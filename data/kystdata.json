@@ -1,5 +1,18 @@
 {
   "version": "1.0",
   "country": "Danmark",
-  "sectors": []
+  "description": "RavRadar kystsektorer",
+  "sectorLengthKm": 4,
+  "sectors": [
+    {
+      "id": "DK-0001",
+      "name": "Kystsektor 0001",
+      "region": "Nordjylland",
+      "lat": 57.0000,
+      "lon": 10.0000,
+      "station": null,
+      "windModel": "offshore",
+      "maxWind": 6
+    }
+  ]
 }
