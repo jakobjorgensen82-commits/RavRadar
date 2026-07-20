@@ -2,15 +2,15 @@ async function getWaterLevel(lat, lon) {
 
     try {
 
-        // Struktur til fremtidig DMI-forbindelse
-
         const now = new Date();
-
 
         const forecast = [];
 
 
-        for (let i = 0; i < 24; i++) {
+        // 5 døgn = 120 timer
+
+        for (let i = 0; i < 120; i++) {
+
 
             let time = new Date(
                 now.getTime() + i * 60 * 60 * 1000
@@ -23,14 +23,19 @@ async function getWaterLevel(lat, lon) {
                 time.toLocaleString("da-DK",
                 {
                     weekday:"short",
+                    day:"numeric",
+                    month:"short",
                     hour:"2-digit",
                     minute:"2-digit"
                 }),
 
+
                 level:
                 "Afventer DMI"
 
+
             });
+
 
         }
 
