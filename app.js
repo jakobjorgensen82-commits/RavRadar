@@ -1,6 +1,4 @@
-const APP_VERSION = "RavRadar v1.1 - 5 døgn visning";
-
-console.log(APP_VERSION);
+const APP_VERSION = "RavRadar v1.2 - Ravscore";
 
 
 const map = L.map('map')
@@ -32,11 +30,7 @@ function showWaterDay(day) {
 
     let html = `
 
-    <h3>🌊 Vandstand time for time</h3>
-
-    <p>
-    ${APP_VERSION}
-    </p>
+    <h3>🌊 Vandstand</h3>
 
     <button onclick="showWaterDay(0)">Dag 1</button>
     <button onclick="showWaterDay(1)">Dag 2</button>
@@ -63,17 +57,13 @@ function showWaterDay(day) {
         html += `
 
         <tr>
-
         <td>${item.time}</td>
-
         <td>${item.level}</td>
-
         </tr>
 
         `;
 
     });
-
 
 
     html += "</table>";
@@ -89,7 +79,6 @@ function showWaterDay(day) {
 
 Promise.all([
 
-
 fetch("data/kystdata.json")
 .then(r=>r.json()),
 
@@ -102,9 +91,6 @@ fetch("data/config.json")
 
 
 .then(([kystdata, config])=>{
-
-
-console.log("Kystdata indlæst");
 
 
 kystdata.sectors.forEach(sector=>{
@@ -133,6 +119,13 @@ ${sector.region}
 </p>
 
 
+<div id="score">
+
+⭐ Beregner ravindeks...
+
+</div>
+
+
 <div id="water">
 
 🌊 Henter vandstand...
@@ -146,11 +139,6 @@ ${config.maxWindMps} m/s
 </p>
 
 
-<p>
-⭐ Ravindeks:
-Ikke beregnet endnu
-</p>
-
 `;
 
 
@@ -159,7 +147,6 @@ getWaterLevel(
 sector.lat,
 sector.lon
 )
-
 
 .then(data=>{
 
@@ -171,6 +158,64 @@ showWaterDay(0);
 
 
 });
+
+
+
+/*
+Midlertidige testværdier.
+De erstattes senere med rigtige data.
+*/
+
+
+calculateRavScore({
+
+windHistory:{
+score:25
+},
+
+
+current:{
+score:25
+},
+
+
+waterLevel:{
+score:15
+},
+
+
+windForecast:{
+score:8
+},
+
+
+visibility:{
+score:8
+}
+
+
+})
+
+
+.then(result=>{
+
+
+document.getElementById("score").innerHTML = `
+
+⭐ Ravindeks:
+<br>
+<b>${result.score}/100</b>
+
+<br>
+
+${result.rating}
+
+`;
+
+
+
+});
+
 
 
 });
@@ -188,14 +233,8 @@ showWaterDay(0);
 console.log(error);
 
 
-info.innerHTML = `
+info.innerHTML =
+"<h2>Fejl ved indlæsning</h2>";
 
-<h2>Fejl</h2>
-
-<p>
-${error}
-</p>
-
-`;
 
 });
