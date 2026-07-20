@@ -1,70 +1,93 @@
 const map = L.map('map')
-.setView([56.2,10.5],7);
+.setView([56.2, 10.5], 7);
 
 
 L.tileLayer(
 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
 {
-attribution:'© OpenStreetMap'
+ attribution:'© OpenStreetMap'
 }
 ).addTo(map);
 
 
+// Teststruktur indtil rigtig kystdatabase er koblet på
 
-fetch("kystsektorer.geojson")
-
-.then(response => response.json())
-
-.then(data => {
+const info = document.getElementById("info");
 
 
-L.geoJSON(data, {
+function showSector(name, region, station){
 
-style:function(){
+info.innerHTML = `
 
-return {
-color:"#006994",
-weight:2,
-fillColor:"#00aaff",
-fillOpacity:0.4
-};
+<h2>${name}</h2>
 
-},
-
-
-onEachFeature:function(feature,layer){
-
-
-layer.on("click",function(){
-
-
-document.getElementById("info").innerHTML=`
-
-<h2>${feature.properties.name}</h2>
-
-<p>ID: ${feature.properties.id}</p>
-
-<p>Kysttype:
-${feature.properties.region}</p>
+<p>📍 Region: ${region}</p>
 
 <p>🌊 Vandstand:
 Afventer DMI</p>
 
-<p>💨 Vindmodel:
-${feature.properties.windModel}</p>
+<p>🏖️ Station:
+${station}</p>
+
+<p>💨 Vind:
+Afventer vejrdata</p>
 
 <p>⭐ Ravindeks:
 Ikke beregnet endnu</p>
 
 `;
 
-
-});
-
-
 }
 
-}).addTo(map);
+
+// Midlertidige testområder
+
+const testAreas = [
+
+{
+name:"Øster Hurup",
+lat:56.80,
+lon:10.27,
+region:"Nordjyllands østkyst",
+station:"Hadsund"
+},
+
+{
+name:"Voerså",
+lat:57.19,
+lon:10.33,
+region:"Nordjyllands østkyst",
+station:"Frederikshavn"
+},
+
+{
+name:"Asaa",
+lat:57.14,
+lon:10.43,
+region:"Nordjyllands østkyst",
+station:"Frederikshavn"
+}
+
+];
+
+
+testAreas.forEach(area=>{
+
+
+let marker=L.marker(
+[area.lat,area.lon]
+)
+.addTo(map);
+
+
+marker.on(
+"click",
+()=>showSector(
+area.name,
+area.region,
+area.station
+)
+);
 
 
 });
