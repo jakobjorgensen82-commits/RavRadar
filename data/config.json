@@ -1,16 +1,19 @@
 {
+  "version": "1.0",
   "country": "Danmark",
   "sectorLengthKm": 4,
   "maxWindMps": 6,
-  "darkOnly": true,
+  "darkModeFeature": true,
   "windRule": {
     "eastCoast": "offshorePreferred",
-    "westCoast": "onshorePreferred"
+    "westCoast": "standard"
   },
   "features": {
     "waterLevel": true,
+    "hourlyForecast": true,
     "wind": true,
     "waves": true,
+    "nightAmberMode": true,
     "amberScore": true
   }
 }
