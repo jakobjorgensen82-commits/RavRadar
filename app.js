@@ -42,13 +42,19 @@ document.getElementById("info").innerHTML=`
 
 <h2>${feature.properties.name}</h2>
 
-<p>🌊 Vandstand: kommer fra DMI</p>
+<p>ID: ${feature.properties.id}</p>
 
-<p>💨 Vind: kommer fra DMI</p>
+<p>Kysttype:
+${feature.properties.region}</p>
 
-<p>🌊 Bølger: kommer senere</p>
+<p>🌊 Vandstand:
+Afventer DMI</p>
 
-<p>⭐ Ravindeks: beregnes senere</p>
+<p>💨 Vindmodel:
+${feature.properties.windModel}</p>
+
+<p>⭐ Ravindeks:
+Ikke beregnet endnu</p>
 
 `;
 
