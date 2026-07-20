@@ -140,4 +140,4 @@ console.log(error);
 info.innerHTML =
 "<h2>Fejl ved indlæsning af data</h2>";
 
-});
+}); 
