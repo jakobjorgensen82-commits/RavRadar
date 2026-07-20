@@ -13,14 +13,21 @@ L.tileLayer(
 const info = document.getElementById("info");
 
 
+Promise.all([
+
 fetch("data/kystdata.json")
+.then(r => r.json()),
 
-.then(response => response.json())
+fetch("data/config.json")
+.then(r => r.json())
 
-.then(data => {
+])
 
 
-data.sectors.forEach(sector => {
+.then(([kystdata, config]) => {
+
+
+kystdata.sectors.forEach(sector => {
 
 
 let marker = L.marker(
@@ -32,27 +39,37 @@ sector.lon
 .addTo(map);
 
 
-marker.on("click", function(){
+
+marker.on("click",()=>{
 
 
 info.innerHTML = `
 
 <h2>${sector.name}</h2>
 
-<p>📍 Region:
-${sector.region}
-</p>
+<p>📍 ${sector.region}</p>
+
+<hr>
 
 <p>🌊 Vandstand:
-Afventer DMI
+<br>
+Time for time: klar til DMI
 </p>
 
-<p>💨 Vindmodel:
-${sector.windModel}
+<p>💨 Vind:
+<br>
+Maks ønsket:
+${config.maxWindMps} m/s
+</p>
+
+<p>🌙 Nat-ravtilstand:
+<br>
+Tilgængelig
 </p>
 
 <p>⭐ Ravindeks:
-Ikke beregnet endnu
+<br>
+Beregnes senere
 </p>
 
 `;
@@ -65,13 +82,11 @@ Ikke beregnet endnu
 
 })
 
-.catch(error => {
+.catch(error=>{
 
 console.log(error);
 
-info.innerHTML = `
-<h2>Fejl</h2>
-<p>Kystdata kunne ikke indlæses.</p>
-`;
+info.innerHTML =
+"Fejl ved indlæsning";
 
 });
