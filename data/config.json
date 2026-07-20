@@ -1,0 +1,16 @@
+{
+  "country": "Danmark",
+  "sectorLengthKm": 4,
+  "maxWindMps": 6,
+  "darkOnly": true,
+  "windRule": {
+    "eastCoast": "offshorePreferred",
+    "westCoast": "onshorePreferred"
+  },
+  "features": {
+    "waterLevel": true,
+    "wind": true,
+    "waves": true,
+    "amberScore": true
+  }
+}
