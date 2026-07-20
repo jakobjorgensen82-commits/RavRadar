@@ -52,27 +52,22 @@ info.innerHTML = `
 ${sector.region}
 </p>
 
-<p id="water">
-🌊 Vandstand:
-<br>
-Henter data...
-</p>
+<div id="water">
+🌊 Henter vandstand...
+</div>
 
 <p>
 💨 Vindgrænse:
-<br>
 ${config.maxWindMps} m/s
 </p>
 
 <p>
 🌙 Nat-ravtilstand:
-<br>
 Tilgængelig
 </p>
 
 <p>
 ⭐ Ravindeks:
-<br>
 Ikke beregnet endnu
 </p>
 
@@ -88,20 +83,43 @@ sector.lon
 .then(data=>{
 
 
-document.getElementById("water").innerHTML = `
+let html = `
 
-🌊 Vandstand:
-<br>
-Forbindelse klar
+<h3>🌊 Vandstand time for time</h3>
 
-<br><br>
+<table>
 
-Position:
-<br>
-${data.location.lat},
-${data.location.lon}
+<tr>
+<th>Tid</th>
+<th>Niveau</th>
+</tr>
 
 `;
+
+
+data.forecast.forEach(item=>{
+
+
+html += `
+
+<tr>
+
+<td>${item.time}</td>
+
+<td>${item.level}</td>
+
+</tr>
+
+`;
+
+});
+
+
+html += "</table>";
+
+
+document.getElementById("water").innerHTML = html;
+
 
 });
 
