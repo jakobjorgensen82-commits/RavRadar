@@ -1,0 +1,64 @@
+{
+  "version": "1.0",
+
+  "name": "RavRadar model",
+
+  "description": "Beregning af ravforhold baseret på vind, strøm, vandstand og sigtbarhed",
+
+  "weights": {
+
+    "windHistory": 30,
+
+    "current": 30,
+
+    "waterLevel": 20,
+
+    "windForecast": 10,
+
+    "visibility": 10
+
+  },
+
+
+  "rules": {
+
+    "wind": {
+
+      "maxWalkingWindMps": 6,
+
+      "description": "Kraftig vind kan frigøre rav, men for meget vind giver dårlige observationsforhold"
+
+    },
+
+
+    "waterLevel": {
+
+      "unit": "cm",
+
+      "showExactValue": true,
+
+      "description": "Vandstand vises som faktisk afvigelse i cm"
+
+    },
+
+
+    "current": {
+
+      "important": true,
+
+      "description": "Strømretning og styrke vurderes i forhold til kystsektoren"
+
+    },
+
+
+    "waves": {
+
+      "useFor": "visibility",
+
+      "description": "Bølger bruges primært til vurdering af sigtbarhed under UV-jagt"
+
+    }
+
+  }
+
+}
