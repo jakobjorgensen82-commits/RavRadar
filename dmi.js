@@ -2,50 +2,63 @@ async function getWaterLevel(lat, lon) {
 
     try {
 
-        /*
-        Midlertidig struktur.
-        Her kobler vi DMI API på næste trin.
-        */
+        // Struktur til fremtidig DMI-forbindelse
+
+        const now = new Date();
+
+
+        const forecast = [];
+
+
+        for (let i = 0; i < 24; i++) {
+
+            let time = new Date(
+                now.getTime() + i * 60 * 60 * 1000
+            );
+
+
+            forecast.push({
+
+                time:
+                time.toLocaleString("da-DK",
+                {
+                    weekday:"short",
+                    hour:"2-digit",
+                    minute:"2-digit"
+                }),
+
+                level:
+                "Afventer DMI"
+
+            });
+
+        }
+
 
         return {
 
-            status: "ok",
+            status:"ok",
 
-            location: {
-                lat: lat,
-                lon: lon
+            location:{
+                lat:lat,
+                lon:lon
             },
 
-            forecast: [
-                {
-                    time: "Nu",
-                    level: "Afventer DMI"
-                },
-                {
-                    time: "+6 timer",
-                    level: "Afventer DMI"
-                },
-                {
-                    time: "+12 timer",
-                    level: "Afventer DMI"
-                },
-                {
-                    time: "+24 timer",
-                    level: "Afventer DMI"
-                }
-            ]
+            forecast:forecast
 
         };
 
 
-    } catch(error) {
+    }
+
+
+    catch(error) {
 
 
         return {
 
-            status: "error",
-
-            message: error.message
+            status:"error",
+            message:error.message
 
         };
 
