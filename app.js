@@ -1,4 +1,4 @@
-const APP_VERSION = "RavRadar v1.3 - samlet model";
+const APP_VERSION = "RavRadar v1.4 - vandstand cm";
 
 
 const map = L.map('map')
@@ -43,15 +43,24 @@ function showWaterDay(day) {
 
     <tr>
     <th>Tid</th>
-    <th>Niveau</th>
+    <th>Vandstand</th>
+    <th>Trend</th>
     </tr>
 
     `;
 
 
+
     currentForecast
     .slice(start,end)
     .forEach(item=>{
+
+
+        let sign =
+        item.levelCm > 0
+        ? "+"
+        :
+        "";
 
 
         html += `
@@ -60,13 +69,21 @@ function showWaterDay(day) {
 
         <td>${item.time}</td>
 
-        <td>${item.level}</td>
+        <td>
+        ${sign}${item.levelCm} cm
+        </td>
+
+        <td>
+        ${item.trend}
+        </td>
 
         </tr>
 
         `;
 
+
     });
+
 
 
     html += "</table>";
@@ -79,13 +96,16 @@ function showWaterDay(day) {
 
 
 
+
 Promise.all([
 
 fetch("data/kystdata.json")
 .then(r=>r.json()),
 
+
 fetch("data/config.json")
 .then(r=>r.json())
+
 
 ])
 
@@ -112,7 +132,6 @@ marker.on("click",()=>{
 info.innerHTML = `
 
 <h2>${sector.name}</h2>
-
 
 <p>
 📍 Region:
@@ -174,12 +193,12 @@ sector.lon
 
 currentForecast = water.forecast;
 
+
 showWaterDay(0);
 
 
 
 calculateRavScore({
-
 
 windHistory:{
 score:0
@@ -192,7 +211,7 @@ score:0
 
 
 waterLevel:{
-score:0
+score:calculateWaterLevelScore(water)
 },
 
 
@@ -235,17 +254,17 @@ ${result.rating}
 document.getElementById("conditions").innerHTML = `
 
 🌬️ Vind:
-Klar
+Afventer data
 
 <br>
 
 🧭 Strøm:
-Klar
+Afventer data
 
 <br>
 
 🌊 Vand:
-Klar
+Aktiv
 
 `;
 
