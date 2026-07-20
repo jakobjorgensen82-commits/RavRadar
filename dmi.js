@@ -1,13 +1,15 @@
 async function getWaterLevel(lat, lon) {
 
+
     try {
 
+
         const now = new Date();
+
 
         const forecast = [];
 
 
-        // 5 døgn = 120 timer
 
         for (let i = 0; i < 120; i++) {
 
@@ -17,21 +19,53 @@ async function getWaterLevel(lat, lon) {
             );
 
 
+            /*
+            Midlertidig testværdi.
+            Erstattes senere med DMI vandstand i cm.
+            */
+
+
+            let level = Math.round(
+                Math.sin(i / 8) * 25
+            );
+
+
+
             forecast.push({
+
 
                 time:
                 time.toLocaleString("da-DK",
                 {
+
                     weekday:"short",
+
                     day:"numeric",
+
                     month:"short",
+
                     hour:"2-digit",
+
                     minute:"2-digit"
+
                 }),
 
 
-                level:
-                "Afventer DMI"
+
+                levelCm: level,
+
+
+                trend:
+                i < 1
+                ?
+                "nu"
+                :
+                level > 0
+                ?
+                "stigende"
+                :
+                "faldende"
+
 
 
             });
@@ -40,18 +74,28 @@ async function getWaterLevel(lat, lon) {
         }
 
 
+
         return {
+
 
             status:"ok",
 
+
             location:{
+
                 lat:lat,
+
                 lon:lon
+
             },
+
 
             forecast:forecast
 
+
+
         };
+
 
 
     }
@@ -62,12 +106,77 @@ async function getWaterLevel(lat, lon) {
 
         return {
 
+
             status:"error",
+
+
             message:error.message
+
 
         };
 
 
     }
+
+
+}
+
+
+
+
+
+function calculateWaterLevelScore(water) {
+
+
+    if (!water || !water.forecast) {
+
+
+        return 0;
+
+
+    }
+
+
+
+    let current =
+    water.forecast[0].levelCm;
+
+
+
+    let score = 10;
+
+
+
+    /*
+    Senere justeres denne model
+    efter erfaring med ravfund.
+
+    */
+
+
+
+    if (current > 20) {
+
+        score += 5;
+
+    }
+
+
+    if (current < -20) {
+
+        score -= 5;
+
+    }
+
+
+
+    return Math.max(
+        0,
+        Math.min(
+            20,
+            score
+        )
+    );
+
 
 }
