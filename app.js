@@ -13,21 +13,76 @@ L.tileLayer(
 const info = document.getElementById("info");
 
 
+let currentForecast = [];
+
+
+function showWaterDay(day) {
+
+    let start = day * 24;
+    let end = start + 24;
+
+
+    let html = `
+
+    <h3>🌊 Vandstand</h3>
+
+    <button onclick="showWaterDay(0)">Dag 1</button>
+    <button onclick="showWaterDay(1)">Dag 2</button>
+    <button onclick="showWaterDay(2)">Dag 3</button>
+    <button onclick="showWaterDay(3)">Dag 4</button>
+    <button onclick="showWaterDay(4)">Dag 5</button>
+
+    <table>
+
+    <tr>
+    <th>Tid</th>
+    <th>Niveau</th>
+    </tr>
+
+    `;
+
+
+    currentForecast
+    .slice(start,end)
+    .forEach(item=>{
+
+
+        html += `
+
+        <tr>
+        <td>${item.time}</td>
+        <td>${item.level}</td>
+        </tr>
+
+        `;
+
+    });
+
+
+    html += "</table>";
+
+
+    document.getElementById("water").innerHTML = html;
+
+}
+
+
+
 Promise.all([
 
 fetch("data/kystdata.json")
-.then(r => r.json()),
+.then(r=>r.json()),
 
 fetch("data/config.json")
-.then(r => r.json())
+.then(r=>r.json())
 
 ])
 
 
-.then(([kystdata, config]) => {
+.then(([kystdata, config])=>{
 
 
-kystdata.sectors.forEach(sector => {
+kystdata.sectors.forEach(sector=>{
 
 
 let marker = L.marker(
@@ -62,11 +117,6 @@ ${config.maxWindMps} m/s
 </p>
 
 <p>
-🌙 Nat-ravtilstand:
-Tilgængelig
-</p>
-
-<p>
 ⭐ Ravindeks:
 Ikke beregnet endnu
 </p>
@@ -82,44 +132,9 @@ sector.lon
 
 .then(data=>{
 
+currentForecast = data.forecast;
 
-let html = `
-
-<h3>🌊 Vandstand time for time</h3>
-
-<table>
-
-<tr>
-<th>Tid</th>
-<th>Niveau</th>
-</tr>
-
-`;
-
-
-data.forecast.forEach(item=>{
-
-
-html += `
-
-<tr>
-
-<td>${item.time}</td>
-
-<td>${item.level}</td>
-
-</tr>
-
-`;
-
-});
-
-
-html += "</table>";
-
-
-document.getElementById("water").innerHTML = html;
-
+showWaterDay(0);
 
 });
 
@@ -130,14 +145,4 @@ document.getElementById("water").innerHTML = html;
 });
 
 
-})
-
-
-.catch(error=>{
-
-console.log(error);
-
-info.innerHTML =
-"<h2>Fejl ved indlæsning af data</h2>";
-
-}); 
+});
