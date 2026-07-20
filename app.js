@@ -1,4 +1,4 @@
-const APP_VERSION = "RavRadar v1.5 - stabil dataindlæsning";
+const APP_VERSION = "RavRadar v1.6 - stabil";
 
 
 const map = L.map('map')
@@ -38,12 +38,12 @@ function showWaterDay(day) {
     <button onclick="showWaterDay(3)">Dag 4</button>
     <button onclick="showWaterDay(4)">Dag 5</button>
 
+
     <table>
 
     <tr>
     <th>Tid</th>
     <th>Vandstand</th>
-    <th>Trend</th>
     </tr>
 
     `;
@@ -60,14 +60,19 @@ function showWaterDay(day) {
         html += `
 
         <tr>
+
         <td>${item.time}</td>
-        <td>${sign}${item.levelCm} cm</td>
-        <td>${item.trend}</td>
+
+        <td>
+        ${sign}${item.levelCm} cm
+        </td>
+
         </tr>
 
         `;
 
     });
+
 
 
     html += "</table>";
@@ -80,15 +85,16 @@ function showWaterDay(day) {
 
 
 
-
 fetch("data/kystdata.json")
 
-.then(r=>r.json())
+.then(response => response.json())
 
-.then(kystdata=>{
+.then(kystdata => {
 
 
-kystdata.sectors.forEach(sector=>{
+
+kystdata.sectors.forEach(sector => {
+
 
 
 let marker = L.marker(
@@ -101,7 +107,8 @@ sector.lon
 
 
 
-marker.on("click",()=>{
+marker.on("click", function(){
+
 
 
 info.innerHTML = `
@@ -113,25 +120,23 @@ info.innerHTML = `
 ${sector.region}
 </p>
 
+
 <div id="score">
-⭐ Beregner...
+
+⭐ Beregner ravindeks...
+
 </div>
+
 
 <div id="water">
-🌊 Henter vandstand...
-</div>
 
-<div id="conditions">
-Henter forhold...
+🌊 Henter vandstand...
+
 </div>
 
 `;
 
 
-
-/*
-Vandstand
-*/
 
 getWaterLevel(
 sector.lat,
@@ -143,15 +148,10 @@ sector.lon
 
 currentForecast = water.forecast;
 
+
 showWaterDay(0);
 
 
-})
-
-.catch(error=>{
-
-document.getElementById("water").innerHTML =
-"🌊 Vandstand kunne ikke hentes";
 
 });
 
@@ -159,91 +159,8 @@ document.getElementById("water").innerHTML =
 
 
 
-/*
-Vind
-*/
+if(typeof calculateRavScore === "function"){
 
-let windOK = false;
-
-
-if(typeof getWindData === "function") {
-
-
-getWindData(
-sector.lat,
-sector.lon
-)
-
-.then(()=>{
-
-windOK = true;
-
-});
-
-
-}
-
-
-
-
-
-/*
-Strøm
-*/
-
-let currentOK = false;
-
-
-if(typeof getCurrentData === "function") {
-
-
-getCurrentData(
-sector.lat,
-sector.lon
-)
-
-.then(()=>{
-
-currentOK = true;
-
-});
-
-
-}
-
-
-
-
-
-/*
-Bølger
-*/
-
-let waveOK = false;
-
-
-if(typeof getWaveData === "function") {
-
-
-getWaveData(
-sector.lat,
-sector.lon
-)
-
-.then(()=>{
-
-waveOK = true;
-
-});
-
-
-}
-
-
-
-
-
-setTimeout(()=>{
 
 
 calculateRavScore({
@@ -271,7 +188,6 @@ score:0
 
 })
 
-
 .then(result=>{
 
 
@@ -295,39 +211,20 @@ ${result.rating}
 
 
 
-document.getElementById("conditions").innerHTML = `
-
-🌬️ Vind:
-${windOK ? "klar" : "afventer"}
-
-<br>
-
-🧭 Strøm:
-${currentOK ? "klar" : "afventer"}
-
-<br>
-
-🌊 Bølger:
-${waveOK ? "klar" : "afventer"}
-
-`;
-
-
-
-},1000);
+}
 
 
 
 });
 
 
-});
-
 
 });
+
 
 
 })
+
 .catch(error=>{
 
 
