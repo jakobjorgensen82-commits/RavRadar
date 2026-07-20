@@ -47,30 +47,59 @@ info.innerHTML = `
 
 <h2>${sector.name}</h2>
 
-<p>📍 ${sector.region}</p>
-
-<hr>
-
-<p>🌊 Vandstand:
-<br>
-Time for time: klar til DMI
+<p>
+📍 Region:
+${sector.region}
 </p>
 
-<p>💨 Vind:
+<p id="water">
+🌊 Vandstand:
 <br>
-Maks ønsket:
+Henter data...
+</p>
+
+<p>
+💨 Vindgrænse:
+<br>
 ${config.maxWindMps} m/s
 </p>
 
-<p>🌙 Nat-ravtilstand:
+<p>
+🌙 Nat-ravtilstand:
 <br>
 Tilgængelig
 </p>
 
-<p>⭐ Ravindeks:
+<p>
+⭐ Ravindeks:
 <br>
-Beregnes senere
+Ikke beregnet endnu
 </p>
+
+`;
+
+
+
+getWaterLevel(
+sector.lat,
+sector.lon
+)
+
+.then(data=>{
+
+
+document.getElementById("water").innerHTML = `
+
+🌊 Vandstand:
+<br>
+Forbindelse klar
+
+<br><br>
+
+Position:
+<br>
+${data.location.lat},
+${data.location.lon}
 
 `;
 
@@ -80,13 +109,17 @@ Beregnes senere
 });
 
 
+});
+
+
 })
+
 
 .catch(error=>{
 
 console.log(error);
 
 info.innerHTML =
-"Fejl ved indlæsning";
+"<h2>Fejl ved indlæsning af data</h2>";
 
 });
