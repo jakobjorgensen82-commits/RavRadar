@@ -10,84 +10,104 @@ L.tileLayer(
 ).addTo(map);
 
 
-// Teststruktur indtil rigtig kystdatabase er koblet på
-
 const info = document.getElementById("info");
 
 
-function showSector(name, region, station){
+// Hent kystdata
+
+fetch("data/kystdata.json")
+
+.then(response => response.json())
+
+.then(data => {
+
+
+if(data.sectors.length === 0){
 
 info.innerHTML = `
 
-<h2>${name}</h2>
+<h2>RavRadar</h2>
 
-<p>📍 Region: ${region}</p>
+<p>
+Kystdatabase klar.
+</p>
 
-<p>🌊 Vandstand:
-Afventer DMI</p>
-
-<p>🏖️ Station:
-${station}</p>
-
-<p>💨 Vind:
-Afventer vejrdata</p>
-
-<p>⭐ Ravindeks:
-Ikke beregnet endnu</p>
+<p>
+Afventer indlæsning af danske kystsektorer.
+</p>
 
 `;
 
+return;
+
 }
 
 
-// Midlertidige testområder
+// Når vi senere har alle sektorer
 
-const testAreas = [
-
-{
-name:"Øster Hurup",
-lat:56.80,
-lon:10.27,
-region:"Nordjyllands østkyst",
-station:"Hadsund"
-},
-
-{
-name:"Voerså",
-lat:57.19,
-lon:10.33,
-region:"Nordjyllands østkyst",
-station:"Frederikshavn"
-},
-
-{
-name:"Asaa",
-lat:57.14,
-lon:10.43,
-region:"Nordjyllands østkyst",
-station:"Frederikshavn"
-}
-
-];
+data.sectors.forEach(sector=>{
 
 
-testAreas.forEach(area=>{
-
-
-let marker=L.marker(
-[area.lat,area.lon]
+let marker = L.marker(
+[
+sector.lat,
+sector.lon
+]
 )
 .addTo(map);
 
 
 marker.on(
 "click",
-()=>showSector(
-area.name,
-area.region,
-area.station
-)
-);
+()=>{
 
+
+info.innerHTML=`
+
+<h2>${sector.name}</h2>
+
+<p>
+📍 Region:
+${sector.region}
+</p>
+
+<p>
+🌊 Vandstand:
+Afventer DMI
+</p>
+
+<p>
+💨 Vind:
+Afventer data
+</p>
+
+<p>
+⭐ Ravindeks:
+Beregnes senere
+</p>
+
+`;
+
+});
+
+
+});
+
+
+})
+
+.catch(error=>{
+
+console.log(error);
+
+info.innerHTML=`
+
+<h2>Fejl</h2>
+
+<p>
+Kunne ikke hente kystdata.
+</p>
+
+`;
 
 });
