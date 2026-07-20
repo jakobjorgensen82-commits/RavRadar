@@ -13,8 +13,6 @@ L.tileLayer(
 const info = document.getElementById("info");
 
 
-// Hent kystdata
-
 fetch("data/kystdata.json")
 
 .then(response => response.json())
@@ -22,30 +20,7 @@ fetch("data/kystdata.json")
 .then(data => {
 
 
-if(data.sectors.length === 0){
-
-info.innerHTML = `
-
-<h2>RavRadar</h2>
-
-<p>
-Kystdatabase klar.
-</p>
-
-<p>
-Afventer indlæsning af danske kystsektorer.
-</p>
-
-`;
-
-return;
-
-}
-
-
-// Når vi senere har alle sektorer
-
-data.sectors.forEach(sector=>{
+data.sectors.forEach(sector => {
 
 
 let marker = L.marker(
@@ -57,33 +32,27 @@ sector.lon
 .addTo(map);
 
 
-marker.on(
-"click",
-()=>{
+marker.on("click", function(){
 
 
-info.innerHTML=`
+info.innerHTML = `
 
 <h2>${sector.name}</h2>
 
-<p>
-📍 Region:
+<p>📍 Region:
 ${sector.region}
 </p>
 
-<p>
-🌊 Vandstand:
+<p>🌊 Vandstand:
 Afventer DMI
 </p>
 
-<p>
-💨 Vind:
-Afventer data
+<p>💨 Vindmodel:
+${sector.windModel}
 </p>
 
-<p>
-⭐ Ravindeks:
-Beregnes senere
+<p>⭐ Ravindeks:
+Ikke beregnet endnu
 </p>
 
 `;
@@ -96,18 +65,13 @@ Beregnes senere
 
 })
 
-.catch(error=>{
+.catch(error => {
 
 console.log(error);
 
-info.innerHTML=`
-
+info.innerHTML = `
 <h2>Fejl</h2>
-
-<p>
-Kunne ikke hente kystdata.
-</p>
-
+<p>Kystdata kunne ikke indlæses.</p>
 `;
 
 });
