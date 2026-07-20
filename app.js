@@ -1,55 +1,64 @@
-const map = L.map('map').setView([56.2,10.5],7);
+const map = L.map('map')
+.setView([56.2,10.5],7);
 
 
 L.tileLayer(
 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
 {
- attribution:'© OpenStreetMap'
+attribution:'© OpenStreetMap'
 }
 ).addTo(map);
 
 
-const steder = [
-{
-navn:"Øster Hurup",
-lat:56.804,
-lon:10.270
+
+fetch("kystsektorer.geojson")
+
+.then(response => response.json())
+
+.then(data => {
+
+
+L.geoJSON(data, {
+
+style:function(){
+
+return {
+color:"#006994",
+weight:2,
+fillColor:"#00aaff",
+fillOpacity:0.4
+};
+
 },
-{
-navn:"Voerså",
-lat:57.190,
-lon:10.330
-},
-{
-navn:"Asaa",
-lat:57.140,
-lon:10.430
-}
-];
 
 
-steder.forEach(sted => {
-
-let marker = L.marker(
-[sted.lat,sted.lon]
-).addTo(map);
+onEachFeature:function(feature,layer){
 
 
-marker.on(
-"click",
-function(){
+layer.on("click",function(){
 
-document.getElementById("info").innerHTML =
 
-`
-<h2>${sted.navn}</h2>
+document.getElementById("info").innerHTML=`
 
-<p>🌊 Vandstand: kommer senere</p>
-<p>💨 Vind: kommer senere</p>
-<p>⭐ Ravindeks: kommer senere</p>
+<h2>${feature.properties.name}</h2>
+
+<p>🌊 Vandstand: kommer fra DMI</p>
+
+<p>💨 Vind: kommer fra DMI</p>
+
+<p>🌊 Bølger: kommer senere</p>
+
+<p>⭐ Ravindeks: beregnes senere</p>
 
 `;
 
+
 });
+
+
+}
+
+}).addTo(map);
+
 
 });
