@@ -1,20 +1,16 @@
+let windData = null;
+
+
 async function getWindData(lat, lon) {
 
 
     try {
 
 
-        /*
-        Vindmodul klar til rigtig vejrdata.
-        Senere kobles vindprognose på.
-        */
+        const now = new Date();
 
 
         const forecast = [];
-
-
-        const now = new Date();
-
 
 
         for (let i = 0; i < 120; i++) {
@@ -27,23 +23,11 @@ async function getWindData(lat, lon) {
 
             forecast.push({
 
-                time:
-                time.toLocaleString("da-DK",
-                {
-                    weekday:"short",
-                    day:"numeric",
-                    month:"short",
-                    hour:"2-digit"
-                }),
+                time: time.toISOString(),
 
+                speed: null,
 
-                speed:
-                "Afventer vinddata",
-
-
-                direction:
-                "Afventer retning"
-
+                direction: null
 
             });
 
@@ -64,7 +48,10 @@ async function getWindData(lat, lon) {
             },
 
 
-            forecast:forecast
+            forecast:forecast,
+
+
+            history:[]
 
 
         };
@@ -87,6 +74,36 @@ async function getWindData(lat, lon) {
 
 
     }
+
+
+}
+
+
+
+
+
+function calculateWindScore(wind) {
+
+
+    let score = 0;
+
+
+
+    /*
+    Denne logik erstattes senere
+    med rigtig vindhistorik.
+    */
+
+
+    if (!wind) {
+
+        return 0;
+
+    }
+
+
+
+    return score;
 
 
 }
