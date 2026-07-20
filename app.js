@@ -1,3 +1,8 @@
+const APP_VERSION = "RavRadar v1.1 - 5 døgn visning";
+
+console.log(APP_VERSION);
+
+
 const map = L.map('map')
 .setView([56.2, 10.5], 7);
 
@@ -10,13 +15,16 @@ L.tileLayer(
 ).addTo(map);
 
 
+
 const info = document.getElementById("info");
 
 
 let currentForecast = [];
 
 
+
 function showWaterDay(day) {
+
 
     let start = day * 24;
     let end = start + 24;
@@ -24,13 +32,18 @@ function showWaterDay(day) {
 
     let html = `
 
-    <h3>🌊 Vandstand</h3>
+    <h3>🌊 Vandstand time for time</h3>
+
+    <p>
+    ${APP_VERSION}
+    </p>
 
     <button onclick="showWaterDay(0)">Dag 1</button>
     <button onclick="showWaterDay(1)">Dag 2</button>
     <button onclick="showWaterDay(2)">Dag 3</button>
     <button onclick="showWaterDay(3)">Dag 4</button>
     <button onclick="showWaterDay(4)">Dag 5</button>
+
 
     <table>
 
@@ -50,13 +63,17 @@ function showWaterDay(day) {
         html += `
 
         <tr>
+
         <td>${item.time}</td>
+
         <td>${item.level}</td>
+
         </tr>
 
         `;
 
     });
+
 
 
     html += "</table>";
@@ -68,18 +85,26 @@ function showWaterDay(day) {
 
 
 
+
+
 Promise.all([
+
 
 fetch("data/kystdata.json")
 .then(r=>r.json()),
 
+
 fetch("data/config.json")
 .then(r=>r.json())
+
 
 ])
 
 
 .then(([kystdata, config])=>{
+
+
+console.log("Kystdata indlæst");
 
 
 kystdata.sectors.forEach(sector=>{
@@ -107,14 +132,19 @@ info.innerHTML = `
 ${sector.region}
 </p>
 
+
 <div id="water">
+
 🌊 Henter vandstand...
+
 </div>
+
 
 <p>
 💨 Vindgrænse:
 ${config.maxWindMps} m/s
 </p>
+
 
 <p>
 ⭐ Ravindeks:
@@ -130,19 +160,42 @@ sector.lat,
 sector.lon
 )
 
+
 .then(data=>{
+
 
 currentForecast = data.forecast;
 
+
 showWaterDay(0);
 
-});
-
 
 });
 
 
 });
 
+
+});
+
+
+})
+
+
+.catch(error=>{
+
+
+console.log(error);
+
+
+info.innerHTML = `
+
+<h2>Fejl</h2>
+
+<p>
+${error}
+</p>
+
+`;
 
 });
