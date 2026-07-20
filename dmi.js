@@ -1,17 +1,55 @@
 async function getWaterLevel(lat, lon) {
 
-    /*
-    DMI vandstand kobles på her.
-    Denne funktion er klar til den rigtige API-forbindelse.
-    */
+    try {
 
-    return {
-        status: "klar",
-        location: {
-            lat: lat,
-            lon: lon
-        },
-        forecast: []
-    };
+        /*
+        Midlertidig struktur.
+        Her kobler vi DMI API på næste trin.
+        */
+
+        return {
+
+            status: "ok",
+
+            location: {
+                lat: lat,
+                lon: lon
+            },
+
+            forecast: [
+                {
+                    time: "Nu",
+                    level: "Afventer DMI"
+                },
+                {
+                    time: "+6 timer",
+                    level: "Afventer DMI"
+                },
+                {
+                    time: "+12 timer",
+                    level: "Afventer DMI"
+                },
+                {
+                    time: "+24 timer",
+                    level: "Afventer DMI"
+                }
+            ]
+
+        };
+
+
+    } catch(error) {
+
+
+        return {
+
+            status: "error",
+
+            message: error.message
+
+        };
+
+
+    }
 
 }
