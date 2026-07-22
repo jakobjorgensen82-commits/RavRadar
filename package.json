@@ -1,0 +1,9 @@
+{
+  "name": "ravradar",
+  "private": true,
+  "version": "2.1.0",
+  "type": "module",
+  "scripts": {
+    "validate": "node scripts/validate-data.mjs && node scripts/test-score-engine.mjs"
+  }
+}

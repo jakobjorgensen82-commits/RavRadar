@@ -1,0 +1,48 @@
+{
+  "type": "FeatureCollection",
+  "version": "2.1",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-001",
+        "name": "Øster Hurup Syd",
+        "region": "Nordjyllands østkyst",
+        "coastType": "east",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": true,
+        "reefs": true,
+        "seagrass": true
+      },
+      "geometry": { "type": "Polygon", "coordinates": [[[10.20,56.77],[10.32,56.77],[10.32,56.83],[10.20,56.83],[10.20,56.77]]] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-002",
+        "name": "Helberskov",
+        "region": "Nordjyllands østkyst",
+        "coastType": "east",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true
+      },
+      "geometry": { "type": "Polygon", "coordinates": [[[10.13,56.74],[10.22,56.74],[10.22,56.80],[10.13,56.80],[10.13,56.74]]] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-003",
+        "name": "Voerså",
+        "region": "Nordjyllands østkyst",
+        "coastType": "east",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": true,
+        "reefs": true,
+        "seagrass": true
+      },
+      "geometry": { "type": "Polygon", "coordinates": [[[10.27,57.15],[10.37,57.15],[10.37,57.22],[10.27,57.22],[10.27,57.15]]] }
+    }
+  ]
+}

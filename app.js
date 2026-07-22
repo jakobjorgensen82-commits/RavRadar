@@ -1,238 +1,56 @@
-const APP_VERSION = "RavRadar v1.6 - stabil";
+import { calculateRavScore } from "./js/core/score-engine.js";
+import { loadConditions, loadZones } from "./js/services/data-service.js";
+import { createMap, locateUser, refreshZoneStyles, renderZones } from "./js/map/map-view.js";
+import { showZoneInfo } from "./js/ui/info-panel.js";
 
+const state = { mode: "waders", selectedZone: null, zoneLayer: null, zones: null, conditions: { available: false, zones: {} } };
+const map = createMap("map");
+const infoPanel = document.querySelector("#infoPanel");
+const dataStatus = document.querySelector("#dataStatus");
 
-const map = L.map('map')
-.setView([56.2, 10.5], 7);
-
-
-L.tileLayer(
-'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-{
- attribution:'© OpenStreetMap'
-}
-).addTo(map);
-
-
-
-const info = document.getElementById("info");
-
-
-let currentForecast = [];
-
-
-
-function showWaterDay(day) {
-
-
-    let start = day * 24;
-    let end = start + 24;
-
-
-    let html = `
-
-    <h3>🌊 Vandstand</h3>
-
-    <button onclick="showWaterDay(0)">Dag 1</button>
-    <button onclick="showWaterDay(1)">Dag 2</button>
-    <button onclick="showWaterDay(2)">Dag 3</button>
-    <button onclick="showWaterDay(3)">Dag 4</button>
-    <button onclick="showWaterDay(4)">Dag 5</button>
-
-
-    <table>
-
-    <tr>
-    <th>Tid</th>
-    <th>Vandstand</th>
-    </tr>
-
-    `;
-
-
-    currentForecast
-    .slice(start,end)
-    .forEach(item=>{
-
-
-        let sign = item.levelCm > 0 ? "+" : "";
-
-
-        html += `
-
-        <tr>
-
-        <td>${item.time}</td>
-
-        <td>
-        ${sign}${item.levelCm} cm
-        </td>
-
-        </tr>
-
-        `;
-
-    });
-
-
-
-    html += "</table>";
-
-
-    document.getElementById("water").innerHTML = html;
-
+function resultFor(zone) {
+  const condition = state.conditions.zones?.[zone.id] || {};
+  return calculateRavScore({ mode: state.mode, zone, weather: condition.current || {}, history: condition.history || {} });
 }
 
-
-
-
-fetch("data/kystdata.json")
-
-.then(response => response.json())
-
-.then(kystdata => {
-
-
-
-kystdata.sectors.forEach(sector => {
-
-
-
-let marker = L.marker(
-[
-sector.lat,
-sector.lon
-]
-)
-.addTo(map);
-
-
-
-marker.on("click", function(){
-
-
-
-info.innerHTML = `
-
-<h2>${sector.name}</h2>
-
-<p>
-📍 Region:
-${sector.region}
-</p>
-
-
-<div id="score">
-
-⭐ Beregner ravindeks...
-
-</div>
-
-
-<div id="water">
-
-🌊 Henter vandstand...
-
-</div>
-
-`;
-
-
-
-getWaterLevel(
-sector.lat,
-sector.lon
-)
-
-.then(water=>{
-
-
-currentForecast = water.forecast;
-
-
-showWaterDay(0);
-
-
-
-});
-
-
-
-
-
-if(typeof calculateRavScore === "function"){
-
-
-
-calculateRavScore({
-
-windHistory:{
-score:0
-},
-
-current:{
-score:0
-},
-
-waterLevel:{
-score:10
-},
-
-windForecast:{
-score:0
-},
-
-visibility:{
-score:0
+function renderSelectedZone() {
+  if (!state.selectedZone) return;
+  const condition = state.conditions.zones?.[state.selectedZone.id] || {};
+  showZoneInfo(infoPanel, state.selectedZone, resultFor(state.selectedZone), condition.current || {}, state.mode);
 }
 
-
-})
-
-.then(result=>{
-
-
-document.getElementById("score").innerHTML = `
-
-⭐ Ravindeks:
-
-<br>
-
-<b>${result.score}/100</b>
-
-<br>
-
-${result.rating}
-
-`;
-
-
-
-});
-
-
-
+function setMode(mode) {
+  state.mode = mode;
+  document.querySelectorAll(".mode-button").forEach(button => {
+    const active = button.dataset.mode === mode;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  if (state.zoneLayer) refreshZoneStyles(state.zoneLayer, id => {
+    const feature = state.zones.features.find(item => item.properties.id === id);
+    return resultFor(feature.properties);
+  });
+  renderSelectedZone();
 }
 
+document.querySelectorAll(".mode-button").forEach(button => button.addEventListener("click", () => setMode(button.dataset.mode)));
+document.querySelector("#locateButton").addEventListener("click", () => locateUser(map, () => alert("Din position kunne ikke hentes. Kontroller browserens tilladelse til placering.")));
 
+try {
+  const [zones, conditions] = await Promise.all([loadZones(), loadConditions()]);
+  state.zones = zones;
+  state.conditions = conditions;
+  state.zoneLayer = renderZones(map, zones, id => {
+    const feature = zones.features.find(item => item.properties.id === id);
+    return resultFor(feature.properties);
+  }, zone => { state.selectedZone = zone; renderSelectedZone(); });
 
-});
-
-
-
-});
-
-
-
-})
-
-.catch(error=>{
-
-
-console.log(error);
-
-
-info.innerHTML =
-"Fejl ved indlæsning af kystdata";
-
-
-});
+  if (conditions.available && conditions.generatedAt) {
+    const timestamp = new Date(conditions.generatedAt).toLocaleString("da-DK");
+    dataStatus.textContent = `Data senest opdateret ${timestamp}`;
+  } else dataStatus.textContent = "Aktuelle DMI-data er endnu ikke koblet på. Ingen testmålinger vises.";
+} catch (error) {
+  console.error(error);
+  infoPanel.innerHTML = `<div class="notice">Kortzonerne kunne ikke indlæses. Kontroller projektfilerne på GitHub.</div>`;
+  dataStatus.textContent = "Fejl ved indlæsning";
+}
