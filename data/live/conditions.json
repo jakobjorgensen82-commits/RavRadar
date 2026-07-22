@@ -1,6 +1,12 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "generatedAt": null,
-  "source": "DMI",
-  "zones": {}
+  "source": "DMI Open Data Forecast EDR API",
+  "directionConventions": {
+    "windDirectionDeg": "from",
+    "currentDirectionDeg": "toward",
+    "waveDirectionDeg": "from"
+  },
+  "zones": {},
+  "errors": []
 }

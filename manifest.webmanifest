@@ -1,0 +1,10 @@
+{
+  "name": "RavRadar",
+  "short_name": "RavRadar",
+  "description": "Dansk prognose for ravjagt",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f5f8f9",
+  "theme_color": "#073b4c",
+  "lang": "da"
+}

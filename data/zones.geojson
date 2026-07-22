@@ -1,48 +1,930 @@
 {
   "type": "FeatureCollection",
-  "version": "2.1",
+  "version": "1.0",
   "features": [
     {
       "type": "Feature",
       "properties": {
-        "id": "DK-001",
-        "name": "Øster Hurup Syd",
+        "id": "DK-NW-01",
+        "name": "Skagen og Grenen",
+        "region": "Nordjyllands nordspids",
+        "coastType": "west",
+        "onshoreDirectionDeg": 225,
+        "shallowWater": false,
+        "reefs": true,
+        "seagrass": false,
+        "dataPoint": [
+          10.61,
+          57.74
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.45,
+              57.64
+            ],
+            [
+              10.77,
+              57.64
+            ],
+            [
+              10.77,
+              57.84
+            ],
+            [
+              10.45,
+              57.84
+            ],
+            [
+              10.45,
+              57.64
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-NW-02",
+        "name": "Lønstrup og Løkken",
+        "region": "Nordjyllands vestkyst",
+        "coastType": "west",
+        "onshoreDirectionDeg": 90,
+        "shallowWater": false,
+        "reefs": true,
+        "seagrass": false,
+        "dataPoint": [
+          9.72,
+          57.38
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.56,
+              57.28
+            ],
+            [
+              9.88,
+              57.28
+            ],
+            [
+              9.88,
+              57.480000000000004
+            ],
+            [
+              9.56,
+              57.480000000000004
+            ],
+            [
+              9.56,
+              57.28
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-NW-03",
+        "name": "Blokhus og Saltum",
+        "region": "Nordjyllands vestkyst",
+        "coastType": "west",
+        "onshoreDirectionDeg": 90,
+        "shallowWater": false,
+        "reefs": true,
+        "seagrass": false,
+        "dataPoint": [
+          9.61,
+          57.25
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.45,
+              57.15
+            ],
+            [
+              9.77,
+              57.15
+            ],
+            [
+              9.77,
+              57.35
+            ],
+            [
+              9.45,
+              57.35
+            ],
+            [
+              9.45,
+              57.15
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-W-01",
+        "name": "Thy og Vorupør",
+        "region": "Vestkysten",
+        "coastType": "west",
+        "onshoreDirectionDeg": 90,
+        "shallowWater": false,
+        "reefs": true,
+        "seagrass": false,
+        "dataPoint": [
+          8.38,
+          56.95
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8.22,
+              56.85
+            ],
+            [
+              8.540000000000001,
+              56.85
+            ],
+            [
+              8.540000000000001,
+              57.050000000000004
+            ],
+            [
+              8.22,
+              57.050000000000004
+            ],
+            [
+              8.22,
+              56.85
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-W-02",
+        "name": "Hvide Sande og Søndervig",
+        "region": "Vestkysten",
+        "coastType": "west",
+        "onshoreDirectionDeg": 90,
+        "shallowWater": false,
+        "reefs": true,
+        "seagrass": false,
+        "dataPoint": [
+          8.12,
+          56.02
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.959999999999999,
+              55.92
+            ],
+            [
+              8.28,
+              55.92
+            ],
+            [
+              8.28,
+              56.120000000000005
+            ],
+            [
+              7.959999999999999,
+              56.120000000000005
+            ],
+            [
+              7.959999999999999,
+              55.92
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-W-03",
+        "name": "Blåvand og Vejers",
+        "region": "Vestkysten",
+        "coastType": "west",
+        "onshoreDirectionDeg": 90,
+        "shallowWater": false,
+        "reefs": true,
+        "seagrass": false,
+        "dataPoint": [
+          8.13,
+          55.57
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.970000000000001,
+              55.47
+            ],
+            [
+              8.290000000000001,
+              55.47
+            ],
+            [
+              8.290000000000001,
+              55.67
+            ],
+            [
+              7.970000000000001,
+              55.67
+            ],
+            [
+              7.970000000000001,
+              55.47
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-NE-01",
+        "name": "Voerså og Asaa",
         "region": "Nordjyllands østkyst",
         "coastType": "east",
         "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": true,
-        "seagrass": true
+        "seagrass": true,
+        "dataPoint": [
+          10.35,
+          57.18
+        ]
       },
-      "geometry": { "type": "Polygon", "coordinates": [[[10.20,56.77],[10.32,56.77],[10.32,56.83],[10.20,56.83],[10.20,56.77]]] }
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.23,
+              57.105
+            ],
+            [
+              10.469999999999999,
+              57.105
+            ],
+            [
+              10.469999999999999,
+              57.255
+            ],
+            [
+              10.23,
+              57.255
+            ],
+            [
+              10.23,
+              57.105
+            ]
+          ]
+        ]
+      }
     },
     {
       "type": "Feature",
       "properties": {
-        "id": "DK-002",
-        "name": "Helberskov",
+        "id": "DK-NE-02",
+        "name": "Sæby og Frederikshavn",
         "region": "Nordjyllands østkyst",
+        "coastType": "east",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": true,
+        "reefs": true,
+        "seagrass": true,
+        "dataPoint": [
+          10.54,
+          57.36
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.42,
+              57.285
+            ],
+            [
+              10.659999999999998,
+              57.285
+            ],
+            [
+              10.659999999999998,
+              57.435
+            ],
+            [
+              10.42,
+              57.435
+            ],
+            [
+              10.42,
+              57.285
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-E-01",
+        "name": "Øster Hurup og Helberskov",
+        "region": "Kattegatkysten",
+        "coastType": "east",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": true,
+        "reefs": true,
+        "seagrass": true,
+        "dataPoint": [
+          10.25,
+          56.8
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.13,
+              56.724999999999994
+            ],
+            [
+              10.37,
+              56.724999999999994
+            ],
+            [
+              10.37,
+              56.875
+            ],
+            [
+              10.13,
+              56.875
+            ],
+            [
+              10.13,
+              56.724999999999994
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-E-02",
+        "name": "Djursland nord og øst",
+        "region": "Djursland",
+        "coastType": "east",
+        "onshoreDirectionDeg": 260,
+        "shallowWater": true,
+        "reefs": true,
+        "seagrass": true,
+        "dataPoint": [
+          10.82,
+          56.43
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.700000000000001,
+              56.355
+            ],
+            [
+              10.94,
+              56.355
+            ],
+            [
+              10.94,
+              56.505
+            ],
+            [
+              10.700000000000001,
+              56.505
+            ],
+            [
+              10.700000000000001,
+              56.355
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-E-03",
+        "name": "Aarhusbugten og Odder",
+        "region": "Østjylland",
         "coastType": "east",
         "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
-        "seagrass": true
+        "seagrass": true,
+        "dataPoint": [
+          10.2,
+          56.05
+        ]
       },
-      "geometry": { "type": "Polygon", "coordinates": [[[10.13,56.74],[10.22,56.74],[10.22,56.80],[10.13,56.80],[10.13,56.74]]] }
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.08,
+              55.974999999999994
+            ],
+            [
+              10.319999999999999,
+              55.974999999999994
+            ],
+            [
+              10.319999999999999,
+              56.125
+            ],
+            [
+              10.08,
+              56.125
+            ],
+            [
+              10.08,
+              55.974999999999994
+            ]
+          ]
+        ]
+      }
     },
     {
       "type": "Feature",
       "properties": {
-        "id": "DK-003",
-        "name": "Voerså",
-        "region": "Nordjyllands østkyst",
+        "id": "DK-E-04",
+        "name": "Vejle Fjord til Lillebælt",
+        "region": "Østjylland",
+        "coastType": "east",
+        "onshoreDirectionDeg": 280,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "dataPoint": [
+          9.75,
+          55.62
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.63,
+              55.544999999999995
+            ],
+            [
+              9.87,
+              55.544999999999995
+            ],
+            [
+              9.87,
+              55.695
+            ],
+            [
+              9.63,
+              55.695
+            ],
+            [
+              9.63,
+              55.544999999999995
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-FYN-01",
+        "name": "Nordfyn og Kerteminde",
+        "region": "Fyn",
+        "coastType": "east",
+        "onshoreDirectionDeg": 225,
+        "shallowWater": true,
+        "reefs": true,
+        "seagrass": true,
+        "dataPoint": [
+          10.55,
+          55.55
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.430000000000001,
+              55.474999999999994
+            ],
+            [
+              10.67,
+              55.474999999999994
+            ],
+            [
+              10.67,
+              55.625
+            ],
+            [
+              10.430000000000001,
+              55.625
+            ],
+            [
+              10.430000000000001,
+              55.474999999999994
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-SJ-01",
+        "name": "Sjællands Odde og Odsherred",
+        "region": "Nordvestsjælland",
+        "coastType": "east",
+        "onshoreDirectionDeg": 180,
+        "shallowWater": true,
+        "reefs": true,
+        "seagrass": true,
+        "dataPoint": [
+          11.47,
+          55.93
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.350000000000001,
+              55.855
+            ],
+            [
+              11.59,
+              55.855
+            ],
+            [
+              11.59,
+              56.005
+            ],
+            [
+              11.350000000000001,
+              56.005
+            ],
+            [
+              11.350000000000001,
+              55.855
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-SJ-02",
+        "name": "Nordsjælland og Øresund",
+        "region": "Nordsjælland",
+        "coastType": "east",
+        "onshoreDirectionDeg": 225,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "dataPoint": [
+          12.35,
+          56.05
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              12.23,
+              55.974999999999994
+            ],
+            [
+              12.469999999999999,
+              55.974999999999994
+            ],
+            [
+              12.469999999999999,
+              56.125
+            ],
+            [
+              12.23,
+              56.125
+            ],
+            [
+              12.23,
+              55.974999999999994
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-SJ-03",
+        "name": "Stevns og Sydsjælland",
+        "region": "Sydøstsjælland",
+        "coastType": "east",
+        "onshoreDirectionDeg": 300,
+        "shallowWater": true,
+        "reefs": true,
+        "seagrass": true,
+        "dataPoint": [
+          12.35,
+          55.3
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              12.23,
+              55.224999999999994
+            ],
+            [
+              12.469999999999999,
+              55.224999999999994
+            ],
+            [
+              12.469999999999999,
+              55.375
+            ],
+            [
+              12.23,
+              55.375
+            ],
+            [
+              12.23,
+              55.224999999999994
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-LF-01",
+        "name": "Lolland-Falster sydkyst",
+        "region": "Sydhavsøerne",
+        "coastType": "east",
+        "onshoreDirectionDeg": 0,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "dataPoint": [
+          11.75,
+          54.63
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.63,
+              54.555
+            ],
+            [
+              11.87,
+              54.555
+            ],
+            [
+              11.87,
+              54.705000000000005
+            ],
+            [
+              11.63,
+              54.705000000000005
+            ],
+            [
+              11.63,
+              54.555
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-BH-01",
+        "name": "Bornholms kyster",
+        "region": "Bornholm",
         "coastType": "east",
         "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": true,
-        "seagrass": true
+        "seagrass": true,
+        "dataPoint": [
+          14.87,
+          55.12
+        ]
       },
-      "geometry": { "type": "Polygon", "coordinates": [[[10.27,57.15],[10.37,57.15],[10.37,57.22],[10.27,57.22],[10.27,57.15]]] }
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              14.75,
+              55.044999999999995
+            ],
+            [
+              14.989999999999998,
+              55.044999999999995
+            ],
+            [
+              14.989999999999998,
+              55.195
+            ],
+            [
+              14.75,
+              55.195
+            ],
+            [
+              14.75,
+              55.044999999999995
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-LIM-01",
+        "name": "Limfjorden vest",
+        "region": "Limfjorden",
+        "coastType": "limfjord",
+        "onshoreDirectionDeg": 90,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "dataPoint": [
+          8.72,
+          56.73
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8.56,
+              56.675
+            ],
+            [
+              8.88,
+              56.675
+            ],
+            [
+              8.88,
+              56.785
+            ],
+            [
+              8.56,
+              56.785
+            ],
+            [
+              8.56,
+              56.675
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-LIM-02",
+        "name": "Limfjorden midt",
+        "region": "Limfjorden",
+        "coastType": "limfjord",
+        "onshoreDirectionDeg": 180,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "dataPoint": [
+          9.22,
+          56.83
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.06,
+              56.775
+            ],
+            [
+              9.38,
+              56.775
+            ],
+            [
+              9.38,
+              56.885
+            ],
+            [
+              9.06,
+              56.885
+            ],
+            [
+              9.06,
+              56.775
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-LIM-03",
+        "name": "Limfjorden øst",
+        "region": "Limfjorden",
+        "coastType": "limfjord",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "dataPoint": [
+          10.05,
+          56.92
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.89,
+              56.865
+            ],
+            [
+              10.21,
+              56.865
+            ],
+            [
+              10.21,
+              56.975
+            ],
+            [
+              9.89,
+              56.975
+            ],
+            [
+              9.89,
+              56.865
+            ]
+          ]
+        ]
+      }
     }
   ]
 }

@@ -1,83 +1,53 @@
-# RavRadar 2.1
+# RavRadar 1.0
 
-RavRadar er en statisk, mobilvenlig GitHub Pages-side til vurdering af ravforhold. GitHub indeholder hjemmesiden, kortzoner, scoremotor og kompakte prognosedata. Supabase er reserveret til levende brugerdata.
+RavRadar er en mobilvenlig, statisk webapp til vurdering af ravforhold langs danske kyster. Hjemmesiden og alle faste data ligger på GitHub Pages. Supabase er kun valgfrit lager for anonyme fundobservationer.
 
-## Fast arkitektur
+## Indeholder
 
-### GitHub Pages
+- 21 brede danske kystzoner, inklusive vestkyst, Kattegat, øerne og Limfjorden
+- valg mellem Waders og Strand
+- RavScore med vægtningen jagtbarhed 40 %, transport 35 % og frigivelse 25 %
+- automatisk DMI-hentning fra HARMONIE, WAM og DKSS hver tredje time
+- rangliste over de bedste aktuelle områder
+- kort, GPS-knap, forklaringer og mobiltilpasning
+- valgfri anonyme observationer via Supabase
+- automatisk validering og GitHub Pages-udgivelse
+- ingen billeder og ingen brugerupload
 
-- hjemmeside og brugerflade
-- Leaflet/OpenStreetMap-kort
-- polygonzoner i `data/zones.geojson`
-- RavScore-motoren
-- kompakte aktuelle forhold i `data/live/conditions.json`
-- automatiske valideringstests
+## Arkitektur
 
-### Supabase
+GitHub Pages indeholder hele webappen, zoner, scoremotor og det kompakte aktuelle DMI-datasæt. GitHub Actions henter prognoser og udgiver siden. Supabase bruges ikke til vejrdata og belastes derfor kun minimalt.
 
-- anonyme brugerobservationer
-- eventuelle favoritter eller konti senere
-- små administrative indstillinger, hvis de skal ændres uden ny udgivelse
+## Engangsudgivelse
 
-Store GeoJSON-filer, rå DMI-svar og unødvendig historik skal ikke gemmes i Supabase. Det beskytter grænsen på 500 MB.
+1. Erstat indholdet i repositoryet med alle filer fra denne mappe.
+2. Commit og push til `main`.
+3. Vælg **Settings → Pages → Source: GitHub Actions**.
+4. Åbn fanen **Actions** og kontroller, at `Update DMI and deploy RavRadar` bliver grøn.
 
-## RavScore
+Siden publiceres derefter automatisk og DMI-data opdateres hver tredje time.
 
-Den samlede score bruger den aftalte vægtning:
+## Supabase-observationer
 
-- jagtbarhed: 40 %
-- transport: 35 %
-- frigivelse: 25 %
+Observationer er valgfri. Webappen virker uden dem. For at aktivere dem:
 
-Waders og strand beregnes forskelligt. Ved waders straffes vind over cirka 6 m/s kraftigt. Transport tager både højde for hastighed og retning i forhold til zonens kyst. Stormhistorik giver kun en begrænset frigivelsesbonus.
+1. Kør `supabase/schema.sql` én gang i Supabase SQL Editor.
+2. Indsæt projektets offentlige URL og publishable key i `config.js`.
 
-## Projektstruktur
+Der gemmes ingen billeder, navne, e-mailadresser eller præcise brugerpositioner. Med de kompakte felter vil 500 MB række til meget store mængder observationer.
 
-- `index.html`, `style.css`, `app.js`: brugerflade
-- `js/core/score-engine.js`: scoreberegning
-- `js/map/map-view.js`: kort og polygonzoner
-- `js/services/data-service.js`: dataindlæsning
-- `js/ui/info-panel.js`: områdevisning
-- `data/zones.geojson`: faste zoner
-- `data/live/conditions.json`: kompakte aktuelle forhold
-- `supabase/schema.sql`: minimal database til observationer
-- `scripts/`: datakontrol og test af scoremotor
+## Domæne
 
-## Lokal kontrol
+Et domæne som `ravradar.dk` kan senere forbindes i GitHub Pages under **Custom domain**. Koden kræver ingen ændring.
 
-Kræver Node.js 22 eller nyere:
+## Lokal test
+
+Med Node.js 22 eller nyere:
 
 ```bash
 npm run validate
 ```
 
-GitHub Actions kører samme kontrol automatisk ved push og pull request.
+## Datakilder og forbehold
 
-## Udgivelse
-
-Indholdet af denne mappe skal ligge i roden af repositoryet `RavRadar`. GitHub Pages publicerer fra branch `main` og mappen `/ (root)`.
-
-ZIP-filen er en samlet arbejdskopi. Pak den ud og upload filerne til repositoryets rod, eller brug GitHub Desktop til at erstatte projektfilerne og lave et commit.
-
-## Aktuelle data
-
-Der vises aldrig opdigtede målinger. Indtil den officielle DMI-integration er færdig, viser zonerne “Ingen data”. Det forventede format pr. zone er:
-
-```json
-{
-  "current": {
-    "windSpeedMps": 4.2,
-    "windDirectionDeg": 80,
-    "waveHeightM": 0.3,
-    "waterLevelCm": 12,
-    "waterLevelTrendCm3h": 4,
-    "currentSpeedMps": 0.22,
-    "currentDirectionDeg": 240
-  },
-  "history": {
-    "maxWind24hMps": 10.5,
-    "maxWave24hM": 1.1,
-    "hoursSinceHighEnergy": 8
-  }
-}
-```
+Prognoser kommer fra DMI Open Data Forecast EDR API. RavScore er en vejledende model og kan ikke garantere fund. Brugeren skal altid vurdere lokal bølgegang, strøm, vanddybde og sikkerhed.

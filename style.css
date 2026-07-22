@@ -63,3 +63,29 @@ footer p { margin: 4px 0; }
   .metric-grid { grid-template-columns: 1fr; }
   .zone-header { align-items: stretch; }
 }
+.dashboard { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 14px; padding: 14px 14px 0; }
+.dashboard .map-shell { border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
+.ranking-panel, .about-panel { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
+.ranking-panel { padding: 16px; }
+.section-heading h2, .about-panel h2 { margin: 0; }
+.eyebrow.dark { color: var(--brand-2); opacity: 1; }
+.ranking { display: grid; gap: 8px; margin-top: 14px; }
+.ranking-item { width: 100%; display: grid; grid-template-columns: 28px 1fr 42px; align-items: center; gap: 9px; border: 1px solid var(--line); border-radius: 11px; padding: 9px; text-align: left; background: white; cursor: pointer; }
+.ranking-item:hover, .ranking-item:focus-visible { border-color: var(--brand-2); }
+.rank { font-weight: 800; color: var(--muted); text-align: center; }
+.ranking-item strong, .ranking-item small { display: block; }
+.ranking-item small { color: var(--muted); margin-top: 2px; }
+.rank-score { min-width: 38px; padding: 8px 4px; border-radius: 9px; color: white; text-align: center; background: var(--unavailable); }
+.rank-score.excellent { background: var(--excellent); }.rank-score.good { background: var(--good); }.rank-score.fair { background: var(--fair); }.rank-score.poor { background: var(--poor); }
+.ranking-empty { color: var(--muted); }
+.about-panel { margin: 0 14px 14px; padding: 18px; }
+.about-panel p { margin-bottom: 0; color: var(--muted); line-height: 1.55; }
+.weather-grid { grid-template-columns: repeat(3, 1fr); }
+.observation-form { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.observation-form h3 { margin: 0 0 4px; }.observation-form p { color: var(--muted); }
+.observation-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.observation-buttons button { min-height: 42px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); cursor: pointer; font-weight: 700; }
+.observation-buttons button:hover { border-color: var(--brand-2); }.observation-buttons button:disabled { opacity: .55; }
+.form-status { min-height: 1.3em; margin-bottom: 0; }
+@media (max-width: 880px) { .dashboard { grid-template-columns: 1fr; }.ranking-panel { order: 2; }.ranking { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 680px) { .dashboard { padding: 0; gap: 0; }.dashboard .map-shell { border-radius: 0; box-shadow: none; }.ranking-panel { margin: 14px; }.ranking { grid-template-columns: 1fr; }.weather-grid { grid-template-columns: 1fr 1fr; }.observation-buttons { grid-template-columns: 1fr 1fr; } }

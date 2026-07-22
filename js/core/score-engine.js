@@ -71,7 +71,10 @@ function calculateTransport(zone, weather, reasons) {
     }
   } else reasons.push("Strømdata mangler");
 
-  const windAlignment = directionScore(weather.windDirectionDeg, onshoreDirection);
+  // DMI wind direction is where the wind comes from; transport direction is 180° opposite.
+  const windFrom = numberOrNull(weather.windDirectionDeg);
+  const windToward = windFrom === null ? null : (windFrom + 180) % 360;
+  const windAlignment = directionScore(windToward, onshoreDirection);
   if (windAlignment !== null) {
     score += Math.round(10 * windAlignment);
     if (windAlignment >= 0.65) reasons.push("Vindretningen understøtter transport ind mod kysten");

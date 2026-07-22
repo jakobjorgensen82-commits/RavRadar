@@ -1,9 +1,13 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "2.1.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "validate": "node scripts/validate-data.mjs && node scripts/test-score-engine.mjs"
-  }
+    "update:dmi": "node scripts/update-dmi.mjs",
+    "validate:data": "node scripts/validate-data.mjs",
+    "test:score": "node scripts/test-score-engine.mjs",
+    "validate": "npm run validate:data && npm run test:score"
+  },
+  "engines": { "node": ">=22" }
 }
