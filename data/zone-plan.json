@@ -5366,384 +5366,1200 @@
       "name": "Møn nord og Nyord",
       "batch": "B10",
       "batchName": "Møn, Lolland-Falster og Bornholm",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.22,
+        55.03
+      ],
+      "dataPoint": [
+        12.31,
+        55.07
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              12.0,
+              54.96
+            ],
+            [
+              12.45,
+              54.96
+            ],
+            [
+              12.45,
+              55.13
+            ],
+            [
+              12.0,
+              55.13
+            ],
+            [
+              12.0,
+              54.96
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B10-01",
+      "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
     },
     {
       "planId": "B10-02",
       "name": "Ulvshale og Hårbølle",
       "batch": "B10",
       "batchName": "Møn, Lolland-Falster og Bornholm",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.17,
+        54.94
+      ],
+      "dataPoint": [
+        12.08,
+        54.89
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.93,
+              54.82
+            ],
+            [
+              12.38,
+              54.82
+            ],
+            [
+              12.38,
+              55.03
+            ],
+            [
+              11.93,
+              55.03
+            ],
+            [
+              11.93,
+              54.82
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B10-02",
+      "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
     },
     {
       "planId": "B10-03",
       "name": "Møns Klint nord",
       "batch": "B10",
       "batchName": "Møn, Lolland-Falster og Bornholm",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.56,
+        55.04
+      ],
+      "dataPoint": [
+        12.62,
+        55.04
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              12.43,
+              54.98
+            ],
+            [
+              12.6,
+              54.98
+            ],
+            [
+              12.6,
+              55.1
+            ],
+            [
+              12.43,
+              55.1
+            ],
+            [
+              12.43,
+              54.98
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B10-03",
+      "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
     },
     {
       "planId": "B10-04",
       "name": "Møns Klint syd og Klintholm",
       "batch": "B10",
       "batchName": "Møn, Lolland-Falster og Bornholm",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.5,
+        54.92
+      ],
+      "dataPoint": [
+        12.59,
+        54.91
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              12.33,
+              54.84
+            ],
+            [
+              12.6,
+              54.84
+            ],
+            [
+              12.6,
+              55.0
+            ],
+            [
+              12.33,
+              55.0
+            ],
+            [
+              12.33,
+              54.84
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B10-04",
+      "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
     },
     {
       "planId": "B10-05",
       "name": "Bogø og Farø",
       "batch": "B10",
       "batchName": "Møn, Lolland-Falster og Bornholm",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.03,
+        54.94
+      ],
+      "dataPoint": [
+        12.08,
+        54.93
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.92,
+              54.86
+            ],
+            [
+              12.14,
+              54.86
+            ],
+            [
+              12.14,
+              55.02
+            ],
+            [
+              11.92,
+              55.02
+            ],
+            [
+              11.92,
+              54.86
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B10-05",
+      "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
     },
     {
       "planId": "B10-06",
       "name": "Falster nord og Orehoved",
       "batch": "B10",
       "batchName": "Møn, Lolland-Falster og Bornholm",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.84,
+        54.96
+      ],
+      "dataPoint": [
+        11.91,
+        54.99
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.72,
+              54.88
+            ],
+            [
+              12.08,
+              54.88
+            ],
+            [
+              12.08,
+              55.03
+            ],
+            [
+              11.72,
+              55.03
+            ],
+            [
+              11.72,
+              54.88
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B10-06",
+      "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
     },
     {
       "planId": "B10-07",
       "name": "Falster øst og Pomlenakke",
       "batch": "B10",
       "batchName": "Møn, Lolland-Falster og Bornholm",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.15,
+        54.84
+      ],
+      "dataPoint": [
+        12.24,
+        54.84
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.98,
+              54.72
+            ],
+            [
+              12.25,
+              54.72
+            ],
+            [
+              12.25,
+              54.94
+            ],
+            [
+              11.98,
+              54.94
+            ],
+            [
+              11.98,
+              54.72
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B10-07",
+      "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
     },
     {
       "planId": "B10-08",
       "name": "Marielyst og Bøtø",
       "batch": "B10",
       "batchName": "Møn, Lolland-Falster og Bornholm",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.15,
+        54.68
+      ],
+      "dataPoint": [
+        12.24,
+        54.68
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.98,
+              54.6
+            ],
+            [
+              12.23,
+              54.6
+            ],
+            [
+              12.23,
+              54.76
+            ],
+            [
+              11.98,
+              54.76
+            ],
+            [
+              11.98,
+              54.6
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B10-08",
+      "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
     },
     {
       "planId": "B10-09",
       "name": "Gedser Odde og Gedesby",
       "batch": "B10",
       "batchName": "Møn, Lolland-Falster og Bornholm",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.08,
+        54.57
+      ],
+      "dataPoint": [
+        12.16,
+        54.57
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.82,
+              54.5
+            ],
+            [
+              12.16,
+              54.5
+            ],
+            [
+              12.16,
+              54.65
+            ],
+            [
+              11.82,
+              54.65
+            ],
+            [
+              11.82,
+              54.5
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B10-09",
+      "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
     },
     {
       "planId": "B10-10",
       "name": "Falster vest og Nysted Nor munding",
       "batch": "B10",
       "batchName": "Møn, Lolland-Falster og Bornholm",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.76,
+        54.74
+      ],
+      "dataPoint": [
+        11.67,
+        54.74
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.6,
+              54.58
+            ],
+            [
+              11.98,
+              54.58
+            ],
+            [
+              11.98,
+              54.91
+            ],
+            [
+              11.6,
+              54.91
+            ],
+            [
+              11.6,
+              54.58
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B10-10",
+      "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
     },
     {
       "planId": "B10-11",
       "name": "Lolland sydøst og Nysted",
       "batch": "B10",
       "batchName": "Møn, Lolland-Falster og Bornholm",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.67,
+        54.66
+      ],
+      "dataPoint": [
+        11.67,
+        54.58
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.5,
+              54.6
+            ],
+            [
+              11.84,
+              54.6
+            ],
+            [
+              11.84,
+              54.76
+            ],
+            [
+              11.5,
+              54.76
+            ],
+            [
+              11.5,
+              54.6
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B10-11",
+      "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
     },
     {
       "planId": "B10-12",
       "name": "Lolland syd og Hyllekrog",
       "batch": "B10",
       "batchName": "Møn, Lolland-Falster og Bornholm",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.43,
+        54.61
+      ],
+      "dataPoint": [
+        11.43,
+        54.53
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.23,
+              54.53
+            ],
+            [
+              11.61,
+              54.53
+            ],
+            [
+              11.61,
+              54.69
+            ],
+            [
+              11.23,
+              54.69
+            ],
+            [
+              11.23,
+              54.53
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B10-12",
+      "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
     },
     {
       "planId": "B10-13",
       "name": "Lolland sydvest og Kramnitse",
       "batch": "B10",
       "batchName": "Møn, Lolland-Falster og Bornholm",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.13,
+        54.62
+      ],
+      "dataPoint": [
+        11.13,
+        54.54
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.91,
+              54.53
+            ],
+            [
+              11.31,
+              54.53
+            ],
+            [
+              11.31,
+              54.69
+            ],
+            [
+              10.91,
+              54.69
+            ],
+            [
+              10.91,
+              54.53
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B10-13",
+      "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
     },
     {
       "planId": "B10-14",
       "name": "Lolland vest og Albuen",
       "batch": "B10",
       "batchName": "Møn, Lolland-Falster og Bornholm",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.78,
+        54.7
+      ],
+      "dataPoint": [
+        10.67,
+        54.7
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.5,
+              54.57
+            ],
+            [
+              11.03,
+              54.57
+            ],
+            [
+              11.03,
+              54.85
+            ],
+            [
+              10.5,
+              54.85
+            ],
+            [
+              10.5,
+              54.57
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B10-14",
+      "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
     },
     {
       "planId": "B10-15",
       "name": "Lolland nord og Kragenæs",
       "batch": "B10",
       "batchName": "Møn, Lolland-Falster og Bornholm",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.35,
+        54.9
+      ],
+      "dataPoint": [
+        11.35,
+        55.0
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.0,
+              54.78
+            ],
+            [
+              11.62,
+              54.78
+            ],
+            [
+              11.62,
+              55.02
+            ],
+            [
+              11.0,
+              55.02
+            ],
+            [
+              11.0,
+              54.78
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B10-15",
+      "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
     },
     {
       "planId": "B10-16",
       "name": "Fejø og Femø",
       "batch": "B10",
       "batchName": "Møn, Lolland-Falster og Bornholm",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.48,
+        55.0
+      ],
+      "dataPoint": [
+        11.48,
+        55.1
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.22,
+              54.91
+            ],
+            [
+              11.67,
+              54.91
+            ],
+            [
+              11.67,
+              55.1
+            ],
+            [
+              11.22,
+              55.1
+            ],
+            [
+              11.22,
+              54.91
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B10-16",
+      "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
     },
     {
       "planId": "B10-17",
       "name": "Askø og Lilleø",
       "batch": "B10",
       "batchName": "Møn, Lolland-Falster og Bornholm",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.25,
+        54.91
+      ],
+      "dataPoint": [
+        11.25,
+        55.01
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.13,
+              54.84
+            ],
+            [
+              11.43,
+              54.84
+            ],
+            [
+              11.43,
+              55.02
+            ],
+            [
+              11.13,
+              55.02
+            ],
+            [
+              11.13,
+              54.84
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B10-17",
+      "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
     },
     {
       "planId": "B10-18",
       "name": "Bornholm nord og Sandvig",
       "batch": "B10",
       "batchName": "Møn, Lolland-Falster og Bornholm",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        14.78,
+        55.28
+      ],
+      "dataPoint": [
+        14.78,
+        55.36
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              14.66,
+              55.2
+            ],
+            [
+              14.86,
+              55.2
+            ],
+            [
+              14.86,
+              55.33
+            ],
+            [
+              14.66,
+              55.33
+            ],
+            [
+              14.66,
+              55.2
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B10-18",
+      "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
     },
     {
       "planId": "B10-19",
       "name": "Bornholm nordøst og Gudhjem",
       "batch": "B10",
       "batchName": "Møn, Lolland-Falster og Bornholm",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        14.91,
+        55.22
+      ],
+      "dataPoint": [
+        14.97,
+        55.28
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              14.74,
+              55.13
+            ],
+            [
+              15.08,
+              55.13
+            ],
+            [
+              15.08,
+              55.29
+            ],
+            [
+              14.74,
+              55.29
+            ],
+            [
+              14.74,
+              55.13
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B10-19",
+      "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
     },
     {
       "planId": "B10-20",
       "name": "Bornholm øst og Svaneke",
       "batch": "B10",
       "batchName": "Møn, Lolland-Falster og Bornholm",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        15.12,
+        55.1
+      ],
+      "dataPoint": [
+        15.21,
+        55.1
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              14.98,
+              55.04
+            ],
+            [
+              15.2,
+              55.04
+            ],
+            [
+              15.2,
+              55.19
+            ],
+            [
+              14.98,
+              55.19
+            ],
+            [
+              14.98,
+              55.04
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B10-20",
+      "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
     },
     {
       "planId": "B10-21",
       "name": "Bornholm sydøst og Dueodde",
       "batch": "B10",
       "batchName": "Møn, Lolland-Falster og Bornholm",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        15.08,
+        55.0
+      ],
+      "dataPoint": [
+        15.15,
+        54.94
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              14.94,
+              54.94
+            ],
+            [
+              15.2,
+              54.94
+            ],
+            [
+              15.2,
+              55.09
+            ],
+            [
+              14.94,
+              55.09
+            ],
+            [
+              14.94,
+              54.94
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B10-21",
+      "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
     },
     {
       "planId": "B10-22",
       "name": "Bornholm syd og Boderne",
       "batch": "B10",
       "batchName": "Møn, Lolland-Falster og Bornholm",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        14.84,
+        55.0
+      ],
+      "dataPoint": [
+        14.84,
+        54.93
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              14.64,
+              54.93
+            ],
+            [
+              15.07,
+              54.93
+            ],
+            [
+              15.07,
+              55.06
+            ],
+            [
+              14.64,
+              55.06
+            ],
+            [
+              14.64,
+              54.93
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B10-22",
+      "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
     },
     {
       "planId": "B10-23",
       "name": "Bornholm vest og Hasle",
       "batch": "B10",
       "batchName": "Møn, Lolland-Falster og Bornholm",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        14.7,
+        55.13
+      ],
+      "dataPoint": [
+        14.61,
+        55.13
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              14.63,
+              55.03
+            ],
+            [
+              14.83,
+              55.03
+            ],
+            [
+              14.83,
+              55.23
+            ],
+            [
+              14.63,
+              55.23
+            ],
+            [
+              14.63,
+              55.03
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B10-23",
+      "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
     },
     {
       "planId": "B10-24",
       "name": "Bornholm nordvest og Hammeren",
       "batch": "B10",
       "batchName": "Møn, Lolland-Falster og Bornholm",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        14.73,
+        55.29
+      ],
+      "dataPoint": [
+        14.65,
+        55.3
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              14.63,
+              55.22
+            ],
+            [
+              14.84,
+              55.22
+            ],
+            [
+              14.84,
+              55.34
+            ],
+            [
+              14.63,
+              55.34
+            ],
+            [
+              14.63,
+              55.22
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B10-24",
+      "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
     }
   ],
   "lastUpdated": "2026-07-23",
@@ -5791,6 +6607,11 @@
     {
       "version": "2.6.19",
       "note": "B08 aktiveret; zonegrænsemarkører tegnes oven på scorelinjen og har samme længde som scorelinjens bredde."
+    },
+    {
+      "version": "2.6.23",
+      "batch": "B10",
+      "note": "24 B10-zoner aktiveret for Møn, Lolland-Falster, småøerne og Bornholm."
     }
   ]
 }
