@@ -1,17 +1,24 @@
 [
   {
+    "id": "DK-B06-20",
+    "name": "Endelave syd",
+    "nearestCoastM": 2965,
+    "points": 13,
+    "lengthKm": 22.2
+  },
+  {
     "id": "DK-E-02",
     "name": "Djursland nord og øst",
     "nearestCoastM": 136,
-    "points": 7,
-    "lengthKm": 27.9
+    "points": 3,
+    "lengthKm": 4.6
   },
   {
     "id": "DK-E-03",
     "name": "Aarhusbugten og Odder",
     "nearestCoastM": 728,
-    "points": 12,
-    "lengthKm": 27.9
+    "points": 6,
+    "lengthKm": 6.0
   },
   {
     "id": "DK-E-04",
@@ -263,7 +270,7 @@
     "name": "Udbyhøj og Stenrevet",
     "nearestCoastM": 1230,
     "points": 6,
-    "lengthKm": 19.1
+    "lengthKm": 15.8
   },
   {
     "id": "DK-B03-01",
@@ -467,6 +474,139 @@
     "nearestCoastM": 618,
     "points": 3,
     "lengthKm": 7.8
+  },
+  {
+    "id": "DK-B06-01",
+    "name": "Gjerrild Nordstrand",
+    "nearestCoastM": 841,
+    "points": 3,
+    "lengthKm": 9.2
+  },
+  {
+    "id": "DK-B06-02",
+    "name": "Fornæs og Grenaa",
+    "nearestCoastM": 460,
+    "points": 4,
+    "lengthKm": 7.3
+  },
+  {
+    "id": "DK-B06-03",
+    "name": "Grenaa og Katholm",
+    "nearestCoastM": 895,
+    "points": 4,
+    "lengthKm": 8.1
+  },
+  {
+    "id": "DK-B06-04",
+    "name": "Bønnerup og Fjellerup",
+    "nearestCoastM": 514,
+    "points": 3,
+    "lengthKm": 15.2
+  },
+  {
+    "id": "DK-B06-05",
+    "name": "Rygarde og Sangstrup",
+    "nearestCoastM": 1,
+    "points": 4,
+    "lengthKm": 6.8
+  },
+  {
+    "id": "DK-B06-06",
+    "name": "Karlby og Glatved",
+    "nearestCoastM": 6,
+    "points": 3,
+    "lengthKm": 7.7
+  },
+  {
+    "id": "DK-B06-07",
+    "name": "Jernhatten og Rugård",
+    "nearestCoastM": 1925,
+    "points": 5,
+    "lengthKm": 8.1
+  },
+  {
+    "id": "DK-B06-08",
+    "name": "Ebeltoft og Ahl",
+    "nearestCoastM": 1585,
+    "points": 12,
+    "lengthKm": 27.0
+  },
+  {
+    "id": "DK-B06-09",
+    "name": "Helgenæs øst",
+    "nearestCoastM": 348,
+    "points": 8,
+    "lengthKm": 14.3
+  },
+  {
+    "id": "DK-B06-10",
+    "name": "Helgenæs vest",
+    "nearestCoastM": 2,
+    "points": 8,
+    "lengthKm": 13.4
+  },
+  {
+    "id": "DK-B06-11",
+    "name": "Knebel og Skødshoved",
+    "nearestCoastM": 1665,
+    "points": 3,
+    "lengthKm": 5.2
+  },
+  {
+    "id": "DK-B06-12",
+    "name": "Kalø og Følle",
+    "nearestCoastM": 329,
+    "points": 12,
+    "lengthKm": 15.0
+  },
+  {
+    "id": "DK-B06-13",
+    "name": "Vosnæs og Havhuse",
+    "nearestCoastM": 2769,
+    "points": 3,
+    "lengthKm": 4.1
+  },
+  {
+    "id": "DK-B06-14",
+    "name": "Aarhus nord og Egå",
+    "nearestCoastM": 530,
+    "points": 3,
+    "lengthKm": 9.5
+  },
+  {
+    "id": "DK-B06-15",
+    "name": "Aarhus syd og Moesgård",
+    "nearestCoastM": 7,
+    "points": 4,
+    "lengthKm": 10.4
+  },
+  {
+    "id": "DK-B06-16",
+    "name": "Norsminde og Saksild",
+    "nearestCoastM": 255,
+    "points": 6,
+    "lengthKm": 9.2
+  },
+  {
+    "id": "DK-B06-17",
+    "name": "Hou og Odderkysten",
+    "nearestCoastM": 737,
+    "points": 7,
+    "lengthKm": 14.6
+  },
+  {
+    "id": "DK-B06-18",
+    "name": "Juelsminde og As Vig",
+    "nearestCoastM": 156,
+    "points": 11,
+    "lengthKm": 24.9
+  },
+  {
+    "id": "DK-B06-19",
+    "name": "Snaptun og Endelave nord",
+    "nearestCoastM": 419,
+    "points": 12,
+    "lengthKm": 20.6
   },
   {
     "id": "DK-SJ-01",
