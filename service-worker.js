@@ -1,5 +1,5 @@
-const CACHE = "ravradar-v2-5-2";
-const STATIC = ["./", "./index.html", "./style.css", "./app.js", "./data/zones.geojson", "./data/model.json"];
+const CACHE = "ravradar-v2-5-3";
+const STATIC = ["./", "./index.html", "./style.css?v=2.5.3", "./app.js?v=2.5.3", "./data/zones.geojson", "./data/model.json"];
 
 self.addEventListener("install", event => event.waitUntil(
   caches.open(CACHE).then(cache => cache.addAll(STATIC)).then(() => self.skipWaiting())

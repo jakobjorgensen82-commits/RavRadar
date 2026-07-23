@@ -102,39 +102,3 @@ try {
   infoPanel.innerHTML = `<div class="notice">Kortzonerne kunne ikke indlæses. Kontroller den seneste GitHub Action.</div>`;
   dataStatus.textContent = "Fejl ved indlæsning";
 }
-
-function removeDeprecatedNoImagesLabel(root = document) {
-  const normalize = value => String(value ?? "")
-    .replace(/\u00a0/g, " ")
-    .trim()
-    .replace(/[.!:;,-]+$/u, "")
-    .toLocaleLowerCase("da-DK");
-
-  const removeFrom = scope => {
-    const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
-    const nodes = [];
-    while (walker.nextNode()) nodes.push(walker.currentNode);
-    for (const node of nodes) {
-      if (normalize(node.nodeValue) !== "ingen billeder") continue;
-      const parent = node.parentElement;
-      if (parent && normalize(parent.textContent) === "ingen billeder") parent.remove();
-      else node.nodeValue = "";
-    }
-  };
-
-  removeFrom(root);
-  root.querySelectorAll?.("*").forEach(element => {
-    if (element.shadowRoot) removeFrom(element.shadowRoot);
-  });
-}
-
-removeDeprecatedNoImagesLabel();
-addEventListener("DOMContentLoaded", () => removeDeprecatedNoImagesLabel(), { once: true });
-new MutationObserver(mutations => {
-  for (const mutation of mutations) {
-    for (const node of mutation.addedNodes) {
-      if (node.nodeType === Node.ELEMENT_NODE) removeDeprecatedNoImagesLabel(node);
-      else if (node.nodeType === Node.TEXT_NODE) removeDeprecatedNoImagesLabel(node.parentNode || document);
-    }
-  }
-}).observe(document.documentElement, { childList: true, subtree: true });

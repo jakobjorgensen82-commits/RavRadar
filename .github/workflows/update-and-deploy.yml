@@ -41,7 +41,7 @@ jobs:
           DMI_MAX_RETRIES: 1
           DMI_REQUEST_GAP_MS: 1400
           WEATHER_REQUEST_TIMEOUT_MS: 18000
-          WEATHER_USER_AGENT: "RavRadar/2.5.2 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/2.5.3 (${{ github.server_url }}/${{ github.repository }})"
       - name: Validate updated weather cache
         if: steps.weather.outcome == 'success'
         run: npm run validate:data
