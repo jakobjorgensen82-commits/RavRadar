@@ -106,13 +106,13 @@ document.querySelector("#pinForm").addEventListener("submit",event=>{event.preve
 
 try {await consumeAuthCallback();const [zones,conditions]=await Promise.all([loadZones(),loadConditions()]);state.zones=zones;state.conditions=conditions;state.zoneLayer=renderZones(map,zones,id=>resultFor(zones.features.find(item=>item.properties.id===id).properties),zone=>openZone(zone,{scroll:false}));state.flowArrows=installFlowArrows(map,zones,id=>state.conditions.zones?.[id]||{});setMode(localStorage.getItem("ravradar-mode")==="beach"?"beach":"waders");if(conditions.available&&conditions.generatedAt){const timestamp=new Date(conditions.generatedAt).toLocaleString("da-DK");const stale=Date.now()-new Date(conditions.generatedAt).getTime()>8*3600000;dataStatus.textContent=`${stale?"⚠ Data er ældre end normalt · ":""}Senest opdateret ${timestamp}`;}else dataStatus.textContent="Vejrdata indlæses ved næste automatiske GitHub-kørsel.";resumeTripTracking();updateTripUi();const pending=pendingTripPrompt();if(pending)setTimeout(()=>openTripPrompt(pending),650);}catch(error){console.error(error);infoPanel.innerHTML='<div class="notice">Kortzonerne kunne ikke indlæses. Kontroller den seneste GitHub Action.</div>';dataStatus.textContent="Fejl ved indlæsning";}
 
-// RavRadar 2.6.20: service-worker-opdatering uden manuel cache-rydning.
+// RavRadar 2.6.21: service-worker-opdatering uden manuel cache-rydning.
 function installAppUpdateFlow() {
   if (!("serviceWorker" in navigator)) return;
 
   const banner = document.querySelector("#updateBanner");
   const updateButton = document.querySelector("#updateAppButton");
-  const version = window.RAVRADAR_VERSION || "2.6.20";
+  const version = window.RAVRADAR_VERSION || "2.6.21";
   const versionNode = document.querySelector("#appVersion");
   if (versionNode) versionNode.textContent = version;
 

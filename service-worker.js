@@ -1,9 +1,11 @@
-const APP_VERSION = "2.6.20";
-const CACHE = `ravradar-v${APP_VERSION.replaceAll('.', '-')}`;
+const APP_VERSION = "2.6.21";
+const CACHE_PREFIX = "ravradar-app-";
+const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}`;
 const STATIC = [
   "./",
   "./index.html",
   `./style.css?v=${APP_VERSION}`,
+  `./bootstrap.js?v=${APP_VERSION}`,
   `./app.js?v=${APP_VERSION}`,
   "./config.js",
   "./manifest.webmanifest",
@@ -14,6 +16,7 @@ const STATIC = [
   "./js/services/auth-service.js",
   "./js/services/trip-service.js",
   "./js/services/observation-service.js",
+  "./js/services/storage-safety.js",
   "./js/map/map-view.js",
   "./js/ui/info-panel.js",
   "./js/ui/account-panel.js",
@@ -27,7 +30,7 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))
+      .then(keys => Promise.all(keys.filter(key => key.startsWith(CACHE_PREFIX) && key !== CACHE).map(key => caches.delete(key))))
       .then(() => self.clients.claim())
   );
 });
