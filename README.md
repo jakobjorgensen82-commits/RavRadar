@@ -1,64 +1,37 @@
-# RavRadar 2.3
+# RavRadar 2.6
 
-RavRadar er en mobilvenlig PWA til vurdering af ravforhold langs danske kyster. Den virker uden login og uden Supabase. Vejrdata genereres statisk via GitHub Actions og gemmes i `data/live/conditions.json` – ikke i Supabase.
+RavRadar er en mobilvenlig dansk PWA til planlægning af ravjagt.
 
-## Færdig platform
+## Centrale funktioner
 
-- RavScore for **Waders** og **Strand**
-- kort, rangliste, GPS og offline-cache
-- lokalt registrerede ravture, mens appen er åben
-- prompt dagen efter: **“Var du på ravtur i går?”** med Nej, Ja, Meget og valgfrie gram
-- observationer uden billeder, altid med tidsstempel, zone, RavScore og vejrsnapshot
-- valgfrit Supabase-login med magic link eller adgangskode
-- udviklertilstand: tryk på RavRadar-logoet 10 gange og brug PIN **1931**
-- udviklerpanel med datastatus, proveniens, diagnostik, lokal statistik, GPS- og zoneinspektion
+- Standardkort og Esri-satellitkort med løbende lag-skift.
+- Én farvet strandpin pr. zone; zonepolygoner er skjult og forbeholdt beregninger/geofencing.
+- Aktuel RavScore og forklarlige delscorer for jagtbarhed, transport og frigivelse.
+- 5-dages farveprognose under hver zone.
+- Vandstand time for time, opdelt i fem klikbare ugedage.
+- 5-dages oversigt på forsiden over de bedste zoner pr. dag.
+- Valgfri Supabase-login, lokal ravtur med GPS kun mens appen er åben og anonym fundregistrering.
+- Udviklertilstand: tryk logoet 10 gange, PIN 1931.
 
-## Vigtige begrænsninger
+## Vejrdata
 
-En browser-PWA kan ikke garantere GPS-sporing, når appen er lukket eller suspenderet. RavRadar registrerer derfor kun ruten, mens siden er åben. GPS-ruter gemmes lokalt og vises kun i udviklertilstanden.
+Den centrale GitHub Action forsøger aktuelle data i denne rækkefølge:
 
-## Vejrarkitektur
-
-Provider-rækkefølgen er:
-
-1. DMI
+1. DMI Open Data
 2. Open-Meteo Marine
 3. MET Norway
-4. senere Copernicus Marine
+4. Seneste cache
 
-Fallback-princippet er provider → næste provider → seneste cachede `conditions.json`. Den nuværende updater bruger DMI som aktiv primærkilde; fallback-providerne kan tilføjes uden at ændre frontendens dataformat.
+5-dages timeprognosen hentes fra Open-Meteo og Open-Meteo Marine og gemmes sammen med zonecachen. Den aktuelle vejr-cache deployes direkte til GitHub Pages og committes ikke tilbage til `main`.
 
-## Supabase
-
-RavRadar virker uden konfiguration. For login og synkronisering:
-
-1. Kør `supabase/schema.sql` i Supabase SQL Editor.
-2. Indsæt projektets URL og publishable key i `config.js`.
-3. Aktivér de ønskede auth-metoder i Supabase.
-
-Selv uden Supabase gemmes observationer og ture lokalt i browseren.
-
-## Test
-
-Kræver Node.js 22 eller nyere:
+## Lokal kontrol
 
 ```bash
 npm run validate
+node --check app.js
+node --check scripts/update-weather.mjs
 ```
 
-## Zoner
+## GitHub Pages
 
-Den medfølgende `data/zones.geojson` er den eksisterende brede zoneversion. Den nye naturlige opdeling på cirka 100–200 zoner leveres regionsvis og kan senere samles til samme filformat. Kun åbne kyster og Limfjorden skal med; andre fjorde skal ikke indgå.
-
-## Central vejropdatering (2.4)
-
-GitHub Actions opdaterer den fælles `data/live/conditions.json` fire gange i timen.
-App-brugerne læser kun denne statiske cache og kontakter derfor ikke vejrtjenesterne direkte.
-Kildeprioriteten er DMI → Open-Meteo Marine → MET Norway → seneste gyldige cache.
-Ved en midlertidig DMI-fejl gemmes fallback-data straks, og DMI prøves igen efter fem minutter.
-Deployment fortsætter altid med den seneste gyldige cache, hvis en vejrtjeneste er utilgængelig.
-
-
-## Central weather retry policy (2.4.1)
-
-Weather is refreshed centrally by GitHub Actions every five minutes. Each run tries DMI first, then Open-Meteo Marine, then MET Norway, and finally the last valid cache. A DMI 429 or temporary network error opens a circuit for the rest of that run, so fallback data is published immediately. The workflow never sleeps for five minutes; the next scheduled run performs the DMI retry. End-user devices only read `data/live/conditions.json` and never call providers directly.
+Workflowen `.github/workflows/update-and-deploy.yml` validerer projektet, opdaterer vejrcachen og deployer direkte til Pages. Tilføj eventuelt `DMI_API_KEY` som repository secret.

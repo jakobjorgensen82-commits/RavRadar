@@ -20,14 +20,18 @@ for (const feature of zones.features) {
   ids.add(id);
 }
 
-if (conditions.schemaVersion !== 3 || typeof conditions.zones !== "object" || conditions.zones === null || Array.isArray(conditions.zones)) {
-  throw new Error(`Ugyldig conditions.json: forventede schemaVersion 3 og zones som objekt, fik schemaVersion ${conditions.schemaVersion}`);
+if (conditions.schemaVersion !== 4 || typeof conditions.zones !== "object" || conditions.zones === null || Array.isArray(conditions.zones)) {
+  throw new Error(`Ugyldig conditions.json: forventede schemaVersion 4 og zones som objekt, fik schemaVersion ${conditions.schemaVersion}`);
 }
 
 for (const [conditionId, condition] of Object.entries(conditions.zones)) {
   if (!ids.has(conditionId)) throw new Error(`conditions.json indeholder ukendt zone: ${conditionId}`);
   if (!condition.current || !Number.isFinite(Number(condition.current.windSpeedMps))) throw new Error(`${conditionId}: vinddata mangler`);
   if (condition.samples24h && !Array.isArray(condition.samples24h)) throw new Error(`${conditionId}: samples24h skal være en liste`);
+  if (condition.forecast) {
+    if (!Array.isArray(condition.forecast.hourly)) throw new Error(`${conditionId}: forecast.hourly skal være en liste`);
+    if (condition.forecast.hourly.length > 120) throw new Error(`${conditionId}: forecast.hourly må højst have 120 timer`);
+  }
 }
 
 console.log(`OK: ${zones.features.length} zoner og ${Object.keys(conditions.zones).length} zoner med aktuelle data.`);

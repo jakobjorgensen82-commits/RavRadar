@@ -241,6 +241,54 @@ function historyFor(previous, zoneId, current, generatedAt) {
   };
 }
 
+
+
+function hourlyValue(data, variable, index) {
+  const value = data?.hourly?.[variable]?.[index];
+  return num(value);
+}
+
+async function forecastFromOpenMeteo(feature) {
+  const [longitude, latitude] = zonePoint(feature);
+  const weatherQuery = new URLSearchParams({
+    latitude: String(latitude), longitude: String(longitude),
+    hourly: 'wind_speed_10m,wind_direction_10m,temperature_2m',
+    wind_speed_unit: 'ms', timezone: 'Europe/Copenhagen', forecast_days: '5'
+  });
+  const marineQuery = new URLSearchParams({
+    latitude: String(latitude), longitude: String(longitude),
+    hourly: 'wave_height,wave_direction,wave_period,sea_level_height_msl,sea_surface_temperature,ocean_current_velocity,ocean_current_direction',
+    velocity_unit: 'ms', timezone: 'Europe/Copenhagen', forecast_days: '5', cell_selection: 'sea'
+  });
+  const [weather, marine] = await Promise.all([
+    fetchJson(`https://api.open-meteo.com/v1/forecast?${weatherQuery}`, { provider: 'Open-Meteo forecast', retries: 2 }),
+    fetchJson(`https://marine-api.open-meteo.com/v1/marine?${marineQuery}`, { provider: 'Open-Meteo Marine forecast', retries: 2 })
+  ]);
+  const times = weather?.hourly?.time ?? marine?.hourly?.time ?? [];
+  const marineIndex = new Map((marine?.hourly?.time ?? []).map((time, index) => [time, index]));
+  const hourly = times.slice(0, 120).map((time, index) => {
+    const mi = marineIndex.get(time) ?? index;
+    const sea = hourlyValue(marine, 'sea_level_height_msl', mi);
+    const sea3 = hourlyValue(marine, 'sea_level_height_msl', Math.min(mi + 3, (marine?.hourly?.time?.length ?? 1) - 1));
+    return {
+      time,
+      windSpeedMps: round(hourlyValue(weather, 'wind_speed_10m', index), 1),
+      windDirectionDeg: round(hourlyValue(weather, 'wind_direction_10m', index), 0),
+      airTemperatureC: round(hourlyValue(weather, 'temperature_2m', index), 1),
+      waveHeightM: round(hourlyValue(marine, 'wave_height', mi), 2),
+      waveDirectionDeg: round(hourlyValue(marine, 'wave_direction', mi), 0),
+      wavePeriodS: round(hourlyValue(marine, 'wave_period', mi), 1),
+      waterLevelCm: sea === null ? null : round(sea * 100, 0),
+      waterLevelTrendCm3h: sea === null || sea3 === null ? null : round((sea3 - sea) * 100, 0),
+      currentSpeedMps: round(hourlyValue(marine, 'ocean_current_velocity', mi), 2),
+      currentDirectionDeg: round(hourlyValue(marine, 'ocean_current_direction', mi), 0),
+      waterTemperatureC: round(hourlyValue(marine, 'sea_surface_temperature', mi), 1)
+    };
+  });
+  if (!hourly.some(item => item.windSpeedMps !== null)) throw new Error('5-dages prognose mangler vinddata');
+  return { provider: 'open-meteo', providerLabel: 'Open-Meteo 5-day forecast', hourly };
+}
+
 async function readPrevious() {
   try { return JSON.parse(await fs.readFile(OUTPUT_PATH, 'utf8')); }
   catch { return { zones: {} }; }
@@ -254,7 +302,10 @@ async function resolveZone(feature, generatedAt, previous, { dmiOnly = false } =
     try {
       const result = await provider(feature, generatedAt);
       const history = historyFor(previous, zoneId, result.current, generatedAt);
-      return { ...result, ...history, stale: false, fallback: name !== 'dmi', attempts };
+      let forecast = previous?.zones?.[zoneId]?.forecast ?? null;
+      try { forecast = await forecastFromOpenMeteo(feature); }
+      catch (forecastError) { attempts.push({ provider: 'open-meteo-forecast', message: forecastError instanceof Error ? forecastError.message : String(forecastError) }); }
+      return { ...result, ...history, forecast, stale: false, fallback: name !== 'dmi', attempts };
     } catch (error) {
       attempts.push({ provider: name, message: error instanceof Error ? error.message : String(error) });
       console.warn(`${zoneId}: ${name} fejlede: ${attempts.at(-1).message}`);
@@ -271,7 +322,7 @@ if (!features.length) throw new Error(`${ZONES_PATH} indeholder ingen zoner`);
 const previous = await readPrevious();
 const generatedAt = new Date().toISOString();
 const output = {
-  schemaVersion: 3, generatedAt,
+  schemaVersion: 4, generatedAt,
   source: 'Central RavRadar weather service',
   providerPriority: ['dmi', 'open-meteo', 'met-norway', 'cache'],
   directionConventions: { windDirectionDeg: 'from', currentDirectionDeg: 'toward', waveDirectionDeg: 'from' },

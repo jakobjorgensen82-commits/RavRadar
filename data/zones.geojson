@@ -16,6 +16,10 @@
         "dataPoint": [
           10.61,
           57.74
+        ],
+        "pinPoint": [
+          10.63,
+          57.74
         ]
       },
       "geometry": {
@@ -59,6 +63,10 @@
         "seagrass": false,
         "dataPoint": [
           9.72,
+          57.38
+        ],
+        "pinPoint": [
+          9.66,
           57.38
         ]
       },
@@ -104,6 +112,10 @@
         "dataPoint": [
           9.61,
           57.25
+        ],
+        "pinPoint": [
+          9.58,
+          57.25
         ]
       },
       "geometry": {
@@ -147,6 +159,10 @@
         "seagrass": false,
         "dataPoint": [
           8.38,
+          56.95
+        ],
+        "pinPoint": [
+          8.36,
           56.95
         ]
       },
@@ -192,6 +208,10 @@
         "dataPoint": [
           8.12,
           56.02
+        ],
+        "pinPoint": [
+          8.1,
+          56.02
         ]
       },
       "geometry": {
@@ -234,6 +254,10 @@
         "reefs": true,
         "seagrass": false,
         "dataPoint": [
+          8.13,
+          55.57
+        ],
+        "pinPoint": [
           8.13,
           55.57
         ]
@@ -280,6 +304,10 @@
         "dataPoint": [
           10.35,
           57.18
+        ],
+        "pinPoint": [
+          10.49,
+          57.18
         ]
       },
       "geometry": {
@@ -323,6 +351,10 @@
         "seagrass": true,
         "dataPoint": [
           10.54,
+          57.36
+        ],
+        "pinPoint": [
+          10.53,
           57.36
         ]
       },
@@ -368,6 +400,10 @@
         "dataPoint": [
           10.25,
           56.8
+        ],
+        "pinPoint": [
+          10.32,
+          56.8
         ]
       },
       "geometry": {
@@ -411,6 +447,10 @@
         "seagrass": true,
         "dataPoint": [
           10.82,
+          56.43
+        ],
+        "pinPoint": [
+          10.94,
           56.43
         ]
       },
@@ -456,6 +496,10 @@
         "dataPoint": [
           10.2,
           56.05
+        ],
+        "pinPoint": [
+          10.26,
+          56.05
         ]
       },
       "geometry": {
@@ -499,6 +543,10 @@
         "seagrass": true,
         "dataPoint": [
           9.75,
+          55.62
+        ],
+        "pinPoint": [
+          9.76,
           55.62
         ]
       },
@@ -544,6 +592,10 @@
         "dataPoint": [
           10.55,
           55.55
+        ],
+        "pinPoint": [
+          10.58,
+          55.55
         ]
       },
       "geometry": {
@@ -587,6 +639,10 @@
         "seagrass": true,
         "dataPoint": [
           11.47,
+          55.93
+        ],
+        "pinPoint": [
+          11.5,
           55.93
         ]
       },
@@ -632,6 +688,10 @@
         "dataPoint": [
           12.35,
           56.05
+        ],
+        "pinPoint": [
+          12.45,
+          56.05
         ]
       },
       "geometry": {
@@ -675,6 +735,10 @@
         "seagrass": true,
         "dataPoint": [
           12.35,
+          55.3
+        ],
+        "pinPoint": [
+          12.46,
           55.3
         ]
       },
@@ -720,6 +784,10 @@
         "dataPoint": [
           11.75,
           54.63
+        ],
+        "pinPoint": [
+          11.78,
+          54.65
         ]
       },
       "geometry": {
@@ -763,6 +831,10 @@
         "seagrass": true,
         "dataPoint": [
           14.87,
+          55.12
+        ],
+        "pinPoint": [
+          14.88,
           55.12
         ]
       },
@@ -808,6 +880,10 @@
         "dataPoint": [
           8.72,
           56.73
+        ],
+        "pinPoint": [
+          8.7,
+          56.73
         ]
       },
       "geometry": {
@@ -850,6 +926,10 @@
         "reefs": false,
         "seagrass": true,
         "dataPoint": [
+          9.22,
+          56.83
+        ],
+        "pinPoint": [
           9.22,
           56.83
         ]
@@ -895,6 +975,10 @@
         "seagrass": true,
         "dataPoint": [
           10.05,
+          56.92
+        ],
+        "pinPoint": [
+          10.06,
           56.92
         ]
       },
