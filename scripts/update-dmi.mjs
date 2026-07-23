@@ -4,9 +4,9 @@ const API_ROOT = "https://opendataapi.dmi.dk/v1/forecastedr/collections";
 const ZONES_PATH = "data/zones.geojson";
 const OUTPUT_PATH = "data/live/conditions.json";
 
-const REQUEST_TIMEOUT_MS = 30_000;
-const REQUEST_GAP_MS = 750;
-const MAX_RETRIES = 5;
+const REQUEST_TIMEOUT_MS = Number(process.env.DMI_REQUEST_TIMEOUT_MS ?? 20_000);
+const REQUEST_GAP_MS = Number(process.env.DMI_REQUEST_GAP_MS ?? 1_200);
+const MAX_RETRIES = Number(process.env.DMI_MAX_RETRIES ?? 2);
 
 const WIND_COLLECTION = "harmonie_dini_sf";
 const WIND_PARAMETERS = ["wind-speed-10m", "wind-dir-10m"];
@@ -35,6 +35,7 @@ const round = (value, digits = 2) =>
 const normalizeDegrees = value => ((value % 360) + 360) % 360;
 
 let nextRequestTime = 0;
+let rateLimitCircuitOpen = false;
 
 async function waitForRequestSlot() {
   const delay = Math.max(0, nextRequestTime - Date.now());
@@ -98,6 +99,12 @@ function retryDelay(response, attempt) {
 }
 
 async function fetchJson(url, collection) {
+  if (rateLimitCircuitOpen) {
+    const error = new Error(`${collection}: DMI-rategrænse aktiv; bruger cache`);
+    error.status = 429;
+    throw error;
+  }
+
   let lastError;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
@@ -122,6 +129,13 @@ async function fetchJson(url, collection) {
 
       const error = new Error(`${collection}: HTTP ${response.status}`);
       error.status = response.status;
+
+      if (response.status === 429 && attempt >= MAX_RETRIES) {
+        rateLimitCircuitOpen = true;
+        console.warn(
+          "DMI-rategrænse nået. Stopper yderligere API-kald og bruger cache."
+        );
+      }
 
       if (
         (response.status === 429 || response.status >= 500) &&
