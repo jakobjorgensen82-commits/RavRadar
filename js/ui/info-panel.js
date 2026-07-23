@@ -1,4 +1,4 @@
-import { calculateRavScore } from "../core/score-engine.js";
+import { calculateRavScore, scoreRating } from "../core/score-engine.js";
 
 const formatNumber = (value, suffix, digits = 1) => Number.isFinite(Number(value)) ? `${Number(value).toFixed(digits).replace(".", ",")} ${suffix}` : "Mangler";
 const compass = value => {
@@ -37,7 +37,9 @@ function bestHourForDay(day, zone, mode, history) {
 
 function componentDetails(name, key, result, definition) {
   const reasons = result.componentReasons?.[key] || [];
-  return `<details class="component-detail"><summary><span>${name}</span><strong>${result.components?.[key] ?? "–"}/100</strong></summary><div class="component-explanation"><p><b>Hvad betyder det?</b> ${definition}</p><p><b>Hvorfor denne score?</b></p><ul>${reasons.map(reason => `<li>${escapeHtml(reason)}</li>`).join("") || "<li>Der er ikke nok data til en nærmere forklaring.</li>"}</ul></div></details>`;
+  const componentScore = result.components?.[key];
+  const componentLevel = scoreRating(componentScore).level;
+  return `<details class="component-detail"><summary><span>${name}</span><strong class="component-score ${componentLevel}">${componentScore ?? "–"}/100</strong></summary><div class="component-explanation"><p><b>Hvad betyder det?</b> ${definition}</p><p><b>Hvorfor denne score?</b></p><ul>${reasons.map(reason => `<li>${escapeHtml(reason)}</li>`).join("") || "<li>Der er ikke nok data til en nærmere forklaring.</li>"}</ul></div></details>`;
 }
 
 function dayTabs(days, selected = 0, className = "forecast-day-tab") {

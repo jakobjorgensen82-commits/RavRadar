@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { calculateRavScore } from "../js/core/score-engine.js";
+import { calculateRavScore, scoreRating } from "../js/core/score-engine.js";
 
 const zone = {
   id: "TEST",
@@ -42,4 +42,10 @@ assert.equal(calm.available, true);
 assert.ok(calm.score > rough.score, "Rolige waders-forhold skal slå kraftig påland/udgående situation");
 assert.ok(calm.components.transport > rough.components.transport, "Retning skal påvirke transportscoren");
 assert.equal(calculateRavScore({ mode: "beach", zone, weather: {} }).available, false);
+assert.equal(scoreRating(94).level, "excellent");
+assert.equal(scoreRating(82).level, "good");
+assert.equal(scoreRating(71).level, "fair", "71/100 skal vises som gul Middel");
+assert.equal(scoreRating(44).level, "weak");
+assert.equal(scoreRating(20).level, "poor");
+assert.equal(scoreRating(null).level, "unavailable");
 console.log(`OK: scoremotor (${calm.score} mod ${rough.score})`);

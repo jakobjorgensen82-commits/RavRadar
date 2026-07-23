@@ -11,8 +11,9 @@
   --excellent: #168653;
   --good: #168653;
   --fair: #e6a700;
+  --weak: #d9822b;
   --poor: #d34a3a;
-  --unavailable: #76868d;
+  --unavailable: #30383c;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; min-height: 100%; }
@@ -34,7 +35,7 @@ main { width: min(1180px, 100%); margin: 0 auto; }
 .legend { position: absolute; z-index: 500; left: 10px; bottom: 10px; display: flex; flex-wrap: wrap; gap: 6px 10px; max-width: calc(100% - 20px); padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,.94); box-shadow: var(--shadow); font-size: .72rem; }
 .legend span { display: inline-flex; align-items: center; gap: 4px; }
 .legend-dot { width: 14px; height: 14px; border-radius: 50%; display: inline-grid; place-items: center; color: white; font-size: 9px; font-style: normal; line-height: 1; font-weight: 900; }
-.excellent { background: var(--excellent); } .good { background: var(--good); } .fair { background: var(--fair); } .poor { background: var(--poor); } .unavailable { background: var(--unavailable); }
+.excellent { background: var(--excellent); } .good { background: var(--good); } .fair { background: var(--fair); } .weak { background: var(--weak); } .poor { background: var(--poor); } .unavailable { background: var(--unavailable); }
 .info-panel { min-height: 210px; margin: 14px; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
 .empty-state { text-align: center; padding: 22px 8px; }
 .empty-state h2 { margin: 0 0 8px; }
@@ -45,7 +46,7 @@ main { width: min(1180px, 100%); margin: 0 auto; }
 .score-badge { flex: 0 0 auto; min-width: 90px; padding: 10px; border-radius: 14px; text-align: center; color: white; background: var(--unavailable); }
 .score-badge strong { display: block; font-size: 1.8rem; line-height: 1; }
 .score-badge span { display: block; margin-top: 4px; font-size: .72rem; font-weight: 700; }
-.score-badge.excellent { background: var(--excellent); } .score-badge.good { background: var(--good); } .score-badge.fair { background: var(--fair); } .score-badge.poor { background: var(--poor); }
+.score-badge.excellent { background: var(--excellent); } .score-badge.good { background: var(--good); } .score-badge.fair { background: var(--fair); } .score-badge.weak { background: var(--weak); } .score-badge.poor { background: var(--poor); }
 .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-top: 16px; }
 .metric { padding: 11px; border-radius: 12px; background: var(--surface-soft); }
 .metric span { display: block; color: var(--muted); font-size: .75rem; }
@@ -76,7 +77,7 @@ footer p { margin: 4px 0; }
 .ranking-item strong, .ranking-item small { display: block; }
 .ranking-item small { color: var(--muted); margin-top: 2px; }
 .rank-score { min-width: 38px; padding: 8px 4px; border-radius: 9px; color: white; text-align: center; background: var(--unavailable); }
-.rank-score.excellent { background: var(--excellent); }.rank-score.good { background: var(--good); }.rank-score.fair { background: var(--fair); }.rank-score.poor { background: var(--poor); }
+.rank-score.excellent { background: var(--excellent); }.rank-score.good { background: var(--good); }.rank-score.fair { background: var(--fair); }.rank-score.weak { background: var(--weak); }.rank-score.poor { background: var(--poor); }
 .ranking-empty { color: var(--muted); }
 .about-panel { margin: 0 14px 14px; padding: 18px; }
 .about-panel p { margin-bottom: 0; color: var(--muted); line-height: 1.55; }
@@ -164,7 +165,7 @@ code { padding: 1px 4px; border-radius: 4px; background: var(--surface-soft); }
 .zone-popup { display: grid; min-width: 145px; gap: 7px; }
 .zone-popup strong { font-size: .95rem; }
 .popup-score { width: fit-content; padding: 5px 8px; border-radius: 8px; color: white; background: var(--unavailable); font-weight: 800; }
-.popup-score.excellent { background: var(--excellent); }.popup-score.good { background: var(--good); }.popup-score.fair { background: var(--fair); }.popup-score.poor { background: var(--poor); }
+.popup-score.excellent { background: var(--excellent); }.popup-score.good { background: var(--good); }.popup-score.fair { background: var(--fair); }.popup-score.weak { background: var(--weak); }.popup-score.poor { background: var(--poor); }
 .popup-open-zone { min-height: 34px; border: 0; border-radius: 8px; color: white; background: var(--brand-2); font-weight: 750; cursor: pointer; }
 
 .national-forecast { margin: 14px; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
@@ -194,7 +195,7 @@ code { padding: 1px 4px; border-radius: 4px; background: var(--surface-soft); }
 .forecast-score-day span,.forecast-score-day small { display:block; }.forecast-score-day span { font-weight:800; text-transform:capitalize; }.forecast-score-day small { color:var(--muted); }
 .forecast-score-day.active { border-color:var(--brand-2); box-shadow:inset 0 0 0 1px var(--brand-2); }
 .day-score { display:grid; place-items:center; width:42px; height:42px; margin:5px auto; border-radius:50%; color:white; background:var(--unavailable); font-size:1rem; }
-.day-score.excellent { background:var(--excellent); }.day-score.good { background:var(--good); }.day-score.fair { background:var(--fair); }.day-score.poor { background:var(--poor); }
+.day-score.excellent { background:var(--excellent); }.day-score.good { background:var(--good); }.day-score.fair { background:var(--fair); }.day-score.weak { background:var(--weak); }.day-score.poor { background:var(--poor); }
 .forecast-detail { margin-top:12px; padding:14px; border-radius:13px; background:var(--surface-soft); }
 .forecast-selected { display:flex; align-items:center; justify-content:space-between; gap:12px; }.forecast-selected h4 { margin:0 0 3px; }.forecast-selected p { margin:0; color:var(--muted); }
 .tide-section .day-tabs { margin-top:12px; }.tide-extremes { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0 8px; }.tide-extremes span { padding:7px 10px; border-radius:9px; background:var(--surface-soft); }
@@ -250,6 +251,7 @@ body.zone-focus .info-panel { scroll-margin-top:12px; }
 .score-symbol { width:18px; height:18px; border-radius:50%; display:inline-grid; place-items:center; color:#fff; font-size:11px; line-height:1; font-style:normal; font-weight:900; }
 .score-symbol.excellent,.score-symbol.good { background:var(--excellent); }
 .score-symbol.fair { background:var(--fair); }
+.score-symbol.weak { background:var(--weak); }
 .score-symbol.poor { background:var(--poor); }
 .score-symbol.unavailable { background:var(--unavailable); }
 .signature-note { margin:10px 0 0; }
@@ -258,3 +260,12 @@ body.zone-focus .info-panel { scroll-margin-top:12px; }
 .source-credits div { margin-top:10px; line-height:1.5; }
 .source-credits a { color:var(--brand-2); }
 .source-credits p { margin:8px 0; }
+
+
+/* RavRadar 2.6.3: farvesignatur på delscorer */
+.component-score { display:inline-flex; align-items:center; justify-content:center; min-width:64px; padding:5px 7px; border-radius:9px; color:#fff; font-variant-numeric:tabular-nums; }
+.component-score.excellent,.component-score.good { background:var(--excellent); }
+.component-score.fair { background:var(--fair); }
+.component-score.weak { background:var(--weak); }
+.component-score.poor { background:var(--poor); }
+.component-score.unavailable { background:var(--unavailable); }

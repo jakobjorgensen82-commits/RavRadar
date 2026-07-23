@@ -1,4 +1,4 @@
-const palette = { excellent: "#168653", good: "#168653", fair: "#e6a700", poor: "#d34a3a", unavailable: "#76868d" };
+const palette = { excellent: "#168653", good: "#168653", fair: "#e6a700", weak: "#d9822b", poor: "#d34a3a", unavailable: "#30383c" };
 
 function markerIcon(level = "unavailable") {
   const color = palette[level] || palette.unavailable;
@@ -32,9 +32,7 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
     const point = Array.isArray(zone.pinPoint) ? zone.pinPoint : zone.dataPoint;
     const result = scoreForZone(zone.id);
     const marker = L.marker([point[1], point[0]], { icon: markerIcon(result?.level), title: zone.name, keyboard: true });
-    marker.bindTooltip(zone.name, { direction: "top", offset: [0, -30] });
-    marker.bindPopup(`<div class="zone-popup"><strong>${escapeHtml(zone.name)}</strong><span class="popup-score ${result?.level || "unavailable"}">${result?.available ? `${result.score}/100` : "Ingen data"}</span><button type="button" class="popup-open-zone">Åbn zone</button></div>`);
-    marker.on("popupopen", event => event.popup.getElement()?.querySelector(".popup-open-zone")?.addEventListener("click", () => onSelect(zone)));
+    marker.bindTooltip(`${escapeHtml(zone.name)} · ${result?.available ? `${result.score}/100` : "Ingen data"}`, { direction: "top", offset: [0, -30] });
     marker.on("click", () => onSelect(zone));
     marker.addTo(markerLayer);
     markers.set(zone.id, marker);
@@ -48,8 +46,7 @@ export function refreshZoneStyles(layer, scoreForZone) {
   for (const [id, marker] of layer.markers.entries()) {
     const result = scoreForZone(id);
     marker.setIcon(markerIcon(result?.level));
-    const popup = marker.getPopup();
-    if (popup) popup.setContent(`<div class="zone-popup"><strong>${escapeHtml(marker.options.title)}</strong><span class="popup-score ${result?.level || "unavailable"}">${result?.available ? `${result.score}/100` : "Ingen data"}</span><button type="button" class="popup-open-zone">Åbn zone</button></div>`);
+    marker.setTooltipContent(`${escapeHtml(marker.options.title)} · ${result?.available ? `${result.score}/100` : "Ingen data"}`);
   }
 }
 

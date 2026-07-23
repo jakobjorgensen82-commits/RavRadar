@@ -3,11 +3,15 @@ const numberOrNull = value => Number.isFinite(Number(value)) ? Number(value) : n
 
 export const SCORE_WEIGHTS = Object.freeze({ huntability: 0.40, transport: 0.35, release: 0.25 });
 
-function rating(score) {
-  if (score >= 80) return { label: "Meget gode forhold", level: "excellent" };
-  if (score >= 60) return { label: "Gode forhold", level: "good" };
-  if (score >= 40) return { label: "Middel forhold", level: "fair" };
-  return { label: "Dårlige forhold", level: "poor" };
+export function scoreRating(score) {
+  if (score === null || score === undefined || score === "") return { label: "Ingen data", level: "unavailable" };
+  const value = Number(score);
+  if (!Number.isFinite(value)) return { label: "Ingen data", level: "unavailable" };
+  if (value >= 90) return { label: "Fremragende", level: "excellent" };
+  if (value >= 75) return { label: "God", level: "good" };
+  if (value >= 55) return { label: "Middel", level: "fair" };
+  if (value >= 35) return { label: "Svag", level: "weak" };
+  return { label: "Dårlig", level: "poor" };
 }
 function angularDifference(a, b) { const d = Math.abs(((a - b + 540) % 360) - 180); return Number.isFinite(d) ? d : null; }
 function directionScore(directionDeg, targetDeg) {
@@ -85,6 +89,6 @@ export function calculateRavScore({ mode, zone, weather, history = {} }) {
   const transport = calculateTransport(zone, weather, componentReasons.transport);
   const release = calculateRelease(zone, history, componentReasons.release);
   const score = Math.round(huntability*SCORE_WEIGHTS.huntability + transport*SCORE_WEIGHTS.transport + release*SCORE_WEIGHTS.release);
-  const r = rating(score);
+  const r = scoreRating(score);
   return { available:true, score, level:r.level, label:r.label, components:{ huntability:Math.round(huntability), transport:Math.round(transport), release:Math.round(release) }, componentReasons, reasons:[...new Set(Object.values(componentReasons).flat())].slice(0,6), stormBonus:release>=65 };
 }
