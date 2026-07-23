@@ -34,11 +34,18 @@ function coastBearing(a, b) {
   return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
 }
 
-function boundaryTickIcon(tangentBearing, selected = false) {
+function boundaryTickLength(selected = false, zoom = 7) {
+  // Markørens længde følger præcis den synlige farvestregs bredde.
+  const baseWeight = zoom <= 7 ? 7 : zoom <= 9 ? 6 : zoom <= 11 ? 5.5 : 5;
+  return baseWeight + (selected ? 4 : 0);
+}
+
+function boundaryTickIcon(tangentBearing, selected = false, zoom = 7) {
   const rotation = (tangentBearing + 90) % 360;
+  const length = boundaryTickLength(selected, zoom);
   return L.divIcon({
     className: "zone-boundary-tick-wrap",
-    html: `<span class="zone-boundary-tick${selected ? " selected" : ""}" style="--tick-rotation:${rotation}deg" aria-hidden="true"></span>`,
+    html: `<span class="zone-boundary-tick${selected ? " selected" : ""}" style="--tick-rotation:${rotation}deg;--tick-length:${length}px" aria-hidden="true"></span>`,
     iconSize: [20, 20],
     iconAnchor: [10, 10]
   });
@@ -66,6 +73,11 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
   if (!map.getPane("zoneCoastPane")) {
     const pane = map.createPane("zoneCoastPane");
     pane.style.zIndex = "410";
+  }
+  if (!map.getPane("zoneBoundaryPane")) {
+    const pane = map.createPane("zoneBoundaryPane");
+    pane.style.zIndex = "430";
+    pane.style.pointerEvents = "none";
   }
 
   for (const feature of featureCollection.features) {
@@ -102,8 +114,8 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
     // Sorte tværstreger gør zonens start og slutning synlige uden at dække scorefarven.
     const startBearing = coastBearing(coastLine[0], coastLine[1]);
     const endBearing = coastBearing(coastLine[coastLine.length - 2], coastLine[coastLine.length - 1]);
-    const startTick = L.marker(coastLine[0], { icon: boundaryTickIcon(startBearing), pane: "zoneCoastPane", interactive: false, keyboard: false }).addTo(lineLayer);
-    const endTick = L.marker(coastLine[coastLine.length - 1], { icon: boundaryTickIcon(endBearing), pane: "zoneCoastPane", interactive: false, keyboard: false }).addTo(lineLayer);
+    const startTick = L.marker(coastLine[0], { icon: boundaryTickIcon(startBearing, false, map.getZoom()), pane: "zoneBoundaryPane", interactive: false, keyboard: false }).addTo(lineLayer);
+    const endTick = L.marker(coastLine[coastLine.length - 1], { icon: boundaryTickIcon(endBearing, false, map.getZoom()), pane: "zoneBoundaryPane", interactive: false, keyboard: false }).addTo(lineLayer);
 
     hit.bindTooltip(`${escapeHtml(zone.name)} · ${result?.available ? `${result.score}/100` : "Ingen data"}`, { direction: "top", sticky: true });
     hit.on("click", () => onSelect(zone));
@@ -125,8 +137,8 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
       pair.hit.options.ravSelected = zoneId === api.selectedId;
       pair.casing.setStyle(zoneCasingStyle(pair.hit.options.ravSelected, map.getZoom()));
       pair.visible.setStyle(zoneLineStyle(pair.hit.options.ravLevel, pair.hit.options.ravSelected, map.getZoom()));
-      pair.startTick.setIcon(boundaryTickIcon(pair.startBearing, pair.hit.options.ravSelected));
-      pair.endTick.setIcon(boundaryTickIcon(pair.endBearing, pair.hit.options.ravSelected));
+      pair.startTick.setIcon(boundaryTickIcon(pair.startBearing, pair.hit.options.ravSelected, map.getZoom()));
+      pair.endTick.setIcon(boundaryTickIcon(pair.endBearing, pair.hit.options.ravSelected, map.getZoom()));
       if (pair.hit.options.ravSelected) { pair.casing.bringToFront(); pair.visible.bringToFront(); pair.hit.bringToFront(); }
     }
   };
@@ -135,6 +147,8 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
       pair.casing.setStyle(zoneCasingStyle(pair.hit.options.ravSelected, map.getZoom()));
       pair.visible.setStyle(zoneLineStyle(pair.hit.options.ravLevel, pair.hit.options.ravSelected, map.getZoom()));
       pair.hit.setStyle({ weight: map.getZoom() <= 8 ? 28 : 24 });
+      pair.startTick.setIcon(boundaryTickIcon(pair.startBearing, pair.hit.options.ravSelected, map.getZoom()));
+      pair.endTick.setIcon(boundaryTickIcon(pair.endBearing, pair.hit.options.ravSelected, map.getZoom()));
     }
   };
   map.on("zoomend", refreshZoomStyles);

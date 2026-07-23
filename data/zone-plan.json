@@ -3979,15 +3979,47 @@
       "name": "Røsnæs nord",
       "batch": "B08",
       "batchName": "Nord- og Vestsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.05,
+        55.75
+      ],
+      "dataPoint": [
+        10.99,
+        55.8
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.92,
+              55.68
+            ],
+            [
+              11.16,
+              55.68
+            ],
+            [
+              11.16,
+              55.79
+            ],
+            [
+              10.92,
+              55.79
+            ],
+            [
+              10.92,
+              55.68
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -3995,15 +4027,47 @@
       "name": "Røsnæs syd og Kalundborg",
       "batch": "B08",
       "batchName": "Nord- og Vestsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.08,
+        55.66
+      ],
+      "dataPoint": [
+        11.02,
+        55.61
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.93,
+              55.6
+            ],
+            [
+              11.22,
+              55.6
+            ],
+            [
+              11.22,
+              55.72
+            ],
+            [
+              10.93,
+              55.72
+            ],
+            [
+              10.93,
+              55.6
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -4011,15 +4075,47 @@
       "name": "Sejerø nord",
       "batch": "B08",
       "batchName": "Nord- og Vestsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.13,
+        55.94
+      ],
+      "dataPoint": [
+        11.08,
+        56.0
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.97,
+              55.86
+            ],
+            [
+              11.2,
+              55.86
+            ],
+            [
+              11.2,
+              56.02
+            ],
+            [
+              10.97,
+              56.02
+            ],
+            [
+              10.97,
+              55.86
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -4027,15 +4123,47 @@
       "name": "Sejerø syd",
       "batch": "B08",
       "batchName": "Nord- og Vestsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.1,
+        55.88
+      ],
+      "dataPoint": [
+        11.05,
+        55.82
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.97,
+              55.82
+            ],
+            [
+              11.2,
+              55.82
+            ],
+            [
+              11.2,
+              55.94
+            ],
+            [
+              10.97,
+              55.94
+            ],
+            [
+              10.97,
+              55.82
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -4043,15 +4171,47 @@
       "name": "Nekselø og Havnsø",
       "batch": "B08",
       "batchName": "Nord- og Vestsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.31,
+        55.77
+      ],
+      "dataPoint": [
+        11.25,
+        55.79
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.24,
+              55.72
+            ],
+            [
+              11.39,
+              55.72
+            ],
+            [
+              11.39,
+              55.82
+            ],
+            [
+              11.24,
+              55.82
+            ],
+            [
+              11.24,
+              55.72
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -4059,15 +4219,47 @@
       "name": "Vesterlyng og Bjørnstrup",
       "batch": "B08",
       "batchName": "Nord- og Vestsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.39,
+        55.74
+      ],
+      "dataPoint": [
+        11.34,
+        55.81
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.3,
+              55.69
+            ],
+            [
+              11.49,
+              55.69
+            ],
+            [
+              11.49,
+              55.8
+            ],
+            [
+              11.3,
+              55.8
+            ],
+            [
+              11.3,
+              55.69
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -4075,15 +4267,47 @@
       "name": "Ordrup Næs og Kårup",
       "batch": "B08",
       "batchName": "Nord- og Vestsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.46,
+        55.82
+      ],
+      "dataPoint": [
+        11.42,
+        55.89
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.37,
+              55.76
+            ],
+            [
+              11.55,
+              55.76
+            ],
+            [
+              11.55,
+              55.88
+            ],
+            [
+              11.37,
+              55.88
+            ],
+            [
+              11.37,
+              55.76
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -4091,15 +4315,47 @@
       "name": "Vejrhøj og Vindekilde",
       "batch": "B08",
       "batchName": "Nord- og Vestsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.52,
+        55.88
+      ],
+      "dataPoint": [
+        11.48,
+        55.95
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.42,
+              55.82
+            ],
+            [
+              11.62,
+              55.82
+            ],
+            [
+              11.62,
+              55.93
+            ],
+            [
+              11.42,
+              55.93
+            ],
+            [
+              11.42,
+              55.82
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -4107,15 +4363,47 @@
       "name": "Høve og Gudmindrup",
       "batch": "B08",
       "batchName": "Nord- og Vestsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.61,
+        55.94
+      ],
+      "dataPoint": [
+        11.58,
+        56.02
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.5,
+              55.88
+            ],
+            [
+              11.72,
+              55.88
+            ],
+            [
+              11.72,
+              56.0
+            ],
+            [
+              11.5,
+              56.0
+            ],
+            [
+              11.5,
+              55.88
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -4123,15 +4411,47 @@
       "name": "Sjællands Odde nord",
       "batch": "B08",
       "batchName": "Nord- og Vestsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.7,
+        56.05
+      ],
+      "dataPoint": [
+        11.66,
+        56.14
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.55,
+              55.94
+            ],
+            [
+              11.85,
+              55.94
+            ],
+            [
+              11.85,
+              56.13
+            ],
+            [
+              11.55,
+              56.13
+            ],
+            [
+              11.55,
+              55.94
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -4139,15 +4459,47 @@
       "name": "Sjællands Odde syd",
       "batch": "B08",
       "batchName": "Nord- og Vestsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.74,
+        55.97
+      ],
+      "dataPoint": [
+        11.7,
+        55.9
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.56,
+              55.88
+            ],
+            [
+              11.88,
+              55.88
+            ],
+            [
+              11.88,
+              56.04
+            ],
+            [
+              11.56,
+              56.04
+            ],
+            [
+              11.56,
+              55.88
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -4155,15 +4507,47 @@
       "name": "Nykøbing Sjælland og Rørvig",
       "batch": "B08",
       "batchName": "Nord- og Vestsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.84,
+        55.93
+      ],
+      "dataPoint": [
+        11.91,
+        55.88
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.7,
+              55.84
+            ],
+            [
+              11.96,
+              55.84
+            ],
+            [
+              11.96,
+              56.0
+            ],
+            [
+              11.7,
+              56.0
+            ],
+            [
+              11.7,
+              55.84
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -4171,15 +4555,47 @@
       "name": "Klint og Korshage",
       "batch": "B08",
       "batchName": "Nord- og Vestsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.92,
+        56.0
+      ],
+      "dataPoint": [
+        12.0,
+        56.04
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.79,
+              55.91
+            ],
+            [
+              12.05,
+              55.91
+            ],
+            [
+              12.05,
+              56.06
+            ],
+            [
+              11.79,
+              56.06
+            ],
+            [
+              11.79,
+              55.91
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -4187,15 +4603,47 @@
       "name": "Hundested og Lynæs",
       "batch": "B08",
       "batchName": "Nord- og Vestsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.95,
+        55.98
+      ],
+      "dataPoint": [
+        11.87,
+        56.03
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.82,
+              55.92
+            ],
+            [
+              12.05,
+              55.92
+            ],
+            [
+              12.05,
+              56.03
+            ],
+            [
+              11.82,
+              56.03
+            ],
+            [
+              11.82,
+              55.92
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -4203,15 +4651,47 @@
       "name": "Liseleje og Melby",
       "batch": "B08",
       "batchName": "Nord- og Vestsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.08,
+        56.04
+      ],
+      "dataPoint": [
+        12.05,
+        56.11
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.95,
+              55.98
+            ],
+            [
+              12.19,
+              55.98
+            ],
+            [
+              12.19,
+              56.09
+            ],
+            [
+              11.95,
+              56.09
+            ],
+            [
+              11.95,
+              55.98
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -4219,15 +4699,47 @@
       "name": "Tisvildeleje og Rågeleje",
       "batch": "B08",
       "batchName": "Nord- og Vestsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.26,
+        56.09
+      ],
+      "dataPoint": [
+        12.25,
+        56.15
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              12.14,
+              56.02
+            ],
+            [
+              12.38,
+              56.02
+            ],
+            [
+              12.38,
+              56.13
+            ],
+            [
+              12.14,
+              56.13
+            ],
+            [
+              12.14,
+              56.02
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -4235,15 +4747,47 @@
       "name": "Gilleleje og Gilbjerg",
       "batch": "B08",
       "batchName": "Nord- og Vestsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.45,
+        56.11
+      ],
+      "dataPoint": [
+        12.44,
+        56.16
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              12.33,
+              56.05
+            ],
+            [
+              12.55,
+              56.05
+            ],
+            [
+              12.55,
+              56.14
+            ],
+            [
+              12.33,
+              56.14
+            ],
+            [
+              12.33,
+              56.05
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -4251,15 +4795,47 @@
       "name": "Dronningmølle og Hornbæk",
       "batch": "B08",
       "batchName": "Nord- og Vestsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.64,
+        56.09
+      ],
+      "dataPoint": [
+        12.64,
+        56.15
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              12.5,
+              56.03
+            ],
+            [
+              12.76,
+              56.03
+            ],
+            [
+              12.76,
+              56.13
+            ],
+            [
+              12.5,
+              56.13
+            ],
+            [
+              12.5,
+              56.03
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -4267,15 +4843,47 @@
       "name": "Ålsgårde og Helsingør",
       "batch": "B08",
       "batchName": "Nord- og Vestsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.75,
+        56.04
+      ],
+      "dataPoint": [
+        12.82,
+        56.05
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              12.68,
+              55.98
+            ],
+            [
+              12.83,
+              55.98
+            ],
+            [
+              12.83,
+              56.1
+            ],
+            [
+              12.68,
+              56.1
+            ],
+            [
+              12.68,
+              55.98
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -5008,6 +5616,10 @@
       "version": "2.6.18",
       "batch": "B07",
       "note": "B07 aktiveret med 28 zoner i Lillebælt, Fyn og øhavet."
+    },
+    {
+      "version": "2.6.19",
+      "note": "B08 aktiveret; zonegrænsemarkører tegnes oven på scorelinjen og har samme længde som scorelinjens bredde."
     }
   ]
 }
