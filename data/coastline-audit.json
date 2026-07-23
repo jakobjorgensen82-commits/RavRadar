@@ -789,5 +789,176 @@
     "nearestCoastM": 1247,
     "points": 5,
     "lengthKm": 13.8
+  },
+  {
+    "id": "DK-B09-01",
+    "name": "Snekkersten og Espergærde",
+    "batch": "B09",
+    "points": 4,
+    "lengthDegrees": 0.214476,
+    "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+    "version": "2.6.22"
+  },
+  {
+    "id": "DK-B09-02",
+    "name": "Humlebæk og Nivå",
+    "batch": "B09",
+    "points": 3,
+    "lengthDegrees": 0.133097,
+    "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+    "version": "2.6.22"
+  },
+  {
+    "id": "DK-B09-03",
+    "name": "Rungsted og Vedbæk",
+    "batch": "B09",
+    "points": 3,
+    "lengthDegrees": 0.120082,
+    "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+    "version": "2.6.22"
+  },
+  {
+    "id": "DK-B09-04",
+    "name": "Skodsborg og Bellevue",
+    "batch": "B09",
+    "points": 4,
+    "lengthDegrees": 0.120161,
+    "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+    "version": "2.6.22"
+  },
+  {
+    "id": "DK-B09-05",
+    "name": "Amager nord og Kastrup",
+    "batch": "B09",
+    "points": 5,
+    "lengthDegrees": 0.188124,
+    "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+    "version": "2.6.22"
+  },
+  {
+    "id": "DK-B09-06",
+    "name": "Amager Strand og Dragør",
+    "batch": "B09",
+    "points": 3,
+    "lengthDegrees": 0.141992,
+    "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+    "version": "2.6.22"
+  },
+  {
+    "id": "DK-B09-07",
+    "name": "Sydamager og Kongelunden",
+    "batch": "B09",
+    "points": 4,
+    "lengthDegrees": 0.156808,
+    "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+    "version": "2.6.22"
+  },
+  {
+    "id": "DK-B09-08",
+    "name": "Køge Bugt nord",
+    "batch": "B09",
+    "points": 3,
+    "lengthDegrees": 0.23553,
+    "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+    "version": "2.6.22"
+  },
+  {
+    "id": "DK-B09-09",
+    "name": "Køge Bugt syd og Solrød",
+    "batch": "B09",
+    "points": 4,
+    "lengthDegrees": 0.170826,
+    "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+    "version": "2.6.22"
+  },
+  {
+    "id": "DK-B09-10",
+    "name": "Køge og Strøby Egede",
+    "batch": "B09",
+    "points": 4,
+    "lengthDegrees": 0.155529,
+    "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+    "version": "2.6.22"
+  },
+  {
+    "id": "DK-B09-11",
+    "name": "Stevns nord og Holtug",
+    "batch": "B09",
+    "points": 4,
+    "lengthDegrees": 0.19464,
+    "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+    "version": "2.6.22"
+  },
+  {
+    "id": "DK-B09-12",
+    "name": "Stevns Klint og Højerup",
+    "batch": "B09",
+    "points": 4,
+    "lengthDegrees": 0.206529,
+    "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+    "version": "2.6.22"
+  },
+  {
+    "id": "DK-B09-13",
+    "name": "Rødvig og Faxe Ladeplads",
+    "batch": "B09",
+    "points": 7,
+    "lengthDegrees": 0.298988,
+    "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+    "version": "2.6.22"
+  },
+  {
+    "id": "DK-B09-14",
+    "name": "Præstø og Jungshoved",
+    "batch": "B09",
+    "points": 12,
+    "lengthDegrees": 0.494226,
+    "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+    "version": "2.6.22"
+  },
+  {
+    "id": "DK-B09-15",
+    "name": "Bøgestrømmen vest",
+    "batch": "B09",
+    "points": 4,
+    "lengthDegrees": 0.229099,
+    "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+    "version": "2.6.22"
+  },
+  {
+    "id": "DK-B09-16",
+    "name": "Karrebæksminde og Enø",
+    "batch": "B09",
+    "points": 10,
+    "lengthDegrees": 0.457221,
+    "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+    "version": "2.6.22"
+  },
+  {
+    "id": "DK-B09-17",
+    "name": "Bisserup og Glænø",
+    "batch": "B09",
+    "points": 8,
+    "lengthDegrees": 0.337715,
+    "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+    "version": "2.6.22"
+  },
+  {
+    "id": "DK-B09-18",
+    "name": "Korsør og Lejodde",
+    "batch": "B09",
+    "points": 6,
+    "lengthDegrees": 0.306432,
+    "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+    "version": "2.6.22"
+  },
+  {
+    "id": "DK-B09-19",
+    "name": "Reersø og Mullerup",
+    "batch": "B09",
+    "points": 10,
+    "lengthDegrees": 0.34199,
+    "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+    "version": "2.6.22"
   }
 ]

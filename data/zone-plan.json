@@ -4891,304 +4891,475 @@
       "name": "Snekkersten og Espergærde",
       "batch": "B09",
       "batchName": "Øresund, Stevns og Sydsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.58,
+        56.02
+      ],
+      "dataPoint": [
+        12.66,
+        56.03
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true,
+        "precisionPass": "B09-2026-07-23"
+      },
+      "zoneId": "DK-B09-01",
+      "notes": "Kystlinje klippet fra RavRadars lokale GSHHS-master; pin på repræsentativ strand og marine datapunkt ude over vandet."
     },
     {
       "planId": "B09-02",
       "name": "Humlebæk og Nivå",
       "batch": "B09",
       "batchName": "Øresund, Stevns og Sydsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.56,
+        55.96
+      ],
+      "dataPoint": [
+        12.66,
+        55.96
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true,
+        "precisionPass": "B09-2026-07-23"
+      },
+      "zoneId": "DK-B09-02",
+      "notes": "Kystlinje klippet fra RavRadars lokale GSHHS-master; pin på repræsentativ strand og marine datapunkt ude over vandet."
     },
     {
       "planId": "B09-03",
       "name": "Rungsted og Vedbæk",
       "batch": "B09",
       "batchName": "Øresund, Stevns og Sydsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.57,
+        55.86
+      ],
+      "dataPoint": [
+        12.67,
+        55.86
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true,
+        "precisionPass": "B09-2026-07-23"
+      },
+      "zoneId": "DK-B09-03",
+      "notes": "Kystlinje klippet fra RavRadars lokale GSHHS-master; pin på repræsentativ strand og marine datapunkt ude over vandet."
     },
     {
       "planId": "B09-04",
       "name": "Skodsborg og Bellevue",
       "batch": "B09",
       "batchName": "Øresund, Stevns og Sydsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.59,
+        55.79
+      ],
+      "dataPoint": [
+        12.69,
+        55.79
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true,
+        "precisionPass": "B09-2026-07-23"
+      },
+      "zoneId": "DK-B09-04",
+      "notes": "Kystlinje klippet fra RavRadars lokale GSHHS-master; pin på repræsentativ strand og marine datapunkt ude over vandet."
     },
     {
       "planId": "B09-05",
       "name": "Amager nord og Kastrup",
       "batch": "B09",
       "batchName": "Øresund, Stevns og Sydsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.65,
+        55.64
+      ],
+      "dataPoint": [
+        12.75,
+        55.64
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true,
+        "precisionPass": "B09-2026-07-23"
+      },
+      "zoneId": "DK-B09-05",
+      "notes": "Kystlinje klippet fra RavRadars lokale GSHHS-master; pin på repræsentativ strand og marine datapunkt ude over vandet."
     },
     {
       "planId": "B09-06",
       "name": "Amager Strand og Dragør",
       "batch": "B09",
       "batchName": "Øresund, Stevns og Sydsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.66,
+        55.59
+      ],
+      "dataPoint": [
+        12.76,
+        55.59
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true,
+        "precisionPass": "B09-2026-07-23"
+      },
+      "zoneId": "DK-B09-06",
+      "notes": "Kystlinje klippet fra RavRadars lokale GSHHS-master; pin på repræsentativ strand og marine datapunkt ude over vandet."
     },
     {
       "planId": "B09-07",
       "name": "Sydamager og Kongelunden",
       "batch": "B09",
       "batchName": "Øresund, Stevns og Sydsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.57,
+        55.55
+      ],
+      "dataPoint": [
+        12.57,
+        55.47
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true,
+        "precisionPass": "B09-2026-07-23"
+      },
+      "zoneId": "DK-B09-07",
+      "notes": "Kystlinje klippet fra RavRadars lokale GSHHS-master; pin på repræsentativ strand og marine datapunkt ude over vandet."
     },
     {
       "planId": "B09-08",
       "name": "Køge Bugt nord",
       "batch": "B09",
       "batchName": "Øresund, Stevns og Sydsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.37,
+        55.62
+      ],
+      "dataPoint": [
+        12.37,
+        55.52
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true,
+        "precisionPass": "B09-2026-07-23"
+      },
+      "zoneId": "DK-B09-08",
+      "notes": "Kystlinje klippet fra RavRadars lokale GSHHS-master; pin på repræsentativ strand og marine datapunkt ude over vandet."
     },
     {
       "planId": "B09-09",
       "name": "Køge Bugt syd og Solrød",
       "batch": "B09",
       "batchName": "Øresund, Stevns og Sydsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.2,
+        55.51
+      ],
+      "dataPoint": [
+        12.2,
+        55.42
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true,
+        "precisionPass": "B09-2026-07-23"
+      },
+      "zoneId": "DK-B09-09",
+      "notes": "Kystlinje klippet fra RavRadars lokale GSHHS-master; pin på repræsentativ strand og marine datapunkt ude over vandet."
     },
     {
       "planId": "B09-10",
       "name": "Køge og Strøby Egede",
       "batch": "B09",
       "batchName": "Øresund, Stevns og Sydsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.22,
+        55.4
+      ],
+      "dataPoint": [
+        12.31,
+        55.4
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true,
+        "precisionPass": "B09-2026-07-23"
+      },
+      "zoneId": "DK-B09-10",
+      "notes": "Kystlinje klippet fra RavRadars lokale GSHHS-master; pin på repræsentativ strand og marine datapunkt ude over vandet."
     },
     {
       "planId": "B09-11",
       "name": "Stevns nord og Holtug",
       "batch": "B09",
       "batchName": "Øresund, Stevns og Sydsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.4,
+        55.33
+      ],
+      "dataPoint": [
+        12.51,
+        55.33
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true,
+        "precisionPass": "B09-2026-07-23"
+      },
+      "zoneId": "DK-B09-11",
+      "notes": "Kystlinje klippet fra RavRadars lokale GSHHS-master; pin på repræsentativ strand og marine datapunkt ude over vandet."
     },
     {
       "planId": "B09-12",
       "name": "Stevns Klint og Højerup",
       "batch": "B09",
       "batchName": "Øresund, Stevns og Sydsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.42,
+        55.25
+      ],
+      "dataPoint": [
+        12.53,
+        55.25
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true,
+        "precisionPass": "B09-2026-07-23"
+      },
+      "zoneId": "DK-B09-12",
+      "notes": "Kystlinje klippet fra RavRadars lokale GSHHS-master; pin på repræsentativ strand og marine datapunkt ude over vandet."
     },
     {
       "planId": "B09-13",
       "name": "Rødvig og Faxe Ladeplads",
       "batch": "B09",
       "batchName": "Øresund, Stevns og Sydsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.27,
+        55.17
+      ],
+      "dataPoint": [
+        12.38,
+        55.1
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true,
+        "precisionPass": "B09-2026-07-23"
+      },
+      "zoneId": "DK-B09-13",
+      "notes": "Kystlinje klippet fra RavRadars lokale GSHHS-master; pin på repræsentativ strand og marine datapunkt ude over vandet."
     },
     {
       "planId": "B09-14",
       "name": "Præstø og Jungshoved",
       "batch": "B09",
       "batchName": "Øresund, Stevns og Sydsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.14,
+        55.11
+      ],
+      "dataPoint": [
+        12.26,
+        55.1
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true,
+        "precisionPass": "B09-2026-07-23"
+      },
+      "zoneId": "DK-B09-14",
+      "notes": "Kystlinje klippet fra RavRadars lokale GSHHS-master; pin på repræsentativ strand og marine datapunkt ude over vandet."
     },
     {
       "planId": "B09-15",
       "name": "Bøgestrømmen vest",
       "batch": "B09",
       "batchName": "Øresund, Stevns og Sydsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        12.03,
+        55.03
+      ],
+      "dataPoint": [
+        12.15,
+        55.0
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true,
+        "precisionPass": "B09-2026-07-23"
+      },
+      "zoneId": "DK-B09-15",
+      "notes": "Kystlinje klippet fra RavRadars lokale GSHHS-master; pin på repræsentativ strand og marine datapunkt ude over vandet."
     },
     {
       "planId": "B09-16",
       "name": "Karrebæksminde og Enø",
       "batch": "B09",
       "batchName": "Øresund, Stevns og Sydsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.66,
+        55.18
+      ],
+      "dataPoint": [
+        11.64,
+        55.09
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true,
+        "precisionPass": "B09-2026-07-23"
+      },
+      "zoneId": "DK-B09-16",
+      "notes": "Kystlinje klippet fra RavRadars lokale GSHHS-master; pin på repræsentativ strand og marine datapunkt ude over vandet."
     },
     {
       "planId": "B09-17",
       "name": "Bisserup og Glænø",
       "batch": "B09",
       "batchName": "Øresund, Stevns og Sydsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.43,
+        55.19
+      ],
+      "dataPoint": [
+        11.42,
+        55.1
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true,
+        "precisionPass": "B09-2026-07-23"
+      },
+      "zoneId": "DK-B09-17",
+      "notes": "Kystlinje klippet fra RavRadars lokale GSHHS-master; pin på repræsentativ strand og marine datapunkt ude over vandet."
     },
     {
       "planId": "B09-18",
       "name": "Korsør og Lejodde",
       "batch": "B09",
       "batchName": "Øresund, Stevns og Sydsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.08,
+        55.34
+      ],
+      "dataPoint": [
+        10.96,
+        55.34
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true,
+        "precisionPass": "B09-2026-07-23"
+      },
+      "zoneId": "DK-B09-18",
+      "notes": "Kystlinje klippet fra RavRadars lokale GSHHS-master; pin på repræsentativ strand og marine datapunkt ude over vandet."
     },
     {
       "planId": "B09-19",
       "name": "Reersø og Mullerup",
       "batch": "B09",
       "batchName": "Øresund, Stevns og Sydsjælland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        11.12,
+        55.55
+      ],
+      "dataPoint": [
+        10.99,
+        55.55
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true,
+        "precisionPass": "B09-2026-07-23"
+      },
+      "zoneId": "DK-B09-19",
+      "notes": "Kystlinje klippet fra RavRadars lokale GSHHS-master; pin på repræsentativ strand og marine datapunkt ude over vandet."
     },
     {
       "planId": "B10-01",
