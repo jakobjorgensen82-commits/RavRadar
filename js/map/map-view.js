@@ -101,7 +101,10 @@ export function installFlowArrows(map, featureCollection, conditionForZone) {
       if (!point) continue;
       const base = L.latLng(point[1], point[0]);
       if (!bounds.contains(base)) continue;
-      const condition = conditionForZone(zone.id)?.current || conditionForZone(zone.id) || {};
+      // Datadrevet pr. zone: enhver ny feature i zones.geojson får automatisk
+      // vind- og strømpile, når conditionForZone(zone.id) leverer retningerne.
+      const zoneCondition = conditionForZone(zone.id);
+      const condition = zoneCondition?.current || zoneCondition || {};
       const hasWind = Number.isFinite(Number(condition.windDirectionDeg));
       const hasCurrent = Number.isFinite(Number(condition.currentDirectionDeg));
       if (!hasWind && !hasCurrent) continue;

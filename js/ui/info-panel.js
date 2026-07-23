@@ -16,6 +16,8 @@ const directionArrow = (value, type = "current") => {
   const label = type === "wind" ? "Vindens bevægelsesretning" : "Strømmens bevægelsesretning";
   return `<span class="direction-arrow ${type}" style="--direction:${rotation}deg" title="${label}" aria-label="${label}">↑</span>`;
 };
+// Fælles renderer til både zonepanelet og alle prognosedage. Nye zoner får
+// automatisk samme visning, fordi værdierne kommer fra zonens forecast/condition.
 const directionMetric = (type, speed, speedSuffix, direction, digits = 1) => `<span class="direction-reading">${directionArrow(direction,type)}<span>${formatNumber(speed,speedSuffix,digits)} · ${compass(direction)}</span></span>`;
 
 function groupForecastHours(forecast) {
