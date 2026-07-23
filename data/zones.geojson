@@ -2023,39 +2023,41 @@
         "reefs": false,
         "seagrass": true,
         "dataPoint": [
-          10.485,
-          57.6
+          10.47,
+          57.596
         ],
         "pinPoint": [
-          10.4263,
-          57.5954
+          10.4238,
+          57.5928
         ],
         "batch": "B02",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "placementReview": "B02 precision review 2026-07-23",
+        "placementNote": "Pin flyttet til Ålbæk Strand ved byen; geofence følger den nordlige Ålbæk Bugt."
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
             [
-              10.405,
-              57.59
+              10.404,
+              57.575
             ],
             [
-              10.505,
-              57.59
+              10.475,
+              57.575
             ],
             [
-              10.505,
-              57.65
+              10.49,
+              57.615
             ],
             [
-              10.405,
-              57.65
+              10.415,
+              57.615
             ],
             [
-              10.405,
-              57.59
+              10.404,
+              57.575
             ]
           ]
         ]
@@ -2068,44 +2070,46 @@
         "name": "Napstjert og Jerup",
         "region": "Ålbæk Bugt midt",
         "coastType": "east",
-        "onshoreDirectionDeg": 92,
+        "onshoreDirectionDeg": 94,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
         "dataPoint": [
-          10.5,
-          57.545
+          10.482,
+          57.548
         ],
         "pinPoint": [
-          10.4417,
-          57.5426
+          10.44172,
+          57.54264
         ],
         "batch": "B02",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "placementReview": "B02 precision review 2026-07-23",
+        "placementNote": "Pin placeret på Jerup Strand; zonegrænser følger Jerup Å mod syd og Napstjert-kysten mod nord."
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
             [
-              10.405,
-              57.53
+              10.421,
+              57.525
             ],
             [
-              10.52,
-              57.53
+              10.48,
+              57.525
             ],
             [
-              10.52,
-              57.59
+              10.49,
+              57.575
             ],
             [
-              10.405,
-              57.59
+              10.42,
+              57.575
             ],
             [
-              10.405,
-              57.53
+              10.421,
+              57.525
             ]
           ]
         ]
@@ -2118,44 +2122,46 @@
         "name": "Bratten og Strandby",
         "region": "Ålbæk Bugt syd",
         "coastType": "east",
-        "onshoreDirectionDeg": 95,
+        "onshoreDirectionDeg": 96,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
         "dataPoint": [
-          10.525,
-          57.515
+          10.515,
+          57.516
         ],
         "pinPoint": [
           10.4686,
           57.5194
         ],
         "batch": "B02",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "placementReview": "B02 precision review 2026-07-23",
+        "placementNote": "Pin placeret på Bratten Strand; sydgrænse ved Strandby og nordgrænse ved skiftet mod Jerup."
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
             [
-              10.44,
-              57.475
+              10.45,
+              57.485
             ],
             [
-              10.535,
-              57.475
+              10.52,
+              57.485
             ],
             [
-              10.535,
-              57.535
+              10.52,
+              57.53
             ],
             [
-              10.44,
-              57.535
+              10.447,
+              57.53
             ],
             [
-              10.44,
-              57.475
+              10.45,
+              57.485
             ]
           ]
         ]
@@ -2173,39 +2179,41 @@
         "reefs": true,
         "seagrass": false,
         "dataPoint": [
-          10.61,
-          57.425
+          10.59,
+          57.458
         ],
         "pinPoint": [
-          10.548,
-          57.427
+          10.54058,
+          57.46147
         ],
         "batch": "B02",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "placementReview": "B02 precision review 2026-07-23",
+        "placementNote": "Pin flyttet til Palm Beach nord for Frederikshavn; geofence dækker den åbne kyst mod Bangsbostrand uden at ligge inde over byen."
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
             [
-              10.5,
-              57.39
+              10.515,
+              57.405
             ],
             [
-              10.625,
-              57.39
+              10.6,
+              57.405
             ],
             [
-              10.625,
-              57.475
+              10.6,
+              57.48
             ],
             [
-              10.5,
-              57.475
+              10.52,
+              57.48
             ],
             [
-              10.5,
-              57.39
+              10.515,
+              57.405
             ]
           ]
         ]
@@ -2223,39 +2231,41 @@
         "reefs": true,
         "seagrass": true,
         "dataPoint": [
-          10.6,
-          57.33
+          10.575,
+          57.34
         ],
         "pinPoint": [
-          10.536,
-          57.33
+          10.5275,
+          57.3388
         ],
         "batch": "B02",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "placementReview": "B02 precision review 2026-07-23",
+        "placementNote": "Pin placeret på Sæby nordstrand mellem havnen og Sulbæk; zonegrænser følger Sæby Havn og kystknækket nordpå."
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
             [
-              10.495,
-              57.295
+              10.505,
+              57.305
             ],
             [
-              10.615,
-              57.295
+              10.585,
+              57.305
             ],
             [
-              10.615,
-              57.39
+              10.585,
+              57.375
             ],
             [
-              10.495,
-              57.39
+              10.51,
+              57.375
             ],
             [
-              10.495,
-              57.295
+              10.505,
+              57.305
             ]
           ]
         ]
@@ -2268,44 +2278,46 @@
         "name": "Lyngså og Voerså",
         "region": "Sæby Bugt syd",
         "coastType": "east",
-        "onshoreDirectionDeg": 95,
+        "onshoreDirectionDeg": 98,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
         "dataPoint": [
-          10.605,
-          57.245
+          10.59,
+          57.252
         ],
         "pinPoint": [
-          10.5446,
-          57.2556
+          10.54459,
+          57.25558
         ],
         "batch": "B02",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "placementReview": "B02 precision review 2026-07-23",
+        "placementNote": "Pin placeret på Lyngså Strand; sydgrænse ved Voerså/Stensnæs og nordgrænse ved overgang til Sæby Bugt."
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
             [
-              10.505,
-              57.155
+              10.5,
+              57.205
             ],
             [
-              10.62,
-              57.155
+              10.59,
+              57.205
             ],
             [
-              10.62,
-              57.3
+              10.6,
+              57.285
             ],
             [
-              10.505,
-              57.3
+              10.515,
+              57.285
             ],
             [
-              10.505,
-              57.155
+              10.5,
+              57.205
             ]
           ]
         ]
@@ -2316,46 +2328,48 @@
       "properties": {
         "id": "DK-B02-07",
         "name": "Asaa og Melholt",
-        "region": "Kattegatkysten ved Asaa",
+        "region": "Asaa kyst",
         "coastType": "east",
-        "onshoreDirectionDeg": 92,
+        "onshoreDirectionDeg": 100,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
         "dataPoint": [
-          10.5,
-          57.02
+          10.475,
+          57.14
         ],
         "pinPoint": [
-          10.434,
-          57.015
+          10.4265,
+          57.1398
         ],
         "batch": "B02",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "placementReview": "B02 precision review 2026-07-23",
+        "placementNote": "Pin placeret på stranden umiddelbart syd for Asaa Havn; havnen fungerer som tydelig lokal reference og naturlig opdeling."
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
             [
-              10.39,
-              56.97
+              10.395,
+              57.105
             ],
             [
-              10.515,
-              56.97
+              10.48,
+              57.105
             ],
             [
-              10.515,
-              57.11
+              10.485,
+              57.175
             ],
             [
-              10.39,
-              57.11
+              10.405,
+              57.175
             ],
             [
-              10.39,
-              56.97
+              10.395,
+              57.105
             ]
           ]
         ]
@@ -2366,46 +2380,48 @@
       "properties": {
         "id": "DK-B02-08",
         "name": "Hou og Bisnap",
-        "region": "Kattegatkysten ved Hou",
+        "region": "Hou Bugt",
         "coastType": "east",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 105,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
         "dataPoint": [
-          10.465,
-          56.915
+          10.405,
+          57.02
         ],
         "pinPoint": [
-          10.394,
-          56.911
+          10.35088,
+          57.0092
         ],
         "batch": "B02",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "placementReview": "B02 precision review 2026-07-23",
+        "placementNote": "Pin placeret på Bisnap Strand; geofence følger den sammenhængende sandkyst mellem Hou og Bisnap."
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
             [
-              10.35,
-              56.87
+              10.33,
+              56.99
             ],
             [
-              10.48,
-              56.87
+              10.415,
+              56.99
             ],
             [
-              10.48,
-              56.97
-            ],
-            [
-              10.35,
-              56.97
+              10.43,
+              57.075
             ],
             [
               10.35,
-              56.87
+              57.075
+            ],
+            [
+              10.33,
+              56.99
             ]
           ]
         ]
@@ -2416,46 +2432,48 @@
       "properties": {
         "id": "DK-B02-09",
         "name": "Hals og Nordmandshage",
-        "region": "Limfjordens østlige munding nord",
+        "region": "Kattegat ved Hals",
         "coastType": "east",
-        "onshoreDirectionDeg": 95,
+        "onshoreDirectionDeg": 108,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
         "dataPoint": [
-          10.41,
-          56.835
+          10.39,
+          56.98
         ],
         "pinPoint": [
-          10.332,
-          56.842
+          10.33415,
+          56.98214
         ],
         "batch": "B02",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "placementReview": "B02 precision review 2026-07-23",
+        "placementNote": "Pin placeret ved Nordmandshage nordøst for Hals, ikke inde i landet. Området er adskilt fra Limfjordsmundingen."
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
             [
-              10.285,
-              56.79
+              10.315,
+              56.955
             ],
             [
-              10.43,
-              56.79
+              10.4,
+              56.955
             ],
             [
-              10.43,
-              56.875
+              10.405,
+              57.005
             ],
             [
-              10.285,
-              56.875
+              10.33,
+              57.005
             ],
             [
-              10.285,
-              56.79
+              10.315,
+              56.955
             ]
           ]
         ]
@@ -2466,46 +2484,48 @@
       "properties": {
         "id": "DK-B02-10",
         "name": "Egense og Mou",
-        "region": "Limfjordens østlige munding syd",
-        "coastType": "east",
-        "onshoreDirectionDeg": 88,
+        "region": "Limfjorden øst",
+        "coastType": "limfjord",
+        "onshoreDirectionDeg": 180,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
         "dataPoint": [
-          10.39,
-          56.8
+          10.305,
+          56.995
         ],
         "pinPoint": [
-          10.305,
-          56.806
+          10.306,
+          56.9745
         ],
         "batch": "B02",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "placementReview": "B02 precision review 2026-07-23",
+        "placementNote": "Zone flyttet til den faktiske sydkyst af Limfjorden mellem Mou og Egense; marint datapunkt ligger i fjorden."
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
             [
-              10.255,
-              56.76
+              10.21,
+              56.955
             ],
             [
-              10.41,
-              56.76
+              10.355,
+              56.955
             ],
             [
-              10.41,
-              56.83
+              10.355,
+              57.01
             ],
             [
-              10.255,
-              56.83
+              10.21,
+              57.01
             ],
             [
-              10.255,
-              56.76
+              10.21,
+              56.955
             ]
           ]
         ]
@@ -2516,46 +2536,48 @@
       "properties": {
         "id": "DK-B02-11",
         "name": "Dokkedal og Mulbjerge",
-        "region": "Lille Vildmose-kysten",
+        "region": "Lille Vildmose kyst",
         "coastType": "east",
-        "onshoreDirectionDeg": 88,
+        "onshoreDirectionDeg": 100,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
         "dataPoint": [
-          10.37,
-          56.72
+          10.345,
+          56.915
         ],
         "pinPoint": [
-          10.285,
-          56.72
+          10.286,
+          56.914
         ],
         "batch": "B02",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "placementReview": "B02 precision review 2026-07-23",
+        "placementNote": "Pin placeret på den lave kyst øst for Mulbjerge/Dokkedal, ikke ved landsbyen inde i landet."
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
             [
-              10.24,
-              56.65
+              10.255,
+              56.875
             ],
             [
-              10.39,
-              56.65
+              10.35,
+              56.875
             ],
             [
-              10.39,
-              56.77
+              10.35,
+              56.945
             ],
             [
-              10.24,
-              56.77
+              10.27,
+              56.945
             ],
             [
-              10.24,
-              56.65
+              10.255,
+              56.875
             ]
           ]
         ]
@@ -2568,44 +2590,46 @@
         "name": "Øster Hurup og Als",
         "region": "Kattegat ved Øster Hurup",
         "coastType": "east",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 100,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
         "dataPoint": [
-          10.365,
-          56.785
+          10.335,
+          56.807
         ],
         "pinPoint": [
-          10.2833,
-          56.805
+          10.27735,
+          56.80591
         ],
         "batch": "B02",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "placementReview": "B02 precision review 2026-07-23",
+        "placementNote": "Pin placeret på Øster Hurup offentlige strand; geofence følger den åbne sandkyst nord og syd for havnen."
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
             [
-              10.245,
-              56.745
+              10.255,
+              56.77
             ],
             [
-              10.38,
-              56.745
+              10.345,
+              56.77
             ],
             [
-              10.38,
-              56.825
+              10.345,
+              56.835
             ],
             [
-              10.245,
-              56.825
+              10.26,
+              56.835
             ],
             [
-              10.245,
-              56.745
+              10.255,
+              56.77
             ]
           ]
         ]
@@ -2616,46 +2640,48 @@
       "properties": {
         "id": "DK-B02-13",
         "name": "Als Odde og Helberskov",
-        "region": "Mariager Fjords munding nord",
+        "region": "Mariager Fjord munding nord",
         "coastType": "east",
-        "onshoreDirectionDeg": 100,
+        "onshoreDirectionDeg": 125,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
         "dataPoint": [
-          10.395,
-          56.69
+          10.37,
+          56.68
         ],
         "pinPoint": [
-          10.316,
-          56.7
+          10.331,
+          56.695
         ],
         "batch": "B02",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "placementReview": "B02 precision review 2026-07-23",
+        "placementNote": "Pin flyttet til Als Odde ved fjordmundingen; området adskilles naturligt af odden og indløbet."
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
             [
-              10.27,
-              56.65
+              10.28,
+              56.665
             ],
             [
-              10.41,
-              56.65
+              10.385,
+              56.665
             ],
             [
-              10.41,
-              56.74
+              10.385,
+              56.715
             ],
             [
-              10.27,
-              56.74
+              10.3,
+              56.715
             ],
             [
-              10.27,
-              56.65
+              10.28,
+              56.665
             ]
           ]
         ]
@@ -2666,22 +2692,24 @@
       "properties": {
         "id": "DK-B02-14",
         "name": "Havnø og Mariager Fjord øst",
-        "region": "Mariager Fjords munding syd",
+        "region": "Mariager Fjord munding syd",
         "coastType": "east",
-        "onshoreDirectionDeg": 92,
+        "onshoreDirectionDeg": 130,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
         "dataPoint": [
-          10.375,
-          56.645
+          10.345,
+          56.66
         ],
         "pinPoint": [
-          10.29,
-          56.65
+          10.3,
+          56.672
         ],
         "batch": "B02",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "placementReview": "B02 precision review 2026-07-23",
+        "placementNote": "Pin placeret på sydsiden af den østlige fjordmunding ved Helberskov/Havnø-kysten; holdt adskilt fra Als Odde-zonen."
       },
       "geometry": {
         "type": "Polygon",
@@ -2689,23 +2717,23 @@
           [
             [
               10.235,
-              56.6
+              56.64
             ],
             [
-              10.395,
-              56.6
+              10.355,
+              56.64
             ],
             [
-              10.395,
-              56.69
+              10.355,
+              56.685
+            ],
+            [
+              10.27,
+              56.685
             ],
             [
               10.235,
-              56.69
-            ],
-            [
-              10.235,
-              56.6
+              56.64
             ]
           ]
         ]
@@ -2716,22 +2744,24 @@
       "properties": {
         "id": "DK-B02-15",
         "name": "Udbyhøj og Stenrevet",
-        "region": "Randers Fjords munding",
+        "region": "Randers Fjord munding",
         "coastType": "east",
-        "onshoreDirectionDeg": 92,
+        "onshoreDirectionDeg": 105,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
         "dataPoint": [
-          10.41,
-          56.565
+          10.37,
+          56.595
         ],
         "pinPoint": [
-          10.323,
-          56.57
+          10.304,
+          56.594
         ],
         "batch": "B02",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "placementReview": "B02 precision review 2026-07-23",
+        "placementNote": "Pin placeret ved Udbyhøj-kysten tæt på Randers Fjords munding; separat fra Mariager Fjord-området."
       },
       "geometry": {
         "type": "Polygon",
@@ -2739,23 +2769,23 @@
           [
             [
               10.27,
-              56.52
+              56.565
             ],
             [
-              10.43,
-              56.52
+              10.39,
+              56.565
             ],
             [
-              10.43,
-              56.615
+              10.39,
+              56.625
+            ],
+            [
+              10.285,
+              56.625
             ],
             [
               10.27,
-              56.615
-            ],
-            [
-              10.27,
-              56.52
+              56.565
             ]
           ]
         ]
