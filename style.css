@@ -9,7 +9,7 @@
   --line: #d7e3e6;
   --shadow: 0 10px 30px rgba(7, 59, 76, .12);
   --excellent: #168653;
-  --good: #6ba83b;
+  --good: #168653;
   --fair: #e6a700;
   --poor: #d34a3a;
   --unavailable: #76868d;
@@ -33,7 +33,7 @@ main { width: min(1180px, 100%); margin: 0 auto; }
 #map { height: min(58vh, 620px); min-height: 390px; width: 100%; background: #dce8eb; }
 .legend { position: absolute; z-index: 500; left: 10px; bottom: 10px; display: flex; flex-wrap: wrap; gap: 6px 10px; max-width: calc(100% - 20px); padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,.94); box-shadow: var(--shadow); font-size: .72rem; }
 .legend span { display: inline-flex; align-items: center; gap: 4px; }
-.legend-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.legend-dot { width: 14px; height: 14px; border-radius: 50%; display: inline-grid; place-items: center; color: white; font-size: 9px; font-style: normal; line-height: 1; font-weight: 900; }
 .excellent { background: var(--excellent); } .good { background: var(--good); } .fair { background: var(--fair); } .poor { background: var(--poor); } .unavailable { background: var(--unavailable); }
 .info-panel { min-height: 210px; margin: 14px; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
 .empty-state { text-align: center; padding: 22px 8px; }
@@ -159,8 +159,8 @@ code { padding: 1px 4px; border-radius: 4px; background: var(--surface-soft); }
 
 /* RavRadar 2.6: rene pins, forklarlige delscorer og 5-dages planlægning */
 .rav-pin-wrap { background: transparent; border: 0; }
-.rav-pin { position: relative; display: block; width: 28px; height: 28px; border: 3px solid #fff; border-radius: 50% 50% 50% 0; background: var(--pin-color); box-shadow: 0 3px 9px rgba(0,0,0,.35); transform: rotate(-45deg); }
-.rav-pin span { position: absolute; inset: 7px; border-radius: 50%; background: rgba(255,255,255,.88); }
+.rav-pin { position: relative; display: grid; place-items: center; width: 31px; height: 31px; border: 3px solid #fff; border-radius: 50%; background: var(--pin-color); box-shadow: 0 3px 9px rgba(0,0,0,.35); }
+.rav-pin-symbol { display: grid; place-items: center; width: 100%; height: 100%; color: white; font-size: 17px; line-height: 1; font-weight: 900; text-shadow: 0 1px 2px rgba(0,0,0,.2); }
 .zone-popup { display: grid; min-width: 145px; gap: 7px; }
 .zone-popup strong { font-size: .95rem; }
 .popup-score { width: fit-content; padding: 5px 8px; border-radius: 8px; color: white; background: var(--unavailable); font-weight: 800; }
@@ -233,3 +233,28 @@ body.zone-focus .info-panel { scroll-margin-top:12px; }
   .component-list.metric-sized { grid-template-columns:1fr 1fr; }
   .component-list.metric-sized .component-detail[open] { grid-column:1 / -1; }
 }
+
+
+/* RavRadar 2.6.2: fælles scoresignatur og kildeangivelser */
+.score-badge.excellent::after,
+.rank-score.excellent::after,
+.day-score.excellent::after,
+.popup-score.excellent::after {
+  content: " ★";
+  font-weight: 900;
+}
+.footer-signature { width:min(760px,100%); margin:0 auto 16px; padding:14px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.78); }
+.footer-signature h2 { margin:0 0 10px; color:var(--ink); font-size:1rem; }
+.footer-score-legend { display:flex; flex-wrap:wrap; justify-content:center; gap:9px 14px; color:var(--ink); }
+.footer-score-legend span { display:inline-flex; align-items:center; gap:6px; }
+.score-symbol { width:18px; height:18px; border-radius:50%; display:inline-grid; place-items:center; color:#fff; font-size:11px; line-height:1; font-style:normal; font-weight:900; }
+.score-symbol.excellent,.score-symbol.good { background:var(--excellent); }
+.score-symbol.fair { background:var(--fair); }
+.score-symbol.poor { background:var(--poor); }
+.score-symbol.unavailable { background:var(--unavailable); }
+.signature-note { margin:10px 0 0; }
+.source-credits { width:min(900px,100%); margin:14px auto 0; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.7); text-align:left; }
+.source-credits summary { color:var(--ink); cursor:pointer; font-weight:800; text-align:center; }
+.source-credits div { margin-top:10px; line-height:1.5; }
+.source-credits a { color:var(--brand-2); }
+.source-credits p { margin:8px 0; }

@@ -1,10 +1,10 @@
-const palette = { excellent: "#168653", good: "#3f86c7", fair: "#e6a700", poor: "#d34a3a", unavailable: "#76868d" };
+const palette = { excellent: "#168653", good: "#168653", fair: "#e6a700", poor: "#d34a3a", unavailable: "#76868d" };
 
 function markerIcon(level = "unavailable") {
   const color = palette[level] || palette.unavailable;
   return L.divIcon({
     className: "rav-pin-wrap",
-    html: `<span class="rav-pin" style="--pin-color:${color}" aria-hidden="true"><span></span></span>`,
+    html: `<span class="rav-pin ${level}" style="--pin-color:${color}" aria-hidden="true"><span class="rav-pin-symbol">${level === "excellent" ? "★" : ""}</span></span>`,
     iconSize: [30, 40], iconAnchor: [15, 39], popupAnchor: [0, -35]
   });
 }
@@ -12,7 +12,7 @@ function markerIcon(level = "unavailable") {
 export function createMap(elementId) {
   const map = L.map(elementId, { zoomControl: true }).setView([56.45, 10.15], 7);
   const streetMap = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "&copy; OpenStreetMap-bidragsydere" });
-  const satelliteMap = L.tileLayer("https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, attribution: "Tiles &copy; Esri" });
+  const satelliteMap = L.tileLayer("https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, attribution: "Imagery &copy; Esri, Maxar, Earthstar Geographics og GIS-brugerfællesskabet" });
   const saved = localStorage.getItem("ravradar-basemap");
   (saved === "satellite" ? satelliteMap : streetMap).addTo(map);
   const control = L.control.layers({ "🗺️ Standard": streetMap, "🛰️ Satellit": satelliteMap }, null, { position: "topright", collapsed: true }).addTo(map);
