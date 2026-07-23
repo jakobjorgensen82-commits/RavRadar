@@ -1,13 +1,26 @@
 const palette = { excellent: "#168653", good: "#168653", fair: "#e6a700", weak: "#d9822b", poor: "#d34a3a", unavailable: "#30383c" };
 
-function markerIcon(level = "unavailable") {
+function markerMetrics(zoom = 7) {
+  if (zoom <= 7) return { size: 12, border: 1.5, shadow: "0 1px 3px rgba(0,0,0,.32)" };
+  if (zoom === 8) return { size: 15, border: 1.5, shadow: "0 1px 4px rgba(0,0,0,.33)" };
+  if (zoom === 9) return { size: 18, border: 2, shadow: "0 2px 5px rgba(0,0,0,.34)" };
+  if (zoom === 10) return { size: 22, border: 2, shadow: "0 2px 6px rgba(0,0,0,.35)" };
+  return { size: 26, border: 2.5, shadow: "0 3px 8px rgba(0,0,0,.36)" };
+}
+
+function markerIcon(level = "unavailable", zoom = 7) {
   const color = palette[level] || palette.unavailable;
+  const { size, border, shadow } = markerMetrics(zoom);
+  const symbolSize = Math.max(8, Math.round(size * 0.52));
   return L.divIcon({
     className: "rav-pin-wrap",
-    html: `<span class="rav-pin ${level}" style="--pin-color:${color}" aria-hidden="true"><span class="rav-pin-symbol">${level === "excellent" ? "★" : ""}</span></span>`,
-    iconSize: [30, 40], iconAnchor: [15, 39], popupAnchor: [0, -35]
+    html: `<span class="rav-pin ${level}" style="--pin-color:${color};--pin-size:${size}px;--pin-border:${border}px;--pin-shadow:${shadow};--pin-symbol-size:${symbolSize}px" aria-hidden="true"><span class="rav-pin-symbol">${level === "excellent" ? "★" : ""}</span></span>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    tooltipAnchor: [0, -(size / 2 + 6)]
   });
 }
+
 
 export function createMap(elementId) {
   const map = L.map(elementId, { zoomControl: true }).setView([56.45, 10.15], 7);
@@ -31,21 +44,29 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
     const zone = feature.properties;
     const point = Array.isArray(zone.pinPoint) ? zone.pinPoint : zone.dataPoint;
     const result = scoreForZone(zone.id);
-    const marker = L.marker([point[1], point[0]], { icon: markerIcon(result?.level), title: zone.name, keyboard: true });
-    marker.bindTooltip(`${escapeHtml(zone.name)} · ${result?.available ? `${result.score}/100` : "Ingen data"}`, { direction: "top", offset: [0, -30] });
+    const marker = L.marker([point[1], point[0]], { icon: markerIcon(result?.level, map.getZoom()), title: zone.name, keyboard: true });
+    marker.options.ravLevel = result?.level || "unavailable";
+    marker.bindTooltip(`${escapeHtml(zone.name)} · ${result?.available ? `${result.score}/100` : "Ingen data"}`, { direction: "top" });
     marker.on("click", () => onSelect(zone));
     marker.addTo(markerLayer);
     markers.set(zone.id, marker);
   }
+  const resizeMarkers = () => {
+    const zoom = map.getZoom();
+    for (const marker of markers.values()) marker.setIcon(markerIcon(marker.options.ravLevel, zoom));
+  };
+  map.on("zoomend", resizeMarkers);
   const bounds = geometryLayer.getBounds();
   if (bounds.isValid()) map.fitBounds(bounds, { padding: [18, 18], maxZoom: 10 });
-  return { geometryLayer, markerLayer, markers };
+  resizeMarkers();
+  return { geometryLayer, markerLayer, markers, map, resizeMarkers };
 }
 
 export function refreshZoneStyles(layer, scoreForZone) {
   for (const [id, marker] of layer.markers.entries()) {
     const result = scoreForZone(id);
-    marker.setIcon(markerIcon(result?.level));
+    marker.options.ravLevel = result?.level || "unavailable";
+    marker.setIcon(markerIcon(marker.options.ravLevel, layer.map?.getZoom?.() ?? 7));
     marker.setTooltipContent(`${escapeHtml(marker.options.title)} · ${result?.available ? `${result.score}/100` : "Ingen data"}`);
   }
 }
