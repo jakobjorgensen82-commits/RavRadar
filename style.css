@@ -207,3 +207,29 @@ code { padding: 1px 4px; border-radius: 4px; background: var(--surface-soft); }
   .national-forecast { margin:14px; }
   .forecast-selected { align-items:stretch; }
 }
+
+
+/* RavRadar 2.6.1: fokuseret zonevisning og kompakt turbetjening */
+.visually-hidden { position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important; }
+.app-header .header-button.trip-active { color:#17333b; background:#fff1b8; border-color:#e6ca58; }
+.back-to-overview { margin:0 0 12px; padding:7px 10px; border:1px solid var(--line); border-radius:9px; color:var(--brand-2); background:white; font-weight:750; cursor:pointer; }
+body.zone-focus .ranking-panel,
+body.zone-focus .national-forecast,
+body.zone-focus .mode-panel,
+body.zone-focus .about-panel { display:none; }
+body.zone-focus .dashboard { grid-template-columns:1fr; }
+body.zone-focus #map { height:min(64vh,720px); }
+body.zone-focus .info-panel { scroll-margin-top:12px; }
+.component-list.metric-sized { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.component-list.metric-sized .component-detail { border:0; background:var(--surface-soft); overflow:visible; }
+.component-list.metric-sized .component-detail summary { min-height:auto; padding:11px; border-radius:12px; }
+.component-list.metric-sized .component-detail summary span { font-size:.75rem; }
+.component-list.metric-sized .component-detail summary strong { font-size:1rem; }
+.component-list.metric-sized .component-detail summary::after { font-size:.8rem; }
+.component-list.metric-sized .component-detail[open] { grid-column:1 / -1; border:1px solid var(--line); overflow:hidden; }
+.component-list.metric-sized .component-detail[open] summary { border-radius:0; }
+@media (max-width:680px) {
+  body.zone-focus #map { height:56vh; min-height:390px; }
+  .component-list.metric-sized { grid-template-columns:1fr 1fr; }
+  .component-list.metric-sized .component-detail[open] { grid-column:1 / -1; }
+}

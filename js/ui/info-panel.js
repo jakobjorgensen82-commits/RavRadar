@@ -22,8 +22,17 @@ function groupForecastHours(forecast) {
 }
 
 function bestHourForDay(day, zone, mode, history) {
-  const scored = day.hours.map(hour => ({ hour, result: calculateRavScore({ mode, zone, weather:hour, history }) })).filter(item => item.result.available);
-  return scored.sort((a,b) => b.result.score-a.result.score)[0] || { hour:day.hours[Math.floor(day.hours.length/2)] || {}, result:{ available:false, score:null, level:"unavailable", components:{} } };
+  const scored = day.hours.map(hour => ({ hour, result: calculateRavScore({ mode, zone, weather:hour, history }) })).filter(item => item.result.available).sort((a,b) => b.result.score-a.result.score);
+  if (!scored.length) return { hour:day.hours[Math.floor(day.hours.length/2)] || {}, result:{ available:false, score:null, level:"unavailable", components:{} }, recommended:false };
+  if (mode !== "waders") return { ...scored[0], recommended:true };
+  const levels = day.hours.map(hour => Number(hour.waterLevelCm)).filter(Number.isFinite);
+  if (!levels.length) return { ...scored[0], recommended:false };
+  const min = Math.min(...levels), max = Math.max(...levels), lowThreshold = min + (max-min)*0.4;
+  const suitable = scored.filter(({ hour }) => {
+    const level = Number(hour.waterLevelCm), trend = Number(hour.waterLevelTrendCm3h);
+    return Number.isFinite(level) && level <= lowThreshold && (Number.isFinite(trend) ? trend <= 0 : true);
+  });
+  return suitable.length ? { ...suitable[0], recommended:true } : { ...scored[0], recommended:false };
 }
 
 function componentDetails(name, key, result, definition) {
@@ -59,8 +68,8 @@ export function bindZoneInfoInteractions(element, zone, mode, history) {
     const render = index => {
       const day = summaries[index], best = day.best, h = best.hour || {}, r = best.result || {};
       forecastSection.querySelectorAll(".forecast-score-day").forEach((button,i) => { button.classList.toggle("active",i===index); button.setAttribute("aria-selected",String(i===index)); });
-      detail.innerHTML = `<div class="forecast-selected"><div><h4>${capitalize(dayLabel(`${day.date}T12:00:00`))} ${dateLabel(`${day.date}T12:00:00`)}</h4><p>Bedste beregnede tidspunkt: <b>${hourLabel(h.time)}</b></p></div><div class="score-badge ${r.level}"><strong>${r.available?r.score:"–"}</strong><span>RavScore</span></div></div>
-        <div class="component-list compact">${componentDetails("Jagtbarhed","huntability",r,"Hvor let og sikkert det forventes at være at finde rav med den valgte jagtform. Vind og bølger betyder mest.")}${componentDetails("Transport","transport",r,"Hvor godt vind, strøm og vandstandsændringer forventes at føre rav og let materiale mod kysten.")}${componentDetails("Frigivelse","release",r,"Sandsynligheden for at tidligere høj energi har løsnet nyt materiale fra havbund, tang og kystaflejringer.")}</div>
+      detail.innerHTML = `<div class="forecast-selected"><div><h4>${capitalize(dayLabel(`${day.date}T12:00:00`))} ${dateLabel(`${day.date}T12:00:00`)}</h4>${best.recommended?`<p>Bedste beregnede tidspunkt: <b>${hourLabel(h.time)}</b></p>`:`<p>Intet sikkert bedste tidspunkt. Se timeprognosen, da vandstand, vind og strøm ikke peger tydeligt samme vej.</p>`}</div><div class="score-badge ${r.level}"><strong>${r.available?r.score:"–"}</strong><span>RavScore</span></div></div>
+        <div class="component-list compact metric-sized">${componentDetails("Jagtbarhed","huntability",r,"Hvor let og sikkert det forventes at være at finde rav med den valgte jagtform. Vind og bølger betyder mest.")}${componentDetails("Transport","transport",r,"Hvor godt vind, strøm og vandstandsændringer forventes at føre rav og let materiale mod kysten.")}${componentDetails("Frigivelse","release",r,"Sandsynligheden for at tidligere høj energi har løsnet nyt materiale fra havbund, tang og kystaflejringer.")}</div>
         <div class="metric-grid weather-grid"><div class="metric"><span>Vind</span><strong>${formatNumber(h.windSpeedMps,"m/s")} · ${compass(h.windDirectionDeg)}</strong></div><div class="metric"><span>Bølger</span><strong>${formatNumber(h.waveHeightM,"m")}</strong></div><div class="metric"><span>Vandstand</span><strong>${formatNumber(h.waterLevelCm,"cm",0)}</strong></div><div class="metric"><span>Strøm</span><strong>${formatNumber(h.currentSpeedMps,"m/s",2)} · ${compass(h.currentDirectionDeg)}</strong></div></div>`;
     };
     forecastSection.querySelectorAll(".forecast-score-day").forEach((button,index) => button.addEventListener("click",()=>render(index)));
@@ -82,8 +91,8 @@ export function bindZoneInfoInteractions(element, zone, mode, history) {
 
 export function showZoneInfo(element, zone, result, condition, mode, options = {}) {
   const modeName = mode === "waders" ? "Waders" : "Strand", score = result.available ? result.score : "–", days = groupForecastHours(options.forecast);
-  const componentHtml = result.available ? `<div class="component-list">${componentDetails("Jagtbarhed","huntability",result,"Hvor let og sikkert det er at finde rav med den valgte jagtform. Vind og bølger betyder mest.")}${componentDetails("Transport","transport",result,"Hvor godt vind, strøm og vandstandsændringer fører rav og let materiale mod kysten.")}${componentDetails("Frigivelse","release",result,"Sandsynligheden for at tidligere høj energi har løsnet nyt materiale fra havbund, tang og kystaflejringer.")}</div>` : `<div class="metric-grid"><div class="metric"><span>Jagtbarhed</span><strong>–/100</strong></div><div class="metric"><span>Transport</span><strong>–/100</strong></div><div class="metric"><span>Frigivelse</span><strong>–/100</strong></div></div>`;
-  element.innerHTML = `<div class="zone-header"><div><h2>${escapeHtml(zone.name)}</h2><p class="zone-meta">${escapeHtml(zone.region)} · ${modeName}</p></div><div class="score-badge ${result.level}"><strong>${score}</strong><span>${escapeHtml(result.label)}</span></div></div>
+  const componentHtml = result.available ? `<div class="component-list metric-sized">${componentDetails("Jagtbarhed","huntability",result,"Hvor let og sikkert det er at finde rav med den valgte jagtform. Vind og bølger betyder mest.")}${componentDetails("Transport","transport",result,"Hvor godt vind, strøm og vandstandsændringer fører rav og let materiale mod kysten.")}${componentDetails("Frigivelse","release",result,"Sandsynligheden for at tidligere høj energi har løsnet nyt materiale fra havbund, tang og kystaflejringer.")}</div>` : `<div class="metric-grid"><div class="metric"><span>Jagtbarhed</span><strong>–/100</strong></div><div class="metric"><span>Transport</span><strong>–/100</strong></div><div class="metric"><span>Frigivelse</span><strong>–/100</strong></div></div>`;
+  element.innerHTML = `<button type="button" class="back-to-overview" data-close-zone>← Tilbage til oversigten</button><div class="zone-header"><div><h2>${escapeHtml(zone.name)}</h2><p class="zone-meta">${escapeHtml(zone.region)} · ${modeName}</p></div><div class="score-badge ${result.level}"><strong>${score}</strong><span>${escapeHtml(result.label)}</span></div></div>
     ${componentHtml}
     ${result.available ? `<div class="metric-grid weather-grid"><div class="metric"><span>Vind</span><strong>${formatNumber(condition.windSpeedMps,"m/s")} · ${compass(condition.windDirectionDeg)}</strong></div><div class="metric"><span>Bølger</span><strong>${formatNumber(condition.waveHeightM,"m")}</strong></div><div class="metric"><span>Vandstand</span><strong>${formatNumber(condition.waterLevelCm,"cm",0)}</strong></div><div class="metric"><span>Strøm</span><strong>${formatNumber(condition.currentSpeedMps,"m/s",2)} · ${compass(condition.currentDirectionDeg)}</strong></div><div class="metric"><span>Vandtemperatur</span><strong>${formatNumber(condition.waterTemperatureC,"°C")}</strong></div><div class="metric"><span>3-timers trend</span><strong>${formatNumber(condition.waterLevelTrendCm3h,"cm",0)}</strong></div></div>` : ""}
     ${forecastPanel(days,zone,mode,options.history||{})}${tidePanel(days)}
