@@ -20,6 +20,28 @@
         "pinPoint": [
           10.63,
           57.74
+        ],
+        "coastLine": [
+          [
+            10.706015,
+            57.702792
+          ],
+          [
+            10.668392,
+            57.721601
+          ],
+          [
+            10.631563,
+            57.740834
+          ],
+          [
+            10.59553,
+            57.760492
+          ],
+          [
+            10.560291,
+            57.780574
+          ]
         ]
       },
       "geometry": {
@@ -68,6 +90,28 @@
         "pinPoint": [
           9.66,
           57.38
+        ],
+        "coastLine": [
+          [
+            9.655585,
+            57.435
+          ],
+          [
+            9.657255,
+            57.4075
+          ],
+          [
+            9.657811,
+            57.38
+          ],
+          [
+            9.657255,
+            57.3525
+          ],
+          [
+            9.655585,
+            57.325
+          ]
         ]
       },
       "geometry": {
@@ -116,6 +160,28 @@
         "pinPoint": [
           9.58,
           57.25
+        ],
+        "coastLine": [
+          [
+            9.575601,
+            57.305
+          ],
+          [
+            9.577264,
+            57.2775
+          ],
+          [
+            9.577819,
+            57.25
+          ],
+          [
+            9.577264,
+            57.2225
+          ],
+          [
+            9.575601,
+            57.195
+          ]
         ]
       },
       "geometry": {
@@ -164,6 +230,28 @@
         "pinPoint": [
           8.36,
           56.95
+        ],
+        "coastLine": [
+          [
+            8.355636,
+            57.005
+          ],
+          [
+            8.357286,
+            56.9775
+          ],
+          [
+            8.357836,
+            56.95
+          ],
+          [
+            8.357286,
+            56.9225
+          ],
+          [
+            8.355636,
+            56.895
+          ]
         ]
       },
       "geometry": {
@@ -212,6 +300,28 @@
         "pinPoint": [
           8.1,
           56.02
+        ],
+        "coastLine": [
+          [
+            8.095742,
+            56.075
+          ],
+          [
+            8.097352,
+            56.0475
+          ],
+          [
+            8.097889,
+            56.02
+          ],
+          [
+            8.097352,
+            55.9925
+          ],
+          [
+            8.095742,
+            55.965
+          ]
         ]
       },
       "geometry": {
@@ -260,6 +370,28 @@
         "pinPoint": [
           8.13,
           55.57
+        ],
+        "coastLine": [
+          [
+            8.125791,
+            55.625
+          ],
+          [
+            8.127382,
+            55.5975
+          ],
+          [
+            8.127913,
+            55.57
+          ],
+          [
+            8.127382,
+            55.5425
+          ],
+          [
+            8.125791,
+            55.515
+          ]
         ]
       },
       "geometry": {
@@ -308,6 +440,28 @@
         "pinPoint": [
           10.49,
           57.18
+        ],
+        "coastLine": [
+          [
+            10.494391,
+            57.134334
+          ],
+          [
+            10.492731,
+            57.157167
+          ],
+          [
+            10.492177,
+            57.18
+          ],
+          [
+            10.492731,
+            57.202833
+          ],
+          [
+            10.494391,
+            57.225666
+          ]
         ]
       },
       "geometry": {
@@ -356,6 +510,28 @@
         "pinPoint": [
           10.53,
           57.36
+        ],
+        "coastLine": [
+          [
+            10.534413,
+            57.31443
+          ],
+          [
+            10.532744,
+            57.337215
+          ],
+          [
+            10.532188,
+            57.36
+          ],
+          [
+            10.532744,
+            57.382785
+          ],
+          [
+            10.534413,
+            57.40557
+          ]
         ]
       },
       "geometry": {
@@ -404,6 +580,28 @@
         "pinPoint": [
           10.32,
           56.8
+        ],
+        "coastLine": [
+          [
+            10.324347,
+            56.754132
+          ],
+          [
+            10.322703,
+            56.777066
+          ],
+          [
+            10.322155,
+            56.8
+          ],
+          [
+            10.322703,
+            56.822934
+          ],
+          [
+            10.324347,
+            56.845868
+          ]
         ]
       },
       "geometry": {
@@ -452,6 +650,28 @@
         "pinPoint": [
           10.94,
           56.43
+        ],
+        "coastLine": [
+          [
+            10.958705,
+            56.385049
+          ],
+          [
+            10.949869,
+            56.407575
+          ],
+          [
+            10.942102,
+            56.430205
+          ],
+          [
+            10.935403,
+            56.452939
+          ],
+          [
+            10.929773,
+            56.475778
+          ]
         ]
       },
       "geometry": {
@@ -500,6 +720,28 @@
         "pinPoint": [
           10.26,
           56.05
+        ],
+        "coastLine": [
+          [
+            10.264262,
+            56.003734
+          ],
+          [
+            10.26265,
+            56.026867
+          ],
+          [
+            10.262113,
+            56.05
+          ],
+          [
+            10.26265,
+            56.073133
+          ],
+          [
+            10.264262,
+            56.096266
+          ]
         ]
       },
       "geometry": {
@@ -548,6 +790,28 @@
         "pinPoint": [
           9.76,
           55.62
+        ],
+        "coastLine": [
+          [
+            9.749853,
+            55.573798
+          ],
+          [
+            9.755432,
+            55.596848
+          ],
+          [
+            9.762058,
+            55.619795
+          ],
+          [
+            9.76973,
+            55.642638
+          ],
+          [
+            9.778449,
+            55.665376
+          ]
         ]
       },
       "geometry": {
@@ -596,6 +860,28 @@
         "pinPoint": [
           10.58,
           55.55
+        ],
+        "coastLine": [
+          [
+            10.641141,
+            55.518779
+          ],
+          [
+            10.610933,
+            55.534595
+          ],
+          [
+            10.581475,
+            55.550834
+          ],
+          [
+            10.552767,
+            55.567498
+          ],
+          [
+            10.524809,
+            55.584587
+          ]
         ]
       },
       "geometry": {
@@ -644,6 +930,28 @@
         "pinPoint": [
           11.5,
           55.93
+        ],
+        "coastLine": [
+          [
+            11.582702,
+            55.93238
+          ],
+          [
+            11.541351,
+            55.93148
+          ],
+          [
+            11.5,
+            55.93118
+          ],
+          [
+            11.458649,
+            55.93148
+          ],
+          [
+            11.417298,
+            55.93238
+          ]
         ]
       },
       "geometry": {
@@ -692,6 +1000,28 @@
         "pinPoint": [
           12.45,
           56.05
+        ],
+        "coastLine": [
+          [
+            12.511594,
+            56.018968
+          ],
+          [
+            12.481164,
+            56.034689
+          ],
+          [
+            12.451494,
+            56.050834
+          ],
+          [
+            12.422584,
+            56.067404
+          ],
+          [
+            12.394433,
+            56.084398
+          ]
         ]
       },
       "geometry": {
@@ -740,6 +1070,28 @@
         "pinPoint": [
           12.46,
           55.3
+        ],
+        "coastLine": [
+          [
+            12.422634,
+            55.258396
+          ],
+          [
+            12.441758,
+            55.279053
+          ],
+          [
+            12.461795,
+            55.29941
+          ],
+          [
+            12.482745,
+            55.319467
+          ],
+          [
+            12.504608,
+            55.339224
+          ]
         ]
       },
       "geometry": {
@@ -788,6 +1140,28 @@
         "pinPoint": [
           11.78,
           54.65
+        ],
+        "coastLine": [
+          [
+            11.698743,
+            54.64762
+          ],
+          [
+            11.739371,
+            54.64852
+          ],
+          [
+            11.78,
+            54.64882
+          ],
+          [
+            11.820629,
+            54.64852
+          ],
+          [
+            11.861257,
+            54.64762
+          ]
         ]
       },
       "geometry": {
@@ -836,6 +1210,28 @@
         "pinPoint": [
           14.88,
           55.12
+        ],
+        "coastLine": [
+          [
+            14.884162,
+            55.073238
+          ],
+          [
+            14.882588,
+            55.096619
+          ],
+          [
+            14.882063,
+            55.12
+          ],
+          [
+            14.882588,
+            55.143381
+          ],
+          [
+            14.884162,
+            55.166762
+          ]
         ]
       },
       "geometry": {
@@ -884,6 +1280,28 @@
         "pinPoint": [
           8.7,
           56.73
+        ],
+        "coastLine": [
+          [
+            8.695662,
+            56.777648
+          ],
+          [
+            8.697302,
+            56.753824
+          ],
+          [
+            8.697849,
+            56.73
+          ],
+          [
+            8.697302,
+            56.706176
+          ],
+          [
+            8.695662,
+            56.682352
+          ]
         ]
       },
       "geometry": {
@@ -932,6 +1350,28 @@
         "pinPoint": [
           9.22,
           56.83
+        ],
+        "coastLine": [
+          [
+            9.306921,
+            56.83238
+          ],
+          [
+            9.26346,
+            56.83148
+          ],
+          [
+            9.22,
+            56.83118
+          ],
+          [
+            9.17654,
+            56.83148
+          ],
+          [
+            9.133079,
+            56.83238
+          ]
         ]
       },
       "geometry": {
@@ -981,7 +1421,29 @@
           10.115,
           57.066
         ],
-        "locationCorrection": "2.6.8: flyttet fra land syd for fjorden til den østlige Limfjord"
+        "locationCorrection": "2.6.8: flyttet fra land syd for fjorden til den østlige Limfjord",
+        "coastLine": [
+          [
+            10.119378,
+            57.024245
+          ],
+          [
+            10.117722,
+            57.045122
+          ],
+          [
+            10.11717,
+            57.066
+          ],
+          [
+            10.117722,
+            57.086878
+          ],
+          [
+            10.119378,
+            57.107755
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -1031,7 +1493,29 @@
           56.7834
         ],
         "batch": "B01",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            8.233645,
+            56.766194
+          ],
+          [
+            8.232002,
+            56.774797
+          ],
+          [
+            8.231454,
+            56.7834
+          ],
+          [
+            8.232002,
+            56.792003
+          ],
+          [
+            8.233645,
+            56.800606
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -1081,7 +1565,29 @@
           56.842
         ],
         "batch": "B01",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            8.226351,
+            56.825232
+          ],
+          [
+            8.224706,
+            56.833616
+          ],
+          [
+            8.224157,
+            56.842
+          ],
+          [
+            8.224706,
+            56.850384
+          ],
+          [
+            8.226351,
+            56.858768
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -1131,7 +1637,29 @@
           56.92
         ],
         "batch": "B01",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            8.33436,
+            56.902507
+          ],
+          [
+            8.332712,
+            56.911254
+          ],
+          [
+            8.332162,
+            56.92
+          ],
+          [
+            8.332712,
+            56.928746
+          ],
+          [
+            8.33436,
+            56.937493
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -1181,7 +1709,29 @@
           57.035
         ],
         "batch": "B01",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            8.504374,
+            57.017538
+          ],
+          [
+            8.50272,
+            57.026269
+          ],
+          [
+            8.502169,
+            57.035
+          ],
+          [
+            8.50272,
+            57.043731
+          ],
+          [
+            8.504374,
+            57.052462
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -1231,7 +1781,29 @@
           57.124
         ],
         "batch": "B01",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            8.612545,
+            57.106283
+          ],
+          [
+            8.604775,
+            57.115241
+          ],
+          [
+            8.598043,
+            57.124404
+          ],
+          [
+            8.592349,
+            57.133772
+          ],
+          [
+            8.587695,
+            57.143345
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -1281,7 +1853,29 @@
           57.105
         ],
         "batch": "B01",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            8.815631,
+            57.091869
+          ],
+          [
+            8.798159,
+            57.098657
+          ],
+          [
+            8.781397,
+            57.105904
+          ],
+          [
+            8.765345,
+            57.113611
+          ],
+          [
+            8.750003,
+            57.121777
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -1331,7 +1925,29 @@
           57.157
         ],
         "batch": "B01",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            9.062639,
+            57.142978
+          ],
+          [
+            9.044163,
+            57.150211
+          ],
+          [
+            9.026399,
+            57.157904
+          ],
+          [
+            9.009345,
+            57.166056
+          ],
+          [
+            8.993003,
+            57.174668
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -1381,7 +1997,29 @@
           57.15
         ],
         "batch": "B01",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            9.403228,
+            57.135707
+          ],
+          [
+            9.384458,
+            57.143076
+          ],
+          [
+            9.366398,
+            57.150904
+          ],
+          [
+            9.34905,
+            57.159192
+          ],
+          [
+            9.332413,
+            57.167939
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -1431,7 +2069,29 @@
           57.205
         ],
         "batch": "B01",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            9.52884,
+            57.190037
+          ],
+          [
+            9.512299,
+            57.197723
+          ],
+          [
+            9.49654,
+            57.205834
+          ],
+          [
+            9.481565,
+            57.21437
+          ],
+          [
+            9.467374,
+            57.223329
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -1481,7 +2141,29 @@
           57.255
         ],
         "batch": "B01",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            9.609359,
+            57.239777
+          ],
+          [
+            9.59509,
+            57.247575
+          ],
+          [
+            9.581671,
+            57.255758
+          ],
+          [
+            9.569102,
+            57.264328
+          ],
+          [
+            9.557383,
+            57.273282
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -1531,7 +2213,29 @@
           57.315
         ],
         "batch": "B01",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            9.680808,
+            57.299245
+          ],
+          [
+            9.668344,
+            57.307289
+          ],
+          [
+            9.65679,
+            57.315677
+          ],
+          [
+            9.646146,
+            57.324409
+          ],
+          [
+            9.636412,
+            57.333485
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -1581,7 +2285,29 @@
           57.372
         ],
         "batch": "B01",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            9.731981,
+            57.356233
+          ],
+          [
+            9.721456,
+            57.364261
+          ],
+          [
+            9.711895,
+            57.37259
+          ],
+          [
+            9.703298,
+            57.381219
+          ],
+          [
+            9.695665,
+            57.390147
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -1631,7 +2357,29 @@
           57.445
         ],
         "batch": "B01",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            9.750679,
+            57.428778
+          ],
+          [
+            9.743346,
+            57.436988
+          ],
+          [
+            9.737061,
+            57.445404
+          ],
+          [
+            9.731823,
+            57.454024
+          ],
+          [
+            9.727633,
+            57.46285
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -1681,7 +2429,29 @@
           57.485
         ],
         "batch": "B01",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            9.816258,
+            57.467949
+          ],
+          [
+            9.808636,
+            57.476574
+          ],
+          [
+            9.802063,
+            57.485404
+          ],
+          [
+            9.796539,
+            57.494439
+          ],
+          [
+            9.792064,
+            57.503679
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -1731,7 +2501,29 @@
           57.575
         ],
         "batch": "B01",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            9.934298,
+            57.558441
+          ],
+          [
+            9.925139,
+            57.566843
+          ],
+          [
+            9.916995,
+            57.575499
+          ],
+          [
+            9.909864,
+            57.584408
+          ],
+          [
+            9.903748,
+            57.59357
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -1781,7 +2573,29 @@
           57.59
         ],
         "batch": "B01",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            10.059799,
+            57.582679
+          ],
+          [
+            10.040128,
+            57.586602
+          ],
+          [
+            10.02093,
+            57.591069
+          ],
+          [
+            10.002206,
+            57.59608
+          ],
+          [
+            9.983954,
+            57.601635
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -1831,7 +2645,29 @@
           57.595
         ],
         "batch": "B01",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            10.232812,
+            57.593371
+          ],
+          [
+            10.2115,
+            57.594471
+          ],
+          [
+            10.190382,
+            57.596162
+          ],
+          [
+            10.169459,
+            57.598444
+          ],
+          [
+            10.14873,
+            57.601316
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -1881,7 +2717,29 @@
           57.65
         ],
         "batch": "B01",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            10.428176,
+            57.644124
+          ],
+          [
+            10.406773,
+            57.647334
+          ],
+          [
+            10.385754,
+            57.651109
+          ],
+          [
+            10.365118,
+            57.655447
+          ],
+          [
+            10.344866,
+            57.660349
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -1931,7 +2789,29 @@
           57.72
         ],
         "batch": "B01",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            10.595481,
+            57.709637
+          ],
+          [
+            10.578052,
+            57.715056
+          ],
+          [
+            10.561267,
+            57.720967
+          ],
+          [
+            10.545127,
+            57.727368
+          ],
+          [
+            10.529632,
+            57.734262
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -1981,7 +2861,29 @@
           57.7393
         ],
         "batch": "B01",
-        "zoneStatus": "active"
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            10.618464,
+            57.755418
+          ],
+          [
+            10.625822,
+            57.74726
+          ],
+          [
+            10.632123,
+            57.738896
+          ],
+          [
+            10.637367,
+            57.730328
+          ],
+          [
+            10.641556,
+            57.721554
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -2033,7 +2935,29 @@
         "batch": "B02",
         "zoneStatus": "active",
         "placementReview": "B02 precision review 2026-07-23",
-        "placementNote": "Pin flyttet til Ålbæk Strand ved byen; geofence følger den nordlige Ålbæk Bugt."
+        "placementNote": "Pin flyttet til Ålbæk Strand ved byen; geofence følger den nordlige Ålbæk Bugt.",
+        "coastLine": [
+          [
+            10.420276,
+            57.606911
+          ],
+          [
+            10.421497,
+            57.599865
+          ],
+          [
+            10.4216,
+            57.592841
+          ],
+          [
+            10.420583,
+            57.585838
+          ],
+          [
+            10.418448,
+            57.578855
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -2085,7 +3009,29 @@
         "batch": "B02",
         "zoneStatus": "active",
         "placementReview": "B02 precision review 2026-07-23",
-        "placementNote": "Pin placeret på Jerup Strand; zonegrænser følger Jerup Å mod syd og Napstjert-kysten mod nord."
+        "placementNote": "Pin placeret på Jerup Strand; zonegrænser følger Jerup Å mod syd og Napstjert-kysten mod nord.",
+        "coastLine": [
+          [
+            10.439166,
+            57.557155
+          ],
+          [
+            10.439904,
+            57.549918
+          ],
+          [
+            10.439527,
+            57.542722
+          ],
+          [
+            10.438034,
+            57.535569
+          ],
+          [
+            10.435426,
+            57.528457
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -2137,7 +3083,29 @@
         "batch": "B02",
         "zoneStatus": "active",
         "placementReview": "B02 precision review 2026-07-23",
-        "placementNote": "Pin placeret på Bratten Strand; sydgrænse ved Strandby og nordgrænse ved skiftet mod Jerup."
+        "placementNote": "Pin placeret på Bratten Strand; sydgrænse ved Strandby og nordgrænse ved skiftet mod Jerup.",
+        "coastLine": [
+          [
+            10.466864,
+            57.5333
+          ],
+          [
+            10.467195,
+            57.52638
+          ],
+          [
+            10.466415,
+            57.519523
+          ],
+          [
+            10.464523,
+            57.512729
+          ],
+          [
+            10.461521,
+            57.505997
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -2189,7 +3157,29 @@
         "batch": "B02",
         "zoneStatus": "active",
         "placementReview": "B02 precision review 2026-07-23",
-        "placementNote": "Pin flyttet til Palm Beach nord for Frederikshavn; geofence dækker den åbne kyst mod Bangsbostrand uden at ligge inde over byen."
+        "placementNote": "Pin flyttet til Palm Beach nord for Frederikshavn; geofence dækker den åbne kyst mod Bangsbostrand uden at ligge inde over byen.",
+        "coastLine": [
+          [
+            10.542745,
+            57.481779
+          ],
+          [
+            10.541131,
+            57.471675
+          ],
+          [
+            10.538419,
+            57.461675
+          ],
+          [
+            10.534609,
+            57.451779
+          ],
+          [
+            10.5297,
+            57.441988
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -2241,7 +3231,29 @@
         "batch": "B02",
         "zoneStatus": "active",
         "placementReview": "B02 precision review 2026-07-23",
-        "placementNote": "Pin placeret på Sæby nordstrand mellem havnen og Sulbæk; zonegrænser følger Sæby Havn og kystknækket nordpå."
+        "placementNote": "Pin placeret på Sæby nordstrand mellem havnen og Sulbæk; zonegrænser følger Sæby Havn og kystknækket nordpå.",
+        "coastLine": [
+          [
+            10.528011,
+            57.357863
+          ],
+          [
+            10.527223,
+            57.348372
+          ],
+          [
+            10.525335,
+            57.338964
+          ],
+          [
+            10.522345,
+            57.32964
+          ],
+          [
+            10.518255,
+            57.320399
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -2293,7 +3305,29 @@
         "batch": "B02",
         "zoneStatus": "active",
         "placementReview": "B02 precision review 2026-07-23",
-        "placementNote": "Pin placeret på Lyngså Strand; sydgrænse ved Voerså/Stensnæs og nordgrænse ved overgang til Sæby Bugt."
+        "placementNote": "Pin placeret på Lyngså Strand; sydgrænse ved Voerså/Stensnæs og nordgrænse ved overgang til Sæby Bugt.",
+        "coastLine": [
+          [
+            10.545948,
+            57.277906
+          ],
+          [
+            10.544738,
+            57.266783
+          ],
+          [
+            10.54243,
+            57.255744
+          ],
+          [
+            10.539023,
+            57.244789
+          ],
+          [
+            10.534518,
+            57.233916
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -2345,7 +3379,29 @@
         "batch": "B02",
         "zoneStatus": "active",
         "placementReview": "B02 precision review 2026-07-23",
-        "placementNote": "Pin placeret på stranden umiddelbart syd for Asaa Havn; havnen fungerer som tydelig lokal reference og naturlig opdeling."
+        "placementNote": "Pin placeret på stranden umiddelbart syd for Asaa Havn; havnen fungerer som tydelig lokal reference og naturlig opdeling.",
+        "coastLine": [
+          [
+            10.428463,
+            57.159546
+          ],
+          [
+            10.426955,
+            57.149723
+          ],
+          [
+            10.424358,
+            57.140005
+          ],
+          [
+            10.420673,
+            57.130391
+          ],
+          [
+            10.415898,
+            57.120881
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -2397,7 +3453,29 @@
         "batch": "B02",
         "zoneStatus": "active",
         "placementReview": "B02 precision review 2026-07-23",
-        "placementNote": "Pin placeret på Bisnap Strand; geofence følger den sammenhængende sandkyst mellem Hou og Bisnap."
+        "placementNote": "Pin placeret på Bisnap Strand; geofence følger den sammenhængende sandkyst mellem Hou og Bisnap.",
+        "coastLine": [
+          [
+            10.357694,
+            57.032242
+          ],
+          [
+            10.353772,
+            57.020796
+          ],
+          [
+            10.348787,
+            57.009505
+          ],
+          [
+            10.342737,
+            56.99837
+          ],
+          [
+            10.335622,
+            56.98739
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -2449,7 +3527,29 @@
         "batch": "B02",
         "zoneStatus": "active",
         "placementReview": "B02 precision review 2026-07-23",
-        "placementNote": "Pin placeret ved Nordmandshage nordøst for Hals, ikke inde i landet. Området er adskilt fra Limfjordsmundingen."
+        "placementNote": "Pin placeret ved Nordmandshage nordøst for Hals, ikke inde i landet. Området er adskilt fra Limfjordsmundingen.",
+        "coastLine": [
+          [
+            10.339131,
+            56.998195
+          ],
+          [
+            10.336134,
+            56.990257
+          ],
+          [
+            10.33209,
+            56.982505
+          ],
+          [
+            10.326999,
+            56.974937
+          ],
+          [
+            10.320861,
+            56.967556
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -2501,7 +3601,29 @@
         "batch": "B02",
         "zoneStatus": "active",
         "placementReview": "B02 precision review 2026-07-23",
-        "placementNote": "Zone flyttet til den faktiske sydkyst af Limfjorden mellem Mou og Egense; marint datapunkt ligger i fjorden."
+        "placementNote": "Zone flyttet til den faktiske sydkyst af Limfjorden mellem Mou og Egense; marint datapunkt ligger i fjorden.",
+        "coastLine": [
+          [
+            10.346632,
+            56.97688
+          ],
+          [
+            10.326316,
+            56.97598
+          ],
+          [
+            10.306,
+            56.97568
+          ],
+          [
+            10.285684,
+            56.97598
+          ],
+          [
+            10.265368,
+            56.97688
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -2553,7 +3675,29 @@
         "batch": "B02",
         "zoneStatus": "active",
         "placementReview": "B02 precision review 2026-07-23",
-        "placementNote": "Pin placeret på den lave kyst øst for Mulbjerge/Dokkedal, ikke ved landsbyen inde i landet."
+        "placementNote": "Pin placeret på den lave kyst øst for Mulbjerge/Dokkedal, ikke ved landsbyen inde i landet.",
+        "coastLine": [
+          [
+            10.28808,
+            56.934146
+          ],
+          [
+            10.286517,
+            56.924123
+          ],
+          [
+            10.283871,
+            56.914205
+          ],
+          [
+            10.280143,
+            56.904391
+          ],
+          [
+            10.275333,
+            56.894681
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -2605,7 +3749,29 @@
         "batch": "B02",
         "zoneStatus": "active",
         "placementReview": "B02 precision review 2026-07-23",
-        "placementNote": "Pin placeret på Øster Hurup offentlige strand; geofence følger den åbne sandkyst nord og syd for havnen."
+        "placementNote": "Pin placeret på Øster Hurup offentlige strand; geofence følger den åbne sandkyst nord og syd for havnen.",
+        "coastLine": [
+          [
+            10.279019,
+            56.824798
+          ],
+          [
+            10.277663,
+            56.815404
+          ],
+          [
+            10.275227,
+            56.806115
+          ],
+          [
+            10.271713,
+            56.79693
+          ],
+          [
+            10.267119,
+            56.787848
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -2657,7 +3823,29 @@
         "batch": "B02",
         "zoneStatus": "active",
         "placementReview": "B02 precision review 2026-07-23",
-        "placementNote": "Pin flyttet til Als Odde ved fjordmundingen; området adskilles naturligt af odden og indløbet."
+        "placementNote": "Pin flyttet til Als Odde ved fjordmundingen; området adskilles naturligt af odden og indløbet.",
+        "coastLine": [
+          [
+            10.345785,
+            56.710743
+          ],
+          [
+            10.33796,
+            56.703038
+          ],
+          [
+            10.32924,
+            56.695677
+          ],
+          [
+            10.319625,
+            56.68866
+          ],
+          [
+            10.309114,
+            56.681987
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -2709,7 +3897,29 @@
         "batch": "B02",
         "zoneStatus": "active",
         "placementReview": "B02 precision review 2026-07-23",
-        "placementNote": "Pin placeret på sydsiden af den østlige fjordmunding ved Helberskov/Havnø-kysten; holdt adskilt fra Als Odde-zonen."
+        "placementNote": "Pin placeret på sydsiden af den østlige fjordmunding ved Helberskov/Havnø-kysten; holdt adskilt fra Als Odde-zonen.",
+        "coastLine": [
+          [
+            10.318161,
+            56.687594
+          ],
+          [
+            10.308676,
+            56.679983
+          ],
+          [
+            10.298355,
+            56.672758
+          ],
+          [
+            10.287197,
+            56.665919
+          ],
+          [
+            10.275202,
+            56.659465
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -2761,7 +3971,29 @@
         "batch": "B02",
         "zoneStatus": "active",
         "placementReview": "B02 precision review 2026-07-23",
-        "placementNote": "Pin placeret ved Udbyhøj-kysten tæt på Randers Fjords munding; separat fra Mariager Fjord-området."
+        "placementNote": "Pin placeret ved Udbyhøj-kysten tæt på Randers Fjords munding; separat fra Mariager Fjord-området.",
+        "coastLine": [
+          [
+            10.309474,
+            56.614443
+          ],
+          [
+            10.306228,
+            56.604297
+          ],
+          [
+            10.30193,
+            56.594305
+          ],
+          [
+            10.296579,
+            56.584469
+          ],
+          [
+            10.290175,
+            56.574789
+          ]
+        ]
       },
       "geometry": {
         "type": "Polygon",

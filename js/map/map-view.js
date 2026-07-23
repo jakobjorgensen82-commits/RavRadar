@@ -1,24 +1,13 @@
 const palette = { excellent: "#168653", good: "#168653", fair: "#e6a700", weak: "#d9822b", poor: "#d34a3a", unavailable: "#30383c" };
 
-function markerMetrics(zoom = 7) {
-  if (zoom <= 7) return { size: 12, border: 1.5, shadow: "0 1px 3px rgba(0,0,0,.32)" };
-  if (zoom === 8) return { size: 15, border: 1.5, shadow: "0 1px 4px rgba(0,0,0,.33)" };
-  if (zoom === 9) return { size: 18, border: 2, shadow: "0 2px 5px rgba(0,0,0,.34)" };
-  if (zoom === 10) return { size: 22, border: 2, shadow: "0 2px 6px rgba(0,0,0,.35)" };
-  return { size: 26, border: 2.5, shadow: "0 3px 8px rgba(0,0,0,.36)" };
-}
-
-function markerIcon(level = "unavailable", zoom = 7) {
-  const color = palette[level] || palette.unavailable;
-  const { size, border, shadow } = markerMetrics(zoom);
-  const symbolSize = Math.max(8, Math.round(size * 0.52));
-  return L.divIcon({
-    className: "rav-pin-wrap",
-    html: `<span class="rav-pin ${level}" style="--pin-color:${color};--pin-size:${size}px;--pin-border:${border}px;--pin-shadow:${shadow};--pin-symbol-size:${symbolSize}px" aria-hidden="true"><span class="rav-pin-symbol">${level === "excellent" ? "★" : ""}</span></span>`,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-    tooltipAnchor: [0, -(size / 2 + 6)]
-  });
+function zoneLineStyle(level = "unavailable", selected = false) {
+  return {
+    color: palette[level] || palette.unavailable,
+    weight: selected ? 9 : 6,
+    opacity: selected ? 1 : .94,
+    lineCap: "round",
+    lineJoin: "round"
+  };
 }
 
 
@@ -36,40 +25,74 @@ export function createMap(elementId) {
 }
 
 export function renderZones(map, featureCollection, scoreForZone, onSelect) {
-  // Polygonerne er fortsat tilgængelige for geofencing, men tegnes ikke på kortet.
+  // Polygonerne bevares skjult til geofencing og beregninger.
   const geometryLayer = L.geoJSON(featureCollection, { style: { opacity: 0, fillOpacity: 0, weight: 0 }, interactive: false });
-  const markerLayer = L.layerGroup().addTo(map);
-  const markers = new Map();
+  const lineLayer = L.layerGroup().addTo(map);
+  const lines = new Map();
+
+  if (!map.getPane("zoneCoastPane")) {
+    const pane = map.createPane("zoneCoastPane");
+    pane.style.zIndex = "410";
+  }
+
   for (const feature of featureCollection.features) {
     const zone = feature.properties;
-    const point = Array.isArray(zone.pinPoint) ? zone.pinPoint : zone.dataPoint;
     const result = scoreForZone(zone.id);
-    const marker = L.marker([point[1], point[0]], { icon: markerIcon(result?.level, map.getZoom()), title: zone.name, keyboard: true });
-    marker.options.ravLevel = result?.level || "unavailable";
-    marker.bindTooltip(`${escapeHtml(zone.name)} · ${result?.available ? `${result.score}/100` : "Ingen data"}`, { direction: "top" });
-    marker.on("click", () => onSelect(zone));
-    marker.addTo(markerLayer);
-    markers.set(zone.id, marker);
+    const coastLine = Array.isArray(zone.coastLine) && zone.coastLine.length > 1
+      ? zone.coastLine.map(([lng, lat]) => [lat, lng])
+      : null;
+    if (!coastLine) continue;
+
+    const visible = L.polyline(coastLine, {
+      ...zoneLineStyle(result?.level),
+      pane: "zoneCoastPane",
+      interactive: false
+    }).addTo(lineLayer);
+
+    // En transparent, bred klikflade gør kystlinjen nem at vælge på mobil.
+    const hit = L.polyline(coastLine, {
+      color: "transparent",
+      opacity: 0,
+      weight: 24,
+      pane: "zoneCoastPane",
+      interactive: true,
+      bubblingMouseEvents: false
+    }).addTo(lineLayer);
+
+    hit.bindTooltip(`${escapeHtml(zone.name)} · ${result?.available ? `${result.score}/100` : "Ingen data"}`, { direction: "top", sticky: true });
+    hit.on("click", () => onSelect(zone));
+    hit.on("mouseover", () => visible.setStyle({ weight: Math.max(7, visible.options.weight + 1), opacity: 1 }));
+    hit.on("mouseout", () => visible.setStyle(zoneLineStyle(hit.options.ravLevel, hit.options.ravSelected)));
+    hit.options.ravLevel = result?.level || "unavailable";
+    hit.options.ravSelected = false;
+    hit.options.zoneTitle = zone.name;
+    lines.set(zone.id, { visible, hit });
   }
-  const resizeMarkers = () => {
-    const zoom = map.getZoom();
-    for (const marker of markers.values()) marker.setIcon(markerIcon(marker.options.ravLevel, zoom));
-  };
-  map.on("zoomend", resizeMarkers);
+
   const bounds = geometryLayer.getBounds();
   if (bounds.isValid()) map.fitBounds(bounds, { padding: [18, 18], maxZoom: 10 });
-  resizeMarkers();
-  return { geometryLayer, markerLayer, markers, map, resizeMarkers };
+
+  const api = { geometryLayer, lineLayer, lines, map, selectedId: null };
+  api.selectZone = id => {
+    api.selectedId = id || null;
+    for (const [zoneId, pair] of lines.entries()) {
+      pair.hit.options.ravSelected = zoneId === api.selectedId;
+      pair.visible.setStyle(zoneLineStyle(pair.hit.options.ravLevel, pair.hit.options.ravSelected));
+      if (pair.hit.options.ravSelected) pair.visible.bringToFront();
+    }
+  };
+  return api;
 }
 
 export function refreshZoneStyles(layer, scoreForZone) {
-  for (const [id, marker] of layer.markers.entries()) {
+  for (const [id, pair] of layer.lines.entries()) {
     const result = scoreForZone(id);
-    marker.options.ravLevel = result?.level || "unavailable";
-    marker.setIcon(markerIcon(marker.options.ravLevel, layer.map?.getZoom?.() ?? 7));
-    marker.setTooltipContent(`${escapeHtml(marker.options.title)} · ${result?.available ? `${result.score}/100` : "Ingen data"}`);
+    pair.hit.options.ravLevel = result?.level || "unavailable";
+    pair.visible.setStyle(zoneLineStyle(pair.hit.options.ravLevel, pair.hit.options.ravSelected));
+    pair.hit.setTooltipContent(`${escapeHtml(pair.hit.options.zoneTitle)} · ${result?.available ? `${result.score}/100` : "Ingen data"}`);
   }
 }
+
 
 export function locateUser(map, onError, onFound = () => {}) {
   map.locate({ setView: true, maxZoom: 12, enableHighAccuracy: true });

@@ -308,3 +308,9 @@ body.zone-focus .info-panel { scroll-margin-top:12px; }
 
 /* 2.6.6: Markørerne skalerer med kortets zoom, så landsoversigten forbliver læsbar med mange zoner. */
 .rav-pin-wrap { transition: none; }
+
+/* 2.6.11: Farvede kystzoner erstatter pins. Leaflet SVG-linjer tegnes i zoneCoastPane. */
+.leaflet-zone-pane path,
+.leaflet-pane.leaflet-zoneCoastPane-pane path {
+  vector-effect: non-scaling-stroke;
+}

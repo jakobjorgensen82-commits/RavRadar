@@ -38,6 +38,7 @@ function renderSelectedZone() {
 
 function openZone(zone,{scroll=true}={}) {
   state.selectedZone=zone;
+  state.zoneLayer?.selectZone?.(zone.id);
   document.body.classList.add("zone-focus");
   const point=zone.pinPoint||zone.dataPoint;
   if(point) map.setView([point[1],point[0]],Math.max(map.getZoom(),10));
@@ -48,6 +49,7 @@ function openZone(zone,{scroll=true}={}) {
 
 function closeZone() {
   state.selectedZone=null;
+  state.zoneLayer?.selectZone?.(null);
   document.body.classList.remove("zone-focus");
   infoPanel.innerHTML='<div class="empty-state"><h2>Vælg et område på kortet</h2><p>Du får RavScore, forklaring og de vigtigste forhold for den valgte jagtform.</p></div>';
   requestAnimationFrame(()=>map.invalidateSize());
