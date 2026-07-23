@@ -2010,6 +2010,756 @@
           ]
         ]
       }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B02-01",
+        "name": "Ålbæk og Bunken",
+        "region": "Ålbæk Bugt nord",
+        "coastType": "east",
+        "onshoreDirectionDeg": 92,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "dataPoint": [
+          10.485,
+          57.6
+        ],
+        "pinPoint": [
+          10.4263,
+          57.5954
+        ],
+        "batch": "B02",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.405,
+              57.59
+            ],
+            [
+              10.505,
+              57.59
+            ],
+            [
+              10.505,
+              57.65
+            ],
+            [
+              10.405,
+              57.65
+            ],
+            [
+              10.405,
+              57.59
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B02-02",
+        "name": "Napstjert og Jerup",
+        "region": "Ålbæk Bugt midt",
+        "coastType": "east",
+        "onshoreDirectionDeg": 92,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "dataPoint": [
+          10.5,
+          57.545
+        ],
+        "pinPoint": [
+          10.4417,
+          57.5426
+        ],
+        "batch": "B02",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.405,
+              57.53
+            ],
+            [
+              10.52,
+              57.53
+            ],
+            [
+              10.52,
+              57.59
+            ],
+            [
+              10.405,
+              57.59
+            ],
+            [
+              10.405,
+              57.53
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B02-03",
+        "name": "Bratten og Strandby",
+        "region": "Ålbæk Bugt syd",
+        "coastType": "east",
+        "onshoreDirectionDeg": 95,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "dataPoint": [
+          10.525,
+          57.515
+        ],
+        "pinPoint": [
+          10.4686,
+          57.5194
+        ],
+        "batch": "B02",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.44,
+              57.475
+            ],
+            [
+              10.535,
+              57.475
+            ],
+            [
+              10.535,
+              57.535
+            ],
+            [
+              10.44,
+              57.535
+            ],
+            [
+              10.44,
+              57.475
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B02-04",
+        "name": "Frederikshavn og Bangsbo",
+        "region": "Frederikshavn kyst",
+        "coastType": "east",
+        "onshoreDirectionDeg": 100,
+        "shallowWater": false,
+        "reefs": true,
+        "seagrass": false,
+        "dataPoint": [
+          10.61,
+          57.425
+        ],
+        "pinPoint": [
+          10.548,
+          57.427
+        ],
+        "batch": "B02",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.5,
+              57.39
+            ],
+            [
+              10.625,
+              57.39
+            ],
+            [
+              10.625,
+              57.475
+            ],
+            [
+              10.5,
+              57.475
+            ],
+            [
+              10.5,
+              57.39
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B02-05",
+        "name": "Sæby og Sulbæk",
+        "region": "Sæby Bugt nord",
+        "coastType": "east",
+        "onshoreDirectionDeg": 98,
+        "shallowWater": true,
+        "reefs": true,
+        "seagrass": true,
+        "dataPoint": [
+          10.6,
+          57.33
+        ],
+        "pinPoint": [
+          10.536,
+          57.33
+        ],
+        "batch": "B02",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.495,
+              57.295
+            ],
+            [
+              10.615,
+              57.295
+            ],
+            [
+              10.615,
+              57.39
+            ],
+            [
+              10.495,
+              57.39
+            ],
+            [
+              10.495,
+              57.295
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B02-06",
+        "name": "Lyngså og Voerså",
+        "region": "Sæby Bugt syd",
+        "coastType": "east",
+        "onshoreDirectionDeg": 95,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "dataPoint": [
+          10.605,
+          57.245
+        ],
+        "pinPoint": [
+          10.5446,
+          57.2556
+        ],
+        "batch": "B02",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.505,
+              57.155
+            ],
+            [
+              10.62,
+              57.155
+            ],
+            [
+              10.62,
+              57.3
+            ],
+            [
+              10.505,
+              57.3
+            ],
+            [
+              10.505,
+              57.155
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B02-07",
+        "name": "Asaa og Melholt",
+        "region": "Kattegatkysten ved Asaa",
+        "coastType": "east",
+        "onshoreDirectionDeg": 92,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "dataPoint": [
+          10.5,
+          57.02
+        ],
+        "pinPoint": [
+          10.434,
+          57.015
+        ],
+        "batch": "B02",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.39,
+              56.97
+            ],
+            [
+              10.515,
+              56.97
+            ],
+            [
+              10.515,
+              57.11
+            ],
+            [
+              10.39,
+              57.11
+            ],
+            [
+              10.39,
+              56.97
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B02-08",
+        "name": "Hou og Bisnap",
+        "region": "Kattegatkysten ved Hou",
+        "coastType": "east",
+        "onshoreDirectionDeg": 90,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "dataPoint": [
+          10.465,
+          56.915
+        ],
+        "pinPoint": [
+          10.394,
+          56.911
+        ],
+        "batch": "B02",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.35,
+              56.87
+            ],
+            [
+              10.48,
+              56.87
+            ],
+            [
+              10.48,
+              56.97
+            ],
+            [
+              10.35,
+              56.97
+            ],
+            [
+              10.35,
+              56.87
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B02-09",
+        "name": "Hals og Nordmandshage",
+        "region": "Limfjordens østlige munding nord",
+        "coastType": "east",
+        "onshoreDirectionDeg": 95,
+        "shallowWater": true,
+        "reefs": true,
+        "seagrass": true,
+        "dataPoint": [
+          10.41,
+          56.835
+        ],
+        "pinPoint": [
+          10.332,
+          56.842
+        ],
+        "batch": "B02",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.285,
+              56.79
+            ],
+            [
+              10.43,
+              56.79
+            ],
+            [
+              10.43,
+              56.875
+            ],
+            [
+              10.285,
+              56.875
+            ],
+            [
+              10.285,
+              56.79
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B02-10",
+        "name": "Egense og Mou",
+        "region": "Limfjordens østlige munding syd",
+        "coastType": "east",
+        "onshoreDirectionDeg": 88,
+        "shallowWater": true,
+        "reefs": true,
+        "seagrass": true,
+        "dataPoint": [
+          10.39,
+          56.8
+        ],
+        "pinPoint": [
+          10.305,
+          56.806
+        ],
+        "batch": "B02",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.255,
+              56.76
+            ],
+            [
+              10.41,
+              56.76
+            ],
+            [
+              10.41,
+              56.83
+            ],
+            [
+              10.255,
+              56.83
+            ],
+            [
+              10.255,
+              56.76
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B02-11",
+        "name": "Dokkedal og Mulbjerge",
+        "region": "Lille Vildmose-kysten",
+        "coastType": "east",
+        "onshoreDirectionDeg": 88,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "dataPoint": [
+          10.37,
+          56.72
+        ],
+        "pinPoint": [
+          10.285,
+          56.72
+        ],
+        "batch": "B02",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.24,
+              56.65
+            ],
+            [
+              10.39,
+              56.65
+            ],
+            [
+              10.39,
+              56.77
+            ],
+            [
+              10.24,
+              56.77
+            ],
+            [
+              10.24,
+              56.65
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B02-12",
+        "name": "Øster Hurup og Als",
+        "region": "Kattegat ved Øster Hurup",
+        "coastType": "east",
+        "onshoreDirectionDeg": 90,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "dataPoint": [
+          10.365,
+          56.785
+        ],
+        "pinPoint": [
+          10.2833,
+          56.805
+        ],
+        "batch": "B02",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.245,
+              56.745
+            ],
+            [
+              10.38,
+              56.745
+            ],
+            [
+              10.38,
+              56.825
+            ],
+            [
+              10.245,
+              56.825
+            ],
+            [
+              10.245,
+              56.745
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B02-13",
+        "name": "Als Odde og Helberskov",
+        "region": "Mariager Fjords munding nord",
+        "coastType": "east",
+        "onshoreDirectionDeg": 100,
+        "shallowWater": true,
+        "reefs": true,
+        "seagrass": true,
+        "dataPoint": [
+          10.395,
+          56.69
+        ],
+        "pinPoint": [
+          10.316,
+          56.7
+        ],
+        "batch": "B02",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.27,
+              56.65
+            ],
+            [
+              10.41,
+              56.65
+            ],
+            [
+              10.41,
+              56.74
+            ],
+            [
+              10.27,
+              56.74
+            ],
+            [
+              10.27,
+              56.65
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B02-14",
+        "name": "Havnø og Mariager Fjord øst",
+        "region": "Mariager Fjords munding syd",
+        "coastType": "east",
+        "onshoreDirectionDeg": 92,
+        "shallowWater": true,
+        "reefs": true,
+        "seagrass": true,
+        "dataPoint": [
+          10.375,
+          56.645
+        ],
+        "pinPoint": [
+          10.29,
+          56.65
+        ],
+        "batch": "B02",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.235,
+              56.6
+            ],
+            [
+              10.395,
+              56.6
+            ],
+            [
+              10.395,
+              56.69
+            ],
+            [
+              10.235,
+              56.69
+            ],
+            [
+              10.235,
+              56.6
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B02-15",
+        "name": "Udbyhøj og Stenrevet",
+        "region": "Randers Fjords munding",
+        "coastType": "east",
+        "onshoreDirectionDeg": 92,
+        "shallowWater": true,
+        "reefs": true,
+        "seagrass": true,
+        "dataPoint": [
+          10.41,
+          56.565
+        ],
+        "pinPoint": [
+          10.323,
+          56.57
+        ],
+        "batch": "B02",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.27,
+              56.52
+            ],
+            [
+              10.43,
+              56.52
+            ],
+            [
+              10.43,
+              56.615
+            ],
+            [
+              10.27,
+              56.615
+            ],
+            [
+              10.27,
+              56.52
+            ]
+          ]
+        ]
+      }
     }
   ]
 }

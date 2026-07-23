@@ -556,240 +556,360 @@
       "name": "Ålbæk og Bunken",
       "batch": "B02",
       "batchName": "Nordøstjylland og Kattegat nord",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.4263,
+        57.5954
+      ],
+      "dataPoint": [
+        10.485,
+        57.6
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B02-01",
+      "notes": "Pin placeret på den relevante kyststrækning; separat maritimt datapunkt og skjult geofence aktiveret."
     },
     {
       "planId": "B02-02",
       "name": "Napstjert og Jerup",
       "batch": "B02",
       "batchName": "Nordøstjylland og Kattegat nord",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.4417,
+        57.5426
+      ],
+      "dataPoint": [
+        10.5,
+        57.545
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B02-02",
+      "notes": "Pin placeret på den relevante kyststrækning; separat maritimt datapunkt og skjult geofence aktiveret."
     },
     {
       "planId": "B02-03",
-      "name": "Strandby og Bratten",
+      "name": "Bratten og Strandby",
       "batch": "B02",
       "batchName": "Nordøstjylland og Kattegat nord",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.4686,
+        57.5194
+      ],
+      "dataPoint": [
+        10.525,
+        57.515
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B02-03",
+      "notes": "Pin placeret på den relevante kyststrækning; separat maritimt datapunkt og skjult geofence aktiveret."
     },
     {
       "planId": "B02-04",
       "name": "Frederikshavn og Bangsbo",
       "batch": "B02",
       "batchName": "Nordøstjylland og Kattegat nord",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.548,
+        57.427
+      ],
+      "dataPoint": [
+        10.61,
+        57.425
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B02-04",
+      "notes": "Pin placeret på den relevante kyststrækning; separat maritimt datapunkt og skjult geofence aktiveret."
     },
     {
       "planId": "B02-05",
       "name": "Sæby og Sulbæk",
       "batch": "B02",
       "batchName": "Nordøstjylland og Kattegat nord",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.536,
+        57.33
+      ],
+      "dataPoint": [
+        10.6,
+        57.33
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B02-05",
+      "notes": "Pin placeret på den relevante kyststrækning; separat maritimt datapunkt og skjult geofence aktiveret."
     },
     {
       "planId": "B02-06",
       "name": "Lyngså og Voerså",
       "batch": "B02",
       "batchName": "Nordøstjylland og Kattegat nord",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.5446,
+        57.2556
+      ],
+      "dataPoint": [
+        10.605,
+        57.245
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B02-06",
+      "notes": "Pin placeret på den relevante kyststrækning; separat maritimt datapunkt og skjult geofence aktiveret."
     },
     {
       "planId": "B02-07",
       "name": "Asaa og Melholt",
       "batch": "B02",
       "batchName": "Nordøstjylland og Kattegat nord",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.434,
+        57.015
+      ],
+      "dataPoint": [
+        10.5,
+        57.02
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B02-07",
+      "notes": "Pin placeret på den relevante kyststrækning; separat maritimt datapunkt og skjult geofence aktiveret."
     },
     {
       "planId": "B02-08",
-      "name": "Hou og Hals",
+      "name": "Hou og Bisnap",
       "batch": "B02",
       "batchName": "Nordøstjylland og Kattegat nord",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.394,
+        56.911
+      ],
+      "dataPoint": [
+        10.465,
+        56.915
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B02-08",
+      "notes": "Pin placeret på den relevante kyststrækning; separat maritimt datapunkt og skjult geofence aktiveret."
     },
     {
       "planId": "B02-09",
-      "name": "Bisnap og Hou",
+      "name": "Hals og Nordmandshage",
       "batch": "B02",
       "batchName": "Nordøstjylland og Kattegat nord",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.332,
+        56.842
+      ],
+      "dataPoint": [
+        10.41,
+        56.835
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B02-09",
+      "notes": "Pin placeret på den relevante kyststrækning; separat maritimt datapunkt og skjult geofence aktiveret."
     },
     {
       "planId": "B02-10",
       "name": "Egense og Mou",
       "batch": "B02",
       "batchName": "Nordøstjylland og Kattegat nord",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.305,
+        56.806
+      ],
+      "dataPoint": [
+        10.39,
+        56.8
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B02-10",
+      "notes": "Pin placeret på den relevante kyststrækning; separat maritimt datapunkt og skjult geofence aktiveret."
     },
     {
       "planId": "B02-11",
       "name": "Dokkedal og Mulbjerge",
       "batch": "B02",
       "batchName": "Nordøstjylland og Kattegat nord",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.285,
+        56.72
+      ],
+      "dataPoint": [
+        10.37,
+        56.72
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B02-11",
+      "notes": "Pin placeret på den relevante kyststrækning; separat maritimt datapunkt og skjult geofence aktiveret."
     },
     {
       "planId": "B02-12",
-      "name": "Øster Hurup og Als Odde",
+      "name": "Øster Hurup og Als",
       "batch": "B02",
       "batchName": "Nordøstjylland og Kattegat nord",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.2833,
+        56.805
+      ],
+      "dataPoint": [
+        10.365,
+        56.785
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B02-12",
+      "notes": "Pin placeret på den relevante kyststrækning; separat maritimt datapunkt og skjult geofence aktiveret."
     },
     {
       "planId": "B02-13",
-      "name": "Helberskov og Havnø",
+      "name": "Als Odde og Helberskov",
       "batch": "B02",
       "batchName": "Nordøstjylland og Kattegat nord",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.316,
+        56.7
+      ],
+      "dataPoint": [
+        10.395,
+        56.69
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B02-13",
+      "notes": "Pin placeret på den relevante kyststrækning; separat maritimt datapunkt og skjult geofence aktiveret."
     },
     {
       "planId": "B02-14",
-      "name": "Mariagerkysten øst",
+      "name": "Havnø og Mariager Fjord øst",
       "batch": "B02",
       "batchName": "Nordøstjylland og Kattegat nord",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.29,
+        56.65
+      ],
+      "dataPoint": [
+        10.375,
+        56.645
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B02-14",
+      "notes": "Pin placeret på den relevante kyststrækning; separat maritimt datapunkt og skjult geofence aktiveret."
     },
     {
       "planId": "B02-15",
       "name": "Udbyhøj og Stenrevet",
       "batch": "B02",
       "batchName": "Nordøstjylland og Kattegat nord",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.323,
+        56.57
+      ],
+      "dataPoint": [
+        10.41,
+        56.565
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B02-15",
+      "notes": "Pin placeret på den relevante kyststrækning; separat maritimt datapunkt og skjult geofence aktiveret."
     },
     {
       "planId": "B03-01",
@@ -3374,6 +3494,11 @@
       "zoneId": "DK-LIM-03",
       "change": "Pin og datapunkt flyttet til den østlige Limfjord ved Aalborg–Hals.",
       "version": "2.6.8"
+    },
+    {
+      "batch": "B02",
+      "change": "15 zoner aktiveret fra Ålbæk Bugt til Randers Fjords munding med separate strandpins, marine datapunkter og skjulte geofences.",
+      "version": "2.6.9"
     }
   ]
 }
