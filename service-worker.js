@@ -1,5 +1,5 @@
-const CACHE = "ravradar-v2-5-4";
-const STATIC = ["./", "./index.html", "./style.css?v=2.5.4", "./app.js?v=2.5.4", "./config.js", "./data/zones.geojson", "./data/model.json", "./js/core/score-engine.js", "./js/services/data-service.js", "./js/services/auth-service.js", "./js/services/trip-service.js", "./js/services/observation-service.js", "./js/map/map-view.js", "./js/ui/info-panel.js", "./js/ui/account-panel.js", "./js/ui/developer-panel.js"];
+const CACHE = "ravradar-v2-5-6";
+const STATIC = ["./", "./index.html", "./style.css?v=2.5.6", "./app.js?v=2.5.6", "./config.js", "./data/zones.geojson", "./data/model.json", "./js/core/score-engine.js", "./js/services/data-service.js", "./js/services/auth-service.js", "./js/services/trip-service.js", "./js/services/observation-service.js", "./js/map/map-view.js", "./js/ui/info-panel.js", "./js/ui/account-panel.js", "./js/ui/developer-panel.js"];
 self.addEventListener("install", event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(STATIC)).then(() => self.skipWaiting())));
 self.addEventListener("activate", event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim())));
 self.addEventListener("fetch", event => {

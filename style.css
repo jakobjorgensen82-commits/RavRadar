@@ -125,3 +125,34 @@ code { padding: 1px 4px; border-radius: 4px; background: var(--surface-soft); }
   .trip-bar { align-items: stretch; flex-direction: column; gap: 7px; }
   .developer-grid { grid-template-columns: 1fr; }
 }
+
+/* Kortlag: kompakt lagknap med trykvenlig menu */
+.leaflet-control-layers {
+  border: 0;
+  border-radius: 12px;
+  box-shadow: 0 3px 14px rgba(0,0,0,.22);
+  overflow: hidden;
+}
+.leaflet-control-layers-toggle {
+  width: 44px;
+  height: 44px;
+  background-size: 24px 24px;
+}
+.leaflet-control-layers-expanded {
+  min-width: 145px;
+  padding: .6rem .75rem;
+  border-radius: 12px;
+  font: inherit;
+}
+.leaflet-control-layers-base label {
+  display: block;
+  margin: .2rem 0;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.leaflet-control-layers-base input {
+  margin-right: .4rem;
+}
+@media (max-width: 520px) {
+  .leaflet-control-layers-expanded { font-size: .92rem; }
+}

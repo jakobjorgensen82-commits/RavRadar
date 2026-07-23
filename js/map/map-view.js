@@ -2,10 +2,44 @@ const palette = { excellent: "#168653", good: "#6ba83b", fair: "#e6a700", poor: 
 
 export function createMap(elementId) {
   const map = L.map(elementId, { zoomControl: true }).setView([56.45, 10.15], 7);
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 18,
+
+  const streetMap = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
     attribution: "&copy; OpenStreetMap-bidragsydere"
+  });
+
+  const satelliteMap = L.tileLayer(
+    "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    {
+      maxZoom: 19,
+      attribution: "Tiles &copy; Esri"
+    }
+  );
+
+  const baseMaps = {
+    "🗺️ Standard": streetMap,
+    "🛰️ Satellit": satelliteMap
+  };
+  const savedBaseMap = localStorage.getItem("ravradar-basemap");
+  const initialBaseMap = savedBaseMap === "satellite" ? satelliteMap : streetMap;
+  initialBaseMap.addTo(map);
+
+  const layerControl = L.control.layers(baseMaps, null, {
+    position: "topright",
+    collapsed: true
   }).addTo(map);
+
+  const layerToggle = layerControl.getContainer()?.querySelector(".leaflet-control-layers-toggle");
+  if (layerToggle) {
+    layerToggle.title = "Skift kortvisning";
+    layerToggle.setAttribute("aria-label", "Skift kortvisning");
+  }
+
+  map.on("baselayerchange", event => {
+    localStorage.setItem("ravradar-basemap", event.layer === satelliteMap ? "satellite" : "street");
+    layerControl.collapse();
+  });
+
   return map;
 }
 
