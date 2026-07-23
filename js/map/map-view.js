@@ -3,23 +3,23 @@ const palette = { excellent: "#168653", good: "#168653", fair: "#e6a700", weak: 
 function zoneLineStyle(level = "unavailable", selected = false, zoom = 7) {
   // Oversigten skal kunne aflæses på landsniveau. Derfor er zonelinjerne
   // tydeligst ved lav zoom og bliver mere præcise/finere, jo tættere man går på.
-  const baseWeight = zoom <= 7 ? 9 : zoom <= 9 ? 8 : zoom <= 11 ? 7 : 6;
+  const baseWeight = zoom <= 7 ? 7 : zoom <= 9 ? 6 : zoom <= 11 ? 5.5 : 5;
   return {
     color: palette[level] || palette.unavailable,
     weight: baseWeight + (selected ? 4 : 0),
     opacity: selected ? 1 : .96,
-    lineCap: "round",
+    lineCap: "butt",
     lineJoin: "round"
   };
 }
 
 function zoneCasingStyle(selected = false, zoom = 7) {
-  const baseWeight = zoom <= 7 ? 12 : zoom <= 9 ? 11 : zoom <= 11 ? 10 : 9;
+  const baseWeight = zoom <= 7 ? 10 : zoom <= 9 ? 9 : zoom <= 11 ? 8.5 : 8;
   return {
     color: "rgba(255,255,255,.88)",
     weight: baseWeight + (selected ? 5 : 0),
     opacity: .92,
-    lineCap: "round",
+    lineCap: "butt",
     lineJoin: "round"
   };
 }

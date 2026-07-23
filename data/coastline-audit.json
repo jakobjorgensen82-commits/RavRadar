@@ -1,0 +1,450 @@
+[
+  {
+    "id": "DK-W-03",
+    "name": "Blåvand og Vejers",
+    "nearestCoastM": 2716,
+    "points": 9,
+    "lengthKm": 32.0,
+    "segment": 4
+  },
+  {
+    "id": "DK-W-02",
+    "name": "Hvide Sande og Søndervig",
+    "nearestCoastM": 250,
+    "points": 8,
+    "lengthKm": 32.1,
+    "segment": 4
+  },
+  {
+    "id": "DK-B01-01",
+    "name": "Agger og Krik Vig",
+    "nearestCoastM": 131,
+    "points": 8,
+    "lengthKm": 19.0,
+    "segment": 4
+  },
+  {
+    "id": "DK-B01-02",
+    "name": "Lyngby og Lodbjerg",
+    "nearestCoastM": 2341,
+    "points": 2,
+    "lengthKm": 8.3,
+    "segment": 4
+  },
+  {
+    "id": "DK-B01-03",
+    "name": "Stenbjerg og Vorupør",
+    "nearestCoastM": 232,
+    "points": 3,
+    "lengthKm": 7.3,
+    "segment": 4
+  },
+  {
+    "id": "DK-W-01",
+    "name": "Thy og Vorupør",
+    "nearestCoastM": 226,
+    "points": 6,
+    "lengthKm": 8.4,
+    "segment": 4
+  },
+  {
+    "id": "DK-B01-04",
+    "name": "Vangså og Klitmøller",
+    "nearestCoastM": 1214,
+    "points": 4,
+    "lengthKm": 12.0,
+    "segment": 4
+  },
+  {
+    "id": "DK-B01-05",
+    "name": "Hanstholm og Hamborg",
+    "nearestCoastM": 315,
+    "points": 4,
+    "lengthKm": 11.3,
+    "segment": 4
+  },
+  {
+    "id": "DK-B01-06",
+    "name": "Vigsø og Lild Strand",
+    "nearestCoastM": 44,
+    "points": 6,
+    "lengthKm": 14.0,
+    "segment": 4
+  },
+  {
+    "id": "DK-B01-07",
+    "name": "Bulbjerg og Thorup Strand",
+    "nearestCoastM": 351,
+    "points": 6,
+    "lengthKm": 18.7,
+    "segment": 4
+  },
+  {
+    "id": "DK-B01-08",
+    "name": "Slettestrand og Svinkløv",
+    "nearestCoastM": 834,
+    "points": 5,
+    "lengthKm": 15.4,
+    "segment": 4
+  },
+  {
+    "id": "DK-B01-09",
+    "name": "Tranum og Rødhus",
+    "nearestCoastM": 148,
+    "points": 3,
+    "lengthKm": 8.5,
+    "segment": 4
+  },
+  {
+    "id": "DK-NW-03",
+    "name": "Blokhus og Saltum",
+    "nearestCoastM": 409,
+    "points": 4,
+    "lengthKm": 3.8,
+    "segment": 4
+  },
+  {
+    "id": "DK-B01-10",
+    "name": "Blokhus og Hune",
+    "nearestCoastM": 124,
+    "points": 2,
+    "lengthKm": 4.3,
+    "segment": 4
+  },
+  {
+    "id": "DK-B01-11",
+    "name": "Saltum og Grønhøj",
+    "nearestCoastM": 587,
+    "points": 3,
+    "lengthKm": 7.3,
+    "segment": 4
+  },
+  {
+    "id": "DK-NW-02",
+    "name": "Lønstrup og Løkken",
+    "nearestCoastM": 2863,
+    "points": 2,
+    "lengthKm": 3.6,
+    "segment": 4
+  },
+  {
+    "id": "DK-B01-12",
+    "name": "Løkken og Furreby",
+    "nearestCoastM": 175,
+    "points": 3,
+    "lengthKm": 4.5,
+    "segment": 4
+  },
+  {
+    "id": "DK-B01-13",
+    "name": "Nørre Lyngby og Rubjerg",
+    "nearestCoastM": 1849,
+    "points": 3,
+    "lengthKm": 6.9,
+    "segment": 4
+  },
+  {
+    "id": "DK-B01-14",
+    "name": "Lønstrup og Nørlev",
+    "nearestCoastM": 200,
+    "points": 4,
+    "lengthKm": 8.9,
+    "segment": 4
+  },
+  {
+    "id": "DK-B01-15",
+    "name": "Tornby og Hirtshals",
+    "nearestCoastM": 405,
+    "points": 4,
+    "lengthKm": 9.5,
+    "segment": 4
+  },
+  {
+    "id": "DK-B01-16",
+    "name": "Kjul og Uggerby",
+    "nearestCoastM": 182,
+    "points": 3,
+    "lengthKm": 8.5,
+    "segment": 4
+  },
+  {
+    "id": "DK-B01-17",
+    "name": "Tversted og Skiveren",
+    "nearestCoastM": 855,
+    "points": 5,
+    "lengthKm": 11.5,
+    "segment": 4
+  },
+  {
+    "id": "DK-B01-18",
+    "name": "Kandestederne og Hulsig",
+    "nearestCoastM": 2098,
+    "points": 3,
+    "lengthKm": 15.9,
+    "segment": 4
+  },
+  {
+    "id": "DK-NW-01",
+    "name": "Skagen og Grenen",
+    "nearestCoastM": 62,
+    "points": 9,
+    "lengthKm": 9.7,
+    "segment": 4
+  },
+  {
+    "id": "DK-B01-20",
+    "name": "Grenen og Skagen øst",
+    "nearestCoastM": 17,
+    "points": 4,
+    "lengthKm": 3.7,
+    "segment": 4
+  },
+  {
+    "id": "DK-B01-19",
+    "name": "Skagen vest og Damstederne",
+    "nearestCoastM": 1804,
+    "points": 4,
+    "lengthKm": 11.7,
+    "segment": 4
+  },
+  {
+    "id": "DK-B02-01",
+    "name": "Ålbæk og Bunken",
+    "nearestCoastM": 171,
+    "points": 5,
+    "lengthKm": 10.9,
+    "segment": 4
+  },
+  {
+    "id": "DK-B02-02",
+    "name": "Napstjert og Jerup",
+    "nearestCoastM": 355,
+    "points": 4,
+    "lengthKm": 4.5,
+    "segment": 4
+  },
+  {
+    "id": "DK-B02-03",
+    "name": "Bratten og Strandby",
+    "nearestCoastM": 571,
+    "points": 3,
+    "lengthKm": 5.6,
+    "segment": 4
+  },
+  {
+    "id": "DK-B02-04",
+    "name": "Frederikshavn og Bangsbo",
+    "nearestCoastM": 837,
+    "points": 4,
+    "lengthKm": 9.7,
+    "segment": 4
+  },
+  {
+    "id": "DK-NE-02",
+    "name": "Sæby og Frederikshavn",
+    "nearestCoastM": 423,
+    "points": 5,
+    "lengthKm": 7.1,
+    "segment": 4
+  },
+  {
+    "id": "DK-B02-05",
+    "name": "Sæby og Sulbæk",
+    "nearestCoastM": 51,
+    "points": 3,
+    "lengthKm": 5.9,
+    "segment": 4
+  },
+  {
+    "id": "DK-B02-06",
+    "name": "Lyngså og Voerså",
+    "nearestCoastM": 203,
+    "points": 4,
+    "lengthKm": 9.4,
+    "segment": 4
+  },
+  {
+    "id": "DK-NE-01",
+    "name": "Voerså og Asaa",
+    "nearestCoastM": 815,
+    "points": 2,
+    "lengthKm": 7.6,
+    "segment": 4
+  },
+  {
+    "id": "DK-B02-07",
+    "name": "Asaa og Melholt",
+    "nearestCoastM": 633,
+    "points": 4,
+    "lengthKm": 10.8,
+    "segment": 4
+  },
+  {
+    "id": "DK-B02-08",
+    "name": "Hou og Bisnap",
+    "nearestCoastM": 123,
+    "points": 3,
+    "lengthKm": 9.0,
+    "segment": 4
+  },
+  {
+    "id": "DK-B02-09",
+    "name": "Hals og Nordmandshage",
+    "nearestCoastM": 1192,
+    "points": 4,
+    "lengthKm": 4.3,
+    "segment": 4
+  },
+  {
+    "id": "DK-LIM-03",
+    "name": "Limfjorden øst",
+    "nearestCoastM": 11275,
+    "points": 3,
+    "lengthKm": 5.9,
+    "segment": 4
+  },
+  {
+    "id": "DK-B02-10",
+    "name": "Egense og Mou",
+    "nearestCoastM": 24,
+    "points": 4,
+    "lengthKm": 6.2,
+    "segment": 4
+  },
+  {
+    "id": "DK-B02-11",
+    "name": "Dokkedal og Mulbjerge",
+    "nearestCoastM": 141,
+    "points": 5,
+    "lengthKm": 9.6,
+    "segment": 4
+  },
+  {
+    "id": "DK-B02-12",
+    "name": "Øster Hurup og Als",
+    "nearestCoastM": 316,
+    "points": 2,
+    "lengthKm": 6.6,
+    "segment": 4
+  },
+  {
+    "id": "DK-E-01",
+    "name": "Øster Hurup og Helberskov",
+    "nearestCoastM": 2184,
+    "points": 5,
+    "lengthKm": 16.5,
+    "segment": 4
+  },
+  {
+    "id": "DK-B02-14",
+    "name": "Havnø og Mariager Fjord øst",
+    "nearestCoastM": 2715,
+    "points": 8,
+    "lengthKm": 16.7,
+    "segment": 4
+  },
+  {
+    "id": "DK-B02-13",
+    "name": "Als Odde og Helberskov",
+    "nearestCoastM": 3,
+    "points": 5,
+    "lengthKm": 7.3,
+    "segment": 4
+  },
+  {
+    "id": "DK-B02-15",
+    "name": "Udbyhøj og Stenrevet",
+    "nearestCoastM": 1230,
+    "points": 9,
+    "lengthKm": 22.5,
+    "segment": 4
+  },
+  {
+    "id": "DK-E-02",
+    "name": "Djursland nord og øst",
+    "nearestCoastM": 136,
+    "points": 11,
+    "lengthKm": 32.0,
+    "segment": 4
+  },
+  {
+    "id": "DK-E-03",
+    "name": "Aarhusbugten og Odder",
+    "nearestCoastM": 728,
+    "points": 13,
+    "lengthKm": 32.0,
+    "segment": 4
+  },
+  {
+    "id": "DK-E-04",
+    "name": "Vejle Fjord til Lillebælt",
+    "nearestCoastM": 506,
+    "points": 16,
+    "lengthKm": 32.0,
+    "segment": 4
+  },
+  {
+    "id": "DK-SJ-01",
+    "name": "Sjællands Odde og Odsherred",
+    "nearestCoastM": 620,
+    "points": 12,
+    "lengthKm": 32.1,
+    "segment": 15
+  },
+  {
+    "id": "DK-SJ-02",
+    "name": "Nordsjælland og Øresund",
+    "nearestCoastM": 4774,
+    "points": 10,
+    "lengthKm": 32.1,
+    "segment": 15
+  },
+  {
+    "id": "DK-SJ-03",
+    "name": "Stevns og Sydsjælland",
+    "nearestCoastM": 432,
+    "points": 12,
+    "lengthKm": 32.1,
+    "segment": 15
+  },
+  {
+    "id": "DK-FYN-01",
+    "name": "Nordfyn og Kerteminde",
+    "nearestCoastM": 1922,
+    "points": 17,
+    "lengthKm": 31.8,
+    "segment": 16
+  },
+  {
+    "id": "DK-LF-01",
+    "name": "Lolland-Falster sydkyst",
+    "nearestCoastM": 615,
+    "points": 19,
+    "lengthKm": 31.7,
+    "segment": 17
+  },
+  {
+    "id": "DK-BH-01",
+    "name": "Bornholms kyster",
+    "nearestCoastM": 9548,
+    "points": 10,
+    "lengthKm": 28.3,
+    "segment": 22
+  },
+  {
+    "id": "DK-LIM-02",
+    "name": "Limfjorden midt",
+    "nearestCoastM": 1346,
+    "points": 15,
+    "lengthKm": 32.0,
+    "segment": 30
+  },
+  {
+    "id": "DK-LIM-01",
+    "name": "Limfjorden vest",
+    "nearestCoastM": 6225,
+    "points": 11,
+    "lengthKm": 32.1,
+    "segment": 35
+  }
+]
