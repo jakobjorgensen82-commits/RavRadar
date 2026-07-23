@@ -1,53 +1,51 @@
-# RavRadar 1.0
+# RavRadar 2.3
 
-RavRadar er en mobilvenlig, statisk webapp til vurdering af ravforhold langs danske kyster. Hjemmesiden og alle faste data ligger på GitHub Pages. Supabase er kun valgfrit lager for anonyme fundobservationer.
+RavRadar er en mobilvenlig PWA til vurdering af ravforhold langs danske kyster. Den virker uden login og uden Supabase. Vejrdata genereres statisk via GitHub Actions og gemmes i `data/live/conditions.json` – ikke i Supabase.
 
-## Indeholder
+## Færdig platform
 
-- 21 brede danske kystzoner, inklusive vestkyst, Kattegat, øerne og Limfjorden
-- valg mellem Waders og Strand
-- RavScore med vægtningen jagtbarhed 40 %, transport 35 % og frigivelse 25 %
-- automatisk DMI-hentning fra HARMONIE, WAM og DKSS hver tredje time
-- rangliste over de bedste aktuelle områder
-- kort, GPS-knap, forklaringer og mobiltilpasning
-- valgfri anonyme observationer via Supabase
-- automatisk validering og GitHub Pages-udgivelse
-- ingen billeder og ingen brugerupload
+- RavScore for **Waders** og **Strand**
+- kort, rangliste, GPS og offline-cache
+- lokalt registrerede ravture, mens appen er åben
+- prompt dagen efter: **“Var du på ravtur i går?”** med Nej, Ja, Meget og valgfrie gram
+- observationer uden billeder, altid med tidsstempel, zone, RavScore og vejrsnapshot
+- valgfrit Supabase-login med magic link eller adgangskode
+- udviklertilstand: tryk på RavRadar-logoet 10 gange og brug PIN **1931**
+- udviklerpanel med datastatus, proveniens, diagnostik, lokal statistik, GPS- og zoneinspektion
 
-## Arkitektur
+## Vigtige begrænsninger
 
-GitHub Pages indeholder hele webappen, zoner, scoremotor og det kompakte aktuelle DMI-datasæt. GitHub Actions henter prognoser og udgiver siden. Supabase bruges ikke til vejrdata og belastes derfor kun minimalt.
+En browser-PWA kan ikke garantere GPS-sporing, når appen er lukket eller suspenderet. RavRadar registrerer derfor kun ruten, mens siden er åben. GPS-ruter gemmes lokalt og vises kun i udviklertilstanden.
 
-## Engangsudgivelse
+## Vejrarkitektur
 
-1. Erstat indholdet i repositoryet med alle filer fra denne mappe.
-2. Commit og push til `main`.
-3. Vælg **Settings → Pages → Source: GitHub Actions**.
-4. Åbn fanen **Actions** og kontroller, at `Update DMI and deploy RavRadar` bliver grøn.
+Provider-rækkefølgen er:
 
-Siden publiceres derefter automatisk og DMI-data opdateres hver tredje time.
+1. DMI
+2. Open-Meteo Marine
+3. MET Norway
+4. senere Copernicus Marine
 
-## Supabase-observationer
+Fallback-princippet er provider → næste provider → seneste cachede `conditions.json`. Den nuværende updater bruger DMI som aktiv primærkilde; fallback-providerne kan tilføjes uden at ændre frontendens dataformat.
 
-Observationer er valgfri. Webappen virker uden dem. For at aktivere dem:
+## Supabase
 
-1. Kør `supabase/schema.sql` én gang i Supabase SQL Editor.
-2. Indsæt projektets offentlige URL og publishable key i `config.js`.
+RavRadar virker uden konfiguration. For login og synkronisering:
 
-Der gemmes ingen billeder, navne, e-mailadresser eller præcise brugerpositioner. Med de kompakte felter vil 500 MB række til meget store mængder observationer.
+1. Kør `supabase/schema.sql` i Supabase SQL Editor.
+2. Indsæt projektets URL og publishable key i `config.js`.
+3. Aktivér de ønskede auth-metoder i Supabase.
 
-## Domæne
+Selv uden Supabase gemmes observationer og ture lokalt i browseren.
 
-Et domæne som `ravradar.dk` kan senere forbindes i GitHub Pages under **Custom domain**. Koden kræver ingen ændring.
+## Test
 
-## Lokal test
-
-Med Node.js 22 eller nyere:
+Kræver Node.js 22 eller nyere:
 
 ```bash
 npm run validate
 ```
 
-## Datakilder og forbehold
+## Zoner
 
-Prognoser kommer fra DMI Open Data Forecast EDR API. RavScore er en vejledende model og kan ikke garantere fund. Brugeren skal altid vurdere lokal bølgegang, strøm, vanddybde og sikkerhed.
+Den medfølgende `data/zones.geojson` er den eksisterende brede zoneversion. Den nye naturlige opdeling på cirka 100–200 zoner leveres regionsvis og kan senere samles til samme filformat. Kun åbne kyster og Limfjorden skal med; andre fjorde skal ikke indgå.
