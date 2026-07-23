@@ -8,7 +8,8 @@
     "update:dmi": "node scripts/update-weather.mjs",
     "validate:data": "node scripts/validate-data.mjs",
     "test:score": "node scripts/test-score-engine.mjs",
-    "validate": "npm run validate:data && npm run test:score"
+    "validate": "npm run validate:data && npm run test:score",
+    "validate:zone-plan": "node scripts/validate-zone-plan.mjs"
   },
   "engines": {
     "node": ">=22"

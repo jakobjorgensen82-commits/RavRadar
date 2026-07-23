@@ -1,0 +1,3211 @@
+{
+  "schemaVersion": 1,
+  "title": "RavRadar national zone plan",
+  "created": "2026-07-23",
+  "principles": {
+    "targetZoneCount": 196,
+    "scope": "Danmarks åbne kyster samt Limfjorden; øvrige indre fjorde er ikke selvstændige zoner.",
+    "boundaries": [
+      "næs og odder",
+      "bugter og vige",
+      "havne og sejlløb",
+      "klinter og markante kystskift",
+      "øer og tanger",
+      "skift i eksponering og kystretning"
+    ],
+    "naming": "Kendte kystbyer, strande eller landskabselementer; normalt højst to stednavne.",
+    "pin": "Placér på den faktiske strand/kystlinje, ikke i vandet eller inde i byen.",
+    "marineDataPoint": "Placér i åbent vand ud for zonens repræsentative kyst, uden for havnebassiner og landceller.",
+    "activation": "Kun reviewed zoner må flyttes fra zone-plan.json til zones.geojson."
+  },
+  "batches": [
+    {
+      "id": "B01",
+      "name": "Nordvestjylland og Skagen",
+      "count": 20
+    },
+    {
+      "id": "B02",
+      "name": "Nordøstjylland og Kattegat nord",
+      "count": 15
+    },
+    {
+      "id": "B03",
+      "name": "Vestjylland",
+      "count": 15
+    },
+    {
+      "id": "B04",
+      "name": "Vadehavet og Sydvestjylland",
+      "count": 11
+    },
+    {
+      "id": "B05",
+      "name": "Limfjorden",
+      "count": 25
+    },
+    {
+      "id": "B06",
+      "name": "Djursland og Østjylland",
+      "count": 20
+    },
+    {
+      "id": "B07",
+      "name": "Lillebælt, Fyn og øhavet",
+      "count": 28
+    },
+    {
+      "id": "B08",
+      "name": "Nord- og Vestsjælland",
+      "count": 19
+    },
+    {
+      "id": "B09",
+      "name": "Øresund, Stevns og Sydsjælland",
+      "count": 19
+    },
+    {
+      "id": "B10",
+      "name": "Møn, Lolland-Falster og Bornholm",
+      "count": 24
+    }
+  ],
+  "zones": [
+    {
+      "planId": "B01-01",
+      "name": "Agger og Krik Vig",
+      "batch": "B01",
+      "batchName": "Nordvestjylland og Skagen",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B01-02",
+      "name": "Lyngby og Lodbjerg",
+      "batch": "B01",
+      "batchName": "Nordvestjylland og Skagen",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B01-03",
+      "name": "Stenbjerg og Vorupør",
+      "batch": "B01",
+      "batchName": "Nordvestjylland og Skagen",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B01-04",
+      "name": "Vangså og Klitmøller",
+      "batch": "B01",
+      "batchName": "Nordvestjylland og Skagen",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B01-05",
+      "name": "Hanstholm og Hamborg",
+      "batch": "B01",
+      "batchName": "Nordvestjylland og Skagen",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B01-06",
+      "name": "Vigsø og Lild Strand",
+      "batch": "B01",
+      "batchName": "Nordvestjylland og Skagen",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B01-07",
+      "name": "Bulbjerg og Thorup Strand",
+      "batch": "B01",
+      "batchName": "Nordvestjylland og Skagen",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B01-08",
+      "name": "Slettestrand og Svinkløv",
+      "batch": "B01",
+      "batchName": "Nordvestjylland og Skagen",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B01-09",
+      "name": "Tranum og Rødhus",
+      "batch": "B01",
+      "batchName": "Nordvestjylland og Skagen",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B01-10",
+      "name": "Blokhus og Hune",
+      "batch": "B01",
+      "batchName": "Nordvestjylland og Skagen",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B01-11",
+      "name": "Saltum og Grønhøj",
+      "batch": "B01",
+      "batchName": "Nordvestjylland og Skagen",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B01-12",
+      "name": "Løkken og Furreby",
+      "batch": "B01",
+      "batchName": "Nordvestjylland og Skagen",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B01-13",
+      "name": "Nørre Lyngby og Rubjerg",
+      "batch": "B01",
+      "batchName": "Nordvestjylland og Skagen",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B01-14",
+      "name": "Lønstrup og Nørlev",
+      "batch": "B01",
+      "batchName": "Nordvestjylland og Skagen",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B01-15",
+      "name": "Tornby og Hirtshals",
+      "batch": "B01",
+      "batchName": "Nordvestjylland og Skagen",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B01-16",
+      "name": "Kjul og Uggerby",
+      "batch": "B01",
+      "batchName": "Nordvestjylland og Skagen",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B01-17",
+      "name": "Tversted og Skiveren",
+      "batch": "B01",
+      "batchName": "Nordvestjylland og Skagen",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B01-18",
+      "name": "Kandestederne og Hulsig",
+      "batch": "B01",
+      "batchName": "Nordvestjylland og Skagen",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B01-19",
+      "name": "Skagen vest og Damstederne",
+      "batch": "B01",
+      "batchName": "Nordvestjylland og Skagen",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B01-20",
+      "name": "Grenen og Skagen øst",
+      "batch": "B01",
+      "batchName": "Nordvestjylland og Skagen",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B02-01",
+      "name": "Ålbæk og Bunken",
+      "batch": "B02",
+      "batchName": "Nordøstjylland og Kattegat nord",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B02-02",
+      "name": "Napstjert og Jerup",
+      "batch": "B02",
+      "batchName": "Nordøstjylland og Kattegat nord",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B02-03",
+      "name": "Strandby og Bratten",
+      "batch": "B02",
+      "batchName": "Nordøstjylland og Kattegat nord",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B02-04",
+      "name": "Frederikshavn og Bangsbo",
+      "batch": "B02",
+      "batchName": "Nordøstjylland og Kattegat nord",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B02-05",
+      "name": "Sæby og Sulbæk",
+      "batch": "B02",
+      "batchName": "Nordøstjylland og Kattegat nord",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B02-06",
+      "name": "Lyngså og Voerså",
+      "batch": "B02",
+      "batchName": "Nordøstjylland og Kattegat nord",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B02-07",
+      "name": "Asaa og Melholt",
+      "batch": "B02",
+      "batchName": "Nordøstjylland og Kattegat nord",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B02-08",
+      "name": "Hou og Hals",
+      "batch": "B02",
+      "batchName": "Nordøstjylland og Kattegat nord",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B02-09",
+      "name": "Bisnap og Hou",
+      "batch": "B02",
+      "batchName": "Nordøstjylland og Kattegat nord",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B02-10",
+      "name": "Egense og Mou",
+      "batch": "B02",
+      "batchName": "Nordøstjylland og Kattegat nord",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B02-11",
+      "name": "Dokkedal og Mulbjerge",
+      "batch": "B02",
+      "batchName": "Nordøstjylland og Kattegat nord",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B02-12",
+      "name": "Øster Hurup og Als Odde",
+      "batch": "B02",
+      "batchName": "Nordøstjylland og Kattegat nord",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B02-13",
+      "name": "Helberskov og Havnø",
+      "batch": "B02",
+      "batchName": "Nordøstjylland og Kattegat nord",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B02-14",
+      "name": "Mariagerkysten øst",
+      "batch": "B02",
+      "batchName": "Nordøstjylland og Kattegat nord",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B02-15",
+      "name": "Udbyhøj og Stenrevet",
+      "batch": "B02",
+      "batchName": "Nordøstjylland og Kattegat nord",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B03-01",
+      "name": "Harboøre og Vrist",
+      "batch": "B03",
+      "batchName": "Vestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B03-02",
+      "name": "Vejlby Klit og Ferring",
+      "batch": "B03",
+      "batchName": "Vestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B03-03",
+      "name": "Bovbjerg og Trans",
+      "batch": "B03",
+      "batchName": "Vestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B03-04",
+      "name": "Thorsminde og Husby Klit",
+      "batch": "B03",
+      "batchName": "Vestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B03-05",
+      "name": "Fjand og Vedersø Klit",
+      "batch": "B03",
+      "batchName": "Vestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B03-06",
+      "name": "Søndervig og Klegod",
+      "batch": "B03",
+      "batchName": "Vestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B03-07",
+      "name": "Hvide Sande nord",
+      "batch": "B03",
+      "batchName": "Vestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B03-08",
+      "name": "Hvide Sande syd og Årgab",
+      "batch": "B03",
+      "batchName": "Vestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B03-09",
+      "name": "Haurvig og Skodbjerge",
+      "batch": "B03",
+      "batchName": "Vestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B03-10",
+      "name": "Nymindegab og Houstrup",
+      "batch": "B03",
+      "batchName": "Vestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B03-11",
+      "name": "Henne Strand og Grærup",
+      "batch": "B03",
+      "batchName": "Vestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B03-12",
+      "name": "Vejers og Børsmose",
+      "batch": "B03",
+      "batchName": "Vestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B03-13",
+      "name": "Blåvand og Hvidbjerg",
+      "batch": "B03",
+      "batchName": "Vestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B03-14",
+      "name": "Skallingen nord",
+      "batch": "B03",
+      "batchName": "Vestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B03-15",
+      "name": "Skallingen syd",
+      "batch": "B03",
+      "batchName": "Vestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B04-01",
+      "name": "Ho Bugt og Oksby",
+      "batch": "B04",
+      "batchName": "Vadehavet og Sydvestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B04-02",
+      "name": "Hjerting og Sædding",
+      "batch": "B04",
+      "batchName": "Vadehavet og Sydvestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B04-03",
+      "name": "Fanø nord og Nordby",
+      "batch": "B04",
+      "batchName": "Vadehavet og Sydvestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B04-04",
+      "name": "Fanø vest og Rindby",
+      "batch": "B04",
+      "batchName": "Vadehavet og Sydvestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B04-05",
+      "name": "Fanø syd og Sønderho",
+      "batch": "B04",
+      "batchName": "Vadehavet og Sydvestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B04-06",
+      "name": "Mandø vest",
+      "batch": "B04",
+      "batchName": "Vadehavet og Sydvestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B04-07",
+      "name": "Rømø nord og Lakolk",
+      "batch": "B04",
+      "batchName": "Vadehavet og Sydvestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B04-08",
+      "name": "Rømø vest og Kongsmark",
+      "batch": "B04",
+      "batchName": "Vadehavet og Sydvestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B04-09",
+      "name": "Rømø syd og Sønderstrand",
+      "batch": "B04",
+      "batchName": "Vadehavet og Sydvestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B04-10",
+      "name": "Hjerpsted og Emmerlev",
+      "batch": "B04",
+      "batchName": "Vadehavet og Sydvestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B04-11",
+      "name": "Højer og Vidå",
+      "batch": "B04",
+      "batchName": "Vadehavet og Sydvestjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-01",
+      "name": "Thyborøn og Harboøre Tange øst",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-02",
+      "name": "Agger Tange og Krik",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-03",
+      "name": "Nissum Bredning nord",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-04",
+      "name": "Nissum Bredning syd",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-05",
+      "name": "Jegindø og Thyholm",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-06",
+      "name": "Venø og Struer",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-07",
+      "name": "Lemvig og Gjellerodde",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-08",
+      "name": "Toftum Bjerge og Remmerstrand",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-09",
+      "name": "Thisted Bredning vest",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-10",
+      "name": "Thisted og Vildsund",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-11",
+      "name": "Mors nord og Feggesund",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-12",
+      "name": "Mors vest og Ejerslev",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-13",
+      "name": "Mors syd og Nykøbing",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-14",
+      "name": "Sallingsund og Glyngøre",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-15",
+      "name": "Salling vest og Junget",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-16",
+      "name": "Fur nord",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-17",
+      "name": "Fur syd",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-18",
+      "name": "Løgstør og Aggersund",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-19",
+      "name": "Livø og Rønbjerg",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-20",
+      "name": "Nibe Bredning vest",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-21",
+      "name": "Nibe og Sebbersund",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-22",
+      "name": "Gjøl og Attrup",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-23",
+      "name": "Aalborg vest og Egholm",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-24",
+      "name": "Aalborg øst og Nørresundby",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B05-25",
+      "name": "Hals Barre og Egense",
+      "batch": "B05",
+      "batchName": "Limfjorden",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B06-01",
+      "name": "Gjerrild Nordstrand",
+      "batch": "B06",
+      "batchName": "Djursland og Østjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B06-02",
+      "name": "Fornaes og Grenaa",
+      "batch": "B06",
+      "batchName": "Djursland og Østjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B06-03",
+      "name": "Grenaa og Katholm",
+      "batch": "B06",
+      "batchName": "Djursland og Østjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B06-04",
+      "name": "Bønnerup og Fjellerup",
+      "batch": "B06",
+      "batchName": "Djursland og Østjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B06-05",
+      "name": "Rygarde og Sangstrup",
+      "batch": "B06",
+      "batchName": "Djursland og Østjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B06-06",
+      "name": "Karlby og Glatved",
+      "batch": "B06",
+      "batchName": "Djursland og Østjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B06-07",
+      "name": "Jernhatten og Rugård",
+      "batch": "B06",
+      "batchName": "Djursland og Østjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B06-08",
+      "name": "Ebeltoft og Ahl",
+      "batch": "B06",
+      "batchName": "Djursland og Østjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B06-09",
+      "name": "Helgenæs øst",
+      "batch": "B06",
+      "batchName": "Djursland og Østjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B06-10",
+      "name": "Helgenæs vest",
+      "batch": "B06",
+      "batchName": "Djursland og Østjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B06-11",
+      "name": "Knebel og Skødshoved",
+      "batch": "B06",
+      "batchName": "Djursland og Østjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B06-12",
+      "name": "Kalø og Følle",
+      "batch": "B06",
+      "batchName": "Djursland og Østjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B06-13",
+      "name": "Vosnæs og Havhuse",
+      "batch": "B06",
+      "batchName": "Djursland og Østjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B06-14",
+      "name": "Aarhus nord og Egå",
+      "batch": "B06",
+      "batchName": "Djursland og Østjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B06-15",
+      "name": "Aarhus syd og Moesgård",
+      "batch": "B06",
+      "batchName": "Djursland og Østjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B06-16",
+      "name": "Norsminde og Saksild",
+      "batch": "B06",
+      "batchName": "Djursland og Østjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B06-17",
+      "name": "Hou og Odderkysten",
+      "batch": "B06",
+      "batchName": "Djursland og Østjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B06-18",
+      "name": "Juelsminde og As Vig",
+      "batch": "B06",
+      "batchName": "Djursland og Østjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B06-19",
+      "name": "Snaptun og Endelave nord",
+      "batch": "B06",
+      "batchName": "Djursland og Østjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B06-20",
+      "name": "Endelave syd",
+      "batch": "B06",
+      "batchName": "Djursland og Østjylland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-01",
+      "name": "Trelde Næs og Vejlby Fed",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-02",
+      "name": "Strib og Røjle Klint",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-03",
+      "name": "Middelfart og Hindsgavl",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-04",
+      "name": "Båring Vig og Varbjerg",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-05",
+      "name": "Bogense og Gyldensteen",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-06",
+      "name": "Flyvesandet og Enebærodde",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-07",
+      "name": "Hasmark og Hofmansgave",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-08",
+      "name": "Kerteminde nord og Mølleå",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-09",
+      "name": "Kerteminde syd og Lundsgård",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-10",
+      "name": "Nyborg nord og Storebæltskysten",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-11",
+      "name": "Nyborg syd og Knudshoved",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-12",
+      "name": "Tårup og Kongshøj",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-13",
+      "name": "Lundeborg og Elsehoved",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-14",
+      "name": "Thurø og Smørmosen",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-15",
+      "name": "Svendborg og Christiansminde",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-16",
+      "name": "Tåsinge øst",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-17",
+      "name": "Langeland nord og Lohals",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-18",
+      "name": "Langeland øst og Spodsbjerg",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-19",
+      "name": "Langeland syd og Bagenkop",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-20",
+      "name": "Langeland vest og Ristinge",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-21",
+      "name": "Ærø nord og Søby",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-22",
+      "name": "Ærø syd og Voderup",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-23",
+      "name": "Ærø øst og Marstal",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-24",
+      "name": "Faaborg og Dyreborg",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-25",
+      "name": "Horne Land og Bøjden",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-26",
+      "name": "Helnæs og Torø",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-27",
+      "name": "Assens og Sandager Næs",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B07-28",
+      "name": "Bågø og Brandsø",
+      "batch": "B07",
+      "batchName": "Lillebælt, Fyn og øhavet",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B08-01",
+      "name": "Røsnæs nord",
+      "batch": "B08",
+      "batchName": "Nord- og Vestsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B08-02",
+      "name": "Røsnæs syd og Kalundborg",
+      "batch": "B08",
+      "batchName": "Nord- og Vestsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B08-03",
+      "name": "Sejerø nord",
+      "batch": "B08",
+      "batchName": "Nord- og Vestsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B08-04",
+      "name": "Sejerø syd",
+      "batch": "B08",
+      "batchName": "Nord- og Vestsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B08-05",
+      "name": "Nekselø og Havnsø",
+      "batch": "B08",
+      "batchName": "Nord- og Vestsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B08-06",
+      "name": "Vesterlyng og Bjørnstrup",
+      "batch": "B08",
+      "batchName": "Nord- og Vestsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B08-07",
+      "name": "Ordrup Næs og Kårup",
+      "batch": "B08",
+      "batchName": "Nord- og Vestsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B08-08",
+      "name": "Vejrhøj og Vindekilde",
+      "batch": "B08",
+      "batchName": "Nord- og Vestsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B08-09",
+      "name": "Høve og Gudmindrup",
+      "batch": "B08",
+      "batchName": "Nord- og Vestsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B08-10",
+      "name": "Sjællands Odde nord",
+      "batch": "B08",
+      "batchName": "Nord- og Vestsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B08-11",
+      "name": "Sjællands Odde syd",
+      "batch": "B08",
+      "batchName": "Nord- og Vestsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B08-12",
+      "name": "Nykøbing Sjælland og Rørvig",
+      "batch": "B08",
+      "batchName": "Nord- og Vestsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B08-13",
+      "name": "Klint og Korshage",
+      "batch": "B08",
+      "batchName": "Nord- og Vestsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B08-14",
+      "name": "Hundested og Lynæs",
+      "batch": "B08",
+      "batchName": "Nord- og Vestsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B08-15",
+      "name": "Liseleje og Melby",
+      "batch": "B08",
+      "batchName": "Nord- og Vestsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B08-16",
+      "name": "Tisvildeleje og Rågeleje",
+      "batch": "B08",
+      "batchName": "Nord- og Vestsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B08-17",
+      "name": "Gilleleje og Gilbjerg",
+      "batch": "B08",
+      "batchName": "Nord- og Vestsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B08-18",
+      "name": "Dronningmølle og Hornbæk",
+      "batch": "B08",
+      "batchName": "Nord- og Vestsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B08-19",
+      "name": "Ålsgårde og Helsingør",
+      "batch": "B08",
+      "batchName": "Nord- og Vestsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B09-01",
+      "name": "Snekkersten og Espergærde",
+      "batch": "B09",
+      "batchName": "Øresund, Stevns og Sydsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B09-02",
+      "name": "Humlebæk og Nivå",
+      "batch": "B09",
+      "batchName": "Øresund, Stevns og Sydsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B09-03",
+      "name": "Rungsted og Vedbæk",
+      "batch": "B09",
+      "batchName": "Øresund, Stevns og Sydsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B09-04",
+      "name": "Skodsborg og Bellevue",
+      "batch": "B09",
+      "batchName": "Øresund, Stevns og Sydsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B09-05",
+      "name": "Amager nord og Kastrup",
+      "batch": "B09",
+      "batchName": "Øresund, Stevns og Sydsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B09-06",
+      "name": "Amager Strand og Dragør",
+      "batch": "B09",
+      "batchName": "Øresund, Stevns og Sydsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B09-07",
+      "name": "Sydamager og Kongelunden",
+      "batch": "B09",
+      "batchName": "Øresund, Stevns og Sydsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B09-08",
+      "name": "Køge Bugt nord",
+      "batch": "B09",
+      "batchName": "Øresund, Stevns og Sydsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B09-09",
+      "name": "Køge Bugt syd og Solrød",
+      "batch": "B09",
+      "batchName": "Øresund, Stevns og Sydsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B09-10",
+      "name": "Køge og Strøby Egede",
+      "batch": "B09",
+      "batchName": "Øresund, Stevns og Sydsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B09-11",
+      "name": "Stevns nord og Holtug",
+      "batch": "B09",
+      "batchName": "Øresund, Stevns og Sydsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B09-12",
+      "name": "Stevns Klint og Højerup",
+      "batch": "B09",
+      "batchName": "Øresund, Stevns og Sydsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B09-13",
+      "name": "Rødvig og Faxe Ladeplads",
+      "batch": "B09",
+      "batchName": "Øresund, Stevns og Sydsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B09-14",
+      "name": "Præstø og Jungshoved",
+      "batch": "B09",
+      "batchName": "Øresund, Stevns og Sydsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B09-15",
+      "name": "Bøgestrømmen vest",
+      "batch": "B09",
+      "batchName": "Øresund, Stevns og Sydsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B09-16",
+      "name": "Karrebæksminde og Enø",
+      "batch": "B09",
+      "batchName": "Øresund, Stevns og Sydsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B09-17",
+      "name": "Bisserup og Glænø",
+      "batch": "B09",
+      "batchName": "Øresund, Stevns og Sydsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B09-18",
+      "name": "Korsør og Lejodde",
+      "batch": "B09",
+      "batchName": "Øresund, Stevns og Sydsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B09-19",
+      "name": "Reersø og Mullerup",
+      "batch": "B09",
+      "batchName": "Øresund, Stevns og Sydsjælland",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B10-01",
+      "name": "Møn nord og Nyord",
+      "batch": "B10",
+      "batchName": "Møn, Lolland-Falster og Bornholm",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B10-02",
+      "name": "Ulvshale og Hårbølle",
+      "batch": "B10",
+      "batchName": "Møn, Lolland-Falster og Bornholm",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B10-03",
+      "name": "Møns Klint nord",
+      "batch": "B10",
+      "batchName": "Møn, Lolland-Falster og Bornholm",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B10-04",
+      "name": "Møns Klint syd og Klintholm",
+      "batch": "B10",
+      "batchName": "Møn, Lolland-Falster og Bornholm",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B10-05",
+      "name": "Bogø og Farø",
+      "batch": "B10",
+      "batchName": "Møn, Lolland-Falster og Bornholm",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B10-06",
+      "name": "Falster nord og Orehoved",
+      "batch": "B10",
+      "batchName": "Møn, Lolland-Falster og Bornholm",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B10-07",
+      "name": "Falster øst og Pomlenakke",
+      "batch": "B10",
+      "batchName": "Møn, Lolland-Falster og Bornholm",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B10-08",
+      "name": "Marielyst og Bøtø",
+      "batch": "B10",
+      "batchName": "Møn, Lolland-Falster og Bornholm",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B10-09",
+      "name": "Gedser Odde og Gedesby",
+      "batch": "B10",
+      "batchName": "Møn, Lolland-Falster og Bornholm",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B10-10",
+      "name": "Falster vest og Nysted Nor munding",
+      "batch": "B10",
+      "batchName": "Møn, Lolland-Falster og Bornholm",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B10-11",
+      "name": "Lolland sydøst og Nysted",
+      "batch": "B10",
+      "batchName": "Møn, Lolland-Falster og Bornholm",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B10-12",
+      "name": "Lolland syd og Hyllekrog",
+      "batch": "B10",
+      "batchName": "Møn, Lolland-Falster og Bornholm",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B10-13",
+      "name": "Lolland sydvest og Kramnitse",
+      "batch": "B10",
+      "batchName": "Møn, Lolland-Falster og Bornholm",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B10-14",
+      "name": "Lolland vest og Albuen",
+      "batch": "B10",
+      "batchName": "Møn, Lolland-Falster og Bornholm",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B10-15",
+      "name": "Lolland nord og Kragenæs",
+      "batch": "B10",
+      "batchName": "Møn, Lolland-Falster og Bornholm",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B10-16",
+      "name": "Fejø og Femø",
+      "batch": "B10",
+      "batchName": "Møn, Lolland-Falster og Bornholm",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B10-17",
+      "name": "Askø og Lilleø",
+      "batch": "B10",
+      "batchName": "Møn, Lolland-Falster og Bornholm",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B10-18",
+      "name": "Bornholm nord og Sandvig",
+      "batch": "B10",
+      "batchName": "Møn, Lolland-Falster og Bornholm",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B10-19",
+      "name": "Bornholm nordøst og Gudhjem",
+      "batch": "B10",
+      "batchName": "Møn, Lolland-Falster og Bornholm",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B10-20",
+      "name": "Bornholm øst og Svaneke",
+      "batch": "B10",
+      "batchName": "Møn, Lolland-Falster og Bornholm",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B10-21",
+      "name": "Bornholm sydøst og Dueodde",
+      "batch": "B10",
+      "batchName": "Møn, Lolland-Falster og Bornholm",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B10-22",
+      "name": "Bornholm syd og Boderne",
+      "batch": "B10",
+      "batchName": "Møn, Lolland-Falster og Bornholm",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B10-23",
+      "name": "Bornholm vest og Hasle",
+      "batch": "B10",
+      "batchName": "Møn, Lolland-Falster og Bornholm",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    },
+    {
+      "planId": "B10-24",
+      "name": "Bornholm nordvest og Hammeren",
+      "batch": "B10",
+      "batchName": "Møn, Lolland-Falster og Bornholm",
+      "status": "planned",
+      "pinPoint": null,
+      "dataPoint": null,
+      "geometry": null,
+      "review": {
+        "placeNames": false,
+        "coastline": false,
+        "marinePoint": false,
+        "naturalBoundaries": false
+      }
+    }
+  ]
+}
