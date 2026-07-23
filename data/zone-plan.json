@@ -1291,176 +1291,264 @@
       "name": "Ho Bugt og Oksby",
       "batch": "B04",
       "batchName": "Vadehavet og Sydvestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.337,
+        55.555
+      ],
+      "dataPoint": [
+        8.27,
+        55.555
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B04-01",
+      "notes": "Kystzone på Vadehavskysten. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B04-02",
       "name": "Hjerting og Sædding",
       "batch": "B04",
       "batchName": "Vadehavet og Sydvestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.379,
+        55.505
+      ],
+      "dataPoint": [
+        8.305,
+        55.505
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B04-02",
+      "notes": "Kystzone på Vadehavskysten. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B04-03",
       "name": "Fanø nord og Nordby",
       "batch": "B04",
       "batchName": "Vadehavet og Sydvestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.342,
+        55.447
+      ],
+      "dataPoint": [
+        8.255,
+        55.447
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B04-03",
+      "notes": "Kystzone på Vadehavskysten. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B04-04",
       "name": "Fanø vest og Rindby",
       "batch": "B04",
       "batchName": "Vadehavet og Sydvestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.32,
+        55.405
+      ],
+      "dataPoint": [
+        8.225,
+        55.405
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B04-04",
+      "notes": "Kystzone på Vadehavskysten. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B04-05",
       "name": "Fanø syd og Sønderho",
       "batch": "B04",
       "batchName": "Vadehavet og Sydvestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.345,
+        55.35
+      ],
+      "dataPoint": [
+        8.255,
+        55.35
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B04-05",
+      "notes": "Kystzone på Vadehavskysten. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B04-06",
       "name": "Mandø vest",
       "batch": "B04",
       "batchName": "Vadehavet og Sydvestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.53,
+        55.278
+      ],
+      "dataPoint": [
+        8.445,
+        55.278
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B04-06",
+      "notes": "Kystzone på Vadehavskysten. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B04-07",
       "name": "Rømø nord og Lakolk",
       "batch": "B04",
       "batchName": "Vadehavet og Sydvestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.494,
+        55.151
+      ],
+      "dataPoint": [
+        8.395,
+        55.151
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B04-07",
+      "notes": "Kystzone på Vadehavskysten. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B04-08",
       "name": "Rømø vest og Kongsmark",
       "batch": "B04",
       "batchName": "Vadehavet og Sydvestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.474,
+        55.106
+      ],
+      "dataPoint": [
+        8.375,
+        55.106
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B04-08",
+      "notes": "Kystzone på Vadehavskysten. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B04-09",
       "name": "Rømø syd og Sønderstrand",
       "batch": "B04",
       "batchName": "Vadehavet og Sydvestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.5,
+        55.05
+      ],
+      "dataPoint": [
+        8.405,
+        55.05
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B04-09",
+      "notes": "Kystzone på Vadehavskysten. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B04-10",
       "name": "Hjerpsted og Emmerlev",
       "batch": "B04",
       "batchName": "Vadehavet og Sydvestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.64,
+        54.995
+      ],
+      "dataPoint": [
+        8.555,
+        54.995
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B04-10",
+      "notes": "Kystzone på Vadehavskysten. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B04-11",
       "name": "Højer og Vidå",
       "batch": "B04",
       "batchName": "Vadehavet og Sydvestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.695,
+        54.96
+      ],
+      "dataPoint": [
+        8.61,
+        54.96
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B04-11",
+      "notes": "Kystzone på Vadehavskysten. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-01",
@@ -3644,6 +3732,11 @@
       "date": "2026-07-23",
       "batch": "B03",
       "change": "15 vestjyske zoner aktiveret fra Harboøre/Vrist til Skallingen. De brede legacy-zoner DK-W-02 og DK-W-03 er bevaret i data, men markeret som erstattet for at undgå dobbeltvisning."
+    },
+    {
+      "date": "2026-07-23",
+      "batch": "B04",
+      "change": "11 zoner aktiveret i Ho Bugt, Fanø, Mandø, Rømø og den sydvestjyske Vadehavskyst. Zonerne bruger samme kystlinje-, zonegrænse-, vind- og strømstruktur som øvrige aktive zoner."
     }
   ]
 }
