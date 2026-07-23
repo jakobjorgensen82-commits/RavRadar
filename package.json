@@ -1,10 +1,11 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "2.3.0",
+  "version": "2.4.0",
   "type": "module",
   "scripts": {
-    "update:dmi": "node scripts/update-dmi.mjs",
+    "update:weather": "node scripts/update-weather.mjs",
+    "update:dmi": "node scripts/update-weather.mjs",
     "validate:data": "node scripts/validate-data.mjs",
     "test:score": "node scripts/test-score-engine.mjs",
     "validate": "npm run validate:data && npm run test:score"

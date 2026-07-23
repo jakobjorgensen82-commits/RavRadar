@@ -49,3 +49,11 @@ npm run validate
 ## Zoner
 
 Den medfølgende `data/zones.geojson` er den eksisterende brede zoneversion. Den nye naturlige opdeling på cirka 100–200 zoner leveres regionsvis og kan senere samles til samme filformat. Kun åbne kyster og Limfjorden skal med; andre fjorde skal ikke indgå.
+
+## Central vejropdatering (2.4)
+
+GitHub Actions opdaterer den fælles `data/live/conditions.json` fire gange i timen.
+App-brugerne læser kun denne statiske cache og kontakter derfor ikke vejrtjenesterne direkte.
+Kildeprioriteten er DMI → Open-Meteo Marine → MET Norway → seneste gyldige cache.
+Ved en midlertidig DMI-fejl gemmes fallback-data straks, og DMI prøves igen efter fem minutter.
+Deployment fortsætter altid med den seneste gyldige cache, hvis en vejrtjeneste er utilgængelig.

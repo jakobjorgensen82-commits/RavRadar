@@ -3,7 +3,8 @@ name: Update weather and deploy RavRadar
 on:
   workflow_dispatch:
   schedule:
-    - cron: "17 */3 * * *"
+    # Central opdatering fire gange i timen. GitHub kan forsinke planlagte jobs lidt.
+    - cron: "3,18,33,48 * * * *"
   push:
     branches: [main]
 
@@ -14,12 +15,13 @@ permissions:
 
 concurrency:
   group: ravradar-pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   update:
     if: github.event_name != 'push' || github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,12 +29,27 @@ jobs:
           node-version: 22
       - name: Validate project
         run: npm run validate
-      - name: Update weather cache
-        run: npm run update:dmi
+      - name: Update central weather cache
+        id: weather
+        continue-on-error: true
+        timeout-minutes: 12
+        run: npm run update:weather
         env:
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
+          DMI_MAX_RETRIES: 1
+          DMI_REQUEST_GAP_MS: 1400
+          DMI_RETRY_AFTER_MS: 300000
+          WEATHER_REQUEST_TIMEOUT_MS: 18000
+          WEATHER_USER_AGENT: "RavRadar/2.4 (${{ github.server_url }}/${{ github.repository }})"
+      - name: Report provider fallback
+        if: steps.weather.outcome != 'success'
+        run: echo "Weather updater failed or timed out. Deploying the last valid cached conditions.json."
       - name: Commit changed weather data
         run: |
+          if [ ! -f data/live/conditions.json ]; then
+            echo "No weather cache exists; continuing with application deployment"
+            exit 0
+          fi
           if git diff --quiet -- data/live/conditions.json; then
             echo "No weather changes"
             exit 0
@@ -40,7 +57,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/live/conditions.json
-          git commit -m "Update weather conditions"
+          git commit -m "Update central weather conditions"
           git push
 
   deploy:
