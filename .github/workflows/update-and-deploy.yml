@@ -3,13 +3,13 @@ name: Update weather and deploy RavRadar
 on:
   workflow_dispatch:
   schedule:
-    # Central opdatering hvert 5. minut. DMI prøves altid først; fallback udgives straks.
+    # Central opdatering hvert 5. minut. Brugerne henter kun den udgivne cache.
     - cron: "*/5 * * * *"
   push:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
@@ -18,10 +18,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  update:
-    if: github.event_name != 'push' || github.actor != 'github-actions[bot]'
+  update-and-deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -39,40 +41,13 @@ jobs:
           DMI_MAX_RETRIES: 1
           DMI_REQUEST_GAP_MS: 1400
           WEATHER_REQUEST_TIMEOUT_MS: 18000
-          WEATHER_USER_AGENT: "RavRadar/2.4 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/2.5.2 (${{ github.server_url }}/${{ github.repository }})"
       - name: Validate updated weather cache
         if: steps.weather.outcome == 'success'
         run: npm run validate:data
-      - name: Report provider fallback
+      - name: Report cached fallback
         if: steps.weather.outcome != 'success'
         run: echo "Weather updater failed or timed out. Deploying the last valid cached conditions.json."
-      - name: Commit changed weather data
-        run: |
-          if [ ! -f data/live/conditions.json ]; then
-            echo "No weather cache exists; continuing with application deployment"
-            exit 0
-          fi
-          if git diff --quiet -- data/live/conditions.json; then
-            echo "No weather changes"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/live/conditions.json
-          git commit -m "Update central weather conditions"
-          git push
-
-  deploy:
-    needs: [update]
-    if: always() && (needs.update.result == 'success' || needs.update.result == 'skipped')
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

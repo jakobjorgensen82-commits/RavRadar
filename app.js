@@ -104,24 +104,37 @@ try {
 }
 
 function removeDeprecatedNoImagesLabel(root = document) {
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  const nodes = [];
-  while (walker.nextNode()) nodes.push(walker.currentNode);
-  for (const node of nodes) {
-    if (node.nodeValue?.trim().toLocaleLowerCase("da-DK") === "ingen billeder") {
+  const normalize = value => String(value ?? "")
+    .replace(/\u00a0/g, " ")
+    .trim()
+    .replace(/[.!:;,-]+$/u, "")
+    .toLocaleLowerCase("da-DK");
+
+  const removeFrom = scope => {
+    const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    for (const node of nodes) {
+      if (normalize(node.nodeValue) !== "ingen billeder") continue;
       const parent = node.parentElement;
-      if (parent && parent.textContent.trim().toLocaleLowerCase("da-DK") === "ingen billeder") parent.remove();
+      if (parent && normalize(parent.textContent) === "ingen billeder") parent.remove();
       else node.nodeValue = "";
     }
-  }
+  };
+
+  removeFrom(root);
+  root.querySelectorAll?.("*").forEach(element => {
+    if (element.shadowRoot) removeFrom(element.shadowRoot);
+  });
 }
 
 removeDeprecatedNoImagesLabel();
+addEventListener("DOMContentLoaded", () => removeDeprecatedNoImagesLabel(), { once: true });
 new MutationObserver(mutations => {
   for (const mutation of mutations) {
     for (const node of mutation.addedNodes) {
       if (node.nodeType === Node.ELEMENT_NODE) removeDeprecatedNoImagesLabel(node);
-      else if (node.nodeType === Node.TEXT_NODE && node.nodeValue?.trim().toLocaleLowerCase("da-DK") === "ingen billeder") node.nodeValue = "";
+      else if (node.nodeType === Node.TEXT_NODE) removeDeprecatedNoImagesLabel(node.parentNode || document);
     }
   }
-}).observe(document.body, { childList: true, subtree: true });
+}).observe(document.documentElement, { childList: true, subtree: true });
