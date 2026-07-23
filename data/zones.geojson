@@ -967,44 +967,1045 @@
       "properties": {
         "id": "DK-LIM-03",
         "name": "Limfjorden øst",
-        "region": "Limfjorden",
+        "region": "Limfjorden øst – Aalborg til Hals",
         "coastType": "limfjord",
         "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
         "dataPoint": [
-          10.05,
-          56.92
+          10.155,
+          57.045
         ],
         "pinPoint": [
-          10.06,
-          56.92
-        ]
+          10.115,
+          57.066
+        ],
+        "locationCorrection": "2.6.8: flyttet fra land syd for fjorden til den østlige Limfjord"
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
             [
-              9.89,
-              56.865
+              9.98,
+              57.015
             ],
             [
-              10.21,
-              56.865
+              10.27,
+              57.015
             ],
             [
-              10.21,
-              56.975
+              10.27,
+              57.105
             ],
             [
-              9.89,
-              56.975
+              9.98,
+              57.105
             ],
             [
-              9.89,
-              56.865
+              9.98,
+              57.015
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B01-01",
+        "name": "Agger og Krik Vig",
+        "region": "Thy syd",
+        "coastType": "west",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "dataPoint": [
+          8.19,
+          56.79
+        ],
+        "pinPoint": [
+          8.2293,
+          56.7834
+        ],
+        "batch": "B01",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8.165,
+              56.7584
+            ],
+            [
+              8.2543,
+              56.7584
+            ],
+            [
+              8.2543,
+              56.815
+            ],
+            [
+              8.165,
+              56.815
+            ],
+            [
+              8.165,
+              56.7584
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B01-02",
+        "name": "Lyngby og Lodbjerg",
+        "region": "Thy syd",
+        "coastType": "west",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": false,
+        "reefs": true,
+        "seagrass": false,
+        "dataPoint": [
+          8.175,
+          56.842
+        ],
+        "pinPoint": [
+          8.222,
+          56.842
+        ],
+        "batch": "B01",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8.15,
+              56.817
+            ],
+            [
+              8.247,
+              56.817
+            ],
+            [
+              8.247,
+              56.867
+            ],
+            [
+              8.15,
+              56.867
+            ],
+            [
+              8.15,
+              56.817
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B01-03",
+        "name": "Stenbjerg og Vorupør",
+        "region": "Thy",
+        "coastType": "west",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": false,
+        "reefs": true,
+        "seagrass": false,
+        "dataPoint": [
+          8.275,
+          56.92
+        ],
+        "pinPoint": [
+          8.33,
+          56.92
+        ],
+        "batch": "B01",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8.25,
+              56.895
+            ],
+            [
+              8.355,
+              56.895
+            ],
+            [
+              8.355,
+              56.945
+            ],
+            [
+              8.25,
+              56.945
+            ],
+            [
+              8.25,
+              56.895
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B01-04",
+        "name": "Vangså og Klitmøller",
+        "region": "Thy",
+        "coastType": "west",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": false,
+        "reefs": true,
+        "seagrass": false,
+        "dataPoint": [
+          8.445,
+          57.035
+        ],
+        "pinPoint": [
+          8.5,
+          57.035
+        ],
+        "batch": "B01",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8.42,
+              57.01
+            ],
+            [
+              8.525,
+              57.01
+            ],
+            [
+              8.525,
+              57.059999999999995
+            ],
+            [
+              8.42,
+              57.059999999999995
+            ],
+            [
+              8.42,
+              57.01
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B01-05",
+        "name": "Hanstholm og Hamborg",
+        "region": "Thy nord",
+        "coastType": "west",
+        "onshoreDirectionDeg": 250,
+        "shallowWater": false,
+        "reefs": true,
+        "seagrass": false,
+        "dataPoint": [
+          8.535,
+          57.135
+        ],
+        "pinPoint": [
+          8.596,
+          57.124
+        ],
+        "batch": "B01",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8.51,
+              57.099000000000004
+            ],
+            [
+              8.621,
+              57.099000000000004
+            ],
+            [
+              8.621,
+              57.16
+            ],
+            [
+              8.51,
+              57.16
+            ],
+            [
+              8.51,
+              57.099000000000004
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B01-06",
+        "name": "Vigsø og Lild Strand",
+        "region": "Hanstholm–Jammerbugt",
+        "coastType": "west",
+        "onshoreDirectionDeg": 220,
+        "shallowWater": false,
+        "reefs": true,
+        "seagrass": false,
+        "dataPoint": [
+          8.745,
+          57.145
+        ],
+        "pinPoint": [
+          8.78,
+          57.105
+        ],
+        "batch": "B01",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8.719999999999999,
+              57.08
+            ],
+            [
+              8.805,
+              57.08
+            ],
+            [
+              8.805,
+              57.17
+            ],
+            [
+              8.719999999999999,
+              57.17
+            ],
+            [
+              8.719999999999999,
+              57.08
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B01-07",
+        "name": "Bulbjerg og Thorup Strand",
+        "region": "Jammerbugt vest",
+        "coastType": "west",
+        "onshoreDirectionDeg": 220,
+        "shallowWater": false,
+        "reefs": true,
+        "seagrass": false,
+        "dataPoint": [
+          8.995,
+          57.205
+        ],
+        "pinPoint": [
+          9.025,
+          57.157
+        ],
+        "batch": "B01",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8.969999999999999,
+              57.132
+            ],
+            [
+              9.05,
+              57.132
+            ],
+            [
+              9.05,
+              57.23
+            ],
+            [
+              8.969999999999999,
+              57.23
+            ],
+            [
+              8.969999999999999,
+              57.132
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B01-08",
+        "name": "Slettestrand og Svinkløv",
+        "region": "Jammerbugt",
+        "coastType": "west",
+        "onshoreDirectionDeg": 220,
+        "shallowWater": false,
+        "reefs": true,
+        "seagrass": false,
+        "dataPoint": [
+          9.335,
+          57.2
+        ],
+        "pinPoint": [
+          9.365,
+          57.15
+        ],
+        "batch": "B01",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.31,
+              57.125
+            ],
+            [
+              9.39,
+              57.125
+            ],
+            [
+              9.39,
+              57.225
+            ],
+            [
+              9.31,
+              57.225
+            ],
+            [
+              9.31,
+              57.125
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B01-09",
+        "name": "Tranum og Rødhus",
+        "region": "Jammerbugt",
+        "coastType": "west",
+        "onshoreDirectionDeg": 225,
+        "shallowWater": false,
+        "reefs": false,
+        "seagrass": false,
+        "dataPoint": [
+          9.455,
+          57.245
+        ],
+        "pinPoint": [
+          9.495,
+          57.205
+        ],
+        "batch": "B01",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.43,
+              57.18
+            ],
+            [
+              9.52,
+              57.18
+            ],
+            [
+              9.52,
+              57.269999999999996
+            ],
+            [
+              9.43,
+              57.269999999999996
+            ],
+            [
+              9.43,
+              57.18
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B01-10",
+        "name": "Blokhus og Hune",
+        "region": "Jammerbugt",
+        "coastType": "west",
+        "onshoreDirectionDeg": 230,
+        "shallowWater": false,
+        "reefs": false,
+        "seagrass": false,
+        "dataPoint": [
+          9.535,
+          57.285
+        ],
+        "pinPoint": [
+          9.58,
+          57.255
+        ],
+        "batch": "B01",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.51,
+              57.230000000000004
+            ],
+            [
+              9.605,
+              57.230000000000004
+            ],
+            [
+              9.605,
+              57.309999999999995
+            ],
+            [
+              9.51,
+              57.309999999999995
+            ],
+            [
+              9.51,
+              57.230000000000004
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B01-11",
+        "name": "Saltum og Grønhøj",
+        "region": "Jammerbugt nord",
+        "coastType": "west",
+        "onshoreDirectionDeg": 235,
+        "shallowWater": false,
+        "reefs": false,
+        "seagrass": false,
+        "dataPoint": [
+          9.61,
+          57.34
+        ],
+        "pinPoint": [
+          9.655,
+          57.315
+        ],
+        "batch": "B01",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.584999999999999,
+              57.29
+            ],
+            [
+              9.68,
+              57.29
+            ],
+            [
+              9.68,
+              57.365
+            ],
+            [
+              9.584999999999999,
+              57.365
+            ],
+            [
+              9.584999999999999,
+              57.29
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B01-12",
+        "name": "Løkken og Furreby",
+        "region": "Vendsyssel vest",
+        "coastType": "west",
+        "onshoreDirectionDeg": 240,
+        "shallowWater": false,
+        "reefs": true,
+        "seagrass": false,
+        "dataPoint": [
+          9.665,
+          57.39
+        ],
+        "pinPoint": [
+          9.71,
+          57.372
+        ],
+        "batch": "B01",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.639999999999999,
+              57.347
+            ],
+            [
+              9.735000000000001,
+              57.347
+            ],
+            [
+              9.735000000000001,
+              57.415
+            ],
+            [
+              9.639999999999999,
+              57.415
+            ],
+            [
+              9.639999999999999,
+              57.347
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B01-13",
+        "name": "Nørre Lyngby og Rubjerg",
+        "region": "Vendsyssel vest",
+        "coastType": "west",
+        "onshoreDirectionDeg": 250,
+        "shallowWater": false,
+        "reefs": true,
+        "seagrass": false,
+        "dataPoint": [
+          9.69,
+          57.455
+        ],
+        "pinPoint": [
+          9.735,
+          57.445
+        ],
+        "batch": "B01",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.665,
+              57.42
+            ],
+            [
+              9.76,
+              57.42
+            ],
+            [
+              9.76,
+              57.48
+            ],
+            [
+              9.665,
+              57.48
+            ],
+            [
+              9.665,
+              57.42
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B01-14",
+        "name": "Lønstrup og Nørlev",
+        "region": "Vendsyssel vest",
+        "coastType": "west",
+        "onshoreDirectionDeg": 250,
+        "shallowWater": false,
+        "reefs": true,
+        "seagrass": false,
+        "dataPoint": [
+          9.755,
+          57.5
+        ],
+        "pinPoint": [
+          9.8,
+          57.485
+        ],
+        "batch": "B01",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.73,
+              57.46
+            ],
+            [
+              9.825000000000001,
+              57.46
+            ],
+            [
+              9.825000000000001,
+              57.525
+            ],
+            [
+              9.73,
+              57.525
+            ],
+            [
+              9.73,
+              57.46
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B01-15",
+        "name": "Tornby og Hirtshals",
+        "region": "Vendsyssel nordvest",
+        "coastType": "west",
+        "onshoreDirectionDeg": 245,
+        "shallowWater": false,
+        "reefs": true,
+        "seagrass": false,
+        "dataPoint": [
+          9.865,
+          57.59
+        ],
+        "pinPoint": [
+          9.915,
+          57.575
+        ],
+        "batch": "B01",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.84,
+              57.550000000000004
+            ],
+            [
+              9.94,
+              57.550000000000004
+            ],
+            [
+              9.94,
+              57.615
+            ],
+            [
+              9.84,
+              57.615
+            ],
+            [
+              9.84,
+              57.550000000000004
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B01-16",
+        "name": "Kjul og Uggerby",
+        "region": "Tannis Bugt vest",
+        "coastType": "west",
+        "onshoreDirectionDeg": 205,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "dataPoint": [
+          10.0,
+          57.63
+        ],
+        "pinPoint": [
+          10.02,
+          57.59
+        ],
+        "batch": "B01",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.975,
+              57.565000000000005
+            ],
+            [
+              10.045,
+              57.565000000000005
+            ],
+            [
+              10.045,
+              57.655
+            ],
+            [
+              9.975,
+              57.655
+            ],
+            [
+              9.975,
+              57.565000000000005
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B01-17",
+        "name": "Tversted og Skiveren",
+        "region": "Tannis Bugt",
+        "coastType": "west",
+        "onshoreDirectionDeg": 190,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "dataPoint": [
+          10.185,
+          57.64
+        ],
+        "pinPoint": [
+          10.19,
+          57.595
+        ],
+        "batch": "B01",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.16,
+              57.57
+            ],
+            [
+              10.215,
+              57.57
+            ],
+            [
+              10.215,
+              57.665
+            ],
+            [
+              10.16,
+              57.665
+            ],
+            [
+              10.16,
+              57.57
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B01-18",
+        "name": "Kandestederne og Hulsig",
+        "region": "Skagen Odde vest",
+        "coastType": "west",
+        "onshoreDirectionDeg": 200,
+        "shallowWater": false,
+        "reefs": true,
+        "seagrass": false,
+        "dataPoint": [
+          10.36,
+          57.695
+        ],
+        "pinPoint": [
+          10.385,
+          57.65
+        ],
+        "batch": "B01",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.334999999999999,
+              57.625
+            ],
+            [
+              10.41,
+              57.625
+            ],
+            [
+              10.41,
+              57.72
+            ],
+            [
+              10.334999999999999,
+              57.72
+            ],
+            [
+              10.334999999999999,
+              57.625
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B01-19",
+        "name": "Skagen vest og Damstederne",
+        "region": "Skagen Odde",
+        "coastType": "west",
+        "onshoreDirectionDeg": 215,
+        "shallowWater": false,
+        "reefs": true,
+        "seagrass": false,
+        "dataPoint": [
+          10.52,
+          57.75
+        ],
+        "pinPoint": [
+          10.56,
+          57.72
+        ],
+        "batch": "B01",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.495,
+              57.695
+            ],
+            [
+              10.585,
+              57.695
+            ],
+            [
+              10.585,
+              57.775
+            ],
+            [
+              10.495,
+              57.775
+            ],
+            [
+              10.495,
+              57.695
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B01-20",
+        "name": "Grenen og Skagen øst",
+        "region": "Skagen Odde nordøst",
+        "coastType": "east",
+        "onshoreDirectionDeg": 70,
+        "shallowWater": false,
+        "reefs": true,
+        "seagrass": false,
+        "dataPoint": [
+          10.69,
+          57.735
+        ],
+        "pinPoint": [
+          10.6342,
+          57.7393
+        ],
+        "batch": "B01",
+        "zoneStatus": "active"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.6092,
+              57.71
+            ],
+            [
+              10.715,
+              57.71
+            ],
+            [
+              10.715,
+              57.7643
+            ],
+            [
+              10.6092,
+              57.7643
+            ],
+            [
+              10.6092,
+              57.71
             ]
           ]
         ]

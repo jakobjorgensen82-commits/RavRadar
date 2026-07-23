@@ -76,320 +76,480 @@
       "name": "Agger og Krik Vig",
       "batch": "B01",
       "batchName": "Nordvestjylland og Skagen",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.2293,
+        56.7834
+      ],
+      "dataPoint": [
+        8.19,
+        56.79
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B01-01",
+      "notes": "Pin på kysten; datapunkt ude over vandet; skjult geofence aktiveret."
     },
     {
       "planId": "B01-02",
       "name": "Lyngby og Lodbjerg",
       "batch": "B01",
       "batchName": "Nordvestjylland og Skagen",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.222,
+        56.842
+      ],
+      "dataPoint": [
+        8.175,
+        56.842
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B01-02",
+      "notes": "Pin på kysten; datapunkt ude over vandet; skjult geofence aktiveret."
     },
     {
       "planId": "B01-03",
       "name": "Stenbjerg og Vorupør",
       "batch": "B01",
       "batchName": "Nordvestjylland og Skagen",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.33,
+        56.92
+      ],
+      "dataPoint": [
+        8.275,
+        56.92
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B01-03",
+      "notes": "Pin på kysten; datapunkt ude over vandet; skjult geofence aktiveret."
     },
     {
       "planId": "B01-04",
       "name": "Vangså og Klitmøller",
       "batch": "B01",
       "batchName": "Nordvestjylland og Skagen",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.5,
+        57.035
+      ],
+      "dataPoint": [
+        8.445,
+        57.035
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B01-04",
+      "notes": "Pin på kysten; datapunkt ude over vandet; skjult geofence aktiveret."
     },
     {
       "planId": "B01-05",
       "name": "Hanstholm og Hamborg",
       "batch": "B01",
       "batchName": "Nordvestjylland og Skagen",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.596,
+        57.124
+      ],
+      "dataPoint": [
+        8.535,
+        57.135
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B01-05",
+      "notes": "Pin på kysten; datapunkt ude over vandet; skjult geofence aktiveret."
     },
     {
       "planId": "B01-06",
       "name": "Vigsø og Lild Strand",
       "batch": "B01",
       "batchName": "Nordvestjylland og Skagen",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.78,
+        57.105
+      ],
+      "dataPoint": [
+        8.745,
+        57.145
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B01-06",
+      "notes": "Pin på kysten; datapunkt ude over vandet; skjult geofence aktiveret."
     },
     {
       "planId": "B01-07",
       "name": "Bulbjerg og Thorup Strand",
       "batch": "B01",
       "batchName": "Nordvestjylland og Skagen",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        9.025,
+        57.157
+      ],
+      "dataPoint": [
+        8.995,
+        57.205
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B01-07",
+      "notes": "Pin på kysten; datapunkt ude over vandet; skjult geofence aktiveret."
     },
     {
       "planId": "B01-08",
       "name": "Slettestrand og Svinkløv",
       "batch": "B01",
       "batchName": "Nordvestjylland og Skagen",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        9.365,
+        57.15
+      ],
+      "dataPoint": [
+        9.335,
+        57.2
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B01-08",
+      "notes": "Pin på kysten; datapunkt ude over vandet; skjult geofence aktiveret."
     },
     {
       "planId": "B01-09",
       "name": "Tranum og Rødhus",
       "batch": "B01",
       "batchName": "Nordvestjylland og Skagen",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        9.495,
+        57.205
+      ],
+      "dataPoint": [
+        9.455,
+        57.245
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B01-09",
+      "notes": "Pin på kysten; datapunkt ude over vandet; skjult geofence aktiveret."
     },
     {
       "planId": "B01-10",
       "name": "Blokhus og Hune",
       "batch": "B01",
       "batchName": "Nordvestjylland og Skagen",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        9.58,
+        57.255
+      ],
+      "dataPoint": [
+        9.535,
+        57.285
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B01-10",
+      "notes": "Pin på kysten; datapunkt ude over vandet; skjult geofence aktiveret."
     },
     {
       "planId": "B01-11",
       "name": "Saltum og Grønhøj",
       "batch": "B01",
       "batchName": "Nordvestjylland og Skagen",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        9.655,
+        57.315
+      ],
+      "dataPoint": [
+        9.61,
+        57.34
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B01-11",
+      "notes": "Pin på kysten; datapunkt ude over vandet; skjult geofence aktiveret."
     },
     {
       "planId": "B01-12",
       "name": "Løkken og Furreby",
       "batch": "B01",
       "batchName": "Nordvestjylland og Skagen",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        9.71,
+        57.372
+      ],
+      "dataPoint": [
+        9.665,
+        57.39
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B01-12",
+      "notes": "Pin på kysten; datapunkt ude over vandet; skjult geofence aktiveret."
     },
     {
       "planId": "B01-13",
       "name": "Nørre Lyngby og Rubjerg",
       "batch": "B01",
       "batchName": "Nordvestjylland og Skagen",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        9.735,
+        57.445
+      ],
+      "dataPoint": [
+        9.69,
+        57.455
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B01-13",
+      "notes": "Pin på kysten; datapunkt ude over vandet; skjult geofence aktiveret."
     },
     {
       "planId": "B01-14",
       "name": "Lønstrup og Nørlev",
       "batch": "B01",
       "batchName": "Nordvestjylland og Skagen",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        9.8,
+        57.485
+      ],
+      "dataPoint": [
+        9.755,
+        57.5
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B01-14",
+      "notes": "Pin på kysten; datapunkt ude over vandet; skjult geofence aktiveret."
     },
     {
       "planId": "B01-15",
       "name": "Tornby og Hirtshals",
       "batch": "B01",
       "batchName": "Nordvestjylland og Skagen",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        9.915,
+        57.575
+      ],
+      "dataPoint": [
+        9.865,
+        57.59
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B01-15",
+      "notes": "Pin på kysten; datapunkt ude over vandet; skjult geofence aktiveret."
     },
     {
       "planId": "B01-16",
       "name": "Kjul og Uggerby",
       "batch": "B01",
       "batchName": "Nordvestjylland og Skagen",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.02,
+        57.59
+      ],
+      "dataPoint": [
+        10.0,
+        57.63
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B01-16",
+      "notes": "Pin på kysten; datapunkt ude over vandet; skjult geofence aktiveret."
     },
     {
       "planId": "B01-17",
       "name": "Tversted og Skiveren",
       "batch": "B01",
       "batchName": "Nordvestjylland og Skagen",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.19,
+        57.595
+      ],
+      "dataPoint": [
+        10.185,
+        57.64
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B01-17",
+      "notes": "Pin på kysten; datapunkt ude over vandet; skjult geofence aktiveret."
     },
     {
       "planId": "B01-18",
       "name": "Kandestederne og Hulsig",
       "batch": "B01",
       "batchName": "Nordvestjylland og Skagen",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.385,
+        57.65
+      ],
+      "dataPoint": [
+        10.36,
+        57.695
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B01-18",
+      "notes": "Pin på kysten; datapunkt ude over vandet; skjult geofence aktiveret."
     },
     {
       "planId": "B01-19",
       "name": "Skagen vest og Damstederne",
       "batch": "B01",
       "batchName": "Nordvestjylland og Skagen",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.56,
+        57.72
+      ],
+      "dataPoint": [
+        10.52,
+        57.75
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B01-19",
+      "notes": "Pin på kysten; datapunkt ude over vandet; skjult geofence aktiveret."
     },
     {
       "planId": "B01-20",
       "name": "Grenen og Skagen øst",
       "batch": "B01",
       "batchName": "Nordvestjylland og Skagen",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.6342,
+        57.7393
+      ],
+      "dataPoint": [
+        10.69,
+        57.735
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B01-20",
+      "notes": "Pin på kysten; datapunkt ude over vandet; skjult geofence aktiveret."
     },
     {
       "planId": "B02-01",
@@ -3206,6 +3366,14 @@
         "marinePoint": false,
         "naturalBoundaries": false
       }
+    }
+  ],
+  "lastUpdated": "2026-07-23",
+  "corrections": [
+    {
+      "zoneId": "DK-LIM-03",
+      "change": "Pin og datapunkt flyttet til den østlige Limfjord ved Aalborg–Hals.",
+      "version": "2.6.8"
     }
   ]
 }
