@@ -105,3 +105,58 @@ let logoTaps=0,tapTimer=null;document.querySelector("#logoButton").addEventListe
 document.querySelector("#pinForm").addEventListener("submit",event=>{event.preventDefault();const pin=new FormData(event.currentTarget).get("pin");if(pin!=="1931"){document.querySelector("#pinStatus").textContent="Forkert PIN.";return;}pinDialog.close();event.currentTarget.reset();document.querySelector("#pinStatus").textContent="";openDeveloperDialog(developerDialog,state);});
 
 try {await consumeAuthCallback();const [zones,conditions]=await Promise.all([loadZones(),loadConditions()]);state.zones=zones;state.conditions=conditions;state.zoneLayer=renderZones(map,zones,id=>resultFor(zones.features.find(item=>item.properties.id===id).properties),zone=>openZone(zone,{scroll:false}));state.flowArrows=installFlowArrows(map,zones,id=>state.conditions.zones?.[id]||{});setMode(localStorage.getItem("ravradar-mode")==="beach"?"beach":"waders");if(conditions.available&&conditions.generatedAt){const timestamp=new Date(conditions.generatedAt).toLocaleString("da-DK");const stale=Date.now()-new Date(conditions.generatedAt).getTime()>8*3600000;dataStatus.textContent=`${stale?"⚠ Data er ældre end normalt · ":""}Senest opdateret ${timestamp}`;}else dataStatus.textContent="Vejrdata indlæses ved næste automatiske GitHub-kørsel.";resumeTripTracking();updateTripUi();const pending=pendingTripPrompt();if(pending)setTimeout(()=>openTripPrompt(pending),650);}catch(error){console.error(error);infoPanel.innerHTML='<div class="notice">Kortzonerne kunne ikke indlæses. Kontroller den seneste GitHub Action.</div>';dataStatus.textContent="Fejl ved indlæsning";}
+
+// RavRadar 2.6.20: service-worker-opdatering uden manuel cache-rydning.
+function installAppUpdateFlow() {
+  if (!("serviceWorker" in navigator)) return;
+
+  const banner = document.querySelector("#updateBanner");
+  const updateButton = document.querySelector("#updateAppButton");
+  const version = window.RAVRADAR_VERSION || "2.6.20";
+  const versionNode = document.querySelector("#appVersion");
+  if (versionNode) versionNode.textContent = version;
+
+  let refreshing = false;
+  let registration = null;
+
+  const showUpdate = worker => {
+    if (!worker || !banner || !updateButton) return;
+    banner.hidden = false;
+    updateButton.onclick = () => {
+      updateButton.disabled = true;
+      updateButton.textContent = "Opdaterer…";
+      worker.postMessage({ type: "SKIP_WAITING" });
+    };
+  };
+
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (refreshing) return;
+    refreshing = true;
+    location.reload();
+  });
+
+  addEventListener("load", async () => {
+    try {
+      registration = await navigator.serviceWorker.register(`./service-worker.js?v=${version}`, { updateViaCache: "none" });
+
+      if (registration.waiting && navigator.serviceWorker.controller) showUpdate(registration.waiting);
+
+      registration.addEventListener("updatefound", () => {
+        const worker = registration.installing;
+        worker?.addEventListener("statechange", () => {
+          if (worker.state === "installed" && navigator.serviceWorker.controller) showUpdate(worker);
+        });
+      });
+
+      // Tjek ved opstart og igen, når brugeren vender tilbage til appen.
+      registration.update().catch(() => {});
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") registration?.update().catch(() => {});
+      });
+    } catch (error) {
+      console.warn("Service worker kunne ikke registreres", error);
+    }
+  });
+}
+
+installAppUpdateFlow();

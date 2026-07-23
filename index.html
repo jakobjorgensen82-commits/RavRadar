@@ -4,7 +4,7 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#073b4c">
   <meta name="description" content="RavRadar vurderer aktuelle forhold for ravjagt langs danske kyster.">
   <title>RavRadar – dansk ravprognose</title>
-  <link rel="manifest" href="manifest.webmanifest"><link rel="preconnect" href="https://unpkg.com"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""><link rel="stylesheet" href="style.css?v=2.6.17">
+  <link rel="manifest" href="manifest.webmanifest"><link rel="preconnect" href="https://unpkg.com"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""><link rel="stylesheet" href="style.css?v=2.6.20">
 </head>
 <body>
   <header class="app-header">
@@ -12,6 +12,10 @@
     <div class="header-actions"><button id="tripButton" class="header-button" type="button">Start ravtur</button><button id="accountButton" class="icon-button" type="button" aria-label="Konto" title="Konto">◉</button><button id="locateButton" class="icon-button" type="button" aria-label="Vis min position" title="Vis min position">⌖</button></div>
   </header>
   <div id="tripStatus" class="visually-hidden" aria-live="polite"></div>
+  <div id="updateBanner" class="update-banner" role="status" aria-live="polite" hidden>
+    <span>Ny version af RavRadar er klar.</span>
+    <button id="updateAppButton" type="button">Opdater nu</button>
+  </div>
   <main>
     <section class="mode-panel" aria-labelledby="modeTitle"><div><h2 id="modeTitle">Hvordan vil du lede?</h2><p>Scoren beregnes forskelligt for vand og strand.</p></div><div class="segmented-control" role="group" aria-label="Jagtform"><button class="mode-button active" type="button" data-mode="waders" aria-pressed="true">🌊 Waders</button><button class="mode-button" type="button" data-mode="beach" aria-pressed="false">🥾 Strand</button></div></section>
     <section class="dashboard"><div class="map-shell" aria-label="Kort over ravzoner"><div id="map"></div><div class="legend" aria-label="Kortforklaring"><span><i class="legend-dot excellent" aria-hidden="true">★</i>Fremragende</span><span><i class="legend-dot good"></i>God</span><span><i class="legend-dot fair"></i>Middel</span><span><i class="legend-dot weak"></i>Svag</span><span><i class="legend-dot poor"></i>Dårlig</span><span><i class="legend-dot unavailable"></i>Ingen data</span></div></div>
@@ -35,6 +39,7 @@
     </section>
     <p>RavRadar er vejledende. Tjek altid lokale forhold, bølger, strøm og din egen sikkerhed.</p>
     <p id="dataStatus">Indlæser data…</p>
+    <p class="app-version">Version <span id="appVersion">2.6.20</span></p>
     <details class="source-credits">
       <summary>Kilder, kort og licenser</summary>
       <div>
@@ -48,6 +53,6 @@
   <dialog id="developerDialog" class="app-dialog wide-dialog"><button class="dialog-close" type="button" aria-label="Luk">×</button><div class="dialog-content"></div></dialog>
   <dialog id="pinDialog" class="app-dialog"><button class="dialog-close" type="button" aria-label="Luk">×</button><div class="dialog-content"><h2>Udviklertilstand</h2><form id="pinForm" class="stack-form"><label>PIN<input name="pin" type="password" inputmode="numeric" maxlength="4" required></label><button class="primary-button">Åbn</button><p id="pinStatus" class="form-status"></p></form></div></dialog>
   <dialog id="tripDialog" class="app-dialog"><button class="dialog-close" type="button" aria-label="Luk">×</button><div class="dialog-content"></div></dialog>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script><script type="module" src="app.js?v=2.6.17"></script>
-  <script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js?v=2.6.17', { updateViaCache: 'none' }));</script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script><script type="module" src="app.js?v=2.6.20"></script>
+  <script>window.RAVRADAR_VERSION='2.6.20';</script>
 </body></html>
