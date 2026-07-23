@@ -1,18 +1,122 @@
 [
   {
-    "id": "DK-W-03",
-    "name": "Blåvand og Vejers",
-    "nearestCoastM": 2716,
-    "points": 9,
-    "lengthKm": 32.0,
+    "id": "DK-B03-15",
+    "name": "Skallingen syd",
+    "nearestCoastM": 990,
+    "points": 8,
+    "lengthKm": 19.3,
     "segment": 4
   },
   {
-    "id": "DK-W-02",
-    "name": "Hvide Sande og Søndervig",
-    "nearestCoastM": 250,
+    "id": "DK-B03-14",
+    "name": "Skallingen nord",
+    "nearestCoastM": 1566,
+    "points": 4,
+    "lengthKm": 7.2,
+    "segment": 4
+  },
+  {
+    "id": "DK-B03-13",
+    "name": "Blåvand og Hvidbjerg",
+    "nearestCoastM": 1509,
+    "points": 4,
+    "lengthKm": 10.5,
+    "segment": 4
+  },
+  {
+    "id": "DK-B03-12",
+    "name": "Vejers og Børsmose",
+    "nearestCoastM": 755,
+    "points": 3,
+    "lengthKm": 11.4,
+    "segment": 4
+  },
+  {
+    "id": "DK-B03-11",
+    "name": "Henne Strand og Grærup",
+    "nearestCoastM": 26,
+    "points": 5,
+    "lengthKm": 9.4,
+    "segment": 4
+  },
+  {
+    "id": "DK-B03-10",
+    "name": "Nymindegab og Houstrup",
+    "nearestCoastM": 410,
+    "points": 3,
+    "lengthKm": 9.8,
+    "segment": 4
+  },
+  {
+    "id": "DK-B03-09",
+    "name": "Haurvig og Skodbjerge",
+    "nearestCoastM": 81,
+    "points": 4,
+    "lengthKm": 9.0,
+    "segment": 4
+  },
+  {
+    "id": "DK-B03-08",
+    "name": "Hvide Sande syd og Årgab",
+    "nearestCoastM": 597,
+    "points": 2,
+    "lengthKm": 7.0,
+    "segment": 4
+  },
+  {
+    "id": "DK-B03-07",
+    "name": "Hvide Sande nord",
+    "nearestCoastM": 812,
+    "points": 3,
+    "lengthKm": 9.1,
+    "segment": 4
+  },
+  {
+    "id": "DK-B03-06",
+    "name": "Søndervig og Klegod",
+    "nearestCoastM": 809,
+    "points": 4,
+    "lengthKm": 14.0,
+    "segment": 4
+  },
+  {
+    "id": "DK-B03-05",
+    "name": "Fjand og Vedersø Klit",
+    "nearestCoastM": 837,
+    "points": 3,
+    "lengthKm": 13.5,
+    "segment": 4
+  },
+  {
+    "id": "DK-B03-04",
+    "name": "Thorsminde og Husby Klit",
+    "nearestCoastM": 3,
+    "points": 3,
+    "lengthKm": 12.3,
+    "segment": 4
+  },
+  {
+    "id": "DK-B03-03",
+    "name": "Bovbjerg og Trans",
+    "nearestCoastM": 23,
+    "points": 3,
+    "lengthKm": 10.4,
+    "segment": 4
+  },
+  {
+    "id": "DK-B03-02",
+    "name": "Vejlby Klit og Ferring",
+    "nearestCoastM": 157,
+    "points": 2,
+    "lengthKm": 6.6,
+    "segment": 4
+  },
+  {
+    "id": "DK-B03-01",
+    "name": "Harboøre og Vrist",
+    "nearestCoastM": 1786,
     "points": 8,
-    "lengthKm": 32.1,
+    "lengthKm": 18.8,
     "segment": 4
   },
   {
@@ -35,24 +139,16 @@
     "id": "DK-B01-03",
     "name": "Stenbjerg og Vorupør",
     "nearestCoastM": 232,
-    "points": 3,
-    "lengthKm": 7.3,
-    "segment": 4
-  },
-  {
-    "id": "DK-W-01",
-    "name": "Thy og Vorupør",
-    "nearestCoastM": 226,
-    "points": 6,
-    "lengthKm": 8.4,
+    "points": 5,
+    "lengthKm": 13.7,
     "segment": 4
   },
   {
     "id": "DK-B01-04",
     "name": "Vangså og Klitmøller",
     "nearestCoastM": 1214,
-    "points": 4,
-    "lengthKm": 12.0,
+    "points": 5,
+    "lengthKm": 14.0,
     "segment": 4
   },
   {
@@ -92,23 +188,15 @@
     "name": "Tranum og Rødhus",
     "nearestCoastM": 148,
     "points": 3,
-    "lengthKm": 8.5,
-    "segment": 4
-  },
-  {
-    "id": "DK-NW-03",
-    "name": "Blokhus og Saltum",
-    "nearestCoastM": 409,
-    "points": 4,
-    "lengthKm": 3.8,
+    "lengthKm": 8.8,
     "segment": 4
   },
   {
     "id": "DK-B01-10",
     "name": "Blokhus og Hune",
     "nearestCoastM": 124,
-    "points": 2,
-    "lengthKm": 4.3,
+    "points": 5,
+    "lengthKm": 7.9,
     "segment": 4
   },
   {
@@ -116,23 +204,15 @@
     "name": "Saltum og Grønhøj",
     "nearestCoastM": 587,
     "points": 3,
-    "lengthKm": 7.3,
-    "segment": 4
-  },
-  {
-    "id": "DK-NW-02",
-    "name": "Lønstrup og Løkken",
-    "nearestCoastM": 2863,
-    "points": 2,
-    "lengthKm": 3.6,
+    "lengthKm": 7.7,
     "segment": 4
   },
   {
     "id": "DK-B01-12",
     "name": "Løkken og Furreby",
     "nearestCoastM": 175,
-    "points": 3,
-    "lengthKm": 4.5,
+    "points": 4,
+    "lengthKm": 7.7,
     "segment": 4
   },
   {
@@ -180,23 +260,15 @@
     "name": "Kandestederne og Hulsig",
     "nearestCoastM": 2098,
     "points": 3,
-    "lengthKm": 15.9,
-    "segment": 4
-  },
-  {
-    "id": "DK-NW-01",
-    "name": "Skagen og Grenen",
-    "nearestCoastM": 62,
-    "points": 9,
-    "lengthKm": 9.7,
+    "lengthKm": 16.1,
     "segment": 4
   },
   {
     "id": "DK-B01-20",
     "name": "Grenen og Skagen øst",
     "nearestCoastM": 17,
-    "points": 4,
-    "lengthKm": 3.7,
+    "points": 6,
+    "lengthKm": 13.1,
     "segment": 4
   },
   {
@@ -236,47 +308,31 @@
     "name": "Frederikshavn og Bangsbo",
     "nearestCoastM": 837,
     "points": 4,
-    "lengthKm": 9.7,
-    "segment": 4
-  },
-  {
-    "id": "DK-NE-02",
-    "name": "Sæby og Frederikshavn",
-    "nearestCoastM": 423,
-    "points": 5,
-    "lengthKm": 7.1,
+    "lengthKm": 10.9,
     "segment": 4
   },
   {
     "id": "DK-B02-05",
     "name": "Sæby og Sulbæk",
     "nearestCoastM": 51,
-    "points": 3,
-    "lengthKm": 5.9,
+    "points": 5,
+    "lengthKm": 11.7,
     "segment": 4
   },
   {
     "id": "DK-B02-06",
     "name": "Lyngså og Voerså",
     "nearestCoastM": 203,
-    "points": 4,
-    "lengthKm": 9.4,
-    "segment": 4
-  },
-  {
-    "id": "DK-NE-01",
-    "name": "Voerså og Asaa",
-    "nearestCoastM": 815,
-    "points": 2,
-    "lengthKm": 7.6,
+    "points": 5,
+    "lengthKm": 12.3,
     "segment": 4
   },
   {
     "id": "DK-B02-07",
     "name": "Asaa og Melholt",
     "nearestCoastM": 633,
-    "points": 4,
-    "lengthKm": 10.8,
+    "points": 5,
+    "lengthKm": 15.5,
     "segment": 4
   },
   {
@@ -323,16 +379,8 @@
     "id": "DK-B02-12",
     "name": "Øster Hurup og Als",
     "nearestCoastM": 316,
-    "points": 2,
-    "lengthKm": 6.6,
-    "segment": 4
-  },
-  {
-    "id": "DK-E-01",
-    "name": "Øster Hurup og Helberskov",
-    "nearestCoastM": 2184,
-    "points": 5,
-    "lengthKm": 16.5,
+    "points": 6,
+    "lengthKm": 22.1,
     "segment": 4
   },
   {

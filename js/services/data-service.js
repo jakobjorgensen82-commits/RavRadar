@@ -8,7 +8,11 @@ async function fetchJson(url) {
 }
 
 export async function loadZones() {
-  return fetchJson(ZONES_URL);
+  const collection = await fetchJson(ZONES_URL);
+  return {
+    ...collection,
+    features: (collection.features || []).filter(feature => feature?.properties?.zoneStatus !== "legacy")
+  };
 }
 
 export async function loadConditions() {

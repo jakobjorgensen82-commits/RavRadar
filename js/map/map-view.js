@@ -25,6 +25,25 @@ function zoneCasingStyle(selected = false, zoom = 7) {
 }
 
 
+function coastBearing(a, b) {
+  const lat1 = a[0] * Math.PI / 180;
+  const lat2 = b[0] * Math.PI / 180;
+  const dLon = (b[1] - a[1]) * Math.PI / 180;
+  const y = Math.sin(dLon) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+
+function boundaryTickIcon(tangentBearing, selected = false) {
+  const rotation = (tangentBearing + 90) % 360;
+  return L.divIcon({
+    className: "zone-boundary-tick-wrap",
+    html: `<span class="zone-boundary-tick${selected ? " selected" : ""}" style="--tick-rotation:${rotation}deg" aria-hidden="true"></span>`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10]
+  });
+}
+
 export function createMap(elementId) {
   const map = L.map(elementId, { zoomControl: true }).setView([56.45, 10.15], 7);
   const streetMap = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "&copy; OpenStreetMap-bidragsydere" });
@@ -51,6 +70,7 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
 
   for (const feature of featureCollection.features) {
     const zone = feature.properties;
+    if (zone.zoneStatus === "legacy") continue;
     const result = scoreForZone(zone.id);
     const coastLine = Array.isArray(zone.coastLine) && zone.coastLine.length > 1
       ? zone.coastLine.map(([lng, lat]) => [lat, lng])
@@ -79,6 +99,12 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
       bubblingMouseEvents: false
     }).addTo(lineLayer);
 
+    // Sorte tværstreger gør zonens start og slutning synlige uden at dække scorefarven.
+    const startBearing = coastBearing(coastLine[0], coastLine[1]);
+    const endBearing = coastBearing(coastLine[coastLine.length - 2], coastLine[coastLine.length - 1]);
+    const startTick = L.marker(coastLine[0], { icon: boundaryTickIcon(startBearing), pane: "zoneCoastPane", interactive: false, keyboard: false }).addTo(lineLayer);
+    const endTick = L.marker(coastLine[coastLine.length - 1], { icon: boundaryTickIcon(endBearing), pane: "zoneCoastPane", interactive: false, keyboard: false }).addTo(lineLayer);
+
     hit.bindTooltip(`${escapeHtml(zone.name)} · ${result?.available ? `${result.score}/100` : "Ingen data"}`, { direction: "top", sticky: true });
     hit.on("click", () => onSelect(zone));
     hit.on("mouseover", () => visible.setStyle({ weight: visible.options.weight + 1, opacity: 1 }));
@@ -86,7 +112,7 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
     hit.options.ravLevel = result?.level || "unavailable";
     hit.options.ravSelected = false;
     hit.options.zoneTitle = zone.name;
-    lines.set(zone.id, { casing, visible, hit });
+    lines.set(zone.id, { casing, visible, hit, startTick, endTick, startBearing, endBearing });
   }
 
   const bounds = geometryLayer.getBounds();
@@ -99,6 +125,8 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
       pair.hit.options.ravSelected = zoneId === api.selectedId;
       pair.casing.setStyle(zoneCasingStyle(pair.hit.options.ravSelected, map.getZoom()));
       pair.visible.setStyle(zoneLineStyle(pair.hit.options.ravLevel, pair.hit.options.ravSelected, map.getZoom()));
+      pair.startTick.setIcon(boundaryTickIcon(pair.startBearing, pair.hit.options.ravSelected));
+      pair.endTick.setIcon(boundaryTickIcon(pair.endBearing, pair.hit.options.ravSelected));
       if (pair.hit.options.ravSelected) { pair.casing.bringToFront(); pair.visible.bringToFront(); pair.hit.bringToFront(); }
     }
   };

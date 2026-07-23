@@ -931,240 +931,360 @@
       "name": "Harboøre og Vrist",
       "batch": "B03",
       "batchName": "Vestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.1205,
+        56.625
+      ],
+      "dataPoint": [
+        8.045,
+        56.625
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B03-01",
+      "notes": "Præcisionszone langs GSHHS-masterkyst; synlig linje forskydes mod land."
     },
     {
       "planId": "B03-02",
       "name": "Vejlby Klit og Ferring",
       "batch": "B03",
       "batchName": "Vestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.132,
+        56.57
+      ],
+      "dataPoint": [
+        8.055,
+        56.57
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B03-02",
+      "notes": "Præcisionszone langs GSHHS-masterkyst; synlig linje forskydes mod land."
     },
     {
       "planId": "B03-03",
       "name": "Bovbjerg og Trans",
       "batch": "B03",
       "batchName": "Vestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.119,
+        56.505
+      ],
+      "dataPoint": [
+        8.04,
+        56.505
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B03-03",
+      "notes": "Præcisionszone langs GSHHS-masterkyst; synlig linje forskydes mod land."
     },
     {
       "planId": "B03-04",
       "name": "Thorsminde og Husby Klit",
       "batch": "B03",
       "batchName": "Vestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.123,
+        56.385
+      ],
+      "dataPoint": [
+        8.045,
+        56.385
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B03-04",
+      "notes": "Præcisionszone langs GSHHS-masterkyst; synlig linje forskydes mod land."
     },
     {
       "planId": "B03-05",
       "name": "Fjand og Vedersø Klit",
       "batch": "B03",
       "batchName": "Vestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.113,
+        56.285
+      ],
+      "dataPoint": [
+        8.035,
+        56.285
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B03-05",
+      "notes": "Præcisionszone langs GSHHS-masterkyst; synlig linje forskydes mod land."
     },
     {
       "planId": "B03-06",
       "name": "Søndervig og Klegod",
       "batch": "B03",
       "batchName": "Vestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.105,
+        56.145
+      ],
+      "dataPoint": [
+        8.025,
+        56.145
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B03-06",
+      "notes": "Præcisionszone langs GSHHS-masterkyst; synlig linje forskydes mod land."
     },
     {
       "planId": "B03-07",
       "name": "Hvide Sande nord",
       "batch": "B03",
       "batchName": "Vestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.113,
+        56.035
+      ],
+      "dataPoint": [
+        8.03,
+        56.035
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B03-07",
+      "notes": "Præcisionszone langs GSHHS-masterkyst; synlig linje forskydes mod land."
     },
     {
       "planId": "B03-08",
       "name": "Hvide Sande syd og Årgab",
       "batch": "B03",
       "batchName": "Vestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.132,
+        55.985
+      ],
+      "dataPoint": [
+        8.05,
+        55.985
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B03-08",
+      "notes": "Præcisionszone langs GSHHS-masterkyst; synlig linje forskydes mod land."
     },
     {
       "planId": "B03-09",
       "name": "Haurvig og Skodbjerge",
       "batch": "B03",
       "batchName": "Vestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.151,
+        55.915
+      ],
+      "dataPoint": [
+        8.07,
+        55.915
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B03-09",
+      "notes": "Præcisionszone langs GSHHS-masterkyst; synlig linje forskydes mod land."
     },
     {
       "planId": "B03-10",
       "name": "Nymindegab og Houstrup",
       "batch": "B03",
       "batchName": "Vestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.175,
+        55.825
+      ],
+      "dataPoint": [
+        8.09,
+        55.825
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B03-10",
+      "notes": "Præcisionszone langs GSHHS-masterkyst; synlig linje forskydes mod land."
     },
     {
       "planId": "B03-11",
       "name": "Henne Strand og Grærup",
       "batch": "B03",
       "batchName": "Vestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.163,
+        55.742
+      ],
+      "dataPoint": [
+        8.078,
+        55.742
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B03-11",
+      "notes": "Præcisionszone langs GSHHS-masterkyst; synlig linje forskydes mod land."
     },
     {
       "planId": "B03-12",
       "name": "Vejers og Børsmose",
       "batch": "B03",
       "batchName": "Vestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.135,
+        55.66
+      ],
+      "dataPoint": [
+        8.045,
+        55.66
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B03-12",
+      "notes": "Præcisionszone langs GSHHS-masterkyst; synlig linje forskydes mod land."
     },
     {
       "planId": "B03-13",
       "name": "Blåvand og Hvidbjerg",
       "batch": "B03",
       "batchName": "Vestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.105,
+        55.565
+      ],
+      "dataPoint": [
+        8.015,
+        55.565
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B03-13",
+      "notes": "Præcisionszone langs GSHHS-masterkyst; synlig linje forskydes mod land."
     },
     {
       "planId": "B03-14",
       "name": "Skallingen nord",
       "batch": "B03",
       "batchName": "Vestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.185,
+        55.51
+      ],
+      "dataPoint": [
+        8.095,
+        55.51
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B03-14",
+      "notes": "Præcisionszone langs GSHHS-masterkyst; synlig linje forskydes mod land."
     },
     {
       "planId": "B03-15",
       "name": "Skallingen syd",
       "batch": "B03",
       "batchName": "Vestjylland",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.27,
+        55.475
+      ],
+      "dataPoint": [
+        8.185,
+        55.455
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B03-15",
+      "notes": "Præcisionszone langs GSHHS-masterkyst; synlig linje forskydes mod land."
     },
     {
       "planId": "B04-01",
@@ -3519,6 +3639,11 @@
       "date": "2026-07-23",
       "batch": "B02",
       "change": "Alle 15 B02-zoner er genplaceret med kystnære pins, separate marine datapunkter og naturligere geofences. Egense/Mou er flyttet til Limfjordens faktiske sydkyst."
+    },
+    {
+      "date": "2026-07-23",
+      "batch": "B03",
+      "change": "15 vestjyske zoner aktiveret fra Harboøre/Vrist til Skallingen. De brede legacy-zoner DK-W-02 og DK-W-03 er bevaret i data, men markeret som erstattet for at undgå dobbeltvisning."
     }
   ]
 }

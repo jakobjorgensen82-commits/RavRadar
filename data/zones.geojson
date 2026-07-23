@@ -21,46 +21,8 @@
           10.63,
           57.74
         ],
-        "coastLine": [
-          [
-            10.488486,
-            57.716697
-          ],
-          [
-            10.555191,
-            57.744354
-          ],
-          [
-            10.558648,
-            57.744455
-          ],
-          [
-            10.59861,
-            57.741704
-          ],
-          [
-            10.60595,
-            57.741293
-          ],
-          [
-            10.610341,
-            57.74123
-          ],
-          [
-            10.614589,
-            57.740684
-          ],
-          [
-            10.618245,
-            57.740352
-          ],
-          [
-            10.632768,
-            57.739274
-          ]
-        ],
-        "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "zoneStatus": "legacy",
+        "supersededByBatch": "B01"
       },
       "geometry": {
         "type": "Polygon",
@@ -109,18 +71,8 @@
           9.66,
           57.38
         ],
-        "coastLine": [
-          [
-            9.673319,
-            57.341922
-          ],
-          [
-            9.70371,
-            57.369497
-          ]
-        ],
-        "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "zoneStatus": "legacy",
+        "supersededByBatch": "B01"
       },
       "geometry": {
         "type": "Polygon",
@@ -169,26 +121,8 @@
           9.58,
           57.25
         ],
-        "coastLine": [
-          [
-            9.537021,
-            57.226981
-          ],
-          [
-            9.555386,
-            57.235797
-          ],
-          [
-            9.557609,
-            57.23724
-          ],
-          [
-            9.575474,
-            57.253805
-          ]
-        ],
-        "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "zoneStatus": "legacy",
+        "supersededByBatch": "B01"
       },
       "geometry": {
         "type": "Polygon",
@@ -237,34 +171,8 @@
           8.36,
           56.95
         ],
-        "coastLine": [
-          [
-            8.33864,
-            56.936633
-          ],
-          [
-            8.34147,
-            56.94026
-          ],
-          [
-            8.343476,
-            56.941884
-          ],
-          [
-            8.365428,
-            56.957874
-          ],
-          [
-            8.390106,
-            56.97509
-          ],
-          [
-            8.420834,
-            56.996823
-          ]
-        ],
-        "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "zoneStatus": "legacy",
+        "supersededByBatch": "B01"
       },
       "geometry": {
         "type": "Polygon",
@@ -313,42 +221,8 @@
           8.1,
           56.02
         ],
-        "coastLine": [
-          [
-            8.156996,
-            55.880047
-          ],
-          [
-            8.14438,
-            55.940682
-          ],
-          [
-            8.143573,
-            55.942593
-          ],
-          [
-            8.120301,
-            55.988029
-          ],
-          [
-            8.105127,
-            56.016683
-          ],
-          [
-            8.098556,
-            56.030353
-          ],
-          [
-            8.105119,
-            56.067744
-          ],
-          [
-            8.121136,
-            56.163832
-          ]
-        ],
-        "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "zoneStatus": "legacy",
+        "supersededByBatch": "B03"
       },
       "geometry": {
         "type": "Polygon",
@@ -397,46 +271,8 @@
           8.13,
           55.57
         ],
-        "coastLine": [
-          [
-            8.313696,
-            55.466174
-          ],
-          [
-            8.312551,
-            55.465736
-          ],
-          [
-            8.194605,
-            55.523802
-          ],
-          [
-            8.19165,
-            55.524815
-          ],
-          [
-            8.113446,
-            55.546951
-          ],
-          [
-            8.072707,
-            55.558711
-          ],
-          [
-            8.072412,
-            55.560319
-          ],
-          [
-            8.078018,
-            55.571836
-          ],
-          [
-            8.12959,
-            55.674592
-          ]
-        ],
-        "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "zoneStatus": "legacy",
+        "supersededByBatch": "B03"
       },
       "geometry": {
         "type": "Polygon",
@@ -485,18 +321,8 @@
           10.49,
           57.18
         ],
-        "coastLine": [
-          [
-            10.528586,
-            57.217286
-          ],
-          [
-            10.449625,
-            57.163869
-          ]
-        ],
-        "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "zoneStatus": "legacy",
+        "supersededByBatch": "B02"
       },
       "geometry": {
         "type": "Polygon",
@@ -545,30 +371,8 @@
           10.53,
           57.36
         ],
-        "coastLine": [
-          [
-            10.531228,
-            57.410886
-          ],
-          [
-            10.518185,
-            57.392497
-          ],
-          [
-            10.517346,
-            57.390622
-          ],
-          [
-            10.522027,
-            57.360967
-          ],
-          [
-            10.524376,
-            57.348877
-          ]
-        ],
-        "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "zoneStatus": "legacy",
+        "supersededByBatch": "B02"
       },
       "geometry": {
         "type": "Polygon",
@@ -617,30 +421,8 @@
           10.32,
           56.8
         ],
-        "coastLine": [
-          [
-            10.284239,
-            56.801934
-          ],
-          [
-            10.291369,
-            56.770239
-          ],
-          [
-            10.335732,
-            56.707647
-          ],
-          [
-            10.333603,
-            56.707384
-          ],
-          [
-            10.248698,
-            56.71651
-          ]
-        ],
-        "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "zoneStatus": "legacy",
+        "supersededByBatch": "B02"
       },
       "geometry": {
         "type": "Polygon",
@@ -736,7 +518,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -840,7 +622,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -956,7 +738,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -1076,7 +858,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -1176,7 +958,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -1268,7 +1050,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -1368,7 +1150,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -1496,7 +1278,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -1588,7 +1370,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -1684,7 +1466,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -1796,7 +1578,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -1861,7 +1643,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -1947,7 +1729,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -2009,7 +1791,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -2066,16 +1848,24 @@
             56.876837
           ],
           [
-            8.318358,
-            56.909584
+            8.318324,
+            56.909541
           ],
           [
-            8.339943,
-            56.937013
+            8.342739,
+            56.940564
+          ],
+          [
+            8.344736,
+            56.942193
+          ],
+          [
+            8.401596,
+            56.982874
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -2128,16 +1918,20 @@
         "zoneStatus": "active",
         "coastLine": [
           [
-            8.420273,
-            56.996076
+            8.40074,
+            56.982234
           ],
           [
-            8.464612,
-            57.027132
+            8.433468,
+            57.005384
           ],
           [
-            8.497337,
-            57.050742
+            8.464659,
+            57.027166
+          ],
+          [
+            8.497363,
+            57.050761
           ],
           [
             8.540868,
@@ -2145,7 +1939,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -2215,7 +2009,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -2293,7 +2087,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -2371,7 +2165,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -2445,7 +2239,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -2502,16 +2296,16 @@
             57.176332
           ],
           [
-            9.497511,
-            57.207445
+            9.500409,
+            57.208829
           ],
           [
-            9.538358,
-            57.227035
+            9.541339,
+            57.22847
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -2564,8 +2358,20 @@
         "zoneStatus": "active",
         "coastLine": [
           [
-            9.576638,
-            57.253396
+            9.540677,
+            57.228201
+          ],
+          [
+            9.557036,
+            57.235963
+          ],
+          [
+            9.559086,
+            57.237562
+          ],
+          [
+            9.589006,
+            57.264587
           ],
           [
             9.613147,
@@ -2573,7 +2379,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -2630,16 +2436,16 @@
             57.286238
           ],
           [
-            9.651991,
-            57.321785
+            9.653619,
+            57.323256
           ],
           [
-            9.674478,
-            57.342286
+            9.677785,
+            57.345316
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -2692,12 +2498,16 @@
         "zoneStatus": "active",
         "coastLine": [
           [
-            9.704732,
-            57.369528
+            9.677152,
+            57.344858
           ],
           [
-            9.728336,
-            57.391006
+            9.707336,
+            57.371868
+          ],
+          [
+            9.727946,
+            57.39059
           ],
           [
             9.738865,
@@ -2705,7 +2515,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -2771,7 +2581,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -2841,7 +2651,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -2911,7 +2721,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -2977,7 +2787,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -3051,7 +2861,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -3108,16 +2918,16 @@
             57.629456
           ],
           [
-            10.388693,
-            57.674824
+            10.389599,
+            57.675199
           ],
           [
-            10.489917,
-            57.716955
+            10.491632,
+            57.717664
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -3187,7 +2997,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -3240,16 +3050,24 @@
         "zoneStatus": "active",
         "coastLine": [
           [
-            10.631265,
-            57.739354
+            10.490168,
+            57.717475
           ],
           [
-            10.655579,
-            57.737641
+            10.553615,
+            57.743696
           ],
           [
-            10.65481,
-            57.736809
+            10.556656,
+            57.744583
+          ],
+          [
+            10.654095,
+            57.737746
+          ],
+          [
+            10.655917,
+            57.737244
           ],
           [
             10.626376,
@@ -3257,7 +3075,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -3333,7 +3151,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -3405,7 +3223,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -3473,7 +3291,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -3532,20 +3350,20 @@
             57.487304
           ],
           [
-            10.549019,
-            57.439104
+            10.549482,
+            57.438703
           ],
           [
-            10.549807,
-            57.437382
+            10.549494,
+            57.43693
           ],
           [
-            10.530883,
-            57.410147
+            10.524035,
+            57.400328
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -3601,11 +3419,19 @@
         "coastLine": [
           [
             10.52412,
-            57.349329
+            57.40104
           ],
           [
-            10.527161,
-            57.331704
+            10.517577,
+            57.391779
+          ],
+          [
+            10.517357,
+            57.389849
+          ],
+          [
+            10.525979,
+            57.338354
           ],
           [
             10.53361,
@@ -3613,7 +3439,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -3672,20 +3498,24 @@
             57.297418
           ],
           [
-            10.54099,
-            57.252531
+            10.541074,
+            57.252042
           ],
           [
-            10.545248,
-            57.228996
+            10.54502,
+            57.230231
           ],
           [
-            10.527373,
-            57.216851
+            10.544536,
+            57.2284
+          ],
+          [
+            10.496746,
+            57.196241
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -3740,16 +3570,20 @@
         "placementNote": "Pin placeret på stranden umiddelbart syd for Asaa Havn; havnen fungerer som tydelig lokal reference og naturlig opdeling.",
         "coastLine": [
           [
-            10.448533,
-            57.164333
+            10.497402,
+            57.196936
           ],
           [
-            10.416477,
-            57.142629
+            10.435161,
+            57.155353
           ],
           [
-            10.414699,
-            57.140944
+            10.416838,
+            57.142876
+          ],
+          [
+            10.414848,
+            57.14124
           ],
           [
             10.382387,
@@ -3757,7 +3591,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -3825,7 +3659,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -3897,7 +3731,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -3969,7 +3803,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -4045,7 +3879,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -4104,12 +3938,28 @@
             56.860873
           ],
           [
-            10.282781,
-            56.801821
+            10.281819,
+            56.805955
+          ],
+          [
+            10.290318,
+            56.770554
+          ],
+          [
+            10.334932,
+            56.70826
+          ],
+          [
+            10.334551,
+            56.707203
+          ],
+          [
+            10.264168,
+            56.714839
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -4185,7 +4035,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -4273,7 +4123,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -4365,7 +4215,7 @@
           ]
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
-        "coastLineVersion": "2.6.13"
+        "coastLineVersion": "2.6.14"
       },
       "geometry": {
         "type": "Polygon",
@@ -4390,6 +4240,1052 @@
             [
               10.27,
               56.565
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B03-01",
+        "name": "Harboøre og Vrist",
+        "region": "Lemvig vestkyst",
+        "coastType": "west",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": false,
+        "dataPoint": [
+          8.045,
+          56.625
+        ],
+        "pinPoint": [
+          8.1205,
+          56.625
+        ],
+        "batch": "B03",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            8.139876,
+            56.595807
+          ],
+          [
+            8.158074,
+            56.643942
+          ],
+          [
+            8.159424,
+            56.645748
+          ],
+          [
+            8.213047,
+            56.709712
+          ],
+          [
+            8.214449,
+            56.709752
+          ],
+          [
+            8.232661,
+            56.684204
+          ],
+          [
+            8.232145,
+            56.682423
+          ],
+          [
+            8.218013,
+            56.666624
+          ]
+        ],
+        "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
+        "coastLineVersion": "2.6.14"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8.01,
+              56.5975
+            ],
+            [
+              8.1605,
+              56.5975
+            ],
+            [
+              8.1605,
+              56.69
+            ],
+            [
+              8.01,
+              56.69
+            ],
+            [
+              8.01,
+              56.5975
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B03-02",
+        "name": "Vejlby Klit og Ferring",
+        "region": "Lemvig vestkyst",
+        "coastType": "west",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": false,
+        "dataPoint": [
+          8.055,
+          56.57
+        ],
+        "pinPoint": [
+          8.132,
+          56.57
+        ],
+        "batch": "B03",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            8.117964,
+            56.537708
+          ],
+          [
+            8.139876,
+            56.596202
+          ]
+        ],
+        "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
+        "coastLineVersion": "2.6.14"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8.02,
+              56.5375
+            ],
+            [
+              8.172,
+              56.5375
+            ],
+            [
+              8.172,
+              56.5975
+            ],
+            [
+              8.02,
+              56.5975
+            ],
+            [
+              8.02,
+              56.5375
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B03-03",
+        "name": "Bovbjerg og Trans",
+        "region": "Bovbjerg Klint",
+        "coastType": "west",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": false,
+        "reefs": true,
+        "seagrass": false,
+        "dataPoint": [
+          8.04,
+          56.505
+        ],
+        "pinPoint": [
+          8.119,
+          56.505
+        ],
+        "batch": "B03",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            8.121223,
+            56.444674
+          ],
+          [
+            8.119488,
+            56.501141
+          ],
+          [
+            8.118008,
+            56.53823
+          ]
+        ],
+        "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
+        "coastLineVersion": "2.6.14"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8.005,
+              56.445
+            ],
+            [
+              8.159,
+              56.445
+            ],
+            [
+              8.159,
+              56.5375
+            ],
+            [
+              8.005,
+              56.5375
+            ],
+            [
+              8.005,
+              56.445
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B03-04",
+        "name": "Thorsminde og Husby Klit",
+        "region": "Holstebro vestkyst",
+        "coastType": "west",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": false,
+        "dataPoint": [
+          8.045,
+          56.385
+        ],
+        "pinPoint": [
+          8.123,
+          56.385
+        ],
+        "batch": "B03",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            8.125217,
+            56.334772
+          ],
+          [
+            8.123633,
+            56.386121
+          ],
+          [
+            8.121206,
+            56.445329
+          ]
+        ],
+        "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
+        "coastLineVersion": "2.6.14"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8.01,
+              56.335
+            ],
+            [
+              8.163,
+              56.335
+            ],
+            [
+              8.163,
+              56.445
+            ],
+            [
+              8.01,
+              56.445
+            ],
+            [
+              8.01,
+              56.335
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B03-05",
+        "name": "Fjand og Vedersø Klit",
+        "region": "Ulfborg vestkyst",
+        "coastType": "west",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": false,
+        "dataPoint": [
+          8.035,
+          56.285
+        ],
+        "pinPoint": [
+          8.113,
+          56.285
+        ],
+        "batch": "B03",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            8.129462,
+            56.214279
+          ],
+          [
+            8.127295,
+            56.283717
+          ],
+          [
+            8.125248,
+            56.335361
+          ]
+        ],
+        "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
+        "coastLineVersion": "2.6.14"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8.0,
+              56.215
+            ],
+            [
+              8.153,
+              56.215
+            ],
+            [
+              8.153,
+              56.335
+            ],
+            [
+              8.0,
+              56.335
+            ],
+            [
+              8.0,
+              56.215
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B03-06",
+        "name": "Søndervig og Klegod",
+        "region": "Holmsland Klit nord",
+        "coastType": "west",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": false,
+        "dataPoint": [
+          8.025,
+          56.145
+        ],
+        "pinPoint": [
+          8.105,
+          56.145
+        ],
+        "batch": "B03",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            8.109452,
+            56.089694
+          ],
+          [
+            8.118399,
+            56.142544
+          ],
+          [
+            8.129459,
+            56.211001
+          ],
+          [
+            8.129495,
+            56.214914
+          ]
+        ],
+        "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
+        "coastLineVersion": "2.6.14"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.99,
+              56.09
+            ],
+            [
+              8.145,
+              56.09
+            ],
+            [
+              8.145,
+              56.215
+            ],
+            [
+              7.99,
+              56.215
+            ],
+            [
+              7.99,
+              56.09
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B03-07",
+        "name": "Hvide Sande nord",
+        "region": "Holmsland Klit",
+        "coastType": "west",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": false,
+        "dataPoint": [
+          8.03,
+          56.035
+        ],
+        "pinPoint": [
+          8.113,
+          56.035
+        ],
+        "batch": "B03",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            8.110169,
+            56.009299
+          ],
+          [
+            8.099812,
+            56.029992
+          ],
+          [
+            8.109436,
+            56.090317
+          ]
+        ],
+        "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
+        "coastLineVersion": "2.6.14"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.995,
+              56.01
+            ],
+            [
+              8.153,
+              56.01
+            ],
+            [
+              8.153,
+              56.09
+            ],
+            [
+              7.995,
+              56.09
+            ],
+            [
+              7.995,
+              56.01
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B03-08",
+        "name": "Hvide Sande syd og Årgab",
+        "region": "Holmsland Klit",
+        "coastType": "west",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": false,
+        "dataPoint": [
+          8.05,
+          55.985
+        ],
+        "pinPoint": [
+          8.132,
+          55.985
+        ],
+        "batch": "B03",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            8.140654,
+            55.949415
+          ],
+          [
+            8.110125,
+            56.00974
+          ]
+        ],
+        "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
+        "coastLineVersion": "2.6.14"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8.015,
+              55.95
+            ],
+            [
+              8.172,
+              55.95
+            ],
+            [
+              8.172,
+              56.01
+            ],
+            [
+              8.015,
+              56.01
+            ],
+            [
+              8.015,
+              55.95
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B03-09",
+        "name": "Haurvig og Skodbjerge",
+        "region": "Holmsland Klit syd",
+        "coastType": "west",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": false,
+        "dataPoint": [
+          8.07,
+          55.915
+        ],
+        "pinPoint": [
+          8.151,
+          55.915
+        ],
+        "batch": "B03",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            8.159649,
+            55.869473
+          ],
+          [
+            8.145073,
+            55.940343
+          ],
+          [
+            8.144521,
+            55.942297
+          ],
+          [
+            8.140605,
+            55.949915
+          ]
+        ],
+        "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
+        "coastLineVersion": "2.6.14"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8.035,
+              55.87
+            ],
+            [
+              8.191,
+              55.87
+            ],
+            [
+              8.191,
+              55.95
+            ],
+            [
+              8.035,
+              55.95
+            ],
+            [
+              8.035,
+              55.87
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B03-10",
+        "name": "Nymindegab og Houstrup",
+        "region": "Ringkøbing Fjord sydvest",
+        "coastType": "west",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": false,
+        "dataPoint": [
+          8.09,
+          55.825
+        ],
+        "pinPoint": [
+          8.175,
+          55.825
+        ],
+        "batch": "B03",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            8.177702,
+            55.782488
+          ],
+          [
+            8.168261,
+            55.829187
+          ],
+          [
+            8.159588,
+            55.87005
+          ]
+        ],
+        "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
+        "coastLineVersion": "2.6.14"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8.055,
+              55.7835
+            ],
+            [
+              8.215,
+              55.7835
+            ],
+            [
+              8.215,
+              55.87
+            ],
+            [
+              8.055,
+              55.87
+            ],
+            [
+              8.055,
+              55.7835
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B03-11",
+        "name": "Henne Strand og Grærup",
+        "region": "Varde vestkyst",
+        "coastType": "west",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": false,
+        "dataPoint": [
+          8.078,
+          55.742
+        ],
+        "pinPoint": [
+          8.163,
+          55.742
+        ],
+        "batch": "B03",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            8.143885,
+            55.701592
+          ],
+          [
+            8.160011,
+            55.733672
+          ],
+          [
+            8.179618,
+            55.773285
+          ],
+          [
+            8.179379,
+            55.77522
+          ],
+          [
+            8.177739,
+            55.78299
+          ]
+        ],
+        "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
+        "coastLineVersion": "2.6.14"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8.043,
+              55.701
+            ],
+            [
+              8.203,
+              55.701
+            ],
+            [
+              8.203,
+              55.7835
+            ],
+            [
+              8.043,
+              55.7835
+            ],
+            [
+              8.043,
+              55.701
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B03-12",
+        "name": "Vejers og Børsmose",
+        "region": "Varde vestkyst",
+        "coastType": "west",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": false,
+        "dataPoint": [
+          8.045,
+          55.66
+        ],
+        "pinPoint": [
+          8.135,
+          55.66
+        ],
+        "batch": "B03",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            8.094923,
+            55.603459
+          ],
+          [
+            8.117786,
+            55.648981
+          ],
+          [
+            8.143973,
+            55.702133
+          ]
+        ],
+        "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
+        "coastLineVersion": "2.6.14"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8.01,
+              55.6125
+            ],
+            [
+              8.175,
+              55.6125
+            ],
+            [
+              8.175,
+              55.701
+            ],
+            [
+              8.01,
+              55.701
+            ],
+            [
+              8.01,
+              55.6125
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B03-13",
+        "name": "Blåvand og Hvidbjerg",
+        "region": "Blåvandshuk",
+        "coastType": "west",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": true,
+        "reefs": true,
+        "seagrass": false,
+        "dataPoint": [
+          8.015,
+          55.565
+        ],
+        "pinPoint": [
+          8.105,
+          55.565
+        ],
+        "batch": "B03",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            8.149146,
+            55.537242
+          ],
+          [
+            8.074589,
+            55.558624
+          ],
+          [
+            8.07365,
+            55.560069
+          ],
+          [
+            8.095145,
+            55.604085
+          ]
+        ],
+        "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
+        "coastLineVersion": "2.6.14"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7.98,
+              55.5375
+            ],
+            [
+              8.145,
+              55.5375
+            ],
+            [
+              8.145,
+              55.6125
+            ],
+            [
+              7.98,
+              55.6125
+            ],
+            [
+              7.98,
+              55.5375
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B03-14",
+        "name": "Skallingen nord",
+        "region": "Skallingen",
+        "coastType": "west",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": false,
+        "dataPoint": [
+          8.095,
+          55.51
+        ],
+        "pinPoint": [
+          8.185,
+          55.51
+        ],
+        "batch": "B03",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            8.241484,
+            55.501138
+          ],
+          [
+            8.194889,
+            55.5242
+          ],
+          [
+            8.191984,
+            55.525219
+          ],
+          [
+            8.149006,
+            55.537652
+          ]
+        ],
+        "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
+        "coastLineVersion": "2.6.14"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8.06,
+              55.4925
+            ],
+            [
+              8.225,
+              55.4925
+            ],
+            [
+              8.225,
+              55.5375
+            ],
+            [
+              8.06,
+              55.5375
+            ],
+            [
+              8.06,
+              55.4925
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B03-15",
+        "name": "Skallingen syd",
+        "region": "Skallingen",
+        "coastType": "west",
+        "onshoreDirectionDeg": 270,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": false,
+        "dataPoint": [
+          8.185,
+          55.455
+        ],
+        "pinPoint": [
+          8.27,
+          55.475
+        ],
+        "batch": "B03",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            8.249599,
+            55.571259
+          ],
+          [
+            8.239568,
+            55.55655
+          ],
+          [
+            8.240882,
+            55.554871
+          ],
+          [
+            8.310814,
+            55.495695
+          ],
+          [
+            8.311572,
+            55.493828
+          ],
+          [
+            8.313928,
+            55.466131
+          ],
+          [
+            8.312233,
+            55.466342
+          ],
+          [
+            8.241179,
+            55.501515
+          ]
+        ],
+        "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
+        "coastLineVersion": "2.6.14"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8.15,
+              55.43
+            ],
+            [
+              8.31,
+              55.43
+            ],
+            [
+              8.31,
+              55.4925
+            ],
+            [
+              8.15,
+              55.4925
+            ],
+            [
+              8.15,
+              55.43
             ]
           ]
         ]
