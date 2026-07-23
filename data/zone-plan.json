@@ -2635,15 +2635,47 @@
       "name": "Trelde Næs og Vejlby Fed",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        9.84,
+        55.62
+      ],
+      "dataPoint": [
+        9.801109,
+        55.58818
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.78,
+              55.585
+            ],
+            [
+              9.9,
+              55.585
+            ],
+            [
+              9.9,
+              55.655
+            ],
+            [
+              9.78,
+              55.655
+            ],
+            [
+              9.78,
+              55.585
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -2651,15 +2683,47 @@
       "name": "Strib og Røjle Klint",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        9.76,
+        55.54
+      ],
+      "dataPoint": [
+        9.815,
+        55.54
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.7,
+              55.505
+            ],
+            [
+              9.82,
+              55.505
+            ],
+            [
+              9.82,
+              55.575
+            ],
+            [
+              9.7,
+              55.575
+            ],
+            [
+              9.7,
+              55.505
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -2667,15 +2731,47 @@
       "name": "Middelfart og Hindsgavl",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        9.7,
+        55.5
+      ],
+      "dataPoint": [
+        9.751683,
+        55.515391
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.64,
+              55.465
+            ],
+            [
+              9.76,
+              55.465
+            ],
+            [
+              9.76,
+              55.535
+            ],
+            [
+              9.64,
+              55.535
+            ],
+            [
+              9.64,
+              55.465
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -2683,15 +2779,47 @@
       "name": "Båring Vig og Varbjerg",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        9.88,
+        55.53
+      ],
+      "dataPoint": [
+        9.88,
+        55.485
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.82,
+              55.495
+            ],
+            [
+              9.94,
+              55.495
+            ],
+            [
+              9.94,
+              55.565
+            ],
+            [
+              9.82,
+              55.565
+            ],
+            [
+              9.82,
+              55.495
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -2699,15 +2827,47 @@
       "name": "Bogense og Gyldensteen",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.09,
+        55.57
+      ],
+      "dataPoint": [
+        10.09,
+        55.525
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.03,
+              55.535
+            ],
+            [
+              10.15,
+              55.535
+            ],
+            [
+              10.15,
+              55.605
+            ],
+            [
+              10.03,
+              55.605
+            ],
+            [
+              10.03,
+              55.535
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -2715,15 +2875,47 @@
       "name": "Flyvesandet og Enebærodde",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.31,
+        55.61
+      ],
+      "dataPoint": [
+        10.31,
+        55.565
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.25,
+              55.575
+            ],
+            [
+              10.37,
+              55.575
+            ],
+            [
+              10.37,
+              55.645
+            ],
+            [
+              10.25,
+              55.645
+            ],
+            [
+              10.25,
+              55.575
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -2731,15 +2923,47 @@
       "name": "Hasmark og Hofmansgave",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.45,
+        55.57
+      ],
+      "dataPoint": [
+        10.4225,
+        55.531029
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.39,
+              55.535
+            ],
+            [
+              10.51,
+              55.535
+            ],
+            [
+              10.51,
+              55.605
+            ],
+            [
+              10.39,
+              55.605
+            ],
+            [
+              10.39,
+              55.535
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -2747,15 +2971,47 @@
       "name": "Kerteminde nord og Mølleå",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.67,
+        55.47
+      ],
+      "dataPoint": [
+        10.615,
+        55.47
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.61,
+              55.435
+            ],
+            [
+              10.73,
+              55.435
+            ],
+            [
+              10.73,
+              55.505
+            ],
+            [
+              10.61,
+              55.505
+            ],
+            [
+              10.61,
+              55.435
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -2763,15 +3019,47 @@
       "name": "Kerteminde syd og Lundsgård",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.68,
+        55.42
+      ],
+      "dataPoint": [
+        10.625,
+        55.42
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.62,
+              55.385
+            ],
+            [
+              10.74,
+              55.385
+            ],
+            [
+              10.74,
+              55.455
+            ],
+            [
+              10.62,
+              55.455
+            ],
+            [
+              10.62,
+              55.385
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -2779,15 +3067,47 @@
       "name": "Nyborg nord og Storebæltskysten",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.8,
+        55.35
+      ],
+      "dataPoint": [
+        10.745,
+        55.35
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.74,
+              55.315
+            ],
+            [
+              10.86,
+              55.315
+            ],
+            [
+              10.86,
+              55.385
+            ],
+            [
+              10.74,
+              55.385
+            ],
+            [
+              10.74,
+              55.315
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -2795,15 +3115,47 @@
       "name": "Nyborg syd og Knudshoved",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.82,
+        55.29
+      ],
+      "dataPoint": [
+        10.765,
+        55.29
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.76,
+              55.255
+            ],
+            [
+              10.88,
+              55.255
+            ],
+            [
+              10.88,
+              55.325
+            ],
+            [
+              10.76,
+              55.325
+            ],
+            [
+              10.76,
+              55.255
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -2811,15 +3163,47 @@
       "name": "Tårup og Kongshøj",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.75,
+        55.2
+      ],
+      "dataPoint": [
+        10.695836,
+        55.207814
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.69,
+              55.165
+            ],
+            [
+              10.81,
+              55.165
+            ],
+            [
+              10.81,
+              55.235
+            ],
+            [
+              10.69,
+              55.235
+            ],
+            [
+              10.69,
+              55.165
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -2827,15 +3211,47 @@
       "name": "Lundeborg og Elsehoved",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.72,
+        55.1
+      ],
+      "dataPoint": [
+        10.665836,
+        55.107814
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.665,
+              55.065
+            ],
+            [
+              10.775,
+              55.065
+            ],
+            [
+              10.775,
+              55.135
+            ],
+            [
+              10.665,
+              55.135
+            ],
+            [
+              10.665,
+              55.065
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -2843,15 +3259,47 @@
       "name": "Thurø og Smørmosen",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.72,
+        55.04
+      ],
+      "dataPoint": [
+        10.665,
+        55.04
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.665,
+              55.005
+            ],
+            [
+              10.775,
+              55.005
+            ],
+            [
+              10.775,
+              55.075
+            ],
+            [
+              10.665,
+              55.075
+            ],
+            [
+              10.665,
+              55.005
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -2859,15 +3307,47 @@
       "name": "Svendborg og Christiansminde",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.63,
+        55.05
+      ],
+      "dataPoint": [
+        10.582369,
+        55.0725
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.575,
+              55.015
+            ],
+            [
+              10.685,
+              55.015
+            ],
+            [
+              10.685,
+              55.085
+            ],
+            [
+              10.575,
+              55.085
+            ],
+            [
+              10.575,
+              55.015
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -2875,15 +3355,47 @@
       "name": "Tåsinge øst",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.67,
+        54.98
+      ],
+      "dataPoint": [
+        10.615,
+        54.98
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.615,
+              54.945
+            ],
+            [
+              10.725,
+              54.945
+            ],
+            [
+              10.725,
+              55.015
+            ],
+            [
+              10.615,
+              55.015
+            ],
+            [
+              10.615,
+              54.945
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -2891,15 +3403,47 @@
       "name": "Langeland nord og Lohals",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.72,
+        55.13
+      ],
+      "dataPoint": [
+        10.681109,
+        55.09818
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.665,
+              55.095
+            ],
+            [
+              10.775,
+              55.095
+            ],
+            [
+              10.775,
+              55.165
+            ],
+            [
+              10.665,
+              55.165
+            ],
+            [
+              10.665,
+              55.095
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -2907,15 +3451,47 @@
       "name": "Langeland øst og Spodsbjerg",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.95,
+        54.93
+      ],
+      "dataPoint": [
+        10.895,
+        54.93
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.895,
+              54.895
+            ],
+            [
+              11.005,
+              54.895
+            ],
+            [
+              11.005,
+              54.965
+            ],
+            [
+              10.895,
+              54.965
+            ],
+            [
+              10.895,
+              54.895
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -2923,15 +3499,47 @@
       "name": "Langeland syd og Bagenkop",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.69,
+        54.75
+      ],
+      "dataPoint": [
+        10.69,
+        54.795
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.635,
+              54.715
+            ],
+            [
+              10.745,
+              54.715
+            ],
+            [
+              10.745,
+              54.785
+            ],
+            [
+              10.635,
+              54.785
+            ],
+            [
+              10.635,
+              54.715
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -2939,15 +3547,47 @@
       "name": "Langeland vest og Ristinge",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.6,
+        54.82
+      ],
+      "dataPoint": [
+        10.654164,
+        54.827814
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.545,
+              54.785
+            ],
+            [
+              10.655,
+              54.785
+            ],
+            [
+              10.655,
+              54.855
+            ],
+            [
+              10.545,
+              54.855
+            ],
+            [
+              10.545,
+              54.785
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -2955,15 +3595,47 @@
       "name": "Ærø nord og Søby",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.26,
+        54.94
+      ],
+      "dataPoint": [
+        10.295353,
+        54.905528
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.205,
+              54.905
+            ],
+            [
+              10.315,
+              54.905
+            ],
+            [
+              10.315,
+              54.975
+            ],
+            [
+              10.205,
+              54.975
+            ],
+            [
+              10.205,
+              54.905
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -2971,15 +3643,47 @@
       "name": "Ærø syd og Voderup",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.35,
+        54.84
+      ],
+      "dataPoint": [
+        10.368811,
+        54.882286
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.295,
+              54.805
+            ],
+            [
+              10.405,
+              54.805
+            ],
+            [
+              10.405,
+              54.875
+            ],
+            [
+              10.295,
+              54.875
+            ],
+            [
+              10.295,
+              54.805
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -2987,15 +3691,47 @@
       "name": "Ærø øst og Marstal",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.53,
+        54.85
+      ],
+      "dataPoint": [
+        10.478317,
+        54.865391
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.475,
+              54.815
+            ],
+            [
+              10.585,
+              54.815
+            ],
+            [
+              10.585,
+              54.885
+            ],
+            [
+              10.475,
+              54.885
+            ],
+            [
+              10.475,
+              54.815
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -3003,15 +3739,47 @@
       "name": "Faaborg og Dyreborg",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.2,
+        55.08
+      ],
+      "dataPoint": [
+        10.2,
+        55.125
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.145,
+              55.045
+            ],
+            [
+              10.255,
+              55.045
+            ],
+            [
+              10.255,
+              55.115
+            ],
+            [
+              10.145,
+              55.115
+            ],
+            [
+              10.145,
+              55.045
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -3019,15 +3787,47 @@
       "name": "Horne Land og Bøjden",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.09,
+        55.1
+      ],
+      "dataPoint": [
+        10.125353,
+        55.134472
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10.035,
+              55.065
+            ],
+            [
+              10.145,
+              55.065
+            ],
+            [
+              10.145,
+              55.135
+            ],
+            [
+              10.035,
+              55.135
+            ],
+            [
+              10.035,
+              55.065
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -3035,15 +3835,47 @@
       "name": "Helnæs og Torø",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        9.98,
+        55.13
+      ],
+      "dataPoint": [
+        10.027631,
+        55.1525
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.925,
+              55.095
+            ],
+            [
+              10.035,
+              55.095
+            ],
+            [
+              10.035,
+              55.165
+            ],
+            [
+              9.925,
+              55.165
+            ],
+            [
+              9.925,
+              55.095
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -3051,15 +3883,47 @@
       "name": "Assens og Sandager Næs",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        9.88,
+        55.27
+      ],
+      "dataPoint": [
+        9.935,
+        55.27
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.82,
+              55.235
+            ],
+            [
+              9.94,
+              55.235
+            ],
+            [
+              9.94,
+              55.305
+            ],
+            [
+              9.82,
+              55.305
+            ],
+            [
+              9.82,
+              55.235
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -3067,15 +3931,47 @@
       "name": "Bågø og Brandsø",
       "batch": "B07",
       "batchName": "Lillebælt, Fyn og øhavet",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        9.82,
+        55.31
+      ],
+      "dataPoint": [
+        9.875,
+        55.31
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.76,
+              55.275
+            ],
+            [
+              9.88,
+              55.275
+            ],
+            [
+              9.88,
+              55.345
+            ],
+            [
+              9.76,
+              55.345
+            ],
+            [
+              9.76,
+              55.275
+            ]
+          ]
+        ]
+      },
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
       }
     },
     {
@@ -4107,6 +5003,11 @@
       "date": "2026-07-23",
       "batch": "B06",
       "change": "20 zoner aktiveret langs Djursland og Østjylland fra Gjerrild til Endelave."
+    },
+    {
+      "version": "2.6.18",
+      "batch": "B07",
+      "note": "B07 aktiveret med 28 zoner i Lillebælt, Fyn og øhavet."
     }
   ]
 }
