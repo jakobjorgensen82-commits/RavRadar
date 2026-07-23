@@ -1,12 +1,963 @@
 {
-  "schemaVersion": 2,
-  "generatedAt": null,
-  "source": "DMI Open Data Forecast EDR API",
+  "schemaVersion": 3,
+  "generatedAt": "2026-07-23T10:42:39.546Z",
+  "source": "Central RavRadar weather service",
+  "providerPriority": [
+    "dmi",
+    "open-meteo",
+    "met-norway",
+    "cache"
+  ],
   "directionConventions": {
     "windDirectionDeg": "from",
     "currentDirectionDeg": "toward",
     "waveDirectionDeg": "from"
   },
-  "zones": {},
-  "errors": []
+  "zones": {
+    "DK-NW-01": {
+      "point": [
+        10.61,
+        57.74
+      ],
+      "provider": "dmi",
+      "providerLabel": "DMI Open Data",
+      "modelSteps": {
+        "wind": "2026-07-23T11:00:00.000Z",
+        "wave": "2026-07-23T11:00:00.000Z",
+        "ocean": "2026-07-23T11:00:00.000Z"
+      },
+      "current": {
+        "windSpeedMps": 3.5,
+        "windDirectionDeg": 345,
+        "waveHeightM": 0,
+        "waveDirectionDeg": 0,
+        "wavePeriodS": 0,
+        "waterLevelCm": 9,
+        "waterLevelTrendCm3h": 5,
+        "currentSpeedMps": 0.16,
+        "currentDirectionDeg": 1,
+        "waterTemperatureC": 18.2
+      },
+      "samples24h": [
+        {
+          "at": "2026-07-23T10:34:57.108Z",
+          "windSpeedMps": 3.5,
+          "waveHeightM": 0
+        }
+      ],
+      "history": {
+        "maxWind24hMps": 3.5,
+        "maxWave24hM": 0,
+        "hoursSinceHighEnergy": null
+      },
+      "stale": false,
+      "fallback": false,
+      "attempts": []
+    },
+    "DK-NW-02": {
+      "point": [
+        9.72,
+        57.38
+      ],
+      "provider": "dmi",
+      "providerLabel": "DMI Open Data",
+      "modelSteps": {
+        "wind": "2026-07-23T11:00:00.000Z",
+        "wave": "2026-07-23T11:00:00.000Z",
+        "ocean": "2026-07-23T11:00:00.000Z"
+      },
+      "current": {
+        "windSpeedMps": 5.1,
+        "windDirectionDeg": 351,
+        "waveHeightM": 0.74,
+        "waveDirectionDeg": 315,
+        "wavePeriodS": 8,
+        "waterLevelCm": 2,
+        "waterLevelTrendCm3h": -2,
+        "currentSpeedMps": 0.01,
+        "currentDirectionDeg": 215,
+        "waterTemperatureC": 16.6
+      },
+      "samples24h": [
+        {
+          "at": "2026-07-23T10:34:57.108Z",
+          "windSpeedMps": 5.1,
+          "waveHeightM": 0.54
+        },
+        {
+          "at": "2026-07-23T10:40:58.089Z",
+          "windSpeedMps": 5.1,
+          "waveHeightM": 0.74
+        }
+      ],
+      "history": {
+        "maxWind24hMps": 5.1,
+        "maxWave24hM": 0.74,
+        "hoursSinceHighEnergy": null
+      },
+      "stale": false,
+      "fallback": false,
+      "attempts": []
+    },
+    "DK-NW-03": {
+      "point": [
+        9.61,
+        57.25
+      ],
+      "provider": "dmi",
+      "providerLabel": "DMI Open Data",
+      "modelSteps": {
+        "wind": "2026-07-23T11:00:00.000Z",
+        "wave": "2026-07-23T11:00:00.000Z",
+        "ocean": "2026-07-23T11:00:00.000Z"
+      },
+      "current": {
+        "windSpeedMps": 3.3,
+        "windDirectionDeg": 339,
+        "waveHeightM": 0.71,
+        "waveDirectionDeg": 315,
+        "wavePeriodS": 7.9,
+        "waterLevelCm": 0,
+        "waterLevelTrendCm3h": 0,
+        "currentSpeedMps": 0,
+        "currentDirectionDeg": 0,
+        "waterTemperatureC": 0
+      },
+      "samples24h": [
+        {
+          "at": "2026-07-23T10:34:57.108Z",
+          "windSpeedMps": 4.1,
+          "waveHeightM": 0.68
+        },
+        {
+          "at": "2026-07-23T10:41:26.164Z",
+          "windSpeedMps": 3.3,
+          "waveHeightM": 0.71
+        }
+      ],
+      "history": {
+        "maxWind24hMps": 4.1,
+        "maxWave24hM": 0.71,
+        "hoursSinceHighEnergy": null
+      },
+      "stale": false,
+      "fallback": false,
+      "attempts": []
+    },
+    "DK-W-01": {
+      "point": [
+        8.38,
+        56.95
+      ],
+      "provider": "open-meteo",
+      "providerLabel": "Open-Meteo Marine",
+      "modelSteps": {
+        "wind": "2026-07-23T10:30",
+        "wave": "2026-07-23T10:30",
+        "ocean": "2026-07-23T10:30"
+      },
+      "current": {
+        "windSpeedMps": 3,
+        "windDirectionDeg": 280,
+        "waveHeightM": 1.38,
+        "waveDirectionDeg": 302,
+        "wavePeriodS": 6.8,
+        "waterLevelCm": -27,
+        "waterLevelTrendCm3h": -30,
+        "currentSpeedMps": 0.3,
+        "currentDirectionDeg": 315,
+        "waterTemperatureC": 18.5
+      },
+      "samples24h": [
+        {
+          "at": "2026-07-23T10:34:57.108Z",
+          "windSpeedMps": 3,
+          "waveHeightM": 1.38
+        }
+      ],
+      "history": {
+        "maxWind24hMps": 3,
+        "maxWave24hM": 1.38,
+        "hoursSinceHighEnergy": 0
+      },
+      "stale": false,
+      "fallback": true,
+      "attempts": [
+        {
+          "provider": "dmi",
+          "message": "DMI-rategrænse aktiv"
+        }
+      ]
+    },
+    "DK-W-02": {
+      "point": [
+        8.12,
+        56.02
+      ],
+      "provider": "open-meteo",
+      "providerLabel": "Open-Meteo Marine",
+      "modelSteps": {
+        "wind": "2026-07-23T10:30",
+        "wave": "2026-07-23T10:30",
+        "ocean": "2026-07-23T10:30"
+      },
+      "current": {
+        "windSpeedMps": 5.5,
+        "windDirectionDeg": 300,
+        "waveHeightM": 1.56,
+        "waveDirectionDeg": 311,
+        "wavePeriodS": 6.3,
+        "waterLevelCm": -39,
+        "waterLevelTrendCm3h": -36,
+        "currentSpeedMps": 0.5,
+        "currentDirectionDeg": 135,
+        "waterTemperatureC": 16.6
+      },
+      "samples24h": [
+        {
+          "at": "2026-07-23T10:34:57.108Z",
+          "windSpeedMps": 5.5,
+          "waveHeightM": 1.56
+        }
+      ],
+      "history": {
+        "maxWind24hMps": 5.5,
+        "maxWave24hM": 1.56,
+        "hoursSinceHighEnergy": 0
+      },
+      "stale": false,
+      "fallback": true,
+      "attempts": [
+        {
+          "provider": "dmi",
+          "message": "DMI-rategrænse aktiv"
+        }
+      ]
+    },
+    "DK-W-03": {
+      "point": [
+        8.13,
+        55.57
+      ],
+      "provider": "open-meteo",
+      "providerLabel": "Open-Meteo Marine",
+      "modelSteps": {
+        "wind": "2026-07-23T10:30",
+        "wave": "2026-07-23T10:30",
+        "ocean": "2026-07-23T10:30"
+      },
+      "current": {
+        "windSpeedMps": 5.6,
+        "windDirectionDeg": 307,
+        "waveHeightM": 1.5,
+        "waveDirectionDeg": 313,
+        "wavePeriodS": 6.2,
+        "waterLevelCm": -49,
+        "waterLevelTrendCm3h": -43,
+        "currentSpeedMps": 0.6,
+        "currentDirectionDeg": 146,
+        "waterTemperatureC": 17.9
+      },
+      "samples24h": [
+        {
+          "at": "2026-07-23T10:34:57.108Z",
+          "windSpeedMps": 5.6,
+          "waveHeightM": 1.5
+        }
+      ],
+      "history": {
+        "maxWind24hMps": 5.6,
+        "maxWave24hM": 1.5,
+        "hoursSinceHighEnergy": 0
+      },
+      "stale": false,
+      "fallback": true,
+      "attempts": [
+        {
+          "provider": "dmi",
+          "message": "DMI-rategrænse aktiv"
+        }
+      ]
+    },
+    "DK-NE-01": {
+      "point": [
+        10.35,
+        57.18
+      ],
+      "provider": "open-meteo",
+      "providerLabel": "Open-Meteo Marine",
+      "modelSteps": {
+        "wind": "2026-07-23T10:30",
+        "wave": "2026-07-23T10:30",
+        "ocean": "2026-07-23T10:30"
+      },
+      "current": {
+        "windSpeedMps": 2.9,
+        "windDirectionDeg": 6,
+        "waveHeightM": 0.2,
+        "waveDirectionDeg": 24,
+        "wavePeriodS": 2.8,
+        "waterLevelCm": -14,
+        "waterLevelTrendCm3h": 7,
+        "currentSpeedMps": 0.6,
+        "currentDirectionDeg": 198,
+        "waterTemperatureC": 20.5
+      },
+      "samples24h": [
+        {
+          "at": "2026-07-23T10:34:57.108Z",
+          "windSpeedMps": 2.9,
+          "waveHeightM": 0.2
+        }
+      ],
+      "history": {
+        "maxWind24hMps": 2.9,
+        "maxWave24hM": 0.2,
+        "hoursSinceHighEnergy": null
+      },
+      "stale": false,
+      "fallback": true,
+      "attempts": [
+        {
+          "provider": "dmi",
+          "message": "DMI-rategrænse aktiv"
+        }
+      ]
+    },
+    "DK-NE-02": {
+      "point": [
+        10.54,
+        57.36
+      ],
+      "provider": "open-meteo",
+      "providerLabel": "Open-Meteo Marine",
+      "modelSteps": {
+        "wind": "2026-07-23T10:30",
+        "wave": "2026-07-23T10:30",
+        "ocean": "2026-07-23T10:30"
+      },
+      "current": {
+        "windSpeedMps": 4.7,
+        "windDirectionDeg": 23,
+        "waveHeightM": 0.24,
+        "waveDirectionDeg": 13,
+        "wavePeriodS": 3,
+        "waterLevelCm": -10,
+        "waterLevelTrendCm3h": -4,
+        "currentSpeedMps": 0.2,
+        "currentDirectionDeg": 270,
+        "waterTemperatureC": 19.6
+      },
+      "samples24h": [
+        {
+          "at": "2026-07-23T10:34:57.108Z",
+          "windSpeedMps": 4.7,
+          "waveHeightM": 0.24
+        }
+      ],
+      "history": {
+        "maxWind24hMps": 4.7,
+        "maxWave24hM": 0.24,
+        "hoursSinceHighEnergy": null
+      },
+      "stale": false,
+      "fallback": true,
+      "attempts": [
+        {
+          "provider": "dmi",
+          "message": "DMI-rategrænse aktiv"
+        }
+      ]
+    },
+    "DK-E-01": {
+      "point": [
+        10.25,
+        56.8
+      ],
+      "provider": "open-meteo",
+      "providerLabel": "Open-Meteo Marine",
+      "modelSteps": {
+        "wind": "2026-07-23T10:30",
+        "wave": "2026-07-23T10:30",
+        "ocean": "2026-07-23T10:30"
+      },
+      "current": {
+        "windSpeedMps": 3.3,
+        "windDirectionDeg": 64,
+        "waveHeightM": 0.2,
+        "waveDirectionDeg": 22,
+        "wavePeriodS": 2.6,
+        "waterLevelCm": -26,
+        "waterLevelTrendCm3h": 23,
+        "currentSpeedMps": 0.2,
+        "currentDirectionDeg": 270,
+        "waterTemperatureC": 20.5
+      },
+      "samples24h": [
+        {
+          "at": "2026-07-23T10:34:57.108Z",
+          "windSpeedMps": 3.3,
+          "waveHeightM": 0.2
+        }
+      ],
+      "history": {
+        "maxWind24hMps": 3.3,
+        "maxWave24hM": 0.2,
+        "hoursSinceHighEnergy": null
+      },
+      "stale": false,
+      "fallback": true,
+      "attempts": [
+        {
+          "provider": "dmi",
+          "message": "DMI-rategrænse aktiv"
+        }
+      ]
+    },
+    "DK-E-02": {
+      "point": [
+        10.82,
+        56.43
+      ],
+      "provider": "open-meteo",
+      "providerLabel": "Open-Meteo Marine",
+      "modelSteps": {
+        "wind": "2026-07-23T10:30",
+        "wave": "2026-07-23T10:30",
+        "ocean": "2026-07-23T10:30"
+      },
+      "current": {
+        "windSpeedMps": 3.8,
+        "windDirectionDeg": 4,
+        "waveHeightM": 0.26,
+        "waveDirectionDeg": 4,
+        "wavePeriodS": 2.5,
+        "waterLevelCm": -29,
+        "waterLevelTrendCm3h": 26,
+        "currentSpeedMps": 0.4,
+        "currentDirectionDeg": 297,
+        "waterTemperatureC": 19.6
+      },
+      "samples24h": [
+        {
+          "at": "2026-07-23T10:34:57.108Z",
+          "windSpeedMps": 3.8,
+          "waveHeightM": 0.26
+        }
+      ],
+      "history": {
+        "maxWind24hMps": 3.8,
+        "maxWave24hM": 0.26,
+        "hoursSinceHighEnergy": null
+      },
+      "stale": false,
+      "fallback": true,
+      "attempts": [
+        {
+          "provider": "dmi",
+          "message": "DMI-rategrænse aktiv"
+        }
+      ]
+    },
+    "DK-E-03": {
+      "point": [
+        10.2,
+        56.05
+      ],
+      "provider": "open-meteo",
+      "providerLabel": "Open-Meteo Marine",
+      "modelSteps": {
+        "wind": "2026-07-23T10:30",
+        "wave": "2026-07-23T10:30",
+        "ocean": "2026-07-23T10:30"
+      },
+      "current": {
+        "windSpeedMps": 2.1,
+        "windDirectionDeg": 352,
+        "waveHeightM": 0.12,
+        "waveDirectionDeg": 338,
+        "wavePeriodS": 2.2,
+        "waterLevelCm": -29,
+        "waterLevelTrendCm3h": 16,
+        "currentSpeedMps": 0.2,
+        "currentDirectionDeg": 180,
+        "waterTemperatureC": 19.1
+      },
+      "samples24h": [
+        {
+          "at": "2026-07-23T10:34:57.108Z",
+          "windSpeedMps": 2.1,
+          "waveHeightM": 0.12
+        }
+      ],
+      "history": {
+        "maxWind24hMps": 2.1,
+        "maxWave24hM": 0.12,
+        "hoursSinceHighEnergy": null
+      },
+      "stale": false,
+      "fallback": true,
+      "attempts": [
+        {
+          "provider": "dmi",
+          "message": "DMI-rategrænse aktiv"
+        }
+      ]
+    },
+    "DK-E-04": {
+      "point": [
+        9.75,
+        55.62
+      ],
+      "provider": "open-meteo",
+      "providerLabel": "Open-Meteo Marine",
+      "modelSteps": {
+        "wind": "2026-07-23T10:30",
+        "wave": "2026-07-23T10:30",
+        "ocean": "2026-07-23T10:30"
+      },
+      "current": {
+        "windSpeedMps": 3.3,
+        "windDirectionDeg": 309,
+        "waveHeightM": 0.04,
+        "waveDirectionDeg": 8,
+        "wavePeriodS": 2.3,
+        "waterLevelCm": -19,
+        "waterLevelTrendCm3h": 2,
+        "currentSpeedMps": 0.8,
+        "currentDirectionDeg": 45,
+        "waterTemperatureC": 19.8
+      },
+      "samples24h": [
+        {
+          "at": "2026-07-23T10:34:57.108Z",
+          "windSpeedMps": 3.3,
+          "waveHeightM": 0.04
+        }
+      ],
+      "history": {
+        "maxWind24hMps": 3.3,
+        "maxWave24hM": 0.04,
+        "hoursSinceHighEnergy": null
+      },
+      "stale": false,
+      "fallback": true,
+      "attempts": [
+        {
+          "provider": "dmi",
+          "message": "DMI-rategrænse aktiv"
+        }
+      ]
+    },
+    "DK-FYN-01": {
+      "point": [
+        10.55,
+        55.55
+      ],
+      "provider": "open-meteo",
+      "providerLabel": "Open-Meteo Marine",
+      "modelSteps": {
+        "wind": "2026-07-23T10:30",
+        "wave": "2026-07-23T10:30",
+        "ocean": "2026-07-23T10:30"
+      },
+      "current": {
+        "windSpeedMps": 4.9,
+        "windDirectionDeg": 313,
+        "waveHeightM": 0.26,
+        "waveDirectionDeg": 328,
+        "wavePeriodS": 2.5,
+        "waterLevelCm": -23,
+        "waterLevelTrendCm3h": 8,
+        "currentSpeedMps": 0,
+        "currentDirectionDeg": 90,
+        "waterTemperatureC": 20.1
+      },
+      "samples24h": [
+        {
+          "at": "2026-07-23T10:34:57.108Z",
+          "windSpeedMps": 4.9,
+          "waveHeightM": 0.26
+        }
+      ],
+      "history": {
+        "maxWind24hMps": 4.9,
+        "maxWave24hM": 0.26,
+        "hoursSinceHighEnergy": null
+      },
+      "stale": false,
+      "fallback": true,
+      "attempts": [
+        {
+          "provider": "dmi",
+          "message": "DMI-rategrænse aktiv"
+        }
+      ]
+    },
+    "DK-SJ-01": {
+      "point": [
+        11.47,
+        55.93
+      ],
+      "provider": "open-meteo",
+      "providerLabel": "Open-Meteo Marine",
+      "modelSteps": {
+        "wind": "2026-07-23T10:30",
+        "wave": "2026-07-23T10:30",
+        "ocean": "2026-07-23T10:30"
+      },
+      "current": {
+        "windSpeedMps": 5.2,
+        "windDirectionDeg": 342,
+        "waveHeightM": 0.32,
+        "waveDirectionDeg": 342,
+        "wavePeriodS": 2.8,
+        "waterLevelCm": -26,
+        "waterLevelTrendCm3h": 11,
+        "currentSpeedMps": 0,
+        "currentDirectionDeg": 90,
+        "waterTemperatureC": 20.1
+      },
+      "samples24h": [
+        {
+          "at": "2026-07-23T10:34:57.108Z",
+          "windSpeedMps": 5.2,
+          "waveHeightM": 0.32
+        }
+      ],
+      "history": {
+        "maxWind24hMps": 5.2,
+        "maxWave24hM": 0.32,
+        "hoursSinceHighEnergy": null
+      },
+      "stale": false,
+      "fallback": true,
+      "attempts": [
+        {
+          "provider": "dmi",
+          "message": "DMI-rategrænse aktiv"
+        }
+      ]
+    },
+    "DK-SJ-02": {
+      "point": [
+        12.35,
+        56.05
+      ],
+      "provider": "open-meteo",
+      "providerLabel": "Open-Meteo Marine",
+      "modelSteps": {
+        "wind": "2026-07-23T10:30",
+        "wave": "2026-07-23T10:30",
+        "ocean": "2026-07-23T10:30"
+      },
+      "current": {
+        "windSpeedMps": 4.1,
+        "windDirectionDeg": 342,
+        "waveHeightM": 0.26,
+        "waveDirectionDeg": 334,
+        "wavePeriodS": 2.5,
+        "waterLevelCm": -18,
+        "waterLevelTrendCm3h": 13,
+        "currentSpeedMps": 0.5,
+        "currentDirectionDeg": 315,
+        "waterTemperatureC": 19.4
+      },
+      "samples24h": [
+        {
+          "at": "2026-07-23T10:34:57.108Z",
+          "windSpeedMps": 4.1,
+          "waveHeightM": 0.26
+        }
+      ],
+      "history": {
+        "maxWind24hMps": 4.1,
+        "maxWave24hM": 0.26,
+        "hoursSinceHighEnergy": null
+      },
+      "stale": false,
+      "fallback": true,
+      "attempts": [
+        {
+          "provider": "dmi",
+          "message": "DMI-rategrænse aktiv"
+        }
+      ]
+    },
+    "DK-SJ-03": {
+      "point": [
+        12.35,
+        55.3
+      ],
+      "provider": "open-meteo",
+      "providerLabel": "Open-Meteo Marine",
+      "modelSteps": {
+        "wind": "2026-07-23T10:30",
+        "wave": "2026-07-23T10:30",
+        "ocean": "2026-07-23T10:30"
+      },
+      "current": {
+        "windSpeedMps": 3.4,
+        "windDirectionDeg": 313,
+        "waveHeightM": 0.18,
+        "waveDirectionDeg": 23,
+        "wavePeriodS": 2.7,
+        "waterLevelCm": 0,
+        "waterLevelTrendCm3h": 5,
+        "currentSpeedMps": 0.3,
+        "currentDirectionDeg": 225,
+        "waterTemperatureC": 16.4
+      },
+      "samples24h": [
+        {
+          "at": "2026-07-23T10:34:57.108Z",
+          "windSpeedMps": 3.4,
+          "waveHeightM": 0.18
+        }
+      ],
+      "history": {
+        "maxWind24hMps": 3.4,
+        "maxWave24hM": 0.18,
+        "hoursSinceHighEnergy": null
+      },
+      "stale": false,
+      "fallback": true,
+      "attempts": [
+        {
+          "provider": "dmi",
+          "message": "DMI-rategrænse aktiv"
+        }
+      ]
+    },
+    "DK-LF-01": {
+      "point": [
+        11.75,
+        54.63
+      ],
+      "provider": "open-meteo",
+      "providerLabel": "Open-Meteo Marine",
+      "modelSteps": {
+        "wind": "2026-07-23T10:30",
+        "wave": "2026-07-23T10:30",
+        "ocean": "2026-07-23T10:30"
+      },
+      "current": {
+        "windSpeedMps": 5.7,
+        "windDirectionDeg": 319,
+        "waveHeightM": 0.4,
+        "waveDirectionDeg": 297,
+        "wavePeriodS": 2.7,
+        "waterLevelCm": 4,
+        "waterLevelTrendCm3h": -2,
+        "currentSpeedMps": 0.3,
+        "currentDirectionDeg": 135,
+        "waterTemperatureC": 19.2
+      },
+      "samples24h": [
+        {
+          "at": "2026-07-23T10:34:57.108Z",
+          "windSpeedMps": 5.7,
+          "waveHeightM": 0.4
+        }
+      ],
+      "history": {
+        "maxWind24hMps": 5.7,
+        "maxWave24hM": 0.4,
+        "hoursSinceHighEnergy": null
+      },
+      "stale": false,
+      "fallback": true,
+      "attempts": [
+        {
+          "provider": "dmi",
+          "message": "DMI-rategrænse aktiv"
+        }
+      ]
+    },
+    "DK-BH-01": {
+      "point": [
+        14.87,
+        55.12
+      ],
+      "provider": "open-meteo",
+      "providerLabel": "Open-Meteo Marine",
+      "modelSteps": {
+        "wind": "2026-07-23T10:30",
+        "wave": "2026-07-23T10:30",
+        "ocean": "2026-07-23T10:30"
+      },
+      "current": {
+        "windSpeedMps": 5,
+        "windDirectionDeg": 342,
+        "waveHeightM": 0.76,
+        "waveDirectionDeg": 348,
+        "wavePeriodS": 3.9,
+        "waterLevelCm": 1,
+        "waterLevelTrendCm3h": 3,
+        "currentSpeedMps": 0.6,
+        "currentDirectionDeg": 236,
+        "waterTemperatureC": 17.2
+      },
+      "samples24h": [
+        {
+          "at": "2026-07-23T10:34:57.108Z",
+          "windSpeedMps": 5,
+          "waveHeightM": 0.76
+        }
+      ],
+      "history": {
+        "maxWind24hMps": 5,
+        "maxWave24hM": 0.76,
+        "hoursSinceHighEnergy": null
+      },
+      "stale": false,
+      "fallback": true,
+      "attempts": [
+        {
+          "provider": "dmi",
+          "message": "DMI-rategrænse aktiv"
+        }
+      ]
+    },
+    "DK-LIM-01": {
+      "point": [
+        8.72,
+        56.73
+      ],
+      "provider": "open-meteo",
+      "providerLabel": "Open-Meteo Marine",
+      "modelSteps": {
+        "wind": "2026-07-23T10:30",
+        "wave": "2026-07-23T10:30",
+        "ocean": "2026-07-23T10:30"
+      },
+      "current": {
+        "windSpeedMps": 2.9,
+        "windDirectionDeg": 210,
+        "waveHeightM": 0,
+        "waveDirectionDeg": 0,
+        "wavePeriodS": 0,
+        "waterLevelCm": -24,
+        "waterLevelTrendCm3h": -35,
+        "currentSpeedMps": 0.4,
+        "currentDirectionDeg": 117,
+        "waterTemperatureC": 18.8
+      },
+      "samples24h": [
+        {
+          "at": "2026-07-23T10:34:57.108Z",
+          "windSpeedMps": 2.9,
+          "waveHeightM": 0
+        }
+      ],
+      "history": {
+        "maxWind24hMps": 2.9,
+        "maxWave24hM": 0,
+        "hoursSinceHighEnergy": null
+      },
+      "stale": false,
+      "fallback": true,
+      "attempts": [
+        {
+          "provider": "dmi",
+          "message": "DMI-rategrænse aktiv"
+        }
+      ]
+    },
+    "DK-LIM-02": {
+      "point": [
+        9.22,
+        56.83
+      ],
+      "provider": "open-meteo",
+      "providerLabel": "Open-Meteo Marine",
+      "modelSteps": {
+        "wind": "2026-07-23T10:30",
+        "wave": "2026-07-23T10:30",
+        "ocean": "2026-07-23T10:30"
+      },
+      "current": {
+        "windSpeedMps": 2.3,
+        "windDirectionDeg": 290,
+        "waveHeightM": 0,
+        "waveDirectionDeg": 0,
+        "wavePeriodS": 0,
+        "waterLevelCm": 0,
+        "waterLevelTrendCm3h": 0,
+        "currentSpeedMps": 0,
+        "currentDirectionDeg": 0,
+        "waterTemperatureC": 0
+      },
+      "samples24h": [
+        {
+          "at": "2026-07-23T10:34:57.108Z",
+          "windSpeedMps": 2.3,
+          "waveHeightM": 0
+        }
+      ],
+      "history": {
+        "maxWind24hMps": 2.3,
+        "maxWave24hM": 0,
+        "hoursSinceHighEnergy": null
+      },
+      "stale": false,
+      "fallback": true,
+      "attempts": [
+        {
+          "provider": "dmi",
+          "message": "DMI-rategrænse aktiv"
+        }
+      ]
+    },
+    "DK-LIM-03": {
+      "point": [
+        10.05,
+        56.92
+      ],
+      "provider": "open-meteo",
+      "providerLabel": "Open-Meteo Marine",
+      "modelSteps": {
+        "wind": "2026-07-23T10:30",
+        "wave": "2026-07-23T10:30",
+        "ocean": "2026-07-23T10:30"
+      },
+      "current": {
+        "windSpeedMps": 2.1,
+        "windDirectionDeg": 2,
+        "waveHeightM": 0,
+        "waveDirectionDeg": 0,
+        "wavePeriodS": 0,
+        "waterLevelCm": 0,
+        "waterLevelTrendCm3h": 0,
+        "currentSpeedMps": 0,
+        "currentDirectionDeg": 0,
+        "waterTemperatureC": 0
+      },
+      "samples24h": [
+        {
+          "at": "2026-07-23T10:34:57.108Z",
+          "windSpeedMps": 2.1,
+          "waveHeightM": 0
+        }
+      ],
+      "history": {
+        "maxWind24hMps": 2.1,
+        "maxWave24hM": 0,
+        "hoursSinceHighEnergy": null
+      },
+      "stale": false,
+      "fallback": true,
+      "attempts": [
+        {
+          "provider": "dmi",
+          "message": "DMI-rategrænse aktiv"
+        }
+      ]
+    }
+  },
+  "errors": [],
+  "retry": {
+    "dmiRetriedAfterMinutes": 5,
+    "completedAt": "2026-07-23T10:42:39.546Z"
+  }
 }
