@@ -1,10 +1,24 @@
 const palette = { excellent: "#168653", good: "#168653", fair: "#e6a700", weak: "#d9822b", poor: "#d34a3a", unavailable: "#30383c" };
 
-function zoneLineStyle(level = "unavailable", selected = false) {
+function zoneLineStyle(level = "unavailable", selected = false, zoom = 7) {
+  // Oversigten skal kunne aflæses på landsniveau. Derfor er zonelinjerne
+  // tydeligst ved lav zoom og bliver mere præcise/finere, jo tættere man går på.
+  const baseWeight = zoom <= 7 ? 9 : zoom <= 9 ? 8 : zoom <= 11 ? 7 : 6;
   return {
     color: palette[level] || palette.unavailable,
-    weight: selected ? 9 : 6,
-    opacity: selected ? 1 : .94,
+    weight: baseWeight + (selected ? 4 : 0),
+    opacity: selected ? 1 : .96,
+    lineCap: "round",
+    lineJoin: "round"
+  };
+}
+
+function zoneCasingStyle(selected = false, zoom = 7) {
+  const baseWeight = zoom <= 7 ? 12 : zoom <= 9 ? 11 : zoom <= 11 ? 10 : 9;
+  return {
+    color: "rgba(255,255,255,.88)",
+    weight: baseWeight + (selected ? 5 : 0),
+    opacity: .92,
     lineCap: "round",
     lineJoin: "round"
   };
@@ -43,8 +57,14 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
       : null;
     if (!coastLine) continue;
 
+    const casing = L.polyline(coastLine, {
+      ...zoneCasingStyle(false, map.getZoom()),
+      pane: "zoneCoastPane",
+      interactive: false
+    }).addTo(lineLayer);
+
     const visible = L.polyline(coastLine, {
-      ...zoneLineStyle(result?.level),
+      ...zoneLineStyle(result?.level, false, map.getZoom()),
       pane: "zoneCoastPane",
       interactive: false
     }).addTo(lineLayer);
@@ -61,12 +81,12 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
 
     hit.bindTooltip(`${escapeHtml(zone.name)} · ${result?.available ? `${result.score}/100` : "Ingen data"}`, { direction: "top", sticky: true });
     hit.on("click", () => onSelect(zone));
-    hit.on("mouseover", () => visible.setStyle({ weight: Math.max(7, visible.options.weight + 1), opacity: 1 }));
-    hit.on("mouseout", () => visible.setStyle(zoneLineStyle(hit.options.ravLevel, hit.options.ravSelected)));
+    hit.on("mouseover", () => visible.setStyle({ weight: visible.options.weight + 1, opacity: 1 }));
+    hit.on("mouseout", () => visible.setStyle(zoneLineStyle(hit.options.ravLevel, hit.options.ravSelected, map.getZoom())));
     hit.options.ravLevel = result?.level || "unavailable";
     hit.options.ravSelected = false;
     hit.options.zoneTitle = zone.name;
-    lines.set(zone.id, { visible, hit });
+    lines.set(zone.id, { casing, visible, hit });
   }
 
   const bounds = geometryLayer.getBounds();
@@ -77,10 +97,20 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
     api.selectedId = id || null;
     for (const [zoneId, pair] of lines.entries()) {
       pair.hit.options.ravSelected = zoneId === api.selectedId;
-      pair.visible.setStyle(zoneLineStyle(pair.hit.options.ravLevel, pair.hit.options.ravSelected));
-      if (pair.hit.options.ravSelected) pair.visible.bringToFront();
+      pair.casing.setStyle(zoneCasingStyle(pair.hit.options.ravSelected, map.getZoom()));
+      pair.visible.setStyle(zoneLineStyle(pair.hit.options.ravLevel, pair.hit.options.ravSelected, map.getZoom()));
+      if (pair.hit.options.ravSelected) { pair.casing.bringToFront(); pair.visible.bringToFront(); pair.hit.bringToFront(); }
     }
   };
+  const refreshZoomStyles = () => {
+    for (const pair of lines.values()) {
+      pair.casing.setStyle(zoneCasingStyle(pair.hit.options.ravSelected, map.getZoom()));
+      pair.visible.setStyle(zoneLineStyle(pair.hit.options.ravLevel, pair.hit.options.ravSelected, map.getZoom()));
+      pair.hit.setStyle({ weight: map.getZoom() <= 8 ? 28 : 24 });
+    }
+  };
+  map.on("zoomend", refreshZoomStyles);
+  api.destroy = () => map.off("zoomend", refreshZoomStyles);
   return api;
 }
 
@@ -88,7 +118,8 @@ export function refreshZoneStyles(layer, scoreForZone) {
   for (const [id, pair] of layer.lines.entries()) {
     const result = scoreForZone(id);
     pair.hit.options.ravLevel = result?.level || "unavailable";
-    pair.visible.setStyle(zoneLineStyle(pair.hit.options.ravLevel, pair.hit.options.ravSelected));
+    pair.visible.setStyle(zoneLineStyle(pair.hit.options.ravLevel, pair.hit.options.ravSelected, layer.map.getZoom()));
+    pair.casing.setStyle(zoneCasingStyle(pair.hit.options.ravSelected, layer.map.getZoom()));
     pair.hit.setTooltipContent(`${escapeHtml(pair.hit.options.zoneTitle)} · ${result?.available ? `${result.score}/100` : "Ingen data"}`);
   }
 }
