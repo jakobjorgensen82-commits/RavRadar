@@ -3,42 +3,42 @@
     "id": "DK-E-02",
     "name": "Djursland nord og øst",
     "nearestCoastM": 136,
-    "points": 11,
-    "lengthKm": 31.9
+    "points": 7,
+    "lengthKm": 27.9
   },
   {
     "id": "DK-E-03",
     "name": "Aarhusbugten og Odder",
     "nearestCoastM": 728,
     "points": 12,
-    "lengthKm": 31.8
+    "lengthKm": 27.9
   },
   {
     "id": "DK-E-04",
     "name": "Vejle Fjord til Lillebælt",
     "nearestCoastM": 506,
-    "points": 16,
-    "lengthKm": 31.8
+    "points": 12,
+    "lengthKm": 27.9
   },
   {
     "id": "DK-B01-01",
     "name": "Agger og Krik Vig",
     "nearestCoastM": 131,
-    "points": 8,
-    "lengthKm": 19.2
+    "points": 4,
+    "lengthKm": 6.2
   },
   {
     "id": "DK-B01-02",
     "name": "Lyngby og Lodbjerg",
     "nearestCoastM": 2341,
     "points": 2,
-    "lengthKm": 7.4
+    "lengthKm": 7.5
   },
   {
     "id": "DK-B01-03",
     "name": "Stenbjerg og Vorupør",
     "nearestCoastM": 232,
-    "points": 5,
+    "points": 4,
     "lengthKm": 13.9
   },
   {
@@ -46,20 +46,20 @@
     "name": "Vangså og Klitmøller",
     "nearestCoastM": 1214,
     "points": 4,
-    "lengthKm": 13.7
+    "lengthKm": 13.8
   },
   {
     "id": "DK-B01-05",
     "name": "Hanstholm og Hamborg",
     "nearestCoastM": 315,
     "points": 4,
-    "lengthKm": 11.0
+    "lengthKm": 11.1
   },
   {
     "id": "DK-B01-06",
     "name": "Vigsø og Lild Strand",
     "nearestCoastM": 44,
-    "points": 5,
+    "points": 6,
     "lengthKm": 13.9
   },
   {
@@ -67,7 +67,7 @@
     "name": "Bulbjerg og Thorup Strand",
     "nearestCoastM": 351,
     "points": 6,
-    "lengthKm": 18.6
+    "lengthKm": 18.8
   },
   {
     "id": "DK-B01-08",
@@ -81,21 +81,21 @@
     "name": "Tranum og Rødhus",
     "nearestCoastM": 148,
     "points": 2,
-    "lengthKm": 8.6
+    "lengthKm": 8.7
   },
   {
     "id": "DK-B01-10",
     "name": "Blokhus og Hune",
     "nearestCoastM": 124,
     "points": 4,
-    "lengthKm": 7.9
+    "lengthKm": 7.7
   },
   {
     "id": "DK-B01-11",
     "name": "Saltum og Grønhøj",
     "nearestCoastM": 587,
     "points": 3,
-    "lengthKm": 7.4
+    "lengthKm": 7.5
   },
   {
     "id": "DK-B01-12",
@@ -115,8 +115,8 @@
     "id": "DK-B01-14",
     "name": "Lønstrup og Nørlev",
     "nearestCoastM": 200,
-    "points": 3,
-    "lengthKm": 9.1
+    "points": 4,
+    "lengthKm": 9.2
   },
   {
     "id": "DK-B01-15",
@@ -136,7 +136,7 @@
     "id": "DK-B01-17",
     "name": "Tversted og Skiveren",
     "nearestCoastM": 855,
-    "points": 4,
+    "points": 5,
     "lengthKm": 11.5
   },
   {
@@ -151,27 +151,27 @@
     "name": "Skagen vest og Damstederne",
     "nearestCoastM": 1804,
     "points": 4,
-    "lengthKm": 8.7
+    "lengthKm": 8.8
   },
   {
     "id": "DK-B01-20",
     "name": "Grenen og Skagen øst",
     "nearestCoastM": 17,
-    "points": 3,
-    "lengthKm": 7.8
+    "points": 4,
+    "lengthKm": 7.9
   },
   {
     "id": "DK-B02-01",
     "name": "Ålbæk og Bunken",
     "nearestCoastM": 171,
     "points": 5,
-    "lengthKm": 8.2
+    "lengthKm": 8.1
   },
   {
     "id": "DK-B02-02",
     "name": "Napstjert og Jerup",
     "nearestCoastM": 355,
-    "points": 4,
+    "points": 3,
     "lengthKm": 4.4
   },
   {
@@ -179,35 +179,35 @@
     "name": "Bratten og Strandby",
     "nearestCoastM": 571,
     "points": 3,
-    "lengthKm": 5.3
+    "lengthKm": 5.5
   },
   {
     "id": "DK-B02-04",
     "name": "Frederikshavn og Bangsbo",
     "nearestCoastM": 837,
     "points": 4,
-    "lengthKm": 10.8
+    "lengthKm": 10.7
   },
   {
     "id": "DK-B02-05",
     "name": "Sæby og Sulbæk",
     "nearestCoastM": 51,
-    "points": 4,
-    "lengthKm": 11.5
+    "points": 5,
+    "lengthKm": 11.6
   },
   {
     "id": "DK-B02-06",
     "name": "Lyngså og Voerså",
     "nearestCoastM": 203,
-    "points": 5,
-    "lengthKm": 12.5
+    "points": 4,
+    "lengthKm": 12.4
   },
   {
     "id": "DK-B02-07",
     "name": "Asaa og Melholt",
     "nearestCoastM": 633,
-    "points": 4,
-    "lengthKm": 15.1
+    "points": 5,
+    "lengthKm": 15.2
   },
   {
     "id": "DK-B02-08",
@@ -221,56 +221,56 @@
     "name": "Hals og Nordmandshage",
     "nearestCoastM": 1192,
     "points": 4,
-    "lengthKm": 2.1
+    "lengthKm": 2.2
   },
   {
     "id": "DK-B02-10",
     "name": "Egense og Mou",
     "nearestCoastM": 24,
-    "points": 6,
-    "lengthKm": 13.7
+    "points": 4,
+    "lengthKm": 5.5
   },
   {
     "id": "DK-B02-11",
     "name": "Dokkedal og Mulbjerge",
     "nearestCoastM": 141,
     "points": 4,
-    "lengthKm": 9.4
+    "lengthKm": 9.5
   },
   {
     "id": "DK-B02-12",
     "name": "Øster Hurup og Als",
     "nearestCoastM": 316,
     "points": 5,
-    "lengthKm": 12.4
+    "lengthKm": 12.3
   },
   {
     "id": "DK-B02-13",
     "name": "Als Odde og Helberskov",
     "nearestCoastM": 3,
     "points": 5,
-    "lengthKm": 6.8
+    "lengthKm": 7.0
   },
   {
     "id": "DK-B02-14",
     "name": "Havnø og Mariager Fjord øst",
     "nearestCoastM": 2715,
     "points": 10,
-    "lengthKm": 15.8
+    "lengthKm": 13.9
   },
   {
     "id": "DK-B02-15",
     "name": "Udbyhøj og Stenrevet",
     "nearestCoastM": 1230,
-    "points": 7,
-    "lengthKm": 20.9
+    "points": 6,
+    "lengthKm": 19.1
   },
   {
     "id": "DK-B03-01",
     "name": "Harboøre og Vrist",
     "nearestCoastM": 1786,
-    "points": 3,
-    "lengthKm": 11.7
+    "points": 4,
+    "lengthKm": 7.0
   },
   {
     "id": "DK-B03-02",
@@ -284,7 +284,7 @@
     "name": "Bovbjerg og Trans",
     "nearestCoastM": 23,
     "points": 3,
-    "lengthKm": 10.3
+    "lengthKm": 10.4
   },
   {
     "id": "DK-B03-04",
@@ -305,7 +305,7 @@
     "name": "Søndervig og Klegod",
     "nearestCoastM": 809,
     "points": 4,
-    "lengthKm": 13.9
+    "lengthKm": 14.0
   },
   {
     "id": "DK-B03-07",
@@ -319,7 +319,7 @@
     "name": "Hvide Sande syd og Årgab",
     "nearestCoastM": 597,
     "points": 2,
-    "lengthKm": 6.6
+    "lengthKm": 6.8
   },
   {
     "id": "DK-B03-09",
@@ -339,8 +339,8 @@
     "id": "DK-B03-11",
     "name": "Henne Strand og Grærup",
     "nearestCoastM": 26,
-    "points": 3,
-    "lengthKm": 9.4
+    "points": 4,
+    "lengthKm": 9.3
   },
   {
     "id": "DK-B03-12",
@@ -353,8 +353,8 @@
     "id": "DK-B03-13",
     "name": "Blåvand og Hvidbjerg",
     "nearestCoastM": 1509,
-    "points": 3,
-    "lengthKm": 11.4
+    "points": 4,
+    "lengthKm": 11.5
   },
   {
     "id": "DK-B03-14",
@@ -368,150 +368,286 @@
     "name": "Skallingen syd",
     "nearestCoastM": 990,
     "points": 2,
-    "lengthKm": 6.0
+    "lengthKm": 5.9
+  },
+  {
+    "id": "DK-B04-01",
+    "name": "Ho Bugt og Oksby",
+    "nearestCoastM": 1438,
+    "points": 10,
+    "lengthKm": 16.3
+  },
+  {
+    "id": "DK-B04-02",
+    "name": "Hjerting og Sædding",
+    "nearestCoastM": 218,
+    "points": 4,
+    "lengthKm": 17.1
+  },
+  {
+    "id": "DK-B04-03",
+    "name": "Fanø nord og Nordby",
+    "nearestCoastM": 2739,
+    "points": 2,
+    "lengthKm": 0.0
+  },
+  {
+    "id": "DK-B04-06",
+    "name": "Mandø vest",
+    "nearestCoastM": 7852,
+    "points": 6,
+    "lengthKm": 23.7
+  },
+  {
+    "id": "DK-B04-07",
+    "name": "Rømø nord og Lakolk",
+    "nearestCoastM": 10208,
+    "points": 7,
+    "lengthKm": 13.8
+  },
+  {
+    "id": "DK-B04-09",
+    "name": "Rømø syd og Sønderstrand",
+    "nearestCoastM": 2282,
+    "points": 14,
+    "lengthKm": 27.9
+  },
+  {
+    "id": "DK-B04-10",
+    "name": "Hjerpsted og Emmerlev",
+    "nearestCoastM": 977,
+    "points": 3,
+    "lengthKm": 14.7
+  },
+  {
+    "id": "DK-B04-11",
+    "name": "Højer og Vidå",
+    "nearestCoastM": 1573,
+    "points": 6,
+    "lengthKm": 15.6
+  },
+  {
+    "id": "DK-B05-01",
+    "name": "Thyborøn og Harboøre Tange øst",
+    "nearestCoastM": 541,
+    "points": 6,
+    "lengthKm": 13.8
+  },
+  {
+    "id": "DK-B05-02",
+    "name": "Agger Tange og Krik",
+    "nearestCoastM": 273,
+    "points": 2,
+    "lengthKm": 5.5
+  },
+  {
+    "id": "DK-B05-04",
+    "name": "Nissum Bredning syd",
+    "nearestCoastM": 1947,
+    "points": 8,
+    "lengthKm": 18.4
+  },
+  {
+    "id": "DK-B05-07",
+    "name": "Lemvig og Gjellerodde",
+    "nearestCoastM": 396,
+    "points": 10,
+    "lengthKm": 18.6
+  },
+  {
+    "id": "DK-B05-08",
+    "name": "Toftum Bjerge og Remmerstrand",
+    "nearestCoastM": 3026,
+    "points": 5,
+    "lengthKm": 8.7
+  },
+  {
+    "id": "DK-B05-25",
+    "name": "Hals Barre og Egense",
+    "nearestCoastM": 618,
+    "points": 3,
+    "lengthKm": 7.8
   },
   {
     "id": "DK-SJ-01",
     "name": "Sjællands Odde og Odsherred",
     "nearestCoastM": 620,
     "points": 10,
-    "lengthKm": 31.9
+    "lengthKm": 28.0
   },
   {
     "id": "DK-SJ-02",
     "name": "Nordsjælland og Øresund",
     "nearestCoastM": 4774,
-    "points": 10,
-    "lengthKm": 31.9
+    "points": 7,
+    "lengthKm": 27.9
   },
   {
     "id": "DK-SJ-03",
     "name": "Stevns og Sydsjælland",
     "nearestCoastM": 432,
-    "points": 12,
-    "lengthKm": 31.9
+    "points": 11,
+    "lengthKm": 28.0
   },
   {
     "id": "DK-FYN-01",
     "name": "Nordfyn og Kerteminde",
     "nearestCoastM": 1922,
-    "points": 20,
-    "lengthKm": 31.7
+    "points": 15,
+    "lengthKm": 27.8
   },
   {
     "id": "DK-LF-01",
     "name": "Lolland-Falster sydkyst",
     "nearestCoastM": 615,
-    "points": 20,
-    "lengthKm": 31.7
+    "points": 18,
+    "lengthKm": 27.8
   },
   {
     "id": "DK-BH-01",
     "name": "Bornholms kyster",
     "nearestCoastM": 9548,
-    "points": 8,
-    "lengthKm": 28.3
+    "points": 6,
+    "lengthKm": 26.2
   },
   {
     "id": "DK-LIM-02",
     "name": "Limfjorden midt",
     "nearestCoastM": 1346,
-    "points": 14,
-    "lengthKm": 31.9
+    "points": 10,
+    "lengthKm": 18.8
+  },
+  {
+    "id": "DK-B05-03",
+    "name": "Nissum Bredning nord",
+    "nearestCoastM": 4264,
+    "points": 8,
+    "lengthKm": 11.8
+  },
+  {
+    "id": "DK-B05-05",
+    "name": "Jegindø og Thyholm",
+    "nearestCoastM": 1738,
+    "points": 11,
+    "lengthKm": 20.2
+  },
+  {
+    "id": "DK-B05-06",
+    "name": "Venø og Struer",
+    "nearestCoastM": 2114,
+    "points": 11,
+    "lengthKm": 22.6
+  },
+  {
+    "id": "DK-B05-09",
+    "name": "Thisted Bredning vest",
+    "nearestCoastM": 2481,
+    "points": 8,
+    "lengthKm": 13.9
+  },
+  {
+    "id": "DK-B05-10",
+    "name": "Thisted og Vildsund",
+    "nearestCoastM": 588,
+    "points": 10,
+    "lengthKm": 22.6
+  },
+  {
+    "id": "DK-B05-13",
+    "name": "Mors syd og Nykøbing",
+    "nearestCoastM": 1310,
+    "points": 9,
+    "lengthKm": 21.4
+  },
+  {
+    "id": "DK-B05-17",
+    "name": "Fur syd",
+    "nearestCoastM": 2630,
+    "points": 8,
+    "lengthKm": 21.1
+  },
+  {
+    "id": "DK-B05-18",
+    "name": "Løgstør og Aggersund",
+    "nearestCoastM": 826,
+    "points": 5,
+    "lengthKm": 25.0
+  },
+  {
+    "id": "DK-B05-19",
+    "name": "Livø og Rønbjerg",
+    "nearestCoastM": 5106,
+    "points": 7,
+    "lengthKm": 5.3
+  },
+  {
+    "id": "DK-B05-20",
+    "name": "Nibe Bredning vest",
+    "nearestCoastM": 5704,
+    "points": 3,
+    "lengthKm": 7.5
+  },
+  {
+    "id": "DK-B05-21",
+    "name": "Nibe og Sebbersund",
+    "nearestCoastM": 1122,
+    "points": 11,
+    "lengthKm": 19.7
+  },
+  {
+    "id": "DK-B05-22",
+    "name": "Gjøl og Attrup",
+    "nearestCoastM": 1066,
+    "points": 6,
+    "lengthKm": 13.1
+  },
+  {
+    "id": "DK-B05-23",
+    "name": "Aalborg vest og Egholm",
+    "nearestCoastM": 1710,
+    "points": 5,
+    "lengthKm": 12.6
+  },
+  {
+    "id": "DK-B05-24",
+    "name": "Aalborg øst og Nørresundby",
+    "nearestCoastM": 6594,
+    "points": 4,
+    "lengthKm": 2.1
   },
   {
     "id": "DK-LIM-01",
     "name": "Limfjorden vest",
     "nearestCoastM": 6225,
-    "points": 10,
-    "lengthKm": 31.9
+    "points": 8,
+    "lengthKm": 16.9
   },
   {
-    "id": "DK-B04-01",
-    "name": "Ho Bugt og Oksby",
-    "nearestCoastM": 0,
+    "id": "DK-B05-11",
+    "name": "Mors nord og Feggesund",
+    "nearestCoastM": 1673,
     "points": 4,
-    "lengthKm": null,
-    "review": "controlled B04 shoreline"
+    "lengthKm": 12.6
   },
   {
-    "id": "DK-B04-02",
-    "name": "Hjerting og Sædding",
-    "nearestCoastM": 0,
-    "points": 4,
-    "lengthKm": null,
-    "review": "controlled B04 shoreline"
+    "id": "DK-B05-12",
+    "name": "Mors vest og Ejerslev",
+    "nearestCoastM": 2626,
+    "points": 7,
+    "lengthKm": 19.3
   },
   {
-    "id": "DK-B04-03",
-    "name": "Fanø nord og Nordby",
-    "nearestCoastM": 0,
-    "points": 4,
-    "lengthKm": null,
-    "review": "controlled B04 shoreline"
+    "id": "DK-B05-14",
+    "name": "Sallingsund og Glyngøre",
+    "nearestCoastM": 303,
+    "points": 7,
+    "lengthKm": 16.8
   },
   {
-    "id": "DK-B04-04",
-    "name": "Fanø vest og Rindby",
-    "nearestCoastM": 0,
-    "points": 4,
-    "lengthKm": null,
-    "review": "controlled B04 shoreline"
-  },
-  {
-    "id": "DK-B04-05",
-    "name": "Fanø syd og Sønderho",
-    "nearestCoastM": 0,
-    "points": 4,
-    "lengthKm": null,
-    "review": "controlled B04 shoreline"
-  },
-  {
-    "id": "DK-B04-06",
-    "name": "Mandø vest",
-    "nearestCoastM": 0,
-    "points": 4,
-    "lengthKm": null,
-    "review": "controlled B04 shoreline"
-  },
-  {
-    "id": "DK-B04-07",
-    "name": "Rømø nord og Lakolk",
-    "nearestCoastM": 0,
-    "points": 4,
-    "lengthKm": null,
-    "review": "controlled B04 shoreline"
-  },
-  {
-    "id": "DK-B04-08",
-    "name": "Rømø vest og Kongsmark",
-    "nearestCoastM": 0,
-    "points": 4,
-    "lengthKm": null,
-    "review": "controlled B04 shoreline"
-  },
-  {
-    "id": "DK-B04-09",
-    "name": "Rømø syd og Sønderstrand",
-    "nearestCoastM": 0,
-    "points": 4,
-    "lengthKm": null,
-    "review": "controlled B04 shoreline"
-  },
-  {
-    "id": "DK-B04-10",
-    "name": "Hjerpsted og Emmerlev",
-    "nearestCoastM": 0,
-    "points": 4,
-    "lengthKm": null,
-    "review": "controlled B04 shoreline"
-  },
-  {
-    "id": "DK-B04-11",
-    "name": "Højer og Vidå",
-    "nearestCoastM": 0,
-    "points": 4,
-    "lengthKm": null,
-    "review": "controlled B04 shoreline"
+    "id": "DK-B05-15",
+    "name": "Salling vest og Junget",
+    "nearestCoastM": 1247,
+    "points": 5,
+    "lengthKm": 13.8
   }
 ]

@@ -1555,400 +1555,600 @@
       "name": "Thyborøn og Harboøre Tange øst",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.214,
+        56.696
+      ],
+      "dataPoint": [
+        8.27,
+        56.69
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-01",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-02",
       "name": "Agger Tange og Krik",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.245,
+        56.735
+      ],
+      "dataPoint": [
+        8.305,
+        56.735
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-02",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-03",
       "name": "Nissum Bredning nord",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.425,
+        56.76
+      ],
+      "dataPoint": [
+        8.425,
+        56.715
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-03",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-04",
       "name": "Nissum Bredning syd",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.48,
+        56.6
+      ],
+      "dataPoint": [
+        8.48,
+        56.655
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-04",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-05",
       "name": "Jegindø og Thyholm",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.61,
+        56.655
+      ],
+      "dataPoint": [
+        8.545,
+        56.655
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-05",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-06",
       "name": "Venø og Struer",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.63,
+        56.51
+      ],
+      "dataPoint": [
+        8.57,
+        56.51
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-06",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-07",
       "name": "Lemvig og Gjellerodde",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.3,
+        56.565
+      ],
+      "dataPoint": [
+        8.375,
+        56.565
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-07",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-08",
       "name": "Toftum Bjerge og Remmerstrand",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.45,
+        56.53
+      ],
+      "dataPoint": [
+        8.45,
+        56.575
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-08",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-09",
       "name": "Thisted Bredning vest",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.545,
+        56.845
+      ],
+      "dataPoint": [
+        8.62,
+        56.845
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-09",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-10",
       "name": "Thisted og Vildsund",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.72,
+        56.93
+      ],
+      "dataPoint": [
+        8.72,
+        56.875
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-10",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-11",
       "name": "Mors nord og Feggesund",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.905,
+        56.975
+      ],
+      "dataPoint": [
+        8.905,
+        57.03
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-11",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-12",
       "name": "Mors vest og Ejerslev",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.69,
+        56.9
+      ],
+      "dataPoint": [
+        8.62,
+        56.9
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-12",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-13",
       "name": "Mors syd og Nykøbing",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.835,
+        56.7
+      ],
+      "dataPoint": [
+        8.835,
+        56.64
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-13",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-14",
       "name": "Sallingsund og Glyngøre",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.85,
+        56.76
+      ],
+      "dataPoint": [
+        8.9,
+        56.76
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-14",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-15",
       "name": "Salling vest og Junget",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        8.75,
+        56.69
+      ],
+      "dataPoint": [
+        8.69,
+        56.69
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-15",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-16",
       "name": "Fur nord",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        9.02,
+        56.85
+      ],
+      "dataPoint": [
+        9.02,
+        56.9
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-16",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-17",
       "name": "Fur syd",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        9.025,
+        56.815
+      ],
+      "dataPoint": [
+        9.025,
+        56.77
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-17",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-18",
       "name": "Løgstør og Aggersund",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        9.21,
+        56.98
+      ],
+      "dataPoint": [
+        9.145,
+        56.98
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-18",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-19",
       "name": "Livø og Rønbjerg",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        9.09,
+        56.885
+      ],
+      "dataPoint": [
+        9.15,
+        56.885
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-19",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-20",
       "name": "Nibe Bredning vest",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        9.33,
+        56.92
+      ],
+      "dataPoint": [
+        9.39,
+        56.92
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-20",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-21",
       "name": "Nibe og Sebbersund",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        9.64,
+        56.965
+      ],
+      "dataPoint": [
+        9.58,
+        56.965
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-21",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-22",
       "name": "Gjøl og Attrup",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        9.71,
+        57.065
+      ],
+      "dataPoint": [
+        9.71,
+        57.015
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-22",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-23",
       "name": "Aalborg vest og Egholm",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        9.8,
+        57.07
+      ],
+      "dataPoint": [
+        9.8,
+        57.035
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-23",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-24",
       "name": "Aalborg øst og Nørresundby",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.02,
+        57.075
+      ],
+      "dataPoint": [
+        10.02,
+        57.04
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-24",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B05-25",
       "name": "Hals Barre og Egense",
       "batch": "B05",
       "batchName": "Limfjorden",
-      "status": "planned",
-      "pinPoint": null,
-      "dataPoint": null,
-      "geometry": null,
+      "status": "active",
+      "pinPoint": [
+        10.275,
+        56.995
+      ],
+      "dataPoint": [
+        10.34,
+        56.995
+      ],
+      "geometry": "data/zones.geojson",
       "review": {
-        "placeNames": false,
-        "coastline": false,
-        "marinePoint": false,
-        "naturalBoundaries": false
-      }
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B05-25",
+      "notes": "Limfjordszone. Synlig scorelinje udledes fra fælles kystmaster og forskydes mod land."
     },
     {
       "planId": "B06-01",
@@ -3737,6 +3937,11 @@
       "date": "2026-07-23",
       "batch": "B04",
       "change": "11 zoner aktiveret i Ho Bugt, Fanø, Mandø, Rømø og den sydvestjyske Vadehavskyst. Zonerne bruger samme kystlinje-, zonegrænse-, vind- og strømstruktur som øvrige aktive zoner."
+    },
+    {
+      "date": "2026-07-23",
+      "batch": "B05",
+      "change": "25 Limfjordszoner aktiveret fra Thyborøn/Agger via Mors, Fur og Løgstør til Hals/Egense."
     }
   ]
 }
