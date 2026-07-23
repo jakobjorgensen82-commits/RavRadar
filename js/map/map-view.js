@@ -34,11 +34,8 @@ export function refreshZoneStyles(layer, scoreForZone) {
   });
 }
 
-export function locateUser(map, onError, onFound = () => {}) {
-  map.locate({ setView: true, maxZoom: 12, enableHighAccuracy: true });
-  map.once("locationfound", event => {
-    L.circleMarker(event.latlng, { radius: 7, weight: 3, color: "#073b4c", fillColor: "#fff", fillOpacity: 1 }).addTo(map);
-    onFound({ latitude: event.latitude, longitude: event.longitude, accuracy: event.accuracy });
-  });
+export function locateUser(map, onError) {
+  map.locate({ setView: true, maxZoom: 12 });
+  map.once("locationfound", event => L.circleMarker(event.latlng, { radius: 7, weight: 3, color: "#073b4c", fillColor: "#fff", fillOpacity: 1 }).addTo(map));
   map.once("locationerror", onError);
 }

@@ -40,6 +40,9 @@ jobs:
           DMI_REQUEST_GAP_MS: 1400
           WEATHER_REQUEST_TIMEOUT_MS: 18000
           WEATHER_USER_AGENT: "RavRadar/2.4 (${{ github.server_url }}/${{ github.repository }})"
+      - name: Validate updated weather cache
+        if: steps.weather.outcome == 'success'
+        run: npm run validate:data
       - name: Report provider fallback
         if: steps.weather.outcome != 'success'
         run: echo "Weather updater failed or timed out. Deploying the last valid cached conditions.json."

@@ -1,66 +1,70 @@
-# RavRadar 2.3
+# RavRadar 1.0
 
-RavRadar er en mobilvenlig PWA til vurdering af ravforhold langs danske kyster. Den virker uden login og uden Supabase. Vejrdata genereres statisk via GitHub Actions og gemmes i `data/live/conditions.json` – ikke i Supabase.
+RavRadar er en mobilvenlig, statisk webapp til vurdering af ravforhold langs danske kyster. Hjemmesiden og alle faste data ligger på GitHub Pages. Supabase er kun valgfrit lager for anonyme fundobservationer.
 
-## Færdig platform
+## Indeholder
 
-- RavScore for **Waders** og **Strand**
-- kort, rangliste, GPS og offline-cache
-- lokalt registrerede ravture, mens appen er åben
-- prompt dagen efter: **“Var du på ravtur i går?”** med Nej, Ja, Meget og valgfrie gram
-- observationer uden billeder, altid med tidsstempel, zone, RavScore og vejrsnapshot
-- valgfrit Supabase-login med magic link eller adgangskode
-- udviklertilstand: tryk på RavRadar-logoet 10 gange og brug PIN **1931**
-- udviklerpanel med datastatus, proveniens, diagnostik, lokal statistik, GPS- og zoneinspektion
+- 21 brede danske kystzoner, inklusive vestkyst, Kattegat, øerne og Limfjorden
+- valg mellem Waders og Strand
+- RavScore med vægtningen jagtbarhed 40 %, transport 35 % og frigivelse 25 %
+- automatisk DMI-hentning fra HARMONIE, WAM og DKSS hver tredje time
+- rangliste over de bedste aktuelle områder
+- kort, GPS-knap, forklaringer og mobiltilpasning
+- valgfri anonyme observationer via Supabase
+- automatisk validering og GitHub Pages-udgivelse
+- ingen brugerupload
 
-## Vigtige begrænsninger
+## Arkitektur
 
-En browser-PWA kan ikke garantere GPS-sporing, når appen er lukket eller suspenderet. RavRadar registrerer derfor kun ruten, mens siden er åben. GPS-ruter gemmes lokalt og vises kun i udviklertilstanden.
+GitHub Pages indeholder hele webappen, zoner, scoremotor og det kompakte aktuelle DMI-datasæt. GitHub Actions henter prognoser og udgiver siden. Supabase bruges ikke til vejrdata og belastes derfor kun minimalt.
 
-## Vejrarkitektur
+## Engangsudgivelse
 
-Provider-rækkefølgen er:
+1. Erstat indholdet i repositoryet med alle filer fra denne mappe.
+2. Commit og push til `main`.
+3. Vælg **Settings → Pages → Source: GitHub Actions**.
+4. Åbn fanen **Actions** og kontroller, at `Update DMI and deploy RavRadar` bliver grøn.
 
-1. DMI
-2. Open-Meteo Marine
-3. MET Norway
-4. senere Copernicus Marine
+Siden publiceres derefter automatisk og DMI-data opdateres hver tredje time.
 
-Fallback-princippet er provider → næste provider → seneste cachede `conditions.json`. Den nuværende updater bruger DMI som aktiv primærkilde; fallback-providerne kan tilføjes uden at ændre frontendens dataformat.
+## Supabase-observationer
 
-## Supabase
+Observationer er valgfri. Webappen virker uden dem. For at aktivere dem:
 
-RavRadar virker uden konfiguration. For login og synkronisering:
+1. Kør `supabase/schema.sql` én gang i Supabase SQL Editor.
+2. Indsæt projektets offentlige URL og publishable key i `config.js`.
 
-1. Kør `supabase/schema.sql` i Supabase SQL Editor.
-2. Indsæt projektets URL og publishable key i `config.js`.
-3. Aktivér de ønskede auth-metoder i Supabase.
+Der gemmes ingen navne, e-mailadresser eller præcise brugerpositioner. Med de kompakte felter vil 500 MB række til meget store mængder observationer.
 
-Selv uden Supabase gemmes observationer og ture lokalt i browseren.
+## Domæne
 
-## Test
+Et domæne som `ravradar.dk` kan senere forbindes i GitHub Pages under **Custom domain**. Koden kræver ingen ændring.
 
-Kræver Node.js 22 eller nyere:
+## Lokal test
+
+Med Node.js 22 eller nyere:
 
 ```bash
 npm run validate
 ```
 
-## Zoner
+## Datakilder og forbehold
 
-Den medfølgende `data/zones.geojson` er den eksisterende brede zoneversion. Den nye naturlige opdeling på cirka 100–200 zoner leveres regionsvis og kan senere samles til samme filformat. Kun åbne kyster og Limfjorden skal med; andre fjorde skal ikke indgå.
+Prognoser kommer fra DMI Open Data Forecast EDR API. RavScore er en vejledende model og kan ikke garantere fund. Brugeren skal altid vurdere lokal bølgegang, strøm, vanddybde og sikkerhed.
 
-## Central vejropdatering (2.4)
+## Central vejrarkitektur (2.5)
 
-GitHub Actions opdaterer den fælles `data/live/conditions.json` fire gange i timen.
-App-brugerne læser kun denne statiske cache og kontakter derfor ikke vejrtjenesterne direkte.
-Kildeprioriteten er DMI → Open-Meteo Marine → MET Norway → seneste gyldige cache.
-Ved en midlertidig DMI-fejl gemmes fallback-data straks, og DMI prøves igen efter fem minutter.
-Deployment fortsætter altid med den seneste gyldige cache, hvis en vejrtjeneste er utilgængelig.
+RavRadar-klienterne kalder aldrig vejrtjenester direkte. GitHub Actions opdaterer den fælles
+`data/live/conditions.json` hvert femte minut og deployer den statiske app.
 
+Kildeprioritet pr. zone:
 
-## Central weather retry policy (2.4.1)
+1. DMI Open Data
+2. Open-Meteo Marine
+3. MET Norway
+4. Seneste gyldige cache
 
-Weather is refreshed centrally by GitHub Actions every five minutes. Each run tries DMI first, then Open-Meteo Marine, then MET Norway, and finally the last valid cache. A DMI 429 or temporary network error opens a circuit for the rest of that run, so fallback data is published immediately. The workflow never sleeps for five minutes; the next scheduled run performs the DMI retry. End-user devices only read `data/live/conditions.json` and never call providers directly.
-
-GitHub Pages deploy via Actions
+Ved DMI HTTP 429, timeout eller midlertidig netværksfejl publiceres fallback-data straks.
+Workflowet venter ikke fem minutter i samme job; næste centrale kørsel forsøger automatisk
+DMI igen. Hver zone indeholder `provider`, `providerLabel`, `fallback`, `stale` og `attempts`,
+så datakilden kan vises i udviklerdiagnostikken.

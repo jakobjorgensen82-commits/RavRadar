@@ -1,7 +1,7 @@
 {
   "name": "RavRadar",
   "short_name": "RavRadar",
-  "description": "Dansk ravprognose med RavScore, ture og observationer",
+  "description": "Dansk prognose for ravjagt",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#f5f8f9",
