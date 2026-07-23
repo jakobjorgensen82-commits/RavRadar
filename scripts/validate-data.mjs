@@ -20,8 +20,8 @@ for (const feature of zones.features) {
   ids.add(id);
 }
 
-if (conditions.schemaVersion !== 2 || typeof conditions.zones !== "object" || Array.isArray(conditions.zones)) {
-  throw new Error("Ugyldig conditions.json schemaVersion 2");
+if (conditions.schemaVersion !== 3 || typeof conditions.zones !== "object" || conditions.zones === null || Array.isArray(conditions.zones)) {
+  throw new Error(`Ugyldig conditions.json: forventede schemaVersion 3 og zones som objekt, fik schemaVersion ${conditions.schemaVersion}`);
 }
 
 for (const [conditionId, condition] of Object.entries(conditions.zones)) {

@@ -57,3 +57,8 @@ App-brugerne læser kun denne statiske cache og kontakter derfor ikke vejrtjenes
 Kildeprioriteten er DMI → Open-Meteo Marine → MET Norway → seneste gyldige cache.
 Ved en midlertidig DMI-fejl gemmes fallback-data straks, og DMI prøves igen efter fem minutter.
 Deployment fortsætter altid med den seneste gyldige cache, hvis en vejrtjeneste er utilgængelig.
+
+
+## Central weather retry policy (2.4.1)
+
+Weather is refreshed centrally by GitHub Actions every five minutes. Each run tries DMI first, then Open-Meteo Marine, then MET Norway, and finally the last valid cache. A DMI 429 or temporary network error opens a circuit for the rest of that run, so fallback data is published immediately. The workflow never sleeps for five minutes; the next scheduled run performs the DMI retry. End-user devices only read `data/live/conditions.json` and never call providers directly.

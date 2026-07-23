@@ -3,8 +3,8 @@ name: Update weather and deploy RavRadar
 on:
   workflow_dispatch:
   schedule:
-    # Central opdatering fire gange i timen. GitHub kan forsinke planlagte jobs lidt.
-    - cron: "3,18,33,48 * * * *"
+    # Central opdatering hvert 5. minut. DMI prøves altid først; fallback udgives straks.
+    - cron: "*/5 * * * *"
   push:
     branches: [main]
 
@@ -21,7 +21,7 @@ jobs:
   update:
     if: github.event_name != 'push' || github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,13 +32,12 @@ jobs:
       - name: Update central weather cache
         id: weather
         continue-on-error: true
-        timeout-minutes: 12
+        timeout-minutes: 7
         run: npm run update:weather
         env:
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
           DMI_MAX_RETRIES: 1
           DMI_REQUEST_GAP_MS: 1400
-          DMI_RETRY_AFTER_MS: 300000
           WEATHER_REQUEST_TIMEOUT_MS: 18000
           WEATHER_USER_AGENT: "RavRadar/2.4 (${{ github.server_url }}/${{ github.repository }})"
       - name: Report provider fallback

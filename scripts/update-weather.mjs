@@ -3,7 +3,6 @@ import fs from 'node:fs/promises';
 const ZONES_PATH = 'data/zones.geojson';
 const OUTPUT_PATH = 'data/live/conditions.json';
 const DMI_ROOT = 'https://opendataapi.dmi.dk/v1/forecastedr/collections';
-const RETRY_AFTER_MS = Number(process.env.DMI_RETRY_AFTER_MS ?? 300000);
 const REQUEST_TIMEOUT_MS = Number(process.env.WEATHER_REQUEST_TIMEOUT_MS ?? 18000);
 const REQUEST_GAP_MS = Number(process.env.DMI_REQUEST_GAP_MS ?? 1400);
 const DMI_MAX_RETRIES = Number(process.env.DMI_MAX_RETRIES ?? 1);
@@ -296,26 +295,16 @@ const fallbackZoneIds = Object.entries(output.zones)
   .filter(([, zone]) => zone.provider !== 'dmi')
   .map(([zoneId]) => zoneId);
 
-if (dmiTransientFailure && fallbackZoneIds.length && RETRY_AFTER_MS > 0) {
-  console.log(`DMI fejlede midlertidigt. Fallback-data er gemt. Prøver DMI igen om ${Math.round(RETRY_AFTER_MS / 60000)} minutter.`);
-  await sleep(RETRY_AFTER_MS);
-  dmiCircuitOpen = false;
-  dmiTransientFailure = false;
-  nextDmiRequestAt = 0;
-  for (const feature of features.filter(f => fallbackZoneIds.includes(f.properties?.id))) {
-    const zoneId = feature.properties.id;
-    try {
-      const retried = await resolveZone(feature, new Date().toISOString(), output, { dmiOnly: true });
-      if (retried.provider === 'dmi') {
-        output.zones[zoneId] = retried;
-        console.log(`DMI retry OK: ${zoneId}`);
-      }
-    } catch (error) {
-      console.warn(`DMI retry stadig fejlet for ${zoneId}: ${error.message}`);
-    }
-  }
-  output.generatedAt = new Date().toISOString();
-  output.retry = { dmiRetriedAfterMinutes: Math.round(RETRY_AFTER_MS / 60000), completedAt: output.generatedAt };
+if (dmiTransientFailure && fallbackZoneIds.length) {
+  // Vent aldrig inde i samme GitHub-job. Den planlagte centrale kørsel starter igen
+  // fem minutter senere og forsøger automatisk DMI først.
+  output.retry = {
+    dmiRetriedAfterMinutes: null,
+    completedAt: null,
+    nextCentralAttemptMinutes: 5,
+    reason: 'DMI transient failure; fallback cache published immediately'
+  };
+  console.log('DMI fejlede midlertidigt. Fallback-data er gemt; næste centrale kørsel forsøger DMI igen om ca. 5 minutter.');
   await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(output, null, 2)}\n`);
 }
 
