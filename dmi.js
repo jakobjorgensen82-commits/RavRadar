@@ -416,3 +416,12 @@ export function calculateWaterLevelScore(water) {
   if (current < -20) score -= 5;
   return Math.max(0, Math.min(20, score));
 }
+
+
+// Sprint 6 - Weather Source Decision
+export function getWeatherSourceDecision(controlCenter){
+  const c=controlCenter||{};
+  if(c.health===false) return {source:'fallback',reason:'health'};
+  if(c.quality==='stale') return {source:'cache',reason:'stale-live'};
+  return {source:'live',reason:'healthy'};
+}
