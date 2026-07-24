@@ -207,3 +207,31 @@ async function getWaterLevelV27(lat,lon){
 function getWeatherHealth(){
   return {...WeatherHealth};
 }
+
+
+// Sprint 2: diagnostics + source metadata
+function classifyWeatherSource(result){
+  if(!result) return "none";
+  return result.source || (WeatherHealth.mode==="live"?"dmi-live":"fallback-model");
+}
+
+async function getWeatherDiagnostics(lat,lon){
+  const sample=await getWaterLevelV27(lat,lon);
+  return {
+    healthy: WeatherHealth.mode==="live",
+    mode: WeatherHealth.mode,
+    lastSuccessfulAt: WeatherHealth.lastSuccessfulAt,
+    lastError: WeatherHealth.lastError,
+    source: classifyWeatherSource(sample),
+    forecastPoints: sample?.forecast?.length||0,
+    coordinates:{lat,lon}
+  };
+}
+
+// wrap fallback with metadata
+const _origGetWaterLevel=getWaterLevel;
+getWaterLevel=async function(lat,lon){
+ const r=await _origGetWaterLevel(lat,lon);
+ r.source="fallback-model";
+ return r;
+}
