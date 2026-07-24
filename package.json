@@ -1,16 +1,17 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "2.6.24",
+  "version": "2.6.25",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
     "update:dmi": "node scripts/update-weather.mjs",
     "validate:data": "node scripts/validate-data.mjs",
     "test:score": "node scripts/test-score-engine.mjs",
-    "validate": "npm run validate:data && npm run test:score && npm run validate:coastlines",
+    "validate": "npm run validate:data && npm run test:score && npm run validate:coastlines && npm run validate:zone-plan && npm run validate:knowledge",
     "validate:zone-plan": "node scripts/validate-zone-plan.mjs",
-    "validate:coastlines": "node scripts/validate-coastlines.mjs"
+    "validate:coastlines": "node scripts/validate-coastlines.mjs",
+    "validate:knowledge": "node scripts/validate-knowledge.mjs"
   },
   "engines": {
     "node": ">=22"

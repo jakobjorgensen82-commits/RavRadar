@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "1.0",
+  "rules": [
+    {
+      "id": "HYP-PERSISTENCE-TEMPLATE-001",
+      "name": "Skabelon: ravpotentiale fastholdes efter gunstigt forløb",
+      "status": "draft",
+      "kind": "persistence",
+      "knowledgeClass": "hypothesis",
+      "confidence": "lav",
+      "priority": 100,
+      "geography": { "scope": "zone", "zoneIds": [] },
+      "source": {
+        "type": "project-requirement",
+        "title": "Administratorens krav om lokale fastholdelsesregler",
+        "reference": "RavRadar System Specification 1.0"
+      },
+      "conditions": {
+        "historyHours": 24,
+        "wind": {
+          "directionSemantics": "from",
+          "directionRangesDeg": [],
+          "maxSpeedMps": null,
+          "minConsecutiveHours": null
+        },
+        "current": {
+          "directionSemantics": "towards",
+          "directionRangesDeg": [],
+          "maxSpeedMps": null
+        }
+      },
+      "effect": {
+        "scoreAdjustment": 0,
+        "persistHours": 0,
+        "decay": "linear",
+        "cancelWhen": []
+      },
+      "version": 1,
+      "validFrom": null,
+      "notes": "Udfyldes først, når geografi, retninger, styrker og varighed er dokumenteret eller angivet af ekspert."
+    }
+  ]
+}

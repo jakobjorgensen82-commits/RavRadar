@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ravradar.dk/schemas/analysis-export.schema.json",
+  "title": "Pseudonymised RavRadar analysis row",
+  "type": "object",
+  "required": ["observation_id", "zone_id", "observed_at", "result"],
+  "properties": {
+    "observation_id": { "type": "string" },
+    "zone_id": { "type": "string" },
+    "observed_at": { "type": "string", "format": "date-time" },
+    "result": { "type": "string" },
+    "grams": { "type": ["number", "null"] },
+    "base_score": { "type": ["number", "null"] },
+    "rule_adjustment": { "type": ["number", "null"] },
+    "final_score": { "type": ["number", "null"] },
+    "matched_rule_versions": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": true
+}

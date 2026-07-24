@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ravradar.dk/schemas/rule.schema.json",
+  "title": "RavRadar knowledge rule",
+  "type": "object",
+  "required": ["id", "name", "status", "kind", "knowledgeClass", "confidence", "priority", "geography", "source", "conditions", "effect", "version"],
+  "properties": {
+    "id": { "type": "string", "minLength": 3 },
+    "name": { "type": "string", "minLength": 3 },
+    "status": { "enum": ["draft", "active", "inactive", "retired"] },
+    "kind": { "enum": ["bonus", "penalty", "persistence", "gate", "override", "annotation"] },
+    "knowledgeClass": { "enum": ["documented", "expert", "data-derived", "hypothesis"] },
+    "confidence": { "enum": ["lav", "mellem", "stor"] },
+    "priority": { "type": "integer", "minimum": 0, "maximum": 10000 },
+    "geography": { "type": "object" },
+    "source": { "type": "object", "required": ["type", "title"] },
+    "conditions": { "type": "object" },
+    "effect": { "type": "object" },
+    "version": { "type": "integer", "minimum": 1 }
+  },
+  "additionalProperties": true
+}

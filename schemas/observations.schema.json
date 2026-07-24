@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ravradar.dk/schemas/observations.schema.json",
+  "title": "RavRadar observation",
+  "type": "object",
+  "required": ["id", "zoneId", "observedAt", "huntMode", "result", "weatherSnapshot", "algorithmVersion"],
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "zoneId": { "type": "string" },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "huntMode": { "enum": ["waders", "beach"] },
+    "result": { "enum": ["none", "small", "medium", "good"] },
+    "grams": { "type": ["number", "null"], "minimum": 0, "maximum": 10000 },
+    "searchDurationMinutes": { "type": ["integer", "null"], "minimum": 0 },
+    "weatherSnapshot": { "type": "object" },
+    "baseScore": { "type": ["integer", "null"], "minimum": 0, "maximum": 100 },
+    "ruleAdjustment": { "type": ["integer", "null"], "minimum": -100, "maximum": 100 },
+    "finalScore": { "type": ["integer", "null"], "minimum": 0, "maximum": 100 },
+    "matchedRuleVersions": { "type": "array", "items": { "type": "string" } },
+    "algorithmVersion": { "type": "string" }
+  },
+  "additionalProperties": true
+}
