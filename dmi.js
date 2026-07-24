@@ -235,3 +235,25 @@ getWaterLevel=async function(lat,lon){
  r.source="fallback-model";
  return r;
 }
+
+
+// Sprint 3 - Weather Engine 2.7
+const WeatherQuality = {
+  score: 0,
+  reason: "uninitialized"
+};
+
+export function evaluateWeatherQuality(diag) {
+  const healthy = !!(diag && diag.healthy);
+  WeatherQuality.score = healthy ? 100 : 40;
+  WeatherQuality.reason = healthy ? "live-source" : "fallback";
+  return {
+    score: WeatherQuality.score,
+    reason: WeatherQuality.reason,
+    source: diag?.source || "unknown"
+  };
+}
+
+export function getWeatherQuality() {
+  return { ...WeatherQuality };
+}
