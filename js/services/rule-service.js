@@ -13,7 +13,9 @@ export async function loadActiveRules() {
       return Array.isArray(data.rules) ? data.rules : [];
     } catch { return []; }
   }));
-  cachedRules = results.flat().filter(rule => rule.status === 'active');
+  let adminRules = [];
+  try { adminRules = JSON.parse(localStorage.getItem('ravradar-admin-rules-v1') || '[]'); } catch {}
+  cachedRules = [...results.flat(), ...adminRules].filter(rule => rule.status === 'active');
   return cachedRules;
 }
 

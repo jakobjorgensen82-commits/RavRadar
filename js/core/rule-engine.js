@@ -33,6 +33,8 @@ function conditionMatches(rule, context) {
   if (!inDirectionRanges(weather.windDirectionDeg, conditions.windDirectionRangesDeg)) return false;
   if (finite(conditions.minWaveHeightM) !== null && finite(weather.waveHeightM) < Number(conditions.minWaveHeightM)) return false;
   if (finite(conditions.maxWaveHeightM) !== null && finite(weather.waveHeightM) > Number(conditions.maxWaveHeightM)) return false;
+  if (finite(conditions.minWaterLevelCm) !== null && finite(weather.waterLevelCm) < Number(conditions.minWaterLevelCm)) return false;
+  if (finite(conditions.maxWaterLevelCm) !== null && finite(weather.waterLevelCm) > Number(conditions.maxWaterLevelCm)) return false;
   if (finite(conditions.maxHoursSinceHighEnergy) !== null && finite(history.hoursSinceHighEnergy) > Number(conditions.maxHoursSinceHighEnergy)) return false;
   return true;
 }

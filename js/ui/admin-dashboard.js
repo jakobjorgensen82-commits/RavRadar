@@ -1,158 +1,87 @@
-const ADMIN_SESSION_KEY = 'ravradar-admin-session';
-const OBSERVATION_KEY = 'ravradar-observations-v2';
-const TRIP_KEYS = ['ravradar-trips-v1', 'ravradar-trips'];
-const VERSION = window.RAVRADAR_VERSION || 'unknown';
-const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const getJson = async url => { const response = await fetch(url, { cache: 'no-store' }); if (!response.ok) throw new Error(`${url}: ${response.status}`); return response.json(); };
-const readLocalArray = key => { try { const value = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(value) ? value : []; } catch { return []; } };
-const formatDate = value => value ? new Date(value).toLocaleString('da-DK') : '–';
-const formatNumber = (value, digits = 0) => Number.isFinite(Number(value)) ? Number(value).toLocaleString('da-DK', { maximumFractionDigits: digits }) : '–';
+import { evaluateRules } from '../core/rule-engine.js';
 
-let model = { health:null, conditions:{zones:{}}, zones:{features:[]}, rules:[], knowledge:[], observations:[], trips:[] };
+const VERSION='2.6.30';
+const RULES_KEY='ravradar-admin-rules-v1';
+const HISTORY_KEY='ravradar-admin-rule-history-v1';
+const SESSION_KEY='ravradar-admin-auth';
+const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+const getJson=async url=>{const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw new Error(`${url}: ${r.status}`);return r.json();};
+const download=(name,data)=>{const blob=new Blob([typeof data==='string'?data:JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),0);};
 
-function requireAdminSession() {
-  let session = null;
-  try { session = JSON.parse(sessionStorage.getItem(ADMIN_SESSION_KEY) || 'null'); } catch {}
-  if (!session?.unlockedAt) {
-    document.body.innerHTML = `<main class="admin-shell"><article class="admin-card"><h1>Administration er låst</h1><p>Åbn RavRadar, tryk på logoet 10 gange, indtast PIN-koden og vælg derefter <b>Åbn administration</b>.</p><a class="button" href="./">Tilbage til RavRadar</a></article></main>`;
-    throw new Error('Admin session mangler');
-  }
+if(sessionStorage.getItem(SESSION_KEY)!=='yes') location.replace('./');
+
+const state={tab:'dashboard',rules:[],zones:[],conditions:{zones:{}},health:null,editingId:null};
+const content=document.querySelector('#adminContent');
+const ruleDialog=document.querySelector('#ruleDialog');
+const testDialog=document.querySelector('#testDialog');
+
+function adminRules(){try{return JSON.parse(localStorage.getItem(RULES_KEY)||'[]')}catch{return[]}}
+function saveAdminRules(rules){localStorage.setItem(RULES_KEY,JSON.stringify(rules));state.rules=rules;}
+function history(){try{return JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]')}catch{return[]}}
+function addHistory(action,rule){const rows=history();rows.unshift({at:new Date().toISOString(),action,rule:structuredClone(rule)});localStorage.setItem(HISTORY_KEY,JSON.stringify(rows.slice(0,200)));}
+function uid(){return `admin-${Date.now()}-${Math.random().toString(36).slice(2,7)}`}
+
+async function boot(){
+ const [zones,conditions,health,...files]=await Promise.all([
+  getJson('./data/zones.geojson').catch(()=>({features:[]})),getJson('./data/live/conditions.json').catch(()=>({zones:{}})),getJson('./data/live/weather-health.json').catch(()=>null),
+  getJson('./rules/national-rules.json').catch(()=>({rules:[]})),getJson('./rules/local-rules.json').catch(()=>({rules:[]})),getJson('./rules/experimental-rules.json').catch(()=>({rules:[]}))]);
+ state.zones=zones.features||[];state.conditions=conditions;state.health=health;
+ const shipped=files.flatMap(f=>f.rules||[]).map(r=>({...r,_origin:'projekt'}));
+ state.rules=[...shipped,...adminRules().map(r=>({...r,_origin:'admin'}))];
+ render();
 }
 
-async function load() {
-  document.querySelector('#adminStatus').textContent = 'Opdaterer data…';
-  const [health, conditions, zones, national, local, experimental, amber, coastTypes, persistence] = await Promise.all([
-    getJson('./data/live/weather-health.json').catch(() => null),
-    getJson('./data/live/conditions.json').catch(() => ({ zones:{} })),
-    getJson('./data/zones.geojson').catch(() => ({ features:[] })),
-    getJson('./rules/national-rules.json').catch(() => ({ rules:[] })),
-    getJson('./rules/local-rules.json').catch(() => ({ rules:[] })),
-    getJson('./rules/experimental-rules.json').catch(() => ({ rules:[] })),
-    getJson('./knowledge/amber-behaviour.json').catch(() => null),
-    getJson('./knowledge/coast-types.json').catch(() => null),
-    getJson('./knowledge/persistence-rules.json').catch(() => null)
-  ]);
-  model = {
-    health,
-    conditions,
-    zones,
-    rules:[...(national.rules||[]), ...(local.rules||[]), ...(experimental.rules||[])],
-    knowledge:[amber, coastTypes, persistence].filter(Boolean),
-    observations:readLocalArray(OBSERVATION_KEY),
-    trips:TRIP_KEYS.flatMap(readLocalArray)
-  };
-  renderAll();
-  document.querySelector('#adminStatus').textContent = `Version ${VERSION} · data genereret ${formatDate(conditions.generatedAt)}`;
-}
+document.querySelectorAll('.admin-tabs button').forEach(b=>b.addEventListener('click',()=>{state.tab=b.dataset.tab;document.querySelectorAll('.admin-tabs button').forEach(x=>x.classList.toggle('active',x===b));render();}));
 
-function renderAll() {
-  renderDashboard();
-  renderWeather();
-  renderZones();
-  renderRules();
-  renderKnowledge();
-  renderAnalysis();
-  renderSystem();
-}
+function render(){({dashboard:renderDashboard,rules:renderRules,knowledge:renderKnowledge,weather:renderWeather,zones:renderZones,observations:renderObservations,system:renderSystem}[state.tab]||renderDashboard)();}
 
-function providerCounts() {
-  return Object.values(model.conditions.zones || {}).reduce((acc, zone) => {
-    const provider = zone.provider || zone.source || 'ukendt';
-    acc[provider] = (acc[provider] || 0) + 1;
-    return acc;
-  }, {});
-}
+function renderDashboard(){const h=state.health;const zc=Object.keys(state.conditions.zones||{}).length;const active=state.rules.filter(r=>r.status==='active').length;const obs=JSON.parse(localStorage.getItem('ravradar-observations-v2')||'[]');content.innerHTML=`<div class="admin-grid">
+<article class="admin-card"><h2>Drift</h2><div class="metric ${h?.status==='good'?'status-good':'status-warning'}">${esc((h?.status||'ukendt').toUpperCase())}</div><p class="muted">Seneste centrale vejrstatus</p></article>
+<article class="admin-card"><h2>Vejrzoner</h2><div class="metric">${zc}/${state.zones.length}</div><p class="muted">Zoner med centrale data</p></article>
+<article class="admin-card"><h2>Aktive regler</h2><div class="metric">${active}</div><p class="muted">Projekt- og administratorregler</p></article>
+<article class="admin-card"><h2>Observationer</h2><div class="metric">${obs.length}</div><p class="muted">På denne enhed</p></article></div>
+<div class="two-col"><article class="admin-card"><h2>Hurtige handlinger</h2><div class="toolbar"><button class="admin-button" id="quickNewRule">Opret regel</button><button class="admin-button secondary" id="quickAdvice">Tilføj godt råd</button><button class="admin-button secondary" id="quickExport">Eksportér regler</button></div></article><article class="admin-card"><h2>Det kræver opmærksomhed</h2><p>${h?.alerts?.shouldNotifyAdministrator?'⚠️ DMI har været ustabilt længe nok til en administratoralarm.':'✓ Ingen ny administratoralarm nødvendig.'}</p><p>${state.rules.filter(r=>r.status==='draft').length} kladder venter på gennemgang.</p></article></div>`;
+ document.querySelector('#quickNewRule').onclick=()=>openRuleEditor();document.querySelector('#quickAdvice').onclick=()=>openRuleEditor(null,true);document.querySelector('#quickExport').onclick=exportRules;}
 
-function renderDashboard() {
-  const health = model.health;
-  const status = health?.status || 'unknown';
-  const weatherZoneCount = Object.keys(model.conditions.zones || {}).length;
-  const zoneCount = model.zones.features?.length || 0;
-  document.querySelector('#summary').innerHTML = `
-    <article class="admin-card"><h2>Vejrstatus</h2><div class="metric status-${esc(status)}">${esc(status.toUpperCase())}</div><p>${esc(health?.dmi?.coveragePercent ?? 0)} % DMI-dækning</p></article>
-    <article class="admin-card"><h2>Vejrzoner</h2><div class="metric">${weatherZoneCount}/${zoneCount}</div><p>${zoneCount ? Math.round(weatherZoneCount/zoneCount*100) : 0} % med aktuelle data</p></article>
-    <article class="admin-card"><h2>DMI-fejl</h2><div class="metric">${esc(health?.dmi?.failureMinutes ?? 0)} min</div><p>Sammenhængende utilstrækkelig drift</p></article>
-    <article class="admin-card"><h2>Administratoralarmer</h2><div class="metric">${esc(health?.alerts?.sentLast24Hours ?? 0)}/${esc(health?.alerts?.maxPer24Hours ?? 2)}</div><p>${health?.alerts?.shouldNotifyAdministrator ? 'Alarm bør sendes nu' : 'Ingen ny alarm nødvendig'}</p></article>
-    <article class="admin-card"><h2>Regler</h2><div class="metric">${model.rules.filter(rule=>rule.status==='active').length}</div><p>${model.rules.length} regler i alt</p></article>
-    <article class="admin-card"><h2>Observationer</h2><div class="metric">${model.observations.length}</div><p>På denne enhed</p></article>`;
-  const providers = providerCounts();
-  document.querySelector('#providers').innerHTML = Object.keys(providers).length
-    ? `<table class="admin-table"><thead><tr><th>Kilde</th><th>Zoner</th></tr></thead><tbody>${Object.entries(providers).sort((a,b)=>b[1]-a[1]).map(([name,count])=>`<tr><td>${esc(name)}</td><td>${count}</td></tr>`).join('')}</tbody></table>`
-    : '<p>Ingen centrale vejrzonedata endnu.</p>';
-  document.querySelector('#healthDetails').innerHTML = `<dl><dt>Genereret</dt><dd>${formatDate(health?.generatedAt)}</dd><dt>Seneste DMI-succes</dt><dd>${formatDate(health?.dmi?.lastSuccessfulAt)}</dd><dt>Fejl siden</dt><dd>${formatDate(health?.dmi?.consecutiveFailureSince)}</dd><dt>Næste alarm tidligst</dt><dd>${formatDate(health?.alerts?.nextAllowedAfter)}</dd></dl>`;
-}
+function renderRules(){const rules=state.rules;content.innerHTML=`<article class="admin-card"><div class="rule-card-head"><div><h2>Regelværksted</h2><p class="muted">Omsæt ravjægeres erfaringer til forståelige, testbare regler. Regler gemmes på denne enhed og kan eksporteres til projektet.</p></div><button class="admin-button" id="newRule">+ Ny regel</button></div><div class="toolbar"><input id="ruleSearch" placeholder="Søg efter regel, kilde eller forklaring"><select id="ruleStatus"><option value="">Alle statusser</option><option>active</option><option>draft</option><option>inactive</option></select><button class="admin-button secondary" id="importRules">Importér</button><button class="admin-button secondary" id="exportRules">Eksportér</button></div></article><div id="ruleList" class="admin-grid"></div>`;
+ const draw=()=>{const q=document.querySelector('#ruleSearch').value.toLowerCase();const s=document.querySelector('#ruleStatus').value;const filtered=rules.filter(r=>(!s||r.status===s)&&JSON.stringify(r).toLowerCase().includes(q));document.querySelector('#ruleList').innerHTML=filtered.length?filtered.map(ruleCard).join(''):'<div class="empty">Ingen regler matcher filtreringen.</div>';bindRuleActions();};
+ document.querySelector('#newRule').onclick=()=>openRuleEditor();document.querySelector('#ruleSearch').oninput=draw;document.querySelector('#ruleStatus').onchange=draw;document.querySelector('#exportRules').onclick=exportRules;document.querySelector('#importRules').onclick=()=>document.querySelector('#importRulesInput').click();draw();}
 
-function stationText(waterLevel) {
-  const stations = waterLevel?.stations || waterLevel?.stationInterpolation?.stations || [];
-  if (!stations.length) return '–';
-  return stations.map(station => `${station.name || station.stationId || 'station'} (${formatNumber(station.distanceKm,1)} km · ${formatNumber((station.weight ?? 0)*100,0)} %)`).join('<br>');
-}
+function ruleCard(r){const conditions=describeConditions(r.conditions);return `<article class="admin-card rule-card"><div class="rule-card-head"><div><span class="badge ${esc(r.status)}">${esc(statusDa(r.status))}</span> <span class="badge">${esc(classDa(r.knowledgeClass))}</span><h3>${esc(r.name)}</h3></div><span class="muted">v${esc(r.version||1)}</span></div><p>${esc(r.effect?.explanation||'Ingen forklaring')}</p><p class="hint"><b>Når:</b> ${esc(conditions||'Altid')}<br><b>Så:</b> ${esc(describeEffect(r))}<br><b>Geografi:</b> ${esc(describeGeo(r.geography))}</p><div class="rule-card-actions"><button class="admin-button" data-edit="${esc(r.id)}">Redigér</button><button class="admin-button secondary" data-test="${esc(r.id)}">Test</button>${r._origin==='admin'?`<button class="admin-button secondary" data-copy="${esc(r.id)}">Kopiér</button><button class="admin-button danger" data-delete="${esc(r.id)}">Slet</button>`:'<span class="hint">Projektregel – kopiér for at ændre</span>'}</div></article>`}
+function bindRuleActions(){content.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{const r=state.rules.find(x=>x.id===b.dataset.edit);r._origin==='admin'?openRuleEditor(r):copyRule(r)});content.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>copyRule(state.rules.find(x=>x.id===b.dataset.copy)));content.querySelectorAll('[data-test]').forEach(b=>b.onclick=()=>openTest(state.rules.find(x=>x.id===b.dataset.test)));content.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>{const r=state.rules.find(x=>x.id===b.dataset.delete);if(confirm(`Slet “${r.name}”?`)){saveAdminRules(adminRules().filter(x=>x.id!==r.id));addHistory('deleted',r);boot();}})}
 
-function renderWeather() {
-  const rows = Object.entries(model.conditions.zones || {}).map(([zoneId, weather]) => ({ zoneId, ...weather }));
-  document.querySelector('#weatherTable').innerHTML = rows.length ? `<table class="admin-table"><thead><tr><th>Zone</th><th>Kilde</th><th>Vind</th><th>Bølger</th><th>Vandstand</th><th>Stationer/interpolation</th></tr></thead><tbody>${rows.slice(0,500).map(row => {
-    const water = row.current?.waterLevel || row.waterLevel || {};
-    return `<tr><td>${esc(row.zoneName || row.name || row.zoneId)}</td><td><span class="badge">${esc(row.provider || row.source || 'ukendt')}</span></td><td>${formatNumber(row.current?.windSpeedMs ?? row.windSpeedMs,1)} m/s</td><td>${formatNumber(row.current?.waveHeightM ?? row.waveHeightM,1)} m</td><td>${formatNumber(water.valueCm ?? row.current?.waterLevelCm ?? row.waterLevelCm,0)} cm<br><span class="muted">${esc(water.method || '')}</span></td><td>${stationText(water)}</td></tr>`;
-  }).join('')}</tbody></table>` : '<p>Der er endnu ingen genererede vejrzoner i <code>conditions.json</code>.</p>';
-}
+function renderKnowledge(){const advice=state.rules.filter(r=>r.kind==='annotation');content.innerHTML=`<article class="admin-card"><div class="rule-card-head"><div><h2>Gode råd fra ravjægere</h2><p class="muted">Gem praktiske råd med kilde, geografi og tillidsniveau. Et råd kan senere kopieres og udbygges til en scoreregel.</p></div><button id="newAdvice" class="admin-button">+ Nyt råd</button></div></article><div class="admin-grid">${advice.length?advice.map(r=>`<article class="admin-card knowledge-card"><span class="badge">${esc(r.confidence)} tillid</span><h3>${esc(r.name)}</h3><blockquote>${esc(r.effect?.explanation)}</blockquote><p class="hint">Kilde: ${esc(r.source?.title||'Ikke angivet')} · ${esc(describeGeo(r.geography))}</p><button class="admin-button" data-advice-edit="${esc(r.id)}">Redigér</button></article>`).join(''):'<div class="empty">Ingen gode råd endnu.</div>'}</div>`;document.querySelector('#newAdvice').onclick=()=>openRuleEditor(null,true);content.querySelectorAll('[data-advice-edit]').forEach(b=>b.onclick=()=>{const r=state.rules.find(x=>x.id===b.dataset.adviceEdit);r._origin==='admin'?openRuleEditor(r,true):copyRule(r)});}
 
-function renderZones() {
-  const query = (document.querySelector('#zoneSearch')?.value || '').trim().toLowerCase();
-  const conditionMap = model.conditions.zones || {};
-  const rows = (model.zones.features || []).map(feature => {
-    const p = feature.properties || {};
-    const id = p.id || feature.id || p.zoneId;
-    const weather = conditionMap[id] || {};
-    const water = weather.current?.waterLevel || weather.waterLevel || {};
-    return { id, name:p.name || p.zoneName || id, coastType:p.coastType || '–', region:p.region || p.area || '–', provider:weather.provider || 'ingen data', water };
-  }).filter(row => !query || `${row.name} ${row.region} ${row.id}`.toLowerCase().includes(query));
-  document.querySelector('#zonesTable').innerHTML = `<p>${rows.length} zoner vist.</p><table class="admin-table"><thead><tr><th>Zone</th><th>Region</th><th>Kysttype</th><th>Vejrkilde</th><th>Vandstandsstationer</th></tr></thead><tbody>${rows.map(row=>`<tr><td><b>${esc(row.name)}</b><br><span class="muted">${esc(row.id)}</span></td><td>${esc(row.region)}</td><td>${esc(row.coastType)}</td><td>${esc(row.provider)}</td><td>${stationText(row.water)}</td></tr>`).join('')}</tbody></table>`;
-}
+function renderWeather(){const providers=Object.values(state.conditions.zones||{}).reduce((a,z)=>(a[z.provider||'ukendt']=(a[z.provider||'ukendt']||0)+1,a),{});content.innerHTML=`<div class="admin-grid"><article class="admin-card"><h2>DMI-dækning</h2><div class="metric">${esc(state.health?.dmi?.coveragePercent??0)}%</div><p class="muted">Fejlperiode: ${esc(state.health?.dmi?.failureMinutes??0)} minutter</p></article><article class="admin-card"><h2>Alarmkvote</h2><div class="metric">${esc(state.health?.alerts?.sentLast24Hours??0)}/2</div><p class="muted">Maksimalt to alarmer pr. døgn</p></article></div><article class="admin-card"><h2>Datakilder</h2><table class="admin-table"><thead><tr><th>Kilde</th><th>Zoner</th></tr></thead><tbody>${Object.entries(providers).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${v}</td></tr>`).join('')||'<tr><td colspan="2">Ingen aktuelle data</td></tr>'}</tbody></table></article><article class="admin-card"><h2>Vandstandsinterpolation</h2><p>RavRadar kan vise stationer, afstande og vægte, når de centrale vejrfiler indeholder feltet <code>waterLevelInterpolation</code>. Interpolation skal beregnes centralt – ikke på telefonen.</p><div id="interpolationRows"></div></article>`;
+ const rows=Object.entries(state.conditions.zones||{}).filter(([,z])=>z.waterLevelInterpolation).slice(0,25);document.querySelector('#interpolationRows').innerHTML=rows.length?`<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Zone</th><th>Resultat</th><th>Stationer</th></tr></thead><tbody>${rows.map(([id,z])=>`<tr><td>${esc(id)}</td><td>${esc(z.waterLevelCm)} cm</td><td>${esc((z.waterLevelInterpolation.stations||[]).map(s=>`${s.name}: ${Math.round((s.weight||0)*100)}%`).join(', '))}</td></tr>`).join('')}</tbody></table></div>`:'<p class="muted">Ingen interpolationsdetaljer i den aktuelle cache.</p>';}
 
-function renderRules() {
-  document.querySelector('#rules').innerHTML = model.rules.length ? `<table class="admin-table"><thead><tr><th>Regel</th><th>Status</th><th>Type</th><th>Vidensklasse</th><th>Tillid</th><th>Prioritet</th><th>Version</th></tr></thead><tbody>${model.rules.map(rule=>`<tr><td><b>${esc(rule.name || rule.id)}</b><br><span class="muted">${esc(rule.id)}</span></td><td><span class="badge ${esc(rule.status)}">${esc(rule.status)}</span></td><td>${esc(rule.kind)}</td><td>${esc(rule.knowledgeClass)}</td><td><span class="badge ${esc(rule.confidence)}">${esc(rule.confidence)}</span></td><td>${esc(rule.priority ?? '–')}</td><td>${esc(rule.version ?? '–')}</td></tr>`).join('')}</tbody></table>` : '<p>Ingen regler fundet.</p>';
-}
+function renderZones(){content.innerHTML=`<article class="admin-card"><h2>Zoner</h2><div class="toolbar"><input id="zoneSearch" placeholder="Søg zone"><select id="zoneType"><option value="">Alle kysttyper</option>${[...new Set(state.zones.map(z=>z.properties?.coastType).filter(Boolean))].sort().map(x=>`<option>${esc(x)}</option>`).join('')}</select></div></article><div id="zoneList" class="admin-table-wrap"></div>`;const draw=()=>{const q=document.querySelector('#zoneSearch').value.toLowerCase(),t=document.querySelector('#zoneType').value;const rows=state.zones.filter(z=>(!t||z.properties?.coastType===t)&&JSON.stringify(z.properties).toLowerCase().includes(q));document.querySelector('#zoneList').innerHTML=`<table class="admin-table"><thead><tr><th>Zone</th><th>Kysttype</th><th>Område</th><th>Vejrkilde</th></tr></thead><tbody>${rows.slice(0,250).map(z=>{const p=z.properties||{},w=state.conditions.zones?.[p.id]||{};return `<tr><td>${esc(p.name||p.id)}</td><td>${esc(p.coastType||'–')}</td><td>${esc(p.region||p.area||'–')}</td><td>${esc(w.provider||'ingen data')}</td></tr>`}).join('')}</tbody></table>`};document.querySelector('#zoneSearch').oninput=draw;document.querySelector('#zoneType').onchange=draw;draw();}
 
-function renderKnowledge() {
-  document.querySelector('#knowledge').innerHTML = model.knowledge.length ? model.knowledge.map((item,index)=>`<details ${index===0?'open':''}><summary>${esc(item.title || item.name || item.id || `Videnskilde ${index+1}`)}</summary><pre>${esc(JSON.stringify(item,null,2))}</pre></details>`).join('') : '<p>Ingen vidensfiler fundet.</p>';
-}
+function renderObservations(){const obs=JSON.parse(localStorage.getItem('ravradar-observations-v2')||'[]');const finds=obs.filter(x=>x.found||x.result==='found').length;content.innerHTML=`<div class="admin-grid"><article class="admin-card"><h2>Observationer</h2><div class="metric">${obs.length}</div></article><article class="admin-card"><h2>Registrerede fund</h2><div class="metric">${finds}</div></article><article class="admin-card"><h2>Vejrsnapshots</h2><div class="metric">${obs.filter(x=>x.weatherSnapshot).length}</div><p class="muted">Bevares ved central oprydning</p></article></div><article class="admin-card"><h2>Eksport og databeskyttelse</h2><p>Eksporten fjerner bruger-id og præcis GPS-position. Vejrsnapshot og regelforklaring bevares til analyse.</p><button id="exportObs" class="admin-button">Eksportér pseudonymiseret JSON</button></article>`;document.querySelector('#exportObs').onclick=()=>{const rows=obs.map(({anonymous_id,user_id,gps,...r})=>({...r,gps:gps?{accuracy:gps.accuracy??null}:null}));download('ravradar-observationer.json',{exportedAt:new Date().toISOString(),privacyProfile:'pseudonymised',rows})};}
 
-function renderAnalysis() {
-  const withSnapshot = model.observations.filter(row => row.weatherSnapshot || row.weather_snapshot).length;
-  document.querySelector('#observations').innerHTML = `<dl><dt>Observationer</dt><dd>${model.observations.length}</dd><dt>Med vejrsnapshot</dt><dd>${withSnapshot}</dd><dt>Uden vejrsnapshot</dt><dd>${model.observations.length-withSnapshot}</dd></dl><p class="muted">Eksporten fjerner direkte bruger-id og præcis GPS-position.</p>`;
-  document.querySelector('#trips').innerHTML = `<dl><dt>Registrerede ture</dt><dd>${model.trips.length}</dd><dt>Afsluttede</dt><dd>${model.trips.filter(t=>t.endedAt||t.endTime).length}</dd></dl>`;
-}
+function renderSystem(){content.innerHTML=`<div class="admin-grid"><article class="admin-card"><h2>Version</h2><div class="metric">${VERSION}</div></article><article class="admin-card"><h2>Lokale administratorregler</h2><div class="metric">${adminRules().length}</div></article><article class="admin-card"><h2>Regelhistorik</h2><div class="metric">${history().length}</div></article></div><article class="admin-card"><h2>Vedligeholdelse</h2><div class="toolbar"><button id="exportDiag" class="admin-button secondary">Eksportér diagnostik</button><button id="clearCaches" class="admin-button danger">Ryd RavRadar-caches</button><button id="logoutAdmin" class="admin-button secondary">Lås administration</button></div><p class="hint">Cacheknappen rydder kun caches, hvis navn starter med “ravradar”. Den sletter ikke observationer, ture eller regler.</p></article><article class="admin-card"><h2>Seneste regelændringer</h2><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Tid</th><th>Handling</th><th>Regel</th></tr></thead><tbody>${history().slice(0,20).map(x=>`<tr><td>${new Date(x.at).toLocaleString('da-DK')}</td><td>${esc(x.action)}</td><td>${esc(x.rule?.name)}</td></tr>`).join('')||'<tr><td colspan="3">Ingen ændringer</td></tr>'}</tbody></table></div></article>`;document.querySelector('#exportDiag').onclick=()=>download('ravradar-diagnostik.json',{version:VERSION,exportedAt:new Date().toISOString(),health:state.health,weatherZoneCount:Object.keys(state.conditions.zones||{}).length,zoneCount:state.zones.length,adminRuleCount:adminRules().length});document.querySelector('#clearCaches').onclick=async()=>{if(!confirm('Ryd RavRadars app-caches?'))return;for(const name of await caches.keys())if(name.toLowerCase().startsWith('ravradar'))await caches.delete(name);alert('RavRadar-caches er ryddet.');};document.querySelector('#logoutAdmin').onclick=()=>{sessionStorage.removeItem(SESSION_KEY);location.replace('./')};}
 
-function renderSystem() {
-  const storageBytes = Object.keys(localStorage).reduce((sum,key)=>sum + key.length + (localStorage.getItem(key)?.length || 0),0) * 2;
-  document.querySelector('#systemInfo').innerHTML = `<dl><dt>Version</dt><dd>${esc(VERSION)}</dd><dt>Service worker</dt><dd>${'serviceWorker' in navigator ? 'Understøttet' : 'Ikke understøttet'}</dd><dt>Online</dt><dd>${navigator.onLine ? 'Ja' : 'Nej'}</dd><dt>Lokal lagring</dt><dd>${formatNumber(storageBytes/1024,1)} KiB</dd><dt>Vejr genereret</dt><dd>${formatDate(model.conditions.generatedAt)}</dd></dl>`;
-}
+function openRuleEditor(rule=null,advice=false){state.editingId=rule?.id||null;const r=rule||{id:uid(),name:'',status:'draft',kind:advice?'annotation':'bonus',knowledgeClass:'expert',confidence:'mellem',priority:500,geography:{scope:'national'},source:{type:'expert',title:''},conditions:{},effect:{scoreAdjustment:0,explanation:''},version:1};document.querySelector('#ruleDialogTitle').textContent=rule?'Redigér regel':advice?'Nyt godt råd':'Ny regel';document.querySelector('#ruleFormBody').innerHTML=`<div class="form-grid"><label class="full">Titel<input name="name" required value="${esc(r.name)}" placeholder="Fx Frisk pålandsvind efter stille periode"></label><label>Status<select name="status"><option value="draft" ${r.status==='draft'?'selected':''}>Kladde</option><option value="active" ${r.status==='active'?'selected':''}>Aktiv</option><option value="inactive" ${r.status==='inactive'?'selected':''}>Inaktiv</option></select></label><label>Type<select name="kind"><option value="bonus" ${r.kind==='bonus'?'selected':''}>Giver bonus</option><option value="penalty" ${r.kind==='penalty'?'selected':''}>Giver fradrag</option><option value="persistence" ${r.kind==='persistence'?'selected':''}>Virker i timer/dage efter hændelse</option><option value="gate" ${r.kind==='gate'?'selected':''}>Blokerer vurdering</option><option value="override" ${r.kind==='override'?'selected':''}>Sætter fast score</option><option value="annotation" ${r.kind==='annotation'?'selected':''}>Godt råd uden score</option></select></label><label>Videnstype<select name="knowledgeClass"><option value="expert" ${r.knowledgeClass==='expert'?'selected':''}>Erfaring fra ravjæger</option><option value="documented" ${r.knowledgeClass==='documented'?'selected':''}>Dokumenteret viden</option><option value="data-derived" ${r.knowledgeClass==='data-derived'?'selected':''}>Udledt af RavRadar-data</option><option value="hypothesis" ${r.knowledgeClass==='hypothesis'?'selected':''}>Hypotese til afprøvning</option></select></label><label>Tillid<select name="confidence"><option ${r.confidence==='lav'?'selected':''}>lav</option><option ${r.confidence==='mellem'?'selected':''}>mellem</option><option ${r.confidence==='stor'?'selected':''}>stor</option></select></label><label>Kilde / ravjæger<input name="sourceTitle" value="${esc(r.source?.title||'')}" placeholder="Navn, bog, artikel eller samtale"></label><label>Prioritet<input name="priority" type="number" min="0" max="10000" value="${esc(r.priority??500)}"><span class="hint">Lavt tal køres først.</span></label><label>Hvor gælder rådet?<select name="scope" id="geoScope"><option value="national" ${r.geography?.scope==='national'?'selected':''}>Hele Danmark</option><option value="coastType" ${r.geography?.scope==='coastType'?'selected':''}>Bestemte kysttyper</option><option value="zone" ${r.geography?.scope==='zone'?'selected':''}>Bestemte zoner</option></select></label><label class="full" id="geoValuesLabel">Områder<input name="geoValues" value="${esc((r.geography?.zoneIds||r.geography?.coastTypes||[]).join(', '))}" placeholder="Skriv zone-id'er eller kysttyper adskilt med komma"></label><div class="full"><h3>Betingelser</h3><p class="hint">Tilføj kun de forhold, som skal være opfyldt. Alle valgte betingelser skal passe samtidig.</p><div id="conditionList" class="condition-list"></div><button type="button" id="addCondition" class="admin-button secondary">+ Tilføj betingelse</button></div><label>Scoreændring<input name="scoreAdjustment" type="number" min="-100" max="100" value="${esc(r.effect?.scoreAdjustment??0)}"><span class="hint">Fx 10 for bonus eller -15 for fradrag.</span></label><label>Fast score<input name="overrideScore" type="number" min="0" max="100" value="${esc(r.effect?.score??'')}"><span class="hint">Kun ved typen “sætter fast score”.</span></label><label class="switch-line"><input name="block" type="checkbox" ${r.effect?.block?'checked':''}> Blokér vurderingen</label><label class="full">Forklaring / godt råd<textarea name="explanation" required placeholder="Skriv rådet i almindeligt dansk. Forklar hvorfor det betyder noget for ravjagt.">${esc(r.effect?.explanation||'')}</textarea></label><label class="full">Interne noter<textarea name="notes" placeholder="Usikkerheder, undtagelser eller hvad der bør undersøges.">${esc(r.notes||'')}</textarea></label></div>`;
+ const existing=conditionsToRows(r.conditions||{});existing.forEach(addConditionRow);document.querySelector('#addCondition').onclick=()=>addConditionRow();ruleDialog.showModal();}
 
-function downloadJson(filename, data) {
-  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob); link.download = filename; link.click(); URL.revokeObjectURL(link.href);
-}
+const conditionDefs={minWindSpeedMps:['Vindstyrke mindst','m/s'],maxWindSpeedMps:['Vindstyrke højst','m/s'],windDirection:['Vindretning','retning'],minWaveHeightM:['Bølgehøjde mindst','m'],maxWaveHeightM:['Bølgehøjde højst','m'],minWaterLevelCm:['Vandstand mindst','cm'],maxWaterLevelCm:['Vandstand højst','cm'],maxHoursSinceHighEnergy:['Højst timer siden kraftigt vejr','timer'],minBaseScore:['Grundscore mindst','point'],maxBaseScore:['Grundscore højst','point'],huntMode:['Jagtform','valg']};
+function addConditionRow(row={key:'minWindSpeedMps',value:'',extra:''}){const wrap=document.querySelector('#conditionList');const div=document.createElement('div');div.className='condition-row';div.innerHTML=`<select class="cond-key">${Object.entries(conditionDefs).map(([k,v])=>`<option value="${k}" ${row.key===k?'selected':''}>${v[0]}</option>`).join('')}</select><select class="cond-op"><option value="value">Værdi</option></select><input class="cond-value" value="${esc(row.value)}" placeholder="Tal, N/NE/E… eller waders/beach"><button type="button" class="admin-button danger">×</button>`;div.querySelector('button').onclick=()=>div.remove();wrap.appendChild(div)}
+function conditionsToRows(c){const rows=[];for(const k of ['minWindSpeedMps','maxWindSpeedMps','minWaveHeightM','maxWaveHeightM','minWaterLevelCm','maxWaterLevelCm','maxHoursSinceHighEnergy','minBaseScore','maxBaseScore'])if(c[k]!=null)rows.push({key:k,value:c[k]});if(c.huntModes?.length)rows.push({key:'huntMode',value:c.huntModes.join(',')});if(c.windDirectionRangesDeg?.length)rows.push({key:'windDirection',value:directionRangeToLabel(c.windDirectionRangesDeg[0])});return rows}
 
-function wireEvents() {
-  document.querySelectorAll('.admin-tab').forEach(button => button.addEventListener('click', () => {
-    document.querySelectorAll('.admin-tab').forEach(item=>item.classList.toggle('active',item===button));
-    document.querySelectorAll('.admin-view').forEach(view=>view.classList.toggle('active',view.id===`tab-${button.dataset.tab}`));
-  }));
-  document.querySelector('#refresh').addEventListener('click', load);
-  document.querySelector('#zoneSearch').addEventListener('input', renderZones);
-  document.querySelector('#downloadObservations').addEventListener('click', () => {
-    const rows = model.observations.map(({anonymous_id,user_id,gps,...row}) => ({...row, gps:gps ? {accuracy:gps.accuracy ?? null}:null}));
-    downloadJson('ravradar-observationer-pseudonymiseret.json',{exportedAt:new Date().toISOString(),privacyProfile:'pseudonymised',rows});
-  });
-  document.querySelector('#downloadDiagnostics').addEventListener('click', () => downloadJson('ravradar-diagnostik.json',{generatedAt:new Date().toISOString(),version:VERSION,health:model.health,weatherGeneratedAt:model.conditions.generatedAt,weatherZones:Object.keys(model.conditions.zones||{}).length,zones:model.zones.features?.length||0,rules:model.rules.length,observations:model.observations.length,trips:model.trips.length,navigator:{online:navigator.onLine,userAgent:navigator.userAgent}}));
-  document.querySelector('#clearAppCaches').addEventListener('click', async () => {
-    if (!('caches' in window)) return alert('Cache API er ikke tilgængelig i denne browser.');
-    const keys = await caches.keys();
-    const targets = keys.filter(key=>key.startsWith('ravradar-app-'));
-    await Promise.all(targets.map(key=>caches.delete(key)));
-    alert(`${targets.length} RavRadar-cache(r) blev ryddet. Brugerdata i localStorage blev ikke slettet.`);
-  });
-}
+document.querySelector('#ruleForm').addEventListener('submit',e=>{if(e.submitter?.value==='cancel')return;e.preventDefault();const fd=new FormData(e.currentTarget);const old=state.editingId?adminRules().find(x=>x.id===state.editingId):null;const conditions={};document.querySelectorAll('.condition-row').forEach(row=>{const k=row.querySelector('.cond-key').value,v=row.querySelector('.cond-value').value.trim();if(!v)return;if(k==='huntMode')conditions.huntModes=v.split(',').map(x=>x.trim()).filter(Boolean);else if(k==='windDirection')conditions.windDirectionRangesDeg=[directionLabelToRange(v)];else conditions[k]=Number(v)});const scope=fd.get('scope');const values=String(fd.get('geoValues')||'').split(',').map(x=>x.trim()).filter(Boolean);const kind=fd.get('kind');const rule={id:old?.id||uid(),name:fd.get('name'),status:fd.get('status'),kind,knowledgeClass:fd.get('knowledgeClass'),confidence:fd.get('confidence'),priority:Number(fd.get('priority')),geography:{scope,...(scope==='zone'?{zoneIds:values}:scope==='coastType'?{coastTypes:values}:{})},source:{type:fd.get('knowledgeClass')==='expert'?'expert':'reference',title:fd.get('sourceTitle')||'Ikke angivet'},conditions,effect:{scoreAdjustment:Number(fd.get('scoreAdjustment')||0),explanation:fd.get('explanation'),...(fd.get('overrideScore')!==''?{score:Number(fd.get('overrideScore'))}:{}),...(fd.get('block')?{block:true}:{})},notes:fd.get('notes'),version:(old?.version||0)+1,updatedAt:new Date().toISOString()};const rows=adminRules();const i=rows.findIndex(x=>x.id===rule.id);if(i>=0)rows[i]=rule;else rows.push(rule);saveAdminRules(rows);addHistory(i>=0?'updated':'created',rule);ruleDialog.close();boot();});
 
-try { requireAdminSession(); wireEvents(); load(); } catch (error) { console.warn(error.message); }
+function openTest(rule){const zones=state.zones.slice(0,100);document.querySelector('#testContent').innerHTML=`<div class="form-grid"><label>Zone<select id="testZone">${zones.map(z=>`<option value="${esc(z.properties?.id)}">${esc(z.properties?.name||z.properties?.id)}</option>`).join('')}</select></label><label>Jagtform<select id="testMode"><option value="waders">Waders</option><option value="beach">Strand</option></select></label><label>Grundscore<input id="testBase" type="number" value="50"></label><label>Vindstyrke m/s<input id="testWind" type="number" value="10"></label><label>Vindretning grader<input id="testDir" type="number" value="270"></label><label>Bølgehøjde m<input id="testWave" type="number" step="0.1" value="0.8"></label><label>Vandstand cm<input id="testWater" type="number" value="0"></label><div class="full"><button type="button" id="runTest" class="admin-button">Kør test</button></div><div id="testResult" class="full admin-card"></div></div>`;document.querySelector('#runTest').onclick=()=>{const z=state.zones.find(x=>x.properties?.id===document.querySelector('#testZone').value);const result=evaluateRules({rules:[rule],zone:{id:z?.properties?.id,coastType:z?.properties?.coastType},mode:document.querySelector('#testMode').value,baseScore:Number(document.querySelector('#testBase').value),weather:{windSpeedMps:Number(document.querySelector('#testWind').value),windDirectionDeg:Number(document.querySelector('#testDir').value),waveHeightM:Number(document.querySelector('#testWave').value),waterLevelCm:Number(document.querySelector('#testWater').value)},history:{}});document.querySelector('#testResult').innerHTML=result.matches.length?`<h3>Reglen matcher</h3><p>Resultatscore: <b>${esc(result.score)}</b> · ændring ${result.adjustment>=0?'+':''}${result.adjustment}</p><p>${esc(result.matches[0].explanation)}</p>`:'<h3>Reglen matcher ikke</h3><p>Prøv at ændre testværdierne og se, hvilke forhold der udløser den.</p>'};testDialog.showModal();document.querySelector('#runTest').click();}
+
+function copyRule(r){const copy={...structuredClone(r),id:uid(),name:`Kopi af ${r.name}`,status:'draft',version:1,_origin:undefined};const rows=adminRules();rows.push(copy);saveAdminRules(rows);addHistory('copied',copy);boot();openRuleEditor(copy)}
+function exportRules(){download(`ravradar-admin-regler-${new Date().toISOString().slice(0,10)}.json`,{schemaVersion:'1.1',exportedAt:new Date().toISOString(),rules:adminRules()})}
+document.querySelector('#importRulesInput').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{const data=JSON.parse(await file.text());if(!Array.isArray(data.rules))throw new Error('Filen indeholder ikke en rules-liste.');const current=adminRules();for(const r of data.rules){const i=current.findIndex(x=>x.id===r.id);if(i>=0)current[i]=r;else current.push(r);addHistory('imported',r)}saveAdminRules(current);await boot();alert(`${data.rules.length} regler importeret.`)}catch(err){alert(`Import mislykkedes: ${err.message}`)}finally{e.target.value=''}});
+
+function describeConditions(c={}){const a=[];if(c.minWindSpeedMps!=null)a.push(`vind ≥ ${c.minWindSpeedMps} m/s`);if(c.maxWindSpeedMps!=null)a.push(`vind ≤ ${c.maxWindSpeedMps} m/s`);if(c.windDirectionRangesDeg?.length)a.push('passende vindretning');if(c.minWaveHeightM!=null)a.push(`bølger ≥ ${c.minWaveHeightM} m`);if(c.maxWaveHeightM!=null)a.push(`bølger ≤ ${c.maxWaveHeightM} m`);if(c.minWaterLevelCm!=null)a.push(`vandstand ≥ ${c.minWaterLevelCm} cm`);if(c.maxWaterLevelCm!=null)a.push(`vandstand ≤ ${c.maxWaterLevelCm} cm`);if(c.maxHoursSinceHighEnergy!=null)a.push(`inden for ${c.maxHoursSinceHighEnergy} timer efter kraftigt vejr`);if(c.huntModes?.length)a.push(`jagtform: ${c.huntModes.join('/')}`);return a.join(', ')}
+function describeEffect(r){if(r.kind==='annotation')return'Viser et godt råd';if(r.kind==='gate')return r.effect?.block?'Blokerer vurdering':'Gate';if(r.kind==='override')return`Sætter score til ${r.effect?.score}`;return`${Number(r.effect?.scoreAdjustment||0)>=0?'+':''}${r.effect?.scoreAdjustment||0} point`}
+function describeGeo(g={}){if(!g.scope||g.scope==='national')return'Hele Danmark';if(g.scope==='zone')return`${g.zoneIds?.length||0} valgte zoner`;if(g.scope==='coastType')return`Kysttyper: ${(g.coastTypes||[]).join(', ')}`;return g.scope}
+function classDa(x){return({expert:'Ravjæger-erfaring',documented:'Dokumenteret','data-derived':'Dataafledt',hypothesis:'Hypotese'})[x]||x}
+function statusDa(x){return({active:'Aktiv',draft:'Kladde',inactive:'Inaktiv',retired:'Arkiveret'})[x]||x}
+function directionLabelToRange(v){const m={N:[337.5,22.5],NE:[22.5,67.5],E:[67.5,112.5],SE:[112.5,157.5],S:[157.5,202.5],SW:[202.5,247.5],W:[247.5,292.5],NW:[292.5,337.5]};return m[v.toUpperCase()]||String(v).split('-').map(Number)}
+function directionRangeToLabel(r){return `${r[0]}-${r[1]}`}
+
+boot();
