@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "rawResolutionDays": 7,
+  "hourlyResolutionDays": 90,
+  "longTermDays": 1095,
+  "preserveObservationSnapshots": true,
+  "adminAlert": {
+    "failureMinutesBeforeAlarm": 60,
+    "maxNotificationsPer24Hours": 2
+  },
+  "notes": "Gamle fortløbende vejrdata kan slettes eller aggregeres. Vejrsnapshots knyttet til brugerfund bevares permanent."
+}

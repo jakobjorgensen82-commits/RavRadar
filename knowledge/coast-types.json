@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "1.0",
+  "coastTypes": [
+    { "id": "open-west-coast", "name": "Åben vestkyst", "description": "Eksponeret kyst; lokale regler kræver zonespecifik validering." },
+    { "id": "sheltered-coast", "name": "Beskyttet kyst", "description": "Kyst med reduceret eksponering; strøm og lokal geometri kan dominere." },
+    { "id": "fjord-limfjorden", "name": "Limfjorden", "description": "Særskilt fjordkategori i RavRadar." }
+  ]
+}

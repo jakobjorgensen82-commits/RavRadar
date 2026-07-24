@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.0",
+  "statements": [
+    {
+      "id": "KB-001",
+      "statement": "RavScore skal skelne mellem transport/frigivelse og muligheden for sikkert og praktisk at finde rav.",
+      "knowledgeClass": "project-principle",
+      "confidence": "stor",
+      "source": "data/model.json"
+    },
+    {
+      "id": "KB-002",
+      "statement": "Tidligere gunstige forhold kan i lokale situationer skabe et potentiale, der består efter at vejret ændrer sig.",
+      "knowledgeClass": "expert-hypothesis",
+      "confidence": "lav",
+      "source": "Administrator requirement; requires local validation"
+    }
+  ]
+}

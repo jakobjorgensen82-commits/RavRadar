@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ravradar.dk/schemas/weather.snapshot.schema.json",
+  "title": "RavRadar weather and sea snapshot",
+  "type": "object",
+  "required": ["capturedAt", "zoneId", "source", "quality"],
+  "properties": {
+    "capturedAt": { "type": "string", "format": "date-time" },
+    "zoneId": { "type": "string" },
+    "source": { "enum": ["dmi", "open-meteo-marine", "met-norway", "cache", "mixed"] },
+    "quality": { "enum": ["good", "partial", "stale", "missing"] },
+    "windSpeedMps": { "type": ["number", "null"], "minimum": 0 },
+    "windDirectionFromDeg": { "type": ["number", "null"], "minimum": 0, "exclusiveMaximum": 360 },
+    "currentSpeedMps": { "type": ["number", "null"], "minimum": 0 },
+    "currentDirectionTowardsDeg": { "type": ["number", "null"], "minimum": 0, "exclusiveMaximum": 360 },
+    "waveHeightM": { "type": ["number", "null"], "minimum": 0 },
+    "wavePeriodS": { "type": ["number", "null"], "minimum": 0 },
+    "waterLevelCm": { "type": ["number", "null"] },
+    "waterTemperatureC": { "type": ["number", "null"] },
+    "history": { "type": "object" }
+  },
+  "additionalProperties": true
+}
