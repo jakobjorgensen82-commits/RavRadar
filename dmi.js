@@ -180,3 +180,30 @@ function calculateWaterLevelScore(water) {
 
 
 }
+
+const WeatherHealth={
+ lastSuccessfulAt:null,
+ lastError:null,
+ mode:"fallback",
+ setSuccess(){this.lastSuccessfulAt=new Date().toISOString();this.lastError=null;this.mode="live";},
+ setFallback(err){this.lastError=String(err||"fallback");this.mode="fallback";}
+};
+
+async function fetchDMIWaterLevel(lat,lon){
+  try{
+    throw new Error("DMI connector not configured");
+  }catch(e){
+    WeatherHealth.setFallback(e.message);
+    return null;
+  }
+}
+
+async function getWaterLevelV27(lat,lon){
+  const live=await fetchDMIWaterLevel(lat,lon);
+  if(live) return live;
+  return getWaterLevel(lat,lon);
+}
+
+function getWeatherHealth(){
+  return {...WeatherHealth};
+}
