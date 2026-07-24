@@ -24,10 +24,10 @@ function immutableWeatherSnapshot(weather, scoreResult) {
 }
 export function observationsEnabled() { return enabled; }
 export function getLocalObservations() { return localObservations(); }
-export async function submitObservation({ zone, huntMode, result, grams = null, scoreResult, weather, gps = null, tripId = null }) {
+export async function submitObservation({ zone, huntMode, result, grams = null, scoreResult, weather, gps = null, tripId = null, observedAt = null }) {
   const session = currentSession();
   const row = {
-    id: crypto.randomUUID(), zone_id: zone.id, zone_name: zone.name, observed_at: new Date().toISOString(), hunt_mode: huntMode,
+    id: crypto.randomUUID(), zone_id: zone.id, zone_name: zone.name, observed_at: observedAt || new Date().toISOString(), submitted_at: new Date().toISOString(), hunt_mode: huntMode,
     result, grams: grams === "" || grams == null ? null : Number(grams), anonymous_id: anonymousId(), user_id: session?.user?.id || null,
     trip_id: tripId, gps, rav_score: scoreResult?.score ?? null, score_level: scoreResult?.level ?? null,
     weather_snapshot: immutableWeatherSnapshot(weather, scoreResult), wind_speed_mps: weather?.windSpeedMps ?? null, wind_direction_deg: weather?.windDirectionDeg ?? null,

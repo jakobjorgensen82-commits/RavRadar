@@ -47,10 +47,10 @@ export function pendingTripPrompt() {
   const today = new Date(); today.setHours(0,0,0,0);
   return listTrips().find(trip => !trip.response && new Date(trip.endedAt || trip.startedAt) < today) || null;
 }
-export function answerTrip(id, response, grams = null) {
+export function answerTrip(id, response, grams = null, metadata = {}) {
   const trips = listTrips(); const trip = trips.find(item => item.id === id);
   if (!trip) throw new Error("Turen blev ikke fundet.");
-  trip.response = response; trip.grams = Number.isFinite(Number(grams)) && grams !== "" ? Number(grams) : null; trip.answeredAt = new Date().toISOString();
+  trip.response = response; trip.grams = Number.isFinite(Number(grams)) && grams !== "" ? Number(grams) : null; trip.observedDate = metadata.observedDate || String(trip.endedAt || trip.startedAt).slice(0,10); trip.zoneId = metadata.zoneId || null; trip.zoneName = metadata.zoneName || null; trip.answeredAt = new Date().toISOString();
   write(TRIPS_KEY, trips); return trip;
 }
 export function clearTrips() { localStorage.removeItem(TRIPS_KEY); }

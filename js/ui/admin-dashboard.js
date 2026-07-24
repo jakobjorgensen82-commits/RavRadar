@@ -1,6 +1,6 @@
 import { evaluateRules } from '../core/rule-engine.js';
 
-const VERSION='2.6.30';
+const VERSION='2.9.0';
 const RULES_KEY='ravradar-admin-rules-v1';
 const HISTORY_KEY='ravradar-admin-rule-history-v1';
 const SESSION_KEY='ravradar-admin-auth';

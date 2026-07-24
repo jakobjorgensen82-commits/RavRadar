@@ -93,5 +93,16 @@ export function calculateRavScore({ mode, zone, weather, history = {}, ruleEvalu
   if (finalScore === null) return { available:false, score:null, level:"unavailable", label:"Ikke anbefalet", reasons:[...(ruleEvaluation?.matches||[]).map(item=>item.explanation)], componentReasons, ruleEvaluation };
   const r = scoreRating(finalScore);
   const ruleReasons = (ruleEvaluation?.matches || []).map(item => item.explanation).filter(Boolean);
-  return { available:true, score:finalScore, baseScore:score, level:r.level, label:r.label, components:{ huntability:Math.round(huntability), transport:Math.round(transport), release:Math.round(release) }, componentReasons, reasons:[...new Set([...Object.values(componentReasons).flat(), ...ruleReasons])].slice(0,8), stormBonus:release>=65, ruleEvaluation };
+  const components = { huntability:Math.round(huntability), transport:Math.round(transport), release:Math.round(release) };
+  const contributions = {
+    huntability: Math.round(components.huntability * SCORE_WEIGHTS.huntability),
+    transport: Math.round(components.transport * SCORE_WEIGHTS.transport),
+    release: Math.round(components.release * SCORE_WEIGHTS.release)
+  };
+  const ruleAdjustment = finalScore - score;
+  return {
+    available:true, score:finalScore, baseScore:score, level:r.level, label:r.label, components, componentReasons,
+    explanation:{ weights:SCORE_WEIGHTS, contributions, baseScore:score, ruleAdjustment, finalScore, formula:"Jagtbarhed 40 % + transport 35 % + frigivelse 25 %" },
+    reasons:[...new Set([...Object.values(componentReasons).flat(), ...ruleReasons])].slice(0,8), stormBonus:release>=65, ruleEvaluation
+  };
 }

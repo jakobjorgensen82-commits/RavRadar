@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import { analyzeObservationRows } from '../js/services/learning-analysis.js';
+const rows=Array.from({length:12},(_,i)=>({zone_id:i<6?'a':'b',observed_at:`2026-07-${String(i+1).padStart(2,'0')}T12:00:00Z`,result:i%2?'good':'none',weather_snapshot:{},water_level_cm:i%2?30:5,wind_speed_mps:i%2?8:3,wave_height_m:i%2?1.2:.3}));
+const result=analyzeObservationRows(rows);
+assert.equal(result.status,'ready');
+assert.equal(result.sampleSize,12);
+assert.equal(result.policy,'advisory-only');
+assert.ok(result.suggestions.some(item=>item.metric==='water_level_cm'));
+assert.equal(analyzeObservationRows(rows.slice(0,4)).status,'collecting');
+console.log('Feedback- og læringsanalyse bestået.');

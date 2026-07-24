@@ -49,7 +49,11 @@ function componentDetails(name, key, result, definition) {
   const reasons = result.componentReasons?.[key] || [];
   const componentScore = result.components?.[key];
   const componentLevel = scoreRating(componentScore).level;
-  return `<details class="component-detail"><summary><span>${name}</span><strong class="component-score ${componentLevel}">${componentScore ?? "–"}/100</strong></summary><div class="component-explanation"><p><b>Hvad betyder det?</b> ${definition}</p><p><b>Hvorfor denne score?</b></p><ul>${reasons.map(reason => `<li>${escapeHtml(reason)}</li>`).join("") || "<li>Der er ikke nok data til en nærmere forklaring.</li>"}</ul></div></details>`;
+  const weight = result.explanation?.weights?.[key];
+  const contribution = result.explanation?.contributions?.[key];
+  const calculation = Number.isFinite(Number(weight)) && Number.isFinite(Number(contribution))
+    ? `<p class="score-calculation"><b>Bidrag til RavScore:</b> ${componentScore} × ${Math.round(weight*100)} % = <strong>${contribution} point</strong></p>` : "";
+  return `<details class="component-detail"><summary><span>${name}</span><strong class="component-score ${componentLevel}">${componentScore ?? "–"}/100</strong></summary><div class="component-explanation"><p><b>Hvad betyder det?</b> ${definition}</p>${calculation}<p><b>Hvorfor denne score?</b></p><ul>${reasons.map(reason => `<li>${escapeHtml(reason)}</li>`).join("") || "<li>Der er ikke nok data til en nærmere forklaring.</li>"}</ul></div></details>`;
 }
 
 function dayTabs(days, selected = 0, className = "forecast-day-tab") {
@@ -108,7 +112,7 @@ export function showZoneInfo(element, zone, result, condition, mode, options = {
     ${componentHtml}
     ${result.available ? `<div class="metric-grid weather-grid"><div class="metric"><span>Vind</span><strong>${directionMetric("wind",condition.windSpeedMps,"m/s",condition.windDirectionDeg)}</strong></div><div class="metric"><span>Bølger</span><strong>${formatNumber(condition.waveHeightM,"m")}</strong></div><div class="metric"><span>Vandstand</span><strong>${formatNumber(condition.waterLevelCm,"cm",0)}</strong></div><div class="metric"><span>Strøm</span><strong>${directionMetric("current",condition.currentSpeedMps,"m/s",condition.currentDirectionDeg,2)}</strong></div><div class="metric"><span>Vandtemperatur</span><strong>${formatNumber(condition.waterTemperatureC,"°C")}</strong></div><div class="metric"><span>3-timers trend</span><strong>${formatNumber(condition.waterLevelTrendCm3h,"cm",0)}</strong></div></div>` : ""}
     ${forecastPanel(days,zone,mode,options.history||{})}${tidePanel(days)}
-    <form id="observationForm" class="observation-form"><h3>Hvad fandt du?</h3><p>En anonym observation hjælper RavRadar med senere at forbedre modellen.</p><label class="grams-field">Valgfrit antal gram<input name="grams" type="number" min="0" max="10000" step="0.1" inputmode="decimal"></label><div class="observation-buttons"><button type="submit" name="result" value="none">Intet</button><button type="submit" name="result" value="small">Små stykker</button><button type="submit" name="result" value="medium">Noget rav</button><button type="submit" name="result" value="good">Godt fund</button></div><p id="observationStatus" class="form-status" aria-live="polite"></p></form>`;
+    <form id="observationForm" class="observation-form"><h3>Hvad fandt du?</h3><p>For at gøre RavRadar mere præcis vil vi gerne sammenholde dit fund med vejr, vandstand og den RavScore, der gjaldt under ravjagten.</p><label>Dato for ravjagten<input name="observedDate" type="date" required value="${new Date().toISOString().slice(0,10)}" max="${new Date().toISOString().slice(0,10)}"></label><label class="grams-field">Valgfrit antal gram<input name="grams" type="number" min="0" max="10000" step="0.1" inputmode="decimal"></label><div class="observation-buttons"><button type="submit" name="result" value="none">Intet</button><button type="submit" name="result" value="small">Små stykker</button><button type="submit" name="result" value="medium">Noget rav</button><button type="submit" name="result" value="good">Godt fund</button></div><p id="observationStatus" class="form-status" aria-live="polite"></p></form>`;
 }
 
 function capitalize(value="") { return value.charAt(0).toUpperCase()+value.slice(1); }

@@ -1,4 +1,4 @@
-const APP_VERSION = "2.6.30";
+const APP_VERSION = "2.9.0";
 const CACHE_PREFIX = "ravradar-app-";
 const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}`;
 const STATIC = [
@@ -12,6 +12,7 @@ const STATIC = [
   `./app.js?v=${APP_VERSION}`,
   "./config.js",
   "./manifest.webmanifest",
+  "./version.json",
   "./data/zones.geojson",
   "./data/model.json",
   "./js/core/score-engine.js",
@@ -24,6 +25,7 @@ const STATIC = [
   "./js/services/auth-service.js",
   "./js/services/trip-service.js",
   "./js/services/observation-service.js",
+  "./js/services/learning-analysis.js",
   "./js/services/storage-safety.js",
   "./js/map/map-view.js",
   "./js/ui/info-panel.js",
@@ -79,13 +81,13 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
-      if (response.ok && url.origin === self.location.origin) {
-        const copy = response.clone();
-        caches.open(CACHE).then(cache => cache.put(event.request, copy));
-      }
+  const isAppAsset = url.origin === self.location.origin && /\.(?:js|css|json|webmanifest)$/.test(url.pathname);
+  if (isAppAsset) {
+    event.respondWith(fetch(event.request, { cache: "no-store" }).then(response => {
+      if (response.ok) caches.open(CACHE).then(cache => cache.put(event.request, response.clone()));
       return response;
-    }))
-  );
+    }).catch(() => caches.match(event.request)));
+    return;
+  }
+  event.respondWith(caches.match(event.request).then(cached => cached || fetch(event.request)));
 });
