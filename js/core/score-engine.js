@@ -81,7 +81,7 @@ function calculateRelease(zone, history, reasons) {
   return clamp(score);
 }
 
-export function calculateRavScore({ mode, zone, weather, history = {} }) {
+export function calculateRavScore({ mode, zone, weather, history = {}, ruleEvaluation = null }) {
   if (!zone || !["waders", "beach"].includes(mode)) throw new Error("Ugyldig zone eller jagtform");
   if (numberOrNull(weather?.windSpeedMps) === null) return { available:false, score:null, level:"unavailable", label:"Ingen aktuelle data", reasons:["RavScore vises først, når nødvendige vejrdata er hentet."], componentReasons:{} };
   const componentReasons = { huntability: [], transport: [], release: [] };
@@ -89,6 +89,9 @@ export function calculateRavScore({ mode, zone, weather, history = {} }) {
   const transport = calculateTransport(zone, weather, componentReasons.transport);
   const release = calculateRelease(zone, history, componentReasons.release);
   const score = Math.round(huntability*SCORE_WEIGHTS.huntability + transport*SCORE_WEIGHTS.transport + release*SCORE_WEIGHTS.release);
-  const r = scoreRating(score);
-  return { available:true, score, level:r.level, label:r.label, components:{ huntability:Math.round(huntability), transport:Math.round(transport), release:Math.round(release) }, componentReasons, reasons:[...new Set(Object.values(componentReasons).flat())].slice(0,6), stormBonus:release>=65 };
+  const finalScore = ruleEvaluation?.blocked ? null : (Number.isFinite(ruleEvaluation?.score) ? ruleEvaluation.score : score);
+  if (finalScore === null) return { available:false, score:null, level:"unavailable", label:"Ikke anbefalet", reasons:[...(ruleEvaluation?.matches||[]).map(item=>item.explanation)], componentReasons, ruleEvaluation };
+  const r = scoreRating(finalScore);
+  const ruleReasons = (ruleEvaluation?.matches || []).map(item => item.explanation).filter(Boolean);
+  return { available:true, score:finalScore, baseScore:score, level:r.level, label:r.label, components:{ huntability:Math.round(huntability), transport:Math.round(transport), release:Math.round(release) }, componentReasons, reasons:[...new Set([...Object.values(componentReasons).flat(), ...ruleReasons])].slice(0,8), stormBonus:release>=65, ruleEvaluation };
 }
