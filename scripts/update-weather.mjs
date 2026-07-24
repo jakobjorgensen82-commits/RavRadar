@@ -10,6 +10,9 @@ const ALERT_FAILURE_MINUTES = Number(process.env.WEATHER_ALERT_FAILURE_MINUTES ?
 const REQUEST_TIMEOUT_MS = Number(process.env.WEATHER_REQUEST_TIMEOUT_MS ?? 18000);
 const REQUEST_GAP_MS = Number(process.env.DMI_REQUEST_GAP_MS ?? 1400);
 const DMI_MAX_RETRIES = Number(process.env.DMI_MAX_RETRIES ?? 1);
+const WEATHER_CONCURRENCY = Math.max(1, Number(process.env.WEATHER_CONCURRENCY ?? 6));
+const PROVIDER_FAILURE_THRESHOLD = Math.max(1, Number(process.env.WEATHER_PROVIDER_FAILURE_THRESHOLD ?? 4));
+const PROVIDER_COOLDOWN_MS = Number(process.env.WEATHER_PROVIDER_COOLDOWN_MS ?? 10 * 60 * 1000);
 const USER_AGENT = process.env.WEATHER_USER_AGENT ?? 'RavRadar/2.4 (central weather updater)';
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -18,25 +21,40 @@ const round = (value, digits = 2) => Number.isFinite(value) ? Number(value.toFix
 const normalizeDegrees = value => ((value % 360) + 360) % 360;
 
 let nextDmiRequestAt = 0;
-let dmiCircuitOpen = false;
 let dmiTransientFailure = false;
+const providerRuntime = new Map();
+
+function providerState(name) {
+  if (!providerRuntime.has(name)) providerRuntime.set(name, { failures: 0, circuitOpenedAt: null, lastAttemptAt: null, lastSuccessAt: null, lastError: null, requests: 0, successes: 0, latencyTotalMs: 0 });
+  return providerRuntime.get(name);
+}
+
+function providerCircuitOpen(name) {
+  const state = providerState(name);
+  if (!state.circuitOpenedAt) return false;
+  if (Date.now() - state.circuitOpenedAt >= PROVIDER_COOLDOWN_MS) { state.circuitOpenedAt = null; state.failures = 0; return false; }
+  return true;
+}
 let dmiWaterStationsPromise = null;
 let dmiLatestSeaLevelPromise = null;
 
 async function fetchJson(url, { provider, retries = 1, dmi = false } = {}) {
+  const state = providerState(provider);
+  if (providerCircuitOpen(provider)) {
+    const error = new Error(`${provider}: circuit breaker active`);
+    error.code = 'CIRCUIT_OPEN';
+    throw error;
+  }
   let lastError;
   for (let attempt = 0; attempt <= retries; attempt += 1) {
     if (dmi) {
-      if (dmiCircuitOpen) {
-        const error = new Error('DMI-rategrænse aktiv');
-        error.status = 429;
-        throw error;
-      }
       const wait = Math.max(0, nextDmiRequestAt - Date.now());
       if (wait) await sleep(wait);
       nextDmiRequestAt = Date.now() + REQUEST_GAP_MS;
     }
-
+    const startedAt = Date.now();
+    state.lastAttemptAt = new Date().toISOString();
+    state.requests += 1;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
@@ -44,28 +62,30 @@ async function fetchJson(url, { provider, retries = 1, dmi = false } = {}) {
         headers: { Accept: 'application/json, application/geo+json', 'User-Agent': USER_AGENT },
         signal: controller.signal
       });
-      if (response.ok) return await response.json();
-
-      const error = new Error(`${provider}: HTTP ${response.status}`);
-      error.status = response.status;
-      if (dmi && response.status === 429) {
-        dmiTransientFailure = true;
-        if (attempt >= retries) dmiCircuitOpen = true;
+      if (!response.ok) {
+        const error = new Error(`${provider}: HTTP ${response.status}`);
+        error.status = response.status;
+        throw error;
       }
-      if ((response.status === 429 || response.status >= 500) && attempt < retries) {
-        const retryAfter = Number(response.headers.get('retry-after'));
-        await sleep(Number.isFinite(retryAfter) ? retryAfter * 1000 : 2000 * 2 ** attempt);
-        continue;
-      }
-      throw error;
+      const data = await response.json();
+      state.failures = 0;
+      state.circuitOpenedAt = null;
+      state.lastSuccessAt = new Date().toISOString();
+      state.lastError = null;
+      state.successes += 1;
+      state.latencyTotalMs += Date.now() - startedAt;
+      return data;
     } catch (error) {
-      lastError = error;
-      if (dmi && (error?.name === 'AbortError' || error instanceof TypeError)) dmiTransientFailure = true;
-      if ((error?.name === 'AbortError' || error instanceof TypeError) && attempt < retries) {
-        await sleep(2000 * 2 ** attempt);
-        continue;
-      }
-      throw error;
+      lastError = error?.name === 'AbortError' ? new Error(`${provider}: timeout after ${REQUEST_TIMEOUT_MS} ms`) : error;
+      state.failures += 1;
+      state.lastError = lastError instanceof Error ? lastError.message : String(lastError);
+      state.latencyTotalMs += Date.now() - startedAt;
+      if (state.failures >= PROVIDER_FAILURE_THRESHOLD) state.circuitOpenedAt = Date.now();
+      if (dmi && (error?.status === 429 || error?.name === 'AbortError' || error instanceof TypeError)) dmiTransientFailure = true;
+      const retryable = error?.status === 429 || error?.status >= 500 || error?.name === 'AbortError' || error instanceof TypeError;
+      if (!retryable || attempt >= retries) throw lastError;
+      const retryAfter = Number(error?.retryAfter);
+      await sleep(Number.isFinite(retryAfter) ? retryAfter * 1000 : Math.min(5000, 750 * 2 ** attempt));
     } finally {
       clearTimeout(timeout);
     }
@@ -445,6 +465,7 @@ function buildWeatherHealth(previousHealth, output, nowIso) {
     status: dmiHealthy ? 'ok' : (failureMinutes >= ALERT_FAILURE_MINUTES ? 'alarm' : 'warning'),
     dmi: { healthy: dmiHealthy, zonesFromDmi: dmiCount, totalZones: total, coveragePercent: total ? round(dmiCount / total * 100, 1) : 0, consecutiveFailureSince: failureSince, failureMinutes, lastSuccessfulAt: dmiHealthy ? nowIso : (previousHealth.lastSuccessfulDmiAt ?? null) },
     alerts: { maxPer24Hours: ALERT_MAX_PER_24H, sentLast24Hours: alertHistory.length, shouldNotifyAdministrator: alertEligible, nextAllowedAfter: alertHistory.length >= ALERT_MAX_PER_24H ? alertHistory[0].sentAt : null },
+    providers: output.weatherEngine?.providers ?? {},
     alertHistory
   };
 }
@@ -462,15 +483,37 @@ const output = {
   zones: {}, errors: [], retry: { dmiRetriedAfterMinutes: 0, completedAt: null }
 };
 
-for (const feature of features) {
+async function mapWithConcurrency(items, concurrency, worker) {
+  const queue = [...items];
+  const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
+    while (queue.length) {
+      const item = queue.shift();
+      if (item) await worker(item);
+    }
+  });
+  await Promise.all(workers);
+}
+
+await mapWithConcurrency(features, WEATHER_CONCURRENCY, async feature => {
   const zoneId = feature.properties?.id ?? 'Ukendt zone';
   try {
     output.zones[zoneId] = await resolveZone(feature, generatedAt, previous);
     console.log(`OK: ${zoneId} via ${output.zones[zoneId].provider}`);
   } catch (error) {
-    output.errors.push({ zoneId, message: error.message });
+    output.errors.push({ zoneId, message: error instanceof Error ? error.message : String(error) });
   }
-}
+});
+
+output.weatherEngine = {
+  version: '2.7.0',
+  concurrency: WEATHER_CONCURRENCY,
+  providerPriority: output.providerPriority,
+  providers: Object.fromEntries([...providerRuntime.entries()].map(([name, state]) => [name, {
+    ...state,
+    circuitOpen: providerCircuitOpen(name),
+    averageLatencyMs: state.requests ? round(state.latencyTotalMs / state.requests, 0) : null
+  }]))
+};
 
 await fs.mkdir('data/live', { recursive: true });
 await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(output, null, 2)}\n`);
