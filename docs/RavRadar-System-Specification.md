@@ -1,7 +1,7 @@
 # RavRadar System Specification 1.0
 
 Status: integreret arkitekturgrundlag  
-Projektversion: 2.6.25  
+Projektversion: 2.6.27  
 Formål: gøre RavRadar klar til regelstyret ekspertviden, Supabase-synkronisering, analyse af brugerfund og løbende forbedring af RavScore.
 
 ## 1. Grundprincipper
