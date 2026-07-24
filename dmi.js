@@ -257,3 +257,28 @@ export function evaluateWeatherQuality(diag) {
 export function getWeatherQuality() {
   return { ...WeatherQuality };
 }
+
+
+// Sprint 4 - Weather Control Center
+const WeatherControlCenter = {
+  status: "initializing",
+  updatedAt: null,
+  health: null,
+  quality: null
+};
+
+export function updateWeatherControlCenter(diag) {
+  try {
+    WeatherControlCenter.health = typeof getWeatherHealth === "function" ? getWeatherHealth() : null;
+    WeatherControlCenter.quality = typeof getWeatherQuality === "function" ? getWeatherQuality() : null;
+    WeatherControlCenter.status = diag?.healthy ? "live" : "fallback";
+    WeatherControlCenter.updatedAt = new Date().toISOString();
+  } catch (e) {
+    WeatherControlCenter.status = "error";
+  }
+  return WeatherControlCenter;
+}
+
+export function getWeatherControlCenter() {
+  return WeatherControlCenter;
+}
