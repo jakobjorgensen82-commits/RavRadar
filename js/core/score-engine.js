@@ -1,3 +1,4 @@
+import { loadAdaptiveModel, modelAdjustment } from './adaptive-model.js';
 const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, value));
 const numberOrNull = value => Number.isFinite(Number(value)) ? Number(value) : null;
 
@@ -88,21 +89,25 @@ export function calculateRavScore({ mode, zone, weather, history = {}, ruleEvalu
   const huntability = calculateHuntability(mode, weather, componentReasons.huntability);
   const transport = calculateTransport(zone, weather, componentReasons.transport);
   const release = calculateRelease(zone, history, componentReasons.release);
-  const score = Math.round(huntability*SCORE_WEIGHTS.huntability + transport*SCORE_WEIGHTS.transport + release*SCORE_WEIGHTS.release);
+  const adaptiveModel = loadAdaptiveModel();
+  const weights = adaptiveModel.weights || SCORE_WEIGHTS;
+  const rawScore = Math.round(huntability*weights.huntability + transport*weights.transport + release*weights.release);
+  const adaptive = modelAdjustment({model:adaptiveModel,zone,weather});
+  const score = clamp(rawScore + adaptive.adjustment);
   const finalScore = ruleEvaluation?.blocked ? null : (Number.isFinite(ruleEvaluation?.score) ? ruleEvaluation.score : score);
   if (finalScore === null) return { available:false, score:null, level:"unavailable", label:"Ikke anbefalet", reasons:[...(ruleEvaluation?.matches||[]).map(item=>item.explanation)], componentReasons, ruleEvaluation };
   const r = scoreRating(finalScore);
   const ruleReasons = (ruleEvaluation?.matches || []).map(item => item.explanation).filter(Boolean);
   const components = { huntability:Math.round(huntability), transport:Math.round(transport), release:Math.round(release) };
   const contributions = {
-    huntability: Math.round(components.huntability * SCORE_WEIGHTS.huntability),
-    transport: Math.round(components.transport * SCORE_WEIGHTS.transport),
-    release: Math.round(components.release * SCORE_WEIGHTS.release)
+    huntability: Math.round(components.huntability * weights.huntability),
+    transport: Math.round(components.transport * weights.transport),
+    release: Math.round(components.release * weights.release)
   };
   const ruleAdjustment = finalScore - score;
   return {
     available:true, score:finalScore, baseScore:score, level:r.level, label:r.label, components, componentReasons,
-    explanation:{ weights:SCORE_WEIGHTS, contributions, baseScore:score, ruleAdjustment, finalScore, formula:"Jagtbarhed 40 % + transport 35 % + frigivelse 25 %" },
+    explanation:{ weights, contributions, rawScore, adaptiveAdjustment:adaptive.adjustment, adaptiveMatches:adaptive.matches, baseScore:score, ruleAdjustment, finalScore, formula:`Jagtbarhed ${Math.round(weights.huntability*100)} % + transport ${Math.round(weights.transport*100)} % + frigivelse ${Math.round(weights.release*100)} %` },
     reasons:[...new Set([...Object.values(componentReasons).flat(), ...ruleReasons])].slice(0,8), stormBonus:release>=65, ruleEvaluation
   };
 }

@@ -4,7 +4,7 @@ const rows=Array.from({length:12},(_,i)=>({zone_id:i<6?'a':'b',observed_at:`2026
 const result=analyzeObservationRows(rows);
 assert.equal(result.status,'ready');
 assert.equal(result.sampleSize,12);
-assert.equal(result.policy,'advisory-only');
-assert.ok(result.suggestions.some(item=>item.metric==='water_level_cm'));
+assert.equal(result.policy,'human-approved-adaptive-model');
+assert.ok(result.suggestions.some(item=>item.patch?.metricAdjustment?.field==='water_level_cm'));
 assert.equal(analyzeObservationRows(rows.slice(0,4)).status,'collecting');
 console.log('Feedback- og læringsanalyse bestået.');

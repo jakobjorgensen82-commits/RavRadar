@@ -1,4 +1,4 @@
-const APP_VERSION = "2.9.0";
+const APP_VERSION = "3.0.0";
 const CACHE_PREFIX = "ravradar-app-";
 const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}`;
 const STATIC = [
@@ -17,6 +17,8 @@ const STATIC = [
   "./data/model.json",
   "./js/core/score-engine.js",
   "./js/core/rule-engine.js",
+  "./js/core/adaptive-model.js",
+  "./js/core/prediction-engine.js",
   "./js/services/rule-service.js",
   "./rules/national-rules.json",
   "./rules/local-rules.json",
@@ -26,6 +28,7 @@ const STATIC = [
   "./js/services/trip-service.js",
   "./js/services/observation-service.js",
   "./js/services/learning-analysis.js",
+  "./js/services/historical-analysis.js",
   "./js/services/storage-safety.js",
   "./js/map/map-view.js",
   "./js/ui/info-panel.js",

@@ -360,3 +360,4 @@ body.zone-focus .info-panel { scroll-margin-top:12px; }
 .stack-form select,.stack-form input[type="date"]{width:100%;min-height:46px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font:inherit;}
 .score-calculation{padding:9px 11px;border-radius:9px;background:var(--surface-soft);}
 .observation-form label{display:grid;gap:6px;margin:10px 0;font-weight:700;}
+.prediction-panel{margin:14px 0;padding:16px;border:1px solid rgba(216,162,50,.55);border-radius:16px;background:linear-gradient(135deg,rgba(216,162,50,.12),rgba(7,59,76,.08));display:grid;gap:8px}.prediction-panel h3{margin:.2rem 0;font-size:1.25rem}.prediction-panel p{margin:0}.prediction-panel summary{cursor:pointer;font-weight:750}.prediction-panel ul{margin:.6rem 0 0;padding-left:1.2rem}

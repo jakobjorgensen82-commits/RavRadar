@@ -19,15 +19,16 @@ const ocean = Array.from({ length: 130 }, (_, i) => ({ step: new Date(Date.parse
 
 const built = buildDmiForecastHourly({ wind, waves, ocean, observedWaterLevel: { valueCm: 25 }, generatedAt });
 assert.equal(built.hourly.length, DMI_FORECAST_HOURS);
-assert.equal(built.waterLevelBiasCm, 15);
-assert.equal(built.hourly[0].waterLevelCm, 25, 'observeret stationstilpasning skal korrigere modelniveauet');
-assert.equal(built.hourly[0].waterLevelSource, 'dmi-model-observation-corrected');
+assert.equal(built.waterLevelBiasCm, 0);
+assert.equal(built.observationDifferenceCm, 15);
+assert.equal(built.hourly[0].waterLevelCm, 10, 'DMI-modelvandstanden skal forblive autoritativ');
+assert.equal(built.hourly[0].waterLevelSource, 'dmi-model-authoritative');
 assert.equal(built.hourly.at(-1).source, 'dmi-forecast');
 
 const record = createDmiForecastRecord({ zoneId: 'test-zone', point: [10, 56], generatedAt, hourly: built.hourly });
 assert.equal(record.horizonHours, 120);
 assert.ok(Date.parse(record.validUntil) - Date.parse(record.validFrom) >= 119 * 3600000);
-assert.equal(selectDmiForecastAt(record, '2026-07-26T12:00:00.000Z').waterLevelCm, 30);
+assert.equal(selectDmiForecastAt(record, '2026-07-26T12:00:00.000Z').waterLevelCm, 15);
 assert.equal(selectDmiForecastAt(record, '2026-07-30T12:00:00.000Z'), null, 'udløbet DMI-cache må ikke bruges');
 assert.equal(dmiForecastCoverage(record, generatedAt).totalHours, 120);
 
@@ -41,10 +42,10 @@ const levels = new Map([
   ['B', { valueCm: 30, observed: generatedAt }],
   ['C', { valueCm: 50, observed: generatedAt }]
 ]);
-const interpolation = interpolateWaterLevelStations([1, 0], stations, levels, { haversineKm: (a, b) => Math.abs(a[0] - b[0]), maxStations: 3 });
-assert.equal(interpolation.method, 'inverse-distance-3-stations');
+const interpolation = interpolateWaterLevelStations([1, 0], stations, levels, { haversineKm: (a, b) => Math.abs(a[0] - b[0]), maxStations: 2 });
+assert.equal(interpolation.method, 'inverse-distance-2-stations');
 assert.ok(interpolation.valueCm > 10 && interpolation.valueCm < 30);
-assert.equal(interpolation.stations.length, 3);
+assert.equal(interpolation.stations.length, 2);
 assert.ok(Math.abs(interpolation.stations.reduce((sum, station) => sum + station.weight, 0) - 1) < 0.01);
 
 console.log('DMI 120-timers Forecast Store og Water Level Engine bestået.');

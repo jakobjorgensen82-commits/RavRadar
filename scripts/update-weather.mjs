@@ -168,7 +168,7 @@ async function dmiLatestSeaLevels() {
 async function interpolatedDmiWaterLevel(point) {
   try {
     const [stations, levels] = await Promise.all([dmiWaterStations(), dmiLatestSeaLevels()]);
-    return interpolateWaterLevelStations(point, stations, levels, { haversineKm, maxStations: 3 });
+    return interpolateWaterLevelStations(point, stations, levels, { haversineKm, maxStations: 2 });
   } catch (error) {
     dmiTransientFailure = true;
     console.warn(`DMI stationsvandstand fejlede: ${error instanceof Error ? error.message : String(error)}`);
@@ -268,7 +268,7 @@ async function fromDmi(feature, generatedAt) {
     },
     waterLevel: {
       source: stationWaterLevel ? 'dmi-model-observation-corrected' : 'dmi-model',
-      reference: stationWaterLevel ? 'DMI model corrected against interpolated DMI observations' : 'DMI sea-mean-deviation',
+      reference: stationWaterLevel ? 'DMI model (authoritative); nearby DMI observations shown only as diagnostics' : 'DMI sea-mean-deviation',
       interpolation: stationWaterLevel ?? null,
       modelBiasCm: dmiForecast.waterLevelBiasCm
     },

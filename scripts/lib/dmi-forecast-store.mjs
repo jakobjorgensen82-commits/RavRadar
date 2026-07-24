@@ -5,7 +5,7 @@ const finite = value => Number.isFinite(Number(value)) ? Number(value) : null;
 const round = (value, digits = 2) => Number.isFinite(value) ? Number(value.toFixed(digits)) : null;
 const normalizeDegrees = value => ((value % 360) + 360) % 360;
 
-export function interpolateWaterLevelStations(point, stations, levels, { maxStations = 3, minimumDistanceKm = 0.25, haversineKm } = {}) {
+export function interpolateWaterLevelStations(point, stations, levels, { maxStations = 2, minimumDistanceKm = 0.25, haversineKm } = {}) {
   if (!Array.isArray(point) || typeof haversineKm !== 'function') throw new TypeError('point and haversineKm are required');
   const candidates = stations
     .map(station => ({ ...station, level: levels.get(station.stationId), distanceKm: haversineKm(point, station.point) }))
@@ -54,7 +54,8 @@ export function buildDmiForecastHourly({ wind = [], waves = [], ocean = [], obse
   const oceanCurrent = closest(ocean, start);
   const modelCurrentCm = finite(oceanCurrent?.['sea-mean-deviation']) === null ? null : finite(oceanCurrent['sea-mean-deviation']) * 100;
   const observationCm = finite(observedWaterLevel?.valueCm);
-  const waterLevelBiasCm = observationCm !== null && modelCurrentCm !== null ? observationCm - modelCurrentCm : 0;
+  const observationDifferenceCm = observationCm !== null && modelCurrentCm !== null ? observationCm - modelCurrentCm : null;
+  const waterLevelBiasCm = 0;
 
   const hourly = [];
   for (let index = 0; index < hours; index += 1) {
@@ -75,18 +76,19 @@ export function buildDmiForecastHourly({ wind = [], waves = [], ocean = [], obse
       waveHeightM: round(finite(wa?.['significant-wave-height']), 2),
       waveDirectionDeg: round(finite(wa?.['mean-wave-dir']), 0),
       wavePeriodS: round(finite(wa?.['dominant-wave-period']), 1),
-      waterLevelCm: sea === null ? null : round(sea * 100 + waterLevelBiasCm, 0),
+      waterLevelCm: sea === null ? null : round(sea * 100, 0),
       waterLevelModelCm: sea === null ? null : round(sea * 100, 0),
-      waterLevelBiasCm: sea === null ? null : round(waterLevelBiasCm, 0),
+      waterLevelBiasCm: 0,
+      waterLevelObservationDifferenceCm: sea === null ? null : round(observationDifferenceCm, 0),
       waterLevelTrendCm3h: sea === null || sea3 === null ? null : round((sea3 - sea) * 100, 0),
       currentSpeedMps: u === null || v === null ? null : round(Math.hypot(u, v), 2),
       currentDirectionDeg: u === null || v === null ? null : round(normalizeDegrees(Math.atan2(u, v) * 180 / Math.PI), 0),
       waterTemperatureC: round(finite(o?.['water-temperature']), 1),
       source: 'dmi-forecast',
-      waterLevelSource: observedWaterLevel ? 'dmi-model-observation-corrected' : 'dmi-model'
+      waterLevelSource: 'dmi-model-authoritative'
     });
   }
-  return { hourly, waterLevelBiasCm: round(waterLevelBiasCm, 0) };
+  return { hourly, waterLevelBiasCm: 0, observationDifferenceCm: round(observationDifferenceCm, 0) };
 }
 
 export function createDmiForecastRecord({ zoneId, point, generatedAt, hourly, waterLevelInterpolation = null, model = null } = {}) {

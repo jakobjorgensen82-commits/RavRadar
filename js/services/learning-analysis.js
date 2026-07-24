@@ -1,20 +1,10 @@
-import { getLocalObservations } from "./observation-service.js";
-
-const finite = value => Number.isFinite(Number(value));
-const found = row => row.result && !["none", "no"].includes(row.result);
-const average = values => values.length ? values.reduce((sum,value)=>sum+value,0)/values.length : null;
-function groupRate(rows, selector) {
-  const groups = new Map();
-  for (const row of rows) { const key=selector(row); if(key==null) continue; const group=groups.get(key)||[]; group.push(row); groups.set(key,group); }
-  return [...groups].map(([key,items])=>({key,count:items.length,successRate:items.filter(found).length/items.length})).filter(item=>item.count>=3).sort((a,b)=>b.successRate-a.successRate);
-}
-export function analyzeObservationRows(rows = []) {
-  const valid=rows.filter(row=>row?.zone_id&&row?.observed_at&&row?.weather_snapshot);
-  if(valid.length<8) return {status:"collecting",sampleSize:valid.length,minimumSampleSize:8,suggestions:[]};
-  const successful=valid.filter(found), unsuccessful=valid.filter(row=>!found(row));
-  const metricDiff=(field,label,unit)=>{const yes=successful.map(r=>r[field]).filter(finite).map(Number), no=unsuccessful.map(r=>r[field]).filter(finite).map(Number);if(yes.length<3||no.length<3)return null;const delta=average(yes)-average(no);if(Math.abs(delta)<0.05)return null;return {metric:field,label,delta:Number(delta.toFixed(2)),unit,evidence:`Fund: ${average(yes).toFixed(1)} ${unit}; ingen fund: ${average(no).toFixed(1)} ${unit}`};};
-  const suggestions=[metricDiff("water_level_cm","vandstand","cm"),metricDiff("wind_speed_mps","vindstyrke","m/s"),metricDiff("wave_height_m","bølgehøjde","m")].filter(Boolean);
-  const zones=groupRate(valid,row=>row.zone_id).slice(0,5);
-  return {status:"ready",sampleSize:valid.length,successCount:successful.length,successRate:Number((successful.length/valid.length).toFixed(3)),suggestions,zones,generatedAt:new Date().toISOString(),policy:"advisory-only"};
-}
+import { getLocalObservations } from './observation-service.js';
+import { decisionHistory } from '../core/adaptive-model.js';
+const finite=v=>Number.isFinite(Number(v));
+const found=row=>row.result&&!['none','no'].includes(row.result);
+const average=values=>values.length?values.reduce((a,b)=>a+b,0)/values.length:null;
+const clamp=(v,min,max)=>Math.min(max,Math.max(min,v));
+function stableId(parts){let h=2166136261;for(const c of parts.join('|'))h=Math.imul(h^c.charCodeAt(0),16777619);return `ml-${(h>>>0).toString(16)}`;}
+function metricProposal(field,label,unit,successful,unsuccessful){const yes=successful.map(r=>r[field]).filter(finite).map(Number),no=unsuccessful.map(r=>r[field]).filter(finite).map(Number);if(yes.length<4||no.length<4)return null;const y=average(yes),n=average(no),delta=y-n;const spread=Math.max(1,Math.abs(y)+Math.abs(n));const confidence=clamp(Math.round(55+Math.min(35,(yes.length+no.length)*1.2)+Math.min(10,Math.abs(delta)/spread*30)),55,95);if(Math.abs(delta)<({water_level_cm:4,wind_speed_mps:.8,wave_height_m:.15}[field]||.1))return null;const positive=delta>0;const threshold=Number(((y+n)/2).toFixed(field==='water_level_cm'?0:1));const adjustment=clamp(Math.round(Math.abs(delta)/({water_level_cm:6,wind_speed_mps:1.2,wave_height_m:.2}[field]||1)),2,8)*(positive?1:-1);const id=stableId([field,String(threshold),String(adjustment)]);return {id,type:'metric-adjustment',title:`Tilpas ${label}`,description:`Registrerede fund har i gennemsnit ${y.toFixed(1)} ${unit}, mens ture uden fund har ${n.toFixed(1)} ${unit}.`,evidence:{successful:yes.length,unsuccessful:no.length,successfulAverage:y,unsuccessfulAverage:n,delta,unit},confidence,expectedEffect:`Juster RavScore med ${adjustment>0?'+':''}${adjustment} point, når ${label} er ${positive?'mindst':'højst'} ${threshold} ${unit}.`,patch:{metricAdjustment:{id,field,min:positive?threshold:null,max:positive?null:threshold,adjustment,label,approvedFrom:'machine-learning-studio'}}};}
+export function analyzeObservationRows(rows=[]){const valid=rows.filter(r=>r?.zone_id&&r?.observed_at&&r?.weather_snapshot);if(valid.length<12)return {status:'collecting',sampleSize:valid.length,minimumSampleSize:12,suggestions:[]};const successful=valid.filter(found),unsuccessful=valid.filter(r=>!found(r));if(successful.length<4||unsuccessful.length<4)return {status:'collecting-balanced-data',sampleSize:valid.length,successCount:successful.length,minimumEachOutcome:4,suggestions:[]};let suggestions=[metricProposal('water_level_cm','vandstanden','cm',successful,unsuccessful),metricProposal('wind_speed_mps','vindstyrken','m/s',successful,unsuccessful),metricProposal('wave_height_m','bølgehøjden','m',successful,unsuccessful)].filter(Boolean);const decided=new Set(decisionHistory().map(x=>x.suggestionId));suggestions=suggestions.filter(x=>!decided.has(x.id));return {status:'ready',sampleSize:valid.length,successCount:successful.length,successRate:Number((successful.length/valid.length).toFixed(3)),suggestions,generatedAt:new Date().toISOString(),policy:'human-approved-adaptive-model'};}
 export function analyzeObservations(){return analyzeObservationRows(getLocalObservations());}

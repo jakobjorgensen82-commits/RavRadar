@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import { normalizeAdaptiveModel, modelAdjustment } from '../js/core/adaptive-model.js';
+import { predictAmberChance } from '../js/core/prediction-engine.js';
+import { analyzeObservationRows } from '../js/services/learning-analysis.js';
+const model=normalizeAdaptiveModel({weights:{huntability:.5,transport:.3,release:.2},metricAdjustments:[{id:'x',field:'waterLevelCm',min:20,adjustment:5}]});
+assert.equal(modelAdjustment({model,zone:{id:'z'},weather:{waterLevelCm:25}}).adjustment,5);
+const observations=Array.from({length:20},(_,i)=>({zone_id:'z',observed_at:`2026-07-${String(i+1).padStart(2,'0')}T12:00:00Z`,result:i<10?'good':'none',weather_snapshot:{},water_level_cm:i<10?35:5,wind_speed_mps:i<10?8:4,wave_height_m:i<10?1.2:.3}));
+const analysis=analyzeObservationRows(observations);
+assert.equal(analysis.status,'ready');assert.ok(analysis.suggestions.length>=1);assert.ok(analysis.suggestions[0].patch);
+const prediction=predictAmberChance({baseScore:70,zone:{id:'z'},weather:{windSpeedMps:7,waveHeightM:1,waterLevelCm:30,currentSpeedMps:.3},observations,model});
+assert.equal(prediction.available,true);assert.ok(prediction.probability>=0&&prediction.probability<=100);assert.ok(prediction.confidence>=35);
+console.log('Adaptive model, Machine Learning Studio og AI Prediction Engine bestået.');
