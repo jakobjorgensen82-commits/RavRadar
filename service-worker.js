@@ -1,4 +1,4 @@
-const APP_VERSION = "2.6.28";
+const APP_VERSION = "2.6.29";
 const CACHE_PREFIX = "ravradar-app-";
 const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}`;
 const STATIC = [
@@ -20,7 +20,10 @@ const STATIC = [
   "./js/map/map-view.js",
   "./js/ui/info-panel.js",
   "./js/ui/account-panel.js",
-  "./js/ui/developer-panel.js"
+  "./js/ui/developer-panel.js",
+  "./admin.html",
+  "./admin.css",
+  "./js/ui/admin-dashboard.js"
 ];
 
 self.addEventListener("install", event => {

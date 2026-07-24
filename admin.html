@@ -1,1 +1,39 @@
-<!doctype html><html lang="da"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RavRadar administration</title><link rel="stylesheet" href="style.css?v=2.6.28"><style>body{background:#07131c;color:#eef7fb}.admin{max-width:1100px;margin:auto;padding:20px}.admin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}.admin-card{background:#102431;border:1px solid #2d4b5d;border-radius:14px;padding:16px}.admin-card h2{margin-top:0}.metric{font-size:2rem;font-weight:800}.status-ok{color:#5ee093}.status-warning{color:#ffd166}.status-alarm{color:#ff6b6b}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:8px;border-bottom:1px solid #29404e}.admin-actions{display:flex;gap:8px;flex-wrap:wrap}button,a.button{padding:10px 14px;border-radius:9px;border:0;background:#d8a232;color:#111;text-decoration:none;font-weight:700}</style></head><body><main class="admin"><h1>RavRadar administration</h1><p><a class="button" href="./">Tilbage til kortet</a></p><div id="summary" class="admin-grid"></div><section class="admin-card"><h2>Aktive regler</h2><div id="rules">Indlæser…</div></section><section class="admin-card"><h2>Lokale observationer</h2><div id="observations"></div></section><section class="admin-card"><h2>Vedligeholdelse</h2><p>Vejrhistorik kan slettes centralt uden at røre snapshots i observationer. Kør <code>npm run maintenance:weather</code> med ønsket retention.</p><div class="admin-actions"><button id="downloadObservations">Eksportér pseudonymiseret JSON</button><button id="refresh">Opdatér status</button></div></section></main><script type="module" src="js/ui/admin-dashboard.js?v=2.6.28"></script></body></html>
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07131c">
+  <title>RavRadar administration</title>
+  <link rel="stylesheet" href="style.css?v=2.6.29">
+  <link rel="stylesheet" href="admin.css?v=2.6.29">
+</head>
+<body class="admin-body">
+  <main class="admin-shell">
+    <header class="admin-header">
+      <div><p class="eyebrow">RavRadar</p><h1>Administration</h1><p id="adminStatus">Indlæser systemstatus…</p></div>
+      <div class="admin-header-actions"><button id="refresh" type="button">Opdatér</button><a class="button" href="./">Tilbage til kortet</a></div>
+    </header>
+
+    <nav class="admin-tabs" aria-label="Administrationsområder">
+      <button class="admin-tab active" data-tab="dashboard">Dashboard</button>
+      <button class="admin-tab" data-tab="weather">Vejr</button>
+      <button class="admin-tab" data-tab="zones">Zoner</button>
+      <button class="admin-tab" data-tab="rules">Regler</button>
+      <button class="admin-tab" data-tab="knowledge">Vidensbase</button>
+      <button class="admin-tab" data-tab="analysis">Analyse</button>
+      <button class="admin-tab" data-tab="system">System</button>
+    </nav>
+
+    <section id="tab-dashboard" class="admin-view active"><div id="summary" class="admin-grid"></div><div class="admin-grid two"><article class="admin-card"><h2>Datakilder</h2><div id="providers"></div></article><article class="admin-card"><h2>Seneste drift</h2><div id="healthDetails"></div></article></div></section>
+    <section id="tab-weather" class="admin-view"><article class="admin-card"><h2>Vejr- og vandstandsdata</h2><div id="weatherTable"></div></article></section>
+    <section id="tab-zones" class="admin-view"><article class="admin-card"><h2>Zoner og stationstilknytning</h2><label class="admin-search">Søg zone<input id="zoneSearch" type="search" placeholder="Fx Als, Læsø eller Samsø"></label><div id="zonesTable"></div></article></section>
+    <section id="tab-rules" class="admin-view"><article class="admin-card"><h2>Regelmotor</h2><p class="admin-note">Reglerne vises her som læsbar driftskontrol. Ændringer gemmes først sikkert, når serverbaseret administrator-login er koblet til.</p><div id="rules"></div></article></section>
+    <section id="tab-knowledge" class="admin-view"><article class="admin-card"><h2>Vidensbase</h2><div id="knowledge"></div></article></section>
+    <section id="tab-analysis" class="admin-view"><div class="admin-grid two"><article class="admin-card"><h2>Lokale observationer</h2><div id="observations"></div><button id="downloadObservations" type="button">Eksportér pseudonymiseret JSON</button></article><article class="admin-card"><h2>Ravture</h2><div id="trips"></div></article></div></section>
+    <section id="tab-system" class="admin-view"><div class="admin-grid two"><article class="admin-card"><h2>App og cache</h2><div id="systemInfo"></div><div class="admin-actions"><button id="clearAppCaches" type="button">Ryd RavRadar-cache</button><button id="downloadDiagnostics" type="button">Hent diagnostik</button></div></article><article class="admin-card"><h2>Vedligeholdelse</h2><p>Central vejrhistorik kan beskæres uden at slette vejrsnapshots, der allerede er gemt sammen med observationer.</p><code>npm run maintenance:weather</code></article></div></section>
+  </main>
+  <script>window.RAVRADAR_VERSION='2.6.29';</script>
+  <script type="module" src="js/ui/admin-dashboard.js?v=2.6.29"></script>
+</body>
+</html>
