@@ -1,6 +1,6 @@
 {
   "type": "FeatureCollection",
-  "version": "1.0",
+  "version": "3.0.2",
   "features": [
     {
       "type": "Feature",
@@ -17133,28 +17133,59 @@
         "zoneStatus": "active",
         "coastLine": [
           [
-            9.48,
-            55.52
+            9.7697989,
+            55.5584938
           ],
           [
-            9.51,
-            55.5
+            9.7330846,
+            55.5559818
           ],
           [
-            9.56,
-            55.5
+            9.7389921,
+            55.51879
           ],
           [
-            9.61,
-            55.52
+            9.6773536,
+            55.527133
           ],
           [
-            9.64,
-            55.49
+            9.6156581,
+            55.5095449
+          ],
+          [
+            9.5716812,
+            55.5266058
+          ],
+          [
+            9.5870488,
+            55.4975737
+          ],
+          [
+            9.4951214,
+            55.4923217
+          ],
+          [
+            9.5869043,
+            55.4858738
+          ],
+          [
+            9.6290099,
+            55.4985644
+          ],
+          [
+            9.6964232,
+            55.4614119
+          ],
+          [
+            9.5942511,
+            55.4229302
           ]
         ],
-        "coastLineSource": "RavRadar B12 kystafgrænsning baseret på masterkyst og lokale stednavne",
-        "coastLineVersion": "2.6.24"
+        "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline; 45 m landward offset",
+        "coastLineVersion": "3.0.2",
+        "coastLineMasterSegments": [
+          5
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -17207,28 +17238,47 @@
         "zoneStatus": "active",
         "coastLine": [
           [
-            9.59,
-            55.4
+            9.5936476,
+            55.4236262
           ],
           [
-            9.61,
-            55.37
+            9.6218706,
+            55.3927422
           ],
           [
-            9.64,
-            55.35
+            9.5967632,
+            55.3574501
           ],
           [
-            9.68,
-            55.33
+            9.6485763,
+            55.3406118
           ],
           [
-            9.72,
-            55.31
+            9.6219983,
+            55.3105347
+          ],
+          [
+            9.6429252,
+            55.313418
+          ],
+          [
+            9.6723223,
+            55.2854066
+          ],
+          [
+            9.6396995,
+            55.2942258
+          ],
+          [
+            9.5653735,
+            55.2496663
           ]
         ],
-        "coastLineSource": "RavRadar B12 kystafgrænsning baseret på masterkyst og lokale stednavne",
-        "coastLineVersion": "2.6.24"
+        "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline; 45 m landward offset",
+        "coastLineVersion": "3.0.2",
+        "coastLineMasterSegments": [
+          5
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -17281,28 +17331,43 @@
         "zoneStatus": "active",
         "coastLine": [
           [
-            9.64,
-            55.27
-          ],
-          [
-            9.68,
+            9.5650721,
             55.25
           ],
           [
-            9.71,
-            55.25
+            9.6326152,
+            55.286399
           ],
           [
-            9.75,
-            55.23
+            9.7167601,
+            55.248261
           ],
           [
-            9.79,
-            55.2
+            9.6885372,
+            55.2239831
+          ],
+          [
+            9.6927499,
+            55.1942842
+          ],
+          [
+            9.6360291,
+            55.1743056
+          ],
+          [
+            9.5909725,
+            55.1935524
+          ],
+          [
+            9.4951572,
+            55.1556144
           ]
         ],
-        "coastLineSource": "RavRadar B12 kystafgrænsning baseret på masterkyst og lokale stednavne",
-        "coastLineVersion": "2.6.24"
+        "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline; 45 m landward offset",
+        "coastLineVersion": "3.0.2",
+        "coastLineMasterSegments": [
+          5
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -17355,28 +17420,71 @@
         "zoneStatus": "active",
         "coastLine": [
           [
-            9.57,
-            55.16
+            9.4951721,
+            55.1560134
           ],
           [
-            9.62,
-            55.12
+            9.5184264,
+            55.1268153
           ],
           [
-            9.63,
-            55.08
+            9.4742804,
+            55.1305842
           ],
           [
-            9.58,
-            55.04
+            9.4600612,
+            55.1167045
           ],
           [
-            9.5,
-            55.02
+            9.5209002,
+            55.1096905
+          ],
+          [
+            9.5517925,
+            55.0766231
+          ],
+          [
+            9.5059862,
+            55.0470064
+          ],
+          [
+            9.4293113,
+            55.0428043
+          ],
+          [
+            9.4234884,
+            55.028187
+          ],
+          [
+            9.4926136,
+            55.0160417
+          ],
+          [
+            9.5776581,
+            55.0452591
+          ],
+          [
+            9.6010621,
+            55.0393432
+          ],
+          [
+            9.63119,
+            55.0100628
+          ],
+          [
+            9.7391442,
+            54.9886782
+          ],
+          [
+            9.7575692,
+            54.9287047
           ]
         ],
-        "coastLineSource": "RavRadar B12 kystafgrænsning baseret på masterkyst og lokale stednavne",
-        "coastLineVersion": "2.6.24"
+        "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline; 45 m landward offset",
+        "coastLineVersion": "3.0.2",
+        "coastLineMasterSegments": [
+          5
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -17429,28 +17537,99 @@
         "zoneStatus": "active",
         "coastLine": [
           [
-            9.45,
-            54.91
+            9.7580783,
+            54.9293105
           ],
           [
-            9.5,
-            54.89
+            9.7863963,
+            54.91422
           ],
           [
-            9.55,
-            54.87
+            9.765613,
+            54.8987148
           ],
           [
-            9.61,
-            54.85
+            9.7047307,
+            54.9008393
           ],
           [
-            9.66,
-            54.84
+            9.7614365,
+            54.8631054
+          ],
+          [
+            9.7471223,
+            54.8384086
+          ],
+          [
+            9.6373826,
+            54.862005
+          ],
+          [
+            9.6563487,
+            54.8813323
+          ],
+          [
+            9.6002697,
+            54.9093731
+          ],
+          [
+            9.6727518,
+            54.9185902
+          ],
+          [
+            9.6214519,
+            54.9357601
+          ],
+          [
+            9.5684189,
+            54.8815025
+          ],
+          [
+            9.5259206,
+            54.877764
+          ],
+          [
+            9.4201446,
+            54.8280691
+          ],
+          [
+            9.4344253,
+            54.7950802
+          ],
+          [
+            9.4643299,
+            54.8242802
+          ],
+          [
+            9.4961142,
+            54.8243025
+          ],
+          [
+            9.5859262,
+            54.8785529
+          ],
+          [
+            9.6160286,
+            54.8792832
+          ],
+          [
+            9.590344,
+            54.852904
+          ],
+          [
+            9.6038997,
+            54.8328697
+          ],
+          [
+            9.7936591,
+            54.7992394
           ]
         ],
-        "coastLineSource": "RavRadar B12 kystafgrænsning baseret på masterkyst og lokale stednavne",
-        "coastLineVersion": "2.6.24"
+        "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline; 45 m landward offset",
+        "coastLineVersion": "3.0.2",
+        "coastLineMasterSegments": [
+          5
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -17503,28 +17682,35 @@
         "zoneStatus": "active",
         "coastLine": [
           [
-            9.74,
-            54.91
+            9.7927153,
+            54.7992188
           ],
           [
-            9.79,
-            54.9
+            9.8413102,
+            54.7590891
           ],
           [
-            9.84,
-            54.91
+            9.9057083,
+            54.7653401
           ],
           [
-            9.89,
-            54.89
+            9.90824,
+            54.7990925
           ],
           [
-            9.94,
-            54.86
+            9.9592265,
+            54.7820036
+          ],
+          [
+            9.9909732,
+            54.7195495
           ]
         ],
-        "coastLineSource": "RavRadar B12 kystafgrænsning baseret på masterkyst og lokale stednavne",
-        "coastLineVersion": "2.6.24"
+        "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline; 45 m landward offset",
+        "coastLineVersion": "3.0.2",
+        "coastLineMasterSegments": [
+          5
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -17577,28 +17763,51 @@
         "zoneStatus": "active",
         "coastLine": [
           [
-            9.86,
-            54.87
+            9.9952078,
+            54.8556844
           ],
           [
-            9.9,
-            54.82
+            9.9935365,
+            54.8556871
           ],
           [
-            9.94,
-            54.78
+            9.9365056,
+            54.8557382
           ],
           [
-            10.0,
-            54.75
+            9.870478,
+            54.8769705
           ],
           [
-            10.06,
-            54.78
+            9.9015105,
+            54.8990941
+          ],
+          [
+            9.992734,
+            54.8602798
+          ],
+          [
+            9.9859244,
+            54.8769717
+          ],
+          [
+            9.9032228,
+            54.9082592
+          ],
+          [
+            9.8362181,
+            54.8898342
+          ],
+          [
+            9.7899614,
+            54.9066724
           ]
         ],
-        "coastLineSource": "RavRadar B12 kystafgrænsning baseret på masterkyst og lokale stednavne",
-        "coastLineVersion": "2.6.24"
+        "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline; 45 m landward offset",
+        "coastLineVersion": "3.0.2",
+        "coastLineMasterSegments": [
+          24
+        ]
       },
       "geometry": {
         "type": "Polygon",
@@ -17651,28 +17860,31 @@
         "zoneStatus": "active",
         "coastLine": [
           [
-            10.01,
-            54.91
+            10.0017171,
+            54.9858045
           ],
           [
-            10.04,
-            54.95
+            10.0738952,
+            54.8746015
           ],
           [
-            10.05,
-            55.0
+            10.0229435,
+            54.8725669
           ],
           [
-            10.02,
-            55.04
+            9.99443,
+            54.8550084
           ],
           [
-            9.98,
-            55.07
+            9.99443,
+            54.8550084
           ]
         ],
-        "coastLineSource": "RavRadar B12 kystafgrænsning baseret på masterkyst og lokale stednavne",
-        "coastLineVersion": "2.6.24"
+        "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline; 45 m landward offset",
+        "coastLineVersion": "3.0.2",
+        "coastLineMasterSegments": [
+          24
+        ]
       },
       "geometry": {
         "type": "Polygon",

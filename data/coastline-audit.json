@@ -1929,6 +1929,71 @@
       "points": 8,
       "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
       "version": "2.6.24"
+    },
+    {
+      "zoneId": "DK-B12-01",
+      "status": "verified",
+      "coastLineVersion": "3.0.2",
+      "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+      "landwardOffsetMeters": 45,
+      "verifiedAt": "2026-07-25"
+    },
+    {
+      "zoneId": "DK-B12-02",
+      "status": "verified",
+      "coastLineVersion": "3.0.2",
+      "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+      "landwardOffsetMeters": 45,
+      "verifiedAt": "2026-07-25"
+    },
+    {
+      "zoneId": "DK-B12-03",
+      "status": "verified",
+      "coastLineVersion": "3.0.2",
+      "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+      "landwardOffsetMeters": 45,
+      "verifiedAt": "2026-07-25"
+    },
+    {
+      "zoneId": "DK-B12-04",
+      "status": "verified",
+      "coastLineVersion": "3.0.2",
+      "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+      "landwardOffsetMeters": 45,
+      "verifiedAt": "2026-07-25"
+    },
+    {
+      "zoneId": "DK-B12-05",
+      "status": "verified",
+      "coastLineVersion": "3.0.2",
+      "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+      "landwardOffsetMeters": 45,
+      "verifiedAt": "2026-07-25"
+    },
+    {
+      "zoneId": "DK-B12-06",
+      "status": "verified",
+      "coastLineVersion": "3.0.2",
+      "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+      "landwardOffsetMeters": 45,
+      "verifiedAt": "2026-07-25"
+    },
+    {
+      "zoneId": "DK-B12-07",
+      "status": "verified",
+      "coastLineVersion": "3.0.2",
+      "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+      "landwardOffsetMeters": 45,
+      "verifiedAt": "2026-07-25"
+    },
+    {
+      "zoneId": "DK-B12-08",
+      "status": "verified",
+      "coastLineVersion": "3.0.2",
+      "source": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+      "landwardOffsetMeters": 45,
+      "verifiedAt": "2026-07-25"
     }
-  ]
+  ],
+  "version": "3.0.2"
 }
