@@ -111,7 +111,7 @@ footer p { margin: 4px 0; }
 .button-row button, .stack-form > button, .trip-answer-buttons button { min-height: 44px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); font-weight: 750; cursor: pointer; }
 .button-row .primary-button, .stack-form > .primary-button { color: white; background: var(--brand-2); border-color: var(--brand-2); }
 .grams-field { margin-top: 12px; max-width: 260px; }
-.trip-answer-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.trip-answer-buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 .developer-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
 .developer-grid section { min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
 .developer-grid h3 { margin: 0 0 10px; }
@@ -361,3 +361,6 @@ body.zone-focus .info-panel { scroll-margin-top:12px; }
 .score-calculation{padding:9px 11px;border-radius:9px;background:var(--surface-soft);}
 .observation-form label{display:grid;gap:6px;margin:10px 0;font-weight:700;}
 .prediction-panel{margin:14px 0;padding:16px;border:1px solid rgba(216,162,50,.55);border-radius:16px;background:linear-gradient(135deg,rgba(216,162,50,.12),rgba(7,59,76,.08));display:grid;gap:8px}.prediction-panel h3{margin:.2rem 0;font-size:1.25rem}.prediction-panel p{margin:0}.prediction-panel summary{cursor:pointer;font-weight:750}.prediction-panel ul{margin:.6rem 0 0;padding-left:1.2rem}
+
+/* RavRadar 3.0.1: søgbar zonevælger og tydelig indsendelse */
+.trip-found-field{border:0;padding:0;margin:0;display:grid;gap:8px}.trip-found-field legend{font-weight:800;color:var(--ink);margin-bottom:4px}.trip-answer-buttons label{display:block}.trip-answer-buttons input{position:absolute;opacity:0;pointer-events:none}.trip-answer-buttons span{display:grid;place-items:center;min-height:48px;border:1px solid var(--line);border-radius:10px;background:var(--surface-soft);color:#1485ef;font-weight:800;cursor:pointer}.trip-answer-buttons input:checked+span{background:#dff1ff;border-color:#1485ef;box-shadow:0 0 0 2px rgba(20,133,239,.2)}.zone-search{position:relative}.zone-search>input[type="search"]{padding-right:38px}.zone-search-results{position:absolute;z-index:1000;left:0;right:0;top:calc(100% + 5px);max-height:270px;overflow:auto;border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:0 16px 35px rgba(7,59,76,.22);padding:6px}.zone-search-results button{width:100%;display:grid;gap:2px;text-align:left;border:0;border-radius:8px;background:#fff;padding:10px 11px;color:var(--ink);font:inherit;cursor:pointer}.zone-search-results button:hover,.zone-search-results button:focus{background:var(--surface-soft);outline:none}.zone-search-results small{color:var(--muted)}.zone-search-results p{margin:8px;color:var(--muted)}.trip-submit{width:100%;min-height:50px;font-size:1rem}.trip-submit:disabled{opacity:.65}

@@ -17109,6 +17109,598 @@
           ]
         ]
       }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B12-01",
+        "name": "Kolding Fjord og Løverodde",
+        "region": "Sydøstjylland · Kolding Fjord",
+        "coastType": "east",
+        "onshoreDirectionDeg": 95,
+        "dataPoint": [
+          9.57,
+          55.51
+        ],
+        "pinPoint": [
+          9.5,
+          55.5
+        ],
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "batch": "B12",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            9.48,
+            55.52
+          ],
+          [
+            9.51,
+            55.5
+          ],
+          [
+            9.56,
+            55.5
+          ],
+          [
+            9.61,
+            55.52
+          ],
+          [
+            9.64,
+            55.49
+          ]
+        ],
+        "coastLineSource": "RavRadar B12 kystafgrænsning baseret på masterkyst og lokale stednavne",
+        "coastLineVersion": "2.6.24"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.42,
+              55.45
+            ],
+            [
+              9.68,
+              55.45
+            ],
+            [
+              9.68,
+              55.56
+            ],
+            [
+              9.42,
+              55.56
+            ],
+            [
+              9.42,
+              55.45
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B12-02",
+        "name": "Hejlsminde og Binderup",
+        "region": "Sydøstjylland · Lillebælt",
+        "coastType": "east",
+        "onshoreDirectionDeg": 90,
+        "dataPoint": [
+          9.7,
+          55.36
+        ],
+        "pinPoint": [
+          9.61,
+          55.37
+        ],
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "batch": "B12",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            9.59,
+            55.4
+          ],
+          [
+            9.61,
+            55.37
+          ],
+          [
+            9.64,
+            55.35
+          ],
+          [
+            9.68,
+            55.33
+          ],
+          [
+            9.72,
+            55.31
+          ]
+        ],
+        "coastLineSource": "RavRadar B12 kystafgrænsning baseret på masterkyst og lokale stednavne",
+        "coastLineVersion": "2.6.24"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.52,
+              55.3
+            ],
+            [
+              9.78,
+              55.3
+            ],
+            [
+              9.78,
+              55.43
+            ],
+            [
+              9.52,
+              55.43
+            ],
+            [
+              9.52,
+              55.3
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B12-03",
+        "name": "Haderslev Fjord og Årøsund",
+        "region": "Sydøstjylland · Haderslev",
+        "coastType": "east",
+        "onshoreDirectionDeg": 95,
+        "dataPoint": [
+          9.8,
+          55.25
+        ],
+        "pinPoint": [
+          9.71,
+          55.25
+        ],
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "batch": "B12",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            9.64,
+            55.27
+          ],
+          [
+            9.68,
+            55.25
+          ],
+          [
+            9.71,
+            55.25
+          ],
+          [
+            9.75,
+            55.23
+          ],
+          [
+            9.79,
+            55.2
+          ]
+        ],
+        "coastLineSource": "RavRadar B12 kystafgrænsning baseret på masterkyst og lokale stednavne",
+        "coastLineVersion": "2.6.24"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.57,
+              55.18
+            ],
+            [
+              9.88,
+              55.18
+            ],
+            [
+              9.88,
+              55.31
+            ],
+            [
+              9.57,
+              55.31
+            ],
+            [
+              9.57,
+              55.18
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B12-04",
+        "name": "Genner Bugt og Aabenraa Fjord",
+        "region": "Sydøstjylland · Aabenraa",
+        "coastType": "east",
+        "onshoreDirectionDeg": 105,
+        "dataPoint": [
+          9.72,
+          55.08
+        ],
+        "pinPoint": [
+          9.61,
+          55.07
+        ],
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "batch": "B12",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            9.57,
+            55.16
+          ],
+          [
+            9.62,
+            55.12
+          ],
+          [
+            9.63,
+            55.08
+          ],
+          [
+            9.58,
+            55.04
+          ],
+          [
+            9.5,
+            55.02
+          ]
+        ],
+        "coastLineSource": "RavRadar B12 kystafgrænsning baseret på masterkyst og lokale stednavne",
+        "coastLineVersion": "2.6.24"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.43,
+              54.99
+            ],
+            [
+              9.82,
+              54.99
+            ],
+            [
+              9.82,
+              55.17
+            ],
+            [
+              9.43,
+              55.17
+            ],
+            [
+              9.43,
+              54.99
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B12-05",
+        "name": "Kruså og Flensborg Fjord nord",
+        "region": "Sydøstjylland · Aabenraa syd",
+        "coastType": "east",
+        "onshoreDirectionDeg": 120,
+        "dataPoint": [
+          9.64,
+          54.89
+        ],
+        "pinPoint": [
+          9.52,
+          54.89
+        ],
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "batch": "B12",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            9.45,
+            54.91
+          ],
+          [
+            9.5,
+            54.89
+          ],
+          [
+            9.55,
+            54.87
+          ],
+          [
+            9.61,
+            54.85
+          ],
+          [
+            9.66,
+            54.84
+          ]
+        ],
+        "coastLineSource": "RavRadar B12 kystafgrænsning baseret på masterkyst og lokale stednavne",
+        "coastLineVersion": "2.6.24"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.35,
+              54.82
+            ],
+            [
+              9.72,
+              54.82
+            ],
+            [
+              9.72,
+              54.96
+            ],
+            [
+              9.35,
+              54.96
+            ],
+            [
+              9.35,
+              54.82
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B12-06",
+        "name": "Sønderborg Bugt og Dybbøl",
+        "region": "Sydøstjylland · Sønderborg",
+        "coastType": "east",
+        "onshoreDirectionDeg": 145,
+        "dataPoint": [
+          9.91,
+          54.88
+        ],
+        "pinPoint": [
+          9.83,
+          54.91
+        ],
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "batch": "B12",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            9.74,
+            54.91
+          ],
+          [
+            9.79,
+            54.9
+          ],
+          [
+            9.84,
+            54.91
+          ],
+          [
+            9.89,
+            54.89
+          ],
+          [
+            9.94,
+            54.86
+          ]
+        ],
+        "coastLineSource": "RavRadar B12 kystafgrænsning baseret på masterkyst og lokale stednavne",
+        "coastLineVersion": "2.6.24"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.72,
+              54.82
+            ],
+            [
+              10.0,
+              54.82
+            ],
+            [
+              10.0,
+              54.96
+            ],
+            [
+              9.72,
+              54.96
+            ],
+            [
+              9.72,
+              54.82
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B12-07",
+        "name": "Als syd og Kegnæs",
+        "region": "Sydøstjylland · Als syd",
+        "coastType": "east",
+        "onshoreDirectionDeg": 165,
+        "dataPoint": [
+          9.94,
+          54.8
+        ],
+        "pinPoint": [
+          9.98,
+          54.86
+        ],
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "batch": "B12",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            9.86,
+            54.87
+          ],
+          [
+            9.9,
+            54.82
+          ],
+          [
+            9.94,
+            54.78
+          ],
+          [
+            10.0,
+            54.75
+          ],
+          [
+            10.06,
+            54.78
+          ]
+        ],
+        "coastLineSource": "RavRadar B12 kystafgrænsning baseret på masterkyst og lokale stednavne",
+        "coastLineVersion": "2.6.24"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.82,
+              54.73
+            ],
+            [
+              10.1,
+              54.73
+            ],
+            [
+              10.1,
+              54.91
+            ],
+            [
+              9.82,
+              54.91
+            ],
+            [
+              9.82,
+              54.73
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B12-08",
+        "name": "Als øst og Fynshav",
+        "region": "Sydøstjylland · Als øst",
+        "coastType": "east",
+        "onshoreDirectionDeg": 90,
+        "dataPoint": [
+          10.16,
+          54.98
+        ],
+        "pinPoint": [
+          10.03,
+          54.98
+        ],
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "batch": "B12",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            10.01,
+            54.91
+          ],
+          [
+            10.04,
+            54.95
+          ],
+          [
+            10.05,
+            55.0
+          ],
+          [
+            10.02,
+            55.04
+          ],
+          [
+            9.98,
+            55.07
+          ]
+        ],
+        "coastLineSource": "RavRadar B12 kystafgrænsning baseret på masterkyst og lokale stednavne",
+        "coastLineVersion": "2.6.24"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.96,
+              54.89
+            ],
+            [
+              10.24,
+              54.89
+            ],
+            [
+              10.24,
+              55.08
+            ],
+            [
+              9.96,
+              55.08
+            ],
+            [
+              9.96,
+              54.89
+            ]
+          ]
+        ]
+      }
     }
   ]
 }

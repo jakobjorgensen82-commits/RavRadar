@@ -3,7 +3,7 @@ import { analyzeObservations } from '../services/learning-analysis.js';
 import { historicalSummary } from '../services/historical-analysis.js';
 import { loadAdaptiveModel, applyApprovedSuggestion, recordDecision, decisionHistory, rollbackAdaptiveModel } from '../core/adaptive-model.js';
 
-const VERSION='3.0.0';
+const VERSION='3.0.1';
 const RULES_KEY='ravradar-admin-rules-v1';
 const HISTORY_KEY='ravradar-admin-rule-history-v1';
 const SESSION_KEY='ravradar-admin-auth';

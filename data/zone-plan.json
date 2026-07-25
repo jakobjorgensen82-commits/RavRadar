@@ -3,7 +3,7 @@
   "title": "RavRadar national zone plan",
   "created": "2026-07-23",
   "principles": {
-    "targetZoneCount": 196,
+    "targetZoneCount": 204,
     "scope": "Danmarks åbne kyster samt Limfjorden; øvrige indre fjorde er ikke selvstændige zoner.",
     "boundaries": [
       "næs og odder",
@@ -68,6 +68,12 @@
       "id": "B10",
       "name": "Møn, Lolland-Falster og Bornholm",
       "count": 24
+    },
+    {
+      "batch": "B12",
+      "name": "Sydøstjylland, Sønderborg og Als",
+      "status": "active",
+      "targetZoneCount": 8
     }
   ],
   "zones": [
@@ -6560,9 +6566,409 @@
       },
       "zoneId": "DK-B10-24",
       "notes": "Aktiveret i RavRadar 2.6.23; kystlinje klippet fra lokal GSHHS-masterkyst."
+    },
+    {
+      "planId": "B12-01",
+      "name": "Kolding Fjord og Løverodde",
+      "batch": "B12",
+      "batchName": "Sydøstjylland, Sønderborg og Als",
+      "status": "active",
+      "pinPoint": [
+        9.5,
+        55.5
+      ],
+      "dataPoint": [
+        9.57,
+        55.51
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.42,
+              55.45
+            ],
+            [
+              9.68,
+              55.45
+            ],
+            [
+              9.68,
+              55.56
+            ],
+            [
+              9.42,
+              55.56
+            ],
+            [
+              9.42,
+              55.45
+            ]
+          ]
+        ]
+      },
+      "review": {
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B12-01",
+      "notes": "Oprettet i RavRadar 3.0.1 som manglende sydøstjysk kystzone; DMI anvendes som autoritativ vejrbærer."
+    },
+    {
+      "planId": "B12-02",
+      "name": "Hejlsminde og Binderup",
+      "batch": "B12",
+      "batchName": "Sydøstjylland, Sønderborg og Als",
+      "status": "active",
+      "pinPoint": [
+        9.61,
+        55.37
+      ],
+      "dataPoint": [
+        9.7,
+        55.36
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.52,
+              55.3
+            ],
+            [
+              9.78,
+              55.3
+            ],
+            [
+              9.78,
+              55.43
+            ],
+            [
+              9.52,
+              55.43
+            ],
+            [
+              9.52,
+              55.3
+            ]
+          ]
+        ]
+      },
+      "review": {
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B12-02",
+      "notes": "Oprettet i RavRadar 3.0.1 som manglende sydøstjysk kystzone; DMI anvendes som autoritativ vejrbærer."
+    },
+    {
+      "planId": "B12-03",
+      "name": "Haderslev Fjord og Årøsund",
+      "batch": "B12",
+      "batchName": "Sydøstjylland, Sønderborg og Als",
+      "status": "active",
+      "pinPoint": [
+        9.71,
+        55.25
+      ],
+      "dataPoint": [
+        9.8,
+        55.25
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.57,
+              55.18
+            ],
+            [
+              9.88,
+              55.18
+            ],
+            [
+              9.88,
+              55.31
+            ],
+            [
+              9.57,
+              55.31
+            ],
+            [
+              9.57,
+              55.18
+            ]
+          ]
+        ]
+      },
+      "review": {
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B12-03",
+      "notes": "Oprettet i RavRadar 3.0.1 som manglende sydøstjysk kystzone; DMI anvendes som autoritativ vejrbærer."
+    },
+    {
+      "planId": "B12-04",
+      "name": "Genner Bugt og Aabenraa Fjord",
+      "batch": "B12",
+      "batchName": "Sydøstjylland, Sønderborg og Als",
+      "status": "active",
+      "pinPoint": [
+        9.61,
+        55.07
+      ],
+      "dataPoint": [
+        9.72,
+        55.08
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.43,
+              54.99
+            ],
+            [
+              9.82,
+              54.99
+            ],
+            [
+              9.82,
+              55.17
+            ],
+            [
+              9.43,
+              55.17
+            ],
+            [
+              9.43,
+              54.99
+            ]
+          ]
+        ]
+      },
+      "review": {
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B12-04",
+      "notes": "Oprettet i RavRadar 3.0.1 som manglende sydøstjysk kystzone; DMI anvendes som autoritativ vejrbærer."
+    },
+    {
+      "planId": "B12-05",
+      "name": "Kruså og Flensborg Fjord nord",
+      "batch": "B12",
+      "batchName": "Sydøstjylland, Sønderborg og Als",
+      "status": "active",
+      "pinPoint": [
+        9.52,
+        54.89
+      ],
+      "dataPoint": [
+        9.64,
+        54.89
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.35,
+              54.82
+            ],
+            [
+              9.72,
+              54.82
+            ],
+            [
+              9.72,
+              54.96
+            ],
+            [
+              9.35,
+              54.96
+            ],
+            [
+              9.35,
+              54.82
+            ]
+          ]
+        ]
+      },
+      "review": {
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B12-05",
+      "notes": "Oprettet i RavRadar 3.0.1 som manglende sydøstjysk kystzone; DMI anvendes som autoritativ vejrbærer."
+    },
+    {
+      "planId": "B12-06",
+      "name": "Sønderborg Bugt og Dybbøl",
+      "batch": "B12",
+      "batchName": "Sydøstjylland, Sønderborg og Als",
+      "status": "active",
+      "pinPoint": [
+        9.83,
+        54.91
+      ],
+      "dataPoint": [
+        9.91,
+        54.88
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.72,
+              54.82
+            ],
+            [
+              10.0,
+              54.82
+            ],
+            [
+              10.0,
+              54.96
+            ],
+            [
+              9.72,
+              54.96
+            ],
+            [
+              9.72,
+              54.82
+            ]
+          ]
+        ]
+      },
+      "review": {
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B12-06",
+      "notes": "Oprettet i RavRadar 3.0.1 som manglende sydøstjysk kystzone; DMI anvendes som autoritativ vejrbærer."
+    },
+    {
+      "planId": "B12-07",
+      "name": "Als syd og Kegnæs",
+      "batch": "B12",
+      "batchName": "Sydøstjylland, Sønderborg og Als",
+      "status": "active",
+      "pinPoint": [
+        9.98,
+        54.86
+      ],
+      "dataPoint": [
+        9.94,
+        54.8
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.82,
+              54.73
+            ],
+            [
+              10.1,
+              54.73
+            ],
+            [
+              10.1,
+              54.91
+            ],
+            [
+              9.82,
+              54.91
+            ],
+            [
+              9.82,
+              54.73
+            ]
+          ]
+        ]
+      },
+      "review": {
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B12-07",
+      "notes": "Oprettet i RavRadar 3.0.1 som manglende sydøstjysk kystzone; DMI anvendes som autoritativ vejrbærer."
+    },
+    {
+      "planId": "B12-08",
+      "name": "Als øst og Fynshav",
+      "batch": "B12",
+      "batchName": "Sydøstjylland, Sønderborg og Als",
+      "status": "active",
+      "pinPoint": [
+        10.03,
+        54.98
+      ],
+      "dataPoint": [
+        10.16,
+        54.98
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              9.96,
+              54.89
+            ],
+            [
+              10.24,
+              54.89
+            ],
+            [
+              10.24,
+              55.08
+            ],
+            [
+              9.96,
+              55.08
+            ],
+            [
+              9.96,
+              54.89
+            ]
+          ]
+        ]
+      },
+      "review": {
+        "placeNames": true,
+        "coastline": true,
+        "marinePoint": true,
+        "naturalBoundaries": true
+      },
+      "zoneId": "DK-B12-08",
+      "notes": "Oprettet i RavRadar 3.0.1 som manglende sydøstjysk kystzone; DMI anvendes som autoritativ vejrbærer."
     }
   ],
-  "lastUpdated": "2026-07-23",
+  "lastUpdated": "2026-07-25",
   "corrections": [
     {
       "zoneId": "DK-LIM-03",

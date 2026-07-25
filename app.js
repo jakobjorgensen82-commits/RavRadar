@@ -97,18 +97,27 @@ function renderNationalForecast() {
 
 function setMode(mode){state.mode=mode;localStorage.setItem("ravradar-mode",mode);document.querySelectorAll(".mode-button").forEach(button=>{const active=button.dataset.mode===mode;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active));});if(state.zoneLayer)refreshZoneStyles(state.zoneLayer,id=>resultFor(state.zones.features.find(item=>item.properties.id===id).properties));renderRanking();renderNationalForecast();renderSelectedZone();}
 function updateTripUi(){const trip=activeTrip();tripButton.textContent=trip?"Afslut tur":"Start ravtur";tripButton.classList.toggle("trip-active",Boolean(trip));tripButton.setAttribute("aria-pressed",String(Boolean(trip)));document.querySelector("#tripStatus").textContent=trip?"Ravtur i gang. GPS registreres kun, mens appen er åben.":"";}
+function normalizeZoneSearch(value){return String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("da-DK").trim();}
+function installZoneSearch(form,zones){
+  const input=form.querySelector("#tripZoneSearch"), hidden=form.querySelector("input[name=zoneId]"), results=form.querySelector("#tripZoneResults");
+  const label=zone=>`${zone.name} · ${zone.region}`;
+  const render=()=>{const query=normalizeZoneSearch(input.value);const matches=zones.filter(zone=>!query||normalizeZoneSearch(`${zone.name} ${zone.region} ${zone.id}`).includes(query)).slice(0,30);results.innerHTML=matches.map(zone=>`<button type="button" role="option" data-zone-id="${zone.id}"><strong>${zone.name}</strong><small>${zone.region}</small></button>`).join("")||'<p>Ingen zoner matcher søgningen.</p>';results.hidden=false;results.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>{const zone=zones.find(item=>item.id===button.dataset.zoneId);input.value=label(zone);hidden.value=zone.id;results.hidden=true;input.setAttribute("aria-expanded","false");}));};
+  input.addEventListener("focus",()=>{input.setAttribute("aria-expanded","true");render();});
+  input.addEventListener("input",()=>{hidden.value="";input.setAttribute("aria-expanded","true");render();});
+  input.addEventListener("keydown",event=>{if(event.key==="Escape"){results.hidden=true;input.setAttribute("aria-expanded","false");}});
+  document.addEventListener("click",event=>{if(!form.querySelector(".zone-search").contains(event.target)){results.hidden=true;input.setAttribute("aria-expanded","false");}},{once:false});
+}
 function openTripPrompt(trip){
   const zones=(state.zones?.features||[]).map(feature=>feature.properties).sort((a,b)=>a.name.localeCompare(b.name,"da"));
   const defaultDate=String(trip.endedAt||trip.startedAt||new Date().toISOString()).slice(0,10);
-  tripDialog.querySelector(".dialog-content").innerHTML=`<h2>Fandt du rav på din tur?</h2><p>For at gøre RavRadar bedre sammenholder vi dit svar med de vejr-, vandstands- og prognosedata, der gjaldt på den valgte dato og i den valgte zone.</p><form id="tripAnswerForm" class="stack-form"><label>Dato for ravjagten<input name="observedDate" type="date" required value="${defaultDate}" max="${new Date().toISOString().slice(0,10)}"></label><label>Zone<select name="zoneId" required><option value="">Vælg zone</option>${zones.map(zone=>`<option value="${zone.id}">${zone.name} · ${zone.region}</option>`).join("")}</select></label><label>Valgfrit antal gram<input name="grams" type="number" min="0" max="10000" step="0.1" inputmode="decimal"></label><div class="trip-answer-buttons"><button name="response" value="no">Nej</button><button name="response" value="yes">Ja</button><button name="response" value="much">Meget</button></div><p class="form-status" id="tripAnswerStatus"></p></form>`;
+  tripDialog.querySelector(".dialog-content").innerHTML=`<h2>Fortæl om din ravtur</h2><p>For at gøre RavRadar bedre sammenholder vi dit svar med de vejr-, vandstands- og prognosedata, der gjaldt på den valgte dato og i den valgte zone.</p><form id="tripAnswerForm" class="stack-form"><fieldset class="trip-found-field"><legend>Fandt du rav?</legend><div class="trip-answer-buttons"><label><input type="radio" name="response" value="none" required><span>Nej</span></label><label><input type="radio" name="response" value="medium" required><span>Ja</span></label></div></fieldset><label>Dato for ravjagten<input name="observedDate" type="date" required value="${defaultDate}" max="${new Date().toISOString().slice(0,10)}"></label><label>Zone<div class="zone-search"><input id="tripZoneSearch" type="search" placeholder="Søg efter zone, fx øs" autocomplete="off" role="combobox" aria-controls="tripZoneResults" aria-expanded="false" required><input name="zoneId" type="hidden"><div id="tripZoneResults" class="zone-search-results" role="listbox" hidden></div></div></label><label>Valgfrit antal gram<input name="grams" type="number" min="0" max="10000" step="0.1" inputmode="decimal"></label><button type="submit" class="primary-button trip-submit">Indsend</button><p class="form-status" id="tripAnswerStatus"></p></form>`;
   tripDialog.showModal();
-  tripDialog.querySelector("#tripAnswerForm").addEventListener("submit",async event=>{
-    event.preventDefault(); const form=event.currentTarget, data=new FormData(form), response=event.submitter?.value, zone=zones.find(item=>item.id===data.get("zoneId"));
-    if(!response||!zone){form.querySelector("#tripAnswerStatus").textContent="Vælg både zone og svar.";return;}
-    const observedDate=String(data.get("observedDate")); const condition=zoneCondition(zone); const weather=condition.current||{}; const scoreResult=resultFor(zone,weather,condition.history||{});
-    answerTrip(trip.id,response,data.get("grams"),{observedDate,zoneId:zone.id,zoneName:zone.name});
-    try{await submitObservation({zone,huntMode:state.mode,result:response==="no"?"none":response==="much"?"good":"medium",grams:data.get("grams"),observedAt:`${observedDate}T12:00:00.000Z`,scoreResult,weather,gps:trip.points?.at(-1)||null,tripId:trip.id});}catch(error){console.warn("Tursvar blev gemt lokalt",error);}
-    tripDialog.close();
+  const form=tripDialog.querySelector("#tripAnswerForm");installZoneSearch(form,zones);
+  form.addEventListener("submit",async event=>{
+    event.preventDefault();const data=new FormData(form),response=String(data.get("response")||""),zone=zones.find(item=>item.id===data.get("zoneId")),status=form.querySelector("#tripAnswerStatus");
+    if(!response||!zone){status.textContent="Vælg både Ja/Nej og en zone fra søgeresultaterne.";return;}
+    const observedDate=String(data.get("observedDate"));const condition=zoneCondition(zone);const weather=condition.current||{};const scoreResult=resultFor(zone,weather,condition.history||{});const submitButton=form.querySelector(".trip-submit");submitButton.disabled=true;submitButton.textContent="Indsender…";
+    try{answerTrip(trip.id,response,data.get("grams"),{observedDate,zoneId:zone.id,zoneName:zone.name});await submitObservation({zone,huntMode:state.mode,result:response,grams:data.get("grams"),observedAt:`${observedDate}T12:00:00.000Z`,scoreResult,weather,gps:trip.points?.at(-1)||null,tripId:trip.id});status.textContent="Tak. Oplysningerne er sendt til Administratorcenteret.";setTimeout(()=>tripDialog.close(),450);}catch(error){status.textContent=error.message;submitButton.disabled=false;submitButton.textContent="Indsend";}
   });
 }
 function enableDialogClose(dialog){dialog.querySelector(".dialog-close")?.addEventListener("click",()=>dialog.close());dialog.addEventListener("click",event=>{if(event.target===dialog)dialog.close();});}
@@ -123,11 +132,11 @@ document.querySelector("#pinForm").addEventListener("submit",event=>{event.preve
 
 try {await consumeAuthCallback();const [zones,conditions]=await Promise.all([loadZones(),loadConditions()]);state.zones=zones;state.conditions=conditions;state.zoneLayer=renderZones(map,zones,id=>resultFor(zones.features.find(item=>item.properties.id===id).properties),zone=>openZone(zone,{scroll:false}));state.flowArrows=installFlowArrows(map,zones,id=>state.conditions.zones?.[id]||{});setMode(localStorage.getItem("ravradar-mode")==="beach"?"beach":"waders");if(conditions.available&&conditions.generatedAt){const timestamp=new Date(conditions.generatedAt).toLocaleString("da-DK");const stale=Date.now()-new Date(conditions.generatedAt).getTime()>8*3600000;dataStatus.textContent=`${stale?"⚠ Data er ældre end normalt · ":""}Senest opdateret ${timestamp}`;}else dataStatus.textContent="Vejrdata indlæses ved næste automatiske GitHub-kørsel.";resumeTripTracking();updateTripUi();const pending=pendingTripPrompt();if(pending)setTimeout(()=>openTripPrompt(pending),650);}catch(error){console.error(error);infoPanel.innerHTML='<div class="notice">Kortzonerne kunne ikke indlæses. Kontroller den seneste GitHub Action.</div>';dataStatus.textContent="Fejl ved indlæsning";}
 
-// RavRadar 3.0.0: versionsmanifest + sikker service-worker-opdatering.
+// RavRadar 3.0.1: versionsmanifest + sikker service-worker-opdatering.
 function installAppUpdateFlow() {
   if (!("serviceWorker" in navigator)) return;
   const banner=document.querySelector("#updateBanner"), updateButton=document.querySelector("#updateAppButton");
-  const version=window.RAVRADAR_VERSION||"3.0.0"; document.querySelector("#appVersion").textContent=version;
+  const version=window.RAVRADAR_VERSION||"3.0.1"; document.querySelector("#appVersion").textContent=version;
   let refreshing=false, registration=null, waitingWorker=null;
   const showUpdate=worker=>{waitingWorker=worker||waitingWorker;if(!banner||!updateButton)return;banner.hidden=false;updateButton.disabled=false;updateButton.textContent="Opdater nu";};
   const activate=()=>{updateButton.disabled=true;updateButton.textContent="Opdaterer…";(waitingWorker||registration?.waiting)?.postMessage({type:"SKIP_WAITING"});};
