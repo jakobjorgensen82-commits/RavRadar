@@ -1,12 +1,12 @@
-const APP_VERSION = "3.1.1";
+const APP_VERSION = "3.1.2";
 const CACHE_PREFIX = "ravradar-app-";
 const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}`;
 const STATIC = [
   "./","./index.html","./admin.html",`./admin.css?v=${APP_VERSION}`,`./js/ui/admin-dashboard.js?v=${APP_VERSION}`,`./style.css?v=${APP_VERSION}`,`./bootstrap.js?v=${APP_VERSION}`,`./app.js?v=${APP_VERSION}`,
-  "./config.js","./manifest.webmanifest","./version.json","./data/zones.geojson","./data/model.json",
+  "./config.js","./manifest.webmanifest","./version.json",`./data/zones.geojson?v=${APP_VERSION}`,"./data/model.json",
   "./js/core/score-engine.js","./js/core/rule-engine.js","./js/core/adaptive-model.js","./js/core/prediction-engine.js",
   "./js/services/rule-service.js","./rules/national-rules.json","./rules/local-rules.json","./rules/experimental-rules.json",
-  "./js/services/data-service.js","./js/services/auth-service.js","./js/services/trip-service.js","./js/services/observation-service.js","./js/services/learning-analysis.js","./js/services/historical-analysis.js","./js/services/storage-safety.js",
+  "./js/services/data-service.js","./js/services/zone-registry.js","./js/services/auth-service.js","./js/services/trip-service.js","./js/services/observation-service.js","./js/services/learning-analysis.js","./js/services/historical-analysis.js","./js/services/storage-safety.js",
   "./js/map/map-view.js","./js/ui/info-panel.js","./js/ui/account-panel.js","./js/ui/developer-panel.js"
 ];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>Promise.allSettled(STATIC.map(url=>cache.add(url)))));});
@@ -18,7 +18,7 @@ async function staleWhileRevalidate(request){const cache=await caches.open(CACHE
 self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET')return;const url=new URL(event.request.url);if(url.origin!==self.location.origin)return;
   if(event.request.mode==='navigate'){event.respondWith(networkFirst(event.request));return;}
-  if(url.pathname.endsWith('/data/live/conditions.json')||url.pathname.endsWith('/version.json')||url.pathname.endsWith('/data/live/weather-health.json')){event.respondWith(networkFirst(event.request));return;}
+  if(url.pathname.endsWith('/data/live/conditions.json')||url.pathname.endsWith('/version.json')||url.pathname.endsWith('/data/live/weather-health.json')||url.pathname.endsWith('/data/zones.geojson')||url.pathname.endsWith('/data/zone-plan.json')){event.respondWith(networkFirst(event.request));return;}
   const versioned=url.searchParams.get('v')===APP_VERSION;
   if(versioned||/\.(?:png|svg|ico|webp|woff2)$/.test(url.pathname)){event.respondWith(cacheFirst(event.request));return;}
   if(/\.(?:js|css|json|geojson|webmanifest)$/.test(url.pathname)){event.respondWith(staleWhileRevalidate(event.request));return;}

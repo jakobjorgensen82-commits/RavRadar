@@ -8,7 +8,7 @@ const replacements=[
  ['data/zones.geojson',json=>({...json,version})]
 ];
 for(const [file,transform] of replacements){const json=JSON.parse(await fs.readFile(file,'utf8'));await fs.writeFile(file,JSON.stringify(transform(json),null,2)+'\n');}
-for(const file of ['index.html','admin.html','service-worker.js','app.js','js/ui/admin-dashboard.js']){
- let text=await fs.readFile(file,'utf8');text=text.replace(/3\.0\.2/g,version).replace(/3\.0\.1/g,version);await fs.writeFile(file,text);
+for(const file of ['index.html','admin.html','service-worker.js','app.js','js/ui/admin-dashboard.js','js/services/zone-registry.js']){
+ let text=await fs.readFile(file,'utf8');text=text.replace(/3\.1\.1/g,version).replace(/3\.0\.2/g,version).replace(/3\.0\.1/g,version);await fs.writeFile(file,text);
 }
 console.log(`RavRadar-version opdateret til ${version}.`);
