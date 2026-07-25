@@ -18,7 +18,7 @@ export function interpolateWaterLevelStations(point, stations, levels, { maxStat
     return {
       valueCm: round(finite(station.level.valueCm), 0),
       method: 'nearest-station',
-      stations: [{ stationId: station.stationId, name: station.name, distanceKm: round(station.distanceKm, 1), weight: 1, observed: station.level.observed, qcStatus: station.level.qcStatus ?? null }]
+      stations: [{ stationId: station.stationId, name: station.name, valueCm: round(finite(station.level.valueCm), 0), distanceKm: round(station.distanceKm, 1), weight: 1, observed: station.level.observed, observationAgeMinutes: Number.isFinite(Date.parse(station.level.observed)) ? round((Date.now() - Date.parse(station.level.observed)) / 60000, 0) : null, qcStatus: station.level.qcStatus ?? null }]
     };
   }
   const inverseDistances = candidates.map(item => 1 / Math.max(item.distanceKm, minimumDistanceKm));
@@ -31,9 +31,11 @@ export function interpolateWaterLevelStations(point, stations, levels, { maxStat
     stations: candidates.map((item, index) => ({
       stationId: item.stationId,
       name: item.name,
+      valueCm: round(finite(item.level.valueCm), 0),
       distanceKm: round(item.distanceKm, 1),
       weight: round(weights[index], 3),
       observed: item.level.observed,
+      observationAgeMinutes: Number.isFinite(Date.parse(item.level.observed)) ? round((Date.now() - Date.parse(item.level.observed)) / 60000, 0) : null,
       qcStatus: item.level.qcStatus ?? null
     }))
   };

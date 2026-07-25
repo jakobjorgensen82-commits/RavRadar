@@ -46,6 +46,8 @@ const interpolation = interpolateWaterLevelStations([1, 0], stations, levels, { 
 assert.equal(interpolation.method, 'inverse-distance-2-stations');
 assert.ok(interpolation.valueCm > 10 && interpolation.valueCm < 30);
 assert.equal(interpolation.stations.length, 2);
+assert.equal(interpolation.stations[0].valueCm, 10, 'Diagnosen skal indeholde stationens rå DMI-værdi');
+assert.ok(Object.hasOwn(interpolation.stations[0], 'observationAgeMinutes'), 'Diagnosen skal indeholde observationsalder');
 assert.ok(Math.abs(interpolation.stations.reduce((sum, station) => sum + station.weight, 0) - 1) < 0.01);
 
 console.log('DMI 120-timers Forecast Store og Water Level Engine bestået.');

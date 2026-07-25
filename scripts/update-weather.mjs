@@ -19,6 +19,8 @@ const ALERT_FAILURE_MINUTES = Number(process.env.WEATHER_ALERT_FAILURE_MINUTES ?
 const REQUEST_TIMEOUT_MS = Number(process.env.WEATHER_REQUEST_TIMEOUT_MS ?? 18000);
 const REQUEST_GAP_MS = Number(process.env.DMI_REQUEST_GAP_MS ?? 1400);
 const DMI_MAX_RETRIES = Number(process.env.DMI_MAX_RETRIES ?? 1);
+const DMI_LIVE_ZONE_BUDGET = Math.max(1, Number(process.env.DMI_LIVE_ZONE_BUDGET ?? 6));
+const DMI_CACHE_REFRESH_BELOW_HOURS = Math.max(1, Number(process.env.DMI_CACHE_REFRESH_BELOW_HOURS ?? 24));
 const WEATHER_CONCURRENCY = Math.max(1, Number(process.env.WEATHER_CONCURRENCY ?? 6));
 const PROVIDER_FAILURE_THRESHOLD = Math.max(1, Number(process.env.WEATHER_PROVIDER_FAILURE_THRESHOLD ?? 4));
 const PROVIDER_COOLDOWN_MS = Number(process.env.WEATHER_PROVIDER_COOLDOWN_MS ?? 10 * 60 * 1000);
@@ -267,12 +269,36 @@ async function fromDmi(feature, generatedAt) {
       waterTemperatureC: currentForecast.waterTemperatureC
     },
     waterLevel: {
-      source: stationWaterLevel ? 'dmi-model-observation-corrected' : 'dmi-model',
+      source: 'dmi-model-authoritative',
       reference: stationWaterLevel ? 'DMI model (authoritative); nearby DMI observations shown only as diagnostics' : 'DMI sea-mean-deviation',
       interpolation: stationWaterLevel ?? null,
-      modelBiasCm: dmiForecast.waterLevelBiasCm
+      modelBiasCm: dmiForecast.waterLevelBiasCm,
+      diagnostic: waterLevelDiagnostic({ feature, point, collections, currentForecast, stationWaterLevel, forecastRecord, generatedAt })
     },
     dmiForecast: forecastRecord
+  };
+}
+
+
+function waterLevelDiagnostic({ feature, point, collections, currentForecast, stationWaterLevel, forecastRecord, generatedAt, fromCache = false } = {}) {
+  const modelCm = num(currentForecast?.waterLevelModelCm ?? currentForecast?.waterLevelCm);
+  const observedCm = num(stationWaterLevel?.valueCm);
+  return {
+    zoneId: feature?.properties?.id ?? forecastRecord?.zoneId ?? null,
+    zoneName: feature?.properties?.name ?? null,
+    point,
+    generatedAt,
+    displayValueCm: num(currentForecast?.waterLevelCm),
+    displaySource: currentForecast?.waterLevelSource ?? (fromCache ? 'dmi-model-cache' : 'dmi-model-authoritative'),
+    modelValueCm: modelCm,
+    modelStep: currentForecast?.time ?? null,
+    modelCollection: collections?.ocean ?? forecastRecord?.model?.ocean ?? null,
+    observationInterpolatedCm: observedCm,
+    modelObservationDifferenceCm: modelCm !== null && observedCm !== null ? round(observedCm - modelCm, 0) : null,
+    observationMethod: stationWaterLevel?.method ?? null,
+    observationStations: stationWaterLevel?.stations ?? [],
+    observationUsedForDisplay: false,
+    cache: fromCache ? { generatedAt: forecastRecord?.generatedAt ?? null, validUntil: forecastRecord?.validUntil ?? null } : null
   };
 }
 
@@ -445,7 +471,8 @@ function zoneFromDmiForecastCache(feature, record, generatedAt) {
       source: selected.waterLevelSource ?? 'dmi-model-cache',
       reference: 'Cached DMI model forecast',
       interpolation: record.waterLevelInterpolation ?? null,
-      modelBiasCm: selected.waterLevelBiasCm ?? null
+      modelBiasCm: selected.waterLevelBiasCm ?? null,
+      diagnostic: waterLevelDiagnostic({ feature, point: zonePoint(feature), collections: { ocean: record?.model?.ocean }, currentForecast: selected, stationWaterLevel: record.waterLevelInterpolation ?? null, forecastRecord: record, generatedAt, fromCache: true })
     },
     forecast: {
       provider: 'dmi-cache',
@@ -463,11 +490,22 @@ async function readPrevious() {
   catch { return { zones: {} }; }
 }
 
-async function resolveZone(feature, generatedAt, previous, dmiForecastStore, nextDmiForecastStore, { dmiOnly = false } = {}) {
+async function resolveZone(feature, generatedAt, previous, dmiForecastStore, nextDmiForecastStore, { dmiOnly = false, allowLiveDmi = true } = {}) {
   const zoneId = feature.properties?.id ?? 'Ukendt zone';
   const attempts = [];
 
-  try {
+  const existingRecord = dmiForecastStore?.zones?.[zoneId];
+  const existingCoverage = dmiForecastCoverage(existingRecord, generatedAt);
+  const healthyCachedDmi = existingCoverage.available && existingCoverage.remainingHours > DMI_CACHE_REFRESH_BELOW_HOURS
+    ? zoneFromDmiForecastCache(feature, existingRecord, generatedAt)
+    : null;
+  if (healthyCachedDmi) {
+    const history = historyFor(previous, zoneId, healthyCachedDmi.current, generatedAt);
+    nextDmiForecastStore.zones[zoneId] = existingRecord;
+    return { ...healthyCachedDmi, ...history, stale: false, fallback: false, attempts, acquisition: { mode: 'cache-first', remainingHours: existingCoverage.remainingHours } };
+  }
+
+  if (allowLiveDmi) try {
     const result = await fromDmi(feature, generatedAt);
     const history = historyFor(previous, zoneId, result.current, generatedAt);
     nextDmiForecastStore.zones[zoneId] = result.dmiForecast;
@@ -483,6 +521,8 @@ async function resolveZone(feature, generatedAt, previous, dmiForecastStore, nex
   } catch (error) {
     attempts.push({ provider: 'dmi', message: error instanceof Error ? error.message : String(error) });
     console.warn(`${zoneId}: dmi fejlede: ${attempts.at(-1).message}`);
+  } else {
+    attempts.push({ provider: 'dmi', message: `Live DMI udsat af natlig hentekvote (${DMI_LIVE_ZONE_BUDGET} zoner pr. kørsel)` });
   }
 
   const cachedDmi = zoneFromDmiForecastCache(feature, dmiForecastStore?.zones?.[zoneId], generatedAt);
@@ -567,11 +607,24 @@ async function mapWithConcurrency(items, concurrency, worker) {
   await Promise.all(workers);
 }
 
-await mapWithConcurrency(features, WEATHER_CONCURRENCY, async feature => {
+const prioritizedFeatures = [...features].sort((a, b) => {
+  const aId = a.properties?.id ?? '';
+  const bId = b.properties?.id ?? '';
+  const aCoverage = dmiForecastCoverage(dmiForecastStore.zones?.[aId], generatedAt);
+  const bCoverage = dmiForecastCoverage(dmiForecastStore.zones?.[bId], generatedAt);
+  if (aCoverage.available !== bCoverage.available) return aCoverage.available ? 1 : -1;
+  return aCoverage.remainingHours - bCoverage.remainingHours;
+});
+let liveDmiAssigned = 0;
+await mapWithConcurrency(prioritizedFeatures, WEATHER_CONCURRENCY, async feature => {
   const zoneId = feature.properties?.id ?? 'Ukendt zone';
+  const coverage = dmiForecastCoverage(dmiForecastStore.zones?.[zoneId], generatedAt);
+  const needsLive = !coverage.available || coverage.remainingHours <= DMI_CACHE_REFRESH_BELOW_HOURS;
+  const allowLiveDmi = needsLive && liveDmiAssigned < DMI_LIVE_ZONE_BUDGET;
+  if (allowLiveDmi) liveDmiAssigned += 1;
   try {
-    output.zones[zoneId] = await resolveZone(feature, generatedAt, previous, dmiForecastStore, nextDmiForecastStore);
-    console.log(`OK: ${zoneId} via ${output.zones[zoneId].provider}`);
+    output.zones[zoneId] = await resolveZone(feature, generatedAt, previous, dmiForecastStore, nextDmiForecastStore, { allowLiveDmi });
+    console.log(`OK: ${zoneId} via ${output.zones[zoneId].provider}${allowLiveDmi ? ' (live DMI-plads)' : ''}`);
   } catch (error) {
     output.errors.push({ zoneId, message: error instanceof Error ? error.message : String(error) });
   }
@@ -581,6 +634,7 @@ output.weatherEngine = {
   version: '2.8.0',
   concurrency: WEATHER_CONCURRENCY,
   providerPriority: output.providerPriority,
+  acquisition: { liveZoneBudget: DMI_LIVE_ZONE_BUDGET, liveZonesAssigned: liveDmiAssigned, cacheRefreshBelowHours: DMI_CACHE_REFRESH_BELOW_HOURS, prioritizedMissingOrExpiringZones: prioritizedFeatures.filter(feature => { const c=dmiForecastCoverage(dmiForecastStore.zones?.[feature.properties?.id], generatedAt); return !c.available || c.remainingHours <= DMI_CACHE_REFRESH_BELOW_HOURS; }).length },
   providers: Object.fromEntries([...providerRuntime.entries()].map(([name, state]) => [name, {
     ...state,
     circuitOpen: providerCircuitOpen(name),
