@@ -1,6 +1,6 @@
 import { calculateRavScore } from "./js/core/score-engine.js";
 import { loadConditions, loadZones } from "./js/services/data-service.js";
-import { submitObservation, getLocalObservations } from "./js/services/observation-service.js";
+import { submitObservation, getLocalObservations, syncPendingObservations } from "./js/services/observation-service.js";
 import { predictAmberChance } from "./js/core/prediction-engine.js";
 import { consumeAuthCallback } from "./js/services/auth-service.js";
 import { activeTrip, answerTrip, pendingTripPrompt, resumeTripTracking, startTrip, stopTrip } from "./js/services/trip-service.js";
@@ -19,6 +19,13 @@ const accountDialog=document.querySelector("#accountDialog"), developerDialog=do
 
 function zoneCondition(zone) { return state.conditions.zones?.[zone?.id] || {}; }
 function resultFor(zone, weather = zoneCondition(zone).current || {}, history = zoneCondition(zone).history || {}) { const result=calculateRavScore({ mode:state.mode, zone, weather, history }); return {...result,prediction:predictAmberChance({baseScore:result.score,zone,weather,history,observations:getLocalObservations()})}; }
+function weatherForObservedDate(zone,date){
+  const condition=zoneCondition(zone);const hours=condition.forecast?.hourly||[];
+  const target=Date.parse(`${date}T12:00:00Z`);
+  const sameDay=hours.filter(hour=>String(hour.time||'').slice(0,10)===date);
+  if(!sameDay.length)return condition.current||{};
+  return sameDay.reduce((best,hour)=>Math.abs(Date.parse(hour.time)-target)<Math.abs(Date.parse(best.time)-target)?hour:best,sameDay[0]);
+}
 function selectedFeature() { return state.zones?.features.find(item=>item.properties.id===state.selectedZone?.id); }
 
 function bindObservationForm() {
@@ -116,8 +123,8 @@ function openTripPrompt(trip){
   form.addEventListener("submit",async event=>{
     event.preventDefault();const data=new FormData(form),response=String(data.get("response")||""),zone=zones.find(item=>item.id===data.get("zoneId")),status=form.querySelector("#tripAnswerStatus");
     if(!response||!zone){status.textContent="Vælg både Ja/Nej og en zone fra søgeresultaterne.";return;}
-    const observedDate=String(data.get("observedDate"));const condition=zoneCondition(zone);const weather=condition.current||{};const scoreResult=resultFor(zone,weather,condition.history||{});const submitButton=form.querySelector(".trip-submit");submitButton.disabled=true;submitButton.textContent="Indsender…";
-    try{answerTrip(trip.id,response,data.get("grams"),{observedDate,zoneId:zone.id,zoneName:zone.name});await submitObservation({zone,huntMode:state.mode,result:response,grams:data.get("grams"),observedAt:`${observedDate}T12:00:00.000Z`,scoreResult,weather,gps:trip.points?.at(-1)||null,tripId:trip.id});status.textContent="Tak. Oplysningerne er sendt til Administratorcenteret.";setTimeout(()=>tripDialog.close(),450);}catch(error){status.textContent=error.message;submitButton.disabled=false;submitButton.textContent="Indsend";}
+    const observedDate=String(data.get("observedDate"));const condition=zoneCondition(zone);const weather=weatherForObservedDate(zone,observedDate);const scoreResult=resultFor(zone,weather,condition.history||{});const submitButton=form.querySelector(".trip-submit");submitButton.disabled=true;submitButton.textContent="Indsender…";
+    try{answerTrip(trip.id,response,data.get("grams"),{observedDate,zoneId:zone.id,zoneName:zone.name});await submitObservation({zone,huntMode:state.mode,result:response,grams:data.get("grams"),observedAt:`${observedDate}T12:00:00.000Z`,scoreResult,weather,prediction:scoreResult.prediction,gps:trip.points?.at(-1)||null,tripId:trip.id});status.textContent="Tak. Oplysningerne er sendt til Administratorcenteret.";setTimeout(()=>tripDialog.close(),450);}catch(error){status.textContent=error.message;submitButton.disabled=false;submitButton.textContent="Indsend";}
   });
 }
 function enableDialogClose(dialog){dialog.querySelector(".dialog-close")?.addEventListener("click",()=>dialog.close());dialog.addEventListener("click",event=>{if(event.target===dialog)dialog.close();});}
@@ -130,13 +137,13 @@ tripButton.addEventListener("click",()=>{if(activeTrip())stopTrip();else startTr
 let logoTaps=0,tapTimer=null;document.querySelector("#logoButton").addEventListener("click",()=>{logoTaps+=1;clearTimeout(tapTimer);tapTimer=setTimeout(()=>{logoTaps=0;},5000);if(logoTaps>=10){logoTaps=0;pinDialog.showModal();pinDialog.querySelector("input").focus();}});
 document.querySelector("#pinForm").addEventListener("submit",event=>{event.preventDefault();const pin=new FormData(event.currentTarget).get("pin");if(pin!=="1931"){document.querySelector("#pinStatus").textContent="Forkert PIN.";return;}pinDialog.close();event.currentTarget.reset();document.querySelector("#pinStatus").textContent="";openDeveloperDialog(developerDialog,state);});
 
-try {await consumeAuthCallback();const [zones,conditions]=await Promise.all([loadZones(),loadConditions()]);state.zones=zones;state.conditions=conditions;state.zoneLayer=renderZones(map,zones,id=>resultFor(zones.features.find(item=>item.properties.id===id).properties),zone=>openZone(zone,{scroll:false}));state.flowArrows=installFlowArrows(map,zones,id=>state.conditions.zones?.[id]||{});setMode(localStorage.getItem("ravradar-mode")==="beach"?"beach":"waders");if(conditions.available&&conditions.generatedAt){const timestamp=new Date(conditions.generatedAt).toLocaleString("da-DK");const stale=Date.now()-new Date(conditions.generatedAt).getTime()>8*3600000;dataStatus.textContent=`${stale?"⚠ Data er ældre end normalt · ":""}Senest opdateret ${timestamp}`;}else dataStatus.textContent="Vejrdata indlæses ved næste automatiske GitHub-kørsel.";resumeTripTracking();updateTripUi();const pending=pendingTripPrompt();if(pending)setTimeout(()=>openTripPrompt(pending),650);}catch(error){console.error(error);infoPanel.innerHTML='<div class="notice">Kortzonerne kunne ikke indlæses. Kontroller den seneste GitHub Action.</div>';dataStatus.textContent="Fejl ved indlæsning";}
+try {await consumeAuthCallback();const [zones,conditions]=await Promise.all([loadZones(),loadConditions()]);state.zones=zones;state.conditions=conditions;state.zoneLayer=renderZones(map,zones,id=>resultFor(zones.features.find(item=>item.properties.id===id).properties),zone=>openZone(zone,{scroll:false}));state.flowArrows=installFlowArrows(map,zones,id=>state.conditions.zones?.[id]||{});setMode(localStorage.getItem("ravradar-mode")==="beach"?"beach":"waders");if(conditions.available&&conditions.generatedAt){const timestamp=new Date(conditions.generatedAt).toLocaleString("da-DK");const stale=Date.now()-new Date(conditions.generatedAt).getTime()>8*3600000;dataStatus.textContent=`${stale?"⚠ Data er ældre end normalt · ":""}Senest opdateret ${timestamp}`;}else dataStatus.textContent="Vejrdata indlæses ved næste automatiske GitHub-kørsel.";resumeTripTracking();syncPendingObservations().catch(()=>{});updateTripUi();const pending=pendingTripPrompt();if(pending)setTimeout(()=>openTripPrompt(pending),650);}catch(error){console.error(error);infoPanel.innerHTML='<div class="notice">Kortzonerne kunne ikke indlæses. Kontroller den seneste GitHub Action.</div>';dataStatus.textContent="Fejl ved indlæsning";}
 
-// RavRadar 3.0.1: versionsmanifest + sikker service-worker-opdatering.
+// RavRadar 3.1.0: versionsmanifest + sikker service-worker-opdatering.
 function installAppUpdateFlow() {
   if (!("serviceWorker" in navigator)) return;
   const banner=document.querySelector("#updateBanner"), updateButton=document.querySelector("#updateAppButton");
-  const version=window.RAVRADAR_VERSION||"3.0.1"; document.querySelector("#appVersion").textContent=version;
+  const version=window.RAVRADAR_VERSION||"3.1.0"; document.querySelector("#appVersion").textContent=version;
   let refreshing=false, registration=null, waitingWorker=null;
   const showUpdate=worker=>{waitingWorker=worker||waitingWorker;if(!banner||!updateButton)return;banner.hidden=false;updateButton.disabled=false;updateButton.textContent="Opdater nu";};
   const activate=()=>{updateButton.disabled=true;updateButton.textContent="Opdaterer…";(waitingWorker||registration?.waiting)?.postMessage({type:"SKIP_WAITING"});};
