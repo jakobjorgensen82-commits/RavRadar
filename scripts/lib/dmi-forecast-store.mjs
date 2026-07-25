@@ -128,3 +128,70 @@ export function dmiForecastCoverage(record, at = new Date().toISOString()) {
   const remainingHours = Math.max(0, (Date.parse(record.validUntil) - Date.parse(at)) / 3600000);
   return { available: remainingHours > 0, remainingHours: round(remainingHours, 1), totalHours: record.hourly?.length ?? 0 };
 }
+
+function localKm(point, origin) {
+  const latScale = 111.32;
+  const lonScale = 111.32 * Math.cos((origin[1] ?? 56) * Math.PI / 180);
+  return [(point[0] - origin[0]) * lonScale, (point[1] - origin[1]) * latScale];
+}
+
+export function projectPointOnCoastPath(point, path) {
+  if (!Array.isArray(point) || !Array.isArray(path) || path.length < 2) return null;
+  let cumulativeKm = 0;
+  let best = null;
+  for (let i = 0; i < path.length - 1; i += 1) {
+    const a = path[i], b = path[i + 1];
+    if (!Array.isArray(a) || !Array.isArray(b)) continue;
+    const av = localKm(a, point), bv = localKm(b, point);
+    const vx = bv[0] - av[0], vy = bv[1] - av[1];
+    const length2 = vx * vx + vy * vy;
+    const t = length2 ? Math.max(0, Math.min(1, -(av[0] * vx + av[1] * vy) / length2)) : 0;
+    const px = av[0] + t * vx, py = av[1] + t * vy;
+    const distanceKm = Math.hypot(px, py);
+    const segmentKm = Math.sqrt(length2);
+    const alongKm = cumulativeKm + t * segmentKm;
+    if (!best || distanceKm < best.distanceKm) best = { distanceKm, alongKm, segmentIndex: i, fraction: t };
+    cumulativeKm += segmentKm;
+  }
+  return best;
+}
+
+export function interpolateWaterLevelAlongCoast(point, coastPath, stations, levels, {
+  directStationKm = 8,
+  maxCorridorDistanceKm = 25,
+  minimumDistanceKm = 0.25,
+  haversineKm
+} = {}) {
+  if (!Array.isArray(coastPath) || coastPath.length < 2) return interpolateWaterLevelStations(point, stations, levels, { maxStations: 2, minimumDistanceKm, haversineKm });
+  const targetProjection = projectPointOnCoastPath(point, coastPath);
+  if (!targetProjection) return null;
+  const candidates = stations.map(station => {
+    const level = levels.get(station.stationId);
+    const projection = projectPointOnCoastPath(station.point, coastPath);
+    return { ...station, level, projection, distanceKm: haversineKm(point, station.point) };
+  }).filter(item => item.level && finite(item.level.valueCm) !== null && item.projection && item.projection.distanceKm <= maxCorridorDistanceKm);
+  if (!candidates.length) return null;
+  candidates.sort((a, b) => a.distanceKm - b.distanceKm);
+  if (candidates[0].distanceKm <= directStationKm) {
+    const station = candidates[0];
+    return {
+      valueCm: round(finite(station.level.valueCm), 0), method: 'direct-coast-station',
+      targetCoastPositionKm: round(targetProjection.alongKm, 1),
+      stations: [{ stationId: station.stationId, name: station.name, valueCm: round(finite(station.level.valueCm), 0), distanceKm: round(station.distanceKm, 1), coastPositionKm: round(station.projection.alongKm, 1), side: 'direct', weight: 1, observed: station.level.observed, observationAgeMinutes: Number.isFinite(Date.parse(station.level.observed)) ? round((Date.now() - Date.parse(station.level.observed)) / 60000, 0) : null, qcStatus: station.level.qcStatus ?? null }]
+    };
+  }
+  const before = candidates.filter(item => item.projection.alongKm <= targetProjection.alongKm).sort((a, b) => b.projection.alongKm - a.projection.alongKm)[0];
+  const after = candidates.filter(item => item.projection.alongKm >= targetProjection.alongKm).sort((a, b) => a.projection.alongKm - b.projection.alongKm)[0];
+  let selected = before && after && before.stationId !== after.stationId ? [before, after] : [...candidates].sort((a, b) => Math.abs(a.projection.alongKm - targetProjection.alongKm) - Math.abs(b.projection.alongKm - targetProjection.alongKm)).slice(0, 2);
+  selected = [...new Map(selected.map(item => [item.stationId, item])).values()];
+  if (!selected.length) return null;
+  const alongDistances = selected.map(item => Math.max(Math.abs(item.projection.alongKm - targetProjection.alongKm), minimumDistanceKm));
+  const inverses = alongDistances.map(value => 1 / value);
+  const total = inverses.reduce((sum, value) => sum + value, 0);
+  const weights = inverses.map(value => value / total);
+  const valueCm = selected.reduce((sum, item, index) => sum + finite(item.level.valueCm) * weights[index], 0);
+  return {
+    valueCm: round(valueCm, 0), method: selected.length === 2 && before && after ? 'coast-bracket-2-stations' : `coast-nearest-${selected.length}-stations`, targetCoastPositionKm: round(targetProjection.alongKm, 1),
+    stations: selected.map((item, index) => ({ stationId: item.stationId, name: item.name, valueCm: round(finite(item.level.valueCm), 0), distanceKm: round(item.distanceKm, 1), coastDistanceKm: round(alongDistances[index], 1), coastPositionKm: round(item.projection.alongKm, 1), side: item.projection.alongKm < targetProjection.alongKm ? 'before' : 'after', weight: round(weights[index], 3), observed: item.level.observed, observationAgeMinutes: Number.isFinite(Date.parse(item.level.observed)) ? round((Date.now() - Date.parse(item.level.observed)) / 60000, 0) : null, qcStatus: item.level.qcStatus ?? null }))
+  };
+}

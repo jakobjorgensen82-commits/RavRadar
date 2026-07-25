@@ -5,6 +5,7 @@ import {
   createDmiForecastRecord,
   dmiForecastCoverage,
   interpolateWaterLevelStations,
+  interpolateWaterLevelAlongCoast,
   selectDmiForecastAt
 } from './lib/dmi-forecast-store.mjs';
 
@@ -176,6 +177,88 @@ async function interpolatedDmiWaterLevel(point) {
     console.warn(`DMI stationsvandstand fejlede: ${error instanceof Error ? error.message : String(error)}`);
     return null;
   }
+}
+
+
+function featureCoastLine(feature) {
+  const line = feature?.properties?.coastLine;
+  return Array.isArray(line) && line.length >= 2 ? line : [zonePoint(feature)];
+}
+
+function endpointDistanceKm(a, b) { return haversineKm(a, b); }
+function featureDistanceKm(a, b) {
+  const aa = featureCoastLine(a), bb = featureCoastLine(b);
+  let best = Infinity;
+  for (const x of [aa[0], aa.at(-1)]) for (const y of [bb[0], bb.at(-1)]) best = Math.min(best, endpointDistanceKm(x, y));
+  return best;
+}
+
+function buildCoastCorridors(allFeatures) {
+  const groups = new Map();
+  for (const feature of allFeatures) {
+    const key = `${feature.properties?.batch ?? 'legacy'}|${feature.properties?.coastType ?? 'unknown'}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(feature);
+  }
+  const byZone = new Map();
+  for (const features of groups.values()) {
+    const remaining = new Set(features);
+    while (remaining.size) {
+      const seed = remaining.values().next().value;
+      const component = [seed]; remaining.delete(seed);
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const candidate of [...remaining]) {
+          if (component.some(item => featureDistanceKm(item, candidate) <= 30)) { component.push(candidate); remaining.delete(candidate); changed = true; }
+        }
+      }
+      component.sort((a,b)=>String(a.properties?.id).localeCompare(String(b.properties?.id), 'en', {numeric:true}));
+      let path = [];
+      for (const feature of component) {
+        let line = [...featureCoastLine(feature)];
+        if (path.length) {
+          const end = path.at(-1);
+          if (haversineKm(end, line.at(-1)) < haversineKm(end, line[0])) line.reverse();
+        }
+        if (path.length && haversineKm(path.at(-1), line[0]) < 0.1) line = line.slice(1);
+        path.push(...line);
+      }
+      for (const feature of component) byZone.set(feature.properties?.id, path);
+    }
+  }
+  return byZone;
+}
+
+async function observedDmiWaterLevel(feature, coastCorridors) {
+  try {
+    const [stations, levels] = await Promise.all([dmiWaterStations(), dmiLatestSeaLevels()]);
+    const point = zonePoint(feature);
+    const coastPath = coastCorridors.get(feature.properties?.id);
+    return interpolateWaterLevelAlongCoast(point, coastPath, stations, levels, { haversineKm });
+  } catch (error) {
+    console.warn(`DMI kystvandstand fejlede: ${error instanceof Error ? error.message : String(error)}`);
+    return null;
+  }
+}
+
+function applyObservedWaterLevel(zone, feature, observation, generatedAt) {
+  if (!zone?.current || !observation || !Number.isFinite(Number(observation.valueCm))) return zone;
+  const previousValue = num(zone.current.waterLevelCm);
+  zone.current.waterLevelCm = observation.valueCm;
+  zone.waterLevel = {
+    ...(zone.waterLevel ?? {}),
+    source: observation.method === 'direct-coast-station' ? 'dmi-observation-direct' : 'dmi-observation-coast-interpolation',
+    reference: observation.method === 'direct-coast-station' ? 'Aktuel DMI-målestation ved zonen' : 'Aktuel DMI-vandstand interpoleret mellem én station på hver side langs samme kystkorridor',
+    interpolation: observation,
+    diagnostic: {
+      ...(zone.waterLevel?.diagnostic ?? {}), zoneId: feature.properties?.id, zoneName: feature.properties?.name, generatedAt,
+      displayValueCm: observation.valueCm, displaySource: observation.method, fallbackModelValueCm: previousValue,
+      observationInterpolatedCm: observation.valueCm, observationMethod: observation.method, observationStations: observation.stations,
+      observationUsedForDisplay: true
+    }
+  };
+  return zone;
 }
 
 function dmiCollections(coastType) {
@@ -584,6 +667,7 @@ function buildWeatherHealth(previousHealth, output, nowIso) {
 const zonesFile = JSON.parse(await fs.readFile(ZONES_PATH, 'utf8'));
 const features = Array.isArray(zonesFile.features) ? zonesFile.features : [];
 if (!features.length) throw new Error(`${ZONES_PATH} indeholder ingen zoner`);
+const coastCorridors = buildCoastCorridors(features);
 const previous = await readPrevious();
 const dmiForecastStore = await readDmiForecastStore();
 const nextDmiForecastStore = { schemaVersion: 1, generatedAt: null, horizonHours: DMI_FORECAST_HOURS, zones: {} };
@@ -630,8 +714,17 @@ await mapWithConcurrency(prioritizedFeatures, WEATHER_CONCURRENCY, async feature
   }
 });
 
+
+// DMI oceanObs hentes én gang og bruges som aktuel vandstand. Zoner uden lokal station
+// interpoleres kun mellem de to stationer, der omslutter zonen langs samme kystkorridor.
+await mapWithConcurrency(features, WEATHER_CONCURRENCY, async feature => {
+  const zoneId = feature.properties?.id;
+  const observation = await observedDmiWaterLevel(feature, coastCorridors);
+  if (zoneId && output.zones[zoneId]) applyObservedWaterLevel(output.zones[zoneId], feature, observation, generatedAt);
+});
+
 output.weatherEngine = {
-  version: '2.8.0',
+  version: '2.8.1',
   concurrency: WEATHER_CONCURRENCY,
   providerPriority: output.providerPriority,
   acquisition: { liveZoneBudget: DMI_LIVE_ZONE_BUDGET, liveZonesAssigned: liveDmiAssigned, cacheRefreshBelowHours: DMI_CACHE_REFRESH_BELOW_HOURS, prioritizedMissingOrExpiringZones: prioritizedFeatures.filter(feature => { const c=dmiForecastCoverage(dmiForecastStore.zones?.[feature.properties?.id], generatedAt); return !c.available || c.remainingHours <= DMI_CACHE_REFRESH_BELOW_HOURS; }).length },
