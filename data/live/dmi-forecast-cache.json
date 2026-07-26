@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": null,
+  "horizonHours": 120,
+  "runtime": {
+    "nextZoneCursor": 0,
+    "rateLimitedUntil": null,
+    "lastAttemptedZoneId": null,
+    "lastAttemptAt": null,
+    "lastSuccessfulZoneId": null,
+    "lastSuccessAt": null
+  },
+  "coverage": {
+    "zones": 0,
+    "minimumRemainingHours": 0,
+    "maximumRemainingHours": 0
+  },
+  "zones": {}
+}

@@ -9,6 +9,7 @@ import {
   selectDmiForecastAt
 } from './lib/dmi-forecast-store.mjs';
 import { buildDataQuality } from './lib/data-quality.mjs';
+import { countDmiBackedZones, createPersistentDmiStore, prioritizeDmiFeatures, summarizeAvailableCoverage } from './lib/dmi-acquisition-state.mjs';
 
 const ZONES_PATH = 'data/zones.geojson';
 const OUTPUT_PATH = 'data/live/conditions.json';
@@ -21,7 +22,8 @@ const ALERT_FAILURE_MINUTES = Number(process.env.WEATHER_ALERT_FAILURE_MINUTES ?
 const REQUEST_TIMEOUT_MS = Number(process.env.WEATHER_REQUEST_TIMEOUT_MS ?? 30000);
 const REQUEST_GAP_MS = Number(process.env.DMI_REQUEST_GAP_MS ?? 2500);
 const DMI_MAX_RETRIES = Number(process.env.DMI_MAX_RETRIES ?? 2);
-const DMI_LIVE_ZONE_BUDGET = Math.max(1, Number(process.env.DMI_LIVE_ZONE_BUDGET ?? 4));
+const DMI_LIVE_ZONE_BUDGET = Math.max(1, Number(process.env.DMI_LIVE_ZONE_BUDGET ?? 2));
+const DMI_REQUEST_BUDGET = Math.max(1, Number(process.env.DMI_REQUEST_BUDGET ?? 8));
 const DMI_REQUEST_CONCURRENCY = Math.max(1, Number(process.env.DMI_REQUEST_CONCURRENCY ?? 1));
 const DMI_CACHE_REFRESH_BELOW_HOURS = Math.max(1, Number(process.env.DMI_CACHE_REFRESH_BELOW_HOURS ?? 24));
 const WEATHER_CONCURRENCY = Math.max(1, Number(process.env.WEATHER_CONCURRENCY ?? 6));
@@ -50,6 +52,15 @@ function releaseDmiRequestSlot() {
 }
 let dmiTransientFailure = false;
 let dmiRateLimitedUntil = 0;
+let dmiRequestBudgetUsed = 0;
+let dmiPersistentRuntime = {
+  nextZoneCursor: 0,
+  rateLimitedUntil: null,
+  lastAttemptedZoneId: null,
+  lastAttemptAt: null,
+  lastSuccessfulZoneId: null,
+  lastSuccessAt: null
+};
 const providerRuntime = new Map();
 
 function providerState(name) {
@@ -67,6 +78,11 @@ let dmiWaterStationsPromise = null;
 let dmiLatestSeaLevelPromise = null;
 
 async function fetchJson(url, { provider, retries = 1, dmi = false } = {}) {
+  if (dmi && dmiRequestBudgetUsed >= DMI_REQUEST_BUDGET) {
+    const error = new Error(`${provider}: DMI requestbudget opbrugt (${DMI_REQUEST_BUDGET} kald)`);
+    error.code = 'DMI_REQUEST_BUDGET_EXHAUSTED';
+    throw error;
+  }
   if (dmi && Date.now() < dmiRateLimitedUntil) {
     const seconds = Math.ceil((dmiRateLimitedUntil - Date.now()) / 1000);
     const error = new Error(`${provider}: DMI rate-limit cooldown active (${seconds}s tilbage)`);
@@ -82,6 +98,12 @@ async function fetchJson(url, { provider, retries = 1, dmi = false } = {}) {
   let lastError;
   for (let attempt = 0; attempt <= retries; attempt += 1) {
     if (dmi) {
+      if (dmiRequestBudgetUsed >= DMI_REQUEST_BUDGET) {
+        const error = new Error(`${provider}: DMI requestbudget opbrugt (${DMI_REQUEST_BUDGET} kald)`);
+        error.code = 'DMI_REQUEST_BUDGET_EXHAUSTED';
+        throw error;
+      }
+      dmiRequestBudgetUsed += 1;
       await acquireDmiRequestSlot();
       const wait = Math.max(0, nextDmiRequestAt - Date.now());
       if (wait) await sleep(wait);
@@ -123,6 +145,7 @@ async function fetchJson(url, { provider, retries = 1, dmi = false } = {}) {
         const retryAfterSeconds = Number(error?.retryAfter);
         const cooldownMs = Number.isFinite(retryAfterSeconds) ? Math.max(60_000, retryAfterSeconds * 1000) : 15 * 60 * 1000;
         dmiRateLimitedUntil = Math.max(dmiRateLimitedUntil, Date.now() + cooldownMs);
+        dmiPersistentRuntime.rateLimitedUntil = new Date(dmiRateLimitedUntil).toISOString();
         state.circuitOpenedAt = Date.now();
         throw lastError;
       }
@@ -745,10 +768,12 @@ async function readHealth() {
 
 function buildWeatherHealth(previousHealth, output, nowIso) {
   const now = Date.parse(nowIso);
-  const dmiCount = Object.values(output.zones).filter(zone => zone.provider === 'dmi').length;
+  const dmiCounts = countDmiBackedZones(output.zones);
+  const dmiCount = dmiCounts.total;
+  const liveDmiCount = dmiCounts.live;
   const total = Object.keys(output.zones).length;
   const dmiHealthy = total > 0 && dmiCount / total >= 0.8 && !dmiTransientFailure;
-  const failureSince = dmiHealthy ? null : (previousHealth.consecutiveFailureSince ?? nowIso);
+  const failureSince = dmiHealthy ? null : (previousHealth.dmi?.consecutiveFailureSince ?? previousHealth.consecutiveFailureSince ?? nowIso);
   const failureMinutes = failureSince ? Math.max(0, Math.round((now - Date.parse(failureSince)) / 60000)) : 0;
   const recentAlerts = (previousHealth.alertHistory ?? []).filter(item => now - Date.parse(item.sentAt) < 24 * 3600000);
   const alertEligible = !dmiHealthy && failureMinutes >= ALERT_FAILURE_MINUTES && recentAlerts.length < ALERT_MAX_PER_24H;
@@ -758,7 +783,7 @@ function buildWeatherHealth(previousHealth, output, nowIso) {
   return {
     generatedAt: nowIso,
     status: dmiHealthy ? 'ok' : (failureMinutes >= ALERT_FAILURE_MINUTES ? 'alarm' : 'warning'),
-    dmi: { healthy: dmiHealthy, zonesFromDmi: dmiCount, totalZones: total, coveragePercent: total ? round(dmiCount / total * 100, 1) : 0, consecutiveFailureSince: failureSince, failureMinutes, lastSuccessfulAt: dmiHealthy ? nowIso : (previousHealth.lastSuccessfulDmiAt ?? null) },
+    dmi: { healthy: dmiHealthy, zonesFromDmi: dmiCount, totalZones: total, coveragePercent: total ? round(dmiCount / total * 100, 1) : 0, consecutiveFailureSince: failureSince, failureMinutes, lastSuccessfulAt: liveDmiCount > 0 ? nowIso : (previousHealth.dmi?.lastSuccessfulAt ?? previousHealth.lastSuccessfulDmiAt ?? null) },
     alerts: { maxPer24Hours: ALERT_MAX_PER_24H, sentLast24Hours: alertHistory.length, shouldNotifyAdministrator: alertEligible, nextAllowedAfter: alertHistory.length >= ALERT_MAX_PER_24H ? alertHistory[0].sentAt : null },
     providers: output.weatherEngine?.providers ?? {},
     dmiForecastCache: output.weatherEngine?.dmiForecastCache ?? { zones: 0, minimumRemainingHours: 0, maximumRemainingHours: 0 },
@@ -772,8 +797,24 @@ if (!features.length) throw new Error(`${ZONES_PATH} indeholder ingen zoner`);
 const coastCorridors = buildCoastCorridors(features);
 const previous = await readPrevious();
 const dmiForecastStore = await readDmiForecastStore();
-const nextDmiForecastStore = { schemaVersion: 1, generatedAt: null, horizonHours: DMI_FORECAST_HOURS, zones: {} };
 const generatedAt = new Date().toISOString();
+const activeZoneIds = features.map(feature => feature.properties?.id).filter(Boolean);
+const nextDmiForecastStore = createPersistentDmiStore(dmiForecastStore, activeZoneIds, DMI_FORECAST_HOURS);
+dmiPersistentRuntime = nextDmiForecastStore.runtime;
+const persistedCooldown = Date.parse(dmiPersistentRuntime.rateLimitedUntil ?? '');
+if (Number.isFinite(persistedCooldown) && persistedCooldown > Date.now()) dmiRateLimitedUntil = persistedCooldown;
+else dmiPersistentRuntime.rateLimitedUntil = null;
+let dmiStoreWriteChain = Promise.resolve();
+async function writeDmiForecastStoreCheckpoint() {
+  const payload = `${JSON.stringify(nextDmiForecastStore, null, 2)}\n`;
+  dmiStoreWriteChain = dmiStoreWriteChain.then(async () => {
+    await fs.mkdir('data/live', { recursive: true });
+    const temporaryPath = `${DMI_FORECAST_STORE_PATH}.tmp`;
+    await fs.writeFile(temporaryPath, payload);
+    await fs.rename(temporaryPath, DMI_FORECAST_STORE_PATH);
+  });
+  return dmiStoreWriteChain;
+}
 const output = {
   schemaVersion: 4, generatedAt,
   source: 'Central RavRadar weather service',
@@ -793,26 +834,40 @@ async function mapWithConcurrency(items, concurrency, worker) {
   await Promise.all(workers);
 }
 
-const prioritizedFeatures = [...features].sort((a, b) => {
-  const aId = a.properties?.id ?? '';
-  const bId = b.properties?.id ?? '';
-  const aCoverage = dmiForecastCoverage(dmiForecastStore.zones?.[aId], generatedAt);
-  const bCoverage = dmiForecastCoverage(dmiForecastStore.zones?.[bId], generatedAt);
-  if (aCoverage.available !== bCoverage.available) return aCoverage.available ? 1 : -1;
-  return aCoverage.remainingHours - bCoverage.remainingHours;
-});
+const { stable: stableFeatures, prioritized: prioritizedFeatures } = prioritizeDmiFeatures(
+  features,
+  dmiForecastStore,
+  generatedAt,
+  dmiForecastCoverage,
+  dmiPersistentRuntime.nextZoneCursor
+);
 let liveDmiAssigned = 0;
 await mapWithConcurrency(prioritizedFeatures, WEATHER_CONCURRENCY, async feature => {
   const zoneId = feature.properties?.id ?? 'Ukendt zone';
   const coverage = dmiForecastCoverage(dmiForecastStore.zones?.[zoneId], generatedAt);
   const needsLive = !coverage.available || coverage.remainingHours <= DMI_CACHE_REFRESH_BELOW_HOURS;
-  const allowLiveDmi = needsLive && liveDmiAssigned < DMI_LIVE_ZONE_BUDGET;
-  if (allowLiveDmi) liveDmiAssigned += 1;
+  const allowLiveDmi = needsLive
+    && liveDmiAssigned < DMI_LIVE_ZONE_BUDGET
+    && dmiRequestBudgetUsed < DMI_REQUEST_BUDGET
+    && Date.now() >= dmiRateLimitedUntil;
+  if (allowLiveDmi) {
+    liveDmiAssigned += 1;
+    const stableIndex = stableFeatures.findIndex(item => item.properties?.id === zoneId);
+    dmiPersistentRuntime.nextZoneCursor = stableFeatures.length ? (stableIndex + 1) % stableFeatures.length : 0;
+    dmiPersistentRuntime.lastAttemptedZoneId = zoneId;
+    dmiPersistentRuntime.lastAttemptAt = new Date().toISOString();
+  }
   try {
     output.zones[zoneId] = await resolveZone(feature, generatedAt, previous, dmiForecastStore, nextDmiForecastStore, { allowLiveDmi });
+    if (allowLiveDmi && output.zones[zoneId].provider === 'dmi') {
+      dmiPersistentRuntime.lastSuccessfulZoneId = zoneId;
+      dmiPersistentRuntime.lastSuccessAt = new Date().toISOString();
+    }
+    if (allowLiveDmi) await writeDmiForecastStoreCheckpoint();
     console.log(`OK: ${zoneId} via ${output.zones[zoneId].provider}${allowLiveDmi ? ' (live DMI-plads)' : ''}`);
   } catch (error) {
     output.errors.push({ zoneId, message: error instanceof Error ? error.message : String(error) });
+    if (allowLiveDmi) await writeDmiForecastStoreCheckpoint();
   }
 });
 
@@ -832,7 +887,7 @@ output.weatherEngine = {
   dmiRequestGapMs: REQUEST_GAP_MS,
   dmiRequestTimeoutMs: REQUEST_TIMEOUT_MS,
   providerPriority: output.providerPriority,
-  acquisition: { liveZoneBudget: DMI_LIVE_ZONE_BUDGET, liveZonesAssigned: liveDmiAssigned, cacheRefreshBelowHours: DMI_CACHE_REFRESH_BELOW_HOURS, prioritizedMissingOrExpiringZones: prioritizedFeatures.filter(feature => { const c=dmiForecastCoverage(dmiForecastStore.zones?.[feature.properties?.id], generatedAt); return !c.available || c.remainingHours <= DMI_CACHE_REFRESH_BELOW_HOURS; }).length },
+  acquisition: { liveZoneBudget: DMI_LIVE_ZONE_BUDGET, liveZonesAssigned: liveDmiAssigned, requestBudget: DMI_REQUEST_BUDGET, requestsUsed: dmiRequestBudgetUsed, persistentRateLimitedUntil: dmiPersistentRuntime.rateLimitedUntil, nextZoneCursor: dmiPersistentRuntime.nextZoneCursor, cacheRefreshBelowHours: DMI_CACHE_REFRESH_BELOW_HOURS, prioritizedMissingOrExpiringZones: prioritizedFeatures.filter(feature => { const c=dmiForecastCoverage(dmiForecastStore.zones?.[feature.properties?.id], generatedAt); return !c.available || c.remainingHours <= DMI_CACHE_REFRESH_BELOW_HOURS; }).length },
   providers: Object.fromEntries([...providerRuntime.entries()].map(([name, state]) => [name, {
     ...state,
     circuitOpen: providerCircuitOpen(name),
@@ -840,18 +895,14 @@ output.weatherEngine = {
   }]))
 };
 
-const dmiCoverage = Object.values(nextDmiForecastStore.zones).map(record => dmiForecastCoverage(record, generatedAt));
 nextDmiForecastStore.generatedAt = generatedAt;
-nextDmiForecastStore.coverage = {
-  zones: dmiCoverage.filter(item => item.available).length,
-  minimumRemainingHours: dmiCoverage.length ? round(Math.min(...dmiCoverage.map(item => item.remainingHours)), 1) : 0,
-  maximumRemainingHours: dmiCoverage.length ? round(Math.max(...dmiCoverage.map(item => item.remainingHours)), 1) : 0
-};
+nextDmiForecastStore.runtime = { ...dmiPersistentRuntime, rateLimitedUntil: Date.now() < dmiRateLimitedUntil ? new Date(dmiRateLimitedUntil).toISOString() : null };
+nextDmiForecastStore.coverage = summarizeAvailableCoverage(nextDmiForecastStore.zones, generatedAt, dmiForecastCoverage, round);
 output.weatherEngine.dmiForecastCache = nextDmiForecastStore.coverage;
 const [qualityStations, qualityLevels] = await Promise.all([dmiWaterStations().catch(() => []), dmiLatestSeaLevels().catch(() => new Map())]);
 output.dataQuality = buildDataQuality(output, { stationsFetched: qualityStations.length, stationsWithFreshLevel: qualityLevels.size });
 await fs.mkdir('data/live', { recursive: true });
-await fs.writeFile(DMI_FORECAST_STORE_PATH, `${JSON.stringify(nextDmiForecastStore, null, 2)}\n`);
+await writeDmiForecastStoreCheckpoint();
 await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(output, null, 2)}\n`);
 const previousHealth = await readHealth();
 const weatherHealth = buildWeatherHealth(previousHealth, output, generatedAt);
@@ -867,10 +918,10 @@ if (dmiTransientFailure && fallbackZoneIds.length) {
   output.retry = {
     dmiRetriedAfterMinutes: null,
     completedAt: null,
-    nextCentralAttemptMinutes: 5,
-    reason: 'DMI transient failure; fallback cache published immediately'
+    nextCentralAttemptMinutes: null,
+    reason: 'DMI transient failure; fallback cache published immediately; next attempt follows workflow schedule and persisted cooldown'
   };
-  console.log('DMI fejlede midlertidigt. Fallback-data er gemt; næste centrale kørsel forsøger DMI igen om ca. 5 minutter.');
+  console.log('DMI fejlede midlertidigt. Fallback-data er gemt; næste planlagte centrale kørsel forsøger igen, når DMI-cooldown er udløbet.');
   await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(output, null, 2)}\n`);
 const previousHealth = await readHealth();
 const weatherHealth = buildWeatherHealth(previousHealth, output, generatedAt);

@@ -3,8 +3,9 @@ name: Update weather and deploy RavRadar
 on:
   workflow_dispatch:
   schedule:
-    # Central opdatering hvert 5. minut. Brugerne henter kun den udgivne cache.
-    - cron: "*/5 * * * *"
+    # To zoner pr. kørsel og højst otte DMI-kald. Hele landet roteres igennem
+    # uden at presse DMI med store bursts.
+    - cron: "*/10 * * * *"
   push:
     branches: [main]
 
@@ -15,12 +16,13 @@ permissions:
 
 concurrency:
   group: ravradar-pages
-  cancel-in-progress: true
+  # En igangværende vejrkørsel må ikke afbrydes før dens cache er gemt.
+  cancel-in-progress: false
 
 jobs:
   update-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -29,25 +31,55 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Restore persistent weather state
+        id: weather-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/live/dmi-forecast-cache.json
+            data/live/conditions.json
+            data/live/weather-health.json
+          key: ravradar-weather-${{ github.run_id }}
+          restore-keys: |
+            ravradar-weather-
+
       - name: Validate project
         run: npm run validate
+
       - name: Update central weather cache
         id: weather
         continue-on-error: true
-        timeout-minutes: 7
+        timeout-minutes: 12
         run: npm run update:weather
         env:
-          DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
           DMI_MAX_RETRIES: 1
-          DMI_REQUEST_GAP_MS: 1400
-          WEATHER_REQUEST_TIMEOUT_MS: 18000
-          WEATHER_USER_AGENT: "RavRadar/2.6.29 (${{ github.server_url }}/${{ github.repository }})"
+          DMI_REQUEST_GAP_MS: 2500
+          DMI_REQUEST_CONCURRENCY: 1
+          DMI_LIVE_ZONE_BUDGET: 2
+          DMI_REQUEST_BUDGET: 8
+          DMI_CACHE_REFRESH_BELOW_HOURS: 24
+          WEATHER_REQUEST_TIMEOUT_MS: 25000
+          WEATHER_USER_AGENT: "RavRadar/3.1.7 (${{ github.server_url }}/${{ github.repository }})"
+
       - name: Validate updated weather cache
         if: steps.weather.outcome == 'success'
         run: npm run validate:data
+
       - name: Report cached fallback
         if: steps.weather.outcome != 'success'
         run: echo "Weather updater failed or timed out. Deploying the last valid cached conditions.json."
+
+      - name: Save persistent weather state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            data/live/dmi-forecast-cache.json
+            data/live/conditions.json
+            data/live/weather-health.json
+          key: ravradar-weather-${{ github.run_id }}
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
