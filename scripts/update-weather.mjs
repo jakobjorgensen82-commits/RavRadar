@@ -30,7 +30,7 @@ const PROVIDER_COOLDOWN_MS = Number(process.env.WEATHER_PROVIDER_COOLDOWN_MS ?? 
 const USER_AGENT = process.env.WEATHER_USER_AGENT ?? 'RavRadar/2.4 (central weather updater)';
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-const num = value => Number.isFinite(Number(value)) ? Number(value) : null;
+const num = value => value === null || value === undefined || value === '' ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
 const round = (value, digits = 2) => Number.isFinite(value) ? Number(value.toFixed(digits)) : null;
 const normalizeDegrees = value => ((value % 360) + 360) % 360;
 
@@ -49,6 +49,7 @@ function releaseDmiRequestSlot() {
   dmiRequestWaiters.shift()?.();
 }
 let dmiTransientFailure = false;
+let dmiRateLimitedUntil = 0;
 const providerRuntime = new Map();
 
 function providerState(name) {
@@ -66,6 +67,12 @@ let dmiWaterStationsPromise = null;
 let dmiLatestSeaLevelPromise = null;
 
 async function fetchJson(url, { provider, retries = 1, dmi = false } = {}) {
+  if (dmi && Date.now() < dmiRateLimitedUntil) {
+    const seconds = Math.ceil((dmiRateLimitedUntil - Date.now()) / 1000);
+    const error = new Error(`${provider}: DMI rate-limit cooldown active (${seconds}s tilbage)`);
+    error.code = 'DMI_RATE_LIMIT_COOLDOWN';
+    throw error;
+  }
   const state = providerState(provider);
   if (providerCircuitOpen(provider)) {
     const error = new Error(`${provider}: circuit breaker active`);
@@ -112,10 +119,16 @@ async function fetchJson(url, { provider, retries = 1, dmi = false } = {}) {
       state.latencyTotalMs += Date.now() - startedAt;
       if (state.failures >= PROVIDER_FAILURE_THRESHOLD) state.circuitOpenedAt = Date.now();
       if (dmi && (error?.status === 429 || error?.name === 'AbortError' || error instanceof TypeError)) dmiTransientFailure = true;
-      const retryable = error?.status === 429 || error?.status >= 500 || error?.name === 'AbortError' || error instanceof TypeError;
+      if (dmi && error?.status === 429) {
+        const retryAfterSeconds = Number(error?.retryAfter);
+        const cooldownMs = Number.isFinite(retryAfterSeconds) ? Math.max(60_000, retryAfterSeconds * 1000) : 15 * 60 * 1000;
+        dmiRateLimitedUntil = Math.max(dmiRateLimitedUntil, Date.now() + cooldownMs);
+        state.circuitOpenedAt = Date.now();
+        throw lastError;
+      }
+      const retryable = error?.status >= 500 || error?.name === 'AbortError' || error instanceof TypeError;
       if (!retryable || attempt >= retries) throw lastError;
-      const retryAfter = Number(error?.retryAfter);
-      await sleep(Number.isFinite(retryAfter) ? retryAfter * 1000 : Math.min(5000, 750 * 2 ** attempt));
+      await sleep(Math.min(5000, 750 * 2 ** attempt));
     } finally {
       clearTimeout(timeout);
       if (dmi) releaseDmiRequestSlot();

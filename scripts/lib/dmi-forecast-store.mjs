@@ -1,13 +1,19 @@
 export const DMI_FORECAST_HOURS = 120;
 export const DMI_FORECAST_SCHEMA_VERSION = 1;
 
-const finite = value => Number.isFinite(Number(value)) ? Number(value) : null;
+const finite = value => value === null || value === undefined || value === '' ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
 const round = (value, digits = 2) => Number.isFinite(value) ? Number(value.toFixed(digits)) : null;
-const normalizeDegrees = value => ((value % 360) + 360) % 360;
+export const normalizeDegrees = value => ((value % 360) + 360) % 360;
+export function uvToTowardDirectionDeg(uValue, vValue) {
+  const u = finite(uValue);
+  const v = finite(vValue);
+  return u === null || v === null ? null : normalizeDegrees(Math.atan2(u, v) * 180 / Math.PI);
+}
 
 export function interpolateWaterLevelStations(point, stations, levels, { maxStations = 2, minimumDistanceKm = 0.25, haversineKm } = {}) {
   if (!Array.isArray(point) || typeof haversineKm !== 'function') throw new TypeError('point and haversineKm are required');
-  const candidates = stations
+  const uniqueStations = [...new Map((stations ?? []).filter(station => station?.stationId).map(station => [String(station.stationId), station])).values()];
+  const candidates = uniqueStations
     .map(station => ({ ...station, level: levels.get(station.stationId), distanceKm: haversineKm(point, station.point) }))
     .filter(item => item.level && finite(item.level.valueCm) !== null && Number.isFinite(item.distanceKm))
     .sort((a, b) => a.distanceKm - b.distanceKm)
@@ -84,7 +90,7 @@ export function buildDmiForecastHourly({ wind = [], waves = [], ocean = [], obse
       waterLevelObservationDifferenceCm: sea === null ? null : round(observationDifferenceCm, 0),
       waterLevelTrendCm3h: sea === null || sea3 === null ? null : round((sea3 - sea) * 100, 0),
       currentSpeedMps: u === null || v === null ? null : round(Math.hypot(u, v), 2),
-      currentDirectionDeg: u === null || v === null ? null : round(normalizeDegrees(Math.atan2(u, v) * 180 / Math.PI), 0),
+      currentDirectionDeg: round(uvToTowardDirectionDeg(u, v), 0),
       waterTemperatureC: round(finite(o?.['water-temperature']), 1),
       source: 'dmi-forecast',
       waterLevelSource: 'dmi-model-authoritative'
@@ -163,17 +169,20 @@ export function interpolateWaterLevelAlongCoast(point, coastPath, stations, leve
   haversineKm,
   requireBracket = false
 } = {}) {
-  if (!Array.isArray(coastPath) || coastPath.length < 2) return interpolateWaterLevelStations(point, stations, levels, { maxStations: 2, minimumDistanceKm, haversineKm });
+  if (!Array.isArray(coastPath) || coastPath.length < 2) {
+    return requireBracket ? null : interpolateWaterLevelStations(point, stations, levels, { maxStations: 2, minimumDistanceKm, haversineKm });
+  }
   const targetProjection = projectPointOnCoastPath(point, coastPath);
   if (!targetProjection) return null;
-  const candidates = stations.map(station => {
+  const uniqueStations = [...new Map((stations ?? []).filter(station => station?.stationId).map(station => [String(station.stationId), station])).values()];
+  const candidates = uniqueStations.map(station => {
     const level = levels.get(station.stationId);
     const projection = projectPointOnCoastPath(station.point, coastPath);
     return { ...station, level, projection, distanceKm: haversineKm(point, station.point) };
   }).filter(item => item.level && finite(item.level.valueCm) !== null && item.projection && item.projection.distanceKm <= maxCorridorDistanceKm);
   if (!candidates.length) return null;
   candidates.sort((a, b) => a.distanceKm - b.distanceKm);
-  if (candidates[0].distanceKm <= directStationKm) {
+  if (!requireBracket && candidates[0].distanceKm <= directStationKm) {
     const station = candidates[0];
     return {
       valueCm: round(finite(station.level.valueCm), 0), method: 'direct-coast-station',

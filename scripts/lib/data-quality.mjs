@@ -17,6 +17,9 @@ export function buildDataQuality(output, stationInventory = {}) {
     if (new Set(ids).size !== ids.length) {
       issues.push({ severity: 'error', code: 'DUPLICATE_STATION', zoneId, message: 'Samme DMI-station er valgt mere end én gang.' });
     }
+    if (method && !method.startsWith('direct-') && method !== 'coast-bracket-2-stations') {
+      issues.push({ severity: 'error', code: 'UNSUPPORTED_OBSERVATION_METHOD', zoneId, method, message: 'En DMI-observation anvendes med en metode, der ikke er direkte lokal station eller gyldig kystbracketing.' });
+    }
     if (method === 'coast-bracket-2-stations') {
       const sides = new Set(stations.map(item => item.side));
       if (stations.length !== 2 || !sides.has('before') || !sides.has('after')) {
@@ -34,6 +37,8 @@ export function buildDataQuality(output, stationInventory = {}) {
     }
   }
 
+  const duplicateErrors = issues.filter(item => item.code === 'DUPLICATE_STATION').length;
+  const invalidInterpolationErrors = issues.filter(item => ['INVALID_BRACKET','UNSUPPORTED_OBSERVATION_METHOD'].includes(item.code)).length;
   const forecastZones = zones.filter(([, zone]) => zone.provider === 'dmi' || zone.provider === 'dmi-cache').length;
   const partialForecastZones = zones.filter(([, zone]) => zone.dmiCompleteness?.componentErrors?.length).length;
   return {
@@ -45,7 +50,9 @@ export function buildDataQuality(output, stationInventory = {}) {
       uniqueStationsUsed: stationUse.size,
       directZones: direct,
       interpolatedZones: interpolated,
-      zonesWithoutDmiObservation: observationFallback
+      zonesWithoutDmiObservation: observationFallback,
+      duplicateStationSelections: duplicateErrors,
+      invalidInterpolationSelections: invalidInterpolationErrors
     },
     forecast: {
       zonesFromDmiOrCache: forecastZones,
