@@ -1,0 +1,41 @@
+{
+  "version": "3.1.10",
+  "method": "Independent nearest-coastline audit, restricted to high-confidence cases: marine dataPoint within 5 km, nearest projection on segment interior, and configured direction at least 120° opposite.",
+  "changes": [
+    {
+      "zoneId": "DK-B04-01",
+      "name": "Ho Bugt og Oksby",
+      "previous": 90,
+      "corrected": 291,
+      "reason": "Configured direction was more than 120° opposite the direction from the marine dataPoint to the nearest interior point on the zone coastline; marine point was within 5 km."
+    },
+    {
+      "zoneId": "DK-B05-19",
+      "name": "Livø og Rønbjerg",
+      "previous": 270,
+      "corrected": 101,
+      "reason": "Configured direction was more than 120° opposite the direction from the marine dataPoint to the nearest interior point on the zone coastline; marine point was within 5 km."
+    },
+    {
+      "zoneId": "DK-B07-09",
+      "name": "Kerteminde syd og Lundsgård",
+      "previous": 90,
+      "corrected": 280,
+      "reason": "Configured direction was more than 120° opposite the direction from the marine dataPoint to the nearest interior point on the zone coastline; marine point was within 5 km."
+    },
+    {
+      "zoneId": "DK-B07-17",
+      "name": "Langeland nord og Lohals",
+      "previous": 35,
+      "corrected": 174,
+      "reason": "Configured direction was more than 120° opposite the direction from the marine dataPoint to the nearest interior point on the zone coastline; marine point was within 5 km."
+    },
+    {
+      "zoneId": "DK-B12-01",
+      "name": "Kolding Fjord og Løverodde",
+      "previous": 256,
+      "corrected": 73,
+      "reason": "Configured direction was more than 120° opposite the direction from the marine dataPoint to the nearest interior point on the zone coastline; marine point was within 5 km."
+    }
+  ]
+}
