@@ -43,26 +43,62 @@ function calculateHuntability(mode, weather, reasons) {
   return clamp(score);
 }
 
-function calculateTransport(zone, weather, reasons) {
-  const current = numberOrNull(weather.currentSpeedMps), trend = numberOrNull(weather.waterLevelTrendCm3h), onshore = numberOrNull(zone.onshoreDirectionDeg); let score = 42;
+function calculateTransport(zone, weather, reasons, diagnostics) {
+  const current = numberOrNull(weather.currentSpeedMps);
+  const trend = numberOrNull(weather.waterLevelTrendCm3h);
+  const onshore = numberOrNull(zone.onshoreDirectionDeg);
+  let score = 34;
+  let currentAlignment = null;
+  const caps = [];
+
   if (current !== null) {
     if (current >= .15 && current <= .65) { score += 18; reasons.push("Strømhastigheden er velegnet til at flytte let materiale."); }
     else if (current > .65) { score += 5; reasons.push("Kraftig strøm kan flytte materiale, men mere uforudsigeligt."); }
-    else { score -= 10; reasons.push("Svag strøm giver begrænset transport lige nu."); }
-    const alignment = directionScore(weather.currentDirectionDeg, onshore);
-    if (alignment !== null) { score += Math.round(22 * alignment); if (alignment >= .65) reasons.push("Strømmen fører materiale ind mod zonen."); else if (alignment <= -.35) reasons.push("Strømmen fører hovedsageligt materiale væk fra zonen."); }
-  } else reasons.push("Strømdata mangler.");
-  const windFrom = numberOrNull(weather.windDirectionDeg), windToward = windFrom === null ? null : (windFrom + 180) % 360;
+    else { score -= 12; reasons.push("Svag strøm giver begrænset transport lige nu."); }
+    currentAlignment = directionScore(weather.currentDirectionDeg, onshore);
+    if (currentAlignment !== null) {
+      score += Math.round(30 * currentAlignment);
+      if (currentAlignment >= .65) reasons.push("Strømmen fører materiale ind mod zonen.");
+      else if (currentAlignment <= -.35) reasons.push("Strømmen fører hovedsageligt materiale væk fra zonen.");
+    }
+  } else {
+    reasons.push("Strømdata mangler; transportscoren begrænses.");
+    caps.push({ max: 52, reason: 'missing-current-data' });
+  }
+
+  const windFrom = numberOrNull(weather.windDirectionDeg);
+  const windToward = windFrom === null ? null : (windFrom + 180) % 360;
   const windAlignment = directionScore(windToward, onshore);
-  if (windAlignment !== null) { score += Math.round(10 * windAlignment); if (windAlignment >= .65) reasons.push("Vindretningen understøtter transport ind mod kysten."); else if (windAlignment <= -.35) reasons.push("Vindretningen arbejder imod transport ind mod kysten."); }
+  if (windAlignment !== null) {
+    if (windAlignment >= .65) { score += 6; reasons.push("Vindretningen kan understøtte transport ind mod kysten."); }
+    else if (windAlignment <= -.35) { score -= 2; reasons.push("Vindretningen giver ikke direkte overfladetransport ind mod kysten."); }
+  }
+
   if (trend !== null) {
-    if (trend >= 8) { score += 10; reasons.push("Stigende vandstand kan føre flydende materiale ind over lavt vand."); }
-    else if (trend <= -8) { score += 4; reasons.push("Faldende vandstand kan samle materiale langs nye kanter."); }
+    if (trend >= 8) { score += 8; reasons.push("Stigende vandstand kan føre flydende materiale ind over lavt vand."); }
+    else if (trend <= -8) { score += 3; reasons.push("Faldende vandstand kan samle materiale langs nye kanter."); }
     else if (Math.abs(trend) < 2) { score -= 4; reasons.push("Næsten stabil vandstand giver kun lidt ekstra transport."); }
   }
-  if (zone.shallowWater) { score += 8; reasons.push("Lavt vand hjælper materiale med at nå strandzonen."); }
-  if (zone.reefs) { score += 8; reasons.push("Rev kan koncentrere strøm og opsamling."); }
-  if (zone.seagrass) { score += 6; reasons.push("Tang og ålegræs kan fastholde let materiale."); }
+
+  // Statiske kystegenskaber må kun forstærke dokumenteret indtransport.
+  if (currentAlignment !== null && currentAlignment >= .2) {
+    if (zone.shallowWater) { score += 4; reasons.push("Lavt vand kan hjælpe indgående materiale ind i strandzonen."); }
+    if (zone.reefs) { score += 3; reasons.push("Rev kan koncentrere en allerede indgående transport."); }
+    if (zone.seagrass) { score += 3; reasons.push("Tang og ålegræs kan fastholde materiale, der allerede føres ind."); }
+  }
+
+  if (currentAlignment !== null && current >= .15) {
+    if (currentAlignment <= -.75) caps.push({ max: 28, reason: 'strongly-offshore-current' });
+    else if (currentAlignment <= -.35) caps.push({ max: 42, reason: 'offshore-current' });
+  }
+  for (const cap of caps) score = Math.min(score, cap.max);
+
+  diagnostics.currentAlignment = currentAlignment;
+  diagnostics.currentDirectionDifferenceDeg = numberOrNull(weather.currentDirectionDeg) === null || onshore === null ? null : angularDifference(weather.currentDirectionDeg, onshore);
+  diagnostics.windTowardDirectionDeg = windToward;
+  diagnostics.windAlignment = windAlignment;
+  diagnostics.windDirectionDifferenceDeg = windToward === null || onshore === null ? null : angularDifference(windToward, onshore);
+  diagnostics.capsApplied = caps;
   return clamp(score);
 }
 
@@ -87,7 +123,8 @@ export function calculateRavScore({ mode, zone, weather, history = {}, ruleEvalu
   if (numberOrNull(weather?.windSpeedMps) === null) return { available:false, score:null, level:"unavailable", label:"Ingen aktuelle data", reasons:["RavScore vises først, når nødvendige vejrdata er hentet."], componentReasons:{} };
   const componentReasons = { huntability: [], transport: [], release: [] };
   const huntability = calculateHuntability(mode, weather, componentReasons.huntability);
-  const transport = calculateTransport(zone, weather, componentReasons.transport);
+  const transportDiagnostics = {};
+  const transport = calculateTransport(zone, weather, componentReasons.transport, transportDiagnostics);
   const release = calculateRelease(zone, history, componentReasons.release);
   const adaptiveModel = loadAdaptiveModel();
   const weights = adaptiveModel.weights || SCORE_WEIGHTS;
@@ -107,7 +144,7 @@ export function calculateRavScore({ mode, zone, weather, history = {}, ruleEvalu
   const ruleAdjustment = finalScore - score;
   return {
     available:true, score:finalScore, baseScore:score, level:r.level, label:r.label, components, componentReasons,
-    explanation:{ weights, contributions, rawScore, adaptiveAdjustment:adaptive.adjustment, adaptiveMatches:adaptive.matches, baseScore:score, ruleAdjustment, finalScore, formula:`Jagtbarhed ${Math.round(weights.huntability*100)} % + transport ${Math.round(weights.transport*100)} % + frigivelse ${Math.round(weights.release*100)} %` },
+    explanation:{ weights, contributions, transportDiagnostics, rawScore, adaptiveAdjustment:adaptive.adjustment, adaptiveMatches:adaptive.matches, baseScore:score, ruleAdjustment, finalScore, formula:`Jagtbarhed ${Math.round(weights.huntability*100)} % + transport ${Math.round(weights.transport*100)} % + frigivelse ${Math.round(weights.release*100)} %` },
     reasons:[...new Set([...Object.values(componentReasons).flat(), ...ruleReasons])].slice(0,8), stormBonus:release>=65, ruleEvaluation
   };
 }

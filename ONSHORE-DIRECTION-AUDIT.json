@@ -1,1563 +1,2730 @@
 {
-  "generatedAt": "2026-07-26T00:00:00Z",
-  "method": "Bearing from offshore dataPoint toward beach pinPoint; all non-legacy zones",
-  "activeZones": 222,
-  "changedZones": 179,
-  "majorCorrectionsOver90Deg": 135,
+  "generatedAt": "2026-07-26T15:33:25.972Z",
+  "mode": "audit-only",
+  "method": "Independent consistency audit of configured direction against dataPoint→pinPoint bearing. This does not prove that either point is geographically correct.",
+  "summary": {
+    "activeZones": 222,
+    "pass": 94,
+    "review": 127,
+    "fail": 1,
+    "historicalCorrectionsOver90Deg": 135,
+    "identicalOrTooClosePoints": 1,
+    "pointsTooFarApart": 24,
+    "complexCoastsForManualReview": 118
+  },
   "zones": [
     {
       "zoneId": "DK-E-02",
       "name": "Djursland nord og øst",
-      "previous": 260,
-      "audited": 90,
-      "correctionDeg": 170
+      "historicalDirectionDeg": 260,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 7.38,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-E-03",
       "name": "Aarhusbugten og Odder",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.73,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-E-04",
       "name": "Vejle Fjord til Lillebælt",
-      "previous": 280,
-      "audited": 90,
-      "correctionDeg": 170
+      "historicalDirectionDeg": 280,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 0.63,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-FYN-01",
       "name": "Nordfyn og Kerteminde",
-      "previous": 225,
-      "audited": 90,
-      "correctionDeg": 135
+      "historicalDirectionDeg": 225,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 1.89,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-SJ-01",
       "name": "Sjællands Odde og Odsherred",
-      "previous": 180,
-      "audited": 90,
-      "correctionDeg": 90
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 1.87,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-SJ-02",
       "name": "Nordsjælland og Øresund",
-      "previous": 225,
-      "audited": 90,
-      "correctionDeg": 135
+      "historicalDirectionDeg": 225,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6.21,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-SJ-03",
       "name": "Stevns og Sydsjælland",
-      "previous": 300,
-      "audited": 90,
-      "correctionDeg": 150
+      "historicalDirectionDeg": 300,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6.96,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-LF-01",
       "name": "Lolland-Falster sydkyst",
-      "previous": 0,
-      "audited": 41,
-      "correctionDeg": 41
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 41,
+      "pointBearingDeg": 41,
+      "differenceDeg": 0,
+      "pointDistanceKm": 2.94,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-BH-01",
       "name": "Bornholms kyster",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 0.64,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-LIM-01",
       "name": "Limfjorden vest",
-      "previous": 90,
-      "audited": 270,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 1.22,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-LIM-02",
       "name": "Limfjorden midt",
-      "previous": 180,
-      "audited": 0,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 0,
+      "pointBearingDeg": null,
+      "differenceDeg": null,
+      "pointDistanceKm": 0,
+      "status": "FAIL",
+      "warnings": [
+        "IDENTICAL_OR_TOO_CLOSE_POINTS",
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-LIM-03",
       "name": "Limfjorden øst",
-      "previous": 270,
-      "audited": 314,
-      "correctionDeg": 44
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 314,
+      "pointBearingDeg": 314,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.36,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B01-01",
       "name": "Agger og Krik Vig",
-      "previous": 270,
-      "audited": 107,
-      "correctionDeg": 163
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 107,
+      "pointBearingDeg": 107,
+      "differenceDeg": 0,
+      "pointDistanceKm": 2.5,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B01-02",
       "name": "Lyngby og Lodbjerg",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 2.86,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B01-03",
       "name": "Stenbjerg og Vorupør",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.34,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B01-04",
       "name": "Vangså og Klitmøller",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.33,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B01-05",
       "name": "Hanstholm og Hamborg",
-      "previous": 250,
-      "audited": 108,
-      "correctionDeg": 142
+      "historicalDirectionDeg": 250,
+      "configuredDirectionDeg": 108,
+      "pointBearingDeg": 108,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.88,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B01-06",
       "name": "Vigsø og Lild Strand",
-      "previous": 220,
-      "audited": 155,
-      "correctionDeg": 65
+      "historicalDirectionDeg": 220,
+      "configuredDirectionDeg": 155,
+      "pointBearingDeg": 155,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.92,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B01-07",
       "name": "Bulbjerg og Thorup Strand",
-      "previous": 220,
-      "audited": 161,
-      "correctionDeg": 59
+      "historicalDirectionDeg": 220,
+      "configuredDirectionDeg": 161,
+      "pointBearingDeg": 161,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.64,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B01-08",
       "name": "Slettestrand og Svinkløv",
-      "previous": 220,
-      "audited": 162,
-      "correctionDeg": 58
+      "historicalDirectionDeg": 220,
+      "configuredDirectionDeg": 162,
+      "pointBearingDeg": 162,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.85,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B01-09",
       "name": "Tranum og Rødhus",
-      "previous": 225,
-      "audited": 152,
-      "correctionDeg": 73
+      "historicalDirectionDeg": 225,
+      "configuredDirectionDeg": 152,
+      "pointBearingDeg": 152,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.06,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B01-10",
       "name": "Blokhus og Hune",
-      "previous": 230,
-      "audited": 141,
-      "correctionDeg": 89
+      "historicalDirectionDeg": 230,
+      "configuredDirectionDeg": 141,
+      "pointBearingDeg": 141,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.3,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B01-11",
       "name": "Saltum og Grønhøj",
-      "previous": 235,
-      "audited": 136,
-      "correctionDeg": 99
+      "historicalDirectionDeg": 235,
+      "configuredDirectionDeg": 136,
+      "pointBearingDeg": 136,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.88,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B01-12",
       "name": "Løkken og Furreby",
-      "previous": 240,
-      "audited": 127,
-      "correctionDeg": 113
+      "historicalDirectionDeg": 240,
+      "configuredDirectionDeg": 127,
+      "pointBearingDeg": 127,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.36,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B01-13",
       "name": "Nørre Lyngby og Rubjerg",
-      "previous": 250,
-      "audited": 112,
-      "correctionDeg": 138
+      "historicalDirectionDeg": 250,
+      "configuredDirectionDeg": 112,
+      "pointBearingDeg": 112,
+      "differenceDeg": 0,
+      "pointDistanceKm": 2.91,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B01-14",
       "name": "Lønstrup og Nørlev",
-      "previous": 250,
-      "audited": 122,
-      "correctionDeg": 128
+      "historicalDirectionDeg": 250,
+      "configuredDirectionDeg": 122,
+      "pointBearingDeg": 122,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.16,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B01-15",
       "name": "Tornby og Hirtshals",
-      "previous": 245,
-      "audited": 119,
-      "correctionDeg": 126
+      "historicalDirectionDeg": 245,
+      "configuredDirectionDeg": 119,
+      "pointBearingDeg": 119,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.42,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B01-16",
       "name": "Kjul og Uggerby",
-      "previous": 205,
-      "audited": 165,
-      "correctionDeg": 40
+      "historicalDirectionDeg": 205,
+      "configuredDirectionDeg": 165,
+      "pointBearingDeg": 165,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.6,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B01-17",
       "name": "Tversted og Skiveren",
-      "previous": 190,
-      "audited": 177,
-      "correctionDeg": 13
+      "historicalDirectionDeg": 190,
+      "configuredDirectionDeg": 177,
+      "pointBearingDeg": 177,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.01,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B01-18",
       "name": "Kandestederne og Hulsig",
-      "previous": 200,
-      "audited": 163,
-      "correctionDeg": 37
+      "historicalDirectionDeg": 200,
+      "configuredDirectionDeg": 163,
+      "pointBearingDeg": 163,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.22,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B01-19",
       "name": "Skagen vest og Damstederne",
-      "previous": 215,
-      "audited": 145,
-      "correctionDeg": 70
+      "historicalDirectionDeg": 215,
+      "configuredDirectionDeg": 145,
+      "pointBearingDeg": 145,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.09,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B01-20",
       "name": "Grenen og Skagen øst",
-      "previous": 70,
-      "audited": 278,
-      "correctionDeg": 152
+      "historicalDirectionDeg": 70,
+      "configuredDirectionDeg": 278,
+      "pointBearingDeg": 278,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.35,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B02-01",
       "name": "Ålbæk og Bunken",
-      "previous": 92,
-      "audited": 263,
-      "correctionDeg": 171
+      "historicalDirectionDeg": 92,
+      "configuredDirectionDeg": 263,
+      "pointBearingDeg": 263,
+      "differenceDeg": 0,
+      "pointDistanceKm": 2.78,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B02-02",
       "name": "Napstjert og Jerup",
-      "previous": 94,
-      "audited": 256,
-      "correctionDeg": 162
+      "historicalDirectionDeg": 94,
+      "configuredDirectionDeg": 256,
+      "pointBearingDeg": 256,
+      "differenceDeg": 0,
+      "pointDistanceKm": 2.48,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B02-03",
       "name": "Bratten og Strandby",
-      "previous": 96,
-      "audited": 278,
-      "correctionDeg": 178
+      "historicalDirectionDeg": 96,
+      "configuredDirectionDeg": 278,
+      "pointBearingDeg": 278,
+      "differenceDeg": 0,
+      "pointDistanceKm": 2.8,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B02-04",
       "name": "Frederikshavn og Bangsbo",
-      "previous": 100,
-      "audited": 277,
-      "correctionDeg": 177
+      "historicalDirectionDeg": 100,
+      "configuredDirectionDeg": 277,
+      "pointBearingDeg": 277,
+      "differenceDeg": 0,
+      "pointDistanceKm": 2.98,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B02-05",
       "name": "Sæby og Sulbæk",
-      "previous": 98,
-      "audited": 267,
-      "correctionDeg": 169
+      "historicalDirectionDeg": 98,
+      "configuredDirectionDeg": 267,
+      "pointBearingDeg": 267,
+      "differenceDeg": 0,
+      "pointDistanceKm": 2.85,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B02-06",
       "name": "Lyngså og Voerså",
-      "previous": 98,
-      "audited": 278,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 98,
+      "configuredDirectionDeg": 278,
+      "pointBearingDeg": 278,
+      "differenceDeg": 0,
+      "pointDistanceKm": 2.76,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B02-07",
       "name": "Asaa og Melholt",
-      "previous": 100,
-      "audited": 270,
-      "correctionDeg": 170
+      "historicalDirectionDeg": 100,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 2.93,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B02-08",
       "name": "Hou og Bisnap",
-      "previous": 105,
-      "audited": 250,
-      "correctionDeg": 145
+      "historicalDirectionDeg": 105,
+      "configuredDirectionDeg": 250,
+      "pointBearingDeg": 250,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.49,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B02-09",
       "name": "Hals og Nordmandshage",
-      "previous": 108,
-      "audited": 274,
-      "correctionDeg": 166
+      "historicalDirectionDeg": 108,
+      "configuredDirectionDeg": 274,
+      "pointBearingDeg": 274,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.39,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B02-10",
       "name": "Egense og Mou",
-      "previous": 180,
-      "audited": 178,
-      "correctionDeg": 2
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 178,
+      "pointBearingDeg": 178,
+      "differenceDeg": 0,
+      "pointDistanceKm": 2.28,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B02-11",
       "name": "Dokkedal og Mulbjerge",
-      "previous": 100,
-      "audited": 268,
-      "correctionDeg": 168
+      "historicalDirectionDeg": 100,
+      "configuredDirectionDeg": 268,
+      "pointBearingDeg": 268,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.58,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B02-12",
       "name": "Øster Hurup og Als",
-      "previous": 100,
-      "audited": 268,
-      "correctionDeg": 168
+      "historicalDirectionDeg": 100,
+      "configuredDirectionDeg": 268,
+      "pointBearingDeg": 268,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.51,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B02-13",
       "name": "Als Odde og Helberskov",
-      "previous": 125,
-      "audited": 305,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 125,
+      "configuredDirectionDeg": 305,
+      "pointBearingDeg": 305,
+      "differenceDeg": 0,
+      "pointDistanceKm": 2.91,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B02-14",
       "name": "Havnø og Mariager Fjord øst",
-      "previous": 130,
-      "audited": 296,
-      "correctionDeg": 166
+      "historicalDirectionDeg": 130,
+      "configuredDirectionDeg": 296,
+      "pointBearingDeg": 296,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.06,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B02-15",
       "name": "Udbyhøj og Stenrevet",
-      "previous": 105,
-      "audited": 268,
-      "correctionDeg": 163
+      "historicalDirectionDeg": 105,
+      "configuredDirectionDeg": 268,
+      "pointBearingDeg": 268,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.04,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B03-01",
       "name": "Harboøre og Vrist",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.62,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B03-02",
       "name": "Vejlby Klit og Ferring",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.72,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B03-03",
       "name": "Bovbjerg og Trans",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.85,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B03-04",
       "name": "Thorsminde og Husby Klit",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.8,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B03-05",
       "name": "Fjand og Vedersø Klit",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.81,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B03-06",
       "name": "Søndervig og Klegod",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.96,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B03-07",
       "name": "Hvide Sande nord",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.16,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B03-08",
       "name": "Hvide Sande syd og Årgab",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.1,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B03-09",
       "name": "Haurvig og Skodbjerge",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.05,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B03-10",
       "name": "Nymindegab og Houstrup",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.31,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B03-11",
       "name": "Henne Strand og Grærup",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.32,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B03-12",
       "name": "Vejers og Børsmose",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.65,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B03-13",
       "name": "Blåvand og Hvidbjerg",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.66,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B03-14",
       "name": "Skallingen nord",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.67,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B03-15",
       "name": "Skallingen syd",
-      "previous": 270,
-      "audited": 67,
-      "correctionDeg": 157
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 67,
+      "pointBearingDeg": 67,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.8,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B04-01",
       "name": "Ho Bugt og Oksby",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.21,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B04-02",
       "name": "Hjerting og Sædding",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.66,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B04-03",
       "name": "Fanø nord og Nordby",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.49,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B04-04",
       "name": "Fanø vest og Rindby",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B04-05",
       "name": "Fanø syd og Sønderho",
-      "previous": 255,
-      "audited": 90,
-      "correctionDeg": 165
+      "historicalDirectionDeg": 255,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.69,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B04-06",
       "name": "Mandø vest",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.38,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B04-07",
       "name": "Rømø nord og Lakolk",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6.29,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B04-08",
       "name": "Rømø vest og Kongsmark",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6.3,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B04-09",
       "name": "Rømø syd og Sønderstrand",
-      "previous": 250,
-      "audited": 90,
-      "correctionDeg": 160
+      "historicalDirectionDeg": 250,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6.05,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B04-10",
       "name": "Hjerpsted og Emmerlev",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.42,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B04-11",
       "name": "Højer og Vidå",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.43,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-01",
       "name": "Thyborøn og Harboøre Tange øst",
-      "previous": 90,
-      "audited": 281,
-      "correctionDeg": 169
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 281,
+      "pointBearingDeg": 281,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.48,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-02",
       "name": "Agger Tange og Krik",
-      "previous": 90,
-      "audited": 270,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.66,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-03",
       "name": "Nissum Bredning nord",
-      "previous": 180,
-      "audited": 0,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 0,
+      "pointBearingDeg": 0,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-04",
       "name": "Nissum Bredning syd",
-      "previous": 0,
-      "audited": 180,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 180,
+      "pointBearingDeg": 180,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6.12,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-05",
       "name": "Jegindø og Thyholm",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.97,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-06",
       "name": "Venø og Struer",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.68,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-07",
       "name": "Lemvig og Gjellerodde",
-      "previous": 90,
-      "audited": 270,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.6,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-08",
       "name": "Toftum Bjerge og Remmerstrand",
-      "previous": 0,
-      "audited": 180,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 180,
+      "pointBearingDeg": 180,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-09",
       "name": "Thisted Bredning vest",
-      "previous": 90,
-      "audited": 270,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.56,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-10",
       "name": "Thisted og Vildsund",
-      "previous": 180,
-      "audited": 0,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 0,
+      "pointBearingDeg": 0,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6.12,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-11",
       "name": "Mors nord og Feggesund",
-      "previous": 0,
-      "audited": 180,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 180,
+      "pointBearingDeg": 180,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6.12,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-12",
       "name": "Mors vest og Ejerslev",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.25,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-13",
       "name": "Mors syd og Nykøbing",
-      "previous": 180,
-      "audited": 0,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 0,
+      "pointBearingDeg": 0,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6.67,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-14",
       "name": "Sallingsund og Glyngøre",
-      "previous": 90,
-      "audited": 270,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.05,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-15",
       "name": "Salling vest og Junget",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.66,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-16",
       "name": "Fur nord",
-      "previous": 0,
-      "audited": 180,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 180,
+      "pointBearingDeg": 180,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.56,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-17",
       "name": "Fur syd",
-      "previous": 180,
-      "audited": 0,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 0,
+      "pointBearingDeg": 0,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-18",
       "name": "Løgstør og Aggersund",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.94,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-19",
       "name": "Livø og Rønbjerg",
-      "previous": 90,
-      "audited": 270,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.64,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-20",
       "name": "Nibe Bredning vest",
-      "previous": 90,
-      "audited": 270,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.64,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-21",
       "name": "Nibe og Sebbersund",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.64,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-22",
       "name": "Gjøl og Attrup",
-      "previous": 180,
-      "audited": 0,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 0,
+      "pointBearingDeg": 0,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.56,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-23",
       "name": "Aalborg vest og Egholm",
-      "previous": 180,
-      "audited": 0,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 0,
+      "pointBearingDeg": 0,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.89,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-24",
       "name": "Aalborg øst og Nørresundby",
-      "previous": 180,
-      "audited": 0,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 0,
+      "pointBearingDeg": 0,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.89,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B05-25",
       "name": "Hals Barre og Egense",
-      "previous": 90,
-      "audited": 270,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.94,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B06-01",
       "name": "Gjerrild Nordstrand",
-      "previous": 0,
-      "audited": 180,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 180,
+      "pointBearingDeg": 180,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.56,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B06-02",
       "name": "Fornæs og Grenaa",
-      "previous": 90,
-      "audited": 270,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.75,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B06-03",
       "name": "Grenaa og Katholm",
-      "previous": 90,
-      "audited": 270,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.76,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B06-04",
       "name": "Bønnerup og Fjellerup",
-      "previous": 0,
-      "audited": 180,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 180,
+      "pointBearingDeg": 180,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.78,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B06-05",
       "name": "Rygarde og Sangstrup",
-      "previous": 45,
-      "audited": 231,
-      "correctionDeg": 174
+      "historicalDirectionDeg": 45,
+      "configuredDirectionDeg": 231,
+      "pointBearingDeg": 231,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.53,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B06-06",
       "name": "Karlby og Glatved",
-      "previous": 90,
-      "audited": 270,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.45,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B06-07",
       "name": "Jernhatten og Rugård",
-      "previous": 90,
-      "audited": 270,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.58,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B06-08",
       "name": "Ebeltoft og Ahl",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 2.78,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B06-09",
       "name": "Helgenæs øst",
-      "previous": 90,
-      "audited": 270,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.6,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B06-10",
       "name": "Helgenæs vest",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.44,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B06-11",
       "name": "Knebel og Skødshoved",
-      "previous": 270,
-      "audited": 90,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.22,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B06-12",
       "name": "Kalø og Følle",
-      "previous": 180,
-      "audited": 0,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 0,
+      "pointBearingDeg": 0,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B06-13",
       "name": "Vosnæs og Havhuse",
-      "previous": 180,
-      "audited": 0,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 0,
+      "pointBearingDeg": 0,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6.34,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B06-14",
       "name": "Aarhus nord og Egå",
-      "previous": 90,
-      "audited": 270,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.46,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B06-15",
       "name": "Aarhus syd og Moesgård",
-      "previous": 90,
-      "audited": 270,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.72,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B06-16",
       "name": "Norsminde og Saksild",
-      "previous": 90,
-      "audited": 270,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.73,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B06-17",
       "name": "Hou og Odderkysten",
-      "previous": 90,
-      "audited": 270,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.74,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B06-18",
       "name": "Juelsminde og As Vig",
-      "previous": 90,
-      "audited": 270,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.44,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B06-19",
       "name": "Snaptun og Endelave nord",
-      "previous": 0,
-      "audited": 180,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 180,
+      "pointBearingDeg": 180,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.56,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B06-20",
       "name": "Endelave syd",
-      "previous": 180,
-      "audited": 0,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 0,
+      "pointBearingDeg": 0,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.56,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B07-01",
       "name": "Trelde Næs og Vejlby Fed",
-      "previous": 45,
-      "audited": 35,
-      "correctionDeg": 10
+      "historicalDirectionDeg": 45,
+      "configuredDirectionDeg": 35,
+      "pointBearingDeg": 35,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.3,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B07-02",
       "name": "Strib og Røjle Klint",
-      "previous": 270,
-      "audited": 270,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.46,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B07-03",
       "name": "Middelfart og Hindsgavl",
-      "previous": 250,
-      "audited": 242,
-      "correctionDeg": 8
+      "historicalDirectionDeg": 250,
+      "configuredDirectionDeg": 242,
+      "pointBearingDeg": 242,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.68,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B07-04",
       "name": "Båring Vig og Varbjerg",
-      "previous": 0,
-      "audited": 0,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 0,
+      "pointBearingDeg": 0,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B07-05",
       "name": "Bogense og Gyldensteen",
-      "previous": 0,
-      "audited": 0,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 0,
+      "pointBearingDeg": 0,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B07-06",
       "name": "Flyvesandet og Enebærodde",
-      "previous": 0,
-      "audited": 0,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 0,
+      "pointBearingDeg": 0,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B07-07",
       "name": "Hasmark og Hofmansgave",
-      "previous": 30,
-      "audited": 22,
-      "correctionDeg": 8
+      "historicalDirectionDeg": 30,
+      "configuredDirectionDeg": 22,
+      "pointBearingDeg": 22,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.67,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B07-08",
       "name": "Kerteminde nord og Mølleå",
-      "previous": 90,
-      "audited": 90,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.47,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B07-09",
       "name": "Kerteminde syd og Lundsgård",
-      "previous": 90,
-      "audited": 90,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.47,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B07-10",
       "name": "Nyborg nord og Storebæltskysten",
-      "previous": 90,
-      "audited": 90,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.48,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B07-11",
       "name": "Nyborg syd og Knudshoved",
-      "previous": 90,
-      "audited": 90,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.48,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B07-12",
       "name": "Tårup og Kongshøj",
-      "previous": 100,
-      "audited": 104,
-      "correctionDeg": 4
+      "historicalDirectionDeg": 100,
+      "configuredDirectionDeg": 104,
+      "pointBearingDeg": 104,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.55,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B07-13",
       "name": "Lundeborg og Elsehoved",
-      "previous": 100,
-      "audited": 104,
-      "correctionDeg": 4
+      "historicalDirectionDeg": 100,
+      "configuredDirectionDeg": 104,
+      "pointBearingDeg": 104,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.55,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B07-14",
       "name": "Thurø og Smørmosen",
-      "previous": 90,
-      "audited": 90,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.5,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B07-15",
       "name": "Svendborg og Christiansminde",
-      "previous": 120,
-      "audited": 130,
-      "correctionDeg": 10
+      "historicalDirectionDeg": 120,
+      "configuredDirectionDeg": 130,
+      "pointBearingDeg": 130,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.93,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B07-16",
       "name": "Tåsinge øst",
-      "previous": 90,
-      "audited": 90,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.51,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B07-17",
       "name": "Langeland nord og Lohals",
-      "previous": 45,
-      "audited": 35,
-      "correctionDeg": 10
+      "historicalDirectionDeg": 45,
+      "configuredDirectionDeg": 35,
+      "pointBearingDeg": 35,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.32,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B07-18",
       "name": "Langeland øst og Spodsbjerg",
-      "previous": 90,
-      "audited": 90,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.51,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B07-19",
       "name": "Langeland syd og Bagenkop",
-      "previous": 180,
-      "audited": 180,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 180,
+      "pointBearingDeg": 180,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B07-20",
       "name": "Langeland vest og Ristinge",
-      "previous": 260,
-      "audited": 256,
-      "correctionDeg": 4
+      "historicalDirectionDeg": 260,
+      "configuredDirectionDeg": 256,
+      "pointBearingDeg": 256,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.58,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B07-21",
       "name": "Ærø nord og Søby",
-      "previous": 320,
-      "audited": 329,
-      "correctionDeg": 9
+      "historicalDirectionDeg": 320,
+      "configuredDirectionDeg": 329,
+      "pointBearingDeg": 329,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.45,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B07-22",
       "name": "Ærø syd og Voderup",
-      "previous": 200,
-      "audited": 194,
-      "correctionDeg": 6
+      "historicalDirectionDeg": 200,
+      "configuredDirectionDeg": 194,
+      "pointBearingDeg": 194,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.85,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B07-23",
       "name": "Ærø øst og Marstal",
-      "previous": 110,
-      "audited": 117,
-      "correctionDeg": 7
+      "historicalDirectionDeg": 110,
+      "configuredDirectionDeg": 117,
+      "pointBearingDeg": 117,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.72,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B07-24",
       "name": "Faaborg og Dyreborg",
-      "previous": 180,
-      "audited": 180,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 180,
+      "pointBearingDeg": 180,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B07-25",
       "name": "Horne Land og Bøjden",
-      "previous": 220,
-      "audited": 210,
-      "correctionDeg": 10
+      "historicalDirectionDeg": 220,
+      "configuredDirectionDeg": 210,
+      "pointBearingDeg": 210,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.44,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B07-26",
       "name": "Helnæs og Torø",
-      "previous": 240,
-      "audited": 230,
-      "correctionDeg": 10
+      "historicalDirectionDeg": 240,
+      "configuredDirectionDeg": 230,
+      "pointBearingDeg": 230,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.93,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B07-27",
       "name": "Assens og Sandager Næs",
-      "previous": 270,
-      "audited": 270,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.48,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B07-28",
       "name": "Bågø og Brandsø",
-      "previous": 270,
-      "audited": 270,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.48,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B08-01",
       "name": "Røsnæs nord",
-      "previous": 0,
-      "audited": 146,
-      "correctionDeg": 146
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 146,
+      "pointBearingDeg": 146,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6.71,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B08-02",
       "name": "Røsnæs syd og Kalundborg",
-      "previous": 180,
-      "audited": 34,
-      "correctionDeg": 146
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 34,
+      "pointBearingDeg": 34,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6.72,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B08-03",
       "name": "Sejerø nord",
-      "previous": 0,
-      "audited": 155,
-      "correctionDeg": 155
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 155,
+      "pointBearingDeg": 155,
+      "differenceDeg": 0,
+      "pointDistanceKm": 7.36,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B08-04",
       "name": "Sejerø syd",
-      "previous": 180,
-      "audited": 25,
-      "correctionDeg": 155
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 25,
+      "pointBearingDeg": 25,
+      "differenceDeg": 0,
+      "pointDistanceKm": 7.37,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B08-05",
       "name": "Nekselø og Havnsø",
-      "previous": 270,
-      "audited": 121,
-      "correctionDeg": 149
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 121,
+      "pointBearingDeg": 121,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.36,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B08-06",
       "name": "Vesterlyng og Bjørnstrup",
-      "previous": 0,
-      "audited": 158,
-      "correctionDeg": 158
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 158,
+      "pointBearingDeg": 158,
+      "differenceDeg": 0,
+      "pointDistanceKm": 8.39,
+      "status": "REVIEW",
+      "warnings": [
+        "POINTS_TOO_FAR_APART",
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B08-07",
       "name": "Ordrup Næs og Kårup",
-      "previous": 0,
-      "audited": 162,
-      "correctionDeg": 162
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 162,
+      "pointBearingDeg": 162,
+      "differenceDeg": 0,
+      "pointDistanceKm": 8.17,
+      "status": "REVIEW",
+      "warnings": [
+        "POINTS_TOO_FAR_APART",
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B08-08",
       "name": "Vejrhøj og Vindekilde",
-      "previous": 0,
-      "audited": 162,
-      "correctionDeg": 162
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 162,
+      "pointBearingDeg": 162,
+      "differenceDeg": 0,
+      "pointDistanceKm": 8.17,
+      "status": "REVIEW",
+      "warnings": [
+        "POINTS_TOO_FAR_APART",
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B08-09",
       "name": "Høve og Gudmindrup",
-      "previous": 0,
-      "audited": 168,
-      "correctionDeg": 168
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 168,
+      "pointBearingDeg": 168,
+      "differenceDeg": 0,
+      "pointDistanceKm": 9.09,
+      "status": "REVIEW",
+      "warnings": [
+        "POINTS_TOO_FAR_APART",
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B08-10",
       "name": "Sjællands Odde nord",
-      "previous": 0,
-      "audited": 166,
-      "correctionDeg": 166
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 166,
+      "pointBearingDeg": 166,
+      "differenceDeg": 0,
+      "pointDistanceKm": 10.31,
+      "status": "REVIEW",
+      "warnings": [
+        "POINTS_TOO_FAR_APART",
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B08-11",
       "name": "Sjællands Odde syd",
-      "previous": 180,
-      "audited": 18,
-      "correctionDeg": 162
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 18,
+      "pointBearingDeg": 18,
+      "differenceDeg": 0,
+      "pointDistanceKm": 8.17,
+      "status": "REVIEW",
+      "warnings": [
+        "POINTS_TOO_FAR_APART",
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B08-12",
       "name": "Nykøbing Sjælland og Rørvig",
-      "previous": 90,
-      "audited": 322,
-      "correctionDeg": 128
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 322,
+      "pointBearingDeg": 322,
+      "differenceDeg": 0,
+      "pointDistanceKm": 7.07,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B08-13",
       "name": "Klint og Korshage",
-      "previous": 90,
-      "audited": 228,
-      "correctionDeg": 138
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 228,
+      "pointBearingDeg": 228,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6.67,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B08-14",
       "name": "Hundested og Lynæs",
-      "previous": 270,
-      "audited": 138,
-      "correctionDeg": 132
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 138,
+      "pointBearingDeg": 138,
+      "differenceDeg": 0,
+      "pointDistanceKm": 7.46,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B08-15",
       "name": "Liseleje og Melby",
-      "previous": 0,
-      "audited": 167,
-      "correctionDeg": 167
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 167,
+      "pointBearingDeg": 167,
+      "differenceDeg": 0,
+      "pointDistanceKm": 8,
+      "status": "REVIEW",
+      "warnings": [
+        "POINTS_TOO_FAR_APART"
+      ]
     },
     {
       "zoneId": "DK-B08-16",
       "name": "Tisvildeleje og Rågeleje",
-      "previous": 0,
-      "audited": 175,
-      "correctionDeg": 175
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 175,
+      "pointBearingDeg": 175,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6.7,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B08-17",
       "name": "Gilleleje og Gilbjerg",
-      "previous": 0,
-      "audited": 174,
-      "correctionDeg": 174
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 174,
+      "pointBearingDeg": 174,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.59,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B08-18",
       "name": "Dronningmølle og Hornbæk",
-      "previous": 0,
-      "audited": 180,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 180,
+      "pointBearingDeg": 180,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6.67,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B08-19",
       "name": "Ålsgårde og Helsingør",
-      "previous": 90,
-      "audited": 256,
-      "correctionDeg": 166
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 256,
+      "pointBearingDeg": 256,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.49,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B09-01",
       "name": "Snekkersten og Espergærde",
-      "previous": 270,
-      "audited": 257,
-      "correctionDeg": 13
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 257,
+      "pointBearingDeg": 257,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.09,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B09-02",
       "name": "Humlebæk og Nivå",
-      "previous": 270,
-      "audited": 270,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6.22,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B09-03",
       "name": "Rungsted og Vedbæk",
-      "previous": 270,
-      "audited": 270,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6.24,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B09-04",
       "name": "Skodsborg og Bellevue",
-      "previous": 270,
-      "audited": 270,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6.25,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B09-05",
       "name": "Amager nord og Kastrup",
-      "previous": 270,
-      "audited": 270,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6.28,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B09-06",
       "name": "Amager Strand og Dragør",
-      "previous": 270,
-      "audited": 270,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6.28,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B09-07",
       "name": "Sydamager og Kongelunden",
-      "previous": 0,
-      "audited": 0,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 0,
+      "pointBearingDeg": 0,
+      "differenceDeg": 0,
+      "pointDistanceKm": 8.9,
+      "status": "REVIEW",
+      "warnings": [
+        "POINTS_TOO_FAR_APART"
+      ]
     },
     {
       "zoneId": "DK-B09-08",
       "name": "Køge Bugt nord",
-      "previous": 0,
-      "audited": 0,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 0,
+      "pointBearingDeg": 0,
+      "differenceDeg": 0,
+      "pointDistanceKm": 11.12,
+      "status": "REVIEW",
+      "warnings": [
+        "POINTS_TOO_FAR_APART",
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B09-09",
       "name": "Køge Bugt syd og Solrød",
-      "previous": 0,
-      "audited": 0,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 0,
+      "pointBearingDeg": 0,
+      "differenceDeg": 0,
+      "pointDistanceKm": 10.01,
+      "status": "REVIEW",
+      "warnings": [
+        "POINTS_TOO_FAR_APART",
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B09-10",
       "name": "Køge og Strøby Egede",
-      "previous": 270,
-      "audited": 270,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.68,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B09-11",
       "name": "Stevns nord og Holtug",
-      "previous": 270,
-      "audited": 270,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6.96,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B09-12",
       "name": "Stevns Klint og Højerup",
-      "previous": 270,
-      "audited": 270,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6.97,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B09-13",
       "name": "Rødvig og Faxe Ladeplads",
-      "previous": 315,
-      "audited": 318,
-      "correctionDeg": 3
+      "historicalDirectionDeg": 315,
+      "configuredDirectionDeg": 318,
+      "pointBearingDeg": 318,
+      "differenceDeg": 0,
+      "pointDistanceKm": 10.46,
+      "status": "REVIEW",
+      "warnings": [
+        "POINTS_TOO_FAR_APART",
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B09-14",
       "name": "Præstø og Jungshoved",
-      "previous": 270,
-      "audited": 278,
-      "correctionDeg": 8
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 278,
+      "pointBearingDeg": 278,
+      "differenceDeg": 0,
+      "pointDistanceKm": 7.71,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B09-15",
       "name": "Bøgestrømmen vest",
-      "previous": 300,
-      "audited": 294,
-      "correctionDeg": 6
+      "historicalDirectionDeg": 300,
+      "configuredDirectionDeg": 294,
+      "pointBearingDeg": 294,
+      "differenceDeg": 0,
+      "pointDistanceKm": 8.35,
+      "status": "REVIEW",
+      "warnings": [
+        "POINTS_TOO_FAR_APART",
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B09-16",
       "name": "Karrebæksminde og Enø",
-      "previous": 0,
-      "audited": 7,
-      "correctionDeg": 7
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 7,
+      "pointBearingDeg": 7,
+      "differenceDeg": 0,
+      "pointDistanceKm": 10.09,
+      "status": "REVIEW",
+      "warnings": [
+        "POINTS_TOO_FAR_APART"
+      ]
     },
     {
       "zoneId": "DK-B09-17",
       "name": "Bisserup og Glænø",
-      "previous": 0,
-      "audited": 4,
-      "correctionDeg": 4
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 4,
+      "pointBearingDeg": 4,
+      "differenceDeg": 0,
+      "pointDistanceKm": 10.03,
+      "status": "REVIEW",
+      "warnings": [
+        "POINTS_TOO_FAR_APART"
+      ]
     },
     {
       "zoneId": "DK-B09-18",
       "name": "Korsør og Lejodde",
-      "previous": 90,
-      "audited": 90,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 7.59,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B09-19",
       "name": "Reersø og Mullerup",
-      "previous": 90,
-      "audited": 90,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 8.18,
+      "status": "REVIEW",
+      "warnings": [
+        "POINTS_TOO_FAR_APART"
+      ]
     },
     {
       "zoneId": "DK-B10-01",
       "name": "Møn nord og Nyord",
-      "previous": 315,
-      "audited": 232,
-      "correctionDeg": 83
+      "historicalDirectionDeg": 315,
+      "configuredDirectionDeg": 232,
+      "pointBearingDeg": 232,
+      "differenceDeg": 0,
+      "pointDistanceKm": 7.26,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B10-02",
       "name": "Ulvshale og Hårbølle",
-      "previous": 180,
-      "audited": 46,
-      "correctionDeg": 134
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 46,
+      "pointBearingDeg": 46,
+      "differenceDeg": 0,
+      "pointDistanceKm": 8,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B10-03",
       "name": "Møns Klint nord",
-      "previous": 270,
-      "audited": 270,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.82,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B10-04",
       "name": "Møns Klint syd og Klintholm",
-      "previous": 260,
-      "audited": 281,
-      "correctionDeg": 21
+      "historicalDirectionDeg": 260,
+      "configuredDirectionDeg": 281,
+      "pointBearingDeg": 281,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.86,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B10-05",
       "name": "Bogø og Farø",
-      "previous": 180,
-      "audited": 289,
-      "correctionDeg": 109
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 289,
+      "pointBearingDeg": 289,
+      "differenceDeg": 0,
+      "pointDistanceKm": 3.38,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B10-06",
       "name": "Falster nord og Orehoved",
-      "previous": 0,
-      "audited": 233,
-      "correctionDeg": 127
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 233,
+      "pointBearingDeg": 233,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.58,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B10-07",
       "name": "Falster øst og Pomlenakke",
-      "previous": 270,
-      "audited": 270,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.76,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B10-08",
       "name": "Marielyst og Bøtø",
-      "previous": 270,
-      "audited": 270,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.79,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B10-09",
       "name": "Gedser Odde og Gedesby",
-      "previous": 240,
-      "audited": 270,
-      "correctionDeg": 30
+      "historicalDirectionDeg": 240,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.16,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B10-10",
       "name": "Falster vest og Nysted Nor munding",
-      "previous": 90,
-      "audited": 90,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.78,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B10-11",
       "name": "Lolland sydøst og Nysted",
-      "previous": 0,
-      "audited": 0,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 0,
+      "pointBearingDeg": 0,
+      "differenceDeg": 0,
+      "pointDistanceKm": 8.9,
+      "status": "REVIEW",
+      "warnings": [
+        "POINTS_TOO_FAR_APART",
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B10-12",
       "name": "Lolland syd og Hyllekrog",
-      "previous": 0,
-      "audited": 0,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 0,
+      "pointBearingDeg": 0,
+      "differenceDeg": 0,
+      "pointDistanceKm": 8.9,
+      "status": "REVIEW",
+      "warnings": [
+        "POINTS_TOO_FAR_APART"
+      ]
     },
     {
       "zoneId": "DK-B10-13",
       "name": "Lolland sydvest og Kramnitse",
-      "previous": 0,
-      "audited": 0,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 0,
+      "pointBearingDeg": 0,
+      "differenceDeg": 0,
+      "pointDistanceKm": 8.9,
+      "status": "REVIEW",
+      "warnings": [
+        "POINTS_TOO_FAR_APART"
+      ]
     },
     {
       "zoneId": "DK-B10-14",
       "name": "Lolland vest og Albuen",
-      "previous": 90,
-      "audited": 90,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 7.07,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B10-15",
       "name": "Lolland nord og Kragenæs",
-      "previous": 180,
-      "audited": 180,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 180,
+      "pointBearingDeg": 180,
+      "differenceDeg": 0,
+      "pointDistanceKm": 11.12,
+      "status": "REVIEW",
+      "warnings": [
+        "POINTS_TOO_FAR_APART",
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B10-16",
       "name": "Fejø og Femø",
-      "previous": 180,
-      "audited": 180,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 180,
+      "pointBearingDeg": 180,
+      "differenceDeg": 0,
+      "pointDistanceKm": 11.12,
+      "status": "REVIEW",
+      "warnings": [
+        "POINTS_TOO_FAR_APART"
+      ]
     },
     {
       "zoneId": "DK-B10-17",
       "name": "Askø og Lilleø",
-      "previous": 180,
-      "audited": 180,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 180,
+      "pointBearingDeg": 180,
+      "differenceDeg": 0,
+      "pointDistanceKm": 11.12,
+      "status": "REVIEW",
+      "warnings": [
+        "POINTS_TOO_FAR_APART"
+      ]
     },
     {
       "zoneId": "DK-B10-18",
       "name": "Bornholm nord og Sandvig",
-      "previous": 180,
-      "audited": 180,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 180,
+      "pointBearingDeg": 180,
+      "differenceDeg": 0,
+      "pointDistanceKm": 8.9,
+      "status": "REVIEW",
+      "warnings": [
+        "POINTS_TOO_FAR_APART"
+      ]
     },
     {
       "zoneId": "DK-B10-19",
       "name": "Bornholm nordøst og Gudhjem",
-      "previous": 225,
-      "audited": 210,
-      "correctionDeg": 15
+      "historicalDirectionDeg": 225,
+      "configuredDirectionDeg": 210,
+      "pointBearingDeg": 210,
+      "differenceDeg": 0,
+      "pointDistanceKm": 7.68,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B10-20",
       "name": "Bornholm øst og Svaneke",
-      "previous": 270,
-      "audited": 270,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.73,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B10-21",
       "name": "Bornholm sydøst og Dueodde",
-      "previous": 320,
-      "audited": 326,
-      "correctionDeg": 6
+      "historicalDirectionDeg": 320,
+      "configuredDirectionDeg": 326,
+      "pointBearingDeg": 326,
+      "differenceDeg": 0,
+      "pointDistanceKm": 8.03,
+      "status": "REVIEW",
+      "warnings": [
+        "POINTS_TOO_FAR_APART",
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B10-22",
       "name": "Bornholm syd og Boderne",
-      "previous": 0,
-      "audited": 0,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 0,
+      "configuredDirectionDeg": 0,
+      "pointBearingDeg": 0,
+      "differenceDeg": 0,
+      "pointDistanceKm": 7.78,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B10-23",
       "name": "Bornholm vest og Hasle",
-      "previous": 90,
-      "audited": 90,
-      "correctionDeg": 0
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.72,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B10-24",
       "name": "Bornholm nordvest og Hammeren",
-      "previous": 120,
-      "audited": 102,
-      "correctionDeg": 18
+      "historicalDirectionDeg": 120,
+      "configuredDirectionDeg": 102,
+      "pointBearingDeg": 102,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.19,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B11-SAM-01",
       "name": "Samsø nord",
-      "previous": 180,
-      "audited": 196,
-      "correctionDeg": 16
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 196,
+      "pointBearingDeg": 196,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.62,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B11-SAM-02",
       "name": "Samsø øst",
-      "previous": 270,
-      "audited": 284,
-      "correctionDeg": 14
+      "historicalDirectionDeg": 270,
+      "configuredDirectionDeg": 284,
+      "pointBearingDeg": 284,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.51,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B11-SAM-03",
       "name": "Samsø syd og vest",
-      "previous": 80,
-      "audited": 90,
-      "correctionDeg": 10
+      "historicalDirectionDeg": 80,
+      "configuredDirectionDeg": 90,
+      "pointBearingDeg": 90,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B11-LAE-01",
       "name": "Læsø vest og Vesterø",
-      "previous": 90,
-      "audited": 80,
-      "correctionDeg": 10
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 80,
+      "pointBearingDeg": 80,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6.71,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B11-LAE-02",
       "name": "Læsø nord",
-      "previous": 180,
-      "audited": 176,
-      "correctionDeg": 4
+      "historicalDirectionDeg": 180,
+      "configuredDirectionDeg": 176,
+      "pointBearingDeg": 176,
+      "differenceDeg": 0,
+      "pointDistanceKm": 7.81,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B11-LAE-03",
       "name": "Læsø øst og syd",
-      "previous": 300,
-      "audited": 287,
-      "correctionDeg": 13
+      "historicalDirectionDeg": 300,
+      "configuredDirectionDeg": 287,
+      "pointBearingDeg": 287,
+      "differenceDeg": 0,
+      "pointDistanceKm": 7.55,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B12-01",
       "name": "Kolding Fjord og Løverodde",
-      "previous": 95,
-      "audited": 256,
-      "correctionDeg": 161
+      "historicalDirectionDeg": 95,
+      "configuredDirectionDeg": 256,
+      "pointBearingDeg": 256,
+      "differenceDeg": 0,
+      "pointDistanceKm": 4.55,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B12-02",
       "name": "Hejlsminde og Binderup",
-      "previous": 90,
-      "audited": 281,
-      "correctionDeg": 169
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 281,
+      "pointBearingDeg": 281,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.8,
+      "status": "PASS",
+      "warnings": []
     },
     {
       "zoneId": "DK-B12-03",
       "name": "Haderslev Fjord og Årøsund",
-      "previous": 95,
-      "audited": 270,
-      "correctionDeg": 175
+      "historicalDirectionDeg": 95,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 5.7,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B12-04",
       "name": "Genner Bugt og Aabenraa Fjord",
-      "previous": 105,
-      "audited": 261,
-      "correctionDeg": 156
+      "historicalDirectionDeg": 105,
+      "configuredDirectionDeg": 261,
+      "pointBearingDeg": 261,
+      "differenceDeg": 0,
+      "pointDistanceKm": 7.09,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B12-05",
       "name": "Kruså og Flensborg Fjord nord",
-      "previous": 120,
-      "audited": 270,
-      "correctionDeg": 150
+      "historicalDirectionDeg": 120,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 7.67,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B12-06",
       "name": "Sønderborg Bugt og Dybbøl",
-      "previous": 145,
-      "audited": 303,
-      "correctionDeg": 158
+      "historicalDirectionDeg": 145,
+      "configuredDirectionDeg": 303,
+      "pointBearingDeg": 303,
+      "differenceDeg": 0,
+      "pointDistanceKm": 6.11,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B12-07",
       "name": "Als syd og Kegnæs",
-      "previous": 165,
-      "audited": 21,
-      "correctionDeg": 144
+      "historicalDirectionDeg": 165,
+      "configuredDirectionDeg": 21,
+      "pointBearingDeg": 21,
+      "differenceDeg": 0,
+      "pointDistanceKm": 7.15,
+      "status": "REVIEW",
+      "warnings": [
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     },
     {
       "zoneId": "DK-B12-08",
       "name": "Als øst og Fynshav",
-      "previous": 90,
-      "audited": 270,
-      "correctionDeg": 180
+      "historicalDirectionDeg": 90,
+      "configuredDirectionDeg": 270,
+      "pointBearingDeg": 270,
+      "differenceDeg": 0,
+      "pointDistanceKm": 8.3,
+      "status": "REVIEW",
+      "warnings": [
+        "POINTS_TOO_FAR_APART",
+        "COMPLEX_COAST_MANUAL_REVIEW"
+      ]
     }
   ]
 }
