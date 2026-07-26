@@ -50,14 +50,16 @@ function calculateTransport(zone, weather, reasons, diagnostics) {
   let score = 34;
   let currentAlignment = null;
   const caps = [];
+  const steps = [{ label:'Grundscore', delta:34, scoreAfter:34 }];
+  const add = (label, delta) => { score += delta; steps.push({ label, delta, scoreAfter:score }); };
 
   if (current !== null) {
-    if (current >= .15 && current <= .65) { score += 18; reasons.push("Strømhastigheden er velegnet til at flytte let materiale."); }
-    else if (current > .65) { score += 5; reasons.push("Kraftig strøm kan flytte materiale, men mere uforudsigeligt."); }
-    else { score -= 12; reasons.push("Svag strøm giver begrænset transport lige nu."); }
+    if (current >= .15 && current <= .65) { add('Velegnet strømhastighed',18); reasons.push("Strømhastigheden er velegnet til at flytte let materiale."); }
+    else if (current > .65) { add('Kraftig strømhastighed',5); reasons.push("Kraftig strøm kan flytte materiale, men mere uforudsigeligt."); }
+    else { add('Svag strøm',-12); reasons.push("Svag strøm giver begrænset transport lige nu."); }
     currentAlignment = directionScore(weather.currentDirectionDeg, onshore);
     if (currentAlignment !== null) {
-      score += Math.round(30 * currentAlignment);
+      add('Strømretning mod land', Math.round(30 * currentAlignment));
       if (currentAlignment >= .65) reasons.push("Strømmen fører materiale ind mod zonen.");
       else if (currentAlignment <= -.35) reasons.push("Strømmen fører hovedsageligt materiale væk fra zonen.");
     }
@@ -70,35 +72,49 @@ function calculateTransport(zone, weather, reasons, diagnostics) {
   const windToward = windFrom === null ? null : (windFrom + 180) % 360;
   const windAlignment = directionScore(windToward, onshore);
   if (windAlignment !== null) {
-    if (windAlignment >= .65) { score += 6; reasons.push("Vindretningen kan understøtte transport ind mod kysten."); }
-    else if (windAlignment <= -.35) { score -= 2; reasons.push("Vindretningen giver ikke direkte overfladetransport ind mod kysten."); }
+    if (windAlignment >= .65) { add('Vind understøtter indtransport',6); reasons.push("Vindretningen kan understøtte transport ind mod kysten."); }
+    else if (windAlignment <= -.35) { add('Vind understøtter ikke indtransport',-2); reasons.push("Vindretningen giver ikke direkte overfladetransport ind mod kysten."); }
   }
 
   if (trend !== null) {
-    if (trend >= 8) { score += 8; reasons.push("Stigende vandstand kan føre flydende materiale ind over lavt vand."); }
-    else if (trend <= -8) { score += 3; reasons.push("Faldende vandstand kan samle materiale langs nye kanter."); }
-    else if (Math.abs(trend) < 2) { score -= 4; reasons.push("Næsten stabil vandstand giver kun lidt ekstra transport."); }
+    if (trend >= 8) { add('Stigende vandstand',8); reasons.push("Stigende vandstand kan føre flydende materiale ind over lavt vand."); }
+    else if (trend <= -8) { add('Faldende vandstand',3); reasons.push("Faldende vandstand kan samle materiale langs nye kanter."); }
+    else if (Math.abs(trend) < 2) { add('Stabil vandstand',-4); reasons.push("Næsten stabil vandstand giver kun lidt ekstra transport."); }
   }
 
   // Statiske kystegenskaber må kun forstærke dokumenteret indtransport.
   if (currentAlignment !== null && currentAlignment >= .2) {
-    if (zone.shallowWater) { score += 4; reasons.push("Lavt vand kan hjælpe indgående materiale ind i strandzonen."); }
-    if (zone.reefs) { score += 3; reasons.push("Rev kan koncentrere en allerede indgående transport."); }
-    if (zone.seagrass) { score += 3; reasons.push("Tang og ålegræs kan fastholde materiale, der allerede føres ind."); }
+    if (zone.shallowWater) { add('Lavt vand',4); reasons.push("Lavt vand kan hjælpe indgående materiale ind i strandzonen."); }
+    if (zone.reefs) { add('Rev',3); reasons.push("Rev kan koncentrere en allerede indgående transport."); }
+    if (zone.seagrass) { add('Tang og ålegræs',3); reasons.push("Tang og ålegræs kan fastholde materiale, der allerede føres ind."); }
   }
 
   if (currentAlignment !== null && current >= .15) {
     if (currentAlignment <= -.75) caps.push({ max: 28, reason: 'strongly-offshore-current' });
     else if (currentAlignment <= -.35) caps.push({ max: 42, reason: 'offshore-current' });
   }
-  for (const cap of caps) score = Math.min(score, cap.max);
+  const scoreBeforeCaps = score;
+  for (const cap of caps) {
+    const before = score; score = Math.min(score, cap.max);
+    if (score !== before) steps.push({ label:`Loft: ${cap.reason}`, delta:score-before, scoreAfter:score });
+  }
 
+  diagnostics.onshoreDirectionDeg = onshore;
+  diagnostics.currentDirectionDeg = numberOrNull(weather.currentDirectionDeg);
+  diagnostics.currentDirectionConvention = 'oceanographic-to';
+  diagnostics.windDirectionDeg = windFrom;
+  diagnostics.windDirectionConvention = 'meteorological-from';
   diagnostics.currentAlignment = currentAlignment;
   diagnostics.currentDirectionDifferenceDeg = numberOrNull(weather.currentDirectionDeg) === null || onshore === null ? null : angularDifference(weather.currentDirectionDeg, onshore);
   diagnostics.windTowardDirectionDeg = windToward;
   diagnostics.windAlignment = windAlignment;
   diagnostics.windDirectionDifferenceDeg = windToward === null || onshore === null ? null : angularDifference(windToward, onshore);
+  diagnostics.currentClassification = currentAlignment === null ? 'unknown' : currentAlignment >= .65 ? 'onshore' : currentAlignment >= .2 ? 'partly-onshore' : currentAlignment <= -.75 ? 'strongly-offshore' : currentAlignment <= -.35 ? 'offshore' : 'cross-shore';
+  diagnostics.windClassification = windAlignment === null ? 'unknown' : windAlignment >= .65 ? 'onshore' : windAlignment >= .2 ? 'partly-onshore' : windAlignment <= -.35 ? 'offshore' : 'cross-shore';
+  diagnostics.scoreBeforeCaps = Math.round(scoreBeforeCaps);
+  diagnostics.scoreAfterCaps = Math.round(score);
   diagnostics.capsApplied = caps;
+  diagnostics.steps = steps;
   return clamp(score);
 }
 

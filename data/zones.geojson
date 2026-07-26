@@ -1,6 +1,6 @@
 {
   "type": "FeatureCollection",
-  "version": "3.1.7",
+  "version": "3.1.9",
   "features": [
     {
       "type": "Feature",
@@ -459,7 +459,7 @@
         "name": "Djursland nord og øst",
         "region": "Djursland",
         "coastType": "east",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 260,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -487,8 +487,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -525,7 +526,7 @@
         "name": "Aarhusbugten og Odder",
         "region": "Østjylland",
         "coastType": "east",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -565,8 +566,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -603,7 +605,7 @@
         "name": "Vejle Fjord til Lillebælt",
         "region": "Østjylland",
         "coastType": "east",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 280,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -667,8 +669,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -705,7 +708,7 @@
         "name": "Nordfyn og Kerteminde",
         "region": "Fyn",
         "coastType": "east",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 225,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -781,8 +784,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -819,7 +823,7 @@
         "name": "Sjællands Odde og Odsherred",
         "region": "Nordvestsjælland",
         "coastType": "east",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 180,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -875,8 +879,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -913,7 +918,7 @@
         "name": "Nordsjælland og Øresund",
         "region": "Nordsjælland",
         "coastType": "east",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 225,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -957,8 +962,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -995,7 +1001,7 @@
         "name": "Stevns og Sydsjælland",
         "region": "Sydøstsjælland",
         "coastType": "east",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 300,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -1055,8 +1061,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -1093,7 +1100,7 @@
         "name": "Lolland-Falster sydkyst",
         "region": "Sydhavsøerne",
         "coastType": "east",
-        "onshoreDirectionDeg": 41,
+        "onshoreDirectionDeg": 0,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -1181,8 +1188,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -1219,7 +1227,7 @@
         "name": "Bornholms kyster",
         "region": "Bornholm",
         "coastType": "east",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -1259,8 +1267,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -1297,7 +1306,7 @@
         "name": "Limfjorden vest",
         "region": "Limfjorden",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 270,
+        "onshoreDirectionDeg": 90,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -1345,8 +1354,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -1383,7 +1393,7 @@
         "name": "Limfjorden midt",
         "region": "Limfjorden",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 0,
+        "onshoreDirectionDeg": 180,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -1439,8 +1449,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -1477,7 +1488,7 @@
         "name": "Limfjorden øst",
         "region": "Limfjorden øst – Aalborg til Hals",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 314,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -1506,8 +1517,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -1578,8 +1590,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -1642,8 +1655,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -1714,8 +1728,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -1786,8 +1801,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -1858,8 +1874,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -1938,8 +1955,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -2018,8 +2036,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -2094,8 +2113,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -2158,8 +2178,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -2230,8 +2251,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -2298,8 +2320,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -2370,8 +2393,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -2434,8 +2458,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -2506,8 +2531,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -2582,8 +2608,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -2650,8 +2677,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -2726,8 +2754,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -2794,8 +2823,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -2866,8 +2896,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -2938,8 +2969,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -3016,8 +3048,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -3086,8 +3119,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -3156,8 +3190,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -3230,8 +3265,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -3308,8 +3344,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -3382,8 +3419,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -3460,8 +3498,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -3530,8 +3569,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -3604,8 +3644,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -3678,8 +3719,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -3752,8 +3794,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -3830,8 +3873,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -3908,8 +3952,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -4006,8 +4051,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -4088,8 +4134,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -4160,8 +4207,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -4224,8 +4272,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -4292,8 +4341,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -4360,8 +4410,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -4428,8 +4479,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -4500,8 +4552,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -4568,8 +4621,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -4632,8 +4686,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -4704,8 +4759,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -4772,8 +4828,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -4844,8 +4901,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -4912,8 +4970,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -4984,8 +5043,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -5052,8 +5112,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -5116,8 +5177,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -5212,8 +5274,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -5284,8 +5347,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -5348,8 +5412,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -5420,8 +5485,9 @@
         ],
         "coastLineSource": "RavRadar controlled Wadden Sea shoreline; land-side beach alignment",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -5492,8 +5558,9 @@
         ],
         "coastLineSource": "RavRadar controlled Wadden Sea shoreline; land-side beach alignment",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -5572,8 +5639,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -5656,8 +5724,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -5728,8 +5797,9 @@
         ],
         "coastLineSource": "RavRadar controlled Wadden Sea shoreline; land-side beach alignment",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -5840,8 +5910,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -5908,8 +5979,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -5988,8 +6060,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -6068,8 +6141,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -6132,8 +6206,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -6220,8 +6295,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -6308,8 +6384,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -6408,8 +6485,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -6508,8 +6586,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -6604,8 +6683,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -6680,8 +6760,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -6768,8 +6849,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -6864,8 +6946,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -6936,8 +7019,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -7020,8 +7104,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -7112,8 +7197,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -7196,8 +7282,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -7272,8 +7359,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -7347,8 +7435,9 @@
           ]
         ],
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -7435,8 +7524,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -7511,8 +7601,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -7595,8 +7686,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -7663,8 +7755,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -7763,8 +7856,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -7843,8 +7937,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -7919,8 +8014,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -7991,8 +8087,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -8059,8 +8156,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -8127,8 +8225,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -8199,8 +8298,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -8271,8 +8371,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -8339,8 +8440,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -8411,8 +8513,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -8479,8 +8582,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -8555,8 +8659,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -8659,8 +8764,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -8747,8 +8853,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -8835,8 +8942,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -8903,8 +9011,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -9007,8 +9116,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -9075,8 +9185,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -9143,8 +9254,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -9215,8 +9327,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -9295,8 +9408,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -9379,8 +9493,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -9479,8 +9594,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -9583,8 +9699,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -9691,8 +9808,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -9775,8 +9893,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -9859,8 +9978,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -9943,8 +10063,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -10027,8 +10148,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -10103,8 +10225,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -10187,8 +10310,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -10271,8 +10395,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -10355,8 +10480,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -10439,8 +10565,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -10523,8 +10650,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -10607,8 +10735,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -10691,8 +10820,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -10775,8 +10905,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -10859,8 +10990,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -10943,8 +11075,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -11027,8 +11160,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -11111,8 +11245,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -11195,8 +11330,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -11279,8 +11415,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -11363,8 +11500,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -11447,8 +11585,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -11531,8 +11670,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -11615,8 +11755,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -11699,8 +11840,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -11783,8 +11925,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -11867,8 +12010,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -11951,8 +12095,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -12035,8 +12180,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -12107,8 +12253,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -12187,8 +12334,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -12251,8 +12399,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -12315,8 +12464,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -12399,8 +12549,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -12475,8 +12626,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -12547,8 +12699,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -12619,8 +12772,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -12699,8 +12853,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -12779,8 +12934,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -12887,8 +13043,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -12979,8 +13136,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -13063,8 +13221,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -13147,8 +13306,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -13211,8 +13371,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -13279,8 +13440,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -13351,8 +13513,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -13419,8 +13582,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -13491,8 +13655,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -13563,8 +13728,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -13631,8 +13797,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -13699,8 +13866,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -13771,8 +13939,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -13847,8 +14016,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -13915,8 +14085,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -13987,8 +14158,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -14055,8 +14227,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -14127,8 +14300,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -14199,8 +14373,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -14271,8 +14446,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -14343,8 +14519,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -14427,8 +14604,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -14531,8 +14709,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -14603,8 +14782,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -14699,8 +14879,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -14787,8 +14968,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -14867,8 +15049,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -14963,8 +15146,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -15051,8 +15235,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -15187,8 +15372,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -15255,8 +15441,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -15335,8 +15522,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -15415,8 +15603,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -15511,8 +15700,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -15587,8 +15777,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -15651,8 +15842,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -15727,8 +15919,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -15867,8 +16060,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -15959,8 +16153,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -16027,8 +16222,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -16095,8 +16291,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -16187,8 +16384,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -16327,8 +16525,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -16399,8 +16598,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -16479,8 +16679,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -16555,8 +16756,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -16635,8 +16837,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -16711,8 +16914,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -16791,8 +16995,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -16863,8 +17068,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -16943,8 +17149,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -17015,8 +17222,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -17103,8 +17311,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -17183,8 +17392,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -17263,8 +17473,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -17339,8 +17550,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -17419,8 +17631,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -17507,8 +17720,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -17614,8 +17828,9 @@
         "coastLineMasterSegments": [
           5
         ],
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -17709,8 +17924,9 @@
         "coastLineMasterSegments": [
           5
         ],
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -17800,8 +18016,9 @@
         "coastLineMasterSegments": [
           5
         ],
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -17919,8 +18136,9 @@
         "coastLineMasterSegments": [
           5
         ],
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -18066,8 +18284,9 @@
         "coastLineMasterSegments": [
           5
         ],
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -18149,8 +18368,9 @@
         "coastLineMasterSegments": [
           5
         ],
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -18248,8 +18468,9 @@
         "coastLineMasterSegments": [
           24
         ],
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",
@@ -18327,8 +18548,9 @@
         "coastLineMasterSegments": [
           24
         ],
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9"
       },
       "geometry": {
         "type": "Polygon",

@@ -1,0 +1,1180 @@
+{
+  "version": "3.1.9",
+  "generatedAt": "2026-07-26T18:00:00Z",
+  "scope": "210 current detailed coastal zones",
+  "method": "For the current detailed registry, dataPoint is the marine forecast point and pinPoint is the landward beach point. onshoreDirectionDeg is the bearing from dataPoint to pinPoint.",
+  "changedCount": 167,
+  "correctionsOver45Deg": 133,
+  "correctionsOver90Deg": 126,
+  "changes": [
+    {
+      "zoneId": "DK-B01-01",
+      "name": "Agger og Krik Vig",
+      "fromDeg": 270,
+      "toDeg": 107,
+      "differenceDeg": 163
+    },
+    {
+      "zoneId": "DK-B01-02",
+      "name": "Lyngby og Lodbjerg",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B01-03",
+      "name": "Stenbjerg og Vorupør",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B01-04",
+      "name": "Vangså og Klitmøller",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B01-05",
+      "name": "Hanstholm og Hamborg",
+      "fromDeg": 250,
+      "toDeg": 108,
+      "differenceDeg": 142
+    },
+    {
+      "zoneId": "DK-B01-06",
+      "name": "Vigsø og Lild Strand",
+      "fromDeg": 220,
+      "toDeg": 155,
+      "differenceDeg": 65
+    },
+    {
+      "zoneId": "DK-B01-07",
+      "name": "Bulbjerg og Thorup Strand",
+      "fromDeg": 220,
+      "toDeg": 161,
+      "differenceDeg": 59
+    },
+    {
+      "zoneId": "DK-B01-08",
+      "name": "Slettestrand og Svinkløv",
+      "fromDeg": 220,
+      "toDeg": 162,
+      "differenceDeg": 58
+    },
+    {
+      "zoneId": "DK-B01-09",
+      "name": "Tranum og Rødhus",
+      "fromDeg": 225,
+      "toDeg": 152,
+      "differenceDeg": 73
+    },
+    {
+      "zoneId": "DK-B01-10",
+      "name": "Blokhus og Hune",
+      "fromDeg": 230,
+      "toDeg": 141,
+      "differenceDeg": 89
+    },
+    {
+      "zoneId": "DK-B01-11",
+      "name": "Saltum og Grønhøj",
+      "fromDeg": 235,
+      "toDeg": 136,
+      "differenceDeg": 99
+    },
+    {
+      "zoneId": "DK-B01-12",
+      "name": "Løkken og Furreby",
+      "fromDeg": 240,
+      "toDeg": 127,
+      "differenceDeg": 113
+    },
+    {
+      "zoneId": "DK-B01-13",
+      "name": "Nørre Lyngby og Rubjerg",
+      "fromDeg": 250,
+      "toDeg": 112,
+      "differenceDeg": 138
+    },
+    {
+      "zoneId": "DK-B01-14",
+      "name": "Lønstrup og Nørlev",
+      "fromDeg": 250,
+      "toDeg": 122,
+      "differenceDeg": 128
+    },
+    {
+      "zoneId": "DK-B01-15",
+      "name": "Tornby og Hirtshals",
+      "fromDeg": 245,
+      "toDeg": 119,
+      "differenceDeg": 126
+    },
+    {
+      "zoneId": "DK-B01-16",
+      "name": "Kjul og Uggerby",
+      "fromDeg": 205,
+      "toDeg": 165,
+      "differenceDeg": 40
+    },
+    {
+      "zoneId": "DK-B01-17",
+      "name": "Tversted og Skiveren",
+      "fromDeg": 190,
+      "toDeg": 177,
+      "differenceDeg": 13
+    },
+    {
+      "zoneId": "DK-B01-18",
+      "name": "Kandestederne og Hulsig",
+      "fromDeg": 200,
+      "toDeg": 163,
+      "differenceDeg": 37
+    },
+    {
+      "zoneId": "DK-B01-19",
+      "name": "Skagen vest og Damstederne",
+      "fromDeg": 215,
+      "toDeg": 145,
+      "differenceDeg": 70
+    },
+    {
+      "zoneId": "DK-B01-20",
+      "name": "Grenen og Skagen øst",
+      "fromDeg": 70,
+      "toDeg": 278,
+      "differenceDeg": 152
+    },
+    {
+      "zoneId": "DK-B02-01",
+      "name": "Ålbæk og Bunken",
+      "fromDeg": 92,
+      "toDeg": 263,
+      "differenceDeg": 171
+    },
+    {
+      "zoneId": "DK-B02-02",
+      "name": "Napstjert og Jerup",
+      "fromDeg": 94,
+      "toDeg": 256,
+      "differenceDeg": 162
+    },
+    {
+      "zoneId": "DK-B02-03",
+      "name": "Bratten og Strandby",
+      "fromDeg": 96,
+      "toDeg": 278,
+      "differenceDeg": 178
+    },
+    {
+      "zoneId": "DK-B02-04",
+      "name": "Frederikshavn og Bangsbo",
+      "fromDeg": 100,
+      "toDeg": 277,
+      "differenceDeg": 177
+    },
+    {
+      "zoneId": "DK-B02-05",
+      "name": "Sæby og Sulbæk",
+      "fromDeg": 98,
+      "toDeg": 267,
+      "differenceDeg": 169
+    },
+    {
+      "zoneId": "DK-B02-06",
+      "name": "Lyngså og Voerså",
+      "fromDeg": 98,
+      "toDeg": 278,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B02-07",
+      "name": "Asaa og Melholt",
+      "fromDeg": 100,
+      "toDeg": 270,
+      "differenceDeg": 170
+    },
+    {
+      "zoneId": "DK-B02-08",
+      "name": "Hou og Bisnap",
+      "fromDeg": 105,
+      "toDeg": 250,
+      "differenceDeg": 145
+    },
+    {
+      "zoneId": "DK-B02-09",
+      "name": "Hals og Nordmandshage",
+      "fromDeg": 108,
+      "toDeg": 274,
+      "differenceDeg": 166
+    },
+    {
+      "zoneId": "DK-B02-10",
+      "name": "Egense og Mou",
+      "fromDeg": 180,
+      "toDeg": 178,
+      "differenceDeg": 2
+    },
+    {
+      "zoneId": "DK-B02-11",
+      "name": "Dokkedal og Mulbjerge",
+      "fromDeg": 100,
+      "toDeg": 268,
+      "differenceDeg": 168
+    },
+    {
+      "zoneId": "DK-B02-12",
+      "name": "Øster Hurup og Als",
+      "fromDeg": 100,
+      "toDeg": 268,
+      "differenceDeg": 168
+    },
+    {
+      "zoneId": "DK-B02-13",
+      "name": "Als Odde og Helberskov",
+      "fromDeg": 125,
+      "toDeg": 305,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B02-14",
+      "name": "Havnø og Mariager Fjord øst",
+      "fromDeg": 130,
+      "toDeg": 296,
+      "differenceDeg": 166
+    },
+    {
+      "zoneId": "DK-B02-15",
+      "name": "Udbyhøj og Stenrevet",
+      "fromDeg": 105,
+      "toDeg": 268,
+      "differenceDeg": 163
+    },
+    {
+      "zoneId": "DK-B03-01",
+      "name": "Harboøre og Vrist",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B03-02",
+      "name": "Vejlby Klit og Ferring",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B03-03",
+      "name": "Bovbjerg og Trans",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B03-04",
+      "name": "Thorsminde og Husby Klit",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B03-05",
+      "name": "Fjand og Vedersø Klit",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B03-06",
+      "name": "Søndervig og Klegod",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B03-07",
+      "name": "Hvide Sande nord",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B03-08",
+      "name": "Hvide Sande syd og Årgab",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B03-09",
+      "name": "Haurvig og Skodbjerge",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B03-10",
+      "name": "Nymindegab og Houstrup",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B03-11",
+      "name": "Henne Strand og Grærup",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B03-12",
+      "name": "Vejers og Børsmose",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B03-13",
+      "name": "Blåvand og Hvidbjerg",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B03-14",
+      "name": "Skallingen nord",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B03-15",
+      "name": "Skallingen syd",
+      "fromDeg": 270,
+      "toDeg": 67,
+      "differenceDeg": 157
+    },
+    {
+      "zoneId": "DK-B04-01",
+      "name": "Ho Bugt og Oksby",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B04-02",
+      "name": "Hjerting og Sædding",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B04-03",
+      "name": "Fanø nord og Nordby",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B04-04",
+      "name": "Fanø vest og Rindby",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B04-05",
+      "name": "Fanø syd og Sønderho",
+      "fromDeg": 255,
+      "toDeg": 90,
+      "differenceDeg": 165
+    },
+    {
+      "zoneId": "DK-B04-06",
+      "name": "Mandø vest",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B04-07",
+      "name": "Rømø nord og Lakolk",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B04-08",
+      "name": "Rømø vest og Kongsmark",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B04-09",
+      "name": "Rømø syd og Sønderstrand",
+      "fromDeg": 250,
+      "toDeg": 90,
+      "differenceDeg": 160
+    },
+    {
+      "zoneId": "DK-B04-10",
+      "name": "Hjerpsted og Emmerlev",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B04-11",
+      "name": "Højer og Vidå",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B05-01",
+      "name": "Thyborøn og Harboøre Tange øst",
+      "fromDeg": 90,
+      "toDeg": 281,
+      "differenceDeg": 169
+    },
+    {
+      "zoneId": "DK-B05-02",
+      "name": "Agger Tange og Krik",
+      "fromDeg": 90,
+      "toDeg": 270,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B05-03",
+      "name": "Nissum Bredning nord",
+      "fromDeg": 180,
+      "toDeg": 0,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B05-04",
+      "name": "Nissum Bredning syd",
+      "fromDeg": 0,
+      "toDeg": 180,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B05-05",
+      "name": "Jegindø og Thyholm",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B05-06",
+      "name": "Venø og Struer",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B05-07",
+      "name": "Lemvig og Gjellerodde",
+      "fromDeg": 90,
+      "toDeg": 270,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B05-08",
+      "name": "Toftum Bjerge og Remmerstrand",
+      "fromDeg": 0,
+      "toDeg": 180,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B05-09",
+      "name": "Thisted Bredning vest",
+      "fromDeg": 90,
+      "toDeg": 270,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B05-10",
+      "name": "Thisted og Vildsund",
+      "fromDeg": 180,
+      "toDeg": 0,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B05-11",
+      "name": "Mors nord og Feggesund",
+      "fromDeg": 0,
+      "toDeg": 180,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B05-12",
+      "name": "Mors vest og Ejerslev",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B05-13",
+      "name": "Mors syd og Nykøbing",
+      "fromDeg": 180,
+      "toDeg": 0,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B05-14",
+      "name": "Sallingsund og Glyngøre",
+      "fromDeg": 90,
+      "toDeg": 270,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B05-15",
+      "name": "Salling vest og Junget",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B05-16",
+      "name": "Fur nord",
+      "fromDeg": 0,
+      "toDeg": 180,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B05-17",
+      "name": "Fur syd",
+      "fromDeg": 180,
+      "toDeg": 0,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B05-18",
+      "name": "Løgstør og Aggersund",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B05-19",
+      "name": "Livø og Rønbjerg",
+      "fromDeg": 90,
+      "toDeg": 270,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B05-20",
+      "name": "Nibe Bredning vest",
+      "fromDeg": 90,
+      "toDeg": 270,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B05-21",
+      "name": "Nibe og Sebbersund",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B05-22",
+      "name": "Gjøl og Attrup",
+      "fromDeg": 180,
+      "toDeg": 0,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B05-23",
+      "name": "Aalborg vest og Egholm",
+      "fromDeg": 180,
+      "toDeg": 0,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B05-24",
+      "name": "Aalborg øst og Nørresundby",
+      "fromDeg": 180,
+      "toDeg": 0,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B05-25",
+      "name": "Hals Barre og Egense",
+      "fromDeg": 90,
+      "toDeg": 270,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B06-01",
+      "name": "Gjerrild Nordstrand",
+      "fromDeg": 0,
+      "toDeg": 180,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B06-02",
+      "name": "Fornæs og Grenaa",
+      "fromDeg": 90,
+      "toDeg": 270,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B06-03",
+      "name": "Grenaa og Katholm",
+      "fromDeg": 90,
+      "toDeg": 270,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B06-04",
+      "name": "Bønnerup og Fjellerup",
+      "fromDeg": 0,
+      "toDeg": 180,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B06-05",
+      "name": "Rygarde og Sangstrup",
+      "fromDeg": 45,
+      "toDeg": 231,
+      "differenceDeg": 174
+    },
+    {
+      "zoneId": "DK-B06-06",
+      "name": "Karlby og Glatved",
+      "fromDeg": 90,
+      "toDeg": 270,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B06-07",
+      "name": "Jernhatten og Rugård",
+      "fromDeg": 90,
+      "toDeg": 270,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B06-08",
+      "name": "Ebeltoft og Ahl",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B06-09",
+      "name": "Helgenæs øst",
+      "fromDeg": 90,
+      "toDeg": 270,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B06-10",
+      "name": "Helgenæs vest",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B06-11",
+      "name": "Knebel og Skødshoved",
+      "fromDeg": 270,
+      "toDeg": 90,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B06-12",
+      "name": "Kalø og Følle",
+      "fromDeg": 180,
+      "toDeg": 0,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B06-13",
+      "name": "Vosnæs og Havhuse",
+      "fromDeg": 180,
+      "toDeg": 0,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B06-14",
+      "name": "Aarhus nord og Egå",
+      "fromDeg": 90,
+      "toDeg": 270,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B06-15",
+      "name": "Aarhus syd og Moesgård",
+      "fromDeg": 90,
+      "toDeg": 270,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B06-16",
+      "name": "Norsminde og Saksild",
+      "fromDeg": 90,
+      "toDeg": 270,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B06-17",
+      "name": "Hou og Odderkysten",
+      "fromDeg": 90,
+      "toDeg": 270,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B06-18",
+      "name": "Juelsminde og As Vig",
+      "fromDeg": 90,
+      "toDeg": 270,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B06-19",
+      "name": "Snaptun og Endelave nord",
+      "fromDeg": 0,
+      "toDeg": 180,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B06-20",
+      "name": "Endelave syd",
+      "fromDeg": 180,
+      "toDeg": 0,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B07-01",
+      "name": "Trelde Næs og Vejlby Fed",
+      "fromDeg": 45,
+      "toDeg": 35,
+      "differenceDeg": 10
+    },
+    {
+      "zoneId": "DK-B07-03",
+      "name": "Middelfart og Hindsgavl",
+      "fromDeg": 250,
+      "toDeg": 242,
+      "differenceDeg": 8
+    },
+    {
+      "zoneId": "DK-B07-07",
+      "name": "Hasmark og Hofmansgave",
+      "fromDeg": 30,
+      "toDeg": 22,
+      "differenceDeg": 8
+    },
+    {
+      "zoneId": "DK-B07-12",
+      "name": "Tårup og Kongshøj",
+      "fromDeg": 100,
+      "toDeg": 104,
+      "differenceDeg": 4
+    },
+    {
+      "zoneId": "DK-B07-13",
+      "name": "Lundeborg og Elsehoved",
+      "fromDeg": 100,
+      "toDeg": 104,
+      "differenceDeg": 4
+    },
+    {
+      "zoneId": "DK-B07-15",
+      "name": "Svendborg og Christiansminde",
+      "fromDeg": 120,
+      "toDeg": 130,
+      "differenceDeg": 10
+    },
+    {
+      "zoneId": "DK-B07-17",
+      "name": "Langeland nord og Lohals",
+      "fromDeg": 45,
+      "toDeg": 35,
+      "differenceDeg": 10
+    },
+    {
+      "zoneId": "DK-B07-20",
+      "name": "Langeland vest og Ristinge",
+      "fromDeg": 260,
+      "toDeg": 256,
+      "differenceDeg": 4
+    },
+    {
+      "zoneId": "DK-B07-21",
+      "name": "Ærø nord og Søby",
+      "fromDeg": 320,
+      "toDeg": 329,
+      "differenceDeg": 9
+    },
+    {
+      "zoneId": "DK-B07-22",
+      "name": "Ærø syd og Voderup",
+      "fromDeg": 200,
+      "toDeg": 194,
+      "differenceDeg": 6
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "name": "Ærø øst og Marstal",
+      "fromDeg": 110,
+      "toDeg": 117,
+      "differenceDeg": 7
+    },
+    {
+      "zoneId": "DK-B07-25",
+      "name": "Horne Land og Bøjden",
+      "fromDeg": 220,
+      "toDeg": 210,
+      "differenceDeg": 10
+    },
+    {
+      "zoneId": "DK-B07-26",
+      "name": "Helnæs og Torø",
+      "fromDeg": 240,
+      "toDeg": 230,
+      "differenceDeg": 10
+    },
+    {
+      "zoneId": "DK-B08-01",
+      "name": "Røsnæs nord",
+      "fromDeg": 0,
+      "toDeg": 146,
+      "differenceDeg": 146
+    },
+    {
+      "zoneId": "DK-B08-02",
+      "name": "Røsnæs syd og Kalundborg",
+      "fromDeg": 180,
+      "toDeg": 34,
+      "differenceDeg": 146
+    },
+    {
+      "zoneId": "DK-B08-03",
+      "name": "Sejerø nord",
+      "fromDeg": 0,
+      "toDeg": 155,
+      "differenceDeg": 155
+    },
+    {
+      "zoneId": "DK-B08-04",
+      "name": "Sejerø syd",
+      "fromDeg": 180,
+      "toDeg": 25,
+      "differenceDeg": 155
+    },
+    {
+      "zoneId": "DK-B08-05",
+      "name": "Nekselø og Havnsø",
+      "fromDeg": 270,
+      "toDeg": 121,
+      "differenceDeg": 149
+    },
+    {
+      "zoneId": "DK-B08-06",
+      "name": "Vesterlyng og Bjørnstrup",
+      "fromDeg": 0,
+      "toDeg": 158,
+      "differenceDeg": 158
+    },
+    {
+      "zoneId": "DK-B08-07",
+      "name": "Ordrup Næs og Kårup",
+      "fromDeg": 0,
+      "toDeg": 162,
+      "differenceDeg": 162
+    },
+    {
+      "zoneId": "DK-B08-08",
+      "name": "Vejrhøj og Vindekilde",
+      "fromDeg": 0,
+      "toDeg": 162,
+      "differenceDeg": 162
+    },
+    {
+      "zoneId": "DK-B08-09",
+      "name": "Høve og Gudmindrup",
+      "fromDeg": 0,
+      "toDeg": 168,
+      "differenceDeg": 168
+    },
+    {
+      "zoneId": "DK-B08-10",
+      "name": "Sjællands Odde nord",
+      "fromDeg": 0,
+      "toDeg": 166,
+      "differenceDeg": 166
+    },
+    {
+      "zoneId": "DK-B08-11",
+      "name": "Sjællands Odde syd",
+      "fromDeg": 180,
+      "toDeg": 18,
+      "differenceDeg": 162
+    },
+    {
+      "zoneId": "DK-B08-12",
+      "name": "Nykøbing Sjælland og Rørvig",
+      "fromDeg": 90,
+      "toDeg": 322,
+      "differenceDeg": 128
+    },
+    {
+      "zoneId": "DK-B08-13",
+      "name": "Klint og Korshage",
+      "fromDeg": 90,
+      "toDeg": 228,
+      "differenceDeg": 138
+    },
+    {
+      "zoneId": "DK-B08-14",
+      "name": "Hundested og Lynæs",
+      "fromDeg": 270,
+      "toDeg": 138,
+      "differenceDeg": 132
+    },
+    {
+      "zoneId": "DK-B08-15",
+      "name": "Liseleje og Melby",
+      "fromDeg": 0,
+      "toDeg": 167,
+      "differenceDeg": 167
+    },
+    {
+      "zoneId": "DK-B08-16",
+      "name": "Tisvildeleje og Rågeleje",
+      "fromDeg": 0,
+      "toDeg": 175,
+      "differenceDeg": 175
+    },
+    {
+      "zoneId": "DK-B08-17",
+      "name": "Gilleleje og Gilbjerg",
+      "fromDeg": 0,
+      "toDeg": 174,
+      "differenceDeg": 174
+    },
+    {
+      "zoneId": "DK-B08-18",
+      "name": "Dronningmølle og Hornbæk",
+      "fromDeg": 0,
+      "toDeg": 180,
+      "differenceDeg": 180
+    },
+    {
+      "zoneId": "DK-B08-19",
+      "name": "Ålsgårde og Helsingør",
+      "fromDeg": 90,
+      "toDeg": 256,
+      "differenceDeg": 166
+    },
+    {
+      "zoneId": "DK-B09-01",
+      "name": "Snekkersten og Espergærde",
+      "fromDeg": 270,
+      "toDeg": 257,
+      "differenceDeg": 13
+    },
+    {
+      "zoneId": "DK-B09-13",
+      "name": "Rødvig og Faxe Ladeplads",
+      "fromDeg": 315,
+      "toDeg": 318,
+      "differenceDeg": 3
+    },
+    {
+      "zoneId": "DK-B09-14",
+      "name": "Præstø og Jungshoved",
+      "fromDeg": 270,
+      "toDeg": 278,
+      "differenceDeg": 8
+    },
+    {
+      "zoneId": "DK-B09-15",
+      "name": "Bøgestrømmen vest",
+      "fromDeg": 300,
+      "toDeg": 294,
+      "differenceDeg": 6
+    },
+    {
+      "zoneId": "DK-B09-16",
+      "name": "Karrebæksminde og Enø",
+      "fromDeg": 0,
+      "toDeg": 7,
+      "differenceDeg": 7
+    },
+    {
+      "zoneId": "DK-B09-17",
+      "name": "Bisserup og Glænø",
+      "fromDeg": 0,
+      "toDeg": 4,
+      "differenceDeg": 4
+    },
+    {
+      "zoneId": "DK-B10-01",
+      "name": "Møn nord og Nyord",
+      "fromDeg": 315,
+      "toDeg": 232,
+      "differenceDeg": 83
+    },
+    {
+      "zoneId": "DK-B10-02",
+      "name": "Ulvshale og Hårbølle",
+      "fromDeg": 180,
+      "toDeg": 46,
+      "differenceDeg": 134
+    },
+    {
+      "zoneId": "DK-B10-04",
+      "name": "Møns Klint syd og Klintholm",
+      "fromDeg": 260,
+      "toDeg": 281,
+      "differenceDeg": 21
+    },
+    {
+      "zoneId": "DK-B10-05",
+      "name": "Bogø og Farø",
+      "fromDeg": 180,
+      "toDeg": 289,
+      "differenceDeg": 109
+    },
+    {
+      "zoneId": "DK-B10-06",
+      "name": "Falster nord og Orehoved",
+      "fromDeg": 0,
+      "toDeg": 233,
+      "differenceDeg": 127
+    },
+    {
+      "zoneId": "DK-B10-09",
+      "name": "Gedser Odde og Gedesby",
+      "fromDeg": 240,
+      "toDeg": 270,
+      "differenceDeg": 30
+    },
+    {
+      "zoneId": "DK-B10-19",
+      "name": "Bornholm nordøst og Gudhjem",
+      "fromDeg": 225,
+      "toDeg": 210,
+      "differenceDeg": 15
+    },
+    {
+      "zoneId": "DK-B10-21",
+      "name": "Bornholm sydøst og Dueodde",
+      "fromDeg": 320,
+      "toDeg": 326,
+      "differenceDeg": 6
+    },
+    {
+      "zoneId": "DK-B10-24",
+      "name": "Bornholm nordvest og Hammeren",
+      "fromDeg": 120,
+      "toDeg": 102,
+      "differenceDeg": 18
+    },
+    {
+      "zoneId": "DK-B11-SAM-01",
+      "name": "Samsø nord",
+      "fromDeg": 180,
+      "toDeg": 196,
+      "differenceDeg": 16
+    },
+    {
+      "zoneId": "DK-B11-SAM-02",
+      "name": "Samsø øst",
+      "fromDeg": 270,
+      "toDeg": 284,
+      "differenceDeg": 14
+    },
+    {
+      "zoneId": "DK-B11-SAM-03",
+      "name": "Samsø syd og vest",
+      "fromDeg": 80,
+      "toDeg": 90,
+      "differenceDeg": 10
+    },
+    {
+      "zoneId": "DK-B11-LAE-01",
+      "name": "Læsø vest og Vesterø",
+      "fromDeg": 90,
+      "toDeg": 80,
+      "differenceDeg": 10
+    },
+    {
+      "zoneId": "DK-B11-LAE-02",
+      "name": "Læsø nord",
+      "fromDeg": 180,
+      "toDeg": 176,
+      "differenceDeg": 4
+    },
+    {
+      "zoneId": "DK-B11-LAE-03",
+      "name": "Læsø øst og syd",
+      "fromDeg": 300,
+      "toDeg": 287,
+      "differenceDeg": 13
+    },
+    {
+      "zoneId": "DK-B12-01",
+      "name": "Kolding Fjord og Løverodde",
+      "fromDeg": 95,
+      "toDeg": 256,
+      "differenceDeg": 161
+    },
+    {
+      "zoneId": "DK-B12-02",
+      "name": "Hejlsminde og Binderup",
+      "fromDeg": 90,
+      "toDeg": 281,
+      "differenceDeg": 169
+    },
+    {
+      "zoneId": "DK-B12-03",
+      "name": "Haderslev Fjord og Årøsund",
+      "fromDeg": 95,
+      "toDeg": 270,
+      "differenceDeg": 175
+    },
+    {
+      "zoneId": "DK-B12-04",
+      "name": "Genner Bugt og Aabenraa Fjord",
+      "fromDeg": 105,
+      "toDeg": 261,
+      "differenceDeg": 156
+    },
+    {
+      "zoneId": "DK-B12-05",
+      "name": "Kruså og Flensborg Fjord nord",
+      "fromDeg": 120,
+      "toDeg": 270,
+      "differenceDeg": 150
+    },
+    {
+      "zoneId": "DK-B12-06",
+      "name": "Sønderborg Bugt og Dybbøl",
+      "fromDeg": 145,
+      "toDeg": 303,
+      "differenceDeg": 158
+    },
+    {
+      "zoneId": "DK-B12-07",
+      "name": "Als syd og Kegnæs",
+      "fromDeg": 165,
+      "toDeg": 21,
+      "differenceDeg": 144
+    },
+    {
+      "zoneId": "DK-B12-08",
+      "name": "Als øst og Fynshav",
+      "fromDeg": 90,
+      "toDeg": 270,
+      "differenceDeg": 180
+    }
+  ]
+}

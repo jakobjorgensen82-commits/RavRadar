@@ -56,6 +56,37 @@ function componentDetails(name, key, result, definition) {
   return `<details class="component-detail"><summary><span>${name}</span><strong class="component-score ${componentLevel}">${componentScore ?? "–"}/100</strong></summary><div class="component-explanation"><p><b>Hvad betyder det?</b> ${definition}</p>${calculation}<p><b>Hvorfor denne score?</b></p><ul>${reasons.map(reason => `<li>${escapeHtml(reason)}</li>`).join("") || "<li>Der er ikke nok data til en nærmere forklaring.</li>"}</ul></div></details>`;
 }
 
+
+function debugPanel(zone, result, condition) {
+  const d = result.explanation?.transportDiagnostics || {};
+  const prediction = result.prediction || {};
+  const caps = (d.capsApplied || []).map(cap => `<li><code>${escapeHtml(cap.reason)}</code>: maks. ${cap.max} transportpoint</li>`).join("") || "<li>Ingen scorelofter anvendt.</li>";
+  const steps = (d.steps || []).map(step => `<tr><td>${escapeHtml(step.label)}</td><td>${step.delta > 0 ? "+" : ""}${step.delta}</td><td>${Math.round(step.scoreAfter)}</td></tr>`).join("") || '<tr><td colspan="3">Ingen mellemregninger tilgængelige.</td></tr>';
+  const provider = condition.providerLabel || condition.provider || "Ukendt";
+  const currentDifference = Number.isFinite(Number(d.currentDirectionDifferenceDeg)) ? `${Math.round(d.currentDirectionDifferenceDeg)}°` : "Mangler";
+  const classificationLabels = { onshore:"Ind mod land", "partly-onshore":"Delvist ind mod land", "cross-shore":"Langs kysten/tværgående", offshore:"Væk fra land", "strongly-offshore":"Kraftigt væk fra land", unknown:"Ukendt" };
+  return `<details class="debug-panel"><summary>Debug: vis alle mellemregninger</summary><div class="debug-content">
+    <p class="debug-warning"><b>Teknisk visning.</b> Bruges til at kontrollere, at rådata, retninger og score passer fysisk sammen.</p>
+    <div class="debug-grid">
+      <div><span>Zone-ID</span><strong>${escapeHtml(zone.id)}</strong></div>
+      <div><span>Datakilde</span><strong>${escapeHtml(provider)}</strong></div>
+      <div><span>Pålandsretning</span><strong>${compass(zone.onshoreDirectionDeg)}</strong></div>
+      <div><span>Retningskilde</span><strong>${escapeHtml(zone.onshoreDirectionSource || "Ikke angivet")}</strong></div>
+      <div><span>Rå strømretning</span><strong>${compass(condition.currentDirectionDeg)} (mod-retning)</strong></div>
+      <div><span>Forskel strøm/land</span><strong>${currentDifference}</strong></div>
+      <div><span>Strømklassifikation</span><strong>${escapeHtml(classificationLabels[d.currentClassification] || d.currentClassification || "Ukendt")}</strong></div>
+      <div><span>Rå vindretning</span><strong>${compass(condition.windDirectionDeg)} (fra-retning)</strong></div>
+      <div><span>Vindens bevægelse</span><strong>${compass(d.windTowardDirectionDeg)}</strong></div>
+      <div><span>Transport før loft</span><strong>${Number.isFinite(Number(d.scoreBeforeCaps)) ? d.scoreBeforeCaps : "–"}/100</strong></div>
+      <div><span>Transport efter loft</span><strong>${Number.isFinite(Number(d.scoreAfterCaps)) ? d.scoreAfterCaps : "–"}/100</strong></div>
+      <div><span>Endelig RavScore</span><strong>${result.score ?? "–"}/100</strong></div>
+    </div>
+    <h4>Transportens mellemregninger</h4><div class="debug-table-wrap"><table class="debug-table"><thead><tr><th>Trin</th><th>Ændring</th><th>Efter trin</th></tr></thead><tbody>${steps}</tbody></table></div>
+    <h4>Anvendte scorelofter</h4><ul>${caps}</ul>
+    <h4>Samlet score</h4><pre>${escapeHtml(JSON.stringify({ formula:result.explanation?.formula, components:result.components, weights:result.explanation?.weights, contributions:result.explanation?.contributions, rawScore:result.explanation?.rawScore, adaptiveAdjustment:result.explanation?.adaptiveAdjustment, ruleAdjustment:result.explanation?.ruleAdjustment, finalScore:result.explanation?.finalScore, ai:{ probability:prediction.probability, modelProbability:prediction.modelProbability, empiricalProbability:prediction.empiricalProbability, confidence:prediction.confidence, sampleSize:prediction.sampleSize } }, null, 2))}</pre>
+  </div></details>`;
+}
+
 function dayTabs(days, selected = 0, className = "forecast-day-tab") {
   return `<div class="day-tabs" role="tablist">${days.map((day,index) => `<button class="${className} ${index===selected?"active":""}" type="button" data-day-index="${index}" role="tab" aria-selected="${index===selected}"><span>${dayLabel(`${day.date}T12:00:00`)}</span><small>${dateLabel(`${day.date}T12:00:00`)}</small></button>`).join("")}</div>`;
 }
@@ -111,6 +142,7 @@ export function showZoneInfo(element, zone, result, condition, mode, options = {
   element.innerHTML = `<button type="button" class="back-to-overview" data-close-zone>← Tilbage til oversigten</button><div class="zone-header"><div><h2>${escapeHtml(zone.name)}</h2><p class="zone-meta">${escapeHtml(zone.region)} · ${modeName}</p></div><div class="score-badge ${result.level}"><strong>${score}</strong><span>${escapeHtml(result.label)}</span></div></div>
     ${componentHtml}
     ${result.prediction?.available ? `<section class="prediction-panel"><div><span class="eyebrow">AI-prognose</span><h3>${result.prediction.probability}% chance for ravfund</h3><p>${escapeHtml(result.prediction.label)} · sikkerhed ${result.prediction.confidence}%</p></div><details><summary>Sådan er prognosen beregnet</summary><ul>${result.prediction.reasons.map(reason=>`<li>${escapeHtml(reason)}</li>`).join("")}</ul></details></section>` : ""}
+    ${result.available ? debugPanel(zone,result,condition) : ""}
     ${result.available ? `<div class="metric-grid weather-grid"><div class="metric"><span>Vind</span><strong>${directionMetric("wind",condition.windSpeedMps,"m/s",condition.windDirectionDeg)}</strong></div><div class="metric"><span>Bølger</span><strong>${formatNumber(condition.waveHeightM,"m")}</strong></div><div class="metric"><span>Vandstand</span><strong>${formatNumber(condition.waterLevelCm,"cm",0)}</strong></div><div class="metric"><span>Strøm</span><strong>${directionMetric("current",condition.currentSpeedMps,"m/s",condition.currentDirectionDeg,2)}</strong></div><div class="metric"><span>Vandtemperatur</span><strong>${formatNumber(condition.waterTemperatureC,"°C")}</strong></div><div class="metric"><span>3-timers trend</span><strong>${formatNumber(condition.waterLevelTrendCm3h,"cm",0)}</strong></div></div>` : ""}
     ${forecastPanel(days,zone,mode,options.history||{})}${tidePanel(days)}
     <form id="observationForm" class="observation-form"><h3>Hvad fandt du?</h3><p>For at gøre RavRadar mere præcis vil vi gerne sammenholde dit fund med vejr, vandstand og den RavScore, der gjaldt under ravjagten.</p><label>Dato for ravjagten<input name="observedDate" type="date" required value="${new Date().toISOString().slice(0,10)}" max="${new Date().toISOString().slice(0,10)}"></label><label class="grams-field">Valgfrit antal gram<input name="grams" type="number" min="0" max="10000" step="0.1" inputmode="decimal"></label><div class="observation-buttons"><button type="submit" name="result" value="none">Intet</button><button type="submit" name="result" value="small">Små stykker</button><button type="submit" name="result" value="medium">Noget rav</button><button type="submit" name="result" value="good">Godt fund</button></div><p id="observationStatus" class="form-status" aria-live="polite"></p></form>`;
