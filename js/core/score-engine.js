@@ -1,4 +1,5 @@
 import { loadAdaptiveModel, modelAdjustment } from './adaptive-model.js';
+import { evaluateDirectionAnchors, anchorClassification, buildCoastTransportExplanation } from './direction-anchors.js';
 const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, value));
 const numberOrNull = value => Number.isFinite(Number(value)) ? Number(value) : null;
 
@@ -46,7 +47,8 @@ function calculateHuntability(mode, weather, reasons) {
 function calculateTransport(zone, weather, reasons, diagnostics) {
   const current = numberOrNull(weather.currentSpeedMps);
   const trend = numberOrNull(weather.waterLevelTrendCm3h);
-  const onshore = numberOrNull(zone.onshoreDirectionDeg);
+  const anchorEvaluation = evaluateDirectionAnchors(zone, weather.currentDirectionDeg);
+  const onshore = anchorEvaluation.primaryAnchor?.onshoreDirectionDeg ?? numberOrNull(zone.onshoreDirectionDeg);
   let score = 34;
   let currentAlignment = null;
   const caps = [];
@@ -57,7 +59,7 @@ function calculateTransport(zone, weather, reasons, diagnostics) {
     if (current >= .15 && current <= .65) { add('Velegnet strømhastighed',18); reasons.push("Strømhastigheden er velegnet til at flytte let materiale."); }
     else if (current > .65) { add('Kraftig strømhastighed',5); reasons.push("Kraftig strøm kan flytte materiale, men mere uforudsigeligt."); }
     else { add('Svag strøm',-12); reasons.push("Svag strøm giver begrænset transport lige nu."); }
-    currentAlignment = directionScore(weather.currentDirectionDeg, onshore);
+    currentAlignment = anchorEvaluation.effectiveAlignment;
     if (currentAlignment !== null) {
       add('Strømretning mod land', Math.round(30 * currentAlignment));
       if (currentAlignment >= .65) reasons.push("Strømmen fører materiale ind mod zonen.");
@@ -109,7 +111,11 @@ function calculateTransport(zone, weather, reasons, diagnostics) {
   diagnostics.windTowardDirectionDeg = windToward;
   diagnostics.windAlignment = windAlignment;
   diagnostics.windDirectionDifferenceDeg = windToward === null || onshore === null ? null : angularDifference(windToward, onshore);
-  diagnostics.currentClassification = currentAlignment === null ? 'unknown' : currentAlignment >= .65 ? 'onshore' : currentAlignment >= .2 ? 'partly-onshore' : currentAlignment <= -.75 ? 'strongly-offshore' : currentAlignment <= -.35 ? 'offshore' : 'cross-shore';
+  diagnostics.currentClassification = anchorClassification(currentAlignment);
+  diagnostics.directionAnchors = anchorEvaluation.anchors;
+  diagnostics.selectedDirectionAnchor = anchorEvaluation.primaryAnchor;
+  diagnostics.anchorSelectionMethod = anchorEvaluation.method;
+  diagnostics.coastTransportExplanation = buildCoastTransportExplanation(anchorEvaluation);
   diagnostics.windClassification = windAlignment === null ? 'unknown' : windAlignment >= .65 ? 'onshore' : windAlignment >= .2 ? 'partly-onshore' : windAlignment <= -.35 ? 'offshore' : 'cross-shore';
   diagnostics.scoreBeforeCaps = Math.round(scoreBeforeCaps);
   diagnostics.scoreAfterCaps = Math.round(score);
