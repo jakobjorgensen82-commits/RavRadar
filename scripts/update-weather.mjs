@@ -22,8 +22,8 @@ const ALERT_FAILURE_MINUTES = Number(process.env.WEATHER_ALERT_FAILURE_MINUTES ?
 const REQUEST_TIMEOUT_MS = Number(process.env.WEATHER_REQUEST_TIMEOUT_MS ?? 30000);
 const REQUEST_GAP_MS = Number(process.env.DMI_REQUEST_GAP_MS ?? 2500);
 const DMI_MAX_RETRIES = Number(process.env.DMI_MAX_RETRIES ?? 2);
-const DMI_LIVE_ZONE_BUDGET = Math.max(1, Number(process.env.DMI_LIVE_ZONE_BUDGET ?? 2));
-const DMI_REQUEST_BUDGET = Math.max(1, Number(process.env.DMI_REQUEST_BUDGET ?? 8));
+const DMI_LIVE_ZONE_BUDGET = Math.max(1, Number(process.env.DMI_LIVE_ZONE_BUDGET ?? 20));
+const DMI_REQUEST_BUDGET = Math.max(1, Number(process.env.DMI_REQUEST_BUDGET ?? 90));
 const DMI_REQUEST_CONCURRENCY = Math.max(1, Number(process.env.DMI_REQUEST_CONCURRENCY ?? 1));
 const DMI_CACHE_REFRESH_BELOW_HOURS = Math.max(1, Number(process.env.DMI_CACHE_REFRESH_BELOW_HOURS ?? 24));
 const WEATHER_CONCURRENCY = Math.max(1, Number(process.env.WEATHER_CONCURRENCY ?? 6));
@@ -730,7 +730,7 @@ async function resolveZone(feature, generatedAt, previous, dmiForecastStore, nex
     attempts.push({ provider: 'dmi', message: error instanceof Error ? error.message : String(error) });
     console.warn(`${zoneId}: dmi fejlede: ${attempts.at(-1).message}`);
   } else {
-    attempts.push({ provider: 'dmi', message: `Live DMI udsat af natlig hentekvote (${DMI_LIVE_ZONE_BUDGET} zoner pr. kørsel)` });
+    attempts.push({ provider: 'dmi', message: `Live DMI udsat til en senere rullende kørsel (op til ${DMI_LIVE_ZONE_BUDGET} zoner pr. kørsel)` });
   }
 
   const cachedDmi = zoneFromDmiForecastCache(feature, dmiForecastStore?.zones?.[zoneId], generatedAt);
@@ -881,13 +881,13 @@ await mapWithConcurrency(features, WEATHER_CONCURRENCY, async feature => {
 });
 
 output.weatherEngine = {
-  version: '2.9.0',
+  version: '2.10.0',
   concurrency: WEATHER_CONCURRENCY,
   dmiRequestConcurrency: DMI_REQUEST_CONCURRENCY,
   dmiRequestGapMs: REQUEST_GAP_MS,
   dmiRequestTimeoutMs: REQUEST_TIMEOUT_MS,
   providerPriority: output.providerPriority,
-  acquisition: { liveZoneBudget: DMI_LIVE_ZONE_BUDGET, liveZonesAssigned: liveDmiAssigned, requestBudget: DMI_REQUEST_BUDGET, requestsUsed: dmiRequestBudgetUsed, persistentRateLimitedUntil: dmiPersistentRuntime.rateLimitedUntil, nextZoneCursor: dmiPersistentRuntime.nextZoneCursor, cacheRefreshBelowHours: DMI_CACHE_REFRESH_BELOW_HOURS, prioritizedMissingOrExpiringZones: prioritizedFeatures.filter(feature => { const c=dmiForecastCoverage(dmiForecastStore.zones?.[feature.properties?.id], generatedAt); return !c.available || c.remainingHours <= DMI_CACHE_REFRESH_BELOW_HOURS; }).length },
+  acquisition: { strategy: 'rolling-cache-warmup', liveZoneBudget: DMI_LIVE_ZONE_BUDGET, liveZonesAssigned: liveDmiAssigned, requestBudget: DMI_REQUEST_BUDGET, requestsUsed: dmiRequestBudgetUsed, persistentRateLimitedUntil: dmiPersistentRuntime.rateLimitedUntil, nextZoneCursor: dmiPersistentRuntime.nextZoneCursor, cacheRefreshBelowHours: DMI_CACHE_REFRESH_BELOW_HOURS, cacheRetention: 'until-forecast-expiry', prioritizedMissingOrExpiringZones: prioritizedFeatures.filter(feature => { const c=dmiForecastCoverage(dmiForecastStore.zones?.[feature.properties?.id], generatedAt); return !c.available || c.remainingHours <= DMI_CACHE_REFRESH_BELOW_HOURS; }).length },
   providers: Object.fromEntries([...providerRuntime.entries()].map(([name, state]) => [name, {
     ...state,
     circuitOpen: providerCircuitOpen(name),
