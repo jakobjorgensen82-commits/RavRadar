@@ -1,14 +1,14 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "3.1.4",
+  "version": "3.1.5",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
     "update:dmi": "node scripts/update-weather.mjs",
     "validate:data": "node scripts/validate-data.mjs",
     "test:score": "node scripts/test-score-engine.mjs",
-    "validate": "npm run validate:data && npm run test:score && npm run test:rules && npm run validate:weather-health && npm run validate:coastlines && npm run validate:zone-plan && npm run validate:knowledge && npm run test:weather-engine && npm run test:dmi-forecast-store && npm run test:feedback-learning && npm run test:adaptive-prediction && npm run test:feedback-zone-ui && npm run test:zone-registry && npm run test:b12-coastlines && npm run test:model-versioning && npm run test:water-level-diagnostics && npm run test:coast-water-level && npm run validate:release-version",
+    "validate": "npm run validate:data && npm run test:score && npm run test:rules && npm run validate:weather-health && npm run validate:coastlines && npm run validate:zone-plan && npm run validate:knowledge && npm run test:weather-engine && npm run test:dmi-forecast-store && npm run test:feedback-learning && npm run test:adaptive-prediction && npm run test:feedback-zone-ui && npm run test:zone-registry && npm run test:b12-coastlines && npm run test:model-versioning && npm run test:water-level-diagnostics && npm run test:coast-water-level && npm run test:data-quality && npm run validate:release-version",
     "validate:zone-plan": "node scripts/validate-zone-plan.mjs",
     "validate:coastlines": "node scripts/validate-coastlines.mjs",
     "validate:knowledge": "node scripts/validate-knowledge.mjs",
@@ -26,7 +26,8 @@
     "validate:release-version": "node scripts/validate-release-version.mjs",
     "test:water-level-diagnostics": "node scripts/test-water-level-diagnostics.mjs",
     "test:zone-registry": "node scripts/test-zone-registry-consistency.mjs",
-    "test:coast-water-level": "node scripts/test-coast-water-level.mjs"
+    "test:coast-water-level": "node scripts/test-coast-water-level.mjs",
+    "test:data-quality": "node scripts/test-data-quality.mjs"
   },
   "engines": {
     "node": ">=22"

@@ -8,6 +8,7 @@ import {
   interpolateWaterLevelAlongCoast,
   selectDmiForecastAt
 } from './lib/dmi-forecast-store.mjs';
+import { buildDataQuality } from './lib/data-quality.mjs';
 
 const ZONES_PATH = 'data/zones.geojson';
 const OUTPUT_PATH = 'data/live/conditions.json';
@@ -17,10 +18,11 @@ const HEALTH_PATH = 'data/live/weather-health.json';
 const DMI_FORECAST_STORE_PATH = 'data/live/dmi-forecast-cache.json';
 const ALERT_MAX_PER_24H = Number(process.env.WEATHER_ALERT_MAX_PER_24H ?? 2);
 const ALERT_FAILURE_MINUTES = Number(process.env.WEATHER_ALERT_FAILURE_MINUTES ?? 60);
-const REQUEST_TIMEOUT_MS = Number(process.env.WEATHER_REQUEST_TIMEOUT_MS ?? 18000);
-const REQUEST_GAP_MS = Number(process.env.DMI_REQUEST_GAP_MS ?? 1400);
-const DMI_MAX_RETRIES = Number(process.env.DMI_MAX_RETRIES ?? 1);
-const DMI_LIVE_ZONE_BUDGET = Math.max(1, Number(process.env.DMI_LIVE_ZONE_BUDGET ?? 6));
+const REQUEST_TIMEOUT_MS = Number(process.env.WEATHER_REQUEST_TIMEOUT_MS ?? 30000);
+const REQUEST_GAP_MS = Number(process.env.DMI_REQUEST_GAP_MS ?? 2500);
+const DMI_MAX_RETRIES = Number(process.env.DMI_MAX_RETRIES ?? 2);
+const DMI_LIVE_ZONE_BUDGET = Math.max(1, Number(process.env.DMI_LIVE_ZONE_BUDGET ?? 4));
+const DMI_REQUEST_CONCURRENCY = Math.max(1, Number(process.env.DMI_REQUEST_CONCURRENCY ?? 1));
 const DMI_CACHE_REFRESH_BELOW_HOURS = Math.max(1, Number(process.env.DMI_CACHE_REFRESH_BELOW_HOURS ?? 24));
 const WEATHER_CONCURRENCY = Math.max(1, Number(process.env.WEATHER_CONCURRENCY ?? 6));
 const PROVIDER_FAILURE_THRESHOLD = Math.max(1, Number(process.env.WEATHER_PROVIDER_FAILURE_THRESHOLD ?? 4));
@@ -33,6 +35,19 @@ const round = (value, digits = 2) => Number.isFinite(value) ? Number(value.toFix
 const normalizeDegrees = value => ((value % 360) + 360) % 360;
 
 let nextDmiRequestAt = 0;
+let activeDmiRequests = 0;
+const dmiRequestWaiters = [];
+
+async function acquireDmiRequestSlot() {
+  if (activeDmiRequests < DMI_REQUEST_CONCURRENCY) { activeDmiRequests += 1; return; }
+  await new Promise(resolve => dmiRequestWaiters.push(resolve));
+  activeDmiRequests += 1;
+}
+
+function releaseDmiRequestSlot() {
+  activeDmiRequests = Math.max(0, activeDmiRequests - 1);
+  dmiRequestWaiters.shift()?.();
+}
 let dmiTransientFailure = false;
 const providerRuntime = new Map();
 
@@ -60,6 +75,7 @@ async function fetchJson(url, { provider, retries = 1, dmi = false } = {}) {
   let lastError;
   for (let attempt = 0; attempt <= retries; attempt += 1) {
     if (dmi) {
+      await acquireDmiRequestSlot();
       const wait = Math.max(0, nextDmiRequestAt - Date.now());
       if (wait) await sleep(wait);
       nextDmiRequestAt = Date.now() + REQUEST_GAP_MS;
@@ -77,6 +93,8 @@ async function fetchJson(url, { provider, retries = 1, dmi = false } = {}) {
       if (!response.ok) {
         const error = new Error(`${provider}: HTTP ${response.status}`);
         error.status = response.status;
+        const retryAfterHeader = response.headers.get('retry-after');
+        if (retryAfterHeader) error.retryAfter = Number(retryAfterHeader);
         throw error;
       }
       const data = await response.json();
@@ -100,6 +118,7 @@ async function fetchJson(url, { provider, retries = 1, dmi = false } = {}) {
       await sleep(Number.isFinite(retryAfter) ? retryAfter * 1000 : Math.min(5000, 750 * 2 ** attempt));
     } finally {
       clearTimeout(timeout);
+      if (dmi) releaseDmiRequestSlot();
     }
   }
   throw lastError ?? new Error(`${provider}: ukendt fejl`);
@@ -368,70 +387,70 @@ async function fromDmi(feature, generatedAt) {
   const point = zonePoint(feature);
   const collections = dmiCollections(feature.properties?.coastType);
   const now = Date.parse(generatedAt);
-  const [wind, waves, oceanResult, stationWaterLevel] = await Promise.all([
-    dmiPosition('harmonie_dini_sf', point, ['wind-speed-10m', 'wind-dir-10m']),
-    collections.wave ? dmiPosition(collections.wave, point, ['significant-wave-height', 'mean-wave-dir', 'dominant-wave-period']) : Promise.resolve([]),
-    (async () => {
-      try {
-        return await dmiPosition(collections.ocean, point, ['sea-mean-deviation', 'current-u', 'current-v', 'water-temperature']);
-      } catch (error) {
-        if (error?.status !== 400) throw error;
-        return dmiPosition(collections.ocean, point, ['sea-mean-deviation', 'current-u', 'current-v']);
-      }
-    })(),
-    interpolatedDmiWaterLevel(point)
-  ]);
-  const ocean = oceanResult;
+  const componentErrors = [];
+
+  // ForecastEDR is deliberately fetched component-by-component. A single slow
+  // marine collection must not discard a valid DMI wind forecast or prevent the
+  // 120-hour cache from warming.
+  const wind = await dmiPosition('harmonie_dini_sf', point, ['wind-speed-10m', 'wind-dir-10m']);
+  let waves = [];
+  if (collections.wave) {
+    try {
+      waves = await dmiPosition(collections.wave, point, ['significant-wave-height', 'mean-wave-dir', 'dominant-wave-period']);
+    } catch (error) {
+      componentErrors.push({ component: 'wave', collection: collections.wave, message: error instanceof Error ? error.message : String(error) });
+    }
+  }
+  let ocean = [];
+  try {
+    try {
+      ocean = await dmiPosition(collections.ocean, point, ['sea-mean-deviation', 'current-u', 'current-v', 'water-temperature']);
+    } catch (error) {
+      if (error?.status !== 400) throw error;
+      ocean = await dmiPosition(collections.ocean, point, ['sea-mean-deviation', 'current-u', 'current-v']);
+    }
+  } catch (error) {
+    componentErrors.push({ component: 'ocean', collection: collections.ocean, message: error instanceof Error ? error.message : String(error) });
+  }
+  const stationWaterLevel = await interpolatedDmiWaterLevel(point);
   const w = nearest(wind, now);
   if (!w || num(w['wind-speed-10m']) === null) throw new Error('DMI-vinddata mangler');
   const wa = nearest(waves, now);
   const o = nearest(ocean, now);
-  const o3 = atOrAfter(ocean, now + 3 * 3600000);
-  const u = num(o?.['current-u']);
-  const v = num(o?.['current-v']);
-  const sea = num(o?.['sea-mean-deviation']);
-  const sea3 = num(o3?.['sea-mean-deviation']);
-  const dmiForecast = buildDmiForecastHourly({
-    wind, waves, ocean, observedWaterLevel: stationWaterLevel, generatedAt, hours: DMI_FORECAST_HOURS
-  });
+  const dmiForecast = buildDmiForecastHourly({ wind, waves, ocean, observedWaterLevel: stationWaterLevel, generatedAt, hours: DMI_FORECAST_HOURS });
   const zoneId = feature.properties?.id ?? 'Ukendt zone';
+  const completeness = {
+    wind: wind.some(item => num(item['wind-speed-10m']) !== null),
+    wave: waves.some(item => num(item['significant-wave-height']) !== null),
+    ocean: ocean.some(item => num(item['sea-mean-deviation']) !== null),
+    componentErrors
+  };
   const forecastRecord = createDmiForecastRecord({
-    zoneId,
-    point,
-    generatedAt,
-    hourly: dmiForecast.hourly,
+    zoneId, point, generatedAt, hourly: dmiForecast.hourly,
     waterLevelInterpolation: stationWaterLevel,
-    model: { wind: 'harmonie_dini_sf', wave: collections.wave, ocean: collections.ocean }
+    model: { wind: 'harmonie_dini_sf', wave: collections.wave, ocean: collections.ocean, completeness }
   });
   const currentForecast = selectDmiForecastAt(forecastRecord, generatedAt) ?? dmiForecast.hourly[0];
   return {
-    point,
-    provider: 'dmi',
-    providerLabel: 'DMI Open Data',
+    point, provider: 'dmi', providerLabel: componentErrors.length ? 'DMI Open Data (delvis)' : 'DMI Open Data',
     modelSteps: { wind: w.step, wave: wa?.step ?? null, ocean: o?.step ?? null },
+    dmiCompleteness: completeness,
     current: {
-      windSpeedMps: currentForecast.windSpeedMps,
-      windDirectionDeg: currentForecast.windDirectionDeg,
-      waveHeightM: currentForecast.waveHeightM,
-      waveDirectionDeg: currentForecast.waveDirectionDeg,
-      wavePeriodS: currentForecast.wavePeriodS,
-      waterLevelCm: currentForecast.waterLevelCm,
-      waterLevelTrendCm3h: currentForecast.waterLevelTrendCm3h,
-      currentSpeedMps: currentForecast.currentSpeedMps,
-      currentDirectionDeg: currentForecast.currentDirectionDeg,
-      waterTemperatureC: currentForecast.waterTemperatureC
+      windSpeedMps: currentForecast.windSpeedMps, windDirectionDeg: currentForecast.windDirectionDeg,
+      waveHeightM: currentForecast.waveHeightM, waveDirectionDeg: currentForecast.waveDirectionDeg,
+      wavePeriodS: currentForecast.wavePeriodS, waterLevelCm: currentForecast.waterLevelCm,
+      waterLevelTrendCm3h: currentForecast.waterLevelTrendCm3h, currentSpeedMps: currentForecast.currentSpeedMps,
+      currentDirectionDeg: currentForecast.currentDirectionDeg, waterTemperatureC: currentForecast.waterTemperatureC
     },
     waterLevel: {
       source: 'dmi-model-authoritative',
-      reference: stationWaterLevel ? 'DMI model (authoritative); nearby DMI observations shown only as diagnostics' : 'DMI sea-mean-deviation',
-      interpolation: stationWaterLevel ?? null,
-      modelBiasCm: dmiForecast.waterLevelBiasCm,
+      reference: stationWaterLevel ? 'DMI model; DMI observation shown diagnostically and later used as current observed level' : 'DMI sea-mean-deviation',
+      interpolation: stationWaterLevel ?? null, modelBiasCm: dmiForecast.waterLevelBiasCm,
       diagnostic: waterLevelDiagnostic({ feature, point, collections, currentForecast, stationWaterLevel, forecastRecord, generatedAt })
     },
     dmiForecast: forecastRecord
   };
 }
-
 
 function waterLevelDiagnostic({ feature, point, collections, currentForecast, stationWaterLevel, forecastRecord, generatedAt, fromCache = false } = {}) {
   const modelCm = num(currentForecast?.waterLevelModelCm ?? currentForecast?.waterLevelCm);
@@ -794,8 +813,11 @@ await mapWithConcurrency(features, WEATHER_CONCURRENCY, async feature => {
 });
 
 output.weatherEngine = {
-  version: '2.8.2',
+  version: '2.9.0',
   concurrency: WEATHER_CONCURRENCY,
+  dmiRequestConcurrency: DMI_REQUEST_CONCURRENCY,
+  dmiRequestGapMs: REQUEST_GAP_MS,
+  dmiRequestTimeoutMs: REQUEST_TIMEOUT_MS,
   providerPriority: output.providerPriority,
   acquisition: { liveZoneBudget: DMI_LIVE_ZONE_BUDGET, liveZonesAssigned: liveDmiAssigned, cacheRefreshBelowHours: DMI_CACHE_REFRESH_BELOW_HOURS, prioritizedMissingOrExpiringZones: prioritizedFeatures.filter(feature => { const c=dmiForecastCoverage(dmiForecastStore.zones?.[feature.properties?.id], generatedAt); return !c.available || c.remainingHours <= DMI_CACHE_REFRESH_BELOW_HOURS; }).length },
   providers: Object.fromEntries([...providerRuntime.entries()].map(([name, state]) => [name, {
@@ -813,6 +835,8 @@ nextDmiForecastStore.coverage = {
   maximumRemainingHours: dmiCoverage.length ? round(Math.max(...dmiCoverage.map(item => item.remainingHours)), 1) : 0
 };
 output.weatherEngine.dmiForecastCache = nextDmiForecastStore.coverage;
+const [qualityStations, qualityLevels] = await Promise.all([dmiWaterStations().catch(() => []), dmiLatestSeaLevels().catch(() => new Map())]);
+output.dataQuality = buildDataQuality(output, { stationsFetched: qualityStations.length, stationsWithFreshLevel: qualityLevels.size });
 await fs.mkdir('data/live', { recursive: true });
 await fs.writeFile(DMI_FORECAST_STORE_PATH, `${JSON.stringify(nextDmiForecastStore, null, 2)}\n`);
 await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(output, null, 2)}\n`);
