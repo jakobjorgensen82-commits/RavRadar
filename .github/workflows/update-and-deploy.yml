@@ -3,8 +3,7 @@ name: Update weather and deploy RavRadar
 on:
   workflow_dispatch:
   schedule:
-    # To zoner pr. kørsel og højst otte DMI-kald. Hele landet roteres igennem
-    # uden at presse DMI med store bursts.
+    # Forsigtig rullende opbygning: fem zoner pr. kørsel med fem sekunder mellem DMI-kald.
     - cron: "*/10 * * * *"
   push:
     branches: [main]
@@ -54,13 +53,14 @@ jobs:
         run: npm run update:weather
         env:
           DMI_MAX_RETRIES: 1
-          DMI_REQUEST_GAP_MS: 2500
+          DMI_REQUEST_GAP_MS: 5000
           DMI_REQUEST_CONCURRENCY: 1
-          DMI_LIVE_ZONE_BUDGET: 2
-          DMI_REQUEST_BUDGET: 8
+          DMI_LIVE_ZONE_BUDGET: 5
+          DMI_REQUEST_BUDGET: 20
           DMI_CACHE_REFRESH_BELOW_HOURS: 24
+          DMI_SCHEDULE_INTERVAL_MINUTES: 10
           WEATHER_REQUEST_TIMEOUT_MS: 25000
-          WEATHER_USER_AGENT: "RavRadar/3.1.10 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/3.1.15 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Validate updated weather cache
         if: steps.weather.outcome == 'success'

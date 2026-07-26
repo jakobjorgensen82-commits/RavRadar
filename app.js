@@ -139,11 +139,11 @@ document.querySelector("#pinForm").addEventListener("submit",event=>{event.preve
 
 try {await consumeAuthCallback();const [zones,conditions]=await Promise.all([loadZones(),loadConditions()]);state.zones=zones;state.conditions=conditions;state.zoneLayer=renderZones(map,zones,id=>resultFor(zones.features.find(item=>item.properties.id===id).properties),zone=>openZone(zone,{scroll:false}));state.flowArrows=installFlowArrows(map,zones,id=>state.conditions.zones?.[id]||{});setMode(localStorage.getItem("ravradar-mode")==="beach"?"beach":"waders");if(conditions.available&&conditions.generatedAt){const timestamp=new Date(conditions.generatedAt).toLocaleString("da-DK");const stale=Date.now()-new Date(conditions.generatedAt).getTime()>8*3600000;dataStatus.textContent=`${stale?"⚠ Data er ældre end normalt · ":""}Senest opdateret ${timestamp}`;}else dataStatus.textContent="Vejrdata indlæses ved næste automatiske GitHub-kørsel.";resumeTripTracking();syncPendingObservations().catch(()=>{});updateTripUi();const pending=pendingTripPrompt();if(pending)setTimeout(()=>openTripPrompt(pending),650);}catch(error){console.error(error);infoPanel.innerHTML='<div class="notice">Kortzonerne kunne ikke indlæses. Kontroller den seneste GitHub Action.</div>';dataStatus.textContent="Fejl ved indlæsning";}
 
-// RavRadar 3.1.1432: versionsmanifest + sikker service-worker-opdatering.
+// RavRadar 3.1.15432: versionsmanifest + sikker service-worker-opdatering.
 function installAppUpdateFlow() {
   if (!("serviceWorker" in navigator)) return;
   const banner=document.querySelector("#updateBanner"), updateButton=document.querySelector("#updateAppButton");
-  const version=window.RAVRADAR_VERSION||"3.1.1432"; document.querySelector("#appVersion").textContent=version;
+  const version=window.RAVRADAR_VERSION||"3.1.15432"; document.querySelector("#appVersion").textContent=version;
   let refreshing=false, registration=null, waitingWorker=null;
   const showUpdate=worker=>{waitingWorker=worker||waitingWorker;if(!banner||!updateButton)return;banner.hidden=false;updateButton.disabled=false;updateButton.textContent="Opdater nu";};
   const activate=()=>{updateButton.disabled=true;updateButton.textContent="Opdaterer…";(waitingWorker||registration?.waiting)?.postMessage({type:"SKIP_WAITING"});};

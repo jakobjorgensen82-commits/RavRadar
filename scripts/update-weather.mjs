@@ -26,6 +26,7 @@ const DMI_LIVE_ZONE_BUDGET = Math.max(1, Number(process.env.DMI_LIVE_ZONE_BUDGET
 const DMI_REQUEST_BUDGET = Math.max(1, Number(process.env.DMI_REQUEST_BUDGET ?? 90));
 const DMI_REQUEST_CONCURRENCY = Math.max(1, Number(process.env.DMI_REQUEST_CONCURRENCY ?? 1));
 const DMI_CACHE_REFRESH_BELOW_HOURS = Math.max(1, Number(process.env.DMI_CACHE_REFRESH_BELOW_HOURS ?? 24));
+const DMI_SCHEDULE_INTERVAL_MINUTES = Math.max(1, Number(process.env.DMI_SCHEDULE_INTERVAL_MINUTES ?? 10));
 const WEATHER_CONCURRENCY = Math.max(1, Number(process.env.WEATHER_CONCURRENCY ?? 6));
 const PROVIDER_FAILURE_THRESHOLD = Math.max(1, Number(process.env.WEATHER_PROVIDER_FAILURE_THRESHOLD ?? 4));
 const PROVIDER_COOLDOWN_MS = Number(process.env.WEATHER_PROVIDER_COOLDOWN_MS ?? 10 * 60 * 1000);
@@ -53,6 +54,10 @@ function releaseDmiRequestSlot() {
 let dmiTransientFailure = false;
 let dmiRateLimitedUntil = 0;
 let dmiRequestBudgetUsed = 0;
+let dmiRateLimitTriggered = false;
+let dmiHttp429Count = 0;
+const dmiAcquisitionStats = { assignedZoneIds: [], attemptedZoneIds: [], successfulZoneIds: [], stoppedZoneIds: [], cursorAdvancedForZoneIds: [] };
+let dmiObservationSkipReason = null;
 let dmiPersistentRuntime = {
   nextZoneCursor: 0,
   rateLimitedUntil: null,
@@ -142,6 +147,8 @@ async function fetchJson(url, { provider, retries = 1, dmi = false } = {}) {
       if (state.failures >= PROVIDER_FAILURE_THRESHOLD) state.circuitOpenedAt = Date.now();
       if (dmi && (error?.status === 429 || error?.name === 'AbortError' || error instanceof TypeError)) dmiTransientFailure = true;
       if (dmi && error?.status === 429) {
+        dmiRateLimitTriggered = true;
+        dmiHttp429Count += 1;
         const retryAfterSeconds = Number(error?.retryAfter);
         const cooldownMs = Number.isFinite(retryAfterSeconds) ? Math.max(60_000, retryAfterSeconds * 1000) : 15 * 60 * 1000;
         dmiRateLimitedUntil = Math.max(dmiRateLimitedUntil, Date.now() + cooldownMs);
@@ -362,7 +369,9 @@ async function observedDmiWaterLevel(feature, coastCorridors) {
     const coastPath = coastCorridors.get(feature.properties?.id);
     return interpolateWaterLevelAlongCoast(point, coastPath, stations, levels, { haversineKm, requireBracket: true });
   } catch (error) {
-    console.warn(`DMI kystvandstand fejlede: ${error instanceof Error ? error.message : String(error)}`);
+    if (!['DMI_RATE_LIMIT_COOLDOWN', 'CIRCUIT_OPEN'].includes(error?.code) && error?.status !== 429) {
+      console.warn(`DMI kystvandstand fejlede: ${error instanceof Error ? error.message : String(error)}`);
+    }
     return null;
   }
 }
@@ -850,18 +859,28 @@ await mapWithConcurrency(prioritizedFeatures, WEATHER_CONCURRENCY, async feature
     && liveDmiAssigned < DMI_LIVE_ZONE_BUDGET
     && dmiRequestBudgetUsed < DMI_REQUEST_BUDGET
     && Date.now() >= dmiRateLimitedUntil;
+  const requestsBeforeZone = dmiRequestBudgetUsed;
   if (allowLiveDmi) {
     liveDmiAssigned += 1;
-    const stableIndex = stableFeatures.findIndex(item => item.properties?.id === zoneId);
-    dmiPersistentRuntime.nextZoneCursor = stableFeatures.length ? (stableIndex + 1) % stableFeatures.length : 0;
-    dmiPersistentRuntime.lastAttemptedZoneId = zoneId;
-    dmiPersistentRuntime.lastAttemptAt = new Date().toISOString();
+    dmiAcquisitionStats.assignedZoneIds.push(zoneId);
   }
   try {
     output.zones[zoneId] = await resolveZone(feature, generatedAt, previous, dmiForecastStore, nextDmiForecastStore, { allowLiveDmi });
+    const madeHttpAttempt = allowLiveDmi && dmiRequestBudgetUsed > requestsBeforeZone;
+    if (madeHttpAttempt) {
+      const stableIndex = stableFeatures.findIndex(item => item.properties?.id === zoneId);
+      dmiPersistentRuntime.nextZoneCursor = stableFeatures.length ? (stableIndex + 1) % stableFeatures.length : 0;
+      dmiPersistentRuntime.lastAttemptedZoneId = zoneId;
+      dmiPersistentRuntime.lastAttemptAt = new Date().toISOString();
+      dmiAcquisitionStats.attemptedZoneIds.push(zoneId);
+      dmiAcquisitionStats.cursorAdvancedForZoneIds.push(zoneId);
+    } else if (allowLiveDmi && dmiRateLimitTriggered) {
+      dmiAcquisitionStats.stoppedZoneIds.push(zoneId);
+    }
     if (allowLiveDmi && output.zones[zoneId].provider === 'dmi') {
       dmiPersistentRuntime.lastSuccessfulZoneId = zoneId;
       dmiPersistentRuntime.lastSuccessAt = new Date().toISOString();
+      dmiAcquisitionStats.successfulZoneIds.push(zoneId);
     }
     if (allowLiveDmi) await writeDmiForecastStoreCheckpoint();
     console.log(`OK: ${zoneId} via ${output.zones[zoneId].provider}${allowLiveDmi ? ' (live DMI-plads)' : ''}`);
@@ -872,22 +891,26 @@ await mapWithConcurrency(prioritizedFeatures, WEATHER_CONCURRENCY, async feature
 });
 
 
-// DMI oceanObs hentes én gang og bruges som aktuel vandstand. Zoner uden lokal station
-// interpoleres kun mellem de to stationer, der omslutter zonen langs samme kystkorridor.
-await mapWithConcurrency(features, WEATHER_CONCURRENCY, async feature => {
-  const zoneId = feature.properties?.id;
-  const observation = await observedDmiWaterLevel(feature, coastCorridors);
-  if (zoneId && output.zones[zoneId]) applyObservedWaterLevel(output.zones[zoneId], feature, observation, generatedAt);
-});
+// DMI oceanObs hentes højst én gang pr. datatype og deles af alle zoner. Hvis ForecastEDR
+// allerede har udløst 429/cooldown, springes observationerne helt over i denne kørsel.
+if (dmiRateLimitTriggered || Date.now() < dmiRateLimitedUntil) {
+  dmiObservationSkipReason = dmiRateLimitTriggered ? 'skipped-after-http-429' : 'skipped-during-persisted-cooldown';
+} else {
+  await mapWithConcurrency(features, WEATHER_CONCURRENCY, async feature => {
+    const zoneId = feature.properties?.id;
+    const observation = await observedDmiWaterLevel(feature, coastCorridors);
+    if (zoneId && output.zones[zoneId]) applyObservedWaterLevel(output.zones[zoneId], feature, observation, generatedAt);
+  });
+}
 
 output.weatherEngine = {
-  version: '2.10.0',
+  version: '2.11.0',
   concurrency: WEATHER_CONCURRENCY,
   dmiRequestConcurrency: DMI_REQUEST_CONCURRENCY,
   dmiRequestGapMs: REQUEST_GAP_MS,
   dmiRequestTimeoutMs: REQUEST_TIMEOUT_MS,
   providerPriority: output.providerPriority,
-  acquisition: { strategy: 'rolling-cache-warmup', liveZoneBudget: DMI_LIVE_ZONE_BUDGET, liveZonesAssigned: liveDmiAssigned, requestBudget: DMI_REQUEST_BUDGET, requestsUsed: dmiRequestBudgetUsed, persistentRateLimitedUntil: dmiPersistentRuntime.rateLimitedUntil, nextZoneCursor: dmiPersistentRuntime.nextZoneCursor, cacheRefreshBelowHours: DMI_CACHE_REFRESH_BELOW_HOURS, cacheRetention: 'until-forecast-expiry', prioritizedMissingOrExpiringZones: prioritizedFeatures.filter(feature => { const c=dmiForecastCoverage(dmiForecastStore.zones?.[feature.properties?.id], generatedAt); return !c.available || c.remainingHours <= DMI_CACHE_REFRESH_BELOW_HOURS; }).length },
+  acquisition: (() => { const pending = prioritizedFeatures.filter(feature => { const c=dmiForecastCoverage(dmiForecastStore.zones?.[feature.properties?.id], generatedAt); return !c.available || c.remainingHours <= DMI_CACHE_REFRESH_BELOW_HOURS; }).length; return { strategy: 'rolling-cache-warmup', liveZoneBudget: DMI_LIVE_ZONE_BUDGET, liveZonesAssigned: liveDmiAssigned, assignedZoneIds: dmiAcquisitionStats.assignedZoneIds, attemptedZones: dmiAcquisitionStats.attemptedZoneIds.length, attemptedZoneIds: dmiAcquisitionStats.attemptedZoneIds, successfulZones: dmiAcquisitionStats.successfulZoneIds.length, successfulZoneIds: dmiAcquisitionStats.successfulZoneIds, stoppedAfterRateLimitZones: dmiAcquisitionStats.stoppedZoneIds.length, stoppedZoneIds: dmiAcquisitionStats.stoppedZoneIds, requestBudget: DMI_REQUEST_BUDGET, requestsUsed: dmiRequestBudgetUsed, http429Count: dmiHttp429Count, stoppedByHttp429: dmiRateLimitTriggered, persistentRateLimitedUntil: dmiPersistentRuntime.rateLimitedUntil, nextZoneCursor: dmiPersistentRuntime.nextZoneCursor, cursorAdvancedForZoneIds: dmiAcquisitionStats.cursorAdvancedForZoneIds, cacheRefreshBelowHours: DMI_CACHE_REFRESH_BELOW_HOURS, cacheRetention: 'until-forecast-expiry', observationAcquisition: dmiObservationSkipReason ?? 'attempted-once-and-shared', prioritizedMissingOrExpiringZones: pending, scheduleIntervalMinutes: DMI_SCHEDULE_INTERVAL_MINUTES, estimatedRunsAtCurrentBudget: Math.ceil(pending / Math.max(1, DMI_LIVE_ZONE_BUDGET)), optimisticMinutesToFullCache: Math.ceil(pending / Math.max(1, DMI_LIVE_ZONE_BUDGET)) * DMI_SCHEDULE_INTERVAL_MINUTES }; })(),
   providers: Object.fromEntries([...providerRuntime.entries()].map(([name, state]) => [name, {
     ...state,
     circuitOpen: providerCircuitOpen(name),
@@ -899,7 +922,9 @@ nextDmiForecastStore.generatedAt = generatedAt;
 nextDmiForecastStore.runtime = { ...dmiPersistentRuntime, rateLimitedUntil: Date.now() < dmiRateLimitedUntil ? new Date(dmiRateLimitedUntil).toISOString() : null };
 nextDmiForecastStore.coverage = summarizeAvailableCoverage(nextDmiForecastStore.zones, generatedAt, dmiForecastCoverage, round);
 output.weatherEngine.dmiForecastCache = nextDmiForecastStore.coverage;
-const [qualityStations, qualityLevels] = await Promise.all([dmiWaterStations().catch(() => []), dmiLatestSeaLevels().catch(() => new Map())]);
+const [qualityStations, qualityLevels] = dmiObservationSkipReason
+  ? [[], new Map()]
+  : await Promise.all([dmiWaterStations().catch(() => []), dmiLatestSeaLevels().catch(() => new Map())]);
 output.dataQuality = buildDataQuality(output, { stationsFetched: qualityStations.length, stationsWithFreshLevel: qualityLevels.size });
 await fs.mkdir('data/live', { recursive: true });
 await writeDmiForecastStoreCheckpoint();

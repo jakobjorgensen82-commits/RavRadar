@@ -40,4 +40,15 @@ const summary = summarizeAvailableCoverage({
 }, 'now', record => record, value => value);
 assert.deepEqual(summary, { zones: 2, minimumRemainingHours: 12, maximumRemainingHours: 30 }, 'udløbet cache må ikke forurene dækningsminimum');
 
+
+const workflow = await import('node:fs/promises').then(({ readFile }) => readFile('.github/workflows/update-and-deploy.yml', 'utf8'));
+for (const expected of ['DMI_LIVE_ZONE_BUDGET: 5', 'DMI_REQUEST_BUDGET: 20', 'DMI_REQUEST_GAP_MS: 5000', 'DMI_SCHEDULE_INTERVAL_MINUTES: 10']) {
+  assert.ok(workflow.includes(expected), `workflow mangler ${expected}`);
+}
+const updater = await import('node:fs/promises').then(({ readFile }) => readFile('scripts/update-weather.mjs', 'utf8'));
+for (const expected of ['stoppedByHttp429', 'attemptedZoneIds', 'successfulZoneIds', 'observationAcquisition', 'optimisticMinutesToFullCache']) {
+  assert.ok(updater.includes(expected), `DMI-diagnostikken mangler ${expected}`);
+}
+assert.ok(updater.includes("dmiRateLimitTriggered ? 'skipped-after-http-429'"), 'oceanObs skal springes over efter HTTP 429');
+
 console.log('DMI acquisition resilience bestået.');
