@@ -1,0 +1,1903 @@
+{
+  "generatedAt": "2026-07-26T00:00:00Z",
+  "method": "Cross-check configured marine→land direction against an independent bearing from the marine data point to the nearest point on the stored coastline. Disagreement marks uncertainty; it is not auto-corrected.",
+  "summary": {
+    "zones": 210,
+    "high": 110,
+    "medium": 54,
+    "review": 46,
+    "unknown": 0
+  },
+  "zones": [
+    {
+      "zoneId": "DK-B01-01",
+      "name": "Agger og Krik Vig",
+      "configuredDirectionDeg": 107,
+      "marineToPinBearingDeg": 107,
+      "marineToNearestCoastBearingDeg": 96,
+      "differenceDeg": 11.4,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B01-02",
+      "name": "Lyngby og Lodbjerg",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 113,
+      "differenceDeg": 23.3,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B01-03",
+      "name": "Stenbjerg og Vorupør",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 113,
+      "differenceDeg": 23.3,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B01-04",
+      "name": "Vangså og Klitmøller",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 128,
+      "differenceDeg": 37.7,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B01-05",
+      "name": "Hanstholm og Hamborg",
+      "configuredDirectionDeg": 108,
+      "marineToPinBearingDeg": 108,
+      "marineToNearestCoastBearingDeg": 128,
+      "differenceDeg": 19.3,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B01-06",
+      "name": "Vigsø og Lild Strand",
+      "configuredDirectionDeg": 155,
+      "marineToPinBearingDeg": 155,
+      "marineToNearestCoastBearingDeg": 193,
+      "differenceDeg": 38.1,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B01-07",
+      "name": "Bulbjerg og Thorup Strand",
+      "configuredDirectionDeg": 161,
+      "marineToPinBearingDeg": 161,
+      "marineToNearestCoastBearingDeg": 190,
+      "differenceDeg": 28.8,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B01-08",
+      "name": "Slettestrand og Svinkløv",
+      "configuredDirectionDeg": 162,
+      "marineToPinBearingDeg": 162,
+      "marineToNearestCoastBearingDeg": 169,
+      "differenceDeg": 7.2,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B01-09",
+      "name": "Tranum og Rødhus",
+      "configuredDirectionDeg": 152,
+      "marineToPinBearingDeg": 152,
+      "marineToNearestCoastBearingDeg": 139,
+      "differenceDeg": 13.0,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B01-10",
+      "name": "Blokhus og Hune",
+      "configuredDirectionDeg": 141,
+      "marineToPinBearingDeg": 141,
+      "marineToNearestCoastBearingDeg": 121,
+      "differenceDeg": 20.2,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B01-11",
+      "name": "Saltum og Grønhøj",
+      "configuredDirectionDeg": 136,
+      "marineToPinBearingDeg": 136,
+      "marineToNearestCoastBearingDeg": 121,
+      "differenceDeg": 15.2,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B01-12",
+      "name": "Løkken og Furreby",
+      "configuredDirectionDeg": 127,
+      "marineToPinBearingDeg": 127,
+      "marineToNearestCoastBearingDeg": 121,
+      "differenceDeg": 5.9,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B01-13",
+      "name": "Nørre Lyngby og Rubjerg",
+      "configuredDirectionDeg": 112,
+      "marineToPinBearingDeg": 112,
+      "marineToNearestCoastBearingDeg": 112,
+      "differenceDeg": 0.3,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B01-14",
+      "name": "Lønstrup og Nørlev",
+      "configuredDirectionDeg": 122,
+      "marineToPinBearingDeg": 122,
+      "marineToNearestCoastBearingDeg": 125,
+      "differenceDeg": 3.4,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B01-15",
+      "name": "Tornby og Hirtshals",
+      "configuredDirectionDeg": 119,
+      "marineToPinBearingDeg": 119,
+      "marineToNearestCoastBearingDeg": 125,
+      "differenceDeg": 6.1,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B01-16",
+      "name": "Kjul og Uggerby",
+      "configuredDirectionDeg": 165,
+      "marineToPinBearingDeg": 165,
+      "marineToNearestCoastBearingDeg": 173,
+      "differenceDeg": 8.0,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B01-17",
+      "name": "Tversted og Skiveren",
+      "configuredDirectionDeg": 177,
+      "marineToPinBearingDeg": 177,
+      "marineToNearestCoastBearingDeg": 173,
+      "differenceDeg": 3.3,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B01-18",
+      "name": "Kandestederne og Hulsig",
+      "configuredDirectionDeg": 163,
+      "marineToPinBearingDeg": 163,
+      "marineToNearestCoastBearingDeg": 142,
+      "differenceDeg": 21.4,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B01-19",
+      "name": "Skagen vest og Damstederne",
+      "configuredDirectionDeg": 145,
+      "marineToPinBearingDeg": 145,
+      "marineToNearestCoastBearingDeg": 144,
+      "differenceDeg": 0.3,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B01-20",
+      "name": "Grenen og Skagen øst",
+      "configuredDirectionDeg": 278,
+      "marineToPinBearingDeg": 278,
+      "marineToNearestCoastBearingDeg": 277,
+      "differenceDeg": 0.8,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B02-01",
+      "name": "Ålbæk og Bunken",
+      "configuredDirectionDeg": 263,
+      "marineToPinBearingDeg": 263,
+      "marineToNearestCoastBearingDeg": 298,
+      "differenceDeg": 35.6,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B02-02",
+      "name": "Napstjert og Jerup",
+      "configuredDirectionDeg": 256,
+      "marineToPinBearingDeg": 256,
+      "marineToNearestCoastBearingDeg": 261,
+      "differenceDeg": 5.2,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B02-03",
+      "name": "Bratten og Strandby",
+      "configuredDirectionDeg": 278,
+      "marineToPinBearingDeg": 278,
+      "marineToNearestCoastBearingDeg": 238,
+      "differenceDeg": 39.8,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B02-04",
+      "name": "Frederikshavn og Bangsbo",
+      "configuredDirectionDeg": 277,
+      "marineToPinBearingDeg": 277,
+      "marineToNearestCoastBearingDeg": 238,
+      "differenceDeg": 39.0,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B02-05",
+      "name": "Sæby og Sulbæk",
+      "configuredDirectionDeg": 267,
+      "marineToPinBearingDeg": 267,
+      "marineToNearestCoastBearingDeg": 264,
+      "differenceDeg": 3.0,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B02-06",
+      "name": "Lyngså og Voerså",
+      "configuredDirectionDeg": 278,
+      "marineToPinBearingDeg": 278,
+      "marineToNearestCoastBearingDeg": 264,
+      "differenceDeg": 13.9,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B02-07",
+      "name": "Asaa og Melholt",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 309,
+      "differenceDeg": 39.1,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B02-08",
+      "name": "Hou og Bisnap",
+      "configuredDirectionDeg": 250,
+      "marineToPinBearingDeg": 250,
+      "marineToNearestCoastBearingDeg": 285,
+      "differenceDeg": 35.2,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B02-09",
+      "name": "Hals og Nordmandshage",
+      "configuredDirectionDeg": 274,
+      "marineToPinBearingDeg": 274,
+      "marineToNearestCoastBearingDeg": 297,
+      "differenceDeg": 22.6,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B02-10",
+      "name": "Egense og Mou",
+      "configuredDirectionDeg": 178,
+      "marineToPinBearingDeg": 178,
+      "marineToNearestCoastBearingDeg": 187,
+      "differenceDeg": 8.6,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B02-11",
+      "name": "Dokkedal og Mulbjerge",
+      "configuredDirectionDeg": 268,
+      "marineToPinBearingDeg": 268,
+      "marineToNearestCoastBearingDeg": 282,
+      "differenceDeg": 13.5,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B02-12",
+      "name": "Øster Hurup og Als",
+      "configuredDirectionDeg": 268,
+      "marineToPinBearingDeg": 268,
+      "marineToNearestCoastBearingDeg": 263,
+      "differenceDeg": 5.5,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B02-13",
+      "name": "Als Odde og Helberskov",
+      "configuredDirectionDeg": 305,
+      "marineToPinBearingDeg": 305,
+      "marineToNearestCoastBearingDeg": 262,
+      "differenceDeg": 42.7,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B02-14",
+      "name": "Havnø og Mariager Fjord øst",
+      "configuredDirectionDeg": 296,
+      "marineToPinBearingDeg": 296,
+      "marineToNearestCoastBearingDeg": 316,
+      "differenceDeg": 20.4,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B02-15",
+      "name": "Udbyhøj og Stenrevet",
+      "configuredDirectionDeg": 268,
+      "marineToPinBearingDeg": 268,
+      "marineToNearestCoastBearingDeg": 235,
+      "differenceDeg": 33.6,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B03-01",
+      "name": "Harboøre og Vrist",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 102,
+      "differenceDeg": 11.7,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B03-02",
+      "name": "Vejlby Klit og Ferring",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 102,
+      "differenceDeg": 11.7,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B03-03",
+      "name": "Bovbjerg og Trans",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 89,
+      "differenceDeg": 1.3,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B03-04",
+      "name": "Thorsminde og Husby Klit",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 89,
+      "differenceDeg": 1.0,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B03-05",
+      "name": "Fjand og Vedersø Klit",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 89,
+      "differenceDeg": 1.3,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B03-06",
+      "name": "Søndervig og Klegod",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 95,
+      "differenceDeg": 5.4,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B03-07",
+      "name": "Hvide Sande nord",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 95,
+      "differenceDeg": 5.1,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B03-08",
+      "name": "Hvide Sande syd og Årgab",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 74,
+      "differenceDeg": 15.8,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B03-09",
+      "name": "Haurvig og Skodbjerge",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 83,
+      "differenceDeg": 6.6,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B03-10",
+      "name": "Nymindegab og Houstrup",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 83,
+      "differenceDeg": 6.8,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B03-11",
+      "name": "Henne Strand og Grærup",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 106,
+      "differenceDeg": 15.7,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B03-12",
+      "name": "Vejers og Børsmose",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 106,
+      "differenceDeg": 15.8,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B03-13",
+      "name": "Blåvand og Hvidbjerg",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 99,
+      "differenceDeg": 9.0,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B03-14",
+      "name": "Skallingen nord",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 47,
+      "differenceDeg": 42.8,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B03-15",
+      "name": "Skallingen syd",
+      "configuredDirectionDeg": 67,
+      "marineToPinBearingDeg": 67,
+      "marineToNearestCoastBearingDeg": 41,
+      "differenceDeg": 26.4,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B04-01",
+      "name": "Ho Bugt og Oksby",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 291,
+      "differenceDeg": 158.6,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B04-02",
+      "name": "Hjerting og Sædding",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 53,
+      "differenceDeg": 36.6,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B04-03",
+      "name": "Fanø nord og Nordby",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 60,
+      "differenceDeg": 30.0,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B04-04",
+      "name": "Fanø vest og Rindby",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 84,
+      "differenceDeg": 6.5,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B04-05",
+      "name": "Fanø syd og Sønderho",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 65,
+      "differenceDeg": 24.8,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B04-06",
+      "name": "Mandø vest",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 86,
+      "differenceDeg": 4.2,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B04-07",
+      "name": "Rømø nord og Lakolk",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 91,
+      "differenceDeg": 1.0,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B04-08",
+      "name": "Rømø vest og Kongsmark",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 90,
+      "differenceDeg": 0.0,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B04-09",
+      "name": "Rømø syd og Sønderstrand",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 12,
+      "differenceDeg": 77.7,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B04-10",
+      "name": "Hjerpsted og Emmerlev",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 72,
+      "differenceDeg": 18.4,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B04-11",
+      "name": "Højer og Vidå",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 104,
+      "differenceDeg": 13.8,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B05-01",
+      "name": "Thyborøn og Harboøre Tange øst",
+      "configuredDirectionDeg": 281,
+      "marineToPinBearingDeg": 281,
+      "marineToNearestCoastBearingDeg": 253,
+      "differenceDeg": 28.1,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B05-02",
+      "name": "Agger Tange og Krik",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 279,
+      "differenceDeg": 9.0,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B05-03",
+      "name": "Nissum Bredning nord",
+      "configuredDirectionDeg": 0,
+      "marineToPinBearingDeg": 0,
+      "marineToNearestCoastBearingDeg": 101,
+      "differenceDeg": 100.5,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B05-04",
+      "name": "Nissum Bredning syd",
+      "configuredDirectionDeg": 180,
+      "marineToPinBearingDeg": 180,
+      "marineToNearestCoastBearingDeg": 235,
+      "differenceDeg": 55.1,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B05-05",
+      "name": "Jegindø og Thyholm",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 336,
+      "differenceDeg": 113.8,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B05-06",
+      "name": "Venø og Struer",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 74,
+      "differenceDeg": 16.1,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B05-07",
+      "name": "Lemvig og Gjellerodde",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 0,
+      "differenceDeg": 90.3,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B05-08",
+      "name": "Toftum Bjerge og Remmerstrand",
+      "configuredDirectionDeg": 180,
+      "marineToPinBearingDeg": 180,
+      "marineToNearestCoastBearingDeg": 210,
+      "differenceDeg": 29.9,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B05-09",
+      "name": "Thisted Bredning vest",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 311,
+      "differenceDeg": 40.8,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B05-10",
+      "name": "Thisted og Vildsund",
+      "configuredDirectionDeg": 0,
+      "marineToPinBearingDeg": 0,
+      "marineToNearestCoastBearingDeg": 301,
+      "differenceDeg": 58.8,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B05-11",
+      "name": "Mors nord og Feggesund",
+      "configuredDirectionDeg": 180,
+      "marineToPinBearingDeg": 180,
+      "marineToNearestCoastBearingDeg": 176,
+      "differenceDeg": 4.0,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B05-12",
+      "name": "Mors vest og Ejerslev",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 159,
+      "differenceDeg": 69.3,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B05-13",
+      "name": "Mors syd og Nykøbing",
+      "configuredDirectionDeg": 0,
+      "marineToPinBearingDeg": 0,
+      "marineToNearestCoastBearingDeg": 310,
+      "differenceDeg": 49.7,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B05-14",
+      "name": "Sallingsund og Glyngøre",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 303,
+      "differenceDeg": 32.9,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B05-15",
+      "name": "Salling vest og Junget",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 170,
+      "differenceDeg": 80.0,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B05-16",
+      "name": "Fur nord",
+      "configuredDirectionDeg": 180,
+      "marineToPinBearingDeg": 180,
+      "marineToNearestCoastBearingDeg": 209,
+      "differenceDeg": 28.7,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B05-17",
+      "name": "Fur syd",
+      "configuredDirectionDeg": 0,
+      "marineToPinBearingDeg": 0,
+      "marineToNearestCoastBearingDeg": 351,
+      "differenceDeg": 8.8,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B05-18",
+      "name": "Løgstør og Aggersund",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 45,
+      "differenceDeg": 44.9,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B05-19",
+      "name": "Livø og Rønbjerg",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 101,
+      "differenceDeg": 168.5,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B05-20",
+      "name": "Nibe Bredning vest",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 349,
+      "differenceDeg": 79.4,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B05-21",
+      "name": "Nibe og Sebbersund",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 302,
+      "differenceDeg": 147.8,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B05-22",
+      "name": "Gjøl og Attrup",
+      "configuredDirectionDeg": 0,
+      "marineToPinBearingDeg": 0,
+      "marineToNearestCoastBearingDeg": 5,
+      "differenceDeg": 5.0,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B05-23",
+      "name": "Aalborg vest og Egholm",
+      "configuredDirectionDeg": 0,
+      "marineToPinBearingDeg": 0,
+      "marineToNearestCoastBearingDeg": 324,
+      "differenceDeg": 35.7,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B05-24",
+      "name": "Aalborg øst og Nørresundby",
+      "configuredDirectionDeg": 0,
+      "marineToPinBearingDeg": 0,
+      "marineToNearestCoastBearingDeg": 272,
+      "differenceDeg": 87.5,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B05-25",
+      "name": "Hals Barre og Egense",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 259,
+      "differenceDeg": 11.1,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B06-01",
+      "name": "Gjerrild Nordstrand",
+      "configuredDirectionDeg": 180,
+      "marineToPinBearingDeg": 180,
+      "marineToNearestCoastBearingDeg": 190,
+      "differenceDeg": 9.6,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B06-02",
+      "name": "Fornæs og Grenaa",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 259,
+      "differenceDeg": 11.0,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B06-03",
+      "name": "Grenaa og Katholm",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 273,
+      "differenceDeg": 3.1,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B06-04",
+      "name": "Bønnerup og Fjellerup",
+      "configuredDirectionDeg": 180,
+      "marineToPinBearingDeg": 180,
+      "marineToNearestCoastBearingDeg": 169,
+      "differenceDeg": 10.8,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B06-05",
+      "name": "Rygarde og Sangstrup",
+      "configuredDirectionDeg": 231,
+      "marineToPinBearingDeg": 231,
+      "marineToNearestCoastBearingDeg": 190,
+      "differenceDeg": 41.5,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B06-06",
+      "name": "Karlby og Glatved",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 304,
+      "differenceDeg": 34.0,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B06-07",
+      "name": "Jernhatten og Rugård",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 303,
+      "differenceDeg": 33.3,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B06-08",
+      "name": "Ebeltoft og Ahl",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 123,
+      "differenceDeg": 33.3,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B06-09",
+      "name": "Helgenæs øst",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 288,
+      "differenceDeg": 17.9,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B06-10",
+      "name": "Helgenæs vest",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 54,
+      "differenceDeg": 36.5,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B06-11",
+      "name": "Knebel og Skødshoved",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 63,
+      "differenceDeg": 26.8,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B06-12",
+      "name": "Kalø og Følle",
+      "configuredDirectionDeg": 0,
+      "marineToPinBearingDeg": 0,
+      "marineToNearestCoastBearingDeg": 313,
+      "differenceDeg": 46.7,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B06-13",
+      "name": "Vosnæs og Havhuse",
+      "configuredDirectionDeg": 0,
+      "marineToPinBearingDeg": 0,
+      "marineToNearestCoastBearingDeg": 347,
+      "differenceDeg": 12.9,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B06-14",
+      "name": "Aarhus nord og Egå",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 293,
+      "differenceDeg": 22.6,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B06-15",
+      "name": "Aarhus syd og Moesgård",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 250,
+      "differenceDeg": 20.3,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B06-16",
+      "name": "Norsminde og Saksild",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 300,
+      "differenceDeg": 29.7,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B06-17",
+      "name": "Hou og Odderkysten",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 281,
+      "differenceDeg": 10.6,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B06-18",
+      "name": "Juelsminde og As Vig",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 337,
+      "differenceDeg": 67.2,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B06-19",
+      "name": "Snaptun og Endelave nord",
+      "configuredDirectionDeg": 180,
+      "marineToPinBearingDeg": 180,
+      "marineToNearestCoastBearingDeg": 208,
+      "differenceDeg": 27.6,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B06-20",
+      "name": "Endelave syd",
+      "configuredDirectionDeg": 0,
+      "marineToPinBearingDeg": 0,
+      "marineToNearestCoastBearingDeg": 357,
+      "differenceDeg": 2.9,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B07-01",
+      "name": "Trelde Næs og Vejlby Fed",
+      "configuredDirectionDeg": 35,
+      "marineToPinBearingDeg": 35,
+      "marineToNearestCoastBearingDeg": 295,
+      "differenceDeg": 99.8,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B07-02",
+      "name": "Strib og Røjle Klint",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 344,
+      "differenceDeg": 73.6,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B07-03",
+      "name": "Middelfart og Hindsgavl",
+      "configuredDirectionDeg": 242,
+      "marineToPinBearingDeg": 242,
+      "marineToNearestCoastBearingDeg": 278,
+      "differenceDeg": 35.9,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B07-04",
+      "name": "Båring Vig og Varbjerg",
+      "configuredDirectionDeg": 0,
+      "marineToPinBearingDeg": 0,
+      "marineToNearestCoastBearingDeg": 14,
+      "differenceDeg": 14.5,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B07-05",
+      "name": "Bogense og Gyldensteen",
+      "configuredDirectionDeg": 0,
+      "marineToPinBearingDeg": 0,
+      "marineToNearestCoastBearingDeg": 333,
+      "differenceDeg": 26.6,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B07-06",
+      "name": "Flyvesandet og Enebærodde",
+      "configuredDirectionDeg": 0,
+      "marineToPinBearingDeg": 0,
+      "marineToNearestCoastBearingDeg": 356,
+      "differenceDeg": 4.2,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B07-07",
+      "name": "Hasmark og Hofmansgave",
+      "configuredDirectionDeg": 22,
+      "marineToPinBearingDeg": 22,
+      "marineToNearestCoastBearingDeg": 94,
+      "differenceDeg": 72.3,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B07-08",
+      "name": "Kerteminde nord og Mølleå",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 195,
+      "differenceDeg": 105.3,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B07-09",
+      "name": "Kerteminde syd og Lundsgård",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 280,
+      "differenceDeg": 170.4,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B07-10",
+      "name": "Nyborg nord og Storebæltskysten",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 56,
+      "differenceDeg": 33.7,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B07-11",
+      "name": "Nyborg syd og Knudshoved",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 19,
+      "differenceDeg": 71.4,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B07-12",
+      "name": "Tårup og Kongshøj",
+      "configuredDirectionDeg": 104,
+      "marineToPinBearingDeg": 104,
+      "marineToNearestCoastBearingDeg": 81,
+      "differenceDeg": 23.4,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B07-13",
+      "name": "Lundeborg og Elsehoved",
+      "configuredDirectionDeg": 104,
+      "marineToPinBearingDeg": 104,
+      "marineToNearestCoastBearingDeg": 174,
+      "differenceDeg": 70.2,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B07-14",
+      "name": "Thurø og Smørmosen",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 354,
+      "differenceDeg": 95.6,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B07-15",
+      "name": "Svendborg og Christiansminde",
+      "configuredDirectionDeg": 130,
+      "marineToPinBearingDeg": 130,
+      "marineToNearestCoastBearingDeg": 151,
+      "differenceDeg": 21.0,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B07-16",
+      "name": "Tåsinge øst",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 123,
+      "differenceDeg": 32.5,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B07-17",
+      "name": "Langeland nord og Lohals",
+      "configuredDirectionDeg": 35,
+      "marineToPinBearingDeg": 35,
+      "marineToNearestCoastBearingDeg": 174,
+      "differenceDeg": 139.4,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B07-18",
+      "name": "Langeland øst og Spodsbjerg",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 118,
+      "differenceDeg": 28.4,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B07-19",
+      "name": "Langeland syd og Bagenkop",
+      "configuredDirectionDeg": 180,
+      "marineToPinBearingDeg": 180,
+      "marineToNearestCoastBearingDeg": 248,
+      "differenceDeg": 68.2,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B07-20",
+      "name": "Langeland vest og Ristinge",
+      "configuredDirectionDeg": 256,
+      "marineToPinBearingDeg": 256,
+      "marineToNearestCoastBearingDeg": 316,
+      "differenceDeg": 59.6,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B07-21",
+      "name": "Ærø nord og Søby",
+      "configuredDirectionDeg": 329,
+      "marineToPinBearingDeg": 329,
+      "marineToNearestCoastBearingDeg": 6,
+      "differenceDeg": 36.4,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B07-22",
+      "name": "Ærø syd og Voderup",
+      "configuredDirectionDeg": 194,
+      "marineToPinBearingDeg": 194,
+      "marineToNearestCoastBearingDeg": 109,
+      "differenceDeg": 85.8,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "name": "Ærø øst og Marstal",
+      "configuredDirectionDeg": 117,
+      "marineToPinBearingDeg": 117,
+      "marineToNearestCoastBearingDeg": 112,
+      "differenceDeg": 5.5,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B07-24",
+      "name": "Faaborg og Dyreborg",
+      "configuredDirectionDeg": 180,
+      "marineToPinBearingDeg": 180,
+      "marineToNearestCoastBearingDeg": 148,
+      "differenceDeg": 31.6,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B07-25",
+      "name": "Horne Land og Bøjden",
+      "configuredDirectionDeg": 210,
+      "marineToPinBearingDeg": 210,
+      "marineToNearestCoastBearingDeg": 158,
+      "differenceDeg": 52.6,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B07-26",
+      "name": "Helnæs og Torø",
+      "configuredDirectionDeg": 230,
+      "marineToPinBearingDeg": 230,
+      "marineToNearestCoastBearingDeg": 236,
+      "differenceDeg": 5.4,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B07-27",
+      "name": "Assens og Sandager Næs",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 266,
+      "differenceDeg": 3.9,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B07-28",
+      "name": "Bågø og Brandsø",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 4,
+      "differenceDeg": 94.2,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B08-01",
+      "name": "Røsnæs nord",
+      "configuredDirectionDeg": 146,
+      "marineToPinBearingDeg": 146,
+      "marineToNearestCoastBearingDeg": 198,
+      "differenceDeg": 51.8,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B08-02",
+      "name": "Røsnæs syd og Kalundborg",
+      "configuredDirectionDeg": 34,
+      "marineToPinBearingDeg": 34,
+      "marineToNearestCoastBearingDeg": 5,
+      "differenceDeg": 28.8,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B08-03",
+      "name": "Sejerø nord",
+      "configuredDirectionDeg": 155,
+      "marineToPinBearingDeg": 155,
+      "marineToNearestCoastBearingDeg": 172,
+      "differenceDeg": 17.0,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B08-04",
+      "name": "Sejerø syd",
+      "configuredDirectionDeg": 25,
+      "marineToPinBearingDeg": 25,
+      "marineToNearestCoastBearingDeg": 8,
+      "differenceDeg": 17.1,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B08-05",
+      "name": "Nekselø og Havnsø",
+      "configuredDirectionDeg": 121,
+      "marineToPinBearingDeg": 121,
+      "marineToNearestCoastBearingDeg": 147,
+      "differenceDeg": 26.8,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B08-06",
+      "name": "Vesterlyng og Bjørnstrup",
+      "configuredDirectionDeg": 158,
+      "marineToPinBearingDeg": 158,
+      "marineToNearestCoastBearingDeg": 114,
+      "differenceDeg": 44.3,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B08-07",
+      "name": "Ordrup Næs og Kårup",
+      "configuredDirectionDeg": 162,
+      "marineToPinBearingDeg": 162,
+      "marineToNearestCoastBearingDeg": 161,
+      "differenceDeg": 1.6,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B08-08",
+      "name": "Vejrhøj og Vindekilde",
+      "configuredDirectionDeg": 162,
+      "marineToPinBearingDeg": 162,
+      "marineToNearestCoastBearingDeg": 131,
+      "differenceDeg": 31.3,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B08-09",
+      "name": "Høve og Gudmindrup",
+      "configuredDirectionDeg": 168,
+      "marineToPinBearingDeg": 168,
+      "marineToNearestCoastBearingDeg": 172,
+      "differenceDeg": 3.5,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B08-10",
+      "name": "Sjællands Odde nord",
+      "configuredDirectionDeg": 166,
+      "marineToPinBearingDeg": 166,
+      "marineToNearestCoastBearingDeg": 157,
+      "differenceDeg": 8.6,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B08-11",
+      "name": "Sjællands Odde syd",
+      "configuredDirectionDeg": 18,
+      "marineToPinBearingDeg": 18,
+      "marineToNearestCoastBearingDeg": 74,
+      "differenceDeg": 56.3,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B08-12",
+      "name": "Nykøbing Sjælland og Rørvig",
+      "configuredDirectionDeg": 322,
+      "marineToPinBearingDeg": 322,
+      "marineToNearestCoastBearingDeg": 285,
+      "differenceDeg": 36.4,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B08-13",
+      "name": "Klint og Korshage",
+      "configuredDirectionDeg": 228,
+      "marineToPinBearingDeg": 228,
+      "marineToNearestCoastBearingDeg": 143,
+      "differenceDeg": 85.0,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B08-14",
+      "name": "Hundested og Lynæs",
+      "configuredDirectionDeg": 138,
+      "marineToPinBearingDeg": 138,
+      "marineToNearestCoastBearingDeg": 143,
+      "differenceDeg": 5.0,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B08-15",
+      "name": "Liseleje og Melby",
+      "configuredDirectionDeg": 167,
+      "marineToPinBearingDeg": 167,
+      "marineToNearestCoastBearingDeg": 143,
+      "differenceDeg": 23.5,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B08-16",
+      "name": "Tisvildeleje og Rågeleje",
+      "configuredDirectionDeg": 175,
+      "marineToPinBearingDeg": 175,
+      "marineToNearestCoastBearingDeg": 164,
+      "differenceDeg": 10.3,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B08-17",
+      "name": "Gilleleje og Gilbjerg",
+      "configuredDirectionDeg": 174,
+      "marineToPinBearingDeg": 174,
+      "marineToNearestCoastBearingDeg": 191,
+      "differenceDeg": 17.7,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B08-18",
+      "name": "Dronningmølle og Hornbæk",
+      "configuredDirectionDeg": 180,
+      "marineToPinBearingDeg": 180,
+      "marineToNearestCoastBearingDeg": 233,
+      "differenceDeg": 53.4,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B08-19",
+      "name": "Ålsgårde og Helsingør",
+      "configuredDirectionDeg": 256,
+      "marineToPinBearingDeg": 256,
+      "marineToNearestCoastBearingDeg": 215,
+      "differenceDeg": 41.1,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B09-01",
+      "name": "Snekkersten og Espergærde",
+      "configuredDirectionDeg": 257,
+      "marineToPinBearingDeg": 257,
+      "marineToNearestCoastBearingDeg": 295,
+      "differenceDeg": 37.2,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B09-02",
+      "name": "Humlebæk og Nivå",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 297,
+      "differenceDeg": 26.7,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B09-03",
+      "name": "Rungsted og Vedbæk",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 259,
+      "differenceDeg": 10.9,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B09-04",
+      "name": "Skodsborg og Bellevue",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 259,
+      "differenceDeg": 10.9,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B09-05",
+      "name": "Amager nord og Kastrup",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 257,
+      "differenceDeg": 13.1,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B09-06",
+      "name": "Amager Strand og Dragør",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 268,
+      "differenceDeg": 2.2,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B09-07",
+      "name": "Sydamager og Kongelunden",
+      "configuredDirectionDeg": 0,
+      "marineToPinBearingDeg": 0,
+      "marineToNearestCoastBearingDeg": 9,
+      "differenceDeg": 9.1,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B09-08",
+      "name": "Køge Bugt nord",
+      "configuredDirectionDeg": 0,
+      "marineToPinBearingDeg": 0,
+      "marineToNearestCoastBearingDeg": 320,
+      "differenceDeg": 40.1,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B09-09",
+      "name": "Køge Bugt syd og Solrød",
+      "configuredDirectionDeg": 0,
+      "marineToPinBearingDeg": 0,
+      "marineToNearestCoastBearingDeg": 359,
+      "differenceDeg": 1.2,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B09-10",
+      "name": "Køge og Strøby Egede",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 7,
+      "differenceDeg": 96.9,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B09-11",
+      "name": "Stevns nord og Holtug",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 262,
+      "differenceDeg": 8.0,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B09-12",
+      "name": "Stevns Klint og Højerup",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 308,
+      "differenceDeg": 38.2,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B09-13",
+      "name": "Rødvig og Faxe Ladeplads",
+      "configuredDirectionDeg": 318,
+      "marineToPinBearingDeg": 318,
+      "marineToNearestCoastBearingDeg": 335,
+      "differenceDeg": 17.1,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B09-14",
+      "name": "Præstø og Jungshoved",
+      "configuredDirectionDeg": 278,
+      "marineToPinBearingDeg": 278,
+      "marineToNearestCoastBearingDeg": 285,
+      "differenceDeg": 6.3,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B09-15",
+      "name": "Bøgestrømmen vest",
+      "configuredDirectionDeg": 294,
+      "marineToPinBearingDeg": 294,
+      "marineToNearestCoastBearingDeg": 245,
+      "differenceDeg": 48.2,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B09-16",
+      "name": "Karrebæksminde og Enø",
+      "configuredDirectionDeg": 7,
+      "marineToPinBearingDeg": 7,
+      "marineToNearestCoastBearingDeg": 32,
+      "differenceDeg": 25.2,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B09-17",
+      "name": "Bisserup og Glænø",
+      "configuredDirectionDeg": 4,
+      "marineToPinBearingDeg": 4,
+      "marineToNearestCoastBearingDeg": 345,
+      "differenceDeg": 18.9,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B09-18",
+      "name": "Korsør og Lejodde",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 84,
+      "differenceDeg": 5.8,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B09-19",
+      "name": "Reersø og Mullerup",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 111,
+      "differenceDeg": 20.6,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B10-01",
+      "name": "Møn nord og Nyord",
+      "configuredDirectionDeg": 232,
+      "marineToPinBearingDeg": 232,
+      "marineToNearestCoastBearingDeg": 224,
+      "differenceDeg": 7.7,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B10-02",
+      "name": "Ulvshale og Hårbølle",
+      "configuredDirectionDeg": 46,
+      "marineToPinBearingDeg": 46,
+      "marineToNearestCoastBearingDeg": 52,
+      "differenceDeg": 5.9,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B10-03",
+      "name": "Møns Klint nord",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 231,
+      "differenceDeg": 38.6,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B10-04",
+      "name": "Møns Klint syd og Klintholm",
+      "configuredDirectionDeg": 281,
+      "marineToPinBearingDeg": 281,
+      "marineToNearestCoastBearingDeg": 318,
+      "differenceDeg": 37.0,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B10-05",
+      "name": "Bogø og Farø",
+      "configuredDirectionDeg": 289,
+      "marineToPinBearingDeg": 289,
+      "marineToNearestCoastBearingDeg": 191,
+      "differenceDeg": 97.7,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B10-06",
+      "name": "Falster nord og Orehoved",
+      "configuredDirectionDeg": 233,
+      "marineToPinBearingDeg": 233,
+      "marineToNearestCoastBearingDeg": 114,
+      "differenceDeg": 119.3,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B10-07",
+      "name": "Falster øst og Pomlenakke",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 261,
+      "differenceDeg": 9.1,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B10-08",
+      "name": "Marielyst og Bøtø",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 308,
+      "differenceDeg": 38.2,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B10-09",
+      "name": "Gedser Odde og Gedesby",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 271,
+      "differenceDeg": 1.4,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B10-10",
+      "name": "Falster vest og Nysted Nor munding",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 182,
+      "differenceDeg": 92.3,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B10-11",
+      "name": "Lolland sydøst og Nysted",
+      "configuredDirectionDeg": 0,
+      "marineToPinBearingDeg": 0,
+      "marineToNearestCoastBearingDeg": 20,
+      "differenceDeg": 20.3,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B10-12",
+      "name": "Lolland syd og Hyllekrog",
+      "configuredDirectionDeg": 0,
+      "marineToPinBearingDeg": 0,
+      "marineToNearestCoastBearingDeg": 15,
+      "differenceDeg": 15.1,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B10-13",
+      "name": "Lolland sydvest og Kramnitse",
+      "configuredDirectionDeg": 0,
+      "marineToPinBearingDeg": 0,
+      "marineToNearestCoastBearingDeg": 198,
+      "differenceDeg": 162.5,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B10-14",
+      "name": "Lolland vest og Albuen",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 32,
+      "differenceDeg": 57.6,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B10-15",
+      "name": "Lolland nord og Kragenæs",
+      "configuredDirectionDeg": 180,
+      "marineToPinBearingDeg": 180,
+      "marineToNearestCoastBearingDeg": 216,
+      "differenceDeg": 36.4,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B10-16",
+      "name": "Fejø og Femø",
+      "configuredDirectionDeg": 180,
+      "marineToPinBearingDeg": 180,
+      "marineToNearestCoastBearingDeg": 216,
+      "differenceDeg": 36.5,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B10-17",
+      "name": "Askø og Lilleø",
+      "configuredDirectionDeg": 180,
+      "marineToPinBearingDeg": 180,
+      "marineToNearestCoastBearingDeg": 184,
+      "differenceDeg": 3.7,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B10-18",
+      "name": "Bornholm nord og Sandvig",
+      "configuredDirectionDeg": 180,
+      "marineToPinBearingDeg": 180,
+      "marineToNearestCoastBearingDeg": 183,
+      "differenceDeg": 2.8,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B10-19",
+      "name": "Bornholm nordøst og Gudhjem",
+      "configuredDirectionDeg": 210,
+      "marineToPinBearingDeg": 210,
+      "marineToNearestCoastBearingDeg": 177,
+      "differenceDeg": 32.9,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B10-20",
+      "name": "Bornholm øst og Svaneke",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 268,
+      "differenceDeg": 2.1,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B10-21",
+      "name": "Bornholm sydøst og Dueodde",
+      "configuredDirectionDeg": 326,
+      "marineToPinBearingDeg": 326,
+      "marineToNearestCoastBearingDeg": 319,
+      "differenceDeg": 7.3,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B10-22",
+      "name": "Bornholm syd og Boderne",
+      "configuredDirectionDeg": 0,
+      "marineToPinBearingDeg": 0,
+      "marineToNearestCoastBearingDeg": 22,
+      "differenceDeg": 22.3,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B10-23",
+      "name": "Bornholm vest og Hasle",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 112,
+      "differenceDeg": 22.4,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B10-24",
+      "name": "Bornholm nordvest og Hammeren",
+      "configuredDirectionDeg": 102,
+      "marineToPinBearingDeg": 102,
+      "marineToNearestCoastBearingDeg": 115,
+      "differenceDeg": 12.3,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B11-SAM-01",
+      "name": "Samsø nord",
+      "configuredDirectionDeg": 196,
+      "marineToPinBearingDeg": 196,
+      "marineToNearestCoastBearingDeg": 272,
+      "differenceDeg": 76.1,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B11-SAM-02",
+      "name": "Samsø øst",
+      "configuredDirectionDeg": 284,
+      "marineToPinBearingDeg": 284,
+      "marineToNearestCoastBearingDeg": 287,
+      "differenceDeg": 2.2,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B11-SAM-03",
+      "name": "Samsø syd og vest",
+      "configuredDirectionDeg": 90,
+      "marineToPinBearingDeg": 90,
+      "marineToNearestCoastBearingDeg": 90,
+      "differenceDeg": 0.1,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B11-LAE-01",
+      "name": "Læsø vest og Vesterø",
+      "configuredDirectionDeg": 80,
+      "marineToPinBearingDeg": 80,
+      "marineToNearestCoastBearingDeg": 100,
+      "differenceDeg": 19.9,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B11-LAE-02",
+      "name": "Læsø nord",
+      "configuredDirectionDeg": 176,
+      "marineToPinBearingDeg": 176,
+      "marineToNearestCoastBearingDeg": 170,
+      "differenceDeg": 5.1,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B11-LAE-03",
+      "name": "Læsø øst og syd",
+      "configuredDirectionDeg": 287,
+      "marineToPinBearingDeg": 287,
+      "marineToNearestCoastBearingDeg": 334,
+      "differenceDeg": 46.9,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B12-01",
+      "name": "Kolding Fjord og Løverodde",
+      "configuredDirectionDeg": 256,
+      "marineToPinBearingDeg": 256,
+      "marineToNearestCoastBearingDeg": 73,
+      "differenceDeg": 177.5,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B12-02",
+      "name": "Hejlsminde og Binderup",
+      "configuredDirectionDeg": 281,
+      "marineToPinBearingDeg": 281,
+      "marineToNearestCoastBearingDeg": 236,
+      "differenceDeg": 44.6,
+      "confidence": "medium"
+    },
+    {
+      "zoneId": "DK-B12-03",
+      "name": "Haderslev Fjord og Årøsund",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 268,
+      "differenceDeg": 2.1,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B12-04",
+      "name": "Genner Bugt og Aabenraa Fjord",
+      "configuredDirectionDeg": 261,
+      "marineToPinBearingDeg": 261,
+      "marineToNearestCoastBearingDeg": 239,
+      "differenceDeg": 21.8,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B12-05",
+      "name": "Kruså og Flensborg Fjord nord",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 221,
+      "differenceDeg": 49.0,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B12-06",
+      "name": "Sønderborg Bugt og Dybbøl",
+      "configuredDirectionDeg": 303,
+      "marineToPinBearingDeg": 303,
+      "marineToNearestCoastBearingDeg": 181,
+      "differenceDeg": 122.4,
+      "confidence": "review"
+    },
+    {
+      "zoneId": "DK-B12-07",
+      "name": "Als syd og Kegnæs",
+      "configuredDirectionDeg": 21,
+      "marineToPinBearingDeg": 21,
+      "marineToNearestCoastBearingDeg": 0,
+      "differenceDeg": 20.9,
+      "confidence": "high"
+    },
+    {
+      "zoneId": "DK-B12-08",
+      "name": "Als øst og Fynshav",
+      "configuredDirectionDeg": 270,
+      "marineToPinBearingDeg": 270,
+      "marineToNearestCoastBearingDeg": 250,
+      "differenceDeg": 20.4,
+      "confidence": "high"
+    }
+  ]
+}

@@ -70,3 +70,24 @@ const missingCurrent = calculateRavScore({
   history: { maxWind24hMps: 15, maxWave24hM: 2, hoursSinceHighEnergy: 8 }
 });
 assert.ok(missingCurrent.components.transport <= 52, 'Manglende strømdata skal begrænse transportscoren');
+
+
+const uncertainZone = { ...zone, onshoreDirectionConfidence: 'review' };
+const uncertainOnshore = calculateRavScore({
+  mode: 'beach', zone: uncertainZone,
+  weather: { windSpeedMps: 3, windDirectionDeg: 90, waveHeightM: .2, currentSpeedMps: .3, currentDirectionDeg: 270, waterLevelTrendCm3h: 12 },
+  history: { maxWind24hMps: 12, maxWave24hM: 1.5, hoursSinceHighEnergy: 8 }
+});
+assert.ok(uncertainOnshore.components.transport <= 60, 'Geografisk usikker pålandsretning må ikke udløse næsten maksimal transport');
+assert.ok(uncertainOnshore.explanation.transportDiagnostics.capsApplied.some(cap => cap.reason === 'onshore-direction-needs-review'));
+
+const oesterHurup = { id:'DK-B02-12', onshoreDirectionDeg:268, onshoreDirectionConfidence:'high', shallowWater:true, reefs:false, seagrass:true, coastType:'east' };
+const oesterHurupCase = calculateRavScore({
+  mode:'waders', zone:oesterHurup,
+  weather:{ windSpeedMps:2.8, windDirectionDeg:309, waveHeightM:.1, currentSpeedMps:.30, currentDirectionDeg:135, waterLevelTrendCm3h:-15 },
+  history:{ maxWind24hMps:5, maxWave24hM:.4, hoursSinceHighEnergy:24 }
+});
+assert.ok(oesterHurupCase.explanation.transportDiagnostics.currentDirectionDifferenceDeg >= 130, 'Øster Hurup: strøm 135° skal klassificeres som væk fra land mod 268°');
+assert.ok(['offshore','strongly-offshore'].includes(oesterHurupCase.explanation.transportDiagnostics.currentClassification));
+assert.ok(oesterHurupCase.components.transport <= 42, 'Øster Hurup-scenariet fra debugbilledet må ikke være grøn indtransport');
+console.log(`OK: retningsusikkerhed og Øster Hurup regression (${oesterHurupCase.components.transport}/100 transport)`);

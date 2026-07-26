@@ -92,6 +92,12 @@ function calculateTransport(zone, weather, reasons, diagnostics) {
   if (currentAlignment !== null && current >= .15) {
     if (currentAlignment <= -.75) caps.push({ max: 28, reason: 'strongly-offshore-current' });
     else if (currentAlignment <= -.35) caps.push({ max: 42, reason: 'offshore-current' });
+    // En høj indtransportscore må ikke hvile på en geografisk retning, hvor
+    // de to uafhængige geometri-signaler er markant uenige.
+    if (currentAlignment >= .2 && zone.onshoreDirectionConfidence === 'review') {
+      caps.push({ max: 60, reason: 'onshore-direction-needs-review' });
+      reasons.push('Zonens pålandsretning er geografisk usikker; transportscoren begrænses, indtil retningen er manuelt verificeret.');
+    }
   }
   const scoreBeforeCaps = score;
   for (const cap of caps) {
@@ -100,6 +106,9 @@ function calculateTransport(zone, weather, reasons, diagnostics) {
   }
 
   diagnostics.onshoreDirectionDeg = onshore;
+  diagnostics.onshoreDirectionConfidence = zone.onshoreDirectionConfidence || 'unknown';
+  diagnostics.onshoreDirectionCoastBearingDeg = numberOrNull(zone.onshoreDirectionCoastBearingDeg);
+  diagnostics.onshoreDirectionGeometryDifferenceDeg = numberOrNull(zone.onshoreDirectionGeometryDifferenceDeg);
   diagnostics.currentDirectionDeg = numberOrNull(weather.currentDirectionDeg);
   diagnostics.currentDirectionConvention = 'oceanographic-to';
   diagnostics.windDirectionDeg = windFrom;

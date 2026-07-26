@@ -72,6 +72,9 @@ function debugPanel(zone, result, condition) {
       <div><span>Datakilde</span><strong>${escapeHtml(provider)}</strong></div>
       <div><span>Pålandsretning</span><strong>${compass(zone.onshoreDirectionDeg)}</strong></div>
       <div><span>Retningskilde</span><strong>${escapeHtml(zone.onshoreDirectionSource || "Ikke angivet")}</strong></div>
+      <div><span>Retningssikkerhed</span><strong>${escapeHtml(d.onshoreDirectionConfidence || zone.onshoreDirectionConfidence || "Ukendt")}</strong></div>
+      <div><span>Uafhængig kystkontrol</span><strong>${compass(d.onshoreDirectionCoastBearingDeg ?? zone.onshoreDirectionCoastBearingDeg)}</strong></div>
+      <div><span>Forskel mellem geometrier</span><strong>${Number.isFinite(Number(d.onshoreDirectionGeometryDifferenceDeg ?? zone.onshoreDirectionGeometryDifferenceDeg)) ? `${Math.round(Number(d.onshoreDirectionGeometryDifferenceDeg ?? zone.onshoreDirectionGeometryDifferenceDeg))}°` : "Mangler"}</strong></div>
       <div><span>Rå strømretning</span><strong>${compass(condition.currentDirectionDeg)} (mod-retning)</strong></div>
       <div><span>Forskel strøm/land</span><strong>${currentDifference}</strong></div>
       <div><span>Strømklassifikation</span><strong>${escapeHtml(classificationLabels[d.currentClassification] || d.currentClassification || "Ukendt")}</strong></div>

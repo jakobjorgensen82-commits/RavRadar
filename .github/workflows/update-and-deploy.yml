@@ -60,7 +60,7 @@ jobs:
           DMI_REQUEST_BUDGET: 8
           DMI_CACHE_REFRESH_BELOW_HOURS: 24
           WEATHER_REQUEST_TIMEOUT_MS: 25000
-          WEATHER_USER_AGENT: "RavRadar/3.1.7 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/3.1.10 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Validate updated weather cache
         if: steps.weather.outcome == 'success'
