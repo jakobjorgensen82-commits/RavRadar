@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 const ZONES_PATH = 'data/zones.geojson';
 const OUTPUT_PATH = 'ONSHORE-DIRECTION-AUDIT.json';
 const APPLY = process.argv.includes('--apply');
+if (APPLY) throw new Error('Automatisk --apply er deaktiveret: dataPoint/pinPoint dokumenterer ikke sikkert hav→land-retningen. Retninger skal ændres via geografisk godkendt kildedata.');
 const normalize = value => ((value % 360) + 360) % 360;
 const angularDifference = (a, b) => Math.abs(((a - b + 540) % 360) - 180);
 
@@ -44,12 +45,7 @@ for (const feature of geojson.features ?? []) {
   if (expected !== null && delta > 1) warnings.push(delta >= 150 ? 'LIKELY_180_DEG_MISMATCH' : 'DIRECTION_MISMATCH');
   if (['limfjord', 'island'].includes(String(p.coastType ?? '').toLowerCase()) || /odde|næs|bugt|fjord|ø\b/i.test(String(p.name ?? ''))) warnings.push('COMPLEX_COAST_MANUAL_REVIEW');
 
-  if (APPLY && expected !== null && !warnings.includes('IDENTICAL_OR_TOO_CLOSE_POINTS')) {
-    if (configured !== expected) changed += 1;
-    p.onshoreDirectionDeg = expected;
-    p.onshoreDirectionSource = 'bearing from offshore dataPoint toward beach pinPoint';
-    p.onshoreDirectionAuditedAt = new Date().toISOString().slice(0, 10);
-  }
+
 
   audit.push({
     zoneId: p.id,
@@ -75,12 +71,11 @@ const summary = {
   complexCoastsForManualReview: audit.filter(item => item.warnings.includes('COMPLEX_COAST_MANUAL_REVIEW')).length
 };
 
-if (APPLY) await fs.writeFile(ZONES_PATH, `${JSON.stringify(geojson, null, 2)}\n`);
 await fs.writeFile(OUTPUT_PATH, `${JSON.stringify({
   generatedAt: new Date().toISOString(),
-  mode: APPLY ? 'apply' : 'audit-only',
+  mode: 'audit-only',
   method: 'Independent consistency audit of configured direction against dataPoint→pinPoint bearing. This does not prove that either point is geographically correct.',
   summary,
   zones: audit
 }, null, 2)}\n`);
-console.log(`Onshore-audit: ${summary.pass} PASS, ${summary.review} REVIEW, ${summary.fail} FAIL.${APPLY ? ` ${changed} retninger opdateret.` : ' Ingen zonedata blev ændret.'}`);
+console.log(`Onshore-audit: ${summary.pass} PASS, ${summary.review} REVIEW, ${summary.fail} FAIL. Ingen zonedata blev ændret.`);

@@ -1,6 +1,6 @@
 {
   "type": "FeatureCollection",
-  "version": "3.1.7",
+  "version": "3.1.8",
   "features": [
     {
       "type": "Feature",
@@ -459,7 +459,7 @@
         "name": "Djursland nord og øst",
         "region": "Djursland",
         "coastType": "east",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 260,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -487,8 +487,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -525,7 +526,7 @@
         "name": "Aarhusbugten og Odder",
         "region": "Østjylland",
         "coastType": "east",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -565,8 +566,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -603,7 +605,7 @@
         "name": "Vejle Fjord til Lillebælt",
         "region": "Østjylland",
         "coastType": "east",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 280,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -667,8 +669,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -705,7 +708,7 @@
         "name": "Nordfyn og Kerteminde",
         "region": "Fyn",
         "coastType": "east",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 225,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -781,8 +784,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -819,7 +823,7 @@
         "name": "Sjællands Odde og Odsherred",
         "region": "Nordvestsjælland",
         "coastType": "east",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 180,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -875,8 +879,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -913,7 +918,7 @@
         "name": "Nordsjælland og Øresund",
         "region": "Nordsjælland",
         "coastType": "east",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 225,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -957,8 +962,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -995,7 +1001,7 @@
         "name": "Stevns og Sydsjælland",
         "region": "Sydøstsjælland",
         "coastType": "east",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 300,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -1055,8 +1061,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -1093,7 +1100,7 @@
         "name": "Lolland-Falster sydkyst",
         "region": "Sydhavsøerne",
         "coastType": "east",
-        "onshoreDirectionDeg": 41,
+        "onshoreDirectionDeg": 0,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -1181,8 +1188,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -1219,7 +1227,7 @@
         "name": "Bornholms kyster",
         "region": "Bornholm",
         "coastType": "east",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -1259,8 +1267,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -1297,7 +1306,7 @@
         "name": "Limfjorden vest",
         "region": "Limfjorden",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 270,
+        "onshoreDirectionDeg": 90,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -1345,8 +1354,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -1383,7 +1393,7 @@
         "name": "Limfjorden midt",
         "region": "Limfjorden",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 0,
+        "onshoreDirectionDeg": 180,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -1439,8 +1449,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -1477,7 +1488,7 @@
         "name": "Limfjorden øst",
         "region": "Limfjorden øst – Aalborg til Hals",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 314,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -1506,8 +1517,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -1544,7 +1556,7 @@
         "name": "Agger og Krik Vig",
         "region": "Thy syd",
         "coastType": "west",
-        "onshoreDirectionDeg": 107,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -1578,8 +1590,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -1616,7 +1629,7 @@
         "name": "Lyngby og Lodbjerg",
         "region": "Thy syd",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": false,
         "reefs": true,
         "seagrass": false,
@@ -1642,8 +1655,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -1680,7 +1694,7 @@
         "name": "Stenbjerg og Vorupør",
         "region": "Thy",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": false,
         "reefs": true,
         "seagrass": false,
@@ -1714,8 +1728,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -1752,7 +1767,7 @@
         "name": "Vangså og Klitmøller",
         "region": "Thy",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": false,
         "reefs": true,
         "seagrass": false,
@@ -1786,8 +1801,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -1824,7 +1840,7 @@
         "name": "Hanstholm og Hamborg",
         "region": "Thy nord",
         "coastType": "west",
-        "onshoreDirectionDeg": 108,
+        "onshoreDirectionDeg": 250,
         "shallowWater": false,
         "reefs": true,
         "seagrass": false,
@@ -1858,8 +1874,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -1896,7 +1913,7 @@
         "name": "Vigsø og Lild Strand",
         "region": "Hanstholm–Jammerbugt",
         "coastType": "west",
-        "onshoreDirectionDeg": 155,
+        "onshoreDirectionDeg": 220,
         "shallowWater": false,
         "reefs": true,
         "seagrass": false,
@@ -1938,8 +1955,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -1976,7 +1994,7 @@
         "name": "Bulbjerg og Thorup Strand",
         "region": "Jammerbugt vest",
         "coastType": "west",
-        "onshoreDirectionDeg": 161,
+        "onshoreDirectionDeg": 220,
         "shallowWater": false,
         "reefs": true,
         "seagrass": false,
@@ -2018,8 +2036,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -2056,7 +2075,7 @@
         "name": "Slettestrand og Svinkløv",
         "region": "Jammerbugt",
         "coastType": "west",
-        "onshoreDirectionDeg": 162,
+        "onshoreDirectionDeg": 220,
         "shallowWater": false,
         "reefs": true,
         "seagrass": false,
@@ -2094,8 +2113,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -2132,7 +2152,7 @@
         "name": "Tranum og Rødhus",
         "region": "Jammerbugt",
         "coastType": "west",
-        "onshoreDirectionDeg": 152,
+        "onshoreDirectionDeg": 225,
         "shallowWater": false,
         "reefs": false,
         "seagrass": false,
@@ -2158,8 +2178,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -2196,7 +2217,7 @@
         "name": "Blokhus og Hune",
         "region": "Jammerbugt",
         "coastType": "west",
-        "onshoreDirectionDeg": 141,
+        "onshoreDirectionDeg": 230,
         "shallowWater": false,
         "reefs": false,
         "seagrass": false,
@@ -2230,8 +2251,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -2268,7 +2290,7 @@
         "name": "Saltum og Grønhøj",
         "region": "Jammerbugt nord",
         "coastType": "west",
-        "onshoreDirectionDeg": 136,
+        "onshoreDirectionDeg": 235,
         "shallowWater": false,
         "reefs": false,
         "seagrass": false,
@@ -2298,8 +2320,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -2336,7 +2359,7 @@
         "name": "Løkken og Furreby",
         "region": "Vendsyssel vest",
         "coastType": "west",
-        "onshoreDirectionDeg": 127,
+        "onshoreDirectionDeg": 240,
         "shallowWater": false,
         "reefs": true,
         "seagrass": false,
@@ -2370,8 +2393,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -2408,7 +2432,7 @@
         "name": "Nørre Lyngby og Rubjerg",
         "region": "Vendsyssel vest",
         "coastType": "west",
-        "onshoreDirectionDeg": 112,
+        "onshoreDirectionDeg": 250,
         "shallowWater": false,
         "reefs": true,
         "seagrass": false,
@@ -2434,8 +2458,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -2472,7 +2497,7 @@
         "name": "Lønstrup og Nørlev",
         "region": "Vendsyssel vest",
         "coastType": "west",
-        "onshoreDirectionDeg": 122,
+        "onshoreDirectionDeg": 250,
         "shallowWater": false,
         "reefs": true,
         "seagrass": false,
@@ -2506,8 +2531,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -2544,7 +2570,7 @@
         "name": "Tornby og Hirtshals",
         "region": "Vendsyssel nordvest",
         "coastType": "west",
-        "onshoreDirectionDeg": 119,
+        "onshoreDirectionDeg": 245,
         "shallowWater": false,
         "reefs": true,
         "seagrass": false,
@@ -2582,8 +2608,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -2620,7 +2647,7 @@
         "name": "Kjul og Uggerby",
         "region": "Tannis Bugt vest",
         "coastType": "west",
-        "onshoreDirectionDeg": 165,
+        "onshoreDirectionDeg": 205,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -2650,8 +2677,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -2688,7 +2716,7 @@
         "name": "Tversted og Skiveren",
         "region": "Tannis Bugt",
         "coastType": "west",
-        "onshoreDirectionDeg": 177,
+        "onshoreDirectionDeg": 190,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -2726,8 +2754,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -2764,7 +2793,7 @@
         "name": "Kandestederne og Hulsig",
         "region": "Skagen Odde vest",
         "coastType": "west",
-        "onshoreDirectionDeg": 163,
+        "onshoreDirectionDeg": 200,
         "shallowWater": false,
         "reefs": true,
         "seagrass": false,
@@ -2794,8 +2823,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -2832,7 +2862,7 @@
         "name": "Skagen vest og Damstederne",
         "region": "Skagen Odde",
         "coastType": "west",
-        "onshoreDirectionDeg": 145,
+        "onshoreDirectionDeg": 215,
         "shallowWater": false,
         "reefs": true,
         "seagrass": false,
@@ -2866,8 +2896,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -2904,7 +2935,7 @@
         "name": "Grenen og Skagen øst",
         "region": "Skagen Odde nordøst",
         "coastType": "east",
-        "onshoreDirectionDeg": 278,
+        "onshoreDirectionDeg": 70,
         "shallowWater": false,
         "reefs": true,
         "seagrass": false,
@@ -2938,8 +2969,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -2976,7 +3008,7 @@
         "name": "Ålbæk og Bunken",
         "region": "Ålbæk Bugt nord",
         "coastType": "east",
-        "onshoreDirectionDeg": 263,
+        "onshoreDirectionDeg": 92,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -3016,8 +3048,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -3054,7 +3087,7 @@
         "name": "Napstjert og Jerup",
         "region": "Ålbæk Bugt midt",
         "coastType": "east",
-        "onshoreDirectionDeg": 256,
+        "onshoreDirectionDeg": 94,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -3086,8 +3119,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -3124,7 +3158,7 @@
         "name": "Bratten og Strandby",
         "region": "Ålbæk Bugt syd",
         "coastType": "east",
-        "onshoreDirectionDeg": 278,
+        "onshoreDirectionDeg": 96,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -3156,8 +3190,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -3194,7 +3229,7 @@
         "name": "Frederikshavn og Bangsbo",
         "region": "Frederikshavn kyst",
         "coastType": "east",
-        "onshoreDirectionDeg": 277,
+        "onshoreDirectionDeg": 100,
         "shallowWater": false,
         "reefs": true,
         "seagrass": false,
@@ -3230,8 +3265,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -3268,7 +3304,7 @@
         "name": "Sæby og Sulbæk",
         "region": "Sæby Bugt nord",
         "coastType": "east",
-        "onshoreDirectionDeg": 267,
+        "onshoreDirectionDeg": 98,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -3308,8 +3344,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -3346,7 +3383,7 @@
         "name": "Lyngså og Voerså",
         "region": "Sæby Bugt syd",
         "coastType": "east",
-        "onshoreDirectionDeg": 278,
+        "onshoreDirectionDeg": 98,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -3382,8 +3419,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -3420,7 +3458,7 @@
         "name": "Asaa og Melholt",
         "region": "Asaa kyst",
         "coastType": "east",
-        "onshoreDirectionDeg": 270,
+        "onshoreDirectionDeg": 100,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -3460,8 +3498,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -3498,7 +3537,7 @@
         "name": "Hou og Bisnap",
         "region": "Hou Bugt",
         "coastType": "east",
-        "onshoreDirectionDeg": 250,
+        "onshoreDirectionDeg": 105,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -3530,8 +3569,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -3568,7 +3608,7 @@
         "name": "Hals og Nordmandshage",
         "region": "Kattegat ved Hals",
         "coastType": "east",
-        "onshoreDirectionDeg": 274,
+        "onshoreDirectionDeg": 108,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -3604,8 +3644,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -3642,7 +3683,7 @@
         "name": "Egense og Mou",
         "region": "Limfjorden øst",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 178,
+        "onshoreDirectionDeg": 180,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -3678,8 +3719,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -3716,7 +3758,7 @@
         "name": "Dokkedal og Mulbjerge",
         "region": "Lille Vildmose kyst",
         "coastType": "east",
-        "onshoreDirectionDeg": 268,
+        "onshoreDirectionDeg": 100,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -3752,8 +3794,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -3790,7 +3833,7 @@
         "name": "Øster Hurup og Als",
         "region": "Kattegat ved Øster Hurup",
         "coastType": "east",
-        "onshoreDirectionDeg": 268,
+        "onshoreDirectionDeg": 100,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -3830,8 +3873,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -3868,7 +3912,7 @@
         "name": "Als Odde og Helberskov",
         "region": "Mariager Fjord munding nord",
         "coastType": "east",
-        "onshoreDirectionDeg": 305,
+        "onshoreDirectionDeg": 125,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -3908,8 +3952,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -3946,7 +3991,7 @@
         "name": "Havnø og Mariager Fjord øst",
         "region": "Mariager Fjord munding syd",
         "coastType": "east",
-        "onshoreDirectionDeg": 296,
+        "onshoreDirectionDeg": 130,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -4006,8 +4051,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -4044,7 +4090,7 @@
         "name": "Udbyhøj og Stenrevet",
         "region": "Randers Fjord munding",
         "coastType": "east",
-        "onshoreDirectionDeg": 268,
+        "onshoreDirectionDeg": 105,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -4088,8 +4134,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -4126,7 +4173,7 @@
         "name": "Harboøre og Vrist",
         "region": "Lemvig vestkyst",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": false,
@@ -4160,8 +4207,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -4198,7 +4246,7 @@
         "name": "Vejlby Klit og Ferring",
         "region": "Lemvig vestkyst",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": false,
@@ -4224,8 +4272,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -4262,7 +4311,7 @@
         "name": "Bovbjerg og Trans",
         "region": "Bovbjerg Klint",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": false,
         "reefs": true,
         "seagrass": false,
@@ -4292,8 +4341,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -4330,7 +4380,7 @@
         "name": "Thorsminde og Husby Klit",
         "region": "Holstebro vestkyst",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": false,
@@ -4360,8 +4410,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -4398,7 +4449,7 @@
         "name": "Fjand og Vedersø Klit",
         "region": "Ulfborg vestkyst",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": false,
@@ -4428,8 +4479,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -4466,7 +4518,7 @@
         "name": "Søndervig og Klegod",
         "region": "Holmsland Klit nord",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": false,
@@ -4500,8 +4552,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -4538,7 +4591,7 @@
         "name": "Hvide Sande nord",
         "region": "Holmsland Klit",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": false,
@@ -4568,8 +4621,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -4606,7 +4660,7 @@
         "name": "Hvide Sande syd og Årgab",
         "region": "Holmsland Klit",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": false,
@@ -4632,8 +4686,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -4670,7 +4725,7 @@
         "name": "Haurvig og Skodbjerge",
         "region": "Holmsland Klit syd",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": false,
@@ -4704,8 +4759,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -4742,7 +4798,7 @@
         "name": "Nymindegab og Houstrup",
         "region": "Ringkøbing Fjord sydvest",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": false,
@@ -4772,8 +4828,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -4810,7 +4867,7 @@
         "name": "Henne Strand og Grærup",
         "region": "Varde vestkyst",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": false,
@@ -4844,8 +4901,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -4882,7 +4940,7 @@
         "name": "Vejers og Børsmose",
         "region": "Varde vestkyst",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": false,
@@ -4912,8 +4970,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -4950,7 +5009,7 @@
         "name": "Blåvand og Hvidbjerg",
         "region": "Blåvandshuk",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": true,
         "seagrass": false,
@@ -4984,8 +5043,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -5022,7 +5082,7 @@
         "name": "Skallingen nord",
         "region": "Skallingen",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": false,
@@ -5052,8 +5112,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -5090,7 +5151,7 @@
         "name": "Skallingen syd",
         "region": "Skallingen",
         "coastType": "west",
-        "onshoreDirectionDeg": 67,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": false,
@@ -5116,8 +5177,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -5154,7 +5216,7 @@
         "name": "Ho Bugt og Oksby",
         "region": "Ho Bugt",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -5212,8 +5274,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -5250,7 +5313,7 @@
         "name": "Hjerting og Sædding",
         "region": "Esbjerg nordkyst",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -5284,8 +5347,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -5322,7 +5386,7 @@
         "name": "Fanø nord og Nordby",
         "region": "Fanø nord",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -5348,8 +5412,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -5386,7 +5451,7 @@
         "name": "Fanø vest og Rindby",
         "region": "Fanø vest",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -5420,8 +5485,9 @@
         ],
         "coastLineSource": "RavRadar controlled Wadden Sea shoreline; land-side beach alignment",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -5458,7 +5524,7 @@
         "name": "Fanø syd og Sønderho",
         "region": "Fanø syd",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 255,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -5492,8 +5558,9 @@
         ],
         "coastLineSource": "RavRadar controlled Wadden Sea shoreline; land-side beach alignment",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -5530,7 +5597,7 @@
         "name": "Mandø vest",
         "region": "Mandø",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -5572,8 +5639,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -5610,7 +5678,7 @@
         "name": "Rømø nord og Lakolk",
         "region": "Rømø nord",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -5656,8 +5724,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -5694,7 +5763,7 @@
         "name": "Rømø vest og Kongsmark",
         "region": "Rømø vest",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -5728,8 +5797,9 @@
         ],
         "coastLineSource": "RavRadar controlled Wadden Sea shoreline; land-side beach alignment",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -5766,7 +5836,7 @@
         "name": "Rømø syd og Sønderstrand",
         "region": "Rømø syd",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 250,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -5840,8 +5910,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -5878,7 +5949,7 @@
         "name": "Hjerpsted og Emmerlev",
         "region": "Sydvestjylland",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -5908,8 +5979,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -5946,7 +6018,7 @@
         "name": "Højer og Vidå",
         "region": "Vidåslusen",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -5988,8 +6060,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -6026,7 +6099,7 @@
         "name": "Thyborøn og Harboøre Tange øst",
         "region": "Limfjord vest",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 281,
+        "onshoreDirectionDeg": 90,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -6068,8 +6141,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -6106,7 +6180,7 @@
         "name": "Agger Tange og Krik",
         "region": "Limfjord vest",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 270,
+        "onshoreDirectionDeg": 90,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -6132,8 +6206,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -6170,7 +6245,7 @@
         "name": "Nissum Bredning nord",
         "region": "Nissum Bredning",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 0,
+        "onshoreDirectionDeg": 180,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -6220,8 +6295,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -6258,7 +6334,7 @@
         "name": "Nissum Bredning syd",
         "region": "Nissum Bredning",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 180,
+        "onshoreDirectionDeg": 0,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -6308,8 +6384,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -6346,7 +6423,7 @@
         "name": "Jegindø og Thyholm",
         "region": "Thyholm",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -6408,8 +6485,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -6446,7 +6524,7 @@
         "name": "Venø og Struer",
         "region": "Venø Bugt",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -6508,8 +6586,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -6546,7 +6625,7 @@
         "name": "Lemvig og Gjellerodde",
         "region": "Lem Vig",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 270,
+        "onshoreDirectionDeg": 90,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -6604,8 +6683,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -6642,7 +6722,7 @@
         "name": "Toftum Bjerge og Remmerstrand",
         "region": "Limfjord sydvest",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 180,
+        "onshoreDirectionDeg": 0,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -6680,8 +6760,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -6718,7 +6799,7 @@
         "name": "Thisted Bredning vest",
         "region": "Thisted Bredning",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 270,
+        "onshoreDirectionDeg": 90,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -6768,8 +6849,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -6806,7 +6888,7 @@
         "name": "Thisted og Vildsund",
         "region": "Thisted Bredning",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 0,
+        "onshoreDirectionDeg": 180,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -6864,8 +6946,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -6902,7 +6985,7 @@
         "name": "Mors nord og Feggesund",
         "region": "Mors nord",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 180,
+        "onshoreDirectionDeg": 0,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -6936,8 +7019,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -6974,7 +7058,7 @@
         "name": "Mors vest og Ejerslev",
         "region": "Mors vest",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -7020,8 +7104,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -7058,7 +7143,7 @@
         "name": "Mors syd og Nykøbing",
         "region": "Mors syd",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 0,
+        "onshoreDirectionDeg": 180,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -7112,8 +7197,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -7150,7 +7236,7 @@
         "name": "Sallingsund og Glyngøre",
         "region": "Sallingsund",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 270,
+        "onshoreDirectionDeg": 90,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -7196,8 +7282,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -7234,7 +7321,7 @@
         "name": "Salling vest og Junget",
         "region": "Salling vest",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -7272,8 +7359,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -7310,7 +7398,7 @@
         "name": "Fur nord",
         "region": "Fur",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 180,
+        "onshoreDirectionDeg": 0,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -7347,8 +7435,9 @@
           ]
         ],
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -7385,7 +7474,7 @@
         "name": "Fur syd",
         "region": "Fur",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 0,
+        "onshoreDirectionDeg": 180,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -7435,8 +7524,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -7473,7 +7563,7 @@
         "name": "Løgstør og Aggersund",
         "region": "Løgstør Bredning",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -7511,8 +7601,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -7549,7 +7640,7 @@
         "name": "Livø og Rønbjerg",
         "region": "Livø Bredning",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 270,
+        "onshoreDirectionDeg": 90,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -7595,8 +7686,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -7633,7 +7725,7 @@
         "name": "Nibe Bredning vest",
         "region": "Nibe Bredning",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 270,
+        "onshoreDirectionDeg": 90,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -7663,8 +7755,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -7701,7 +7794,7 @@
         "name": "Nibe og Sebbersund",
         "region": "Nibe Bredning",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -7763,8 +7856,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -7801,7 +7895,7 @@
         "name": "Gjøl og Attrup",
         "region": "Limfjord midt",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 0,
+        "onshoreDirectionDeg": 180,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -7843,8 +7937,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -7881,7 +7976,7 @@
         "name": "Aalborg vest og Egholm",
         "region": "Aalborg vest",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 0,
+        "onshoreDirectionDeg": 180,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -7919,8 +8014,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -7957,7 +8053,7 @@
         "name": "Aalborg øst og Nørresundby",
         "region": "Aalborg øst",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 0,
+        "onshoreDirectionDeg": 180,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -7991,8 +8087,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -8029,7 +8126,7 @@
         "name": "Hals Barre og Egense",
         "region": "Limfjord øst",
         "coastType": "limfjord",
-        "onshoreDirectionDeg": 270,
+        "onshoreDirectionDeg": 90,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -8059,8 +8156,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -8097,7 +8195,7 @@
         "name": "Gjerrild Nordstrand",
         "region": "Norddjursland",
         "coastType": "east",
-        "onshoreDirectionDeg": 180,
+        "onshoreDirectionDeg": 0,
         "shallowWater": true,
         "reefs": true,
         "seagrass": false,
@@ -8127,8 +8225,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -8165,7 +8264,7 @@
         "name": "Fornæs og Grenaa",
         "region": "Grenaa kyst",
         "coastType": "east",
-        "onshoreDirectionDeg": 270,
+        "onshoreDirectionDeg": 90,
         "shallowWater": true,
         "reefs": true,
         "seagrass": false,
@@ -8199,8 +8298,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -8237,7 +8337,7 @@
         "name": "Grenaa og Katholm",
         "region": "Grenaa syd",
         "coastType": "east",
-        "onshoreDirectionDeg": 270,
+        "onshoreDirectionDeg": 90,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -8271,8 +8371,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -8309,7 +8410,7 @@
         "name": "Bønnerup og Fjellerup",
         "region": "Norddjursland",
         "coastType": "east",
-        "onshoreDirectionDeg": 180,
+        "onshoreDirectionDeg": 0,
         "shallowWater": true,
         "reefs": false,
         "seagrass": false,
@@ -8339,8 +8440,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -8377,7 +8479,7 @@
         "name": "Rygarde og Sangstrup",
         "region": "Djursland nordøst",
         "coastType": "east",
-        "onshoreDirectionDeg": 231,
+        "onshoreDirectionDeg": 45,
         "shallowWater": true,
         "reefs": true,
         "seagrass": false,
@@ -8411,8 +8513,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -8449,7 +8552,7 @@
         "name": "Karlby og Glatved",
         "region": "Djursland øst",
         "coastType": "east",
-        "onshoreDirectionDeg": 270,
+        "onshoreDirectionDeg": 90,
         "shallowWater": true,
         "reefs": true,
         "seagrass": false,
@@ -8479,8 +8582,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -8517,7 +8621,7 @@
         "name": "Jernhatten og Rugård",
         "region": "Djursland øst",
         "coastType": "east",
-        "onshoreDirectionDeg": 270,
+        "onshoreDirectionDeg": 90,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -8555,8 +8659,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -8593,7 +8698,7 @@
         "name": "Ebeltoft og Ahl",
         "region": "Ebeltoft Vig",
         "coastType": "east",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -8659,8 +8764,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -8697,7 +8803,7 @@
         "name": "Helgenæs øst",
         "region": "Helgenæs",
         "coastType": "east",
-        "onshoreDirectionDeg": 270,
+        "onshoreDirectionDeg": 90,
         "shallowWater": true,
         "reefs": true,
         "seagrass": false,
@@ -8747,8 +8853,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -8785,7 +8892,7 @@
         "name": "Helgenæs vest",
         "region": "Helgenæs",
         "coastType": "east",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": true,
         "seagrass": false,
@@ -8835,8 +8942,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -8873,7 +8981,7 @@
         "name": "Knebel og Skødshoved",
         "region": "Mols",
         "coastType": "east",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -8903,8 +9011,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -8941,7 +9050,7 @@
         "name": "Kalø og Følle",
         "region": "Kalø Vig",
         "coastType": "east",
-        "onshoreDirectionDeg": 0,
+        "onshoreDirectionDeg": 180,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -9007,8 +9116,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -9045,7 +9155,7 @@
         "name": "Vosnæs og Havhuse",
         "region": "Aarhus Bugt nord",
         "coastType": "east",
-        "onshoreDirectionDeg": 0,
+        "onshoreDirectionDeg": 180,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -9075,8 +9185,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -9113,7 +9224,7 @@
         "name": "Aarhus nord og Egå",
         "region": "Aarhus Bugt",
         "coastType": "east",
-        "onshoreDirectionDeg": 270,
+        "onshoreDirectionDeg": 90,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -9143,8 +9254,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -9181,7 +9293,7 @@
         "name": "Aarhus syd og Moesgård",
         "region": "Aarhus Bugt",
         "coastType": "east",
-        "onshoreDirectionDeg": 270,
+        "onshoreDirectionDeg": 90,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -9215,8 +9327,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -9253,7 +9366,7 @@
         "name": "Norsminde og Saksild",
         "region": "Odderkysten",
         "coastType": "east",
-        "onshoreDirectionDeg": 270,
+        "onshoreDirectionDeg": 90,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -9295,8 +9408,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -9333,7 +9447,7 @@
         "name": "Hou og Odderkysten",
         "region": "Odderkysten",
         "coastType": "east",
-        "onshoreDirectionDeg": 270,
+        "onshoreDirectionDeg": 90,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -9379,8 +9493,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -9417,7 +9532,7 @@
         "name": "Juelsminde og As Vig",
         "region": "Juelsminde Bugt",
         "coastType": "east",
-        "onshoreDirectionDeg": 270,
+        "onshoreDirectionDeg": 90,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -9479,8 +9594,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -9517,7 +9633,7 @@
         "name": "Snaptun og Endelave nord",
         "region": "Horsens Fjord og Endelave",
         "coastType": "east",
-        "onshoreDirectionDeg": 180,
+        "onshoreDirectionDeg": 0,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -9583,8 +9699,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -9621,7 +9738,7 @@
         "name": "Endelave syd",
         "region": "Endelave",
         "coastType": "east",
-        "onshoreDirectionDeg": 0,
+        "onshoreDirectionDeg": 180,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -9691,8 +9808,9 @@
         ],
         "coastLineSource": "GSHHS coastline; 45 m landward offset from mapped shoreline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -9729,7 +9847,7 @@
         "name": "Trelde Næs og Vejlby Fed",
         "region": "Fredericia",
         "coastType": "east",
-        "onshoreDirectionDeg": 35,
+        "onshoreDirectionDeg": 45,
         "shallowWater": true,
         "reefs": true,
         "seagrass": false,
@@ -9775,8 +9893,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -9897,7 +10016,7 @@
         "name": "Middelfart og Hindsgavl",
         "region": "Middelfart",
         "coastType": "west",
-        "onshoreDirectionDeg": 242,
+        "onshoreDirectionDeg": 250,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -9943,8 +10062,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -10225,7 +10345,7 @@
         "name": "Hasmark og Hofmansgave",
         "region": "Nordfyn",
         "coastType": "east",
-        "onshoreDirectionDeg": 22,
+        "onshoreDirectionDeg": 30,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -10271,8 +10391,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -10645,7 +10766,7 @@
         "name": "Tårup og Kongshøj",
         "region": "Sydøstfyn",
         "coastType": "east",
-        "onshoreDirectionDeg": 104,
+        "onshoreDirectionDeg": 100,
         "shallowWater": true,
         "reefs": false,
         "seagrass": false,
@@ -10691,8 +10812,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -10729,7 +10851,7 @@
         "name": "Lundeborg og Elsehoved",
         "region": "Sydøstfyn",
         "coastType": "east",
-        "onshoreDirectionDeg": 104,
+        "onshoreDirectionDeg": 100,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -10775,8 +10897,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -10897,7 +11020,7 @@
         "name": "Svendborg og Christiansminde",
         "region": "Svendborg",
         "coastType": "east",
-        "onshoreDirectionDeg": 130,
+        "onshoreDirectionDeg": 120,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -10943,8 +11066,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -11065,7 +11189,7 @@
         "name": "Langeland nord og Lohals",
         "region": "Langeland",
         "coastType": "east",
-        "onshoreDirectionDeg": 35,
+        "onshoreDirectionDeg": 45,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -11111,8 +11235,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -11317,7 +11442,7 @@
         "name": "Langeland vest og Ristinge",
         "region": "Langeland",
         "coastType": "west",
-        "onshoreDirectionDeg": 256,
+        "onshoreDirectionDeg": 260,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -11363,8 +11488,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -11401,7 +11527,7 @@
         "name": "Ærø nord og Søby",
         "region": "Ærø",
         "coastType": "west",
-        "onshoreDirectionDeg": 329,
+        "onshoreDirectionDeg": 320,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -11447,8 +11573,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -11485,7 +11612,7 @@
         "name": "Ærø syd og Voderup",
         "region": "Ærø",
         "coastType": "west",
-        "onshoreDirectionDeg": 194,
+        "onshoreDirectionDeg": 200,
         "shallowWater": false,
         "reefs": true,
         "seagrass": false,
@@ -11531,8 +11658,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -11569,7 +11697,7 @@
         "name": "Ærø øst og Marstal",
         "region": "Ærø",
         "coastType": "east",
-        "onshoreDirectionDeg": 117,
+        "onshoreDirectionDeg": 110,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -11615,8 +11743,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -11737,7 +11866,7 @@
         "name": "Horne Land og Bøjden",
         "region": "Sydvestfyn",
         "coastType": "west",
-        "onshoreDirectionDeg": 210,
+        "onshoreDirectionDeg": 220,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -11783,8 +11912,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -11821,7 +11951,7 @@
         "name": "Helnæs og Torø",
         "region": "Sydvestfyn",
         "coastType": "west",
-        "onshoreDirectionDeg": 230,
+        "onshoreDirectionDeg": 240,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -11867,8 +11997,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -12073,7 +12204,7 @@
         "name": "Røsnæs nord",
         "region": "Vestsjælland",
         "coastType": "west",
-        "onshoreDirectionDeg": 146,
+        "onshoreDirectionDeg": 0,
         "shallowWater": true,
         "reefs": true,
         "seagrass": false,
@@ -12107,8 +12238,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -12145,7 +12277,7 @@
         "name": "Røsnæs syd og Kalundborg",
         "region": "Vestsjælland",
         "coastType": "west",
-        "onshoreDirectionDeg": 34,
+        "onshoreDirectionDeg": 180,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -12187,8 +12319,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -12225,7 +12358,7 @@
         "name": "Sejerø nord",
         "region": "Sejerø Bugt",
         "coastType": "west",
-        "onshoreDirectionDeg": 155,
+        "onshoreDirectionDeg": 0,
         "shallowWater": true,
         "reefs": true,
         "seagrass": false,
@@ -12251,8 +12384,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -12289,7 +12423,7 @@
         "name": "Sejerø syd",
         "region": "Sejerø Bugt",
         "coastType": "west",
-        "onshoreDirectionDeg": 25,
+        "onshoreDirectionDeg": 180,
         "shallowWater": true,
         "reefs": true,
         "seagrass": false,
@@ -12315,8 +12449,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -12353,7 +12488,7 @@
         "name": "Nekselø og Havnsø",
         "region": "Sejerø Bugt",
         "coastType": "west",
-        "onshoreDirectionDeg": 121,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -12399,8 +12534,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -12437,7 +12573,7 @@
         "name": "Vesterlyng og Bjørnstrup",
         "region": "Sejerø Bugt",
         "coastType": "west",
-        "onshoreDirectionDeg": 158,
+        "onshoreDirectionDeg": 0,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -12475,8 +12611,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -12513,7 +12650,7 @@
         "name": "Ordrup Næs og Kårup",
         "region": "Odsherred",
         "coastType": "west",
-        "onshoreDirectionDeg": 162,
+        "onshoreDirectionDeg": 0,
         "shallowWater": true,
         "reefs": false,
         "seagrass": false,
@@ -12547,8 +12684,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -12585,7 +12723,7 @@
         "name": "Vejrhøj og Vindekilde",
         "region": "Odsherred",
         "coastType": "west",
-        "onshoreDirectionDeg": 162,
+        "onshoreDirectionDeg": 0,
         "shallowWater": true,
         "reefs": false,
         "seagrass": false,
@@ -12619,8 +12757,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -12657,7 +12796,7 @@
         "name": "Høve og Gudmindrup",
         "region": "Odsherred",
         "coastType": "west",
-        "onshoreDirectionDeg": 168,
+        "onshoreDirectionDeg": 0,
         "shallowWater": true,
         "reefs": false,
         "seagrass": false,
@@ -12699,8 +12838,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -12737,7 +12877,7 @@
         "name": "Sjællands Odde nord",
         "region": "Odsherred",
         "coastType": "west",
-        "onshoreDirectionDeg": 166,
+        "onshoreDirectionDeg": 0,
         "shallowWater": true,
         "reefs": true,
         "seagrass": false,
@@ -12779,8 +12919,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -12817,7 +12958,7 @@
         "name": "Sjællands Odde syd",
         "region": "Odsherred",
         "coastType": "west",
-        "onshoreDirectionDeg": 18,
+        "onshoreDirectionDeg": 180,
         "shallowWater": true,
         "reefs": true,
         "seagrass": false,
@@ -12887,8 +13028,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -12925,7 +13067,7 @@
         "name": "Nykøbing Sjælland og Rørvig",
         "region": "Odsherred",
         "coastType": "east",
-        "onshoreDirectionDeg": 322,
+        "onshoreDirectionDeg": 90,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -12979,8 +13121,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -13017,7 +13160,7 @@
         "name": "Klint og Korshage",
         "region": "Odsherred",
         "coastType": "east",
-        "onshoreDirectionDeg": 228,
+        "onshoreDirectionDeg": 90,
         "shallowWater": true,
         "reefs": true,
         "seagrass": false,
@@ -13063,8 +13206,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -13101,7 +13245,7 @@
         "name": "Hundested og Lynæs",
         "region": "Nordsjælland",
         "coastType": "west",
-        "onshoreDirectionDeg": 138,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -13147,8 +13291,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -13185,7 +13330,7 @@
         "name": "Liseleje og Melby",
         "region": "Nordsjælland",
         "coastType": "west",
-        "onshoreDirectionDeg": 167,
+        "onshoreDirectionDeg": 0,
         "shallowWater": true,
         "reefs": false,
         "seagrass": false,
@@ -13211,8 +13356,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -13249,7 +13395,7 @@
         "name": "Tisvildeleje og Rågeleje",
         "region": "Nordsjælland",
         "coastType": "west",
-        "onshoreDirectionDeg": 175,
+        "onshoreDirectionDeg": 0,
         "shallowWater": true,
         "reefs": false,
         "seagrass": false,
@@ -13279,8 +13425,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -13317,7 +13464,7 @@
         "name": "Gilleleje og Gilbjerg",
         "region": "Nordsjælland",
         "coastType": "west",
-        "onshoreDirectionDeg": 174,
+        "onshoreDirectionDeg": 0,
         "shallowWater": true,
         "reefs": true,
         "seagrass": false,
@@ -13351,8 +13498,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -13389,7 +13537,7 @@
         "name": "Dronningmølle og Hornbæk",
         "region": "Nordsjælland",
         "coastType": "west",
-        "onshoreDirectionDeg": 180,
+        "onshoreDirectionDeg": 0,
         "shallowWater": true,
         "reefs": false,
         "seagrass": false,
@@ -13419,8 +13567,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -13457,7 +13606,7 @@
         "name": "Ålsgårde og Helsingør",
         "region": "Nordsjælland",
         "coastType": "east",
-        "onshoreDirectionDeg": 256,
+        "onshoreDirectionDeg": 90,
         "shallowWater": true,
         "reefs": false,
         "seagrass": false,
@@ -13491,8 +13640,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -13529,7 +13679,7 @@
         "name": "Snekkersten og Espergærde",
         "region": "Øresund",
         "coastType": "east",
-        "onshoreDirectionDeg": 257,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -13563,8 +13713,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -14381,7 +14532,7 @@
         "name": "Rødvig og Faxe Ladeplads",
         "region": "Sydsjælland",
         "coastType": "east",
-        "onshoreDirectionDeg": 318,
+        "onshoreDirectionDeg": 315,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -14427,8 +14578,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -14465,7 +14617,7 @@
         "name": "Præstø og Jungshoved",
         "region": "Sydsjælland",
         "coastType": "east",
-        "onshoreDirectionDeg": 278,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -14531,8 +14683,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -14569,7 +14722,7 @@
         "name": "Bøgestrømmen vest",
         "region": "Sydsjælland",
         "coastType": "east",
-        "onshoreDirectionDeg": 294,
+        "onshoreDirectionDeg": 300,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -14603,8 +14756,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -14641,7 +14795,7 @@
         "name": "Karrebæksminde og Enø",
         "region": "Sydsjælland",
         "coastType": "west",
-        "onshoreDirectionDeg": 7,
+        "onshoreDirectionDeg": 0,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -14699,8 +14853,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -14737,7 +14892,7 @@
         "name": "Bisserup og Glænø",
         "region": "Sydsjælland",
         "coastType": "west",
-        "onshoreDirectionDeg": 4,
+        "onshoreDirectionDeg": 0,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -14787,8 +14942,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -15001,7 +15157,7 @@
         "name": "Møn nord og Nyord",
         "region": "Møn",
         "coastType": "east",
-        "onshoreDirectionDeg": 232,
+        "onshoreDirectionDeg": 315,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -15051,8 +15207,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -15089,7 +15246,7 @@
         "name": "Ulvshale og Hårbølle",
         "region": "Møn",
         "coastType": "east",
-        "onshoreDirectionDeg": 46,
+        "onshoreDirectionDeg": 180,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -15187,8 +15344,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -15293,7 +15451,7 @@
         "name": "Møns Klint syd og Klintholm",
         "region": "Møn",
         "coastType": "east",
-        "onshoreDirectionDeg": 281,
+        "onshoreDirectionDeg": 260,
         "shallowWater": false,
         "reefs": true,
         "seagrass": false,
@@ -15335,8 +15493,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -15373,7 +15532,7 @@
         "name": "Bogø og Farø",
         "region": "Sydsjælland",
         "coastType": "east",
-        "onshoreDirectionDeg": 289,
+        "onshoreDirectionDeg": 180,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -15415,8 +15574,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -15453,7 +15613,7 @@
         "name": "Falster nord og Orehoved",
         "region": "Falster",
         "coastType": "east",
-        "onshoreDirectionDeg": 233,
+        "onshoreDirectionDeg": 0,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -15511,8 +15671,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -15689,7 +15850,7 @@
         "name": "Gedser Odde og Gedesby",
         "region": "Falster",
         "coastType": "east",
-        "onshoreDirectionDeg": 270,
+        "onshoreDirectionDeg": 240,
         "shallowWater": true,
         "reefs": false,
         "seagrass": false,
@@ -15727,8 +15888,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -16593,7 +16755,7 @@
         "name": "Bornholm nordøst og Gudhjem",
         "region": "Bornholm",
         "coastType": "east",
-        "onshoreDirectionDeg": 210,
+        "onshoreDirectionDeg": 225,
         "shallowWater": false,
         "reefs": true,
         "seagrass": false,
@@ -16635,8 +16797,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -16749,7 +16912,7 @@
         "name": "Bornholm sydøst og Dueodde",
         "region": "Bornholm",
         "coastType": "east",
-        "onshoreDirectionDeg": 326,
+        "onshoreDirectionDeg": 320,
         "shallowWater": true,
         "reefs": false,
         "seagrass": false,
@@ -16791,8 +16954,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -16981,7 +17145,7 @@
         "name": "Bornholm nordvest og Hammeren",
         "region": "Bornholm",
         "coastType": "west",
-        "onshoreDirectionDeg": 102,
+        "onshoreDirectionDeg": 120,
         "shallowWater": false,
         "reefs": true,
         "seagrass": false,
@@ -17015,8 +17179,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -17053,7 +17218,7 @@
         "name": "Samsø nord",
         "region": "Samsø",
         "coastType": "east",
-        "onshoreDirectionDeg": 196,
+        "onshoreDirectionDeg": 180,
         "shallowWater": false,
         "reefs": true,
         "seagrass": false,
@@ -17103,8 +17268,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -17141,7 +17307,7 @@
         "name": "Samsø øst",
         "region": "Samsø",
         "coastType": "east",
-        "onshoreDirectionDeg": 284,
+        "onshoreDirectionDeg": 270,
         "shallowWater": true,
         "reefs": true,
         "seagrass": false,
@@ -17183,8 +17349,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -17221,7 +17388,7 @@
         "name": "Samsø syd og vest",
         "region": "Samsø",
         "coastType": "west",
-        "onshoreDirectionDeg": 90,
+        "onshoreDirectionDeg": 80,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -17263,8 +17430,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -17301,7 +17469,7 @@
         "name": "Læsø vest og Vesterø",
         "region": "Læsø",
         "coastType": "west",
-        "onshoreDirectionDeg": 80,
+        "onshoreDirectionDeg": 90,
         "shallowWater": true,
         "reefs": false,
         "seagrass": true,
@@ -17339,8 +17507,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -17377,7 +17546,7 @@
         "name": "Læsø nord",
         "region": "Læsø",
         "coastType": "east",
-        "onshoreDirectionDeg": 176,
+        "onshoreDirectionDeg": 180,
         "shallowWater": false,
         "reefs": true,
         "seagrass": false,
@@ -17419,8 +17588,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -17457,7 +17627,7 @@
         "name": "Læsø øst og syd",
         "region": "Læsø",
         "coastType": "east",
-        "onshoreDirectionDeg": 287,
+        "onshoreDirectionDeg": 300,
         "shallowWater": true,
         "reefs": true,
         "seagrass": true,
@@ -17507,8 +17677,9 @@
         ],
         "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
         "coastLineVersion": "2.6.24",
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -17545,7 +17716,7 @@
         "name": "Kolding Fjord og Løverodde",
         "region": "Sydøstjylland · Kolding Fjord",
         "coastType": "east",
-        "onshoreDirectionDeg": 256,
+        "onshoreDirectionDeg": 95,
         "dataPoint": [
           9.57,
           55.51
@@ -17614,8 +17785,9 @@
         "coastLineMasterSegments": [
           5
         ],
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -17652,7 +17824,7 @@
         "name": "Hejlsminde og Binderup",
         "region": "Sydøstjylland · Lillebælt",
         "coastType": "east",
-        "onshoreDirectionDeg": 281,
+        "onshoreDirectionDeg": 90,
         "dataPoint": [
           9.7,
           55.36
@@ -17709,8 +17881,9 @@
         "coastLineMasterSegments": [
           5
         ],
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -17747,7 +17920,7 @@
         "name": "Haderslev Fjord og Årøsund",
         "region": "Sydøstjylland · Haderslev",
         "coastType": "east",
-        "onshoreDirectionDeg": 270,
+        "onshoreDirectionDeg": 95,
         "dataPoint": [
           9.8,
           55.25
@@ -17800,8 +17973,9 @@
         "coastLineMasterSegments": [
           5
         ],
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -17838,7 +18012,7 @@
         "name": "Genner Bugt og Aabenraa Fjord",
         "region": "Sydøstjylland · Aabenraa",
         "coastType": "east",
-        "onshoreDirectionDeg": 261,
+        "onshoreDirectionDeg": 105,
         "dataPoint": [
           9.72,
           55.08
@@ -17919,8 +18093,9 @@
         "coastLineMasterSegments": [
           5
         ],
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -17957,7 +18132,7 @@
         "name": "Kruså og Flensborg Fjord nord",
         "region": "Sydøstjylland · Aabenraa syd",
         "coastType": "east",
-        "onshoreDirectionDeg": 270,
+        "onshoreDirectionDeg": 120,
         "dataPoint": [
           9.64,
           54.89
@@ -18066,8 +18241,9 @@
         "coastLineMasterSegments": [
           5
         ],
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -18104,7 +18280,7 @@
         "name": "Sønderborg Bugt og Dybbøl",
         "region": "Sydøstjylland · Sønderborg",
         "coastType": "east",
-        "onshoreDirectionDeg": 303,
+        "onshoreDirectionDeg": 145,
         "dataPoint": [
           9.91,
           54.88
@@ -18149,8 +18325,9 @@
         "coastLineMasterSegments": [
           5
         ],
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -18187,7 +18364,7 @@
         "name": "Als syd og Kegnæs",
         "region": "Sydøstjylland · Als syd",
         "coastType": "east",
-        "onshoreDirectionDeg": 21,
+        "onshoreDirectionDeg": 165,
         "dataPoint": [
           9.94,
           54.8
@@ -18248,8 +18425,9 @@
         "coastLineMasterSegments": [
           24
         ],
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
@@ -18286,7 +18464,7 @@
         "name": "Als øst og Fynshav",
         "region": "Sydøstjylland · Als øst",
         "coastType": "east",
-        "onshoreDirectionDeg": 270,
+        "onshoreDirectionDeg": 90,
         "dataPoint": [
           10.16,
           54.98
@@ -18327,8 +18505,9 @@
         "coastLineMasterSegments": [
           24
         ],
-        "onshoreDirectionSource": "bearing from offshore dataPoint toward beach pinPoint",
-        "onshoreDirectionAuditedAt": "2026-07-26"
+        "onshoreDirectionSource": "restored documented pre-audit direction; point bearing is not accepted as land-sea proof",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "restored-after-invalid-point-bearing-audit"
       },
       "geometry": {
         "type": "Polygon",
