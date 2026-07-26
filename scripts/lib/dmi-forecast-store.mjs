@@ -160,7 +160,8 @@ export function interpolateWaterLevelAlongCoast(point, coastPath, stations, leve
   directStationKm = 8,
   maxCorridorDistanceKm = 25,
   minimumDistanceKm = 0.25,
-  haversineKm
+  haversineKm,
+  requireBracket = false
 } = {}) {
   if (!Array.isArray(coastPath) || coastPath.length < 2) return interpolateWaterLevelStations(point, stations, levels, { maxStations: 2, minimumDistanceKm, haversineKm });
   const targetProjection = projectPointOnCoastPath(point, coastPath);
@@ -182,9 +183,10 @@ export function interpolateWaterLevelAlongCoast(point, coastPath, stations, leve
   }
   const before = candidates.filter(item => item.projection.alongKm <= targetProjection.alongKm).sort((a, b) => b.projection.alongKm - a.projection.alongKm)[0];
   const after = candidates.filter(item => item.projection.alongKm >= targetProjection.alongKm).sort((a, b) => a.projection.alongKm - b.projection.alongKm)[0];
+  if (requireBracket && (!before || !after || before.stationId === after.stationId)) return null;
   let selected = before && after && before.stationId !== after.stationId ? [before, after] : [...candidates].sort((a, b) => Math.abs(a.projection.alongKm - targetProjection.alongKm) - Math.abs(b.projection.alongKm - targetProjection.alongKm)).slice(0, 2);
   selected = [...new Map(selected.map(item => [item.stationId, item])).values()];
-  if (!selected.length) return null;
+  if (!selected.length || (requireBracket && selected.length !== 2)) return null;
   const alongDistances = selected.map(item => Math.max(Math.abs(item.projection.alongKm - targetProjection.alongKm), minimumDistanceKm));
   const inverses = alongDistances.map(value => 1 / value);
   const total = inverses.reduce((sum, value) => sum + value, 0);

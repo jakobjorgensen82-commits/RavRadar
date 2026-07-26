@@ -1,4 +1,4 @@
-const APP_VERSION = '3.1.3';
+const APP_VERSION = '3.1.4';
 const ZONE_REGISTRY_URL = `./data/zones.geojson?v=${APP_VERSION}`;
 let registryPromise = null;
 

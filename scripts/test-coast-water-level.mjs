@@ -19,3 +19,6 @@ const direct=interpolateWaterLevelAlongCoast([2.05,0],path,stations,levels,{have
 assert.equal(direct.method,'direct-coast-station');
 assert.equal(direct.valueCm,10);
 console.log('Kystbaseret DMI-vandstandsinterpolation bestået.');
+
+const oneSided=interpolateWaterLevelAlongCoast([9,0],path,[{stationId:'LEFT',name:'Hals II',point:[2,0]}],new Map([['LEFT',{valueCm:10,observed:new Date().toISOString()}]]),{haversineKm:(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]),directStationKm:0.1,maxCorridorDistanceKm:1,requireBracket:true});
+assert.equal(oneSided,null,'Interpolation uden station på begge sider skal afvises');

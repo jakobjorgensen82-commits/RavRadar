@@ -105,6 +105,65 @@ async function fetchJson(url, { provider, retries = 1, dmi = false } = {}) {
   throw lastError ?? new Error(`${provider}: ukendt fejl`);
 }
 
+
+async function fetchAllFeatures(baseUrl, params, options = {}, { pageSize = 1000, maxPages = 20 } = {}) {
+  const all = [];
+  let nextUrl = null;
+  for (let page = 0; page < maxPages; page += 1) {
+    const query = new URLSearchParams({ ...params, limit: String(pageSize), offset: String(page * pageSize) });
+    const data = await fetchJson(nextUrl ?? `${baseUrl}?${query}`, options);
+    const features = Array.isArray(data.features) ? data.features : [];
+    all.push(...features);
+    nextUrl = (data.links ?? []).find(link => link?.rel === 'next' && link?.href)?.href ?? null;
+    if (!nextUrl && features.length < pageSize) break;
+  }
+  return all;
+}
+
+function pointInRing(point, ring) {
+  if (!Array.isArray(ring) || ring.length < 3) return false;
+  const [x, y] = point;
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i], [xj, yj] = ring[j];
+    const intersects = ((yi > y) !== (yj > y)) && (x < ((xj - xi) * (y - yi)) / ((yj - yi) || Number.EPSILON) + xi);
+    if (intersects) inside = !inside;
+  }
+  return inside;
+}
+
+function pointInFeature(point, feature) {
+  const geometry = feature?.geometry;
+  if (!geometry) return false;
+  const polygons = geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.type === 'MultiPolygon' ? geometry.coordinates : [];
+  return polygons.some(polygon => pointInRing(point, polygon[0]) && !(polygon.slice(1).some(hole => pointInRing(point, hole))));
+}
+
+function stationSiteKey(station) {
+  const normalizedName = String(station.name ?? '')
+    .toLocaleLowerCase('da-DK')
+    .replace(/\b(havn|station)\b/g, '')
+    .replace(/\b[ivx]+\b$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const [lon, lat] = station.point ?? [];
+  return `${normalizedName}|${Number(lon).toFixed(3)}|${Number(lat).toFixed(3)}`;
+}
+
+function deduplicateStationSites(stations, levels) {
+  const bySite = new Map();
+  for (const station of stations) {
+    const level = levels.get(station.stationId);
+    if (!level || !Number.isFinite(Number(level.valueCm))) continue;
+    const key = stationSiteKey(station);
+    const existing = bySite.get(key);
+    const candidateTime = Date.parse(level.observed) || 0;
+    const existingTime = existing ? (Date.parse(levels.get(existing.stationId)?.observed) || 0) : -1;
+    if (!existing || candidateTime > existingTime) bySite.set(key, station);
+  }
+  return [...bySite.values()];
+}
+
 function zonePoint(feature) {
   const configured = feature.properties?.dataPoint;
   if (Array.isArray(configured) && configured.length === 2 && configured.every(Number.isFinite)) return configured;
@@ -130,10 +189,9 @@ function haversineKm(a, b) {
 
 async function dmiWaterStations() {
   if (!dmiWaterStationsPromise) {
-    const query = new URLSearchParams({ limit: '1000', status: 'Active' });
-    dmiWaterStationsPromise = fetchJson(`${DMI_OCEAN_OBS_ROOT}/station/items?${query}`, {
+    dmiWaterStationsPromise = fetchAllFeatures(`${DMI_OCEAN_OBS_ROOT}/station/items`, { status: 'Active' }, {
       provider: 'DMI oceanObs stations', retries: DMI_MAX_RETRIES, dmi: true
-    }).then(data => (data.features ?? []).map(feature => ({
+    }).then(features => features.map(feature => ({
       stationId: String(feature.properties?.stationId ?? feature.properties?.id ?? ''),
       name: feature.properties?.name ?? feature.properties?.stationName ?? feature.properties?.countryName ?? 'DMI station',
       point: feature.geometry?.coordinates,
@@ -145,14 +203,13 @@ async function dmiWaterStations() {
 
 async function dmiLatestSeaLevels() {
   if (!dmiLatestSeaLevelPromise) {
-    const query = new URLSearchParams({
-      limit: '1000', parameterId: 'sealev_ln', period: 'latest-hour', sortorder: 'observed,DESC'
-    });
-    dmiLatestSeaLevelPromise = fetchJson(`${DMI_OCEAN_OBS_ROOT}/observation/items?${query}`, {
+    dmiLatestSeaLevelPromise = fetchAllFeatures(`${DMI_OCEAN_OBS_ROOT}/observation/items`, {
+      parameterId: 'sealev_ln', period: 'latest-hour', sortorder: 'observed,DESC'
+    }, {
       provider: 'DMI oceanObs water level', retries: DMI_MAX_RETRIES, dmi: true
-    }).then(data => {
+    }, { pageSize: 1000, maxPages: 20 }).then(features => {
       const latest = new Map();
-      for (const feature of data.features ?? []) {
+      for (const feature of features) {
         const p = feature.properties ?? {};
         const stationId = String(p.stationId ?? '');
         const value = num(p.value);
@@ -232,10 +289,23 @@ function buildCoastCorridors(allFeatures) {
 
 async function observedDmiWaterLevel(feature, coastCorridors) {
   try {
-    const [stations, levels] = await Promise.all([dmiWaterStations(), dmiLatestSeaLevels()]);
+    const [rawStations, levels] = await Promise.all([dmiWaterStations(), dmiLatestSeaLevels()]);
+    const stations = deduplicateStationSites(rawStations, levels);
     const point = zonePoint(feature);
+    const inside = stations
+      .filter(station => pointInFeature(station.point, feature))
+      .sort((a, b) => haversineKm(point, a.point) - haversineKm(point, b.point));
+    if (inside.length) {
+      const station = inside[0];
+      const level = levels.get(station.stationId);
+      return {
+        valueCm: round(Number(level.valueCm), 0),
+        method: 'direct-zone-station',
+        stations: [{ stationId: station.stationId, name: station.name, valueCm: round(Number(level.valueCm), 0), distanceKm: round(haversineKm(point, station.point), 1), side: 'inside-zone', weight: 1, observed: level.observed, observationAgeMinutes: Number.isFinite(Date.parse(level.observed)) ? round((Date.now() - Date.parse(level.observed)) / 60000, 0) : null, qcStatus: level.qcStatus ?? null }]
+      };
+    }
     const coastPath = coastCorridors.get(feature.properties?.id);
-    return interpolateWaterLevelAlongCoast(point, coastPath, stations, levels, { haversineKm });
+    return interpolateWaterLevelAlongCoast(point, coastPath, stations, levels, { haversineKm, requireBracket: true });
   } catch (error) {
     console.warn(`DMI kystvandstand fejlede: ${error instanceof Error ? error.message : String(error)}`);
     return null;
@@ -248,8 +318,8 @@ function applyObservedWaterLevel(zone, feature, observation, generatedAt) {
   zone.current.waterLevelCm = observation.valueCm;
   zone.waterLevel = {
     ...(zone.waterLevel ?? {}),
-    source: observation.method === 'direct-coast-station' ? 'dmi-observation-direct' : 'dmi-observation-coast-interpolation',
-    reference: observation.method === 'direct-coast-station' ? 'Aktuel DMI-målestation ved zonen' : 'Aktuel DMI-vandstand interpoleret mellem én station på hver side langs samme kystkorridor',
+    source: ['direct-zone-station','direct-coast-station'].includes(observation.method) ? 'dmi-observation-direct' : 'dmi-observation-coast-interpolation',
+    reference: ['direct-zone-station','direct-coast-station'].includes(observation.method) ? 'Aktuel DMI-målestation ved zonen' : 'Aktuel DMI-vandstand interpoleret mellem én station på hver side langs samme kystkorridor',
     interpolation: observation,
     diagnostic: {
       ...(zone.waterLevel?.diagnostic ?? {}), zoneId: feature.properties?.id, zoneName: feature.properties?.name, generatedAt,
@@ -724,7 +794,7 @@ await mapWithConcurrency(features, WEATHER_CONCURRENCY, async feature => {
 });
 
 output.weatherEngine = {
-  version: '2.8.1',
+  version: '2.8.2',
   concurrency: WEATHER_CONCURRENCY,
   providerPriority: output.providerPriority,
   acquisition: { liveZoneBudget: DMI_LIVE_ZONE_BUDGET, liveZonesAssigned: liveDmiAssigned, cacheRefreshBelowHours: DMI_CACHE_REFRESH_BELOW_HOURS, prioritizedMissingOrExpiringZones: prioritizedFeatures.filter(feature => { const c=dmiForecastCoverage(dmiForecastStore.zones?.[feature.properties?.id], generatedAt); return !c.available || c.remainingHours <= DMI_CACHE_REFRESH_BELOW_HOURS; }).length },
