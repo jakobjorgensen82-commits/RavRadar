@@ -17,6 +17,7 @@ const DMI_ROOT = 'https://opendataapi.dmi.dk/v1/forecastedr/collections';
 const DMI_OCEAN_OBS_ROOT = 'https://opendataapi.dmi.dk/v2/oceanObs/collections';
 const HEALTH_PATH = 'data/live/weather-health.json';
 const DMI_FORECAST_STORE_PATH = 'data/live/dmi-forecast-cache.json';
+const DMI_BULK_CACHE_PATH = 'data/live/dmi-bulk-cache.json';
 const ALERT_MAX_PER_24H = Number(process.env.WEATHER_ALERT_MAX_PER_24H ?? 2);
 const ALERT_FAILURE_MINUTES = Number(process.env.WEATHER_ALERT_FAILURE_MINUTES ?? 60);
 const REQUEST_TIMEOUT_MS = Number(process.env.WEATHER_REQUEST_TIMEOUT_MS ?? 30000);
@@ -396,6 +397,81 @@ function applyObservedWaterLevel(zone, feature, observation, generatedAt) {
     }
   };
   return zone;
+}
+
+
+async function readDmiBulkCache() {
+  try {
+    const parsed = JSON.parse(await fs.readFile(DMI_BULK_CACHE_PATH, 'utf8'));
+    return parsed?.schemaVersion === 1 && parsed?.zones ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function bulkZoneToForecastRecord(feature, bulkCache, generatedAt, previousRecord = null) {
+  const zoneId = feature.properties?.id;
+  const bulkZone = bulkCache?.zones?.[zoneId];
+  const rows = Object.values(bulkZone?.hourly ?? {}).filter(row => Number.isFinite(Date.parse(row?.time))).sort((a, b) => Date.parse(a.time) - Date.parse(b.time));
+  if (!rows.length) return null;
+  const wind = rows.map(row => ({ step: row.time, 'wind-speed-10m': num(row['wind-speed-10m']), 'wind-dir-10m': num(row['wind-dir-10m']) }));
+  const waves = rows.map(row => ({ step: row.time, 'significant-wave-height': num(row['significant-wave-height']), 'mean-wave-dir': num(row['mean-wave-dir']), 'dominant-wave-period': num(row['dominant-wave-period']) }));
+  const ocean = rows.map(row => ({ step: row.time, 'sea-mean-deviation': num(row['sea-mean-deviation']), 'current-u': num(row['current-u']), 'current-v': num(row['current-v']), 'water-temperature': num(row['water-temperature']) }));
+  const built = buildDmiForecastHourly({ wind, waves, ocean, generatedAt, hours: DMI_FORECAST_HOURS });
+  const marine = ocean.some(item => num(item['sea-mean-deviation']) !== null && num(item['current-u']) !== null && num(item['current-v']) !== null);
+  const windAvailable = wind.some(item => num(item['wind-speed-10m']) !== null && num(item['wind-dir-10m']) !== null);
+  const waveRequired = dmiCollections(feature.properties?.coastType).wave !== null;
+  const waveAvailable = !waveRequired || waves.some(item => num(item['significant-wave-height']) !== null);
+  if (!marine && !windAvailable && !waveAvailable) return null;
+  const mergedHourly = mergeHourlyPreferDmi(built.hourly, previousRecord?.hourly ?? []);
+  const oldCompleteness = previousRecord?.model?.completeness ?? {};
+  return createDmiForecastRecord({
+    zoneId,
+    point: zonePoint(feature),
+    generatedAt: bulkCache.generatedAt ?? generatedAt,
+    hourly: mergedHourly,
+    waterLevelInterpolation: previousRecord?.waterLevelInterpolation ?? null,
+    model: {
+      ...(previousRecord?.model ?? {}),
+      wind: windAvailable ? 'harmonie_dini_sf-stac-grib' : previousRecord?.model?.wind ?? null,
+      wave: waveAvailable && waveRequired ? `${dmiCollections(feature.properties?.coastType).wave}-stac-grib` : previousRecord?.model?.wave ?? null,
+      ocean: marine ? `${dmiCollections(feature.properties?.coastType).ocean}-stac-grib` : previousRecord?.model?.ocean ?? null,
+      completeness: {
+        ...oldCompleteness,
+        phase: 'bulk-stac-grib',
+        ocean: marine || oldCompleteness.ocean === true,
+        current: marine || oldCompleteness.current === true,
+        wind: windAvailable || oldCompleteness.wind === true,
+        wave: waveAvailable || oldCompleteness.wave === true,
+        acquisitionMethod: 'whole-GRIB nearest-valid-original-grid-point',
+        spatialInterpolation: false,
+        gridPoints: bulkZone.gridPoints ?? {},
+        collections: bulkZone.collections ?? {}
+      }
+    }
+  });
+}
+
+function mergeBulkCacheIntoForecastStore(features, bulkCache, store, generatedAt) {
+  const stats = { available: Boolean(bulkCache), zonesExamined: 0, zonesMerged: 0, marineZones: 0, windZones: 0, waveZones: 0, errors: [] };
+  if (!bulkCache) return stats;
+  for (const feature of features) {
+    const zoneId = feature.properties?.id;
+    if (!zoneId || !bulkCache.zones?.[zoneId]) continue;
+    stats.zonesExamined += 1;
+    try {
+      const record = bulkZoneToForecastRecord(feature, bulkCache, generatedAt, store.zones?.[zoneId] ?? null);
+      if (!record) continue;
+      store.zones[zoneId] = record;
+      stats.zonesMerged += 1;
+      if (record.model?.completeness?.ocean) stats.marineZones += 1;
+      if (record.model?.completeness?.wind) stats.windZones += 1;
+      if (record.model?.completeness?.wave) stats.waveZones += 1;
+    } catch (error) {
+      stats.errors.push({ zoneId, message: error instanceof Error ? error.message : String(error) });
+    }
+  }
+  return stats;
 }
 
 function dmiCollections(coastType) {
@@ -909,9 +985,11 @@ if (!features.length) throw new Error(`${ZONES_PATH} indeholder ingen zoner`);
 const coastCorridors = buildCoastCorridors(features);
 const previous = await readPrevious();
 const dmiForecastStore = await readDmiForecastStore();
+const dmiBulkCache = await readDmiBulkCache();
 const generatedAt = new Date().toISOString();
 const activeZoneIds = features.map(feature => feature.properties?.id).filter(Boolean);
 const nextDmiForecastStore = createPersistentDmiStore(dmiForecastStore, activeZoneIds, DMI_FORECAST_HOURS);
+const dmiBulkMergeStats = mergeBulkCacheIntoForecastStore(features, dmiBulkCache, nextDmiForecastStore, generatedAt);
 dmiPersistentRuntime = nextDmiForecastStore.runtime;
 const persistedCooldown = Date.parse(dmiPersistentRuntime.rateLimitedUntil ?? '');
 if (Number.isFinite(persistedCooldown) && persistedCooldown > Date.now()) dmiRateLimitedUntil = persistedCooldown;
@@ -1042,13 +1120,13 @@ if (dmiRateLimitTriggered || Date.now() < dmiRateLimitedUntil) {
 }
 
 output.weatherEngine = {
-  version: '2.12.0',
+  version: '2.13.0',
   concurrency: WEATHER_CONCURRENCY,
   dmiRequestConcurrency: DMI_REQUEST_CONCURRENCY,
   dmiRequestGapMs: REQUEST_GAP_MS,
   dmiRequestTimeoutMs: REQUEST_TIMEOUT_MS,
   providerPriority: output.providerPriority,
-  acquisition: (() => { const pending = targetFeatures.length; return { strategy: 'two-phase-sequential-dmi-cache', phase: acquisitionPhase, marineCacheCompleteAtStart, liveZoneBudget: DMI_LIVE_ZONE_BUDGET, liveZonesAssigned: liveDmiAssigned, assignedZoneIds: dmiAcquisitionStats.assignedZoneIds, attemptedZones: dmiAcquisitionStats.attemptedZoneIds.length, attemptedZoneIds: dmiAcquisitionStats.attemptedZoneIds, successfulZones: dmiAcquisitionStats.successfulZoneIds.length, successfulZoneIds: dmiAcquisitionStats.successfulZoneIds, stoppedAfterRateLimitZones: dmiAcquisitionStats.stoppedZoneIds.length, stoppedZoneIds: dmiAcquisitionStats.stoppedZoneIds, requestBudget: DMI_REQUEST_BUDGET, requestsUsed: dmiRequestBudgetUsed, http429Count: dmiHttp429Count, stoppedByHttp429: dmiRateLimitTriggered, persistentRateLimitedUntil: dmiPersistentRuntime.rateLimitedUntil, nextZoneCursor: dmiPersistentRuntime.nextZoneCursor, cursorAdvancedForZoneIds: dmiAcquisitionStats.cursorAdvancedForZoneIds, cacheRefreshBelowHours: DMI_CACHE_REFRESH_BELOW_HOURS, cacheRetention: 'until-forecast-expiry', observationAcquisition: dmiObservationSkipReason ?? 'attempted-once-and-shared', fallbackPolicy: 'Open-Meteo used until DMI component is cached; DMI values override component-by-component', prioritizedMissingOrExpiringZones: pending, scheduleIntervalMinutes: DMI_SCHEDULE_INTERVAL_MINUTES, observationIntervalMinutes: DMI_OBSERVATION_INTERVAL_MINUTES, estimatedRunsAtCurrentBudget: Math.ceil(pending / Math.max(1, DMI_LIVE_ZONE_BUDGET)), optimisticMinutesToFullCache: Math.ceil(pending / Math.max(1, DMI_LIVE_ZONE_BUDGET)) * DMI_SCHEDULE_INTERVAL_MINUTES }; })(),
+  acquisition: (() => { const pending = targetFeatures.length; return { strategy: 'bulk-stac-grib-first-with-sequential-edr-repair', bulkModelDownloads: { ...dmiBulkMergeStats, cacheGeneratedAt: dmiBulkCache?.generatedAt ?? null, method: dmiBulkCache?.method ?? null, runs: dmiBulkCache?.runs ?? {}, diagnostics: dmiBulkCache?.diagnostics ?? null }, phase: acquisitionPhase, marineCacheCompleteAtStart, liveZoneBudget: DMI_LIVE_ZONE_BUDGET, liveZonesAssigned: liveDmiAssigned, assignedZoneIds: dmiAcquisitionStats.assignedZoneIds, attemptedZones: dmiAcquisitionStats.attemptedZoneIds.length, attemptedZoneIds: dmiAcquisitionStats.attemptedZoneIds, successfulZones: dmiAcquisitionStats.successfulZoneIds.length, successfulZoneIds: dmiAcquisitionStats.successfulZoneIds, stoppedAfterRateLimitZones: dmiAcquisitionStats.stoppedZoneIds.length, stoppedZoneIds: dmiAcquisitionStats.stoppedZoneIds, requestBudget: DMI_REQUEST_BUDGET, requestsUsed: dmiRequestBudgetUsed, http429Count: dmiHttp429Count, stoppedByHttp429: dmiRateLimitTriggered, persistentRateLimitedUntil: dmiPersistentRuntime.rateLimitedUntil, nextZoneCursor: dmiPersistentRuntime.nextZoneCursor, cursorAdvancedForZoneIds: dmiAcquisitionStats.cursorAdvancedForZoneIds, cacheRefreshBelowHours: DMI_CACHE_REFRESH_BELOW_HOURS, cacheRetention: 'until-forecast-expiry', observationAcquisition: dmiObservationSkipReason ?? 'attempted-once-and-shared', fallbackPolicy: 'Open-Meteo used until DMI component is cached; DMI values override component-by-component', prioritizedMissingOrExpiringZones: pending, scheduleIntervalMinutes: DMI_SCHEDULE_INTERVAL_MINUTES, observationIntervalMinutes: DMI_OBSERVATION_INTERVAL_MINUTES, estimatedRunsAtCurrentBudget: Math.ceil(pending / Math.max(1, DMI_LIVE_ZONE_BUDGET)), optimisticMinutesToFullCache: Math.ceil(pending / Math.max(1, DMI_LIVE_ZONE_BUDGET)) * DMI_SCHEDULE_INTERVAL_MINUTES }; })(),
   providers: Object.fromEntries([...providerRuntime.entries()].map(([name, state]) => [name, {
     ...state,
     circuitOpen: providerCircuitOpen(name),

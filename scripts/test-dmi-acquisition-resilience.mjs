@@ -53,6 +53,6 @@ assert.ok(updater.includes("dmiRateLimitTriggered ? 'skipped-after-http-429'"), 
 
 console.log('DMI acquisition resilience bestået.');
 
-assert.ok(updater.includes('two-phase-sequential-dmi-cache'), 'DMI skal bruge sekventiel to-faset cacheopbygning');
+assert.ok(updater.includes('bulk-stac-grib-first-with-sequential-edr-repair'), 'DMI skal bruge bulk-STAC først og sekventiel EDR-reparation bagefter');
 assert.ok(updater.includes('mergeDmiWithFallback'), 'Open-Meteo skal udfylde manglende DMI-komponenter');
 assert.ok(updater.includes('marineCacheCompleteAtStart'), 'vind og bølger må først beriges efter fuld marin cache');
