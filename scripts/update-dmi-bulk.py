@@ -23,7 +23,7 @@ from typing import Any
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from eccodes import codes_get, codes_grib_find_nearest, codes_grib_new_from_file, codes_release
+from eccodes import codes_get, codes_get_element, codes_grib_find_nearest, codes_grib_new_from_file, codes_release
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 ZONES_PATH = ROOT / "data/zones.geojson"
@@ -42,6 +42,9 @@ FORCE_REFRESH = os.getenv("DMI_BULK_FORCE_REFRESH", "false").lower() in {"1", "t
 USER_AGENT = os.getenv("WEATHER_USER_AGENT", "RavRadar DMI bulk downloader")
 API_KEY = os.getenv("DMI_API_KEY")
 STARTED = time.monotonic()
+FINALIZE_RESERVE_SECONDS = max(60, int(os.getenv("DMI_BULK_FINALIZE_RESERVE_SECONDS", "180")))
+WORK_DEADLINE = STARTED + max(60, MAX_RUNTIME_SECONDS - FINALIZE_RESERVE_SECONDS)
+GRID_INDEX_CACHE: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
 
 STAC_SESSION = requests.Session()
 DOWNLOAD_SESSION = requests.Session()
@@ -319,20 +322,68 @@ def valid_value(value: Any, missing: Any) -> float | None:
     return number
 
 
-def nearest_valid(gid: int, lat: float, lon: float) -> dict[str, float] | None:
-    missing = safe_get(gid, "missingValue")
+def runtime_remaining() -> float:
+    return WORK_DEADLINE - time.monotonic()
+
+
+def should_stop_work() -> bool:
+    return runtime_remaining() <= 0
+
+
+def progress(message: str) -> None:
+    elapsed = time.monotonic() - STARTED
+    print(f"[DMI bulk +{elapsed:6.1f}s] {message}", flush=True)
+
+
+def grid_signature(gid: int) -> tuple[Any, ...]:
+    keys = (
+        "gridType", "Ni", "Nj", "numberOfPoints",
+        "latitudeOfFirstGridPointInDegrees", "longitudeOfFirstGridPointInDegrees",
+        "latitudeOfLastGridPointInDegrees", "longitudeOfLastGridPointInDegrees",
+        "iDirectionIncrementInDegrees", "jDirectionIncrementInDegrees",
+    )
+    return tuple(safe_get(gid, key) for key in keys)
+
+
+def nearest_candidates(gid: int, collection: str, zone: dict[str, Any]) -> list[dict[str, Any]]:
+    cache_key = (collection, grid_signature(gid), zone["id"])
+    cached = GRID_INDEX_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
     try:
-        candidates = codes_grib_find_nearest(gid, lat, lon, npoints=4)
+        candidates = codes_grib_find_nearest(gid, zone["lat"], zone["lon"], npoints=4)
     except TypeError:
-        candidates = codes_grib_find_nearest(gid, lat, lon, False, 4)
+        candidates = codes_grib_find_nearest(gid, zone["lat"], zone["lon"], False, 4)
     except Exception:
-        return None
+        candidates = []
     if isinstance(candidates, dict):
         candidates = [candidates]
+    normalized = []
     for candidate in sorted(candidates or [], key=lambda item: float(item.get("distance", 1e99))):
-        value = valid_value(candidate.get("value"), missing)
-        if value is not None:
-            return {"value": value, "latitude": float(candidate.get("lat")), "longitude": float(candidate.get("lon")), "distanceKm": float(candidate.get("distance", 0.0))}
+        try:
+            normalized.append({
+                "index": int(candidate.get("index")),
+                "latitude": float(candidate.get("lat")),
+                "longitude": float(candidate.get("lon")),
+                "distanceKm": float(candidate.get("distance", 0.0)),
+            })
+        except (TypeError, ValueError):
+            continue
+    GRID_INDEX_CACHE[cache_key] = normalized
+    return normalized
+
+
+def nearest_valid_cached(gid: int, collection: str, zone: dict[str, Any]) -> dict[str, float] | None:
+    missing = safe_get(gid, "missingValue")
+    candidates = nearest_candidates(gid, collection, zone)
+    for candidate in candidates:
+        try:
+            value = codes_get_element(gid, "values", candidate["index"])
+        except Exception:
+            continue
+        number = valid_value(value, missing)
+        if number is not None:
+            return {"value": number, "latitude": candidate["latitude"], "longitude": candidate["longitude"], "distanceKm": candidate["distanceKm"]}
     return None
 
 
@@ -347,14 +398,21 @@ def relevant_zones(collection: str, zones: list[dict[str, Any]]) -> list[dict[st
 
 
 def process_grib(path: pathlib.Path, collection: str, valid_time: str,
-                 zones: list[dict[str, Any]], output: dict[str, Any], diagnostics: dict[str, Any]) -> set[str]:
-    wanted, found = relevant_zones(collection, zones), set()
+                 zones: list[dict[str, Any]], output: dict[str, Any], diagnostics: dict[str, Any]) -> tuple[set[str], set[str], bool, int, int]:
+    wanted, found, touched = relevant_zones(collection, zones), set(), set()
     inventory = diagnostics.setdefault("gribFieldInventory", {}).setdefault(collection, {})
+    messages_seen = 0
+    zone_lookups = 0
+    interrupted = False
     with path.open("rb") as handle:
         while True:
+            if should_stop_work():
+                interrupted = True
+                break
             gid = codes_grib_new_from_file(handle)
             if gid is None:
                 break
+            messages_seen += 1
             try:
                 sig = field_signature(gid)
                 sig_key = "|".join(str(sig.get(k) or "") for k in ("shortName", "name", "units", "typeOfLevel", "level", "paramId"))
@@ -366,19 +424,25 @@ def process_grib(path: pathlib.Path, collection: str, valid_time: str,
                 if not parameter:
                     continue
                 found.add(parameter)
-                for zone in wanted:
-                    nearest = nearest_valid(gid, zone["lat"], zone["lon"])
+                for zone_number, zone in enumerate(wanted):
+                    if zone_number % 8 == 0 and should_stop_work():
+                        interrupted = True
+                        break
+                    nearest = nearest_valid_cached(gid, collection, zone)
+                    zone_lookups += 1
                     if not nearest:
                         continue
+                    touched.add(zone["id"])
                     point = output["zones"].setdefault(zone["id"], {"hourly": {}, "gridPoints": {}, "collections": {}})
                     hour = point["hourly"].setdefault(valid_time, {"time": valid_time})
                     hour[parameter] = nearest["value"]
                     point["gridPoints"][parameter] = {k: round(v, 5) for k, v in nearest.items() if k != "value"}
                     point["collections"][parameter] = collection
+                if interrupted:
+                    break
             finally:
                 codes_release(gid)
-    return found
-
+    return found, touched, interrupted, messages_seen, zone_lookups
 
 def wind_from_uv(hour: dict[str, Any]) -> None:
     u, v = hour.get("wind-u-10m"), hour.get("wind-v-10m")
@@ -421,7 +485,38 @@ def collection_schedule(previous: dict[str, Any]) -> list[str]:
     return eligible[:COLLECTIONS_PER_RUN]
 
 
+
+def clean_and_summarize(result: dict[str, Any], fresh_zone_ids: set[str], budget: dict[str, int]) -> None:
+    cutoff, horizon = time.time() - 6 * 3600, time.time() + (HOURS + 6) * 3600
+    for zone in result["zones"].values():
+        cleaned = {}
+        for valid, hour in zone.get("hourly", {}).items():
+            if cutoff <= epoch(valid) <= horizon:
+                wind_from_uv(hour)
+                cleaned[valid] = hour
+        zone["hourly"] = dict(sorted(cleaned.items(), key=lambda row: epoch(row[0])))
+    result["zones"] = {k: v for k, v in result["zones"].items() if v.get("hourly")}
+    diag = result["diagnostics"]
+    diag["downloadedBytes"] = budget["bytes"]
+    diag["freshZoneCount"] = len(fresh_zone_ids)
+    diag["zoneCount"] = len(result["zones"])
+    diag["completeMarineZones"] = sum(1 for z in result["zones"].values() if any(all(k in h for k in ("sea-mean-deviation", "current-u", "current-v")) for h in z["hourly"].values()))
+    diag["completeWindZones"] = sum(1 for z in result["zones"].values() if any("wind-speed-10m" in h for h in z["hourly"].values()))
+    diag["completeWaveZones"] = sum(1 for z in result["zones"].values() if any("significant-wave-height" in h for h in z["hourly"].values()))
+
+
+def write_checkpoint(result: dict[str, Any], fresh_zone_ids: set[str], budget: dict[str, int], status: str = "partial") -> None:
+    result["refreshStatus"] = status
+    result["checkpointedAt"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    clean_and_summarize(result, fresh_zone_ids, budget)
+    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    tmp = OUTPUT_PATH.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", "utf-8")
+    tmp.replace(OUTPUT_PATH)
+
+
 def main() -> int:
+    progress(f"starter; arbejdsbudget={MAX_RUNTIME_SECONDS - FINALIZE_RESERVE_SECONDS}s, afslutningsreserve={FINALIZE_RESERVE_SECONDS}s")
     previous = load_previous()
     previous_generated = epoch(previous.get("generatedAt"))
     if not FORCE_REFRESH and previous_generated and previous.get("zones") and time.time() - previous_generated < REFRESH_MINUTES * 60:
@@ -453,14 +548,17 @@ def main() -> int:
               "hours": HOURS, "timeStrideHours": TIME_STRIDE_HOURS, "zones": {}, "runs": {},
               "collectionState": dict(previous.get("collectionState") or {}),
               "diagnostics": {"collectionsAttempted": [], "collectionsSucceeded": [], "collectionsPartial": [], "errors": [],
-                              "downloadedBytes": 0, "reusedAssets": 0, "parametersByCollection": {}, "stacByCollection": {}}}
+                              "downloadedBytes": 0, "reusedAssets": 0, "parametersByCollection": {}, "stacByCollection": {},
+                              "assetsSkippedPreviouslyProcessed": 0, "messagesSeen": 0, "zoneLookups": 0,
+                              "runtimeBudgetSeconds": MAX_RUNTIME_SECONDS, "finalizeReserveSeconds": FINALIZE_RESERVE_SECONDS}}
+    merge_previous(result, previous)
     budget = {"bytes": 0}
     selected = collection_schedule(previous)
     result["diagnostics"]["scheduledCollections"] = selected
     fresh_zone_ids: set[str] = set()
 
     for collection in selected:
-        if time.monotonic() - STARTED > MAX_RUNTIME_SECONDS:
+        if should_stop_work():
             result["diagnostics"]["errors"].append({"collection": collection, "message": "bulk runtime budget reached"})
             break
         result["diagnostics"]["collectionsAttempted"].append(collection)
@@ -471,13 +569,20 @@ def main() -> int:
             result["diagnostics"]["stacByCollection"][collection] = stac_stats
             if not assets:
                 raise RuntimeError("no forecast-step GRIB assets found in latest STAC run")
+            previous_run = (previous.get("runs") or {}).get(collection) or {}
+            previously_processed = set(previous_run.get("processedValidTimes") or []) if previous_run.get("referenceTime") == run else set()
             run_info = {"referenceTime": run, "assetsDiscovered": len(assets), "assetsProcessed": 0, "assetsReused": 0,
+                        "assetsSkippedPreviouslyProcessed": 0, "processedValidTimes": sorted(previously_processed),
                         "recognizedParameters": []}
             result["runs"][collection] = run_info
             recognized: set[str] = set()
             budget_stop = None
-            for asset in assets:
-                if time.monotonic() - STARTED > MAX_RUNTIME_SECONDS:
+            for asset_number, asset in enumerate(assets, start=1):
+                if asset["valid"] in previously_processed:
+                    run_info["assetsSkippedPreviouslyProcessed"] += 1
+                    result["diagnostics"]["assetsSkippedPreviouslyProcessed"] += 1
+                    continue
+                if should_stop_work():
                     budget_stop = "bulk runtime budget reached"
                     break
                 try:
@@ -490,11 +595,21 @@ def main() -> int:
                 if reused:
                     result["diagnostics"]["reusedAssets"] += 1
                     run_info["assetsReused"] += 1
-                found = process_grib(path, collection, asset["valid"], zones, result, result["diagnostics"])
+                progress(f"{collection}: behandler forecast-step {asset_number}/{len(assets)} {asset['valid']} ({'genbrugt' if reused else 'downloadet'})")
+                found, touched, interrupted, messages_seen, zone_lookups = process_grib(path, collection, asset["valid"], zones, result, result["diagnostics"])
                 recognized.update(found)
-                run_info["assetsProcessed"] += 1
-                for zone_id in result["zones"]:
-                    fresh_zone_ids.add(zone_id)
+                result["diagnostics"]["messagesSeen"] += messages_seen
+                result["diagnostics"]["zoneLookups"] += zone_lookups
+                if not interrupted:
+                    run_info["assetsProcessed"] += 1
+                    previously_processed.add(asset["valid"])
+                    run_info["processedValidTimes"] = sorted(previously_processed, key=epoch)
+                fresh_zone_ids.update(touched)
+                write_checkpoint(result, fresh_zone_ids, budget, "partial")
+                progress(f"{collection}: checkpoint gemt; steps={run_info['assetsProcessed']}, felter={sorted(recognized)}, resterende={runtime_remaining():.0f}s")
+                if interrupted:
+                    budget_stop = "bulk runtime budget reached inside GRIB processing"
+                    break
             result["diagnostics"]["parametersByCollection"][collection] = sorted(recognized)
             run_info["recognizedParameters"] = sorted(recognized)
             required = set(TARGETS[COLLECTION_FAMILY[collection]])
@@ -523,33 +638,14 @@ def main() -> int:
             state["nextEligibleAt"] = datetime.fromtimestamp(time.time() + delay_minutes * 60, timezone.utc).isoformat().replace("+00:00", "Z")
             result["diagnostics"]["errors"].append({"collection": collection, "message": str(exc), "retryAfterMinutes": delay_minutes})
 
-    merge_previous(result, previous)
-    cutoff, horizon = time.time() - 6 * 3600, time.time() + (HOURS + 6) * 3600
-    for zone in result["zones"].values():
-        cleaned = {}
-        for valid, hour in zone.get("hourly", {}).items():
-            if cutoff <= epoch(valid) <= horizon:
-                wind_from_uv(hour)
-                cleaned[valid] = hour
-        zone["hourly"] = dict(sorted(cleaned.items(), key=lambda row: epoch(row[0])))
-    result["zones"] = {k: v for k, v in result["zones"].items() if v.get("hourly")}
-
+    clean_and_summarize(result, fresh_zone_ids, budget)
     diag = result["diagnostics"]
-    diag["downloadedBytes"] = budget["bytes"]
-    diag["freshZoneCount"] = len(fresh_zone_ids)
-    diag["zoneCount"] = len(result["zones"])
-    diag["completeMarineZones"] = sum(1 for z in result["zones"].values() if any(all(k in h for k in ("sea-mean-deviation", "current-u", "current-v")) for h in z["hourly"].values()))
-    diag["completeWindZones"] = sum(1 for z in result["zones"].values() if any("wind-speed-10m" in h for h in z["hourly"].values()))
-    diag["completeWaveZones"] = sum(1 for z in result["zones"].values() if any("significant-wave-height" in h for h in z["hourly"].values()))
     fresh_successes, fresh_partials = len(diag["collectionsSucceeded"]), len(diag["collectionsPartial"])
     if fresh_successes or fresh_partials:
         result["sourceUpdatedAt"] = generated
     result["refreshStatus"] = "ok" if fresh_successes == len(selected) else ("partial" if fresh_successes or fresh_partials else "failed")
 
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    tmp = OUTPUT_PATH.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", "utf-8")
-    tmp.replace(OUTPUT_PATH)
+    write_checkpoint(result, fresh_zone_ids, budget, result["refreshStatus"])
     summary = {**diag, "refreshStatus": result["refreshStatus"], "sourceUpdatedAt": result.get("sourceUpdatedAt"),
                "preservedPreviousZones": max(0, len(result["zones"]) - len(fresh_zone_ids))}
     if os.getenv("GITHUB_OUTPUT"):
