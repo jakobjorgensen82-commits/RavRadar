@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Incrementally build RavRadar's DMI model cache from Forecast Data STAC GRIB assets.
+"""Build RavRadar's DMI cache from forecast-step GRIB assets.
 
-DMI publishes several parameter/time items for the same valid time. The downloader
-therefore identifies the parameter before de-duplication, downloads only parameters
-used by RavRadar, rotates collections between runs, and preserves partial progress.
+DMI STAC items represent forecast steps, not individual parameters. Each selected
+GRIB file is downloaded once, inventoried message-by-message with ecCodes, and only
+the collection-specific fields needed by RavRadar are extracted. Progress, failures
+and collection rotation are persisted across runs.
 """
 from __future__ import annotations
 
@@ -197,41 +198,43 @@ def stride_selected(valid: str, run: str) -> bool:
 
 
 def list_latest_assets(collection: str) -> tuple[str | None, list[dict[str, Any]], dict[str, Any]]:
-    family = COLLECTION_FAMILY[collection]
     data = request_json(f"{STAC_ROOT}/collections/{collection}/items",
                         {"limit": 1000, "bbox": "7,54,16,58", "sortorder": "datetime,DESC"})
     items = data.get("features") or []
     runs: dict[str, list[dict[str, Any]]] = {}
-    stats = {"itemsSeen": len(items), "itemsWithoutGrib": 0, "itemsWithoutParameterHint": 0,
-             "parameterHints": {}, "sampleUnmatchedItems": []}
+    stats = {
+        "itemsSeen": len(items),
+        "itemsWithoutGrib": 0,
+        "forecastStepAssets": 0,
+        "duplicateValidTimes": 0,
+        "sampleItems": [],
+    }
     for item in items:
         run, valid, asset = item_run(item), item_valid(item), grib_asset(item)
         if not run or not valid or not asset:
             stats["itemsWithoutGrib"] += 1
             continue
-        href, size, asset_description = asset
-        hint = parameter_hint(item, family, asset_description)
-        if not hint:
-            stats["itemsWithoutParameterHint"] += 1
-            if len(stats["sampleUnmatchedItems"]) < 8:
-                stats["sampleUnmatchedItems"].append({"id": item.get("id"), "metadata": metadata_text(item, asset_description)[:500]})
-            continue
-        stats["parameterHints"][hint] = stats["parameterHints"].get(hint, 0) + 1
+        href, size, _description = asset
         if epoch(valid) < epoch(run) - 3600 or epoch(valid) > epoch(run) + (HOURS + 6) * 3600:
             continue
-        runs.setdefault(run, []).append({"valid": valid, "href": href, "size": size, "id": item.get("id"), "parameterHint": hint})
+        row = {"valid": valid, "href": href, "size": size, "id": item.get("id")}
+        runs.setdefault(run, []).append(row)
+        stats["forecastStepAssets"] += 1
+        if len(stats["sampleItems"]) < 5:
+            stats["sampleItems"].append({"id": item.get("id"), "run": run, "valid": valid})
     if not runs:
         return None, [], stats
     run = max(runs, key=epoch)
-    # Keep one item for each parameter and valid time. 3.2.1 incorrectly kept
-    # only one item per valid time, which consistently selected temperature.
-    unique: dict[tuple[str, str], dict[str, Any]] = {}
-    for row in sorted(runs[run], key=lambda r: (epoch(r["valid"]), r["parameterHint"], str(r["id"]))):
-        if stride_selected(row["valid"], run):
-            unique.setdefault((row["valid"], row["parameterHint"]), row)
-    rows = list(unique.values())
-    # Fair ordering: complete each time slice before moving further into horizon.
-    rows.sort(key=lambda r: (epoch(r["valid"]), TARGETS[family].index(r["parameterHint"])))
+    unique: dict[str, dict[str, Any]] = {}
+    for row in sorted(runs[run], key=lambda r: (epoch(r["valid"]), str(r["id"]))):
+        if not stride_selected(row["valid"], run):
+            continue
+        if row["valid"] in unique:
+            stats["duplicateValidTimes"] += 1
+            continue
+        unique[row["valid"]] = row
+    rows = sorted(unique.values(), key=lambda r: epoch(r["valid"]))
+    stats["selectedForecastSteps"] = min(len(rows), MAX_ASSETS_PER_COLLECTION)
     return run, rows[:MAX_ASSETS_PER_COLLECTION], stats
 
 
@@ -274,7 +277,7 @@ def field_signature(gid: int) -> dict[str, Any]:
             ("shortName", "name", "cfName", "parameterName", "units", "typeOfLevel", "level", "paramId", "discipline", "parameterCategory", "parameterNumber")}
 
 
-def classify_parameter(gid: int, collection: str, expected: str | None) -> str | None:
+def classify_parameter(gid: int, collection: str) -> str | None:
     sig = field_signature(gid)
     short = str(sig.get("shortName") or "").lower().strip()
     metadata = " ".join(str(sig.get(key) or "") for key in ("name", "cfName", "parameterName")).lower()
@@ -296,8 +299,6 @@ def classify_parameter(gid: int, collection: str, expected: str | None) -> str |
     if family == "wind" and short in {"v", "10v", "v10", "v10m"} and (level == 10 or "heightaboveground" in level_type or "10" in metadata):
         candidates.append("wind-v-10m")
     candidates = list(dict.fromkeys(candidates))
-    if expected and expected in candidates:
-        return expected
     if len(candidates) == 1:
         return candidates[0]
     return None
@@ -345,7 +346,7 @@ def relevant_zones(collection: str, zones: list[dict[str, Any]]) -> list[dict[st
     return zones
 
 
-def process_grib(path: pathlib.Path, collection: str, valid_time: str, expected: str | None,
+def process_grib(path: pathlib.Path, collection: str, valid_time: str,
                  zones: list[dict[str, Any]], output: dict[str, Any], diagnostics: dict[str, Any]) -> set[str]:
     wanted, found = relevant_zones(collection, zones), set()
     inventory = diagnostics.setdefault("gribFieldInventory", {}).setdefault(collection, {})
@@ -357,9 +358,11 @@ def process_grib(path: pathlib.Path, collection: str, valid_time: str, expected:
             try:
                 sig = field_signature(gid)
                 sig_key = "|".join(str(sig.get(k) or "") for k in ("shortName", "name", "units", "typeOfLevel", "level", "paramId"))
-                if sig_key not in inventory and len(inventory) < 30:
-                    inventory[sig_key] = sig
-                parameter = classify_parameter(gid, collection, expected)
+                if sig_key not in inventory and len(inventory) < 60:
+                    inventory[sig_key] = {**sig, "messagesSeen": 1}
+                elif sig_key in inventory:
+                    inventory[sig_key]["messagesSeen"] = int(inventory[sig_key].get("messagesSeen") or 0) + 1
+                parameter = classify_parameter(gid, collection)
                 if not parameter:
                     continue
                 found.add(parameter)
@@ -407,7 +410,15 @@ def merge_previous(current: dict[str, Any], previous: dict[str, Any]) -> None:
 
 def collection_schedule(previous: dict[str, Any]) -> list[str]:
     state = previous.get("collectionState") or {}
-    return sorted(COLLECTION_ORDER, key=lambda c: (epoch((state.get(c) or {}).get("lastSuccessfulAt")), COLLECTION_ORDER.index(c)))[:COLLECTIONS_PER_RUN]
+    now = time.time()
+    def priority(collection: str) -> tuple[float, float, int, int]:
+        entry = state.get(collection) or {}
+        retry_after = epoch(entry.get("nextEligibleAt"))
+        blocked = 1 if retry_after > now else 0
+        # Rotate by last attempt even after failure; successful freshness is secondary.
+        return (blocked, epoch(entry.get("lastAttemptAt")), epoch(entry.get("lastSuccessfulAt")), COLLECTION_ORDER.index(collection))
+    eligible = sorted(COLLECTION_ORDER, key=priority)
+    return eligible[:COLLECTIONS_PER_RUN]
 
 
 def main() -> int:
@@ -438,7 +449,7 @@ def main() -> int:
     generated = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     result = {"schemaVersion": 2, "generatedAt": generated,
               "sourceUpdatedAt": previous.get("sourceUpdatedAt") or previous.get("generatedAt"),
-              "method": f"DMI STAC parameter-aware incremental GRIB; nearest original grid point; {TIME_STRIDE_HOURS}h model stride; no spatial interpolation",
+              "method": f"DMI STAC forecast-step GRIB inventory; collection-specific field extraction; nearest original grid point; {TIME_STRIDE_HOURS}h model stride; no spatial interpolation",
               "hours": HOURS, "timeStrideHours": TIME_STRIDE_HOURS, "zones": {}, "runs": {},
               "collectionState": dict(previous.get("collectionState") or {}),
               "diagnostics": {"collectionsAttempted": [], "collectionsSucceeded": [], "collectionsPartial": [], "errors": [],
@@ -459,9 +470,9 @@ def main() -> int:
             run, assets, stac_stats = list_latest_assets(collection)
             result["diagnostics"]["stacByCollection"][collection] = stac_stats
             if not assets:
-                raise RuntimeError("no required parameter GRIB assets found in latest STAC run")
+                raise RuntimeError("no forecast-step GRIB assets found in latest STAC run")
             run_info = {"referenceTime": run, "assetsDiscovered": len(assets), "assetsProcessed": 0, "assetsReused": 0,
-                        "parameterAssets": {p: 0 for p in TARGETS[COLLECTION_FAMILY[collection]]}}
+                        "recognizedParameters": []}
             result["runs"][collection] = run_info
             recognized: set[str] = set()
             budget_stop = None
@@ -479,28 +490,38 @@ def main() -> int:
                 if reused:
                     result["diagnostics"]["reusedAssets"] += 1
                     run_info["assetsReused"] += 1
-                found = process_grib(path, collection, asset["valid"], asset.get("parameterHint"), zones, result, result["diagnostics"])
+                found = process_grib(path, collection, asset["valid"], zones, result, result["diagnostics"])
                 recognized.update(found)
                 run_info["assetsProcessed"] += 1
-                run_info["parameterAssets"][asset["parameterHint"]] = run_info["parameterAssets"].get(asset["parameterHint"], 0) + 1
                 for zone_id in result["zones"]:
                     fresh_zone_ids.add(zone_id)
             result["diagnostics"]["parametersByCollection"][collection] = sorted(recognized)
+            run_info["recognizedParameters"] = sorted(recognized)
             required = set(TARGETS[COLLECTION_FAMILY[collection]])
             if recognized >= required and run_info["assetsProcessed"]:
                 state["lastSuccessfulAt"] = generated
                 state["referenceTime"] = run
+                state["consecutiveFailures"] = 0
+                state["nextEligibleAt"] = None
+                state["lastError"] = None
                 result["diagnostics"]["collectionsSucceeded"].append(collection)
             elif recognized:
                 state["lastPartialAt"] = generated
+                state["referenceTime"] = run
+                state["consecutiveFailures"] = 0
+                state["nextEligibleAt"] = None
                 result["diagnostics"]["collectionsPartial"].append(collection)
             else:
                 raise RuntimeError("GRIB downloaded but no required RavRadar parameters were recognized")
             if budget_stop:
                 result["diagnostics"]["errors"].append({"collection": collection, "message": budget_stop, "partialProgressPreserved": True})
         except Exception as exc:
+            failures = int(state.get("consecutiveFailures") or 0) + 1
+            delay_minutes = min(180, 10 * (2 ** min(failures - 1, 4)))
+            state["consecutiveFailures"] = failures
             state["lastError"] = str(exc)
-            result["diagnostics"]["errors"].append({"collection": collection, "message": str(exc)})
+            state["nextEligibleAt"] = datetime.fromtimestamp(time.time() + delay_minutes * 60, timezone.utc).isoformat().replace("+00:00", "Z")
+            result["diagnostics"]["errors"].append({"collection": collection, "message": str(exc), "retryAfterMinutes": delay_minutes})
 
     merge_previous(result, previous)
     cutoff, horizon = time.time() - 6 * 3600, time.time() + (HOURS + 6) * 3600
