@@ -42,7 +42,7 @@ assert.deepEqual(summary, { zones: 2, minimumRemainingHours: 12, maximumRemainin
 
 
 const workflow = await import('node:fs/promises').then(({ readFile }) => readFile('.github/workflows/update-and-deploy.yml', 'utf8'));
-for (const expected of ['DMI_LIVE_ZONE_BUDGET: 5', 'DMI_REQUEST_BUDGET: 20', 'DMI_REQUEST_GAP_MS: 5000', 'DMI_SCHEDULE_INTERVAL_MINUTES: 10']) {
+for (const expected of ['DMI_LIVE_ZONE_BUDGET: 4', 'DMI_REQUEST_BUDGET: 6', 'DMI_REQUEST_GAP_MS: 12000', 'DMI_SCHEDULE_INTERVAL_MINUTES: 10', 'DMI_OBSERVATION_INTERVAL_MINUTES: 60']) {
   assert.ok(workflow.includes(expected), `workflow mangler ${expected}`);
 }
 const updater = await import('node:fs/promises').then(({ readFile }) => readFile('scripts/update-weather.mjs', 'utf8'));
@@ -52,3 +52,7 @@ for (const expected of ['stoppedByHttp429', 'attemptedZoneIds', 'successfulZoneI
 assert.ok(updater.includes("dmiRateLimitTriggered ? 'skipped-after-http-429'"), 'oceanObs skal springes over efter HTTP 429');
 
 console.log('DMI acquisition resilience bestået.');
+
+assert.ok(updater.includes('two-phase-sequential-dmi-cache'), 'DMI skal bruge sekventiel to-faset cacheopbygning');
+assert.ok(updater.includes('mergeDmiWithFallback'), 'Open-Meteo skal udfylde manglende DMI-komponenter');
+assert.ok(updater.includes('marineCacheCompleteAtStart'), 'vind og bølger må først beriges efter fuld marin cache');

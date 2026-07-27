@@ -3,7 +3,8 @@ name: Update weather and deploy RavRadar
 on:
   workflow_dispatch:
   schedule:
-    # Forsigtig rullende opbygning: fem zoner pr. kørsel med fem sekunder mellem DMI-kald.
+    # To-faset DMI-opbygning: først havdata, derefter vind og bølger.
+    # Open-Meteo holder alle zoner udfyldt, mens DMI-cachen varmes op.
     - cron: "*/10 * * * *"
   push:
     branches: [main]
@@ -21,7 +22,7 @@ concurrency:
 jobs:
   update-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -49,18 +50,20 @@ jobs:
       - name: Update central weather cache
         id: weather
         continue-on-error: true
-        timeout-minutes: 12
+        timeout-minutes: 17
         run: npm run update:weather
         env:
-          DMI_MAX_RETRIES: 1
-          DMI_REQUEST_GAP_MS: 5000
+          DMI_MAX_RETRIES: 0
+          DMI_REQUEST_GAP_MS: 12000
           DMI_REQUEST_CONCURRENCY: 1
-          DMI_LIVE_ZONE_BUDGET: 5
-          DMI_REQUEST_BUDGET: 20
+          DMI_LIVE_ZONE_BUDGET: 4
+          DMI_REQUEST_BUDGET: 6
           DMI_CACHE_REFRESH_BELOW_HOURS: 24
           DMI_SCHEDULE_INTERVAL_MINUTES: 10
+          DMI_OBSERVATION_INTERVAL_MINUTES: 60
+          DMI_DEPLOYED_CACHE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/live/dmi-forecast-cache.json"
           WEATHER_REQUEST_TIMEOUT_MS: 25000
-          WEATHER_USER_AGENT: "RavRadar/3.1.15 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/3.1.16 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Validate updated weather cache
         if: steps.weather.outcome == 'success'
