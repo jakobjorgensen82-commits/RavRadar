@@ -1,0 +1,17 @@
+name: Test scheduled workflow
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "7,17,27,37,47,57 * * * *"
+
+jobs:
+  test-schedule:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Confirm scheduled trigger
+        run: |
+          echo "Schedule test ran successfully"
+          echo "Event: ${{ github.event_name }}"
+          date -u
