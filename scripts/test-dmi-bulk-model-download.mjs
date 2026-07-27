@@ -14,11 +14,16 @@ for (const collection of ['dkss_idw', 'dkss_nsbs', 'dkss_lf', 'harmonie_dini_sf'
   assert.match(preflight, new RegExp(collection));
 }
 assert.match(bulk, /codes_grib_find_nearest/);
-assert.match(bulk, /nearest valid original model grid point/);
+assert.match(bulk, /nearest original grid point/);
 assert.match(bulk, /DMI_BULK_FORCE_REFRESH/);
 assert.match(bulk, /for container_name in \("assets", "asset"\)/);
 assert.match(bulk, /DOWNLOAD_SESSION/);
 assert.match(bulk, /refreshStatus/);
+assert.match(bulk, /parameterHint/);
+assert.match(bulk, /TIME_STRIDE_HOURS/);
+assert.match(bulk, /collection_schedule/);
+assert.doesNotMatch(bulk, /unique = \{row\["valid"\]/);
+assert.match(updater, /\[1, 2\]\.includes\(parsed\?\.schemaVersion\)/);
 assert.match(updater, /bulk-stac-grib-first-with-sequential-edr-repair/);
 assert.match(updater, /spatialInterpolation: false/);
 assert.match(workflow, /workflow_dispatch/);

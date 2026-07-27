@@ -403,7 +403,7 @@ function applyObservedWaterLevel(zone, feature, observation, generatedAt) {
 async function readDmiBulkCache() {
   try {
     const parsed = JSON.parse(await fs.readFile(DMI_BULK_CACHE_PATH, 'utf8'));
-    return parsed?.schemaVersion === 1 && parsed?.zones ? parsed : null;
+    return [1, 2].includes(parsed?.schemaVersion) && parsed?.zones ? parsed : null;
   } catch {
     return null;
   }
