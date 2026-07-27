@@ -47,19 +47,35 @@ export function interpolateWaterLevelStations(point, stations, levels, { maxStat
   };
 }
 
-function closest(items, targetMs) {
-  return items.reduce((best, item) => {
+function closest(items, targetMs, toleranceMs = Number.POSITIVE_INFINITY) {
+  const selected = items.reduce((best, item) => {
     const time = Date.parse(item.step ?? item.time);
     if (!Number.isFinite(time)) return best;
     const distance = Math.abs(time - targetMs);
     return !best || distance < best.distance ? { item, distance } : best;
-  }, null)?.item ?? null;
+  }, null);
+  return selected && selected.distance <= toleranceMs ? selected.item : null;
+}
+
+export function normalizeForecastHourly(hourly = [], { limit = DMI_FORECAST_HOURS } = {}) {
+  const byTime = new Map();
+  for (const row of hourly ?? []) {
+    const ms = Date.parse(row?.time);
+    if (!Number.isFinite(ms)) continue;
+    const time = new Date(ms).toISOString();
+    const previous = byTime.get(time) ?? {};
+    byTime.set(time, { ...previous, ...row, time });
+  }
+  return [...byTime.values()]
+    .sort((a, b) => Date.parse(a.time) - Date.parse(b.time))
+    .slice(0, Math.max(0, limit));
 }
 
 export function buildDmiForecastHourly({ wind = [], waves = [], ocean = [], observedWaterLevel = null, generatedAt, hours = DMI_FORECAST_HOURS } = {}) {
   const start = Date.parse(generatedAt);
   if (!Number.isFinite(start)) throw new Error('generatedAt must be a valid date');
-  const oceanCurrent = closest(ocean, start);
+  const toleranceMs = 90 * 60000;
+  const oceanCurrent = closest(ocean, start, toleranceMs);
   const modelCurrentCm = finite(oceanCurrent?.['sea-mean-deviation']) === null ? null : finite(oceanCurrent['sea-mean-deviation']) * 100;
   const observationCm = finite(observedWaterLevel?.valueCm);
   const observationDifferenceCm = observationCm !== null && modelCurrentCm !== null ? observationCm - modelCurrentCm : null;
@@ -68,17 +84,16 @@ export function buildDmiForecastHourly({ wind = [], waves = [], ocean = [], obse
   const hourly = [];
   for (let index = 0; index < hours; index += 1) {
     const validMs = start + index * 3600000;
-    const w = closest(wind, validMs);
-    const wa = closest(waves, validMs);
-    const o = closest(ocean, validMs);
-    const o3 = closest(ocean, validMs + 3 * 3600000);
+    const w = closest(wind, validMs, toleranceMs);
+    const wa = closest(waves, validMs, toleranceMs);
+    const o = closest(ocean, validMs, toleranceMs);
+    const o3 = closest(ocean, validMs + 3 * 3600000, toleranceMs);
     const u = finite(o?.['current-u']);
     const v = finite(o?.['current-v']);
     const sea = finite(o?.['sea-mean-deviation']);
     const sea3 = finite(o3?.['sea-mean-deviation']);
-    const timeSource = o?.step ?? w?.step ?? wa?.step ?? new Date(validMs).toISOString();
     hourly.push({
-      time: new Date(Date.parse(timeSource) || validMs).toISOString(),
+      time: new Date(validMs).toISOString(),
       windSpeedMps: round(finite(w?.['wind-speed-10m']), 1),
       windDirectionDeg: round(finite(w?.['wind-dir-10m']), 0),
       waveHeightM: round(finite(wa?.['significant-wave-height']), 2),
@@ -100,7 +115,7 @@ export function buildDmiForecastHourly({ wind = [], waves = [], ocean = [], obse
 }
 
 export function createDmiForecastRecord({ zoneId, point, generatedAt, hourly, waterLevelInterpolation = null, model = null } = {}) {
-  const validHourly = (hourly ?? []).filter(item => Number.isFinite(Date.parse(item.time))).sort((a, b) => Date.parse(a.time) - Date.parse(b.time)).slice(0, DMI_FORECAST_HOURS);
+  const validHourly = normalizeForecastHourly(hourly, { limit: DMI_FORECAST_HOURS });
   if (!validHourly.length) throw new Error(`DMI forecast for ${zoneId ?? 'zone'} has no valid hourly values`);
   return {
     schemaVersion: DMI_FORECAST_SCHEMA_VERSION,
@@ -130,9 +145,11 @@ export function selectDmiForecastAt(record, at = new Date().toISOString(), { tol
 }
 
 export function dmiForecastCoverage(record, at = new Date().toISOString()) {
-  if (!record?.validUntil) return { available: false, remainingHours: 0, totalHours: 0 };
-  const remainingHours = Math.max(0, (Date.parse(record.validUntil) - Date.parse(at)) / 3600000);
-  return { available: remainingHours > 0, remainingHours: round(remainingHours, 1), totalHours: record.hourly?.length ?? 0 };
+  const uniqueHourly = normalizeForecastHourly(record?.hourly ?? [], { limit: DMI_FORECAST_HOURS });
+  if (!uniqueHourly.length) return { available: false, remainingHours: 0, totalHours: 0, uniqueHours: 0 };
+  const validUntil = Date.parse(uniqueHourly.at(-1).time);
+  const remainingHours = Math.max(0, (validUntil - Date.parse(at)) / 3600000);
+  return { available: remainingHours > 0, remainingHours: round(remainingHours, 1), totalHours: uniqueHourly.length, uniqueHours: uniqueHourly.length };
 }
 
 function localKm(point, origin) {

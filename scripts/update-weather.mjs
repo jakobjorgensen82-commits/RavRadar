@@ -4,6 +4,7 @@ import {
   buildDmiForecastHourly,
   createDmiForecastRecord,
   dmiForecastCoverage,
+  normalizeForecastHourly,
   interpolateWaterLevelStations,
   interpolateWaterLevelAlongCoast,
   selectDmiForecastAt
@@ -591,24 +592,32 @@ async function fromDmi(feature, generatedAt, { includeAtmosphere = false } = {})
 }
 
 function mergeHourlyPreferDmi(dmiHourly = [], fallbackHourly = []) {
-  const fallbackByTime = new Map((fallbackHourly ?? []).map(item => [item.time, item]));
-  return (dmiHourly ?? []).map((item, index) => {
-    const fallback = fallbackByTime.get(item.time) ?? fallbackHourly?.[index] ?? {};
+  const dmiByTime = new Map(normalizeForecastHourly(dmiHourly).map(item => [item.time, item]));
+  const fallbackByTime = new Map(normalizeForecastHourly(fallbackHourly).map(item => [item.time, item]));
+  const times = [...new Set([...dmiByTime.keys(), ...fallbackByTime.keys()])].sort((a, b) => Date.parse(a) - Date.parse(b));
+  const merged = times.map(time => {
+    const item = dmiByTime.get(time) ?? {};
+    const fallback = fallbackByTime.get(time) ?? {};
     return {
       ...fallback,
       ...item,
+      time,
       windSpeedMps: item.windSpeedMps ?? fallback.windSpeedMps ?? null,
       windDirectionDeg: item.windDirectionDeg ?? fallback.windDirectionDeg ?? null,
       waveHeightM: item.waveHeightM ?? fallback.waveHeightM ?? null,
       waveDirectionDeg: item.waveDirectionDeg ?? fallback.waveDirectionDeg ?? null,
       wavePeriodS: item.wavePeriodS ?? fallback.wavePeriodS ?? null,
       waterLevelCm: item.waterLevelCm ?? fallback.waterLevelCm ?? null,
+      waterLevelModelCm: item.waterLevelModelCm ?? fallback.waterLevelModelCm ?? null,
+      waterLevelBiasCm: item.waterLevelBiasCm ?? fallback.waterLevelBiasCm ?? null,
+      waterLevelObservationDifferenceCm: item.waterLevelObservationDifferenceCm ?? fallback.waterLevelObservationDifferenceCm ?? null,
       waterLevelTrendCm3h: item.waterLevelTrendCm3h ?? fallback.waterLevelTrendCm3h ?? null,
       currentSpeedMps: item.currentSpeedMps ?? fallback.currentSpeedMps ?? null,
       currentDirectionDeg: item.currentDirectionDeg ?? fallback.currentDirectionDeg ?? null,
       waterTemperatureC: item.waterTemperatureC ?? fallback.waterTemperatureC ?? null
     };
   });
+  return normalizeForecastHourly(merged);
 }
 
 function mergeDmiWithFallback(dmiResult, fallbackZone) {
@@ -1119,6 +1128,24 @@ if (dmiRateLimitTriggered || Date.now() < dmiRateLimitedUntil) {
   dmiPersistentRuntime.lastObservationAt = generatedAt;
 }
 
+function summarizeDmiComponentCoverage(records, generatedAt) {
+  const rows = Object.values(records ?? {}).filter(record => dmiForecastCoverage(record, generatedAt).available);
+  const has = (record, predicate) => normalizeForecastHourly(record?.hourly ?? []).some(predicate);
+  const summary = {
+    availableZones: rows.length,
+    windZones: rows.filter(record => has(record, item => item.windSpeedMps !== null && item.windDirectionDeg !== null)).length,
+    waveZones: rows.filter(record => has(record, item => item.waveHeightM !== null)).length,
+    currentZones: rows.filter(record => has(record, item => item.currentSpeedMps !== null && item.currentDirectionDeg !== null)).length,
+    waterLevelZones: rows.filter(record => has(record, item => item.waterLevelCm !== null)).length,
+    completeZones: rows.filter(record => has(record, item => item.windSpeedMps !== null && item.waveHeightM !== null && item.currentSpeedMps !== null && item.waterLevelCm !== null)).length,
+    duplicateTimestampZones: rows.filter(record => {
+      const raw = (record?.hourly ?? []).filter(item => Number.isFinite(Date.parse(item?.time)));
+      return new Set(raw.map(item => new Date(Date.parse(item.time)).toISOString())).size !== raw.length;
+    }).length
+  };
+  return summary;
+}
+
 output.weatherEngine = {
   version: '2.13.0',
   concurrency: WEATHER_CONCURRENCY,
@@ -1137,7 +1164,8 @@ output.weatherEngine = {
 nextDmiForecastStore.generatedAt = generatedAt;
 nextDmiForecastStore.runtime = { ...dmiPersistentRuntime, rateLimitedUntil: Date.now() < dmiRateLimitedUntil ? new Date(dmiRateLimitedUntil).toISOString() : null };
 nextDmiForecastStore.coverage = summarizeAvailableCoverage(nextDmiForecastStore.zones, generatedAt, dmiForecastCoverage, round);
-output.weatherEngine.dmiForecastCache = nextDmiForecastStore.coverage;
+nextDmiForecastStore.dataQuality = summarizeDmiComponentCoverage(nextDmiForecastStore.zones, generatedAt);
+output.weatherEngine.dmiForecastCache = { ...nextDmiForecastStore.coverage, ...nextDmiForecastStore.dataQuality };
 const [qualityStations, qualityLevels] = dmiObservationSkipReason
   ? [[], new Map()]
   : await Promise.all([dmiWaterStations().catch(() => []), dmiLatestSeaLevels().catch(() => new Map())]);

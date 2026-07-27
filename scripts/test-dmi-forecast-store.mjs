@@ -5,6 +5,7 @@ import {
   createDmiForecastRecord,
   dmiForecastCoverage,
   interpolateWaterLevelStations,
+  normalizeForecastHourly,
   selectDmiForecastAt
 } from './lib/dmi-forecast-store.mjs';
 
@@ -24,6 +25,27 @@ assert.equal(built.observationDifferenceCm, 15);
 assert.equal(built.hourly[0].waterLevelCm, 10, 'DMI-modelvandstanden skal forblive autoritativ');
 assert.equal(built.hourly[0].waterLevelSource, 'dmi-model-authoritative');
 assert.equal(built.hourly.at(-1).source, 'dmi-forecast');
+
+
+const sparseWind = [
+  { step: generatedAt, 'wind-speed-10m': 5, 'wind-dir-10m': 180 },
+  { step: new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString(), 'wind-speed-10m': 8, 'wind-dir-10m': 210 }
+];
+const sparse = buildDmiForecastHourly({ wind: sparseWind, generatedAt, hours: 8 });
+assert.equal(new Set(sparse.hourly.map(item => item.time)).size, 8, 'Alle forecast-timer skal have unikke måltidspunkter');
+assert.equal(sparse.hourly[0].windSpeedMps, 5);
+assert.equal(sparse.hourly[1].windSpeedMps, 5, 'Nærmeste værdi inden for 90 minutter må bruges');
+assert.equal(sparse.hourly[2].windSpeedMps, 8, 'Nærmeste værdi inden for 90 minutter må bruges');
+assert.equal(sparse.hourly[5].windSpeedMps, null, 'Sidste modeltrin må ikke gentages uden for tolerancen');
+
+const normalized = normalizeForecastHourly([
+  { time: generatedAt, windSpeedMps: 4 },
+  { time: generatedAt, waveHeightM: 0.5 },
+  { time: new Date(Date.parse(generatedAt) + 3600000).toISOString(), windSpeedMps: 5 }
+]);
+assert.equal(normalized.length, 2, 'Dublerede tidsstempler skal samles');
+assert.equal(normalized[0].windSpeedMps, 4);
+assert.equal(normalized[0].waveHeightM, 0.5);
 
 const record = createDmiForecastRecord({ zoneId: 'test-zone', point: [10, 56], generatedAt, hourly: built.hourly });
 assert.equal(record.horizonHours, 120);
