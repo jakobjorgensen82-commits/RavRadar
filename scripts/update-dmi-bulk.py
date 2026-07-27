@@ -22,6 +22,8 @@ from datetime import datetime, timezone
 from typing import Any
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from eccodes import (codes_get, codes_get_array, codes_grib_find_nearest,
                      codes_grib_new_from_file, codes_release)
 
@@ -40,10 +42,24 @@ FORCE_REFRESH = os.getenv("DMI_BULK_FORCE_REFRESH", "false").lower() in {"1", "t
 USER_AGENT = os.getenv("WEATHER_USER_AGENT", "RavRadar DMI bulk downloader")
 API_KEY = os.getenv("DMI_API_KEY")
 STARTED = time.monotonic()
-SESSION = requests.Session()
-SESSION.headers.update({"User-Agent": USER_AGENT, "Accept": "application/geo+json, application/json"})
-if API_KEY:
-    SESSION.params.update({"api-key": API_KEY})
+STAC_SESSION = requests.Session()
+DOWNLOAD_SESSION = requests.Session()
+_retry = Retry(
+    total=4,
+    connect=4,
+    read=4,
+    status=4,
+    backoff_factor=1.5,
+    status_forcelist=(429, 500, 502, 503, 504),
+    allowed_methods=frozenset({"GET"}),
+    respect_retry_after_header=True,
+)
+_adapter = HTTPAdapter(max_retries=_retry, pool_connections=4, pool_maxsize=4)
+for _session in (STAC_SESSION, DOWNLOAD_SESSION):
+    _session.mount("https://", _adapter)
+    _session.headers.update({"User-Agent": USER_AGENT})
+STAC_SESSION.headers.update({"Accept": "application/geo+json, application/json"})
+DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octet-stream, */*"})
 
 COLLECTIONS = {
     "marine": ["dkss_idw", "dkss_nsbs", "dkss_lf"],
@@ -110,7 +126,10 @@ def epoch(value: Any) -> float:
 
 
 def request_json(url: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
-    response = SESSION.get(url, params=params, timeout=REQUEST_TIMEOUT)
+    query = dict(params or {})
+    if API_KEY and url.startswith(STAC_ROOT):
+        query.setdefault("api-key", API_KEY)
+    response = STAC_SESSION.get(url, params=query, timeout=REQUEST_TIMEOUT)
     response.raise_for_status()
     return response.json()
 
@@ -137,33 +156,56 @@ def item_valid(item: dict[str, Any]) -> str | None:
     return None
 
 
+def asset_map(item: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Return DMI assets for both the documented singular `asset` field and
+    standard STAC `assets`. DMI currently documents asset/data/href, while
+    some STAC implementations use assets/data/href.
+    """
+    merged: dict[str, dict[str, Any]] = {}
+    for container_name in ("assets", "asset"):
+        container = item.get(container_name)
+        if not isinstance(container, dict):
+            continue
+        # A direct asset object is accepted as a defensive compatibility path.
+        if isinstance(container.get("href"), str):
+            merged.setdefault(container_name, container)
+            continue
+        for key, value in container.items():
+            if isinstance(value, dict):
+                merged.setdefault(str(key), value)
+    return merged
+
+
 def grib_asset(item: dict[str, Any]) -> tuple[str, int | None] | None:
-    assets = item.get("assets") or {}
     ranked: list[tuple[int, str, int | None]] = []
-    for key, asset in assets.items():
+    for key, asset in asset_map(item).items():
         href = asset.get("href")
-        if not href:
+        if not isinstance(href, str) or not href.strip():
             continue
         media = str(asset.get("type", "")).lower()
-        name = f"{key} {href}".lower()
-        if "grib" not in media and not re.search(r"\.(grib2?|grb2?|bin)(\?|$)", name):
+        roles = " ".join(str(value).lower() for value in (asset.get("roles") or []))
+        title = str(asset.get("title", "")).lower()
+        name = f"{key} {title} {roles} {href}".lower()
+        if "grib" not in media and "grib" not in name and not re.search(r"\.(grib2?|grb2?|bin)(\?|$)", name):
             continue
-        size = asset.get("file:size") or asset.get("size")
+        size = asset.get("file:size") or asset.get("size") or asset.get("content_length")
         try:
             size = int(size) if size is not None else None
         except (TypeError, ValueError):
             size = None
-        score = 0 if key in {"data", "grib", "download"} else 1
-        ranked.append((score, href, size))
+        preferred = key.lower() in {"data", "grib", "download"} or "data" in roles
+        ranked.append((0 if preferred else 1, href.strip(), size))
     if not ranked:
         return None
-    ranked.sort(key=lambda row: row[0])
+    ranked.sort(key=lambda row: (row[0], row[1]))
     return ranked[0][1], ranked[0][2]
 
 
 def list_latest_assets(collection: str) -> tuple[str | None, list[dict[str, Any]]]:
     url = f"{STAC_ROOT}/collections/{collection}/items"
-    data = request_json(url, {"limit": 1000})
+    # Ask DMI for the newest forecast steps first. A Denmark bbox avoids
+    # unrelated tiles should a collection ever become spatially tiled.
+    data = request_json(url, {"limit": 1000, "bbox": "7,54,16,58", "sortorder": "datetime,DESC"})
     items = data.get("features") or []
     runs: dict[str, list[dict[str, Any]]] = {}
     for item in items:
@@ -191,7 +233,7 @@ def download_asset(href: str, expected_size: int | None, budget: dict[str, int])
         return path
     if expected_size and budget["bytes"] + expected_size > MAX_DOWNLOAD_BYTES:
         raise RuntimeError("DMI bulk download budget would be exceeded")
-    with SESSION.get(href, stream=True, timeout=REQUEST_TIMEOUT) as response:
+    with DOWNLOAD_SESSION.get(href, stream=True, timeout=REQUEST_TIMEOUT) as response:
         response.raise_for_status()
         content_length = int(response.headers.get("content-length", "0") or 0)
         if budget["bytes"] + content_length > MAX_DOWNLOAD_BYTES:
@@ -320,6 +362,8 @@ def load_previous() -> dict[str, Any]:
 
 
 def merge_previous(current: dict[str, Any], previous: dict[str, Any]) -> None:
+    for collection, details in (previous.get("runs") or {}).items():
+        current.setdefault("runs", {}).setdefault(collection, details)
     for zone_id, old_zone in (previous.get("zones") or {}).items():
         new_zone = current["zones"].setdefault(zone_id, {"hourly": {}, "gridPoints": {}, "collections": {}})
         for valid, old_hour in (old_zone.get("hourly") or {}).items():
@@ -364,6 +408,7 @@ def main() -> int:
     result = {
         "schemaVersion": 1,
         "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "sourceUpdatedAt": previous.get("sourceUpdatedAt") or previous.get("generatedAt"),
         "method": "DMI STAC whole-GRIB download; nearest valid original model grid point; no spatial interpolation",
         "hours": HOURS,
         "zones": {},
@@ -390,6 +435,10 @@ def main() -> int:
                     path = download_asset(asset["href"], asset.get("size"), budget)
                     process_grib(path, collection, asset["valid"], zones, result, result["diagnostics"])
                     result["runs"][collection]["assetsProcessed"] += 1
+                recognized = sorted(set(result["diagnostics"]["parametersByCollection"].get(collection, [])))
+                result["diagnostics"]["parametersByCollection"][collection] = recognized
+                if not recognized:
+                    raise RuntimeError("GRIB downloaded but no required RavRadar parameters were recognized")
                 result["diagnostics"]["collectionsSucceeded"].append(collection)
             except Exception as exc:
                 result["diagnostics"]["errors"].append({"collection": collection, "message": str(exc)})
@@ -399,6 +448,11 @@ def main() -> int:
         if stop:
             break
 
+    fresh_successes = len(result["diagnostics"]["collectionsSucceeded"])
+    fresh_zone_count = len(result["zones"])
+    if fresh_successes:
+        result["sourceUpdatedAt"] = result["generatedAt"]
+    result["refreshStatus"] = "ok" if fresh_successes == sum(len(v) for v in COLLECTIONS.values()) else ("partial" if fresh_successes else "failed")
     merge_previous(result, previous)
     cutoff = time.time() - 6 * 3600
     horizon = time.time() + (HOURS + 6) * 3600
@@ -412,6 +466,7 @@ def main() -> int:
         zone["hourly"] = dict(sorted(cleaned.items(), key=lambda row: epoch(row[0])))
     result["zones"] = {key: value for key, value in result["zones"].items() if value["hourly"]}
     result["diagnostics"]["downloadedBytes"] = budget["bytes"]
+    result["diagnostics"]["freshZoneCount"] = fresh_zone_count
     result["diagnostics"]["zoneCount"] = len(result["zones"])
     result["diagnostics"]["completeMarineZones"] = sum(
         1 for zone in result["zones"].values()
@@ -424,8 +479,31 @@ def main() -> int:
     tmp = OUTPUT_PATH.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", "utf-8")
     tmp.replace(OUTPUT_PATH)
-    print(json.dumps(result["diagnostics"], ensure_ascii=False))
-    return 0
+    summary = {
+        **result["diagnostics"],
+        "refreshStatus": result["refreshStatus"],
+        "sourceUpdatedAt": result.get("sourceUpdatedAt"),
+        "preservedPreviousZones": max(0, len(result["zones"]) - fresh_zone_count),
+    }
+    github_output = os.getenv("GITHUB_OUTPUT")
+    if github_output:
+        with open(github_output, "a", encoding="utf-8") as handle:
+            handle.write(f"status={result['refreshStatus']}\n")
+            handle.write(f"fresh_collections={fresh_successes}\n")
+            handle.write(f"zone_count={len(result['zones'])}\n")
+            handle.write(f"downloaded_bytes={budget['bytes']}\n")
+    github_summary = os.getenv("GITHUB_STEP_SUMMARY")
+    if github_summary:
+        with open(github_summary, "a", encoding="utf-8") as handle:
+            handle.write("## DMI bulk refresh\n\n")
+            handle.write(f"- Status: **{result['refreshStatus']}**\n")
+            handle.write(f"- Nye samlinger: **{fresh_successes}/6**\n")
+            handle.write(f"- Zoner i samlet cache: **{len(result['zones'])}**\n")
+            handle.write(f"- Downloadet: **{budget['bytes']} bytes**\n")
+            if result["diagnostics"]["errors"]:
+                handle.write("- Fejl: " + "; ".join(f"{e['collection']}: {e['message']}" for e in result["diagnostics"]["errors"]) + "\n")
+    print(json.dumps(summary, ensure_ascii=False))
+    return 0 if fresh_successes else 2
 
 
 if __name__ == "__main__":

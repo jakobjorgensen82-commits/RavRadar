@@ -4,7 +4,7 @@ import { historicalSummary } from '../services/historical-analysis.js';
 import { loadAdaptiveModel, applyApprovedSuggestion, recordDecision, decisionHistory, rollbackAdaptiveModel, listAdaptiveModelVersions, activateAdaptiveModelVersion } from '../core/adaptive-model.js';
 import { loadZoneRegistry } from '../services/zone-registry.js';
 
-const VERSION='3.2.0765433';
+const VERSION='3.2.1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
 const RULES_KEY='ravradar-admin-rules-v1';
 const HISTORY_KEY='ravradar-admin-rule-history-v1';

@@ -43,7 +43,7 @@ jobs:
         run: python scripts/hydrate-deployed-weather.py
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
-          WEATHER_USER_AGENT: "RavRadar/3.2.0 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/3.2.1 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Decide whether weather needs updating
         id: preflight
@@ -52,7 +52,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/3.2.0 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/3.2.1 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Report skipped refresh
         if: steps.preflight.outputs.should_run != 'true'
@@ -90,7 +90,18 @@ jobs:
           DMI_BULK_REFRESH_MINUTES: 60
           DMI_BULK_FORCE_REFRESH: ${{ steps.preflight.outputs.dmi_changed }}
           DMI_BULK_RAW_DIR: /tmp/ravradar-dmi-grib
-          WEATHER_USER_AGENT: "RavRadar/3.2.0 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/3.2.1 (${{ github.server_url }}/${{ github.repository }})"
+          DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
+
+      - name: Report DMI bulk result
+        if: steps.preflight.outputs.should_run == 'true' && always()
+        run: |
+          echo "DMI bulk status: ${{ steps.dmi-bulk.outputs.status || 'unknown' }}"
+          echo "Fresh collections: ${{ steps.dmi-bulk.outputs.fresh_collections || '0' }}/6"
+          echo "Zones in bulk cache: ${{ steps.dmi-bulk.outputs.zone_count || '0' }}"
+          if [ "${{ steps.dmi-bulk.outputs.status }}" = "failed" ]; then
+            echo "::warning::DMI bulk refresh failed. RavRadar preserves the previous DMI cache and uses fallback providers where necessary."
+          fi
 
       - name: Update central weather cache
         if: steps.preflight.outputs.should_run == 'true'
@@ -109,7 +120,8 @@ jobs:
           DMI_OBSERVATION_INTERVAL_MINUTES: 60
           DMI_DEPLOYED_CACHE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/live/dmi-forecast-cache.json"
           WEATHER_REQUEST_TIMEOUT_MS: 25000
-          WEATHER_USER_AGENT: "RavRadar/3.2.0 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/3.2.1 (${{ github.server_url }}/${{ github.repository }})"
+          DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Validate updated weather cache
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'
