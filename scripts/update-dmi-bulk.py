@@ -23,7 +23,16 @@ from typing import Any
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from eccodes import codes_get, codes_get_element, codes_grib_find_nearest, codes_grib_new_from_file, codes_release
+try:
+    from eccodes import (
+        codes_get, codes_get_elements, codes_grib_find_nearest,
+        codes_grib_new_from_file, codes_release,
+    )
+except ImportError as exc:
+    raise RuntimeError(
+        "ecCodes Python API er ikke kompatibelt: codes_get_elements mangler. "
+        "Installer requirements-dmi.txt igen."
+    ) from exc
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 ZONES_PATH = ROOT / "data/zones.geojson"
@@ -378,7 +387,7 @@ def nearest_valid_cached(gid: int, collection: str, zone: dict[str, Any]) -> dic
     candidates = nearest_candidates(gid, collection, zone)
     for candidate in candidates:
         try:
-            value = codes_get_element(gid, "values", candidate["index"])
+            value = codes_get_elements(gid, "values", [candidate["index"]])[0]
         except Exception:
             continue
         number = valid_value(value, missing)
@@ -515,6 +524,30 @@ def write_checkpoint(result: dict[str, Any], fresh_zone_ids: set[str], budget: d
     tmp.replace(OUTPUT_PATH)
 
 
+def write_github_outputs(status: str, fresh_collections: int = 0, partial_collections: int = 0,
+                         zone_count: int = 0, downloaded_bytes: int = 0, error: str | None = None) -> None:
+    output_path = os.getenv("GITHUB_OUTPUT")
+    if output_path:
+        with open(output_path, "a", encoding="utf-8") as handle:
+            handle.write(f"status={status}\n")
+            handle.write(f"fresh_collections={fresh_collections}\n")
+            handle.write(f"partial_collections={partial_collections}\n")
+            handle.write(f"zone_count={zone_count}\n")
+            handle.write(f"downloaded_bytes={downloaded_bytes}\n")
+            if error:
+                safe_error = str(error).replace("\r", " ").replace("\n", " ")[:500]
+                handle.write(f"error={safe_error}\n")
+
+
+def write_failure_summary(error: Exception) -> None:
+    summary_path = os.getenv("GITHUB_STEP_SUMMARY")
+    if summary_path:
+        with open(summary_path, "a", encoding="utf-8") as handle:
+            handle.write("## DMI bulk refresh\n\n")
+            handle.write("- Status: **failed**\n")
+            handle.write(f"- Opstartsfejl: `{str(error)[:500]}`\n")
+
+
 def main() -> int:
     progress(f"starter; arbejdsbudget={MAX_RUNTIME_SECONDS - FINALIZE_RESERVE_SECONDS}s, afslutningsreserve={FINALIZE_RESERVE_SECONDS}s")
     previous = load_previous()
@@ -648,9 +681,10 @@ def main() -> int:
     write_checkpoint(result, fresh_zone_ids, budget, result["refreshStatus"])
     summary = {**diag, "refreshStatus": result["refreshStatus"], "sourceUpdatedAt": result.get("sourceUpdatedAt"),
                "preservedPreviousZones": max(0, len(result["zones"]) - len(fresh_zone_ids))}
-    if os.getenv("GITHUB_OUTPUT"):
-        with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as h:
-            h.write(f"status={result['refreshStatus']}\nfresh_collections={fresh_successes}\npartial_collections={fresh_partials}\nzone_count={len(result['zones'])}\ndownloaded_bytes={budget['bytes']}\n")
+    write_github_outputs(
+        result["refreshStatus"], fresh_successes, fresh_partials,
+        len(result["zones"]), budget["bytes"]
+    )
     if os.getenv("GITHUB_STEP_SUMMARY"):
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as h:
             h.write("## DMI bulk refresh\n\n")
@@ -667,5 +701,7 @@ if __name__ == "__main__":
     try:
         raise SystemExit(main())
     except Exception as exc:
-        print(f"DMI bulk downloader failed safely: {exc}", file=sys.stderr)
-        raise SystemExit(0)
+        print(f"DMI bulk downloader failed safely: {exc}", file=sys.stderr, flush=True)
+        write_github_outputs("failed", error=str(exc))
+        write_failure_summary(exc)
+        raise SystemExit(2)
