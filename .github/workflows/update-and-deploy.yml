@@ -5,7 +5,7 @@ on:
   schedule:
     # To-faset DMI-opbygning: først havdata, derefter vind og bølger.
     # Open-Meteo holder alle zoner udfyldt, mens DMI-cachen varmes op.
-    - cron: "*/10 * * * *"
+    - cron: "3,13,23,33,43,53 * * * *"
   push:
     branches: [main]
 
