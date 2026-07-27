@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": null,
+  "bulkCacheGeneratedAt": null,
+  "refreshStatus": "waiting-for-first-4.0.4-run",
+  "summary": {
+    "zonesInBulkCache": 0,
+    "waterLevelZones": 0,
+    "currentUZones": 0,
+    "currentVZones": 0,
+    "currentVectorAvailable": false,
+    "waterTemperatureZones": 0,
+    "marineErrors": 0
+  },
+  "parameters": {},
+  "collections": {},
+  "errors": [],
+  "pipelineCounters": {}
+}

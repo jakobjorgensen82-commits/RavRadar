@@ -37,6 +37,8 @@ except ImportError as exc:
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 ZONES_PATH = ROOT / "data/zones.geojson"
 OUTPUT_PATH = ROOT / "data/live/dmi-bulk-cache.json"
+DIAGNOSTICS_JSON_PATH = ROOT / "data/diagnostics/dmi-ocean-diagnostics.json"
+DIAGNOSTICS_TEXT_PATH = ROOT / "data/diagnostics/dmi-ocean-summary.txt"
 RAW_DIR = pathlib.Path(os.getenv("DMI_BULK_RAW_DIR", str(ROOT / ".cache/dmi-grib")))
 STAC_ROOT = os.getenv("DMI_STAC_ROOT", "https://opendataapi.dmi.dk/v1/forecastdata")
 HOURS = max(1, int(os.getenv("DMI_BULK_HOURS", "120")))
@@ -514,6 +516,115 @@ def clean_and_summarize(result: dict[str, Any], fresh_zone_ids: set[str], budget
     diag["completeWaveZones"] = sum(1 for z in result["zones"].values() if any("significant-wave-height" in h for h in z["hourly"].values()))
 
 
+
+def build_ocean_diagnostics(result: dict[str, Any]) -> dict[str, Any]:
+    marine_collections = ["dkss_idw", "dkss_nsbs", "dkss_lf"]
+    parameter_keys = ["sea-mean-deviation", "current-u", "current-v", "water-temperature"]
+    zones = result.get("zones") or {}
+    per_parameter = {}
+    for key in parameter_keys:
+        zone_count = 0
+        value_count = 0
+        min_value = None
+        max_value = None
+        for zone in zones.values():
+            zone_has = False
+            for hour in (zone.get("hourly") or {}).values():
+                value = hour.get(key)
+                if isinstance(value, (int, float)) and math.isfinite(float(value)):
+                    number = float(value)
+                    value_count += 1
+                    zone_has = True
+                    min_value = number if min_value is None else min(min_value, number)
+                    max_value = number if max_value is None else max(max_value, number)
+            if zone_has:
+                zone_count += 1
+        per_parameter[key] = {
+            "zonesPopulated": zone_count,
+            "finiteValues": value_count,
+            "minimum": min_value,
+            "maximum": max_value,
+        }
+
+    collection_details = {}
+    diagnostics = result.get("diagnostics") or {}
+    for collection in marine_collections:
+        state = (result.get("collectionState") or {}).get(collection) or {}
+        run = (result.get("runs") or {}).get(collection) or {}
+        inventory = (diagnostics.get("gribFieldInventory") or {}).get(collection) or {}
+        recognized = (diagnostics.get("parametersByCollection") or {}).get(collection) or run.get("recognizedParameters") or []
+        collection_details[collection] = {
+            "scheduledThisRun": collection in (diagnostics.get("scheduledCollections") or []),
+            "attemptedThisRun": collection in (diagnostics.get("collectionsAttempted") or []),
+            "succeededThisRun": collection in (diagnostics.get("collectionsSucceeded") or []),
+            "partialThisRun": collection in (diagnostics.get("collectionsPartial") or []),
+            "referenceTime": run.get("referenceTime"),
+            "assetsDiscovered": run.get("assetsDiscovered", 0),
+            "assetsProcessed": run.get("assetsProcessed", 0),
+            "recognizedParameters": recognized,
+            "requiredParameters": TARGETS["marine"],
+            "missingParameters": [key for key in TARGETS["marine"] if key not in recognized],
+            "inventoryMessageTypes": len(inventory),
+            "lastSuccessfulAt": state.get("lastSuccessfulAt"),
+            "lastPartialAt": state.get("lastPartialAt"),
+            "lastError": state.get("lastError"),
+            "nextEligibleAt": state.get("nextEligibleAt"),
+        }
+
+    marine_errors = [error for error in (diagnostics.get("errors") or []) if error.get("collection") in marine_collections]
+    complete_current = per_parameter["current-u"]["zonesPopulated"] and per_parameter["current-v"]["zonesPopulated"]
+    return {
+        "schemaVersion": 1,
+        "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "bulkCacheGeneratedAt": result.get("generatedAt"),
+        "refreshStatus": result.get("refreshStatus"),
+        "method": result.get("method"),
+        "summary": {
+            "zonesInBulkCache": len(zones),
+            "waterLevelZones": per_parameter["sea-mean-deviation"]["zonesPopulated"],
+            "currentUZones": per_parameter["current-u"]["zonesPopulated"],
+            "currentVZones": per_parameter["current-v"]["zonesPopulated"],
+            "currentVectorAvailable": bool(complete_current),
+            "waterTemperatureZones": per_parameter["water-temperature"]["zonesPopulated"],
+            "marineErrors": len(marine_errors),
+        },
+        "parameters": per_parameter,
+        "collections": collection_details,
+        "errors": marine_errors,
+        "pipelineCounters": {
+            "messagesSeen": diagnostics.get("messagesSeen", 0),
+            "zoneLookups": diagnostics.get("zoneLookups", 0),
+            "downloadedBytes": diagnostics.get("downloadedBytes", 0),
+            "freshZoneCount": diagnostics.get("freshZoneCount", 0),
+        },
+    }
+
+
+def write_ocean_diagnostics(result: dict[str, Any]) -> None:
+    report = build_ocean_diagnostics(result)
+    DIAGNOSTICS_JSON_PATH.parent.mkdir(parents=True, exist_ok=True)
+    DIAGNOSTICS_JSON_PATH.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", "utf-8")
+    lines = [
+        "RavRadar DMI ocean diagnostics",
+        f"Generated: {report['generatedAt']}",
+        f"Bulk status: {report.get('refreshStatus')}",
+        f"Zones in bulk cache: {report['summary']['zonesInBulkCache']}",
+        f"Water-level zones: {report['summary']['waterLevelZones']}",
+        f"Current U zones: {report['summary']['currentUZones']}",
+        f"Current V zones: {report['summary']['currentVZones']}",
+        f"Water-temperature zones: {report['summary']['waterTemperatureZones']}",
+        "",
+        "Collections:",
+    ]
+    for name, details in report["collections"].items():
+        missing = ", ".join(details["missingParameters"]) or "none"
+        lines.append(f"- {name}: attempted={details['attemptedThisRun']} success={details['succeededThisRun']} partial={details['partialThisRun']} assets={details['assetsProcessed']}/{details['assetsDiscovered']} missing={missing} error={details['lastError'] or 'none'}")
+    if report["errors"]:
+        lines.extend(["", "Errors:"])
+        lines.extend(f"- {item.get('collection')}: {item.get('message')}" for item in report["errors"])
+    DIAGNOSTICS_TEXT_PATH.write_text("\n".join(lines) + "\n", "utf-8")
+
+
 def write_checkpoint(result: dict[str, Any], fresh_zone_ids: set[str], budget: dict[str, int], status: str = "partial") -> None:
     result["refreshStatus"] = status
     result["checkpointedAt"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -522,6 +633,7 @@ def write_checkpoint(result: dict[str, Any], fresh_zone_ids: set[str], budget: d
     tmp = OUTPUT_PATH.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", "utf-8")
     tmp.replace(OUTPUT_PATH)
+    write_ocean_diagnostics(result)
 
 
 def write_github_outputs(status: str, fresh_collections: int = 0, partial_collections: int = 0,
@@ -691,6 +803,9 @@ def main() -> int:
             h.write(f"- Status: **{result['refreshStatus']}**\n- Planlagte samlinger: **{', '.join(selected)}**\n")
             h.write(f"- Fuld/delvis succes: **{fresh_successes}/{fresh_partials}**\n- Zoner i cache: **{len(result['zones'])}**\n")
             h.write(f"- Downloadet denne kørsel: **{budget['bytes']} bytes**\n")
+            ocean = build_ocean_diagnostics(result)["summary"]
+            h.write(f"- Ocean-dækning: vandstand **{ocean['waterLevelZones']}** zoner, strøm-U/V **{ocean['currentUZones']}/{ocean['currentVZones']}**, temperatur **{ocean['waterTemperatureZones']}**\n")
+            h.write("- Diagnostik: `data/diagnostics/dmi-ocean-diagnostics.json` og `data/diagnostics/dmi-ocean-summary.txt`\n")
             if diag["errors"]:
                 h.write("- Bemærkninger: " + "; ".join(f"{e['collection']}: {e['message']}" for e in diag["errors"]) + "\n")
     print(json.dumps(summary, ensure_ascii=False))
