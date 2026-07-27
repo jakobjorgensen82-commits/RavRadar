@@ -36,6 +36,7 @@ MAX_RUNTIME_SECONDS = max(60, int(os.getenv("DMI_BULK_MAX_RUNTIME_SECONDS", "780
 REQUEST_TIMEOUT = max(10, int(os.getenv("DMI_BULK_REQUEST_TIMEOUT_SECONDS", "90")))
 MAX_ASSETS_PER_COLLECTION = max(1, int(os.getenv("DMI_BULK_MAX_ASSETS_PER_COLLECTION", "130")))
 REFRESH_MINUTES = max(1, int(os.getenv("DMI_BULK_REFRESH_MINUTES", "60")))
+FORCE_REFRESH = os.getenv("DMI_BULK_FORCE_REFRESH", "false").lower() in {"1", "true", "yes", "on"}
 USER_AGENT = os.getenv("WEATHER_USER_AGENT", "RavRadar DMI bulk downloader")
 API_KEY = os.getenv("DMI_API_KEY")
 STARTED = time.monotonic()
@@ -335,7 +336,7 @@ def main() -> int:
     previous = load_previous()
     previous_generated = epoch(previous.get("generatedAt"))
     previous_zone_count = len(previous.get("zones") or {})
-    if previous_generated and previous_zone_count and time.time() - previous_generated < REFRESH_MINUTES * 60:
+    if not FORCE_REFRESH and previous_generated and previous_zone_count and time.time() - previous_generated < REFRESH_MINUTES * 60:
         print(json.dumps({"skipped": "fresh-bulk-cache", "zoneCount": previous_zone_count, "generatedAt": previous.get("generatedAt")}, ensure_ascii=False))
         return 0
 
