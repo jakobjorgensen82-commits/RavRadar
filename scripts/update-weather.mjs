@@ -1434,7 +1434,7 @@ function buildRuntimeDiagnostics(output, health) {
   return {
     schemaVersion: 1,
     generatedAt: output.generatedAt,
-    version: '4.0.19',
+    version: '4.0.22',
     health,
     componentCoverage,
     forecastCompleteness: (() => {

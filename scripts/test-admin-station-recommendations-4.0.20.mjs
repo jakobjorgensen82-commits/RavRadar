@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const admin=fs.readFileSync('js/ui/admin-dashboard.js','utf8');
+const css=fs.readFileSync('admin.css','utf8');
+assert.match(admin,/automaticStationRecommendation/);
+assert.match(admin,/RavRadars automatiske valg/);
+assert.match(admin,/Vis automatisk beregning/);
+assert.match(admin,/Kopiér valget til administratorvalg/);
+assert.match(admin,/Automatisk valgt/);
+assert.match(admin,/Administratorvalgt/);
+assert.match(admin,/inverse-distance/);
+assert.match(css,/automatic-station/);
+assert.match(css,/automatic-admin-station/);
+console.log('OK: admin viser automatisk primær\/sekundær station, kandidater, vægte og tydeligt override.');
