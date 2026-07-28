@@ -34,8 +34,8 @@ const sparseWind = [
 const sparse = buildDmiForecastHourly({ wind: sparseWind, generatedAt, hours: 8 });
 assert.equal(new Set(sparse.hourly.map(item => item.time)).size, 8, 'Alle forecast-timer skal have unikke måltidspunkter');
 assert.equal(sparse.hourly[0].windSpeedMps, 5);
-assert.equal(sparse.hourly[1].windSpeedMps, 5, 'Nærmeste værdi inden for 90 minutter må bruges');
-assert.equal(sparse.hourly[2].windSpeedMps, 8, 'Nærmeste værdi inden for 90 minutter må bruges');
+assert.ok(Math.abs(sparse.hourly[1].windSpeedMps - 5.8) < 0.01, 'Vind skal vektorinterpoleres mellem modeltrin');
+assert.ok(Math.abs(sparse.hourly[2].windSpeedMps - 6.8) < 0.01, 'Vind skal vektorinterpoleres mellem modeltrin');
 assert.equal(sparse.hourly[5].windSpeedMps, null, 'Sidste modeltrin må ikke gentages uden for tolerancen');
 
 const normalized = normalizeForecastHourly([
@@ -92,4 +92,18 @@ console.log('DMI 120-timers Forecast Store og Water Level Engine bestået.');
   const selected = selectDmiForecastAt(record, '2026-07-28T15:00:30.000Z');
   assert.equal(selected?.time, '2026-07-28T18:00:00.000Z');
   assert.equal(selectDmiForecastAt(record, '2026-07-28T15:00:30.000Z', { toleranceMinutes: 90 }), null);
+}
+
+// 4.0.14 regression: interpolate native current components, not direction angles.
+{
+  const sparseOcean = [
+    { step: generatedAt, 'sea-mean-deviation': 0.0, 'current-u': 0.2, 'current-v': 0.0, 'water-temperature': 10 },
+    { step: new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString(), 'sea-mean-deviation': 0.3, 'current-u': 0.0, 'current-v': 0.2, 'water-temperature': 13 }
+  ];
+  const interpolated = buildDmiForecastHourly({ ocean: sparseOcean, generatedAt, hours: 4, sourceCadenceMinutes: 180 });
+  assert.equal(interpolated.hourly[1].waterLevelCm, 10);
+  assert.equal(interpolated.hourly[2].waterLevelCm, 20);
+  assert.ok(interpolated.hourly[1].currentDirectionDeg > 45 && interpolated.hourly[1].currentDirectionDeg < 90);
+  assert.equal(interpolated.hourly[1].temporalResolution, 'interpolated');
+  assert.equal(interpolated.hourly[3].temporalResolution, 'exact');
 }

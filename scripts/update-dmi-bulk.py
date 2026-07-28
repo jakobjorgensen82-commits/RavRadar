@@ -69,7 +69,9 @@ for _session in (STAC_SESSION, DOWNLOAD_SESSION):
 STAC_SESSION.headers.update({"Accept": "application/geo+json, application/json"})
 DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octet-stream, */*"})
 
-PARSER_VERSION = 6
+PARSER_VERSION = 7
+PARAMETER_MAP_VERSION = 2
+GRID_LOOKUP_VERSION = 2
 COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw", "wam_nsb", "harmonie_dini_sf"]
 COLLECTION_FAMILY = {
     "dkss_idw": "marine", "dkss_nsbs": "marine", "dkss_lf": "marine",
@@ -79,6 +81,11 @@ TARGETS = {
     "marine": ["sea-mean-deviation", "current-u", "current-v", "water-temperature"],
     "wind": ["wind-u-10m", "wind-v-10m"],
     "wave": ["significant-wave-height", "mean-wave-dir", "dominant-wave-period"],
+}
+REQUIRED_TARGETS = {
+    "marine": {"sea-mean-deviation", "current-u", "current-v"},
+    "wind": {"wind-u-10m", "wind-v-10m"},
+    "wave": {"significant-wave-height", "mean-wave-dir", "dominant-wave-period"},
 }
 
 # Strong aliases are used for STAC item/asset metadata. Single-letter aliases are
@@ -564,7 +571,7 @@ def collection_schedule(previous: dict[str, Any]) -> list[str]:
             family_rank = 9
         return (blocked, family_rank, epoch(entry.get("lastAttemptAt")), epoch(entry.get("lastSuccessfulAt")), COLLECTION_ORDER.index(collection))
     eligible = sorted(COLLECTION_ORDER, key=priority)
-    return eligible[:COLLECTIONS_PER_RUN]
+    return eligible
 
 
 
@@ -809,20 +816,25 @@ def main() -> int:
               "collectionState": dict(previous.get("collectionState") or {}),
               "diagnostics": {"collectionsAttempted": [], "collectionsSucceeded": [], "collectionsPartial": [], "errors": [],
                               "downloadedBytes": 0, "reusedAssets": 0, "parametersByCollection": {}, "stacByCollection": {},
-                              "assetsSkippedPreviouslyProcessed": 0, "messagesSeen": 0, "zoneLookups": 0,
+                              "assetsSkippedPreviouslyProcessed": 0, "assetsRetriedIncomplete": 0, "zeroProgressCollections": [], "messagesSeen": 0, "zoneLookups": 0,
                               "runtimeBudgetSeconds": MAX_RUNTIME_SECONDS, "finalizeReserveSeconds": FINALIZE_RESERVE_SECONDS,
                               "persistentFieldInventory": dict(((previous.get("diagnostics") or {}).get("persistentFieldInventory") or {}))}}
     merge_previous(result, previous)
     budget = {"bytes": 0}
-    selected = collection_schedule(previous)
-    result["diagnostics"]["scheduledCollections"] = selected
+    scheduled = collection_schedule(previous)
+    result["diagnostics"]["scheduledCollections"] = scheduled
     fresh_zone_ids: set[str] = set()
+    productive_collections = 0
 
-    for collection in selected:
+    for collection in scheduled:
+        if productive_collections >= COLLECTIONS_PER_RUN:
+            break
         if should_stop_work():
             result["diagnostics"]["errors"].append({"collection": collection, "message": "bulk runtime budget reached"})
             break
         result["diagnostics"]["collectionsAttempted"].append(collection)
+        collection_start_bytes = budget["bytes"]
+        collection_start_reused = int(result["diagnostics"].get("reusedAssets") or 0)
         state = result["collectionState"].setdefault(collection, {})
         state["lastAttemptAt"] = generated
         try:
@@ -831,12 +843,25 @@ def main() -> int:
             if not assets:
                 raise RuntimeError("no forecast-step GRIB assets found in latest STAC run")
             previous_run = (previous.get("runs") or {}).get(collection) or {}
-            same_parser = int(previous_run.get("parserVersion") or 0) == PARSER_VERSION
-            previously_processed = set(previous_run.get("processedValidTimes") or []) if previous_run.get("referenceTime") == run and same_parser else set()
-            run_info = {"referenceTime": run, "parserVersion": PARSER_VERSION, "assetsDiscovered": len(assets), "assetsProcessed": 0, "assetsReused": 0,
+            zone_registry_signature = hashlib.sha256(ZONES_PATH.read_bytes()).hexdigest()[:16]
+            processing_signature = f"parser:{PARSER_VERSION}|params:{PARAMETER_MAP_VERSION}|grid:{GRID_LOOKUP_VERSION}|zones:{zone_registry_signature}"
+            same_processing = previous_run.get("processingSignature") == processing_signature
+            same_run = previous_run.get("referenceTime") == run
+            previous_steps = dict(previous_run.get("processedSteps") or {}) if same_processing and same_run else {}
+            required_for_family = REQUIRED_TARGETS[COLLECTION_FAMILY[collection]]
+            previously_processed = {
+                valid for valid, step in previous_steps.items()
+                if step.get("complete") is True
+                and set(step.get("recognizedParameters") or []) >= required_for_family
+                and int(step.get("zonesTouched") or 0) > 0
+            }
+            result["diagnostics"]["assetsRetriedIncomplete"] += max(0, len(previous_steps) - len(previously_processed))
+            run_info = {"referenceTime": run, "parserVersion": PARSER_VERSION,
+                        "parameterMapVersion": PARAMETER_MAP_VERSION, "gridLookupVersion": GRID_LOOKUP_VERSION,
+                        "processingSignature": processing_signature,
+                        "assetsDiscovered": len(assets), "assetsProcessed": 0, "assetsReused": 0,
                         "assetsSkippedPreviouslyProcessed": 0, "processedValidTimes": sorted(previously_processed),
-                        "processedSteps": dict(previous_run.get("processedSteps") or {}) if same_parser else {},
-                        "recognizedParameters": []}
+                        "processedSteps": previous_steps, "recognizedParameters": []}
             result["runs"][collection] = run_info
             recognized: set[str] = set()
             for previous_step in (run_info.get("processedSteps") or {}).values():
@@ -866,15 +891,26 @@ def main() -> int:
                 recognized.update(found)
                 result["diagnostics"]["messagesSeen"] += messages_seen
                 result["diagnostics"]["zoneLookups"] += zone_lookups
-                required_for_family = set(TARGETS[COLLECTION_FAMILY[collection]])
-                step_recognized = sorted(set(found) & required_for_family)
-                if not interrupted and step_recognized:
+                required_for_family = REQUIRED_TARGETS[COLLECTION_FAMILY[collection]]
+                step_recognized = sorted(set(found) & set(TARGETS[COLLECTION_FAMILY[collection]]))
+                step_complete = set(step_recognized) >= required_for_family and len(touched) > 0
+                if not interrupted and step_complete:
                     run_info["assetsProcessed"] += 1
                     previously_processed.add(asset["valid"])
                     run_info["processedValidTimes"] = sorted(previously_processed, key=epoch)
-                    run_info["processedSteps"][asset["valid"]] = {"recognizedParameters": step_recognized, "complete": True, "parserVersion": PARSER_VERSION}
                 elif not interrupted:
-                    run_info["processedSteps"][asset["valid"]] = {"recognizedParameters": [], "complete": False, "parserVersion": PARSER_VERSION}
+                    previously_processed.discard(asset["valid"])
+                    run_info["processedValidTimes"] = sorted(previously_processed, key=epoch)
+                if not interrupted:
+                    run_info["processedSteps"][asset["valid"]] = {
+                        "recognizedParameters": step_recognized,
+                        "requiredParameters": sorted(required_for_family),
+                        "missingRequiredParameters": sorted(required_for_family - set(step_recognized)),
+                        "zonesTouched": len(touched),
+                        "complete": step_complete,
+                        "parserVersion": PARSER_VERSION,
+                        "processingSignature": processing_signature
+                    }
                 fresh_zone_ids.update(touched)
                 write_checkpoint(result, fresh_zone_ids, budget, "partial")
                 progress(f"{collection}: checkpoint gemt; steps={run_info['assetsProcessed']}, felter={sorted(recognized)}, resterende={runtime_remaining():.0f}s")
@@ -883,7 +919,8 @@ def main() -> int:
                     break
             result["diagnostics"]["parametersByCollection"][collection] = sorted(recognized)
             run_info["recognizedParameters"] = sorted(recognized)
-            required = set(TARGETS[COLLECTION_FAMILY[collection]])
+            required = REQUIRED_TARGETS[COLLECTION_FAMILY[collection]]
+            made_progress = (run_info["assetsProcessed"] > 0 or int(result["diagnostics"].get("reusedAssets") or 0) > collection_start_reused or budget["bytes"] > collection_start_bytes)
             if recognized >= required and run_info["assetsProcessed"]:
                 state["lastSuccessfulAt"] = generated
                 state["referenceTime"] = run
@@ -899,6 +936,10 @@ def main() -> int:
                 result["diagnostics"]["collectionsPartial"].append(collection)
             else:
                 raise RuntimeError("GRIB downloaded but no required RavRadar parameters were recognized")
+            if made_progress:
+                productive_collections += 1
+            else:
+                result["diagnostics"]["zeroProgressCollections"].append(collection)
             if budget_stop:
                 result["diagnostics"]["errors"].append({"collection": collection, "message": budget_stop, "partialProgressPreserved": True})
         except Exception as exc:
@@ -920,7 +961,7 @@ def main() -> int:
     fresh_successes, fresh_partials = len(diag["collectionsSucceeded"]), len(diag["collectionsPartial"])
     if fresh_successes or fresh_partials:
         result["sourceUpdatedAt"] = generated
-    result["refreshStatus"] = "ok" if fresh_successes == len(selected) else ("partial" if fresh_successes or fresh_partials else "failed")
+    result["refreshStatus"] = "ok" if productive_collections >= COLLECTIONS_PER_RUN and fresh_successes else ("partial" if fresh_successes or fresh_partials or result["diagnostics"]["zeroProgressCollections"] else "failed")
 
     write_checkpoint(result, fresh_zone_ids, budget, result["refreshStatus"])
     summary = {**diag, "refreshStatus": result["refreshStatus"], "sourceUpdatedAt": result.get("sourceUpdatedAt"),

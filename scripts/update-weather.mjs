@@ -466,7 +466,8 @@ function bulkZoneToForecastRecord(feature, bulkCache, generatedAt, previousRecor
   const wind = rows.map(row => ({ step: row.time, 'wind-speed-10m': num(row['wind-speed-10m']), 'wind-dir-10m': num(row['wind-dir-10m']) }));
   const waves = rows.map(row => ({ step: row.time, 'significant-wave-height': num(row['significant-wave-height']), 'mean-wave-dir': num(row['mean-wave-dir']), 'dominant-wave-period': num(row['dominant-wave-period']) }));
   const ocean = rows.map(row => ({ step: row.time, 'sea-mean-deviation': num(row['sea-mean-deviation']), 'current-u': num(row['current-u']), 'current-v': num(row['current-v']), 'water-temperature': num(row['water-temperature']) }));
-  const built = buildDmiForecastHourly({ wind, waves, ocean, generatedAt, hours: DMI_FORECAST_HOURS });
+  const sourceCadenceMinutes = Number(bulkCache?.timeStrideHours ?? 3) * 60;
+  const built = buildDmiForecastHourly({ wind, waves, ocean, generatedAt, hours: DMI_FORECAST_HOURS, sourceCadenceMinutes });
   const marine = ocean.some(item => num(item['sea-mean-deviation']) !== null && num(item['current-u']) !== null && num(item['current-v']) !== null);
   const windAvailable = wind.some(item => num(item['wind-speed-10m']) !== null && num(item['wind-dir-10m']) !== null);
   const waveRequired = dmiCollections(feature.properties?.coastType).wave !== null;
@@ -493,7 +494,9 @@ function bulkZoneToForecastRecord(feature, bulkCache, generatedAt, previousRecor
         wind: windAvailable || oldCompleteness.wind === true,
         wave: waveAvailable || oldCompleteness.wave === true,
         acquisitionMethod: 'whole-GRIB nearest-valid-original-grid-point',
-        forecastCadenceMinutes: Number(bulkCache?.timeStrideHours ?? 3) * 60,
+        forecastCadenceMinutes: 60,
+        sourceCadenceMinutes,
+        temporalInterpolation: built.interpolation,
         spatialInterpolation: false,
         gridPoints: bulkZone.gridPoints ?? {},
         collections: bulkZone.collections ?? {}
@@ -1351,7 +1354,7 @@ function buildRuntimeDiagnostics(output, health) {
   return {
     schemaVersion: 1,
     generatedAt: output.generatedAt,
-    version: '4.0.13',
+    version: '4.0.14',
     health,
     componentCoverage,
     forecastCompleteness: (() => {

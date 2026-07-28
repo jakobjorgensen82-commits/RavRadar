@@ -57,6 +57,89 @@ function closest(items, targetMs, toleranceMs = Number.POSITIVE_INFINITY) {
   return selected && selected.distance <= toleranceMs ? selected.item : null;
 }
 
+function timeBracket(items, targetMs, { maxGapMs = 4 * 3600000, edgeToleranceMs = 95 * 60000 } = {}) {
+  const ordered = (items ?? [])
+    .map(item => ({ item, time: Date.parse(item?.step ?? item?.time) }))
+    .filter(entry => Number.isFinite(entry.time))
+    .sort((a, b) => a.time - b.time);
+  if (!ordered.length) return null;
+  const exact = ordered.find(entry => entry.time === targetMs);
+  if (exact) return { before: exact.item, after: exact.item, ratio: 0, mode: 'exact' };
+  let before = null;
+  let after = null;
+  for (const entry of ordered) {
+    if (entry.time < targetMs) before = entry;
+    else if (entry.time > targetMs) { after = entry; break; }
+  }
+  if (before && after && after.time - before.time <= maxGapMs) {
+    return { before: before.item, after: after.item, ratio: (targetMs - before.time) / (after.time - before.time), mode: 'interpolated' };
+  }
+  const edge = !before ? after : (!after ? before : null);
+  if (edge && Math.abs(edge.time - targetMs) <= edgeToleranceMs) {
+    return { before: edge.item, after: edge.item, ratio: 0, mode: 'nearest-edge' };
+  }
+  return null;
+}
+
+function interpolateScalar(bracket, key) {
+  if (!bracket) return null;
+  const a = finite(bracket.before?.[key]);
+  const b = finite(bracket.after?.[key]);
+  if (a === null && b === null) return null;
+  if (bracket.before === bracket.after) return a ?? b;
+  if (a === null || b === null) return null;
+  return a + (b - a) * bracket.ratio;
+}
+
+function directionToVector(speedValue, directionValue, { from = false } = {}) {
+  const speed = finite(speedValue);
+  const direction = finite(directionValue);
+  if (speed === null || direction === null) return null;
+  const toward = normalizeDegrees(direction + (from ? 180 : 0)) * Math.PI / 180;
+  return { u: speed * Math.sin(toward), v: speed * Math.cos(toward) };
+}
+
+function vectorToDirection(uValue, vValue, { from = false } = {}) {
+  const toward = uvToTowardDirectionDeg(uValue, vValue);
+  return toward === null ? null : normalizeDegrees(toward + (from ? 180 : 0));
+}
+
+
+function interpolateDirection(bracket, directionKey, { from = false } = {}) {
+  if (!bracket) return null;
+  const convert = item => {
+    const direction = finite(item?.[directionKey]);
+    if (direction === null) return null;
+    const toward = normalizeDegrees(direction + (from ? 180 : 0)) * Math.PI / 180;
+    return { u: Math.sin(toward), v: Math.cos(toward) };
+  };
+  const a = convert(bracket.before);
+  const b = convert(bracket.after);
+  if (!a && !b) return null;
+  if (bracket.before === bracket.after) {
+    const vector = a ?? b;
+    return vectorToDirection(vector.u, vector.v, { from });
+  }
+  if (!a || !b) return null;
+  const u = a.u + (b.u - a.u) * bracket.ratio;
+  const v = a.v + (b.v - a.v) * bracket.ratio;
+  return vectorToDirection(u, v, { from });
+}
+function interpolateSpeedDirection(bracket, speedKey, directionKey, { from = false } = {}) {
+  if (!bracket) return { speed: null, direction: null };
+  const a = directionToVector(bracket.before?.[speedKey], bracket.before?.[directionKey], { from });
+  const b = directionToVector(bracket.after?.[speedKey], bracket.after?.[directionKey], { from });
+  if (!a && !b) return { speed: null, direction: null };
+  if (bracket.before === bracket.after) {
+    const vector = a ?? b;
+    return { speed: Math.hypot(vector.u, vector.v), direction: vectorToDirection(vector.u, vector.v, { from }) };
+  }
+  if (!a || !b) return { speed: null, direction: null };
+  const u = a.u + (b.u - a.u) * bracket.ratio;
+  const v = a.v + (b.v - a.v) * bracket.ratio;
+  return { speed: Math.hypot(u, v), direction: vectorToDirection(u, v, { from }) };
+}
+
 export function normalizeForecastHourly(hourly = [], { limit = DMI_FORECAST_HOURS } = {}) {
   const byTime = new Map();
   for (const row of hourly ?? []) {
@@ -81,34 +164,38 @@ export function normalizeForecastHourly(hourly = [], { limit = DMI_FORECAST_HOUR
     .slice(0, Math.max(0, limit));
 }
 
-export function buildDmiForecastHourly({ wind = [], waves = [], ocean = [], observedWaterLevel = null, generatedAt, hours = DMI_FORECAST_HOURS } = {}) {
+export function buildDmiForecastHourly({ wind = [], waves = [], ocean = [], observedWaterLevel = null, generatedAt, hours = DMI_FORECAST_HOURS, sourceCadenceMinutes = 180 } = {}) {
   const start = Date.parse(generatedAt);
   if (!Number.isFinite(start)) throw new Error('generatedAt must be a valid date');
-  const toleranceMs = 90 * 60000;
-  const oceanCurrent = closest(ocean, start, toleranceMs);
-  const modelCurrentCm = finite(oceanCurrent?.['sea-mean-deviation']) === null ? null : finite(oceanCurrent['sea-mean-deviation']) * 100;
+  const cadenceMs = Math.max(60, Number(sourceCadenceMinutes) || 180) * 60000;
+  const bracketOptions = { maxGapMs: Math.max(4 * 3600000, cadenceMs + 15 * 60000), edgeToleranceMs: Math.min(95 * 60000, cadenceMs / 2 + 5 * 60000) };
+  const currentOceanBracket = timeBracket(ocean, start, bracketOptions);
+  const modelCurrentSea = interpolateScalar(currentOceanBracket, 'sea-mean-deviation');
+  const modelCurrentCm = modelCurrentSea === null ? null : modelCurrentSea * 100;
   const observationCm = finite(observedWaterLevel?.valueCm);
   const observationDifferenceCm = observationCm !== null && modelCurrentCm !== null ? observationCm - modelCurrentCm : null;
-  const waterLevelBiasCm = 0;
 
   const hourly = [];
   for (let index = 0; index < hours; index += 1) {
     const validMs = start + index * 3600000;
-    const w = closest(wind, validMs, toleranceMs);
-    const wa = closest(waves, validMs, toleranceMs);
-    const o = closest(ocean, validMs, toleranceMs);
-    const o3 = closest(ocean, validMs + 3 * 3600000, toleranceMs);
-    const u = finite(o?.['current-u']);
-    const v = finite(o?.['current-v']);
-    const sea = finite(o?.['sea-mean-deviation']);
-    const sea3 = finite(o3?.['sea-mean-deviation']);
+    const windBracket = timeBracket(wind, validMs, bracketOptions);
+    const waveBracket = timeBracket(waves, validMs, bracketOptions);
+    const oceanBracket = timeBracket(ocean, validMs, bracketOptions);
+    const ocean3Bracket = timeBracket(ocean, validMs + 3 * 3600000, bracketOptions);
+    const windVector = interpolateSpeedDirection(windBracket, 'wind-speed-10m', 'wind-dir-10m', { from: true });
+    const waveHeight = interpolateScalar(waveBracket, 'significant-wave-height');
+    const waveDirection = interpolateDirection(waveBracket, 'mean-wave-dir');
+    const u = interpolateScalar(oceanBracket, 'current-u');
+    const v = interpolateScalar(oceanBracket, 'current-v');
+    const sea = interpolateScalar(oceanBracket, 'sea-mean-deviation');
+    const sea3 = interpolateScalar(ocean3Bracket, 'sea-mean-deviation');
     hourly.push({
       time: new Date(validMs).toISOString(),
-      windSpeedMps: round(finite(w?.['wind-speed-10m']), 1),
-      windDirectionDeg: round(finite(w?.['wind-dir-10m']), 0),
-      waveHeightM: round(finite(wa?.['significant-wave-height']), 2),
-      waveDirectionDeg: round(finite(wa?.['mean-wave-dir']), 0),
-      wavePeriodS: round(finite(wa?.['dominant-wave-period']), 1),
+      windSpeedMps: round(windVector.speed, 1),
+      windDirectionDeg: round(windVector.direction, 0),
+      waveHeightM: round(waveHeight, 2),
+      waveDirectionDeg: round(waveDirection, 0),
+      wavePeriodS: round(interpolateScalar(waveBracket, 'dominant-wave-period'), 1),
       waterLevelCm: sea === null ? null : round(sea * 100, 0),
       waterLevelModelCm: sea === null ? null : round(sea * 100, 0),
       waterLevelBiasCm: 0,
@@ -116,12 +203,13 @@ export function buildDmiForecastHourly({ wind = [], waves = [], ocean = [], obse
       waterLevelTrendCm3h: sea === null || sea3 === null ? null : round((sea3 - sea) * 100, 0),
       currentSpeedMps: u === null || v === null ? null : round(Math.hypot(u, v), 2),
       currentDirectionDeg: round(uvToTowardDirectionDeg(u, v), 0),
-      waterTemperatureC: round(finite(o?.['water-temperature']), 1),
+      waterTemperatureC: round(interpolateScalar(oceanBracket, 'water-temperature'), 1),
+      temporalResolution: oceanBracket?.mode ?? windBracket?.mode ?? waveBracket?.mode ?? null,
       source: 'dmi-forecast',
       waterLevelSource: 'dmi-model-authoritative'
     });
   }
-  return { hourly, waterLevelBiasCm: 0, observationDifferenceCm: round(observationDifferenceCm, 0) };
+  return { hourly, waterLevelBiasCm: 0, observationDifferenceCm: round(observationDifferenceCm, 0), interpolation: { method: 'linear-between-model-steps', vectorInterpolation: ['wind', 'wave-direction', 'current'], sourceCadenceMinutes: Number(sourceCadenceMinutes) || 180 } };
 }
 
 export function createDmiForecastRecord({ zoneId, point, generatedAt, hourly, waterLevelInterpolation = null, model = null } = {}) {
