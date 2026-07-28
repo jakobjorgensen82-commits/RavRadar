@@ -365,6 +365,39 @@ function buildCoastCorridors(allFeatures) {
   return byZone;
 }
 
+const FJORD_INTERPOLATION_RULES = [
+  {
+    id: 'mariager-fjord-mouth',
+    zonePattern: /(øster hurup|als odde|helberskov|mariager fjord)/i,
+    stationPatterns: [/hals/i, /(als odde|helberskov|\bals\b)/i],
+    maxStationDistanceKm: 95
+  }
+];
+
+function interpolateAllowedFjord(feature, point, stations, levels) {
+  const zoneName = `${feature?.properties?.name ?? ''} ${feature?.properties?.id ?? ''}`;
+  const rule = FJORD_INTERPOLATION_RULES.find(item => item.zonePattern.test(zoneName));
+  if (!rule) return null;
+  const selected = [];
+  for (const pattern of rule.stationPatterns) {
+    const candidates = stations
+      .filter(station => pattern.test(String(station.name ?? '')) && levels.get(station.stationId))
+      .map(station => ({ ...station, level: levels.get(station.stationId), distanceKm: haversineKm(point, station.point) }))
+      .filter(item => item.distanceKm <= rule.maxStationDistanceKm)
+      .sort((a,b)=>a.distanceKm-b.distanceKm);
+    if (candidates[0]) selected.push(candidates[0]);
+  }
+  if (selected.length !== 2 || selected[0].stationId === selected[1].stationId) return null;
+  const inverse = selected.map(item => 1 / Math.max(0.25, item.distanceKm));
+  const total = inverse.reduce((a,b)=>a+b,0);
+  const weights = inverse.map(value=>value/total);
+  const valueCm = selected.reduce((sum,item,index)=>sum + Number(item.level.valueCm) * weights[index],0);
+  return {
+    valueCm: round(valueCm,0), method: 'fjord-bracket-2-stations', fjordRuleId: rule.id,
+    stations: selected.map((item,index)=>({ stationId:item.stationId, name:item.name, valueCm:round(Number(item.level.valueCm),0), distanceKm:round(item.distanceKm,1), side:index===0?'fjord-side-a':'fjord-side-b', weight:round(weights[index],3), observed:item.level.observed, observationAgeMinutes:Number.isFinite(Date.parse(item.level.observed))?round((Date.now()-Date.parse(item.level.observed))/60000,0):null, qcStatus:item.level.qcStatus??null }))
+  };
+}
+
 async function observedDmiWaterLevel(feature, coastCorridors) {
   try {
     const [rawStations, levels] = await Promise.all([dmiWaterStations(), dmiLatestSeaLevels()]);
@@ -382,6 +415,8 @@ async function observedDmiWaterLevel(feature, coastCorridors) {
         stations: [{ stationId: station.stationId, name: station.name, valueCm: round(Number(level.valueCm), 0), distanceKm: round(haversineKm(point, station.point), 1), side: 'inside-zone', weight: 1, observed: level.observed, observationAgeMinutes: Number.isFinite(Date.parse(level.observed)) ? round((Date.now() - Date.parse(level.observed)) / 60000, 0) : null, qcStatus: level.qcStatus ?? null }]
       };
     }
+    const fjord = interpolateAllowedFjord(feature, point, stations, levels);
+    if (fjord) return fjord;
     const coastPath = coastCorridors.get(feature.properties?.id);
     return interpolateWaterLevelAlongCoast(point, coastPath, stations, levels, { haversineKm, requireBracket: true });
   } catch (error) {
@@ -399,7 +434,7 @@ function applyObservedWaterLevel(zone, feature, observation, generatedAt) {
   zone.waterLevel = {
     ...(zone.waterLevel ?? {}),
     source: ['direct-zone-station','direct-coast-station'].includes(observation.method) ? 'dmi-observation-direct' : 'dmi-observation-coast-interpolation',
-    reference: ['direct-zone-station','direct-coast-station'].includes(observation.method) ? 'Aktuel DMI-målestation ved zonen' : 'Aktuel DMI-vandstand interpoleret mellem én station på hver side langs samme kystkorridor',
+    reference: ['direct-zone-station','direct-coast-station'].includes(observation.method) ? 'Aktuel DMI-målestation ved zonen' : observation.method === 'fjord-bracket-2-stations' ? 'Aktuel DMI-vandstand interpoleret mellem to stationer på hver sin side af samme fjord' : 'Aktuel DMI-vandstand interpoleret mellem én station på hver side langs samme kystkorridor',
     interpolation: observation,
     diagnostic: {
       ...(zone.waterLevel?.diagnostic ?? {}), zoneId: feature.properties?.id, zoneName: feature.properties?.name, generatedAt,
@@ -540,8 +575,13 @@ async function fromDmi(feature, generatedAt, { includeAtmosphere = false } = {})
     componentErrors.push({ component: 'ocean', collection: collections.ocean, message: error instanceof Error ? error.message : String(error) });
     throw error;
   }
-  if (!ocean.some(item => num(item['sea-mean-deviation']) !== null || (num(item['current-u']) !== null && num(item['current-v']) !== null))) {
-    throw new Error('DMI-havdata mangler vandstand og strøm');
+  const oceanHasWaterLevel = ocean.some(item => num(item['sea-mean-deviation']) !== null);
+  const oceanHasCurrent = ocean.some(item => num(item['current-u']) !== null && num(item['current-v']) !== null);
+  const oceanHasTemperature = ocean.some(item => num(item['water-temperature']) !== null);
+  if (!oceanHasWaterLevel && !oceanHasCurrent && !oceanHasTemperature) {
+    const error = new Error('DMI-havdata gav ingen brugbare marine komponenter');
+    error.code = 'DMI_NO_USABLE_COMPONENTS';
+    throw error;
   }
 
   let wind = [];
@@ -659,7 +699,7 @@ function componentHasValue(zone, component) {
     : component === 'current' ? ['currentSpeedMps','currentDirectionDeg']
     : component === 'waterLevel' ? ['waterLevelCm']
     : ['waterTemperatureC'];
-  return keys.some(key => zone?.current?.[key] !== null && zone?.current?.[key] !== undefined);
+  return keys.every(key => zone?.current?.[key] !== null && zone?.current?.[key] !== undefined);
 }
 
 function sourceForComponent(zone, component, generatedAt) {
@@ -693,7 +733,7 @@ function mergeDmiWithFallback(dmiResult, fallbackZone) {
       ? componentSource('dmi', dmiResult, component, dmiResult.generatedAt ?? new Date().toISOString(), { fallback: false })
       : componentSource(fallbackZone.provider ?? 'fallback', fallbackZone, component, fallbackZone.generatedAt ?? new Date().toISOString(), { fallback: true, fallbackReason: 'DMI-komponenten manglede og blev udfyldt fra fallback' });
   }
-  const dmiForecast = dmiResult.dmiForecast;
+  const dmiForecast = dmiResult.dmiForecast ?? dmiResult.forecast ?? null;
   if (dmiForecast) {
     dmiForecast.hourly = mergeHourlyPreferDmi(dmiForecast.hourly, fallbackZone.forecast?.hourly ?? []);
     dmiForecast.validFrom = dmiForecast.hourly[0]?.time ?? dmiForecast.validFrom;
@@ -1064,7 +1104,7 @@ function buildWeatherHealth(previousHealth, output, nowIso) {
   const userDataHealthy = total > 0 && actualComplete / total >= 0.95;
   const dmiCompletePercent = total ? round(complete / total * 100, 1) : 0;
   const dmiHealthy = total > 0 && dmiCompletePercent >= 80 && !dmiTransientFailure;
-  const degraded = userDataHealthy && !dmiHealthy;
+  const degraded = !dmiHealthy || !userDataHealthy;
   const failureSince = userDataHealthy ? null : (previousHealth.dmi?.consecutiveFailureSince ?? previousHealth.consecutiveFailureSince ?? nowIso);
   const failureMinutes = failureSince ? Math.max(0, Math.round((now - Date.parse(failureSince)) / 60000)) : 0;
   const recentAlerts = (previousHealth.alertHistory ?? []).filter(item => now - Date.parse(item.sentAt) < 24 * 3600000);
@@ -1072,7 +1112,11 @@ function buildWeatherHealth(previousHealth, output, nowIso) {
   const alertHistory = alertEligible ? [...recentAlerts, { sentAt: nowIso, reason: 'Brugerdata har været utilstrækkelige i længere tid', dmiZones: complete, totalZones: total }] : recentAlerts;
   return {
     generatedAt: nowIso,
-    status: userDataHealthy ? (degraded ? 'degraded' : 'ok') : (failureMinutes >= ALERT_FAILURE_MINUTES ? 'alarm' : 'warning'),
+    status: userDataHealthy ? (degraded ? 'degraded' : 'ok') : (actualComplete / Math.max(1,total) >= 0.9 ? 'degraded' : (failureMinutes >= ALERT_FAILURE_MINUTES ? 'alarm' : 'warning')),
+    serviceStatus: actualComplete / Math.max(1,total) >= 0.9 ? 'degraded' : 'alarm',
+    userForecastStatus: userDataHealthy ? 'ok' : (actualComplete / Math.max(1,total) >= 0.9 ? 'warning' : 'alarm'),
+    dmiCoverageStatus: dmiHealthy ? 'ok' : 'alarm',
+    apiConnectivityStatus: dmiHttp429Count > 0 ? 'rate-limited' : 'ok',
     userData: { healthy: userDataHealthy, completeZones: actualComplete, totalZones: total, coveragePercent: total ? round(actualComplete / total * 100, 1) : 0 },
     dmi: {
       healthy: dmiHealthy, zonesFromDmi: cache.availableZones ?? cache.zones ?? 0, totalZones: total,
@@ -1082,7 +1126,10 @@ function buildWeatherHealth(previousHealth, output, nowIso) {
         current: cache.currentZones ?? 0, waterLevel: cache.waterLevelZones ?? 0
       },
       consecutiveFailureSince: failureSince, failureMinutes,
-      lastSuccessfulAt: (cache.availableZones ?? 0) > 0 ? nowIso : (previousHealth.dmi?.lastSuccessfulAt ?? null)
+      lastSuccessfulAt: (cache.availableZones ?? 0) > 0 ? nowIso : (previousHealth.dmi?.lastSuccessfulAt ?? null),
+      lastApiSuccessAt: output.weatherEngine?.providers?.DMI?.lastSuccessAt ?? previousHealth.dmi?.lastApiSuccessAt ?? null,
+      lastObservationSuccessAt: output.weatherEngine?.providers?.['DMI oceanObs water level']?.lastSuccessAt ?? previousHealth.dmi?.lastObservationSuccessAt ?? null,
+      lastCoverageImprovementAt: complete > (previousHealth.dmi?.completeZones ?? 0) ? nowIso : (previousHealth.dmi?.lastCoverageImprovementAt ?? null)
     },
     alerts: { maxPer24Hours: ALERT_MAX_PER_24H, sentLast24Hours: alertHistory.length, shouldNotifyAdministrator: alertEligible, nextAllowedAfter: alertHistory.length >= ALERT_MAX_PER_24H ? alertHistory[0].sentAt : null },
     providers: output.weatherEngine?.providers ?? {},
@@ -1164,6 +1211,9 @@ const rotatedStable = [...stableFeatures.slice(cursorStart), ...stableFeatures.s
 const targetFeatures = rotatedStable.filter(feature => {
   const zoneId = feature.properties?.id;
   const record = nextDmiForecastStore.zones?.[zoneId];
+  const repairState = dmiPersistentRuntime.zoneRepairState?.[zoneId];
+  const nextEligibleAt = Date.parse(repairState?.nextEligibleAt ?? '');
+  if (Number.isFinite(nextEligibleAt) && nextEligibleAt > Date.now()) return false;
   return acquisitionPhase === 'dmi-marine-cache-warmup'
     ? !recordHasMarine(record, generatedAt)
     : !recordHasAtmosphere(record, generatedAt);
@@ -1213,7 +1263,16 @@ for (const feature of targetFeatures) {
       dmiAcquisitionStats.stoppedZoneIds.push(zoneId);
       break;
     }
-    // Cursoren flyttes ikke ved timeout/fejl. Zonen prøves igen i næste kørsel.
+    const terminalNoProgress = ['DMI_NO_USABLE_COMPONENTS'].includes(error?.code) || /mangler vandstand og strøm|ingen brugbare marine komponenter/i.test(message);
+    if (terminalNoProgress) {
+      const stableIndex = stableFeatures.findIndex(item => item.properties?.id === zoneId);
+      dmiPersistentRuntime.nextZoneCursor = stableFeatures.length ? (stableIndex + 1) % stableFeatures.length : 0;
+      dmiAcquisitionStats.cursorAdvancedForZoneIds.push(zoneId);
+      dmiPersistentRuntime.zoneRepairState ??= {};
+      dmiPersistentRuntime.zoneRepairState[zoneId] = { lastAttemptAt: new Date().toISOString(), result: 'no-new-marine-components', nextEligibleAt: new Date(Date.now() + 12 * 3600000).toISOString() };
+      continue;
+    }
+    // Netværksfejl uden 429 prøves igen senere.
     break;
   }
 }
@@ -1255,14 +1314,14 @@ function buildRuntimeDiagnostics(output, health) {
       const provider = zone.sources?.[component]?.provider ?? 'unknown';
       providers[provider] = (providers[provider] ?? 0) + 1;
       const keys = component === 'wind' ? ['windSpeedMps','windDirectionDeg'] : component === 'wave' ? ['waveHeightM'] : component === 'current' ? ['currentSpeedMps','currentDirectionDeg'] : component === 'waterLevel' ? ['waterLevelCm'] : ['waterTemperatureC'];
-      if (!keys.some(k => zone.current?.[k] !== null && zone.current?.[k] !== undefined)) missing += 1;
+      if (!keys.every(k => zone.current?.[k] !== null && zone.current?.[k] !== undefined)) missing += 1;
     }
-    return { totalZones: zones.length, providers, missing };
+    return [component, { totalZones: zones.length, providers, missing }];
   }));
   return {
     schemaVersion: 1,
     generatedAt: output.generatedAt,
-    version: '4.0.8',
+    version: '4.0.9',
     health,
     componentCoverage,
     forecastCompleteness: (() => {
@@ -1321,7 +1380,7 @@ function summarizeDmiComponentCoverage(records, generatedAt) {
 }
 
 output.weatherEngine = {
-  version: '2.15.0',
+  version: '2.16.0',
   concurrency: WEATHER_CONCURRENCY,
   dmiRequestConcurrency: DMI_REQUEST_CONCURRENCY,
   dmiRequestGapMs: REQUEST_GAP_MS,

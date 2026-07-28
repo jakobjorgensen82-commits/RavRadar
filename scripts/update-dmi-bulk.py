@@ -253,6 +253,24 @@ def list_latest_assets(collection: str) -> tuple[str | None, list[dict[str, Any]
     return run, rows[:MAX_ASSETS_PER_COLLECTION], stats
 
 
+
+
+def prune_raw_cache(max_bytes: int = 3 * 1024 * 1024 * 1024) -> None:
+    RAW_DIR.mkdir(parents=True, exist_ok=True)
+    files = [path for path in RAW_DIR.iterdir() if path.is_file()]
+    total = sum(path.stat().st_size for path in files)
+    if total <= max_bytes:
+        return
+    for path in sorted(files, key=lambda item: item.stat().st_mtime):
+        try:
+            size = path.stat().st_size
+            path.unlink(missing_ok=True)
+            total -= size
+        except OSError:
+            continue
+        if total <= max_bytes:
+            break
+
 def download_asset(href: str, expected_size: int | None, budget: dict[str, int]) -> tuple[pathlib.Path, bool]:
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     suffix = pathlib.Path(href.split("?", 1)[0]).suffix or ".grib"
@@ -497,8 +515,15 @@ def collection_schedule(previous: dict[str, Any]) -> list[str]:
     marine_incomplete = int(previous_diag.get("completeMarineZones") or 0) < int(previous_diag.get("zoneCount") or 1)
     def priority(collection: str) -> tuple[int, int, float, float, int]:
         entry = state.get(collection) or {}
+        blocked_parser_version = int(entry.get("blockedParserVersion") or 0)
+        parser_block_obsolete = entry.get("failureClass") == "parser-blocked" and blocked_parser_version != PARSER_VERSION
         retry_after = epoch(entry.get("nextEligibleAt"))
-        blocked = 1 if retry_after > now else 0
+        blocked = 0 if parser_block_obsolete else (1 if retry_after > now else 0)
+        if parser_block_obsolete:
+            entry["nextEligibleAt"] = None
+            entry["failureClass"] = None
+            entry["blockedParserVersion"] = None
+            entry["consecutiveFailures"] = 0
         family = COLLECTION_FAMILY[collection]
         # DMI er førstevalg. Mens havdata er ufuldstændige, går DKSS foran WAM
         # og HARMONIE, fordi strøm/vandstand er de mest kritiske RavRadar-data.
@@ -761,6 +786,9 @@ def main() -> int:
                         "recognizedParameters": []}
             result["runs"][collection] = run_info
             recognized: set[str] = set()
+            for previous_step in (run_info.get("processedSteps") or {}).values():
+                if previous_step.get("complete"):
+                    recognized.update(previous_step.get("recognizedParameters") or [])
             budget_stop = None
             for asset_number, asset in enumerate(assets, start=1):
                 if asset["valid"] in previously_processed:
