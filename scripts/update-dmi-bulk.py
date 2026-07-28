@@ -69,9 +69,9 @@ for _session in (STAC_SESSION, DOWNLOAD_SESSION):
 STAC_SESSION.headers.update({"Accept": "application/geo+json, application/json"})
 DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octet-stream, */*"})
 
-PARSER_VERSION = 7
+PARSER_VERSION = 8
 PARAMETER_MAP_VERSION = 2
-GRID_LOOKUP_VERSION = 2
+GRID_LOOKUP_VERSION = 3
 COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw", "wam_nsb", "harmonie_dini_sf"]
 COLLECTION_FAMILY = {
     "dkss_idw": "marine", "dkss_nsbs": "marine", "dkss_lf": "marine",
@@ -434,18 +434,45 @@ def nearest_candidates(gid: int, collection: str, zone: dict[str, Any]) -> list[
     return normalized
 
 
-def nearest_valid_cached(gid: int, collection: str, zone: dict[str, Any]) -> dict[str, float] | None:
+def nearest_valid_batch(gid: int, collection: str, zones: list[dict[str, Any]]) -> dict[str, dict[str, float]]:
+    """Resolve all zone values with one ecCodes array lookup per GRIB message.
+
+    Candidate indices remain tied to the current zone-registry hash through the
+    processing signature. Moving a land/data point therefore forces a rebuild,
+    while repeated forecast steps on the same grid reuse the nearest-index map.
+    """
     missing = safe_get(gid, "missingValue")
-    candidates = nearest_candidates(gid, collection, zone)
-    for candidate in candidates:
-        try:
-            value = codes_get_elements(gid, "values", [candidate["index"]])[0]
-        except Exception:
-            continue
-        number = valid_value(value, missing)
-        if number is not None:
-            return {"value": number, "latitude": candidate["latitude"], "longitude": candidate["longitude"], "distanceKm": candidate["distanceKm"]}
-    return None
+    candidates_by_zone: dict[str, list[dict[str, Any]]] = {}
+    unique_indices: list[int] = []
+    seen: set[int] = set()
+    for zone in zones:
+        candidates = nearest_candidates(gid, collection, zone)
+        candidates_by_zone[zone["id"]] = candidates
+        for candidate in candidates:
+            index = int(candidate["index"])
+            if index not in seen:
+                seen.add(index)
+                unique_indices.append(index)
+    if not unique_indices:
+        return {}
+    try:
+        raw_values = codes_get_elements(gid, "values", unique_indices)
+    except Exception:
+        return {}
+    values = {index: raw_values[pos] for pos, index in enumerate(unique_indices)}
+    resolved: dict[str, dict[str, float]] = {}
+    for zone_id, candidates in candidates_by_zone.items():
+        for candidate in candidates:
+            number = valid_value(values.get(int(candidate["index"])), missing)
+            if number is not None:
+                resolved[zone_id] = {
+                    "value": number,
+                    "latitude": candidate["latitude"],
+                    "longitude": candidate["longitude"],
+                    "distanceKm": candidate["distanceKm"],
+                }
+                break
+    return resolved
 
 
 def relevant_zones(collection: str, zones: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -497,12 +524,11 @@ def process_grib(path: pathlib.Path, collection: str, valid_time: str,
                 if not parameter:
                     continue
                 found.add(parameter)
-                for zone_number, zone in enumerate(wanted):
-                    if zone_number % 8 == 0 and should_stop_work():
-                        interrupted = True
-                        break
-                    nearest = nearest_valid_cached(gid, collection, zone)
-                    zone_lookups += 1
+                resolved = nearest_valid_batch(gid, collection, wanted)
+                diagnostics["batchedGridReads"] = int(diagnostics.get("batchedGridReads") or 0) + 1
+                zone_lookups += len(wanted)
+                for zone in wanted:
+                    nearest = resolved.get(zone["id"])
                     if not nearest:
                         continue
                     touched.add(zone["id"])
@@ -729,6 +755,27 @@ def write_github_outputs(status: str, fresh_collections: int = 0, partial_collec
                 handle.write(f"error={safe_error}\n")
 
 
+
+def write_step_summary(result: dict[str, Any], scheduled: list[str], diag: dict[str, Any], budget: dict[str, int], fresh_successes: int, fresh_partials: int) -> None:
+    summary_path = os.getenv("GITHUB_STEP_SUMMARY")
+    if not summary_path:
+        return
+    try:
+        with open(summary_path, "a", encoding="utf-8") as handle:
+            handle.write("## DMI bulk refresh\n\n")
+            handle.write(f"- Status: **{result.get('refreshStatus', 'unknown')}**\n")
+            handle.write(f"- Planlagte samlinger: **{', '.join(scheduled or [])}**\n")
+            handle.write(f"- Fuld/delvis succes: **{fresh_successes}/{fresh_partials}**\n")
+            handle.write(f"- Zoner i cache: **{len(result.get('zones') or {})}**\n")
+            handle.write(f"- Downloadet denne kørsel: **{budget.get('bytes', 0)} bytes**\n")
+            ocean = build_ocean_diagnostics(result)["summary"]
+            handle.write(f"- Ocean-dækning: vandstand **{ocean['waterLevelZones']}** zoner, strøm-U/V **{ocean['currentUZones']}/{ocean['currentVZones']}**, temperatur **{ocean['waterTemperatureZones']}**\n")
+            handle.write("- Diagnostik: `data/diagnostics/dmi-ocean-diagnostics.json` og `data/diagnostics/dmi-ocean-summary.txt`\n")
+            if diag.get("errors"):
+                handle.write("- Bemærkninger: " + "; ".join(f"{e.get('collection')}: {e.get('message')}" for e in diag["errors"]) + "\n")
+    except Exception as exc:
+        print(f"Kunne ikke skrive GitHub-stepoversigt: {exc}", file=sys.stderr, flush=True)
+
 def write_failure_summary(error: Exception) -> None:
     summary_path = os.getenv("GITHUB_STEP_SUMMARY")
     if summary_path:
@@ -816,7 +863,7 @@ def main() -> int:
               "collectionState": dict(previous.get("collectionState") or {}),
               "diagnostics": {"collectionsAttempted": [], "collectionsSucceeded": [], "collectionsPartial": [], "errors": [],
                               "downloadedBytes": 0, "reusedAssets": 0, "parametersByCollection": {}, "stacByCollection": {},
-                              "assetsSkippedPreviouslyProcessed": 0, "assetsRetriedIncomplete": 0, "zeroProgressCollections": [], "messagesSeen": 0, "zoneLookups": 0,
+                              "assetsSkippedPreviouslyProcessed": 0, "assetsRetriedIncomplete": 0, "zeroProgressCollections": [], "messagesSeen": 0, "zoneLookups": 0, "batchedGridReads": 0,
                               "runtimeBudgetSeconds": MAX_RUNTIME_SECONDS, "finalizeReserveSeconds": FINALIZE_RESERVE_SECONDS,
                               "persistentFieldInventory": dict(((previous.get("diagnostics") or {}).get("persistentFieldInventory") or {}))}}
     merge_previous(result, previous)
@@ -970,17 +1017,7 @@ def main() -> int:
         result["refreshStatus"], fresh_successes, fresh_partials,
         len(result["zones"]), budget["bytes"]
     )
-    if os.getenv("GITHUB_STEP_SUMMARY"):
-        with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as h:
-            h.write("## DMI bulk refresh\n\n")
-            h.write(f"- Status: **{result['refreshStatus']}**\n- Planlagte samlinger: **{', '.join(selected)}**\n")
-            h.write(f"- Fuld/delvis succes: **{fresh_successes}/{fresh_partials}**\n- Zoner i cache: **{len(result['zones'])}**\n")
-            h.write(f"- Downloadet denne kørsel: **{budget['bytes']} bytes**\n")
-            ocean = build_ocean_diagnostics(result)["summary"]
-            h.write(f"- Ocean-dækning: vandstand **{ocean['waterLevelZones']}** zoner, strøm-U/V **{ocean['currentUZones']}/{ocean['currentVZones']}**, temperatur **{ocean['waterTemperatureZones']}**\n")
-            h.write("- Diagnostik: `data/diagnostics/dmi-ocean-diagnostics.json` og `data/diagnostics/dmi-ocean-summary.txt`\n")
-            if diag["errors"]:
-                h.write("- Bemærkninger: " + "; ".join(f"{e['collection']}: {e['message']}" for e in diag["errors"]) + "\n")
+    write_step_summary(result, scheduled, diag, budget, fresh_successes, fresh_partials)
     print(json.dumps(summary, ensure_ascii=False))
     return 0 if fresh_successes or fresh_partials else 2
 
