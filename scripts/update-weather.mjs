@@ -23,6 +23,7 @@ const RUNTIME_DIAGNOSTICS_PATH = 'data/live/ravradar-runtime-diagnostics.json';
 const ALERT_MAX_PER_24H = Number(process.env.WEATHER_ALERT_MAX_PER_24H ?? 2);
 const ALERT_FAILURE_MINUTES = Number(process.env.WEATHER_ALERT_FAILURE_MINUTES ?? 60);
 const REQUEST_TIMEOUT_MS = Number(process.env.WEATHER_REQUEST_TIMEOUT_MS ?? 30000);
+const DMI_OCEAN_REQUEST_TIMEOUT_MS = Number(process.env.DMI_OCEAN_REQUEST_TIMEOUT_MS ?? 60000);
 const REQUEST_GAP_MS = Number(process.env.DMI_REQUEST_GAP_MS ?? 12000);
 const DMI_MAX_RETRIES = Number(process.env.DMI_MAX_RETRIES ?? 0);
 const DMI_LIVE_ZONE_BUDGET = Math.max(1, Number(process.env.DMI_LIVE_ZONE_BUDGET ?? 4));
@@ -98,7 +99,7 @@ function providerCircuitOpen(name) {
 let dmiWaterStationsPromise = null;
 let dmiLatestSeaLevelPromise = null;
 
-async function fetchJson(url, { provider, retries = 1, dmi = false } = {}) {
+async function fetchJson(url, { provider, retries = 1, dmi = false, timeoutMs = REQUEST_TIMEOUT_MS } = {}) {
   if (dmi && dmiRequestBudgetUsed >= DMI_REQUEST_BUDGET) {
     const error = new Error(`${provider}: DMI requestbudget opbrugt (${DMI_REQUEST_BUDGET} kald)`);
     error.code = 'DMI_REQUEST_BUDGET_EXHAUSTED';
@@ -134,7 +135,7 @@ async function fetchJson(url, { provider, retries = 1, dmi = false } = {}) {
     state.lastAttemptAt = new Date().toISOString();
     state.requests += 1;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetch(url, {
         headers: { Accept: 'application/json, application/geo+json', 'User-Agent': USER_AGENT },
@@ -156,7 +157,7 @@ async function fetchJson(url, { provider, retries = 1, dmi = false } = {}) {
       state.latencyTotalMs += Date.now() - startedAt;
       return data;
     } catch (error) {
-      lastError = error?.name === 'AbortError' ? new Error(`${provider}: timeout after ${REQUEST_TIMEOUT_MS} ms`) : error;
+      lastError = error?.name === 'AbortError' ? new Error(`${provider}: timeout after ${timeoutMs} ms`) : error;
       state.failures += 1;
       state.lastError = lastError instanceof Error ? lastError.message : String(lastError);
       state.latencyTotalMs += Date.now() - startedAt;
@@ -168,7 +169,8 @@ async function fetchJson(url, { provider, retries = 1, dmi = false } = {}) {
         const retryAfterSeconds = Number(error?.retryAfter);
         const cooldownMs = Number.isFinite(retryAfterSeconds) ? Math.max(60_000, retryAfterSeconds * 1000) : 15 * 60 * 1000;
         dmiRateLimitedUntil = Math.max(dmiRateLimitedUntil, Date.now() + cooldownMs);
-        dmiPersistentRuntime.rateLimitedUntil = new Date(dmiRateLimitedUntil).toISOString();
+        dmiPersistentRuntime.rateLimits ??= {};
+        dmiPersistentRuntime.rateLimits.forecastEdr = { ...(dmiPersistentRuntime.rateLimits.forecastEdr ?? {}), rateLimitedUntil: new Date(dmiRateLimitedUntil).toISOString(), last429At: new Date().toISOString() };
         state.circuitOpenedAt = Date.now();
         throw lastError;
       }
@@ -537,7 +539,7 @@ async function dmiPosition(collection, point, parameters) {
   const apiKey = process.env.DMI_API_KEY;
   if (apiKey) query.set('api-key', apiKey);
   const data = await fetchJson(`${DMI_ROOT}/${collection}/position?${query}`, {
-    provider: 'DMI', retries: DMI_MAX_RETRIES, dmi: true
+    provider: 'DMI', retries: DMI_MAX_RETRIES, dmi: true, timeoutMs: DMI_OCEAN_REQUEST_TIMEOUT_MS
   });
   return (data.features ?? []).map(feature => feature.properties ?? {})
     .filter(item => item.step).sort((a, b) => Date.parse(a.step) - Date.parse(b.step));
@@ -565,12 +567,23 @@ async function fromDmi(feature, generatedAt, { includeAtmosphere = false } = {})
   // gyldig marin DMI-cache. Det holder DMI-forbruget nede under opvarmningen.
   let ocean = [];
   try {
-    try {
-      ocean = await dmiPosition(collections.ocean, point, ['sea-mean-deviation', 'current-u', 'current-v', 'water-temperature']);
-    } catch (error) {
-      if (error?.status !== 400) throw error;
-      ocean = await dmiPosition(collections.ocean, point, ['sea-mean-deviation', 'current-u', 'current-v']);
+    const attempts = [
+      ['sea-mean-deviation', 'current-u', 'current-v', 'water-temperature'],
+      ['sea-mean-deviation', 'current-u', 'current-v'],
+      ['sea-mean-deviation']
+    ];
+    let lastOceanError = null;
+    for (const parameters of attempts) {
+      try {
+        ocean = await dmiPosition(collections.ocean, point, parameters);
+        if (ocean.length) break;
+      } catch (error) {
+        lastOceanError = error;
+        const retryableSplit = error?.status === 400 || /timeout after/i.test(error?.message ?? '');
+        if (!retryableSplit) throw error;
+      }
     }
+    if (!ocean.length && lastOceanError) throw lastOceanError;
   } catch (error) {
     componentErrors.push({ component: 'ocean', collection: collections.ocean, message: error instanceof Error ? error.message : String(error) });
     throw error;
@@ -649,7 +662,8 @@ function mergeHourlyPreferDmi(dmiHourly = [], fallbackHourly = []) {
   const merged = times.map(time => {
     const item = dmiByTime.get(time) ?? {};
     const fallback = fallbackByTime.get(time) ?? {};
-    return {
+    const waterLevelFromDmi = item.waterLevelCm != null;
+    const mergedRow = {
       ...fallback,
       ...item,
       time,
@@ -674,6 +688,14 @@ function mergeHourlyPreferDmi(dmiHourly = [], fallbackHourly = []) {
         waterTemperature: item.waterTemperatureC != null ? { provider: 'dmi', fallback: false } : { provider: fallback.source ?? 'open-meteo', fallback: true }
       }
     };
+    if (!waterLevelFromDmi) {
+      delete mergedRow.waterLevelSource;
+      delete mergedRow.waterLevelModelCm;
+      delete mergedRow.waterLevelBiasCm;
+      delete mergedRow.waterLevelObservationDifferenceCm;
+    }
+    if (Object.values(mergedRow.sources ?? {}).some(source => source?.provider !== 'dmi')) delete mergedRow.source;
+    return mergedRow;
   });
   return normalizeForecastHourly(merged);
 }
@@ -1283,8 +1305,9 @@ for (const feature of targetFeatures) {
 
 // DMI oceanObs hentes højst én gang pr. datatype og deles af alle zoner. Hvis ForecastEDR
 // allerede har udløst 429/cooldown, springes observationerne helt over i denne kørsel.
+const lastObservationSuccessMs = Date.parse(dmiPersistentRuntime.observations?.lastSuccessfulAt ?? '');
 const lastObservationMs = Date.parse(dmiPersistentRuntime.lastObservationAt ?? '');
-const observationDue = !Number.isFinite(lastObservationMs) || Date.now() - lastObservationMs >= DMI_OBSERVATION_INTERVAL_MINUTES * 60000;
+const observationDue = !Number.isFinite(lastObservationSuccessMs) || !Number.isFinite(lastObservationMs) || Date.now() - lastObservationMs >= DMI_OBSERVATION_INTERVAL_MINUTES * 60000;
 if (dmiRateLimitTriggered) {
   dmiObservationSkipReason = 'skipped-after-http-429';
 } else if (!observationDue) {
@@ -1327,7 +1350,7 @@ function buildRuntimeDiagnostics(output, health) {
   return {
     schemaVersion: 1,
     generatedAt: output.generatedAt,
-    version: '4.0.11',
+    version: '4.0.12',
     health,
     componentCoverage,
     forecastCompleteness: (() => {
@@ -1386,7 +1409,7 @@ function summarizeDmiComponentCoverage(records, generatedAt) {
 }
 
 output.weatherEngine = {
-  version: '2.17.1',
+  version: '2.18.0',
   concurrency: WEATHER_CONCURRENCY,
   dmiRequestConcurrency: DMI_REQUEST_CONCURRENCY,
   dmiRequestGapMs: REQUEST_GAP_MS,

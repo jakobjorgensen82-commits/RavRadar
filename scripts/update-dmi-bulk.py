@@ -69,7 +69,7 @@ for _session in (STAC_SESSION, DOWNLOAD_SESSION):
 STAC_SESSION.headers.update({"Accept": "application/geo+json, application/json"})
 DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octet-stream, */*"})
 
-PARSER_VERSION = 5
+PARSER_VERSION = 6
 COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw", "wam_nsb", "harmonie_dini_sf"]
 COLLECTION_FAMILY = {
     "dkss_idw": "marine", "dkss_nsbs": "marine", "dkss_lf": "marine",
@@ -88,6 +88,7 @@ HINT_ALIASES = {
     "sea-mean-deviation": ("sea mean deviation", "sea surface height", "sea_surface_height", "sea-surface-height", "water level", "water surface elevation", "sea level", "surface elevation", "zos", "zeta", "ssh", "smd"),
     "current-u": ("u component of current", "u-component of sea water velocity", "eastward sea water velocity", "eastward current", "sea water x velocity", "current-u", "uo", "ucurr", "uocn", "vozocrtx"),
     "current-v": ("v component of current", "v-component of sea water velocity", "northward sea water velocity", "northward current", "sea water y velocity", "current-v", "vo", "vcurr", "vocn", "vomecrty"),
+    "water-temperature": ("water temperature", "sea water temperature", "sea-water temperature", "sea surface temperature", "water-temperature", "temperature of sea water", "sst"),
     "wind-u-10m": ("10 metre u wind", "10 meter u wind", "10m u wind", "wind-u-10m", "10u", "u10", "u10m"),
     "wind-v-10m": ("10 metre v wind", "10 meter v wind", "10m v wind", "wind-v-10m", "10v", "v10", "v10m"),
     "significant-wave-height": ("significant wave height", "significant height of combined", "significant-wave-height", "swh", "htsgw"),
@@ -202,7 +203,7 @@ def alias_matches(text: str, alias: str) -> bool:
 def parameter_hint(item: dict[str, Any], family: str, asset_description: str = "") -> str | None:
     text = metadata_text(item, asset_description)
     for canonical in TARGETS[family]:
-        if any(alias_matches(text, alias) for alias in HINT_ALIASES[canonical]):
+        if any(alias_matches(text, alias) for alias in HINT_ALIASES.get(canonical, ())):
             return canonical
     return None
 
@@ -337,7 +338,7 @@ def classify_parameter(gid: int, collection: str) -> str | None:
             if canonical:
                 candidates.append(canonical)
     for canonical in TARGETS[family]:
-        if any(alias_matches(metadata, alias) or alias == short for alias in HINT_ALIASES[canonical]):
+        if any(alias_matches(metadata, alias) or alias == short for alias in HINT_ALIASES.get(canonical, ())):
             candidates.append(canonical)
     # Collection-aware handling of ambiguous GRIB short names.
     if family == "marine" and short in {"u", "uo", "ucurr", "uocn", "vozocrtx"}:
@@ -734,11 +735,29 @@ def main() -> int:
     progress(f"starter; arbejdsbudget={MAX_RUNTIME_SECONDS - FINALIZE_RESERVE_SECONDS}s, afslutningsreserve={FINALIZE_RESERVE_SECONDS}s")
     previous = load_previous()
     previous_generated = epoch(previous.get("generatedAt"))
-    if not FORCE_REFRESH and previous_generated and previous.get("zones") and time.time() - previous_generated < REFRESH_MINUTES * 60:
-        # A code/deployment run can reach this branch while the bulk cache is still
-        # fresh. Diagnostics must nevertheless be regenerated from the hydrated
-        # cache; otherwise checked-in placeholder files survive forever and the
-        # ocean pipeline cannot be audited.
+    previous_diag = previous.get("diagnostics") or {}
+    previous_ocean = build_ocean_diagnostics(previous)["summary"] if previous.get("zones") else {}
+    previous_marine_errors = [
+        error for error in (previous_diag.get("errors") or [])
+        if str(error.get("collection", "")).startswith("dkss_")
+    ]
+    previous_refresh_status = str(previous.get("refreshStatus") or "").lower()
+    marine_cache_healthy = (
+        int(previous_ocean.get("waterLevelZones") or 0) > 0
+        and int(previous_ocean.get("currentUZones") or 0) > 0
+        and int(previous_ocean.get("currentVZones") or 0) > 0
+        and not previous_marine_errors
+        and previous_refresh_status not in {"failed"}
+    )
+    if (
+        not FORCE_REFRESH
+        and previous_generated
+        and previous.get("zones")
+        and time.time() - previous_generated < REFRESH_MINUTES * 60
+        and marine_cache_healthy
+    ):
+        # Kun en både tidsmæssigt frisk og funktionelt sund marine-cache genbruges.
+        # En nylig parserfejl må aldrig blokere et nyt DKSS-forsøg efter en kodeopdatering.
         previous.setdefault("refreshStatus", "fresh-bulk-cache")
         previous.setdefault("diagnostics", {})
         write_ocean_diagnostics(previous)
@@ -886,11 +905,13 @@ def main() -> int:
             message = str(exc)
             failures = int(state.get("consecutiveFailures") or 0) + 1
             parser_blocked = "no required RavRadar parameters" in message
-            delay_minutes = 24 * 60 if parser_blocked else min(180, 10 * (2 ** min(failures - 1, 4)))
+            parser_exception = isinstance(exc, (KeyError, TypeError, IndexError, AttributeError))
+            failure_class = "parser-blocked" if parser_blocked else ("parser-exception" if parser_exception else "transient")
+            delay_minutes = 24 * 60 if parser_blocked else (15 if parser_exception else min(180, 10 * (2 ** min(failures - 1, 4))))
             state["consecutiveFailures"] = failures
             state["lastError"] = message
-            state["failureClass"] = "parser-blocked" if parser_blocked else "transient"
-            state["blockedParserVersion"] = PARSER_VERSION if parser_blocked else None
+            state["failureClass"] = failure_class
+            state["blockedParserVersion"] = PARSER_VERSION if (parser_blocked or parser_exception) else None
             state["nextEligibleAt"] = datetime.fromtimestamp(time.time() + delay_minutes * 60, timezone.utc).isoformat().replace("+00:00", "Z")
             result["diagnostics"]["errors"].append({"collection": collection, "message": message, "failureClass": state["failureClass"], "retryAfterMinutes": delay_minutes})
 
