@@ -34,7 +34,7 @@ assert.match(bulk, /dmi-ocean-diagnostics\.json/);
 assert.match(bulk, /dmi-ocean-summary\.txt/);
 assert.match(bulk, /build_ocean_diagnostics/);
 assert.match(bulk, /write_ocean_diagnostics/);
-assert.match(workflow, /RavRadar\/4\.0\.9/);
+assert.match(workflow, /RavRadar\/4\.0\.10/);
 assert.match(workflow, /DMI_BULK_FINALIZE_RESERVE_SECONDS/);
 assert.match(workflow, /timeout-minutes: 10/);
 assert.doesNotMatch(bulk, /unique = \{row\["valid"\]/);

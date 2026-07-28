@@ -69,14 +69,14 @@ for _session in (STAC_SESSION, DOWNLOAD_SESSION):
 STAC_SESSION.headers.update({"Accept": "application/geo+json, application/json"})
 DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octet-stream, */*"})
 
-PARSER_VERSION = 4
+PARSER_VERSION = 5
 COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw", "wam_nsb", "harmonie_dini_sf"]
 COLLECTION_FAMILY = {
     "dkss_idw": "marine", "dkss_nsbs": "marine", "dkss_lf": "marine",
     "harmonie_dini_sf": "wind", "wam_dw": "wave", "wam_nsb": "wave",
 }
 TARGETS = {
-    "marine": ["sea-mean-deviation", "current-u", "current-v"],
+    "marine": ["sea-mean-deviation", "current-u", "current-v", "water-temperature"],
     "wind": ["wind-u-10m", "wind-v-10m"],
     "wave": ["significant-wave-height", "mean-wave-dir", "dominant-wave-period"],
 }
@@ -307,7 +307,7 @@ def safe_get(gid: int, key: str) -> Any:
 
 def field_signature(gid: int) -> dict[str, Any]:
     return {key: safe_get(gid, key) for key in
-            ("shortName", "name", "cfName", "parameterName", "units", "typeOfLevel", "level", "paramId", "discipline", "parameterCategory", "parameterNumber", "numberOfPoints", "numberOfMissing", "minimum", "maximum")}
+            ("shortName", "name", "cfName", "parameterName", "units", "typeOfLevel", "level", "paramId", "discipline", "parameterCategory", "parameterNumber", "numberOfPoints", "numberOfMissing", "minimum", "maximum", "indicatorOfParameter", "table2Version", "centre", "subCentre", "generatingProcessIdentifier", "scaledValueOfFirstFixedSurface", "typeOfFirstFixedSurface")}
 
 
 def classify_parameter(gid: int, collection: str) -> str | None:
@@ -319,6 +319,23 @@ def classify_parameter(gid: int, collection: str) -> str | None:
     family = COLLECTION_FAMILY[collection]
 
     candidates: list[str] = []
+    # DMI DKSS uses local GRIB parameter ids. These numeric ids remain reliable
+    # even when ecCodes cannot resolve the local shortName/name table.
+    if family == "marine":
+        raw_ids = {sig.get("paramId"), sig.get("indicatorOfParameter")}
+        direct_ids = {
+            82: "sea-mean-deviation", 3082: "sea-mean-deviation", 300082: "sea-mean-deviation",
+            49: "current-u", 300049: "current-u",
+            50: "current-v", 300050: "current-v",
+            80: "water-temperature", 3080: "water-temperature", 300080: "water-temperature",
+        }
+        for raw_id in raw_ids:
+            try:
+                canonical = direct_ids.get(int(raw_id))
+            except (TypeError, ValueError):
+                canonical = None
+            if canonical:
+                candidates.append(canonical)
     for canonical in TARGETS[family]:
         if any(alias_matches(metadata, alias) or alias == short for alias in HINT_ALIASES[canonical]):
             candidates.append(canonical)
@@ -437,6 +454,14 @@ def process_grib(path: pathlib.Path, collection: str, valid_time: str,
                  zones: list[dict[str, Any]], output: dict[str, Any], diagnostics: dict[str, Any]) -> tuple[set[str], set[str], bool, int, int]:
     wanted, found, touched = relevant_zones(collection, zones), set(), set()
     inventory = diagnostics.setdefault("gribFieldInventory", {}).setdefault(collection, {})
+    persistent_inventory = diagnostics.setdefault("persistentFieldInventory", {}).setdefault(collection, {
+        "capturedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "parserVersion": PARSER_VERSION,
+        "fields": {},
+    })
+    persistent_inventory["capturedAt"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    persistent_inventory["parserVersion"] = PARSER_VERSION
+    persistent_fields = persistent_inventory.setdefault("fields", {})
     messages_seen = 0
     zone_lookups = 0
     interrupted = False
@@ -452,10 +477,14 @@ def process_grib(path: pathlib.Path, collection: str, valid_time: str,
             try:
                 sig = field_signature(gid)
                 sig_key = "|".join(str(sig.get(k) or "") for k in ("shortName", "name", "units", "typeOfLevel", "level", "paramId"))
-                if sig_key not in inventory and len(inventory) < 60:
+                if sig_key not in inventory and len(inventory) < 120:
                     inventory[sig_key] = {**sig, "messagesSeen": 1}
                 elif sig_key in inventory:
                     inventory[sig_key]["messagesSeen"] = int(inventory[sig_key].get("messagesSeen") or 0) + 1
+                if sig_key not in persistent_fields and len(persistent_fields) < 240:
+                    persistent_fields[sig_key] = {**sig, "messagesSeen": 1}
+                elif sig_key in persistent_fields:
+                    persistent_fields[sig_key]["messagesSeen"] = int(persistent_fields[sig_key].get("messagesSeen") or 0) + 1
                 parameter = classify_parameter(gid, collection)
                 if not parameter:
                     continue
@@ -512,7 +541,9 @@ def collection_schedule(previous: dict[str, Any]) -> list[str]:
     state = previous.get("collectionState") or {}
     now = time.time()
     previous_diag = previous.get("diagnostics") or {}
-    marine_incomplete = int(previous_diag.get("completeMarineZones") or 0) < int(previous_diag.get("zoneCount") or 1)
+    zone_count = int(previous_diag.get("zoneCount") or 1)
+    marine_incomplete = int(previous_diag.get("completeMarineZones") or 0) < zone_count
+    wind_complete = int(previous_diag.get("completeWindZones") or 0) >= zone_count
     def priority(collection: str) -> tuple[int, int, float, float, int]:
         entry = state.get(collection) or {}
         blocked_parser_version = int(entry.get("blockedParserVersion") or 0)
@@ -528,6 +559,8 @@ def collection_schedule(previous: dict[str, Any]) -> list[str]:
         # DMI er førstevalg. Mens havdata er ufuldstændige, går DKSS foran WAM
         # og HARMONIE, fordi strøm/vandstand er de mest kritiske RavRadar-data.
         family_rank = 0 if family == "marine" and marine_incomplete else (1 if family == "wave" else 2)
+        if collection == "harmonie_dini_sf" and wind_complete:
+            family_rank = 9
         return (blocked, family_rank, epoch(entry.get("lastAttemptAt")), epoch(entry.get("lastSuccessfulAt")), COLLECTION_ORDER.index(collection))
     eligible = sorted(COLLECTION_ORDER, key=priority)
     return eligible[:COLLECTIONS_PER_RUN]
@@ -758,7 +791,8 @@ def main() -> int:
               "diagnostics": {"collectionsAttempted": [], "collectionsSucceeded": [], "collectionsPartial": [], "errors": [],
                               "downloadedBytes": 0, "reusedAssets": 0, "parametersByCollection": {}, "stacByCollection": {},
                               "assetsSkippedPreviouslyProcessed": 0, "messagesSeen": 0, "zoneLookups": 0,
-                              "runtimeBudgetSeconds": MAX_RUNTIME_SECONDS, "finalizeReserveSeconds": FINALIZE_RESERVE_SECONDS}}
+                              "runtimeBudgetSeconds": MAX_RUNTIME_SECONDS, "finalizeReserveSeconds": FINALIZE_RESERVE_SECONDS,
+                              "persistentFieldInventory": dict(((previous.get("diagnostics") or {}).get("persistentFieldInventory") or {}))}}
     merge_previous(result, previous)
     budget = {"bytes": 0}
     selected = collection_schedule(previous)
