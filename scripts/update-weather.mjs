@@ -615,7 +615,14 @@ function mergeHourlyPreferDmi(dmiHourly = [], fallbackHourly = []) {
       waterLevelTrendCm3h: item.waterLevelTrendCm3h ?? fallback.waterLevelTrendCm3h ?? null,
       currentSpeedMps: item.currentSpeedMps ?? fallback.currentSpeedMps ?? null,
       currentDirectionDeg: item.currentDirectionDeg ?? fallback.currentDirectionDeg ?? null,
-      waterTemperatureC: item.waterTemperatureC ?? fallback.waterTemperatureC ?? null
+      waterTemperatureC: item.waterTemperatureC ?? fallback.waterTemperatureC ?? null,
+      sources: {
+        wind: (item.windSpeedMps != null && item.windDirectionDeg != null) ? { provider: 'dmi', fallback: false } : { provider: fallback.source ?? 'open-meteo', fallback: true },
+        wave: item.waveHeightM != null ? { provider: 'dmi', fallback: false } : { provider: fallback.source ?? 'open-meteo', fallback: true },
+        current: (item.currentSpeedMps != null && item.currentDirectionDeg != null) ? { provider: 'dmi', fallback: false } : { provider: fallback.source ?? 'open-meteo', fallback: true },
+        waterLevel: item.waterLevelCm != null ? { provider: 'dmi', fallback: false } : { provider: fallback.source ?? 'open-meteo', fallback: true },
+        waterTemperature: item.waterTemperatureC != null ? { provider: 'dmi', fallback: false } : { provider: fallback.source ?? 'open-meteo', fallback: true }
+      }
     };
   });
   return normalizeForecastHourly(merged);
@@ -636,7 +643,22 @@ function componentSource(provider, zone, component, generatedAt, extra = {}) {
   };
 }
 
+function componentHasValue(zone, component) {
+  const keys = component === 'wind' ? ['windSpeedMps','windDirectionDeg']
+    : component === 'wave' ? ['waveHeightM']
+    : component === 'current' ? ['currentSpeedMps','currentDirectionDeg']
+    : component === 'waterLevel' ? ['waterLevelCm']
+    : ['waterTemperatureC'];
+  return keys.some(key => zone?.current?.[key] !== null && zone?.current?.[key] !== undefined);
+}
+
 function sourceForComponent(zone, component, generatedAt) {
+  if (!componentHasValue(zone, component)) {
+    return componentSource('missing', zone, component, generatedAt, {
+      providerLabel: 'Mangler data', fallback: false,
+      fallbackReason: 'Ingen gyldig værdi fra DMI eller fallback'
+    });
+  }
   const p = zone?.provider ?? 'unknown';
   return componentSource(p, zone, component, generatedAt, {
     fallbackReason: zone?.fallback ? (zone?.attempts?.at(-1)?.message ?? 'Primær DMI-kilde var ikke komplet') : null
@@ -655,7 +677,7 @@ function mergeDmiWithFallback(dmiResult, fallbackZone) {
   const mergedCurrent = {};
   const sources = {};
   for (const [component, keys] of Object.entries(groups)) {
-    const dmiHas = keys.some(key => dmiResult.current?.[key] !== null && dmiResult.current?.[key] !== undefined);
+    const dmiHas = keys.every(key => dmiResult.current?.[key] !== null && dmiResult.current?.[key] !== undefined);
     for (const key of keys) mergedCurrent[key] = dmiResult.current?.[key] ?? fallbackZone.current?.[key] ?? null;
     sources[component] = dmiHas
       ? componentSource('dmi', dmiResult, component, dmiResult.generatedAt ?? new Date().toISOString(), { fallback: false })
@@ -699,7 +721,7 @@ function waterLevelDiagnostic({ feature, point, collections, currentForecast, st
     point,
     generatedAt,
     displayValueCm: num(currentForecast?.waterLevelCm),
-    displaySource: currentForecast?.waterLevelSource ?? (fromCache ? 'dmi-model-cache' : 'dmi-model-authoritative'),
+    displaySource: num(currentForecast?.waterLevelCm) !== null ? (currentForecast?.waterLevelSource ?? (fromCache ? 'dmi-model-cache' : 'dmi-model-authoritative')) : 'missing',
     modelValueCm: modelCm,
     modelStep: currentForecast?.time ?? null,
     modelCollection: collections?.ocean ?? forecastRecord?.model?.ocean ?? null,
@@ -909,7 +931,7 @@ function zoneFromDmiForecastCache(feature, record, generatedAt) {
       waterTemperatureC: selected.waterTemperatureC ?? null
     },
     waterLevel: {
-      source: selected.waterLevelSource ?? 'dmi-model-cache',
+      source: selected.waterLevelCm != null ? (selected.waterLevelSource ?? 'dmi-model-cache') : 'missing',
       reference: 'Cached DMI model forecast',
       interpolation: record.waterLevelInterpolation ?? null,
       modelBiasCm: selected.waterLevelBiasCm ?? null,
@@ -931,6 +953,21 @@ async function readPrevious() {
   catch { return { zones: {} }; }
 }
 
+async function fallbackForZone(feature, generatedAt, previous, attempts) {
+  for (const [name, provider] of [['open-meteo', fromOpenMeteo], ['met-norway', fromMetNorway]]) {
+    try {
+      const result = await provider(feature, generatedAt);
+      let forecast = previous?.zones?.[feature.properties?.id]?.forecast ?? null;
+      try { forecast = await forecastFromOpenMeteo(feature); }
+      catch (forecastError) { attempts.push({ provider: 'open-meteo-forecast', message: forecastError instanceof Error ? forecastError.message : String(forecastError) }); }
+      return { ...result, forecast, stale: false, fallback: true, attempts };
+    } catch (error) {
+      attempts.push({ provider: name, message: error instanceof Error ? error.message : String(error) });
+    }
+  }
+  return null;
+}
+
 async function resolveZone(feature, generatedAt, previous, dmiForecastStore, nextDmiForecastStore, { dmiOnly = false, allowLiveDmi = true } = {}) {
   const zoneId = feature.properties?.id ?? 'Ukendt zone';
   const attempts = [];
@@ -941,9 +978,15 @@ async function resolveZone(feature, generatedAt, previous, dmiForecastStore, nex
     ? zoneFromDmiForecastCache(feature, existingRecord, generatedAt)
     : null;
   if (healthyCachedDmi) {
-    const history = historyFor(previous, zoneId, healthyCachedDmi.current, generatedAt);
-    nextDmiForecastStore.zones[zoneId] = existingRecord;
-    return { ...healthyCachedDmi, ...history, stale: false, fallback: false, attempts, acquisition: { mode: 'cache-first', remainingHours: existingCoverage.remainingHours } };
+    nextDmiForecastStore.zones[zoneId] = { ...existingRecord, hourly: normalizeForecastHourly(existingRecord?.hourly ?? []) };
+    if (dmiOnly) {
+      const history = historyFor(previous, zoneId, healthyCachedDmi.current, generatedAt);
+      return { ...healthyCachedDmi, ...history, stale: false, fallback: false, attempts, acquisition: { mode: 'dmi-cache-only', remainingHours: existingCoverage.remainingHours } };
+    }
+    const fallback = await fallbackForZone(feature, generatedAt, previous, attempts);
+    const merged = fallback ? mergeDmiWithFallback(healthyCachedDmi, fallback) : healthyCachedDmi;
+    const history = historyFor(previous, zoneId, merged.current, generatedAt);
+    return { ...merged, ...history, stale: false, fallback: Boolean(fallback), attempts, acquisition: { mode: fallback ? 'cache-first-dmi-component-fill' : 'cache-first-dmi-only', remainingHours: existingCoverage.remainingHours } };
   }
 
   if (allowLiveDmi) try {
@@ -968,25 +1011,19 @@ async function resolveZone(feature, generatedAt, previous, dmiForecastStore, nex
 
   const cachedDmi = zoneFromDmiForecastCache(feature, dmiForecastStore?.zones?.[zoneId], generatedAt);
   if (cachedDmi) {
-    const history = historyFor(previous, zoneId, cachedDmi.current, generatedAt);
-    nextDmiForecastStore.zones[zoneId] = dmiForecastStore.zones[zoneId];
-    return { ...cachedDmi, ...history, stale: false, fallback: false, attempts };
+    nextDmiForecastStore.zones[zoneId] = { ...dmiForecastStore.zones[zoneId], hourly: normalizeForecastHourly(dmiForecastStore.zones[zoneId]?.hourly ?? []) };
+    const fallback = dmiOnly ? null : await fallbackForZone(feature, generatedAt, previous, attempts);
+    const merged = fallback ? mergeDmiWithFallback(cachedDmi, fallback) : cachedDmi;
+    const history = historyFor(previous, zoneId, merged.current, generatedAt);
+    return { ...merged, ...history, stale: false, fallback: Boolean(fallback), attempts };
   }
   attempts.push({ provider: 'dmi-cache', message: 'Ingen gyldig DMI-prognose i 120-timers cache' });
   if (dmiOnly) throw new Error(`${zoneId}: DMI live og DMI cache fejlede`);
 
-  for (const [name, provider] of [['open-meteo', fromOpenMeteo], ['met-norway', fromMetNorway]]) {
-    try {
-      const result = await provider(feature, generatedAt);
-      const history = historyFor(previous, zoneId, result.current, generatedAt);
-      let forecast = previous?.zones?.[zoneId]?.forecast ?? null;
-      try { forecast = await forecastFromOpenMeteo(feature); }
-      catch (forecastError) { attempts.push({ provider: 'open-meteo-forecast', message: forecastError instanceof Error ? forecastError.message : String(forecastError) }); }
-      return { ...result, ...history, forecast, stale: false, fallback: true, attempts };
-    } catch (error) {
-      attempts.push({ provider: name, message: error instanceof Error ? error.message : String(error) });
-      console.warn(`${zoneId}: ${name} fejlede: ${attempts.at(-1).message}`);
-    }
+  const fallback = await fallbackForZone(feature, generatedAt, previous, attempts);
+  if (fallback) {
+    const history = historyFor(previous, zoneId, fallback.current, generatedAt);
+    return { ...fallback, ...history };
   }
   const cached = previous?.zones?.[zoneId];
   if (cached?.current) return { ...cached, stale: true, fallback: true, provider: 'cache', providerLabel: 'Seneste cache', attempts };
@@ -1001,25 +1038,38 @@ async function readHealth() {
 
 function buildWeatherHealth(previousHealth, output, nowIso) {
   const now = Date.parse(nowIso);
-  const dmiCounts = countDmiBackedZones(output.zones);
-  const dmiCount = dmiCounts.total;
-  const liveDmiCount = dmiCounts.live;
-  const total = Object.keys(output.zones).length;
-  const dmiHealthy = total > 0 && dmiCount / total >= 0.8 && !dmiTransientFailure;
-  const failureSince = dmiHealthy ? null : (previousHealth.dmi?.consecutiveFailureSince ?? previousHealth.consecutiveFailureSince ?? nowIso);
+  const total = Object.keys(output.zones ?? {}).length;
+  const cache = output.weatherEngine?.dmiForecastCache ?? {};
+  const complete = cache.completeZones ?? 0;
+  const actualComplete = Object.values(output.zones ?? {}).filter(zone =>
+    componentHasValue(zone, 'wind') && componentHasValue(zone, 'wave') &&
+    componentHasValue(zone, 'current') && componentHasValue(zone, 'waterLevel')).length;
+  const userDataHealthy = total > 0 && actualComplete / total >= 0.95;
+  const dmiCompletePercent = total ? round(complete / total * 100, 1) : 0;
+  const dmiHealthy = total > 0 && dmiCompletePercent >= 80 && !dmiTransientFailure;
+  const degraded = userDataHealthy && !dmiHealthy;
+  const failureSince = userDataHealthy ? null : (previousHealth.dmi?.consecutiveFailureSince ?? previousHealth.consecutiveFailureSince ?? nowIso);
   const failureMinutes = failureSince ? Math.max(0, Math.round((now - Date.parse(failureSince)) / 60000)) : 0;
   const recentAlerts = (previousHealth.alertHistory ?? []).filter(item => now - Date.parse(item.sentAt) < 24 * 3600000);
-  const alertEligible = !dmiHealthy && failureMinutes >= ALERT_FAILURE_MINUTES && recentAlerts.length < ALERT_MAX_PER_24H;
-  const alertHistory = alertEligible
-    ? [...recentAlerts, { sentAt: nowIso, reason: 'DMI-data har været utilstrækkelige i længere tid', dmiZones: dmiCount, totalZones: total }]
-    : recentAlerts;
+  const alertEligible = !userDataHealthy && failureMinutes >= ALERT_FAILURE_MINUTES && recentAlerts.length < ALERT_MAX_PER_24H;
+  const alertHistory = alertEligible ? [...recentAlerts, { sentAt: nowIso, reason: 'Brugerdata har været utilstrækkelige i længere tid', dmiZones: complete, totalZones: total }] : recentAlerts;
   return {
     generatedAt: nowIso,
-    status: dmiHealthy ? 'ok' : (failureMinutes >= ALERT_FAILURE_MINUTES ? 'alarm' : 'warning'),
-    dmi: { healthy: dmiHealthy, zonesFromDmi: dmiCount, totalZones: total, coveragePercent: total ? round(dmiCount / total * 100, 1) : 0, consecutiveFailureSince: failureSince, failureMinutes, lastSuccessfulAt: liveDmiCount > 0 ? nowIso : (previousHealth.dmi?.lastSuccessfulAt ?? previousHealth.lastSuccessfulDmiAt ?? null) },
+    status: userDataHealthy ? (degraded ? 'degraded' : 'ok') : (failureMinutes >= ALERT_FAILURE_MINUTES ? 'alarm' : 'warning'),
+    userData: { healthy: userDataHealthy, completeZones: actualComplete, totalZones: total, coveragePercent: total ? round(actualComplete / total * 100, 1) : 0 },
+    dmi: {
+      healthy: dmiHealthy, zonesFromDmi: cache.availableZones ?? cache.zones ?? 0, totalZones: total,
+      coveragePercent: dmiCompletePercent, completeZones: complete,
+      componentCoverage: {
+        wind: cache.windZones ?? 0, wave: cache.waveZones ?? 0,
+        current: cache.currentZones ?? 0, waterLevel: cache.waterLevelZones ?? 0
+      },
+      consecutiveFailureSince: failureSince, failureMinutes,
+      lastSuccessfulAt: (cache.availableZones ?? 0) > 0 ? nowIso : (previousHealth.dmi?.lastSuccessfulAt ?? null)
+    },
     alerts: { maxPer24Hours: ALERT_MAX_PER_24H, sentLast24Hours: alertHistory.length, shouldNotifyAdministrator: alertEligible, nextAllowedAfter: alertHistory.length >= ALERT_MAX_PER_24H ? alertHistory[0].sentAt : null },
     providers: output.weatherEngine?.providers ?? {},
-    dmiForecastCache: output.weatherEngine?.dmiForecastCache ?? { zones: 0, minimumRemainingHours: 0, maximumRemainingHours: 0 },
+    dmiForecastCache: cache,
     alertHistory
   };
 }
@@ -1151,8 +1201,8 @@ for (const feature of targetFeatures) {
 // allerede har udløst 429/cooldown, springes observationerne helt over i denne kørsel.
 const lastObservationMs = Date.parse(dmiPersistentRuntime.lastObservationAt ?? '');
 const observationDue = !Number.isFinite(lastObservationMs) || Date.now() - lastObservationMs >= DMI_OBSERVATION_INTERVAL_MINUTES * 60000;
-if (dmiRateLimitTriggered || Date.now() < dmiRateLimitedUntil) {
-  dmiObservationSkipReason = dmiRateLimitTriggered ? 'skipped-after-http-429' : 'skipped-during-persisted-cooldown';
+if (dmiRateLimitTriggered) {
+  dmiObservationSkipReason = 'skipped-after-http-429';
 } else if (!observationDue) {
   dmiObservationSkipReason = 'skipped-until-hourly-observation-window';
 } else {
@@ -1190,7 +1240,7 @@ function buildRuntimeDiagnostics(output, health) {
   return {
     schemaVersion: 1,
     generatedAt: output.generatedAt,
-    version: '4.0.6',
+    version: '4.0.7',
     health,
     componentCoverage,
     freshness: {
@@ -1230,7 +1280,7 @@ function summarizeDmiComponentCoverage(records, generatedAt) {
 }
 
 output.weatherEngine = {
-  version: '2.13.0',
+  version: '2.14.0',
   concurrency: WEATHER_CONCURRENCY,
   dmiRequestConcurrency: DMI_REQUEST_CONCURRENCY,
   dmiRequestGapMs: REQUEST_GAP_MS,
@@ -1243,6 +1293,13 @@ output.weatherEngine = {
     averageLatencyMs: state.requests ? round(state.latencyTotalMs / state.requests, 0) : null
   }]))
 };
+
+for (const record of Object.values(nextDmiForecastStore.zones ?? {})) {
+  record.hourly = normalizeForecastHourly(record.hourly ?? []);
+}
+for (const zone of Object.values(output.zones ?? {})) {
+  if (zone.forecast?.hourly) zone.forecast.hourly = normalizeForecastHourly(zone.forecast.hourly);
+}
 
 nextDmiForecastStore.generatedAt = generatedAt;
 nextDmiForecastStore.runtime = { ...dmiPersistentRuntime, rateLimitedUntil: Date.now() < dmiRateLimitedUntil ? new Date(dmiRateLimitedUntil).toISOString() : null };

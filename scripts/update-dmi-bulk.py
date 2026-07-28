@@ -69,7 +69,8 @@ for _session in (STAC_SESSION, DOWNLOAD_SESSION):
 STAC_SESSION.headers.update({"Accept": "application/geo+json, application/json"})
 DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octet-stream, */*"})
 
-COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "harmonie_dini_sf", "wam_dw", "wam_nsb"]
+PARSER_VERSION = 3
+COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw", "wam_nsb", "harmonie_dini_sf"]
 COLLECTION_FAMILY = {
     "dkss_idw": "marine", "dkss_nsbs": "marine", "dkss_lf": "marine",
     "harmonie_dini_sf": "wind", "wam_dw": "wave", "wam_nsb": "wave",
@@ -486,12 +487,17 @@ def merge_previous(current: dict[str, Any], previous: dict[str, Any]) -> None:
 def collection_schedule(previous: dict[str, Any]) -> list[str]:
     state = previous.get("collectionState") or {}
     now = time.time()
-    def priority(collection: str) -> tuple[float, float, int, int]:
+    previous_diag = previous.get("diagnostics") or {}
+    marine_incomplete = int(previous_diag.get("completeMarineZones") or 0) < int(previous_diag.get("zoneCount") or 1)
+    def priority(collection: str) -> tuple[int, int, float, float, int]:
         entry = state.get(collection) or {}
         retry_after = epoch(entry.get("nextEligibleAt"))
         blocked = 1 if retry_after > now else 0
-        # Rotate by last attempt even after failure; successful freshness is secondary.
-        return (blocked, epoch(entry.get("lastAttemptAt")), epoch(entry.get("lastSuccessfulAt")), COLLECTION_ORDER.index(collection))
+        family = COLLECTION_FAMILY[collection]
+        # DMI er førstevalg. Mens havdata er ufuldstændige, går DKSS foran WAM
+        # og HARMONIE, fordi strøm/vandstand er de mest kritiske RavRadar-data.
+        family_rank = 0 if family == "marine" and marine_incomplete else (1 if family == "wave" else 2)
+        return (blocked, family_rank, epoch(entry.get("lastAttemptAt")), epoch(entry.get("lastSuccessfulAt")), COLLECTION_ORDER.index(collection))
     eligible = sorted(COLLECTION_ORDER, key=priority)
     return eligible[:COLLECTIONS_PER_RUN]
 
@@ -741,9 +747,11 @@ def main() -> int:
             if not assets:
                 raise RuntimeError("no forecast-step GRIB assets found in latest STAC run")
             previous_run = (previous.get("runs") or {}).get(collection) or {}
-            previously_processed = set(previous_run.get("processedValidTimes") or []) if previous_run.get("referenceTime") == run else set()
-            run_info = {"referenceTime": run, "assetsDiscovered": len(assets), "assetsProcessed": 0, "assetsReused": 0,
+            same_parser = int(previous_run.get("parserVersion") or 0) == PARSER_VERSION
+            previously_processed = set(previous_run.get("processedValidTimes") or []) if previous_run.get("referenceTime") == run and same_parser else set()
+            run_info = {"referenceTime": run, "parserVersion": PARSER_VERSION, "assetsDiscovered": len(assets), "assetsProcessed": 0, "assetsReused": 0,
                         "assetsSkippedPreviouslyProcessed": 0, "processedValidTimes": sorted(previously_processed),
+                        "processedSteps": dict(previous_run.get("processedSteps") or {}) if same_parser else {},
                         "recognizedParameters": []}
             result["runs"][collection] = run_info
             recognized: set[str] = set()
@@ -771,10 +779,15 @@ def main() -> int:
                 recognized.update(found)
                 result["diagnostics"]["messagesSeen"] += messages_seen
                 result["diagnostics"]["zoneLookups"] += zone_lookups
-                if not interrupted:
+                required_for_family = set(TARGETS[COLLECTION_FAMILY[collection]])
+                step_recognized = sorted(set(found) & required_for_family)
+                if not interrupted and step_recognized:
                     run_info["assetsProcessed"] += 1
                     previously_processed.add(asset["valid"])
                     run_info["processedValidTimes"] = sorted(previously_processed, key=epoch)
+                    run_info["processedSteps"][asset["valid"]] = {"recognizedParameters": step_recognized, "complete": True, "parserVersion": PARSER_VERSION}
+                elif not interrupted:
+                    run_info["processedSteps"][asset["valid"]] = {"recognizedParameters": [], "complete": False, "parserVersion": PARSER_VERSION}
                 fresh_zone_ids.update(touched)
                 write_checkpoint(result, fresh_zone_ids, budget, "partial")
                 progress(f"{collection}: checkpoint gemt; steps={run_info['assetsProcessed']}, felter={sorted(recognized)}, resterende={runtime_remaining():.0f}s")

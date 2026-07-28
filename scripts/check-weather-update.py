@@ -21,6 +21,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 BULK_PATH = ROOT / "data/live/dmi-bulk-cache.json"
 CONDITIONS_PATH = ROOT / "data/live/conditions.json"
 OCEAN_DIAGNOSTICS_PATH = ROOT / "data/diagnostics/dmi-ocean-diagnostics.json"
+RUNTIME_PATH = ROOT / "data/live/ravradar-runtime-diagnostics.json"
 STAC_ROOT = os.getenv("DMI_STAC_ROOT", "https://opendataapi.dmi.dk/v1/forecastdata")
 MAX_STALE_MINUTES = max(10, int(os.getenv("RAVRADAR_MAX_STALE_MINUTES", "30")))
 TIMEOUT = max(5, int(os.getenv("RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS", "20")))
@@ -95,6 +96,7 @@ def main() -> int:
     conditions = read_json(CONDITIONS_PATH)
     bulk = read_json(BULK_PATH)
     ocean_diagnostics = read_json(OCEAN_DIAGNOSTICS_PATH)
+    runtime = read_json(RUNTIME_PATH)
     generated = epoch(conditions.get("generatedAt"))
     age_minutes = (time.time() - generated) / 60 if generated else float("inf")
     previous_runs = {
@@ -122,6 +124,25 @@ def main() -> int:
     diagnostics_status = str(ocean_diagnostics.get("refreshStatus") or "")
     if not diagnostics_generated or diagnostics_status.startswith("waiting-for-first"):
         reasons.append("missing-ocean-diagnostics")
+
+    acquisition = runtime.get("acquisition") or {}
+    bulk_runtime = (acquisition.get("bulkModelDownloads") or {})
+    bulk_diag = bulk_runtime.get("diagnostics") or {}
+    data_quality = runtime.get("dataQuality") or {}
+    forecast_quality = data_quality.get("forecast") or {}
+    complete_dmi = int(forecast_quality.get("completeDmiZones") or 0)
+    total_zones = int(((runtime.get("health") or {}).get("dmi") or {}).get("totalZones") or 0)
+    missing_or_expiring = int(acquisition.get("prioritizedMissingOrExpiringZones") or 0)
+    refresh_status = str(bulk_runtime.get("refreshStatus") or bulk.get("refreshStatus") or "")
+    duplicate_zones = int((runtime.get("duplicateTimes") or {}).get("zones") or 0)
+    if total_zones and complete_dmi < total_zones:
+        reasons.append("dmi-cache-incomplete")
+    if missing_or_expiring > 0:
+        reasons.append("marine-warmup-pending")
+    if refresh_status in {"partial", "failed"}:
+        reasons.append(f"bulk-{refresh_status}")
+    if duplicate_zones > 0:
+        reasons.append("duplicate-repair-pending")
 
     # A failed model probe must never destroy working state. The stale fallback
     # guarantees a refresh no later than MAX_STALE_MINUTES.

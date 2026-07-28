@@ -20,6 +20,7 @@ JSON_FILES = (
     "data/live/dmi-bulk-cache.json",
     "data/live/conditions.json",
     "data/live/weather-health.json",
+    "data/live/ravradar-runtime-diagnostics.json",
     "data/diagnostics/dmi-ocean-diagnostics.json",
 )
 TEXT_FILES = (

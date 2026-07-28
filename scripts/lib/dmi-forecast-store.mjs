@@ -63,8 +63,18 @@ export function normalizeForecastHourly(hourly = [], { limit = DMI_FORECAST_HOUR
     const ms = Date.parse(row?.time);
     if (!Number.isFinite(ms)) continue;
     const time = new Date(ms).toISOString();
-    const previous = byTime.get(time) ?? {};
-    byTime.set(time, { ...previous, ...row, time });
+    const previous = byTime.get(time) ?? { time };
+    const merged = { ...previous, time };
+    for (const [key, value] of Object.entries(row ?? {})) {
+      if (key === 'time') continue;
+      // Samme tidspunkt kan komme fra flere DMI-collections. Bevar allerede
+      // gyldige værdier, men udfyld tomme komponenter fra den næste række.
+      if (merged[key] === null || merged[key] === undefined || merged[key] === '') merged[key] = value;
+      else if (value !== null && value !== undefined && value !== '' && key === 'sources') {
+        merged.sources = { ...(merged.sources ?? {}), ...value };
+      }
+    }
+    byTime.set(time, merged);
   }
   return [...byTime.values()]
     .sort((a, b) => Date.parse(a.time) - Date.parse(b.time))

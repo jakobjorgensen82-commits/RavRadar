@@ -49,7 +49,8 @@ const updater = await import('node:fs/promises').then(({ readFile }) => readFile
 for (const expected of ['stoppedByHttp429', 'attemptedZoneIds', 'successfulZoneIds', 'observationAcquisition', 'optimisticMinutesToFullCache']) {
   assert.ok(updater.includes(expected), `DMI-diagnostikken mangler ${expected}`);
 }
-assert.ok(updater.includes("dmiRateLimitTriggered ? 'skipped-after-http-429'"), 'oceanObs skal springes over efter HTTP 429');
+assert.ok(updater.includes("dmiObservationSkipReason = 'skipped-after-http-429'"), 'oceanObs skal springes over efter HTTP 429 i den aktuelle kørsel');
+assert.ok(!updater.includes("skipped-during-persisted-cooldown"), 'forecast-cooldown må ikke automatisk blokere oceanObs i en senere kørsel');
 
 console.log('DMI acquisition resilience bestået.');
 
