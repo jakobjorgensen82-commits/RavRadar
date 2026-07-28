@@ -42,7 +42,7 @@ assert.match(updater, /DMI_OCEAN_REQUEST_TIMEOUT_MS/);
 assert.match(updater, /lastObservationSuccessMs/);
 assert.match(updater, /delete mergedRow\.waterLevelSource/);
 assert.match(bulk, /write_ocean_diagnostics/);
-assert.match(workflow, /RavRadar\/4\.0\.12/);
+assert.match(workflow, /RavRadar\/4\.0\.13/);
 assert.match(workflow, /DMI_BULK_FINALIZE_RESERVE_SECONDS/);
 assert.match(workflow, /timeout-minutes: 10/);
 assert.doesNotMatch(bulk, /unique = \{row\["valid"\]/);

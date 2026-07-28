@@ -73,3 +73,23 @@ assert.ok(Object.hasOwn(interpolation.stations[0], 'observationAgeMinutes'), 'Di
 assert.ok(Math.abs(interpolation.stations.reduce((sum, station) => sum + station.weight, 0) - 1) < 0.01);
 
 console.log('DMI 120-timers Forecast Store og Water Level Engine bestået.');
+
+// 4.0.13 regression: STAC bulk forecasts are intentionally sampled every
+// three hours. A current timestamp can therefore be slightly more than 90
+// minutes from the nearest model step because workflow execution adds seconds
+// and minutes. The record cadence must control the default selection tolerance.
+{
+  const record = createDmiForecastRecord({
+    zoneId: 'cadence-test',
+    point: [10, 56],
+    generatedAt: '2026-07-28T12:00:00.000Z',
+    hourly: [
+      { time: '2026-07-28T12:00:00.000Z', currentSpeedMps: 0.2 },
+      { time: '2026-07-28T18:00:00.000Z', currentSpeedMps: 0.3 }
+    ],
+    model: { completeness: { forecastCadenceMinutes: 180 } }
+  });
+  const selected = selectDmiForecastAt(record, '2026-07-28T15:00:30.000Z');
+  assert.equal(selected?.time, '2026-07-28T18:00:00.000Z');
+  assert.equal(selectDmiForecastAt(record, '2026-07-28T15:00:30.000Z', { toleranceMinutes: 90 }), null);
+}

@@ -142,15 +142,19 @@ export function createDmiForecastRecord({ zoneId, point, generatedAt, hourly, wa
   };
 }
 
-export function selectDmiForecastAt(record, at = new Date().toISOString(), { toleranceMinutes = 90 } = {}) {
+export function selectDmiForecastAt(record, at = new Date().toISOString(), { toleranceMinutes = null } = {}) {
+  const cadenceMinutes = Number(record?.model?.completeness?.forecastCadenceMinutes ?? record?.model?.forecastCadenceMinutes ?? 60);
+  const resolvedToleranceMinutes = toleranceMinutes !== null && toleranceMinutes !== undefined && Number.isFinite(Number(toleranceMinutes))
+    ? Number(toleranceMinutes)
+    : Math.max(90, Math.min(190, Math.ceil(cadenceMinutes) + 5));
   if (!record?.hourly?.length) return null;
   const target = Date.parse(at);
-  if (!Number.isFinite(target) || target < Date.parse(record.validFrom) - toleranceMinutes * 60000 || target > Date.parse(record.validUntil) + toleranceMinutes * 60000) return null;
+  if (!Number.isFinite(target) || target < Date.parse(record.validFrom) - resolvedToleranceMinutes * 60000 || target > Date.parse(record.validUntil) + resolvedToleranceMinutes * 60000) return null;
   const selected = record.hourly.reduce((best, item) => {
     const distance = Math.abs(Date.parse(item.time) - target);
     return !best || distance < best.distance ? { item, distance } : best;
   }, null);
-  if (!selected || selected.distance > toleranceMinutes * 60000) return null;
+  if (!selected || selected.distance > resolvedToleranceMinutes * 60000) return null;
   return { ...selected.item, cacheAgeHours: round((target - Date.parse(record.generatedAt)) / 3600000, 1) };
 }
 

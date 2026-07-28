@@ -493,6 +493,7 @@ function bulkZoneToForecastRecord(feature, bulkCache, generatedAt, previousRecor
         wind: windAvailable || oldCompleteness.wind === true,
         wave: waveAvailable || oldCompleteness.wave === true,
         acquisitionMethod: 'whole-GRIB nearest-valid-original-grid-point',
+        forecastCadenceMinutes: Number(bulkCache?.timeStrideHours ?? 3) * 60,
         spatialInterpolation: false,
         gridPoints: bulkZone.gridPoints ?? {},
         collections: bulkZone.collections ?? {}
@@ -1350,7 +1351,7 @@ function buildRuntimeDiagnostics(output, health) {
   return {
     schemaVersion: 1,
     generatedAt: output.generatedAt,
-    version: '4.0.12',
+    version: '4.0.13',
     health,
     componentCoverage,
     forecastCompleteness: (() => {
