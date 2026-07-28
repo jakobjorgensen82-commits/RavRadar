@@ -281,6 +281,11 @@ function haversineKm(a, b) {
   return 6371 * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
 }
 
+
+async function readCachedWaterStations() {
+  try { const doc=JSON.parse(await fs.readFile(WATER_STATION_INVENTORY_PATH,'utf8')); return Array.isArray(doc.stations)?doc.stations:[]; } catch { return []; }
+}
+
 async function dmiWaterStations() {
   if (!dmiWaterStationsPromise) {
     dmiWaterStationsPromise = fetchAllFeatures(`${DMI_OCEAN_OBS_ROOT}/station/items`, { status: 'Active' }, {
@@ -293,9 +298,9 @@ async function dmiWaterStations() {
     })).filter(station => station.stationId && Array.isArray(station.point) && station.point.length === 2))
       .then(async stations => {
         await fs.mkdir('data/live', { recursive: true });
-        await fs.writeFile(WATER_STATION_INVENTORY_PATH, JSON.stringify({ schemaVersion: 1, generatedAt: new Date().toISOString(), stations: stations.map(({ stationId, name, point, properties }) => ({ stationId, name, point, properties: { country: properties?.country, owner: properties?.owner, status: properties?.status } })) }, null, 2));
+        await fs.writeFile(WATER_STATION_INVENTORY_PATH, JSON.stringify({ schemaVersion: 1, generatedAt: new Date().toISOString(), source: 'existing-dmi-oceanobs-station-registry-cache', stations: stations.map(({ stationId, name, point, properties }) => ({ stationId, name, point, properties: { country: properties?.country, owner: properties?.owner, status: properties?.status } })) }, null, 2));
         return stations;
-      });
+      }).catch(async error => { const cached=await readCachedWaterStations(); if(cached.length){ console.warn(`DMI stationsregister kunne ikke opdateres; bruger ${cached.length} cachede stationer`); return cached; } throw error; });
   }
   return dmiWaterStationsPromise;
 }
@@ -1228,6 +1233,10 @@ function buildWeatherHealth(previousHealth, output, nowIso) {
       lastObservationSuccessAt: output.weatherEngine?.providers?.['DMI oceanObs water level']?.lastSuccessAt ?? previousHealth.dmi?.lastObservationSuccessAt ?? null,
       lastCoverageImprovementAt: complete > (previousHealth.dmi?.completeZones ?? 0) ? nowIso : (previousHealth.dmi?.lastCoverageImprovementAt ?? null),
       pipeline: {
+        acquisition: { status: dmiTransientFailure ? 'degraded' : 'healthy' },
+        conversion: { status: conversionHealthy ? 'healthy' : 'degraded' },
+        horizon: { status: (cache.minimumRemainingHours ?? 0) >= 110 ? 'healthy' : 'critical', minimumRemainingHours: cache.minimumRemainingHours ?? null },
+        observations: { status: output.dataQuality?.observations?.currentRun?.attempted === false ? 'cached' : ((output.dataQuality?.observations?.stationsFetched ?? 0)>0 ? 'healthy' : 'degraded') },
         acquisitionHealthy: !dmiTransientFailure,
         conversionHealthy,
         bulkMarineCandidateZones: output.weatherEngine?.acquisition?.bulkModelDownloads?.bulkMarineCandidateZones ?? 0,
@@ -1432,11 +1441,11 @@ function buildRuntimeDiagnostics(output, health) {
   return {
     schemaVersion: 1,
     generatedAt: output.generatedAt,
-    version: '4.0.14',
+    version: '4.0.18',
     health,
     componentCoverage,
     forecastCompleteness: (() => {
-      const horizons = [24, 120];
+      const horizons = [6, 24, 48, 120];
       const componentKeys = { wind: ['windSpeedMps','windDirectionDeg'], wave: ['waveHeightM'], current: ['currentSpeedMps','currentDirectionDeg'], waterLevel: ['waterLevelCm'] };
       const rows = Object.fromEntries(horizons.map(hours => {
         let completeZones = 0, completeHours = 0, totalHours = 0;
@@ -1448,12 +1457,18 @@ function buildRuntimeDiagnostics(output, health) {
             const complete = Object.values(componentKeys).every(keys => keys.every(key => row[key] !== null && row[key] !== undefined));
             if (complete) completeHours += 1; else zoneComplete = false;
           }
-          if (zoneComplete && hourly.length >= Math.min(hours, 24)) completeZones += 1;
+          if (zoneComplete && hourly.length >= hours) completeZones += 1;
         }
         return [String(hours), { completeZones, totalZones: zones.length, completeHours, totalHours, completeHoursPercent: totalHours ? round(completeHours / totalHours * 100, 1) : 0 }];
       }));
       return rows;
     })(),
+    componentHorizonCoverage: Object.fromEntries(components.map(component => {
+      const keys = component === 'wind' ? ['windSpeedMps','windDirectionDeg'] : component === 'wave' ? ['waveHeightM'] : component === 'current' ? ['currentSpeedMps','currentDirectionDeg'] : component === 'waterLevel' ? ['waterLevelCm'] : ['waterTemperatureC'];
+      const horizons=[6,24,48,120]; const summary={};
+      for(const hours of horizons){let zonesComplete=0,validHours=0,totalHours=0;for(const [,zone] of zones){const hourly=normalizeForecastHourly(zone.forecast?.hourly??[]).slice(0,hours);const valid=hourly.filter(row=>keys.every(k=>row[k]!=null)).length;validHours+=valid;totalHours+=hours;if(hourly.length>=hours&&valid===hours)zonesComplete++;}summary[hours]={zonesComplete,totalZones:zones.length,validHours,totalHours,percent:totalHours?round(validHours/totalHours*100,1):0};}
+      return [component,summary];
+    })),
     freshness: {
       conditionsGeneratedAt: output.generatedAt,
       minimumRemainingHours: output.weatherEngine?.dmiForecastCache?.minimumRemainingHours ?? null,
@@ -1518,9 +1533,10 @@ delete nextDmiForecastStore.runtime.rateLimitedUntil;
 nextDmiForecastStore.coverage = summarizeAvailableCoverage(nextDmiForecastStore.zones, generatedAt, dmiForecastCoverage, round);
 nextDmiForecastStore.dataQuality = summarizeDmiComponentCoverage(nextDmiForecastStore.zones, generatedAt);
 output.weatherEngine.dmiForecastCache = { ...nextDmiForecastStore.coverage, ...nextDmiForecastStore.dataQuality };
+const stationRegistry = await dmiWaterStations().catch(() => readCachedWaterStations());
 const [qualityStations, qualityLevels] = dmiObservationSkipReason
-  ? [[], new Map()]
-  : await Promise.all([dmiWaterStations().catch(() => []), dmiLatestSeaLevels().catch(() => new Map())]);
+  ? [stationRegistry, new Map()]
+  : await Promise.all([Promise.resolve(stationRegistry), dmiLatestSeaLevels().catch(() => new Map())]);
 for (const zone of Object.values(output.zones)) enrichZoneSources(zone, generatedAt);
 output.dataQuality = buildDataQuality(output, { stationsFetched: qualityStations.length, stationsWithFreshLevel: qualityLevels.size });
 dmiPersistentRuntime.observations ??= {};

@@ -45,6 +45,12 @@ jobs:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           WEATHER_USER_AGENT: "RavRadar/4.0.14 (${{ github.server_url }}/${{ github.repository }})"
 
+      - name: Sync centrally saved admin configuration
+        run: python scripts/sync-admin-config.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
       - name: Decide whether weather needs updating
         id: preflight
         run: python scripts/check-weather-update.py
