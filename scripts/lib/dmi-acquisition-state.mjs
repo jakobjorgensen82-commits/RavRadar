@@ -10,6 +10,7 @@ export function createPersistentDmiStore(existingStore, activeZoneIds, horizonHo
     runtime: {
       nextZoneCursor: 0,
       rateLimitedUntil: null,
+      rateLimits: { forecastEdr: { rateLimitedUntil: null, successStreak: 0, last429At: null }, forecastStac: { rateLimitedUntil: null }, oceanObs: { rateLimitedUntil: null } },
       lastAttemptedZoneId: null,
       lastAttemptAt: null,
       lastSuccessfulZoneId: null,

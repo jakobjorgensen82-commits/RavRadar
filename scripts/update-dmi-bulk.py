@@ -60,7 +60,7 @@ GRID_INDEX_CACHE: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
 STAC_SESSION = requests.Session()
 DOWNLOAD_SESSION = requests.Session()
 _retry = Retry(total=4, connect=4, read=4, status=4, backoff_factor=1.5,
-               status_forcelist=(429, 500, 502, 503, 504), allowed_methods=frozenset({"GET"}),
+               status_forcelist=(500, 502, 503, 504), allowed_methods=frozenset({"GET"}),
                respect_retry_after_header=True)
 _adapter = HTTPAdapter(max_retries=_retry, pool_connections=4, pool_maxsize=4)
 for _session in (STAC_SESSION, DOWNLOAD_SESSION):
@@ -69,7 +69,7 @@ for _session in (STAC_SESSION, DOWNLOAD_SESSION):
 STAC_SESSION.headers.update({"Accept": "application/geo+json, application/json"})
 DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octet-stream, */*"})
 
-PARSER_VERSION = 3
+PARSER_VERSION = 4
 COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw", "wam_nsb", "harmonie_dini_sf"]
 COLLECTION_FAMILY = {
     "dkss_idw": "marine", "dkss_nsbs": "marine", "dkss_lf": "marine",
@@ -85,9 +85,9 @@ TARGETS = {
 # intentionally excluded here because they caused every valid time to collapse to
 # the water-temperature item in 3.2.1.
 HINT_ALIASES = {
-    "sea-mean-deviation": ("sea mean deviation", "sea_surface_height", "sea-surface-height", "water level", "sea level", "zos", "zeta"),
-    "current-u": ("u component of current", "eastward sea water velocity", "eastward current", "current-u", "uo", "ucurr", "uocn"),
-    "current-v": ("v component of current", "northward sea water velocity", "northward current", "current-v", "vo", "vcurr", "vocn"),
+    "sea-mean-deviation": ("sea mean deviation", "sea surface height", "sea_surface_height", "sea-surface-height", "water level", "water surface elevation", "sea level", "surface elevation", "zos", "zeta", "ssh", "smd"),
+    "current-u": ("u component of current", "u-component of sea water velocity", "eastward sea water velocity", "eastward current", "sea water x velocity", "current-u", "uo", "ucurr", "uocn", "vozocrtx"),
+    "current-v": ("v component of current", "v-component of sea water velocity", "northward sea water velocity", "northward current", "sea water y velocity", "current-v", "vo", "vcurr", "vocn", "vomecrty"),
     "wind-u-10m": ("10 metre u wind", "10 meter u wind", "10m u wind", "wind-u-10m", "10u", "u10", "u10m"),
     "wind-v-10m": ("10 metre v wind", "10 meter v wind", "10m v wind", "wind-v-10m", "10v", "v10", "v10m"),
     "significant-wave-height": ("significant wave height", "significant height of combined", "significant-wave-height", "swh", "htsgw"),
@@ -289,7 +289,7 @@ def safe_get(gid: int, key: str) -> Any:
 
 def field_signature(gid: int) -> dict[str, Any]:
     return {key: safe_get(gid, key) for key in
-            ("shortName", "name", "cfName", "parameterName", "units", "typeOfLevel", "level", "paramId", "discipline", "parameterCategory", "parameterNumber")}
+            ("shortName", "name", "cfName", "parameterName", "units", "typeOfLevel", "level", "paramId", "discipline", "parameterCategory", "parameterNumber", "numberOfPoints", "numberOfMissing", "minimum", "maximum")}
 
 
 def classify_parameter(gid: int, collection: str) -> str | None:
@@ -305,10 +305,16 @@ def classify_parameter(gid: int, collection: str) -> str | None:
         if any(alias_matches(metadata, alias) or alias == short for alias in HINT_ALIASES[canonical]):
             candidates.append(canonical)
     # Collection-aware handling of ambiguous GRIB short names.
-    if family == "marine" and short in {"u", "uo"}:
+    if family == "marine" and short in {"u", "uo", "ucurr", "uocn", "vozocrtx"}:
         candidates.append("current-u")
-    if family == "marine" and short in {"v", "vo"}:
+    if family == "marine" and short in {"v", "vo", "vcurr", "vocn", "vomecrty"}:
         candidates.append("current-v")
+    if family == "marine" and short in {"zos", "zeta", "ssh", "smd", "wlv", "sealev"}:
+        candidates.append("sea-mean-deviation")
+    if family == "marine" and sig.get("paramId") in {49, 50, 51, 131, 132}:
+        # DMI/ecCodes local tables can expose ocean fields with generic ids; metadata still decides ambiguity below.
+        if "eastward" in metadata or "u component" in metadata: candidates.append("current-u")
+        if "northward" in metadata or "v component" in metadata: candidates.append("current-v")
     if family == "wind" and short in {"u", "10u", "u10", "u10m"} and (level == 10 or "heightaboveground" in level_type or "10" in metadata):
         candidates.append("wind-u-10m")
     if family == "wind" and short in {"v", "10v", "v10", "v10m"} and (level == 10 or "heightaboveground" in level_type or "10" in metadata):
@@ -815,12 +821,16 @@ def main() -> int:
             if budget_stop:
                 result["diagnostics"]["errors"].append({"collection": collection, "message": budget_stop, "partialProgressPreserved": True})
         except Exception as exc:
+            message = str(exc)
             failures = int(state.get("consecutiveFailures") or 0) + 1
-            delay_minutes = min(180, 10 * (2 ** min(failures - 1, 4)))
+            parser_blocked = "no required RavRadar parameters" in message
+            delay_minutes = 24 * 60 if parser_blocked else min(180, 10 * (2 ** min(failures - 1, 4)))
             state["consecutiveFailures"] = failures
-            state["lastError"] = str(exc)
+            state["lastError"] = message
+            state["failureClass"] = "parser-blocked" if parser_blocked else "transient"
+            state["blockedParserVersion"] = PARSER_VERSION if parser_blocked else None
             state["nextEligibleAt"] = datetime.fromtimestamp(time.time() + delay_minutes * 60, timezone.utc).isoformat().replace("+00:00", "Z")
-            result["diagnostics"]["errors"].append({"collection": collection, "message": str(exc), "retryAfterMinutes": delay_minutes})
+            result["diagnostics"]["errors"].append({"collection": collection, "message": message, "failureClass": state["failureClass"], "retryAfterMinutes": delay_minutes})
 
     clean_and_summarize(result, fresh_zone_ids, budget)
     diag = result["diagnostics"]

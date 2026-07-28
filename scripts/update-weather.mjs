@@ -26,6 +26,8 @@ const REQUEST_TIMEOUT_MS = Number(process.env.WEATHER_REQUEST_TIMEOUT_MS ?? 3000
 const REQUEST_GAP_MS = Number(process.env.DMI_REQUEST_GAP_MS ?? 12000);
 const DMI_MAX_RETRIES = Number(process.env.DMI_MAX_RETRIES ?? 0);
 const DMI_LIVE_ZONE_BUDGET = Math.max(1, Number(process.env.DMI_LIVE_ZONE_BUDGET ?? 4));
+const DMI_RETRY_JITTER_MIN_MS = Math.max(0, Number(process.env.DMI_RETRY_JITTER_MIN_MS ?? 30000));
+const DMI_RETRY_JITTER_MAX_MS = Math.max(DMI_RETRY_JITTER_MIN_MS, Number(process.env.DMI_RETRY_JITTER_MAX_MS ?? 180000));
 const DMI_REQUEST_BUDGET = Math.max(1, Number(process.env.DMI_REQUEST_BUDGET ?? 6));
 const DMI_REQUEST_CONCURRENCY = Math.max(1, Number(process.env.DMI_REQUEST_CONCURRENCY ?? 1));
 const DMI_CACHE_REFRESH_BELOW_HOURS = Math.max(1, Number(process.env.DMI_CACHE_REFRESH_BELOW_HOURS ?? 24));
@@ -41,6 +43,14 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const num = value => value === null || value === undefined || value === '' ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
 const round = (value, digits = 2) => Number.isFinite(value) ? Number(value.toFixed(digits)) : null;
 const normalizeDegrees = value => ((value % 360) + 360) % 360;
+const randomJitterMs = () => DMI_RETRY_JITTER_MIN_MS + Math.floor(Math.random() * Math.max(1, DMI_RETRY_JITTER_MAX_MS - DMI_RETRY_JITTER_MIN_MS + 1));
+function parseRetryAfterMs(value) {
+  if (!value) return null;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
+  const when = Date.parse(value);
+  return Number.isFinite(when) ? Math.max(0, when - Date.now()) : null;
+}
 
 let nextDmiRequestAt = 0;
 let activeDmiRequests = 0;
@@ -684,13 +694,20 @@ function mergeDmiWithFallback(dmiResult, fallbackZone) {
       : componentSource(fallbackZone.provider ?? 'fallback', fallbackZone, component, fallbackZone.generatedAt ?? new Date().toISOString(), { fallback: true, fallbackReason: 'DMI-komponenten manglede og blev udfyldt fra fallback' });
   }
   const dmiForecast = dmiResult.dmiForecast;
-  if (dmiForecast) dmiForecast.hourly = mergeHourlyPreferDmi(dmiForecast.hourly, fallbackZone.forecast?.hourly ?? []);
+  if (dmiForecast) {
+    dmiForecast.hourly = mergeHourlyPreferDmi(dmiForecast.hourly, fallbackZone.forecast?.hourly ?? []);
+    dmiForecast.validFrom = dmiForecast.hourly[0]?.time ?? dmiForecast.validFrom;
+    dmiForecast.validUntil = dmiForecast.hourly.at(-1)?.time ?? dmiForecast.validUntil;
+    dmiForecast.horizonHours = dmiForecast.hourly.length;
+  }
+  const mergedForecast = dmiForecast ? { provider: 'mixed', providerLabel: 'DMI med komponentvis fallback', generatedAt: dmiForecast.generatedAt, validUntil: dmiForecast.validUntil, hourly: dmiForecast.hourly } : fallbackZone.forecast;
   return {
     ...fallbackZone,
     ...dmiResult,
     provider: 'mixed',
     providerLabel: 'Blandede datakilder',
     current: mergedCurrent,
+    forecast: mergedForecast,
     sources,
     modelSteps: {
       wind: dmiResult.modelSteps?.wind ?? fallbackZone.modelSteps?.wind ?? null,
@@ -1152,9 +1169,12 @@ const targetFeatures = rotatedStable.filter(feature => {
     : !recordHasAtmosphere(record, generatedAt);
 });
 
+const edrState = dmiPersistentRuntime.rateLimits?.forecastEdr ?? {};
+const edrSuccessStreak = Math.max(0, Number(edrState.successStreak) || 0);
+const adaptiveLiveBudget = edrSuccessStreak < 3 ? 1 : edrSuccessStreak < 6 ? Math.min(2, DMI_LIVE_ZONE_BUDGET) : DMI_LIVE_ZONE_BUDGET;
 let liveDmiAssigned = 0;
 for (const feature of targetFeatures) {
-  if (liveDmiAssigned >= DMI_LIVE_ZONE_BUDGET || dmiRequestBudgetUsed >= DMI_REQUEST_BUDGET) break;
+  if (liveDmiAssigned >= adaptiveLiveBudget || dmiRequestBudgetUsed >= DMI_REQUEST_BUDGET) break;
   if (dmiRateLimitTriggered || Date.now() < dmiRateLimitedUntil) break;
   const zoneId = feature.properties?.id ?? 'Ukendt zone';
   liveDmiAssigned += 1;
@@ -1181,6 +1201,8 @@ for (const feature of targetFeatures) {
     dmiPersistentRuntime.lastSuccessfulZoneId = zoneId;
     dmiPersistentRuntime.lastSuccessAt = new Date().toISOString();
     dmiAcquisitionStats.successfulZoneIds.push(zoneId);
+    dmiPersistentRuntime.rateLimits ??= {};
+    dmiPersistentRuntime.rateLimits.forecastEdr = { ...(dmiPersistentRuntime.rateLimits.forecastEdr ?? {}), rateLimitedUntil: null, successStreak: edrSuccessStreak + dmiAcquisitionStats.successfulZoneIds.length, lastSuccessAt: new Date().toISOString() };
     await writeDmiForecastStoreCheckpoint();
     console.log(`DMI succes: ${zoneId} (${acquisitionPhase})`);
   } catch (error) {
@@ -1240,9 +1262,28 @@ function buildRuntimeDiagnostics(output, health) {
   return {
     schemaVersion: 1,
     generatedAt: output.generatedAt,
-    version: '4.0.7',
+    version: '4.0.8',
     health,
     componentCoverage,
+    forecastCompleteness: (() => {
+      const horizons = [24, 120];
+      const componentKeys = { wind: ['windSpeedMps','windDirectionDeg'], wave: ['waveHeightM'], current: ['currentSpeedMps','currentDirectionDeg'], waterLevel: ['waterLevelCm'] };
+      const rows = Object.fromEntries(horizons.map(hours => {
+        let completeZones = 0, completeHours = 0, totalHours = 0;
+        for (const [, zone] of zones) {
+          const hourly = normalizeForecastHourly(zone.forecast?.hourly ?? []).slice(0, hours);
+          let zoneComplete = hourly.length > 0;
+          for (const row of hourly) {
+            totalHours += 1;
+            const complete = Object.values(componentKeys).every(keys => keys.every(key => row[key] !== null && row[key] !== undefined));
+            if (complete) completeHours += 1; else zoneComplete = false;
+          }
+          if (zoneComplete && hourly.length >= Math.min(hours, 24)) completeZones += 1;
+        }
+        return [String(hours), { completeZones, totalZones: zones.length, completeHours, totalHours, completeHoursPercent: totalHours ? round(completeHours / totalHours * 100, 1) : 0 }];
+      }));
+      return rows;
+    })(),
     freshness: {
       conditionsGeneratedAt: output.generatedAt,
       minimumRemainingHours: output.weatherEngine?.dmiForecastCache?.minimumRemainingHours ?? null,
@@ -1280,13 +1321,13 @@ function summarizeDmiComponentCoverage(records, generatedAt) {
 }
 
 output.weatherEngine = {
-  version: '2.14.0',
+  version: '2.15.0',
   concurrency: WEATHER_CONCURRENCY,
   dmiRequestConcurrency: DMI_REQUEST_CONCURRENCY,
   dmiRequestGapMs: REQUEST_GAP_MS,
   dmiRequestTimeoutMs: REQUEST_TIMEOUT_MS,
   providerPriority: output.providerPriority,
-  acquisition: (() => { const pending = targetFeatures.length; return { strategy: 'bulk-stac-grib-first-with-sequential-edr-repair', bulkModelDownloads: { ...dmiBulkMergeStats, cacheGeneratedAt: dmiBulkCache?.generatedAt ?? null, method: dmiBulkCache?.method ?? null, runs: dmiBulkCache?.runs ?? {}, diagnostics: dmiBulkCache?.diagnostics ?? null }, phase: acquisitionPhase, marineCacheCompleteAtStart, liveZoneBudget: DMI_LIVE_ZONE_BUDGET, liveZonesAssigned: liveDmiAssigned, assignedZoneIds: dmiAcquisitionStats.assignedZoneIds, attemptedZones: dmiAcquisitionStats.attemptedZoneIds.length, attemptedZoneIds: dmiAcquisitionStats.attemptedZoneIds, successfulZones: dmiAcquisitionStats.successfulZoneIds.length, successfulZoneIds: dmiAcquisitionStats.successfulZoneIds, stoppedAfterRateLimitZones: dmiAcquisitionStats.stoppedZoneIds.length, stoppedZoneIds: dmiAcquisitionStats.stoppedZoneIds, requestBudget: DMI_REQUEST_BUDGET, requestsUsed: dmiRequestBudgetUsed, http429Count: dmiHttp429Count, stoppedByHttp429: dmiRateLimitTriggered, persistentRateLimitedUntil: dmiPersistentRuntime.rateLimitedUntil, nextZoneCursor: dmiPersistentRuntime.nextZoneCursor, cursorAdvancedForZoneIds: dmiAcquisitionStats.cursorAdvancedForZoneIds, cacheRefreshBelowHours: DMI_CACHE_REFRESH_BELOW_HOURS, cacheRetention: 'until-forecast-expiry', observationAcquisition: dmiObservationSkipReason ?? 'attempted-once-and-shared', fallbackPolicy: 'Open-Meteo used until DMI component is cached; DMI values override component-by-component', prioritizedMissingOrExpiringZones: pending, scheduleIntervalMinutes: DMI_SCHEDULE_INTERVAL_MINUTES, observationIntervalMinutes: DMI_OBSERVATION_INTERVAL_MINUTES, estimatedRunsAtCurrentBudget: Math.ceil(pending / Math.max(1, DMI_LIVE_ZONE_BUDGET)), optimisticMinutesToFullCache: Math.ceil(pending / Math.max(1, DMI_LIVE_ZONE_BUDGET)) * DMI_SCHEDULE_INTERVAL_MINUTES }; })(),
+  acquisition: (() => { const pending = targetFeatures.length; return { strategy: 'bulk-stac-grib-first-with-sequential-edr-repair', bulkModelDownloads: { ...dmiBulkMergeStats, cacheGeneratedAt: dmiBulkCache?.generatedAt ?? null, method: dmiBulkCache?.method ?? null, runs: dmiBulkCache?.runs ?? {}, diagnostics: dmiBulkCache?.diagnostics ?? null }, phase: acquisitionPhase, marineCacheCompleteAtStart, liveZoneBudget: DMI_LIVE_ZONE_BUDGET, adaptiveLiveZoneBudget: adaptiveLiveBudget, liveZonesAssigned: liveDmiAssigned, assignedZoneIds: dmiAcquisitionStats.assignedZoneIds, attemptedZones: dmiAcquisitionStats.attemptedZoneIds.length, attemptedZoneIds: dmiAcquisitionStats.attemptedZoneIds, successfulZones: dmiAcquisitionStats.successfulZoneIds.length, successfulZoneIds: dmiAcquisitionStats.successfulZoneIds, stoppedAfterRateLimitZones: dmiAcquisitionStats.stoppedZoneIds.length, stoppedZoneIds: dmiAcquisitionStats.stoppedZoneIds, requestBudget: DMI_REQUEST_BUDGET, requestsUsed: dmiRequestBudgetUsed, http429Count: dmiHttp429Count, stoppedByHttp429: dmiRateLimitTriggered, persistentRateLimitedUntil: dmiPersistentRuntime.rateLimits?.forecastEdr?.rateLimitedUntil ?? dmiPersistentRuntime.rateLimitedUntil, rateLimits: dmiPersistentRuntime.rateLimits ?? {}, nextZoneCursor: dmiPersistentRuntime.nextZoneCursor, cursorAdvancedForZoneIds: dmiAcquisitionStats.cursorAdvancedForZoneIds, cacheRefreshBelowHours: DMI_CACHE_REFRESH_BELOW_HOURS, cacheRetention: 'until-forecast-expiry', observationAcquisition: dmiObservationSkipReason ?? 'attempted-once-and-shared', fallbackPolicy: 'Open-Meteo used until DMI component is cached; DMI values override component-by-component', prioritizedMissingOrExpiringZones: pending, scheduleIntervalMinutes: DMI_SCHEDULE_INTERVAL_MINUTES, observationIntervalMinutes: DMI_OBSERVATION_INTERVAL_MINUTES, estimatedRunsAtCurrentBudget: Math.ceil(pending / Math.max(1, DMI_LIVE_ZONE_BUDGET)), optimisticMinutesToFullCache: Math.ceil(pending / Math.max(1, DMI_LIVE_ZONE_BUDGET)) * DMI_SCHEDULE_INTERVAL_MINUTES }; })(),
   providers: Object.fromEntries([...providerRuntime.entries()].map(([name, state]) => [name, {
     ...state,
     circuitOpen: providerCircuitOpen(name),
