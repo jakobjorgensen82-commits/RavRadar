@@ -665,7 +665,33 @@ def main() -> int:
     previous = load_previous()
     previous_generated = epoch(previous.get("generatedAt"))
     if not FORCE_REFRESH and previous_generated and previous.get("zones") and time.time() - previous_generated < REFRESH_MINUTES * 60:
-        print(json.dumps({"skipped": "fresh-bulk-cache", "zoneCount": len(previous.get("zones") or {}), "generatedAt": previous.get("generatedAt")}, ensure_ascii=False))
+        # A code/deployment run can reach this branch while the bulk cache is still
+        # fresh. Diagnostics must nevertheless be regenerated from the hydrated
+        # cache; otherwise checked-in placeholder files survive forever and the
+        # ocean pipeline cannot be audited.
+        previous.setdefault("refreshStatus", "fresh-bulk-cache")
+        previous.setdefault("diagnostics", {})
+        write_ocean_diagnostics(previous)
+        ocean = build_ocean_diagnostics(previous)["summary"]
+        write_github_outputs(
+            "fresh-bulk-cache",
+            zone_count=len(previous.get("zones") or {}),
+            downloaded_bytes=0,
+        )
+        if os.getenv("GITHUB_STEP_SUMMARY"):
+            with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as h:
+                h.write("## DMI bulk refresh\n\n")
+                h.write("- Status: **fresh bulk-cache genbrugt**\n")
+                h.write(f"- Zoner i cache: **{len(previous.get('zones') or {})}**\n")
+                h.write(f"- Ocean-dækning: vandstand **{ocean['waterLevelZones']}** zoner, strøm-U/V **{ocean['currentUZones']}/{ocean['currentVZones']}**, temperatur **{ocean['waterTemperatureZones']}**\n")
+                h.write("- Diagnostik blev regenereret fra den hydratiserede cache.\n")
+        print(json.dumps({
+            "skipped": "fresh-bulk-cache",
+            "zoneCount": len(previous.get("zones") or {}),
+            "generatedAt": previous.get("generatedAt"),
+            "diagnosticsRegenerated": True,
+            "ocean": ocean,
+        }, ensure_ascii=False))
         return 0
 
     zones_geo = json.loads(ZONES_PATH.read_text("utf-8"))

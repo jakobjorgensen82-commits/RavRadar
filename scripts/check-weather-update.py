@@ -20,6 +20,7 @@ from typing import Any
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 BULK_PATH = ROOT / "data/live/dmi-bulk-cache.json"
 CONDITIONS_PATH = ROOT / "data/live/conditions.json"
+OCEAN_DIAGNOSTICS_PATH = ROOT / "data/diagnostics/dmi-ocean-diagnostics.json"
 STAC_ROOT = os.getenv("DMI_STAC_ROOT", "https://opendataapi.dmi.dk/v1/forecastdata")
 MAX_STALE_MINUTES = max(10, int(os.getenv("RAVRADAR_MAX_STALE_MINUTES", "30")))
 TIMEOUT = max(5, int(os.getenv("RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS", "20")))
@@ -93,6 +94,7 @@ def set_output(name: str, value: str) -> None:
 def main() -> int:
     conditions = read_json(CONDITIONS_PATH)
     bulk = read_json(BULK_PATH)
+    ocean_diagnostics = read_json(OCEAN_DIAGNOSTICS_PATH)
     generated = epoch(conditions.get("generatedAt"))
     age_minutes = (time.time() - generated) / 60 if generated else float("inf")
     previous_runs = {
@@ -115,6 +117,11 @@ def main() -> int:
         reasons.append(f"weather-stale-{int(age_minutes)}m")
     if not previous_runs:
         reasons.append("missing-dmi-run-state")
+
+    diagnostics_generated = epoch(ocean_diagnostics.get("generatedAt"))
+    diagnostics_status = str(ocean_diagnostics.get("refreshStatus") or "")
+    if not diagnostics_generated or diagnostics_status.startswith("waiting-for-first"):
+        reasons.append("missing-ocean-diagnostics")
 
     # A failed model probe must never destroy working state. The stale fallback
     # guarantees a refresh no later than MAX_STALE_MINUTES.
@@ -143,6 +150,8 @@ def main() -> int:
         "weatherAgeMinutes": None if age_minutes == float("inf") else round(age_minutes, 1),
         "changedCollections": changed,
         "probeErrors": errors,
+        "oceanDiagnosticsGeneratedAt": ocean_diagnostics.get("generatedAt"),
+        "oceanDiagnosticsStatus": ocean_diagnostics.get("refreshStatus"),
     }
     print(json.dumps(report, ensure_ascii=False))
     return 0
