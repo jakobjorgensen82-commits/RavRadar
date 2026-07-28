@@ -1327,7 +1327,7 @@ function buildRuntimeDiagnostics(output, health) {
   return {
     schemaVersion: 1,
     generatedAt: output.generatedAt,
-    version: '4.0.10',
+    version: '4.0.11',
     health,
     componentCoverage,
     forecastCompleteness: (() => {
@@ -1386,7 +1386,7 @@ function summarizeDmiComponentCoverage(records, generatedAt) {
 }
 
 output.weatherEngine = {
-  version: '2.17.0',
+  version: '2.17.1',
   concurrency: WEATHER_CONCURRENCY,
   dmiRequestConcurrency: DMI_REQUEST_CONCURRENCY,
   dmiRequestGapMs: REQUEST_GAP_MS,
