@@ -19,6 +19,7 @@ const DMI_OCEAN_OBS_ROOT = 'https://opendataapi.dmi.dk/v2/oceanObs/collections';
 const HEALTH_PATH = 'data/live/weather-health.json';
 const DMI_FORECAST_STORE_PATH = 'data/live/dmi-forecast-cache.json';
 const DMI_BULK_CACHE_PATH = 'data/live/dmi-bulk-cache.json';
+const RUNTIME_DIAGNOSTICS_PATH = 'data/live/ravradar-runtime-diagnostics.json';
 const ALERT_MAX_PER_24H = Number(process.env.WEATHER_ALERT_MAX_PER_24H ?? 2);
 const ALERT_FAILURE_MINUTES = Number(process.env.WEATHER_ALERT_FAILURE_MINUTES ?? 60);
 const REQUEST_TIMEOUT_MS = Number(process.env.WEATHER_REQUEST_TIMEOUT_MS ?? 30000);
@@ -620,20 +621,55 @@ function mergeHourlyPreferDmi(dmiHourly = [], fallbackHourly = []) {
   return normalizeForecastHourly(merged);
 }
 
+function componentSource(provider, zone, component, generatedAt, extra = {}) {
+  const validTime = component === 'wind' ? zone?.modelSteps?.wind : component === 'wave' ? zone?.modelSteps?.wave : zone?.modelSteps?.ocean;
+  return {
+    provider,
+    providerLabel: zone?.providerLabel ?? provider,
+    collection: component === 'wind' ? zone?.dmiCompleteness?.collections?.wind ?? zone?.model?.wind ?? null : component === 'wave' ? zone?.dmiCompleteness?.collections?.wave ?? zone?.model?.wave ?? null : zone?.waterLevel?.diagnostic?.modelCollection ?? zone?.model?.ocean ?? null,
+    modelRun: zone?.forecast?.generatedAt ?? zone?.dmiCache?.generatedAt ?? null,
+    validTime: validTime ?? null,
+    fetchedAt: generatedAt,
+    cacheAgeHours: zone?.dmiCache?.cacheAgeHours ?? null,
+    fallback: provider !== 'dmi',
+    ...extra
+  };
+}
+
+function sourceForComponent(zone, component, generatedAt) {
+  const p = zone?.provider ?? 'unknown';
+  return componentSource(p, zone, component, generatedAt, {
+    fallbackReason: zone?.fallback ? (zone?.attempts?.at(-1)?.message ?? 'Primær DMI-kilde var ikke komplet') : null
+  });
+}
+
 function mergeDmiWithFallback(dmiResult, fallbackZone) {
   if (!fallbackZone) return dmiResult;
+  const groups = {
+    wind: ['windSpeedMps','windDirectionDeg'],
+    wave: ['waveHeightM','waveDirectionDeg','wavePeriodS'],
+    current: ['currentSpeedMps','currentDirectionDeg'],
+    waterLevel: ['waterLevelCm','waterLevelTrendCm3h'],
+    waterTemperature: ['waterTemperatureC']
+  };
   const mergedCurrent = {};
-  for (const key of ['windSpeedMps','windDirectionDeg','waveHeightM','waveDirectionDeg','wavePeriodS','waterLevelCm','waterLevelTrendCm3h','currentSpeedMps','currentDirectionDeg','waterTemperatureC']) {
-    mergedCurrent[key] = dmiResult.current?.[key] ?? fallbackZone.current?.[key] ?? null;
+  const sources = {};
+  for (const [component, keys] of Object.entries(groups)) {
+    const dmiHas = keys.some(key => dmiResult.current?.[key] !== null && dmiResult.current?.[key] !== undefined);
+    for (const key of keys) mergedCurrent[key] = dmiResult.current?.[key] ?? fallbackZone.current?.[key] ?? null;
+    sources[component] = dmiHas
+      ? componentSource('dmi', dmiResult, component, dmiResult.generatedAt ?? new Date().toISOString(), { fallback: false })
+      : componentSource(fallbackZone.provider ?? 'fallback', fallbackZone, component, fallbackZone.generatedAt ?? new Date().toISOString(), { fallback: true, fallbackReason: 'DMI-komponenten manglede og blev udfyldt fra fallback' });
   }
   const dmiForecast = dmiResult.dmiForecast;
   if (dmiForecast) dmiForecast.hourly = mergeHourlyPreferDmi(dmiForecast.hourly, fallbackZone.forecast?.hourly ?? []);
   return {
     ...fallbackZone,
     ...dmiResult,
-    provider: 'dmi',
-    providerLabel: dmiResult.providerLabel,
+    provider: 'mixed',
+    providerLabel: 'Blandede datakilder',
     current: mergedCurrent,
+    sources,
     modelSteps: {
       wind: dmiResult.modelSteps?.wind ?? fallbackZone.modelSteps?.wind ?? null,
       wave: dmiResult.modelSteps?.wave ?? fallbackZone.modelSteps?.wave ?? null,
@@ -1128,6 +1164,53 @@ if (dmiRateLimitTriggered || Date.now() < dmiRateLimitedUntil) {
   dmiPersistentRuntime.lastObservationAt = generatedAt;
 }
 
+
+function enrichZoneSources(zone, generatedAt) {
+  const existing = zone.sources ?? {};
+  const groups = ['wind','wave','current','waterLevel','waterTemperature'];
+  zone.sources = Object.fromEntries(groups.map(component => [component, existing[component] ?? sourceForComponent(zone, component, generatedAt)]));
+  zone.sourceSummary = Object.fromEntries(groups.map(component => [component, zone.sources[component]?.provider ?? 'unknown']));
+  return zone;
+}
+
+function buildRuntimeDiagnostics(output, health) {
+  const zones = Object.entries(output.zones ?? {});
+  const components = ['wind','wave','current','waterLevel','waterTemperature'];
+  const componentCoverage = Object.fromEntries(components.map(component => {
+    const providers = {};
+    let missing = 0;
+    for (const [, zone] of zones) {
+      const provider = zone.sources?.[component]?.provider ?? 'unknown';
+      providers[provider] = (providers[provider] ?? 0) + 1;
+      const keys = component === 'wind' ? ['windSpeedMps','windDirectionDeg'] : component === 'wave' ? ['waveHeightM'] : component === 'current' ? ['currentSpeedMps','currentDirectionDeg'] : component === 'waterLevel' ? ['waterLevelCm'] : ['waterTemperatureC'];
+      if (!keys.some(k => zone.current?.[k] !== null && zone.current?.[k] !== undefined)) missing += 1;
+    }
+    return { totalZones: zones.length, providers, missing };
+  }));
+  return {
+    schemaVersion: 1,
+    generatedAt: output.generatedAt,
+    version: '4.0.6',
+    health,
+    componentCoverage,
+    freshness: {
+      conditionsGeneratedAt: output.generatedAt,
+      minimumRemainingHours: output.weatherEngine?.dmiForecastCache?.minimumRemainingHours ?? null,
+      maximumRemainingHours: output.weatherEngine?.dmiForecastCache?.maximumRemainingHours ?? null
+    },
+    duplicateTimes: { zones: output.weatherEngine?.dmiForecastCache?.duplicateTimestampZones ?? 0 },
+    rateLimits: {
+      http429Count: output.weatherEngine?.acquisition?.http429Count ?? 0,
+      stoppedByHttp429: output.weatherEngine?.acquisition?.stoppedByHttp429 ?? false,
+      rateLimitedUntil: output.weatherEngine?.acquisition?.persistentRateLimitedUntil ?? null
+    },
+    observations: output.dataQuality?.observations ?? {},
+    acquisition: output.weatherEngine?.acquisition ?? {},
+    dataQuality: output.dataQuality ?? {},
+    zoneSamples: Object.fromEntries(zones.slice(0, 25))
+  };
+}
+
 function summarizeDmiComponentCoverage(records, generatedAt) {
   const rows = Object.values(records ?? {}).filter(record => dmiForecastCoverage(record, generatedAt).available);
   const has = (record, predicate) => normalizeForecastHourly(record?.hourly ?? []).some(predicate);
@@ -1169,6 +1252,7 @@ output.weatherEngine.dmiForecastCache = { ...nextDmiForecastStore.coverage, ...n
 const [qualityStations, qualityLevels] = dmiObservationSkipReason
   ? [[], new Map()]
   : await Promise.all([dmiWaterStations().catch(() => []), dmiLatestSeaLevels().catch(() => new Map())]);
+for (const zone of Object.values(output.zones)) enrichZoneSources(zone, generatedAt);
 output.dataQuality = buildDataQuality(output, { stationsFetched: qualityStations.length, stationsWithFreshLevel: qualityLevels.size });
 await fs.mkdir('data/live', { recursive: true });
 await writeDmiForecastStoreCheckpoint();
@@ -1176,6 +1260,7 @@ await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(output, null, 2)}\n`);
 const previousHealth = await readHealth();
 const weatherHealth = buildWeatherHealth(previousHealth, output, generatedAt);
 await fs.writeFile(HEALTH_PATH, `${JSON.stringify(weatherHealth, null, 2)}\n`);
+await fs.writeFile(RUNTIME_DIAGNOSTICS_PATH, `${JSON.stringify(buildRuntimeDiagnostics(output, weatherHealth), null, 2)}\n`);
 
 const fallbackZoneIds = Object.entries(output.zones)
   .filter(([, zone]) => zone.provider !== 'dmi')

@@ -15,5 +15,7 @@
   "parameters": {},
   "collections": {},
   "errors": [],
-  "pipelineCounters": {}
+  "pipelineCounters": {},
+  "isTemplate": true,
+  "templateNotice": "Repository-fil. Aktuelle runtime-data findes på den deployede side og i admin-download."
 }

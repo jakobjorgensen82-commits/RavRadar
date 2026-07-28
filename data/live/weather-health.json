@@ -1,1 +1,22 @@
-{"generatedAt":null,"status":"warning","dmi":{"healthy":false,"zonesFromDmi":0,"totalZones":0,"coveragePercent":0,"consecutiveFailureSince":null,"failureMinutes":0,"lastSuccessfulAt":null},"alerts":{"maxPer24Hours":2,"sentLast24Hours":0,"shouldNotifyAdministrator":false,"nextAllowedAfter":null},"alertHistory":[]}
+{
+  "generatedAt": null,
+  "status": "warning",
+  "dmi": {
+    "healthy": false,
+    "zonesFromDmi": 0,
+    "totalZones": 0,
+    "coveragePercent": 0,
+    "consecutiveFailureSince": null,
+    "failureMinutes": 0,
+    "lastSuccessfulAt": null
+  },
+  "alerts": {
+    "maxPer24Hours": 2,
+    "sentLast24Hours": 0,
+    "shouldNotifyAdministrator": false,
+    "nextAllowedAfter": null
+  },
+  "alertHistory": [],
+  "isTemplate": true,
+  "templateNotice": "Repository-fil. Aktuelle runtime-data findes på den deployede side og i admin-download."
+}

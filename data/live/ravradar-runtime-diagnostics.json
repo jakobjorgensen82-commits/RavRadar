@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "isTemplate": true,
+  "generatedAt": null,
+  "version": "4.0.6",
+  "message": "Denne repository-fil er en startskabelon. Den aktuelle fil genereres ved hver vejropdatering og kan downloades fra admin.",
+  "componentCoverage": {},
+  "freshness": {},
+  "duplicateTimes": {},
+  "rateLimits": {},
+  "observations": {},
+  "acquisition": {},
+  "dataQuality": {},
+  "zoneSamples": {}
+}
