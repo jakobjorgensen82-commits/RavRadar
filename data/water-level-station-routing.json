@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": null,
+  "description": "Administratorvalgt routing af DMI-vandstandsmålestationer. Tom routing betyder automatisk kystinterpolation.",
+  "zones": {}
+}

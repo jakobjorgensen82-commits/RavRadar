@@ -20,6 +20,8 @@ const HEALTH_PATH = 'data/live/weather-health.json';
 const DMI_FORECAST_STORE_PATH = 'data/live/dmi-forecast-cache.json';
 const DMI_BULK_CACHE_PATH = 'data/live/dmi-bulk-cache.json';
 const RUNTIME_DIAGNOSTICS_PATH = 'data/live/ravradar-runtime-diagnostics.json';
+const WATER_STATION_ROUTING_PATH = 'data/water-level-station-routing.json';
+const WATER_STATION_INVENTORY_PATH = 'data/live/dmi-water-stations.json';
 const ALERT_MAX_PER_24H = Number(process.env.WEATHER_ALERT_MAX_PER_24H ?? 2);
 const ALERT_FAILURE_MINUTES = Number(process.env.WEATHER_ALERT_FAILURE_MINUTES ?? 60);
 const REQUEST_TIMEOUT_MS = Number(process.env.WEATHER_REQUEST_TIMEOUT_MS ?? 30000);
@@ -98,6 +100,18 @@ function providerCircuitOpen(name) {
 }
 let dmiWaterStationsPromise = null;
 let dmiLatestSeaLevelPromise = null;
+let waterStationRoutingPromise = null;
+
+async function waterStationRouting() {
+  if (!waterStationRoutingPromise) {
+    waterStationRoutingPromise = fs.readFile(WATER_STATION_ROUTING_PATH, 'utf8')
+      .then(text => JSON.parse(text))
+      .then(data => data?.zones && typeof data.zones === 'object' ? data : { schemaVersion: 1, zones: {} })
+      .catch(() => ({ schemaVersion: 1, zones: {} }));
+  }
+  return waterStationRoutingPromise;
+}
+
 
 async function fetchJson(url, { provider, retries = 1, dmi = false, timeoutMs = REQUEST_TIMEOUT_MS } = {}) {
   if (dmi && dmiRequestBudgetUsed >= DMI_REQUEST_BUDGET) {
@@ -276,7 +290,12 @@ async function dmiWaterStations() {
       name: feature.properties?.name ?? feature.properties?.stationName ?? feature.properties?.countryName ?? 'DMI station',
       point: feature.geometry?.coordinates,
       properties: feature.properties ?? {}
-    })).filter(station => station.stationId && Array.isArray(station.point) && station.point.length === 2));
+    })).filter(station => station.stationId && Array.isArray(station.point) && station.point.length === 2))
+      .then(async stations => {
+        await fs.mkdir('data/live', { recursive: true });
+        await fs.writeFile(WATER_STATION_INVENTORY_PATH, JSON.stringify({ schemaVersion: 1, generatedAt: new Date().toISOString(), stations: stations.map(({ stationId, name, point, properties }) => ({ stationId, name, point, properties: { country: properties?.country, owner: properties?.owner, status: properties?.status } })) }, null, 2));
+        return stations;
+      });
   }
   return dmiWaterStationsPromise;
 }
@@ -400,11 +419,45 @@ function interpolateAllowedFjord(feature, point, stations, levels) {
   };
 }
 
+function manualStationInterpolation(feature, point, stations, levels, route) {
+  const requested = Array.isArray(route?.stations) ? route.stations : [];
+  if (!route?.enabled || !requested.length) return null;
+  const byId = new Map(stations.map(station => [String(station.stationId), station]));
+  const selected = requested.map((entry, index) => {
+    const station = byId.get(String(entry.stationId));
+    const level = station ? levels.get(station.stationId) : null;
+    if (!station || !level || !Number.isFinite(Number(level.valueCm))) return null;
+    return { ...station, level, requestedWeight: num(entry.weight), role: entry.role ?? (index === 0 ? 'primary' : 'secondary'), distanceKm: haversineKm(point, station.point) };
+  }).filter(Boolean);
+  if (!selected.length) return null;
+  if (route.requireAll !== false && selected.length !== requested.length) return null;
+  let weights;
+  if (route.method === 'manual-weights' && selected.every(item => item.requestedWeight !== null && item.requestedWeight >= 0)) {
+    const total = selected.reduce((sum, item) => sum + item.requestedWeight, 0);
+    if (!(total > 0)) return null;
+    weights = selected.map(item => item.requestedWeight / total);
+  } else if (selected.length === 1) {
+    weights = [1];
+  } else {
+    const inverse = selected.map(item => 1 / Math.max(0.25, item.distanceKm));
+    const total = inverse.reduce((sum, value) => sum + value, 0);
+    weights = inverse.map(value => value / total);
+  }
+  const valueCm = selected.reduce((sum, item, index) => sum + Number(item.level.valueCm) * weights[index], 0);
+  return {
+    valueCm: round(valueCm, 0), method: selected.length === 1 ? 'admin-selected-station' : 'admin-selected-interpolation',
+    routingSource: 'data/water-level-station-routing.json', routingReviewed: route.reviewed === true,
+    stations: selected.map((item, index) => ({ stationId: item.stationId, name: item.name, valueCm: round(Number(item.level.valueCm), 0), distanceKm: round(item.distanceKm, 1), side: item.role, weight: round(weights[index], 3), observed: item.level.observed, observationAgeMinutes: Number.isFinite(Date.parse(item.level.observed)) ? round((Date.now() - Date.parse(item.level.observed)) / 60000, 0) : null, qcStatus: item.level.qcStatus ?? null }))
+  };
+}
+
 async function observedDmiWaterLevel(feature, coastCorridors) {
   try {
-    const [rawStations, levels] = await Promise.all([dmiWaterStations(), dmiLatestSeaLevels()]);
+    const [rawStations, levels, routing] = await Promise.all([dmiWaterStations(), dmiLatestSeaLevels(), waterStationRouting()]);
     const stations = deduplicateStationSites(rawStations, levels);
     const point = zonePoint(feature);
+    const explicit = manualStationInterpolation(feature, point, stations, levels, routing.zones?.[feature.properties?.id]);
+    if (explicit) return explicit;
     const inside = stations
       .filter(station => pointInFeature(station.point, feature))
       .sort((a, b) => haversineKm(point, a.point) - haversineKm(point, b.point));
@@ -435,8 +488,8 @@ function applyObservedWaterLevel(zone, feature, observation, generatedAt) {
   zone.current.waterLevelCm = observation.valueCm;
   zone.waterLevel = {
     ...(zone.waterLevel ?? {}),
-    source: ['direct-zone-station','direct-coast-station'].includes(observation.method) ? 'dmi-observation-direct' : 'dmi-observation-coast-interpolation',
-    reference: ['direct-zone-station','direct-coast-station'].includes(observation.method) ? 'Aktuel DMI-målestation ved zonen' : observation.method === 'fjord-bracket-2-stations' ? 'Aktuel DMI-vandstand interpoleret mellem to stationer på hver sin side af samme fjord' : 'Aktuel DMI-vandstand interpoleret mellem én station på hver side langs samme kystkorridor',
+    source: ['direct-zone-station','direct-coast-station','admin-selected-station'].includes(observation.method) ? 'dmi-observation-direct' : 'dmi-observation-coast-interpolation',
+    reference: observation.method === 'admin-selected-station' ? 'Administratorvalgt DMI-målestation' : observation.method === 'admin-selected-interpolation' ? 'Administratorvalgt interpolation mellem DMI-målestationer' : ['direct-zone-station','direct-coast-station'].includes(observation.method) ? 'Aktuel DMI-målestation ved zonen' : observation.method === 'fjord-bracket-2-stations' ? 'Aktuel DMI-vandstand interpoleret mellem to stationer på hver sin side af samme fjord' : 'Aktuel DMI-vandstand interpoleret mellem én station på hver side langs samme kystkorridor',
     interpolation: observation,
     diagnostic: {
       ...(zone.waterLevel?.diagnostic ?? {}), zoneId: feature.properties?.id, zoneName: feature.properties?.name, generatedAt,
@@ -463,9 +516,9 @@ function bulkZoneToForecastRecord(feature, bulkCache, generatedAt, previousRecor
   const bulkZone = bulkCache?.zones?.[zoneId];
   const rows = Object.values(bulkZone?.hourly ?? {}).filter(row => Number.isFinite(Date.parse(row?.time))).sort((a, b) => Date.parse(a.time) - Date.parse(b.time));
   if (!rows.length) return null;
-  const wind = rows.map(row => ({ step: row.time, 'wind-speed-10m': num(row['wind-speed-10m']), 'wind-dir-10m': num(row['wind-dir-10m']) }));
-  const waves = rows.map(row => ({ step: row.time, 'significant-wave-height': num(row['significant-wave-height']), 'mean-wave-dir': num(row['mean-wave-dir']), 'dominant-wave-period': num(row['dominant-wave-period']) }));
-  const ocean = rows.map(row => ({ step: row.time, 'sea-mean-deviation': num(row['sea-mean-deviation']), 'current-u': num(row['current-u']), 'current-v': num(row['current-v']), 'water-temperature': num(row['water-temperature']) }));
+  const wind = rows.filter(row => num(row['wind-speed-10m']) !== null && num(row['wind-dir-10m']) !== null).map(row => ({ step: row.time, 'wind-speed-10m': num(row['wind-speed-10m']), 'wind-dir-10m': num(row['wind-dir-10m']) }));
+  const waves = rows.filter(row => ['significant-wave-height','mean-wave-dir','dominant-wave-period'].some(key => num(row[key]) !== null)).map(row => ({ step: row.time, 'significant-wave-height': num(row['significant-wave-height']), 'mean-wave-dir': num(row['mean-wave-dir']), 'dominant-wave-period': num(row['dominant-wave-period']) }));
+  const ocean = rows.filter(row => ['sea-mean-deviation','current-u','current-v','water-temperature'].some(key => num(row[key]) !== null)).map(row => ({ step: row.time, 'sea-mean-deviation': num(row['sea-mean-deviation']), 'current-u': num(row['current-u']), 'current-v': num(row['current-v']), 'water-temperature': num(row['water-temperature']) }));
   const sourceCadenceMinutes = Number(bulkCache?.timeStrideHours ?? 3) * 60;
   const built = buildDmiForecastHourly({ wind, waves, ocean, generatedAt, hours: DMI_FORECAST_HOURS, sourceCadenceMinutes });
   const marine = ocean.some(item => num(item['sea-mean-deviation']) !== null && num(item['current-u']) !== null && num(item['current-v']) !== null);

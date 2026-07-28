@@ -23,7 +23,7 @@ export function buildDataQuality(output, stationInventory = {}) {
   const acq = output.weatherEngine?.acquisition ?? {};
   if (cache.currentZones !== undefined && (cache.currentZones??0) < zones.length*.8) issues.push({severity:'warning',code:'DMI_CURRENT_LOW_COVERAGE',message:`DMI-strøm dækker kun ${cache.currentZones??0} af ${zones.length} zoner.`});
   if (cache.waterLevelZones !== undefined && (cache.waterLevelZones??0) < zones.length*.8) issues.push({severity:'warning',code:'DMI_WATER_LEVEL_LOW_COVERAGE',message:`DMI-vandstand dækker kun ${cache.waterLevelZones??0} af ${zones.length} zoner.`});
-  if (stationInventory.stationsFetched === 0 && (stationInventory.stationsWithFreshLevel??0) === 0) issues.push({severity:'warning',code:'DMI_OBSERVATIONS_UNAVAILABLE',message:'Ingen friske DMI-vandstandsobservationer blev hentet i denne kørsel.'});
+  if (stationInventory.attempted === true && stationInventory.stationsFetched === 0 && (stationInventory.stationsWithFreshLevel??0) === 0) issues.push({severity:'warning',code:'DMI_OBSERVATIONS_UNAVAILABLE',message:'DMI-vandstandsobservationer blev forsøgt hentet, men ingen friske observationer var tilgængelige.'});
   if (acq.stoppedByHttp429) issues.push({severity:'error',code:'DMI_HTTP_429_ACTIVE',message:'DMI stoppede kørslens livehentning med HTTP 429.'});
   if ((cache.duplicateTimestampZones??0)>0) issues.push({severity:'warning',code:'DUPLICATE_FORECAST_TIMESTAMPS',message:`${cache.duplicateTimestampZones} zoner havde dublerede rå prognosetider.`});
   const bulkErrors = acq.bulkModelDownloads?.diagnostics?.errors ?? [];

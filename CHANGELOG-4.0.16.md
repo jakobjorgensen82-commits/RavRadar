@@ -1,10 +1,10 @@
-# RavRadar 4.0.16 – DMI bulk-to-forecast repair
+# RavRadar 4.0.17 – DMI bulk-to-forecast repair
 
 ## Kritisk rettelse
 
 Den friske DMI-bulkcache blev tidligere flettet ind i `nextDmiForecastStore`, men zoneopbygningen læste bagefter fra den gamle deployede forecaststore og skrev gamle records tilbage oven på de nye. Det forklarede, at cirka 168 marine bulkzoner kun gav DMI-strøm og vandstand i 8 færdige zoner.
 
-4.0.16 bruger nu den nyflettede store som autoritativ kilde i samme kørsel og forhindrer den gamle cache i at overskrive friske bulkdata.
+4.0.17 bruger nu den nyflettede store som autoritativ kilde i samme kørsel og forhindrer den gamle cache i at overskrive friske bulkdata.
 
 ## Yderligere forbedringer
 

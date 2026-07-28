@@ -140,12 +140,23 @@ function interpolateSpeedDirection(bracket, speedKey, directionKey, { from = fal
   return { speed: Math.hypot(u, v), direction: vectorToDirection(u, v, { from }) };
 }
 
+export function canonicalForecastHour(value, { ceil = false } = {}) {
+  const ms = typeof value === 'number' ? value : Date.parse(value);
+  if (!Number.isFinite(ms)) return null;
+  const date = new Date(ms);
+  const hadPartialHour = date.getUTCMinutes() !== 0 || date.getUTCSeconds() !== 0 || date.getUTCMilliseconds() !== 0;
+  date.setUTCMinutes(0, 0, 0);
+  if (ceil && hadPartialHour) date.setUTCHours(date.getUTCHours() + 1);
+  return date.toISOString();
+}
+
 export function normalizeForecastHourly(hourly = [], { limit = DMI_FORECAST_HOURS } = {}) {
   const byTime = new Map();
   for (const row of hourly ?? []) {
     const ms = Date.parse(row?.time);
     if (!Number.isFinite(ms)) continue;
-    const time = new Date(ms).toISOString();
+    const time = canonicalForecastHour(ms);
+    if (!time) continue;
     const previous = byTime.get(time) ?? { time };
     const merged = { ...previous, time };
     for (const [key, value] of Object.entries(row ?? {})) {
@@ -165,7 +176,8 @@ export function normalizeForecastHourly(hourly = [], { limit = DMI_FORECAST_HOUR
 }
 
 export function buildDmiForecastHourly({ wind = [], waves = [], ocean = [], observedWaterLevel = null, generatedAt, hours = DMI_FORECAST_HOURS, sourceCadenceMinutes = 180 } = {}) {
-  const start = Date.parse(generatedAt);
+  const canonicalStart = canonicalForecastHour(generatedAt, { ceil: true });
+  const start = Date.parse(canonicalStart);
   if (!Number.isFinite(start)) throw new Error('generatedAt must be a valid date');
   const cadenceMs = Math.max(60, Number(sourceCadenceMinutes) || 180) * 60000;
   const bracketOptions = { maxGapMs: Math.max(4 * 3600000, cadenceMs + 15 * 60000), edgeToleranceMs: Math.min(95 * 60000, cadenceMs / 2 + 5 * 60000) };
