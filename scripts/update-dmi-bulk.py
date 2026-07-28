@@ -788,6 +788,9 @@ def write_failure_summary(error: Exception) -> None:
 def main() -> int:
     progress(f"starter; arbejdsbudget={MAX_RUNTIME_SECONDS - FINALIZE_RESERVE_SECONDS}s, afslutningsreserve={FINALIZE_RESERVE_SECONDS}s")
     previous = load_previous()
+    current_zone_registry_signature = hashlib.sha256(ZONES_PATH.read_bytes()).hexdigest()[:16]
+    previous_zone_registry_signature = previous.get("zoneRegistrySignature")
+    zone_registry_unchanged = previous_zone_registry_signature == current_zone_registry_signature
     previous_generated = epoch(previous.get("generatedAt"))
     previous_diag = previous.get("diagnostics") or {}
     previous_ocean = build_ocean_diagnostics(previous)["summary"] if previous.get("zones") else {}
@@ -809,6 +812,7 @@ def main() -> int:
         and previous.get("zones")
         and time.time() - previous_generated < REFRESH_MINUTES * 60
         and marine_cache_healthy
+        and zone_registry_unchanged
     ):
         # Kun en både tidsmæssigt frisk og funktionelt sund marine-cache genbruges.
         # En nylig parserfejl må aldrig blokere et nyt DKSS-forsøg efter en kodeopdatering.
@@ -859,7 +863,7 @@ def main() -> int:
     result = {"schemaVersion": 2, "generatedAt": generated,
               "sourceUpdatedAt": previous.get("sourceUpdatedAt") or previous.get("generatedAt"),
               "method": f"DMI STAC forecast-step GRIB inventory; collection-specific field extraction; nearest original grid point; {TIME_STRIDE_HOURS}h model stride; no spatial interpolation",
-              "hours": HOURS, "timeStrideHours": TIME_STRIDE_HOURS, "zones": {}, "runs": {},
+              "hours": HOURS, "timeStrideHours": TIME_STRIDE_HOURS, "zoneRegistrySignature": current_zone_registry_signature, "zones": {}, "runs": {},
               "collectionState": dict(previous.get("collectionState") or {}),
               "diagnostics": {"collectionsAttempted": [], "collectionsSucceeded": [], "collectionsPartial": [], "errors": [],
                               "downloadedBytes": 0, "reusedAssets": 0, "parametersByCollection": {}, "stacByCollection": {},
@@ -890,7 +894,7 @@ def main() -> int:
             if not assets:
                 raise RuntimeError("no forecast-step GRIB assets found in latest STAC run")
             previous_run = (previous.get("runs") or {}).get(collection) or {}
-            zone_registry_signature = hashlib.sha256(ZONES_PATH.read_bytes()).hexdigest()[:16]
+            zone_registry_signature = current_zone_registry_signature
             processing_signature = f"parser:{PARSER_VERSION}|params:{PARAMETER_MAP_VERSION}|grid:{GRID_LOOKUP_VERSION}|zones:{zone_registry_signature}"
             same_processing = previous_run.get("processingSignature") == processing_signature
             same_run = previous_run.get("referenceTime") == run
