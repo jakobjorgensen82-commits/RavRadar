@@ -49,7 +49,7 @@ MAX_RUNTIME_SECONDS = max(60, int(os.getenv("DMI_BULK_MAX_RUNTIME_SECONDS", "780
 REQUEST_TIMEOUT = max(10, int(os.getenv("DMI_BULK_REQUEST_TIMEOUT_SECONDS", "90")))
 MAX_ASSETS_PER_COLLECTION = max(1, int(os.getenv("DMI_BULK_MAX_ASSETS_PER_COLLECTION", "130")))
 TIME_STRIDE_HOURS = max(1, int(os.getenv("DMI_BULK_TIME_STRIDE_HOURS", "3")))
-COLLECTIONS_PER_RUN = max(1, int(os.getenv("DMI_BULK_COLLECTIONS_PER_RUN", "1")))
+COLLECTIONS_PER_RUN = max(1, int(os.getenv("DMI_BULK_COLLECTIONS_PER_RUN", "2")))
 REFRESH_MINUTES = max(1, int(os.getenv("DMI_BULK_REFRESH_MINUTES", "60")))
 FORCE_REFRESH = os.getenv("DMI_BULK_FORCE_REFRESH", "false").lower() in {"1", "true", "yes", "on"}
 USER_AGENT = os.getenv("WEATHER_USER_AGENT", "RavRadar DMI bulk downloader")
@@ -73,7 +73,7 @@ DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octe
 
 PARSER_VERSION = 8
 PARAMETER_MAP_VERSION = 2
-GRID_LOOKUP_VERSION = 3
+GRID_LOOKUP_VERSION = 4
 COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw", "wam_nsb", "harmonie_dini_sf"]
 COLLECTION_FAMILY = {
     "dkss_idw": "marine", "dkss_nsbs": "marine", "dkss_lf": "marine",
@@ -88,6 +88,16 @@ REQUIRED_TARGETS = {
     "marine": {"sea-mean-deviation", "current-u", "current-v"},
     "wind": {"wind-u-10m", "wind-v-10m"},
     "wave": {"significant-wave-height", "mean-wave-dir", "dominant-wave-period"},
+}
+
+MARINE_COLLECTIONS = {"dkss_idw", "dkss_nsbs", "dkss_lf"}
+MARINE_PARAMETERS = {"sea-mean-deviation", "current-u", "current-v", "water-temperature"}
+GRID_CANDIDATE_TARGET = max(4, int(os.getenv("DMI_BULK_GRID_CANDIDATES", "16")))
+MAX_GRID_DISTANCE_KM = {"limfjord": 24.0, "west": 40.0, "east": 32.0}
+MARINE_MODEL_PENALTY_KM = {
+    "limfjord": {"dkss_lf": 0.0, "dkss_idw": 8.0, "dkss_nsbs": 18.0},
+    "west": {"dkss_nsbs": 0.0, "dkss_idw": 10.0, "dkss_lf": 22.0},
+    "east": {"dkss_idw": 0.0, "dkss_lf": 10.0, "dkss_nsbs": 20.0},
 }
 
 # Strong aliases are used for STAC item/asset metadata. Single-letter aliases are
@@ -441,33 +451,57 @@ def grid_signature(gid: int) -> tuple[Any, ...]:
     return tuple(safe_get(gid, key) for key in keys)
 
 
+def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    radius = 6371.0088
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp = math.radians(lat2 - lat1)
+    dl = math.radians(lon2 - lon1)
+    a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return radius * 2 * math.atan2(math.sqrt(a), math.sqrt(max(0.0, 1 - a)))
+
+
 def nearest_candidates(gid: int, collection: str, zone: dict[str, Any]) -> list[dict[str, Any]]:
-    cache_key = (collection, grid_signature(gid), zone["id"])
+    """Find flere mulige havpunkter uden at antage, at de fire nærmeste er gyldige.
+
+    ecCodes returnerer højst fire punkter pr. opslag på flere grids. Derfor probes
+    et lille mønster omkring zonens datapunkt, kandidater deduplikeres på gridindeks,
+    og den reelle afstand tilbage til zonen beregnes. Ingen kandidat accepteres alene
+    fordi den ligger tæt på et probe-punkt.
+    """
+    cache_key = (collection, grid_signature(gid), zone["id"], GRID_CANDIDATE_TARGET)
     cached = GRID_INDEX_CACHE.get(cache_key)
     if cached is not None:
         return cached
-    try:
-        candidates = codes_grib_find_nearest(gid, zone["lat"], zone["lon"], npoints=4)
-    except TypeError:
-        candidates = codes_grib_find_nearest(gid, zone["lat"], zone["lon"], False, 4)
-    except Exception:
-        candidates = []
-    if isinstance(candidates, dict):
-        candidates = [candidates]
-    normalized = []
-    for candidate in sorted(candidates or [], key=lambda item: float(item.get("distance", 1e99))):
+    probes = [(0.0, 0.0)]
+    for radius in (0.025, 0.05, 0.09, 0.14):
+        probes.extend((dlat * radius, dlon * radius) for dlat, dlon in (
+            (1, 0), (-1, 0), (0, 1), (0, -1),
+            (0.707, 0.707), (0.707, -0.707), (-0.707, 0.707), (-0.707, -0.707),
+        ))
+    by_index: dict[int, dict[str, Any]] = {}
+    for dlat, dlon in probes:
         try:
-            normalized.append({
-                "index": int(candidate.get("index")),
-                "latitude": float(candidate.get("lat")),
-                "longitude": float(candidate.get("lon")),
-                "distanceKm": float(candidate.get("distance", 0.0)),
-            })
-        except (TypeError, ValueError):
-            continue
+            candidates = codes_grib_find_nearest(gid, zone["lat"] + dlat, zone["lon"] + dlon, npoints=4)
+        except TypeError:
+            candidates = codes_grib_find_nearest(gid, zone["lat"] + dlat, zone["lon"] + dlon, False, 4)
+        except Exception:
+            candidates = []
+        if isinstance(candidates, dict):
+            candidates = [candidates]
+        for candidate in candidates or []:
+            try:
+                index = int(candidate.get("index"))
+                lat = float(candidate.get("lat"))
+                lon = float(candidate.get("lon"))
+                distance = haversine_km(zone["lat"], zone["lon"], lat, lon)
+            except (TypeError, ValueError):
+                continue
+            prior = by_index.get(index)
+            if prior is None or distance < prior["distanceKm"]:
+                by_index[index] = {"index": index, "latitude": lat, "longitude": lon, "distanceKm": distance}
+    normalized = sorted(by_index.values(), key=lambda item: item["distanceKm"])[:GRID_CANDIDATE_TARGET]
     GRID_INDEX_CACHE[cache_key] = normalized
     return normalized
-
 
 def nearest_valid_batch(gid: int, collection: str, zones: list[dict[str, Any]]) -> dict[str, dict[str, float]]:
     """Resolve all zone values with one ecCodes array lookup per GRIB message.
@@ -511,13 +545,45 @@ def nearest_valid_batch(gid: int, collection: str, zones: list[dict[str, Any]]) 
 
 
 def relevant_zones(collection: str, zones: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    if collection in {"dkss_nsbs", "wam_nsb"}:
+    # Marine collections må overlappe. coastType bestemmer prioritet og afstandsgrænse,
+    # men må ikke længere blokere en alternativ DMI-model med et bedre gyldigt havpunkt.
+    if collection in MARINE_COLLECTIONS:
+        return zones
+    if collection == "wam_nsb":
         return [z for z in zones if z["coastType"] == "west"]
-    if collection == "dkss_lf":
-        return [z for z in zones if z["coastType"] == "limfjord"]
-    if collection in {"dkss_idw", "wam_dw"}:
-        return [z for z in zones if z["coastType"] not in {"west", "limfjord"}]
+    if collection == "wam_dw":
+        return [z for z in zones if z["coastType"] != "west"]
     return zones
+
+
+def marine_model_score(zone: dict[str, Any], collection: str, distance_km: float) -> float:
+    coast = zone.get("coastType") or "east"
+    penalty = MARINE_MODEL_PENALTY_KM.get(coast, MARINE_MODEL_PENALTY_KM["east"]).get(collection, 25.0)
+    return float(distance_km) + float(penalty)
+
+
+def accept_marine_collection(point: dict[str, Any], zone: dict[str, Any], collection: str, distance_km: float) -> bool:
+    coast = zone.get("coastType") or "east"
+    if distance_km > MAX_GRID_DISTANCE_KM.get(coast, 32.0):
+        return False
+    selection = point.get("marineSelection") or {}
+    score = marine_model_score(zone, collection, distance_km)
+    current_score = selection.get("score")
+    if current_score is not None and float(current_score) <= score and selection.get("collection") != collection:
+        return False
+    if selection.get("collection") != collection:
+        for hour in (point.get("hourly") or {}).values():
+            for key in MARINE_PARAMETERS:
+                hour.pop(key, None)
+        for key in MARINE_PARAMETERS:
+            (point.get("gridPoints") or {}).pop(key, None)
+            (point.get("collections") or {}).pop(key, None)
+    point["marineSelection"] = {
+        "collection": collection, "score": round(score, 3),
+        "distanceKm": round(distance_km, 3), "coastType": coast,
+        "modelPenaltyKm": MARINE_MODEL_PENALTY_KM.get(coast, {}).get(collection, 25.0),
+    }
+    return True
 
 
 def process_grib(path: pathlib.Path, collection: str, valid_time: str,
@@ -566,8 +632,25 @@ def process_grib(path: pathlib.Path, collection: str, valid_time: str,
                     nearest = resolved.get(zone["id"])
                     if not nearest:
                         continue
-                    touched.add(zone["id"])
                     point = output["zones"].setdefault(zone["id"], {"hourly": {}, "gridPoints": {}, "collections": {}})
+                    if collection in MARINE_COLLECTIONS and parameter in MARINE_PARAMETERS:
+                        search = diagnostics.setdefault("marineGridSearch", {}).setdefault(zone["id"], {}).setdefault(collection, {
+                            "candidatesExamined": 0, "nearestValidDistanceKm": None, "parametersFound": []
+                        })
+                        search["candidatesExamined"] = max(int(search.get("candidatesExamined") or 0), len(nearest_candidates(gid, collection, zone)))
+                        old_distance = search.get("nearestValidDistanceKm")
+                        distance = float(nearest["distanceKm"])
+                        search["nearestValidDistanceKm"] = round(distance if old_distance is None else min(float(old_distance), distance), 3)
+                        if parameter not in search["parametersFound"]:
+                            search["parametersFound"].append(parameter)
+                        if distance > MAX_GRID_DISTANCE_KM.get(zone.get("coastType") or "east", 32.0):
+                            search["rejectedReason"] = "VALID_POINT_TOO_FAR"
+                            continue
+                        if not accept_marine_collection(point, zone, collection, distance):
+                            search["rejectedReason"] = "BETTER_COLLECTION_SELECTED"
+                            continue
+                        search["selected"] = True
+                    touched.add(zone["id"])
                     hour = point["hourly"].setdefault(valid_time, {"time": valid_time})
                     hour[parameter] = nearest["value"]
                     point["gridPoints"][parameter] = {k: round(v, 5) for k, v in nearest.items() if k != "value"}
@@ -712,6 +795,38 @@ def build_ocean_diagnostics(result: dict[str, Any]) -> dict[str, Any]:
 
     marine_errors = [error for error in (diagnostics.get("errors") or []) if error.get("collection") in marine_collections]
     complete_current = per_parameter["current-u"]["zonesPopulated"] and per_parameter["current-v"]["zonesPopulated"]
+    complete_marine_ids = {
+        zone_id for zone_id, zone in zones.items()
+        if any(all(key in hour for key in ("sea-mean-deviation", "current-u", "current-v")) for hour in (zone.get("hourly") or {}).values())
+    }
+    fresh_marine_ids = set(diagnostics.get("freshMarineZoneIds") or []) & complete_marine_ids
+    preserved_marine_ids = complete_marine_ids - fresh_marine_ids
+    grid_search = diagnostics.get("marineGridSearch") or {}
+    missing_zone_reasons = {}
+    for zone_id in sorted(set(grid_search) | set(zones)):
+        if zone_id in complete_marine_ids:
+            continue
+        attempts = grid_search.get(zone_id) or {}
+        parameter_union = set()
+        nearest = None
+        for details in attempts.values():
+            parameter_union.update(details.get("parametersFound") or [])
+            distance = details.get("nearestValidDistanceKm")
+            if distance is not None:
+                nearest = float(distance) if nearest is None else min(nearest, float(distance))
+        missing = sorted(REQUIRED_TARGETS["marine"] - parameter_union)
+        if not attempts:
+            reason = "PRIMARY_COLLECTION_NO_COVERAGE"
+        elif all(details.get("rejectedReason") == "VALID_POINT_TOO_FAR" for details in attempts.values() if details):
+            reason = "VALID_POINT_TOO_FAR"
+        elif missing:
+            reason = "MISSING_" + "_AND_".join(key.upper().replace("-", "_") for key in missing)
+        else:
+            reason = "NO_VALID_GRID_POINT"
+        missing_zone_reasons[zone_id] = {
+            "reason": reason, "collectionsTried": sorted(attempts),
+            "nearestValidDistanceKm": nearest, "missingParameters": missing, "attempts": attempts,
+        }
     return {
         "schemaVersion": 1,
         "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -726,15 +841,22 @@ def build_ocean_diagnostics(result: dict[str, Any]) -> dict[str, Any]:
             "currentVectorAvailable": bool(complete_current),
             "waterTemperatureZones": per_parameter["water-temperature"]["zonesPopulated"],
             "marineErrors": len(marine_errors),
+            "freshMarineZones": len(fresh_marine_ids),
+            "preservedMarineZones": len(preserved_marine_ids),
+            "fallbackOrMissingMarineZones": len(missing_zone_reasons),
         },
         "parameters": per_parameter,
         "collections": collection_details,
         "errors": marine_errors,
+        "missingZones": missing_zone_reasons,
+        "modelSelections": {zone_id: zone.get("marineSelection") for zone_id, zone in zones.items() if zone.get("marineSelection")},
         "pipelineCounters": {
             "messagesSeen": diagnostics.get("messagesSeen", 0),
             "zoneLookups": diagnostics.get("zoneLookups", 0),
             "downloadedBytes": diagnostics.get("downloadedBytes", 0),
             "freshZoneCount": diagnostics.get("freshZoneCount", 0),
+            "freshMarineZones": len(fresh_marine_ids),
+            "preservedMarineZones": len(preserved_marine_ids),
         },
     }
 
@@ -752,6 +874,9 @@ def write_ocean_diagnostics(result: dict[str, Any]) -> None:
         f"Current U zones: {report['summary']['currentUZones']}",
         f"Current V zones: {report['summary']['currentVZones']}",
         f"Water-temperature zones: {report['summary']['waterTemperatureZones']}",
+        f"Fresh marine zones this run: {report['summary']['freshMarineZones']}",
+        f"Preserved marine zones: {report['summary']['preservedMarineZones']}",
+        f"Fallback/missing marine zones: {report['summary']['fallbackOrMissingMarineZones']}",
         "",
         "Collections:",
     ]
@@ -898,12 +1023,12 @@ def main() -> int:
     generated = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     result = {"schemaVersion": 2, "generatedAt": generated,
               "sourceUpdatedAt": previous.get("sourceUpdatedAt") or previous.get("generatedAt"),
-              "method": f"DMI STAC forecast-step GRIB inventory; collection-specific field extraction; nearest original grid point; {TIME_STRIDE_HOURS}h model stride; no spatial interpolation",
+              "method": f"DMI STAC forecast-step GRIB inventory; collection-specific field extraction; multi-candidate nearest valid grid point with marine collection overlap; {TIME_STRIDE_HOURS}h model stride; no spatial interpolation",
               "hours": HOURS, "timeStrideHours": TIME_STRIDE_HOURS, "zoneRegistrySignature": current_zone_registry_signature, "zones": {}, "runs": {},
               "collectionState": dict(previous.get("collectionState") or {}),
               "diagnostics": {"collectionsAttempted": [], "collectionsSucceeded": [], "collectionsPartial": [], "errors": [],
                               "downloadedBytes": 0, "reusedAssets": 0, "parametersByCollection": {}, "stacByCollection": {},
-                              "assetsSkippedPreviouslyProcessed": 0, "assetsRetriedIncomplete": 0, "zeroProgressCollections": [], "messagesSeen": 0, "zoneLookups": 0, "batchedGridReads": 0,
+                              "assetsSkippedPreviouslyProcessed": 0, "assetsRetriedIncomplete": 0, "zeroProgressCollections": [], "messagesSeen": 0, "zoneLookups": 0, "batchedGridReads": 0, "marineGridSearch": {},
                               "runtimeBudgetSeconds": MAX_RUNTIME_SECONDS, "finalizeReserveSeconds": FINALIZE_RESERVE_SECONDS,
                               "persistentFieldInventory": dict(((previous.get("diagnostics") or {}).get("persistentFieldInventory") or {}))}}
     merge_previous(result, previous)
@@ -911,6 +1036,7 @@ def main() -> int:
     scheduled = collection_schedule(previous)
     result["diagnostics"]["scheduledCollections"] = scheduled
     fresh_zone_ids: set[str] = set()
+    fresh_marine_zone_ids: set[str] = set()
     productive_collections = 0
 
     for collection in scheduled:
@@ -999,6 +1125,8 @@ def main() -> int:
                         "processingSignature": processing_signature
                     }
                 fresh_zone_ids.update(touched)
+                if collection in MARINE_COLLECTIONS:
+                    fresh_marine_zone_ids.update(touched)
                 write_checkpoint(result, fresh_zone_ids, budget, "partial")
                 progress(f"{collection}: checkpoint gemt; steps={run_info['assetsProcessed']}, felter={sorted(recognized)}, resterende={runtime_remaining():.0f}s")
                 if interrupted:
@@ -1043,6 +1171,7 @@ def main() -> int:
             state["nextEligibleAt"] = datetime.fromtimestamp(time.time() + delay_minutes * 60, timezone.utc).isoformat().replace("+00:00", "Z")
             result["diagnostics"]["errors"].append({"collection": collection, "message": message, "failureClass": state["failureClass"], "retryAfterMinutes": delay_minutes})
 
+    result["diagnostics"]["freshMarineZoneIds"] = sorted(fresh_marine_zone_ids)
     clean_and_summarize(result, fresh_zone_ids, budget)
     diag = result["diagnostics"]
     fresh_successes, fresh_partials = len(diag["collectionsSucceeded"]), len(diag["collectionsPartial"])

@@ -14,7 +14,7 @@ for (const collection of ['dkss_idw', 'dkss_nsbs', 'dkss_lf', 'harmonie_dini_sf'
   assert.match(preflight, new RegExp(collection));
 }
 assert.match(bulk, /codes_grib_find_nearest/);
-assert.match(bulk, /nearest original grid point/);
+assert.match(bulk, /multi-candidate nearest valid grid point/);
 assert.match(bulk, /DMI_BULK_FORCE_REFRESH/);
 assert.match(bulk, /for container_name in \("assets", "asset"\)/);
 assert.match(bulk, /DOWNLOAD_SESSION/);
@@ -50,9 +50,9 @@ assert.match(updater, /lastObservationSuccessMs/);
 assert.match(updater, /repairWaterLevelContinuity/);
 assert.match(updater, /open-meteo-adjusted|fallbackPolicy/);
 assert.match(bulk, /write_ocean_diagnostics/);
-assert.match(workflow, /RavRadar\/4\.0\.14/);
+assert.match(workflow, /RavRadar\/4\.0\.23/);
 assert.match(workflow, /DMI_BULK_FINALIZE_RESERVE_SECONDS/);
-assert.match(workflow, /timeout-minutes: 10/);
+assert.match(workflow, /timeout-minutes: 14/);
 assert.doesNotMatch(bulk, /unique = \{row\["valid"\]/);
 assert.match(updater, /\[1, 2\]\.includes\(parsed\?\.schemaVersion\)/);
 assert.match(updater, /bulk-stac-grib-first-with-sequential-edr-repair/);

@@ -5,7 +5,7 @@ import { loadAdaptiveModel, applyApprovedSuggestion, recordDecision, decisionHis
 import { loadZoneRegistry } from '../services/zone-registry.js';
 import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled } from '../services/admin-document-store.js';
 
-const VERSION='4.0.22';
+const VERSION='4.0.23';
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
 const RULES_KEY='ravradar-admin-rules-v1';
