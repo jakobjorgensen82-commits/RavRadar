@@ -40,6 +40,8 @@ OUTPUT_PATH = ROOT / "data/live/dmi-bulk-cache.json"
 DIAGNOSTICS_JSON_PATH = ROOT / "data/diagnostics/dmi-ocean-diagnostics.json"
 DIAGNOSTICS_TEXT_PATH = ROOT / "data/diagnostics/dmi-ocean-summary.txt"
 RAW_DIR = pathlib.Path(os.getenv("DMI_BULK_RAW_DIR", str(ROOT / ".cache/dmi-grib")))
+CACHE_AUDIT_PATH = ROOT / "data/diagnostics/dmi-cache-audit.json"
+RAW_CACHE_MAX_BYTES = max(256 * 1024 * 1024, int(float(os.getenv("DMI_BULK_RAW_CACHE_MAX_MB", "1400")) * 1024 * 1024))
 STAC_ROOT = os.getenv("DMI_STAC_ROOT", "https://opendataapi.dmi.dk/v1/forecastdata")
 HOURS = max(1, int(os.getenv("DMI_BULK_HOURS", "120")))
 MAX_DOWNLOAD_BYTES = max(1, int(float(os.getenv("DMI_BULK_MAX_DOWNLOAD_MB", "1400")) * 1024 * 1024))
@@ -263,27 +265,60 @@ def list_latest_assets(collection: str) -> tuple[str | None, list[dict[str, Any]
 
 
 
-def prune_raw_cache(max_bytes: int = 3 * 1024 * 1024 * 1024) -> None:
+def raw_cache_inventory() -> dict[str, Any]:
+    RAW_DIR.mkdir(parents=True, exist_ok=True)
+    files = [path for path in RAW_DIR.iterdir() if path.is_file()]
+    rows = []
+    for path in files:
+        try:
+            stat = path.stat()
+            rows.append({"name": path.name, "bytes": stat.st_size, "modifiedAt": datetime.fromtimestamp(stat.st_mtime, timezone.utc).isoformat().replace("+00:00", "Z")})
+        except OSError:
+            continue
+    rows.sort(key=lambda row: row["modifiedAt"])
+    return {"files": len(rows), "bytes": sum(row["bytes"] for row in rows), "oldest": rows[0]["modifiedAt"] if rows else None, "newest": rows[-1]["modifiedAt"] if rows else None, "largestFiles": sorted(rows, key=lambda row: row["bytes"], reverse=True)[:20]}
+
+
+def write_cache_audit(before: dict[str, Any], after: dict[str, Any], removed_files: int, removed_bytes: int) -> None:
+    CACHE_AUDIT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    CACHE_AUDIT_PATH.write_text(json.dumps({
+        "schemaVersion": 1,
+        "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "policy": {"maxBytes": RAW_CACHE_MAX_BYTES, "strategy": "least-recently-used; reused files are touched before pruning"},
+        "before": before, "after": after,
+        "removedFiles": removed_files, "removedBytes": removed_bytes
+    }, ensure_ascii=False, indent=2) + "\n", "utf-8")
+
+
+def prune_raw_cache(max_bytes: int = RAW_CACHE_MAX_BYTES) -> dict[str, int]:
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     files = [path for path in RAW_DIR.iterdir() if path.is_file()]
     total = sum(path.stat().st_size for path in files)
-    if total <= max_bytes:
-        return
-    for path in sorted(files, key=lambda item: item.stat().st_mtime):
-        try:
-            size = path.stat().st_size
-            path.unlink(missing_ok=True)
-            total -= size
-        except OSError:
-            continue
-        if total <= max_bytes:
-            break
+    removed_files = 0
+    removed_bytes = 0
+    if total > max_bytes:
+        for path in sorted(files, key=lambda item: item.stat().st_mtime):
+            try:
+                size = path.stat().st_size
+                path.unlink(missing_ok=True)
+                total -= size
+                removed_files += 1
+                removed_bytes += size
+            except OSError:
+                continue
+            if total <= max_bytes:
+                break
+    return {"removedFiles": removed_files, "removedBytes": removed_bytes}
 
 def download_asset(href: str, expected_size: int | None, budget: dict[str, int]) -> tuple[pathlib.Path, bool]:
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     suffix = pathlib.Path(href.split("?", 1)[0]).suffix or ".grib"
     path = RAW_DIR / f"{hashlib.sha256(href.encode()).hexdigest()[:24]}{suffix}"
     if path.exists() and path.stat().st_size > 0:
+        try:
+            os.utime(path, None)
+        except OSError:
+            pass
         return path, True
     if expected_size and budget["bytes"] + expected_size > MAX_DOWNLOAD_BYTES:
         raise RuntimeError("DMI bulk download budget would be exceeded")
@@ -787,6 +822,7 @@ def write_failure_summary(error: Exception) -> None:
 
 def main() -> int:
     progress(f"starter; arbejdsbudget={MAX_RUNTIME_SECONDS - FINALIZE_RESERVE_SECONDS}s, afslutningsreserve={FINALIZE_RESERVE_SECONDS}s")
+    cache_before = raw_cache_inventory()
     previous = load_previous()
     current_zone_registry_signature = hashlib.sha256(ZONES_PATH.read_bytes()).hexdigest()[:16]
     previous_zone_registry_signature = previous.get("zoneRegistrySignature")
@@ -1015,6 +1051,10 @@ def main() -> int:
     result["refreshStatus"] = "ok" if productive_collections >= COLLECTIONS_PER_RUN and fresh_successes else ("partial" if fresh_successes or fresh_partials or result["diagnostics"]["zeroProgressCollections"] else "failed")
 
     write_checkpoint(result, fresh_zone_ids, budget, result["refreshStatus"])
+    prune_stats = prune_raw_cache()
+    cache_after = raw_cache_inventory()
+    write_cache_audit(cache_before, cache_after, prune_stats["removedFiles"], prune_stats["removedBytes"])
+    result["diagnostics"]["rawCache"] = {"before": cache_before, "after": cache_after, **prune_stats, "maxBytes": RAW_CACHE_MAX_BYTES}
     summary = {**diag, "refreshStatus": result["refreshStatus"], "sourceUpdatedAt": result.get("sourceUpdatedAt"),
                "preservedPreviousZones": max(0, len(result["zones"]) - len(fresh_zone_ids))}
     write_github_outputs(

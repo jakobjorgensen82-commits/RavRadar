@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const workflow=fs.readFileSync('.github/workflows/update-and-deploy.yml','utf8');
+const bulk=fs.readFileSync('scripts/update-dmi-bulk.py','utf8');
+const update=fs.readFileSync('scripts/update-weather.mjs','utf8');
+assert.doesNotMatch(workflow,/github\.run_id/);
+assert.match(workflow,/dmi-grib-v3/);
+assert.match(workflow,/DMI_BULK_RAW_CACHE_MAX_MB: 1400/);
+assert.match(bulk,/raw_cache_inventory/);
+assert.match(bulk,/write_cache_audit/);
+assert.match(bulk,/os\.utime\(path, None\)/);
+assert.match(update,/DMI oceanObs stations', retries: DMI_MAX_RETRIES, dmi: false/);
+assert.match(workflow,/Verify DMI station inventory for admin map/);
+assert.match(update,/ACCEPTED_FORECAST_HOURS = 118/);
+console.log('OK: bounded GitHub cache, station inventory gate and 118-hour acceptance.');

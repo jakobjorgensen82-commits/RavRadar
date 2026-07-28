@@ -10,6 +10,7 @@ import {
   selectDmiForecastAt
 } from './lib/dmi-forecast-store.mjs';
 import { buildDataQuality } from './lib/data-quality.mjs';
+import { repairWaterLevelContinuity } from './lib/water-level-continuity.mjs';
 import { countDmiBackedZones, createPersistentDmiStore, prioritizeDmiFeatures, summarizeAvailableCoverage } from './lib/dmi-acquisition-state.mjs';
 
 const ZONES_PATH = 'data/zones.geojson';
@@ -22,6 +23,9 @@ const DMI_BULK_CACHE_PATH = 'data/live/dmi-bulk-cache.json';
 const RUNTIME_DIAGNOSTICS_PATH = 'data/live/ravradar-runtime-diagnostics.json';
 const WATER_STATION_ROUTING_PATH = 'data/water-level-station-routing.json';
 const WATER_STATION_INVENTORY_PATH = 'data/live/dmi-water-stations.json';
+const ACCEPTED_FORECAST_HOURS = 118;
+const SHORT_DMI_WATER_GAP_HOURS = 6;
+const WATER_LEVEL_JUMP_WARN_CM = 35;
 const ALERT_MAX_PER_24H = Number(process.env.WEATHER_ALERT_MAX_PER_24H ?? 2);
 const ALERT_FAILURE_MINUTES = Number(process.env.WEATHER_ALERT_FAILURE_MINUTES ?? 60);
 const REQUEST_TIMEOUT_MS = Number(process.env.WEATHER_REQUEST_TIMEOUT_MS ?? 30000);
@@ -289,7 +293,7 @@ async function readCachedWaterStations() {
 async function dmiWaterStations() {
   if (!dmiWaterStationsPromise) {
     dmiWaterStationsPromise = fetchAllFeatures(`${DMI_OCEAN_OBS_ROOT}/station/items`, { status: 'Active' }, {
-      provider: 'DMI oceanObs stations', retries: DMI_MAX_RETRIES, dmi: true
+      provider: 'DMI oceanObs stations', retries: DMI_MAX_RETRIES, dmi: false
     }).then(features => features.map(feature => ({
       stationId: String(feature.properties?.stationId ?? feature.properties?.id ?? ''),
       name: feature.properties?.name ?? feature.properties?.stationName ?? feature.properties?.countryName ?? 'DMI station',
@@ -733,29 +737,22 @@ async function fromDmi(feature, generatedAt, { includeAtmosphere = false } = {})
 
 function mergeHourlyPreferDmi(dmiHourly = [], fallbackHourly = [], { generatedAt = null } = {}) {
   const cutoffMs = Number.isFinite(Date.parse(generatedAt)) ? Date.parse(generatedAt) - 65 * 60000 : -Infinity;
-  const future = rows => normalizeForecastHourly(rows, { limit: Number.MAX_SAFE_INTEGER })
-    .filter(item => Date.parse(item.time) >= cutoffMs);
+  const future = rows => normalizeForecastHourly(rows, { limit: Number.MAX_SAFE_INTEGER }).filter(item => Date.parse(item.time) >= cutoffMs);
   const dmiByTime = new Map(future(dmiHourly).map(item => [item.time, item]));
   const fallbackByTime = new Map(future(fallbackHourly).map(item => [item.time, item]));
   const times = [...new Set([...dmiByTime.keys(), ...fallbackByTime.keys()])].sort((a, b) => Date.parse(a) - Date.parse(b));
   const merged = times.map(time => {
     const item = dmiByTime.get(time) ?? {};
     const fallback = fallbackByTime.get(time) ?? {};
-    const waterLevelFromDmi = item.waterLevelCm != null;
     const mergedRow = {
-      ...fallback,
-      ...item,
-      time,
+      ...fallback, ...item, time,
       windSpeedMps: item.windSpeedMps ?? fallback.windSpeedMps ?? null,
       windDirectionDeg: item.windDirectionDeg ?? fallback.windDirectionDeg ?? null,
       waveHeightM: item.waveHeightM ?? fallback.waveHeightM ?? null,
       waveDirectionDeg: item.waveDirectionDeg ?? fallback.waveDirectionDeg ?? null,
       wavePeriodS: item.wavePeriodS ?? fallback.wavePeriodS ?? null,
-      waterLevelCm: item.waterLevelCm ?? fallback.waterLevelCm ?? null,
-      waterLevelModelCm: item.waterLevelModelCm ?? fallback.waterLevelModelCm ?? null,
-      waterLevelBiasCm: item.waterLevelBiasCm ?? fallback.waterLevelBiasCm ?? null,
-      waterLevelObservationDifferenceCm: item.waterLevelObservationDifferenceCm ?? fallback.waterLevelObservationDifferenceCm ?? null,
-      waterLevelTrendCm3h: item.waterLevelTrendCm3h ?? fallback.waterLevelTrendCm3h ?? null,
+      waterLevelCm: null,
+      waterLevelTrendCm3h: null,
       currentSpeedMps: item.currentSpeedMps ?? fallback.currentSpeedMps ?? null,
       currentDirectionDeg: item.currentDirectionDeg ?? fallback.currentDirectionDeg ?? null,
       waterTemperatureC: item.waterTemperatureC ?? fallback.waterTemperatureC ?? null,
@@ -763,20 +760,16 @@ function mergeHourlyPreferDmi(dmiHourly = [], fallbackHourly = [], { generatedAt
         wind: (item.windSpeedMps != null && item.windDirectionDeg != null) ? { provider: 'dmi', fallback: false } : { provider: fallback.source ?? 'open-meteo', fallback: true },
         wave: item.waveHeightM != null ? { provider: 'dmi', fallback: false } : { provider: fallback.source ?? 'open-meteo', fallback: true },
         current: (item.currentSpeedMps != null && item.currentDirectionDeg != null) ? { provider: 'dmi', fallback: false } : { provider: fallback.source ?? 'open-meteo', fallback: true },
-        waterLevel: item.waterLevelCm != null ? { provider: 'dmi', fallback: false } : { provider: fallback.source ?? 'open-meteo', fallback: true },
+        waterLevel: { provider: 'pending', fallback: false },
         waterTemperature: item.waterTemperatureC != null ? { provider: 'dmi', fallback: false } : { provider: fallback.source ?? 'open-meteo', fallback: true }
       }
     };
-    if (!waterLevelFromDmi) {
-      delete mergedRow.waterLevelSource;
-      delete mergedRow.waterLevelModelCm;
-      delete mergedRow.waterLevelBiasCm;
-      delete mergedRow.waterLevelObservationDifferenceCm;
-    }
     if (Object.values(mergedRow.sources ?? {}).some(source => source?.provider !== 'dmi')) delete mergedRow.source;
     return mergedRow;
   });
-  return normalizeForecastHourly(merged);
+  const waterLevelContinuity = repairWaterLevelContinuity(merged, dmiByTime, fallbackByTime, { shortDmiGapHours: SHORT_DMI_WATER_GAP_HOURS, jumpWarningCm: WATER_LEVEL_JUMP_WARN_CM });
+  for (const row of merged) row.waterLevelContinuity = waterLevelContinuity;
+  return normalizeForecastHourly(merged, { limit: ACCEPTED_FORECAST_HOURS });
 }
 
 function componentSource(provider, zone, component, generatedAt, extra = {}) {
@@ -1207,10 +1200,10 @@ function buildWeatherHealth(previousHealth, output, nowIso) {
   const conversionHealthy = output.weatherEngine?.acquisition?.bulkModelDownloads?.conversionHealthy !== false;
   const dmiHealthy = total > 0 && dmiCompletePercent >= 80 && !dmiTransientFailure && conversionHealthy;
   const degraded = !dmiHealthy || !userDataHealthy;
-  const failureSince = userDataHealthy ? null : (previousHealth.dmi?.consecutiveFailureSince ?? previousHealth.consecutiveFailureSince ?? nowIso);
+  const failureSince = dmiTransientFailure ? (previousHealth.dmi?.consecutiveFailureSince ?? nowIso) : null;
   const failureMinutes = failureSince ? Math.max(0, Math.round((now - Date.parse(failureSince)) / 60000)) : 0;
   const recentAlerts = (previousHealth.alertHistory ?? []).filter(item => now - Date.parse(item.sentAt) < 24 * 3600000);
-  const alertEligible = !userDataHealthy && failureMinutes >= ALERT_FAILURE_MINUTES && recentAlerts.length < ALERT_MAX_PER_24H;
+  const alertEligible = dmiTransientFailure && failureMinutes >= ALERT_FAILURE_MINUTES && recentAlerts.length < ALERT_MAX_PER_24H;
   const alertHistory = alertEligible ? [...recentAlerts, { sentAt: nowIso, reason: 'Brugerdata har været utilstrækkelige i længere tid', dmiZones: complete, totalZones: total }] : recentAlerts;
   return {
     generatedAt: nowIso,
@@ -1441,11 +1434,11 @@ function buildRuntimeDiagnostics(output, health) {
   return {
     schemaVersion: 1,
     generatedAt: output.generatedAt,
-    version: '4.0.18',
+    version: '4.0.19',
     health,
     componentCoverage,
     forecastCompleteness: (() => {
-      const horizons = [6, 24, 48, 120];
+      const horizons = [6, 24, 48, ACCEPTED_FORECAST_HOURS];
       const componentKeys = { wind: ['windSpeedMps','windDirectionDeg'], wave: ['waveHeightM'], current: ['currentSpeedMps','currentDirectionDeg'], waterLevel: ['waterLevelCm'] };
       const rows = Object.fromEntries(horizons.map(hours => {
         let completeZones = 0, completeHours = 0, totalHours = 0;
@@ -1465,8 +1458,8 @@ function buildRuntimeDiagnostics(output, health) {
     })(),
     componentHorizonCoverage: Object.fromEntries(components.map(component => {
       const keys = component === 'wind' ? ['windSpeedMps','windDirectionDeg'] : component === 'wave' ? ['waveHeightM'] : component === 'current' ? ['currentSpeedMps','currentDirectionDeg'] : component === 'waterLevel' ? ['waterLevelCm'] : ['waterTemperatureC'];
-      const horizons=[6,24,48,120]; const summary={};
-      for(const hours of horizons){let zonesComplete=0,validHours=0,totalHours=0;for(const [,zone] of zones){const hourly=normalizeForecastHourly(zone.forecast?.hourly??[]).slice(0,hours);const valid=hourly.filter(row=>keys.every(k=>row[k]!=null)).length;validHours+=valid;totalHours+=hours;if(hourly.length>=hours&&valid===hours)zonesComplete++;}summary[hours]={zonesComplete,totalZones:zones.length,validHours,totalHours,percent:totalHours?round(validHours/totalHours*100,1):0};}
+      const horizons=[6,24,48,ACCEPTED_FORECAST_HOURS]; const summary={};
+      for(const hours of horizons){let zonesComplete=0,validHours=0,totalHours=0;for(const [,zone] of zones){const hourly=normalizeForecastHourly(zone.forecast?.hourly??[]).slice(0,hours);const valid=hourly.filter(row=>keys.every(k=>row[k]!=null)).length;validHours+=valid;const expected=Math.min(hours,hourly.length);totalHours+=expected;if(expected>0&&valid===expected)zonesComplete++;}summary[hours]={zonesComplete,totalZones:zones.length,validHours,totalHours,percent:totalHours?round(validHours/totalHours*100,1):0};}
       return [component,summary];
     })),
     freshness: {
@@ -1512,7 +1505,7 @@ output.weatherEngine = {
   dmiRequestGapMs: REQUEST_GAP_MS,
   dmiRequestTimeoutMs: REQUEST_TIMEOUT_MS,
   providerPriority: output.providerPriority,
-  acquisition: (() => { const pending = targetFeatures.length; return { strategy: 'bulk-stac-grib-first-with-sequential-edr-repair', bulkModelDownloads: { ...dmiBulkMergeStats, cacheGeneratedAt: dmiBulkCache?.generatedAt ?? null, method: dmiBulkCache?.method ?? null, runs: dmiBulkCache?.runs ?? {}, diagnostics: dmiBulkCache?.diagnostics ?? null }, phase: acquisitionPhase, marineCacheCompleteAtStart, liveZoneBudget: DMI_LIVE_ZONE_BUDGET, adaptiveLiveZoneBudget: adaptiveLiveBudget, liveZonesAssigned: liveDmiAssigned, assignedZoneIds: dmiAcquisitionStats.assignedZoneIds, attemptedZones: dmiAcquisitionStats.attemptedZoneIds.length, attemptedZoneIds: dmiAcquisitionStats.attemptedZoneIds, successfulZones: dmiAcquisitionStats.successfulZoneIds.length, successfulZoneIds: dmiAcquisitionStats.successfulZoneIds, stoppedAfterRateLimitZones: dmiAcquisitionStats.stoppedZoneIds.length, stoppedZoneIds: dmiAcquisitionStats.stoppedZoneIds, requestBudget: DMI_REQUEST_BUDGET, requestsUsed: dmiRequestBudgetUsed, http429Count: dmiHttp429Count, stoppedByHttp429: dmiRateLimitTriggered, persistentRateLimitedUntil: dmiPersistentRuntime.rateLimits?.forecastEdr?.rateLimitedUntil ?? null, rateLimits: dmiPersistentRuntime.rateLimits ?? {}, nextZoneCursor: dmiPersistentRuntime.nextZoneCursor, cursorAdvancedForZoneIds: dmiAcquisitionStats.cursorAdvancedForZoneIds, cacheRefreshBelowHours: DMI_CACHE_REFRESH_BELOW_HOURS, cacheRetention: 'until-forecast-expiry', observationAcquisition: dmiObservationSkipReason ?? 'attempted-once-and-shared', fallbackPolicy: 'Open-Meteo used until DMI component is cached; DMI values override component-by-component', prioritizedMissingOrExpiringZones: pending, scheduleIntervalMinutes: DMI_SCHEDULE_INTERVAL_MINUTES, observationIntervalMinutes: DMI_OBSERVATION_INTERVAL_MINUTES, estimatedRunsAtCurrentBudget: Math.ceil(pending / Math.max(1, DMI_LIVE_ZONE_BUDGET)), optimisticMinutesToFullCache: Math.ceil(pending / Math.max(1, DMI_LIVE_ZONE_BUDGET)) * DMI_SCHEDULE_INTERVAL_MINUTES }; })(),
+  acquisition: (() => { const pending = targetFeatures.length; return { strategy: 'bulk-stac-grib-first-with-sequential-edr-repair', bulkModelDownloads: { ...dmiBulkMergeStats, cacheGeneratedAt: dmiBulkCache?.generatedAt ?? null, method: dmiBulkCache?.method ?? null, runs: dmiBulkCache?.runs ?? {}, diagnostics: dmiBulkCache?.diagnostics ?? null }, phase: acquisitionPhase, marineCacheCompleteAtStart, liveZoneBudget: DMI_LIVE_ZONE_BUDGET, adaptiveLiveZoneBudget: adaptiveLiveBudget, liveZonesAssigned: liveDmiAssigned, assignedZoneIds: dmiAcquisitionStats.assignedZoneIds, attemptedZones: dmiAcquisitionStats.attemptedZoneIds.length, attemptedZoneIds: dmiAcquisitionStats.attemptedZoneIds, successfulZones: dmiAcquisitionStats.successfulZoneIds.length, successfulZoneIds: dmiAcquisitionStats.successfulZoneIds, stoppedAfterRateLimitZones: dmiAcquisitionStats.stoppedZoneIds.length, stoppedZoneIds: dmiAcquisitionStats.stoppedZoneIds, requestBudget: DMI_REQUEST_BUDGET, requestsUsed: dmiRequestBudgetUsed, http429Count: dmiHttp429Count, stoppedByHttp429: dmiRateLimitTriggered, persistentRateLimitedUntil: dmiPersistentRuntime.rateLimits?.forecastEdr?.rateLimitedUntil ?? null, rateLimits: dmiPersistentRuntime.rateLimits ?? {}, nextZoneCursor: dmiPersistentRuntime.nextZoneCursor, cursorAdvancedForZoneIds: dmiAcquisitionStats.cursorAdvancedForZoneIds, cacheRefreshBelowHours: DMI_CACHE_REFRESH_BELOW_HOURS, cacheRetention: 'until-forecast-expiry', observationAcquisition: dmiObservationSkipReason ?? 'attempted-once-and-shared', fallbackPolicy: 'DMI is authoritative. Short DMI gaps are interpolated from DMI; fallback is only used as continuous bias-adjusted blocks when DMI is absent.', prioritizedMissingOrExpiringZones: pending, scheduleIntervalMinutes: DMI_SCHEDULE_INTERVAL_MINUTES, observationIntervalMinutes: DMI_OBSERVATION_INTERVAL_MINUTES, estimatedRunsAtCurrentBudget: Math.ceil(pending / Math.max(1, DMI_LIVE_ZONE_BUDGET)), optimisticMinutesToFullCache: Math.ceil(pending / Math.max(1, DMI_LIVE_ZONE_BUDGET)) * DMI_SCHEDULE_INTERVAL_MINUTES }; })(),
   providers: Object.fromEntries([...providerRuntime.entries()].map(([name, state]) => [name, {
     ...state,
     circuitOpen: providerCircuitOpen(name),

@@ -85,14 +85,19 @@ jobs:
         if: steps.preflight.outputs.should_run == 'true'
         run: python scripts/smoke-test-eccodes.py
 
-      - name: Restore DMI GRIB download cache
+      - name: Resolve bounded DMI cache generation
+        if: steps.preflight.outputs.should_run == 'true'
+        id: dmi-cache-generation
+        run: echo "generation=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore bounded DMI GRIB download cache
         if: steps.preflight.outputs.should_run == 'true'
         uses: actions/cache@v4
         with:
           path: .cache/dmi-grib
-          key: dmi-grib-${{ runner.os }}-${{ github.run_id }}
+          key: dmi-grib-v3-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}
           restore-keys: |
-            dmi-grib-${{ runner.os }}-
+            dmi-grib-v3-${{ runner.os }}-
 
       - name: Update DMI bulk model cache
         if: steps.preflight.outputs.should_run == 'true'
@@ -101,8 +106,9 @@ jobs:
         timeout-minutes: 10
         run: python -u scripts/update-dmi-bulk.py
         env:
-          DMI_BULK_HOURS: 120
+          DMI_BULK_HOURS: 118
           DMI_BULK_MAX_DOWNLOAD_MB: 1400
+          DMI_BULK_RAW_CACHE_MAX_MB: 1400
           DMI_BULK_MAX_RUNTIME_SECONDS: 480
           DMI_BULK_FINALIZE_RESERVE_SECONDS: 120
           DMI_BULK_MAX_ASSETS_PER_COLLECTION: 130
@@ -157,6 +163,23 @@ jobs:
       - name: Report cached fallback
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome != 'success'
         run: echo "Weather updater failed or timed out. Deploying the last valid hydrated conditions.json."
+
+
+      - name: Verify DMI station inventory for admin map
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          path = pathlib.Path('data/live/dmi-water-stations.json')
+          if not path.exists():
+              raise SystemExit('DMI station inventory was not generated')
+          doc = json.loads(path.read_text('utf-8'))
+          stations = doc.get('stations') or []
+          valid = [s for s in stations if s.get('stationId') and isinstance(s.get('point'), list) and len(s['point']) == 2]
+          if not valid:
+              raise SystemExit('DMI station inventory contains no valid stations')
+          print(f'{len(valid)} DMI water-level stations ready for admin map')
+          PY
 
       - name: Build lean GitHub Pages artifact
         if: steps.preflight.outputs.should_run == 'true'
