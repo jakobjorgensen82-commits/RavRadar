@@ -1,5 +1,7 @@
 import { loadAdaptiveModel, modelAdjustment } from './adaptive-model.js';
 import { evaluateDirectionAnchors, anchorClassification, buildCoastTransportExplanation } from './direction-anchors.js';
+import { evaluateTransportEvent, classifyCoastalZone } from './coastal-process-model.js';
+import { buildScoreDebugTrace } from './debug-trace.js';
 const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, value));
 const numberOrNull = value => Number.isFinite(Number(value)) ? Number(value) : null;
 
@@ -148,6 +150,8 @@ export function calculateRavScore({ mode, zone, weather, history = {}, ruleEvalu
   const transportDiagnostics = {};
   const transport = calculateTransport(zone, weather, componentReasons.transport, transportDiagnostics);
   const release = calculateRelease(zone, history, componentReasons.release);
+  const transportEvent = evaluateTransportEvent({history,weather,zone});
+  const coastalProfile = classifyCoastalZone(zone);
   const adaptiveModel = loadAdaptiveModel();
   const weights = adaptiveModel.weights || SCORE_WEIGHTS;
   const rawScore = Math.round(huntability*weights.huntability + transport*weights.transport + release*weights.release);
@@ -166,7 +170,8 @@ export function calculateRavScore({ mode, zone, weather, history = {}, ruleEvalu
   const ruleAdjustment = finalScore - score;
   return {
     available:true, score:finalScore, baseScore:score, level:r.level, label:r.label, components, componentReasons,
-    explanation:{ weights, contributions, transportDiagnostics, rawScore, adaptiveAdjustment:adaptive.adjustment, adaptiveMatches:adaptive.matches, baseScore:score, ruleAdjustment, finalScore, formula:`Jagtbarhed ${Math.round(weights.huntability*100)} % + transport ${Math.round(weights.transport*100)} % + frigivelse ${Math.round(weights.release*100)} %` },
-    reasons:[...new Set([...Object.values(componentReasons).flat(), ...ruleReasons])].slice(0,8), stormBonus:release>=65, ruleEvaluation
+    explanation:{ weights, contributions, transportDiagnostics, transportEvent, coastalProfile, rawScore, adaptiveAdjustment:adaptive.adjustment, adaptiveMatches:adaptive.matches, baseScore:score, ruleAdjustment, finalScore, formula:`Jagtbarhed ${Math.round(weights.huntability*100)} % + transport ${Math.round(weights.transport*100)} % + frigivelse ${Math.round(weights.release*100)} %` },
+    reasons:[...new Set([...Object.values(componentReasons).flat(), ...ruleReasons])].slice(0,8), stormBonus:release>=65, ruleEvaluation,
+    debugTrace:buildScoreDebugTrace({mode,zone,weather,history,components,weights,transportDiagnostics,adaptive,ruleEvaluation,rawScore,baseScore:score,finalScore})
   };
 }

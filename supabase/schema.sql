@@ -258,3 +258,14 @@ drop policy if exists "authenticated admins manage documents" on public.admin_do
 create policy "authenticated admins manage documents" on public.admin_documents for all to authenticated using(true) with check(true);
 drop policy if exists "authenticated admins read document versions" on public.admin_document_versions;
 create policy "authenticated admins read document versions" on public.admin_document_versions for select to authenticated using(true);
+
+-- RavRadar 4.0.33: produktionsgrundlag for samtykke, prognosekobling og datakvalitet.
+alter table public.observations add column if not exists consent_version text;
+alter table public.observations add column if not exists forecast_issued_at timestamptz;
+alter table public.observations add column if not exists forecast_target_at timestamptz;
+alter table public.observations add column if not exists score_engine_version text;
+alter table public.observations add column if not exists data_quality_flags jsonb not null default '[]'::jsonb;
+alter table public.observations add column if not exists search_minutes integer check (search_minutes is null or search_minutes between 1 and 1440);
+alter table public.observations add column if not exists report_accuracy text check (report_accuracy is null or report_accuracy in ('exact','approximate','unknown'));
+create unique index if not exists observations_user_trip_unique on public.observations(user_id,trip_id) where user_id is not null and trip_id is not null;
+create index if not exists observations_forecast_target_idx on public.observations(zone_id, forecast_target_at desc);

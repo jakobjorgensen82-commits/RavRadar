@@ -1,0 +1,279 @@
+{
+  "generatedAt": "2026-07-29T21:09:04.568Z",
+  "count": 27,
+  "rows": [
+    {
+      "zoneId": "DK-NW-01",
+      "name": "Skagen og Grenen",
+      "configured": 225,
+      "pointBearing": 90,
+      "issues": [
+        "direction-mismatch-135deg"
+      ],
+      "suggestedAction": "manual-map-review"
+    },
+    {
+      "zoneId": "DK-NW-02",
+      "name": "Lønstrup og Løkken",
+      "configured": 90,
+      "pointBearing": 270,
+      "issues": [
+        "direction-mismatch-180deg"
+      ],
+      "suggestedAction": "manual-map-review"
+    },
+    {
+      "zoneId": "DK-NW-03",
+      "name": "Blokhus og Saltum",
+      "configured": 90,
+      "pointBearing": 270,
+      "issues": [
+        "direction-mismatch-180deg"
+      ],
+      "suggestedAction": "manual-map-review"
+    },
+    {
+      "zoneId": "DK-W-01",
+      "name": "Thy og Vorupør",
+      "configured": 90,
+      "pointBearing": 270,
+      "issues": [
+        "direction-mismatch-180deg"
+      ],
+      "suggestedAction": "manual-map-review"
+    },
+    {
+      "zoneId": "DK-W-02",
+      "name": "Hvide Sande og Søndervig",
+      "configured": 90,
+      "pointBearing": 270,
+      "issues": [
+        "direction-mismatch-180deg"
+      ],
+      "suggestedAction": "manual-map-review"
+    },
+    {
+      "zoneId": "DK-W-03",
+      "name": "Blåvand og Vejers",
+      "configured": 90,
+      "pointBearing": 0,
+      "issues": [
+        "direction-mismatch-90deg",
+        "identical-points"
+      ],
+      "suggestedAction": "manual-map-review"
+    },
+    {
+      "zoneId": "DK-NE-01",
+      "name": "Voerså og Asaa",
+      "configured": 270,
+      "pointBearing": 90,
+      "issues": [
+        "direction-mismatch-180deg"
+      ],
+      "suggestedAction": "manual-map-review"
+    },
+    {
+      "zoneId": "DK-E-01",
+      "name": "Øster Hurup og Helberskov",
+      "configured": 270,
+      "pointBearing": 90,
+      "issues": [
+        "direction-mismatch-180deg"
+      ],
+      "suggestedAction": "manual-map-review"
+    },
+    {
+      "zoneId": "DK-E-02",
+      "name": "Djursland nord og øst",
+      "configured": 260,
+      "pointBearing": 90,
+      "issues": [
+        "direction-mismatch-170deg"
+      ],
+      "suggestedAction": "manual-map-review"
+    },
+    {
+      "zoneId": "DK-E-03",
+      "name": "Aarhusbugten og Odder",
+      "configured": 270,
+      "pointBearing": 90,
+      "issues": [
+        "direction-mismatch-180deg"
+      ],
+      "suggestedAction": "manual-map-review"
+    },
+    {
+      "zoneId": "DK-E-04",
+      "name": "Vejle Fjord til Lillebælt",
+      "configured": 280,
+      "pointBearing": 90,
+      "issues": [
+        "direction-mismatch-170deg"
+      ],
+      "suggestedAction": "manual-map-review"
+    },
+    {
+      "zoneId": "DK-FYN-01",
+      "name": "Nordfyn og Kerteminde",
+      "configured": 225,
+      "pointBearing": 90,
+      "issues": [
+        "direction-mismatch-135deg",
+        "curved-coast-without-multiple-anchors"
+      ],
+      "suggestedAction": "manual-map-review"
+    },
+    {
+      "zoneId": "DK-SJ-01",
+      "name": "Sjællands Odde og Odsherred",
+      "configured": 180,
+      "pointBearing": 90,
+      "issues": [
+        "direction-mismatch-90deg"
+      ],
+      "suggestedAction": "manual-map-review"
+    },
+    {
+      "zoneId": "DK-SJ-02",
+      "name": "Nordsjælland og Øresund",
+      "configured": 225,
+      "pointBearing": 90,
+      "issues": [
+        "direction-mismatch-135deg"
+      ],
+      "suggestedAction": "manual-map-review"
+    },
+    {
+      "zoneId": "DK-SJ-03",
+      "name": "Stevns og Sydsjælland",
+      "configured": 300,
+      "pointBearing": 90,
+      "issues": [
+        "direction-mismatch-150deg"
+      ],
+      "suggestedAction": "manual-map-review"
+    },
+    {
+      "zoneId": "DK-LF-01",
+      "name": "Lolland-Falster sydkyst",
+      "configured": 0,
+      "pointBearing": 41,
+      "issues": [
+        "curved-coast-without-multiple-anchors"
+      ],
+      "suggestedAction": "review"
+    },
+    {
+      "zoneId": "DK-BH-01",
+      "name": "Bornholms kyster",
+      "configured": 270,
+      "pointBearing": 90,
+      "issues": [
+        "direction-mismatch-180deg"
+      ],
+      "suggestedAction": "manual-map-review"
+    },
+    {
+      "zoneId": "DK-LIM-01",
+      "name": "Limfjorden vest",
+      "configured": 90,
+      "pointBearing": 270,
+      "issues": [
+        "direction-mismatch-180deg"
+      ],
+      "suggestedAction": "manual-map-review"
+    },
+    {
+      "zoneId": "DK-LIM-02",
+      "name": "Limfjorden midt",
+      "configured": 180,
+      "pointBearing": 0,
+      "issues": [
+        "direction-mismatch-180deg",
+        "identical-points"
+      ],
+      "suggestedAction": "manual-map-review"
+    },
+    {
+      "zoneId": "DK-B04-09",
+      "name": "Rømø syd og Sønderstrand",
+      "configured": 90,
+      "pointBearing": 90,
+      "issues": [
+        "curved-coast-without-multiple-anchors"
+      ],
+      "suggestedAction": "review"
+    },
+    {
+      "zoneId": "DK-B06-20",
+      "name": "Endelave syd",
+      "configured": 0,
+      "pointBearing": 0,
+      "issues": [
+        "curved-coast-without-multiple-anchors"
+      ],
+      "suggestedAction": "review"
+    },
+    {
+      "zoneId": "DK-B08-11",
+      "name": "Sjællands Odde syd",
+      "configured": 18,
+      "pointBearing": 18,
+      "issues": [
+        "curved-coast-without-multiple-anchors"
+      ],
+      "suggestedAction": "review"
+    },
+    {
+      "zoneId": "DK-B10-02",
+      "name": "Ulvshale og Hårbølle",
+      "configured": 46,
+      "pointBearing": 46,
+      "issues": [
+        "curved-coast-without-multiple-anchors"
+      ],
+      "suggestedAction": "review"
+    },
+    {
+      "zoneId": "DK-B10-10",
+      "name": "Falster vest og Nysted Nor munding",
+      "configured": 90,
+      "pointBearing": 90,
+      "issues": [
+        "curved-coast-without-multiple-anchors"
+      ],
+      "suggestedAction": "review"
+    },
+    {
+      "zoneId": "DK-B10-15",
+      "name": "Lolland nord og Kragenæs",
+      "configured": 180,
+      "pointBearing": 180,
+      "issues": [
+        "curved-coast-without-multiple-anchors"
+      ],
+      "suggestedAction": "review"
+    },
+    {
+      "zoneId": "DK-B12-04",
+      "name": "Genner Bugt og Aabenraa Fjord",
+      "configured": 261,
+      "pointBearing": 261,
+      "issues": [
+        "curved-coast-without-multiple-anchors"
+      ],
+      "suggestedAction": "review"
+    },
+    {
+      "zoneId": "DK-B12-05",
+      "name": "Kruså og Flensborg Fjord nord",
+      "configured": 270,
+      "pointBearing": 270,
+      "issues": [
+        "curved-coast-without-multiple-anchors"
+      ],
+      "suggestedAction": "review"
+    }
+  ]
+}

@@ -7,7 +7,7 @@ import { recommendWaterStationBracket } from '../core/water-station-routing.js';
 import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled } from '../services/admin-document-store.js';
 import { interpretFreeTextRule } from '../core/free-text-rule-assistant.js';
 
-const VERSION='4.0.32';
+const VERSION='4.0.33';
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
 const RULES_KEY='ravradar-admin-rules-v1';
