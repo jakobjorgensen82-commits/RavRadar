@@ -1264,3 +1264,5 @@ if __name__ == "__main__":
         write_github_outputs("failed", error=str(exc))
         write_failure_summary(exc)
         raise SystemExit(2)
+
+# 4.0.28 diagnostics placeholders: zonesWithAnyData/zonesWith96Hours
