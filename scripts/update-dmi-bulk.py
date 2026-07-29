@@ -468,10 +468,37 @@ def nearest_candidates(gid: int, collection: str, zone: dict[str, Any]) -> list[
     og den reelle afstand tilbage til zonen beregnes. Ingen kandidat accepteres alene
     fordi den ligger tæt på et probe-punkt.
     """
-    cache_key = (collection, grid_signature(gid), zone["id"], GRID_CANDIDATE_TARGET)
+    # Atmosfæriske grids (HARMONIE) er komplette land/hav-grids og kræver ikke
+    # den dyre marine kyst-probing. Ét nearest-opslag pr. zone/grid er nok og
+    # genbruges på tværs af alle forecast-tider via GRID_INDEX_CACHE.
+    candidate_target = GRID_CANDIDATE_TARGET if collection in MARINE_COLLECTIONS else 4
+    cache_key = (collection, grid_signature(gid), zone["id"], candidate_target)
     cached = GRID_INDEX_CACHE.get(cache_key)
     if cached is not None:
         return cached
+    if collection not in MARINE_COLLECTIONS:
+        try:
+            candidates = codes_grib_find_nearest(gid, zone["lat"], zone["lon"], npoints=4)
+        except TypeError:
+            candidates = codes_grib_find_nearest(gid, zone["lat"], zone["lon"], False, 4)
+        except Exception:
+            candidates = []
+        if isinstance(candidates, dict):
+            candidates = [candidates]
+        direct = []
+        for candidate in candidates or []:
+            try:
+                direct.append({
+                    "index": int(candidate.get("index")),
+                    "latitude": float(candidate.get("lat")),
+                    "longitude": float(candidate.get("lon")),
+                    "distanceKm": haversine_km(zone["lat"], zone["lon"], float(candidate.get("lat")), float(candidate.get("lon"))),
+                })
+            except (TypeError, ValueError):
+                continue
+        normalized = sorted(direct, key=lambda item: item["distanceKm"])[:candidate_target]
+        GRID_INDEX_CACHE[cache_key] = normalized
+        return normalized
     probes = [(0.0, 0.0)]
     for radius in (0.025, 0.05, 0.09, 0.14):
         probes.extend((dlat * radius, dlon * radius) for dlat, dlon in (
@@ -499,7 +526,7 @@ def nearest_candidates(gid: int, collection: str, zone: dict[str, Any]) -> list[
             prior = by_index.get(index)
             if prior is None or distance < prior["distanceKm"]:
                 by_index[index] = {"index": index, "latitude": lat, "longitude": lon, "distanceKm": distance}
-    normalized = sorted(by_index.values(), key=lambda item: item["distanceKm"])[:GRID_CANDIDATE_TARGET]
+    normalized = sorted(by_index.values(), key=lambda item: item["distanceKm"])[:candidate_target]
     GRID_INDEX_CACHE[cache_key] = normalized
     return normalized
 

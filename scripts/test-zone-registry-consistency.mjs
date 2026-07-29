@@ -13,3 +13,5 @@ if(!dataService.includes("from './zone-registry.js'")) throw new Error('Appens d
 if(!admin.includes("from '../services/zone-registry.js'")) throw new Error('Administratorcenteret bruger ikke Zone Registry');
 if(!sw.includes("url.pathname.endsWith('/data/zones.geojson')")||!sw.includes('networkFirst(event.request)')) throw new Error('Service worker bruger ikke network-first for Zone Registry');
 console.log(`OK: én Zone Registry med ${all.length} registrerede, ${active.length} aktive og ${legacy.length} historiske zoner.`);
+
+if(!sw.includes("url.pathname.includes('/data/live/')")||!sw.includes("url.pathname.includes('/data/diagnostics/')")) throw new Error('Service worker bruger ikke network-first for live- og diagnostikfiler');

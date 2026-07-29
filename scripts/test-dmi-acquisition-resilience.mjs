@@ -49,11 +49,13 @@ const updater = await import('node:fs/promises').then(({ readFile }) => readFile
 for (const expected of ['stoppedByHttp429', 'attemptedZoneIds', 'successfulZoneIds', 'observationAcquisition', 'optimisticMinutesToFullCache']) {
   assert.ok(updater.includes(expected), `DMI-diagnostikken mangler ${expected}`);
 }
-assert.ok(updater.includes("dmiObservationSkipReason = 'skipped-after-http-429'"), 'oceanObs skal springes over efter HTTP 429 i den aktuelle kørsel');
+assert.ok(!updater.includes("dmiObservationSkipReason = 'skipped-after-http-429'"), 'ForecastEDR-429 må ikke blokere OceanObs');
+assert.ok(updater.includes("provider: 'DMI oceanObs water level', retries: DMI_MAX_RETRIES, dmi: false"), 'OceanObs skal have uafhængig rate-limit-domæne');
 assert.ok(!updater.includes("skipped-during-persisted-cooldown"), 'forecast-cooldown må ikke automatisk blokere oceanObs i en senere kørsel');
 
 console.log('DMI acquisition resilience bestået.');
 
 assert.ok(updater.includes('bulk-stac-grib-first-with-sequential-edr-repair'), 'DMI skal bruge bulk-STAC først og sekventiel EDR-reparation bagefter');
 assert.ok(updater.includes('mergeDmiWithFallback'), 'Open-Meteo skal udfylde manglende DMI-komponenter');
-assert.ok(updater.includes('marineCacheCompleteAtStart'), 'vind og bølger må først beriges efter fuld marin cache');
+assert.ok(updater.includes('atmosphereCacheCompleteAtStart'), 'vinddækning skal måles uafhængigt af marinecache');
+assert.ok(updater.includes("'dmi-atmosphere-repair'"), 'manglende DMI-vind skal have sin egen reparationsfase');
