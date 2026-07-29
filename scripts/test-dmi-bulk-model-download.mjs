@@ -50,7 +50,7 @@ assert.match(updater, /lastObservationSuccessMs/);
 assert.match(updater, /repairWaterLevelContinuity/);
 assert.match(updater, /open-meteo-adjusted|fallbackPolicy/);
 assert.match(bulk, /write_ocean_diagnostics/);
-assert.match(workflow, /RavRadar\/4\.0\.23/);
+assert.match(workflow, /RavRadar\/4\.0\.25/);
 assert.match(workflow, /DMI_BULK_FINALIZE_RESERVE_SECONDS/);
 assert.match(workflow, /timeout-minutes: 14/);
 assert.doesNotMatch(bulk, /unique = \{row\["valid"\]/);

@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const admin=fs.readFileSync('js/ui/admin-dashboard.js','utf8');
+const workflow=fs.readFileSync('.github/workflows/update-and-deploy.yml','utf8');
+const bulk=fs.readFileSync('scripts/update-dmi-bulk.py','utf8');
+const audit=fs.readFileSync('scripts/audit-implementation-plan-4.0.25.mjs','utf8');
+for(const token of ['oceanDiagnostics','cacheAudit','implementationAudit','freshMarine','preservedMarine','missingReasons','hourlyProviderSwitches']) assert.match(admin,new RegExp(token));
+assert.match(workflow,/DMI_BULK_COLLECTIONS_PER_RUN:\s*2/);
+assert.match(workflow,/audit:implementation-plan/);
+for(const token of ['GRID_CANDIDATE_TARGET','MARINE_MODEL_PENALTY_KM','VALID_POINT_TOO_FAR']) assert.match(bulk,new RegExp(token));
+for(const token of ['ALS_ODDE_PLACEMENT_REGRESSION','FORECAST_HORIZON_BELOW_ACCEPTED_MINIMUM','providerSwitchDetails','RAVRADAR_AUDIT_STRICT']) assert.match(audit,new RegExp(token));
+console.log('OK: samlet implementeringsplan 4.0.25 er koblet ind');
