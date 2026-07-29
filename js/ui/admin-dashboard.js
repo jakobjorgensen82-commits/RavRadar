@@ -6,7 +6,7 @@ import { loadZoneRegistry } from '../services/zone-registry.js';
 import { recommendWaterStationBracket } from '../core/water-station-routing.js';
 import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled } from '../services/admin-document-store.js';
 
-const VERSION='4.0.29';
+const VERSION='4.0.30';
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
 const RULES_KEY='ravradar-admin-rules-v1';
@@ -95,7 +95,7 @@ function haversineAdmin(a,b){const r=x=>x*Math.PI/180,dLat=r(b[1]-a[1]),dLon=r(b
 function automaticStationRecommendation(zoneId){
  const audited=state.stationRoutingAudit?.zones?.[zoneId];
  if(audited){const byId=new Map(state.waterStations.map(st=>[String(st.stationId),st]));return {method:audited.completeBracket?'Topologisk valg: én station på hver side langs kysten':`Ufuldstændigt topologisk valg: ${audited.reason||'mangler modstående station'}`,completeBracket:audited.completeBracket,reason:audited.reason,candidates:(audited.candidates||[]).map(x=>({...byId.get(String(x.stationId)),...x})),stations:(audited.stations||[]).map((x,i)=>({...byId.get(String(x.stationId)),...x,role:x.role||(i?'coast-after':'coast-before')}))};}
- const zone=state.zones.find(z=>z.properties?.id===zoneId),center=zoneCenter(zone);return recommendWaterStationBracket({zoneId,zoneName:zone?.properties?.name,point:center,coastLine:zone?.properties?.coastLine,stations:state.waterStations,haversineKm:haversineAdmin});
+ const zone=state.zones.find(z=>z.properties?.id===zoneId),center=zoneCenter(zone);return recommendWaterStationBracket({zoneId,zoneName:zone?.properties?.name,point:center,coastLine:zone?.properties?.coastLine,onshoreDirectionDeg:zone?.properties?.onshoreDirectionDeg,stations:state.waterStations,haversineKm:haversineAdmin});
 }
 function renderWaterStations(){
  const zoneId=state.selectedRoutingZoneId||state.zones[0]?.properties?.id;state.selectedRoutingZoneId=zoneId;const route=state.waterRouting.zones?.[zoneId]||{enabled:false,method:'inverse-distance',requireAll:true,stations:[]};const automatic=automaticStationRecommendation(zoneId);

@@ -14,3 +14,9 @@ const generic=recommendWaterStationBracket({zoneId:'GEN',zoneName:'Generisk kyst
 assert.equal(generic.completeBracket,true);
 assert.deepEqual(new Set(generic.stations.map(x=>x.stationId)),new Set(['N','S']));
 console.log('OK: topologisk vandstandsrouting vælger modsatte sider langs kysten.');
+const fallbackAxis=recommendWaterStationBracket({zoneId:'FALLBACK',zoneName:'Kyst uden linje',point:[10,56],onshoreDirectionDeg:90,stations:[{stationId:'N',name:'Nord',point:[10,56.1],properties:{status:'Active',parameterId:['sea_reg']}},{stationId:'S',name:'Syd',point:[10,55.9],properties:{status:'Active',parameterId:['sea_reg']}}],haversineKm});
+assert.equal(fallbackAxis.completeBracket,true);
+assert.equal(fallbackAxis.axis.source,'onshore-direction-fallback');
+const historicalFiltered=recommendWaterStationBracket({zoneId:'HIST',zoneName:'Historisk filter',point:[10,56],coastLine:[[10,55.8],[10,56.2]],stations:[{stationId:'OLD',name:'Historisk',point:[10,56.05],registryStatus:'historical',properties:{parameterId:['sea_reg']}},{stationId:'N',name:'Nord',point:[10,56.1],registryStatus:'active',properties:{parameterId:['sea_reg']}},{stationId:'S',name:'Syd',point:[10,55.9],registryStatus:'active',properties:{parameterId:['sea_reg']}}],haversineKm});
+assert.ok(!historicalFiltered.candidates.some(x=>x.stationId==='OLD'));
+console.log('OK: fallback-kystakse og historiske stationsfiltre virker.');

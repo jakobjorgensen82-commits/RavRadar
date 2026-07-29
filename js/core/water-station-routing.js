@@ -7,9 +7,14 @@ function localKm(point, origin) {
   return [(point[0] - origin[0]) * lonScale, (point[1] - origin[1]) * latScale];
 }
 
-function coastlineAxis(point, coastLine) {
+function coastlineAxis(point, coastLine, onshoreDirectionDeg = null) {
   const line = Array.isArray(coastLine) ? coastLine.filter(p => Array.isArray(p) && p.length === 2) : [];
-  if (line.length < 2) return null;
+  if (line.length < 2) {
+    const onshore = finite(onshoreDirectionDeg);
+    if (onshore === null) return null;
+    const tangent = (onshore + 90) * Math.PI / 180;
+    return { x: Math.sin(tangent), y: Math.cos(tangent), distance: null, source: 'onshore-direction-fallback' };
+  }
   let best = null;
   for (let i = 0; i < line.length - 1; i += 1) {
     const a = localKm(line[i], point), b = localKm(line[i + 1], point);
@@ -27,7 +32,9 @@ function coastlineAxis(point, coastLine) {
 function stationUsable(station) {
   if (!station?.stationId || !Array.isArray(station.point) || station.point.length !== 2) return false;
   const status = normText(station.registryStatus ?? station.properties?.status);
-  return !['retired', 'deleted'].includes(status);
+  if (['retired', 'deleted', 'historical', 'inactive', 'future'].includes(status)) return false;
+  const parameters = Array.isArray(station.properties?.parameterId) ? station.properties.parameterId.map(normText) : [];
+  return parameters.length === 0 || parameters.some(id => ['sea_reg', 'sealev_dvr', 'sealev_ln'].includes(id));
 }
 
 function weightedSelection(selected) {
@@ -42,8 +49,8 @@ const SPECIAL_BRACKETS = [{
   sides: [/(^|\b)hals(\b|\s|i|ii|2)/, /(als odde|helberskov|\bals\b)/]
 }];
 
-export function recommendWaterStationBracket({ zoneId, zoneName, point, coastLine, stations, levels = null, haversineKm = null, maxDistanceKm = 140 } = {}) {
-  const axis = coastlineAxis(point, coastLine);
+export function recommendWaterStationBracket({ zoneId, zoneName, point, coastLine, onshoreDirectionDeg = null, stations, levels = null, haversineKm = null, maxDistanceKm = 140 } = {}) {
+  const axis = coastlineAxis(point, coastLine, onshoreDirectionDeg);
   const zoneText = normText(`${zoneName ?? ''} ${zoneId ?? ''}`);
   const raw = (stations ?? []).filter(stationUsable).map(station => {
     const v = localKm(station.point, point);

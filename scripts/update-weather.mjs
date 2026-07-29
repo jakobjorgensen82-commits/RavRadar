@@ -294,14 +294,22 @@ async function readCachedWaterStations() {
   try { const doc=JSON.parse(await fs.readFile(WATER_STATION_INVENTORY_PATH,'utf8')); return Array.isArray(doc.stations)?doc.stations:[]; } catch { return []; }
 }
 
+function stationEffectiveStatus(properties, now = Date.now()) {
+  const from = Date.parse(properties?.operationFrom ?? properties?.validFrom ?? '') || null;
+  const to = Date.parse(properties?.operationTo ?? properties?.validTo ?? '') || null;
+  if (from && from > now) return 'future';
+  if (to && to < now) return 'historical';
+  return String(properties?.status ?? '').toLowerCase() === 'active' ? 'active' : 'known';
+}
+
 function stationRegistryRecord(station, previous = null, seenAt = new Date().toISOString()) {
   const properties = { ...(previous?.properties ?? {}), ...(station?.properties ?? {}) };
-  const active = String(properties.status ?? '').toLowerCase() === 'active';
+  const registryStatus = stationEffectiveStatus(properties, Date.parse(seenAt));
   return {
     ...(previous ?? {}), stationId: String(station.stationId), name: station.name ?? previous?.name ?? 'DMI station', point: station.point ?? previous?.point,
-    properties, registryStatus: active ? 'active' : (previous?.registryStatus ?? 'known'),
+    properties, registryStatus,
     firstSeenAt: previous?.firstSeenAt ?? seenAt, lastSeenAt: seenAt,
-    lastActiveSeenAt: active ? seenAt : (previous?.lastActiveSeenAt ?? null)
+    lastActiveSeenAt: registryStatus === 'active' ? seenAt : (previous?.lastActiveSeenAt ?? null)
   };
 }
 
@@ -310,14 +318,15 @@ async function dmiWaterStations() {
     dmiWaterStationsPromise = (async () => {
       const cached = await readCachedWaterStations();
       try {
-        const features = await fetchAllFeatures(`${DMI_OCEAN_OBS_ROOT}/station/items`, { status: 'Active' }, { provider: 'DMI oceanObs stations', retries: DMI_MAX_RETRIES, dmi: false });
+        const features = await fetchAllFeatures(`${DMI_OCEAN_OBS_ROOT}/station/items`, {}, { provider: 'DMI oceanObs stations', retries: DMI_MAX_RETRIES, dmi: false }, { pageSize: 1000, maxPages: 20 });
         const fetched = features.map(feature => ({ stationId: String(feature.properties?.stationId ?? feature.properties?.id ?? ''), name: feature.properties?.name ?? feature.properties?.stationName ?? feature.properties?.countryName ?? 'DMI station', point: feature.geometry?.coordinates, properties: feature.properties ?? {} })).filter(station => station.stationId && Array.isArray(station.point) && station.point.length === 2);
         const now = new Date().toISOString(), merged = new Map(cached.map(station => [String(station.stationId), station]));
         for (const station of fetched) merged.set(String(station.stationId), stationRegistryRecord(station, merged.get(String(station.stationId)), now));
         for (const [id, station] of merged) if (!fetched.some(item => String(item.stationId) === id)) merged.set(id, { ...station, registryStatus: station.registryStatus === 'active' ? 'not-returned-this-run' : (station.registryStatus ?? 'known') });
+        for (const [id, station] of merged) merged.set(id, stationRegistryRecord(station, station, now));
         const stations = [...merged.values()].filter(station => station.stationId && Array.isArray(station.point) && station.point.length === 2);
         await fs.mkdir('data/live', { recursive: true });
-        await fs.writeFile(WATER_STATION_INVENTORY_PATH, JSON.stringify({ schemaVersion: 2, generatedAt: now, source: 'persistent-merged-dmi-oceanobs-station-registry', fetchedActiveCount: fetched.length, retainedKnownCount: Math.max(0, stations.length - fetched.length), stations }, null, 2));
+        await fs.writeFile(WATER_STATION_INVENTORY_PATH, JSON.stringify({ schemaVersion: 2, generatedAt: now, source: 'persistent-merged-dmi-oceanobs-complete-station-registry', fetchedStationCount: fetched.length, fetchedActiveCount: stations.filter(station => station.registryStatus === 'active').length, retainedKnownCount: Math.max(0, stations.length - fetched.length), stations }, null, 2));
         return stations;
       } catch (error) {
         if (cached.length) { console.warn(`DMI stationsregister kunne ikke opdateres; bruger ${cached.length} persistente stationer`); return cached; }
@@ -480,7 +489,7 @@ function manualStationInterpolation(feature, point, stations, levels, route) {
 }
 
 function topologyStationInterpolation(feature, point, stations, levels) {
-  const recommendation = recommendWaterStationBracket({ zoneId: feature.properties?.id, zoneName: feature.properties?.name, point, coastLine: featureCoastLine(feature), stations, levels, haversineKm });
+  const recommendation = recommendWaterStationBracket({ zoneId: feature.properties?.id, zoneName: feature.properties?.name, point, coastLine: featureCoastLine(feature), onshoreDirectionDeg: feature.properties?.onshoreDirectionDeg, stations, levels, haversineKm });
   if (!recommendation.completeBracket || recommendation.stations.length !== 2) return null;
   const selected = recommendation.stations;
   const valueCm = selected.reduce((sum, item) => sum + Number(item.level.valueCm) * item.weight, 0);
@@ -546,12 +555,12 @@ function applyObservedWaterLevel(zone, feature, observation, generatedAt) {
 async function writeWaterStationRoutingAudit(features, stations, generatedAt) {
   const zones = {}, counts = { totalZones: 0, completeBracket: 0, incompleteBracket: 0, noCandidates: 0, namedRules: 0 };
   for (const feature of features) {
-    const point = zonePoint(feature), recommendation = recommendWaterStationBracket({ zoneId: feature.properties?.id, zoneName: feature.properties?.name, point, coastLine: featureCoastLine(feature), stations, haversineKm });
+    const point = zonePoint(feature), recommendation = recommendWaterStationBracket({ zoneId: feature.properties?.id, zoneName: feature.properties?.name, point, coastLine: featureCoastLine(feature), onshoreDirectionDeg: feature.properties?.onshoreDirectionDeg, stations, haversineKm });
     counts.totalZones += 1; counts[recommendation.completeBracket ? 'completeBracket' : 'incompleteBracket'] += 1;
     if (!recommendation.candidates.length) counts.noCandidates += 1; if (recommendation.ruleId) counts.namedRules += 1;
     zones[feature.properties?.id] = { zoneName: feature.properties?.name, method: recommendation.method, ruleId: recommendation.ruleId ?? null, completeBracket: recommendation.completeBracket, reason: recommendation.reason, stations: recommendation.stations.map(item => ({ stationId:item.stationId,name:item.name,role:item.role,distanceKm:round(item.distanceKm,1),alongCoastKm:round(item.alongKm,1),crossCoastKm:round(item.crossKm,1),weight:round(item.weight,3),registryStatus:item.registryStatus??item.properties?.status??null })), candidates: recommendation.candidates.map(item => ({ stationId:item.stationId,name:item.name,distanceKm:round(item.distanceKm,1),alongCoastKm:round(item.alongKm,1),crossCoastKm:round(item.crossKm,1),registryStatus:item.registryStatus??item.properties?.status??null })) };
   }
-  const doc = { schemaVersion: 1, generatedAt, description: 'Automatisk topologiaudit: stationer skal indramme zonen fra modsatte sider langs den lokale kystlinje.', stationInventoryCount: stations.length, counts, zones };
+  const doc = { schemaVersion: 2, generatedAt, description: 'Automatisk topologiaudit: stationer skal indramme zonen fra modsatte sider langs den lokale kystlinje.', stationInventoryCount: stations.length, counts, zones };
   await fs.writeFile(WATER_STATION_ROUTING_AUDIT_PATH, `${JSON.stringify(doc,null,2)}\n`);
   return doc;
 }
