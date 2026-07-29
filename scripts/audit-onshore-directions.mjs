@@ -31,7 +31,7 @@ let changed = 0;
 
 for (const feature of geojson.features ?? []) {
   const p = feature.properties ?? {};
-  if (p.zoneStatus === 'legacy') continue;
+  if (p.zoneStatus !== 'active') continue;
   if (!Array.isArray(p.dataPoint) || !Array.isArray(p.pinPoint)) throw new Error(`${p.id}: dataPoint/pinPoint mangler`);
   const expectedRaw = bearing(p.dataPoint, p.pinPoint);
   const expected = expectedRaw === null ? null : Math.round(expectedRaw);

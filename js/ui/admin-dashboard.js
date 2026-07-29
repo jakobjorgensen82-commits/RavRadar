@@ -7,7 +7,7 @@ import { recommendWaterStationBracket } from '../core/water-station-routing.js';
 import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled } from '../services/admin-document-store.js';
 import { interpretFreeTextRule } from '../core/free-text-rule-assistant.js';
 
-const VERSION='4.0.33';
+const VERSION='4.0.35';
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
 const RULES_KEY='ravradar-admin-rules-v1';
@@ -148,7 +148,7 @@ function drawDirectionZone(feature,anchors,selectedAnchorId,onPointMoved){
 }
 
 function renderDirectionAudit(){
- const reviews=directionReviews();const active=state.zones.filter(z=>z.properties?.zoneStatus!=='legacy');const verified=active.filter(z=>reviews[z.properties?.id]?.status==='verified').length;
+ const reviews=directionReviews();const active=state.zones.filter(z=>z.properties?.zoneStatus==='active');const verified=active.filter(z=>reviews[z.properties?.id]?.status==='verified').length;
  content.innerHTML=`<article class="admin-card direction-intro"><div class="rule-card-head"><div><h2>Geografisk kontrol af kystdele</h2><p>Flyt punkterne direkte på kortet. <b>Blå skal ligge i havet</b>, <b>grøn ved stranden/land</b>, og den røde retning skal pege fra havet ind mod land.</p></div><span class="badge">${verified}/${active.length} zoner godkendt</span></div><ol class="direction-steps"><li>Vælg en zone og derefter den kystdel, du vil redigere.</li><li>Træk det blå og grønne punkt til de rigtige steder.</li><li>Klik <b>Beregn retning fra punkterne</b>, eller finjustér graderne.</li><li>Ved en bugtet kyst kan du tilføje flere kystdele. Hver kystdel får sit eget havpunkt, landpunkt og retning.</li><li>Godkend zonen og download til sidst en ny <code>zones.geojson</code>.</li></ol><p class="hint">Den røde cirkel er slutningen af retningen – altså den ende, retningen peger imod. Ændringer gemmes lokalt i browseren, indtil du eksporterer zonefilen.</p></article>
  <div class="direction-layout"><article class="admin-card direction-queue"><div class="toolbar"><input id="directionSearch" placeholder="Søg efter zone"><select id="directionFilter"><option value="pending">Ikke godkendte først</option><option value="uncertain">Kun mistænkelige</option><option value="verified">Kun godkendte</option><option value="all">Alle zoner</option></select></div><div id="directionZoneList" class="direction-zone-list"></div></article>
  <article class="admin-card direction-work"><div id="directionEmpty" class="empty">Vælg en zone i listen.</div><div id="directionEditor" hidden><div class="rule-card-head"><div><span id="directionStatus" class="badge"></span><h2 id="directionName"></h2><p id="directionMeta" class="muted"></p></div><button id="directionOpenMain" class="admin-button secondary">Vis på hovedkortet</button></div>

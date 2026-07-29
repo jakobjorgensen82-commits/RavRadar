@@ -28,15 +28,15 @@ const zones = JSON.parse(await fs.readFile('data/zones.geojson', 'utf8'));
 let active = 0;
 for (const feature of zones.features ?? []) {
   const p = feature.properties ?? {};
-  if (p.zoneStatus === 'legacy') continue;
+  if (p.zoneStatus !== 'active') continue;
   active += 1;
   assert.ok(Number.isFinite(Number(p.onshoreDirectionDeg)), `${p.id}: onshoreDirectionDeg mangler`);
   assert.ok(Number(p.onshoreDirectionDeg) >= 0 && Number(p.onshoreDirectionDeg) < 360, `${p.id}: onshoreDirectionDeg skal være 0-359°`);
   assert.ok(p.onshoreDirectionSource, `${p.id}: dokumentationskilde mangler`);
 }
-assert.equal(active, 222);
-const djursland = zones.features.find(feature => feature.properties?.id === 'DK-E-02')?.properties;
-assert.ok(djursland, 'DK-E-02 mangler');
-assert.ok(angularDifference(djursland.onshoreDirectionDeg, 260) <= 15, 'Djurslands østkyst skal have landretning omtrent vest, ikke øst');
+assert.equal(active, 210);
+const djursland = zones.features.find(feature => feature.properties?.id === 'DK-B06-02')?.properties;
+assert.ok(djursland, 'DK-B06-02 mangler');
+assert.ok(angularDifference(djursland.onshoreDirectionDeg, 270) <= 15, 'Djurslands østkyst skal have landretning omtrent vest, ikke øst');
 assert.ok(transport({ onshore:djursland.onshoreDirectionDeg, currentToward:90, windFrom:225 }) <= 28, 'Strøm mod øst ved Djurslands østkyst skal klassificeres som kraftigt udgående');
 console.log(`Retningskonventioner og ${active} aktive onshore-retninger er dokumenteret; Djursland-regressionen består.`);

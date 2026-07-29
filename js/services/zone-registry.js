@@ -4,8 +4,8 @@ let registryPromise = null;
 
 function normalize(collection) {
   const all = Array.isArray(collection?.features) ? collection.features : [];
-  const active = all.filter(feature => feature?.properties?.zoneStatus !== 'legacy');
-  const legacy = all.filter(feature => feature?.properties?.zoneStatus === 'legacy');
+  const active = all.filter(feature => feature?.properties?.zoneStatus === 'active');
+  const legacy = all.filter(feature => feature?.properties?.zoneStatus !== 'active');
   const ids = new Set();
   const duplicates = [];
   for (const feature of all) {

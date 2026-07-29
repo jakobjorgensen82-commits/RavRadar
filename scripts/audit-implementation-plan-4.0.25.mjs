@@ -4,7 +4,7 @@ const readJson = path => JSON.parse(fs.readFileSync(path, 'utf8'));
 const exists = path => fs.existsSync(path);
 const zonesDoc = readJson('data/zones.geojson');
 const conditions = readJson('data/live/conditions.json');
-const active = (zonesDoc.features || []).filter(f => f.properties?.status !== 'legacy' && f.properties?.zoneStatus !== 'legacy');
+const active = (zonesDoc.features || []).filter(f => f.properties?.zoneStatus === 'active');
 const issues = [];
 const horizons = [];
 const providerSwitchDetails = [];
@@ -14,7 +14,7 @@ const angleDiff = (a,b) => { const d=Math.abs(norm(a)-norm(b));return Math.min(d
 const hoursBetween = (a,b) => (Date.parse(b)-Date.parse(a))/36e5;
 const components = ['wind','wave','current','waterLevel'];
 const summary = {
-  generatedAt: new Date().toISOString(), version: '4.0.33', activeZones: active.length,
+  generatedAt: new Date().toISOString(), version: '4.0.35', activeZones: active.length,
   conditionsZones: Object.keys(conditions.zones || {}).length, zonesWithDirectionAnchors: 0,
   zonesWithValidGeometryDirection: 0, zonesWithAdminStationOverride: 0,
   duplicateForecastTimestampZones: 0, nonMonotonicForecastZones: 0,

@@ -1,11 +1,11 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-07-29T00:38:31.849Z",
-  "version": "4.0.25",
-  "activeZones": 222,
+  "generatedAt": "2026-07-29T21:37:58.672Z",
+  "version": "4.0.33",
+  "activeZones": 210,
   "conditionsZones": 0,
   "zonesWithDirectionAnchors": 0,
-  "zonesWithValidGeometryDirection": 212,
+  "zonesWithValidGeometryDirection": 210,
   "zonesWithAdminStationOverride": 0,
   "duplicateForecastTimestampZones": 0,
   "nonMonotonicForecastZones": 0,
@@ -18,10 +18,10 @@
     "waterLevel": 0
   },
   "componentMissingZones": {
-    "wind": 222,
-    "wave": 222,
-    "current": 222,
-    "waterLevel": 222
+    "wind": 210,
+    "wave": 210,
+    "current": 210,
+    "waterLevel": 210
   },
   "alsOddePlacementVerified": true,
   "forecastHorizonHours": {
@@ -30,12 +30,12 @@
     "max": null
   },
   "summary": {
-    "generatedAt": "2026-07-29T00:38:31.849Z",
-    "version": "4.0.25",
-    "activeZones": 222,
+    "generatedAt": "2026-07-29T21:37:58.672Z",
+    "version": "4.0.33",
+    "activeZones": 210,
     "conditionsZones": 0,
     "zonesWithDirectionAnchors": 0,
-    "zonesWithValidGeometryDirection": 212,
+    "zonesWithValidGeometryDirection": 210,
     "zonesWithAdminStationOverride": 0,
     "duplicateForecastTimestampZones": 0,
     "nonMonotonicForecastZones": 0,
@@ -48,10 +48,10 @@
       "waterLevel": 0
     },
     "componentMissingZones": {
-      "wind": 222,
-      "wave": 222,
-      "current": 222,
-      "waterLevel": 222
+      "wind": 210,
+      "wave": 210,
+      "current": 210,
+      "waterLevel": 210
     },
     "alsOddePlacementVerified": true,
     "forecastHorizonHours": {
@@ -71,70 +71,9 @@
     "marineErrors": 0
   },
   "providerSwitchDetails": [],
-  "issues": [
-    {
-      "severity": "warning",
-      "code": "ONSHORE_DIRECTION_GEOMETRY_MISMATCH",
-      "zoneId": "DK-E-02",
-      "differenceDeg": 170
-    },
-    {
-      "severity": "warning",
-      "code": "ONSHORE_DIRECTION_GEOMETRY_MISMATCH",
-      "zoneId": "DK-E-03",
-      "differenceDeg": 180
-    },
-    {
-      "severity": "warning",
-      "code": "ONSHORE_DIRECTION_GEOMETRY_MISMATCH",
-      "zoneId": "DK-E-04",
-      "differenceDeg": 170
-    },
-    {
-      "severity": "warning",
-      "code": "ONSHORE_DIRECTION_GEOMETRY_MISMATCH",
-      "zoneId": "DK-FYN-01",
-      "differenceDeg": 135
-    },
-    {
-      "severity": "warning",
-      "code": "ONSHORE_DIRECTION_GEOMETRY_MISMATCH",
-      "zoneId": "DK-SJ-01",
-      "differenceDeg": 90
-    },
-    {
-      "severity": "warning",
-      "code": "ONSHORE_DIRECTION_GEOMETRY_MISMATCH",
-      "zoneId": "DK-SJ-02",
-      "differenceDeg": 135
-    },
-    {
-      "severity": "warning",
-      "code": "ONSHORE_DIRECTION_GEOMETRY_MISMATCH",
-      "zoneId": "DK-SJ-03",
-      "differenceDeg": 150
-    },
-    {
-      "severity": "warning",
-      "code": "ONSHORE_DIRECTION_GEOMETRY_MISMATCH",
-      "zoneId": "DK-BH-01",
-      "differenceDeg": 180
-    },
-    {
-      "severity": "warning",
-      "code": "ONSHORE_DIRECTION_GEOMETRY_MISMATCH",
-      "zoneId": "DK-LIM-01",
-      "differenceDeg": 180
-    },
-    {
-      "severity": "warning",
-      "code": "ONSHORE_DIRECTION_GEOMETRY_MISMATCH",
-      "zoneId": "DK-LIM-02",
-      "differenceDeg": 180
-    }
-  ],
+  "issues": [],
   "issueCounts": {
     "errors": 0,
-    "warnings": 10
+    "warnings": 0
   }
 }

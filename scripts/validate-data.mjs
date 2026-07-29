@@ -4,11 +4,14 @@ const zones = JSON.parse(fs.readFileSync("data/zones.geojson", "utf8"));
 const conditions = JSON.parse(fs.readFileSync("data/live/conditions.json", "utf8"));
 
 if (zones.type !== "FeatureCollection" || !Array.isArray(zones.features)) throw new Error("Ugyldig zones.geojson");
+if (zones.features.length !== 210) throw new Error(`Forventede 210 officielle zoner, fandt ${zones.features.length}`);
+
 
 const ids = new Set();
 for (const feature of zones.features) {
   const properties = feature?.properties || {};
   const id = properties.id;
+  if (properties.zoneStatus !== "active") throw new Error(`${id}: zoneStatus skal være active`);
   if (!id || ids.has(id)) throw new Error(`Manglende eller dubleret zone-id: ${id}`);
   if (!properties.name || !properties.region) throw new Error(`${id}: navn eller region mangler`);
   if (!["east", "west", "limfjord"].includes(properties.coastType)) throw new Error(`${id}: ugyldig coastType`);

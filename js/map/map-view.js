@@ -82,7 +82,7 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
 
   for (const feature of featureCollection.features) {
     const zone = feature.properties;
-    if (zone.zoneStatus === "legacy") continue;
+    if (zone.zoneStatus !== "active") continue;
     const result = scoreForZone(zone.id);
     const coastLine = Array.isArray(zone.coastLine) && zone.coastLine.length > 1
       ? zone.coastLine.map(([lng, lat]) => [lat, lng])
