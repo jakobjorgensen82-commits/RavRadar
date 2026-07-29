@@ -853,16 +853,30 @@ function mergeDmiWithFallback(dmiResult, fallbackZone) {
   };
 }
 
+function componentForecastHorizonHours(record, generatedAt, keys) {
+  const start = Date.parse(generatedAt);
+  if (!Number.isFinite(start)) return 0;
+  const validTimes = normalizeForecastHourly(record?.hourly ?? [], { limit: Number.MAX_SAFE_INTEGER })
+    .filter(row => keys.every(key => row?.[key] !== null && row?.[key] !== undefined))
+    .map(row => Date.parse(row.time))
+    .filter(time => Number.isFinite(time) && time >= start - 65 * 60000);
+  return validTimes.length ? Math.max(0, (Math.max(...validTimes) - start) / 3600000) : 0;
+}
+
 function recordHasMarine(record, generatedAt) {
   const coverage = dmiForecastCoverage(record, generatedAt);
   const completeness = record?.model?.completeness ?? {};
-  return coverage.available && completeness.ocean === true;
+  return coverage.available && completeness.ocean === true
+    && componentForecastHorizonHours(record, generatedAt, ['waterLevelCm','currentSpeedMps','currentDirectionDeg']) >= 24;
 }
 
 function recordHasAtmosphere(record, generatedAt) {
   const coverage = dmiForecastCoverage(record, generatedAt);
   const completeness = record?.model?.completeness ?? {};
-  return coverage.available && completeness.wind === true && completeness.wave === true;
+  const windHours = componentForecastHorizonHours(record, generatedAt, ['windSpeedMps','windDirectionDeg']);
+  const waveHours = componentForecastHorizonHours(record, generatedAt, ['waveHeightM']);
+  return coverage.available && completeness.wind === true && completeness.wave === true
+    && windHours >= 96 && waveHours >= 24;
 }
 
 function waterLevelDiagnostic({ feature, point, collections, currentForecast, stationWaterLevel, forecastRecord, generatedAt, fromCache = false } = {}) {
@@ -1495,13 +1509,33 @@ function buildRuntimeDiagnostics(output, health) {
 function summarizeDmiComponentCoverage(records, generatedAt) {
   const rows = Object.values(records ?? {}).filter(record => dmiForecastCoverage(record, generatedAt).available);
   const has = (record, predicate) => normalizeForecastHourly(record?.hourly ?? []).some(predicate);
+  const horizonStats = keys => {
+    const values = rows.map(record => componentForecastHorizonHours(record, generatedAt, keys));
+    return {
+      zonesWithAnyData: values.filter(value => value > 0).length,
+      zonesWith24Hours: values.filter(value => value >= 24).length,
+      zonesWith96Hours: values.filter(value => value >= 96).length,
+      averageHours: values.length ? round(values.reduce((sum, value) => sum + value, 0) / values.length, 1) : 0,
+      minimumHours: values.length ? round(Math.min(...values), 1) : 0,
+      maximumHours: values.length ? round(Math.max(...values), 1) : 0
+    };
+  };
   const summary = {
     availableZones: rows.length,
     windZones: rows.filter(record => has(record, item => item.windSpeedMps !== null && item.windDirectionDeg !== null)).length,
     waveZones: rows.filter(record => has(record, item => item.waveHeightM !== null)).length,
     currentZones: rows.filter(record => has(record, item => item.currentSpeedMps !== null && item.currentDirectionDeg !== null)).length,
     waterLevelZones: rows.filter(record => has(record, item => item.waterLevelCm !== null)).length,
-    completeZones: rows.filter(record => has(record, item => item.windSpeedMps !== null && item.waveHeightM !== null && item.currentSpeedMps !== null && item.waterLevelCm !== null)).length,
+    componentHorizonCoverage: {
+      wind: horizonStats(['windSpeedMps','windDirectionDeg']),
+      wave: horizonStats(['waveHeightM']),
+      current: horizonStats(['currentSpeedMps','currentDirectionDeg']),
+      waterLevel: horizonStats(['waterLevelCm'])
+    },
+    completeZones: rows.filter(record => componentForecastHorizonHours(record, generatedAt, ['windSpeedMps','windDirectionDeg']) >= 96
+      && componentForecastHorizonHours(record, generatedAt, ['waveHeightM']) >= 24
+      && componentForecastHorizonHours(record, generatedAt, ['currentSpeedMps','currentDirectionDeg']) >= 24
+      && componentForecastHorizonHours(record, generatedAt, ['waterLevelCm']) >= 24).length,
     duplicateTimestampZones: rows.filter(record => {
       const raw = (record?.hourly ?? []).filter(item => Number.isFinite(Date.parse(item?.time)));
       return new Set(raw.map(item => new Date(Date.parse(item.time)).toISOString())).size !== raw.length;

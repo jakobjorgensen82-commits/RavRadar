@@ -116,6 +116,7 @@ jobs:
           DMI_BULK_COLLECTIONS_PER_RUN: 2
           DMI_BULK_REQUEST_TIMEOUT_SECONDS: 90
           DMI_BULK_REFRESH_MINUTES: 60
+          DMI_BULK_COMPLETE_HORIZON_HOURS: 96
           DMI_BULK_FORCE_REFRESH: ${{ steps.preflight.outputs.dmi_changed }}
           DMI_BULK_RAW_DIR: .cache/dmi-grib
           WEATHER_USER_AGENT: "RavRadar/4.0.27 (${{ github.server_url }}/${{ github.repository }})"

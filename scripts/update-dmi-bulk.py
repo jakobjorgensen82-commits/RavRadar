@@ -51,6 +51,7 @@ MAX_ASSETS_PER_COLLECTION = max(1, int(os.getenv("DMI_BULK_MAX_ASSETS_PER_COLLEC
 TIME_STRIDE_HOURS = max(1, int(os.getenv("DMI_BULK_TIME_STRIDE_HOURS", "3")))
 COLLECTIONS_PER_RUN = max(1, int(os.getenv("DMI_BULK_COLLECTIONS_PER_RUN", "2")))
 REFRESH_MINUTES = max(1, int(os.getenv("DMI_BULK_REFRESH_MINUTES", "60")))
+COMPLETE_HORIZON_HOURS = max(24, int(os.getenv("DMI_BULK_COMPLETE_HORIZON_HOURS", "96")))
 FORCE_REFRESH = os.getenv("DMI_BULK_FORCE_REFRESH", "false").lower() in {"1", "true", "yes", "on"}
 USER_AGENT = os.getenv("WEATHER_USER_AGENT", "RavRadar DMI bulk downloader")
 API_KEY = os.getenv("DMI_API_KEY")
@@ -727,10 +728,11 @@ def collection_schedule(previous: dict[str, Any]) -> list[str]:
     now = time.time()
     previous_diag = previous.get("diagnostics") or {}
     zone_count = max(1, int(previous_diag.get("zoneCount") or 1))
+    horizon_coverage = previous_diag.get("componentHorizonCoverage") or {}
     complete = {
-        "atmosphere": int(previous_diag.get("completeWindZones") or 0),
-        "wave": int(previous_diag.get("completeWaveZones") or 0),
-        "marine": int(previous_diag.get("completeMarineZones") or 0),
+        "atmosphere": int((horizon_coverage.get("wind") or {}).get("zonesWith96Hours") or previous_diag.get("completeWindZones") or 0),
+        "wave": int((horizon_coverage.get("wave") or {}).get("zonesWith96Hours") or previous_diag.get("completeWaveZones") or 0),
+        "marine": int((horizon_coverage.get("marine") or {}).get("zonesWith96Hours") or previous_diag.get("completeMarineZones") or 0),
     }
     missing = {family: max(0, zone_count - count) for family, count in complete.items()}
 
@@ -768,6 +770,27 @@ def collection_schedule(previous: dict[str, Any]) -> list[str]:
 
 
 
+def component_horizon_hours(zone: dict[str, Any], required: tuple[str, ...], now_epoch: float | None = None) -> float:
+    now_value = time.time() if now_epoch is None else now_epoch
+    valid_times = [epoch(valid) for valid, hour in (zone.get("hourly") or {}).items()
+                   if epoch(valid) >= now_value - 3600 and all(key in hour for key in required)]
+    return max(0.0, (max(valid_times) - now_value) / 3600.0) if valid_times else 0.0
+
+
+def coverage_summary(zones: dict[str, Any], required: tuple[str, ...]) -> dict[str, Any]:
+    now_value = time.time()
+    horizons = [component_horizon_hours(zone, required, now_value) for zone in zones.values()]
+    return {
+        "zonesWithAnyData": sum(1 for value in horizons if value > 0),
+        "zonesWith24Hours": sum(1 for value in horizons if value >= 24),
+        "zonesWith96Hours": sum(1 for value in horizons if value >= COMPLETE_HORIZON_HOURS),
+        "averageHours": round(sum(horizons) / len(horizons), 1) if horizons else 0,
+        "minimumHours": round(min(horizons), 1) if horizons else 0,
+        "maximumHours": round(max(horizons), 1) if horizons else 0,
+        "requiredHorizonHours": COMPLETE_HORIZON_HOURS,
+    }
+
+
 def clean_and_summarize(result: dict[str, Any], fresh_zone_ids: set[str], budget: dict[str, int]) -> None:
     cutoff, horizon = time.time() - 6 * 3600, time.time() + (HOURS + 6) * 3600
     for zone in result["zones"].values():
@@ -782,9 +805,16 @@ def clean_and_summarize(result: dict[str, Any], fresh_zone_ids: set[str], budget
     diag["downloadedBytes"] = budget["bytes"]
     diag["freshZoneCount"] = len(fresh_zone_ids)
     diag["zoneCount"] = len(result["zones"])
-    diag["completeMarineZones"] = sum(1 for z in result["zones"].values() if any(all(k in h for k in ("sea-mean-deviation", "current-u", "current-v")) for h in z["hourly"].values()))
-    diag["completeWindZones"] = sum(1 for z in result["zones"].values() if any("wind-speed-10m" in h for h in z["hourly"].values()))
-    diag["completeWaveZones"] = sum(1 for z in result["zones"].values() if any("significant-wave-height" in h for h in z["hourly"].values()))
+    component_coverage = {
+        "wind": coverage_summary(result["zones"], ("wind-speed-10m",)),
+        "wave": coverage_summary(result["zones"], ("significant-wave-height",)),
+        "marine": coverage_summary(result["zones"], ("sea-mean-deviation", "current-u", "current-v")),
+    }
+    diag["componentHorizonCoverage"] = component_coverage
+    # Backwards-compatible names now mean sufficient forecast horizon, not merely one value.
+    diag["completeMarineZones"] = component_coverage["marine"]["zonesWith96Hours"]
+    diag["completeWindZones"] = component_coverage["wind"]["zonesWith96Hours"]
+    diag["completeWaveZones"] = component_coverage["wave"]["zonesWith96Hours"]
 
 
 
@@ -1009,12 +1039,18 @@ def main() -> int:
         if str(error.get("collection", "")).startswith("dkss_")
     ]
     previous_refresh_status = str(previous.get("refreshStatus") or "").lower()
+    horizon_coverage = previous_diag.get("componentHorizonCoverage") or {}
+    previous_zone_count = max(1, int(previous_diag.get("zoneCount") or len(previous.get("zones") or {}) or 1))
+    wind_horizon_healthy = int((horizon_coverage.get("wind") or {}).get("zonesWith96Hours") or 0) >= previous_zone_count
+    marine_horizon_healthy = int((horizon_coverage.get("marine") or {}).get("zonesWith96Hours") or 0) >= previous_zone_count
     marine_cache_healthy = (
         int(previous_ocean.get("waterLevelZones") or 0) > 0
         and int(previous_ocean.get("currentUZones") or 0) > 0
         and int(previous_ocean.get("currentVZones") or 0) > 0
+        and marine_horizon_healthy
+        and wind_horizon_healthy
         and not previous_marine_errors
-        and previous_refresh_status not in {"failed"}
+        and previous_refresh_status not in {"failed", "partial"}
     )
     if (
         not FORCE_REFRESH
@@ -1077,7 +1113,7 @@ def main() -> int:
               "collectionState": dict(previous.get("collectionState") or {}),
               "diagnostics": {"collectionsAttempted": [], "collectionsSucceeded": [], "collectionsPartial": [], "errors": [],
                               "downloadedBytes": 0, "reusedAssets": 0, "parametersByCollection": {}, "stacByCollection": {},
-                              "assetsSkippedPreviouslyProcessed": 0, "assetsRetriedIncomplete": 0, "zeroProgressCollections": [], "messagesSeen": 0, "zoneLookups": 0, "batchedGridReads": 0, "marineGridSearch": {},
+                              "assetsSkippedPreviouslyProcessed": 0, "assetsRetriedIncomplete": 0, "zeroProgressCollections": [], "collectionsUnchanged": [], "messagesSeen": 0, "zoneLookups": 0, "batchedGridReads": 0, "marineGridSearch": {},
                               "runtimeBudgetSeconds": MAX_RUNTIME_SECONDS, "finalizeReserveSeconds": FINALIZE_RESERVE_SECONDS,
                               "persistentFieldInventory": dict(((previous.get("diagnostics") or {}).get("persistentFieldInventory") or {}))}}
     merge_previous(result, previous)
@@ -1086,15 +1122,21 @@ def main() -> int:
     previous_diag = previous.get("diagnostics") or {}
     previous_zone_count = max(1, int(previous_diag.get("zoneCount") or len(zones) or 1))
     result["diagnostics"]["scheduledCollections"] = scheduled
+    previous_horizon = previous_diag.get("componentHorizonCoverage") or {}
+    wind96 = int((previous_horizon.get("wind") or {}).get("zonesWith96Hours") or previous_diag.get("completeWindZones") or 0)
+    wave96 = int((previous_horizon.get("wave") or {}).get("zonesWith96Hours") or previous_diag.get("completeWaveZones") or 0)
+    marine96 = int((previous_horizon.get("marine") or {}).get("zonesWith96Hours") or previous_diag.get("completeMarineZones") or 0)
     result["diagnostics"]["scheduleCoverageBeforeRun"] = {
         "zoneCount": previous_zone_count,
-        "wind": int(previous_diag.get("completeWindZones") or 0),
-        "wave": int(previous_diag.get("completeWaveZones") or 0),
-        "marine": int(previous_diag.get("completeMarineZones") or 0),
-        "missingWind": max(0, previous_zone_count - int(previous_diag.get("completeWindZones") or 0)),
-        "missingWave": max(0, previous_zone_count - int(previous_diag.get("completeWaveZones") or 0)),
-        "missingMarine": max(0, previous_zone_count - int(previous_diag.get("completeMarineZones") or 0)),
-        "windReservationActive": int(previous_diag.get("completeWindZones") or 0) < previous_zone_count,
+        "wind": wind96, "wave": wave96, "marine": marine96,
+        "windHorizon": previous_horizon.get("wind") or {},
+        "waveHorizon": previous_horizon.get("wave") or {},
+        "marineHorizon": previous_horizon.get("marine") or {},
+        "missingWind": max(0, previous_zone_count - wind96),
+        "missingWave": max(0, previous_zone_count - wave96),
+        "missingMarine": max(0, previous_zone_count - marine96),
+        "windReservationActive": wind96 < previous_zone_count,
+        "completionDefinition": f"component horizon >= {COMPLETE_HORIZON_HOURS} hours",
     }
     fresh_zone_ids: set[str] = set()
     fresh_marine_zone_ids: set[str] = set()
@@ -1197,7 +1239,13 @@ def main() -> int:
             run_info["recognizedParameters"] = sorted(recognized)
             required = REQUIRED_TARGETS[COLLECTION_FAMILY[collection]]
             made_progress = (run_info["assetsProcessed"] > 0 or int(result["diagnostics"].get("reusedAssets") or 0) > collection_start_reused or budget["bytes"] > collection_start_bytes)
-            if recognized >= required and run_info["assetsProcessed"]:
+            if not made_progress and recognized >= required and run_info["assetsSkippedPreviouslyProcessed"] == len(assets):
+                state["lastCheckedAt"] = generated
+                state["referenceTime"] = run
+                state["lastError"] = None
+                result["diagnostics"]["collectionsUnchanged"].append(collection)
+                result["diagnostics"]["zeroProgressCollections"].append(collection)
+            elif recognized >= required and run_info["assetsProcessed"]:
                 state["lastSuccessfulAt"] = generated
                 state["referenceTime"] = run
                 state["consecutiveFailures"] = 0
@@ -1214,8 +1262,6 @@ def main() -> int:
                 raise RuntimeError("GRIB downloaded but no required RavRadar parameters were recognized")
             if made_progress:
                 productive_collections += 1
-            else:
-                result["diagnostics"]["zeroProgressCollections"].append(collection)
             if budget_stop:
                 result["diagnostics"]["errors"].append({"collection": collection, "message": budget_stop, "partialProgressPreserved": True})
         except Exception as exc:
