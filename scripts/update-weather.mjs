@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import { recommendWaterStationBracket } from '../js/core/water-station-routing.js';
 import {
   DMI_FORECAST_HOURS,
   buildDmiForecastHourly,
@@ -23,6 +24,7 @@ const DMI_BULK_CACHE_PATH = 'data/live/dmi-bulk-cache.json';
 const RUNTIME_DIAGNOSTICS_PATH = 'data/live/ravradar-runtime-diagnostics.json';
 const WATER_STATION_ROUTING_PATH = 'data/water-level-station-routing.json';
 const WATER_STATION_INVENTORY_PATH = 'data/live/dmi-water-stations.json';
+const WATER_STATION_ROUTING_AUDIT_PATH = 'data/live/water-station-routing-audit.json';
 const ACCEPTED_FORECAST_HOURS = 118;
 const SHORT_DMI_WATER_GAP_HOURS = 6;
 const WATER_LEVEL_JUMP_WARN_CM = 35;
@@ -292,21 +294,36 @@ async function readCachedWaterStations() {
   try { const doc=JSON.parse(await fs.readFile(WATER_STATION_INVENTORY_PATH,'utf8')); return Array.isArray(doc.stations)?doc.stations:[]; } catch { return []; }
 }
 
+function stationRegistryRecord(station, previous = null, seenAt = new Date().toISOString()) {
+  const properties = { ...(previous?.properties ?? {}), ...(station?.properties ?? {}) };
+  const active = String(properties.status ?? '').toLowerCase() === 'active';
+  return {
+    ...(previous ?? {}), stationId: String(station.stationId), name: station.name ?? previous?.name ?? 'DMI station', point: station.point ?? previous?.point,
+    properties, registryStatus: active ? 'active' : (previous?.registryStatus ?? 'known'),
+    firstSeenAt: previous?.firstSeenAt ?? seenAt, lastSeenAt: seenAt,
+    lastActiveSeenAt: active ? seenAt : (previous?.lastActiveSeenAt ?? null)
+  };
+}
+
 async function dmiWaterStations() {
   if (!dmiWaterStationsPromise) {
-    dmiWaterStationsPromise = fetchAllFeatures(`${DMI_OCEAN_OBS_ROOT}/station/items`, { status: 'Active' }, {
-      provider: 'DMI oceanObs stations', retries: DMI_MAX_RETRIES, dmi: false
-    }).then(features => features.map(feature => ({
-      stationId: String(feature.properties?.stationId ?? feature.properties?.id ?? ''),
-      name: feature.properties?.name ?? feature.properties?.stationName ?? feature.properties?.countryName ?? 'DMI station',
-      point: feature.geometry?.coordinates,
-      properties: feature.properties ?? {}
-    })).filter(station => station.stationId && Array.isArray(station.point) && station.point.length === 2))
-      .then(async stations => {
+    dmiWaterStationsPromise = (async () => {
+      const cached = await readCachedWaterStations();
+      try {
+        const features = await fetchAllFeatures(`${DMI_OCEAN_OBS_ROOT}/station/items`, { status: 'Active' }, { provider: 'DMI oceanObs stations', retries: DMI_MAX_RETRIES, dmi: false });
+        const fetched = features.map(feature => ({ stationId: String(feature.properties?.stationId ?? feature.properties?.id ?? ''), name: feature.properties?.name ?? feature.properties?.stationName ?? feature.properties?.countryName ?? 'DMI station', point: feature.geometry?.coordinates, properties: feature.properties ?? {} })).filter(station => station.stationId && Array.isArray(station.point) && station.point.length === 2);
+        const now = new Date().toISOString(), merged = new Map(cached.map(station => [String(station.stationId), station]));
+        for (const station of fetched) merged.set(String(station.stationId), stationRegistryRecord(station, merged.get(String(station.stationId)), now));
+        for (const [id, station] of merged) if (!fetched.some(item => String(item.stationId) === id)) merged.set(id, { ...station, registryStatus: station.registryStatus === 'active' ? 'not-returned-this-run' : (station.registryStatus ?? 'known') });
+        const stations = [...merged.values()].filter(station => station.stationId && Array.isArray(station.point) && station.point.length === 2);
         await fs.mkdir('data/live', { recursive: true });
-        await fs.writeFile(WATER_STATION_INVENTORY_PATH, JSON.stringify({ schemaVersion: 1, generatedAt: new Date().toISOString(), source: 'existing-dmi-oceanobs-station-registry-cache', stations: stations.map(({ stationId, name, point, properties }) => ({ stationId, name, point, properties: { country: properties?.country, owner: properties?.owner, status: properties?.status } })) }, null, 2));
+        await fs.writeFile(WATER_STATION_INVENTORY_PATH, JSON.stringify({ schemaVersion: 2, generatedAt: now, source: 'persistent-merged-dmi-oceanobs-station-registry', fetchedActiveCount: fetched.length, retainedKnownCount: Math.max(0, stations.length - fetched.length), stations }, null, 2));
         return stations;
-      }).catch(async error => { const cached=await readCachedWaterStations(); if(cached.length){ console.warn(`DMI stationsregister kunne ikke opdateres; bruger ${cached.length} cachede stationer`); return cached; } throw error; });
+      } catch (error) {
+        if (cached.length) { console.warn(`DMI stationsregister kunne ikke opdateres; bruger ${cached.length} persistente stationer`); return cached; }
+        throw error;
+      }
+    })();
   }
   return dmiWaterStationsPromise;
 }
@@ -462,6 +479,17 @@ function manualStationInterpolation(feature, point, stations, levels, route) {
   };
 }
 
+function topologyStationInterpolation(feature, point, stations, levels) {
+  const recommendation = recommendWaterStationBracket({ zoneId: feature.properties?.id, zoneName: feature.properties?.name, point, coastLine: featureCoastLine(feature), stations, levels, haversineKm });
+  if (!recommendation.completeBracket || recommendation.stations.length !== 2) return null;
+  const selected = recommendation.stations;
+  const valueCm = selected.reduce((sum, item) => sum + Number(item.level.valueCm) * item.weight, 0);
+  return {
+    valueCm: round(valueCm, 0), method: 'topology-bracket-2-stations', routingMethod: recommendation.method, routingRuleId: recommendation.ruleId ?? null,
+    stations: selected.map(item => ({ stationId: item.stationId, name: item.name, valueCm: round(Number(item.level.valueCm),0), distanceKm: round(item.distanceKm,1), alongCoastKm: round(item.alongKm,1), crossCoastKm: round(item.crossKm,1), side: item.role, weight: round(item.weight,3), observed: item.level.observed, observationAgeMinutes: Number.isFinite(Date.parse(item.level.observed)) ? round((Date.now()-Date.parse(item.level.observed))/60000,0) : null, qcStatus: item.level.qcStatus ?? null }))
+  };
+}
+
 async function observedDmiWaterLevel(feature, coastCorridors) {
   try {
     const [rawStations, levels, routing] = await Promise.all([dmiWaterStations(), dmiLatestSeaLevels(), waterStationRouting()]);
@@ -481,6 +509,8 @@ async function observedDmiWaterLevel(feature, coastCorridors) {
         stations: [{ stationId: station.stationId, name: station.name, valueCm: round(Number(level.valueCm), 0), distanceKm: round(haversineKm(point, station.point), 1), side: 'inside-zone', weight: 1, observed: level.observed, observationAgeMinutes: Number.isFinite(Date.parse(level.observed)) ? round((Date.now() - Date.parse(level.observed)) / 60000, 0) : null, qcStatus: level.qcStatus ?? null }]
       };
     }
+    const topology = topologyStationInterpolation(feature, point, stations, levels);
+    if (topology) return topology;
     const fjord = interpolateAllowedFjord(feature, point, stations, levels);
     if (fjord) return fjord;
     const coastPath = coastCorridors.get(feature.properties?.id);
@@ -500,7 +530,7 @@ function applyObservedWaterLevel(zone, feature, observation, generatedAt) {
   zone.waterLevel = {
     ...(zone.waterLevel ?? {}),
     source: ['direct-zone-station','direct-coast-station','admin-selected-station'].includes(observation.method) ? 'dmi-observation-direct' : 'dmi-observation-coast-interpolation',
-    reference: observation.method === 'admin-selected-station' ? 'Administratorvalgt DMI-målestation' : observation.method === 'admin-selected-interpolation' ? 'Administratorvalgt interpolation mellem DMI-målestationer' : ['direct-zone-station','direct-coast-station'].includes(observation.method) ? 'Aktuel DMI-målestation ved zonen' : observation.method === 'fjord-bracket-2-stations' ? 'Aktuel DMI-vandstand interpoleret mellem to stationer på hver sin side af samme fjord' : 'Aktuel DMI-vandstand interpoleret mellem én station på hver side langs samme kystkorridor',
+    reference: observation.method === 'admin-selected-station' ? 'Administratorvalgt DMI-målestation' : observation.method === 'admin-selected-interpolation' ? 'Administratorvalgt interpolation mellem DMI-målestationer' : ['direct-zone-station','direct-coast-station'].includes(observation.method) ? 'Aktuel DMI-målestation ved zonen' : observation.method === 'topology-bracket-2-stations' ? 'Aktuel DMI-vandstand interpoleret mellem stationer på modsatte sider langs den lokale kystlinje' : observation.method === 'fjord-bracket-2-stations' ? 'Aktuel DMI-vandstand interpoleret mellem to stationer på hver sin side af samme fjord' : 'Aktuel DMI-vandstand interpoleret mellem én station på hver side langs samme kystkorridor',
     interpolation: observation,
     diagnostic: {
       ...(zone.waterLevel?.diagnostic ?? {}), zoneId: feature.properties?.id, zoneName: feature.properties?.name, generatedAt,
@@ -512,6 +542,19 @@ function applyObservedWaterLevel(zone, feature, observation, generatedAt) {
   return zone;
 }
 
+
+async function writeWaterStationRoutingAudit(features, stations, generatedAt) {
+  const zones = {}, counts = { totalZones: 0, completeBracket: 0, incompleteBracket: 0, noCandidates: 0, namedRules: 0 };
+  for (const feature of features) {
+    const point = zonePoint(feature), recommendation = recommendWaterStationBracket({ zoneId: feature.properties?.id, zoneName: feature.properties?.name, point, coastLine: featureCoastLine(feature), stations, haversineKm });
+    counts.totalZones += 1; counts[recommendation.completeBracket ? 'completeBracket' : 'incompleteBracket'] += 1;
+    if (!recommendation.candidates.length) counts.noCandidates += 1; if (recommendation.ruleId) counts.namedRules += 1;
+    zones[feature.properties?.id] = { zoneName: feature.properties?.name, method: recommendation.method, ruleId: recommendation.ruleId ?? null, completeBracket: recommendation.completeBracket, reason: recommendation.reason, stations: recommendation.stations.map(item => ({ stationId:item.stationId,name:item.name,role:item.role,distanceKm:round(item.distanceKm,1),alongCoastKm:round(item.alongKm,1),crossCoastKm:round(item.crossKm,1),weight:round(item.weight,3),registryStatus:item.registryStatus??item.properties?.status??null })), candidates: recommendation.candidates.map(item => ({ stationId:item.stationId,name:item.name,distanceKm:round(item.distanceKm,1),alongCoastKm:round(item.alongKm,1),crossCoastKm:round(item.crossKm,1),registryStatus:item.registryStatus??item.properties?.status??null })) };
+  }
+  const doc = { schemaVersion: 1, generatedAt, description: 'Automatisk topologiaudit: stationer skal indramme zonen fra modsatte sider langs den lokale kystlinje.', stationInventoryCount: stations.length, counts, zones };
+  await fs.writeFile(WATER_STATION_ROUTING_AUDIT_PATH, `${JSON.stringify(doc,null,2)}\n`);
+  return doc;
+}
 
 async function readDmiBulkCache() {
   try {
@@ -1573,11 +1616,13 @@ nextDmiForecastStore.coverage = summarizeAvailableCoverage(nextDmiForecastStore.
 nextDmiForecastStore.dataQuality = summarizeDmiComponentCoverage(nextDmiForecastStore.zones, generatedAt);
 output.weatherEngine.dmiForecastCache = { ...nextDmiForecastStore.coverage, ...nextDmiForecastStore.dataQuality };
 const stationRegistry = await dmiWaterStations().catch(() => readCachedWaterStations());
+const stationRoutingAudit = await writeWaterStationRoutingAudit(features, stationRegistry, generatedAt);
 const [qualityStations, qualityLevels] = dmiObservationSkipReason
   ? [stationRegistry, new Map()]
   : await Promise.all([Promise.resolve(stationRegistry), dmiLatestSeaLevels().catch(() => new Map())]);
 for (const zone of Object.values(output.zones)) enrichZoneSources(zone, generatedAt);
 output.dataQuality = buildDataQuality(output, { stationsFetched: qualityStations.length, stationsWithFreshLevel: qualityLevels.size });
+output.dataQuality.stationRouting = stationRoutingAudit.counts;
 dmiPersistentRuntime.observations ??= {};
 const currentObservationSummary = output.dataQuality?.observations ?? {};
 if (!dmiObservationSkipReason && (currentObservationSummary.stationsFetched ?? 0) > 0) {

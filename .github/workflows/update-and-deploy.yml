@@ -43,7 +43,7 @@ jobs:
         run: python scripts/hydrate-deployed-weather.py
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
-          WEATHER_USER_AGENT: "RavRadar/4.0.27 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.29 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Sync centrally saved admin configuration
         run: python scripts/sync-admin-config.py
@@ -58,7 +58,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.27 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.29 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Report skipped refresh
         if: steps.preflight.outputs.should_run != 'true'
@@ -119,7 +119,7 @@ jobs:
           DMI_BULK_COMPLETE_HORIZON_HOURS: 96
           DMI_BULK_FORCE_REFRESH: ${{ steps.preflight.outputs.dmi_changed }}
           DMI_BULK_RAW_DIR: .cache/dmi-grib
-          WEATHER_USER_AGENT: "RavRadar/4.0.27 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.29 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Report DMI bulk result
@@ -154,7 +154,7 @@ jobs:
           DMI_DEPLOYED_CACHE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/live/dmi-forecast-cache.json"
           WEATHER_REQUEST_TIMEOUT_MS: 25000
           DMI_OCEAN_REQUEST_TIMEOUT_MS: 60000
-          WEATHER_USER_AGENT: "RavRadar/4.0.27 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.29 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Validate updated weather cache
@@ -184,8 +184,36 @@ jobs:
           valid = [s for s in stations if s.get('stationId') and isinstance(s.get('point'), list) and len(s['point']) == 2]
           if not valid:
               raise SystemExit('DMI station inventory contains no valid stations')
-          print(f'{len(valid)} DMI water-level stations ready for admin map')
+          
+          names = ' '.join(str(s.get('name','')).lower() for s in valid)
+          if 'hals' not in names:
+              raise SystemExit('Critical station family Hals is missing from persistent inventory')
+          print(f'{len(valid)} persistent DMI water-level stations ready for admin map')
           PY
+
+      - name: Build RavRadar support package
+        if: always()
+        run: |
+          rm -rf _support
+          mkdir -p _support/project _support/run-metadata
+          rsync -a ./ _support/project/ \
+            --exclude '.git/' --exclude '_site/' --exclude '_support/' --exclude '.cache/' --exclude 'node_modules/'
+          printf '%s\n' \
+            "repository=${{ github.repository }}" \
+            "run_number=${{ github.run_number }}" \
+            "sha=${{ github.sha }}" \
+            "ref=${{ github.ref }}" \
+            "generated_at=$(date -u +%FT%TZ)" > _support/run-metadata/github-run.txt
+          (cd _support && zip -qr ../RavRadar-support-${{ github.run_number }}.zip .)
+
+      - name: Upload RavRadar support package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RavRadar-support-${{ github.run_number }}
+          path: RavRadar-support-${{ github.run_number }}.zip
+          retention-days: 14
+          if-no-files-found: error
 
       - name: Build lean GitHub Pages artifact
         if: steps.preflight.outputs.should_run == 'true'
