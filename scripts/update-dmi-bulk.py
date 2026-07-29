@@ -717,13 +717,24 @@ def merge_previous(current: dict[str, Any], previous: dict[str, Any]) -> None:
 
 
 def collection_schedule(previous: dict[str, Any]) -> list[str]:
+    """Prioritér den komponent der mangler mest, uden at HARMONIE kan sulte.
+
+    Der er normalt kun plads til to produktive collections pr. workflow. Derfor
+    skal vind have et reserveret førstevalg, når DMI-vinddækningen er ufuldstændig.
+    De øvrige collections rangeres efter faktisk dækningsmangel.
+    """
     state = previous.get("collectionState") or {}
     now = time.time()
     previous_diag = previous.get("diagnostics") or {}
-    zone_count = int(previous_diag.get("zoneCount") or 1)
-    marine_incomplete = int(previous_diag.get("completeMarineZones") or 0) < zone_count
-    wind_complete = int(previous_diag.get("completeWindZones") or 0) >= zone_count
-    def priority(collection: str) -> tuple[int, int, float, float, int]:
+    zone_count = max(1, int(previous_diag.get("zoneCount") or 1))
+    complete = {
+        "atmosphere": int(previous_diag.get("completeWindZones") or 0),
+        "wave": int(previous_diag.get("completeWaveZones") or 0),
+        "marine": int(previous_diag.get("completeMarineZones") or 0),
+    }
+    missing = {family: max(0, zone_count - count) for family, count in complete.items()}
+
+    def priority(collection: str) -> tuple[int, int, int, int, float, float, int]:
         entry = state.get(collection) or {}
         blocked_parser_version = int(entry.get("blockedParserVersion") or 0)
         parser_block_obsolete = entry.get("failureClass") == "parser-blocked" and blocked_parser_version != PARSER_VERSION
@@ -734,15 +745,26 @@ def collection_schedule(previous: dict[str, Any]) -> list[str]:
             entry["failureClass"] = None
             entry["blockedParserVersion"] = None
             entry["consecutiveFailures"] = 0
+
         family = COLLECTION_FAMILY[collection]
-        # DMI er førstevalg. Mens havdata er ufuldstændige, går DKSS foran WAM
-        # og HARMONIE, fordi strøm/vandstand er de mest kritiske RavRadar-data.
-        family_rank = 0 if family == "marine" and marine_incomplete else (1 if family == "wave" else 2)
-        if collection == "harmonie_dini_sf" and wind_complete:
-            family_rank = 9
-        return (blocked, family_rank, epoch(entry.get("lastAttemptAt")), epoch(entry.get("lastSuccessfulAt")), COLLECTION_ORDER.index(collection))
-    eligible = sorted(COLLECTION_ORDER, key=priority)
-    return eligible
+        # HARMONIE får et reserveret førstevalg, så næsten komplette marine-
+        # collections ikke kan forhindre genopbygning af manglende DMI-vind.
+        reserved_wind_rank = 0 if collection == "harmonie_dini_sf" and missing["atmosphere"] > 0 else 1
+        # Største dækningsmangel kommer først. Ved lighed bevares den kendte
+        # collection-rækkefølge og mindst nyligt forsøgte kilde prioriteres.
+        deficit_rank = -missing.get(family, 0)
+        complete_family_rank = 1 if missing.get(family, 0) == 0 else 0
+        return (
+            blocked,
+            reserved_wind_rank,
+            complete_family_rank,
+            deficit_rank,
+            epoch(entry.get("lastAttemptAt")),
+            epoch(entry.get("lastSuccessfulAt")),
+            COLLECTION_ORDER.index(collection),
+        )
+
+    return sorted(COLLECTION_ORDER, key=priority)
 
 
 
@@ -1061,7 +1083,19 @@ def main() -> int:
     merge_previous(result, previous)
     budget = {"bytes": 0}
     scheduled = collection_schedule(previous)
+    previous_diag = previous.get("diagnostics") or {}
+    previous_zone_count = max(1, int(previous_diag.get("zoneCount") or len(zones) or 1))
     result["diagnostics"]["scheduledCollections"] = scheduled
+    result["diagnostics"]["scheduleCoverageBeforeRun"] = {
+        "zoneCount": previous_zone_count,
+        "wind": int(previous_diag.get("completeWindZones") or 0),
+        "wave": int(previous_diag.get("completeWaveZones") or 0),
+        "marine": int(previous_diag.get("completeMarineZones") or 0),
+        "missingWind": max(0, previous_zone_count - int(previous_diag.get("completeWindZones") or 0)),
+        "missingWave": max(0, previous_zone_count - int(previous_diag.get("completeWaveZones") or 0)),
+        "missingMarine": max(0, previous_zone_count - int(previous_diag.get("completeMarineZones") or 0)),
+        "windReservationActive": int(previous_diag.get("completeWindZones") or 0) < previous_zone_count,
+    }
     fresh_zone_ids: set[str] = set()
     fresh_marine_zone_ids: set[str] = set()
     productive_collections = 0
