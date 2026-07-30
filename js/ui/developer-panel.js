@@ -14,7 +14,7 @@ export function openDeveloperDialog(dialog, context) {
       <section><h3>Dataproveniens</h3>${providerRows ? `<table><thead><tr><th>Kilde</th><th>Status</th></tr></thead><tbody>${providerRows}</tbody></table>` : `<p>DMI er primær. Open-Meteo Marine og MET Norway er forberedt som fallback i opdateringsarkitekturen.</p>`}</section>
       <section><h3>Valgt zone</h3><pre>${escapeHtml(JSON.stringify(context.selectedZone || { message: "Ingen zone valgt" }, null, 2))}</pre></section>
     </div><p><button id="openAdminButton" class="primary-button" type="button">Åbn administration</button></p><details><summary>Rå diagnostik</summary><pre>${escapeHtml(JSON.stringify({ generatedAt: conditions.generatedAt, available: conditions.available, zoneCount: zones.length, selectedZone: context.selectedZone }, null, 2))}</pre></details>`;
-  dialog.querySelector('#openAdminButton').addEventListener('click', () => { sessionStorage.setItem('ravradar-admin-auth', 'yes'); location.href = './admin.html'; });
+  dialog.querySelector('#openAdminButton').addEventListener('click', () => { location.href = './admin.html'; });
   dialog.showModal();
 }
 function escapeHtml(value="") { return String(value).replace(/[&<>'"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"})[c]); }

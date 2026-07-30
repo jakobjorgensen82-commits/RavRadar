@@ -38,6 +38,7 @@ export async function sendMagicLink(email) {
 }
 export async function signInWithPassword(email, password) {
   const next = await request("/token?grant_type=password", { method: "POST", body: JSON.stringify({ email, password }) });
+  if(next?.expires_in) next.expires_at=Math.floor(Date.now()/1000)+Number(next.expires_in);
   saveSession(next);
   return next;
 }
@@ -64,4 +65,18 @@ export async function consumeAuthCallback() {
   saveSession(next);
   history.replaceState(null, "", location.pathname + location.search);
   return next;
+}
+
+export async function getCurrentRole(){
+  const s=currentSession();
+  if(!enabled||!s?.access_token)return null;
+  const response=await fetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/app_user_roles?select=role&user_id=eq.${encodeURIComponent(s.user?.id||'')}&limit=1`,{headers:{apikey:PUBLIC_CONFIG.supabasePublishableKey,Authorization:`Bearer ${s.access_token}`}});
+  if(!response.ok)throw new Error(`Kunne ikke kontrollere ejerrollen (${response.status})`);
+  const rows=await response.json();
+  return rows[0]?.role||null;
+}
+export async function testConnection(){
+  if(!enabled)throw new Error('Supabase er ikke konfigureret');
+  const response=await fetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/`,{headers:{apikey:PUBLIC_CONFIG.supabasePublishableKey}});
+  return {ok:response.ok,status:response.status};
 }
