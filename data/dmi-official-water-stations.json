@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "source": "DMI official station documentation",
+  "verifiedAt": "2026-07-31T00:00:00Z",
+  "stations": [
+    {
+      "stationId": "20262",
+      "name": "Hals Havn",
+      "point": [10.3084, 56.9901],
+      "properties": {"status":"documented","measurementType":"Vandstand","officialRegistry":"DMI oceanographic tidewater stations","officialSupplement":true}
+    },
+    {
+      "stationId": "20252",
+      "name": "Hals Barre Fyr",
+      "point": [10.4255, 56.9547],
+      "properties": {"status":"documented","measurementType":"Vandstand","officialRegistry":"DMI station list / tidewater stations","officialSupplement":true,"alternateStationId":"20253"}
+    }
+  ]
+}

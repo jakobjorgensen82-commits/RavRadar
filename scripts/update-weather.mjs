@@ -24,6 +24,7 @@ const DMI_BULK_CACHE_PATH = 'data/live/dmi-bulk-cache.json';
 const RUNTIME_DIAGNOSTICS_PATH = 'data/live/ravradar-runtime-diagnostics.json';
 const WATER_STATION_ROUTING_PATH = 'data/water-level-station-routing.json';
 const WATER_STATION_INVENTORY_PATH = 'data/live/dmi-water-stations.json';
+const OFFICIAL_WATER_STATION_SUPPLEMENT_PATH = 'data/dmi-official-water-stations.json';
 const WATER_STATION_ROUTING_AUDIT_PATH = 'data/live/water-station-routing-audit.json';
 const ACCEPTED_FORECAST_HOURS = 118;
 const SHORT_DMI_WATER_GAP_HOURS = 6;
@@ -293,6 +294,9 @@ function haversineKm(a, b) {
 async function readCachedWaterStations() {
   try { const doc=JSON.parse(await fs.readFile(WATER_STATION_INVENTORY_PATH,'utf8')); return Array.isArray(doc.stations)?doc.stations:[]; } catch { return []; }
 }
+async function readOfficialWaterStationSupplement(){
+  try { const doc=JSON.parse(await fs.readFile(OFFICIAL_WATER_STATION_SUPPLEMENT_PATH,'utf8')); return Array.isArray(doc.stations)?doc.stations:[]; } catch { return []; }
+}
 
 function stationEffectiveStatus(properties, now = Date.now()) {
   const from = Date.parse(properties?.operationFrom ?? properties?.validFrom ?? '') || null;
@@ -316,17 +320,21 @@ function stationRegistryRecord(station, previous = null, seenAt = new Date().toI
 async function dmiWaterStations() {
   if (!dmiWaterStationsPromise) {
     dmiWaterStationsPromise = (async () => {
-      const cached = await readCachedWaterStations();
+      const [cached, officialSupplement] = await Promise.all([readCachedWaterStations(), readOfficialWaterStationSupplement()]);
       try {
         const features = await fetchAllFeatures(`${DMI_OCEAN_OBS_ROOT}/station/items`, {}, { provider: 'DMI oceanObs stations', retries: DMI_MAX_RETRIES, dmi: false }, { pageSize: 1000, maxPages: 20 });
         const fetched = features.map(feature => ({ stationId: String(feature.properties?.stationId ?? feature.properties?.id ?? ''), name: feature.properties?.name ?? feature.properties?.stationName ?? feature.properties?.countryName ?? 'DMI station', point: feature.geometry?.coordinates, properties: feature.properties ?? {} })).filter(station => station.stationId && Array.isArray(station.point) && station.point.length === 2);
         const now = new Date().toISOString(), merged = new Map(cached.map(station => [String(station.stationId), station]));
+        for (const station of officialSupplement) if (!merged.has(String(station.stationId))) merged.set(String(station.stationId), stationRegistryRecord(station, null, now));
         for (const station of fetched) merged.set(String(station.stationId), stationRegistryRecord(station, merged.get(String(station.stationId)), now));
-        for (const [id, station] of merged) if (!fetched.some(item => String(item.stationId) === id)) merged.set(id, { ...station, registryStatus: station.registryStatus === 'active' ? 'not-returned-this-run' : (station.registryStatus ?? 'known') });
-        for (const [id, station] of merged) merged.set(id, stationRegistryRecord(station, station, now));
+        const fetchedIds = new Set(fetched.map(item => String(item.stationId)));
+        for (const [id, station] of merged) {
+          if (fetchedIds.has(id)) continue;
+          merged.set(id, { ...station, registryStatus: station.properties?.officialSupplement ? 'official-not-returned-by-oceanobs' : (station.registryStatus === 'active' ? 'not-returned-this-run' : (station.registryStatus ?? 'known')), lastSeenAt: station.lastSeenAt ?? null });
+        }
         const stations = [...merged.values()].filter(station => station.stationId && Array.isArray(station.point) && station.point.length === 2);
         await fs.mkdir('data/live', { recursive: true });
-        await fs.writeFile(WATER_STATION_INVENTORY_PATH, JSON.stringify({ schemaVersion: 2, generatedAt: now, source: 'persistent-merged-dmi-oceanobs-complete-station-registry', fetchedStationCount: fetched.length, fetchedActiveCount: stations.filter(station => station.registryStatus === 'active').length, retainedKnownCount: Math.max(0, stations.length - fetched.length), stations }, null, 2));
+        await fs.writeFile(WATER_STATION_INVENTORY_PATH, JSON.stringify({ schemaVersion: 2, generatedAt: now, source: 'persistent-merged-dmi-oceanobs-and-official-station-registry', fetchedStationCount: fetched.length, fetchedActiveCount: stations.filter(station => station.registryStatus === 'active').length, retainedKnownCount: Math.max(0, stations.length - fetched.length), stations }, null, 2));
         return stations;
       } catch (error) {
         if (cached.length) { console.warn(`DMI stationsregister kunne ikke opdateres; bruger ${cached.length} persistente stationer`); return cached; }
@@ -811,11 +819,11 @@ function mergeHourlyPreferDmi(dmiHourly = [], fallbackHourly = [], { generatedAt
       currentDirectionDeg: item.currentDirectionDeg ?? fallback.currentDirectionDeg ?? null,
       waterTemperatureC: item.waterTemperatureC ?? fallback.waterTemperatureC ?? null,
       sources: {
-        wind: (item.windSpeedMps != null && item.windDirectionDeg != null) ? { provider: 'dmi', fallback: false } : { provider: fallback.source ?? 'open-meteo', fallback: true },
-        wave: item.waveHeightM != null ? { provider: 'dmi', fallback: false } : { provider: fallback.source ?? 'open-meteo', fallback: true },
-        current: (item.currentSpeedMps != null && item.currentDirectionDeg != null) ? { provider: 'dmi', fallback: false } : { provider: fallback.source ?? 'open-meteo', fallback: true },
+        wind: (item.windSpeedMps != null && item.windDirectionDeg != null) ? { provider: 'dmi', fallback: false } : (fallback.windSpeedMps != null && fallback.windDirectionDeg != null) ? { provider: fallback.source ?? 'open-meteo', fallback: true } : { provider: 'missing', fallback: false },
+        wave: item.waveHeightM != null ? { provider: 'dmi', fallback: false } : fallback.waveHeightM != null ? { provider: fallback.source ?? 'open-meteo', fallback: true } : { provider: 'missing', fallback: false },
+        current: (item.currentSpeedMps != null && item.currentDirectionDeg != null) ? { provider: 'dmi', fallback: false } : (fallback.currentSpeedMps != null && fallback.currentDirectionDeg != null) ? { provider: fallback.source ?? 'open-meteo', fallback: true } : { provider: 'missing', fallback: false },
         waterLevel: { provider: 'pending', fallback: false },
-        waterTemperature: item.waterTemperatureC != null ? { provider: 'dmi', fallback: false } : { provider: fallback.source ?? 'open-meteo', fallback: true }
+        waterTemperature: item.waterTemperatureC != null ? { provider: 'dmi', fallback: false } : fallback.waterTemperatureC != null ? { provider: fallback.source ?? 'open-meteo', fallback: true } : { provider: 'missing', fallback: false }
       }
     };
     if (Object.values(mergedRow.sources ?? {}).some(source => source?.provider !== 'dmi')) delete mergedRow.source;
@@ -876,10 +884,13 @@ function mergeDmiWithFallback(dmiResult, fallbackZone) {
   const sources = {};
   for (const [component, keys] of Object.entries(groups)) {
     const dmiHas = keys.every(key => dmiResult.current?.[key] !== null && dmiResult.current?.[key] !== undefined);
+    const fallbackHas = keys.every(key => fallbackZone.current?.[key] !== null && fallbackZone.current?.[key] !== undefined);
     for (const key of keys) mergedCurrent[key] = dmiResult.current?.[key] ?? fallbackZone.current?.[key] ?? null;
     sources[component] = dmiHas
       ? componentSource('dmi', dmiResult, component, dmiResult.generatedAt ?? new Date().toISOString(), { fallback: false })
-      : componentSource(fallbackZone.provider ?? 'fallback', fallbackZone, component, fallbackZone.generatedAt ?? new Date().toISOString(), { fallback: true, fallbackReason: 'DMI-komponenten manglede og blev udfyldt fra fallback' });
+      : fallbackHas
+        ? componentSource(fallbackZone.provider ?? 'fallback', fallbackZone, component, fallbackZone.generatedAt ?? new Date().toISOString(), { fallback: true, fallbackReason: 'DMI-komponenten manglede og blev udfyldt fra fallback' })
+        : componentSource('missing', fallbackZone, component, fallbackZone.generatedAt ?? new Date().toISOString(), { fallback: false, providerLabel: 'Mangler data', fallbackReason: 'Ingen gyldig værdi fra DMI eller fallback' });
   }
   const dmiForecast = dmiResult.dmiForecast ?? dmiResult.forecast ?? null;
   if (dmiForecast) {

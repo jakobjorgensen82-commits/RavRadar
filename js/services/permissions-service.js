@@ -1,5 +1,5 @@
 import { PUBLIC_CONFIG } from "../../config.js";
-import { currentSession } from "./auth-service.js";
+import { authorizedFetch, currentSession, requireFreshSession, getCurrentProfile } from "./auth-service.js";
 export const PERMISSIONS=Object.freeze([
  {id:'handbook_review',label:'Læs og kommentér drejebog'},
  {id:'rules_edit',label:'Opret og redigér regler'},
@@ -9,8 +9,9 @@ export const PERMISSIONS=Object.freeze([
  {id:'experts_manage',label:'Administrér eksperter'},
  {id:'full_admin',label:'Fuld adminadgang'}
 ]);
-function headers(extra={}){const s=currentSession();return {apikey:PUBLIC_CONFIG.supabasePublishableKey,Authorization:`Bearer ${s?.access_token||''}`,'Content-Type':'application/json',...extra};}
 function enabled(){return Boolean(PUBLIC_CONFIG.supabaseUrl&&PUBLIC_CONFIG.supabasePublishableKey&&currentSession()?.access_token);}
-export async function listProfiles(){if(!enabled())return [];const r=await fetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/profiles?select=id,email,display_name,role,is_active,user_permissions(permission_key,enabled)&order=email`,{headers:headers()});if(!r.ok)throw new Error(`Brugere kunne ikke hentes (${r.status})`);return r.json();}
-export async function savePermissions(userId,values){if(!enabled())throw new Error('Supabase-login mangler.');const rows=PERMISSIONS.map(p=>({user_id:userId,permission_key:p.id,enabled:Boolean(values[p.id]),updated_at:new Date().toISOString()}));const r=await fetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/user_permissions`,{method:'POST',headers:headers({Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(rows)});if(!r.ok)throw new Error(`Rettigheder kunne ikke gemmes (${r.status})`);}
-export async function myPermissions(){if(!enabled())return [];const id=currentSession()?.user?.id;if(!id)return [];const r=await fetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/user_permissions?user_id=eq.${id}&enabled=eq.true&select=permission_key`,{headers:headers()});if(!r.ok)return [];return (await r.json()).map(x=>x.permission_key);}
+export async function listProfiles(){if(!enabled())return [];await requireFreshSession();const r=await authorizedFetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/profiles?select=id,email,display_name,role,is_active,user_permissions(permission_key,enabled)&order=email`);if(!r.ok)throw new Error(`Brugere kunne ikke hentes (${r.status})`);return r.json();}
+export async function savePermissions(userId,values){if(!enabled())throw new Error('Supabase-login mangler.');await requireFreshSession();const r=await authorizedFetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/rpc/save_ravradar_permissions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({p_user_id:userId,p_permissions:values})});if(!r.ok)throw new Error(`Rettigheder kunne ikke gemmes (${r.status})`);}
+export async function myAccess(){if(!enabled())return {profile:null,permissions:new Set()};const profile=await getCurrentProfile();if(!profile?.is_active)throw new Error('Din RavRadar-konto er deaktiveret.');if(profile.role==='owner')return {profile,permissions:new Set(PERMISSIONS.map(p=>p.id))};const id=currentSession()?.user?.id;const r=await authorizedFetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/user_permissions?user_id=eq.${id}&enabled=eq.true&select=permission_key`);if(!r.ok)throw new Error(`Rettigheder kunne ikke hentes (${r.status})`);return {profile,permissions:new Set((await r.json()).map(x=>x.permission_key))};}
+export async function myPermissions(){return [...(await myAccess()).permissions];}
+export function hasPermission(access,key){return access?.profile?.role==='owner'||access?.permissions?.has('full_admin')||access?.permissions?.has(key);}
