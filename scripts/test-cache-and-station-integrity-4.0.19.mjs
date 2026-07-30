@@ -5,7 +5,7 @@ const bulk=fs.readFileSync('scripts/update-dmi-bulk.py','utf8');
 const update=fs.readFileSync('scripts/update-weather.mjs','utf8');
 assert.doesNotMatch(workflow,/github\.run_id/);
 assert.match(workflow,/dmi-grib-v3/);
-assert.match(workflow,/DMI_BULK_RAW_CACHE_MAX_MB: 1400/);
+assert.match(workflow,/DMI_BULK_RAW_CACHE_MAX_MB: 4096/);
 assert.match(bulk,/raw_cache_inventory/);
 assert.match(bulk,/write_cache_audit/);
 assert.match(bulk,/os\.utime\(path, None\)/);

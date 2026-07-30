@@ -41,10 +41,10 @@ DIAGNOSTICS_JSON_PATH = ROOT / "data/diagnostics/dmi-ocean-diagnostics.json"
 DIAGNOSTICS_TEXT_PATH = ROOT / "data/diagnostics/dmi-ocean-summary.txt"
 RAW_DIR = pathlib.Path(os.getenv("DMI_BULK_RAW_DIR", str(ROOT / ".cache/dmi-grib")))
 CACHE_AUDIT_PATH = ROOT / "data/diagnostics/dmi-cache-audit.json"
-RAW_CACHE_MAX_BYTES = max(256 * 1024 * 1024, int(float(os.getenv("DMI_BULK_RAW_CACHE_MAX_MB", "1400")) * 1024 * 1024))
+RAW_CACHE_MAX_BYTES = max(256 * 1024 * 1024, int(float(os.getenv("DMI_BULK_RAW_CACHE_MAX_MB", "4096")) * 1024 * 1024))
 STAC_ROOT = os.getenv("DMI_STAC_ROOT", "https://opendataapi.dmi.dk/v1/forecastdata")
 HOURS = max(1, int(os.getenv("DMI_BULK_HOURS", "120")))
-MAX_DOWNLOAD_BYTES = max(1, int(float(os.getenv("DMI_BULK_MAX_DOWNLOAD_MB", "1400")) * 1024 * 1024))
+MAX_DOWNLOAD_BYTES = max(1, int(float(os.getenv("DMI_BULK_MAX_DOWNLOAD_MB", "2048")) * 1024 * 1024))
 MAX_RUNTIME_SECONDS = max(60, int(os.getenv("DMI_BULK_MAX_RUNTIME_SECONDS", "780")))
 REQUEST_TIMEOUT = max(10, int(os.getenv("DMI_BULK_REQUEST_TIMEOUT_SECONDS", "90")))
 MAX_ASSETS_PER_COLLECTION = max(1, int(os.getenv("DMI_BULK_MAX_ASSETS_PER_COLLECTION", "130")))
@@ -72,7 +72,7 @@ for _session in (STAC_SESSION, DOWNLOAD_SESSION):
 STAC_SESSION.headers.update({"Accept": "application/geo+json, application/json"})
 DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octet-stream, */*"})
 
-PARSER_VERSION = 8
+PARSER_VERSION = 9
 PARAMETER_MAP_VERSION = 2
 GRID_LOOKUP_VERSION = 4
 COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw", "wam_nsb", "harmonie_dini_sf"]
@@ -857,11 +857,14 @@ def build_ocean_diagnostics(result: dict[str, Any]) -> dict[str, Any]:
         collection_details[collection] = {
             "scheduledThisRun": collection in (diagnostics.get("scheduledCollections") or []),
             "attemptedThisRun": collection in (diagnostics.get("collectionsAttempted") or []),
-            "succeededThisRun": collection in (diagnostics.get("collectionsSucceeded") or []),
+            "succeededThisRun": collection in ((diagnostics.get("collectionsSucceeded") or []) + (diagnostics.get("collectionsUnchanged") or [])),
             "partialThisRun": collection in (diagnostics.get("collectionsPartial") or []),
             "referenceTime": run.get("referenceTime"),
             "assetsDiscovered": run.get("assetsDiscovered", 0),
             "assetsProcessed": run.get("assetsProcessed", 0),
+            "assetsReused": run.get("assetsReused", 0),
+            "assetsSkippedPreviouslyProcessed": run.get("assetsSkippedPreviouslyProcessed", 0),
+            "healthState": ("fresh" if collection in (diagnostics.get("collectionsSucceeded") or []) else "unchanged-valid" if collection in (diagnostics.get("collectionsUnchanged") or []) else "partial" if collection in (diagnostics.get("collectionsPartial") or []) else "failed" if state.get("lastError") else "not-run"),
             "recognizedParameters": recognized,
             "requiredParameters": TARGETS["marine"],
             "missingParameters": [key for key in TARGETS["marine"] if key not in recognized],
@@ -961,7 +964,7 @@ def write_ocean_diagnostics(result: dict[str, Any]) -> None:
     ]
     for name, details in report["collections"].items():
         missing = ", ".join(details["missingParameters"]) or "none"
-        lines.append(f"- {name}: attempted={details['attemptedThisRun']} success={details['succeededThisRun']} partial={details['partialThisRun']} assets={details['assetsProcessed']}/{details['assetsDiscovered']} missing={missing} error={details['lastError'] or 'none'}")
+        lines.append(f"- {name}: attempted={details['attemptedThisRun']} health={details.get('healthState')} success={details['succeededThisRun']} partial={details['partialThisRun']} assets={details['assetsProcessed']}/{details['assetsDiscovered']} reused={details.get('assetsReused', 0)} skipped={details.get('assetsSkippedPreviouslyProcessed', 0)} missing={missing} error={details['lastError'] or 'none'}")
     if report["errors"]:
         lines.extend(["", "Errors:"])
         lines.extend(f"- {item.get('collection')}: {item.get('message')}" for item in report["errors"])

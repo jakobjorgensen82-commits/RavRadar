@@ -14,5 +14,5 @@ assert.match(bulk, /freshMarineZones/);
 assert.match(bulk, /preservedMarineZones/);
 assert.match(bulk, /missingZones/);
 assert.match(workflow, /DMI_BULK_COLLECTIONS_PER_RUN: 2/);
-assert.match(workflow, /DMI_BULK_MAX_RUNTIME_SECONDS: 660/);
+assert.match(workflow, /DMI_BULK_MAX_RUNTIME_SECONDS: 900/);
 console.log('Marine overlap, grid candidate and coverage diagnostics test passed.');

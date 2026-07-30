@@ -103,13 +103,13 @@ jobs:
         if: steps.preflight.outputs.should_run == 'true'
         id: dmi-bulk
         continue-on-error: true
-        timeout-minutes: 14
+        timeout-minutes: 18
         run: python -u scripts/update-dmi-bulk.py
         env:
           DMI_BULK_HOURS: 118
-          DMI_BULK_MAX_DOWNLOAD_MB: 1400
-          DMI_BULK_RAW_CACHE_MAX_MB: 1400
-          DMI_BULK_MAX_RUNTIME_SECONDS: 660
+          DMI_BULK_MAX_DOWNLOAD_MB: 2048
+          DMI_BULK_RAW_CACHE_MAX_MB: 4096
+          DMI_BULK_MAX_RUNTIME_SECONDS: 900
           DMI_BULK_FINALIZE_RESERVE_SECONDS: 120
           DMI_BULK_MAX_ASSETS_PER_COLLECTION: 130
           DMI_BULK_TIME_STRIDE_HOURS: 3
