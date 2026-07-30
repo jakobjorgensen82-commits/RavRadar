@@ -9,13 +9,14 @@ import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js";
 import { openAccountDialog } from "./js/ui/account-panel.js";
 import { openDeveloperDialog } from "./js/ui/developer-panel.js";
 import { analyzeObservations } from "./js/services/learning-analysis.js";
+import { askRavRadar, QUICK_QUESTIONS } from "./js/services/rav-assistant.js";
 
 const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, lastGps:null, flowArrows:null };
 const map = createMap("map");
 const infoPanel = document.querySelector("#infoPanel"), dataStatus = document.querySelector("#dataStatus"), ranking = document.querySelector("#ranking");
 const nationalForecast = document.querySelector("#nationalForecastContent");
 const tripButton = document.querySelector("#tripButton");
-const accountDialog=document.querySelector("#accountDialog"), developerDialog=document.querySelector("#developerDialog"), pinDialog=document.querySelector("#pinDialog"), tripDialog=document.querySelector("#tripDialog");
+const assistantDialog=document.querySelector("#assistantDialog"), accountDialog=document.querySelector("#accountDialog"), developerDialog=document.querySelector("#developerDialog"), pinDialog=document.querySelector("#pinDialog"), tripDialog=document.querySelector("#tripDialog");
 
 function zoneCondition(zone) { return state.conditions.zones?.[zone?.id] || {}; }
 function resultFor(zone, weather = zoneCondition(zone).current || {}, history = zoneCondition(zone).history || {}) { const result=calculateRavScore({ mode:state.mode, zone, weather, history }); return {...result,prediction:predictAmberChance({baseScore:result.score,zone,weather,history,observations:getLocalObservations()})}; }
@@ -128,7 +129,12 @@ function openTripPrompt(trip){
   });
 }
 function enableDialogClose(dialog){dialog.querySelector(".dialog-close")?.addEventListener("click",()=>dialog.close());dialog.addEventListener("click",event=>{if(event.target===dialog)dialog.close();});}
-[accountDialog,developerDialog,pinDialog,tripDialog].forEach(enableDialogClose);
+[assistantDialog,accountDialog,developerDialog,pinDialog,tripDialog].forEach(enableDialogClose);
+
+function assistantContext(){const zone=state.selectedZone;const condition=zoneCondition(zone);return {zone,weather:condition.current||{},history:condition.history||{},result:zone?resultFor(zone):null,mode:state.mode};}
+function addAssistantMessage(text,who="assistant",loading=false){const box=document.querySelector("#assistantMessages");const div=document.createElement("div");div.className=`assistant-message ${who}${loading?" loading":""}`;const p=document.createElement("p");p.textContent=text;div.appendChild(p);box.appendChild(div);box.scrollTop=box.scrollHeight;return div;}
+async function submitAssistantQuestion(question){const clean=String(question||"").trim();if(!clean)return;addAssistantMessage(clean,"user");const pending=addAssistantMessage("Undersøger forholdene…","assistant",true);try{pending.querySelector("p").textContent=await askRavRadar(clean,assistantContext());pending.classList.remove("loading");}catch(error){pending.querySelector("p").textContent=error.message;pending.classList.remove("loading");}}
+const quickBox=document.querySelector("#assistantQuickQuestions");quickBox.innerHTML=QUICK_QUESTIONS.map(q=>`<button type="button">${q}</button>`).join("");quickBox.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>submitAssistantQuestion(button.textContent)));document.querySelector("#assistantButton").addEventListener("click",()=>assistantDialog.showModal());document.querySelector("#assistantForm").addEventListener("submit",async event=>{event.preventDefault();const field=event.currentTarget.elements.question;const q=field.value;field.value="";await submitAssistantQuestion(q);});
 
 document.querySelectorAll(".mode-button").forEach(button=>button.addEventListener("click",()=>setMode(button.dataset.mode)));
 document.querySelector("#locateButton").addEventListener("click",()=>locateUser(map,()=>alert("Din position kunne ikke hentes. Kontroller browserens tilladelse til placering."),position=>{state.lastGps={lat:position.latitude,lng:position.longitude,accuracy:position.accuracy,at:new Date().toISOString()};}));
@@ -139,11 +145,11 @@ document.querySelector("#pinForm").addEventListener("submit",event=>{event.preve
 
 try {await consumeAuthCallback();const [zones,conditions]=await Promise.all([loadZones(),loadConditions()]);state.zones=zones;state.conditions=conditions;state.zoneLayer=renderZones(map,zones,id=>resultFor(zones.features.find(item=>item.properties.id===id).properties),zone=>openZone(zone,{scroll:false}));state.flowArrows=installFlowArrows(map,zones,id=>state.conditions.zones?.[id]||{});setMode(localStorage.getItem("ravradar-mode")==="beach"?"beach":"waders");if(conditions.available&&conditions.generatedAt){const timestamp=new Date(conditions.generatedAt).toLocaleString("da-DK");const stale=Date.now()-new Date(conditions.generatedAt).getTime()>8*3600000;dataStatus.textContent=`${stale?"⚠ Data er ældre end normalt · ":""}Senest opdateret ${timestamp}`;}else dataStatus.textContent="Vejrdata indlæses ved næste automatiske GitHub-kørsel.";resumeTripTracking();syncPendingObservations().catch(()=>{});updateTripUi();const pending=pendingTripPrompt();if(pending)setTimeout(()=>openTripPrompt(pending),650);}catch(error){console.error(error);infoPanel.innerHTML='<div class="notice">Kortzonerne kunne ikke indlæses. Kontroller den seneste GitHub Action.</div>';dataStatus.textContent="Fejl ved indlæsning";}
 
-// RavRadar 4.0.40: versionsmanifest + sikker service-worker-opdatering.
+// RavRadar 4.0.41: versionsmanifest + sikker service-worker-opdatering.
 function installAppUpdateFlow() {
   if (!("serviceWorker" in navigator)) return;
   const banner=document.querySelector("#updateBanner"), updateButton=document.querySelector("#updateAppButton");
-  const version=window.RAVRADAR_VERSION||"4.0.40"; document.querySelector("#appVersion").textContent=version;
+  const version=window.RAVRADAR_VERSION||"4.0.41"; document.querySelector("#appVersion").textContent=version;
   let refreshing=false, registration=null, waitingWorker=null;
   const showUpdate=worker=>{waitingWorker=worker||waitingWorker;if(!banner||!updateButton)return;banner.hidden=false;updateButton.disabled=false;updateButton.textContent="Opdater nu";};
   const activate=()=>{updateButton.disabled=true;updateButton.textContent="Opdaterer…";(waitingWorker||registration?.waiting)?.postMessage({type:"SKIP_WAITING"});};
