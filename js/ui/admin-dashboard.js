@@ -8,7 +8,7 @@ import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdmi
 import { interpretFreeTextRule } from '../core/free-text-rule-assistant.js';
 import { listHandbookReviews, updateHandbookReview, localHandbookDraftCount } from '../services/handbook-review-store.js';
 
-const VERSION='4.0.38';
+const VERSION='4.0.39';
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
 const RULES_KEY='ravradar-admin-rules-v1';
