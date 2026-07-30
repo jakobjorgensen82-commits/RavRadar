@@ -1,4 +1,4 @@
-# RavRadar 4.0.36 – realistisk DMI-cache og guidet administration
+# RavRadar 4.0.37 – realistisk DMI-cache og guidet administration
 
 ## DMI og cache
 - Rå GRIB-cache hævet fra 1.400 MB til 4.096 MB. Det giver realistisk plads til både store HARMONIE-filer og marine forecast-trin.
