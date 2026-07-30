@@ -1,8 +1,8 @@
-const APP_VERSION = "4.0.39";
+const APP_VERSION = "4.0.40";
 const CACHE_PREFIX = "ravradar-app-";
 const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}`;
 const STATIC = [
-  "./","./index.html","./admin.html",`./admin.css?v=${APP_VERSION}`,`./js/ui/admin-gate.js?v=${APP_VERSION}`,`./js/ui/admin-app.js?v=${APP_VERSION}`,`./js/ui/supabase-setup.js?v=${APP_VERSION}`,"./supabase-setup.html",`./style.css?v=${APP_VERSION}`,`./bootstrap.js?v=${APP_VERSION}`,`./app.js?v=${APP_VERSION}`,
+  "./","./index.html","./admin.html","./handbook.html",`./handbook.css?v=${APP_VERSION}`,`./js/ui/handbook.js?v=${APP_VERSION}`,`./admin.css?v=${APP_VERSION}`,`./js/ui/admin-gate.js?v=${APP_VERSION}`,`./js/ui/admin-app.js?v=${APP_VERSION}`,`./js/ui/supabase-setup.js?v=${APP_VERSION}`,"./supabase-setup.html",`./style.css?v=${APP_VERSION}`,`./bootstrap.js?v=${APP_VERSION}`,`./app.js?v=${APP_VERSION}`,
   "./config.js","./manifest.webmanifest","./version.json",`./data/zones.geojson?v=${APP_VERSION}`,"./data/model.json",
   "./js/core/score-engine.js","./js/core/rule-engine.js","./js/core/adaptive-model.js","./js/core/prediction-engine.js",
   "./js/services/rule-service.js","./rules/national-rules.json","./rules/local-rules.json","./rules/experimental-rules.json",

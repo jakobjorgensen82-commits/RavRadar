@@ -75,6 +75,26 @@ export async function getCurrentRole(){
   const rows=await response.json();
   return rows[0]?.role||null;
 }
+
+export function expertLoginConfig(){
+  return {
+    username: PUBLIC_CONFIG.expertLoginUsername || 'ekspert',
+    email: PUBLIC_CONFIG.expertAuthEmail || 'ekspert@ravradar.dk'
+  };
+}
+export async function signInAsExpert(username,password){
+  const cfg=expertLoginConfig();
+  if(String(username||'').trim().toLowerCase()!==cfg.username.toLowerCase())
+    throw new Error('Forkert brugernavn eller kode.');
+  await signInWithPassword(cfg.email,password);
+  const role=await getCurrentRole();
+  if(role!=='expert'){
+    await signOut();
+    throw new Error('Denne konto har ikke ekspertadgang.');
+  }
+  return currentSession();
+}
+
 export async function testConnection(){
   if(!enabled)throw new Error('Supabase er ikke konfigureret');
   const response=await fetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/`,{headers:{apikey:PUBLIC_CONFIG.supabasePublishableKey}});
