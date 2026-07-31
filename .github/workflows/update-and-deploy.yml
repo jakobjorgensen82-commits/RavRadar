@@ -221,6 +221,18 @@ jobs:
           retention-days: 14
           if-no-files-found: error
 
+      - name: Sync protected admin data to Supabase
+        if: steps.preflight.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY; refusing to publish protected admin files."
+            exit 1
+          fi
+          node scripts/sync-protected-admin-assets.mjs
+
       - name: Build lean GitHub Pages artifact
         if: steps.preflight.outputs.should_run == 'true'
         run: |
@@ -234,6 +246,16 @@ jobs:
             --exclude 'node_modules/' \
             --exclude 'scripts/' \
             --exclude 'docs/' \
+            --exclude 'data/diagnostics/' \
+            --exclude 'data/live/weather-health.json' \
+            --exclude 'data/live/ravradar-runtime-diagnostics.json' \
+            --exclude 'data/live/dmi-water-stations.json' \
+            --exclude 'data/live/water-station-routing-audit.json' \
+            --exclude 'handbook.html' \
+            --exclude 'handbook.css' \
+            --exclude 'documentation.html' \
+            --exclude 'js/ui/handbook.js' \
+            --exclude 'js/services/handbook-review-store.js' \
             --exclude 'schemas/' \
             --exclude 'supabase/' \
             --exclude 'requirements-dmi.txt' \
