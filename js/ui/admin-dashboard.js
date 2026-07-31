@@ -9,7 +9,7 @@ import { interpretFreeTextRule } from '../core/free-text-rule-assistant.js';
 import { listProfiles, savePermissions, PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js';
 import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js';
 
-const VERSION='4.0.47';
+const VERSION='4.0.48';
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
 const RULES_KEY='ravradar-admin-rules-v1';

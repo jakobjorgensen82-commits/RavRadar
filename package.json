@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.47",
+  "version": "4.0.48",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -53,6 +53,7 @@
     "test:coastline-refinement": "node scripts/test-coastline-refinement-4.0.45.mjs",
     "test:geometry-rollback": "node scripts/test-geometry-rollback-4.0.46.mjs",
     "test:production-coastline-generator": "python scripts/generate-production-coastlines-4.0.47.py --self-test",
+    "build:constrained-coastlines": "python scripts/refine-coastlines-constrained-4.0.48.py",
     "test:production-coastline-integration": "node scripts/test-production-coastline-integration-4.0.47.mjs"
   },
   "engines": {

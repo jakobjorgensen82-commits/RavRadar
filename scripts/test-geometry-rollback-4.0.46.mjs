@@ -11,7 +11,7 @@ const beforeIds = new Set(before.features.map(f => f.properties.id));
 const failedIds = new Set(failed.features.map(f => f.properties.id));
 assert.deepEqual(activeIds, beforeIds, '4.0.44 rollback-snapshot mangler zone-IDer');
 assert.deepEqual(activeIds, failedIds, '4.0.45 snapshot mangler zone-IDer');
-const production = active.features.some(f => f.properties.coastLineVersion === '4.0.47');
+const production = active.features.some(f => ['4.0.47','4.0.48','4.0.48-safe-fallback'].includes(f.properties.coastLineVersion));
 if (!production) {
   const baseline = new Map(before.features.map(f => [f.properties.id, f.properties.coastLine]));
   for (const f of active.features) {
