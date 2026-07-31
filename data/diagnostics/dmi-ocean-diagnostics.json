@@ -1,21 +1,292 @@
 {
   "schemaVersion": 1,
-  "generatedAt": null,
-  "bulkCacheGeneratedAt": null,
-  "refreshStatus": "waiting-for-first-4.0.4-run",
+  "generatedAt": "2026-07-31T15:52:14.933630Z",
+  "bulkCacheGeneratedAt": "2026-07-31T15:52:11.575642Z",
+  "refreshStatus": "partial",
+  "method": "DMI STAC forecast-step GRIB inventory; collection-specific field extraction; multi-candidate nearest valid grid point with marine collection overlap; 3h model stride; no spatial interpolation",
   "summary": {
-    "zonesInBulkCache": 0,
-    "waterLevelZones": 0,
-    "currentUZones": 0,
-    "currentVZones": 0,
-    "currentVectorAvailable": false,
-    "waterTemperatureZones": 0,
-    "marineErrors": 0
+    "zonesInBulkCache": 231,
+    "waterLevelZones": 218,
+    "currentUZones": 218,
+    "currentVZones": 218,
+    "currentVectorAvailable": true,
+    "waterTemperatureZones": 218,
+    "marineErrors": 0,
+    "freshMarineZones": 0,
+    "preservedMarineZones": 218,
+    "fallbackOrMissingMarineZones": 13
   },
-  "parameters": {},
-  "collections": {},
+  "parameters": {
+    "sea-mean-deviation": {
+      "zonesPopulated": 218,
+      "finiteValues": 9492,
+      "minimum": -1.251368522644043,
+      "maximum": 1.1923513412475586
+    },
+    "current-u": {
+      "zonesPopulated": 218,
+      "finiteValues": 9492,
+      "minimum": -0.2754096984863281,
+      "maximum": 0.2959327697753906
+    },
+    "current-v": {
+      "zonesPopulated": 218,
+      "finiteValues": 9492,
+      "minimum": -0.5075387954711914,
+      "maximum": 0.44709300994873047
+    },
+    "water-temperature": {
+      "zonesPopulated": 218,
+      "finiteValues": 9492,
+      "minimum": 3.027226448059082,
+      "maximum": 20.549068450927734
+    }
+  },
+  "collections": {
+    "dkss_idw": {
+      "scheduledThisRun": true,
+      "attemptedThisRun": true,
+      "succeededThisRun": true,
+      "partialThisRun": false,
+      "referenceTime": "2026-07-31T12:00:00Z",
+      "assetsDiscovered": 47,
+      "assetsProcessed": 0,
+      "assetsReused": 0,
+      "assetsSkippedPreviouslyProcessed": 47,
+      "healthState": "unchanged-valid",
+      "recognizedParameters": [
+        "current-u",
+        "current-v",
+        "sea-mean-deviation",
+        "water-temperature"
+      ],
+      "requiredParameters": [
+        "sea-mean-deviation",
+        "current-u",
+        "current-v",
+        "water-temperature"
+      ],
+      "missingParameters": [],
+      "inventoryMessageTypes": 0,
+      "lastSuccessfulAt": "2026-07-31T15:40:55.349068Z",
+      "lastPartialAt": "2026-07-29T09:41:32.764169Z",
+      "lastError": null,
+      "nextEligibleAt": null
+    },
+    "dkss_nsbs": {
+      "scheduledThisRun": true,
+      "attemptedThisRun": true,
+      "succeededThisRun": true,
+      "partialThisRun": false,
+      "referenceTime": "2026-07-31T12:00:00Z",
+      "assetsDiscovered": 47,
+      "assetsProcessed": 0,
+      "assetsReused": 0,
+      "assetsSkippedPreviouslyProcessed": 47,
+      "healthState": "unchanged-valid",
+      "recognizedParameters": [
+        "current-u",
+        "current-v",
+        "sea-mean-deviation",
+        "water-temperature"
+      ],
+      "requiredParameters": [
+        "sea-mean-deviation",
+        "current-u",
+        "current-v",
+        "water-temperature"
+      ],
+      "missingParameters": [],
+      "inventoryMessageTypes": 0,
+      "lastSuccessfulAt": "2026-07-31T15:31:21.024423Z",
+      "lastPartialAt": "2026-07-29T09:20:59.063225Z",
+      "lastError": null,
+      "nextEligibleAt": null
+    },
+    "dkss_lf": {
+      "scheduledThisRun": true,
+      "attemptedThisRun": true,
+      "succeededThisRun": true,
+      "partialThisRun": false,
+      "referenceTime": "2026-07-31T12:00:00Z",
+      "assetsDiscovered": 47,
+      "assetsProcessed": 0,
+      "assetsReused": 0,
+      "assetsSkippedPreviouslyProcessed": 47,
+      "healthState": "unchanged-valid",
+      "recognizedParameters": [
+        "current-u",
+        "current-v",
+        "sea-mean-deviation",
+        "water-temperature"
+      ],
+      "requiredParameters": [
+        "sea-mean-deviation",
+        "current-u",
+        "current-v",
+        "water-temperature"
+      ],
+      "missingParameters": [],
+      "inventoryMessageTypes": 0,
+      "lastSuccessfulAt": "2026-07-31T15:31:21.024423Z",
+      "lastPartialAt": "2026-07-29T09:41:32.764169Z",
+      "lastError": null,
+      "nextEligibleAt": null
+    }
+  },
   "errors": [],
-  "pipelineCounters": {},
-  "isTemplate": true,
-  "templateNotice": "Repository-fil. Aktuelle runtime-data findes på den deployede side og i admin-download."
+  "missingZones": {
+    "DK-B05-05": {
+      "reason": "PRIMARY_COLLECTION_NO_COVERAGE",
+      "collectionsTried": [],
+      "nearestValidDistanceKm": null,
+      "missingParameters": [
+        "current-u",
+        "current-v",
+        "sea-mean-deviation"
+      ],
+      "attempts": {}
+    },
+    "DK-B05-07": {
+      "reason": "PRIMARY_COLLECTION_NO_COVERAGE",
+      "collectionsTried": [],
+      "nearestValidDistanceKm": null,
+      "missingParameters": [
+        "current-u",
+        "current-v",
+        "sea-mean-deviation"
+      ],
+      "attempts": {}
+    },
+    "DK-B05-09": {
+      "reason": "PRIMARY_COLLECTION_NO_COVERAGE",
+      "collectionsTried": [],
+      "nearestValidDistanceKm": null,
+      "missingParameters": [
+        "current-u",
+        "current-v",
+        "sea-mean-deviation"
+      ],
+      "attempts": {}
+    },
+    "DK-B05-10": {
+      "reason": "PRIMARY_COLLECTION_NO_COVERAGE",
+      "collectionsTried": [],
+      "nearestValidDistanceKm": null,
+      "missingParameters": [
+        "current-u",
+        "current-v",
+        "sea-mean-deviation"
+      ],
+      "attempts": {}
+    },
+    "DK-B05-13": {
+      "reason": "PRIMARY_COLLECTION_NO_COVERAGE",
+      "collectionsTried": [],
+      "nearestValidDistanceKm": null,
+      "missingParameters": [
+        "current-u",
+        "current-v",
+        "sea-mean-deviation"
+      ],
+      "attempts": {}
+    },
+    "DK-B05-17": {
+      "reason": "PRIMARY_COLLECTION_NO_COVERAGE",
+      "collectionsTried": [],
+      "nearestValidDistanceKm": null,
+      "missingParameters": [
+        "current-u",
+        "current-v",
+        "sea-mean-deviation"
+      ],
+      "attempts": {}
+    },
+    "DK-B05-20": {
+      "reason": "PRIMARY_COLLECTION_NO_COVERAGE",
+      "collectionsTried": [],
+      "nearestValidDistanceKm": null,
+      "missingParameters": [
+        "current-u",
+        "current-v",
+        "sea-mean-deviation"
+      ],
+      "attempts": {}
+    },
+    "DK-B05-21": {
+      "reason": "PRIMARY_COLLECTION_NO_COVERAGE",
+      "collectionsTried": [],
+      "nearestValidDistanceKm": null,
+      "missingParameters": [
+        "current-u",
+        "current-v",
+        "sea-mean-deviation"
+      ],
+      "attempts": {}
+    },
+    "DK-B05-22": {
+      "reason": "PRIMARY_COLLECTION_NO_COVERAGE",
+      "collectionsTried": [],
+      "nearestValidDistanceKm": null,
+      "missingParameters": [
+        "current-u",
+        "current-v",
+        "sea-mean-deviation"
+      ],
+      "attempts": {}
+    },
+    "DK-B05-23": {
+      "reason": "PRIMARY_COLLECTION_NO_COVERAGE",
+      "collectionsTried": [],
+      "nearestValidDistanceKm": null,
+      "missingParameters": [
+        "current-u",
+        "current-v",
+        "sea-mean-deviation"
+      ],
+      "attempts": {}
+    },
+    "DK-B05-24": {
+      "reason": "PRIMARY_COLLECTION_NO_COVERAGE",
+      "collectionsTried": [],
+      "nearestValidDistanceKm": null,
+      "missingParameters": [
+        "current-u",
+        "current-v",
+        "sea-mean-deviation"
+      ],
+      "attempts": {}
+    },
+    "DK-B10-10": {
+      "reason": "PRIMARY_COLLECTION_NO_COVERAGE",
+      "collectionsTried": [],
+      "nearestValidDistanceKm": null,
+      "missingParameters": [
+        "current-u",
+        "current-v",
+        "sea-mean-deviation"
+      ],
+      "attempts": {}
+    },
+    "DK-LIM-03": {
+      "reason": "PRIMARY_COLLECTION_NO_COVERAGE",
+      "collectionsTried": [],
+      "nearestValidDistanceKm": null,
+      "missingParameters": [
+        "current-u",
+        "current-v",
+        "sea-mean-deviation"
+      ],
+      "attempts": {}
+    }
+  },
+  "modelSelections": {},
+  "pipelineCounters": {
+    "messagesSeen": 0,
+    "zoneLookups": 0,
+    "downloadedBytes": 0,
+    "freshZoneCount": 0,
+    "freshMarineZones": 0,
+    "preservedMarineZones": 218
+  }
 }

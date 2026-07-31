@@ -1,14 +1,54 @@
 {
-  "generatedAt": null,
-  "status": "warning",
+  "generatedAt": "2026-07-31T15:52:17.621Z",
+  "status": "degraded",
+  "serviceStatus": "degraded",
+  "userForecastStatus": "ok",
+  "dmiCoverageStatus": "alarm",
+  "apiConnectivityStatus": "ok",
+  "userData": {
+    "healthy": true,
+    "completeZones": 203,
+    "totalZones": 210,
+    "coveragePercent": 96.7
+  },
   "dmi": {
     "healthy": false,
-    "zonesFromDmi": 0,
-    "totalZones": 0,
-    "coveragePercent": 0,
+    "zonesFromDmi": 210,
+    "totalZones": 210,
+    "coveragePercent": 12.4,
+    "completeZones": 26,
+    "componentCoverage": {
+      "wind": 210,
+      "wave": 191,
+      "current": 200,
+      "waterLevel": 200
+    },
     "consecutiveFailureSince": null,
     "failureMinutes": 0,
-    "lastSuccessfulAt": null
+    "lastSuccessfulAt": "2026-07-31T15:52:17.621Z",
+    "lastApiSuccessAt": "2026-07-31T15:01:57.523Z",
+    "lastObservationSuccessAt": "2026-07-31T15:11:18.119Z",
+    "lastCoverageImprovementAt": "2026-07-31T15:01:35.369Z",
+    "pipeline": {
+      "acquisition": {
+        "status": "healthy"
+      },
+      "conversion": {
+        "status": "healthy"
+      },
+      "horizon": {
+        "status": "healthy",
+        "minimumRemainingHours": 116.1
+      },
+      "observations": {
+        "status": "cached"
+      },
+      "acquisitionHealthy": true,
+      "conversionHealthy": true,
+      "bulkMarineCandidateZones": 198,
+      "conversionLossZones": [],
+      "conversionLossPercent": 0
+    }
   },
   "alerts": {
     "maxPer24Hours": 2,
@@ -16,7 +56,125 @@
     "shouldNotifyAdministrator": false,
     "nextAllowedAfter": null
   },
-  "alertHistory": [],
-  "isTemplate": true,
-  "templateNotice": "Repository-fil. Aktuelle runtime-data findes på den deployede side og i admin-download."
+  "providers": {
+    "Deployed DMI cache": {
+      "failures": 0,
+      "circuitOpenedAt": null,
+      "lastAttemptAt": "2026-07-31T15:52:16.097Z",
+      "lastSuccessAt": "2026-07-31T15:52:17.572Z",
+      "lastError": null,
+      "requests": 1,
+      "successes": 1,
+      "latencyTotalMs": 1475,
+      "circuitOpen": false,
+      "averageLatencyMs": 1475
+    },
+    "Open-Meteo": {
+      "failures": 0,
+      "circuitOpenedAt": null,
+      "lastAttemptAt": "2026-07-31T15:52:28.973Z",
+      "lastSuccessAt": "2026-07-31T15:52:29.075Z",
+      "lastError": null,
+      "requests": 210,
+      "successes": 209,
+      "latencyTotalMs": 27284,
+      "circuitOpen": false,
+      "averageLatencyMs": 130
+    },
+    "Open-Meteo Marine": {
+      "failures": 0,
+      "circuitOpenedAt": null,
+      "lastAttemptAt": "2026-07-31T15:52:28.973Z",
+      "lastSuccessAt": "2026-07-31T15:52:29.070Z",
+      "lastError": null,
+      "requests": 210,
+      "successes": 210,
+      "latencyTotalMs": 22614,
+      "circuitOpen": false,
+      "averageLatencyMs": 108
+    },
+    "Open-Meteo forecast": {
+      "failures": 0,
+      "circuitOpenedAt": null,
+      "lastAttemptAt": "2026-07-31T15:52:29.075Z",
+      "lastSuccessAt": "2026-07-31T15:52:29.180Z",
+      "lastError": null,
+      "requests": 210,
+      "successes": 206,
+      "latencyTotalMs": 24306,
+      "circuitOpen": false,
+      "averageLatencyMs": 116
+    },
+    "Open-Meteo Marine forecast": {
+      "failures": 0,
+      "circuitOpenedAt": null,
+      "lastAttemptAt": "2026-07-31T15:52:29.075Z",
+      "lastSuccessAt": "2026-07-31T15:52:29.173Z",
+      "lastError": null,
+      "requests": 210,
+      "successes": 210,
+      "latencyTotalMs": 20721,
+      "circuitOpen": false,
+      "averageLatencyMs": 99
+    },
+    "MET Norway": {
+      "failures": 0,
+      "circuitOpenedAt": null,
+      "lastAttemptAt": "2026-07-31T15:52:23.114Z",
+      "lastSuccessAt": "2026-07-31T15:52:23.533Z",
+      "lastError": null,
+      "requests": 1,
+      "successes": 1,
+      "latencyTotalMs": 419,
+      "circuitOpen": false,
+      "averageLatencyMs": 419
+    }
+  },
+  "dmiForecastCache": {
+    "zones": 210,
+    "minimumRemainingHours": 116.1,
+    "maximumRemainingHours": 116.1,
+    "availableZones": 210,
+    "windZones": 210,
+    "waveZones": 191,
+    "currentZones": 200,
+    "waterLevelZones": 200,
+    "componentHorizonCoverage": {
+      "wind": {
+        "zonesWithAnyData": 210,
+        "zonesWith24Hours": 210,
+        "zonesWith96Hours": 26,
+        "averageHours": 62.8,
+        "minimumHours": 57.1,
+        "maximumHours": 103.1
+      },
+      "wave": {
+        "zonesWithAnyData": 191,
+        "zonesWith24Hours": 191,
+        "zonesWith96Hours": 173,
+        "averageHours": 100.9,
+        "minimumHours": 0,
+        "maximumHours": 116.1
+      },
+      "current": {
+        "zonesWithAnyData": 200,
+        "zonesWith24Hours": 200,
+        "zonesWith96Hours": 198,
+        "averageHours": 110,
+        "minimumHours": 0,
+        "maximumHours": 116.1
+      },
+      "waterLevel": {
+        "zonesWithAnyData": 200,
+        "zonesWith24Hours": 200,
+        "zonesWith96Hours": 198,
+        "averageHours": 110,
+        "minimumHours": 0,
+        "maximumHours": 116.1
+      }
+    },
+    "completeZones": 26,
+    "duplicateTimestampZones": 0
+  },
+  "alertHistory": []
 }

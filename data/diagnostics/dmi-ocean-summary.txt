@@ -1,2 +1,16 @@
 RavRadar DMI ocean diagnostics
-Waiting for the first RavRadar 4.0.4 GitHub Actions run.
+Generated: 2026-07-31T15:52:14.933630Z
+Bulk status: partial
+Zones in bulk cache: 231
+Water-level zones: 218
+Current U zones: 218
+Current V zones: 218
+Water-temperature zones: 218
+Fresh marine zones this run: 0
+Preserved marine zones: 218
+Fallback/missing marine zones: 13
+
+Collections:
+- dkss_idw: attempted=True health=unchanged-valid success=True partial=False assets=0/47 reused=0 skipped=47 missing=none error=none
+- dkss_nsbs: attempted=True health=unchanged-valid success=True partial=False assets=0/47 reused=0 skipped=47 missing=none error=none
+- dkss_lf: attempted=True health=unchanged-valid success=True partial=False assets=0/47 reused=0 skipped=47 missing=none error=none
