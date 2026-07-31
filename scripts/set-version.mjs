@@ -17,7 +17,7 @@ for(const [file,transform] of replacements){
 }
 const escaped=String(previousVersion).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
 const versionPattern=new RegExp(`\\b${escaped}\\b`,'g');
-for(const file of ['index.html','admin.html','service-worker.js','app.js','js/ui/admin-dashboard.js','js/services/zone-registry.js']){
+for(const file of ['index.html','admin.html','documentation.html','handbook.html','service-worker.js','app.js','js/ui/admin-dashboard.js','js/ui/admin-app.js','js/services/zone-registry.js','HANDBOOK-RAVRADAR.md','docs/handbook/content.json']){
  let text=await fs.readFile(file,'utf8');
  text=text.replace(versionPattern,version);
  await fs.writeFile(file,text);

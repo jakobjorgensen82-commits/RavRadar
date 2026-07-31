@@ -5,7 +5,7 @@ begin;
 do $$
 declare c record;
 begin
-  for c in select conname from pg_constraint where conrelid='public.user_permissions'::regclass and contype='c' loop
+  for c in select oid, conname from pg_constraint where conrelid='public.user_permissions'::regclass and contype='c' loop
     if pg_get_constraintdef(c.oid) ilike '%permission_key%' then execute format('alter table public.user_permissions drop constraint %I',c.conname); end if;
   end loop;
 end $$;

@@ -1,1 +1,5 @@
-{"version":"4.0.56","releasedAt":"2026-07-31T21:55:00Z"}
+{
+  "version": "4.0.57",
+  "releasedAt": "2026-07-31T23:12:44.069Z",
+  "minimumSupportedVersion": "4.0.57"
+}

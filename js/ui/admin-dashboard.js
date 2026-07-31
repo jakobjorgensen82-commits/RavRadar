@@ -10,7 +10,7 @@ import { listProfiles, savePermissions, PERMISSIONS, myAccess, hasPermission } f
 import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js';
 import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js';
 
-const VERSION='4.0.56';
+const VERSION='4.0.57';
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
 const RULES_KEY='ravradar-admin-rules-v1';
@@ -127,7 +127,7 @@ function renderWeather(){
  <article class="admin-card"><h2>Datakilde pr. zone</h2><div class="toolbar"><input id="weatherZoneSearch" placeholder="Søg zone"><button id="downloadRuntime" class="admin-button secondary">Download samlet runtime-diagnostik</button><button id="downloadConditions" class="admin-button secondary">Download conditions.json</button></div><div id="weatherZoneRows"></div></article>`;
  const draw=()=>{const q=(document.querySelector('#weatherZoneSearch').value||'').toLowerCase();const zoneRows=Object.entries(state.conditions.zones||{}).filter(([id,z])=>(id+' '+(z.waterLevel?.diagnostic?.zoneName||'')).toLowerCase().includes(q)).slice(0,250);document.querySelector('#weatherZoneRows').innerHTML=`<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Zone</th><th>Vind</th><th>Bølger</th><th>Strøm</th><th>Vandstand</th><th>Gyldige tider</th></tr></thead><tbody>${zoneRows.map(([id,z])=>`<tr><td>${esc(z.waterLevel?.diagnostic?.zoneName||id)}</td><td>${sourceBadge(z.sources?.wind)}</td><td>${sourceBadge(z.sources?.wave)}</td><td>${sourceBadge(z.sources?.current)}</td><td>${sourceBadge(z.sources?.waterLevel)}</td><td>Vind ${esc(z.modelSteps?.wind||'–')}<br>Bølge ${esc(z.modelSteps?.wave||'–')}<br>Ocean ${esc(z.modelSteps?.ocean||'–')}</td></tr>`).join('')}</tbody></table></div>`};
  document.querySelector('#weatherZoneSearch').oninput=draw;draw();
- document.querySelector('#downloadRuntime').onclick=async()=>{try{const fresh=await getJson(`./data/live/ravradar-runtime-diagnostics.json?t=${Date.now()}`);download('ravradar-runtime-diagnostics.json',fresh);state.runtime=fresh;}catch(error){console.error(error);alert('Kunne ikke hente en frisk runtime-diagnostik. Genindlæs siden og prøv igen.');}};
+ document.querySelector('#downloadRuntime').onclick=()=>{if(!allowed('diagnostics_download')){alert('Din konto har ikke rettighed til at downloade rå diagnostik.');return;}if(!state.runtime){alert('Der er ingen beskyttet runtime-diagnostik tilgængelig.');return;}download('ravradar-runtime-diagnostics.json',state.runtime);};
  document.querySelector('#downloadConditions').onclick=async()=>{try{const fresh=await getJson(`./data/live/conditions.json?t=${Date.now()}`);download('conditions.json',fresh);state.conditions=fresh;}catch(error){console.error(error);alert('Kunne ikke hente friske conditions. Genindlæs siden og prøv igen.');}};
 }
 

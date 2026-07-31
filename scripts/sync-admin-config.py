@@ -5,7 +5,7 @@ URL=os.getenv('SUPABASE_URL','').rstrip('/'); KEY=os.getenv('SUPABASE_SERVICE_RO
 MAP={'water-level-station-routing':'data/water-level-station-routing.json','direction-reviews':'data/admin/direction-reviews.json','rules':'data/admin/admin-rules.json'}
 if not URL or not KEY:
  print(json.dumps({'status':'fallback','reason':'missing-supabase-secrets'})); raise SystemExit(0)
-req=urllib.request.Request(URL+'/rest/v1/admin_documents?select=document_key,payload,updated_at',headers={'apikey':KEY,'Authorization':'Bearer '+KEY})
+req=urllib.request.Request(URL+'/rest/v1/admin_documents?select=document_key,payload,updated_at',headers=({'apikey':KEY} if KEY.startswith('sb_secret_') else {'apikey':KEY,'Authorization':'Bearer '+KEY}))
 try:
  rows=json.load(urllib.request.urlopen(req,timeout=20))
  for row in rows:

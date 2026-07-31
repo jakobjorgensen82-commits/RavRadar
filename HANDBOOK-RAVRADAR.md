@@ -1,6 +1,6 @@
 # RavRadar – levende faglig og teknisk håndbog
 
-**Håndbogsversion:** 4.0.54  
+**Håndbogsversion:** 4.0.57  
 **Opdateret:** 31. juli 2026  
 **Status:** Levende dokument; tekniske forhold skal verificeres mod aktuel kode og RDKS.
 

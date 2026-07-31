@@ -32,3 +32,12 @@ Status: Implementeret
 - Beskyttede admin-data synkroniseres til Supabase i stedet for at blive offentliggjort på GitHub Pages.
 - Gamle vejrdata over friskhedsgrænsen afvises.
 - Nye appversioner aktiveres og genindlæses automatisk.
+## 4.0.57 – 2026-08-01
+
+Status: Implementeret
+
+- Stabiliseret Supabase-sikret administration efter installationsaudit.
+- Rettet SQL constraint-inspektion og understøttelse af nye `sb_secret_` servernøgler.
+- Håndbogen synkroniseres nu automatisk som beskyttet admin-dokument.
+- Rå runtime-diagnostik hentes ikke længere fra en offentlig URL i admin.
+- Versionskonsistens er udvidet til alle aktive bruger-, admin- og håndbogsfiler.
