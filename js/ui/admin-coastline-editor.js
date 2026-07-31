@@ -143,12 +143,13 @@ function selectZone(config, zoneId) {
     undo: [],
     redo: [],
     note: override?.note || '',
+    disabled: override?.disabled === true,
     dirty: false
   };
   document.querySelector('#coastlineZone').value = zone.properties.id;
   document.querySelector('#coastlineNote').value = activeState.note;
   document.querySelector('#coastlineZoneStatus').innerHTML = override
-    ? `<span class="badge draft">Kladde gemt ${esc(new Date(override.updatedAt).toLocaleString('da-DK'))}</span>`
+    ? `<span class="badge draft">${override.disabled?'Kystdel deaktiveret':'Kladde gemt'} ${esc(new Date(override.updatedAt).toLocaleString('da-DK'))}</span>`
     : '<span class="badge">Uændret projektgeometri</span>';
   document.querySelector('#coastlineAnchorMode').checked = false;
   editorMap.__anchorMode = false;
@@ -188,6 +189,7 @@ export function renderCoastlineEditor(content, config) {
         <div id="coastlineZoneStatus"></div>
         <fieldset class="coastline-tools"><legend>Redigering</legend>
           <p><b>Grønne punkter:</b> træk dem. <b>Blå punkter:</b> klik for at indsætte. Dobbeltklik på et grønt punkt for at slette det.</p>
+          <div class="coastline-mode-switch"><button type="button" id="coastlineNavigateMode" class="admin-button secondary active">Flyt kort</button><button type="button" id="coastlinePreciseMode" class="admin-button secondary">Præcis redigering</button></div>
           <label class="switch-line"><input id="coastlineAnchorMode" type="checkbox"> Sæt strandmarkører ved klik på kortet</label>
           <label>Påvirk nabopunkter<select id="coastlineAnchorRadius"><option value="0">Kun nærmeste punkt</option><option value="1">1 punkt på hver side</option><option value="2" selected>2 punkter på hver side</option><option value="3">3 punkter på hver side</option><option value="5">5 punkter på hver side</option></select></label>
           <p class="hint">En strandmarkør flytter nærmeste linjepunkt til markøren og former nabopunkterne gradvist. Det giver en blød linje uden at flytte hele zonen.</p>
@@ -196,7 +198,7 @@ export function renderCoastlineEditor(content, config) {
         <label>Notat om rettelsen<textarea id="coastlineNote" placeholder="Fx: skærer forbi havnemolen og følger stranden mod nord"></textarea></label>
         <div id="coastlineMetrics" class="direction-checks"></div>
         <div id="coastlineIssues" aria-live="polite"></div>
-        <div class="toolbar"><button id="saveCoastlineDraft" class="admin-button">Gem zonekladde</button><button id="discardCoastlineDraft" class="admin-button secondary">Slet kladde</button></div>
+        <div class="toolbar"><button id="saveCoastlineDraft" class="admin-button">Gem zonekladde</button><button id="disableCoastlineSegment" class="admin-button danger">Deaktivér kystdel</button><button id="discardCoastlineDraft" class="admin-button secondary">Slet kladde</button></div><p class="hint">Deaktivér kystdel fjerner zonen fra den eksporterede aktive visning uden at slette dens geometri eller historik.</p>
       </article>
       <article class="admin-card coastline-map-card">
         <div class="coastline-map-legend"><span><i class="line original"></i> Projektets linje</span><span><i class="line edited"></i> Redigeret linje</span><span><i class="dot insert"></i> Indsæt punkt</span><span><i class="diamond">◆</i> Strandmarkør</span></div>
@@ -236,6 +238,15 @@ export function renderCoastlineEditor(content, config) {
     if (activeState?.dirty && !confirm('Der er ændringer, som ikke er gemt. Skift zone og kassér dem?')) { event.target.value = activeState.zone.properties.id; return; }
     selectZone(config, event.target.value);
   });
+  const setMapMode = precise => {
+    editorMap.__preciseMode = precise;
+    document.querySelector('#coastlineNavigateMode').classList.toggle('active', !precise);
+    document.querySelector('#coastlinePreciseMode').classList.toggle('active', precise);
+    if (!precise) { document.querySelector('#coastlineAnchorMode').checked = false; editorMap.__anchorMode = false; }
+    document.querySelector('#coastlineEditorMap').classList.toggle('precise-mode', precise);
+  };
+  document.querySelector('#coastlineNavigateMode').onclick=()=>setMapMode(false);
+  document.querySelector('#coastlinePreciseMode').onclick=()=>setMapMode(true);
   document.querySelector('#coastlineAnchorMode').addEventListener('change', event => {
     editorMap.__anchorMode = event.target.checked;
     document.querySelector('#coastlineEditorMap').classList.toggle('anchor-mode', event.target.checked);
@@ -269,6 +280,20 @@ export function renderCoastlineEditor(content, config) {
     await config.onSave(config.document);
     activeState.dirty = false;
     selectZone(config, override.zoneId);
+  });
+  document.querySelector('#disableCoastlineSegment').addEventListener('click', async () => {
+    if (!activeState) return;
+    const id=activeState.zone.properties.id;
+    const existing=config.document.overrides[id];
+    const disabling=existing?.disabled!==true;
+    if (!confirm(disabling?'Deaktivér denne kystdel? Geometrien bevares og kan aktiveres igen.':'Aktivér denne kystdel igen?')) return;
+    const override=createOverride(activeState.zone, activeState.line, document.querySelector('#coastlineNote').value);
+    override.disabled=disabling;
+    config.document.overrides[id]=override;
+    config.document.updatedAt=new Date().toISOString();
+    await config.onSave(config.document);
+    activeState.dirty=false;
+    selectZone(config,id);
   });
   document.querySelector('#discardCoastlineDraft').addEventListener('click', async () => {
     if (!activeState || !config.document.overrides[activeState.zone.properties.id]) return;

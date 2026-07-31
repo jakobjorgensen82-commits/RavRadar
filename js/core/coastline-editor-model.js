@@ -71,12 +71,37 @@ export function applyAnchor(line, anchor, radius = 2) {
   const source = normalized[nearest.index];
   const delta = [target[0] - source[0], target[1] - source[1]];
   const spread = Math.max(0, Math.trunc(radius));
-  return normalized.map((point, index) => {
-    const offset = Math.abs(index - nearest.index);
-    if (offset > spread) return point;
-    const weight = spread === 0 ? 1 : (spread + 1 - offset) / (spread + 1);
+
+  // A marker must create an actual curve, even when the source line is sparse.
+  // Densify the affected neighbourhood first and then use a cosine falloff,
+  // so adjacent points bend gradually instead of producing a new straight chord.
+  const left = Math.max(0, nearest.index - Math.max(1, spread));
+  const right = Math.min(normalized.length - 1, nearest.index + Math.max(1, spread));
+  const dense = [];
+  for (let i = 0; i < normalized.length - 1; i += 1) {
+    dense.push(normalized[i]);
+    if (i >= left && i < right) {
+      const subdivisions = 4;
+      for (let step = 1; step < subdivisions; step += 1) {
+        const t = step / subdivisions;
+        dense.push([
+          normalized[i][0] + (normalized[i + 1][0] - normalized[i][0]) * t,
+          normalized[i][1] + (normalized[i + 1][1] - normalized[i][1]) * t
+        ]);
+      }
+    }
+  }
+  dense.push(normalized.at(-1));
+  const denseNearest = nearestVertexIndex(dense, source).index;
+  const denseSpread = Math.max(1, spread * 4 + 2);
+  return normalizeLine(dense.map((point, index) => {
+    const offset = Math.abs(index - denseNearest);
+    if (offset > denseSpread) return point;
+    const weight = spread === 0
+      ? (offset === 0 ? 1 : 0)
+      : (0.5 + 0.5 * Math.cos(Math.PI * offset / denseSpread));
     return [point[0] + delta[0] * weight, point[1] + delta[1] * weight];
-  });
+  }));
 }
 
 function orientation(a, b, c) {
@@ -151,12 +176,14 @@ export function applyOverridesToCollection(collection, overrides = {}) {
   for (const feature of next.features || []) {
     const id = feature?.properties?.id;
     const override = overrides[id];
-    if (!override?.coastLine || override.status === 'discarded') continue;
+    if (!override || override.status === 'discarded') continue;
+    if (override.disabled === true) { feature.properties.active = false; feature.properties.disabledByAdmin = true; feature.properties.disabledAt = override.updatedAt; continue; }
+    if (!override.coastLine) continue;
     const validation = validateCoastLine(override.coastLine, feature.properties?.coastLine || []);
     if (!validation.valid) continue;
     feature.properties.coastLine = cloneLine(override.coastLine);
     feature.properties.coastLineSource = 'admin-manual-editor';
-    feature.properties.coastLineVersion = '4.0.49';
+    feature.properties.coastLineVersion = '4.0.50';
     feature.properties.coastLineEditedAt = override.updatedAt;
     feature.properties.coastLineEditNote = override.note || '';
     feature.properties.coastLineRollbackVersion = feature.properties.coastLineRollbackVersion || '4.0.44';
