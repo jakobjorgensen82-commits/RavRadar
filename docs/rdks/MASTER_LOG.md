@@ -1,3 +1,11 @@
+## 4.0.58 – 2026-08-01
+- Færdiggjort den adgangsbeskyttede RavRadar-håndbog med dyb faglig beskrivelse af rav, lavdensitetspartikler, kysthydrodynamik, sedimenttransport og implementering i RavScore.
+- Kortlagt alle aktuelle tærskler, vægte, retninger, caps og ekspertregelprocesser til den faktiske kode.
+- Indført bindende RDKS Release Governance efter læringen fra 4.0.56-forløbet.
+- Tilføjet automatisk release-gate, sikker pakning og release-rapport.
+- Registreret arkitekturretning for `ravradar.dk`, uden at aktivere CNAME før DNS og Supabase redirects er klar.
+- Omdøbt brugerfladens “drejebog” til “håndbog”.
+
 ## 4.0.54 – 2026-07-31
 - Implementerede stationsspecifik prognose-/cachestatus og samlet anvendelighed.
 - Gyldig cache kan holde en station i automatisk routing, selv om nye observationer midlertidigt mangler.

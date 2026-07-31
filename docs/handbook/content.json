@@ -1,104 +1,146 @@
 {
-  "schemaVersion": 1,
-  "handbookVersion": "4.0.57",
-  "updatedAt": "2026-07-31",
-  "title": "RavRadar – levende faglig og teknisk drejebog",
+  "schemaVersion": 2,
+  "handbookVersion": "4.0.58",
+  "updatedAt": "2026-08-01",
+  "title": "RavRadar-håndbogen – faglig model, regler, data og drift",
   "sections": [
     {
-      "id": "forord",
-      "title": "1. Formål og løfte",
-      "summary": "Hvad RavRadar lover – og ikke lover.",
-      "body": "<p>RavRadar er beslutningsstøtte til ravjagt langs danske kyster. Systemet hjælper med valg af sted og tidspunkt, men en høj score er aldrig et løfte om fund.</p><p>Rav skal være til stede, frigøres, transporteres, koncentreres eller aflejres og til sidst være tilgængeligt under jagtbare forhold. Appen skal derfor være ærlig om data, fallback, antagelser og usikkerhed.</p>"
+      "id": "formaal",
+      "title": "1. Formål, målgruppe og fagligt løfte",
+      "summary": "Hvad RavRadar er, hvem håndbogen er skrevet til, og hvilke påstande systemet ikke må fremsætte.",
+      "body": "<p>RavRadar er et beslutningsstøttesystem til ravjagt langs danske kyster. Det kombinerer prognoser, lokale kystdata, en forklarlig procesmodel og kontrollerbare ekspertregler. Systemet kan prioritere steder og tidspunkter, men kan aldrig love et fund.</p>\n<p>Håndbogen er skrevet til ejeren, eksterne rav- og kysteksperter samt fremtidige udviklere. Den skal gøre det muligt at efterprøve både den faglige antagelse og den konkrete kodevirkning.</p>\n<div class=\"callout\"><strong>Grundregel:</strong> En høj RavScore betyder, at de målte og modellerede forhold passer bedre til RavRadars nuværende hypotese. Den betyder ikke, at rav med sikkerhed er til stede eller synligt.</div>"
     },
     {
-      "id": "historie",
-      "title": "2. Projektets udvikling",
-      "summary": "Fra vandstandskort til et samlet, auditerbart ravsystem.",
-      "body": "<p>Projektet begyndte som et ønske om gratis vandstandsprognoser langs hele Danmark. Det udviklede sig til et landsdækkende system med zoner, vind, bølger, strøm, vandstand, RavScore, diagnostik og administration.</p><ul><li>DMI blev autoritativ kilde, mens Open-Meteo blev fallback.</li><li>Brede førstegenerationszoner blev erstattet af ét detaljeret register.</li><li>Stationsvalg blev udbygget fra afstand til topologi, historik og override.</li><li>RDKS bevarer historien uden at genindføre forældede løsninger.</li></ul>"
+      "id": "evidens",
+      "title": "2. Evidensklasser og usikkerhed",
+      "summary": "Sådan skelnes der mellem forskning, erfaring, hypotese og valideret RavRadar-viden.",
+      "body": "<p>Alle faglige udsagn bør placeres i én af fire klasser:</p>\n<table><thead><tr><th>Klasse</th><th>Betydning</th><th>Hvordan den må bruges</th></tr></thead><tbody>\n<tr><td>Dokumenteret</td><td>Understøttet af faglitteratur eller officielle kilder.</td><td>Kan indgå som generelt princip, men lokale tærskler kræver stadig validering.</td></tr>\n<tr><td>Observeret</td><td>Gentagne erfaringer fra ravjægere eller feltobservationer.</td><td>Kan oprettes som ekspertregel med tydelig kilde og usikkerhed.</td></tr>\n<tr><td>Hypotese</td><td>Fagligt plausibel, men endnu ikke dokumenteret for RavRadar.</td><td>Må ikke aktiveres direkte som stærk produktionsregel.</td></tr>\n<tr><td>Valideret i RavRadar</td><td>Testet mod tilstrækkelige, versionsbundne observationer.</td><td>Kan vægtes højere, men skal fortsat kunne tilbagerulles.</td></tr>\n</tbody></table>\n<p>Hvor litteraturen omhandler mikroplast, drivgods eller almindeligt sediment, bruges den kun som analogi. Rav har egne egenskaber og er ikke en neutral vandpartikel.</p>"
     },
     {
-      "id": "natur",
-      "title": "3. Rav og kystprocesser",
-      "summary": "Den procesmodel, som score og forklaring skal følge.",
-      "body": "<ol><li>Tilstedeværelse</li><li>Frigivelse</li><li>Transport</li><li>Koncentration eller aflejring</li><li>Tilgængelighed og jagtbarhed</li></ol><p>En statisk faktor som rev eller lavt vand må ikke alene skabe høj score. Den kan højst forstærke en dokumenteret dynamisk proces.</p><p>Regler mærkes som dokumenterede, observerede, hypoteser eller validerede i RavRadar.</p>"
+      "id": "rav-egenskaber",
+      "title": "3. Ravets fysiske egenskaber",
+      "summary": "Hvorfor rav kan være bundnært, midlertidigt suspenderet eller koblet til let organisk materiale.",
+      "body": "<p>Baltisk rav har typisk en massefylde tæt på, men oftest lidt højere end, naturligt brak- og havvand. Variationer i porøsitet, indeslutninger, forvitring, form og størrelse betyder, at stykker ikke reagerer ens. Almindeligt rav synker derfor normalt i Østersøens og de danske farvandes vand, men kræver langt mindre løft og turbulens end mineralske partikler med samme størrelse.</p>\n<p>Det er afgørende at skelne mellem <em>positiv opdrift</em> og <em>lav effektiv synkehastighed</em>. Rav kan transporteres med bundnære hvirvler, bølgeorbitaler og strøm, selv om det ikke flyder permanent i overfladen. Stykker kan også blive fanget i tang, ålegræs, træstykker og andet opskyl, hvilket ændrer den samlede pakkes opdrift, ruhed og strandingsadfærd.</p>\n<ul><li>Små, flade og porøse stykker forventes lettere mobiliseret end store, kompakte stykker.</li><li>Form og orientering kan påvirke drag, løft, rullebevægelse og strandingschance.</li><li>Rav kan sorteres sammen med let organisk materiale uden at være fysisk identisk med det.</li></ul>"
     },
     {
-      "id": "dataflow",
-      "title": "4. Datakilder og pipeline",
-      "summary": "DMI-prioritet, separate komponentserier og sammenhængende forecast.",
-      "body": "<p>DMI er autoritativ dansk kilde. Open-Meteo er fallback. Vind, bølger, strøm, vandstand og temperatur behandles separat og samles på faste UTC-timer.</p><p>Timevis pendlen DMI → fallback → DMI er forbudt, fordi den kan skabe kunstige spring. En ærlig horisont på 118–119 timer accepteres frem for kunstigt at tvinge 120 timer.</p>"
+      "id": "proceskaede",
+      "title": "4. Den samlede ravproces",
+      "summary": "RavRadar opdeler chancen i tilstedeværelse, frigivelse, transport, koncentration, aflejring og jagtbarhed.",
+      "body": "<ol><li><strong>Tilstedeværelse:</strong> Rav skal findes i eller opstrøms for det aktive sediment- og opskylssystem.</li><li><strong>Frigivelse/mobilisering:</strong> Bølger, strøm eller erosion skal løsne materialet fra bund, brink, tang eller ældre aflejring.</li><li><strong>Transport:</strong> Materialet skal flyttes mod eller langs den relevante kyst.</li><li><strong>Koncentration:</strong> Hydrodynamisk sortering, tanglinjer, rev, render, odder eller læzoner kan samle materialet.</li><li><strong>Aflejring/stranding:</strong> Energiniveau, vandstand og timing skal føre materialet ind i en zone, hvor det bliver liggende.</li><li><strong>Tilgængelighed:</strong> Ravet skal kunne ses og findes sikkert med den valgte jagtform.</li></ol>\n<p>En statisk kystegenskab kan ikke alene skabe høj sandsynlighed. Den kan højst forstærke en aktiv transport- eller aflejringsproces.</p>"
     },
     {
-      "id": "stationer",
-      "title": "5. Observationer, cache og DMI-stationer",
-      "summary": "Stationens registerstatus er ikke det samme som dens datastatus.",
-      "body": "<p>RavRadar skal holde DMI-registerstatus, observationsstatus og prognose-/cachestatus adskilt. En station kan være midlertidigt tavs, men stadig prognosebrugbar, hvis gyldige cachedata findes.</p><p>Admin skal på sigt vise seneste observation, cache gyldig til, samlet anvendelighed og historisk leveringsstabilitet. Kendte stationer bevares med historik i stedet for at forsvinde efter en mangelfuld kørsel.</p><p>Administratoroverride erstatter automatikken, når override opfylder de valgte leveringskrav. Det automatiske valg kan vises som reference.</p>"
+      "id": "boelger",
+      "title": "5. Bølger, turbulens og mobilisering",
+      "summary": "Hvordan bølger både kan frigøre rav og forringe jagtbarheden.",
+      "body": "<p>Bølger skaber oscillerende bevægelse helt ned mod bunden, når vanddybden er lille nok i forhold til bølgelængden. Nær brændingszonen tilføjes turbulens, undertow, bølgeinducerede strømme og hurtige skift mellem acceleration og afbremsning. Det kan løsne lavdensitetsmateriale, flytte tangbælter og omarbejde de øverste sedimentlag.</p>\n<p>Den samme høje energi, som mobiliserer materiale, kan gøre det umuligt at se eller sikkert opsamle rav. Derfor er RavRadars faglige arbejdshypotese ofte en todelt sekvens: først høj energi, derefter en roligere transport- eller aflejringsfase.</p>\n<p>Den nuværende frigivelsesmodel giver ekstra potentiale ved historiske bølger på mindst 1,5 m og ved kraftig vind. Tærsklerne er foreløbige modelparametre, ikke universelle naturkonstanter.</p>"
     },
     {
-      "id": "retninger",
-      "title": "6. Retninger og lokal geometri",
-      "summary": "Vind, strøm og pålandsretning må aldrig blandes sammen.",
-      "body": "<ul><li>Vind: hvor vinden kommer fra.</li><li>Strøm: hvor vandet bevæger sig hen.</li><li>Påland: lokal retning fra hav mod land.</li></ul><p>En korrekt matematisk konvention garanterer ikke korrekt zonegeometri. Land-/havpunkt og <code>onshoreDirectionDeg</code> skal auditeres lokalt.</p><p>En forklarende diskussion om en funktion er ikke automatisk en bestilling på at ændre den.</p>"
+      "id": "stroem",
+      "title": "6. Strøm: retning, hastighed og bundnær transport",
+      "summary": "Hvorfor strømretningen skal tolkes som bevægelse mod, langs eller væk fra den lokale kyst.",
+      "body": "<p>Strøm er RavRadars vigtigste direkte transportindikator. Oceanografisk strømretning angiver, hvor vandet bevæger sig hen. Den sammenlignes med zonens lokale retning fra hav mod land.</p>\n<p>Den nuværende model belønner omtrent 0,15–0,65 m/s som et foreløbigt brugbart interval. Svagere strøm vurderes som begrænset transport; stærkere strøm kan mobilisere meget, men bliver mindre forudsigelig. Intervallet skal ekspertvalideres efter kysttype og vanddybde.</p>\n<p>En kraftig strøm væk fra land udløser et hårdt loft over transportscoren. Det er bevidst: andre positive signaler må ikke skjule, at den aktuelle nettotransport går den forkerte vej. Ved bugtede kyster bruges flere retningsankre, så én grov retning ikke repræsenterer hele zonen.</p>\n<div class=\"callout\"><strong>Vigtig begrænsning:</strong> DMI-modellens strømværdi er ikke nødvendigvis identisk med den helt bundnære strøm i surfzonen. RavRadar bruger den som bedste tilgængelige indikator og skal vise denne usikkerhed.</div>"
     },
     {
-      "id": "zoner",
-      "title": "7. Zoner og kystlinjer",
-      "summary": "Ét register, naturlig kyst og præcis redigering.",
-      "body": "<p>Alle dele af systemet bruger ét detaljeret officielt zoneregister. Brede gamle zoner er udfaset. Als Odde og Helberskov ligger nord for Mariager Fjord mod Øster Hurup.</p><p>Kysteditoren skal bevare præcisionsmarkøren, understøtte glatte lokale kurver, deaktivering uden datatab, central lagring og rollback. Naturlig kyst må ikke ukritisk erstattes af retningen på moler og kajer.</p>"
-    },
-    {
-      "id": "score",
-      "title": "8. Procesmodel og RavScore",
-      "summary": "Fra rådata til forklarlig score.",
-      "body": "<p>Scoreforklaringen skal vise rådata, kilde, retninger, delscorer, bonusser, fradrag, caps, aktive regler og eventuelt AI-bidrag.</p><p>RavRadar skal også kunne forklare, hvorfor en zone afviger fra nabozonen. Usandsynligt høje scorer skal flagges til audit.</p>"
+      "id": "vind",
+      "title": "7. Vindens indirekte rolle",
+      "summary": "Vind kan drive overfladevand og bølger, men må ikke forveksles med lokal bundstrøm.",
+      "body": "<p>Meteorologisk vindretning angiver, hvor vinden kommer fra. RavRadar omregner den til bevægelsesretning, før den sammenlignes med pålandsretningen.</p>\n<p>Vind kan påvirke overfladedrift, vandstand, bølgeopbygning og den overordnede cirkulation. Den kan derfor understøtte en indtransport, men er ikke bevis for, at bundnært rav bevæger sig samme vej. I den nuværende transportscore giver vindretningen derfor kun en mindre bonus eller et lille fradrag sammenlignet med strømretningen.</p>\n<p>Pålandsvind kan samtidig gøre vandet uklart og farligt. Fralandsvind kan lokalt give roligt vand og god sigtbarhed, selv om den ikke driver materiale direkte ind. Det er årsagen til, at transport og jagtbarhed beregnes separat.</p>"
     },
     {
       "id": "vandstand",
-      "title": "9. Vandstand og kontinuitet",
-      "summary": "Undgå kunstige spring uden at udglatte ægte tidevand.",
-      "body": "<p>Historiske timevise kildeskift skabte kunstige vandstandsspring og må ikke vende tilbage. Store svingninger i Vadehavet kan være ægte tidevand og skal vurderes ud fra mønster, kilde og geografi.</p><p>Observation og prognose skal vises som forskellige datatyper. Mismatch, eksempelvis ved Frederikshavn, skal kunne spores og forklares.</p>"
+      "title": "8. Vandstand, tidevand og kystens aktive zone",
+      "summary": "Stigende og faldende vand ændrer både transportveje, aflejring og hvor ravet kan findes.",
+      "body": "<p>Stigende vandstand kan føre flydende eller let mobiliseret materiale længere ind over lavvandede flader og ind i tanglinjer. Faldende vand kan blotlægge nye kanter og samle materiale i render eller langs den tilbagegående vandlinje. Effekten afhænger af bølger, strøm, strandprofil og timing.</p>\n<p>RavRadar bruger aktuelt ændringen over tre timer som et beskedent transportbidrag: tydeligt stigende vand belønnes mere end faldende vand, mens næsten stabil vandstand giver et mindre fradrag. Det er en modelhypotese, som bør vurderes særskilt for Vadehavet, fjorde og åbne kyster.</p>\n<p>Store regelmæssige udsving i Vadehavet kan være ægte tidevand. Datakvalitetskontrol må derfor ikke automatisk udglatte dem som fejl.</p>"
     },
     {
-      "id": "admin",
-      "title": "10. Administration og regelbygger",
-      "summary": "Menneskeførst i stedet for datamodelførst.",
-      "body": "<p>En ikke-teknisk administrator skal forstå hvert felt, dets effekt og et konkret eksempel. Regelbyggeren skal være trinvist opbygget med livepreview, forståelig geografi og konflikttjek.</p><p>Prioritet vises som Lav, Normal, Høj eller Kritisk. Dialoger lukkes via kryds, Annuller, Escape og klik udenfor med advarsel ved ikke-gemte ændringer.</p>"
+      "id": "langskyst",
+      "title": "9. Langs- og tværkysttransport",
+      "summary": "Rav kan ankomme fra siden, ikke kun direkte fra havet.",
+      "body": "<p>Skråt indfaldende bølger skaber langs-kysten-transport. I opskylszonen går swash ofte skråt op på stranden, mens backwash søger mere direkte ned ad hældningen. Gentagelsen giver en nettoforskydning langs kysten. Strøm kan samtidig transportere materiale parallelt med strandlinjen over langt større afstande.</p>\n<p>En tværgående strøm mod land er en stærk kandidat til direkte indtransport. En langsrettet strøm kan være neutral eller positiv, hvis der længere fremme findes en odde, revkant, havnearm, læside eller kurvet kyst, der ændrer strømmen og skaber en samlingszone.</p>\n<p>RavRadar modellerer i dag primært den lokale retning og kun indirekte den regionale tilførsel. Dette er et vigtigt ekspertområde: systemet mangler endnu en egentlig Lagrange-/partikelhistorik, der følger materiale mellem zoner.</p>"
     },
     {
-      "id": "ai",
-      "title": "11. AI, ekspertviden og feedback",
-      "summary": "AI hjælper, men bestemmer ikke alene.",
-      "body": "<p>AI kan strukturere fri tekst, forklare, auditere og foreslå mønstre. AI må ikke aktivere regler, ændre vægte eller lære direkte af rå feedback uden menneskelig kontrol og validering.</p><p>Både fund og ture uden fund er nødvendige og skal knyttes til zone, tid, viste data og scoremotorversion.</p>"
+      "id": "sortering",
+      "title": "10. Sortering, tang og andre indikatorer",
+      "summary": "Hvorfor rav ofte findes sammen med bestemte opskylsfraktioner – og hvorfor sammenhængen ikke er entydig.",
+      "body": "<p>Hydrodynamisk sortering afhænger ikke kun af massefylde. Størrelse, form, ruhed, opdriftsreserve, synkehastighed og partiklens respons på accelererende strøm er mindst lige så vigtige. Rav kan derfor optræde sammen med træ, frø, bark, lette skaller, kulstykker og tang, når deres effektive transportegenskaber overlapper.</p>\n<p>Tang og ålegræs kan både være transportbærer, fælde og synlig indikator. En tanglinje er dog ikke i sig selv bevis for rav. RavRadar giver kun bonus for tang/ålegræs, når en gunstig dynamisk strømretning allerede er påvist.</p>\n<p>Eksperten bør især hjælpe med at afklare hvilke opskylstyper, kornfraktioner og biologiske materialer der bedst indikerer aktiv ravsortering ved forskellige danske kysttyper.</p>"
     },
     {
-      "id": "lagring",
-      "title": "12. Central lagring og rollback",
-      "summary": "Historik skal følge ændringerne.",
-      "body": "<p>Zoner, geometri, stationer, regler, ekspertreviews og rettigheder skal lagres centralt med revisionshistorik. Lokale kladder er nødmekanisme.</p><p>Rollback er nødvendig, så geografiske og regelmæssige ændringer kan spores og tilbageføres sikkert.</p>"
+      "id": "kystmorfologi",
+      "title": "11. Kystmorfologi, rev, render og odder",
+      "summary": "Statiske former kan styre, fokusere eller fastholde en eksisterende transport.",
+      "body": "<p>Revler og rev kan bryde bølger, skabe lokale cirkulationsceller og ændre, hvor materiale krydser brændingszonen. Render kan koncentrere returstrøm og transportere materiale væk. Odder og krumme kyster kan adskille strømregimer og skabe læ- eller konvergenszoner.</p>\n<p>Lavt vand kan øge samspillet mellem bølgeorbitaler og bundmateriale, men kan også skabe stor turbulens. RavRadar behandler derfor rev, lavt vand og vegetation som små forstærkere og kun ved dokumenteret delvis eller stærk indtransport.</p>\n<p>Den lokale geometri er kritisk. En korrekt matematisk retningsformel giver et forkert resultat, hvis zonens havpunkt, landpunkt eller pålandsretning er placeret forkert.</p>"
     },
     {
-      "id": "drift",
-      "title": "13. Diagnostik, drift og release",
-      "summary": "Brugerstatus, DMI-status og pipeline-status er forskellige.",
-      "body": "<p>En næsten komplet brugerprognose kan eksistere samtidig med degraderet DMI-dækning, fordi fallback udfylder data. Diagnostikken skal forklare acquisition, konvertering, horisont, observationer, cache og fallback.</p><p>Ved hver release skal RDKS, changelog og relevante håndbogsafsnit opdateres, og tests skal bestå, før ZIP-filen afleveres.</p>"
+      "id": "stormforloeb",
+      "title": "12. Storm, efterstorm og tidslig persistens",
+      "summary": "Hvorfor den bedste jagt ofte kan ligge efter, ikke under, den højeste energi.",
+      "body": "<p>En storm kan mobilisere materiale, men samtidige bølger, skum, uklart vand og farlige forhold kan reducere muligheden for at finde det. Når energien aftager, kan strøm og vandstandsændring fortsætte transporten, mens sigtbarheden forbedres.</p>\n<p>RavRadars nuværende frigivelsesmodel giver størst tidsbonus 3–18 timer efter en registreret højenergifase og et fradrag efter 48 timer. Procesmodellen klassificerer højenergifase, efterstorm/transportfase, aflejringsfase og sen efterfase.</p>\n<p>Dette er en bevidst, testbar hypotese. Det præcise vindue forventes at variere mellem åben vestkyst, Kattegat, fjorde og beskyttede østkyster. Persistensregler skal derfor oprettes lokalt, have udløbstid og være dokumenteret med fund samt ture uden fund.</p>"
     },
     {
-      "id": "rdks",
-      "title": "14. RDKS og historiske chats",
-      "summary": "Projektets vedvarende og versionsstyrede hukommelse.",
-      "body": "<p>RDKS indeholder aktive beslutninger, krav, implementeringsstatus, kendte issues og historiske kilder. Syv gamle chats er kronologiseret efter tekst og versionsforløb og bevaret med hash og sporbarhed.</p><p>Gamle chats kan forklare, hvorfor projektet ændrede retning, men de giver aldrig alene tilladelse til kodeændringer. Nyere aktive beslutninger vinder.</p>"
+      "id": "jagtbarhed",
+      "title": "13. Jagtbarhed og sikkerhed",
+      "summary": "En fysisk gunstig transport kan stadig give et dårligt tidspunkt at lede.",
+      "body": "<p>Jagtbarhed omfatter sigtbarhed, bølger, vind, stabilitet, adgang og sikkerhed. Ved wadersjagt straffes vind over cirka 6 m/s kraftigt, og bølger over cirka 0,7 m reducerer scoren. Ved strandjagt tolereres mere vind, men ekstremt vejr belønnes ikke automatisk.</p>\n<p>Disse grænser er operationelle standarder – ikke individuelle sikkerhedsgarantier. Brugeren skal altid vurdere strøm, temperatur, lokale revler, mørke, redningsmuligheder og egne færdigheder.</p>\n<p>Jagtbarhed vægter 40 % af grundscoren, netop for at undgå høje anbefalinger under forhold, hvor materialet måske flyttes, men ikke kan eftersøges forsvarligt.</p>"
     },
     {
-      "id": "status",
-      "title": "15. Aktuel status og næste spor",
-      "summary": "Hvad der især mangler lige nu.",
-      "body": "<ul><li>Fuld observations- kontra prognose-/cachestatus pr. station.</li><li>Cacheudløb og historisk stabilitet i admin.</li><li>Notifikation ved nye stationer, udfald, genoptagelse og bedre routing.</li><li>Fortsat officiel DMI-stationsaudit.</li><li>Komplet RavScore-forklaring og nabozoneaudit.</li><li>Mobil regressionstest af kysteditor og regelbygger.</li><li>Ekstern ekspertvalidering af faglige rav- og sedimentantagelser.</li></ul>"
+      "id": "score-implementering",
+      "title": "14. Præcis implementering i RavScore 4.0.58",
+      "summary": "Den faktiske kodevirkning – ikke kun den ønskede teori.",
+      "body": "<p>Grundscoren beregnes som:</p><p><code>40 % jagtbarhed + 35 % transport + 25 % frigivelse</code>.</p>\n<h4>Transport</h4><ul><li>Grundværdi 34.</li><li>Strøm 0,15–0,65 m/s: +18; over 0,65 m/s: +5; svagere: −12.</li><li>Strømretning: op til cirka +30 ved stærk indtransport og negativt bidrag ved fralandstransport.</li><li>Vind mod land: +6; tydeligt væk: −2.</li><li>Vandstandstrend ≥ +8 cm/3 t: +8; ≤ −8: +3; næsten stabil: −4.</li><li>Lavt vand +4, rev +3 og vegetation +3 – kun når strømmen mindst delvist går ind.</li><li>Tydelig fralandsstrøm kan sætte loft på 42; meget stærk fralandsretning loft på 28.</li></ul>\n<h4>Frigivelse</h4><ul><li>Grundværdi 22.</li><li>Maksvind seneste døgn ≥14 m/s: +35; ≥9 m/s: +18; ellers +4.</li><li>Maksbølge ≥1,5 m: +14.</li><li>3–18 timer siden høj energi: +12; mere end 48 timer: −8.</li><li>Kysttype <code>west</code>: +5.</li></ul>\n<h4>Efterbehandling</h4><p>En adaptiv, versionsstyret model kan justere grundscoren. Derefter anvendes aktive ekspertregler. En regel kan give bonus, fradrag, fast score, blokere vurderingen eller blot vise et råd. Debugsporet gemmer delscorer, retninger, caps, regelmatch og slutscore.</p>"
+    },
+    {
+      "id": "regler",
+      "title": "15. Fra faglig viden til regler",
+      "summary": "Hvordan en ekspertobservation omsættes uden at blive til skjult eller utestet logik.",
+      "body": "<p>En regel skal beskrive én tydelig sammenhæng og indeholde: geografi, betingelser, effekt, kilde, evidensklasse, tillid, begrundelse, version og status.</p>\n<ol><li>Beskriv observationen i almindeligt dansk.</li><li>Angiv om den vedrører mobilisering, transport, aflejring eller jagtbarhed.</li><li>Vælg målbare betingelser og et afgrænset geografisk omfang.</li><li>Gem som kladde.</li><li>Test positive og negative eksempler.</li><li>Aktivér kun med rettigheden til publicering.</li><li>Følg effekten i historiske observationer og tilbagerul ved problemer.</li></ol>\n<p>Store scoreændringer, regler uden betingelser og kritisk prioritet skal udløse advarsler. AI må gerne foreslå en struktur, men må ikke aktivere reglen.</p>"
+    },
+    {
+      "id": "data",
+      "title": "16. Datakilder, retninger og forecastintegritet",
+      "summary": "DMI-prioritet, fallback og hvorfor en sammenhængende tidsserie er vigtigere end et kunstigt 120-tal.",
+      "body": "<p>DMI er autoritativ dansk kilde. Vind, bølger, strøm, vandstand og temperatur behandles som separate komponentserier, kvalitetssikres og samles på faste UTC-timer. Open-Meteo bruges kun som fallback.</p>\n<p>RavRadar må ikke skifte frem og tilbage mellem DMI og fallback time for time, fordi det kan skabe kunstige spring og falske trends. En sammenhængende prognose på 118–119 timer accepteres frem for kunstigt at gentage værdier til 120 timer.</p>\n<p>Vind er meteorologisk <em>fra-retning</em>. Strøm er oceanografisk <em>til-retning</em>. Alle forklaringer og pile skal følge denne forskel.</p>"
+    },
+    {
+      "id": "stationer",
+      "title": "17. DMI-vandstandsstationer og cachelivscyklus",
+      "summary": "Observation, prognosecache og registerstatus skal holdes adskilt.",
+      "body": "<p>En station kan være aktiv i DMI-registeret, midlertidigt mangle en ny observation og stadig være prognosebrugbar, fordi dens cache er gyldig. RavRadar viser derfor observationsstatus, cacheudløb og samlet anvendelighed separat.</p>\n<p>Kendte stationer bevares i registeret, også når de er historiske eller midlertidigt inaktive. Automatisk primær/sekundær routing skal vise afstand, vægt og metode. Administratorens override vises særskilt og må ikke ændres automatisk af et forslag.</p>"
+    },
+    {
+      "id": "admin-sikkerhed",
+      "title": "18. Administration, Supabase og ekspertrettigheder",
+      "summary": "Hele den værdifulde adminfunktionalitet er adgangskontrolleret.",
+      "body": "<p>GitHub Pages kan udlevere den statiske adminskal, men den må være ubrugelig uden gyldig Supabase-session. Beskyttet indhold – håndbog, diagnostik, stationaudit, regler og centrale konfigurationer – hentes gennem Supabase med Row Level Security.</p>\n<p>Eksperten skal have både <strong>Åbn administrationen</strong> og den relevante modulrettighed. Håndbogen kræver <strong>Læs håndbogen</strong>; indsendelse af faglige rettelser kræver særskilt <strong>Indsend faglige rettelser til håndbogen</strong>.</p>\n<p>Læsning, redigering, publicering, rå download og systemadministration er bevidst opdelt. Ejeren har fuld adgang.</p>"
+    },
+    {
+      "id": "release",
+      "title": "19. Release Governance og RDKS-gate",
+      "summary": "Den arbejdsgang, som skal forhindre gentagelse af 4.0.56-forløbet.",
+      "body": "<p>En version må ikke kaldes færdig eller leveres som ZIP, før den obligatoriske release-gate er grøn. Den kontrollerer versionskonsistens, RDKS, håndbog, sikkerhedsarkitektur, workflow, beskyttede filer, domæneberedskab og hele testpakken.</p>\n<ul><li>Ingen manuelle enkeltrettelser må præsenteres som færdig release.</li><li>En fejl i CI skal udløse en samlet audit af resten af kæden – ikke kun en lapning af første fejl.</li><li>GitHub-secrets må aldrig ligge i ZIP eller kode og skal bevares på repository-niveau.</li><li>SQL-migrationer skal være idempotente eller tydeligt mærket som engangskørsel.</li><li>Leverance-ZIP må ikke indeholde <code>.git</code>, caches, node_modules eller hemmeligheder.</li><li>Release-rapporten skal angive præcis hvilke tests der faktisk er kørt.</li></ul>\n<p>RDKS er den bindende proceshukommelse: fremtidige versioner skal stoppe, hvis release-governance ikke er dokumenteret og valideret.</p>"
+    },
+    {
+      "id": "domaene",
+      "title": "20. Overgang til ravradar.dk",
+      "summary": "Brugerne skal møde eget domæne, selv om GitHub Pages fortsat kan være hosting.",
+      "body": "<p>Målet er, at brugerne besøger <strong>ravradar.dk</strong>. GitHub Pages kan fortsat bygge og hoste statiske filer, mens et custom domain peger på deploymentet. Supabase forbliver backend.</p>\n<p>Før domænet aktiveres skal følgende være klar: DNS og HTTPS, GitHub Pages custom domain, Supabase Site URL og redirect-URL'er for både <code>https://ravradar.dk</code> og eventuelt <code>https://www.ravradar.dk</code>, relative appstier, service-worker-scope, manifest, canonical URL, Open Graph, fejlredirect og en kontrolleret overgang fra den gamle GitHub-adresse.</p>\n<p>Der oprettes ikke en <code>CNAME</code>-fil før DNS og Supabase er klar, fordi en for tidlig aktivering kan forstyrre den nuværende side. Koden skal indtil da være domæneagnostisk og bruge relative URL'er.</p>"
+    },
+    {
+      "id": "ekspertsporgsmaal",
+      "title": "21. Prioriterede spørgsmål til rav- og sedimenteksperten",
+      "summary": "De vigtigste steder, hvor ekstern faglig korrektion kan forbedre modellen.",
+      "body": "<ol><li>Er intervallet 0,15–0,65 m/s meningsfuldt som transportindikator på tværs af danske kysttyper?</li><li>Hvordan bør bundnær strøm afvige fra modelstrømmen i surfzone, fjord, revle og lavvandet bugt?</li><li>Hvilke kombinationer af bølgehøjde, periode og vanddybde mobiliserer typisk rav i forskellige størrelser?</li><li>Er 3–18 timers efterstormvindue realistisk, og hvordan varierer det geografisk?</li><li>Hvornår er faldende vand mere gunstigt end stigende vand?</li><li>Hvilke opskylsfraktioner er de bedste indikatorer for ravsortering?</li><li>Hvordan bør langs-kysten-transport og tilførsel fra nabozoner modelleres?</li><li>Hvornår virker tang som transportbærer, fælde eller blot samtidig indikator?</li><li>Hvilke statiske kystformer bør give bonus, fradrag eller slet ingen direkte score?</li><li>Hvilke data og observationer er nødvendige for at kalibrere tærsklerne forsvarligt?</li></ol>"
+    },
+    {
+      "id": "kilder",
+      "title": "22. Faglige hovedkilder og læsevej",
+      "summary": "Kilderne bag den generelle procesforståelse – med tydelig adskillelse fra RavRadars egne tærskler.",
+      "body": "<ul>\n<li>Chubarenko m.fl. (2017), <em>Microplastics in sea coastal zone: Lessons learned from the Baltic amber</em>. Bruges især til analogien mellem rav, lavdensitetspartikler, stormmobilisering og gentagen strand–hav-migration.</li>\n<li>van Sebille m.fl. (2020), <em>The physical oceanography of the transport of floating marine debris</em>. Overordnet ramme for strøm, vind, bølger, partikelegenskaber og strandingsprocesser.</li>\n<li>Zhang (2017), <em>Transport of microplastics in coastal seas</em>. Samlet oversigt over betydningen af massefylde, størrelse, form, vind, bølger, tidevand og bentiske processer.</li>\n<li>DHI, <em>Shoreline Management Guidelines</em>, samt TU Delft, <em>Coastal Dynamics</em>. Grundlæggende kysthydrodynamik, sedimenttransport, surfzone og morfologi.</li>\n<li>Davidson, Brenner &amp; Pujara (2023), <em>Beaching model for buoyant marine debris in bore-driven swash</em>. Viser betydningen af partikelinerti og tidspunkt/hastighed ved indtræden i swashzonen.</li>\n<li>RavRadars egne zonedata, DMI-diagnostik, historiske fundregistreringer og ekspertreviews. Disse er nødvendige for lokal validering, men er ikke i sig selv generel naturvidenskabelig dokumentation.</li>\n</ul>\n<p>Håndbogen parafraserer kilderne. Konkrete scoretærskler er RavRadar-parametre, medmindre andet er udtrykkeligt dokumenteret.</p>"
     },
     {
       "id": "ordbog",
-      "title": "16. Ordbog",
-      "summary": "De vigtigste begreber.",
-      "body": "<dl><dt>Observation</dt><dd>Faktisk måling.</dd><dt>Prognose</dt><dd>Modelberegnet fremtidig værdi.</dd><dt>Cache</dt><dd>Tidligere hentet data, som stadig kan være gyldig.</dd><dt>Routing</dt><dd>Valg og vægtning af datakilder eller stationer for en zone.</dd><dt>Override</dt><dd>Administratorens bevidste erstatning af automatik.</dd><dt>RDKS</dt><dd>RavRadar Decision &amp; Knowledge System.</dd></dl>"
+      "title": "23. Ordbog",
+      "summary": "Centrale begreber i systemet.",
+      "body": "<dl><dt>Mobilisering</dt><dd>At et stykke løsnes eller sættes i bevægelse.</dd><dt>Transport</dt><dd>Nettobevægelse mod, langs eller væk fra kysten.</dd><dt>Swash</dt><dd>Vandets løb op på stranden efter bølgebrud.</dd><dt>Backwash</dt><dd>Vandets returløb ned ad stranden.</dd><dt>Undertow</dt><dd>Bundnær returstrøm væk fra kysten under bølgepåvirkning.</dd><dt>Observation</dt><dd>Faktisk måling.</dd><dt>Prognose</dt><dd>Modelberegnet fremtidig værdi.</dd><dt>Cache</dt><dd>Tidligere hentede data, der kan være gyldige i en afgrænset periode.</dd><dt>RDKS</dt><dd>RavRadar Decision &amp; Knowledge System.</dd><dt>Release-gate</dt><dd>Automatisk og dokumenteret stopklods før udgivelse.</dd></dl>"
     }
   ]
 }

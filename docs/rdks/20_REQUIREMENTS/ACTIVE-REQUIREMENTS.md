@@ -46,3 +46,9 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-RDKS-002 – IMPLEMENTERET:** Historiske chats er normaliseret, kronologiseret og sporbare.
 - **REQ-RDKS-003 – AKTIV:** Samtalens nye beslutninger og status indarbejdes automatisk ved versionsaflevering.
 - **REQ-RDKS-004 – AKTIV:** Håndbogen opdateres ved relevante arkitektur-, data-, score- og adminændringer.
+## Release og domæne
+- **REQ-RELEASE-001 – IMPLEMENTERET:** En samlet release-gate skal bestå før en ZIP kan erklæres installationsklar.
+- **REQ-RELEASE-002 – IMPLEMENTERET:** Releasepakker må ikke indeholde `.git`, secrets, caches eller `node_modules`.
+- **REQ-RELEASE-003 – AKTIV:** CI-fejl udløser samlet release-audit og dokumenteret ny pakke – ikke manuelle enkeltlapninger som slutleverance.
+- **REQ-DOMAIN-001 – AKTIV:** RavRadar klargøres til `ravradar.dk` med relative stier, Supabase redirects, HTTPS og kontrolleret canonical-strategi.
+- **REQ-HANDBOOK-001 – IMPLEMENTERET:** Håndbogen beskriver grundigt rav-/sedimentprocesser og kortlægger dem til den faktiske scorekode og ekspertregler.

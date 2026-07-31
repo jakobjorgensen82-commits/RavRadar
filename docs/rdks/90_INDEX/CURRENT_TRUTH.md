@@ -52,3 +52,13 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - Ved hver ny version importeres samtaledeltaet automatisk til RDKS, changelog og relevante håndbogsafsnit.
 - Gamle chats er historiske kilder; forældede løsninger må ikke genindføres.
 - Ved konflikt gælder: brugerens aktuelle instruktion > aktiv RDKS > verificeret aktuel kode > håndbog > changelog > historiske chats.
+## Release Governance
+- En version må ikke erklæres færdig eller leveres som ZIP, før `npm run validate` og `npm run release:gate` er grønne.
+- GitHub-secrets bevares i repository-indstillinger og må aldrig medtages i kode eller ZIP.
+- CI-fejl skal føre til samlet audit af hele releasekæden.
+- Leverancepakker må aldrig indeholde `.git`.
+
+## Eget domæne
+- Den planlagte offentlige adresse er `https://ravradar.dk`.
+- GitHub Pages kan fortsat hoste siden; koden skal være domæneagnostisk.
+- CNAME og DNS aktiveres først efter Supabase redirect- og domænetest.

@@ -21,3 +21,9 @@
 
 ## Konflikter
 Stop og forklar konflikten før kodeændring, hvis et nyt ønske strider mod en aktiv beslutning. Aktuel brugerbeslutning kan ændre RDKS, men ændringen skal registreres med begrundelse.
+## Bindende release-gate
+- Skriv aldrig, at en ZIP er færdigvalideret, medmindre de angivne kommandoer faktisk er kørt på præcis det pakkede indhold.
+- Kør hele release-gaten og gennemgå alle fejl samlet, før ny ZIP bygges.
+- Lever aldrig `.git`, secrets, caches eller `node_modules` i en brugerpakke.
+- Skeln tydeligt mellem lokalt beståede tests og en faktisk grøn GitHub Actions-kørsel; påstå ikke CI-success uden bevis.
+- Bevar eksisterende GitHub-secrets og Supabase-installation. En filopdatering må ikke kræve genoprettelse af secrets, medmindre navne eller backend faktisk ændres.

@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.54
+# Implementeringsstatus pr. 4.0.58
 
 Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode/teststruktur. Den er en styringsoversigt, ikke en påstand om ekstern driftsverifikation.
 
@@ -20,3 +20,6 @@ Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode
 | Ekspertreview og brugerfeedback | Delvist implementeret | Valideringsproces og dokumenteret læringskontrol |
 | RDKS | Implementeret i første fulde historikversion | Automatisk samtaledelta ved alle kommende releases |
 | Levende håndbog | Markant udbygget | Løbende faglig ekspertvalidering og kodeverifikation |
+| Release Governance | Implementeret i 4.0.58 | Skal bestå ved alle kommende releases |
+| ravradar.dk-beredskab | Planlagt/delvist | DNS, Supabase redirects, CNAME og produktionstest før aktivering |
+| Faglig rav- og sedimenthåndbog | Markant udbygget | Ekstern ekspertreview og lokal kalibrering af tærskler |
