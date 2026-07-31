@@ -39,6 +39,34 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Restore immutable coastline source cache
+        uses: actions/cache@v4
+        with:
+          path: .cache/coastline-source
+          key: ravradar-osm-coastline-100m-v0.6.0
+
+      - name: Install production geometry tools
+        run: python -m pip install --disable-pip-version-check "shapely>=2.0,<3" "pyproj>=3.6,<4"
+
+      - name: Download immutable OSM-derived coastline source
+        run: |
+          mkdir -p .cache/coastline-source
+          SOURCE=.cache/coastline-source/countries-coastline-100m-v0.6.0.geo.json
+          if [ ! -s "$SOURCE" ]; then
+            curl --fail --location --retry 4 --retry-all-errors \
+              --connect-timeout 20 --max-time 300 \
+              -o "$SOURCE.tmp" \
+              "https://cdn.jsdelivr.net/npm/@geo-maps/countries-coastline-100m@0.6.0/map.geo.json"
+            mv "$SOURCE.tmp" "$SOURCE"
+          fi
+          test -s "$SOURCE"
+
+      - name: Build and validate natural zone coastlines
+        run: |
+          python scripts/generate-production-coastlines-4.0.47.py \
+            --source .cache/coastline-source/countries-coastline-100m-v0.6.0.geo.json \
+            --minimum-generated 190
+
       - name: Hydrate latest deployed weather state
         run: python scripts/hydrate-deployed-weather.py
         env:

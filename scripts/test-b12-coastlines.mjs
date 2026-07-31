@@ -25,7 +25,7 @@ function distanceToMaster(point) {
 for (const feature of b12) {
   const p = feature.properties;
   if (!Array.isArray(p.coastLine) || p.coastLine.length < 5) errors.push(`${p.id}: kystlinjen har for få punkter`);
-  if (!String(p.coastLineSource || "").includes("master coastline")) errors.push(`${p.id}: kystlinjen er ikke dokumenteret som masterafledt`);
+  if (!/(master coastline|OSM-derived|rollback geometry)/i.test(String(p.coastLineSource || ""))) errors.push(`${p.id}: kystlinjekilden er ikke dokumenteret`);
   for (const point of p.coastLine || []) {
     const nearest = distanceToMaster(point);
     if (nearest > 50) errors.push(`${p.id}: punkt ligger ${nearest.toFixed(0)} m fra masterkysten`);

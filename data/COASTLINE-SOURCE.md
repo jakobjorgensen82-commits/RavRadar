@@ -1,7 +1,14 @@
-# Kystlinjekilde
+# Kystlinjekilde — RavRadar 4.0.47
 
-De synlige zoneforløb i RavRadar 2.6.13 er genereret fra GSHHS-kystlinjedata (intermediate opløsning). Kystlinjen gemmes lokalt i `coastline-master.geojson`, så kortet ikke er afhængigt af eksterne GIS-kald ved brug.
+RavRadars synlige, RavScore-farvede zoneforløb bygges under deployment fra en immutable OSM-afledt kystkilde:
 
-Hver zone klippes som et sammenhængende udsnit af masterlinjen. Nabozoners grænser beregnes som midtpunkter langs samme kystforløb. Den viste linje forskydes ca. 45 meter væk fra zonens marine datapunkt, altså mod land-/strandsiden.
+- Pakke: `@geo-maps/countries-coastline-100m`
+- Version: `0.6.0`
+- Fil: `map.geo.json`
+- CDN: jsDelivr
+- Oprindelse: OpenStreetMap-afledte kystdata
+- Licens: ODbL / OpenStreetMap contributors
 
-`coastline-audit.json` indeholder længde, antal punkter og afstand fra det oprindelige zonepunkt til den anvendte kyst. Store afstande skal gennemgås manuelt i kommende præcisionsbatches.
+Kilden har væsentligt højere geometrisk opløsning end den tidligere GSHHS intermediate-master. Hver zone klippes som et sammenhængende udsnit af den virkelige kystlinje, hvorefter kompakte havne-/moleafstikkere brobygges. Den viste linje flyttes 5 meter væk fra zonens marine datapunkt, så stregen ligger på strandsiden.
+
+Kildeprojektet indeholder fortsat den auditerede 4.0.44-geometri som rollback. En deployment accepteres kun, hvis mindst 190 af 210 aktive zoner kan genereres sikkert; ellers publiceres ændringen ikke.

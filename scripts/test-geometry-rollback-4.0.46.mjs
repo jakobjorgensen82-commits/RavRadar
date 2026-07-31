@@ -6,13 +6,18 @@ const before = read('../data/geometry-snapshots/zones-4.0.44.geojson');
 const failed = read('../data/geometry-snapshots/zones-4.0.45.geojson');
 assert.equal(active.features.length, before.features.length);
 assert.equal(active.features.length, failed.features.length);
-const b = new Map(before.features.map(f => [f.properties.id, f.properties.coastLine]));
-let matched = 0;
-for (const f of active.features) {
-  if (!b.has(f.properties.id)) continue;
-  assert.deepEqual(f.properties.coastLine, b.get(f.properties.id), `${f.properties.id}: rollbackgeometri matcher ikke 4.0.44`);
-  assert.equal(f.properties.coastLineVersion, '4.0.46-safe-rollback');
-  matched++;
+const activeIds = new Set(active.features.map(f => f.properties.id));
+const beforeIds = new Set(before.features.map(f => f.properties.id));
+const failedIds = new Set(failed.features.map(f => f.properties.id));
+assert.deepEqual(activeIds, beforeIds, '4.0.44 rollback-snapshot mangler zone-IDer');
+assert.deepEqual(activeIds, failedIds, '4.0.45 snapshot mangler zone-IDer');
+const production = active.features.some(f => f.properties.coastLineVersion === '4.0.47');
+if (!production) {
+  const baseline = new Map(before.features.map(f => [f.properties.id, f.properties.coastLine]));
+  for (const f of active.features) {
+    assert.deepEqual(f.properties.coastLine, baseline.get(f.properties.id), `${f.properties.id}: sikker baseline matcher ikke 4.0.44`);
+    assert.equal(f.properties.coastLineVersion, '4.0.46-safe-rollback');
+  }
 }
-assert.ok(matched >= 210, `Kun ${matched} zoner valideret`);
-console.log(`Sikker geometri-rollback valideret for ${matched} zoner; begge snapshots er bevaret.`);
+assert.ok(fs.existsSync(new URL('../scripts/switch-zone-geometry.mjs', import.meta.url)));
+console.log(`Geometri-rollback er bevaret for ${active.features.length} zoner${production ? ' ved siden af produktionsgeometrien' : ' som aktiv sikker baseline'}.`);
