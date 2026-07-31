@@ -2,7 +2,7 @@
 
 - **Status:** DELVIST IMPLEMENTERET
 - **Prioritet:** KRITISK
-- **Senest bekræftet:** 4.0.53
+- **Senest bekræftet:** 4.0.54
 
 Kendte stationer bevares, også når de midlertidigt ikke leverer. DMI-registerstatus, observationsstatus og prognose-/cachestatus er separate forhold. Admin skal vise første/seneste observation, leveringshistorik, cachegyldighed og samlet anvendelighed. En station kan fortsat være prognosebrugbar, mens gyldig cache findes.
 

@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+const update = await fs.readFile('scripts/update-weather.mjs','utf8');
+const routing = await fs.readFile('js/core/water-station-routing.js','utf8');
+const admin = await fs.readFile('js/ui/admin-dashboard.js','utf8');
+assert.match(update,/forecastCacheValidUntil/);
+assert.match(update,/overallUsabilityStatus/);
+assert.match(update,/cachedStationLevels/);
+assert.match(update,/forecast-cache-only/);
+assert.match(routing,/cacheValid/);
+assert.match(routing,/forecastCacheStatus === 'valid'/);
+assert.match(admin,/Dokumentationscenter/);
+assert.match(admin,/stationCacheLabel/);
+assert.match(admin,/stationUsabilityLabel/);
+console.log('Station cache usability and documentation center: OK');

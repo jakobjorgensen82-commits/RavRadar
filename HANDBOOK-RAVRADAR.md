@@ -1,6 +1,6 @@
 # RavRadar – levende faglig og teknisk håndbog
 
-**Håndbogsversion:** 4.0.53  
+**Håndbogsversion:** 4.0.54  
 **Opdateret:** 31. juli 2026  
 **Status:** Levende dokument; tekniske forhold skal verificeres mod aktuel kode og RDKS.
 
@@ -228,3 +228,16 @@ Se `docs/rdks/90_INDEX/IMPLEMENTATION_STATUS.md` for den operationelle status. D
 - **Override:** administratorens bevidste erstatning af automatisk valg.
 - **RDKS:** RavRadar Decision & Knowledge System.
 - **Regression:** tidligere løst fejl eller fjernet adfærd, som vender tilbage.
+
+
+## Dokumentationscenter
+Administrationens dokumentationscenter samler den læsevenlige håndbog og RDKS-filerne. Her kan administratoren åbne gældende projektviden, implementeringsstatus, aktive krav, kendte problemer og masterloggen uden at lede i projektmappen.
+
+## Stationsstatus: observation, cache og anvendelighed
+En DMI-vandstandsstation har tre adskilte statuslag:
+
+1. **Observationsstatus** beskriver, om stationen leverer en ny brugbar måling nu, midlertidigt mangler en måling eller ikke har leveret i flere gennemførte observationskørsler.
+2. **Prognose-/cachestatus** beskriver, om RavRadar fortsat har en gyldig DMI-prognosecache, som bygger på stationens seneste dokumenterede bidrag, og hvornår den cache udløber.
+3. **Samlet anvendelighed** afgør, om stationen kan anvendes nu. En station kan derfor være markeret som “kun cache” og stadig være brugbar, selv om observationsfeedet er midlertidigt tavst.
+
+Friske observationer har altid forrang. Cachede stationsværdier bruges kun frem til det dokumenterede cacheudløb. Når cache bliver tilgængelig eller udløber, oprettes en tilstandsnotifikation.

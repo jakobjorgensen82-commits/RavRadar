@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.53
+# Implementeringsstatus pr. 4.0.54
 
 Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode/teststruktur. Den er en styringsoversigt, ikke en påstand om ekstern driftsverifikation.
 
@@ -10,7 +10,7 @@ Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode
 | Retningskonventioner | Implementeret | Zonernes lokale geometri og visuel ende-til-ende-kontrol |
 | DMI-stationsregister | Delvist implementeret | Officiel registerkontrol og fuld datalivscyklus |
 | Observationslivscyklus | Delvist implementeret | Historisk stabilitet og bedre audit pr. station |
-| Prognose-/cachestatus pr. station | Planlagt | Cache gyldig til og samlet anvendelighed |
+| Prognose-/cachestatus pr. station | Implementeret | Overvåg cacheudløb, drift og historisk stabilitet |
 | Automatisk stationsrouting | Implementeret, overvåges | Bedre-station-notifikationer uden automatisk omskiftning |
 | Adminoverride | Implementeret | Tydelig visning af aktiv kontra tilsidesat routing |
 | Kystlinjeeditor | Delvist implementeret | Mobil regressionstest af kurver, deaktivering og lagring |

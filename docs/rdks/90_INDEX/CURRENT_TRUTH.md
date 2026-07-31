@@ -33,7 +33,7 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - Automatisk routing kræver dokumenteret brugbarhed og må ikke uden videre bruge historiske/inaktive stationer.
 - Adminoverride erstatter automatik, når override opfylder de valgte leveringskrav.
 - Nye stationer, udfald, genoptagelse og potentielt bedre routing skal skabe meningsfulde tilstandsnotifikationer.
-- En station kan fortsat være prognosebrugbar, så længe dens cachedata er gyldige, selv om en ny observation mangler. Den fulde UI/status for dette er planlagt.
+- En station kan fortsat være prognosebrugbar, så længe dens cachedata er gyldige, selv om en ny observation mangler. Admin viser observationsstatus, cacheudløb og samlet anvendelighed.
 
 ## RavScore
 - Scoren skal kunne forklares fra rådata til slutscore.

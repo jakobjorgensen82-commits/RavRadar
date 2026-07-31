@@ -15,8 +15,8 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-STATION-002 – DELVIST:** Vis automatisk primær/sekundær, afstand, vægt og valgmetode pr. zone.
 - **REQ-STATION-003 – IMPLEMENTERET:** Adminoverride erstatter automatik, når override kan levere efter de valgte krav.
 - **REQ-STATION-004 – AKTIV:** Nye stationer, udfald og genoptaget levering udløser meningsfulde notifikationer ved tilstandsændring – ikke spam ved ét manglende tidspunkt.
-- **REQ-STATION-005 – PLANLAGT:** Skeln observationsstatus fra prognose-/cachestatus og vis samlet anvendelighed.
-- **REQ-STATION-006 – PLANLAGT:** Vis seneste observation, cache gyldig til, historisk stabilitet og om stationen kan bruges nu.
+- **REQ-STATION-005 – IMPLEMENTERET:** Skeln observationsstatus fra prognose-/cachestatus og vis samlet anvendelighed.
+- **REQ-STATION-006 – DELVIST:** Vis seneste observation, cache gyldig til, historisk stabilitet og om stationen kan bruges nu.
 - **REQ-STATION-007 – AKTIV:** Foreslå bedre station til en zone, men ændr ikke administratorens valg automatisk.
 - **REQ-STATION-008 – AKTIV:** Historiske/inaktive stationer markeres tydeligt og kræver ekstra bekræftelse ved override.
 - **REQ-STATION-009 – AKTIV:** Stationskortet skal kunne verificeres mod DMI's officielle register.

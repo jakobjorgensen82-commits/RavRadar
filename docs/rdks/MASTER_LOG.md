@@ -1,3 +1,9 @@
+## 4.0.54 – 2026-07-31
+- Implementerede stationsspecifik prognose-/cachestatus og samlet anvendelighed.
+- Gyldig cache kan holde en station i automatisk routing, selv om nye observationer midlertidigt mangler.
+- Tilføjede cachetilstandsnotifikationer og adminvisning af observation, cache og samlet status.
+- Tilføjede dokumentationscenter i admin og opdaterede håndbogen.
+
 # RDKS Master Log
 
 ## 4.0.53 – 2026-07-31

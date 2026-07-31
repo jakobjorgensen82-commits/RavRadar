@@ -44,6 +44,7 @@ const DMI_REQUEST_CONCURRENCY = Math.max(1, Number(process.env.DMI_REQUEST_CONCU
 const DMI_CACHE_REFRESH_BELOW_HOURS = Math.max(1, Number(process.env.DMI_CACHE_REFRESH_BELOW_HOURS ?? 24));
 const DMI_SCHEDULE_INTERVAL_MINUTES = Math.max(1, Number(process.env.DMI_SCHEDULE_INTERVAL_MINUTES ?? 10));
 const DMI_OBSERVATION_INTERVAL_MINUTES = Math.max(10, Number(process.env.DMI_OBSERVATION_INTERVAL_MINUTES ?? 60));
+const STATION_CACHE_GRACE_HOURS = Math.max(1, Number(process.env.STATION_CACHE_GRACE_HOURS ?? 6));
 const DMI_DEPLOYED_CACHE_URL = process.env.DMI_DEPLOYED_CACHE_URL ?? null;
 const WEATHER_CONCURRENCY = Math.max(1, Number(process.env.WEATHER_CONCURRENCY ?? 6));
 const PROVIDER_FAILURE_THRESHOLD = Math.max(1, Number(process.env.WEATHER_PROVIDER_FAILURE_THRESHOLD ?? 4));
@@ -320,15 +321,79 @@ function stationRegistryRecord(station, previous = null, seenAt = new Date().toI
     lastObservationAt: previous?.lastObservationAt ?? null,
     lastObservationValueCm: previous?.lastObservationValueCm ?? null,
     consecutiveMissingObservationRuns: previous?.consecutiveMissingObservationRuns ?? 0,
-    deliveryStatus: previous?.deliveryStatus ?? 'never-delivered'
+    deliveryStatus: previous?.deliveryStatus ?? 'never-delivered',
+    forecastCacheGeneratedAt: previous?.forecastCacheGeneratedAt ?? null,
+    forecastCacheValidUntil: previous?.forecastCacheValidUntil ?? null,
+    forecastCacheStatus: previous?.forecastCacheStatus ?? 'none',
+    overallUsabilityStatus: previous?.overallUsabilityStatus ?? 'unavailable',
+    forecastCacheZoneIds: Array.isArray(previous?.forecastCacheZoneIds) ? previous.forecastCacheZoneIds : []
   };
+}
+
+
+function stationForecastCacheIndex(forecastStore, generatedAt) {
+  const index = new Map();
+  for (const [zoneId, record] of Object.entries(forecastStore?.zones ?? {})) {
+    const validUntilMs = Date.parse(record?.validUntil ?? '');
+    if (!Number.isFinite(validUntilMs)) continue;
+    const stations = record?.waterLevelInterpolation?.stations ?? [];
+    for (const item of stations) {
+      const stationId = String(item?.stationId ?? '');
+      if (!stationId) continue;
+      const current = index.get(stationId) ?? { generatedAt: null, validUntil: null, zoneIds: [] };
+      if (!current.validUntil || validUntilMs > Date.parse(current.validUntil)) {
+        current.generatedAt = record?.generatedAt ?? forecastStore?.generatedAt ?? generatedAt;
+        current.validUntil = new Date(validUntilMs).toISOString();
+      }
+      if (!current.zoneIds.includes(zoneId)) current.zoneIds.push(zoneId);
+      index.set(stationId, current);
+    }
+  }
+  return index;
+}
+
+function applyStationForecastCacheStatus(stations, forecastStore, generatedAt) {
+  const now = Date.parse(generatedAt);
+  const index = stationForecastCacheIndex(forecastStore, generatedAt);
+  return stations.map(station => {
+    const cached = index.get(String(station.stationId));
+    const inheritedUntil = Date.parse(station.forecastCacheValidUntil ?? '');
+    const candidateUntil = cached?.validUntil ? Date.parse(cached.validUntil) : inheritedUntil;
+    const validUntil = Number.isFinite(candidateUntil) ? new Date(candidateUntil).toISOString() : null;
+    const cacheValid = validUntil ? Date.parse(validUntil) >= now : false;
+    const forecastCacheStatus = cacheValid ? 'valid' : validUntil ? 'expired' : 'none';
+    const observationUsable = station.deliveryStatus === 'delivering' || station.deliveryStatus === 'temporarily-missing';
+    const overallUsabilityStatus = observationUsable ? 'live-or-recent-observation' : cacheValid ? 'forecast-cache-only' : 'unavailable';
+    return {...station,
+      forecastCacheGeneratedAt: cached?.generatedAt ?? station.forecastCacheGeneratedAt ?? null,
+      forecastCacheValidUntil: validUntil,
+      forecastCacheStatus,
+      forecastCacheZoneIds: cached?.zoneIds ?? station.forecastCacheZoneIds ?? [],
+      overallUsabilityStatus
+    };
+  });
+}
+
+async function cachedStationLevels(generatedAt) {
+  const doc = await fs.readFile(WATER_STATION_INVENTORY_PATH, 'utf8').then(JSON.parse).catch(() => ({ stations: [] }));
+  const now = Date.parse(generatedAt);
+  const levels = new Map();
+  for (const station of doc.stations ?? []) {
+    const validUntil = Date.parse(station.forecastCacheValidUntil ?? '');
+    const value = Number(station.lastObservationValueCm);
+    if (!Number.isFinite(validUntil) || validUntil < now || !Number.isFinite(value)) continue;
+    levels.set(String(station.stationId), {stationId:String(station.stationId),valueCm:value,
+      observed:station.lastObservationAt ?? station.forecastCacheGeneratedAt ?? generatedAt,
+      qcStatus:'cached-station-value',cacheSource:true,cacheValidUntil:station.forecastCacheValidUntil});
+  }
+  return levels;
 }
 
 function stationEvent(type, station, generatedAt, details = {}) {
   return { id: `${type}:${station.stationId}:${generatedAt}`, type, stationId: String(station.stationId), stationName: station.name, generatedAt, ...details };
 }
 
-async function updateStationObservationLifecycle(stations, levels, generatedAt, { observationAttempted = true } = {}) {
+async function updateStationObservationLifecycle(stations, levels, generatedAt, { observationAttempted = true, forecastStore = null } = {}) {
   const previousDoc = await fs.readFile(WATER_STATION_INVENTORY_PATH, 'utf8').then(JSON.parse).catch(() => ({ notifications: [] }));
   const previousById = new Map((previousDoc.stations ?? []).map(station => [String(station.stationId), station]));
   const notifications = [];
@@ -358,6 +423,12 @@ async function updateStationObservationLifecycle(stations, levels, generatedAt, 
     }
     return next;
   });
+  const cacheAware = applyStationForecastCacheStatus(updated, forecastStore, generatedAt);
+  for (const station of cacheAware) {
+    const previous = previousById.get(String(station.stationId));
+    if (station.forecastCacheStatus === 'valid' && previous?.forecastCacheStatus !== 'valid') notifications.push(stationEvent('forecast-cache-available', station, generatedAt, { message: `${station.name} kan fortsat bruges via gyldig prognosecache til ${station.forecastCacheValidUntil}.` }));
+    if (station.forecastCacheStatus === 'expired' && previous?.forecastCacheStatus === 'valid') notifications.push(stationEvent('forecast-cache-expired', station, generatedAt, { message: `${station.name}s prognosecache er udløbet.` }));
+  }
   const recent = [...notifications, ...(previousDoc.notifications ?? [])]
     .filter((item, index, all) => all.findIndex(other => other.id === item.id) === index)
     .slice(0, 250);
@@ -366,20 +437,23 @@ async function updateStationObservationLifecycle(stations, levels, generatedAt, 
     schemaVersion: 3,
     generatedAt,
     source: 'persistent-dmi-station-registry-with-observation-lifecycle',
-    stations: updated,
+    stations: cacheAware,
     notifications: recent,
     summary: {
-      total: updated.length,
-      delivering: updated.filter(station => station.deliveryStatus === 'delivering').length,
-      temporarilyMissing: updated.filter(station => station.deliveryStatus === 'temporarily-missing').length,
-      notDelivering: updated.filter(station => station.deliveryStatus === 'not-delivering').length,
-      neverDelivered: updated.filter(station => !station.hasEverDelivered).length,
+      total: cacheAware.length,
+      delivering: cacheAware.filter(station => station.deliveryStatus === 'delivering').length,
+      temporarilyMissing: cacheAware.filter(station => station.deliveryStatus === 'temporarily-missing').length,
+      notDelivering: cacheAware.filter(station => station.deliveryStatus === 'not-delivering').length,
+      neverDelivered: cacheAware.filter(station => !station.hasEverDelivered).length,
+      forecastCacheValid: cacheAware.filter(station => station.forecastCacheStatus === 'valid').length,
+      cacheOnlyUsable: cacheAware.filter(station => station.overallUsabilityStatus === 'forecast-cache-only').length,
+      unavailable: cacheAware.filter(station => station.overallUsabilityStatus === 'unavailable').length,
       newNotifications: notifications.length
     }
   };
   await fs.writeFile(WATER_STATION_INVENTORY_PATH, `${JSON.stringify(document, null, 2)}\n`);
   await fs.writeFile(WATER_STATION_NOTIFICATIONS_PATH, `${JSON.stringify({ schemaVersion: 1, generatedAt, notifications: recent, newNotifications: notifications }, null, 2)}\n`);
-  return { stations: updated, notifications, document };
+  return { stations: cacheAware, notifications, document };
 }
 
 async function dmiWaterStations() {
@@ -578,7 +652,9 @@ function topologyStationInterpolation(feature, point, stations, levels) {
 
 async function observedDmiWaterLevel(feature, coastCorridors) {
   try {
-    const [rawStations, levels, routing] = await Promise.all([dmiWaterStations(), dmiLatestSeaLevels(), waterStationRouting()]);
+    const [rawStations, freshLevels, routing, cachedLevels] = await Promise.all([dmiWaterStations(), dmiLatestSeaLevels(), waterStationRouting(), cachedStationLevels(new Date().toISOString())]);
+    const levels = new Map(cachedLevels);
+    for (const [stationId, level] of freshLevels) levels.set(String(stationId), level);
     const stations = deduplicateStationSites(rawStations, levels);
     const point = zonePoint(feature);
     const explicit = manualStationInterpolation(feature, point, stations, levels, routing.zones?.[feature.properties?.id]);
@@ -1706,9 +1782,9 @@ nextDmiForecastStore.dataQuality = summarizeDmiComponentCoverage(nextDmiForecast
 output.weatherEngine.dmiForecastCache = { ...nextDmiForecastStore.coverage, ...nextDmiForecastStore.dataQuality };
 const rawStationRegistry = await dmiWaterStations().catch(() => readCachedWaterStations());
 const qualityLevels = dmiObservationSkipReason ? new Map() : await dmiLatestSeaLevels().catch(() => new Map());
-const stationLifecycle = await updateStationObservationLifecycle(rawStationRegistry, qualityLevels, generatedAt, { observationAttempted: !dmiObservationSkipReason });
+const stationLifecycle = await updateStationObservationLifecycle(rawStationRegistry, qualityLevels, generatedAt, { observationAttempted: !dmiObservationSkipReason, forecastStore: nextDmiForecastStore });
 const stationRegistry = stationLifecycle.stations;
-const stationRoutingAudit = await writeWaterStationRoutingAudit(features, stationRegistry.filter(station => station.hasEverDelivered && station.deliveryStatus !== 'not-delivering'), generatedAt);
+const stationRoutingAudit = await writeWaterStationRoutingAudit(features, stationRegistry.filter(station => station.overallUsabilityStatus !== 'unavailable'), generatedAt);
 const qualityStations = stationRegistry;
 for (const zone of Object.values(output.zones)) enrichZoneSources(zone, generatedAt);
 output.dataQuality = buildDataQuality(output, { stationsFetched: qualityStations.length, stationsWithFreshLevel: qualityLevels.size });
