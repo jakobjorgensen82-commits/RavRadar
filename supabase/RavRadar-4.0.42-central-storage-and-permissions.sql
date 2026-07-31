@@ -1,4 +1,4 @@
--- LEGACY: Må ikke bruges til ny 4.0.43-installation. Kør INSTALL-RAVRADAR-4.0.43.sql i stedet.
+-- LEGACY: Må ikke bruges til ny 4.0.44-installation. Kør INSTALL-RAVRADAR-4.0.44.sql i stedet.
 -- RavRadar 4.0.42
 -- Sikker central lagring, dokumentbaserede rettigheder og verificerbar audit.
 

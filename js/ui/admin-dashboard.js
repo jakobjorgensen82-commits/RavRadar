@@ -9,7 +9,7 @@ import { interpretFreeTextRule } from '../core/free-text-rule-assistant.js';
 import { listProfiles, savePermissions, PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js';
 import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js';
 
-const VERSION='4.0.43';
+const VERSION='4.0.44';
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
 const RULES_KEY='ravradar-admin-rules-v1';
@@ -51,12 +51,15 @@ const TAB_PERMISSIONS={rules:'rules_edit',knowledge:'rules_edit',weather:'diagno
 function allowed(permission){return !permission||hasPermission(state.access,permission);}
 function applyTabPermissions(){document.querySelectorAll('.admin-tabs button').forEach(button=>{const permission=TAB_PERMISSIONS[button.dataset.tab];button.hidden=!allowed(permission);button.disabled=!allowed(permission);});}
 function guard(permission,message='Du har ikke rettighed til denne funktion.'){if(allowed(permission))return true;alert(message);return false;}
-document.querySelectorAll('.admin-tabs button').forEach(b=>b.addEventListener('click',()=>{if(!guard(TAB_PERMISSIONS[b.dataset.tab]))return;state.tab=b.dataset.tab;
-const TAB_PERMISSIONS={rules:'rules_edit',knowledge:'rules_edit',weather:'diagnostics_view',waterStations:'zones_weather_edit',zones:'zones_weather_edit',directionAudit:'zones_weather_edit',observations:'diagnostics_view',history:'diagnostics_view',learning:'rules_edit',users:'experts_manage',system:'diagnostics_view'};
-function allowed(permission){return !permission||hasPermission(state.access,permission);}
-function applyTabPermissions(){document.querySelectorAll('.admin-tabs button').forEach(button=>{const permission=TAB_PERMISSIONS[button.dataset.tab];button.hidden=!allowed(permission);button.disabled=!allowed(permission);});}
-function guard(permission,message='Du har ikke rettighed til denne funktion.'){if(allowed(permission))return true;alert(message);return false;}
-document.querySelectorAll('.admin-tabs button').forEach(x=>x.classList.toggle('active',x===b));render();}));
+document.querySelectorAll('.admin-tabs button').forEach(button => {
+  button.addEventListener('click', () => {
+    const permission = TAB_PERMISSIONS[button.dataset.tab];
+    if (!guard(permission)) return;
+    state.tab = button.dataset.tab;
+    document.querySelectorAll('.admin-tabs button').forEach(tab => tab.classList.toggle('active', tab === button));
+    render();
+  });
+});
 
 const MODULE_GUIDES={
  dashboard:{title:'Start her',purpose:'Overblikket viser, om RavRadar kan bruges sikkert lige nu, og hvad der kræver handling.',steps:['Se først efter røde eller gule advarsler','Åbn det relevante modul via knappen under anbefalet handling','Foretag kun ændringer, når modulets kontroltrin er gennemført'],result:'Du behøver normalt ikke ændre noget her.'},

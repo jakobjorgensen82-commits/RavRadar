@@ -1,4 +1,4 @@
--- RavRadar 4.0.43
+-- RavRadar 4.0.44
 -- ÉN samlet, genkørbar installation til central adminlagring og ekspertrettigheder.
 -- Filen ændrer IKKE den eksisterende observationsdatamodel og kan derfor køres
 -- på både ældre og nyere RavRadar-Supabase-projekter uden UUID/bigint-konflikter.

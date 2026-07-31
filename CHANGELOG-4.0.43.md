@@ -1,4 +1,4 @@
-# RavRadar 4.0.43 – robust Supabase-installation
+# RavRadar 4.0.44 – robust Supabase-installation
 
 - Én samlet, idempotent Supabase-installationsfil.
 - Rører ikke den eksisterende observationsdatamodel.

@@ -1,4 +1,4 @@
--- LEGACY: Må ikke bruges til ny 4.0.43-installation. Kør INSTALL-RAVRADAR-4.0.43.sql i stedet.
+-- LEGACY: Må ikke bruges til ny 4.0.44-installation. Kør INSTALL-RAVRADAR-4.0.44.sql i stedet.
 -- RavRadar 2.3. Appen virker uden Supabase. Tabellen bruges kun, når synkronisering er aktiveret.
 create table if not exists public.observations (
   id uuid primary key,
