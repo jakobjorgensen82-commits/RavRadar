@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+const update=await fs.readFile('scripts/update-weather.mjs','utf8');
+const routing=await fs.readFile('js/core/water-station-routing.js','utf8');
+const admin=await fs.readFile('js/ui/admin-app.js','utf8');
+assert.match(update,/hasEverDelivered/);
+assert.match(update,/consecutiveMissingObservationRuns/);
+assert.match(update,/delivery-stopped/);
+assert.match(update,/delivery-resumed/);
+assert.match(update,/first-observation/);
+assert.match(update,/station-discovered/);
+assert.match(update,/WATER_STATION_NOTIFICATIONS_PATH/);
+assert.match(routing,/station\.hasEverDelivered === false/);
+assert.match(routing,/deliveryStatus === 'not-delivering'/);
+assert.match(admin,/Stationsstatus og hændelser/);
+assert.match(admin,/stationDeliveryLabel/);
+console.log('OK: stationslivscyklus, routing-gate og adminhændelser er koblet sammen.');

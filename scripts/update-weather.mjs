@@ -26,6 +26,7 @@ const WATER_STATION_ROUTING_PATH = 'data/water-level-station-routing.json';
 const WATER_STATION_INVENTORY_PATH = 'data/live/dmi-water-stations.json';
 const OFFICIAL_WATER_STATION_SUPPLEMENT_PATH = 'data/dmi-official-water-stations.json';
 const WATER_STATION_ROUTING_AUDIT_PATH = 'data/live/water-station-routing-audit.json';
+const WATER_STATION_NOTIFICATIONS_PATH = 'data/live/water-station-notifications.json';
 const ACCEPTED_FORECAST_HOURS = 118;
 const SHORT_DMI_WATER_GAP_HOURS = 6;
 const WATER_LEVEL_JUMP_WARN_CM = 35;
@@ -313,8 +314,72 @@ function stationRegistryRecord(station, previous = null, seenAt = new Date().toI
     ...(previous ?? {}), stationId: String(station.stationId), name: station.name ?? previous?.name ?? 'DMI station', point: station.point ?? previous?.point,
     properties, registryStatus,
     firstSeenAt: previous?.firstSeenAt ?? seenAt, lastSeenAt: seenAt,
-    lastActiveSeenAt: registryStatus === 'active' ? seenAt : (previous?.lastActiveSeenAt ?? null)
+    lastActiveSeenAt: registryStatus === 'active' ? seenAt : (previous?.lastActiveSeenAt ?? null),
+    hasEverDelivered: previous?.hasEverDelivered ?? false,
+    firstObservationAt: previous?.firstObservationAt ?? null,
+    lastObservationAt: previous?.lastObservationAt ?? null,
+    lastObservationValueCm: previous?.lastObservationValueCm ?? null,
+    consecutiveMissingObservationRuns: previous?.consecutiveMissingObservationRuns ?? 0,
+    deliveryStatus: previous?.deliveryStatus ?? 'never-delivered'
   };
+}
+
+function stationEvent(type, station, generatedAt, details = {}) {
+  return { id: `${type}:${station.stationId}:${generatedAt}`, type, stationId: String(station.stationId), stationName: station.name, generatedAt, ...details };
+}
+
+async function updateStationObservationLifecycle(stations, levels, generatedAt, { observationAttempted = true } = {}) {
+  const previousDoc = await fs.readFile(WATER_STATION_INVENTORY_PATH, 'utf8').then(JSON.parse).catch(() => ({ notifications: [] }));
+  const previousById = new Map((previousDoc.stations ?? []).map(station => [String(station.stationId), station]));
+  const notifications = [];
+  const updated = stations.map(station => {
+    const previous = previousById.get(String(station.stationId)) ?? station;
+    const level = levels.get(String(station.stationId));
+    let next = { ...station };
+    if (level && Number.isFinite(Number(level.valueCm))) {
+      const firstDelivery = !previous.hasEverDelivered;
+      const resumed = previous.hasEverDelivered && ['temporarily-missing','not-delivering'].includes(previous.deliveryStatus);
+      next = {
+        ...next,
+        hasEverDelivered: true,
+        firstObservationAt: previous.firstObservationAt ?? level.observed ?? generatedAt,
+        lastObservationAt: level.observed ?? generatedAt,
+        lastObservationValueCm: round(Number(level.valueCm), 1),
+        consecutiveMissingObservationRuns: 0,
+        deliveryStatus: 'delivering'
+      };
+      if (firstDelivery) notifications.push(stationEvent('first-observation', next, generatedAt, { message: `${next.name} har leveret sin første brugbare vandstandsmåling til RavRadar.` }));
+      else if (resumed) notifications.push(stationEvent('delivery-resumed', next, generatedAt, { message: `${next.name} leverer igen vandstandsmålinger efter et udfald.` }));
+    } else if (observationAttempted && previous.hasEverDelivered) {
+      const misses = Number(previous.consecutiveMissingObservationRuns ?? 0) + 1;
+      const deliveryStatus = misses >= 3 ? 'not-delivering' : 'temporarily-missing';
+      next = { ...next, consecutiveMissingObservationRuns: misses, deliveryStatus };
+      if (misses === 3) notifications.push(stationEvent('delivery-stopped', next, generatedAt, { message: `${next.name} har manglet brugbare målinger i tre observationkørsler.`, consecutiveMissingObservationRuns: misses }));
+    }
+    return next;
+  });
+  const recent = [...notifications, ...(previousDoc.notifications ?? [])]
+    .filter((item, index, all) => all.findIndex(other => other.id === item.id) === index)
+    .slice(0, 250);
+  const document = {
+    ...previousDoc,
+    schemaVersion: 3,
+    generatedAt,
+    source: 'persistent-dmi-station-registry-with-observation-lifecycle',
+    stations: updated,
+    notifications: recent,
+    summary: {
+      total: updated.length,
+      delivering: updated.filter(station => station.deliveryStatus === 'delivering').length,
+      temporarilyMissing: updated.filter(station => station.deliveryStatus === 'temporarily-missing').length,
+      notDelivering: updated.filter(station => station.deliveryStatus === 'not-delivering').length,
+      neverDelivered: updated.filter(station => !station.hasEverDelivered).length,
+      newNotifications: notifications.length
+    }
+  };
+  await fs.writeFile(WATER_STATION_INVENTORY_PATH, `${JSON.stringify(document, null, 2)}\n`);
+  await fs.writeFile(WATER_STATION_NOTIFICATIONS_PATH, `${JSON.stringify({ schemaVersion: 1, generatedAt, notifications: recent, newNotifications: notifications }, null, 2)}\n`);
+  return { stations: updated, notifications, document };
 }
 
 async function dmiWaterStations() {
@@ -333,8 +398,12 @@ async function dmiWaterStations() {
           merged.set(id, { ...station, registryStatus: station.properties?.officialSupplement ? 'official-not-returned-by-oceanobs' : (station.registryStatus === 'active' ? 'not-returned-this-run' : (station.registryStatus ?? 'known')), lastSeenAt: station.lastSeenAt ?? null });
         }
         const stations = [...merged.values()].filter(station => station.stationId && Array.isArray(station.point) && station.point.length === 2);
+        const cachedIds = new Set(cached.map(station => String(station.stationId)));
+        const newStationNotifications = stations.filter(station => !cachedIds.has(String(station.stationId))).map(station => stationEvent('station-discovered', station, now, { message: `${station.name} er ny i RavRadars stationsregister. Den bruges ikke automatisk, før den har leveret en brugbar måling.` }));
+        const previousNotifications = await fs.readFile(WATER_STATION_INVENTORY_PATH, 'utf8').then(JSON.parse).then(doc => doc.notifications ?? []).catch(() => []);
+        const notifications = [...newStationNotifications, ...previousNotifications].slice(0, 250);
         await fs.mkdir('data/live', { recursive: true });
-        await fs.writeFile(WATER_STATION_INVENTORY_PATH, JSON.stringify({ schemaVersion: 2, generatedAt: now, source: 'persistent-merged-dmi-oceanobs-and-official-station-registry', fetchedStationCount: fetched.length, fetchedActiveCount: stations.filter(station => station.registryStatus === 'active').length, retainedKnownCount: Math.max(0, stations.length - fetched.length), stations }, null, 2));
+        await fs.writeFile(WATER_STATION_INVENTORY_PATH, JSON.stringify({ schemaVersion: 3, generatedAt: now, source: 'persistent-merged-dmi-oceanobs-and-official-station-registry', fetchedStationCount: fetched.length, fetchedActiveCount: stations.filter(station => station.registryStatus === 'active').length, retainedKnownCount: Math.max(0, stations.length - fetched.length), stations, notifications }, null, 2));
         return stations;
       } catch (error) {
         if (cached.length) { console.warn(`DMI stationsregister kunne ikke opdateres; bruger ${cached.length} persistente stationer`); return cached; }
@@ -1635,14 +1704,17 @@ delete nextDmiForecastStore.runtime.rateLimitedUntil;
 nextDmiForecastStore.coverage = summarizeAvailableCoverage(nextDmiForecastStore.zones, generatedAt, dmiForecastCoverage, round);
 nextDmiForecastStore.dataQuality = summarizeDmiComponentCoverage(nextDmiForecastStore.zones, generatedAt);
 output.weatherEngine.dmiForecastCache = { ...nextDmiForecastStore.coverage, ...nextDmiForecastStore.dataQuality };
-const stationRegistry = await dmiWaterStations().catch(() => readCachedWaterStations());
-const stationRoutingAudit = await writeWaterStationRoutingAudit(features, stationRegistry, generatedAt);
-const [qualityStations, qualityLevels] = dmiObservationSkipReason
-  ? [stationRegistry, new Map()]
-  : await Promise.all([Promise.resolve(stationRegistry), dmiLatestSeaLevels().catch(() => new Map())]);
+const rawStationRegistry = await dmiWaterStations().catch(() => readCachedWaterStations());
+const qualityLevels = dmiObservationSkipReason ? new Map() : await dmiLatestSeaLevels().catch(() => new Map());
+const stationLifecycle = await updateStationObservationLifecycle(rawStationRegistry, qualityLevels, generatedAt, { observationAttempted: !dmiObservationSkipReason });
+const stationRegistry = stationLifecycle.stations;
+const stationRoutingAudit = await writeWaterStationRoutingAudit(features, stationRegistry.filter(station => station.hasEverDelivered && station.deliveryStatus !== 'not-delivering'), generatedAt);
+const qualityStations = stationRegistry;
 for (const zone of Object.values(output.zones)) enrichZoneSources(zone, generatedAt);
 output.dataQuality = buildDataQuality(output, { stationsFetched: qualityStations.length, stationsWithFreshLevel: qualityLevels.size });
 output.dataQuality.stationRouting = stationRoutingAudit.counts;
+output.dataQuality.stationLifecycle = stationLifecycle.document.summary;
+output.dataQuality.stationNotifications = stationLifecycle.notifications;
 dmiPersistentRuntime.observations ??= {};
 const currentObservationSummary = output.dataQuality?.observations ?? {};
 if (!dmiObservationSkipReason && (currentObservationSummary.stationsFetched ?? 0) > 0) {

@@ -33,6 +33,8 @@ function stationUsable(station) {
   if (!station?.stationId || !Array.isArray(station.point) || station.point.length !== 2) return false;
   const status = normText(station.registryStatus ?? station.properties?.status);
   if (['retired', 'deleted', 'historical', 'inactive', 'future'].includes(status)) return false;
+  if (station.hasEverDelivered === false) return false;
+  if (station.deliveryStatus === 'not-delivering') return false;
   const parameters = Array.isArray(station.properties?.parameterId) ? station.properties.parameterId.map(normText) : [];
   return parameters.length === 0 || parameters.some(id => ['sea_reg', 'sealev_dvr', 'sealev_ln'].includes(id));
 }
