@@ -1,4 +1,4 @@
-# RavRadar 4.0.42 – central lagring, rettigheder og stationsaudit
+# RavRadar 4.0.43 – central lagring, rettigheder og stationsaudit
 
 - Gendanner tydelig Supabase-status på admin-overblikket og i topbjælken.
 - Automatisk fornyelse af Supabase access-token og ét sikkert genforsøg ved HTTP 401.

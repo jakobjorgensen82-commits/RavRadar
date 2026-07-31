@@ -1,3 +1,4 @@
+-- LEGACY: Må ikke bruges til ny 4.0.43-installation. Kør INSTALL-RAVRADAR-4.0.43.sql i stedet.
 -- RavRadar 4.0.41 – profiler og brede ekspertrettigheder
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
