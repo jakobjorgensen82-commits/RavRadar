@@ -1,0 +1,217 @@
+tirsdag 10.04
+Nu har den kørt et par kørsler igen. Hvilke filer skal du bruge denne gang for at kunne analysere vejr data vi får ind?
+For at kunne lave en ordentlig analyse denne gang – og ikke kun gætte ud fra slutresultatet – vil jeg gerne have både inputdata, diagnostik og det færdige output. Så kan jeg følge hele kæden fra DMI-data til RavRadar-score.
+Prioritet 1 (de vigtigste):
+Den nyeste RavRadar.zip (hele projektet efter de seneste ændringer).
+Den seneste ravradar-diagnostik.json.
+Hele mappen data/diagnostics/ hvis den findes.
+Hele mappen data/ fra den seneste kørsel (inkl. forecast-filer).
+Prioritet 2:5. GitHub Actions-loggen fra den seneste succesfulde kørsel (Download logs som ZIP, hvis muligt).6. Eventuelle nye debug- eller audit-filer.
+Hvis de findes, er jeg især interesseret i filer som:
+dmi-ocean-diagnostics.json
+dmi-ocean-summary.txt
+forecast*.json
+weather*.json
+ocean*.json
+zones*.json
+debug*.json
+audit*.json
+Denne gang vil jeg kontrollere langt mere end sidst
+Jeg vil blandt andet undersøge:
+Om DMI faktisk leverer alle oceanfelter (strøm, bølger, vandstand, temperatur).
+Om nogle felter stadig falder tilbage til default-værdier.
+Om 429-rate limits stadig påvirker datakvaliteten.
+Om forecast-tiderne er komplette uden huller eller dubletter.
+Om strømretningen stadig bliver vendt forkert nogen steder.
+Om vindretning og strømretning bruger samme reference (meteorologisk vs. geografisk).
+Om hver zone får data fra det korrekte havpunkt.
+Om interpolation mellem gridpunkter fungerer korrekt.
+Om onshoreDirectionDeg stadig er korrekt efter de seneste ændringer.
+Om nogle zoner får data fra land i stedet for hav.
+Om AI-scoringen bliver fodret med korrekte rådata.
+Om de høje scorer, vi så tidligere (fx Als Odde), stadig kan opstå.
+Jeg vil også lave en egentlig datakvalitetsrapport
+Denne gang vil jeg ikke kun lede efter fejl. Jeg vil dokumentere:
+hvilke DMI-parametre der er 100 % pålidelige,
+hvilke der er usikre,
+hvilke der stadig mangler,
+og hvor stor tillid RavRadar realistisk kan have til hver enkelt parameter.
+Det giver os et klart billede af, om problemerne skyldes DMI-data, vores behandling af dem eller selve scoringsmodellen.
+Hvis du sender RavRadar.zip og den seneste diagnostik-JSON, kan jeg som regel afgøre 90-95 % af det. Hvis du også kan vedlægge GitHub Actions-loggen, kan jeg samtidig finde eventuelle skjulte fejl under kørslen, som ikke ender i diagnostikfilerne.
+RavRadar(54).zip
+Zip-arkiv
+zone-plan.json
+Fil
+zones.geojson
+Fil
+weather-health.json
+Fil
+dmi-forecast-cache (2).json
+Fil
+dmi-ocean-summary (2).txt
+Dokument
+dmi-ocean-diagnostics (2).json
+Fil
+dmi-ocean-summary (1).txt
+Dokument
+dmi-ocean-diagnostics (1).json
+Fil
+ravradar-diagnostik (13).json
+Fil
+Jeg har vedhæftet lidt af hvert til din analyse. Hvis det ikke er det rigtige, må du lige undersøge hvilke filer vi rent faktisk har i projektet, så jeg ikke skal lede efter filer vi muligvis har eller ikke har. Måske vi også skal overveje at gøre det mere synligt i admin delen, hvilke data der kommer hvorfra, så det feks er nemt at se hvor vandstandsdata, strømdata osv hver især kommer fra, og hvor opdaterede de er. analyser grundigt ift det sidste du har skrevet i chat og find løsninger. tænk dybt.
+RavRadar(55).zip
+Zip-arkiv
+godt. implementer alt dette.
+RavRadar(56).zip
+Zip-arkiv
+logs_82234140747.zip
+Zip-arkiv
+ravradar-diagnostik (14).json
+Fil
+conditions (2).json
+Fil
+ravradar-runtime-diagnostics.json
+Fil
+her er hvad du skal bruge. Analyser grundigt og find løsninger på problemer eller til forbedringer
+RavRadar(57).zip
+Zip-arkiv
+implementer alt dette, men husk samtidig at dmi giver de mest præcise data og prognoser. open meteo er ikke nær så præcis
+RavRadar(58).zip
+Zip-arkiv
+conditions (3).json
+Fil
+ravradar-runtime-diagnostics (1).json
+Fil
+logs_82243486758.zip
+Zip-arkiv
+opdateringen er implementeret og siden har den kørt update weather and deploy ravrader, 2 gange i github. Jeg har vedhæftet projektet som zip sammen med diverse logs som du plejer at bruge til analyse. Kig om der er noget vi skal ændre eller forbedre. analyser det dybt. ift fejlen http 429, så undersøg dybt også ved alternative kilder, om det kan forbedres. Kan det være vi bare skal vente på at der er "hul igennem", eller kan vi forbedre vilkårene for at det lykkes at "få hul igennem" til dmi?
+RavRadar(59).zip
+Zip-arkiv
+implementer alt det, men inden så overvej lige, hvis vi kører 15 min cooldown, men har cron-job til at sætte en ny kørsel igang efter 10 min, skaber det så ikke problemer? projekt zip er vedhæftet , så du kan lave næste version.
+RavRadar(60).zip
+Zip-arkiv
+logs_82253279246.zip
+Zip-arkiv
+ravradar-runtime-diagnostics (2).json
+Fil
+conditions (4).json
+Fil
+Den er implementeret. nye logs er vedhæftet og klar til analyse
+RavRadar(61).zip
+Zip-arkiv
+jeg synes godt at vandstand må beregnes ud fra 2 stationer på hver sin side af en fjord. feks må Hals 2 og Als odde gerne danne grundlag for en udregning til øster hurup. men ellers er jeg enig i at det ikke må være på tværs af bælter osv. lav rettelserne fra din analyse.
+RavRadar(62).zip
+Zip-arkiv
+conditions (5).json
+Fil
+ravradar-runtime-diagnostics (3).json
+Fil
+logs_82264525108.zip
+Zip-arkiv
+den er implementeret og der er kørt et par kørsler siden. Lav nu ny dyb analyse og klargør til forbedringer. for mig at se ligner det ikke den rigtig får hentet mere vandstand og strøm fra dmi feks
+RavRadar(63).zip
+Zip-arkiv
+fix det
+IMG_1279CABA-53F6-4E67-BD59-E733B6C7B06B.jpeg
+RavRadar(64).zip
+Zip-arkiv
+ravradar-diagnostik (15).json
+Fil
+ravradar-runtime-diagnostics (4).json
+Fil
+conditions (6).json
+Fil
+logs_82276215035.zip
+Zip-arkiv
+analyseer nu igen, her efter sidste opdatering. analyser meget dybt og søg viden alle steder du kan komme i tanke om, så vi kan få det til at fungere
+RavRadar(65).zip
+Zip-arkiv
+perfekt. tilføj rettelserne
+Tænkte i 4m 16s
+Rettelserne er implementeret som RavRadar 4.0.12.
+Download RavRadar 4.0.12
+Det centrale er nu:
+DKSS parserVersion 6
+water-temperature er tilføjet korrekt til aliaslisten
+alle aliasopslag bruger nu sikker .get(canonical, ())
+lokale programmeringsfejl klassificeres som parser-exception
+parserblokering ophæves automatisk ved ny parserVersion
+en nylig, men fejlet marine-cache bliver ikke længere betragtet som brugbar “fresh cache”
+DMI ocean EDR har nu 60 sekunders timeout
+EDR deler automatisk parameterkaldet op ved timeout eller HTTP 400:
+vandstand + strøm + temperatur
+vandstand + strøm
+vandstand alene
+ocean-observationer forsøges straks, hvis der endnu aldrig er registreret en succes
+forkert DMI-vandstandsmetadata fjernes, når vandstanden faktisk kommer fra Open-Meteo
+det gamle globale rate-limit-felt bliver ikke længere skrevet ved nye 429-hændelser
+workflowet indeholder eksplicit DMI_OCEAN_REQUEST_TIMEOUT_MS: 60000
+Jeg tilføjede også regressionstests for netop disse fejl, så valideringen nu kontrollerer:
+PARSER_VERSION = 6
+water-temperature-alias findes
+sikre aliasopslag anvendes
+parser-exception findes
+marine_cache_healthy anvendes
+60 sekunders ocean-timeout findes
+observation-success styrer nyt forsøg
+fallback-vandstand får fjernet DMI-metadata
+Hele npm run validate består, inklusive DMI bulk-pipeline, weather engine, vandstand, data quality, releaseversion og alle zone-/retningskontroller.
+Ved næste kørsel bør den afgørende ændring være, at loggen ikke længere stopper med:
+'water-temperature'
+I stedet bør inventoryen fortsætte videre fra parameter 82 og vise parameter 49, 50 og sandsynligvis 80. Derefter bør waterLevelZones, currentUZones og currentVZones begynde at stige.
+RavRadar(66).zip
+Zip-arkiv
+ravradar-diagnostik (16).json
+Fil
+ravradar-runtime-diagnostics (5).json
+Fil
+logs_82287111446.zip
+Zip-arkiv
+analyser grundigt og lav rettelser. lær af hvad vi har gjort som virker og ikke virker. søg information grundigt
+Thinking stoppet
+IMG_BB88B260-CEC6-4E2F-B13C-6D73F8268740.jpeg
+Conditions filen vil ikke længere oploade til ChatGPT
+Det ligner ikke, at der er noget galt med selve conditions.json. På billedet står der “Upload af filen mislykkedes”, altså fejler overførslen, før ChatGPT når at læse filen.
+Den mest sandsynlige forklaring er én af disse:
+Projektet kan have ramt filgrænsen. Du bruger et ChatGPT-projekt, og Plus-projekter har aktuelt en grænse på 25 filer i projektet. RavRadar-projektet har fået mange ZIP- og JSON-filer undervejs, så det er en realistisk årsag.
+Browser/sessionen er blevet ustabil efter mange store uploads.
+Filen er stadig ved at blive skrevet eller synkroniseret, når du forsøger at vælge den.
+Netværket eller en browserudvidelse blokerer uploaden.
+Gør dette i denne rækkefølge
+1. Prøv filen i en helt ny almindelig chat
+Ikke inde i RavRadar-projektet.
+Klik Ny chat
+Upload kun conditions.json
+Skriv, at den hører til RavRadar-analysen
+Virker det dér, er problemet næsten sikkert projektets filgrænse og ikke filen.
+2. Lav en ny kopi af filen
+I Stifinder:
+Højreklik på conditions.json
+Vælg Kopiér
+Indsæt den på Skrivebordet
+Omdøb den til eksempelvis:
+conditions-2026-07-28.json
+Upload den nye kopi. Det kan løse problemer med midlertidig låsning eller synkronisering.
+3. Pak den som ZIP
+Højreklik på filen:
+Send til → ZIP-komprimeret mappe
+Upload derefter:
+conditions-2026-07-28.zip
+Det er ofte mere stabilt ved store JSON-filer.
+4. Genindlæs ChatGPT helt
+På Windows-browseren:
+Ctrl + F5
+Prøv derefter igen. OpenAI anbefaler også genindlæsning, rydning af cache/cookies, privat vindue og deaktivering af browserudvidelser ved filuploadfejl.
+5. Brug privat vindue
+I Edge:
+Ctrl + Shift + N
+Log ind på ChatGPT og prøv uploaden dér.
+Min vurdering
+Fordi:
+andre diagnostikfiler tidligere kunne uploades
+fejlen kommer med det samme
+det sker inde i et stort projekt med mange tidligere filer
+er projektets filgrænse eller en fastlåst projekt-upload den mest sandsynlige forklaring.
+Den letteste løsning lige nu er derfor:
+Upload conditions.json i en ny almindelig chat eller som ZIP.
+Der er en generel hård grænse på 512 MB pr. fil, men almindelige JSON-filer rammer normalt ikke den grænse.

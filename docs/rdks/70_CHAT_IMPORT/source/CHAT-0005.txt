@@ -1,0 +1,472 @@
+onsdag 10.33
+RavRadar(83).zip
+Zip-arkiv
+diagnose (9).zip
+Zip-arkiv
+logs_82493437251.zip
+Zip-arkiv
+Der går vist noget galt med vores vejrdata. blandt andet kommer alt vind fra open-meteo. Vores workflow i github kører også meget langt tid. Analyser dette grundigt og analyser for andre fejl og mangler. Gør klar til at lave rettelser.
+Tænkte i 3m 18s
+Jeg har gennemgået RavRadar(83), den aktuelle diagnostik og GitHub Actions-loggen samlet. Problemet er reelt, og det skyldes især en kombination af en fastlåst DMI-bulkproces, en uhensigtsmæssig faseopdeling og for aggressiv DMI-livefallback.
+Hovedkonklusion
+Den aktuelle kørsel gav:
+Vind fra DMI: 4 af 231 zoner
+Vind fra Open-Meteo: 227 af 231 zoner
+DMI-bølger: 205 zoner
+DMI-strøm og vandstand: 220 zoner
+Kun 4 komplette DMI-zoner
+Alle 231 zoner er markeret som fallback
+DMI-livekaldet fik HTTP 429 efter ét forsøg
+Det er altså ikke en generel DMI-nedetid. DMI-marine- og bølgedata findes i stor udstrækning. Det er specifikt vinddelen af DMI-bulkcachen, der er kollapset.
+1. Den direkte årsag til Open-Meteo-vind
+Workflowets DMI-bulkjob starter med samlingen:
+harmonie_dini_sf
+Det er netop DMI-modellen, der leverer vind.
+Loggen viser:
+[DMI bulk + 27.3s] harmonie_dini_sf:
+behandler forecast-step 1/17
+Derefter kommer der ingen yderligere status i næsten 14 minutter, hvorefter GitHub dræber processen:
+The action 'Update DMI bulk model cache' has timed out after 14 minutes.
+Resultatet er, at den nye vindcache aldrig færdiggøres eller checkpointes. RavRadar beholder derfor den tidligere cache, som kun indeholder DMI-vind for fire zoner.
+Den tidligere diagnostik viser, at systemet få timer før havde:
+DMI-vind: 231 af 231 zoner
+Den nye kørsel reducerede det til:
+DMI-vind: 4 af 231 zoner
+Det dokumenterer, at vindmodellen tidligere virkede. Fejlen er opstået i den nuværende bulkbehandling eller dens cachetilstand – ikke fordi DMI mangler vinddata.
+2. Hvorfor bulkjobbet hænger
+Tidsgrænsen i Python-scriptet ser umiddelbart korrekt ud:
+maksimal intern runtime: 660 sekunder
+reserve til afslutning: 120 sekunder
+effektiv arbejdsperiode: 540 sekunder
+Men tidskontrollen foretages kun mellem GRIB-meddelelser:
+while True:
+if should_stop_work():
+interrupted = True
+break
+gid = codes_grib_new_from_file(handle)
+Når scriptet er inde i:
+nearest_valid_batch(...)
+nearest_candidates(...)
+codes_grib_find_nearest(...)
+codes_get_elements(...)
+kan det ikke afbrydes.
+For hver relevant GRIB-meddelelse udføres der potentielt:
+231 zoner
+cirka 33 probe-positioner pr. zone
+op til fire gridpunkter pr. probe
+tusindvis af ecCodes-opslag
+Det giver omtrent:
+231 × 33 = 7.623 codes_grib_find_nearest-kald
+for blot ét grid, før cachen er fuldt opbygget.
+Hvis grid-signaturen ændrer sig mellem GRIB-meddelelser, eller cache-genbrug ikke rammer, gentages det. Derfor kan én enkelt forecast-step blokere hele Python-processen længere end dens interne deadline.
+GitHub kan afbryde selve processen, men Python-scriptet får ikke mulighed for at:
+gemme sidste checkpoint
+skrive outputs
+gemme vinddata
+opdatere collection state
+rydde den rå cache ordentligt
+3. Faseopdelingen forværrer problemet
+update-weather.mjs gør dette:
+const marineCacheCompleteAtStart =
+activeZoneIds.every(zoneId =>
+recordHasMarine(nextDmiForecastStore.zones?.[zoneId], generatedAt)
+);
+const acquisitionPhase = marineCacheCompleteAtStart
+? 'dmi-wind-wave-enrichment'
+: 'dmi-marine-cache-warmup';
+Det betyder, at DMI-vind kun hentes via live-EDR, hvis samtlige aktive zoner først har komplette marinedata.
+Hvis blot én zone mangler vandstand eller strøm, bliver fasen:
+dmi-marine-cache-warmup
+og så kaldes DMI sådan:
+fromDmi(feature, generatedAt, {
+includeAtmosphere: false
+})
+Vind bliver dermed bevidst fravalgt.
+Det er en uhensigtsmæssig kobling:
+manglende strøm i én kystzone bør ikke blokere DMI-vind for resten af Danmark
+DMI-vind og DMI-marine bør have uafhængige reparationskøer
+systemet bør aldrig kræve 100 % marinekomplethed, før vind må opdateres
+Dette er en af de vigtigste arkitekturfejl.
+4. HTTP 429 stopper for meget
+Efter bulkjobbet fejler, forsøger den centrale vejropdatering live-DMI.
+Den første zone får:
+DMI: HTTP 429
+Derefter stopper resten af DMI-livekøen.
+Samtidig springes DMI-vandstandsobservationerne over:
+skipReason: skipped-after-http-429
+Problemet er, at én 429 fra ForecastEDR også blokerer OceanObs. Det er to forskellige datatyper og muligvis forskellige API-belastninger.
+Konsekvensen bliver:
+ingen live-DMI-vind
+ingen live-DMI-marinereparation
+ingen nye vandstandsobservationer
+næsten alt afhænger af den gamle cache
+Cooldown bør opdeles i mindst:
+ForecastEDR atmosphere
+ForecastEDR marine
+OceanObs stationer
+OceanObs observationer
+STAC/bulk-download
+En fejl i én kanal bør ikke stoppe de andre.
+5. Workflowet bruger næsten al tiden på ét trin
+Den målte varighed var:
+Trin
+Tid
+Hydrering af deployed cache
+11 sek.
+Preflight
+8 sek.
+Installation af ecCodes
+6 sek.
+DMI bulk model cache
+852 sek.
+Central vejropdatering
+26 sek.
+Audit
+under 1 sek.
+Upload og deployment
+ca. 10 sek.
+Bulkjobbet står for cirka 93 % af hele kørselstiden.
+Selve resten af RavRadar-pipelinen er ikke langsom.
+6. Unødvendigt mange Open-Meteo-kald
+For hver af de 231 zoner udføres fire Open-Meteo-kald:
+Open-Meteo current
+Open-Meteo Marine current
+Open-Meteo forecast
+Open-Meteo Marine forecast
+Diagnostikken viser derfor:
+231 + 231 + 231 + 231 = 924 Open-Meteo-kald
+Det tager kun cirka 26 sekunder på grund af parallelisering, men det er stadig unødvendigt og skrøbeligt.
+Mange zoner ligger geografisk meget tæt. Data kan i praksis grupperes efter:
+afrundede koordinater
+zoneankre
+geografiske klynger
+identiske Open-Meteo-gridceller
+Det bør kunne reduceres til måske 50–100 unikke koordinatsæt i stedet for 231.
+Derudover hentes “current” og “forecast” separat, selv om forecastsvaret allerede indeholder første time. Det ser ud til at give dobbeltarbejde.
+7. Der er en vigtig risiko for cache-regression
+Den deployede runtime-diagnostik fra tidligere viste:
+DMI-vind: 231 zoner
+DMI-bølger: 173 zoner
+DMI-strøm: 219 zoner
+DMI-vandstand: 219 zoner
+Komplette DMI-zoner: 173
+Den nye diagnostik viser:
+DMI-vind: 4 zoner
+DMI-bølger: 205 zoner
+DMI-strøm: 220 zoner
+DMI-vandstand: 220 zoner
+Komplette DMI-zoner: 4
+Det betyder, at bølge- og marinedækningen blev forbedret, men en næsten komplet vindcache blev mistet.
+Cachemerge bør være monotont pr. komponent:
+nyere gyldig vind må erstatte ældre vind
+manglende ny vind må ikke slette gammel, stadig gyldig vind
+forbedring af marine må ikke forringe atmosfære
+hver komponent skal have sit eget generatedAt, referenceTime og validUntil
+Det ser ud til, at cachen på et tidspunkt er blevet overskrevet eller beskåret på en måde, der fjernede DMI-vind fra 227 zoner.
+8. Vandstandsobservationernes status er inkonsistent
+Den aktuelle diagnostik siger:
+stationsFetched: 180
+stationsWithFreshLevel: 0
+currentRun.attempted: false
+lastSuccessfulInventory.stationsWithFreshLevel: 15
+Det betyder, at UI-diagnostikken viser nul friske observationer for den aktuelle kørsel, selv om en fungerende observationstilstand findes i den persistente historik.
+Det kan få systemet til at se dårligere ud, end brugerdata reelt er.
+Observationer bør rapporteres som:
+currentRun
+effectiveState
+lastSuccessfulState
+Hvis den aktuelle kørsel springes over, bør den effektive tilstand ikke automatisk blive nul.
+9. Diagnostikfilen er delvist forældet
+Den uploadede ravradar-runtime-diagnostics (14).json er:
+version 4.0.22
+generatedAt 2026-07-29T01:20:52Z
+Den øvrige diagnostik er:
+version 4.0.25
+generatedAt 2026-07-29T08:21:41Z
+Runtime-filen er altså omkring syv timer ældre og fra en anden RavRadar-version.
+Det er sandsynligvis derfor, den stadig viser 231 DMI-vindzoner, mens den aktuelle conditions-fil viser fire.
+Diagnostikeksporten bør tydeligt advare, når filer:
+er fra forskellige versioner
+har markant forskellige generatedAt
+ikke stammer fra samme deploy
+ikke har samme cache-ID eller pipeline-run-ID
+10. Health-scoren bruger “komplette DMI-zoner” for aggressivt
+Systemets DMI-dækning rapporteres som:
+coveragePercent: 1.7
+Det skyldes:
+4 komplette zoner / 231 zoner
+Men samtidig findes:
+DMI-bølger i 205 zoner
+DMI-strøm i 220 zoner
+DMI-vandstand i 220 zoner
+At kalde den samlede DMI-dækning 1,7 % er derfor misvisende. Det er kun fuld komponentkomplethed, der er 1,7 %.
+Health bør skelne mellem:
+komplet DMI-dækning
+vinddækning
+bølgedækning
+strømdækning
+vandstandsdækning
+vægtet samlet komponentdækning
+En mulig vægtet dækning er langt over 1,7 %.
+Rettelserne bør gennemføres i denne rækkefølge
+Kritisk rettelse 1: Gør bulkprocessen reelt afbrydelig
+GRIB-behandlingen skal flyttes til en separat workerproces pr. asset eller forecast-step.
+Så kan hovedprocessen:
+sætte en reel timeout
+terminere en hængende ecCodes-worker
+gemme checkpoint
+fortsætte ved næste kørsel
+markere præcis hvilket asset der hænger
+Python-tråde er ikke tilstrækkelige, fordi et blokerende C-kald i ecCodes ikke nødvendigvis kan afbrydes sikkert.
+Kritisk rettelse 2: Del marine, vind og bølger op
+Collection-køerne bør være uafhængige:
+marine-reparation
+vind-reparation
+bølge-reparation
+Vind må ikke vente på 100 % marinekomplethed.
+Kritisk rettelse 3: Beskyt cache mod komponenttab
+Ved merge skal hvert timestamp og hver komponent bevares individuelt:
+wind
+wave
+current
+waterLevel
+waterTemperature
+Ny cache må kun erstatte en eksisterende komponent, når den nye værdi:
+er gyldig
+har nyere model-reference eller generationstid
+har tilstrækkelig horisont
+består plausibilitetskontrollen
+Kritisk rettelse 4: Kør ikke tung vindbulk hvert 10. minut
+HARMONIE-vind behøver ikke fuld GRIB-genbehandling ved hver vejropdatering.
+Et bedre mønster er:
+let vejropdatering hvert 10.–30. minut
+OceanObs cirka hver time
+ny HARMONIE-bulk kun ved nyt model-run
+marine/bølge-bulk kun ved nyt model-run
+målrettet komponentreparation mellem modelkørsler
+Kritisk rettelse 5: Separate rate-limit-domæner
+En 429 fra ForecastEDR må ikke blokere OceanObs eller STAC.
+Forbedring 6: Reducer Open-Meteo-kald
+Brug deduplikerede koordinater og ét samlet forecastkald pr. geografisk punkt.
+Forbedring 7: Sammenhængende diagnostik
+Alle diagnostikfiler bør få:
+{
+"pipelineRunId": "...",
+"deployedVersion": "4.0.x",
+"conditionsGeneratedAt": "...",
+"bulkCacheGeneratedAt": "...",
+"forecastStoreGeneratedAt": "..."
+}
+Eksportværktøjet bør advare om mismatch.
+Status før rettelser
+Det positive er:
+DMI-marinekonverteringen fungerer
+ingen dublerede timestamps
+forecast-horisonten er cirka 116 timer
+220 zoner har DMI-strøm og vandstand
+205 zoner har DMI-bølger
+brugerprognosen er stadig brugbar via fallback
+hovedproblemet er afgrænset til bulk-vind, cachebevarelse og reparationsstyring
+Jeg vurderer derfor, at det ikke kræver en total omskrivning. Det kræver målrettede ændringer i:
+.github/workflows/update-and-deploy.yml
+scripts/update-dmi-bulk.py
+scripts/update-weather.mjs
+sandsynligvis scripts/lib/dmi-forecast-store.mjs
+health- og diagnostikberegningen
+Projektet er nu klar til, at rettelserne kan implementeres på et velbegrundet grundlag.
+RavRadar(84).zip
+Zip-arkiv
+implementer rettelserne. tilknyt evt flere rettelser fra vores plan vi lavede, hvis det er muligt og hensigtsmæssigt.
+RavRadar(85).zip
+Zip-arkiv
+diagnose (10).zip
+Zip-arkiv
+logs_82506739166.zip
+Zip-arkiv
+nu har github kørt 1 gang. Analyser dybt om vores ændringer hjælper, eller vi skal lave yderligere
+RavRadar(86).zip
+Zip-arkiv
+tænk dybt og lav rettelserne
+RavRadar(87).zip
+Zip-arkiv
+diagnose (11).zip
+Zip-arkiv
+logs_82516463915.zip
+Zip-arkiv
+analyser meget grundigt igen
+RavRadar(88).zip
+Zip-arkiv
+lav ændringer
+IMG_C7D1511E-35B1-40E0-8581-58C597D053BD.jpeg
+Den fejlede i GitHub
+logs_82521658378.zip
+Zip-arkiv
+update-and-deploy(3).yml
+Fil
+update-weather.mjs
+Fil
+update-dmi-bulk.py
+Python
+RavRadar(89).zip
+Zip-arkiv
+onsdag 17.06
+RavRadar(90).zip
+Zip-arkiv
+diagnose (12).zip
+Zip-arkiv
+logs_82578271988.zip
+Zip-arkiv
+nu har den kørt i over 4 timer. Jeg er ved at samle filer til din analyse, så du kan lave de nye højt prioriterede opgaver som vi lige har aftalt. Hvilke filer skal du bruge ud over de vedhæftede? Skal der hentes nogen inde fra github?
+RavRadar(91).zip
+Zip-arkiv
+RavRadar-support-418.zip
+Zip-arkiv
+godt. klar til at analysere dybt ift at følge vores plan og hvad vi ellers har talt om. Ret yderligere fejl og mangler også.
+onsdag 21.58
+RavRadar-support-440.zip
+Zip-arkiv
+RavRadar(92).zip
+Zip-arkiv
+godt. Nu er det vist ved at være tid til en ny analyse ift forbedringer, vores plan og fejlretning. Analyser grundigt
+RavRadar(93).zip
+Zip-arkiv
+ift punkt 9 synes jeg det er okay at lave prognosen efter de 57 timer (hvis mere ikke kan hentes), ud fra feks open-meteo vind data. Brugeren behøver ikke vide at det ikke er dmi data. For brugeren skal det se ud på dag 5 som på dag 2. ift punkt 10 synes jeg det skal holdes internt. en 5 dages prognose er jo stadig bare en prognose. Alle ved at prognoser er forbundet med en vis usikkerhed. Det vigtigste er at de første par dage er meget nøjagtige. vi skal selvfølgelig tilsikre at de sidste dage i 5 dages prognosen er så nøjagtige som muligt, men det er stadig kun en prognose - ikke 100% fakta. Ift input fra feks eksperten og opsætning af regler, skal du analysere om den fane i admin delen skal udbygges og gøres bedre, samt mere forståelig og intuiativ. Det skal være nemt at opsætte regler og gerne i fri tekst som evt ai så kan omsætte til regler. Kan det lade sig gøre? Analyser og implementer så meget som overhovedet muligt fra to-do listen i næste opdatering. lav det nu
+RavRadar(94).zip
+Zip-arkiv
+byg den lige ovenpå denne, så jeg ikke får konflikt når jeg skal pushe den
+Ja. Jeg har ryddet det op i RavRadar 4.0.34, bygget direkte oven på den samme version 94/4.0.33-gren.
+Download RavRadar 4.0.34 – zoneoprydning
+Nu er zoneregisteret entydigt:
+231 registrerede zoner i alt
+210 aktive detaljerede zoner
+21 historiske samle-zoner
+0 zoner med manglende eller ukendt status
+De 12 gamle brede zoner, som tidligere manglede status og derfor fejlagtigt blev regnet som aktive, er nu markeret som legacy.
+Jeg har også ændret logikken, så RavRadar fremover kun regner en zone som aktiv, når den udtrykkeligt har:
+"zoneStatus": "active"
+En zone uden status bliver altså ikke længere stiltiende aktiveret. Valideringen stopper fremover med en fejl, hvis en zone har manglende eller ukendt status.
+Kort, admin, audits og tests bruger nu samme definition. Hele npm run validate består, og Git-historikken er:
+7ad68eb RavRadar 4.0.34 ryd op i zoneregister
+8d8b56a RavRadar 4.0.33 deep foundation
+6f7a556 RavRadar 4.0.32
+De 21 historiske zoner bliver bevaret i registeret af hensyn til historik og kompatibilitet, men de indgår ikke længere i aktive prognoser eller vises som aktive jagtzoner.
+men hvad er de 21 historiske zoner? er det de første vi oprettede helt da vi startede projektet? altså inden vi lavede vores nuværende zoner?
+Ja, det er faktisk også min opfattelse efter at have fulgt projektet gennem alle versionerne.
+De 21 historiske zoner ser ud til at være første generations zoner – altså de store samlezoner, vi brugte tidligt i projektet, før vi opdelte Danmark i de nuværende detaljerede kystzoner.
+Eksempler er:
+Skagen og Grenen
+Lønstrup og Løkken
+Blokhus og Saltum
+Thy og Vorupør
+Hvide Sande og Søndervig
+Blåvand og Vejers
+Voerså og Asaa
+Sæby og Frederikshavn
+Øster Hurup og Helberskov
+Djursland nord og øst
+Aarhusbugten og Odder
+Vejle Fjord til Lillebælt
+Nordfyn og Kerteminde
+Sjællands Odde og Odsherred
+Nordsjælland og Øresund
+Stevns og Sydsjælland
+Lolland-Falster sydkyst
+Bornholms kyster
+Limfjorden vest
+Limfjorden midt
+Limfjorden øst
+Det er præcis den type brede områder, vi brugte, inden vi gik over til den nuværende opdeling i omkring 210 mere præcise zoner.
+Jeg tror faktisk, vi kan gå et skridt videre
+Mit spørgsmål er:
+Har vi overhovedet nogen grund til at beholde de 21 legacy-zoner længere?
+Hvis de:
+ikke vises til brugeren,
+ikke bruges i scoringen,
+ikke bruges til routing,
+ikke bruges af admin,
+og ikke længere er nødvendige for kompatibilitet,
+så ser de mest ud til at være historisk ballast.
+Min anbefaling ville derfor være at lave en analyse af hele projektet og kontrollere:
+Refererer nogen kode til deres zoneId?
+Findes de i gamle observationer?
+Findes de i Supabase-tabeller?
+Bruges de af tests?
+Bruges de i import-/eksportfunktioner?
+Refererer nogen dokumentation til dem?
+Hvis svaret er nej, ville jeg hellere:
+slette de 21 gamle zoner helt,
+lade projektet bestå af 210 aktive zoner,
+og gøre det til den eneste officielle zonestruktur.
+Det vil gøre hele projektet betydeligt enklere og fjerne en masse potentiel forvirring fremover.
+Jeg ville ikke slette dem uden først at verificere, at intet afhænger af dem, men hvis analysen viser, at de er ubrugte, synes jeg, vi bør rydde helt op i stedet for blot at markere dem som legacy. Det vil være den mest langsigtede løsning.
+RavRadar(95).zip
+Zip-arkiv
+RavRadar-support-451.zip
+Zip-arkiv
+det synes jeg du skal analysere GRUNDIGT og implementere hvis det forholder sig sådan.
+Jeg har analyseret det grundigt, og konklusionen er klar:
+De 21 brede zoner var præcis første generations zoner fra RavRadar 2.2. Git-historikken viser, at commit 41c2872 introducerede netop disse 21 zoner, før de nuværende detaljerede DK-B...-zoner blev oprettet.
+De var derfor ikke en anden type aktiv zone, men gamle samleområder, som efterhånden var blevet erstattet.
+Jeg har bygget oprydningen direkte oven på din uploadede RavRadar(95):
+Download RavRadar 4.0.35 – zoneoprydning bygget oven på RavRadar(95)
+Det er ændret
+Det officielle zonesystem består nu kun af:
+210 aktive, detaljerede zoner
+0 legacyzoner i runtime
+0 zoner uden status
+De 21 gamle zoner er fjernet fra:
+data/zones.geojson
+den medfølgende forecastcache
+conditions.json
+aktive geografiske audits
+appens zoneoptælling
+adminens zoneoptælling
+DMI- og vejrpipelines
+De er ikke gået tabt
+Jeg har arkiveret deres fulde geometri og oplysninger i:
+docs/archive/legacy-zones-v2.2.geojson
+Arkivet er kun historisk dokumentation og bruges ikke af appen.
+Sikkerhed mod gentagelse
+Jeg har ændret logikken, så en zone fremover kun kan indgå, når den udtrykkeligt har:
+"zoneStatus": "active"
+Det gælder nu både:
+brugerappen
+kortet
+admin
+vejropdateringen
+DMI-bulkprocessen
+retningsaudits
+kystvalidering
+Derudover stopper testpakken, hvis zonesystemet igen afviger fra præcis 210 officielle aktive zoner.
+Kontrol af afhængigheder
+De gamle zone-id’er blev fundet i:
+zonefilen
+genererede vejrdata
+gamle auditrapporter
+nogle historiske tests og dokumenter
+De blev ikke fundet som nødvendige aktive nøgler i:
+regelmotoren
+stationsroutingens manuelle konfiguration
+aktive ekspertregler
+et lokalt produktionsregister med brugerobservationer
+Supabase bruger tekstbaserede zone-id’er uden en fremmednøgle til zonefilen. Eventuelle gamle eksterne observationer bliver derfor ikke slettet eller beskadiget, selvom de gamle zoner ikke længere findes i appens aktive register.
+Supportpakke 451
+Supportpakken bekræftede også problemet:
+conditions.json indeholdt vejrdata for alle 231 zoner
+forecastcachen indeholdt alle 21 gamle zone-id’er
+workflowet brugte derfor stadig tid og DMI-kapacitet på zoner, som brugerne ikke skulle anvende
+Efter denne ændring vil næste normale workflowkørsel kun generere vejrdata for de 210 officielle zoner.
+Validering
+Hele npm run validate består.
+Resultaterne omfatter blandt andet:
+210 officielle zoner
+210 validerede hav→land-retninger
+210 zoner i feedback-UI
+zone-registertest bestået
+vejrpipeline bestået
+DMI-bulk bestået
+stationsrouting bestået
+scoremotor bestået
+releaseversion 4.0.35 konsistent
+Git-commit oven på din version:
+28c6797 RavRadar 4.0.35 fjern første generations zoner

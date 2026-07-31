@@ -1,0 +1,21 @@
+# Kendte åbne og overvågede forhold
+
+## Høj prioritet
+1. **ISSUE-STATION-CACHE-STATUS – PLANLAGT:** Stationslivscyklus skelner endnu ikke fuldt mellem observation og gyldig prognosecache.
+2. **ISSUE-HANDBOOK-EVIDENCE – LØBENDE:** Flere faglige antagelser om rav og sedimenttransport kræver ekstern ekspertvalidering.
+3. **ISSUE-DMI-HORIZON – OVERVÅGES:** Komponenternes DMI-horisont kan være kortere end hele brugerprognosen; fallback og dækning skal forklares.
+4. **ISSUE-WATERLEVEL-CONTINUITY – OVERVÅGES:** Kunstige spring må ikke genopstå ved kildeskift; Vadehavet skal vurderes særskilt.
+5. **ISSUE-STATION-OFFICIAL-AUDIT – ÅBEN:** Kortets register skal løbende sammenholdes med DMI's officielle stationsliste.
+
+## Produkt og admin
+6. **ISSUE-RULE-USABILITY – DELVIST:** Regelbyggerens fulde menneskevenlige workflow og konfliktforklaring skal løbende verificeres i browseren.
+7. **ISSUE-COASTLINE-EDITOR – DELVIST:** Kurver, navigation, deaktivering, gemning og rollback skal regressionstestes på mobil.
+8. **ISSUE-CENTRAL-STORAGE – DELVIST:** Supabase-opsætning og rettigheder kræver fortsat driftsverifikation.
+
+## Historiske problemer, der ikke må genindføres
+- Timevis DMI/Open-Meteo-pendlen.
+- Global 180°-vending som hurtigfix uden lokal geometri-audit.
+- Afstandsbaseret stationsvalg uden kysttopologi og datastatus.
+- Fjernelse af kendte stationer, fordi én kørsel mangler observationer.
+- Genindførelse af brede førstegenerationszoner.
+- Implementering af funktioner alene fordi de blev diskuteret teoretisk.

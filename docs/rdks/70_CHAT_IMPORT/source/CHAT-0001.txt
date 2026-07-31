@@ -1,0 +1,600 @@
+man. 20. jul. kl. 18.59
+Hvilke muligheder har jeg for at kunne se vandstandsprognose ved de danske kyster, med så mange lokaliteter som muligt? Det skal være en gratis løsning. Prognoserne må gerne række 4-5 dage ud i fremtiden hvis muligt
+Hvis dit mål er at kunne tjekke vandstanden mange steder langs de danske kyster flere dage frem, er der reelt én løsning, som skiller sig ud:
+1. DMI – Vandstand ⭐⭐⭐⭐⭐ (bedste gratis løsning)
+Fordele:
+Gratis.
+Omkring 100 målestationer fordelt over hele Danmark.
+Viser både aktuelle målinger og prognoser.
+Prognosen ved målestationerne vises typisk 48 timer frem.
+Ekstra bonus:Hvis en lokalitet ikke har en målestation, kan du bruge DMI's vejrkort med laget "Vandstand", som viser en modelberegnet prognose langs hele den danske kyst. DMI oplyser, at havmodellen beregner en ny prognose 4 gange i døgnet, og den rækker 5 dage frem.
+2. DMI – Vejrkort med laget "Vandstand" ⭐⭐⭐⭐⭐
+Hvis du leder efter steder, hvor der ikke findes en målestation, er dette den bedste løsning.
+Her kan du:
+zoome ind på stort set hele den danske kyst
+se den beregnede vandstand
+bladre flere dage frem (op til ca. 5 døgn)
+3. Kystdirektoratet – Vandstande ⭐⭐⭐☆
+God til statistik og historiske vandstande, men ikke lige så praktisk til daglige prognoser.
+Hvis du er ravjæger
+Ud fra de spørgsmål, du tidligere har stillet om rav, ville jeg bruge denne kombination:
+DMI Vejrkort (Vandstand) → se hele kysten 5 dage frem.
+DMI Vandstand → kontrollér den nærmeste målestation.
+DMI Vind og bølger → kombiner med vindretning og bølger for at vurdere, hvor rav kan skylle op.
+Det giver efter min vurdering den bedste gratis løsning i Danmark.
+Hvis du vil have noget endnu bedre, kan jeg også vise dig, hvordan du kan få alle DMI's vandstandsprognoser samlet på ét interaktivt kort, så du ikke skal vælge station én ad gangen. Det kræver stadig kun gratis data.
+Vis mig, hvordan jeg kan få alle DMI's vandstandsprognoser samlet på ét interaktivt kort
+Det kan du faktisk – og det er efter min mening den bedste løsning, hvis du ofte holder øje med vandstanden (f.eks. i forbindelse med ravjagt).
+Mulighed 1 – DMI's modelkort (nemmest)
+DMI har et interaktivt kort, hvor du kan se den beregnede vandstand langs hele den danske kyst og bladre op til ca. 5 døgn frem. Modellen opdateres fire gange i døgnet.
+Her:DMI Vejrkort – Vandstand
+Det er ikke begrænset til målestationer – du kan zoome ind næsten overalt langs kysten.
+Mulighed 2 – Lav dit eget interaktive kort med alle stationer
+DMI stiller alle vandstandsdata og prognoser gratis til rådighed via deres åbne API'er.
+Hvis man bygger et lille kort (f.eks. i Google Maps eller Leaflet), kan man få:
+🟢 Alle danske målestationer på ét kort.
+📈 Klik på en station og se prognosen.
+🔴 Farvekoder efter forventet høj- eller lavvande.
+🔍 Zoom ind på dine favoritområder.
+Det er gratis, men kræver lidt programmering.
+Mulighed 3 – Det, jeg ville lave
+Hvis du vil følge ravforhold, ville jeg lave et kort med:
+alle DMI's vandstandsstationer
+prognose 48 timer for hver station
+vindretning
+bølgehøjde
+en farve på stationerne:
+🔴 stigende vand
+🟢 faldende vand
+🔵 meget lav vandstand
+Så kunne man på få sekunder se, hvor forholdene ser mest lovende ud.
+Det kan bygges udelukkende med DMI's gratis data.
+Jeg kan også lave en webside til dig (HTML), som du kan gemme på din iPhone og åbne som en app. Den vil automatisk hente de nyeste DMI-data og vise alle vandstandsstationer på ét kort.
+RavRadar-main.zip
+Zip-arkiv
+IMG_5D55E431-CE03-41DE-9F69-F19B601DEDF6.jpeg
+IMG_4388EF0A-69C7-4C28-84F2-5D733AB212A9.jpeg
+IMG_BE3FCDDB-23DA-4D31-8F81-D75E4BA76698.jpeg
+IMG_4844A2AE-2DA1-448E-942D-7562018A78B3.jpeg
+IMG_2F8B6898-E9D7-4053-9CB5-43236EFB796C.jpeg
+De er kopieret, men se lige tekstboksen øverst
+IMG_D75ED734-0C80-409A-9256-49DE83CCF432.jpeg
+4 minutter
+IMG_DAAB5D0D-AC2B-4F86-9F42-363EF974CD6E.jpeg
+IMG_934A6C33-5862-4F6A-85AF-DB56A9BAAFCB.jpeg
+IMG_24135F0B-3C65-45B0-914E-8FAA062BFEB9.jpeg
+Ravradar.zip
+Zip-arkiv
+IMG_77F6E062-B05E-4050-B1B2-C59B32A54259.jpeg
+IMG_77A2A56D-2043-4CE9-8806-E473EFB39D4D.jpeg
+IMG_BAE358D0-7B91-407F-9854-60752A9858A4.jpeg
+IMG_03467040-EA6E-45C0-8182-0D9DC94F03AB.jpeg
+IMG_A289B93C-E1A0-4CE4-B716-E78BE68EF7BB.jpeg
+IMG_49FA1808-D384-4BD9-9CD3-379A9179015C.jpeg
+IMG_053E1750-E61B-468F-B389-4D08E1DC7FA7.jpeg
+IMG_0072CEC4-782A-43C2-B8E8-906130595A1E.jpeg
+IMG_A04BF219-2D6D-4BF9-9DE9-EF42E112FFFC.jpeg
+IMG_0AA959D0-1FB8-4118-848B-639DF7CACDBD.jpeg
+IMG_74B3FD58-3D8D-4EE4-A589-CD028D5C4C31.jpeg
+IMG_734DD58F-C408-45AC-9E9C-04CFFD448FBC.jpeg
+Guide mig
+IMG_B7BDBA26-9591-4103-BC36-E8BC61174C68.jpeg
+1
+IMG_BA36454C-4CAA-4E7A-A14B-4EDF12E5B26F.jpeg
+IMG_3BA4BFD4-62E9-45BD-A583-D4F6EDDE75CD.jpeg
+IMG_A331D032-94C4-4A3B-A712-8FCDF735B8AB.jpeg
+Jamen den er jo tom
+IMG_DCB07FAE-26A1-4633-AA5B-898533CA0771.jpeg
+IMG_E5B09A4C-5479-4D5D-BFF6-CCADF7CEB547.jpeg
+IMG_A0E896B0-4232-42F3-9731-B49612B3A915.jpeg
+Ravradar(1).zip
+Zip-arkiv
+IMG_3C5EEFEB-858F-436E-8119-C4EFD2869129.jpeg
+IMG_A156169F-7E56-4774-98CA-DDF015EF9D00.jpeg
+IMG_6E9E0FEE-FA19-4410-A190-DCE9AA50D10F.jpeg
+IMG_140C7210-3D71-4EAA-8251-6B50B1820F18.jpeg
+IMG_38E9A62E-76D9-414E-A7DD-0F406952971A.jpeg
+IMG_8D0A40C8-0388-47FC-AAD4-79D6E62EBF1F.jpeg
+IMG_10232B6E-6315-4973-BB77-0AEE3AC32A70.jpeg
+IMG_99CFF709-7632-40A4-A1B8-E7E011E426B3.jpeg
+IMG_3EC8309B-B917-4B95-98CC-D7B94830D2DB.jpeg
+IMG_024D6653-E536-4373-87FC-E54B3E7EE976.jpeg
+IMG_CFA248C7-5818-48C4-9947-8C3E738FF2E7.jpeg
+IMG_F435A643-FCB1-4024-96E1-89E7C5C20732.jpeg
+IMG_1020A757-0BF5-46CE-820E-23DA19FF75D5.jpeg
+IMG_4DF7EA0B-F9C0-4013-9B37-80C23F83115A.jpeg
+IMG_6827214C-5758-4614-BE9E-107D89DC0389.jpeg
+Kan ikke finde info panel ja
+IMG_EA50A4D7-8A24-47F9-8DD7-61373A36A279.jpeg
+Fandt det ikke
+IMG_2844BD7F-C5BA-43FC-BC99-EBB97D0982E5.jpeg
+Havde du ikke løst det?
+IMG_0722E609-15B3-4F82-925E-247BEE60DB6D.jpeg
+IMG_790D3946-6E9A-442A-AB44-80ECC5300CB7.jpeg
+Ravradar.zip
+Zip-arkiv
+@Lav et billede
+Ravradar(1).zip
+Zip-arkiv
+4E469434-DDDD-4311-9B8A-C706A61DCBF1.jpeg
+Farverne på pins passer ikke med forklaringen nedenunder.
+IMG_104273DC-7E3B-4D22-A230-87EBD8EE8706.jpeg
+Knappen “åben zone” behøves ikke. Zonen åbner når man trykker på pin’en på kortet
+RavRadar(2).zip
+Zip-arkiv
+RavRadar(3).zip
+Zip-arkiv
+IMG_451E0B02-50B8-4045-B2BD-DF2BE1C0D694.jpeg
+Her i 5 dages prognosen og zonepanelet skal der da ikke være de cirkler. Retningen skal bare vises med en sort tydelig pil
+IMG_0906798E-14E0-4B36-BDAF-FC1AEC6155AF.jpeg
+Tror du ikke pins er alt for store når der er zoomet ud på kortet? Tænk når vi får 150 zoner, så vil man slet ikke kunne se landet.
+IMG_DBD3A1E2-D45F-4511-91B9-5F943FE6FD8B.jpeg
+Nordjyske østkyst - dem har du placeret meget upræcist
+IMG_B7CC250A-9D18-407B-AD82-924C1AA55CE1.jpeg
+Det blev lidt bedre, men som du kan se, er der nogen felter der overlapper og nogen står vinkelret på kysten. Det er vel ikke meningen?
+tors. 23. jul. kl. 22.17
+IMG_D4E02489-C41E-45D8-8C5E-3742A32F986B.jpeg
+2.6.16 fejlede
+IMG_4EB7067F-B981-46DC-A5A2-6FB122726621.jpeg
+RavRadar(4).zip
+Zip-arkiv
+IMG_80D1A21A-7FA7-479E-91E7-98B33913BCA4.jpeg
+Den er også grøn, så vi er klar til en ny. Men inden da, så se lige de sorte streger vi lavede til af markere start og stop på hver zone. Nogen steder ligger de under farvestregen og andre steder over farvestregen. Jeg vil gerne have dem ovenpå farvestregen. Dog skal de ikke være bredere end stregen. Lige nu fylder de alt for meget. De skal tilpasses bredden på farvestregen
+RavRadar(5).zip
+Zip-arkiv
+her er hele projektet
+RavRadar(6).zip
+Zip-arkiv
+RavRadar(7).zip
+Zip-arkiv
+RavRadar(8).zip
+Zip-arkiv
+Her er det praktisk talt færdige projekt. Du skal gennemgå det for fejl og mangler. Vi skal selvfølgeloig have det koblet sammen med supabase senere, men er der ellers noget vi mangler? Jeg regner også med at vi skal have det koblet op på domænet ravrader.dk
+RavRadar(9).zip
+Zip-arkiv
+7AB605AB-4A4E-46CF-BA6F-41880DB6D5FC.jpeg
+A79CD49A-5C6F-40D8-B052-72A9BEBEB804.png
+Der er noget galt med vores vandstand. Jeg har vedhæftet 2 billeder som eksempel. Det ene er data fra DMI, det andet er fra vores projekt.
+IMG_AA921CAC-8C92-4AA2-A9BA-A73AD5CD9752.jpeg
+Iflg workflow er 2.6.25 lagt ind og deployed. Versionnummer har ikke ændret sig, selvom jeg teykker ctrl f5. Jeg kan godt installere 2.6.26 ik?
+IMG_33C76218-F5D0-4255-A839-A0DC844FB386.jpeg
+IMG_2BF011DA-B32D-4D63-A765-442159F374BE.jpeg
+RavRadar(10).zip
+Zip-arkiv
+det er jo så denne version jeg ikke kan få lagt ind og som fejlede.
+IMG_4CAE82B7-6C1B-4A32-8405-FA40FEE31FB6.jpeg
+IMG_32BF32A1-D0AA-489C-B6C0-74645AEE89D5.jpeg
+IMG_4656F215-F5D8-4B49-9434-3AB01A4064C0.jpeg
+IMG_452595DA-6F21-4511-9669-FC10C7F2CF14.jpeg
+IMG_F0BB6AE7-8A16-411A-83DB-CA148CB82F4C.jpeg
+IMG_C8BCCA0D-F3E6-460B-AC86-6E04CFA0D54B.jpeg
+IMG_8972153C-12F0-43E7-836F-3DF6B7F5667C.jpeg
+RavRadar(11).zip
+Zip-arkiv
+Hvis der er andre ting du har snakket om at bygge, så gør det samtidig
+ravradar-diagnostik.json
+Fil
+Det ligner overhovedet ikke at der er hul igennem til DMI. Det skal vi altså have løst
+RavRadar(12).zip
+Zip-arkiv
+RavRadar(13).zip
+Zip-arkiv
+sprint 1 er lagt ind. fortsæt og lav sprint 2
+fredag 20.53
+RavRadar(14).zip
+Zip-arkiv
+sprint 2 er lagt ind. klar til sprint 3
+RavRadar(15).zip
+Zip-arkiv
+sprint 3 er lagt ind. klar til sprint 4
+RavRadar(16).zip
+Zip-arkiv
+sprint 4 er lagt ind. klar til sprint 5
+RavRadar(17).zip
+Zip-arkiv
+sprint 5 er lagt ind. klar til sprint 6
+RavRadar(18).zip
+Zip-arkiv
+sprint 6 er lagt ind. klar til næste
+RavRadar(19).zip
+Zip-arkiv
+stort sprint er lagt ind. Hvad er næste skridt?
+IMG_70129175-1BCD-4DA0-A060-E820FC4360F4.jpeg
+Vi skal lige huske, at hver gang vi frigiver en ny version, skal versionsnummeret ændres. Jeg kommer lige med flere rettelser du skal huske. Vi ændrer det senere. Svar ikke før jeg skriver “færdig”
+604EFB56-0B39-4312-A0AA-5B71FFF39F46.jpeg
+Her skal forklares, at for at gøre RavRadar bedre, vil vi gerne vide om man fandt rav. Der må gerne tilføjes en kalender hvor bruger kan vælge hvilken dato ravjagten foregik, så projektet automatisk kan sammenkoble det med vores indsamlede data fra brugeren. For en sikkerheds skyld må brugeren også meget gerne vælge zonen ud fra en drop Down liste/menu.
+RavRadar(20).zip
+Zip-arkiv
+Færdiggør Weather Engine 2.8 med DMI som autoritativ kilde og forbedret vandstandsberegning. Byg brugerfeedback-systemet med dato, zone og fundoplysninger. Implementér automatisk versionskontrol og sikker opdatering. Udbyg forklaringerne bag RavScore. Tilføj en selvlærende analyse baseret på indsamlede brugerdata.
+RavRadar(21).zip
+Zip-arkiv
+Versionsnummeret ændrer sig vel fremover på siden, når vi laver en ny version? Hvad mangler vi at lave nu?
+AB4C5A53-7209-44E8-A7C7-4A31191A7B0A.jpeg
+5604A907-9704-4D4D-8839-26E5AE8961CD.png
+Ikke alle zoner er med i drop Down menuen. Der skal være et søgefelt, så man kan f.eks. skrive “øs” og så kommer øster Hurup, hvis man ikke vil søge listen igennem manuelt. I “fandt du rav på din tur” skal feltet “meget” fjernes. Felterne ja og nej, skal stå over datoen, og over ja og nej felterne skal stå “Fandt du rav?” Nederst skal der være en knap der hedder “Indsend” som sender dataene til administrator centret (som vi har aftalt tidligere) og derefter lukker vinduet ned. Lav en zip med den ændring
+RavRadar(22).zip
+Zip-arkiv
+projektet er vedhæftet. Der mangler også zoner i de syd østlige jylland ved kysten ud for kolding, haderslev aabenraa, sønderborg og Als området. De skal oprettes og implementeres så de er som de andre. Lav ændringerne og vedhæft zip.
+IMG_2C891C95-D741-4305-8131-B336E2919732.jpeg
+De sidste zoner du tilføjede, følger på ingen måde kystlinjen. Du skal lave dem som du har lavet resten af landet tidligere.
+RavRadar(23).zip
+Zip-arkiv
+zoner er lavet. Du skal lave resten nu og pakke i zip: korrigerede kystzoner ved Kolding, Haderslev, Aabenraa, Sønderborg og Als komplet søgbar zonevælger færdig feedbackdialog med Ja/Nej, dato, zone, gram og Indsend kobling til Administrator Center AI Prediction Engine historisk analyse Machine Learning Studio med Godkend/Afvis og regelversioner DMI-baseret Water Level Engine som aftalt versionsstyring og sikker opdatering performanceforbedringer og samlet testpakke
+ravradar-diagnostik (1).json
+Fil
+kan du se om dmi virker nu ud fra vores diagnose fil
+8A0E39A8-D11D-4173-8674-6385E5AE4BB2.jpeg
+DE517B93-6C7C-48D2-86FA-2DEC31F0AC9B.png
+Her er et billede af vores vandstand ved øster Hurup og det andet billede er fra vandstands stationerne på dmi. Vores viser noget lavere. Er det en fejl? Eller er disse stationer bare ikke blevet opdateret fra dmi endnu i vores system? Det må stå i den log jeg sendte
+F2341D01-423E-4E51-86B1-06095B111840.jpeg
+5C1B8AF7-0613-4E65-AAE3-B1F7A7BEC983.png
+I Frederikshavn er der en station. Se forskellen:
+lørdag 10.21
+DE521907-3989-486A-96E0-AE6224F5E4B1.png
+92C88DA9-F3D3-40B1-B81F-8853B3A9317A.png
+I administratorpanelet ligner det flere steder, at der kun er 56 zoner. Det er vist ligesom der manglede zoner i drop Down menuen. Det skal vist rettes grundlæggende.
+lørdag 12.58
+ravradar-diagnostik (2).json
+Fil
+her er diagnose fil fra de sidste par timer. Jeg synes stadig vandstand ser helt skæv ud, og det ligner ikke der hentes noget fra dmi. Jeg har tænkt på, at en zoner der ikke har en station der passer med dmi, skal kun trække fra de 2 nærmeste og udregne fra dem, altså til hver side langs kysten. feks skal øster hurup trække fra Hals 2 og als odde. Hvis den feks går ind og trækker fra hadsund og randers, som kystlinie mæssigt ligger længere væk, får den meget andre målinger. så altså. de 2 nærmeste, 1 til hver side, langs den kyst området og målestationerne ligger på.
+søndag 8.31
+ravradar-diagnostik (3).json
+Fil
+RavRadar(24).zip
+Zip-arkiv
+For mig ligner det at den ikke henter data fra dmi. Analyser dybt
+RavRadar(25).zip
+Zip-arkiv
+RavRadar(26).zip
+Zip-arkiv
+RavRadar(27).zip
+Zip-arkiv
+Jeg vil gerne have dig til at lave en grundig og dybdegående analyse ift tvivlen vi havde om strøm og vindretning. Specielt ved strømretningen hvor vi var i tvivl om den "vender rigtig". Det lignede at vores projekt måske har vendt det 180 grader, så modellen måske tror at strøm væk fra land, faktisk førte ind mod land.
+Tænkte i 3m 0s
+Konklusion
+I den nuværende version ser strømmens beregningsretning ikke ud til at være vendt 180 grader.
+Den centrale DMI-konvertering er matematisk korrekt, forudsat at DMI’s current-u er den østgående komponent og current-v den nordgående komponent, hvilket er den normale U/V-konvention for GRIB-data. DMI beskriver felterne som U- og V-komponenter af strømmen, og de underliggende GRIB-konventioner bruger positiv U mod øst og positiv V mod nord.
+Der er dog nogle reelle problemer omkring navngivning, visning og test, som meget let kan få det til at se ud, som om retningen er vendt. Især har vindpilen og kompassteksten ikke helt samme semantik.
+1. De tre forskellige retningsbegreber
+Det vigtigste er at holde disse tre ting adskilt:
+Vindretning
+Meteorologisk vindretning angiver normalt, hvor vinden kommer fra.
+Eksempel:
+270° vind = vinden kommer fra vest
+luften bevæger sig derfor mod øst, 90°
+Strømretning
+Strømretning bør i RavRadar angive, hvor vandet bevæger sig hen.
+Eksempel:
+270° strøm = vandet bevæger sig mod vest
+90° strøm = vandet bevæger sig mod øst
+Open-Meteo dokumenterer specifikt ocean_current_direction som retningen, strømmen bevæger sig mod: 0° går mod nord og 90° mod øst.
+Pålandsretning
+onshoreDirectionDeg angiver, hvilken bevægelsesretning der fører vand eller materiale fra havet og ind mod land ved zonen.
+Eksempel på den danske vestkyst:
+havet ligger mod vest
+land ligger mod øst
+bevægelse mod land er derfor cirka 90°
+Eksempel på den danske østkyst:
+havet ligger mod øst
+land ligger mod vest
+bevægelse mod land er derfor cirka 270°
+Det stemmer overordnet med jeres zonedata:
+Hvide Sande, Blåvand og vestkysten: cirka 90°
+Øster Hurup, Sæby og østkysten: cirka 270°
+2. DMI-strømmen i kildekoden
+Den centrale konvertering ligger i:
+scripts/lib/dmi-forecast-store.mjs
+Koden er:
+const u = finite(o?.['current-u']);
+const v = finite(o?.['current-v']);
+currentSpeedMps:
+u === null || v === null
+? null
+: round(Math.hypot(u, v), 2),
+currentDirectionDeg:
+u === null || v === null
+? null
+: round(
+normalizeDegrees(
+Math.atan2(u, v) * 180 / Math.PI
+),
+0
+),
+Det lidt usædvanlige er:
+Math.atan2(u, v)
+Mange programmører forventer instinktivt:
+Math.atan2(v, u)
+Men det sidste ville give en almindelig matematisk vinkel, hvor:
+0° ligger mod øst
+vinklen vokser mod uret
+RavRadar ønsker i stedet et kompas-bearing, hvor:
+0° er nord
+90° er øst
+180° er syd
+270° er vest
+Derfor er:
+Math.atan2(u, v)
+faktisk korrekt.
+Kontrol med fire rene strømvektorer
+U
+V
+Fysisk bevægelse
+Koden giver
+0
++1
+nord
+0°
++1
+0
+øst
+90°
+0
+-1
+syd
+180°
+-1
+0
+vest
+270°
+Det er præcis det ønskede resultat.
+Hvis koden var vendt 180°
+Så skulle den eksempelvis gøre noget i retning af:
+(direction + 180) % 360
+eller bruge negative komponenter:
+Math.atan2(-u, -v)
+Det sker ikke i DMI-normaliseringen.
+3. Open-Meteo-strømmen
+I:
+scripts/update-weather.mjs
+bliver Open-Meteo-værdien overført direkte:
+currentDirectionDeg:
+round(num(c.ocean_current_direction), 0),
+Det er korrekt, fordi Open-Meteo allerede leverer retningen som towards, altså hvor strømmen er på vej hen.
+Der skal derfor ikke lægges 180° til denne værdi.
+Hvis RavRadar begyndte at gøre det, ville Open-Meteo-strømmen faktisk blive forkert.
+4. Scoringen mod kysten
+I:
+js/core/score-engine.js
+bruges strømretningen sådan:
+const alignment = directionScore(
+weather.currentDirectionDeg,
+onshore
+);
+Her sammenlignes:
+strømmen, som er en towards-retning
+med onshoreDirectionDeg, som også er en towards-retning
+Det er korrekt.
+Hvis:
+currentDirectionDeg = 270°
+onshoreDirectionDeg = 270°
+så vurderes strømmen som direkte påland.
+Hvis:
+currentDirectionDeg = 90°
+onshoreDirectionDeg = 270°
+så er forskellen 180°, og strømmen vurderes som udgående.
+Der er ikke en skjult inversion her.
+5. Vindretningen behandles anderledes – korrekt
+Vindretningen er lagret som en from-retning:
+const windFrom = numberOrNull(weather.windDirectionDeg);
+const windToward =
+windFrom === null
+? null
+: (windFrom + 180) % 360;
+Derefter sammenlignes windToward med pålandsretningen.
+Det er også korrekt.
+Eksempel: dansk vestkyst
+Vestkystens pålandsretning er cirka:
+90° — mod øst
+Vestenvind:
+windDirectionDeg = 270°
+Konverteringen bliver:
+270° + 180° = 450°
+450° modulo 360° = 90°
+Vinden bevæger sig altså mod øst og dermed ind mod vestkysten.
+Eksempel: dansk østkyst
+Østkystens pålandsretning er cirka:
+270° — mod vest
+Østenvind:
+windDirectionDeg = 90°
+Konverteringen bliver:
+90° + 180° = 270°
+Også korrekt.
+6. Kortets pile
+I:
+js/map/map-view.js
+bruges:
+const rotation =
+Number(directionDeg) +
+(type === "wind" ? 180 : 0);
+Det betyder:
+vindpilen vendes 180°, fordi vinddata angiver, hvor vinden kommer fra
+strømpilen vendes ikke, fordi strømdata allerede angiver, hvor strømmen bevæger sig hen
+Det er korrekt.
+Der er derfor heller ikke her en 180°-fejl på strømmen.
+7. Det reelle visningsproblem
+I:
+js/ui/info-panel.js
+beregnes pilens rotation korrekt:
+const rotation =
+Number(value) +
+(type === "wind" ? 180 : 0);
+Men teksten ved siden af pilen bruger den oprindelige værdi:
+compass(direction)
+Det giver en semantisk uoverensstemmelse for vind.
+Eksempel
+Data:
+vindretning = 270°
+Pilen vises mod:
+90° — øst
+Men teksten viser:
+V 270°
+Begge oplysninger kan hver for sig være korrekte:
+V 270° betyder, at vinden kommer fra vest
+pilen mod øst viser bevægelsen
+Men brugergrænsefladen forklarer ikke tydeligt, at pil og tekst repræsenterer hver sin side af samme vindvektor.
+For strøm gælder dette ikke, fordi både pil og tekst bruger towards-retningen.
+Det kan meget nemt have været årsagen til mistanken om, at noget var vendt.
+8. Et problem i de eksisterende tests
+I:
+scripts/test-score-engine.mjs
+er testzonen defineret med:
+onshoreDirectionDeg: 270
+Det svarer til, at påland er mod vest.
+I den såkaldte rolige situation bruges:
+windDirectionDeg: 270
+currentDirectionDeg: 270
+Strømmen er korrekt påland:
+strøm mod vest = 270°
+påland mod vest = 270°
+Men vinden er faktisk fralands:
+vind fra vest = 270°
+vinden bevæger sig mod øst = 90°
+Så testen blander:
+pålandsstrøm
+fralandsvind
+lav vindstyrke
+små bølger
+stigende vandstand
+Testen består, fordi den rolige situation samlet scorer bedre. Men den beviser ikke isoleret, at vindretningen behandles korrekt.
+Kommentaren:
+Rolige waders-forhold skal slå kraftig påland/udgående situation
+er også uklar, fordi “påland/udgående” blander to modsatrettede transportbegreber.
+Dette er et konkret testmæssigt hængeparti.
+9. Det største tilbageværende risikoområde: zonernes pålandsretning
+Selve strømvektoren ser rigtig ud. Den næste mulige fejlkilde er derfor:
+zone.onshoreDirectionDeg
+Hvis en zone har fået forkert kystnormal, kan en korrekt strøm blive klassificeret forkert.
+Eksempel:
+Den virkelige pålandsretning er:
+270°
+men zonen er registreret som:
+90°
+Så vil modellen opføre sig præcis som ved en 180°-vendt strøm:
+fysisk pålandsstrøm belønnes som fralands
+fysisk fralandsstrøm belønnes som pålands
+Det ville se ud som en fejl i strømdata, selv om fejlen faktisk lå i zonegeometrien.
+De overordnede vest- og østkystzoner ser fornuftige ud, men de mere komplekse områder bør auditeres enkeltvis:
+Grenen og Skagen
+Djursland
+Samsø
+Lillebælt
+Storebælt
+Isefjord og Roskilde Fjord
+Limfjorden
+Als og Aabenraa Fjord
+Lolland-Falsters bugter
+Bornholms hjørner
+Her kan én retning for en større zone være for grov, fordi kysten ændrer orientering inde i zonen.
+10. Kildernes semantik samlet
+Projektet har allerede denne deklaration i update-weather.mjs:
+directionConventions: {
+windDirectionDeg: 'from',
+currentDirectionDeg: 'toward',
+waveDirectionDeg: 'from'
+}
+Det er den rigtige model.
+Det stemmer også med:
+Open-Meteo: strømretning er der, hvor strømmen bevæger sig hen.
+DMI: strøm leveres som U- og V-komponenter.
+Den almindelige U/V-konvention: U er østgående, V er nordgående.
+Min samlede vurdering
+DMI-strømkonvertering
+Korrekt. Høj sikkerhed.
+atan2(u, v)
+producerer en kompasretning mod strømningen.
+Open-Meteo-strøm
+Korrekt. Høj sikkerhed.
+Retningen videresendes uden 180°-ændring, hvilket er det rigtige.
+RavScore-sammenligning
+Korrekt. Høj sikkerhed.
+Strøm-towards sammenlignes direkte med pålands-towards.
+Vindkonvertering i RavScore
+Korrekt. Høj sikkerhed.
+Vindens from konverteres til towards med +180°.
+Pile på kort og i panel
+Den geometriske rotation er korrekt.
+Kompasetiketten for vind
+Potentielt misvisende.
+Pilen viser bevægelsesretning, mens teksten viser oprindelsesretning.
+Testdækning
+Utilstrækkelig.
+De eksisterende tests kontrollerer ikke systematisk de fire verdenshjørner og isolerer ikke vindretning fra strømstyrke, bølger og øvrige faktorer.
+Zonernes pålandsretninger
+Det mest sandsynlige sted for en reel lokal 180°-fejl.
+Især i bugter, fjorde, øer og kystknæk.
+De tests, der bør tilføjes
+Jeg ville kræve en eksplicit sandhedstabel for strøm:
+U
+V
+Forventet strømretning
+0
+1
+0°
+1
+0
+90°
+0
+-1
+180°
+-1
+0
+270°
+1
+1
+45°
+1
+-1
+135°
+-1
+-1
+225°
+-1
+1
+315°
+Derefter tests for kysttransport:
+vestkyst: 90° strøm skal være påland
+vestkyst: 270° strøm skal være fraland
+østkyst: 270° strøm skal være påland
+østkyst: 90° strøm skal være fraland
+Og tilsvarende for vind:
+vestkyst: vind fra 270° skal være påland
+vestkyst: vind fra 90° skal være fraland
+østkyst: vind fra 90° skal være påland
+østkyst: vind fra 270° skal være fraland
+Den vigtige bundlinje er altså: Jeg finder ikke en generel 180°-fejl i den nuværende strømkonvertering. Tvivlen er forståelig, fordi vind og strøm bruger forskellige konventioner, visningen blander “fra” og “mod”, og testene ikke dokumenterer retningerne skarpt nok.
+søndag 13.30
+så konklusionen må være at vi ikke skal gøre mere ved det?
+Ja – med én vigtig nuancering.
+Min konklusion er ikke, at der er en 180°-fejl, som bør rettes i produktionskoden. Tværtimod ville jeg være tilbageholdende med at ændre logikken nu, fordi risikoen for at indføre en reel fejl er større end sandsynligheden for, at der allerede er en.
+Jeg ville derfor ikke ændre beregningerne for:
+✅ DMI current-u/current-v → currentDirectionDeg
+✅ Open-Meteo currentDirectionDeg
+✅ Vind from → toward
+✅ Sammenligningen mod onshoreDirectionDeg
+Det ser konsistent ud.
+Det, jeg stadig ville gøre
+Jeg ville dog stadig bruge lidt tid på at bevise, at det er korrekt, i stedet for blot at antage det.
+Der er især to ting, jeg ville tilføje:
+Enhedstests for retninger
+De otte hovedvektorer (N, NE, Ø, SE, S, SV, V, NV).
+Tests for vestkyst, østkyst, nordkyst og sydkyst.
+De tager kun kort tid at skrive, men de sikrer, at en fremtidig ændring ikke vender logikken.
+Audit af onshoreDirectionDeg
+Jeg ville gennemgå alle 231 zoner én gang.
+Ikke fordi jeg forventer mange fejl, men fordi hvis der findes en lokal 180°-fejl, er den langt mere sandsynligt i zonedata end i selve strømkonverteringen.
+Min risikovurdering
+Hvis jeg skulle sætte tal på:
+95 % sandsynlighed for, at strømkonverteringen er korrekt.
+4 % sandsynlighed for, at enkelte zoner har en forkert onshoreDirectionDeg.
+1 % sandsynlighed for, at DMI's U/V-fortolkning er misforstået (det ville kræve, at DMI afveg fra den normale GRIB-konvention, hvilket ville være usædvanligt).
+Så min anbefaling er:
+Lad beregningslogikken være.
+Tilføj dokumenterende tests.
+Auditér zonernes onshoreDirectionDeg.
+Det giver langt større sikkerhed end at ændre en logik, der efter analysen ser ud til at være korrekt.
+RavRadar(28).zip
+Zip-arkiv
+ravradar-diagnostik (4).json
+Fil
+udfør tilføj dokumenterende testes og auditer zonernes onshoredirectiondeg. Derudover skal du igen analyse diagnostikken fra RavRadar. Det ser ikke ud til at virke optimalt endnu. Tænk dybt og analyser dig frem til løsninger.
+Listede og inspicerede zip-indhold, kode samt deduplikeringsfunktioner

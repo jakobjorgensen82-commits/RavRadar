@@ -1,0 +1,134 @@
+i dag 14.37
+IMG_F2BFF7FC-5AB3-4766-8C0B-DE403D67E9B8.jpeg
+Er det lige meget hvor langt ude i vandet havmarkøren placeres?
+Det korte svar er: nej, den er ikke helt ligegyldig, men den behøver heller ikke ligge meget præcist.
+Ud fra den måde RavRadar er bygget på, bør havmarkøren placeres efter disse principper:
+Den skal ligge ude i åbent vand, så den repræsenterer de vandmasser, der bevæger sig mod kysten.
+Den skal være uden for lavvandede bugter, havne og fjorde, da strømforhold dér ofte afviger fra det åbne hav.
+Den skal ikke ligge unødigt langt ude, hvor strømmen kan være markant anderledes end den, der faktisk påvirker kysten.
+For zonen Hou og Bisnap på dit billede ser havmarkøren umiddelbart fornuftigt placeret ud. Den ligger:
+ude i Kattegat,
+ud for den relevante kyst,
+og ikke inde i en vig eller havn.
+Hvornår bliver afstanden et problem?
+Hvis du flytter havmarkøren:
+100-500 meter: normalt næsten ingen forskel.
+1-3 km: kan begynde at ændre de hentede strømdata.
+5-10 km eller mere: kan give helt andre strømforhold, især langs Jyllands østkyst hvor der kan være kyststrømme og hvirvler.
+Min anbefaling til RavRadar
+Jeg ville faktisk gøre systemet mere robust, så det ikke afhænger af ét enkelt punkt. I stedet kunne hver zone have:
+et primært havpunkt,
+eventuelt 2-4 ekstra havpunkter,
+og beregne et gennemsnit eller en vægtning af strømmen.
+Så bliver resultaterne langt mindre følsomme over for, om markøren ligger 300 meter for langt mod nord eller syd. Det er en forbedring, der vil gøre RavRadar mere stabil, især i områder med komplekse strømforhold.
+Hvis man gør det skal de vel ligge på linie, ellers kan man jo ikke se strømretningen når den er direkte på landet, og det er vel det denne funktion er til for?
+Ja, og det er faktisk en vigtig observation.
+Hvis formålet med funktionen er at definere den retning, som "pålandsvind/pålandsstrøm" skal vurderes ud fra, så bør land- og havmarkøren i princippet ligge på samme linje – altså vinkelret på den del af kysten, de repræsenterer.
+Det giver flere fordele:
+Retningen bliver intuitiv. Den røde linje viser præcis den akse, strømmen sammenlignes med.
+OnshoreDirectionDeg bliver korrekt. Den kan beregnes direkte ud fra linjen mellem land- og havpunktet.
+Visuel kontrol bliver nem. Hvis du ser, at linjen peger forkert, ved du straks, at noget skal rettes.
+Hvis havpunktet derimod flyttes langt mod nord eller syd for at ramme et "bedre" datapunkt, kan der opstå et problem:
+Linjen kommer til at repræsentere en anden retning end den, kysten faktisk vender imod.
+Så kan en strøm, der ser ud til at være direkte mod land på kortet, matematisk blive vurderet som skrå eller næsten fralands.
+Det ideelle design til RavRadar
+Jeg ville faktisk skille de to funktioner ad:
+Geometripunktet (det du redigerer i admin)
+Bruges kun til at definere kystens retning (onshoreDirectionDeg).
+Land- og havpunkt ligger på samme linje.
+Datapunktet
+Bruges kun til at hente DMI's strømdata.
+Kan ligge et andet sted, hvis det giver mere repræsentative data fra åbent vand.
+Så kan du både få:
+en korrekt og let forståelig retningslinje, og
+de bedst mulige strømdata, uden at de to hensyn kommer i konflikt.
+Det passer også godt med den udviklingsretning, du har valgt for RavRadar, hvor geometri og datakilder skal være så gennemskuelige som muligt for administratoren.
+RavRadar(112).zip
+Zip-arkiv
+implementer de forbedringer og rettelser vi har talt om.
+RavRadar(113).zip
+Zip-arkiv
+godt - analyser nu grundigt, så vi er sikre på du gør det rigtigt og byg så zip
+IMG_97E00D9B-25C8-4C61-8F7C-CB5CE2D93659.jpeg
+Er vi ikke enige om, at når jeg vælger den røde og lilla, så overruler det den grønne?
+IMG_E4EE6424-B9BE-45CB-9788-9437C1147215.jpeg
+IMG_7A042E8B-10AD-45DB-BCF2-78BD8E1B21FA.jpeg
+Det ligner det ud fra det
+RavRadar(114).zip
+Zip-arkiv
+JO DU HAR DESIGNET OG IMPLEMENTERET DEN KODE!!!!!!!!
+Ja — Hals Havn ser nu ud til at være aktiv og brugbar i RavRadar.
+Det tydeligste tegn er, at RavRadar selv har valgt Hals Havn som primær automatisk station. Det ville den normalt ikke gøre, hvis stationen var markeret som historisk eller inaktiv.
+Derudover:
+Hals Havn vises som almindelig station uden advarsel.
+Den kan vælges som administratorstation.
+Den indgår både i det automatiske valg og dit manuelle valg.
+Systemet viser en konkret afstand til zonen.
+Så ja: Det ser ud til, at den Hals-station, vi har ledt efter længe, nu er fundet i DMI-registeret og bliver behandlet som aktiv.
+Det eneste, billedet ikke alene beviser, er, om den også leverer friske målinger i den aktuelle datakørsel. Men den er nu klart kommet ind i registeret og routingen på den rigtige måde.
+ravradar-diagnostik (31).json
+Fil
+ravradar-runtime-diagnostics (20).json
+Fil
+RavRadar(115).zip
+Zip-arkiv
+godt - det skal vi have implementeret. Har jeg haft andre ønsker du siden bare har ignoreret? Du bliver nødt til at kigge i din hukommelse
+i dag 17.28
+chat 1.zip
+Zip-arkiv
+Hvis jeg uploader de gamle chats, vil du så kunne bruge dem til din hukommelse? Her er den første gamle chat, hvis du kan bruge det format? Det er kopieret ind i neat office og zippet
+RavRadar(117).zip
+Zip-arkiv
+godt - så byg den version. og lav samtidig den optimering af vandstand som vi snakkede om lige før ift nye og gamle stationer, samt notifikation om de leverer eller ej
+Det er gemt til næste RavRadar-version.
+Den skal skelne mellem:
+Observationsstatus
+Prognose-/cachestatus
+Samlet anvendelighed
+En station må fortsat bruges, så længe dens cachede prognosedata stadig er gyldige, selv om den midlertidigt ikke leverer en ny observation. Admin skal vise seneste observation, hvor længe cachen er gyldig, og om stationen samlet set stadig kan anvendes.
+RavRadar-support-724.zip
+Zip-arkiv
+den fejlede
+Ja — jeg har fundet den konkrete fejl.
+Det er ikke DMI-kørslen, der fejler. Det er en forældet regressionstest.
+Testen scripts/test-admin-persistence-4.0.18.mjs forventer stadig denne gamle tekst i update-weather.mjs:
+stationRegistry = await dmiWaterStations
+Men i den nye stationslivscyklus blev koden korrekt ændret til:
+const rawStationRegistry = await dmiWaterStations().catch(() => readCachedWaterStations());
+const stationLifecycle = await updateWaterStationLifecycle(rawStationRegistry, ...);
+const stationRegistry = stationLifecycle.stations;
+Derfor stopper npm run validate ved:
+AssertionError:
+expected /stationRegistry = await dmiWaterStations/
+Det betyder:
+Den nye stationsfunktion er faktisk til stede.
+DMI-bulkdelen gennemførte.
+Cachen indeholder 218 zoner med vandstand og strøm.
+Fejlen skyldes, at jeg ændrede implementeringen uden samtidig at opdatere den gamle test.
+Det er min fejl. Version 4.0.51 kan derfor ikke godkendes eller deployes som den er.
+Rettelsen skal være begrænset til at opdatere testen, så den kontrollerer den nye kæde:
+hent stationsregister,
+anvend livscyklus,
+brug det opdaterede stationRegistry,
+skriv stationsaudit og notifikationer.
+Derefter skal hele npm run validate køres igen — ikke kun den ene test.
+lav det
+Rettelsen er lavet i RavRadar 4.0.52.
+Den forældede regressionstest er opdateret, så den nu kontrollerer den aktuelle stationskæde:
+DMI-stationsregister
+fallback til gemt stationsregister
+stationslivscyklus
+det behandlede stationsregister
+stationsaudit
+stationsnotifikationer
+Produktionslogikken og stationsroutingen er ikke ændret. Det er alene testen, versionsdokumentationen, changelog og RDKS-loggen, der er rettet.
+Hele npm run validate er kørt og bestået, inklusive:
+admin persistence
+stationslivscyklus
+station-routing
+forecast-integritet
+DMI-data
+RDKS
+versionskonsistens
+alle øvrige projekttests
+Download RavRadar 4.0.52

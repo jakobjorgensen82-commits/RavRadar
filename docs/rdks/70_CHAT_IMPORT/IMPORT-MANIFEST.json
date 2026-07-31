@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "importedAt": "2026-07-31",
+  "sourceArchive": "chat.zip",
+  "orderingBasis": "Textual continuity, version references, feature progression and explicit dates; filenames and modification times were not used as chronology.",
+  "items": [
+    {
+      "id": "CHAT-0001",
+      "sourceFile": "chat 1.txt",
+      "chronologicalOrder": 1,
+      "period": "2026-07-20 til projektets version 28",
+      "summary": "Projektets opstart: gratis vandstandsprognose, første kort, zoner, scoring og den første retnings-/diagnostikfase",
+      "sha256": "da4df3c00847fe3b79e62d06e360598305a01692e8221a6f756be54562bf495c",
+      "normalizedText": "docs/rdks/70_CHAT_IMPORT/source/CHAT-0001.txt",
+      "status": "imported-classified"
+    },
+    {
+      "id": "CHAT-0002",
+      "sourceFile": "chat 7.txt",
+      "chronologicalOrder": 2,
+      "period": "Efter version 28 til version 53 / 4.0.5",
+      "summary": "Retningsaudit, DMI-cacheopbygning, zoner, scorer, diagnostik, administration og overgang til 4.0-serien",
+      "sha256": "8055425a878053ebdb85c2f2d48bb88683f601fa8bb3cd0ceea6b578bca61a9e",
+      "normalizedText": "docs/rdks/70_CHAT_IMPORT/source/CHAT-0002.txt",
+      "status": "imported-classified"
+    },
+    {
+      "id": "CHAT-0003",
+      "sourceFile": "chat 2.txt",
+      "chronologicalOrder": 3,
+      "period": "Version 54 til 66 / omkring 4.0.12",
+      "summary": "Datakvalitet, kildegennemsigtighed, DMI-prioritet, forecastfiler, runtime-diagnostik og filarbejdsgang",
+      "sha256": "4a8646f1875d56b00d5b66d7711407247e5dfa001e7db213bff06761ff295531",
+      "normalizedText": "docs/rdks/70_CHAT_IMPORT/source/CHAT-0003.txt",
+      "status": "imported-classified"
+    },
+    {
+      "id": "CHAT-0004",
+      "sourceFile": "chat 5.txt",
+      "chronologicalOrder": 4,
+      "period": "Version 68 til 82 / 4.0.13–4.0.21",
+      "summary": "DMI-bulkmodeller, marine dækning, observationer, stationer, Frederikshavn-mismatch og cachearbejde",
+      "sha256": "7a2491118fa3ad185a6c4b82f56075910a88d9a824ca0c92d3b69e53c6d4589b",
+      "normalizedText": "docs/rdks/70_CHAT_IMPORT/source/CHAT-0004.txt",
+      "status": "imported-classified"
+    },
+    {
+      "id": "CHAT-0005",
+      "sourceFile": "chat 3.txt",
+      "chronologicalOrder": 5,
+      "period": "Version 83 til 95 / 4.0.22–4.0.35",
+      "summary": "Weather engine, GitHub-kørsler, stationsregister, zoneregister, Supabase og oprydning af gamle zoner",
+      "sha256": "482bf39d0e3f5f4a419cc5d9de2298335e94998272d13946100d3d4c1b5a560f",
+      "normalizedText": "docs/rdks/70_CHAT_IMPORT/source/CHAT-0005.txt",
+      "status": "imported-classified"
+    },
+    {
+      "id": "CHAT-0006",
+      "sourceFile": "chat 6.txt",
+      "chronologicalOrder": 6,
+      "period": "Version 96 til 111 / 4.0.35–4.0.49",
+      "summary": "Langtidssundhed, kysteditor, admin, regler, scorepræsentation, stationsrouting og brugervenlighed",
+      "sha256": "922c8b21fdd94bbd295e30bde1961a9ecab081b19e176b5c329b30fc81cdd5d6",
+      "normalizedText": "docs/rdks/70_CHAT_IMPORT/source/CHAT-0006.txt",
+      "status": "imported-classified"
+    },
+    {
+      "id": "CHAT-0007",
+      "sourceFile": "chat 4.txt",
+      "chronologicalOrder": 7,
+      "period": "Version 112 til 4.0.52",
+      "summary": "Havmarkør-afklaring, korrekt afgrænsning af ændringer, regelbygger, RDKS og stationers livscyklus",
+      "sha256": "74aab64db1135a49ad5346749337535e7153f714851ec92f2ad039adb2ee1d98",
+      "normalizedText": "docs/rdks/70_CHAT_IMPORT/source/CHAT-0007.txt",
+      "status": "imported-classified"
+    }
+  ]
+}

@@ -1,74 +1,104 @@
 {
   "schemaVersion": 1,
-  "handbookVersion": "1.0.0",
-  "updatedAt": "2026-07-30",
-  "title": "RavRadar – projektdrejebog",
+  "handbookVersion": "4.0.53",
+  "updatedAt": "2026-07-31",
+  "title": "RavRadar – levende faglig og teknisk drejebog",
   "sections": [
     {
       "id": "forord",
-      "title": "1. Forord og formål",
-      "summary": "Hvad RavRadar er, hvem drejebogen er til, og hvordan den skal bruges.",
-      "body": "<p>RavRadar er et dansk beslutningsstøttesystem til ravjagt. Systemet samler prognoser for vind, bølger, strøm, vandstand og andre relevante forhold og omsætter dem til en forklarlig vurdering af, hvor og hvornår forholdene kan være gunstige. Målet er ikke at love ravfund. Målet er at give brugeren et bedre, mere gennemsigtigt og mere fagligt funderet grundlag for at vælge tid og sted.</p>\n<p>Denne drejebog er projektets fælles reference. Den er skrevet til fire grupper: brugere, administratorer, udviklere og eksterne fagpersoner. En bruger skal kunne forstå, hvad en score betyder. En administrator skal kunne kontrollere zoner, datakilder og regler. En udvikler skal kunne ændre systemet uden at bryde grundlæggende principper. En ekspert skal kunne vurdere faglige antagelser og foreslå præcise rettelser.</p>\n<h3>Dokumentets status</h3><p>Drejebogen beskriver RavRadars tilsigtede arkitektur og arbejdsform. Den er levende: når systemets grundlæggende metode ændres, skal den relevante del af dokumentationen opdateres samtidig. Dokumentationen er dog ikke en erstatning for tests, kodedokumentation eller rå diagnostik. Den binder disse elementer sammen og forklarer deres formål.</p>\n<h3>Grundregel</h3><p>RavRadar skal altid kunne forklare, hvilke data der blev brugt, hvordan de blev fortolket, og hvorfor vurderingen blev som den blev. Hvis en vurdering ikke kan forklares, er den ikke moden nok til at være en autoritativ del af systemet.</p>"
+      "title": "1. Formål og løfte",
+      "summary": "Hvad RavRadar lover – og ikke lover.",
+      "body": "<p>RavRadar er beslutningsstøtte til ravjagt langs danske kyster. Systemet hjælper med valg af sted og tidspunkt, men en høj score er aldrig et løfte om fund.</p><p>Rav skal være til stede, frigøres, transporteres, koncentreres eller aflejres og til sidst være tilgængeligt under jagtbare forhold. Appen skal derfor være ærlig om data, fallback, antagelser og usikkerhed.</p>"
     },
     {
-      "id": "vision",
-      "title": "2. Vision og produktprincipper",
-      "summary": "RavRadars rolle, begrænsninger og vigtigste designprincipper.",
-      "body": "<p>RavRadar bygger på den antagelse, at ravjagt kan understøttes af bedre data og bedre sammenhæng mellem data, men ikke reduceres til én simpel regel. Fralandsvind, kraftige bølger eller en bestemt vandstand kan hver for sig være relevante, men deres virkning afhænger af kystens geometri, havbund, hændelsesforløb og tidspunkt.</p>\n<h3>Produktets løfte</h3><p>RavRadar lover ikke fund. Det lover en sporbar vurdering baseret på de bedste tilgængelige data og en model, som kan forbedres gennem dokumenteret ekspertviden og observationer.</p>\n<h3>Ufravigelige principper</h3><ul><li><strong>DMI først:</strong> DMI er den foretrukne autoritative kilde for danske forhold, når en relevant og gyldig DMI-datakilde findes.</li><li><strong>Ingen opdigtede data:</strong> Manglende data må ikke maskeres som sikre målinger. Fallback skal markeres som fallback.</li><li><strong>Forklarlighed:</strong> Score, datakilde, retninger, vægte og begrænsninger skal kunne vises.</li><li><strong>Geografi før generalisering:</strong> En national regel må ikke uden videre overtrumfe dokumenteret lokal geografi.</li><li><strong>Kontrolleret læring:</strong> Observationer og AI må foreslå ændringer, men ikke aktivere dem uden review.</li><li><strong>Robusthed:</strong> Midlertidige netværks- eller kildesvigt må ikke få systemet til at blande data ukontrolleret.</li><li><strong>Versionssporbarhed:</strong> Vigtige model-, data- og regelændringer skal kunne spores og rulles tilbage.</li></ul>\n<h3>Ikke et facit</h3><p>En ravscore er en prioritering, ikke en sandhed. Den kan være høj uden fund og lav med fund. Brugerens faktiske observationer er derfor værdifulde, men de skal behandles med hensyn til søgetid, erfaring, præcision, sted og datakvalitet.</p>"
+      "id": "historie",
+      "title": "2. Projektets udvikling",
+      "summary": "Fra vandstandskort til et samlet, auditerbart ravsystem.",
+      "body": "<p>Projektet begyndte som et ønske om gratis vandstandsprognoser langs hele Danmark. Det udviklede sig til et landsdækkende system med zoner, vind, bølger, strøm, vandstand, RavScore, diagnostik og administration.</p><ul><li>DMI blev autoritativ kilde, mens Open-Meteo blev fallback.</li><li>Brede førstegenerationszoner blev erstattet af ét detaljeret register.</li><li>Stationsvalg blev udbygget fra afstand til topologi, historik og override.</li><li>RDKS bevarer historien uden at genindføre forældede løsninger.</li></ul>"
     },
     {
       "id": "natur",
-      "title": "3. Rav, kystprocesser og faglig model",
-      "summary": "Den fysiske tankemodel bag transport, ophobning og tilgængelighed.",
-      "body": "<p>Rav er lettere end de fleste mineralske sedimenter, men dets bevægelse afhænger stadig af størrelse, form, densitet, indkapslet luft, begroing og vandets saltholdighed. Rav kan transporteres sammen med tang, træ, kulstumper og andet organisk materiale, men ikke nødvendigvis på samme måde som sand.</p>\n<h3>En hændelseskæde frem for et øjebliksbillede</h3><p>RavRadar betragter gode forhold som resultatet af en kæde. Energi kan først løsne eller omfordele materiale. Strøm og bølger kan derefter transportere det. Vandstand og kystgeometri kan flytte den zone, hvor materialet aflejres. Senere kan roligere vand, lavere bølger eller fralandsvind gøre materialet synligt og tilgængeligt.</p>\n<ol><li><strong>Mobilisering:</strong> Kraftigt vejr og bølgeenergi påvirker bund og strandprofil.</li><li><strong>Transport:</strong> Strøm, bølgeinduceret bevægelse og vindpåvirkning flytter materiale.</li><li><strong>Sortering:</strong> Materialer med forskellig størrelse og densitet adskilles.</li><li><strong>Aflejring:</strong> Lokale strømfelter, revler, høfder, pynter, bugter og tangbælter skaber ophobning.</li><li><strong>Tilgængelighed:</strong> Sigt, bølger, vandstand og adgang afgør, om ravet kan findes.</li></ol>\n<h3>Vind</h3><p>Vind påvirker overfladestrøm, bølger og vandstand. Vindretning alene fortæller ikke sikkert, hvor rav transporteres. Derfor må vind ikke behandles som en direkte erstatning for strømdata. Fralandsvind kan efter en energirig hændelse give roligere kystvand og bedre adgang, men kan også føre let materiale væk fra en bestemt kyst under andre forhold.</p>\n<h3>Strøm</h3><p>Strømretning er central, men kræver en entydig retningskonvention. RavRadar skal altid kende forskellen på retningen, som en strøm bevæger sig <em>mod</em>, og en meteorologisk retning, som vind kommer <em>fra</em>. En 180-graders fejl kan vende modellens fysiske fortolkning. Derfor sammenlignes strømvektoren med zonens lokalt definerede retning fra hav mod land.</p>\n<h3>Bølger</h3><p>Bølger kan mobilisere og omfordele materiale, men kraftige bølger kan samtidig gøre søgning vanskelig og skjule rav. Scoren bør derfor skelne mellem energien, som har været til stede, og forholdene på selve søgetidspunktet.</p>\n<h3>Vandstand</h3><p>Vandstanden ændrer, hvor bølger bryder, hvilke revler og strandafsnit der påvirkes, og hvor ophobet materiale ender. En gunstig vandstand er ikke universel; den afhænger af kystprofil og hændelsesforløb.</p>\n<h3>Usikkerhed</h3><p>Ravtransport er ikke fuldt observerbar gennem de nuværende datakilder. Modellen skal derfor udtrykke usikkerhed og undgå overdreven præcision. Nye faglige antagelser bør indføres som hypoteser, testes mod historiske og fremtidige observationer og kun derefter få permanent vægt.</p>"
+      "title": "3. Rav og kystprocesser",
+      "summary": "Den procesmodel, som score og forklaring skal følge.",
+      "body": "<ol><li>Tilstedeværelse</li><li>Frigivelse</li><li>Transport</li><li>Koncentration eller aflejring</li><li>Tilgængelighed og jagtbarhed</li></ol><p>En statisk faktor som rev eller lavt vand må ikke alene skabe høj score. Den kan højst forstærke en dokumenteret dynamisk proces.</p><p>Regler mærkes som dokumenterede, observerede, hypoteser eller validerede i RavRadar.</p>"
     },
     {
       "id": "dataflow",
-      "title": "4. Systemarkitektur og dataflow",
-      "summary": "Fra eksterne kilder gennem cache og kvalitetssikring til zoneprognose.",
-      "body": "<p>RavRadar er opdelt i lag, så dataindsamling, databehandling, faglig fortolkning og præsentation kan kontrolleres hver for sig.</p>\n<pre class=\"flow\">Eksterne kilder\n      ↓\nIndsamling og rå cache\n      ↓\nParser og normalisering\n      ↓\nKomponentserier pr. tidspunkt\n      ↓\nKvalitetskontrol og kildevalg\n      ↓\nZone-routing og interpolation\n      ↓\nForecast Store\n      ↓\nProces- og scoremotor\n      ↓\nForklaring, kort og administration</pre>\n<h3>Indsamling</h3><p>Indsamlingslaget henter rå data og registrerer tidspunkt, kilde, modelkørsel og resultat. En mislykket hentning må ikke automatisk slette sidste kendte gyldige datasæt.</p>\n<h3>Cache</h3><p>Cachen reducerer belastning på datakilderne og gør systemet mere robust. Den er ikke blot en hastighedsoptimering; den gør det muligt at genbruge gyldige assets, når en ekstern kilde midlertidigt fejler eller ikke har publiceret en nyere model. Cachen skal have eksplicit retention, kapacitetsgrænse og audit.</p>\n<h3>Normalisering</h3><p>Alle tidsserier normaliseres til fælles enheder og kanoniske UTC-tidspunkter. Vind, strøm, bølger, vandstand og temperatur skal filtreres og valideres som separate komponentserier, før de kombineres. Det forhindrer, at manglende værdier i én komponent forurener en anden.</p>\n<h3>Kildevalg</h3><p>En gyldig DMI-serie har forrang. Fallback bruges kun for de manglende perioder eller komponenter efter en kontrolleret grænse. Systemet må ikke skifte frem og tilbage mellem kilder time for time, hvis det skaber kunstige spring eller inkonsistente forløb.</p>\n<h3>Forecast Store</h3><p>Forecast Store er det fælles, normaliserede datagrundlag for resten af systemet. Hver værdi bør kunne spores til kilde, issue-tid, forecast-tid og kvalitetsstatus. Scoremotoren skal ikke selv hente eksterne data.</p>"
+      "title": "4. Datakilder og pipeline",
+      "summary": "DMI-prioritet, separate komponentserier og sammenhængende forecast.",
+      "body": "<p>DMI er autoritativ dansk kilde. Open-Meteo er fallback. Vind, bølger, strøm, vandstand og temperatur behandles separat og samles på faste UTC-timer.</p><p>Timevis pendlen DMI → fallback → DMI er forbudt, fordi den kan skabe kunstige spring. En ærlig horisont på 118–119 timer accepteres frem for kunstigt at tvinge 120 timer.</p>"
+    },
+    {
+      "id": "stationer",
+      "title": "5. Observationer, cache og DMI-stationer",
+      "summary": "Stationens registerstatus er ikke det samme som dens datastatus.",
+      "body": "<p>RavRadar skal holde DMI-registerstatus, observationsstatus og prognose-/cachestatus adskilt. En station kan være midlertidigt tavs, men stadig prognosebrugbar, hvis gyldige cachedata findes.</p><p>Admin skal på sigt vise seneste observation, cache gyldig til, samlet anvendelighed og historisk leveringsstabilitet. Kendte stationer bevares med historik i stedet for at forsvinde efter en mangelfuld kørsel.</p><p>Administratoroverride erstatter automatikken, når override opfylder de valgte leveringskrav. Det automatiske valg kan vises som reference.</p>"
+    },
+    {
+      "id": "retninger",
+      "title": "6. Retninger og lokal geometri",
+      "summary": "Vind, strøm og pålandsretning må aldrig blandes sammen.",
+      "body": "<ul><li>Vind: hvor vinden kommer fra.</li><li>Strøm: hvor vandet bevæger sig hen.</li><li>Påland: lokal retning fra hav mod land.</li></ul><p>En korrekt matematisk konvention garanterer ikke korrekt zonegeometri. Land-/havpunkt og <code>onshoreDirectionDeg</code> skal auditeres lokalt.</p><p>En forklarende diskussion om en funktion er ikke automatisk en bestilling på at ændre den.</p>"
     },
     {
       "id": "zoner",
-      "title": "5. Zoner, geometri og routing",
-      "summary": "Hvordan Danmark opdeles, og hvordan data kobles korrekt til hver kyst.",
-      "body": "<p>En zone repræsenterer et kystafsnit, som er tilstrækkeligt ensartet til at få én prognose og én faglig kontekst. Zonen har identitet, navn, geometri, kysttype, land- og havrelationer samt routing til relevante datakilder.</p>\n<h3>Havpunkt og landpunkt</h3><p>For at fortolke transport skal systemet kende den lokale retning fra åbent vand mod land. Et havpunkt og et landpunkt danner et kontrolbart anker. Retningen skal valideres visuelt på kortet og mod kystens faktiske geometri.</p>\n<h3>OnshoreDirectionDeg</h3><p><code>onshoreDirectionDeg</code> angiver kompasretningen fra hav mod land. Den bruges til at beregne, hvor stor en del af en vind- eller strømvektor der peger ind mod eller væk fra kysten. Værdien må ikke udledes blindt af et polygoncentrum, hvis kysten er buet, smal eller består af flere eksponerede sider.</p>\n<h3>Flere ankre</h3><p>Buede zoner kan kræve flere retningsankre. Prognosen kan da vægte ankeret efter nærmeste kystafsnit eller relevante datapunkter. Formålet er ikke større matematisk kompleksitet, men at undgå en grov retning, som er korrekt i den ene ende af zonen og forkert i den anden.</p>\n<h3>Vandstandsstationer</h3><p>Stationer vælges efter mere end afstand. Systemet skal tage hensyn til hydrologisk forbindelse, samme bassin eller fjordside, stationens status, datadækning og mulighed for interpolation mellem en primær og sekundær station. Automatisk valg skal vises i admin før en eventuel override.</p>\n<h3>Persistens</h3><p>En station, som tidligere er fundet i DMI-registeret, bør bevares i RavRadars stationsregister, selv hvis den senere bliver inaktiv eller midlertidigt ikke leverer data. Status skal ændres; historikken skal ikke forsvinde.</p>"
+      "title": "7. Zoner og kystlinjer",
+      "summary": "Ét register, naturlig kyst og præcis redigering.",
+      "body": "<p>Alle dele af systemet bruger ét detaljeret officielt zoneregister. Brede gamle zoner er udfaset. Als Odde og Helberskov ligger nord for Mariager Fjord mod Øster Hurup.</p><p>Kysteditoren skal bevare præcisionsmarkøren, understøtte glatte lokale kurver, deaktivering uden datatab, central lagring og rollback. Naturlig kyst må ikke ukritisk erstattes af retningen på moler og kajer.</p>"
     },
     {
       "id": "score",
-      "title": "6. Procesmodel og RavScore",
-      "summary": "Hvordan komponenter bliver til en forklarlig prioritering.",
-      "body": "<p>RavScore er en samlet vurdering på en begrænset skala. Den skal fortolkes som relativ mulighed og praktisk egnethed, ikke som sandsynligheden for at finde et bestemt antal gram rav.</p>\n<h3>Lagdeling</h3><ol><li><strong>Datakvalitet:</strong> Er input friskt, komplet og troværdigt?</li><li><strong>Fysisk proces:</strong> Understøtter hændelsesforløbet mobilisering, transport eller aflejring?</li><li><strong>Lokal geografi:</strong> Passer retninger og eksponering til zonen?</li><li><strong>Tilgængelighed:</strong> Er bølger, vandstand og sigt forenelige med søgning?</li><li><strong>Regler og begrænsninger:</strong> Findes veldokumenterede lokale eller nationale korrektioner?</li><li><strong>Forklaring og sikkerhed:</strong> Hvor sikkert er resultatet, og hvilke kilder bar vurderingen?</li></ol>\n<h3>Retningsvirkning</h3><p>Vektorer bør fortolkes med projektion mod zonens onshore-retning. En strøm næsten parallelt med kysten er ikke det samme som en strøm direkte ind mod land. Samtidig kan langs-kyst-transport være vigtig ved pynter og bugter. Modellen skal derfor kunne skelne mellem direkte onshore-komponent og langs-kyst-komponent.</p>\n<h3>Hændelseshukommelse</h3><p>Gode forhold kan afhænge af vejret i timerne eller dagene før søgetidspunktet. Scoren bør derfor kunne medtage akkumuleret energi og tid siden en kraftig hændelse fremfor kun øjebliksværdien.</p>\n<h3>Caps og gates</h3><p>Ved alvorlige datamangler eller farlige forhold kan systemet begrænse eller blokere en score. En cap skal altid forklares. Den må ikke skjule, at de fysiske signaler ellers var positive.</p>\n<h3>Forklaringen er en del af resultatet</h3><p>Et scoretal uden forklaring er utilstrækkeligt. Brugeren bør kunne se de vigtigste positive og negative bidrag, anvendte datakilder og usikkerheder.</p>"
+      "title": "8. Procesmodel og RavScore",
+      "summary": "Fra rådata til forklarlig score.",
+      "body": "<p>Scoreforklaringen skal vise rådata, kilde, retninger, delscorer, bonusser, fradrag, caps, aktive regler og eventuelt AI-bidrag.</p><p>RavRadar skal også kunne forklare, hvorfor en zone afviger fra nabozonen. Usandsynligt høje scorer skal flagges til audit.</p>"
+    },
+    {
+      "id": "vandstand",
+      "title": "9. Vandstand og kontinuitet",
+      "summary": "Undgå kunstige spring uden at udglatte ægte tidevand.",
+      "body": "<p>Historiske timevise kildeskift skabte kunstige vandstandsspring og må ikke vende tilbage. Store svingninger i Vadehavet kan være ægte tidevand og skal vurderes ud fra mønster, kilde og geografi.</p><p>Observation og prognose skal vises som forskellige datatyper. Mismatch, eksempelvis ved Frederikshavn, skal kunne spores og forklares.</p>"
     },
     {
       "id": "admin",
-      "title": "7. Administration og faglige arbejdsgange",
-      "summary": "Hvordan ændringer foretages sikkert og forståeligt.",
-      "body": "<p>Administrationen er RavRadars kontrolrum. Den skal være brugbar for en person, som ikke har skrevet koden. Hvert modul skal derfor forklare formål, arbejdsgang, resultat og risiko.</p>\n<h3>Arbejdsgang for en ny regel</h3><ol><li>Beskriv observationen eller den faglige sammenhæng i almindeligt sprog.</li><li>Angiv kilde, geografi, betingelser og forventet virkning.</li><li>Opret reglen som kladde.</li><li>Test med realistiske og grænsetilfælde.</li><li>Kontrollér at forklaringen til brugeren er forståelig.</li><li>Aktivér først efter review.</li><li>Følg effekten i observationer og scorefordeling.</li></ol>\n<h3>Arbejdsgang for stationsrouting</h3><ol><li>Vælg zone og se systemets automatiske forslag.</li><li>Kontrollér stationernes officielle status og geografiske placering.</li><li>Kontrollér hydrologisk forbindelse og afstand.</li><li>Brug kun override, når automatisk valg er dokumenteret uhensigtsmæssigt.</li><li>Registrér begrundelsen.</li><li>Kør routing- og kontinuitetstest.</li></ol>\n<h3>Arbejdsgang for geometri</h3><ol><li>Find zonen på kortet.</li><li>Kontrollér at den dækker det navngivne kystafsnit.</li><li>Kontrollér hav- og landpunkt.</li><li>Kontrollér pilen for hav mod land.</li><li>Tilføj flere ankre ved kurvede zoner.</li><li>Kør retningsaudit og scoringsregression.</li></ol>\n<h3>Ekspertrettelser</h3><p>Faglige rettelser indsendes fra denne drejebog og gemmes centralt. En rettelse ændrer ikke automatisk teksten eller modellen. Den får en status og behandles som et review-emne. Når en rettelse accepteres, skal dokumentation, kode, regler og tests vurderes samlet.</p>"
-    },
-    {
-      "id": "ekspertreview",
-      "title": "8. Ekspertreview og sikker lagring",
-      "summary": "Hvordan ekspertkommentarer bevares, vurderes og omsættes til ændringer.",
-      "body": "<p>Ekspertforslag er projektdata, ikke midlertidige kommentarer. De må derfor ikke ligge alene i en projektfil, en browser eller en ZIP-pakke.</p>\n<h3>Autoritativ lagring</h3><p>Forslag gemmes i en særskilt Supabase-tabel. Tabellen ligger uden for GitHub Pages-deployet og påvirkes ikke, når projektfiler udskiftes. Hver post indeholder dokumentversion, afsnit, markering, foreslået tekst, begrundelse, fagområde, status, opretter og tidsstempler.</p>\n<h3>Uforanderlig historik</h3><p>Ændringer i status eller indhold kopieres til en historiktabel. Dermed kan man senere se, hvad der oprindeligt blev foreslået, hvem der behandlede det, og hvorfor det blev accepteret eller afvist.</p>\n<h3>Nødlagring</h3><p>Hvis central lagring ikke er tilgængelig, gemmes forslaget som lokal kladde på enheden og kan eksporteres som JSON. Lokal lagring er ikke betragtet som en sikker endelig aflevering. Brugerfladen skal tydeligt vise, om et forslag er gemt centralt eller kun lokalt.</p>\n<h3>Behandlingsstatus</h3><ul><li><strong>Ny:</strong> Modtaget, ikke vurderet.</li><li><strong>Under vurdering:</strong> Faglig og teknisk konsekvens analyseres.</li><li><strong>Accepteret:</strong> Ændringen er godkendt til implementering.</li><li><strong>Implementeret:</strong> Dokumentation og relevante systemdele er opdateret.</li><li><strong>Afvist:</strong> Forslaget er vurderet og fravalgt med begrundelse.</li></ul>\n<h3>Ingen direkte modelændring</h3><p>Selv en højt kvalificeret kommentar må ikke direkte ændre produktionsscore. Den skal først omsættes til en præcis hypotese, konsekvensanalyse og tests.</p>"
+      "title": "10. Administration og regelbygger",
+      "summary": "Menneskeførst i stedet for datamodelførst.",
+      "body": "<p>En ikke-teknisk administrator skal forstå hvert felt, dets effekt og et konkret eksempel. Regelbyggeren skal være trinvist opbygget med livepreview, forståelig geografi og konflikttjek.</p><p>Prioritet vises som Lav, Normal, Høj eller Kritisk. Dialoger lukkes via kryds, Annuller, Escape og klik udenfor med advarsel ved ikke-gemte ændringer.</p>"
     },
     {
       "id": "ai",
-      "title": "9. AI, læring og menneskelig kontrol",
-      "summary": "AI som analyseværktøj uden automatisk autoritet.",
-      "body": "<p>AI kan hjælpe med at sammenfatte observationer, finde mønstre, formulere regler, analysere ekspertrettelser og pege på berørte kodeområder. AI må ikke opfinde manglende data eller præsentere en statistisk sammenhæng som en fysisk årsag uden grundlag.</p>\n<h3>Tilladte roller</h3><ul><li>Foreslå hypoteser og testcases.</li><li>Sammenligne ekspertkommentarer med nuværende dokumentation.</li><li>Finde mulige konflikter mellem regler.</li><li>Udarbejde konsekvensanalyse og implementeringsplan.</li><li>Forklare resultater i almindeligt sprog.</li></ul>\n<h3>Ikke tilladte roller</h3><ul><li>Aktivere scoreændrende regler uden review.</li><li>Overskrive DMI-data med genererede værdier.</li><li>Skjule usikkerhed eller kildeblanding.</li><li>Ændre geometri alene på baggrund af tekst uden kortkontrol.</li></ul>\n<h3>Fra kommentar til systemændring</h3><p>Når en ekspert indsender en rettelse, bør AI først udtrække den konkrete påstand, berørte zoner eller processer, forventet effekt og nødvendige tests. Derefter vurderer et menneske, om forslaget skal implementeres.</p>"
+      "title": "11. AI, ekspertviden og feedback",
+      "summary": "AI hjælper, men bestemmer ikke alene.",
+      "body": "<p>AI kan strukturere fri tekst, forklare, auditere og foreslå mønstre. AI må ikke aktivere regler, ændre vægte eller lære direkte af rå feedback uden menneskelig kontrol og validering.</p><p>Både fund og ture uden fund er nødvendige og skal knyttes til zone, tid, viste data og scoremotorversion.</p>"
+    },
+    {
+      "id": "lagring",
+      "title": "12. Central lagring og rollback",
+      "summary": "Historik skal følge ændringerne.",
+      "body": "<p>Zoner, geometri, stationer, regler, ekspertreviews og rettigheder skal lagres centralt med revisionshistorik. Lokale kladder er nødmekanisme.</p><p>Rollback er nødvendig, så geografiske og regelmæssige ændringer kan spores og tilbageføres sikkert.</p>"
     },
     {
       "id": "drift",
-      "title": "10. Drift, kvalitet og release",
-      "summary": "Krav til opdateringer, tests og overvågning.",
-      "body": "<p>En RavRadar-release er ikke færdig, blot fordi siden kan åbnes. Dataflow, tests, versionsnumre og dokumentation skal stemme overens.</p>\n<h3>Minimumskontrol før release</h3><ul><li>Forecast-tider er unikke og monotone.</li><li>Horisonten er realistisk og tydeligt angivet.</li><li>Ingen ukontrolleret timevis kildezigzag.</li><li>DMI- og fallback-status kan aflæses pr. komponent.</li><li>Aktive og historiske stationer skelnes.</li><li>Zone- og retningsaudit består.</li><li>Score- og regeltests består.</li><li>Versionen er ens i relevante filer.</li><li>Drejebogen er opdateret ved metodeændringer.</li></ul>\n<h3>Diagnostik</h3><p>Diagnostik skal beskrive årsager, ikke kun symptomer. Tilstanden “ingen frisk marine data” bør eksempelvis skelne mellem ingen nyere model, genbrugt gyldig cache, downloadfejl, parsefejl og manglende assets.</p>\n<h3>Backup og persistens</h3><p>Kildekode versionsstyres i GitHub. Ekspertrettelser og andre løbende admin-data lagres centralt i databasen med historik. Projektopdateringer må aldrig nulstille disse tabeller.</p>"
+      "title": "13. Diagnostik, drift og release",
+      "summary": "Brugerstatus, DMI-status og pipeline-status er forskellige.",
+      "body": "<p>En næsten komplet brugerprognose kan eksistere samtidig med degraderet DMI-dækning, fordi fallback udfylder data. Diagnostikken skal forklare acquisition, konvertering, horisont, observationer, cache og fallback.</p><p>Ved hver release skal RDKS, changelog og relevante håndbogsafsnit opdateres, og tests skal bestå, før ZIP-filen afleveres.</p>"
+    },
+    {
+      "id": "rdks",
+      "title": "14. RDKS og historiske chats",
+      "summary": "Projektets vedvarende og versionsstyrede hukommelse.",
+      "body": "<p>RDKS indeholder aktive beslutninger, krav, implementeringsstatus, kendte issues og historiske kilder. Syv gamle chats er kronologiseret efter tekst og versionsforløb og bevaret med hash og sporbarhed.</p><p>Gamle chats kan forklare, hvorfor projektet ændrede retning, men de giver aldrig alene tilladelse til kodeændringer. Nyere aktive beslutninger vinder.</p>"
+    },
+    {
+      "id": "status",
+      "title": "15. Aktuel status og næste spor",
+      "summary": "Hvad der især mangler lige nu.",
+      "body": "<ul><li>Fuld observations- kontra prognose-/cachestatus pr. station.</li><li>Cacheudløb og historisk stabilitet i admin.</li><li>Notifikation ved nye stationer, udfald, genoptagelse og bedre routing.</li><li>Fortsat officiel DMI-stationsaudit.</li><li>Komplet RavScore-forklaring og nabozoneaudit.</li><li>Mobil regressionstest af kysteditor og regelbygger.</li><li>Ekstern ekspertvalidering af faglige rav- og sedimentantagelser.</li></ul>"
     },
     {
       "id": "ordbog",
-      "title": "11. Ordbog",
-      "summary": "Fælles betydning af centrale begreber.",
-      "body": "<dl><dt>Asset</dt><dd>En fil eller datapakke fra en ekstern modelkørsel.</dd><dt>Bracket</dt><dd>Primær og eventuel sekundær station, som tilsammen repræsenterer en zone.</dd><dt>Cache</dt><dd>Kontrolleret genbrugslager for hentede data.</dd><dt>Fallback</dt><dd>Alternativ kilde, der kun bruges, når den foretrukne kilde ikke dækker gyldigt.</dd><dt>Forecast Store</dt><dd>Det normaliserede fælles datagrundlag for prognoser.</dd><dt>OnshoreDirectionDeg</dt><dd>Kompasretningen fra hav mod land for et kystafsnit.</dd><dt>Routing</dt><dd>Reglerne, som kobler en zone til relevante stationer eller modelpunkter.</dd><dt>Zone</dt><dd>Et afgrænset kystafsnit med egen geometri, prognose og faglig kontekst.</dd><dt>Issue-tid</dt><dd>Tidspunktet hvor en modelprognose blev udstedt.</dd><dt>Forecast-tid</dt><dd>Tidspunktet som prognoseværdien gælder for.</dd></dl>"
+      "title": "16. Ordbog",
+      "summary": "De vigtigste begreber.",
+      "body": "<dl><dt>Observation</dt><dd>Faktisk måling.</dd><dt>Prognose</dt><dd>Modelberegnet fremtidig værdi.</dd><dt>Cache</dt><dd>Tidligere hentet data, som stadig kan være gyldig.</dd><dt>Routing</dt><dd>Valg og vægtning af datakilder eller stationer for en zone.</dd><dt>Override</dt><dd>Administratorens bevidste erstatning af automatik.</dd><dt>RDKS</dt><dd>RavRadar Decision &amp; Knowledge System.</dd></dl>"
     }
   ]
 }

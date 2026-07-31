@@ -1,0 +1,266 @@
+tirsdag 15.43
+RavRadar(68).zip
+Zip-arkiv
+logs_82287111446(3).zip
+Zip-arkiv
+ravradar-diagnostik.zip
+Zip-arkiv
+analyser grundigt og lav rettelser. lær af hvad vi har gjort som virker og ikke virker. søg information grundigt
+Tænkte i 4m 36s
+Jeg har gennemgået RavRadar 4.0.12, GitHub Actions-loggene, runtime-diagnostikken og conditions-dataene samlet og lavet RavRadar 4.0.13.
+Hovedfund
+GitHub-kørslen fejlede ikke. Den:
+hentede den tidligere deployede cache korrekt,
+gennemførte DMI-bulkbehandlingen,
+skrev conditions.json,
+deployede til GitHub Pages,
+havde ingen 429-fejl i den analyserede kørsel,
+bevarede tidligere data korrekt.
+Den vigtigste uoverensstemmelse var:
+Bulkdiagnostikken viste 101 zoner med marine DMI-data.
+93 zoner havde vandstand samt begge strømkomponenter i samme prognosetrin.
+Men den færdige DMI-cache rapporterede kun:
+8 zoner med strøm,
+8 zoner med vandstand,
+6 komplet dækkede DMI-zoner.
+Det betød, at GRIB-filerne og parameterfortolkningen faktisk virkede væsentligt bedre, end den færdige diagnostik viste.
+Den konkrete fejl
+Bulkdata hentes med 3-timers prognosetrin for at begrænse downloadmængde og køretid.
+Funktionen, der valgte den aktuelle prognoseværdi, accepterede imidlertid kun et modeltrin, hvis det lå højst 90 minutter fra det aktuelle tidspunkt.
+Det gav problemer under opvarmningen, fordi:
+ikke alle 3-timers trin endnu var downloadet,
+der derfor kunne være 3–6 timer mellem de tilgængelige trin,
+gyldige strøm- og vandstandsdata lå i cachen,
+men blev afvist som aktuelle,
+hvorefter Open-Meteo blev vist som datakilde i stedet.
+Rettelser i 4.0.13
+Jeg har ændret udvælgelsen, så tolerancen nu følger prognosens reelle tidsopløsning:
+timedata beholder den normale stramme tolerance,
+3-timers bulkdata kan anvende et nærliggende modeltrin inden for op til ét modelinterval plus en lille buffer,
+maksimum er begrænset til 190 minutter,
+den eksplicitte model-egenskab forecastCadenceMinutes gemmes i DMI-recorden,
+en specifik tolerance kan stadig angives og tilsidesætter automatikken.
+Jeg har også tilføjet en regressionstest, der efterligner situationen med manglende mellemtrin under bulk-opvarmningen.
+Hvad der virkede og derfor er bevaret
+Jeg har ikke ændret følgende fungerende dele:
+rotation mellem DMI-modelsamlinger,
+bevarelse af tidligere bulkdata,
+checkpoint efter hvert behandlet GRIB-trin,
+komponentvis fallback,
+3-timers bulk-stride,
+sekventielle DMI-kald,
+deployed-cache hydration,
+beskyttelsen mod at overskrive en fungerende cache med en mislykket kørsel.
+DMI anbefaler selv STAC frem for EDR ved større datamængder. RavRadars nuværende hovedstrategi med hele GRIB-filer er derfor rigtig for 231 zoner; EDR bør fortsat kun være reparations- og fallbackmekanisme. DMI dokumenterer også DKSS-samlingerne som de korrekte stormflods- og havmodeller for blandt andet indre danske farvande, Nordsø/Østersø og Limfjorden.
+Testresultat
+Hele projektets valideringspakke består, herunder:
+scoremotor,
+strøm- og vindretninger,
+onshore-geometri,
+231 zoners register,
+DMI forecast store,
+DMI acquisition resilience,
+DMI bulk-download,
+vandstandsdiagnostik,
+kystbaseret interpolation,
+datakvalitet,
+releaseversion,
+adminens retningsankre.
+Versionen er konsekvent sat til 4.0.13.
+Download RavRadar 4.0.13 med rettelser
+Efter upload bør næste diagnostik især vise en tydelig stigning fra de nuværende 8 DMI-strømzoner, også før alle tre marine modelsamlinger er fuldt opvarmet.
+logs_82306833000.zip
+Zip-arkiv
+diagnose.zip
+Zip-arkiv
+RavRadar(69).zip
+Zip-arkiv
+analyser grundigt og giv mig en status samt forslag til rettelser
+tirsdag 18.11
+RavRadar(70).zip
+Zip-arkiv
+diagnose (2).zip
+Zip-arkiv
+logs_82329446371.zip
+Zip-arkiv
+analyser grundigt og kom med løsninger og forbedringer
+RavRadar(71).zip
+Zip-arkiv
+jeg er endnu ikke færdig med at flytte land og havpunkter i zonerne, så det skal systemet være klar på at jeg ændrer løbende. ellers skal du sige til, hvis jeg skal gøre det inden vi gør mere. Jeg vil gerne have dig til at løse så mange issues som muligt nu, af de ting du fandt i analysen. projekt er vedhæftet, så du kan lave det.
+tirsdag 19.42
+RavRadar(72).zip
+Zip-arkiv
+diagnose (3).zip
+Zip-arkiv
+logs_82350151556.zip
+Zip-arkiv
+analyser grundigt for ændringer, fejlrettelser og forbedringer vi skal implementere
+tirsdag 21.09
+RavRadar(73).zip
+Zip-arkiv
+diagnose (4).zip
+Zip-arkiv
+logs_82370810401.zip
+Zip-arkiv
+analyser grundigt og lav en plan ud fra analysen, fejl og mangler. Kig også på projektet i sin helhed ift alt hvad vi har talt om det skal kunne
+RavRadar(74).zip
+Zip-arkiv
+Husk det hele, så det er den proces vi primært arbejder ud fra! Derudover ønsker jeg en ny funktion i admin delen, hvor jeg via et kort kan redigere hvilke målestationer vores forskellige zoner skal trække vandstand fra til interpolering. Implementer nu så meget som muligt fra planen. projekt zip er vedhæftet.
+IMG_873AFBF6-5042-435D-A6F5-5FEB0342998F.jpeg
+DMI målestationerne er ikke på kortet. Det skal også ordnes.
+RavRadar(75).zip
+Zip-arkiv
+diagnose (5).zip
+Zip-arkiv
+logs_82386252313.zip
+Zip-arkiv
+i næste version skal du implemetre så mange af vores rettelser som muligt, af dem vi også har på vores TO-DO liste
+IMG_FD3BF0A2-12B9-416D-A424-4730507BD9C6.jpeg
+Stationerne er der stadig ikke
+IMG_02E37A23-7C7A-4EAB-B807-5B1AE179CBD0.jpeg
+Se hvor meget vandstanden springer. Det er simpelthen ikke korrekt. Du skal analysere grundigt hvorfor de gør det og så skal det rettes i næste opdatering.
+RavRadar(76).zip
+Zip-arkiv
+diagnose (6).zip
+Zip-arkiv
+logs_82394987651.zip
+Zip-arkiv
+vi er klar til at lave flere rettelser og tilføjelser som aftalt. start med at analysere de filer jeg sender og gennemgå vores planer og projektet som helhed.
+RavRadar(77).zip
+Zip-arkiv
+jeg er enig i alt dette. De ting der først skal udføres på et senere tidspunkt, skal du huske, som feks at stoppe alle kald til metoo når vi er sikre på dmi leverer. Over hele projektet må vi også sige at 118 prognosetimer er fint. vi skal ikke være rigide ift 120 timer, når det giver andre udfordringer og vi så feks casher for meget fra andre udbydere end dmi. Analyser grundigt hvad du lige har gennemgået for mig og byg implementeringen
+IMG_9784A1B9-4E1C-45CE-9FDF-6790D995742B.jpeg
+Her vil jeg gerne kunne se hvilken eller hvilke stationer hver zone, systemet selv har valgt, så jeg bare kan redigere dem, hvis det er nødvendigt.
+RavRadar(78).zip
+Zip-arkiv
+diagnose (7).zip
+Zip-arkiv
+logs_82412496648.zip
+Zip-arkiv
+analyser grundigt og implementer planen, rettelser og forbedringer
+RavRadar(79).zip
+Zip-arkiv
+diagnose (8).zip
+Zip-arkiv
+logs_82420497577(1).zip
+Zip-arkiv
+jeg synes ikke rigtigt strøm og vandstand har fyldet flere zoner ud de sidste par downloads? analyser filer og gør klar til næste implementering iflg vores plan
+RavRadar(80).zip
+Zip-arkiv
+implementer det sammen med du fortsætter med at implementere andre rettelser og forbedringer ud fra vores plan
+RavRadar(81).zip
+Zip-arkiv
+glemte du ikke at vi har flere ting på vores liste som vi skal have implementeret? jeg har vedhæftet projektet som zip.
+IMG_F1C6D996-5DBB-42A9-8F37-0FEB9C24A38F.jpeg
+IMG_D9FDCBDF-EE87-486A-9A89-EF390A20DFE3.jpeg
+IMG_E693AC49-AADD-41FC-841D-6609A4C034D1.jpeg
+IMG_3F36229A-E0CE-4D7A-B244-464DC9B9CE6A.jpeg
+IMG_CF6BF7CE-B5CB-4688-943F-4428988AD6AA.jpeg
+IMG_D8CFE73C-4899-4F93-8067-008AA64C0402.jpeg
+Okay. Men hvad gør jeg så?
+IMG_E7C9A4EC-8C1C-4914-8667-B14BE10C8D9D.jpeg
+Jeg har jo ændret stinavnet
+IMG_76BE9DFE-D579-4FEF-9D83-3E97C0701496.jpeg
+IMG_528CF845-5A4B-4562-953B-CEF8A2808563.jpeg
+Jeg tror altså stadig ikke den har fundet filerne. Vi har jo ikke valgt hvor den skal finde projektet
+IMG_60E0B35B-90AD-4FDA-BA27-237FC21DC294.jpeg
+Du er alt for hurtig! Tror du ikke vi skal vise den det her?
+IMG_63C43EFD-054A-478F-9455-5BB01174F486.jpeg
+IMG_1F55A47A-3740-4000-A480-41EE3DA44A93.jpeg
+Jeg tror vi er på afveje. Tænk dig om for helvede
+IMG_A8695111-3685-4005-9E9B-09A39EECF82E.jpeg
+IMG_98540BBF-A2AE-474C-868E-CF99F14FD02A.jpeg
+IMG_606C2450-DBC4-412D-A920-1B81E77D11DF.jpeg
+IMG_BE87F845-F172-411B-B18A-312065B8236C.jpeg
+IMG_72F296EC-4324-45C2-B4CD-4B4217E32557.jpeg
+Men hvilken af disse er det så vi arbejder med? Og skal jeg slette 1 af dem?
+IMG_6093E37D-CFF6-4F98-A923-8D34E96502BA.jpeg
+RavRadar(82).zip
+Zip-arkiv
+IMG_D8755C5A-8529-49DB-8B1E-4354EA045D5D.jpeg
+Den er lagt ind nu uden problemer. Burde dette på billedet rette sig op nu?
+IMG_30C7BF78-A92B-4C9D-9DEA-C2400B6C1A76.jpeg
+Burde der ikke være en station i Hals?
+IMG_ED518F11-DAC6-40F1-9BEC-9FA126E7B7CF.jpeg
+Her er et komplet billede. I morgen vil jeg gerne have at du tjekker op på at det stemmer overens med de stationer som dmi rent faktisk har! Husk det
+IMG_2B050C2D-65BD-4B8E-A646-83575BB7AB24.jpeg
+B563C4CF-D8AF-48A9-82A0-12A72336EF03.png
+Her er Frederikshavn.iflg dmi skulle vandstanden nu være minus 3. Iflg vores time tabel skulle den være +5
+Ja, og det gør observationen endnu mere interessant.
+Du sammenligner nu:
+DMI's egen vandstandsside (aktuel vandstand): −3 cm
+RavRadars "nu" / første time i tabellen: +5 cm
+Det er altså ikke to forskellige hjemmesider eller tredjepartsdata – det er DMI mod RavRadar, og derfor skal de normalt ligge tæt på hinanden.
+En forskel på 8 cm kan godt forekomme, hvis RavRadar viser en prognose for kl. 03:00, mens DMI-kortet viser en observation kl. 03:11, men det er stort nok til, at vi ikke bare skal antage, at det er normalt.
+Det, jeg nu mistænker mest
+Jeg vil rangere mulighederne sådan:
+Vi bruger ikke den samme DMI-kilde, som DMI's vandstandskort viser. Det er min største mistanke.
+Vi henter prognosedata, men sammenligner med observationsdata.
+Der er en fejl i koblingen mellem zone og station, så Frederikshavn-zonen får vandstand fra en anden station.
+Vi læser den rigtige prognose, men med et forkert tidspunkt eller en forkert reference.
+Det bør vi kontrollere
+For hver zone bør diagnostikken vise noget i stil med:
+Zone: Frederikshavn
+DMI-station: Frederikshavn Havn
+DMI observationsværdi nu: −3 cm
+DMI prognose kl. 03:00: ?
+RavRadar viser: +5 cm
+Afvigelse til observation: 8 cm
+Afvigelse til prognose: ?
+Hvis RavRadar faktisk viser den samme prognose, som DMI selv udstiller, er alt fint. Hvis ikke, har vi fundet en reel fejl.
+Jeg synes faktisk, at dette er en vigtigere kontrol end de sidste 12 marine zoner. Det hjælper ikke meget at have næsten fuld DMI-dækning, hvis den vandstand, vi viser brugeren, ikke stemmer overens med DMI's egne værdier. Det bliver derfor et af de første punkter, jeg vil dykke ned i, når vi analyserer næste kørsel.
+IMG_58E870C1-FE49-4BE7-BD65-AA8DB086EFBF.jpeg
+Her er vores kilder
+Det billede hjælper faktisk meget.
+Det fortæller os flere vigtige ting:
+Zonen bruger Frederikshavn I og Frederikshavn II.
+De ligger begge ca. 3,5 km fra zonepunktet.
+De vægtes 50 % / 50 %.
+Der er altså ikke tale om, at zonen henter vandstand fra Hals eller Skagen.
+Det betyder, at hvis DMI's vandstandskort viser −3 cm ved Frederikshavn, mens RavRadar viser +5 cm, så skyldes forskellen sandsynligvis ikke et forkert stationsvalg.
+Så er der tre ting tilbage, vi skal undersøge
+1. Henter vi den rigtige datatype?
+DMI har både:
+aktuelle observationer
+prognoser
+Hvis RavRadar læser prognosen, mens du kigger på observationskortet, kan der være en reel forskel.
+2. Henter vi den rigtige prognose?
+Det kan være, at vi bruger:
+en anden DMI-forecast-model,
+en anden reference,
+eller et forkert tidspunkt.
+3. Bliver værdien ændret i vores egen kode?
+Det er den mulighed, jeg er mest interesseret i at få af- eller bekræftet.
+Det kunne være:
+interpolation mellem Frederikshavn I og II,
+en konvertering,
+en cacheværdi,
+eller en efterbehandling.
+Jeg synes faktisk, vi mangler én vigtig ting i admin
+For vandstand burde der stå noget i stil med:
+Frederikshavn I
+rå DMI-værdi: -3 cm
+Frederikshavn II
+rå DMI-værdi: -3 cm
+Interpoleret:
+-3 cm
+Vist til bruger:
++5 cm
+Hvis de sidste to linjer ikke er ens, ved vi med det samme, at fejlen ligger efter datahentningen.
+Min mistanke lige nu
+Det nye billede flytter faktisk min mistanke.
+Tidligere troede jeg, at det måske var stationerne.
+Nu tror jeg mere, at stationerne er korrekte, men at der sker noget mellem den rå DMI-værdi og den værdi, RavRadar viser til brugeren.
+Det er præcis den slags fejl, der kan være svær at opdage uden en detaljeret sporbarhed i diagnostikken. Jeg synes derfor, at næste skridt bør være at få vist de rå DMI-vandstandsværdier fra Frederikshavn I og II side om side med den endelige værdi, så vi kan se præcis, hvor afvigelsen opstår. Det vil hurtigt afgøre, om problemet ligger i datahentningen eller i vores egen behandling af data.
+På dmi hjemmeside står der at det er aktuelle målinger
+Ja, præcis — så DMI-billedet viser en faktisk observation på −3 cm, ikke en prognose.
+RavRadars tabel viser derimod sandsynligvis DMI’s modelprognose for kl. 03.00, som er +5 cm. Derfor sammenligner vi:
+faktisk målt vandstand kl. 03.11: −3 cm
+prognosticeret vandstand kl. 03.00: +5 cm
+Afvigelsen på 8 cm betyder ikke automatisk, at RavRadar læser data forkert. En prognose kan afvige fra den faktiske måling. Men vi har et reelt problem, hvis RavRadar fremstiller +5 cm som den aktuelle vandstand uden at fortælle, at det er en prognose.
+Det bør derfor rettes eller tydeliggøres sådan:
+feltet øverst mærkes “Prognose nu” eller “Prognose for nærmeste hele time”
+eventuelt tilføjes separat: “Seneste DMI-måling: −3 cm kl. 03.11”
+admin skal vise både observation og prognose samt afvigelsen
+vi skal kontrollere, om Frederikshavn I og II er prognosestationer, observationsstationer eller dublerede poster med forskellige stations-id’er
+Den bedste løsning er, at RavRadar bruger aktuel DMI-måling som værdien nu, mens de kommende timer fortsat kommer fra DMI-prognosen. Så bliver overgangen også synlig og ærlig. Denne Frederikshavn-sammenligning skal med som konkret test i næste analyse.

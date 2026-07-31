@@ -1,5 +1,8 @@
-# DEC-0001 – RDKS som gældende projektviden
-Status: AKTIV
-Introduceret: 4.0.51
+# DEC-0001 – RDKS er projektets gældende hukommelse
 
-RDKS er den strukturerede autoritet for gældende projektbeslutninger. Historiske chats bevares som kilder, men kan ikke overtrumfe nyere aktive beslutninger eller implementeret arkitektur.
+- **Status:** AKTIV
+- **Prioritet:** KRITISK
+- **Introduceret:** 4.0.51
+- **Senest bekræftet:** 4.0.53
+
+RDKS samler den gældende projektviden. Gamle chats bevares som kilder, men kan ikke alene aktivere kodeændringer. Nyere aktive beslutninger erstatter ældre løsninger. Ved versionsbygning skal samtalens nye beslutninger, krav, fejl og afklaringer indarbejdes automatisk.

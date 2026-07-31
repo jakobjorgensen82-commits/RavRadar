@@ -1,0 +1,450 @@
+i går 13.29
+RavRadar(96).zip
+Zip-arkiv
+RavRadar-support-535.zip
+Zip-arkiv
+Nu er det vist tid til en grundig analyse igen, efter den har kørt i mange timer. Er vores ændringer virksomme, og har vi nogen forbedringspunkter?
+Tænkte i 1m 55s
+Samlet vurdering
+Ja — de seneste ændringer virker i høj grad. RavRadar er blevet markant mere stabilt og gennemskueligt. De tidligere alvorlige problemer med dublerede tider, vilkårlige kildeskift, manglende zoner og forkert prognosehorisont ser ud til at være løst.
+Systemet er dog endnu ikke helt i mål. Den største tilbageværende svaghed er ikke længere selve samlingen af prognosen, men friskheden og dækningslængden af DMI-data, især vind, samt nogle geografisk vanskelige marine zoner.
+Det, der nu fungerer
+Prognosestrukturen er stabil
+Den aktuelle kørsel indeholder:
+præcis 210 aktive zoner
+præcis 117 prognosetimer for samtlige zoner
+ingen dublerede forecast-tidspunkter
+ingen ikke-monotone tidsserier
+ingen zoner under den accepterede prognosehorisont
+ingen manglende hovedkomponenter i den færdige brugerprognose
+Det er en klar forbedring i forhold til tidligere, hvor enkelte tidsserier havde dubletter, forskellige længder og problematiske merges.
+Jeg kørte også hele projektets valideringspakke. Alle automatiske tests bestod, herunder:
+strøm- og vindretningskonventioner
+onshore-geometri
+scoremotor
+forecast-integritet
+DMI-cache
+vandstandskontinuitet
+topologisk stationsrouting
+marine modelrouting
+station-register
+Als Odde-placeringen
+versionering og service worker
+De farlige timevise kildeskift er stort set væk
+Det tidligere problem var, at eksempelvis vandstanden kunne skifte:
+DMI → Open-Meteo → DMI → Open-Meteo
+fra time til time. Det kunne skabe kunstige spring og zigzag.
+Nu har næsten alle zoner højst ét kildeskift pr. komponent, typisk ved DMI-prognosens naturlige afslutning:
+vind: DMI → Open-Meteo
+bølger: DMI → Open-Meteo
+strøm: DMI → Open-Meteo
+vandstand: DMI → manglende eller biasjusteret fallback
+Kun én zone, DK-B05-09 Thisted Bredning vest, havde to vandstandsskift. Der er derfor ikke længere tale om et generelt pendulproblem.
+Vandstandsspringene er ikke længere et landsdækkende mergeproblem
+Jeg fandt 817 ændringer på mindst 25 cm på én time, men de ligger kun i 17 zoner og er stærkt koncentreret omkring Vadehavet.
+De største ligger blandt andet ved:
+Rømø vest og Kongsmark
+Rømø syd og Sønderstrand
+Hjerpsted og Emmerlev
+Højer og Vidå
+Springene følger sammenhængende DMI-tidsserier og forekommer ikke ved vekslende udbyderskift. Det tyder på, at de hovedsageligt er reelle eller modelmæssigt sammenhængende tidevandssvingninger — ikke den tidligere fejl, hvor to forskellige udbydere blev blandet time for time.
+Det er derfor korrekt, at RavRadar ikke automatisk udglatter disse værdier.
+Zonesystemet er blevet ryddet op
+Version 4.0.35 har korrekt fjernet de 21 gamle, brede førstegenerationszoner. Projektet, conditions, forecastcache og audits arbejder nu med det samme officielle register på 210 detaljerede zoner.
+Als Odde og Helberskov består også placeringskontrollen og ligger nu korrekt nord for Mariager Fjord.
+Stationsregisteret er væsentligt bedre
+Det persistente DMI-register indeholder nu 153 stationer, inklusive historiske stationer med status, frem for at stationerne forsvinder mellem kørsler.
+Den automatiske routing opnår:
+187 zoner med komplet topologisk bracket
+23 zoner med ufuldstændig bracket
+kun 1 zone helt uden kompatible kandidater
+Det er et godt resultat og klart bedre end almindeligt afstandsbaseret stationvalg.
+De vigtigste resterende problemer
+1. DMI-vindhorisonten er for kort
+Alle 210 zoner har DMI-vind, men:
+gennemsnitlig DMI-vindhorisont: 56,6 timer
+minimum: 55,7 timer
+kun én zone har mindst 96 timers DMI-vind
+Efter cirka time 57 skifter 204 zoner samlet over til Open-Meteo.
+Det betyder, at brugerprognosen godt nok fortsætter i fem døgn, men kun de første omtrent 2½ døgn er baseret på DMI-vind i næsten hele landet.
+Det er den vigtigste årsag til, at systemets DMI-status står som alarm.
+Forbedringspunkt: Undersøg hvorfor HARMONIE-udtrækket kun bevarer omtrent 56 timer, selv om enkelte zoner når over 100 timer. Det ligner mere et model-step-, asset- eller filtreringsproblem end et geografisk dækningsproblem.
+2. Ingen friske marine zoner i denne kørsel
+Ocean-diagnostikken viser:
+218 marine zoner bevaret fra eksisterende DMI-cache
+0 friske marine zoner
+13 marine modelzoner mangler eller kræver fallback
+1,23 GB blev downloadet i forsøget
+Alle tre marine collections blev forsøgt:
+dkss_idw
+dkss_nsbs
+dkss_lf
+Men ingen af dem blev registreret som succesfuldt opdateret i denne kørsel. Samtidig var der ingen eksplicitte fejl.
+Det er bekymrende, fordi systemet bruger ret store ressourcer, uden at den marine cache faktisk bliver fornyet.
+Det nuværende resultat ser godt ud, fordi tidligere gyldige marine data bevares. Men hvis dette fortsætter over længere tid, bliver de gradvist forældede.
+Forbedringspunkt: Diagnostikken bør angive præcist, hvorfor en collection ender med:
+attempted = true
+success = false
+assets = 0/47
+error = none
+Der mangler en slutårsag som eksempelvis:
+ingen nyere modelrunde
+assets genbrugt fra cache
+forecast-steps allerede dækket
+download fuldført, men intet ekstraktionsresultat
+collection afvist på grund af run age
+checksum eller model-run uændret
+success=false sammen med error=none er for uklart.
+3. Cachegrænsen er næsten helt opbrugt
+Efter kørsel fylder GRIB-cachen:
+1.463.678.926 bytes
+grænse: 1.468.006.400 bytes
+Der er altså kun omkring 4,3 MB luft tilbage.
+To nye filer er cirka 615 MB hver. Cachepruningen fjernede 21 mindre filer og beholdt kun 28 filer samlet.
+Selve LRU-pruningen virker, men grænsen ligger så tæt, at næste større download næsten med sikkerhed vil kræve massiv omrokering igen. Det kan også forklare, hvorfor ældre marine forecast-steps risikerer at blive fjernet, mens store atmosfærefiler optager hovedparten af pladsen.
+Forbedringspunkt: Opdel cachebudgettet efter collection, eksempelvis:
+reserveret plads til HARMONIE
+reserveret plads til marine collections
+separat maksimum pr. modelrunde
+slet først komplette gamle modelrunder frem for enkelte forecast-steps
+En enkelt fælles LRU-pulje kan ellers lade to meget store filer fortrænge mange værdifulde marine filer.
+4. Fem-døgnsprognosen er ikke helt komplet
+Brugerstatus siger 96,7 % komplette zoner de første 48 timer:
+203 af 210 zoner er komplette
+samlet 118-timers komplethed: 89 %
+De største fuldstændige huller ligger i Limfjorden:
+Mors syd og Nykøbing
+Fur syd
+Nibe Bredning vest
+Gjøl og Attrup
+Aalborg vest og Egholm
+Aalborg øst og Nørresundby
+Disse seks zoner mangler bølger, strøm og vandstand gennem hele prognosen eller store dele af den. Det giver fagligt mening, at standard havmodeller kan have svært ved de indre, smalle farvande, men RavRadar bør ikke behandle dem som almindelige åbne havzoner.
+Forbedringspunkt: Lav en særskilt Limfjordsstrategi:
+vandstand fra relevante DMI-stationer
+strøm fra nærmeste gyldige fjordgrid eller særskilt model
+bølger markeres som ikke relevante eller lav-tillid frem for teknisk “manglende”
+fjordzoner bør have deres egen datakvalitetsprofil
+Det vil gøre både health-målingen og RavScore mere realistisk.
+5. Sidste forecast-time mangler ofte data
+Alle 210 zoner har 118 tidsrækker, men den sidste time indeholder ofte null:
+vind mangler i de sidste 9 timer for alle zoner
+vandstand og strøm mangler typisk i den sidste time
+Open-Meteo-vinden er markeret som kilde, selv når værdien er null
+Det er teknisk misvisende at registrere:
+provider: open-meteo
+fallback: true
+value: null
+En kilde bør kun tilskrives en time, når der faktisk findes en brugbar værdi.
+Forbedringspunkt: Den endelige merge bør sætte provider til missing, når komponentværdien er null. Alternativt skal forecastet afkortes til den sidste time, hvor minimumskravene faktisk er opfyldt.
+6. Health-status blander to forskellige mål
+Weather health viser samtidig:
+userForecastStatus: ok
+serviceStatus: degraded
+dmiCoverageStatus: alarm
+DMI coverage: 0,5 %
+De 0,5 % kommer af, at kun én zone har alle DMI-komponenter gennem en lang nok horisont. Det er matematisk korrekt efter den nuværende definition, men tallet kan let opfattes som, at kun 0,5 % af RavRadar har DMI-data. Det passer ikke:
+vind: DMI i 210 zoner
+strøm: DMI i 200 zoner
+vandstand: DMI i 200 zoner
+bølger: DMI i 191 zoner
+Forbedringspunkt: Vis mindst tre separate DMI-mål:
+geografisk komponentdækning
+gennemsnitlig DMI-horisont
+zoner med komplet DMI gennem 96 timer
+Alarmen bør beskrives som “komplet 96-timers DMI-dækning utilstrækkelig”, ikke blot “DMI-dækning 0,5 %”.
+7. Stationsrouting kræver stadig manuel kontrol i 23 zoner
+De ufuldstændige brackets er især ved:
+Skagen og Grenen
+øer som Læsø og Bornholm
+Vadehavet
+Møns Klint
+Gedser
+Hals Barre og Egense
+Sønderborg Bugt
+Det er ikke nødvendigvis kodefejl. Ved øer og kystender findes der ofte reelt ikke en station på begge sider langs samme kysttopologi.
+En særlig zone skiller sig ud:
+Bornholm sydøst og Dueodde: ingen kompatible stationer langs kystkorridoren
+Forbedringspunkt: Routing-auditten bør skelne mellem:
+reelt topologisk umulig bracket
+manglende station i registeret
+for snæver korridor
+station filtreret fra på grund af status eller parameter
+ø-zone, hvor clockwise/counter-clockwise routing kræves
+Så bliver 23 “ufuldstændige” ikke behandlet som samme fejltype.
+8. Multi-ankre er implementeret, men bruges ikke
+Alle 210 zoner består den grundlæggende geometrikontrol, men:
+zonesWithDirectionAnchors: 0
+8 kurvede zoner anbefales kontrolleret
+De otte er:
+Rømø syd og Sønderstrand
+Endelave syd
+Sjællands Odde syd
+Ulvshale og Hårbølle
+Falster vest og Nysted Nor munding
+Lolland nord og Kragenæs
+Genner Bugt og Aabenraa Fjord
+Kruså og Flensborg Fjord nord
+Her kan én enkelt onshoreDirectionDeg være for grov for hele zonen.
+Forbedringspunkt: Disse otte bør være første praktiske test af multi-ankerfunktionen. Funktionen består testene, men giver først værdi, når zonerne faktisk har flere lokale retningsankre.
+Min prioriterede plan for næste version
+Kritisk
+Find årsagen til den korte HARMONIE-vindhorisont på cirka 56 timer.
+Forklar og ret marine kørsler, hvor 1,23 GB downloades, men 0 zoner bliver friske.
+Opdel GRIB-cachebudgettet mellem atmosfære og marine collections.
+Ret provider-metadata, så null-værdier ikke tilskrives Open-Meteo.
+Høj prioritet
+Lav særbehandling af Limfjordszonerne.
+Opdel DMI-health i geografisk dækning, horisont og komplethed.
+Udbyg stationsauditten med præcise årsagskategorier.
+Kontrollér Thisted Bredning vest, som er den eneste zone med to vandstandskildeskift.
+Geografisk kvalitet
+Tilføj multi-ankre til de otte kurvede zoner.
+Gennemgå de 23 ufuldstændige stationsbrackets, især Hals Barre/Egense, Læsø og Bornholm.
+Konklusion
+RavRadar 4.0.35 er den hidtil mest stabile udgave. De grundlæggende ændringer har virket:
+forecastet hænger sammen
+de gamle zoner er væk
+kildeskift er blokbaserede frem for timevise
+DMI-data bevares sikkert ved mislykkede opdateringer
+stationerne persisteres
+retninger og Als Odde-geometrien består
+alle automatiske tests består
+Den største risiko er nu, at systemet ser stabilt ud, fordi det effektivt genbruger gammel DMI-cache, mens nye marine modelrunder ikke bliver indlæst. Samtidig falder næsten al vind tilbage til Open-Meteo efter omtrent 57 timer.
+Så status er: arkitekturen og sikkerhedsnettet fungerer; næste opgave er at få den friske DMI-forsyning til at udnytte arkitekturen fuldt ud.
+RavRadar(97).zip
+Zip-arkiv
+hvis det er fordi vi har sat grænsen til cache for lavt, skal den naturligvis udvides. Det skal være realistisk. undersøg grundigt alle fejl og mangler og implementer løsninger. Ift admin delen, er der flere ting derinde jeg slet ikke forstår. Der mangler forklaringer på hvad de forskellige moduler er og hvad de gør. Der skal forklares processer, så man ikke er i tvivl om hvad man skal. feks ved regler. Man skal guides igennem det step for step. I det hele taget må det gerne virke meget mere intuitivt. Det hele skal kunne betjenes af en der ikke kender systemet, processerne og arbejdsgangene. Analyser grundigt på det hele både du og jeg skriver og implementer arbejdet.
+RavRadar(98).zip
+Zip-arkiv
+perfekt. Skriv det første af drejebogen og implementer det på den beskrevne måde.
+IMG_DF699DDB-6084-4879-9268-BB535C79C7F5.jpeg
+Her er et billede af hvordan det ser ud, når jeg er logget ind på supabase. Det er fra sidst vi var i gang, jeg har ikke gjort noget af det du lige har skrevet
+IMG_494AEBA0-D8CA-40F7-8746-E6B0EC439395.jpeg
+IMG_A1037880-BEC3-4E87-88FC-1114362C9825.jpeg
+Hvordan åbner jeg filen?
+IMG_02F9BCBF-B89B-492D-80B7-3FEB101A526A.jpeg
+IMG_193738FE-CD21-46C4-8DE9-1B7507FF4171.jpeg
+IMG_7AB33FAE-0AB0-4222-93C9-B6A093E1A427.jpeg
+RavRadar(99).zip
+Zip-arkiv
+lav det
+IMG_36B44714-10A2-4B10-B827-6833D1219679.jpeg
+IMG_8039FC84-D3BC-4091-A8D0-9F757097C85A.jpeg
+Er det rigtigt?
+IMG_AFE507A7-9841-4297-9DD1-D6201A77DBCC.jpeg
+IMG_265258B0-8ACC-4493-98F6-83E5C7491DE0.jpeg
+Skal jeg lukke fanerne?
+IMG_07A0042D-C804-4227-9499-357E57AA0BC4.jpeg
+RavRadar(100).zip
+Zip-arkiv
+værsgo at bygge det
+IMG_9F2E85FE-044E-4A2B-8699-66B8BF5F518A.jpeg
+Hvor finder jeg så project url og publishable key?
+IMG_60B03A29-1D47-463D-8B0D-FE7039D67739.jpeg
+Lad være at gætte. Hvor er den url?
+IMG_2D1BC03F-734E-4C5D-885B-AFC0E5F3C5E1.jpeg
+IMG_A2175D09-5036-491E-9774-86DCB1D444BB.jpeg
+RavRadar(101).zip
+Zip-arkiv
+fix det
+IMG_087799B9-088B-401A-8F6C-7CE66F25D1C9.jpeg
+Skal jeg download config.js ?
+RavRadar(102).zip
+Zip-arkiv
+lav det, men husk at vi også skal lave et login til vores ekspert. Det skal bare være et simpelt brugernavn - evt bare ekspert, og en simpel kode som vi giver ham.
+IMG_1AA4FA27-C2DB-4E12-B53A-73A4A1111F1E.jpeg
+Skal jeg på noget tidspunkt trykke gem eller noget som helst herinde?
+RavRadar(103).zip
+Zip-arkiv
+godt. lav det nu og lav samtidig det færdig vi var igang med ift vores ekspert rettigheder
+i går 22.36
+RavRadar(104).zip
+Zip-arkiv
+diagnose (13).zip
+Zip-arkiv
+logs_82916961033.zip
+Zip-arkiv
+Godt. Lad os lige køre et sundhedstjek og samtidig få samlet op på, om der er noget vi mangler at implementere eller rette.
+i dag 0.43
+IMG_35C94CD3-96F5-407D-A921-7CB2AAE23236.jpeg
+I vandstandsstationer på kort gemmer den kun lokal kladde (se billede). Kontroller om det kun er den funktion der ikke virker ift at få det gemt på supabase, eller om det også gælder i de andre funktioner som f.eks. regler osv. Vi skal være sikre på at vores ting gemmes på supabase som aftalt og planlagt. Analyser for løsninger til det du skrev punkt 1,3 og 4. Punkt 2 venter vi lidt med.
+RavRadar(105).zip
+Zip-arkiv
+Jeg kan se på den første side i admin delen, der var der tidligere et felt som viste at supabase er tilsluttet eller lignende. det felt er væk. Analyser grundigt og implementer de bedste løsninger på alt det vi lige har talt om.
+IMG_07FA93CB-1656-4FF5-8257-416416C925C6.jpeg
+Import af sql vedr rettigheder fejlede i supabase. Se billede
+IMG_D7AE75E0-1327-4053-B5BD-8B160B18F62B.jpeg
+Schema.sql fejlede også
+IMG_DA30FF6B-D38F-47C8-A81A-C266603157EE.jpeg
+IMG_238B5F24-D34E-4186-A165-49CDD8A0EB80.jpeg
+Jeg nåede kun til at køre schema. Du skal altså lave det ordentligt
+IMG_5F894278-0825-45D5-86D6-93560A6BD8B7.jpeg
+Var det så alt vi skulle?
+IMG_5B5239D9-38E6-4C02-9BAF-1B5F510B32D3.jpeg
+Jeg kan ikke længere trykke mig ind på de forskellige faneblade.
+RavRadar(106).zip
+Zip-arkiv
+IMG_FB2B2D5D-D54B-4578-83D8-DFDAD1A8000C.jpeg
+Vil det være muligt at få zone-stregen til at løbe præcis inde på stranden, som vi har prøvet på før? Altså virkelig få det findpudset, så der ikke er streger ude i vandet?
+Genereret billede: Hou kystkort med zonegrænse
+Rediger
+Genereret billede: Præcis strandlinje: GIS-forbedringer for Danmark
+Rediger
+IMG_CD57B949-60D8-476B-82CB-35E6F930485E.jpeg
+IMG_A543E38D-F36E-43DC-AFA4-12FF35E9B538.jpeg
+IMG_6DDE8C64-DB00-4638-A81F-5FB7D6C7180D.jpeg
+Perfekt. Husk det til næste version. Husker du at vi lavede en grøn markør med en stjerne indeni (se første billede), hvis ravscoren var fremragende? Det kan vi jo ikke rigtig se på en linie. Jeg tror vi skal have grøn med stjerne fjernet på kortet, og så skal resten af farverne dække vores ravscore. Det betyder også at du skal flytte grænserne for hvilken farve der passer til hvilken score. Det skal gøres alle steder i projektet. Jeg vil dog sige at vi godt kan lave det sådan, at i “bedste områder” og “5-dages RavRadar”, kan der komme en stjerne ved siden af scoren, hvis forholdende er exceptionelt gode, altså meget høj score.(se de sidste 2 billeder)
+IMG_70E2655E-8489-4039-A7FB-C8B70BBBC77E.jpeg
+4.0.44 er lagt ind, men når jeg gemmer vandstandsstationer kommer denne fejl
+RavRadar(107).zip
+Zip-arkiv
+det virkede. som det sidste i dag skal du implementere de ændringer vi har talt om. Husk at gøre det ordentligt som vi lige har talt om
+IMG_67A744AA-73FD-48E4-8A9E-C94895CECE13.jpeg
+Det lykkedes vist ikke ret godt
+RavRadar(108).zip
+Zip-arkiv
+RavRadar(109).zip
+Zip-arkiv
+sikkerhedsgitteret er ved at blive lagt ind med github. nu må du gerne lave den endelige version
+RavRadar-support-642.zip
+Zip-arkiv
+RavRadar(110).zip
+Zip-arkiv
+jeg synes du skal forberede at lave et modul til admin delen, hvor man zone for zone kan redigere kystlinien. Det kan gøres vad at man trækker i linien eller ved at man sætter markører på stranden, som linien så skal flytte sig ind til. Det må gerne være en kombination af begge dele. Dette skal selvfølgelig være fuldstændig kompatibelt og integrerbart med resten af vores system.
+i dag 11.51
+RavRadar(111).zip
+Zip-arkiv
+diagnose (14).zip
+Zip-arkiv
+logs_83034599558.zip
+Zip-arkiv
+Nu er det vist på tide at du laver et sundhedstjek på projektet https://jakobjorgensen82-commits.github.io/RavRadar/
+IMG_1BC320AC-119C-4333-8D7F-96B041EB94E9.jpeg
+Jeg vil gerne slette denne kystdel, men knappen virker ikke. Det skal rettes i næste version.
+IMG_90CB44A3-67B3-444D-9AC5-CDCE438C570A.jpeg
+I denne funktion kan man ikke lave krumninger på linien. Uanset hvordan man trækker eller hvor mange punkter man sætter, laver den blot lige linier. Dette uanset hvordan jeg vælger “påvirk nabopunkter”
+Det er gemt.
+Til næste RavRadar-version bliver det et fast designkrav, at:
+Den nuværende præcisionsmarkør til at placere strandpunkter bevares uændret.
+Nye funktioner til at flytte kortet bliver supplerende værktøjer og må ikke gøre punktplaceringen mindre præcis.
+Man skal nemt kunne skifte mellem kortnavigation og præcis redigering, uden at miste nøjagtighed.
+Jeg synes faktisk, at kystlinjeeditoren er ved at udvikle sig til et af RavRadars vigtigste værktøjer. Hvis vi får de sidste ting på plads – glatte kurver, bedre navigation, mulighed for at deaktivere zoner og en stabil gemmefunktion – vil den være et stærkt grundlag for at finjustere alle kystzoner med høj præcision.
+i dag 14.23
+IMG_C744DDE8-30F5-44A3-A022-922157294DB9.jpeg
+Det her skal være meget nemmere at bruge, og man skal kunne få forklaringer på hvad de forskellige felter betyder og hvad det ændrer. Jeg vil ikke engang kunne finde ud af at bruge det, for jeg forstår det simpelthen ikke. Det skal du gøre meget bedre.
+Du har helt ret. Den formular er blevet bygget ud fra systemets datamodel i stedet for ud fra, hvordan et menneske tænker. Derfor virker den teknisk, tung og uoverskuelig.
+Den skal laves om fra en lang formular til en guidet regelbygger.
+Den nye arbejdsgang
+Trin 1: Hvad har du observeret?
+I stedet for at starte med felter som “evidenstype”, “tillid” og “prioritet”, skal den spørge almindeligt:
+Hvad har du lagt mærke til?
+Eksempel:
+Frisk pålandsvind efter en stille periode giver ofte mere rav.
+Trin 2: Hvornår gælder reglen?
+Her vælger man forhold gennem enkle kort eller knapper:
+Vindretning
+Vindstyrke
+Strømretning
+Bølgehøjde
+Vandstand
+Tidsperiode
+Bestemte zoner eller hele Danmark
+Man skal kunne se en forklaring som:
+“Pålandsvind” betyder, at vinden blæser fra havet ind mod stranden.
+Trin 3: Hvad skal reglen gøre?
+Eksempelvis:
+Giv flere point
+Træk point fra
+Sæt maksimum på scoren
+Sæt minimum på scoren
+Vis kun en advarsel
+Og direkte under valget:
+Denne regel lægger 8 point oven i RavScore, når betingelserne er opfyldt.
+Trin 4: Se et konkret eksempel
+Før reglen gemmes, skal RavRadar vise:
+Uden reglen: 54 pointMed reglen: 62 pointÆndring: +8 point
+Der bør også vises, hvilke zoner og tidspunkter reglen ville ramme med de aktuelle data.
+Felterne på billedet
+De skal ændres sådan:
+Status: vises som “Kladde” eller “Aktiv”, med forklaring på om reglen bruges i beregningen.
+Type: omdøbes til “Hvad skal reglen gøre?”
+Videnstype: flyttes under “Dokumentation” og forklares som, hvor erfaringen kommer fra.
+Tillid: vises som almindelige valg som “Usikker”, “Rimelig sikker” og “Meget sikker”.
+Prioritet: skjules under Avanceret, fordi almindelige brugere ikke bør skulle forstå et tal som 500.
+Områder: erstattes af en søgbar zoneliste og et kort. Man skal ikke skrive zone-ID’er manuelt.
+Kilde/ravjæger: får et eksempel og bliver valgfrit.
+Hjælp direkte i formularen
+Hvert felt skal have et lille ?, der åbner en kort forklaring med:
+Hvad betyder feltet?
+Hvad ændrer det?
+Et konkret eksempel.
+Ikke en teknisk manual, men korte forklaringer i almindeligt dansk.
+Derudover skal der være en knap:
+“Forklar denne regel”
+Den skal omsætte hele den valgte opsætning til en sætning som:
+Når vinden er mellem 6 og 10 m/s og blæser påland i mindst 8 timer ved de valgte zoner, giver reglen 6 ekstra RavScore-point.
+Sikkerhed
+Regelbyggeren skal advare ved uklare eller farlige opsætninger:
+Reglen gælder altid og kan derfor påvirke alle prognoser.
+Reglen giver meget stor scoreændring.
+To aktive regler ser ud til at modsige hinanden.
+Ingen områder er valgt.
+Betingelserne kan aldrig blive opfyldt.
+En høj prioritet overskriver muligvis andre regler.
+Alle avancerede tekniske muligheder skal stadig være tilgængelige, men samlet under “Avancerede indstillinger”.
+Det er gemt som et fast krav til næste RavRadar-version. Målet bliver, at du kan oprette og forstå en regel uden at kende systemets interne begreber.
+Man kan heller ikke komme ud af den ved at trykke på krydset eller annuller. Ift hvilke zoner det rammer, skal man også kunne vælge eller skrive et større geografisk område, f.eks. Vadehavet, nordjyske østkyst, Vesterhavet osv osv. Ift prioritet, ved heller ikke jeg hvad “500” står for og hvad det gør.
+Det bekræfter, at regelvinduet både har en funktionel fejl og et designproblem.
+Krydset og “Annuller”
+Det skal rettes, så vinduet kan lukkes med:
+krydset øverst
+Annuller
+Escape-tasten
+klik uden for vinduet
+Hvis du har skrevet noget, skal der komme en enkel advarsel:
+Du har ændringer, som ikke er gemt. Vil du lukke alligevel?
+Lige nu bliver man reelt fanget i vinduet, og det er en klar fejl.
+Større geografiske områder
+Du skal ikke kende eller skrive tekniske zone-ID’er. Geografisk område skal kunne vælges på flere måder:
+Hele Danmark
+Landsdel eller farvand
+En eller flere navngivne kystregioner
+Enkeltzoner
+Valg direkte på kortet
+Eksempler på større områder:
+Vadehavet
+Vesterhavet
+Nordjyske vestkyst
+Nordjyske østkyst
+Kattegat
+Limfjorden
+Djursland
+Storebælt
+Øresund
+Sydfynske Øhav
+Bornholm
+Når du vælger eksempelvis Nordjyske østkyst, skal systemet vise:
+Reglen rammer 24 zoner fra Skagen til Als Odde.
+Du skal kunne åbne listen og fravælge enkelte zoner, hvis en regel ikke passer på hele området.
+Fri tekst kan bruges som søgning, men systemet bør ikke gemme en løs formulering uden at omsætte den til konkrete zoner. Ellers kan betydningen ændre sig senere.
+Hvad betyder prioritet 500?
+Som det står nu, er 500 et internt sorteringstal, som en almindelig administrator ikke kan forventes at forstå.
+Prioriteten afgør typisk, hvilken regel der behandles først, når flere regler gælder samtidig. Men tallet siger ikke i sig selv:
+om høje eller lave tal kører først
+om reglen overskriver andre regler
+om den blot sorteres tidligere
+om forskellen mellem 500 og 501 har praktisk betydning
+Derfor skal talfeltet fjernes fra den almindelige visning og erstattes af:
+Lav
+Normal
+Høj
+Kritisk
+Med en forklaring, eksempelvis:
+Normal: Bruges til almindelige regler.Høj: Behandles før normale regler, hvis flere regler påvirker det samme.Kritisk: Bruges kun til sikkerhedsgrænser eller regler, der skal have forrang.
+Det interne tal kan stadig eksistere bagved, men du skal ikke arbejde direkte med det.
+Systemet skal desuden vise en forståelig konsekvens:
+Denne regel behandles som nummer 3 af 12 aktive regler i området.
+Og ved konflikt:
+Denne regel og “Kraftig fralandsstrøm” påvirker begge RavScore. Den højest prioriterede regel behandles først.
+De krav er nu gemt til næste version.

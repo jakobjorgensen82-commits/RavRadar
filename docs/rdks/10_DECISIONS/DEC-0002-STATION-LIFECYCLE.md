@@ -1,5 +1,9 @@
-# DEC-0002 – Persistent stationslivscyklus
-Status: AKTIV
-Introduceret: 4.0.51
+# DEC-0002 – Vedvarende DMI-stationsregister og livscyklus
 
-Alle kendte DMI-vandstandsstationer bevares. Registeret lagrer første/seneste observation, om stationen nogensinde har leveret, antal manglende observationskørsler og aktuel leveringsstatus. Automatisk routing kræver dokumenteret levering.
+- **Status:** DELVIST IMPLEMENTERET
+- **Prioritet:** KRITISK
+- **Senest bekræftet:** 4.0.53
+
+Kendte stationer bevares, også når de midlertidigt ikke leverer. DMI-registerstatus, observationsstatus og prognose-/cachestatus er separate forhold. Admin skal vise første/seneste observation, leveringshistorik, cachegyldighed og samlet anvendelighed. En station kan fortsat være prognosebrugbar, mens gyldig cache findes.
+
+Det er implementeret at bevare stationer og registrere observationers livscyklus. Den fulde særskilte prognose-/cachestatus og stabilitetsmåling er fortsat planlagt.

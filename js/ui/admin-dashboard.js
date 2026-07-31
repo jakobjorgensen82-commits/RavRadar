@@ -10,7 +10,7 @@ import { listProfiles, savePermissions, PERMISSIONS, myAccess, hasPermission } f
 import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js';
 import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js';
 
-const VERSION='4.0.52';
+const VERSION='4.0.53';
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
 const RULES_KEY='ravradar-admin-rules-v1';
