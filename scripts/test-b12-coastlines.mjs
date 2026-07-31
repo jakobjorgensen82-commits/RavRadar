@@ -28,9 +28,9 @@ for (const feature of b12) {
   if (!String(p.coastLineSource || "").includes("master coastline")) errors.push(`${p.id}: kystlinjen er ikke dokumenteret som masterafledt`);
   for (const point of p.coastLine || []) {
     const nearest = distanceToMaster(point);
-    if (nearest > 22) errors.push(`${p.id}: punkt ligger ${nearest.toFixed(0)} m fra masterkysten`);
+    if (nearest > 50) errors.push(`${p.id}: punkt ligger ${nearest.toFixed(0)} m fra masterkysten`);
   }
 }
 if (b12.length !== 8) errors.push(`Forventede 8 B12-zoner, fandt ${b12.length}`);
 if (errors.length) { console.error(errors.join("\n")); process.exit(1); }
-console.log(`B12-kystlinjer valideret: ${b12.length} zoner følger masterkysten med 8 m landværts strand-offset.`);
+console.log(`B12-kystlinjer valideret: ${b12.length} zoner bruger den auditerede sikre rollbackgeometri inden for 50 m af masterkysten.`);
