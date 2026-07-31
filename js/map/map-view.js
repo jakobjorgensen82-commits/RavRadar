@@ -1,4 +1,4 @@
-const palette = { excellent: "#168653", good: "#168653", fair: "#e6a700", weak: "#d9822b", poor: "#d34a3a", unavailable: "#30383c" };
+const palette = { good: "#168653", fair: "#e6a700", weak: "#d9822b", poor: "#d34a3a", unavailable: "#30383c" };
 
 function zoneLineStyle(level = "unavailable", selected = false, zoom = 7) {
   // Oversigten skal kunne aflæses på landsniveau. Derfor er zonelinjerne

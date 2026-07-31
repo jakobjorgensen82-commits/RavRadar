@@ -1,0 +1,26 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import { scoreRating, exceptionalScoreMark, SCORE_PRESENTATION } from "../js/core/score-engine.js";
+
+assert.equal(scoreRating(100).level, "good");
+assert.equal(scoreRating(90).exceptional, true);
+assert.equal(scoreRating(89).exceptional, false);
+assert.equal(scoreRating(75).level, "good");
+assert.equal(scoreRating(74).level, "fair");
+assert.equal(scoreRating(55).level, "fair");
+assert.equal(scoreRating(54).level, "weak");
+assert.equal(scoreRating(35).level, "weak");
+assert.equal(scoreRating(34).level, "poor");
+assert.equal(scoreRating(null).level, "unavailable");
+assert.equal(exceptionalScoreMark(95), "★");
+assert.equal(exceptionalScoreMark(70), "");
+assert.equal(SCORE_PRESENTATION.exceptionalMinimum, 90);
+
+const index = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
+const app = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8");
+const css = fs.readFileSync(new URL("../style.css", import.meta.url), "utf8");
+assert.doesNotMatch(index, /Fremragende|legend-dot excellent|score-symbol excellent/);
+assert.match(index, /En stjerne ved scoren markerer exceptionelt gode forhold/);
+assert.match(app, /exceptionalScoreMark\(item\.result\.score\)/);
+assert.doesNotMatch(css, /\.rank-score\.excellent|\.score-badge\.excellent/);
+console.log("Scoresignatur 4.0.45 valideret: fire kortfarver og stjerne kun ved exceptionel ranglistescore.");

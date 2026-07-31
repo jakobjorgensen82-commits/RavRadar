@@ -6,7 +6,7 @@ function bearing(a,b){const [lo1,la1,lo2,la2]=[...a,...b].map(x=>x*Math.PI/180);
 const rows=[];
 for(const f of zones){const p=f.properties||{}; const issues=[]; let pointBearing=null;
  if(!Array.isArray(p.dataPoint)||!Array.isArray(p.pinPoint)) issues.push('missing-sea-or-land-point'); else {pointBearing=bearing(p.dataPoint,p.pinPoint); const d=diff(Number(p.onshoreDirectionDeg),pointBearing); if(d>45)issues.push(`direction-mismatch-${Math.round(d)}deg`); if(p.dataPoint[0]===p.pinPoint[0]&&p.dataPoint[1]===p.pinPoint[1])issues.push('identical-points');}
- const anchors=Array.isArray(p.directionAnchors)?p.directionAnchors:[]; if((p.coastLine?.length||0)>12&&anchors.length<2)issues.push('curved-coast-without-multiple-anchors');
+ const anchors=Array.isArray(p.directionAnchors)?p.directionAnchors:[]; if(p.directionAnchorAuditRecommended===true&&anchors.length<2)issues.push('curved-coast-without-multiple-anchors');
  if(issues.length)rows.push({zoneId:p.id,name:p.name,configured:p.onshoreDirectionDeg,pointBearing:pointBearing&&Math.round(pointBearing),issues,suggestedAction:issues.some(x=>x.startsWith('direction-mismatch'))?'manual-map-review':'review'});
 }
 await fs.mkdir('data/diagnostics',{recursive:true}); await fs.writeFile('data/diagnostics/zone-geometry-audit.json',JSON.stringify({generatedAt:new Date().toISOString(),count:rows.length,rows},null,2));

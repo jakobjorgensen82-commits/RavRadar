@@ -7,15 +7,26 @@ const numberOrNull = value => Number.isFinite(Number(value)) ? Number(value) : n
 
 export const SCORE_WEIGHTS = Object.freeze({ huntability: 0.40, transport: 0.35, release: 0.25 });
 
+export const SCORE_PRESENTATION = Object.freeze({
+  exceptionalMinimum: 90,
+  levels: Object.freeze([
+    Object.freeze({ minimum: 75, label: "God", level: "good" }),
+    Object.freeze({ minimum: 55, label: "Middel", level: "fair" }),
+    Object.freeze({ minimum: 35, label: "Svag", level: "weak" }),
+    Object.freeze({ minimum: 0, label: "Dårlig", level: "poor" })
+  ])
+});
+
 export function scoreRating(score) {
-  if (score === null || score === undefined || score === "") return { label: "Ingen data", level: "unavailable" };
+  if (score === null || score === undefined || score === "") return { label: "Ingen data", level: "unavailable", exceptional: false };
   const value = Number(score);
-  if (!Number.isFinite(value)) return { label: "Ingen data", level: "unavailable" };
-  if (value >= 90) return { label: "Fremragende", level: "excellent" };
-  if (value >= 75) return { label: "God", level: "good" };
-  if (value >= 55) return { label: "Middel", level: "fair" };
-  if (value >= 35) return { label: "Svag", level: "weak" };
-  return { label: "Dårlig", level: "poor" };
+  if (!Number.isFinite(value)) return { label: "Ingen data", level: "unavailable", exceptional: false };
+  const rating = SCORE_PRESENTATION.levels.find(item => value >= item.minimum) || SCORE_PRESENTATION.levels.at(-1);
+  return { ...rating, exceptional: value >= SCORE_PRESENTATION.exceptionalMinimum };
+}
+
+export function exceptionalScoreMark(score, { symbol = "★" } = {}) {
+  return scoreRating(score).exceptional ? symbol : "";
 }
 function angularDifference(a, b) { const d = Math.abs(((a - b + 540) % 360) - 180); return Number.isFinite(d) ? d : null; }
 function directionScore(directionDeg, targetDeg) {
