@@ -21,3 +21,14 @@
 
 ## 4.0.51 – 2026-07-31
 - Første RDKS- og stationslivscyklusgrundlag.
+
+## 4.0.56 – Supabase-sikret administration
+
+Status: Implementeret
+
+- Hele adminområdet kræver gyldig Supabase-session og relevante rettigheder.
+- Håndbogen er flyttet bag Supabase-adgangskontrol.
+- Ny særskilt eksperttilladelse til at læse håndbogen.
+- Beskyttede admin-data synkroniseres til Supabase i stedet for at blive offentliggjort på GitHub Pages.
+- Gamle vejrdata over friskhedsgrænsen afvises.
+- Nye appversioner aktiveres og genindlæses automatisk.
