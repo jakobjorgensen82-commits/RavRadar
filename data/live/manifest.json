@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "datasetId": "rr-20260731155217-209",
+  "generatedAt": "2026-07-31T15:52:17.621Z",
+  "validUntil": "2026-08-05T12:00:00.000Z",
+  "zoneCount": 209,
+  "conditionsPath": "./conditions.json",
+  "complete": true
+}

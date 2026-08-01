@@ -1820,9 +1820,13 @@ if (dmiTransientFailure && fallbackZoneIds.length) {
   console.log('DMI fejlede midlertidigt. Fallback-data er gemt; næste planlagte centrale kørsel forsøger igen, når DMI-cooldown er udløbet.');
 }
 
-// Conditions, health og runtime skrives samlet til sidst, så alle tre filer
-// beskriver præcis samme pipeline-kørsel og samme endelige retry-status.
+// Alle filer fra samme kørsel får samme dataset-id. Frontenden må ikke blande filer fra forskellige kørsler.
+output.datasetId = `rr-${generatedAt.replace(/[^0-9]/g,'').slice(0,14)}-${Object.keys(output.zones).length}`;
+const validUntilValues=Object.values(output.zones).flatMap(zone=>[zone.forecast?.validUntil,zone.dmiCache?.validUntil]).filter(Boolean).map(Date.parse).filter(Number.isFinite);
+const publicManifest={schemaVersion:1,datasetId:output.datasetId,generatedAt,validUntil:validUntilValues.length?new Date(Math.max(...validUntilValues)).toISOString():new Date(Date.parse(generatedAt)+8*3600000).toISOString(),zoneCount:Object.keys(output.zones).length,conditionsPath:'./conditions.json',complete:true};
+// Conditions, health og runtime skrives samlet til sidst, så alle tre filer beskriver samme kørsel.
 await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(output, null, 2)}\n`);
+await fs.writeFile('data/live/manifest.json', `${JSON.stringify(publicManifest, null, 2)}\n`);
 const previousHealth = await readHealth();
 const weatherHealth = buildWeatherHealth(previousHealth, output, generatedAt);
 await fs.writeFile(HEALTH_PATH, `${JSON.stringify(weatherHealth, null, 2)}\n`);

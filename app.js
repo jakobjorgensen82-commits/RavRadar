@@ -1,5 +1,5 @@
 import { calculateRavScore, exceptionalScoreMark } from "./js/core/score-engine.js";
-import { loadConditions, loadZones } from "./js/services/data-service.js";
+import { loadConditions, loadZones, loadDataManifest } from "./js/services/data-service.js";
 import { submitObservation, getLocalObservations, syncPendingObservations } from "./js/services/observation-service.js";
 import { predictAmberChance } from "./js/core/prediction-engine.js";
 import { consumeAuthCallback } from "./js/services/auth-service.js";
@@ -131,7 +131,7 @@ function openTripPrompt(trip){
 function enableDialogClose(dialog){dialog.querySelector(".dialog-close")?.addEventListener("click",()=>dialog.close());dialog.addEventListener("click",event=>{if(event.target===dialog)dialog.close();});}
 [assistantDialog,accountDialog,developerDialog,pinDialog,tripDialog].forEach(enableDialogClose);
 
-function assistantContext(){const zone=state.selectedZone;const condition=zoneCondition(zone);return {zone,weather:condition.current||{},history:condition.history||{},result:zone?resultFor(zone):null,mode:state.mode};}
+function assistantContext(){const zone=state.selectedZone;const condition=zoneCondition(zone);return {zone,weather:condition.current||{},history:condition.history||{},result:zone?resultFor(zone):null,mode:state.mode,zones:state.zones,conditions:state.conditions};}
 function addAssistantMessage(text,who="assistant",loading=false){const box=document.querySelector("#assistantMessages");const div=document.createElement("div");div.className=`assistant-message ${who}${loading?" loading":""}`;const p=document.createElement("p");p.textContent=text;div.appendChild(p);box.appendChild(div);box.scrollTop=box.scrollHeight;return div;}
 async function submitAssistantQuestion(question){const clean=String(question||"").trim();if(!clean)return;addAssistantMessage(clean,"user");const pending=addAssistantMessage("Undersøger forholdene…","assistant",true);try{pending.querySelector("p").textContent=await askRavRadar(clean,assistantContext());pending.classList.remove("loading");}catch(error){pending.querySelector("p").textContent=error.message;pending.classList.remove("loading");}}
 const quickBox=document.querySelector("#assistantQuickQuestions");quickBox.innerHTML=QUICK_QUESTIONS.map(q=>`<button type="button">${q}</button>`).join("");quickBox.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>submitAssistantQuestion(button.textContent)));document.querySelector("#assistantButton").addEventListener("click",()=>assistantDialog.showModal());document.querySelector("#assistantForm").addEventListener("submit",async event=>{event.preventDefault();const field=event.currentTarget.elements.question;const q=field.value;field.value="";await submitAssistantQuestion(q);});
@@ -143,13 +143,34 @@ tripButton.addEventListener("click",()=>{if(activeTrip())stopTrip();else startTr
 let logoTaps=0,tapTimer=null;document.querySelector("#logoButton").addEventListener("click",()=>{logoTaps+=1;clearTimeout(tapTimer);tapTimer=setTimeout(()=>{logoTaps=0;},5000);if(logoTaps>=10){logoTaps=0;pinDialog.showModal();pinDialog.querySelector("input").focus();}});
 document.querySelector("#pinForm").addEventListener("submit",event=>{event.preventDefault();const pin=new FormData(event.currentTarget).get("pin");if(pin!=="1931"){document.querySelector("#pinStatus").textContent="Forkert PIN.";return;}pinDialog.close();event.currentTarget.reset();document.querySelector("#pinStatus").textContent="";openDeveloperDialog(developerDialog,state);});
 
-try {await consumeAuthCallback();const [zones,conditions]=await Promise.all([loadZones(),loadConditions()]);state.zones=zones;state.conditions=conditions;state.zoneLayer=renderZones(map,zones,id=>resultFor(zones.features.find(item=>item.properties.id===id).properties),zone=>openZone(zone,{scroll:false}));state.flowArrows=installFlowArrows(map,zones,id=>state.conditions.zones?.[id]||{});setMode(localStorage.getItem("ravradar-mode")==="beach"?"beach":"waders");if(conditions.available&&conditions.generatedAt){const timestamp=new Date(conditions.generatedAt).toLocaleString("da-DK");const stale=Date.now()-new Date(conditions.generatedAt).getTime()>8*3600000;dataStatus.textContent=`${stale?"⚠ Data er ældre end normalt · ":""}Senest opdateret ${timestamp}`;}else dataStatus.textContent="Vejrdata indlæses ved næste automatiske GitHub-kørsel.";resumeTripTracking();syncPendingObservations().catch(()=>{});updateTripUi();const pending=pendingTripPrompt();if(pending)setTimeout(()=>openTripPrompt(pending),650);}catch(error){console.error(error);infoPanel.innerHTML='<div class="notice">Kortzonerne kunne ikke indlæses. Kontroller den seneste GitHub Action.</div>';dataStatus.textContent="Fejl ved indlæsning";}
+try {
+  await consumeAuthCallback();
+  const started=performance.now();
+  // 1: side/kortgrundlag og statiske zoner vises straks.
+  const zones=await loadZones();state.zones=zones;
+  state.zoneLayer=renderZones(map,zones,()=>({available:false,level:'unavailable'}),zone=>openZone(zone,{scroll:false}));
+  dataStatus.textContent='Kontrollerer aktuelle data…';
+  // 2: lille manifest kontrollerer friskhed og sammenhæng.
+  const manifest=await loadDataManifest();
+  if(manifest?.generatedAt)dataStatus.textContent=`Seneste datasæt ${new Date(manifest.generatedAt).toLocaleString('da-DK')} · henter zoner…`;
+  // 3: samlet landsdatasæt hentes; dataset-id forhindrer blanding.
+  const conditions=await loadConditions({manifest});state.conditions=conditions;
+  // 4: zonefarver først.
+  refreshZoneStyles(state.zoneLayer,id=>resultFor(zones.features.find(item=>item.properties.id===id).properties));
+  state.flowArrows=installFlowArrows(map,zones,id=>state.conditions.zones?.[id]||{});
+  setMode(localStorage.getItem('ravradar-mode')==='beach'?'beach':'waders');
+  // 5: ranglister og fulde prognoser efter kortet er brugbart.
+  renderRanking();renderNationalForecast();
+  if(conditions.available&&conditions.generatedAt)dataStatus.textContent=`Senest opdateret ${new Date(conditions.generatedAt).toLocaleString('da-DK')} · klar på ${Math.round(performance.now()-started)} ms`;
+  else dataStatus.textContent='Aktuelle data kunne ikke hentes. Gamle data vises ikke.';
+  resumeTripTracking();syncPendingObservations().catch(()=>{});updateTripUi();const pending=pendingTripPrompt();if(pending)setTimeout(()=>openTripPrompt(pending),650);
+} catch(error){console.error(error);infoPanel.innerHTML='<div class="notice">Aktuelle data kunne ikke indlæses. Gamle prognoser vises ikke.</div>';dataStatus.textContent='Fejl ved indlæsning';}
 
-// RavRadar 4.0.65: versionsmanifest + sikker service-worker-opdatering.
+// RavRadar 4.0.66: versionsmanifest + sikker service-worker-opdatering.
 function installAppUpdateFlow() {
   if (!("serviceWorker" in navigator)) return;
   const banner=document.querySelector("#updateBanner"), updateButton=document.querySelector("#updateAppButton");
-  const version=window.RAVRADAR_VERSION||"4.0.65"; document.querySelector("#appVersion").textContent=version;
+  const version=window.RAVRADAR_VERSION||"4.0.66"; document.querySelector("#appVersion").textContent=version;
   let refreshing=false, registration=null, waitingWorker=null;
   const showUpdate=worker=>{waitingWorker=worker||waitingWorker;if(waitingWorker){waitingWorker.postMessage({type:'SKIP_WAITING'});return;}if(!banner||!updateButton)return;banner.hidden=false;updateButton.disabled=false;updateButton.textContent="Opdater nu";};
   const activate=()=>{updateButton.disabled=true;updateButton.textContent="Opdaterer…";(waitingWorker||registration?.waiting)?.postMessage({type:"SKIP_WAITING"});};

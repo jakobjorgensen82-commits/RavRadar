@@ -2,6 +2,7 @@ import { PUBLIC_CONFIG } from "../../config.js";
 
 const STORAGE_KEY = "ravradar-auth-session";
 const REFRESH_MARGIN_SECONDS = 300;
+const DEFAULT_TIMEOUT_MS = 12000;
 const enabled = Boolean(PUBLIC_CONFIG.supabaseUrl && PUBLIC_CONFIG.supabasePublishableKey);
 let session = readStoredSession();
 let listeners = new Set();
@@ -21,17 +22,34 @@ function saveSession(next) {
   else localStorage.removeItem(STORAGE_KEY);
   listeners.forEach(listener => listener(session));
 }
-async function authRequest(path, options = {}, { useAuthorization = true } = {}) {
+function timeoutSignal(timeoutMs=DEFAULT_TIMEOUT_MS, externalSignal=null) {
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(new DOMException(`Supabase svarede ikke inden ${Math.round(timeoutMs/1000)} sekunder.`, 'TimeoutError')),timeoutMs);
+  if(externalSignal){
+    if(externalSignal.aborted)controller.abort(externalSignal.reason);
+    else externalSignal.addEventListener('abort',()=>controller.abort(externalSignal.reason),{once:true});
+  }
+  return {signal:controller.signal,done:()=>clearTimeout(timer)};
+}
+function friendlyNetworkError(error){
+  if(error?.name==='AbortError'||error?.name==='TimeoutError')return new Error('Supabase svarede ikke i tide. Kontrollér forbindelsen og prøv igen.');
+  if(error instanceof TypeError)return new Error('Kunne ikke kontakte Supabase. Din eksisterende opsætning er bevaret; prøv igen eller kontrollér netværket.');
+  return error;
+}
+async function authRequest(path, options = {}, { useAuthorization = true, timeoutMs=DEFAULT_TIMEOUT_MS } = {}) {
   if (!enabled) throw new Error("Login er ikke aktiveret i config.js endnu.");
-  const response = await fetch(`${PUBLIC_CONFIG.supabaseUrl}/auth/v1${path}`, {
+  const guard=timeoutSignal(timeoutMs,options.signal);
+  let response;
+  try { response = await fetch(`${PUBLIC_CONFIG.supabaseUrl}/auth/v1${path}`, {
     ...options,
     headers: {
       apikey: PUBLIC_CONFIG.supabasePublishableKey,
       "Content-Type": "application/json",
       ...(useAuthorization && session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
       ...(options.headers || {})
-    }
-  });
+    },
+    signal:guard.signal
+  }); } catch(error) { throw friendlyNetworkError(error); } finally { guard.done(); }
   const body = await response.json().catch(() => ({}));
   if (!response.ok) throw Object.assign(new Error(body.msg || body.error_description || body.message || `Loginfejl (${response.status})`), { status: response.status, body });
   return body;
@@ -67,19 +85,22 @@ export async function requireFreshSession() {
   if (tokenNeedsRefresh()) await refreshSession();
   return session;
 }
-export async function authorizedFetch(url, options = {}, { retry401 = true } = {}) {
+export async function authorizedFetch(url, options = {}, { retry401 = true, timeoutMs=DEFAULT_TIMEOUT_MS } = {}) {
   const active = await requireFreshSession();
-  const response = await fetch(url, {
+  const guard=timeoutSignal(timeoutMs,options.signal);
+  let response;
+  try { response = await fetch(url, {
     ...options,
     headers: {
       apikey: PUBLIC_CONFIG.supabasePublishableKey,
       Authorization: `Bearer ${active.access_token}`,
       ...(options.headers || {})
-    }
-  });
+    },
+    signal:guard.signal
+  }); } catch(error) { throw friendlyNetworkError(error); } finally { guard.done(); }
   if (response.status === 401 && retry401 && session?.refresh_token) {
     await refreshSession({ force: true });
-    return authorizedFetch(url, options, { retry401: false });
+    return authorizedFetch(url, options, { retry401: false, timeoutMs });
   }
   return response;
 }

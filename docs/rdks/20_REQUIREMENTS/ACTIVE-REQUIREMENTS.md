@@ -56,3 +56,11 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-HANDBOOK-002 – IMPLEMENTERET:** Håndbogen skal beskrive rav- og sedimenttransport ekstremt grundigt, herunder alle centrale mekanismer, aktive scoretærskler, usikkerheder, forskningsanalogier og prioriterede ekspertspørgsmål.
 - **REQ-HANDBOOK-003 – IMPLEMENTERET:** Ekspertspørgsmål skal have stabile ID'er og være sporbare til kode og evidensklasse.
 - **REQ-RELEASE-002 – IMPLEMENTERET:** Release Gate skal stoppe ændringer, hvor centrale scorekonstanter eller fagkapitler ikke længere stemmer med håndbogen.
+
+
+## 4.0.66 – regressioner, strøm og frisk opstart
+- Admin-login skal virke med eksisterende Supabase-opsætning og må aldrig hænge uendeligt.
+- Kritiske brugerrejser skal regressionssikres.
+- Strømretning skal kunne spores fra rådata til pil og RavScore.
+- Spørg RavRadar skal forstå almindelige spørgsmål.
+- Forsiden skal starte progressivt uden gamle eller blandede data.
