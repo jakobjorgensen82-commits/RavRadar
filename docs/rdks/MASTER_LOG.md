@@ -58,3 +58,10 @@ Status: Implementeret og lokalt release-valideret
 - Historiske geometri-snapshots må ikke overskrive releaseidentiteten.
 - Release Gate testes efter samme geometri-trin som i GitHub Actions.
 - Ændringen retter produktionsstop fundet af Release Governance i 4.0.58.
+
+## 4.0.60 – 2026-08-01
+- Håndbogen er færdiggjort så langt som muligt på det nuværende faglige og tekniske grundlag.
+- 33 kapitler beskriver ravets og ledsagematerialers proceskæde samt den faktiske RavScore-kode.
+- Ekspertvalideringsmatrix E-01–E-15 er indført.
+- DEC-0015 gør evidens- og implementeringssporbarhed bindende.
+- Release Gate kontrollerer fremover håndbogens faglige minimum og centrale kodekonstanter.

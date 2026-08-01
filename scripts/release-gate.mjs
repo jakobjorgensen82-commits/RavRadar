@@ -19,10 +19,24 @@ for(const rel of ['index.html','admin.html','service-worker.js','app.js','js/ui/
   const text=await read(rel); ok(text.includes(version),`${rel} mangler releaseversion ${version}`);
 }
 const handbook=JSON.parse(await read('docs/handbook/content.json'));
-ok(Array.isArray(handbook.sections)&&handbook.sections.length>=23,'Håndbogen skal indeholde mindst 23 kapitler');
-for(const id of ['rav-egenskaber','boelger','stroem','sortering','score-implementering','release','domaene','ekspertsporgsmaal','kilder']){
+ok(Array.isArray(handbook.sections)&&handbook.sections.length>=33,'Håndbogen skal indeholde mindst 33 kapitler');
+for(const id of ['rav-egenskaber','tilstedevaerelse','boelger','stroem','vind','vandstand','langskyst','undertow','sortering','vegetation','kystmorfologi','stormforloeb','aflejring','jagtbarhed','score-implementering','procesindikator','retninger','regler','eksperimentdesign','stationer','admin-sikkerhed','release','domaene','ekspertmatrix','scenarier','kilder']){
   ok(handbook.sections.some(s=>s.id===id),`Håndbogen mangler obligatorisk afsnit ${id}`);
 }
+
+const handbookText=await read('HANDBOOK-RAVRADAR.md');
+for(const expertId of Array.from({length:15},(_,i)=>`E-${String(i+1).padStart(2,'0')}`)){
+  ok(handbookText.includes(expertId),`Håndbogen mangler ekspertpunkt ${expertId}`);
+}
+for(const marker of ['0,15–0,65 m/s','stærk offshore-strøm','3–18 timer','Jagtbarhed','Chubarenko','GitHub Actions-kørsel']){
+  ok(handbookText.includes(marker),`Håndbogen mangler obligatorisk sporbarhedsmarkør: ${marker}`);
+}
+const scoreEngine=await read('js/core/score-engine.js');
+for(const marker of ['huntability: 0.40','transport: 0.35','release: 0.25','current >= .15 && current <= .65','max: 28','max: 42','hours >= 3 && hours <= 18']){
+  ok(scoreEngine.includes(marker),`Scoremotorens forventede auditkonstant mangler: ${marker}`);
+}
+ok(await exists('docs/rdks/10_DECISIONS/DEC-0015-HANDBOOK-EVIDENCE-TRACEABILITY.md'),'RDKS mangler DEC-0015 om håndbogens sporbarhed');
+
 const permissions=await read('js/services/permissions-service.js');
 ok(permissions.includes("handbook_view")&&permissions.includes('Læs håndbogen'),'Rettigheden Læs håndbogen mangler');
 ok(permissions.includes("handbook_review"),'Separat håndbogs-reviewrettighed mangler');

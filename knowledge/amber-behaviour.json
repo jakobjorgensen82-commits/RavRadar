@@ -1,19 +1,55 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "2.0",
+  "updatedForRelease": "4.0.60",
   "statements": [
     {
       "id": "KB-001",
-      "statement": "RavScore skal skelne mellem transport/frigivelse og muligheden for sikkert og praktisk at finde rav.",
+      "statement": "RavScore skal skelne mellem fysisk frigivelse/transport og muligheden for sikkert og praktisk at finde rav.",
       "knowledgeClass": "project-principle",
       "confidence": "stor",
-      "source": "data/model.json"
+      "source": "js/core/score-engine.js"
     },
     {
       "id": "KB-002",
-      "statement": "Tidligere gunstige forhold kan i lokale situationer skabe et potentiale, der består efter at vejret ændrer sig.",
-      "knowledgeClass": "expert-hypothesis",
-      "confidence": "lav",
-      "source": "Administrator requirement; requires local validation"
+      "statement": "Ravets densitet ligger nærmere havvand end almindelige mineraler, men ravets transport afhænger også af form, størrelse, bundkontakt, saltindhold og kobling til organisk materiale.",
+      "knowledgeClass": "documented-with-analogy",
+      "confidence": "mellem",
+      "source": "Chubarenko et al. 2017; handbook E-01"
+    },
+    {
+      "id": "KB-003",
+      "statement": "Høj energi kan mobilisere rav, mens det bedste jagttidspunkt kan opstå senere, når transporten fortsætter og jagtbarheden forbedres.",
+      "knowledgeClass": "documented-process-plus-project-hypothesis",
+      "confidence": "mellem",
+      "source": "HANDBOOK-RAVRADAR.md sections 6 and 15"
+    },
+    {
+      "id": "KB-004",
+      "statement": "Vindretning må ikke bruges som synonym for bundnær strømretning.",
+      "knowledgeClass": "project-principle",
+      "confidence": "stor",
+      "source": "DEC-0004; js/core/score-engine.js"
+    },
+    {
+      "id": "KB-005",
+      "statement": "Statiske kystegenskaber som rev, lavt vand og vegetation må kun forstærke en allerede dokumenteret indgående eller skrå transport i den aktive model.",
+      "knowledgeClass": "implemented-model-rule",
+      "confidence": "stor",
+      "source": "js/core/score-engine.js"
+    },
+    {
+      "id": "KB-006",
+      "statement": "Langskyst transport, undertow og lokale surfzoneprocesser kan afvige fra den simple lokale onshore/offshore-klassifikation.",
+      "knowledgeClass": "documented-general-coastal-process",
+      "confidence": "stor",
+      "source": "USGS coastal sediment transport; handbook E-07/E-08"
+    },
+    {
+      "id": "KB-007",
+      "statement": "RavRadar modellerer endnu ikke et fysisk lager af rav og kan derfor ikke skelne sikkert mellem gunstige transportforhold og et tømt eller ravfattigt område.",
+      "knowledgeClass": "known-model-limitation",
+      "confidence": "stor",
+      "source": "HANDBOOK-RAVRADAR.md section 4"
     }
   ]
 }

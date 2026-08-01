@@ -52,3 +52,7 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-RELEASE-003 – AKTIV:** CI-fejl udløser samlet release-audit og dokumenteret ny pakke – ikke manuelle enkeltlapninger som slutleverance.
 - **REQ-DOMAIN-001 – AKTIV:** RavRadar klargøres til `ravradar.dk` med relative stier, Supabase redirects, HTTPS og kontrolleret canonical-strategi.
 - **REQ-HANDBOOK-001 – IMPLEMENTERET:** Håndbogen beskriver grundigt rav-/sedimentprocesser og kortlægger dem til den faktiske scorekode og ekspertregler.
+
+- **REQ-HANDBOOK-002 – IMPLEMENTERET:** Håndbogen skal beskrive rav- og sedimenttransport ekstremt grundigt, herunder alle centrale mekanismer, aktive scoretærskler, usikkerheder, forskningsanalogier og prioriterede ekspertspørgsmål.
+- **REQ-HANDBOOK-003 – IMPLEMENTERET:** Ekspertspørgsmål skal have stabile ID'er og være sporbare til kode og evidensklasse.
+- **REQ-RELEASE-002 – IMPLEMENTERET:** Release Gate skal stoppe ændringer, hvor centrale scorekonstanter eller fagkapitler ikke længere stemmer med håndbogen.
