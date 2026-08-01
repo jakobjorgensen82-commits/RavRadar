@@ -19,6 +19,8 @@ ACTIVE=ROOT/'data/zones.geojson'
 SNAPSHOT=ROOT/'data/geometry-snapshots/zones-4.0.48.geojson'
 AUDIT=ROOT/'data/diagnostics/constrained-coastline-4.0.48.json'
 VERSION='4.0.48'
+RETIRED_ZONE_IDS={'DK-B04-09'}
+MANUAL_COASTLINE_OVERRIDES={'DK-B04-08': [[8.468,55.198],[8.463,55.178],[8.458,55.155],[8.454,55.132],[8.451,55.109],[8.451,55.086],[8.454,55.062],[8.458,55.040],[8.464,55.020]]}
 TO_M=Transformer.from_crs('EPSG:4326','EPSG:25832',always_xy=True)
 TO_LL=Transformer.from_crs('EPSG:25832','EPSG:4326',always_xy=True)
 STEP_M=70.0
@@ -86,12 +88,21 @@ def main():
         except (json.JSONDecodeError, OSError):
             active_release_version = None
     guide=json.loads(GUIDE.read_text('utf-8')); target=json.loads(TARGET.read_text('utf-8'))
+    guide['features']=[f for f in guide['features'] if f.get('properties',{}).get('id') not in RETIRED_ZONE_IDS]
     if active_release_version:
         guide['version'] = active_release_version
     tm={f['properties']['id']:f for f in target['features']}
     report=[]; accepted=0
     for f in guide['features']:
         p=f['properties']; zid=p['id']; tf=tm.get(zid)
+        if zid in MANUAL_COASTLINE_OVERRIDES:
+            p['coastLine']=MANUAL_COASTLINE_OVERRIDES[zid]
+            p['name']='Rømø vest og Kongsmark'; p['region']='Rømø vest · hele vestkysten'
+            p['dataPoint']=[8.37,55.11]; p['pinPoint']=[8.47,55.11]
+            p['coastLineSource']='RavRadar controlled Rømø west shoreline; manually corrected 4.0.64'
+            p['coastLineVersion']='4.0.64-manual-roemoe'; p['coastLineRefinementMode']='manual-authoritative-override'
+            f['geometry']={'type':'Polygon','coordinates':[[[8.34,55.015],[8.54,55.015],[8.54,55.205],[8.34,55.205],[8.34,55.015]]]}
+            report.append({'zoneId':zid,'name':p.get('name'),'status':'manual-override'}); accepted+=1; continue
         new=None; metrics={'reason':'missing-target'}
         if tf:
             new,metrics=build(line_from_feature(f),line_from_feature(tf))

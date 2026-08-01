@@ -89,3 +89,9 @@ Status: Implementeret
 - “Gemt centralt” viser nu lokal kvitteringstid efter verificeret Supabase-genlæsning.
 - Ejerstyret og CI-baseret Supabase-persistenstest er indført.
 - DEC-0018 gør områdeintegritet og central persistenstest bindende.
+
+## 4.0.64 – Ekspertreview og Rømø-korrektion
+- Ekspertformularer indlejret ved hvert håndbogsafsnit i admin.
+- Supabase-write verificeres med readback før central kvittering.
+- DK-B04-09 fjernet fra den aktive systembestand.
+- DK-B04-08 udvidet til hele Rømøs vestside og beskyttet mod generator-rollback.

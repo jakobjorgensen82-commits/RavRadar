@@ -4,6 +4,9 @@ const read = p => JSON.parse(fs.readFileSync(new URL(p, import.meta.url)));
 const active = read('../data/zones.geojson');
 const before = read('../data/geometry-snapshots/zones-4.0.44.geojson');
 const failed = read('../data/geometry-snapshots/zones-4.0.45.geojson');
+const retired = new Set(['DK-B04-09']);
+before.features = before.features.filter(f=>!retired.has(f.properties.id));
+failed.features = failed.features.filter(f=>!retired.has(f.properties.id));
 assert.equal(active.features.length, before.features.length);
 assert.equal(active.features.length, failed.features.length);
 const activeIds = new Set(active.features.map(f => f.properties.id));
@@ -11,7 +14,7 @@ const beforeIds = new Set(before.features.map(f => f.properties.id));
 const failedIds = new Set(failed.features.map(f => f.properties.id));
 assert.deepEqual(activeIds, beforeIds, '4.0.44 rollback-snapshot mangler zone-IDer');
 assert.deepEqual(activeIds, failedIds, '4.0.45 snapshot mangler zone-IDer');
-const production = active.features.some(f => ['4.0.47','4.0.48','4.0.48-safe-fallback'].includes(f.properties.coastLineVersion));
+const production = active.features.some(f => ['4.0.47','4.0.48','4.0.48-safe-fallback','4.0.64-manual-roemoe'].includes(f.properties.coastLineVersion));
 if (!production) {
   const baseline = new Map(before.features.map(f => [f.properties.id, f.properties.coastLine]));
   for (const f of active.features) {

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 const zones=JSON.parse(fs.readFileSync(new URL("../data/zones.geojson", import.meta.url)));
 const errors=[];
-const allowed=new Set(["2.6.24","3.0.2","4.0.45","4.0.46-safe-rollback","4.0.47","4.0.44-fallback","4.0.48","4.0.48-safe-fallback"]);
+const allowed=new Set(["2.6.24","3.0.2","4.0.45","4.0.46-safe-rollback","4.0.47","4.0.44-fallback","4.0.48","4.0.48-safe-fallback","4.0.64-manual-roemoe"]);
 for(const feature of zones.features||[]){
  const p=feature.properties||{};
  if(p.zoneStatus!=="active") continue;

@@ -1,7 +1,7 @@
 {
   "version": "4.0.48",
-  "refinedZones": 60,
-  "fallbackZones": 150,
+  "refinedZones": 61,
+  "fallbackZones": 148,
   "thresholds": {
     "maxAverageM": 320.0,
     "maxP95M": 480.0,
@@ -611,22 +611,7 @@
     {
       "zoneId": "DK-B04-08",
       "name": "Rømø vest og Kongsmark",
-      "status": "fallback",
-      "reason": "distance-or-order",
-      "averageDistanceM": 235.1,
-      "p95DistanceM": 715.7,
-      "maximumDistanceM": 840.8,
-      "backtrackShare": 0.0118
-    },
-    {
-      "zoneId": "DK-B04-09",
-      "name": "Rømø syd og Sønderstrand",
-      "status": "fallback",
-      "reason": "distance-or-order",
-      "averageDistanceM": 148.9,
-      "p95DistanceM": 408.2,
-      "maximumDistanceM": 513.8,
-      "backtrackShare": 0.105
+      "status": "manual-override"
     },
     {
       "zoneId": "DK-B04-10",

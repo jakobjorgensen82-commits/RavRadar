@@ -21,7 +21,7 @@ function distanceToMaster(point) {
 }
 function pointDistance(a, b) { return segmentDistance(a, b, b); }
 
-assert.equal(active.length, 210);
+assert.equal(active.length, 209);
 let detailed = 0;
 for (const feature of active) {
   const p = feature.properties;

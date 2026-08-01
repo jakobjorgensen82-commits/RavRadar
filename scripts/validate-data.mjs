@@ -4,7 +4,7 @@ const zones = JSON.parse(fs.readFileSync("data/zones.geojson", "utf8"));
 const conditions = JSON.parse(fs.readFileSync("data/live/conditions.json", "utf8"));
 
 if (zones.type !== "FeatureCollection" || !Array.isArray(zones.features)) throw new Error("Ugyldig zones.geojson");
-if (zones.features.length !== 210) throw new Error(`Forventede 210 officielle zoner, fandt ${zones.features.length}`);
+if (zones.features.length !== 209) throw new Error(`Forventede 209 officielle zoner, fandt ${zones.features.length}`);
 
 
 const ids = new Set();
