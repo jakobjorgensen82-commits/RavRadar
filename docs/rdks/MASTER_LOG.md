@@ -1,3 +1,8 @@
+## 4.0.68 – 2026-08-02
+- Rettet Pages-deployregression: `js/services/handbook-review-store.js` blev fejlagtigt udelukket, selv om admin importerede modulet.
+- Tilføjet browsermodul-lukningstest, som bygger det faktiske Pages-artifact og verificerer alle statiske modulimports fra `index.html` og `admin.html`.
+- Release Gate stopper nu udgivelsen, hvis et importeret browsermodul mangler i deploy-artifactet.
+
 ## 4.0.67 – 2026-08-01
 GitHub Actions-regression rettet: `manifest.json` og `conditions.json` hydreres nu som ét atomisk vejrdatasæt og må aldrig få forskellige `datasetId`.
 

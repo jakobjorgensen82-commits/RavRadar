@@ -266,7 +266,6 @@ jobs:
             --exclude 'handbook.css' \
             --exclude 'documentation.html' \
             --exclude 'js/ui/handbook.js' \
-            --exclude 'js/services/handbook-review-store.js' \
             --exclude 'schemas/' \
             --exclude 'supabase/' \
             --exclude 'requirements-dmi.txt' \
