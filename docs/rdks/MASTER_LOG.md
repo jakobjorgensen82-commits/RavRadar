@@ -65,3 +65,13 @@ Status: Implementeret og lokalt release-valideret
 - Ekspertvalideringsmatrix E-01–E-15 er indført.
 - DEC-0015 gør evidens- og implementeringssporbarhed bindende.
 - Release Gate kontrollerer fremover håndbogens faglige minimum og centrale kodekonstanter.
+
+## 4.0.61 – 2026-08-01
+
+Status: Implementeret
+
+- Håndbogen er løftet fra disposition til fagligt referenceværk med 50 kapitler.
+- Kystfysik, ravtransport, hypoteser, validering, feltprotokol og litteratursporbarhed er uddybet.
+- RDKS DEC-0016 gør substans- og sporbarhedskrav bindende.
+- Release Gate kontrollerer den udvidede håndbog og ekspertpunkter E-01–E-21.
+- Hvide standardkodefelter i adminhåndbogen er erstattet af tematilpassede, læselige filreferencer.
