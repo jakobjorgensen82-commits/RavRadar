@@ -57,6 +57,13 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
+      - name: Test Supabase persistence roundtrip
+        if: github.event_name == 'push' || inputs.force == true
+        run: node scripts/test-supabase-persistence.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
       - name: Decide whether weather needs updating
         id: preflight
         run: python scripts/check-weather-update.py

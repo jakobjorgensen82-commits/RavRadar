@@ -81,3 +81,11 @@ Status: Implementeret
 - Ny frigivelse og nærkystnær genmobilisering beregnes separat.
 - Ingen parallel Model 2; forbedringen er implementeret direkte i produktionsmodellen.
 - Håndbog kapitel 51, ekspertpunkt E-22 og DEC-0017 tilføjet.
+
+## 4.0.63 – 2026-08-01
+- Områdevalg i regelbyggeren er samlet i en landsdækkende, testbar områdemodel.
+- Områder forvælger zoner, mens manuelle fravalg bevares gennem søgning og filtrering.
+- Ekspertens fulde læseadgang til Regler er adskilt fra redigering og publicering.
+- “Gemt centralt” viser nu lokal kvitteringstid efter verificeret Supabase-genlæsning.
+- Ejerstyret og CI-baseret Supabase-persistenstest er indført.
+- DEC-0018 gør områdeintegritet og central persistenstest bindende.

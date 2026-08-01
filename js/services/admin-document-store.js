@@ -27,6 +27,7 @@ async function remoteWrite(key,payload){
   if(!verified?.payload)throw new Error("Central gemning kunne ikke verificeres efter skrivning");
   return verified||row||body;
 }
+export async function readAdminDocumentNow(key){return remoteRead(key);}
 export function onAdminSaveStatus(fn){listeners.add(fn);return()=>listeners.delete(fn);}
 export function getAdminSaveStatuses(){return Object.fromEntries(lastStatus);}
 export async function loadAdminDocument(key,fallback){
@@ -35,8 +36,8 @@ export async function loadAdminDocument(key,fallback){
   catch(error){emit({state:"local",key,error:error.message,central:false});}
   return local??fallback;
 }
-export function queueAdminDocumentSave(key,payload,{delay=500}={}){writeLocal(key,payload);emit({state:"saving",key,central:false});clearTimeout(pending.get(key));pending.set(key,setTimeout(async()=>{try{const row=await remoteWrite(key,payload);emit({state:"saved",key,at:row.updated_at||new Date().toISOString(),version:row.version,central:true});}catch(error){emit({state:"local",key,error:error.message,central:false});}},delay));}
-export async function saveAdminDocumentNow(key,payload){writeLocal(key,payload);emit({state:"saving",key,central:false});try{const row=await remoteWrite(key,payload);emit({state:"saved",key,at:row.updated_at||new Date().toISOString(),version:row.version,central:true});return {ok:true,row}}catch(error){emit({state:"local",key,error:error.message,central:false});return {ok:false,error}}}
+export function queueAdminDocumentSave(key,payload,{delay=500}={}){writeLocal(key,payload);emit({state:"saving",key,central:false});clearTimeout(pending.get(key));pending.set(key,setTimeout(async()=>{try{const row=await remoteWrite(key,payload);emit({state:"saved",key,at:new Date().toISOString(),serverAt:row.updated_at||null,version:row.version,central:true});}catch(error){emit({state:"local",key,error:error.message,central:false});}},delay));}
+export async function saveAdminDocumentNow(key,payload,{writeLocal:shouldWriteLocal=true}={}){if(shouldWriteLocal)writeLocal(key,payload);emit({state:"saving",key,central:false});try{const row=await remoteWrite(key,payload);const clientAt=new Date().toISOString();emit({state:"saved",key,at:clientAt,serverAt:row.updated_at||null,version:row.version,central:true});return {ok:true,row,clientAt}}catch(error){emit({state:"local",key,error:error.message,central:false});return {ok:false,error}}}
 export function centralAdminStorageEnabled(){return enabled&&Boolean(currentSession()?.access_token);}
 export async function adminStorageHealth(keys=['rules','rule-history','water-level-station-routing','direction-reviews']){
   const result={ok:true,checkedAt:new Date().toISOString(),documents:{}};

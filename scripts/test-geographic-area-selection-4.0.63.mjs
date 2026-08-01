@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+import { GEOGRAPHIC_AREAS, matchingZoneIds, auditGeographicAreas } from '../js/core/geographic-areas.js';
+const zones=JSON.parse(fs.readFileSync('data/zones.geojson','utf8')).features;
+const audit=auditGeographicAreas(zones);
+if(!audit.ok)throw new Error(`Områdeaudit fejlede. Uden område: ${JSON.stringify(audit.uncovered.slice(0,10))}`);
+for(const [area,row] of Object.entries(audit.areas))if(!row.count)throw new Error(`${area} matcher 0 zoner`);
+const east=matchingZoneIds(zones,'Nordjyske østkyst');
+const thy=zones.filter(z=>east.includes(z.properties.id)&&/thy/i.test(z.properties.region||z.properties.name||''));
+if(thy.length)throw new Error(`Nordjyske østkyst indeholder Thy-zoner: ${thy.map(x=>x.properties.id).join(', ')}`);
+if(!east.length)throw new Error('Nordjyske østkyst er tom');
+console.log(`${Object.keys(GEOGRAPHIC_AREAS).length} områder auditeret; alle ${zones.length} zoner er dækket af mindst ét område.`);
