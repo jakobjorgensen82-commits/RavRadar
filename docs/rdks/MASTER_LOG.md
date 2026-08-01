@@ -1,3 +1,16 @@
+## 4.0.70 – 2026-08-02
+- Udvidet den tidligere begrænsede sitetest til en samlet funktionstest af hele RavRadar.
+- Testen åbner den offentlige side i en isoleret browserramme og kontrollerer kort, zonefarver, rangliste, jagtform og femdøgnsprognose.
+- Tilføjet kontroller af landsdata, assistent, admin, Supabase, deployfiler, service worker, JavaScript-fejl og performance.
+- Testrapporten grupperes efter område og kan downloades som JSON.
+- Tilføjet DEC-0020 om samlet siteaccept og regressionsbeskyttelse.
+
+## 4.0.69 – 2026-08-02
+- Repareret “Kontrollér nu” med synlig status og fejlhåndtering.
+- Tilføjet samlet sitetest og ægte CRUD-test af håndbogsreview i Supabase.
+- Omskrevet ekspertens arbejdsplan og tilføjet læsehjælp i alle håndbogskapitler.
+- Tilføjet DEC-0019.
+
 ## 4.0.68 – 2026-08-02
 - Rettet Pages-deployregression: `js/services/handbook-review-store.js` blev fejlagtigt udelukket, selv om admin importerede modulet.
 - Tilføjet browsermodul-lukningstest, som bygger det faktiske Pages-artifact og verificerer alle statiske modulimports fra `index.html` og `admin.html`.

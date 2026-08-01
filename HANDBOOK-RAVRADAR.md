@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.68
+**Håndbogsversion:** 4.0.70
 
 **Opdateret:** 1. august 2026
 
@@ -1016,3 +1016,7 @@ Det højeste spor bærer komponenten. Begge stærke samtidig giver en begrænset
 Ekspertpunkt E-22: Vurder hvilke kombinationer af bølger, strøm, vandstandsændring og kystmorfologi der realistisk genmobiliserer rav fra sekundære nærkystlagre, og hvor længe sådanne lagre kan bestå.
 
 Implementeret i: **js/core/score-engine.js** og **js/core/coastal-process-model.js**.
+
+
+## Sproglig standard fra 4.0.69
+Hele webhåndbogen er gennemgået med fast læsehjælp, forklaring af centrale fagord og en omskrevet ekspertarbejdsplan i almindeligt dansk. Ekspertens opgave beskrives nu med konkrete spørgsmål og eksempler frem for en teknisk matrix.

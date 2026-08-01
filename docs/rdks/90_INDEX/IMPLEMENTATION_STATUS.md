@@ -1,4 +1,9 @@
-# Implementeringsstatus pr. 4.0.58
+# Implementeringsstatus pr. 4.0.70
+
+## 4.0.70
+- Samlet funktionstest dækker nu hele sitets centrale brugerrejser, data, deploy og performance.
+- Testresultat vises pr. område og kan downloades.
+- Live Supabase-skrivninger er fortsat mærkede og ryddes op automatisk.
 
 Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode/teststruktur. Den er en styringsoversigt, ikke en påstand om ekstern driftsverifikation.
 
@@ -15,11 +20,11 @@ Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode
 | Adminoverride | Implementeret | Tydelig visning af aktiv kontra tilsidesat routing |
 | Kystlinjeeditor | Delvist implementeret | Mobil regressionstest af kurver, deaktivering og lagring |
 | Regelbygger | Delvist implementeret | Fuld brugertest, geografiske grupper og konfliktforklaring |
-| Supabase/central adminlagring | Delvist implementeret | Produktionsrettigheder, migration og rollback-verifikation |
+| Supabase/central adminlagring | Implementeret med samlet funktionstest | Kør produktionstesten ved releases og følg fejlrapporten |
 | RavScore/debug | Delvist implementeret | Komplet forklaringskæde og nabozoneaudit |
-| Ekspertreview og brugerfeedback | Delvist implementeret | Valideringsproces og dokumenteret læringskontrol |
+| Ekspertreview og brugerfeedback | Implementeret med central CRUD-test | Faglig behandling af indsendte forslag |
 | RDKS | Implementeret i første fulde historikversion | Automatisk samtaledelta ved alle kommende releases |
-| Levende håndbog | Markant udbygget | Løbende faglig ekspertvalidering og kodeverifikation |
+| Levende håndbog | Sprogligt revideret og markant udbygget | Fortsat faglig ekspertvalidering og konkrete forbedringer |
 | Release Governance | Implementeret i 4.0.58 | Skal bestå ved alle kommende releases |
 | ravradar.dk-beredskab | Planlagt/delvist | DNS, Supabase redirects, CNAME og produktionstest før aktivering |
 | Faglig rav- og sedimenthåndbog | Markant udbygget | Ekstern ekspertreview og lokal kalibrering af tærskler |

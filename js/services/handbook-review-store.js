@@ -12,3 +12,16 @@ export function exportLocalHandbookDrafts(){const data={schemaVersion:1,exported
 export function localHandbookDraftCount(){return drafts().length;}
 export async function listHandbookReviews(){const session=currentSession();if(!enabled||!session?.access_token)return[];const r=await fetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/handbook_reviews?select=*&order=created_at.desc`,{headers:{apikey:PUBLIC_CONFIG.supabasePublishableKey,Authorization:`Bearer ${session.access_token}`}});if(!r.ok)throw new Error(`Kunne ikke hente ekspertrettelser (${r.status})`);return r.json();}
 export async function updateHandbookReview(id,patch){const session=currentSession();if(!enabled||!session?.access_token)throw new Error('Login kræves');const r=await fetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/handbook_reviews?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',headers:{apikey:PUBLIC_CONFIG.supabasePublishableKey,Authorization:`Bearer ${session.access_token}`,'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(patch)});if(!r.ok)throw new Error(`Kunne ikke opdatere ekspertrettelse (${r.status})`);return (await r.json())[0];}
+
+export async function createHandbookReviewProbe(runId){
+ const session=currentSession();if(!enabled||!session?.access_token)throw new Error('Login kræves');
+ const probe={id:`probe-${runId}`,handbookVersion:'test',sectionId:'system-test',sectionTitle:'Automatisk systemtest',expertise:'Data og software',issue:'Automatisk testpost – skal slettes',proposal:'Test af central skrivning og readback',reasoning:'Oprettet af RavRadars samlede funktionstest',expertName:'RavRadar systemtest',organization:null};
+ const row=await remoteInsert(probe);
+ const patch=await updateHandbookReview(probe.id,{status:'testing',client_payload:{...probe,phase:'updated'}});
+ if(!patch||patch.status!=='testing')throw new Error('Testreview kunne ikke opdateres og læses tilbage.');
+ const r=await fetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/handbook_reviews?id=eq.${encodeURIComponent(probe.id)}`,{method:'DELETE',headers:{apikey:PUBLIC_CONFIG.supabasePublishableKey,Authorization:`Bearer ${session.access_token}`,Prefer:'return=representation'}});
+ if(!r.ok)throw new Error(`Testreview kunne ikke slettes (${r.status})`);
+ const verify=await fetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/handbook_reviews?id=eq.${encodeURIComponent(probe.id)}&select=id`,{headers:{apikey:PUBLIC_CONFIG.supabasePublishableKey,Authorization:`Bearer ${session.access_token}`,'Cache-Control':'no-store'}});
+ if(!verify.ok||(await verify.json()).length)throw new Error('Testreview blev ikke fjernet igen.');
+ return 'Opret, læs, opdater og slet af håndbogsreview bestået.';
+}

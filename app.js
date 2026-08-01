@@ -166,11 +166,11 @@ try {
   resumeTripTracking();syncPendingObservations().catch(()=>{});updateTripUi();const pending=pendingTripPrompt();if(pending)setTimeout(()=>openTripPrompt(pending),650);
 } catch(error){console.error(error);infoPanel.innerHTML='<div class="notice">Aktuelle data kunne ikke indlæses. Gamle prognoser vises ikke.</div>';dataStatus.textContent='Fejl ved indlæsning';}
 
-// RavRadar 4.0.68: versionsmanifest + sikker service-worker-opdatering.
+// RavRadar 4.0.70: versionsmanifest + sikker service-worker-opdatering.
 function installAppUpdateFlow() {
   if (!("serviceWorker" in navigator)) return;
   const banner=document.querySelector("#updateBanner"), updateButton=document.querySelector("#updateAppButton");
-  const version=window.RAVRADAR_VERSION||"4.0.68"; document.querySelector("#appVersion").textContent=version;
+  const version=window.RAVRADAR_VERSION||"4.0.70"; document.querySelector("#appVersion").textContent=version;
   let refreshing=false, registration=null, waitingWorker=null;
   const showUpdate=worker=>{waitingWorker=worker||waitingWorker;if(waitingWorker){waitingWorker.postMessage({type:'SKIP_WAITING'});return;}if(!banner||!updateButton)return;banner.hidden=false;updateButton.disabled=false;updateButton.textContent="Opdater nu";};
   const activate=()=>{updateButton.disabled=true;updateButton.textContent="Opdaterer…";(waitingWorker||registration?.waiting)?.postMessage({type:"SKIP_WAITING"});};

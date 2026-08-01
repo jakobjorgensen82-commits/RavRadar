@@ -1,0 +1,10 @@
+import fs from 'node:fs';
+const book=JSON.parse(fs.readFileSync('docs/handbook/content.json','utf8'));
+if(book.handbookVersion!=='4.0.69')throw new Error('Forkert håndbogsversion');
+const matrix=book.sections.find(x=>x.id==='ekspertmatrix');
+if(!matrix||!matrix.title.includes('arbejdsplan'))throw new Error('Ekspertmatrixen er ikke omskrevet');
+for(const marker of ['Hvad gør RavRadar i dag?','Hvorfor kan det være for simpelt?','Det vil vi gerne have din hjælp til:','E-22'])if(!matrix.body.includes(marker))throw new Error(`Mangler ${marker}`);
+const withoutGuide=book.sections.filter(x=>x.id!=='ekspertmatrix'&&!x.body.includes('reader-guide'));
+if(withoutGuide.length)throw new Error(`${withoutGuide.length} kapitler mangler læsehjælp`);
+for(const forbidden of ['Størrelsesafhængige transportregimer','Geologisk/geomorfologisk lagerkort','Faseafhængig offshorelogik'])if(matrix.body.includes(forbidden))throw new Error(`Uforklaret fagsprog står stadig i arbejdsplanen: ${forbidden}`);
+console.log(`OK: ${book.sections.length} kapitler har læsehjælp, og ekspertens arbejdsplan er omskrevet i almindeligt dansk.`);

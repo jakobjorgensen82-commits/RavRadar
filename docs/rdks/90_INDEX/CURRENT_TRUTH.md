@@ -62,3 +62,7 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - Den planlagte offentlige adresse er `https://ravradar.dk`.
 - GitHub Pages kan fortsat hoste siden; koden skal være domæneagnostisk.
 - CNAME og DNS aktiveres først efter Supabase redirect- og domænetest.
+
+## Accepttest og håndbogssprog
+- Admin har en samlet funktionstest, som kontrollerer deploy, aktuelle data og central Supabase-readback med oprydning.
+- Håndbogen skal skrives i almindeligt dansk. Fagord forklares, og ekspertens opgave skal altid være konkret.
