@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.61
+**Håndbogsversion:** 4.0.62
 
 **Opdateret:** 1. august 2026
 
@@ -89,7 +89,9 @@ Ekspertpunkt E-02: Identificér kysttyper og områder, hvor geologisk ravtilsted
 
 *RavRadar opdeler chancen i tilstedeværelse, frigivelse, transport, koncentration, aflejring og jagtbarhed.*
 
-RavRadar bør forstås som en kæde. Et svagt led kan begrænse hele resultatet:
+RavRadar bruger proceskæden som den stærkeste forklaringsramme, men ikke som en absolut port. Den fulde kæde giver normalt det største potentiale, fordi flere nødvendige betingelser virker samtidig. Rav kan dog allerede ligge i et sekundært nærkystlager og genmobiliseres uden en ny storm eller ny erosion af et primært lager.
+
+Den klassiske kæde er:
 
 - Tilstedeværelse: rav findes i et tilgængeligt lager.
 
@@ -105,7 +107,7 @@ RavRadar bør forstås som en kæde. Et svagt led kan begrænse hele resultatet:
 
 - Jagtbarhed: sigt, sikkerhed, bølgehøjde og adgang gør eftersøgning realistisk.
 
-Den aktive RavScore har tre numeriske hovedkomponenter: jagtbarhed, transport og frigivelse. Tilstedeværelse og koncentration er endnu ikke selvstændige scoringskomponenter. De optræder kun indirekte gennem kystegenskaber, historik og ekspertregler. Det er en vigtig modelbegrænsning.
+Den aktive RavScore har tre numeriske hovedkomponenter: jagtbarhed, transport og mobilisering/tilgængelighed. Den sidste komponent vælger nu det stærkeste af ny frigivelse og nærkystnær genmobilisering. Tilstedeværelse og koncentration er endnu ikke selvstændige scoringskomponenter. De optræder kun indirekte gennem kystegenskaber, historik og ekspertregler. Det er en vigtig modelbegrænsning.
 
 Modelkritik: En lineær vægtet sum kan give en pæn score, selv om én nødvendig proces er meget svag. Offshore-caps reducerer denne risiko for transport, men modellen har endnu ikke generelle multiplicative gates for alle procesled.
 
@@ -341,7 +343,7 @@ Ekspertpunkt E-14: Valider wadersgrænserne for forskellige kyster og vurder om 
 Den aktive beregning findes i js/core/score-engine.js. Den gamle rod-fil ravscore.js er historisk/sekundær og må ikke bruges som beskrivelse af den aktive app uden at bekræfte importkæden.
 
 18.1 Hovedformel
-rå score = jagtbarhed × 0,40 + transport × 0,35 + frigivelse × 0,25
+rå score = jagtbarhed × 0,40 + transport × 0,35 + mobilisering/tilgængelighed × 0,25
 
 Vægtene kan ændres af den godkendte adaptive model, men normaliseres altid til 1,0. Hver vægt begrænses til 0,05–0,80. Derefter lægges et adaptivt justeringsled på -25 til +25. Til sidst anvendes aktive ekspertregler.
 
@@ -982,3 +984,35 @@ En ekspertkommentar ændrer aldrig håndbogen eller scoremotoren direkte. Den ge
 **Swash:** Den vekslende op- og nedløbende vandbevægelse på strandfladen.
 
 **Undertow:** Middelreturstrøm, ofte udadgående nær bunden under brændingszonen.
+
+
+## 51. Flere veje til fundbart rav: primærlager, sekundærlager og genmobilisering
+
+*Hvorfor RavRadar ikke må gøre den fulde stormkæde til en absolut sandhed.*
+
+Den klassiske stormfortælling er vigtig, men ufuldstændig. Rav kan flyttes gennem gentagne korte cyklusser mellem strand, swashzone, revle, rende, tang og helt lavt vand. Derfor skelner modellen nu mellem et **primært lager**, der kræver egentlig frigivelse, og et **sekundært nærkystlager**, hvor rav allerede er hydrodynamisk tilgængeligt.
+
+### 51.1 Primærlager
+
+Rav er begravet, mekanisk låst eller ligger uden for almindelig bølge- og strømpåvirkning. Her er høj energi, erosion eller langvarig bundpåvirkning typisk nødvendig.
+
+### 51.2 Sekundært nærkystlager
+
+Rav er tidligere frigivet og ligger på en revle, i en rende, i tang, i et tidligere opskyl eller umiddelbart uden for brændingszonen. Backwash eller faldende vand kan have trukket det ud, uden at det er ført tilbage til et dybt lager.
+
+### 51.3 Genmobilisering
+
+Moderate bølger kan løfte eller rulle ravet, mens en indgående eller skrå strøm giver nettotransport. Vandstandsændring kan flytte den aktive kant. Hændelsen behøver ikke opfylde stormtærsklerne, men kræver stadig tilstedeværelse, bevægelse og gunstig transport/aflejring.
+
+### 51.4 Aktiv implementering
+
+Komponenten mobilisering/tilgængelighed har to spor:
+
+- **Fresh-release:** historisk vind, historiske bølger, tid siden høj energi og eksponering.
+- **Nearshore-remobilisation:** aktuelle bølger, strømstyrke, indkomponent, vandstandsændring og retention.
+
+Det højeste spor bærer komponenten. Begge stærke samtidig giver en begrænset bonus. Den fulde kæde vægter dermed fortsat højest, men er ikke den eneste vej til en meningsfuld score.
+
+Ekspertpunkt E-22: Vurder hvilke kombinationer af bølger, strøm, vandstandsændring og kystmorfologi der realistisk genmobiliserer rav fra sekundære nærkystlagre, og hvor længe sådanne lagre kan bestå.
+
+Implementeret i: **js/core/score-engine.js** og **js/core/coastal-process-model.js**.

@@ -19,25 +19,26 @@ for(const rel of ['index.html','admin.html','service-worker.js','app.js','js/ui/
   const text=await read(rel); ok(text.includes(version),`${rel} mangler releaseversion ${version}`);
 }
 const handbook=JSON.parse(await read('docs/handbook/content.json'));
-ok(Array.isArray(handbook.sections)&&handbook.sections.length>=50,'Håndbogen skal indeholde mindst 50 kapitler');
-for(const id of ['rav-egenskaber','tilstedevaerelse','boelger','stroem','vind','vandstand','langskyst','undertow','sortering','vegetation','kystmorfologi','stormforloeb','aflejring','jagtbarhed','score-implementering','procesindikator','retninger','regler','eksperimentdesign','stationer','admin-sikkerhed','release','domaene','ekspertmatrix','scenarier','kilder','fluidmekanik','dimensionsloese-tal','boelgespektrum','strandtilstande','kildelager-model','organisk-opskael','regional-oceanografi','datamaaling-usikkerhed','hypoteseregister','valideringsdesign','feltprotokol','fejlscenarier','kodematrix','kildekritik-detaljer','bibliografi','ekspertarbejdsgang','ordliste']){
+ok(Array.isArray(handbook.sections)&&handbook.sections.length>=51,'Håndbogen skal indeholde mindst 51 kapitler');
+for(const id of ['rav-egenskaber','tilstedevaerelse','boelger','stroem','vind','vandstand','langskyst','undertow','sortering','vegetation','kystmorfologi','stormforloeb','aflejring','jagtbarhed','score-implementering','procesindikator','retninger','regler','eksperimentdesign','stationer','admin-sikkerhed','release','domaene','ekspertmatrix','scenarier','kilder','fluidmekanik','dimensionsloese-tal','boelgespektrum','strandtilstande','kildelager-model','organisk-opskael','regional-oceanografi','datamaaling-usikkerhed','hypoteseregister','valideringsdesign','feltprotokol','fejlscenarier','kodematrix','kildekritik-detaljer','bibliografi','ekspertarbejdsgang','ordliste','flere-transportveje']){
   ok(handbook.sections.some(s=>s.id===id),`Håndbogen mangler obligatorisk afsnit ${id}`);
 }
 
 const handbookText=await read('HANDBOOK-RAVRADAR.md');
 const handbookTextLower=handbookText.toLowerCase();
-for(const expertId of Array.from({length:21},(_,i)=>`E-${String(i+1).padStart(2,'0')}`)){
+for(const expertId of Array.from({length:22},(_,i)=>`E-${String(i+1).padStart(2,'0')}`)){
   ok(handbookText.includes(expertId),`Håndbogen mangler ekspertpunkt ${expertId}`);
 }
-for(const marker of ['0,15–0,65 m/s','stærk offshore-strøm','3–18 timer','Jagtbarhed','Chubarenko','GitHub Actions-kørsel','Shields-parameteren','bundskærspænding','hypoteseregister','annoteret faglig bibliografi']){
+for(const marker of ['0,15–0,65 m/s','stærk offshore-strøm','3–18 timer','Jagtbarhed','Chubarenko','GitHub Actions-kørsel','Shields-parameteren','bundskærspænding','hypoteseregister','annoteret faglig bibliografi','sekundært nærkystlager','nearshore-remobilisation']){
   ok(handbookTextLower.includes(marker.toLowerCase()),`Håndbogen mangler obligatorisk sporbarhedsmarkør: ${marker}`);
 }
 const scoreEngine=await read('js/core/score-engine.js');
-for(const marker of ['huntability: 0.40','transport: 0.35','release: 0.25','current >= .15 && current <= .65','max: 28','max: 42','hours >= 3 && hours <= 18']){
+for(const marker of ['huntability: 0.40','transport: 0.35','release: 0.25','current >= .15 && current <= .65','max: 28','max: 42','hours >= 3 && hours <= 18','nearshore-remobilisation','dominantPathway']){
   ok(scoreEngine.includes(marker),`Scoremotorens forventede auditkonstant mangler: ${marker}`);
 }
 ok(await exists('docs/rdks/10_DECISIONS/DEC-0015-HANDBOOK-EVIDENCE-TRACEABILITY.md'),'RDKS mangler DEC-0015 om håndbogens sporbarhed');
 ok(await exists('docs/rdks/10_DECISIONS/DEC-0016-HANDBOOK-REFERENCE-WORK.md'),'RDKS mangler DEC-0016 om håndbogens substans');
+ok(await exists('docs/rdks/10_DECISIONS/DEC-0017-MULTIPLE-AMBER-PATHWAYS.md'),'RDKS mangler DEC-0017 om flere ravveje');
 
 const permissions=await read('js/services/permissions-service.js');
 ok(permissions.includes("handbook_view")&&permissions.includes('Læs håndbogen'),'Rettigheden Læs håndbogen mangler');

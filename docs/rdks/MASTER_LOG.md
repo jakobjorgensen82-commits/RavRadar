@@ -75,3 +75,9 @@ Status: Implementeret
 - RDKS DEC-0016 gør substans- og sporbarhedskrav bindende.
 - Release Gate kontrollerer den udvidede håndbog og ekspertpunkter E-01–E-21.
 - Hvide standardkodefelter i adminhåndbogen er erstattet af tematilpassede, læselige filreferencer.
+
+## 4.0.62 – 2026-08-01
+- Aktiv RavScore udvidet med flere veje til fundbart rav.
+- Ny frigivelse og nærkystnær genmobilisering beregnes separat.
+- Ingen parallel Model 2; forbedringen er implementeret direkte i produktionsmodellen.
+- Håndbog kapitel 51, ekspertpunkt E-22 og DEC-0017 tilføjet.

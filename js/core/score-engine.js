@@ -137,20 +137,78 @@ function calculateTransport(zone, weather, reasons, diagnostics) {
   return clamp(score);
 }
 
-function calculateRelease(zone, history, reasons) {
-  const maxWind = numberOrNull(history.maxWind24hMps), maxWave = numberOrNull(history.maxWave24hM), hours = numberOrNull(history.hoursSinceHighEnergy); let score = 22;
+function calculateMobilisationAvailability(zone, weather, history, transportDiagnostics, reasons) {
+  const maxWind = numberOrNull(history.maxWind24hMps);
+  const maxWave = numberOrNull(history.maxWave24hM);
+  const hours = numberOrNull(history.hoursSinceHighEnergy);
+  const currentWave = numberOrNull(weather.waveHeightM);
+  const current = numberOrNull(weather.currentSpeedMps);
+  const trend = numberOrNull(weather.waterLevelTrendCm3h);
+  const alignment = numberOrNull(transportDiagnostics.currentAlignment);
+
+  // Spor A: ny frigivelse fra bund, tang eller kystaflejring efter høj energi.
+  let freshRelease = 18;
+  const freshReasons = [];
   if (maxWind !== null) {
-    if (maxWind >= 14) { score += 35; reasons.push("Høj energi det seneste døgn kan have frigivet nyt materiale."); }
-    else if (maxWind >= 9) { score += 18; reasons.push("Tidligere frisk vind kan have flyttet og frigivet materiale."); }
-    else { score += 4; reasons.push("Der har kun været begrænset vindenergi det seneste døgn."); }
-  } else reasons.push("Historiske vinddata mangler.");
-  if (maxWave !== null && maxWave >= 1.5) { score += 14; reasons.push("Tidligere høje bølger kan have arbejdet i havbunden og tangbælter."); }
+    if (maxWind >= 14) { freshRelease += 35; freshReasons.push("Høj energi det seneste døgn kan have åbnet eller forstyrret et nyt kildelager."); }
+    else if (maxWind >= 9) { freshRelease += 18; freshReasons.push("Tidligere frisk vind kan have løsnet eller omlejret materiale."); }
+    else { freshRelease += 4; freshReasons.push("Der har kun været begrænset vindenergi til ny frigivelse."); }
+  } else freshReasons.push("Historiske vinddata mangler.");
+  if (maxWave !== null && maxWave >= 1.5) { freshRelease += 14; freshReasons.push("Tidligere høje bølger kan have arbejdet i havbund, revler og tangbælter."); }
   if (hours !== null) {
-    if (hours >= 3 && hours <= 18) { score += 12; reasons.push("Der er gået passende tid siden den høje energi."); }
-    else if (hours > 48) { score -= 8; reasons.push("Den seneste høje energi ligger mere end to døgn tilbage."); }
+    if (hours >= 3 && hours <= 18) { freshRelease += 12; freshReasons.push("Tidspunktet ligger i den nuværende arbejdsperiode efter høj energi."); }
+    else if (hours > 48) { freshRelease -= 8; freshReasons.push("Potentialet for helt ny frigivelse er lavere, fordi højenergihændelsen ligger mere end to døgn tilbage."); }
   }
-  if (zone.coastType === "west") { score += 5; reasons.push("Vestkystens eksponering giver lidt større frigivelsespotentiale."); }
-  return clamp(score);
+  if (zone.coastType === "west") freshRelease += 5;
+  freshRelease = clamp(freshRelease);
+
+  // Spor B: genmobilisering af rav, som allerede ligger i nærkystzonen, i tanglinjer,
+  // på revler eller i tidligere opskyl. Dette spor kræver ikke en ny stormhændelse.
+  let remobilisation = 14;
+  const remobilisationReasons = [];
+  if (currentWave !== null) {
+    if (currentWave >= .25 && currentWave <= 1.2) { remobilisation += 17; remobilisationReasons.push("Aktuelle bølger kan genmobilisere allerede nærkystnært rav uden en ny stor storm."); }
+    else if (currentWave > 1.2) { remobilisation += 12; remobilisationReasons.push("Aktuelle høje bølger kan genmobilisere materiale, men aflejringen er mere uforudsigelig."); }
+    else { remobilisation += 3; }
+  }
+  if (current !== null) {
+    if (current >= .12 && current <= .65) remobilisation += 12;
+    else if (current > .65) remobilisation += 6;
+  }
+  if (alignment !== null) {
+    if (alignment >= .65) { remobilisation += 15; remobilisationReasons.push("Indgående strøm kan føre tidligere udtrukket eller nærtliggende rav tilbage mod stranden."); }
+    else if (alignment >= .2) { remobilisation += 8; remobilisationReasons.push("Strømmen har en indkomponent, som kan understøtte genindtransport."); }
+    else if (alignment <= -.35) remobilisation -= 5;
+  }
+  if (trend !== null && Math.abs(trend) >= 6) { remobilisation += 7; remobilisationReasons.push("Vandstandsændringen flytter den aktive kant og kan genmobilisere eller eksponere tidligere aflejret rav."); }
+  let retention = 0;
+  if (zone.shallowWater) retention += 4;
+  if (zone.reefs) retention += 4;
+  if (zone.seagrass) retention += 4;
+  remobilisation += Math.min(8, retention);
+  remobilisation = clamp(remobilisation);
+
+  // Det stærkeste realistiske spor bærer komponenten. Når ny frigivelse og
+  // genmobilisering begge er tydelige, gives en lille samspilsbonus.
+  const dominantPathway = freshRelease >= remobilisation ? 'fresh-release' : 'nearshore-remobilisation';
+  const synergy = freshRelease >= 55 && remobilisation >= 45 ? 7 : 0;
+  const score = clamp(Math.max(freshRelease, remobilisation) + synergy);
+  if (dominantPathway === 'fresh-release') reasons.push(...freshReasons);
+  else reasons.push(...remobilisationReasons, "Scoren bæres her primært af genmobilisering af allerede tilgængeligt rav – ikke af en ny fuld frigivelseskæde.");
+  if (synergy) reasons.push("Ny frigivelse og gunstig genmobilisering virker samtidig.");
+
+  return {
+    score,
+    diagnostics: {
+      dominantPathway,
+      freshRelease: Math.round(freshRelease),
+      nearshoreRemobilisation: Math.round(remobilisation),
+      synergy,
+      interpretation: dominantPathway === 'fresh-release'
+        ? 'Nyt eller nyligt frigivet materiale er det stærkeste spor.'
+        : 'Tidligere indtransporteret eller nærkystnært materiale kan genmobiliseres uden en ny storm.'
+    }
+  };
 }
 
 export function calculateRavScore({ mode, zone, weather, history = {}, ruleEvaluation = null }) {
@@ -160,7 +218,8 @@ export function calculateRavScore({ mode, zone, weather, history = {}, ruleEvalu
   const huntability = calculateHuntability(mode, weather, componentReasons.huntability);
   const transportDiagnostics = {};
   const transport = calculateTransport(zone, weather, componentReasons.transport, transportDiagnostics);
-  const release = calculateRelease(zone, history, componentReasons.release);
+  const mobilisation = calculateMobilisationAvailability(zone, weather, history, transportDiagnostics, componentReasons.release);
+  const release = mobilisation.score;
   const transportEvent = evaluateTransportEvent({history,weather,zone});
   const coastalProfile = classifyCoastalZone(zone);
   const adaptiveModel = loadAdaptiveModel();
@@ -181,7 +240,7 @@ export function calculateRavScore({ mode, zone, weather, history = {}, ruleEvalu
   const ruleAdjustment = finalScore - score;
   return {
     available:true, score:finalScore, baseScore:score, level:r.level, label:r.label, components, componentReasons,
-    explanation:{ weights, contributions, transportDiagnostics, transportEvent, coastalProfile, rawScore, adaptiveAdjustment:adaptive.adjustment, adaptiveMatches:adaptive.matches, baseScore:score, ruleAdjustment, finalScore, formula:`Jagtbarhed ${Math.round(weights.huntability*100)} % + transport ${Math.round(weights.transport*100)} % + frigivelse ${Math.round(weights.release*100)} %` },
+    explanation:{ weights, contributions, transportDiagnostics, mobilisationDiagnostics:mobilisation.diagnostics, transportEvent, coastalProfile, rawScore, adaptiveAdjustment:adaptive.adjustment, adaptiveMatches:adaptive.matches, baseScore:score, ruleAdjustment, finalScore, formula:`Jagtbarhed ${Math.round(weights.huntability*100)} % + transport ${Math.round(weights.transport*100)} % + mobilisering/tilgængelighed ${Math.round(weights.release*100)} %` },
     reasons:[...new Set([...Object.values(componentReasons).flat(), ...ruleReasons])].slice(0,8), stormBonus:release>=65, ruleEvaluation,
     debugTrace:buildScoreDebugTrace({mode,zone,weather,history,components,weights,transportDiagnostics,adaptive,ruleEvaluation,rawScore,baseScore:score,finalScore})
   };

@@ -72,3 +72,17 @@ const missingCurrent = calculateRavScore({
   history: { maxWind24hMps: 15, maxWave24hM: 2, hoursSinceHighEnergy: 8 }
 });
 assert.ok(missingCurrent.components.transport <= 52, 'Manglende strømdata skal begrænse transportscoren');
+
+const remobilised = calculateRavScore({
+  mode: 'beach', zone,
+  weather: { windSpeedMps: 4, windDirectionDeg: 90, waveHeightM: .55, currentSpeedMps: .28, currentDirectionDeg: 270, waterLevelTrendCm3h: 7 },
+  history: { maxWind24hMps: 5, maxWave24hM: .5, hoursSinceHighEnergy: 120 }
+});
+const dormant = calculateRavScore({
+  mode: 'beach', zone,
+  weather: { windSpeedMps: 4, windDirectionDeg: 90, waveHeightM: .05, currentSpeedMps: .05, currentDirectionDeg: 90, waterLevelTrendCm3h: 0 },
+  history: { maxWind24hMps: 5, maxWave24hM: .5, hoursSinceHighEnergy: 120 }
+});
+assert.ok(remobilised.components.release > dormant.components.release + 20, 'Tidligere nærkystnært rav skal kunne genmobiliseres uden en ny storm');
+assert.equal(remobilised.explanation.mobilisationDiagnostics.dominantPathway, 'nearshore-remobilisation');
+assert.ok(remobilised.components.release < 80, 'Genmobilisering alene må ikke ligne en fuld frisk frigivelseshændelse');
