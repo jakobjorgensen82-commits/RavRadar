@@ -49,3 +49,12 @@ Status: Implementeret
 - Håndbogen synkroniseres nu automatisk som beskyttet admin-dokument.
 - Rå runtime-diagnostik hentes ikke længere fra en offentlig URL i admin.
 - Versionskonsistens er udvidet til alle aktive bruger-, admin- og håndbogsfiler.
+
+## 4.0.59 – 2026-08-01
+
+Status: Implementeret og lokalt release-valideret
+
+- Kystlinje-generatoren bevarer nu den aktuelle RavRadar-releaseversion i `data/zones.geojson`.
+- Historiske geometri-snapshots må ikke overskrive releaseidentiteten.
+- Release Gate testes efter samme geometri-trin som i GitHub Actions.
+- Ændringen retter produktionsstop fundet af Release Governance i 4.0.58.

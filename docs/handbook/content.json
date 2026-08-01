@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "handbookVersion": "4.0.58",
+  "handbookVersion": "4.0.59",
   "updatedAt": "2026-08-01",
   "title": "RavRadar-håndbogen – faglig model, regler, data og drift",
   "sections": [
@@ -84,7 +84,7 @@
     },
     {
       "id": "score-implementering",
-      "title": "14. Præcis implementering i RavScore 4.0.58",
+      "title": "14. Præcis implementering i RavScore 4.0.59",
       "summary": "Den faktiske kodevirkning – ikke kun den ønskede teori.",
       "body": "<p>Grundscoren beregnes som:</p><p><code>40 % jagtbarhed + 35 % transport + 25 % frigivelse</code>.</p>\n<h4>Transport</h4><ul><li>Grundværdi 34.</li><li>Strøm 0,15–0,65 m/s: +18; over 0,65 m/s: +5; svagere: −12.</li><li>Strømretning: op til cirka +30 ved stærk indtransport og negativt bidrag ved fralandstransport.</li><li>Vind mod land: +6; tydeligt væk: −2.</li><li>Vandstandstrend ≥ +8 cm/3 t: +8; ≤ −8: +3; næsten stabil: −4.</li><li>Lavt vand +4, rev +3 og vegetation +3 – kun når strømmen mindst delvist går ind.</li><li>Tydelig fralandsstrøm kan sætte loft på 42; meget stærk fralandsretning loft på 28.</li></ul>\n<h4>Frigivelse</h4><ul><li>Grundværdi 22.</li><li>Maksvind seneste døgn ≥14 m/s: +35; ≥9 m/s: +18; ellers +4.</li><li>Maksbølge ≥1,5 m: +14.</li><li>3–18 timer siden høj energi: +12; mere end 48 timer: −8.</li><li>Kysttype <code>west</code>: +5.</li></ul>\n<h4>Efterbehandling</h4><p>En adaptiv, versionsstyret model kan justere grundscoren. Derefter anvendes aktive ekspertregler. En regel kan give bonus, fradrag, fast score, blokere vurderingen eller blot vise et råd. Debugsporet gemmer delscorer, retninger, caps, regelmatch og slutscore.</p>"
     },

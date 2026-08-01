@@ -77,7 +77,17 @@ def build(guide_ll,target_ll):
     return transform(TO_LL.transform,out),{'averageDistanceM':round(avg,1),'p95DistanceM':round(p95,1),'maximumDistanceM':round(mx,1),'backtrackShare':round(backshare,4),'lengthRatio':round(ratio,3),'points':len(out.coords)}
 
 def main():
+    # Bevar den aktuelle RavRadar-releaseversion. GUIDE er et historisk geometrisnapshot
+    # og må ikke nedgradere topniveauets app-version, når ACTIVE regenereres.
+    active_release_version = None
+    if ACTIVE.exists():
+        try:
+            active_release_version = json.loads(ACTIVE.read_text('utf-8')).get('version')
+        except (json.JSONDecodeError, OSError):
+            active_release_version = None
     guide=json.loads(GUIDE.read_text('utf-8')); target=json.loads(TARGET.read_text('utf-8'))
+    if active_release_version:
+        guide['version'] = active_release_version
     tm={f['properties']['id']:f for f in target['features']}
     report=[]; accepted=0
     for f in guide['features']:

@@ -18,3 +18,7 @@ En RavRadar-version er ikke færdig, før den samlede release-gate er bestået. 
 
 ## Begrundelse
 Forløbet omkring 4.0.56 viste, at lokal kode kunne se korrekt ud, mens SQL, RDKS, håndbogsversion, nøglekompatibilitet og CI stadig fejlede. RDKS skal forhindre gentagelse – ikke blot beskrive den bagefter.
+
+## Tillæg 4.0.59 – genererede artefakter
+
+Genererede datafiler må gerne bygges fra historiske snapshots, men generatoren skal bevare den aktuelle releaseidentitet. En generator må aldrig kopiere et ældre snapshots topniveau-`version` ind i den aktive produktionsfil. Release Gate skal køres efter de generatortrin, som GitHub Actions udfører før deployment.
