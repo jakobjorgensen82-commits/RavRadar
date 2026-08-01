@@ -95,3 +95,9 @@ Status: Implementeret
 - Supabase-write verificeres med readback før central kvittering.
 - DK-B04-09 fjernet fra den aktive systembestand.
 - DK-B04-08 udvidet til hele Rømøs vestside og beskyttet mod generator-rollback.
+
+## 4.0.65 – Hydreringsbeskyttelse for slettede zoner
+- Den deployede vejrtilstand må ikke genindføre pensionerede eller ukendte zoner.
+- `conditions.json` filtreres mod det aktive zoneregister umiddelbart efter download og før versions-/friskhedsvurdering.
+- DK-B04-09 kan derfor ikke genopstå fra en ældre GitHub Pages-cache.
+- En regressionstest gør beskyttelsen bindende i den fulde valideringskæde.
