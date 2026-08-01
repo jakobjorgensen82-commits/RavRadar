@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.66
+**Håndbogsversion:** 4.0.67
 
 **Opdateret:** 1. august 2026
 
@@ -1016,7 +1016,3 @@ Det højeste spor bærer komponenten. Begge stærke samtidig giver en begrænset
 Ekspertpunkt E-22: Vurder hvilke kombinationer af bølger, strøm, vandstandsændring og kystmorfologi der realistisk genmobiliserer rav fra sekundære nærkystlagre, og hvor længe sådanne lagre kan bestå.
 
 Implementeret i: **js/core/score-engine.js** og **js/core/coastal-process-model.js**.
-
-
-## 52. Strøm langs kysten – åbne spørgsmål
-RavRadar må ikke antage, at kun direkte strøm mod land kan give rav. Eksperten skal især vurdere næsten parallel strøm, bølgernes indskub, varighed og forskelle mellem kysttyper.

@@ -15,10 +15,13 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 BASE_URL = os.getenv("RAVRADAR_DEPLOYED_BASE_URL", "").rstrip("/")
 TIMEOUT = max(5, int(os.getenv("RAVRADAR_HYDRATE_TIMEOUT_SECONDS", "20")))
 USER_AGENT = os.getenv("WEATHER_USER_AGENT", "RavRadar deployed-state hydrator")
+ATOMIC_WEATHER_FILES = (
+    "data/live/manifest.json",
+    "data/live/conditions.json",
+)
 JSON_FILES = (
     "data/live/dmi-forecast-cache.json",
     "data/live/dmi-bulk-cache.json",
-    "data/live/conditions.json",
     "data/live/weather-health.json",
     "data/live/ravradar-runtime-diagnostics.json",
     "data/live/dmi-water-stations.json",
@@ -113,7 +116,7 @@ def sanitize_remote_document(relative: str, document: Any, allowed_zone_ids: set
 
 
 def main() -> int:
-    all_files = (*JSON_FILES, *TEXT_FILES)
+    all_files = (*ATOMIC_WEATHER_FILES, *JSON_FILES, *TEXT_FILES)
     if not BASE_URL:
         print(json.dumps({"hydrated": [], "skipped": list(all_files), "reason": "missing-base-url"}))
         return 0
@@ -123,6 +126,46 @@ def main() -> int:
     sanitized: dict[str, list[str]] = {}
     errors: list[dict[str, str]] = []
     allowed_zone_ids = active_zone_ids()
+
+    # Manifest and conditions are one atomic publication unit. Never hydrate one
+    # without the other, otherwise a deployed forecast can be paired with a
+    # checked-in manifest from a different run.
+    try:
+        remote_manifest = json.loads(fetch(f"{BASE_URL}/data/live/manifest.json", "application/json").decode("utf-8"))
+        remote_conditions = json.loads(fetch(f"{BASE_URL}/data/live/conditions.json", "application/json").decode("utf-8"))
+        if not isinstance(remote_manifest, dict) or not isinstance(remote_conditions, dict):
+            raise RuntimeError("atomic weather response is not a JSON object")
+        remote_conditions, removed_zone_ids = sanitize_remote_document(
+            "data/live/conditions.json", remote_conditions, allowed_zone_ids
+        )
+        if removed_zone_ids:
+            sanitized["data/live/conditions.json"] = removed_zone_ids
+        manifest_dataset = remote_manifest.get("datasetId")
+        conditions_dataset = remote_conditions.get("datasetId")
+        if not manifest_dataset or manifest_dataset != conditions_dataset:
+            raise RuntimeError(
+                f"deployed manifest/conditions datasetId mismatch: {manifest_dataset!r} != {conditions_dataset!r}"
+            )
+
+        local_manifest_path = ROOT / "data/live/manifest.json"
+        local_conditions_path = ROOT / "data/live/conditions.json"
+        local_manifest = read_json(local_manifest_path)
+        local_conditions = read_json(local_conditions_path)
+        local_pair_matches = (
+            isinstance(local_manifest, dict)
+            and isinstance(local_conditions, dict)
+            and local_manifest.get("datasetId")
+            and local_manifest.get("datasetId") == local_conditions.get("datasetId")
+        )
+        remote_is_newer = timestamp(remote_conditions) > timestamp(local_conditions)
+        if remote_is_newer or not local_pair_matches:
+            atomic_write_json(local_manifest_path, remote_manifest)
+            atomic_write_json(local_conditions_path, remote_conditions)
+            hydrated.extend(ATOMIC_WEATHER_FILES)
+        else:
+            preserved.extend(ATOMIC_WEATHER_FILES)
+    except (urllib.error.URLError, TimeoutError, ValueError, RuntimeError, json.JSONDecodeError) as exc:
+        errors.append({"file": "atomic-weather-dataset", "message": str(exc)})
 
     for relative in JSON_FILES:
         local_path = ROOT / relative

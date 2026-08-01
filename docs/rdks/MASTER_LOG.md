@@ -1,3 +1,6 @@
+## 4.0.67 – 2026-08-01
+GitHub Actions-regression rettet: `manifest.json` og `conditions.json` hydreres nu som ét atomisk vejrdatasæt og må aldrig få forskellige `datasetId`.
+
 ## 4.0.66 – 2026-08-01
 Admin-loginregression løst uden ny Supabase-opsætning; strømaudit, assistent-intents og frisk progressiv opstart indført.
 
