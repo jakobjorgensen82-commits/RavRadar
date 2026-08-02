@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.83
+**Håndbogsversion:** 4.0.84
 
 **Opdateret:** 1. august 2026
 
@@ -1147,3 +1147,6 @@ Denne skelnen er vigtig, fordi ærlig usikkerhed er bedre end en præcis, men op
 Når RavRadar beregner de bedste områder for fem dage, skal mange zoner og timer vurderes. Tidligere blev hele arbejdet udført i én ubrudt omgang. Selvom dagens rangliste teknisk var skrevet til siden, kunne browseren ikke nå at vise den, før alle beregninger var færdige. På langsomme telefoner kunne det ligne en permanent fastlåsning.
 
 Fra 4.0.83 vises dagens rangliste først. Browseren får derefter lov til at tegne siden, og femdøgnsberegningen fortsætter i små bidder med procentvis fremdrift. Det ændrer ikke RavScore-reglerne eller valget af bedste tidspunkt; det ændrer kun, hvordan arbejdet fordeles, så brugerfladen forbliver levende.
+
+### Teknisk læring fra version 4.0.84
+Når RavRadar dokumenterer en strømprognose med rå øst-/vest- og nord-/sydkomponenter fra DMI, skal den viste hastighed og retning beregnes fra netop de samme komponenter. En hydreret ældre cache må ikke bevare gamle afledte værdier. Derfor genberegner systemet nu altid strømretning og -hastighed, når verificeret u/v-proveniens tilføjes.

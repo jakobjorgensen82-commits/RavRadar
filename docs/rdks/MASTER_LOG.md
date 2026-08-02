@@ -197,3 +197,10 @@ Status: Implementeret
 
 ## 2026-08-02 – 4.0.83
 Brugeren dokumenterede, at dagens rangliste og 5-dages prognose kunne forblive permanent på "Indlæser", selv om automatiseret test på en kraftigere maskine afsluttede efter cirka 21 sekunder. Rodårsagen blev præciseret: DOM-ranglisten blev skrevet, men kunne ikke males, fordi den efterfølgende 5-dages beregning fortsatte synkront med omtrent 25.000 scoreberegninger. 4.0.83 indfører garanteret paint før prognosen, asynkron chunking, fremdrift og annullering ved jagtformsskift. Tidligere 4.0.79-4.0.81 må ikke betragtes som løst for denne fejl.
+
+## 4.0.84 – Verificeret strømkonsistens efter hydrering
+- GitHub-valideringen afslørede, at hydrerede prognoser kunne få rå DMI `current-u/current-v` tilføjet uden samtidig at genberegne den viste strømretning og -hastighed.
+- Det skabte internt modstridende strømfelter og fik den videnskabelige strømaudit til at fejle.
+- Rettelsen gør de verificerede u/v-komponenter autoritative og genberegner altid `currentSpeedMps` og `currentDirectionDeg` fra samme vektor.
+- Auditgrænserne er ikke løsnet. Fejlen er rettet i datakæden.
+- Ny regressionstest sikrer, at fremtidig proveniensberigelse aldrig kan efterlade u/v, retning og hastighed indbyrdes inkonsistente.

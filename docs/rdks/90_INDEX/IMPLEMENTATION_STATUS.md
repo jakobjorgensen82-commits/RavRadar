@@ -85,3 +85,8 @@ Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode
 - [x] Gammel prognoseberegning annulleres ved skift af jagtform.
 - [x] Regressionstest beskytter mod genindførelse af en synkron, blokerende prognoseberegning.
 - [ ] Produktionssitetest efter deployment skal bekræfte faktisk rendering på brugerens browser.
+
+### 4.0.84
+- [x] Verificeret DMI u/v er autoritativ kilde for strømretning og -hastighed efter hydrering.
+- [x] Proveniensberigelse genberegner viste strømfelter fra u/v.
+- [x] Regressionstest for vektorkonsistens tilføjet.

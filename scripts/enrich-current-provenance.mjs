@@ -13,6 +13,8 @@ const finite = value => {
 };
 const gridPoint=(grid,...keys)=>{for(const key of keys){const p=grid?.[key];const lon=finite(p?.longitude),lat=finite(p?.latitude);if(lon!==null&&lat!==null)return[lon,lat];}return null;};
 const normalizedProvider = value => String(value || '').trim().toLowerCase();
+const round=(value,digits=0)=>{const number=finite(value);return number===null?null:Number(number.toFixed(digits));};
+const directionFromComponents=(u,v)=>{const east=finite(u),north=finite(v);if(east===null||north===null)return null;if(Math.hypot(east,north)<1e-12)return 0;return (Math.atan2(east,north)*180/Math.PI+360)%360;};
 const isDmiCurrentRow = row => {
   const provider = normalizedProvider(row?.sources?.current?.provider);
   // Manglende source-metadata i ældre DMI-cache må kun accepteres, når rækken
@@ -56,8 +58,13 @@ function clearProvenance(row, reason='unverified'){
 }
 function applyProvenance(row, raw, point){
   if(!row||!raw||raw.u===null||raw.v===null||!point)return false;
-  row.currentUMps=raw.u;
-  row.currentVMps=raw.v;
+  row.currentUMps=round(raw.u,5);
+  row.currentVMps=round(raw.v,5);
+  // Verificerede u/v-komponenter er den autoritative fysiske kilde.
+  // Retning og hastighed skal derfor altid afledes på ny her, så en hydreret
+  // ældre cache ikke kan efterlade modstridende strømfelter i samme time.
+  row.currentSpeedMps=round(Math.hypot(raw.u,raw.v),2);
+  row.currentDirectionDeg=round(directionFromComponents(raw.u,raw.v),0);
   row.currentProvenance={
     status:'verified',
     provider:'dmi',
