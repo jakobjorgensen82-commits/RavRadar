@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.74
+**Håndbogsversion:** 4.0.75
 
 **Opdateret:** 1. august 2026
 
@@ -1082,3 +1082,11 @@ RavRadar kender ikke den faktiske mængde rav i sedimentet. Den modellerer trans
 ### 54.6 Sådan skal eksperten kommentere
 
 For en regel eller vurdering skal eksperten beskrive: hvad der ser forkert ud, hvilken kysttype det gælder, hvilke målbare forhold der bør udløse en anden vurdering, hvor meget scoren bør ændres, og hvilke observationer der ville kunne vise, at hypotesen er forkert. På den måde kan kommentaren omsættes til en testbar regel i stedet for en løs mening.
+
+## 55. Sådan holdes den hurtige brugerfil og den fulde diagnosefil sammen
+
+RavRadar gemmer de samme vejrforhold i to forskellige udgaver. Den lille brugerfil indeholder alt det, der skal bruges på kortet, i scorerne og i femdøgnsprognosen. Den store fil indeholder desuden tekniske spor, som kun er nødvendige for administration og fejlsøgning.
+
+Den lille fil beregnes altid direkte fra den store fil med den samme faste opskrift. GitHub må ikke genbruge en lille fil fra én vejrberegning sammen med en stor fil fra en anden. Derfor bygger RavRadar brugerfilen igen efter hydrering og lige før publicering. Manifestet indeholder både datasættets id, filens størrelse og et digitalt fingeraftryk. Hvis én af disse værdier ikke passer, stopper releasen i stedet for at vise blandede eller forældede data.
+
+Denne opdeling ændrer ikke RavScore, kortfarver, bedste tidspunkt eller de viste vejrdata. Den reducerer kun den mængde intern diagnostik, som en almindelig bruger ellers skulle hente.

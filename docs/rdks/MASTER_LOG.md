@@ -1,3 +1,9 @@
+## 4.0.75 – 2026-08-02
+
+- Rettede den fejlede 4.0.74 GitHub-integration.
+- Samlede public runtime, manifest, hydrering og deploy omkring én deterministisk writer.
+- Tilføjede hash- og pipelinekontrol samt DEC-0023.
+
 ## 4.0.72 – 2026-08-02
 - Rettet uoverensstemmelsen mellem den aktuelle RavScore og “Bedste beregnede tidspunkt”.
 - Den aktuelle vurdering indgår nu som kandidat for dagens prognose, og fortidige timer kan ikke vælges.

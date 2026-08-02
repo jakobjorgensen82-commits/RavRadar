@@ -1,10 +1,12 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "datasetId": "rr-20260731155217-209",
   "generatedAt": "2026-07-31T15:52:17.621Z",
   "validUntil": "2026-08-05T12:00:00.000Z",
   "zoneCount": 209,
   "conditionsPath": "./public-conditions.json",
-  "complete": true,
-  "fullConditionsPath": "./conditions.json"
+  "fullConditionsPath": "./conditions.json",
+  "publicConditionsSha256": "ded74d20cff580207f94306fc3f0f552fbac4ba5efab702749ae79f94117aaeb",
+  "publicConditionsBytes": 6866897,
+  "complete": true
 }
