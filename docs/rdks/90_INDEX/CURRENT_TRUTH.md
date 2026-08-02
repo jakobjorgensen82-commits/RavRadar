@@ -75,3 +75,8 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - Kunstige pilekopier omkring zoner er forbudt, fordi de antyder målinger, som ikke findes, og kan placere pile på land.
 - DMI-pile uden dokumenteret gitterpunkt skjules. Fallback må kun vises ved det punkt, fallbackudbyderen faktisk blev forespurgt på.
 - Rå u/v-komponenter skal bevares i den fulde diagnosekæde, så hastighed og retning kan efterprøves.
+
+## Admininitialisering og sitetest
+- Oversigt skal renderes straks efter godkendt adgang og opdateres efter fuld dataindlæsning.
+- Sitetesten må først skifte faner efter eksplicit admin-ready-markør.
+- Browserdialoger fra den isolerede test må ikke vises på den synlige adminside.

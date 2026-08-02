@@ -15,7 +15,8 @@ import { runFullPersistenceTest } from '../services/persistence-test-service.js'
 import { runFullSiteFunctionTest } from '../services/site-function-test-service.js';
 import { submitHandbookReview, listHandbookReviews, updateHandbookReview } from '../services/handbook-review-store.js';
 
-const VERSION='4.0.76';
+const VERSION='4.0.77';
+const SITE_TEST_MODE=new URLSearchParams(location.search).has('ravradarAdminSiteTest');
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
 const RULES_KEY='ravradar-admin-rules-v1';
@@ -42,7 +43,11 @@ async function boot(){
  const gate=document.querySelector('.admin-auth-gate');
  const stage=text=>{if(gate)gate.innerHTML=`<div class="auth-stage"><b>${esc(text)}</b><small>Din eksisterende Supabase-opsætning ændres ikke.</small></div>`;};
  const fail=error=>{if(gate)gate.innerHTML=`<div class="auth-error"><h2>Administration kunne ikke åbnes</h2><p>${esc(error.message)}</p><div class="toolbar"><button id="retryAdminAuth" class="admin-button">Prøv igen</button><a class="admin-button secondary" href="./">Til kortet</a></div><details><summary>Teknisk kontrol</summary><p>Fejlen opstod under sikker kontrol af session, profil eller rettigheder. Ingen nøgler eller Supabase-indstillinger er ændret.</p></details></div>`;document.querySelector('#retryAdminAuth')?.addEventListener('click',()=>location.reload());};
- try{stage('Kontrollerer Supabase-session…');await requireFreshSession();stage('Henter profil og rettigheder…');state.access=await myAccess();if(!hasPermission(state.access,'admin_access'))throw new Error('Din konto har ikke adgang til administrationen.');stage('Starter administration…');document.body.classList.remove('admin-locked');document.body.classList.add('admin-unlocked');}catch(error){console.error('Admin adgangskontrol fejlede',error);fail(error);return;}
+ try{stage('Kontrollerer Supabase-session…');await requireFreshSession();stage('Henter profil og rettigheder…');state.access=await myAccess();if(!hasPermission(state.access,'admin_access'))throw new Error('Din konto har ikke adgang til administrationen.');stage('Starter administration…');document.body.classList.remove('admin-locked');document.body.classList.add('admin-unlocked');
+  // Vis et reelt dashboard straks efter godkendt adgang. Datafelterne opdateres igen,
+  // når de asynkrone kilder er færdige, så Oversigt aldrig starter som en tom fane.
+  render();
+ }catch(error){console.error('Admin adgangskontrol fejlede',error);fail(error);return;}
  state.connection=await testConnection();
  const headerConnection=document.querySelector('#adminSupabaseHeader');if(headerConnection){headerConnection.textContent=state.connection.ok?'Supabase tilsluttet':'Supabase fejl';headerConnection.classList.toggle('ok',state.connection.ok);headerConnection.classList.toggle('bad',!state.connection.ok);}
  state.storageHealth=await adminStorageHealth();
@@ -54,13 +59,19 @@ async function boot(){
  const shipped=files.flatMap(f=>f.rules||[]).map(r=>({...r,_origin:'projekt'}));
  state.rules=[...shipped,...adminRules().map(r=>({...r,_origin:'admin'}))];
  render();
+ document.body.dataset.adminReady='true';
+ window.dispatchEvent(new CustomEvent('ravradar:admin-ready',{detail:{version:VERSION,tab:state.tab}}));
 }
 
 
 const TAB_PERMISSIONS={dashboard:'admin_access',rules:'rules_view',knowledge:'rules_view',weather:'diagnostics_view',waterStations:'zones_view',zones:'zones_view',coastlineEditor:'zones_weather_edit',directionAudit:'zones_weather_edit',observations:'observations_view',history:'observations_view',learning:'learning_manage',users:'experts_manage',handbook:'handbook_view',documentation:'handbook_view',system:'system_manage'};
 function allowed(permission){return !permission||hasPermission(state.access,permission);}
 function applyTabPermissions(){document.querySelectorAll('.admin-tabs button').forEach(button=>{const permission=TAB_PERMISSIONS[button.dataset.tab];button.hidden=!allowed(permission);button.disabled=!allowed(permission);});}
-function guard(permission,message='Du har ikke rettighed til denne funktion.'){if(allowed(permission))return true;alert(message);return false;}
+function guard(permission,message='Du har ikke rettighed til denne funktion.'){
+ if(allowed(permission))return true;
+ if(SITE_TEST_MODE){window.dispatchEvent(new CustomEvent('ravradar:test-permission-denied',{detail:{permission,message,tab:state.tab}}));console.warn(`[RavRadar sitetest] ${message}`,{permission,tab:state.tab});return false;}
+ alert(message);return false;
+}
 document.querySelectorAll('.admin-tabs button').forEach(button => {
   button.addEventListener('click', () => {
     const permission = TAB_PERMISSIONS[button.dataset.tab];
@@ -284,7 +295,7 @@ function renderObservations(){const obs=JSON.parse(localStorage.getItem('ravrada
 async function renderUsers(){
  content.innerHTML=`<article class="admin-card"><h2>Eksperter og rettigheder</h2><p class="muted">Få, brede tilladelser. Du kan til enhver tid ændre dem igen.</p><div id="profilesList" class="admin-grid"><p class="muted">Henter brugere…</p></div></article>`;
  const host=document.querySelector('#profilesList');
- try{state.profiles=await listProfiles();if(!state.profiles.length){host.innerHTML='<div class="empty">Ingen profiler blev fundet. Kør SQL-opdateringen til 4.0.76 i Supabase én gang.</div>';return;}
+ try{state.profiles=await listProfiles();if(!state.profiles.length){host.innerHTML='<div class="empty">Ingen profiler blev fundet. Kør SQL-opdateringen til 4.0.77 i Supabase én gang.</div>';return;}
  host.innerHTML=state.profiles.map(profile=>{const active=new Set((profile.user_permissions||[]).filter(x=>x.enabled).map(x=>x.permission_key));return `<article class="admin-card permission-card" data-user-id="${esc(profile.id)}"><div class="rule-card-head"><div><h3>${esc(profile.display_name||profile.email)}</h3><p class="muted">${esc(profile.email||'')} · ${esc(profile.role||'expert')}</p></div><span class="badge ${profile.is_active!==false?'active':'draft'}">${profile.is_active!==false?'Aktiv':'Deaktiveret'}</span></div><div class="permission-list">${PERMISSIONS.map(p=>`<label class="permission-option"><input type="checkbox" name="${esc(p.id)}" ${active.has(p.id)||profile.role==='owner'?'checked':''} ${profile.role==='owner'?'disabled':''}><span>${esc(p.label)}</span></label>`).join('')}</div>${profile.role==='owner'?'<p class="hint">Owner har altid alle rettigheder.</p>':'<button class="admin-button save-user-permissions" type="button">Gem rettigheder</button><p class="form-status"></p>'}</article>`}).join('');
  host.querySelectorAll('.save-user-permissions').forEach(button=>button.onclick=async()=>{const card=button.closest('[data-user-id]');const status=card.querySelector('.form-status');const values={};PERMISSIONS.forEach(p=>values[p.id]=card.querySelector(`[name="${p.id}"]`).checked);button.disabled=true;status.textContent='Gemmer…';try{await savePermissions(card.dataset.userId,values);status.textContent='Rettighederne er gemt og gælder med det samme.';}catch(error){status.textContent=error.message;}finally{button.disabled=false;}});
  }catch(error){host.innerHTML=`<div class="empty">${esc(error.message)}</div>`;}

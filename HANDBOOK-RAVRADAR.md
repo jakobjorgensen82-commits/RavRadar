@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.76
+**Håndbogsversion:** 4.0.77
 
 **Opdateret:** 1. august 2026
 
@@ -1118,3 +1118,9 @@ I 4.0.76 blev 23.049 prognosetimer kontrolleret på denne måde. 197 af 209 akti
 ### 56.3 Hvad betyder pilens sted ikke?
 
 Pilen viser modelværdien på modelgitteret. Den beviser ikke, at strømmen er præcis den samme helt inde ved stranden, bag en mole, i en smal rende eller på den anden side af en revle. RavRadar bruger den bedst dokumenterede modelværdi sammen med kystens retning, men lokale bundforhold kan afvige. Derfor skal ekspertens kommentarer især pege på områder, hvor modelpunktet ligger for langt fra den relevante kyst eller ikke repræsenterer lokale render og passager.
+
+## 57. Hvorfor admin ikke må starte med en tom Oversigt
+
+Når RavRadar åbner administrationen, skal systemet først kontrollere login og rettigheder. Nogle datakilder tager længere tid at hente end andre, men det må ikke efterlade fanen **Oversigt** helt tom. Efter godkendt adgang viser RavRadar derfor straks et første, brugbart overblik med de oplysninger, der allerede findes. Når de resterende data er hentet, opdateres det samme overblik automatisk.
+
+Den samlede sitetest åbner administrationen i en skjult, isoleret browserramme. Den venter nu på en tydelig færdigmarkør, før den skifter mellem fanerne. Eventuelle browserdialoger eller rettighedsafvisninger bliver skrevet i testens rapport i stedet for at dukke op oven på den administration, ejeren arbejder i. Det gør testen både mere præcis og mindre forstyrrende.

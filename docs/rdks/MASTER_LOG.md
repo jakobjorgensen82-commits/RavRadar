@@ -168,3 +168,8 @@ Status: Implementeret
 - 197 af 209 aktive zoner har dokumenteret DMI-marinegitterpunkt; 23.049 prognosetimer er verificeret.
 - DMI-pile uden dokumenteret gitterproveniens skjules frem for at vise en usikker placering.
 - DEC-0024 og håndbogskapitel 56 gør kravene bindende.
+
+## 2026-08-02 – 4.0.77
+- Rettet tom Oversigt ved første adminåbning.
+- Sitetesten venter på fuld admininitialisering og opsamler browserdialoger uden popup.
+- Versionskontrollen bruger faktiske runtimekilder.

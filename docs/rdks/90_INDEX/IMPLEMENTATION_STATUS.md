@@ -53,3 +53,9 @@ Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode
 - [x] Mobilkort, kontoikon, GPS-flow, knapper og farveforklaring er implementeret.
 - [x] Håndbog og RDKS er opdateret.
 - [ ] Produktionsmålinger efter deployment skal bekræfte den faktiske hastighedsgevinst på mobil og desktop.
+
+## 4.0.77
+- [x] Oversigt renderes ved første åbning.
+- [x] Admin-ready-markør styrer aktiv fanetest.
+- [x] Testdialoger opsamles uden popup.
+- [x] Runtimebaseret versionskontrol.
