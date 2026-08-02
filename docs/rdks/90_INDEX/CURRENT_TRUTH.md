@@ -85,3 +85,10 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - Manglende `current-u` eller `current-v` er ukendt data, ikke fysisk nulstrøm.
 - En time kaldes kun verificeret, når begge DMI-komponenter kan knyttes til samme gitterpunkt og gyldigt tidspunkt.
 - Ikke-verificerbare timer bevarer deres eksisterende viste strøm, men må ikke bære rå u/v-felter eller fremstilles som videnskabeligt verificerede.
+
+## Strømvektor og scorekonsistens – 4.0.85
+- DMI `current-u/current-v` er den autoritative fysiske strømvektor, når proveniensen er `verified`.
+- Der findes kun én kanonisk lagret vektor pr. time: `currentUMps/currentVMps` afrundet til den aftalte præcision.
+- `currentSpeedMps` og `currentDirectionDeg` skal altid afledes fra præcis de lagrede komponenter, ikke fra en skjult højere præcision.
+- RavScore, kortpil, debug og audit skal derfor kunne genskabe samme hastighed og retning fra de samme felter.
+- Strømretning ved næsten nul hastighed er fysisk og numerisk svagt bestemt; den må ikke få særskilt autoritet frem for komponenterne.

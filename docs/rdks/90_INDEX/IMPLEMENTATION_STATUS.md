@@ -90,3 +90,9 @@ Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode
 - [x] Verificeret DMI u/v er autoritativ kilde for strømretning og -hastighed efter hydrering.
 - [x] Proveniensberigelse genberegner viste strømfelter fra u/v.
 - [x] Regressionstest for vektorkonsistens tilføjet.
+
+## 4.0.85 – IMPLEMENTERET
+- Kanonisk lagret DMI-u/v-vektor er indført i proveniensberigelsen.
+- Hastighed og retning genberegnes fra de lagrede komponenter.
+- Videnskabelig strømaudit består på 23.049 verificerede prognosetimer uden lempelse af tolerancer.
+- Regressionstest beskytter mod fremtidig forskel mellem lagret vektor og afledte scorefelter.

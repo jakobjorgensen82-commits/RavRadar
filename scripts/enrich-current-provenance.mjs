@@ -58,13 +58,15 @@ function clearProvenance(row, reason='unverified'){
 }
 function applyProvenance(row, raw, point){
   if(!row||!raw||raw.u===null||raw.v===null||!point)return false;
-  row.currentUMps=round(raw.u,5);
-  row.currentVMps=round(raw.v,5);
-  // Verificerede u/v-komponenter er den autoritative fysiske kilde.
-  // Retning og hastighed skal derfor altid afledes på ny her, så en hydreret
-  // ældre cache ikke kan efterlade modstridende strømfelter i samme time.
-  row.currentSpeedMps=round(Math.hypot(raw.u,raw.v),2);
-  row.currentDirectionDeg=round(directionFromComponents(raw.u,raw.v),0);
+  // Gem først den kanoniske vektor. Alle afledte felter skal beregnes fra
+  // præcis de samme lagrede komponenter, som audit, scoremotor og debug senere
+  // læser. Ellers kan afrunding af især meget svag strøm ændre vinklen mærkbart.
+  const storedU=round(raw.u,5);
+  const storedV=round(raw.v,5);
+  row.currentUMps=storedU;
+  row.currentVMps=storedV;
+  row.currentSpeedMps=round(Math.hypot(storedU,storedV),2);
+  row.currentDirectionDeg=round(directionFromComponents(storedU,storedV),0);
   row.currentProvenance={
     status:'verified',
     provider:'dmi',

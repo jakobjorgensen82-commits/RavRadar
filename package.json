@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.84",
+  "version": "4.0.85",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -86,7 +86,7 @@
     "test:public-startup-order": "node scripts/test-public-startup-order-4.0.80.mjs",
     "test:public-nonblocking-forecast": "node scripts/test-public-nonblocking-forecast-4.0.83.mjs",
     "test:adaptive-model-performance": "node scripts/test-adaptive-model-performance-4.0.83.mjs",
-    "test:current-provenance-vector-consistency": "node scripts/test-current-provenance-vector-consistency-4.0.84.mjs"
+    "test:current-provenance-vector-consistency": "node scripts/test-current-provenance-vector-consistency-4.0.85.mjs"
   },
   "engines": {
     "node": ">=22"

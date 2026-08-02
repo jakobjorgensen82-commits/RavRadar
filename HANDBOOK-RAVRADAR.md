@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.84
+**Håndbogsversion:** 4.0.85
 
 **Opdateret:** 1. august 2026
 
@@ -1150,3 +1150,8 @@ Fra 4.0.83 vises dagens rangliste først. Browseren får derefter lov til at teg
 
 ### Teknisk læring fra version 4.0.84
 Når RavRadar dokumenterer en strømprognose med rå øst-/vest- og nord-/sydkomponenter fra DMI, skal den viste hastighed og retning beregnes fra netop de samme komponenter. En hydreret ældre cache må ikke bevare gamle afledte værdier. Derfor genberegner systemet nu altid strømretning og -hastighed, når verificeret u/v-proveniens tilføjes.
+
+### Teknisk læring fra version 4.0.85 – én strømvektor, ét svar
+Når RavRadar har verificerede DMI-komponenter for strømmen, gemmes øst/vest-komponenten og nord/syd-komponenten først som systemets kanoniske vektor. Hastighed og bevægelsesretning beregnes derefter fra netop disse lagrede værdier. Dermed bruger RavScore, kortets pil, debugvisningen og den videnskabelige audit samme fysiske grundlag.
+
+Det er især vigtigt ved meget svag strøm. Når både u og v ligger tæt på nul, kan få decimalers forskel flytte den beregnede vinkel meget, selv om den fysiske strøm næsten ikke flytter vand. En stor vinkelændring ved næsten nul hastighed er derfor ikke nødvendigvis en stor fysisk ændring. RavRadar må aldrig blande en retning fra én præcision med komponenter fra en anden.

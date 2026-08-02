@@ -204,3 +204,11 @@ Brugeren dokumenterede, at dagens rangliste og 5-dages prognose kunne forblive p
 - Rettelsen gør de verificerede u/v-komponenter autoritative og genberegner altid `currentSpeedMps` og `currentDirectionDeg` fra samme vektor.
 - Auditgrænserne er ikke løsnet. Fejlen er rettet i datakæden.
 - Ny regressionstest sikrer, at fremtidig proveniensberigelse aldrig kan efterlade u/v, retning og hastighed indbyrdes inkonsistente.
+
+## 4.0.85 – Én kanonisk strømvektor i hele scorekæden
+- Den præcise GitHub-fejl fra 4.0.84 blev reproduceret på de hydrerede produktionsdata.
+- Fejlen skyldtes ikke en 180°-konvention og ikke en for løs/streng audit, men forskellig afrundingsrækkefølge: lagret u/v var afrundet, mens retning og hastighed var beregnet fra uafrundede værdier.
+- Ved meget svag strøm kan dette give store vinkeludsving, fordi retningen er numerisk ustabil nær nulhastighed.
+- Fremover fastlægges først én kanonisk lagret `currentUMps/currentVMps`-vektor. `currentSpeedMps` og `currentDirectionDeg` beregnes derefter fra præcis den samme vektor.
+- Score, pil, debug og videnskabelig audit skal altid bruge samme kanoniske vektor. Auditgrænser må ikke løsnes for at skjule inkonsistens.
+- Regressionstesten kontrollerer den arkitektoniske regel og ikke en bestemt tekststreng fra en tidligere implementation.
