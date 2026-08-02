@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.77
+**Håndbogsversion:** 4.0.78
 
 **Opdateret:** 1. august 2026
 
@@ -1124,3 +1124,21 @@ Pilen viser modelværdien på modelgitteret. Den beviser ikke, at strømmen er p
 Når RavRadar åbner administrationen, skal systemet først kontrollere login og rettigheder. Nogle datakilder tager længere tid at hente end andre, men det må ikke efterlade fanen **Oversigt** helt tom. Efter godkendt adgang viser RavRadar derfor straks et første, brugbart overblik med de oplysninger, der allerede findes. Når de resterende data er hentet, opdateres det samme overblik automatisk.
 
 Den samlede sitetest åbner administrationen i en skjult, isoleret browserramme. Den venter nu på en tydelig færdigmarkør, før den skifter mellem fanerne. Eventuelle browserdialoger eller rettighedsafvisninger bliver skrevet i testens rapport i stedet for at dukke op oven på den administration, ejeren arbejder i. Det gør testen både mere præcis og mindre forstyrrende.
+
+## 58. Manglende strømdata betyder ikke, at strømmen er nul
+
+*Dette afsnit forklarer, hvorfor RavRadar skelner skarpt mellem en målt nulstrøm og en strøm, som ikke kan efterprøves fra rå DMI-komponenter.*
+
+DMI beskriver strøm med to tal: en øst-/vest-komponent og en nord-/syd-komponent. Begge kan godt være præcis nul, men det skal være værdier, DMI faktisk har leveret. Hvis en værdi mangler, må RavRadar ikke skrive nul i stedet. Nul betyder nemlig fysisk, at der ikke er bevægelse i den pågældende retning, mens en manglende værdi betyder, at vi ikke ved det.
+
+RavRadar markerer derfor nu en prognosetime som **verificeret**, når begge komponenter kan forbindes med det samme marine DMI-gitterpunkt og med et gyldigt tidspunkt. Ved lineær interpolation gemmes også de to DMI-tider, som beregningen ligger mellem. Derefter kan hastighed og retning regnes efter og sammenlignes med den pil, brugeren ser.
+
+Hvis sådan et sikkert match ikke findes, ændrer RavRadar ikke den eksisterende viste strømværdi. I stedet fjernes de rå u/v-felter, og timen mærkes **ikke verificerbar** med en årsag, eksempelvis manglende gitterpunkt, manglende tidsmatch eller en anden datakilde. Den må ikke fremstilles som videnskabeligt efterprøvet, men den bliver heller ikke fejlagtigt omskrevet til nulstrøm.
+
+Det betyder, at auditrapporten har tre forskellige resultater:
+
+1. **Verificeret:** rå DMI-komponenter, sted, tid, hastighed, retning og pil hænger sammen.
+2. **Ikke verificerbar:** dokumentationen er utilstrækkelig, men der er ikke bevist en fysisk fejl.
+3. **Reel uoverensstemmelse:** dokumenterede komponenter giver en anden hastighed eller retning end den, RavRadar viser. Dette stopper releasen.
+
+Denne skelnen er vigtig, fordi ærlig usikkerhed er bedre end en præcis, men opdigtet nulværdi.

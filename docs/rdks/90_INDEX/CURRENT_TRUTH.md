@@ -80,3 +80,8 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - Oversigt skal renderes straks efter godkendt adgang og opdateres efter fuld dataindlæsning.
 - Sitetesten må først skifte faner efter eksplicit admin-ready-markør.
 - Browserdialoger fra den isolerede test må ikke vises på den synlige adminside.
+
+## Strømproveniens og manglende værdier
+- Manglende `current-u` eller `current-v` er ukendt data, ikke fysisk nulstrøm.
+- En time kaldes kun verificeret, når begge DMI-komponenter kan knyttes til samme gitterpunkt og gyldigt tidspunkt.
+- Ikke-verificerbare timer bevarer deres eksisterende viste strøm, men må ikke bære rå u/v-felter eller fremstilles som videnskabeligt verificerede.

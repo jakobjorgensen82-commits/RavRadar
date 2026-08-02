@@ -1,0 +1,12 @@
+import fs from 'node:fs/promises';
+const source=await fs.readFile('scripts/enrich-current-provenance.mjs','utf8');
+const failures=[];
+if(!/value === null \|\| value === undefined \|\| value === ''/.test(source))failures.push('finite() afviser ikke null/undefined/tom tekst før Number-konvertering.');
+if(!/currentProvenance=\{status:'unverified'/.test(source))failures.push('Manglende proveniens markeres ikke eksplicit som unverified.');
+if(!/delete row\.currentUMps;\s*delete row\.currentVMps/.test(source))failures.push('Ikke-verificerbare timer rydder ikke falske u/v-felter.');
+if(!/status:'verified'/.test(source)||!/gridPoint:point/.test(source)||!/sourceTimes:raw\.sourceTimes/.test(source))failures.push('Verificeret proveniens mangler status, gitterpunkt eller kildetider.');
+const audit=await fs.readFile('scripts/test-current-spatial-scientific-audit-4.0.76.mjs','utf8');
+if(!/status!==['"]verified['"]/.test(audit))failures.push('Auditten skelner ikke mellem verificeret og ikke-verificerbar proveniens.');
+if(!/Missing provenance is never represented as 0\/0/.test(audit))failures.push('Auditrapporten dokumenterer ikke nul-sikkerhedsreglen.');
+if(failures.length)throw new Error(failures.join('\n'));
+console.log('OK: Manglende strømproveniens kan ikke blive til fysisk 0/0, og auditten tester kun dokumenterede matches.');

@@ -59,3 +59,9 @@ Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode
 - [x] Admin-ready-markør styrer aktiv fanetest.
 - [x] Testdialoger opsamles uden popup.
 - [x] Runtimebaseret versionskontrol.
+
+## 4.0.78
+- [x] Null, tomme værdier og manglende strømkomponenter kan ikke blive til falsk 0/0.
+- [x] Verificeret proveniens indeholder gitterpunkt, metode og kildetider.
+- [x] Ikke-verificerbare timer bevarer vist strøm uden falske råkomponenter.
+- [x] Audit og Release Gate skelner mellem reel fejl og manglende dokumentation.

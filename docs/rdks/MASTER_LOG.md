@@ -173,3 +173,10 @@ Status: Implementeret
 - Rettet tom Oversigt ved første adminåbning.
 - Sitetesten venter på fuld admininitialisering og opsamler browserdialoger uden popup.
 - Versionskontrollen bruger faktiske runtimekilder.
+
+## 2026-08-02 – 4.0.78
+- Rettet en kritisk null-konverteringsfejl, hvor manglende DMI-u/v kunne blive til falsk 0/0-strøm.
+- Indført eksplicit `verified`/`unverified` strømproveniens med gitterpunkt, metode og kildetider.
+- 23.049 timer er verificeret; 1.613 timer er bevaret som ikke-verificerbare uden overskrivning.
+- Strømauditten skelner nu mellem manglende dokumentation og reel fysisk uoverensstemmelse.
+- DEC-0026 og en fast null-sikkerhedstest gør reglen bindende.
