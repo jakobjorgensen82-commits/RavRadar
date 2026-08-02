@@ -65,3 +65,11 @@ Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode
 - [x] Verificeret proveniens indeholder gitterpunkt, metode og kildetider.
 - [x] Ikke-verificerbare timer bevarer vist strøm uden falske råkomponenter.
 - [x] Audit og Release Gate skelner mellem reel fejl og manglende dokumentation.
+
+## 4.0.79
+- [x] Rangliste og 5-dages prognose bruger én indlæst adaptiv model.
+- [x] Aktuelle scores caches pr. jagtform og zone.
+- [x] Prognosedage grupperes én gang pr. zone.
+- [x] Skjult dobbelt rendering ved opstart er fjernet.
+- [x] Sitetestens dashboardkontrol følger den faktiske UI-livscyklus.
+- [ ] Produktionstesten efter deployment skal bekræfte hurtig rendering på brugerens enheder.

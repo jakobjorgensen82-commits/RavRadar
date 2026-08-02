@@ -211,7 +211,7 @@ function calculateMobilisationAvailability(zone, weather, history, transportDiag
   };
 }
 
-export function calculateRavScore({ mode, zone, weather, history = {}, ruleEvaluation = null }) {
+export function calculateRavScore({ mode, zone, weather, history = {}, ruleEvaluation = null, adaptiveModel = null }) {
   if (!zone || !["waders", "beach"].includes(mode)) throw new Error("Ugyldig zone eller jagtform");
   if (numberOrNull(weather?.windSpeedMps) === null) return { available:false, score:null, level:"unavailable", label:"Ingen aktuelle data", reasons:["RavScore vises først, når nødvendige vejrdata er hentet."], componentReasons:{} };
   const componentReasons = { huntability: [], transport: [], release: [] };
@@ -222,10 +222,10 @@ export function calculateRavScore({ mode, zone, weather, history = {}, ruleEvalu
   const release = mobilisation.score;
   const transportEvent = evaluateTransportEvent({history,weather,zone});
   const coastalProfile = classifyCoastalZone(zone);
-  const adaptiveModel = loadAdaptiveModel();
-  const weights = adaptiveModel.weights || SCORE_WEIGHTS;
+  const activeAdaptiveModel = adaptiveModel || loadAdaptiveModel();
+  const weights = activeAdaptiveModel.weights || SCORE_WEIGHTS;
   const rawScore = Math.round(huntability*weights.huntability + transport*weights.transport + release*weights.release);
-  const adaptive = modelAdjustment({model:adaptiveModel,zone,weather});
+  const adaptive = modelAdjustment({model:activeAdaptiveModel,zone,weather});
   const score = clamp(rawScore + adaptive.adjustment);
   const finalScore = ruleEvaluation?.blocked ? null : (Number.isFinite(ruleEvaluation?.score) ? ruleEvaluation.score : score);
   if (finalScore === null) return { available:false, score:null, level:"unavailable", label:"Ikke anbefalet", reasons:[...(ruleEvaluation?.matches||[]).map(item=>item.explanation)], componentReasons, ruleEvaluation };

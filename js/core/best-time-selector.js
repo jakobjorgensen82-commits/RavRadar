@@ -33,7 +33,8 @@ export function selectBestTimeForDay({
   history = {},
   currentWeather = null,
   currentResult = null,
-  now = new Date()
+  now = new Date(),
+  adaptiveModel = null
 }) {
   const dayDate = day?.date || isoDay(day?.hours?.[0]?.time);
   const nowMs = now instanceof Date ? now.getTime() : Date.parse(now);
@@ -44,7 +45,7 @@ export function selectBestTimeForDay({
     const hourMs = timeMs(hour.time);
     // På dagens kort vises kun nu og resten af dagen. Fortid må aldrig vælges.
     if (dayDate === today && hourMs !== null && hourMs < nowMs - 30 * 60 * 1000) continue;
-    const result = calculateRavScore({ mode, zone, weather: hour, history });
+    const result = calculateRavScore({ mode, zone, weather: hour, history, adaptiveModel });
     if (result.available) candidates.push({ hour, result, source: 'forecast', isNow: false });
   }
 

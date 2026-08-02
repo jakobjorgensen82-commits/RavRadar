@@ -180,3 +180,10 @@ Status: Implementeret
 - 23.049 timer er verificeret; 1.613 timer er bevaret som ikke-verificerbare uden overskrivning.
 - Strømauditten skelner nu mellem manglende dokumentation og reel fysisk uoverensstemmelse.
 - DEC-0026 og en fast null-sikkerhedstest gør reglen bindende.
+
+## 2026-08-02 – 4.0.79
+- Rettet den offentlige sides fastlåste rangliste og 5-dages prognose.
+- Den adaptive model indlæses nu én gang og genbruges i scoreberegninger i stedet for at blive læst og normaliseret titusindvis af gange.
+- Aktuelle scores og grupperede prognosedage caches pr. zone og jagtform.
+- Dobbelt rendering under opstart er fjernet, og fund-sandsynlighed beregnes kun, når zonepanelet faktisk har brug for den.
+- Sitetestens kontrol af knappen til samlet funktionstest udføres nu på dashboardet og ikke efter faneskift.

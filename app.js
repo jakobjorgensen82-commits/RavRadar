@@ -11,8 +11,9 @@ import { openAccountDialog } from "./js/ui/account-panel.js";
 import { openDeveloperDialog } from "./js/ui/developer-panel.js";
 import { analyzeObservations } from "./js/services/learning-analysis.js";
 import { askRavRadar, QUICK_QUESTIONS } from "./js/services/rav-assistant.js";
+import { loadAdaptiveModel } from "./js/core/adaptive-model.js";
 
-const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, lastGps:null, flowArrows:null };
+const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, lastGps:null, flowArrows:null, adaptiveModel:loadAdaptiveModel(), currentScores:new Map(), forecastGroups:new Map() };
 const map = createMap("map");
 performance.mark?.('ravradar:map-shell-ready');
 const infoPanel = document.querySelector("#infoPanel"), dataStatus = document.querySelector("#dataStatus"), ranking = document.querySelector("#ranking");
@@ -21,7 +22,9 @@ const tripButton = document.querySelector("#tripButton");
 const assistantDialog=document.querySelector("#assistantDialog"), accountDialog=document.querySelector("#accountDialog"), developerDialog=document.querySelector("#developerDialog"), pinDialog=document.querySelector("#pinDialog"), tripDialog=document.querySelector("#tripDialog");
 
 function zoneCondition(zone) { return state.conditions.zones?.[zone?.id] || {}; }
-function resultFor(zone, weather = zoneCondition(zone).current || {}, history = zoneCondition(zone).history || {}) { const result=calculateRavScore({ mode:state.mode, zone, weather, history }); return {...result,prediction:predictAmberChance({baseScore:result.score,zone,weather,history,observations:getLocalObservations()})}; }
+function scoreFor(zone, weather = zoneCondition(zone).current || {}, history = zoneCondition(zone).history || {}) { return calculateRavScore({ mode:state.mode, zone, weather, history, adaptiveModel:state.adaptiveModel }); }
+function resultFor(zone, weather = zoneCondition(zone).current || {}, history = zoneCondition(zone).history || {}) { const result=scoreFor(zone,weather,history); return {...result,prediction:predictAmberChance({baseScore:result.score,zone,weather,history,observations:getLocalObservations(),model:state.adaptiveModel})}; }
+function currentScoreFor(zone){const key=`${state.mode}:${zone.id}`;if(!state.currentScores.has(key))state.currentScores.set(key,scoreFor(zone));return state.currentScores.get(key);}
 function weatherForObservedDate(zone,date){
   const condition=zoneCondition(zone);const hours=condition.forecast?.hourly||[];
   const target=Date.parse(`${date}T12:00:00Z`);
@@ -72,23 +75,25 @@ function closeZone() {
 
 function renderRanking() {
   if(!state.zones)return;
-  const rows=state.zones.features.map(feature=>({zone:feature.properties,result:resultFor(feature.properties)})).filter(item=>item.result.available).sort((a,b)=>b.result.score-a.result.score).slice(0,5);
+  const rows=state.zones.features.map(feature=>({zone:feature.properties,result:currentScoreFor(feature.properties)})).filter(item=>item.result.available).sort((a,b)=>b.result.score-a.result.score).slice(0,5);
   ranking.innerHTML=rows.length?rows.map((item,index)=>`<button class="ranking-item" type="button" data-zone-id="${item.zone.id}"><span class="rank">${index+1}</span><span><strong>${item.zone.name}</strong><small>${item.zone.region}</small></span><b class="rank-score ${item.result.level}">${item.result.score}${exceptionalScoreMark(item.result.score)}</b></button>`).join(""):`<p class="ranking-empty">Ranglisten vises, når vejrdata er hentet.</p>`;
   ranking.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>openZone(state.zones.features.find(item=>item.properties.id===button.dataset.zoneId).properties)));
 }
 
-function groupHours(forecast) {
-  const groups=new Map(); for(const hour of forecast?.hourly||[]){const date=String(hour.time||"").slice(0,10);if(!date)continue;if(!groups.has(date))groups.set(date,[]);groups.get(date).push(hour);} return [...groups.entries()].slice(0,5).map(([date,hours])=>({date,hours}));
+function groupHoursForZone(zone) {
+  if(state.forecastGroups.has(zone.id))return state.forecastGroups.get(zone.id);
+  const groups=new Map(); for(const hour of zoneCondition(zone).forecast?.hourly||[]){const date=String(hour.time||"").slice(0,10);if(!date)continue;if(!groups.has(date))groups.set(date,[]);groups.get(date).push(hour);}
+  const days=[...groups.entries()].slice(0,5).map(([date,hours])=>({date,hours}));state.forecastGroups.set(zone.id,days);return days;
 }
 function bestForDay(zone,date) {
-  const condition=zoneCondition(zone), day=groupHours(condition.forecast).find(item=>item.date===date); if(!day)return null;
-  const currentResult=resultFor(zone,condition.current||{},condition.history||{});
-  return selectBestTimeForDay({day,zone,mode:state.mode,history:condition.history||{},currentWeather:condition.current||null,currentResult});
+  const condition=zoneCondition(zone), day=groupHoursForZone(zone).find(item=>item.date===date); if(!day)return null;
+  const currentResult=currentScoreFor(zone);
+  return selectBestTimeForDay({day,zone,mode:state.mode,history:condition.history||{},currentWeather:condition.current||null,currentResult,adaptiveModel:state.adaptiveModel});
 }
 
 function renderNationalForecast() {
   if(!state.zones)return;
-  const dates=[...new Set(state.zones.features.flatMap(f=>groupHours(zoneCondition(f.properties).forecast).map(day=>day.date)))].sort().slice(0,5);
+  const dates=[...new Set(state.zones.features.flatMap(f=>groupHoursForZone(f.properties).map(day=>day.date)))].sort().slice(0,5);
   if(!dates.length){nationalForecast.innerHTML='<p class="ranking-empty">5-dages prognosen bliver vist efter næste vejr-opdatering.</p>';return;}
   const data=dates.map(date=>({date,rows:state.zones.features.map(f=>{const best=bestForDay(f.properties,date);return best?{zone:f.properties,...best}:null;}).filter(Boolean).sort((a,b)=>b.result.score-a.result.score).slice(0,5)}));
   nationalForecast.innerHTML=`<div class="day-tabs national-day-tabs" role="tablist">${data.map((day,index)=>`<button type="button" class="national-day-tab ${index===0?"active":""}" data-day-index="${index}"><span>${new Intl.DateTimeFormat("da-DK",{weekday:"short"}).format(new Date(`${day.date}T12:00:00`)).replace(".","")}</span><small>${new Intl.DateTimeFormat("da-DK",{day:"numeric",month:"short"}).format(new Date(`${day.date}T12:00:00`)).replace(".","")}</small></button>`).join("")}</div><div class="national-forecast-list"></div>`;
@@ -97,7 +102,7 @@ function renderNationalForecast() {
   nationalForecast.querySelectorAll(".national-day-tab").forEach((button,index)=>button.addEventListener("click",()=>render(index))); render(0);
 }
 
-function setMode(mode){state.mode=mode;localStorage.setItem("ravradar-mode",mode);document.querySelectorAll(".mode-button").forEach(button=>{const active=button.dataset.mode===mode;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active));});if(state.zoneLayer)refreshZoneStyles(state.zoneLayer,id=>resultFor(state.zones.features.find(item=>item.properties.id===id).properties));renderRanking();performance.mark?.('ravradar:ranking-ready');renderNationalForecast();performance.mark?.('ravradar:forecast-ready');renderSelectedZone();}
+function setMode(mode,{render=true}={}){state.mode=mode;state.currentScores.clear();localStorage.setItem("ravradar-mode",mode);document.querySelectorAll(".mode-button").forEach(button=>{const active=button.dataset.mode===mode;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active));});if(!render)return;if(state.zoneLayer)refreshZoneStyles(state.zoneLayer,id=>currentScoreFor(state.zones.features.find(item=>item.properties.id===id).properties));renderRanking();performance.mark?.('ravradar:ranking-ready');renderNationalForecast();performance.mark?.('ravradar:forecast-ready');renderSelectedZone();}
 function updateTripUi(){const trip=activeTrip();tripButton.textContent=trip?"Afslut tur":"Start ravtur";tripButton.classList.toggle("trip-active",Boolean(trip));tripButton.setAttribute("aria-pressed",String(Boolean(trip)));document.querySelector("#tripStatus").textContent=trip?"Ravtur i gang. GPS registreres kun, mens appen er åben.":"";}
 function normalizeZoneSearch(value){return String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("da-DK").trim();}
 function installZoneSearch(form,zones){
@@ -152,10 +157,10 @@ try {
   const conditions=await loadConditions({manifest});state.conditions=conditions;
   performance.mark?.('ravradar:conditions-loaded');
   // 4: zonefarver først.
-  refreshZoneStyles(state.zoneLayer,id=>resultFor(zones.features.find(item=>item.properties.id===id).properties));
+  refreshZoneStyles(state.zoneLayer,id=>currentScoreFor(zones.features.find(item=>item.properties.id===id).properties));
   performance.mark?.('ravradar:zone-colors-ready');
   state.flowArrows=installFlowArrows(map,zones,id=>state.conditions.zones?.[id]||{});
-  setMode(localStorage.getItem('ravradar-mode')==='beach'?'beach':'waders');
+  setMode(localStorage.getItem('ravradar-mode')==='beach'?'beach':'waders',{render:false});
   // 5: ranglister og fulde prognoser efter kortet er brugbart.
   renderRanking();performance.mark?.('ravradar:ranking-ready');renderNationalForecast();performance.mark?.('ravradar:forecast-ready');
   if(conditions.available&&conditions.generatedAt)dataStatus.textContent=`Senest opdateret ${new Date(conditions.generatedAt).toLocaleString('da-DK')} · klar på ${Math.round(performance.now()-started)} ms`;
@@ -165,11 +170,11 @@ try {
   resumeTripTracking();syncPendingObservations().catch(()=>{});updateTripUi();const pending=pendingTripPrompt();if(pending)setTimeout(()=>openTripPrompt(pending),650);
 } catch(error){console.error(error);infoPanel.innerHTML='<div class="notice">Aktuelle data kunne ikke indlæses. Gamle prognoser vises ikke.</div>';dataStatus.textContent='Fejl ved indlæsning';}
 
-// RavRadar 4.0.78: versionsmanifest + sikker service-worker-opdatering.
+// RavRadar 4.0.79: versionsmanifest + sikker service-worker-opdatering.
 function installAppUpdateFlow() {
   if (!("serviceWorker" in navigator)) return;
   const banner=document.querySelector("#updateBanner"), updateButton=document.querySelector("#updateAppButton");
-  const version=window.RAVRADAR_VERSION||"4.0.78"; document.querySelector("#appVersion").textContent=version;
+  const version=window.RAVRADAR_VERSION||"4.0.79"; document.querySelector("#appVersion").textContent=version;
   let refreshing=false, registration=null, waitingWorker=null;
   const showUpdate=worker=>{waitingWorker=worker||waitingWorker;if(waitingWorker){waitingWorker.postMessage({type:'SKIP_WAITING'});return;}if(!banner||!updateButton)return;banner.hidden=false;updateButton.disabled=false;updateButton.textContent="Opdater nu";};
   const activate=()=>{updateButton.disabled=true;updateButton.textContent="Opdaterer…";(waitingWorker||registration?.waiting)?.postMessage({type:"SKIP_WAITING"});};
