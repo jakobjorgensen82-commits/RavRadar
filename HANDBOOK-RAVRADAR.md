@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.75
+**Håndbogsversion:** 4.0.76
 
 **Opdateret:** 1. august 2026
 
@@ -1090,3 +1090,31 @@ RavRadar gemmer de samme vejrforhold i to forskellige udgaver. Den lille brugerf
 Den lille fil beregnes altid direkte fra den store fil med den samme faste opskrift. GitHub må ikke genbruge en lille fil fra én vejrberegning sammen med en stor fil fra en anden. Derfor bygger RavRadar brugerfilen igen efter hydrering og lige før publicering. Manifestet indeholder både datasættets id, filens størrelse og et digitalt fingeraftryk. Hvis én af disse værdier ikke passer, stopper releasen i stedet for at vise blandede eller forældede data.
 
 Denne opdeling ændrer ikke RavScore, kortfarver, bedste tidspunkt eller de viste vejrdata. Den reducerer kun den mængde intern diagnostik, som en almindelig bruger ellers skulle hente.
+
+## 56. Hvor står strømpilene, og hvilken vej peger de?
+
+*Dette afsnit forklarer forskellen mellem zonens kystpunkt, modelgitteret og den pil, brugeren ser.*
+
+En strømpil er ikke blot pynt. Den skal vise en bestemt beregnet vandbevægelse ved et bestemt sted. RavRadar viser derfor ikke længere flere kopier af den samme pil spredt tilfældigt omkring en zone. Den tidligere visning kunne placere pile på land og kunne få kortet til at ligne et tæt målenet, selv om alle pilene byggede på den samme zoneværdi.
+
+Når strømmen kommer direkte fra DMI, placeres pilen nu ved det modelgitterpunkt, hvor DMI leverede de to strømkomponenter. Den ene komponent beskriver bevægelsen mod øst eller vest, og den anden beskriver bevægelsen mod nord eller syd. Punktet betragtes som et gyldigt marint modelpunkt, fordi begge strømkomponenter findes dér. Hvis RavRadar ikke kan dokumentere dette punkt, vises der ikke en DMI-strømpil.
+
+### 56.1 Sådan beregnes retningen
+
+RavRadar bruger den oceanografiske måde at angive strøm på: Retningen fortæller, hvor vandet bevæger sig hen. 0° betyder mod nord, 90° mod øst, 180° mod syd og 270° mod vest. De østlige og nordlige komponenter omregnes med en vektorberegning. Strømpilen peger direkte i denne retning og bliver ikke vendt.
+
+Vind er anderledes. Meteorologisk vindretning fortæller normalt, hvor vinden kommer fra. Derfor vendes vindpilen 180°, så kortpilen viser, hvor luften faktisk bevæger sig hen. Den forskel er bevidst og testes automatisk.
+
+### 56.2 Sådan kontrolleres zoneværdien
+
+For hver DMI-time kan RavRadar efterprøve tre ting:
+
+1. Om øst-/vest- og nord-/syd-komponenten kommer fra samme modelpunkt.
+2. Om den viste hastighed svarer til længden af de to komponenter tilsammen.
+3. Om den viste retning og kortpil svarer til komponenternes faktiske bevægelsesretning.
+
+I 4.0.76 blev 23.049 prognosetimer kontrolleret på denne måde. 197 af 209 aktive zoner havde et direkte dokumenteret DMI-marinepunkt i den medfølgende modelcache. De resterende zoner har enten fallback, manglende strøm eller ældre DMI-data uden tilstrækkelig punktproveniens. RavRadar viser ikke en direkte DMI-pil uden denne dokumentation.
+
+### 56.3 Hvad betyder pilens sted ikke?
+
+Pilen viser modelværdien på modelgitteret. Den beviser ikke, at strømmen er præcis den samme helt inde ved stranden, bag en mole, i en smal rende eller på den anden side af en revle. RavRadar bruger den bedst dokumenterede modelværdi sammen med kystens retning, men lokale bundforhold kan afvige. Derfor skal ekspertens kommentarer især pege på områder, hvor modelpunktet ligger for langt fra den relevante kyst eller ikke repræsenterer lokale render og passager.

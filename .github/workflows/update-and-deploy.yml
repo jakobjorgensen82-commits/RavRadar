@@ -51,6 +51,9 @@ jobs:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           WEATHER_USER_AGENT: "RavRadar/4.0.29 (${{ github.server_url }}/${{ github.repository }})"
 
+      - name: Attach scientific current provenance after hydration
+        run: npm run build:current-provenance
+
       - name: Rebuild deterministic public weather runtime after hydration
         run: node scripts/generate-public-conditions.mjs
 
@@ -176,6 +179,10 @@ jobs:
           DMI_OCEAN_REQUEST_TIMEOUT_MS: 60000
           WEATHER_USER_AGENT: "RavRadar/4.0.29 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
+
+      - name: Attach scientific current provenance and exact DMI grid points
+        if: steps.preflight.outputs.should_run == 'true'
+        run: npm run build:current-provenance
 
       - name: Rebuild deterministic public weather runtime before validation and deploy
         if: steps.preflight.outputs.should_run == 'true'

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-02T18:31:21.767Z",
+  "basis": {
+    "directionConvention": "oceanographic-to: 0° north, 90° east",
+    "components": "current-u=eastward velocity; current-v=northward velocity",
+    "directionFormula": "atan2(u,v)",
+    "speedFormula": "hypot(u,v)",
+    "displayRule": "current arrow points toward movement; wind arrow converts meteorological from-direction by +180°"
+  },
+  "activeZones": 209,
+  "verifiedMarineGridZones": 197,
+  "verifiedForecastHours": 23049,
+  "warnings": [
+    "DK-B05-05: mangler dokumenteret current-u/v-gitterpunkt",
+    "DK-B05-07: mangler dokumenteret current-u/v-gitterpunkt",
+    "DK-B05-09: mangler dokumenteret current-u/v-gitterpunkt",
+    "DK-B05-10: mangler dokumenteret current-u/v-gitterpunkt",
+    "DK-B05-13: mangler dokumenteret current-u/v-gitterpunkt",
+    "DK-B05-17: mangler dokumenteret current-u/v-gitterpunkt",
+    "DK-B05-20: mangler dokumenteret current-u/v-gitterpunkt",
+    "DK-B05-21: mangler dokumenteret current-u/v-gitterpunkt",
+    "DK-B05-22: mangler dokumenteret current-u/v-gitterpunkt",
+    "DK-B05-23: mangler dokumenteret current-u/v-gitterpunkt",
+    "DK-B05-24: mangler dokumenteret current-u/v-gitterpunkt",
+    "DK-B10-10: mangler dokumenteret current-u/v-gitterpunkt"
+  ],
+  "failures": [],
+  "status": "passed-with-warnings"
+}

@@ -160,3 +160,11 @@ Status: Implementeret
 - Kontoikon, GPS-flow, knapplacering og farveforklaring er tilpasset mobilkravene.
 - Håndbogen har fået et samlet kapitel om, hvordan RavRadar vurderer ravindtransport på forskellige kysttyper.
 - DEC-0022 og nye regressionstests gør performance- og funktionskravene bindende.
+
+## 4.0.76 – 2026-08-02
+- Kunstige pileklynger omkring zonernes datapunkter er fjernet.
+- DMI-strømpile placeres ved det dokumenterede marine gitterpunkt, som leverede current-u og current-v.
+- Rå u/v-komponenter bevares i den fulde diagnosekæde og kontrolleres mod hastighed, retning og vist pil.
+- 197 af 209 aktive zoner har dokumenteret DMI-marinegitterpunkt; 23.049 prognosetimer er verificeret.
+- DMI-pile uden dokumenteret gitterproveniens skjules frem for at vise en usikker placering.
+- DEC-0024 og håndbogskapitel 56 gør kravene bindende.

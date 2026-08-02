@@ -176,28 +176,38 @@ export function locateUser(map, onError, onFound = () => {}) {
 function escapeHtml(value = "") { return String(value).replace(/[&<>'"]/g, char => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" })[char]); }
 
 
-function flowArrowIcon(type, directionDeg) {
+function flowArrowIcon(type, directionDeg, label = "") {
   const rotation = (Number(directionDeg) + (type === "wind" ? 180 : 0) + 360) % 360;
   return L.divIcon({
     className: `flow-arrow-wrap ${type}`,
     html: `<span class="flow-arrow ${type}" style="--direction:${rotation}deg" aria-hidden="true">↑</span>`,
     iconSize: [28, 28],
-    iconAnchor: [14, 14]
+    iconAnchor: [14, 14],
+    tooltipAnchor: [0, -12]
   });
 }
 
-function arrowOffsetsForZoom(zoom) {
-  if (zoom <= 7) return [[0, 0]];
-  if (zoom <= 9) return [[-24, -15], [24, 15]];
-  if (zoom <= 11) return [[-42, -24], [0, 0], [42, 24], [-26, 32]];
-  return [[-60, -34], [0, -32], [60, -8], [-48, 28], [18, 30], [66, 42]];
+function pointFrom(value, fallback) {
+  if (Array.isArray(value) && value.length >= 2 && Number.isFinite(Number(value[0])) && Number.isFinite(Number(value[1]))) {
+    return [Number(value[1]), Number(value[0])];
+  }
+  return fallback;
 }
 
-/**
- * Viser et diskret, zoomafhængigt felt af vind- og strømpile omkring zonernes
- * marine datapunkter. Laget genberegnes ved zoom og panorering, så der kommer
- * nye pile frem uden at overfylde kortet.
- */
+function minArrowSeparationPx(zoom) {
+  if (zoom <= 7) return 34;
+  if (zoom <= 9) return 28;
+  if (zoom <= 11) return 22;
+  return 16;
+}
+
+function canPlaceAt(map, latLng, occupied, minDistance) {
+  const p = map.latLngToLayerPoint(latLng);
+  if (occupied.some(existing => p.distanceTo(existing) < minDistance)) return false;
+  occupied.push(p);
+  return true;
+}
+
 export function installFlowArrows(map, featureCollection, conditionForZone) {
   if (!map.getPane("flowArrowsPane")) {
     const pane = map.createPane("flowArrowsPane");
@@ -208,48 +218,56 @@ export function installFlowArrows(map, featureCollection, conditionForZone) {
 
   const render = () => {
     layer.clearLayers();
-    const bounds = map.getBounds().pad(0.2);
+    const bounds = map.getBounds().pad(0.12);
     const zoom = map.getZoom();
-    const offsets = arrowOffsetsForZoom(zoom);
+    const minDistance = minArrowSeparationPx(zoom);
+    const occupied = { current: [], wind: [] };
 
     for (const feature of featureCollection.features || []) {
       const zone = feature.properties || {};
-      const point = Array.isArray(zone.dataPoint) ? zone.dataPoint : zone.pinPoint;
-      if (!point) continue;
-      const base = L.latLng(point[1], point[0]);
-      if (!bounds.contains(base)) continue;
-      // Datadrevet pr. zone: enhver ny feature i zones.geojson får automatisk
-      // vind- og strømpile, når conditionForZone(zone.id) leverer retningerne.
+      if (zone.zoneStatus && zone.zoneStatus !== "active") continue;
+      const fallbackPoint = Array.isArray(zone.dataPoint) ? L.latLng(zone.dataPoint[1], zone.dataPoint[0]) : null;
+      if (!fallbackPoint) continue;
       const zoneCondition = conditionForZone(zone.id);
       const condition = zoneCondition?.current || zoneCondition || {};
+      const flowPoints = zoneCondition?.flowPoints || {};
       const hasWind = Number.isFinite(Number(condition.windDirectionDeg));
-      const hasCurrent = Number.isFinite(Number(condition.currentDirectionDeg));
-      if (!hasWind && !hasCurrent) continue;
-      const basePixel = map.latLngToLayerPoint(base);
+      const currentProvider = zoneCondition?.currentSource || zoneCondition?.sources?.current?.provider || null;
+      const hasCurrentValue = Number.isFinite(Number(condition.currentDirectionDeg));
+      const hasVerifiedDmiPoint = flowPoints?.sources?.current === 'dmi-marine-grid';
+      const hasCurrent = hasCurrentValue && (currentProvider !== 'dmi' || hasVerifiedDmiPoint);
 
-      offsets.forEach((offset, index) => {
-        const pairBase = basePixel.add(L.point(offset[0], offset[1]));
-        if (hasWind) {
-          const windPosition = map.layerPointToLatLng(pairBase.add(L.point(-9, -6)));
-          L.marker(windPosition, {
-            icon: flowArrowIcon("wind", condition.windDirectionDeg),
-            interactive: false,
-            keyboard: false,
-            pane: "flowArrowsPane",
-            zIndexOffset: index
-          }).addTo(layer);
-        }
-        if (hasCurrent) {
-          const currentPosition = map.layerPointToLatLng(pairBase.add(L.point(9, 8)));
-          L.marker(currentPosition, {
+      // Strømpilen står ved det faktiske marine DMI-gitterpunkt, som leverede
+      // current-u/current-v. Der fremstilles ikke længere kunstige kopier rundt
+      // om zonen; det gav pile på land og antydede en rumlig opløsning, vi ikke har.
+      if (hasCurrent) {
+        const currentPosition = L.latLng(...pointFrom(flowPoints.current, fallbackPoint));
+        if (bounds.contains(currentPosition) && canPlaceAt(map, currentPosition, occupied.current, minDistance)) {
+          const marker = L.marker(currentPosition, {
             icon: flowArrowIcon("current", condition.currentDirectionDeg),
             interactive: false,
             keyboard: false,
-            pane: "flowArrowsPane",
-            zIndexOffset: index
+            pane: "flowArrowsPane"
           }).addTo(layer);
+          marker.options.ravFlowMeta = { type:'current', zoneId:zone.id, point:[currentPosition.lng,currentPosition.lat], directionDeg:Number(condition.currentDirectionDeg) };
         }
-      });
+      }
+
+      // Vindpilen står ved det faktiske atmosfæriske gitterpunkt. Vindretningen
+      // er meteorologisk "fra", derfor vender ikonfunktionen pilen 180° til den
+      // retning luften bevæger sig imod.
+      if (hasWind) {
+        const windPosition = L.latLng(...pointFrom(flowPoints.wind, fallbackPoint));
+        if (bounds.contains(windPosition) && canPlaceAt(map, windPosition, occupied.wind, minDistance)) {
+          const marker = L.marker(windPosition, {
+            icon: flowArrowIcon("wind", condition.windDirectionDeg),
+            interactive: false,
+            keyboard: false,
+            pane: "flowArrowsPane"
+          }).addTo(layer);
+          marker.options.ravFlowMeta = { type:'wind', zoneId:zone.id, point:[windPosition.lng,windPosition.lat], directionDeg:(Number(condition.windDirectionDeg)+180)%360 };
+        }
+      }
     }
   };
 
@@ -257,3 +275,4 @@ export function installFlowArrows(map, featureCollection, conditionForZone) {
   render();
   return { layer, refresh:render };
 }
+

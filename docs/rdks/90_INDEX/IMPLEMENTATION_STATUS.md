@@ -1,4 +1,10 @@
-# Implementeringsstatus pr. 4.0.73
+# Implementeringsstatus pr. 4.0.76
+
+## 4.0.76
+- Strømpile placeres ved dokumenterede DMI-marinegitterpunkter i stedet for kunstige offsets.
+- Rå current-u/current-v bevares og valideres mod hastighed, retning og pil.
+- 197/209 zoner har direkte DMI-gitterproveniens i den medfølgende cache; 12 zoner kræver fortsat kildespecifik opfølgning.
+- DMI-pile uden dokumenteret punkt skjules.
 
 ## 4.0.73
 - Ekspertreview viser fuld Supabase-fejl og understøtter eksisterende skemaer.
@@ -22,7 +28,7 @@ Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode
 | DMI-bulkprognoser | Implementeret, overvåges | Fortsat audit af horisont og marine randzoner |
 | Sammenhængende forecastserier | Implementeret | Regressionstest mod kildeskift og spring |
 | Officielt zoneregister | Implementeret | Fortsat geografisk audit |
-| Retningskonventioner | Implementeret | Zonernes lokale geometri og visuel ende-til-ende-kontrol |
+| Retningskonventioner | Implementeret og rådata-verificeret | Opfølgning på 12 zoner uden direkte DMI-gitterproveniens |
 | DMI-stationsregister | Delvist implementeret | Officiel registerkontrol og fuld datalivscyklus |
 | Observationslivscyklus | Delvist implementeret | Historisk stabilitet og bedre audit pr. station |
 | Prognose-/cachestatus pr. station | Implementeret | Overvåg cacheudløb, drift og historisk stabilitet |

@@ -213,6 +213,8 @@ export function buildDmiForecastHourly({ wind = [], waves = [], ocean = [], obse
       waterLevelBiasCm: 0,
       waterLevelObservationDifferenceCm: sea === null ? null : round(observationDifferenceCm, 0),
       waterLevelTrendCm3h: sea === null || sea3 === null ? null : round((sea3 - sea) * 100, 0),
+      currentUMps: round(u, 5),
+      currentVMps: round(v, 5),
       currentSpeedMps: u === null || v === null ? null : round(Math.hypot(u, v), 2),
       currentDirectionDeg: round(uvToTowardDirectionDeg(u, v), 0),
       waterTemperatureC: round(interpolateScalar(oceanBracket, 'water-temperature'), 1),

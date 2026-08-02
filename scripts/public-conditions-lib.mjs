@@ -16,6 +16,8 @@ export function buildPublicConditions(full){
     zones[zoneId]={
       provider:zone?.provider||null,
       providerLabel:zone?.providerLabel||null,
+      flowPoints:zone?.flowPoints||null,
+      currentSource:zone?.sources?.current?.provider||null,
       current:pick(zone?.current||{},CURRENT_FIELDS),
       history:pick(zone?.history||{},HISTORY_FIELDS),
       forecast:{

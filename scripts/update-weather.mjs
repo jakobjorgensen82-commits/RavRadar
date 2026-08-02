@@ -925,15 +925,15 @@ async function fromDmi(feature, generatedAt, { includeAtmosphere = false } = {})
   });
   const currentForecast = selectDmiForecastAt(forecastRecord, generatedAt) ?? dmiForecast.hourly[0];
   return {
-    point, provider: 'dmi', providerLabel: includeAtmosphere ? 'DMI Open Data' : 'DMI havdata + Open-Meteo fallback',
+    point, flowPoints: flowPointsFromForecastRecord(feature, forecastRecord), provider: 'dmi', providerLabel: includeAtmosphere ? 'DMI Open Data' : 'DMI havdata + Open-Meteo fallback',
     modelSteps: { wind: w?.step ?? null, wave: wa?.step ?? null, ocean: o?.step ?? null },
     dmiCompleteness: completeness,
     current: {
       windSpeedMps: currentForecast.windSpeedMps, windDirectionDeg: currentForecast.windDirectionDeg,
       waveHeightM: currentForecast.waveHeightM, waveDirectionDeg: currentForecast.waveDirectionDeg,
       wavePeriodS: currentForecast.wavePeriodS, waterLevelCm: currentForecast.waterLevelCm,
-      waterLevelTrendCm3h: currentForecast.waterLevelTrendCm3h, currentSpeedMps: currentForecast.currentSpeedMps,
-      currentDirectionDeg: currentForecast.currentDirectionDeg, waterTemperatureC: currentForecast.waterTemperatureC
+      waterLevelTrendCm3h: currentForecast.waterLevelTrendCm3h, currentUMps: currentForecast.currentUMps ?? null, currentVMps: currentForecast.currentVMps ?? null,
+      currentSpeedMps: currentForecast.currentSpeedMps, currentDirectionDeg: currentForecast.currentDirectionDeg, waterTemperatureC: currentForecast.waterTemperatureC
     },
     waterLevel: {
       source: 'dmi-model-authoritative',
@@ -1287,12 +1287,30 @@ async function readDmiForecastStore() {
   }
 }
 
+function flowPointsFromForecastRecord(feature, record) {
+  const fallback = zonePoint(feature);
+  const grid = record?.model?.completeness?.gridPoints ?? {};
+  const pointFor = (...keys) => {
+    for (const key of keys) {
+      const row = grid?.[key];
+      const lon = Number(row?.longitude), lat = Number(row?.latitude);
+      if (Number.isFinite(lon) && Number.isFinite(lat)) return [lon, lat];
+    }
+    return fallback;
+  };
+  const currentGrid = pointFor('current-u', 'current-v');
+  const windGrid = pointFor('wind-u-10m', 'wind-v-10m');
+  const waveGrid = pointFor('significant-wave-height', 'mean-wave-dir');
+  return { current: currentGrid, wind: windGrid, wave: waveGrid, sources: { current: grid?.['current-u'] && grid?.['current-v'] ? 'dmi-marine-grid' : 'zone-marine-anchor', wind: grid?.['wind-u-10m'] && grid?.['wind-v-10m'] ? 'dmi-atmospheric-grid' : 'zone-marine-anchor', wave: grid?.['significant-wave-height'] ? 'dmi-wave-grid' : 'zone-marine-anchor' } };
+}
+
 function zoneFromDmiForecastCache(feature, record, generatedAt) {
   const selected = selectDmiForecastAt(record, generatedAt);
   if (!selected) return null;
   const remaining = (record.hourly ?? []).filter(item => Date.parse(item.time) >= Date.parse(generatedAt) - 30 * 60000);
   return {
     point: zonePoint(feature),
+    flowPoints: flowPointsFromForecastRecord(feature, record),
     provider: 'dmi-cache',
     providerLabel: 'DMI 5-døgns prognosecache',
     modelSteps: { wind: selected.time, wave: selected.time, ocean: selected.time },
@@ -1304,6 +1322,8 @@ function zoneFromDmiForecastCache(feature, record, generatedAt) {
       wavePeriodS: selected.wavePeriodS ?? null,
       waterLevelCm: selected.waterLevelCm ?? null,
       waterLevelTrendCm3h: selected.waterLevelTrendCm3h ?? null,
+      currentUMps: selected.currentUMps ?? null,
+      currentVMps: selected.currentVMps ?? null,
       currentSpeedMps: selected.currentSpeedMps ?? null,
       currentDirectionDeg: selected.currentDirectionDeg ?? null,
       waterTemperatureC: selected.waterTemperatureC ?? null

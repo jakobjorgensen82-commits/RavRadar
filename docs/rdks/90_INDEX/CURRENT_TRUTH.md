@@ -68,3 +68,10 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - Håndbogen skal skrives i almindeligt dansk. Fagord forklares, og ekspertens opgave skal altid være konkret.
 
 - Diagnostik skal navngive konkrete fejl og må ikke kalde browsercache eller en bevidst sprunget observationskørsel for datatab.
+
+## Strømpile og modelproveniens
+- En strømretning er en oceanografisk mod-retning: 0° nord, 90° øst.
+- DMI-strømpile må kun stå ved det marine gitterpunkt, som leverede både current-u og current-v.
+- Kunstige pilekopier omkring zoner er forbudt, fordi de antyder målinger, som ikke findes, og kan placere pile på land.
+- DMI-pile uden dokumenteret gitterpunkt skjules. Fallback må kun vises ved det punkt, fallbackudbyderen faktisk blev forespurgt på.
+- Rå u/v-komponenter skal bevares i den fulde diagnosekæde, så hastighed og retning kan efterprøves.
