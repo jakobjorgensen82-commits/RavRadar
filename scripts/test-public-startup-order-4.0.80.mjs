@@ -1,0 +1,13 @@
+import fs from 'node:fs/promises';
+const app = await fs.readFile('app.js', 'utf8');
+const ranking = app.indexOf("renderRanking();performance.mark?.('ravradar:ranking-ready')");
+const paintYield = app.indexOf('await yieldToBrowser();', ranking);
+const forecast = app.indexOf('const forecastCompleted=await renderNationalForecast()', ranking);
+const arrows = app.indexOf('const installArrows=()=>');
+const idle = app.indexOf("requestIdleCallback(installArrows");
+if ([ranking,paintYield,forecast,arrows,idle].some(value=>value<0)) throw new Error('Opstartsmarkører, paint-yield eller udsat pilinstallation mangler.');
+if (!(ranking < paintYield && paintYield < forecast && forecast < arrows && arrows < idle)) throw new Error('Dagens rangliste skal kunne males før den asynkrone prognose, og pile skal komme sidst.');
+if (!app.includes('async function renderNationalForecast()') || !app.includes('index%2===1') || !app.includes('Beregner 5-dages prognose… ${progress} %')) throw new Error('5-dages beregningen er ikke opdelt i browservenlige bidder.');
+const mapView = await fs.readFile('js/map/map-view.js', 'utf8');
+if (!mapView.includes('if (wasVisible) map.removeLayer(layer)') || !mapView.includes('layer.addTo(map);')) throw new Error('Pilelaget bygges ikke afkoblet fra kortet.');
+console.log('OK: Dagens rangliste kan males før prognosen, prognosen giver løbende browseren kontrollen tilbage, og pile installeres sidst.');

@@ -214,9 +214,13 @@ export function installFlowArrows(map, featureCollection, conditionForZone) {
     pane.style.zIndex = "360";
     pane.style.pointerEvents = "none";
   }
-  const layer = L.layerGroup([], { pane:"flowArrowsPane" }).addTo(map);
+  // Byg markørerne mens laget er afkoblet fra kortet. Hvis laget allerede er
+  // monteret, udløser hver addTo(layer) ellers en dyr DOM-opdatering.
+  const layer = L.layerGroup([], { pane:"flowArrowsPane" });
 
   const render = () => {
+    const wasVisible = map.hasLayer(layer);
+    if (wasVisible) map.removeLayer(layer);
     layer.clearLayers();
     const bounds = map.getBounds().pad(0.12);
     const zoom = map.getZoom();
@@ -269,6 +273,7 @@ export function installFlowArrows(map, featureCollection, conditionForZone) {
         }
       }
     }
+    layer.addTo(map);
   };
 
   map.on("zoomend moveend resize", render);

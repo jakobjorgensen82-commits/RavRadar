@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.79
+**Håndbogsversion:** 4.0.83
 
 **Opdateret:** 1. august 2026
 
@@ -1142,3 +1142,8 @@ Det betyder, at auditrapporten har tre forskellige resultater:
 3. **Reel uoverensstemmelse:** dokumenterede komponenter giver en anden hastighed eller retning end den, RavRadar viser. Dette stopper releasen.
 
 Denne skelnen er vigtig, fordi ærlig usikkerhed er bedre end en præcis, men opdigtet nulværdi.
+
+## Ydelse på den offentlige side – opdatering 4.0.83
+Når RavRadar beregner de bedste områder for fem dage, skal mange zoner og timer vurderes. Tidligere blev hele arbejdet udført i én ubrudt omgang. Selvom dagens rangliste teknisk var skrevet til siden, kunne browseren ikke nå at vise den, før alle beregninger var færdige. På langsomme telefoner kunne det ligne en permanent fastlåsning.
+
+Fra 4.0.83 vises dagens rangliste først. Browseren får derefter lov til at tegne siden, og femdøgnsberegningen fortsætter i små bidder med procentvis fremdrift. Det ændrer ikke RavScore-reglerne eller valget af bedste tidspunkt; det ændrer kun, hvordan arbejdet fordeles, så brugerfladen forbliver levende.

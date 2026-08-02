@@ -187,3 +187,13 @@ Status: Implementeret
 - Aktuelle scores og grupperede prognosedage caches pr. zone og jagtform.
 - Dobbelt rendering under opstart er fjernet, og fund-sandsynlighed beregnes kun, når zonepanelet faktisk har brug for den.
 - Sitetestens kontrol af knappen til samlet funktionstest udføres nu på dashboardet og ikke efter faneskift.
+
+## 2026-08-02 – 4.0.80
+- Produktionssitetesten viste, at zonefarver var klar efter ca. 3,7 sekunder, mens rangliste og prognose først blev færdige efter ca. 21 sekunder.
+- Rodårsagen var synkron opbygning af hundredvis af Leaflet-vind- og strømpile før de centrale prognosevisninger.
+- Rangliste og 5-dages prognose renderes nu før pilene.
+- Pilene bygges i ledig browser-tid, og Leaflet-laget afkobles under markøropbygningen for at undgå en DOM-opdatering pr. pil.
+- Den gemte jagtform vælges før første scorecache opbygges.
+
+## 2026-08-02 – 4.0.83
+Brugeren dokumenterede, at dagens rangliste og 5-dages prognose kunne forblive permanent på "Indlæser", selv om automatiseret test på en kraftigere maskine afsluttede efter cirka 21 sekunder. Rodårsagen blev præciseret: DOM-ranglisten blev skrevet, men kunne ikke males, fordi den efterfølgende 5-dages beregning fortsatte synkront med omtrent 25.000 scoreberegninger. 4.0.83 indfører garanteret paint før prognosen, asynkron chunking, fremdrift og annullering ved jagtformsskift. Tidligere 4.0.79-4.0.81 må ikke betragtes som løst for denne fejl.

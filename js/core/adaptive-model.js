@@ -16,6 +16,8 @@ const clamp=(v,min,max)=>Math.min(max,Math.max(min,v));
 function storage(){return typeof localStorage==='undefined'?null:localStorage;}
 function readJson(key,fallback){try{return JSON.parse(storage()?.getItem(key)||'null')??fallback;}catch{return fallback;}}
 function writeJson(key,value){storage()?.setItem(key,JSON.stringify(value));}
+let adaptiveModelCacheRaw = Symbol('unset');
+let adaptiveModelCacheValue = null;
 export function normalizeAdaptiveModel(value={}){
   const merged={...clone(DEFAULT_ADAPTIVE_MODEL),...value,weights:{...DEFAULT_ADAPTIVE_MODEL.weights,...(value.weights||{})},zoneAdjustments:{...(value.zoneAdjustments||{})},metricAdjustments:Array.isArray(value.metricAdjustments)?value.metricAdjustments:[]};
   const sum=Object.values(merged.weights).reduce((a,b)=>a+Number(b||0),0)||1;
@@ -27,7 +29,15 @@ export function normalizeAdaptiveModel(value={}){
   merged.schemaVersion=2;
   return merged;
 }
-export function loadAdaptiveModel(){const stored=readJson(ADAPTIVE_MODEL_KEY,null);return stored?normalizeAdaptiveModel(stored):clone(DEFAULT_ADAPTIVE_MODEL);}
+export function loadAdaptiveModel(){
+  const raw=storage()?.getItem(ADAPTIVE_MODEL_KEY)??null;
+  if(raw===adaptiveModelCacheRaw&&adaptiveModelCacheValue)return adaptiveModelCacheValue;
+  let parsed=null;
+  try{parsed=raw?JSON.parse(raw):null;}catch{parsed=null;}
+  adaptiveModelCacheRaw=raw;
+  adaptiveModelCacheValue=parsed?normalizeAdaptiveModel(parsed):clone(DEFAULT_ADAPTIVE_MODEL);
+  return adaptiveModelCacheValue;
+}
 export function listAdaptiveModelVersions(){
   const history=readJson(ADAPTIVE_MODEL_HISTORY_KEY,[]).map(normalizeAdaptiveModel);
   const current=loadAdaptiveModel();
@@ -40,7 +50,7 @@ function archiveModel(model){
 }
 export function saveAdaptiveModel(model,{archiveCurrent=true}={}){
   const current=loadAdaptiveModel();if(archiveCurrent&&current)archiveModel(current);
-  const normalized=normalizeAdaptiveModel(model);writeJson(ADAPTIVE_MODEL_KEY,normalized);archiveModel(normalized);return normalized;
+  const normalized=normalizeAdaptiveModel(model);writeJson(ADAPTIVE_MODEL_KEY,normalized);adaptiveModelCacheRaw=storage()?.getItem(ADAPTIVE_MODEL_KEY)??null;adaptiveModelCacheValue=normalized;archiveModel(normalized);return normalized;
 }
 export function modelAdjustment({model=loadAdaptiveModel(),zone,weather={}}={}){
   let adjustment=Number(model.scoreAdjustment||0)+Number(model.zoneAdjustments?.[zone?.id]||0);const matches=[];

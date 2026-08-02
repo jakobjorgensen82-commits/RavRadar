@@ -19,3 +19,6 @@
 - Fjernelse af kendte stationer, fordi én kørsel mangler observationer.
 - Genindførelse af brede førstegenerationszoner.
 - Implementering af funktioner alene fordi de blev diskuteret teoretisk.
+
+## Senest løst, kræver produktionsbekræftelse
+- **ISSUE-PUBLIC-FORECAST-MAIN-THREAD – RETTET I 4.0.83, AFVENTER PRODUKTIONSBEKRÆFTELSE:** Dagens rangliste kunne ikke males, fordi 5-dages landsberegningen blokerede browserens hovedtråd synkront. Beregningen er nu opdelt og giver løbende browseren kontrollen tilbage.

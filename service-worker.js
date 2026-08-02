@@ -1,4 +1,4 @@
-const APP_VERSION = "4.0.79";
+const APP_VERSION = "4.0.83";
 const CACHE_PREFIX = "ravradar-app-";
 const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}`;
 const STATIC = [
@@ -23,6 +23,7 @@ self.addEventListener('fetch',event=>{
   if(url.pathname.endsWith('/version.json')||url.pathname.includes('/data/diagnostics/')||url.pathname.endsWith('/data/zones.geojson')||url.pathname.endsWith('/data/zone-plan.json')){event.respondWith(networkFirst(event.request));return;}
   const versioned=url.searchParams.get('v')===APP_VERSION;
   if(versioned||/\.(?:png|svg|ico|webp|woff2)$/.test(url.pathname)){event.respondWith(cacheFirst(event.request));return;}
-  if(/\.(?:js|css|json|geojson|webmanifest)$/.test(url.pathname)){event.respondWith(staleWhileRevalidate(event.request));return;}
+  if(/\.(?:js|css)$/.test(url.pathname)){event.respondWith(networkFirst(event.request));return;}
+  if(/\.(?:json|geojson|webmanifest)$/.test(url.pathname)){event.respondWith(staleWhileRevalidate(event.request));return;}
   event.respondWith(cacheFirst(event.request));
 });

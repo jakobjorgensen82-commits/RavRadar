@@ -73,3 +73,15 @@ Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode
 - [x] Skjult dobbelt rendering ved opstart er fjernet.
 - [x] Sitetestens dashboardkontrol følger den faktiske UI-livscyklus.
 - [ ] Produktionstesten efter deployment skal bekræfte hurtig rendering på brugerens enheder.
+
+## 4.0.80
+- Implementeret: Kritisk opstartsrettelse, så dagens rangliste og 5-dages prognose ikke længere blokeres af vind- og strømpile.
+- Implementeret: Pile installeres efter centrale prognosevisninger og bygges samlet på et afkoblet Leaflet-lag.
+- Implementeret: Jagtform vælges før første scorecache.
+
+## 4.0.83
+- [x] Dagens rangliste får et eksplicit browser-paint før 5-dages landsberegningen.
+- [x] 5-dages prognosen beregnes i små, afbrydelige bidder med synlig fremdrift.
+- [x] Gammel prognoseberegning annulleres ved skift af jagtform.
+- [x] Regressionstest beskytter mod genindførelse af en synkron, blokerende prognoseberegning.
+- [ ] Produktionssitetest efter deployment skal bekræfte faktisk rendering på brugerens browser.

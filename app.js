@@ -1,19 +1,19 @@
-import { calculateRavScore, exceptionalScoreMark } from "./js/core/score-engine.js";
-import { selectBestTimeForDay } from "./js/core/best-time-selector.js";
-import { loadConditions, loadZones, loadDataManifest } from "./js/services/data-service.js";
-import { submitObservation, getLocalObservations, syncPendingObservations } from "./js/services/observation-service.js";
-import { predictAmberChance } from "./js/core/prediction-engine.js";
-import { consumeAuthCallback } from "./js/services/auth-service.js";
-import { activeTrip, answerTrip, pendingTripPrompt, resumeTripTracking, startTrip, stopTrip } from "./js/services/trip-service.js";
-import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js";
-import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js";
-import { openAccountDialog } from "./js/ui/account-panel.js";
-import { openDeveloperDialog } from "./js/ui/developer-panel.js";
-import { analyzeObservations } from "./js/services/learning-analysis.js";
-import { askRavRadar, QUICK_QUESTIONS } from "./js/services/rav-assistant.js";
-import { loadAdaptiveModel } from "./js/core/adaptive-model.js";
+import { calculateRavScore, exceptionalScoreMark } from "./js/core/score-engine.js?v=4.0.83";
+import { selectBestTimeForDay } from "./js/core/best-time-selector.js?v=4.0.83";
+import { loadConditions, loadZones, loadDataManifest } from "./js/services/data-service.js?v=4.0.83";
+import { submitObservation, getLocalObservations, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.83";
+import { predictAmberChance } from "./js/core/prediction-engine.js?v=4.0.83";
+import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.83";
+import { activeTrip, answerTrip, pendingTripPrompt, resumeTripTracking, startTrip, stopTrip } from "./js/services/trip-service.js?v=4.0.83";
+import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.83";
+import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.83";
+import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.83";
+import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.83";
+import { analyzeObservations } from "./js/services/learning-analysis.js?v=4.0.83";
+import { askRavRadar, QUICK_QUESTIONS } from "./js/services/rav-assistant.js?v=4.0.83";
+import { loadAdaptiveModel } from "./js/core/adaptive-model.js?v=4.0.83";
 
-const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, lastGps:null, flowArrows:null, adaptiveModel:loadAdaptiveModel(), currentScores:new Map(), forecastGroups:new Map() };
+const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, lastGps:null, flowArrows:null, adaptiveModel:loadAdaptiveModel(), currentScores:new Map(), forecastGroups:new Map(), forecastRenderId:0 };
 const map = createMap("map");
 performance.mark?.('ravradar:map-shell-ready');
 const infoPanel = document.querySelector("#infoPanel"), dataStatus = document.querySelector("#dataStatus"), ranking = document.querySelector("#ranking");
@@ -91,18 +91,51 @@ function bestForDay(zone,date) {
   return selectBestTimeForDay({day,zone,mode:state.mode,history:condition.history||{},currentWeather:condition.current||null,currentResult,adaptiveModel:state.adaptiveModel});
 }
 
-function renderNationalForecast() {
-  if(!state.zones)return;
+const yieldToBrowser=()=>new Promise(resolve=>requestAnimationFrame(()=>resolve()));
+
+async function renderNationalForecast() {
+  if(!state.zones)return false;
+  const renderId=++state.forecastRenderId;
   const dates=[...new Set(state.zones.features.flatMap(f=>groupHoursForZone(f.properties).map(day=>day.date)))].sort().slice(0,5);
-  if(!dates.length){nationalForecast.innerHTML='<p class="ranking-empty">5-dages prognosen bliver vist efter næste vejr-opdatering.</p>';return;}
-  const data=dates.map(date=>({date,rows:state.zones.features.map(f=>{const best=bestForDay(f.properties,date);return best?{zone:f.properties,...best}:null;}).filter(Boolean).sort((a,b)=>b.result.score-a.result.score).slice(0,5)}));
-  nationalForecast.innerHTML=`<div class="day-tabs national-day-tabs" role="tablist">${data.map((day,index)=>`<button type="button" class="national-day-tab ${index===0?"active":""}" data-day-index="${index}"><span>${new Intl.DateTimeFormat("da-DK",{weekday:"short"}).format(new Date(`${day.date}T12:00:00`)).replace(".","")}</span><small>${new Intl.DateTimeFormat("da-DK",{day:"numeric",month:"short"}).format(new Date(`${day.date}T12:00:00`)).replace(".","")}</small></button>`).join("")}</div><div class="national-forecast-list"></div>`;
+  if(!dates.length){nationalForecast.innerHTML='<p class="ranking-empty">5-dages prognosen bliver vist efter næste vejr-opdatering.</p>';return true;}
+
+  // Vis strukturen straks og giv browseren en reel mulighed for at tegne dagens rangliste.
+  const data=dates.map(date=>({date,rows:[]}));
+  nationalForecast.innerHTML=`<div class="day-tabs national-day-tabs" role="tablist">${data.map((day,index)=>`<button type="button" class="national-day-tab ${index===0?"active":""}" data-day-index="${index}"><span>${new Intl.DateTimeFormat("da-DK",{weekday:"short"}).format(new Date(`${day.date}T12:00:00`)).replace(".","")}</span><small>${new Intl.DateTimeFormat("da-DK",{day:"numeric",month:"short"}).format(new Date(`${day.date}T12:00:00`)).replace(".","")}</small></button>`).join("")}</div><div class="national-forecast-list"><p class="ranking-empty">Beregner 5-dages prognose… 0 %</p></div>`;
+  await yieldToBrowser();
+  if(renderId!==state.forecastRenderId)return false;
+
+  // Beregn i små bidder. Den gamle synkrone løkke kunne blokere mobilbrowseren så
+  // længe, at hverken dagens rangliste eller prognosen nogensinde blev malet.
+  const features=state.zones.features;
+  for(let index=0;index<features.length;index++){
+    const zone=features[index].properties;
+    for(let dayIndex=0;dayIndex<dates.length;dayIndex++){
+      const best=bestForDay(zone,dates[dayIndex]);
+      if(best){
+        const rows=data[dayIndex].rows;
+        rows.push({zone,...best});
+        rows.sort((a,b)=>b.result.score-a.result.score);
+        if(rows.length>5)rows.length=5;
+      }
+    }
+    if(index%2===1||index===features.length-1){
+      if(renderId!==state.forecastRenderId)return false;
+      const progress=Math.round(((index+1)/features.length)*100);
+      const list=nationalForecast.querySelector(".national-forecast-list");
+      if(list)list.innerHTML=`<p class="ranking-empty">Beregner 5-dages prognose… ${progress} %</p>`;
+      await yieldToBrowser();
+    }
+  }
+  if(renderId!==state.forecastRenderId)return false;
+
   const list=nationalForecast.querySelector(".national-forecast-list");
   const render=index=>{nationalForecast.querySelectorAll(".national-day-tab").forEach((button,i)=>button.classList.toggle("active",i===index)); const rows=data[index].rows; list.innerHTML=rows.length?rows.map((item,i)=>`<button type="button" class="national-zone-row" data-zone-id="${item.zone.id}"><span class="rank">${i+1}</span><span><strong>${item.zone.name}</strong><small>${item.recommended?(item.isNow?"Bedst lige nu":`Bedste tidspunkt ca. ${new Intl.DateTimeFormat("da-DK",{hour:"2-digit",minute:"2-digit"}).format(new Date(item.hour.time))}`):"Se timeprognosen for forhold"}</small></span><b class="rank-score ${item.result.level}">${item.result.score}${exceptionalScoreMark(item.result.score)}</b></button>`).join(""):'<p class="ranking-empty">Ingen prognosedata for dagen.</p>'; list.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>openZone(state.zones.features.find(f=>f.properties.id===button.dataset.zoneId).properties)));};
   nationalForecast.querySelectorAll(".national-day-tab").forEach((button,index)=>button.addEventListener("click",()=>render(index))); render(0);
+  return true;
 }
 
-function setMode(mode,{render=true}={}){state.mode=mode;state.currentScores.clear();localStorage.setItem("ravradar-mode",mode);document.querySelectorAll(".mode-button").forEach(button=>{const active=button.dataset.mode===mode;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active));});if(!render)return;if(state.zoneLayer)refreshZoneStyles(state.zoneLayer,id=>currentScoreFor(state.zones.features.find(item=>item.properties.id===id).properties));renderRanking();performance.mark?.('ravradar:ranking-ready');renderNationalForecast();performance.mark?.('ravradar:forecast-ready');renderSelectedZone();}
+function setMode(mode,{render=true}={}){state.mode=mode;state.currentScores.clear();localStorage.setItem("ravradar-mode",mode);document.querySelectorAll(".mode-button").forEach(button=>{const active=button.dataset.mode===mode;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active));});if(!render)return;if(state.zoneLayer)refreshZoneStyles(state.zoneLayer,id=>currentScoreFor(state.zones.features.find(item=>item.properties.id===id).properties));renderRanking();performance.mark?.('ravradar:ranking-ready');renderNationalForecast().then(completed=>{if(completed)performance.mark?.('ravradar:forecast-ready');}).catch(error=>{console.error('5-dages prognosen kunne ikke beregnes',error);nationalForecast.innerHTML='<p class="ranking-empty">5-dages prognosen kunne ikke beregnes.</p>';});renderSelectedZone();}
 function updateTripUi(){const trip=activeTrip();tripButton.textContent=trip?"Afslut tur":"Start ravtur";tripButton.classList.toggle("trip-active",Boolean(trip));tripButton.setAttribute("aria-pressed",String(Boolean(trip)));document.querySelector("#tripStatus").textContent=trip?"Ravtur i gang. GPS registreres kun, mens appen er åben.":"";}
 function normalizeZoneSearch(value){return String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("da-DK").trim();}
 function installZoneSearch(form,zones){
@@ -156,13 +189,23 @@ try {
   // 3: samlet landsdatasæt hentes; dataset-id forhindrer blanding.
   const conditions=await loadConditions({manifest});state.conditions=conditions;
   performance.mark?.('ravradar:conditions-loaded');
-  // 4: zonefarver først.
+  // 4: vælg jagtform før den første scoreberegning, så cachen ikke bygges to gange.
+  setMode(localStorage.getItem('ravradar-mode')==='beach'?'beach':'waders',{render:false});
   refreshZoneStyles(state.zoneLayer,id=>currentScoreFor(zones.features.find(item=>item.properties.id===id).properties));
   performance.mark?.('ravradar:zone-colors-ready');
-  state.flowArrows=installFlowArrows(map,zones,id=>state.conditions.zones?.[id]||{});
-  setMode(localStorage.getItem('ravradar-mode')==='beach'?'beach':'waders',{render:false});
-  // 5: ranglister og fulde prognoser efter kortet er brugbart.
-  renderRanking();performance.mark?.('ravradar:ranking-ready');renderNationalForecast();performance.mark?.('ravradar:forecast-ready');
+  // 5: dagens rangliste og 5-dages prognose må aldrig vente på dekorative pile.
+  renderRanking();performance.mark?.('ravradar:ranking-ready');
+  await yieldToBrowser();
+  const forecastCompleted=await renderNationalForecast();
+  if(forecastCompleted)performance.mark?.('ravradar:forecast-ready');
+  // Vind- og strømpile bygges bagefter i ledig browser-tid. På især mobil kan
+  // hundredvis af Leaflet-markører ellers blokere hovedtråden i mange sekunder.
+  const installArrows=()=>{
+    try{state.flowArrows=installFlowArrows(map,zones,id=>state.conditions.zones?.[id]||{});performance.mark?.('ravradar:flow-arrows-ready');}
+    catch(error){console.warn('Vind- og strømpile kunne ikke vises',error);}
+  };
+  if('requestIdleCallback' in window) requestIdleCallback(installArrows,{timeout:2500});
+  else setTimeout(installArrows,0);
   if(conditions.available&&conditions.generatedAt)dataStatus.textContent=`Senest opdateret ${new Date(conditions.generatedAt).toLocaleString('da-DK')} · klar på ${Math.round(performance.now()-started)} ms`;
   else dataStatus.textContent='Aktuelle data kunne ikke hentes. Gamle data vises ikke.';
   performance.mark?.('ravradar:ready');
@@ -170,11 +213,11 @@ try {
   resumeTripTracking();syncPendingObservations().catch(()=>{});updateTripUi();const pending=pendingTripPrompt();if(pending)setTimeout(()=>openTripPrompt(pending),650);
 } catch(error){console.error(error);infoPanel.innerHTML='<div class="notice">Aktuelle data kunne ikke indlæses. Gamle prognoser vises ikke.</div>';dataStatus.textContent='Fejl ved indlæsning';}
 
-// RavRadar 4.0.79: versionsmanifest + sikker service-worker-opdatering.
+// RavRadar 4.0.83: versionsmanifest + sikker service-worker-opdatering.
 function installAppUpdateFlow() {
   if (!("serviceWorker" in navigator)) return;
   const banner=document.querySelector("#updateBanner"), updateButton=document.querySelector("#updateAppButton");
-  const version=window.RAVRADAR_VERSION||"4.0.79"; document.querySelector("#appVersion").textContent=version;
+  const version=window.RAVRADAR_VERSION||"4.0.83"; document.querySelector("#appVersion").textContent=version;
   let refreshing=false, registration=null, waitingWorker=null;
   const showUpdate=worker=>{waitingWorker=worker||waitingWorker;if(waitingWorker){waitingWorker.postMessage({type:'SKIP_WAITING'});return;}if(!banner||!updateButton)return;banner.hidden=false;updateButton.disabled=false;updateButton.textContent="Opdater nu";};
   const activate=()=>{updateButton.disabled=true;updateButton.textContent="Opdaterer…";(waitingWorker||registration?.waiting)?.postMessage({type:"SKIP_WAITING"});};

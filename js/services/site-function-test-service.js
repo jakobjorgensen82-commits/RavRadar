@@ -1,7 +1,7 @@
-import { currentSession, requireFreshSession, testConnection } from './auth-service.js';
-import { adminStorageHealth } from './admin-document-store.js';
-import { runFullPersistenceTest } from './persistence-test-service.js';
-import { askRavRadar, classifyRavQuestion } from './rav-assistant.js';
+import { currentSession, requireFreshSession, testConnection } from './auth-service.js?v=4.0.83';
+import { adminStorageHealth } from './admin-document-store.js?v=4.0.83';
+import { runFullPersistenceTest } from './persistence-test-service.js?v=4.0.83';
+import { askRavRadar, classifyRavQuestion } from './rav-assistant.js?v=4.0.83';
 
 const EXPECTED_ZONE_COUNT=209;
 const TIMEOUT_MS=20000;
