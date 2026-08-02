@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.72
+**Håndbogsversion:** 4.0.73
 
 **Opdateret:** 1. august 2026
 
@@ -1020,3 +1020,16 @@ Implementeret i: **js/core/score-engine.js** og **js/core/coastal-process-model.
 
 ## Sproglig standard fra 4.0.69
 Hele webhåndbogen er gennemgået med fast læsehjælp, forklaring af centrale fagord og en omskrevet ekspertarbejdsplan i almindeligt dansk. Ekspertens opgave beskrives nu med konkrete spørgsmål og eksempler frem for en teknisk matrix.
+
+
+## 53. Sådan skal RavRadar forstå fejl, cache og manglende målinger
+
+RavRadar skelner mellem tre forskellige situationer:
+
+1. **En rigtig fejl:** En nødvendig fil mangler, Supabase afviser en skrivning, eller en central brugerfunktion virker ikke. Fejlen skal vises med den konkrete årsag.
+2. **En advarsel:** Siden virker, men noget er langsomt eller bør undersøges. Det må ikke blandes sammen med en funktionsfejl.
+3. **En forventet mellemtilstand:** Browseren bruger en verificeret cache, eller en DMI-observationskørsel springes bevidst over, fordi sidste kontrol stadig er ny nok. Det er ikke det samme som, at data aldrig har eksisteret.
+
+For vandstandsstationer betyder det, at RavRadar viser separat, om stationen er kendt, hvornår den senest leverede en måling, om en prognosecache stadig er gyldig, og om stationen samlet set kan bruges. En kørsel uden ny observationshentning må aldrig omskrive en tidligere leverende station til “aldrig leveret”.
+
+Den samlede funktionstest viser **fejl**, **advarsler** og **bestået** særskilt. En langsom ressource er en advarsel, mens en manglende kritisk fil er en fejl.

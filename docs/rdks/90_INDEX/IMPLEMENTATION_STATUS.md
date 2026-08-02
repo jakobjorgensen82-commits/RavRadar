@@ -1,4 +1,9 @@
-# Implementeringsstatus pr. 4.0.71
+# Implementeringsstatus pr. 4.0.73
+
+## 4.0.73
+- Ekspertreview viser fuld Supabase-fejl og understøtter eksisterende skemaer.
+- Stationshistorik bevares ved hydrering og observationsskip.
+- Helhedstesten skelner mellem funktionsfejl og performanceadvarsel og profilerer opstartstrin.
 
 ## 4.0.71
 - Samlet sitetest viser nu levende fremdrift, slutrapport og fatal fejl direkte i admin.

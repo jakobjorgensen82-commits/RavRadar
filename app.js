@@ -14,6 +14,7 @@ import { askRavRadar, QUICK_QUESTIONS } from "./js/services/rav-assistant.js";
 
 const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, lastGps:null, flowArrows:null };
 const map = createMap("map");
+performance.mark?.('ravradar:map-shell-ready');
 const infoPanel = document.querySelector("#infoPanel"), dataStatus = document.querySelector("#dataStatus"), ranking = document.querySelector("#ranking");
 const nationalForecast = document.querySelector("#nationalForecastContent");
 const tripButton = document.querySelector("#tripButton");
@@ -96,7 +97,7 @@ function renderNationalForecast() {
   nationalForecast.querySelectorAll(".national-day-tab").forEach((button,index)=>button.addEventListener("click",()=>render(index))); render(0);
 }
 
-function setMode(mode){state.mode=mode;localStorage.setItem("ravradar-mode",mode);document.querySelectorAll(".mode-button").forEach(button=>{const active=button.dataset.mode===mode;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active));});if(state.zoneLayer)refreshZoneStyles(state.zoneLayer,id=>resultFor(state.zones.features.find(item=>item.properties.id===id).properties));renderRanking();renderNationalForecast();renderSelectedZone();}
+function setMode(mode){state.mode=mode;localStorage.setItem("ravradar-mode",mode);document.querySelectorAll(".mode-button").forEach(button=>{const active=button.dataset.mode===mode;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active));});if(state.zoneLayer)refreshZoneStyles(state.zoneLayer,id=>resultFor(state.zones.features.find(item=>item.properties.id===id).properties));renderRanking();performance.mark?.('ravradar:ranking-ready');renderNationalForecast();performance.mark?.('ravradar:forecast-ready');renderSelectedZone();}
 function updateTripUi(){const trip=activeTrip();tripButton.textContent=trip?"Afslut tur":"Start ravtur";tripButton.classList.toggle("trip-active",Boolean(trip));tripButton.setAttribute("aria-pressed",String(Boolean(trip)));document.querySelector("#tripStatus").textContent=trip?"Ravtur i gang. GPS registreres kun, mens appen er åben.":"";}
 function normalizeZoneSearch(value){return String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("da-DK").trim();}
 function installZoneSearch(form,zones){
@@ -141,29 +142,35 @@ try {
   const started=performance.now();
   // 1: side/kortgrundlag og statiske zoner vises straks.
   const zones=await loadZones();state.zones=zones;
+  performance.mark?.('ravradar:zones-loaded');
   state.zoneLayer=renderZones(map,zones,()=>({available:false,level:'unavailable'}),zone=>openZone(zone,{scroll:false}));
   dataStatus.textContent='Kontrollerer aktuelle data…';
   // 2: lille manifest kontrollerer friskhed og sammenhæng.
   const manifest=await loadDataManifest();
+  performance.mark?.('ravradar:manifest-loaded');
   if(manifest?.generatedAt)dataStatus.textContent=`Seneste datasæt ${new Date(manifest.generatedAt).toLocaleString('da-DK')} · henter zoner…`;
   // 3: samlet landsdatasæt hentes; dataset-id forhindrer blanding.
   const conditions=await loadConditions({manifest});state.conditions=conditions;
+  performance.mark?.('ravradar:conditions-loaded');
   // 4: zonefarver først.
   refreshZoneStyles(state.zoneLayer,id=>resultFor(zones.features.find(item=>item.properties.id===id).properties));
+  performance.mark?.('ravradar:zone-colors-ready');
   state.flowArrows=installFlowArrows(map,zones,id=>state.conditions.zones?.[id]||{});
   setMode(localStorage.getItem('ravradar-mode')==='beach'?'beach':'waders');
   // 5: ranglister og fulde prognoser efter kortet er brugbart.
-  renderRanking();renderNationalForecast();
+  renderRanking();performance.mark?.('ravradar:ranking-ready');renderNationalForecast();performance.mark?.('ravradar:forecast-ready');
   if(conditions.available&&conditions.generatedAt)dataStatus.textContent=`Senest opdateret ${new Date(conditions.generatedAt).toLocaleString('da-DK')} · klar på ${Math.round(performance.now()-started)} ms`;
   else dataStatus.textContent='Aktuelle data kunne ikke hentes. Gamle data vises ikke.';
+  performance.mark?.('ravradar:ready');
+  window.dispatchEvent(new CustomEvent('ravradar:ready',{detail:{generatedAt:conditions.generatedAt||null,datasetId:conditions.datasetId||null}}));
   resumeTripTracking();syncPendingObservations().catch(()=>{});updateTripUi();const pending=pendingTripPrompt();if(pending)setTimeout(()=>openTripPrompt(pending),650);
 } catch(error){console.error(error);infoPanel.innerHTML='<div class="notice">Aktuelle data kunne ikke indlæses. Gamle prognoser vises ikke.</div>';dataStatus.textContent='Fejl ved indlæsning';}
 
-// RavRadar 4.0.72: versionsmanifest + sikker service-worker-opdatering.
+// RavRadar 4.0.73: versionsmanifest + sikker service-worker-opdatering.
 function installAppUpdateFlow() {
   if (!("serviceWorker" in navigator)) return;
   const banner=document.querySelector("#updateBanner"), updateButton=document.querySelector("#updateAppButton");
-  const version=window.RAVRADAR_VERSION||"4.0.72"; document.querySelector("#appVersion").textContent=version;
+  const version=window.RAVRADAR_VERSION||"4.0.73"; document.querySelector("#appVersion").textContent=version;
   let refreshing=false, registration=null, waitingWorker=null;
   const showUpdate=worker=>{waitingWorker=worker||waitingWorker;if(waitingWorker){waitingWorker.postMessage({type:'SKIP_WAITING'});return;}if(!banner||!updateButton)return;banner.hidden=false;updateButton.disabled=false;updateButton.textContent="Opdater nu";};
   const activate=()=>{updateButton.disabled=true;updateButton.textContent="Opdaterer…";(waitingWorker||registration?.waiting)?.postMessage({type:"SKIP_WAITING"});};

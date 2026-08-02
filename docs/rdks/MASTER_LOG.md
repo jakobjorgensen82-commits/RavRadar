@@ -140,3 +140,9 @@ Status: Implementeret
 - `conditions.json` filtreres mod det aktive zoneregister umiddelbart efter download og før versions-/friskhedsvurdering.
 - DK-B04-09 kan derfor ikke genopstå fra en ældre GitHub Pages-cache.
 - En regressionstest gør beskyttelsen bindende i den fulde valideringskæde.
+
+## 4.0.73 – 2026-08-02
+- Løst 400-fejl og skjult fejltekst i ekspertreviewets Supabase-flow uden at ændre eksisterende nøgler eller loginopsætning.
+- Gjort stationshydrering historikbevarende og forhindret observationsskip i at nulstille stationernes livscyklus.
+- Opdelt DMI-status i brugerprognose, DMI-komponentdækning, observation og cache.
+- Udvidet helhedstesten med aktive adminfaner, navngivne ressourcer, performanceadvarsler og startup-profiler.

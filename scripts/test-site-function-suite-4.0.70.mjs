@@ -6,7 +6,7 @@ const dashboard=fs.readFileSync('js/ui/admin-dashboard.js','utf8');
 for(const marker of [
  "Offentlig side","Data og prognoser","Spørg RavRadar","Adgang og admin","Supabase-lagring","Deploy og opdatering","Performance",
  'loadPublicFrame','Jagtform kan skiftes','5-dages prognose renderes','Hensigtsforståelse','Landsdækkende prognosesvar',
- 'assetClosure','Service worker og versionssammenhæng','Browserfejl og afviste promises','Opstarts- og ressourcemåling'
+ 'assetClosure','Service worker og versionssammenhæng','Browserfejl og afviste promises','Kritiske ressourcer og opstartsprofil'
 ])if(!service.includes(marker))throw new Error(`Helhedstesten mangler: ${marker}`);
 for(const marker of ['Samlet funktionstest af hele RavRadar','Download testrapport','report.categories','report.summary','TESTEN KØRER','siteTestLiveRows','scrollIntoView','ravradar-last-site-test-report-v1','TESTEN STOPPEDE MED FEJL'])if(!dashboard.includes(marker))throw new Error(`Adminrapporten mangler: ${marker}`);
 if(/downloadJson\(`ravradar-sitetest/.test(dashboard))throw new Error('Testrapporten bruger en ikke-defineret downloadJson-funktion.');

@@ -115,6 +115,45 @@ def sanitize_remote_document(relative: str, document: Any, allowed_zone_ids: set
     return document, removed
 
 
+
+def merge_station_documents(local: Any, remote: Any) -> Any:
+    """Merge station registry without allowing a newer but poorer run to erase history."""
+    if not isinstance(remote, dict):
+        return remote
+    if not isinstance(local, dict):
+        return remote
+    local_rows = {str(row.get("stationId")): row for row in local.get("stations", []) if isinstance(row, dict) and row.get("stationId")}
+    remote_rows = {str(row.get("stationId")): row for row in remote.get("stations", []) if isinstance(row, dict) and row.get("stationId")}
+    merged = dict(local_rows)
+    lifecycle_fields = (
+        "hasEverDelivered", "firstObservationAt", "lastObservationAt", "lastObservationValueCm",
+        "consecutiveMissingObservationRuns", "deliveryStatus", "forecastCacheGeneratedAt",
+        "forecastCacheValidUntil", "forecastCacheStatus", "overallUsabilityStatus", "forecastCacheZoneIds"
+    )
+    for station_id, incoming in remote_rows.items():
+        previous = local_rows.get(station_id, {})
+        row = {**previous, **incoming}
+        previous_has_history = bool(previous.get("hasEverDelivered") or previous.get("lastObservationAt") or previous.get("lastObservationValueCm") is not None)
+        incoming_has_history = bool(incoming.get("hasEverDelivered") or incoming.get("lastObservationAt") or incoming.get("lastObservationValueCm") is not None)
+        if previous_has_history and not incoming_has_history:
+            for field in lifecycle_fields:
+                if field in previous:
+                    row[field] = previous[field]
+        merged[station_id] = row
+    notifications = []
+    seen = set()
+    for item in [*(remote.get("notifications") or []), *(local.get("notifications") or [])]:
+        if not isinstance(item, dict):
+            continue
+        key = item.get("id") or json.dumps(item, sort_keys=True, ensure_ascii=False)
+        if key in seen:
+            continue
+        seen.add(key); notifications.append(item)
+    result = {**local, **remote, "schemaVersion": max(int(local.get("schemaVersion") or 0), int(remote.get("schemaVersion") or 0), 3),
+              "stations": list(merged.values()), "notifications": notifications[:250]}
+    result["retainedKnownCount"] = max(int(result.get("retainedKnownCount") or 0), len(merged) - len(remote_rows))
+    return result
+
 def main() -> int:
     all_files = (*ATOMIC_WEATHER_FILES, *JSON_FILES, *TEXT_FILES)
     if not BASE_URL:
@@ -177,6 +216,14 @@ def main() -> int:
             if removed_zone_ids:
                 sanitized[relative] = removed_zone_ids
             local = read_json(local_path)
+            if relative == "data/live/dmi-water-stations.json":
+                merged = merge_station_documents(local, remote)
+                if merged != local:
+                    atomic_write_json(local_path, merged)
+                    hydrated.append(relative)
+                else:
+                    preserved.append(relative)
+                continue
             remote_time, local_time = timestamp(remote), timestamp(local)
             if local is None or remote_time > local_time or (not local_time and remote_time):
                 atomic_write_json(local_path, remote)

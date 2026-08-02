@@ -66,3 +66,5 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 ## Accepttest og håndbogssprog
 - Admin har en samlet funktionstest, som kontrollerer deploy, aktuelle data og central Supabase-readback med oprydning.
 - Håndbogen skal skrives i almindeligt dansk. Fagord forklares, og ekspertens opgave skal altid være konkret.
+
+- Diagnostik skal navngive konkrete fejl og må ikke kalde browsercache eller en bevidst sprunget observationskørsel for datatab.

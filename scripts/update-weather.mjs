@@ -316,7 +316,7 @@ function stationRegistryRecord(station, previous = null, seenAt = new Date().toI
     properties, registryStatus,
     firstSeenAt: previous?.firstSeenAt ?? seenAt, lastSeenAt: seenAt,
     lastActiveSeenAt: registryStatus === 'active' ? seenAt : (previous?.lastActiveSeenAt ?? null),
-    hasEverDelivered: previous?.hasEverDelivered ?? false,
+    hasEverDelivered: Boolean(previous?.hasEverDelivered || previous?.lastObservationAt || Number.isFinite(Number(previous?.lastObservationValueCm))),
     firstObservationAt: previous?.firstObservationAt ?? null,
     lastObservationAt: previous?.lastObservationAt ?? null,
     lastObservationValueCm: previous?.lastObservationValueCm ?? null,
@@ -401,7 +401,9 @@ async function updateStationObservationLifecycle(stations, levels, generatedAt, 
     const previous = previousById.get(String(station.stationId)) ?? station;
     const level = levels.get(String(station.stationId));
     let next = { ...station };
-    if (level && Number.isFinite(Number(level.valueCm))) {
+    if (level?.cacheSource && Number.isFinite(Number(level.valueCm))) {
+      next = { ...next, hasEverDelivered: true, firstObservationAt: previous.firstObservationAt ?? previous.lastObservationAt ?? level.observed ?? generatedAt, lastObservationAt: previous.lastObservationAt ?? level.observed ?? null, lastObservationValueCm: Number.isFinite(Number(previous.lastObservationValueCm)) ? Number(previous.lastObservationValueCm) : round(Number(level.valueCm), 1), consecutiveMissingObservationRuns: previous.consecutiveMissingObservationRuns ?? 0, deliveryStatus: previous.deliveryStatus === 'never-delivered' ? 'temporarily-missing' : (previous.deliveryStatus ?? 'temporarily-missing') };
+    } else if (level && Number.isFinite(Number(level.valueCm))) {
       const firstDelivery = !previous.hasEverDelivered;
       const resumed = previous.hasEverDelivered && ['temporarily-missing','not-delivering'].includes(previous.deliveryStatus);
       next = {
@@ -1781,13 +1783,14 @@ nextDmiForecastStore.coverage = summarizeAvailableCoverage(nextDmiForecastStore.
 nextDmiForecastStore.dataQuality = summarizeDmiComponentCoverage(nextDmiForecastStore.zones, generatedAt);
 output.weatherEngine.dmiForecastCache = { ...nextDmiForecastStore.coverage, ...nextDmiForecastStore.dataQuality };
 const rawStationRegistry = await dmiWaterStations().catch(() => readCachedWaterStations());
-const qualityLevels = dmiObservationSkipReason ? new Map() : await dmiLatestSeaLevels().catch(() => new Map());
+const qualityLevels = dmiObservationSkipReason ? await cachedStationLevels(generatedAt) : await dmiLatestSeaLevels().catch(() => new Map());
 const stationLifecycle = await updateStationObservationLifecycle(rawStationRegistry, qualityLevels, generatedAt, { observationAttempted: !dmiObservationSkipReason, forecastStore: nextDmiForecastStore });
 const stationRegistry = stationLifecycle.stations;
 const stationRoutingAudit = await writeWaterStationRoutingAudit(features, stationRegistry.filter(station => station.overallUsabilityStatus !== 'unavailable'), generatedAt);
 const qualityStations = stationRegistry;
 for (const zone of Object.values(output.zones)) enrichZoneSources(zone, generatedAt);
-output.dataQuality = buildDataQuality(output, { stationsFetched: qualityStations.length, stationsWithFreshLevel: qualityLevels.size });
+const freshObservationCount = [...qualityLevels.values()].filter(level => !level?.cacheSource).length;
+output.dataQuality = buildDataQuality(output, { stationsFetched: qualityStations.length, stationsWithFreshLevel: freshObservationCount });
 output.dataQuality.stationRouting = stationRoutingAudit.counts;
 output.dataQuality.stationLifecycle = stationLifecycle.document.summary;
 output.dataQuality.stationNotifications = stationLifecycle.notifications;
