@@ -8,6 +8,8 @@ for(const marker of [
  'loadPublicFrame','Jagtform kan skiftes','5-dages prognose renderes','Hensigtsforståelse','Landsdækkende prognosesvar',
  'assetClosure','Service worker og versionssammenhæng','Browserfejl og afviste promises','Opstarts- og ressourcemåling'
 ])if(!service.includes(marker))throw new Error(`Helhedstesten mangler: ${marker}`);
-for(const marker of ['Samlet funktionstest af hele RavRadar','Download testrapport','report.categories','report.summary','Tester ${step.category}'])if(!dashboard.includes(marker))throw new Error(`Adminrapporten mangler: ${marker}`);
+for(const marker of ['Samlet funktionstest af hele RavRadar','Download testrapport','report.categories','report.summary','TESTEN KØRER','siteTestLiveRows','scrollIntoView','ravradar-last-site-test-report-v1','TESTEN STOPPEDE MED FEJL'])if(!dashboard.includes(marker))throw new Error(`Adminrapporten mangler: ${marker}`);
 if(/downloadJson\(`ravradar-sitetest/.test(dashboard))throw new Error('Testrapporten bruger en ikke-defineret downloadJson-funktion.');
-console.log('OK: helhedstesten dækker offentlig side, data, assistent, admin, Supabase, deploy, JavaScript-fejl og performance.');
+if(!service.includes("phase:'finished'"))throw new Error('Helhedstesten sender ikke afslutningsstatus for hver deltest.');
+if(!service.includes('globalTimeoutMs'))throw new Error('Helhedstesten mangler samlet timeout.');
+console.log('OK: helhedstesten viser fremdrift, delresultater, slutrapport og fejl synligt samt dækker hele sitet.');

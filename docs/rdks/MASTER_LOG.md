@@ -1,3 +1,18 @@
+## 4.0.72 – 2026-08-02
+- Rettet uoverensstemmelsen mellem den aktuelle RavScore og “Bedste beregnede tidspunkt”.
+- Den aktuelle vurdering indgår nu som kandidat for dagens prognose, og fortidige timer kan ikke vælges.
+- Den højeste samlede RavScore vinder altid; vandstand bruges kun som tie-breaker ved samme score.
+- Zoneprognosen og landsprognosen bruger nu samme centrale udvælgelsesfunktion.
+- Visningen forklarer valget og kan vise de bedst rangerede alternative tidspunkter.
+- Tilføjet bindende regressionstest for bedste-tidspunkt-konsistens.
+
+## 4.0.71 – 2026-08-02
+- Rettet den samlede sitetest, så resultatet altid vises direkte under knappen.
+- Tilføjet levende fremdrift og synligt resultat for hver deltest.
+- Tilføjet tydelig fatal fejlvisning og samlet timeout, så tavs afslutning eller evig kørsel ikke kan forveksles med succes.
+- Seneste rapport gemmes lokalt og vises igen efter genindlæsning.
+- Release-testen kræver nu synlig start, fremdrift, slutrapport og fejlstatus.
+
 ## 4.0.70 – 2026-08-02
 - Udvidet den tidligere begrænsede sitetest til en samlet funktionstest af hele RavRadar.
 - Testen åbner den offentlige side i en isoleret browserramme og kontrollerer kort, zonefarver, rangliste, jagtform og femdøgnsprognose.

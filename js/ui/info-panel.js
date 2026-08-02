@@ -1,4 +1,5 @@
 import { calculateRavScore, scoreRating } from "../core/score-engine.js";
+import { selectBestTimeForDay } from "../core/best-time-selector.js";
 
 const formatNumber = (value, suffix, digits = 1) => Number.isFinite(Number(value)) ? `${Number(value).toFixed(digits).replace(".", ",")} ${suffix}` : "Mangler";
 const compass = value => {
@@ -31,18 +32,8 @@ function groupForecastHours(forecast) {
   return [...groups.entries()].slice(0, 5).map(([date, hours]) => ({ date, hours }));
 }
 
-function bestHourForDay(day, zone, mode, history) {
-  const scored = day.hours.map(hour => ({ hour, result: calculateRavScore({ mode, zone, weather:hour, history }) })).filter(item => item.result.available).sort((a,b) => b.result.score-a.result.score);
-  if (!scored.length) return { hour:day.hours[Math.floor(day.hours.length/2)] || {}, result:{ available:false, score:null, level:"unavailable", components:{} }, recommended:false };
-  if (mode !== "waders") return { ...scored[0], recommended:true };
-  const levels = day.hours.map(hour => Number(hour.waterLevelCm)).filter(Number.isFinite);
-  if (!levels.length) return { ...scored[0], recommended:false };
-  const min = Math.min(...levels), max = Math.max(...levels), lowThreshold = min + (max-min)*0.4;
-  const suitable = scored.filter(({ hour }) => {
-    const level = Number(hour.waterLevelCm), trend = Number(hour.waterLevelTrendCm3h);
-    return Number.isFinite(level) && level <= lowThreshold && (Number.isFinite(trend) ? trend <= 0 : true);
-  });
-  return suitable.length ? { ...suitable[0], recommended:true } : { ...scored[0], recommended:false };
+function bestHourForDay(day, zone, mode, history, currentWeather = null, currentResult = null) {
+  return selectBestTimeForDay({ day, zone, mode, history, currentWeather, currentResult });
 }
 
 function componentDetails(name, key, result, definition) {
@@ -98,9 +89,9 @@ function dayTabs(days, selected = 0, className = "forecast-day-tab") {
   return `<div class="day-tabs" role="tablist">${days.map((day,index) => `<button class="${className} ${index===selected?"active":""}" type="button" data-day-index="${index}" role="tab" aria-selected="${index===selected}"><span>${dayLabel(`${day.date}T12:00:00`)}</span><small>${dateLabel(`${day.date}T12:00:00`)}</small></button>`).join("")}</div>`;
 }
 
-function forecastPanel(days, zone, mode, history) {
+function forecastPanel(days, zone, mode, history, currentWeather, currentResult) {
   if (!days.length) return `<section class="forecast-section"><h3>5-dages prognose</h3><p class="muted">Prognosen bliver vist efter næste vejr-opdatering.</p></section>`;
-  const summaries = days.map(day => ({ ...day, best:bestHourForDay(day,zone,mode,history) }));
+  const summaries = days.map(day => ({ ...day, best:bestHourForDay(day,zone,mode,history,currentWeather,currentResult) }));
   return `<section class="forecast-section" data-forecast-section>
     <div class="section-title-row"><div><p class="eyebrow dark">Planlæg ravjagten</p><h3>5-dages prognose</h3></div></div>
     <div class="forecast-score-strip">${summaries.map((day,index) => `<button type="button" class="forecast-score-day ${index===0?"active":""}" data-day-index="${index}"><span>${dayLabel(`${day.date}T12:00:00`)}</span><b class="day-score ${day.best.result.level}">${day.best.result.available ? day.best.result.score : "–"}</b><small>${dateLabel(`${day.date}T12:00:00`)}</small></button>`).join("")}</div>
@@ -122,7 +113,7 @@ export function bindZoneInfoInteractions(element, zone, mode, history) {
     const render = index => {
       const day = summaries[index], best = day.best, h = best.hour || {}, r = best.result || {};
       forecastSection.querySelectorAll(".forecast-score-day").forEach((button,i) => { button.classList.toggle("active",i===index); button.setAttribute("aria-selected",String(i===index)); });
-      detail.innerHTML = `<div class="forecast-selected"><div><h4>${capitalize(dayLabel(`${day.date}T12:00:00`))} ${dateLabel(`${day.date}T12:00:00`)}</h4>${best.recommended?`<p>Bedste beregnede tidspunkt: <b>${hourLabel(h.time)}</b></p>`:`<p>Intet sikkert bedste tidspunkt. Se timeprognosen, da vandstand, vind og strøm ikke peger tydeligt samme vej.</p>`}</div><div class="score-badge ${r.level}"><strong>${r.available?r.score:"–"}</strong><span>RavScore</span></div></div>
+      detail.innerHTML = `<div class="forecast-selected"><div><h4>${capitalize(dayLabel(`${day.date}T12:00:00`))} ${dateLabel(`${day.date}T12:00:00`)}</h4>${best.recommended?`<p>Bedste beregnede tidspunkt: <b>${best.isNow?"Lige nu":hourLabel(h.time)}</b></p><p class="muted">Valgt som den højeste samlede RavScore ${best.isNow?"blandt lige nu og resten af dagen":"for dagen"}. Vandstand bruges kun som tie-breaker ved samme score.</p>${best.candidates?.length>1?`<details class="best-time-comparison"><summary>Se sammenligningen</summary><ol>${best.candidates.slice(0,5).map(candidate=>`<li><span>${candidate.isNow?"Lige nu":hourLabel(candidate.time)}</span><b>RavScore ${candidate.score}</b></li>`).join("")}</ol></details>`:""}`:`<p>Intet sikkert bedste tidspunkt. Se timeprognosen, da der mangler tilstrækkelige data.</p>`}</div><div class="score-badge ${r.level}"><strong>${r.available?r.score:"–"}</strong><span>RavScore</span></div></div>
         <div class="component-list compact metric-sized">${componentDetails("Jagtbarhed","huntability",r,"Hvor let og sikkert det forventes at være at finde rav med den valgte jagtform. Vind og bølger betyder mest.")}${componentDetails("Transport","transport",r,"Hvor godt vind, strøm og vandstandsændringer forventes at føre rav og let materiale mod kysten.")}${componentDetails("Mobilisering","release",r,"Samlet potentiale for enten ny frigivelse eller genmobilisering af rav, som allerede ligger i nærkystzonen eller tidligere opskyl.")}</div>${r.available ? coastTransportExplanation(r) : ""}
         <div class="metric-grid weather-grid"><div class="metric"><span>Vind</span><strong>${directionMetric("wind",h.windSpeedMps,"m/s",h.windDirectionDeg)}</strong></div><div class="metric"><span>Bølger</span><strong>${formatNumber(h.waveHeightM,"m")}</strong></div><div class="metric"><span>Vandstand</span><strong>${formatNumber(h.waterLevelCm,"cm",0)}</strong></div><div class="metric"><span>Strøm</span><strong>${directionMetric("current",h.currentSpeedMps,"m/s",h.currentDirectionDeg,2)}</strong></div></div>`;
     };
@@ -152,7 +143,7 @@ export function showZoneInfo(element, zone, result, condition, mode, options = {
     ${result.prediction?.available ? `<section class="prediction-panel"><div><span class="eyebrow">AI-prognose</span><h3>${result.prediction.probability}% chance for ravfund</h3><p>${escapeHtml(result.prediction.label)} · sikkerhed ${result.prediction.confidence}%</p></div><details><summary>Sådan er prognosen beregnet</summary><ul>${result.prediction.reasons.map(reason=>`<li>${escapeHtml(reason)}</li>`).join("")}</ul></details></section>` : ""}
     ${result.available ? debugPanel(zone,result,condition) : ""}
     ${result.available ? `<div class="metric-grid weather-grid"><div class="metric"><span>Vind</span><strong>${directionMetric("wind",condition.windSpeedMps,"m/s",condition.windDirectionDeg)}</strong></div><div class="metric"><span>Bølger</span><strong>${formatNumber(condition.waveHeightM,"m")}</strong></div><div class="metric"><span>Vandstand</span><strong>${formatNumber(condition.waterLevelCm,"cm",0)}</strong></div><div class="metric"><span>Strøm</span><strong>${directionMetric("current",condition.currentSpeedMps,"m/s",condition.currentDirectionDeg,2)}</strong></div><div class="metric"><span>Vandtemperatur</span><strong>${formatNumber(condition.waterTemperatureC,"°C")}</strong></div><div class="metric"><span>3-timers trend</span><strong>${formatNumber(condition.waterLevelTrendCm3h,"cm",0)}</strong></div></div>` : ""}
-    ${forecastPanel(days,zone,mode,options.history||{})}${tidePanel(days)}
+    ${forecastPanel(days,zone,mode,options.history||{},condition,result)}${tidePanel(days)}
     <form id="observationForm" class="observation-form"><h3>Hvad fandt du?</h3><p>For at gøre RavRadar mere præcis vil vi gerne sammenholde dit fund med vejr, vandstand og den RavScore, der gjaldt under ravjagten.</p><label>Dato for ravjagten<input name="observedDate" type="date" required value="${new Date().toISOString().slice(0,10)}" max="${new Date().toISOString().slice(0,10)}"></label><label class="grams-field">Valgfrit antal gram<input name="grams" type="number" min="0" max="10000" step="0.1" inputmode="decimal"></label><div class="observation-buttons"><button type="submit" name="result" value="none">Intet</button><button type="submit" name="result" value="small">Små stykker</button><button type="submit" name="result" value="medium">Noget rav</button><button type="submit" name="result" value="good">Godt fund</button></div><p id="observationStatus" class="form-status" aria-live="polite"></p></form>`;
 }
 

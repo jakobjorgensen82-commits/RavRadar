@@ -1,4 +1,5 @@
 import { calculateRavScore, exceptionalScoreMark } from "./js/core/score-engine.js";
+import { selectBestTimeForDay } from "./js/core/best-time-selector.js";
 import { loadConditions, loadZones, loadDataManifest } from "./js/services/data-service.js";
 import { submitObservation, getLocalObservations, syncPendingObservations } from "./js/services/observation-service.js";
 import { predictAmberChance } from "./js/core/prediction-engine.js";
@@ -80,18 +81,10 @@ function groupHours(forecast) {
 }
 function bestForDay(zone,date) {
   const condition=zoneCondition(zone), day=groupHours(condition.forecast).find(item=>item.date===date); if(!day)return null;
-  const scored=day.hours.map(hour=>({hour,result:resultFor(zone,hour,condition.history||{})})).filter(item=>item.result.available).sort((a,b)=>b.result.score-a.result.score);
-  if(!scored.length)return null;
-  if(state.mode!=="waders")return {...scored[0],recommended:true};
-  const levels=day.hours.map(hour=>Number(hour.waterLevelCm)).filter(Number.isFinite);
-  if(!levels.length)return {...scored[0],recommended:false};
-  const min=Math.min(...levels),max=Math.max(...levels),lowThreshold=min+(max-min)*0.4;
-  const suitable=scored.filter(({hour})=>{
-    const level=Number(hour.waterLevelCm),trend=Number(hour.waterLevelTrendCm3h);
-    return Number.isFinite(level)&&level<=lowThreshold&&(Number.isFinite(trend)?trend<=0:true);
-  });
-  return suitable.length?{...suitable[0],recommended:true}:{...scored[0],recommended:false};
+  const currentResult=resultFor(zone,condition.current||{},condition.history||{});
+  return selectBestTimeForDay({day,zone,mode:state.mode,history:condition.history||{},currentWeather:condition.current||null,currentResult});
 }
+
 function renderNationalForecast() {
   if(!state.zones)return;
   const dates=[...new Set(state.zones.features.flatMap(f=>groupHours(zoneCondition(f.properties).forecast).map(day=>day.date)))].sort().slice(0,5);
@@ -99,7 +92,7 @@ function renderNationalForecast() {
   const data=dates.map(date=>({date,rows:state.zones.features.map(f=>{const best=bestForDay(f.properties,date);return best?{zone:f.properties,...best}:null;}).filter(Boolean).sort((a,b)=>b.result.score-a.result.score).slice(0,5)}));
   nationalForecast.innerHTML=`<div class="day-tabs national-day-tabs" role="tablist">${data.map((day,index)=>`<button type="button" class="national-day-tab ${index===0?"active":""}" data-day-index="${index}"><span>${new Intl.DateTimeFormat("da-DK",{weekday:"short"}).format(new Date(`${day.date}T12:00:00`)).replace(".","")}</span><small>${new Intl.DateTimeFormat("da-DK",{day:"numeric",month:"short"}).format(new Date(`${day.date}T12:00:00`)).replace(".","")}</small></button>`).join("")}</div><div class="national-forecast-list"></div>`;
   const list=nationalForecast.querySelector(".national-forecast-list");
-  const render=index=>{nationalForecast.querySelectorAll(".national-day-tab").forEach((button,i)=>button.classList.toggle("active",i===index)); const rows=data[index].rows; list.innerHTML=rows.length?rows.map((item,i)=>`<button type="button" class="national-zone-row" data-zone-id="${item.zone.id}"><span class="rank">${i+1}</span><span><strong>${item.zone.name}</strong><small>${item.recommended?`Bedste tidspunkt ca. ${new Intl.DateTimeFormat("da-DK",{hour:"2-digit",minute:"2-digit"}).format(new Date(item.hour.time))}`:"Se timeprognosen for vandstand og forhold"}</small></span><b class="rank-score ${item.result.level}">${item.result.score}${exceptionalScoreMark(item.result.score)}</b></button>`).join(""):'<p class="ranking-empty">Ingen prognosedata for dagen.</p>'; list.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>openZone(state.zones.features.find(f=>f.properties.id===button.dataset.zoneId).properties)));};
+  const render=index=>{nationalForecast.querySelectorAll(".national-day-tab").forEach((button,i)=>button.classList.toggle("active",i===index)); const rows=data[index].rows; list.innerHTML=rows.length?rows.map((item,i)=>`<button type="button" class="national-zone-row" data-zone-id="${item.zone.id}"><span class="rank">${i+1}</span><span><strong>${item.zone.name}</strong><small>${item.recommended?(item.isNow?"Bedst lige nu":`Bedste tidspunkt ca. ${new Intl.DateTimeFormat("da-DK",{hour:"2-digit",minute:"2-digit"}).format(new Date(item.hour.time))}`):"Se timeprognosen for forhold"}</small></span><b class="rank-score ${item.result.level}">${item.result.score}${exceptionalScoreMark(item.result.score)}</b></button>`).join(""):'<p class="ranking-empty">Ingen prognosedata for dagen.</p>'; list.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>openZone(state.zones.features.find(f=>f.properties.id===button.dataset.zoneId).properties)));};
   nationalForecast.querySelectorAll(".national-day-tab").forEach((button,index)=>button.addEventListener("click",()=>render(index))); render(0);
 }
 
@@ -166,11 +159,11 @@ try {
   resumeTripTracking();syncPendingObservations().catch(()=>{});updateTripUi();const pending=pendingTripPrompt();if(pending)setTimeout(()=>openTripPrompt(pending),650);
 } catch(error){console.error(error);infoPanel.innerHTML='<div class="notice">Aktuelle data kunne ikke indlæses. Gamle prognoser vises ikke.</div>';dataStatus.textContent='Fejl ved indlæsning';}
 
-// RavRadar 4.0.70: versionsmanifest + sikker service-worker-opdatering.
+// RavRadar 4.0.72: versionsmanifest + sikker service-worker-opdatering.
 function installAppUpdateFlow() {
   if (!("serviceWorker" in navigator)) return;
   const banner=document.querySelector("#updateBanner"), updateButton=document.querySelector("#updateAppButton");
-  const version=window.RAVRADAR_VERSION||"4.0.70"; document.querySelector("#appVersion").textContent=version;
+  const version=window.RAVRADAR_VERSION||"4.0.72"; document.querySelector("#appVersion").textContent=version;
   let refreshing=false, registration=null, waitingWorker=null;
   const showUpdate=worker=>{waitingWorker=worker||waitingWorker;if(waitingWorker){waitingWorker.postMessage({type:'SKIP_WAITING'});return;}if(!banner||!updateButton)return;banner.hidden=false;updateButton.disabled=false;updateButton.textContent="Opdater nu";};
   const activate=()=>{updateButton.disabled=true;updateButton.textContent="Opdaterer…";(waitingWorker||registration?.waiting)?.postMessage({type:"SKIP_WAITING"});};

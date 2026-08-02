@@ -9,7 +9,7 @@ import { interpretFreeTextRule } from '../core/free-text-rule-assistant.js';
 import { listHandbookReviews, updateHandbookReview, localHandbookDraftCount } from '../services/handbook-review-store.js';
 import { currentSession } from '../services/auth-service.js';
 
-const VERSION='4.0.70';
+const VERSION='4.0.72';
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
 const RULES_KEY='ravradar-admin-rules-v1';

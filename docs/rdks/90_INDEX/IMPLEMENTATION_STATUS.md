@@ -1,4 +1,9 @@
-# Implementeringsstatus pr. 4.0.70
+# Implementeringsstatus pr. 4.0.71
+
+## 4.0.71
+- Samlet sitetest viser nu levende fremdrift, slutrapport og fatal fejl direkte i admin.
+- Tavs afslutning kan ikke længere fortolkes som bestået.
+- Seneste rapport bevares lokalt efter genindlæsning.
 
 ## 4.0.70
 - Samlet funktionstest dækker nu hele sitets centrale brugerrejser, data, deploy og performance.

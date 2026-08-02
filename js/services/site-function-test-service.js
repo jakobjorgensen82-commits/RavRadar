@@ -17,9 +17,18 @@ function normalizeDetail(value){
  return{detail:'Bestået',metrics:null};
 }
 async function executeStep(category,name,fn,onProgress){
- onProgress({category,name});const started=now();
- try{const value=await fn();const normalized=normalizeDetail(value);return{category,name,status:'passed',detail:normalized.detail,metrics:normalized.metrics,ms:Math.round(now()-started)};}
- catch(error){return{category,name,status:'failed',detail:error?.message||String(error),metrics:null,ms:Math.round(now()-started)};}
+ const started=now();
+ onProgress({phase:'started',category,name});
+ let result;
+ try{
+  const value=await fn();
+  const normalized=normalizeDetail(value);
+  result={category,name,status:'passed',detail:normalized.detail,metrics:normalized.metrics,ms:Math.round(now()-started)};
+ }catch(error){
+  result={category,name,status:'failed',detail:error?.message||String(error),metrics:null,ms:Math.round(now()-started)};
+ }
+ onProgress({phase:'finished',category,name,result});
+ return result;
 }
 function createFrame(){
  const frame=document.createElement('iframe');frame.title='RavRadar automatisk funktionstest';frame.setAttribute('aria-hidden','true');Object.assign(frame.style,{position:'fixed',left:'-10000px',top:'0',width:'1280px',height:'900px',border:'0',visibility:'hidden'});document.body.append(frame);return frame;
@@ -62,7 +71,7 @@ async function assetClosure(){
  return`${discovered.size} HTML-, CSS-, script- og modulreferencer kunne hentes uden 404.`;
 }
 
-export async function runFullSiteFunctionTest({onProgress=()=>{}}={}){
+async function runFullSiteFunctionTestInternal({onProgress=()=>{}}={}){
  const runId=`site-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
  const startedAt=new Date().toISOString(),results=[];let publicFrame=null;let publicErrors=[];let publicRejections=[];
  const run=async(category,name,fn)=>{const result=await executeStep(category,name,fn,onProgress);results.push(result);return result;};
@@ -89,4 +98,15 @@ export async function runFullSiteFunctionTest({onProgress=()=>{}}={}){
  }finally{if(publicFrame?.isConnected)publicFrame.remove();}
  const categories={};for(const result of results){categories[result.category]??={passed:0,failed:0,total:0};categories[result.category].total++;categories[result.category][result.status==='passed'?'passed':'failed']++;}
  return{runId,startedAt,finishedAt:new Date().toISOString(),ok:results.every(x=>x.status==='passed'),results,categories,summary:{passed:results.filter(x=>x.status==='passed').length,failed:results.filter(x=>x.status==='failed').length,total:results.length}};
+}
+
+
+export async function runFullSiteFunctionTest(options={}){
+ const onProgress=typeof options.onProgress==='function'?options.onProgress:()=>{};
+ const globalTimeoutMs=Number(options.globalTimeoutMs)||240000;
+ return timeout(
+  runFullSiteFunctionTestInternal({...options,onProgress}),
+  globalTimeoutMs,
+  'Den samlede sitetest'
+ );
 }
