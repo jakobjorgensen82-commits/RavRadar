@@ -5,7 +5,7 @@ import { submitObservation, getLocalObservations, syncPendingObservations } from
 import { predictAmberChance } from "./js/core/prediction-engine.js";
 import { consumeAuthCallback } from "./js/services/auth-service.js";
 import { activeTrip, answerTrip, pendingTripPrompt, resumeTripTracking, startTrip, stopTrip } from "./js/services/trip-service.js";
-import { createMap, installFlowArrows, locateUser, refreshZoneStyles, renderZones } from "./js/map/map-view.js";
+import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js";
 import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js";
 import { openAccountDialog } from "./js/ui/account-panel.js";
 import { openDeveloperDialog } from "./js/ui/developer-panel.js";
@@ -131,9 +131,8 @@ async function submitAssistantQuestion(question){const clean=String(question||""
 const quickBox=document.querySelector("#assistantQuickQuestions");quickBox.innerHTML=QUICK_QUESTIONS.map(q=>`<button type="button">${q}</button>`).join("");quickBox.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>submitAssistantQuestion(button.textContent)));document.querySelector("#assistantButton").addEventListener("click",()=>assistantDialog.showModal());document.querySelector("#assistantForm").addEventListener("submit",async event=>{event.preventDefault();const field=event.currentTarget.elements.question;const q=field.value;field.value="";await submitAssistantQuestion(q);});
 
 document.querySelectorAll(".mode-button").forEach(button=>button.addEventListener("click",()=>setMode(button.dataset.mode)));
-document.querySelector("#locateButton").addEventListener("click",()=>locateUser(map,()=>alert("Din position kunne ikke hentes. Kontroller browserens tilladelse til placering."),position=>{state.lastGps={lat:position.latitude,lng:position.longitude,accuracy:position.accuracy,at:new Date().toISOString()};}));
 document.querySelector("#accountButton").addEventListener("click",()=>openAccountDialog(accountDialog));
-tripButton.addEventListener("click",()=>{if(activeTrip())stopTrip();else startTrip();updateTripUi();});
+tripButton.addEventListener("click",()=>{if(activeTrip()){stopTrip();updateTripUi();return;}startTrip();updateTripUi();});
 let logoTaps=0,tapTimer=null;document.querySelector("#logoButton").addEventListener("click",()=>{logoTaps+=1;clearTimeout(tapTimer);tapTimer=setTimeout(()=>{logoTaps=0;},5000);if(logoTaps>=10){logoTaps=0;pinDialog.showModal();pinDialog.querySelector("input").focus();}});
 document.querySelector("#pinForm").addEventListener("submit",event=>{event.preventDefault();const pin=new FormData(event.currentTarget).get("pin");if(pin!=="1931"){document.querySelector("#pinStatus").textContent="Forkert PIN.";return;}pinDialog.close();event.currentTarget.reset();document.querySelector("#pinStatus").textContent="";openDeveloperDialog(developerDialog,state);});
 
@@ -166,11 +165,11 @@ try {
   resumeTripTracking();syncPendingObservations().catch(()=>{});updateTripUi();const pending=pendingTripPrompt();if(pending)setTimeout(()=>openTripPrompt(pending),650);
 } catch(error){console.error(error);infoPanel.innerHTML='<div class="notice">Aktuelle data kunne ikke indlæses. Gamle prognoser vises ikke.</div>';dataStatus.textContent='Fejl ved indlæsning';}
 
-// RavRadar 4.0.73: versionsmanifest + sikker service-worker-opdatering.
+// RavRadar 4.0.74: versionsmanifest + sikker service-worker-opdatering.
 function installAppUpdateFlow() {
   if (!("serviceWorker" in navigator)) return;
   const banner=document.querySelector("#updateBanner"), updateButton=document.querySelector("#updateAppButton");
-  const version=window.RAVRADAR_VERSION||"4.0.73"; document.querySelector("#appVersion").textContent=version;
+  const version=window.RAVRADAR_VERSION||"4.0.74"; document.querySelector("#appVersion").textContent=version;
   let refreshing=false, registration=null, waitingWorker=null;
   const showUpdate=worker=>{waitingWorker=worker||waitingWorker;if(waitingWorker){waitingWorker.postMessage({type:'SKIP_WAITING'});return;}if(!banner||!updateButton)return;banner.hidden=false;updateButton.disabled=false;updateButton.textContent="Opdater nu";};
   const activate=()=>{updateButton.disabled=true;updateButton.textContent="Opdaterer…";(waitingWorker||registration?.waiting)?.postMessage({type:"SKIP_WAITING"});};

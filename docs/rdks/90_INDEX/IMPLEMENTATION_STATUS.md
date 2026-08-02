@@ -38,3 +38,12 @@ Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode
 | Release Governance | Implementeret i 4.0.58 | Skal bestå ved alle kommende releases |
 | ravradar.dk-beredskab | Planlagt/delvist | DNS, Supabase redirects, CNAME og produktionstest før aktivering |
 | Faglig rav- og sedimenthåndbog | Markant udbygget | Ekstern ekspertreview og lokal kalibrering af tærskler |
+
+## 4.0.74
+- [x] Offentlig `public-conditions.json` genereres atomisk.
+- [x] Offentlig side bruger ikke fuld `conditions.json`.
+- [x] Scoreparitet verificeres for 209 zoner, begge jagtformer og prognosetimer.
+- [x] Live-data undtages fra service-worker-cache.
+- [x] Mobilkort, kontoikon, GPS-flow, knapper og farveforklaring er implementeret.
+- [x] Håndbog og RDKS er opdateret.
+- [ ] Produktionsmålinger efter deployment skal bekræfte den faktiske hastighedsgevinst på mobil og desktop.

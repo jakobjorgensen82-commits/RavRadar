@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.73
+**Håndbogsversion:** 4.0.74
 
 **Opdateret:** 1. august 2026
 
@@ -1033,3 +1033,52 @@ RavRadar skelner mellem tre forskellige situationer:
 For vandstandsstationer betyder det, at RavRadar viser separat, om stationen er kendt, hvornår den senest leverede en måling, om en prognosecache stadig er gyldig, og om stationen samlet set kan bruges. En kørsel uden ny observationshentning må aldrig omskrive en tidligere leverende station til “aldrig leveret”.
 
 Den samlede funktionstest viser **fejl**, **advarsler** og **bestået** særskilt. En langsom ressource er en advarsel, mens en manglende kritisk fil er en fejl.
+
+
+## 54. Sådan regner RavRadar ud, om rav sandsynligvis kommer ind
+
+*En samlet forklaring af scoringskæden, de aktive hovedregler og forskellene mellem kysttyper.*
+
+RavRadar beregner ikke ravfund ud fra én enkelt vejrregel. Systemet vurderer en kæde af forhold, som tilsammen siger noget om, hvor sandsynligt det er, at rav eller ravførende materiale kan blive frigjort, flyttet, samlet og gjort tilgængeligt for en ravjæger. En høj score er derfor en samlet sandsynlighedsvurdering – ikke et løfte om fund.
+
+### 54.1 De tre aktive hoveddele
+
+**Jagtbarhed** beskriver, om forholdene er praktisk egnede til at lede. Vind, bølger, sigtbarhed, vandstand og jagtformen strand eller waders påvirker denne del. En zone kan godt have god fysisk transport, men stadig være dårlig eller usikker at lede i.
+
+**Transport** beskriver, om strømmen og kystens retning sandsynligvis fører materiale mod den relevante kyst, langs kysten eller væk fra den. RavRadar sammenholder strømretningen med zonens lokale kystretning og eventuelle retningsankre. Kraftig strøm væk fra land kan begrænse transportscoren, også når andre forhold ser gode ud.
+
+**Mobilisering** beskriver, om rav og ledsagemateriale sandsynligvis er blevet løsnet eller genaktiveret. Historisk vind og bølgeenergi, tid siden kraftig energi, aktuelle bølger, strøm, vandstandsændringer og lokale fastholdelsesforhold indgår. Modellen anerkender både ny frigivelse fra et lager og genmobilisering af rav, som allerede ligger i nærkysten.
+
+### 54.2 Beregningen trin for trin
+
+1. RavRadar læser aktuelle og historiske data for vind, bølger, strøm, vandstand og temperatur.
+2. Strømretningen sammenholdes med den faktiske lokale kystretning. Systemet vurderer ikke blot en gennemsnitlig landsretning.
+3. De tre delscorer beregnes hver for sig. Hver regel kan give plus, minus, advarsel eller loft.
+4. Kysttype og lokale zoneegenskaber påvirker kun de dele, hvor de er fagligt relevante. En statisk kystegenskab må ikke alene skabe en høj score uden fysisk transport.
+5. Delresultaterne samles til RavScore. Aktive ekspert- og administratorregler kan justere resultatet inden for fastlagte grænser.
+6. Begrænsninger anvendes til sidst. Eksempelvis kan tydelig offshore-transport sætte et loft over transport eller samlet score.
+7. “Bedste tidspunkt” vælges blandt de samme timescorer. Det må aldrig vælge en time med lavere RavScore, blot fordi vandstanden ser mere bekvem ud. Ved helt samme score kan vandstand bruges som tie-breaker for waders.
+
+### 54.3 Forskelle mellem kysttyper
+
+**Åben vestkyst:** Stor bølgeenergi kan frigive meget materiale, men undertow og udadgående strøm kan samtidig føre det væk. Efterstormfasen, faldende bølger og skift til mere gunstig transport kan derfor være vigtigere end selve stormens maksimum.
+
+**Nordjysk østkyst og Kattegat:** Mere moderate bølger kan være tilstrækkelige. Strømretning, vedvarende langskysttransport og tidligere mobiliseret materiale kan få relativt større betydning. Fralandsvind er ikke automatisk dårligt og kan i nogle situationer forbedre sigt, vandstand og genindtransport.
+
+**Indre farvande, fjorde og sunde:** Lokale render, odder, smalle passager og små retningsændringer kan dominere. Modelgitteret kan være groft i forhold til den lokale geometri, og derfor skal lokale regler og ekspertinput vægte forsigtigt og tydeligt.
+
+**Vadehavet:** Tidevand, vandstand, adgang, render og meget store strømvariationer kræver særskilt fortolkning. En time med god transport kan være uegnet at færdes i, og den bedste jagttid er derfor et kompromis mellem fysisk transport og sikker adgang.
+
+### 54.4 Hvad trækker op og ned?
+
+Typiske forhold, der kan trække op, er passende strømstyrke mod eller gunstigt langs kysten, nylig eller aktuel mobilisering, faldende energi efter storm, gunstig vandstandsudvikling og lokale forhold, der kan koncentrere ledsagemateriale.
+
+Typiske forhold, der kan trække ned, er meget svag strøm, tydelig strøm væk fra land, manglende mobilisering, høj bølgeuro ved wadersjagt, høj vind, dårlig adgang eller manglende kritiske data. En enkelt positiv faktor må ikke skjule en stærk negativ transportretning.
+
+### 54.5 Hvad RavRadar endnu ikke ved sikkert
+
+RavRadar kender ikke den faktiske mængde rav i sedimentet. Den modellerer transport- og findeforhold. Størrelse, form, begravelsesdybde, lokale revler, vegetation og bundnære strømme kan ændre det virkelige resultat. Derfor er ekspertens vigtigste opgave at pege på konkrete kyster og situationer, hvor en aktiv regel giver forkert retning, forkert styrke eller forkert tidsforløb.
+
+### 54.6 Sådan skal eksperten kommentere
+
+For en regel eller vurdering skal eksperten beskrive: hvad der ser forkert ud, hvilken kysttype det gælder, hvilke målbare forhold der bør udløse en anden vurdering, hvor meget scoren bør ændres, og hvilke observationer der ville kunne vise, at hypotesen er forkert. På den måde kan kommentaren omsættes til en testbar regel i stedet for en løs mening.

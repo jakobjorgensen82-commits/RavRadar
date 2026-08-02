@@ -4,6 +4,7 @@
   "generatedAt": "2026-07-31T15:52:17.621Z",
   "validUntil": "2026-08-05T12:00:00.000Z",
   "zoneCount": 209,
-  "conditionsPath": "./conditions.json",
-  "complete": true
+  "conditionsPath": "./public-conditions.json",
+  "complete": true,
+  "fullConditionsPath": "./conditions.json"
 }

@@ -1,0 +1,13 @@
+import fs from 'node:fs/promises';
+const [html,css,app,sw,ds,manifest]=await Promise.all(['index.html','style.css','app.js','service-worker.js','js/services/data-service.js','data/live/manifest.json'].map(file=>fs.readFile(file,'utf8')));
+if(html.includes('id="locateButton"'))throw new Error('Den selvstændige GPS-knap findes stadig.');
+if(!html.includes('account-icon-button')||!html.includes('<svg'))throw new Error('Konto vises ikke som personikon.');
+if(!html.includes('primary-header-actions'))throw new Error('Start ravtur og Spørg RavRadar er ikke samlet side om side.');
+if(!html.includes('<div class="map-column"')||!/map-shell[\s\S]*<\/div><div class="legend"/.test(html))throw new Error('Farveforklaringen ligger ikke under kortet.');
+if(!css.includes('#map{height:58vh')&&!css.includes('#map { height: 58vh'))throw new Error('Mobilkortet er ikke gjort større.');
+if(app.includes('locateButton'))throw new Error('Appen binder stadig en selvstændig GPS-knap.');
+if(!app.includes('startTrip()'))throw new Error('Start ravtur er ikke bevaret.');
+if(!sw.includes("url.pathname.includes('/data/live/')")||!sw.includes('liveNetworkOnly'))throw new Error('Live-data er ikke isoleret fra service-worker-cache.');
+if(!ds.includes('public-conditions.json'))throw new Error('Den offentlige side bruger ikke public-conditions.json.');
+const m=JSON.parse(manifest);if(m.conditionsPath!=='./public-conditions.json')throw new Error('Manifestet peger ikke på public-conditions.json.');
+console.log('OK: mobilprioritet, GPS-flow og sikker live-cache er koblet ind.');

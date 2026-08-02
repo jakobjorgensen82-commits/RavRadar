@@ -146,3 +146,11 @@ Status: Implementeret
 - Gjort stationshydrering historikbevarende og forhindret observationsskip i at nulstille stationernes livscyklus.
 - Opdelt DMI-status i brugerprognose, DMI-komponentdækning, observation og cache.
 - Udvidet helhedstesten med aktive adminfaner, navngivne ressourcer, performanceadvarsler og startup-profiler.
+
+## 4.0.74 – 2026-08-02
+- Offentlig runtime opdelt i en kompakt brugerfil og en fuld diagnosefil.
+- Service worker cacher ikke længere live-data, så store query-varianter ikke ophobes.
+- Mobilforsiden prioriterer et større, brugbart kort uden ændring af zoom- eller lagkontroller.
+- Kontoikon, GPS-flow, knapplacering og farveforklaring er tilpasset mobilkravene.
+- Håndbogen har fået et samlet kapitel om, hvordan RavRadar vurderer ravindtransport på forskellige kysttyper.
+- DEC-0022 og nye regressionstests gør performance- og funktionskravene bindende.
