@@ -85,6 +85,9 @@ export function exportLocalHandbookDrafts(){
  a.href=URL.createObjectURL(blob);a.download=`ravradar-ekspertrettelser-${new Date().toISOString().slice(0,10)}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),0);
 }
 export function localHandbookDraftCount(){return drafts().length;}
+export function listLocalHandbookDrafts(){return drafts();}
+export function deleteLocalHandbookDraft(reviewId){const rows=drafts().filter(x=>x.id!==reviewId);save(rows);return rows;}
+export async function retryLocalHandbookDraft(reviewId){const rows=drafts();const review=rows.find(x=>x.id===reviewId);if(!review)throw new Error('Den lokale nødkladde findes ikke længere.');const row=await remoteInsert(review);save(rows.filter(x=>x.id!==reviewId));return row;}
 
 export async function listHandbookReviews(){
  if(!enabled||!currentSession()?.access_token)return[];

@@ -96,3 +96,12 @@ Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode
 - Hastighed og retning genberegnes fra de lagrede komponenter.
 - Videnskabelig strømaudit består på 23.049 verificerede prognosetimer uden lempelse af tolerancer.
 - Regressionstest beskytter mod fremtidig forskel mellem lagret vektor og afledte scorefelter.
+
+## 4.0.86 – IMPLEMENTERET
+- Synlig reviewkø og komplet ejerflow i aktiv admin.
+- Synlig håndtering af lokale håndbogsnødkladder.
+- Reelt dokumentationscenter med RDKS-kernedokumenter.
+- Tydelig lokal afgrænsning af model-forslag.
+- Sitetest skelner 404, timeout, netværksfejl og HTTP-fejl.
+- Performanceprofil opdelt i netværk/data, beregning og rendering.
+- Reachability-test beskytter centrale adminfunktioner.

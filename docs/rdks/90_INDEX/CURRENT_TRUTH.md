@@ -92,3 +92,11 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - `currentSpeedMps` og `currentDirectionDeg` skal altid afledes fra præcis de lagrede komponenter, ikke fra en skjult højere præcision.
 - RavScore, kortpil, debug og audit skal derfor kunne genskabe samme hastighed og retning fra de samme felter.
 - Strømretning ved næsten nul hastighed er fysisk og numerisk svagt bestemt; den må ikke få særskilt autoritet frem for komponenterne.
+
+## Komplette adminarbejdsgange – 4.0.86
+- Håndbogsreview findes i den aktive Håndbog-fane med synlig reviewkø og direkte genvej efter indsendelse.
+- Lokale nødkladder kan findes, gensendes, eksporteres og slettes.
+- Ejerens implementering af et review gemmer den centrale håndbog og verificerer readback, før reviewet markeres implementeret.
+- Dokumentationscenteret giver adgang til RDKS-kernedokumenterne.
+- Model-forslag er lokale browsermodeller, indtil de særskilt indarbejdes i en versioneret produktionsrelease.
+- En funktion regnes ikke som implementeret alene fordi kode eller database findes; den synlige brugerrejse skal bestå.

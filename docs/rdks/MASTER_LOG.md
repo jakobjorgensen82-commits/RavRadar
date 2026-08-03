@@ -212,3 +212,10 @@ Brugeren dokumenterede, at dagens rangliste og 5-dages prognose kunne forblive p
 - Fremover fastlægges først én kanonisk lagret `currentUMps/currentVMps`-vektor. `currentSpeedMps` og `currentDirectionDeg` beregnes derefter fra præcis den samme vektor.
 - Score, pil, debug og videnskabelig audit skal altid bruge samme kanoniske vektor. Auditgrænser må ikke løsnes for at skjule inkonsistens.
 - Regressionstesten kontrollerer den arkitektoniske regel og ikke en bestemt tekststreng fra en tidligere implementation.
+
+## 2026-08-03 – 4.0.86
+- Brugerens konkrete fund viste, at håndbogsreview kunne indsendes uden synlig adgang til reviewkøen i den aktive admin.
+- Audit fandt samme mønster for lokale nødkladder, dokumentationscenter og model-forslagenes lokale virkning.
+- Aktiv admin fik samlet reviewkø, implementeringsflow, nødkladdehåndtering og reelle dokumentindgange.
+- Sitetesten skelner nu 404, timeout, netværksfejl og HTTP-fejl og opdeler opstart i netværk/data, beregning og rendering.
+- Reachability-test er tilføjet som releasekrav.

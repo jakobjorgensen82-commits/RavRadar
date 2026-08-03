@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.85
+**Håndbogsversion:** 4.0.86
 
 **Opdateret:** 1. august 2026
 
@@ -1155,3 +1155,18 @@ Når RavRadar dokumenterer en strømprognose med rå øst-/vest- og nord-/sydkom
 Når RavRadar har verificerede DMI-komponenter for strømmen, gemmes øst/vest-komponenten og nord/syd-komponenten først som systemets kanoniske vektor. Hastighed og bevægelsesretning beregnes derefter fra netop disse lagrede værdier. Dermed bruger RavScore, kortets pil, debugvisningen og den videnskabelige audit samme fysiske grundlag.
 
 Det er især vigtigt ved meget svag strøm. Når både u og v ligger tæt på nul, kan få decimalers forskel flytte den beregnede vinkel meget, selv om den fysiske strøm næsten ikke flytter vand. En stor vinkelændring ved næsten nul hastighed er derfor ikke nødvendigvis en stor fysisk ændring. RavRadar må aldrig blande en retning fra én præcision med komponenter fra en anden.
+
+## 58. Fra kode til brugbar funktion
+
+En funktion er ikke færdig, blot fordi en metode, databasepost eller skjult visning findes i projektet. RavRadar kræver nu en komplet brugerrejse: administratoren skal kunne finde funktionen fra den aktive menu, forstå dens formål, gennemføre opgaven, få en sand kvittering og finde resultatet igen.
+
+### Håndbogsreview
+Når en rettelse indsendes, kan den straks åbnes via **Håndbog → Reviewkø**. Ejeren kan vurdere den, ændre status og åbne implementeringen. Ved implementering redigeres det berørte håndbogsafsnit, hvorefter den centrale håndbog gemmes og læses tilbage. Først efter verificeret readback markeres reviewet som implementeret.
+
+Hvis Supabase ikke kan modtage rettelsen, oprettes en lokal nødkladde. Den vises nederst på Håndbog-fanen og kan gensendes, eksporteres eller slettes. En lokal nødkladde er aldrig autoritativ projektviden.
+
+### Dokumentation og model-forslag
+Dokumentationscenteret åbner Current Truth, implementeringsstatus, aktive krav, kendte problemer, masterlog og håndbogen. Model-forslag er udtrykkeligt lokale browsermodeller. De ændrer ikke automatisk fælles produktion eller andre enheder.
+
+### Sitetestens fejl og tider
+Deploykontrollen skelner mellem en virkelig manglende fil (HTTP 404), timeout, netværksfejl og andre HTTP-fejl. Opstart rapporteres særskilt som netværk/data, beregning og rendering. Dermed må en langsom hentning ikke fejlagtigt beskrives som en langsom scoremotor.

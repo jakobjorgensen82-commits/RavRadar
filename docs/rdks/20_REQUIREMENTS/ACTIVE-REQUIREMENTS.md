@@ -64,3 +64,9 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - Strømretning skal kunne spores fra rådata til pil og RavScore.
 - Spørg RavRadar skal forstå almindelige spørgsmål.
 - Forsiden skal starte progressivt uden gamle eller blandede data.
+
+## 4.0.86 – komplette brugerrejser
+- **REQ-ADMIN-006 – IMPLEMENTERET:** En funktion er først færdig, når den har en synlig indgang, kan gennemføres og resultatet kan findes igen i den aktive admin.
+- **REQ-HANDBOOK-004 – IMPLEMENTERET:** Håndbogsreview har synlig reviewkø, direkte genvej, statusbehandling, central implementering og håndtering af lokale nødkladder.
+- **REQ-DIAGNOSTIC-001 – IMPLEMENTERET:** Sitetestens deploykontrol skelner 404, timeout, netværksfejl og øvrige HTTP-fejl.
+- **REQ-DIAGNOSTIC-002 – IMPLEMENTERET:** Opstartsprofilen opdeles i netværk/data, beregning og rendering.

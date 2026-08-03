@@ -1,17 +1,17 @@
-import { calculateRavScore, exceptionalScoreMark } from "./js/core/score-engine.js?v=4.0.85";
-import { selectBestTimeForDay } from "./js/core/best-time-selector.js?v=4.0.85";
-import { loadConditions, loadZones, loadDataManifest } from "./js/services/data-service.js?v=4.0.85";
-import { submitObservation, getLocalObservations, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.85";
-import { predictAmberChance } from "./js/core/prediction-engine.js?v=4.0.85";
-import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.85";
-import { activeTrip, answerTrip, pendingTripPrompt, resumeTripTracking, startTrip, stopTrip } from "./js/services/trip-service.js?v=4.0.85";
-import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.85";
-import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.85";
-import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.85";
-import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.85";
-import { analyzeObservations } from "./js/services/learning-analysis.js?v=4.0.85";
-import { askRavRadar, QUICK_QUESTIONS } from "./js/services/rav-assistant.js?v=4.0.85";
-import { loadAdaptiveModel } from "./js/core/adaptive-model.js?v=4.0.85";
+import { calculateRavScore, exceptionalScoreMark } from "./js/core/score-engine.js?v=4.0.86";
+import { selectBestTimeForDay } from "./js/core/best-time-selector.js?v=4.0.86";
+import { loadConditions, loadZones, loadDataManifest } from "./js/services/data-service.js?v=4.0.86";
+import { submitObservation, getLocalObservations, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.86";
+import { predictAmberChance } from "./js/core/prediction-engine.js?v=4.0.86";
+import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.86";
+import { activeTrip, answerTrip, pendingTripPrompt, resumeTripTracking, startTrip, stopTrip } from "./js/services/trip-service.js?v=4.0.86";
+import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.86";
+import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.86";
+import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.86";
+import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.86";
+import { analyzeObservations } from "./js/services/learning-analysis.js?v=4.0.86";
+import { askRavRadar, QUICK_QUESTIONS } from "./js/services/rav-assistant.js?v=4.0.86";
+import { loadAdaptiveModel } from "./js/core/adaptive-model.js?v=4.0.86";
 
 const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, lastGps:null, flowArrows:null, adaptiveModel:loadAdaptiveModel(), currentScores:new Map(), forecastGroups:new Map(), forecastRenderId:0 };
 const map = createMap("map");
@@ -213,11 +213,11 @@ try {
   resumeTripTracking();syncPendingObservations().catch(()=>{});updateTripUi();const pending=pendingTripPrompt();if(pending)setTimeout(()=>openTripPrompt(pending),650);
 } catch(error){console.error(error);infoPanel.innerHTML='<div class="notice">Aktuelle data kunne ikke indlæses. Gamle prognoser vises ikke.</div>';dataStatus.textContent='Fejl ved indlæsning';}
 
-// RavRadar 4.0.85: versionsmanifest + sikker service-worker-opdatering.
+// RavRadar 4.0.86: versionsmanifest + sikker service-worker-opdatering.
 function installAppUpdateFlow() {
   if (!("serviceWorker" in navigator)) return;
   const banner=document.querySelector("#updateBanner"), updateButton=document.querySelector("#updateAppButton");
-  const version=window.RAVRADAR_VERSION||"4.0.85"; document.querySelector("#appVersion").textContent=version;
+  const version=window.RAVRADAR_VERSION||"4.0.86"; document.querySelector("#appVersion").textContent=version;
   let refreshing=false, registration=null, waitingWorker=null;
   const showUpdate=worker=>{waitingWorker=worker||waitingWorker;if(waitingWorker){waitingWorker.postMessage({type:'SKIP_WAITING'});return;}if(!banner||!updateButton)return;banner.hidden=false;updateButton.disabled=false;updateButton.textContent="Opdater nu";};
   const activate=()=>{updateButton.disabled=true;updateButton.textContent="Opdaterer…";(waitingWorker||registration?.waiting)?.postMessage({type:"SKIP_WAITING"});};
