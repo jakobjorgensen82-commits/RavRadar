@@ -10,6 +10,8 @@ need(app.includes('flowArrowAttempts<2'),'Pilelaget mangler sikker engangs-retry
 need(!app.includes('requestIdleCallback(installArrows'),'Pilelaget afhænger stadig af requestIdleCallback.');
 need(mapView.includes('pane.style.zIndex = "440"'),'Pilepanelet ligger ikke sikkert over zone- og grænselag.');
 need(mapView.includes('counts:()=>'),'Pilelaget eksponerer ikke faktiske markørtal.');
+need(mapView.includes('function latLngFromPoint') && !mapView.includes('L.latLng(...pointFrom'), 'Pilefallback blander fortsat koordinat-array og L.LatLng.');
+need(mapView.includes('Pile for zone kunne ikke vises'), 'En ugyldig zone kan stadig afbryde hele pilelaget.');
 need(siteTest.includes("'Vind- og strømpile renderes'"),'Sitetesten kontrollerer ikke pilelaget.');
 need(siteTest.includes("querySelectorAll('.flow-arrow.wind')")&&siteTest.includes("querySelectorAll('.flow-arrow.current')"),'Sitetesten tæller ikke faktiske vind- og strømpile.');
 if(failures.length){console.error('Pile-runtime-test fejlede:\n- '+failures.join('\n- '));process.exit(1)}

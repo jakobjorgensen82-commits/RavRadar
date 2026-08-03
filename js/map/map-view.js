@@ -142,17 +142,35 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
       if (pair.hit.options.ravSelected) { pair.casing.bringToFront(); pair.visible.bringToFront(); pair.hit.bringToFront(); }
     }
   };
-  const refreshZoomStyles = () => {
+  const applyZoomStyles = () => {
+    const zoom = map.getZoom();
     for (const pair of lines.values()) {
-      pair.casing.setStyle(zoneCasingStyle(pair.hit.options.ravSelected, map.getZoom()));
-      pair.visible.setStyle(zoneLineStyle(pair.hit.options.ravLevel, pair.hit.options.ravSelected, map.getZoom()));
-      pair.hit.setStyle({ weight: map.getZoom() <= 8 ? 28 : 24 });
-      pair.startTick.setIcon(boundaryTickIcon(pair.startBearing, pair.hit.options.ravSelected, map.getZoom()));
-      pair.endTick.setIcon(boundaryTickIcon(pair.endBearing, pair.hit.options.ravSelected, map.getZoom()));
+      pair.casing.setStyle(zoneCasingStyle(pair.hit.options.ravSelected, zoom));
+      pair.visible.setStyle(zoneLineStyle(pair.hit.options.ravLevel, pair.hit.options.ravSelected, zoom));
+      pair.hit.setStyle({ weight: zoom <= 8 ? 28 : 24 });
+      pair.startTick.setIcon(boundaryTickIcon(pair.startBearing, pair.hit.options.ravSelected, zoom));
+      pair.endTick.setIcon(boundaryTickIcon(pair.endBearing, pair.hit.options.ravSelected, zoom));
+      // Leaflet kan afslutte zoomanimationens SVG-transform efter zoomend.
+      // redraw() sikrer, at geometri og stregbredde projekteres på det nye zoomniveau.
+      pair.casing.redraw();
+      pair.visible.redraw();
+      pair.hit.redraw();
     }
   };
+  let zoomFrame = 0;
+  const refreshZoomStyles = () => {
+    applyZoomStyles();
+    if (zoomFrame) cancelAnimationFrame(zoomFrame);
+    zoomFrame = requestAnimationFrame(() => {
+      zoomFrame = 0;
+      applyZoomStyles();
+    });
+  };
   map.on("zoomend", refreshZoomStyles);
-  api.destroy = () => map.off("zoomend", refreshZoomStyles);
+  api.destroy = () => {
+    map.off("zoomend", refreshZoomStyles);
+    if (zoomFrame) cancelAnimationFrame(zoomFrame);
+  };
   return api;
 }
 
@@ -187,9 +205,9 @@ function flowArrowIcon(type, directionDeg, label = "") {
   });
 }
 
-function pointFrom(value, fallback) {
+function latLngFromPoint(value, fallback = null) {
   if (Array.isArray(value) && value.length >= 2 && Number.isFinite(Number(value[0])) && Number.isFinite(Number(value[1]))) {
-    return [Number(value[1]), Number(value[0])];
+    return L.latLng(Number(value[1]), Number(value[0]));
   }
   return fallback;
 }
@@ -232,6 +250,7 @@ export function installFlowArrows(map, featureCollection, conditionForZone) {
     for (const feature of featureCollection.features || []) {
       const zone = feature.properties || {};
       if (zone.zoneStatus && zone.zoneStatus !== "active") continue;
+      try {
       const fallbackPoint = Array.isArray(zone.dataPoint) ? L.latLng(zone.dataPoint[1], zone.dataPoint[0]) : null;
       if (!fallbackPoint) continue;
       const zoneCondition = conditionForZone(zone.id);
@@ -247,7 +266,7 @@ export function installFlowArrows(map, featureCollection, conditionForZone) {
       // current-u/current-v. Der fremstilles ikke længere kunstige kopier rundt
       // om zonen; det gav pile på land og antydede en rumlig opløsning, vi ikke har.
       if (hasCurrent) {
-        const currentPosition = L.latLng(...pointFrom(flowPoints.current, fallbackPoint));
+        const currentPosition = latLngFromPoint(flowPoints.current, fallbackPoint);
         if (bounds.contains(currentPosition) && canPlaceAt(map, currentPosition, occupied.current, minDistance)) {
           const marker = L.marker(currentPosition, {
             icon: flowArrowIcon("current", condition.currentDirectionDeg),
@@ -264,7 +283,7 @@ export function installFlowArrows(map, featureCollection, conditionForZone) {
       // er meteorologisk "fra", derfor vender ikonfunktionen pilen 180° til den
       // retning luften bevæger sig imod.
       if (hasWind) {
-        const windPosition = L.latLng(...pointFrom(flowPoints.wind, fallbackPoint));
+        const windPosition = latLngFromPoint(flowPoints.wind, fallbackPoint);
         if (bounds.contains(windPosition) && canPlaceAt(map, windPosition, occupied.wind, minDistance)) {
           const marker = L.marker(windPosition, {
             icon: flowArrowIcon("wind", condition.windDirectionDeg),
@@ -275,6 +294,9 @@ export function installFlowArrows(map, featureCollection, conditionForZone) {
           marker.options.ravFlowMeta = { type:'wind', zoneId:zone.id, point:[windPosition.lng,windPosition.lat], directionDeg:(Number(condition.windDirectionDeg)+180)%360 };
           counts.wind += 1;
         }
+      }
+      } catch (error) {
+        console.warn("Pile for zone kunne ikke vises", { zoneId: zone.id || null, error });
       }
     }
     layer.addTo(map);

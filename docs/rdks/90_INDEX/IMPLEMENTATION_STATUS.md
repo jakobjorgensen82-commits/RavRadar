@@ -112,3 +112,9 @@ Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode
 - Admin-kort ryddes ved faneskift, og forsinket initialisering kontrollerer containerens livscyklus.
 - Hele den aktive browser-importgraf versionslukkes til releaseversionen.
 - Rangliste, første paint og ikke-blokerende 5-dagesberegning er bevaret.
+
+## 4.0.88 – IMPLEMENTERET
+- Historisk koordinatfallback i pilelaget er rettet til én ensartet `L.LatLng`-type.
+- Fejl isoleres pr. zone, så én mangelfuld datapost ikke fjerner alle pile.
+- Zonestreger og grænsetikker redrawes automatisk efter zoomanimation.
+- Regressionstest beskytter pilefallback og zoomopdatering.

@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.87
+**Håndbogsversion:** 4.0.88
 
 **Opdateret:** 1. august 2026
 
@@ -1172,3 +1172,8 @@ Dokumentationscenteret åbner Current Truth, implementeringsstatus, aktive krav,
 
 ### Sitetestens fejl og tider
 Deploykontrollen skelner mellem en virkelig manglende fil (HTTP 404), timeout, netværksfejl og andre HTTP-fejl. Opstart rapporteres særskilt som netværk/data, beregning og rendering. Dermed må en langsom hentning ikke fejlagtigt beskrives som en langsom scoremotor.
+
+### 56.4 Automatisk opdatering ved zoom
+Når kortet zoomes ind eller ud, tilpasser RavRadar automatisk kyststregens tykkelse, den hvide kant, klikfladen og de sorte grænsetikker. Leaflet afslutter en zoom med en kort grafisk transformation. RavRadar gentager derfor stilen og beder de offentlige Leaflet-lag om at tegne sig selv igen i næste billedramme. Brugeren skal ikke længere flytte kortet en smule for at få stregerne til at passe til det nye zoomniveau.
+
+Hvis et enkelt flowpunkt mangler eller er ugyldigt, springes kun den pågældende pil over. Det øvrige vind- og strømpilelag vises fortsat. Alle gyldige flowpunkter omdannes til samme Leaflet-koordinattype, så en fallback ikke kan stoppe hele laget.

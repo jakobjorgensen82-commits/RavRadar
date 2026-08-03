@@ -225,3 +225,10 @@ Brugeren dokumenterede, at dagens rangliste og 5-dages prognose kunne forblive p
 - Den efterstillede pileinstallation bevares af performancehensyn, men `requestIdleCallback` er erstattet med deterministisk timerkørsel, målbar status og runtimekontrol.
 - Adminfejlen `Map container not found` blev ført til en forsinket Leaflet-callback, der overlevede faneskift; kort og timere ryddes nu ved skift.
 - En importgraf-audit fandt aktive `?v=4.0.83`-referencer i 4.0.86. Versionsværktøj og release-test lukker nu hele browsergrafen til én version.
+
+## 2026-08-03 – 4.0.88
+- Produktionstesten dokumenterede `flow-arrows-started` fulgt straks af `flow-arrows-failed`.
+- Historisk audit førte rodårsagen til 4.0.76: `pointFrom()` returnerede enten array eller `L.LatLng`, mens kaldet altid brugte spread til `L.latLng()`.
+- 4.0.83 gjorde konsekvensen total, fordi det afkoblede lag først blev monteret efter hele løkken.
+- 4.0.88 normaliserer til `L.LatLng`, isolerer fejl pr. zone og bevarer efterstillet pileinstallation.
+- Brugerobservation viste desuden, at zonestreger først faldt på plads efter panorering. `zoomend` fandtes allerede, men stilen blev anvendt før Leaflets afsluttende zoomtransform. Offentligt `redraw()` i næste animation frame sikrer automatisk opdatering uden private Leaflet-metoder.
