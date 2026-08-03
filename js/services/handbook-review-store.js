@@ -1,5 +1,5 @@
-import { PUBLIC_CONFIG } from '../../config.js?v=4.0.88';
-import { authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.88';
+import { PUBLIC_CONFIG } from '../../config.js?v=4.0.89';
+import { authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.89';
 
 const KEY='ravradar-handbook-review-drafts-v1';
 const enabled=Boolean(PUBLIC_CONFIG.supabaseUrl&&PUBLIC_CONFIG.supabasePublishableKey);
@@ -91,9 +91,13 @@ export async function retryLocalHandbookDraft(reviewId){const rows=drafts();cons
 
 export async function listHandbookReviews(){
  if(!enabled||!currentSession()?.access_token)return[];
- const response=await authorizedFetch(`${TABLE_URL()}?select=*&order=created_at.desc`);
+ const response=await authorizedFetch(`${TABLE_URL()}?status=neq.archived&select=*&order=created_at.desc`);
  if(!response.ok)throw await responseError(response,'Kunne ikke hente ekspertrettelser');
  return response.json();
+}
+
+export async function archiveHandbookReview(reviewId,reason='Arkiveret af ejer') {
+ return updateHandbookReview(reviewId,{status:'archived',resolution_note:`${reason} · ${new Date().toISOString()}`});
 }
 
 export async function updateHandbookReview(reviewId,patch){
@@ -118,10 +122,10 @@ async function deleteOrArchiveProbe(probeId){
  // eller kræve en ny Supabase-installation.
  const deleteError=await responseError(response,'Testreview kunne ikke slettes');
  const archived=await updateHandbookReview(probeId,{
-  status:'rejected',
-  resolution_note:`Automatisk systemtest afsluttet. DELETE var ikke tilladt; posten er arkiveret. ${deleteError.message}`
+  status:'archived',
+  resolution_note:`Automatisk systemtest afsluttet og skjult fra reviewkøen. DELETE var ikke tilladt; auditsporet er bevaret. ${deleteError.message}`
  });
- if(!archived||archived.status!=='rejected')throw deleteError;
+ if(!archived||archived.status!=='archived')throw deleteError;
  return'archived';
 }
 
@@ -140,5 +144,5 @@ export async function createHandbookReviewProbe(runId){
  const cleanup=await deleteOrArchiveProbe(probe.id);
  return cleanup==='deleted'
   ?'Opret, læs, opdater og slet af håndbogsreview bestået.'
-  :'Opret, læs og opdater bestod. Supabase-installationen tillader ikke DELETE, så testposten blev tydeligt arkiveret som afvist.';
+  :'Opret, læs og opdater bestod. Supabase-installationen tillader ikke DELETE, så testposten blev soft-slettet og skjult fra reviewkøen.';
 }

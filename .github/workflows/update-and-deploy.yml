@@ -45,6 +45,15 @@ jobs:
       - name: Build constrained natural zone coastlines
         run: python scripts/refine-coastlines-constrained-4.0.48.py
 
+      - name: Sync centrally saved admin configuration
+        run: python scripts/sync-admin-config.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Apply centrally approved zone geometry and deletions
+        run: python scripts/apply-central-zone-reviews.py
+
       - name: Hydrate latest deployed weather state
         run: python scripts/hydrate-deployed-weather.py
         env:
@@ -56,12 +65,6 @@ jobs:
 
       - name: Rebuild deterministic public weather runtime after hydration
         run: node scripts/generate-public-conditions.mjs
-
-      - name: Sync centrally saved admin configuration
-        run: python scripts/sync-admin-config.py
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Test Supabase persistence roundtrip
         if: github.event_name == 'push' || inputs.force == true

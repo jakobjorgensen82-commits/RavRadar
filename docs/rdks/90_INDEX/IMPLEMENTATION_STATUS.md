@@ -118,3 +118,12 @@ Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode
 - Fejl isoleres pr. zone, så én mangelfuld datapost ikke fjerner alle pile.
 - Zonestreger og grænsetikker redrawes automatisk efter zoomanimation.
 - Regressionstest beskytter pilefallback og zoomopdatering.
+
+## 4.0.89 – zoneændringer og reviewoprydning
+Status: Implementeret og lokalt valideret.
+
+- Slet valgt kystdel: centralt gemt og readback-verificeret.
+- Slet hele zone: dobbelt bekræftelse, central tombstone og automatisk anvendelse i deployment.
+- Retnings- og ankerændringer anvendes på den autoritative zonefil før runtime-data bygges.
+- Reviewkø: individuel soft-delete og samlet oprydning af systemtestposter.
+- Ny integrationstest beviser både retningsoverførsel og zonesletning i buildkæden.

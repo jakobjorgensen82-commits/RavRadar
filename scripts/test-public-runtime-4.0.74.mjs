@@ -7,7 +7,7 @@ const zones=JSON.parse(await fs.readFile('data/zones.geojson','utf8'));
 const rebuilt=buildPublicConditions(full);
 if(JSON.stringify(publicFile)!==JSON.stringify(rebuilt))throw new Error('public-conditions.json svarer ikke til den deterministiske projektion af conditions.json.');
 if(full.datasetId!==publicFile.datasetId)throw new Error('datasetId mismatch mellem fuld og offentlig runtime.');
-if(Object.keys(publicFile.zones||{}).length!==209)throw new Error('Den offentlige runtime indeholder ikke 209 zoner.');
+if(Object.keys(publicFile.zones||{}).length!==zones.features.length)throw new Error('Den offentlige runtime matcher ikke det aktive zoneregister.');
 const zoneMap=new Map(zones.features.map(feature=>[feature.properties.id,feature.properties]));
 for(const [zoneId,fullZone] of Object.entries(full.zones||{})){
  const pub=publicFile.zones[zoneId],zone=zoneMap.get(zoneId);if(!pub||!zone)throw new Error(`Manglende zone ${zoneId}.`);

@@ -232,3 +232,9 @@ Brugeren dokumenterede, at dagens rangliste og 5-dages prognose kunne forblive p
 - 4.0.83 gjorde konsekvensen total, fordi det afkoblede lag først blev monteret efter hele løkken.
 - 4.0.88 normaliserer til `L.LatLng`, isolerer fejl pr. zone og bevarer efterstillet pileinstallation.
 - Brugerobservation viste desuden, at zonestreger først faldt på plads efter panorering. `zoomend` fandtes allerede, men stilen blev anvendt før Leaflets afsluttende zoomtransform. Offentligt `redraw()` i næste animation frame sikrer automatisk opdatering uden private Leaflet-metoder.
+
+## 2026-08-03 – 4.0.89
+- Retning hav-land fik særskilt sletning af valgt kystdel og hele zone med dobbelt bekræftelse for zonesletning.
+- Centrale retningsreviews er nu en del af deploymentkæden og ændrer det autoritative zoneregister før vejrhydrering og offentlig runtime.
+- Godkendte pålandsretninger og kystdele forplanter sig til score, kort, forecast og debug gennem samme zonefil.
+- Reviewkøens automatiske systemtestposter kan ryddes via soft-delete, så auditspor bevares uden at køen fyldes.

@@ -112,3 +112,10 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - En ugyldig zones piledata må ikke afbryde pilelaget for alle andre zoner.
 - Zonestregens bredde, kant, klikflade og grænsetikker skal opdateres ved zoom uden efterfølgende panorering.
 - Zoomopdateringen udfører et offentligt Leaflet `redraw()` efter zoomanimationen; private Leaflet-internals anvendes ikke.
+
+## Centrale zoneændringer – 4.0.89
+- Retning hav-land skelner mellem at slette én valgt kystdel og at slette hele zonen.
+- Destruktive ændringer kræver tydelig bekræftelse og verificeret central readback.
+- `direction-reviews` anvendes i GitHub-workflowet på det autoritative `data/zones.geojson` før vejrhyrering; dermed bruger kort, RavScore, rangliste, forecast, debug og routing samme godkendte geometri og status.
+- En hel zonesletning er en central tombstone i reviewdokumentet og bliver fysisk udeladt af den aktive zonefil ved deployment. Historikken bevares i Supabase og versionshistorikken.
+- Reviewposter slettes som udgangspunkt med soft-delete (`archived`), så de skjules fra arbejdslisten uden at auditsporet forsvinder.

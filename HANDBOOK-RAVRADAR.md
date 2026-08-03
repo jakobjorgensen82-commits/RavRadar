@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.88
+**Håndbogsversion:** 4.0.89
 
 **Opdateret:** 1. august 2026
 
@@ -1177,3 +1177,14 @@ Deploykontrollen skelner mellem en virkelig manglende fil (HTTP 404), timeout, n
 Når kortet zoomes ind eller ud, tilpasser RavRadar automatisk kyststregens tykkelse, den hvide kant, klikfladen og de sorte grænsetikker. Leaflet afslutter en zoom med en kort grafisk transformation. RavRadar gentager derfor stilen og beder de offentlige Leaflet-lag om at tegne sig selv igen i næste billedramme. Brugeren skal ikke længere flytte kortet en smule for at få stregerne til at passe til det nye zoomniveau.
 
 Hvis et enkelt flowpunkt mangler eller er ugyldigt, springes kun den pågældende pil over. Det øvrige vind- og strømpilelag vises fortsat. Alle gyldige flowpunkter omdannes til samme Leaflet-koordinattype, så en fallback ikke kan stoppe hele laget.
+
+## Administration af kystdele og zoner
+
+I fanen **Retning hav-land** kan ejeren nu vælge mellem to forskellige handlinger:
+
+- **Slet valgt kystdel** fjerner kun den valgte del af zonens kystorientering. Zonen fortsætter med de resterende kystdele.
+- **Slet hele zonen** fjerner zonen fra det aktive system efter to tydelige bekræftelser.
+
+Ændringerne gemmes centralt og kontrolleres ved genlæsning. Ved næste deployment anvendes de på RavRadars autoritative zonefil, før vejrdata og offentlig runtime bygges. Derfor bruger kort, score, ranglister, prognoser, debug og routing samme godkendte retning og zonesammensætning.
+
+En slettet zone kan gendannes gennem versionshistorikken og den centrale auditlog. Reviewkøens testposter skjules med soft-delete, så historikken bevares uden at fylde den daglige arbejdsoversigt.
