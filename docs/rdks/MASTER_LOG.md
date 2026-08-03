@@ -238,3 +238,9 @@ Brugeren dokumenterede, at dagens rangliste og 5-dages prognose kunne forblive p
 - Centrale retningsreviews er nu en del af deploymentkæden og ændrer det autoritative zoneregister før vejrhydrering og offentlig runtime.
 - Godkendte pålandsretninger og kystdele forplanter sig til score, kort, forecast og debug gennem samme zonefil.
 - Reviewkøens automatiske systemtestposter kan ryddes via soft-delete, så auditspor bevares uden at køen fyldes.
+
+- 2026-08-03 · 4.0.90: Kystlinjeeditoren blev adskilt tydeligt fra hav-land-retning. Søgning skifter kortzone, zonenavn kan ændres, og én central Gem ændringer-handling erstatter synlige kladde-/eksporttrin. Historiske kladder er bevidst ikke aktiveret.
+
+## 4.0.91 – kontrollerede zonesletninger og gyldig reviewarkivering
+
+GitHub-kørslen efter sletning af DK-B02-14 fejlede, fordi `validate-data.mjs` stadig krævede præcis 209 zoner. Valideringen er gjort dynamisk med sikkerhedsgrænse og krav om eksakt ID-sammenhæng mellem aktivt zoneregister og conditions. Samtidig blev det opdaget, at centrale retningsreviews blev anvendt uanset status; kun `verified` må nu påvirke produktionen. Reviewkøens soft-delete brugte den ikke-installerede status `archived`, men Supabase-skemaet tillader kun new/reviewing/accepted/implemented/rejected. Arkivering bruger nu rejected plus `[ARKIVERET]` i resolution_note og skjules i normal kø.

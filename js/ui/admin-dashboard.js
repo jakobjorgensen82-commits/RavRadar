@@ -1,21 +1,21 @@
-import { evaluateRules } from '../core/rule-engine.js?v=4.0.89';
-import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.89';
-import { historicalSummary } from '../services/historical-analysis.js?v=4.0.89';
-import { loadAdaptiveModel, applyApprovedSuggestion, recordDecision, decisionHistory, rollbackAdaptiveModel, listAdaptiveModelVersions, activateAdaptiveModelVersion } from '../core/adaptive-model.js?v=4.0.89';
-import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.89';
-import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.89';
-import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.89';
-import { interpretFreeTextRule } from '../core/free-text-rule-assistant.js?v=4.0.89';
-import { listProfiles, savePermissions, PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.89';
-import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js?v=4.0.89';
-import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.89';
-import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.89';
-import { GEOGRAPHIC_AREAS, matchingZoneIds } from '../core/geographic-areas.js?v=4.0.89';
-import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.89';
-import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.89';
-import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.89';
+import { evaluateRules } from '../core/rule-engine.js?v=4.0.91';
+import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.91';
+import { historicalSummary } from '../services/historical-analysis.js?v=4.0.91';
+import { loadAdaptiveModel, applyApprovedSuggestion, recordDecision, decisionHistory, rollbackAdaptiveModel, listAdaptiveModelVersions, activateAdaptiveModelVersion } from '../core/adaptive-model.js?v=4.0.91';
+import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.91';
+import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.91';
+import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.91';
+import { interpretFreeTextRule } from '../core/free-text-rule-assistant.js?v=4.0.91';
+import { listProfiles, savePermissions, PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.91';
+import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js?v=4.0.91';
+import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.91';
+import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.91';
+import { GEOGRAPHIC_AREAS, matchingZoneIds } from '../core/geographic-areas.js?v=4.0.91';
+import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.91';
+import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.91';
+import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.91';
 
-const VERSION='4.0.89';
+const VERSION='4.0.91';
 const SITE_TEST_MODE=new URLSearchParams(location.search).has('ravradarAdminSiteTest');
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
@@ -27,7 +27,7 @@ const getJson=async url=>{const r=await fetch(url,{cache:'no-store'});if(!r.ok)t
 const download=(name,data)=>{const blob=new Blob([typeof data==='string'?data:JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),0);};
 
 
-const state={access:null,connection:null,storageHealth:null,waterStations:[],stationRoutingAudit:null,waterRouting:{schemaVersion:1,zones:{}},stationMap:null,selectedRoutingZoneId:null,tab:'dashboard',rules:[],zones:[],zoneCollection:{type:'FeatureCollection',features:[]},zoneRegistry:{counts:{registered:0,active:0,legacy:0}},coastlineDrafts:{schemaVersion:1,overrides:{}},conditions:{zones:{}},health:null,runtime:null,oceanDiagnostics:null,cacheAudit:null,implementationAudit:null,editingId:null,profiles:[]};
+const state={access:null,connection:null,storageHealth:null,waterStations:[],stationRoutingAudit:null,waterRouting:{schemaVersion:1,zones:{}},stationMap:null,selectedRoutingZoneId:null,tab:'dashboard',rules:[],zones:[],zoneCollection:{type:'FeatureCollection',features:[]},zoneRegistry:{counts:{registered:0,active:0,legacy:0}},coastlineDrafts:{schemaVersion:2,overrides:{}},selectedCoastlineZoneId:null,conditions:{zones:{}},health:null,runtime:null,oceanDiagnostics:null,cacheAudit:null,implementationAudit:null,editingId:null,profiles:[]};
 const content=document.querySelector('#adminContent');
 const ruleDialog=document.querySelector('#ruleDialog');
 const testDialog=document.querySelector('#testDialog');
@@ -89,7 +89,7 @@ const MODULE_GUIDES={
  weather:{title:'Vejr og vandstand',purpose:'Modulet viser datakildernes sundhed, friskhed og dækning. Det ændrer ikke vejret manuelt.',steps:['Kontrollér brugerprognosen først','Se derefter DMI-dækning og horisont pr. komponent','Undersøg cache, marine status og årsager ved advarsler','Eksportér diagnostik, hvis en fejl skal analyseres'],result:'Grøn brugerprognose kan godt eksistere sammen med gul DMI-status, fordi fallback udfylder huller.'},
  waterStations:{title:'Vandstandsstationer',purpose:'Her kontrolleres hvilke DMI-stationer der repræsenterer hver kystzone.',steps:['Vælg en zone','Se RavRadars automatiske primære og sekundære valg','Kontrollér placering, afstand, status og topologisk side','Brug kun override, hvis auto-valget er dokumenteret forkert','Gem og kontrollér forskellen mellem automatisk valg og override'],result:'Historiske eller inaktive stationer bør normalt ikke vælges.'},
  zones:{title:'Zoneregister',purpose:'Zoner er de kystafsnit, som prognoser og RavScore beregnes for.',steps:['Søg efter zonen','Kontrollér navn, kysttype, område og datakilde','Brug retningskontrollen ved geografiske fejl'],result:'Dette modul er primært et kontrolregister; geografiske ændringer udføres i de relevante værktøjer.'},
- coastlineEditor:{title:'Kystlinjer – sikker arbejdsgang',purpose:'Her kan hver zones synlige RavScore-linje tilpasses præcist til stranden uden at ændre zonens øvrige data.',steps:['Vælg én zone og zoom ind på satellitkortet','Træk eksisterende punkter eller sæt strandmarkører','Kontrollér den grønne linje og de automatiske geometri-advarsler','Gem som kladde; udgiv først samlet efter kontrol'],result:'Kladder påvirker aldrig brugerkortet. En valideret zones.geojson skal fortsat gennem GitHub og projektets testpakke.'},
+ coastlineEditor:{title:'Rediger kystlinjer',purpose:'Her kan zonens synlige kystforløb og navn rettes præcist og gemmes centralt.',steps:['Søg og vælg den rigtige zone','Brug Flyt kort eller Præcis redigering','Kontrollér den grønne linje og geometri-advarslerne','Tryk Gem ændringer'],result:'Den centralt gemte ændring anvendes automatisk på det autoritative zoneregister ved næste deployment.'},
  directionAudit:{title:'Geografisk retningskontrol',purpose:'Her sikres at “ind mod land” faktisk peger ind mod kysten for hver zone.',steps:['Vælg en zone fra køen','Kontrollér havpunkt, landpunkt og kystlinje på kortet','Kontrollér pilens retning visuelt','Tilføj flere ankre ved buede zoner','Bekræft alle kontrolpunkter og gem'],result:'En forkert retning kan vende strøm- og vindvirkning 180°, så spring aldrig den visuelle kontrol over.'},
  observations:{title:'Observationer',purpose:'Observationer sammenholder faktiske ravfund med den prognose og forklaring, brugeren så.',steps:['Kontrollér antal og datadækning','Eksportér pseudonymiseret data ved analyse','Brug Historisk analyse til mønstre'],result:'Eksporten fjerner direkte bruger-id og præcis GPS-position.'},
  history:{title:'Historisk analyse',purpose:'Her undersøges om bestemte forhold gentagne gange hænger sammen med fund eller nul-fund.',steps:['Vælg et tilstrækkeligt datagrundlag','Se mønstre som hypoteser – ikke beviser','Flyt kun veldokumenterede resultater videre som regelkladder'],result:'Små datasæt skal ikke automatisk ændre scoremodellen.'},
@@ -215,8 +215,8 @@ function renderWaterStations(){
  drawAutomatic();drawSelection();drawMap();drawStationSearch();
 }
 
-async function saveCoastlineDrafts(document){if(!guard('zones_weather_edit'))return;state.coastlineDrafts=document;localStorage.setItem(COASTLINE_DRAFT_KEY,JSON.stringify(document));const result=await saveAdminDocumentNow('coastline-overrides',document);if(!result.ok)alert(`Kystlinjekladden blev kun gemt lokalt: ${result.error}`);}
-function renderAdminCoastlineEditor(){renderCoastlineEditor(content,{zones:state.zones,collection:state.zoneCollection,document:state.coastlineDrafts,onSave:saveCoastlineDrafts});}
+async function saveCoastlineChanges(document,override){if(!guard('zones_weather_edit'))return{ok:false,error:'Du mangler rettighed til at redigere zoner.'};state.coastlineDrafts=document;localStorage.setItem(COASTLINE_DRAFT_KEY,JSON.stringify(document));const result=await saveAdminDocumentNow('coastline-overrides',document);if(!result.ok)return result;const verified=result.row?.payload;if(!verified?.overrides?.[override.zoneId]?.published)return{ok:false,error:'Central readback indeholdt ikke den gemte zoneændring.'};state.coastlineDrafts=verified;localStorage.setItem(COASTLINE_DRAFT_KEY,JSON.stringify(verified));const zone=state.zoneCollection.features?.find(feature=>feature.properties?.id===override.zoneId);if(zone){zone.properties.name=override.zoneName;zone.properties.coastLine=structuredClone(override.coastLine);}const active=state.zones.find(feature=>feature.properties?.id===override.zoneId);if(active){active.properties.name=override.zoneName;active.properties.coastLine=structuredClone(override.coastLine);}return{ok:true};}
+function renderAdminCoastlineEditor(){renderCoastlineEditor(content,{zones:state.zones,collection:state.zoneCollection,document:state.coastlineDrafts,selectedZoneId:state.selectedCoastlineZoneId,onZoneSelected:id=>{state.selectedCoastlineZoneId=id;},onSave:saveCoastlineChanges});}
 
 function renderZones(){content.innerHTML=`<article class="admin-card"><h2>Zoner</h2><div class="toolbar"><input id="zoneSearch" placeholder="Søg zone"><select id="zoneType"><option value="">Alle kysttyper</option>${[...new Set(state.zones.map(z=>z.properties?.coastType).filter(Boolean))].sort().map(x=>`<option>${esc(x)}</option>`).join('')}</select></div></article><div id="zoneList" class="admin-table-wrap"></div>`;const draw=()=>{const q=document.querySelector('#zoneSearch').value.toLowerCase(),t=document.querySelector('#zoneType').value;const rows=state.zones.filter(z=>(!t||z.properties?.coastType===t)&&JSON.stringify(z.properties).toLowerCase().includes(q));document.querySelector('#zoneList').innerHTML=`<table class="admin-table"><thead><tr><th>Zone</th><th>Kysttype</th><th>Område</th><th>Vejrkilde</th></tr></thead><tbody>${rows.slice(0,250).map(z=>{const p=z.properties||{},w=state.conditions.zones?.[p.id]||{};return `<tr><td>${esc(p.name||p.id)}</td><td>${esc(p.coastType||'–')}</td><td>${esc(p.region||p.area||'–')}</td><td>${esc(w.provider||'ingen data')}</td></tr>`}).join('')}</tbody></table>`};document.querySelector('#zoneSearch').oninput=draw;document.querySelector('#zoneType').onchange=draw;draw();}
 
@@ -299,7 +299,7 @@ function renderObservations(){const obs=JSON.parse(localStorage.getItem('ravrada
 async function renderUsers(){
  content.innerHTML=`<article class="admin-card"><h2>Eksperter og rettigheder</h2><p class="muted">Få, brede tilladelser. Du kan til enhver tid ændre dem igen.</p><div id="profilesList" class="admin-grid"><p class="muted">Henter brugere…</p></div></article>`;
  const host=document.querySelector('#profilesList');
- try{state.profiles=await listProfiles();if(!state.profiles.length){host.innerHTML='<div class="empty">Ingen profiler blev fundet. Kør SQL-opdateringen til 4.0.89 i Supabase én gang.</div>';return;}
+ try{state.profiles=await listProfiles();if(!state.profiles.length){host.innerHTML='<div class="empty">Ingen profiler blev fundet. Kør SQL-opdateringen til 4.0.91 i Supabase én gang.</div>';return;}
  host.innerHTML=state.profiles.map(profile=>{const active=new Set((profile.user_permissions||[]).filter(x=>x.enabled).map(x=>x.permission_key));return `<article class="admin-card permission-card" data-user-id="${esc(profile.id)}"><div class="rule-card-head"><div><h3>${esc(profile.display_name||profile.email)}</h3><p class="muted">${esc(profile.email||'')} · ${esc(profile.role||'expert')}</p></div><span class="badge ${profile.is_active!==false?'active':'draft'}">${profile.is_active!==false?'Aktiv':'Deaktiveret'}</span></div><div class="permission-list">${PERMISSIONS.map(p=>`<label class="permission-option"><input type="checkbox" name="${esc(p.id)}" ${active.has(p.id)||profile.role==='owner'?'checked':''} ${profile.role==='owner'?'disabled':''}><span>${esc(p.label)}</span></label>`).join('')}</div>${profile.role==='owner'?'<p class="hint">Owner har altid alle rettigheder.</p>':'<button class="admin-button save-user-permissions" type="button">Gem rettigheder</button><p class="form-status"></p>'}</article>`}).join('');
  host.querySelectorAll('.save-user-permissions').forEach(button=>button.onclick=async()=>{const card=button.closest('[data-user-id]');const status=card.querySelector('.form-status');const values={};PERMISSIONS.forEach(p=>values[p.id]=card.querySelector(`[name="${p.id}"]`).checked);button.disabled=true;status.textContent='Gemmer…';try{await savePermissions(card.dataset.userId,values);status.textContent='Rettighederne er gemt og gælder med det samme.';}catch(error){status.textContent=error.message;}finally{button.disabled=false;}});
  }catch(error){host.innerHTML=`<div class="empty">${esc(error.message)}</div>`;}

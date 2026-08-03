@@ -14,4 +14,4 @@ if(!/from ['"]\.\/zone-registry\.js(?:\?v=[^'"]+)?['"]/.test(dataService)) throw
 if(!/from ['"]\.\.\/services\/zone-registry\.js(?:\?v=[^'"]+)?['"]/.test(admin)) throw new Error('Administratorcenteret bruger ikke Zone Registry');
 if(!sw.includes("url.pathname.endsWith('/data/zones.geojson')")||!sw.includes('networkFirst(event.request)')) throw new Error('Service worker bruger ikke network-first for Zone Registry');
 if(!sw.includes("url.pathname.includes('/data/live/')")||!sw.includes("url.pathname.includes('/data/diagnostics/')")) throw new Error('Service worker bruger ikke network-first for live- og diagnostikfiler');
-console.log('OK: Zone Registry indeholder kun de 209 officielle, detaljerede og aktive zoner.');
+console.log(`OK: Zone Registry indeholder ${active.length} eksplicit aktive zoner og ingen inaktive poster.`);

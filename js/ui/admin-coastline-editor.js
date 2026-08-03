@@ -8,7 +8,7 @@ import {
   movePoint,
   removePoint,
   validateCoastLine
-} from '../core/coastline-editor-model.js?v=4.0.89';
+} from '../core/coastline-editor-model.js?v=4.0.91';
 
 let editorMap = null;
 let mapLayers = [];
@@ -175,17 +175,27 @@ export function destroyCoastlineEditor() {
 
 export function renderCoastlineEditor(content, config) {
   destroyCoastlineEditor();
-  const draftCount = Object.keys(config.document.overrides || {}).length;
   const selectedId = config.selectedZoneId || config.zones[0]?.properties?.id;
+  const effectiveName = zone => String(config.document.overrides?.[zone.properties?.id]?.published === true
+    ? (config.document.overrides[zone.properties.id].zoneName || zone.properties?.name || zone.properties?.id)
+    : (zone.properties?.name || zone.properties?.id));
+  const filteredOptions = (selected, query='') => {
+    const needle=query.trim().toLowerCase();
+    return config.zones.filter(zone => !needle || `${zone.properties?.id} ${effectiveName(zone)} ${zone.properties?.region||''}`.toLowerCase().includes(needle))
+      .map(zone => `<option value="${esc(zone.properties.id)}" ${zone.properties.id===selected?'selected':''}>${esc(effectiveName(zone))}</option>`).join('');
+  };
+
   content.innerHTML = `
     <article class="admin-card coastline-editor-intro">
-      <div class="rule-card-head"><div><h2>Manuel redigering af kystlinjer</h2><p>Ret én zone ad gangen direkte på kortet. Ændringer gemmes som kladder og påvirker ikke brugerkortet, før en valideret <code>zones.geojson</code> eksporteres og lægges på GitHub.</p></div><span class="badge draft">${draftCount} kladder</span></div>
-      <div class="workflow-path"><div><b>1. Vælg zone</b><span>Find kyststrækningen</span></div><div><b>2. Ret linjen</b><span>Træk punkter eller sæt strandmarkører</span></div><div><b>3. Kontrollér</b><span>Geometri testes automatisk</span></div><div><b>4. Udgiv samlet</b><span>Eksportér først efter kontrol</span></div></div>
+      <div class="rule-card-head"><div><h2>Rediger kystlinjer</h2><p>Vælg en zone, ret dens synlige kystforløb eller navn og tryk <b>Gem ændringer</b>. Den centrale ændring kontrolleres og bruges automatisk ved næste deployment.</p></div><span class="badge active">Central gemning</span></div>
+      <div class="workflow-path"><div><b>1. Vælg zone</b><span>Søg på navn, område eller ID</span></div><div><b>2. Ret linje eller navn</b><span>Arbejd direkte på kortet</span></div><div><b>3. Kontrollér</b><span>Geometrien testes automatisk</span></div><div><b>4. Gem</b><span>Ændringen forplantes til hele systemet</span></div></div>
     </article>
     <div class="coastline-editor-layout">
       <article class="admin-card coastline-editor-panel">
         <label>Søg zone<input id="coastlineSearch" placeholder="Navn, område eller zone-ID"></label>
-        <label>Zone<select id="coastlineZone">${zoneOptions(config.zones, selectedId)}</select></label>
+        <label>Zone<select id="coastlineZone">${filteredOptions(selectedId)}</select></label>
+        <div id="coastlineNoMatches" class="status-warning" hidden>Ingen zoner matcher søgningen.</div>
+        <label>Zonenavn<input id="coastlineZoneName" maxlength="120" placeholder="Zonens navn"></label>
         <div id="coastlineZoneStatus"></div>
         <fieldset class="coastline-tools"><legend>Redigering</legend>
           <p><b>Grønne punkter:</b> træk dem. <b>Blå punkter:</b> klik for at indsætte. Dobbeltklik på et grønt punkt for at slette det.</p>
@@ -195,27 +205,34 @@ export function renderCoastlineEditor(content, config) {
           <p class="hint">En strandmarkør flytter nærmeste linjepunkt til markøren og former nabopunkterne gradvist. Det giver en blød linje uden at flytte hele zonen.</p>
         </fieldset>
         <div class="toolbar"><button id="coastlineUndo" class="admin-button secondary">Fortryd</button><button id="coastlineRedo" class="admin-button secondary">Gentag</button><button id="coastlineReset" class="admin-button danger">Nulstil zonen</button></div>
-        <label>Notat om rettelsen<textarea id="coastlineNote" placeholder="Fx: skærer forbi havnemolen og følger stranden mod nord"></textarea></label>
+        <label>Notat om rettelsen<textarea id="coastlineNote" placeholder="Fx: følger stranden nord om havnemolen"></textarea></label>
         <div id="coastlineMetrics" class="direction-checks"></div>
         <div id="coastlineIssues" aria-live="polite"></div>
-        <div class="toolbar"><button id="saveCoastlineDraft" class="admin-button">Gem zonekladde</button><button id="disableCoastlineSegment" class="admin-button danger">Deaktivér kystdel</button><button id="discardCoastlineDraft" class="admin-button secondary">Slet kladde</button></div><p class="hint">Deaktivér kystdel fjerner zonen fra den eksporterede aktive visning uden at slette dens geometri eller historik.</p>
+        <div class="toolbar"><button id="saveCoastlineDraft" class="admin-button">Gem ændringer</button></div>
+        <p id="coastlineSaveStatus" class="hint" aria-live="polite">Gemte ændringer slår igennem i zoneregister, kort, søgning, ranglister, prognoser og debug efter næste deployment.</p>
       </article>
       <article class="admin-card coastline-map-card">
         <div class="coastline-map-legend"><span><i class="line original"></i> Projektets linje</span><span><i class="line edited"></i> Redigeret linje</span><span><i class="dot insert"></i> Indsæt punkt</span><span><i class="diamond">◆</i> Strandmarkør</span></div>
         <div id="coastlineEditorMap" class="coastline-editor-map"></div>
       </article>
-    </div>
-    <article class="admin-card coastline-publish-card">
-      <h2>Samlet udgivelse</h2>
-      <p>Eksporten anvender alle gyldige kladder oven på den nuværende zonefil. Polygoner, zone-ID'er, RavScore, DMI-routing, onshore-retninger og øvrige egenskaber bevares uændret.</p>
-      <div class="toolbar"><button id="exportCoastlineDrafts" class="admin-button secondary">Eksportér kladdebackup</button><button id="exportPublishedZones" class="admin-button">Eksportér valideret zones.geojson</button></div>
-      <p class="status-warning"><b>Sikkerhed:</b> Den eksporterede fil bliver ikke automatisk aktiv. Den skal gennem projektets normale GitHub-validering. Den eksisterende snapshot-/rollbackmekanisme bevares.</p>
-    </article>`;
+    </div>`;
 
   editorMap = L.map('coastlineEditorMap', {zoomControl:true}).setView([56.2, 10.2], 8);
   const street = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:20, attribution:'&copy; OpenStreetMap-bidragsydere'});
   const satellite = L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:20, attribution:'Imagery &copy; Esri, Maxar'}).addTo(editorMap);
   L.control.layers({'Satellit':satellite,'Standardkort':street}, null, {collapsed:false}).addTo(editorMap);
+
+  const originalSelectZone = selectZone;
+  const selectAndSync = zoneId => {
+    originalSelectZone(config, zoneId);
+    if (!activeState) return;
+    const override=config.document.overrides?.[zoneId];
+    document.querySelector('#coastlineZoneName').value = override?.published === true ? (override.zoneName || activeState.zone.properties?.name || '') : (activeState.zone.properties?.name || '');
+    document.querySelector('#coastlineZoneStatus').innerHTML = override?.published === true
+      ? `<span class="badge active">Gemt centralt ${esc(new Date(override.updatedAt).toLocaleString('da-DK'))}</span>`
+      : '<span class="badge">Aktuel projektgeometri</span>';
+    config.onZoneSelected?.(zoneId);
+  };
 
   editorMap.on('click', event => {
     if (!editorMap.__anchorMode || !activeState) return;
@@ -230,14 +247,33 @@ export function renderCoastlineEditor(content, config) {
 
   document.querySelector('#coastlineSearch').addEventListener('input', event => {
     const select = document.querySelector('#coastlineZone');
-    const current = select.value;
-    select.innerHTML = zoneOptions(config.zones, current, event.target.value);
-    if (!select.value && select.options.length) select.value = select.options[0].value;
+    const previous=activeState?.zone?.properties?.id || select.value;
+    const html=filteredOptions(previous,event.target.value);
+    select.innerHTML=html;
+    const noMatches=document.querySelector('#coastlineNoMatches');
+    noMatches.hidden=Boolean(select.options.length);
+    if (!select.options.length) { clearLayers(); return; }
+    const nextId=[...select.options].some(option=>option.value===previous)?previous:select.options[0].value;
+    select.value=nextId;
+    if (nextId !== activeState?.zone?.properties?.id) {
+      if (activeState?.dirty && !confirm('Der er ændringer, som ikke er gemt. Skift zone og kassér dem?')) {
+        event.target.value='';
+        select.innerHTML=filteredOptions(previous,'');
+        select.value=previous;
+        return;
+      }
+      selectAndSync(nextId);
+    } else {
+      drawMap(activeState,{fit:true});
+    }
   });
   document.querySelector('#coastlineZone').addEventListener('change', event => {
     if (activeState?.dirty && !confirm('Der er ændringer, som ikke er gemt. Skift zone og kassér dem?')) { event.target.value = activeState.zone.properties.id; return; }
-    selectZone(config, event.target.value);
+    selectAndSync(event.target.value);
   });
+  document.querySelector('#coastlineZoneName').addEventListener('input',()=>{if(activeState)activeState.dirty=true;});
+
+  // The following mode controls are intentionally preserved unchanged.
   const setMapMode = precise => {
     editorMap.__preciseMode = precise;
     document.querySelector('#coastlineNavigateMode').classList.toggle('active', !precise);
@@ -268,49 +304,34 @@ export function renderCoastlineEditor(content, config) {
     pushHistory(activeState);
     activeState.line = cloneLine(activeState.original);
     activeState.anchors = [];
+    document.querySelector('#coastlineZoneName').value=activeState.zone.properties?.name||'';
     drawMap(activeState); renderMetrics(activeState);
   });
   document.querySelector('#saveCoastlineDraft').addEventListener('click', async () => {
     if (!activeState) return;
     const validation = validateCoastLine(activeState.line, activeState.original);
     if (!validation.valid) return alert('Linjen kan ikke gemmes, før geometri-fejlene er rettet.');
-    const override = createOverride(activeState.zone, activeState.line, document.querySelector('#coastlineNote').value);
+    const zoneName=document.querySelector('#coastlineZoneName').value.trim();
+    if (!zoneName) return alert('Zonen skal have et navn.');
+    const button=document.querySelector('#saveCoastlineDraft');
+    const status=document.querySelector('#coastlineSaveStatus');
+    button.disabled=true;button.textContent='Gemmer…';status.textContent='Gemmer centralt og kontrollerer readback…';
+    const override = createOverride(activeState.zone, activeState.line, document.querySelector('#coastlineNote').value, zoneName);
     config.document.overrides[override.zoneId] = override;
+    config.document.schemaVersion=2;
     config.document.updatedAt = new Date().toISOString();
-    await config.onSave(config.document);
+    const result=await config.onSave(config.document,override);
+    button.disabled=false;button.textContent='Gem ændringer';
+    if (!result?.ok) { status.className='status-bad';status.textContent=`Ændringen kunne ikke gemmes centralt: ${result?.error||'ukendt fejl'}. Den er sikret lokalt og kan forsøges igen.`; return; }
+    activeState.zone.properties.name=zoneName;
     activeState.dirty = false;
-    selectZone(config, override.zoneId);
-  });
-  document.querySelector('#disableCoastlineSegment').addEventListener('click', async () => {
-    if (!activeState) return;
-    const id=activeState.zone.properties.id;
-    const existing=config.document.overrides[id];
-    const disabling=existing?.disabled!==true;
-    if (!confirm(disabling?'Deaktivér denne kystdel? Geometrien bevares og kan aktiveres igen.':'Aktivér denne kystdel igen?')) return;
-    const override=createOverride(activeState.zone, activeState.line, document.querySelector('#coastlineNote').value);
-    override.disabled=disabling;
-    config.document.overrides[id]=override;
-    config.document.updatedAt=new Date().toISOString();
-    await config.onSave(config.document);
-    activeState.dirty=false;
-    selectZone(config,id);
-  });
-  document.querySelector('#discardCoastlineDraft').addEventListener('click', async () => {
-    if (!activeState || !config.document.overrides[activeState.zone.properties.id]) return;
-    if (!confirm('Slet den gemte kladde for denne zone?')) return;
-    delete config.document.overrides[activeState.zone.properties.id];
-    config.document.updatedAt = new Date().toISOString();
-    await config.onSave(config.document);
-    selectZone(config, activeState.zone.properties.id);
-  });
-  document.querySelector('#exportCoastlineDrafts').addEventListener('click', () => downloadJson(`ravradar-kystlinje-klader-${new Date().toISOString().slice(0,10)}.json`, config.document));
-  document.querySelector('#exportPublishedZones').addEventListener('click', () => {
-    const invalid = Object.values(config.document.overrides || {}).filter(override => !validateCoastLine(override.coastLine, override.originalCoastLine).valid);
-    if (invalid.length) return alert(`${invalid.length} kladde(r) er ugyldige. Ret dem før samlet eksport.`);
-    const collection = applyOverridesToCollection(config.collection, config.document.overrides);
-    downloadJson('zones.geojson', collection);
+    status.className='status-good';status.textContent='Gemt centralt og verificeret. Ændringen bruges automatisk i hele systemet efter næste deployment.';
+    const search=document.querySelector('#coastlineSearch').value;
+    document.querySelector('#coastlineZone').innerHTML=filteredOptions(override.zoneId,search);
+    document.querySelector('#coastlineZone').value=override.zoneId;
+    selectAndSync(override.zoneId);
   });
 
-  selectZone(config, selectedId);
+  selectAndSync(selectedId);
   setTimeout(() => editorMap?.invalidateSize(), 0);
 }

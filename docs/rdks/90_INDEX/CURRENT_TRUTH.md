@@ -119,3 +119,11 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - `direction-reviews` anvendes i GitHub-workflowet på det autoritative `data/zones.geojson` før vejrhyrering; dermed bruger kort, RavScore, rangliste, forecast, debug og routing samme godkendte geometri og status.
 - En hel zonesletning er en central tombstone i reviewdokumentet og bliver fysisk udeladt af den aktive zonefil ved deployment. Historikken bevares i Supabase og versionshistorikken.
 - Reviewposter slettes som udgangspunkt med soft-delete (`archived`), så de skjules fra arbejdslisten uden at auditsporet forsvinder.
+
+## Kystlinjeeditor og enkel central gemning – 4.0.90
+- Fanen Rediger kystlinjer ændrer kun zonens navn og geografiske kystforløb; den må ikke blandes sammen med Retning: hav → land.
+- Knapperne Flyt kort og Præcis redigering samt deres funktion bevares uændret.
+- Søgning skal skifte den aktive zone og kortvisningen, ikke kun filtrere en dropdown.
+- Gem ændringer skriver centralt, verificerer readback og markeres eksplicit som publiceret til næste deployment.
+- Historiske kystlinjekladder fra tidligere versioner må ikke automatisk blive aktive.
+- Produktionsbygningen anvender kun eksplicit publicerede navn- og geometriændringer på det autoritative zoneregister.

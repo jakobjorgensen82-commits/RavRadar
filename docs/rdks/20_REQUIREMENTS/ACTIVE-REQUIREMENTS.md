@@ -26,7 +26,8 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-GEO-002 – AKTIV:** Alle zoners pålandsretning skal kunne auditeres og dokumenteres.
 - **REQ-GEO-003 – IMPLEMENTERET:** Als Odde/Helberskov er placeret nord for Mariager Fjord.
 - **REQ-GEO-004 – AKTIV:** Hav-/landpunktsfunktionen ændres kun ved en udtrykkelig bestilling; spørgsmål om betydning er ikke implementeringskrav.
-- **REQ-GEO-005 – AKTIV:** Kystlinjeeditoren skal kunne lave lokale krumninger og deaktivere/genaktivere kystdele uden datatab.
+- **REQ-GEO-005 – IMPLEMENTERET I 4.0.90:** Kystlinjeeditoren bevarer lokale krumninger, Flyt kort og Præcis redigering. Søgning vælger og viser den matchende zone, og navn/geometri gemmes centralt med readback og anvendes automatisk ved deployment.
+- **REQ-ADMIN-007 – AKTIV:** Tekniske nødkladder og eksportmellemtrin må ikke være en del af ejerens normale arbejdsgang. De kan bevares internt som fejlsikring; faglige statusser som en endnu ikke aktiv regel må fortsat vises forståeligt.
 
 ## RavScore og forklaring
 - **REQ-SCORE-001 – AKTIV:** Debug forklarer rådata, kilder, retninger, delscorer, caps, regler og AI.

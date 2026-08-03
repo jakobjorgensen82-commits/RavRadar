@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.89
+**Håndbogsversion:** 4.0.91
 
 **Opdateret:** 1. august 2026
 
@@ -1188,3 +1188,15 @@ I fanen **Retning hav-land** kan ejeren nu vælge mellem to forskellige handling
 Ændringerne gemmes centralt og kontrolleres ved genlæsning. Ved næste deployment anvendes de på RavRadars autoritative zonefil, før vejrdata og offentlig runtime bygges. Derfor bruger kort, score, ranglister, prognoser, debug og routing samme godkendte retning og zonesammensætning.
 
 En slettet zone kan gendannes gennem versionshistorikken og den centrale auditlog. Reviewkøens testposter skjules med soft-delete, så historikken bevares uden at fylde den daglige arbejdsoversigt.
+
+
+## Administration: redigering af kystlinjer
+Kystlinjeeditoren bruges kun til zonens navn og det geografiske forløb af den synlige kystlinje. Den er adskilt fra fanen **Retning: hav → land**, som styrer landpunkt, havpunkt og pålandsretning til RavScore.
+
+Administratoren søger efter en zone, vælger den, bruger **Flyt kort** eller **Præcis redigering** og trykker derefter **Gem ændringer**. Gemningen skrives centralt og læses tilbage som kontrol. Ved næste deployment anvendes det nye navn og den nye kystlinje automatisk på zoneregister, kort, søgning, ranglister, prognoser og debug. Zone-ID bevares, så historik, routing og observationer ikke mister deres reference.
+
+Gamle tekniske kystlinjekladder fra tidligere versioner aktiveres ikke automatisk. Kun ændringer, som er gemt gennem den nye centrale arbejdsgang, kan blive anvendt i produktionen.
+
+### Kontrollerede zonesletninger og godkendelsesstatus (4.0.91)
+
+Når ejeren sletter en zone, må det aktive zoneantal falde. Systemet validerer derfor ikke længere mod et fast antal på 209, men kræver, at alle tilbageværende aktive zoner har præcis matchende forecastdata, og at ingen slettede zoner fortsat findes i conditions. En sikkerhedsgrænse stopper utilsigtede massesletninger. Retningsændringer påvirker først score og offentlig drift, når de er markeret som godkendt (`verified`); kladder og forslag under vurdering ignoreres af produktionsbygningen.

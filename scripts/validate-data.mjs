@@ -4,7 +4,8 @@ const zones = JSON.parse(fs.readFileSync("data/zones.geojson", "utf8"));
 const conditions = JSON.parse(fs.readFileSync("data/live/conditions.json", "utf8"));
 
 if (zones.type !== "FeatureCollection" || !Array.isArray(zones.features)) throw new Error("Ugyldig zones.geojson");
-if (zones.features.length !== 209) throw new Error(`Forventede 209 officielle zoner, fandt ${zones.features.length}`);
+if (zones.features.length < 1) throw new Error('Zone Registry er tomt');
+if (zones.features.length < 150) throw new Error(`Sikkerhedsstop: kun ${zones.features.length} aktive zoner tilbage. En stor sletning kræver særskilt audit.`);
 
 
 const ids = new Set();
@@ -26,6 +27,12 @@ for (const feature of zones.features) {
 if (conditions.schemaVersion !== 4 || typeof conditions.zones !== "object" || conditions.zones === null || Array.isArray(conditions.zones)) {
   throw new Error(`Ugyldig conditions.json: forventede schemaVersion 4 og zones som objekt, fik schemaVersion ${conditions.schemaVersion}`);
 }
+
+const conditionIds = new Set(Object.keys(conditions.zones));
+const missingConditionIds = [...ids].filter(id => !conditionIds.has(id));
+const unknownConditionIds = [...conditionIds].filter(id => !ids.has(id));
+if (missingConditionIds.length) throw new Error(`conditions.json mangler ${missingConditionIds.length} aktive zoner, bl.a. ${missingConditionIds.slice(0,5).join(', ')}`);
+if (unknownConditionIds.length) throw new Error(`conditions.json indeholder ${unknownConditionIds.length} slettede eller ukendte zoner, bl.a. ${unknownConditionIds.slice(0,5).join(', ')}`);
 
 for (const [conditionId, condition] of Object.entries(conditions.zones)) {
   if (!ids.has(conditionId)) throw new Error(`conditions.json indeholder ukendt zone: ${conditionId}`);

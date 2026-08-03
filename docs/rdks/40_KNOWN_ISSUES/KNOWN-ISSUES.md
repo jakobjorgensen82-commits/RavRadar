@@ -9,7 +9,7 @@
 
 ## Produkt og admin
 6. **ISSUE-RULE-USABILITY – DELVIST:** Regelbyggerens fulde menneskevenlige workflow og konfliktforklaring skal løbende verificeres i browseren.
-7. **ISSUE-COASTLINE-EDITOR – DELVIST:** Kurver, navigation, deaktivering, gemning og rollback skal regressionstestes på mobil.
+7. **ISSUE-COASTLINE-EDITOR – RETTET I 4.0.90, OVERVÅGES:** Søgning, zonevalg, omdøbning og central gemning er samlet i én brugerrejse. Mobil browsertest og rollback overvåges fortsat.
 8. **ISSUE-CENTRAL-STORAGE – DELVIST:** Supabase-opsætning og rettigheder kræver fortsat driftsverifikation.
 
 ## Historiske problemer, der ikke må genindføres

@@ -155,19 +155,20 @@ export function validateCoastLine(line, original = []) {
   };
 }
 
-export function createOverride(zone, line, note = '') {
+export function createOverride(zone, line, note = '', zoneName = '') {
   const original = zone?.properties?.coastLine || [];
   const validation = validateCoastLine(line, original);
   return {
     zoneId: zone?.properties?.id,
-    zoneName: zone?.properties?.name,
+    zoneName: String(zoneName || zone?.properties?.name || zone?.properties?.id || '').trim(),
     coastLine: cloneLine(line),
     originalCoastLine: cloneLine(original),
     note: String(note || '').trim(),
-    status: 'draft',
+    status: 'published',
+    published: true,
     validation,
     updatedAt: new Date().toISOString(),
-    editorVersion: 1
+    editorVersion: 2
   };
 }
 
@@ -176,14 +177,27 @@ export function applyOverridesToCollection(collection, overrides = {}) {
   for (const feature of next.features || []) {
     const id = feature?.properties?.id;
     const override = overrides[id];
-    if (!override || override.status === 'discarded') continue;
-    if (override.disabled === true) { feature.properties.active = false; feature.properties.disabledByAdmin = true; feature.properties.disabledAt = override.updatedAt; continue; }
+    // Historical drafts are deliberately ignored. Only an explicit save from
+    // the simplified editor may become part of the authoritative zone file.
+    if (!override || override.published !== true || override.status === 'discarded') continue;
+    if (override.disabled === true) {
+      feature.properties.active = false;
+      feature.properties.disabledByAdmin = true;
+      feature.properties.disabledAt = override.updatedAt;
+      continue;
+    }
+    const nextName = String(override.zoneName || '').trim();
+    if (nextName) {
+      feature.properties.name = nextName;
+      feature.properties.nameEditedAt = override.updatedAt;
+      feature.properties.nameSource = 'admin-coastline-editor';
+    }
     if (!override.coastLine) continue;
     const validation = validateCoastLine(override.coastLine, feature.properties?.coastLine || []);
     if (!validation.valid) continue;
     feature.properties.coastLine = cloneLine(override.coastLine);
     feature.properties.coastLineSource = 'admin-manual-editor';
-    feature.properties.coastLineVersion = '4.0.50';
+    feature.properties.coastLineVersion = '4.0.90';
     feature.properties.coastLineEditedAt = override.updatedAt;
     feature.properties.coastLineEditNote = override.note || '';
     feature.properties.coastLineRollbackVersion = feature.properties.coastLineRollbackVersion || '4.0.44';

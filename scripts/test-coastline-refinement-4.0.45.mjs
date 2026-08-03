@@ -21,7 +21,7 @@ function distanceToMaster(point) {
 }
 function pointDistance(a, b) { return segmentDistance(a, b, b); }
 
-assert.equal(active.length, 209);
+assert.ok(active.length>=150, `For få aktive zoner efter godkendte sletninger: ${active.length}`);
 let detailed = 0;
 for (const feature of active) {
   const p = feature.properties;

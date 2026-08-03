@@ -1,5 +1,5 @@
-import { PUBLIC_CONFIG } from '../../config.js?v=4.0.89';
-import { authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.89';
+import { PUBLIC_CONFIG } from '../../config.js?v=4.0.91';
+import { authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.91';
 
 const KEY='ravradar-handbook-review-drafts-v1';
 const enabled=Boolean(PUBLIC_CONFIG.supabaseUrl&&PUBLIC_CONFIG.supabasePublishableKey);
@@ -91,13 +91,14 @@ export async function retryLocalHandbookDraft(reviewId){const rows=drafts();cons
 
 export async function listHandbookReviews(){
  if(!enabled||!currentSession()?.access_token)return[];
- const response=await authorizedFetch(`${TABLE_URL()}?status=neq.archived&select=*&order=created_at.desc`);
+ const response=await authorizedFetch(`${TABLE_URL()}?select=*&order=created_at.desc`);
  if(!response.ok)throw await responseError(response,'Kunne ikke hente ekspertrettelser');
- return response.json();
+ const rows=await response.json();
+ return rows.filter(row=>!String(row.resolution_note||'').startsWith('[ARKIVERET]'));
 }
 
 export async function archiveHandbookReview(reviewId,reason='Arkiveret af ejer') {
- return updateHandbookReview(reviewId,{status:'archived',resolution_note:`${reason} · ${new Date().toISOString()}`});
+ return updateHandbookReview(reviewId,{status:'rejected',resolution_note:`[ARKIVERET] ${reason} · ${new Date().toISOString()}`});
 }
 
 export async function updateHandbookReview(reviewId,patch){
@@ -122,10 +123,10 @@ async function deleteOrArchiveProbe(probeId){
  // eller kræve en ny Supabase-installation.
  const deleteError=await responseError(response,'Testreview kunne ikke slettes');
  const archived=await updateHandbookReview(probeId,{
-  status:'archived',
-  resolution_note:`Automatisk systemtest afsluttet og skjult fra reviewkøen. DELETE var ikke tilladt; auditsporet er bevaret. ${deleteError.message}`
+  status:'rejected',
+  resolution_note:`[ARKIVERET] Automatisk systemtest afsluttet og skjult fra reviewkøen. DELETE var ikke tilladt; auditsporet er bevaret. ${deleteError.message}`
  });
- if(!archived||archived.status!=='archived')throw deleteError;
+ if(!archived||archived.status!=='rejected')throw deleteError;
  return'archived';
 }
 

@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.87
+# Implementeringsstatus pr. 4.0.90
 
 ## 4.0.76
 - Strømpile placeres ved dokumenterede DMI-marinegitterpunkter i stedet for kunstige offsets.
@@ -127,3 +127,11 @@ Status: Implementeret og lokalt valideret.
 - Retnings- og ankerændringer anvendes på den autoritative zonefil før runtime-data bygges.
 - Reviewkø: individuel soft-delete og samlet oprydning af systemtestposter.
 - Ny integrationstest beviser både retningsoverførsel og zonesletning i buildkæden.
+
+## 4.0.90 – IMPLEMENTERET
+- Kystlinjesøgning skifter nu både aktiv zone, kortudsnit og redigeringspunkter.
+- Zoner kan omdøbes i kystlinjeeditoren uden at ændre zone-ID.
+- Én Gem ændringer-knap erstatter kladde- og eksportarbejdsgangen i normal admin.
+- Flyt kort og Præcis redigering er bevaret uden funktionsændring.
+- Kun nye eksplicit publicerede ændringer anvendes i deployment; gamle kladder ignoreres.
+- Central readback og buildtest beskytter navn/geometri-forplantningen.

@@ -21,11 +21,13 @@ assert.equal(validateCoastLine(line,line).valid,true);
 assert.equal(validateCoastLine([[1,1],[2,2]],line).valid,false);
 
 const zone = {type:'Feature',properties:{id:'DK-TEST',name:'Test',coastLine:line,coastLineSource:'baseline'},geometry:{type:'Polygon',coordinates:[]}};
-const override = createOverride(zone,anchored,'test');
-assert.equal(override.status,'draft');
+const override = createOverride(zone,anchored,'test','Nyt zonenavn');
+assert.equal(override.status,'published');
+assert.equal(override.published,true);
 const collection = applyOverridesToCollection({type:'FeatureCollection',features:[zone]},{'DK-TEST':override});
 assert.deepEqual(collection.features[0].geometry,zone.geometry,'polygon geometry must remain unchanged');
 assert.deepEqual(collection.features[0].properties.coastLine,anchored);
+assert.equal(collection.features[0].properties.name,'Nyt zonenavn');
 assert.equal(collection.features[0].properties.coastLineSource,'admin-manual-editor');
 
 const html = fs.readFileSync(new URL('../admin.html',import.meta.url),'utf8');
@@ -34,6 +36,10 @@ const editor = fs.readFileSync(new URL('../js/ui/admin-coastline-editor.js',impo
 assert.match(html,/data-tab="coastlineEditor"/);
 assert.match(dashboard,/loadAdminDocument\('coastline-overrides'/);
 assert.match(dashboard,/saveAdminDocumentNow\('coastline-overrides'/);
-assert.match(editor,/Eksportér valideret zones\.geojson/);
+assert.match(editor,/Gem ændringer/);
+assert.match(editor,/Zonenavn/);
+assert.match(editor,/Flyt kort/);
+assert.match(editor,/Præcis redigering/);
+assert.doesNotMatch(editor,/Gem zonekladde|Slet kladde|Eksportér kladdebackup|Eksportér valideret zones\.geojson/);
 assert.match(editor,/Sæt strandmarkører/);
-console.log('✓ 4.0.49 kystlinjeeditor: model, central kladde, sikker eksport og admin-integration');
+console.log('✓ kystlinjeeditor: central gemning, zonenavn, geometri og bevarede redigeringstilstande');
