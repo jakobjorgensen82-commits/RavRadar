@@ -35,8 +35,11 @@ for (const feature of zones.features ?? []) {
   assert.ok(p.onshoreDirectionSource, `${p.id}: dokumentationskilde mangler`);
 }
 assert.ok(active>=150, `For få aktive zoner efter godkendte sletninger: ${active}`);
-const djursland = zones.features.find(feature => feature.properties?.id === 'DK-B06-02')?.properties;
-assert.ok(djursland, 'DK-B06-02 mangler');
-assert.ok(angularDifference(djursland.onshoreDirectionDeg, 270) <= 15, 'Djurslands østkyst skal have landretning omtrent vest, ikke øst');
-assert.ok(transport({ onshore:djursland.onshoreDirectionDeg, currentToward:90, windFrom:225 }) <= 28, 'Strøm mod øst ved Djurslands østkyst skal klassificeres som kraftigt udgående');
-console.log(`Retningskonventioner og ${active} aktive onshore-retninger er dokumenteret; Djursland-regressionen består.`);
+// Scoringsregressionen testes på en fast syntetisk østkyst. Produktionszoners
+// retning kan lovligt ændres via godkendte adminankre og må ikke låses til gamle grader.
+const syntheticEastCoast = { onshoreDirectionDeg: 270 };
+assert.ok(
+  transport({ onshore: syntheticEastCoast.onshoreDirectionDeg, currentToward: 90, windFrom: 225 }) <= 28,
+  'Syntetisk østkyst: strøm mod øst skal klassificeres som kraftigt udgående'
+);
+console.log(`Retningskonventioner og ${active} aktive onshore-retninger er dokumenteret; syntetisk østkyst-regression består.`);

@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.91
+**Håndbogsversion:** 4.0.92
 
 **Opdateret:** 1. august 2026
 
@@ -1196,7 +1196,3 @@ Kystlinjeeditoren bruges kun til zonens navn og det geografiske forløb af den s
 Administratoren søger efter en zone, vælger den, bruger **Flyt kort** eller **Præcis redigering** og trykker derefter **Gem ændringer**. Gemningen skrives centralt og læses tilbage som kontrol. Ved næste deployment anvendes det nye navn og den nye kystlinje automatisk på zoneregister, kort, søgning, ranglister, prognoser og debug. Zone-ID bevares, så historik, routing og observationer ikke mister deres reference.
 
 Gamle tekniske kystlinjekladder fra tidligere versioner aktiveres ikke automatisk. Kun ændringer, som er gemt gennem den nye centrale arbejdsgang, kan blive anvendt i produktionen.
-
-### Kontrollerede zonesletninger og godkendelsesstatus (4.0.91)
-
-Når ejeren sletter en zone, må det aktive zoneantal falde. Systemet validerer derfor ikke længere mod et fast antal på 209, men kræver, at alle tilbageværende aktive zoner har præcis matchende forecastdata, og at ingen slettede zoner fortsat findes i conditions. En sikkerhedsgrænse stopper utilsigtede massesletninger. Retningsændringer påvirker først score og offentlig drift, når de er markeret som godkendt (`verified`); kladder og forslag under vurdering ignoreres af produktionsbygningen.

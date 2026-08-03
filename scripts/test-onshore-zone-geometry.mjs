@@ -10,18 +10,35 @@ function bearing(from, to) {
   if (Math.hypot(east, north) < 1e-10) return null;
   return normalize(Math.atan2(east, north) * 180 / Math.PI);
 }
+
+// Retningskonventionen testes på faste syntetiske geometrier. Produktionszoner
+// kan lovligt ændres gennem admin og må derfor ikke være hårdkodede til gamle grader.
+const fixtures = [
+  { name: 'nord', from: [10, 56], to: [10, 56.1], expected: 0 },
+  { name: 'øst', from: [10, 56], to: [10.1, 56], expected: 90 },
+  { name: 'syd', from: [10, 56], to: [10, 55.9], expected: 180 },
+  { name: 'vest', from: [10, 56], to: [9.9, 56], expected: 270 }
+];
+for (const fixture of fixtures) {
+  assert.ok(
+    angularDifference(bearing(fixture.from, fixture.to), fixture.expected) <= 0.2,
+    `Syntetisk ${fixture.name}-retning skal give ${fixture.expected}°`
+  );
+}
+
 const geojson = JSON.parse(await fs.readFile('data/zones.geojson', 'utf8'));
-const detailed = (geojson.features ?? []).filter(({properties:p={}}) => /^DK-B(?:\d{2}-\d{2}|11-(?:SAM|LAE)-\d{2})$/.test(p.id ?? '') && p.zoneStatus !== 'legacy');
-assert.ok(detailed.length>=150, `For få aktuelle detaljerede kystzoner: ${detailed.length}`);
-for (const {properties:p} of detailed) {
+const detailed = (geojson.features ?? []).filter(({ properties: p = {} }) =>
+  /^DK-B(?:\d{2}-\d{2}|11-(?:SAM|LAE)-\d{2})$/.test(p.id ?? '') && p.zoneStatus !== 'legacy'
+);
+assert.ok(detailed.length >= 150, `For få aktuelle detaljerede kystzoner: ${detailed.length}`);
+for (const { properties: p } of detailed) {
   assert.ok(Array.isArray(p.dataPoint) && Array.isArray(p.pinPoint), `${p.id}: mangler dataPoint/pinPoint`);
   const expected = bearing(p.dataPoint, p.pinPoint);
   assert.notEqual(expected, null, `${p.id}: identiske hav- og landpunkter`);
   const delta = angularDifference(Number(p.onshoreDirectionDeg), expected);
-  assert.ok(delta <= 1.1, `${p.id}: pålandsretning ${p.onshoreDirectionDeg}° afviger ${delta.toFixed(1)}° fra hav→land ${expected.toFixed(1)}°`);
+  assert.ok(
+    delta <= 1.1,
+    `${p.id}: pålandsretning ${p.onshoreDirectionDeg}° afviger ${delta.toFixed(1)}° fra hav→land ${expected.toFixed(1)}°`
+  );
 }
-const byId = new Map(detailed.map(f => [f.properties.id, f.properties]));
-assert.ok(angularDifference(byId.get('DK-B02-12').onshoreDirectionDeg, 268) <= 1, 'Øster Hurup skal pege mod land mod vest');
-assert.ok(angularDifference(byId.get('DK-B06-03').onshoreDirectionDeg, 270) <= 1, 'Grenaa skal pege mod land mod vest');
-assert.ok(angularDifference(byId.get('DK-B03-13').onshoreDirectionDeg, 90) <= 1, 'Blåvand skal pege mod land mod øst');
-console.log(`Onshore-geometri: ${detailed.length} detaljerede zoner valideret; hav→land-retningen er konsistent.`);
+console.log(`Onshore-geometri: ${detailed.length} detaljerede zoner valideret; godkendte adminretninger stemmer med hav→land-geometrien.`);

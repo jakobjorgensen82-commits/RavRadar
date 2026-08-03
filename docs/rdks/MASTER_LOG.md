@@ -244,3 +244,9 @@ Brugeren dokumenterede, at dagens rangliste og 5-dages prognose kunne forblive p
 ## 4.0.91 – kontrollerede zonesletninger og gyldig reviewarkivering
 
 GitHub-kørslen efter sletning af DK-B02-14 fejlede, fordi `validate-data.mjs` stadig krævede præcis 209 zoner. Valideringen er gjort dynamisk med sikkerhedsgrænse og krav om eksakt ID-sammenhæng mellem aktivt zoneregister og conditions. Samtidig blev det opdaget, at centrale retningsreviews blev anvendt uanset status; kun `verified` må nu påvirke produktionen. Reviewkøens soft-delete brugte den ikke-installerede status `archived`, men Supabase-skemaet tillader kun new/reviewing/accepted/implemented/rejected. Arkivering bruger nu rejected plus `[ARKIVERET]` i resolution_note og skjules i normal kø.
+
+## 4.0.92 – Godkendte retningsankre må ændre produktionszoner
+
+- GitHub-run 1181 viste, at central synkronisering korrekt anvendte godkendte retningsankre og fjernede DK-B02-14, hvorefter en gammel hårdkodet Blåvand-test stoppede deployment.
+- Produktionszoner må ikke være låst til historiske gradtal i regressionstests, når ejerens adminworkflow eksplicit kan godkende nye hav-/landankre.
+- Sikkerheden bevares ved at validere alle aktive zoners `onshoreDirectionDeg` mod den faktiske bearing fra `dataPoint` til `pinPoint` og ved at teste kompas- og scorekonventioner på syntetiske fixtures.
