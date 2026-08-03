@@ -1,26 +1,27 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-const read = p => JSON.parse(fs.readFileSync(new URL(p, import.meta.url)));
+import { validateActiveZoneIds, expectedActiveZoneIds } from './zone-registry-integrity.mjs';
+
+const read = path => JSON.parse(fs.readFileSync(new URL(path, import.meta.url)));
 const active = read('../data/zones.geojson');
 const before = read('../data/geometry-snapshots/zones-4.0.44.geojson');
 const failed = read('../data/geometry-snapshots/zones-4.0.45.geojson');
-const retired = new Set(['DK-B04-09']);
-before.features = before.features.filter(f=>!retired.has(f.properties.id));
-failed.features = failed.features.filter(f=>!retired.has(f.properties.id));
-assert.equal(active.features.length, before.features.length);
-assert.equal(active.features.length, failed.features.length);
-const activeIds = new Set(active.features.map(f => f.properties.id));
-const beforeIds = new Set(before.features.map(f => f.properties.id));
-const failedIds = new Set(failed.features.map(f => f.properties.id));
-assert.deepEqual(activeIds, beforeIds, '4.0.44 rollback-snapshot mangler zone-IDer');
-assert.deepEqual(activeIds, failedIds, '4.0.45 snapshot mangler zone-IDer');
-const production = active.features.some(f => ['4.0.47','4.0.48','4.0.48-safe-fallback','4.0.64-manual-roemoe'].includes(f.properties.coastLineVersion));
-if (!production) {
-  const baseline = new Map(before.features.map(f => [f.properties.id, f.properties.coastLine]));
-  for (const f of active.features) {
-    assert.deepEqual(f.properties.coastLine, baseline.get(f.properties.id), `${f.properties.id}: sikker baseline matcher ikke 4.0.44`);
-    assert.equal(f.properties.coastLineVersion, '4.0.46-safe-rollback');
-  }
+
+assert.equal(active.type, 'FeatureCollection');
+assert.ok(Array.isArray(active.features) && active.features.length > 0, 'Det aktive zoneregister er tomt');
+const activeIds = new Set(active.features.map(feature => feature.properties?.id).filter(Boolean));
+validateActiveZoneIds(activeIds);
+
+const expectedIds = expectedActiveZoneIds();
+const beforeIds = new Set(before.features.map(feature => feature.properties?.id).filter(Boolean));
+const failedIds = new Set(failed.features.map(feature => feature.properties?.id).filter(Boolean));
+for (const id of expectedIds) {
+  assert.ok(beforeIds.has(id), `4.0.44 rollback-snapshot mangler aktiv zone ${id}`);
+  assert.ok(failedIds.has(id), `4.0.45 snapshot mangler aktiv zone ${id}`);
 }
+
+// Administratorens godkendte navn, kystlinje og retning er autoritativ og må
+// derfor ikke sammenlignes med historiske produktionsværdier. Testen beskytter
+// rollback-materialets dækning og ID-integritet, ikke gamle redigerbare felter.
 assert.ok(fs.existsSync(new URL('../scripts/switch-zone-geometry.mjs', import.meta.url)));
-console.log(`Geometri-rollback er bevaret for ${active.features.length} zoner${production ? ' ved siden af produktionsgeometrien' : ' som aktiv sikker baseline'}.`);
+console.log(`Geometri-rollback dækker alle ${active.features.length} aktive zoner uden at låse admin-redigerbare navne, kystlinjer eller retninger.`);

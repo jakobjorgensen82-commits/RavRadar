@@ -127,3 +127,10 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - Gem ændringer skriver centralt, verificerer readback og markeres eksplicit som publiceret til næste deployment.
 - Historiske kystlinjekladder fra tidligere versioner må ikke automatisk blive aktive.
 - Produktionsbygningen anvender kun eksplicit publicerede navn- og geometriændringer på det autoritative zoneregister.
+
+## Administratorredigerbare zoner og dynamiske tests – 4.0.93
+- Ejer/admin kan omdøbe zoner, ændre kystlinjer, ændre land-/havpunkter og retningsankre samt slette zoner uden kodeændringer.
+- En godkendt ændring kan lovligt vende pålandsretningen 180°, når de nye hav-/landpunkter og `onshoreDirectionDeg` er indbyrdes konsistente.
+- Produktionszoners antal, navn, kystlinje, koordinater og retning må ikke låses til historiske værdier i regressionstests.
+- Tests beskytter i stedet zone-ID-integritet, eksplicitte sletningstombstones, gyldig geometri, hav→land-konsistens, datadækning og fuld forplantning til score, kort, forecast og debug.
+- Historiske rollback-snapshots må ikke genoplive slettede zoner eller overskrive administratorens aktuelle navn, kystlinje, land-/havpunkter, ankre eller retning.

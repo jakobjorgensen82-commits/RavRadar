@@ -1,11 +1,11 @@
 import fs from "node:fs";
+import { validateActiveZoneIds } from "./zone-registry-integrity.mjs";
 
 const zones = JSON.parse(fs.readFileSync("data/zones.geojson", "utf8"));
 const conditions = JSON.parse(fs.readFileSync("data/live/conditions.json", "utf8"));
 
 if (zones.type !== "FeatureCollection" || !Array.isArray(zones.features)) throw new Error("Ugyldig zones.geojson");
 if (zones.features.length < 1) throw new Error('Zone Registry er tomt');
-if (zones.features.length < 150) throw new Error(`Sikkerhedsstop: kun ${zones.features.length} aktive zoner tilbage. En stor sletning kræver særskilt audit.`);
 
 
 const ids = new Set();
@@ -27,6 +27,8 @@ for (const feature of zones.features) {
 if (conditions.schemaVersion !== 4 || typeof conditions.zones !== "object" || conditions.zones === null || Array.isArray(conditions.zones)) {
   throw new Error(`Ugyldig conditions.json: forventede schemaVersion 4 og zones som objekt, fik schemaVersion ${conditions.schemaVersion}`);
 }
+
+validateActiveZoneIds(ids);
 
 const conditionIds = new Set(Object.keys(conditions.zones));
 const missingConditionIds = [...ids].filter(id => !conditionIds.has(id));

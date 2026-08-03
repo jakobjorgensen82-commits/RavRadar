@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.90
+# Implementeringsstatus pr. 4.0.93
 
 ## 4.0.76
 - Strømpile placeres ved dokumenterede DMI-marinegitterpunkter i stedet for kunstige offsets.
@@ -135,3 +135,10 @@ Status: Implementeret og lokalt valideret.
 - Flyt kort og Præcis redigering er bevaret uden funktionsændring.
 - Kun nye eksplicit publicerede ændringer anvendes i deployment; gamle kladder ignoreres.
 - Central readback og buildtest beskytter navn/geometri-forplantningen.
+
+## 4.0.93 – IMPLEMENTERET
+- Alle testantagelser om fast zoneantal er erstattet af integritetskontrol mod det historiske ID-grundlag og eksplicitte administratorsletninger.
+- En fuld 180° vending af land-/havpunkter og pålandsretning accepteres, når geometrien er konsistent.
+- Geometri-rollback beskytter snapshots uden at låse admin-redigerbare navne, kystlinjer, punkter eller retninger.
+- Rollbackværktøjet skifter kun polygongeometri og bevarer slettede zoner og aktuelle adminfelter.
+- En ny samlet admin-zonekontrakttest dækker omdøbning, kystlinjeændring, 180° vending, zonesletning og beskyttelse mod ikke-godkendte kladder.

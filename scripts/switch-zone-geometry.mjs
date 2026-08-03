@@ -15,7 +15,20 @@ if (!allowed.has(target)) {
 }
 const source = path.join(root, allowed.get(target));
 const destination = path.join(root, 'data/zones.geojson');
-const parsed = JSON.parse(fs.readFileSync(source, 'utf8'));
-if (!Array.isArray(parsed.features) || parsed.features.length < 200) throw new Error('Ugyldigt geometri-snapshot');
-fs.copyFileSync(source, destination);
-console.log(`Aktiv zonegeometri er nu snapshot ${target}.`);
+const snapshot = JSON.parse(fs.readFileSync(source, 'utf8'));
+const current = JSON.parse(fs.readFileSync(destination, 'utf8'));
+if (snapshot?.type !== 'FeatureCollection' || !Array.isArray(snapshot.features) || snapshot.features.length < 1) throw new Error('Ugyldigt geometri-snapshot');
+if (current?.type !== 'FeatureCollection' || !Array.isArray(current.features) || current.features.length < 1) throw new Error('Ugyldigt aktivt zoneregister');
+
+const snapshotById = new Map(snapshot.features.map(feature => [feature.properties?.id, feature]));
+for (const feature of current.features) {
+  const id = feature.properties?.id;
+  const historical = snapshotById.get(id);
+  if (!historical) throw new Error(`Rollback-snapshot mangler aktiv zone ${id}`);
+  // Rollbackværktøjet må kun skifte zonegeometrien. Administratorens aktuelle
+  // navn, kystlinje, land-/havpunkter, ankre og retning bevares.
+  feature.geometry = structuredClone(historical.geometry);
+  feature.properties.geometryRollbackSource = target;
+}
+fs.writeFileSync(destination, JSON.stringify(current, null, 2) + '\n');
+console.log(`Aktiv polygongeometri er nu baseret på snapshot ${target}; adminredigerede felter og zonesletninger er bevaret.`);

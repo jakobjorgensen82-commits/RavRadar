@@ -250,3 +250,10 @@ GitHub-kørslen efter sletning af DK-B02-14 fejlede, fordi `validate-data.mjs` s
 - GitHub-run 1181 viste, at central synkronisering korrekt anvendte godkendte retningsankre og fjernede DK-B02-14, hvorefter en gammel hårdkodet Blåvand-test stoppede deployment.
 - Produktionszoner må ikke være låst til historiske gradtal i regressionstests, når ejerens adminworkflow eksplicit kan godkende nye hav-/landankre.
 - Sikkerheden bevares ved at validere alle aktive zoners `onshoreDirectionDeg` mod den faktiske bearing fra `dataPoint` til `pinPoint` og ved at teste kompas- og scorekonventioner på syntetiske fixtures.
+
+## 2026-08-03 – 4.0.93
+- GitHub-kørslen efter 4.0.92 viste endnu en gammel fast antagelse: geometri-rollbacktesten krævede samme zoneantal og ID-sæt som historiske snapshots, selv efter en eksplicit administratorsletning.
+- Hele zone-testkontrakten blev ændret fra historiske produktionsværdier til dynamisk integritet: manglende zoner skal være dækket af centrale sletningstombstones, og aktive zoner skal stemme med vejrdata.
+- Administratorens godkendte navn, kystlinje, land-/havpunkter, retningsankre og pålandsretning er autoritative. En 180° korrektion er gyldig, når hav→land-geometrien stemmer.
+- Rollbackværktøjet ændrer fremover kun polygongeometrien og kan ikke genoplive slettede zoner eller overskrive aktuelle adminfelter.
+- En samlet regressionstest simulerer omdøbning, kystlinjeredigering, 180° vending, zonesletning og ikke-godkendte kladder.

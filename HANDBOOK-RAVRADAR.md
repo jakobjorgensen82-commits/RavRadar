@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.92
+**Håndbogsversion:** 4.0.93
 
 **Opdateret:** 1. august 2026
 
@@ -390,6 +390,8 @@ Vind er 'fra'; strøm er 'mod'; onshoreDirectionDeg er retningen fra hav mod lan
 Bugtede zoner kan have flere retningankre. Systemet vælger den mindst offshore / mest gunstige relevante kystdel og dokumenterer valgmetoden. Det er en pragmatisk løsning, men kan overvurdere en stor zone, hvis kun en lille kystdel rammes gunstigt.
 
 Land- og havpunkter, kystlinje, ankre og onshoreDirectionDeg skal auditeres visuelt. Als Odde og Helberskov nord for Mariager Fjord er en fast regressionskontrol.
+
+Administratorens godkendte geometri er den aktive sandhed. Hvis de oprindelige land- og havpunkter er byttet om, kan en korrekt rettelse vende retningen næsten eller præcis 180°. RavRadar må advare om en stor ændring, men må ikke afvise den alene på grund af vinkelforskellen. Det afgørende er, at havpunkt, landpunkt og `onshoreDirectionDeg` stemmer indbyrdes, og at samme værdi bruges af score, kort, forecast og debug.
 
 Ekspertpunkt E-15: Vurder om flere kystankre skal vægtes efter kystlængde, eksponering og transportforbindelse i stedet for at vælge bedste alignment.
 
