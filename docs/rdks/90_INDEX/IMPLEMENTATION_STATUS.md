@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.76
+# Implementeringsstatus pr. 4.0.87
 
 ## 4.0.76
 - Strømpile placeres ved dokumenterede DMI-marinegitterpunkter i stedet for kunstige offsets.
@@ -105,3 +105,10 @@ Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode
 - Sitetest skelner 404, timeout, netværksfejl og HTTP-fejl.
 - Performanceprofil opdelt i netværk/data, beregning og rendering.
 - Reachability-test beskytter centrale adminfunktioner.
+
+## 4.0.87 – IMPLEMENTERET
+- Deterministisk, efterstillet installation af vind- og strømpile med ready/failed-status og retry ved reel fejl.
+- Sitetest kontrollerer faktiske vind- og verificerede strømpile.
+- Admin-kort ryddes ved faneskift, og forsinket initialisering kontrollerer containerens livscyklus.
+- Hele den aktive browser-importgraf versionslukkes til releaseversionen.
+- Rangliste, første paint og ikke-blokerende 5-dagesberegning er bevaret.

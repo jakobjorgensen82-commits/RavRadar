@@ -24,6 +24,30 @@ for(const file of ['index.html','admin.html','documentation.html','handbook.html
  text=text.replace(/4\.0\.\d+/g,version);
  await fs.writeFile(file,text);
 }
+
+// Alle browsermodulers cache-identitet skal følge releaseversionen. Tidligere
+// kunne topniveauet vise en ny version, mens interne imports stadig brugte en
+// gammel ?v=-parameter og dermed genbrugte et blandet modultræ fra cache.
+const browserSources=[];
+for(const root of ['.','js']){
+  const walk=async dir=>{
+    for(const entry of await fs.readdir(dir,{withFileTypes:true})){
+      if(['.git','node_modules','release'].includes(entry.name))continue;
+      const rel=dir==='.'?entry.name:`${dir}/${entry.name}`;
+      if(entry.isDirectory())await walk(rel);
+      else if(/\.(?:js|html)$/.test(entry.name))browserSources.push(rel);
+    }
+  };
+  if(root==='.'){
+    for(const file of await fs.readdir('.'))if(/\.(?:js|html)$/.test(file))browserSources.push(file);
+  }else await walk(root);
+}
+for(const file of [...new Set(browserSources)]){
+  let text=await fs.readFile(file,'utf8');
+  text=text.replace(/([?&]v=)\d+\.\d+\.\d+/g,`$1${version}`);
+  await fs.writeFile(file,text);
+}
+
 // Releasebærende dokumenter kan være gledet fra package-versionen. Normalisér deres
 // eksplicitte versionsfelter i stedet for kun at erstatte previousVersion.
 {

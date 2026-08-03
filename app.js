@@ -1,17 +1,17 @@
-import { calculateRavScore, exceptionalScoreMark } from "./js/core/score-engine.js?v=4.0.86";
-import { selectBestTimeForDay } from "./js/core/best-time-selector.js?v=4.0.86";
-import { loadConditions, loadZones, loadDataManifest } from "./js/services/data-service.js?v=4.0.86";
-import { submitObservation, getLocalObservations, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.86";
-import { predictAmberChance } from "./js/core/prediction-engine.js?v=4.0.86";
-import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.86";
-import { activeTrip, answerTrip, pendingTripPrompt, resumeTripTracking, startTrip, stopTrip } from "./js/services/trip-service.js?v=4.0.86";
-import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.86";
-import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.86";
-import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.86";
-import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.86";
-import { analyzeObservations } from "./js/services/learning-analysis.js?v=4.0.86";
-import { askRavRadar, QUICK_QUESTIONS } from "./js/services/rav-assistant.js?v=4.0.86";
-import { loadAdaptiveModel } from "./js/core/adaptive-model.js?v=4.0.86";
+import { calculateRavScore, exceptionalScoreMark } from "./js/core/score-engine.js?v=4.0.87";
+import { selectBestTimeForDay } from "./js/core/best-time-selector.js?v=4.0.87";
+import { loadConditions, loadZones, loadDataManifest } from "./js/services/data-service.js?v=4.0.87";
+import { submitObservation, getLocalObservations, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.87";
+import { predictAmberChance } from "./js/core/prediction-engine.js?v=4.0.87";
+import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.87";
+import { activeTrip, answerTrip, pendingTripPrompt, resumeTripTracking, startTrip, stopTrip } from "./js/services/trip-service.js?v=4.0.87";
+import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.87";
+import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.87";
+import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.87";
+import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.87";
+import { analyzeObservations } from "./js/services/learning-analysis.js?v=4.0.87";
+import { askRavRadar, QUICK_QUESTIONS } from "./js/services/rav-assistant.js?v=4.0.87";
+import { loadAdaptiveModel } from "./js/core/adaptive-model.js?v=4.0.87";
 
 const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, lastGps:null, flowArrows:null, adaptiveModel:loadAdaptiveModel(), currentScores:new Map(), forecastGroups:new Map(), forecastRenderId:0 };
 const map = createMap("map");
@@ -198,14 +198,31 @@ try {
   await yieldToBrowser();
   const forecastCompleted=await renderNationalForecast();
   if(forecastCompleted)performance.mark?.('ravradar:forecast-ready');
-  // Vind- og strømpile bygges bagefter i ledig browser-tid. På især mobil kan
-  // hundredvis af Leaflet-markører ellers blokere hovedtråden i mange sekunder.
+  // Vind- og strømpile kommer fortsat efter de centrale prognosevisninger,
+  // men installationen må ikke afhænge af browserens vurdering af "ledig tid".
+  // requestIdleCallback kan blive udskudt kraftigt i baggrundsfaner og på pressede
+  // enheder. En almindelig timer gør arbejdet deterministisk uden at flytte det
+  // tilbage foran rangliste, første paint eller 5-dagesprognosen.
+  let flowArrowAttempts=0;
   const installArrows=()=>{
-    try{state.flowArrows=installFlowArrows(map,zones,id=>state.conditions.zones?.[id]||{});performance.mark?.('ravradar:flow-arrows-ready');}
-    catch(error){console.warn('Vind- og strømpile kunne ikke vises',error);}
+    if(state.flowArrows)return;
+    flowArrowAttempts+=1;
+    performance.mark?.('ravradar:flow-arrows-started');
+    try{
+      const arrows=installFlowArrows(map,zones,id=>state.conditions.zones?.[id]||{});
+      const counts=arrows.counts?.()||{wind:0,current:0};
+      if((counts.wind||0)+(counts.current||0)===0)throw new Error('Pilelaget blev oprettet uden synlige vind- eller strømpile.');
+      state.flowArrows=arrows;
+      performance.mark?.('ravradar:flow-arrows-ready');
+      window.dispatchEvent(new CustomEvent('ravradar:flow-arrows-ready',{detail:counts}));
+    }catch(error){
+      performance.mark?.('ravradar:flow-arrows-failed');
+      console.error('Vind- og strømpile kunne ikke vises',error);
+      window.dispatchEvent(new CustomEvent('ravradar:flow-arrows-failed',{detail:{message:error?.message||String(error),attempt:flowArrowAttempts}}));
+      if(flowArrowAttempts<2)setTimeout(installArrows,750);
+    }
   };
-  if('requestIdleCallback' in window) requestIdleCallback(installArrows,{timeout:2500});
-  else setTimeout(installArrows,0);
+  setTimeout(installArrows,0);
   if(conditions.available&&conditions.generatedAt)dataStatus.textContent=`Senest opdateret ${new Date(conditions.generatedAt).toLocaleString('da-DK')} · klar på ${Math.round(performance.now()-started)} ms`;
   else dataStatus.textContent='Aktuelle data kunne ikke hentes. Gamle data vises ikke.';
   performance.mark?.('ravradar:ready');
@@ -213,11 +230,11 @@ try {
   resumeTripTracking();syncPendingObservations().catch(()=>{});updateTripUi();const pending=pendingTripPrompt();if(pending)setTimeout(()=>openTripPrompt(pending),650);
 } catch(error){console.error(error);infoPanel.innerHTML='<div class="notice">Aktuelle data kunne ikke indlæses. Gamle prognoser vises ikke.</div>';dataStatus.textContent='Fejl ved indlæsning';}
 
-// RavRadar 4.0.86: versionsmanifest + sikker service-worker-opdatering.
+// RavRadar 4.0.87: versionsmanifest + sikker service-worker-opdatering.
 function installAppUpdateFlow() {
   if (!("serviceWorker" in navigator)) return;
   const banner=document.querySelector("#updateBanner"), updateButton=document.querySelector("#updateAppButton");
-  const version=window.RAVRADAR_VERSION||"4.0.86"; document.querySelector("#appVersion").textContent=version;
+  const version=window.RAVRADAR_VERSION||"4.0.87"; document.querySelector("#appVersion").textContent=version;
   let refreshing=false, registration=null, waitingWorker=null;
   const showUpdate=worker=>{waitingWorker=worker||waitingWorker;if(waitingWorker){waitingWorker.postMessage({type:'SKIP_WAITING'});return;}if(!banner||!updateButton)return;banner.hidden=false;updateButton.disabled=false;updateButton.textContent="Opdater nu";};
   const activate=()=>{updateButton.disabled=true;updateButton.textContent="Opdaterer…";(waitingWorker||registration?.waiting)?.postMessage({type:"SKIP_WAITING"});};

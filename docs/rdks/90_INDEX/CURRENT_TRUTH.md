@@ -100,3 +100,9 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - Dokumentationscenteret giver adgang til RDKS-kernedokumenterne.
 - Model-forslag er lokale browsermodeller, indtil de særskilt indarbejdes i en versioneret produktionsrelease.
 - En funktion regnes ikke som implementeret alene fordi kode eller database findes; den synlige brugerrejse skal bestå.
+
+## Kortpile, admin-kort og modulversionering – 4.0.87
+- Vind- og strømpile installeres efter rangliste og 5-dagesprognose, men må ikke afhænge af `requestIdleCallback`.
+- Pilelaget skal afslutte med en entydig ready- eller failed-status, og sitetesten skal finde faktiske vind- og strømpile.
+- Forsinkede Leaflet-initialiseringer skal kontrollere, at fanen og kortcontaineren stadig eksisterer; kort skal fjernes ved faneskift.
+- Alle aktive browserimports skal bruge den aktuelle releaseversion. En grøn topniveauversion er ikke tilstrækkelig, hvis importgrafen stadig peger på ældre `?v=`-identiteter.

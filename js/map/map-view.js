@@ -211,14 +211,16 @@ function canPlaceAt(map, latLng, occupied, minDistance) {
 export function installFlowArrows(map, featureCollection, conditionForZone) {
   if (!map.getPane("flowArrowsPane")) {
     const pane = map.createPane("flowArrowsPane");
-    pane.style.zIndex = "360";
+    pane.style.zIndex = "440";
     pane.style.pointerEvents = "none";
   }
   // Byg markørerne mens laget er afkoblet fra kortet. Hvis laget allerede er
   // monteret, udløser hver addTo(layer) ellers en dyr DOM-opdatering.
   const layer = L.layerGroup([], { pane:"flowArrowsPane" });
 
+  let counts = { wind:0, current:0 };
   const render = () => {
+    counts = { wind:0, current:0 };
     const wasVisible = map.hasLayer(layer);
     if (wasVisible) map.removeLayer(layer);
     layer.clearLayers();
@@ -254,6 +256,7 @@ export function installFlowArrows(map, featureCollection, conditionForZone) {
             pane: "flowArrowsPane"
           }).addTo(layer);
           marker.options.ravFlowMeta = { type:'current', zoneId:zone.id, point:[currentPosition.lng,currentPosition.lat], directionDeg:Number(condition.currentDirectionDeg) };
+          counts.current += 1;
         }
       }
 
@@ -270,14 +273,17 @@ export function installFlowArrows(map, featureCollection, conditionForZone) {
             pane: "flowArrowsPane"
           }).addTo(layer);
           marker.options.ravFlowMeta = { type:'wind', zoneId:zone.id, point:[windPosition.lng,windPosition.lat], directionDeg:(Number(condition.windDirectionDeg)+180)%360 };
+          counts.wind += 1;
         }
       }
     }
     layer.addTo(map);
+    layer.ravFlowCounts = { ...counts };
+    return layer.ravFlowCounts;
   };
 
   map.on("zoomend moveend resize", render);
   render();
-  return { layer, refresh:render };
+  return { layer, refresh:render, counts:()=>({ ...(layer.ravFlowCounts||counts) }) };
 }
 

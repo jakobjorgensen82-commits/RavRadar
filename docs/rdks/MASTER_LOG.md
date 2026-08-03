@@ -219,3 +219,9 @@ Brugeren dokumenterede, at dagens rangliste og 5-dages prognose kunne forblive p
 - Aktiv admin fik samlet reviewkø, implementeringsflow, nødkladdehåndtering og reelle dokumentindgange.
 - Sitetesten skelner nu 404, timeout, netværksfejl og HTTP-fejl og opdeler opstart i netværk/data, beregning og rendering.
 - Reachability-test er tilføjet som releasekrav.
+
+## 2026-08-03 – 4.0.87
+- Produktionstesten og brugerobservationen viste, at vind- og strømpile kunne mangle, selv om data, rangliste og zonefarver var korrekte.
+- Den efterstillede pileinstallation bevares af performancehensyn, men `requestIdleCallback` er erstattet med deterministisk timerkørsel, målbar status og runtimekontrol.
+- Adminfejlen `Map container not found` blev ført til en forsinket Leaflet-callback, der overlevede faneskift; kort og timere ryddes nu ved skift.
+- En importgraf-audit fandt aktive `?v=4.0.83`-referencer i 4.0.86. Versionsværktøj og release-test lukker nu hele browsergrafen til én version.

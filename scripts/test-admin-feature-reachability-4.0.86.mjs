@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 
+const version=JSON.parse(fs.readFileSync('package.json','utf8')).version;
 const adminHtml=fs.readFileSync('admin.html','utf8');
 const dashboard=fs.readFileSync('js/ui/admin-dashboard.js','utf8');
 const reviewStore=fs.readFileSync('js/services/handbook-review-store.js','utf8');
@@ -8,7 +9,7 @@ const siteTest=fs.readFileSync('js/services/site-function-test-service.js','utf8
 const failures=[];
 const requireMatch=(source,re,label)=>{if(!re.test(source))failures.push(label);};
 
-requireMatch(adminHtml,/admin-dashboard\.js\?v=4\.0\.86/,'Aktiv admin skal indlæse admin-dashboard.js 4.0.86.');
+if(!adminHtml.includes(`admin-dashboard.js?v=${version}`))failures.push(`Aktiv admin skal indlæse admin-dashboard.js ${version}.`);
 requireMatch(dashboard,/id="handbookReviewQueue"/,'Håndbogsfanen mangler en synlig reviewkø.');
 requireMatch(dashboard,/id="handbookLocalDrafts"/,'Håndbogsfanen mangler synlige lokale nødkladder.');
 requireMatch(dashboard,/open-review-after-save/,'Kvitteringen efter reviewgemning mangler direkte adgang til reviewkøen.');

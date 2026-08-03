@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.86
+**Håndbogsversion:** 4.0.87
 
 **Opdateret:** 1. august 2026
 
@@ -1105,6 +1105,8 @@ RavRadar bruger den oceanografiske måde at angive strøm på: Retningen fortæl
 
 Vind er anderledes. Meteorologisk vindretning fortæller normalt, hvor vinden kommer fra. Derfor vendes vindpilen 180°, så kortpilen viser, hvor luften faktisk bevæger sig hen. Den forskel er bevidst og testes automatisk.
 
+Pilene tilføjes først, når dagens rangliste og femdøgnsprognosen er klar. Det beskytter den første visning mod at blive blokeret af mange kortmarkører. Installationen er dog en garanteret efterfølgende opgave: systemet registrerer både start, succes og fejl, og sitetesten kontrollerer, at der faktisk findes vindpile og verificerede strømpile på kortet.
+
 ### 56.2 Sådan kontrolleres zoneværdien
 
 For hver DMI-time kan RavRadar efterprøve tre ting:
@@ -1123,7 +1125,7 @@ Pilen viser modelværdien på modelgitteret. Den beviser ikke, at strømmen er p
 
 Når RavRadar åbner administrationen, skal systemet først kontrollere login og rettigheder. Nogle datakilder tager længere tid at hente end andre, men det må ikke efterlade fanen **Oversigt** helt tom. Efter godkendt adgang viser RavRadar derfor straks et første, brugbart overblik med de oplysninger, der allerede findes. Når de resterende data er hentet, opdateres det samme overblik automatisk.
 
-Den samlede sitetest åbner administrationen i en skjult, isoleret browserramme. Den venter nu på en tydelig færdigmarkør, før den skifter mellem fanerne. Eventuelle browserdialoger eller rettighedsafvisninger bliver skrevet i testens rapport i stedet for at dukke op oven på den administration, ejeren arbejder i. Det gør testen både mere præcis og mindre forstyrrende.
+Den samlede sitetest åbner administrationen i en skjult, isoleret browserramme. Forsinkede kortopgaver må ikke overleve et faneskift. Retnings- og stationskort fjernes derfor, når fanen forlades, og Leaflet starter kun, hvis den forventede kortcontainer stadig findes. Den venter nu på en tydelig færdigmarkør, før den skifter mellem fanerne. Eventuelle browserdialoger eller rettighedsafvisninger bliver skrevet i testens rapport i stedet for at dukke op oven på den administration, ejeren arbejder i. Det gør testen både mere præcis og mindre forstyrrende.
 
 ## 58. Manglende strømdata betyder ikke, at strømmen er nul
 
