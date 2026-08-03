@@ -142,3 +142,10 @@ Status: Implementeret og lokalt valideret.
 - Geometri-rollback beskytter snapshots uden at låse admin-redigerbare navne, kystlinjer, punkter eller retninger.
 - Rollbackværktøjet skifter kun polygongeometri og bevarer slettede zoner og aktuelle adminfelter.
 - En ny samlet admin-zonekontrakttest dækker omdøbning, kystlinjeændring, 180° vending, zonesletning og beskyttelse mod ikke-godkendte kladder.
+
+## 4.0.94 – IMPLEMENTERET
+- [x] Aktive centrale administratorregler publiceres sanitiseret til offentlig runtime.
+- [x] Offentlig score er uafhængig af den enkelte browsers lokale administratorlager.
+- [x] Regelkladder og inaktive regler kan ikke påvirke produktionen.
+- [x] Rå `data/admin/`-filer udelukkes fra Pages-artifactet.
+- [x] Integrations- og release-gate beskytter hele kæden.

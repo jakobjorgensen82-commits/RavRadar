@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.93
+**Håndbogsversion:** 4.0.94
 
 **Opdateret:** 1. august 2026
 
@@ -1198,3 +1198,10 @@ Kystlinjeeditoren bruges kun til zonens navn og det geografiske forløb af den s
 Administratoren søger efter en zone, vælger den, bruger **Flyt kort** eller **Præcis redigering** og trykker derefter **Gem ændringer**. Gemningen skrives centralt og læses tilbage som kontrol. Ved næste deployment anvendes det nye navn og den nye kystlinje automatisk på zoneregister, kort, søgning, ranglister, prognoser og debug. Zone-ID bevares, så historik, routing og observationer ikke mister deres reference.
 
 Gamle tekniske kystlinjekladder fra tidligere versioner aktiveres ikke automatisk. Kun ændringer, som er gemt gennem den nye centrale arbejdsgang, kan blive anvendt i produktionen.
+
+## Centrale regler og ens score for alle brugere – 4.0.94
+Når ejeren aktiverer en regel i administrationen, gemmes den centralt. Ved næste deployment udvælger RavRadar kun regler med status **Aktiv**, kontrollerer deres struktur og opretter en lille offentlig regelfil med de felter, scoremotoren behøver. Regler, der endnu ikke er aktive, påvirker ikke brugerne.
+
+Den offentlige side læser ikke længere ejerens lokale browserlager. Det betyder, at to brugere ikke kan få forskellige RavScore-resultater, blot fordi den ene browser tidligere har været brugt til administration. Alle brugere anvender samme versionerede regelsæt.
+
+Rå centrale adminfiler indeholder arbejdsmateriale og må ikke publiceres på GitHub Pages. Kun den sanitiserede liste over aktive regler bliver offentlig, fordi den er nødvendig for at beregne og forklare den fælles RavScore.

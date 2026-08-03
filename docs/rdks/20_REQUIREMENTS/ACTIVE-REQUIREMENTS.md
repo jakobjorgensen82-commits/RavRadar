@@ -72,3 +72,5 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-HANDBOOK-004 – IMPLEMENTERET:** Håndbogsreview har synlig reviewkø, direkte genvej, statusbehandling, central implementering og håndtering af lokale nødkladder.
 - **REQ-DIAGNOSTIC-001 – IMPLEMENTERET:** Sitetestens deploykontrol skelner 404, timeout, netværksfejl og øvrige HTTP-fejl.
 - **REQ-DIAGNOSTIC-002 – IMPLEMENTERET:** Opstartsprofilen opdeles i netværk/data, beregning og rendering.
+
+- **REQ-ADMIN-008 – IMPLEMENTERET I 4.0.94:** Aktive centrale regler skal automatisk publiceres til én fælles offentlig regelfil. Offentlig RavScore må ikke afhænge af browserens lokale adminlager, og rå adminmellemdata må ikke udstilles på GitHub Pages.

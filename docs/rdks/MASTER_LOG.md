@@ -257,3 +257,10 @@ GitHub-kørslen efter sletning af DK-B02-14 fejlede, fordi `validate-data.mjs` s
 - Administratorens godkendte navn, kystlinje, land-/havpunkter, retningsankre og pålandsretning er autoritative. En 180° korrektion er gyldig, når hav→land-geometrien stemmer.
 - Rollbackværktøjet ændrer fremover kun polygongeometrien og kan ikke genoplive slettede zoner eller overskrive aktuelle adminfelter.
 - En samlet regressionstest simulerer omdøbning, kystlinjeredigering, 180° vending, zonesletning og ikke-godkendte kladder.
+
+## 2026-08-03 – 4.0.94
+- Den grønne 4.0.93 blev valideret som baseline før ændringer.
+- En read-only audit af administrator-redigerbare datakæder viste, at zoner, retninger, kystlinjer og stationsrouting allerede havde en produktionskæde, mens centralt gemte aktive regler kun blev læst lokalt i administratorens browser.
+- Offentlig regelindlæsning blev ændret til en sanitiseret, versionsstyret fil genereret fra Supabase ved deployment.
+- Rå centrale adminfiler blev udelukket fra Pages-artifactet.
+- Ingen scorekonstanter, DMI-kæder, kortfunktioner eller zoneværdier blev ændret.

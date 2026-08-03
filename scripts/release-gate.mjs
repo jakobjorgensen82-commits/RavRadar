@@ -58,6 +58,11 @@ for(const protectedPath of ['handbook.html','documentation.html','data/diagnosti
   ok(workflow.includes(`--exclude '${protectedPath}'`)||workflow.includes(`--exclude \"${protectedPath}\"`),`Pages-workflow udelukker ikke ${protectedPath}`);
 }
 ok(!workflow.includes("--exclude 'js/services/handbook-review-store.js'"),'Pages-workflow må ikke udelukke et browsermodul som admin importerer');
+ok(workflow.includes("--exclude 'data/admin/'"),'Pages-workflow skal udelukke rå centrale adminfiler');
+ok(workflow.includes('generate-public-admin-rules.mjs'),'Workflowet skal publicere centralt aktive administratorregler');
+const publicRuleService=await read('js/services/rule-service.js');
+ok(publicRuleService.includes('admin-active-rules.json'),'Offentlig regelservice mangler centralt publicerede administratorregler');
+ok(!publicRuleService.includes("localStorage.getItem('ravradar-admin-rules-v1')"),'Offentlig RavScore må ikke afhænge af lokale administratorregler');
 const moduleClosureTest=await read('scripts/test-pages-module-closure-4.0.68.mjs');
 ok(moduleClosureTest.includes('Pages-artifact mangler browsermodul')&&moduleClosureTest.includes('handbook-review-store.js'),'Release mangler Pages-modullukningstest');
 ok(workflow.includes('SUPABASE_URL')&&workflow.includes('SUPABASE_SERVICE_ROLE_KEY'),'Workflow mangler Supabase secrets');

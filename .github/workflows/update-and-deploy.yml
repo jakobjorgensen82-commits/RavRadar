@@ -54,6 +54,9 @@ jobs:
       - name: Apply centrally approved zone geometry and deletions
         run: python scripts/apply-central-zone-reviews.py
 
+      - name: Publish centrally active administrator rules
+        run: node scripts/generate-public-admin-rules.mjs
+
       - name: Hydrate latest deployed weather state
         run: python scripts/hydrate-deployed-weather.py
         env:
@@ -275,6 +278,7 @@ jobs:
             --exclude 'scripts/' \
             --exclude 'docs/' \
             --exclude 'data/diagnostics/' \
+            --exclude 'data/admin/' \
             --exclude 'data/live/weather-health.json' \
             --exclude 'data/live/ravradar-runtime-diagnostics.json' \
             --exclude 'data/live/dmi-water-stations.json' \

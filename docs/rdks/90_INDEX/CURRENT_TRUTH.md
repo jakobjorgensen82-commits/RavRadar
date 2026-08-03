@@ -134,3 +134,9 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - Produktionszoners antal, navn, kystlinje, koordinater og retning må ikke låses til historiske værdier i regressionstests.
 - Tests beskytter i stedet zone-ID-integritet, eksplicitte sletningstombstones, gyldig geometri, hav→land-konsistens, datadækning og fuld forplantning til score, kort, forecast og debug.
 - Historiske rollback-snapshots må ikke genoplive slettede zoner eller overskrive administratorens aktuelle navn, kystlinje, land-/havpunkter, ankre eller retning.
+
+## Centrale administratorregler – 4.0.94
+- Godkendte aktive administratorregler publiceres ved deployment som en sanitiseret offentlig regelfil.
+- Offentlig RavScore må aldrig læse administratorregler fra browserens lokale lager; alle brugere skal bruge samme centrale, versionerede regelsæt.
+- Regelkladder og inaktive regler forbliver centrale adminposter og påvirker ikke produktionen.
+- Rå synkroniserede adminfiler under `data/admin/` er beskyttede mellemprodukter og må ikke indgå i GitHub Pages-artifactet.
