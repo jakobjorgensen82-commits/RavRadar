@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-04T01:23:03.756Z",
+  "generatedAt": "2026-08-04T09:46:15.525Z",
   "basis": {
     "directionConvention": "oceanographic-to: 0° north, 90° east",
     "components": "current-u=eastward velocity; current-v=northward velocity",

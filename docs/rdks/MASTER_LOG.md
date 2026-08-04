@@ -271,3 +271,15 @@ GitHub-kørslen efter sletning af DK-B02-14 fejlede, fordi `validate-data.mjs` s
 - Sitetesten dokumenterede `ReferenceError: stationDeliveryLabel is not defined`.
 - Rettelsen er afgrænset til admininitialisering og beskyttet stationsstatus: runtimekald rettet, Supabase-hydrering tilføjet, ukendt status bevares, og central upload er ikke-destruktiv.
 - DMI-prognosekæde, vandstandsværdier, interpolation og RavScore er uændrede.
+
+## 2026-08-04 – 4.0.97 præcis stationscache og override-status
+- Produktionstjek af Hirtshals viste “Ingen prognosecache” og “Utilgængelig”, samtidig med at den offentlige zoneprognose havde gyldig DMI-modelcache.
+- Analysen dokumenterede to forskellige datatyper: stationens målestationsbaserede cache til override/interpolation og zonens DMI-modelprognosecache.
+- Admin bruger nu begrebet “stationscache” og beskriver anvendelighed specifikt som stationsoverride-anvendelighed.
+- Et gemt override anvendes fortsat kun, hvis de valgte stationer leverer brugbare værdier efter `requireAll`; ellers fortsætter den eksisterende automatiske/modelbaserede kæde.
+- Ingen DMI-værdier, scorelogik eller offentlig prognose blev ændret.
+
+## 2026-08-04 – 4.0.98 effektiv stationsrouting
+- Brugerkravet blev præciseret: stationerne i admin må ikke kun være visning; effektivt auto-/overridevalg skal styre prognosen og vandstandstabellen.
+- Implementeret fælles routingproveniens, inverse afstandsvægte, modelbias, offentlig dokumentation og cachealarmer for aktive valgte stationer.
+- 4.0.97’s rene tekstpræcisering var utilstrækkelig og er erstattet af den funktionelle 4.0.98-kæde.

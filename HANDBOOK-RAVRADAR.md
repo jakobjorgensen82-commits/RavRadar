@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.96
+**Håndbogsversion:** 4.0.98
 
 **Opdateret:** 1. august 2026
 
@@ -463,13 +463,17 @@ En station har mindst tre statuslag:
 
 - Prognose-/cachestatus: gyldig prognosecache, gyldig til, udløbet eller mangler.
 
-Samlet anvendelighed må ikke sættes til falsk, blot fordi en ny observation mangler. Hvis gyldig prognosecache findes, kan stationen fortsat anvendes til prognosen. Friske observationer har forrang; cache må kun bruges til dokumenteret udløb.
+Samlet anvendelighed må ikke sættes til falsk, blot fordi en ny observation mangler. Hvis gyldig stationscache findes, kan stationen fortsat anvendes til målestationsbaseret override/interpolation. Friske observationer har forrang; cache må kun bruges til dokumenteret udløb. Stationscache er ikke det samme som zonens DMI-modelprognosecache: den offentlige vandstandsprognose kan godt fungere fra modelcache, selv om en bestemt station ikke har en brugbar stationsværdi.
 
 Stationsregisteret er persistent. Opdagede stationer fjernes ikke ved en tom kørsel. Admin viser automatisk primær/sekundær station, afstand, vægt, valgmetode og eventuel override.
 
 Historiske/inaktive stationer skal være tydeligt markeret og må normalt ikke vælges uden advarsel. Hele registeret skal periodisk sammenholdes med DMI's officielle liste.
 
 I admin betyder kortfarverne: grøn er RavRadars automatiske valg, rød er administratorens override, lilla er valgt af begge, grå er udfaset, og orange er øvrige stationer. Manglende livscyklusdata vises som ukendt og må ikke fejlagtigt blive til “utilgængelig”. Beskyttet stationshistorik læses tilbage fra Supabase før en ny kørsel og flettes ikke-destruktivt, så kendte observationer og cacheoplysninger ikke går tabt.
+
+Den effektive routing er den routing, produktionen faktisk bruger. Et aktivt og leveringsdygtigt administratoroverride har første prioritet. Ellers bruges RavRadars automatiske topologiske valg. Ved to stationer beregnes inverse afstandsvægte fra zonens datapunkt. Den interpolerede stationsværdi bruges som dokumenteret korrektion af DMI-modelvandstanden gennem hele prognoseserien. Derfor bruger kort, prognose, RavScore og vandstandstabel den samme vandstand. Den rå modelværdi og den anvendte korrektion bevares i diagnostikken.
+
+Hvis en aktiv station i den effektive routing stopper med at levere, kan dens gyldige stationscache fortsat holde routingen i drift. Admin har en central alarmgrænse i timer. Når den resterende cachehorisont kommer under grænsen, vises en advarsel med berørte zoner. Ved udløb vises en kritisk alarm.
 
 
 ## 25. Brugerfeedback, adaptiv model og AI

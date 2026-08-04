@@ -1,7 +1,7 @@
 performance.mark?.('ravradar:bootstrap-start');
-import { initializeUserDataSafety } from "./js/services/storage-safety.js?v=4.0.96";
+import { initializeUserDataSafety } from "./js/services/storage-safety.js?v=4.0.98";
 
 await initializeUserDataSafety();
 performance.mark?.('ravradar:storage-ready');
-await import("./app.js?v=4.0.96");
+await import("./app.js?v=4.0.98");
 performance.mark?.('ravradar:app-imported');

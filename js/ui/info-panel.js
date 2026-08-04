@@ -1,5 +1,5 @@
-import { calculateRavScore, scoreRating } from "../core/score-engine.js?v=4.0.96";
-import { selectBestTimeForDay } from "../core/best-time-selector.js?v=4.0.96";
+import { calculateRavScore, scoreRating } from "../core/score-engine.js?v=4.0.98";
+import { selectBestTimeForDay } from "../core/best-time-selector.js?v=4.0.98";
 
 const formatNumber = (value, suffix, digits = 1) => Number.isFinite(Number(value)) ? `${Number(value).toFixed(digits).replace(".", ",")} ${suffix}` : "Mangler";
 const compass = value => {
@@ -100,9 +100,11 @@ function forecastPanel(days, zone, mode, history, currentWeather, currentResult)
   </section>`;
 }
 
-function tidePanel(days) {
+function tidePanel(days, waterLevel = null) {
   if (!days.length) return `<section class="tide-section"><h3>Vandstand time for time</h3><p class="muted">Vandstandsprognosen bliver vist efter næste vejr-opdatering.</p></section>`;
-  return `<section class="tide-section" data-tide-section><div class="section-title-row"><div><p class="eyebrow dark">Næste fem dage</p><h3>Vandstand time for time</h3></div></div>${dayTabs(days,0,"tide-day-tab")}<div data-tide-table></div><script type="application/json" class="tide-payload">${escapeScriptJson(JSON.stringify(days))}</script></section>`;
+  const routing=waterLevel?.routing;
+  const routingText=routing?.stations?.length?`<div class="water-routing-proof"><b>${routing.mode==='admin-override'?'Administratorvalg':'Automatisk stationsvalg'}</b><span>${routing.stations.map(st=>`${escapeHtml(st.name||st.stationId)} ${Math.round(Number(st.weight||0)*100)} %`).join(' · ')}</span><small>DMI-modelprognosen er korrigeret med disse stationer${Number.isFinite(Number(routing.biasCm))?` · korrektion ${Number(routing.biasCm)>=0?'+':''}${Math.round(Number(routing.biasCm))} cm`:''}.</small></div>`:'';
+  return `<section class="tide-section" data-tide-section><div class="section-title-row"><div><p class="eyebrow dark">Næste fem dage</p><h3>Vandstand time for time</h3></div></div>${routingText}${dayTabs(days,0,"tide-day-tab")}<div data-tide-table></div><script type="application/json" class="tide-payload">${escapeScriptJson(JSON.stringify(days))}</script></section>`;
 }
 
 export function bindZoneInfoInteractions(element, zone, mode, history) {
@@ -143,7 +145,7 @@ export function showZoneInfo(element, zone, result, condition, mode, options = {
     ${result.prediction?.available ? `<section class="prediction-panel"><div><span class="eyebrow">AI-prognose</span><h3>${result.prediction.probability}% chance for ravfund</h3><p>${escapeHtml(result.prediction.label)} · sikkerhed ${result.prediction.confidence}%</p></div><details><summary>Sådan er prognosen beregnet</summary><ul>${result.prediction.reasons.map(reason=>`<li>${escapeHtml(reason)}</li>`).join("")}</ul></details></section>` : ""}
     ${result.available ? debugPanel(zone,result,condition) : ""}
     ${result.available ? `<div class="metric-grid weather-grid"><div class="metric"><span>Vind</span><strong>${directionMetric("wind",condition.windSpeedMps,"m/s",condition.windDirectionDeg)}</strong></div><div class="metric"><span>Bølger</span><strong>${formatNumber(condition.waveHeightM,"m")}</strong></div><div class="metric"><span>Vandstand</span><strong>${formatNumber(condition.waterLevelCm,"cm",0)}</strong></div><div class="metric"><span>Strøm</span><strong>${directionMetric("current",condition.currentSpeedMps,"m/s",condition.currentDirectionDeg,2)}</strong></div><div class="metric"><span>Vandtemperatur</span><strong>${formatNumber(condition.waterTemperatureC,"°C")}</strong></div><div class="metric"><span>3-timers trend</span><strong>${formatNumber(condition.waterLevelTrendCm3h,"cm",0)}</strong></div></div>` : ""}
-    ${forecastPanel(days,zone,mode,options.history||{},condition,result)}${tidePanel(days)}
+    ${forecastPanel(days,zone,mode,options.history||{},condition,result)}${tidePanel(days,options.waterLevel)}
     <form id="observationForm" class="observation-form"><h3>Hvad fandt du?</h3><p>For at gøre RavRadar mere præcis vil vi gerne sammenholde dit fund med vejr, vandstand og den RavScore, der gjaldt under ravjagten.</p><label>Dato for ravjagten<input name="observedDate" type="date" required value="${new Date().toISOString().slice(0,10)}" max="${new Date().toISOString().slice(0,10)}"></label><label class="grams-field">Valgfrit antal gram<input name="grams" type="number" min="0" max="10000" step="0.1" inputmode="decimal"></label><div class="observation-buttons"><button type="submit" name="result" value="none">Intet</button><button type="submit" name="result" value="small">Små stykker</button><button type="submit" name="result" value="medium">Noget rav</button><button type="submit" name="result" value="good">Godt fund</button></div><p id="observationStatus" class="form-status" aria-live="polite"></p></form>`;
 }
 

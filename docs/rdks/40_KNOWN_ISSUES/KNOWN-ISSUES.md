@@ -1,7 +1,7 @@
 # Kendte åbne og overvågede forhold
 
 ## Høj prioritet
-1. **ISSUE-STATION-CACHE-STATUS – PLANLAGT:** Stationslivscyklus skelner endnu ikke fuldt mellem observation og gyldig prognosecache.
+1. **ISSUE-STATION-CACHE-STATUS – DELVIST LØST I 4.0.97:** Admin skelner nu mellem observation, stationsbaseret cache og zonebaseret DMI-modelcache. Historisk stabilitet og produktionsverifikation af alle stationers livscyklus overvåges fortsat.
 2. **ISSUE-HANDBOOK-EVIDENCE – LØBENDE:** Flere faglige antagelser om rav og sedimenttransport kræver ekstern ekspertvalidering.
 3. **ISSUE-DMI-HORIZON – OVERVÅGES:** Komponenternes DMI-horisont kan være kortere end hele brugerprognosen; fallback og dækning skal forklares.
 4. **ISSUE-WATERLEVEL-CONTINUITY – OVERVÅGES:** Kunstige spring må ikke genopstå ved kildeskift; Vadehavet skal vurderes særskilt.
@@ -41,3 +41,8 @@ Pileinstallationen var gjort afhængig af browserens idle-callback uden runtimek
 ## Løst i 4.0.96 – vandstandsstationsfanen
 - `stationDeliveryLabel` stoppede kortinitialisering for zoner med gemt override. Løst ved at bruge de aktive observations-, cache- og anvendelighedslabels.
 - Beskyttet stationsstatus blev ikke hydreret fra Supabase og kunne blive forringet til ukendt/utilgængelig. Løst med central readback og ikke-destruktiv merge.
+
+## Løst i 4.0.97 – misvisende cache- og anvendelighedstekst
+- “Ingen prognosecache” kunne fejlagtigt læses som om zonens DMI-modelprognose manglede, selv om feltet kun beskrev stationsbaseret interpolation.
+- Admin viser nu “Ingen stationsbaseret cache” og “Ingen brugbar stationsværdi nu”.
+- Status forklarer, at et override kun anvendes, når de valgte stationer faktisk har brugbare værdier; den offentlige zoneprognose er en separat kæde.

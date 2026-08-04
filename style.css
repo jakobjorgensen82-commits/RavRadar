@@ -385,3 +385,5 @@ body.zone-focus .info-panel { scroll-margin-top:12px; }
 }
 @media(max-width:420px){.app-header{grid-template-columns:1fr}.header-actions{width:100%;grid-template-columns:auto 1fr}.primary-header-actions .header-button{font-size:.72rem}}
 .legend-note{margin:0;padding:5px 10px 8px;text-align:center;color:var(--muted);font-size:.68rem;background:var(--surface)}
+.water-routing-proof{display:grid;gap:.25rem;margin:.5rem 0 1rem;padding:.75rem 1rem;border-radius:.75rem;background:rgba(7,59,76,.08)}
+.water-routing-proof span,.water-routing-proof small{display:block}

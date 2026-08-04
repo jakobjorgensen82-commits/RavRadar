@@ -186,6 +186,7 @@ export function buildDmiForecastHourly({ wind = [], waves = [], ocean = [], obse
   const modelCurrentCm = modelCurrentSea === null ? null : modelCurrentSea * 100;
   const observationCm = finite(observedWaterLevel?.valueCm);
   const observationDifferenceCm = observationCm !== null && modelCurrentCm !== null ? observationCm - modelCurrentCm : null;
+  const waterLevelBiasCm = observationDifferenceCm === null ? 0 : observationDifferenceCm;
 
   const hourly = [];
   for (let index = 0; index < hours; index += 1) {
@@ -208,9 +209,9 @@ export function buildDmiForecastHourly({ wind = [], waves = [], ocean = [], obse
       waveHeightM: round(waveHeight, 2),
       waveDirectionDeg: round(waveDirection, 0),
       wavePeriodS: round(interpolateScalar(waveBracket, 'dominant-wave-period'), 1),
-      waterLevelCm: sea === null ? null : round(sea * 100, 0),
+      waterLevelCm: sea === null ? null : round(sea * 100 + waterLevelBiasCm, 0),
       waterLevelModelCm: sea === null ? null : round(sea * 100, 0),
-      waterLevelBiasCm: 0,
+      waterLevelBiasCm: round(waterLevelBiasCm, 0),
       waterLevelObservationDifferenceCm: sea === null ? null : round(observationDifferenceCm, 0),
       waterLevelTrendCm3h: sea === null || sea3 === null ? null : round((sea3 - sea) * 100, 0),
       currentUMps: round(u, 5),
@@ -220,10 +221,10 @@ export function buildDmiForecastHourly({ wind = [], waves = [], ocean = [], obse
       waterTemperatureC: round(interpolateScalar(oceanBracket, 'water-temperature'), 1),
       temporalResolution: oceanBracket?.mode ?? windBracket?.mode ?? waveBracket?.mode ?? null,
       source: 'dmi-forecast',
-      waterLevelSource: 'dmi-model-authoritative'
+      waterLevelSource: observationCm === null ? 'dmi-model-authoritative' : 'dmi-model-station-routed-bias'
     });
   }
-  return { hourly, waterLevelBiasCm: 0, observationDifferenceCm: round(observationDifferenceCm, 0), interpolation: { method: 'linear-between-model-steps', vectorInterpolation: ['wind', 'wave-direction', 'current'], sourceCadenceMinutes: Number(sourceCadenceMinutes) || 180 } };
+  return { hourly, waterLevelBiasCm: round(waterLevelBiasCm, 0), observationDifferenceCm: round(observationDifferenceCm, 0), interpolation: { method: 'linear-between-model-steps', vectorInterpolation: ['wind', 'wave-direction', 'current'], sourceCadenceMinutes: Number(sourceCadenceMinutes) || 180 } };
 }
 
 export function createDmiForecastRecord({ zoneId, point, generatedAt, hourly, waterLevelInterpolation = null, model = null } = {}) {

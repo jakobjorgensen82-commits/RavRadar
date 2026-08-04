@@ -35,6 +35,9 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - Nye stationer, udfald, genoptagelse og potentielt bedre routing skal skabe meningsfulde tilstandsnotifikationer.
 - En station kan fortsat være prognosebrugbar, så længe dens cachedata er gyldige, selv om en ny observation mangler. Admin viser observationsstatus, cacheudløb og samlet anvendelighed.
 - Manglende stationslivscyklus er ukendt status og må ikke omsættes til “utilgængelig” eller “aldrig leveret”. Beskyttet stationshistorik hydreres fra Supabase og må ikke forringes ved en nyere kørsel.
+- “Stationscache” er cache knyttet til målestationsbaseret override/interpolation. Den må ikke forveksles med zonens DMI-modelprognosecache. En station kan mangle stationscache, mens den offentlige zoneprognose stadig har gyldig DMI-modelcache.
+- Den effektive routing pr. zone er administratoroverride, når det er aktivt og kan levere efter kravene; ellers systemets automatiske topologiske valg. Præcis disse stationer og afstandsvægte bruges til at korrigere DMI-modelvandstanden gennem hele prognosen og i den offentlige vandstandstabel.
+- Aktive stationer i den effektive routing, som ikke leverer, udløser advarsel før stationscacheudløb og kritisk alarm ved udløb. Alarmgrænsen konfigureres centralt i admin.
 
 ## RavScore
 - Scoren skal kunne forklares fra rådata til slutscore.

@@ -49,3 +49,4 @@ button.documentation-card{width:100%;font:inherit}
 
 .documentation-pre{white-space:pre-wrap;max-height:70vh;overflow:auto;background:rgba(0,0,0,.04);padding:1rem;border-radius:.75rem;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}.link-button{border:0;background:none;color:inherit;text-decoration:underline;cursor:pointer;font:inherit}.handbook-review-card .review-implementation{margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(0,0,0,.12)}.handbook-review-card .implementation-body{width:100%;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.local-handbook-draft{border-left:4px solid #d49b00}
 .dot.retired-station{background:#777;border:1px dashed #bbb}
+.station-routing-alerts{display:grid;gap:.6rem;margin:.6rem 0 1rem}.station-routing-alerts>div{padding:.75rem 1rem;border-radius:.7rem}.station-routing-alerts .status-warning{background:rgba(255,193,7,.15)}.station-routing-alerts .status-bad{background:rgba(220,53,69,.14)}

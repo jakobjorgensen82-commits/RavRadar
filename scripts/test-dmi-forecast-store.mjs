@@ -20,10 +20,10 @@ const ocean = Array.from({ length: 130 }, (_, i) => ({ step: new Date(Date.parse
 
 const built = buildDmiForecastHourly({ wind, waves, ocean, observedWaterLevel: { valueCm: 25 }, generatedAt });
 assert.equal(built.hourly.length, DMI_FORECAST_HOURS);
-assert.equal(built.waterLevelBiasCm, 0);
+assert.equal(built.waterLevelBiasCm, 15);
 assert.equal(built.observationDifferenceCm, 15);
-assert.equal(built.hourly[0].waterLevelCm, 10, 'DMI-modelvandstanden skal forblive autoritativ');
-assert.equal(built.hourly[0].waterLevelSource, 'dmi-model-authoritative');
+assert.equal(built.hourly[0].waterLevelCm, 25, 'Stationsroutingen skal korrigere DMI-modellen til den valgte observation ved starttidspunktet');
+assert.equal(built.hourly[0].waterLevelSource, 'dmi-model-station-routed-bias');
 assert.equal(built.hourly.at(-1).source, 'dmi-forecast');
 
 
@@ -50,7 +50,7 @@ assert.equal(normalized[0].waveHeightM, 0.5);
 const record = createDmiForecastRecord({ zoneId: 'test-zone', point: [10, 56], generatedAt, hourly: built.hourly });
 assert.equal(record.horizonHours, 120);
 assert.ok(Date.parse(record.validUntil) - Date.parse(record.validFrom) >= 119 * 3600000);
-assert.equal(selectDmiForecastAt(record, '2026-07-26T12:00:00.000Z').waterLevelCm, 15);
+assert.equal(selectDmiForecastAt(record, '2026-07-26T12:00:00.000Z').waterLevelCm, 30);
 assert.equal(selectDmiForecastAt(record, '2026-07-30T12:00:00.000Z'), null, 'udløbet DMI-cache må ikke bruges');
 assert.equal(dmiForecastCoverage(record, generatedAt).totalHours, 120);
 
