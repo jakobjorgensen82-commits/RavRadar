@@ -112,6 +112,8 @@ function providerCircuitOpen(name) {
 }
 let dmiWaterStationsPromise = null;
 let dmiLatestSeaLevelPromise = null;
+let dmiSeaLevelObservationRun = { attempted: false, succeeded: false, parameters: {}, featureCount: 0, validLevelCount: 0, error: null };
+const DMI_WATER_LEVEL_PARAMETER_IDS = ['sealev_ln', 'sealev_dvr', 'sea_reg'];
 let waterStationRoutingPromise = null;
 
 async function waterStationRouting() {
@@ -359,7 +361,11 @@ function applyStationForecastCacheStatus(stations, forecastStore, generatedAt) {
   return stations.map(station => {
     const cached = index.get(String(station.stationId));
     const inheritedUntil = Date.parse(station.forecastCacheValidUntil ?? '');
-    const candidateUntil = cached?.validUntil ? Date.parse(cached.validUntil) : inheritedUntil;
+    const observationUntil = Number.isFinite(Date.parse(station.lastObservationAt ?? ''))
+      ? Date.parse(station.lastObservationAt) + STATION_CACHE_GRACE_HOURS * 3600000
+      : NaN;
+    const candidates = [cached?.validUntil ? Date.parse(cached.validUntil) : NaN, inheritedUntil, observationUntil].filter(Number.isFinite);
+    const candidateUntil = candidates.length ? Math.max(...candidates) : NaN;
     const validUntil = Number.isFinite(candidateUntil) ? new Date(candidateUntil).toISOString() : null;
     const cacheValid = validUntil ? Date.parse(validUntil) >= now : false;
     const forecastCacheStatus = cacheValid ? 'valid' : validUntil ? 'expired' : 'none';
@@ -494,23 +500,49 @@ async function dmiWaterStations() {
 
 async function dmiLatestSeaLevels() {
   if (!dmiLatestSeaLevelPromise) {
-    dmiLatestSeaLevelPromise = fetchAllFeatures(`${DMI_OCEAN_OBS_ROOT}/observation/items`, {
-      parameterId: 'sealev_ln', period: 'latest-hour', sortorder: 'observed,DESC'
-    }, {
-      provider: 'DMI oceanObs water level', retries: DMI_MAX_RETRIES, dmi: false
-    }, { pageSize: 1000, maxPages: 20 }).then(features => {
+    dmiSeaLevelObservationRun = { attempted: true, succeeded: false, parameters: {}, featureCount: 0, validLevelCount: 0, error: null };
+    dmiLatestSeaLevelPromise = (async () => {
       const latest = new Map();
-      for (const feature of features) {
-        const p = feature.properties ?? {};
-        const stationId = String(p.stationId ?? '');
-        const value = num(p.value);
-        if (!stationId || value === null) continue;
-        const existing = latest.get(stationId);
-        if (!existing || Date.parse(p.observed) > Date.parse(existing.observed)) {
-          latest.set(stationId, { stationId, valueCm: value, observed: p.observed, qcStatus: p.qcStatus ?? null });
+      const failures = [];
+      for (const parameterId of DMI_WATER_LEVEL_PARAMETER_IDS) {
+        try {
+          const features = await fetchAllFeatures(`${DMI_OCEAN_OBS_ROOT}/observation/items`, {
+            parameterId, period: 'latest-hour', sortorder: 'observed,DESC'
+          }, {
+            provider: `DMI oceanObs water level ${parameterId}`, retries: DMI_MAX_RETRIES, dmi: false
+          }, { pageSize: 1000, maxPages: 20 });
+          let valid = 0;
+          for (const feature of features) {
+            const p = feature.properties ?? {};
+            const stationId = String(p.stationId ?? '');
+            const value = num(p.value);
+            if (!stationId || value === null || !Number.isFinite(Date.parse(p.observed ?? ''))) continue;
+            valid += 1;
+            const existing = latest.get(stationId);
+            if (!existing || Date.parse(p.observed) > Date.parse(existing.observed)) {
+              latest.set(stationId, { stationId, valueCm: value, observed: p.observed, qcStatus: p.qcStatus ?? null, parameterId });
+            }
+          }
+          dmiSeaLevelObservationRun.parameters[parameterId] = { ok: true, features: features.length, valid };
+          dmiSeaLevelObservationRun.featureCount += features.length;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          dmiSeaLevelObservationRun.parameters[parameterId] = { ok: false, features: 0, valid: 0, error: message };
+          failures.push(`${parameterId}: ${message}`);
         }
       }
+      dmiSeaLevelObservationRun.validLevelCount = latest.size;
+      dmiSeaLevelObservationRun.succeeded = latest.size > 0;
+      if (!dmiSeaLevelObservationRun.succeeded) {
+        dmiSeaLevelObservationRun.error = failures.length ? failures.join(' | ') : 'DMI OceanObs returned no valid water-level observations';
+        const error = new Error(dmiSeaLevelObservationRun.error);
+        error.code = 'DMI_OCEANOBS_NO_VALID_LEVELS';
+        throw error;
+      }
       return latest;
+    })().catch(error => {
+      dmiSeaLevelObservationRun.error ??= error instanceof Error ? error.message : String(error);
+      throw error;
     });
   }
   return dmiLatestSeaLevelPromise;
@@ -643,39 +675,44 @@ function manualStationInterpolation(feature, point, stations, levels, route) {
   };
 }
 
-function automaticStationInterpolation(feature, point, stations, levels) {
+function topologyStationInterpolation(feature, point, stations, levels) {
   const recommendation = recommendWaterStationBracket({ zoneId: feature.properties?.id, zoneName: feature.properties?.name, point, coastLine: featureCoastLine(feature), onshoreDirectionDeg: feature.properties?.onshoreDirectionDeg, stations, levels, haversineKm });
-  const selected = (recommendation.stations ?? []).filter(item => item?.level && Number.isFinite(Number(item.level.valueCm)));
-  if (!selected.length) return null;
-  const rawWeights = selected.map(item => Number.isFinite(Number(item.weight)) ? Number(item.weight) : 1 / Math.max(0.25, Number(item.distanceKm) || 0.25));
-  const total = rawWeights.reduce((sum, value) => sum + value, 0) || 1;
-  const weights = rawWeights.map(value => value / total);
-  const valueCm = selected.reduce((sum, item, index) => sum + Number(item.level.valueCm) * weights[index], 0);
+  if (!recommendation.completeBracket || recommendation.stations.length !== 2) return null;
+  const selected = recommendation.stations;
+  const valueCm = selected.reduce((sum, item) => sum + Number(item.level.valueCm) * item.weight, 0);
   return {
-    valueCm: round(valueCm, 0),
-    method: selected.length === 1 ? 'automatic-selected-station' : 'automatic-selected-interpolation',
-    routingMode: 'automatic',
-    routingMethod: recommendation.method,
-    routingRuleId: recommendation.ruleId ?? null,
-    completeBracket: recommendation.completeBracket,
-    stations: selected.map((item, index) => ({ stationId: item.stationId, name: item.name, valueCm: round(Number(item.level.valueCm),0), distanceKm: round(item.distanceKm,1), alongCoastKm: round(item.alongKm,1), crossCoastKm: round(item.crossKm,1), side: item.role, weight: round(weights[index],3), observed: item.level.observed, observationAgeMinutes: Number.isFinite(Date.parse(item.level.observed)) ? round((Date.now()-Date.parse(item.level.observed))/60000,0) : null, qcStatus: item.level.qcStatus ?? null }))
+    valueCm: round(valueCm, 0), method: 'topology-bracket-2-stations', routingMethod: recommendation.method, routingRuleId: recommendation.ruleId ?? null,
+    stations: selected.map(item => ({ stationId: item.stationId, name: item.name, valueCm: round(Number(item.level.valueCm),0), distanceKm: round(item.distanceKm,1), alongCoastKm: round(item.alongKm,1), crossCoastKm: round(item.crossKm,1), side: item.role, weight: round(item.weight,3), observed: item.level.observed, observationAgeMinutes: Number.isFinite(Date.parse(item.level.observed)) ? round((Date.now()-Date.parse(item.level.observed))/60000,0) : null, qcStatus: item.level.qcStatus ?? null }))
   };
 }
 
-function routedStationWaterLevel(feature, rawStations, levels, routing) {
-  const stations = deduplicateStationSites(rawStations, levels);
-  const point = zonePoint(feature);
-  const explicit = manualStationInterpolation(feature, point, stations, levels, routing.zones?.[feature.properties?.id]);
-  if (explicit) return { ...explicit, routingMode: 'admin-override' };
-  return automaticStationInterpolation(feature, point, stations, levels);
-}
-
-async function observedDmiWaterLevel(feature) {
+async function observedDmiWaterLevel(feature, coastCorridors) {
   try {
     const [rawStations, freshLevels, routing, cachedLevels] = await Promise.all([dmiWaterStations(), dmiLatestSeaLevels(), waterStationRouting(), cachedStationLevels(new Date().toISOString())]);
     const levels = new Map(cachedLevels);
     for (const [stationId, level] of freshLevels) levels.set(String(stationId), level);
-    return routedStationWaterLevel(feature, rawStations, levels, routing);
+    const stations = deduplicateStationSites(rawStations, levels);
+    const point = zonePoint(feature);
+    const explicit = manualStationInterpolation(feature, point, stations, levels, routing.zones?.[feature.properties?.id]);
+    if (explicit) return explicit;
+    const inside = stations
+      .filter(station => pointInFeature(station.point, feature))
+      .sort((a, b) => haversineKm(point, a.point) - haversineKm(point, b.point));
+    if (inside.length) {
+      const station = inside[0];
+      const level = levels.get(station.stationId);
+      return {
+        valueCm: round(Number(level.valueCm), 0),
+        method: 'direct-zone-station',
+        stations: [{ stationId: station.stationId, name: station.name, valueCm: round(Number(level.valueCm), 0), distanceKm: round(haversineKm(point, station.point), 1), side: 'inside-zone', weight: 1, observed: level.observed, observationAgeMinutes: Number.isFinite(Date.parse(level.observed)) ? round((Date.now() - Date.parse(level.observed)) / 60000, 0) : null, qcStatus: level.qcStatus ?? null }]
+      };
+    }
+    const topology = topologyStationInterpolation(feature, point, stations, levels);
+    if (topology) return topology;
+    const fjord = interpolateAllowedFjord(feature, point, stations, levels);
+    if (fjord) return fjord;
+    const coastPath = coastCorridors.get(feature.properties?.id);
+    return interpolateWaterLevelAlongCoast(point, coastPath, stations, levels, { haversineKm, requireBracket: true });
   } catch (error) {
     if (!['DMI_RATE_LIMIT_COOLDOWN', 'CIRCUIT_OPEN'].includes(error?.code) && error?.status !== 429) {
       console.warn(`DMI kystvandstand fejlede: ${error instanceof Error ? error.message : String(error)}`);
@@ -684,69 +721,20 @@ async function observedDmiWaterLevel(feature) {
   }
 }
 
-
-function applyObservedWaterLevel(zone, feature, observation, generatedAt, forecastRecord = null) {
+function applyObservedWaterLevel(zone, feature, observation, generatedAt) {
   if (!zone?.current || !observation || !Number.isFinite(Number(observation.valueCm))) return zone;
   const previousValue = num(zone.current.waterLevelCm);
-  const baseHourly = forecastRecord?.hourly ?? zone.forecast?.hourly ?? [];
-  const referenceRow = baseHourly.find(row => Number.isFinite(Number(row?.waterLevelModelCm ?? row?.waterLevelCm)));
-  const modelReferenceCm = num(referenceRow?.waterLevelModelCm ?? referenceRow?.waterLevelCm);
-  const biasCm = modelReferenceCm === null ? 0 : round(Number(observation.valueCm) - modelReferenceCm, 0);
-  const routedHourly = baseHourly.map(row => {
-    const modelCm = num(row?.waterLevelModelCm ?? row?.waterLevelCm);
-    if (modelCm === null) return row;
-    return {
-      ...row,
-      waterLevelModelCm: round(modelCm, 0),
-      waterLevelCm: round(modelCm + biasCm, 0),
-      waterLevelBiasCm: biasCm,
-      waterLevelObservationDifferenceCm: biasCm,
-      waterLevelSource: 'dmi-model-station-routed-bias',
-      waterLevelRoutingMode: observation.routingMode ?? (String(observation.method).startsWith('admin-') ? 'admin-override' : 'automatic'),
-      waterLevelStationIds: (observation.stations ?? []).map(item => String(item.stationId)),
-      waterLevelStationWeights: (observation.stations ?? []).map(item => Number(item.weight))
-    };
-  });
-  if (forecastRecord) {
-    forecastRecord.hourly = routedHourly;
-    forecastRecord.waterLevelInterpolation = observation;
-    forecastRecord.waterLevelBiasCm = biasCm;
-    forecastRecord.waterLevelRouting = {
-      mode: observation.routingMode ?? (String(observation.method).startsWith('admin-') ? 'admin-override' : 'automatic'),
-      method: observation.method,
-      stationIds: (observation.stations ?? []).map(item => String(item.stationId)),
-      stations: observation.stations ?? [],
-      biasCm,
-      generatedAt
-    };
-  }
-  if (zone.forecast?.hourly) zone.forecast.hourly = routedHourly;
-  const selectedCurrent = routedHourly.find(row => Date.parse(row?.time) >= Date.parse(generatedAt) - 65 * 60000) ?? routedHourly[0];
-  zone.current.waterLevelCm = num(selectedCurrent?.waterLevelCm) ?? observation.valueCm;
-  zone.current.waterLevelTrendCm3h = num(selectedCurrent?.waterLevelTrendCm3h) ?? zone.current.waterLevelTrendCm3h;
-  const routingMode = observation.routingMode ?? (String(observation.method).startsWith('admin-') ? 'admin-override' : 'automatic');
+  zone.current.waterLevelCm = observation.valueCm;
   zone.waterLevel = {
     ...(zone.waterLevel ?? {}),
-    source: 'dmi-model-with-station-routing',
-    reference: routingMode === 'admin-override'
-      ? 'DMI-modelprognose korrigeret med administratorvalgte DMI-vandstandsstationer'
-      : 'DMI-modelprognose korrigeret med RavRadars automatisk valgte DMI-vandstandsstationer',
+    source: ['direct-zone-station','direct-coast-station','admin-selected-station'].includes(observation.method) ? 'dmi-observation-direct' : 'dmi-observation-coast-interpolation',
+    reference: observation.method === 'admin-selected-station' ? 'Administratorvalgt DMI-målestation' : observation.method === 'admin-selected-interpolation' ? 'Administratorvalgt interpolation mellem DMI-målestationer' : ['direct-zone-station','direct-coast-station'].includes(observation.method) ? 'Aktuel DMI-målestation ved zonen' : observation.method === 'topology-bracket-2-stations' ? 'Aktuel DMI-vandstand interpoleret mellem stationer på modsatte sider langs den lokale kystlinje' : observation.method === 'fjord-bracket-2-stations' ? 'Aktuel DMI-vandstand interpoleret mellem to stationer på hver sin side af samme fjord' : 'Aktuel DMI-vandstand interpoleret mellem én station på hver side langs samme kystkorridor',
     interpolation: observation,
-    modelBiasCm: biasCm,
-    routing: {
-      mode: routingMode,
-      method: observation.method,
-      stationIds: (observation.stations ?? []).map(item => String(item.stationId)),
-      stations: observation.stations ?? [],
-      biasCm,
-      generatedAt
-    },
     diagnostic: {
       ...(zone.waterLevel?.diagnostic ?? {}), zoneId: feature.properties?.id, zoneName: feature.properties?.name, generatedAt,
-      displayValueCm: zone.current.waterLevelCm, displaySource: 'dmi-model-station-routed-bias', fallbackModelValueCm: previousValue,
+      displayValueCm: observation.valueCm, displaySource: observation.method, fallbackModelValueCm: previousValue,
       observationInterpolatedCm: observation.valueCm, observationMethod: observation.method, observationStations: observation.stations,
-      observationUsedForDisplay: true, stationRoutingMode: routingMode, stationRoutingAppliedToForecast: true,
-      waterLevelBiasCm: biasCm
+      observationUsedForDisplay: true
     }
   };
   return zone;
@@ -764,86 +752,6 @@ async function writeWaterStationRoutingAudit(features, stations, generatedAt) {
   const doc = { schemaVersion: 2, generatedAt, description: 'Automatisk topologiaudit: stationer skal indramme zonen fra modsatte sider langs den lokale kystlinje.', stationInventoryCount: stations.length, counts, zones };
   await fs.writeFile(WATER_STATION_ROUTING_AUDIT_PATH, `${JSON.stringify(doc,null,2)}\n`);
   return doc;
-}
-
-
-function selectedStationsByEffectiveRouting(features, routing, audit) {
-  const stationZones = new Map();
-  for (const feature of features ?? []) {
-    const zoneId = String(feature?.properties?.id ?? '');
-    if (!zoneId) continue;
-    const override = routing?.zones?.[zoneId];
-    const selected = override?.enabled && Array.isArray(override.stations) && override.stations.length
-      ? override.stations.map(item => ({ stationId: String(item.stationId), source: 'admin-override' }))
-      : (audit?.zones?.[zoneId]?.stations ?? []).map(item => ({ stationId: String(item.stationId), source: 'automatic' }));
-    for (const item of selected) {
-      if (!item.stationId) continue;
-      const zones = stationZones.get(item.stationId) ?? [];
-      zones.push({ zoneId, source: item.source });
-      stationZones.set(item.stationId, zones);
-    }
-  }
-  return stationZones;
-}
-
-function activeStationRegistryStatus(station) {
-  const status = String(station?.registryStatus ?? station?.properties?.status ?? '').toLowerCase();
-  return !['retired','deleted','historical','inactive','future'].includes(status);
-}
-
-async function applyEffectiveRoutingCacheAlerts(stationLifecycle, features, routing, audit, generatedAt) {
-  const warningHours = Math.max(1, Math.min(120, Number(routing?.alertSettings?.cacheWarningHours ?? 12)));
-  const selectedByStation = selectedStationsByEffectiveRouting(features, routing, audit);
-  const now = Date.parse(generatedAt);
-  const newNotifications = [];
-  const stations = (stationLifecycle?.document?.stations ?? stationLifecycle?.stations ?? []).map(station => {
-    const routedZones = selectedByStation.get(String(station.stationId)) ?? [];
-    let alertLevel = null;
-    let remainingHours = null;
-    if (routedZones.length && activeStationRegistryStatus(station) && station.deliveryStatus !== 'delivering') {
-      const validUntil = Date.parse(station.forecastCacheValidUntil ?? '');
-      remainingHours = Number.isFinite(validUntil) ? (validUntil - now) / 3600000 : null;
-      if (remainingHours === null || remainingHours <= 0) alertLevel = 'critical';
-      else if (remainingHours <= warningHours) alertLevel = 'warning';
-    }
-    const previousLevel = station.routingCacheAlertLevel ?? null;
-    if (alertLevel && alertLevel !== previousLevel) {
-      const zoneNames = routedZones.map(item => item.zoneId).slice(0, 8).join(', ');
-      const type = alertLevel === 'critical' ? 'selected-station-cache-exhausted' : 'selected-station-cache-warning';
-      const message = alertLevel === 'critical'
-        ? `${station.name} er valgt til ${routedZones.length} zone(r), leverer ikke nu og har ingen gyldig stationscache. Berørte zoner: ${zoneNames}.`
-        : `${station.name} er valgt til ${routedZones.length} zone(r), leverer ikke nu, og stationscachen udløber om ca. ${Math.max(0, Math.round(remainingHours))} timer. Berørte zoner: ${zoneNames}.`;
-      newNotifications.push(stationEvent(type, station, generatedAt, { severity: alertLevel, message, cacheRemainingHours: remainingHours === null ? null : round(remainingHours, 1), cacheWarningHours: warningHours, routedZones }));
-    }
-    return {
-      ...station,
-      effectiveRoutingZoneIds: routedZones.map(item => item.zoneId),
-      effectiveRoutingSources: [...new Set(routedZones.map(item => item.source))],
-      routingCacheAlertLevel: alertLevel,
-      routingCacheRemainingHours: remainingHours === null ? null : round(remainingHours, 1),
-      routingCacheWarningHours: warningHours
-    };
-  });
-  const existingNotifications = stationLifecycle?.document?.notifications ?? [];
-  const notifications = [...newNotifications, ...existingNotifications]
-    .filter((item, index, all) => all.findIndex(other => other.id === item.id) === index)
-    .slice(0, 250);
-  const document = {
-    ...(stationLifecycle?.document ?? {}),
-    generatedAt,
-    stations,
-    notifications,
-    alertSettings: { cacheWarningHours: warningHours },
-    summary: {
-      ...(stationLifecycle?.document?.summary ?? {}),
-      selectedStationsWithCacheWarning: stations.filter(item => item.routingCacheAlertLevel === 'warning').length,
-      selectedStationsCritical: stations.filter(item => item.routingCacheAlertLevel === 'critical').length,
-      newNotifications: Number(stationLifecycle?.document?.summary?.newNotifications ?? 0) + newNotifications.length
-    }
-  };
-  await fs.writeFile(WATER_STATION_INVENTORY_PATH, `${JSON.stringify(document, null, 2)}\n`);
-  await fs.writeFile(WATER_STATION_NOTIFICATIONS_PATH, `${JSON.stringify({ schemaVersion: 1, generatedAt, alertSettings: document.alertSettings, notifications, newNotifications }, null, 2)}\n`);
-  return { ...stationLifecycle, stations, notifications: [...(stationLifecycle?.notifications ?? []), ...newNotifications], document, routingAlerts: newNotifications };
 }
 
 async function readDmiBulkCache() {
@@ -1778,22 +1686,18 @@ const lastObservationMs = Date.parse(dmiPersistentRuntime.lastObservationAt ?? '
 const observationDue = !Number.isFinite(lastObservationSuccessMs) || !Number.isFinite(lastObservationMs) || Date.now() - lastObservationMs >= DMI_OBSERVATION_INTERVAL_MINUTES * 60000;
 if (!observationDue) {
   dmiObservationSkipReason = 'skipped-until-hourly-observation-window';
-  const [rawStations, cachedLevels, routing] = await Promise.all([dmiWaterStations().catch(() => readCachedWaterStations()), cachedStationLevels(generatedAt), waterStationRouting()]);
-  await mapWithConcurrency(features, WEATHER_CONCURRENCY, async feature => {
-    const zoneId = feature.properties?.id;
-    const observation = routedStationWaterLevel(feature, rawStations, cachedLevels, routing);
-    if (zoneId && output.zones[zoneId]) applyObservedWaterLevel(output.zones[zoneId], feature, observation, generatedAt, nextDmiForecastStore.zones?.[zoneId]);
-  });
 } else {
   await mapWithConcurrency(features, WEATHER_CONCURRENCY, async feature => {
     const zoneId = feature.properties?.id;
-    const observation = await observedDmiWaterLevel(feature);
-    if (zoneId && output.zones[zoneId]) applyObservedWaterLevel(output.zones[zoneId], feature, observation, generatedAt, nextDmiForecastStore.zones?.[zoneId]);
+    const observation = await observedDmiWaterLevel(feature, coastCorridors);
+    if (zoneId && output.zones[zoneId]) applyObservedWaterLevel(output.zones[zoneId], feature, observation, generatedAt);
   });
   dmiPersistentRuntime.lastObservationAt = generatedAt;
   dmiPersistentRuntime.observations ??= {};
   dmiPersistentRuntime.observations.lastAttemptAt = generatedAt;
-  dmiPersistentRuntime.observations.lastSuccessfulAt = generatedAt;
+  if (dmiSeaLevelObservationRun.succeeded && dmiSeaLevelObservationRun.validLevelCount > 0) {
+    dmiPersistentRuntime.observations.lastSuccessfulAt = generatedAt;
+  }
 }
 
 
@@ -1936,12 +1840,10 @@ nextDmiForecastStore.dataQuality = summarizeDmiComponentCoverage(nextDmiForecast
 output.weatherEngine.dmiForecastCache = { ...nextDmiForecastStore.coverage, ...nextDmiForecastStore.dataQuality };
 const rawStationRegistry = await dmiWaterStations().catch(() => readCachedWaterStations());
 const qualityLevels = dmiObservationSkipReason ? await cachedStationLevels(generatedAt) : await dmiLatestSeaLevels().catch(() => new Map());
-let stationLifecycle = await updateStationObservationLifecycle(rawStationRegistry, qualityLevels, generatedAt, { observationAttempted: !dmiObservationSkipReason, forecastStore: nextDmiForecastStore });
-let stationRegistry = stationLifecycle.stations;
+const observationResultUsable = !dmiObservationSkipReason && dmiSeaLevelObservationRun.succeeded && dmiSeaLevelObservationRun.validLevelCount > 0;
+const stationLifecycle = await updateStationObservationLifecycle(rawStationRegistry, qualityLevels, generatedAt, { observationAttempted: observationResultUsable, forecastStore: nextDmiForecastStore });
+const stationRegistry = stationLifecycle.stations;
 const stationRoutingAudit = await writeWaterStationRoutingAudit(features, stationRegistry.filter(station => station.overallUsabilityStatus !== 'unavailable'), generatedAt);
-const effectiveRouting = await waterStationRouting();
-stationLifecycle = await applyEffectiveRoutingCacheAlerts(stationLifecycle, features, effectiveRouting, stationRoutingAudit, generatedAt);
-stationRegistry = stationLifecycle.stations;
 const qualityStations = stationRegistry;
 for (const zone of Object.values(output.zones)) enrichZoneSources(zone, generatedAt);
 const freshObservationCount = [...qualityLevels.values()].filter(level => !level?.cacheSource).length;
@@ -1951,13 +1853,13 @@ output.dataQuality.stationLifecycle = stationLifecycle.document.summary;
 output.dataQuality.stationNotifications = stationLifecycle.notifications;
 dmiPersistentRuntime.observations ??= {};
 const currentObservationSummary = output.dataQuality?.observations ?? {};
-if (!dmiObservationSkipReason && (currentObservationSummary.stationsFetched ?? 0) > 0) {
+if (observationResultUsable && (currentObservationSummary.stationsWithFreshLevel ?? 0) > 0) {
   dmiPersistentRuntime.observations.lastSuccessfulAt = generatedAt;
   dmiPersistentRuntime.observations.lastSuccessfulInventory = currentObservationSummary;
 }
 output.dataQuality.observations = {
   ...currentObservationSummary,
-  currentRun: { attempted: !dmiObservationSkipReason, skipReason: dmiObservationSkipReason },
+  currentRun: { attempted: !dmiObservationSkipReason, succeeded: observationResultUsable, skipReason: dmiObservationSkipReason, validLevelCount: dmiSeaLevelObservationRun.validLevelCount, featureCount: dmiSeaLevelObservationRun.featureCount, parameters: dmiSeaLevelObservationRun.parameters, error: dmiSeaLevelObservationRun.error },
   lastSuccessfulAt: dmiPersistentRuntime.observations.lastSuccessfulAt ?? null,
   lastSuccessfulInventory: dmiPersistentRuntime.observations.lastSuccessfulInventory ?? null
 };

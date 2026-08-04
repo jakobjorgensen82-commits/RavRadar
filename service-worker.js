@@ -1,4 +1,4 @@
-const APP_VERSION = "4.0.98";
+const APP_VERSION = "4.0.99";
 const CACHE_PREFIX = "ravradar-app-";
 const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}`;
 const STATIC = [

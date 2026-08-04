@@ -20,18 +20,6 @@ export function buildPublicConditions(full){
       currentSource:zone?.sources?.current?.provider||null,
       current:pick(zone?.current||{},CURRENT_FIELDS),
       history:pick(zone?.history||{},HISTORY_FIELDS),
-      waterLevel:zone?.waterLevel?.routing?{
-        source:zone.waterLevel.source||null,
-        reference:zone.waterLevel.reference||null,
-        modelBiasCm:zone.waterLevel.modelBiasCm??null,
-        routing:{
-          mode:zone.waterLevel.routing.mode||null,
-          method:zone.waterLevel.routing.method||null,
-          biasCm:zone.waterLevel.routing.biasCm??null,
-          stationIds:(zone.waterLevel.routing.stationIds||[]).map(String),
-          stations:(zone.waterLevel.routing.stations||[]).map(station=>({stationId:String(station.stationId||''),name:station.name||null,weight:station.weight??null,distanceKm:station.distanceKm??null,side:station.side||null}))
-        }
-      }:null,
       forecast:{
         provider:forecast.provider||zone?.provider||null,
         providerLabel:forecast.providerLabel||zone?.providerLabel||null,

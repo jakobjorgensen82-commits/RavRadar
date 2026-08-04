@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.96
+# Implementeringsstatus pr. 4.0.99
 
 ## 4.0.76
 - Strømpile placeres ved dokumenterede DMI-marinegitterpunkter i stedet for kunstige offsets.
@@ -30,10 +30,10 @@ Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode
 | Officielt zoneregister | Implementeret | Fortsat geografisk audit |
 | Retningskonventioner | Implementeret og rådata-verificeret | Opfølgning på 12 zoner uden direkte DMI-gitterproveniens |
 | DMI-stationsregister | Delvist implementeret | Officiel registerkontrol og fuld datalivscyklus |
-| Observationslivscyklus | Delvist implementeret | Historisk stabilitet og bedre audit pr. station |
-| Prognose-/cachestatus pr. station | Implementeret | Overvåg cacheudløb, drift og historisk stabilitet |
+| Observationslivscyklus | Rettet i 4.0.99, kræver produktionsverifikation | Bekræft OceanObs-resultat og adminstatus efter Update weather and deploy |
+| Prognose-/cachestatus pr. station | Rettet i 4.0.99, kræver produktionsverifikation | Bekræft cacheudløb og alarmer på reelle stationsmålinger |
 | Automatisk stationsrouting | Implementeret, overvåges | Bedre-station-notifikationer uden automatisk omskiftning |
-| Adminoverride | Implementeret end-to-end i 4.0.98 | Produktion, prognosetabel og admin bruger samme effektive routing |
+| Adminoverride | Implementeret og runtime-rettet i 4.0.96 | Overvåg central readback og produktionens anvendelse af valgte stationer |
 | Kystlinjeeditor | Delvist implementeret | Mobil regressionstest af kurver, deaktivering og lagring |
 | Regelbygger | Delvist implementeret | Fuld brugertest, geografiske grupper og konfliktforklaring |
 | Supabase/central adminlagring | Implementeret med samlet funktionstest | Kør produktionstesten ved releases og følg fejlrapporten |
@@ -157,9 +157,3 @@ Status: Implementeret og lokalt valideret.
 - Upload til Supabase fletter livscyklusfelter ikke-destruktivt, så nyere men informationsfattigere filer ikke sletter kendt historik.
 - Kortets eksisterende farvekontrakt er bevaret: grøn automatisk, rød administrator, lilla begge, grå udfaset, orange øvrig.
 - DMI-prognoser, vandstandsværdier, RavScore og offentlig runtime er ikke ændret.
-
-## 4.0.98 – IMPLEMENTERET
-- Effektiv stationsrouting er nu end-to-end: adminoverride når aktivt og brugbart, ellers automatisk topologisk valg.
-- Samme station-ID’er og inverse afstandsvægte bruges i prognoseproduktion, diagnostik og offentlig vandstandstabel.
-- DMI-modelvandstanden korrigeres med routingens observerede/interpolerede stationsværdi, mens rå modelværdi og bias bevares.
-- Aktive valgte stationer uden levering overvåges med konfigurerbar cacheadvarsel og kritisk alarm.

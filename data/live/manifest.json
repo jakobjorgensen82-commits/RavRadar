@@ -6,7 +6,7 @@
   "zoneCount": 209,
   "conditionsPath": "./public-conditions.json",
   "fullConditionsPath": "./conditions.json",
-  "publicConditionsSha256": "1748ce5d65eb6bc2dcfff6c3f043a6426908b982b84a30108e1fd5db07926000",
-  "publicConditionsBytes": 6913591,
+  "publicConditionsSha256": "dc8ecfce6f18c2a5d373308985c79aad67c3104626221a4167077deea48c374e",
+  "publicConditionsBytes": 6909829,
   "complete": true
 }

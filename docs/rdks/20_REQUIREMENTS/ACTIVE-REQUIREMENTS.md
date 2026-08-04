@@ -13,10 +13,10 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 ## DMI-stationer
 - **REQ-STATION-001 – DELVIST:** Alle kendte stationer bevares med DMI-status og datalivscyklus.
 - **REQ-STATION-002 – DELVIST:** Vis automatisk primær/sekundær, afstand, vægt og valgmetode pr. zone.
-- **REQ-STATION-003 – IMPLEMENTERET OG UDVIDET I 4.0.98:** Adminoverride erstatter automatik, når override kan levere efter de valgte krav. Ellers bruges systemets automatiske valg. Den effektive routing, station-ID’er og afstandsvægte bruges i både prognoseproduktion og vandstandstabel.
-- **REQ-STATION-004 – IMPLEMENTERET I 4.0.98:** Nye stationer, udfald og genoptaget levering udløser meningsfulde notifikationer. Aktive stationer i effektiv routing giver konfigurerbar cacheadvarsel før udløb og kritisk alarm ved udløb.
-- **REQ-STATION-005 – IMPLEMENTERET OG PRÆCISERET I 4.0.97:** Skeln observationsstatus fra stationsbaseret cache og samlet anvendelighed til stationsoverride. DMI's zonebaserede modelprognosecache vises som en separat datakæde.
-- **REQ-STATION-006 – DELVIST, UI PRÆCISERET I 4.0.97:** Vis seneste observation, stationscache gyldig til, historisk stabilitet og om stationen kan bruges til stationsoverride nu.
+- **REQ-STATION-003 – IMPLEMENTERET OG REGRESSIONSSIKRET I 4.0.96:** Adminoverride erstatter automatik, når override kan levere efter de valgte krav. Admin viser de faktiske afstandsvægte for de valgte stationer og skelner mellem automatisk valg, administratorvalg, begge valg og udfasede stationer.
+- **REQ-STATION-004 – AKTIV:** Nye stationer, udfald og genoptaget levering udløser meningsfulde notifikationer ved tilstandsændring – ikke spam ved ét manglende tidspunkt.
+- **REQ-STATION-005 – IMPLEMENTERET:** Skeln observationsstatus fra prognose-/cachestatus og vis samlet anvendelighed.
+- **REQ-STATION-006 – DELVIST:** Vis seneste observation, cache gyldig til, historisk stabilitet og om stationen kan bruges nu.
 - **REQ-STATION-007 – AKTIV:** Foreslå bedre station til en zone, men ændr ikke administratorens valg automatisk.
 - **REQ-STATION-008 – AKTIV:** Historiske/inaktive stationer markeres tydeligt og kræver ekstra bekræftelse ved override.
 - **REQ-STATION-009 – AKTIV:** Stationskortet skal kunne verificeres mod DMI's officielle register.

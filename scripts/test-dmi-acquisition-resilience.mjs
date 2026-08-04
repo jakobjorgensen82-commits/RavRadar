@@ -50,7 +50,7 @@ for (const expected of ['stoppedByHttp429', 'attemptedZoneIds', 'successfulZoneI
   assert.ok(updater.includes(expected), `DMI-diagnostikken mangler ${expected}`);
 }
 assert.ok(!updater.includes("dmiObservationSkipReason = 'skipped-after-http-429'"), 'ForecastEDR-429 må ikke blokere OceanObs');
-assert.ok(updater.includes("provider: 'DMI oceanObs water level', retries: DMI_MAX_RETRIES, dmi: false"), 'OceanObs skal have uafhængig rate-limit-domæne');
+assert.ok(updater.includes('DMI oceanObs water level ${parameterId}') && updater.includes('dmi: false'), 'OceanObs skal have uafhængig rate-limit-domæne for alle vandstandsparametre');
 assert.ok(!updater.includes("skipped-during-persisted-cooldown"), 'forecast-cooldown må ikke automatisk blokere oceanObs i en senere kørsel');
 
 console.log('DMI acquisition resilience bestået.');

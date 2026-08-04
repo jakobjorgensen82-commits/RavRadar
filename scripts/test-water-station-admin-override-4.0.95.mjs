@@ -6,8 +6,8 @@ const weather=fs.readFileSync('scripts/update-weather.mjs','utf8');
 const css=fs.readFileSync('admin.css','utf8');
 
 assert.match(admin,/Observationsstatus ikke dokumenteret/);
-assert.match(admin,/Stationscachestatus ikke dokumenteret/);
-assert.match(admin,/Override-anvendelighed ikke dokumenteret/);
+assert.match(admin,/Cachestatus ikke dokumenteret/);
+assert.match(admin,/Anvendelighed ikke dokumenteret/);
 assert.match(admin,/station\?\.hasEverDelivered===false/);
 assert.match(admin,/stationRegistryState/);
 assert.match(admin,/retired-station/);
@@ -23,5 +23,5 @@ assert.match(weather,/if \(!route\?\.enabled \|\| !requested\.length\) return nu
 assert.match(weather,/const inverse = selected\.map\(item => 1 \/ Math\.max\(0\.25, item\.distanceKm\)\)/);
 assert.match(weather,/method: selected\.length === 1 \? 'admin-selected-station' : 'admin-selected-interpolation'/);
 assert.match(weather,/const explicit = manualStationInterpolation/);
-assert.match(weather,/if \(explicit\) return \{ \.\.\.explicit, routingMode: 'admin-override' \}/);
+assert.match(weather,/if \(explicit\) return explicit/);
 console.log('OK: adminoverride er sandfærdigt vist, afstandsvægtet og koblet til den eksisterende produktionskæde.');

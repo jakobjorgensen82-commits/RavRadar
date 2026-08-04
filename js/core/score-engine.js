@@ -1,7 +1,7 @@
-import { loadAdaptiveModel, modelAdjustment } from './adaptive-model.js?v=4.0.98';
-import { evaluateDirectionAnchors, anchorClassification, buildCoastTransportExplanation } from './direction-anchors.js?v=4.0.98';
-import { evaluateTransportEvent, classifyCoastalZone } from './coastal-process-model.js?v=4.0.98';
-import { buildScoreDebugTrace } from './debug-trace.js?v=4.0.98';
+import { loadAdaptiveModel, modelAdjustment } from './adaptive-model.js?v=4.0.99';
+import { evaluateDirectionAnchors, anchorClassification, buildCoastTransportExplanation } from './direction-anchors.js?v=4.0.99';
+import { evaluateTransportEvent, classifyCoastalZone } from './coastal-process-model.js?v=4.0.99';
+import { buildScoreDebugTrace } from './debug-trace.js?v=4.0.99';
 const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, value));
 const numberOrNull = value => Number.isFinite(Number(value)) ? Number(value) : null;
 
