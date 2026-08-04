@@ -1,0 +1,15 @@
+import fs from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const admin=await fs.readFile('js/ui/admin-dashboard.js','utf8');
+const sync=await fs.readFile('scripts/sync-admin-config.py','utf8');
+const updater=await fs.readFile('scripts/update-weather.mjs','utf8');
+assert.ok(!/stationDeliveryLabel\(st\)/.test(admin),'Forældet stationDeliveryLabel-kald må ikke findes i aktiv admin');
+assert.match(admin,/stationObservationLabel\(st\).*stationCacheLabel\(st\).*stationUsabilityLabel\(st\)/s);
+assert.match(admin,/auto\?'#38d996'/,'Automatisk valgte stationer skal være grønne');
+assert.match(admin,/both\?'#a978ff':admin\?'#ff6b6b':auto\?'#38d996':retired\?'#777':'#d8a232'/);
+assert.match(sync,/'dmi-water-stations':'data\/live\/dmi-water-stations\.json'/);
+assert.match(sync,/'water-station-routing-audit':'data\/live\/water-station-routing-audit\.json'/);
+assert.match(updater,/deliveryStatus: previous\?\.deliveryStatus \?\? 'unknown'/);
+assert.match(updater,/overallUsabilityStatus: previous\?\.overallUsabilityStatus \?\? 'unknown'/);
+assert.match(updater,/lifecycleKnown \? 'unavailable' : 'unknown'/);
+console.log('OK: vandstandsstations-admin initialiserer uden forældet runtimekald, bevarer statusfarver og hydrerer beskyttet stationsstatus.');

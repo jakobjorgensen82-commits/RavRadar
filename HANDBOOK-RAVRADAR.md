@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.95
+**Håndbogsversion:** 4.0.96
 
 **Opdateret:** 1. august 2026
 
@@ -468,6 +468,8 @@ Samlet anvendelighed må ikke sættes til falsk, blot fordi en ny observation ma
 Stationsregisteret er persistent. Opdagede stationer fjernes ikke ved en tom kørsel. Admin viser automatisk primær/sekundær station, afstand, vægt, valgmetode og eventuel override.
 
 Historiske/inaktive stationer skal være tydeligt markeret og må normalt ikke vælges uden advarsel. Hele registeret skal periodisk sammenholdes med DMI's officielle liste.
+
+I admin betyder kortfarverne: grøn er RavRadars automatiske valg, rød er administratorens override, lilla er valgt af begge, grå er udfaset, og orange er øvrige stationer. Manglende livscyklusdata vises som ukendt og må ikke fejlagtigt blive til “utilgængelig”. Beskyttet stationshistorik læses tilbage fra Supabase før en ny kørsel og flettes ikke-destruktivt, så kendte observationer og cacheoplysninger ikke går tabt.
 
 
 ## 25. Brugerfeedback, adaptiv model og AI

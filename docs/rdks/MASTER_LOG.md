@@ -265,3 +265,9 @@ GitHub-kørslen efter sletning af DK-B02-14 fejlede, fordi `validate-data.mjs` s
 - Offentlig regelindlæsning blev ændret til en sanitiseret, versionsstyret fil genereret fra Supabase ved deployment.
 - Rå centrale adminfiler blev udelukket fra Pages-artifactet.
 - Ingen scorekonstanter, DMI-kæder, kortfunktioner eller zoneværdier blev ændret.
+
+## 2026-08-04 – 4.0.96 vandstandsstations-admin
+- Brugerens produktionstest viste, at alle stationer blev advaret som utilgængelige, automatiske stationer ikke blev grønne, og første zone kunne stå med tomt kort.
+- Sitetesten dokumenterede `ReferenceError: stationDeliveryLabel is not defined`.
+- Rettelsen er afgrænset til admininitialisering og beskyttet stationsstatus: runtimekald rettet, Supabase-hydrering tilføjet, ukendt status bevares, og central upload er ikke-destruktiv.
+- DMI-prognosekæde, vandstandsværdier, interpolation og RavScore er uændrede.

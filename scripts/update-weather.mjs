@@ -322,11 +322,11 @@ function stationRegistryRecord(station, previous = null, seenAt = new Date().toI
     lastObservationAt: previous?.lastObservationAt ?? null,
     lastObservationValueCm: previous?.lastObservationValueCm ?? null,
     consecutiveMissingObservationRuns: previous?.consecutiveMissingObservationRuns ?? 0,
-    deliveryStatus: previous?.deliveryStatus ?? 'never-delivered',
+    deliveryStatus: previous?.deliveryStatus ?? 'unknown',
     forecastCacheGeneratedAt: previous?.forecastCacheGeneratedAt ?? null,
     forecastCacheValidUntil: previous?.forecastCacheValidUntil ?? null,
-    forecastCacheStatus: previous?.forecastCacheStatus ?? 'none',
-    overallUsabilityStatus: previous?.overallUsabilityStatus ?? 'unavailable',
+    forecastCacheStatus: previous?.forecastCacheStatus ?? 'unknown',
+    overallUsabilityStatus: previous?.overallUsabilityStatus ?? 'unknown',
     forecastCacheZoneIds: Array.isArray(previous?.forecastCacheZoneIds) ? previous.forecastCacheZoneIds : []
   };
 }
@@ -364,7 +364,8 @@ function applyStationForecastCacheStatus(stations, forecastStore, generatedAt) {
     const cacheValid = validUntil ? Date.parse(validUntil) >= now : false;
     const forecastCacheStatus = cacheValid ? 'valid' : validUntil ? 'expired' : 'none';
     const observationUsable = station.deliveryStatus === 'delivering' || station.deliveryStatus === 'temporarily-missing';
-    const overallUsabilityStatus = observationUsable ? 'live-or-recent-observation' : cacheValid ? 'forecast-cache-only' : 'unavailable';
+    const lifecycleKnown = station.deliveryStatus && station.deliveryStatus !== 'unknown';
+    const overallUsabilityStatus = observationUsable ? 'live-or-recent-observation' : cacheValid ? 'forecast-cache-only' : lifecycleKnown ? 'unavailable' : 'unknown';
     return {...station,
       forecastCacheGeneratedAt: cached?.generatedAt ?? station.forecastCacheGeneratedAt ?? null,
       forecastCacheValidUntil: validUntil,

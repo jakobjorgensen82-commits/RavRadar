@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.93
+# Implementeringsstatus pr. 4.0.96
 
 ## 4.0.76
 - Strømpile placeres ved dokumenterede DMI-marinegitterpunkter i stedet for kunstige offsets.
@@ -33,7 +33,7 @@ Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode
 | Observationslivscyklus | Delvist implementeret | Historisk stabilitet og bedre audit pr. station |
 | Prognose-/cachestatus pr. station | Implementeret | Overvåg cacheudløb, drift og historisk stabilitet |
 | Automatisk stationsrouting | Implementeret, overvåges | Bedre-station-notifikationer uden automatisk omskiftning |
-| Adminoverride | Implementeret og præciseret i 4.0.95 | Overvåg central readback og produktionens anvendelse af valgte stationer |
+| Adminoverride | Implementeret og runtime-rettet i 4.0.96 | Overvåg central readback og produktionens anvendelse af valgte stationer |
 | Kystlinjeeditor | Delvist implementeret | Mobil regressionstest af kurver, deaktivering og lagring |
 | Regelbygger | Delvist implementeret | Fuld brugertest, geografiske grupper og konfliktforklaring |
 | Supabase/central adminlagring | Implementeret med samlet funktionstest | Kør produktionstesten ved releases og følg fejlrapporten |
@@ -149,3 +149,11 @@ Status: Implementeret og lokalt valideret.
 - [x] Regelkladder og inaktive regler kan ikke påvirke produktionen.
 - [x] Rå `data/admin/`-filer udelukkes fra Pages-artifactet.
 - [x] Integrations- og release-gate beskytter hele kæden.
+
+## 4.0.96 – IMPLEMENTERET
+- Vandstandsstationsfanen bruger ikke længere det slettede `stationDeliveryLabel`-kald, som stoppede kortinitialisering og adminfanetest.
+- Beskyttet stationsregister og routing-audit hydreres fra Supabase før vejropdatering.
+- Manglende stationslivscyklus behandles som ukendt, ikke som dokumenteret utilgængelig.
+- Upload til Supabase fletter livscyklusfelter ikke-destruktivt, så nyere men informationsfattigere filer ikke sletter kendt historik.
+- Kortets eksisterende farvekontrakt er bevaret: grøn automatisk, rød administrator, lilla begge, grå udfaset, orange øvrig.
+- DMI-prognoser, vandstandsværdier, RavScore og offentlig runtime er ikke ændret.
