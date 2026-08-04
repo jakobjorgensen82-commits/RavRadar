@@ -31,7 +31,7 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - Alle kendte DMI-stationer bevares med status; midlertidigt tavse stationer skjules ikke.
 - DMI-registerstatus, observationsstatus og prognose-/cachestatus er forskellige.
 - Automatisk routing kræver dokumenteret brugbarhed og må ikke uden videre bruge historiske/inaktive stationer.
-- Adminoverride erstatter automatik, når override opfylder de valgte leveringskrav.
+- Adminoverride erstatter automatik, når override opfylder de valgte leveringskrav. Ved to administratorvalgte stationer beregnes inverse afstandsvægte ud fra zonens datapunkt; admin viser samme vægtprincip før lagring.
 - Nye stationer, udfald, genoptagelse og potentielt bedre routing skal skabe meningsfulde tilstandsnotifikationer.
 - En station kan fortsat være prognosebrugbar, så længe dens cachedata er gyldige, selv om en ny observation mangler. Admin viser observationsstatus, cacheudløb og samlet anvendelighed.
 

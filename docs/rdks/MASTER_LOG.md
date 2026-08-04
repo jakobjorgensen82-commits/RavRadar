@@ -1,3 +1,4 @@
+- 4.0.95: Vandstandsstations-admin viser ukendt status ærligt, markerer udfasede stationer særskilt og viser inverse afstandsvægte for administratorvalgte stationer. DMI-hentning, prognosecache og scoremotor er uændret.
 ## 4.0.75 – 2026-08-02
 
 - Rettede den fejlede 4.0.74 GitHub-integration.

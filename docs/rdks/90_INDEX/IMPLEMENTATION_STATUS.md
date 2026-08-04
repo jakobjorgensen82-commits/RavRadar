@@ -33,7 +33,7 @@ Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode
 | Observationslivscyklus | Delvist implementeret | Historisk stabilitet og bedre audit pr. station |
 | Prognose-/cachestatus pr. station | Implementeret | Overvåg cacheudløb, drift og historisk stabilitet |
 | Automatisk stationsrouting | Implementeret, overvåges | Bedre-station-notifikationer uden automatisk omskiftning |
-| Adminoverride | Implementeret | Tydelig visning af aktiv kontra tilsidesat routing |
+| Adminoverride | Implementeret og præciseret i 4.0.95 | Overvåg central readback og produktionens anvendelse af valgte stationer |
 | Kystlinjeeditor | Delvist implementeret | Mobil regressionstest af kurver, deaktivering og lagring |
 | Regelbygger | Delvist implementeret | Fuld brugertest, geografiske grupper og konfliktforklaring |
 | Supabase/central adminlagring | Implementeret med samlet funktionstest | Kør produktionstesten ved releases og følg fejlrapporten |

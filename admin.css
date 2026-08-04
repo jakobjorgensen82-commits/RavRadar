@@ -48,3 +48,4 @@ button.documentation-card{width:100%;font:inherit}
 .inline-handbook-review textarea,.inline-handbook-review input,.inline-handbook-review select{width:100%;box-sizing:border-box;background:#102f3a;color:#f5fbff;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:.7rem}
 
 .documentation-pre{white-space:pre-wrap;max-height:70vh;overflow:auto;background:rgba(0,0,0,.04);padding:1rem;border-radius:.75rem;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}.link-button{border:0;background:none;color:inherit;text-decoration:underline;cursor:pointer;font:inherit}.handbook-review-card .review-implementation{margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(0,0,0,.12)}.handbook-review-card .implementation-body{width:100%;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.local-handbook-draft{border-left:4px solid #d49b00}
+.dot.retired-station{background:#777;border:1px dashed #bbb}
