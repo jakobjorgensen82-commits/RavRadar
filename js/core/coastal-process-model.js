@@ -44,5 +44,18 @@ export function evaluateTransportEvent({history={},weather={},zone={}}={}){
   const phase = dominantPathway==='nearshore-remobilisation'
     ? 'genmobiliseringsfase'
     : mobilisation<30?'rolig fase':hours===null?'ukendt fase':hours<3?'højenergifase':hours<=18?'efterstorm/transportfase':hours<=48?'aflejringsfase':'sen efterfase';
-  return {index,phase,dominantPathway,freshPath,remobilisationPath,mobilisation:Math.round(mobilisation),remobilisation:Math.round(remobilisation),timing:Math.round(timing),continuation:Math.round(continuation),retention:Math.round(retention),coast};
+  const shadowState={
+    mode:history.stateModelMode||null,
+    eventPhase:history.eventPhase||null,
+    strongEventDurationHours:n(history.strongEventDurationHours),
+    hoursSinceStrongEventEnd:n(history.hoursSinceStrongEventEnd),
+    inboundCurrentDurationHours:n(history.inboundCurrentDurationHours),
+    inboundCurrentMomentum:n(history.inboundCurrentMomentum),
+    outboundCurrentDurationHours:n(history.outboundCurrentDurationHours),
+    outboundCurrentPressure:n(history.outboundCurrentPressure),
+    currentDirectionStability:n(history.currentDirectionStability),
+    mobilisationPotential:n(history.mobilisationPotential),
+    nearshorePotential:n(history.nearshorePotential)
+  };
+  return {index,phase,dominantPathway,freshPath,remobilisationPath,mobilisation:Math.round(mobilisation),remobilisation:Math.round(remobilisation),timing:Math.round(timing),continuation:Math.round(continuation),retention:Math.round(retention),coast,shadowState};
 }

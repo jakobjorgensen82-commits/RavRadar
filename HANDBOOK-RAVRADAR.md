@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.106
+**Håndbogsversion:** 4.0.107
 
 **Opdateret:** 1. august 2026
 
@@ -1231,3 +1231,9 @@ Mens de hentes, viser fanen en tydelig besked og kan ikke redigeres. Det forhind
 
 ### Lokal browsercache og central lagring
 Vandstandsrouting gemmes centralt i Supabase. Browserens localStorage er kun en lille, valgfri hjælpe-cache. Store stationsregistre og diagnostik må ikke gemmes der. Hvis browserens lagerkvote er fuld, skal kortet stadig reagere med det samme, og den centrale gemning skal fortsætte.
+
+
+## Teknisk driftsnote 4.0.107 – historisk tilstand uden scoreændring
+RavRadar gemmer nu en begrænset 24-timers historik i produktionspipelinen og beregner varighed og styrke for strøm ind mod og væk fra den lokale kystretning. Den nye tilstand er foreløbig diagnostisk og ændrer ikke RavScore. Formålet er først at kontrollere, at forløb og retninger er fagligt korrekte. Generelle strømbånd bruges ikke. Kun de faktiske marine strømdata og zonens aktuelle retningsankre anvendes. Rå historik sendes ikke til den offentlige side.
+
+Vandstationsfejlen fra 4.0.105 skyldtes fyldt browserlager. Fra 4.0.106 er lokal cache ikke-blokerende, store læsedokumenter gemmes ikke i localStorage, og røde administratorvalg samt Fjern er produktionsbekræftet som fungerende.

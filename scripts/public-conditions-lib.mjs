@@ -6,7 +6,7 @@ const HOURLY_FIELDS = [
   'waterLevelCm','waterLevelTrendCm3h','currentSpeedMps','currentDirectionDeg','waterTemperatureC'
 ];
 const CURRENT_FIELDS = HOURLY_FIELDS.filter(key => key !== 'time' && key !== 'airTemperatureC');
-const HISTORY_FIELDS = ['maxWind24hMps','maxWave24hM','hoursSinceHighEnergy'];
+const HISTORY_FIELDS = ['maxWind24hMps','maxWave24hM','hoursSinceHighEnergy','strongEventDurationHours','hoursSinceStrongEventEnd','inboundCurrentDurationHours','inboundCurrentMomentum','outboundCurrentDurationHours','outboundCurrentPressure','currentDirectionStability','mobilisationPotential','nearshorePotential','eventPhase','stateModelMode'];
 const pick=(source,fields)=>Object.fromEntries(fields.filter(key=>source?.[key]!==undefined).map(key=>[key,source[key]]));
 
 export function buildPublicConditions(full){

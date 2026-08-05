@@ -58,4 +58,4 @@ Første valg i en zone uden routingpost blev tidligere foretaget i et løsrevet 
 
 Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central routing stadig ventede bag en stor samlet admininitialisering. Når Supabase-data senere ankom, blev tilstanden og DOM'en erstattet, så røde valg kom flere minutter for sent, og et klik på “Fjern” kunne blive overskrevet. 4.0.105 indlæser de tre nødvendige vandstandsdele først og holder fanen ikke-klikbar, indtil den endelige centrale routing er klar.
 
-- 4.0.105 kunne fylde localStorage med store Supabase-dokumenter og udløse QuotaExceededError. Rodårsagen er rettet i 4.0.106; produktionsverifikation mangler.
+- 4.0.105 kunne fylde localStorage med store Supabase-dokumenter og udløse QuotaExceededError. Rodårsagen er rettet i 4.0.106 og produktionsbekræftet af ejer i den efterfølgende drift.

@@ -1215,22 +1215,105 @@ async function fromMetNorway(feature) {
   };
 }
 
-function historyFor(previous, zoneId, current, generatedAt) {
+function normalizeDeg(value) { const n = num(value); return n === null ? null : ((n % 360) + 360) % 360; }
+function angularDifference(a, b) { const x = normalizeDeg(a), y = normalizeDeg(b); return x === null || y === null ? null : Math.abs(((x - y + 540) % 360) - 180); }
+function directionAlignment(directionDeg, targetDeg) {
+  const d = angularDifference(directionDeg, targetDeg);
+  if (d === null) return null;
+  if (d <= 25) return 1; if (d <= 55) return .65; if (d <= 90) return .2; if (d <= 130) return -.35; return -.8;
+}
+function effectiveCurrentAlignment(feature, directionDeg) {
+  const p = feature?.properties ?? {};
+  const anchors = Array.isArray(p.directionAnchors) && p.directionAnchors.length
+    ? p.directionAnchors
+    : [{ onshoreDirectionDeg: p.onshoreDirectionDeg, weight: 1 }];
+  const rows = anchors.map(anchor => ({ alignment: directionAlignment(directionDeg, anchor?.onshoreDirectionDeg), weight: Math.max(.1, num(anchor?.weight) ?? 1) }))
+    .filter(row => row.alignment !== null);
+  if (!rows.length) return null;
+  const best = Math.max(...rows.map(row => row.alignment));
+  const positive = rows.filter(row => row.alignment > 0);
+  if (!positive.length) return best;
+  const weighted = positive.reduce((sum, row) => sum + row.alignment * row.weight, 0) / positive.reduce((sum, row) => sum + row.weight, 0);
+  return Math.max(-.8, Math.min(1, best * .7 + weighted * .3));
+}
+function durationAndMomentum(samples, predicate, contribution) {
+  let duration = 0, momentum = 0;
+  for (let i = 0; i < samples.length; i += 1) {
+    const sample = samples[i];
+    if (!predicate(sample)) continue;
+    const nextAt = i + 1 < samples.length ? Date.parse(samples[i + 1].at) : Date.parse(sample.at) + 3600000;
+    const hours = Math.max(0, Math.min(2, (nextAt - Date.parse(sample.at)) / 3600000));
+    duration += hours;
+    momentum += contribution(sample) * hours;
+  }
+  return { duration: round(duration, 1), momentum: round(momentum, 3) };
+}
+function lastContiguousEvent(samples, predicate) {
+  let end = -1;
+  for (let i = samples.length - 1; i >= 0; i -= 1) { if (predicate(samples[i])) { end = i; break; } }
+  if (end < 0) return null;
+  let start = end;
+  while (start > 0 && predicate(samples[start - 1]) && Date.parse(samples[start].at) - Date.parse(samples[start - 1].at) <= 2 * 3600000) start -= 1;
+  const startAt = Date.parse(samples[start].at), endAt = Date.parse(samples[end].at);
+  return { startAt: samples[start].at, endAt: samples[end].at, durationHours: round(Math.max(1, (endAt - startAt) / 3600000 + 1), 1) };
+}
+function historyFor(previous, zoneId, current, generatedAt, feature = null) {
   const cutoff = Date.parse(generatedAt) - 24 * 3600000;
+  const currentAlignment = effectiveCurrentAlignment(feature, current.currentDirectionDeg);
   const samples = [...(previous?.zones?.[zoneId]?.samples24h ?? []), {
-    at: generatedAt, windSpeedMps: current.windSpeedMps, waveHeightM: current.waveHeightM
+    at: generatedAt,
+    windSpeedMps: current.windSpeedMps,
+    windDirectionDeg: current.windDirectionDeg,
+    waveHeightM: current.waveHeightM,
+    currentSpeedMps: current.currentSpeedMps,
+    currentDirectionDeg: current.currentDirectionDeg,
+    currentAlignment,
+    waterLevelCm: current.waterLevelCm,
+    waterLevelTrendCm3h: current.waterLevelTrendCm3h
   }].filter(sample => Date.parse(sample.at) >= cutoff)
     .filter((sample, index, all) => all.findIndex(item => item.at === sample.at) === index)
     .sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
   const winds = samples.map(s => num(s.windSpeedMps)).filter(Number.isFinite);
   const waves = samples.map(s => num(s.waveHeightM)).filter(Number.isFinite);
   const high = samples.filter(s => (num(s.windSpeedMps) ?? 0) >= 9 || (num(s.waveHeightM) ?? 0) >= 1.2).at(-1);
+  const strongEvent = lastContiguousEvent(samples, s => (num(s.windSpeedMps) ?? 0) >= 14 || (num(s.waveHeightM) ?? 0) >= 1.5);
+  const inbound = durationAndMomentum(samples, s => (num(s.currentAlignment) ?? -1) >= .2 && (num(s.currentSpeedMps) ?? 0) > 0,
+    s => Math.max(0, num(s.currentAlignment) ?? 0) * (num(s.currentSpeedMps) ?? 0));
+  const outbound = durationAndMomentum(samples, s => (num(s.currentAlignment) ?? 1) <= -.35 && (num(s.currentSpeedMps) ?? 0) > 0,
+    s => Math.abs(Math.min(0, num(s.currentAlignment) ?? 0)) * (num(s.currentSpeedMps) ?? 0));
+  const alignments = samples.map(s => num(s.currentAlignment)).filter(Number.isFinite);
+  const stability = alignments.length >= 2 ? Math.max(0, 1 - (Math.max(...alignments) - Math.min(...alignments)) / 1.8) : null;
+  const strongHoursSinceEnd = strongEvent ? round((Date.parse(generatedAt) - Date.parse(strongEvent.endAt)) / 3600000, 1) : null;
+  const mobilisationPotential = Math.max(0, Math.min(100,
+    (winds.length ? Math.min(55, Math.max(...winds) / 14 * 55) : 0) +
+    (waves.length ? Math.min(35, Math.max(...waves) / 1.5 * 35) : 0) +
+    (strongEvent ? Math.min(10, strongEvent.durationHours * 2) : 0)));
+  const inboundMomentum = Math.max(0, Math.min(100, inbound.momentum * 85));
+  const outboundPressure = Math.max(0, Math.min(100, outbound.momentum * 85));
+  const nearshorePotential = Math.max(0, Math.min(100, mobilisationPotential * .45 + inboundMomentum * .65 - outboundPressure * .55));
+  let eventPhase = 'rolig fase';
+  if (strongEvent && strongHoursSinceEnd !== null && strongHoursSinceEnd <= 1) eventPhase = 'højenergifase';
+  else if (strongEvent && strongHoursSinceEnd !== null && strongHoursSinceEnd <= 18 && inbound.duration > 0) eventPhase = 'efterstorm/indtransport';
+  else if (nearshorePotential >= 55) eventPhase = 'vedvarende nærkystpotentiale';
+  else if (outboundPressure >= 35) eventPhase = 'udtransport/nedbrydning';
+  else if (inbound.duration > 0) eventPhase = 'indtransport opbygges';
   return {
     samples24h: samples,
     history: {
       maxWind24hMps: winds.length ? round(Math.max(...winds), 1) : null,
       maxWave24hM: waves.length ? round(Math.max(...waves), 2) : null,
-      hoursSinceHighEnergy: high ? round((Date.parse(generatedAt) - Date.parse(high.at)) / 3600000, 1) : null
+      hoursSinceHighEnergy: high ? round((Date.parse(generatedAt) - Date.parse(high.at)) / 3600000, 1) : null,
+      strongEventDurationHours: strongEvent?.durationHours ?? null,
+      hoursSinceStrongEventEnd: strongHoursSinceEnd,
+      inboundCurrentDurationHours: inbound.duration,
+      inboundCurrentMomentum: inboundMomentum === 0 && inbound.duration === 0 ? 0 : round(inboundMomentum, 1),
+      outboundCurrentDurationHours: outbound.duration,
+      outboundCurrentPressure: outboundPressure === 0 && outbound.duration === 0 ? 0 : round(outboundPressure, 1),
+      currentDirectionStability: stability === null ? null : round(stability, 2),
+      mobilisationPotential: round(mobilisationPotential, 1),
+      nearshorePotential: round(nearshorePotential, 1),
+      eventPhase,
+      stateModelMode: 'shadow-v1'
     }
   };
 }
@@ -1414,18 +1497,18 @@ async function resolveZone(feature, generatedAt, previous, dmiForecastStore, nex
   if (healthyCachedDmi) {
     nextDmiForecastStore.zones[zoneId] = { ...existingRecord, hourly: normalizeForecastHourly(existingRecord?.hourly ?? []) };
     if (dmiOnly) {
-      const history = historyFor(previous, zoneId, healthyCachedDmi.current, generatedAt);
+      const history = historyFor(previous, zoneId, healthyCachedDmi.current, generatedAt, feature);
       return { ...healthyCachedDmi, ...history, stale: false, fallback: false, attempts, acquisition: { mode: 'dmi-cache-only', remainingHours: existingCoverage.remainingHours } };
     }
     const fallback = await fallbackForZone(feature, generatedAt, previous, attempts);
     const merged = fallback ? mergeDmiWithFallback(healthyCachedDmi, fallback) : healthyCachedDmi;
-    const history = historyFor(previous, zoneId, merged.current, generatedAt);
+    const history = historyFor(previous, zoneId, merged.current, generatedAt, feature);
     return { ...merged, ...history, stale: false, fallback: Boolean(fallback), attempts, acquisition: { mode: fallback ? 'cache-first-dmi-component-fill' : 'cache-first-dmi-only', remainingHours: existingCoverage.remainingHours } };
   }
 
   if (allowLiveDmi) try {
     const result = await fromDmi(feature, generatedAt);
-    const history = historyFor(previous, zoneId, result.current, generatedAt);
+    const history = historyFor(previous, zoneId, result.current, generatedAt, feature);
     nextDmiForecastStore.zones[zoneId] = result.dmiForecast;
     const forecast = {
       provider: 'dmi',
@@ -1448,7 +1531,7 @@ async function resolveZone(feature, generatedAt, previous, dmiForecastStore, nex
     nextDmiForecastStore.zones[zoneId] = { ...dmiForecastStore.zones[zoneId], hourly: normalizeForecastHourly(dmiForecastStore.zones[zoneId]?.hourly ?? []) };
     const fallback = dmiOnly ? null : await fallbackForZone(feature, generatedAt, previous, attempts);
     const merged = fallback ? mergeDmiWithFallback(cachedDmi, fallback) : cachedDmi;
-    const history = historyFor(previous, zoneId, merged.current, generatedAt);
+    const history = historyFor(previous, zoneId, merged.current, generatedAt, feature);
     return { ...merged, ...history, stale: false, fallback: Boolean(fallback), attempts };
   }
   attempts.push({ provider: 'dmi-cache', message: 'Ingen gyldig DMI-prognose i 120-timers cache' });
@@ -1456,7 +1539,7 @@ async function resolveZone(feature, generatedAt, previous, dmiForecastStore, nex
 
   const fallback = await fallbackForZone(feature, generatedAt, previous, attempts);
   if (fallback) {
-    const history = historyFor(previous, zoneId, fallback.current, generatedAt);
+    const history = historyFor(previous, zoneId, fallback.current, generatedAt, feature);
     return { ...fallback, ...history };
   }
   const cached = previous?.zones?.[zoneId];
@@ -1646,7 +1729,7 @@ for (const feature of targetFeatures) {
       hourly: merged.dmiForecast.hourly
     };
     const { dmiForecast, ...publicResult } = merged;
-    const history = historyFor(previous, zoneId, publicResult.current, generatedAt);
+    const history = historyFor(previous, zoneId, publicResult.current, generatedAt, feature);
     output.zones[zoneId] = { ...publicResult, ...history, forecast, stale: false, fallback: !recordHasAtmosphere(merged.dmiForecast, generatedAt) || !recordHasMarine(merged.dmiForecast, generatedAt), attempts: output.zones[zoneId]?.attempts ?? [], acquisition: { mode: acquisitionPhase } };
     const stableIndex = stableFeatures.findIndex(item => item.properties?.id === zoneId);
     dmiPersistentRuntime.nextZoneCursor = stableFeatures.length ? (stableIndex + 1) % stableFeatures.length : 0;

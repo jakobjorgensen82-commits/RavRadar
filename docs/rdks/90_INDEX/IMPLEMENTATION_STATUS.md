@@ -206,3 +206,16 @@ Status: Implementeret og lokalt valideret.
 
 ## 4.0.106 – kvotesikker vandstandsrouting
 **IMPLEMENTERET, afventer produktionsverifikation.** Store read-only admin-dokumenter fylder ikke længere localStorage, gamle store cacher ryddes, og QuotaExceededError kan ikke afbryde røde markører, Fjern eller central routinggemning.
+
+## 4.0.107 – historisk tilstandsmodel i skyggetilstand
+**IMPLEMENTERET, afventer pipeline- og produktionsverifikation.**
+- [x] Udvidet 24-timers historik med vindretning, strøm, alignment og vandstand.
+- [x] Akkumuleret indtransportmomentum og udtransporttryk.
+- [x] Stærk energihændelses varighed/alder, mobiliserings- og nærkystpotentiale samt procesfase.
+- [x] Score-neutral `shadow-v1`, så offentlig RavScore ikke ændres i denne version.
+- [x] Kompakt public projection uden rå historik.
+- [x] Ingen generelle strømbånd eller strømbåndsfallback.
+- [x] 4.0.106 vandstationsrettelse markeret produktionsbekræftet af ejer.
+- [ ] GitHub-kørsel skal opbygge rigtige historiksamples over flere kørsler.
+- [ ] Sitetest skal bekræfte uændret eller acceptabel offentlig opstartstid.
+- [ ] Debugkontrol skal udføres på zoner med kendte administrator-overrides af land-/havpunkter.

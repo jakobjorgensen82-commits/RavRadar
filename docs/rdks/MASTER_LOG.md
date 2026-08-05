@@ -323,3 +323,6 @@ GitHub-kørslen efter sletning af DK-B02-14 fejlede, fordi `validate-data.mjs` s
 
 ## 2026-08-05 – 4.0.106
 Konsollen dokumenterede QuotaExceededError ved både `ravradar-admin-document:water-level-station-routing` og legacy-nøglen. HAR viste, at routingdokumentet kun var ca. 2 KB, mens runtime-diagnostik alene var ca. 5,6 MB og stationsregisteret ca. 0,57 MB. Den generelle admin-document-cache havde fyldt browserens kvote. Store read-only dokumenter caches ikke længere lokalt, gamle cacher ryddes, og lokale skrivefejl er ikke-blokerende.
+
+## 2026-08-05 – 4.0.107
+Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler nu faktiske DMI-strømvektorer, alignment mod zonens aktuelle retningsankre, vindretning og vandstand og beregner indtransportmomentum, udtransporttryk, stærke energihændelser, mobiliseringspotentiale, nærkystpotentiale og procesfase. Ingen generelle strømbånd anvendes. Rå historik holdes væk fra public runtime. Ejer har samtidig produktionsbekræftet 4.0.106-rettelsen af røde vandstationsmarkører, override og Fjern.

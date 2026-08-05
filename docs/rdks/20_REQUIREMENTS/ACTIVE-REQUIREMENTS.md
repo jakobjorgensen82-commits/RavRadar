@@ -88,3 +88,13 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-MAP-ARROWS-ZOOM-001 – AKTIV, IKKE IMPLEMENTERET:** Ved indzoomning skal kortet vise mærkbart flere verificerede vind- og strømpile, når flere faktiske DMI-gitterpunkter findes i udsnittet. Pilene må ikke flyttes eller kunstigt kopieres, og ændringen må ikke påvirke DMI-data eller RavScore.
 
 - Vandstandskortets klik, røde markører og Fjern skal reagere straks, også hvis browserens localStorage er fuld. Central Supabase-lagring må ikke afhænge af lokal cache.
+
+## Tilstandsmodel og læring – 4.0.107+
+- **REQ-STATE-001 – IMPLEMENTERET I SKYGGETILSTAND I 4.0.107:** Historikken skal akkumulere faktisk indadgående og udadgående DMI-strøm over tid i stedet for kun at bruge et øjebliksbillede.
+- **REQ-STATE-002 – AKTIV:** Den numeriske score skal senere stige gradvist med varigheden og styrken af dokumenteret indadgående strøm; der må ikke indføres et fast universelt krav om 3–5 timer.
+- **REQ-STATE-003 – AKTIV:** Efter meget kraftig mobilisering skal roligere forhold og indadgående strøm kunne opbygge potentialet gradvist mod et stærkt niveau omkring et cirka 10-timers forløb, ikke via en hård kontakt.
+- **REQ-STATE-004 – AKTIV:** Tidligere indtransport skal kunne skabe et vedvarende nærkystpotentiale, som ikke nulstilles af svage vinddrejninger, men kan nedbrydes af stærk/vedvarende udtransport.
+- **REQ-STATE-005 – BINDENDE:** Generelle strømbånd må ikke bruges i score, tilstand eller fallback. Kun faktiske marine data må styre strømtransporten.
+- **REQ-PERFORMANCE-STATE-001 – BINDENDE:** Historik og tilstandsberegning sker i pipeline. Offentlig runtime må kun modtage kompakte afledte felter, og opstart må ikke forringes væsentligt.
+- **REQ-MORPHOLOGY-001 – BINDENDE:** Eksisterende dokumenteret morfologi må fortsat påvirke scoren. Manglende data er neutralt, og administratoren pålægges ikke ny landsdækkende manuel kortlægning.
+- **REQ-OBSERVATION-ZONE-001 – AKTIV:** En fundrapport skal kræve valg af jagtzonen. GPS bruges som plausibilitetskontrol og må ikke automatisk antages at være jagtstedet, fordi rapporten kan indsendes hjemmefra.
