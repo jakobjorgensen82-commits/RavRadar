@@ -12,7 +12,7 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 
 ## DMI-stationer
 - **REQ-STATION-001 – DELVIST:** Alle kendte stationer bevares med DMI-status og datalivscyklus.
-- **REQ-STATION-002 – IMPLEMENTERET OG REGRESSIONSSIKRET I 4.0.101:** Vis automatisk primær/sekundær, afstand, vægt og valgmetode pr. zone. Automatikken genberegnes fra aktuelle brugbare vandstandskilder, interpolerer mellem to kilder med afstandsvægte og bruger én kilde med 100 % vægt, hvis kun én er kompatibel. Et gammelt auditresultat må ikke skjule et nyere gyldigt valg.
+- **REQ-STATION-002 – IMPLEMENTERET OG REGRESSIONSSIKRET I 4.0.103:** Vis automatisk primær/sekundær, afstand, vægt og valgmetode pr. zone. Automatikken genberegnes fra aktuelle brugbare vandstandskilder, vælger fortsat topologisk egnede kilder, men interpolerer efter reel geografisk haversineafstand ligesom administratoroverride. Én kompatibel kilde bruges med 100 % vægt. Et gammelt auditresultat må ikke skjule et nyere gyldigt valg.
 - **REQ-STATION-003 – IMPLEMENTERET OG REGRESSIONSSIKRET I 4.0.102:** Adminoverride erstatter automatik, når override kan levere efter de valgte krav. Admin viser de faktiske afstandsvægte. Kortet viser kun den aktive routing: grøn ved automatik, rød ved aktivt administratorvalg; grønne markører skjules under override, og lilla “begge valg” er fjernet. Dublerede administratorvalg samles til én kilde med 100 % vægt.
 - **REQ-STATION-004 – AKTIV:** Nye stationer, udfald og genoptaget levering udløser meningsfulde notifikationer ved tilstandsændring – ikke spam ved ét manglende tidspunkt.
 - **REQ-STATION-005 – IMPLEMENTERET:** Skeln observationsstatus fra prognose-/cachestatus og vis samlet anvendelighed.
@@ -20,6 +20,7 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-STATION-007 – AKTIV:** Foreslå bedre station til en zone, men ændr ikke administratorens valg automatisk.
 - **REQ-STATION-008 – AKTIV:** Historiske/inaktive stationer markeres tydeligt og kræver ekstra bekræftelse ved override.
 - **REQ-STATION-009 – AKTIV:** Stationskortet skal kunne verificeres mod DMI's officielle register.
+- **REQ-STATION-010 – IMPLEMENTERET I 4.0.103, AFVENTER PRODUKTIONSBEKRÆFTELSE:** DMI-prognosepunkter opdages via `tidewaterstation`-collectionen. Alle vandstandskilder auditeres med kildetype, discovery-resultat, prognosehorisont, gyldighed og routingberettigelse.
 
 ## Retning, zoner og kort
 - **REQ-GEO-001 – IMPLEMENTERET:** Strøm er bevægelsesretning; vind er fra-retning.
@@ -52,6 +53,7 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-RELEASE-001 – IMPLEMENTERET:** En samlet release-gate skal bestå før en ZIP kan erklæres installationsklar.
 - **REQ-RELEASE-002 – IMPLEMENTERET:** Releasepakker må ikke indeholde `.git`, secrets, caches eller `node_modules`.
 - **REQ-RELEASE-003 – AKTIV:** CI-fejl udløser samlet release-audit og dokumenteret ny pakke – ikke manuelle enkeltlapninger som slutleverance.
+- **REQ-RELEASE-004 – IMPLEMENTERET I 4.0.103:** `_support/` og support-ZIP må aldrig indgå i det offentlige GitHub Pages-artifact.
 - **REQ-DOMAIN-001 – AKTIV:** RavRadar klargøres til `ravradar.dk` med relative stier, Supabase redirects, HTTPS og kontrolleret canonical-strategi.
 - **REQ-HANDBOOK-001 – IMPLEMENTERET:** Håndbogen beskriver grundigt rav-/sedimentprocesser og kortlægger dem til den faktiske scorekode og ekspertregler.
 

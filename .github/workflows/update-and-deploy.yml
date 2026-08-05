@@ -279,6 +279,8 @@ jobs:
             --exclude '.git/' \
             --exclude '.github/' \
             --exclude '_site/' \
+            --exclude '_support/' \
+            --exclude 'RavRadar-support-*.zip' \
             --exclude '.cache/' \
             --exclude 'node_modules/' \
             --exclude 'scripts/' \

@@ -59,6 +59,8 @@ for(const protectedPath of ['handbook.html','documentation.html','data/diagnosti
 }
 ok(!workflow.includes("--exclude 'js/services/handbook-review-store.js'"),'Pages-workflow må ikke udelukke et browsermodul som admin importerer');
 ok(workflow.includes("--exclude 'data/admin/'"),'Pages-workflow skal udelukke rå centrale adminfiler');
+ok(workflow.includes("--exclude '_support/'"),'Pages-workflow skal udelukke supportmappen fra det offentlige artifact');
+ok(workflow.includes("--exclude 'RavRadar-support-*.zip'"),'Pages-workflow skal udelukke support-ZIP fra det offentlige artifact');
 ok(workflow.includes('generate-public-admin-rules.mjs'),'Workflowet skal publicere centralt aktive administratorregler');
 const publicRuleService=await read('js/services/rule-service.js');
 ok(publicRuleService.includes('admin-active-rules.json'),'Offentlig regelservice mangler centralt publicerede administratorregler');

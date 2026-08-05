@@ -5,7 +5,7 @@
 2. **ISSUE-HANDBOOK-EVIDENCE – LØBENDE:** Flere faglige antagelser om rav og sedimenttransport kræver ekstern ekspertvalidering.
 3. **ISSUE-DMI-HORIZON – OVERVÅGES:** Komponenternes DMI-horisont kan være kortere end hele brugerprognosen; fallback og dækning skal forklares.
 4. **ISSUE-WATERLEVEL-CONTINUITY – OVERVÅGES:** Kunstige spring må ikke genopstå ved kildeskift; Vadehavet skal vurderes særskilt.
-5. **ISSUE-STATION-OFFICIAL-AUDIT – ÅBEN:** Kortets register skal løbende sammenholdes med DMI's officielle stationsliste.
+5. **ISSUE-STATION-OFFICIAL-AUDIT – DELVIST LØST I 4.0.103:** OceanObs-målestationer og `tidewaterstation`-prognosepunkter opdages fra deres dokumenterede collections og skrives til en samlet audit. Første produktion skal bekræfte antal, horisont og Hals-punkternes faktiske data.
 
 ## Produkt og admin
 6. **ISSUE-RULE-USABILITY – DELVIST:** Regelbyggerens fulde menneskevenlige workflow og konfliktforklaring skal løbende verificeres i browseren.
@@ -41,3 +41,9 @@ Pileinstallationen var gjort afhængig af browserens idle-callback uden runtimek
 ## Løst i 4.0.96 – vandstandsstationsfanen
 - `stationDeliveryLabel` stoppede kortinitialisering for zoner med gemt override. Løst ved at bruge de aktive observations-, cache- og anvendelighedslabels.
 - Beskyttet stationsstatus blev ikke hydreret fra Supabase og kunne blive forringet til ukendt/utilgængelig. Løst med central readback og ikke-destruktiv merge.
+
+
+## Løst i 4.0.103 – supporteksponering og uens afstandsvægte
+**Status:** LØST I KODE, AFVENTER GITHUB-BEKRÆFTELSE
+
+Pages-buildet udelukker nu både `_support/` og support-ZIP. Automatisk routing og administratoroverride anvender samme reelle geografiske afstand til vægtning, mens topologien fortsat bestemmer kandidatvalget. Det fejlagtige plurale prognosepunkt-endpoint er erstattet af DMI's dokumenterede `tidewaterstation`-collection.

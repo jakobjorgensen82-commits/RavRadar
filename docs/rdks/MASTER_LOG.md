@@ -299,3 +299,11 @@ GitHub-kørslen efter sletning af DK-B02-14 fejlede, fordi `validate-data.mjs` s
 - Begge typer samples i samme DKSS STAC/GRIB-model ved kildens koordinat, så serierne er sammenlignelige og indeholder meteorologisk/oceanografisk totalvandstand, ikke kun astronomisk tidevand.
 - Administratoroverride har prioritet; ellers automatisk topologisk routing. Ved to kilder anvendes inverse afstandsvægte.
 - Den resulterende serie forplanter sig til aktuel vandstand, RavScore, ranglister, femdøgnsprognose og time-for-time-tabellen.
+
+
+## 2026-08-05 – 4.0.103 sikker Pages-pakning og verificerbar vandstandskæde
+- Sundhedstjekket dokumenterede, at supportpakken kunne følge med i Pages-artifactet. Buildet udelukker nu `_support/` og `RavRadar-support-*.zip`, mens den private Actions-artifact bevares.
+- Brugerbeslutning: automatisk interpolation og administratoroverride skal bruge samme reelle geografiske afstand. Kysttopologien bevares uændret som kandidatvalg; kun vægtgrundlaget er ensrettet til haversineafstand.
+- DMI-dokumentationen viser collections `station`, `observation`, `tidewater` og `tidewaterstation`. Det plurale `tidewaterstations` gav 404 og er erstattet med den dokumenterede entalscollection.
+- Kildediscovery og hver produceret kildes femdøgnsstatus auditeres nu eksplicit. Auditfilen er beskyttet og medtages ikke på Pages.
+- Ny samlet regressionstest følger automatisk routing og administratoroverride gennem den producerede aktuelle vandstand, forecastStore og time-for-time-serie og kontrollerer samtidig Pages-eksklusioner og endpointkontrakt.

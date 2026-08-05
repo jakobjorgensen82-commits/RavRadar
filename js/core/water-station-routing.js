@@ -47,7 +47,9 @@ function stationUsable(station) {
 }
 
 function weightedSelection(selected) {
-  const inverse = selected.map(item => 1 / Math.max(0.5, Math.abs(item.alongKm)));
+  // Kandidatvalget er fortsat topologisk langs kysten, men selve interpolationens
+  // vægte skal være identiske med administratoroverride: reel geografisk afstand.
+  const inverse = selected.map(item => 1 / Math.max(0.5, Number(item.distanceKm)));
   const total = inverse.reduce((sum, value) => sum + value, 0) || 1;
   return selected.map((item, index) => ({ ...item, weight: inverse[index] / total }));
 }

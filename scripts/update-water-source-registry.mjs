@@ -25,8 +25,9 @@ const previousByKey=new Map((previous.stations??[]).map(s=>[String(s.sourceKey??
 const supplement=await safeJson(SUPPLEMENT,{stations:[]});
 const now=new Date().toISOString();
 let observations=[],tidewater=[];
-try{observations=await fetchAll(`${ROOT}/station/items`);}catch(error){console.warn(`OceanObs stations kunne ikke opdateres: ${error.message}`)}
-try{tidewater=await fetchAll(`${ROOT}/tidewaterstations/items`);}catch(error){console.warn(`Tidewater-stationer kunne ikke opdateres: ${error.message}`)}
+const discovery={oceanObsStation:{endpoint:`${ROOT}/station/items`,status:'not-attempted',count:0,error:null},tidewaterStation:{endpoint:`${ROOT}/tidewaterstation/items`,status:'not-attempted',count:0,error:null}};
+try{observations=await fetchAll(discovery.oceanObsStation.endpoint);discovery.oceanObsStation={...discovery.oceanObsStation,status:'ok',count:observations.length};}catch(error){discovery.oceanObsStation={...discovery.oceanObsStation,status:'failed',error:error.message};console.warn(`OceanObs stations kunne ikke opdateres: ${error.message}`)}
+try{tidewater=await fetchAll(discovery.tidewaterStation.endpoint);discovery.tidewaterStation={...discovery.tidewaterStation,status:'ok',count:tidewater.length};}catch(error){discovery.tidewaterStation={...discovery.tidewaterStation,status:'failed',error:error.message};console.warn(`Tidewater-stationer kunne ikke opdateres: ${error.message}`)}
 const merged=new Map();
 function add(feature,sourceType){
  const p=feature.properties??{}; const stationId=String(p.stationId??p.id??''); const coords=point(feature);
@@ -51,7 +52,7 @@ for(const s of supplement.stations??[]){
  merged.set(sourceKey,{...old,...s,sourceKey,sourceType:'forecast-point',sourceTypes:['forecast'],registryStatus:'official-forecast-point',properties:{...(old.properties??{}),...(s.properties??{}),officialSupplement:true},firstSeenAt:old.firstSeenAt??now,lastSeenAt:old.lastSeenAt??null,lastActiveSeenAt:old.lastActiveSeenAt??null});
 }
 const stations=[...merged.values()].filter(s=>s.stationId&&Array.isArray(s.point)&&s.point.length===2).sort((a,b)=>a.name.localeCompare(b.name,'da'));
-const summary={total:stations.length,observationStations:stations.filter(s=>s.sourceType==='observation-station').length,forecastPoints:stations.filter(s=>s.sourceType==='forecast-point').length};
+const summary={total:stations.length,observationStations:stations.filter(s=>s.sourceType==='observation-station').length,forecastPoints:stations.filter(s=>s.sourceType==='forecast-point').length,discovery};
 await fs.mkdir('data/live',{recursive:true});
-await fs.writeFile(OUT,JSON.stringify({...previous,schemaVersion:4,generatedAt:now,source:'DMI OceanObs station + tidewaterstations source registry',stations,summary},null,2)+'\n');
+await fs.writeFile(OUT,JSON.stringify({...previous,schemaVersion:4,generatedAt:now,source:'DMI OceanObs station + tidewaterstation source registry',stations,summary},null,2)+'\n');
 console.log(`Vandstandskilder opdateret: ${summary.observationStations} målestationer, ${summary.forecastPoints} prognosepunkter.`);

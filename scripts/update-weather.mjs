@@ -1858,6 +1858,33 @@ output.dataQuality = buildDataQuality(output, { stationsFetched: qualityStations
 output.dataQuality.stationRouting = { ...stationRoutingAudit.counts, productionApplication: waterSourceApplication.audit };
 output.dataQuality.stationLifecycle = stationLifecycle.document.summary;
 output.dataQuality.stationNotifications = stationLifecycle.notifications;
+const waterSourceAudit = {
+  schemaVersion: 1,
+  generatedAt,
+  summary: {
+    total: stationRegistry.length,
+    observationStations: stationRegistry.filter(source => source.sourceType === 'observation-station').length,
+    forecastPoints: stationRegistry.filter(source => source.sourceType === 'forecast-point').length,
+    receivingForecast: stationRegistry.filter(source => source.sourceForecastStatus === 'receiving').length,
+    routingEligible: stationRegistry.filter(source => source.routingEligible).length
+  },
+  sources: stationRegistry.map(source => ({
+    sourceKey: source.sourceKey ?? null,
+    stationId: String(source.stationId ?? ''),
+    name: source.name ?? null,
+    sourceType: source.sourceType ?? 'observation-station',
+    registryStatus: source.registryStatus ?? null,
+    point: source.point ?? null,
+    observationStatus: source.deliveryStatus ?? 'unknown',
+    forecastStatus: source.sourceForecastStatus ?? 'not-receiving',
+    forecastHours: Number(source.sourceForecastHours ?? 0),
+    forecastGeneratedAt: source.sourceForecastGeneratedAt ?? null,
+    forecastValidUntil: source.sourceForecastValidUntil ?? null,
+    routingEligible: Boolean(source.routingEligible)
+  }))
+};
+await fs.mkdir('data/diagnostics', { recursive: true });
+await fs.writeFile('data/diagnostics/water-source-audit.json', `${JSON.stringify(waterSourceAudit, null, 2)}\n`);
 dmiPersistentRuntime.observations ??= {};
 const currentObservationSummary = output.dataQuality?.observations ?? {};
 if (observationResultUsable && (currentObservationSummary.stationsWithFreshLevel ?? 0) > 0) {
