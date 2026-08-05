@@ -1,3 +1,9 @@
+
+## 4.0.101 – 2026-08-05
+- Rettede kun den automatiske udvælgelse af vandstandskilder.
+- Admin genberegner nu valget fra de aktuelle brugbare kilder med samme topologiske kernefunktion som produktionen i stedet for at lade et gammelt/tomt auditdokument være autoritativt.
+- Automatisk valg bevarer interpolation mellem to kilder med afstandsvægte og bruger én gyldig kilde med 100 % vægt, når en komplet topologisk indramning ikke findes.
+- Manuel override og hele vandstands-, score- og prognosekæden fra 4.0.100 er bevidst ikke ændret.
 - 4.0.95: Vandstandsstations-admin viser ukendt status ærligt, markerer udfasede stationer særskilt og viser inverse afstandsvægte for administratorvalgte stationer. DMI-hentning, prognosecache og scoremotor er uændret.
 ## 4.0.75 – 2026-08-02
 
