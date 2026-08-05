@@ -1,3 +1,10 @@
+## 4.0.102 – 2026-08-05
+- Kortets farver er ændret fra “forslag + aktiv routing” til kun at vise den aktive routing for zonen.
+- Aktiv automatik vises grønt. Aktivt administratoroverride skjuler grønne markører og viser kun administratorens kilder rødt.
+- Lilla “begge valg” er fjernet.
+- Dublerede administratorvalg deduplikeres; én kilde vises og anvendes med 100 % vægt.
+- Ingen ændring af automatisk udvælgelse, DMI-data, femdøgnsserier, interpolation, RavScore eller offentlig prognosekæde.
+
 
 ## 4.0.101 – 2026-08-05
 - Rettede kun den automatiske udvælgelse af vandstandskilder.

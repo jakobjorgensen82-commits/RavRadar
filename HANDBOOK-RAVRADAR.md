@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.101
+**Håndbogsversion:** 4.0.102
 
 **Opdateret:** 1. august 2026
 
@@ -469,7 +469,7 @@ Stationsregisteret er persistent. Opdagede stationer fjernes ikke ved en tom kø
 
 Historiske/inaktive stationer skal være tydeligt markeret og må normalt ikke vælges uden advarsel. Hele registeret skal periodisk sammenholdes med DMI's officielle liste.
 
-I admin betyder kortfarverne: grøn er RavRadars automatiske valg, rød er administratorens override, lilla er valgt af begge, grå er udfaset, og orange er øvrige stationer. Manglende livscyklusdata vises som ukendt og må ikke fejlagtigt blive til “utilgængelig”. Beskyttet stationshistorik læses tilbage fra Supabase før en ny kørsel og flettes ikke-destruktivt, så kendte observationer og cacheoplysninger ikke går tabt.
+I admin viser kortfarverne den routing, der faktisk er aktiv for zonen. Grøn betyder aktiv automatisk routing. Når administratoroverride er slået til, skjules de grønne automatiske markører, og de kilder som faktisk styrer produktionen vises rødt. Lilla “begge valg” bruges ikke længere. Grå er udfaset, og orange er øvrige kilder. Manglende livscyklusdata vises som ukendt og må ikke fejlagtigt blive til “utilgængelig”. Beskyttet stationshistorik læses tilbage fra Supabase før en ny kørsel og flettes ikke-destruktivt, så kendte observationer og cacheoplysninger ikke går tabt.
 
 
 ## 25. Brugerfeedback, adaptiv model og AI
@@ -1211,7 +1211,7 @@ Rå centrale adminfiler indeholder arbejdsmateriale og må ikke publiceres på G
 
 
 ### Automatisk kildevalg og interpolation
-RavRadar beregner det automatiske valg direkte fra de vandstandskilder, som er brugbare i den aktuelle kørsel. Et tidligere routing-audit er dokumentation, men må ikke fastholde et tomt valg, hvis en kilde senere har fået en gyldig femdøgnsserie. Systemet forsøger først at vælge to kompatible kilder på hver sin side langs den lokale kystkorridor. De to serier interpoleres med inverse afstandsvægte fra zonens datapunkt. Hvis kun én kompatibel kilde findes, anvendes den med 100 % vægt i stedet for at efterlade zonen uden automatisk kilde. Administratoren kan fortsat overrule valget; override ændrer ikke den automatiske beregningsmetode for andre zoner.
+RavRadar beregner det automatiske valg direkte fra de vandstandskilder, som er brugbare i den aktuelle kørsel. Et tidligere routing-audit er dokumentation, men må ikke fastholde et tomt valg, hvis en kilde senere har fået en gyldig femdøgnsserie. Systemet forsøger først at vælge to kompatible kilder på hver sin side langs den lokale kystkorridor. De to serier interpoleres med inverse afstandsvægte fra zonens datapunkt. Hvis kun én kompatibel kilde findes, anvendes den med 100 % vægt i stedet for at efterlade zonen uden automatisk kilde. Administratoren kan fortsat overrule valget; override ændrer ikke den automatiske beregningsmetode for andre zoner. Når override er aktivt, viser kortet kun administratorens aktive kilder rødt. Automatiske forslag kan stadig læses i beregningspanelet, men vises ikke som grønne kortmarkører. Samme kilde kan ikke stå både som primær og sekundær; den samles til én kilde med 100 % vægt.
 
 ## Vandstandskilder: målestationer og prognosepunkter
 RavRadar kan bruge både fysiske DMI-målestationer og DMI-prognosepunkter. En målestation viser observationsstatus. Et prognosepunkt viser i stedet, om det modtager en gyldig femdøgnsprognose. Begge typer samples i samme DKSS-model ved kildens koordinat, så de kan sammenlignes og afstandsvægtes. Administratorens aktive valg bruges før systemets automatiske valg. Den valgte serie bruges både i RavScore, ranglister, femdøgnsvisningen og tabellen “Næste fem dage – Vandstand time for time”.

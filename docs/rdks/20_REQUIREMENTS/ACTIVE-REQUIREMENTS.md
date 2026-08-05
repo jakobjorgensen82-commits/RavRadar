@@ -13,7 +13,7 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 ## DMI-stationer
 - **REQ-STATION-001 – DELVIST:** Alle kendte stationer bevares med DMI-status og datalivscyklus.
 - **REQ-STATION-002 – IMPLEMENTERET OG REGRESSIONSSIKRET I 4.0.101:** Vis automatisk primær/sekundær, afstand, vægt og valgmetode pr. zone. Automatikken genberegnes fra aktuelle brugbare vandstandskilder, interpolerer mellem to kilder med afstandsvægte og bruger én kilde med 100 % vægt, hvis kun én er kompatibel. Et gammelt auditresultat må ikke skjule et nyere gyldigt valg.
-- **REQ-STATION-003 – IMPLEMENTERET OG REGRESSIONSSIKRET I 4.0.96:** Adminoverride erstatter automatik, når override kan levere efter de valgte krav. Admin viser de faktiske afstandsvægte for de valgte stationer og skelner mellem automatisk valg, administratorvalg, begge valg og udfasede stationer.
+- **REQ-STATION-003 – IMPLEMENTERET OG REGRESSIONSSIKRET I 4.0.102:** Adminoverride erstatter automatik, når override kan levere efter de valgte krav. Admin viser de faktiske afstandsvægte. Kortet viser kun den aktive routing: grøn ved automatik, rød ved aktivt administratorvalg; grønne markører skjules under override, og lilla “begge valg” er fjernet. Dublerede administratorvalg samles til én kilde med 100 % vægt.
 - **REQ-STATION-004 – AKTIV:** Nye stationer, udfald og genoptaget levering udløser meningsfulde notifikationer ved tilstandsændring – ikke spam ved ét manglende tidspunkt.
 - **REQ-STATION-005 – IMPLEMENTERET:** Skeln observationsstatus fra prognose-/cachestatus og vis samlet anvendelighed.
 - **REQ-STATION-006 – DELVIST:** Vis seneste observation, cache gyldig til, historisk stabilitet og om stationen kan bruges nu.
