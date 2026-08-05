@@ -33,9 +33,12 @@ function stationUsable(station) {
   if (!station?.stationId || !Array.isArray(station.point) || station.point.length !== 2) return false;
   const status = normText(station.registryStatus ?? station.properties?.status);
   if (['retired', 'deleted', 'historical', 'inactive', 'future'].includes(status)) return false;
+  const sourceForecastValid = station.sourceForecastStatus === 'receiving' && Number(station.sourceForecastHours ?? 0) >= 96;
   const cacheValid = station.forecastCacheStatus === 'valid'
     && Number.isFinite(Date.parse(station.forecastCacheValidUntil ?? ''))
     && Date.parse(station.forecastCacheValidUntil) >= Date.now();
+  if (sourceForecastValid) return true;
+  if (station.sourceType === 'forecast-point') return false;
   if (station.hasEverDelivered === false && !cacheValid) return false;
   if (station.deliveryStatus === 'not-delivering' && !cacheValid) return false;
   if (station.overallUsabilityStatus === 'unavailable' && !cacheValid) return false;

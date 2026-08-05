@@ -36,6 +36,7 @@ except ImportError as exc:
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 ZONES_PATH = ROOT / "data/zones.geojson"
+WATER_SOURCES_PATH = ROOT / "data/live/dmi-water-stations.json"
 OUTPUT_PATH = ROOT / "data/live/dmi-bulk-cache.json"
 DIAGNOSTICS_JSON_PATH = ROOT / "data/diagnostics/dmi-ocean-diagnostics.json"
 DIAGNOSTICS_TEXT_PATH = ROOT / "data/diagnostics/dmi-ocean-summary.txt"
@@ -1031,7 +1032,8 @@ def main() -> int:
     progress(f"starter; arbejdsbudget={MAX_RUNTIME_SECONDS - FINALIZE_RESERVE_SECONDS}s, afslutningsreserve={FINALIZE_RESERVE_SECONDS}s")
     cache_before = raw_cache_inventory()
     previous = load_previous()
-    current_zone_registry_signature = hashlib.sha256(ZONES_PATH.read_bytes()).hexdigest()[:16]
+    signature_bytes = ZONES_PATH.read_bytes() + (WATER_SOURCES_PATH.read_bytes() if WATER_SOURCES_PATH.exists() else b'')
+    current_zone_registry_signature = hashlib.sha256(signature_bytes).hexdigest()[:16]
     previous_zone_registry_signature = previous.get("zoneRegistrySignature")
     zone_registry_unchanged = previous_zone_registry_signature == current_zone_registry_signature
     previous_generated = epoch(previous.get("generatedAt"))
@@ -1107,6 +1109,24 @@ def main() -> int:
             continue
         if props.get("id"):
             zones.append({"id": props["id"], "lon": float(lon), "lat": float(lat), "coastType": props.get("coastType") or "east"})
+
+    # Vandstandskilder (målestationer og DMI-prognosepunkter) samples i samme
+    # DKSS-GRIB som zonerne. Dermed får begge kildetyper sammenlignelige
+    # femdøgnsserier uden et stort antal ForecastEDR-kald.
+    if WATER_SOURCES_PATH.exists():
+        try:
+            source_doc = json.loads(WATER_SOURCES_PATH.read_text("utf-8"))
+            zone_points = list(zones)
+            for source in source_doc.get("stations", []):
+                coords = source.get("point")
+                source_key = source.get("sourceKey")
+                if not source_key or not isinstance(coords, list) or len(coords) != 2:
+                    continue
+                lon, lat = float(coords[0]), float(coords[1])
+                nearest = min(zone_points, key=lambda z: (z["lon"]-lon)**2 + (z["lat"]-lat)**2) if zone_points else None
+                zones.append({"id": f"SOURCE::{source_key}", "lon": lon, "lat": lat, "coastType": (nearest or {}).get("coastType", "east"), "waterSource": True})
+        except Exception as exc:
+            print(f"Advarsel: vandstandskilder kunne ikke føjes til bulk-grid: {exc}", file=sys.stderr)
 
     generated = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     result = {"schemaVersion": 2, "generatedAt": generated,

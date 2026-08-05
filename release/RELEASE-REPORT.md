@@ -1,7 +1,7 @@
-# Release-rapport 4.0.98
+# Release-rapport 4.0.100
 
 - Status: **BESTÅET**
-- Kontrolleret: 2026-08-04T09:46:20.687Z
+- Kontrolleret: 2026-08-05T06:07:24.306Z
 - Versionskonsistens: OK
 - Håndbog og RDKS: OK
 - Supabase- og rettighedskæde: OK

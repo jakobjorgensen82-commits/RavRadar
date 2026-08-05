@@ -14,6 +14,7 @@ import {
 import { buildDataQuality } from './lib/data-quality.mjs';
 import { repairWaterLevelContinuity } from './lib/water-level-continuity.mjs';
 import { countDmiBackedZones, createPersistentDmiStore, prioritizeDmiFeatures, summarizeAvailableCoverage } from './lib/dmi-acquisition-state.mjs';
+import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting } from './lib/water-source-forecast-routing.mjs';
 
 const ZONES_PATH = 'data/zones.geojson';
 const OUTPUT_PATH = 'data/live/conditions.json';
@@ -315,7 +316,7 @@ function stationRegistryRecord(station, previous = null, seenAt = new Date().toI
   const properties = { ...(previous?.properties ?? {}), ...(station?.properties ?? {}) };
   const registryStatus = stationEffectiveStatus(properties, Date.parse(seenAt));
   return {
-    ...(previous ?? {}), stationId: String(station.stationId), name: station.name ?? previous?.name ?? 'DMI station', point: station.point ?? previous?.point,
+    ...(previous ?? {}), sourceKey: station.sourceKey ?? previous?.sourceKey ?? `oceanobs:${String(station.stationId)}`, sourceType: station.sourceType ?? previous?.sourceType ?? 'observation-station', sourceTypes: station.sourceTypes ?? previous?.sourceTypes ?? ['observation','forecast'], stationId: String(station.stationId), name: station.name ?? previous?.name ?? 'DMI station', point: station.point ?? previous?.point,
     properties, registryStatus,
     firstSeenAt: previous?.firstSeenAt ?? seenAt, lastSeenAt: seenAt,
     lastActiveSeenAt: registryStatus === 'active' ? seenAt : (previous?.lastActiveSeenAt ?? null),
@@ -371,7 +372,8 @@ function applyStationForecastCacheStatus(stations, forecastStore, generatedAt) {
     const forecastCacheStatus = cacheValid ? 'valid' : validUntil ? 'expired' : 'none';
     const observationUsable = station.deliveryStatus === 'delivering' || station.deliveryStatus === 'temporarily-missing';
     const lifecycleKnown = station.deliveryStatus && station.deliveryStatus !== 'unknown';
-    const overallUsabilityStatus = observationUsable ? 'live-or-recent-observation' : cacheValid ? 'forecast-cache-only' : lifecycleKnown ? 'unavailable' : 'unknown';
+    const sourceForecastUsable = station.sourceForecastStatus === 'receiving' && Number(station.sourceForecastHours ?? 0) >= 96;
+    const overallUsabilityStatus = sourceForecastUsable ? 'forecast-series' : observationUsable ? 'live-or-recent-observation' : cacheValid ? 'forecast-cache-only' : lifecycleKnown ? 'unavailable' : 'unknown';
     return {...station,
       forecastCacheGeneratedAt: cached?.generatedAt ?? station.forecastCacheGeneratedAt ?? null,
       forecastCacheValidUntil: validUntil,
@@ -472,25 +474,26 @@ async function dmiWaterStations() {
       const [cached, officialSupplement] = await Promise.all([readCachedWaterStations(), readOfficialWaterStationSupplement()]);
       try {
         const features = await fetchAllFeatures(`${DMI_OCEAN_OBS_ROOT}/station/items`, {}, { provider: 'DMI oceanObs stations', retries: DMI_MAX_RETRIES, dmi: false }, { pageSize: 1000, maxPages: 20 });
-        const fetched = features.map(feature => ({ stationId: String(feature.properties?.stationId ?? feature.properties?.id ?? ''), name: feature.properties?.name ?? feature.properties?.stationName ?? feature.properties?.countryName ?? 'DMI station', point: feature.geometry?.coordinates, properties: feature.properties ?? {} })).filter(station => station.stationId && Array.isArray(station.point) && station.point.length === 2);
-        const now = new Date().toISOString(), merged = new Map(cached.map(station => [String(station.stationId), station]));
-        for (const station of officialSupplement) if (!merged.has(String(station.stationId))) merged.set(String(station.stationId), stationRegistryRecord(station, null, now));
-        for (const station of fetched) merged.set(String(station.stationId), stationRegistryRecord(station, merged.get(String(station.stationId)), now));
-        const fetchedIds = new Set(fetched.map(item => String(item.stationId)));
-        for (const [id, station] of merged) {
-          if (fetchedIds.has(id)) continue;
-          merged.set(id, { ...station, registryStatus: station.properties?.officialSupplement ? 'official-not-returned-by-oceanobs' : (station.registryStatus === 'active' ? 'not-returned-this-run' : (station.registryStatus ?? 'known')), lastSeenAt: station.lastSeenAt ?? null });
+        const fetched = features.map(feature => ({ sourceKey:`oceanobs:${String(feature.properties?.stationId ?? feature.properties?.id ?? '')}`, sourceType:'observation-station', sourceTypes:['observation','forecast'], stationId: String(feature.properties?.stationId ?? feature.properties?.id ?? ''), name: feature.properties?.name ?? feature.properties?.stationName ?? feature.properties?.countryName ?? 'DMI station', point: feature.geometry?.coordinates, properties: feature.properties ?? {} })).filter(station => station.stationId && Array.isArray(station.point) && station.point.length === 2);
+        const now = new Date().toISOString();
+        const merged = new Map(cached.map(station => [String(station.sourceKey ?? `${station.sourceType==='forecast-point'?'tidewater':'oceanobs'}:${station.stationId}`), station]));
+        for (const station of officialSupplement) {
+          const sourceKey=String(station.sourceKey ?? `tidewater:${station.stationId}`);
+          if (!merged.has(sourceKey)) merged.set(sourceKey, stationRegistryRecord({...station,sourceKey,sourceType:'forecast-point',sourceTypes:['forecast']}, null, now));
+        }
+        for (const station of fetched) merged.set(station.sourceKey, stationRegistryRecord(station, merged.get(station.sourceKey), now));
+        const fetchedKeys = new Set(fetched.map(item => item.sourceKey));
+        for (const [sourceKey, station] of merged) {
+          if (fetchedKeys.has(sourceKey) || station.sourceType === 'forecast-point') continue;
+          merged.set(sourceKey, { ...station, registryStatus: station.registryStatus === 'active' ? 'not-returned-this-run' : (station.registryStatus ?? 'known'), lastSeenAt: station.lastSeenAt ?? null });
         }
         const stations = [...merged.values()].filter(station => station.stationId && Array.isArray(station.point) && station.point.length === 2);
-        const cachedIds = new Set(cached.map(station => String(station.stationId)));
-        const newStationNotifications = stations.filter(station => !cachedIds.has(String(station.stationId))).map(station => stationEvent('station-discovered', station, now, { message: `${station.name} er ny i RavRadars stationsregister. Den bruges ikke automatisk, før den har leveret en brugbar måling.` }));
-        const previousNotifications = await fs.readFile(WATER_STATION_INVENTORY_PATH, 'utf8').then(JSON.parse).then(doc => doc.notifications ?? []).catch(() => []);
-        const notifications = [...newStationNotifications, ...previousNotifications].slice(0, 250);
-        await fs.mkdir('data/live', { recursive: true });
-        await fs.writeFile(WATER_STATION_INVENTORY_PATH, JSON.stringify({ schemaVersion: 3, generatedAt: now, source: 'persistent-merged-dmi-oceanobs-and-official-station-registry', fetchedStationCount: fetched.length, fetchedActiveCount: stations.filter(station => station.registryStatus === 'active').length, retainedKnownCount: Math.max(0, stations.length - fetched.length), stations, notifications }, null, 2));
+        const cachedKeys = new Set(cached.map(station => String(station.sourceKey ?? `${station.sourceType==='forecast-point'?'tidewater':'oceanobs'}:${station.stationId}`)));
+        const newStationNotifications = stations.filter(station => !cachedKeys.has(String(station.sourceKey))).map(station => stationEvent('station-discovered', station, now, { message: `${station.name} er ny i RavRadars vandstandskilderegister.` }));
+        if (newStationNotifications.length) console.log(`${newStationNotifications.length} nye vandstandskilder opdaget.`);
         return stations;
       } catch (error) {
-        if (cached.length) { console.warn(`DMI stationsregister kunne ikke opdateres; bruger ${cached.length} persistente stationer`); return cached; }
+        if (cached.length) { console.warn(`DMI stationsregister kunne ikke opdateres; bruger ${cached.length} persistente vandstandskilder`); return cached; }
         throw error;
       }
     })();
@@ -747,7 +750,7 @@ async function writeWaterStationRoutingAudit(features, stations, generatedAt) {
     const point = zonePoint(feature), recommendation = recommendWaterStationBracket({ zoneId: feature.properties?.id, zoneName: feature.properties?.name, point, coastLine: featureCoastLine(feature), onshoreDirectionDeg: feature.properties?.onshoreDirectionDeg, stations, haversineKm });
     counts.totalZones += 1; counts[recommendation.completeBracket ? 'completeBracket' : 'incompleteBracket'] += 1;
     if (!recommendation.candidates.length) counts.noCandidates += 1; if (recommendation.ruleId) counts.namedRules += 1;
-    zones[feature.properties?.id] = { zoneName: feature.properties?.name, method: recommendation.method, ruleId: recommendation.ruleId ?? null, completeBracket: recommendation.completeBracket, reason: recommendation.reason, stations: recommendation.stations.map(item => ({ stationId:item.stationId,name:item.name,role:item.role,distanceKm:round(item.distanceKm,1),alongCoastKm:round(item.alongKm,1),crossCoastKm:round(item.crossKm,1),weight:round(item.weight,3),registryStatus:item.registryStatus??item.properties?.status??null })), candidates: recommendation.candidates.map(item => ({ stationId:item.stationId,name:item.name,distanceKm:round(item.distanceKm,1),alongCoastKm:round(item.alongKm,1),crossCoastKm:round(item.crossKm,1),registryStatus:item.registryStatus??item.properties?.status??null })) };
+    zones[feature.properties?.id] = { zoneName: feature.properties?.name, method: recommendation.method, ruleId: recommendation.ruleId ?? null, completeBracket: recommendation.completeBracket, reason: recommendation.reason, stations: recommendation.stations.map(item => ({ sourceKey:item.sourceKey??null,stationId:item.stationId,name:item.name,role:item.role,distanceKm:round(item.distanceKm,1),alongCoastKm:round(item.alongKm,1),crossCoastKm:round(item.crossKm,1),weight:round(item.weight,3),registryStatus:item.registryStatus??item.properties?.status??null })), candidates: recommendation.candidates.map(item => ({ sourceKey:item.sourceKey??null,stationId:item.stationId,name:item.name,distanceKm:round(item.distanceKm,1),alongCoastKm:round(item.alongKm,1),crossCoastKm:round(item.crossKm,1),registryStatus:item.registryStatus??item.properties?.status??null })) };
   }
   const doc = { schemaVersion: 2, generatedAt, description: 'Automatisk topologiaudit: stationer skal indramme zonen fra modsatte sider langs den lokale kystlinje.', stationInventoryCount: stations.length, counts, zones };
   await fs.writeFile(WATER_STATION_ROUTING_AUDIT_PATH, `${JSON.stringify(doc,null,2)}\n`);
@@ -1839,16 +1842,20 @@ nextDmiForecastStore.coverage = summarizeAvailableCoverage(nextDmiForecastStore.
 nextDmiForecastStore.dataQuality = summarizeDmiComponentCoverage(nextDmiForecastStore.zones, generatedAt);
 output.weatherEngine.dmiForecastCache = { ...nextDmiForecastStore.coverage, ...nextDmiForecastStore.dataQuality };
 const rawStationRegistry = await dmiWaterStations().catch(() => readCachedWaterStations());
+const waterSourceForecastIndex = buildWaterSourceForecastIndex(rawStationRegistry, dmiBulkCache, generatedAt);
+const forecastAwareRegistry = applyWaterSourceForecastStatus(rawStationRegistry, waterSourceForecastIndex, generatedAt, { minimumHours: 96 });
 const qualityLevels = dmiObservationSkipReason ? await cachedStationLevels(generatedAt) : await dmiLatestSeaLevels().catch(() => new Map());
 const observationResultUsable = !dmiObservationSkipReason && dmiSeaLevelObservationRun.succeeded && dmiSeaLevelObservationRun.validLevelCount > 0;
-const stationLifecycle = await updateStationObservationLifecycle(rawStationRegistry, qualityLevels, generatedAt, { observationAttempted: observationResultUsable, forecastStore: nextDmiForecastStore });
+const stationLifecycle = await updateStationObservationLifecycle(forecastAwareRegistry, qualityLevels, generatedAt, { observationAttempted: observationResultUsable, forecastStore: nextDmiForecastStore });
 const stationRegistry = stationLifecycle.stations;
-const stationRoutingAudit = await writeWaterStationRoutingAudit(features, stationRegistry.filter(station => station.overallUsabilityStatus !== 'unavailable'), generatedAt);
+const activeWaterRouting = await waterStationRouting();
+const waterSourceApplication = applyWaterSourceRouting({ features, output, forecastStore: nextDmiForecastStore, sources: stationRegistry, index: waterSourceForecastIndex, routing: activeWaterRouting, haversineKm, generatedAt });
+const stationRoutingAudit = await writeWaterStationRoutingAudit(features, stationRegistry.filter(station => station.routingEligible || station.overallUsabilityStatus !== 'unavailable'), generatedAt);
 const qualityStations = stationRegistry;
 for (const zone of Object.values(output.zones)) enrichZoneSources(zone, generatedAt);
 const freshObservationCount = [...qualityLevels.values()].filter(level => !level?.cacheSource).length;
 output.dataQuality = buildDataQuality(output, { stationsFetched: qualityStations.length, stationsWithFreshLevel: freshObservationCount });
-output.dataQuality.stationRouting = stationRoutingAudit.counts;
+output.dataQuality.stationRouting = { ...stationRoutingAudit.counts, productionApplication: waterSourceApplication.audit };
 output.dataQuality.stationLifecycle = stationLifecycle.document.summary;
 output.dataQuality.stationNotifications = stationLifecycle.notifications;
 dmiPersistentRuntime.observations ??= {};

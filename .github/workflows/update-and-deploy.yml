@@ -106,6 +106,12 @@ jobs:
         if: steps.preflight.outputs.should_run == 'true' && (github.event_name == 'push' || inputs.force == true)
         run: npm run release:gate
 
+      - name: Refresh DMI water-source registry
+        if: steps.preflight.outputs.should_run == 'true'
+        run: node scripts/update-water-source-registry.mjs
+        env:
+          WEATHER_USER_AGENT: "RavRadar water-source registry (${{ github.server_url }}/${{ github.repository }})"
+
       - name: Install DMI GRIB reader (eccodes)
         if: steps.preflight.outputs.should_run == 'true'
         run: python -m pip install --disable-pip-version-check -r requirements-dmi.txt

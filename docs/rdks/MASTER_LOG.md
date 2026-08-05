@@ -279,3 +279,10 @@ GitHub-kørslen efter sletning af DK-B02-14 fejlede, fordi `validate-data.mjs` s
 - API-/netværksfejl tæller ikke længere som en manglende leveringskørsel for alle stationer.
 - Stationscache kan nu dokumenteres direkte fra seneste reelle observation plus den konfigurerede cacheperiode.
 - STAC/GRIB-modelprognosen, RavScore og den kanoniske strømvektorkæde er ikke ændret.
+
+## 4.0.100 – fælles vandstandskilder
+- Brugerbeslutning: både fysiske målestationer og DMI-prognosepunkter må bruges som vandstandskilder, når de har en gyldig femdøgnsprognose.
+- Implementeret kildeklassifikation: `observation-station` og `forecast-point`.
+- Begge typer samples i samme DKSS STAC/GRIB-model ved kildens koordinat, så serierne er sammenlignelige og indeholder meteorologisk/oceanografisk totalvandstand, ikke kun astronomisk tidevand.
+- Administratoroverride har prioritet; ellers automatisk topologisk routing. Ved to kilder anvendes inverse afstandsvægte.
+- Den resulterende serie forplanter sig til aktuel vandstand, RavScore, ranglister, femdøgnsprognose og time-for-time-tabellen.

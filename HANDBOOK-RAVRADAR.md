@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.99
+**Håndbogsversion:** 4.0.100
 
 **Opdateret:** 1. august 2026
 
@@ -1207,3 +1207,7 @@ Når ejeren aktiverer en regel i administrationen, gemmes den centralt. Ved næs
 Den offentlige side læser ikke længere ejerens lokale browserlager. Det betyder, at to brugere ikke kan få forskellige RavScore-resultater, blot fordi den ene browser tidligere har været brugt til administration. Alle brugere anvender samme versionerede regelsæt.
 
 Rå centrale adminfiler indeholder arbejdsmateriale og må ikke publiceres på GitHub Pages. Kun den sanitiserede liste over aktive regler bliver offentlig, fordi den er nødvendig for at beregne og forklare den fælles RavScore.
+
+
+## Vandstandskilder: målestationer og prognosepunkter
+RavRadar kan bruge både fysiske DMI-målestationer og DMI-prognosepunkter. En målestation viser observationsstatus. Et prognosepunkt viser i stedet, om det modtager en gyldig femdøgnsprognose. Begge typer samples i samme DKSS-model ved kildens koordinat, så de kan sammenlignes og afstandsvægtes. Administratorens aktive valg bruges før systemets automatiske valg. Den valgte serie bruges både i RavScore, ranglister, femdøgnsvisningen og tabellen “Næste fem dage – Vandstand time for time”.

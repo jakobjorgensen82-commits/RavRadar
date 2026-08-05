@@ -14,7 +14,8 @@ assert.match(store, /localStorage/);
 
 // Stationsregisteret går nu gennem den persistente livscyklus, før det bruges.
 assert.match(update, /const rawStationRegistry\s*=\s*await dmiWaterStations\(\)\.catch\(\(\)\s*=>\s*readCachedWaterStations\(\)\)/);
-assert.match(update, /const stationLifecycle\s*=\s*await updateStationObservationLifecycle\(rawStationRegistry,/);
+assert.match(update, /const forecastAwareRegistry\s*=\s*applyWaterSourceForecastStatus\(rawStationRegistry,/);
+assert.match(update, /const stationLifecycle\s*=\s*await updateStationObservationLifecycle\(forecastAwareRegistry,/);
 assert.match(update, /const stationRegistry\s*=\s*stationLifecycle\.stations/);
 assert.match(update, /output\.dataQuality\.stationLifecycle\s*=\s*stationLifecycle\.document\.summary/);
 assert.match(update, /output\.dataQuality\.stationNotifications\s*=\s*stationLifecycle\.notifications/);

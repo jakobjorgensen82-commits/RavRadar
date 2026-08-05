@@ -157,3 +157,11 @@ Status: Implementeret og lokalt valideret.
 - Upload til Supabase fletter livscyklusfelter ikke-destruktivt, så nyere men informationsfattigere filer ikke sletter kendt historik.
 - Kortets eksisterende farvekontrakt er bevaret: grøn automatisk, rød administrator, lilla begge, grå udfaset, orange øvrig.
 - DMI-prognoser, vandstandsværdier, RavScore og offentlig runtime er ikke ændret.
+
+## 4.0.100
+- [x] Målestationer og prognosepunkter klassificeres særskilt.
+- [x] Tidewaterstations-registeret indlæses som prognosepunkter.
+- [x] Begge kildetyper får DKSS-femdøgnsserier via STAC/GRIB ved deres koordinater.
+- [x] Adminoverride og automatisk routing bruger samme produktionskæde.
+- [x] Afstandsinterpoleret kildeserie forplantes til aktuel vandstand, RavScore, ranglister, femdøgnsprognose og time-for-time-vandstandstabel.
+- [ ] Produktionens første fulde bulk-kørsel skal verificere Hals-kildernes faktiske horisont og markering.
