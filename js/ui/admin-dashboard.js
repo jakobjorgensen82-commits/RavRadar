@@ -1,21 +1,21 @@
-import { evaluateRules } from '../core/rule-engine.js?v=4.0.104';
-import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.104';
-import { historicalSummary } from '../services/historical-analysis.js?v=4.0.104';
-import { loadAdaptiveModel, applyApprovedSuggestion, recordDecision, decisionHistory, rollbackAdaptiveModel, listAdaptiveModelVersions, activateAdaptiveModelVersion } from '../core/adaptive-model.js?v=4.0.104';
-import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.104';
-import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.104';
-import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.104';
-import { interpretFreeTextRule } from '../core/free-text-rule-assistant.js?v=4.0.104';
-import { listProfiles, savePermissions, PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.104';
-import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js?v=4.0.104';
-import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.104';
-import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.104';
-import { GEOGRAPHIC_AREAS, matchingZoneIds } from '../core/geographic-areas.js?v=4.0.104';
-import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.104';
-import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.104';
-import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.104';
+import { evaluateRules } from '../core/rule-engine.js?v=4.0.105';
+import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.105';
+import { historicalSummary } from '../services/historical-analysis.js?v=4.0.105';
+import { loadAdaptiveModel, applyApprovedSuggestion, recordDecision, decisionHistory, rollbackAdaptiveModel, listAdaptiveModelVersions, activateAdaptiveModelVersion } from '../core/adaptive-model.js?v=4.0.105';
+import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.105';
+import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.105';
+import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.105';
+import { interpretFreeTextRule } from '../core/free-text-rule-assistant.js?v=4.0.105';
+import { listProfiles, savePermissions, PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.105';
+import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js?v=4.0.105';
+import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.105';
+import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.105';
+import { GEOGRAPHIC_AREAS, matchingZoneIds } from '../core/geographic-areas.js?v=4.0.105';
+import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.105';
+import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.105';
+import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.105';
 
-const VERSION='4.0.104';
+const VERSION='4.0.105';
 const SITE_TEST_MODE=new URLSearchParams(location.search).has('ravradarAdminSiteTest');
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
@@ -27,7 +27,7 @@ const getJson=async url=>{const r=await fetch(url,{cache:'no-store'});if(!r.ok)t
 const download=(name,data)=>{const blob=new Blob([typeof data==='string'?data:JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),0);};
 
 
-const state={access:null,connection:null,storageHealth:null,waterStations:[],stationRoutingAudit:null,waterRouting:{schemaVersion:1,zones:{}},stationMap:null,selectedRoutingZoneId:null,tab:'dashboard',rules:[],zones:[],zoneCollection:{type:'FeatureCollection',features:[]},zoneRegistry:{counts:{registered:0,active:0,legacy:0}},coastlineDrafts:{schemaVersion:2,overrides:{}},selectedCoastlineZoneId:null,conditions:{zones:{}},health:null,runtime:null,oceanDiagnostics:null,cacheAudit:null,implementationAudit:null,editingId:null,profiles:[]};
+const state={access:null,connection:null,storageHealth:null,waterStations:[],waterStationsLoading:true,waterStationsReady:false,waterStationsError:null,stationRoutingAudit:null,waterRouting:{schemaVersion:1,zones:{}},stationMap:null,selectedRoutingZoneId:null,tab:'dashboard',rules:[],zones:[],zoneCollection:{type:'FeatureCollection',features:[]},zoneRegistry:{counts:{registered:0,active:0,legacy:0}},coastlineDrafts:{schemaVersion:2,overrides:{}},selectedCoastlineZoneId:null,conditions:{zones:{}},health:null,runtime:null,oceanDiagnostics:null,cacheAudit:null,implementationAudit:null,editingId:null,profiles:[]};
 const content=document.querySelector('#adminContent');
 const ruleDialog=document.querySelector('#ruleDialog');
 const testDialog=document.querySelector('#testDialog');
@@ -38,29 +38,58 @@ function history(){try{return JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]'
 function addHistory(action,rule){const rows=history();rows.unshift({at:new Date().toISOString(),action,rule:structuredClone(rule)});const trimmed=rows.slice(0,500);localStorage.setItem(HISTORY_KEY,JSON.stringify(trimmed));queueAdminDocumentSave('rule-history',{schemaVersion:1,entries:trimmed,updatedAt:new Date().toISOString()});}
 function uid(){return `admin-${Date.now()}-${Math.random().toString(36).slice(2,7)}`}
 
+async function loadPriorityWaterStationAdminData(){
+ state.waterStationsLoading=true;state.waterStationsReady=false;state.waterStationsError=null;
+ if(state.tab==='waterStations')render();
+ try{
+  const [zoneRegistry,stationInventory,stationRouting]=await Promise.all([
+   loadZoneRegistry({forceRefresh:true}).catch(()=>({all:[],active:[],legacy:[],counts:{registered:0,active:0,legacy:0},collection:{type:'FeatureCollection',features:[]}})),
+   loadAdminDocument('dmi-water-stations',{stations:[]}).catch(()=>({stations:[]})),
+   getJson('./data/water-level-station-routing.json').catch(()=>({schemaVersion:1,zones:{}}))
+  ]);
+  const centralRouting=await loadAdminDocument('water-level-station-routing',stationRouting);
+  state.zoneRegistry=zoneRegistry;state.zones=zoneRegistry.active||[];state.zoneCollection=zoneRegistry.collection||{type:'FeatureCollection',features:zoneRegistry.all||[]};
+  state.waterStations=stationInventory.stations||[];state.waterRouting=centralRouting?.zones?centralRouting:{schemaVersion:1,zones:{}};
+  localStorage.setItem(WATER_ROUTING_KEY,JSON.stringify(state.waterRouting));
+  state.waterStationsReady=true;state.waterStationsLoading=false;
+  if(state.tab==='waterStations')render();
+  window.dispatchEvent(new CustomEvent('ravradar:water-stations-ready',{detail:{stations:state.waterStations.length,zones:state.zones.length}}));
+ }catch(error){
+  state.waterStationsLoading=false;state.waterStationsReady=false;state.waterStationsError=error;
+  if(state.tab==='waterStations')render();
+  throw error;
+ }
+}
+
 async function boot(){
  if(!authEnabled()||!currentSession()?.access_token){location.replace('./');return;}
  const gate=document.querySelector('.admin-auth-gate');
  const stage=text=>{if(gate)gate.innerHTML=`<div class="auth-stage"><b>${esc(text)}</b><small>Din eksisterende Supabase-opsætning ændres ikke.</small></div>`;};
  const fail=error=>{if(gate)gate.innerHTML=`<div class="auth-error"><h2>Administration kunne ikke åbnes</h2><p>${esc(error.message)}</p><div class="toolbar"><button id="retryAdminAuth" class="admin-button">Prøv igen</button><a class="admin-button secondary" href="./">Til kortet</a></div><details><summary>Teknisk kontrol</summary><p>Fejlen opstod under sikker kontrol af session, profil eller rettigheder. Ingen nøgler eller Supabase-indstillinger er ændret.</p></details></div>`;document.querySelector('#retryAdminAuth')?.addEventListener('click',()=>location.reload());};
- try{stage('Kontrollerer Supabase-session…');await requireFreshSession();stage('Henter profil og rettigheder…');state.access=await myAccess();if(!hasPermission(state.access,'admin_access'))throw new Error('Din konto har ikke adgang til administrationen.');stage('Starter administration…');document.body.classList.remove('admin-locked');document.body.classList.add('admin-unlocked');
-  // Vis et reelt dashboard straks efter godkendt adgang. Datafelterne opdateres igen,
-  // når de asynkrone kilder er færdige, så Oversigt aldrig starter som en tom fane.
-  render();
+ try{stage('Kontrollerer Supabase-session…');await requireFreshSession();stage('Henter profil og rettigheder…');state.access=await myAccess();if(!hasPermission(state.access,'admin_access'))throw new Error('Din konto har ikke adgang til administrationen.');stage('Starter administration…');document.body.classList.remove('admin-locked');document.body.classList.add('admin-unlocked');applyTabPermissions();render();
  }catch(error){console.error('Admin adgangskontrol fejlede',error);fail(error);return;}
- state.connection=await testConnection();
+
+ // Vandstandskilder og den centrale routing indlæses i deres egen prioriterede kæde.
+ // Ingen diagnose-, regel- eller historikkald må forsinke eller senere overskrive denne tilstand.
+ const waterPriority=loadPriorityWaterStationAdminData().catch(error=>{console.error('Prioriteret vandstandsindlæsning fejlede',error);return null;});
+ const connectionPromise=testConnection().catch(error=>({ok:false,error:error.message}));
+ const storageHealthPromise=adminStorageHealth().catch(error=>({ok:false,error:error.message,documents:{}}));
+
+ state.connection=await connectionPromise;
  const headerConnection=document.querySelector('#adminSupabaseHeader');if(headerConnection){headerConnection.textContent=state.connection.ok?'Supabase tilsluttet':'Supabase fejl';headerConnection.classList.toggle('ok',state.connection.ok);headerConnection.classList.toggle('bad',!state.connection.ok);}
- state.storageHealth=await adminStorageHealth();
- applyTabPermissions();
- const [zoneRegistry,conditions,health,runtime,stationInventory,stationRouting,stationRoutingAudit,oceanDiagnostics,cacheAudit,implementationAudit,...files]=await Promise.all([
-  loadZoneRegistry({forceRefresh:true}).catch(()=>({all:[],active:[],legacy:[],counts:{registered:0,active:0,legacy:0}})),getJson('./data/live/conditions.json').catch(()=>({zones:{}})),loadAdminDocument('weather-health',null).catch(()=>null),loadAdminDocument('runtime-diagnostics',null).catch(()=>null),loadAdminDocument('dmi-water-stations',{stations:[]}).catch(()=>({stations:[]})),getJson('./data/water-level-station-routing.json').catch(()=>({schemaVersion:1,zones:{}})),loadAdminDocument('water-station-routing-audit',null).catch(()=>null),loadAdminDocument('ocean-diagnostics',null).catch(()=>null),loadAdminDocument('cache-audit',null).catch(()=>null),loadAdminDocument('implementation-audit',null).catch(()=>null),
+ state.storageHealth=await storageHealthPromise;
+ await waterPriority;
+
+ const [conditions,health,runtime,stationRoutingAudit,oceanDiagnostics,cacheAudit,implementationAudit,...files]=await Promise.all([
+  getJson('./data/live/conditions.json').catch(()=>({zones:{}})),loadAdminDocument('weather-health',null).catch(()=>null),loadAdminDocument('runtime-diagnostics',null).catch(()=>null),loadAdminDocument('water-station-routing-audit',null).catch(()=>null),loadAdminDocument('ocean-diagnostics',null).catch(()=>null),loadAdminDocument('cache-audit',null).catch(()=>null),loadAdminDocument('implementation-audit',null).catch(()=>null),
   getJson('./rules/national-rules.json').catch(()=>({rules:[]})),getJson('./rules/local-rules.json').catch(()=>({rules:[]})),getJson('./rules/experimental-rules.json').catch(()=>({rules:[]}))]);
- state.zoneRegistry=zoneRegistry;state.zones=zoneRegistry.active||[];state.zoneCollection=zoneRegistry.collection||{type:'FeatureCollection',features:zoneRegistry.all||[]};state.conditions=conditions;state.health=health;state.runtime=runtime;state.stationRoutingAudit=stationRoutingAudit;state.oceanDiagnostics=oceanDiagnostics;state.cacheAudit=cacheAudit;state.implementationAudit=implementationAudit;state.waterStations=stationInventory.stations||[];state.waterRouting=await loadAdminDocument('water-level-station-routing',stationRouting);localStorage.setItem(WATER_ROUTING_KEY,JSON.stringify(state.waterRouting));const remoteRules=await loadAdminDocument('rules',{rules:adminRules()});if(Array.isArray(remoteRules?.rules)){localStorage.setItem(RULES_KEY,JSON.stringify(remoteRules.rules));}const remoteReviews=await loadAdminDocument('direction-reviews',{zones:directionReviews()});if(remoteReviews?.zones)localStorage.setItem(DIRECTION_REVIEW_KEY,JSON.stringify(remoteReviews.zones));const remoteHistory=await loadAdminDocument('rule-history',{entries:history()});if(Array.isArray(remoteHistory?.entries))localStorage.setItem(HISTORY_KEY,JSON.stringify(remoteHistory.entries));const localCoastlineDrafts=(()=>{try{return JSON.parse(localStorage.getItem(COASTLINE_DRAFT_KEY)||'{"schemaVersion":1,"overrides":{}}')}catch{return{schemaVersion:1,overrides:{}}}})();state.coastlineDrafts=await loadAdminDocument('coastline-overrides',localCoastlineDrafts);if(!state.coastlineDrafts?.overrides)state.coastlineDrafts={schemaVersion:1,overrides:{}};localStorage.setItem(COASTLINE_DRAFT_KEY,JSON.stringify(state.coastlineDrafts));
- const shipped=files.flatMap(f=>f.rules||[]).map(r=>({...r,_origin:'projekt'}));
- state.rules=[...shipped,...adminRules().map(r=>({...r,_origin:'admin'}))];
- render();
- document.body.dataset.adminReady='true';
- window.dispatchEvent(new CustomEvent('ravradar:admin-ready',{detail:{version:VERSION,tab:state.tab}}));
+ state.conditions=conditions;state.health=health;state.runtime=runtime;state.stationRoutingAudit=stationRoutingAudit;state.oceanDiagnostics=oceanDiagnostics;state.cacheAudit=cacheAudit;state.implementationAudit=implementationAudit;
+ const remoteRules=await loadAdminDocument('rules',{rules:adminRules()});if(Array.isArray(remoteRules?.rules)){localStorage.setItem(RULES_KEY,JSON.stringify(remoteRules.rules));}
+ const remoteReviews=await loadAdminDocument('direction-reviews',{zones:directionReviews()});if(remoteReviews?.zones)localStorage.setItem(DIRECTION_REVIEW_KEY,JSON.stringify(remoteReviews.zones));
+ const remoteHistory=await loadAdminDocument('rule-history',{entries:history()});if(Array.isArray(remoteHistory?.entries))localStorage.setItem(HISTORY_KEY,JSON.stringify(remoteHistory.entries));
+ const localCoastlineDrafts=(()=>{try{return JSON.parse(localStorage.getItem(COASTLINE_DRAFT_KEY)||'{"schemaVersion":1,"overrides":{}}')}catch{return{schemaVersion:1,overrides:{}}}})();state.coastlineDrafts=await loadAdminDocument('coastline-overrides',localCoastlineDrafts);if(!state.coastlineDrafts?.overrides)state.coastlineDrafts={schemaVersion:1,overrides:{}};localStorage.setItem(COASTLINE_DRAFT_KEY,JSON.stringify(state.coastlineDrafts));
+ const shipped=files.flatMap(f=>f.rules||[]).map(r=>({...r,_origin:'projekt'}));state.rules=[...shipped,...adminRules().map(r=>({...r,_origin:'admin'}))];
+ render();document.body.dataset.adminReady='true';window.dispatchEvent(new CustomEvent('ravradar:admin-ready',{detail:{version:VERSION,tab:state.tab}}));
 }
 
 
@@ -225,6 +254,12 @@ function automaticStationRecommendation(zoneId){
  return recommendWaterStationBracket({zoneId,zoneName:zone?.properties?.name,point:center,coastLine:zone?.properties?.coastLine,onshoreDirectionDeg:zone?.properties?.onshoreDirectionDeg,stations:state.waterStations,haversineKm:haversineAdmin});
 }
 function renderWaterStations(){
+ if(state.waterStationsLoading||!state.waterStationsReady){
+  const error=state.waterStationsError;
+  content.innerHTML=`<article class="admin-card water-stations-loading"><span class="eyebrow">Prioriteret indlæsning</span><h2>${error?'Vandstandskilder kunne ikke indlæses':'Henter vandstandskilder og administratorvalg…'}</h2><p>${error?esc(error.message):'Zoneregister, DMI-kilder og den centrale Supabase-routing indlæses samlet. Fanen bliver først klikbar, når den viste routing er den endelige aktive tilstand.'}</p>${error?'<button id="retryWaterStations" class="admin-button">Prøv igen</button>':'<div class="loading-bar" aria-label="Indlæser"></div>'}</article>`;
+  document.querySelector('#retryWaterStations')?.addEventListener('click',()=>loadPriorityWaterStationAdminData());
+  return;
+ }
  const zoneId=state.selectedRoutingZoneId||state.zones[0]?.properties?.id;state.selectedRoutingZoneId=zoneId;state.waterRouting.zones??={};const route=state.waterRouting.zones[zoneId]??={enabled:false,method:'inverse-distance',requireAll:true,stations:[]};const automatic=automaticStationRecommendation(zoneId);
  content.innerHTML=`<article class="admin-card"><div class="rule-card-head"><div><h2>Vandstandskilder på kort</h2><p class="muted">Kortet viser den routing, som er aktiv for zonen. Når administratorvalg er slået til, skjules de automatiske markører, og kun administratorens aktive valg vises rødt. Ændringer gemmes automatisk.</p></div><div class="toolbar"><button id="saveWaterRoutingNow" class="admin-button">Gem nu</button><button id="exportWaterRouting" class="admin-button secondary">Eksportér backup</button><button id="resetWaterRouting" class="admin-button secondary">Nulstil lokalt</button></div></div></article><div class="station-routing-layout"><article class="admin-card station-routing-panel"><label>Zone<select id="routingZone">${state.zones.map(z=>`<option value="${esc(z.properties?.id)}" ${z.properties?.id===zoneId?'selected':''}>${esc(z.properties?.name||z.properties?.id)}</option>`).join('')}</select></label><label>Søg DMI-vandstandskilde<input id="stationSearch" placeholder="Navn eller stations-ID, fx Hals"></label><div id="stationSearchResults" class="station-search-results"></div><section class="automatic-station-box"><div class="rule-card-head"><div><h3>RavRadars automatiske valg</h3><p class="hint">${esc(automatic.method)}</p>${automatic.completeBracket===false?`<p class="status-warning"><b>Advarsel:</b> ${esc(automatic.reason||'Stationerne indrammer ikke zonen korrekt.')}</p>`:''}</div><span class="badge active">Standard</span></div><div id="automaticRoutingSelection"></div><details id="automaticCalculation"><summary>Vis automatisk beregning</summary><div id="automaticCandidates"></div></details><button id="useAutomaticAsOverride" class="admin-button secondary" ${automatic.stations.length?'':'disabled'}>Kopiér valget til administratorvalg</button></section><hr><label class="switch-line"><input id="routingEnabled" type="checkbox" ${route.enabled?'checked':''}> Brug administratorvalgte stationer for denne zone</label><div class="override-status ${route.enabled?'enabled':'disabled'}">${route.enabled?'Administratorens valg erstatter automatikken':'Automatikken er aktiv'}</div><label>Metode<select id="routingMethod"><option value="inverse-distance" ${route.method!=='manual-weights'?'selected':''}>Automatiske afstandsvægte</option><option value="manual-weights" ${route.method==='manual-weights'?'selected':''}>Manuelle vægte</option></select></label><label class="switch-line"><input id="routingRequireAll" type="checkbox" ${route.requireAll!==false?'checked':''}> Kræv alle valgte stationer</label><div id="routingSelection"></div><p class="hint">Klik station på kortet for at tilføje. Maksimum to stationer. Manuelle valg anvendes kun, når kontakten ovenfor er aktiv.</p></article><article class="admin-card"><div id="stationRoutingMap" class="station-routing-map"></div><div class="direction-legend"><span><i class="dot sea"></i> Zone</span><span><i class="dot station"></i> Øvrig DMI-kilde</span>${route.enabled?'<span><i class="dot selected-station"></i> Aktivt administratorvalg</span>':'<span><i class="dot automatic-station"></i> Aktivt automatisk valg</span>'}<span><i class="dot retired-station"></i> Udfaset station</span></div></article></div>`;
  const saveControls=()=>{const r=state.waterRouting.zones[zoneId]||(state.waterRouting.zones[zoneId]={stations:[]});r.enabled=document.querySelector('#routingEnabled').checked;r.method=document.querySelector('#routingMethod').value;r.requireAll=document.querySelector('#routingRequireAll').checked;r.reviewed=true;saveWaterRouting();drawSelection();drawMap();};
@@ -336,7 +371,7 @@ function renderObservations(){const obs=JSON.parse(localStorage.getItem('ravrada
 async function renderUsers(){
  content.innerHTML=`<article class="admin-card"><h2>Eksperter og rettigheder</h2><p class="muted">Få, brede tilladelser. Du kan til enhver tid ændre dem igen.</p><div id="profilesList" class="admin-grid"><p class="muted">Henter brugere…</p></div></article>`;
  const host=document.querySelector('#profilesList');
- try{state.profiles=await listProfiles();if(!state.profiles.length){host.innerHTML='<div class="empty">Ingen profiler blev fundet. Kør SQL-opdateringen til 4.0.104 i Supabase én gang.</div>';return;}
+ try{state.profiles=await listProfiles();if(!state.profiles.length){host.innerHTML='<div class="empty">Ingen profiler blev fundet. Kør SQL-opdateringen til 4.0.105 i Supabase én gang.</div>';return;}
  host.innerHTML=state.profiles.map(profile=>{const active=new Set((profile.user_permissions||[]).filter(x=>x.enabled).map(x=>x.permission_key));return `<article class="admin-card permission-card" data-user-id="${esc(profile.id)}"><div class="rule-card-head"><div><h3>${esc(profile.display_name||profile.email)}</h3><p class="muted">${esc(profile.email||'')} · ${esc(profile.role||'expert')}</p></div><span class="badge ${profile.is_active!==false?'active':'draft'}">${profile.is_active!==false?'Aktiv':'Deaktiveret'}</span></div><div class="permission-list">${PERMISSIONS.map(p=>`<label class="permission-option"><input type="checkbox" name="${esc(p.id)}" ${active.has(p.id)||profile.role==='owner'?'checked':''} ${profile.role==='owner'?'disabled':''}><span>${esc(p.label)}</span></label>`).join('')}</div>${profile.role==='owner'?'<p class="hint">Owner har altid alle rettigheder.</p>':'<button class="admin-button save-user-permissions" type="button">Gem rettigheder</button><p class="form-status"></p>'}</article>`}).join('');
  host.querySelectorAll('.save-user-permissions').forEach(button=>button.onclick=async()=>{const card=button.closest('[data-user-id]');const status=card.querySelector('.form-status');const values={};PERMISSIONS.forEach(p=>values[p.id]=card.querySelector(`[name="${p.id}"]`).checked);button.disabled=true;status.textContent='Gemmer…';try{await savePermissions(card.dataset.userId,values);status.textContent='Rettighederne er gemt og gælder med det samme.';}catch(error){status.textContent=error.message;}finally{button.disabled=false;}});
  }catch(error){host.innerHTML=`<div class="empty">${esc(error.message)}</div>`;}

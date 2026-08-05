@@ -313,3 +313,10 @@ GitHub-kørslen efter sletning af DK-B02-14 fejlede, fordi `validate-data.mjs` s
 - Rodårsag 2: Vandstandsroutingens talnormalisering behandlede `null` som `Number(null) = 0`. Manglende DMI-værdier kunne dermed danne en falsk, næsten konstant 0 cm-serie og gøre en tom prognosekilde routingberettiget.
 - Rettelse: Routingpost oprettes direkte i det persistente dokument; `null`, `undefined` og tom streng afvises før numerisk konvertering.
 - Regressionstest beskytter begge runtimekæder.
+
+## 2026-08-05 – 4.0.105 prioriteret vandstandsadmin
+- Produktion viste, at gemte administratorvalg kunne dukke op flere minutter efter fanen, og at “Fjern” kunne være uden varig effekt.
+- Historisk og aktuel kodeanalyse viste, at vandstandsrouting ventede bag hele adminens diagnose-, regel- og historikblok og derefter kunne erstatte den viste tilstand.
+- Zoneregister, DMI-vandstandskilder og central routing har nu deres egen prioriterede kæde. Fanen viser kun indlæsning, indtil denne kæde er komplet.
+- Den langsomme baggrundsinitialisering genindlæser eller overskriver ikke længere vandstandsroutingen.
+- Sitetesten måler nu reel funktionel klarhed for vandstandsfanen, ikke kun at admin til sidst bliver færdig.

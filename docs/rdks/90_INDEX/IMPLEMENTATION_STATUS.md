@@ -195,3 +195,11 @@ Status: Implementeret og lokalt valideret.
 - [x] Tomme prognosekilder kan ikke blive routingberettigede.
 - [x] Samlet regressionstest dækker override og vandstandsserie.
 - [ ] Første deployment skal bekræfte UI og varierede værdier på den offentlige side.
+
+## 4.0.105 – IMPLEMENTERET, kræver produktionsverifikation
+- [x] Vandstandskilder, zoneregister og central administratorrouting indlæses i en separat prioriteret opstartskæde.
+- [x] Vandstandsfanen er ikke klikbar med foreløbige eller tomme data.
+- [x] Langsomme diagnose-, regel-, historik- og reviewkald kan ikke længere forsinke eller efterfølgende overskrive vandstandsroutingen.
+- [x] Sitetesten åbner vandstandsfanen tidligt og måler, hvornår zonevalg, kort og administratoroverride faktisk er klar.
+- [x] Eksisterende DMI-data, automatiske valg, manuel override, interpolation, vandstandsprognose, RavScore og offentlig runtime er uændret.
+- [ ] Første deployment skal bekræfte, at gemte røde valg og Fjern-knappen er tilgængelige hurtigt og reagerer uden senere overskrivning.

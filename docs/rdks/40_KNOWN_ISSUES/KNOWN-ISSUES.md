@@ -52,3 +52,8 @@ Pages-buildet udelukker nu både `_support/` og support-ZIP. Automatisk routing 
 Status: **LØST, AFVENTER PRODUKTIONSVERIFIKATION**
 
 Første valg i en zone uden routingpost blev tidligere foretaget i et løsrevet midlertidigt objekt. Samtidig kunne manglende prognoseværdier (`null`) blive konverteret til 0 og skabe en falsk nulserie. Begge rodårsager er rettet og dækket af regressionstest. Første GitHub-kørsel skal bekræfte varierede femdøgnsværdier og rødt aktivt administratorvalg i produktionen.
+
+## Løst i 4.0.105 – forsinkede administratorvalg og døde knapper
+**Status:** LØST I KODE, AFVENTER PRODUKTIONSBEKRÆFTELSE
+
+Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central routing stadig ventede bag en stor samlet admininitialisering. Når Supabase-data senere ankom, blev tilstanden og DOM'en erstattet, så røde valg kom flere minutter for sent, og et klik på “Fjern” kunne blive overskrevet. 4.0.105 indlæser de tre nødvendige vandstandsdele først og holder fanen ikke-klikbar, indtil den endelige centrale routing er klar.

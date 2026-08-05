@@ -81,3 +81,8 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - `null`, `undefined` og tomme DMI-værdier må aldrig normaliseres til fysisk 0 cm.
 - En vandstandskilde må kun være routingberettiget, når den indeholder en reel, tilstrækkelig femdøgnsserie.
 - Første klik på en vandstandskilde i en zone uden tidligere routing skal straks oprette zonens routingpost, aktivere override, vise valget rødt og gøre det centralt gemmeligt.
+
+## Vandstandsadmin – prioriteret og atomisk initialisering
+- **REQ-WATER-ADMIN-INIT-001 – IMPLEMENTERET I 4.0.105:** Vandstandsfanen må først være klikbar, når zoner, vandstandskilder og central routing er indlæst som én sammenhængende tilstand.
+- **REQ-WATER-ADMIN-INIT-002 – IMPLEMENTERET I 4.0.105:** Øvrige admin- og diagnosekald må ikke blokere eller senere overskrive brugerens aktive vandstandsrouting.
+- **REQ-MAP-ARROWS-ZOOM-001 – AKTIV, IKKE IMPLEMENTERET:** Ved indzoomning skal kortet vise mærkbart flere verificerede vind- og strømpile, når flere faktiske DMI-gitterpunkter findes i udsnittet. Pilene må ikke flyttes eller kunstigt kopieres, og ændringen må ikke påvirke DMI-data eller RavScore.
