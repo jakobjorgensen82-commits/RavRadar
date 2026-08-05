@@ -63,12 +63,6 @@ jobs:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           WEATHER_USER_AGENT: "RavRadar/4.0.29 (${{ github.server_url }}/${{ github.repository }})"
 
-      - name: Attach scientific current provenance after hydration
-        run: npm run build:current-provenance
-
-      - name: Rebuild deterministic public weather runtime after hydration
-        run: node scripts/generate-public-conditions.mjs
-
       - name: Test Supabase persistence roundtrip
         if: github.event_name == 'push' || inputs.force == true
         run: node scripts/test-supabase-persistence.mjs
@@ -97,14 +91,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-
-      - name: Validate full project on source changes or forced runs
-        if: steps.preflight.outputs.should_run == 'true' && (github.event_name == 'push' || inputs.force == true)
-        run: npm run validate
-
-      - name: Run release governance gate
-        if: steps.preflight.outputs.should_run == 'true' && (github.event_name == 'push' || inputs.force == true)
-        run: npm run release:gate
 
       - name: Refresh DMI water-source registry
         if: steps.preflight.outputs.should_run == 'true'
@@ -199,6 +185,14 @@ jobs:
       - name: Rebuild deterministic public weather runtime before validation and deploy
         if: steps.preflight.outputs.should_run == 'true'
         run: node scripts/generate-public-conditions.mjs
+
+      - name: Validate full project after fresh weather and current provenance
+        if: steps.preflight.outputs.should_run == 'true' && (github.event_name == 'push' || inputs.force == true)
+        run: npm run validate
+
+      - name: Run release governance gate after refreshed data validation
+        if: steps.preflight.outputs.should_run == 'true' && (github.event_name == 'push' || inputs.force == true)
+        run: npm run release:gate
 
       - name: Validate updated weather cache
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'

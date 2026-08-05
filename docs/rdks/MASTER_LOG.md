@@ -326,3 +326,9 @@ Konsollen dokumenterede QuotaExceededError ved både `ravradar-admin-document:wa
 
 ## 2026-08-05 – 4.0.107
 Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler nu faktiske DMI-strømvektorer, alignment mod zonens aktuelle retningsankre, vindretning og vandstand og beregner indtransportmomentum, udtransporttryk, stærke energihændelser, mobiliseringspotentiale, nærkystpotentiale og procesfase. Ingen generelle strømbånd anvendes. Rå historik holdes væk fra public runtime. Ejer har samtidig produktionsbekræftet 4.0.106-rettelsen af røde vandstationsmarkører, override og Fjern.
+
+## 4.0.108 – workflow-validering efter frisk DMI-proveniens
+- Rodårsag: 4.0.107 validerede det hydrerede gamle datasæt før frisk DMI-opdatering. Strømauditten fandt derfor 0 direkte verificerede u/v-timer og stoppede push-workflowet.
+- Rettelse: rækkefølgen er nu hydration → preflight → DMI/vejr → u/v-proveniens → public runtime → fuld validering → release gate → deploy.
+- Regressionstest: `scripts/test-workflow-validation-order-4.0.108.mjs`.
+- Ingen ændring af RavScore, skyggetilstandsmodel, offentlig load eller vandstationsfunktionalitet.
