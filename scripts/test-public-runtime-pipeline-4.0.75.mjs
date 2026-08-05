@@ -12,7 +12,12 @@ if(manifest.publicConditionsBytes!==Buffer.byteLength(publicText)) throw new Err
 if(manifest.conditionsPath!=='./public-conditions.json') throw new Error('Manifestet peger ikke på public runtime.');
 const workflow=await fs.readFile('.github/workflows/update-and-deploy.yml','utf8');
 const occurrences=(workflow.match(/node scripts\/generate-public-conditions\.mjs/g)||[]).length;
-if(occurrences<2) throw new Error('Workflowet genopbygger ikke public runtime både efter hydrering og før deploy.');
+if(occurrences!==1) throw new Error(`Workflowet skal genopbygge public runtime præcis én gang efter frisk vejr/proveniens; fandt ${occurrences}.`);
+const runtimeIndex=workflow.indexOf('name: Rebuild deterministic public weather runtime before validation and deploy');
+const weatherIndex=workflow.indexOf('name: Update central weather cache');
+const provenanceIndex=workflow.indexOf('name: Attach scientific current provenance and exact DMI grid points');
+const validateIndex=workflow.indexOf('name: Validate full project after fresh weather and current provenance');
+if(!(weatherIndex<provenanceIndex && provenanceIndex<runtimeIndex && runtimeIndex<validateIndex)) throw new Error('Public runtime bygges ikke i den sikre rækkefølge efter frisk vejr og proveniens, men før validering.');
 const updater=await fs.readFile('scripts/update-weather.mjs','utf8');
 if(!updater.includes('writePublicRuntimeFromFull(output)')) throw new Error('Vejropdateringen bruger ikke den fælles runtime-writer.');
 if(updater.includes('buildPublicConditions(output)')) throw new Error('Vejropdateringen har stadig en separat projektionsvej.');
