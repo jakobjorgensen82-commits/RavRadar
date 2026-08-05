@@ -27,3 +27,6 @@ Stop og forklar konflikten før kodeændring, hvis et nyt ønske strider mod en 
 - Lever aldrig `.git`, secrets, caches eller `node_modules` i en brugerpakke.
 - Skeln tydeligt mellem lokalt beståede tests og en faktisk grøn GitHub Actions-kørsel; påstå ikke CI-success uden bevis.
 - Bevar eksisterende GitHub-secrets og Supabase-installation. En filopdatering må ikke kræve genoprettelse af secrets, medmindre navne eller backend faktisk ændres.
+
+## End-to-end konsekvensanalyse
+Før en RavRadar-ændring implementeres, skal hele runtime- og releasekæden analyseres: input, scheduler, tidsbudget, cache, datagenerering, score, tests, artifact, deploy og browser. En lokal rettelse må ikke frigives, før gamle antagelser og alternative fejlgrene er gennemgået.

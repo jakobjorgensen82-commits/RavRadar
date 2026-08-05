@@ -219,3 +219,6 @@ Status: Implementeret og lokalt valideret.
 - [ ] GitHub-kørsel skal opbygge rigtige historiksamples over flere kørsler.
 - [ ] Sitetest skal bekræfte uændret eller acceptabel offentlig opstartstid.
 - [ ] Debugkontrol skal udføres på zoner med kendte administrator-overrides af land-/havpunkter.
+
+## 4.0.110 – marine recovery scheduler
+**IMPLEMENTERET, AFVENTER PRODUKTIONSVERIFIKATION.** DKSS prioriteres før HARMONIE under manglende marinehorisont. Den videnskabelige u/v-audit er uændret.

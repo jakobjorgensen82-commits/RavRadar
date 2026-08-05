@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.109
+**Håndbogsversion:** 4.0.110
 
 **Opdateret:** 1. august 2026
 
@@ -1237,3 +1237,7 @@ Vandstandsrouting gemmes centralt i Supabase. Browserens localStorage er kun en 
 RavRadar gemmer nu en begrænset 24-timers historik i produktionspipelinen og beregner varighed og styrke for strøm ind mod og væk fra den lokale kystretning. Den nye tilstand er foreløbig diagnostisk og ændrer ikke RavScore. Formålet er først at kontrollere, at forløb og retninger er fagligt korrekte. Generelle strømbånd bruges ikke. Kun de faktiske marine strømdata og zonens aktuelle retningsankre anvendes. Rå historik sendes ikke til den offentlige side.
 
 Vandstationsfejlen fra 4.0.105 skyldtes fyldt browserlager. Fra 4.0.106 er lokal cache ikke-blokerende, store læsedokumenter gemmes ikke i localStorage, og røde administratorvalg samt Fjern er produktionsbekræftet som fungerende.
+
+
+## DMI-pipeline og prioritering (4.0.110)
+Når strømprognosens marine horisont mangler, henter RavRadar DKSS før den meget store HARMONIE-vindfil. Det beskytter de faktiske u/v-strømvektorer og vandstandsdata, som er nødvendige for score og audit. Vind kan midlertidigt komme fra den eksisterende fallbackkæde; manglende strøm må aldrig behandles som nul.

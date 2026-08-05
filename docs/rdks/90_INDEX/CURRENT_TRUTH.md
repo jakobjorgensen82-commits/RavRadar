@@ -173,3 +173,8 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - Rå historik holdes i produktionsdata/pipeline. Den offentlige browser modtager kun kompakte, færdigberegnede felter for at beskytte opstartshastigheden.
 - Eksisterende dokumenteret morfologi bevares i scoren; manglende morfologidata er neutralt og udløser ikke krav om manuel landsdækkende kortlægning.
 - 4.0.106 vandstationsrettelsen er produktionsbekræftet: røde markører, override og Fjern fungerer.
+
+## DMI bulk-prioritering – 4.0.110
+- Marine u/v og vandstand er release-kritiske og prioriteres før HARMONIE, når marinehorisonten mangler.
+- Et stort atmosfærisk asset må ikke bruge hele kørselsbudgettet og sulte DKSS.
+- Der anvendes fortsat ingen generelle strømbånd eller strømbåndsfallback.

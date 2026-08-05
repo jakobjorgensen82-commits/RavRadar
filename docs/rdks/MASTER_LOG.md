@@ -337,3 +337,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Produktionsworkflowet i 4.0.108 nåede DMI-bulk, vejropdatering, strømproveniens og runtimebygning, men blev stoppet af en forældet test, der krævede to runtimebygninger.
 - Kravet er nu rettet til præcis én deterministisk runtimebygning efter frisk vejr/proveniens og før validering.
 - Ingen model- eller UI-adfærd er ændret.
+
+## 2026-08-06 – 4.0.110 marine recovery før HARMONIE
+- Produktionsloggen viste, at ét HARMONIE-asset på ca. 600 MB brugte ca. 676 sekunder. DKSS nåede derefter kun fire timer, og u/v-auditten fandt 0 verificerede prognosetimer.
+- Rodårsagen var schedulerens vindreservation, som prioriterede atmosfære foran release-kritiske marine data.
+- Når marinehorisonten er ufuldstændig, prioriteres DKSS nu før HARMONIE og bølger. Auditkravet er bevaret; manglende u/v skjules ikke.
+- Fast udviklingsregel: ændringer skal konsekvensanalyseres gennem hele kæden fra scheduler og tidsbudget til cache, runtime, tests og deploy.

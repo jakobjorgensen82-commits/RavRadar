@@ -719,11 +719,12 @@ def merge_previous(current: dict[str, Any], previous: dict[str, Any]) -> None:
 
 
 def collection_schedule(previous: dict[str, Any]) -> list[str]:
-    """Prioritér den komponent der mangler mest, uden at HARMONIE kan sulte.
+    """Prioritér kritiske marine u/v-data før store atmosfæriske assets.
 
-    Der er normalt kun plads til to produktive collections pr. workflow. Derfor
-    skal vind have et reserveret førstevalg, når DMI-vinddækningen er ufuldstændig.
-    De øvrige collections rangeres efter faktisk dækningsmangel.
+    Den hyppige produktionskørsel må aldrig lade et enkelt HARMONIE-asset bruge
+    hele tidsbudgettet, mens strømprognosen mangler. Når marinehorisonten er
+    ufuldstændig, rangeres DKSS-collections først. Vind og bølger kan derefter
+    opdateres i senere kørsler eller leveres af den eksisterende fallbackkæde.
     """
     state = previous.get("collectionState") or {}
     now = time.time()
@@ -750,16 +751,16 @@ def collection_schedule(previous: dict[str, Any]) -> list[str]:
             entry["consecutiveFailures"] = 0
 
         family = COLLECTION_FAMILY[collection]
-        # HARMONIE får et reserveret førstevalg, så næsten komplette marine-
-        # collections ikke kan forhindre genopbygning af manglende DMI-vind.
-        reserved_wind_rank = 0 if collection == "harmonie_dini_sf" and missing["atmosphere"] > 0 else 1
-        # Største dækningsmangel kommer først. Ved lighed bevares den kendte
-        # collection-rækkefølge og mindst nyligt forsøgte kilde prioriteres.
+        marine_recovery_active = missing["marine"] > 0
+        # Marine u/v og vandstand er release-kritiske. Et 600+ MB HARMONIE-asset
+        # må derfor ikke komme foran DKSS under marine recovery.
+        critical_family_rank = 0 if (marine_recovery_active and family == "marine") else 1
+        # Når marine er komplet, rangeres alle familier igen efter reel mangel.
         deficit_rank = -missing.get(family, 0)
         complete_family_rank = 1 if missing.get(family, 0) == 0 else 0
         return (
             blocked,
-            reserved_wind_rank,
+            critical_family_rank,
             complete_family_rank,
             deficit_rank,
             epoch(entry.get("lastAttemptAt")),
@@ -1158,7 +1159,8 @@ def main() -> int:
         "missingWind": max(0, previous_zone_count - wind96),
         "missingWave": max(0, previous_zone_count - wave96),
         "missingMarine": max(0, previous_zone_count - marine96),
-        "windReservationActive": wind96 < previous_zone_count,
+        "marineRecoveryActive": marine96 < previous_zone_count,
+        "atmosphereDeferredDuringMarineRecovery": marine96 < previous_zone_count,
         "completionDefinition": f"component horizon >= {COMPLETE_HORIZON_HOURS} hours",
     }
     fresh_zone_ids: set[str] = set()
