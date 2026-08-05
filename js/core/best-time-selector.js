@@ -1,4 +1,4 @@
-import { calculateRavScore } from './score-engine.js?v=4.0.103';
+import { calculateRavScore } from './score-engine.js?v=4.0.104';
 
 const finite = value => Number.isFinite(Number(value));
 const isoDay = value => String(value || '').slice(0, 10);

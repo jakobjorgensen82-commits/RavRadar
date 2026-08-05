@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.103
+**Håndbogsversion:** 4.0.104
 
 **Opdateret:** 1. august 2026
 
@@ -1219,3 +1219,6 @@ RavRadar kan bruge både fysiske DMI-målestationer og DMI-prognosepunkter. Mål
 
 ### Driftstjek af alle vandstandskilder
 Efter hver vejrproduktion skriver RavRadar en beskyttet auditfil med alle vandstandskilder. For hver kilde fremgår type, DMI-id, koordinat, observationsstatus, om den modtager en gyldig DKSS-femdøgnsserie, antal prognosetimer, gyldighedstid og om den må indgå i routing. Filen bruges til at bevise, om eksempelvis Hals Havn og Hals Barre faktisk har modtaget de serier, som admin viser. Den offentlige GitHub Pages-side må ikke indeholde denne audit eller projektets supportmappe.
+
+### Teknisk sikkerhed for vandstandsserier
+RavRadar skelner mellem en reel måling på 0 cm og en manglende værdi. Manglende data må aldrig vises eller beregnes som 0 cm. En vandstandskilde bruges kun, når den har en reel og tilstrækkelig prognoseserie. Når administratoren vælger en kilde på kortet, bliver valget straks den aktive røde routing for zonen og kan gemmes centralt.

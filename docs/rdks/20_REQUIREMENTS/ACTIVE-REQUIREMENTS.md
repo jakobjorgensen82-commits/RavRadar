@@ -76,3 +76,8 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-DIAGNOSTIC-002 – IMPLEMENTERET:** Opstartsprofilen opdeles i netværk/data, beregning og rendering.
 
 - **REQ-ADMIN-008 – IMPLEMENTERET I 4.0.94:** Aktive centrale regler skal automatisk publiceres til én fælles offentlig regelfil. Offentlig RavScore må ikke afhænge af browserens lokale adminlager, og rå adminmellemdata må ikke udstilles på GitHub Pages.
+
+## Vandstandsserier og administratorvalg – bindende regressionkrav
+- `null`, `undefined` og tomme DMI-værdier må aldrig normaliseres til fysisk 0 cm.
+- En vandstandskilde må kun være routingberettiget, når den indeholder en reel, tilstrækkelig femdøgnsserie.
+- Første klik på en vandstandskilde i en zone uden tidligere routing skal straks oprette zonens routingpost, aktivere override, vise valget rødt og gøre det centralt gemmeligt.

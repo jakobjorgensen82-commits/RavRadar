@@ -1,7 +1,7 @@
 import { buildDmiForecastHourly } from './dmi-forecast-store.mjs';
 import { recommendWaterStationBracket } from '../../js/core/water-station-routing.js';
 
-const finite=v=>Number.isFinite(Number(v))?Number(v):null;
+const finite=v=>{if(v===null||v===undefined||v==='')return null;const n=Number(v);return Number.isFinite(n)?n:null;};
 const round=(v,d=2)=>Number.isFinite(v)?Number(v.toFixed(d)):null;
 const sourceKey=s=>String(s?.sourceKey??s?.stationId??'');
 const routeKey=e=>String(e?.sourceKey??e?.stationId??'');

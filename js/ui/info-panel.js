@@ -1,5 +1,5 @@
-import { calculateRavScore, scoreRating } from "../core/score-engine.js?v=4.0.103";
-import { selectBestTimeForDay } from "../core/best-time-selector.js?v=4.0.103";
+import { calculateRavScore, scoreRating } from "../core/score-engine.js?v=4.0.104";
+import { selectBestTimeForDay } from "../core/best-time-selector.js?v=4.0.104";
 
 const formatNumber = (value, suffix, digits = 1) => Number.isFinite(Number(value)) ? `${Number(value).toFixed(digits).replace(".", ",")} ${suffix}` : "Mangler";
 const compass = value => {

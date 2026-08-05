@@ -47,3 +47,8 @@ Pileinstallationen var gjort afhængig af browserens idle-callback uden runtimek
 **Status:** LØST I KODE, AFVENTER GITHUB-BEKRÆFTELSE
 
 Pages-buildet udelukker nu både `_support/` og support-ZIP. Automatisk routing og administratoroverride anvender samme reelle geografiske afstand til vægtning, mens topologien fortsat bestemmer kandidatvalget. Det fejlagtige plurale prognosepunkt-endpoint er erstattet af DMI's dokumenterede `tidewaterstation`-collection.
+
+## Løst i 4.0.104 – administratorvalg og næsten konstant 0 cm
+Status: **LØST, AFVENTER PRODUKTIONSVERIFIKATION**
+
+Første valg i en zone uden routingpost blev tidligere foretaget i et løsrevet midlertidigt objekt. Samtidig kunne manglende prognoseværdier (`null`) blive konverteret til 0 og skabe en falsk nulserie. Begge rodårsager er rettet og dækket af regressionstest. Første GitHub-kørsel skal bekræfte varierede femdøgnsværdier og rødt aktivt administratorvalg i produktionen.

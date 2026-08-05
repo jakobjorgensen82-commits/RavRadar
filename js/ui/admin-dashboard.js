@@ -1,21 +1,21 @@
-import { evaluateRules } from '../core/rule-engine.js?v=4.0.103';
-import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.103';
-import { historicalSummary } from '../services/historical-analysis.js?v=4.0.103';
-import { loadAdaptiveModel, applyApprovedSuggestion, recordDecision, decisionHistory, rollbackAdaptiveModel, listAdaptiveModelVersions, activateAdaptiveModelVersion } from '../core/adaptive-model.js?v=4.0.103';
-import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.103';
-import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.103';
-import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.103';
-import { interpretFreeTextRule } from '../core/free-text-rule-assistant.js?v=4.0.103';
-import { listProfiles, savePermissions, PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.103';
-import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js?v=4.0.103';
-import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.103';
-import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.103';
-import { GEOGRAPHIC_AREAS, matchingZoneIds } from '../core/geographic-areas.js?v=4.0.103';
-import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.103';
-import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.103';
-import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.103';
+import { evaluateRules } from '../core/rule-engine.js?v=4.0.104';
+import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.104';
+import { historicalSummary } from '../services/historical-analysis.js?v=4.0.104';
+import { loadAdaptiveModel, applyApprovedSuggestion, recordDecision, decisionHistory, rollbackAdaptiveModel, listAdaptiveModelVersions, activateAdaptiveModelVersion } from '../core/adaptive-model.js?v=4.0.104';
+import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.104';
+import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.104';
+import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.104';
+import { interpretFreeTextRule } from '../core/free-text-rule-assistant.js?v=4.0.104';
+import { listProfiles, savePermissions, PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.104';
+import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js?v=4.0.104';
+import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.104';
+import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.104';
+import { GEOGRAPHIC_AREAS, matchingZoneIds } from '../core/geographic-areas.js?v=4.0.104';
+import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.104';
+import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.104';
+import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.104';
 
-const VERSION='4.0.103';
+const VERSION='4.0.104';
 const SITE_TEST_MODE=new URLSearchParams(location.search).has('ravradarAdminSiteTest');
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
@@ -225,7 +225,7 @@ function automaticStationRecommendation(zoneId){
  return recommendWaterStationBracket({zoneId,zoneName:zone?.properties?.name,point:center,coastLine:zone?.properties?.coastLine,onshoreDirectionDeg:zone?.properties?.onshoreDirectionDeg,stations:state.waterStations,haversineKm:haversineAdmin});
 }
 function renderWaterStations(){
- const zoneId=state.selectedRoutingZoneId||state.zones[0]?.properties?.id;state.selectedRoutingZoneId=zoneId;const route=state.waterRouting.zones?.[zoneId]||{enabled:false,method:'inverse-distance',requireAll:true,stations:[]};const automatic=automaticStationRecommendation(zoneId);
+ const zoneId=state.selectedRoutingZoneId||state.zones[0]?.properties?.id;state.selectedRoutingZoneId=zoneId;state.waterRouting.zones??={};const route=state.waterRouting.zones[zoneId]??={enabled:false,method:'inverse-distance',requireAll:true,stations:[]};const automatic=automaticStationRecommendation(zoneId);
  content.innerHTML=`<article class="admin-card"><div class="rule-card-head"><div><h2>Vandstandskilder på kort</h2><p class="muted">Kortet viser den routing, som er aktiv for zonen. Når administratorvalg er slået til, skjules de automatiske markører, og kun administratorens aktive valg vises rødt. Ændringer gemmes automatisk.</p></div><div class="toolbar"><button id="saveWaterRoutingNow" class="admin-button">Gem nu</button><button id="exportWaterRouting" class="admin-button secondary">Eksportér backup</button><button id="resetWaterRouting" class="admin-button secondary">Nulstil lokalt</button></div></div></article><div class="station-routing-layout"><article class="admin-card station-routing-panel"><label>Zone<select id="routingZone">${state.zones.map(z=>`<option value="${esc(z.properties?.id)}" ${z.properties?.id===zoneId?'selected':''}>${esc(z.properties?.name||z.properties?.id)}</option>`).join('')}</select></label><label>Søg DMI-vandstandskilde<input id="stationSearch" placeholder="Navn eller stations-ID, fx Hals"></label><div id="stationSearchResults" class="station-search-results"></div><section class="automatic-station-box"><div class="rule-card-head"><div><h3>RavRadars automatiske valg</h3><p class="hint">${esc(automatic.method)}</p>${automatic.completeBracket===false?`<p class="status-warning"><b>Advarsel:</b> ${esc(automatic.reason||'Stationerne indrammer ikke zonen korrekt.')}</p>`:''}</div><span class="badge active">Standard</span></div><div id="automaticRoutingSelection"></div><details id="automaticCalculation"><summary>Vis automatisk beregning</summary><div id="automaticCandidates"></div></details><button id="useAutomaticAsOverride" class="admin-button secondary" ${automatic.stations.length?'':'disabled'}>Kopiér valget til administratorvalg</button></section><hr><label class="switch-line"><input id="routingEnabled" type="checkbox" ${route.enabled?'checked':''}> Brug administratorvalgte stationer for denne zone</label><div class="override-status ${route.enabled?'enabled':'disabled'}">${route.enabled?'Administratorens valg erstatter automatikken':'Automatikken er aktiv'}</div><label>Metode<select id="routingMethod"><option value="inverse-distance" ${route.method!=='manual-weights'?'selected':''}>Automatiske afstandsvægte</option><option value="manual-weights" ${route.method==='manual-weights'?'selected':''}>Manuelle vægte</option></select></label><label class="switch-line"><input id="routingRequireAll" type="checkbox" ${route.requireAll!==false?'checked':''}> Kræv alle valgte stationer</label><div id="routingSelection"></div><p class="hint">Klik station på kortet for at tilføje. Maksimum to stationer. Manuelle valg anvendes kun, når kontakten ovenfor er aktiv.</p></article><article class="admin-card"><div id="stationRoutingMap" class="station-routing-map"></div><div class="direction-legend"><span><i class="dot sea"></i> Zone</span><span><i class="dot station"></i> Øvrig DMI-kilde</span>${route.enabled?'<span><i class="dot selected-station"></i> Aktivt administratorvalg</span>':'<span><i class="dot automatic-station"></i> Aktivt automatisk valg</span>'}<span><i class="dot retired-station"></i> Udfaset station</span></div></article></div>`;
  const saveControls=()=>{const r=state.waterRouting.zones[zoneId]||(state.waterRouting.zones[zoneId]={stations:[]});r.enabled=document.querySelector('#routingEnabled').checked;r.method=document.querySelector('#routingMethod').value;r.requireAll=document.querySelector('#routingRequireAll').checked;r.reviewed=true;saveWaterRouting();drawSelection();drawMap();};
  document.querySelector('#routingZone').onchange=e=>{state.selectedRoutingZoneId=e.target.value;renderWaterStations();};['routingEnabled','routingMethod','routingRequireAll'].forEach(id=>document.querySelector('#'+id).onchange=saveControls);
@@ -336,7 +336,7 @@ function renderObservations(){const obs=JSON.parse(localStorage.getItem('ravrada
 async function renderUsers(){
  content.innerHTML=`<article class="admin-card"><h2>Eksperter og rettigheder</h2><p class="muted">Få, brede tilladelser. Du kan til enhver tid ændre dem igen.</p><div id="profilesList" class="admin-grid"><p class="muted">Henter brugere…</p></div></article>`;
  const host=document.querySelector('#profilesList');
- try{state.profiles=await listProfiles();if(!state.profiles.length){host.innerHTML='<div class="empty">Ingen profiler blev fundet. Kør SQL-opdateringen til 4.0.103 i Supabase én gang.</div>';return;}
+ try{state.profiles=await listProfiles();if(!state.profiles.length){host.innerHTML='<div class="empty">Ingen profiler blev fundet. Kør SQL-opdateringen til 4.0.104 i Supabase én gang.</div>';return;}
  host.innerHTML=state.profiles.map(profile=>{const active=new Set((profile.user_permissions||[]).filter(x=>x.enabled).map(x=>x.permission_key));return `<article class="admin-card permission-card" data-user-id="${esc(profile.id)}"><div class="rule-card-head"><div><h3>${esc(profile.display_name||profile.email)}</h3><p class="muted">${esc(profile.email||'')} · ${esc(profile.role||'expert')}</p></div><span class="badge ${profile.is_active!==false?'active':'draft'}">${profile.is_active!==false?'Aktiv':'Deaktiveret'}</span></div><div class="permission-list">${PERMISSIONS.map(p=>`<label class="permission-option"><input type="checkbox" name="${esc(p.id)}" ${active.has(p.id)||profile.role==='owner'?'checked':''} ${profile.role==='owner'?'disabled':''}><span>${esc(p.label)}</span></label>`).join('')}</div>${profile.role==='owner'?'<p class="hint">Owner har altid alle rettigheder.</p>':'<button class="admin-button save-user-permissions" type="button">Gem rettigheder</button><p class="form-status"></p>'}</article>`}).join('');
  host.querySelectorAll('.save-user-permissions').forEach(button=>button.onclick=async()=>{const card=button.closest('[data-user-id]');const status=card.querySelector('.form-status');const values={};PERMISSIONS.forEach(p=>values[p.id]=card.querySelector(`[name="${p.id}"]`).checked);button.disabled=true;status.textContent='Gemmer…';try{await savePermissions(card.dataset.userId,values);status.textContent='Rettighederne er gemt og gælder med det samme.';}catch(error){status.textContent=error.message;}finally{button.disabled=false;}});
  }catch(error){host.innerHTML=`<div class="empty">${esc(error.message)}</div>`;}

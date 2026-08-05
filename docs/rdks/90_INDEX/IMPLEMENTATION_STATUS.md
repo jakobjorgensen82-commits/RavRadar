@@ -187,3 +187,11 @@ Status: Implementeret og lokalt valideret.
 - Kilderegisteret dokumenterer discovery-endpoint, resultat, antal og fejl. Hver vejrproduktion skriver desuden en beskyttet audit af alle målestationer og prognosepunkter med prognosestatus, horisont, gyldighed og routingberettigelse.
 - En ny samlet produktionstest kontrollerer automatisk routing, adminoverride, geografiske vægte, forecastStore, zonens aktuelle vandstand og time-for-time-serie samt Pages-sikkerhed og DMI-endpointkontrakt.
 - En rigtig GitHub-vejrproduktion skal stadig bekræfte det aktuelle antal DMI-prognosepunkter og deres faktiske femdøgnshorisont.
+
+## 4.0.104 – IMPLEMENTERET, kræver produktionsverifikation
+- [x] Første administratorvalg i enhver zone bindes til det centrale routingdokument.
+- [x] Aktivt override vises rødt og kan gemmes ved første valg.
+- [x] Manglende prognoseværdier kan ikke længere konverteres til falske 0 cm.
+- [x] Tomme prognosekilder kan ikke blive routingberettigede.
+- [x] Samlet regressionstest dækker override og vandstandsserie.
+- [ ] Første deployment skal bekræfte UI og varierede værdier på den offentlige side.
