@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.105
+**Håndbogsversion:** 4.0.106
 
 **Opdateret:** 1. august 2026
 
@@ -1227,3 +1227,7 @@ RavRadar skelner mellem en reel måling på 0 cm og en manglende værdi. Manglen
 Når fanen **Vandstandsstationer** åbnes, skal RavRadar først have tre ting på plads: zonerne, det aktuelle register over vandstandskilder og det centralt gemte administratorvalg. De indlæses derfor før de øvrige diagnoser og adminregistre.
 
 Mens de hentes, viser fanen en tydelig besked og kan ikke redigeres. Det forhindrer, at administratoren ser et midlertidigt automatisk valg, trykker på en knap og bagefter får handlingen overskrevet af en forsinket Supabase-læsning. Når kortet og knapperne vises, er den aktive routing allerede den endelige centrale tilstand. Røde markører betyder derfor straks et aktivt administratorvalg, og **Fjern** ændrer det samme dokument, som efterfølgende gemmes centralt.
+
+
+### Lokal browsercache og central lagring
+Vandstandsrouting gemmes centralt i Supabase. Browserens localStorage er kun en lille, valgfri hjælpe-cache. Store stationsregistre og diagnostik må ikke gemmes der. Hvis browserens lagerkvote er fuld, skal kortet stadig reagere med det samme, og den centrale gemning skal fortsætte.

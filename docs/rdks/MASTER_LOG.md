@@ -320,3 +320,6 @@ GitHub-kørslen efter sletning af DK-B02-14 fejlede, fordi `validate-data.mjs` s
 - Zoneregister, DMI-vandstandskilder og central routing har nu deres egen prioriterede kæde. Fanen viser kun indlæsning, indtil denne kæde er komplet.
 - Den langsomme baggrundsinitialisering genindlæser eller overskriver ikke længere vandstandsroutingen.
 - Sitetesten måler nu reel funktionel klarhed for vandstandsfanen, ikke kun at admin til sidst bliver færdig.
+
+## 2026-08-05 – 4.0.106
+Konsollen dokumenterede QuotaExceededError ved både `ravradar-admin-document:water-level-station-routing` og legacy-nøglen. HAR viste, at routingdokumentet kun var ca. 2 KB, mens runtime-diagnostik alene var ca. 5,6 MB og stationsregisteret ca. 0,57 MB. Den generelle admin-document-cache havde fyldt browserens kvote. Store read-only dokumenter caches ikke længere lokalt, gamle cacher ryddes, og lokale skrivefejl er ikke-blokerende.

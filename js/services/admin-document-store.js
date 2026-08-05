@@ -1,15 +1,35 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.105";
-import { authorizedFetch, currentSession, requireFreshSession } from "./auth-service.js?v=4.0.105";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.106";
+import { authorizedFetch, currentSession, requireFreshSession } from "./auth-service.js?v=4.0.106";
 
 const PREFIX="ravradar-admin-document:";
 const listeners=new Set();
 const pending=new Map();
 const enabled=Boolean(PUBLIC_CONFIG.supabaseUrl&&PUBLIC_CONFIG.supabasePublishableKey);
 const lastStatus=new Map();
+const LOCAL_CACHE_KEYS=new Set(['rules','rule-history','water-level-station-routing','direction-reviews','coastline-overrides']);
+function clearObsoleteAdminDocumentCaches(){
+  try{
+    for(let i=localStorage.length-1;i>=0;i--){
+      const key=localStorage.key(i);
+      if(key?.startsWith(PREFIX)&&!LOCAL_CACHE_KEYS.has(key.slice(PREFIX.length)))localStorage.removeItem(key);
+    }
+  }catch{}
+}
+clearObsoleteAdminDocumentCaches();
 function emit(status){lastStatus.set(status.key||'global',status);for(const fn of listeners)fn(status);}
 function localKey(key){return `${PREFIX}${key}`;}
 function readLocal(key,fallback){try{return JSON.parse(localStorage.getItem(localKey(key))||"null")??fallback}catch{return fallback}}
-function writeLocal(key,payload){localStorage.setItem(localKey(key),JSON.stringify(payload));}
+function writeLocal(key,payload){
+  if(!LOCAL_CACHE_KEYS.has(key))return {ok:false,skipped:true};
+  let serialized;
+  try{serialized=JSON.stringify(payload);}catch(error){return {ok:false,error};}
+  try{localStorage.setItem(localKey(key),serialized);return {ok:true};}
+  catch(error){
+    clearObsoleteAdminDocumentCaches();
+    try{localStorage.setItem(localKey(key),serialized);return {ok:true,recovered:true};}
+    catch(retryError){console.warn(`[RavRadar] Lokal cache kunne ikke gemmes for ${key}; central gemning fortsætter.`,retryError);return {ok:false,error:retryError};}
+  }
+}
 async function remoteRead(key){
   if(!enabled)return null; await requireFreshSession();
   const q=encodeURIComponent(`eq.${key}`);

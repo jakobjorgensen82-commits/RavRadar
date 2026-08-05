@@ -203,3 +203,6 @@ Status: Implementeret og lokalt valideret.
 - [x] Sitetesten åbner vandstandsfanen tidligt og måler, hvornår zonevalg, kort og administratoroverride faktisk er klar.
 - [x] Eksisterende DMI-data, automatiske valg, manuel override, interpolation, vandstandsprognose, RavScore og offentlig runtime er uændret.
 - [ ] Første deployment skal bekræfte, at gemte røde valg og Fjern-knappen er tilgængelige hurtigt og reagerer uden senere overskrivning.
+
+## 4.0.106 – kvotesikker vandstandsrouting
+**IMPLEMENTERET, afventer produktionsverifikation.** Store read-only admin-dokumenter fylder ikke længere localStorage, gamle store cacher ryddes, og QuotaExceededError kan ikke afbryde røde markører, Fjern eller central routinggemning.
