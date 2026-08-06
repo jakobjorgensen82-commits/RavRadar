@@ -72,3 +72,7 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 - **ISSUE-DMI-CACHE-IMMUTABLE-KEY – RETTET I 4.0.113, AFVENTER PRODUKTIONSBEKRÆFTELSE:** Fem kørsler gendannede samme ugentlige primærnøgle og gemte derfor ikke ny rå GRIB-fremdrift. Workflowet bruger nu separat restore/save og unik save-nøgle.
 - **ISSUE-WORKFLOW-DURATION – FORTSAT AKTIV:** De målte 12–15 minutter kan være kunstigt forhøjede af cachefejlen. Cron ændres ikke før nye målinger.
 - **ISSUE-STATE-SHADOW-VALIDATION – FORBEDRET, FORTSAT AKTIV:** Hver frisk produktion logger nu datasætbundne referencefelter og håndhæver streng tilstedeværelse. Faglig stabilitet over flere timer skal stadig bekræftes.
+
+## 4.0.114 – Pages-deploy og workflowkø
+- **ISSUE-PAGES-DEPLOY-QUEUED – RETTET STRUKTURELT I 4.0.114, AFVENTER PRODUKTIONSBEKRÆFTELSE:** Flere selvstændige kørsler byggede og uploadede et gyldigt Pages-artifact, men GitHub Pages blev stående i `deployment_queued` til timeout. Build/data og deploy er nu adskilt, og kun deployjobbet ejer `github-pages`-miljøet. Et fejlet deploy kan genkøres uden ny DMI-kørsel.
+- **ISSUE-WORKFLOW-QUEUE-PRIORITY – DELVIST RETTET I 4.0.114:** Push og tvungne manuelle releasekørsler må afbryde en ældre almindelig vejropdatering. Almindelige 10-minutters kald afbryder ikke den aktive kørsel. Den faktiske køadfærd og cronintervallet skal stadig måles i produktion.

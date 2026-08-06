@@ -203,3 +203,10 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - Referencezonerapporten skal knyttes til et konkret datasæt og logges kompakt i hver frisk produktion.
 - Streng produktionsvalidering kræver `shadow-v1` for alle fire referencezoner. Verificeret DMI-strøm tælles og logges; mangler registreres uden kunstig transportfallback.
 - Cronintervallet er fortsat 10 minutter, indtil køretiden er målt efter cachekorrektionen.
+
+## Releasekæde fra 4.0.114
+- Data/build og GitHub Pages-deploy er separate jobs.
+- Kun deployjobbet bruger `github-pages`-miljøet og Pages-skriverettigheder.
+- Et fejlet deployjob kan genkøres uden at gentage DMI-pipelinen eller uploade endnu et Pages-artifact.
+- Push og tvungne releasekørsler kan afbryde en ældre almindelig vejropdatering; almindelige vejrkald afbryder ikke en aktiv tung kørsel.
+- Pages-fejlen `deployment_queued` er strukturelt afgrænset, men 4.0.114 kræver stadig produktionsbekræftelse.

@@ -67,3 +67,10 @@ Søg efter gamle tests og antagelser, som ændringen gør forældede. Simulér b
 - Næste analyse skal kontrollere, at cachefremdrift faktisk bæres mellem kørsler, at warmup ophører, og at jobtiden falder eller stabiliseres.
 - Cron forbliver foreløbig 10 minutter. Intervallet må først ændres efter nye målinger uden cachefejlen.
 - Workflowloggen skriver nu `RAVRADAR_STATE_REFERENCE` med datasæt og de fire zoners kompakte skyggefelter. Sammenlign mindst tre friske produktionstimer.
+
+## 4.0.114 – produktionskontrol
+- Workflowet er opdelt i `build-and-prepare` og `deploy-pages`.
+- Kontrollér at kun deployjobbet viser environment `github-pages`.
+- Hvis deployjobbet fejler, brug `Re-run failed jobs`; build/DMI-jobbet må ikke køre igen.
+- Kontrollér at der kun findes ét `github-pages`-artifact i runnet.
+- Efter grøn deploy køres sitetest. Først derefter fortsættes den historiske tilstandsplan.

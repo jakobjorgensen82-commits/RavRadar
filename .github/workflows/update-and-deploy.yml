@@ -13,23 +13,22 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 # cron-job.org starter workflow_dispatch hvert 10. minut. GitHubs egen
 # schedule-trigger bruges bevidst ikke. Der må højst være én tung kørsel og én
 # ventende kørsel; ventende kald kontrollerer friskhed, når de får en runner.
 concurrency:
   group: ravradar-weather-production
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.force == true) }}
 
 jobs:
-  update-and-deploy:
+  build-and-prepare:
     runs-on: ubuntu-latest
     timeout-minutes: 40
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+    outputs:
+      should_deploy: ${{ steps.preflight.outputs.should_run }}
 
     steps:
       - uses: actions/checkout@v4
@@ -323,7 +322,20 @@ jobs:
         with:
           path: _site
 
+
+  deploy-pages:
+    name: Deploy prepared Pages artifact
+    needs: build-and-prepare
+    if: needs.build-and-prepare.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
-        if: steps.preflight.outputs.should_run == 'true'
         id: deployment
         uses: actions/deploy-pages@v4

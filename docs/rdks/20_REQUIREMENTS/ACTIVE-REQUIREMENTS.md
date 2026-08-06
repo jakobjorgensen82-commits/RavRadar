@@ -119,3 +119,9 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-REFERENCE-PRODUCTION-001 – IMPLEMENTERET:** Hver frisk produktion skal logge referencezonernes datasæt-id, strømverifikation og skyggefelter i maskinlæsbart format.
 - **REQ-REFERENCE-PRODUCTION-002 – BINDENDE:** Frisk produktion må ikke bestå den strenge referencekontrol, hvis en af de fire zoner mangler `shadow-v1`. Manglende verificeret DMI-strøm skal logges som advarsel og må ikke erstattes af generelle strømbånd eller anden transportfallback.
 - **REQ-SCHEDULER-MEASURE-001 – AKTIV:** Croninterval må først ændres efter måling af mindst tre kørsler med fungerende progressiv cache.
+
+## Release- og deployrobusthed – 4.0.114
+- **REQ-DEPLOY-ISOLATION-001 – IMPLEMENTERET:** Den tunge data-/buildkæde og GitHub Pages-deploy skal være separate jobs. Kun deployjobbet må holde `github-pages`-miljøet og Pages-skriverettighederne.
+- **REQ-DEPLOY-RETRY-001 – IMPLEMENTERET:** Et fejlet Pages-deploy skal kunne genkøres som fejlet job mod det eksisterende artifact uden ny DMI-kørsel og uden ny artifact-upload.
+- **REQ-RELEASE-PRIORITY-001 – IMPLEMENTERET:** En push- eller udtrykkeligt tvungen releasekørsel må afbryde en ældre almindelig vejropdatering. Almindelige eksterne vejrkald må ikke afbryde den aktive tunge kørsel.
+- **REQ-DEPLOY-SCORE-NEUTRAL-001 – BINDENDE:** Workflowrettelser må ikke ændre RavScore, marine audits, DMI-proveniens, skyggetilstand eller offentlig startupberegning.

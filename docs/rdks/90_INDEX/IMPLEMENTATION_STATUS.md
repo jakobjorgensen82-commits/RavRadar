@@ -238,3 +238,10 @@ Status: Implementeret og lokalt valideret.
 - **OVERVÅGES:** Faktisk cacheprogression, ophør af gentagen marine warmup og ny normal køretid.
 - **UDSAT:** Ændring af eksternt 10-minutters croninterval, indtil nye produktionsmålinger foreligger.
 - **IKKE IMPLEMENTERET:** Numerisk transportbidrag til RavScore.
+
+## 4.0.114 – deployisolering
+- **IMPLEMENTERET LOKALT:** `build-and-prepare` udfører data, validering, supportpakke og Pages-artifact.
+- **IMPLEMENTERET LOKALT:** `deploy-pages` er et separat kort job med `needs`, eget environment og mindst mulige Pages-rettigheder.
+- **IMPLEMENTERET LOKALT:** Fejlet deploy kan genkøres uden ny tung build.
+- **IMPLEMENTERET LOKALT:** Push/tvungen release prioriteres ved at afbryde en ældre almindelig kørsel.
+- **AFVENTER CI/PRODUKTION:** Første grønne deploy og efterfølgende sitetest af 4.0.114.

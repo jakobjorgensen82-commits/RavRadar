@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.113
+**Håndbogsversion:** 4.0.114
 
 **Opdateret:** 1. august 2026
 
@@ -1310,3 +1310,12 @@ Ved starten af en ny chat skal `docs/rdks/05_NEXT_CHAT_HANDOFF.md` læses sammen
 Den historiske tilstand er fortsat en skyggeberegning uden pointvirkning. Efter hver frisk produktion kontrollerer workflowet de fire faste referencezoner. Kontrollen kræver både verificeret DMI-strøm og historikmærket `shadow-v1`. En kompakt loglinje gør det muligt at sammenligne varighed, styrke, stabilitet og nærkystpotentiale mellem produktionstimer uden nye manuelle screenshots.
 
 Den rå DMI GRIB-cache skal bevare fremdrift mellem kørsler. GitHub-caches kan ikke overskrives under samme nøgle, så hver kørsel gemmer en unik cache og næste kørsel henter den seneste kompatible. Dette er en driftsmekanisme og ændrer ikke de marine kvalitetskrav.
+
+
+## Releasekæden i 4.0.114
+
+RavRadars tunge dataarbejde og selve offentliggørelsen er nu adskilt. Jobbet `build-and-prepare` henter og kontrollerer data, bygger supportpakken og uploader ét færdigt Pages-artifact. Det korte job `deploy-pages` publicerer derefter præcis dette artifact.
+
+Kun deployjobbet har adgang til miljøet `github-pages`. Hvis GitHub Pages fejler efter et færdigt build, kan ejeren vælge **Re-run failed jobs**. Derved genkøres kun deploymentet; DMI-pipelinen, scorevalideringen og artifact-uploaden gentages ikke.
+
+En almindelig vejropdatering må ikke afbryde en allerede aktiv tung kørsel. En ny kode-push eller en udtrykkeligt tvungen release må derimod afbryde en ældre almindelig vejropdatering, så en ny version ikke bliver låst bag gamle vejrjobs. Denne procesændring ændrer ikke RavScore eller datakravene.

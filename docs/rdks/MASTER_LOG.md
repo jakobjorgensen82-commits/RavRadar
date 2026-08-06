@@ -365,3 +365,11 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Workflowet bruger nu separat restore/save og unik save-nøgle pr. run.
 - Referencezonediagnostik er datasætbundet, logges kompakt og valideres strengt efter frisk produktion.
 - RavScore er uændret. Cronintervallet afventer nye målinger efter cachekorrektionen.
+
+
+## 2026-08-06 – 4.0.114 deployisolering
+- Gentagne runs byggede og uploadede Pages-artifact, men stod i `deployment_queued` til timeout.
+- Regressionanalysen fandt ingen ændring i Pages-actions mellem 4.0.112 og 4.0.113, men den monolitiske jobstruktur holdt `github-pages`-miljøet gennem hele den tunge pipeline.
+- Build/data og deploy er opdelt. Kun deployjobbet ejer miljø og Pages-rettigheder.
+- Fejlet deploy kan genkøres alene. Push/tvungen release kan afbryde en ældre almindelig vejropdatering.
+- Score, DMI, marine audits og skyggetilstand er uændrede.
