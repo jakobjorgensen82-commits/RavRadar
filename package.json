@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.112",
+  "version": "4.0.113",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -112,8 +112,8 @@
     "test:dmi-marine-first-recovery": "node scripts/test-dmi-marine-first-recovery-4.0.110.mjs",
     "test:state-explanations": "node scripts/test-state-explanations-4.0.111.mjs",
     "test:project-source-neutrality": "node scripts/test-project-source-neutrality-4.0.111.mjs",
-    "build:state-reference-report": "node scripts/generate-state-reference-report-4.0.112.mjs",
-    "test:state-reference-report": "node scripts/test-state-reference-report-4.0.112.mjs"
+    "build:state-reference-report": "node scripts/generate-state-reference-report-4.0.113.mjs",
+    "test:state-reference-report": "node scripts/test-state-reference-report-4.0.113.mjs"
   },
   "engines": {
     "node": ">=22"

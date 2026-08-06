@@ -113,11 +113,14 @@ jobs:
 
       - name: Restore bounded DMI GRIB download cache
         if: steps.preflight.outputs.should_run == 'true'
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
+        id: dmi-grib-cache-restore
         with:
           path: .cache/dmi-grib
-          key: dmi-grib-v3-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}
+          key: dmi-grib-v4-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
+            dmi-grib-v4-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-
+            dmi-grib-v4-${{ runner.os }}-
             dmi-grib-v3-${{ runner.os }}-
 
       - name: Update DMI bulk model cache
@@ -142,6 +145,13 @@ jobs:
           DMI_BULK_RAW_DIR: .cache/dmi-grib
           WEATHER_USER_AGENT: "RavRadar/4.0.29 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
+
+      - name: Save progressed DMI GRIB download cache
+        if: steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled'
+        uses: actions/cache/save@v4
+        with:
+          path: .cache/dmi-grib
+          key: dmi-grib-v4-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Report DMI bulk result
         if: steps.preflight.outputs.should_run == 'true' && always()
@@ -185,6 +195,10 @@ jobs:
       - name: Rebuild deterministic public weather runtime before validation and deploy
         if: steps.preflight.outputs.should_run == 'true'
         run: node scripts/generate-public-conditions.mjs
+
+      - name: Generate and strictly validate production reference zones
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'
+        run: node scripts/generate-state-reference-report-4.0.113.mjs --strict
 
       - name: Validate full project after fresh weather and current provenance
         if: steps.preflight.outputs.should_run == 'true' && (github.event_name == 'push' || inputs.force == true)

@@ -196,3 +196,10 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - Als Odde og Helberskov er åben kyst nord for Mariager Fjord, ikke fjordzone.
 - Den offentlige side skal fortsat ligge omkring den senest verificerede baseline på ca. 3,45 sekunder; tunge historikdata må ikke flyttes til browseren.
 - Deploy/Update-jobbets ca. 14 minutters køretid er en åben driftsrisiko i forhold til 10-minutters planlægning. Optimering kræver måling og må ikke svække marine audits.
+
+## Workflow og skyggevalidering – 4.0.113
+- GitHub Actions-cache er uforanderlig pr. nøgle. En fast ugentlig primærnøgle må derfor ikke bruges til en cache, som skal akkumulere GRIB-fremdrift mellem kørsler.
+- DMI GRIB-cachen gendannes fra seneste kompatible nøgle og gemmes under en unik nøgle pr. kørsel.
+- Referencezonerapporten skal knyttes til et konkret datasæt og logges kompakt i hver frisk produktion.
+- Streng produktionsvalidering kræver `shadow-v1` for alle fire referencezoner. Verificeret DMI-strøm tælles og logges; mangler registreres uden kunstig transportfallback.
+- Cronintervallet er fortsat 10 minutter, indtil køretiden er målt efter cachekorrektionen.

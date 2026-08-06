@@ -358,3 +358,10 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Sitetestens eneste kendte falske negative er rettet ved eksplicit dashboardaktivering og vent på klikbar knap.
 - Tilstandsmodellen ændrer fortsat ikke RavScore. Næste scoretrin er glidende varighed/styrke af faktisk indadgående DMI-strøm, efter faglig skyggevalidering.
 - DMI-workflowets lange køretid forbliver et separat optimeringsspor.
+
+## 4.0.113 – 6. august 2026
+- Fem produktionslogs blev analyseret samlet med projekt-ZIP og sitetest.
+- Fast ugentlig GitHub-cache-nøgle blev identificeret som rodårsag til tabt rå GRIB-cachefremdrift mellem kørsler.
+- Workflowet bruger nu separat restore/save og unik save-nøgle pr. run.
+- Referencezonediagnostik er datasætbundet, logges kompakt og valideres strengt efter frisk produktion.
+- RavScore er uændret. Cronintervallet afventer nye målinger efter cachekorrektionen.

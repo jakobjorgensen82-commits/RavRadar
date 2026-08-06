@@ -1,9 +1,15 @@
 {
-  "schemaVersion": 1,
-  "version": "4.0.112",
-  "generatedAt": "2026-08-06T09:19:56.334Z",
+  "schemaVersion": 2,
+  "version": "4.0.113",
+  "generatedAt": "2026-08-06T11:19:28.811Z",
+  "dataset": {
+    "id": "rr-20260731155217-209",
+    "generatedAt": "2026-07-31T15:52:17.621Z",
+    "schemaVersion": 4
+  },
   "mode": "shadow-validation",
   "scoreImpact": "none",
+  "strictValidationRequested": false,
   "referenceZones": [
     {
       "id": "DK-B01-01",
@@ -253,5 +259,10 @@
         "numericScoreChangedByReport": false
       }
     }
-  ]
+  ],
+  "validationSummary": {
+    "verifiedCurrentZones": 4,
+    "shadowStateZones": 0,
+    "expectedZones": 4
+  }
 }

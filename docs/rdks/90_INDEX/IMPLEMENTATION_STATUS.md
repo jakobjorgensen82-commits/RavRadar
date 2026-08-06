@@ -231,3 +231,10 @@ Status: Implementeret og lokalt valideret.
 - **FORTSAT SKYGGETILSTAND:** Historisk tilstand forklares, men påvirker ikke RavScore.
 - **NÆSTE PLANTRIN:** Validér referencezonernes historiske felter over flere produktionstimer; aktivér derefter kun det glidende varigheds-/styrkebidrag for dokumenteret indadgående strøm.
 - **ÅBEN DRIFT:** Workflowkøretid over cronintervallet skal profileres og optimeres separat.
+
+## 4.0.113
+- **IMPLEMENTERET:** Progressiv rå DMI GRIB-cache med separat restore/save og unik nøgle pr. kørsel.
+- **IMPLEMENTERET:** Datasætbundet referencezonerapport med kompakt loglinje og streng CI-kontrol efter frisk datagenerering.
+- **OVERVÅGES:** Faktisk cacheprogression, ophør af gentagen marine warmup og ny normal køretid.
+- **UDSAT:** Ændring af eksternt 10-minutters croninterval, indtil nye produktionsmålinger foreligger.
+- **IKKE IMPLEMENTERET:** Numerisk transportbidrag til RavScore.

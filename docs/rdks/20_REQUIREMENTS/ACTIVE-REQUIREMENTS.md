@@ -113,3 +113,9 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-REFERENCE-003 – BINDENDE:** Als Odde og Helberskov må ikke klassificeres som fjordzone.
 - **REQ-SITETEST-DASHBOARD-001 – IMPLEMENTERET:** Sitetesten må først kontrollere samlet-test-knappen efter at dashboardfanen er aktiv og knappen er synlig og klikbar.
 - **REQ-SCREENSHOT-001 – BINDENDE:** Ejeren skal kun bedes om nye manuelle screenshots i yderste nødstilfælde, når projekt-ZIP, logs, sitetest og automatisk diagnostik ikke kan afgøre spørgsmålet.
+
+## Workflowcache og produktionsbevis – 4.0.113
+- **REQ-DMI-CACHE-PROGRESS-001 – IMPLEMENTERET:** Rå DMI GRIB-cache skal kunne akkumulere fremdrift mellem GitHub-kørsler. Save-nøglen skal være unik, og næste kørsel skal gendanne seneste kompatible cache.
+- **REQ-REFERENCE-PRODUCTION-001 – IMPLEMENTERET:** Hver frisk produktion skal logge referencezonernes datasæt-id, strømverifikation og skyggefelter i maskinlæsbart format.
+- **REQ-REFERENCE-PRODUCTION-002 – BINDENDE:** Frisk produktion må ikke bestå den strenge referencekontrol, hvis en af de fire zoner mangler `shadow-v1`. Manglende verificeret DMI-strøm skal logges som advarsel og må ikke erstattes af generelle strømbånd eller anden transportfallback.
+- **REQ-SCHEDULER-MEASURE-001 – AKTIV:** Croninterval må først ændres efter måling af mindst tre kørsler med fungerende progressiv cache.

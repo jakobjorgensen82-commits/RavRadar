@@ -59,3 +59,11 @@ Tænk ændringen til ende før implementering. Følg hele kæden:
 input → scheduler/tidsbudget → cache → datagenerering → proveniens → state/score → offentlig runtime → UI/admin → tests → artifact → deploy → browser.
 
 Søg efter gamle tests og antagelser, som ændringen gør forældede. Simulér både frisk opdatering, cachegenbrug og fejlgrene. En ZIP må kun leveres efter fuld validering på det præcise pakkede indhold.
+
+## 4.0.113 – næste produktionskontrol
+- Fem komplette kørsler 6. august 2026 viste 12–15 minutters varighed og gentagen `marine-warmup-pending`.
+- Rodårsagen var GitHubs uforanderlige cache: samme ugentlige primærnøgle blev ramt hver gang, hvorefter cache-action undlod at gemme den nye GRIB-fremdrift.
+- 4.0.113 bruger unik save-nøgle pr. kørsel og gendanner seneste kompatible cache.
+- Næste analyse skal kontrollere, at cachefremdrift faktisk bæres mellem kørsler, at warmup ophører, og at jobtiden falder eller stabiliseres.
+- Cron forbliver foreløbig 10 minutter. Intervallet må først ændres efter nye målinger uden cachefejlen.
+- Workflowloggen skriver nu `RAVRADAR_STATE_REFERENCE` med datasæt og de fire zoners kompakte skyggefelter. Sammenlign mindst tre friske produktionstimer.

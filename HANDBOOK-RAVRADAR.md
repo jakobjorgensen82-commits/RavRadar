@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.112
+**Håndbogsversion:** 4.0.113
 
 **Opdateret:** 1. august 2026
 
@@ -1305,3 +1305,8 @@ Gamle tests kan indeholde antagelser om en tidligere arkitektur. De skal findes 
 
 ### 60.9 Overlevering mellem projektchats
 Ved starten af en ny chat skal `docs/rdks/05_NEXT_CHAT_HANDOFF.md` læses sammen med Current Truth, implementeringsstatus, aktive krav, kendte issues og seneste changelog. Projekt-ZIP’en er den primære tekniske sandhed. Historiske chats bruges kun til begrundelse, når projektets aktuelle dokumentation ikke er tilstrækkelig.
+
+## Produktionskontrol af historisk tilstand (4.0.113)
+Den historiske tilstand er fortsat en skyggeberegning uden pointvirkning. Efter hver frisk produktion kontrollerer workflowet de fire faste referencezoner. Kontrollen kræver både verificeret DMI-strøm og historikmærket `shadow-v1`. En kompakt loglinje gør det muligt at sammenligne varighed, styrke, stabilitet og nærkystpotentiale mellem produktionstimer uden nye manuelle screenshots.
+
+Den rå DMI GRIB-cache skal bevare fremdrift mellem kørsler. GitHub-caches kan ikke overskrives under samme nøgle, så hver kørsel gemmer en unik cache og næste kørsel henter den seneste kompatible. Dette er en driftsmekanisme og ændrer ikke de marine kvalitetskrav.
