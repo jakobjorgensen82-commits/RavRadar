@@ -1,0 +1,257 @@
+{
+  "schemaVersion": 1,
+  "version": "4.0.112",
+  "generatedAt": "2026-08-06T09:19:56.334Z",
+  "mode": "shadow-validation",
+  "scoreImpact": "none",
+  "referenceZones": [
+    {
+      "id": "DK-B01-01",
+      "name": "Agger og Krik Vig",
+      "referenceRole": "kompleks åben vestkyst",
+      "classification": "reference-coast",
+      "geometry": {
+        "dataPoint": [
+          8.19,
+          56.79
+        ],
+        "pinPoint": [
+          8.2293,
+          56.7834
+        ],
+        "onshoreDirectionDeg": 107,
+        "coastType": "west",
+        "coastLinePoints": 15,
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "reviewStatus": "geometry-consistent-v3.1.9"
+      },
+      "morphology": {
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true
+      },
+      "current": {
+        "speedMps": 0.05,
+        "directionDeg": 39,
+        "uMps": 0.03457,
+        "vMps": 0.04209,
+        "provenance": {
+          "status": "verified",
+          "provider": "dmi",
+          "gridPoint": [
+            8.04178,
+            56.825
+          ],
+          "method": "exact",
+          "sourceTimes": [
+            "2026-07-31T16:00:00.000Z"
+          ]
+        }
+      },
+      "state": {
+        "mode": null,
+        "eventPhase": null,
+        "strongEventDurationHours": null,
+        "hoursSinceStrongEventEnd": null,
+        "inboundCurrentDurationHours": null,
+        "inboundCurrentMomentum": null,
+        "outboundCurrentDurationHours": null,
+        "outboundCurrentPressure": null,
+        "currentDirectionStability": null,
+        "mobilisationPotential": null,
+        "nearshorePotential": null
+      },
+      "validation": {
+        "verifiedCurrent": true,
+        "shadowStatePresent": false,
+        "numericScoreChangedByReport": false
+      }
+    },
+    {
+      "id": "DK-B02-07",
+      "name": "Asaa og Melholt",
+      "referenceRole": "nordjysk østkyst",
+      "classification": "reference-coast",
+      "geometry": {
+        "dataPoint": [
+          10.475,
+          57.14
+        ],
+        "pinPoint": [
+          10.4265,
+          57.1398
+        ],
+        "onshoreDirectionDeg": 270,
+        "coastType": "east",
+        "coastLinePoints": 5,
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "reviewStatus": "geometry-consistent-v3.1.9"
+      },
+      "morphology": {
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true
+      },
+      "current": {
+        "speedMps": 0.04,
+        "directionDeg": 265,
+        "uMps": -0.04287,
+        "vMps": -0.00355,
+        "provenance": {
+          "status": "verified",
+          "provider": "dmi",
+          "gridPoint": [
+            10.54181,
+            57.075
+          ],
+          "method": "exact",
+          "sourceTimes": [
+            "2026-07-31T16:00:00.000Z"
+          ]
+        }
+      },
+      "state": {
+        "mode": null,
+        "eventPhase": null,
+        "strongEventDurationHours": null,
+        "hoursSinceStrongEventEnd": null,
+        "inboundCurrentDurationHours": null,
+        "inboundCurrentMomentum": null,
+        "outboundCurrentDurationHours": null,
+        "outboundCurrentPressure": null,
+        "currentDirectionStability": null,
+        "mobilisationPotential": null,
+        "nearshorePotential": null
+      },
+      "validation": {
+        "verifiedCurrent": true,
+        "shadowStatePresent": false,
+        "numericScoreChangedByReport": false
+      }
+    },
+    {
+      "id": "DK-B02-13",
+      "name": "Als Odde og Helberskov",
+      "referenceRole": "åben kyst nord for Mariager Fjord; ikke fjordzone",
+      "classification": "open-coast-near-estuary",
+      "geometry": {
+        "dataPoint": [
+          10.37,
+          56.68
+        ],
+        "pinPoint": [
+          10.331,
+          56.695
+        ],
+        "onshoreDirectionDeg": 305,
+        "coastType": "east",
+        "coastLinePoints": 5,
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "reviewStatus": "geometry-consistent-v3.1.9"
+      },
+      "morphology": {
+        "shallowWater": true,
+        "reefs": true,
+        "seagrass": true
+      },
+      "current": {
+        "speedMps": 0.03,
+        "directionDeg": 270,
+        "uMps": -0.02936,
+        "vMps": -0.00009,
+        "provenance": {
+          "status": "verified",
+          "provider": "dmi",
+          "gridPoint": [
+            10.38165,
+            56.667
+          ],
+          "method": "exact",
+          "sourceTimes": [
+            "2026-07-31T16:00:00.000Z"
+          ]
+        }
+      },
+      "state": {
+        "mode": null,
+        "eventPhase": null,
+        "strongEventDurationHours": null,
+        "hoursSinceStrongEventEnd": null,
+        "inboundCurrentDurationHours": null,
+        "inboundCurrentMomentum": null,
+        "outboundCurrentDurationHours": null,
+        "outboundCurrentPressure": null,
+        "currentDirectionStability": null,
+        "mobilisationPotential": null,
+        "nearshorePotential": null
+      },
+      "validation": {
+        "verifiedCurrent": true,
+        "shadowStatePresent": false,
+        "numericScoreChangedByReport": false
+      }
+    },
+    {
+      "id": "DK-B03-13",
+      "name": "Blåvand og Hvidbjerg",
+      "referenceRole": "højenergi-kyst med flere lokale kystretninger",
+      "classification": "reference-coast",
+      "geometry": {
+        "dataPoint": [
+          8.015,
+          55.565
+        ],
+        "pinPoint": [
+          8.105,
+          55.565
+        ],
+        "onshoreDirectionDeg": 90,
+        "coastType": "west",
+        "coastLinePoints": 4,
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "reviewStatus": "geometry-consistent-v3.1.9"
+      },
+      "morphology": {
+        "shallowWater": true,
+        "reefs": true,
+        "seagrass": false
+      },
+      "current": {
+        "speedMps": 0.2,
+        "directionDeg": 329,
+        "uMps": -0.10152,
+        "vMps": 0.169,
+        "provenance": {
+          "status": "verified",
+          "provider": "dmi",
+          "gridPoint": [
+            7.95845,
+            55.475
+          ],
+          "method": "exact",
+          "sourceTimes": [
+            "2026-07-31T16:00:00.000Z"
+          ]
+        }
+      },
+      "state": {
+        "mode": null,
+        "eventPhase": null,
+        "strongEventDurationHours": null,
+        "hoursSinceStrongEventEnd": null,
+        "inboundCurrentDurationHours": null,
+        "inboundCurrentMomentum": null,
+        "outboundCurrentDurationHours": null,
+        "outboundCurrentPressure": null,
+        "currentDirectionStability": null,
+        "mobilisationPotential": null,
+        "nearshorePotential": null
+      },
+      "validation": {
+        "verifiedCurrent": true,
+        "shadowStatePresent": false,
+        "numericScoreChangedByReport": false
+      }
+    }
+  ]
+}

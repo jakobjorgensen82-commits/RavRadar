@@ -61,3 +61,9 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 - 4.0.105 kunne fylde localStorage med store Supabase-dokumenter og udløse QuotaExceededError. Rodårsagen er rettet i 4.0.106 og produktionsbekræftet af ejer i den efterfølgende drift.
 
 - 4.0.109 kunne fejle, fordi HARMONIE brugte næsten hele bulkbudgettet før DKSS. Rettet i 4.0.110 ved marine-first recovery; afventer produktionsverifikation.
+
+
+## Overvåges fra 4.0.112
+- **ISSUE-WORKFLOW-DURATION – AKTIV:** Deploy/Update-jobbet kan vare omkring 14 minutter og dermed overlappe et 10-minutters interval. Profilér collection- og trinforbrug, cachegenbrug og uændrede GRIB-assets. Auditkrav og marine dækning må ikke svækkes som genvej.
+- **ISSUE-SITETEST-DASHBOARD-TIMING – RETTET I 4.0.112:** Sitetesten kunne kontrollere dashboardknappen efter admin-ready, men mens en anden fane stadig var aktiv. Den skifter nu eksplicit til dashboard og venter på en synlig, klikbar knap.
+- **ISSUE-STATE-SHADOW-VALIDATION – AKTIV:** Tilstandsfelterne skal valideres over flere produktionstimer på de faste referencezoner, før de får numerisk scorevirkning.

@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.111
+**Håndbogsversion:** 4.0.112
 
 **Opdateret:** 1. august 2026
 
@@ -1252,3 +1252,56 @@ Forklaringen kan blandt andet vise:
 - eller at udadgående strøm gennem flere timer sandsynligvis nedbryder potentialet.
 
 Der bruges ikke en fast regel om, at almindelig indtransport altid tager et bestemt antal timer. Varighed, retning og styrke vurderes samlet.
+
+## 60. Historisk tilstandsmodel, referencezoner og sikker videreudvikling
+
+### 60.1 Hvorfor RavRadar bruger en tilstandsmodel
+Ravtransport beskrives ikke godt nok af et øjebliksbillede. Et område kan have haft kraftig mobilisering, flere timers indadgående strøm og derefter roligere forhold. Ravet kan stadig være nær kysten, selv om den aktuelle vindretning ikke længere ser optimal ud. Derfor skelner RavRadar mellem aktuelle jagtforhold og den historiske proces, som har ført zonen frem til den aktuelle time.
+
+Den historiske model beregner blandt andet:
+- hvor længe en kraftig energihændelse har stået på,
+- hvor længe siden hændelsen sluttede,
+- hvor længe strømmen har haft en indadgående eller udadgående komponent,
+- akkumuleret indtransportmomentum og udtransporttryk,
+- mobiliseringspotentiale,
+- nærkystpotentiale,
+- og en forklarende procesfase.
+
+I 4.0.112 er dette fortsat en skyggetilstand. Den bruges til forklaring, diagnostik og faglig kontrol, men ændrer ikke RavScore. Det er bevidst: nye historiske regler skal først bevises på faktiske produktionsdata og i regressionstest.
+
+### 60.2 Ingen universel transportforsinkelse
+RavRadar bruger ikke en hård regel om, at almindelig indtransport altid kræver tre, fire eller fem timer. Den fysiske transporttid afhænger blandt andet af afstand, strømstyrke og hvor materialet allerede befinder sig. I stedet skal det senere numeriske bidrag vokse glidende med dokumenteret varighed, styrke og stabilitet af indadgående strøm.
+
+Efter meget kraftig mobilisering kan roligere forhold og indadgående strøm opbygge et stærkt potentiale over omtrent ti timer. Det er et gradvist forløb og ikke en kontakt, der pludselig skifter ved præcis ti timer.
+
+### 60.3 Faktiske strømdata – ingen generelle strømbånd
+Kun den faktiske marine strømvektor må styre transportberegningen. Generelle beskrivelser af faste strømbånd omkring Danmark bruges hverken som scoregrundlag eller fallback. Når DMI-u/v mangler, er data ukendt. Manglende data må ikke blive til nulstrøm eller en antaget regional strøm.
+
+### 60.4 Morfologi
+Eksisterende dokumenterede zoneoplysninger om rev, ålegræs og lavt vand bevares i RavScore. Manglende oplysninger er neutrale og må ikke give straf. RavRadar kræver ikke, at administratoren manuelt kortlægger hele Danmarks bund og kystmorfologi. Praktiske råd om revler, høfter, ålegræs, tangbræmmer og opskyl kan bruges i håndbog og vejledning, også hvor de ikke indgår som numerisk data.
+
+### 60.5 Faste referencezoner
+Fire zoner bruges til automatiseret kontrol af geometri, strøm og skyggetilstand:
+- Agger og Krik Vig,
+- Asaa og Melholt,
+- Als Odde og Helberskov,
+- Blåvand og Hvidbjerg.
+
+Als Odde og Helberskov er åben kyst nord for Mariager Fjord og må ikke behandles som fjordzone. Referencezonerapporten samler zonegeometri, pålandsretning, morfologi, verificeret strømproveniens og historiske state-felter. Rapporten ændrer ikke scoren. Nye manuelle billedserier skal kun kræves, hvis projekt-ZIP, logs, sitetest og automatisk diagnostik ikke kan afgøre en konkret fejl.
+
+### 60.6 Brugerfund og GPS
+En fremtidig fundrapport skal kræve, at brugeren vælger den zone, hvor jagten foregik. GPS må bruges til at kontrollere, om valget virker plausibelt, men må ikke automatisk blive jagtstedet. Brugeren kan oprette rapporten hjemmefra, og telefonens aktuelle position kan derfor være irrelevant.
+
+Fundrapporten skal knyttes til den historiske vejr- og tilstandskæde på det valgte tidspunkt. AI kan senere finde mønstre og foreslå nye regler, men en produktionsregel kræver menneskelig godkendelse, versionering og efterfølgende effektkontrol. Manglende fund er svagere evidens end et dokumenteret fund, fordi erfaring, udstyr, søgetid og konkurrence påvirker resultatet.
+
+### 60.7 Performance
+Historik og tilstand beregnes i pipeline. Den offentlige browser modtager kun kompakte afledte felter. Rå 24-timershistorik og store diagnostikfiler må ikke flyttes til offentlig startup. Seneste verificerede opstart omkring 3,45 sekunder er en baseline, som nye ændringer skal sammenlignes med.
+
+### 60.8 Sikker udviklingsmetode
+Før en ændring implementeres, skal hele kæden gennemgås:
+input, scheduler, tidsbudget, cache, DMI-hentning, proveniens, tilstand, score, offentlig runtime, UI, admin, tests, artifact, deploy og browsercache.
+
+Gamle tests kan indeholde antagelser om en tidligere arkitektur. De skal findes og vurderes, før workflowet ændres. En release må ikke afleveres alene fordi den nye, lokale test består. Hele valideringen og release-gaten skal køre på præcis det pakkede indhold.
+
+### 60.9 Overlevering mellem projektchats
+Ved starten af en ny chat skal `docs/rdks/05_NEXT_CHAT_HANDOFF.md` læses sammen med Current Truth, implementeringsstatus, aktive krav, kendte issues og seneste changelog. Projekt-ZIP’en er den primære tekniske sandhed. Historiske chats bruges kun til begrundelse, når projektets aktuelle dokumentation ikke er tilstrækkelig.

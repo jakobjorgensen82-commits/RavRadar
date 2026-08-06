@@ -348,3 +348,13 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Tilføjede fælles tilstandsforklaring til zonepanel, debug og Spørg RavRadar uden at ændre den numeriske score.
 - Tilføjede bindende kildeneutralitetsregel og automatisk releaseblokering ved forbudte eksterne navne.
 - Fastholdt hurtig offentlig opstart ved kun at bruge kompakte state-felter beregnet i pipelinen.
+
+
+## 2026-08-06 – 4.0.112 sikker overlevering og automatisk referencevalidering
+- En lang projektchat gjorde det nødvendigt at flytte maksimal aktuel viden ind i projektet før næste chat.
+- Ny `05_NEXT_CHAT_HANDOFF.md` samler læserækkefølge, baseline, tilstandsplan, bindende afgrænsninger, driftsrisici og første handlinger.
+- Fire manuelt kontrollerede zoner er gjort til automatiske referencezoner; nye omfattende billedserier skal normalt ikke kræves.
+- Als Odde og Helberskov er korrigeret i dokumentationen som åben kyst nord for Mariager Fjord, ikke fjord.
+- Sitetestens eneste kendte falske negative er rettet ved eksplicit dashboardaktivering og vent på klikbar knap.
+- Tilstandsmodellen ændrer fortsat ikke RavScore. Næste scoretrin er glidende varighed/styrke af faktisk indadgående DMI-strøm, efter faglig skyggevalidering.
+- DMI-workflowets lange køretid forbliver et separat optimeringsspor.

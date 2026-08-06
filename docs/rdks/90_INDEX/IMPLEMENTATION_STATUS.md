@@ -222,3 +222,12 @@ Status: Implementeret og lokalt valideret.
 
 ## 4.0.110 – marine recovery scheduler
 **IMPLEMENTERET, AFVENTER PRODUKTIONSVERIFIKATION.** DKSS prioriteres før HARMONIE under manglende marinehorisont. Den videnskabelige u/v-audit er uændret.
+
+
+## 4.0.112 – overgang, teststabilitet og referencezoner
+- **IMPLEMENTERET:** Obligatorisk næste-chat-overlevering med aktuel sandhed, plan, beslutninger, kendte risici og første læserækkefølge.
+- **IMPLEMENTERET:** Automatisk score-neutral referencezonerapport for Agger/Krik Vig, Asaa/Melholt, Als Odde/Helberskov og Blåvand/Hvidbjerg.
+- **IMPLEMENTERET:** Sitetesten venter på aktivt dashboard og en synlig, klikbar samlet-test-knap.
+- **FORTSAT SKYGGETILSTAND:** Historisk tilstand forklares, men påvirker ikke RavScore.
+- **NÆSTE PLANTRIN:** Validér referencezonernes historiske felter over flere produktionstimer; aktivér derefter kun det glidende varigheds-/styrkebidrag for dokumenteret indadgående strøm.
+- **ÅBEN DRIFT:** Workflowkøretid over cronintervallet skal profileres og optimeres separat.

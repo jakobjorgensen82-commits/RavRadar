@@ -187,3 +187,12 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - Eksisterende dokumenterede morfologidata må fortsat påvirke score; manglende morfologidata er neutralt og giver ingen straf.
 - Ingen del af projektet må navngive de eksterne hjemmesider, som blev brugt som analysemateriale. Dette gælder UI, kode, kommentarer, tests, RDKS, håndbog, debug, AI og artefakter.
 - Brugerfund skal knyttes til en aktivt valgt zone. GPS er kun plausibilitetskontrol og må ikke automatisk antages at være jagtstedet.
+
+
+## Aktuel overgangsstatus – 4.0.112
+- Den obligatoriske næste-chat-overlevering findes i `docs/rdks/05_NEXT_CHAT_HANDOFF.md` og skal læses i starten af en ny projektchat.
+- Tilstandsmodellen er fortsat score-neutral. Næste faglige scoretrin må først aktiveres efter automatisk referencezonevalidering.
+- Fire referencezoner genereres automatisk i `data/diagnostics/state-reference-zones.json`; nye manuelle billedserier kræves kun i yderste nødstilfælde.
+- Als Odde og Helberskov er åben kyst nord for Mariager Fjord, ikke fjordzone.
+- Den offentlige side skal fortsat ligge omkring den senest verificerede baseline på ca. 3,45 sekunder; tunge historikdata må ikke flyttes til browseren.
+- Deploy/Update-jobbets ca. 14 minutters køretid er en åben driftsrisiko i forhold til 10-minutters planlægning. Optimering kræver måling og må ikke svække marine audits.

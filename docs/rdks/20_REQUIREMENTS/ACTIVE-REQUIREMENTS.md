@@ -104,3 +104,12 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - Indtransport skal senere påvirke score gradvist efter varighed og styrke; der må ikke indføres en fast generel forsinkelse.
 - Brugerfund skal kræve valgt zone; GPS bruges kun til plausibilitetskontrol.
 - Projektet skal være kildeneutralt og må ikke indeholde navne på eksterne analysekilder.
+
+
+## Chat-overlevering og referencevalidering – 4.0.112
+- **REQ-HANDOFF-001 – IMPLEMENTERET:** Hver release før en ny projektchat skal bære en selvstændig RDKS-overlevering med læserækkefølge, aktuel baseline, næste plantrin, risici, referencezoner og bindende afgrænsninger.
+- **REQ-REFERENCE-001 – IMPLEMENTERET:** Tilstandsmodellen skal kunne valideres automatisk på faste referencezoner uden gentagne manuelle billedserier.
+- **REQ-REFERENCE-002 – BINDENDE:** Referencezonerapporten er diagnostik og må ikke i sig selv ændre RavScore.
+- **REQ-REFERENCE-003 – BINDENDE:** Als Odde og Helberskov må ikke klassificeres som fjordzone.
+- **REQ-SITETEST-DASHBOARD-001 – IMPLEMENTERET:** Sitetesten må først kontrollere samlet-test-knappen efter at dashboardfanen er aktiv og knappen er synlig og klikbar.
+- **REQ-SCREENSHOT-001 – BINDENDE:** Ejeren skal kun bedes om nye manuelle screenshots i yderste nødstilfælde, når projekt-ZIP, logs, sitetest og automatisk diagnostik ikke kan afgøre spørgsmålet.
