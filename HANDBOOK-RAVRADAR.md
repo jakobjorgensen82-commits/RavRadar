@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.110
+**Håndbogsversion:** 4.0.111
 
 **Opdateret:** 1. august 2026
 
@@ -1241,3 +1241,14 @@ Vandstationsfejlen fra 4.0.105 skyldtes fyldt browserlager. Fra 4.0.106 er lokal
 
 ## DMI-pipeline og prioritering (4.0.110)
 Når strømprognosens marine horisont mangler, henter RavRadar DKSS før den meget store HARMONIE-vindfil. Det beskytter de faktiske u/v-strømvektorer og vandstandsdata, som er nødvendige for score og audit. Vind kan midlertidigt komme fra den eksisterende fallbackkæde; manglende strøm må aldrig behandles som nul.
+
+## Historisk tilstand i RavRadar
+RavRadar vurderer ikke kun den aktuelle time. Systemet opsummerer også det seneste forløb med kraftig vind og bølger samt hvor længe strømmen har bevæget sig ind mod eller væk fra kysten. I version 4.0.111 bruges disse oplysninger kun til forklaring og teknisk kontrol. De ændrer endnu ikke RavScore.
+
+Forklaringen kan blandt andet vise:
+- at en kraftig hændelse nyligt kan have mobiliseret materiale,
+- at indtransport gradvist bygges op, jo længere en indadgående strøm varer,
+- at tidligere gunstige forhold kan efterlade et vedvarende nærkystpotentiale,
+- eller at udadgående strøm gennem flere timer sandsynligvis nedbryder potentialet.
+
+Der bruges ikke en fast regel om, at almindelig indtransport altid tager et bestemt antal timer. Varighed, retning og styrke vurderes samlet.

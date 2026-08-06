@@ -178,3 +178,12 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - Marine u/v og vandstand er release-kritiske og prioriteres før HARMONIE, når marinehorisonten mangler.
 - Et stort atmosfærisk asset må ikke bruge hele kørselsbudgettet og sulte DKSS.
 - Der anvendes fortsat ingen generelle strømbånd eller strømbåndsfallback.
+
+## Historisk tilstandsmodel og kildeneutralitet – 4.0.111
+- Den historiske model kører fortsat i skyggetilstand og må ikke ændre RavScore, før forklaringer og tilstande er valideret.
+- Zonepanelet, debug og Spørg RavRadar bruger samme neutrale forklaring af højenergi, indtransport, nærkystpotentiale og udtransport.
+- Almindelig indtransport har ingen fast 3–5 timers forsinkelse; potentialet vokser gradvist med varighed, retning og styrke.
+- Generelle strømbånd bruges ikke i score eller fallback. Faktiske DMI-strømdata er autoritative.
+- Eksisterende dokumenterede morfologidata må fortsat påvirke score; manglende morfologidata er neutralt og giver ingen straf.
+- Ingen del af projektet må navngive de eksterne hjemmesider, som blev brugt som analysemateriale. Dette gælder UI, kode, kommentarer, tests, RDKS, håndbog, debug, AI og artefakter.
+- Brugerfund skal knyttes til en aktivt valgt zone. GPS er kun plausibilitetskontrol og må ikke automatisk antages at være jagtstedet.

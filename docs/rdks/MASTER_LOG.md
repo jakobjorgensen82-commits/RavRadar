@@ -343,3 +343,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Rodårsagen var schedulerens vindreservation, som prioriterede atmosfære foran release-kritiske marine data.
 - Når marinehorisonten er ufuldstændig, prioriteres DKSS nu før HARMONIE og bølger. Auditkravet er bevaret; manglende u/v skjules ikke.
 - Fast udviklingsregel: ændringer skal konsekvensanalyseres gennem hele kæden fra scheduler og tidsbudget til cache, runtime, tests og deploy.
+
+## 4.0.111 – Historisk forklaring i skyggetilstand
+- Tilføjede fælles tilstandsforklaring til zonepanel, debug og Spørg RavRadar uden at ændre den numeriske score.
+- Tilføjede bindende kildeneutralitetsregel og automatisk releaseblokering ved forbudte eksterne navne.
+- Fastholdt hurtig offentlig opstart ved kun at bruge kompakte state-felter beregnet i pipelinen.

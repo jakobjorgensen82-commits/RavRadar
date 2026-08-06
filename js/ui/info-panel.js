@@ -1,5 +1,5 @@
-import { calculateRavScore, scoreRating } from "../core/score-engine.js?v=4.0.110";
-import { selectBestTimeForDay } from "../core/best-time-selector.js?v=4.0.110";
+import { calculateRavScore, scoreRating } from "../core/score-engine.js?v=4.0.111";
+import { selectBestTimeForDay } from "../core/best-time-selector.js?v=4.0.111";
 
 const formatNumber = (value, suffix, digits = 1) => Number.isFinite(Number(value)) ? `${Number(value).toFixed(digits).replace(".", ",")} ${suffix}` : "Mangler";
 const compass = value => {
@@ -49,6 +49,17 @@ function componentDetails(name, key, result, definition) {
 
 
 
+
+function stateExplanationPanel(result) {
+  const state=result?.explanation?.transportEvent?.stateExplanation;
+  if(!state?.summary)return '';
+  const facts=(state.facts||[]).map(item=>`<li>${escapeHtml(item)}</li>`).join('');
+  const metrics=[];
+  if(Number.isFinite(Number(state.mobilisationPotential)))metrics.push(`<span>Mobilisering <b>${Math.round(state.mobilisationPotential)}/100</b></span>`);
+  if(Number.isFinite(Number(state.nearshorePotential)))metrics.push(`<span>Nærkystpotentiale <b>${Math.round(state.nearshorePotential)}/100</b></span>`);
+  return `<section class="state-explanation"><p class="eyebrow dark">Historisk tilstand</p><h3>${escapeHtml(state.phase)}</h3><p>${escapeHtml(state.summary)}</p>${metrics.length?`<div class="state-metrics">${metrics.join('')}</div>`:''}${facts?`<details><summary>Se det historiske forløb</summary><ul>${facts}</ul><p class="muted">Tilstanden forklarer historikken, men ændrer endnu ikke den numeriske RavScore i denne version.</p></details>`:''}</section>`;
+}
+
 function coastTransportExplanation(result) {
   const explanation = result?.explanation?.transportDiagnostics?.coastTransportExplanation;
   if (!explanation?.summary) return "";
@@ -78,10 +89,12 @@ function debugPanel(zone, result, condition) {
       <div><span>Transport før loft</span><strong>${Number.isFinite(Number(d.scoreBeforeCaps)) ? d.scoreBeforeCaps : "–"}/100</strong></div>
       <div><span>Transport efter loft</span><strong>${Number.isFinite(Number(d.scoreAfterCaps)) ? d.scoreAfterCaps : "–"}/100</strong></div>
       <div><span>Endelig RavScore</span><strong>${result.score ?? "–"}/100</strong></div>
+      <div><span>Historisk fase</span><strong>${escapeHtml(result.explanation?.transportEvent?.stateExplanation?.phase || "Ikke beregnet")}</strong></div>
+      <div><span>Nærkystpotentiale</span><strong>${Number.isFinite(Number(result.explanation?.transportEvent?.shadowState?.nearshorePotential)) ? `${Math.round(result.explanation.transportEvent.shadowState.nearshorePotential)}/100` : "–"}</strong></div>
     </div>
     <h4>Transportens mellemregninger</h4><div class="debug-table-wrap"><table class="debug-table"><thead><tr><th>Trin</th><th>Ændring</th><th>Efter trin</th></tr></thead><tbody>${steps}</tbody></table></div>
     <h4>Anvendte scorelofter</h4><ul>${caps}</ul>
-    <h4>Samlet score</h4><pre>${escapeHtml(JSON.stringify({ formula:result.explanation?.formula, components:result.components, weights:result.explanation?.weights, contributions:result.explanation?.contributions, rawScore:result.explanation?.rawScore, adaptiveAdjustment:result.explanation?.adaptiveAdjustment, ruleAdjustment:result.explanation?.ruleAdjustment, finalScore:result.explanation?.finalScore, ai:{ probability:prediction.probability, modelProbability:prediction.modelProbability, empiricalProbability:prediction.empiricalProbability, confidence:prediction.confidence, sampleSize:prediction.sampleSize } }, null, 2))}</pre>
+    <h4>Samlet score</h4><pre>${escapeHtml(JSON.stringify({ formula:result.explanation?.formula, components:result.components, weights:result.explanation?.weights, contributions:result.explanation?.contributions, rawScore:result.explanation?.rawScore, adaptiveAdjustment:result.explanation?.adaptiveAdjustment, ruleAdjustment:result.explanation?.ruleAdjustment, finalScore:result.explanation?.finalScore, historicalState:result.explanation?.transportEvent?.shadowState, stateExplanation:result.explanation?.transportEvent?.stateExplanation, ai:{ probability:prediction.probability, modelProbability:prediction.modelProbability, empiricalProbability:prediction.empiricalProbability, confidence:prediction.confidence, sampleSize:prediction.sampleSize } }, null, 2))}</pre>
   </div></details>`;
 }
 
@@ -139,6 +152,7 @@ export function showZoneInfo(element, zone, result, condition, mode, options = {
   const componentHtml = result.available ? `<div class="component-list metric-sized">${componentDetails("Jagtbarhed","huntability",result,"Hvor let og sikkert det er at finde rav med den valgte jagtform. Vind og bølger betyder mest.")}${componentDetails("Transport","transport",result,"Hvor godt vind, strøm og vandstandsændringer fører rav og let materiale mod kysten.")}${componentDetails("Mobilisering","release",result,"Samlet potentiale for enten ny frigivelse eller genmobilisering af rav, som allerede ligger i nærkystzonen eller tidligere opskyl.")}</div>` : `<div class="metric-grid"><div class="metric"><span>Jagtbarhed</span><strong>–/100</strong></div><div class="metric"><span>Transport</span><strong>–/100</strong></div><div class="metric"><span>Mobilisering</span><strong>–/100</strong></div></div>`;
   element.innerHTML = `<button type="button" class="back-to-overview" data-close-zone>← Tilbage til oversigten</button><div class="zone-header"><div><h2>${escapeHtml(zone.name)}</h2><p class="zone-meta">${escapeHtml(zone.region)} · ${modeName}</p></div><div class="score-badge ${result.level}"><strong>${score}</strong><span>${escapeHtml(result.label)}</span></div></div>
     ${componentHtml}
+    ${result.available ? stateExplanationPanel(result) : ""}
     ${result.available ? coastTransportExplanation(result) : ""}
     ${result.prediction?.available ? `<section class="prediction-panel"><div><span class="eyebrow">AI-prognose</span><h3>${result.prediction.probability}% chance for ravfund</h3><p>${escapeHtml(result.prediction.label)} · sikkerhed ${result.prediction.confidence}%</p></div><details><summary>Sådan er prognosen beregnet</summary><ul>${result.prediction.reasons.map(reason=>`<li>${escapeHtml(reason)}</li>`).join("")}</ul></details></section>` : ""}
     ${result.available ? debugPanel(zone,result,condition) : ""}

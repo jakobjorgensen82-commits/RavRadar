@@ -385,3 +385,5 @@ body.zone-focus .info-panel { scroll-margin-top:12px; }
 }
 @media(max-width:420px){.app-header{grid-template-columns:1fr}.header-actions{width:100%;grid-template-columns:auto 1fr}.primary-header-actions .header-button{font-size:.72rem}}
 .legend-note{margin:0;padding:5px 10px 8px;text-align:center;color:var(--muted);font-size:.68rem;background:var(--surface)}
+.state-explanation{margin:14px 0;padding:15px;border:1px solid rgba(7,59,76,.24);border-radius:14px;background:linear-gradient(135deg,#f5fbfd,#f7faf6)}
+.state-explanation h3{margin:.15rem 0 .45rem;text-transform:none}.state-explanation p{margin:.4rem 0}.state-explanation details{margin-top:.65rem}.state-explanation summary{cursor:pointer;font-weight:750}.state-explanation ul{margin:.55rem 0;padding-left:1.2rem}.state-metrics{display:flex;flex-wrap:wrap;gap:8px;margin:.7rem 0}.state-metrics span{padding:5px 9px;border-radius:999px;background:#e7f1f4;font-size:.88rem}

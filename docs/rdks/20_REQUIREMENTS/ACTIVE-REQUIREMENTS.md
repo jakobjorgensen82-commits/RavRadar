@@ -98,3 +98,9 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-PERFORMANCE-STATE-001 – BINDENDE:** Historik og tilstandsberegning sker i pipeline. Offentlig runtime må kun modtage kompakte afledte felter, og opstart må ikke forringes væsentligt.
 - **REQ-MORPHOLOGY-001 – BINDENDE:** Eksisterende dokumenteret morfologi må fortsat påvirke scoren. Manglende data er neutralt, og administratoren pålægges ikke ny landsdækkende manuel kortlægning.
 - **REQ-OBSERVATION-ZONE-001 – AKTIV:** En fundrapport skal kræve valg af jagtzonen. GPS bruges som plausibilitetskontrol og må ikke automatisk antages at være jagtstedet, fordi rapporten kan indsendes hjemmefra.
+
+## Historisk model og brugerfund – aktivt
+- Den historiske tilstandsmodel skal valideres i skyggetilstand, før den får lov at ændre RavScore.
+- Indtransport skal senere påvirke score gradvist efter varighed og styrke; der må ikke indføres en fast generel forsinkelse.
+- Brugerfund skal kræve valgt zone; GPS bruges kun til plausibilitetskontrol.
+- Projektet skal være kildeneutralt og må ikke indeholde navne på eksterne analysekilder.

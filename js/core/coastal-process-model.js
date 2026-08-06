@@ -16,6 +16,56 @@ export function classifyCoastalZone(zone={}){
   return {primary:type,tags:[...new Set(tags)],confidence:'heuristic'};
 }
 
+
+function formatHours(value) {
+  const hours=n(value);
+  if(hours===null)return null;
+  if(hours<1)return 'under 1 time';
+  const rounded=Math.round(hours*10)/10;
+  return `${String(rounded).replace('.',',')} ${Math.abs(rounded-1)<.05?'time':'timer'}`;
+}
+
+export function buildStateExplanation(history={}) {
+  const mode=history.stateModelMode||null;
+  if(!mode)return null;
+  const phase=history.eventPhase||'ukendt fase';
+  const inbound=n(history.inboundCurrentDurationHours);
+  const inboundMomentum=n(history.inboundCurrentMomentum);
+  const outbound=n(history.outboundCurrentDurationHours);
+  const outboundPressure=n(history.outboundCurrentPressure);
+  const eventDuration=n(history.strongEventDurationHours);
+  const sinceEvent=n(history.hoursSinceStrongEventEnd);
+  const mobilisation=n(history.mobilisationPotential);
+  const nearshore=n(history.nearshorePotential);
+  const stability=n(history.currentDirectionStability);
+  const facts=[];
+  if(eventDuration!==null&&eventDuration>0){
+    const age=sinceEvent===null?'':` og sluttede for ${formatHours(sinceEvent)} siden`;
+    facts.push(`En kraftig energihændelse varede cirka ${formatHours(eventDuration)}${age}.`);
+  }
+  if(inbound!==null&&inbound>0){
+    const strength=inboundMomentum===null?'':inboundMomentum>=65?' med stærkt akkumuleret transportbidrag':inboundMomentum>=30?' med tydeligt akkumuleret transportbidrag':' med et foreløbigt transportbidrag';
+    facts.push(`Strømmen har haft en indadgående komponent i cirka ${formatHours(inbound)}${strength}.`);
+  }
+  if(outbound!==null&&outbound>0){
+    const strength=outboundPressure===null?'':outboundPressure>=55?' og giver et stærkt udtransporttryk':outboundPressure>=25?' og giver et mærkbart udtransporttryk':' og giver et mindre udtransporttryk';
+    facts.push(`Strømmen har også bevæget sig væk fra kysten i cirka ${formatHours(outbound)}${strength}.`);
+  }
+  if(stability!==null&&inbound!==null&&inbound>0){
+    if(stability>=.75)facts.push('Strømretningen har været forholdsvis stabil.');
+    else if(stability<.4)facts.push('Strømretningen har skiftet en del, så transportforløbet er mere usikkert.');
+  }
+  let summary='RavRadar har endnu ikke nok historik til en sikker tilstandsvurdering.';
+  if(phase==='højenergifase')summary='Der er høj energi nu eller meget nyligt. Rav kan være blevet mobiliseret, men jagtforholdene kan stadig være vanskelige.';
+  else if(phase==='efterstorm/indtransport')summary='En tidligere kraftig hændelse efterfølges nu af indadgående strøm. Potentialet ved kysten er derfor under opbygning.';
+  else if(phase==='vedvarende nærkystpotentiale')summary='Der forventes fortsat et nærkystpotentiale fra tidligere gunstige forhold, selv om der ikke nødvendigvis kommer nyt rav ind lige nu.';
+  else if(phase==='udtransport/nedbrydning')summary='Tidligere potentiale bliver sandsynligvis reduceret, fordi strømmen gennem en periode har ført materiale væk fra kysten.';
+  else if(phase==='indtransport opbygges')summary='Strømmen har en indadgående komponent, og transportpotentialet stiger gradvist jo længere forholdet varer.';
+  else if(phase==='rolig fase'&&nearshore!==null&&nearshore<25)summary='Der er kun svage tegn på en aktiv transport- eller mobiliseringshændelse i den tilgængelige historik.';
+  const confidence = [inbound,outbound,mobilisation,nearshore].filter(v=>v!==null).length>=3 ? 'beregnet' : 'foreløbig';
+  return {phase,summary,facts,confidence,mobilisationPotential:mobilisation,nearshorePotential:nearshore};
+}
+
 export function evaluateTransportEvent({history={},weather={},zone={}}={}){
   const maxWind=n(history.maxWind24hMps),maxWave=n(history.maxWave24hM),hours=n(history.hoursSinceHighEnergy);
   const current=n(weather.currentSpeedMps),trend=n(weather.waterLevelTrendCm3h),wave=n(weather.waveHeightM);
@@ -57,5 +107,6 @@ export function evaluateTransportEvent({history={},weather={},zone={}}={}){
     mobilisationPotential:n(history.mobilisationPotential),
     nearshorePotential:n(history.nearshorePotential)
   };
-  return {index,phase,dominantPathway,freshPath,remobilisationPath,mobilisation:Math.round(mobilisation),remobilisation:Math.round(remobilisation),timing:Math.round(timing),continuation:Math.round(continuation),retention:Math.round(retention),coast,shadowState};
+  const stateExplanation=buildStateExplanation(history);
+  return {index,phase,dominantPathway,freshPath,remobilisationPath,mobilisation:Math.round(mobilisation),remobilisation:Math.round(remobilisation),timing:Math.round(timing),continuation:Math.round(continuation),retention:Math.round(retention),coast,shadowState,stateExplanation};
 }
