@@ -142,7 +142,7 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-TRUE-ZERO-WEATHER-001 – BINDENDE:** En eksplicit numerisk 0-værdi fra datakilden er gyldig og må ikke forveksles med manglende data.
 
 ## 4.0.117 / Codex-overgang – aktive tværgående krav
-- **REQ-RELEASE-NO-SKIPPED-GATES – IMPLEMENTERET LOKALT, AFVENTER CI/PRODUKTION:** Et nyt produktionsartifact/deploy efter reel dataopbygning kræver nu, at både `npm run validate` og `npm run release:gate` kører og består. Preflight-skip uden build/deploy er bevaret. En frisk streng kørsel skal stadig bevise kontrakten eksternt.
+- **REQ-RELEASE-NO-SKIPPED-GATES – IMPLEMENTERET OG PRODUKTIONSVERIFICERET I #1772:** Et nyt produktionsartifact/deploy efter reel dataopbygning kræver, at både `npm run validate` og `npm run release:gate` kører og består. Preflight-skip uden build/deploy er bevaret. #1772 beviste begge gates, artifact og deploy som `success` i samme friske kæde.
 - **REQ-CODEX-BOOTSTRAP-001 – ERSTATTET:** Den midlertidige pre-Codex undtagelse ophørte med første Codex-workflowrettelse. Historikken bevares, men tillader ikke længere deploy med skipped gates.
 
 - **SYSTEMISK FEJLRETNING – AKTIV:** En fejl må ikke behandles som isoleret fil/test. Hele input→produktion→UI→release-kæden skal vurderes, og seneste fungerende reference skal bruges ved regressioner.

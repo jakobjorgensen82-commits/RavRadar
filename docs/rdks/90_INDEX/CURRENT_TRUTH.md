@@ -63,6 +63,7 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 ## Release Governance
 - En version må ikke erklæres færdig eller leveres som ZIP, før `npm run validate` og `npm run release:gate` er grønne.
 - Enhver positiv produktions-preflight kører begge fulde gates før Pages-artifactet bygges. Kun en negativ preflight må springe gates, artifact og deploy over.
+- Streng baseline er produktionsverificeret i #1772 på `292b402487efaf74e2a102773a3a8fbfbd39f5af`: central sync, frisk data/proveniens/runtime, begge gates, artifact og Pages-deploy var `success`.
 - GitHub-secrets bevares i repository-indstillinger og må aldrig medtages i kode eller ZIP.
 - CI-fejl skal føre til samlet audit af hele releasekæden.
 - Leverancepakker må aldrig indeholde `.git`.

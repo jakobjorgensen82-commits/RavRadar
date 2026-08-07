@@ -444,3 +444,10 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Spatial-auditten fandt fire aktive zoner uden komplet `conditions/public/bulk`: `DK-B05-17`, `DK-B05-22`, `DK-B05-23` og `DK-B10-10`.
 - Rodårsag: initial materialisering oprettede zonerne, men `clean_and_summarize()` slettede alle tomme `hourly`-records igen.
 - Rettelse: aktive tomme records bevares som eksplicit missing. Ingen nul-, stale- eller fallbackdata konstrueres.
+
+## 2026-08-07 – #1772 etablerer streng produktionsbaseline
+- #1772 kørte på `292b402487efaf74e2a102773a3a8fbfbd39f5af` med seneste centrale admin-konfiguration.
+- DMI bulk, weather-cache, current-proveniens, public runtime og referencezoner blev bygget med `success`.
+- `Validate full project after fresh weather and current provenance` og `Run release governance gate after refreshed data validation` var begge `success`, ikke skipped.
+- Pages-artifact, upload og `Deploy to GitHub Pages` var `success` i samme run.
+- P0-bypasset og den efterfølgende tom-zone-regression er dermed CI-valideret og produktionsverificeret.

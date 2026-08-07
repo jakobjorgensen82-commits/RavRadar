@@ -2,10 +2,10 @@
 
 Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status skal løbende flyttes til RDKS, når noget implementeres.
 
-## P0 – etabler en ægte Codex-baseline
+## P0 – ægte Codex-baseline etableret i #1772
 - **Første opgave – implementeret lokalt:** workflowets gate-bypass er lukket. En positiv preflight kræver nu `npm run validate` og `npm run release:gate` før artifact; negativ preflight kan fortsat stoppe billigt.
 - Auditér de seneste to dages røde push-runs og grønne auto-runs som historik. Grøn topstatus på runs med `skipped` fulde gates er ikke releasebevis.
-- **Aktuelt P0-trin:** kør én frisk streng produktionskørsel på aktuel `main` + seneste centrale admin-geometri. Først denne kan blive ny stabil baseline.
+- **Gennemført:** #1772 på `292b4024…` brugte central admin-geometri og gennemførte frisk data, begge fulde gates, artifact og Pages-deploy med `success`.
 - Hvis den strenge kørsel fejler, ret rodårsagen systemisk uden stale data, nulkonvertering, hardcodede zoner eller svækkede audits.
 - Undersøg derefter femdøgns-horisontens yderste `missing` for strøm/vandstand og de kendte 0/missing vind-/bølgeproblemer.
 - Fortsæt måling af workflowtid/schedulerbudget og DMI-coverage uden at svække marine audits.

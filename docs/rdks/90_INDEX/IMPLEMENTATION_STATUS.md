@@ -41,7 +41,7 @@ Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode
 | Ekspertreview og brugerfeedback | Implementeret med central CRUD-test | Faglig behandling af indsendte forslag |
 | RDKS | Implementeret i første fulde historikversion | Automatisk samtaledelta ved alle kommende releases |
 | Levende håndbog | Sprogligt revideret og markant udbygget | Fortsat faglig ekspertvalidering og konkrete forbedringer |
-| Release Governance | **Gate-bypass rettet lokalt; afventer streng CI/produktion** | Alle reelle produktionsbuilds kræver nu begge fulde gates; næste run skal bevise `success` for gates og deploy i samme kæde |
+| Release Governance | **Produktionsverificeret i #1772** | Alle reelle produktionsbuilds kræver begge fulde gates; overvåg kontrakten ved fremtidige workflowændringer |
 | ravradar.dk-beredskab | Planlagt/delvist | DNS, Supabase redirects, CNAME og produktionstest før aktivering |
 | Faglig rav- og sedimenthåndbog | Markant udbygget | Ekstern ekspertreview og lokal kalibrering af tærskler |
 
@@ -289,4 +289,4 @@ Status: Implementeret og lokalt valideret.
 - [x] `npm run validate` og `npm run release:gate` er nu betinget alene af, at preflight beslutter at bygge frisk produktionsdata.
 - [x] Billigt preflight-skip uden artifact/deploy er bevaret.
 - [x] Workflow-kontrakttesten kræver begge gates før Pages-artifactet og forbyder trigger-/force-betingelser på gates.
-- [ ] Frisk GitHub-kørsel skal stadig vise begge gates og Pages-deploy som `success`, før baselinen er CI-/produktionsverificeret.
+- [x] #1772 på `292b4024…` viste central sync, frisk produktionskæde, begge fulde gates, artifact og Pages-deploy som `success` i samme run.

@@ -59,3 +59,6 @@ Den dokumenterede bootstrap-fejl er lukket lokalt. Når preflight beslutter at b
 
 ## Opfølgning fra streng #1769 – tomme aktive bulkzoner
 #1769 blev korrekt stoppet af den fulde validate før artifact/deploy. Fire aktive zoner var blevet materialiseret, men blev bagefter slettet af bulk-cleanup, fordi deres `hourly` var tom. Cleanup bevarer nu hele den aktive registrering; tomme records betyder eksplicit manglende data og udfyldes ikke med nul eller stale værdier.
+
+## Streng produktionsverifikation #1772
+#1772 på `292b402487efaf74e2a102773a3a8fbfbd39f5af` gennemførte central admin-sync, frisk DMI/weather/proveniens/public runtime, fuld validate, releasegate, Pages-artifact og deployment med `success` i samme run. Gate-bypasset og tom-zone-regressionen er dermed produktionsverificeret løst.
