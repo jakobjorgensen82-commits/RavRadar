@@ -1371,3 +1371,10 @@ Codex skal begynde med `docs/ai/CODEX_START_HERE.md` og derefter følge RDKS-læ
 
 ### 61.7 Arbejd som på et helt bræt
 Ved komplekse fejl skal udvikleren holde hele kæden i overblik: input og administratoropsætning, scheduler og tidsbudget, cache, DMI-collection og GRIB, grid-/lagparring, interpolation/routing, provenance, historisk state, RavScore, public runtime, UI/admin, regressionstests, artifact, deploy og browsercache. Det er denne systemiske arbejdsform, der skal forhindre en ny række symptomrettelser, hvor hvert træk kun flytter fejlen til næste led.
+
+### 61.8 Vigtig korrektion: et grønt automatisk run kan være utilstrækkeligt
+Ved den afsluttende Codex-overgang blev workflowets statuslogik gennemgået igen. Her viste det sig, at en almindelig automatisk `workflow_dispatch` kan bygge nye vejrdata og deploye et Pages-artifact, selv om de to fulde trin `npm run validate` og `npm run release:gate` er sprunget over. #1760 var grønt og deployede, men begge fulde gates stod `skipped`.
+
+Derfor gælder fremover: **grøn topstatus er ikke nok**. En release er kun strengt godkendt, når de bindende gate-trin faktisk er kørt og har status `success`. Den aktuelle 4.0.117-handoff er kode- og deploymæssigt aktiv, men må ikke betegnes som ny stabil baseline endnu.
+
+Den sidste pre-Codex pakke ændrer med vilje ikke denne workflowbetingelse. Første Codex-opgave er at rette den direkte i repositoryet og derefter gennemføre en frisk fuld produktionsvalidering. Denne midlertidige bootstrap er ikke en permanent undtagelse fra Release Governance.

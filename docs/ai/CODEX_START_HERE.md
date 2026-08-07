@@ -4,9 +4,9 @@ Dette er den obligatoriske indgang til RavRadar for Codex og andre kodeassistent
 
 ## Verificeret startbaseline
 - Applikationsversion: **4.0.117**.
-- Git-baseline: `6c1dece72d5970a1fc095b9a22f080d811cd9f36` (`RavRadar 4.0.117 stab`).
-- GitHub Actions #1749: succes og deploy på samme commit.
-- GitHub Actions #1750: succes på samme commit efter administratorens rettelser af zonegeometri; denne kørsel er den vigtigste friske produktionsverifikation ved Codex-overgangen.
+- Aktuel `main` ved handoff: `a164b6e52fa18efc7209d90779048bb86bcf870a` (`RavRadar 4.0.117 codex handoff v2`).
+- Historiske #1749/#1750 var grønne i deres daværende kontekst, men må **ikke længere bruges som bevis for den aktuelle handoff-baseline**. Efterfølgende fejlsøgning viste, at almindelige automatiske `workflow_dispatch`-kørsler kan springe de to fulde releasegates over og stadig deploye.
+- #1760 kørte på `a164b6e…`, opdaterede DMI/weather/provenance/public runtime og deployede succesfuldt, men trinene `Validate full project after fresh weather and current provenance` og `Run release governance gate after refreshed data validation` var begge **skipped**. Derfor er #1760 et deploy-/datakædebevis, ikke et fuldt releasebevis.
 - De centrale adminrettelser blev i #1750 hentet fra Supabase, anvendt på zoneregisteret og ført videre gennem vejrproduktionen.
 - En senere kørsel skal altid vurderes som nyere evidens, men må ikke automatisk omskrive denne dokumenterede baseline uden analyse.
 
@@ -42,3 +42,13 @@ Codex må ikke få tests grønne ved at genindføre stale vejrdata, konstruere m
 
 ## Praktisk handoff
 Brug `docs/ai/CODEX_HANDOFF_CHECKLIST.md` ved første lokale opsætning og før den første Codex-release.
+
+## P0 – første Codex-opgave før al videre udvikling
+1. Kontrollér den aktuelle workflowfil og bekræft gatebypasset: de to fulde gates er betinget af `push || force`, mens almindelig `workflow_dispatch` stadig kan nå artifact/deploy.
+2. Ret workflowet systemisk, så et nyt produktionsartifact ikke kan deployes efter en frisk dataopbygning uden at de relevante fulde gates faktisk har kørt og bestået. Svæk ikke gates og ændr ikke RavScore/DMI-regler for at få grønt.
+3. Kør lokale målrettede tests + `npm run validate` + `npm run release:gate`.
+4. Commit/push workflowrettelsen fra Codex.
+5. Følg den første friske GitHub-kørsel trin for trin. Den tæller kun, hvis de to gate-trin står som **success**, ikke `skipped`.
+6. Hvis den bliver rød, analysér den konkrete runtimekæde og ret årsagen. Ingen ny større featureudvikling før en fuld streng produktionskørsel er grøn.
+
+**Vigtigt:** Handoff-ZIP'en før Codex ændrer med vilje ikke workflowbetingelserne. Det er en midlertidig bootstrapmekanisme, ikke accepteret slutarkitektur.

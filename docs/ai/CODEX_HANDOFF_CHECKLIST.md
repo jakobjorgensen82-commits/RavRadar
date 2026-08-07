@@ -4,8 +4,10 @@
 - Åbn den eksisterende lokale RavRadar Git-mappe; opret ikke et nyt tomt projekt.
 - Kontrollér at `git status` viser de forventede dokumentationsændringer, og at `.git` stadig tilhører det eksisterende repository.
 - Læs `docs/ai/CODEX_START_HERE.md` og `AGENTS.md` før første kodeopgave.
-- Bekræft version 4.0.117 og baselinecommit `6c1dece…` i historikken.
+- Bekræft version 4.0.117 og aktuel `main`/handoff `a164b6e…`; behandl den som deployet bootstrap, **ikke** som fuldt streng baseline.
 - Kør `npm run validate:rdks`; brug `npm run validate` før første ændringsrelease.
+- Før nogen anden kodeopgave: auditér `.github/workflows/update-and-deploy.yml` og luk det kendte bypass, hvor almindelig `workflow_dispatch` kan deploye med `npm run validate` og `npm run release:gate` som `skipped`.
+- Efter workflowrettelsen: kræv en frisk GitHub-kørsel hvor begge fulde gate-trin står `success`; topniveauets grønne runstatus alene tæller ikke.
 
 ## Ved hver opgave
 - Find aktivt RDKS-krav/issue eller registrer det før større implementering.

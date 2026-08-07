@@ -229,15 +229,14 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - JavaScript må skelne `null`/manglende data fra tallet 0. Manglende vind eller bølger vises som `Mangler`; en ægte 0-værdi er stadig gyldig. Regler og scorevalg må ikke behandle manglende vind som vindstille.
 - Den observerede 5-dages visning med `0,0 m/s · N 0°` og `0,0 m` havde mindst én separat præsentations-/null-årsag. Den oppustede sampling af vandstandskilder kunne samtidig forsinke reelle DMI-vind/bølgeopdateringer. Produktionsverifikation skal skelne reelle datagab fra visningsfejl.
 
-## 4.0.117 – produktionssandhed ved Codex-overgangen
-- Aktuel kodebaseline er commit `6c1dece72d5970a1fc095b9a22f080d811cd9f36` på version 4.0.117.
-- GitHub Actions #1749 og #1750 gennemførte succesfuldt på denne commit; #1750 er den friske verifikation efter administratorens seneste zonegeometriændringer.
-- 4.0.117 må derfor beskrives som CI-/produktionsverificeret på dette tidspunkt. Tidligere fejlede push-/workflowkørsler på 4.0.117 er historik og må ikke forveksles med den senere verificerede tilstand.
-- Schedulerens nævner er aktive zoner, `wind` er kanonisk HARMONIE-familie, og DKSS recovery kan prioritere efter faktiske geografiske marine datagab.
-- DMI current-U/V kræver samme prognosetid og samme fysiske gitterpunkt. Når DKSS leverer flere vertikallag, isoleres kandidater pr. lag og U/V må kun danne en vektor inden for samme lag. Parsergeneration 11 sikrer genbehandling efter denne kontrakt.
-- Centralt gemt administratorgeometri er autoritativ runtimeinput. #1750 bekræftede, at de seneste korrigerede land-/havpunkter og kystlinjer blev hentet fra Supabase og anvendt før vejrproduktionen.
-- Tests må derfor ikke forsøge at genskabe historiske koordinater for at få en zone gennem DMI-kæden. Hvis administratorens aktuelle geometri er gyldig, er systemet forpligtet til at følge den.
-- Forecastets yderste horisont kan fortsat have `missing` strøm/vandstand i enkelte timer. Dette er et separat aktivt dækningsproblem. Det må ikke løses ved at gentage sidste værdi, gøre missing til 0 eller genindføre stale data.
+## 4.0.117 – korrigeret sandhed ved Codex-overgangen
+- Appversionen er 4.0.117. Aktuel `main` ved denne handoff er `a164b6e52fa18efc7209d90779048bb86bcf870a` (`RavRadar 4.0.117 codex handoff v2`).
+- Denne commit er deployet via efterfølgende automatiske runs. #1760 bekræfter succes for DMI/weather/provenance/public runtime/referencezoner/`validate:data` og GitHub Pages-deploy efter de seneste admin-geometriændringer.
+- **Men #1760 er ikke fuldt releasebevis:** `npm run validate` og `npm run release:gate` stod som `skipped`, fordi workflowet kun kører dem ved `push` eller `force=true`.
+- Brugerens observerede mønster de seneste to dage er, at strenge push-runs er blevet røde, hvorefter almindelige automatiske runs blev grønne og deployede. Den verificerede workflowlogik forklarer, hvordan dette kan ske. Indtil en historisk audit eventuelt viser andet, må ingen af disse efterfølgende auto-grønne runs anvendes som fuld releasegodkendelse.
+- Derfor er status: **kode på main: ja; deployet: ja; fuldt strengt produktionsverificeret baseline: nej endnu**.
+- Handoff-ZIP'en ændrer bevidst ikke workflow-gatebetingelserne. Første Codex-kodeopgave er at lukke bypasset direkte i repositoryet og derefter skabe en ny frisk kørsel, hvor begge fulde gates faktisk står `success`.
+- Ingen større videreudvikling må begynde, før denne strenge baseline er etableret eller den konkrete røde fejl er systemisk analyseret og løst.
 
 ## Codex-overgang – autoritativ arbejdsmodel
 - Codex starter i `docs/ai/CODEX_START_HERE.md` og arbejder derefter efter AGENTS/RDKS.

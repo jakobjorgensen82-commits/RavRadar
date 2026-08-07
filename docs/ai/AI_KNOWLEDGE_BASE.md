@@ -43,3 +43,11 @@ I den friske femdøgnsproduktion kan forecastets yderste timer vise `missing` fo
 
 ## Lokal snapshot-advarsel ved handoff
 Den projekt-ZIP, som Codex-handoffet blev bygget fra, består `npm run validate`, men den lokale `test:current-spatial-audit` rapporterer 12 advarsler om aktive zoner uden dokumenteret current-U/V-gridpunkt i netop det bundne datasnapshot. Det er ikke det samme som en frisk produktionsfejl. Ved overgangen har #1750 højere evidens for de senest korrigerede adminzoner, fordi den kørte efter central geometri-sync med friske data. Codex skal derfor altid sammenligne snapshot-tidspunkt, run-tidspunkt og commit før en warning erklæres aktuel regression.
+
+## 4.0.117 – korrigeret releasehistorik før Codex
+Efter den første handoff blev det opdaget, at topniveauet `success` på en almindelig automatisk vejropdatering ikke betyder, at hele release governance er kørt. Workflowet betinger `npm run validate` og `npm run release:gate` af `push` eller `force=true`, mens en almindelig `workflow_dispatch` med reel vejropdatering fortsat kan nå Pages-artifact og deployment. #1760 er et konkret eksempel: DMI bulk, central weather-cache, current provenance, public runtime, referencezoner, `validate:data` og Pages deployment var succes, men de to fulde gates var `skipped`.
+
+Konsekvensen er, at de seneste automatiske grønne runs ikke må bruges som stabilitetsbevis. Den aktuelle 4.0.117-kode er på `main` og er deployet, men handoffet skal betragtes som **ikke fuldt release-verificeret**, indtil Codex har lukket gatehullet og en frisk kørsel har vist `success` på begge fulde gate-trin.
+
+### Endelig admin-geometri før Codex
+Efter #1758 blev yderligere fire zoner gennemgået manuelt og konstateret klart geografisk forkerte: **Fur syd**, **Gjøl og Attrup**, **Aalborg vest og Egholm** samt **Aalborg øst og Nørresundby**. Administratoren rettede deres kystlinje og/eller land-/havpunkter centralt. #1760 blev startet efter disse sidste rettelser og viste, at den efterfølgende DMI/weather/provenance/public/deploy-kæde kunne gennemføres. Da de fulde releasegates var `skipped`, er dette bevis for propagation/deployment, ikke fuld releasegodkendelse.

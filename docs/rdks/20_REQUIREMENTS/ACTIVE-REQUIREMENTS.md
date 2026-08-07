@@ -142,6 +142,9 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-TRUE-ZERO-WEATHER-001 – BINDENDE:** En eksplicit numerisk 0-værdi fra datakilden er gyldig og må ikke forveksles med manglende data.
 
 ## 4.0.117 / Codex-overgang – aktive tværgående krav
+- **REQ-RELEASE-NO-SKIPPED-GATES – P0 / AKTIV:** Et nyt produktionsartifact/deploy efter reel dataopbygning må ikke kunne gennemføres, hvis `npm run validate` eller `npm run release:gate` er `skipped` eller fejlet. Første Codex-opgave er at implementere dette direkte i GitHub-workflowet og bevise det med en frisk streng kørsel.
+- **REQ-CODEX-BOOTSTRAP-001 – MIDLERTIDIG:** Den sidste pre-Codex handoff-pakke bevarer bevidst den eksisterende workflowlogik for at kunne komme ind i repoet med den nuværende overgangsmekanisme. Dette er ikke en permanent undtagelse fra Release Governance og skal afsluttes af første Codex-commit.
+
 - **SYSTEMISK FEJLRETNING – AKTIV:** En fejl må ikke behandles som isoleret fil/test. Hele input→produktion→UI→release-kæden skal vurderes, og seneste fungerende reference skal bruges ved regressioner.
 - **STABILITETSBEGREB – AKTIV:** Lokal grøn validering er ikke bevis for CI eller produktion. DMI-/Supabase-/pipelineændringer kræver frisk ekstern verifikation før de betegnes produktionsstabile.
 - **CENTRAL ADMIN-GEOMETRI – AKTIV OG PRODUKTIONSVERIFICERET:** Centralt gemte kystlinjer, land-/havpunkter, retninger og øvrige redigerbare zonefelter skal være autoritative og propagere gennem hele produktionskæden. Tests må ikke hardcode historiske adminværdier.

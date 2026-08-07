@@ -39,3 +39,6 @@ Ingen væsentlig arkitektur-, data-, score-, admin- eller driftsændring afslutt
 
 ## 10. Arbejdsdisciplin i Codex
 Arbejd i det lokale Git-repository. Vis/inspektér diff før commit. Lav små, forklarlige commits med tests. Push først når lokal validering er passende grøn. Brug GitHub Actions som ekstern verifikation, og gennemgå produktionsresultatet for ændringer i eksterne datakæder.
+
+## 11. Deployment-gates må aldrig være falsk grønne
+Et GitHub Actions-run er ikke releasebevis, hvis `npm run validate` eller `npm run release:gate` er `skipped`. Codex skal kontrollere **step status**, ikke kun runets grønne topstatus. Et workflow må ikke kunne bygge og deploye et nyt produktionsartifact efter frisk dataopbygning, mens de bindende releasegates springes over. Den kendte 4.0.117-overgangsfejl skal være første Codex-rettelse.

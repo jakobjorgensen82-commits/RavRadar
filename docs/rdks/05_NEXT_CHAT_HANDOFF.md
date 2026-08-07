@@ -2,7 +2,7 @@
 
 **Opdateret:** 2026-08-07
 **Aktuel appversion:** 4.0.117
-**Verificeret kodebaseline:** `6c1dece72d5970a1fc095b9a22f080d811cd9f36` (`RavRadar 4.0.117 stab`)
+**Aktuel main/handoff:** `a164b6e52fa18efc7209d90779048bb86bcf870a` (`RavRadar 4.0.117 codex handoff v2`) – deployet, men endnu ikke fuldt strengt release-verificeret
 **Produktion:** GitHub Actions #1749 og #1750 gennemført med succes på samme commit; #1750 er den friske kontrol efter de seneste centrale zonegeometriændringer.
 
 ## Start ikke med at kode
@@ -47,3 +47,11 @@ Fejlen må ikke forstås som én enkelt scheduler- eller radiusfejl. Forløbet v
 
 ## Før næste release
 Codex skal vise diff, køre relevante målrettede tests og den fulde releasevalidering, opdatere RDKS/håndbog/changelog og derefter bruge GitHub Actions/produktion som ekstern verifikation. Hvis en ændring rører DMI, Supabase eller genereret runtime, er lokal test alene ikke nok.
+
+## Første Codex-opgave – må ikke omprioriteres
+Den aktuelle workflowimplementering kan give et grønt automatisk run og deploy, selv om de to fulde releasegates er `skipped`. #1760 demonstrerer dette konkret. Codex skal som første kodeopgave lukke dette bypass direkte i repoet, køre lokal fuld validering, committe/pushe og derefter følge en frisk GitHub-kørsel. Baseline må først kaldes stabil, når begge gate-trin faktisk står `success`.
+
+Denne handoff-pakke ændrer **ikke** selve workflowbetingelserne. Det er en bevidst, kortvarig bootstrapbeslutning for at få al dokumentation ind før Codex overtager.
+
+## Seneste centrale adminændringer
+Efter #1758 blev fire ekstra zoner rettet manuelt, fordi geometrien var åbenlyst forkert: **Fur syd**, **Gjøl og Attrup**, **Aalborg vest og Egholm** og **Aalborg øst og Nørresundby**. #1760 blev kørt efter disse rettelser. Codex må ikke genskabe gamle koordinater eller hardcode dem i tests; den aktuelle centrale admin-geometri er autoritativ.

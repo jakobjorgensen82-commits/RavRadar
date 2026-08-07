@@ -63,3 +63,10 @@ Fem sammenhængende produktionskørsler afslørede, at samme ugentlige GitHub-ca
 5. Efterfølgende #1749 og især frisk #1750 kørte succesfuldt på commit `6c1dece…`; #1750 bekræftede central geometri-propagation.
 6. Forecast-edge `missing` blev bevaret som separat aktivt dækningsissue.
 7. CHAT-0014 og en samlet AI/Codex-dokumentationspakke blev oprettet før videre udvikling.
+
+## 2026-08-07 – korrigeret Codex-overgang efter #1760
+1. Efter #1758 blev fire yderligere zoner manuelt rettet i admin, fordi deres kystlinje/land-/havpunkter var geografisk forkerte: Fur syd, Gjøl og Attrup, Aalborg vest og Egholm samt Aalborg øst og Nørresundby.
+2. #1760 kørte efter de endelige adminrettelser på `a164b6e…` og deployede succesfuldt.
+3. Gennemgang af step-status viste, at de to fulde releasegates var `skipped` i #1760. Dermed blev det bevist, at en almindelig automatisk `workflow_dispatch` kan være grøn og deploye uden fuld releasevalidering.
+4. Tidligere formulering om #1749/#1750 som aktuel stabil Codex-baseline blev derfor trukket tilbage. De er historisk evidens, men ikke bevis for den nuværende handoff-kode og endelige adminstate.
+5. Den sidste pre-Codex ZIP bruges kun til at få den komplette projektviden ind i det lokale/repository-baserede arbejdsmiljø. Workflowbypasset bevares midlertidigt i denne bootstrap og skal lukkes af Codex som første kodeopgave.

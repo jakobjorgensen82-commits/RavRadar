@@ -41,7 +41,7 @@ Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode
 | Ekspertreview og brugerfeedback | Implementeret med central CRUD-test | Faglig behandling af indsendte forslag |
 | RDKS | Implementeret i første fulde historikversion | Automatisk samtaledelta ved alle kommende releases |
 | Levende håndbog | Sprogligt revideret og markant udbygget | Fortsat faglig ekspertvalidering og konkrete forbedringer |
-| Release Governance | Implementeret i 4.0.58 | Skal bestå ved alle kommende releases |
+| Release Governance | **Kendt workflow-gap ved 4.0.117-handoff** | Bindende regler findes, men almindelig `workflow_dispatch` kan deploye med de to fulde gates `skipped`; første Codex-opgave er at lukke bypasset og få en frisk streng kørsel grøn |
 | ravradar.dk-beredskab | Planlagt/delvist | DNS, Supabase redirects, CNAME og produktionstest før aktivering |
 | Faglig rav- og sedimenthåndbog | Markant udbygget | Ekstern ekspertreview og lokal kalibrering af tærskler |
 
@@ -278,3 +278,9 @@ Status: Implementeret og lokalt valideret.
 - 4.0.117 commit `6c1dece…` er derfor den dokumenterede overgangsbaseline.
 - Codex AI-dokumentationspakken og CHAT-0014 er tilføjet som dokumentationslag uden ændring af RavScore.
 - Åben: femdøgnshorisontens yderste `missing` for enkelte marine felter samt øvrige aktive roadmapkrav.
+
+## Codex bootstrap-status 2026-08-07
+- Aktuel `main`: `a164b6e…`, 4.0.117 handoff v2.
+- #1760 deployede denne kode og den seneste synkroniserede admin-geometri, men de fulde `npm run validate`/`npm run release:gate` steps var `skipped`.
+- Status må derfor ikke være "stabil baseline" endnu.
+- Første Codex-implementering er workflow-gatefikset; først derefter kan næste fulde grønne run lukke stabiliseringsfasen.

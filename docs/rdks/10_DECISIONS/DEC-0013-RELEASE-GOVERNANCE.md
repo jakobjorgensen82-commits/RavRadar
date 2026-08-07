@@ -22,3 +22,6 @@ Forløbet omkring 4.0.56 viste, at lokal kode kunne se korrekt ud, mens SQL, RDK
 ## Tillæg 4.0.59 – genererede artefakter
 
 Genererede datafiler må gerne bygges fra historiske snapshots, men generatoren skal bevare den aktuelle releaseidentitet. En generator må aldrig kopiere et ældre snapshots topniveau-`version` ind i den aktive produktionsfil. Release Gate skal køres efter de generatortrin, som GitHub Actions udfører før deployment.
+
+## Tillæg 2026-08-07 – grøn runstatus er ikke nok
+Ved 4.0.117-overgangen blev det konstateret, at workflowets almindelige `workflow_dispatch` kan springe `npm run validate` og `npm run release:gate` over og stadig nå Pages-deploy. Det er i strid med denne beslutnings hensigt. Releasebevis kræver derfor ikke kun grøn samlet runstatus, men at de bindende gate-trin faktisk er kørt og har status `success`. Første Codex-opgave er at bringe workflowimplementeringen i overensstemmelse med denne allerede bindende beslutning.
