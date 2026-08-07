@@ -6,7 +6,9 @@ const [bulk, workflow] = await Promise.all([
   fs.readFile('.github/workflows/update-and-deploy.yml', 'utf8')
 ]);
 assert.match(bulk, /GRID_CANDIDATE_TARGET/);
-assert.match(bulk, /for radius in \(0\.025, 0\.05, 0\.09, 0\.14\)/);
+assert.match(bulk, /LIMFJORD_GRID_CANDIDATE_TARGET/);
+assert.match(bulk, /radii = \(0\.025, 0\.05, 0\.09, 0\.14, 0\.20, 0\.26\) if zone\.get\("coastType"\) == "limfjord" else \(0\.025, 0\.05, 0\.09, 0\.14\)/);
+assert.match(bulk, /MAX_GRID_DISTANCE_KM = \{"limfjord": 24\.0/);
 assert.match(bulk, /if collection in MARINE_COLLECTIONS:\s*return zones/);
 assert.match(bulk, /marine_model_score/);
 assert.match(bulk, /VALID_POINT_TOO_FAR/);
