@@ -298,3 +298,7 @@ Status: Implementeret og lokalt valideret.
 - [x] Balanceret recovery ved mindst 95 % marinegrundlag er implementeret med én marineplads og én plads til mest underdækkede vind/bølgefamilie.
 - [x] Regression dækker både bred marine-first recovery og den målte 203/208-profil.
 - [ ] Frisk produktion skal bevise HARMONIE-forsøg, fulde releasegates og forbedret offentlig coverage. Issue er derfor ikke produktionslukket endnu.
+- [x] #1778 og #1779 beviste balanceret rækkefølge `dkss_lf,harmonie_dini_sf`, begge collections som `success`, fulde gates og deploy.
+- [x] Offentlig vind steg progressivt fra 21/208 zoner i #1774 til 199/208 i #1779.
+- [x] Udløbne HARMONIE-forecasttrin ældre end én time filtreres nu før download, så det begrænsede bytebudget bruges på aktuelle/fremtidige trin.
+- [ ] 96-timers vinddækning skal fortsat bygges progressivt og måles i ny produktion; issue er derfor kun delvist produktionslukket.

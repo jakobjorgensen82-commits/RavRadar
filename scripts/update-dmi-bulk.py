@@ -273,7 +273,11 @@ def list_latest_assets(collection: str) -> tuple[str | None, list[dict[str, Any]
         return None, [], stats
     run = max(runs, key=epoch)
     unique: dict[str, dict[str, Any]] = {}
+    minimum_valid_epoch = time.time() - 3600
     for row in sorted(runs[run], key=lambda r: (epoch(r["valid"]), str(r["id"]))):
+        if epoch(row["valid"]) < minimum_valid_epoch:
+            stats["expiredForecastStepsSkipped"] = int(stats.get("expiredForecastStepsSkipped") or 0) + 1
+            continue
         if not stride_selected(row["valid"], run):
             continue
         if row["valid"] in unique:

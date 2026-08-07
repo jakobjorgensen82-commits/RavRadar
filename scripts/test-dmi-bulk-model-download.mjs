@@ -23,6 +23,8 @@ assert.doesNotMatch(bulk, /asset\["parameterHint"\]/);
 assert.match(bulk, /forecast-step GRIB inventory/);
 assert.match(bulk, /recognizedParameters/);
 assert.match(bulk, /TIME_STRIDE_HOURS/);
+assert.match(bulk, /minimum_valid_epoch = time\.time\(\) - 3600/);
+assert.match(bulk, /expiredForecastStepsSkipped/);
 assert.match(bulk, /collection_schedule/);
 assert.match(bulk, /processedValidTimes/);
 assert.match(bulk, /processingSignature/);

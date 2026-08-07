@@ -7,7 +7,7 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 - Auditér de seneste to dages røde push-runs og grønne auto-runs som historik. Grøn topstatus på runs med `skipped` fulde gates er ikke releasebevis.
 - **Gennemført:** #1772 på `292b4024…` brugte central admin-geometri og gennemførte frisk data, begge fulde gates, artifact og Pages-deploy med `success`.
 - Hvis den strenge kørsel fejler, ret rodårsagen systemisk uden stale data, nulkonvertering, hardcodede zoner eller svækkede audits.
-- Femdøgnsdiagnosen fra #1774 er gennemført: public runtime manglede vind i 187/208 zoner og bølger i 33/208, mens 203/208 havde mindst 96 timers marinegrundlag. Den binære marine-recovery udsultede atmosfæremodellen; balanceret recovery er implementeret lokalt og afventer frisk produktion.
+- Femdøgnsdiagnosen fra #1774 er gennemført: public runtime manglede vind i 187/208 zoner og bølger i 33/208, mens 203/208 havde mindst 96 timers marinegrundlag. Balanceret recovery er produktionsbekræftet i #1778/#1779; vind steg til 199/208 zoner med mindst noget data. Næste målepunkt er progressiv 96-timers HARMONIE-dækning efter filtrering af udløbne modeltrin.
 - Fortsæt måling af workflowtid/schedulerbudget og DMI-coverage uden at svække marine audits.
 
 ## P1 – vandstandskilder

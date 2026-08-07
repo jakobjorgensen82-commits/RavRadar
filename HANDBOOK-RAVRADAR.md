@@ -1383,3 +1383,5 @@ Den første Codex-kodeændring har rettet workflowbetingelsen: når preflight be
 Marine data har fortsat første prioritet, når grundlaget mangler bredt. Men få vedvarende geografiske huller må ikke blokere vind og bølger i alle fremtidige kørsler. Når mindst 95 % af de aktive forecastzoner har marinegrundlag, bruger scheduleren derfor første produktive plads på den mest relevante DKSS-model og anden plads på den mest underdækkede vind- eller bølgefamilie.
 
 Grænsen er en budgetregel, ikke en lempelse af datakravene. Zoner uden gyldig strøm forbliver manglende, marineauditten er uændret, og RavRadar kopierer hverken sidste værdi eller nul ind. Hvis marinegrundlaget falder under 95 %, går begge pladser igen til marine recovery.
+
+HARMONIE-filerne er store nok til, at én kørsel kun kan behandle få forecasttrin. Cachen bygges derfor progressivt mellem kørsler. Forecasttrin, der allerede er mere end én time gamle, downloades ikke på ny; budgettet starter ved den aktuelle forecastkant og fortsætter kronologisk fremad. Den ene times tolerance bevarer et anker omkring genereringstidspunktet til den dokumenterede tidsinterpolation.

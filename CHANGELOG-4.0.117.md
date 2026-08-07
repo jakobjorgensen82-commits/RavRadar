@@ -67,3 +67,5 @@ Den dokumenterede bootstrap-fejl er lukket lokalt. Når preflight beslutter at b
 #1774 viste, at fem vedvarende marinegrundlagshuller kunne holde begge produktive collection-pladser på DKSS, selv om 203/208 zoner allerede havde mindst 96 timers marinegrundlag. Resultatet var vinddata i kun 21/208 offentlige zoner og bølgedata i 175/208.
 
 Scheduleren bevarer nu fuld marine-first ved bred fejl, men skifter ved mindst 95 % marinegrundlag til én relevant DKSS-plads og én plads for den mest underdækkede vind-/bølgefamilie. Missing forbliver missing; der er ikke tilføjet stale eller syntetisk fallback. Regressionstesten dækker begge tilstande. Frisk produktionsverifikation afventer.
+
+#1778 og #1779 produktionsbekræftede den nye rækkefølge, HARMONIE-success, fulde gates og deploy. Offentlig vind steg fra 21/208 til 199/208 zoner med mindst noget data. Målingen viste samtidig, at #1778 først downloadede tre allerede udløbne HARMONIE-trin. Bulkudvælgelsen springer derfor nu trin ældre end én time over, før bytebudgettet bruges; aktuelle/fremtidige trin og den progressive cache er uændrede.

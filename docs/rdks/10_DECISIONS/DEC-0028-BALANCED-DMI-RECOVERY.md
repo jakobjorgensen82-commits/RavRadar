@@ -13,3 +13,5 @@ Supportpakken fra den strengt grønne produktion #1774 viste 208 aktive zoner: 2
 
 ## Verifikation
 Regressionstesten skal bevise både bred marine-first recovery og den balancerede 203/208-profil. Endelig lukning kræver en frisk produktionskørsel, hvor fulde gates består, HARMONIE faktisk forsøges, og den offentlige vind-/bølgedækning måles igen.
+
+#1778 og #1779 bekræftede efterfølgende schedulerpolitikken, HARMONIE-success, fulde gates og deploy. Offentlig vind steg til 199/208 zoner med mindst noget data. 96-timers dækning var fortsat kun 14/208 og forbliver et aktivt progressivt målepunkt.
