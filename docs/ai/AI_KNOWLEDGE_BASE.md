@@ -3,6 +3,8 @@
 ## Formål
 RavRadar er et dansk kystbeslutningssystem for ravjagt. Systemet producerer en RavScore 0–100 og femdøgns/time-for-time prognoser for kystzoner. Scoren er beslutningsstøtte, ikke en garanti. DMI er den autoritative kilde til de marine og meteorologiske data, som projektet kan hente pålideligt.
 
+Produktets femdøgnsmål skal skelnes fra én models native horisont. En komponentkæde bruger den bedst egnede DMI-kilde til dens sidste valide time, undersøger andre DMI-produkter som forlængelse og anvender først derefter ekstern fallback på den resterende hale. Kæden og skiftetiden fastlægges separat for hver komponent; fallback må ikke skubbe fungerende DMI-data ud. Se DEC-0030.
+
 ## Arkitektonisk sandhed
 Der findes flere forskellige typer sandhed, som ikke må blandes:
 - Git-repository: versioneret kode, tests og dokumentation.

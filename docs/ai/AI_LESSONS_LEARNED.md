@@ -35,6 +35,9 @@ Chatarkiv og gamle changelogs er værdifulde til regressioner og begrundelser. D
 ## 11. Aktiv zonepopulation skal materialiseres i alle pipelineled
 Run #1753-lignende fejlbillede viste, at en aktiv zone kan være korrekt opbygget i central weather-cache, men stadig mangle helt i `dmi-bulk-cache.json`, hvis bulk-builderen kun opretter poster ved et direkte DMI-hit. Det er strukturelt forkert. Den aktuelle admin-zone-/kilderegistrering skal materialiseres som tomme, eksplicitte records før data flettes ind. Manglende direkte DMI-data skal være `missing`/unverified – aldrig et manglende zoneobjekt, kunstigt nul eller stale data. Tidligere bulkposter uden for den aktuelle registrering må ikke genindføres ved merge.
 
+## 12. Native modelhorisont er ikke produktets horisont
+HARMONIEs cirka 60 timer bestemmer run-retention og validering af netop den kilde, men reducerer ikke RavRadars cirka 120-timers produktmål. Den korrekte løsning er en dokumenteret komponentkæde: DMI så langt som muligt, eventuel anden DMI-kilde og kun derefter en fagligt valgt fallbackhale. Kilder må ikke sammensys uden overgangs-, proveniens- og scoreanalyse.
+
 ## Grøn workflowstatus kan skjule `skipped` releasegates
 **Hændelse:** De strenge push-runs fejlede, mens efterfølgende automatiske vejrruns ofte blev grønne og deployede.
 **Rodmekanisme:** `npm run validate` og `npm run release:gate` var betinget af `push || force`, men artifact/deploy kunne fortsætte i en almindelig `workflow_dispatch`.

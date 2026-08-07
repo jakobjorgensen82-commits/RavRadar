@@ -7,9 +7,19 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 - Auditér de seneste to dages røde push-runs og grønne auto-runs som historik. Grøn topstatus på runs med `skipped` fulde gates er ikke releasebevis.
 - **Gennemført:** #1772 på `292b4024…` brugte central admin-geometri og gennemførte frisk data, begge fulde gates, artifact og Pages-deploy med `success`.
 - Hvis den strenge kørsel fejler, ret rodårsagen systemisk uden stale data, nulkonvertering, hardcodede zoner eller svækkede audits.
-- Femdøgnsdiagnosen fra #1774 er gennemført: public runtime manglede vind i 187/208 zoner og bølger i 33/208, mens 203/208 havde mindst 96 timers marinegrundlag. Balanceret recovery er produktionsbekræftet i #1778/#1779; vind steg til 199/208 zoner med mindst noget data. HARMONIE-kildens native horisont er cirka 60 timer, så vindmålet er fuld native horisont; 96 timer gælder fortsat marine data og bølger.
-- #1785 bekræftede, at et ufuldstændigt 21Z-run blev udskudt til fordel for 18Z, og at fulde gates og deploy bestod. Runfastholdelsen er korrigeret til HARMONIEs native profil: 48 resterende timer. Næste strenge runs skal bevise fortsat opbygning på samme reference og voksende 24/48-timers vinddækning.
+- Femdøgnsdiagnosen fra #1774 er gennemført: public runtime manglede vind i 187/208 zoner og bølger i 33/208, mens 203/208 havde mindst 96 timers marinegrundlag. Balanceret recovery er produktionsbekræftet i #1778/#1779; vind steg til 199/208 zoner med mindst noget data. HARMONIE-kildens native horisont er cirka 60 timer; det er et kilde-/retentionmål, ikke en reduktion af produktets cirka 120-timers mål.
+- #1785 bekræftede valg af 18Z frem for et kortere 21Z-run. #1788 produktionsverificerede 48-timersfastholdelsen: 18Z blev bevaret, fire assets blev genbrugt, og den progressive serie voksede fra 4 til 7 behandlede tidspunkter. Fulde gates og deploy bestod.
 - Fortsæt måling af workflowtid/schedulerbudget og DMI-coverage uden at svække marine audits.
+
+## P1 – komplette DMI-first femdøgnskæder pr. komponent
+- **Status: næste prioriterede analyseopgave under DEC-0030.** HARMONIE/cache-stabilisering er produktionsbevist i #1788; opgaven ligger før P3 RavScore-forskningen.
+- Kortlæg for vind, bølger, strøm, vandstand, vandtemperatur og alle øvrige aktive score-/forecastkomponenter: nuværende DMI-kilde, native og typisk resterende horisont, runfrekvens, alternative DMI-produkter, lovlig/teknisk anvendelighed, opløsning og kvalitet.
+- Design derefter den bedste kæde individuelt: primær DMI så langt den er valid, eventuel anden relevant DMI-kilde som forlængelse og kun ekstern fallback for den resterende hale mod cirka 120 timer.
+- Revurdér eksisterende Open-Meteo-fallback fagligt og teknisk; historisk brug er ikke i sig selv et valg.
+- Auditér overgangene for spring, tidsforskydning, dubletter, huller, enheder, retninger, stale data og interpolation. UTC og fuld timeproveniens er bindende.
+- Udvid diagnostik og gates med faktisk intervaldækning pr. komponent/zone, herunder kilde, model-run, lead time, prognosealder og native/interpoleret/fallback-status.
+- Vurder separat konsekvensen for RavScore, state og UI. Dag 5 må ikke fremstå lige så sikker som dag 1 uden evidens, og missing må aldrig opfindes som nul eller kopieret sidste værdi.
+- **Stopregel:** Ingen ny produktionskilde, sammensyning eller scoreændring implementeres før kortlægning, design og regressionplan er dokumenteret og godkendt.
 
 ## P1 – vandstandskilder
 - Gør forecast/cache-brugbarhed uafhængig af midlertidigt observationsstop.

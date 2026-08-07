@@ -317,3 +317,11 @@ Status: Implementeret og lokalt valideret.
 - [ ] Fase C: konceptuel fysisk systemmodel før scoremodel.
 - [ ] Fase D: evidensmatrix, strømstrukturkonklusion og prioriterede valideringseksperimenter.
 - [ ] Eventuel implementering kræver en ny, særskilt brugerbeslutning efter forskningsleverancen.
+
+## P1 – komplette DMI-first femdøgnskæder
+- [x] Produktkravet og analyse-/stopreglen er registreret i DEC-0030 og REQ-DATA-007–010.
+- [x] HARMONIEs cirka 60 timer er klassificeret som native kildehorisont, ikke som samlet produktmål.
+- [x] #1788 produktionsverificerede 48-timers HARMONIE-fastholdelse, genbrug af fire assets og vækst fra fire til syv behandlede forecasttider; fulde gates og deploy bestod.
+- [ ] Kortlæg eksisterende runtimekæde, faktisk horisont/runfrekvens og alle relevante DMI-alternativer pr. komponent.
+- [ ] Vurder først derefter tail-fallback, overgangskvalitet, proveniens, automatiske dækningsgates samt konsekvens for RavScore og UI.
+- [ ] Implementering og produktionsverifikation kræver efterfølgende dokumenteret design; ingen blind fallbackændring er godkendt.
