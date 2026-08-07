@@ -87,7 +87,7 @@ assert.match(preflight, /missing-ocean-diagnostics/);
 assert.match(preflight, /dmi-cache-incomplete/);
 assert.match(preflight, /marine-warmup-pending/);
 assert.match(bulk, /diagnosticsRegenerated/);
-assert.match(bulk, /critical_family_rank = 0 if \(marine_recovery_active and family == "marine"\) else 1/);
+assert.match(bulk, /if marine_foundation_missing:/);
 assert.match(bulk, /scheduleCoverageBeforeRun/);
 assert.match(bulk, /marineRecoveryActive/);
 assert.match(updater, /version: APP_VERSION/);

@@ -92,3 +92,6 @@ Søg efter gamle tests og antagelser, som ændringen gør forældede. Simulér b
 - Zoneprognosens tidligere 0,0-vind/0,0-bølger skal efter deploy verificeres: `Mangler` ved reelt datagab, reel talværdi når data findes.
 - `shadow-v2` er fortsat score-neutral. Ingen transport-score aktiveres i denne release.
 - Efter stabil produktion af recovery-releasen opbygges den planlagte AI Knowledge Base, AI Roadmap og AI Working Rules før større ny funktionalitet flyttes til Codex.
+
+## 4.0.117 schedulerfix
+Efter produktion #1717: U/V-grid mismatch er væk. DMI-vind var fortsat uden 24/96-timers dækning. 4.0.117 ændrer schedulerens dækningsnævner til det aktuelle aktive zoneregister og retter family-key fra `atmosphere` til `wind`. Marine-first/audits er bevaret. Produktion skal verificere schedulerorden og vinddækning.

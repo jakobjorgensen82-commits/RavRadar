@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const bulk=fs.readFileSync('scripts/update-dmi-bulk.py','utf8');
+assert.match(bulk,/def collection_schedule\(previous: dict\[str, Any\], active_zone_ids: list\[str\]\)/);
+assert.match(bulk,/coverageDenominator": "current-active-zone-registry"/);
+assert.match(bulk,/active_zones = \{zone_id: \(previous\.get\("zones"\) or \{\}\)\.get\(zone_id, \{\}\) for zone_id in active_ids\}/);
+assert.match(bulk,/family = COLLECTION_FAMILY\[collection\]/);
+assert.match(bulk,/missing96\.get\(family, 0\)/);
+assert.doesNotMatch(bulk,/"atmosphere": int\(\(horizon_coverage\.get\("wind"\)/);
+assert.match(bulk,/marine_foundation_missing/);
+assert.match(bulk,/elif any_data\.get\(family, 0\) == 0/);
+console.log('OK: scheduler bruger aktive zoner og wind-familien konsekvent.');

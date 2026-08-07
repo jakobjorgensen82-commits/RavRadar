@@ -834,26 +834,31 @@ def merge_previous(current: dict[str, Any], previous: dict[str, Any]) -> None:
                 new_zone[field].setdefault(key, value)
 
 
-def collection_schedule(previous: dict[str, Any]) -> list[str]:
-    """Prioritér kritiske marine u/v-data før store atmosfæriske assets.
+def collection_schedule(previous: dict[str, Any], active_zone_ids: list[str]) -> tuple[list[str], dict[str, Any]]:
+    """Planlæg collections ud fra det aktuelle aktive zoneregister.
 
-    Den hyppige produktionskørsel må aldrig lade et enkelt HARMONIE-asset bruge
-    hele tidsbudgettet, mens strømprognosen mangler. Når marinehorisonten er
-    ufuldstændig, rangeres DKSS-collections først. Vind og bølger kan derefter
-    opdateres i senere kørsler eller leveres af den eksisterende fallbackkæde.
+    Cache må aldrig definere nævneren: nye aktive zoner skal tælle som manglende,
+    og udgåede cachezoner må ikke holde en familie kunstigt komplet. Marine er
+    fortsat release-kritisk og rangeres først under recovery. Når alle aktive
+    zoner har mindst noget gyldigt marinegrundlag, må en helt udsultet vind-
+    eller bølgefamilie få andenpladsen, så femdøgnshorisonten kan bygges op.
     """
     state = previous.get("collectionState") or {}
     now = time.time()
-    previous_diag = previous.get("diagnostics") or {}
-    previous_production_zones = [zone_id for zone_id in (previous.get("zones") or {}) if not str(zone_id).startswith("SOURCE::")]
-    zone_count = max(1, len(previous_production_zones) or int(previous_diag.get("zoneCount") or 1))
-    horizon_coverage = previous_diag.get("componentHorizonCoverage") or {}
-    complete = {
-        "atmosphere": int((horizon_coverage.get("wind") or {}).get("zonesWith96Hours") or previous_diag.get("completeWindZones") or 0),
-        "wave": int((horizon_coverage.get("wave") or {}).get("zonesWith96Hours") or previous_diag.get("completeWaveZones") or 0),
-        "marine": int((horizon_coverage.get("marine") or {}).get("zonesWith96Hours") or previous_diag.get("completeMarineZones") or 0),
+    active_ids = list(dict.fromkeys(str(zone_id) for zone_id in active_zone_ids if zone_id and not str(zone_id).startswith("SOURCE::")))
+    active_zones = {zone_id: (previous.get("zones") or {}).get(zone_id, {}) for zone_id in active_ids}
+    zone_count = max(1, len(active_ids))
+    coverage = {
+        "wind": coverage_summary(active_zones, ("wind-speed-10m",)),
+        "wave": coverage_summary(active_zones, ("significant-wave-height",)),
+        "marine": coverage_summary(active_zones, ("sea-mean-deviation", "current-u", "current-v")),
     }
-    missing = {family: max(0, zone_count - count) for family, count in complete.items()}
+    complete96 = {family: int(details.get("zonesWith96Hours") or 0) for family, details in coverage.items()}
+    any_data = {family: int(details.get("zonesWithAnyData") or 0) for family, details in coverage.items()}
+    missing96 = {family: max(0, zone_count - complete96[family]) for family in ("wind", "wave", "marine")}
+    missing_any = {family: max(0, zone_count - any_data[family]) for family in ("wind", "wave", "marine")}
+    marine_recovery_active = missing96["marine"] > 0
+    marine_foundation_missing = missing_any["marine"] > 0
 
     def priority(collection: str) -> tuple[int, int, int, int, float, float, int]:
         entry = state.get(collection) or {}
@@ -868,25 +873,41 @@ def collection_schedule(previous: dict[str, Any]) -> list[str]:
             entry["consecutiveFailures"] = 0
 
         family = COLLECTION_FAMILY[collection]
-        marine_recovery_active = missing["marine"] > 0
-        # Marine u/v og vandstand er release-kritiske. Et 600+ MB HARMONIE-asset
-        # må derfor ikke komme foran DKSS under marine recovery.
-        critical_family_rank = 0 if (marine_recovery_active and family == "marine") else 1
-        # Når marine er komplet, rangeres alle familier igen efter reel mangel.
-        deficit_rank = -missing.get(family, 0)
-        complete_family_rank = 1 if missing.get(family, 0) == 0 else 0
+        # Mangler en aktiv zone helt marinegrundlag, er DKSS ubetinget først.
+        if marine_foundation_missing:
+            family_rank = 0 if family == "marine" else 1
+        elif marine_recovery_active:
+            # Marine beholder førstepladsen, men en helt udsultet familie får
+            # næste prioritet, så vind/bølger ikke kan sulte på ubestemt tid.
+            if family == "marine":
+                family_rank = 0
+            elif any_data.get(family, 0) == 0:
+                family_rank = 1
+            else:
+                family_rank = 2
+        else:
+            family_rank = 0
+        deficit_rank = -missing96.get(family, 0)
+        complete_family_rank = 1 if missing96.get(family, 0) == 0 else 0
         return (
-            blocked,
-            critical_family_rank,
-            complete_family_rank,
-            deficit_rank,
-            epoch(entry.get("lastAttemptAt")),
-            epoch(entry.get("lastSuccessfulAt")),
+            blocked, family_rank, complete_family_rank, deficit_rank,
+            epoch(entry.get("lastAttemptAt")), epoch(entry.get("lastSuccessfulAt")),
             COLLECTION_ORDER.index(collection),
         )
 
-    return sorted(COLLECTION_ORDER, key=priority)
-
+    diagnostics = {
+        "zoneCount": zone_count,
+        "wind": complete96["wind"], "wave": complete96["wave"], "marine": complete96["marine"],
+        "windHorizon": coverage["wind"], "waveHorizon": coverage["wave"], "marineHorizon": coverage["marine"],
+        "missingWind": missing96["wind"], "missingWave": missing96["wave"], "missingMarine": missing96["marine"],
+        "missingAnyWind": missing_any["wind"], "missingAnyWave": missing_any["wave"], "missingAnyMarine": missing_any["marine"],
+        "marineRecoveryActive": marine_recovery_active,
+        "marineFoundationMissing": marine_foundation_missing,
+        "atmosphereDeferredDuringMarineRecovery": marine_foundation_missing,
+        "completionDefinition": f"component horizon >= {COMPLETE_HORIZON_HOURS} hours",
+        "coverageDenominator": "current-active-zone-registry",
+    }
+    return sorted(COLLECTION_ORDER, key=priority), diagnostics
 
 
 def component_horizon_hours(zone: dict[str, Any], required: tuple[str, ...], now_epoch: float | None = None) -> float:
@@ -1291,27 +1312,10 @@ def main() -> int:
                               "persistentFieldInventory": dict(((previous.get("diagnostics") or {}).get("persistentFieldInventory") or {}))}}
     merge_previous(result, previous)
     budget = {"bytes": 0}
-    scheduled = collection_schedule(previous)
-    previous_diag = previous.get("diagnostics") or {}
-    previous_zone_count = max(1, int(previous_diag.get("zoneCount") or len(zones) or 1))
+    active_zone_ids = [zone["id"] for zone in zones if not zone.get("waterSource")]
+    scheduled, schedule_coverage = collection_schedule(previous, active_zone_ids)
     result["diagnostics"]["scheduledCollections"] = scheduled
-    previous_horizon = previous_diag.get("componentHorizonCoverage") or {}
-    wind96 = int((previous_horizon.get("wind") or {}).get("zonesWith96Hours") or previous_diag.get("completeWindZones") or 0)
-    wave96 = int((previous_horizon.get("wave") or {}).get("zonesWith96Hours") or previous_diag.get("completeWaveZones") or 0)
-    marine96 = int((previous_horizon.get("marine") or {}).get("zonesWith96Hours") or previous_diag.get("completeMarineZones") or 0)
-    result["diagnostics"]["scheduleCoverageBeforeRun"] = {
-        "zoneCount": previous_zone_count,
-        "wind": wind96, "wave": wave96, "marine": marine96,
-        "windHorizon": previous_horizon.get("wind") or {},
-        "waveHorizon": previous_horizon.get("wave") or {},
-        "marineHorizon": previous_horizon.get("marine") or {},
-        "missingWind": max(0, previous_zone_count - wind96),
-        "missingWave": max(0, previous_zone_count - wave96),
-        "missingMarine": max(0, previous_zone_count - marine96),
-        "marineRecoveryActive": marine96 < previous_zone_count,
-        "atmosphereDeferredDuringMarineRecovery": marine96 < previous_zone_count,
-        "completionDefinition": f"component horizon >= {COMPLETE_HORIZON_HOURS} hours",
-    }
+    result["diagnostics"]["scheduleCoverageBeforeRun"] = schedule_coverage
     fresh_zone_ids: set[str] = set()
     fresh_marine_zone_ids: set[str] = set()
     productive_collections = 0

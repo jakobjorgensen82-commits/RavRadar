@@ -391,3 +391,10 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Manglende vind/bølge behandles ikke længere som fysisk nul i den relevante JavaScript-kæde; ægte numerisk nul bevares.
 - Eksternt croninterval er 15 minutter. Yderligere schedulerændring kræver nye målinger.
 - `shadow-v2`, RavScore-vægte og dokumenteret morfologi er uændrede og score-neutrale i denne recovery-release.
+
+## 4.0.117 – aktiv-zone scheduler og DMI-vind recovery
+- Produktionskørsel #1717 bekræftede, at 4.0.116 fjernede U/V-grid mismatch.
+- Schedulerens cachebaserede nævner er erstattet af det aktuelle aktive zoneregister.
+- HARMONIE-deficit bruger nu samme family-key `wind` som collection-mappingen.
+- Marine-first og de strenge marine audits er bevaret; score-neutral historisk tilstandsmodel er uændret.
+- Ny regressionstest beskytter schedulerens aktive zoner, family-key og recoveryprioritet.

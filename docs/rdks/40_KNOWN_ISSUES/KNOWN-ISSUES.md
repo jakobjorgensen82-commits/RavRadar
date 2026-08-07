@@ -88,3 +88,8 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 - **ISSUE-WATER-SOURCE-COVERAGE-INFLATION – RETTET LOKALT I 4.0.116:** `SOURCE::`-vandstandspunkter blev talt med som almindelige zoner i komponentdækning og sampled unødigt for andre parametre. Det kunne holde marine recovery aktiv og bruge tidsbudget, som ellers kunne nå vind/bølger. Afventer CI-måling.
 - **ISSUE-FIVE-DAY-WIND-WAVE-ZERO – DELVIST RODÅRSAG FUNDET, RETTET LOKALT I 4.0.116:** JavaScript-konvertering kunne gøre `null` til 0, så manglende vind/bølge blev vist og delvist behandlet som fysisk nul. 4.0.116 gør kæden null-sikker. Produktion skal stadig afgøre, om der bagefter findes reelle kildedatamangler i bestemte timer/zoner.
 - **ISSUE-WORKFLOW-DURATION – FORTSAT AKTIV:** Eksternt cron-job er nu 15 minutter. DMI-workload skal måles efter fjernelse af unødige `SOURCE::`-opslag; marine audits må ikke svækkes.
+
+## 4.0.117 – schedulerens aktive zoner og DMI-vind
+- **ISSUE-DMI-SCHEDULER-CACHE-DENOMINATOR – RETTET LOKALT I 4.0.117:** Schedulerens dækning kunne bruge zonerne i den gamle bulkcache som nævner og dermed overse nye aktive zoner uden cache. Nævneren er nu altid det aktuelle aktive zoneregister.
+- **ISSUE-DMI-WIND-FAMILY-NAME – RETTET LOKALT I 4.0.117:** HARMONIE er familien `wind`, men schedulerens gamle mangeltabel brugte `atmosphere`. Reelt manglende DMI-vind kunne derfor få nul deficit. Familienavnet er nu konsistent gennem prioriteringen.
+- **ISSUE-FIVE-DAY-WIND-WAVE-ZERO – FORTSAT AKTIV:** 4.0.116 fjernede falsk `null -> 0`; 4.0.117 retter dokumenteret schedulerudsultning. Ny produktion skal måle reel 24/96-timers vind- og bølgedækning. Store HARMONIE-assets og runtime/downloadbudget forbliver et separat målepunkt.
