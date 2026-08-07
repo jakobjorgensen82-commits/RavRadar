@@ -323,5 +323,7 @@ Status: Implementeret og lokalt valideret.
 - [x] HARMONIEs cirka 60 timer er klassificeret som native kildehorisont, ikke som samlet produktmål.
 - [x] #1788 produktionsverificerede 48-timers HARMONIE-fastholdelse, genbrug af fire assets og vækst fra fire til syv behandlede forecasttider; fulde gates og deploy bestod.
 - [ ] Kortlæg eksisterende runtimekæde, faktisk horisont/runfrekvens og alle relevante DMI-alternativer pr. komponent.
+- [x] Fase A er startet i `docs/research/DMI_FIRST_FIVE_DAY_SOURCE_AUDIT.md`: aktuel kodekæde, officielle DMI-horisonter, runfrekvenser, opløsninger, vilkår og foreløbige alternativer er dokumenteret.
+- [ ] Verificér faktiske WAM-/DKSS-vindfelter og overlap mod HARMONIE i friske runs; auditér samtidig Open-Meteo-modelidentitet og UTC-tidslinjen.
 - [ ] Vurder først derefter tail-fallback, overgangskvalitet, proveniens, automatiske dækningsgates samt konsekvens for RavScore og UI.
 - [ ] Implementering og produktionsverifikation kræver efterfølgende dokumenteret design; ingen blind fallbackændring er godkendt.
