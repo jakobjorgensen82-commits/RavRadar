@@ -834,7 +834,7 @@ def merge_previous(current: dict[str, Any], previous: dict[str, Any]) -> None:
                 new_zone[field].setdefault(key, value)
 
 
-def collection_schedule(previous: dict[str, Any], active_zone_ids: list[str]) -> tuple[list[str], dict[str, Any]]:
+def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict[str, Any]]) -> tuple[list[str], dict[str, Any]]:
     """Planlæg collections ud fra det aktuelle aktive zoneregister.
 
     Cache må aldrig definere nævneren: nye aktive zoner skal tælle som manglende,
@@ -845,7 +845,11 @@ def collection_schedule(previous: dict[str, Any], active_zone_ids: list[str]) ->
     """
     state = previous.get("collectionState") or {}
     now = time.time()
-    active_ids = list(dict.fromkeys(str(zone_id) for zone_id in active_zone_ids if zone_id and not str(zone_id).startswith("SOURCE::")))
+    active_by_id = {
+        str(zone.get("id")): zone for zone in active_zones_config
+        if zone.get("id") and not str(zone.get("id")).startswith("SOURCE::")
+    }
+    active_ids = list(active_by_id)
     active_zones = {zone_id: (previous.get("zones") or {}).get(zone_id, {}) for zone_id in active_ids}
     zone_count = max(1, len(active_ids))
     coverage = {
@@ -860,7 +864,22 @@ def collection_schedule(previous: dict[str, Any], active_zone_ids: list[str]) ->
     marine_recovery_active = missing96["marine"] > 0
     marine_foundation_missing = missing_any["marine"] > 0
 
-    def priority(collection: str) -> tuple[int, int, int, int, float, float, int]:
+    # Når en aktiv zone helt mangler marinegrundlag, skal den DKSS-model som er
+    # geografisk førstevalg for netop den kysttype frem i køen. Ellers kan to
+    # produktive, men irrelevante DKSS-kørsler bruge COLLECTIONS_PER_RUN før fx
+    # Limfjordsmodellen overhovedet bliver forsøgt.
+    missing_marine_zone_ids = [
+        zone_id for zone_id in active_ids
+        if component_horizon_hours(active_zones.get(zone_id, {}), ("sea-mean-deviation", "current-u", "current-v")) <= 0
+    ]
+    preferred_marine_demand = {collection: 0 for collection in MARINE_COLLECTIONS}
+    for zone_id in missing_marine_zone_ids:
+        coast = (active_by_id.get(zone_id) or {}).get("coastType") or "east"
+        penalties = MARINE_MODEL_PENALTY_KM.get(coast, MARINE_MODEL_PENALTY_KM["east"])
+        preferred = min(MARINE_COLLECTIONS, key=lambda collection: (float(penalties.get(collection, 25.0)), COLLECTION_ORDER.index(collection)))
+        preferred_marine_demand[preferred] += 1
+
+    def priority(collection: str) -> tuple[int, int, int, int, int, float, float, int]:
         entry = state.get(collection) or {}
         blocked_parser_version = int(entry.get("blockedParserVersion") or 0)
         parser_block_obsolete = entry.get("failureClass") == "parser-blocked" and blocked_parser_version != PARSER_VERSION
@@ -887,10 +906,14 @@ def collection_schedule(previous: dict[str, Any], active_zone_ids: list[str]) ->
                 family_rank = 2
         else:
             family_rank = 0
+        # Inden for marinefamilien prioriteres den model, der faktisk kan lukke
+        # flest helt manglende aktive zoner. For ikke-marine collections er
+        # denne rang neutral.
+        marine_demand_rank = -preferred_marine_demand.get(collection, 0) if family == "marine" else 0
         deficit_rank = -missing96.get(family, 0)
         complete_family_rank = 1 if missing96.get(family, 0) == 0 else 0
         return (
-            blocked, family_rank, complete_family_rank, deficit_rank,
+            blocked, family_rank, marine_demand_rank, complete_family_rank, deficit_rank,
             epoch(entry.get("lastAttemptAt")), epoch(entry.get("lastSuccessfulAt")),
             COLLECTION_ORDER.index(collection),
         )
@@ -903,6 +926,8 @@ def collection_schedule(previous: dict[str, Any], active_zone_ids: list[str]) ->
         "missingAnyWind": missing_any["wind"], "missingAnyWave": missing_any["wave"], "missingAnyMarine": missing_any["marine"],
         "marineRecoveryActive": marine_recovery_active,
         "marineFoundationMissing": marine_foundation_missing,
+        "missingMarineZoneIds": missing_marine_zone_ids,
+        "preferredMarineDemand": preferred_marine_demand,
         "atmosphereDeferredDuringMarineRecovery": marine_foundation_missing,
         "completionDefinition": f"component horizon >= {COMPLETE_HORIZON_HOURS} hours",
         "coverageDenominator": "current-active-zone-registry",
@@ -1312,8 +1337,8 @@ def main() -> int:
                               "persistentFieldInventory": dict(((previous.get("diagnostics") or {}).get("persistentFieldInventory") or {}))}}
     merge_previous(result, previous)
     budget = {"bytes": 0}
-    active_zone_ids = [zone["id"] for zone in zones if not zone.get("waterSource")]
-    scheduled, schedule_coverage = collection_schedule(previous, active_zone_ids)
+    active_zones_config = [zone for zone in zones if not zone.get("waterSource")]
+    scheduled, schedule_coverage = collection_schedule(previous, active_zones_config)
     result["diagnostics"]["scheduledCollections"] = scheduled
     result["diagnostics"]["scheduleCoverageBeforeRun"] = schedule_coverage
     fresh_zone_ids: set[str] = set()

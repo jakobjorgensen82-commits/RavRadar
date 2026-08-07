@@ -95,3 +95,9 @@ Søg efter gamle tests og antagelser, som ændringen gør forældede. Simulér b
 
 ## 4.0.117 schedulerfix
 Efter produktion #1717: U/V-grid mismatch er væk. DMI-vind var fortsat uden 24/96-timers dækning. 4.0.117 ændrer schedulerens dækningsnævner til det aktuelle aktive zoneregister og retter family-key fra `atmosphere` til `wind`. Marine-first/audits er bevaret. Produktion skal verificere schedulerorden og vinddækning.
+
+## 4.0.117 hotfix – konkret CI-recovery
+- #1728 fejlede i `test:current-spatial-audit`, fordi tre aktive Limfjordszoner manglede i DMI-bulkcache.
+- Årsagen var ikke U/V-gridfejlen: 4.0.116-rettelsen bestod. 4.0.117 schedulerede to andre DKSS-collections før `dkss_lf` og nåede derfor aldrig den model, de manglende Limfjordszoner behøvede.
+- Hotfixen prioriterer marine collections efter de aktive manglende zoners kysttype/modelbehov. Mod #1728-state bliver rækkefølgen `dkss_lf`, `dkss_nsbs`, `dkss_idw`.
+- Seks nyere chats er importeret som CHAT-0008–CHAT-0013 under `docs/rdks/70_CHAT_IMPORT/`.

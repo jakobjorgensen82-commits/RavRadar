@@ -93,3 +93,6 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 - **ISSUE-DMI-SCHEDULER-CACHE-DENOMINATOR – RETTET LOKALT I 4.0.117:** Schedulerens dækning kunne bruge zonerne i den gamle bulkcache som nævner og dermed overse nye aktive zoner uden cache. Nævneren er nu altid det aktuelle aktive zoneregister.
 - **ISSUE-DMI-WIND-FAMILY-NAME – RETTET LOKALT I 4.0.117:** HARMONIE er familien `wind`, men schedulerens gamle mangeltabel brugte `atmosphere`. Reelt manglende DMI-vind kunne derfor få nul deficit. Familienavnet er nu konsistent gennem prioriteringen.
 - **ISSUE-FIVE-DAY-WIND-WAVE-ZERO – FORTSAT AKTIV:** 4.0.116 fjernede falsk `null -> 0`; 4.0.117 retter dokumenteret schedulerudsultning. Ny produktion skal måle reel 24/96-timers vind- og bølgedækning. Store HARMONIE-assets og runtime/downloadbudget forbliver et separat målepunkt.
+
+## 4.0.117 hotfix – DKSS-modeludsultning under marine recovery
+- **ISSUE-DKSS-GEOGRAPHIC-RECOVERY-ORDER – RETTET LOKALT I 4.0.117-HOTFIX:** 4.0.117 kunne registrere et marinegrundlagsgab uden at prioritere den DKSS-model, der geografisk dækkede de manglende zoner. Med to produktive collections kunne Limfjordsmodellen derfor blive stående som nummer tre, og strømauditten fejlede på aktive zoner uden bulkgrundlag. Schedulerprioriteten er nu datagabs- og kysttypebaseret. Afventer CI/produktion.

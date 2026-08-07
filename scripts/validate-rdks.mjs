@@ -26,14 +26,18 @@ const rules = await fs.readFile('docs/rdks/01_AI_OPERATING_RULES.md', 'utf8');
 if (!/Implementer aldrig alene på baggrund af en gammel chat/i.test(rules)) throw new Error('RDKS mangler sikkerhedsregel for gamle chats');
 if (!/samtaledeltaet/i.test(rules)) throw new Error('RDKS mangler automatisk samtaledelta ved nye versioner');
 const manifest = JSON.parse(await fs.readFile('docs/rdks/70_CHAT_IMPORT/IMPORT-MANIFEST.json', 'utf8'));
-if (!Array.isArray(manifest.items) || manifest.items.length !== 7) throw new Error('Chatimport skal indeholde præcis syv importerede kilder');
+if (!Array.isArray(manifest.items) || manifest.items.length < 7) throw new Error('Chatimport mangler importerede historiske kilder');
+const orders=manifest.items.map(item=>item.chronologicalOrder);
+if(new Set(manifest.items.map(item=>item.id)).size!==manifest.items.length)throw new Error('Chatimport indeholder dublerede id’er');
+if(orders.some((value,index)=>value!==index+1))throw new Error('Chatimportens kronologi er ikke sammenhængende');
 for (const item of manifest.items) {
   if (item.status !== 'imported-classified') throw new Error(`Chat ikke færdigimporteret: ${item.id}`);
   await fs.access(item.normalizedText);
+  await fs.access(`docs/rdks/70_CHAT_IMPORT/${item.id}.md`);
 }
 const handbook = JSON.parse(await fs.readFile('docs/handbook/content.json', 'utf8'));
 if (handbook.handbookVersion !== version) throw new Error(`Webhåndbog ${handbook.handbookVersion} matcher ikke release ${version}`);
 if (!Array.isArray(handbook.sections) || handbook.sections.length < 15) throw new Error('Webhåndbogen er ikke fuldt udbygget');
 const markdownHandbook = await fs.readFile('HANDBOOK-RAVRADAR.md', 'utf8');
 if (!markdownHandbook.includes(`Håndbogsversion:** ${version}`)) throw new Error('Markdown-håndbogen matcher ikke releaseversionen');
-console.log(`OK: RDKS, syv chatkilder og håndbog valideret for ${version}.`);
+console.log(`OK: RDKS, ${manifest.items.length} chatkilder og håndbog valideret for ${version}.`);

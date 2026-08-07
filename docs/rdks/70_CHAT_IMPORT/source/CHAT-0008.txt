@@ -1,0 +1,289 @@
+fredag 23.28
+RavRadar(121).zip
+Zip-arkiv
+diagnose (15).zip
+Zip-arkiv
+logs_83168385548.zip
+Zip-arkiv
+Jeg synes siden er blevet lidt langsom til at loade. Når man trykker F5 går der ca 13 sekunder før zoner og bedste områder er indlæst. Ydermere skal vi tilsikre at eksperten har adgang til håndbogen. udfør også sundhedstjek og led efter forbedringer
+Tænkte i 3m 28s
+Jeg har lavet RavRadar 4.0.55 med rettelserne og gennemført det fulde sundhedstjek.
+Hastighed
+Hovedårsagen til de cirka 13 sekunders indlæsning var conditions.json:
+Fil på serveren: cirka 75 MB
+Samme JSON uden formatering: cirka 37,5 MiB
+Ny offentlig browserfil: cirka 7,5 MiB
+Reduktion: cirka 80 % i forhold til den minificerede fuldfil og cirka 90 % i forhold til den tidligere deployede fil
+Den fulde diagnostik er stadig bevaret i projektet og supportpakken. Kun browserens udgave er gjort kompakt. Alle værdier, der bruges af RavScore, kortet, ranglisterne og timeprognosen, er bevaret.
+Ved efterfølgende F5-indlæsninger bruges nu seneste cachede prognose straks, mens en ny kopi opdateres i baggrunden. Første besøg vil stadig afhænge af internetforbindelsen, men bør være væsentligt hurtigere end tidligere.
+Ekspertens adgang til håndbogen
+Jeg fandt en konkret deployfejl: handbook.html blev offentliggjort, men selve håndbogens indhold lå under docs/, som GitHub-workflowet udelukkede.
+Det er rettet:
+docs/handbook deployes nu eksplicit.
+RDKS-dokumenterne deployes også, så dokumentationscenteret fungerer.
+Eksperten får et synligt link til Eksperthåndbogen fra konto-dialogen.
+Håndbogen kan fortsat læses uden login.
+Ekspertlogin kræves kun for at indsende faglige rettelser.
+Sundhedstjek
+Den seneste kørsel viser:
+210 ud af 210 zoner har aktuelle data.
+Brugerprognosen er vurderet som OK.
+6-, 24- og 48-timers komplethed er cirka 96,7 %.
+Prognosehorisonten har cirka 116,6 timer tilbage.
+Ingen dublerede forecast-tider.
+Ingen HTTP 429-fejl i den aktuelle kørsel.
+DMI-dækning:
+Vind: 210 zoner
+Bølger: 191 DMI-zoner
+Strøm: 200 DMI-zoner
+Vandstand: 200 DMI-zoner
+Der er fortsat seks zoner med manglende eller ufuldstændige marine komponenter.
+Den samlede DMI-status står stadig som alarm, fordi kun 20 zoner har alle komponenter komplet fra DMI alene. Det er strengere end den faktiske brugerprognose, som fungerer gennem komponentvis fallback.
+Observationskørslen blev korrekt sprunget over, fordi det endnu ikke var næste times observationsvindue. Seneste succesfulde observation havde 15 leverende stationer.
+DMI-bulkcachen var delvis, men bevarede tidligere data for 136 zoner. Der blev ikke konstateret konverteringstab.
+GitHub Pages-deployet lykkedes. Feltet error_count: 10 i loggen er en konfigurationsværdi for deploy-actionen og ikke ti deployfejl.
+Hele testpakken er kørt og bestået, herunder RavScore, retninger, zonegeometri, forecast-integritet, vandstandskontinuitet, station-routing, stations-cache, admin, dokumentation og releaseversion.
+Download RavRadar 4.0.55
+IMG_2013785D-CE30-4AA9-8DDC-C9463528CD78.jpeg
+Er det denne api url?
+IMG_979FC73F-02A8-4A09-99DF-186CB5632D07.jpeg
+IMG_C440E389-592C-4443-9624-D3254BDE7719.jpeg
+Den er i gang nu
+IMG_6C0B2072-E864-45BC-BAB8-A8898B10D060.jpeg
+IMG_A463D635-BAF7-4F90-A632-2018A6F11804.jpeg
+IMG_83B69092-7C2F-4DF0-A805-68B67DB67813.jpeg
+IMG_0B25C28E-3D6D-4A62-B23D-1332E7A61853.jpeg
+IMG_7869C26A-3036-4749-A9E2-A24D41373EA1.jpeg
+IMG_3CB73BA4-F95B-40CC-BAF3-4C659E5C8476.jpeg
+Er det her virkelig den nemmeste måde at fixe det?
+RavRadar(122).zip
+Zip-arkiv
+godt, den får du, for det vil være noget bøvl at skulle indsætte de nøgler osv forfra, så tænk dig grundigt om og se i samtalen hvad vi fik lavet og hvad der ikke lykkedes og hvorfor
+IMG_DD1EBE5C-68F6-4A1A-A4C1-55D9BF5EC3C1.jpeg
+Drejebog… er det vores håndbog? Hvad er status på den? Fik du den opdateret?
+RavRadar(123).zip
+Zip-arkiv
+sørg også for via vores rdks, at den forkvaklede arbejdsgang vi lige har været igennem, aldrig sker igen
+IMG_E2D75310-8A88-4ED4-ACBA-8438468EE172.jpeg
+IMG_033EC36A-4FFE-4DF4-9B5A-B5DBB445DE76.jpeg
+RavRadar(124).zip
+Zip-arkiv
+gør det ekstremt grundigt
+IMG_CAE4E6FF-CF13-458A-9D34-EC53CDD8A853.jpeg
+Er det kun eksperten der har adgang til at lave kommentarer her?
+IMG_CEB8BF18-816B-4CA0-8972-9F8444D5FBE4.jpeg
+Jeg er ikke fan af de hvide felter
+RavRadar(125).zip
+Zip-arkiv
+godt! så er alt det din opgave nu. gør det grundigt og tag dig bare god tid
+RavRadar(126).zip
+Zip-arkiv
+jeg har 2 indvendinger til det. Først til delen med : "Sandsynligheden for, at et ravstykke gennem de seneste dage har kunnet gennemgå hele kæden fra havbund til synligt opskyl". Det lyder fornuftigt, men husk at det ikke er en solitær sandhed. Vi finder ikke kun rav når hele kæden er opfyldt. Når hele kæden er opfyldt, finder vi selvfølgelig mest rav, men feks rav der tidligere er skyllet ind og er trukket ud mod havet igen, behøver ikke den samme kæde af events for at komme ind mod stranden igen. Så tesen må ikke være en absolut sandhed. Men den må gerne vægte højt. Jeg synes ikke vi skal have en RavRadar model 2. Det bliver alt for uoverskueligt. Jeg vil hellere ændre nogen af de åbenlyse ting vi nu ved nu, og omsætte dem til regler og grundlag for hvordan ravradar virker. Vi behøver ikke vente på ekspertens vurdering med alt. Vi kan sagtens ændre ting nu. Det skal selvfølgelig implementeres i håndbogen også. På den måde verificerer eksperten også et så færdigt produkt som muligt. Analyser grundigt og dybt og implementer ændringerne.
+lørdag 12.36
+IMG_59AAD503-F293-4CD2-B8F0-EB8B87411D76.jpeg
+Var meningen at den skulle forvælge zonerne indenfor området, og man så kan fravælge enkelte hvis man vil? Og, skal eksperten kun have adgang til regler fra “oversigt”, eller bør han have hele fanebladet?
+IMG_7848083B-2E30-4F30-873E-B036A4115E90.jpeg
+Se nederst til højre. Selvom jeg lige har gemt, skriver den gemt centralt 14.42
+RavRadar(127).zip
+Zip-arkiv
+nemlig. analyser dybt og implementer ændringer
+46F52A17-6EB7-4DC4-9ECE-BAEE5141EF65.jpeg
+3A44459F-F174-47E2-B64C-35A058E48C5A.jpeg
+38A39D9B-41A7-4039-908B-A6CDB42D742A.jpeg
+Ekspert kan stadig ikke skrive i håndbogen. Jeg har prøvet at logge ind som ekspert, men man kan ikke skrive rettelser derinde. Vær sikker på at der er et felt derinde, hvor teksten gemmes centralt ved tilføjelser og vi derfra kan bruge det til udbygninger, rettelser og regelændringer eller regel oprettelser. Se også billeder af Rømø. Den nederste zone der hedder Rømø syd og sønderstrand, bør slettes da den ikke viser Rømø, men i stedet øen nedenintyskland. Zonen der hedder Rømø vest og kongsmark bør dække hele Vestsiden af Rømø Gør klar til de rettelser, så sender jeg zip om lidt
+RavRadar(128).zip
+Zip-arkiv
+Lav det og så slet selvfølgelig den zone i hele systemet
+lørdag 14.27
+IMG_6071F01F-41E5-4276-9ED6-3DB5FB290EF4.jpeg
+IMG_1168A8E5-90FD-45B9-AEF0-42966FC8CD31.jpeg
+lørdag 22.40
+232DB517-0993-4D25-96F5-76829EDBC35F.png
+722E3A64-FF13-4CB5-8150-BF9367BA18BE.jpeg
+Er vi 100% sikre på vi læser strømmen korrekt og pilene også vender rigtigt? Det ene er vores kort, det andet er dmi
+IMG_15BA46EF-7803-4B82-B384-2C4639E342FD.jpeg
+IMG_0FEE06EB-AF70-465E-8564-43A30CF12B98.jpeg
+3CD05B90-A1DB-4A8C-8ED5-E0B29BA9DE57.jpeg
+EE66F8A6-894B-4540-8EB7-B853C901FC64.jpeg
+89E74041-C635-42BA-9CFE-209DF049441F.jpeg
+Analyser igen
+IMG_BA2AE1FC-A9CC-4CB4-9D0A-C1C936CC5652.jpeg
+IMG_5E8E8AF7-8F7C-4673-BDD4-4DC7FD9A5496.jpeg
+Synes du dette er tilfredsstillende?
+IMG_AC2C73D0-A7CF-44A1-B7D2-1E69DF8B37CA.jpeg
+Den fatter intet overhovedet!
+IMG_7A91F7C7-14B7-417F-8F2E-4F15EC81A8E9.jpeg
+Sådan ser det ud når både jeg og ekspert forsøger at tilgå admin delen
+RavRadar(129).zip
+Zip-arkiv
+Den er her. Jeg er også ved at være træt af, at når vi implementerer en ny version, er der ting der tidligere har virket, der pludselig ikke virker mere. Det er simpelthen for dårlig og på den måde kommer vi jo aldrig i mål. så bliver det skruen uden ende. Analyser projektet og giv mig så en opdateret liste på hvad vi skal lave nu
+logs_83306360301.zip
+Zip-arkiv
+den fejlede i github
+IMG_5FC3A893-D1A9-4BDA-AE33-F3D69FCAEE89.jpeg
+Det her klarede du sørme fint, hva’?🤦🏼‍♂️
+IMG_FA216E11-F107-4439-B18C-D5CB401E3ACB.jpeg
+IMG_9F5250AE-8D9E-4294-8ACA-4E42C460A846.jpeg
+RavRadar(130).zip
+Zip-arkiv
+RavRadar(131).zip
+Zip-arkiv
+nu får du styr på alle de løse tråde og implementeret tingene fuldt ud. Tænk dig for fanden ordentligt om!!!!!!! Vær grundig .
+RavRadar(132).zip
+Zip-arkiv
+lav det for helvede. og er der andet du har fucket op, hvilket der sikkert er, så lav også det!
+søndag 15.28
+5335B68B-4488-403A-82A6-5E63267946EF.jpeg
+9DC789C4-07D5-4140-B5E6-348A06DCDAB1.png
+Forklar lige det her. Der er samme sted. Det første billede er lige nu og med en høj score, men når man kigger 5 døgns prognosen, siger den at i aften kl 22 er bedste tidspunkt, selvom scoren er lavere og der på det tidspunkt er kraftig strøm væk fra kysten
+RavRadar(133).zip
+Zip-arkiv
+diagnose (16).zip
+Zip-arkiv
+logs_83385234117.zip
+Zip-arkiv
+Analyser grundigt og kom med forslag til evt rettelser og forbedringer
+RavRadar(134).zip
+Zip-arkiv
+logs_83391861848.zip
+Zip-arkiv
+diagnose (17).zip
+Zip-arkiv
+test det grundigt og kig efter andre fejl der skal rettes, eller andre forbedringer
+72EBE282-800E-4177-AD30-C0B5559E1EE9.jpeg
+Jeg vil gerne have at kortet fylder mere af startsiden når man åbner siden på en mobil. Knappen “konto” bør være en silhuet af et ansigt, som det plejer at være i apps og hjemmesider. Knappen “gps” bør undlades og så skal systemet først spørge om den må optage gps data når man starter en ravtur. Knapperne “start ravtur” og “spørg RavRadar” kan stå ved siden af hinanden. De ting vil give noget plads. “Hvordan vil du lede” med tilhørende hjælpetekst og knapper, kan godt komprimeres lidt. Farveforklaringen med de forskellige farver og god, middel, svag osv, bør placeres lige under kortet i stedet på på kortet. På den måde tror jeg der er plads til at vi kan gøre kortet lidt større, så det udfylder en større del af skærmen end nu.
+logs_83402339151.zip
+Zip-arkiv
+RavRadar(135).zip
+Zip-arkiv
+gør det. Jeg har vedhæftet en zip kopi af projektmappen som den ligger på pc'en efter jeg lagde 4.0.74 filerne oveni. jeg ved ikke om du skal bruge det så der ikke går noget galt i implementeringen. Tag højde for at projektmappen ser sådan ud nu, så den nye zip du sender kan overskrive det.
+561D55D5-CADB-4882-83FF-981E4A42E5DD.jpeg
+62D354F3-B125-4C2E-9E87-505A17CDB875.jpeg
+Mange strømpile står inde på land.
+RavRadar(136).zip
+Zip-arkiv
+IMG_291DFCFD-677D-441C-BFE1-74FBEA2096EF.jpeg
+Når jeg tester hele sitet kommer denne boks op.
+ravradar-sitetest-site-1785697198861-ut79d.json
+Fil
+måske du kan bruge resultatet
+RavRadar(137).zip
+Zip-arkiv
+er der andet vi skal gøre eller teste inden du laver ny version?
+logs_83416934591.zip
+Zip-arkiv
+den fejlede
+RavRadar(138).zip
+Zip-arkiv
+Perfekt. Jeg bruger nu RavRadar(138).zip som eneste udgangspunkt.
+Jeg bygger ikke videre på 4.0.77 internt eller på en tidligere arbejdsmappe. Alt bliver rettet direkte oven på den projektmappe, der ligger i ZIP'en, så den nye version igen kan overskrive din mappe uden at miste noget.
+Den første opgave bliver at rette den konkrete GitHub-fejl i provenance-kæden:
+Ingen manglende u/v-proveniens må længere blive skrevet som 0/0.
+Kun timer med et verificeret match mellem DMI's rå u/v, tidspunkt, gitterpunkt og datakilde får markeret strømmen som verificeret.
+Timer uden et sikkert match bevarer deres beregnede strømværdi, men markeres som ikke verificeret i stedet for at blive overskrevet.
+Auditten opdeles i:
+verificeret
+ikke verificerbar
+reel uoverensstemmelse
+Release Gate må kun stoppe på reelle uoverensstemmelser – ikke på manglende proveniens.
+Samtidig gennemfører jeg de øvrige rettelser fra 4.0.77 (admin-initialisering, sitetest, versionskontrol osv.) på denne projektmappe, så der ikke opstår regressioner.
+Inden jeg pakker den nye version, kører jeg hele GitHub-kæden logisk igennem igen med fokus på netop den fejl, der stoppede deployment, så vi ikke gentager samme integrationsfejl.
+gør det
+Tænkte i 10m 27s
+Færdigt som RavRadar 4.0.78, bygget direkte oven på RavRadar(138).zip.
+Den konkrete GitHub-fejl er rettet
+Fejlen skyldtes, at JavaScript kunne omsætte manglende værdier til nul:
+Number(null) === 0
+Dermed kunne en time uden dokumenterede DMI-komponenter få:
+current-u = 0
+current-v = 0
+selv om RavRadar samtidig viste en reel strømstyrke og retning. Det var fagligt forkert.
+Nu gælder:
+null, undefined, tom tekst og boolean accepteres aldrig som strømkomponenter.
+current-u og current-v gemmes kun, når begge værdier kan dokumenteres.
+Komponenten skal stamme fra samme marine DMI-gitterpunkt.
+Tiden skal passe præcist eller ligge inden for en kontrolleret interpolation.
+Verificeret proveniens gemmer:
+DMI-provider
+gitterpunkt
+metode
+kildetidspunkt eller kildetidspunkter
+Open-Meteo-rækker kan ikke få DMI-proveniens.
+Ikke-verificerbare timer beholder deres eksisterende viste strømværdi.
+Falske u/v-felter fjernes.
+Timen mærkes tydeligt som unverified med en konkret årsag.
+Auditten er gjort fagligt korrekt
+Strømauditten skelner nu mellem:
+VerificeretRå DMI-komponenter, tid, sted, hastighed, retning og pil hænger sammen.
+Ikke verificerbarDer mangler tilstrækkelig rå dokumentation, men der er ikke bevist en fysisk fejl.
+Reel uoverensstemmelseDokumenterede komponenter giver en anden hastighed eller retning end RavRadar viser. Dette stopper releasen.
+Resultatet på det medfølgende datasæt er:
+197 af 209 zoner med dokumenteret marine DMI-u/v-gitterpunkt
+23.049 prognosetimer verificeret
+1.613 timer tydeligt markeret som ikke-verificerbare
+ingen ikke-verificerbare timer fik deres viste strøm overskrevet med nul
+12 zoner mangler fortsat direkte marine gitterproveniens og står som advarsler, ikke som opdigtede nulmålinger
+En ekstra regressionsfejl blev også rettet
+Under den fulde validering fandt jeg, at dashboardtesten var hårdkodet til version 4.0.77.
+Den ville derfor fejle ved enhver senere korrekt version.
+Testen læser nu automatisk den aktuelle version fra package.json.
+Dokumentation
+Opdateret:
+CHANGELOG-4.0.78.md
+håndbogen med kapitel 58
+RDKS med DEC-0026
+Current Truth
+Implementation Status
+Master Log
+Håndbogen forklarer nu på almindeligt dansk, hvorfor manglende strømdata ikke er det samme som nulstrøm.
+Egenkontrol mod din projektmappe
+Sammenlignet direkte med RavRadar(138).zip:
+0 filer fjernet
+3 nye filer
+27 kontrollerede ændringer
+414 fælles filer uændrede
+Hele kæden er kørt:
+npm run validate
+npm run release:gate
+npm run release:package
+Resultat:
+209 zoner valideret
+hele regressionstesten bestået
+strømaudit bestået
+null-sikkerhedstest bestået
+dashboardtest bestået
+public-runtime-test bestået
+Pages-modulkontrol bestået
+Release Gate bestået
+ZIP med 486 filer bygget
+SHA-256:
+bca903064d85ba8699995ee4c17c93d003d3516ff3bed65419a51e36915856e3
+Download RavRadar 4.0.78
+VERSION-DIFF-4.0.77-TO-4.0.78.json
+VERSION-DIFF-4.0.77-TO-4.0.78.jsonKodeÅbn fil
+Jeg har brug for vi starter en ny chat, da denne er blevet ekstremt langsom. Hvordan får vi bedst dig til at huske i den nye chat, hvad vi har aftalt, og er i gang med? Alle ravrader chats ligger i en projektmappe her på chatgpt
+Det bedste er faktisk ikke at få mig til at "huske" det hele via hukommelse. Den mest robuste løsning er at starte den nye chat med en kort status, og så arbejde videre derfra.
+Da alle RavRadar-chattene ligger i samme projekt, har jeg allerede adgang til den synlige projektkontekst i projektet. Men en ny chat har ikke automatisk hele denne chats detaljer aktive, så en kort opsummering hjælper mig med at starte det rigtige sted.
+Jeg ville gøre sådan:
+1. Opret en ny chat i RavRadar-projektet
+2. Skriv kun noget i stil med:
+Vi fortsætter RavRadar fra 4.0.78. Læs projektkonteksten og brug den som udgangspunkt. Arbejd videre ud fra vores seneste aftaler og brug den vedhæftede projekt-ZIP som eneste udgangspunkt. Start med at gennemgå, hvad der allerede er implementeret, og hvad der mangler, før du ændrer noget.
+Det er nok til at sætte retningen.
+3. Vedhæft den aktuelle projekt-ZIP
+Det er meget vigtigt, fordi vi har haft flere GitHub-fejl, som skyldtes, at projektmappen havde ændret sig siden sidste version. Ved at bruge den aktuelle ZIP som eneste udgangspunkt undgår vi den type fejl.
+Jeg vil også foreslå én forbedring af vores arbejdsform
+Efter de seneste mange versioner kan jeg se et mønster:
+Vi retter én ting.
+GitHub finder en integrationsfejl.
+Vi retter den.
+Så dukker næste integrationsfejl op.
+Det skyldes ikke nødvendigvis, at rettelserne er dårlige, men at vi ændrer mange centrale dele af systemet på én gang (pipeline, cache, admin, tests, dokumentation, GitHub Actions osv.).
+Derfor vil jeg i den nye chat arbejde efter en fast proces:
+Analyse først – ingen kodeændringer.
+Implementering – kun på den aktuelle projekt-ZIP.
+Intern regressionskontrol – hele projektet.
+GitHub-simulering – gennemgå hele deployment-kæden logisk.
+RDKS og håndbog – opdateres.
+Først derefter pakkes ZIP'en.
+Det er den metode, der giver størst chance for at undgå endnu en "den fejlede i GitHub"-runde.
+Jeg synes også, vi er nået til et punkt, hvor RavRadar er så omfattende, at integrationskontrol er lige så vigtig som selve programmeringen. Det vil jeg prioritere højt i den nye chat.

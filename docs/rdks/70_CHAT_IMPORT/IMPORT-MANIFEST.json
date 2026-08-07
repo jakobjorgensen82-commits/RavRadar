@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "importedAt": "2026-07-31",
-  "sourceArchive": "chat.zip",
-  "orderingBasis": "Textual continuity, version references, feature progression and explicit dates; filenames and modification times were not used as chronology.",
+  "importedAt": "2026-08-07",
+  "sourceArchive": "chat.zip + seneste chats.zip",
+  "orderingBasis": "Oprindelig rekonstruktion for CHAT-0001–0007; derefter dokumenterede samtaledatoer og projektforløbet for CHAT-0008–0013.",
   "items": [
     {
       "id": "CHAT-0001",
@@ -72,6 +72,66 @@
       "summary": "Havmarkør-afklaring, korrekt afgrænsning af ændringer, regelbygger, RDKS og stationers livscyklus",
       "sha256": "74aab64db1135a49ad5346749337535e7153f714851ec92f2ad039adb2ee1d98",
       "normalizedText": "docs/rdks/70_CHAT_IMPORT/source/CHAT-0007.txt",
+      "status": "imported-classified"
+    },
+    {
+      "id": "CHAT-0008",
+      "sourceFile": "hastighedsforbedring og deploymentfejl.odt",
+      "chronologicalOrder": 8,
+      "period": "2026-07-31",
+      "summary": "Performance, deployfejl, adminpersistens og næste versionskrav",
+      "sha256": "0ca9332090e22dde065216c1455e6a4a188a2c9a4709bb3f5ba0ecc46bce9b6b",
+      "normalizedText": "docs/rdks/70_CHAT_IMPORT/source/CHAT-0008.txt",
+      "status": "imported-classified"
+    },
+    {
+      "id": "CHAT-0009",
+      "sourceFile": "Ravradar arbejdsproces plan.odt",
+      "chronologicalOrder": 9,
+      "period": "2026-08-02",
+      "summary": "Arbejdsproces, deployregressioner, sundhedstjek og validering af projektkæden",
+      "sha256": "406aafd1eb03c913dcab7f419f9f7e6e31fb8dc3cf06c9f101896b87f4265bf2",
+      "normalizedText": "docs/rdks/70_CHAT_IMPORT/source/CHAT-0009.txt",
+      "status": "imported-classified"
+    },
+    {
+      "id": "CHAT-0010",
+      "sourceFile": "Projekt zip og arbejdsmodel.odt",
+      "chronologicalOrder": 10,
+      "period": "2026-08-03",
+      "summary": "Projekt-ZIP som autoritativt grundlag, historisk regressionsanalyse og admin-redigerbare zoner",
+      "sha256": "5a85a89907da7521dd43e101c2f24c076a35981c65a42f20231ec41fc18f5d38",
+      "normalizedText": "docs/rdks/70_CHAT_IMPORT/source/CHAT-0010.txt",
+      "status": "imported-classified"
+    },
+    {
+      "id": "CHAT-0011",
+      "sourceFile": "RavRadar arbejdsgrundlag.odt",
+      "chronologicalOrder": 11,
+      "period": "2026-08-03",
+      "summary": "RavScore-arbejdsgrundlag, morfologi, faktisk DMI-strøm, pipelineberegninger og rapportering",
+      "sha256": "42cd4993d2a92f7a7f5aa7a0cda055a84396b6b4550a6174eefad834c704aa11",
+      "normalizedText": "docs/rdks/70_CHAT_IMPORT/source/CHAT-0011.txt",
+      "status": "imported-classified"
+    },
+    {
+      "id": "CHAT-0012",
+      "sourceFile": "analyse af projekt zip.odt",
+      "chronologicalOrder": 12,
+      "period": "2026-08-06 til 2026-08-07",
+      "summary": "Analyse af seneste projektversioner, DMI-recovery, Actions-fejl og AI-dokumentationsplan",
+      "sha256": "2dc8642358ea3465c6a500bb68a5e94f9b454b6b5e5f13e87a2d4d4073b21e76",
+      "normalizedText": "docs/rdks/70_CHAT_IMPORT/source/CHAT-0012.txt",
+      "status": "imported-classified"
+    },
+    {
+      "id": "CHAT-0013",
+      "sourceFile": "den sidste 7.8.2026 kl 16.16.odt",
+      "chronologicalOrder": 13,
+      "period": "2026-08-07",
+      "summary": "Seneste fejlsøgning frem til 4.0.117 og overdragelse til den aktuelle rettelse",
+      "sha256": "d0e9a63c6204c2454e2ffa2280548762ffe1677081542d4102d8d24a14dbb5e8",
+      "normalizedText": "docs/rdks/70_CHAT_IMPORT/source/CHAT-0013.txt",
       "status": "imported-classified"
     }
   ]

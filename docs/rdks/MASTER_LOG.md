@@ -398,3 +398,11 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - HARMONIE-deficit bruger nu samme family-key `wind` som collection-mappingen.
 - Marine-first og de strenge marine audits er bevaret; score-neutral historisk tilstandsmodel er uændret.
 - Ny regressionstest beskytter schedulerens aktive zoner, family-key og recoveryprioritet.
+
+## 2026-08-07 – 4.0.117 hotfix – geografisk DKSS-recovery
+- Produktionskørsel #1728 fejlede først i den strenge strømaudit efter vellykket DMI-opbygning, public runtime og referencezoner.
+- Tre aktive Limfjordszoner manglede i bulkcache, fordi schedulerens to produktive slots gik til `dkss_nsbs` og `dkss_idw`, mens `dkss_lf` stod som nummer tre.
+- Schedulerens marineprioritet bruger nu de aktive manglende zoners kysttype og den eksisterende DKSS-model-penalty, så den model der kan lukke flest faktiske grundlagsmangler kommer først.
+- Mod #1728-state prioriteres `dkss_lf` før `dkss_nsbs` og `dkss_idw`; 11 marinegrundlagsmangler er Limfjord og 1 er vestkyst.
+- DMI-only strøm, fælles U/V-gitterpunkt, runtimebudget og strenge marine audits er ikke svækket.
+- Seks nyere chats er arkiveret som CHAT-0008–CHAT-0013 med kildeneutraliseret normaltekst og dynamisk kronologivalidering.

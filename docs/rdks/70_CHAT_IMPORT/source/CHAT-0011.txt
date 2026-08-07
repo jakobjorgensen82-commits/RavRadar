@@ -1,0 +1,440 @@
+mandag 18.42
+Her er et recap, som du kan indsætte direkte i en ny projektchat. RavRadar – Status og arbejdsgrundlag (efter version 4.0.94) Arbejdsprincip (skal altid følges) Brug den vedhæftede projekt-ZIP som eneste autoritative kilde. Før analyse eller implementering skal du: læse AGENTS.md læse hele RDKS læse: CURRENT_TRUTH IMPLEMENTATION_STATUS aktive beslutninger kendte fejl lessons learned læse håndbogen sammenholde alt med den aktuelle kodebase Der må ikke drages konklusioner ud fra hukommelse alene. Fast udviklingsproces Fase 1 – Analyse Ingen kode. Ingen rettelser. Kun analyse. Gennemgå: RDKS håndbog arkitektur performance regressioner DMI scoremotor cache rendering GitHub service worker Supabase tests Lav derefter en samlet rapport: kritiske fejl store fejl små fejl teknisk gæld forbedringsmuligheder Fase 2 – Rodårsag Ingen rettelser før: regression er reproduceret første dårlige version fundet rodårsag dokumenteret konkret kodelinje eller datakæde fundet Ingen gæt. Ingen symptombehandling. Ingen lappeløsninger. Fase 3 – Implementering Ret kun den dokumenterede årsag. Fase 4 – Validering Valider hele projektet. Ikke kun den ændrede funktion. Kontroller bl.a.: browser rendering performance score DMI GitHub Supabase cache service worker regressionstest integrationstest Fase 5 – Release Først når hele projektet er grønt: opdater RDKS opdater håndbog opdater changelog opdater versionsnummer pak ZIP Vigtige erfaringer Performance-regression Tidligere steg loadtiden fra ca. 3,5 sekunder til ca. 21 sekunder. Rodårsagen var ikke DMI. Den adaptive model blev: hentet fra localStorage JSON-parset normaliseret kopieret for hver scoreberegning. Permanent løsning: én fælles cache modellen normaliseres én gang alle beregninger genbruger samme model Denne løsning må aldrig brydes. u/v-strømdata GitHub-fejlen skyldtes ikke: 180° from/towards tolerance Den skyldtes to forskellige repræsentationer af samme strømvektor. Permanent løsning: Én kanonisk u/v-vektor. Samme data bruges nu af: RavScore debug audit strømpile Denne arkitektur må ikke ændres. Kortpile Vind- og strømpile forsvandt tidligere. Læring: Man skal analysere hele runtime-kæden. At data findes betyder ikke, at rendering sker. Zoom-fejl Efter zoom blev zonestreger først opdateret når kortet blev flyttet. Løst. Må ikke komme igen. Ny arkitektur omkring administratorændringer Dette er en meget vigtig beslutning. Administrator skal frit kunne: omdøbe zoner ændre kystlinjer ændre landpunkt ændre havpunkt ændre retningsankre ændre onshoreDirectionDeg slette zoner Alle godkendte ændringer skal automatisk kunne nå hele vejen til produktion. Udvikleren må ikke skulle ændre tests hver gang administrator laver ændringer. Testfilosofi Tests må ikke længere være hårdkodet til: 209 zoner bestemte zonenavne bestemte koordinater bestemte retninger bestemte grader Tests skal kontrollere: integritet konsistens geometri datakæder referencer vejrdata score Ikke historiske standardværdier. 180°-ændringer Nogle gamle land-/havpunkter var forkerte. Administrator skal kunne vende en zone 180°. Det er en legitim handling. Testene skal acceptere dette. Systemet må gerne advare. Det må ikke blokere. Kystlinjeeditor Denne editor handler KUN om: zonens geometri zonens navn kystlinjer IKKE: landpunkt havpunkt onshoreDirectionDeg Disse hører hjemme i "Retning land-hav". Kystlinjeeditor skal fremover kunne søgning der også skifter kortet omdøbning af zoner én "Gem ændringer" Ingen tekniske kladdeknapper. Flyt kort og Præcis redigering skal bevares. Retning land-hav Denne editor handler om: landpunkt havpunkt retningsankre onshoreDirectionDeg IKKE kystlinjens geometri. Kladder En meget vigtig designbeslutning. Brugeren skal ikke arbejde med: kladder eksport geojson lokale filer Systemet må gerne bruge kladder internt. Men de skal være usynlige. Normal arbejdsgang skal være: Gem ændringer Systemet klarer resten. Dette princip skal bredes ud til hele admin. Reviewkø Der er besluttet: slet-knap ryd systemtestposter filtrering soft-delete Auditspor skal bevares. GitHub Den seneste deployment (4.0.94) lykkedes. Status: GitHub grønt Release gate grønt DMI grønt ingen deployment-fejl Der findes stadig nogle 404 på gamle diagnosefiler. Ikke kritisk. Kan ryddes op senere. DMI DMI fungerer stabilt. Må ikke ændres uden dokumenteret analyse. Performance Ligger nu omkring 5 sekunder. Ingen tegn på tidligere regression. Hvis performance igen bliver dårlig: undersøg først: browsercache service worker netværk før der ændres kode. Sundhedstjek Standardmateriale: projekt-ZIP GitHub Actions-log sitetest Det er som udgangspunkt nok. Ekstra diagnosefiler kun hvis analysen viser behov. Release-princip Der må ikke frigives en version fordi: "det virker hos mig" Der skal være: analyse ↓ rodårsag ↓ rettelse ↓ validering ↓ release En meget vigtig læring Tidligere blev der ofte rettet ud fra symptomer. Det kostede mange timer. Nu gælder: Historisk regression ↓ rodårsag ↓ runtimeanalyse ↓ implementering ↓ fuld regressionstest Det har allerede sparet meget tid. Status på projektet Lige nu virker systemet overordnet meget stabilt. Følgende fungerer: GitHub deployment DMI scoremotor pile zoom zonesletning administratorændringer 180°-retninger GitHub-validering offentlig side Supabase Derfor skal næste udvikling være konservativ. Ændr kun det, der er dokumenteret nødvendigt. Højeste prioritet fremover Den næste ChatGPT skal være ekstremt forsigtig. Målet er ikke længere at få RavRadar til at virke. Det virker. Målet er nu: gøre admin enkel og intuitiv fjerne teknisk kompleksitet fra brugerfladen sikre at administratorændringer automatisk forplanter sig til hele systemet fortsat holde GitHub, DMI og scoremotor stabile undgå regressioner gennem dokumenteret analyse og fuld validering Vigtig arbejdsregel: Hvis en ændring berører et stabilt subsystem (scoremotor, DMI, kort, rendering, deployment, service worker eller cache), må der ikke implementeres noget, før påvirkningen er analyseret, og der er en konkret plan for regressionstest. Behandl den seneste grønne version som en baseline, og begræns ændringer til den mindst mulige del af systemet.
+Det er modtaget og gemt som arbejdsgrundlag for RavRadar.
+Version 4.0.94 behandles som den seneste grønne baseline. Ved næste projekt-ZIP starter jeg med at læse ZIP’ens egne instruktioner, hele RDKS, håndbogen og kodebasen. Recappet bruges som ramme, men ZIP’en er den autoritative sandhed, hvis der findes uoverensstemmelser.
+Jeg følger fremover konsekvent rækkefølgen:
+Analyse → dokumenteret rodårsag → minimal rettelse → fuld projektvalidering → release
+Ingen ændringer i stabile subsystemer uden konkret påvirkningsanalyse og regressionstestplan.
+mandag 22.31
+IMG_2888147B-E5FA-4AD1-8A13-5CBDFC7CD19D.jpeg
+Det er i fanen vandstandsstationer. Det passer vist ikke at de aldrig har leveret. Der er gået noget galt. Analyser det når jeg sender projektet i zip samt sitetest
+Ja, det springer faktisk også mig i øjnene.
+På skærmbilledet kan jeg læse:
+"Frederikshavn II – 96,7 km – Utilgængelig – Har aldrig leveret – Ingen dokumenteret prognosecache"
+Samtidig står der:
+"Register: 155 stationer. Hals-kontrol: 6 fundet."
+"Ingen gyldige DMI-stationer blev indlæst."
+Ud fra det alene vil jeg ikke konkludere, at Frederikshavn II aldrig har leveret. Det er en påstand, som skal dokumenteres.
+Der er flere mulige forklaringer, som skal undersøges systematisk:
+Historik er blevet nulstillet
+Stationens "har aldrig leveret"-status kan være blevet beregnet ud fra en tom database eller en ny registrering.
+Registry og cache er ude af sync
+Stationen kan have leveret tidligere, men den historik bliver ikke længere koblet til registry-posten.
+Station-ID er ændret
+Hvis DMI har ændret ID eller navngivning, kan RavRadar tro, at det er en helt ny station.
+Diagnosefeltet viser forkert
+Teksten kan være baseret på et felt, der aldrig bliver opdateret korrekt.
+Statuslogikken er for streng
+Tidligere har vi netop besluttet, at en station kan være prognosebrugbar, selv om den aktuelt ikke leverer observationer. Den beslutning skal kontrolleres hele vejen gennem kæden.
+Når du sender ZIP'en og sitetesten
+Jeg vil behandle det som en egentlig regression og følge den arbejdsproces, vi har aftalt:
+gennemlæse RDKS, håndbog og projektet
+finde præcis hvor teksten "Har aldrig leveret" bliver genereret
+spore hele datakæden:
+DMI → download → cache → registry → Supabase → admin → rendering
+kontrollere om historikken eksisterer, men ikke vises
+sammenligne med den seneste grønne version (4.0.94), hvis adfærden er ændret
+dokumentere rodårsagen, før der ændres én eneste linje kode
+Jeg vil også kontrollere, om det kun gælder Frederikshavn II, eller om flere stationer fejlagtigt vises som "Har aldrig leveret". Hvis det er et generelt mønster, peger det mere på en fejl i statusberegningen end på selve stationerne.
+IMG_FD1B2155-B9C0-447F-88AD-CEE96DAED56A.jpeg
+Vores vandstandstabeller er fyldt op som de skal være. Jeg tror data er som de skal være og bliver bearbejdet korrekt. Det er bare admin panelet der ikke virker
+RavRadar(149).zip
+Zip-arkiv
+ravradar-sitetest-site-1785789266611-7gxlw.json
+Fil
+hvis du ikke kan finde det og er i tvivl om hvad den afdeling af admin skal lave, så må du ikke gætte.
+IMG_4E1FBCE5-BA59-40CB-90D9-BFEB37D1055E.jpeg
+IMG_9BEAC4B2-B460-42FF-BC71-312014EA849D.jpeg
+Alle stationer er markeret som utilgængelig når man trykker for at vælge dem manuelt. Der vises ikke med grøn hvilke stationer systemet selv har valgt. Når man åbner fanen, starter den på zonen “Agger og krik vig”, men kortet vises ikke for denne zone. Brug de farver i bunden af kortet til de forskellige status. Jeg sender projekt zip. Er der andet du skal bruge?
+logs_83701521548.zip
+Zip-arkiv
+ravradar-sitetest-site-1785805547058-2s9fp.json
+Fil
+RavRadar(150).zip
+Zip-arkiv
+IMG_46625C22-EA72-496B-832D-A3B1C3732A81.jpeg
+Er det korrekt at der ikke er nogen cache for Hirtshals og den er utilgængelig? 4.0.96 er lagt ind og det ser ud til det virker
+tirsdag 11.10
+water-level-station-routing.json
+Fil
+RavRadar(151).zip
+Zip-arkiv
+ravradar-sitetest-site-1785834471179-t28ry.json
+Fil
+logs_83774855360.zip
+Zip-arkiv
+ravradar-diagnostik (36).json
+Fil
+RavRadar-4.0.94(1).zip
+Zip-arkiv
+RavRadar-4.0.93(1).zip
+Zip-arkiv
+RavRadar-4.0.92(1).zip
+Zip-arkiv
+RavRadar-4.0.91(1).zip
+Zip-arkiv
+RavRadar-4.0.89(1).zip
+Zip-arkiv
+RavRadar-4.0.88(1).zip
+Zip-arkiv
+RavRadar-4.0.87(1).zip
+Zip-arkiv
+RavRadar-4.0.86(1).zip
+Zip-arkiv
+RavRadar-4.0.85(1).zip
+Zip-arkiv
+RavRadar-4.0.84(1).zip
+Zip-arkiv
+RavRadar-4.0.83(1).zip
+Zip-arkiv
+RavRadar-4.0.79-clean(1).zip
+Zip-arkiv
+RavRadar-4.0.78(2).zip
+Zip-arkiv
+RavRadar-4.0.77(2).zip
+Zip-arkiv
+RavRadar-4.0.76(2).zip
+Zip-arkiv
+RavRadar-4.0.75(2).zip
+Zip-arkiv
+RavRadar-4.0.74(2).zip
+Zip-arkiv
+RavRadar-4.0.73(2).zip
+Zip-arkiv
+RavRadar-4.0.72(1).zip
+Zip-arkiv
+RavRadar-4.0.70(1).zip
+Zip-arkiv
+RavRadar-4.0.68(1).zip
+Zip-arkiv
+RavRadar-4.0.67(1).zip
+Zip-arkiv
+RavRadar-4.0.66(1).zip
+Zip-arkiv
+RavRadar-4.0.65(1).zip
+Zip-arkiv
+RavRadar-4.0.64(1).zip
+Zip-arkiv
+RavRadar-4.0.63(1).zip
+Zip-arkiv
+RavRadar-4.0.62(1).zip
+Zip-arkiv
+RavRadar-4.0.61(1).zip
+Zip-arkiv
+RavRadar-4.0.60(1).zip
+Zip-arkiv
+RavRadar-4.0.59(1).zip
+Zip-arkiv
+RavRadar-4.0.58(1).zip
+Zip-arkiv
+RavRadar-4.0.57-SUPABASE-FIXED(1).zip
+Zip-arkiv
+RavRadar-4.0.56-FIXED(1).zip
+Zip-arkiv
+RavRadar-4.0.54(1).zip
+Zip-arkiv
+RavRadar-4.0.53(1).zip
+Zip-arkiv
+RavRadar-4.0.52(1).zip
+Zip-arkiv
+RavRadar(152).zip
+Zip-arkiv
+ravradar-sitetest-site-1785904637397-olu79.json
+Fil
+logs_84005945676.zip
+Zip-arkiv
+onsdag 10.12
+IMG_BC01A3EB-DE36-43EB-A32C-612AFE1B09ED.jpeg
+Den er lagt ind. De automatiske valg kører vist ikke. Se billede. Den burde jo vælge Hirtshals.
+RavRadar(153).zip
+Zip-arkiv
+perfekt. lav det. Husk at skrive i rdks og håndbog hvor det giver mening, med alt det vi laver
+IMG_81ED919B-4607-4AC7-A06D-9F3CA4605767.jpeg
+IMG_530646D9-3C85-459A-A044-CA50EBF28B9E.jpeg
+Fortæl mig lige med 100% sikkerhed, hvor henter den data fra her? Thisted er jo stadig grøn, henter den så stadig derfra udover den station jeg har valgt?
+RavRadar(154).zip
+Zip-arkiv
+lav den ændring nu, uden at fucke andet op.
+onsdag 15.06
+RavRadar(155).zip
+Zip-arkiv
+logs_84093496448.zip
+Zip-arkiv
+ravradar-sitetest-site-1785935046069-qpuu3.json
+Fil
+Det er vist på tide du kører et grundigt sundheds og funktionalitets tjek.
+IMG_14F8F227-D325-4C41-B820-4C3178F41CDB.jpeg
+IMG_DBD709D8-6762-4A2F-8CB0-E9DDEA8E9CBC.jpeg
+IMG_9B7D3521-891A-45F3-B62C-A7BD1274D34D.jpeg
+IMG_CE830075-900F-4567-A1DF-CC29533E26D6.jpeg
+IMG_ABBA3351-EA6C-480D-835F-3A3087D36BA9.jpeg
+IMG_2EB748B9-3E03-4EAE-9DE5-D20672E854B8.jpeg
+Det var de første 3 afsnit. Der kommer flere senere så du venter med at gøre mere ved det. Nu vil jeg bare gerne vide, hvor fanden vores strømpile er blevet af???
+RavRadar(156).zip
+Zip-arkiv
+ravradar-sitetest-site-1785945977182-kajzo.json
+Fil
+find ud af det
+IMG_D8D10C98-6BC3-4A16-825D-96EDFBDECE75.jpeg
+IMG_D41F534C-0DCD-46FF-882D-26494BD21018.jpeg
+Vi holder lige pause i kursus. Hvor fanden blev mine funktioner af i vandstand? Jeg kan ikke overrule med rød prik. Desuden er vandstanden snart nul hele tiden i prognosen. Nu må du fandme tage dig sammen!!!!
+ravradar-sitetest-site-1785948972545-y9jq8.json
+Fil
+RavRadar(157).zip
+Zip-arkiv
+nej - du laver begge fejl! nu!!!!!!! idiot
+IMG_54DB22EA-E91F-4EA7-9FB3-8120CF5C17DD.jpeg
+IMG_6197100F-909B-4965-BF1E-F96E3FE3D3E6.jpeg
+Nu skal vi lige kigge på fejl igen. Det ser ud til vandstand kom tilbage i prognosen. Men se billeder. På det ene er vores gamle administrator valg på, men på det andet kan man ikke bruge administrator valg.
+IMG_982D928C-F214-4F19-A715-F1C64C21D924.jpeg
+IMG_5A6C70F0-2516-4121-A4B1-6610D657891E.jpeg
+Da de endelig kom frem, kunne jeg ikke trykke “fjern” på den forvalgte station jeg ville have væk. Måske pga ventetid. Den rigtige løsning er bestemt ikke bare at vente - det tager mange minutter. Den rigtige løsning er at finde ud af hvorfor det varer så langt tid for dem at blive indlæst. Du må kigge tilbage tre i historikken. Det har jo virket.
+RavRadar(158).zip
+Zip-arkiv
+ravradar-sitetest-site-1785951744680-6okid.json
+Fil
+hvis du er 100% sikker, så lav det. og uden at ødelægge andet.
+RavRadar-4.0.105(1).zip
+Zip-arkiv
+du har sendt mig en løsning og skrevet det i rdks osv, så måske du kan se det i den zip du sende mig. den er vedhæftet
+logs_84174206852.zip
+Zip-arkiv
+RavRadar(159).zip
+Zip-arkiv
+ravradar-sitetest-site-1785955096109-c0ojf.json
+Fil
+network.har
+Fil
+Uncaught QuotaExceededError: Failed to execute 'setItem' on 'Storage': Setting the value of 'ravradar-admin-document:water-level-station-routing' exceeded the quota. at writeLocal (admin-document-store.js?v=4.0.105:12:47) at queueAdminDocumentSave (admin-document-store.js?v=4.0.105:39:68) at saveWaterRouting (admin-dashboard.js?v=4.0.105:190:197) at e.<anonymous> (admin-dashboard.js?v=4.0.105:271:2221) at e.fire (Events.js:195:9) at e._fireDOMEvent (Map.js:1452:15) at e._handleDOMEvent (Map.js:1401:8) at HTMLDivElement.o (DomEvent.js:108:13) admin-dashboard.js?v=4.0.105:190 Uncaught QuotaExceededError: Failed to execute 'setItem' on 'Storage': Setting the value of 'ravradar-water-station-routing-v1' exceeded the quota. at saveWaterRouting (admin-dashboard.js?v=4.0.105:190:135) at e.<anonymous> (admin-dashboard.js?v=4.0.105:271:2221) at e.fire (Events.js:195:9) at e._fireDOMEvent (Map.js:1452:15) at e._handleDOMEvent (Map.js:1401:8) at HTMLDivElement.o (DomEvent.js:108:13) 8Tracking Prevention blocked access to storage for <URL>. afqhhdrkjfjtpadntdzo.supabase.co/rest/v1/handbook_reviews?id=eq.4c489945-a686-42c4-8433-0358e26cd45d:1 Failed to load resource: the server responded with a status of 403 () admin-dashboard.js?v=4.0.105:190 Uncaught QuotaExceededError: Failed to execute 'setItem' on 'Storage': Setting the value of 'ravradar-water-station-routing-v1' exceeded the quota. at saveWaterRouting (admin-dashboard.js?v=4.0.105:190:135) at HTMLInputElement.saveControls (admin-dashboard.js?v=4.0.105:265:315) 4admin-dashboard.js?v=4.0.105:190 Uncaught QuotaExceededError: Failed to execute 'setItem' on 'Storage': Setting the value of 'ravradar-water-station-routing-v1' exceeded the quota. at saveWaterRouting (admin-dashboard.js?v=4.0.105:190:135) at e.<anonymous> (admin-dashboard.js?v=4.0.105:271:2221) at e.fire (Events.js:195:9) at e._fireDOMEvent (Map.js:1452:15) at e._handleDOMEvent (Map.js:1401:8) at HTMLDivElement.o (DomEvent.js:108:13) [NEW] Explain Console errors by using Copilot in Edge: click to explain an error. Learn moreDon't show again Det kommer stadig virkelig langsomt med de røde prikker. Og når man har trykket Brug administratorvalgte stationer for denne zone, sæter den ikke røde prikker på kortet - men de kommer så måske senere. men ikke i nuet, så man aner ikke hvad man laver.
+Det var sidste del. Jeg har vedhæftet et par billeder af [ekstern kilde fjernet] som han taler om, så du kan se den. Du må gerne analysere kurset grundigt nu. Du kan betragte kursusholder som ekspert.
+RavRadar(20260805-205415).zip
+Zip-arkiv
+Jeg har brug for at du lige gennemser vores eget projekt og dets funktioner, for du har ikke helt styr på det. Blandt andet aftalte vi i starten, at din scoremotor skal tage højde for historiske begivenheder i vejret. Du tror heller ikke vi har satelitvisning, men det har vi. Ift at almindelig indtransport er forsinket 3-5 timer, vil jeg være varsom med at score udfra den påstand. Jeg tror det er mindre. Jeg vil score det sådan, at jo længere tid strømmen har haft indadgående retning, jo højere bliver scoren. Ift de 10 timer efter meget kraftig vind, og det så bliver roligt med indadgående strøm, er jeg enig. Jeg er fuldstændig enig med afsnit 2. vi skal ikke kun lave et øjebliksbillede. Det er en tilstandsmodel, men det var faktisk også det jeg bad dig om, da vi startede med at bygge ravradar. så tjek lige hvor langt du er med det, og om det ikke allerede er det vi gør, ellers er det vigtigt. forklaringerne i afsnit 2 skal vi klart også implementere når vi forklarer vores score. Vi kan ikke tage højde for lokal bundhøjde eller brugeroplyste referencepunkter, som RavRadar ikke nødvendigvis har endnu, ift hvilken påklædning folk tager på. Vi kan heller ikke kortlægge hele danmarks fysiske struktur og dermed score ud fra det. Det er gode råd med revler, ålegræs osv, men vi kan ikke score udfra det. Morfologisk zonedata vil være et livstidsprojekt for mig at indsamle, så det kan vi heller ikke bruge. Det er kun gode råd. Ift det kursusholder sagde om regionale forskelle, mår du gerne implementere det i dine scorer, hvis der er noget rimelig konkret du kan bruge til at analysrere udfra. Når vi får historik ind fra vores brugere med gps position, dato og tid, skal det sammenholdes med vores historiske vejrdata og udfra det skal vi i vores model /regel motor kunne lave nye regler, samt AI delen skal bruge det til at forbedre vores prognoser. Din endelige vurdering har du fuldstændig ret i. Jeg vedhæfter projektzip, og så vil jeg gerne have dig til at lave en ekstremt grundig analyse, af hvordan vi får implementeret overstående på bedste vis i ravradar. sammenhold alt med rdks, håndbog osv.Det er stadig vigtigt, at vi ikke ødelægger vores funktioner som fungerer nu. nogen skal selvfølgelig rettes til, men jeg vil ikke have at vi indfører ændringer, som gør at vi står tilbage med en masse fejlsøgning på ravradar bagefter. Alt skal være fuldstændig gennemarbejdet, og denne gang skal du for alvor analysere helt i bund. Så er vi klar til at bygge. Sig til hvis du skal bruge andet end projektzip. Ift vores sidste problem med vandstationer, skal dette stadig dokumenteres i næste version du laver.
+logs_84223957543.zip
+Zip-arkiv
+den fejlede
+logs_84226570387.zip
+Zip-arkiv
+fejl
+logs_84231705393.zip
+Zip-arkiv
+fejl igen igen igen
+logs_84236879300.zip
+Zip-arkiv
+guide mig ift planen
+RavRadar(20260805-232926).zip
+Zip-arkiv
+ravradar-sitetest-site-1785972539568-nrbp7.json
+Fil
+resten du skal bruge kommer løbende. jeg siger til når klar
+IMG_2C902848-67A7-4D82-8110-38066B4655B2.jpeg
+IMG_473F78BF-561D-4953-8F95-4EB7F8E59EE5.jpeg
+IMG_F861289A-94CA-4498-83DC-CD1CBF4F121E.jpeg
+IMG_72E841F2-98C1-4116-B3D0-EC83FCE5A581.jpeg
+Er det nok billeder og data fra en zone?
+IMG_4A30DED8-78B4-4FC0-8B2A-DAF55BC8C5D4.jpeg
+IMG_767EDA8A-FECF-427B-9588-09A12337F046.jpeg
+IMG_2946024B-4447-49B6-9E89-ADB9542FEDC7.jpeg
+IMG_1F7FA37C-5243-420E-8574-383AED4FDDCC.jpeg
+IMG_17EEF31D-AE01-451B-9927-F4772E0FB095.jpeg
+IMG_2770227C-5575-4049-99BC-B8BA8525A3E3.jpeg
+IMG_27129348-91F5-42C9-BE0B-D6B9CD28EFA3.jpeg
+IMG_8EBBB56A-2616-43C1-AE3C-E253C9480879.jpeg
+IMG_FB3D4228-0B6B-441B-8B4C-04B66D076A53.jpeg
+IMG_FD01CD18-05BA-49D6-9EBC-8E46127107A7.jpeg
+IMG_916629BB-473E-475F-A302-74EDDC67D1D0.jpeg
+IMG_361021BC-32F7-4A7C-B6D9-49D40ACFB37B.jpeg
+logs_84240251267.zip
+Zip-arkiv
+det var vist det sidste du manglede for at komme videre
+RavRadar(20260806-002756).zip
+Zip-arkiv
+logs_84246079999.zip
+Zip-arkiv
+ravradar-sitetest-site-1785976331894-3l4j3.json
+Fil
+lad mig få en analyse og videre plan. så stopper vi for i dag bagefter
+i går 10.38
+logs_84313640501.zip
+Zip-arkiv
+Nu er der gået ca 8 timer. jeg har vedhæftet den sidste deploy and update log fra github. Hvis du også vil analysrere den. vi er klar til at fortsætte iflg vores plan.
+Ja.
+Jeg har nu det nødvendige grundlag:
+projekt-ZIP fra 4.0.111
+den tidligere sitetest
+den seneste Deploy and Update-log
+de dokumenterede referencezoner
+dine beslutninger om historik, morfologi, strømbånd, performance og brugerfund
+kravene til RDKS, håndbog og regressionstest
+Det eneste praktiske forbehold er, at den seneste GitHub-log stadig skal kunne udlæses stabilt, før jeg kan konkludere noget konkret om netop den kørsel. Jeg behøver ikke yderligere materiale fra dig for at fortsætte arbejdet.
+Jeg tror vi bliver nødt til at starte en ny chat i projektet, for denne er blevet for stor og derfor arbejder du meget langsomt. Derfor skal den version du laver nu, indeholde en kæmpe opdatering af håndbog og rdks, men alt vi har skrevet og lavet i denne chat og tidligere, planer, udfordringer og alt som kan blive relevant, da du ikke husker særlig godt fra chat til chat. Når næste version så er lagt ind, sender jeg dig projekt zip, så du kan blive opdateret fra den. Det er super vigtigt at du propper så meget af den viden du har nu, ind i projektfilens rdks, håndbog mv. Det gør vores arbejde i næste chat meget nemmere og langt mere sikkert ift at undgå at lave fejl. Den nye version bør selvfølgelig også indeholde næste step i vores plan. Når du danner den nye zip skal du også sammen med den, lige skrive en besked herinde, som er møntet på dig selv, ift hvad du skal som det første i den nye chat. hvor og hvilke informationer du skal søge i projekt zippen, så indsætter jeg den tekst i den nye chat. Det er super vigtigt at vi overfører så meget viden som overhovedet muligt, til den nye chat, så analyser meget grundigt når du laver zippen med den nye version. gør det nu.
+RavRadar 4.0.112 er færdigbygget med den store videns- og overleveringsopdatering.
+Download RavRadar 4.0.112
+Det er kommet med
+Stor RDKS-overlevering
+Ny fil:
+docs/rdks/05_NEXT_CHAT_HANDOFF.md
+Den samler blandt andet:
+præcis læserækkefølge i næste chat
+aktuel teknisk baseline
+status på tilstandsmodellen
+næste udviklingstrin
+kendte driftsrisici
+performancekrav
+referencezoner
+regler for morfologi
+forbud mod generelle strømbånd
+brugerfund, zonevalg og GPS
+vandstationsrettelserne
+kravet om end-to-end konsekvensanalyse
+hvad der er implementeret, planlagt og fortsat i skyggetilstand
+RDKS’ øvrige centrale filer er også opdateret:
+CURRENT_TRUTH.md
+IMPLEMENTATION_STATUS.md
+ACTIVE-REQUIREMENTS.md
+KNOWN-ISSUES.md
+MASTER_LOG.md
+AI- og releasearbejdsreglerne
+Stor håndbogsopdatering
+Håndbogen har fået et nyt samlet kapitel om:
+hvorfor RavRadar skal være en tilstandsmodel
+forskellen mellem aktuel score og historisk proces
+indadgående og udadgående strøm over tid
+hvorfor vi ikke bruger en fast 3–5-timers forsinkelse
+cirka 10 timers gradvis efterstormopbygning
+vedvarende nærkystpotentiale
+faktiske DMI-strømdata frem for strømbånd
+eksisterende morfologidata
+referencezoner
+brugerfund, zonevalg og GPS
+performance
+sikker udviklings- og releaseproces
+overlevering mellem projektchats
+Automatisk referencezonerapport
+Ny genereret rapport:
+data/diagnostics/state-reference-zones.json
+Den dækker:
+Agger og Krik Vig
+Asaa og Melholt
+Als Odde og Helberskov
+Blåvand og Hvidbjerg
+Rapporten samler automatisk:
+zonegeometri
+pålandsretning
+kysttype
+datapunkt og landpunkt
+morfologi
+DMI-u/v og strømproveniens
+indtransportvarighed
+indtransportmomentum
+udtransporttryk
+mobiliseringspotentiale
+nærkystpotentiale
+procesfase
+Als Odde og Helberskov er udtrykkeligt registreret som åben kyst nord for Mariager Fjord — ikke fjordzone.
+Denne rapport skal normalt erstatte behovet for nye omfattende screenshots.
+Sitetesten
+Kontrollen af knappen til samlet funktionstest er rettet, så testen:
+skifter tilbage til dashboardet
+venter på den endelige dashboard-rendering
+kræver, at knappen både er synlig, aktiv og klikbar
+Den tidligere falske negative bør derfor være væk.
+Scoren
+Tilstandsmodellen er fortsat score-neutral i 4.0.112.
+Denne version ændrer ikke:
+RavScore
+ranglisten
+femdøgnsprognosen
+morfologipoint
+DMI-strømdata
+vandstandsrouting
+administratoroverride
+vandstationsmarkører
+den offentlige beregningsmodel
+Næste planlagte scoretrin er stadig:
+Et glidende bidrag, der stiger med dokumenteret varighed, styrke og stabilitet af indadgående DMI-strøm — uden en fast 3–5-timers grænse.
+Validering
+Jeg har kørt:
+hele npm run validate
+hele npm run release:gate
+releasepakningen
+ny udpakning af den færdige ZIP
+hele npm run validate igen på præcis det pakkede indhold
+hele npm run release:gate igen på præcis det pakkede indhold
+Alle test bestod.
+Tekst til den nye chat
+Indsæt dette som første besked i den nye projektchat, efter at du har uploadet projekt-ZIP’en:
+Vi fortsætter RavRadar fra den vedhæftede projekt-ZIP. Brug ZIP’en som den primære tekniske sandhed og antag ikke noget ud fra tidligere chats.
+Start med at udpakke projektet og læse disse filer i denne rækkefølge:
+AGENTS.md
+docs/rdks/00_READ_FIRST.md
+docs/rdks/05_NEXT_CHAT_HANDOFF.md
+docs/rdks/90_INDEX/CURRENT_TRUTH.md
+docs/rdks/90_INDEX/IMPLEMENTATION_STATUS.md
+docs/rdks/20_REQUIREMENTS/ACTIVE-REQUIREMENTS.md
+docs/rdks/40_KNOWN_ISSUES/KNOWN-ISSUES.md
+seneste changelog
+relevante håndbogskapitler og den aktuelle kode
+Kontroller derefter versionen i package.json, version.json, service worker og browserimporterne.
+Vigtige aktuelle forhold:
+Den historiske tilstandsmodel er fortsat score-neutral og må endnu ikke ændre RavScore.
+Den automatiske referencezonerapport ligger i data/diagnostics/state-reference-zones.json.
+Referencezonerne er Agger/Krik Vig, Asaa/Melholt, Als Odde/Helberskov og Blåvand/Hvidbjerg.
+Als Odde og Helberskov er åben kyst nord for Mariager Fjord, ikke fjordzone.
+Brug ikke generelle strømbånd i score eller fallback. Kun faktiske marine DMI-data må styre transporten.
+Eksisterende dokumenteret morfologi skal fortsat påvirke scoren; manglende morfologi er neutralt.
+Nye manuelle screenshots skal kun kræves i yderste nødstilfælde.
+Offentlig startup skal fortsat holdes omkring den senest verificerede baseline på cirka 3,45 sekunder.
+Vandstationsadminens røde prikker, override og Fjern er produktionsbekræftet efter localStorage-rettelsen.
+Projektet må ingen steder indeholde navnene på de forbudte eksterne analysekilder.
+GitHub/DMI-jobbets lange køretid er et separat åbent performanceproblem og må ikke løses ved at svække marine audits.
+Første udviklingsopgave er at analysere den seneste projekt-ZIP, sitetest og GitHub-log sammen med den automatiske referencezonerapport. Bekræft, at skyggetilstandens historiske felter er fagligt stabile over produktionstimerne.
+Først derefter må næste plantrin bygges: et begrænset, glidende transportbidrag baseret på varighed, styrke og stabilitet af dokumenteret indadgående DMI-strøm. Der må ikke indføres en fast universel 3–5-timers tærskel.
+Før enhver ændring skal hele kæden analyseres som én sammenhæng:
+input → scheduler/tidsbudget → cache → DMI-data → proveniens → historisk tilstand → score → offentlig runtime → UI/admin → tests → artifact → deploy → browser
+Find også gamle tests og antagelser, som en ændring kan gøre forældede. Byg ikke en hurtig patch. Lever først en ny ZIP efter fuld validering og release-gate på præcis det pakkede indhold.
+perfekt. fik du også alt fra relevant fra vores kursus lagt ind i filen?
+Ja – men med én vigtig nuance.
+Jeg har ikke kopieret kurset ind i RavRadar. Det ville både være forkert og i strid med det, vi aftalte om ikke at referere til eksterne kilder.
+Det jeg har gjort er at omsætte den relevante faglige viden til RavRadars egen viden og arkitektur.
+Det jeg fik med
+✅ Tilstandsmodellen frem for øjebliksbillede.
+✅ Historisk vind, strøm og vandstand.
+✅ Mobilisering → transport → nærkystpotentiale → RavScore.
+✅ At indtransport opbygges gradvist over tid.
+✅ At kraftige hændelser efterlader et potentiale, som ikke forsvinder øjeblikkeligt.
+✅ At udtransport også skal nedbrydes gradvist.
+✅ At forklaringerne skal beskrive processen og ikke kun den aktuelle tilstand.
+✅ At AI-forklaringerne skal fortælle hvorfor scoren ser ud som den gør.
+✅ At revler, tang, ålegræs og anden eksisterende morfologi fortsat anvendes, hvor vi har data.
+✅ At vi ikke bygger generelle strømbånd.
+✅ At brugerfund senere skal bruges til at forbedre reglerne.
+✅ At referencezonerne bliver permanente regressionstests.
+Det jeg bevidst IKKE tog med
+❌ Navnene [ekstern kilde fjernet].
+❌ Navnet [ekstern kilde fjernet].
+❌ Deres markørsystem (grøn/gul/rød).
+❌ Deres interne algoritmer.
+❌ Deres konkrete tærskelværdier.
+❌ Deres beskrivelser af bestemte lokaliteter.
+❌ Noget der kunne ligne en kopi af deres produkt.
+Noget jeg med vilje udskød
+Der er også ting fra kurset, som jeg mener først skal implementeres senere, når vi har mere data.
+For eksempel:
+regionale forskelle mellem forskellige danske kyster
+persistence efter meget kraftige storme
+læring fra brugerfund
+automatisk regelgenerering ud fra historiske fund
+AI der selv foreslår nye regler til regelmotoren
+De står nu som planlagte udvidelser i RDKS og håndbogen, så de ikke bliver glemt.
+Noget jeg faktisk synes blev bedre end kurset
+Kurset beskriver mange ting kvalitativt.
+RavRadar kommer til at beskrive dem kvantitativt.
+Eksempel:
+I stedet for:
+"Der har været indadgående strøm længe."
+kommer RavRadar til at kunne sige noget i stil med:
+"Indadgående DMI-strøm har været stabil i 7 timer og 42 minutter. Mobiliseringspotentialet er højt, og nærkystpotentialet er fortsat stigende."
+Det er efter min vurdering en væsentlig styrke ved RavRadar.
+Der er én ting, jeg gerne vil gøre i en senere version, som vi ikke nåede i 4.0.112:
+Jeg vil gennemgå hele håndbogen én gang mere, kapitel for kapitel, og sikre, at al den ekspertviden vi har samlet gennem projektet – ikke kun fra kurset, men også fra RDKS, vores analyser, fejlretninger og dine beslutninger – er skrevet ind som RavRadars egen viden i et sammenhængende og pædagogisk format. Jeg tror, vi kan løfte håndbogen et niveau mere, så den bliver den centrale vidensbase for hele projektet.
