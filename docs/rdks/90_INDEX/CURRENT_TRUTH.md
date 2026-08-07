@@ -62,6 +62,7 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - Ved konflikt gælder: brugerens aktuelle instruktion > aktiv RDKS > verificeret aktuel kode > håndbog > changelog > historiske chats.
 ## Release Governance
 - En version må ikke erklæres færdig eller leveres som ZIP, før `npm run validate` og `npm run release:gate` er grønne.
+- Enhver positiv produktions-preflight kører begge fulde gates før Pages-artifactet bygges. Kun en negativ preflight må springe gates, artifact og deploy over.
 - GitHub-secrets bevares i repository-indstillinger og må aldrig medtages i kode eller ZIP.
 - CI-fejl skal føre til samlet audit af hele releasekæden.
 - Leverancepakker må aldrig indeholde `.git`.

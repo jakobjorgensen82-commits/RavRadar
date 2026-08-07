@@ -25,3 +25,6 @@ Genererede datafiler må gerne bygges fra historiske snapshots, men generatoren 
 
 ## Tillæg 2026-08-07 – grøn runstatus er ikke nok
 Ved 4.0.117-overgangen blev det konstateret, at workflowets almindelige `workflow_dispatch` kan springe `npm run validate` og `npm run release:gate` over og stadig nå Pages-deploy. Det er i strid med denne beslutnings hensigt. Releasebevis kræver derfor ikke kun grøn samlet runstatus, men at de bindende gate-trin faktisk er kørt og har status `success`. Første Codex-opgave er at bringe workflowimplementeringen i overensstemmelse med denne allerede bindende beslutning.
+
+## Implementering 2026-08-07
+Begge fulde gates følger nu enhver positiv produktions-preflight og står før Pages-artifactet. Trigger og `force` kan ikke længere undtage gates. Negativ preflight må fortsat stoppe uden build/deploy. Implementeringen afventer frisk CI-/produktionsverifikation.

@@ -41,7 +41,7 @@ Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode
 | Ekspertreview og brugerfeedback | Implementeret med central CRUD-test | Faglig behandling af indsendte forslag |
 | RDKS | Implementeret i første fulde historikversion | Automatisk samtaledelta ved alle kommende releases |
 | Levende håndbog | Sprogligt revideret og markant udbygget | Fortsat faglig ekspertvalidering og konkrete forbedringer |
-| Release Governance | **Kendt workflow-gap ved 4.0.117-handoff** | Bindende regler findes, men almindelig `workflow_dispatch` kan deploye med de to fulde gates `skipped`; første Codex-opgave er at lukke bypasset og få en frisk streng kørsel grøn |
+| Release Governance | **Gate-bypass rettet lokalt; afventer streng CI/produktion** | Alle reelle produktionsbuilds kræver nu begge fulde gates; næste run skal bevise `success` for gates og deploy i samme kæde |
 | ravradar.dk-beredskab | Planlagt/delvist | DNS, Supabase redirects, CNAME og produktionstest før aktivering |
 | Faglig rav- og sedimenthåndbog | Markant udbygget | Ekstern ekspertreview og lokal kalibrering af tærskler |
 
@@ -284,3 +284,9 @@ Status: Implementeret og lokalt valideret.
 - #1760 deployede denne kode og den seneste synkroniserede admin-geometri, men de fulde `npm run validate`/`npm run release:gate` steps var `skipped`.
 - Status må derfor ikke være "stabil baseline" endnu.
 - Første Codex-implementering er workflow-gatefikset; først derefter kan næste fulde grønne run lukke stabiliseringsfasen.
+
+## Første Codex-rettelse – releasegates
+- [x] `npm run validate` og `npm run release:gate` er nu betinget alene af, at preflight beslutter at bygge frisk produktionsdata.
+- [x] Billigt preflight-skip uden artifact/deploy er bevaret.
+- [x] Workflow-kontrakttesten kræver begge gates før Pages-artifactet og forbyder trigger-/force-betingelser på gates.
+- [ ] Frisk GitHub-kørsel skal stadig vise begge gates og Pages-deploy som `success`, før baselinen er CI-/produktionsverificeret.

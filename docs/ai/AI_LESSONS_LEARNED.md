@@ -40,3 +40,4 @@ Run #1753-lignende fejlbillede viste, at en aktiv zone kan være korrekt opbygge
 **Rodmekanisme:** `npm run validate` og `npm run release:gate` var betinget af `push || force`, men artifact/deploy kunne fortsætte i en almindelig `workflow_dispatch`.
 **Læring:** Kontroller job-step-status og workflowbetingelser, ikke kun det grønne flueben på runniveau. Deployment og releasegodkendelse er forskellige beviser.
 **Fremtidig regel:** Intet nyt produktionsartifact efter frisk opbygning må deployes med bindende gates `skipped`.
+**Implementeret beskyttelse:** Begge gates følger nu positiv preflight uden trigger-undtagelser, ligger før artifactet og er dækket af en workflow-kontrakttest. Billigt skip findes kun ved negativ preflight, hvor intet artifact deployes.

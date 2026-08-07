@@ -44,6 +44,7 @@ Codex må ikke få tests grønne ved at genindføre stale vejrdata, konstruere m
 Brug `docs/ai/CODEX_HANDOFF_CHECKLIST.md` ved første lokale opsætning og før den første Codex-release.
 
 ## P0 – første Codex-opgave før al videre udvikling
+Workflowrettelsen er implementeret lokalt: begge fulde gates kræver nu enhver positiv preflight, og artifactet ligger efter gates. Status er endnu ikke CI-/produktionsverificeret; en frisk streng run skal vise begge gates og deploy som `success`.
 1. Kontrollér den aktuelle workflowfil og bekræft gatebypasset: de to fulde gates er betinget af `push || force`, mens almindelig `workflow_dispatch` stadig kan nå artifact/deploy.
 2. Ret workflowet systemisk, så et nyt produktionsartifact ikke kan deployes efter en frisk dataopbygning uden at de relevante fulde gates faktisk har kørt og bestået. Svæk ikke gates og ændr ikke RavScore/DMI-regler for at få grønt.
 3. Kør lokale målrettede tests + `npm run validate` + `npm run release:gate`.

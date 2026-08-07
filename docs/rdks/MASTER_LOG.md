@@ -429,3 +429,11 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Konsekvens: de seneste automatiske grønne runs må ikke bruges som fuldt stabilitetsbevis. Status er kode på `main` og deployet, men ingen ny streng baseline er endnu bevist.
 - Den sidste pre-Codex handoff-ZIP ændrer bevidst ikke workflowbetingelserne. Første Codex-kodeopgave er at lukke gate-bypasset direkte i repositoryet og derefter få en frisk kørsel, hvor begge fulde gates faktisk står `success`.
 - Før denne strenge kørsel er grøn, må ingen større videreudvikling begynde.
+
+## 2026-08-07 – første Codex-kodeopgave: gate-bypass lukket lokalt
+- Faktisk `main`/HEAD blev verificeret som `cd70f505054d8578ea29c47be086f0b496161de0`; working tree var rent før ændringen.
+- Bypasset blev bekræftet i både lokal fil og `origin/main`: gates krævede `push || force`, mens Pages-artifactet kun krævede positiv preflight.
+- Begge fulde gates kræver nu enhver positiv preflight og står fortsat efter frisk data/proveniens/runtime og før artifactet.
+- Negativ preflight bevarer den billige skip-adfærd uden artifact/deploy.
+- Workflow-regressionstesten beskytter gatebetingelserne og artifact-rækkefølgen.
+- Status efter implementeringen er lokalt rettet; CI-/produktionsverifikation afventer samme friske run med begge gates og deploy som `success`.

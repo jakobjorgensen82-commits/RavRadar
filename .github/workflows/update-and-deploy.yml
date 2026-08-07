@@ -200,11 +200,11 @@ jobs:
         run: node scripts/generate-state-reference-report-4.0.113.mjs --strict
 
       - name: Validate full project after fresh weather and current provenance
-        if: steps.preflight.outputs.should_run == 'true' && (github.event_name == 'push' || inputs.force == true)
+        if: steps.preflight.outputs.should_run == 'true'
         run: npm run validate
 
       - name: Run release governance gate after refreshed data validation
-        if: steps.preflight.outputs.should_run == 'true' && (github.event_name == 'push' || inputs.force == true)
+        if: steps.preflight.outputs.should_run == 'true'
         run: npm run release:gate
 
       - name: Validate updated weather cache

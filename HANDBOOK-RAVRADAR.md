@@ -1377,4 +1377,4 @@ Ved den afsluttende Codex-overgang blev workflowets statuslogik gennemgået igen
 
 Derfor gælder fremover: **grøn topstatus er ikke nok**. En release er kun strengt godkendt, når de bindende gate-trin faktisk er kørt og har status `success`. Den aktuelle 4.0.117-handoff er kode- og deploymæssigt aktiv, men må ikke betegnes som ny stabil baseline endnu.
 
-Den sidste pre-Codex pakke ændrer med vilje ikke denne workflowbetingelse. Første Codex-opgave er at rette den direkte i repositoryet og derefter gennemføre en frisk fuld produktionsvalidering. Denne midlertidige bootstrap er ikke en permanent undtagelse fra Release Governance.
+Den første Codex-kodeændring har nu rettet workflowbetingelsen: når preflight beslutter at bygge frisk produktionsdata, skal begge fulde gates køre og bestå før Pages-artifactet bygges. Hvis preflight fastslår, at der ikke skal bygges noget nyt, kan kørslen fortsat stoppe billigt uden artifact og deploy. Rettelsen er lokalt valideret; først en frisk kørsel med begge gates og deployment som `success` gør baselinen CI- og produktionsverificeret.

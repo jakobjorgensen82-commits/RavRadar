@@ -53,3 +53,6 @@ Efter de fejlede mellemtrin gennemførte 4.0.117 på commit `6c1dece72d5970a1fc0
 Det afsluttende forløb ændrer den dokumenterede rodårsagsforståelse: den tidligere kandidatradius var ikke tilstrækkelig forklaring på de tilbagevendende udfald. Den væsentlige parserfejl var vertikallagsoverskrivning, samtidig med at nogle berørte zoners centrale geometri faktisk var forkert. Begge forhold er nu en del af RDKS/handbook lessons learned.
 
 Før Codex-overgangen er CHAT-0014 importeret, den gamle handoff opdateret, og en dedikeret `docs/ai/`-pakke er tilføjet. Dette dokumentationsarbejde ændrer ikke RavScore eller runtimeadfærd.
+
+## Første Codex-rettelse – obligatoriske gates ved alle produktionsbuilds
+Den dokumenterede bootstrap-fejl er lukket lokalt. Når preflight beslutter at bygge frisk produktionsdata, kører både `npm run validate` og `npm run release:gate` nu uanset om triggeren er `push`, tvungen manuel kørsel eller almindelig cron-startet `workflow_dispatch`. Et negativt preflight-resultat kan fortsat afslutte billigt uden artifact eller deploy. Regressionstesten kræver begge gates før Pages-artifactet og afviser triggerbaserede gate-undtagelser. Frisk CI-/produktionsverifikation afventer.

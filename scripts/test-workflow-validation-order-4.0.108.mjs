@@ -11,11 +11,12 @@ const positions = {
   reference: text.indexOf('name: Generate and strictly validate production reference zones'),
   validate: text.indexOf('name: Validate full project after fresh weather and current provenance'),
   gate: text.indexOf('name: Run release governance gate after refreshed data validation'),
+  artifact: text.indexOf('name: Build lean GitHub Pages artifact'),
 };
 for (const [name, pos] of Object.entries(positions)) {
   if (pos < 0) throw new Error(`Mangler workflowtrin: ${name}`);
 }
-const expected = ['hydrate','preflight','weather','provenance','runtime','reference','validate','gate'];
+const expected = ['hydrate','preflight','weather','provenance','runtime','reference','validate','gate','artifact'];
 for (let i = 1; i < expected.length; i += 1) {
   const before = expected[i - 1];
   const after = expected[i];
@@ -29,6 +30,17 @@ if (beforeWeather.includes('npm run validate') || beforeWeather.includes('npm ru
 }
 if (beforeWeather.includes('npm run build:current-provenance')) {
   throw new Error('Hydrerede data må ikke tvinges gennem strømaudit før frisk DMI-kørsel på tvungne/source runs.');
+}
+
+for (const step of ['validate', 'gate']) {
+  const blockEnd = text.indexOf('\n\n', positions[step]);
+  const block = text.slice(positions[step], blockEnd < 0 ? text.length : blockEnd);
+  if (!block.includes("if: steps.preflight.outputs.should_run == 'true'")) {
+    throw new Error(`${step} skal køre ved enhver reel produktionsopbygning.`);
+  }
+  if (block.includes('github.event_name') || block.includes('inputs.force')) {
+    throw new Error(`${step} må ikke kunne springes over ud fra trigger eller force-input.`);
+  }
 }
 if (!text.includes('uses: actions/cache/restore@v4') || !text.includes('uses: actions/cache/save@v4')) throw new Error('DMI GRIB-cachen skal både gendannes og gemmes med fremdrift.');
 if (/uses: actions\/cache@v4[\s\S]{0,300}key: dmi-grib-v3-/.test(text)) throw new Error('Den uforanderlige ugentlige primærnøgle må ikke genindføres.');
