@@ -19,7 +19,7 @@ Denne fil er den praktiske overlevering mellem chats. Den skal læses umiddelbar
 5. Skeln mellem: implementeret lokalt, verificeret af CI, og verificeret i produktion.
 
 ## Aktuel arbejdsbaseline
-- Produktionsbaseline er 4.0.114; næste lokale release er 4.0.115.
+- Produktionsbaseline er 4.0.114. 4.0.115 blev stoppet af den strenge DMI-strømaudit; næste lokale recovery-release er 4.0.116.
 - Den historiske tilstandsmodel er i **score-neutral `shadow-v2`**. Kun verificerede marine DMI-prøver tæller, og den må endnu ikke ændre RavScore.
 - Offentlig opstart blev produktionsmålt til 3,663 sekunder i 4.0.114; den tidligere baseline omkring 3,45 sekunder overvåges fortsat. Performance må ikke forringes væsentligt.
 - Vandstationsadminens røde markører, administratoroverride og `Fjern` er produktionsbekræftet efter localStorage-rettelsen i 4.0.106.
@@ -65,7 +65,7 @@ Søg efter gamle tests og antagelser, som ændringen gør forældede. Simulér b
 - Rodårsagen var GitHubs uforanderlige cache: samme ugentlige primærnøgle blev ramt hver gang, hvorefter cache-action undlod at gemme den nye GRIB-fremdrift.
 - 4.0.113 bruger unik save-nøgle pr. kørsel og gendanner seneste kompatible cache.
 - Næste analyse skal kontrollere, at cachefremdrift faktisk bæres mellem kørsler, at warmup ophører, og at jobtiden falder eller stabiliseres.
-- Cron forbliver foreløbig 10 minutter. Intervallet må først ændres efter nye målinger uden cachefejlen.
+- Det eksterne cron-job blev 6. august 2026 ændret fra 10 til 15 minutter efter de observerede lange kørsler. Projektets diagnostik skal afspejle 15 minutter; yderligere ændring kræver nye målinger.
 - Workflowloggen skriver nu `RAVRADAR_STATE_REFERENCE` med datasæt og de fire zoners kompakte skyggefelter. Sammenlign mindst tre friske produktionstimer.
 
 ## 4.0.114 – produktionskontrol
@@ -81,3 +81,14 @@ Søg efter gamle tests og antagelser, som ændringen gør forældede. Simulér b
 - Sammenlign akkumuleret ind-/udtransport med `activeCurrentRegime*` over mindst tre friske produktionstimer.
 - Ikke-verificerede prøver skal øge `unverifiedCurrentSampleCount`, men må ikke øge transportvarighed eller momentum.
 - RavScore skal være uændret mod 4.0.114 for samme data.
+
+
+## 4.0.116 – lokal recovery efter 4.0.115-auditstop
+- 4.0.115 blev ikke publiceret: den strenge audit fandt DMI `current-u` og `current-v` fra forskellige fysiske gitterpunkter samt enkelte zoner uden komplet bulkgrundlag.
+- 4.0.116 må kun danne strøm- og vindvektorer, når begge komponenter findes på samme fysiske DMI-gitterpunkt. Ingen fælles kandidat betyder manglende/ikke-verificeret vektor.
+- Gamle cachede U/V-par, som ikke kan bevises at dele gitterpunkt, invalideres i stedet for at blive genbrugt.
+- `SOURCE::`-vandstandspunkter må kun samples for DKSS-vandstand. De må ikke tælle som forecastzoner i strøm-, vind- eller bølgedækning og må ikke holde scheduleren kunstigt i marine recovery.
+- Manglende vind/bølger må ikke konverteres til fysisk nul i JavaScript eller vises som `0,0`; ægte numerisk nul er fortsat gyldig data.
+- Zoneprognosens tidligere 0,0-vind/0,0-bølger skal efter deploy verificeres: `Mangler` ved reelt datagab, reel talværdi når data findes.
+- `shadow-v2` er fortsat score-neutral. Ingen transport-score aktiveres i denne release.
+- Efter stabil produktion af recovery-releasen opbygges den planlagte AI Knowledge Base, AI Roadmap og AI Working Rules før større ny funktionalitet flyttes til Codex.

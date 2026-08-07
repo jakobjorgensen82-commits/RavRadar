@@ -42,7 +42,7 @@ assert.deepEqual(summary, { zones: 2, minimumRemainingHours: 12, maximumRemainin
 
 
 const workflow = await import('node:fs/promises').then(({ readFile }) => readFile('.github/workflows/update-and-deploy.yml', 'utf8'));
-for (const expected of ['DMI_LIVE_ZONE_BUDGET: 4', 'DMI_REQUEST_BUDGET: 6', 'DMI_REQUEST_GAP_MS: 12000', 'DMI_SCHEDULE_INTERVAL_MINUTES: 10', 'DMI_OBSERVATION_INTERVAL_MINUTES: 60']) {
+for (const expected of ['DMI_LIVE_ZONE_BUDGET: 4', 'DMI_REQUEST_BUDGET: 6', 'DMI_REQUEST_GAP_MS: 12000', 'DMI_SCHEDULE_INTERVAL_MINUTES: 15', 'DMI_OBSERVATION_INTERVAL_MINUTES: 60']) {
   assert.ok(workflow.includes(expected), `workflow mangler ${expected}`);
 }
 const updater = await import('node:fs/promises').then(({ readFile }) => readFile('scripts/update-weather.mjs', 'utf8'));

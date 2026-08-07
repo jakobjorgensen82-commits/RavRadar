@@ -14,7 +14,7 @@ on:
 permissions:
   contents: read
 
-# cron-job.org starter workflow_dispatch hvert 10. minut. GitHubs egen
+# cron-job.org starter workflow_dispatch hvert 15. minut. GitHubs egen
 # schedule-trigger bruges bevidst ikke. Der må højst være én tung kørsel og én
 # ventende kørsel; ventende kald kontrollerer friskhed, når de får en runner.
 concurrency:
@@ -177,7 +177,7 @@ jobs:
           DMI_LIVE_ZONE_BUDGET: 4
           DMI_REQUEST_BUDGET: 6
           DMI_CACHE_REFRESH_BELOW_HOURS: 24
-          DMI_SCHEDULE_INTERVAL_MINUTES: 10
+          DMI_SCHEDULE_INTERVAL_MINUTES: 15
           DMI_RETRY_JITTER_MIN_MS: 30000
           DMI_RETRY_JITTER_MAX_MS: 180000
           DMI_OBSERVATION_INTERVAL_MINUTES: 60

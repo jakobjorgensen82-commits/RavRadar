@@ -1,4 +1,4 @@
-const finite = value => Number.isFinite(Number(value)) ? Number(value) : null;
+const finite = value => (value === null || value === undefined || value === '' || typeof value === 'boolean') ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 function inDirectionRanges(value, ranges = []) {
@@ -28,13 +28,20 @@ function conditionMatches(rule, context) {
   if (conditions.huntModes?.length && !conditions.huntModes.includes(context.mode)) return false;
   if (finite(conditions.minBaseScore) !== null && context.baseScore < Number(conditions.minBaseScore)) return false;
   if (finite(conditions.maxBaseScore) !== null && context.baseScore > Number(conditions.maxBaseScore)) return false;
-  if (finite(conditions.minWindSpeedMps) !== null && finite(weather.windSpeedMps) < Number(conditions.minWindSpeedMps)) return false;
-  if (finite(conditions.maxWindSpeedMps) !== null && finite(weather.windSpeedMps) > Number(conditions.maxWindSpeedMps)) return false;
+  const minWind=finite(conditions.minWindSpeedMps),maxWind=finite(conditions.maxWindSpeedMps),wind=finite(weather.windSpeedMps);
+  if ((minWind !== null || maxWind !== null) && wind === null) return false;
+  if (minWind !== null && wind < minWind) return false;
+  if (maxWind !== null && wind > maxWind) return false;
+  if (conditions.windDirectionRangesDeg?.length && finite(weather.windDirectionDeg) === null) return false;
   if (!inDirectionRanges(weather.windDirectionDeg, conditions.windDirectionRangesDeg)) return false;
-  if (finite(conditions.minWaveHeightM) !== null && finite(weather.waveHeightM) < Number(conditions.minWaveHeightM)) return false;
-  if (finite(conditions.maxWaveHeightM) !== null && finite(weather.waveHeightM) > Number(conditions.maxWaveHeightM)) return false;
-  if (finite(conditions.minWaterLevelCm) !== null && finite(weather.waterLevelCm) < Number(conditions.minWaterLevelCm)) return false;
-  if (finite(conditions.maxWaterLevelCm) !== null && finite(weather.waterLevelCm) > Number(conditions.maxWaterLevelCm)) return false;
+  const minWave=finite(conditions.minWaveHeightM),maxWave=finite(conditions.maxWaveHeightM),wave=finite(weather.waveHeightM);
+  if ((minWave !== null || maxWave !== null) && wave === null) return false;
+  if (minWave !== null && wave < minWave) return false;
+  if (maxWave !== null && wave > maxWave) return false;
+  const minWater=finite(conditions.minWaterLevelCm),maxWater=finite(conditions.maxWaterLevelCm),water=finite(weather.waterLevelCm);
+  if ((minWater !== null || maxWater !== null) && water === null) return false;
+  if (minWater !== null && water < minWater) return false;
+  if (maxWater !== null && water > maxWater) return false;
   if (finite(conditions.maxHoursSinceHighEnergy) !== null && finite(history.hoursSinceHighEnergy) > Number(conditions.maxHoursSinceHighEnergy)) return false;
   return true;
 }

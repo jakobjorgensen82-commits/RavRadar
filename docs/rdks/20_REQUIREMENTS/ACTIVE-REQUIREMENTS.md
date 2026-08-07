@@ -132,3 +132,11 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-STATE-ACTIVE-RUN-001 – IMPLEMENTERET:** Akkumuleret 24-timers transport og aktuelt sammenhængende strømforløb skal være separate felter.
 - **REQ-STATE-GAP-001 – BINDENDE:** En ikke-verificeret prøve eller et hul over to timer stopper det aktive forløb; manglende data må ikke blive til nulstrøm.
 - **REQ-STATE-SCORE-NEUTRAL-002 – BINDENDE:** `shadow-v2` må ikke ændre RavScore eller eksisterende morfologibidrag.
+
+
+## DMI-vektorintegritet og femdøgns-null-sikkerhed – 4.0.116
+- **REQ-DMI-SHARED-VECTOR-GRID-001 – BINDENDE:** U/V-komponenter for strøm og vind må kun kombineres fra samme fysiske DMI-gitterpunkt og samme forecasttid. Ingen fælles kandidat betyder manglende data.
+- **REQ-DMI-OLD-VECTOR-INVALIDATION-001 – BINDENDE:** Cachede vektorpar med dokumenteret forskellige gitterpunkter må ikke genbruges som gyldige.
+- **REQ-WATER-SOURCE-SAMPLING-001 – BINDENDE:** `SOURCE::`-vandstandskilder må kun samples for DKSS-vandstand og må ikke indgå i dækning/schedulerunderskud for forecastzonernes strøm, vind eller bølger.
+- **REQ-MISSING-WEATHER-NULL-001 – BINDENDE:** `null`, tom eller ikke-numerisk vind/bølge er manglende data, ikke 0. UI, score, regler og prognosevalg skal bevare denne forskel.
+- **REQ-TRUE-ZERO-WEATHER-001 – BINDENDE:** En eksplicit numerisk 0-værdi fra datakilden er gyldig og må ikke forveksles med manglende data.

@@ -48,3 +48,9 @@ Fem sammenhængende produktionskørsler afslørede, at samme ugentlige GitHub-ca
 - Releasekædens build/deploy-opdeling blev dermed produktionsbekræftet.
 - Den efterfølgende faglige analyse viste, at transporthistorikken skulle bindes til den endelige DMI-proveniens og at akkumuleret varighed ikke måtte forveksles med et ubrudt forløb.
 - 4.0.115 indfører score-neutral `shadow-v2` med verificerede strømprøver og særskilt aktivt regime.
+
+## 2026-08-07 – 4.0.116
+- 4.0.115 nåede ikke produktion, fordi den strenge DMI spatial-audit afslørede en ældre latent U/V-gridfejl.
+- 4.0.116 parrer strøm og vind på samme fysiske DMI-gitterpunkt, invaliderer gamle mismatch-par og reducerer unødige opslag på vandstandskilder.
+- Manglende vind/bølger forbliver `null`/`Mangler` i stedet for at kunne fremstå som 0,0; ægte nulværdier bevares.
+- `shadow-v2` er fortsat score-neutral.

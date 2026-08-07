@@ -81,3 +81,10 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 ## 4.0.115 – historisk strømproveniens
 - **ISSUE-STATE-PRE-PROVENANCE – RETTET I 4.0.115, AFVENTER PRODUKTIONSBEKRÆFTELSE:** Historiske transportfelter blev tidligere beregnet før den endelige DMI-proveniensberigelse. Nu genberegnes de efter provenance, og kun verificerede DMI-prøver tæller.
 - **ISSUE-STATE-DURATION-SEMANTICS – RETTET I 4.0.115:** Akkumulerede timer kunne fejltolkes som ét ubrudt forløb. Nye aktive-regimefelter beskriver det sammenhængende forløb særskilt.
+
+
+## 4.0.116 – DMI U/V-grid og manglende femdøgnsfelter
+- **ISSUE-DMI-UV-GRID-MISMATCH – RODÅRSAG FUNDET, RETTET LOKALT I 4.0.116:** 4.0.115 blev stoppet, fordi bulk-parseren kunne vælge nærmeste gyldige `current-u` og `current-v` separat. Forskellige masker kunne dermed danne en fysisk falsk vektor. 4.0.116 kræver nærmeste fælles fysiske punkt og invaliderer gamle mismatch-par. Afventer CI/produktion.
+- **ISSUE-WATER-SOURCE-COVERAGE-INFLATION – RETTET LOKALT I 4.0.116:** `SOURCE::`-vandstandspunkter blev talt med som almindelige zoner i komponentdækning og sampled unødigt for andre parametre. Det kunne holde marine recovery aktiv og bruge tidsbudget, som ellers kunne nå vind/bølger. Afventer CI-måling.
+- **ISSUE-FIVE-DAY-WIND-WAVE-ZERO – DELVIST RODÅRSAG FUNDET, RETTET LOKALT I 4.0.116:** JavaScript-konvertering kunne gøre `null` til 0, så manglende vind/bølge blev vist og delvist behandlet som fysisk nul. 4.0.116 gør kæden null-sikker. Produktion skal stadig afgøre, om der bagefter findes reelle kildedatamangler i bestemte timer/zoner.
+- **ISSUE-WORKFLOW-DURATION – FORTSAT AKTIV:** Eksternt cron-job er nu 15 minutter. DMI-workload skal måles efter fjernelse af unødige `SOURCE::`-opslag; marine audits må ikke svækkes.

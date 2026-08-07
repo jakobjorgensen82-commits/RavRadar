@@ -247,11 +247,23 @@ Status: Implementeret og lokalt valideret.
 - **AFVENTER CI/PRODUKTION:** Første grønne deploy og efterfølgende sitetest af 4.0.114.
 
 
-## 4.0.115 – IMPLEMENTERET LOKALT, AFVENTER CI/PRODUKTION
+## 4.0.115 – IMPLEMENTERET LOKALT, CI STOPPET AF DMI-INTEGRITETSAUDIT
 - [x] Historisk strøm beregnes igen efter den videnskabelige DMI-proveniensberigelse.
 - [x] Ikke-verificerede strømprøver udelukkes fra transportvarighed og momentum.
 - [x] Akkumuleret 24-timers transport er adskilt fra aktuelt sammenhængende regime.
 - [x] Aktivt regime har egen varighed, momentum, stabilitet, sampleantal og verificeret dækningsmål.
 - [x] `shadow-v2` er dokumenteret og regressionstestet som score-neutral.
 - [x] Den midlertidige Pages-mikrotest er fjernet, så den ikke ved et uheld kan overskrive produktionssiden.
-- [ ] Produktionslogs fra mindst tre friske timer skal stadig bruges til faglig stabilitetsvalidering før scoreaktivering.
+- [ ] Produktionslogs fra mindst tre friske timer skal stadig bruges til faglig stabilitetsvalidering før scoreaktivering. 4.0.115 nåede ikke produktion, fordi en ældre DMI U/V-gridfejl blev afsløret af release-auditen.
+
+
+## 4.0.116 – IMPLEMENTERET LOKALT, AFVENTER CI/PRODUKTION
+- [x] Strøm-U/V og vind-U/V vælges kun fra nærmeste fælles fysiske DMI-gitterpunkt.
+- [x] Ældre cachede U/V-par med forskellige dokumenterede gitterpunkter invalideres sikkert.
+- [x] Vandstandskilder samples kun for `sea-mean-deviation` og er fjernet fra almindelige forecastdækningsmål.
+- [x] Schedulerens zoneunderskud beregnes på aktive forecastzoner og ikke `SOURCE::`-hjælpepunkter.
+- [x] Manglende vind/bølge/null håndteres null-sikkert i score-, regel-, best-time-, retnings- og UI-kæden; ægte nulværdier bevares.
+- [x] Eksternt croninterval dokumenteret som 15 minutter.
+- [x] `shadow-v2` og eksisterende morfologi forbliver score-neutrale/uændrede.
+- [ ] CI skal bevise, at den strenge current spatial audit består med den nye fælles-grid-logik.
+- [ ] Produktion og sitetest skal kontrollere femdøgnsfelter: reelle datagab vises som `Mangler`, og tilgængelig vind/bølge må ikke forsvinde.

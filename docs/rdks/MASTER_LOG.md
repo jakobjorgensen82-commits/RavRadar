@@ -380,3 +380,14 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - 4.0.115 genberegner transporthistorikken efter provenance og lader kun verificerede marine DMI-u/v-prøver tælle.
 - Akkumuleret 24-timers transport er adskilt fra det aktuelle sammenhængende strømregime.
 - `shadow-v2` er fortsat score-neutral. Den midlertidige Pages-mikrotest er fjernet.
+
+## 2026-08-07 – 4.0.116 DMI-vektorintegritet og null-sikker femdøgnsprognose
+**Status:** IMPLEMENTERET LOKALT, AFVENTER CI/PRODUKTION
+
+- 4.0.115 blev stoppet af den strenge strømaudit, som fandt U/V-komponenter fra forskellige fysiske DMI-gitterpunkter og enkelte zoner uden komplet bulkgrundlag.
+- 4.0.116 vælger kun strøm- og vind-U/V som par fra nærmeste fælles fysiske DMI-gitterpunkt; ingen fælles kandidat bliver manglende/ikke-verificeret data.
+- Ældre cachede U/V-par med forskellige dokumenterede gitterpunkter invalideres sikkert.
+- Vandstandskilder med `SOURCE::` bruges kun til DKSS-vandstand og tæller ikke som almindelige forecastzoner i dækning eller schedulerunderskud.
+- Manglende vind/bølge behandles ikke længere som fysisk nul i den relevante JavaScript-kæde; ægte numerisk nul bevares.
+- Eksternt croninterval er 15 minutter. Yderligere schedulerændring kræver nye målinger.
+- `shadow-v2`, RavScore-vægte og dokumenteret morfologi er uændrede og score-neutrale i denne recovery-release.

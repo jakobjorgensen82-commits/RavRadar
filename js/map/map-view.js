@@ -256,9 +256,9 @@ export function installFlowArrows(map, featureCollection, conditionForZone) {
       const zoneCondition = conditionForZone(zone.id);
       const condition = zoneCondition?.current || zoneCondition || {};
       const flowPoints = zoneCondition?.flowPoints || {};
-      const hasWind = Number.isFinite(Number(condition.windDirectionDeg));
+      const hasWind = condition.windDirectionDeg !== null && condition.windDirectionDeg !== undefined && condition.windDirectionDeg !== '' && Number.isFinite(Number(condition.windDirectionDeg));
       const currentProvider = zoneCondition?.currentSource || zoneCondition?.sources?.current?.provider || null;
-      const hasCurrentValue = Number.isFinite(Number(condition.currentDirectionDeg));
+      const hasCurrentValue = condition.currentDirectionDeg !== null && condition.currentDirectionDeg !== undefined && condition.currentDirectionDeg !== '' && Number.isFinite(Number(condition.currentDirectionDeg));
       const hasVerifiedDmiPoint = flowPoints?.sources?.current === 'dmi-marine-grid';
       const hasCurrent = hasCurrentValue && (currentProvider !== 'dmi' || hasVerifiedDmiPoint);
 

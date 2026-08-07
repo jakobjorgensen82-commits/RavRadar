@@ -1,4 +1,4 @@
-const n=v=>Number.isFinite(Number(v))?Number(v):null;
+const n=v=>(v===null||v===undefined||v===''||typeof v==='boolean')?null:(Number.isFinite(Number(v))?Number(v):null);
 const clamp=(v,min=0,max=100)=>Math.min(max,Math.max(min,v));
 
 export function classifyCoastalZone(zone={}){

@@ -1,4 +1,4 @@
-const finite = value => Number.isFinite(Number(value)) ? Number(value) : null;
+const finite = value => (value === null || value === undefined || value === '' || typeof value === 'boolean') ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
 const normText = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 function localKm(point, origin) {

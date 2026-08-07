@@ -1,9 +1,10 @@
-import { calculateRavScore, scoreRating } from "../core/score-engine.js?v=4.0.115";
-import { selectBestTimeForDay } from "../core/best-time-selector.js?v=4.0.115";
+import { calculateRavScore, scoreRating } from "../core/score-engine.js?v=4.0.116";
+import { selectBestTimeForDay } from "../core/best-time-selector.js?v=4.0.116";
 
-const formatNumber = (value, suffix, digits = 1) => Number.isFinite(Number(value)) ? `${Number(value).toFixed(digits).replace(".", ",")} ${suffix}` : "Mangler";
+const hasNumber = value => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value));
+const formatNumber = (value, suffix, digits = 1) => hasNumber(value) ? `${Number(value).toFixed(digits).replace(".", ",")} ${suffix}` : "Mangler";
 const compass = value => {
-  if (!Number.isFinite(Number(value))) return "–";
+  if (!hasNumber(value)) return "–";
   const names = ["N", "NØ", "Ø", "SØ", "S", "SV", "V", "NV"];
   return `${names[Math.round(Number(value) / 45) % 8]} ${Math.round(Number(value))}°`;
 };
@@ -11,7 +12,7 @@ const dayLabel = iso => new Intl.DateTimeFormat("da-DK", { weekday:"short" }).fo
 const dateLabel = iso => new Intl.DateTimeFormat("da-DK", { day:"numeric", month:"short" }).format(new Date(iso)).replace(".", "");
 const hourLabel = iso => new Intl.DateTimeFormat("da-DK", { hour:"2-digit", minute:"2-digit" }).format(new Date(iso));
 const directionArrow = (value, type = "current") => {
-  if (!Number.isFinite(Number(value))) return '<span class="direction-arrow unavailable" aria-hidden="true">↑</span>';
+  if (!hasNumber(value)) return '<span class="direction-arrow unavailable" aria-hidden="true">↑</span>';
   // Vindretningen i datamodellen angiver, hvor vinden kommer FRA. Pilen viser, hvor den blæser HEN.
   const rotation = (Number(value) + (type === "wind" ? 180 : 0) + 360) % 360;
   const label = type === "wind" ? "Vindens bevægelsesretning" : "Strømmens bevægelsesretning";

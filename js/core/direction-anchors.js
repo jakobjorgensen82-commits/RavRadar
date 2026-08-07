@@ -1,4 +1,4 @@
-const finite = value => Number.isFinite(Number(value));
+const finite = value => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value));
 export const normalizeDeg = value => ((Number(value) % 360) + 360) % 360;
 export const angularDifference = (a,b) => Math.abs(((normalizeDeg(a)-normalizeDeg(b)+540)%360)-180);
 export function directionAlignment(directionDeg,targetDeg){

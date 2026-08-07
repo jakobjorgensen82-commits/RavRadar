@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.115
+**Håndbogsversion:** 4.0.116
 
 **Opdateret:** 1. august 2026
 
@@ -1329,3 +1329,11 @@ RavRadar viser nu to forskellige tidsmål:
 - **Aktuelt sammenhængende regime** beskriver kun den ubrudte seneste periode. Det stopper ved retningsskift, neutral strøm, manglende verifikation eller mere end to timers hul mellem prøver.
 
 Denne skelnen forhindrer, at eksempelvis to timers indtransport, flere timers udtransport og derefter to nye timers indtransport fejlagtigt forklares som fire timers ubrudt indtransport. Tilstanden hedder `shadow-v2` og ændrer stadig ikke RavScore. Rå prøver forbliver i pipeline; browseren får kun de kompakte afledte felter.
+
+
+## DMI-vektorer og manglende vejrfelter i 4.0.116
+En strøm- eller vindvektor består af to komponenter: øst/vest-komponenten U og nord/syd-komponenten V. De to tal må kun sættes sammen, når de kommer fra det samme fysiske DMI-gitterpunkt på samme prognosetid. Hvis nærmeste gyldige U og nærmeste gyldige V ligger forskellige steder, søger RavRadar efter det nærmeste punkt, hvor begge findes. Findes der ikke et fælles gyldigt punkt inden for den tilladte afstand, markeres vektoren som manglende i stedet for at konstruere en usikker retning.
+
+Vandstandskilder, som bruges til stationsrouting, er hjælpepunkter. De har kun brug for DKSS-vandstand og må ikke bruge beregningstid på vind, bølger, strøm eller vandtemperatur. Dækningstal for forecastzoner tæller derfor kun de almindelige aktive zoner.
+
+Manglende data og fysisk nul er to forskellige ting. `null` betyder, at RavRadar ikke har en gyldig værdi. Det skal vises som **Mangler** og må ikke opfylde regler, blive til vindstille eller give en kunstig retning på 0°. Tallet `0` er derimod gyldigt, når datakilden faktisk leverer nul. Denne forskel gælder både vind, bølger og andre numeriske vejrfelter.

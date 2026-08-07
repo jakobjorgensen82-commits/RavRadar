@@ -12,7 +12,7 @@ const finite = value => {
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 };
-const gridPoint=(grid,...keys)=>{for(const key of keys){const p=grid?.[key];const lon=finite(p?.longitude),lat=finite(p?.latitude);if(lon!==null&&lat!==null)return[lon,lat];}return null;};
+const gridPoint=(grid,...keys)=>{const points=keys.map(key=>{const p=grid?.[key];const lon=finite(p?.longitude),lat=finite(p?.latitude);return lon!==null&&lat!==null?[lon,lat]:null;});if(!points.length||points.some(point=>!point))return null;const [lon,lat]=points[0];return points.every(point=>Math.abs(point[0]-lon)<=1e-7&&Math.abs(point[1]-lat)<=1e-7)?[lon,lat]:null;};
 const normalizedProvider = value => String(value || '').trim().toLowerCase();
 const round=(value,digits=0)=>{const number=finite(value);return number===null?null:Number(number.toFixed(digits));};
 const directionFromComponents=(u,v)=>{const east=finite(u),north=finite(v);if(east===null||north===null)return null;if(Math.hypot(east,north)<1e-12)return 0;return (Math.atan2(east,north)*180/Math.PI+360)%360;};
