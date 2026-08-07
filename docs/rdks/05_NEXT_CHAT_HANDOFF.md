@@ -19,9 +19,9 @@ Denne fil er den praktiske overlevering mellem chats. Den skal læses umiddelbar
 5. Skeln mellem: implementeret lokalt, verificeret af CI, og verificeret i produktion.
 
 ## Aktuel arbejdsbaseline
-- Baseline før denne release var 4.0.111.
-- Den historiske tilstandsmodel er i **score-neutral skyggetilstand**. Den forklarer tilstand, men må endnu ikke ændre RavScore.
-- Offentlig opstart er senest målt omkring 3,45 sekunder. Performance må ikke forringes væsentligt.
+- Produktionsbaseline er 4.0.114; næste lokale release er 4.0.115.
+- Den historiske tilstandsmodel er i **score-neutral `shadow-v2`**. Kun verificerede marine DMI-prøver tæller, og den må endnu ikke ændre RavScore.
+- Offentlig opstart blev produktionsmålt til 3,663 sekunder i 4.0.114; den tidligere baseline omkring 3,45 sekunder overvåges fortsat. Performance må ikke forringes væsentligt.
 - Vandstationsadminens røde markører, administratoroverride og `Fjern` er produktionsbekræftet efter localStorage-rettelsen i 4.0.106.
 - Sitetesten har én kendt falsk negativ: knappen til samlet sitetest kan kontrolleres før dashboardet er endeligt renderet. Næste patch skal vente på dashboardets aktive DOM og kontrollere en reel klikbar knap.
 - GitHub/DMI-jobbet kan tage omkring 14 minutter og overlapper derfor et 10-minutters interval. Optimér først på grundlag af målinger; skjul ikke manglende marine data og sænk ikke auditkrav.
@@ -74,3 +74,10 @@ Søg efter gamle tests og antagelser, som ændringen gør forældede. Simulér b
 - Hvis deployjobbet fejler, brug `Re-run failed jobs`; build/DMI-jobbet må ikke køre igen.
 - Kontrollér at der kun findes ét `github-pages`-artifact i runnet.
 - Efter grøn deploy køres sitetest. Først derefter fortsættes den historiske tilstandsplan.
+
+
+## 4.0.115 – næste produktionskontrol
+- Bekræft at referencezoneloggen viser `shadow-v2`.
+- Sammenlign akkumuleret ind-/udtransport med `activeCurrentRegime*` over mindst tre friske produktionstimer.
+- Ikke-verificerede prøver skal øge `unverifiedCurrentSampleCount`, men må ikke øge transportvarighed eller momentum.
+- RavScore skal være uændret mod 4.0.114 for samme data.

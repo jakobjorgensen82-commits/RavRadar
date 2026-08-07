@@ -212,7 +212,7 @@ Status: Implementeret og lokalt valideret.
 - [x] Udvidet 24-timers historik med vindretning, strøm, alignment og vandstand.
 - [x] Akkumuleret indtransportmomentum og udtransporttryk.
 - [x] Stærk energihændelses varighed/alder, mobiliserings- og nærkystpotentiale samt procesfase.
-- [x] Score-neutral `shadow-v1`, så offentlig RavScore ikke ændres i denne version.
+- [x] Score-neutral `shadow-v2`, som kun bruger verificerede marine DMI-prøver og ikke ændrer offentlig RavScore.
 - [x] Kompakt public projection uden rå historik.
 - [x] Ingen generelle strømbånd eller strømbåndsfallback.
 - [x] 4.0.106 vandstationsrettelse markeret produktionsbekræftet af ejer.
@@ -245,3 +245,13 @@ Status: Implementeret og lokalt valideret.
 - **IMPLEMENTERET LOKALT:** Fejlet deploy kan genkøres uden ny tung build.
 - **IMPLEMENTERET LOKALT:** Push/tvungen release prioriteres ved at afbryde en ældre almindelig kørsel.
 - **AFVENTER CI/PRODUKTION:** Første grønne deploy og efterfølgende sitetest af 4.0.114.
+
+
+## 4.0.115 – IMPLEMENTERET LOKALT, AFVENTER CI/PRODUKTION
+- [x] Historisk strøm beregnes igen efter den videnskabelige DMI-proveniensberigelse.
+- [x] Ikke-verificerede strømprøver udelukkes fra transportvarighed og momentum.
+- [x] Akkumuleret 24-timers transport er adskilt fra aktuelt sammenhængende regime.
+- [x] Aktivt regime har egen varighed, momentum, stabilitet, sampleantal og verificeret dækningsmål.
+- [x] `shadow-v2` er dokumenteret og regressionstestet som score-neutral.
+- [x] Den midlertidige Pages-mikrotest er fjernet, så den ikke ved et uheld kan overskrive produktionssiden.
+- [ ] Produktionslogs fra mindst tre friske timer skal stadig bruges til faglig stabilitetsvalidering før scoreaktivering.

@@ -30,8 +30,8 @@ for(const id of ZONES){
   geometry:{dataPoint:p.dataPoint||z.point||null,pinPoint:p.pinPoint||null,onshoreDirectionDeg:finite(p.onshoreDirectionDeg),coastType:p.coastType||null,coastLinePoints:Array.isArray(p.coastLine)?p.coastLine.length:0,onshoreDirectionSource:p.onshoreDirectionSource||null,reviewStatus:p.onshoreDirectionReviewStatus||null},
   morphology:{shallowWater:Boolean(p.shallowWater),reefs:Boolean(p.reefs),seagrass:Boolean(p.seagrass)},
   current:{speedMps:finite(c.currentSpeedMps),directionDeg:finite(c.currentDirectionDeg),uMps:finite(c.currentUMps),vMps:finite(c.currentVMps),provenance:c.currentProvenance||null},
-  state:{mode:h.stateModelMode||null,eventPhase:h.eventPhase||null,strongEventDurationHours:finite(h.strongEventDurationHours),hoursSinceStrongEventEnd:finite(h.hoursSinceStrongEventEnd),inboundCurrentDurationHours:finite(h.inboundCurrentDurationHours),inboundCurrentMomentum:finite(h.inboundCurrentMomentum),outboundCurrentDurationHours:finite(h.outboundCurrentDurationHours),outboundCurrentPressure:finite(h.outboundCurrentPressure),currentDirectionStability:finite(h.currentDirectionStability),mobilisationPotential:finite(h.mobilisationPotential),nearshorePotential:finite(h.nearshorePotential)},
-  validation:{verifiedCurrent:c.currentProvenance?.status==='verified',shadowStatePresent:h.stateModelMode==='shadow-v1',numericScoreChangedByReport:false}
+  state:{mode:h.stateModelMode||null,eventPhase:h.eventPhase||null,strongEventDurationHours:finite(h.strongEventDurationHours),hoursSinceStrongEventEnd:finite(h.hoursSinceStrongEventEnd),inboundCurrentDurationHours:finite(h.inboundCurrentDurationHours),inboundCurrentMomentum:finite(h.inboundCurrentMomentum),outboundCurrentDurationHours:finite(h.outboundCurrentDurationHours),outboundCurrentPressure:finite(h.outboundCurrentPressure),activeCurrentRegime:h.activeCurrentRegime||null,activeCurrentRegimeDurationHours:finite(h.activeCurrentRegimeDurationHours),activeCurrentRegimeMomentum:finite(h.activeCurrentRegimeMomentum),activeCurrentRegimeStability:finite(h.activeCurrentRegimeStability),verifiedCurrentCoverageHours:finite(h.verifiedCurrentCoverageHours),unverifiedCurrentSampleCount:finite(h.unverifiedCurrentSampleCount),currentDirectionStability:finite(h.currentDirectionStability),mobilisationPotential:finite(h.mobilisationPotential),nearshorePotential:finite(h.nearshorePotential)},
+  validation:{verifiedCurrent:c.currentProvenance?.status==='verified',shadowStatePresent:/^shadow-v[12]$/.test(h.stateModelMode||''),numericScoreChangedByReport:false}
  });
 }
 report.validationSummary={
@@ -48,7 +48,7 @@ if(strict){
  if(!report.dataset.id||!report.dataset.generatedAt)failures.push('dataset metadata mangler');
  for(const z of report.referenceZones){
   if(!z.validation.verifiedCurrent)console.warn(`REFERENCE_CURRENT_WARNING ${z.id}: verificeret DMI-strøm mangler i dette datasæt`);
-  if(!z.validation.shadowStatePresent)failures.push(`${z.id}: shadow-v1 mangler`);
+  if(!z.validation.shadowStatePresent)failures.push(`${z.id}: score-neutral skyggetilstand mangler`);
  }
  if(failures.length)throw new Error(`Streng referencezonevalidering fejlede: ${failures.join('; ')}`);
 }

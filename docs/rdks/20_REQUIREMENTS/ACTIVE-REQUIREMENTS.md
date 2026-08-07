@@ -117,7 +117,7 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 ## Workflowcache og produktionsbevis – 4.0.113
 - **REQ-DMI-CACHE-PROGRESS-001 – IMPLEMENTERET:** Rå DMI GRIB-cache skal kunne akkumulere fremdrift mellem GitHub-kørsler. Save-nøglen skal være unik, og næste kørsel skal gendanne seneste kompatible cache.
 - **REQ-REFERENCE-PRODUCTION-001 – IMPLEMENTERET:** Hver frisk produktion skal logge referencezonernes datasæt-id, strømverifikation og skyggefelter i maskinlæsbart format.
-- **REQ-REFERENCE-PRODUCTION-002 – BINDENDE:** Frisk produktion må ikke bestå den strenge referencekontrol, hvis en af de fire zoner mangler `shadow-v1`. Manglende verificeret DMI-strøm skal logges som advarsel og må ikke erstattes af generelle strømbånd eller anden transportfallback.
+- **REQ-REFERENCE-PRODUCTION-002 – BINDENDE:** Frisk produktion må ikke bestå den strenge referencekontrol, hvis en af de fire zoner mangler en score-neutral skyggetilstand. Nye produktioner skal bruge `shadow-v2`. Manglende verificeret DMI-strøm skal logges som advarsel og må ikke erstattes af generelle strømbånd eller anden transportfallback.
 - **REQ-SCHEDULER-MEASURE-001 – AKTIV:** Croninterval må først ændres efter måling af mindst tre kørsler med fungerende progressiv cache.
 
 ## Release- og deployrobusthed – 4.0.114
@@ -125,3 +125,10 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-DEPLOY-RETRY-001 – IMPLEMENTERET:** Et fejlet Pages-deploy skal kunne genkøres som fejlet job mod det eksisterende artifact uden ny DMI-kørsel og uden ny artifact-upload.
 - **REQ-RELEASE-PRIORITY-001 – IMPLEMENTERET:** En push- eller udtrykkeligt tvungen releasekørsel må afbryde en ældre almindelig vejropdatering. Almindelige eksterne vejrkald må ikke afbryde den aktive tunge kørsel.
 - **REQ-DEPLOY-SCORE-NEUTRAL-001 – BINDENDE:** Workflowrettelser må ikke ændre RavScore, marine audits, DMI-proveniens, skyggetilstand eller offentlig startupberegning.
+
+
+## Verificeret strømhistorik – 4.0.115
+- **REQ-STATE-VERIFIED-CURRENT-001 – IMPLEMENTERET:** Historiske transportfelter må kun bruge prøver med verificeret marin DMI-proveniens.
+- **REQ-STATE-ACTIVE-RUN-001 – IMPLEMENTERET:** Akkumuleret 24-timers transport og aktuelt sammenhængende strømforløb skal være separate felter.
+- **REQ-STATE-GAP-001 – BINDENDE:** En ikke-verificeret prøve eller et hul over to timer stopper det aktive forløb; manglende data må ikke blive til nulstrøm.
+- **REQ-STATE-SCORE-NEUTRAL-002 – BINDENDE:** `shadow-v2` må ikke ændre RavScore eller eksisterende morfologibidrag.

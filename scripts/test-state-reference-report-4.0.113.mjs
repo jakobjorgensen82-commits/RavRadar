@@ -12,6 +12,6 @@ assert.deepEqual(r.referenceZones.map(x=>x.id),['DK-B01-01','DK-B02-07','DK-B02-
 const als=r.referenceZones.find(x=>x.id==='DK-B02-13');
 assert.equal(als.classification,'open-coast-near-estuary');
 assert.match(als.referenceRole,/ikke fjordzone/i);
-for(const z of r.referenceZones){assert.ok(z.geometry.onshoreDirectionDeg!==null);assert.equal(z.validation.numericScoreChangedByReport,false);}
+for(const z of r.referenceZones){assert.ok(z.geometry.onshoreDirectionDeg!==null);assert.equal(z.validation.numericScoreChangedByReport,false);assert.ok('activeCurrentRegime' in z.state);assert.ok('verifiedCurrentCoverageHours' in z.state);}
 assert.equal(r.validationSummary.expectedZones,4);
 console.log('Referencezonerapportens kontrakt og logformat består.');

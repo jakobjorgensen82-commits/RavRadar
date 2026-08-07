@@ -167,7 +167,7 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 ## Historisk tilstandsmodel i skyggetilstand – 4.0.107
 - RavRadar beregner nu en kompakt, zonebaseret historisk tilstand ud fra faktiske vind-, bølge-, vandstands- og DMI-strømdata.
 - Tilstanden indeholder varighed/momentum for indadgående strøm, varighed/tryk for udadgående strøm, stærk energihændelses varighed/alder, retningsstabilitet, mobiliseringspotentiale, nærkystpotentiale og procesfase.
-- `shadow-v1` må ikke ændre den numeriske RavScore. Den bruges først til diagnostik, faglig validering og senere forklaring.
+- `shadow-v2` må ikke ændre den numeriske RavScore. Den bruger kun verificerede marine DMI-strømprøver og skelner mellem akkumuleret 24-timers transport og det aktuelle sammenhængende strømforløb.
 - Generelle strømbånd må hverken bruges til score eller fallback. Faktiske DMI-u/v-vektorer er autoritative.
 - Retningsberegningen bruger zonens aktuelle, administratorredigerbare retningsankre eller `onshoreDirectionDeg`; derfor skal manuel validering udføres på zoner med kendte, korrekte land-/hav-overrides.
 - Rå historik holdes i produktionsdata/pipeline. Den offentlige browser modtager kun kompakte, færdigberegnede felter for at beskytte opstartshastigheden.
@@ -201,7 +201,7 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - GitHub Actions-cache er uforanderlig pr. nøgle. En fast ugentlig primærnøgle må derfor ikke bruges til en cache, som skal akkumulere GRIB-fremdrift mellem kørsler.
 - DMI GRIB-cachen gendannes fra seneste kompatible nøgle og gemmes under en unik nøgle pr. kørsel.
 - Referencezonerapporten skal knyttes til et konkret datasæt og logges kompakt i hver frisk produktion.
-- Streng produktionsvalidering kræver `shadow-v1` for alle fire referencezoner. Verificeret DMI-strøm tælles og logges; mangler registreres uden kunstig transportfallback.
+- Streng produktionsvalidering kræver en score-neutral `shadow-v1` eller `shadow-v2` for alle fire referencezoner; nye produktioner skal skrive `shadow-v2`. Verificeret DMI-strøm tælles og logges; mangler registreres uden kunstig transportfallback.
 - Cronintervallet er fortsat 10 minutter, indtil køretiden er målt efter cachekorrektionen.
 
 ## Releasekæde fra 4.0.114
@@ -209,4 +209,12 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - Kun deployjobbet bruger `github-pages`-miljøet og Pages-skriverettigheder.
 - Et fejlet deployjob kan genkøres uden at gentage DMI-pipelinen eller uploade endnu et Pages-artifact.
 - Push og tvungne releasekørsler kan afbryde en ældre almindelig vejropdatering; almindelige vejrkald afbryder ikke en aktiv tung kørsel.
-- Pages-fejlen `deployment_queued` er strukturelt afgrænset, men 4.0.114 kræver stadig produktionsbekræftelse.
+- 4.0.114 er produktionsbekræftet med grøn deploy og sitetest 19/19. Offentlig startup blev målt til 3,663 sekunder, 208 zoner havde data, og 29 verificerede strømpile blev vist.
+
+
+## Verificeret historisk strømtilstand – 4.0.115
+- Historiske transportfelter må kun bygges af strømprøver, som efter provenanceberigelsen er markeret som verificeret DMI-u/v.
+- Ikke-verificerede eller manglende prøver er `unavailable`; de må ikke blive til nulstrøm og må ikke tælle som ind- eller udtransport.
+- `inboundCurrentDurationHours` og `outboundCurrentDurationHours` er fortsat akkumulerede mål i det glidende 24-timers vindue.
+- `activeCurrentRegime` og tilhørende varighed, momentum og stabilitet beskriver kun det aktuelle sammenhængende forløb og nulstilles ved retningsskift, neutral strøm, datamangler eller tidsafstand over to timer.
+- Tilstanden hedder `shadow-v2`, er fortsat score-neutral og sendes kun som kompakte afledte felter til browseren.

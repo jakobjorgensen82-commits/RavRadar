@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.114
+**Håndbogsversion:** 4.0.115
 
 **Opdateret:** 1. august 2026
 
@@ -1307,7 +1307,7 @@ Gamle tests kan indeholde antagelser om en tidligere arkitektur. De skal findes 
 Ved starten af en ny chat skal `docs/rdks/05_NEXT_CHAT_HANDOFF.md` læses sammen med Current Truth, implementeringsstatus, aktive krav, kendte issues og seneste changelog. Projekt-ZIP’en er den primære tekniske sandhed. Historiske chats bruges kun til begrundelse, når projektets aktuelle dokumentation ikke er tilstrækkelig.
 
 ## Produktionskontrol af historisk tilstand (4.0.113)
-Den historiske tilstand er fortsat en skyggeberegning uden pointvirkning. Efter hver frisk produktion kontrollerer workflowet de fire faste referencezoner. Kontrollen kræver både verificeret DMI-strøm og historikmærket `shadow-v1`. En kompakt loglinje gør det muligt at sammenligne varighed, styrke, stabilitet og nærkystpotentiale mellem produktionstimer uden nye manuelle screenshots.
+Den historiske tilstand er fortsat en skyggeberegning uden pointvirkning. Efter hver frisk produktion kontrollerer workflowet de fire faste referencezoner. Kontrollen kræver verificeret DMI-strøm og en score-neutral skyggetilstand; nye produktioner bruger `shadow-v2`. En kompakt loglinje gør det muligt at sammenligne varighed, styrke, stabilitet og nærkystpotentiale mellem produktionstimer uden nye manuelle screenshots.
 
 Den rå DMI GRIB-cache skal bevare fremdrift mellem kørsler. GitHub-caches kan ikke overskrives under samme nøgle, så hver kørsel gemmer en unik cache og næste kørsel henter den seneste kompatible. Dette er en driftsmekanisme og ændrer ikke de marine kvalitetskrav.
 
@@ -1319,3 +1319,13 @@ RavRadars tunge dataarbejde og selve offentliggørelsen er nu adskilt. Jobbet `b
 Kun deployjobbet har adgang til miljøet `github-pages`. Hvis GitHub Pages fejler efter et færdigt build, kan ejeren vælge **Re-run failed jobs**. Derved genkøres kun deploymentet; DMI-pipelinen, scorevalideringen og artifact-uploaden gentages ikke.
 
 En almindelig vejropdatering må ikke afbryde en allerede aktiv tung kørsel. En ny kode-push eller en udtrykkeligt tvungen release må derimod afbryde en ældre almindelig vejropdatering, så en ny version ikke bliver låst bag gamle vejrjobs. Denne procesændring ændrer ikke RavScore eller datakravene.
+
+
+## Verificeret strømhistorik i 4.0.115
+Historiske transportfelter beregnes først endeligt, når den aktuelle strøm er knyttet til dokumenterede DMI-u/v-komponenter. En prøve uden verificeret marin provenance tæller derfor ikke som indtransport eller udtransport. Den behandles heller ikke som nulstrøm.
+
+RavRadar viser nu to forskellige tidsmål:
+- **Akkumuleret 24-timers transport** summerer alle verificerede perioder med indadgående eller udadgående strøm i det glidende døgn.
+- **Aktuelt sammenhængende regime** beskriver kun den ubrudte seneste periode. Det stopper ved retningsskift, neutral strøm, manglende verifikation eller mere end to timers hul mellem prøver.
+
+Denne skelnen forhindrer, at eksempelvis to timers indtransport, flere timers udtransport og derefter to nye timers indtransport fejlagtigt forklares som fire timers ubrudt indtransport. Tilstanden hedder `shadow-v2` og ændrer stadig ikke RavScore. Rå prøver forbliver i pipeline; browseren får kun de kompakte afledte felter.

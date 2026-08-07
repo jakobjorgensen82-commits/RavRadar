@@ -25,8 +25,9 @@ const projectedBytes=Buffer.byteLength(JSON.stringify(publicDoc));
 assert(projectedBytes<2500,'Skyggetilstandens kompakte offentlige felter må ikke skabe en stor payload.');
 
 const updateSource=await fs.readFile('scripts/update-weather.mjs','utf8');
-for(const token of ['currentAlignment','inboundCurrentDurationHours','inboundCurrentMomentum','outboundCurrentPressure','strongEventDurationHours','nearshorePotential','stateModelMode']){
-  assert(updateSource.includes(token),`Historikpipelinen mangler ${token}`);
-}
+const transportSource=await fs.readFile('scripts/lib/current-transport-history.mjs','utf8');
+for(const token of ['currentAlignment','strongEventDurationHours']) assert(updateSource.includes(token),`Historikpipelinen mangler ${token}`);
+for(const token of ['inboundCurrentDurationHours','inboundCurrentMomentum','outboundCurrentPressure','nearshorePotential','stateModelMode']) assert(transportSource.includes(token),`Transporthistorikken mangler ${token}`);
+
 assert(!/strømbånd|current\s*band|general\s*current\s*band/i.test(updateSource),'Pipelinen må ikke bruge generelle strømbånd som fallback.');
 console.log('4.0.107 skyggetilstandsmodel: score-neutralitet, kompakt public projection og DMI-baseret historik bestået.');

@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import { applyCurrentTransportToHistory } from './lib/current-transport-history.mjs';
 
 const CONDITIONS='data/live/conditions.json';
 const BULK='data/live/dmi-bulk-cache.json';
@@ -92,6 +93,15 @@ for(const [zoneId,zone] of Object.entries(conditions.zones)){
   const rawNow=interpolatedRaw(bz.hourly,zone.modelSteps?.ocean||zone.current?.time||conditions.generatedAt);
   if(currentProvider && currentProvider!=='dmi') clearProvenance(zone.current,'non-dmi-current');
   else if(!applyProvenance(zone.current,rawNow,current)) clearProvenance(zone.current,current?'no-time-match':'no-marine-grid-point');
+
+  const samples=Array.isArray(zone.samples24h)?zone.samples24h:[];
+  const latest=samples.find(sample=>sample?.at===conditions.generatedAt)||samples.at(-1);
+  if(latest){
+    latest.currentVerified=zone.current?.currentProvenance?.status==='verified';
+    latest.currentSpeedMps=zone.current?.currentSpeedMps??null;
+    latest.currentDirectionDeg=zone.current?.currentDirectionDeg??null;
+  }
+  zone.history=applyCurrentTransportToHistory(zone.history||{},samples);
 
   for(const row of zone.forecast?.hourly||[]){
     if(!isDmiCurrentRow(row)){clearProvenance(row,'non-dmi-current');unverifiedHours++;continue;}

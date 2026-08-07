@@ -15,6 +15,7 @@ import { buildDataQuality } from './lib/data-quality.mjs';
 import { repairWaterLevelContinuity } from './lib/water-level-continuity.mjs';
 import { countDmiBackedZones, createPersistentDmiStore, prioritizeDmiFeatures, summarizeAvailableCoverage } from './lib/dmi-acquisition-state.mjs';
 import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting } from './lib/water-source-forecast-routing.mjs';
+import { applyCurrentTransportToHistory } from './lib/current-transport-history.mjs';
 
 const ZONES_PATH = 'data/zones.geojson';
 const OUTPUT_PATH = 'data/live/conditions.json';
@@ -1236,18 +1237,6 @@ function effectiveCurrentAlignment(feature, directionDeg) {
   const weighted = positive.reduce((sum, row) => sum + row.alignment * row.weight, 0) / positive.reduce((sum, row) => sum + row.weight, 0);
   return Math.max(-.8, Math.min(1, best * .7 + weighted * .3));
 }
-function durationAndMomentum(samples, predicate, contribution) {
-  let duration = 0, momentum = 0;
-  for (let i = 0; i < samples.length; i += 1) {
-    const sample = samples[i];
-    if (!predicate(sample)) continue;
-    const nextAt = i + 1 < samples.length ? Date.parse(samples[i + 1].at) : Date.parse(sample.at) + 3600000;
-    const hours = Math.max(0, Math.min(2, (nextAt - Date.parse(sample.at)) / 3600000));
-    duration += hours;
-    momentum += contribution(sample) * hours;
-  }
-  return { duration: round(duration, 1), momentum: round(momentum, 3) };
-}
 function lastContiguousEvent(samples, predicate) {
   let end = -1;
   for (let i = samples.length - 1; i >= 0; i -= 1) { if (predicate(samples[i])) { end = i; break; } }
@@ -1268,6 +1257,7 @@ function historyFor(previous, zoneId, current, generatedAt, feature = null) {
     currentSpeedMps: current.currentSpeedMps,
     currentDirectionDeg: current.currentDirectionDeg,
     currentAlignment,
+    currentVerified: current.currentProvenance?.status === 'verified',
     waterLevelCm: current.waterLevelCm,
     waterLevelTrendCm3h: current.waterLevelTrendCm3h
   }].filter(sample => Date.parse(sample.at) >= cutoff)
@@ -1277,47 +1267,21 @@ function historyFor(previous, zoneId, current, generatedAt, feature = null) {
   const waves = samples.map(s => num(s.waveHeightM)).filter(Number.isFinite);
   const high = samples.filter(s => (num(s.windSpeedMps) ?? 0) >= 9 || (num(s.waveHeightM) ?? 0) >= 1.2).at(-1);
   const strongEvent = lastContiguousEvent(samples, s => (num(s.windSpeedMps) ?? 0) >= 14 || (num(s.waveHeightM) ?? 0) >= 1.5);
-  const inbound = durationAndMomentum(samples, s => (num(s.currentAlignment) ?? -1) >= .2 && (num(s.currentSpeedMps) ?? 0) > 0,
-    s => Math.max(0, num(s.currentAlignment) ?? 0) * (num(s.currentSpeedMps) ?? 0));
-  const outbound = durationAndMomentum(samples, s => (num(s.currentAlignment) ?? 1) <= -.35 && (num(s.currentSpeedMps) ?? 0) > 0,
-    s => Math.abs(Math.min(0, num(s.currentAlignment) ?? 0)) * (num(s.currentSpeedMps) ?? 0));
-  const alignments = samples.map(s => num(s.currentAlignment)).filter(Number.isFinite);
-  const stability = alignments.length >= 2 ? Math.max(0, 1 - (Math.max(...alignments) - Math.min(...alignments)) / 1.8) : null;
   const strongHoursSinceEnd = strongEvent ? round((Date.parse(generatedAt) - Date.parse(strongEvent.endAt)) / 3600000, 1) : null;
   const mobilisationPotential = Math.max(0, Math.min(100,
     (winds.length ? Math.min(55, Math.max(...winds) / 14 * 55) : 0) +
     (waves.length ? Math.min(35, Math.max(...waves) / 1.5 * 35) : 0) +
     (strongEvent ? Math.min(10, strongEvent.durationHours * 2) : 0)));
-  const inboundMomentum = Math.max(0, Math.min(100, inbound.momentum * 85));
-  const outboundPressure = Math.max(0, Math.min(100, outbound.momentum * 85));
-  const nearshorePotential = Math.max(0, Math.min(100, mobilisationPotential * .45 + inboundMomentum * .65 - outboundPressure * .55));
-  let eventPhase = 'rolig fase';
-  if (strongEvent && strongHoursSinceEnd !== null && strongHoursSinceEnd <= 1) eventPhase = 'højenergifase';
-  else if (strongEvent && strongHoursSinceEnd !== null && strongHoursSinceEnd <= 18 && inbound.duration > 0) eventPhase = 'efterstorm/indtransport';
-  else if (nearshorePotential >= 55) eventPhase = 'vedvarende nærkystpotentiale';
-  else if (outboundPressure >= 35) eventPhase = 'udtransport/nedbrydning';
-  else if (inbound.duration > 0) eventPhase = 'indtransport opbygges';
-  return {
-    samples24h: samples,
-    history: {
-      maxWind24hMps: winds.length ? round(Math.max(...winds), 1) : null,
-      maxWave24hM: waves.length ? round(Math.max(...waves), 2) : null,
-      hoursSinceHighEnergy: high ? round((Date.parse(generatedAt) - Date.parse(high.at)) / 3600000, 1) : null,
-      strongEventDurationHours: strongEvent?.durationHours ?? null,
-      hoursSinceStrongEventEnd: strongHoursSinceEnd,
-      inboundCurrentDurationHours: inbound.duration,
-      inboundCurrentMomentum: inboundMomentum === 0 && inbound.duration === 0 ? 0 : round(inboundMomentum, 1),
-      outboundCurrentDurationHours: outbound.duration,
-      outboundCurrentPressure: outboundPressure === 0 && outbound.duration === 0 ? 0 : round(outboundPressure, 1),
-      currentDirectionStability: stability === null ? null : round(stability, 2),
-      mobilisationPotential: round(mobilisationPotential, 1),
-      nearshorePotential: round(nearshorePotential, 1),
-      eventPhase,
-      stateModelMode: 'shadow-v1'
-    }
+  const baseHistory = {
+    maxWind24hMps: winds.length ? round(Math.max(...winds), 1) : null,
+    maxWave24hM: waves.length ? round(Math.max(...waves), 2) : null,
+    hoursSinceHighEnergy: high ? round((Date.parse(generatedAt) - Date.parse(high.at)) / 3600000, 1) : null,
+    strongEventDurationHours: strongEvent?.durationHours ?? null,
+    hoursSinceStrongEventEnd: strongHoursSinceEnd,
+    mobilisationPotential: round(mobilisationPotential, 1)
   };
+  return { samples24h: samples, history: applyCurrentTransportToHistory(baseHistory, samples) };
 }
-
 
 
 function hourlyValue(data, variable, index) {

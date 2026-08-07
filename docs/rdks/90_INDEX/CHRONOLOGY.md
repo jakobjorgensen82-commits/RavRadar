@@ -42,3 +42,9 @@ Kronologien er stærk, fordi versionsforløbene overlapper sammenhængende: 1–
 
 ## 2026-08-06 – 4.0.113
 Fem sammenhængende produktionskørsler afslørede, at samme ugentlige GitHub-cache blev gendannet og aldrig opdateret efter primary-key hit. Progressiv cache og streng referencezonevalidering blev implementeret uden scoreændring.
+
+## 2026-08-06 – 4.0.114 til 4.0.115
+- 4.0.114 blev efter gentagne Pages-timeouts til sidst publiceret og bestod sitetest 19/19.
+- Releasekædens build/deploy-opdeling blev dermed produktionsbekræftet.
+- Den efterfølgende faglige analyse viste, at transporthistorikken skulle bindes til den endelige DMI-proveniens og at akkumuleret varighed ikke måtte forveksles med et ubrudt forløb.
+- 4.0.115 indfører score-neutral `shadow-v2` med verificerede strømprøver og særskilt aktivt regime.

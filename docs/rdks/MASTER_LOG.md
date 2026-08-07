@@ -373,3 +373,10 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Build/data og deploy er opdelt. Kun deployjobbet ejer miljø og Pages-rettigheder.
 - Fejlet deploy kan genkøres alene. Push/tvungen release kan afbryde en ældre almindelig vejropdatering.
 - Score, DMI, marine audits og skyggetilstand er uændrede.
+
+## 2026-08-06 – 4.0.115 verificeret historisk strømtilstand
+- 4.0.114 blev produktionsbekræftet med grøn GitHub Pages-deploy og sitetest 19/19; 208 zoner havde data, 29 verificerede strømpile blev vist, og startup var 3,663 sekunder.
+- Historisk transport blev identificeret som beregnet før den endelige DMI-proveniensberigelse.
+- 4.0.115 genberegner transporthistorikken efter provenance og lader kun verificerede marine DMI-u/v-prøver tælle.
+- Akkumuleret 24-timers transport er adskilt fra det aktuelle sammenhængende strømregime.
+- `shadow-v2` er fortsat score-neutral. Den midlertidige Pages-mikrotest er fjernet.

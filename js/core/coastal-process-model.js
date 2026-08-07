@@ -37,7 +37,9 @@ export function buildStateExplanation(history={}) {
   const sinceEvent=n(history.hoursSinceStrongEventEnd);
   const mobilisation=n(history.mobilisationPotential);
   const nearshore=n(history.nearshorePotential);
-  const stability=n(history.currentDirectionStability);
+  const stability=n(history.activeCurrentRegimeStability ?? history.currentDirectionStability);
+  const activeRegime=history.activeCurrentRegime||null;
+  const activeDuration=n(history.activeCurrentRegimeDurationHours);
   const facts=[];
   if(eventDuration!==null&&eventDuration>0){
     const age=sinceEvent===null?'':` og sluttede for ${formatHours(sinceEvent)} siden`;
@@ -51,7 +53,10 @@ export function buildStateExplanation(history={}) {
     const strength=outboundPressure===null?'':outboundPressure>=55?' og giver et stærkt udtransporttryk':outboundPressure>=25?' og giver et mærkbart udtransporttryk':' og giver et mindre udtransporttryk';
     facts.push(`Strømmen har også bevæget sig væk fra kysten i cirka ${formatHours(outbound)}${strength}.`);
   }
-  if(stability!==null&&inbound!==null&&inbound>0){
+  if(activeRegime==='inbound'&&activeDuration!==null&&activeDuration>0)facts.push(`Det aktuelle sammenhængende indtransportforløb har varet cirka ${formatHours(activeDuration)}.`);
+  else if(activeRegime==='outbound'&&activeDuration!==null&&activeDuration>0)facts.push(`Det aktuelle sammenhængende udtransportforløb har varet cirka ${formatHours(activeDuration)}.`);
+  else if(activeRegime==='unavailable')facts.push('Den seneste strømprøve kunne ikke verificeres som marin DMI-strøm og tæller derfor ikke med i transporthistorikken.');
+  if(stability!==null&&activeRegime&&activeRegime!=='unavailable'&&activeRegime!=='neutral'){
     if(stability>=.75)facts.push('Strømretningen har været forholdsvis stabil.');
     else if(stability<.4)facts.push('Strømretningen har skiftet en del, så transportforløbet er mere usikkert.');
   }
@@ -103,6 +108,12 @@ export function evaluateTransportEvent({history={},weather={},zone={}}={}){
     inboundCurrentMomentum:n(history.inboundCurrentMomentum),
     outboundCurrentDurationHours:n(history.outboundCurrentDurationHours),
     outboundCurrentPressure:n(history.outboundCurrentPressure),
+    activeCurrentRegime:history.activeCurrentRegime||null,
+    activeCurrentRegimeDurationHours:n(history.activeCurrentRegimeDurationHours),
+    activeCurrentRegimeMomentum:n(history.activeCurrentRegimeMomentum),
+    activeCurrentRegimeStability:n(history.activeCurrentRegimeStability),
+    verifiedCurrentCoverageHours:n(history.verifiedCurrentCoverageHours),
+    unverifiedCurrentSampleCount:n(history.unverifiedCurrentSampleCount),
     currentDirectionStability:n(history.currentDirectionStability),
     mobilisationPotential:n(history.mobilisationPotential),
     nearshorePotential:n(history.nearshorePotential)
