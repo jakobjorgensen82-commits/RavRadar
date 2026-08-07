@@ -1019,7 +1019,9 @@ def clean_and_summarize(result: dict[str, Any], fresh_zone_ids: set[str], budget
                 wind_from_uv(hour)
                 cleaned[valid] = hour
         zone["hourly"] = dict(sorted(cleaned.items(), key=lambda row: epoch(row[0])))
-    result["zones"] = {k: v for k, v in result["zones"].items() if v.get("hourly")}
+    # Bevar hele den aktive zone-/kilderegistrering. En tom hourly-map er den
+    # eksplicitte, sandfærdige repræsentation af manglende direkte DMI-data og
+    # må ikke forveksles med, at zonen er faldet ud af pipeline-strukturen.
     diag = result["diagnostics"]
     diag["invalidatedMismatchedVectors"] = invalidated_vectors
     diag["downloadedBytes"] = budget["bytes"]

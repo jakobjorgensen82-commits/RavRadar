@@ -23,6 +23,8 @@ assert.match(bulk, /active_output_ids = \{str\(zone\["id"\]\) for zone in zones 
   'bulkcache skal materialisere den aktuelle zone-/kilderegistrering før DMI-felter flettes ind');
 assert.match(bulk, /"zones": initial_zone_records/,
   'aktive zoner må ikke forsvinde fra bulkcache når et direkte DMI-hit mangler');
+assert.doesNotMatch(bulk, /result\["zones"\]\s*=\s*\{[^\n]*if v\.get\("hourly"\)/,
+  'clean/summarize må ikke slette materialiserede zoner uden direkte DMI-hit');
 assert.match(bulk, /merge_previous\(result, previous, active_output_ids\)/,
   'stale bulkposter uden for den aktuelle registrering må ikke genindføres fra tidligere cache');
 

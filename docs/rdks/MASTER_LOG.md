@@ -437,3 +437,10 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Negativ preflight bevarer den billige skip-adfærd uden artifact/deploy.
 - Workflow-regressionstesten beskytter gatebetingelserne og artifact-rækkefølgen.
 - Status efter implementeringen er lokalt rettet; CI-/produktionsverifikation afventer samme friske run med begge gates og deploy som `success`.
+
+## 2026-08-07 – streng #1769 stoppede strukturelt tab af fire aktive zoner
+- #1769 på `b3cb3974…` bekræftede, at positiv preflight nu planlægger fuld validate og releasegate før artifact; deploy blev korrekt stoppet ved fejlet validate.
+- Central admin-sync og geometrianvendelse lykkedes med 208 aktive zoner. DMI, weather, provenance, public runtime og referencezoner blev bygget.
+- Spatial-auditten fandt fire aktive zoner uden komplet `conditions/public/bulk`: `DK-B05-17`, `DK-B05-22`, `DK-B05-23` og `DK-B10-10`.
+- Rodårsag: initial materialisering oprettede zonerne, men `clean_and_summarize()` slettede alle tomme `hourly`-records igen.
+- Rettelse: aktive tomme records bevares som eksplicit missing. Ingen nul-, stale- eller fallbackdata konstrueres.

@@ -56,3 +56,6 @@ Før Codex-overgangen er CHAT-0014 importeret, den gamle handoff opdateret, og e
 
 ## Første Codex-rettelse – obligatoriske gates ved alle produktionsbuilds
 Den dokumenterede bootstrap-fejl er lukket lokalt. Når preflight beslutter at bygge frisk produktionsdata, kører både `npm run validate` og `npm run release:gate` nu uanset om triggeren er `push`, tvungen manuel kørsel eller almindelig cron-startet `workflow_dispatch`. Et negativt preflight-resultat kan fortsat afslutte billigt uden artifact eller deploy. Regressionstesten kræver begge gates før Pages-artifactet og afviser triggerbaserede gate-undtagelser. Frisk CI-/produktionsverifikation afventer.
+
+## Opfølgning fra streng #1769 – tomme aktive bulkzoner
+#1769 blev korrekt stoppet af den fulde validate før artifact/deploy. Fire aktive zoner var blevet materialiseret, men blev bagefter slettet af bulk-cleanup, fordi deres `hourly` var tom. Cleanup bevarer nu hele den aktive registrering; tomme records betyder eksplicit manglende data og udfyldes ikke med nul eller stale værdier.
