@@ -431,6 +431,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Ingen audits, gridafstande, DMI-only-krav eller null-regler er svækket. Frisk produktion afventer.
 - #1778 og #1779 bekræftede rækkefølgen `dkss_lf,harmonie_dini_sf`, begge fulde gates og deploy. Vind med mindst noget offentligt data steg fra 21/208 til 199/208 zoner.
 - Supportmålingen viste, at den første kørsel brugte tre store downloads på udløbne HARMONIE-trin. Trin ældre end én time filtreres nu før download; 96-timers dækning skal fortsat opbygges og produktionsmåles.
+- #1783 filtrerede dokumenteret to udløbne HARMONIE-trin og behandlede 23–01 UTC, men valgte en ny 21 UTC-generation med kun 11 forecasttrin. Vind fandtes fortsat i 199/208 zoner, mens 96-timersdækningen faldt til 1/208.
+- Run-valget er derfor gjort progressionsstabilt: en foretrukken generation fastholdes, mens den rækker mindst 96 timer frem; ufuldstændige nye publikationer udskydes og diagnosticeres. Frisk produktion afventer.
 
 ## 2026-08-08 – planlagt videnskabelig RavScore-forskning
 - En større forsknings- og modelvalideringsrunde er registreret som P3 i DEC-0029; den udføres ikke under den aktuelle forecast-/schedulerstabilisering eller foran højere P0/P1-opgaver.

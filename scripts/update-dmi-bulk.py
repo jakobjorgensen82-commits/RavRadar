@@ -244,7 +244,36 @@ def stride_selected(valid: str, run: str) -> bool:
     return offset_hours <= 6 or offset_hours % TIME_STRIDE_HOURS == 0 or offset_hours >= HOURS - 1
 
 
-def list_latest_assets(collection: str) -> tuple[str | None, list[dict[str, Any]], dict[str, Any]]:
+def select_forecast_run(
+    runs: dict[str, list[dict[str, Any]]],
+    preferred_run: str | None = None,
+    now_epoch: float | None = None,
+) -> tuple[str, dict[str, Any]]:
+    """Keep a usable progressive run instead of chasing each partial publication."""
+    now_value = time.time() if now_epoch is None else now_epoch
+    future_horizon = {
+        run: max((epoch(row["valid"]) - now_value) / 3600 for row in rows)
+        for run, rows in runs.items() if rows
+    }
+    mature = [run for run, hours in future_horizon.items() if hours >= COMPLETE_HORIZON_HOURS]
+    if preferred_run in mature:
+        selected = preferred_run
+    elif mature:
+        selected = max(mature, key=epoch)
+    else:
+        selected = max(future_horizon, key=lambda run: (future_horizon[run], epoch(run)))
+    latest = max(future_horizon, key=epoch)
+    return selected, {
+        "latestRun": latest,
+        "selectedRun": selected,
+        "latestRunFutureHorizonHours": round(future_horizon[latest], 1),
+        "selectedRunFutureHorizonHours": round(future_horizon[selected], 1),
+        "preferredProgressiveRunRetained": selected == preferred_run,
+        "incompleteLatestRunDeferred": selected != latest,
+    }
+
+
+def list_latest_assets(collection: str, preferred_run: str | None = None) -> tuple[str | None, list[dict[str, Any]], dict[str, Any]]:
     data = request_json(f"{STAC_ROOT}/collections/{collection}/items",
                         {"limit": 1000, "bbox": "7,54,16,58", "sortorder": "datetime,DESC"})
     items = data.get("features") or []
@@ -271,7 +300,8 @@ def list_latest_assets(collection: str) -> tuple[str | None, list[dict[str, Any]
             stats["sampleItems"].append({"id": item.get("id"), "run": run, "valid": valid})
     if not runs:
         return None, [], stats
-    run = max(runs, key=epoch)
+    run, run_selection = select_forecast_run(runs, preferred_run)
+    stats.update(run_selection)
     unique: dict[str, dict[str, Any]] = {}
     minimum_valid_epoch = time.time() - 3600
     for row in sorted(runs[run], key=lambda r: (epoch(r["valid"]), str(r["id"]))):
@@ -1429,11 +1459,11 @@ def main() -> int:
         state = result["collectionState"].setdefault(collection, {})
         state["lastAttemptAt"] = generated
         try:
-            run, assets, stac_stats = list_latest_assets(collection)
+            previous_run = (previous.get("runs") or {}).get(collection) or {}
+            run, assets, stac_stats = list_latest_assets(collection, previous_run.get("referenceTime"))
             result["diagnostics"]["stacByCollection"][collection] = stac_stats
             if not assets:
                 raise RuntimeError("no forecast-step GRIB assets found in latest STAC run")
-            previous_run = (previous.get("runs") or {}).get(collection) or {}
             zone_registry_signature = current_zone_registry_signature
             processing_signature = f"parser:{PARSER_VERSION}|params:{PARAMETER_MAP_VERSION}|grid:{GRID_LOOKUP_VERSION}|zones:{zone_registry_signature}"
             same_processing = previous_run.get("processingSignature") == processing_signature

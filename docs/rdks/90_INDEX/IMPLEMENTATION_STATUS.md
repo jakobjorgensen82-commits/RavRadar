@@ -302,6 +302,10 @@ Status: Implementeret og lokalt valideret.
 - [x] Offentlig vind steg progressivt fra 21/208 zoner i #1774 til 199/208 i #1779.
 - [x] Udløbne HARMONIE-forecasttrin ældre end én time filtreres nu før download, så det begrænsede bytebudget bruges på aktuelle/fremtidige trin.
 - [ ] 96-timers vinddækning skal fortsat bygges progressivt og måles i ny produktion; issue er derfor kun delvist produktionslukket.
+- [x] #1783 beviste, at udløbne HARMONIE-trin filtreres, og at aktuelle trin behandles; fulde gates og build bestod.
+- [x] Nyeste, endnu ufuldstændige modelgeneration må ikke længere nulstille en brugbar progressiv generation. Foretrukket run fastholdes ved mindst 96 fremtidige timer.
+- [x] Run-valget eksponerer valgt/nyeste generation, deres fremtidige horisont samt om et ufuldstændigt nyt run er udskudt.
+- [ ] Frisk produktion skal bevise fastholdt generation og voksende 24/96-timers vinddækning over flere kørsler.
 
 ## Planlagt større forskningsopgave – RavScore og kystprocesser
 - [x] Forskningsopgaven er registreret i roadmap og RDKS som P3 under DEC-0029.
