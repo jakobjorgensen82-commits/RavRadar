@@ -106,3 +106,9 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 - **ISSUE-FORECAST-EDGE-COVERAGE – AKTIV:** Ved yderste femdøgnskant kan enkelte zoner/timer mangle strøm og vandstand, og kendte vind-/bølgefelter skal fortsat måles efter null-/schedulerrettelserne. Undersøg kildehorisont, scheduler og sammensmeltning systemisk; ingen stale udfyldning eller nulkonvertering.
 - **ISSUE-DOCUMENTATION-DRIFT-BEFORE-CODEX – RETTET I HANDOFF:** `05_NEXT_CHAT_HANDOFF.md` og flere statusdokumenter beskrev en ældre 4.0.114–4.0.116-baseline. De er opdateret til 4.0.117, og en dedikeret Codex-pakke er gjort obligatorisk.
 - **LOCAL-SNAPSHOT-CURRENT-PROVENANCE-WARNINGS – OBSERVATION VED HANDOFF:** Den lokale 4.0.117-pakke består fuld validering, men spatial-auditten giver 12 warnings for manglende dokumenteret current-gridproveniens i det medfølgende datasnapshot. Dette er ikke i sig selv en frisk produktionsfailure. Ved analyse skal snapshotets alder holdes op mod #1750 og nyere produktioner.
+
+## 2026-08-07 – Bulk-zone-struktur efter dynamiske adminzoner
+- **Fundet i produktion:** Strømaudit fejlede for Fur syd, Gjøl og Attrup, Aalborg vest og Egholm, Aalborg øst og Nørresundby samt Falster vest og Nysted Nor munding, selv om central weather-cache rapporterede `OK ... via mixed`.
+- **Rodårsag:** `update-dmi-bulk.py` oprettede kun zoneposter, når et DMI-felt blev fundet eller en gammel bulkpost fandtes. En aktiv zone uden direkte bulk-hit kunne derfor forsvinde helt fra bulkstrukturen.
+- **Rettet i Codex-handoff-kandidaten:** Bulk-builderen materialiserer nu hele den aktuelle zone-/kilderegistrering før DMI-felter flettes ind og filtrerer gamle bulkposter mod den aktuelle registrering. Missing forbliver missing; ingen nuldata eller stale data indføres.
+- **Validering:** `npm run validate` og `npm run release:gate` består lokalt. Produktionsverifikation kræver næste friske GitHub/DMI-kørsel efter upload.

@@ -19,4 +19,11 @@ assert.match(bulk, /and zone_registry_unchanged/,
   'fresh bulkcache må kun genbruges når zonepunkterne er uændrede');
 assert.match(bulk, /"zoneRegistrySignature": current_zone_registry_signature/);
 
+assert.match(bulk, /active_output_ids = \{str\(zone\["id"\]\) for zone in zones if zone\.get\("id"\)\}/,
+  'bulkcache skal materialisere den aktuelle zone-/kilderegistrering før DMI-felter flettes ind');
+assert.match(bulk, /"zones": initial_zone_records/,
+  'aktive zoner må ikke forsvinde fra bulkcache når et direkte DMI-hit mangler');
+assert.match(bulk, /merge_previous\(result, previous, active_output_ids\)/,
+  'stale bulkposter uden for den aktuelle registrering må ikke genindføres fra tidligere cache');
+
 console.log('DMI bulk → forecast integration regression test passed.');

@@ -844,10 +844,12 @@ def load_previous() -> dict[str, Any]:
         return {"schemaVersion": 2, "zones": {}, "runs": {}}
 
 
-def merge_previous(current: dict[str, Any], previous: dict[str, Any]) -> None:
+def merge_previous(current: dict[str, Any], previous: dict[str, Any], allowed_zone_ids: set[str] | None = None) -> None:
     for collection, details in (previous.get("runs") or {}).items():
         current.setdefault("runs", {}).setdefault(collection, details)
     for zone_id, old_zone in (previous.get("zones") or {}).items():
+        if allowed_zone_ids is not None and zone_id not in allowed_zone_ids:
+            continue
         new_zone = current["zones"].setdefault(zone_id, {"hourly": {}, "gridPoints": {}, "collections": {}})
         for valid, old_hour in (old_zone.get("hourly") or {}).items():
             new_hour = new_zone["hourly"].setdefault(valid, {"time": valid})
@@ -1349,17 +1351,27 @@ def main() -> int:
             print(f"Advarsel: vandstandskilder kunne ikke føjes til bulk-grid: {exc}", file=sys.stderr)
 
     generated = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    # Den aktive zone-/kilderegistrering er den strukturelle sandhed. En zone må
+    # aldrig forsvinde fra bulk-cachen blot fordi den aktuelle DMI-kørsel ikke
+    # finder et gyldigt felt. Tomme poster betyder eksplicit "ingen direkte
+    # bulkdata"; de må ikke udfyldes med nul eller stale data. Det gør det muligt
+    # for provenance/audits at skelne datamangler fra en brudt registreringskæde.
+    active_output_ids = {str(zone["id"]) for zone in zones if zone.get("id")}
+    initial_zone_records = {
+        zone_id: {"hourly": {}, "gridPoints": {}, "collections": {}}
+        for zone_id in active_output_ids
+    }
     result = {"schemaVersion": 2, "generatedAt": generated,
               "sourceUpdatedAt": previous.get("sourceUpdatedAt") or previous.get("generatedAt"),
               "method": f"DMI STAC forecast-step GRIB inventory; collection-specific field extraction; multi-candidate nearest valid grid point with shared-grid U/V vector pairing and marine collection overlap; {TIME_STRIDE_HOURS}h model stride; no spatial interpolation",
-              "hours": HOURS, "timeStrideHours": TIME_STRIDE_HOURS, "zoneRegistrySignature": current_zone_registry_signature, "zones": {}, "runs": {},
+              "hours": HOURS, "timeStrideHours": TIME_STRIDE_HOURS, "zoneRegistrySignature": current_zone_registry_signature, "zones": initial_zone_records, "runs": {},
               "collectionState": dict(previous.get("collectionState") or {}),
               "diagnostics": {"collectionsAttempted": [], "collectionsSucceeded": [], "collectionsPartial": [], "errors": [],
                               "downloadedBytes": 0, "reusedAssets": 0, "parametersByCollection": {}, "stacByCollection": {},
                               "assetsSkippedPreviouslyProcessed": 0, "assetsRetriedIncomplete": 0, "zeroProgressCollections": [], "collectionsUnchanged": [], "messagesSeen": 0, "zoneLookups": 0, "batchedGridReads": 0, "marineGridSearch": {},
                               "runtimeBudgetSeconds": MAX_RUNTIME_SECONDS, "finalizeReserveSeconds": FINALIZE_RESERVE_SECONDS,
                               "persistentFieldInventory": dict(((previous.get("diagnostics") or {}).get("persistentFieldInventory") or {}))}}
-    merge_previous(result, previous)
+    merge_previous(result, previous, active_output_ids)
     budget = {"bytes": 0}
     active_zones_config = [zone for zone in zones if not zone.get("waterSource")]
     scheduled, schedule_coverage = collection_schedule(previous, active_zones_config)
