@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from lib.dmi_grid_vector import select_common_vector_candidate, same_grid_point, water_source_parameter_allowed
+from lib.dmi_grid_vector import select_common_vector_candidate, same_grid_point, water_source_parameter_allowed, vector_vertical_layer, prefer_vector_layer
 
 u = [
     {"latitude": 56.0, "longitude": 10.0, "distanceKm": 1.0, "value": 0.2},
@@ -23,6 +23,22 @@ assert select_common_vector_candidate(
 assert not same_grid_point({"latitude": 1, "longitude": 1}, {"latitude": 1.001, "longitude": 1})
 print("OK: DMI U/V vectors require one shared physical grid point.")
 
+# Regression for production current-layer pairing: U/V components from different
+# DMI depth layers must never compete in one cache bucket. Among valid shared
+# current layers, the deepest available layer wins deterministically.
+surface = vector_vertical_layer("current", "surface", None)
+depth_1 = vector_vertical_layer("current", "depthBelowSea", 1)
+depth_7 = vector_vertical_layer("current", "depthBelowSea", 7)
+assert surface == ("surface:0", 0.0)
+assert depth_1 == ("depthbelowsea:1", 1.0)
+assert depth_7 == ("depthbelowsea:7", 7.0)
+assert surface[0] != depth_1[0] != depth_7[0]
+assert prefer_vector_layer(None, depth_1[1])
+assert prefer_vector_layer(depth_1[1], depth_7[1])
+assert not prefer_vector_layer(depth_7[1], depth_1[1])
+print("OK: DMI current U/V pairing is depth-layer aware and deterministic.")
+
+
 assert water_source_parameter_allowed("sea-mean-deviation")
 for parameter in ("current-u", "current-v", "water-temperature", "wind-u-10m", "wind-v-10m", "significant-wave-height"):
     assert not water_source_parameter_allowed(parameter), f"Water source must not be sampled for {parameter}"
@@ -36,4 +52,7 @@ bulk_source = Path("scripts/update-dmi-bulk.py").read_text()
 assert 'DMI_BULK_LIMFJORD_GRID_CANDIDATES", "48"' in bulk_source
 assert '0.20, 0.26' in bulk_source
 assert 'MAX_GRID_DISTANCE_KM = {"limfjord": 24.0' in bulk_source
-print("OK: Limfjord U/V search reaches the existing physical acceptance radius without relaxing it.")
+assert 'vector_candidates.setdefault((family, zone["id"], layer_key), {})' in bulk_source
+assert 'prefer_vector_layer(previous_layer_rank, layer_rank)' in bulk_source
+assert '"verticalLayer": layer_key' in bulk_source
+print("OK: Limfjord U/V search preserves the acceptance cap and current pairing stays isolated by DMI depth layer.")

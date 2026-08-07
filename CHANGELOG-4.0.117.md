@@ -29,3 +29,20 @@ Schedulerrettelsen fra #1728 virker: #1738 kørte både `dkss_lf` og `dkss_nsbs`
 Rodårsagen var en forskel mellem den dokumenterede fysiske acceptgrænse og den faktiske søgeflade: Limfjordspunkter må bruge et dokumenteret fælles U/V-havpunkt op til 24 km væk, men kandidatproberne stoppede ved 0,14° og kandidatlisten ved 16 punkter. I smalle fjordløb og omkring landmasker kunne søgningen derfor stoppe, før et gyldigt fælles vådt U/V-punkt inden for den eksisterende 24-km-grænse blev undersøgt.
 
 Hotfixen udvider kun Limfjordens marine kandidatsøgning til 48 kandidater og prober op til 0,26°. `MAX_GRID_DISTANCE_KM["limfjord"]` forbliver 24 km, så der accepteres ikke fjernere eller kunstige data. U og V skal fortsat komme fra samme fysiske DMI-gitterpunkt.
+
+
+## Stabiliseringsrettelse efter produktion #1740/#seneste CI – U/V-dybdelag
+
+Den tidligere radiusdiagnose var utilstrækkelig. Den friske GitHub-log viste, at `dkss_lf` blev planlagt og gennemført, men de lavvandede zoner `DK-B05-10`, `DK-B05-13` og `DK-B05-20` endte stadig uden fælles U/V-vektor. DMI-GRIB-inventaret viste samtidig gyldige strøm-U og strøm-V i flere vertikale lag (`surface` og `depthBelowSea`).
+
+Den egentlige parserfejl var, at U/V-kandidatcache var nøglebundet kun til `(familie, zone)`. Når GRIB-filen leverede flere U-dybdelag før de tilsvarende V-dybdelag, overskrev et dybere U-lag det lavere U-lag. I lavvandede områder kunne det dybe lag være maskeret, og et ellers gyldigt lavere fælles U/V-par blev derfor aldrig dannet.
+
+Rettelsen:
+- U/V-kandidater caches nu separat pr. DMI-vertikallag.
+- U og V må kun danne vektor, når både fysisk gitterpunkt **og vertikallag** er fælles.
+- Blandt gyldige fælles strøm-lag vælges deterministisk det dybeste tilgængelige lag, så resultatet ikke afhænger af GRIB-meddelelsesrækkefølgen.
+- Valgt vertikallag skrives i gridproveniens og diagnostik.
+- Parserversionen hæves til 11, så tidligere behandlede assets genbehandles med den korrigerede logik.
+- 24-km-grænsen for Limfjorden og alle øvrige videnskabelige audits er uændrede.
+
+Den lokale komplette `npm run validate` består efter rettelsen. Endelig produktionsbekræftelse kræver fortsat en frisk GitHub/DMI-kørsel, fordi den konkrete fejl kun opstod under parsing af friske DKSS-GRIB-filer.

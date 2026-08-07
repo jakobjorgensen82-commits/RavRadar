@@ -48,3 +48,25 @@ def same_grid_point(
 def water_source_parameter_allowed(parameter: str) -> bool:
     """Water-source helper points are sampled only for DKSS water level."""
     return parameter == "sea-mean-deviation"
+
+
+def vector_vertical_layer(family: str, level_type: Any, level: Any) -> tuple[str, float]:
+    """Return stable layer identity/rank for U/V pairing.
+
+    Current vectors must be paired within the same DMI vertical layer. The
+    numeric rank is depth in metres when available; larger ranks are deeper.
+    Non-current vectors use one neutral layer.
+    """
+    if family != "current":
+        return ("default", 0.0)
+    normalized_type = str(level_type or "unknown").strip().lower()
+    try:
+        numeric_level = float(level)
+    except (TypeError, ValueError):
+        numeric_level = 0.0 if normalized_type == "surface" else -1.0
+    return (f"{normalized_type}:{numeric_level:g}", numeric_level)
+
+
+def prefer_vector_layer(previous_rank: float | None, candidate_rank: float) -> bool:
+    """Prefer the deepest valid shared current layer deterministically."""
+    return previous_rank is None or float(candidate_rank) >= float(previous_rank)

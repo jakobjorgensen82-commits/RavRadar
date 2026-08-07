@@ -259,6 +259,7 @@ Status: Implementeret og lokalt valideret.
 
 ## 4.0.116 – IMPLEMENTERET LOKALT, AFVENTER CI/PRODUKTION
 - [x] Strøm-U/V og vind-U/V vælges kun fra nærmeste fælles fysiske DMI-gitterpunkt.
+- [x] DMI-strøm-U/V isoleres pr. vertikallag; samme vektor må aldrig blande dybder, og dybeste gyldige fælles lag vælges deterministisk (parser v11).
 - [x] Ældre cachede U/V-par med forskellige dokumenterede gitterpunkter invalideres sikkert.
 - [x] Vandstandskilder samples kun for `sea-mean-deviation` og er fjernet fra almindelige forecastdækningsmål.
 - [x] Schedulerens zoneunderskud beregnes på aktive forecastzoner og ikke `SOURCE::`-hjælpepunkter.

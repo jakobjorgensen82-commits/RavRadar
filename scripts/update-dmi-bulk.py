@@ -20,7 +20,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
-from lib.dmi_grid_vector import select_common_vector_candidate, same_grid_point, water_source_parameter_allowed
+from lib.dmi_grid_vector import select_common_vector_candidate, same_grid_point, water_source_parameter_allowed, vector_vertical_layer, prefer_vector_layer
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -75,7 +75,7 @@ for _session in (STAC_SESSION, DOWNLOAD_SESSION):
 STAC_SESSION.headers.update({"Accept": "application/geo+json, application/json"})
 DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octet-stream, */*"})
 
-PARSER_VERSION = 10
+PARSER_VERSION = 11
 PARAMETER_MAP_VERSION = 2
 GRID_LOOKUP_VERSION = 5
 COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw", "wam_nsb", "harmonie_dini_sf"]
@@ -694,7 +694,8 @@ def parameter_zones(collection: str, parameter: str, zones: list[dict[str, Any]]
 def process_grib(path: pathlib.Path, collection: str, valid_time: str,
                  zones: list[dict[str, Any]], output: dict[str, Any], diagnostics: dict[str, Any]) -> tuple[set[str], set[str], bool, int, int]:
     found, touched = set(), set()
-    vector_candidates: dict[tuple[str, str], dict[str, list[dict[str, Any]]]] = {}
+    vector_candidates: dict[tuple[str, str, str], dict[str, list[dict[str, Any]]]] = {}
+    selected_vector_layer_rank: dict[tuple[str, str], float] = {}
     inventory = diagnostics.setdefault("gribFieldInventory", {}).setdefault(collection, {})
     persistent_inventory = diagnostics.setdefault("persistentFieldInventory", {}).setdefault(collection, {
         "capturedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -737,9 +738,10 @@ def process_grib(path: pathlib.Path, collection: str, valid_time: str,
                     candidates = valid_candidates_batch(gid, collection, wanted)
                     diagnostics["batchedGridReads"] = int(diagnostics.get("batchedGridReads") or 0) + 1
                     family, first_key, second_key = VECTOR_PAIRS[parameter]
+                    layer_key, layer_rank = vector_vertical_layer(family, safe_get(gid, "typeOfLevel"), safe_get(gid, "level"))
                     for zone in wanted:
                         zone_candidates = candidates.get(zone["id"]) or []
-                        cache = vector_candidates.setdefault((family, zone["id"]), {})
+                        cache = vector_candidates.setdefault((family, zone["id"], layer_key), {})
                         cache[parameter] = zone_candidates
                         if first_key not in cache or second_key not in cache:
                             continue
@@ -752,6 +754,12 @@ def process_grib(path: pathlib.Path, collection: str, valid_time: str,
                                 search["rejectedReason"] = "NO_SHARED_UV_GRID_POINT"
                             continue
                         first, second = pair
+                        selection_key = (family, zone["id"])
+                        previous_layer_rank = selected_vector_layer_rank.get(selection_key)
+                        # Strøm: behold det dybeste gyldige fælles U/V-lag uanset
+                        # GRIB-meddelelsesrækkefølgen. Vind har kun ét relevant lag.
+                        if not prefer_vector_layer(previous_layer_rank, layer_rank):
+                            continue
                         distance = max(float(first["distanceKm"]), float(second["distanceKm"]))
                         point = output["zones"].setdefault(zone["id"], {"hourly": {}, "gridPoints": {}, "collections": {}})
                         if family == "current":
@@ -771,12 +779,19 @@ def process_grib(path: pathlib.Path, collection: str, valid_time: str,
                                 search["rejectedReason"] = "BETTER_COLLECTION_SELECTED"
                                 continue
                             search["selected"] = True
+                            search["verticalLayer"] = layer_key
+                            search["verticalLayerRankM"] = round(layer_rank, 3)
                             search.pop("rejectedReason", None)
+                        selected_vector_layer_rank[selection_key] = layer_rank
                         touched.add(zone["id"])
                         hour = point["hourly"].setdefault(valid_time, {"time": valid_time})
                         for key, candidate in ((first_key, first), (second_key, second)):
                             hour[key] = candidate["value"]
-                            point["gridPoints"][key] = {k: round(v, 5) for k, v in candidate.items() if k not in {"value", "index"}}
+                            point["gridPoints"][key] = {
+                                **{k: round(v, 5) for k, v in candidate.items() if k not in {"value", "index"}},
+                                "verticalLayer": layer_key,
+                                "verticalLayerRankM": round(layer_rank, 3),
+                            }
                             point["collections"][key] = collection
                     continue
 
