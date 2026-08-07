@@ -1378,3 +1378,8 @@ Ved den afsluttende Codex-overgang blev workflowets statuslogik gennemgået igen
 Derfor gælder fremover: **grøn topstatus er ikke nok**. En release er kun strengt godkendt, når de bindende gate-trin faktisk er kørt og har status `success`. Den aktuelle 4.0.117-handoff er kode- og deploymæssigt aktiv, men må ikke betegnes som ny stabil baseline endnu.
 
 Den første Codex-kodeændring har rettet workflowbetingelsen: når preflight beslutter at bygge frisk produktionsdata, skal begge fulde gates køre og bestå før Pages-artifactet bygges. Hvis preflight fastslår, at der ikke skal bygges noget nyt, kan kørslen fortsat stoppe billigt uden artifact og deploy. #1769 viste korrekt stop ved fejlet validate, og #1772 gennemførte central sync, frisk produktionskæde, begge gates, artifact og Pages-deploy med `success`. Baseline er derfor produktionsverificeret.
+
+### 61.9 Balanceret DMI-recovery
+Marine data har fortsat første prioritet, når grundlaget mangler bredt. Men få vedvarende geografiske huller må ikke blokere vind og bølger i alle fremtidige kørsler. Når mindst 95 % af de aktive forecastzoner har marinegrundlag, bruger scheduleren derfor første produktive plads på den mest relevante DKSS-model og anden plads på den mest underdækkede vind- eller bølgefamilie.
+
+Grænsen er en budgetregel, ikke en lempelse af datakravene. Zoner uden gyldig strøm forbliver manglende, marineauditten er uændret, og RavRadar kopierer hverken sidste værdi eller nul ind. Hvis marinegrundlaget falder under 95 %, går begge pladser igen til marine recovery.

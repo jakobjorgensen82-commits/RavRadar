@@ -423,6 +423,12 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 
 ## 2026-08-07 – sen Codex-bootstrap: korrigeret releasebevis og endelig admin-geometri
 - Aktuel `main` ved handoff er `a164b6e52fa18efc7209d90779048bb86bcf870a` (`RavRadar 4.0.117 codex handoff v2`).
+
+## 2026-08-08 – forecast-coverage og balanceret DMI-recovery
+- #1774-supportpakken viste 203/208 zoner med mindst 96 timers marinegrundlag, men offentlig vind i kun 21/208 zoner og bølger i 175/208.
+- Merge og public projection bevarede mangler korrekt. Schedulerens binære marine-foundation-tilstand brugte derimod begge produktive pladser på DKSS på grund af fem resterende marinehuller og udsultede HARMONIE.
+- DEC-0028 indfører balanceret recovery efter 95 % marinegrundlag: én relevant DKSS-plads og én plads til den mest underdækkede vind-/bølgefamilie. Bred marinefejl er fortsat fuldt marine-first.
+- Ingen audits, gridafstande, DMI-only-krav eller null-regler er svækket. Frisk produktion afventer.
 - Efter #1758 blev yderligere fire zoner konstateret geografisk forkerte og korrigeret centralt i admin: **Fur syd**, **Gjøl og Attrup**, **Aalborg vest og Egholm** samt **Aalborg øst og Nørresundby**. Kystlinje og/eller land-/havpunkter blev rettet som autoritativ geometri.
 - #1760 kørte efter disse sidste adminrettelser på `a164b6e…` og gennemførte DMI bulk, central weather-cache, current provenance, public runtime, referencezoner, `validate:data` og GitHub Pages-deploy.
 - Ny kritisk opdagelse: #1760 sprang de fulde trin `npm run validate` og `npm run release:gate` over, fordi almindelig `workflow_dispatch` ikke opfylder workflowets `push || force`-betingelse. Et grønt automatisk run kan derfor være deployet uden fuld releasegodkendelse.

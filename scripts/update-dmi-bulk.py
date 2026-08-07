@@ -53,6 +53,7 @@ REQUEST_TIMEOUT = max(10, int(os.getenv("DMI_BULK_REQUEST_TIMEOUT_SECONDS", "90"
 MAX_ASSETS_PER_COLLECTION = max(1, int(os.getenv("DMI_BULK_MAX_ASSETS_PER_COLLECTION", "130")))
 TIME_STRIDE_HOURS = max(1, int(os.getenv("DMI_BULK_TIME_STRIDE_HOURS", "3")))
 COLLECTIONS_PER_RUN = max(1, int(os.getenv("DMI_BULK_COLLECTIONS_PER_RUN", "2")))
+MARINE_FOUNDATION_BALANCE_RATIO = 0.95
 REFRESH_MINUTES = max(1, int(os.getenv("DMI_BULK_REFRESH_MINUTES", "60")))
 COMPLETE_HORIZON_HOURS = max(24, int(os.getenv("DMI_BULK_COMPLETE_HORIZON_HOURS", "96")))
 FORCE_REFRESH = os.getenv("DMI_BULK_FORCE_REFRESH", "false").lower() in {"1", "true", "yes", "on"}
@@ -889,6 +890,12 @@ def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict
     missing_any = {family: max(0, zone_count - any_data[family]) for family in ("wind", "wave", "marine")}
     marine_recovery_active = missing96["marine"] > 0
     marine_foundation_missing = missing_any["marine"] > 0
+    marine_foundation_ratio = any_data["marine"] / zone_count
+    balanced_foundation_recovery = (
+        marine_foundation_missing
+        and marine_foundation_ratio >= MARINE_FOUNDATION_BALANCE_RATIO
+        and (missing96["wind"] > 0 or missing96["wave"] > 0)
+    )
 
     # Når en aktiv zone helt mangler marinegrundlag, skal den DKSS-model som er
     # geografisk førstevalg for netop den kysttype frem i køen. Ellers kan to
@@ -905,6 +912,15 @@ def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict
         preferred = min(MARINE_COLLECTIONS, key=lambda collection: (float(penalties.get(collection, 25.0)), COLLECTION_ORDER.index(collection)))
         preferred_marine_demand[preferred] += 1
 
+    lead_marine_collection = min(
+        MARINE_COLLECTIONS,
+        key=lambda collection: (
+            -preferred_marine_demand.get(collection, 0),
+            epoch((state.get(collection) or {}).get("lastAttemptAt")),
+            COLLECTION_ORDER.index(collection),
+        ),
+    )
+
     def priority(collection: str) -> tuple[int, int, int, int, int, float, float, int]:
         entry = state.get(collection) or {}
         blocked_parser_version = int(entry.get("blockedParserVersion") or 0)
@@ -919,7 +935,17 @@ def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict
 
         family = COLLECTION_FAMILY[collection]
         # Mangler en aktiv zone helt marinegrundlag, er DKSS ubetinget først.
-        if marine_foundation_missing:
+        if balanced_foundation_recovery:
+            # A small persistent geographic gap must not occupy both
+            # produktive pladser for evigt. Den mest relevante DKSS-model
+            # keeps first place; the second can rebuild wind or wave coverage.
+            if collection == lead_marine_collection:
+                family_rank = 0
+            elif family != "marine":
+                family_rank = 1
+            else:
+                family_rank = 2
+        elif marine_foundation_missing:
             family_rank = 0 if family == "marine" else 1
         elif marine_recovery_active:
             # Marine beholder førstepladsen, men en helt udsultet familie får
@@ -952,9 +978,13 @@ def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict
         "missingAnyWind": missing_any["wind"], "missingAnyWave": missing_any["wave"], "missingAnyMarine": missing_any["marine"],
         "marineRecoveryActive": marine_recovery_active,
         "marineFoundationMissing": marine_foundation_missing,
+        "marineFoundationRatio": round(marine_foundation_ratio, 4),
+        "marineFoundationBalanceRatio": MARINE_FOUNDATION_BALANCE_RATIO,
+        "balancedFoundationRecovery": balanced_foundation_recovery,
+        "leadMarineCollection": lead_marine_collection,
         "missingMarineZoneIds": missing_marine_zone_ids,
         "preferredMarineDemand": preferred_marine_demand,
-        "atmosphereDeferredDuringMarineRecovery": marine_foundation_missing,
+        "atmosphereDeferredDuringMarineRecovery": marine_foundation_missing and not balanced_foundation_recovery,
         "completionDefinition": f"component horizon >= {COMPLETE_HORIZON_HOURS} hours",
         "coverageDenominator": "current-active-zone-registry",
     }

@@ -12,6 +12,7 @@ assert.match(bulk,/family = COLLECTION_FAMILY\[collection\]/);
 assert.match(bulk,/missing96\.get\(family, 0\)/);
 assert.doesNotMatch(bulk,/"atmosphere": int\(\(horizon_coverage\.get\("wind"\)/);
 assert.match(bulk,/marine_foundation_missing/);
+assert.match(bulk,/balanced_foundation_recovery/);
 assert.match(bulk,/elif any_data\.get\(family, 0\) == 0/);
 
 
@@ -40,6 +41,25 @@ assert scheduled[0]=='dkss_lf', scheduled
 assert diag['preferredMarineDemand']['dkss_lf']==3, diag
 assert diag['preferredMarineDemand']['dkss_nsbs']==1, diag
 assert diag['preferredMarineDemand']['dkss_idw']==1, diag
+
+# Once marine coverage is broadly established, a few persistent gaps must not
+# block a completely missing atmosphere model from both productive slots.
+active=[{'id':f'E{i}','coastType':'east'} for i in range(208)]
+future='2099-01-01T00:00:00Z'
+marine_hour={'sea-mean-deviation':0.1,'current-u':0.2,'current-v':0.3}
+zones={zone['id']:{'hourly':{future:marine_hour}} for zone in active[:203]}
+for zone in active[:175]:
+    zones.setdefault(zone['id'],{'hourly':{}})['hourly'].setdefault(future,{}).update({'significant-wave-height':0.5})
+previous={'zones':zones,'collectionState':{
+ 'dkss_nsbs':{'lastAttemptAt':'2026-01-01T00:00:00Z'},
+ 'dkss_idw':{'lastAttemptAt':'2026-01-02T00:00:00Z'},
+ 'dkss_lf':{'lastAttemptAt':'2026-01-03T00:00:00Z'},
+}}
+scheduled,diag=module.collection_schedule(previous,active)
+assert scheduled[:2]==['dkss_idw','harmonie_dini_sf'], scheduled
+assert diag['balancedFoundationRecovery'] is True, diag
+assert diag['atmosphereDeferredDuringMarineRecovery'] is False, diag
+assert diag['marineFoundationRatio'] >= 0.95, diag
 `;
 const result=spawnSync('python',['-c',behavioral],{encoding:'utf8'});
 assert.equal(result.status,0,`Schedulerens adfærdstest fejlede:\n${result.stdout}\n${result.stderr}`);

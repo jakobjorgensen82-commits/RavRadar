@@ -62,3 +62,8 @@ Den dokumenterede bootstrap-fejl er lukket lokalt. Når preflight beslutter at b
 
 ## Streng produktionsverifikation #1772
 #1772 på `292b402487efaf74e2a102773a3a8fbfbd39f5af` gennemførte central admin-sync, frisk DMI/weather/proveniens/public runtime, fuld validate, releasegate, Pages-artifact og deployment med `success` i samme run. Gate-bypasset og tom-zone-regressionen er dermed produktionsverificeret løst.
+
+## Balanceret scheduler-recovery efter #1774
+#1774 viste, at fem vedvarende marinegrundlagshuller kunne holde begge produktive collection-pladser på DKSS, selv om 203/208 zoner allerede havde mindst 96 timers marinegrundlag. Resultatet var vinddata i kun 21/208 offentlige zoner og bølgedata i 175/208.
+
+Scheduleren bevarer nu fuld marine-first ved bred fejl, men skifter ved mindst 95 % marinegrundlag til én relevant DKSS-plads og én plads for den mest underdækkede vind-/bølgefamilie. Missing forbliver missing; der er ikke tilføjet stale eller syntetisk fallback. Regressionstesten dækker begge tilstande. Frisk produktionsverifikation afventer.

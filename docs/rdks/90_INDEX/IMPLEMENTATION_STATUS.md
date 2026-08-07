@@ -290,3 +290,11 @@ Status: Implementeret og lokalt valideret.
 - [x] Billigt preflight-skip uden artifact/deploy er bevaret.
 - [x] Workflow-kontrakttesten kræver begge gates før Pages-artifactet og forbyder trigger-/force-betingelser på gates.
 - [x] #1772 på `292b4024…` viste central sync, frisk produktionskæde, begge fulde gates, artifact og Pages-deploy som `success` i samme run.
+
+## Forecast-edge og schedulerbalance – 2026-08-08
+- [x] #1774-supportdata er målt på alle 208 aktive zoner og gennem hele bulk/public-kæden.
+- [x] Public projection bevarer manglende værdier korrekt; der er ikke fundet ny `null -> 0`-fejl.
+- [x] Rodårsagen til den brede vindmangel er schedulerudsultning: 203/208 marinezoner var dækket, men fem huller holdt begge collection-pladser på DKSS.
+- [x] Balanceret recovery ved mindst 95 % marinegrundlag er implementeret med én marineplads og én plads til mest underdækkede vind/bølgefamilie.
+- [x] Regression dækker både bred marine-first recovery og den målte 203/208-profil.
+- [ ] Frisk produktion skal bevise HARMONIE-forsøg, fulde releasegates og forbedret offentlig coverage. Issue er derfor ikke produktionslukket endnu.
