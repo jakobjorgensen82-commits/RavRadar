@@ -268,3 +268,13 @@ Status: Implementeret og lokalt valideret.
 - [x] `shadow-v2` og eksisterende morfologi forbliver score-neutrale/uændrede.
 - [ ] CI skal bevise, at den strenge current spatial audit består med den nye fælles-grid-logik.
 - [ ] Produktion og sitetest skal kontrollere femdøgnsfelter: reelle datagab vises som `Mangler`, og tilgængelig vind/bølge må ikke forsvinde.
+
+
+## 4.0.117 – PRODUKTIONSVERIFICERET / CODEX-HANDOFF
+- Schedulerens aktive-zone-nævner og `wind`-familie er implementeret.
+- Geografisk DKSS-recovery er implementeret og efterfølgende kørt i produktion.
+- U/V-gridintegritet er udvidet med vertikallagsisolering; parsergeneration 11 er aktiv i 4.0.117.
+- Den seneste centrale adminzonegeometri blev hentet og anvendt i frisk #1750-kørsel, som gennemførte succesfuldt.
+- 4.0.117 commit `6c1dece…` er derfor den dokumenterede overgangsbaseline.
+- Codex AI-dokumentationspakken og CHAT-0014 er tilføjet som dokumentationslag uden ændring af RavScore.
+- Åben: femdøgnshorisontens yderste `missing` for enkelte marine felter samt øvrige aktive roadmapkrav.

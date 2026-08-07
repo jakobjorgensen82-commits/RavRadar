@@ -140,3 +140,11 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-WATER-SOURCE-SAMPLING-001 – BINDENDE:** `SOURCE::`-vandstandskilder må kun samples for DKSS-vandstand og må ikke indgå i dækning/schedulerunderskud for forecastzonernes strøm, vind eller bølger.
 - **REQ-MISSING-WEATHER-NULL-001 – BINDENDE:** `null`, tom eller ikke-numerisk vind/bølge er manglende data, ikke 0. UI, score, regler og prognosevalg skal bevare denne forskel.
 - **REQ-TRUE-ZERO-WEATHER-001 – BINDENDE:** En eksplicit numerisk 0-værdi fra datakilden er gyldig og må ikke forveksles med manglende data.
+
+## 4.0.117 / Codex-overgang – aktive tværgående krav
+- **SYSTEMISK FEJLRETNING – AKTIV:** En fejl må ikke behandles som isoleret fil/test. Hele input→produktion→UI→release-kæden skal vurderes, og seneste fungerende reference skal bruges ved regressioner.
+- **STABILITETSBEGREB – AKTIV:** Lokal grøn validering er ikke bevis for CI eller produktion. DMI-/Supabase-/pipelineændringer kræver frisk ekstern verifikation før de betegnes produktionsstabile.
+- **CENTRAL ADMIN-GEOMETRI – AKTIV OG PRODUKTIONSVERIFICERET:** Centralt gemte kystlinjer, land-/havpunkter, retninger og øvrige redigerbare zonefelter skal være autoritative og propagere gennem hele produktionskæden. Tests må ikke hardcode historiske adminværdier.
+- **DMI U/V VERTIKALLAG – AKTIV KONTRAKT:** Current-U/V må kun parres på samme forecasttid, samme fysiske DMI-gridpunkt og samme vertikallag. Kandidater fra forskellige lag må ikke overskrive eller blandes.
+- **FORECAST-EDGE-COVERAGE – AKTIV:** Yderste del af femdøgnshorisonten skal undersøges for `missing` strøm/vandstand/vind/bølge. Manglende data må ikke fyldes med stale værdi eller 0.
+- **CODEX-HUKOMMELSE – AKTIV:** `docs/ai/`, RDKS, håndbog, tests, Git-historik og chatarkiv skal vedligeholdes som projektets persistente AI-hukommelse. Væsentlige beslutninger må ikke kun leve i en samtale.

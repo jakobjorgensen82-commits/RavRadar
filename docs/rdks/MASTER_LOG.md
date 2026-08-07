@@ -410,3 +410,13 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Produktion #1738 bekræftede, at scheduler-hotfixen virkede (`dkss_lf` + `dkss_nsbs` blev kørt friskt), men strømauditten fejlede fortsat på DK-B05-10, DK-B05-13 og DK-B05-20.
 - Ny rodårsag: Limfjordens marine kandidatsøgning undersøgte kun 16 kandidater/prober til 0,14°, selv om den fysiske acceptgrænse er 24 km. Søgefladen kunne derfor ikke altid finde et fælles vådt U/V-punkt inden for den tilladte afstand.
 - Rettelse: kun Limfjordssøgningen udvides til 48 kandidater og prober til 0,26°; 24-km-grænsen og kravet om samme fysiske DMI U/V-punkt er uændrede.
+
+## 2026-08-07 – 4.0.117 produktionsverifikation og Codex-handoff
+- Commit `6c1dece72d5970a1fc095b9a22f080d811cd9f36` er dokumenteret 4.0.117-overgangsbaseline.
+- Efter tidligere fejlede 4.0.117-kørsler gennemførte #1749 og #1750 succesfuldt på samme commit; #1750 er den friske kontrol efter seneste admin-geometriændringer.
+- Administratorens korrigerede Limfjord-kystlinjer og land-/havpunkter blev synkroniseret fra Supabase og anvendt før DMI/weather-opbygningen.
+- Den tilbagevendende U/V-fejl er dokumenteret som vertikallagsproblem i parserkandidaterne; parsergeneration 11 isolerer komponenter efter lag og kræver fælles lag ved parring.
+- Arbejdsreglen er skærpet: fejlretning skal være systemisk, og lokal grøn test må ikke kaldes stabil produktionsbaseline.
+- `sidste inden codex.odt` er importeret som CHAT-0014 med normaliseret kildetekst og hash.
+- Ny AI-dokumentationspakke under `docs/ai/` samler Codex-start, knowledge base, arkitekturkort, working rules og roadmap.
+- `05_NEXT_CHAT_HANDOFF.md`, Current Truth, Implementation Status, Active Requirements, Known Issues og håndbog opdateres til denne overgangssandhed.

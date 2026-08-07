@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "importedAt": "2026-08-07",
-  "sourceArchive": "chat.zip + seneste chats.zip",
+  "sourceArchive": "chat.zip + seneste chats.zip + sidste inden codex.odt",
   "orderingBasis": "Oprindelig rekonstruktion for CHAT-0001–0007; derefter dokumenterede samtaledatoer og projektforløbet for CHAT-0008–0013.",
   "items": [
     {
@@ -133,6 +133,17 @@
       "sha256": "d0e9a63c6204c2454e2ffa2280548762ffe1677081542d4102d8d24a14dbb5e8",
       "normalizedText": "docs/rdks/70_CHAT_IMPORT/source/CHAT-0013.txt",
       "status": "imported-classified"
+    },
+    {
+      "id": "CHAT-0014",
+      "sourceFile": "sidste inden codex.odt",
+      "chronologicalOrder": 14,
+      "period": "2026-08-07",
+      "summary": "4.0.117-stabilisering, DKSS/Limfjord, U/V-vertikallag, admin-geometri, produktionsverifikation og Codex-overgang",
+      "sha256": "2380c845f728b76f0c50df051059ff2bb6376dc9bfce82dd34e7b8effabce098",
+      "normalizedText": "docs/rdks/70_CHAT_IMPORT/source/CHAT-0014.txt",
+      "status": "imported-classified",
+      "originalSource": "docs/rdks/70_CHAT_IMPORT/source/CHAT-0014-original.odt"
     }
   ]
 }

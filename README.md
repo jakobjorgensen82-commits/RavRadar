@@ -35,3 +35,6 @@ node --check scripts/update-weather.mjs
 ## GitHub Pages
 
 Workflowen `.github/workflows/update-and-deploy.yml` validerer projektet, opdaterer vejrcachen og deployer direkte til Pages. Tilføj eventuelt `DMI_API_KEY` som repository secret.
+
+## Codex / AI-udvikling
+Codex og andre kodeassistenter skal starte i [`docs/ai/CODEX_START_HERE.md`](docs/ai/CODEX_START_HERE.md) og følge `AGENTS.md`/RDKS før kodeændringer. Historiske chats er kontekst; Current Truth og aktiv kode er den aktuelle sandhed.

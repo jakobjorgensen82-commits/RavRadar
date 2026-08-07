@@ -54,3 +54,12 @@ Fem sammenhængende produktionskørsler afslørede, at samme ugentlige GitHub-ca
 - 4.0.116 parrer strøm og vind på samme fysiske DMI-gitterpunkt, invaliderer gamle mismatch-par og reducerer unødige opslag på vandstandskilder.
 - Manglende vind/bølger forbliver `null`/`Mangler` i stedet for at kunne fremstå som 0,0; ægte nulværdier bevares.
 - `shadow-v2` er fortsat score-neutral.
+
+## 2026-08-07 – 4.0.117 stabilisering og Codex-overgang
+1. Schedulerens aktive-zone- og DMI-vindlogik blev korrigeret i 4.0.117.
+2. Fejlede produktioner afdækkede DKSS-geografisk recovery og derefter en dybere U/V-vertikallagsfejl; tidligere søge-radiusdiagnose blev markeret utilstrækkelig.
+3. Parsergeneration 11 isolerede current-U/V efter vertikallag og krævede fælles lag/gridpunkt.
+4. Administratoren konstaterede forkert geometri i tre Limfjordszoner og korrigerede kystlinje samt land-/havpunkter centralt.
+5. Efterfølgende #1749 og især frisk #1750 kørte succesfuldt på commit `6c1dece…`; #1750 bekræftede central geometri-propagation.
+6. Forecast-edge `missing` blev bevaret som separat aktivt dækningsissue.
+7. CHAT-0014 og en samlet AI/Codex-dokumentationspakke blev oprettet før videre udvikling.

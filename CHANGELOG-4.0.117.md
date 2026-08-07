@@ -46,3 +46,10 @@ Rettelsen:
 - 24-km-grænsen for Limfjorden og alle øvrige videnskabelige audits er uændrede.
 
 Den lokale komplette `npm run validate` består efter rettelsen. Endelig produktionsbekræftelse kræver fortsat en frisk GitHub/DMI-kørsel, fordi den konkrete fejl kun opstod under parsing af friske DKSS-GRIB-filer.
+
+## Produktionsverifikation og Codex-handoff – 7. august 2026
+Efter de fejlede mellemtrin gennemførte 4.0.117 på commit `6c1dece72d5970a1fc095b9a22f080d811cd9f36` efterfølgende succesfulde produktionskørsler. #1749 deployede samme commit, og #1750 gennemførte efter administratorens seneste rettelser af Limfjord-geometri. Den centrale sync viste de nye geometrier som ændrede, og weather-kæden gennemførte.
+
+Det afsluttende forløb ændrer den dokumenterede rodårsagsforståelse: den tidligere kandidatradius var ikke tilstrækkelig forklaring på de tilbagevendende udfald. Den væsentlige parserfejl var vertikallagsoverskrivning, samtidig med at nogle berørte zoners centrale geometri faktisk var forkert. Begge forhold er nu en del af RDKS/handbook lessons learned.
+
+Før Codex-overgangen er CHAT-0014 importeret, den gamle handoff opdateret, og en dedikeret `docs/ai/`-pakke er tilføjet. Dette dokumentationsarbejde ændrer ikke RavScore eller runtimeadfærd.

@@ -228,3 +228,19 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - Vandstandskilder (`SOURCE::`) er hjælpepunkter til DKSS-vandstand, ikke forecastzoner. De samples ikke for strøm, vind, bølger eller vandtemperatur og tæller ikke i forecastzonernes dækningsmål.
 - JavaScript må skelne `null`/manglende data fra tallet 0. Manglende vind eller bølger vises som `Mangler`; en ægte 0-værdi er stadig gyldig. Regler og scorevalg må ikke behandle manglende vind som vindstille.
 - Den observerede 5-dages visning med `0,0 m/s · N 0°` og `0,0 m` havde mindst én separat præsentations-/null-årsag. Den oppustede sampling af vandstandskilder kunne samtidig forsinke reelle DMI-vind/bølgeopdateringer. Produktionsverifikation skal skelne reelle datagab fra visningsfejl.
+
+## 4.0.117 – produktionssandhed ved Codex-overgangen
+- Aktuel kodebaseline er commit `6c1dece72d5970a1fc095b9a22f080d811cd9f36` på version 4.0.117.
+- GitHub Actions #1749 og #1750 gennemførte succesfuldt på denne commit; #1750 er den friske verifikation efter administratorens seneste zonegeometriændringer.
+- 4.0.117 må derfor beskrives som CI-/produktionsverificeret på dette tidspunkt. Tidligere fejlede push-/workflowkørsler på 4.0.117 er historik og må ikke forveksles med den senere verificerede tilstand.
+- Schedulerens nævner er aktive zoner, `wind` er kanonisk HARMONIE-familie, og DKSS recovery kan prioritere efter faktiske geografiske marine datagab.
+- DMI current-U/V kræver samme prognosetid og samme fysiske gitterpunkt. Når DKSS leverer flere vertikallag, isoleres kandidater pr. lag og U/V må kun danne en vektor inden for samme lag. Parsergeneration 11 sikrer genbehandling efter denne kontrakt.
+- Centralt gemt administratorgeometri er autoritativ runtimeinput. #1750 bekræftede, at de seneste korrigerede land-/havpunkter og kystlinjer blev hentet fra Supabase og anvendt før vejrproduktionen.
+- Tests må derfor ikke forsøge at genskabe historiske koordinater for at få en zone gennem DMI-kæden. Hvis administratorens aktuelle geometri er gyldig, er systemet forpligtet til at følge den.
+- Forecastets yderste horisont kan fortsat have `missing` strøm/vandstand i enkelte timer. Dette er et separat aktivt dækningsproblem. Det må ikke løses ved at gentage sidste værdi, gøre missing til 0 eller genindføre stale data.
+
+## Codex-overgang – autoritativ arbejdsmodel
+- Codex starter i `docs/ai/CODEX_START_HERE.md` og arbejder derefter efter AGENTS/RDKS.
+- RavRadar skal analyseres som et helt system: central konfiguration, dataindsamling, scheduler, cache, parser, provenance, score/state, public runtime, UI/admin, tests, artifact og deployment hænger sammen.
+- Stabilitetsudsagn skal matche evidensen: lokal validering, CI-validering og produktionsverifikation er tre forskellige niveauer.
+- Historiske chats bevares som beslutnings- og regressionskontekst; de er aldrig automatisk mere autoritative end aktiv RDKS og faktisk verificeret kode.

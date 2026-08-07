@@ -30,3 +30,12 @@ Stop og forklar konflikten før kodeændring, hvis et nyt ønske strider mod en 
 
 ## End-to-end konsekvensanalyse
 Før en RavRadar-ændring implementeres, skal hele runtime- og releasekæden analyseres: input, scheduler, tidsbudget, cache, datagenerering, score, tests, artifact, deploy og browser. En lokal rettelse må ikke frigives, før gamle antagelser og alternative fejlgrene er gennemgået.
+
+## Stabilitetsniveauer og frisk evidens – 4.0.117
+- Brug ordene lokalt valideret, CI-valideret og produktionsverificeret præcist.
+- En pipelineændring er ikke produktionsverificeret før en frisk kørsel med de berørte eksterne data/centrale konfigurationer er gennemført og kontrolleret.
+- Ved nye failures skal loggen fra den aktuelle run læses før en ældre supportpakke bruges som rodårsagsbevis.
+- Hvis administratoren har ændret geometri/routing/regler, skal den centrale sync og propagation kontrolleres før kode ændres.
+
+## Codex-start
+Codex skal begynde i `docs/ai/CODEX_START_HERE.md`. AI-dokumentationspakken kondenserer den aktuelle arbejdsviden, men RDKS og faktisk kode er fortsat autoritative.

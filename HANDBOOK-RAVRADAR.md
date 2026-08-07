@@ -1337,3 +1337,37 @@ En strøm- eller vindvektor består af to komponenter: øst/vest-komponenten U o
 Vandstandskilder, som bruges til stationsrouting, er hjælpepunkter. De har kun brug for DKSS-vandstand og må ikke bruge beregningstid på vind, bølger, strøm eller vandtemperatur. Dækningstal for forecastzoner tæller derfor kun de almindelige aktive zoner.
 
 Manglende data og fysisk nul er to forskellige ting. `null` betyder, at RavRadar ikke har en gyldig værdi. Det skal vises som **Mangler** og må ikke opfylde regler, blive til vindstille eller give en kunstig retning på 0°. Tallet `0` er derimod gyldigt, når datakilden faktisk leverer nul. Denne forskel gælder både vind, bølger og andre numeriske vejrfelter.
+
+## 61. 4.0.117 – systemisk drift, DMI-dybdelag og Codex-overgang
+
+### 61.1 Hvorfor én rød zone ikke nødvendigvis er én kodefejl
+RavRadar er en kæde. En zone kan ende uden strømdata, fordi dens centralt gemte geometri er forkert, fordi scheduleren ikke når den relevante DMI-model, fordi GRIB-parseren vælger komponenter forkert, fordi en cache er ufuldstændig, eller fordi data falder ud senere i provenance/public runtime. Derfor skal en fejl følges både baglæns til kilden og fremad til det synlige resultat. En test, der fejler, er først et symptom; rodårsagen er det sted, hvor den korrekte information faktisk bliver forkert eller forsvinder.
+
+### 61.2 DMI-current i flere vertikallag
+DMI's DKSS-data kan indeholde strøm-U og strøm-V i flere vertikale lag. Det er ikke nok, at U og V ligger ved samme bredde-/længdepunkt. De skal også høre til samme forecasttid og samme vertikallag. Hvis et U-felt fra ét dybdelag parres med V fra et andet, er den beregnede retning ikke en dokumenteret fysisk DMI-vektor.
+
+Fra 4.0.117 holder RavRadar derfor kandidater adskilt pr. vertikallag. U og V må først danne en vektor, når forecasttid, fysisk gitterpunkt og vertikallag er fælles. Valget mellem flere gyldige fælles lag skal være deterministisk og fremgå af proveniens/diagnostik. Parsergeneration 11 sikrer, at ældre GRIB-assets ikke fortsætter med den tidligere kandidatlogik.
+
+### 61.3 Administratorens geometri er produktionsdata
+Kystlinje, landpunkt, havpunkt, retning og andre administratorredigerbare zonefelter er ikke kosmetiske indstillinger. De påvirker blandt andet hvilket havområde RavRadar leder efter data i, lokale retninger og hele den efterfølgende score-/prognosekæde. Når administratoren gemmer en korrekt ændring centralt, skal produktionsworkflowet hente den og anvende den før vejrproduktionen.
+
+I den afsluttende 4.0.117-kontrol blev tre Limfjordszoners kystlinjer og land-/havpunkter rettet i admin, fordi de var geografisk forkerte. Den friske produktionskørsel #1750 viste ændringerne som centralt anvendte og gennemførte weather-kæden. Det er derfor forkert at reparere en fremtidig test ved at hardcode tidligere koordinater. Testen skal kontrollere, at den aktuelle gyldige admingeometri propagere korrekt.
+
+### 61.4 Hvad “stabil” betyder
+RavRadar skelner mellem tre niveauer:
+- **Lokalt valideret:** de relevante tests på udviklingsmaskinen er grønne.
+- **CI-valideret:** den relevante GitHub Actions-kørsel er grøn.
+- **Produktionsverificeret:** den friske eksterne data-/admin-/pipelinekæde og det deployede resultat er kontrolleret.
+
+En DMI- eller Supabase-relateret ændring må ikke kaldes stabil alene på grund af lokale tests. 4.0.117-overgangen bruger commit `6c1dece72d5970a1fc095b9a22f080d811cd9f36` med de efterfølgende grønne #1749 og #1750-kørsler som dokumenteret baseline; #1750 er særligt vigtig, fordi den lå efter de centrale geometriændringer.
+
+### 61.5 Forecastets yderste kant
+Hvis en strøm-, vandstands-, vind- eller bølgeserie mangler i forecastets yderste timer, er værdien ukendt. RavRadar må ikke forlænge sidste kendte værdi kunstigt eller gøre den til 0. Et sådant hul skal undersøges som et dækningsproblem i kilden, schedulerens tidsbudget, merge-/filterkæden eller forecast-horisonten. Det må ikke blandes sammen med den tidligere Limfjord-fejl, hvor en zone slet ikke fik et gyldigt marinegrundlag.
+
+### 61.6 Codex og projektets hukommelse
+Den videre kodeudvikling kan foregå direkte i et lokalt Git-repository med Codex. Codex får ikke automatisk tidligere samtalers hukommelse, så RavRadar gemmer den aktuelle projektsandhed i RDKS, denne håndbog, `AGENTS.md`, AI-dokumentationspakken under `docs/ai/`, tests og Git-historik. Chatarkivet bruges til historisk begrundelse.
+
+Codex skal begynde med `docs/ai/CODEX_START_HERE.md` og derefter følge RDKS-læserækkefølgen. En væsentlig ændring er ikke færdig, før koden, tests, RDKS, håndbog og relevante issues/roadmap fortæller den samme historie.
+
+### 61.7 Arbejd som på et helt bræt
+Ved komplekse fejl skal udvikleren holde hele kæden i overblik: input og administratoropsætning, scheduler og tidsbudget, cache, DMI-collection og GRIB, grid-/lagparring, interpolation/routing, provenance, historisk state, RavScore, public runtime, UI/admin, regressionstests, artifact, deploy og browsercache. Det er denne systemiske arbejdsform, der skal forhindre en ny række symptomrettelser, hvor hvert træk kun flytter fejlen til næste led.

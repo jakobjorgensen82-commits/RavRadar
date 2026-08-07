@@ -2,7 +2,7 @@
   "schemaVersion": "2.0",
   "handbookVersion": "4.0.117",
   "title": "RavRadar Håndbog",
-  "updatedAt": "2026-08-07T09:36:00.481175Z",
+  "updatedAt": "2026-08-07T19:30:00+02:00",
   "sections": [
     {
       "id": "formaal",
@@ -383,6 +383,12 @@
       "chapter": "Data og prognoser",
       "title": "DMI-vektorer og manglende vejrfelter",
       "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Strøm og vind må kun dannes af U/V-komponenter fra samme fysiske DMI-gitterpunkt. Manglende vind eller bølger vises som <strong>Mangler</strong> og må ikke blive til 0,0.</div><h3>Samme punkt for begge komponenter</h3><p>En strøm- eller vindvektor består af U og V. RavRadar søger efter det nærmeste fysiske DMI-gitterpunkt, hvor begge komponenter er gyldige. Hvis der ikke findes et fælles punkt inden for den tilladte afstand, bruges ingen konstrueret vektor.</p><h3>Vandstandskilder er ikke forecastzoner</h3><p><code>SOURCE::</code>-punkter bruges kun til DKSS-vandstand. De samples ikke for strøm, vind, bølger eller vandtemperatur og tæller ikke i forecastzonernes komponentdækning.</p><h3>Mangler er ikke nul</h3><p><code>null</code>, tomme og ikke-numeriske værdier betyder manglende data. De må ikke blive til vindstille, fladt hav eller retning 0°. En eksplicit numerisk 0-værdi fra datakilden er derimod gyldig og bevares.</p>"
+    },
+    {
+      "id": "systemic-4-0-117-codex",
+      "chapter": "61",
+      "title": "4.0.117 – systemisk drift, DMI-dybdelag og Codex-overgang",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> 4.0.117 viser, hvordan RavRadar skal fejlrettes som et samlet system, hvordan DMI-dybdelag håndteres, og hvordan Codex skal arve projektets viden.</div><h3>Hvorfor hele kæden skal undersøges</h3><p>En rød zone eller en fejlet test er et symptom, indtil det er bevist hvor den korrekte information bliver forkert eller forsvinder. RavRadar skal derfor følges fra central adminopsætning og DMI-kilde gennem scheduler, cache, parser, provenance, score og public runtime helt til test og deployment.</p><h3>DMI-current i flere vertikallag</h3><p>DKSS kan levere strøm-U og strøm-V i flere dybdelag. En gyldig RavRadar-vektor kræver samme forecasttid, samme fysiske gitterpunkt og samme vertikallag. Fra 4.0.117 holdes kandidater adskilt pr. lag, og parsergeneration 11 genbehandler assets med denne kontrakt.</p><h3>Administratorens geometri er produktionsdata</h3><p>Kystlinje, land-/havpunkt og retning kan ændre DMI-opslag og lokal kystretning. Når administratoren gemmer en gyldig central ændring, skal den bruges før vejrproduktionen. I den friske #1750-kørsel blev de seneste Limfjord-geometriændringer hentet og anvendt korrekt. Tests skal beskytte propagation og integritet, ikke gamle koordinater.</p><h3>Stabilitet</h3><p>Lokalt valideret, CI-valideret og produktionsverificeret er forskellige niveauer. En DMI-/Supabaseændring kaldes ikke stabil på baggrund af lokale tests alene. 4.0.117 commit 6c1dece… med grønne #1749 og #1750 er dokumenteret overgangsbaseline.</p><h3>Forecastkant og manglende data</h3><p>Manglende værdier i yderste forecasttimer er ukendte. De må ikke forlænges med sidste værdi eller gøres til nul. Dækningshuller undersøges separat i kilde, scheduler, merge og horisont.</p><h3>Codex</h3><p>Codex starter i docs/ai/CODEX_START_HERE.md. RDKS, håndbogen, AGENTS, tests og Git-historik er den persistente projekthukommelse; chatarkivet er historisk begrundelse. En ændring er først færdig, når implementering og dokumentation er synkroniseret.</p>"
     }
   ]
 }

@@ -1,105 +1,49 @@
-# Næste chat – obligatorisk projektindlæsning
+# RavRadar – aktuel overlevering til Codex
 
-Denne fil er den praktiske overlevering mellem chats. Den skal læses umiddelbart efter `00_READ_FIRST.md` og før der foreslås eller ændres kode.
+**Opdateret:** 2026-08-07
+**Aktuel appversion:** 4.0.117
+**Verificeret kodebaseline:** `6c1dece72d5970a1fc095b9a22f080d811cd9f36` (`RavRadar 4.0.117 stab`)
+**Produktion:** GitHub Actions #1749 og #1750 gennemført med succes på samme commit; #1750 er den friske kontrol efter de seneste centrale zonegeometriændringer.
 
-## Første handlinger i en ny chat
-1. Udpak den seneste projekt-ZIP. Brug ikke tidligere arbejdsmapper som sandhed.
-2. Læs i rækkefølge:
-   - `AGENTS.md`
-   - `docs/rdks/00_READ_FIRST.md`
-   - `docs/rdks/05_NEXT_CHAT_HANDOFF.md`
-   - `docs/rdks/90_INDEX/CURRENT_TRUTH.md`
-   - `docs/rdks/90_INDEX/IMPLEMENTATION_STATUS.md`
-   - `docs/rdks/20_REQUIREMENTS/ACTIVE-REQUIREMENTS.md`
-   - `docs/rdks/40_KNOWN_ISSUES/KNOWN-ISSUES.md`
-   - seneste changelog
-   - relevante håndbogskapitler og aktuel kode
-3. Bekræft den faktiske version i `package.json`, `version.json`, browserimports og service worker.
-4. Kør eller gennemgå de relevante tests, før der drages konklusioner.
-5. Skeln mellem: implementeret lokalt, verificeret af CI, og verificeret i produktion.
+## Start ikke med at kode
+Læs først `docs/ai/CODEX_START_HERE.md`, `AGENTS.md`, Current Truth, Implementation Status, Active Requirements, Known Issues og de relevante beslutninger. Denne fil er et øjebliksbillede, ikke en erstatning for RDKS.
 
-## Aktuel arbejdsbaseline
-- Produktionsbaseline er 4.0.114. 4.0.115 blev stoppet af den strenge DMI-strømaudit; næste lokale recovery-release er 4.0.116.
-- Den historiske tilstandsmodel er i **score-neutral `shadow-v2`**. Kun verificerede marine DMI-prøver tæller, og den må endnu ikke ændre RavScore.
-- Offentlig opstart blev produktionsmålt til 3,663 sekunder i 4.0.114; den tidligere baseline omkring 3,45 sekunder overvåges fortsat. Performance må ikke forringes væsentligt.
-- Vandstationsadminens røde markører, administratoroverride og `Fjern` er produktionsbekræftet efter localStorage-rettelsen i 4.0.106.
-- Sitetesten har én kendt falsk negativ: knappen til samlet sitetest kan kontrolleres før dashboardet er endeligt renderet. Næste patch skal vente på dashboardets aktive DOM og kontrollere en reel klikbar knap.
-- GitHub/DMI-jobbet kan tage omkring 14 minutter og overlapper derfor et 10-minutters interval. Optimér først på grundlag af målinger; skjul ikke manglende marine data og sænk ikke auditkrav.
+## Det som er bevist ved overgangen
+- 4.0.117 ligger på `main` og er deployet efter grønne efterfølgende produktionskørsler.
+- Schedulerens dækning bruger aktive zoner, og `wind`-familien er konsistent.
+- DKSS recovery kan prioritere model efter konkrete geografiske marine datagab.
+- DMI current-U/V parres kun ved fælles fysisk gridpunkt; 4.0.117 isolerer desuden kandidater pr. vertikallag, så et dybt lag ikke kan overskrive et andet lag før U/V-parring. Parsergenerationen er 11.
+- Administratorens gemte zonegeometri er central runtime-sandhed. Tre Limfjordszoner blev korrigeret i admin; #1750 viste, at ændringerne blev synkroniseret og anvendt i den friske pipeline.
+- Den offentlige pipeline/deploykæde kan gennemføre succesfuldt på denne baseline.
 
-## Tilstandsmodel – besluttet retning
-RavRadar skal være en tidslig tilstandsmodel, ikke kun et øjebliksbillede. Den eksisterende scoremotor bevares og udvides lagvist.
+## Vigtig læring fra 4.0.117-forløbet
+Fejlen må ikke forstås som én enkelt scheduler- eller radiusfejl. Forløbet viste flere lag: schedulerprioritet, kandidatlogik, vertikallagsparring og faktisk forkert zonegeometri. Fremover skal hele kæden undersøges, før rodårsagen erklæres. Lokal grøn validering må ikke omtales som stabil produktionsbaseline uden frisk CI/produktionsbevis.
 
-Aktive næste mekanismer:
-1. Automatisk referencezonerapport i skyggetilstand.
-2. Faglig validering af akkumuleret ind-/udtransport uden nye manuelle billedserier.
-3. Første scoreændring: et glidende transportbidrag, der vokser med dokumenteret varighed, styrke og stabilitet af indadgående strøm. Der må ikke bruges en universel 3–5-timers kontakt.
-4. Senere: gradvis efterstormopbygning over omtrent 10 timer og vedvarende nærkystpotentiale, der kun nedbrydes ved dokumenteret udtransport/tid.
-5. Én mekanisme pr. release efter skyggevalidering og regressionstest.
+## Åbne opgaver med høj prioritet
+1. Undersøg yderste del af femdøgns-horisonten, hvor enkelte strøm-/vandstandstimer kan blive `missing`. Hold dette adskilt fra fysisk nul og fra den løste totale marine mangel.
+2. Fortsæt audit af de kendte manglende vind-/bølgefelter i 5-døgnsvisningen efter null-sikkerheden og schedulerrettelserne.
+3. Vandstandskilder: forecast/cache-brugbarhed skal fortsætte, mens cache er gyldig, selv hvis observationer midlertidigt udebliver; statusvisning og auto/override skal gøres fuldt gennemskuelig.
+4. Reparer **Kontroller nu** under Supabase-lagringskontrollen og gennemfør direkte ekspert-review persistens-E2E.
+5. Reviewkøens automatiske testposter skal kunne slettes eller soft-arkiveres sikkert.
+6. Håndbogen skal senere gennemgås sprogligt/pædagogisk, især ekspertens valideringsmatrix.
+7. Bevar public performance omkring den historiske 2–3,5 s baseline; tunge stateberegninger skal forblive i pipeline.
 
-## Bindende faglige og tekniske afgrænsninger
-- DMI's faktiske marine u/v-data er autoritative. Generelle strømbånd må ikke bruges i score eller fallback.
-- Eksisterende dokumenteret morfologi (fx rev, ålegræs og lavt vand) bevares i scoren. Manglende morfologi er neutralt; ejeren skal ikke manuelt kortlægge hele Danmark.
-- Als Odde og Helberskov er en åben kystzone nord for Mariager Fjord, ikke en fjordzone.
-- Zonegeometri kan være administratoroverstyret. Referenceanalyse skal bruge aktiv produktionsgeometri, ikke antage at statiske grundfelter altid er de gældende.
-- Brugerfund skal kræve valgt jagtzone. GPS er plausibilitetskontrol, fordi rapporten kan indsendes hjemmefra.
-- Rå historik og tunge beregninger skal blive i pipeline. Offentlig runtime får kun kompakte afledte felter.
-- Projektet må ingen steder nævne de to forbudte eksterne analysekilder. Kildeneutralitet gælder UI, kode, kommentarer, dokumentation, RDKS, håndbog, AI, tests og artefakter.
+## Ting der ikke må ændres som genvej
+- DMI er autoritativ datakilde.
+- Manglende data er ikke nul.
+- Ingen stale-data-genindførelse for at få grønne tests.
+- Ingen generelle regionale strømbånd som score/fallback.
+- Ingen hardcoding af adminredigerbare zonenavne, antal, koordinater eller retninger.
+- Adminændringer skal propagere gennem produktionskæden uden kodeændring pr. zone.
+- Den historiske state-model er score-neutral, indtil den er fagligt og produktionsmæssigt valideret.
 
-## Referencezoner
-De nuværende referencezoner er:
-- `DK-B01-01` Agger og Krik Vig – kompleks/åben vestkyst.
-- `DK-B02-07` Asaa og Melholt – nordjysk østkyst.
-- `DK-B02-13` Als Odde og Helberskov – åben kyst ved fjordmundingens nordside, ikke fjord.
-- `DK-B03-13` Blåvand og Hvidbjerg – højenergi og flere lokale kystretninger.
+## Dokumentationspakke til Codex
+- `docs/ai/CODEX_START_HERE.md`
+- `docs/ai/AI_KNOWLEDGE_BASE.md`
+- `docs/ai/AI_ARCHITECTURE_MAP.md`
+- `docs/ai/AI_WORKING_RULES.md`
+- `docs/ai/AI_ROADMAP.md`
+- `docs/rdks/70_CHAT_IMPORT/CHAT-0014.md` + normaliseret tekst fra den sidste pre-Codex-samtale
 
-Brug automatiske rapporter fremover. Bed kun om nye screenshots i yderste nødstilfælde, når kode, ZIP, sitetest, log og diagnostik ikke kan afgøre spørgsmålet.
-
-## Fast udviklingsmetode
-Tænk ændringen til ende før implementering. Følg hele kæden:
-input → scheduler/tidsbudget → cache → datagenerering → proveniens → state/score → offentlig runtime → UI/admin → tests → artifact → deploy → browser.
-
-Søg efter gamle tests og antagelser, som ændringen gør forældede. Simulér både frisk opdatering, cachegenbrug og fejlgrene. En ZIP må kun leveres efter fuld validering på det præcise pakkede indhold.
-
-## 4.0.113 – næste produktionskontrol
-- Fem komplette kørsler 6. august 2026 viste 12–15 minutters varighed og gentagen `marine-warmup-pending`.
-- Rodårsagen var GitHubs uforanderlige cache: samme ugentlige primærnøgle blev ramt hver gang, hvorefter cache-action undlod at gemme den nye GRIB-fremdrift.
-- 4.0.113 bruger unik save-nøgle pr. kørsel og gendanner seneste kompatible cache.
-- Næste analyse skal kontrollere, at cachefremdrift faktisk bæres mellem kørsler, at warmup ophører, og at jobtiden falder eller stabiliseres.
-- Det eksterne cron-job blev 6. august 2026 ændret fra 10 til 15 minutter efter de observerede lange kørsler. Projektets diagnostik skal afspejle 15 minutter; yderligere ændring kræver nye målinger.
-- Workflowloggen skriver nu `RAVRADAR_STATE_REFERENCE` med datasæt og de fire zoners kompakte skyggefelter. Sammenlign mindst tre friske produktionstimer.
-
-## 4.0.114 – produktionskontrol
-- Workflowet er opdelt i `build-and-prepare` og `deploy-pages`.
-- Kontrollér at kun deployjobbet viser environment `github-pages`.
-- Hvis deployjobbet fejler, brug `Re-run failed jobs`; build/DMI-jobbet må ikke køre igen.
-- Kontrollér at der kun findes ét `github-pages`-artifact i runnet.
-- Efter grøn deploy køres sitetest. Først derefter fortsættes den historiske tilstandsplan.
-
-
-## 4.0.115 – næste produktionskontrol
-- Bekræft at referencezoneloggen viser `shadow-v2`.
-- Sammenlign akkumuleret ind-/udtransport med `activeCurrentRegime*` over mindst tre friske produktionstimer.
-- Ikke-verificerede prøver skal øge `unverifiedCurrentSampleCount`, men må ikke øge transportvarighed eller momentum.
-- RavScore skal være uændret mod 4.0.114 for samme data.
-
-
-## 4.0.116 – lokal recovery efter 4.0.115-auditstop
-- 4.0.115 blev ikke publiceret: den strenge audit fandt DMI `current-u` og `current-v` fra forskellige fysiske gitterpunkter samt enkelte zoner uden komplet bulkgrundlag.
-- 4.0.116 må kun danne strøm- og vindvektorer, når begge komponenter findes på samme fysiske DMI-gitterpunkt. Ingen fælles kandidat betyder manglende/ikke-verificeret vektor.
-- Gamle cachede U/V-par, som ikke kan bevises at dele gitterpunkt, invalideres i stedet for at blive genbrugt.
-- `SOURCE::`-vandstandspunkter må kun samples for DKSS-vandstand. De må ikke tælle som forecastzoner i strøm-, vind- eller bølgedækning og må ikke holde scheduleren kunstigt i marine recovery.
-- Manglende vind/bølger må ikke konverteres til fysisk nul i JavaScript eller vises som `0,0`; ægte numerisk nul er fortsat gyldig data.
-- Zoneprognosens tidligere 0,0-vind/0,0-bølger skal efter deploy verificeres: `Mangler` ved reelt datagab, reel talværdi når data findes.
-- `shadow-v2` er fortsat score-neutral. Ingen transport-score aktiveres i denne release.
-- Efter stabil produktion af recovery-releasen opbygges den planlagte AI Knowledge Base, AI Roadmap og AI Working Rules før større ny funktionalitet flyttes til Codex.
-
-## 4.0.117 schedulerfix
-Efter produktion #1717: U/V-grid mismatch er væk. DMI-vind var fortsat uden 24/96-timers dækning. 4.0.117 ændrer schedulerens dækningsnævner til det aktuelle aktive zoneregister og retter family-key fra `atmosphere` til `wind`. Marine-first/audits er bevaret. Produktion skal verificere schedulerorden og vinddækning.
-
-## 4.0.117 hotfix – konkret CI-recovery
-- #1728 fejlede i `test:current-spatial-audit`, fordi tre aktive Limfjordszoner manglede i DMI-bulkcache.
-- Årsagen var ikke U/V-gridfejlen: 4.0.116-rettelsen bestod. 4.0.117 schedulerede to andre DKSS-collections før `dkss_lf` og nåede derfor aldrig den model, de manglende Limfjordszoner behøvede.
-- Hotfixen prioriterer marine collections efter de aktive manglende zoners kysttype/modelbehov. Mod #1728-state bliver rækkefølgen `dkss_lf`, `dkss_nsbs`, `dkss_idw`.
-- Seks nyere chats er importeret som CHAT-0008–CHAT-0013 under `docs/rdks/70_CHAT_IMPORT/`.
-
-- #1738 bekræftede schedulerordenen, men fejlede stadig på de samme tre Limfjordszoner. DMI-diagnostikken viste `NO_SHARED_UV_GRID_POINT`; den faktiske kandidatsøgning nåede ikke hele den allerede tilladte 24-km radius. Limfjordssøgningen er derfor udvidet uden at hæve afstandsgrænsen eller tillade U/V fra forskellige gitterpunkter. Afventer produktion.
+## Før næste release
+Codex skal vise diff, køre relevante målrettede tests og den fulde releasevalidering, opdatere RDKS/håndbog/changelog og derefter bruge GitHub Actions/produktion som ekstern verifikation. Hvis en ændring rører DMI, Supabase eller genereret runtime, er lokal test alene ikke nok.

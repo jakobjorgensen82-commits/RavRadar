@@ -1,0 +1,33 @@
+# AI Lessons Learned – RavRadar
+
+Dette dokument samler tværgående læring, som skal påvirke fremtidige tekniske beslutninger. Historiske detaljer findes i RDKS/chatarkivet; her står de generelle arbejdsregler.
+
+## 1. En grøn lokal test kan være falsk tryghed
+I 4.0.117-forløbet bestod lokale tests, mens friske GitHub/DMI-kørsler stadig fandt fejl. Eksterne data, central Supabase-konfiguration, schedulerbudget og produktionscache kan ikke altid reproduceres fuldt lokalt. Brug derfor lokal validering som nødvendig, men ikke tilstrækkelig evidens.
+
+## 2. Find første sted sandheden bliver forkert
+Når public data mangler, start ikke ved UI-testen. Spor værdien baglæns gennem public conditions, central weather cache, provenance, bulk/GRIB og autoritativ geometri. Spor samtidig fremad fra kilden for at se hvor den falder ud. Rodårsagen er det første led, hvor korrekt input bliver forkert eller tabes.
+
+## 3. Vektorer har identitet – ikke kun to tal
+U/V kan kun kombineres, hvis deres metadata beskriver samme fysiske observation/prognose. Samme gridpunkt er ikke nok, når DMI leverer flere vertikallag. Forecasttid, gridpunkt og lag skal være fælles, og cachekeys skal bevare denne identitet.
+
+## 4. Admin-data kan være årsag – og skal respekteres
+Tre Limfjordszoner viste, at forkert central geometri kan ligne en DMI/parserfejl. Administratoren rettede geometri, og den friske pipeline anvendte ændringerne. Derfor skal central konfiguration verificeres tidligt i fejlsøgning. Systemet må ikke "reparere" en korrekt adminændring tilbage til gamle fixtures.
+
+## 5. Schedulerfejl ses ofte som datamangler senere
+Når en tung DMI-family ikke bliver kørt, kan downstream kun rapportere manglende data. Schedulerens beslutningsgrundlag skal derfor logges og bruge aktive zoner og reelle datagab. Historisk cache må ikke definere den nuværende zonepopulation.
+
+## 6. Tests skal beskytte kontrakter, ikke gamle implementeringsdetaljer
+En gammel regressionstest kan være forkert efter en legitim arkitekturændring. Før en test ændres, skal det bevises, at dens gamle forventning ikke længere er selve kravet. Administratorredigerbare koordinater, zonetal og navne må ikke være faste releasekrav.
+
+## 7. Missing er en tilstand
+`missing`, `null` og fraværende provenance betyder ukendt. Det er ikke fysisk nul og må ikke få scoremæssig betydning som nulvind, nulstrøm eller nulbølge. Forecastkantens manglende timer skal forblive synlige, indtil datakæden kan levere dem korrekt.
+
+## 8. Bevar en hurtig offentlig klient
+Tidligere performanceproblemer viste, at gentagen parsing/normalisering og tung historik i browseren kan mangedoble startup-tiden. Cache normaliserede modeller, beregn historik/state i pipeline og hold public payload kompakt.
+
+## 9. Dokumentation er en del af releaseintegriteten
+En gammel handoff kan sende en ny AI tilbage til en forældet baseline. Current Truth, Implementation Status, Known Issues, handbook og AI-dokumenter skal derfor ændres sammen med koden. Validatoren skal kontrollere, at den persistente AI-hukommelse faktisk findes.
+
+## 10. Bevar historien uden at gøre den aktiv
+Chatarkiv og gamle changelogs er værdifulde til regressioner og begrundelser. De må ikke bruges som implicit krav. Nyere aktiv RDKS og verificeret kode/produktion vinder.

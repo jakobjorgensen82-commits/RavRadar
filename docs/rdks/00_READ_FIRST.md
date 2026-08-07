@@ -3,6 +3,7 @@
 RDKS er RavRadars versionsstyrede beslutnings- og videnssystem. Det bevarer historikken uden at gøre forældede idéer gældende igen.
 
 ## Læserækkefølge
+0. Ved AI/Codex-arbejde: `../../ai/CODEX_START_HERE.md`
 1. `90_INDEX/CURRENT_TRUTH.md`
 2. `90_INDEX/IMPLEMENTATION_STATUS.md`
 3. `20_REQUIREMENTS/ACTIVE-REQUIREMENTS.md`

@@ -12,6 +12,13 @@ const required = [
   'docs/rdks/40_KNOWN_ISSUES/KNOWN-ISSUES.md',
   'docs/rdks/70_CHAT_IMPORT/IMPORT-MANIFEST.json',
   'HANDBOOK-RAVRADAR.md',
+  'docs/ai/CODEX_START_HERE.md',
+  'docs/ai/AI_KNOWLEDGE_BASE.md',
+  'docs/ai/AI_ARCHITECTURE_MAP.md',
+  'docs/ai/AI_WORKING_RULES.md',
+  'docs/ai/AI_ROADMAP.md',
+  'docs/ai/AI_LESSONS_LEARNED.md',
+  'docs/ai/CODEX_HANDOFF_CHECKLIST.md',
   'docs/handbook/content.json'
 ];
 for (const file of required) {

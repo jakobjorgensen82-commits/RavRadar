@@ -1,0 +1,159 @@
+i dag 16.23
+RavRadar(20260807-142328).zip
+Zip-arkiv
+seneste chats.zip
+Zip-arkiv
+FORTSÆTTELSE AF RAVRADAR – LÆS DETTE FØR DU GØR NOGET
+Vi fortsætter direkte fra den foregående RavRadar-chat. Brug projektets eksisterende viden/RDKS og tidligere beslutninger som grundlag. Start ikke forfra og genåbn ikke allerede afklarede diskussioner.
+Aktuel situation
+Vi var midt i en konkret fejlrettelse, og den foregående chat blev stoppet, fordi arbejdet blev alt for langsomt. Der blev brugt næsten 15 minutter på at komme frem til noget, som skulle have været en direkte rettelse.
+Første opgave i denne chat er derfor at fortsætte den konkrete rettelse med det samme.
+Brug GitHub-forbindelsen direkte til at undersøge det aktuelle RavRadar-repository, den relevante GitHub Actions-kørsel og fejlen. Den foregående chat var allerede begyndt at hente oplysninger om workflow run/job/logs, så vi skal ikke tilbage til generelle forklaringer.
+Arbejdsformen er vigtig
+RavRadar skal fortsat behandles efter den etablerede proces:
+Find den konkrete fejl og runtime-kæden.
+Sammenlign om nødvendigt med den seneste version, hvor funktionen virkede.
+Ret årsagen, ikke symptomet.
+Undgå uvedkommende ændringer.
+Kontrollér bagefter hele den berørte kæde og relevante regressionstests.
+RDKS/håndbog/tests skal afspejle den faktiske implementering.
+Men processen må ikke blive en undskyldning for at bruge lang tid på at fortælle mig, hvad du vil gøre. Brug værktøjerne og arbejd.
+Vigtigt om GitHub
+ChatGPT har adgang til RavRadar via GitHub-plugin/connectoren. Brug den.
+Hvis den seneste GitHub Actions-kørsel er fejlet:
+hent run,
+hent jobs,
+hent det fejlede jobs steps/log,
+identificér den præcise fejl,
+find den berørte kode,
+og gennemfør den nødvendige rettelse, hvis de tilgængelige GitHub-værktøjer tillader skrivning.
+Hvis connectoren ikke giver mulighed for den nødvendige kodeændring, skal du sige præcist hvad der mangler, i stedet for at bruge lang tid på analyser uden at kunne udføre ændringen.
+Projektets faste tekniske principper
+Seneste autoritative projektversion skal respekteres.
+DMI er den autoritative datakilde.
+Vi må ikke løse problemer ved at genindføre gamle/stale data.
+Forecast-serier for strøm, vandstand, temperatur, bølger og vind skal behandles korrekt og separat.
+UTC/tidsstempler, interpolation, routing og datakvalitet må ikke kompromitteres for at få tests til at blive grønne.
+Tests skal kontrollere systemets integritet og må ikke hardcode administrator-redigerbare zonenavne, antal zoner, koordinater, retninger osv.
+Adminændringer i zoner, kystgeometri, land-/havpunkter, retninger, stationer mv. skal kunne propagere gennem produktionskæden uden efterfølgende kodeændringer.
+Performance er vigtig: den offentlige side har tidligere været omkring 2–3,5 sekunder og må ikke igen ende omkring 13 sekunder på grund af unødigt arbejde ved klientens opstart.
+Kendte aktive krav, som IKKE må glemmes
+Blandt de allerede registrerede RavRadar-krav er:
+DMI-vandstandsstationer skal fortsat kunne være prognosebrugbare, så længe deres cachede prognose er gyldig, selv hvis nye observationer midlertidigt udebliver.
+Stationsstatus skal skelne mellem observationsstatus og prognose/cache-status.
+Admin skal vise auto-valgte primær/sekundær station, afstand, vægtning og metode samt tydeligt skelne auto-valg fra override.
+Opdagede DMI-stationer skal bevares i registry og vises med status frem for at forsvinde, fordi de midlertidigt ikke bruges.
+“Kontroller nu” under Supabase-lagringskontrollen virker ikke og skal repareres.
+Ekspertens håndbogsreview/persistens skal testes direkte mod Supabase med skrivning, readback, reload og ejerens visning.
+Reviewkøen skal kunne rydde op i automatiske systemtestposter via delete eller sikker soft-delete/arkivering.
+Hele håndbogen skal senere gennemarbejdes sprogligt/pædagogisk, inklusive ekspertens valideringsmatrix.
+“Als Odde og Helberskov” skal ligge nord for Mariager Fjord op mod Øster Hurup, ikke syd for fjorden.
+Eksisterende morfologidata skal fortsat bruges i RavScore, hvor data allerede er pålidelige.
+Generelle “strømbånd” må ikke bruges som score/fallback; faktisk DMI-strøm skal bruges.
+Historiske/state-beregninger skal så vidt muligt ske i pipeline, så public-klienten får kompakte præberegnede data.
+Branding
+Der er et absolut projektkrav om, at RavRadar ikke må indeholde eller generere omtale af de to tidligere forbudte eksterne ravsites i UI, kode, kommentarer, dokumentation, RDKS, håndbog, tests, debug eller AI-output. Ekstern fagviden skal kun eksistere som RavRadars egne neutrale regler.
+Hvad du skal gøre NU
+Fortsæt først den fejlrettelse, som den foregående chat var i gang med.
+Brug projektkonteksten og GitHub direkte. Undgå et langt indledende recap til mig. Jeg vil hellere have korte statusmeldinger undervejs såsom:
+“Jeg har fundet fejlen: X. Den skyldes Y. Jeg retter nu Z.”
+Derefter udfører du arbejdet.
+Vigtigt: Lad være med at bruge 10–15 minutter på at skrive en analyse til mig, før du handler. Prioriteten er at få RavRadar rettet korrekt og derefter validere rettelsen. Jeg har vedhæftet zip med vores seneste chats. dem skal du ligge i det arkiv som vi lavede til vores chats i projektet. De er din hukommelse ift hvad vi har talt om, sammen med rdks og håndbogen. De ligger under DOCS/rdks/70_chat_import . Jeg vedhæfter også projketet som zip
+læs
+Tænkte i 48s
+Jeg har læst materialet og er med på præcis, hvor vi slap.
+Jeg har også åbnet den seneste projekt-ZIP og den seneste chat fra chat-arkivet. Projekt-ZIP’en er allerede på RavRadar 4.0.117, og jeg kan se den konkrete kæde fra 4.0.115 → 4.0.116 → 4.0.117.
+Det centrale er: 4.0.116 rettede U/V-gridfejlen, og 4.0.117 gik videre med den efterfølgende fejl omkring DMI-vind/5-døgnsdækning og schedulerens aktive zoner. Så jeg starter ikke forfra med U/V-problemet.
+Jeg kan også se docs/rdks/70_CHAT_IMPORT/ og det eksisterende importmanifest. De seks nye chatfiler skal ind dér efter samme arkivprincip.
+En vigtig detalje: Projekt-ZIP'en indeholder en rigtig Git-repository-kopi med origin/main, og HEAD er commit ef1b3d5 – RavRadar 4.0.117. GitHub Actions-connectoren er tilgængelig, men det tidligere omtalte #1728 er ikke GitHub-run-ID'et — et direkte opslag som run-ID giver 404. Derfor skal jeg finde den faktiske seneste fejlede Actions-kørsel/ID via repository-data i stedet for at gætte.
+Jeg fortsætter herfra med den konkrete fejlrettelse.
+gør det og lav rettelsen
+Tænkte i 18m 11s
+RavRadar-support-1728.zip
+Zip-arkiv
+Jeg har fundet og lavet selve rettelsen lokalt.
+Rodårsagen: GitHub-kørsel #1728 fejlede i den strenge strømaudit. Tre aktive Limfjordszoner manglede bulkdata, fordi schedulerens to tilladte produktive DMI-kørsler gik til dkss_nsbs og dkss_idw. Den relevante Limfjordsmodel dkss_lf stod som nr. 3 og blev derfor aldrig kørt.
+Rettelsen: Schedulerens DKSS-rækkefølge styres nu af de faktiske aktive zoner, der mangler marinegrundlag, og deres geografiske modelbehov. På præcis dataene fra den fejlede #1728-kørsel ændres rækkefølgen til:
+dkss_lf → dkss_nsbs → dkss_idw
+Det betyder, at Limfjordsdata ikke længere kan blive udsultet af de andre DKSS-modeller. U/V-integriteten, DMI-only-strøm og de strenge audits er ikke lempet.
+Jeg har desuden:
+lavet regressionstest af selve scheduler-adfærden
+testet rettelsen mod den faktiske #1728-cache
+kørt RDKS-validering
+kørt versionsintegritet
+kørt projektets kildeneutralitetskontrol
+startet hele npm run validate; den nåede langt forbi den tidligere fejlede current-spatial-audit, som nu bestod, før mit lokale eksekveringsmiljø stoppede kørslen på tidsgrænsen
+importeret dine seks nye chats som CHAT-0008–CHAT-0013 i docs/rdks/70_CHAT_IMPORT
+ændret chatvalidatoren, så den ikke længere er hardcoded til præcis syv chats.
+Det eneste, jeg ikke kan gøre
+Jeg forsøgte at skrive rettelsen direkte til main via GitHub-forbindelsen. GitHub svarer:
+403 – Resource not accessible by integration
+Jeg prøvede både Git tree/commit-metoden og direkte filopdatering. Begge skriveveje er blokeret. Læseadgangen til repository og Actions virker fint; GitHub-forbindelsen mangler skriveadgang til repository-indhold.
+Så koden er rettet og valideret, men jeg kan ikke lægge committen på GitHub, før connectoren får Contents/write-adgang.
+Tænkte i 7m 34s
+RavRadar-support-1738.zip
+Zip-arkiv
+Ja — jeg har fundet den nye fejl og rettet den.
+#1738 viste faktisk, at den første schedulerrettelse virkede: dkss_lf blev nu kørt korrekt. Fejlen var næste led: Limfjordens DMI-søgning kunne tillade et havpunkt op til 24 km væk, men selve søgningen stoppede langt tidligere og undersøgte kun 16 kandidater. Derfor fandt DK-B05-10, DK-B05-13 og DK-B05-20 stadig ikke et fælles gyldigt U/V-punkt.
+Det er nu rettet uden at lempe datakravene: Limfjorden undersøger op til 48 kandidater og søger bredere, men 24-km-grænsen er uændret, og U/V skal fortsat komme fra præcis samme fysiske DMI-gitterpunkt.
+Regressionskæden er grøn, RDKS er opdateret, og ZIP’en er kontrolleret for fejl.
+Download RavRadar-4.0.117-hotfix-1738.zip
+Læg den ind på samme måde som sidst. Når Actions har kørt, kan jeg selv hente resultatet og kontrollere, om #1738-fejlen reelt er væk.
+Tænkte i 11m 46s
+RavRadar-support-1740.zip
+Zip-arkiv
+Jeg er ikke tilfreds med at give dig endnu en ZIP på et gæt. Den seneste fejlede kørsel viser, at vi stadig mangler den konkrete fejllinje fra selve GitHub-jobbet; supportpakken indeholder en ældre audit, som faktisk var passed-with-warnings, så den kan ikke bruges som bevis for, hvad der væltede #1740.
+Derfor stopper jeg her i stedet for at lave hotfix nr. 3 på et forkert grundlag. Det vi allerede har fastslået, er vigtigt: scheduler-rettelsen virker, DMI dkss_lf bliver kørt, 24-km-grænsen og kravet om fælles U/V-punkt skal bevares, og den næste version skal være en stabil Codex-baseline, ikke endnu et enkeltstående plaster.
+Når vi fortsætter, skal baseline-versionen have tre ting samlet: frisk validering fra samme pipelinekørsel, tydelig adskillelse mellem reelle kode/dataintegritetsfejl og midlertidige leverandørfejl, samt en Codex-handoff med de faste RavRadar-regler og en reproducerbar testkommando. Jeg vil ikke svække de videnskabelige kontroller bare for at få en grøn GitHub Actions-kørsel.
+logs_84644302432.zip
+Zip-arkiv
+det kunne du bare have sagt istedet for alt det udenoms snak. skal du også bruge projekt zip fra pc'en?
+RavRadar(20260807-160135).zip
+Zip-arkiv
+logs_84654564555.zip
+Zip-arkiv
+RavRadar(20260807-162438).zip
+Zip-arkiv
+Ja, det var satme da en flot stabil baseline du lavede der? Er det blevet for svært for dig? Det går fanden galemig dårligt!! det har det gjort i et par dage nu!
+logs_84660513332.zip
+Zip-arkiv
+jeg bliver snart sindssyg. hvilke zoner er det? navn på dem, ikke koden.
+Tænkte i 1m 26s
+Nu har vi faktisk et klart næste træk.
+Den seneste GitHub-kørsel #1749 var grøn, men den startede før du rettede de tre zoner i admin. Derfor har vi endnu ikke testet dine nye land-/havpunkter og kystlinjer i produktionskæden.
+Jeg har også verificeret noget vigtigt i workflowet: RavRadar gør allerede det rigtige i princippet. Tidligt i pipeline sker:
+Supabase → sync af admin-konfiguration → anvend central zonegeometri → DMI-opbygning → public runtime → validering.
+Så nu skal vi ikke ændre mere kode endnu og heller ikke ændre mere i admin.
+Det næste er en helt frisk GitHub-kørsel efter dine adminrettelser. I den skal vi kontrollere kæden som helhed:
+I trin “Apply centrally approved zone geometry and deletions” skal de tre rettede zoner dukke op som ændrede. Hvis de ikke gør, har vi fundet en Supabase/admin-persistensfejl.
+Hvis de gør, kontrollerer vi i DMI bulk model cache, at de nye havpunkter faktisk bruges til marine/DKSS-opslag.
+Derefter kontrollerer vi, om de tre zoner nu får gyldigt fælles U/V-data.
+Derefter skal de overleve conditions → public → bulk → provenance → RavScore.
+Til sidst skal hele valideringen være grøn.
+Det er den rigtige “skak”-test, fordi den afgør hvilket led der eventuelt stadig bryder kæden, i stedet for at vi bare retter næste røde test.
+Jeg forsøgte selv at genstarte workflowet via GitHub, men GitHub-appen giver stadig 403 på Actions-write. Så du skal starte en ny “Update weather and deploy RavRadar”-kørsel manuelt nu.
+Når den er færdig, behøver du kun sende loggen ZIP. Du skal ikke sende projekt-ZIP igen, medmindre du også har ændret projektfiler på pc’en siden sidst.
+Og vigtigst: lad de tre zoner stå præcis som du har rettet dem i admin. Det er nu systemet, der skal bevise, at det kan følge dine korrekte adminændringer hele vejen igennem.
+logs_84668426581.zip
+Zip-arkiv
+Den nye kørsel er grøn. Og vigtigere: dine adminændringer kom korrekt hele vejen igennem.
+Jeg har kontrolleret loggen:
+De tre zoner står eksplicit blandt changed, så Supabase → pipeline-geometri virker.
+dkss_lf og dkss_nsbs blev begge kørt succesfuldt.
+Ved opbygning af den centrale weather-cache står alle tre nu som OK ... via mixed.
+Der er ingen ##[error] eller exit-fejl i logpakken.
+Så dine rettelser af land-/havpunkter og kystlinjer gjorde en reel forskel, og arkitekturen respekterer faktisk adminændringerne.
+Der er dog én ting, jeg ikke vil ignorere: coverage-auditten viser ved forecastets yderste kant (12. august kl. 14 UTC) skift fra DMI til missing for bl.a. strøm og vandstand i de tre zoner. Det er et horisont-/dækningsproblem, ikke den gamle fejl hvor zonerne helt manglede strømdata. Vi skal ikke blande de to problemer sammen.
+Mit forslag nu: Vi fryser denne grønne produktionsversion. Ingen flere ændringer i den for at “forbedre lidt”. Det er vores første reelle kandidat til Codex-baseline.
+Derefter går vi over til Codex, men før Codex begynder at udvikle, laver vi den RDKS-/hukommelsesaudit, vi aftalte, og registrerer yderkantens manglende DMI-dækning som et aktivt problem, der skal undersøges systemisk sammen med det allerede kendte 5-døgnsproblem.
+Så: vi har endelig en grøn produktion. Nu skal vi ikke pille mere ved den — nu kan vi begynde Codex-overgangen.
+men er vores 4.0.117 versioner lagt ind og deployed? ingen af dem har jo været grønne.
+Jo – men der er en vigtig forskel mellem “lagt på GitHub” og “deployet”.
+Jeg har lige kontrolleret GitHub. main står på commit:
+6c1dece – RavRadar 4.0.117 stab
+Så 4.0.117-koden er lagt ind på GitHub. Den grønne kørsel #1749 kørte netop på denne commit, og både build-jobbet og “Deploy prepared Pages artifact” gennemførte med success. Det betyder, at denne 4.0.117-commit faktisk blev deployet til GitHub Pages.
+Det, der har gjort det forvirrende, er rækken af fejlede 4.0.117-kørsler inden da. De blev ikke deployet, fordi workflowet stoppede før deployment. Men da vi efterfølgende fik #1749 grøn på samme main-commit, blev den nuværende 4.0.117 faktisk deployet.
+Der er ovenikøbet en ny kørsel #1751 i gang lige nu, også på præcis samme commit 6c1dece.
+Så status lige nu er:
+4.0.117-koden på GitHub: JA.4.0.117 deployet til siden: JA, via grøn #1749.Dine seneste adminændringer: de ligger i Supabase og bliver anvendt dynamisk; de kræver ikke en ny kodecommit.Ny kontrolkørsel efter adminændringer: #1751 kører lige nu.
+Så vi skal ikke lægge endnu en ZIP på GitHub nu. Lad #1751 blive færdig. Hvis den også bliver grøn med dine nye zoneændringer, har vi den kombination, vi ønsker: 4.0.117-kode + korrigeret central geometri + frisk DMI-kørsel + deployment.
