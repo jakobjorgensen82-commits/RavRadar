@@ -32,6 +32,8 @@ Vandstandskilder omfatter observationsstationer og prognosepunkter. Observations
 ## RavScore og historisk state
 RavScore bruger aktuelle og dokumenterede forhold. Eksisterende pålidelige morfologidata bevares. Den historiske state-model beregnes i pipeline og er fortsat skyggetilstand i 4.0.117; den skal valideres fagligt før nye numeriske scorebidrag aktiveres. Faktisk DMI-strøm er eneste gyldige strømgrundlag for transportstate.
 
+En større kildekritisk forskningsrunde er planlagt som P3, men ikke startet. Den skal senere validere hele kæden fra frigivelse til jagtbarhed, auditere den faktiske scorekode og særskilt undersøge, om rumlige strømstrukturer tilfører information ud over punktvise DMI-vektorer. Indtil en separat, evidensbaseret beslutning eventuelt siger andet, bruges generelle strømbånd fortsat hverken som scoreinput eller fallback. Forskningen har ingen automatisk tilladelse til at ændre RavScore.
+
 ## Performance
 Public klienten skal starte hurtigt. Store råhistorikker, private audits og tunge beregninger må ikke flyttes til browserstartup. Den historiske målsætning/baseline er ca. 2–3,5 sekunder; tidligere regression mod ca. 13 sekunder er en advarsel om at holde pipelinearbejde server-/buildside.
 

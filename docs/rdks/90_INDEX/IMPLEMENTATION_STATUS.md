@@ -302,3 +302,13 @@ Status: Implementeret og lokalt valideret.
 - [x] Offentlig vind steg progressivt fra 21/208 zoner i #1774 til 199/208 i #1779.
 - [x] Udløbne HARMONIE-forecasttrin ældre end én time filtreres nu før download, så det begrænsede bytebudget bruges på aktuelle/fremtidige trin.
 - [ ] 96-timers vinddækning skal fortsat bygges progressivt og måles i ny produktion; issue er derfor kun delvist produktionslukket.
+
+## Planlagt større forskningsopgave – RavScore og kystprocesser
+- [x] Forskningsopgaven er registreret i roadmap og RDKS som P3 under DEC-0029.
+- [x] Afhængigheder og stopregel er fastlagt: ingen start før forecast-/schedulerstabilisering og højere P0/P1-opgaver; ingen automatisk produktionskode eller scoreændring.
+- [x] Det aktuelle forbud mod generelle strømbånd består, mens en senere forskningsrunde må revurdere den under streng evidens- og valideringspligt.
+- [ ] Fase A: permanent kildekritisk forskningsgrundlag.
+- [ ] Fase B: audit af faktisk RavScore-kode mekanisme for mekanisme.
+- [ ] Fase C: konceptuel fysisk systemmodel før scoremodel.
+- [ ] Fase D: evidensmatrix, strømstrukturkonklusion og prioriterede valideringseksperimenter.
+- [ ] Eventuel implementering kræver en ny, særskilt brugerbeslutning efter forskningsleverancen.

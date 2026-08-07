@@ -431,6 +431,11 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Ingen audits, gridafstande, DMI-only-krav eller null-regler er svækket. Frisk produktion afventer.
 - #1778 og #1779 bekræftede rækkefølgen `dkss_lf,harmonie_dini_sf`, begge fulde gates og deploy. Vind med mindst noget offentligt data steg fra 21/208 til 199/208 zoner.
 - Supportmålingen viste, at den første kørsel brugte tre store downloads på udløbne HARMONIE-trin. Trin ældre end én time filtreres nu før download; 96-timers dækning skal fortsat opbygges og produktionsmåles.
+
+## 2026-08-08 – planlagt videnskabelig RavScore-forskning
+- En større forsknings- og modelvalideringsrunde er registreret som P3 i DEC-0029; den udføres ikke under den aktuelle forecast-/schedulerstabilisering eller foran højere P0/P1-opgaver.
+- Den senere opgave skal opbygge en fysisk systemmodel fra frigivelse til jagtbarhed, auditere RavScore-koden, udarbejde evidensmatrix og designe virkelighedsvalidering uden automatisk scoreændring.
+- Det bindende produktionsforbud mod generelle strømbånd består. Forskningen må senere revurdere rumlige strømstrukturers selvstændige informationsværdi, men enhver implementering kræver separat godkendelse.
 - Efter #1758 blev yderligere fire zoner konstateret geografisk forkerte og korrigeret centralt i admin: **Fur syd**, **Gjøl og Attrup**, **Aalborg vest og Egholm** samt **Aalborg øst og Nørresundby**. Kystlinje og/eller land-/havpunkter blev rettet som autoritativ geometri.
 - #1760 kørte efter disse sidste adminrettelser på `a164b6e…` og gennemførte DMI bulk, central weather-cache, current provenance, public runtime, referencezoner, `validate:data` og GitHub Pages-deploy.
 - Ny kritisk opdagelse: #1760 sprang de fulde trin `npm run validate` og `npm run release:gate` over, fordi almindelig `workflow_dispatch` ikke opfylder workflowets `push || force`-betingelse. Et grønt automatisk run kan derfor være deployet uden fuld releasegodkendelse.
