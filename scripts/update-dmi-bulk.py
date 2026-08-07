@@ -56,6 +56,7 @@ COLLECTIONS_PER_RUN = max(1, int(os.getenv("DMI_BULK_COLLECTIONS_PER_RUN", "2"))
 MARINE_FOUNDATION_BALANCE_RATIO = 0.95
 REFRESH_MINUTES = max(1, int(os.getenv("DMI_BULK_REFRESH_MINUTES", "60")))
 COMPLETE_HORIZON_HOURS = max(24, int(os.getenv("DMI_BULK_COMPLETE_HORIZON_HOURS", "96")))
+HARMONIE_RUN_RETENTION_HOURS = max(24, int(os.getenv("DMI_HARMONIE_RUN_RETENTION_HOURS", "48")))
 FORCE_REFRESH = os.getenv("DMI_BULK_FORCE_REFRESH", "false").lower() in {"1", "true", "yes", "on"}
 USER_AGENT = os.getenv("WEATHER_USER_AGENT", "RavRadar DMI bulk downloader")
 API_KEY = os.getenv("DMI_API_KEY")
@@ -248,6 +249,7 @@ def select_forecast_run(
     runs: dict[str, list[dict[str, Any]]],
     preferred_run: str | None = None,
     now_epoch: float | None = None,
+    retention_horizon_hours: float = COMPLETE_HORIZON_HOURS,
 ) -> tuple[str, dict[str, Any]]:
     """Keep a usable progressive run instead of chasing each partial publication."""
     now_value = time.time() if now_epoch is None else now_epoch
@@ -255,7 +257,7 @@ def select_forecast_run(
         run: max((epoch(row["valid"]) - now_value) / 3600 for row in rows)
         for run, rows in runs.items() if rows
     }
-    mature = [run for run, hours in future_horizon.items() if hours >= COMPLETE_HORIZON_HOURS]
+    mature = [run for run, hours in future_horizon.items() if hours >= retention_horizon_hours]
     if preferred_run in mature:
         selected = preferred_run
     elif mature:
@@ -268,6 +270,7 @@ def select_forecast_run(
         "selectedRun": selected,
         "latestRunFutureHorizonHours": round(future_horizon[latest], 1),
         "selectedRunFutureHorizonHours": round(future_horizon[selected], 1),
+        "runRetentionHorizonHours": retention_horizon_hours,
         "preferredProgressiveRunRetained": selected == preferred_run,
         "incompleteLatestRunDeferred": selected != latest,
     }
@@ -300,7 +303,14 @@ def list_latest_assets(collection: str, preferred_run: str | None = None) -> tup
             stats["sampleItems"].append({"id": item.get("id"), "run": run, "valid": valid})
     if not runs:
         return None, [], stats
-    run, run_selection = select_forecast_run(runs, preferred_run)
+    retention_horizon_hours = (
+        HARMONIE_RUN_RETENTION_HOURS if collection == "harmonie_dini_sf" else COMPLETE_HORIZON_HOURS
+    )
+    run, run_selection = select_forecast_run(
+        runs,
+        preferred_run,
+        retention_horizon_hours=retention_horizon_hours,
+    )
     stats.update(run_selection)
     unique: dict[str, dict[str, Any]] = {}
     minimum_valid_epoch = time.time() - 3600

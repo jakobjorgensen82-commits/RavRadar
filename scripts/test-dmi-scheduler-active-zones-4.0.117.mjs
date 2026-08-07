@@ -61,19 +61,20 @@ assert diag['balancedFoundationRecovery'] is True, diag
 assert diag['atmosphereDeferredDuringMarineRecovery'] is False, diag
 assert diag['marineFoundationRatio'] >= 0.95, diag
 
-# A progressive run with at least 96 future hours is retained even when a
-# newer model generation has only published its short leading edge.
+# HARMONIE's native horizon is about 60 hours. A progressive run with at
+# least 48 future hours is retained even when a newer generation is partial.
 def row(valid): return {'valid':valid}
 runs={
  '2026-01-01T18:00:00Z':[row('2026-01-06T18:00:00Z')],
  '2026-01-01T21:00:00Z':[row('2026-01-02T09:00:00Z')],
 }
-selected,run_diag=module.select_forecast_run(runs,'2026-01-01T18:00:00Z',module.epoch('2026-01-01T22:00:00Z'))
+selected,run_diag=module.select_forecast_run(runs,'2026-01-01T18:00:00Z',module.epoch('2026-01-03T18:00:00Z'),48)
 assert selected=='2026-01-01T18:00:00Z', run_diag
 assert run_diag['incompleteLatestRunDeferred'] is True, run_diag
 assert run_diag['preferredProgressiveRunRetained'] is True, run_diag
+assert run_diag['runRetentionHorizonHours']==48, run_diag
 `;
-const result=spawnSync('python',['-c',behavioral],{encoding:'utf8'});
+const result=spawnSync(process.env.PYTHON || 'python',['-c',behavioral],{encoding:'utf8'});
 assert.equal(result.status,0,`Schedulerens adfærdstest fejlede:\n${result.stdout}\n${result.stderr}`);
 
 console.log('OK: scheduler bruger aktive zoner, wind-familien og prioriterer DKSS efter reelt geografisk datagab.');

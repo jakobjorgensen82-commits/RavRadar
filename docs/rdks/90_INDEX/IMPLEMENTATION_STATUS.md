@@ -297,15 +297,16 @@ Status: Implementeret og lokalt valideret.
 - [x] Rodårsagen til den brede vindmangel er schedulerudsultning: 203/208 marinezoner var dækket, men fem huller holdt begge collection-pladser på DKSS.
 - [x] Balanceret recovery ved mindst 95 % marinegrundlag er implementeret med én marineplads og én plads til mest underdækkede vind/bølgefamilie.
 - [x] Regression dækker både bred marine-first recovery og den målte 203/208-profil.
-- [ ] Frisk produktion skal bevise HARMONIE-forsøg, fulde releasegates og forbedret offentlig coverage. Issue er derfor ikke produktionslukket endnu.
+- [x] #1778/#1779 og #1785 har bevist HARMONIE-forsøg, fulde releasegates, deploy og forbedret offentlig basiscoverage.
 - [x] #1778 og #1779 beviste balanceret rækkefølge `dkss_lf,harmonie_dini_sf`, begge collections som `success`, fulde gates og deploy.
 - [x] Offentlig vind steg progressivt fra 21/208 zoner i #1774 til 199/208 i #1779.
 - [x] Udløbne HARMONIE-forecasttrin ældre end én time filtreres nu før download, så det begrænsede bytebudget bruges på aktuelle/fremtidige trin.
-- [ ] 96-timers vinddækning skal fortsat bygges progressivt og måles i ny produktion; issue er derfor kun delvist produktionslukket.
+- [x] #1785 korrigerede målet: HARMONIE-samlingens native horisont er cirka 60 timer, så 96-timers vinddækning er ikke et gyldigt succeskriterium.
 - [x] #1783 beviste, at udløbne HARMONIE-trin filtreres, og at aktuelle trin behandles; fulde gates og build bestod.
-- [x] Nyeste, endnu ufuldstændige modelgeneration må ikke længere nulstille en brugbar progressiv generation. Foretrukket run fastholdes ved mindst 96 fremtidige timer.
+- [x] Nyeste, endnu ufuldstændige modelgeneration må ikke nulstille en brugbar progressiv generation. HARMONIE fastholdes ved mindst 48 resterende timer; marine samlinger fortsat ved 96.
 - [x] Run-valget eksponerer valgt/nyeste generation, deres fremtidige horisont samt om et ufuldstændigt nyt run er udskudt.
-- [ ] Frisk produktion skal bevise fastholdt generation og voksende 24/96-timers vinddækning over flere kørsler.
+- [x] #1785 beviste valg af 18Z frem for den kortere 21Z-generation samt fulde gates/deploy.
+- [ ] Næste produktion skal bevise, at 48-timersreglen fastholder 18Z og bygger videre mod 24/48-timers vinddækning.
 
 ## Planlagt større forskningsopgave – RavScore og kystprocesser
 - [x] Forskningsopgaven er registreret i roadmap og RDKS som P3 under DEC-0029.

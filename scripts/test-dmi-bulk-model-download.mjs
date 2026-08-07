@@ -95,5 +95,7 @@ assert.match(bulk, /diagnosticsRegenerated/);
 assert.match(bulk, /if marine_foundation_missing:/);
 assert.match(bulk, /scheduleCoverageBeforeRun/);
 assert.match(bulk, /marineRecoveryActive/);
+assert.match(bulk, /HARMONIE_RUN_RETENTION_HOURS/);
+assert.match(bulk, /runRetentionHorizonHours/);
 assert.match(updater, /version: APP_VERSION/);
 console.log('DMI bulk model download and external scheduler preflight test passed.');

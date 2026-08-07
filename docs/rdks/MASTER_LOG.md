@@ -433,6 +433,7 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Supportmålingen viste, at den første kørsel brugte tre store downloads på udløbne HARMONIE-trin. Trin ældre end én time filtreres nu før download; 96-timers dækning skal fortsat opbygges og produktionsmåles.
 - #1783 filtrerede dokumenteret to udløbne HARMONIE-trin og behandlede 23–01 UTC, men valgte en ny 21 UTC-generation med kun 11 forecasttrin. Vind fandtes fortsat i 199/208 zoner, mens 96-timersdækningen faldt til 1/208.
 - Run-valget er derfor gjort progressionsstabilt: en foretrukken generation fastholdes, mens den rækker mindst 96 timer frem; ufuldstændige nye publikationer udskydes og diagnosticeres. Frisk produktion afventer.
+- #1785 bestod fulde gates og deploy og valgte dokumenteret 18Z (54,7 timer) frem for den nyere 21Z (51,7 timer). Supportpakken viste samtidig, at HARMONIE-samlingen kun har cirka 60 timers native horisont. Fastholdelsen er derfor korrigeret til 48 timer for HARMONIE; marine samlinger beholder 96 timer. Næste run skal bevise genbrug af 18Z-reference og videre progressiv opbygning.
 
 ## 2026-08-08 – planlagt videnskabelig RavScore-forskning
 - En større forsknings- og modelvalideringsrunde er registreret som P3 i DEC-0029; den udføres ikke under den aktuelle forecast-/schedulerstabilisering eller foran højere P0/P1-opgaver.
