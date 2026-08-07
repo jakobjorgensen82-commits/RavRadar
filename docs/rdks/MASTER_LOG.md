@@ -406,3 +406,7 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Mod #1728-state prioriteres `dkss_lf` før `dkss_nsbs` og `dkss_idw`; 11 marinegrundlagsmangler er Limfjord og 1 er vestkyst.
 - DMI-only strøm, fælles U/V-gitterpunkt, runtimebudget og strenge marine audits er ikke svækket.
 - Seks nyere chats er arkiveret som CHAT-0008–CHAT-0013 med kildeneutraliseret normaltekst og dynamisk kronologivalidering.
+
+- Produktion #1738 bekræftede, at scheduler-hotfixen virkede (`dkss_lf` + `dkss_nsbs` blev kørt friskt), men strømauditten fejlede fortsat på DK-B05-10, DK-B05-13 og DK-B05-20.
+- Ny rodårsag: Limfjordens marine kandidatsøgning undersøgte kun 16 kandidater/prober til 0,14°, selv om den fysiske acceptgrænse er 24 km. Søgefladen kunne derfor ikke altid finde et fælles vådt U/V-punkt inden for den tilladte afstand.
+- Rettelse: kun Limfjordssøgningen udvides til 48 kandidater og prober til 0,26°; 24-km-grænsen og kravet om samme fysiske DMI U/V-punkt er uændrede.

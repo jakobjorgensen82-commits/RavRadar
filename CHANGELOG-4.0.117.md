@@ -21,3 +21,11 @@ Produktion #1728 nåede gennem DMI-opbygning, public runtime og referencezoner, 
 Hotfixen lader aktive zoners konkrete marinegrundlagsmangler og kysttype styre rækkefølgen inden for DKSS-familien. Den eksisterende model-penalty afgør geografisk førstevalg, og modellen der kan lukke flest reelle datagab kommer før historiske attempt-tider. Mod #1728-state bliver rækkefølgen `dkss_lf`, `dkss_nsbs`, `dkss_idw`, fordi 11 mangler er Limfjord og 1 er vestkyst. Runtimebudget, DMI-only strøm, fælles U/V-gitterpunkt og den strenge strømaudit er uændrede.
 
 Schedulerregressionen er udvidet med en egentlig adfærdstest. Seks nyere projektchats er samtidig arkiveret som CHAT-0008–CHAT-0013, og chatmanifestets validator er gjort dynamisk uden at hardcode antallet af historiske chats.
+
+
+## Hotfix efter produktion #1738 – Limfjord U/V-kandidatsøgning
+Schedulerrettelsen fra #1728 virker: #1738 kørte både `dkss_lf` og `dkss_nsbs` friskt. Den strenge strømaudit fejlede alligevel på `DK-B05-10`, `DK-B05-13` og `DK-B05-20`, fordi de fortsat ikke fik `conditions/public/bulk`. DMI-diagnostikken viste `NO_SHARED_UV_GRID_POINT`.
+
+Rodårsagen var en forskel mellem den dokumenterede fysiske acceptgrænse og den faktiske søgeflade: Limfjordspunkter må bruge et dokumenteret fælles U/V-havpunkt op til 24 km væk, men kandidatproberne stoppede ved 0,14° og kandidatlisten ved 16 punkter. I smalle fjordløb og omkring landmasker kunne søgningen derfor stoppe, før et gyldigt fælles vådt U/V-punkt inden for den eksisterende 24-km-grænse blev undersøgt.
+
+Hotfixen udvider kun Limfjordens marine kandidatsøgning til 48 kandidater og prober op til 0,26°. `MAX_GRID_DISTANCE_KM["limfjord"]` forbliver 24 km, så der accepteres ikke fjernere eller kunstige data. U og V skal fortsat komme fra samme fysiske DMI-gitterpunkt.

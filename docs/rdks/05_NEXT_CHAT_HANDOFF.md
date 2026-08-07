@@ -101,3 +101,5 @@ Efter produktion #1717: U/V-grid mismatch er væk. DMI-vind var fortsat uden 24/
 - Årsagen var ikke U/V-gridfejlen: 4.0.116-rettelsen bestod. 4.0.117 schedulerede to andre DKSS-collections før `dkss_lf` og nåede derfor aldrig den model, de manglende Limfjordszoner behøvede.
 - Hotfixen prioriterer marine collections efter de aktive manglende zoners kysttype/modelbehov. Mod #1728-state bliver rækkefølgen `dkss_lf`, `dkss_nsbs`, `dkss_idw`.
 - Seks nyere chats er importeret som CHAT-0008–CHAT-0013 under `docs/rdks/70_CHAT_IMPORT/`.
+
+- #1738 bekræftede schedulerordenen, men fejlede stadig på de samme tre Limfjordszoner. DMI-diagnostikken viste `NO_SHARED_UV_GRID_POINT`; den faktiske kandidatsøgning nåede ikke hele den allerede tilladte 24-km radius. Limfjordssøgningen er derfor udvidet uden at hæve afstandsgrænsen eller tillade U/V fra forskellige gitterpunkter. Afventer produktion.

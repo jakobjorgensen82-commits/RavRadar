@@ -103,6 +103,7 @@ VECTOR_PAIRS = {
     "wind-v-10m": ("wind", "wind-u-10m", "wind-v-10m"),
 }
 GRID_CANDIDATE_TARGET = max(4, int(os.getenv("DMI_BULK_GRID_CANDIDATES", "16")))
+LIMFJORD_GRID_CANDIDATE_TARGET = max(GRID_CANDIDATE_TARGET, int(os.getenv("DMI_BULK_LIMFJORD_GRID_CANDIDATES", "48")))
 MAX_GRID_DISTANCE_KM = {"limfjord": 24.0, "west": 40.0, "east": 32.0}
 MARINE_MODEL_PENALTY_KM = {
     "limfjord": {"dkss_lf": 0.0, "dkss_idw": 8.0, "dkss_nsbs": 18.0},
@@ -481,7 +482,10 @@ def nearest_candidates(gid: int, collection: str, zone: dict[str, Any]) -> list[
     # Atmosfæriske grids (HARMONIE) er komplette land/hav-grids og kræver ikke
     # den dyre marine kyst-probing. Ét nearest-opslag pr. zone/grid er nok og
     # genbruges på tværs af alle forecast-tider via GRID_INDEX_CACHE.
-    candidate_target = GRID_CANDIDATE_TARGET if collection in MARINE_COLLECTIONS else 4
+    if collection in MARINE_COLLECTIONS:
+        candidate_target = LIMFJORD_GRID_CANDIDATE_TARGET if zone.get("coastType") == "limfjord" else GRID_CANDIDATE_TARGET
+    else:
+        candidate_target = 4
     cache_key = (collection, grid_signature(gid), zone["id"], candidate_target)
     cached = GRID_INDEX_CACHE.get(cache_key)
     if cached is not None:
@@ -510,7 +514,12 @@ def nearest_candidates(gid: int, collection: str, zone: dict[str, Any]) -> list[
         GRID_INDEX_CACHE[cache_key] = normalized
         return normalized
     probes = [(0.0, 0.0)]
-    for radius in (0.025, 0.05, 0.09, 0.14):
+    # Limfjorden har smalle løb og landmasker, hvor et gyldigt fælles U/V-havpunkt
+    # kan ligge markant længere øst/vest end de første 16 kandidater. Den fysiske
+    # acceptgrænse er fortsat MAX_GRID_DISTANCE_KM (24 km); vi gør kun søgningen
+    # bred nok til faktisk at kunne finde kandidater inden for den eksisterende grænse.
+    radii = (0.025, 0.05, 0.09, 0.14, 0.20, 0.26) if zone.get("coastType") == "limfjord" else (0.025, 0.05, 0.09, 0.14)
+    for radius in radii:
         probes.extend((dlat * radius, dlon * radius) for dlat, dlon in (
             (1, 0), (-1, 0), (0, 1), (0, -1),
             (0.707, 0.707), (0.707, -0.707), (-0.707, 0.707), (-0.707, -0.707),

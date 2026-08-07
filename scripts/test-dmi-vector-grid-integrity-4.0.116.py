@@ -27,3 +27,13 @@ assert water_source_parameter_allowed("sea-mean-deviation")
 for parameter in ("current-u", "current-v", "water-temperature", "wind-u-10m", "wind-v-10m", "significant-wave-height"):
     assert not water_source_parameter_allowed(parameter), f"Water source must not be sampled for {parameter}"
 print("OK: water-source helper points request water level only.")
+
+
+# Regression for production #1738: Limfjord sampling must search broadly enough
+# to discover a shared wet U/V point while preserving the existing 24 km accept cap.
+from pathlib import Path
+bulk_source = Path("scripts/update-dmi-bulk.py").read_text()
+assert 'DMI_BULK_LIMFJORD_GRID_CANDIDATES", "48"' in bulk_source
+assert '0.20, 0.26' in bulk_source
+assert 'MAX_GRID_DISTANCE_KM = {"limfjord": 24.0' in bulk_source
+print("OK: Limfjord U/V search reaches the existing physical acceptance radius without relaxing it.")
