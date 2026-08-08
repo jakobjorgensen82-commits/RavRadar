@@ -77,8 +77,8 @@ for _session in (STAC_SESSION, DOWNLOAD_SESSION):
 STAC_SESSION.headers.update({"Accept": "application/geo+json, application/json"})
 DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octet-stream, */*"})
 
-PARSER_VERSION = 12
-PARAMETER_MAP_VERSION = 3
+PARSER_VERSION = 13
+PARAMETER_MAP_VERSION = 4
 GRID_LOOKUP_VERSION = 5
 COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw", "wam_nsb", "harmonie_dini_sf"]
 COLLECTION_FAMILY = {
@@ -450,7 +450,12 @@ def classify_parameter(gid: int, collection: str) -> str | None:
             except (TypeError, ValueError):
                 canonical = None
             if canonical:
-                candidates.append(canonical)
+                # DKSS parameter 34 is V wind in DMI's local table, while the
+                # generic ecCodes table can label the same field as `sst`.
+                # The producer's local numeric id is authoritative; allowing
+                # generic aliases to vote as well made the valid field
+                # ambiguous and silently discarded it in production.
+                return canonical
     for canonical in TARGETS[family]:
         if any(alias_matches(metadata, alias) or alias == short for alias in HINT_ALIASES.get(canonical, ())):
             candidates.append(canonical)
@@ -974,9 +979,28 @@ def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict
         preferred = min(MARINE_COLLECTIONS, key=lambda collection: (float(penalties.get(collection, 25.0)), COLLECTION_ORDER.index(collection)))
         preferred_marine_demand[preferred] += 1
 
+    # DKSS also supplies the 60-120 hour wind tail. Once ordinary marine data
+    # exists, the scheduler must rotate through the DKSS collection selected
+    # for each zone instead of retrying only the few remaining current gaps.
+    # Otherwise valid tail data for IDW/NSBS can be starved indefinitely.
+    missing_wind_tail_zone_ids = [
+        zone_id for zone_id in active_ids
+        if component_horizon_hours(active_zones.get(zone_id, {}), ("wind-tail-u-10m", "wind-tail-v-10m")) < COMPLETE_HORIZON_HOURS
+    ]
+    preferred_wind_tail_demand = {collection: 0 for collection in MARINE_COLLECTIONS}
+    for zone_id in missing_wind_tail_zone_ids:
+        cached_zone = active_zones.get(zone_id, {})
+        selected = ((cached_zone.get("marineSelection") or {}).get("collection"))
+        if selected not in MARINE_COLLECTIONS:
+            coast = (active_by_id.get(zone_id) or {}).get("coastType") or "east"
+            penalties = MARINE_MODEL_PENALTY_KM.get(coast, MARINE_MODEL_PENALTY_KM["east"])
+            selected = min(MARINE_COLLECTIONS, key=lambda collection: (float(penalties.get(collection, 25.0)), COLLECTION_ORDER.index(collection)))
+        preferred_wind_tail_demand[selected] += 1
+
     lead_marine_collection = min(
         MARINE_COLLECTIONS,
         key=lambda collection: (
+            -preferred_wind_tail_demand.get(collection, 0),
             -preferred_marine_demand.get(collection, 0),
             epoch((state.get(collection) or {}).get("lastAttemptAt")),
             COLLECTION_ORDER.index(collection),
@@ -1023,7 +1047,13 @@ def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict
         # Inden for marinefamilien prioriteres den model, der faktisk kan lukke
         # flest helt manglende aktive zoner. For ikke-marine collections er
         # denne rang neutral.
-        marine_demand_rank = -preferred_marine_demand.get(collection, 0) if family == "marine" else 0
+        if family != "marine":
+            marine_demand_rank = 0
+        elif balanced_foundation_recovery:
+            marine_demand_rank = -preferred_wind_tail_demand.get(collection, 0)
+        else:
+            marine_demand_rank = -(preferred_marine_demand.get(collection, 0) * (zone_count + 1)
+                                   + preferred_wind_tail_demand.get(collection, 0))
         deficit_rank = -missing96.get(family, 0)
         complete_family_rank = 1 if missing96.get(family, 0) == 0 else 0
         return (
@@ -1046,6 +1076,8 @@ def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict
         "leadMarineCollection": lead_marine_collection,
         "missingMarineZoneIds": missing_marine_zone_ids,
         "preferredMarineDemand": preferred_marine_demand,
+        "missingWindTailZoneIds": missing_wind_tail_zone_ids,
+        "preferredWindTailDemand": preferred_wind_tail_demand,
         "atmosphereDeferredDuringMarineRecovery": marine_foundation_missing and not balanced_foundation_recovery,
         "completionDefinition": f"component horizon >= {COMPLETE_HORIZON_HOURS} hours",
         "coverageDenominator": "current-active-zone-registry",

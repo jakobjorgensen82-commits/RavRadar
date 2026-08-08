@@ -474,4 +474,6 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 ## 2026-08-08 – 4.0.118 DMI-first vindhale
 - Officiel kildeaudit førte til HARMONIE som primær vind og DKSS 10-meter U/V som separat DMI-hale.
 - Parsergeneration 12, modelisoleret interpolation og UTC-fallback er implementeret lokalt med regressionsdækning.
+- Efter nattens #1828 viste den fulde produktionslog, at vindhale-V aldrig blev genkendt: lokalt DKSS-id 34 kolliderede med generisk `sst`-metadata.
+- 4.0.119 gør producentens lokale id autoritativt, bruger parser/parameterkort 13/4 og roterer DKSS efter zonernes manglende komplette U/V-vindhale. Frisk produktionsverifikation afventer.
 - RavScore er uændret. Frisk GitHub/DMI-produktion skal stadig bevise faktisk 118–119-timers dækning, kildeskift, gates og deploy.

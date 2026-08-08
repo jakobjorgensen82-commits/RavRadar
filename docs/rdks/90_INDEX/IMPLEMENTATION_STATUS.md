@@ -328,3 +328,10 @@ Status: Implementeret og lokalt valideret.
 - [ ] Verificér faktiske WAM-/DKSS-vindfelter og overlap mod HARMONIE i friske runs; auditér samtidig Open-Meteo-modelidentitet og UTC-tidslinjen.
 - [ ] Vurder først derefter tail-fallback, overgangskvalitet, proveniens, automatiske dækningsgates samt konsekvens for RavScore og UI.
 - [ ] Implementering og produktionsverifikation kræver efterfølgende dokumenteret design; ingen blind fallbackændring er godkendt.
+
+## 4.0.119 – DKSS-vindhale, parser og scheduler
+- [x] #1828 beviste `wind-tail-u-10m`, men manglende `wind-tail-v-10m`.
+- [x] Lokale DKSS-id'er 33/34 er autoritative foran generiske ecCodes-navne. Parser/parameterkort er 13/4.
+- [x] Schedulerrotation følger manglende komplet U/V-vindhale pr. zones DKSS-collection.
+- [x] Regression reproducerer id 34-konflikten og en 208-zoners rotationsprofil.
+- [ ] Frisk produktion skal bevise U+V, positiv hale-dækning, fulde gates og deploy.

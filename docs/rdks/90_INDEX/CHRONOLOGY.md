@@ -77,3 +77,10 @@ Fem sammenhængende produktionskørsler afslørede, at samme ugentlige GitHub-ca
 3. HARMONIE vinder i overlap; interpolation sker aldrig på tværs af HARMONIE/DKSS-grænsen.
 4. Open-Meteo fallback bruger nu entydige GMT/UTC-tider.
 5. Implementeringen og målrettede regressionstests er lokale; frisk produktionsdækning og releasekæde skal stadig bevises.
+
+## 2026-08-08 – 4.0.119 DKSS-vindhale repareret
+1. #1828 bestod releasekæden, men havde ingen dokumenteret DKSS-vindhale.
+2. Parameter 34 blev fejlmærket `sst` og forkastet som tvetydig.
+3. DMI's lokale id er gjort autoritativt; parser/parameterkort er 13/4.
+4. Schedulerens DKSS-plads roterer efter manglende U/V-vindhale pr. valgt marinecollection.
+5. Lokal regression er grøn; frisk produktion afventer.

@@ -123,3 +123,6 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 - **ISSUE-FIVE-DAY-DMI-WIND-TAIL – RETTET LOKALT, AFVENTER PRODUKTION:** DKSS' dokumenterede 10-meter U/V-vind udtrækkes nu som en separat hale efter HARMONIE. Modelserier blandes ikke, og HARMONIE vinder i overlap. En frisk kørsel skal bevise feltgenkendelse, zonehorisont, kildeskift og fulde release-gates.
 - **ISSUE-OPEN-METEO-LOCAL-TIME-AMBIGUITY – RETTET LOKALT, AFVENTER PRODUKTION:** Fallback blev forespurgt med `Europe/Copenhagen` og leverede offsetløse tider. Kaldet bruger nu GMT, og tider lagres eksplicit som UTC.
 - **ISSUE-FIVE-DAY-PER-HOUR-PROVENANCE – FORTSAT AKTIV:** Vindkilden angives nu pr. time, men fuld model-run-, lead-time-, alder- og native/interpoleret-proveniens for alle komponenter er endnu ikke komplet.
+
+## 4.0.119 – produktionsbevist DKSS-parserfejl
+- **ISSUE-DKSS-WIND-TAIL-V-DROPPED – RETTET LOKALT, AFVENTER PRODUKTION:** #1828 beviste, at DKSS-id 34 blev fejlfortolket som `sst` og forkastet som tvetydigt. DMI's lokale id er nu autoritativt, og DKSS-pladsen roterer efter manglende vindhale pr. zones valgte marinecollection.

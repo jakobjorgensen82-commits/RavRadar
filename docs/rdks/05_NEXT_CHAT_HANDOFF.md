@@ -1,7 +1,7 @@
 # RavRadar – aktuel overlevering til Codex
 
-**Opdateret:** 2026-08-07
-**Aktuel appversion:** 4.0.117
+**Opdateret:** 2026-08-08
+**Aktuel appversion:** 4.0.119
 **Aktuel main/handoff:** `a164b6e52fa18efc7209d90779048bb86bcf870a` (`RavRadar 4.0.117 codex handoff v2`) – deployet, men endnu ikke fuldt strengt release-verificeret
 **Produktion:** GitHub Actions #1749 og #1750 gennemført med succes på samme commit; #1750 er den friske kontrol efter de seneste centrale zonegeometriændringer.
 

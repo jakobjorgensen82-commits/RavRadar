@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.118
+**Håndbogsversion:** 4.0.119
 
 **Opdateret:** 1. august 2026
 
@@ -1394,3 +1394,6 @@ HARMONIE-filerne er store nok til, at én kørsel kun kan behandle få forecastt
 En ny modelgeneration publiceres ikke nødvendigvis med hele sin naturlige horisont på én gang. DMI's HARMONIE-samling rækker her omtrent 60 timer, mens marine DKSS-runs rækker længere. RavRadar fastholder derfor en progressiv HARMONIE-generation, mens den stadig rækker mindst 48 timer frem; marine samlinger bruger fortsat 96 timer. En nyere, men endnu kort publikation får ikke lov at nulstille opbygningen. Der kopieres ingen værdier mellem generationer; reglen styrer kun, hvilket dokumenteret DMI-run der behandles.
 
 Den native horisont er ikke det samme som RavRadars produktmål. Målet er fortsat en dokumenteret prognose gennem cirka 120 timer pr. komponent. DMI bruges til den sidste valide DMI-time; en anden relevant DMI-kilde undersøges som forlængelse, og først derefter må en ekstern fallback udfylde den manglende hale. Vind, bølger, strøm, vandstand og temperatur kan derfor have forskellige skiftetidspunkter. Hvis en forsvarlig hale ikke findes, vises manglende data i stedet for nul, stale gentagelser eller skjult fallback.
+
+### 61.10 DKSS' lokale vindkoder i 4.0.119
+Generelle GRIB-tabeller kan navngive DKSS' lokale DMI-koder forkert; V-vindkode 34 blev eksempelvis kaldt havoverfladetemperatur. RavRadar bruger nu den lokale kode som autoritativ og kræver stadig U og V fra samme gitterpunkt. Scheduleren følger manglende vindhale pr. zones valgte DKSS-model, så IDW, NSBS og LF kan rotere over successive kørsler.
