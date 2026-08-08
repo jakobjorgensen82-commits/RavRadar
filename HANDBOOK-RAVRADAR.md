@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.122
+**Håndbogsversion:** 4.0.123
 
 **Opdateret:** 1. august 2026
 
@@ -1401,3 +1401,6 @@ Den native horisont er ikke det samme som RavRadars produktmål. Målet er forts
 
 ### 61.10 DKSS' lokale vindkoder i 4.0.119
 Generelle GRIB-tabeller kan navngive DKSS' lokale DMI-koder forkert; V-vindkode 34 blev eksempelvis kaldt havoverfladetemperatur. RavRadar bruger nu den lokale kode som autoritativ og kræver stadig U og V fra samme gitterpunkt. Scheduleren følger manglende vindhale pr. zones valgte DKSS-model, så IDW, NSBS og LF kan rotere over successive kørsler.
+# Marine datapunkter og DMI-landmasker (4.0.123)
+
+Administratorens centralt gemte datapunkt bruges i produktionskørslen. DMI kan stadig have landmaskerede celler omkring smalle fjorde og lavvandede områder. RavRadar undersøger derfor et bredere område efter et fælles fysisk U/V-havpunkt, men flytter ikke afstandsgrænsen og opfinder ikke værdier. Hvis intet gyldigt punkt findes, vises den dokumenterede fallback, mens direkte DMI-status forbliver manglende.

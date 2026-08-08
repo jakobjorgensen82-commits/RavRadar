@@ -1,5 +1,8 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.123 – fem direkte DKSS-U/V-huller
+`ISSUE-FIVE-ZONES-NO-SHARED-DKSS-GRID` er rettet i søgebredden, men ikke endnu lukket i produktion. #1851 og #1852 bekræftede samme fem huller trods komplet offentlig fallbackvind. Fire er Limfjordszoner med centralt gemte adminpunkter; den femte ligger ved Falster/Nysted. 4.0.123 undersøger flere marine landmaskeceller og rapporterer vindhalepar særskilt. Først en frisk produktionskørsel kan vise, om hullerne skyldtes kandidatloftet eller reel manglende DKSS-dækning inden for afstandsgrænsen.
+
 ## 4.0.122 – offentlig vindhale verificeret
 `ISSUE-DMI-FIRST-FIVE-DAY-CHAIN` er delvist afklaret i produktion: #1845 leverede 208/208 zoner med 118 sammenhængende offentlige vindtimer og grønne gates/deploy. `ISSUE-FIVE-ZONES-NO-SHARED-DKSS-GRID` er fortsat afgrænset til provenance-spørgsmålet; offentlig fallbackdækning er ikke det samme som direkte DMI-gridbevis.
 

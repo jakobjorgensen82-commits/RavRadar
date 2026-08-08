@@ -7,6 +7,10 @@
 ## Formål
 Dette dokument kortlægger den faktiske kæde for hver forecast- og RavScore-komponent, før nye kilder eller sammensyningsregler implementeres. Produktmålet er cirka 120 timer med DMI til sidste valide DMI-time, eventuel anden relevant DMI-kilde derefter og kun ekstern fallback for den resterende hale.
 
+## Produktionsaudit 4.0.123
+
+#1851 og #1852 havde komplet offentlig vinddækning, men ingen direkte DKSS-vindhale i fem zoner. Den deployede zonefil bekræftede, at de seneste centrale adminrettelser var anvendt. Bulkparseren begrænsede imidlertid værdikontrollen til de 16 nærmeste marine kandidater eller 48 i Limfjorden; tørre/maskerede celler kunne derfor fylde vinduet. 4.0.123 udvider kontrollen til 64/128, fastholder de eksisterende fysiske afstandsgrænser og kræver fortsat ét fælles fysisk U/V-punkt. Resultatet skal verificeres i produktion.
+
 ## Verificerede DMI-modelrammer
 
 | Model | Officiel horisont | Runs | Normal komplet tilgængelighed | Relevante felter | Rumlig opløsning |

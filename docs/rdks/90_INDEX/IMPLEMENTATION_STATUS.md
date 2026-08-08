@@ -1,4 +1,11 @@
-# Implementeringsstatus pr. 4.0.122
+# Implementeringsstatus pr. 4.0.123
+
+## 4.0.123 – marine landmasker og fælles U/V-søgning
+- [x] #1851 og #1852 er auditeret på faktisk produktionscache: fem stabile DKSS-vindhalehuller, heraf fire i Limfjorden og ét ved Falster/Nysted.
+- [x] Den centralt gemte og deployede admin-geometri er sammenholdt med bulkcache og fulde conditions; den anvendes faktisk af kørslen.
+- [x] Kandidatvinduet er udvidet til 128 marine gridceller i Limfjorden og 64 ved øvrige kyster uden at ændre de fysiske afstandsgrænser.
+- [x] Strøm og DKSS-vindhale får særskilt U/V-pardiagnostik.
+- [ ] Første produktion på 4.0.123 skal vise, om én eller flere af de fem zoner får direkte DKSS-U/V; fallbackdækning er fortsat komplet uafhængigt heraf.
 
 ## 4.0.122 – produktionsverificeret vindhale
 - [x] #1845 gennemførte frisk DMI-kørsel, fuld projektvalidering, release-gate, artifact og Pages-deploy som `success`.

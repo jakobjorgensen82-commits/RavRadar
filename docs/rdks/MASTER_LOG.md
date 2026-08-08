@@ -1,3 +1,9 @@
+## 2026-08-08 – 4.0.123 produktionsgeometri og bredere marint kandidatvindue
+- Audit af #1851/#1852 fandt de samme fem zoner uden direkte DKSS-vindhale, selv om alle 208 offentlige zoner havde 118 timers vind via fallbackkæden.
+- Deployet zonefil, fuld conditions og bulkcache dokumenterede, at centrale adminrettelser faktisk var anvendt.
+- Landmaskerede celler kunne fylde kandidatvinduet før værdikontrol. Loftet er udvidet fra 16/48 til 64/128; fysisk afstand og U/V-integritet er uændret.
+- Direkte DKSS-resultat afventer frisk produktion. De fulde livecacher blev ikke fjernet, fordi de indgår i hydrering og admin/audit; den almindelige klient bruger fortsat kun den kompakte runtime.
+
 ## 2026-08-08 – 4.0.120 offentlig fallbackhale
 - #1833/#1835 beviste NSBS/LF-rotation: 208/208 zoner havde vind og 203/208 mindst 96 timer, men maksimum var cirka 110 timer.
 - De fem korte zoner havde ingen fælles gyldigt DKSS U/V-punkt. Ingen DMI-værdier konstrueres.

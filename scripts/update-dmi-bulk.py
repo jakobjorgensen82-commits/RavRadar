@@ -106,8 +106,12 @@ VECTOR_PAIRS = {
     "wind-tail-u-10m": ("wind-tail", "wind-tail-u-10m", "wind-tail-v-10m"),
     "wind-tail-v-10m": ("wind-tail", "wind-tail-u-10m", "wind-tail-v-10m"),
 }
-GRID_CANDIDATE_TARGET = max(4, int(os.getenv("DMI_BULK_GRID_CANDIDATES", "16")))
-LIMFJORD_GRID_CANDIDATE_TARGET = max(GRID_CANDIDATE_TARGET, int(os.getenv("DMI_BULK_LIMFJORD_GRID_CANDIDATES", "48")))
+# Marine land masks can occupy many of the geometrically nearest cells before a
+# wet cell appears. Keep the physical acceptance limits below unchanged, but
+# inspect enough candidates that narrow fjords and shallow coastal waters are
+# not rejected merely because dry cells filled the candidate window first.
+GRID_CANDIDATE_TARGET = max(4, int(os.getenv("DMI_BULK_GRID_CANDIDATES", "64")))
+LIMFJORD_GRID_CANDIDATE_TARGET = max(GRID_CANDIDATE_TARGET, int(os.getenv("DMI_BULK_LIMFJORD_GRID_CANDIDATES", "128")))
 MAX_GRID_DISTANCE_KM = {"limfjord": 24.0, "west": 40.0, "east": 32.0}
 MARINE_MODEL_PENALTY_KM = {
     "limfjord": {"dkss_lf": 0.0, "dkss_idw": 8.0, "dkss_nsbs": 18.0},
@@ -803,11 +807,17 @@ def process_grib(path: pathlib.Path, collection: str, valid_time: str,
                             continue
                         pair = select_common_vector_candidate(cache[first_key], cache[second_key])
                         if not pair:
-                            if family == "current":
+                            if family in {"current", "wind-tail"}:
                                 search = diagnostics.setdefault("marineGridSearch", {}).setdefault(zone["id"], {}).setdefault(collection, {
                                     "candidatesExamined": 0, "nearestValidDistanceKm": None, "parametersFound": []
                                 })
-                                search["rejectedReason"] = "NO_SHARED_UV_GRID_POINT"
+                                vector_search = search.setdefault("vectorPairs", {}).setdefault(family, {})
+                                vector_search["validUCandidates"] = len(cache[first_key])
+                                vector_search["validVCandidates"] = len(cache[second_key])
+                                vector_search["rejectedReason"] = "NO_SHARED_UV_GRID_POINT"
+                                if family == "current":
+                                    # Preserve the established top-level diagnostic contract.
+                                    search["rejectedReason"] = "NO_SHARED_UV_GRID_POINT"
                             continue
                         first, second = pair
                         selection_key = (family, zone["id"])
@@ -839,12 +849,29 @@ def process_grib(path: pathlib.Path, collection: str, valid_time: str,
                             search["verticalLayerRankM"] = round(layer_rank, 3)
                             search.pop("rejectedReason", None)
                         if family == "wind-tail":
+                            search = diagnostics.setdefault("marineGridSearch", {}).setdefault(zone["id"], {}).setdefault(collection, {
+                                "candidatesExamined": 0, "nearestValidDistanceKm": None, "parametersFound": []
+                            })
+                            vector_search = search.setdefault("vectorPairs", {}).setdefault(family, {})
+                            vector_search.update({
+                                "selected": True,
+                                "distanceKm": round(distance, 3),
+                                "validUCandidates": len(cache[first_key]),
+                                "validVCandidates": len(cache[second_key]),
+                            })
+                            vector_search.pop("rejectedReason", None)
                             if distance > MAX_GRID_DISTANCE_KM.get(zone.get("coastType") or "east", 32.0):
+                                vector_search["selected"] = False
+                                vector_search["rejectedReason"] = "VALID_POINT_TOO_FAR"
                                 continue
                             selected_collection = (point.get("marineSelection") or {}).get("collection")
                             if selected_collection and selected_collection != collection:
+                                vector_search["selected"] = False
+                                vector_search["rejectedReason"] = "DIFFERENT_MARINE_COLLECTION_SELECTED"
                                 continue
                             if not selected_collection and not accept_marine_collection(point, zone, collection, distance):
+                                vector_search["selected"] = False
+                                vector_search["rejectedReason"] = "BETTER_COLLECTION_SELECTED"
                                 continue
                         selected_vector_layer_rank[selection_key] = layer_rank
                         touched.add(zone["id"])

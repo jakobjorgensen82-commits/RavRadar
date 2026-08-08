@@ -49,10 +49,13 @@ print("OK: water-source helper points request water level only.")
 # to discover a shared wet U/V point while preserving the existing 24 km accept cap.
 from pathlib import Path
 bulk_source = Path("scripts/update-dmi-bulk.py").read_text()
-assert 'DMI_BULK_LIMFJORD_GRID_CANDIDATES", "48"' in bulk_source
+assert 'DMI_BULK_GRID_CANDIDATES", "64"' in bulk_source
+assert 'DMI_BULK_LIMFJORD_GRID_CANDIDATES", "128"' in bulk_source
 assert '0.20, 0.26' in bulk_source
 assert 'MAX_GRID_DISTANCE_KM = {"limfjord": 24.0' in bulk_source
 assert 'vector_candidates.setdefault((family, zone["id"], layer_key), {})' in bulk_source
 assert 'prefer_vector_layer(previous_layer_rank, layer_rank)' in bulk_source
 assert '"verticalLayer": layer_key' in bulk_source
-print("OK: Limfjord U/V search preserves the acceptance cap and current pairing stays isolated by DMI depth layer.")
+assert 'family in {"current", "wind-tail"}' in bulk_source
+assert 'search.setdefault("vectorPairs", {}).setdefault(family, {})' in bulk_source
+print("OK: Marine U/V search examines broad land-mask windows, preserves physical caps, and diagnoses current and wind-tail pairs.")

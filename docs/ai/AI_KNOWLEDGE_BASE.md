@@ -1,5 +1,8 @@
 # AI Knowledge Base – RavRadar
 
+## 4.0.123 – DKSS-landmasker
+Produktionens centralt gemte zonegeometri er bulkjobbets input og kan afvige fra repositoryets historiske datapunkter. Marine U/V-opslag undersøger 64 kandidater ved almindelige kyster og 128 i Limfjorden, men de fysiske afstandsgrænser og kravet om ét fælles U/V-gridpunkt er uændrede. `marineGridSearch.vectorPairs` skelner mellem fejl i strøm og vindhale. De fulde livecacher er vedvarende hydreringstilstand; offentlig browserruntime er fortsat `public-conditions.json`.
+
 ## Formål
 RavRadar er et dansk kystbeslutningssystem for ravjagt. Systemet producerer en RavScore 0–100 og femdøgns/time-for-time prognoser for kystzoner. Scoren er beslutningsstøtte, ikke en garanti. DMI er den autoritative kilde til de marine og meteorologiske data, som projektet kan hente pålideligt.
 
