@@ -38,6 +38,17 @@ assert.ok(Math.abs(sparse.hourly[1].windSpeedMps - 5.8) < 0.01, 'Vind skal vekto
 assert.ok(Math.abs(sparse.hourly[2].windSpeedMps - 6.8) < 0.01, 'Vind skal vektorinterpoleres mellem modeltrin');
 assert.equal(sparse.hourly[5].windSpeedMps, null, 'Sidste modeltrin må ikke gentages uden for tolerancen');
 
+const windTail = [
+  { step: new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString(), 'wind-speed-10m': 20, 'wind-dir-10m': 90 },
+  { step: new Date(Date.parse(generatedAt) + 6 * 3600000).toISOString(), 'wind-speed-10m': 23, 'wind-dir-10m': 90 }
+];
+const chainedWind = buildDmiForecastHourly({ wind: sparseWind, windTail, generatedAt, hours: 7 });
+assert.equal(chainedWind.hourly[3].sources.wind.collection, 'harmonie_dini_sf', 'HARMONIE skal vinde ved overlap');
+assert.equal(chainedWind.hourly[3].windSpeedMps, 8, 'DKSS maa ikke overskrive HARMONIE ved samme tidspunkt');
+assert.equal(chainedWind.hourly[5].sources.wind.collection, 'dkss', 'DKSS skal overtage efter HARMONIE-horisonten');
+assert.ok(chainedWind.hourly[5].windSpeedMps > 20 && chainedWind.hourly[5].windSpeedMps < 23, 'DKSS-halen skal kun interpoleres inden for DKSS-serien');
+assert.equal(chainedWind.interpolation.modelBoundaryInterpolation, false);
+
 const normalized = normalizeForecastHourly([
   { time: generatedAt, windSpeedMps: 4 },
   { time: generatedAt, waveHeightM: 0.5 },

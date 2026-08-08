@@ -158,4 +158,8 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **CENTRAL ADMIN-GEOMETRI – AKTIV OG PRODUKTIONSVERIFICERET:** Centralt gemte kystlinjer, land-/havpunkter, retninger og øvrige redigerbare zonefelter skal være autoritative og propagere gennem hele produktionskæden. Tests må ikke hardcode historiske adminværdier.
 - **DMI U/V VERTIKALLAG – AKTIV KONTRAKT:** Current-U/V må kun parres på samme forecasttid, samme fysiske DMI-gridpunkt og samme vertikallag. Kandidater fra forskellige lag må ikke overskrive eller blandes.
 - **FORECAST-EDGE-COVERAGE – AKTIV:** Yderste del af femdøgnshorisonten skal undersøges for `missing` strøm/vandstand/vind/bølge. Manglende data må ikke fyldes med stale værdi eller 0.
+- **REQ-DATA-007 – IMPLEMENTERET LOKALT, AFVENTER PRODUKTION:** Vind bruger HARMONIE først og DKSS 10-meter U/V som separat DMI-hale. HARMONIE vinder i overlap, og modellerne må ikke krydsinterpoleres.
+- **REQ-DATA-008 – IMPLEMENTERET LOKALT, AFVENTER PRODUKTION:** Open-Meteo fallback canonicaliseres fra GMT/UTC og må kun udfylde manglende komponenttimer efter DMI.
+- **REQ-DATA-009 – DELVIST IMPLEMENTERET:** Vindtimer bærer DMI-collection og fallbackstatus. Fuld model-run-, lead-time-, alder- og native/interpoleret-proveniens pr. komponenttime mangler fortsat.
+- **REQ-DATA-010 – AKTIV:** Frisk produktion skal bevise 118–119 timers faktisk dækning pr. komponent. Vandtemperaturhale og eventuelle resterende huller må ikke erklæres dækket uden dette bevis.
 - **CODEX-HUKOMMELSE – AKTIV:** `docs/ai/`, RDKS, håndbog, tests, Git-historik og chatarkiv skal vedligeholdes som projektets persistente AI-hukommelse. Væsentlige beslutninger må ikke kun leve i en samtale.

@@ -77,8 +77,8 @@ for _session in (STAC_SESSION, DOWNLOAD_SESSION):
 STAC_SESSION.headers.update({"Accept": "application/geo+json, application/json"})
 DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octet-stream, */*"})
 
-PARSER_VERSION = 11
-PARAMETER_MAP_VERSION = 2
+PARSER_VERSION = 12
+PARAMETER_MAP_VERSION = 3
 GRID_LOOKUP_VERSION = 5
 COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw", "wam_nsb", "harmonie_dini_sf"]
 COLLECTION_FAMILY = {
@@ -86,7 +86,7 @@ COLLECTION_FAMILY = {
     "harmonie_dini_sf": "wind", "wam_dw": "wave", "wam_nsb": "wave",
 }
 TARGETS = {
-    "marine": ["sea-mean-deviation", "current-u", "current-v", "water-temperature"],
+    "marine": ["sea-mean-deviation", "current-u", "current-v", "water-temperature", "wind-tail-u-10m", "wind-tail-v-10m"],
     "wind": ["wind-u-10m", "wind-v-10m"],
     "wave": ["significant-wave-height", "mean-wave-dir", "dominant-wave-period"],
 }
@@ -97,12 +97,14 @@ REQUIRED_TARGETS = {
 }
 
 MARINE_COLLECTIONS = {"dkss_idw", "dkss_nsbs", "dkss_lf"}
-MARINE_PARAMETERS = {"sea-mean-deviation", "current-u", "current-v", "water-temperature"}
+MARINE_PARAMETERS = {"sea-mean-deviation", "current-u", "current-v", "water-temperature", "wind-tail-u-10m", "wind-tail-v-10m"}
 VECTOR_PAIRS = {
     "current-u": ("current", "current-u", "current-v"),
     "current-v": ("current", "current-u", "current-v"),
     "wind-u-10m": ("wind", "wind-u-10m", "wind-v-10m"),
     "wind-v-10m": ("wind", "wind-u-10m", "wind-v-10m"),
+    "wind-tail-u-10m": ("wind-tail", "wind-tail-u-10m", "wind-tail-v-10m"),
+    "wind-tail-v-10m": ("wind-tail", "wind-tail-u-10m", "wind-tail-v-10m"),
 }
 GRID_CANDIDATE_TARGET = max(4, int(os.getenv("DMI_BULK_GRID_CANDIDATES", "16")))
 LIMFJORD_GRID_CANDIDATE_TARGET = max(GRID_CANDIDATE_TARGET, int(os.getenv("DMI_BULK_LIMFJORD_GRID_CANDIDATES", "48")))
@@ -123,6 +125,8 @@ HINT_ALIASES = {
     "water-temperature": ("water temperature", "sea water temperature", "sea-water temperature", "sea surface temperature", "water-temperature", "temperature of sea water", "sst"),
     "wind-u-10m": ("10 metre u wind", "10 meter u wind", "10m u wind", "wind-u-10m", "10u", "u10", "u10m"),
     "wind-v-10m": ("10 metre v wind", "10 meter v wind", "10m v wind", "wind-v-10m", "10v", "v10", "v10m"),
+    "wind-tail-u-10m": ("10 metre u wind", "10 meter u wind", "10m u wind", "wind-tail-u-10m", "10u", "u10", "u10m"),
+    "wind-tail-v-10m": ("10 metre v wind", "10 meter v wind", "10m v wind", "wind-tail-v-10m", "10v", "v10", "v10m"),
     "significant-wave-height": ("significant wave height", "significant height of combined", "significant-wave-height", "swh", "htsgw"),
     "mean-wave-dir": ("mean wave direction", "mean direction of waves", "mean-wave-dir", "mwd", "dirpw", "wavedir"),
     "dominant-wave-period": ("peak wave period", "dominant wave period", "mean wave period", "dominant-wave-period", "pp1d", "mwp", "perpw"),
@@ -437,6 +441,8 @@ def classify_parameter(gid: int, collection: str) -> str | None:
             49: "current-u", 300049: "current-u",
             50: "current-v", 300050: "current-v",
             80: "water-temperature", 3080: "water-temperature", 300080: "water-temperature",
+            33: "wind-tail-u-10m", 3033: "wind-tail-u-10m", 300033: "wind-tail-u-10m",
+            34: "wind-tail-v-10m", 3034: "wind-tail-v-10m", 300034: "wind-tail-v-10m",
         }
         for raw_id in raw_ids:
             try:
@@ -827,6 +833,14 @@ def process_grib(path: pathlib.Path, collection: str, valid_time: str,
                             search["verticalLayer"] = layer_key
                             search["verticalLayerRankM"] = round(layer_rank, 3)
                             search.pop("rejectedReason", None)
+                        if family == "wind-tail":
+                            if distance > MAX_GRID_DISTANCE_KM.get(zone.get("coastType") or "east", 32.0):
+                                continue
+                            selected_collection = (point.get("marineSelection") or {}).get("collection")
+                            if selected_collection and selected_collection != collection:
+                                continue
+                            if not selected_collection and not accept_marine_collection(point, zone, collection, distance):
+                                continue
                         selected_vector_layer_rank[selection_key] = layer_rank
                         touched.add(zone["id"])
                         hour = point["hourly"].setdefault(valid_time, {"time": valid_time})
@@ -880,6 +894,10 @@ def wind_from_uv(hour: dict[str, Any]) -> None:
     if isinstance(u, (int, float)) and isinstance(v, (int, float)):
         hour["wind-speed-10m"] = math.hypot(u, v)
         hour["wind-dir-10m"] = (math.degrees(math.atan2(-u, -v)) + 360.0) % 360.0
+    tail_u, tail_v = hour.get("wind-tail-u-10m"), hour.get("wind-tail-v-10m")
+    if isinstance(tail_u, (int, float)) and isinstance(tail_v, (int, float)):
+        hour["wind-tail-speed-10m"] = math.hypot(tail_u, tail_v)
+        hour["wind-tail-dir-10m"] = (math.degrees(math.atan2(-tail_u, -tail_v)) + 360.0) % 360.0
 
 
 def load_previous() -> dict[str, Any]:
@@ -1059,7 +1077,7 @@ def coverage_summary(zones: dict[str, Any], required: tuple[str, ...]) -> dict[s
 def sanitize_vector_integrity(zone: dict[str, Any]) -> list[str]:
     """Fjern gamle/partielle vektorer der ikke kan bevises at dele gitterpunkt."""
     removed = []
-    for first_key, second_key in (("current-u", "current-v"), ("wind-u-10m", "wind-v-10m")):
+    for first_key, second_key in (("current-u", "current-v"), ("wind-u-10m", "wind-v-10m"), ("wind-tail-u-10m", "wind-tail-v-10m")):
         first_point = (zone.get("gridPoints") or {}).get(first_key)
         second_point = (zone.get("gridPoints") or {}).get(second_key)
         has_any = first_point is not None or second_point is not None
@@ -1070,9 +1088,12 @@ def sanitize_vector_integrity(zone: dict[str, Any]) -> list[str]:
         for hour in (zone.get("hourly") or {}).values():
             hour.pop(first_key, None)
             hour.pop(second_key, None)
-            if first_key.startswith("wind-"):
+            if first_key == "wind-u-10m":
                 hour.pop("wind-speed-10m", None)
                 hour.pop("wind-dir-10m", None)
+            if first_key == "wind-tail-u-10m":
+                hour.pop("wind-tail-speed-10m", None)
+                hour.pop("wind-tail-dir-10m", None)
         for key in (first_key, second_key):
             (zone.get("gridPoints") or {}).pop(key, None)
             (zone.get("collections") or {}).pop(key, None)
@@ -1105,6 +1126,7 @@ def clean_and_summarize(result: dict[str, Any], fresh_zone_ids: set[str], budget
     diag["waterSourceCount"] = sum(1 for zone_id in result["zones"] if zone_id.startswith("SOURCE::"))
     component_coverage = {
         "wind": coverage_summary(production_zones, ("wind-speed-10m",)),
+        "windTail": coverage_summary(production_zones, ("wind-tail-speed-10m",)),
         "wave": coverage_summary(production_zones, ("significant-wave-height",)),
         "marine": coverage_summary(production_zones, ("sea-mean-deviation", "current-u", "current-v")),
     }

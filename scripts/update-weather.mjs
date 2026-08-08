@@ -773,15 +773,17 @@ function bulkZoneToForecastRecord(feature, bulkCache, generatedAt, previousRecor
   const rows = Object.values(bulkZone?.hourly ?? {}).filter(row => Number.isFinite(Date.parse(row?.time))).sort((a, b) => Date.parse(a.time) - Date.parse(b.time));
   if (!rows.length) return null;
   const wind = rows.filter(row => num(row['wind-speed-10m']) !== null && num(row['wind-dir-10m']) !== null).map(row => ({ step: row.time, 'wind-speed-10m': num(row['wind-speed-10m']), 'wind-dir-10m': num(row['wind-dir-10m']) }));
+  const windTail = rows.filter(row => num(row['wind-tail-speed-10m']) !== null && num(row['wind-tail-dir-10m']) !== null).map(row => ({ step: row.time, 'wind-speed-10m': num(row['wind-tail-speed-10m']), 'wind-dir-10m': num(row['wind-tail-dir-10m']) }));
   const waves = rows.filter(row => ['significant-wave-height','mean-wave-dir','dominant-wave-period'].some(key => num(row[key]) !== null)).map(row => ({ step: row.time, 'significant-wave-height': num(row['significant-wave-height']), 'mean-wave-dir': num(row['mean-wave-dir']), 'dominant-wave-period': num(row['dominant-wave-period']) }));
   const ocean = rows.filter(row => ['sea-mean-deviation','current-u','current-v','water-temperature'].some(key => num(row[key]) !== null)).map(row => ({ step: row.time, 'sea-mean-deviation': num(row['sea-mean-deviation']), 'current-u': num(row['current-u']), 'current-v': num(row['current-v']), 'water-temperature': num(row['water-temperature']) }));
   const sourceCadenceMinutes = Number(bulkCache?.timeStrideHours ?? 3) * 60;
-  const built = buildDmiForecastHourly({ wind, waves, ocean, generatedAt, hours: DMI_FORECAST_HOURS, sourceCadenceMinutes });
+  const built = buildDmiForecastHourly({ wind, windTail, waves, ocean, generatedAt, hours: DMI_FORECAST_HOURS, sourceCadenceMinutes });
   const marine = ocean.some(item => num(item['sea-mean-deviation']) !== null && num(item['current-u']) !== null && num(item['current-v']) !== null);
   const windAvailable = wind.some(item => num(item['wind-speed-10m']) !== null && num(item['wind-dir-10m']) !== null);
+  const windTailAvailable = windTail.some(item => num(item['wind-speed-10m']) !== null && num(item['wind-dir-10m']) !== null);
   const waveRequired = dmiCollections(feature.properties?.coastType).wave !== null;
   const waveAvailable = !waveRequired || waves.some(item => num(item['significant-wave-height']) !== null);
-  if (!marine && !windAvailable && !waveAvailable) return null;
+  if (!marine && !windAvailable && !windTailAvailable && !waveAvailable) return null;
   const mergedHourly = mergeHourlyPreferDmi(built.hourly, previousRecord?.hourly ?? [], { generatedAt });
   const oldCompleteness = previousRecord?.model?.completeness ?? {};
   return createDmiForecastRecord({
@@ -793,6 +795,7 @@ function bulkZoneToForecastRecord(feature, bulkCache, generatedAt, previousRecor
     model: {
       ...(previousRecord?.model ?? {}),
       wind: windAvailable ? 'harmonie_dini_sf-stac-grib' : previousRecord?.model?.wind ?? null,
+      windTail: windTailAvailable ? `${bulkZone.collections?.['wind-tail-u-10m'] ?? 'dkss'}-stac-grib` : previousRecord?.model?.windTail ?? null,
       wave: waveAvailable && waveRequired ? `${dmiCollections(feature.properties?.coastType).wave}-stac-grib` : previousRecord?.model?.wave ?? null,
       ocean: marine ? `${dmiCollections(feature.properties?.coastType).ocean}-stac-grib` : previousRecord?.model?.ocean ?? null,
       completeness: {
@@ -800,7 +803,9 @@ function bulkZoneToForecastRecord(feature, bulkCache, generatedAt, previousRecor
         phase: 'bulk-stac-grib',
         ocean: marine || oldCompleteness.ocean === true,
         current: marine || oldCompleteness.current === true,
-        wind: windAvailable || oldCompleteness.wind === true,
+        wind: windAvailable || windTailAvailable || oldCompleteness.wind === true,
+        windPrimary: windAvailable || oldCompleteness.windPrimary === true,
+        windTail: windTailAvailable || oldCompleteness.windTail === true,
         wave: waveAvailable || oldCompleteness.wave === true,
         acquisitionMethod: 'whole-GRIB nearest-valid-original-grid-point',
         forecastCadenceMinutes: 60,
@@ -1004,7 +1009,7 @@ function mergeHourlyPreferDmi(dmiHourly = [], fallbackHourly = [], { generatedAt
       currentDirectionDeg: item.currentDirectionDeg ?? fallback.currentDirectionDeg ?? null,
       waterTemperatureC: item.waterTemperatureC ?? fallback.waterTemperatureC ?? null,
       sources: {
-        wind: (item.windSpeedMps != null && item.windDirectionDeg != null) ? { provider: 'dmi', fallback: false } : (fallback.windSpeedMps != null && fallback.windDirectionDeg != null) ? { provider: fallback.source ?? 'open-meteo', fallback: true } : { provider: 'missing', fallback: false },
+        wind: (item.windSpeedMps != null && item.windDirectionDeg != null) ? (item.sources?.wind ?? { provider: 'dmi', fallback: false }) : (fallback.windSpeedMps != null && fallback.windDirectionDeg != null) ? { provider: fallback.source ?? 'open-meteo', fallback: true } : { provider: 'missing', fallback: false },
         wave: item.waveHeightM != null ? { provider: 'dmi', fallback: false } : fallback.waveHeightM != null ? { provider: fallback.source ?? 'open-meteo', fallback: true } : { provider: 'missing', fallback: false },
         current: (item.currentSpeedMps != null && item.currentDirectionDeg != null) ? { provider: 'dmi', fallback: false } : (fallback.currentSpeedMps != null && fallback.currentDirectionDeg != null) ? { provider: fallback.source ?? 'open-meteo', fallback: true } : { provider: 'missing', fallback: false },
         waterLevel: { provider: 'pending', fallback: false },
@@ -1294,12 +1299,12 @@ async function forecastFromOpenMeteo(feature) {
   const weatherQuery = new URLSearchParams({
     latitude: String(latitude), longitude: String(longitude),
     hourly: 'wind_speed_10m,wind_direction_10m,temperature_2m',
-    wind_speed_unit: 'ms', timezone: 'Europe/Copenhagen', forecast_days: '5'
+    wind_speed_unit: 'ms', timezone: 'GMT', forecast_days: '5'
   });
   const marineQuery = new URLSearchParams({
     latitude: String(latitude), longitude: String(longitude),
     hourly: 'wave_height,wave_direction,wave_period,sea_level_height_msl,sea_surface_temperature,ocean_current_velocity,ocean_current_direction',
-    velocity_unit: 'ms', timezone: 'Europe/Copenhagen', forecast_days: '5', cell_selection: 'sea'
+    velocity_unit: 'ms', timezone: 'GMT', forecast_days: '5', cell_selection: 'sea'
   });
   const [weather, marine] = await Promise.all([
     fetchJson(`https://api.open-meteo.com/v1/forecast?${weatherQuery}`, { provider: 'Open-Meteo forecast', retries: 2 }),
@@ -1312,7 +1317,7 @@ async function forecastFromOpenMeteo(feature) {
     const sea = hourlyValue(marine, 'sea_level_height_msl', mi);
     const sea3 = hourlyValue(marine, 'sea_level_height_msl', Math.min(mi + 3, (marine?.hourly?.time?.length ?? 1) - 1));
     return {
-      time,
+      time: new Date(`${time}Z`).toISOString(),
       windSpeedMps: round(hourlyValue(weather, 'wind_speed_10m', index), 1),
       windDirectionDeg: round(hourlyValue(weather, 'wind_direction_10m', index), 0),
       airTemperatureC: round(hourlyValue(weather, 'temperature_2m', index), 1),

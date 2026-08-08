@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.117
+**Håndbogsversion:** 4.0.118
 
 **Opdateret:** 1. august 2026
 
@@ -1241,6 +1241,11 @@ Vandstationsfejlen fra 4.0.105 skyldtes fyldt browserlager. Fra 4.0.106 er lokal
 
 ## DMI-pipeline og prioritering (4.0.110)
 Når strømprognosens marine horisont mangler, henter RavRadar DKSS før den meget store HARMONIE-vindfil. Det beskytter de faktiske u/v-strømvektorer og vandstandsdata, som er nødvendige for score og audit. Vind kan midlertidigt komme fra den eksisterende fallbackkæde; manglende strøm må aldrig behandles som nul.
+
+### DMI-first vind gennem fem døgn (4.0.118)
+RavRadar bruger HARMONIE-vind så længe den valgte modelgeneration har valide værdier. Derefter kan DKSS' 10-meter-vind forlænge serien mod fem døgn. DKSS-vinden gemmes som sin egen U/V-vektor og blandes ikke med HARMONIE under interpolation. Hvis begge modeller har samme forecasttime, vælges HARMONIE. Når HARMONIE slutter, beregnes DKSS-halen kun mellem DKSS' egne modeltrin.
+
+Hver færdig vindtime angiver, om den kom fra HARMONIE, DKSS eller fallback. Open-Meteo bruges kun, hvor DMI-kæden mangler en brugbar time, og tidsstemplerne hentes som UTC. RavRadar er gratis og ikke-kommerciel, men systemet skal stadig overholde kildevilkår, begrænse unødige kald, cache data og kreditere kilderne. Lokal grøn test er ikke bevis for femdøgnsdækning; den skal måles i en frisk produktion.
 
 ## Historisk tilstand i RavRadar
 RavRadar vurderer ikke kun den aktuelle time. Systemet opsummerer også det seneste forløb med kraftig vind og bølger samt hvor længe strømmen har bevæget sig ind mod eller væk fra kysten. I version 4.0.111 bruges disse oplysninger kun til forklaring og teknisk kontrol. De ændrer endnu ikke RavScore.

@@ -18,6 +18,14 @@ assert.match(bulk, /zone_registry_unchanged/);
 assert.match(bulk, /and zone_registry_unchanged/,
   'fresh bulkcache må kun genbruges når zonepunkterne er uændrede');
 assert.match(bulk, /"zoneRegistrySignature": current_zone_registry_signature/);
+assert.match(bulk, /33: "wind-tail-u-10m"/,
+  'DKSS GRIB parameter 33 skal materialiseres som en separat vindhale');
+assert.match(bulk, /34: "wind-tail-v-10m"/,
+  'DKSS GRIB parameter 34 skal materialiseres som en separat vindhale');
+assert.match(source, /buildDmiForecastHourly\(\{ wind, windTail, waves, ocean/,
+  'bulk-konverteringen skal sende HARMONIE og DKSS som adskilte vindserier');
+assert.match(source, /timezone: 'GMT'/,
+  'Open-Meteo fallback skal levere entydige UTC-tider');
 
 assert.match(bulk, /active_output_ids = \{str\(zone\["id"\]\) for zone in zones if zone\.get\("id"\)\}/,
   'bulkcache skal materialisere den aktuelle zone-/kilderegistrering før DMI-felter flettes ind');

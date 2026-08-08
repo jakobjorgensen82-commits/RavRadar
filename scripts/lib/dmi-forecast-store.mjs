@@ -175,7 +175,7 @@ export function normalizeForecastHourly(hourly = [], { limit = DMI_FORECAST_HOUR
     .slice(0, Math.max(0, limit));
 }
 
-export function buildDmiForecastHourly({ wind = [], waves = [], ocean = [], observedWaterLevel = null, generatedAt, hours = DMI_FORECAST_HOURS, sourceCadenceMinutes = 180 } = {}) {
+export function buildDmiForecastHourly({ wind = [], windTail = [], waves = [], ocean = [], observedWaterLevel = null, generatedAt, hours = DMI_FORECAST_HOURS, sourceCadenceMinutes = 180 } = {}) {
   const canonicalStart = canonicalForecastHour(generatedAt, { ceil: true });
   const start = Date.parse(canonicalStart);
   if (!Number.isFinite(start)) throw new Error('generatedAt must be a valid date');
@@ -191,10 +191,15 @@ export function buildDmiForecastHourly({ wind = [], waves = [], ocean = [], obse
   for (let index = 0; index < hours; index += 1) {
     const validMs = start + index * 3600000;
     const windBracket = timeBracket(wind, validMs, bracketOptions);
+    const windTailBracket = timeBracket(windTail, validMs, bracketOptions);
     const waveBracket = timeBracket(waves, validMs, bracketOptions);
     const oceanBracket = timeBracket(ocean, validMs, bracketOptions);
     const ocean3Bracket = timeBracket(ocean, validMs + 3 * 3600000, bracketOptions);
     const windVector = interpolateSpeedDirection(windBracket, 'wind-speed-10m', 'wind-dir-10m', { from: true });
+    const windTailVector = interpolateSpeedDirection(windTailBracket, 'wind-speed-10m', 'wind-dir-10m', { from: true });
+    const primaryWindAvailable = windVector.speed !== null && windVector.direction !== null;
+    const selectedWind = primaryWindAvailable ? windVector : windTailVector;
+    const windSource = primaryWindAvailable ? 'harmonie_dini_sf' : (windTailVector.speed !== null && windTailVector.direction !== null ? 'dkss' : null);
     const waveHeight = interpolateScalar(waveBracket, 'significant-wave-height');
     const waveDirection = interpolateDirection(waveBracket, 'mean-wave-dir');
     const u = interpolateScalar(oceanBracket, 'current-u');
@@ -203,8 +208,8 @@ export function buildDmiForecastHourly({ wind = [], waves = [], ocean = [], obse
     const sea3 = interpolateScalar(ocean3Bracket, 'sea-mean-deviation');
     hourly.push({
       time: new Date(validMs).toISOString(),
-      windSpeedMps: round(windVector.speed, 1),
-      windDirectionDeg: round(windVector.direction, 0),
+      windSpeedMps: round(selectedWind.speed, 1),
+      windDirectionDeg: round(selectedWind.direction, 0),
       waveHeightM: round(waveHeight, 2),
       waveDirectionDeg: round(waveDirection, 0),
       wavePeriodS: round(interpolateScalar(waveBracket, 'dominant-wave-period'), 1),
@@ -218,12 +223,13 @@ export function buildDmiForecastHourly({ wind = [], waves = [], ocean = [], obse
       currentSpeedMps: u === null || v === null ? null : round(Math.hypot(u, v), 2),
       currentDirectionDeg: round(uvToTowardDirectionDeg(u, v), 0),
       waterTemperatureC: round(interpolateScalar(oceanBracket, 'water-temperature'), 1),
-      temporalResolution: oceanBracket?.mode ?? windBracket?.mode ?? waveBracket?.mode ?? null,
+      temporalResolution: oceanBracket?.mode ?? (primaryWindAvailable ? windBracket?.mode : windTailBracket?.mode) ?? waveBracket?.mode ?? null,
       source: 'dmi-forecast',
+      sources: { wind: windSource ? { provider: 'dmi', collection: windSource, fallback: false } : { provider: 'missing', collection: null, fallback: false } },
       waterLevelSource: 'dmi-model-authoritative'
     });
   }
-  return { hourly, waterLevelBiasCm: 0, observationDifferenceCm: round(observationDifferenceCm, 0), interpolation: { method: 'linear-between-model-steps', vectorInterpolation: ['wind', 'wave-direction', 'current'], sourceCadenceMinutes: Number(sourceCadenceMinutes) || 180 } };
+  return { hourly, waterLevelBiasCm: 0, observationDifferenceCm: round(observationDifferenceCm, 0), interpolation: { method: 'linear-within-model-steps', modelBoundaryInterpolation: false, windPriority: ['harmonie_dini_sf', 'dkss'], vectorInterpolation: ['wind', 'wave-direction', 'current'], sourceCadenceMinutes: Number(sourceCadenceMinutes) || 180 } };
 }
 
 export function createDmiForecastRecord({ zoneId, point, generatedAt, hourly, waterLevelInterpolation = null, model = null } = {}) {

@@ -118,3 +118,8 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 - **ISSUE-WORKFLOW-FALSE-GREEN-DEPLOY – PRODUKTIONSVERIFICERET LØST I #1772:** Bypasset blev lukket ved at lade gates følge enhver positiv preflight. #1769 beviste korrekt stop før artifact ved rød validate; #1772 beviste begge gates, artifact og Pages-deploy som `success` i samme friske run.
 - **TRANSITION-NOTE – ERSTATTET:** Pre-Codex bootstrap-undtagelsen er ophørt i kode. Den bevares kun som historisk forklaring.
 - **ISSUE-BULK-EMPTY-ACTIVE-ZONES – PRODUKTIONSVERIFICERET LØST I #1772:** #1769 afslørede, at `clean_and_summarize` slettede aktive records med tom `hourly`. Tomme records bevares nu som eksplicit `missing`; #1772 bestod den fulde spatial-audit uden stale data eller nuludfyldning.
+
+## 4.0.118 – DMI-first vindhale
+- **ISSUE-FIVE-DAY-DMI-WIND-TAIL – RETTET LOKALT, AFVENTER PRODUKTION:** DKSS' dokumenterede 10-meter U/V-vind udtrækkes nu som en separat hale efter HARMONIE. Modelserier blandes ikke, og HARMONIE vinder i overlap. En frisk kørsel skal bevise feltgenkendelse, zonehorisont, kildeskift og fulde release-gates.
+- **ISSUE-OPEN-METEO-LOCAL-TIME-AMBIGUITY – RETTET LOKALT, AFVENTER PRODUKTION:** Fallback blev forespurgt med `Europe/Copenhagen` og leverede offsetløse tider. Kaldet bruger nu GMT, og tider lagres eksplicit som UTC.
+- **ISSUE-FIVE-DAY-PER-HOUR-PROVENANCE – FORTSAT AKTIV:** Vindkilden angives nu pr. time, men fuld model-run-, lead-time-, alder- og native/interpoleret-proveniens for alle komponenter er endnu ikke komplet.

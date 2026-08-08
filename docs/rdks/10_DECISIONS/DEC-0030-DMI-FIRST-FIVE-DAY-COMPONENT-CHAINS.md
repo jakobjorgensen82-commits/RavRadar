@@ -1,6 +1,6 @@
 # DEC-0030 – DMI-first femdøgnskæder pr. komponent
 
-**Status:** AKTIV / analyse før implementering  
+**Status:** AKTIV / vindkæde implementeret lokalt, afventer produktionsbevis
 **Dato:** 2026-08-08
 
 ## Beslutning
@@ -24,3 +24,8 @@ Analysen skal måle, om kilde-, opløsnings- og usikkerhedsskift ændrer betydni
 
 ## Prioritet og stopregel
 Opgaven er P1. Den igangværende HARMONIE/cache-stabilisering og dens produktionsbevis afsluttes eller afgrænses først. Derefter udføres kilde- og runtimekortlægning før implementering. Opgaven ligger før den bredere P3 RavScore-forskningsrunde, fordi en kendt datakæde er en forudsætning for modelvalideringen.
+
+## Implementeringsvalg 2026-08-08
+Vindkæden bruger HARMONIE som primær kilde gennem dens valide native horisont og DKSS' separate 10-meter U/V-vind som DMI-hale mod fem døgn. Serierne opbevares separat, HARMONIE vinder i overlap, og der interpoleres aldrig på tværs af modelgrænsen. Open-Meteo forbliver komponentvis sidste fallback og leverer entydige UTC-tider. RavRadar er gratis og ikke-kommerciel; det reducerer den aktuelle adgangsrisiko ved gratis fallbacktjenester, men ophæver ikke fair-use-, cache- eller krediteringskrav.
+
+Dette implementerer kun vindkæden. WAM/DKSS dækker allerede de planlagte native horisonter for bølger, strøm og vandstand, men fuld 118–119-timers dækning og timeproveniens skal stadig bevises i en frisk produktionskørsel. Vandtemperaturens og eventuelle øvrige komponenters hale er fortsat åben.

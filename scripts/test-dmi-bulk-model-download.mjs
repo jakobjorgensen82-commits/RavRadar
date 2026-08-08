@@ -50,7 +50,7 @@ assert.match(bulk, /build_ocean_diagnostics/);
 assert.match(bulk, /select_common_vector_candidate/);
 assert.match(bulk, /water_source_parameter_allowed/);
 assert.match(bulk, /invalidatedMismatchedVectors/);
-assert.match(bulk, /PARSER_VERSION = 11/);
+assert.match(bulk, /PARSER_VERSION = 12/);
 assert.match(bulk, /"water-temperature": \(/);
 assert.match(bulk, /HINT_ALIASES\.get\(canonical, \(\)\)/);
 assert.match(bulk, /parser-exception/);

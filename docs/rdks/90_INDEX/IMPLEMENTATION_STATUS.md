@@ -26,6 +26,7 @@ Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode
 | Område | Status | Næste væsentlige arbejde |
 |---|---|---|
 | DMI-bulkprognoser | Implementeret, overvåges | Fortsat audit af horisont og marine randzoner |
+| DMI-first vindhale | Implementeret lokalt, afventer frisk produktion | Bevis HARMONIE→DKSS-kildeskift og 118–119 timers dækning |
 | Sammenhængende forecastserier | Implementeret | Regressionstest mod kildeskift og spring |
 | Officielt zoneregister | Implementeret | Fortsat geografisk audit |
 | Retningskonventioner | Implementeret og rådata-verificeret | Opfølgning på 12 zoner uden direkte DMI-gitterproveniens |

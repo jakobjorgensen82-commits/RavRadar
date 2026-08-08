@@ -470,3 +470,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - `Validate full project after fresh weather and current provenance` og `Run release governance gate after refreshed data validation` var begge `success`, ikke skipped.
 - Pages-artifact, upload og `Deploy to GitHub Pages` var `success` i samme run.
 - P0-bypasset og den efterfølgende tom-zone-regression er dermed CI-valideret og produktionsverificeret.
+
+## 2026-08-08 – 4.0.118 DMI-first vindhale
+- Officiel kildeaudit førte til HARMONIE som primær vind og DKSS 10-meter U/V som separat DMI-hale.
+- Parsergeneration 12, modelisoleret interpolation og UTC-fallback er implementeret lokalt med regressionsdækning.
+- RavScore er uændret. Frisk GitHub/DMI-produktion skal stadig bevise faktisk 118–119-timers dækning, kildeskift, gates og deploy.
