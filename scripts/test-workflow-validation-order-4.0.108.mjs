@@ -1,6 +1,14 @@
 import fs from 'node:fs';
 
 const path = '.github/workflows/update-and-deploy.yml';
+const workflowDirectory = '.github/workflows';
+const workflowFiles = fs.readdirSync(workflowDirectory)
+  .filter((name) => /\.ya?ml$/i.test(name))
+  .sort();
+const expectedWorkflowFiles = ['update-and-deploy.yml'];
+if (JSON.stringify(workflowFiles) !== JSON.stringify(expectedWorkflowFiles)) {
+  throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun update-and-deploy.yml må være aktivt.`);
+}
 const text = fs.readFileSync(path, 'utf8');
 const positions = {
   hydrate: text.indexOf('name: Hydrate latest deployed weather state'),
@@ -56,4 +64,4 @@ if (!deploySection.includes('pages: write') || !deploySection.includes('id-token
 if (buildSection.includes('pages: write') || buildSection.includes('id-token: write')) throw new Error('Buildjobbet må ikke have Pages-skriverettigheder.');
 if (!text.includes("cancel-in-progress: ${{ github.event_name == 'push'")) throw new Error('Push-release skal kunne prioritere sig foran en ældre almindelig vejropdatering.');
 
-console.log('Workflow-rækkefølge, deployisolering og progressiv DMI-cache består.');
+console.log('Workflowinventar, rækkefølge, deployisolering og progressiv DMI-cache består.');

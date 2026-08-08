@@ -1,7 +1,7 @@
 # AI Architecture Map – RavRadar
 
 ## Data- og buildpipeline
-- `.github/workflows/update-and-deploy.yml` – samlet produktionsorkestrering og Pages-deploy.
+- `.github/workflows/update-and-deploy.yml` – repositoryets eneste aktive workflow; samlet produktionsorkestrering og Pages-deploy. `pages-build-deployment` er GitHubs egen Pages-mekanisme, ikke en fil i repositoryet.
 - `scripts/sync-admin-config.py` – henter central admin-konfiguration.
 - `scripts/apply-central-zone-reviews.py` – anvender godkendte zone-/geometriændringer.
 - `scripts/hydrate-deployed-weather.py` – hydrering af senest deployede weather state.

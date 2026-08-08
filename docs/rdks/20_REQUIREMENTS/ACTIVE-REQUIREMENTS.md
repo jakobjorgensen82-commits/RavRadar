@@ -59,6 +59,7 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-AI-MODEL-002 – BINDENDE:** Sol bruges ved kritisk/komplekst arbejde og ved tvivl. Hvis Codex har anbefalet en billigere model, skal Codex stoppe og anbefale skift tilbage til Sol før næste kritiske del; ansvaret må ikke overlades til den ikke-tekniske ejer.
 - **REQ-AI-QUOTA-001 – BINDENDE:** Kvotegrænser må ikke reducere analyse, forskning, tests eller validering. En nødvendig pause kræver et permanent, genoptageligt checkpoint med evidens, status, hypoteser, ændringer, tests, næste trin og anbefalet model.
 ## Release og domæne
+- **REQ-WORKFLOW-INVENTORY-001 – IMPLEMENTERET I 4.0.121:** `.github/workflows/update-and-deploy.yml` er eneste repository-ejede aktive workflow. Nye workflowfiler kræver en udtrykkelig aktiv test-, release- eller recoveryrolle og opdateret kontrakttest/dokumentation; GitHubs `pages-build-deployment` er ikke en repositoryfil.
 - **REQ-RELEASE-001 – IMPLEMENTERET:** En samlet release-gate skal bestå før en ZIP kan erklæres installationsklar.
 - **REQ-RELEASE-002 – IMPLEMENTERET:** Releasepakker må ikke indeholde `.git`, secrets, caches eller `node_modules`.
 - **REQ-RELEASE-003 – AKTIV:** CI-fejl udløser samlet release-audit og dokumenteret ny pakke – ikke manuelle enkeltlapninger som slutleverance.

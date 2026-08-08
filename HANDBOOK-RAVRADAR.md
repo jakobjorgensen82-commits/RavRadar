@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.120
+**Håndbogsversion:** 4.0.121
 
 **Opdateret:** 1. august 2026
 
@@ -510,6 +510,8 @@ En faglig scoreaudit skal kunne følge: rå komponenter → enheder → retning 
 *Den bindende proces, som skal forhindre gentagelse af 4.0.56-forløbet.*
 
 En version er ikke installationsklar, før præcis det pakkede indhold har bestået hele valideringen og Release Gate. Kodegennemgang alene er ikke nok.
+
+RavRadar har ét repository-ejet GitHub Actions-workflow: `.github/workflows/update-and-deploy.yml`. Det bygger produktionsdata, kører gates og deployer Pages. De tidligere `schedule-test.yml` og `pages-microtest.yml` var afsluttede diagnostiske forsøg og blev fjernet i 4.0.121; mikrotesten kunne ellers publicere en testside til samme Pages-miljø som produktionen. Navnet `pages-build-deployment` i GitHub er platformens egen Pages-mekanisme og ikke en workflowfil i RavRadar.
 
 Obligatorisk rækkefølge:
 

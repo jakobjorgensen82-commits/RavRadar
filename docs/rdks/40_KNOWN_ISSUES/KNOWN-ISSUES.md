@@ -1,5 +1,10 @@
 # Kendte åbne og overvågede forhold
 
+## Løst i 4.0.121 – historiske diagnostikworkflows
+**Status:** LØST
+
+`schedule-test.yml` målte tidligere GitHubs interne schedule-adfærd, og `pages-microtest.yml` kunne manuelt publicere en minimal testside. Ingen af dem indgik længere i aktiv test, release eller recovery. De er fjernet, fordi især mikrotesten kunne konkurrere med produktionsdeployet om `github-pages`-miljøet. En kontrakttest fastholder nu kun `update-and-deploy.yml` som repository-ejet workflow.
+
 ## Høj prioritet
 1. **ISSUE-STATION-CACHE-STATUS – PLANLAGT:** Stationslivscyklus skelner endnu ikke fuldt mellem observation og gyldig prognosecache.
 2. **ISSUE-HANDBOOK-EVIDENCE – LØBENDE:** Flere faglige antagelser om rav og sedimenttransport kræver ekstern ekspertvalidering.

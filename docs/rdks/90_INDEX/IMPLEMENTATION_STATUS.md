@@ -1,4 +1,10 @@
-# Implementeringsstatus pr. 4.0.99
+# Implementeringsstatus pr. 4.0.121
+
+## 4.0.121 – workflowoprydning
+- [x] Aktiv kode, tests, release- og recoverydokumentation er kontrolleret: ingen procedure afhænger af `schedule-test.yml` eller `pages-microtest.yml`.
+- [x] Begge historiske diagnostikworkflows er fjernet; `update-and-deploy.yml` er bevaret som eneste repository-ejede produktionsworkflow.
+- [x] Workflow-kontrakttesten fejler, hvis ekstra YAML-workflows genindføres uden en ny bevidst beslutning.
+- [x] `pages-build-deployment` er dokumenteret som GitHub-administreret Pages-mekanisme, ikke RavRadar-workflow.
 
 ## 4.0.120 – fallbackhale efter vandstandsrouting
 - [x] #1833/#1835 beviste NSBS/LF-rotation og løftede offentlig vind til 208/208 zoner med data og 203/208 mindst 96 timer.

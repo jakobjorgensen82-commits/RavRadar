@@ -38,6 +38,9 @@ Run #1753-lignende fejlbillede viste, at en aktiv zone kan være korrekt opbygge
 ## 12. Native modelhorisont er ikke produktets horisont
 HARMONIEs cirka 60 timer bestemmer run-retention og validering af netop den kilde, men reducerer ikke RavRadars cirka 120-timers produktmål. Den korrekte løsning er en dokumenteret komponentkæde: DMI så langt som muligt, eventuel anden DMI-kilde og kun derefter en fagligt valgt fallbackhale. Kilder må ikke sammensys uden overgangs-, proveniens- og scoreanalyse.
 
+## 13. Midlertidige workflows skal have en slutdato
+Diagnostiske workflows bliver en driftsrisiko, når deres oprindelige forsøg er slut. En Pages-mikrotest med deployrettigheder kan overskrive samme miljø som produktionen, selv om filnavnet siger test. Aktivt workflowinventar skal derfor være bevidst, dokumenteret og kontrakttestet; GitHub-genererede workflowvisninger må ikke forveksles med repositoryets egne YAML-filer.
+
 ## Grøn workflowstatus kan skjule `skipped` releasegates
 **Hændelse:** De strenge push-runs fejlede, mens efterfølgende automatiske vejrruns ofte blev grønne og deployede.
 **Rodmekanisme:** `npm run validate` og `npm run release:gate` var betinget af `push || force`, men artifact/deploy kunne fortsætte i en almindelig `workflow_dispatch`.

@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.120",
+  "version": "4.0.121",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",

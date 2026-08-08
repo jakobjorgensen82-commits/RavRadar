@@ -490,3 +490,7 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Codex skal selv anbefale en billigere aktuelt tilgængelig model, når kvaliteten er den samme, og selv stoppe for at anbefale skift tilbage til Sol før kritisk arbejde.
 - Kvoteudløb må ikke sænke analyse, forskning, tests eller validering; en pause kræver et permanent genoptageligt checkpoint.
 - Den store videnskabelige RavRadar-/RavScore-analyse bruger som udgangspunkt Sol til centrale synteser og vurderinger.
+## 2026-08-08 – 4.0.121 workflowoprydning
+- Kontrol af kode, tests, aktiv dokumentation og Git-historik bekræftede, at `schedule-test.yml` og `pages-microtest.yml` kun var historisk diagnostik.
+- Begge er fjernet. `update-and-deploy.yml` er fortsat eneste produktionsworkflow; `pages-build-deployment` tilhører GitHub Pages og er ikke en repositoryfil.
+- Workflow-kontrakttesten beskytter det reducerede inventar. AI-hukommelse, RDKS og begge håndbøger forklarer begrundelsen.

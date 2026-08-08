@@ -1,7 +1,7 @@
 # RavRadar – aktuel overlevering til Codex
 
 **Opdateret:** 2026-08-08
-**Aktuel appversion:** 4.0.120 (lokalt valideres; afventer frisk CI/produktion)
+**Aktuel appversion:** 4.0.121 (workflowoprydning; afventer frisk CI/produktion)
 **Aktuel main/handoff:** `a164b6e52fa18efc7209d90779048bb86bcf870a` (`RavRadar 4.0.117 codex handoff v2`) – deployet, men endnu ikke fuldt strengt release-verificeret
 **Produktion:** GitHub Actions #1749 og #1750 gennemført med succes på samme commit; #1750 er den friske kontrol efter de seneste centrale zonegeometriændringer.
 
@@ -9,6 +9,7 @@
 Læs først `docs/ai/CODEX_START_HERE.md`, `AGENTS.md`, Current Truth, Implementation Status, Active Requirements, Known Issues og de relevante beslutninger. Denne fil er et øjebliksbillede, ikke en erstatning for RDKS.
 
 ## Det som er bevist ved overgangen
+- Repositoryets eneste aktive egen workflowfil er `.github/workflows/update-and-deploy.yml`. De historiske `schedule-test.yml` og `pages-microtest.yml` blev fjernet i 4.0.121 efter kontrol mod test, release og recovery; `pages-build-deployment` er GitHub-administreret.
 - 4.0.117 ligger på `main` og er deployet efter grønne efterfølgende produktionskørsler.
 - Schedulerens dækning bruger aktive zoner, og `wind`-familien er konsistent.
 - DKSS recovery kan prioritere model efter konkrete geografiske marine datagab.

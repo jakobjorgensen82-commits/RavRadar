@@ -18,6 +18,8 @@ Der findes flere forskellige typer sandhed, som ikke må blandes:
 ## Produktionskæde
 GitHub-workflowet bygger først/forbereder data og deployer derefter et færdigt Pages-artifact. Tidligt synkroniseres central admin-konfiguration og godkendt zonegeometri. Derefter hydreres eksisterende frisk state, DMI-registre og DMI-bulkdata opdateres efter scheduler/tidsbudget, central weather-cache bygges, strømproveniens tilknyttes, public runtime bygges og valideres, referencezoner kontrolleres, supportpakke genereres og et lean Pages-artifact deployes. `_support` og private adminmellemprodukter må ikke ende offentligt.
 
+Det aktive repositoryinventar består kun af `.github/workflows/update-and-deploy.yml`. `schedule-test.yml` var en historisk schedule-diagnose, og `pages-microtest.yml` var en manuel minimal Pages-diagnose; begge blev fjernet i 4.0.121, fordi ingen aktiv test-, release- eller recoveryprocedure brugte dem, og mikrotesten kunne publicere til produktionens Pages-miljø. `pages-build-deployment` er GitHubs platformsmekanisme og må ikke tælles som en RavRadar-workflowfil. Den eksterne scheduler udløser fortsat produktionsworkflowet via `workflow_dispatch`.
+
 ## DMI bulk og vektorer
 Aktive bulkfamilier omfatter DKSS-varianter for marine data, WAM for bølger og HARMONIE for vind. Schedulerens prioritet skal bestemmes af faktiske aktive zoners datagab, ikke kun historisk cacheindhold. Marinegrundlag prioriteres højt, fordi faktisk DMI-strøm ikke må erstattes af regionale antagelser.
 
