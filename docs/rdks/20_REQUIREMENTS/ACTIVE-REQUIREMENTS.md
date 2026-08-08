@@ -3,6 +3,8 @@
 Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslutninger, chatkilder og kode.
 
 ## Data og prognoser
+- **REQ-DATA-011 – IMPLEMENTERET LOKALT I 4.0.120:** Vandstandsrouting må kun ændre vandstandsfelter. Den må ikke erstatte en offentlig blandet komponentserie med den rene DMI-cache eller slette gyldig fallback.
+- **REQ-DATA-012 – IMPLEMENTERET LOKALT I 4.0.120:** En timebaseret fallbackhale skal forespørge om mindst 120 fremtidige timer; allerede forløbne timer siden midnat må ikke tælle med i produktets forecastbudget.
 - **REQ-DATA-001 – AKTIV:** DMI prioriteres; fallback må ikke skabe timevis pendlen.
 - **REQ-DATA-002 – AKTIV:** Komponentserier filtreres separat før interpolation og merges på faste UTC-timer.
 - **REQ-DATA-003 – IMPLEMENTERET:** Ingen dublerede eller ikke-monotone forecasttider.

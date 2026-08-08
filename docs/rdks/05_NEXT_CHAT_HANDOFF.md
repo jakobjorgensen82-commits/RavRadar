@@ -1,7 +1,7 @@
 # RavRadar – aktuel overlevering til Codex
 
 **Opdateret:** 2026-08-08
-**Aktuel appversion:** 4.0.119
+**Aktuel appversion:** 4.0.120 (lokalt valideres; afventer frisk CI/produktion)
 **Aktuel main/handoff:** `a164b6e52fa18efc7209d90779048bb86bcf870a` (`RavRadar 4.0.117 codex handoff v2`) – deployet, men endnu ikke fuldt strengt release-verificeret
 **Produktion:** GitHub Actions #1749 og #1750 gennemført med succes på samme commit; #1750 er den friske kontrol efter de seneste centrale zonegeometriændringer.
 
@@ -20,7 +20,8 @@ Læs først `docs/ai/CODEX_START_HERE.md`, `AGENTS.md`, Current Truth, Implement
 Fejlen må ikke forstås som én enkelt scheduler- eller radiusfejl. Forløbet viste flere lag: schedulerprioritet, kandidatlogik, vertikallagsparring og faktisk forkert zonegeometri. Fremover skal hele kæden undersøges, før rodårsagen erklæres. Lokal grøn validering må ikke omtales som stabil produktionsbaseline uden frisk CI/produktionsbevis.
 
 ## Åbne opgaver med høj prioritet
-1. Undersøg yderste del af femdøgns-horisonten, hvor enkelte strøm-/vandstandstimer kan blive `missing`. Hold dette adskilt fra fysisk nul og fra den løste totale marine mangel.
+1. Produktionsverificer 4.0.120: 208/208 zoner skal have 118-119 timers vind, og begge fulde gates samt deploy skal være `success`.
+2. Bevar de fem zoners manglende direkte DKSS U/V som `missing`; fallbackvind må ikke fejlagtigt fremstilles som verificeret DMI-havdata.
 2. Fortsæt audit af de kendte manglende vind-/bølgefelter i 5-døgnsvisningen efter null-sikkerheden og schedulerrettelserne.
 3. Vandstandskilder: forecast/cache-brugbarhed skal fortsætte, mens cache er gyldig, selv hvis observationer midlertidigt udebliver; statusvisning og auto/override skal gøres fuldt gennemskuelig.
 4. Reparer **Kontroller nu** under Supabase-lagringskontrollen og gennemfør direkte ekspert-review persistens-E2E.

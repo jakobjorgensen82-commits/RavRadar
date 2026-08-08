@@ -1,3 +1,9 @@
+## 2026-08-08 – 4.0.120 offentlig fallbackhale
+- #1833/#1835 beviste NSBS/LF-rotation: 208/208 zoner havde vind og 203/208 mindst 96 timer, men maksimum var cirka 110 timer.
+- De fem korte zoner havde ingen fælles gyldigt DKSS U/V-punkt. Ingen DMI-værdier konstrueres.
+- Systemaudit fandt to senere tab: vandstandsrouting slettede den blandede fallbackserie, og `forecast_days=5` talte fra midnat.
+- 4.0.120 bevarer den offentlige komponentserie og bruger `forecast_hours=120`. RavScore er uændret; frisk produktion afventer.
+
 ## 4.0.102 – 2026-08-05
 - Kortets farver er ændret fra “forslag + aktiv routing” til kun at vise den aktive routing for zonen.
 - Aktiv automatik vises grønt. Aktivt administratoroverride skjuler grønne markører og viser kun administratorens kilder rødt.

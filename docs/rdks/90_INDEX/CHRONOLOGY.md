@@ -2,6 +2,13 @@
 
 Rækkefølgen er udledt af tekstens indhold, versionsnumre, funktionsudvikling, henvisninger til tidligere arbejde og eksplicitte datoer. Filnavne og redigeringshistorik er ikke brugt som kronologisk bevis.
 
+## 2026-08-08 – 4.0.120 komplet offentlig vindhale
+1. #1833/#1835 roterede NSBS og LF og gav vind i alle 208 zoner; fem zoner manglede fortsat DKSS-hale.
+2. Supportdata afgrænsede de fem som reelle `NO_SHARED_UV_GRID_POINT`, ikke schedulerudsultning.
+3. Vandstandsrouting overskrev den blandede offentlige serie med DMI-cachen og slettede fallback.
+4. Open-Meteos fem kalenderdage mistede dagens allerede forløbne timer; forespørgslen er ændret til 120 fremtidige timer.
+5. Rettelsen er score-neutral og afventer frisk produktionsverifikation.
+
 ## CHAT-0001
 - **Kilde:** chat 1.txt
 - **Forløb:** 2026-07-20 til projektets version 28

@@ -1,5 +1,12 @@
 # Implementeringsstatus pr. 4.0.99
 
+## 4.0.120 – fallbackhale efter vandstandsrouting
+- [x] #1833/#1835 beviste NSBS/LF-rotation og løftede offentlig vind til 208/208 zoner med data og 203/208 mindst 96 timer.
+- [x] Fem zoner mangler et fælles gyldigt DKSS U/V-gitterpunkt; de udfyldes ikke kunstigt.
+- [x] Vandstandsrouting bevarer den blandede offentlige komponentserie og opdaterer DMI-cachen separat.
+- [x] Open-Meteo bruger 120 fremtidige timer i stedet for fem kalenderdage.
+- [ ] Frisk CI/produktion skal vise 208/208 zoner med 118–119 timers vind samt fulde gates og deploy.
+
 ## 4.0.76
 - Strømpile placeres ved dokumenterede DMI-marinegitterpunkter i stedet for kunstige offsets.
 - Rå current-u/current-v bevares og valideres mod hastighed, retning og pil.

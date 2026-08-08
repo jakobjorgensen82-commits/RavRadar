@@ -7,6 +7,11 @@
 4. **ISSUE-WATERLEVEL-CONTINUITY – OVERVÅGES:** Kunstige spring må ikke genopstå ved kildeskift; Vadehavet skal vurderes særskilt.
 5. **ISSUE-STATION-OFFICIAL-AUDIT – DELVIST LØST I 4.0.103:** OceanObs-målestationer og `tidewaterstation`-prognosepunkter opdages fra deres dokumenterede collections og skrives til en samlet audit. Første produktion skal bekræfte antal, horisont og Hals-punkternes faktiske data.
 
+## 4.0.120 – offentlig fallbackhale
+- **ISSUE-WATER-ROUTING-DROPS-FALLBACK – RETTET LOKALT:** Vandstandsroutingen overskrev hele den offentlige blandede prognose med den rene DMI-cache. Routing opdaterer nu vandstand separat i begge serier og bevarer alle andre offentlige komponenter.
+- **ISSUE-OPEN-METEO-CALENDAR-DAY-HORIZON – RETTET LOKALT:** `forecast_days=5` startede ved midnat og gav kun cirka 110 fremtidige timer ved en kørsel kl. 10. Fallback bruger nu `forecast_hours=120`.
+- **ISSUE-FIVE-ZONES-NO-SHARED-DKSS-GRID – AFGRÆNSET:** Fem navngivne zoner havde ingen fælles gyldigt DKSS U/V-punkt i #1835-supportdata. Direkte DMI-havdata forbliver `missing`; afventer frisk produktionsbevis for fallbackhalen.
+
 ## Produkt og admin
 6. **ISSUE-RULE-USABILITY – DELVIST:** Regelbyggerens fulde menneskevenlige workflow og konfliktforklaring skal løbende verificeres i browseren.
 7. **ISSUE-COASTLINE-EDITOR – RETTET I 4.0.90, OVERVÅGES:** Søgning, zonevalg, omdøbning og central gemning er samlet i én brugerrejse. Mobil browsertest og rollback overvåges fortsat.

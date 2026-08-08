@@ -1299,12 +1299,12 @@ async function forecastFromOpenMeteo(feature) {
   const weatherQuery = new URLSearchParams({
     latitude: String(latitude), longitude: String(longitude),
     hourly: 'wind_speed_10m,wind_direction_10m,temperature_2m',
-    wind_speed_unit: 'ms', timezone: 'GMT', forecast_days: '5'
+    wind_speed_unit: 'ms', timezone: 'GMT', forecast_hours: '120'
   });
   const marineQuery = new URLSearchParams({
     latitude: String(latitude), longitude: String(longitude),
     hourly: 'wave_height,wave_direction,wave_period,sea_level_height_msl,sea_surface_temperature,ocean_current_velocity,ocean_current_direction',
-    velocity_unit: 'ms', timezone: 'GMT', forecast_days: '5', cell_selection: 'sea'
+    velocity_unit: 'ms', timezone: 'GMT', forecast_hours: '120', cell_selection: 'sea'
   });
   const [weather, marine] = await Promise.all([
     fetchJson(`https://api.open-meteo.com/v1/forecast?${weatherQuery}`, { provider: 'Open-Meteo forecast', retries: 2 }),

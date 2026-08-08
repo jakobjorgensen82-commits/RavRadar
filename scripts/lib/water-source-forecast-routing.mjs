@@ -67,18 +67,31 @@ export function applyWaterSourceRouting({features,output,forecastStore,sources,i
     if(!selected.length){audit.incomplete++;continue;}
     const rows=weighted(point,selected,haversineKm,route?.method);
     const timeMaps=rows.map(s=>byTime(index.get(sourceKey(s))));
-    const target=forecastStore?.zones?.[zoneId]?.hourly??zone.forecast?.hourly??[];
-    let applied=0;
-    const updated=target.map(row=>{
-      const values=rows.map((s,i)=>finite(timeMaps[i].get(row.time)?.waterLevelCm));
-      if(values.some(v=>v===null))return row;
-      const value=values.reduce((sum,v,i)=>sum+v*rows[i].weight,0); applied++;
-      return {...row,waterLevelCm:round(value,0),waterLevelModelCm:round(value,0),waterLevelSource:'dmi-water-source-interpolation'};
-    });
-    for(let i=0;i<updated.length;i++){const future=updated[i+3];updated[i].waterLevelTrendCm3h=finite(updated[i].waterLevelCm)!==null&&finite(future?.waterLevelCm)!==null?round(future.waterLevelCm-updated[i].waterLevelCm,0):null;}
+    const routeWaterLevels=target=>{
+      const routed=target.map(row=>{
+        const values=rows.map((s,i)=>finite(timeMaps[i].get(row.time)?.waterLevelCm));
+        if(values.some(v=>v===null))return row;
+        const value=values.reduce((sum,v,i)=>sum+v*rows[i].weight,0);
+        return {...row,waterLevelCm:round(value,0),waterLevelModelCm:round(value,0),waterLevelSource:'dmi-water-source-interpolation'};
+      });
+      for(let i=0;i<routed.length;i++){
+        const future=routed[i+3];
+        routed[i].waterLevelTrendCm3h=finite(routed[i].waterLevelCm)!==null&&finite(future?.waterLevelCm)!==null?round(future.waterLevelCm-routed[i].waterLevelCm,0):null;
+      }
+      return routed;
+    };
+    // Den offentlige serie kan indeholde komponentvis fallback, som ikke findes i
+    // den rene DMI-cache. Rout vandstand i begge serier uden at erstatte den
+    // offentlige vind-/bÃ¸lge-/strÃ¸mserie med forecastStore-versionen.
+    const publicTarget=zone.forecast?.hourly??forecastStore?.zones?.[zoneId]?.hourly??[];
+    const updated=routeWaterLevels(publicTarget);
+    const applied=updated.filter(row=>row.waterLevelSource==='dmi-water-source-interpolation').length;
     if(!applied){audit.incomplete++;continue;} audit.applied++;
     const meta={mode,method:rows.length===1?'single-water-source':'inverse-distance-water-sources',stations:rows.map(s=>({sourceKey:sourceKey(s),stationId:String(s.stationId),name:s.name,sourceType:s.sourceType,distanceKm:round(s.distanceKm,1),weight:round(s.weight,3),role:s.role,forecastValidUntil:index.get(sourceKey(s))?.validUntil??null})),generatedAt,validUntil:rows.map(s=>index.get(sourceKey(s))?.validUntil).filter(Boolean).sort()[0]??null,completeBracket:recommendation?.completeBracket??null};
-    if(forecastStore?.zones?.[zoneId]){forecastStore.zones[zoneId].hourly=updated;forecastStore.zones[zoneId].waterLevelInterpolation=meta;}
+    if(forecastStore?.zones?.[zoneId]){
+      forecastStore.zones[zoneId].hourly=routeWaterLevels(forecastStore.zones[zoneId].hourly??[]);
+      forecastStore.zones[zoneId].waterLevelInterpolation=meta;
+    }
     if(zone.forecast?.hourly)zone.forecast.hourly=updated;
     const current=updated.find(r=>Date.parse(r.time)>=Date.parse(generatedAt)-30*60000)??updated[0];
     if(current&&finite(current.waterLevelCm)!==null)zone.current.waterLevelCm=current.waterLevelCm;

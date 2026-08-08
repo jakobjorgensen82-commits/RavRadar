@@ -2,6 +2,11 @@
 
 Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed og udtrykkeligt planlagte næste skridt. Historik findes andre steder i RDKS.
 
+## 4.0.120 – offentlig fallbackhale
+- #1833/#1835 roterede NSBS/LF ind. Offentlig vind nåede 208/208 med data og 203/208 mindst 96 timer; maksimum var cirka 110 timer. De fem resterende zoner havde ingen fælles gyldigt DKSS U/V-gitterpunkt.
+- 4.0.120 retter de to dokumenterede efterfølgende tab: vandstandsrouting bevarer den blandede offentlige serie, og Open-Meteo forespørges om 120 fremtidige timer frem for fem kalenderdage fra midnat.
+- RavScore og DMI-gridkrav er uændrede. Frisk produktion skal bevise 118–119 timer.
+
 ## Projekt og evidens
 - RavRadar er beslutningsstøtte til ravjagt og lover ikke fund.
 - Faglige udsagn mærkes som dokumenterede, observerede, hypoteser eller validerede i RavRadar.
