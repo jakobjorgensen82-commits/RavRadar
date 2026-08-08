@@ -494,3 +494,7 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Kontrol af kode, tests, aktiv dokumentation og Git-historik bekræftede, at `schedule-test.yml` og `pages-microtest.yml` kun var historisk diagnostik.
 - Begge er fjernet. `update-and-deploy.yml` er fortsat eneste produktionsworkflow; `pages-build-deployment` tilhører GitHub Pages og er ikke en repositoryfil.
 - Workflow-kontrakttesten beskytter det reducerede inventar. AI-hukommelse, RDKS og begge håndbøger forklarer begrundelsen.
+## 2026-08-08 – 4.0.122 produktionsverificeret vindhale
+- #1845 på `76c7c23` bestod frisk DMI, fuld validering, release-gate, artifact og Pages-deploy.
+- Offentlig dataset `rr-20260808124116-208`: 208/208 zoner, 118 sammenhængende vindtimer.
+- Fem-zoners direkte DKSS-gridproveniens er fortsat særskilt audit; fallbackdækning må ikke kaldes direkte DMI-bevis.

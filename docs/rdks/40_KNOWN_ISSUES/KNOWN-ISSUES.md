@@ -1,5 +1,8 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.122 – offentlig vindhale verificeret
+`ISSUE-DMI-FIRST-FIVE-DAY-CHAIN` er delvist afklaret i produktion: #1845 leverede 208/208 zoner med 118 sammenhængende offentlige vindtimer og grønne gates/deploy. `ISSUE-FIVE-ZONES-NO-SHARED-DKSS-GRID` er fortsat afgrænset til provenance-spørgsmålet; offentlig fallbackdækning er ikke det samme som direkte DMI-gridbevis.
+
 ## Løst i 4.0.121 – historiske diagnostikworkflows
 **Status:** LØST
 

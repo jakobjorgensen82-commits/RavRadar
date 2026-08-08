@@ -1,4 +1,4 @@
-import { loadActiveZoneCollection } from './zone-registry.js?v=4.0.121';
+import { loadActiveZoneCollection } from './zone-registry.js?v=4.0.122';
 const DEFAULT_PUBLIC_CONDITIONS_URL='./data/live/public-conditions.json';
 const MANIFEST_URL='./data/live/manifest.json';
 const memory=new Map();

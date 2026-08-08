@@ -1,4 +1,9 @@
-# Implementeringsstatus pr. 4.0.121
+# Implementeringsstatus pr. 4.0.122
+
+## 4.0.122 – produktionsverificeret vindhale
+- [x] #1845 gennemførte frisk DMI-kørsel, fuld projektvalidering, release-gate, artifact og Pages-deploy som `success`.
+- [x] Det offentlige datasæt har 208/208 zoner med vind og 118 sammenhængende timer i alle zoner.
+- [ ] Direkte DKSS-gridproveniens versus fallback skal fortsat dokumenteres særskilt for de fem tidligere problemzoner.
 
 ## 4.0.121 – workflowoprydning
 - [x] Aktiv kode, tests, release- og recoverydokumentation er kontrolleret: ingen procedure afhænger af `schedule-test.yml` eller `pages-microtest.yml`.
