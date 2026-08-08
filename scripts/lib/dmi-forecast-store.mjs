@@ -81,6 +81,49 @@ function timeBracket(items, targetMs, { maxGapMs = 4 * 3600000, edgeToleranceMs 
   return null;
 }
 
+function provenanceAt(item, component) {
+  const source = item?.provenance?.[component];
+  return source?.provider === 'dmi' && source.collection && source.modelRun ? source : null;
+}
+
+function sameNativeSeries(bracket, component) {
+  if (!bracket || bracket.before === bracket.after) return true;
+  const before = provenanceAt(bracket.before, component);
+  const after = provenanceAt(bracket.after, component);
+  // Overgang for hydreret cache fra før parsergeneration 14: to helt
+  // uidentificerede trin bevarer den hidtidige værdiadfærd, men får ikke
+  // komplet proveniens og forbliver derfor synlige i auditten. Ny og gammel
+  // identitet må aldrig blandes, og to kendte runs skal være ens.
+  if (!before && !after) return true;
+  return Boolean(before && after && before.collection === after.collection && before.modelRun === after.modelRun);
+}
+
+function componentBracket(items, targetMs, component, options) {
+  const bracket = timeBracket(items, targetMs, options);
+  return sameNativeSeries(bracket, component) ? bracket : null;
+}
+
+function componentSource(bracket, component, targetMs, generatedAt) {
+  if (!bracket) return null;
+  const before = provenanceAt(bracket.before, component);
+  const after = provenanceAt(bracket.after, component);
+  const selected = before ?? after;
+  if (!selected) return null;
+  const modelRunMs = Date.parse(selected.modelRun);
+  const generatedMs = Date.parse(generatedAt);
+  const nativeValidTimes = [...new Set([before?.nativeValidTime, after?.nativeValidTime].filter(Boolean))];
+  return {
+    provider: 'dmi',
+    collection: selected.collection,
+    modelRun: selected.modelRun,
+    leadTimeHours: Number.isFinite(modelRunMs) ? round((targetMs - modelRunMs) / 3600000, 2) : null,
+    forecastAgeHours: Number.isFinite(modelRunMs) && Number.isFinite(generatedMs) ? round((generatedMs - modelRunMs) / 3600000, 2) : null,
+    temporalResolution: bracket.mode === 'exact' ? 'native' : bracket.mode,
+    nativeValidTimes,
+    fallback: false
+  };
+}
+
 function interpolateScalar(bracket, key) {
   if (!bracket) return null;
   const a = finite(bracket.before?.[key]);
@@ -190,11 +233,13 @@ export function buildDmiForecastHourly({ wind = [], windTail = [], waves = [], o
   const hourly = [];
   for (let index = 0; index < hours; index += 1) {
     const validMs = start + index * 3600000;
-    const windBracket = timeBracket(wind, validMs, bracketOptions);
-    const windTailBracket = timeBracket(windTail, validMs, bracketOptions);
-    const waveBracket = timeBracket(waves, validMs, bracketOptions);
-    const oceanBracket = timeBracket(ocean, validMs, bracketOptions);
-    const ocean3Bracket = timeBracket(ocean, validMs + 3 * 3600000, bracketOptions);
+    const windBracket = componentBracket(wind, validMs, 'wind', bracketOptions);
+    const windTailBracket = componentBracket(windTail, validMs, 'wind', bracketOptions);
+    const waveBracket = componentBracket(waves, validMs, 'wave', bracketOptions);
+    const currentBracket = componentBracket(ocean, validMs, 'current', bracketOptions);
+    const waterLevelBracket = componentBracket(ocean, validMs, 'waterLevel', bracketOptions);
+    const waterLevel3Bracket = componentBracket(ocean, validMs + 3 * 3600000, 'waterLevel', bracketOptions);
+    const waterTemperatureBracket = componentBracket(ocean, validMs, 'waterTemperature', bracketOptions);
     const windVector = interpolateSpeedDirection(windBracket, 'wind-speed-10m', 'wind-dir-10m', { from: true });
     const windTailVector = interpolateSpeedDirection(windTailBracket, 'wind-speed-10m', 'wind-dir-10m', { from: true });
     const primaryWindAvailable = windVector.speed !== null && windVector.direction !== null;
@@ -202,10 +247,15 @@ export function buildDmiForecastHourly({ wind = [], windTail = [], waves = [], o
     const windSource = primaryWindAvailable ? 'harmonie_dini_sf' : (windTailVector.speed !== null && windTailVector.direction !== null ? 'dkss' : null);
     const waveHeight = interpolateScalar(waveBracket, 'significant-wave-height');
     const waveDirection = interpolateDirection(waveBracket, 'mean-wave-dir');
-    const u = interpolateScalar(oceanBracket, 'current-u');
-    const v = interpolateScalar(oceanBracket, 'current-v');
-    const sea = interpolateScalar(oceanBracket, 'sea-mean-deviation');
-    const sea3 = interpolateScalar(ocean3Bracket, 'sea-mean-deviation');
+    const u = interpolateScalar(currentBracket, 'current-u');
+    const v = interpolateScalar(currentBracket, 'current-v');
+    const sea = interpolateScalar(waterLevelBracket, 'sea-mean-deviation');
+    const sea3 = interpolateScalar(waterLevel3Bracket, 'sea-mean-deviation');
+    const windProvenance = componentSource(primaryWindAvailable ? windBracket : windTailBracket, 'wind', validMs, generatedAt);
+    const waveProvenance = componentSource(waveBracket, 'wave', validMs, generatedAt);
+    const currentProvenance = componentSource(currentBracket, 'current', validMs, generatedAt);
+    const waterLevelProvenance = componentSource(waterLevelBracket, 'waterLevel', validMs, generatedAt);
+    const waterTemperatureProvenance = componentSource(waterTemperatureBracket, 'waterTemperature', validMs, generatedAt);
     hourly.push({
       time: new Date(validMs).toISOString(),
       windSpeedMps: round(selectedWind.speed, 1),
@@ -222,10 +272,16 @@ export function buildDmiForecastHourly({ wind = [], windTail = [], waves = [], o
       currentVMps: round(v, 5),
       currentSpeedMps: u === null || v === null ? null : round(Math.hypot(u, v), 2),
       currentDirectionDeg: round(uvToTowardDirectionDeg(u, v), 0),
-      waterTemperatureC: round(interpolateScalar(oceanBracket, 'water-temperature'), 1),
-      temporalResolution: oceanBracket?.mode ?? (primaryWindAvailable ? windBracket?.mode : windTailBracket?.mode) ?? waveBracket?.mode ?? null,
+      waterTemperatureC: round(interpolateScalar(waterTemperatureBracket, 'water-temperature'), 1),
+      temporalResolution: currentBracket?.mode ?? waterLevelBracket?.mode ?? (primaryWindAvailable ? windBracket?.mode : windTailBracket?.mode) ?? waveBracket?.mode ?? null,
       source: 'dmi-forecast',
-      sources: { wind: windSource ? { provider: 'dmi', collection: windSource, fallback: false } : { provider: 'missing', collection: null, fallback: false } },
+      sources: {
+        wind: windSource ? (windProvenance ?? { provider: 'dmi', collection: windSource, fallback: false }) : { provider: 'missing', collection: null, fallback: false },
+        wave: waveHeight !== null ? (waveProvenance ?? { provider: 'dmi', fallback: false }) : { provider: 'missing', fallback: false },
+        current: u !== null && v !== null ? (currentProvenance ?? { provider: 'dmi', fallback: false }) : { provider: 'missing', fallback: false },
+        waterLevel: sea !== null ? (waterLevelProvenance ?? { provider: 'dmi', fallback: false }) : { provider: 'missing', fallback: false },
+        waterTemperature: interpolateScalar(waterTemperatureBracket, 'water-temperature') !== null ? (waterTemperatureProvenance ?? { provider: 'dmi', fallback: false }) : { provider: 'missing', fallback: false }
+      },
       waterLevelSource: 'dmi-model-authoritative'
     });
   }

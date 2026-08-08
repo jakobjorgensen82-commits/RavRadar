@@ -12,14 +12,14 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 - Fortsæt måling af workflowtid/schedulerbudget og DMI-coverage uden at svække marine audits.
 
 ## P1 – komplette DMI-first femdøgnskæder pr. komponent
-- **Status: næste prioriterede analyseopgave under DEC-0030.** HARMONIE/cache-stabilisering er produktionsbevist i #1788; opgaven ligger før P3 RavScore-forskningen.
+- **Status: timeproveniens implementeret lokalt i 4.0.125; frisk produktion og de kendte Limfjord-halehuller er næste gate.** HARMONIE/cache-stabilisering og fuld vinddækning er produktionsbevist; opgaven ligger før P3 RavScore-forskningen.
 - **Model efter DEC-0031:** Rutinemæssig overvågning og registrering af allerede definerede LF/NSBS-coverage-målinger kan udføres med GPT-5.6 Terra. Skift til GPT-5.6 Sol før ny faglig kildesyntese, provenance-/fallbackdesign, ændring af datakæden eller endelig kritisk validering.
 - **Fase A startet:** `docs/research/DMI_FIRST_FIVE_DAY_SOURCE_AUDIT.md` kortlægger aktuel kode og officielle modelrammer. DMI dokumenterer HARMONIE til 54 timer, WAM til 5½ døgn og DKSS til 5 døgn. WAM/DKSS-vind er derfor første DMI-halekandidater, før ekstern fallback vurderes.
 - Kortlæg for vind, bølger, strøm, vandstand, vandtemperatur og alle øvrige aktive score-/forecastkomponenter: nuværende DMI-kilde, native og typisk resterende horisont, runfrekvens, alternative DMI-produkter, lovlig/teknisk anvendelighed, opløsning og kvalitet.
 - Design derefter den bedste kæde individuelt: primær DMI så langt den er valid, eventuel anden relevant DMI-kilde som forlængelse og kun ekstern fallback for den resterende hale mod cirka 120 timer.
 - Revurdér eksisterende Open-Meteo-fallback fagligt og teknisk; historisk brug er ikke i sig selv et valg.
 - Auditér overgangene for spring, tidsforskydning, dubletter, huller, enheder, retninger, stale data og interpolation. UTC og fuld timeproveniens er bindende.
-- Udvid diagnostik og gates med faktisk intervaldækning pr. komponent/zone, herunder kilde, model-run, lead time, prognosealder og native/interpoleret/fallback-status.
+- [x] Udvid diagnostik og pipeline med faktisk intervaldækning pr. komponent/zone samt collection, model-run, lead time, prognosealder, native/interpoleret/fallback-status og native kildetider. Frisk 4.0.125-produktion mangler som endeligt bevis.
 - Vurder separat konsekvensen for RavScore, state og UI. Dag 5 må ikke fremstå lige så sikker som dag 1 uden evidens, og missing må aldrig opfindes som nul eller kopieret sidste værdi.
 - **Stopregel:** Ingen ny produktionskilde, sammensyning eller scoreændring implementeres før kortlægning, design og regressionplan er dokumenteret og godkendt.
 

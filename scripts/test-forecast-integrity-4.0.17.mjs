@@ -2,9 +2,14 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { buildDmiForecastHourly, normalizeForecastHourly } from './lib/dmi-forecast-store.mjs';
 const generatedAt='2026-07-28T19:01:41Z';
+const modelRun='2026-07-28T18:00:00.000Z';
+const provenance=step=>({
+ current:{provider:'dmi',collection:'dkss_idw',modelRun,nativeValidTime:step},
+ waterLevel:{provider:'dmi',collection:'dkss_idw',modelRun,nativeValidTime:step}
+});
 const ocean=[
- {step:'2026-07-28T18:00:00Z','sea-mean-deviation':0.1,'current-u':0.1,'current-v':0.0},
- {step:'2026-07-28T21:00:00Z','sea-mean-deviation':0.2,'current-u':0.2,'current-v':0.0}
+ {step:'2026-07-28T18:00:00Z','sea-mean-deviation':0.1,'current-u':0.1,'current-v':0.0,provenance:provenance('2026-07-28T18:00:00.000Z')},
+ {step:'2026-07-28T21:00:00Z','sea-mean-deviation':0.2,'current-u':0.2,'current-v':0.0,provenance:provenance('2026-07-28T21:00:00.000Z')}
 ];
 const built=buildDmiForecastHourly({generatedAt,ocean,hours:120,sourceCadenceMinutes:180});
 assert.equal(built.hourly[0].time,'2026-07-28T20:00:00.000Z');

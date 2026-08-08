@@ -5,9 +5,10 @@
 - `scripts/sync-admin-config.py` – henter central admin-konfiguration.
 - `scripts/apply-central-zone-reviews.py` – anvender godkendte zone-/geometriændringer.
 - `scripts/hydrate-deployed-weather.py` – hydrering af senest deployede weather state.
-- `scripts/update-dmi-bulk.py` – DMI STAC/GRIB bulk, scheduler, sampling og vektorkandidater.
+- `scripts/update-dmi-bulk.py` – DMI STAC/GRIB bulk, scheduler, sampling, vektorkandidater og autoritativ native komponentproveniens (`collection`, `modelRun`, `nativeValidTime`).
 - `scripts/update-water-source-registry.mjs` – DMI-vandstandskilderegister.
-- `scripts/update-weather.mjs` – bygger den centrale weather-cache.
+- `scripts/lib/dmi-forecast-store.mjs` – UTC-timebygning, komponentvis interpolation inden for samme model-run samt lead time/prognosealder.
+- `scripts/update-weather.mjs` – bygger den centrale weather-cache og bevarer komponentproveniens gennem DMI/fallback-merge.
 - `scripts/enrich-current-provenance.mjs` – videnskabelig current-proveniens og rå U/V/gridpunkter.
 - `scripts/generate-public-conditions.mjs` + `scripts/public-conditions-lib.mjs` – deterministisk public runtime.
 - `scripts/generate-state-reference-report-4.0.113.mjs` – referencezoner/statekontrol.

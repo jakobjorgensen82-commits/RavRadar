@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.124
+**Håndbogsversion:** 4.0.125
 
 **Opdateret:** 1. august 2026
 
@@ -1407,3 +1407,9 @@ Administratorens centralt gemte datapunkt bruges i produktionskørslen. DMI kan 
 # Sådan kontrolleres femdøgnsdata (4.0.124)
 
 RavRadar kontrollerer nu vind, bølger, strøm, vandstand og vandtemperatur hver for sig. Hver sammenhængende periode markeres internt som DMI, fallback eller manglende. Det betyder, at fuld vinddækning ikke længere kan skjule et kortere bølge- eller strømforløb. Kontrollen ændrer ikke prognosen eller RavScore; den viser, hvor datakæden senere skal forbedres.
+
+# Sådan spores en DMI-time tilbage til modellen (4.0.125)
+
+Når RavRadar læser et DMI-forecasttrin, gemmes både collection, modelkørsel og det native gyldighedstidspunkt sammen med komponentværdien. Oplysningerne følger vind, bølger, strøm, vandstand og vandtemperatur separat gennem den fulde interne datakæde.
+
+En time mellem to native modeltrin mærkes som interpoleret og henviser til begge kildetidspunkter. Lead time fortæller, hvor langt prognosetimen ligger efter modelkørslens start, mens prognosealderen fortæller, hvor gammel modelkørslen var, da RavRadar byggede datasættet. To trin fra forskellige modelkørsler må ikke blandes; hvis en sammenhængende serie ikke kan dokumenteres, forbliver timen manglende. Den tekniske sporbarhed ligger i den beskyttede diagnosefil og gør ikke den offentlige brugerfil større. RavScore er uændret.

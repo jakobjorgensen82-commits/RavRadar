@@ -772,10 +772,11 @@ function bulkZoneToForecastRecord(feature, bulkCache, generatedAt, previousRecor
   const bulkZone = bulkCache?.zones?.[zoneId];
   const rows = Object.values(bulkZone?.hourly ?? {}).filter(row => Number.isFinite(Date.parse(row?.time))).sort((a, b) => Date.parse(a.time) - Date.parse(b.time));
   if (!rows.length) return null;
-  const wind = rows.filter(row => num(row['wind-speed-10m']) !== null && num(row['wind-dir-10m']) !== null).map(row => ({ step: row.time, 'wind-speed-10m': num(row['wind-speed-10m']), 'wind-dir-10m': num(row['wind-dir-10m']) }));
-  const windTail = rows.filter(row => num(row['wind-tail-speed-10m']) !== null && num(row['wind-tail-dir-10m']) !== null).map(row => ({ step: row.time, 'wind-speed-10m': num(row['wind-tail-speed-10m']), 'wind-dir-10m': num(row['wind-tail-dir-10m']) }));
-  const waves = rows.filter(row => ['significant-wave-height','mean-wave-dir','dominant-wave-period'].some(key => num(row[key]) !== null)).map(row => ({ step: row.time, 'significant-wave-height': num(row['significant-wave-height']), 'mean-wave-dir': num(row['mean-wave-dir']), 'dominant-wave-period': num(row['dominant-wave-period']) }));
-  const ocean = rows.filter(row => ['sea-mean-deviation','current-u','current-v','water-temperature'].some(key => num(row[key]) !== null)).map(row => ({ step: row.time, 'sea-mean-deviation': num(row['sea-mean-deviation']), 'current-u': num(row['current-u']), 'current-v': num(row['current-v']), 'water-temperature': num(row['water-temperature']) }));
+  const provenance = row => ({ ...(row.sources ?? {}) });
+  const wind = rows.filter(row => num(row['wind-speed-10m']) !== null && num(row['wind-dir-10m']) !== null).map(row => ({ step: row.time, 'wind-speed-10m': num(row['wind-speed-10m']), 'wind-dir-10m': num(row['wind-dir-10m']), provenance: { wind: provenance(row).wind } }));
+  const windTail = rows.filter(row => num(row['wind-tail-speed-10m']) !== null && num(row['wind-tail-dir-10m']) !== null).map(row => ({ step: row.time, 'wind-speed-10m': num(row['wind-tail-speed-10m']), 'wind-dir-10m': num(row['wind-tail-dir-10m']), provenance: { wind: provenance(row).windTail } }));
+  const waves = rows.filter(row => ['significant-wave-height','mean-wave-dir','dominant-wave-period'].some(key => num(row[key]) !== null)).map(row => ({ step: row.time, 'significant-wave-height': num(row['significant-wave-height']), 'mean-wave-dir': num(row['mean-wave-dir']), 'dominant-wave-period': num(row['dominant-wave-period']), provenance: { wave: provenance(row).wave } }));
+  const ocean = rows.filter(row => ['sea-mean-deviation','current-u','current-v','water-temperature'].some(key => num(row[key]) !== null)).map(row => ({ step: row.time, 'sea-mean-deviation': num(row['sea-mean-deviation']), 'current-u': num(row['current-u']), 'current-v': num(row['current-v']), 'water-temperature': num(row['water-temperature']), provenance: { current: provenance(row).current, waterLevel: provenance(row).waterLevel, waterTemperature: provenance(row).waterTemperature } }));
   const sourceCadenceMinutes = Number(bulkCache?.timeStrideHours ?? 3) * 60;
   const built = buildDmiForecastHourly({ wind, windTail, waves, ocean, generatedAt, hours: DMI_FORECAST_HOURS, sourceCadenceMinutes });
   const marine = ocean.some(item => num(item['sea-mean-deviation']) !== null && num(item['current-u']) !== null && num(item['current-v']) !== null);
@@ -1010,10 +1011,10 @@ function mergeHourlyPreferDmi(dmiHourly = [], fallbackHourly = [], { generatedAt
       waterTemperatureC: item.waterTemperatureC ?? fallback.waterTemperatureC ?? null,
       sources: {
         wind: (item.windSpeedMps != null && item.windDirectionDeg != null) ? (item.sources?.wind ?? { provider: 'dmi', fallback: false }) : (fallback.windSpeedMps != null && fallback.windDirectionDeg != null) ? { provider: fallback.source ?? 'open-meteo', fallback: true } : { provider: 'missing', fallback: false },
-        wave: item.waveHeightM != null ? { provider: 'dmi', fallback: false } : fallback.waveHeightM != null ? { provider: fallback.source ?? 'open-meteo', fallback: true } : { provider: 'missing', fallback: false },
-        current: (item.currentSpeedMps != null && item.currentDirectionDeg != null) ? { provider: 'dmi', fallback: false } : (fallback.currentSpeedMps != null && fallback.currentDirectionDeg != null) ? { provider: fallback.source ?? 'open-meteo', fallback: true } : { provider: 'missing', fallback: false },
+        wave: item.waveHeightM != null ? (item.sources?.wave ?? { provider: 'dmi', fallback: false }) : fallback.waveHeightM != null ? { provider: fallback.source ?? 'open-meteo', fallback: true } : { provider: 'missing', fallback: false },
+        current: (item.currentSpeedMps != null && item.currentDirectionDeg != null) ? (item.sources?.current ?? { provider: 'dmi', fallback: false }) : (fallback.currentSpeedMps != null && fallback.currentDirectionDeg != null) ? { provider: fallback.source ?? 'open-meteo', fallback: true } : { provider: 'missing', fallback: false },
         waterLevel: { provider: 'pending', fallback: false },
-        waterTemperature: item.waterTemperatureC != null ? { provider: 'dmi', fallback: false } : fallback.waterTemperatureC != null ? { provider: fallback.source ?? 'open-meteo', fallback: true } : { provider: 'missing', fallback: false }
+        waterTemperature: item.waterTemperatureC != null ? (item.sources?.waterTemperature ?? { provider: 'dmi', fallback: false }) : fallback.waterTemperatureC != null ? { provider: fallback.source ?? 'open-meteo', fallback: true } : { provider: 'missing', fallback: false }
       }
     };
     if (Object.values(mergedRow.sources ?? {}).some(source => source?.provider !== 'dmi')) delete mergedRow.source;

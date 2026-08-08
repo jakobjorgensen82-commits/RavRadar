@@ -1,7 +1,7 @@
 {
-  "schemaVersion": 3,
-  "generatedAt": "2026-08-08T15:04:27.885Z",
-  "version": "4.0.124",
+  "schemaVersion": 4,
+  "generatedAt": "2026-08-08T15:54:22.599Z",
+  "version": "4.0.125",
   "activeZones": 209,
   "conditionsZones": 209,
   "zonesWithDirectionAnchors": 0,
@@ -32,8 +32,8 @@
     "max": 117
   },
   "summary": {
-    "generatedAt": "2026-08-08T15:04:27.885Z",
-    "version": "4.0.124",
+    "generatedAt": "2026-08-08T15:54:22.599Z",
+    "version": "4.0.125",
     "activeZones": 209,
     "conditionsZones": 209,
     "zonesWithDirectionAnchors": 0,
@@ -82,7 +82,9 @@
         "collection": 13318,
         "modelRun": 13318,
         "leadTimeHours": 13318,
-        "forecastAgeHours": 13318
+        "forecastAgeHours": 13318,
+        "temporalResolution": 13318,
+        "nativeValidTimes": 13318
       },
       "minimumValidHours": 105,
       "maximumValidHours": 105,
@@ -7964,7 +7966,9 @@
         "collection": 21240,
         "modelRun": 21240,
         "leadTimeHours": 21240,
-        "forecastAgeHours": 21240
+        "forecastAgeHours": 21240,
+        "temporalResolution": 21240,
+        "nativeValidTimes": 21240
       },
       "minimumValidHours": 0,
       "maximumValidHours": 118,
@@ -13186,7 +13190,9 @@
         "collection": 23153,
         "modelRun": 23153,
         "leadTimeHours": 23153,
-        "forecastAgeHours": 23153
+        "forecastAgeHours": 23153,
+        "temporalResolution": 23153,
+        "nativeValidTimes": 23153
       },
       "minimumValidHours": 0,
       "maximumValidHours": 118,
@@ -18205,7 +18211,9 @@
         "collection": 23153,
         "modelRun": 23153,
         "leadTimeHours": 23153,
-        "forecastAgeHours": 23153
+        "forecastAgeHours": 23153,
+        "temporalResolution": 23153,
+        "nativeValidTimes": 23153
       },
       "minimumValidHours": 0,
       "maximumValidHours": 118,
@@ -23224,7 +23232,9 @@
         "collection": 23153,
         "modelRun": 23153,
         "leadTimeHours": 23153,
-        "forecastAgeHours": 23153
+        "forecastAgeHours": 23153,
+        "temporalResolution": 23153,
+        "nativeValidTimes": 23153
       },
       "minimumValidHours": 0,
       "maximumValidHours": 118,
@@ -37652,7 +37662,9 @@
         "collection": 13318,
         "modelRun": 13318,
         "leadTimeHours": 13318,
-        "forecastAgeHours": 13318
+        "forecastAgeHours": 13318,
+        "temporalResolution": 13318,
+        "nativeValidTimes": 13318
       }
     },
     {
@@ -37664,7 +37676,9 @@
         "collection": 21240,
         "modelRun": 21240,
         "leadTimeHours": 21240,
-        "forecastAgeHours": 21240
+        "forecastAgeHours": 21240,
+        "temporalResolution": 21240,
+        "nativeValidTimes": 21240
       }
     },
     {
@@ -37676,7 +37690,9 @@
         "collection": 23153,
         "modelRun": 23153,
         "leadTimeHours": 23153,
-        "forecastAgeHours": 23153
+        "forecastAgeHours": 23153,
+        "temporalResolution": 23153,
+        "nativeValidTimes": 23153
       }
     },
     {
@@ -37688,7 +37704,9 @@
         "collection": 23153,
         "modelRun": 23153,
         "leadTimeHours": 23153,
-        "forecastAgeHours": 23153
+        "forecastAgeHours": 23153,
+        "temporalResolution": 23153,
+        "nativeValidTimes": 23153
       }
     },
     {
@@ -37700,7 +37718,9 @@
         "collection": 23153,
         "modelRun": 23153,
         "leadTimeHours": 23153,
-        "forecastAgeHours": 23153
+        "forecastAgeHours": 23153,
+        "temporalResolution": 23153,
+        "nativeValidTimes": 23153
       }
     }
   ],

@@ -1,3 +1,9 @@
+## 2026-08-08 – 4.0.125 fuld DMI-timeproveniens
+- Brugerens godkendelse af næste roadmaptrin udløste implementering af provenance fra STAC/GRIB til beskyttede forecasttimer.
+- Bulkparsergeneration 14 gemmer collection, modelkørsel og native gyldighedstid pr. komponent; timebyggeren beregner lead time, prognosealder, temporal status og native kildetider.
+- Interpolation over en modelkørselsgrænse er nu en eksplicit regression og giver missing i stedet for en udokumenteret blanding.
+- RavScore, fallbackprioritet og den slanke offentlige runtime er uændrede. Produktionsevidens afventes.
+
 ## 2026-08-08 – 4.0.124 komponentaudit
 - De fem DKSS-vindhalehuller er produktionsverificeret lukket efter 4.0.123 og centrale adminrettelser.
 - Datasæt `rr-20260808145245-208` havde 118 vindtimer i alle zoner, men dokumenterede separate bølge- og marine halehuller i Limfjorden.

@@ -143,7 +143,7 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 ## 4.0.118 – DMI-first vindhale
 - **ISSUE-FIVE-DAY-DMI-WIND-TAIL – RETTET LOKALT, AFVENTER PRODUKTION:** DKSS' dokumenterede 10-meter U/V-vind udtrækkes nu som en separat hale efter HARMONIE. Modelserier blandes ikke, og HARMONIE vinder i overlap. En frisk kørsel skal bevise feltgenkendelse, zonehorisont, kildeskift og fulde release-gates.
 - **ISSUE-OPEN-METEO-LOCAL-TIME-AMBIGUITY – RETTET LOKALT, AFVENTER PRODUKTION:** Fallback blev forespurgt med `Europe/Copenhagen` og leverede offsetløse tider. Kaldet bruger nu GMT, og tider lagres eksplicit som UTC.
-- **ISSUE-FIVE-DAY-PER-HOUR-PROVENANCE – FORTSAT AKTIV:** Vindkilden angives nu pr. time, men fuld model-run-, lead-time-, alder- og native/interpoleret-proveniens for alle komponenter er endnu ikke komplet.
+- **ISSUE-FIVE-DAY-PER-HOUR-PROVENANCE – RETTET LOKALT I 4.0.125, AFVENTER PRODUKTION:** Collection, model-run og native gyldighedstid gemmes nu ved STAC/GRIB-indlæsningen og føres til alle DMI-komponenttimer med lead time, prognosealder og temporal status. Parsergeneration 14 skal genopbygge produktionens cache og auditten skal bekræfte, at felterne er komplette.
 
 ## 4.0.119 – produktionsbevist DKSS-parserfejl
 - **ISSUE-DKSS-WIND-TAIL-V-DROPPED – PRODUKTIONSVERIFICERET LØST I #1831:** #1828 beviste, at DKSS-id 34 blev fejlfortolket som `sst` og forkastet som tvetydigt. #1831 genkendte begge U/V-felter, gav vindhale i 107 zoner med mindst 96 timer og gennemførte fulde gates/deploy. Det offentlige datasæt havde 108/208 zoner med mindst 96 timers samlet vind og maksimum 111,5 timer.

@@ -77,7 +77,7 @@ for _session in (STAC_SESSION, DOWNLOAD_SESSION):
 STAC_SESSION.headers.update({"Accept": "application/geo+json, application/json"})
 DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octet-stream, */*"})
 
-PARSER_VERSION = 13
+PARSER_VERSION = 14
 PARAMETER_MAP_VERSION = 4
 GRID_LOOKUP_VERSION = 5
 COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw", "wam_nsb", "harmonie_dini_sf"]
@@ -105,6 +105,19 @@ VECTOR_PAIRS = {
     "wind-v-10m": ("wind", "wind-u-10m", "wind-v-10m"),
     "wind-tail-u-10m": ("wind-tail", "wind-tail-u-10m", "wind-tail-v-10m"),
     "wind-tail-v-10m": ("wind-tail", "wind-tail-u-10m", "wind-tail-v-10m"),
+}
+PARAMETER_COMPONENT = {
+    "sea-mean-deviation": "waterLevel",
+    "current-u": "current",
+    "current-v": "current",
+    "water-temperature": "waterTemperature",
+    "wind-u-10m": "wind",
+    "wind-v-10m": "wind",
+    "wind-tail-u-10m": "windTail",
+    "wind-tail-v-10m": "windTail",
+    "significant-wave-height": "wave",
+    "mean-wave-dir": "wave",
+    "dominant-wave-period": "wave",
 }
 # Marine land masks can occupy many of the geometrically nearest cells before a
 # wet cell appears. Keep the physical acceptance limits below unchanged, but
@@ -751,7 +764,16 @@ def parameter_zones(collection: str, parameter: str, zones: list[dict[str, Any]]
     return base_regular
 
 
-def process_grib(path: pathlib.Path, collection: str, valid_time: str,
+def native_component_source(collection: str, model_run: str, valid_time: str) -> dict[str, Any]:
+    return {
+        "provider": "dmi",
+        "collection": collection,
+        "modelRun": model_run,
+        "nativeValidTime": valid_time,
+    }
+
+
+def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time: str,
                  zones: list[dict[str, Any]], output: dict[str, Any], diagnostics: dict[str, Any]) -> tuple[set[str], set[str], bool, int, int]:
     found, touched = set(), set()
     vector_candidates: dict[tuple[str, str, str], dict[str, list[dict[str, Any]]]] = {}
@@ -884,6 +906,7 @@ def process_grib(path: pathlib.Path, collection: str, valid_time: str,
                                 "verticalLayerRankM": round(layer_rank, 3),
                             }
                             point["collections"][key] = collection
+                        hour.setdefault("sources", {})[PARAMETER_COMPONENT[first_key]] = native_component_source(collection, model_run, valid_time)
                     continue
 
                 resolved = nearest_valid_batch(gid, collection, wanted)
@@ -913,6 +936,7 @@ def process_grib(path: pathlib.Path, collection: str, valid_time: str,
                     touched.add(zone["id"])
                     hour = point["hourly"].setdefault(valid_time, {"time": valid_time})
                     hour[parameter] = nearest["value"]
+                    hour.setdefault("sources", {})[PARAMETER_COMPONENT[parameter]] = native_component_source(collection, model_run, valid_time)
                     point["gridPoints"][parameter] = {k: round(v, 5) for k, v in nearest.items() if k != "value"}
                     point["collections"][parameter] = collection
                 if interrupted:
@@ -1599,7 +1623,7 @@ def main() -> int:
                     result["diagnostics"]["reusedAssets"] += 1
                     run_info["assetsReused"] += 1
                 progress(f"{collection}: behandler forecast-step {asset_number}/{len(assets)} {asset['valid']} ({'genbrugt' if reused else 'downloadet'})")
-                found, touched, interrupted, messages_seen, zone_lookups = process_grib(path, collection, asset["valid"], zones, result, result["diagnostics"])
+                found, touched, interrupted, messages_seen, zone_lookups = process_grib(path, collection, run, asset["valid"], zones, result, result["diagnostics"])
                 recognized.update(found)
                 result["diagnostics"]["messagesSeen"] += messages_seen
                 result["diagnostics"]["zoneLookups"] += zone_lookups

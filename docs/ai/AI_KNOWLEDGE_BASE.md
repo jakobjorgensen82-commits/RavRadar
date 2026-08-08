@@ -1,5 +1,8 @@
 # AI Knowledge Base – RavRadar
 
+## 4.0.125 – proveniens skabes ved indlæsningen
+`update-dmi-bulk.py` parsergeneration 14 skriver DMI-identitet på den rå komponenttime: provider, collection, model-run og native valid time. `dmi-forecast-store.mjs` må kun interpolere identificerede trin med samme collection og model-run og fører lead time, forecast age, temporal resolution og native source times videre. To hydrerede pre-v14-trin uden identitet kan midlertidigt bevare tidligere værdiinterpolation, men får ingen opdigtet proveniens og udløser fortsat audit; et identificeret og et uidentificeret trin må ikke blandes. `update-weather.mjs` og vandstandskontinuiteten må ikke erstatte identiteten med en generisk DMI-markør. Public runtime forbliver slank; den fulde sporbarhed ligger i beskyttede conditions/audits.
+
 ## 4.0.124 – komponentintervaller og proveniens
 Vind er produktionsdækket, og de fem tidligere DKSS-huller er lukket efter kode- og adminrettelser. Den bredere femdøgnsaudit fandt dog særskilte bølge- og marine halehuller i Limfjorden. `audit-implementation-plan-4.0.25.mjs` schema 3 måler derfor komplette feltsæt, sammenhængende providerintervaller, DMI/fallback/missing og manglende DMI-identitetsfelter for fem komponenter. Fuld timeproveniens skal skabes ved STAC/GRIB-indlæsningen; den må ikke gættes ud fra en senere samlet cache.
 

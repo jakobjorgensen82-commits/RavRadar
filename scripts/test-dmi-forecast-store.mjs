@@ -10,6 +10,9 @@ import {
 } from './lib/dmi-forecast-store.mjs';
 
 const generatedAt = '2026-07-24T12:00:00.000Z';
+const native = (component, collection, step, modelRun = generatedAt) => ({
+  [component]: { provider: 'dmi', collection, modelRun, nativeValidTime: step }
+});
 const series = (parameter, mapper) => Array.from({ length: 130 }, (_, i) => ({
   step: new Date(Date.parse(generatedAt) + i * 3600000).toISOString(),
   [parameter]: mapper(i)
@@ -28,8 +31,8 @@ assert.equal(built.hourly.at(-1).source, 'dmi-forecast');
 
 
 const sparseWind = [
-  { step: generatedAt, 'wind-speed-10m': 5, 'wind-dir-10m': 180 },
-  { step: new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString(), 'wind-speed-10m': 8, 'wind-dir-10m': 210 }
+  { step: generatedAt, 'wind-speed-10m': 5, 'wind-dir-10m': 180, provenance: native('wind', 'harmonie_dini_sf', generatedAt) },
+  { step: new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString(), 'wind-speed-10m': 8, 'wind-dir-10m': 210, provenance: native('wind', 'harmonie_dini_sf', new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString()) }
 ];
 const sparse = buildDmiForecastHourly({ wind: sparseWind, generatedAt, hours: 8 });
 assert.equal(new Set(sparse.hourly.map(item => item.time)).size, 8, 'Alle forecast-timer skal have unikke måltidspunkter');
@@ -39,13 +42,18 @@ assert.ok(Math.abs(sparse.hourly[2].windSpeedMps - 6.8) < 0.01, 'Vind skal vekto
 assert.equal(sparse.hourly[5].windSpeedMps, null, 'Sidste modeltrin må ikke gentages uden for tolerancen');
 
 const windTail = [
-  { step: new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString(), 'wind-speed-10m': 20, 'wind-dir-10m': 90 },
-  { step: new Date(Date.parse(generatedAt) + 6 * 3600000).toISOString(), 'wind-speed-10m': 23, 'wind-dir-10m': 90 }
+  { step: new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString(), 'wind-speed-10m': 20, 'wind-dir-10m': 90, provenance: native('wind', 'dkss', new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString()) },
+  { step: new Date(Date.parse(generatedAt) + 6 * 3600000).toISOString(), 'wind-speed-10m': 23, 'wind-dir-10m': 90, provenance: native('wind', 'dkss', new Date(Date.parse(generatedAt) + 6 * 3600000).toISOString()) }
 ];
 const chainedWind = buildDmiForecastHourly({ wind: sparseWind, windTail, generatedAt, hours: 7 });
 assert.equal(chainedWind.hourly[3].sources.wind.collection, 'harmonie_dini_sf', 'HARMONIE skal vinde ved overlap');
 assert.equal(chainedWind.hourly[3].windSpeedMps, 8, 'DKSS maa ikke overskrive HARMONIE ved samme tidspunkt');
 assert.equal(chainedWind.hourly[5].sources.wind.collection, 'dkss', 'DKSS skal overtage efter HARMONIE-horisonten');
+assert.equal(chainedWind.hourly[5].sources.wind.modelRun, generatedAt);
+assert.equal(chainedWind.hourly[5].sources.wind.leadTimeHours, 5);
+assert.equal(chainedWind.hourly[5].sources.wind.forecastAgeHours, 0);
+assert.equal(chainedWind.hourly[5].sources.wind.temporalResolution, 'interpolated');
+assert.deepEqual(chainedWind.hourly[5].sources.wind.nativeValidTimes, [windTail[0].step, windTail[1].step]);
 assert.ok(chainedWind.hourly[5].windSpeedMps > 20 && chainedWind.hourly[5].windSpeedMps < 23, 'DKSS-halen skal kun interpoleres inden for DKSS-serien');
 assert.equal(chainedWind.interpolation.modelBoundaryInterpolation, false);
 
@@ -108,8 +116,8 @@ console.log('DMI 120-timers Forecast Store og Water Level Engine bestået.');
 // 4.0.14 regression: interpolate native current components, not direction angles.
 {
   const sparseOcean = [
-    { step: generatedAt, 'sea-mean-deviation': 0.0, 'current-u': 0.2, 'current-v': 0.0, 'water-temperature': 10 },
-    { step: new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString(), 'sea-mean-deviation': 0.3, 'current-u': 0.0, 'current-v': 0.2, 'water-temperature': 13 }
+    { step: generatedAt, 'sea-mean-deviation': 0.0, 'current-u': 0.2, 'current-v': 0.0, 'water-temperature': 10, provenance: { ...native('current', 'dkss_idw', generatedAt), ...native('waterLevel', 'dkss_idw', generatedAt), ...native('waterTemperature', 'dkss_idw', generatedAt) } },
+    { step: new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString(), 'sea-mean-deviation': 0.3, 'current-u': 0.0, 'current-v': 0.2, 'water-temperature': 13, provenance: { ...native('current', 'dkss_idw', new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString()), ...native('waterLevel', 'dkss_idw', new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString()), ...native('waterTemperature', 'dkss_idw', new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString()) } }
   ];
   const interpolated = buildDmiForecastHourly({ ocean: sparseOcean, generatedAt, hours: 4, sourceCadenceMinutes: 180 });
   assert.equal(interpolated.hourly[1].waterLevelCm, 10);
@@ -117,4 +125,24 @@ console.log('DMI 120-timers Forecast Store og Water Level Engine bestået.');
   assert.ok(interpolated.hourly[1].currentDirectionDeg > 45 && interpolated.hourly[1].currentDirectionDeg < 90);
   assert.equal(interpolated.hourly[1].temporalResolution, 'interpolated');
   assert.equal(interpolated.hourly[3].temporalResolution, 'exact');
+  assert.equal(interpolated.hourly[1].sources.current.collection, 'dkss_idw');
+  assert.equal(interpolated.hourly[1].sources.waterLevel.temporalResolution, 'interpolated');
+}
+
+// Cachede native trin fra forskellige modelkørsler må ikke sammensys ved interpolation.
+{
+  const laterRun = '2026-07-24T15:00:00.000Z';
+  const mixedRuns = [
+    { step: generatedAt, 'wind-speed-10m': 5, 'wind-dir-10m': 180, provenance: native('wind', 'harmonie_dini_sf', generatedAt, generatedAt) },
+    { step: laterRun, 'wind-speed-10m': 8, 'wind-dir-10m': 210, provenance: native('wind', 'harmonie_dini_sf', laterRun, laterRun) }
+  ];
+  const guarded = buildDmiForecastHourly({ wind: mixedRuns, generatedAt, hours: 4 });
+  assert.equal(guarded.hourly[1].windSpeedMps, null);
+  assert.equal(guarded.hourly[2].windSpeedMps, null);
+  assert.equal(guarded.hourly[0].sources.wind.modelRun, generatedAt);
+  assert.equal(guarded.hourly[3].sources.wind.modelRun, laterRun);
+
+  const mixedIdentity = [mixedRuns[0], { step: laterRun, 'wind-speed-10m': 8, 'wind-dir-10m': 210 }];
+  const identityGuarded = buildDmiForecastHourly({ wind: mixedIdentity, generatedAt, hours: 4 });
+  assert.equal(identityGuarded.hourly[1].windSpeedMps, null, 'nyt identificeret trin må ikke interpoleres med gammel uidentificeret cache');
 }

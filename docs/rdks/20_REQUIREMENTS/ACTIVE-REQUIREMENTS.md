@@ -13,7 +13,7 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-DATA-006 – AKTIV:** Diagnostik viser kilde, friskhed, horisont og fallback pr. komponent og zone.
 - **REQ-DATA-007 – AKTIV / ANALYSE FØR IMPLEMENTERING:** Hver forecast- og RavScore-komponent skal have en dokumenteret cirka 120-timers kildekæde efter DEC-0030: bedste relevante DMI-kilde først, derefter eventuel anden DMI-kilde og først derefter ekstern fallback for den manglende hale. Fungerende DMI-data må ikke erstattes af fallback for at skabe en ensartet serie.
 - **REQ-DATA-008 – BINDENDE:** Hale-fallback må begynde ved den faktiske sidste valide DMI-time pr. komponent. Skiftet skal være UTC-entydigt, monotont, uden huller/dubletter, falske nuller, stale gentagelser eller skjult proveniens.
-- **REQ-DATA-009 – AKTIV:** Automatisk dækningsaudit skal pr. komponent og zone vise kildeinterval, run/lead time, prognosealder, native/interpoleret/fallback-status samt manglende rest mod cirka 120 timer.
+- **REQ-DATA-009 – IMPLEMENTERET LOKALT I 4.0.125, AFVENTER PRODUKTION:** Automatisk dækningsaudit skal pr. komponent og zone vise kildeinterval, run/lead time, prognosealder, native/interpoleret/fallback-status samt manglende rest mod cirka 120 timer. Identiteten gemmes ved STAC/GRIB-indlæsning og føres gennem komponentmerge; den rekonstrueres ikke bagefter.
 - **REQ-DATA-010 – BINDENDE:** Hvis en forsvarlig cirka 120-timers kæde ikke findes, forbliver resten missing. UI og RavScore skal kommunikere eller respektere den større usikkerhed; systemet må ikke konstruere data for at opfylde horisontmålet.
 
 ## DMI-stationer

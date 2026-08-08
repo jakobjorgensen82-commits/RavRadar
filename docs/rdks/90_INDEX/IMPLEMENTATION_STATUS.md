@@ -1,12 +1,20 @@
-# Implementeringsstatus pr. 4.0.124
+# Implementeringsstatus pr. 4.0.125
+
+## 4.0.125 – fuld timeproveniens fra STAC/GRIB
+- [x] Collection, model-run og native gyldighedstid lagres pr. rå komponenttime i bulkcachen.
+- [x] Lead time, prognosealder, native/interpoleret-status og anvendte native tidspunkter føres til beskyttede `conditions.json`.
+- [x] Bølge-, strøm-, vandstands- og vandtemperaturproveniens overlever den endelige komponentmerge; vandstandskontinuitet bevarer original DMI-identitet.
+- [x] Regressionstest afviser interpolation på tværs af modelkørsler.
+- [x] Audit schema 4 måler også temporal status og native kildetider.
+- [ ] Frisk produktion skal genopbygge parsergeneration 14 og bevise komplette proveniensfelter uden dækningstilbagegang.
 
 ## 4.0.124 – komponentvis interval- og proveniensaudit
 - [x] De fem DKSS-vindhalehuller er lukket i produktion; de sidste centrale rettelser for Nibe/Sebbersund og Falster/Nysted propagerede og gav 36 direkte DKSS-haletidspunkter.
 - [x] Seneste målte public dataset havde 208/208 zoner med 118 vindtimer.
 - [x] Implementeringsauditten dækker nu vind, bølger, strøm, vandstand og vandtemperatur med DMI-/fallback-/missing-intervaller pr. zone.
 - [x] Manglende collection, model-run, lead time og prognosealder på DMI-timer rapporteres maskinlæsbart.
-- [ ] Frisk 4.0.124-produktion skal verificere den nye auditfil og dens komponenttal.
-- [ ] Den timevise pipeline skal senere bevare fuld proveniens fra STAC/GRIB til beskyttede conditions; designet må ikke udlede metadata, som råcachen ikke faktisk har gemt.
+- [x] #1862 gennemførte fulde gates og deploy; et frisk live-snapshot med samme commit gav 208/208 zoner og 118 vindtimer samt 0 auditfejl.
+- [x] Den timevise pipeline er implementeret lokalt i 4.0.125 uden at udlede metadata, som råcachen ikke faktisk har gemt.
 
 ## 4.0.123 – marine landmasker og fælles U/V-søgning
 - [x] #1851 og #1852 er auditeret på faktisk produktionscache: fem stabile DKSS-vindhalehuller, heraf fire i Limfjorden og ét ved Falster/Nysted.

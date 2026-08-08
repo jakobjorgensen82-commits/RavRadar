@@ -47,3 +47,5 @@ Diagnostiske workflows bliver en driftsrisiko, når deres oprindelige forsøg er
 **Læring:** Kontroller job-step-status og workflowbetingelser, ikke kun det grønne flueben på runniveau. Deployment og releasegodkendelse er forskellige beviser.
 **Fremtidig regel:** Intet nyt produktionsartifact efter frisk opbygning må deployes med bindende gates `skipped`.
 **Implementeret beskyttelse:** Begge gates følger nu positiv preflight uden trigger-undtagelser, ligger før artifactet og er dækket af en workflow-kontrakttest. Billigt skip findes kun ved negativ preflight, hvor intet artifact deployes.
+## 16. Proveniens kan ikke tilføjes troværdigt efter cachemerge
+Når native forecasttrin fra flere modelkørsler kan eksistere i en progressiv cache, kan en senere samlet `runs`-post ikke bevise, hvilket run der leverede en bestemt komponenttime. Identiteten skal gemmes sammen med værdien ved STAC/GRIB-indlæsningen. Interpolation kræver samme collection og model-run i begge ender; ellers er det korrekte resultat `missing`.

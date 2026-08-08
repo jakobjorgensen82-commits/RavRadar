@@ -24,7 +24,7 @@ const components = Object.keys(componentFields);
 const intervalCoverage = Object.fromEntries(components.map(component => [component, {
   totalZones: active.length, completeZones: 0, zonesWithMissingHours: 0,
   validHours: 0, dmiHours: 0, fallbackHours: 0, missingHours: 0,
-  providerHours: {}, dmiHoursMissingProvenance: { collection: 0, modelRun: 0, leadTimeHours: 0, forecastAgeHours: 0 },
+  providerHours: {}, dmiHoursMissingProvenance: { collection: 0, modelRun: 0, leadTimeHours: 0, forecastAgeHours: 0, temporalResolution: 0, nativeValidTimes: 0 },
   minimumValidHours: null, maximumValidHours: null, zoneDetails: []
 }]));
 const providerClass = provider => provider === 'dmi' ? 'dmi' : provider === 'missing' ? 'missing' : 'fallback';
@@ -88,6 +88,8 @@ for (const f of active) {
           if(!source.modelRun) coverage.dmiHoursMissingProvenance.modelRun++;
           if(!Number.isFinite(source.leadTimeHours)) coverage.dmiHoursMissingProvenance.leadTimeHours++;
           if(!Number.isFinite(source.forecastAgeHours)) coverage.dmiHoursMissingProvenance.forecastAgeHours++;
+          if(!source.temporalResolution) coverage.dmiHoursMissingProvenance.temporalResolution++;
+          if(!Array.isArray(source.nativeValidTimes) || !source.nativeValidTimes.length) coverage.dmiHoursMissingProvenance.nativeValidTimes++;
         } else coverage.fallbackHours++;
       }
       if(provider) seen=true;
@@ -116,7 +118,7 @@ for(const [component,coverage] of Object.entries(intervalCoverage)){
   const missing=coverage.dmiHoursMissingProvenance;
   if(Object.values(missing).some(value=>value>0)) issues.push({severity:'warning',code:'DMI_HOURLY_PROVENANCE_INCOMPLETE',component,dmiHours:coverage.dmiHours,missing});
 }
-const report={schemaVersion:3,...summary,summary,componentIntervalCoverage:intervalCoverage,cacheAuditSummary:cacheAudit?{beforeBytes:cacheAudit.beforeBytes??cacheAudit.sizeBeforeBytes,afterBytes:cacheAudit.afterBytes??cacheAudit.sizeAfterBytes,filesKept:cacheAudit.filesKept??cacheAudit.keptFiles?.length,filesRemoved:cacheAudit.filesRemoved??cacheAudit.removedFiles?.length}:null,marineCoverage:ocean?.summary||null,providerSwitchDetails:providerSwitchDetails.slice(0,1000),issues,issueCounts:{errors:issues.filter(x=>x.severity==='error').length,warnings:issues.filter(x=>x.severity==='warning').length}};
+const report={schemaVersion:4,...summary,summary,componentIntervalCoverage:intervalCoverage,cacheAuditSummary:cacheAudit?{beforeBytes:cacheAudit.beforeBytes??cacheAudit.sizeBeforeBytes,afterBytes:cacheAudit.afterBytes??cacheAudit.sizeAfterBytes,filesKept:cacheAudit.filesKept??cacheAudit.keptFiles?.length,filesRemoved:cacheAudit.filesRemoved??cacheAudit.removedFiles?.length}:null,marineCoverage:ocean?.summary||null,providerSwitchDetails:providerSwitchDetails.slice(0,1000),issues,issueCounts:{errors:issues.filter(x=>x.severity==='error').length,warnings:issues.filter(x=>x.severity==='warning').length}};
 fs.mkdirSync('data/diagnostics',{recursive:true});
 fs.writeFileSync('data/diagnostics/implementation-plan-audit.json',JSON.stringify(report,null,2)+'\n');
 console.log(JSON.stringify(report,null,2));

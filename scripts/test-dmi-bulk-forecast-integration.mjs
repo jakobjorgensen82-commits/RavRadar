@@ -24,6 +24,10 @@ assert.match(bulk, /34: "wind-tail-v-10m"/,
   'DKSS GRIB parameter 34 skal materialiseres som en separat vindhale');
 assert.match(source, /buildDmiForecastHourly\(\{ wind, windTail, waves, ocean/,
   'bulk-konverteringen skal sende HARMONIE og DKSS som adskilte vindserier');
+assert.match(source, /provenance: \{ current: provenance\(row\)\.current, waterLevel: provenance\(row\)\.waterLevel/,
+  'bulk-konverteringen skal føre komponentproveniens videre til interpolation');
+assert.match(source, /item\.sources\?\.wave/,
+  'den endelige merge må ikke erstatte bølgeproveniens med en generisk DMI-markør');
 assert.match(source, /timezone: 'GMT'/,
   'Open-Meteo fallback skal levere entydige UTC-tider');
 
