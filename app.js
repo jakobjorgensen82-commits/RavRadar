@@ -1,17 +1,17 @@
-import { calculateRavScore, exceptionalScoreMark } from "./js/core/score-engine.js?v=4.0.123";
-import { selectBestTimeForDay } from "./js/core/best-time-selector.js?v=4.0.123";
-import { loadConditions, loadZones, loadDataManifest } from "./js/services/data-service.js?v=4.0.123";
-import { submitObservation, getLocalObservations, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.123";
-import { predictAmberChance } from "./js/core/prediction-engine.js?v=4.0.123";
-import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.123";
-import { activeTrip, answerTrip, pendingTripPrompt, resumeTripTracking, startTrip, stopTrip } from "./js/services/trip-service.js?v=4.0.123";
-import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.123";
-import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.123";
-import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.123";
-import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.123";
-import { analyzeObservations } from "./js/services/learning-analysis.js?v=4.0.123";
-import { askRavRadar, QUICK_QUESTIONS } from "./js/services/rav-assistant.js?v=4.0.123";
-import { loadAdaptiveModel } from "./js/core/adaptive-model.js?v=4.0.123";
+import { calculateRavScore, exceptionalScoreMark } from "./js/core/score-engine.js?v=4.0.124";
+import { selectBestTimeForDay } from "./js/core/best-time-selector.js?v=4.0.124";
+import { loadConditions, loadZones, loadDataManifest } from "./js/services/data-service.js?v=4.0.124";
+import { submitObservation, getLocalObservations, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.124";
+import { predictAmberChance } from "./js/core/prediction-engine.js?v=4.0.124";
+import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.124";
+import { activeTrip, answerTrip, pendingTripPrompt, resumeTripTracking, startTrip, stopTrip } from "./js/services/trip-service.js?v=4.0.124";
+import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.124";
+import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.124";
+import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.124";
+import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.124";
+import { analyzeObservations } from "./js/services/learning-analysis.js?v=4.0.124";
+import { askRavRadar, QUICK_QUESTIONS } from "./js/services/rav-assistant.js?v=4.0.124";
+import { loadAdaptiveModel } from "./js/core/adaptive-model.js?v=4.0.124";
 
 const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, lastGps:null, flowArrows:null, adaptiveModel:loadAdaptiveModel(), currentScores:new Map(), forecastGroups:new Map(), forecastRenderId:0 };
 const map = createMap("map");
@@ -230,11 +230,11 @@ try {
   resumeTripTracking();syncPendingObservations().catch(()=>{});updateTripUi();const pending=pendingTripPrompt();if(pending)setTimeout(()=>openTripPrompt(pending),650);
 } catch(error){console.error(error);infoPanel.innerHTML='<div class="notice">Aktuelle data kunne ikke indlæses. Gamle prognoser vises ikke.</div>';dataStatus.textContent='Fejl ved indlæsning';}
 
-// RavRadar 4.0.123: versionsmanifest + sikker service-worker-opdatering.
+// RavRadar 4.0.124: versionsmanifest + sikker service-worker-opdatering.
 function installAppUpdateFlow() {
   if (!("serviceWorker" in navigator)) return;
   const banner=document.querySelector("#updateBanner"), updateButton=document.querySelector("#updateAppButton");
-  const version=window.RAVRADAR_VERSION||"4.0.123"; document.querySelector("#appVersion").textContent=version;
+  const version=window.RAVRADAR_VERSION||"4.0.124"; document.querySelector("#appVersion").textContent=version;
   let refreshing=false, registration=null, waitingWorker=null;
   const showUpdate=worker=>{waitingWorker=worker||waitingWorker;if(waitingWorker){waitingWorker.postMessage({type:'SKIP_WAITING'});return;}if(!banner||!updateButton)return;banner.hidden=false;updateButton.disabled=false;updateButton.textContent="Opdater nu";};
   const activate=()=>{updateButton.disabled=true;updateButton.textContent="Opdaterer…";(waitingWorker||registration?.waiting)?.postMessage({type:"SKIP_WAITING"});};

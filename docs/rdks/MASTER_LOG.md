@@ -1,3 +1,9 @@
+## 2026-08-08 – 4.0.124 komponentaudit
+- De fem DKSS-vindhalehuller er produktionsverificeret lukket efter 4.0.123 og centrale adminrettelser.
+- Datasæt `rr-20260808145245-208` havde 118 vindtimer i alle zoner, men dokumenterede separate bølge- og marine halehuller i Limfjorden.
+- Audit schema 3 måler fem komponenters værdifelter, providerintervaller, missing og timevis DMI-proveniens. Ændringen er diagnostisk og score-neutral.
+- Analyse af koden viste, at collection/model-run/lead time/prognosealder skal føres med fra STAC/GRIB; senere rekonstruktion ville være usikker ved cachede trin fra flere runs.
+
 ## 2026-08-08 – 4.0.123 produktionsgeometri og bredere marint kandidatvindue
 - Audit af #1851/#1852 fandt de samme fem zoner uden direkte DKSS-vindhale, selv om alle 208 offentlige zoner havde 118 timers vind via fallbackkæden.
 - Deployet zonefil, fuld conditions og bulkcache dokumenterede, at centrale adminrettelser faktisk var anvendt.

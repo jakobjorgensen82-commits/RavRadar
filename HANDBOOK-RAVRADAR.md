@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.123
+**Håndbogsversion:** 4.0.124
 
 **Opdateret:** 1. august 2026
 
@@ -1404,3 +1404,6 @@ Generelle GRIB-tabeller kan navngive DKSS' lokale DMI-koder forkert; V-vindkode 
 # Marine datapunkter og DMI-landmasker (4.0.123)
 
 Administratorens centralt gemte datapunkt bruges i produktionskørslen. DMI kan stadig have landmaskerede celler omkring smalle fjorde og lavvandede områder. RavRadar undersøger derfor et bredere område efter et fælles fysisk U/V-havpunkt, men flytter ikke afstandsgrænsen og opfinder ikke værdier. Hvis intet gyldigt punkt findes, vises den dokumenterede fallback, mens direkte DMI-status forbliver manglende.
+# Sådan kontrolleres femdøgnsdata (4.0.124)
+
+RavRadar kontrollerer nu vind, bølger, strøm, vandstand og vandtemperatur hver for sig. Hver sammenhængende periode markeres internt som DMI, fallback eller manglende. Det betyder, at fuld vinddækning ikke længere kan skjule et kortere bølge- eller strømforløb. Kontrollen ændrer ikke prognosen eller RavScore; den viser, hvor datakæden senere skal forbedres.

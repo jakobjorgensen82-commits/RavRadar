@@ -2,6 +2,10 @@
 
 Prioritet: DMI → Open-Meteo Marine → MET Norway → cache.
 
+## Komponentvis femdøgnsaudit (4.0.124)
+
+Vind, bølger, strøm, vandstand og vandtemperatur auditeres som separate timekæder. Et interval klassificeres som DMI, fallback eller manglende ud fra både de nødvendige numeriske felter og den registrerede provider. For DMI-timer kontrolleres collection, model-run, lead time og prognosealder. Diagnostikken ændrer ikke værdier eller RavScore; den gør manglende dækning og metadata synlige før næste designfase.
+
 ## Marine landmasker og U/V-par (4.0.123)
 
 Strøm og DKSS-vind må kun dannes af U og V fra samme fysiske DMI-gridpunkt. I smalle fjorde og lavvandede kyster kan mange af de nærmeste celler være landmaskerede. Bulkjobbet undersøger derfor op til 128 kandidater i Limfjorden og 64 ved øvrige kyster, men accepterer fortsat kun punkter inden for den fastlagte kysttypeafstand. Administratorens centralt gemte marine datapunkt er input og må ikke erstattes af historiske hardcodede koordinater.

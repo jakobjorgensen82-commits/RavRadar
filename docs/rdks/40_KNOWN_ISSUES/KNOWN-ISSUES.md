@@ -1,5 +1,10 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.124 – komponenthuller og manglende timeproveniens
+- **ISSUE-FIVE-ZONES-NO-SHARED-DKSS-GRID – PRODUKTIONSVERIFICERET LØST:** Bredere kandidatsøgning lukkede tre zoner; centrale adminrettelser lukkede Nibe/Sebbersund og Falster/Nysted. Alle fem har nu direkte DKSS-vindhale.
+- **ISSUE-COMPONENT-FIVE-DAY-COVERAGE – AKTIV:** Seneste snapshot havde 3 Limfjordszoner helt uden bølger, 13 med 117 bølgetimer og 8 med kun 101 timer for strøm, vandstand og vandtemperatur. Missing bevares korrekt og må ikke skjules med nul eller stale værdier.
+- **ISSUE-HOURLY-DMI-PROVENANCE – AKTIV:** Timekæden bevarer ikke endnu collection, model-run, lead time og prognosealder komplet fra STAC/GRIB til conditions. 4.0.124 måler tabet; næste designfase skal bevare rå identitet frem for at rekonstruere den efterfølgende.
+
 ## 4.0.123 – fem direkte DKSS-U/V-huller
 `ISSUE-FIVE-ZONES-NO-SHARED-DKSS-GRID` er rettet i søgebredden, men ikke endnu lukket i produktion. #1851 og #1852 bekræftede samme fem huller trods komplet offentlig fallbackvind. Fire er Limfjordszoner med centralt gemte adminpunkter; den femte ligger ved Falster/Nysted. 4.0.123 undersøger flere marine landmaskeceller og rapporterer vindhalepar særskilt. Først en frisk produktionskørsel kan vise, om hullerne skyldtes kandidatloftet eller reel manglende DKSS-dækning inden for afstandsgrænsen.
 

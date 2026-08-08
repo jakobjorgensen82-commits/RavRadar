@@ -11,6 +11,22 @@ Dette dokument kortlægger den faktiske kæde for hver forecast- og RavScore-kom
 
 #1851 og #1852 havde komplet offentlig vinddækning, men ingen direkte DKSS-vindhale i fem zoner. Den deployede zonefil bekræftede, at de seneste centrale adminrettelser var anvendt. Bulkparseren begrænsede imidlertid værdikontrollen til de 16 nærmeste marine kandidater eller 48 i Limfjorden; tørre/maskerede celler kunne derfor fylde vinduet. 4.0.123 udvider kontrollen til 64/128, fastholder de eksisterende fysiske afstandsgrænser og kræver fortsat ét fælles fysisk U/V-punkt. Resultatet skal verificeres i produktion.
 
+## Produktionsaudit 4.0.124 – dataset `rr-20260808145245-208`
+
+De fem DKSS-vindhalehuller er lukket. Den komponentvise måling af 208 zoner og 118 offentlige forecasttimer viste:
+
+| Komponent | Komplette zoner | Delvise zoner | Helt manglende zoner | DMI-timer pr. zone | Fallback/missing-kant |
+|---|---:|---:|---:|---|---|
+| Vind | 208 | 0 | 0 | 101 eller 107 | 17 eller 11 fallbacktimer; ét indledende fallbacktrin og én hale |
+| Bølger, komplet vektor | 192 | 13 med 117 timer | 3 | normalt 117, mens 22 Limfjordszoner bruger ren fallback | 3 zoner uden gyldig DMI eller fallback |
+| Strøm | 200 | 8 med 101 timer | 0 | 101–107 | 8 Limfjordszoner har 17 reelle missing-timer ved forecastkanten |
+| Vandstand | 200 | 8 med 101 timer | 0 | 101–107 | samme 8 Limfjordszoner mangler hale; øvrig fallback biasjusteres til DMI |
+| Vandtemperatur | 200 | 8 med 101 timer | 0 | 101–107 | samme 8 Limfjordszoner mangler hale |
+
+De tre zoner helt uden bølger var Mors nord/Feggesund, Sallingsund/Glyngøre og Salling vest/Junget. De otte fælles marine halehuller var Sallingsund/Glyngøre, Fur nord, Fur syd, Løgstør/Aggersund, Livø/Rønbjerg, Gjøl/Attrup, Aalborg vest/Egholm og Aalborg øst/Nørresundby.
+
+Auditten viste også et selvstændigt provenienstab. Timefelterne gemmer normalt kun provider; vind gemmer delvist `harmonie_dini_sf` eller `dkss`, mens bølger og marine komponenter ikke bærer den konkrete collection. Model-run, lead time og prognosealder mangler pr. time. Disse oplysninger kan ikke sandfærdigt rekonstrueres efter merge, fordi bulkcachen kan akkumulere forecasttrin fra forskellige runs. Næste design skal derfor føre identiteten med fra STAC-asset/GRIB-felt gennem interpolation og merge.
+
 ## Verificerede DMI-modelrammer
 
 | Model | Officiel horisont | Runs | Normal komplet tilgængelighed | Relevante felter | Rumlig opløsning |

@@ -1,4 +1,4 @@
-import { authEnabled,currentSession,signInWithPassword,signOut,getCurrentRole,testConnection } from '../services/auth-service.js?v=4.0.123';
+import { authEnabled,currentSession,signInWithPassword,signOut,getCurrentRole,testConnection } from '../services/auth-service.js?v=4.0.124';
 const root=document.querySelector('#adminGate');
 const shell=document.querySelector('#adminShell');
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -6,7 +6,7 @@ async function start(){
  if(!authEnabled()) return showSetup();
  const session=currentSession();
  if(!session?.access_token) return showLogin();
- try{const role=await getCurrentRole();if(role!=='owner'){await signOut();return showMessage('Adgang nægtet',`Denne konto har rollen ${esc(role||'ukendt')}. Kun RavRadars ejer kan åbne administrationen.`)};root.hidden=true;shell.hidden=false;await import('./admin-app.js?v=4.0.123');}
+ try{const role=await getCurrentRole();if(role!=='owner'){await signOut();return showMessage('Adgang nægtet',`Denne konto har rollen ${esc(role||'ukendt')}. Kun RavRadars ejer kan åbne administrationen.`)};root.hidden=true;shell.hidden=false;await import('./admin-app.js?v=4.0.124');}
  catch(e){showLogin(e.message)}
 }
 function showSetup(){showMessage('Supabase mangler','Denne RavRadar-version mangler den offentlige Supabase-konfiguration. Upload den komplette projektpakke igen eller kontrollér config.js.')}

@@ -8,5 +8,6 @@ for(const token of ['oceanDiagnostics','cacheAudit','implementationAudit','fresh
 assert.match(workflow,/DMI_BULK_COLLECTIONS_PER_RUN:\s*2/);
 assert.match(workflow,/audit:implementation-plan/);
 for(const token of ['GRID_CANDIDATE_TARGET','MARINE_MODEL_PENALTY_KM','VALID_POINT_TOO_FAR']) assert.match(bulk,new RegExp(token));
-for(const token of ['ALS_ODDE_PLACEMENT_REGRESSION','FORECAST_HORIZON_BELOW_ACCEPTED_MINIMUM','providerSwitchDetails','RAVRADAR_AUDIT_STRICT']) assert.match(audit,new RegExp(token));
+for(const token of ['ALS_ODDE_PLACEMENT_REGRESSION','FORECAST_HORIZON_BELOW_ACCEPTED_MINIMUM','providerSwitchDetails','componentIntervalCoverage','COMPONENT_INTERVAL_INCOMPLETE','DMI_HOURLY_PROVENANCE_INCOMPLETE','waterTemperature','leadTimeHours','forecastAgeHours','RAVRADAR_AUDIT_STRICT']) assert.match(audit,new RegExp(token));
+assert.match(audit,/readJson\('package\.json'\)\.version/,'Auditrapporten må ikke bære en historisk hardcodet appversion.');
 console.log('OK: samlet implementeringsplan 4.0.25 er koblet ind');

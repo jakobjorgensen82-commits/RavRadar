@@ -1,5 +1,8 @@
 # AI Knowledge Base – RavRadar
 
+## 4.0.124 – komponentintervaller og proveniens
+Vind er produktionsdækket, og de fem tidligere DKSS-huller er lukket efter kode- og adminrettelser. Den bredere femdøgnsaudit fandt dog særskilte bølge- og marine halehuller i Limfjorden. `audit-implementation-plan-4.0.25.mjs` schema 3 måler derfor komplette feltsæt, sammenhængende providerintervaller, DMI/fallback/missing og manglende DMI-identitetsfelter for fem komponenter. Fuld timeproveniens skal skabes ved STAC/GRIB-indlæsningen; den må ikke gættes ud fra en senere samlet cache.
+
 ## 4.0.123 – DKSS-landmasker
 Produktionens centralt gemte zonegeometri er bulkjobbets input og kan afvige fra repositoryets historiske datapunkter. Marine U/V-opslag undersøger 64 kandidater ved almindelige kyster og 128 i Limfjorden, men de fysiske afstandsgrænser og kravet om ét fælles U/V-gridpunkt er uændrede. `marineGridSearch.vectorPairs` skelner mellem fejl i strøm og vindhale. De fulde livecacher er vedvarende hydreringstilstand; offentlig browserruntime er fortsat `public-conditions.json`.
 

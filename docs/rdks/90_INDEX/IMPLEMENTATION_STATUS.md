@@ -1,4 +1,12 @@
-# Implementeringsstatus pr. 4.0.123
+# Implementeringsstatus pr. 4.0.124
+
+## 4.0.124 – komponentvis interval- og proveniensaudit
+- [x] De fem DKSS-vindhalehuller er lukket i produktion; de sidste centrale rettelser for Nibe/Sebbersund og Falster/Nysted propagerede og gav 36 direkte DKSS-haletidspunkter.
+- [x] Seneste målte public dataset havde 208/208 zoner med 118 vindtimer.
+- [x] Implementeringsauditten dækker nu vind, bølger, strøm, vandstand og vandtemperatur med DMI-/fallback-/missing-intervaller pr. zone.
+- [x] Manglende collection, model-run, lead time og prognosealder på DMI-timer rapporteres maskinlæsbart.
+- [ ] Frisk 4.0.124-produktion skal verificere den nye auditfil og dens komponenttal.
+- [ ] Den timevise pipeline skal senere bevare fuld proveniens fra STAC/GRIB til beskyttede conditions; designet må ikke udlede metadata, som råcachen ikke faktisk har gemt.
 
 ## 4.0.123 – marine landmasker og fælles U/V-søgning
 - [x] #1851 og #1852 er auditeret på faktisk produktionscache: fem stabile DKSS-vindhalehuller, heraf fire i Limfjorden og ét ved Falster/Nysted.
