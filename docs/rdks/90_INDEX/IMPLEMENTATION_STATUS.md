@@ -334,4 +334,5 @@ Status: Implementeret og lokalt valideret.
 - [x] Lokale DKSS-id'er 33/34 er autoritative foran generiske ecCodes-navne. Parser/parameterkort er 13/4.
 - [x] Schedulerrotation følger manglende komplet U/V-vindhale pr. zones DKSS-collection.
 - [x] Regression reproducerer id 34-konflikten og en 208-zoners rotationsprofil.
-- [ ] Frisk produktion skal bevise U+V, positiv hale-dækning, fulde gates og deploy.
+- [x] #1831 beviste U+V i `dkss_idw`, 107 vindhalezoner ≥96 timer, fulde gates og deploy. Offentlig samlet vind: 200/208 med data, 108/208 ≥96 timer og maksimum 111,5 timer.
+- [ ] De automatiske runs skal nu rotere LF/NSBS ind og måles, så de resterende geografiske huller lukkes mod produktmålet 118–119 timer.

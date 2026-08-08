@@ -9,4 +9,5 @@
 ## Sikkerhed og status
 - RavScore, HARMONIE/DKSS-modelgrænsen og null-reglerne er uændrede.
 - Regressionstests reproducerer både id 34-konflikten og schedulerrotation med 208 aktive zoner.
-- Lokal RDKS-, versions-, modul- og releasevalidering består. Frisk CI/DMI-produktion skal fortsat bevise faktisk dækning, gates og deploy.
+- Lokal RDKS-, versions-, modul- og releasevalidering består.
+- #1831 produktionsverificerede begge DKSS-vindkomponenter, 107 halezoner ≥96 timer, begge fulde gates og Pages-deploy. Det offentlige datasæt nåede 108/208 zoner med mindst 96 timers vind og maksimum 111,5 timer.

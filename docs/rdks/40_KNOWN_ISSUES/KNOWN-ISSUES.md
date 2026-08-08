@@ -125,4 +125,4 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 - **ISSUE-FIVE-DAY-PER-HOUR-PROVENANCE – FORTSAT AKTIV:** Vindkilden angives nu pr. time, men fuld model-run-, lead-time-, alder- og native/interpoleret-proveniens for alle komponenter er endnu ikke komplet.
 
 ## 4.0.119 – produktionsbevist DKSS-parserfejl
-- **ISSUE-DKSS-WIND-TAIL-V-DROPPED – RETTET LOKALT, AFVENTER PRODUKTION:** #1828 beviste, at DKSS-id 34 blev fejlfortolket som `sst` og forkastet som tvetydigt. DMI's lokale id er nu autoritativt, og DKSS-pladsen roterer efter manglende vindhale pr. zones valgte marinecollection.
+- **ISSUE-DKSS-WIND-TAIL-V-DROPPED – PRODUKTIONSVERIFICERET LØST I #1831:** #1828 beviste, at DKSS-id 34 blev fejlfortolket som `sst` og forkastet som tvetydigt. #1831 genkendte begge U/V-felter, gav vindhale i 107 zoner med mindst 96 timer og gennemførte fulde gates/deploy. Det offentlige datasæt havde 108/208 zoner med mindst 96 timers samlet vind og maksimum 111,5 timer.

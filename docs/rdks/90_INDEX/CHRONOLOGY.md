@@ -83,4 +83,5 @@ Fem sammenhængende produktionskørsler afslørede, at samme ugentlige GitHub-ca
 2. Parameter 34 blev fejlmærket `sst` og forkastet som tvetydig.
 3. DMI's lokale id er gjort autoritativt; parser/parameterkort er 13/4.
 4. Schedulerens DKSS-plads roterer efter manglende U/V-vindhale pr. valgt marinecollection.
-5. Lokal regression er grøn; frisk produktion afventer.
+5. #1831 genkendte begge DKSS U/V-felter, gav 107 vindhalezoner ≥96 timer og gennemførte validate, release gate og deploy.
+6. Det offentlige datasæt havde 200/208 zoner med vind, 108/208 ≥96 timer og maksimum 111,5 timer; videre automatiske runs skal rotere LF/NSBS og lukke de resterende huller.
