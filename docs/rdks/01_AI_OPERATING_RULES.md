@@ -39,3 +39,11 @@ Før en RavRadar-ændring implementeres, skal hele runtime- og releasekæden ana
 
 ## Codex-start
 Codex skal begynde i `docs/ai/CODEX_START_HERE.md`. AI-dokumentationspakken kondenserer den aktuelle arbejdsviden, men RDKS og faktisk kode er fortsat autoritative.
+
+## Modelvalg og ugentlig kvote – DEC-0031
+- Før hvert væsentligt arbejdsafsnit vurderer assistenten nødvendig ræsonneringsdybde, kodebasebredde, fejlkonsekvens og påvirkning af faglig model, RavScore, data, DMI/fallback, arkitektur og produktion.
+- GPT-5.6 Sol er standard ved kritisk eller uklar analyse, forskning, komplekse regressioner, arkitektur, produktionskritisk datalogik og større slutvalidering. Ved tvivl vælges kvalitet/Sol.
+- Hvis en billigere aktuelt tilgængelig model kan levere samme nødvendige kvalitet, stopper assistenten før hovedarbejdet, anbefaler modellen og forklarer kort hvorfor. Efter et sådant skift er assistenten ansvarlig for at stoppe igen og anbefale Sol, før kritisk arbejde fortsætter.
+- Rutinearbejde må ikke automatisk bruge Sol af bekvemmelighed. En tilladt arbejdsdeling er Sol til analyse/design, billigere model til klart specificeret mekanik og Sol til kritisk integration/review; den vurderes konkret og er ikke en tvungen skabelon.
+- En kvotegrænse må aldrig sænke analyse-, forsknings-, test- eller valideringskrav. Ved pause opdateres et permanent checkpoint med udført arbejde, evidens, konklusioner, åbne og afviste hypoteser, ændringer, tests, mangler, næste konkrete trin og anbefalet model.
+- Den planlagte videnskabelige RavRadar-/RavScore-analyse kræver som udgangspunkt Sol til centrale synteser, evidenskonflikter, hypoteser, scorebeslutninger og endelig vurdering.

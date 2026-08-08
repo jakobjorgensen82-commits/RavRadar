@@ -478,3 +478,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - 4.0.119 gør producentens lokale id autoritativt, bruger parser/parameterkort 13/4 og roterer DKSS efter zonernes manglende komplette U/V-vindhale.
 - #1831 produktionsverificerede begge DKSS U/V-felter, 107 vindhalezoner ≥96 timer, fulde gates og deploy. Offentlig samlet vind nåede 200/208 zoner, 108/208 ≥96 timer og maksimum 111,5 timer.
 - RavScore er uændret. Frisk GitHub/DMI-produktion skal stadig bevise faktisk 118–119-timers dækning, kildeskift, gates og deploy.
+
+## 2026-08-08 – permanent AI-model- og kvotestrategi
+- DEC-0031 gør kvalitet-først-modelvalg bindende under den ugentlige Codex-kvote.
+- Codex skal selv anbefale en billigere aktuelt tilgængelig model, når kvaliteten er den samme, og selv stoppe for at anbefale skift tilbage til Sol før kritisk arbejde.
+- Kvoteudløb må ikke sænke analyse, forskning, tests eller validering; en pause kræver et permanent genoptageligt checkpoint.
+- Den store videnskabelige RavRadar-/RavScore-analyse bruger som udgangspunkt Sol til centrale synteser og vurderinger.

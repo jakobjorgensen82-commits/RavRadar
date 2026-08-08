@@ -53,6 +53,9 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-RDKS-002 – IMPLEMENTERET:** Historiske chats er normaliseret, kronologiseret og sporbare.
 - **REQ-RDKS-003 – AKTIV:** Samtalens nye beslutninger og status indarbejdes automatisk ved versionsaflevering.
 - **REQ-RDKS-004 – AKTIV:** Håndbogen opdateres ved relevante arkitektur-, data-, score- og adminændringer.
+- **REQ-AI-MODEL-001 – BINDENDE:** Codex skal selv vurdere modelbehov før hvert væsentligt arbejdsafsnit og aktivt anbefale den billigste aktuelt tilgængelige model, der kan levere samme nødvendige kvalitet og sikkerhed.
+- **REQ-AI-MODEL-002 – BINDENDE:** Sol bruges ved kritisk/komplekst arbejde og ved tvivl. Hvis Codex har anbefalet en billigere model, skal Codex stoppe og anbefale skift tilbage til Sol før næste kritiske del; ansvaret må ikke overlades til den ikke-tekniske ejer.
+- **REQ-AI-QUOTA-001 – BINDENDE:** Kvotegrænser må ikke reducere analyse, forskning, tests eller validering. En nødvendig pause kræver et permanent, genoptageligt checkpoint med evidens, status, hypoteser, ændringer, tests, næste trin og anbefalet model.
 ## Release og domæne
 - **REQ-RELEASE-001 – IMPLEMENTERET:** En samlet release-gate skal bestå før en ZIP kan erklæres installationsklar.
 - **REQ-RELEASE-002 – IMPLEMENTERET:** Releasepakker må ikke indeholde `.git`, secrets, caches eller `node_modules`.

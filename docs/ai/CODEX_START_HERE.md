@@ -25,6 +25,8 @@ Dette er den obligatoriske indgang til RavRadar for Codex og andre kodeassistent
 ## Første kontrol i en lokal Codex-session
 Kør `git status`, `git log -5 --oneline` og kontroller `package.json`/`version.json`. Kør mindst `npm run validate:rdks` før dokumentationsarbejde og relevante målrettede tests før kodeændringer. Før release kræves hele den gældende validerings- og releasegate.
 
+Før hvert væsentligt arbejdsafsnit skal Codex desuden anvende DEC-0031: vurder modelbehovet, anbefal aktivt en billigere aktuel model når kvaliteten er den samme, og stop senere for at anbefale Sol igen før kritisk arbejde. Kvote må aldrig sænke analyse- eller valideringskrav.
+
 ## Stabilitetsord
 Brug ikke ordet **stabil** om noget, der kun er lokalt grønt. Skeln mellem:
 - **lokalt valideret** – relevante lokale tests er grønne,

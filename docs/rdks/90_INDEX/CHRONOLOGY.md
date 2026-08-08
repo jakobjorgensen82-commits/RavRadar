@@ -85,3 +85,9 @@ Fem sammenhængende produktionskørsler afslørede, at samme ugentlige GitHub-ca
 4. Schedulerens DKSS-plads roterer efter manglende U/V-vindhale pr. valgt marinecollection.
 5. #1831 genkendte begge DKSS U/V-felter, gav 107 vindhalezoner ≥96 timer og gennemførte validate, release gate og deploy.
 6. Det offentlige datasæt havde 200/208 zoner med vind, 108/208 ≥96 timer og maksimum 111,5 timer; videre automatiske runs skal rotere LF/NSBS og lukke de resterende huller.
+
+## 2026-08-08 – DEC-0031 model- og kvotestyring
+1. Jakob fastlagde, at kvalitet går foran kvotebesparelse, men at Sol ikke skal bruges til rutinearbejde af bekvemmelighed.
+2. Codex fik ansvar for både at anbefale billigere model og senere kræve skift tilbage til Sol før kritiske opgaver.
+3. Kvoteudløb kræver dokumenteret checkpoint frem for reduceret analyse eller validering.
+4. Den planlagte videnskabelige RavRadar-/RavScore-analyse er som udgangspunkt Sol-arbejde; afgrænsede mekaniske støtteopgaver kan udføres billigere.

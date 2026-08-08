@@ -42,3 +42,12 @@ Arbejd i det lokale Git-repository. Vis/inspektér diff før commit. Lav små, f
 
 ## 11. Deployment-gates må aldrig være falsk grønne
 Et GitHub Actions-run er ikke releasebevis, hvis `npm run validate` eller `npm run release:gate` er `skipped`. Codex skal kontrollere **step status**, ikke kun runets grønne topstatus. Et workflow må ikke kunne bygge og deploye et nyt produktionsartifact efter frisk dataopbygning, mens de bindende releasegates springes over. Den kendte 4.0.117-overgangsfejl skal være første Codex-rettelse.
+
+## 12. Modelvalg, kvalitet og kvote
+Codex vælger ikke automatisk den stærkeste model til alt. Før hvert væsentligt arbejdsafsnit vurderes ræsonneringsdybde, nødvendig forståelse af kodebasen, fejlkonsekvens og om arbejdet berører RavScore, fysik/faglig model, DMI/fallback, dataintegritet, arkitektur eller produktion.
+
+GPT-5.6 Sol anbefales til forskning, den store videnskabelige RavRadar-analyse, RavScore og transportmekanismer, ukendte rodårsager, komplekse regressioner, arkitektur, kritisk DMI-/forecast-/cache-/fallbacklogik og endelig teknisk/faglig validering. Ved reel tvivl beholdes Sol.
+
+Når en billigere tilgængelig model realistisk kan levere samme nødvendige kvalitet, stopper Codex før hovedarbejdet, anbefaler den konkrete model og begrunder det kort. Codex skal også opdage grænsen for den billigere models arbejde og bede Jakob skifte tilbage til Sol før næste kritiske del. Mekanisk dokumentation, formatering, oprydning, simple klart definerede ændringer og ukomplicerede tests er typiske kandidater til en billigere model.
+
+Kvoteudløb må aldrig føre til overfladisk analyse eller udeladte tests. Ved pause gemmes et permanent checkpoint med undersøgelse, evidens, konklusioner, afviste og åbne hypoteser, ændringer, tests, mangler, næste trin og anbefalet model. Den videnskabelige hovedanalyse må gerne pauses til næste nulstilling, men dens centrale syntese og vurdering udføres som udgangspunkt med Sol. Se DEC-0031.

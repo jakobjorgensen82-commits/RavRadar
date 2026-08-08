@@ -6,6 +6,7 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - RavRadar er beslutningsstøtte til ravjagt og lover ikke fund.
 - Faglige udsagn mærkes som dokumenterede, observerede, hypoteser eller validerede i RavRadar.
 - Nye idéer må ikke blive produktionslogik uden test, forklaring og versionsspor.
+- Modelvalg følger DEC-0031: kvalitet kommer først, men Sol bruges ikke til rutinearbejde, hvis en billigere aktuel model kan levere samme kvalitet. Codex skal selv anbefale både nedskiftning og senere skift tilbage til Sol; kvotepause kræver et permanent checkpoint.
 
 ## Data
 - DMI er autoritativ dansk kilde. Open-Meteo er fallback.
