@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "private-read-only-national-coastal-parts-policy",
+  "groupingGapM": 120,
+  "minimumPartLengthM": 100,
+  "maximumPartsPerZoneBeforeFragmentationReview": 25,
+  "requireOfficialPlaceNameBeforeNextStage": true,
+  "inventedConnectionsAllowed": false,
+  "automaticActivationAllowed": false
+}

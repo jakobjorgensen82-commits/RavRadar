@@ -675,3 +675,6 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - #2039 produktionsverificerede 4.0.147; privat #2040 verificerede 45 overdense zoner med nul anvendte åmasker.
 - Profilen viste 2.551 kandidater på 0–2,5 m, 806 på 2,5–12 m og 37 på mindst 12 m; synlighed/type skelnede ikke.
 - 4.0.148 kræver officiel midtebredde mindst 2,5 m og fysisk linjelængde mindst 100 m, rapporterer smalle/korte fravalg og bevarer >20-klynge no-go.
+# 2026-08-09 – 4.0.149 private nationale kystdelsforslag
+- #2042 produktionsverificerede 4.0.148; privat #2043 reducerede åklynger til 489 og overdense zoner til den kendte `DK-B10-10`-partitionskonflikt.
+- En ny read-only generator grupperer kun faktiske fragmenter som multipart, kræver officielle navne og holder punkter, sampling, state, score og aktivering falske.

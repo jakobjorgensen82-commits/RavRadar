@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.148
+# Implementeringsstatus pr. 4.0.149
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] 4.0.143 er produktionsverificeret i #2027: central sync, frisk data, fuld Linux-validate, releasegate, Pages-artifact og deploy bestod.
@@ -17,6 +17,8 @@
 - [x] 4.0.147 tilbageholder åmasker over en eksplicit auditgrænse, markerer zonen no-go og gemmer egenskabsprofil samt begrænsede diagnostiske samples uden geometri eller credentials.
 - [x] #2040 viste 45 overdense zoner og nul fejlagtigt anvendte masker; #2039 bestod normal produktion.
 - [x] 4.0.148 filtrerer på officiel midtebredde ≥2,5 m og fysisk linjelængde ≥100 m samt rapporterer alle smalle/korte fravalg.
+- [x] #2043 målte 489 klynger og kun én overdense, allerede blokeret partitionszone; #2042 bestod normal produktion.
+- [x] 4.0.149 danner private nationale multipart-reviewdele uden opfundne forbindelser og kræver officielle navne før næste trin.
 - [x] Lokal RDKS, kystgeometri-v2, workflowkontrakt, releaseversion og releasegate består. Hele validate-rækken består bortset fra den kendte Windows/Linux-`rsync`-test, som skal bevises i CI.
 - [ ] National topologi, ravstrandfravalg, stednavne, lokale punkter, DMI/state/score/UI/admin og aktivering er endnu ikke implementeret.
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.

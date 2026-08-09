@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.148
+**Håndbogsversion:** 4.0.149
 
 **Opdateret:** 1. august 2026
 
@@ -1483,5 +1483,7 @@ Den faktiske QA viser, at kun 20 zoner er direkte referenceklare, mens 188 er fl
 #2037 viste, hvorfor også topologiregler skal auditeres fagligt: første åregel fandt 2.868 klynger, op til 189 i én zone. Det er oversegmentering fra rå vandløbsdata, ikke et troværdigt antal åmundinger. Fra 4.0.147 holdes disse åmasker tilbage i overdense zoner, og råegenskaber profileres privat, før reglen skærpes.
 
 #2040 viste, at 2.551 af 3.394 rå kandidater kun er 0–2,5 m brede. 4.0.148 tester derfor kun officielle vandløb på mindst 2,5 m med mindst 100 m fysisk linje. Små grøfter registreres som fravalgt evidens, men skærer ikke hul i en ravstrandlinje.
+
+#2043 reducerede resultatet til 489 mulige åmundinger og kun én overdense zone, som allerede kræver partitionsredesign. 4.0.149 samler de tilbageværende fysiske kystfragmenter som private multipart-dele uden at tegne over spring. Delene får først navn efter officiel stednavneaudit og får endnu ingen datapunkter eller score.
 
 Før et privat artifact accepteres, skal alle 208 zoner være bundet til planen, alle eksponerede lag være komplette, og filer og hashværdier stemme. Deduplikering måles, og credential- eller mutationsfund stopper kørslen. Først derefter udføres en rumligt indekseret fysisk kystsammenligning for alle zoner. Resultatet er fortsat QA og kan ikke aktivere kyst, vejr eller score.

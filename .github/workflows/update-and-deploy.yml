@@ -396,6 +396,12 @@ jobs:
       - name: Validate national topology audit completeness and isolation
         run: python scripts/validate-national-topology-audit.py
 
+      - name: Build private national coastal part review proposals
+        run: python scripts/build-national-coastal-parts.py
+
+      - name: Validate private national coastal parts and no invented links
+        run: python scripts/validate-national-coastal-parts.py
+
       - name: Upload compact national geometry-v2 QA artifact
         uses: actions/upload-artifact@v4
         with:
@@ -408,6 +414,8 @@ jobs:
             .geometry-v2-work/national-water-exclusions.geojson
             .geometry-v2-work/national-topology-audit.json
             .geometry-v2-work/national-topology-audit.geojson
+            .geometry-v2-work/national-coastal-parts.json
+            .geometry-v2-work/national-coastal-parts.geojson
           retention-days: 14
           if-no-files-found: error
           include-hidden-files: true
