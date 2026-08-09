@@ -2,6 +2,8 @@
 - Den eksisterende moderniserede `DATAFORDELER_API_KEY` kan efter den officielle tjenestekontrakt bruges til gratis GeoDanmark Ortofoto forår Web Mercator WMTS; ingen ny betalt kilde eller credentialtype indføres.
 - Pilotworkflowet danner tre private zoom-17-overlays ved Blåvand og bevarer fail-closed secret-håndtering. Ingen geometri, admin-data, DMI-sampling eller RavScore aktiveres.
 - Lokal self-test består. Faktisk WMTS-adgang og visuelt artifactreview afventer den private CI-pilot; ortofotogaten er derfor endnu ikke bestået.
+- Privat pilot #1974 bekræftede 108 officielle tiles, tre private overlays, secret-frit artifact og skipped build/Pages. Visuelt passer nord- og sydøststrækningerne overordnet, mens hukudsnittet viser en indadgående sandtange-/laguneløkke, der kræver geometrisk rettelse før go.
+- Push-run #1973 stoppede før release-gate og deploy, fordi Pillow-importen lå før self-testen i det private script. Hotfixet flytter private imports bag self-testen og fastholder dependency-isolationen; ny produktionskørsel afventer.
 
 ## 2026-08-09 – 4.0.134 privat Blåvand-detailforslag
 - #1959/#1958 lukkede 4.0.133-gaten med henholdsvis privat pilot og fuld produktionskæde.

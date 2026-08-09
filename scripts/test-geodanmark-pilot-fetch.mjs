@@ -128,6 +128,7 @@ for (const marker of [
 for (const forbidden of ['print(key)', 'print(api_key', 'DATAFORDELER_API_KEY=']) {
   assert.ok(!blaavandOrtho.includes(forbidden), `Blåvand-ortofoto kan lække secret: ${forbidden}`);
 }
+assert.ok(blaavandOrtho.indexOf('if args.self_test:') < blaavandOrtho.indexOf('from PIL import'), 'Pillow må kun kræves i det faktiske private ortofototrin');
 assert.ok(mapRenderer.indexOf('if args.self_test:') < mapRenderer.indexOf('from PIL import'), 'Pillow må kun kræves i det faktiske private rendertrin');
 assert.ok(mapRenderer.includes('coastal-part-proposals.geojson'), 'Pilotkortet skal vise de private kystdelsforslag');
 assert.ok(mapRenderer.includes('maps') && mapRenderer.includes('zones'), 'Pilotkortet skal generere zonevise reviewkort');

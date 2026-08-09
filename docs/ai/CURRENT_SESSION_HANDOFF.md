@@ -86,6 +86,8 @@ Desktop-runtimepakken har Node/Python/pnpm, men ingen `npm`-kommando. Validate-d
 - Versionen er hævet til 4.0.135, og RDKS, krav, issue, roadmap, forskningsaudit, begge håndbøger og changelog er opdateret.
 - Lokal `test:coastal-geometry-v2`, ortofoto-self-test, RDKS-validering, releaseversionsvalidering og webhåndbogens JSON-parse består. Faktisk WMTS-fetch kan kun bevises i CI med repository-secret; commit, push, fuld release-gate, privat pilot, artifactreview og normal produktionskørsel mangler.
 - Ortofotogaten er ikke bestået, før de tre billeder er hentet og gennemgået visuelt. DMI-gridvalidering må først begynde derefter.
+- Pilot #1974 er efterfølgende grøn: 108 tiles og tre overlays blev genereret, build/Pages var skipped, rapportens produktions-/vejr-/scoreflag var falske, og en artifactsøgning fandt ingen credentialmatch. Visuelt passer nord- og sydøststrækningerne overordnet; ved selve hukket følger kilden en indadgående sandtange-/laguneløkke. Ortofotogaten er derfor delvist bestået, men samlet no-go indtil hukgeometrien er rettet og genkontrolleret.
+- Normal push-run #1973 stoppede sikkert før release/deploy, fordi Pillow blev importeret før det private scripts self-test i produktionsmiljøet. Det lokale hotfix flytter både `requests` og Pillow bag self-testen og tilføjer en importordensregression. Ny commit/push og normal produktion mangler.
 
 ## Model
 Start og afslut 4.0.134 på GPT-5.6 Sol. Geometrisk review, fuld validering og CI-artifactkontrol er kritisk. En billigere model kan først overvejes til en senere, rent mekanisk dokumentationsopgave.

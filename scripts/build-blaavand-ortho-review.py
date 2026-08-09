@@ -9,8 +9,6 @@ import math
 import os
 from pathlib import Path
 
-import requests
-from PIL import Image, ImageDraw, ImageFont
 from pyproj import Transformer
 from shapely.geometry import Point, shape
 from shapely.ops import transform
@@ -99,6 +97,10 @@ def main():
         assert abs(x) < 1e-6 and abs(y) < 1e-6
         print("Blåvand ortofotoreview self-test: bestået.")
         return
+
+    global requests, Image, ImageDraw, ImageFont
+    import requests
+    from PIL import Image, ImageDraw, ImageFont
 
     work_dir = args.work_dir.resolve()
     if ROOT not in work_dir.parents:
