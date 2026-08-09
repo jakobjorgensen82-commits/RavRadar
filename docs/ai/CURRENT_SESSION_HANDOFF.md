@@ -112,13 +112,15 @@ Desktop-runtimepakken har Node/Python/pnpm, men ingen `npm`-kommando. Validate-d
 - Kandidaten blev committed/pushed som `ab42e99`. Privat pilot #1987 bestod hele GeoDanmark-/ortofoto-/DMI-kæden med build og Pages skipped. Begge punkter har gyldige WAM-/DKSS-celler; current-U/V deler samme fysiske celle og 17 m-lag pr. punkt; alle seks komponentfelter bruger forskellige celler nord/sydøst. Artifactet indeholder ingen credentialbærende URL, og alle mutations-/aktiveringsflag er falske.
 - Normal produktion #1986 bestod central adminhydrering, frisk DMI-/vejropbygning, fuld Linux-validate, release-gate, Pages-artifact og deploy. Offentlig GitHub Pages `version.json` viser 4.0.137. DMI-gridgaten er dermed bestået privat, men ingen Blåvand-geometri, punkter, sampling, admin-data eller RavScore er aktiveret.
 
-## Aktuel ucommittet 4.0.138-kandidat
+## Produktionsverificeret 4.0.138
 - Kodeauditten bekræfter, at den aktive multi-anker-score bruger én fælles zoneserie mod flere retninger. Separate Blåvand-data må derfor ikke kobles direkte på: det kan krydsvurdere nordligt vejr mod sydøstlig kyst eller omvendt.
 - `data/geometry-v2/blaavand-weather-shadow-policy.json` låser to stabile `zoneId::partId`-identiteter, egne validerede samplingpunkter/grid, fuld nødvendig timeproveniens og separate fremtidige historiknøgler.
 - `scripts/build-blaavand-weather-shadow-contract.py` kræver bestået #1987-lignende gridrapport, identiske partmængder og falske mutationsflag. Den danner kun et privat kontraktartifact.
 - Krydsmerge, spatial interpolation, fallback, parent-historikgenbrug, part-state, part-score, best-part-valg, public projection, UI, admin-write og automatisk aktivering er eksplicit deaktiveret. `DK-B03-13`-parentserien, historikken og RavScore forbliver autoritative.
-- Workflowet bygger kontrakten efter DMI-gridgaten og før kort/artifact-upload. Lokal self-test består. Version/RDKS/roadmap/forskningsaudit/begge håndbøger/changelog er opdateret.
-- Målrettet kontrakttest, RDKS, fuld lokal validering, release-gate, commit/push, privat pilot, artifactreview og normal produktion mangler.
+- Workflowet bygger kontrakten efter DMI-gridgaten og før kort/artifact-upload. Produktcommit `2d6127b` er pushed til `main`.
+- Privat pilot #1992 (`31318970308`) bestod. Artifactet har præcis to isolerede delserier med unikke serie-/historik-ID'er, korrekte gridreferencer, ingen credentialbærende URL og alle sampling-/state-/score-/UI-/publicerings-/admin-/aktiveringsflag falske. Build og Pages var skipped.
+- Normal produktion #1991 (`31318963269`) bestod central adminhydrering, frisk DMI-/vejropbygning, fuld Linux-validate, release-gate, Pages-artifact og deploy på samme commit. Offentlig GitHub Pages `version.json` viser 4.0.138.
+- Næste faglige gate er private flertidsserier med timeproveniens og komponentmerge. Sampling, state, score, UI, admin og geometri forbliver deaktiveret.
 
 ## Model
 Start og afslut 4.0.134 på GPT-5.6 Sol. Geometrisk review, fuld validering og CI-artifactkontrol er kritisk. En billigere model kan først overvejes til en senere, rent mekanisk dokumentationsopgave.

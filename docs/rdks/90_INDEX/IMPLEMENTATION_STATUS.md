@@ -26,8 +26,9 @@
 - [x] 4.0.137-kandidaten validerer begge private vandpunkter direkte i aktuelle native `wam_nsb`- og `dkss_nsbs`-GRIB-felter med produktionens nearest-cell-logik og fælles U/V-gridregel.
 - [x] Privat pilot #1987 og artifactreview beviser gyldige WAM-/DKSS-celler for begge punkter, fælles current-U/V på 17 m-laget og forskellige nord/sydøst-celler for alle seks komponentfelter. Ingen sampling eller aktivering er sket.
 - [x] #1986 produktionsverificerede 4.0.137 med frisk data, fuld Linux-validate, release-gate, Pages-artifact og deploy.
-- [x] 4.0.138-kandidaten låser stabil partserieidentitet, eget punkt/grid/proveniens, separat historiknøgle og forbud mod krydsmerge, fallback, part-score, state, UI, public projection, admin-write og aktivering.
-- [ ] Kør privat CI-pilot og gennemgå shadow-kontraktartifactet.
+- [x] 4.0.138 låser stabil partserieidentitet, eget punkt/grid/proveniens, separat historiknøgle og forbud mod krydsmerge, fallback, part-score, state, UI, public projection, admin-write og aktivering.
+- [x] Privat pilot #1992 og artifactreview verificerer præcis to isolerede delserier, unikke serie-/historik-ID'er, korrekte gridreferencer, ingen credentialbærende URL og alle aktiverings-/mutationsflag falske.
+- [x] #1991 produktionsverificerede 4.0.138 med central adminhydrering, frisk data, fuld Linux-validate, release-gate, Pages-artifact og deploy.
 - [ ] Næste gate derefter er private flertidsserier med timeproveniens og komponentmerge; score/state/UI/admin forbliver deaktiveret.
 - [x] #1976 produktionsverificerede 4.0.135 efter dependency-isolationshotfix med frisk data, fuld validate, release-gate, Pages-artifact og deploy.
 
