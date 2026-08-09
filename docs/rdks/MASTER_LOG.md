@@ -1,3 +1,10 @@
+## 2026-08-09 – 4.0.134 privat Blåvand-detailforslag
+- #1959/#1958 lukkede 4.0.133-gaten med henholdsvis privat pilot og fuld produktionskæde.
+- Blåvands fysiske kyst splittes ved det officielle Blåvands Huk i to navngivne retningsdele; en første nærmeste-ankerløsning blev forkastet, fordi den ikke splittede det lange kildeobjekt topologisk korrekt.
+- Begge dele forskydes 15 meter mod den landside, som centralt verificerede adminankre dokumenterer, og får private land-/vandpunktpar uden vejrsampling.
+- Ni høfter registreres separat og score-neutralt. Intet ændres i aktiv zone, admin, DMI eller RavScore.
+- Ortofoto, DMI-grid og admin-roundtrip er næste stopgates.
+
 ## 2026-08-08 – kystgeometri v2 godkendt til score-neutral pilot
 - Brugeren har godkendt opstart af en grundig national geometriomlægning, men ikke en direkte overskrivning af produktionszonerne.
 - Kystlinjen defineres som relevante ravstrande og må springe over havne og åudløb. Indre fjorde udelukkes med Limfjorden som eneste undtagelse.

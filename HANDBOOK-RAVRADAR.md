@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.133
+**Håndbogsversion:** 4.0.134
 
 **Opdateret:** 1. august 2026
 
@@ -1449,3 +1449,11 @@ En regeltekst om fjorde er ikke nok. Det første zonevise review viste kystforsl
 Hver pilotzone har nu sit eget højopløselige kort med nuværende kyst, fysisk GeoDanmark-kyst, forslag, fravalg og officielle stednavne. Reviewet frigiver kun Blåvand til næste private detailopretning. Rømø og Askø/Lilleø ligger geografisk forkert. Thisted, Fur, Aalborg, Stubbekøbing samt Falster/Nysted og Lolland/Kragenæs kræver nye grænser eller partitioner. Ingen af disse otte må få nye DMI-punkter, før den geografiske betydning og migration er besluttet.
 
 Kørsel #1936 bekræftede hele denne kildekæde. Alle 21 lag/område-udtræk var komplette, også de seks der krævede flere WFS-sider, og de rå filer forblev i det private artifact. Det er et datagrundlag for næste analysefase, ikke en ændring af kortets aktive zoner.
+
+# Privat Blåvand-detailforslag (4.0.134)
+
+Blåvands fysiske GeoDanmark-kyst deles ved det officielle sted Blåvands Huk. Dermed får den nordgående strand og den sydøstgående strækning mod Hvidbjerg hver sin navngivne kystdel i stedet for ét misvisende fælles punkt.
+
+Kystlinjen forskydes 15 meter mod land. Landsiden bestemmes separat for hver del ud fra de to centralt gemte og verificerede adminankre; det modsatte lokale normalpunkt bliver en privat vandpunktkandidat. Punkterne bruges endnu ikke til vejr eller score. Ni officielle høfter vises særskilt som mulige ravfælde-hypoteser, men de tegnes ikke ind i kystlinjen og giver ingen point.
+
+Detailforslaget er kun reviewmateriale. Før aktivering kræves kontrol mod ortofoto, gyldige DMI-havceller, admin-readback og hele vejr-/proveniens-/score-/UI-kæden.

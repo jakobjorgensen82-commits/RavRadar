@@ -376,6 +376,9 @@ jobs:
       - name: Assemble conservative private coastal-part proposals
         run: python scripts/assemble-geodanmark-coastal-parts.py
 
+      - name: Build private Blåvand detail proposal
+        run: python scripts/build-blaavand-detail-proposal.py
+
       - name: Render private GeoDanmark source review maps
         run: python scripts/render-geodanmark-pilot-maps.py
 

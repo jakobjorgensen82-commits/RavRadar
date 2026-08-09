@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "private-detail-policy",
+  "zoneId": "DK-B03-13",
+  "officialHeadlandName": "Blåvands Huk",
+  "landwardOffsetM": 15,
+  "landPointOffsetM": 60,
+  "waterPointOffsetM": 250,
+  "offsetToleranceM": 2,
+  "headlandSplitRadiusM": 175,
+  "morphologySearchM": 100,
+  "parts": [
+    {
+      "partId": "dk-b03-13-north-of-blaavands-huk",
+      "name": "Nord for Blåvands Huk",
+      "anchorId": "primary"
+    },
+    {
+      "partId": "dk-b03-13-southeast-of-blaavands-huk",
+      "name": "Sydøst for Blåvands Huk mod Hvidbjerg Strand",
+      "anchorId": "anchor-msd9s5dc"
+    }
+  ],
+  "automaticActivationAllowed": false,
+  "weatherSamplingEnabled": false,
+  "scoreChanged": false
+}

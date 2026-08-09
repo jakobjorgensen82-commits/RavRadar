@@ -56,6 +56,8 @@ def main():
     qa_map = load(work_dir / "coastal-source-qa.geojson")
     proposal_path = work_dir / "coastal-part-proposals.geojson"
     proposals = load(proposal_path) if proposal_path.exists() else {"features": []}
+    detail_path = work_dir / "blaavand-detail-proposal.geojson"
+    detail = load(detail_path) if detail_path.exists() else {"features": []}
     name_audit_path = work_dir / "pilot-name-and-migration-audit.json"
     name_audit = load(name_audit_path) if name_audit_path.exists() else {"zones": []}
     pilot_areas = load(args.pilot_areas.resolve())
@@ -188,8 +190,48 @@ def main():
             draw.ellipse((px - 3, py - 3, px + 3, py + 3), fill="#111111")
             draw.text((px + 5, py - 5), str(candidate.get("primaryName") or ""), fill="#111111", font=font, stroke_width=2, stroke_fill="white")
         image.save(zone_output_dir / f"{zone_id}.png", optimize=True)
-    zone_map_count = len(list(zone_output_dir.glob("*.png")))
-    print(f"Private reviewkort genereret for {len(pilot_areas.get('areas') or [])} pilotområder og {zone_map_count} zoner.")
+    zone_map_count = len([path for path in zone_output_dir.glob("*.png") if not path.stem.endswith("-detail")])
+    if detail.get("features"):
+        zone_id = "DK-B03-13"
+        background = qa_by_zone.get(zone_id, [])
+        detail_features = detail.get("features") or []
+        geometries = [projected(feature["geometry"]) for feature in background + detail_features]
+        minx = min(geometry.bounds[0] for geometry in geometries) - 500
+        miny = min(geometry.bounds[1] for geometry in geometries) - 500
+        maxx = max(geometry.bounds[2] for geometry in geometries) + 500
+        maxy = max(geometry.bounds[3] for geometry in geometries) + 500
+        scale = min((WIDTH - 2 * MARGIN) / max(maxx - minx, 1), (HEIGHT - 2 * MARGIN) / max(maxy - miny, 1))
+
+        def detail_pixel(point):
+            x, y = point[:2]
+            return (MARGIN + (x - minx) * scale, HEIGHT - MARGIN - (y - miny) * scale)
+
+        image = Image.new("RGB", (WIDTH, HEIGHT), "white")
+        draw = ImageDraw.Draw(image)
+        draw.text((20, 16), "DK-B03-13 · Blåvand · privat detailforslag", fill="#111111", font=font)
+        draw.text((20, 34), "Blå: fysisk kyst · Grøn: 15 m mod land · Mørkegrøn: landpunkt · Lilla: vandpunkt · Rød: score-neutral høfte", fill="#333333", font=font)
+        for feature in background:
+            if feature.get("properties", {}).get("kind") != "geodanmark-source-candidate":
+                continue
+            for line in line_parts(projected(feature["geometry"])):
+                draw.line([detail_pixel(point) for point in line.coords], fill="#1769aa", width=3)
+        for feature in detail_features:
+            props = feature.get("properties") or {}
+            kind = props.get("kind")
+            geometry = projected(feature["geometry"])
+            if kind == "private-landward-detail-line":
+                for line in line_parts(geometry):
+                    draw.line([detail_pixel(point) for point in line.coords], fill="#2ca02c", width=5)
+                point = geometry.representative_point()
+                draw.text(detail_pixel((point.x, point.y)), str(props.get("name") or ""), fill="#176f2c", font=font, stroke_width=2, stroke_fill="white")
+            elif kind in {"private-land-point-candidate", "private-water-point-candidate", "private-groyne-hypothesis"}:
+                px, py = detail_pixel((geometry.x, geometry.y))
+                colour = {"private-land-point-candidate": "#145a32", "private-water-point-candidate": "#7d3c98", "private-groyne-hypothesis": "#c0392b"}[kind]
+                radius = 6 if kind != "private-groyne-hypothesis" else 4
+                draw.ellipse((px - radius, py - radius, px + radius, py + radius), fill=colour, outline="white", width=1)
+        image.save(zone_output_dir / "DK-B03-13-detail.png", optimize=True)
+    detail_map_count = 1 if (zone_output_dir / "DK-B03-13-detail.png").exists() else 0
+    print(f"Private reviewkort genereret for {len(pilot_areas.get('areas') or [])} pilotområder, {zone_map_count} zoner og {detail_map_count} detailkort.")
 
 
 if __name__ == "__main__":

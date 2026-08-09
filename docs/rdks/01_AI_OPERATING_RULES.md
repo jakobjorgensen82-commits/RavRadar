@@ -40,6 +40,15 @@ Før en RavRadar-ændring implementeres, skal hele runtime- og releasekæden ana
 ## Codex-start
 Codex skal begynde i `docs/ai/CODEX_START_HERE.md`. AI-dokumentationspakken kondenserer den aktuelle arbejdsviden, men RDKS og faktisk kode er fortsat autoritative.
 
+## Skift til ny chat
+Når ejeren siger, at arbejdet skal fortsætte i en ny chat, stopper Codex det aktive featurearbejde ved en sikker grænse. Før chatten afsluttes skal Codex:
+- synkronisere RDKS, roadmap, kendte issues og relevante håndbogsafsnit med den faktiske status;
+- skrive eller opdatere `docs/ai/CURRENT_SESSION_HANDOFF.md` med ændringer, evidens, afviste løsninger, tests, mangler, worktree-/branchstatus, næste konkrete trin og anbefalet model;
+- validere checkpointets dokumentation så langt den aktuelle tilstand tillader;
+- og give ejeren en færdig besked, som kan indsættes i den nye chat.
+
+En halvfærdig version må ikke fremstilles som releaseklar. Ucommittede filer, manglende gates og eksterne artifacts skal nævnes eksplicit.
+
 ## Modelvalg og ugentlig kvote – DEC-0031
 - Før hvert væsentligt arbejdsafsnit vurderer assistenten nødvendig ræsonneringsdybde, kodebasebredde, fejlkonsekvens og påvirkning af faglig model, RavScore, data, DMI/fallback, arkitektur og produktion.
 - GPT-5.6 Sol er standard ved kritisk eller uklar analyse, forskning, komplekse regressioner, arkitektur, produktionskritisk datalogik og større slutvalidering. Ved tvivl vælges kvalitet/Sol.

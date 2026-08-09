@@ -73,7 +73,15 @@ Lokal kørsel fandt seks relevante officielle polygoner i Lolland/Falster-områd
 
 Ni zonekort viser, at den gamle zonegeometri ikke blot kræver koordinatjustering. Kun Blåvand er kandidat til lokal detailopretning. Rømø og Askø/Lilleø kræver semantisk flytning, mens Thisted, Fur, Aalborg og de tre øvrige Lolland/Falster-zoner kræver grænse-/partitionsredesign. Dommene ligger i `data/geometry-v2/pilot-geographic-review.json` og må ikke fortolkes som produktionsgodkendelse.
 
+## Blåvand-detailforslag – 4.0.134
+Den fysiske GeoDanmark-kyst splittes ved det officielle sted `Blåvands Huk`. Dette er vigtigt, fordi et enkelt langt kildeobjekt følger både nordkysten og knækket mod Hvidbjerg; nærmeste-ankerklassifikation alene gav en falsk topologisk opdeling og blev stoppet af testen.
+
+Efter splittet dannes to private kystdele. Hvert fragment får en 15-meters parallelforskydning mod den side, hvor det tilhørende centralt verificerede admin-landanker ligger, og væk fra det verificerede vandanker. Den lokale prøve på #1959-input gav cirka 6,4 km pr. del, to modsatrettede land-/vandpunktpar og ni separate GeoDanmark-høfter. Høfterne er kun morfologihypoteser.
+
+Kontrollen beviser geometrisk sidekonsistens mod central admin-sandhed, men ikke strandens aktuelle ortofotoudseende eller at et nyt vandpunkt ligger på en gyldig DMI-havcelle. Derfor er vejrsampling, adminændring, aktivering og score fortsat falske.
+
 ## Næste tekniske leverance
-1. Kør 4.0.133-piloten og verificér officielle masker, 72 reviewdele, ni zonekort og reviewgaten.
-2. Byg kun Blåvands private detailforslag med dokumenteret landsideforskydning og fysisk land-/vandkontrol.
-3. Design nye semantiske zoneafgrænsninger for de øvrige otte før land-/vandpunkter eller DMI-celler vurderes.
+1. Kør 4.0.134-piloten og verificér de to dele, 15 detailfeatures, ni høfter og detailkortet.
+2. Kontrollér Blåvand visuelt mod en gratis officiel ortofotokilde og afklar reproducerbar adgang.
+3. Valider først derefter punktkandidater mod relevante DMI-gridmasker; ingen selvstændig sampling før fuld provenance-/score-/UI-plan.
+4. Design nye semantiske zoneafgrænsninger for de øvrige otte før deres land-/vandpunkter eller DMI-celler vurderes.

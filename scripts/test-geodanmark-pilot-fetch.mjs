@@ -8,6 +8,8 @@ const nameAudit = await fs.readFile('scripts/audit-pilot-place-names.py', 'utf8'
 const waterExclusions = await fs.readFile('scripts/fetch-official-water-exclusions.py', 'utf8');
 const coastalParts = await fs.readFile('scripts/assemble-geodanmark-coastal-parts.py', 'utf8');
 const geographicReview = JSON.parse(await fs.readFile('data/geometry-v2/pilot-geographic-review.json', 'utf8'));
+const blaavandDetail = await fs.readFile('scripts/build-blaavand-detail-proposal.py', 'utf8');
+const blaavandPolicy = JSON.parse(await fs.readFile('data/geometry-v2/blaavand-detail-policy.json', 'utf8'));
 const mapRenderer = await fs.readFile('scripts/render-geodanmark-pilot-maps.py', 'utf8');
 const workflow = await fs.readFile('.github/workflows/update-and-deploy.yml', 'utf8');
 
@@ -44,6 +46,7 @@ assert.match(workflow, /python scripts\/analyze-geodanmark-pilot\.py/);
 assert.match(workflow, /python scripts\/audit-pilot-place-names\.py/);
 assert.match(workflow, /python scripts\/fetch-official-water-exclusions\.py/);
 assert.match(workflow, /python scripts\/assemble-geodanmark-coastal-parts\.py/);
+assert.match(workflow, /python scripts\/build-blaavand-detail-proposal\.py/);
 assert.match(workflow, /python scripts\/render-geodanmark-pilot-maps\.py/);
 assert.match(workflow, /--exclude 'data\/geometry-v2\/'/);
 assert.match(workflow, /--exclude '\.geometry-v2-work\/'/);
@@ -101,7 +104,19 @@ assert.ok(coastalParts.includes('official-water-exclusions.geojson'), 'Kystdelss
 assert.equal(Object.keys(geographicReview.zones).length, 9, 'Alle ni pilotzoner skal have geografisk reviewdom');
 assert.equal(Object.values(geographicReview.zones).filter(zone => zone.nextStageAllowed).length, 1, 'Kun den eksplicit godkendte detailkandidat må gå videre');
 assert.equal(geographicReview.automaticActivationAllowed, false);
+assert.equal(blaavandPolicy.zoneId, 'DK-B03-13');
+assert.equal(blaavandPolicy.parts.length, 2, 'Blåvand skal have to retningsmæssigt forskellige private kystdele');
+assert.equal(blaavandPolicy.landwardOffsetM, 15);
+for (const marker of [
+  'private-read-only-blaavand-detail-proposal',
+  'officialHeadlandName',
+  'verified-against-central-admin-land-witness',
+  'private-groyne-hypothesis',
+  'weatherSamplingChanged',
+  'automaticActivationAllowed'
+]) assert.ok(blaavandDetail.includes(marker), `Blåvand-detailkontrakten mangler ${marker}`);
 assert.ok(mapRenderer.indexOf('if args.self_test:') < mapRenderer.indexOf('from PIL import'), 'Pillow må kun kræves i det faktiske private rendertrin');
 assert.ok(mapRenderer.includes('coastal-part-proposals.geojson'), 'Pilotkortet skal vise de private kystdelsforslag');
 assert.ok(mapRenderer.includes('maps') && mapRenderer.includes('zones'), 'Pilotkortet skal generere zonevise reviewkort');
+assert.ok(mapRenderer.includes('blaavand-detail-proposal.geojson') && mapRenderer.includes('DK-B03-13-detail.png'), 'Pilotkortet skal generere Blåvand-detailkort');
 console.log('GeoDanmark pilotfetch-kontrakt: bestået.');

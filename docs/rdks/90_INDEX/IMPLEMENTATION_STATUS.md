@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.133
+# Implementeringsstatus pr. 4.0.134
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.
@@ -76,8 +76,17 @@
 - [x] Ni højopløselige private zonekort viser nuværende linje, fysisk kilde, forslag, fravalg og officielle stednavne.
 - [x] Maskinlæsbart geografisk review dækker alle ni zoner: én detailkandidat, to semantiske flytninger og seks grænse-/partitionsredesign.
 - [x] Kun Blåvand må gå videre til privat detailopretning. Ingen zone er produktionsgodkendt, og ingen af de otte strukturelt fejlplacerede zoner må få DMI-punkter endnu.
-- [ ] Kør 4.0.133-piloten i GitHub og verificér 72 dele, officielle masker, ni zonekort og reviewgaten.
-- [ ] Byg Blåvand-detailforslaget med kontrolleret landsideforskydning og lokal hav-/landvalidering; hold de øvrige otte ved redesigngaten.
+- [x] #1959 verificerede 72 dele, seks officielle masker, ni zonekort, reviewgaten og fortsat privat isolation; #1958 verificerede fuld produktionskæde.
+
+## 4.0.134 – privat Blåvand-detailforslag
+- [x] Den sammenhængende fysiske GeoDanmark-kyst splittes ved det officielle Blåvands Huk, ikke ved nærmeste anker alene.
+- [x] To navngivne dele dannes: `Nord for Blåvands Huk` og `Sydøst for Blåvands Huk mod Hvidbjerg Strand`.
+- [x] Hvert fysisk fragment forskydes præcis 15 meter mod den side, som det tilhørende centralt verificerede land-/vandanker dokumenterer som land.
+- [x] Hver del får et privat land-/vandpunktpar og lokal pålandsretning, men vejrsampling og DMI-gridbrug er eksplicit deaktiveret.
+- [x] Ni GeoDanmark-høfter registreres separat som score-neutrale morfologihypoteser og indgår ikke i kystlinjen eller RavScore.
+- [x] Et særskilt detailkort viser fysisk kyst, landforskudt linje, punktpar og høfter; alle produktions-, admin-, vejr-, score- og aktiveringsflag er falske.
+- [ ] Kør privat CI-pilot og verificér 2 dele, 15 features, 9 høfter og detailkortet på centralt hydreret input.
+- [ ] Gennemfør ortofotokontrol og DMI-gridvalidering før nogen admin-roundtrip eller produktionsbeslutning.
 
 ## 4.0.125 – fuld timeproveniens fra STAC/GRIB
 - [x] Collection, model-run og native gyldighedstid lagres pr. rå komponenttime i bulkcachen.
