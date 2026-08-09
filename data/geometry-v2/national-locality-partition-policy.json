@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "private-read-only-national-locality-partition-policy",
+  "maximumLocalPartLengthM": 20000,
+  "targetSafeguardLengthM": 10000,
+  "maximumOfficialAnchorDistanceM": 3000,
+  "minimumOfficialAnchorSpacingM": 4000,
+  "minimumOutputLengthM": 100,
+  "maximumFragmentGroupingGapM": 3000,
+  "allowedAnchorRelevance": ["direct-coastal"],
+  "inventedConnectionsAllowed": false,
+  "automaticNamingAllowed": false,
+  "automaticActivationAllowed": false
+}

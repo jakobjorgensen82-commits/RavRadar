@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.151
+# Implementeringsstatus pr. 4.0.152
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] 4.0.143 er produktionsverificeret i #2027: central sync, frisk data, fuld Linux-validate, releasegate, Pages-artifact og deploy bestod.
@@ -20,9 +20,10 @@
 - [x] #2043 målte 489 klynger og kun én overdense, allerede blokeret partitionszone; #2042 bestod normal produktion.
 - [x] #2046 produktionsverificerede 4.0.149; privat #2047 dannede 755 dele i 194 zoner med nul opdigtede forbindelser og nul navne/punkter/runtimeaktivering.
 - [x] #2049 produktionsverificerede 4.0.150; privat #2050 gav 129 umiddelbart reviewbare og 79 blokerede zoner samt lokalitetsflag på 25 zoner/28 dele.
-- [x] 4.0.151's lokale officielle navneaudit brugte 503 nøglefrie requests, deduplikerede 37.815 steder og gav balancerede kandidater til 755/755 dele uden automatisk navn eller aktivering; privat CI afventer.
+- [x] #2054 produktionsverificerede 4.0.151; privat #2055 brugte 503 nøglefrie requests, deduplikerede 37.815 steder og gav balancerede kandidater til 755/755 dele uden automatisk navn eller aktivering.
+- [x] 4.0.152 opdeler read-only de 28 grove dele i 56 lokale forslag (2,565–19,882 km; gennemsnit 12,43 km). 55/56 har officielt kystnært stedanker; fragmentgrupper bevarer kildelinjen 1:1 og tegner ingen forbindelser.
 - [x] Lokal RDKS, kystgeometri-v2, workflowkontrakt, releaseversion og releasegate består. Hele validate-rækken består bortset fra den kendte Windows/Linux-`rsync`-test, som skal bevises i CI.
-- [ ] National topologi og første ravstrandfravalg er målt privat; lokal opdeling, stednavne, lokale punkter, DMI/state/score/UI/admin og aktivering er endnu ikke færdige.
+- [ ] National topologi, første ravstrandfravalg og maskinel lokal opdeling er målt privat; endelige navnebeslutninger, lokale punkter, DMI/state/score/UI/admin og aktivering er endnu ikke færdige.
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.
 - [x] Eksisterende multi-ankerfunktion er auditeret: flere navngivne retninger findes allerede i admin og scoreforklaring, men almindelig vejrpipeline leverer ikke endnu en selvstændig komponentserie pr. anker.
 - [x] Høfder og andre mulige ravfælder er afgrænset som score-neutral registrering frem til særskilt RavScore-forskning og godkendelse.

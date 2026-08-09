@@ -33,5 +33,6 @@ await import('./test-geodanmark-national-analysis.mjs');
 await import('./test-national-topology-audit.mjs');
 await import('./test-national-coastal-parts.mjs');
 await import('./test-national-coastal-part-names.mjs');
+await import('./test-national-locality-partitions.mjs');
 
 console.log('National geometry-v2-plan kontrakt: bestået.');

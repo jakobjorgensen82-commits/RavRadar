@@ -688,3 +688,7 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - #2049 produktionsverificerede 4.0.150; privat #2050 verificerede 755 dele, 79 blokerede zoner og lokalitetsflag på 25 zoner/28 dele.
 - Efter udtrykkelig ejergodkendelse blev de private delafgrænsninger brugt mod Dataforsyningens nøglefrie officielle `steder`-API. 503 requests over 100 udvidede fliser gav 37.815 deduplikerede steder.
 - Alle 755 dele fik balancerede kandidater fra direkte kystnavne, lokale bebyggelser, havnekontekst og øvrig kontekst. 751 ramte loftet på 30 kandidater; dette er reviewmateriale, og alle `proposedName` er fortsat null.
+# 2026-08-09 – 4.0.152 privat national lokalitetsopdeling
+- #2054 verificerede 4.0.151-produktionen, og privat #2055 verificerede officiel kandidatdækning for 755/755 kystdele.
+- De 28 grove dele opdeles i 56 read-only forslag på 2,565–19,882 km. Nærliggende kildefragmenter grupperes uden forbindelsesgeometri; 55/56 forslag har officielle direkte kystankre.
+- Ingen admin-, produktionsgeometri-, DMI-, state-, score-, navne- eller aktiveringsændring er tilladt.
