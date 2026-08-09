@@ -122,6 +122,13 @@ Desktop-runtimepakken har Node/Python/pnpm, men ingen `npm`-kommando. Validate-d
 - Normal produktion #1991 (`31318963269`) bestod central adminhydrering, frisk DMI-/vejropbygning, fuld Linux-validate, release-gate, Pages-artifact og deploy på samme commit. Offentlig GitHub Pages `version.json` viser 4.0.138.
 - Næste faglige gate er private flertidsserier med timeproveniens og komponentmerge. Sampling, state, score, UI, admin og geometri forbliver deaktiveret.
 
+## Aktuel ucommittet 4.0.139-kandidat
+- `scripts/validate-blaavand-multi-step-series.py` genbruger produktionens native WAM-/DKSS-parser over op til seks aktuelle forecasttrin for begge private Blåvand-dele.
+- Gaten kræver mindst to fælles komplette native tider, fuld delbundet komponentproveniens, samme current-U/V-celle og vertikallag samt nul interpolation, fallback og krydsmerge.
+- Artifactet gemmer komponenttilstedeværelse og kontekstbundne værdihash, ikke rå vejrværdier. Alle geometri-, sampling-, state-, score-, UI-, publicerings-, admin- og aktiveringsflag er falske.
+- Workflow, tests, version, RDKS, roadmap, forskningsaudit, changelog og begge håndbøger er opdateret. Lokal self-test og workflowkontrakttest består; samlet lokal validering, release-gate, commit/push, privat pilot, artifactreview og normal produktion mangler.
+- Efter bestået 4.0.139 er næste gate separat privat state-/historikvalidering. Ingen aktivering uden senere UI-, admin-roundtrip-, rollback- og ejer-go/no-go.
+
 ## Model
 Start og afslut 4.0.134 på GPT-5.6 Sol. Geometrisk review, fuld validering og CI-artifactkontrol er kritisk. En billigere model kan først overvejes til en senere, rent mekanisk dokumentationsopgave.
 

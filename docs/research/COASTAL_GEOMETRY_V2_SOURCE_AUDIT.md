@@ -99,3 +99,9 @@ Det private pilottrin henter tre afgrænsede zoom-17-vinduer ved norddelen, Blå
 Den eksisterende multi-ankerfunktion vurderer én zones strøm mod flere lokale retninger. Det er acceptabelt, så længe zonen kun har én vejserie, men kan ikke genbruges direkte til to selvstændige målepunkter: vejr fra én kystdel må aldrig scores mod den anden dels retning.
 
 4.0.138-kandidaten indfører derfor kun en privat kontrakt. Hver Blåvand-del får stabil identitet, eget valideret grid, nødvendige timeproveniensfelter og en separat fremtidig historiknøgle. Krydsmerge, fallback, state, score, UI, public projection, admin-write og automatisk aktivering er falske. Den eksisterende parent-zone forbliver autoritativ. Næste forsøg må danne private flertidsserier, men ikke publicere eller score dem.
+
+## Privat native flertidsseriekontrol – 4.0.139-kandidat
+
+Et enkelt gridtrin beviser kun fysisk adgang. 4.0.139 gentager derfor produktionens faktiske WAM-/DKSS-udlæsning over flere aktuelle forecasttrin for hver del. Kun tider, hvor alle seks krævede komponenter findes ved samme native gyldighedstid, tæller som komplette. Current-U/V skal fortsat dele fysisk celle og vertikallag.
+
+Rapporten fører provider, collection, modelkørsel, native tid, gridpunkt, lag, nul interpolation og nul fallback pr. komponent. Den gemmer ikke rå værdier, men en kontekstbundet hash af serie-ID, tid, komponent og værdi. Mindst to fælles komplette tider kræves for begge dele. Resultatet er fortsat privat bevis; ingen sampling, historiktilstand, score, UI, admin eller produktion aktiveres.

@@ -401,6 +401,18 @@ jobs:
       - name: Build private score-neutral Blåvand weather shadow contract
         run: python scripts/build-blaavand-weather-shadow-contract.py
 
+      - name: Validate private isolated Blåvand multi-step weather series
+        run: python scripts/validate-blaavand-multi-step-series.py
+        env:
+          DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
+          DMI_BULK_HOURS: 24
+          DMI_BULK_MAX_ASSETS_PER_COLLECTION: 8
+          BLAAVAND_MULTI_STEP_MAX_ASSETS: 6
+          DMI_BULK_MAX_DOWNLOAD_MB: 512
+          DMI_BULK_MAX_RUNTIME_SECONDS: 900
+          DMI_BULK_FINALIZE_RESERVE_SECONDS: 60
+          DMI_BULK_RAW_DIR: .cache/dmi-grid-validation
+
       - name: Render private GeoDanmark source review maps
         run: python scripts/render-geodanmark-pilot-maps.py
 
