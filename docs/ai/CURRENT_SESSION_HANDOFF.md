@@ -22,7 +22,7 @@ Gamle chats og chatkilder er historiske forklaringer, ikke selvstændig tilladel
 - `DATAFORDELER_API_KEY` findes som GitHub repository secret og må aldrig skrives i kode, logs, dokumentation, artifacts, commits eller chat. Secret-navnet passer til den aktive workflowimplementering.
 - Administratorens centralt gemte Supabase-data er runtime-sandhed. Manuelle navne-, kystlinje-, land-/vandpunkt-, retningsanker- og sletteændringer må ikke overskrives af repositoryets historiske geometri.
 - RavRadar har 209 aktive repositoryzoner, men senest 208 centralt effektive offentlige zoner, fordi `DK-B02-14` er slettet centralt. Generatorer skal hydrere central sandhed og tombstones først.
-- Den aktive geometri-v2-pilot er privat, parallel, read-only og score-neutral. Ingen national eller lokal geometri må aktiveres automatisk.
+- Den afsluttede Blåvand-referencepilot var privat og score-neutral. DEC-0034 autoriserer nu bygning og samlet aktivering af hele Danmark på den nuværende pre-domain GitHub Pages-testside efter grøn national gate; dette erstatter den tidligere generelle no-activation-afgrænsning, men ikke kravene om dataintegritet, rollback og releasevalidering.
 - Kystlinjen repræsenterer relevante ravstrande, ikke enhver fysisk vandkant. Den må springe over åer og havne. Alle indre fjorde udelukkes undtagen Limfjorden.
 - Høfter, læsider, odder og lignende kan være ravfælder, men registreres kun som score-neutrale hypoteser. Eventuel scoreeffekt tilhører den senere videnskabelige DEC-0029-proces.
 - I den senere store DEC-0029-analyse er vinden ved kortets viste pile kun ét udsnit. Kortpile er UI-visualiseringer og må ikke afgrænse det fysiske analysefelt. Relevant rumlig/opstrøms vind over hav og kyst, også hvor ingen pile vises, samt historik, bølge-/strømkobling, forsinkelse og dobbelt-tælling skal undersøges som del af den samlede ravkæde. Dette ændrer ikke RavScore nu.
@@ -167,6 +167,17 @@ Desktop-runtimepakken har Node/Python/pnpm, men ingen `npm`-kommando. Validate-d
 - Ejeren præciserede, at dækningslogikken ikke må være krakilsk: 78 mod 75 skal ikke opdeles eller særforklares. Den midlertidige faste margin er 7 point og skal genvurderes i den store RavScore-analyse.
 - Ejeren præciserede også, at bestillingen er at bygge og senere aktivere den nye model for hele Danmark, ikke kun Blåvand. Delnavne skal være stedbaserede: fx nord/syd for huk, by eller havnemole.
 - National aktivering er ikke evidensmæssigt klar endnu: kun Blåvand har bestået hele kæden, mens de øvrige otte pilotzoner dokumenterede semantiske/grænsemæssige redesignbehov. Næste arbejdsafsnit er derfor national byggekæde og validering, ikke en Blåvand-specialrelease.
+
+## NY CHAT – bindende næste arbejdsafsnit efter ejerens endelige præcisering
+- Ejeren accepterer, at de kendte nationale fejl netop skal rettes som del af arbejdet. De må ikke bruges til at fastholde en permanent Blåvand-only-løsning.
+- Den nuværende GitHub Pages-side har ingen aktive brugere og er testmiljø frem til senere køb/flytning til domæne. Hele den nye Danmarksløsning må bygges og aktiveres på testsiden efter grøn national gate. En senere domæne-/brugerrelease kræver en ny særskilt produktionsgate.
+- Blåvand er den gennemvaliderede reference for metode og UX. Overfør den i stor skala: central admin-sandhed først; gratis officielle kilder; rettede zonebetydninger/navne; kystlinjer uden havne/åer/indre fjorde; stedbaserede delnavne; lokale punkter/serier/proveniens/historik; score-/dæknings-UI; central readback/rollback.
+- Midlertidig score-/dækningsregel: bedste gyldige del bestemmer zonescoren; forskel på højst 7 point fremstilles som praktisk hele zonen; over 7 point navngives den relevante del. Selve scoren/marginen genanalyseres i den senere store DEC-0029/RavScore-analyse. Ingen stor faglig scoreanalyse nu.
+- Den store senere analyse skal fortsat bruge hele det rumlige/historiske vindfelt, også områder uden kortpile. Pile er UI, ikke fysisk analysegrænse.
+- Lokal visuel ejerreview ligger ucommittet i `.owner-review/blaavand/` og bruger det private artifact i `.cache/owner-review-source-2014/`. Serveren har været `http://127.0.0.1:8765/.owner-review/blaavand/`. Disse mapper må ikke deployes eller committes; de kan bevares lokalt til reference.
+- Git før dette checkpoint: `main` på `3cf3bd7` plus denne checkpointændring; kun kendt dependency/cacheaffald og de to lokale reviewmapper er untracked. 4.0.142 er produktionsverificeret via privat #2014 og produktion #2013. Push-run #2021 for `3cf3bd7` var stadig `in_progress` ved checkpointstart og skal sammenholdes med nyere status.
+- Første opgave i ny chat: auditér den eksisterende nationale v2-generator/pilotkode mod den centralt effektive bestand og lav en konkret national implementeringsplan med automatiserbare trin, konfliktklasser og aktiveringsarkitektur. Fortsæt derefter implementeringen; start ikke Blåvand forfra.
+- Brug GPT-5.6 Sol til national geometri, arkitektur, DMI/proveniens/state og endelig gate. Bed kun om billigere model ved rent mekaniske, afgrænsede opgaver og bed om Sol igen før kritisk arbejde.
 
 ## Model
 Start og afslut 4.0.134 på GPT-5.6 Sol. Geometrisk review, fuld validering og CI-artifactkontrol er kritisk. En billigere model kan først overvejes til en senere, rent mekanisk dokumentationsopgave.

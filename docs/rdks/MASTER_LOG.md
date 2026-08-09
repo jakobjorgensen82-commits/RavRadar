@@ -640,3 +640,7 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Dæknings-/usikkerhedstærskler og shadow-validering mangler; beslutningen aktiverer ikke Blåvand.
 - Ejeren fastsatte en midlertidig pragmatisk margin på 7 point: 78 mod 75 gælder praktisk hele zonen uden delopdeling. Marginen skal genvurderes i den store RavScore-analyse.
 - Bestillingen er national bygning og offentlig aktivering, ikke kun Blåvand. Lokale navne skal knyttes til konkrete huk, byer, havnemoler eller andre forståelige orienteringspunkter. National aktivering forbliver gated af landsdækkende geometri-/navne-/topologi-/DMI-/UI-/rollbackvalidering.
+## 2026-08-09 – DEC-0034 pre-domain national testaktivering
+- Ejeren fastlagde, at den nuværende GitHub Pages-side uden aktive brugere er testmiljø frem til senere domænekøb.
+- Hele Danmark skal bygges, kendte fejl skal rettes og den samlede kystgeometri-v2 må aktiveres på testsiden efter grøn national gate. Blåvand er reference, ikke eneste zone.
+- En senere domæne-/brugerrelease kræver en ny modenheds-/produktionsgate. Dataintegritet, gratis kilder, secretsikkerhed og rollback gælder fortsat.
