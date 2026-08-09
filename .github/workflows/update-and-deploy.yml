@@ -370,6 +370,9 @@ jobs:
       - name: Audit official place names and migration classes
         run: python scripts/audit-pilot-place-names.py
 
+      - name: Assemble conservative private coastal-part proposals
+        run: python scripts/assemble-geodanmark-coastal-parts.py
+
       - name: Render private GeoDanmark source review maps
         run: python scripts/render-geodanmark-pilot-maps.py
 

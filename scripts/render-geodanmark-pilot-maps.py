@@ -54,11 +54,16 @@ def main():
     work_dir = args.work_dir.resolve()
     zones = load(work_dir / "effective-pilot-zones.geojson")
     qa_map = load(work_dir / "coastal-source-qa.geojson")
+    proposal_path = work_dir / "coastal-part-proposals.geojson"
+    proposals = load(proposal_path) if proposal_path.exists() else {"features": []}
     pilot_areas = load(args.pilot_areas.resolve())
     zone_by_id = {feature["properties"]["id"]: feature for feature in zones.get("features", [])}
     qa_by_zone = {}
     for feature in qa_map.get("features", []):
         qa_by_zone.setdefault(feature["properties"]["zoneId"], []).append(feature)
+    proposals_by_zone = {}
+    for feature in proposals.get("features", []):
+        proposals_by_zone.setdefault(feature["properties"]["zoneId"], []).append(feature)
     output_dir = work_dir / "maps"
     output_dir.mkdir(parents=True, exist_ok=True)
     font = ImageFont.load_default()
@@ -95,6 +100,11 @@ def main():
                     points = [pixel(point) for point in line.coords]
                     if len(points) >= 2:
                         draw.line(points, fill=colour, width=width)
+            for feature in proposals_by_zone.get(zone_id, []):
+                for line in line_parts(projected(feature["geometry"])):
+                    points = [pixel(point) for point in line.coords]
+                    if len(points) >= 2:
+                        draw.line(points, fill="#ff8c00", width=4)
             anchors = props.get("directionAnchors") or [{"pinPoint": props.get("pinPoint"), "dataPoint": props.get("dataPoint")}]
             for anchor in anchors:
                 for field, colour in (("pinPoint", "#2ca02c"), ("dataPoint", "#9467bd")):

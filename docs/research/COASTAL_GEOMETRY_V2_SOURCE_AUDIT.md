@@ -59,7 +59,14 @@ DAWA er markeret til fremtidig lukning. Adapteren og kildemetadata skal derfor f
 
 Derfor skal kildegeometri, fravalgsmasker og den endelige afledte linje opbevares separat. Et manuelt adminoverride skal kunne spores uden at slette den oprindelige kildeproveniens.
 
+## Kontrolleret samling i 4.0.132
+Generatoren accepterer kun kildestykker med eksisterende eller delvist geometrisk match. Semantiske/grænsemæssige stykker holdes helt ude. Havnelinjer udskæres med buffer. Vandløbsmasken bruger kun synlig, ikke-rørlagt midterlinje, kræver både kystkontakt og dokumenteret fortsættelse væk fra kysten og klynger nærliggende dubletter. Rå vandløbskanter anvendes ikke, fordi de typisk repræsenterer begge bredder og i første forsøg skabte kraftig oversegmentering.
+
+Fysisk adskilte fragmenter inden for det dokumenterede grupperingsgab kan ligge i samme multipart-kystdel; systemet tegner ingen kunstig forbindelseslinje over springet. Hver del bevarer segment-ID'er, reviewklasse og antal fysiske fragmenter. Alle aktiverings-, vejr-, admin- og scoreflag er falske.
+
+Prøvekørsel på det verificerede private #1948-artifact gav 84 reviewforslag. Rømø gav nul, fordi ingen af dens fire kildestykker bestod den geometriske gate. Dette kræver semantisk flyttereview, ikke en løsere automatisk tærskel.
+
 ## Næste tekniske leverance
-1. Kør 4.0.131-piloten og verificér source-segmenttriage samt officiel navne-/migrationstriage i det private artifact.
-2. Byg kontrollerede, sammenhængende kystdelsforslag ud fra de klassificerede kildestykker; rå GeoDanmark-fragmenter må ikke forveksles med færdige ravstrande.
-3. Sammenhold foreslåede marine punkter med faktiske DMI-celler før score-/produktionsintegration.
+1. Kør 4.0.132-piloten og verificér private forslag, masker, kort og isolation.
+2. Gennemgå pilotforslagene visuelt/fagligt og registrér undtagelser uden at ændre aktive zoner.
+3. Design kandidat-land-/vandpunkter og sammenhold marine punkter med faktiske DMI-celler før score-/produktionsintegration.

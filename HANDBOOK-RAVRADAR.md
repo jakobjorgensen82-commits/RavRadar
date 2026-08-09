@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.131
+**Håndbogsversion:** 4.0.132
 
 **Opdateret:** 1. august 2026
 
@@ -1435,5 +1435,11 @@ Den første lokale analyse flaggede alle ni pilotzoner. Rømø har en tydelig ge
 #1941 bekræftede, at source-QA og kort kan dannes privat på den centralt gemte pilotbestand uden build eller Pages. Piloten opdeler nu den fysiske GeoDanmark-reference i målbare kildestykker og mærker dem som tæt på den nuværende linje, delvist match eller semantisk/grænsemæssigt review. Et råt kildestykke er stadig ikke det samme som en færdig ravstrand.
 
 Zonenavnene sammenholdes desuden med Danmarks officielle stednavneregister via Dataforsyningens offentlige, nøglefri API. Systemet gemmer kandidater, navnestatus, type og geografisk afstand, men foreslår ikke automatisk et endeligt navn. Den lokale pilot klassificerede Blåvand som geometriopretning, Rømø og Thisted som mulig semantisk flytning og de øvrige seks zoner som grænse-/partitionsarbejde. Næste skridt er at samle kontrollerede stykker til sammenhængende kystdelsforslag og anvende eksplicitte havn-, å- og fjordfravalg.
+
+# Kontrollerede private kystdelsforslag (4.0.132)
+
+Piloten samler nu kun GeoDanmark-stykker, der ligger tæt på eller delvist følger den eksisterende kyst. Stykker med mulig forkert geografisk betydning stoppes. Havne og faktiske kystskærende, synlige vandløbsmidter fjernes med dokumenterede afstandsbånd; nærliggende dubletter samles, så begge åbredder ikke bliver til mange kunstige kystdele. Små spring kan høre til samme multipart-del, men systemet tegner ingen opdigtet linje hen over springet.
+
+Fjordreglen står eksplicit pr. pilotområde: kun ydre vestkyst, Limfjorden bevidst inkluderet og indre fjorde/nor ved Lolland-Falster udelukket fra automatisk forslag. En lokal prøve på det verificerede #1948-artifact gav 84 private reviewforslag. Rømø gav med vilje ingen forslag, fordi alle kildestykker kræver semantisk flyttereview. Kortet viser forslag orange. De er ikke aktive zoner, har ingen land-/vandpunkter eller selvstændig DMI-sampling og ændrer ikke RavScore.
 
 Kørsel #1936 bekræftede hele denne kildekæde. Alle 21 lag/område-udtræk var komplette, også de seks der krævede flere WFS-sider, og de rå filer forblev i det private artifact. Det er et datagrundlag for næste analysefase, ikke en ændring af kortets aktive zoner.

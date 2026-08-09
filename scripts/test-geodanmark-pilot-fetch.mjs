@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process';
 const source = await fs.readFile('scripts/fetch-geodanmark-pilot.py', 'utf8');
 const analysis = await fs.readFile('scripts/analyze-geodanmark-pilot.py', 'utf8');
 const nameAudit = await fs.readFile('scripts/audit-pilot-place-names.py', 'utf8');
+const coastalParts = await fs.readFile('scripts/assemble-geodanmark-coastal-parts.py', 'utf8');
 const mapRenderer = await fs.readFile('scripts/render-geodanmark-pilot-maps.py', 'utf8');
 const workflow = await fs.readFile('.github/workflows/update-and-deploy.yml', 'utf8');
 
@@ -39,6 +40,7 @@ assert.match(workflow, /DATAFORDELER_API_KEY:\s*\$\{\{ secrets\.DATAFORDELER_API
 assert.match(workflow, /name: Run GeoDanmark geometry-v2 pilot/);
 assert.match(workflow, /python scripts\/analyze-geodanmark-pilot\.py/);
 assert.match(workflow, /python scripts\/audit-pilot-place-names\.py/);
+assert.match(workflow, /python scripts\/assemble-geodanmark-coastal-parts\.py/);
 assert.match(workflow, /python scripts\/render-geodanmark-pilot-maps\.py/);
 assert.match(workflow, /--exclude 'data\/geometry-v2\/'/);
 assert.match(workflow, /--exclude '\.geometry-v2-work\/'/);
@@ -74,5 +76,17 @@ for (const marker of [
   'semantic-relocation',
   'boundary-adjustment'
 ]) assert.ok(nameAudit.includes(marker), `Stednavne-/migrationstriage mangler ${marker}`);
+for (const marker of [
+  'private-read-only-coastal-part-proposals',
+  'semantic-boundary-review',
+  'automaticActivationAllowed',
+  'weatherSamplingChanged',
+  'productionGeometryChanged',
+  'pilot-exclusion-policy.json',
+  'Havn',
+  'Vandloebsmidte',
+  'riverMouthClusterM'
+]) assert.ok(coastalParts.includes(marker), `Kystdelssamling mangler ${marker}`);
 assert.ok(mapRenderer.indexOf('if args.self_test:') < mapRenderer.indexOf('from PIL import'), 'Pillow må kun kræves i det faktiske private rendertrin');
+assert.ok(mapRenderer.includes('coastal-part-proposals.geojson'), 'Pilotkortet skal vise de private kystdelsforslag');
 console.log('GeoDanmark pilotfetch-kontrakt: bestået.');

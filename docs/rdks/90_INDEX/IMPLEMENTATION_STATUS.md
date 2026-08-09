@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.131
+# Implementeringsstatus pr. 4.0.132
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.
@@ -9,14 +9,14 @@
 - [x] V2-arbejdsskema, gratis-kildekontrakt, migrationsklasser og read-only baselineaudit er implementeret uden produktionsintegration.
 - [x] Baselineaudit: 209 aktive repositoryzoner, 0 gemte multi-ankerzoner, 116 flaggede kystlinjer og 157 overlap over 0,01 km². Central runtime har senest 208 zoner, så pilotinput skal hydreres før generering.
 - [x] Offentlig readback er sammenholdt med repositoryet: `DK-B02-14` er slettet centralt, `DK-B10-05` er omdøbt, og 18 zoner har centralt propagerede multi-ankre. Evidensen ligger i `data/diagnostics/coastal-geometry-v2-live-comparison.json`.
-- [ ] Implementér autoritativ navneaudit samt fjord-/havn-/åmasker på den centralt effektive zonebestand.
+- [x] Autoritativ navneaudit samt private, revisionsbare fjord-/havn-/åpolitikker er implementeret på den centralt effektive pilotbestand.
 - [x] Tre pilotmiljøer og nul-tolerancekriterier er låst i `data/geometry-v2/pilot-areas.json`: Blåvand/Rømø, Limfjorden og Lolland/Falster.
 - [x] `DATAFORDELER_API_KEY` er oprettet som repository secret, og lokalt workflowjob/script henter kun små private pilotudsnit efter central adminhydrering. Secret værdi, rå arbejdsmappe og v2-data udelukkes fra Pages.
 - [x] Pilot #1928 bekræftede secret-injektion, central hydrering, maskering og fuld isolation fra build/deploy; den stoppede sikkert ved første lagopslag.
 - [x] #1931 hentede `Kyst_current` og seks supplerende `_current`-lag for alle tre pilotområder uden secretlæk eller produktionsjob.
 - [x] #1936 verificerede pagination og privat råartifact: 21/21 lag/område-udtræk er komplette, seks er flersidede, og største udtræk har 72.870 features.
 - [x] 4.0.130 genererer privat source-QA og oversigtskort direkte fra centralt effektive pilotzoner og komplette rålag; output ændrer ikke produktion.
-- [ ] Klassificér hver zone og generér kontrollerede delstrækningsforslag; ingen blind snapping eller national aktivering.
+- [x] Hver pilotzone klassificeres, og kun geometrisk støttede kildestykker samles til private reviewforslag; ingen blind snapping eller national aktivering.
 
 ## 4.0.126 – sikker gratis GeoDanmark-pilot, afventer CI
 - [x] Gratis kildekontrakt, v2-schema, migrationslogik, audit og tre pilotområder er dokumenteret og regressionstestet.
@@ -59,8 +59,16 @@
 - [x] Det offentlige, nøglefri `steder`-API er verificeret som adgang til Danmarks officielle stednavneregister og forespørges kun i afgrænsede pilotpolygoner.
 - [x] Navnetokens, autoritative kandidater, afstande og manglende match gemmes uden automatisk omdøbning.
 - [x] Lokal migrationstriage: Blåvand geometriopretning; Rømø og Thisted semantisk flyttereview; Fur, Aalborg og fire Lolland/Falster-zoner grænse-/partitionsreview.
-- [ ] Kør 4.0.131 i GitHub og verificér private outputs, netværksadgang og fortsat isolation.
-- [ ] Saml de rå klassificerede stykker til kontrollerede kystdelsforslag med eksplicit havn-/å-/fjordfravalg.
+- [x] #1948 verificerede private outputs, netværksadgang, artifact og fortsat isolation; #1947 verificerede fuld produktionsvalidering og release-gate.
+
+## 4.0.132 – kontrollerede private kystdelsforslag
+- [x] Kun `existing-alignment-reference` og `partial-alignment-review` samles; alle semantiske/grænsemæssige stykker udelades fra forslag.
+- [x] Havne udskæres med et dokumenteret bufferbånd. Kun synlige, ikke-rørlagte vandløbsmidter, der faktisk når kystkandidaten og fortsætter ind i land, danner deduplikerede mundingsmasker.
+- [x] Fjordpolitikken er maskinlæsbar pr. pilotmiljø: ydre vestkyst, eksplicit inkluderet Limfjord og ekskluderede indre fjorde/nor ved Lolland-Falster.
+- [x] Lokalt genkørt på det private #1948-artifact: 84 multipart-reviewforslag på ni zoner; Rømø stoppede sikkert med nul forslag.
+- [x] Forslag, masker og provenance gemmes kun privat, vises orange på pilotkort og har eksplicit falsk aktivering, vejrsampling, adminændring og scoreændring.
+- [ ] Kør 4.0.132-piloten i GitHub og verificér antal, masker, kort, artifact og isolation.
+- [ ] Gennemfør faglig/visuel pilotreview og design derefter kandidat-land-/vandpunkter med DMI-cellekontrol; ingen aktivering før særskilt go/no-go.
 
 ## 4.0.125 – fuld timeproveniens fra STAC/GRIB
 - [x] Collection, model-run og native gyldighedstid lagres pr. rå komponenttime i bulkcachen.

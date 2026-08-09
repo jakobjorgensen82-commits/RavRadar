@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "private-pilot-policy",
+  "defaults": {
+    "harbourBufferM": 30,
+    "riverMouthBufferM": 40,
+    "riverMouthSearchM": 20,
+    "riverMouthMinimumInlandReachM": 30,
+    "riverMouthClusterM": 80,
+    "assemblySnapToleranceM": 15,
+    "coastalPartGroupingGapM": 120,
+    "minimumCoastalPartLengthM": 100,
+    "allowedSourceReviewClasses": [
+      "existing-alignment-reference",
+      "partial-alignment-review"
+    ],
+    "automaticActivationAllowed": false
+  },
+  "areas": {
+    "pilot-west-vadehavet": {
+      "fjordPolicy": "outer-coast-only",
+      "note": "Kun den åbne vestkyst vurderes. Vadehavets indre tidevandsrender og østsider må ikke tilføjes automatisk."
+    },
+    "pilot-limfjord": {
+      "fjordPolicy": "limfjord-explicitly-included",
+      "note": "Limfjorden er den eneste fjord, som må indgå; zonegrænser og relevante ravstrande kræver stadig review."
+    },
+    "pilot-lolland-falster": {
+      "fjordPolicy": "inner-fjords-excluded",
+      "note": "Indre nor, fjorde, havnebassiner og andre beskyttede indre vandkanter må ikke tilføjes automatisk; mundinger vurderes særskilt."
+    }
+  }
+}

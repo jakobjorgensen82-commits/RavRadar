@@ -44,6 +44,12 @@
 - Migrationstriagen klassificerer Blåvand som geometriopretning, Rømø/Thisted som semantisk flyttereview og de øvrige seks som grænse-/partitionsreview. Ingen navne eller geometrier aktiveres automatisk.
 - #1942/#1943 afslørede, at Pillow-importen i den private kort-renderer fejlagtigt blev evalueret under almindelig produktions-self-test. 4.0.131 indlæser nu Pillow først i det faktiske rendertrin, så private pilotafhængigheder ikke lækker til vejrproduktionen.
 
+## 2026-08-09 – 4.0.132 kontrolleret privat kystdelssamling
+- #1948 verificerede 4.0.131-piloten med 702 klassificerede kildestykker, officiel navneaudit og fuld isolation; #1947 bestod den parallelle fulde produktionskæde.
+- Første lokale samling gav 300 tekniske fragmenter, fordi både vandløbskanter og midterlinjer skabte dublerede udskæringer. Resultatet blev forkastet før commit.
+- Den korrigerede generator bruger kun synlige, ikke-rørlagte vandløbsmidter med faktisk kystkontakt/indlandsfortsættelse, klynger mundinger og samler nærliggende fragmenter som multipart uden kunstig forbindelseslinje.
+- #1948-artifactet giver derefter 84 private reviewforslag. Rømø giver nul og forbliver semantisk stop. Aktive zoner, central admin, vejrsampling og RavScore er uændrede.
+
 ## 2026-08-08 – 4.0.125 fuld DMI-timeproveniens
 - Brugerens godkendelse af næste roadmaptrin udløste implementering af provenance fra STAC/GRIB til beskyttede forecasttimer.
 - Bulkparsergeneration 14 gemmer collection, modelkørsel og native gyldighedstid pr. komponent; timebyggeren beregner lead time, prognosealder, temporal status og native kildetider.
