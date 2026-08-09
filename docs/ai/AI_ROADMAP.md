@@ -4,6 +4,7 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 
 ## Aktiv P1 – kystgeometri v2-pilot
 - DEC-0033 er valgt som fremtidig produktretning: bedste gyldige lokale kystdel leverer zonescoren, men UI skal eksplicit skelne hele zonen fra navngivne delstrækninger og forklare den ravtekniske årsag. Før kodeaktivering bygges den forståelige ejer-reviewvisning og en score-shadow med dæknings-/usikkerhedskriterier.
+- Ejeren har bestilt landsdækkende bygning og aktivering, ikke en Blåvand-only-feature. Den nationale arbejdsrækkefølge skal derfor nu gå fra valideret Blåvand-reference til national central-hydreret generering, automatisk topologi/navne/kilde-QA, repræsentative manuelle nul-tolerancekontroller og først derefter samlet aktiveringsgate. En fast 7-points dækningsmargin bruges midlertidigt og revideres i den store analyse.
 - Arbejdet følger DEC-0032 og udføres parallelt uden at ændre produktionszoner eller centrale adminoverrides.
 - Første leverance er en permanent kilde-/licenskontrakt, v2-skema, national topologi-/navneaudit og tre repræsentative pilotområder.
 - Flere lokale kystdele skal vurderes med selvstændig DMI-sampling og provenance; eksisterende multi-ankerretninger er ikke alene et dataprodukt.

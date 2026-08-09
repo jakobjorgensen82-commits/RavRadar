@@ -638,4 +638,5 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Ejeren besluttede, at højeste gyldige lokale delscore skal være zonens viste RavScore.
 - UI skal tydeligt skelne hele zonen fra navngivne delstrækninger og forklare vind, strøm, bølger, vandstand, state/historik og forskellen til andre dele.
 - Dæknings-/usikkerhedstærskler og shadow-validering mangler; beslutningen aktiverer ikke Blåvand.
-- Ejeren præciserede en pragmatisk margin: 78 mod 75 skal gælde praktisk hele zonen uden delopdeling. En 5-points margin bruges kun som justerbar UI-prototype frem til shadow-validering.
+- Ejeren fastsatte en midlertidig pragmatisk margin på 7 point: 78 mod 75 gælder praktisk hele zonen uden delopdeling. Marginen skal genvurderes i den store RavScore-analyse.
+- Bestillingen er national bygning og offentlig aktivering, ikke kun Blåvand. Lokale navne skal knyttes til konkrete huk, byer, havnemoler eller andre forståelige orienteringspunkter. National aktivering forbliver gated af landsdækkende geometri-/navne-/topologi-/DMI-/UI-/rollbackvalidering.

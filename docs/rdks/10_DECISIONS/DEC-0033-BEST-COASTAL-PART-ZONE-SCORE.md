@@ -5,7 +5,7 @@
 ## Beslutning
 Når en zone har flere selvstændigt validerede lokale kystdele, bestemmes zonens viste RavScore af den kystdel, der har den højeste gyldige RavScore for det valgte tidspunkt og den valgte jagtform. Resultatet må ikke fremstilles som dækkende hele zonen, hvis de øvrige dele har mærkbart dårligere eller utilstrækkeligt dokumenterede forhold.
 
-Væsentlighed anvendes pragmatisk, ikke krakilsk. Små scoreforskelle skal samles som praktisk samme zonedækning og må ikke udløse delopdeling eller en unødvendig forklaring. Ejerens eksempel `78` mod `75` skal som udgangspunkt fremstilles som hele zonen. Først en væsentlig og fagligt valideret forskel må udløse “kun en del af zonen”. Den endelige margin fastlægges på shadow-data og kan afhænge af usikkerhed og komponentdækning, ikke kun et råt pointtal.
+Væsentlighed anvendes pragmatisk, ikke krakilsk. Små scoreforskelle skal samles som praktisk samme zonedækning og må ikke udløse delopdeling eller en unødvendig forklaring. Ejerens eksempel `78` mod `75` skal fremstilles som hele zonen. Frem til den store planlagte RavRadar-/RavScore-analyse anvendes en fast margin på **7 point**: først en forskel over 7 point udløser “kun en del af zonen”. Den store analyse skal genvurdere marginen fagligt og må ændre den.
 
 Zonevisningen skal altid angive én af disse dækningsstatusser tydeligt tæt ved scoren:
 
@@ -21,7 +21,8 @@ Ved delvis dækning skal forklaringen vise, hvorfor den valgte del klarer sig be
 - Vindende del vælges pr. tidspunkt og jagtform og kan derfor skifte. Identitet og provenance skal følge resultatet hele vejen til UI og debug.
 - Manglende lokale data må ikke erstattes af parentdata, nul, interpolation eller en anden dels data for at skabe en vinder.
 - Ligheds-, dæknings- og usikkerhedstærskler fastlægges og valideres fagligt før aktivering; de må ikke vælges alene for at give flere høje scorer.
-- En justerbar 5-points margin må bruges som forståelig UI-prototype, men er ikke i sig selv den endelige produktionsregel.
+- Den midlertidige produktionsregel er 7 point. Den er bevidst foreløbig og skal undersøges igen i den store analyse.
+- Lokale delnavne skal være stedbaserede og forståelige uden teknisk kompasjargon, fx `Nord for Blåvands Huk`, `Syd for Hvide Sande` eller `Nord for havnemolen`. Korte former som `Nord for hukket` må kun bruges, når zonekonteksten er synlig.
 - National rangliste må gerne bruge zonescoren fra den bedste del, men zonerækken og detaljevisningen skal kunne kommunikere delvis dækning uden at kræve, at brugeren gætter.
 
 ## Afgrænsning
