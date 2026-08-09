@@ -88,6 +88,7 @@ Desktop-runtimepakken har Node/Python/pnpm, men ingen `npm`-kommando. Validate-d
 - Ortofotogaten er ikke bestået, før de tre billeder er hentet og gennemgået visuelt. DMI-gridvalidering må først begynde derefter.
 - Pilot #1974 er efterfølgende grøn: 108 tiles og tre overlays blev genereret, build/Pages var skipped, rapportens produktions-/vejr-/scoreflag var falske, og en artifactsøgning fandt ingen credentialmatch. Visuelt passer nord- og sydøststrækningerne overordnet; ved selve hukket følger kilden en indadgående sandtange-/laguneløkke. Ortofotogaten er derfor delvist bestået, men samlet no-go indtil hukgeometrien er rettet og genkontrolleret.
 - Normal push-run #1973 stoppede sikkert før release/deploy, fordi Pillow blev importeret før det private scripts self-test i produktionsmiljøet. Det lokale hotfix flytter både `requests` og Pillow bag self-testen og tilføjer en importordensregression. Ny commit/push og normal produktion mangler.
+- Hotfixet blev committed/pushed som `47f88a3`. Normal produktion #1976 gennemførte frisk data, fuld Linux-validate, release-gate, support-/Pages-artifacts og deploy som success; offentlig `version.json` viser 4.0.135. 4.0.135 er dermed produktionsverificeret, men det faglige ortofotoresultat for hukløkken er fortsat no-go.
 
 ## Model
 Start og afslut 4.0.134 på GPT-5.6 Sol. Geometrisk review, fuld validering og CI-artifactkontrol er kritisk. En billigere model kan først overvejes til en senere, rent mekanisk dokumentationsopgave.
