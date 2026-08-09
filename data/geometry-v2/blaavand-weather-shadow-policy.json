@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "private-shadow-design-only",
+  "zoneId": "DK-B03-13",
+  "requiredPartIds": [
+    "dk-b03-13-north-of-blaavands-huk",
+    "dk-b03-13-southeast-of-blaavands-huk"
+  ],
+  "requiredCollections": {
+    "wave": "wam_nsb",
+    "ocean": "dkss_nsbs"
+  },
+  "requiredComponents": [
+    "significant-wave-height",
+    "mean-wave-dir",
+    "dominant-wave-period",
+    "sea-mean-deviation",
+    "current-u",
+    "current-v"
+  ],
+  "seriesIdentityFormat": "{zoneId}::{partId}",
+  "mergePolicy": {
+    "crossPartMergeAllowed": false,
+    "spatialInterpolationAllowed": false,
+    "dmiPrimary": true,
+    "missingRemainsMissing": true,
+    "fallbackAllowed": false
+  },
+  "statePolicy": {
+    "separatePartHistoryRequired": true,
+    "parentHistoryReuseAllowed": false,
+    "enabled": false
+  },
+  "scorePolicy": {
+    "parentZoneScoreRemainsAuthoritative": true,
+    "partScoreEnabled": false,
+    "bestPartSelectionEnabled": false
+  },
+  "runtimePolicy": {
+    "weatherSamplingEnabled": false,
+    "publicProjectionEnabled": false,
+    "uiEnabled": false,
+    "adminWriteEnabled": false,
+    "automaticActivationAllowed": false
+  }
+}

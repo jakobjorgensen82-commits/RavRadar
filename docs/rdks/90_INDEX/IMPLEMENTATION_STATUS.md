@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.137
+# Implementeringsstatus pr. 4.0.138
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.
@@ -26,7 +26,9 @@
 - [x] 4.0.137-kandidaten validerer begge private vandpunkter direkte i aktuelle native `wam_nsb`- og `dkss_nsbs`-GRIB-felter med produktionens nearest-cell-logik og fælles U/V-gridregel.
 - [x] Privat pilot #1987 og artifactreview beviser gyldige WAM-/DKSS-celler for begge punkter, fælles current-U/V på 17 m-laget og forskellige nord/sydøst-celler for alle seks komponentfelter. Ingen sampling eller aktivering er sket.
 - [x] #1986 produktionsverificerede 4.0.137 med frisk data, fuld Linux-validate, release-gate, Pages-artifact og deploy.
-- [ ] Næste Blåvand-gate er fuldt design og senere validering af provenance, merge, score/state, UI og admin-roundtrip før en særskilt aktiveringsbeslutning.
+- [x] 4.0.138-kandidaten låser stabil partserieidentitet, eget punkt/grid/proveniens, separat historiknøgle og forbud mod krydsmerge, fallback, part-score, state, UI, public projection, admin-write og aktivering.
+- [ ] Kør privat CI-pilot og gennemgå shadow-kontraktartifactet.
+- [ ] Næste gate derefter er private flertidsserier med timeproveniens og komponentmerge; score/state/UI/admin forbliver deaktiveret.
 - [x] #1976 produktionsverificerede 4.0.135 efter dependency-isolationshotfix med frisk data, fuld validate, release-gate, Pages-artifact og deploy.
 
 ## 4.0.126 – sikker gratis GeoDanmark-pilot, afventer CI

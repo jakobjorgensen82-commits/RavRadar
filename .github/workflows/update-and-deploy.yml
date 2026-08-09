@@ -398,6 +398,9 @@ jobs:
           DMI_BULK_FINALIZE_RESERVE_SECONDS: 60
           DMI_BULK_RAW_DIR: .cache/dmi-grid-validation
 
+      - name: Build private score-neutral Blåvand weather shadow contract
+        run: python scripts/build-blaavand-weather-shadow-contract.py
+
       - name: Render private GeoDanmark source review maps
         run: python scripts/render-geodanmark-pilot-maps.py
 

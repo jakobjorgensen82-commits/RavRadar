@@ -1,5 +1,5 @@
-import { getLocalObservations } from './observation-service.js?v=4.0.137';
-import { decisionHistory } from '../core/adaptive-model.js?v=4.0.137';
+import { getLocalObservations } from './observation-service.js?v=4.0.138';
+import { decisionHistory } from '../core/adaptive-model.js?v=4.0.138';
 const finite=v=>Number.isFinite(Number(v));
 const found=row=>row.result&&!['none','no'].includes(row.result);
 const average=values=>values.length?values.reduce((a,b)=>a+b,0)/values.length:null;

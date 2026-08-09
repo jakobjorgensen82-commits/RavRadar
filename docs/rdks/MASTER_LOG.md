@@ -1,3 +1,8 @@
+## 2026-08-09 – 4.0.138 privat weather-shadow-kontrakt
+- Den faktiske kodeaudit viser, at multi-anker-scoren i dag anvender én zones fælles vejrserie. Direkte tilkobling af to punktserier ville kunne blande en dels vejr med den anden dels kystretning.
+- En maskinlæsbar Blåvand-policy og privat artifactgenerator låser derfor `zoneId::partId`, eget valideret grid, fuld nødvendig timeproveniens og separat historiknøgle pr. del.
+- Krydsmerge, spatial interpolation, fallback, state, part-score, best-part-valg, public projection, UI, admin-write og automatisk aktivering er falske. Parent-zonen er fortsat runtime- og scoresandhed. Lokal self-test består; CI-pilot og normal produktion mangler.
+
 ## 2026-08-09 – 4.0.137 privat DMI-gridgate
 - Efter #1982's ortofotogo validerer et nyt privat trin Blåvands to vandpunkter direkte i aktuelle `wam_nsb`- og `dkss_nsbs`-GRIB-assets med den samme nearest-valid-cell-logik og de samme afstandsgrænser som produktionen.
 - Current-U/V skal dele både fysisk gridpunkt og vertikallag. Rapporten skelner gyldige gridceller fra uafhængige lokale serier, så to kandidater på samme celle ikke fremstilles som to målinger.

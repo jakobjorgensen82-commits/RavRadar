@@ -93,3 +93,9 @@ Det private pilottrin henter tre afgrænsede zoom-17-vinduer ved norddelen, Blå
 1. Ortofotogaten er bestået i #1982.
 2. Kør 4.0.137-piloten og gennemgå den private DMI-gridrapport: begge punkter skal have gyldige `wam_nsb`- og `dkss_nsbs`-celler, current-U/V skal dele fysisk gridpunkt og vertikallag, og rapporten skal vise om cellerne faktisk er forskellige pr. komponent.
 3. Ingen selvstændig sampling før fuld provenance-/score-/UI-plan. Design desuden nye semantiske zoneafgrænsninger for de øvrige otte, før deres land-/vandpunkter eller DMI-celler vurderes.
+
+## Weather-shadow-isolation – 4.0.138-kandidat
+
+Den eksisterende multi-ankerfunktion vurderer én zones strøm mod flere lokale retninger. Det er acceptabelt, så længe zonen kun har én vejserie, men kan ikke genbruges direkte til to selvstændige målepunkter: vejr fra én kystdel må aldrig scores mod den anden dels retning.
+
+4.0.138-kandidaten indfører derfor kun en privat kontrakt. Hver Blåvand-del får stabil identitet, eget valideret grid, nødvendige timeproveniensfelter og en separat fremtidig historiknøgle. Krydsmerge, fallback, state, score, UI, public projection, admin-write og automatisk aktivering er falske. Den eksisterende parent-zone forbliver autoritativ. Næste forsøg må danne private flertidsserier, men ikke publicere eller score dem.
