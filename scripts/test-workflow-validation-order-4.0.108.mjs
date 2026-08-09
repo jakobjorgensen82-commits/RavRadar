@@ -66,6 +66,8 @@ for (const marker of [
   'python scripts/sync-admin-config.py',
   'python scripts/apply-central-zone-reviews.py',
   'python scripts/fetch-geodanmark-pilot.py',
+  'python scripts/analyze-geodanmark-pilot.py',
+  'python scripts/render-geodanmark-pilot-maps.py',
   'Upload private GeoDanmark pilot artifact',
   'include-hidden-files: true'
 ]) {

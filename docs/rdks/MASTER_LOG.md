@@ -31,6 +31,12 @@
 - Geometripilot og vejrproduktion bruger nu hver sin gruppe. En eksplicit nyere pilot kan annullere en ældre pilot, men vejrdiften kan ikke påvirke pilotens kø.
 - #1936 gennemførte i den nye pilotgruppe: 21/21 komplette råudtræk, seks flersidede, maksimum 72.870 features og ca. 341 MB private GeoJSON-data. Build og Pages-deploy var `skipped`; ingen secretværdi blev persisteret.
 
+## 2026-08-09 – 4.0.130 privat GeoDanmark source-QA
+- Piloten gemmer nu de centralt effektive ni pilotzoner privat og sammenholder deres aktuelle kystlinjer med de komplette GeoDanmark-lag.
+- Source-QA måler længde, fragmentering, nærhed og stikprøveafstande og registrerer havne, vandløbsender, høfder og terræn som score-neutral reviewkontekst.
+- Tre private kort gør forskelle og ankre synlige. Lokal kørsel flaggede 9/9 zoner og viste, at Rømø, Limfjorden og Lolland/Falster kræver forskellige migrationsklasser; blind snapping er forkastet.
+- Aktive zoner, centrale administratorværdier, RavScore, produktionsbuild og Pages forbliver uændrede. CI-verifikation af 4.0.130 afventes.
+
 ## 2026-08-08 – 4.0.125 fuld DMI-timeproveniens
 - Brugerens godkendelse af næste roadmaptrin udløste implementering af provenance fra STAC/GRIB til beskyttede forecasttimer.
 - Bulkparsergeneration 14 gemmer collection, modelkørsel og native gyldighedstid pr. komponent; timebyggeren beregner lead time, prognosealder, temporal status og native kildetider.

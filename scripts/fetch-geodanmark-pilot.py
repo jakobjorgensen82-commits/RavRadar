@@ -134,6 +134,36 @@ def lon_lat_bounds(feature_collection, zone_ids):
     ]
 
 
+def write_effective_pilot_zones(feature_collection, requested_areas, work_dir):
+    requested_ids = {
+        zone_id
+        for area in requested_areas
+        for zone_id in (area.get("zoneIds") or [])
+    }
+    selected = [
+        feature for feature in feature_collection.get("features", [])
+        if feature.get("properties", {}).get("zoneStatus") == "active"
+        and feature.get("properties", {}).get("id") in requested_ids
+    ]
+    found = {feature.get("properties", {}).get("id") for feature in selected}
+    missing = sorted(requested_ids - found)
+    if missing:
+        fail("Pilotzoner mangler efter central hydrering: " + ", ".join(missing))
+    payload = {
+        "type": "FeatureCollection",
+        "source": "centrally-hydrated-pilot-input",
+        "features": selected,
+    }
+    encoded = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    target = work_dir / "effective-pilot-zones.geojson"
+    target.write_bytes(encoded + b"\n")
+    return {
+        "file": target.name,
+        "featureCount": len(selected),
+        "sha256": hashlib.sha256(encoded).hexdigest(),
+    }
+
+
 def fetch_layer(layer_name, bounds, target, key):
     bbox = ",".join(f"{value:.6f}" for value in bounds) + ",EPSG:4326"
     features = []
@@ -211,6 +241,7 @@ def main():
     if ROOT not in work_dir.parents:
         fail("Pilotens arbejdsmappe skal ligge i workspace.")
     work_dir.mkdir(parents=True, exist_ok=True)
+    effective_zones = write_effective_pilot_zones(zones, requested_areas, work_dir)
     result_areas = []
     for area in requested_areas:
         area_id = str(area.get("id") or "")
@@ -241,6 +272,7 @@ def main():
         "requestedOutputCrs": "EPSG:4326",
         "centralHydrationRequired": True,
         "availableLayerCount": len(available),
+        "effectivePilotZones": effective_zones,
         "areas": result_areas,
         "secretHandling": "DATAFORDELER_API_KEY was read only from the process environment and was not persisted.",
     }

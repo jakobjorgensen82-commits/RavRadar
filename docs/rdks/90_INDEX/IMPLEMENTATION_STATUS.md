@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.129
+# Implementeringsstatus pr. 4.0.130
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.
@@ -15,7 +15,8 @@
 - [x] Pilot #1928 bekræftede secret-injektion, central hydrering, maskering og fuld isolation fra build/deploy; den stoppede sikkert ved første lagopslag.
 - [x] #1931 hentede `Kyst_current` og seks supplerende `_current`-lag for alle tre pilotområder uden secretlæk eller produktionsjob.
 - [x] #1936 verificerede pagination og privat råartifact: 21/21 lag/område-udtræk er komplette, seks er flersidede, og største udtræk har 72.870 features.
-- [ ] Generér første parallelle forslag fra den CI-verificerede kilde.
+- [x] 4.0.130 genererer privat source-QA og oversigtskort direkte fra centralt effektive pilotzoner og komplette rålag; output ændrer ikke produktion.
+- [ ] Klassificér hver zone og generér kontrollerede delstrækningsforslag; ingen blind snapping eller national aktivering.
 
 ## 4.0.126 – sikker gratis GeoDanmark-pilot, afventer CI
 - [x] Gratis kildekontrakt, v2-schema, migrationslogik, audit og tre pilotområder er dokumenteret og regressionstestet.
@@ -44,6 +45,14 @@
 - [x] En ny pilot kan kun erstatte en ældre pilot; rutinevejret kan ikke længere annullere den.
 - [x] #1936 kørte samtidig med den separate vejrproduktionskø og verificerede komplethed/artifact uden indbyrdes annullering.
 - [ ] Byg næste read-only analysetrin på den centralt hydrerede zonebestand og de komplette råfiler; ingen produktionsaktivering.
+
+## 4.0.130 – privat GeoDanmark source-QA og kort
+- [x] Den centralt hydrerede delmængde af de ni pilotzoner gemmes kun i det private arbejdsartifact med hash og antal.
+- [x] Eksisterende kystlinjer måles mod nærliggende GeoDanmark-kyst med længde, fragmentering, 250-meters dækning og stikprøveafstande.
+- [x] Havne, vandløbsender, høfder, klit og skrænt registreres som score-neutral reviewkontekst; de fortolkes ikke automatisk som ravstrand eller åmunding.
+- [x] Tre private PNG-kort viser nuværende kyst, GeoDanmark-kilde, zoner og centrale ankre.
+- [x] Lokal analyse flaggede 9/9 zoner: Rømø har en stor forskydning, Limfjorden har manuelle konflikter/modstående bredder, og Lolland/Falster kræver egentlig zonepartition frem for simpel koordinatjustering.
+- [ ] Kør den nye kæde i GitHub og verificér privat artifact, isolation og uændret produktion.
 
 ## 4.0.125 – fuld timeproveniens fra STAC/GRIB
 - [x] Collection, model-run og native gyldighedstid lagres pr. rå komponenttime i bulkcachen.

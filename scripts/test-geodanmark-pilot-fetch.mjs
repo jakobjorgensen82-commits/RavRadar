@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 
 const source = await fs.readFile('scripts/fetch-geodanmark-pilot.py', 'utf8');
+const analysis = await fs.readFile('scripts/analyze-geodanmark-pilot.py', 'utf8');
 const workflow = await fs.readFile('.github/workflows/update-and-deploy.yml', 'utf8');
 
 for (const required of [
@@ -34,6 +35,8 @@ for (const forbidden of [
 assert.match(workflow, /geometry_v2_pilot:/);
 assert.match(workflow, /DATAFORDELER_API_KEY:\s*\$\{\{ secrets\.DATAFORDELER_API_KEY \}\}/);
 assert.match(workflow, /name: Run GeoDanmark geometry-v2 pilot/);
+assert.match(workflow, /python scripts\/analyze-geodanmark-pilot\.py/);
+assert.match(workflow, /python scripts\/render-geodanmark-pilot-maps\.py/);
 assert.match(workflow, /--exclude 'data\/geometry-v2\/'/);
 assert.match(workflow, /--exclude '\.geometry-v2-work\/'/);
 assert.match(workflow, /include-hidden-files:\s*true/);
@@ -49,4 +52,12 @@ const layerTest = spawnSync(python, ['-c', [
   "assert f(['gdk:kystbeskyttelse_current'], 'Kyst') is None",
 ].join(';')], { encoding: 'utf8' });
 assert.equal(layerTest.status, 0, `GeoDanmark-lagmatch fejlede: ${layerTest.stderr || layerTest.error || 'ukendt fejl'}`);
+for (const marker of [
+  'private-read-only-source-qa',
+  'effective-pilot-zones.geojson',
+  'productionGeometryChanged',
+  'scoreChanged',
+  'central-admin-coastline-requires-conflict-review',
+  'Havne og vandløb er registreret som reviewkontekst'
+]) assert.ok(analysis.includes(marker), `GeoDanmark source-QA mangler ${marker}`);
 console.log('GeoDanmark pilotfetch-kontrakt: bestået.');
