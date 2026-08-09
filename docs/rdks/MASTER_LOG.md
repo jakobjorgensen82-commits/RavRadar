@@ -683,3 +683,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - #2046 produktionsverificerede 4.0.149 med fuld datakæde, validate, release-gate og Pages-deploy. Privat #2047 dannede 755 dele i 194 zoner; 14 zoner havde ingen del, 54 var planlagte konflikter, og én havde over 25 dele.
 - Nul forbindelser, navne, punkter eller runtimefunktioner blev opfundet. Artifactauditen viste dog 23 dele over 20 km og 14 dele med over 20 fragmenter.
 - 4.0.150 markerer de for grove dele fail-closed til lokalitetsreview. Lokal genbygning giver 129 umiddelbart reviewbare og 79 blokerede zoner; ingen aktiv geometri ændres.
+
+# 2026-08-09 – 4.0.151 officielle nationale stednavnekandidater
+- #2049 produktionsverificerede 4.0.150; privat #2050 verificerede 755 dele, 79 blokerede zoner og lokalitetsflag på 25 zoner/28 dele.
+- Efter udtrykkelig ejergodkendelse blev de private delafgrænsninger brugt mod Dataforsyningens nøglefrie officielle `steder`-API. 503 requests over 100 udvidede fliser gav 37.815 deduplikerede steder.
+- Alle 755 dele fik balancerede kandidater fra direkte kystnavne, lokale bebyggelser, havnekontekst og øvrig kontekst. 751 ramte loftet på 30 kandidater; dette er reviewmateriale, og alle `proposedName` er fortsat null.

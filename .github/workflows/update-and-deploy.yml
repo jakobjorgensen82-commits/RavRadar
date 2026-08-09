@@ -402,6 +402,12 @@ jobs:
       - name: Validate private national coastal parts and no invented links
         run: python scripts/validate-national-coastal-parts.py
 
+      - name: Fetch official place-name candidates for actual national coastal parts
+        run: python scripts/audit-national-coastal-part-names.py
+
+      - name: Validate official place-name candidates without automatic naming
+        run: python scripts/validate-national-coastal-part-names.py
+
       - name: Upload compact national geometry-v2 QA artifact
         uses: actions/upload-artifact@v4
         with:
@@ -416,6 +422,7 @@ jobs:
             .geometry-v2-work/national-topology-audit.geojson
             .geometry-v2-work/national-coastal-parts.json
             .geometry-v2-work/national-coastal-parts.geojson
+            .geometry-v2-work/national-coastal-part-name-audit.json
           retention-days: 14
           if-no-files-found: error
           include-hidden-files: true

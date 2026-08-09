@@ -1,9 +1,9 @@
 # RavRadar – aktuel overlevering til Codex
 
 **Opdateret:** 2026-08-09
-**Aktuel appversion:** 4.0.150 (national lokalitetsgate; endnu ikke CI-verificeret)
-**Senest verificerede main:** 4.0.149 på `a83ef8016dad8cff657f0a88ca0c9e523b917db7`
-**Produktion:** #2046 bestod frisk DMI/provenance, fuld validate, release-gate, Supabase-sync, Pages-artifact og deploy. Privat #2047 bestod national topologi og dannede 755 read-only kystdele uden runtimeaktivering.
+**Aktuel appversion:** 4.0.151 (officielle nationale stednavnekandidater; endnu ikke CI-verificeret)
+**Senest verificerede main:** 4.0.150 på `4b1dabd662995a34f4f720673603e4ab6a1f1638`
+**Produktion:** #2049 bestod frisk DMI/provenance, fuld validate, release-gate, Supabase-sync, Pages-artifact og deploy. Privat #2050 bestod national topologi/lokalitetsgate og dannede 755 read-only kystdele uden runtimeaktivering.
 
 ## Start ikke med at kode
 Læs først `docs/ai/CODEX_START_HERE.md`, `AGENTS.md`, Current Truth, Implementation Status, Active Requirements, Known Issues og de relevante beslutninger. Denne fil er et øjebliksbillede, ikke en erstatning for RDKS.
@@ -22,9 +22,9 @@ Læs først `docs/ai/CODEX_START_HERE.md`, `AGENTS.md`, Current Truth, Implement
 Fejlen må ikke forstås som én enkelt scheduler- eller radiusfejl. Forløbet viste flere lag: schedulerprioritet, kandidatlogik, vertikallagsparring og faktisk forkert zonegeometri. Fremover skal hele kæden undersøges, før rodårsagen erklæres. Lokal grøn validering må ikke omtales som stabil produktionsbaseline uden frisk CI/produktionsbevis.
 
 ## Åbne opgaver med høj prioritet
-1. CI-verificer 4.0.150-lokalitetsgaten og auditér de blokerede lange/stærkt fragmenterede dele.
-2. Opdel dem efter faktisk lokal geografi og eksponering; en fysisk sammenhængende kyst må ikke automatisk blive ét lokalt vejrområde.
-3. Hent officielle stednavnekandidater geografisk for de faktiske dele uden automatisk omdøbning.
+1. CI-verificer 4.0.151's officielle stednavnekandidater og artifactsummer.
+2. Opdel de 25 lokalitetsflagede zoner/28 dele efter faktisk lokal geografi og eksponering; en fysisk sammenhængende kyst må ikke automatisk blive ét lokalt vejrområde.
+3. Beslut officielle lokale navne revisionsbart; kandidatlisten må ikke automatisk omdøbe.
 4. Byg derefter lokale land-/vandpunkter, native DMI-grid/provenance og isoleret state/shadow-score før UI/admin og national aktivering.
 5. Bevar den eksisterende zoneserie og RavScore som runtime-sandhed, indtil hele den nationale kæde og rollback er verificeret.
 
