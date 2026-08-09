@@ -100,6 +100,16 @@ Desktop-runtimepakken har Node/Python/pnpm, men ingen `npm`-kommando. Validate-d
 - Normal produktion #1981 gennemførte frisk data, fuld Linux-validate, release-gate, Pages-artifact og deploy som success. Offentlig `version.json` viser 4.0.136.
 - Ortofotogaten er dermed bestået. Næste faglige gate er privat DMI-gridvalidering; Blåvand-geometri, punkter, sampling, admin og RavScore er fortsat ikke aktiveret.
 
+## Aktuel ucommittet 4.0.137-kandidat
+- `scripts/validate-blaavand-dmi-grid.py` læser de to private vandpunkter fra det centralt hydrerede Blåvand-detailforslag og genbruger `scripts/update-dmi-bulk.py` direkte som produktionsparser.
+- Det private pilotjob installerer den eksisterende gratis DMI/eccodes-afhængighed og læser ét aktuelt forecast-step fra `wam_nsb` og `dkss_nsbs` via den eksisterende `DMI_API_KEY`. Secret og asset-URL gemmes eller logges ikke i rapporten.
+- Gaten bruger produktionens nearest-valid-cell-søgning, vestkystens fysiske afstandsgrænse og fælles fysisk current-U/V-gridpunkt med samme vertikallag. Der anvendes ingen spatial interpolation.
+- Rapporten gemmer kun gridkoordinater, afstande, collection, model-run og native valid time; rå vejrværdier gemmes ikke. Den angiver også pr. komponent, om de to kandidater faktisk rammer forskellige celler. Samme celle må ikke fremstilles som to uafhængige lokale serier.
+- Alle mutationsflag er falske. Produktionsgeometri, centralt gemt admin, almindelig vejrsampling, public runtime og RavScore ændres ikke.
+- Lokal DMI-grid-self-test, GeoDanmark-workflowkontrakt, alle øvrige geometri-self-tests, RDKS, releaseversionskontrol, webhåndbogens JSON-parse, `git diff --check` og release-gaten består.
+- Den samlede lokale validate-kæde er kørt manuelt med den bundtede runtime. Alle kørte produkt-/JS-tests består bortset fra de kendte Windows-begrænsninger: `test:pages-module-closure` mangler Linux/rsync, og fire tests der kalder det ikke-tilgængelige globale `python` får `spawnSync.status=null`. De samme Python-programmer/self-tests består direkte med den bundtede Python. Linux-CI skal være det endelige fulde bevis.
+- Commit/push, privat pilot, DMI-grid-artifactreview og normal produktionskørsel mangler. Før artifactet er godkendt, er DMI-gridgaten ikke bestået, og ingen Blåvand-data må aktiveres.
+
 ## Model
 Start og afslut 4.0.134 på GPT-5.6 Sol. Geometrisk review, fuld validering og CI-artifactkontrol er kritisk. En billigere model kan først overvejes til en senere, rent mekanisk dokumentationsopgave.
 

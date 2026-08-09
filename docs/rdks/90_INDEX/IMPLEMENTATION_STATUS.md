@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.136
+# Implementeringsstatus pr. 4.0.137
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.
@@ -19,11 +19,12 @@
 - [x] Hver pilotzone klassificeres, og kun geometrisk støttede kildestykker samles til private reviewforslag; ingen blind snapping eller national aktivering.
 - [x] #1974 verificerede gratis ortofoto-WMTS-fetch, 108 tiles, tre private Blåvand-overlays, fail-closed credentialhåndtering og skipped build/Pages.
 - [x] Visuelt review er gennemført: nord og sydøst passer overordnet; hukudsnittet viser en uacceptabel indadgående sandtange-/laguneløkke.
-- [ ] Ret hukløkken i det private forslag og genkør ortofotokontrollen. DMI-gridgaten må ikke begynde før nyt visuelt go.
+- [x] Hukløkken er rettet privat og genkontrolleret mod officielt ortofoto i #1982.
 - [x] 4.0.136-kandidaten registrerer hårnålen maskinelt (430,0/144,3 m; ratio 2,98), bevarer søværts apex og fjerner 242,0 m indadgående detur med syntetisk regression.
 - [x] #1982 verificerede det nye officielle ortofotooverlay, 108 tiles, tre kontroludsnit, nul credentialmatch og alle aktiverings-/vejr-/scoreflag falske. Den relevante grønne linje springer den indre omvej over og ligger på sand/landsiden; ortofotogaten er bestået privat.
 - [x] #1981 produktionsverificerede 4.0.136 med frisk data, fuld Linux-validate, release-gate, Pages-artifact og deploy.
-- [ ] Næste faglige gate er separat DMI-gridvalidering af de private vandpunktkandidater; ingen sampling eller aktivering må ske endnu.
+- [x] 4.0.137-kandidaten validerer begge private vandpunkter direkte i aktuelle native `wam_nsb`- og `dkss_nsbs`-GRIB-felter med produktionens nearest-cell-logik og fælles U/V-gridregel.
+- [ ] Privat CI-pilot og artifactreview skal bevise gyldige celler, afstande og om punkterne faktisk giver forskellige gridserier. Ingen sampling eller aktivering må ske endnu.
 - [x] #1976 produktionsverificerede 4.0.135 efter dependency-isolationshotfix med frisk data, fuld validate, release-gate, Pages-artifact og deploy.
 
 ## 4.0.126 – sikker gratis GeoDanmark-pilot, afventer CI
@@ -94,7 +95,8 @@
 - [x] Ni GeoDanmark-høfter registreres separat som score-neutrale morfologihypoteser og indgår ikke i kystlinjen eller RavScore.
 - [x] Et særskilt detailkort viser fysisk kyst, landforskudt linje, punktpar og høfter; alle produktions-, admin-, vejr-, score- og aktiveringsflag er falske.
 - [x] #1967 verificerede 208-zone central hydrering, 2 dele, 15 features, 9 høfter, detailkort og alle mutations-/vejr-/scoreflag falske. #1965 viste samtidig, at manglende central ankersandhed stopper detailtrinnet sikkert.
-- [ ] Gennemfør ortofotokontrol og DMI-gridvalidering før nogen admin-roundtrip eller produktionsbeslutning.
+- [x] Ortofotokontrol er gennemført; den private DMI-gridkontrol er implementeret i 4.0.137-kandidaten.
+- [ ] Gennemfør CI-/artifactreview af DMI-gridrapporten før nogen admin-roundtrip eller produktionsbeslutning.
 
 ## 4.0.125 – fuld timeproveniens fra STAC/GRIB
 - [x] Collection, model-run og native gyldighedstid lagres pr. rå komponenttime i bulkcachen.

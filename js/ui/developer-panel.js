@@ -1,5 +1,5 @@
-import { getLocalObservations } from "../services/observation-service.js?v=4.0.136";
-import { listTrips } from "../services/trip-service.js?v=4.0.136";
+import { getLocalObservations } from "../services/observation-service.js?v=4.0.137";
+import { listTrips } from "../services/trip-service.js?v=4.0.137";
 
 export function openDeveloperDialog(dialog, context) {
   const conditions = context.conditions || {}; const zones = context.zones?.features || [];

@@ -1,3 +1,8 @@
+## 2026-08-09 – 4.0.137 privat DMI-gridgate
+- Efter #1982's ortofotogo validerer et nyt privat trin Blåvands to vandpunkter direkte i aktuelle `wam_nsb`- og `dkss_nsbs`-GRIB-assets med den samme nearest-valid-cell-logik og de samme afstandsgrænser som produktionen.
+- Current-U/V skal dele både fysisk gridpunkt og vertikallag. Rapporten skelner gyldige gridceller fra uafhængige lokale serier, så to kandidater på samme celle ikke fremstilles som to målinger.
+- Outputtet er privat og uden rå vejrværdier eller credential-URL'er. Geometri, admin, sampling, produktionsdata og RavScore ændres ikke. Lokal self-test består; CI-pilot, artifactreview og normal produktionskørsel mangler.
+
 ## 2026-08-09 – 4.0.136 privat huk-hårnålsrettelse
 - #1974-ortofotoet viste, at nord/sydøst overordnet passede, men at hukket fulgte en indadgående sandtange-/laguneløkke.
 - Kandidaten måler route/chord-forholdet, bevarer det søværts apex og fjerner 242,0 m indadgående detur på det verificerede input. Manglende eksakt hårnål stopper sikkert.

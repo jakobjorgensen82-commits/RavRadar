@@ -90,6 +90,6 @@ Det private pilottrin henter tre afgrænsede zoom-17-vinduer ved norddelen, Blå
 #1974 gav visuelt go til nord- og sydøststrækningen, men no-go ved en indadgående sandtange-/laguneløkke. 4.0.136-kandidaten måler hårnålen som 430,0 m rute over 144,3 m chord (ratio 2,98), bevarer det mest søværts apex og genforener derefter med den sydøstlige åbne strand. På det verificerede input fjernes 242,0 m detur. Tærsklerne ligger i policy, og en syntetisk regression kræver faktisk hårnål; manglende match stopper generatoren.
 
 ## Næste tekniske leverance
-1. Kør 4.0.135-piloten og gennemgå de tre gratis officielle ortofoto-overlays visuelt; registrér konkret go/no-go.
-2. Valider først derefter punktkandidater mod relevante DMI-gridmasker; ingen selvstændig sampling før fuld provenance-/score-/UI-plan.
-3. Design nye semantiske zoneafgrænsninger for de øvrige otte før deres land-/vandpunkter eller DMI-celler vurderes.
+1. Ortofotogaten er bestået i #1982.
+2. Kør 4.0.137-piloten og gennemgå den private DMI-gridrapport: begge punkter skal have gyldige `wam_nsb`- og `dkss_nsbs`-celler, current-U/V skal dele fysisk gridpunkt og vertikallag, og rapporten skal vise om cellerne faktisk er forskellige pr. komponent.
+3. Ingen selvstændig sampling før fuld provenance-/score-/UI-plan. Design desuden nye semantiske zoneafgrænsninger for de øvrige otte, før deres land-/vandpunkter eller DMI-celler vurderes.

@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.136
+**Håndbogsversion:** 4.0.137
 
 **Opdateret:** 1. august 2026
 
@@ -20,7 +20,7 @@ Håndbogen beskriver den aktive version. RDKS er autoritativt for bindende beslu
 
 I den private geometri-v2-pilot kan 4.0.135 hente gratis officielt GeoDanmark Ortofoto forår 2025 via Datafordelerens moderniserede API-key-adgang. Tre højopløselige Blåvand-udsnit overlejrer fysisk kyst, privat 15-meterslinje, punktkandidater og score-neutrale høfter. Materialet er kun et manuelt kontrolgrundlag; det aktiverer hverken geometri, vejrsampling, admin-data eller RavScore.
 
-Ortofotoet afslørede ved Blåvands Huk en fysisk kysthårnål ind mod en sandtange/lagune. 4.0.136-kandidaten måler deturen, bevarer det søværts apex og springer kun den indadgående del over. Rettelsen er fortsat privat og kræver nyt ortofotogo før DMI-gridkontrol.
+Ortofotoet afslørede ved Blåvands Huk en fysisk kysthårnål ind mod en sandtange/lagune. 4.0.136 målte og fjernede den indadgående detur, og #1982 gav visuelt ortofotogo. 4.0.137 kontrollerer derefter de to private vandpunkter direkte i aktuelle WAM- og DKSS-gridfelter med produktionens afstands- og fælles U/V-regler. Kontrollen aktiverer ikke punkterne.
 
 
 ## 2. Evidensklasser, kildekritik og usikkerhed
@@ -1460,4 +1460,4 @@ Blåvands fysiske GeoDanmark-kyst deles ved det officielle sted Blåvands Huk. D
 
 Kystlinjen forskydes 15 meter mod land. Landsiden bestemmes separat for hver del ud fra de to centralt gemte og verificerede adminankre; det modsatte lokale normalpunkt bliver en privat vandpunktkandidat. Punkterne bruges endnu ikke til vejr eller score. Ni officielle høfter vises særskilt som mulige ravfælde-hypoteser, men de tegnes ikke ind i kystlinjen og giver ingen point.
 
-Detailforslaget er kun reviewmateriale. Før aktivering kræves kontrol mod ortofoto, gyldige DMI-havceller, admin-readback og hele vejr-/proveniens-/score-/UI-kæden.
+Detailforslaget er kun reviewmateriale. Ortofotogaten er bestået. Den private DMI-gridgate måler nu gyldige WAM-/DKSS-havceller og angiver særskilt, om de to kandidater faktisk rammer forskellige celler; to punkter på samme modelcelle er ikke to uafhængige målinger. Før aktivering kræves fortsat admin-readback og hele vejr-/proveniens-/score-/UI-kæden.

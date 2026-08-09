@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.136",
+  "version": "4.0.137",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -58,7 +58,7 @@
     "test:coastline-editor": "node scripts/test-coastline-editor-4.0.49.mjs",
     "validate:rdks": "node scripts/validate-rdks.mjs",
     "audit:coastal-geometry-v2": "python scripts/audit-coastal-geometry-v2.py",
-    "test:coastal-geometry-v2": "node scripts/test-coastal-geometry-v2.mjs && node scripts/test-geodanmark-pilot-fetch.mjs && python scripts/audit-coastal-geometry-v2.py --self-test && python scripts/analyze-geodanmark-pilot.py --self-test && python scripts/audit-pilot-place-names.py --self-test && python scripts/fetch-official-water-exclusions.py --self-test && python scripts/assemble-geodanmark-coastal-parts.py --self-test && python scripts/build-blaavand-detail-proposal.py --self-test && python scripts/build-blaavand-ortho-review.py --self-test && python scripts/render-geodanmark-pilot-maps.py --self-test",
+    "test:coastal-geometry-v2": "node scripts/test-coastal-geometry-v2.mjs && node scripts/test-geodanmark-pilot-fetch.mjs && python scripts/audit-coastal-geometry-v2.py --self-test && python scripts/analyze-geodanmark-pilot.py --self-test && python scripts/audit-pilot-place-names.py --self-test && python scripts/fetch-official-water-exclusions.py --self-test && python scripts/assemble-geodanmark-coastal-parts.py --self-test && python scripts/build-blaavand-detail-proposal.py --self-test && python scripts/build-blaavand-ortho-review.py --self-test && python scripts/validate-blaavand-dmi-grid.py --self-test && python scripts/render-geodanmark-pilot-maps.py --self-test",
     "test:water-station-lifecycle": "node scripts/test-water-station-lifecycle-4.0.51.mjs",
     "test:station-cache-usability": "node scripts/test-station-cache-usability-4.0.54.mjs",
     "release:gate": "node scripts/release-gate.mjs",
