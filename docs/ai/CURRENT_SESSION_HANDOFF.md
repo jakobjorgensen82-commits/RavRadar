@@ -7,6 +7,12 @@
 - Næste nødvendige eksterne evidens er første private nationale CI-kørsel. Derefter auditeres artifactet, og den nationale topologi-/ravstrandgenerator bygges på de faktiske kildedata.
 - Ingen aktiv geometri, admin-data, vejr, state, score eller offentlig UI er ændret.
 
+## Aktiv 4.0.144-kandidat – skaleret national hentning og source-QA
+- 4.0.143 er produktionsverificeret i #2027 med fuld Linux-validate, releasegate, artifact og Pages-deploy.
+- Første nationaljob målte 101 fliser/707 sekventielle requests og var efter mere end ti minutter fortsat i hentetrinnet uden flisefremdrift.
+- Worktree bruger nu højst fire samtidige fliser, synlig progress, streng kontrol af komplethed/filer/hashes/deduplikering/secrets og rumligt indekseret QA for alle 208 zoner.
+- Nye self-tests, workflowkontrakter, RDKS-validering, versionskontrol, `git diff --check` og releasegate består lokalt. Commit/push, fuld Linux-produktions-CI, privat 4.0.144-CI og artifactaudit mangler.
+
 ## Hvorfor checkpointet findes
 Ejeren oplevede, at den lange chat var blevet langsommere, og bad om at fortsætte i en ny chat. Dette dokument er den permanente, genoptagelige status. Det er ikke et releasebevis.
 

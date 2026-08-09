@@ -2,6 +2,7 @@
 """Privately fetch and merge official GeoDanmark layers for the national v2 plan."""
 from __future__ import annotations
 import argparse, hashlib, importlib.util, json, os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -46,7 +47,7 @@ def self_test(tmp):
     assert result["featureCount"]==3 and result["duplicateTileFeaturesRemoved"]==1
     print("National GeoDanmark fetch/merge self-test: bestået.")
 def main():
-    parser=argparse.ArgumentParser(); parser.add_argument("--plan",type=Path,default=ROOT/".geometry-v2-work"/"national-work-plan.json"); parser.add_argument("--work-dir",type=Path,default=ROOT/".geometry-v2-work"/"national-source"); parser.add_argument("--report",type=Path,default=ROOT/".geometry-v2-work"/"national-source-manifest.json"); parser.add_argument("--self-test",action="store_true"); args=parser.parse_args()
+    parser=argparse.ArgumentParser(); parser.add_argument("--plan",type=Path,default=ROOT/".geometry-v2-work"/"national-work-plan.json"); parser.add_argument("--work-dir",type=Path,default=ROOT/".geometry-v2-work"/"national-source"); parser.add_argument("--report",type=Path,default=ROOT/".geometry-v2-work"/"national-source-manifest.json"); parser.add_argument("--workers",type=int,default=4); parser.add_argument("--self-test",action="store_true"); args=parser.parse_args()
     if args.self_test: self_test(ROOT/".geometry-v2-work"/"self-test-national-fetch"); return
     key=os.environ.get("DATAFORDELER_API_KEY","").strip()
     if not key: fail("DATAFORDELER_API_KEY mangler; national kildehentning blev ikke forsøgt.")
@@ -54,13 +55,20 @@ def main():
     if ROOT not in work.parents or ROOT not in report.parents: fail("Nationalt kildeoutput skal ligge i workspace.")
     work.mkdir(parents=True,exist_ok=True); available=module.capability_layers(key); resolved={layer:module.find_layer(available,layer) for layer in LAYERS}
     if not resolved["Kyst"]: fail("GeoDanmark WFS eksponerer ikke det krævede Kyst-lag.")
-    tile_results=[]
-    for tile in tiles:
+    if not 1<=args.workers<=6: fail("National kildehentning tillader 1-6 samtidige fliser.")
+    def fetch_tile(tile):
         folder=work/tile["id"]; folder.mkdir(parents=True,exist_ok=True); layers=[]
         for requested,source_layer in resolved.items():
             if not source_layer: layers.append({"requestedLayer":requested,"status":"not-exposed-by-source"}); continue
             result=module.fetch_layer(source_layer,tile["boundsWgs84"],folder/f"{requested}.geojson",key); layers.append({"requestedLayer":requested,"status":"fetched",**result})
-        tile_results.append({"id":tile["id"],"boundsWgs84":tile["boundsWgs84"],"zoneIds":tile["zoneIds"],"layers":layers})
+        return {"id":tile["id"],"boundsWgs84":tile["boundsWgs84"],"zoneIds":tile["zoneIds"],"layers":layers}
+    tile_results=[]
+    with ThreadPoolExecutor(max_workers=args.workers) as executor:
+        pending={executor.submit(fetch_tile,tile):tile["id"] for tile in tiles}
+        for index,future in enumerate(as_completed(pending),1):
+            tile_results.append(future.result())
+            print(f"National GeoDanmark-fremdrift: {index}/{len(tiles)} fliser færdige.",flush=True)
+    tile_results.sort(key=lambda row:row["id"])
     merged={}
     for layer in LAYERS:
         paths=[work/t["id"]/f"{layer}.geojson" for t in tiles if (work/t["id"]/f"{layer}.geojson").exists()]

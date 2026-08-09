@@ -1,6 +1,11 @@
-# Implementeringsstatus pr. 4.0.143
+# Implementeringsstatus pr. 4.0.144
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
+- [x] 4.0.143 er produktionsverificeret i #2027: central sync, frisk data, fuld Linux-validate, releasegate, Pages-artifact og deploy bestod.
+- [x] Første nationaljob målte 101 fliser og 707 sekventielle lagrequests; efter mere end ti minutter var hentningen fortsat aktiv uden flisefremdrift. 4.0.144 begrænser parallelitet til fire fliser og logger deterministisk fremdrift.
+- [x] National kildevalidator kontrollerer plan/rapport, 208 zoner, samtlige eksponerede lag, komplethedsflag, filer, hashes, deduplikering, mutationer og credentialfravær før artifact-upload.
+- [x] National source-QA bruger `STRtree` til at sammenholde samlede officielle kystobjekter med alle effektive zoner og viderefører planens konfliktklasse uden at foreslå aktivering.
+- [ ] Privat 4.0.144-CI skal bevise korrigeret køretid, validator og 208-zoners source-QA på faktiske nationale data.
 - [x] National planlægger bruger den centralt hydrerede effektive bestand, kræver 208 zoner og danner deterministiske, overlappende kildefliser uden 208 manuelle Blåvand-forløb.
 - [x] Kendte fejl ved Blåvand, Rømø, Limfjorden og Lolland/Falster er maskinlæsbare konfliktklasser; øvrige centrale ændringer stoppes automatisk som admin-konflikter.
 - [x] Separat privat nationalt workflowjob kan hente og deduplikere syv gratis officielle GeoDanmark-lag uden Pages-rettigheder eller mutationsadgang.

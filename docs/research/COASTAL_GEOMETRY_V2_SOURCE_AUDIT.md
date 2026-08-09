@@ -126,3 +126,9 @@ Den eksisterende implementering var fortsat hårdt bundet til `pilot-areas.json`
 4.0.143 indfører derfor to forudgående nationale led. Først dannes en plan fra den centralt hydrerede aktive bestand på 208 zoner. Planen bruger deterministiske fliser og eksplicitte konfliktklasser for central admin, semantisk flytning, partition, grænser og lokale detailrettelser. Dernæst kan et isoleret privat job hente de syv eksisterende gratis GeoDanmark-lag pr. flise og deduplikere objekter fra overlap.
 
 Dette løser kildeomfang og revisionsspor, ikke selve kystpartitionen. Første private nationale artifact skal måle fliser, komplette lag, datamængde, dubletter og køretid. Først derefter bygges national havn-/å-/fjordudskæring, topologi, stednavne, lokale punkter og de efterfølgende DMI-/state-/score-/admin-gater.
+
+## Målt skaleringskorrektion i 4.0.144
+
+Den effektive plan gav 101 fliser og 707 lagrequests. Den første implementering kørte dem sekventielt og var stadig aktiv efter mere end ti minutter uden flisebaseret fremdriftsbevis. Dette er ikke et datakvalitetsproblem, men en pipelineflaskehals.
+
+4.0.144 bevarer præcis samme fliser, lag, pagination og sikkerhedsgrænser, men behandler højst fire fliser samtidig og logger afslutning. En efterfølgende validator kræver alle eksponerede lag komplette, kontrollerer filhash, zonebinding, deduplikering og credentialfravær. `STRtree` bruges derefter til national source-QA, så officielle kystobjekter kun sammenlignes med rumligt relevante zoner.

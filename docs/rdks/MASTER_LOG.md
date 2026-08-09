@@ -650,3 +650,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - En ny planlægger kræver den centralt effektive bestand på 208 zoner, danner deterministiske kildefliser og klassificerer kendte geografiske fejl samt centrale adminændringer maskinlæsbart.
 - Et separat privat workflowjob henter syv gratis officielle GeoDanmark-lag nationalt og deduplikerer fliseoverlap. Det har ingen Pages-rettigheder og kan ikke ændre geometri, admin, vejr eller score.
 - Lokal kontraktvalidering er grøn. Privat national CI, artifactaudit og topologigenerering mangler.
+
+## 2026-08-09 – 4.0.144 national skalerings- og source-QA-kandidat
+- #2027 produktionsverificerede 4.0.143 med fuld Linux-validate, releasegate og Pages-deploy.
+- Den private 4.0.143-nationalmåling dannede 101 fliser/707 requests og var fortsat sekventielt aktiv efter mere end ti minutter uden flisefremdrift.
+- 4.0.144 anvender højst fire samtidige fliser, logger fremdrift, validerer alle filer/hashes/lag/208 zoner og scanner for credentials før upload.
+- En rumligt indekseret national QA sammenholder de samlede officielle kystobjekter med alle effektive zoner og viderefører konfliktklasser uden mutation eller aktivering.

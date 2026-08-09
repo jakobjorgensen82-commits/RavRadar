@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.143
+**Håndbogsversion:** 4.0.144
 
 **Opdateret:** 1. august 2026
 
@@ -1469,3 +1469,9 @@ Detailforslaget er kun reviewmateriale. Ortofotogaten og den private DMI-gridgat
 RavRadar kan nu planlægge kystgeometri-v2 for hele den centralt effektive bestand uden at gentage Blåvand manuelt 208 gange. Efter central adminhydrering og tombstones kræver planen præcis 208 aktive zoner. Kystlinjerne fordeles på små, reproducerbare GeoDanmark-fliser, og kendte fejl samt nye centrale ændringer sendes til tydelige konfliktklasser i stedet for at blive overskrevet.
 
 Et separat privat GitHub-job kan hente de gratis officielle kyst-, havne-, vandløbs-, høfde-, klit- og skræntlag for fliserne og fjerne dubletter fra overlap. Jobbet har ingen adgang til Pages og ændrer hverken aktive zoner, admin, vejrdata eller RavScore. 4.0.143 er derfor en kilde- og planlægningsgate; den er ikke den færdige Danmarkskyst eller en aktivering.
+
+## National skalerings- og komplethedsgate (4.0.144)
+
+Den første nationale måling gav 101 fliser og 707 lagforespørgsler. Sekventiel hentning var for langsom og viste ikke flisefremdrift. RavRadar bruger derfor højst fire samtidige fliser og logger hvert afsluttet trin, uden at øge antallet af data eller ændre kildens sikkerhedsgrænser.
+
+Før et privat artifact accepteres, skal alle 208 zoner være bundet til planen, alle eksponerede lag være komplette, og filer og hashværdier stemme. Deduplikering måles, og credential- eller mutationsfund stopper kørslen. Først derefter udføres en rumligt indekseret fysisk kystsammenligning for alle zoner. Resultatet er fortsat QA og kan ikke aktivere kyst, vejr eller score.

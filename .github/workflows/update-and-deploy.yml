@@ -379,6 +379,14 @@ jobs:
         env:
           DATAFORDELER_API_KEY: ${{ secrets.DATAFORDELER_API_KEY }}
 
+      - name: Validate private national source completeness and safety
+        run: python scripts/validate-geodanmark-national-source.py
+        env:
+          DATAFORDELER_API_KEY: ${{ secrets.DATAFORDELER_API_KEY }}
+
+      - name: Analyze indexed national source against all effective zones
+        run: python scripts/analyze-geodanmark-national.py
+
       - name: Upload private national geometry-v2 source artifact
         if: always()
         uses: actions/upload-artifact@v4

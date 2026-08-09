@@ -5,6 +5,8 @@ assert.match(source,/sourceZoneCount.*208/s);
 assert.match(source,/validate_plan/);
 assert.match(source,/feature_key/);
 assert.match(source,/duplicateTileFeaturesRemoved/);
+assert.match(source,/ThreadPoolExecutor/);
+assert.match(source,/1<=args\.workers<=6/);
 assert.match(source,/automaticActivationAllowed.*False/s);
 assert.match(source,/DATAFORDELER_API_KEY/);
 assert.doesNotMatch(source,/print\([^\n]*key/);

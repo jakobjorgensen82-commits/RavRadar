@@ -28,5 +28,7 @@ if (fetchResult.status !== null) {
   assert.match(fetchResult.stdout, /self-test:/);
 }
 await import('./test-geodanmark-national-fetch.mjs');
+await import('./test-geodanmark-national-source-validation.mjs');
+await import('./test-geodanmark-national-analysis.mjs');
 
 console.log('National geometry-v2-plan kontrakt: bestået.');
