@@ -24,7 +24,9 @@
 - [x] #1982 verificerede det nye officielle ortofotooverlay, 108 tiles, tre kontroludsnit, nul credentialmatch og alle aktiverings-/vejr-/scoreflag falske. Den relevante grønne linje springer den indre omvej over og ligger på sand/landsiden; ortofotogaten er bestået privat.
 - [x] #1981 produktionsverificerede 4.0.136 med frisk data, fuld Linux-validate, release-gate, Pages-artifact og deploy.
 - [x] 4.0.137-kandidaten validerer begge private vandpunkter direkte i aktuelle native `wam_nsb`- og `dkss_nsbs`-GRIB-felter med produktionens nearest-cell-logik og fælles U/V-gridregel.
-- [ ] Privat CI-pilot og artifactreview skal bevise gyldige celler, afstande og om punkterne faktisk giver forskellige gridserier. Ingen sampling eller aktivering må ske endnu.
+- [x] Privat pilot #1987 og artifactreview beviser gyldige WAM-/DKSS-celler for begge punkter, fælles current-U/V på 17 m-laget og forskellige nord/sydøst-celler for alle seks komponentfelter. Ingen sampling eller aktivering er sket.
+- [x] #1986 produktionsverificerede 4.0.137 med frisk data, fuld Linux-validate, release-gate, Pages-artifact og deploy.
+- [ ] Næste Blåvand-gate er fuldt design og senere validering af provenance, merge, score/state, UI og admin-roundtrip før en særskilt aktiveringsbeslutning.
 - [x] #1976 produktionsverificerede 4.0.135 efter dependency-isolationshotfix med frisk data, fuld validate, release-gate, Pages-artifact og deploy.
 
 ## 4.0.126 – sikker gratis GeoDanmark-pilot, afventer CI
@@ -96,7 +98,8 @@
 - [x] Et særskilt detailkort viser fysisk kyst, landforskudt linje, punktpar og høfter; alle produktions-, admin-, vejr-, score- og aktiveringsflag er falske.
 - [x] #1967 verificerede 208-zone central hydrering, 2 dele, 15 features, 9 høfter, detailkort og alle mutations-/vejr-/scoreflag falske. #1965 viste samtidig, at manglende central ankersandhed stopper detailtrinnet sikkert.
 - [x] Ortofotokontrol er gennemført; den private DMI-gridkontrol er implementeret i 4.0.137-kandidaten.
-- [ ] Gennemfør CI-/artifactreview af DMI-gridrapporten før nogen admin-roundtrip eller produktionsbeslutning.
+- [x] #1987 gennemførte CI-/artifactreview af DMI-gridrapporten uden credential-URL eller mutationsflag.
+- [ ] Design og valider admin-roundtrip samt hele vejr-/proveniens-/score-/UI-kæden før nogen produktionsbeslutning.
 
 ## 4.0.125 – fuld timeproveniens fra STAC/GRIB
 - [x] Collection, model-run og native gyldighedstid lagres pr. rå komponenttime i bulkcachen.

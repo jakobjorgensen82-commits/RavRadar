@@ -1,7 +1,9 @@
 ## 2026-08-09 – 4.0.137 privat DMI-gridgate
 - Efter #1982's ortofotogo validerer et nyt privat trin Blåvands to vandpunkter direkte i aktuelle `wam_nsb`- og `dkss_nsbs`-GRIB-assets med den samme nearest-valid-cell-logik og de samme afstandsgrænser som produktionen.
 - Current-U/V skal dele både fysisk gridpunkt og vertikallag. Rapporten skelner gyldige gridceller fra uafhængige lokale serier, så to kandidater på samme celle ikke fremstilles som to målinger.
-- Outputtet er privat og uden rå vejrværdier eller credential-URL'er. Geometri, admin, sampling, produktionsdata og RavScore ændres ikke. Lokal self-test består; CI-pilot, artifactreview og normal produktionskørsel mangler.
+- Outputtet er privat og uden rå vejrværdier eller credential-URL'er. Geometri, admin, sampling, produktionsdata og RavScore ændres ikke. Lokal self-test bestod; den oprindelige kandidatstatus om manglende CI-evidens er erstattet af #1987/#1986 nedenfor.
+- #1987 bestod hele den private pilot. Begge kandidater har gyldige WAM-/DKSS-celler; current-U/V deler samme fysiske celle og 17 m-lag pr. kandidat; alle seks komponentfelter bruger forskellige celler mellem nord og sydøst. Artifactet har ingen credentialbærende URL og alle mutations-/aktiveringsflag er falske.
+- #1986 bestod central sync, frisk DMI-/vejropbygning, fuld Linux-validate, release-gate, Pages-artifact og deploy på `ab42e99`; offentlig GitHub Pages-version er 4.0.137.
 
 ## 2026-08-09 – 4.0.136 privat huk-hårnålsrettelse
 - #1974-ortofotoet viste, at nord/sydøst overordnet passede, men at hukket fulgte en indadgående sandtange-/laguneløkke.

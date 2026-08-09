@@ -6,4 +6,4 @@
 - Rapporterer særskilt, om de to kandidater faktisk rammer forskellige gridceller pr. komponent.
 - Ændrer ikke produktionsgeometri, centralt gemte admin-data, vejrsampling, RavScore eller Pages-indhold.
 
-Status ved kandidat: lokal self-test bestået; privat CI-pilot, artifactreview og almindelig produktionsverifikation afventer.
+Verificeret: privat pilot #1987 bestod med gyldige og indbyrdes forskellige WAM-/DKSS-celler samt korrekt fælles current-U/V-lag. Normal produktion #1986 bestod frisk data, fuld Linux-validering, release-gate, Pages-artifact og deploy.
