@@ -461,6 +461,7 @@ Status: Implementeret og lokalt valideret.
 - [x] Forskningsopgaven er registreret i roadmap og RDKS som P3 under DEC-0029.
 - [x] Afhængigheder og stopregel er fastlagt: ingen start før forecast-/schedulerstabilisering og højere P0/P1-opgaver; ingen automatisk produktionskode eller scoreændring.
 - [x] Det aktuelle forbud mod generelle strømbånd består, mens en senere forskningsrunde må revurdere den under streng evidens- og valideringspligt.
+- [x] Forskningsprotokollen fastslår, at viste vindpile ikke afgrænser vindanalysen; relevant rumlig og historisk vind uden for pile-/zonepunkterne skal undersøges sammen med bølge-/strømkobling og dobbelt-tælling.
 - [ ] Fase A: permanent kildekritisk forskningsgrundlag.
 - [ ] Fase B: audit af faktisk RavScore-kode mekanisme for mekanisme.
 - [ ] Fase C: konceptuel fysisk systemmodel før scoremodel.

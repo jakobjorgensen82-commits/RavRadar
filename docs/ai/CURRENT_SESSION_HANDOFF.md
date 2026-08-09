@@ -25,6 +25,7 @@ Gamle chats og chatkilder er historiske forklaringer, ikke selvstændig tilladel
 - Den aktive geometri-v2-pilot er privat, parallel, read-only og score-neutral. Ingen national eller lokal geometri må aktiveres automatisk.
 - Kystlinjen repræsenterer relevante ravstrande, ikke enhver fysisk vandkant. Den må springe over åer og havne. Alle indre fjorde udelukkes undtagen Limfjorden.
 - Høfter, læsider, odder og lignende kan være ravfælder, men registreres kun som score-neutrale hypoteser. Eventuel scoreeffekt tilhører den senere videnskabelige DEC-0029-proces.
+- I den senere store DEC-0029-analyse er vinden ved kortets viste pile kun ét udsnit. Kortpile er UI-visualiseringer og må ikke afgrænse det fysiske analysefelt. Relevant rumlig/opstrøms vind over hav og kyst, også hvor ingen pile vises, samt historik, bølge-/strømkobling, forsinkelse og dobbelt-tælling skal undersøges som del af den samlede ravkæde. Dette ændrer ikke RavScore nu.
 - Flere lokalt navngivne kystdele er ønskede, når vind og strøm rammer strækninger forskelligt. De bliver ikke selvstændige vejrmålepunkter, før DMI-sampling, provenance, merge, score/state og UI er implementeret og valideret ende til ende.
 - Eksisterende zone-ID'er bevares som udgangspunkt. Hvis et ID flyttes til en væsentligt anden geografi, kræves eksplicit migration eller afgrænsning for historik, observationer, regler og læringsdata.
 - Admin skal fortsat kunne revidere navn, kystlinje, lokale dele, land-/vandpunkter og retninger med central readback, historik og rollback.
