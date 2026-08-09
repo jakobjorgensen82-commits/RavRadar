@@ -56,6 +56,9 @@ if (!text.includes('${{ github.run_id }}-${{ github.run_attempt }}')) throw new 
 
 if (!text.includes('build-and-prepare:') || !text.includes('deploy-pages:')) throw new Error('Data/build og Pages-deploy skal være separate jobs.');
 if (!text.includes('geometry-v2-pilot:')) throw new Error('Workflow mangler det isolerede GeoDanmark geometry-v2 pilotjob.');
+if (!text.includes("if: github.event_name != 'workflow_dispatch' || inputs.geometry_v2_pilot != true")) {
+  throw new Error('En GeoDanmark-pilotdispatch skal udelukke det almindelige build- og deployjob.');
+}
 const geometryPilotSection = text.slice(text.indexOf('geometry-v2-pilot:'), text.indexOf('deploy-pages:'));
 for (const marker of [
   "github.event_name == 'workflow_dispatch' && inputs.geometry_v2_pilot == true",
