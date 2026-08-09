@@ -1,21 +1,21 @@
-import { evaluateRules } from '../core/rule-engine.js?v=4.0.128';
-import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.128';
-import { historicalSummary } from '../services/historical-analysis.js?v=4.0.128';
-import { loadAdaptiveModel, applyApprovedSuggestion, recordDecision, decisionHistory, rollbackAdaptiveModel, listAdaptiveModelVersions, activateAdaptiveModelVersion } from '../core/adaptive-model.js?v=4.0.128';
-import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.128';
-import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.128';
-import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.128';
-import { interpretFreeTextRule } from '../core/free-text-rule-assistant.js?v=4.0.128';
-import { listProfiles, savePermissions, PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.128';
-import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js?v=4.0.128';
-import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.128';
-import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.128';
-import { GEOGRAPHIC_AREAS, matchingZoneIds } from '../core/geographic-areas.js?v=4.0.128';
-import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.128';
-import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.128';
-import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.128';
+import { evaluateRules } from '../core/rule-engine.js?v=4.0.129';
+import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.129';
+import { historicalSummary } from '../services/historical-analysis.js?v=4.0.129';
+import { loadAdaptiveModel, applyApprovedSuggestion, recordDecision, decisionHistory, rollbackAdaptiveModel, listAdaptiveModelVersions, activateAdaptiveModelVersion } from '../core/adaptive-model.js?v=4.0.129';
+import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.129';
+import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.129';
+import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.129';
+import { interpretFreeTextRule } from '../core/free-text-rule-assistant.js?v=4.0.129';
+import { listProfiles, savePermissions, PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.129';
+import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js?v=4.0.129';
+import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.129';
+import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.129';
+import { GEOGRAPHIC_AREAS, matchingZoneIds } from '../core/geographic-areas.js?v=4.0.129';
+import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.129';
+import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.129';
+import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.129';
 
-const VERSION='4.0.128';
+const VERSION='4.0.129';
 const SITE_TEST_MODE=new URLSearchParams(location.search).has('ravradarAdminSiteTest');
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
@@ -372,7 +372,7 @@ function renderObservations(){const obs=JSON.parse(localStorage.getItem('ravrada
 async function renderUsers(){
  content.innerHTML=`<article class="admin-card"><h2>Eksperter og rettigheder</h2><p class="muted">Få, brede tilladelser. Du kan til enhver tid ændre dem igen.</p><div id="profilesList" class="admin-grid"><p class="muted">Henter brugere…</p></div></article>`;
  const host=document.querySelector('#profilesList');
- try{state.profiles=await listProfiles();if(!state.profiles.length){host.innerHTML='<div class="empty">Ingen profiler blev fundet. Kør SQL-opdateringen til 4.0.128 i Supabase én gang.</div>';return;}
+ try{state.profiles=await listProfiles();if(!state.profiles.length){host.innerHTML='<div class="empty">Ingen profiler blev fundet. Kør SQL-opdateringen til 4.0.129 i Supabase én gang.</div>';return;}
  host.innerHTML=state.profiles.map(profile=>{const active=new Set((profile.user_permissions||[]).filter(x=>x.enabled).map(x=>x.permission_key));return `<article class="admin-card permission-card" data-user-id="${esc(profile.id)}"><div class="rule-card-head"><div><h3>${esc(profile.display_name||profile.email)}</h3><p class="muted">${esc(profile.email||'')} · ${esc(profile.role||'expert')}</p></div><span class="badge ${profile.is_active!==false?'active':'draft'}">${profile.is_active!==false?'Aktiv':'Deaktiveret'}</span></div><div class="permission-list">${PERMISSIONS.map(p=>`<label class="permission-option"><input type="checkbox" name="${esc(p.id)}" ${active.has(p.id)||profile.role==='owner'?'checked':''} ${profile.role==='owner'?'disabled':''}><span>${esc(p.label)}</span></label>`).join('')}</div>${profile.role==='owner'?'<p class="hint">Owner har altid alle rettigheder.</p>':'<button class="admin-button save-user-permissions" type="button">Gem rettigheder</button><p class="form-status"></p>'}</article>`}).join('');
  host.querySelectorAll('.save-user-permissions').forEach(button=>button.onclick=async()=>{const card=button.closest('[data-user-id]');const status=card.querySelector('.form-status');const values={};PERMISSIONS.forEach(p=>values[p.id]=card.querySelector(`[name="${p.id}"]`).checked);button.disabled=true;status.textContent='Gemmer…';try{await savePermissions(card.dataset.userId,values);status.textContent='Rettighederne er gemt og gælder med det samme.';}catch(error){status.textContent=error.message;}finally{button.disabled=false;}});
  }catch(error){host.innerHTML=`<div class="empty">${esc(error.message)}</div>`;}

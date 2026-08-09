@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.128
+# Implementeringsstatus pr. 4.0.129
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.
@@ -37,6 +37,12 @@
 - [x] 4.0.128 paginerer med `startIndex`, rapporterer source match/page count/completeness og stopper sikkert ved 250.000 features pr. lag/område.
 - [x] GitHub artifact-upload inkluderer nu den skjulte private arbejdsmappe eksplicit; Pages ekskluderer den fortsat.
 - [ ] Grøn genkørsel skal bevise komplette sider og gøre rå pilotdata tilgængelige for parallel geometrianalyse.
+
+## 4.0.129 – separat concurrency-kø til geometri-pilot
+- [x] #1933 dokumenterede, at en nyere 15-minutters vejropdatering kan erstatte en ventende pilot, når begge deler samme concurrency-gruppe.
+- [x] Pilotdispatch bruger nu `ravradar-geometry-v2-pilot`, mens vejrproduktion fortsat bruger `ravradar-weather-production`.
+- [x] En ny pilot kan kun erstatte en ældre pilot; rutinevejret kan ikke længere annullere den.
+- [ ] Genkør 4.0.129-piloten og verificér komplethed/artifact.
 
 ## 4.0.125 – fuld timeproveniens fra STAC/GRIB
 - [x] Collection, model-run og native gyldighedstid lagres pr. rå komponenttime i bulkcachen.

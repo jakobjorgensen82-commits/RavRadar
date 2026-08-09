@@ -83,5 +83,7 @@ for (const protectedPilotPath of ["--exclude 'data/geometry-v2/'", "--exclude '.
   if (!buildSection.includes(protectedPilotPath)) throw new Error(`Pages-artifact må ikke indeholde ${protectedPilotPath}`);
 }
 if (!text.includes("cancel-in-progress: ${{ github.event_name == 'push'")) throw new Error('Push-release skal kunne prioritere sig foran en ældre almindelig vejropdatering.');
+if (!text.includes("'ravradar-geometry-v2-pilot' || 'ravradar-weather-production'")) throw new Error('GeoDanmark-piloten skal have en separat concurrency-gruppe fra vejropdateringer.');
+if (!text.includes('inputs.force == true || inputs.geometry_v2_pilot == true')) throw new Error('En nyere eksplicit pilot skal kunne erstatte en ældre pilot uden at dele vejrkø.');
 
 console.log('Workflowinventar, rækkefølge, deployisolering og progressiv DMI-cache består.');
