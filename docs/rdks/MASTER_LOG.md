@@ -1,7 +1,9 @@
 ## 2026-08-09 – 4.0.140 privat state-/historik-replaygate
 - Kodeauditten viser, at produktionens statehistorik aktuelt slås op via `previous.zones[zoneId]`; private kystdele må derfor ikke kobles direkte på uden egen nøgle.
 - En ny Node-validator bruger den faktiske `shadow-v2`-funktion med unik `historyKey` pr. del og stopper ved delt nøgle, parent-genbrug, krydslæsning eller numerisk scorepåvirkning.
-- Faktiske current-U/V-replayværdier ligger kun i `.cache`, uploades ikke og slettes efter validering. Artifactet gemmer kun kompakt state og hash; alle runtime-/state-/score-/UI-/admin-/aktiveringsflag er falske. Lokal self-test består; CI og produktion mangler.
+- Faktiske current-U/V-replayværdier ligger kun i `.cache`, uploades ikke og slettes efter validering. Artifactet gemmer kun kompakt state og hash; alle runtime-/state-/score-/UI-/admin-/aktiveringsflag er falske.
+- Privat pilot #2004 bestod med to unikke historiknøgler, nul parent-genbrug/krydslæsning, verificerede samples, nul scorepåvirkning og slettet transient input. Artifactet har ingen rå replayfelter eller credentialbærende URL.
+- Normal produktion #2003 bestod central adminsync, frisk DMI-/vejropbygning, fuld Linux-validate, release-gate, Pages-artifact og deploy på `0f8171b`. Offentlig `version.json` viser 4.0.140.
 
 ## 2026-08-09 – 4.0.139 privat Blåvand-flertidsseriegate
 - En ny privat validator genbruger produktionens native WAM-/DKSS-parser over flere forecasttrin for begge isolerede Blåvand-dele.
