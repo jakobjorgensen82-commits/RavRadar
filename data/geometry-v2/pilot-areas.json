@@ -1,0 +1,72 @@
+{
+  "schemaVersion": "1.0.0-pilot",
+  "status": "approved-for-source-acquisition",
+  "inputOrder": [
+    "repository-zone-registry",
+    "central-admin-hydration-and-tombstones",
+    "authoritative-free-source-layers",
+    "v2-generated-proposal",
+    "explicit-admin-conflict-review"
+  ],
+  "areas": [
+    {
+      "id": "pilot-west-vadehavet",
+      "purpose": "Åben, stærkt eksponeret vestkyst samt komplekse tidevands-/øforhold",
+      "zoneIds": ["DK-B03-13", "DK-B04-08"],
+      "requiredCases": [
+        "multi-orientation-coast",
+        "headland",
+        "wadden-sea-edge",
+        "island-coast",
+        "existing-manual-authoritative-override"
+      ]
+    },
+    {
+      "id": "pilot-limfjord",
+      "purpose": "Eneste inkluderede fjordsystem med smalle farvande, øer og centralt rettede marine punkter",
+      "zoneIds": ["DK-B05-10", "DK-B05-17", "DK-B05-24"],
+      "requiredCases": [
+        "limfjord-inclusion",
+        "narrow-water-land-mask",
+        "multiple-local-coastal-parts",
+        "central-admin-point-overrides",
+        "dmi-grid-validation"
+      ]
+    },
+    {
+      "id": "pilot-lolland-falster",
+      "purpose": "Kendt navne-/placeringsproblem, store polygonoverlap og flere forskelligt orienterede kystdele",
+      "zoneIds": ["DK-B10-05", "DK-B10-10", "DK-B10-15", "DK-B10-17"],
+      "requiredCases": [
+        "central-rename-preservation",
+        "falster-lolland-name-audit",
+        "fully-nested-overlap",
+        "harbour-and-river-skips",
+        "multiple-independent-marine-points"
+      ]
+    }
+  ],
+  "acceptance": {
+    "unintendedOverlapAreaM2": 0,
+    "fullyNestedZoneCount": 0,
+    "selfIntersectionCount": 0,
+    "duplicateCoastCoverageLengthM": 0,
+    "unclassifiedCoastGapLengthM": 0,
+    "excludedFjordCoastIncludedLengthM": 0,
+    "centralTombstonesRevived": 0,
+    "centralOverridesSilentlyLost": 0,
+    "zoneIdsWithoutMigrationClassification": 0,
+    "coastalPartsWithoutProvenance": 0,
+    "independentSamplingWithoutIndependentWeatherProvenance": 0,
+    "scoreChangeAllowed": false
+  },
+  "reviewOutputs": [
+    "before-after-map",
+    "geometry-metrics",
+    "name-and-id-migration-table",
+    "admin-overlay-conflicts",
+    "dmi-component-coverage-per-coastal-part",
+    "remaining-human-review-queue"
+  ]
+}
+

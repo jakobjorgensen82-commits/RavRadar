@@ -1,3 +1,20 @@
+## 2026-08-08 – kystgeometri v2 godkendt til score-neutral pilot
+- Brugeren har godkendt opstart af en grundig national geometriomlægning, men ikke en direkte overskrivning af produktionszonerne.
+- Kystlinjen defineres som relevante ravstrande og må springe over havne og åudløb. Indre fjorde udelukkes med Limfjorden som eneste undtagelse.
+- Eksisterende zone-ID'er bevares som udgangspunkt, mens fejlagtige placeringer og navne må korrigeres under eksplicit migrationskontrol.
+- Flere navngivne lokale kystdele med land-/vandpunkter ønskes, hvor retning, strøm og vind varierer. Kodeaudit viser, at admin allerede har multi-ankre, men vejrpipelinen endnu ikke har selvstændige komponentserier pr. anker.
+- Høfder og andre konstruktioner kan være ravfælder. De registreres foreløbig score-neutralt og sendes til den senere DEC-0029-forskning frem for at ændre RavScore under geometriarbejdet.
+- DEC-0032 låser parallel pilot, autoritativ kilde-/licenskontrol, central admin-sandhed, tre pilotmiljøer og særskilt go/no-go før national aktivering.
+- Officiel kildeaudit har verificeret GeoDanmark-objektet `Kyst` i EPSG:25832, entitetsbaseret WFS med API-key/OAuth samt CC BY 4.0. Repository/procesmiljø har ingen identificeret Datafordeler-nøgle; adgang skal tilføjes uden for repositoryet før ægte pilotudtræk.
+- Read-only offentlig sammenligning bekræfter, at central runtime ikke kan erstattes af repositoryfilen: 208 mod 209 aktive zoner, central sletning af `DK-B02-14`, omdøbning af `DK-B10-05` og 18 zoner med centralt gemte multi-ankre. V2-pilotens inputrækkefølge skal derfor være repositorybaseline → central hydrering/tombstones → v2-forslag → eksplicit admin-konfliktreview.
+- Pilotområderne er fastlagt til Blåvand/Rømø, Limfjorden og Lolland/Falster. Acceptkriterierne tillader ingen utilsigtede overlap, indlejring, dobbelt kystdækning, genoplivede tombstones, tavst tabte overrides, udokumenteret selvstændig sampling eller RavScore-ændring.
+- Datafordeler-adgangen er oprettet af ejeren som repository-secret `DATAFORDELER_API_KEY`. Den nye 4.0.126-kandidat isolerer GeoDanmark til et manuelt valgt, score-neutralt job med central adminhydrering, private artifacts og ingen Pages-rettigheder. Secretnavnet er kontrolleret mod workflowets forventede miljøvariabel; værdien er aldrig læst eller logget. Første CI-fetch afventer.
+
+## 2026-08-09 – 4.0.126 sikker GeoDanmark-integrationskandidat
+- GeoDanmark-fetcheren læser kun `DATAFORDELER_API_KEY` fra procesmiljøet, udfører først WFS capabilities og derefter begrænsede pilotudtræk, og producerer en secret-fri rapport med kildehashes og featuretal.
+- Et isoleret `geometry-v2-pilot` workflowjob kan kun startes manuelt med `geometry_v2_pilot=true`. Det henter central admin-konfiguration og tombstones før source fetch, har kun læseadgang til repositoryet og uploader et privat 14-dages pilotartifact.
+- Den hyppige vejrproduktion, Pages-artifactet og RavScore er isoleret fra GeoDanmark-piloten. Første CI-run er påkrævet før enhver påstand om fungerende adgang eller modtaget kildedata.
+
 ## 2026-08-08 – 4.0.125 fuld DMI-timeproveniens
 - Brugerens godkendelse af næste roadmaptrin udløste implementering af provenance fra STAC/GRIB til beskyttede forecasttimer.
 - Bulkparsergeneration 14 gemmer collection, modelkørsel og native gyldighedstid pr. komponent; timebyggeren beregner lead time, prognosealder, temporal status og native kildetider.

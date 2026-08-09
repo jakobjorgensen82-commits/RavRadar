@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0.0-pilot",
+  "status": "pilot",
+  "generatedAt": null,
+  "sourceManifest": {
+    "primary": "GeoDanmark:Kyst",
+    "licence": "CC-BY-4.0",
+    "costClass": "free-data-only",
+    "retrieval": "not-fetched",
+    "retrievedAt": null,
+    "sourceCrs": "EPSG:25832",
+    "outputCrs": "EPSG:4326",
+    "attribution": "GeoDanmark / Klimadatastyrelsen, CC BY 4.0",
+    "contentHash": null,
+    "accessNote": "Gratis data; adgangsnøgle må ikke medføre betalingsafhængighed og må aldrig gemmes i repositoryet."
+  },
+  "zones": [],
+  "migrationLog": []
+}
+

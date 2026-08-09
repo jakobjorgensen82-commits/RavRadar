@@ -1,5 +1,14 @@
 # Kendte åbne og overvågede forhold
 
+## National zone- og kystgeometri – aktiv pilot efter DEC-0032
+- **ISSUE-ZONE-GEOMETRY-NATIONAL-CONSISTENCY – AKTIV:** Det aktuelle register indeholder geografisk misvisende navne/placeringer, utilsigtede overlap og mange kystlinjer, der fortsat bygger på ældre AI-/fallbackgeometri. Integritetstests beviser propagation, men ikke en korrekt national kystpartition.
+- **ISSUE-MULTI-ANCHOR-SAMPLING-GAP – AKTIV:** Admin og scoreforklaring understøtter flere lokale retningsankre, men den almindelige vejrproduktion bygger fortsat primært én zoneserie. Flere autogenererede punkter må ikke markedsføres som forskellig lokal vind/strøm, før sampling og provenance er implementeret pr. kystdel.
+- **ISSUE-ZONE-ID-SEMANTIC-DRIFT – AKTIV:** Omdøbning eller flytning kan få et stabilt teknisk ID til at beskrive en ny geografisk strækning. Historik, observationer, regler og adaptive data kræver en eksplicit migrationsklassifikation.
+- **ISSUE-FJORD-EXCLUSION-BOUNDARIES – AKTIV:** Kravet om at udelukke alle fjorde undtagen Limfjorden kræver dokumenterede grænser ved mundinger, sunde og tvivlsomme indre farvande; det kan ikke skjules i navnematch eller en generel bufferheuristik.
+- **ISSUE-COASTAL-TRAP-EVIDENCE – PLANLAGT:** Høfder, læsider og andre lokale ravfælder kan være fagligt relevante, men deres scoreværdi er endnu ikke valideret og forbliver score-neutral under geometriarbejdet.
+- **ISSUE-REPOSITORY-VS-CENTRAL-ZONE-COUNT – AKTIV:** Read-only v2-audit finder 209 aktive zoner i `data/zones.geojson`, mens den senest dokumenterede centrale produktionsbestand er 208 efter administratorsletning. Pilotgeneratoren skal anvende central hydrering/tombstones før forslag og må ikke genoplive en slettet zone.
+- **ISSUE-GEODANMARK-FIRST-CI-PILOT – AFVENTER CI:** `DATAFORDELER_API_KEY` er konfigureret som repository secret, men første capabilities-/feature-kald kan kun bevises i det isolerede manuelle Actions-job. Indtil da må hverken adgang, lagenavne eller dataindhold kaldes produktionsverificeret.
+
 ## 4.0.124 – komponenthuller og manglende timeproveniens
 - **ISSUE-FIVE-ZONES-NO-SHARED-DKSS-GRID – PRODUKTIONSVERIFICERET LØST:** Bredere kandidatsøgning lukkede tre zoner; centrale adminrettelser lukkede Nibe/Sebbersund og Falster/Nysted. Alle fem har nu direkte DKSS-vindhale.
 - **ISSUE-COMPONENT-FIVE-DAY-COVERAGE – AKTIV:** Seneste snapshot havde 3 Limfjordszoner helt uden bølger, 13 med 117 bølgetimer og 8 med kun 101 timer for strøm, vandstand og vandtemperatur. Missing bevares korrekt og må ikke skjules med nul eller stale værdier.

@@ -54,7 +54,7 @@ ok(sql.includes(`\"handbookVersion\":\"${version}\"`)||sql.includes(`\"handbookV
 const sync=await read('scripts/sync-protected-admin-assets.mjs');
 ok(sync.includes("sb_secret_")||sync.includes("startsWith('sb_secret_')"),'Supabase sync mangler understøttelse af sb_secret_');
 const workflow=await read('.github/workflows/update-and-deploy.yml');
-for(const protectedPath of ['handbook.html','documentation.html','data/diagnostics/','data/live/weather-health.json','data/live/ravradar-runtime-diagnostics.json','data/live/dmi-water-stations.json']){
+for(const protectedPath of ['handbook.html','documentation.html','data/diagnostics/','data/geometry-v2/','.geometry-v2-work/','data/live/weather-health.json','data/live/ravradar-runtime-diagnostics.json','data/live/dmi-water-stations.json']){
   ok(workflow.includes(`--exclude '${protectedPath}'`)||workflow.includes(`--exclude \"${protectedPath}\"`),`Pages-workflow udelukker ikke ${protectedPath}`);
 }
 ok(!workflow.includes("--exclude 'js/services/handbook-review-store.js'"),'Pages-workflow må ikke udelukke et browsermodul som admin importerer');
@@ -76,7 +76,7 @@ const decision=await read('docs/rdks/10_DECISIONS/DEC-0013-RELEASE-GOVERNANCE.md
 ok(decision.includes('Obligatorisk Release Governance'),'RDKS release-governance mangler');
 const rules=await read('docs/rdks/01_AI_OPERATING_RULES.md');
 ok(rules.includes('Bindende release-gate'),'AI operating rules mangler bindende release-gate');
-const trackedSecretPatterns=[/SUPABASE_SERVICE_ROLE_KEY\s*[:=]\s*["']?(sb_secret_|eyJ)/i,/DMI_API_KEY\s*[:=]\s*["'][^$]/i];
+const trackedSecretPatterns=[/SUPABASE_SERVICE_ROLE_KEY\s*[:=]\s*["']?(sb_secret_|eyJ)/i,/DMI_API_KEY\s*[:=]\s*["'][^$]/i,/DATAFORDELER_API_KEY\s*[:=]\s*["'][^$]/i];
 for(const rel of ['config.js','.github/workflows/update-and-deploy.yml','scripts/sync-protected-admin-assets.mjs']){
   const text=await read(rel); for(const rx of trackedSecretPatterns)ok(!rx.test(text),`${rel} ser ud til at indeholde en konkret hemmelig nøgle`);
 }

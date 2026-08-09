@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.125
+**Håndbogsversion:** 4.0.126
 
 **Opdateret:** 1. august 2026
 
@@ -1361,6 +1361,8 @@ Fra 4.0.117 holder RavRadar derfor kandidater adskilt pr. vertikallag. U og V m�
 Kystlinje, landpunkt, havpunkt, retning og andre administratorredigerbare zonefelter er ikke kosmetiske indstillinger. De påvirker blandt andet hvilket havområde RavRadar leder efter data i, lokale retninger og hele den efterfølgende score-/prognosekæde. Når administratoren gemmer en korrekt ændring centralt, skal produktionsworkflowet hente den og anvende den før vejrproduktionen.
 
 I den afsluttende 4.0.117-kontrol blev tre Limfjordszoners kystlinjer og land-/havpunkter rettet i admin, fordi de var geografisk forkerte. Den friske produktionskørsel #1750 viste ændringerne som centralt anvendte og gennemførte weather-kæden. Det er derfor forkert at reparere en fremtidig test ved at hardcode tidligere koordinater. Testen skal kontrollere, at den aktuelle gyldige admingeometri propagere korrekt.
+
+Kystgeometri v2 bygges parallelt og score-neutralt. Den bruger gratis GeoDanmark-kildedata i et særskilt manuelt pilotjob, aldrig i det hyppige vejrloop. Jobbet henter først den centrale admingeometri og dens slettede zoner, så et automatisk forslag ikke kan genoplive eller overskrive ejerens rettelser. Kilden, rå pilotdata og API-adgang ligger ikke i den offentlige Pages-side. Flere lokale kystdele må først blive selvstændige vejrmålepunkter, når DMI-sampling, provenance, score og brugerflade faktisk understøtter dem ende til ende.
 
 ### 61.4 Hvad “stabil” betyder
 RavRadar skelner mellem tre niveauer:

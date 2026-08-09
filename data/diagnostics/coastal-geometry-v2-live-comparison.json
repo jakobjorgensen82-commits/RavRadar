@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "1.0.0",
+  "checkedAt": null,
+  "checkedDate": "2026-08-08",
+  "mode": "read-only-public-vs-repository",
+  "publicSource": "https://jakobjorgensen82-commits.github.io/RavRadar/data/zones.geojson",
+  "repositoryActiveZoneCount": 209,
+  "publicActiveZoneCount": 208,
+  "repositoryMultiAnchorZoneCount": 0,
+  "publicMultiAnchorZoneCount": 18,
+  "repositoryFlaggedZoneCount": 116,
+  "publicFlaggedZoneCount": 112,
+  "repositoryOverlapPairCountAbove001Km2": 157,
+  "publicOverlapPairCountAbove001Km2": 156,
+  "centrallyDeletedZoneIds": [
+    "DK-B02-14"
+  ],
+  "publicNameDifferences": [
+    {
+      "zoneId": "DK-B10-05",
+      "repositoryName": "Bogø og Farø",
+      "publicName": "Stubbekøbing og Farøbroerne"
+    }
+  ],
+  "publicMultiAnchorZones": [
+    { "zoneId": "DK-B02-01", "count": 2, "parts": ["Ålbæk", "Bunken"] },
+    { "zoneId": "DK-B02-04", "count": 2, "parts": ["Frederikshavn nord", "Frederikshavn syd"] },
+    { "zoneId": "DK-B02-06", "count": 2, "parts": ["Lyngså", "Voerså"] },
+    { "zoneId": "DK-B02-09", "count": 2, "parts": ["Hals øst", "Hals syd"] },
+    { "zoneId": "DK-B02-15", "count": 2, "parts": ["Udbyhøj", "Hevring"] },
+    { "zoneId": "DK-B03-13", "count": 2, "parts": ["Nord for fyret", "Syd for fyret"] },
+    { "zoneId": "DK-B05-10", "count": 3, "parts": ["Primær kystdel", "Kystdel 2", "Kystdel 3"] },
+    { "zoneId": "DK-B05-17", "count": 2, "parts": ["sydøst", "sydvest"] },
+    { "zoneId": "DK-B05-24", "count": 2, "parts": ["Østhavn", "Rørdal"] },
+    { "zoneId": "DK-B06-20", "count": 3, "parts": ["Sydlige kyst", "Østlige kyst", "Nordlige kyst"] },
+    { "zoneId": "DK-B07-27", "count": 3, "parts": ["Assens", "Ebberup", "Helnæs vest"] },
+    { "zoneId": "DK-B09-06", "count": 2, "parts": ["Dragør", "Sydstranden"] },
+    { "zoneId": "DK-B09-07", "count": 2, "parts": ["Vildtreservatet", "Sydstranden"] },
+    { "zoneId": "DK-B09-08", "count": 2, "parts": ["Greve strand", "Avedøre holme"] },
+    { "zoneId": "DK-B09-15", "count": 2, "parts": ["Sydvestlig kystdel", "Sydøstlig kystdel"] },
+    { "zoneId": "DK-B10-10", "count": 4, "parts": ["Nysted kysten", "Nord for Guldborg", "Tårs vig øst", "Tårs vig syd"] },
+    { "zoneId": "DK-B10-15", "count": 3, "parts": ["Birket", "Klinteodde", "Nakskov"] },
+    { "zoneId": "DK-B10-24", "count": 2, "parts": ["nordvest", "nordøst"] }
+  ],
+  "conclusion": "Pilotinput must hydrate central deletions, renames, coastline edits and direction anchors before any v2 proposal is generated. Repository geometry alone is not authoritative runtime truth."
+}

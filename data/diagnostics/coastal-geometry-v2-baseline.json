@@ -1,0 +1,2862 @@
+{
+  "schemaVersion": "1.0.0",
+  "mode": "read-only-baseline",
+  "source": "data/zones.geojson",
+  "activeZoneCount": 209,
+  "multiAnchorZoneCount": 0,
+  "coastLineSourceCounts": {
+    "GSHHS coastline; 45 m landward offset from mapped shoreline": 101,
+    "RavRadar controlled Wadden Sea shoreline; land-side beach alignment": 2,
+    "RavRadar controlled Rømø west shoreline; manually corrected 4.0.64": 1,
+    "missing": 1,
+    "GSHHS intermediate coastline clipped from RavRadar master coastline": 96,
+    "GSHHS intermediate coastline clipped from RavRadar master coastline; 45 m landward offset": 8
+  },
+  "refinementModeCounts": {
+    "constrained-nearest-natural-coast": 60,
+    "audited-existing-fallback": 148,
+    "manual-authoritative-override": 1
+  },
+  "flaggedZoneCount": 116,
+  "overlapPairCountAbove001Km2": 157,
+  "largestOverlaps": [
+    {
+      "leftZoneId": "DK-B10-15",
+      "rightZoneId": "DK-B10-17",
+      "areaKm2": 385.2563,
+      "percentOfSmaller": 100.0
+    },
+    {
+      "leftZoneId": "DK-B10-15",
+      "rightZoneId": "DK-B10-16",
+      "areaKm2": 314.0584,
+      "percentOfSmaller": 51.58
+    },
+    {
+      "leftZoneId": "DK-B10-10",
+      "rightZoneId": "DK-B10-11",
+      "areaKm2": 275.7158,
+      "percentOfSmaller": 70.59
+    },
+    {
+      "leftZoneId": "DK-B10-02",
+      "rightZoneId": "DK-B10-05",
+      "areaKm2": 239.7551,
+      "percentOfSmaller": 95.46
+    },
+    {
+      "leftZoneId": "DK-B10-02",
+      "rightZoneId": "DK-B10-07",
+      "areaKm2": 231.2987,
+      "percentOfSmaller": 54.42
+    },
+    {
+      "leftZoneId": "DK-B08-10",
+      "rightZoneId": "DK-B08-11",
+      "areaKm2": 201.5147,
+      "percentOfSmaller": 56.6
+    },
+    {
+      "leftZoneId": "DK-B10-01",
+      "rightZoneId": "DK-B10-02",
+      "areaKm2": 189.5638,
+      "percentOfSmaller": 34.81
+    },
+    {
+      "leftZoneId": "DK-B08-13",
+      "rightZoneId": "DK-B08-14",
+      "areaKm2": 175.8728,
+      "percentOfSmaller": 100.0
+    },
+    {
+      "leftZoneId": "DK-B10-16",
+      "rightZoneId": "DK-B10-17",
+      "areaKm2": 164.5681,
+      "percentOfSmaller": 42.72
+    },
+    {
+      "leftZoneId": "DK-B10-02",
+      "rightZoneId": "DK-B10-06",
+      "areaKm2": 160.4598,
+      "percentOfSmaller": 41.66
+    },
+    {
+      "leftZoneId": "DK-B10-05",
+      "rightZoneId": "DK-B10-06",
+      "areaKm2": 159.7399,
+      "percentOfSmaller": 63.6
+    },
+    {
+      "leftZoneId": "DK-B09-15",
+      "rightZoneId": "DK-B10-01",
+      "areaKm2": 159.4041,
+      "percentOfSmaller": 61.51
+    },
+    {
+      "leftZoneId": "DK-B08-11",
+      "rightZoneId": "DK-B08-12",
+      "areaKm2": 150.2483,
+      "percentOfSmaller": 51.89
+    },
+    {
+      "leftZoneId": "DK-B10-18",
+      "rightZoneId": "DK-B10-24",
+      "areaKm2": 140.438,
+      "percentOfSmaller": 78.58
+    },
+    {
+      "leftZoneId": "DK-B08-09",
+      "rightZoneId": "DK-B08-11",
+      "areaKm2": 133.5268,
+      "percentOfSmaller": 72.71
+    },
+    {
+      "leftZoneId": "DK-B08-03",
+      "rightZoneId": "DK-B08-04",
+      "areaKm2": 128.1014,
+      "percentOfSmaller": 66.63
+    },
+    {
+      "leftZoneId": "DK-B09-14",
+      "rightZoneId": "DK-B10-01",
+      "areaKm2": 124.5819,
+      "percentOfSmaller": 58.46
+    },
+    {
+      "leftZoneId": "DK-B12-06",
+      "rightZoneId": "DK-B12-07",
+      "areaKm2": 115.7111,
+      "percentOfSmaller": 41.35
+    },
+    {
+      "leftZoneId": "DK-B09-15",
+      "rightZoneId": "DK-B10-02",
+      "areaKm2": 114.8739,
+      "percentOfSmaller": 44.33
+    },
+    {
+      "leftZoneId": "DK-B10-21",
+      "rightZoneId": "DK-B10-22",
+      "areaKm2": 111.4914,
+      "percentOfSmaller": 40.03
+    },
+    {
+      "leftZoneId": "DK-B08-12",
+      "rightZoneId": "DK-B08-13",
+      "areaKm2": 106.4092,
+      "percentOfSmaller": 39.26
+    },
+    {
+      "leftZoneId": "DK-B10-13",
+      "rightZoneId": "DK-B10-14",
+      "areaKm2": 103.45,
+      "percentOfSmaller": 22.48
+    },
+    {
+      "leftZoneId": "DK-B09-13",
+      "rightZoneId": "DK-B09-14",
+      "areaKm2": 96.5202,
+      "percentOfSmaller": 45.29
+    },
+    {
+      "leftZoneId": "DK-B09-15",
+      "rightZoneId": "DK-B10-05",
+      "areaKm2": 94.0411,
+      "percentOfSmaller": 37.44
+    },
+    {
+      "leftZoneId": "DK-B10-12",
+      "rightZoneId": "DK-B10-13",
+      "areaKm2": 92.0094,
+      "percentOfSmaller": 21.04
+    },
+    {
+      "leftZoneId": "DK-B10-05",
+      "rightZoneId": "DK-B10-07",
+      "areaKm2": 91.4455,
+      "percentOfSmaller": 36.41
+    },
+    {
+      "leftZoneId": "DK-B09-15",
+      "rightZoneId": "DK-B10-06",
+      "areaKm2": 89.83,
+      "percentOfSmaller": 34.66
+    },
+    {
+      "leftZoneId": "DK-B08-11",
+      "rightZoneId": "DK-B08-13",
+      "areaKm2": 81.3349,
+      "percentOfSmaller": 30.01
+    },
+    {
+      "leftZoneId": "DK-B10-09",
+      "rightZoneId": "DK-B10-10",
+      "areaKm2": 80.5344,
+      "percentOfSmaller": 21.93
+    },
+    {
+      "leftZoneId": "DK-B09-13",
+      "rightZoneId": "DK-B10-01",
+      "areaKm2": 79.0323,
+      "percentOfSmaller": 21.5
+    },
+    {
+      "leftZoneId": "DK-B10-20",
+      "rightZoneId": "DK-B10-21",
+      "areaKm2": 78.4942,
+      "percentOfSmaller": 33.39
+    },
+    {
+      "leftZoneId": "DK-B08-12",
+      "rightZoneId": "DK-B08-14",
+      "areaKm2": 77.8929,
+      "percentOfSmaller": 44.29
+    },
+    {
+      "leftZoneId": "DK-B10-18",
+      "rightZoneId": "DK-B10-19",
+      "areaKm2": 76.6971,
+      "percentOfSmaller": 41.58
+    },
+    {
+      "leftZoneId": "DK-B09-12",
+      "rightZoneId": "DK-B09-13",
+      "areaKm2": 72.3824,
+      "percentOfSmaller": 42.57
+    },
+    {
+      "leftZoneId": "DK-B10-07",
+      "rightZoneId": "DK-B10-08",
+      "areaKm2": 71.6915,
+      "percentOfSmaller": 24.96
+    },
+    {
+      "leftZoneId": "DK-B10-11",
+      "rightZoneId": "DK-B10-12",
+      "areaKm2": 71.1428,
+      "percentOfSmaller": 18.21
+    },
+    {
+      "leftZoneId": "DK-B08-09",
+      "rightZoneId": "DK-B08-10",
+      "areaKm2": 70.871,
+      "percentOfSmaller": 38.59
+    },
+    {
+      "leftZoneId": "DK-B08-18",
+      "rightZoneId": "DK-B09-01",
+      "areaKm2": 67.9608,
+      "percentOfSmaller": 58.27
+    },
+    {
+      "leftZoneId": "DK-B10-08",
+      "rightZoneId": "DK-B10-09",
+      "areaKm2": 64.7628,
+      "percentOfSmaller": 22.54
+    },
+    {
+      "leftZoneId": "DK-B08-01",
+      "rightZoneId": "DK-B08-02",
+      "areaKm2": 64.4149,
+      "percentOfSmaller": 34.9
+    },
+    {
+      "leftZoneId": "DK-B10-19",
+      "rightZoneId": "DK-B10-23",
+      "areaKm2": 63.9744,
+      "percentOfSmaller": 22.47
+    },
+    {
+      "leftZoneId": "DK-B08-10",
+      "rightZoneId": "DK-B08-12",
+      "areaKm2": 62.5534,
+      "percentOfSmaller": 21.6
+    },
+    {
+      "leftZoneId": "DK-B10-01",
+      "rightZoneId": "DK-B10-05",
+      "areaKm2": 59.7994,
+      "percentOfSmaller": 23.81
+    },
+    {
+      "leftZoneId": "DK-B04-07",
+      "rightZoneId": "DK-B04-08",
+      "areaKm2": 57.5869,
+      "percentOfSmaller": 82.86
+    },
+    {
+      "leftZoneId": "DK-B10-02",
+      "rightZoneId": "DK-B10-04",
+      "areaKm2": 57.1213,
+      "percentOfSmaller": 18.52
+    },
+    {
+      "leftZoneId": "DK-B09-11",
+      "rightZoneId": "DK-B09-12",
+      "areaKm2": 56.5986,
+      "percentOfSmaller": 33.29
+    },
+    {
+      "leftZoneId": "DK-B10-06",
+      "rightZoneId": "DK-B10-10",
+      "areaKm2": 55.7322,
+      "percentOfSmaller": 14.47
+    },
+    {
+      "leftZoneId": "DK-B08-13",
+      "rightZoneId": "DK-B08-15",
+      "areaKm2": 55.5524,
+      "percentOfSmaller": 30.31
+    },
+    {
+      "leftZoneId": "DK-B07-19",
+      "rightZoneId": "DK-B10-14",
+      "areaKm2": 55.1653,
+      "percentOfSmaller": 100.0
+    },
+    {
+      "leftZoneId": "DK-B08-07",
+      "rightZoneId": "DK-B08-08",
+      "areaKm2": 54.3782,
+      "percentOfSmaller": 36.08
+    }
+  ],
+  "zones": [
+    {
+      "zoneId": "DK-B01-01",
+      "name": "Agger og Krik Vig",
+      "coastType": "west",
+      "coastLinePoints": 15,
+      "coastLineLengthKm": 6.337,
+      "coastInsideOwnPolygonRatio": 0.990387,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 107.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B01-02",
+      "name": "Lyngby og Lodbjerg",
+      "coastType": "west",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 7.494,
+      "coastInsideOwnPolygonRatio": 0.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B01-03",
+      "name": "Stenbjerg og Vorupør",
+      "coastType": "west",
+      "coastLinePoints": 12,
+      "coastLineLengthKm": 14.103,
+      "coastInsideOwnPolygonRatio": 0.438603,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B01-04",
+      "name": "Vangså og Klitmøller",
+      "coastType": "west",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 13.768,
+      "coastInsideOwnPolygonRatio": 0.50893,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B01-05",
+      "name": "Hanstholm og Hamborg",
+      "coastType": "west",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 11.077,
+      "coastInsideOwnPolygonRatio": 0.411878,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 108.4,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B01-06",
+      "name": "Vigsø og Lild Strand",
+      "coastType": "west",
+      "coastLinePoints": 11,
+      "coastLineLengthKm": 14.048,
+      "coastInsideOwnPolygonRatio": 0.380464,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 154.6,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B01-07",
+      "name": "Bulbjerg og Thorup Strand",
+      "coastType": "west",
+      "coastLinePoints": 15,
+      "coastLineLengthKm": 18.947,
+      "coastInsideOwnPolygonRatio": 0.267738,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 161.3,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B01-08",
+      "name": "Slettestrand og Svinkløv",
+      "coastType": "west",
+      "coastLinePoints": 13,
+      "coastLineLengthKm": 15.177,
+      "coastInsideOwnPolygonRatio": 0.329649,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 162.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B01-09",
+      "name": "Tranum og Rødhus",
+      "coastType": "west",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 8.721,
+      "coastInsideOwnPolygonRatio": 0.733139,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 151.6,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B01-10",
+      "name": "Blokhus og Hune",
+      "coastType": "west",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 7.704,
+      "coastInsideOwnPolygonRatio": 0.845811,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 140.9,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B01-11",
+      "name": "Saltum og Grønhøj",
+      "coastType": "west",
+      "coastLinePoints": 3,
+      "coastLineLengthKm": 7.516,
+      "coastInsideOwnPolygonRatio": 0.930777,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 135.8,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B01-12",
+      "name": "Løkken og Furreby",
+      "coastType": "west",
+      "coastLinePoints": 6,
+      "coastLineLengthKm": 7.877,
+      "coastInsideOwnPolygonRatio": 0.902531,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 126.6,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B01-13",
+      "name": "Nørre Lyngby og Rubjerg",
+      "coastType": "west",
+      "coastLinePoints": 2,
+      "coastLineLengthKm": 6.166,
+      "coastInsideOwnPolygonRatio": 0.273745,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 112.4,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B01-14",
+      "name": "Lønstrup og Nørlev",
+      "coastType": "west",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 9.184,
+      "coastInsideOwnPolygonRatio": 0.572872,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 121.8,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B01-15",
+      "name": "Tornby og Hirtshals",
+      "coastType": "west",
+      "coastLinePoints": 5,
+      "coastLineLengthKm": 9.415,
+      "coastInsideOwnPolygonRatio": 0.531544,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 119.2,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B01-16",
+      "name": "Kjul og Uggerby",
+      "coastType": "west",
+      "coastLinePoints": 3,
+      "coastLineLengthKm": 8.338,
+      "coastInsideOwnPolygonRatio": 0.505668,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 165.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B01-17",
+      "name": "Tversted og Skiveren",
+      "coastType": "west",
+      "coastLinePoints": 5,
+      "coastLineLengthKm": 11.485,
+      "coastInsideOwnPolygonRatio": 0.288228,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 176.6,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B01-18",
+      "name": "Kandestederne og Hulsig",
+      "coastType": "west",
+      "coastLinePoints": 3,
+      "coastLineLengthKm": 12.801,
+      "coastInsideOwnPolygonRatio": 0.441314,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 163.4,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B01-19",
+      "name": "Skagen vest og Damstederne",
+      "coastType": "west",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 8.801,
+      "coastInsideOwnPolygonRatio": 0.307956,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 144.5,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B01-20",
+      "name": "Grenen og Skagen øst",
+      "coastType": "east",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 7.87,
+      "coastInsideOwnPolygonRatio": 0.799381,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 278.2,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B02-01",
+      "name": "Ålbæk og Bunken",
+      "coastType": "east",
+      "coastLinePoints": 5,
+      "coastLineLengthKm": 8.13,
+      "coastInsideOwnPolygonRatio": 0.600013,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 262.7,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B02-02",
+      "name": "Napstjert og Jerup",
+      "coastType": "east",
+      "coastLinePoints": 3,
+      "coastLineLengthKm": 4.376,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 256.1,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B02-03",
+      "name": "Bratten og Strandby",
+      "coastType": "east",
+      "coastLinePoints": 3,
+      "coastLineLengthKm": 5.462,
+      "coastInsideOwnPolygonRatio": 0.983663,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 277.8,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B02-04",
+      "name": "Frederikshavn og Bangsbo",
+      "coastType": "east",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 10.722,
+      "coastInsideOwnPolygonRatio": 0.699031,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 277.5,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B02-05",
+      "name": "Sæby og Sulbæk",
+      "coastType": "east",
+      "coastLinePoints": 15,
+      "coastLineLengthKm": 11.749,
+      "coastInsideOwnPolygonRatio": 0.682114,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 267.3,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B02-06",
+      "name": "Lyngså og Voerså",
+      "coastType": "east",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 12.427,
+      "coastInsideOwnPolygonRatio": 0.779842,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 278.3,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B02-07",
+      "name": "Asaa og Melholt",
+      "coastType": "east",
+      "coastLinePoints": 5,
+      "coastLineLengthKm": 15.216,
+      "coastInsideOwnPolygonRatio": 0.591223,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 269.6,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B02-08",
+      "name": "Hou og Bisnap",
+      "coastType": "east",
+      "coastLinePoints": 10,
+      "coastLineLengthKm": 9.323,
+      "coastInsideOwnPolygonRatio": 0.991547,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 249.9,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B02-09",
+      "name": "Hals og Nordmandshage",
+      "coastType": "east",
+      "coastLinePoints": 10,
+      "coastLineLengthKm": 2.44,
+      "coastInsideOwnPolygonRatio": 0.517011,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 274.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B02-10",
+      "name": "Egense og Mou",
+      "coastType": "limfjord",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 5.541,
+      "coastInsideOwnPolygonRatio": 0.783431,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 178.5,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B02-11",
+      "name": "Dokkedal og Mulbjerge",
+      "coastType": "east",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 9.547,
+      "coastInsideOwnPolygonRatio": 0.822399,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 268.2,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B02-12",
+      "name": "Øster Hurup og Als",
+      "coastType": "east",
+      "coastLinePoints": 19,
+      "coastLineLengthKm": 12.864,
+      "coastInsideOwnPolygonRatio": 0.594393,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 268.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B02-13",
+      "name": "Als Odde og Helberskov",
+      "coastType": "east",
+      "coastLinePoints": 5,
+      "coastLineLengthKm": 7.015,
+      "coastInsideOwnPolygonRatio": 0.897685,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 305.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B02-14",
+      "name": "Havnø og Mariager Fjord øst",
+      "coastType": "east",
+      "coastLinePoints": 13,
+      "coastLineLengthKm": 13.825,
+      "coastInsideOwnPolygonRatio": 0.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 295.9,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B02-15",
+      "name": "Udbyhøj og Stenrevet",
+      "coastType": "east",
+      "coastLinePoints": 8,
+      "coastLineLengthKm": 15.834,
+      "coastInsideOwnPolygonRatio": 0.538567,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 268.5,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B03-01",
+      "name": "Harboøre og Vrist",
+      "coastType": "west",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 6.978,
+      "coastInsideOwnPolygonRatio": 0.703092,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B03-02",
+      "name": "Vejlby Klit og Ferring",
+      "coastType": "west",
+      "coastLinePoints": 3,
+      "coastLineLengthKm": 6.777,
+      "coastInsideOwnPolygonRatio": 0.988635,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B03-03",
+      "name": "Bovbjerg og Trans",
+      "coastType": "west",
+      "coastLinePoints": 6,
+      "coastLineLengthKm": 10.441,
+      "coastInsideOwnPolygonRatio": 0.991843,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B03-04",
+      "name": "Thorsminde og Husby Klit",
+      "coastType": "west",
+      "coastLinePoints": 3,
+      "coastLineLengthKm": 12.19,
+      "coastInsideOwnPolygonRatio": 0.999547,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B03-05",
+      "name": "Fjand og Vedersø Klit",
+      "coastType": "west",
+      "coastLinePoints": 3,
+      "coastLineLengthKm": 13.271,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B03-06",
+      "name": "Søndervig og Klegod",
+      "coastType": "west",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 14.001,
+      "coastInsideOwnPolygonRatio": 0.999139,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B03-07",
+      "name": "Hvide Sande nord",
+      "coastType": "west",
+      "coastLinePoints": 5,
+      "coastLineLengthKm": 9.035,
+      "coastInsideOwnPolygonRatio": 0.985755,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B03-08",
+      "name": "Hvide Sande syd og Årgab",
+      "coastType": "west",
+      "coastLinePoints": 2,
+      "coastLineLengthKm": 6.769,
+      "coastInsideOwnPolygonRatio": 0.997042,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B03-09",
+      "name": "Haurvig og Skodbjerge",
+      "coastType": "west",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 8.932,
+      "coastInsideOwnPolygonRatio": 0.995133,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B03-10",
+      "name": "Nymindegab og Houstrup",
+      "coastType": "west",
+      "coastLinePoints": 5,
+      "coastLineLengthKm": 9.667,
+      "coastInsideOwnPolygonRatio": 0.993813,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B03-11",
+      "name": "Henne Strand og Grærup",
+      "coastType": "west",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 9.298,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B03-12",
+      "name": "Vejers og Børsmose",
+      "coastType": "west",
+      "coastLinePoints": 3,
+      "coastLineLengthKm": 10.024,
+      "coastInsideOwnPolygonRatio": 0.997351,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B03-13",
+      "name": "Blåvand og Hvidbjerg",
+      "coastType": "west",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 11.534,
+      "coastInsideOwnPolygonRatio": 0.974042,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B03-14",
+      "name": "Skallingen nord",
+      "coastType": "west",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 7.183,
+      "coastInsideOwnPolygonRatio": 0.714945,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B03-15",
+      "name": "Skallingen syd",
+      "coastType": "west",
+      "coastLinePoints": 2,
+      "coastLineLengthKm": 5.914,
+      "coastInsideOwnPolygonRatio": 0.717969,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 67.4,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B04-01",
+      "name": "Ho Bugt og Oksby",
+      "coastType": "west",
+      "coastLinePoints": 10,
+      "coastLineLengthKm": 16.279,
+      "coastInsideOwnPolygonRatio": 0.563481,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B04-02",
+      "name": "Hjerting og Sædding",
+      "coastType": "west",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 17.085,
+      "coastInsideOwnPolygonRatio": 0.46008,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B04-03",
+      "name": "Fanø nord og Nordby",
+      "coastType": "west",
+      "coastLinePoints": 2,
+      "coastLineLengthKm": 0.048,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B04-04",
+      "name": "Fanø vest og Rindby",
+      "coastType": "west",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 4.724,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B04-05",
+      "name": "Fanø syd og Sønderho",
+      "coastType": "west",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 5.48,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B04-06",
+      "name": "Mandø vest",
+      "coastType": "west",
+      "coastLinePoints": 6,
+      "coastLineLengthKm": 23.689,
+      "coastInsideOwnPolygonRatio": 0.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B04-07",
+      "name": "Rømø nord og Lakolk",
+      "coastType": "west",
+      "coastLinePoints": 10,
+      "coastLineLengthKm": 13.744,
+      "coastInsideOwnPolygonRatio": 0.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B04-08",
+      "name": "Rømø vest og Kongsmark",
+      "coastType": "west",
+      "coastLinePoints": 9,
+      "coastLineLengthKm": 19.923,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B04-10",
+      "name": "Hjerpsted og Emmerlev",
+      "coastType": "west",
+      "coastLinePoints": 3,
+      "coastLineLengthKm": 14.688,
+      "coastInsideOwnPolygonRatio": 0.419997,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B04-11",
+      "name": "Højer og Vidå",
+      "coastType": "west",
+      "coastLinePoints": 6,
+      "coastLineLengthKm": 15.562,
+      "coastInsideOwnPolygonRatio": 0.382024,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B05-01",
+      "name": "Thyborøn og Harboøre Tange øst",
+      "coastType": "limfjord",
+      "coastLinePoints": 6,
+      "coastLineLengthKm": 13.814,
+      "coastInsideOwnPolygonRatio": 0.816264,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 281.1,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B05-02",
+      "name": "Agger Tange og Krik",
+      "coastType": "limfjord",
+      "coastLinePoints": 5,
+      "coastLineLengthKm": 5.949,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B05-03",
+      "name": "Nissum Bredning nord",
+      "coastType": "limfjord",
+      "coastLinePoints": 8,
+      "coastLineLengthKm": 11.774,
+      "coastInsideOwnPolygonRatio": 0.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 0.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B05-04",
+      "name": "Nissum Bredning syd",
+      "coastType": "limfjord",
+      "coastLinePoints": 8,
+      "coastLineLengthKm": 18.418,
+      "coastInsideOwnPolygonRatio": 0.333826,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 180.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B05-05",
+      "name": "Jegindø og Thyholm",
+      "coastType": "limfjord",
+      "coastLinePoints": 11,
+      "coastLineLengthKm": 20.173,
+      "coastInsideOwnPolygonRatio": 0.334925,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B05-06",
+      "name": "Venø og Struer",
+      "coastType": "limfjord",
+      "coastLinePoints": 11,
+      "coastLineLengthKm": 22.636,
+      "coastInsideOwnPolygonRatio": 0.344955,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B05-07",
+      "name": "Lemvig og Gjellerodde",
+      "coastType": "limfjord",
+      "coastLinePoints": 47,
+      "coastLineLengthKm": 19.591,
+      "coastInsideOwnPolygonRatio": 0.608541,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B05-08",
+      "name": "Toftum Bjerge og Remmerstrand",
+      "coastType": "limfjord",
+      "coastLinePoints": 15,
+      "coastLineLengthKm": 8.98,
+      "coastInsideOwnPolygonRatio": 0.429467,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 180.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B05-09",
+      "name": "Thisted Bredning vest",
+      "coastType": "limfjord",
+      "coastLinePoints": 8,
+      "coastLineLengthKm": 13.851,
+      "coastInsideOwnPolygonRatio": 0.353049,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B05-10",
+      "name": "Thisted og Vildsund",
+      "coastType": "limfjord",
+      "coastLinePoints": 10,
+      "coastLineLengthKm": 22.558,
+      "coastInsideOwnPolygonRatio": 0.345142,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 0.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B05-11",
+      "name": "Mors nord og Feggesund",
+      "coastType": "limfjord",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 12.556,
+      "coastInsideOwnPolygonRatio": 0.408425,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 180.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B05-12",
+      "name": "Mors vest og Ejerslev",
+      "coastType": "limfjord",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 19.332,
+      "coastInsideOwnPolygonRatio": 0.294423,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B05-13",
+      "name": "Mors syd og Nykøbing",
+      "coastType": "limfjord",
+      "coastLinePoints": 9,
+      "coastLineLengthKm": 21.36,
+      "coastInsideOwnPolygonRatio": 0.518179,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 0.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B05-14",
+      "name": "Sallingsund og Glyngøre",
+      "coastType": "limfjord",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 16.85,
+      "coastInsideOwnPolygonRatio": 0.494609,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B05-15",
+      "name": "Salling vest og Junget",
+      "coastType": "limfjord",
+      "coastLinePoints": 5,
+      "coastLineLengthKm": 13.787,
+      "coastInsideOwnPolygonRatio": 0.662572,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B05-16",
+      "name": "Fur nord",
+      "coastType": "limfjord",
+      "coastLinePoints": 5,
+      "coastLineLengthKm": 7.438,
+      "coastInsideOwnPolygonRatio": 0.150447,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 180.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B05-17",
+      "name": "Fur syd",
+      "coastType": "limfjord",
+      "coastLinePoints": 8,
+      "coastLineLengthKm": 21.125,
+      "coastInsideOwnPolygonRatio": 0.263531,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 0.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B05-18",
+      "name": "Løgstør og Aggersund",
+      "coastType": "limfjord",
+      "coastLinePoints": 5,
+      "coastLineLengthKm": 25.027,
+      "coastInsideOwnPolygonRatio": 0.292551,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B05-19",
+      "name": "Livø og Rønbjerg",
+      "coastType": "limfjord",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 5.333,
+      "coastInsideOwnPolygonRatio": 0.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B05-20",
+      "name": "Nibe Bredning vest",
+      "coastType": "limfjord",
+      "coastLinePoints": 3,
+      "coastLineLengthKm": 7.476,
+      "coastInsideOwnPolygonRatio": 0.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B05-21",
+      "name": "Nibe og Sebbersund",
+      "coastType": "limfjord",
+      "coastLinePoints": 11,
+      "coastLineLengthKm": 19.662,
+      "coastInsideOwnPolygonRatio": 0.367007,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B05-22",
+      "name": "Gjøl og Attrup",
+      "coastType": "limfjord",
+      "coastLinePoints": 6,
+      "coastLineLengthKm": 13.125,
+      "coastInsideOwnPolygonRatio": 0.529332,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 0.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B05-23",
+      "name": "Aalborg vest og Egholm",
+      "coastType": "limfjord",
+      "coastLinePoints": 5,
+      "coastLineLengthKm": 12.646,
+      "coastInsideOwnPolygonRatio": 0.670412,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 0.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B05-24",
+      "name": "Aalborg øst og Nørresundby",
+      "coastType": "limfjord",
+      "coastLinePoints": 5,
+      "coastLineLengthKm": 2.111,
+      "coastInsideOwnPolygonRatio": 0.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 0.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B05-25",
+      "name": "Hals Barre og Egense",
+      "coastType": "limfjord",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 7.706,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B06-01",
+      "name": "Gjerrild Nordstrand",
+      "coastType": "east",
+      "coastLinePoints": 3,
+      "coastLineLengthKm": 9.152,
+      "coastInsideOwnPolygonRatio": 0.780846,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 180.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B06-02",
+      "name": "Fornæs og Grenaa",
+      "coastType": "east",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 7.321,
+      "coastInsideOwnPolygonRatio": 0.783881,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B06-03",
+      "name": "Grenaa og Katholm",
+      "coastType": "east",
+      "coastLinePoints": 12,
+      "coastLineLengthKm": 8.021,
+      "coastInsideOwnPolygonRatio": 0.849053,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B06-04",
+      "name": "Bønnerup og Fjellerup",
+      "coastType": "east",
+      "coastLinePoints": 11,
+      "coastLineLengthKm": 15.199,
+      "coastInsideOwnPolygonRatio": 0.434443,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 180.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B06-05",
+      "name": "Rygarde og Sangstrup",
+      "coastType": "east",
+      "coastLinePoints": 10,
+      "coastLineLengthKm": 6.933,
+      "coastInsideOwnPolygonRatio": 0.891,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 231.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B06-06",
+      "name": "Karlby og Glatved",
+      "coastType": "east",
+      "coastLinePoints": 3,
+      "coastLineLengthKm": 7.75,
+      "coastInsideOwnPolygonRatio": 0.94276,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B06-07",
+      "name": "Jernhatten og Rugård",
+      "coastType": "east",
+      "coastLinePoints": 13,
+      "coastLineLengthKm": 8.164,
+      "coastInsideOwnPolygonRatio": 0.787095,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B06-08",
+      "name": "Ebeltoft og Ahl",
+      "coastType": "east",
+      "coastLinePoints": 12,
+      "coastLineLengthKm": 26.99,
+      "coastInsideOwnPolygonRatio": 0.534304,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B06-09",
+      "name": "Helgenæs øst",
+      "coastType": "east",
+      "coastLinePoints": 8,
+      "coastLineLengthKm": 14.298,
+      "coastInsideOwnPolygonRatio": 0.473637,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B06-10",
+      "name": "Helgenæs vest",
+      "coastType": "east",
+      "coastLinePoints": 8,
+      "coastLineLengthKm": 13.36,
+      "coastInsideOwnPolygonRatio": 0.499888,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B06-11",
+      "name": "Knebel og Skødshoved",
+      "coastType": "east",
+      "coastLinePoints": 3,
+      "coastLineLengthKm": 5.165,
+      "coastInsideOwnPolygonRatio": 0.651637,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B06-12",
+      "name": "Kalø og Følle",
+      "coastType": "east",
+      "coastLinePoints": 12,
+      "coastLineLengthKm": 15.014,
+      "coastInsideOwnPolygonRatio": 0.752657,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 0.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B06-13",
+      "name": "Vosnæs og Havhuse",
+      "coastType": "east",
+      "coastLinePoints": 3,
+      "coastLineLengthKm": 4.097,
+      "coastInsideOwnPolygonRatio": 0.581073,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 0.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B06-14",
+      "name": "Aarhus nord og Egå",
+      "coastType": "east",
+      "coastLinePoints": 3,
+      "coastLineLengthKm": 9.51,
+      "coastInsideOwnPolygonRatio": 0.676992,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B06-15",
+      "name": "Aarhus syd og Moesgård",
+      "coastType": "east",
+      "coastLinePoints": 22,
+      "coastLineLengthKm": 10.923,
+      "coastInsideOwnPolygonRatio": 0.568844,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B06-16",
+      "name": "Norsminde og Saksild",
+      "coastType": "east",
+      "coastLinePoints": 6,
+      "coastLineLengthKm": 9.179,
+      "coastInsideOwnPolygonRatio": 0.84357,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B06-17",
+      "name": "Hou og Odderkysten",
+      "coastType": "east",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 14.641,
+      "coastInsideOwnPolygonRatio": 0.444589,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B06-18",
+      "name": "Juelsminde og As Vig",
+      "coastType": "east",
+      "coastLinePoints": 11,
+      "coastLineLengthKm": 24.87,
+      "coastInsideOwnPolygonRatio": 0.505191,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B06-19",
+      "name": "Snaptun og Endelave nord",
+      "coastType": "east",
+      "coastLinePoints": 45,
+      "coastLineLengthKm": 21.116,
+      "coastInsideOwnPolygonRatio": 0.439209,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 180.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B06-20",
+      "name": "Endelave syd",
+      "coastType": "east",
+      "coastLinePoints": 13,
+      "coastLineLengthKm": 22.173,
+      "coastInsideOwnPolygonRatio": 0.355384,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 0.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-01",
+      "name": "Trelde Næs og Vejlby Fed",
+      "coastType": "east",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 28.192,
+      "coastInsideOwnPolygonRatio": 0.401108,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 34.6,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-02",
+      "name": "Strib og Røjle Klint",
+      "coastType": "west",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 25.314,
+      "coastInsideOwnPolygonRatio": 0.446716,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-03",
+      "name": "Middelfart og Hindsgavl",
+      "coastType": "west",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 23.803,
+      "coastInsideOwnPolygonRatio": 0.635904,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 242.3,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-04",
+      "name": "Båring Vig og Varbjerg",
+      "coastType": "east",
+      "coastLinePoints": 25,
+      "coastLineLengthKm": 20.244,
+      "coastInsideOwnPolygonRatio": 0.552077,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 0.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-05",
+      "name": "Bogense og Gyldensteen",
+      "coastType": "east",
+      "coastLinePoints": 5,
+      "coastLineLengthKm": 22.862,
+      "coastInsideOwnPolygonRatio": 0.370282,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 0.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-06",
+      "name": "Flyvesandet og Enebærodde",
+      "coastType": "east",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 29.012,
+      "coastInsideOwnPolygonRatio": 0.397808,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 0.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-07",
+      "name": "Hasmark og Hofmansgave",
+      "coastType": "east",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 27.097,
+      "coastInsideOwnPolygonRatio": 0.354841,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 21.7,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-08",
+      "name": "Kerteminde nord og Mølleå",
+      "coastType": "east",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 38.464,
+      "coastInsideOwnPolygonRatio": 0.224769,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-09",
+      "name": "Kerteminde syd og Lundsgård",
+      "coastType": "east",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 38.705,
+      "coastInsideOwnPolygonRatio": 0.271663,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-10",
+      "name": "Nyborg nord og Storebæltskysten",
+      "coastType": "east",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 41.231,
+      "coastInsideOwnPolygonRatio": 0.227188,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-11",
+      "name": "Nyborg syd og Knudshoved",
+      "coastType": "east",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 37.819,
+      "coastInsideOwnPolygonRatio": 0.371019,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-12",
+      "name": "Tårup og Kongshøj",
+      "coastType": "east",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 47.578,
+      "coastInsideOwnPolygonRatio": 0.092048,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 104.2,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-13",
+      "name": "Lundeborg og Elsehoved",
+      "coastType": "east",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 52.458,
+      "coastInsideOwnPolygonRatio": 0.178295,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 104.1,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-14",
+      "name": "Thurø og Smørmosen",
+      "coastType": "east",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 52.458,
+      "coastInsideOwnPolygonRatio": 0.115512,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-15",
+      "name": "Svendborg og Christiansminde",
+      "coastType": "east",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 52.037,
+      "coastInsideOwnPolygonRatio": 0.143571,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 129.5,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-16",
+      "name": "Tåsinge øst",
+      "coastType": "east",
+      "coastLinePoints": 82,
+      "coastLineLengthKm": 38.532,
+      "coastInsideOwnPolygonRatio": 0.029977,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-17",
+      "name": "Langeland nord og Lohals",
+      "coastType": "east",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 52.458,
+      "coastInsideOwnPolygonRatio": 0.063055,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 34.9,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-18",
+      "name": "Langeland øst og Spodsbjerg",
+      "coastType": "east",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 19.903,
+      "coastInsideOwnPolygonRatio": 0.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-19",
+      "name": "Langeland syd og Bagenkop",
+      "coastType": "east",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 23.001,
+      "coastInsideOwnPolygonRatio": 0.517645,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 180.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-20",
+      "name": "Langeland vest og Ristinge",
+      "coastType": "west",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 26.033,
+      "coastInsideOwnPolygonRatio": 0.406739,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 256.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-21",
+      "name": "Ærø nord og Søby",
+      "coastType": "west",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 25.061,
+      "coastInsideOwnPolygonRatio": 0.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 329.5,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-22",
+      "name": "Ærø syd og Voderup",
+      "coastType": "west",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 26.033,
+      "coastInsideOwnPolygonRatio": 0.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 194.4,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "name": "Ærø øst og Marstal",
+      "coastType": "east",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 26.033,
+      "coastInsideOwnPolygonRatio": 0.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 117.3,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-24",
+      "name": "Faaborg og Dyreborg",
+      "coastType": "west",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 28.373,
+      "coastInsideOwnPolygonRatio": 0.418596,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 180.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-25",
+      "name": "Horne Land og Bøjden",
+      "coastType": "west",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 31.714,
+      "coastInsideOwnPolygonRatio": 0.403421,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 210.4,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-26",
+      "name": "Helnæs og Torø",
+      "coastType": "west",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 27.28,
+      "coastInsideOwnPolygonRatio": 0.421929,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 230.4,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-27",
+      "name": "Assens og Sandager Næs",
+      "coastType": "west",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 30.679,
+      "coastInsideOwnPolygonRatio": 0.263873,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B07-28",
+      "name": "Bågø og Brandsø",
+      "coastType": "west",
+      "coastLinePoints": 34,
+      "coastLineLengthKm": 14.427,
+      "coastInsideOwnPolygonRatio": 0.018439,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B08-01",
+      "name": "Røsnæs nord",
+      "coastType": "west",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 15.716,
+      "coastInsideOwnPolygonRatio": 0.999996,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 146.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B08-02",
+      "name": "Røsnæs syd og Kalundborg",
+      "coastType": "west",
+      "coastLinePoints": 6,
+      "coastLineLengthKm": 22.0,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 34.1,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B08-03",
+      "name": "Sejerø nord",
+      "coastType": "west",
+      "coastLinePoints": 2,
+      "coastLineLengthKm": 4.373,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 155.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B08-04",
+      "name": "Sejerø syd",
+      "coastType": "west",
+      "coastLinePoints": 2,
+      "coastLineLengthKm": 4.38,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 25.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B08-05",
+      "name": "Nekselø og Havnsø",
+      "coastType": "west",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 17.306,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 120.6,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B08-06",
+      "name": "Vesterlyng og Bjørnstrup",
+      "coastType": "west",
+      "coastLinePoints": 5,
+      "coastLineLengthKm": 8.914,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 158.1,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B08-07",
+      "name": "Ordrup Næs og Kårup",
+      "coastType": "west",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 12.287,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 162.2,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B08-08",
+      "name": "Vejrhøj og Vindekilde",
+      "coastType": "west",
+      "coastLinePoints": 29,
+      "coastLineLengthKm": 15.06,
+      "coastInsideOwnPolygonRatio": 0.992736,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 162.2,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B08-09",
+      "name": "Høve og Gudmindrup",
+      "coastType": "west",
+      "coastLinePoints": 6,
+      "coastLineLengthKm": 15.248,
+      "coastInsideOwnPolygonRatio": 0.999993,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 168.1,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B08-10",
+      "name": "Sjællands Odde nord",
+      "coastType": "west",
+      "coastLinePoints": 16,
+      "coastLineLengthKm": 15.422,
+      "coastInsideOwnPolygonRatio": 0.945586,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 166.1,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B08-11",
+      "name": "Sjællands Odde syd",
+      "coastType": "west",
+      "coastLinePoints": 13,
+      "coastLineLengthKm": 38.967,
+      "coastInsideOwnPolygonRatio": 0.999607,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 17.7,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B08-12",
+      "name": "Nykøbing Sjælland og Rørvig",
+      "coastType": "east",
+      "coastLinePoints": 9,
+      "coastLineLengthKm": 22.966,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 321.9,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B08-13",
+      "name": "Klint og Korshage",
+      "coastType": "east",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 35.874,
+      "coastInsideOwnPolygonRatio": 0.999994,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 228.2,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B08-14",
+      "name": "Hundested og Lynæs",
+      "coastType": "west",
+      "coastLinePoints": 56,
+      "coastLineLengthKm": 30.507,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 138.2,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B08-15",
+      "name": "Liseleje og Melby",
+      "coastType": "west",
+      "coastLinePoints": 2,
+      "coastLineLengthKm": 14.239,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 166.5,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B08-16",
+      "name": "Tisvildeleje og Rågeleje",
+      "coastType": "west",
+      "coastLinePoints": 8,
+      "coastLineLengthKm": 11.351,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 174.7,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B08-17",
+      "name": "Gilleleje og Gilbjerg",
+      "coastType": "west",
+      "coastLinePoints": 27,
+      "coastLineLengthKm": 15.272,
+      "coastInsideOwnPolygonRatio": 0.99819,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 173.6,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B08-18",
+      "name": "Dronningmølle og Hornbæk",
+      "coastType": "west",
+      "coastLinePoints": 24,
+      "coastLineLengthKm": 13.719,
+      "coastInsideOwnPolygonRatio": 0.982641,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 180.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B08-19",
+      "name": "Ålsgårde og Helsingør",
+      "coastType": "east",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 9.815,
+      "coastInsideOwnPolygonRatio": 0.999727,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 255.7,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B09-01",
+      "name": "Snekkersten og Espergærde",
+      "coastType": "east",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 17.054,
+      "coastInsideOwnPolygonRatio": 0.999855,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 257.4,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B09-02",
+      "name": "Humlebæk og Nivå",
+      "coastType": "east",
+      "coastLinePoints": 3,
+      "coastLineLengthKm": 12.416,
+      "coastInsideOwnPolygonRatio": 0.999818,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B09-03",
+      "name": "Rungsted og Vedbæk",
+      "coastType": "east",
+      "coastLinePoints": 13,
+      "coastLineLengthKm": 11.984,
+      "coastInsideOwnPolygonRatio": 0.997459,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B09-04",
+      "name": "Skodsborg og Bellevue",
+      "coastType": "east",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 12.624,
+      "coastInsideOwnPolygonRatio": 0.999826,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B09-05",
+      "name": "Amager nord og Kastrup",
+      "coastType": "east",
+      "coastLinePoints": 5,
+      "coastLineLengthKm": 17.934,
+      "coastInsideOwnPolygonRatio": 0.999966,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B09-06",
+      "name": "Amager Strand og Dragør",
+      "coastType": "east",
+      "coastLinePoints": 3,
+      "coastLineLengthKm": 12.467,
+      "coastInsideOwnPolygonRatio": 0.99993,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B09-07",
+      "name": "Sydamager og Kongelunden",
+      "coastType": "east",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 11.731,
+      "coastInsideOwnPolygonRatio": 0.999998,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 0.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B09-08",
+      "name": "Køge Bugt nord",
+      "coastType": "east",
+      "coastLinePoints": 3,
+      "coastLineLengthKm": 16.62,
+      "coastInsideOwnPolygonRatio": 0.999246,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 0.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B09-09",
+      "name": "Køge Bugt syd og Solrød",
+      "coastType": "east",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 15.542,
+      "coastInsideOwnPolygonRatio": 0.999556,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 0.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B09-10",
+      "name": "Køge og Strøby Egede",
+      "coastType": "east",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 12.134,
+      "coastInsideOwnPolygonRatio": 0.999989,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B09-11",
+      "name": "Stevns nord og Holtug",
+      "coastType": "east",
+      "coastLinePoints": 31,
+      "coastLineLengthKm": 17.451,
+      "coastInsideOwnPolygonRatio": 0.991155,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B09-12",
+      "name": "Stevns Klint og Højerup",
+      "coastType": "east",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 15.226,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B09-13",
+      "name": "Rødvig og Faxe Ladeplads",
+      "coastType": "east",
+      "coastLinePoints": 7,
+      "coastLineLengthKm": 24.513,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 318.1,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B09-14",
+      "name": "Præstø og Jungshoved",
+      "coastType": "east",
+      "coastLinePoints": 12,
+      "coastLineLengthKm": 40.341,
+      "coastInsideOwnPolygonRatio": 0.999813,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 278.3,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B09-15",
+      "name": "Bøgestrømmen vest",
+      "coastType": "east",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 15.716,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 293.6,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B09-16",
+      "name": "Karrebæksminde og Enø",
+      "coastType": "west",
+      "coastLinePoints": 10,
+      "coastLineLengthKm": 33.275,
+      "coastInsideOwnPolygonRatio": 0.999998,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 7.2,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B09-17",
+      "name": "Bisserup og Glænø",
+      "coastType": "west",
+      "coastLinePoints": 8,
+      "coastLineLengthKm": 23.335,
+      "coastInsideOwnPolygonRatio": 0.999997,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 3.6,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B09-18",
+      "name": "Korsør og Lejodde",
+      "coastType": "west",
+      "coastLinePoints": 6,
+      "coastLineLengthKm": 23.362,
+      "coastInsideOwnPolygonRatio": 0.999998,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B09-19",
+      "name": "Reersø og Mullerup",
+      "coastType": "west",
+      "coastLinePoints": 10,
+      "coastLineLengthKm": 28.945,
+      "coastInsideOwnPolygonRatio": 0.999813,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 89.9,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B10-01",
+      "name": "Møn nord og Nyord",
+      "coastType": "east",
+      "coastLinePoints": 8,
+      "coastLineLengthKm": 34.65,
+      "coastInsideOwnPolygonRatio": 0.998632,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 232.2,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B10-02",
+      "name": "Ulvshale og Hårbølle",
+      "coastType": "east",
+      "coastLinePoints": 20,
+      "coastLineLengthKm": 66.771,
+      "coastInsideOwnPolygonRatio": 0.999995,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 45.9,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B10-03",
+      "name": "Møns Klint nord",
+      "coastType": "east",
+      "coastLinePoints": 10,
+      "coastLineLengthKm": 7.28,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B10-04",
+      "name": "Møns Klint syd og Klintholm",
+      "coastType": "east",
+      "coastLinePoints": 6,
+      "coastLineLengthKm": 20.781,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 281.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B10-05",
+      "name": "Bogø og Farø",
+      "coastType": "east",
+      "coastLinePoints": 6,
+      "coastLineLengthKm": 20.849,
+      "coastInsideOwnPolygonRatio": 0.999997,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 289.2,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B10-06",
+      "name": "Falster nord og Orehoved",
+      "coastType": "east",
+      "coastLinePoints": 10,
+      "coastLineLengthKm": 37.648,
+      "coastInsideOwnPolygonRatio": 0.999995,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 233.3,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B10-07",
+      "name": "Falster øst og Pomlenakke",
+      "coastType": "east",
+      "coastLinePoints": 5,
+      "coastLineLengthKm": 34.802,
+      "coastInsideOwnPolygonRatio": 0.999885,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B10-08",
+      "name": "Marielyst og Bøtø",
+      "coastType": "east",
+      "coastLinePoints": 2,
+      "coastLineLengthKm": 8.594,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B10-09",
+      "name": "Gedser Odde og Gedesby",
+      "coastType": "east",
+      "coastLinePoints": 5,
+      "coastLineLengthKm": 23.377,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B10-10",
+      "name": "Falster vest og Nysted Nor munding",
+      "coastType": "west",
+      "coastLinePoints": 21,
+      "coastLineLengthKm": 69.421,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B10-11",
+      "name": "Lolland sydøst og Nysted",
+      "coastType": "east",
+      "coastLinePoints": 9,
+      "coastLineLengthKm": 27.034,
+      "coastInsideOwnPolygonRatio": 0.999989,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 0.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B10-12",
+      "name": "Lolland syd og Hyllekrog",
+      "coastType": "east",
+      "coastLinePoints": 3,
+      "coastLineLengthKm": 16.801,
+      "coastInsideOwnPolygonRatio": 0.999994,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 0.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B10-13",
+      "name": "Lolland sydvest og Kramnitse",
+      "coastType": "east",
+      "coastLinePoints": 3,
+      "coastLineLengthKm": 5.144,
+      "coastInsideOwnPolygonRatio": 0.979561,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 0.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B10-14",
+      "name": "Lolland vest og Albuen",
+      "coastType": "west",
+      "coastLinePoints": 9,
+      "coastLineLengthKm": 37.617,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B10-15",
+      "name": "Lolland nord og Kragenæs",
+      "coastType": "east",
+      "coastLinePoints": 21,
+      "coastLineLengthKm": 84.927,
+      "coastInsideOwnPolygonRatio": 0.999996,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 180.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B10-16",
+      "name": "Fejø og Femø",
+      "coastType": "east",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 11.301,
+      "coastInsideOwnPolygonRatio": 0.998058,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 180.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B10-17",
+      "name": "Askø og Lilleø",
+      "coastType": "east",
+      "coastLinePoints": 6,
+      "coastLineLengthKm": 23.65,
+      "coastInsideOwnPolygonRatio": 0.999995,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 180.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B10-18",
+      "name": "Bornholm nord og Sandvig",
+      "coastType": "east",
+      "coastLinePoints": 44,
+      "coastLineLengthKm": 21.411,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 180.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B10-19",
+      "name": "Bornholm nordøst og Gudhjem",
+      "coastType": "east",
+      "coastLinePoints": 50,
+      "coastLineLengthKm": 25.652,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 209.7,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B10-20",
+      "name": "Bornholm øst og Svaneke",
+      "coastType": "east",
+      "coastLinePoints": 5,
+      "coastLineLengthKm": 22.892,
+      "coastInsideOwnPolygonRatio": 0.99973,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B10-21",
+      "name": "Bornholm sydøst og Dueodde",
+      "coastType": "east",
+      "coastLinePoints": 43,
+      "coastLineLengthKm": 19.432,
+      "coastInsideOwnPolygonRatio": 0.992661,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 326.2,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B10-22",
+      "name": "Bornholm syd og Boderne",
+      "coastType": "east",
+      "coastLinePoints": 4,
+      "coastLineLengthKm": 17.093,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 0.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B10-23",
+      "name": "Bornholm vest og Hasle",
+      "coastType": "west",
+      "coastLinePoints": 6,
+      "coastLineLengthKm": 27.105,
+      "coastInsideOwnPolygonRatio": 0.999996,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B10-24",
+      "name": "Bornholm nordvest og Hammeren",
+      "coastType": "west",
+      "coastLinePoints": 37,
+      "coastLineLengthKm": 17.621,
+      "coastInsideOwnPolygonRatio": 0.995341,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 102.3,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B11-SAM-01",
+      "name": "Samsø nord",
+      "coastType": "east",
+      "coastLinePoints": 28,
+      "coastLineLengthKm": 23.129,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 195.6,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B11-SAM-02",
+      "name": "Samsø øst",
+      "coastType": "east",
+      "coastLinePoints": 6,
+      "coastLineLengthKm": 28.616,
+      "coastInsideOwnPolygonRatio": 0.90836,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 284.3,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B11-SAM-03",
+      "name": "Samsø syd og vest",
+      "coastType": "west",
+      "coastLinePoints": 36,
+      "coastLineLengthKm": 20.839,
+      "coastInsideOwnPolygonRatio": 0.975747,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 90.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B11-LAE-01",
+      "name": "Læsø vest og Vesterø",
+      "coastType": "west",
+      "coastLinePoints": 5,
+      "coastLineLengthKm": 19.416,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 80.4,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B11-LAE-02",
+      "name": "Læsø nord",
+      "coastType": "east",
+      "coastLinePoints": 6,
+      "coastLineLengthKm": 17.269,
+      "coastInsideOwnPolygonRatio": 1.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 175.6,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B11-LAE-03",
+      "name": "Læsø øst og syd",
+      "coastType": "east",
+      "coastLinePoints": 8,
+      "coastLineLengthKm": 26.544,
+      "coastInsideOwnPolygonRatio": 0.73228,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 287.2,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B12-01",
+      "name": "Kolding Fjord og Løverodde",
+      "coastType": "east",
+      "coastLinePoints": 12,
+      "coastLineLengthKm": 49.971,
+      "coastInsideOwnPolygonRatio": 0.630466,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 255.9,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B12-02",
+      "name": "Hejlsminde og Binderup",
+      "coastType": "east",
+      "coastLinePoints": 9,
+      "coastLineLengthKm": 29.782,
+      "coastInsideOwnPolygonRatio": 0.62924,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 281.1,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B12-03",
+      "name": "Haderslev Fjord og Årøsund",
+      "coastType": "east",
+      "coastLinePoints": 8,
+      "coastLineLengthKm": 34.53,
+      "coastInsideOwnPolygonRatio": 0.753188,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B12-04",
+      "name": "Genner Bugt og Aabenraa Fjord",
+      "coastType": "east",
+      "coastLinePoints": 15,
+      "coastLineLengthKm": 57.796,
+      "coastInsideOwnPolygonRatio": 0.837129,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 261.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B12-05",
+      "name": "Kruså og Flensborg Fjord nord",
+      "coastType": "east",
+      "coastLinePoints": 40,
+      "coastLineLengthKm": 96.922,
+      "coastInsideOwnPolygonRatio": 0.687172,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.0,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B12-06",
+      "name": "Sønderborg Bugt og Dybbøl",
+      "coastType": "east",
+      "coastLinePoints": 6,
+      "coastLineLengthKm": 24.447,
+      "coastInsideOwnPolygonRatio": 0.0,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 303.1,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    },
+    {
+      "zoneId": "DK-B12-07",
+      "name": "Als syd og Kegnæs",
+      "coastType": "east",
+      "coastLinePoints": 10,
+      "coastLineLengthKm": 35.585,
+      "coastInsideOwnPolygonRatio": 0.935978,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 21.0,
+      "qualityFlags": []
+    },
+    {
+      "zoneId": "DK-B12-08",
+      "name": "Als øst og Fynshav",
+      "coastType": "east",
+      "coastLinePoints": 25,
+      "coastLineLengthKm": 19.034,
+      "coastInsideOwnPolygonRatio": 0.607712,
+      "directionAnchorCount": 1,
+      "pointBearingDeg": 270.1,
+      "qualityFlags": [
+        "coastline-less-than-90-percent-in-own-zone"
+      ]
+    }
+  ],
+  "limitations": [
+    "Navne er ikke valideret mod Danske Stednavne i denne baseline.",
+    "Fjord-, havne- og å-eksklusion kræver v2-kildelag og kan ikke udledes sikkert af de nuværende zoner alene.",
+    "Auditten ændrer ingen produktions- eller administratordata."
+  ]
+}

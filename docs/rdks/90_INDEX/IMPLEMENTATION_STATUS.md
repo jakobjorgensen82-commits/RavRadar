@@ -1,4 +1,27 @@
-# Implementeringsstatus pr. 4.0.125
+# Implementeringsstatus pr. 4.0.126
+
+## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
+- [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.
+- [x] Eksisterende multi-ankerfunktion er auditeret: flere navngivne retninger findes allerede i admin og scoreforklaring, men almindelig vejrpipeline leverer ikke endnu en selvstændig komponentserie pr. anker.
+- [x] Høfder og andre mulige ravfælder er afgrænset som score-neutral registrering frem til særskilt RavScore-forskning og godkendelse.
+- [x] Piloten er låst som parallel og ikke-destruktiv; `data/zones.geojson` og centrale adminoverrides er ikke ændret.
+- [x] GeoDanmark `Kyst`, EPSG:25832, entitets-WFS, API-key/OAuth-adgang og CC BY 4.0 er verificeret i `docs/research/COASTAL_GEOMETRY_V2_SOURCE_AUDIT.md`.
+- [x] V2-arbejdsskema, gratis-kildekontrakt, migrationsklasser og read-only baselineaudit er implementeret uden produktionsintegration.
+- [x] Baselineaudit: 209 aktive repositoryzoner, 0 gemte multi-ankerzoner, 116 flaggede kystlinjer og 157 overlap over 0,01 km². Central runtime har senest 208 zoner, så pilotinput skal hydreres før generering.
+- [x] Offentlig readback er sammenholdt med repositoryet: `DK-B02-14` er slettet centralt, `DK-B10-05` er omdøbt, og 18 zoner har centralt propagerede multi-ankre. Evidensen ligger i `data/diagnostics/coastal-geometry-v2-live-comparison.json`.
+- [ ] Implementér autoritativ navneaudit samt fjord-/havn-/åmasker på den centralt effektive zonebestand.
+- [x] Tre pilotmiljøer og nul-tolerancekriterier er låst i `data/geometry-v2/pilot-areas.json`: Blåvand/Rømø, Limfjorden og Lolland/Falster.
+- [x] `DATAFORDELER_API_KEY` er oprettet som repository secret, og lokalt workflowjob/script henter kun små private pilotudsnit efter central adminhydrering. Secret værdi, rå arbejdsmappe og v2-data udelukkes fra Pages.
+- [ ] Kør første manuelle CI-pilot med secreten og verificér capabilities, Kyst-lag, øvrige tilgængelige lag og private artifact uden læk.
+- [ ] Generér første parallelle forslag fra den CI-verificerede kilde.
+
+## 4.0.126 – sikker gratis GeoDanmark-pilot, afventer CI
+- [x] Gratis kildekontrakt, v2-schema, migrationslogik, audit og tre pilotområder er dokumenteret og regressionstestet.
+- [x] `DATAFORDELER_API_KEY` er koblet til et isoleret manuelt workflowjob og kan ikke påvirke Pages-deploy eller RavScore.
+- [x] Workflowet hydrerer central admin-sandhed før fetch og udelukker v2-data, arbejdsmappe og dependencies fra offentlig artifact.
+- [ ] En konkret manuel Actions-run skal bekræfte secret-injektion, WFS capabilities, `Kyst`-featurehentning, frivillige supplerende lag og privat artifact uden secretlæk.
+- [ ] Mål DMI-forskelle pr. lokal kystdel og design provenance/merge uden at ændre RavScore.
+- [ ] Fremlæg pilotresultat og undtagelsesliste til særskilt go/no-go før national omskrivning.
 
 ## 4.0.125 – fuld timeproveniens fra STAC/GRIB
 - [x] Collection, model-run og native gyldighedstid lagres pr. rå komponenttime i bulkcachen.

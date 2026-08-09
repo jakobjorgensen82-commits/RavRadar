@@ -1,5 +1,5 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.125";
-import { authorizedFetch, currentSession, requireFreshSession, getCurrentProfile } from "./auth-service.js?v=4.0.125";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.126";
+import { authorizedFetch, currentSession, requireFreshSession, getCurrentProfile } from "./auth-service.js?v=4.0.126";
 export const PERMISSIONS=Object.freeze([
  {id:'admin_access',label:'Åbn administrationen'},
  {id:'handbook_view',label:'Læs håndbogen'},

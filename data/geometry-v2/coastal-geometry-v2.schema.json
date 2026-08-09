@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ravradar.dk/schemas/coastal-geometry-v2.schema.json",
+  "title": "RavRadar coastal geometry v2 pilot",
+  "type": "object",
+  "required": ["schemaVersion", "status", "sourceManifest", "zones", "migrationLog"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0-pilot" },
+    "status": { "enum": ["pilot", "review", "approved"] },
+    "generatedAt": { "type": ["string", "null"], "format": "date-time" },
+    "sourceManifest": {
+      "type": "object",
+      "required": ["primary", "licence", "costClass", "retrieval"],
+      "properties": {
+        "primary": { "const": "GeoDanmark:Kyst" },
+        "licence": { "const": "CC-BY-4.0" },
+        "costClass": { "const": "free-data-only" },
+        "retrieval": { "enum": ["not-fetched", "entity-wfs", "authorised-file-extract"] },
+        "retrievedAt": { "type": ["string", "null"], "format": "date-time" },
+        "sourceCrs": { "const": "EPSG:25832" },
+        "outputCrs": { "const": "EPSG:4326" },
+        "attribution": { "type": "string", "minLength": 1 },
+        "contentHash": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "zones": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/zone" }
+    },
+    "migrationLog": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/migration" }
+    }
+  },
+  "$defs": {
+    "position": {
+      "type": "array",
+      "prefixItems": [
+        { "type": "number", "minimum": 7, "maximum": 16 },
+        { "type": "number", "minimum": 54, "maximum": 58.5 }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "lineString": {
+      "type": "object",
+      "required": ["type", "coordinates"],
+      "properties": {
+        "type": { "const": "LineString" },
+        "coordinates": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/position" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "coastalPart": {
+      "type": "object",
+      "required": ["id", "name", "coastGeometry", "landPoint", "marinePoint", "onshoreDirectionDeg", "samplingMode", "reviewStatus"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "name": { "type": "string", "minLength": 3 },
+        "coastGeometry": { "$ref": "#/$defs/lineString" },
+        "landPoint": { "$ref": "#/$defs/position" },
+        "marinePoint": { "$ref": "#/$defs/position" },
+        "onshoreDirectionDeg": { "type": "number", "minimum": 0, "exclusiveMaximum": 360 },
+        "weight": { "type": "number", "exclusiveMinimum": 0 },
+        "samplingMode": { "enum": ["zone-primary-compatibility", "independent-pilot", "independent-verified"] },
+        "reviewStatus": { "enum": ["generated", "flagged", "admin-overridden", "verified"] },
+        "sourceRefs": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "weatherProvenanceRequired": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "exclusion": {
+      "type": "object",
+      "required": ["id", "kind", "reason", "reviewStatus"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "enum": ["harbour", "river-mouth", "fjord", "non-searchable", "other"] },
+        "reason": { "type": "string", "minLength": 3 },
+        "reviewStatus": { "enum": ["generated", "flagged", "verified"] },
+        "geometry": { "type": ["object", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "coastalTrap": {
+      "type": "object",
+      "required": ["id", "kind", "geometry", "scoreEffect", "evidenceStatus"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "enum": ["groyne", "breakwater-lee", "headland", "other"] },
+        "geometry": { "type": "object" },
+        "scoreEffect": { "const": "none-pilot" },
+        "evidenceStatus": { "enum": ["hypothesis", "observed", "research-supported", "validated-ravradar"] },
+        "sourceRefs": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": true
+    },
+    "zone": {
+      "type": "object",
+      "required": ["zoneId", "proposedName", "coastType", "coastalParts", "exclusions", "coastalTraps", "adminOverlayStatus"],
+      "properties": {
+        "zoneId": { "type": "string", "pattern": "^DK-B[0-9]{2}-[0-9]{2}$" },
+        "currentName": { "type": ["string", "null"] },
+        "proposedName": { "type": "string", "minLength": 3 },
+        "coastType": { "enum": ["west", "east", "limfjord"] },
+        "coastalParts": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/coastalPart" } },
+        "exclusions": { "type": "array", "items": { "$ref": "#/$defs/exclusion" } },
+        "coastalTraps": { "type": "array", "items": { "$ref": "#/$defs/coastalTrap" } },
+        "adminOverlayStatus": { "enum": ["none", "preserved", "conflict-review-required"] },
+        "qualityFlags": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": true
+    },
+    "migration": {
+      "type": "object",
+      "required": ["zoneId", "classification", "historyPolicy", "reason"],
+      "properties": {
+        "zoneId": { "type": "string" },
+        "classification": { "enum": ["geometry-correction", "rename-only", "boundary-adjustment", "semantic-relocation", "split", "merge", "retire"] },
+        "historyPolicy": { "enum": ["continuous", "cutover", "exclude-pre-cutover", "manual-review"] },
+        "reason": { "type": "string", "minLength": 3 },
+        "effectiveFrom": { "type": ["string", "null"], "format": "date-time" },
+        "relatedZoneIds": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
+
