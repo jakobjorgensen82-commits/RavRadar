@@ -638,3 +638,4 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Ejeren besluttede, at højeste gyldige lokale delscore skal være zonens viste RavScore.
 - UI skal tydeligt skelne hele zonen fra navngivne delstrækninger og forklare vind, strøm, bølger, vandstand, state/historik og forskellen til andre dele.
 - Dæknings-/usikkerhedstærskler og shadow-validering mangler; beslutningen aktiverer ikke Blåvand.
+- Ejeren præciserede en pragmatisk margin: 78 mod 75 skal gælde praktisk hele zonen uden delopdeling. En 5-points margin bruges kun som justerbar UI-prototype frem til shadow-validering.

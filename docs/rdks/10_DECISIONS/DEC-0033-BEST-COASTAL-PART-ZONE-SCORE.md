@@ -5,6 +5,8 @@
 ## Beslutning
 Når en zone har flere selvstændigt validerede lokale kystdele, bestemmes zonens viste RavScore af den kystdel, der har den højeste gyldige RavScore for det valgte tidspunkt og den valgte jagtform. Resultatet må ikke fremstilles som dækkende hele zonen, hvis de øvrige dele har mærkbart dårligere eller utilstrækkeligt dokumenterede forhold.
 
+Væsentlighed anvendes pragmatisk, ikke krakilsk. Små scoreforskelle skal samles som praktisk samme zonedækning og må ikke udløse delopdeling eller en unødvendig forklaring. Ejerens eksempel `78` mod `75` skal som udgangspunkt fremstilles som hele zonen. Først en væsentlig og fagligt valideret forskel må udløse “kun en del af zonen”. Den endelige margin fastlægges på shadow-data og kan afhænge af usikkerhed og komponentdækning, ikke kun et råt pointtal.
+
 Zonevisningen skal altid angive én af disse dækningsstatusser tydeligt tæt ved scoren:
 
 - **Hele zonen:** forholdene er fagligt sammenlignelige på tværs af de validerede kystdele.
@@ -19,6 +21,7 @@ Ved delvis dækning skal forklaringen vise, hvorfor den valgte del klarer sig be
 - Vindende del vælges pr. tidspunkt og jagtform og kan derfor skifte. Identitet og provenance skal følge resultatet hele vejen til UI og debug.
 - Manglende lokale data må ikke erstattes af parentdata, nul, interpolation eller en anden dels data for at skabe en vinder.
 - Ligheds-, dæknings- og usikkerhedstærskler fastlægges og valideres fagligt før aktivering; de må ikke vælges alene for at give flere høje scorer.
+- En justerbar 5-points margin må bruges som forståelig UI-prototype, men er ikke i sig selv den endelige produktionsregel.
 - National rangliste må gerne bruge zonescoren fra den bedste del, men zonerækken og detaljevisningen skal kunne kommunikere delvis dækning uden at kræve, at brugeren gætter.
 
 ## Afgrænsning

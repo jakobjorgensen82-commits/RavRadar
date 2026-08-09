@@ -164,6 +164,7 @@ Desktop-runtimepakken har Node/Python/pnpm, men ingen `npm`-kommando. Validate-d
 - Detaljen skal give en forståelig ravteknisk forklaring på den vindende del og forskellen til de øvrige, inklusive vind, strøm, bølger, vandstand, historik/state og øvrige aktive komponenter.
 - DEC-0033 fastholder missing/proveniens, valg pr. tidspunkt og jagtform samt krav om senere faglige tærskler for “hele zonen”, delvis og usikker dækning.
 - Dette er produktretning, ikke aktiveringstilladelse. Næste leverance er fortsat den visuelle ejerpræsentation med rigtigt kort/ortofoto og almindeligt sprog.
+- Ejeren præciserede, at dækningslogikken ikke må være krakilsk: 78 mod 75 skal ikke opdeles eller særforklares. Kun væsentlige forskelle gør resultatet delvist; reviewet demonstrerer foreløbigt en justerbar 5-points margin, mens endelig margin afventer shadow-data.
 
 ## Model
 Start og afslut 4.0.134 på GPT-5.6 Sol. Geometrisk review, fuld validering og CI-artifactkontrol er kritisk. En billigere model kan først overvejes til en senere, rent mekanisk dokumentationsopgave.
