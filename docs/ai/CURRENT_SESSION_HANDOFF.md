@@ -79,6 +79,14 @@ Desktop-runtimepakken har Node/Python/pnpm, men ingen `npm`-kommando. Validate-d
 4. Først derefter må de private vandpunktkandidater valideres mod relevante DMI-gridmasker.
 5. Ingen Blåvand-geometri, land-/vandpunkter, selvstændig sampling, adminændring eller RavScore må aktiveres uden de senere systemiske gates.
 
+## Aktuel ucommittet 4.0.135-kandidat
+- Den officielle aktuelle Datafordeler-kontrakt er verificeret: gratis `GeoDanmark Ortofoto forår Web Mercator WMTS`, 2025-data, EPSG:3857 og API-key/OAuth. RavRadars eksisterende `DATAFORDELER_API_KEY` er den nødvendige moderniserede credentialtype; ingen ny konto, betalt adgang eller separat secret er nødvendig.
+- `scripts/build-blaavand-ortho-review.py` henter tre afgrænsede zoom-17-vinduer og danner private overlays for norddelen, Blåvands Huk og sydøstdelen. Fysisk kyst, 15-metersforslag, punktkandidater og høfter vises oven på ortofoto.
+- Workflowtrinnet ligger kun i `geometry-v2-pilot`, bruger samme secret som WFS og gemmer aldrig key eller credential-bærende URL. Output er privat og alle aktiverings-, vejr- og scoreflag er falske.
+- Versionen er hævet til 4.0.135, og RDKS, krav, issue, roadmap, forskningsaudit, begge håndbøger og changelog er opdateret.
+- Lokal `test:coastal-geometry-v2`, ortofoto-self-test, RDKS-validering, releaseversionsvalidering og webhåndbogens JSON-parse består. Faktisk WMTS-fetch kan kun bevises i CI med repository-secret; commit, push, fuld release-gate, privat pilot, artifactreview og normal produktionskørsel mangler.
+- Ortofotogaten er ikke bestået, før de tre billeder er hentet og gennemgået visuelt. DMI-gridvalidering må først begynde derefter.
+
 ## Model
 Start og afslut 4.0.134 på GPT-5.6 Sol. Geometrisk review, fuld validering og CI-artifactkontrol er kritisk. En billigere model kan først overvejes til en senere, rent mekanisk dokumentationsopgave.
 

@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.134
+# Implementeringsstatus pr. 4.0.135
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.
@@ -17,6 +17,8 @@
 - [x] #1936 verificerede pagination og privat råartifact: 21/21 lag/område-udtræk er komplette, seks er flersidede, og største udtræk har 72.870 features.
 - [x] 4.0.130 genererer privat source-QA og oversigtskort direkte fra centralt effektive pilotzoner og komplette rålag; output ændrer ikke produktion.
 - [x] Hver pilotzone klassificeres, og kun geometrisk støttede kildestykker samles til private reviewforslag; ingen blind snapping eller national aktivering.
+- [x] 4.0.135-kandidaten har en isoleret gratis ortofoto-WMTS-fetch, tre private Blåvand-overlays og fail-closed credentialhåndtering.
+- [ ] Kør den private pilot i CI, verificér de tre ortofoto-overlays visuelt og dokumentér go/no-go. Først derefter må DMI-gridgaten begynde.
 
 ## 4.0.126 – sikker gratis GeoDanmark-pilot, afventer CI
 - [x] Gratis kildekontrakt, v2-schema, migrationslogik, audit og tre pilotområder er dokumenteret og regressionstestet.

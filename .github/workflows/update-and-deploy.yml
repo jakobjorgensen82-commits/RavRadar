@@ -379,6 +379,11 @@ jobs:
       - name: Build private Blåvand detail proposal
         run: python scripts/build-blaavand-detail-proposal.py
 
+      - name: Build private official orthophoto review overlays
+        run: python scripts/build-blaavand-ortho-review.py
+        env:
+          DATAFORDELER_API_KEY: ${{ secrets.DATAFORDELER_API_KEY }}
+
       - name: Render private GeoDanmark source review maps
         run: python scripts/render-geodanmark-pilot-maps.py
 

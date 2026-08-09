@@ -9,6 +9,7 @@ const waterExclusions = await fs.readFile('scripts/fetch-official-water-exclusio
 const coastalParts = await fs.readFile('scripts/assemble-geodanmark-coastal-parts.py', 'utf8');
 const geographicReview = JSON.parse(await fs.readFile('data/geometry-v2/pilot-geographic-review.json', 'utf8'));
 const blaavandDetail = await fs.readFile('scripts/build-blaavand-detail-proposal.py', 'utf8');
+const blaavandOrtho = await fs.readFile('scripts/build-blaavand-ortho-review.py', 'utf8');
 const blaavandPolicy = JSON.parse(await fs.readFile('data/geometry-v2/blaavand-detail-policy.json', 'utf8'));
 const mapRenderer = await fs.readFile('scripts/render-geodanmark-pilot-maps.py', 'utf8');
 const workflow = await fs.readFile('.github/workflows/update-and-deploy.yml', 'utf8');
@@ -47,6 +48,7 @@ assert.match(workflow, /python scripts\/audit-pilot-place-names\.py/);
 assert.match(workflow, /python scripts\/fetch-official-water-exclusions\.py/);
 assert.match(workflow, /python scripts\/assemble-geodanmark-coastal-parts\.py/);
 assert.match(workflow, /python scripts\/build-blaavand-detail-proposal\.py/);
+assert.match(workflow, /python scripts\/build-blaavand-ortho-review\.py/);
 assert.match(workflow, /python scripts\/render-geodanmark-pilot-maps\.py/);
 assert.match(workflow, /--exclude 'data\/geometry-v2\/'/);
 assert.match(workflow, /--exclude '\.geometry-v2-work\/'/);
@@ -115,6 +117,17 @@ for (const marker of [
   'weatherSamplingChanged',
   'automaticActivationAllowed'
 ]) assert.ok(blaavandDetail.includes(marker), `Blåvand-detailkontrakten mangler ${marker}`);
+for (const marker of [
+  'https://wmts.datafordeler.dk/GeoDanmarkOrto/orto_foraar_webm/1.0.0/WMTS',
+  'DATAFORDELER_API_KEY',
+  'DFD_GoogleMapsCompatible',
+  'private-manual-review-required',
+  'automaticActivationAllowed',
+  'credential og request-URL logges ikke'
+]) assert.ok(blaavandOrtho.includes(marker), `Blåvand-ortofotokontrakten mangler ${marker}`);
+for (const forbidden of ['print(key)', 'print(api_key', 'DATAFORDELER_API_KEY=']) {
+  assert.ok(!blaavandOrtho.includes(forbidden), `Blåvand-ortofoto kan lække secret: ${forbidden}`);
+}
 assert.ok(mapRenderer.indexOf('if args.self_test:') < mapRenderer.indexOf('from PIL import'), 'Pillow må kun kræves i det faktiske private rendertrin');
 assert.ok(mapRenderer.includes('coastal-part-proposals.geojson'), 'Pilotkortet skal vise de private kystdelsforslag');
 assert.ok(mapRenderer.includes('maps') && mapRenderer.includes('zones'), 'Pilotkortet skal generere zonevise reviewkort');

@@ -3,6 +3,7 @@
 Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed og udtrykkeligt planlagte næste skridt. Historik findes andre steder i RDKS.
 
 ## Aktiv kystgeometri-v2-pilot – score-neutral og ikke-destruktiv
+- 4.0.135-kandidaten genbruger den eksisterende moderniserede `DATAFORDELER_API_KEY` til den gratis officielle `GeoDanmark Ortofoto forår Web Mercator WMTS`. Pilotjobbet danner tre private zoom-17-overlays ved Blåvand med fysisk kyst, 15-meterslinje, punktkandidater og høfter. Credential-bærende URL'er og tiles offentliggøres ikke; manuel faglig review og CI-artifactbevis mangler endnu.
 - DEC-0032 er den aktive kontrakt for en parallel geometri-v2-pilot. Den nuværende produktionsgeometri og centralt gemte adminrettelser ændres ikke af pilotens analyse/generering.
 - Den viste kystlinje skal følge relevante ravstrande og må springe over havne, åudløb og irrelevante strækninger. Indre fjorde udelukkes; Limfjorden er eneste fjordområde.
 - Zoner, navne og placeringer må korrigeres, mens tekniske ID'er bevares som udgangspunkt. Væsentlig ændring af et IDs geografiske betydning kræver eksplicit historik-/regel-/observationsmigration.
@@ -19,7 +20,7 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - #1964 produktionsverificerede 4.0.134 på commit `3843d20`: den fulde validate-gate, release-gate, Pages-artifact og deploy var success. Privat pilot #1967 brugte 208 centralt effektive zoner og verificerede to Blåvand-ankre, 72 private reviewdele, to detaildele, 15 detailfeatures, ni score-neutrale høfter og detailkortet; build og Pages var skipped.
 - Den første pilot #1965 stoppede sikkert, da central Supabase-sync timed out og faldt tilbage til repositoryets 209 zoner uden Blåvands to centrale retningsankre. Ingen historiske ankre blev brugt; den efterfølgende friske central-sync i #1967 lykkedes.
 - Blåvands fysiske kyst splittes ved det officielle Blåvands Huk og forskydes 15 meter mod landsiden, som kontrolleres mod de to centralt verificerede adminankre. Forslaget har to navngivne lokale kystdele, to land-/vandpunktpar og ni score-neutrale høftehypoteser.
-- Ingen Blåvand-geometri eller punkter er produktionsgodkendt. Ortofotokontrol og selvstændig DMI-gridvalidering mangler fortsat før admin-/vejrintegration; de øvrige otte zoner forbliver ved redesigngaten.
+- Ingen Blåvand-geometri eller punkter er produktionsgodkendt. 4.0.135 etablerer ortofoto-kontrolgrundlaget, men gaten er først bestået efter visuelt artifactreview; selvstændig DMI-gridvalidering følger derefter før admin-/vejrintegration. De øvrige otte zoner forbliver ved redesigngaten.
 
 ## 4.0.125 – DMI-identitet følger hver komponenttime
 - STAC/GRIB-indlæsningen gemmer nu `collection`, `modelRun` og `nativeValidTime`, mens disse oplysninger stadig er autoritative. Parsergeneration 14 genbehandler rå assets efter den nye kontrakt.

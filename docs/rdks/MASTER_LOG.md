@@ -1,3 +1,8 @@
+## 2026-08-09 – 4.0.135 officiel privat ortofotokontrol
+- Den eksisterende moderniserede `DATAFORDELER_API_KEY` kan efter den officielle tjenestekontrakt bruges til gratis GeoDanmark Ortofoto forår Web Mercator WMTS; ingen ny betalt kilde eller credentialtype indføres.
+- Pilotworkflowet danner tre private zoom-17-overlays ved Blåvand og bevarer fail-closed secret-håndtering. Ingen geometri, admin-data, DMI-sampling eller RavScore aktiveres.
+- Lokal self-test består. Faktisk WMTS-adgang og visuelt artifactreview afventer den private CI-pilot; ortofotogaten er derfor endnu ikke bestået.
+
 ## 2026-08-09 – 4.0.134 privat Blåvand-detailforslag
 - #1959/#1958 lukkede 4.0.133-gaten med henholdsvis privat pilot og fuld produktionskæde.
 - Blåvands fysiske kyst splittes ved det officielle Blåvands Huk i to navngivne retningsdele; en første nærmeste-ankerløsning blev forkastet, fordi den ikke splittede det lange kildeobjekt topologisk korrekt.

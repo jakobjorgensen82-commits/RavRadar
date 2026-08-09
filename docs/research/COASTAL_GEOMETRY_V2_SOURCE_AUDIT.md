@@ -82,7 +82,12 @@ Kontrollen beviser geometrisk sidekonsistens mod central admin-sandhed, men ikke
 
 #1965 dokumenterede fail-closed-grænsen: en timeout i central Supabase-sync gav repositoryfallback med 209 zoner og uden Blåvands to centrale retningsankre, hvorefter detailgeneratoren stoppede. #1967 gennemførte en frisk central sync med 208 aktive zoner og anker-ID'erne `primary` og `anchor-msd9s5dc`. Artifactet indeholdt 72 kystdelsforslag, to Blåvand-detaildele, 15 detailfeatures, ni høfter og detailkortet; alle produktions-, admin-, vejr-, score- og aktiveringsflag var falske.
 
+## Officiel ortofotokontrol – 4.0.135-kandidat
+Datafordelerens aktuelle dataoversigt angiver `GeoDanmark Ortofoto forår Web Mercator WMTS`, 2025-data, JPEG, EPSG:3857 og adgang via API-key eller OAuth. Den allerede eksisterende `DATAFORDELER_API_KEY` er samme moderniserede credentialtype og anvendes derfor også her; en ekstra betalt eller separat datakilde er ikke nødvendig.
+
+Det private pilottrin henter tre afgrænsede zoom-17-vinduer ved norddelen, Blåvands Huk og den sydøstlige del og tegner fysisk kyst, privat 15-meterslinje, land-/vandpunktkandidater og høfter ovenpå. Tiles og overlays forbliver i det private artifact. Scriptet logger eller gemmer aldrig credential eller credential-bærende URL og stopper ved afvist adgang. Dette etablerer reproducerbar kontrol, men udgør først et bestået ortofotobevis efter CI-fetch og manuelt visuelt review.
+
 ## Næste tekniske leverance
-1. Kontrollér Blåvand visuelt mod en gratis officiel ortofotokilde og afklar reproducerbar adgang.
+1. Kør 4.0.135-piloten og gennemgå de tre gratis officielle ortofoto-overlays visuelt; registrér konkret go/no-go.
 2. Valider først derefter punktkandidater mod relevante DMI-gridmasker; ingen selvstændig sampling før fuld provenance-/score-/UI-plan.
 3. Design nye semantiske zoneafgrænsninger for de øvrige otte før deres land-/vandpunkter eller DMI-celler vurderes.
