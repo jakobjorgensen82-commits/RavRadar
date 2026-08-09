@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.145
+**Håndbogsversion:** 4.0.146
 
 **Opdateret:** 1. august 2026
 
@@ -1474,6 +1474,10 @@ Et separat privat GitHub-job kan hente de gratis officielle kyst-, havne-, vandl
 
 Den første nationale måling gav 101 fliser og 707 lagforespørgsler. Sekventiel hentning var for langsom og viste ikke flisefremdrift. RavRadar bruger derfor højst fire samtidige fliser og logger hvert afsluttet trin, uden at øge antallet af data eller ændre kildens sikkerhedsgrænser.
 
-#2029 bekræftede hele kæden med 208 zoner: hentningen tog cirka 5 minutter og 15 sekunder, kildevalidatoren og den rumlige QA bestod, og råpakken blev bevaret privat. Fra 4.0.145 uploades plan, manifest og zone-QA også i en lille separat privat pakke, så den daglige faglige gennemgang ikke kræver download af den 413 MB store råpakke.
+#2029 bekræftede hele kæden med 208 zoner og den centralt hydrerede plan på 100 fliser/700 lagforespørgsler: hentningen tog cirka 5 minutter og 15 sekunder, kildevalidatoren og den rumlige QA bestod, og råpakken blev bevaret privat. #2033 verificerede en separat kompakt QA-pakke på 6,8 MB ved siden af den 413 MB store råpakke.
+
+## National topologiaudit (4.0.146)
+
+Den faktiske QA viser, at kun 20 zoner er direkte referenceklare, mens 188 er flagget. RavRadar må derfor ikke flytte alle linjer til nærmeste officielle kyst. Først måles officielle fjord- og norpolygoner uden for Limfjorden, havne, synlige åmundinger, klit- og skræntevidens samt høfter for alle 208 zoner. Resultatet er privat og kræver manuelt review; det kan ikke aktivere geometri, sampling, state eller score.
 
 Før et privat artifact accepteres, skal alle 208 zoner være bundet til planen, alle eksponerede lag være komplette, og filer og hashværdier stemme. Deduplikering måles, og credential- eller mutationsfund stopper kørslen. Først derefter udføres en rumligt indekseret fysisk kystsammenligning for alle zoner. Resultatet er fortsat QA og kan ikke aktivere kyst, vejr eller score.

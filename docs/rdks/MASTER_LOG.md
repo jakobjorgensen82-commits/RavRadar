@@ -661,3 +661,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Privat #2029 bestod central hydration/tombstones, 208-zoneplan, 101 fliser/707 requests på cirka 5:15, kildevalidator, `STRtree`-QA og privat råupload; hele jobbet tog 7:45.
 - Råartifactet er 413 MB komprimeret. 4.0.145 bevarer det og uploader samtidig plan, manifest og begge QA-filer som en separat kompakt privat pakke.
 - Ingen aktiv geometri, admin-data, vejrsampling, state, offentlig UI eller RavScore ændres.
+# 2026-08-09 – 4.0.146 national read-only topologiaudit
+- #2032 produktionsverificerede 4.0.145. Privat #2033 uploadede både råartifactet på 413 MB og den kompakte QA-pakke på 6,8 MB.
+- Artifactet korrigerer målingen til 100 central-hydrerede fliser/700 requests; 101/707 var repositorybaselinen før central hydration.
+- 12.094 deduplikerede kystfeatures gav 9.929 relevante kyststykker, men kun 20 referenceklare og 188 flaggede zoner. Blind snapping er forkastet.
+- 4.0.146 tilføjer officielle nationale fjord-/normasker, havn-/åmundingsudskæring, klit-/skræntevidens, score-neutrale høfter og en fail-closed 208-zone topologigate uden aktivering.

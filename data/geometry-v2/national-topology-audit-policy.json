@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "private-read-only-national-topology-audit-policy",
+  "harbourBufferM": 30,
+  "riverMouthBufferM": 40,
+  "riverMouthSearchM": 20,
+  "riverMouthMinimumInlandReachM": 30,
+  "riverMouthClusterM": 80,
+  "officialInnerWaterBufferM": 10,
+  "sandDuneEvidenceBufferM": 250,
+  "slopeEvidenceBufferM": 150,
+  "groyneEvidenceBufferM": 100,
+  "minimumRetainedFragmentM": 100,
+  "limfjordCoastType": "limfjord",
+  "excludedOfficialFarvandSubtypes": ["fjord", "nor"],
+  "automaticActivationAllowed": false
+}

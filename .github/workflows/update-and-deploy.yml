@@ -387,6 +387,15 @@ jobs:
       - name: Analyze indexed national source against all effective zones
         run: python scripts/analyze-geodanmark-national.py
 
+      - name: Fetch official national fjord and nor exclusions
+        run: python scripts/fetch-national-water-exclusions.py
+
+      - name: Analyze national coastal topology and exclusion evidence
+        run: python scripts/analyze-national-coastal-topology.py
+
+      - name: Validate national topology audit completeness and isolation
+        run: python scripts/validate-national-topology-audit.py
+
       - name: Upload compact national geometry-v2 QA artifact
         uses: actions/upload-artifact@v4
         with:
@@ -396,6 +405,9 @@ jobs:
             .geometry-v2-work/national-source-manifest.json
             .geometry-v2-work/national-source-qa.json
             .geometry-v2-work/national-source-qa.geojson
+            .geometry-v2-work/national-water-exclusions.geojson
+            .geometry-v2-work/national-topology-audit.json
+            .geometry-v2-work/national-topology-audit.geojson
           retention-days: 14
           if-no-files-found: error
           include-hidden-files: true

@@ -8,8 +8,9 @@
 - Ingen aktiv geometri, admin-data, vejr, state, score eller offentlig UI er ændret.
 
 ## Aktiv 4.0.144-kandidat – skaleret national hentning og source-QA
-- 4.0.144 blev efterfølgende produktionsverificeret i #2028. Privat #2029 bestod central hydration/tombstones, 208-zoneplan, 101 fliser/707 requests på ca. 5:15, kildevalidator, `STRtree`-QA og privat råupload; hele jobbet tog 7:45, og build/Pages var skipped.
+- 4.0.144 blev efterfølgende produktionsverificeret i #2028. Privat #2029 bestod central hydration/tombstones, 208-zoneplan, autoritative 100 fliser/700 requests på ca. 5:15, kildevalidator, `STRtree`-QA og privat råupload; hele jobbet tog 7:45, og build/Pages var skipped. 101/707 var den tidligere repositorybaserede måling.
 - Råartifactet er 413 MB komprimeret og var upraktisk langsomt at downloade. 4.0.145-kandidaten tilføjer derfor et separat kompakt privat artifact med plan, manifest og begge QA-filer; råartifactet bevares uændret.
+- 4.0.145 er nu produktionsverificeret i #2032; privat #2033 verificerede både råartifact og kompakt 6,8 MB QA-artifact. Auditen viser 20 referenceklare og 188 flaggede zoner. 4.0.146 bygger read-only national topologiaudit med fjord/nor, havn, åmunding, klit/skrænt og høfter samt fail-closed 208-zonegate.
 - 4.0.143 er produktionsverificeret i #2027 med fuld Linux-validate, releasegate, artifact og Pages-deploy.
 - Første nationaljob målte 101 fliser/707 sekventielle requests og var efter mere end ti minutter fortsat i hentetrinnet uden flisefremdrift.
 - Worktree bruger nu højst fire samtidige fliser, synlig progress, streng kontrol af komplethed/filer/hashes/deduplikering/secrets og rumligt indekseret QA for alle 208 zoner.
