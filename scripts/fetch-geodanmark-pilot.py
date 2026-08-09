@@ -54,23 +54,53 @@ def capability_layers(key):
     except ET.ParseError:
         fail("Datafordeler returnerede ikke et gyldigt WFS-capabilities-dokument.")
     names = []
-    for element in root.iter():
-        if element.tag.rsplit("}", 1)[-1] == "Name" and element.text:
-            text = element.text.strip()
-            if text and text not in names:
-                names.append(text)
+    for feature_type in root.iter():
+        if feature_type.tag.rsplit("}", 1)[-1] != "FeatureType":
+            continue
+        for element in feature_type:
+            if element.tag.rsplit("}", 1)[-1] == "Name" and element.text:
+                text = element.text.strip()
+                if text and text not in names:
+                    names.append(text)
+                break
     if not names:
         fail("Datafordeler-capabilities indeholder ingen feature-lagnavne.")
     return names
 
 
 def find_layer(available, desired):
-    folded = desired.lower().replace("ø", "oe").replace("å", "aa")
-    exact = [name for name in available if name.rsplit(":", 1)[-1].lower() == folded]
-    if len(exact) == 1:
-        return exact[0]
-    suffix = [name for name in available if name.rsplit(":", 1)[-1].lower().endswith(folded)]
-    return suffix[0] if len(suffix) == 1 else None
+    def local_name(value):
+        return value.rsplit(":", 1)[-1].casefold().replace("ø", "oe").replace("å", "aa")
+
+    folded = local_name(desired)
+    ranked = []
+    for name in available:
+        local = local_name(name)
+        if local == folded:
+            rank = 0
+        elif local in {f"{folded}_current", f"{folded}current"}:
+            rank = 1
+        else:
+            continue
+        ranked.append((rank, name))
+    ranked.sort(key=lambda item: (item[0], item[1].casefold()))
+    return ranked[0][1] if ranked else None
+
+
+def write_capability_report(target, available, layers, status):
+    report_target = target.resolve()
+    if ROOT not in report_target.parents:
+        fail("Pilotrapporten skal ligge i workspace.")
+    report_target.parent.mkdir(parents=True, exist_ok=True)
+    report_target.write_text(json.dumps({
+        "schemaVersion": "1.0.0",
+        "status": status,
+        "source": "GeoDanmark Vektor WFS",
+        "availableLayerCount": len(available),
+        "availableLayers": available,
+        "resolvedLayers": layers,
+        "secretHandling": "No credential or credential-bearing request URL is persisted.",
+    }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
 def lon_lat_bounds(feature_collection, zone_ids):
@@ -146,6 +176,7 @@ def main():
     available = capability_layers(key)
     layers = {name: find_layer(available, name) for name in (REQUIRED_LAYER, *OPTIONAL_LAYERS)}
     if not layers[REQUIRED_LAYER]:
+        write_capability_report(args.report, available, layers, "required-layer-not-resolved")
         fail("GeoDanmark WFS eksponerer ikke det krævede Kyst-lag for denne adgang.")
     work_dir = args.work_dir.resolve()
     if ROOT not in work_dir.parents:

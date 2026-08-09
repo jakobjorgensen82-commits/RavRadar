@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.126
+**Håndbogsversion:** 4.0.127
 
 **Opdateret:** 1. august 2026
 
@@ -1415,3 +1415,7 @@ RavRadar kontrollerer nu vind, bølger, strøm, vandstand og vandtemperatur hver
 Når RavRadar læser et DMI-forecasttrin, gemmes både collection, modelkørsel og det native gyldighedstidspunkt sammen med komponentværdien. Oplysningerne følger vind, bølger, strøm, vandstand og vandtemperatur separat gennem den fulde interne datakæde.
 
 En time mellem to native modeltrin mærkes som interpoleret og henviser til begge kildetidspunkter. Lead time fortæller, hvor langt prognosetimen ligger efter modelkørslens start, mens prognosealderen fortæller, hvor gammel modelkørslen var, da RavRadar byggede datasættet. To trin fra forskellige modelkørsler må ikke blandes; hvis en sammenhængende serie ikke kan dokumenteres, forbliver timen manglende. Den tekniske sporbarhed ligger i den beskyttede diagnosefil og gør ikke den offentlige brugerfil større. RavScore er uændret.
+
+# GeoDanmark-entitetslag i kystpiloten (4.0.127)
+
+GeoDanmarks entitets-WFS udstiller aktuelle bitemporale objekter som lag med endelsen `_current`, mens `_hist` indeholder historikken. RavRadars pilot vælger kun det præcise aktuelle lag. Hvis Datafordeleren ændrer lagkontrakten, stopper piloten og gemmer en credential-fri lagoversigt i sit private artifact. Den gætter ikke på et beslægtet lag og ændrer fortsat hverken aktive zoner eller RavScore.

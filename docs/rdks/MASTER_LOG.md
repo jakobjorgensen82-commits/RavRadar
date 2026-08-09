@@ -15,6 +15,11 @@
 - Et isoleret `geometry-v2-pilot` workflowjob kan kun startes manuelt med `geometry_v2_pilot=true`. Det henter central admin-konfiguration og tombstones før source fetch, har kun læseadgang til repositoryet og uploader et privat 14-dages pilotartifact.
 - Den hyppige vejrproduktion, Pages-artifactet og RavScore er isoleret fra GeoDanmark-piloten. Første CI-run er påkrævet før enhver påstand om fungerende adgang eller modtaget kildedata.
 
+## 2026-08-09 – 4.0.127 GeoDanmark entity-lag hotfix
+- Manuel pilot #1928 bekræftede, at `DATAFORDELER_API_KEY` blev injiceret og maskeret, at central adminhydrering lykkedes, og at både produktionsbuild og Pages-deploy blev sprunget over.
+- Piloten stoppede ved lagvalg, fordi den aktuelle entitets-WFS udstiller bitemporale objekter som aktuelle `_current`-lag frem for kun det ældre eksakte objektnavn.
+- Parseren læser nu kun WFS `FeatureType/Name`, foretrækker eksakt navn og derefter det præcise `_current`-navn, afviser `_hist` og løse præfiksmatch og gemmer ved ukendt kontrakt kun en secret-fri lagliste i det private artifact.
+
 ## 2026-08-08 – 4.0.125 fuld DMI-timeproveniens
 - Brugerens godkendelse af næste roadmaptrin udløste implementering af provenance fra STAC/GRIB til beskyttede forecasttimer.
 - Bulkparsergeneration 14 gemmer collection, modelkørsel og native gyldighedstid pr. komponent; timebyggeren beregner lead time, prognosealder, temporal status og native kildetider.

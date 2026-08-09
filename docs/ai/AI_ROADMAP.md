@@ -8,7 +8,7 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 - Flere lokale kystdele skal vurderes med selvstændig DMI-sampling og provenance; eksisterende multi-ankerretninger er ikke alene et dataprodukt.
 - Høfder og andre ravfælder registreres score-neutralt. RavScore ændres ikke som del af geometri-piloten.
 - National udrulning kræver særskilt go/no-go efter dokumenteret geometri-, admin-, DMI-, score/state-, runtime- og migrationskontrol.
-- GeoDanmark-adgangen køres kun via et manuelt privat pilotjob med `geometry_v2_pilot=true`; næste trin er CI-bevis for capabilities og bounded Kyst-data, derefter parallel generering.
+- GeoDanmark-adgangen køres kun via et manuelt privat pilotjob med `geometry_v2_pilot=true`. #1928 beviste capabilities-adgang og isolation, men afslørede forskellen mellem objektnavnet `Kyst` og entitetslaget `Kyst_current`. 4.0.127 retter lagvalget; næste trin er CI-bevis for afgrænsede featuredata og derefter parallel generering.
 
 ## P0 – ægte Codex-baseline etableret i #1772
 - **Første opgave – implementeret lokalt:** workflowets gate-bypass er lukket. En positiv preflight kræver nu `npm run validate` og `npm run release:gate` før artifact; negativ preflight kan fortsat stoppe billigt.

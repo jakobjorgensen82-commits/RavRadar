@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.126
+# Implementeringsstatus pr. 4.0.127
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.
@@ -12,7 +12,8 @@
 - [ ] Implementér autoritativ navneaudit samt fjord-/havn-/åmasker på den centralt effektive zonebestand.
 - [x] Tre pilotmiljøer og nul-tolerancekriterier er låst i `data/geometry-v2/pilot-areas.json`: Blåvand/Rømø, Limfjorden og Lolland/Falster.
 - [x] `DATAFORDELER_API_KEY` er oprettet som repository secret, og lokalt workflowjob/script henter kun små private pilotudsnit efter central adminhydrering. Secret værdi, rå arbejdsmappe og v2-data udelukkes fra Pages.
-- [ ] Kør første manuelle CI-pilot med secreten og verificér capabilities, Kyst-lag, øvrige tilgængelige lag og private artifact uden læk.
+- [x] Pilot #1928 bekræftede secret-injektion, central hydrering, maskering og fuld isolation fra build/deploy; den stoppede sikkert ved første lagopslag.
+- [ ] Genkør efter 4.0.127-lagrettelsen og verificér `Kyst_current`, øvrige tilgængelige lag og private artifact uden læk.
 - [ ] Generér første parallelle forslag fra den CI-verificerede kilde.
 
 ## 4.0.126 – sikker gratis GeoDanmark-pilot, afventer CI
@@ -22,6 +23,12 @@
 - [ ] En konkret manuel Actions-run skal bekræfte secret-injektion, WFS capabilities, `Kyst`-featurehentning, frivillige supplerende lag og privat artifact uden secretlæk.
 - [ ] Mål DMI-forskelle pr. lokal kystdel og design provenance/merge uden at ændre RavScore.
 - [ ] Fremlæg pilotresultat og undtagelsesliste til særskilt go/no-go før national omskrivning.
+
+## 4.0.127 – GeoDanmark entity-lag hotfix
+- [x] #1928 dokumenterede, at adgang og secret virker, mens den første parser fejlagtigt søgte efter det ældre eksakte navn `Kyst`.
+- [x] Capabilities-parseren læser nu kun `FeatureType/Name` og vælger deterministisk det aktuelle entity-lag med `_current`; `_hist` og beslægtede navne accepteres ikke.
+- [x] Ved ukendt lagkontrakt gemmes en secret-fri capabilitiesrapport i det private artifact, så næste fejl kan diagnosticeres uden credential eller credential-bærende URL.
+- [ ] Genkør CI-piloten og verificér konkrete featureudtræk før forslag genereres.
 
 ## 4.0.125 – fuld timeproveniens fra STAC/GRIB
 - [x] Collection, model-run og native gyldighedstid lagres pr. rå komponenttime i bulkcachen.

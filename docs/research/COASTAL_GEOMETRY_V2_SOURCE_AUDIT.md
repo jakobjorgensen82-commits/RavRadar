@@ -31,7 +31,7 @@ Dataoversigten bekræfter særskilte GeoDanmark-objekter for blandt andet `Havn`
 Ingen af objekterne må automatisk ændre RavScore.
 
 ## Adgangstilstand
-Repositoryet har nu den task-relevante GitHub Actions-secret `DATAFORDELER_API_KEY`. Dens værdi er ikke læsbar i repositoryet eller lokalt og må aldrig sendes i chat, kode, log, dokumentation, diagnostics eller artifact. Et isoleret manuelt `geometry-v2-pilot`-job bruger den kun som procesmiljøvariabel. Første ægte udtræk er stadig ikke verificeret, før jobrapporten er grøn.
+Repositoryet har nu den task-relevante GitHub Actions-secret `DATAFORDELER_API_KEY`. Dens værdi er ikke læsbar i repositoryet eller lokalt og må aldrig sendes i chat, kode, log, dokumentation, diagnostics eller artifact. Et isoleret manuelt `geometry-v2-pilot`-job bruger den kun som procesmiljøvariabel. #1928 bekræftede fungerende secret-injektion, maskering og capabilities-adgang, men featureudtræk er endnu ikke verificeret. Den aktuelle entitets-WFS bruger `_current` for aktuelle bitemporale objekter og `_hist` for historik; RavRadar må kun vælge det præcise aktuelle lag i denne pilot.
 
 Den ældre generelle GeoDanmark WFS/fildownload er markeret til udfasning i 2026. Piloten skal anvende den aktuelle entitetsbaserede WFS eller en anden dokumenteret aktuel distributionsvej, ikke bygge ny afhængighed på den udgående tjeneste.
 
