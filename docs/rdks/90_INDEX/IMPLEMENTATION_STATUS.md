@@ -36,7 +36,9 @@
 - [x] Privat pilot #2004 verificerede to unikke historiknøgler, nul parent-genbrug/krydslæsning, verificerede samples, nul scorepåvirkning, slettet transient input og intet rå-/credentiallæk.
 - [x] #2003 produktionsverificerede 4.0.140 med central adminsync, frisk data, fuld Linux-validate, release-gate, Pages-artifact og deploy.
 - [x] 4.0.141-kandidaten implementerer et privat HTML/JSON-review, som bevarer parent-zonens eksisterende RavScore-farvelinje og forbyder part-scorefarve, delrangering, “bedste del”, klik og tooltip.
-- [ ] Verificér 4.0.141-artifactet privat og kør normal produktion. Derefter er næste gate central admin-roundtrip/rollback; ingen aktivering før ejer-go/no-go.
+- [x] Privat pilot #2009 verificerede én aktiv parent, bevaret RavScore-præsentation, to helt score-neutrale ikke-interaktive dele, nul rå-/credentiallæk og alle mutations-/aktiveringsflag falske.
+- [x] #2008 produktionsverificerede 4.0.141 med central adminsync, Supabase-roundtrip, frisk data, fuld Linux-validate, release-gate, Pages-artifact og deploy.
+- [ ] Næste gate er privat central admin-roundtrip/rollback; ingen geometri-, sampling-, state-, admin-, UI- eller scoreaktivering før eksplicit ejer-go/no-go.
 - [x] #1976 produktionsverificerede 4.0.135 efter dependency-isolationshotfix med frisk data, fuld validate, release-gate, Pages-artifact og deploy.
 
 ## 4.0.126 – sikker gratis GeoDanmark-pilot, afventer CI

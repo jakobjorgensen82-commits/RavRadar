@@ -629,3 +629,4 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Den faktiske kortvisning er auditeret: aktiv `coastLine` er RavScore-farvet og skal forblive parent-zonens autoritative visning.
 - Et privat HTML/JSON-review bevarer parentens linje, farve, score, klikmål, tooltip og rangering; delene er kun neutrale, stiplede og ikke-interaktive forslag uden score eller “bedste del”.
 - Ingen geometri, sampling, state, admin-data, offentlig UI eller RavScore aktiveres. Privat CI-artifact og normal produktionskørsel afventer.
+- Produktcommit `67a6ebd` er pushed. Privat pilot #2009 bestod hele kæden og artifactaudit; normal produktion #2008 bestod central adminsync, Supabase-roundtrip, frisk data, fuld Linux-validate, release-gate, Pages-artifact og deploy. Offentlig version er 4.0.141.

@@ -139,12 +139,14 @@ Desktop-runtimepakken har Node/Python/pnpm, men ingen `npm`-kommando. Validate-d
 - Normal produktion #2003 (`31322394986`) bestod central adminsync, frisk DMI-/vejropbygning, fuld Linux-validate, release-gate, Pages-artifact og deploy. Offentlig GitHub Pages `version.json` viser 4.0.140.
 - Næste gate er score-neutral UI-review; central admin-roundtrip/rollback og ejer-go/no-go følger senere. Ingen aktivering.
 
-## Ucommittet 4.0.141-kandidat – privat score-neutral UI-gate
+## Produktionsverificeret 4.0.141 – privat score-neutral UI-gate
 - Den faktiske `js/map/map-view.js` er auditeret: den aktive zones `coastLine` får farve direkte fra RavScore-niveauet og bærer det eksisterende klikmål og tooltip.
 - `scripts/build-blaavand-score-neutral-ui-review.mjs` danner et privat JSON/HTML-review efter bestået shadow-kontrakt og state-/historikgate. Parentens linje, farve, score, klikmål, tooltip og rangering skal bevares.
 - To delkonturer må kun være neutrale, stiplede, ikke-interaktive og mærket “Privat forslag · ikke aktiv”. Delscore, scorefarve, delrangering, “bedste del”, vejr-/stateværdier og offentlig integration er forbudt.
-- Workflow, regressionstest og versionsmetadata er opdateret til 4.0.141. Lokal fuld validering, release-gate, commit/push, privat pilot-artifact og normal produktion mangler endnu.
-- Ingen Blåvand-geometri, sampling, state, admin-data, offentlig UI eller RavScore er aktiveret. Efter denne gate følger central admin-roundtrip/rollback og derefter eksplicit ejer-go/no-go.
+- Produktcommit `67a6ebd` er pushed. Privat pilot #2009 (`31323962496`) bestod hele GeoDanmark-/ortofoto-/DMI-/statekæden og den nye UI-gate; build og Pages var skipped.
+- Artifact `geodanmark-geometry-v2-pilot-31323962496` er auditeret: én aktiv parent, alle parent-retentionsflag sande, begge dele uden score/farve/rangering/“bedste del”/klik/tooltip, alle mutations- og aktiveringsflag falske, ingen transient replayfil og ingen credential-/råværdilæk.
+- Normal produktion #2008 (`31323950611`) bestod central adminsync, Supabase-roundtrip, frisk DMI-/vejropbygning, fuld Linux-validate, release-gate, Pages-artifact og deploy. Offentlig GitHub Pages `version.json` viser 4.0.141.
+- Ingen Blåvand-geometri, sampling, state, admin-data, offentlig UI eller RavScore er aktiveret. Næste gate er en privat, ikke-destruktiv central admin-roundtrip/rollback-kontrakt; derefter kræves eksplicit ejer-go/no-go.
 
 ## Model
 Start og afslut 4.0.134 på GPT-5.6 Sol. Geometrisk review, fuld validering og CI-artifactkontrol er kritisk. En billigere model kan først overvejes til en senere, rent mekanisk dokumentationsopgave.
