@@ -50,6 +50,12 @@
 - Den korrigerede generator bruger kun synlige, ikke-rørlagte vandløbsmidter med faktisk kystkontakt/indlandsfortsættelse, klynger mundinger og samler nærliggende fragmenter som multipart uden kunstig forbindelseslinje.
 - #1948-artifactet giver derefter 84 private reviewforslag. Rømø giver nul og forbliver semantisk stop. Aktive zoner, central admin, vejrsampling og RavScore er uændrede.
 
+## 2026-08-09 – 4.0.133 officielle indre-vandmasker og zone-review
+- #1952 verificerede 4.0.132 med 84 private forslag og isolation; #1951 bestod frisk produktion, fuld validate, release-gate og Pages.
+- Visuelt review afslørede, at den eksplicitte fjordpolitik endnu ikke var geometrisk håndhævet. Dette blev behandlet som stopklods før DMI-punkter.
+- Den nøglefri officielle stednavnekilde leverer nu Farvand-GeoJSON. `fjord` og `nor` udskæres uden for Limfjorden; 72 reviewdele resterer.
+- Ni zonekort og en maskinlæsbar dom viser én detailkandidat (Blåvand), to semantiske flytninger og seks grænse-/partitionsredesign. Ingen produktion/admin/score ændres.
+
 ## 2026-08-08 – 4.0.125 fuld DMI-timeproveniens
 - Brugerens godkendelse af næste roadmaptrin udløste implementering af provenance fra STAC/GRIB til beskyttede forecasttimer.
 - Bulkparsergeneration 14 gemmer collection, modelkørsel og native gyldighedstid pr. komponent; timebyggeren beregner lead time, prognosealder, temporal status og native kildetider.

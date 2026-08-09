@@ -66,7 +66,14 @@ Fysisk adskilte fragmenter inden for det dokumenterede grupperingsgab kan ligge 
 
 Prøvekørsel på det verificerede private #1948-artifact gav 84 reviewforslag. Rømø gav nul, fordi ingen af dens fire kildestykker bestod den geometriske gate. Dette kræver semantisk flyttereview, ikke en løsere automatisk tærskel.
 
+## Officielle indre-vandpolygoner og visuelt review – 4.0.133
+Stednavne-API'et kan levere GeoJSON-geometri, ikke kun visuelt center og bbox. Piloten henter derfor alle officielle `Farvand`-polygoner i de tre afgrænsede områder og vælger maskinlæsbart undertyperne `fjord` og `nor` uden for Limfjorden. Kilden kræver ingen nøgle. Limfjordområdet har en tom eksklusionsliste efter DEC-0032.
+
+Lokal kørsel fandt seks relevante officielle polygoner i Lolland/Falster-området. Nysted Nor ramte `DK-B10-10`; Nakskov Fjord, Sakskøbing Fjord og Søndernor ramte den alt for brede `DK-B10-15`. Efter masken faldt det samlede antal private reviewdele fra 84 til 72. Polygonerne og de øvrige fravalg gemmes separat som privat reviewgeometri.
+
+Ni zonekort viser, at den gamle zonegeometri ikke blot kræver koordinatjustering. Kun Blåvand er kandidat til lokal detailopretning. Rømø og Askø/Lilleø kræver semantisk flytning, mens Thisted, Fur, Aalborg og de tre øvrige Lolland/Falster-zoner kræver grænse-/partitionsredesign. Dommene ligger i `data/geometry-v2/pilot-geographic-review.json` og må ikke fortolkes som produktionsgodkendelse.
+
 ## Næste tekniske leverance
-1. Kør 4.0.132-piloten og verificér private forslag, masker, kort og isolation.
-2. Gennemgå pilotforslagene visuelt/fagligt og registrér undtagelser uden at ændre aktive zoner.
-3. Design kandidat-land-/vandpunkter og sammenhold marine punkter med faktiske DMI-celler før score-/produktionsintegration.
+1. Kør 4.0.133-piloten og verificér officielle masker, 72 reviewdele, ni zonekort og reviewgaten.
+2. Byg kun Blåvands private detailforslag med dokumenteret landsideforskydning og fysisk land-/vandkontrol.
+3. Design nye semantiske zoneafgrænsninger for de øvrige otte før land-/vandpunkter eller DMI-celler vurderes.

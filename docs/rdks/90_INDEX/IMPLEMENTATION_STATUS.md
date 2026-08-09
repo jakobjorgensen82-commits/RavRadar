@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.132
+# Implementeringsstatus pr. 4.0.133
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.
@@ -67,8 +67,17 @@
 - [x] Fjordpolitikken er maskinlæsbar pr. pilotmiljø: ydre vestkyst, eksplicit inkluderet Limfjord og ekskluderede indre fjorde/nor ved Lolland-Falster.
 - [x] Lokalt genkørt på det private #1948-artifact: 84 multipart-reviewforslag på ni zoner; Rømø stoppede sikkert med nul forslag.
 - [x] Forslag, masker og provenance gemmes kun privat, vises orange på pilotkort og har eksplicit falsk aktivering, vejrsampling, adminændring og scoreændring.
-- [ ] Kør 4.0.132-piloten i GitHub og verificér antal, masker, kort, artifact og isolation.
-- [ ] Gennemfør faglig/visuel pilotreview og design derefter kandidat-land-/vandpunkter med DMI-cellekontrol; ingen aktivering før særskilt go/no-go.
+- [x] #1952 verificerede antal, private kort, artifact og isolation; #1951 verificerede fuld Linux-validering, release-gate og Pages.
+
+## 4.0.133 – officielle indre-vandmasker og geografisk reviewgate
+- [x] Den officielle nøglefri stednavnekilde hentes som GeoJSON og leverer Farvand-polygoner; kun undertyperne `fjord` og `nor` udelukkes uden for Limfjorden.
+- [x] Seks officielle polygoner blev fundet i Lolland/Falster-piloten. De relevante zoner rammes revisionsbart af Nysted Nor samt Nakskov/Sakskøbing Fjord og Søndernor; Limfjorden har bevidst ingen sådan maske.
+- [x] Havne-, å- og indre-vandmaskernes faktiske private geometri gemmes med forslagene og vises rosa.
+- [x] Ni højopløselige private zonekort viser nuværende linje, fysisk kilde, forslag, fravalg og officielle stednavne.
+- [x] Maskinlæsbart geografisk review dækker alle ni zoner: én detailkandidat, to semantiske flytninger og seks grænse-/partitionsredesign.
+- [x] Kun Blåvand må gå videre til privat detailopretning. Ingen zone er produktionsgodkendt, og ingen af de otte strukturelt fejlplacerede zoner må få DMI-punkter endnu.
+- [ ] Kør 4.0.133-piloten i GitHub og verificér 72 dele, officielle masker, ni zonekort og reviewgaten.
+- [ ] Byg Blåvand-detailforslaget med kontrolleret landsideforskydning og lokal hav-/landvalidering; hold de øvrige otte ved redesigngaten.
 
 ## 4.0.125 – fuld timeproveniens fra STAC/GRIB
 - [x] Collection, model-run og native gyldighedstid lagres pr. rå komponenttime i bulkcachen.

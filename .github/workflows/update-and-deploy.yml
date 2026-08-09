@@ -370,6 +370,9 @@ jobs:
       - name: Audit official place names and migration classes
         run: python scripts/audit-pilot-place-names.py
 
+      - name: Fetch official private fjord and nor exclusion polygons
+        run: python scripts/fetch-official-water-exclusions.py
+
       - name: Assemble conservative private coastal-part proposals
         run: python scripts/assemble-geodanmark-coastal-parts.py
 

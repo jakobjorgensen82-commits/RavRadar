@@ -5,7 +5,9 @@ import { spawnSync } from 'node:child_process';
 const source = await fs.readFile('scripts/fetch-geodanmark-pilot.py', 'utf8');
 const analysis = await fs.readFile('scripts/analyze-geodanmark-pilot.py', 'utf8');
 const nameAudit = await fs.readFile('scripts/audit-pilot-place-names.py', 'utf8');
+const waterExclusions = await fs.readFile('scripts/fetch-official-water-exclusions.py', 'utf8');
 const coastalParts = await fs.readFile('scripts/assemble-geodanmark-coastal-parts.py', 'utf8');
+const geographicReview = JSON.parse(await fs.readFile('data/geometry-v2/pilot-geographic-review.json', 'utf8'));
 const mapRenderer = await fs.readFile('scripts/render-geodanmark-pilot-maps.py', 'utf8');
 const workflow = await fs.readFile('.github/workflows/update-and-deploy.yml', 'utf8');
 
@@ -40,6 +42,7 @@ assert.match(workflow, /DATAFORDELER_API_KEY:\s*\$\{\{ secrets\.DATAFORDELER_API
 assert.match(workflow, /name: Run GeoDanmark geometry-v2 pilot/);
 assert.match(workflow, /python scripts\/analyze-geodanmark-pilot\.py/);
 assert.match(workflow, /python scripts\/audit-pilot-place-names\.py/);
+assert.match(workflow, /python scripts\/fetch-official-water-exclusions\.py/);
 assert.match(workflow, /python scripts\/assemble-geodanmark-coastal-parts\.py/);
 assert.match(workflow, /python scripts\/render-geodanmark-pilot-maps\.py/);
 assert.match(workflow, /--exclude 'data\/geometry-v2\/'/);
@@ -77,6 +80,13 @@ for (const marker of [
   'boundary-adjustment'
 ]) assert.ok(nameAudit.includes(marker), `Stednavne-/migrationstriage mangler ${marker}`);
 for (const marker of [
+  'private-read-only-official-water-exclusions',
+  'format',
+  'geojson',
+  'excludedOfficialFarvandSubtypes',
+  'automaticActivationAllowed'
+]) assert.ok(waterExclusions.includes(marker), `Officiel farvandsmaske mangler ${marker}`);
+for (const marker of [
   'private-read-only-coastal-part-proposals',
   'semantic-boundary-review',
   'automaticActivationAllowed',
@@ -87,6 +97,11 @@ for (const marker of [
   'Vandloebsmidte',
   'riverMouthClusterM'
 ]) assert.ok(coastalParts.includes(marker), `Kystdelssamling mangler ${marker}`);
+assert.ok(coastalParts.includes('official-water-exclusions.geojson'), 'Kystdelssamling skal anvende officielle fjord-/normasker');
+assert.equal(Object.keys(geographicReview.zones).length, 9, 'Alle ni pilotzoner skal have geografisk reviewdom');
+assert.equal(Object.values(geographicReview.zones).filter(zone => zone.nextStageAllowed).length, 1, 'Kun den eksplicit godkendte detailkandidat må gå videre');
+assert.equal(geographicReview.automaticActivationAllowed, false);
 assert.ok(mapRenderer.indexOf('if args.self_test:') < mapRenderer.indexOf('from PIL import'), 'Pillow må kun kræves i det faktiske private rendertrin');
 assert.ok(mapRenderer.includes('coastal-part-proposals.geojson'), 'Pilotkortet skal vise de private kystdelsforslag');
+assert.ok(mapRenderer.includes('maps') && mapRenderer.includes('zones'), 'Pilotkortet skal generere zonevise reviewkort');
 console.log('GeoDanmark pilotfetch-kontrakt: bestået.');

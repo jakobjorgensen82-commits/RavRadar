@@ -12,7 +12,7 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 - Fra 4.0.129 har pilotjobbet sin egen concurrency-gruppe, så 15-minutters vejropdateringer ikke kan erstatte en ventende pilot.
 - #1936 har produktionsverificeret komplet adgang: 21/21 lag/område-udtræk er komplette.
 - 4.0.130 bygger den første private source-QA med afstande, fragmentering, konfliktflag og kort på den centralt effektive pilotbestand. Lokal kørsel viser, at alle ni zoner kræver review; næste trin er klassificerede delstrækninger og stednavneaudit, ikke blind snapping.
-- #1948 verificerede 4.0.131-kæden med 702 fysiske kildestykker og officiel navneaudit. 4.0.132 samler konservativt kun eksisterende/delvist matchede stykker, udskærer deduplikerede havne/åmundinger og håndhæver eksplicit fjordpolitik. Næste gate er privat CI og visuelt/fagligt pilotreview før land-/vandpunkt- og DMI-celledesign.
+- #1952 verificerede 4.0.132 med 84 private forslag; #1951 verificerede den fulde produktionskæde. Visuelt review afslørede, at fjordpolitikken endnu kun var tekst. 4.0.133 håndhæver derfor officielle fjord-/norpolygoner, genererer ni zonekort og låser otte strukturelt forkerte zoner ved redesigngaten. Kun Blåvand går videre til privat detailopretning; DMI-punkter kommer først efter denne gate.
 
 ## P0 – ægte Codex-baseline etableret i #1772
 - **Første opgave – implementeret lokalt:** workflowets gate-bypass er lukket. En positiv preflight kræver nu `npm run validate` og `npm run release:gate` før artifact; negativ preflight kan fortsat stoppe billigt.

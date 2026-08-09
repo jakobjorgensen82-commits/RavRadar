@@ -1,0 +1,104 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "private-pilot-geographic-review",
+  "reviewBasis": [
+    "centrally-hydrated-zone-geometry",
+    "GeoDanmark-Kyst-current",
+    "official-place-names-and-water-polygons",
+    "private-zone-review-maps"
+  ],
+  "reviewedAt": "2026-08-09",
+  "automaticActivationAllowed": false,
+  "zones": {
+    "DK-B03-13": {
+      "verdict": "local-geometry-refinement-candidate",
+      "nextStageAllowed": "detailed-coast-refinement-only",
+      "idContinuity": "likely-continuous",
+      "findings": [
+        "Den nuværende rette linje ligger markant vest for den fysiske kyst.",
+        "GeoDanmark-forslaget følger den åbne kyst omkring Blåvands Huk og Hvidbjerg sammenhængende.",
+        "Endelig ravstrandafgrænsning og landsideforskydning kræver stadig detailreview."
+      ]
+    },
+    "DK-B04-08": {
+      "verdict": "semantic-relocation-required",
+      "nextStageAllowed": false,
+      "idContinuity": "migration-review-required",
+      "findings": [
+        "Den nuværende linje ligger ved Listerdyb og ikke på Rømøs vestkyst.",
+        "Alle fire klassificerede kildestykker kræver semantisk review; der findes derfor intet sikkert automatisk forslag.",
+        "Ny Rømø-afgrænsning skal bygges fra den fysiske ø-kyst og kontrolleres mod Lakolk, Strandby og Sønderstrand."
+      ]
+    },
+    "DK-B05-10": {
+      "verdict": "partition-redesign-required",
+      "nextStageAllowed": false,
+      "idContinuity": "migration-review-required",
+      "findings": [
+        "Den nuværende zonegeometri spænder langt ind over land og forbinder ikke en meningsfuld kyststrækning.",
+        "De private forslag ligger ved Thisted-kysten og havnen, mens navnet også henviser til Vildsund.",
+        "Thisted og Vildsund skal afgrænses eller opdeles eksplicit før punkter og retninger vurderes."
+      ]
+    },
+    "DK-B05-17": {
+      "verdict": "partition-redesign-required",
+      "nextStageAllowed": false,
+      "idContinuity": "migration-review-required",
+      "findings": [
+        "Den nuværende trekantede linje krydser store land-/vandafstande og repræsenterer ikke Fur syds kyst.",
+        "Det geometrisk støttede forslag dækker kun en begrænset sydøstlig del omkring Nederby og Fur Havn.",
+        "Relevant sydkyst og havnefravalg skal afgrænses samlet før videre behandling."
+      ]
+    },
+    "DK-B05-24": {
+      "verdict": "partition-redesign-required",
+      "nextStageAllowed": false,
+      "idContinuity": "migration-review-required",
+      "findings": [
+        "Den nuværende knækkede linje er ikke bundet til den fysiske Limfjordskyst.",
+        "Forslagene følger flere adskilte nordlige kyststykker og rammer omfattende havne-/åmasker.",
+        "Aalborg øst, Nørresundby og erhvervshavne kræver en eksplicit søgbar-strandpartition."
+      ]
+    },
+    "DK-B10-05": {
+      "verdict": "boundary-redesign-required",
+      "nextStageAllowed": false,
+      "idContinuity": "likely-continuous-after-boundary-review",
+      "findings": [
+        "Forslaget følger fysisk kyst, men omfatter flere retningsmæssigt forskellige strækninger fra nordkyst til Grønsund.",
+        "Stubbekøbing Havn er udskåret, men zonegrænsen og lokale kystdele er ikke fagligt fastlagt.",
+        "Strækningen skal partitioneres efter eksponering og stednavne før punkter genereres."
+      ]
+    },
+    "DK-B10-10": {
+      "verdict": "partition-redesign-required",
+      "nextStageAllowed": false,
+      "idContinuity": "migration-review-required",
+      "findings": [
+        "Zonen blander Falster vest med Nysted på Lolland og krydser flere geografisk forskellige kyster.",
+        "Den officielle Nysted Nor-polygon fjerner yderligere indre kyst, men efterlader stadig 33 reviewdele.",
+        "Falster vest og Nysted-mundingen skal skilles semantisk og topologisk."
+      ]
+    },
+    "DK-B10-15": {
+      "verdict": "partition-redesign-required",
+      "nextStageAllowed": false,
+      "idContinuity": "migration-review-required",
+      "findings": [
+        "Den nuværende zone spænder over store dele af Lollands nord- og vestkyst og kan ikke beskrives retvisende som Kragenæs alene.",
+        "Officielle masker for Nakskov Fjord, Sakskøbing Fjord og Søndernor fjerner store indre strækninger.",
+        "De resterende 17 dele kræver flere geografisk navngivne zoner eller lokale kystdele."
+      ]
+    },
+    "DK-B10-17": {
+      "verdict": "semantic-relocation-required",
+      "nextStageAllowed": false,
+      "idContinuity": "migration-review-required",
+      "findings": [
+        "Den nuværende og foreslåede geometri ligger på Lollands fastland ved Kragenæs og Blans Hoved.",
+        "De officielle Askø- og Lilleø-steder ligger cirka 4,5-5,5 km fra den nuværende kyst.",
+        "Zonen skal flyttes til Askø/Lilleø eller omdøbes med eksplicit historikmigration."
+      ]
+    }
+  }
+}

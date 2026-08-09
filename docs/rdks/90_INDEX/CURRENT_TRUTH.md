@@ -14,7 +14,9 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 - #1936 produktionsverificerede 4.0.129: 21/21 udtræk er komplette, seks blev pagineret, 21 rå GeoJSON-filer på ca. 341 MB ligger i det private artifact, og pilot-/vejrgrupperne kørte uafhængigt.
 - #1941 produktionsverificerede 4.0.130: centralt effektive pilotzoner blev sammenholdt med GeoDanmark, source-QA og tre kort blev gemt privat, og build/Pages blev sprunget over. Alle ni zoner kræver review; blind snapping er forkastet.
 - #1948 produktionsverificerede 4.0.131: 702 fysiske kildestykker og den nøglefri officielle navneaudit blev genereret privat; #1947 bestod samtidig den fulde produktionskæde og begge gates.
-- 4.0.132 samler kun eksisterende/delvist matchede kildestykker til private multipart-kystdele. Havne og kystskærende synlige vandløbsmidter udskæres og deduplikeres; fjordpolitikken er eksplicit pr. pilotområde. Prøven på #1948-artifactet gav 84 reviewforslag. Rømø gav bevidst nul, fordi alle fire stykker kræver semantisk review. Ingen aktive zoner, adminfelter, vejrsampling eller score er ændret; CI afventes.
+- #1952 CI-verificerede 4.0.132 med 84 private reviewforslag, tre kort og alle mutationsflag falske; #1951 bestod fuld frisk produktion, validate, release-gate og Pages-deploy på samme commit.
+- 4.0.133 håndhæver nu indre fjord/nor-fravalg med officielle Farvand-polygoner fra den nøglefri stednavnekilde og genererer ni højopløselige private zonekort. Nysted Nor samt Nakskov/Sakskøbing Fjord og Søndernor ramte relevante pilotzoner; reviewdelene faldt fra 84 til 72.
+- Det geografiske review tillader kun Blåvand at gå videre til detailopretning. Rømø og Askø/Lilleø kræver semantisk flytning; de øvrige seks zoner kræver grænse-/partitionsredesign. Ingen er produktionsgodkendt, og kun Blåvand må få næste private detailanalyse. CI afventes.
 
 ## 4.0.125 – DMI-identitet følger hver komponenttime
 - STAC/GRIB-indlæsningen gemmer nu `collection`, `modelRun` og `nativeValidTime`, mens disse oplysninger stadig er autoritative. Parsergeneration 14 genbehandler rå assets efter den nye kontrakt.
