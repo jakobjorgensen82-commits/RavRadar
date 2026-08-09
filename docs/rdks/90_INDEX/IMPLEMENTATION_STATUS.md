@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.140
+# Implementeringsstatus pr. 4.0.141
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.
@@ -35,7 +35,8 @@
 - [x] 4.0.140 replay-validerer hver del med egen historiknøgle gennem den faktiske `shadow-v2`-funktion og afviser parent-genbrug, krydslæsning og scorepåvirkning. Midlertidigt råinput uploades ikke og slettes.
 - [x] Privat pilot #2004 verificerede to unikke historiknøgler, nul parent-genbrug/krydslæsning, verificerede samples, nul scorepåvirkning, slettet transient input og intet rå-/credentiallæk.
 - [x] #2003 produktionsverificerede 4.0.140 med central adminsync, frisk data, fuld Linux-validate, release-gate, Pages-artifact og deploy.
-- [ ] Næste gate er score-neutral UI-review og senere central admin-roundtrip/rollback; ingen aktivering før ejer-go/no-go.
+- [x] 4.0.141-kandidaten implementerer et privat HTML/JSON-review, som bevarer parent-zonens eksisterende RavScore-farvelinje og forbyder part-scorefarve, delrangering, “bedste del”, klik og tooltip.
+- [ ] Verificér 4.0.141-artifactet privat og kør normal produktion. Derefter er næste gate central admin-roundtrip/rollback; ingen aktivering før ejer-go/no-go.
 - [x] #1976 produktionsverificerede 4.0.135 efter dependency-isolationshotfix med frisk data, fuld validate, release-gate, Pages-artifact og deploy.
 
 ## 4.0.126 – sikker gratis GeoDanmark-pilot, afventer CI

@@ -625,3 +625,7 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - #1845 på `76c7c23` bestod frisk DMI, fuld validering, release-gate, artifact og Pages-deploy.
 - Offentlig dataset `rr-20260808124116-208`: 208/208 zoner, 118 sammenhængende vindtimer.
 - Fem-zoners direkte DKSS-gridproveniens er fortsat særskilt audit; fallbackdækning må ikke kaldes direkte DMI-bevis.
+## 2026-08-09 – 4.0.141 privat score-neutral UI-gate
+- Den faktiske kortvisning er auditeret: aktiv `coastLine` er RavScore-farvet og skal forblive parent-zonens autoritative visning.
+- Et privat HTML/JSON-review bevarer parentens linje, farve, score, klikmål, tooltip og rangering; delene er kun neutrale, stiplede og ikke-interaktive forslag uden score eller “bedste del”.
+- Ingen geometri, sampling, state, admin-data, offentlig UI eller RavScore aktiveres. Privat CI-artifact og normal produktionskørsel afventer.

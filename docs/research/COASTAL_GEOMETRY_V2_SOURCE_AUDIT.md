@@ -111,3 +111,7 @@ Rapporten fører provider, collection, modelkørsel, native tid, gridpunkt, lag,
 Den aktive produktionsfunktion bygger historik fra `previous.zones[zoneId]`. En kystdel kan derfor ikke få state ved blot at genbruge parentens tekniske zone-ID. 4.0.140 udfører i stedet et privat replay med den allerede score-neutrale `shadow-v2`-funktion og hver dels kontraktfastlagte `historyKey`.
 
 Replayet bruger kun current-U/V fra de beståede fælles native trin. Råværdierne skrives midlertidigt uden for artifactmappen og slettes efter beregningen. Rapporten gemmer antal/tidsinterval, input-/historikhash og kompakte statefelter. Den kræver unikke nøgler, nul parent-genbrug, nul krydslæsning og uændret numerisk score i begge jagtformer. Dette er strukturel isolation, ikke aktivering eller langtidsvalidering af den fysiske state-model.
+
+## Privat score-neutral UI-kontrol – 4.0.141-kandidat
+
+Den faktiske `js/map/map-view.js` tegner den aktive zones `coastLine` som den synlige farvede linje, hvor farven kommer direkte fra RavScore-niveauet. Et kystdelsreview må derfor ikke erstatte denne parentlinje. 4.0.141 danner kun et privat HTML/JSON-review: parentens linje, farve, score, klikmål, tooltip og rangering bevares, mens delene er neutrale stiplede konturer mærket “Privat forslag · ikke aktiv”. Del-scorefarver, rangering, “bedste del”, klik, tooltip, vejr- og stateværdier er forbudt. Artifactet integreres ikke i den offentlige bundle.

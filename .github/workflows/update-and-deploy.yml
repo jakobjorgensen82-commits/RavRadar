@@ -416,6 +416,9 @@ jobs:
       - name: Validate private isolated Blåvand state and history replay
         run: node scripts/validate-blaavand-state-history.mjs
 
+      - name: Build private score-neutral Blåvand UI review
+        run: node scripts/build-blaavand-score-neutral-ui-review.mjs
+
       - name: Render private GeoDanmark source review maps
         run: python scripts/render-geodanmark-pilot-maps.py
 
