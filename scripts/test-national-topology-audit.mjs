@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 const workflow=await fs.readFile('.github/workflows/update-and-deploy.yml','utf8');
 const source=await fs.readFile('scripts/analyze-national-coastal-topology.py','utf8');
 const validator=await fs.readFile('scripts/validate-national-topology-audit.py','utf8');
-for(const marker of ['Havn','Vandloebsmidte','national-water-exclusions.geojson','sandDuneNearRatio','groyneObjectCount','automaticActivationAllowed']) assert.ok(source.includes(marker),`Mangler ${marker}`);
+for(const marker of ['Havn','Vandloebsmidte','national-water-exclusions.geojson','sandDuneNearRatio','groyneObjectCount','riverMouthPropertyProfile','river-mouth-oversegmentation-mask-withheld','automaticActivationAllowed']) assert.ok(source.includes(marker),`Mangler ${marker}`);
 assert.doesNotMatch(source,/automaticActivationAllowed":True/);
 for(const marker of ['zoneCount")!=208','selectedExclusionCount','automaticActivationAllowed','manual-review-required']) assert.ok(validator.includes(marker),`Validator mangler ${marker}`);
 for(const marker of ['fetch-national-water-exclusions.py','analyze-national-coastal-topology.py','validate-national-topology-audit.py','national-topology-audit.json','national-topology-audit.geojson']) assert.ok(workflow.includes(marker),`Workflow mangler ${marker}`);

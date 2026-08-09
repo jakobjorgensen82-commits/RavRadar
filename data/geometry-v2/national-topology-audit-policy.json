@@ -6,6 +6,7 @@
   "riverMouthSearchM": 20,
   "riverMouthMinimumInlandReachM": 30,
   "riverMouthClusterM": 80,
+  "maximumRiverMouthsPerZoneForMaskApplication": 20,
   "officialInnerWaterBufferM": 10,
   "sandDuneEvidenceBufferM": 250,
   "slopeEvidenceBufferM": 150,

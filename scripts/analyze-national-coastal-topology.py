@@ -27,12 +27,19 @@ def prepared(collection):
     return rows
 def nearby(tree,rows,window): return [rows[int(i)] for i in tree.query(window)] if tree is not None else []
 def ratio_near(line,geometries,distance): return round(line.intersection(unary_union(geometries).buffer(distance)).length/line.length,6) if line.length and geometries else 0
+def scalar_properties(props): return {str(k):v for k,v in props.items() if isinstance(v,(str,int,float,bool)) or v is None}
+def property_profile(entries):
+    keys={}
+    for entry in entries:
+        for key,value in entry["properties"].items():
+            row=keys.setdefault(key,{"presentCount":0,"values":{}}); row["presentCount"]+=1; label=str(value); row["values"][label]=row["values"].get(label,0)+1
+    return {key:{"presentCount":row["presentCount"],"topValues":[{"value":value,"count":count} for value,count in sorted(row["values"].items(),key=lambda item:(-item[1],item[0]))[:20]]} for key,row in sorted(keys.items())}
 def build(zones,source_qa,source_report,waters,layers,policy):
     zone_map={f["properties"]["id"]:f for f in zones.get("features") or [] if f.get("properties",{}).get("zoneStatus")=="active"}; candidates={f["properties"]["zoneId"]:project(shape(f["geometry"])) for f in source_qa.get("features") or []}; qa_rows={r["zoneId"]:r for r in source_report.get("zones") or []}
     if len(zone_map)!=208 or len(candidates)!=208: fail("National topologiaudit kræver 208 effektive zoner og kandidater.")
     indexed={}; trees={}
     for name,collection in {**layers,"Water":waters}.items(): indexed[name]=prepared(collection); trees[name]=STRtree([g for g,_ in indexed[name]]) if indexed[name] else None
-    output=[]; rows=[]
+    output=[]; rows=[]; river_profile_entries=[]
     for zone_id in sorted(zone_map):
         zone=zone_map[zone_id]; props=zone["properties"]; candidate=candidates[zone_id]; window=candidate.buffer(300); harbours=nearby(trees["Havn"],indexed["Havn"],window); harbour_geoms=[g for g,_ in harbours if g.distance(candidate)<=policy["harbourBufferM"]]
         mouths=[]
@@ -41,21 +48,28 @@ def build(zones,source_qa,source_report,waters,layers,policy):
             for line in parts(geometry):
                 if line.length<policy["riverMouthMinimumInlandReachM"]:continue
                 ends=[Point(line.coords[0]),Point(line.coords[-1])]; distances=[p.distance(candidate) for p in ends]; i=0 if distances[0]<=distances[1] else 1
-                if distances[i]<=policy["riverMouthSearchM"] and distances[1-i]>=policy["riverMouthMinimumInlandReachM"]: mouths.append(ends[i])
+                if distances[i]<=policy["riverMouthSearchM"] and distances[1-i]>=policy["riverMouthMinimumInlandReachM"]: mouths.append({"point":ends[i],"properties":scalar_properties(rprops),"lineLengthM":round(line.length,1),"mouthDistanceM":round(distances[i],1),"inlandEndpointDistanceM":round(distances[1-i],1)})
         clustered=[]
-        for point in sorted(mouths,key=lambda p:(p.x,p.y)):
-            if not any(point.distance(existing)<=policy["riverMouthClusterM"] for existing in clustered):clustered.append(point)
+        for entry in sorted(mouths,key=lambda r:(r["point"].x,r["point"].y)):
+            cluster=next((existing for existing in clustered if entry["point"].distance(existing["point"])<=policy["riverMouthClusterM"]),None)
+            if cluster: cluster["members"].append(entry)
+            else: clustered.append({"point":entry["point"],"members":[entry]})
+        for cluster in clustered:
+            for entry in cluster["members"]: river_profile_entries.append({"zoneId":zone_id,**{k:v for k,v in entry.items() if k!="point"}})
         waters_near=[] if props.get("coastType")==policy["limfjordCoastType"] else [g for g,_ in nearby(trees["Water"],indexed["Water"],window) if g.buffer(policy["officialInnerWaterBufferM"]).intersects(candidate)]
-        masks=[g.buffer(policy["harbourBufferM"]) for g in harbour_geoms]+[p.buffer(policy["riverMouthBufferM"]) for p in clustered]+[g.buffer(policy["officialInnerWaterBufferM"]) for g in waters_near]
+        river_masks_allowed=len(clustered)<=policy["maximumRiverMouthsPerZoneForMaskApplication"]
+        masks=[g.buffer(policy["harbourBufferM"]) for g in harbour_geoms]+([p["point"].buffer(policy["riverMouthBufferM"]) for p in clustered] if river_masks_allowed else [])+[g.buffer(policy["officialInnerWaterBufferM"]) for g in waters_near]
         clipped=candidate.difference(unary_union(masks)) if masks else candidate; retained=[p for p in parts(clipped) if p.length>=policy["minimumRetainedFragmentM"]]; retained_union=unary_union(retained) if retained else LineString()
         dunes=[g for g,_ in nearby(trees["SandKlit"],indexed["SandKlit"],window)]; slopes=[g for g,_ in nearby(trees["Skraent"],indexed["Skraent"],window)]; groynes=[g for g,_ in nearby(trees["Hoefde"],indexed["Hoefde"],window) if g.distance(candidate)<=policy["groyneEvidenceBufferM"]]
         conflict=(qa_rows.get(zone_id) or {}).get("conflictClass") or "unknown"; flags=[]
         if retained_union.is_empty:flags.append("no-retained-source-after-topology-masks")
         if conflict!="automatic-source-analysis":flags.append(f"planned-conflict:{conflict}")
         if not waters_near and props.get("coastType")!="limfjord":flags.append("no-official-fjord-or-nor-intersection")
-        row={"zoneId":zone_id,"currentName":props.get("name"),"coastType":props.get("coastType"),"conflictClass":conflict,"inputCandidateLengthKm":round(candidate.length/1000,3),"retainedLengthKm":round(retained_union.length/1000,3),"retainedFragmentCount":len(retained),"removedByTopologyMasksKm":round(max(0,candidate.length-retained_union.length)/1000,3),"harbourObjectCount":len(harbour_geoms),"riverMouthCount":len(clustered),"officialInnerWaterCount":len(waters_near),"sandDuneNearRatio":ratio_near(retained_union,dunes,policy["sandDuneEvidenceBufferM"]),"slopeNearRatio":ratio_near(retained_union,slopes,policy["slopeEvidenceBufferM"]),"groyneObjectCount":len(groynes),"auditStatus":"manual-review-required","qualityFlags":flags,"automaticActivationAllowed":False}
+        if not river_masks_allowed:flags.append("river-mouth-oversegmentation-mask-withheld")
+        row={"zoneId":zone_id,"currentName":props.get("name"),"coastType":props.get("coastType"),"conflictClass":conflict,"inputCandidateLengthKm":round(candidate.length/1000,3),"retainedLengthKm":round(retained_union.length/1000,3),"retainedFragmentCount":len(retained),"removedByTopologyMasksKm":round(max(0,candidate.length-retained_union.length)/1000,3),"harbourObjectCount":len(harbour_geoms),"riverMouthCount":len(clustered),"riverMouthPolicyStatus":"measured-mask-applied" if river_masks_allowed else "oversegmentation-review-required","riverMasksApplied":river_masks_allowed,"officialInnerWaterCount":len(waters_near),"sandDuneNearRatio":ratio_near(retained_union,dunes,policy["sandDuneEvidenceBufferM"]),"slopeNearRatio":ratio_near(retained_union,slopes,policy["slopeEvidenceBufferM"]),"groyneObjectCount":len(groynes),"auditStatus":"manual-review-required","qualityFlags":flags,"automaticActivationAllowed":False}
         rows.append(row); output.append({"type":"Feature","properties":{"zoneId":zone_id,"kind":"private-national-topology-audit-candidate","auditStatus":row["auditStatus"],"automaticActivationAllowed":False},"geometry":mapping(unproject(retained_union))})
-    report={"schemaVersion":"1.0.0","status":"private-national-read-only-topology-audit","generatedAt":datetime.now(timezone.utc).isoformat().replace("+00:00","Z"),"zoneCount":len(rows),"productionGeometryChanged":False,"adminDataChanged":False,"weatherSamplingChanged":False,"stateChanged":False,"scoreChanged":False,"automaticActivationAllowed":False,"zones":rows}
+    over=sum(1 for row in rows if row["riverMouthPolicyStatus"]=="oversegmentation-review-required")
+    report={"schemaVersion":"1.1.0","status":"private-national-read-only-topology-audit","generatedAt":datetime.now(timezone.utc).isoformat().replace("+00:00","Z"),"zoneCount":len(rows),"nationalRiverMouthPolicyAccepted":over==0,"riverMouthOversegmentationZoneCount":over,"riverMouthPropertyProfile":property_profile(river_profile_entries),"riverMouthDiagnosticSamples":river_profile_entries[:200],"productionGeometryChanged":False,"adminDataChanged":False,"weatherSamplingChanged":False,"stateChanged":False,"scoreChanged":False,"automaticActivationAllowed":False,"zones":rows}
     return report,{"type":"FeatureCollection","features":output}
 def self_test():
     def fc(features):return {"type":"FeatureCollection","features":features}

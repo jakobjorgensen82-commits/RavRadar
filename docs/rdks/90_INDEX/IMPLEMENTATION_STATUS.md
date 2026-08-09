@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.146
+# Implementeringsstatus pr. 4.0.147
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] 4.0.143 er produktionsverificeret i #2027: central sync, frisk data, fuld Linux-validate, releasegate, Pages-artifact og deploy bestod.
@@ -12,6 +12,9 @@
 - [x] #2029 beviste 208-zoners hydrering, 100 fliser/700 requests, komplethed, deduplikering og credentialkontrol; råartifactet er privat og 413 MB.
 - [x] #2033 verificerede 4.0.145's særskilte kompakte artifact på 6,8 MB ved siden af råkilden; #2032 bestod normal produktion.
 - [x] 4.0.146 måler national havn-/åmunding-/fjord-/norudskæring, klit-/skræntevidens og høfter i en read-only 208-zone topologiaudit med egen fail-closed gate.
+- [x] #2037 verificerede topologiauditens tekniske kæde: 90 officielle masker, 194 zoner med bevaret kandidat og grøn isolation; #2036 bestod normal produktion.
+- [x] Artifactaudit afviste første nationale åmundingsregel fagligt: 2.868 klynger i 180 zoner og op til 189 i én zone er oversegmentering, ikke 2.868 dokumenterede åmundinger.
+- [x] 4.0.147 tilbageholder åmasker over en eksplicit auditgrænse, markerer zonen no-go og gemmer egenskabsprofil samt begrænsede diagnostiske samples uden geometri eller credentials.
 - [x] Lokal RDKS, kystgeometri-v2, workflowkontrakt, releaseversion og releasegate består. Hele validate-rækken består bortset fra den kendte Windows/Linux-`rsync`-test, som skal bevises i CI.
 - [ ] National topologi, ravstrandfravalg, stednavne, lokale punkter, DMI/state/score/UI/admin og aktivering er endnu ikke implementeret.
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.
