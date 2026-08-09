@@ -1,6 +1,12 @@
-# Implementeringsstatus pr. 4.0.142
+# Implementeringsstatus pr. 4.0.143
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
+- [x] National planlægger bruger den centralt hydrerede effektive bestand, kræver 208 zoner og danner deterministiske, overlappende kildefliser uden 208 manuelle Blåvand-forløb.
+- [x] Kendte fejl ved Blåvand, Rømø, Limfjorden og Lolland/Falster er maskinlæsbare konfliktklasser; øvrige centrale ændringer stoppes automatisk som admin-konflikter.
+- [x] Separat privat nationalt workflowjob kan hente og deduplikere syv gratis officielle GeoDanmark-lag uden Pages-rettigheder eller mutationsadgang.
+- [ ] Første nationale private CI-kørsel skal bevise 208-zoners hydrering, komplet kildehentning, fliseantal, deduplikering og credential-frit artifact.
+- [x] Lokal RDKS, kystgeometri-v2, workflowkontrakt, releaseversion og releasegate består. Hele validate-rækken består bortset fra den kendte Windows/Linux-`rsync`-test, som skal bevises i CI.
+- [ ] National topologi, ravstrandfravalg, stednavne, lokale punkter, DMI/state/score/UI/admin og aktivering er endnu ikke implementeret.
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.
 - [x] Eksisterende multi-ankerfunktion er auditeret: flere navngivne retninger findes allerede i admin og scoreforklaring, men almindelig vejrpipeline leverer ikke endnu en selvstændig komponentserie pr. anker.
 - [x] Høfder og andre mulige ravfælder er afgrænset som score-neutral registrering frem til særskilt RavScore-forskning og godkendelse.

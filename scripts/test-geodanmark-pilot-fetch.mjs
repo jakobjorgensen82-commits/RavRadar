@@ -54,6 +54,8 @@ assert.match(workflow, /python scripts\/analyze-geodanmark-pilot\.py/);
 assert.match(workflow, /python scripts\/audit-pilot-place-names\.py/);
 assert.match(workflow, /python scripts\/fetch-official-water-exclusions\.py/);
 assert.match(workflow, /python scripts\/assemble-geodanmark-coastal-parts\.py/);
+assert.match(workflow, /Snapshot repository zone baseline before central hydration/);
+assert.match(workflow, /python scripts\/build-national-geometry-v2-plan\.py/);
 assert.match(workflow, /python scripts\/build-blaavand-detail-proposal\.py/);
 assert.match(workflow, /python scripts\/build-blaavand-ortho-review\.py/);
 assert.match(workflow, /python scripts\/validate-blaavand-dmi-grid\.py/);

@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "national-planning-policy",
+  "expectedEffectiveZoneCount": 208,
+  "tiling": {
+    "widthDegrees": 0.35,
+    "heightDegrees": 0.25,
+    "marginDegrees": 0.03
+  },
+  "conflictClasses": [
+    "automatic-source-analysis",
+    "central-admin-conflict-review",
+    "local-geometry-refinement",
+    "boundary-redesign-review",
+    "partition-redesign-review",
+    "semantic-migration-review",
+    "explicit-topology-exception"
+  ],
+  "zones": {
+    "DK-B03-13": {
+      "conflictClass": "local-geometry-refinement",
+      "reason": "Blåvand is the fully validated reference implementation; reuse its approved method and evidence."
+    },
+    "DK-B04-08": {
+      "conflictClass": "semantic-migration-review",
+      "reason": "Rømø line and geographic meaning require relocation to the island west coast with history isolation."
+    },
+    "DK-B05-10": {
+      "conflictClass": "partition-redesign-review",
+      "reason": "Thisted and Vildsund require an explicit Limfjord partition."
+    },
+    "DK-B05-17": {
+      "conflictClass": "partition-redesign-review",
+      "reason": "Fur south and harbour exclusions require an explicit partition."
+    },
+    "DK-B05-24": {
+      "conflictClass": "partition-redesign-review",
+      "reason": "Aalborg east, Nørresundby and commercial harbours require an explicit searchable-coast partition."
+    },
+    "DK-B10-05": {
+      "conflictClass": "boundary-redesign-review",
+      "reason": "Falster north coast to Grønsund contains multiple orientations and requires named boundaries."
+    },
+    "DK-B10-10": {
+      "conflictClass": "partition-redesign-review",
+      "reason": "Falster west and Nysted on Lolland must be separated semantically and topologically."
+    },
+    "DK-B10-15": {
+      "conflictClass": "partition-redesign-review",
+      "reason": "Lolland north/west cannot remain represented as Kragenæs alone after inner-fjord exclusions."
+    },
+    "DK-B10-17": {
+      "conflictClass": "semantic-migration-review",
+      "reason": "Askø/Lilleø is geographically displaced and requires relocation or rename with history migration."
+    }
+  },
+  "gates": [
+    "central-admin-hydration-and-tombstones",
+    "official-free-source-completeness",
+    "coast-once-only-topology",
+    "harbour-river-and-inner-fjord-exclusions",
+    "place-based-name-and-id-migration",
+    "independent-dmi-provenance-per-part",
+    "separate-state-and-history-per-part",
+    "best-valid-part-score-with-seven-point-coverage",
+    "central-admin-readback-and-rollback",
+    "national-release-and-pages-activation"
+  ]
+}

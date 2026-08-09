@@ -644,3 +644,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Ejeren fastlagde, at den nuværende GitHub Pages-side uden aktive brugere er testmiljø frem til senere domænekøb.
 - Hele Danmark skal bygges, kendte fejl skal rettes og den samlede kystgeometri-v2 må aktiveres på testsiden efter grøn national gate. Blåvand er reference, ikke eneste zone.
 - En senere domæne-/brugerrelease kræver en ny modenheds-/produktionsgate. Dataintegritet, gratis kilder, secretsikkerhed og rollback gælder fortsat.
+
+## 2026-08-09 – 4.0.143 national kildeplan-kandidat
+- Auditten viste, at den hidtidige v2-generator kun dækkede tre pilotområder og ni zoner.
+- En ny planlægger kræver den centralt effektive bestand på 208 zoner, danner deterministiske kildefliser og klassificerer kendte geografiske fejl samt centrale adminændringer maskinlæsbart.
+- Et separat privat workflowjob henter syv gratis officielle GeoDanmark-lag nationalt og deduplikerer fliseoverlap. Det har ingen Pages-rettigheder og kan ikke ændre geometri, admin, vejr eller score.
+- Lokal kontraktvalidering er grøn. Privat national CI, artifactaudit og topologigenerering mangler.

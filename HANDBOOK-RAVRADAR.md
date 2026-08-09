@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.142
+**Håndbogsversion:** 4.0.143
 
 **Opdateret:** 1. august 2026
 
@@ -1463,3 +1463,9 @@ Kystlinjen forskydes 15 meter mod land. Landsiden bestemmes separat for hver del
 Detailforslaget er kun reviewmateriale. Ortofotogaten og den private DMI-gridgate er bestået; de to kandidater rammer forskellige celler for alle kontrollerede komponenter. 4.0.138 låser hver fremtidig delserie til egen identitet, provenance og historik, 4.0.139 beviser komplette native flertidsserier, og 4.0.140 beviser separat score-neutral historikisolation. Privat pilot #2009 verificerede 4.0.141's UI-gate: den eksisterende aktive Blåvand-zone beholder sin RavScore-farvede kystlinje, score og rangering, mens de to delkonturer kun vises neutralt, stiplet og “ikke aktiv”. Ingen delscore, scorefarve, “bedste del” eller interaktion tillades. Produktion #2008 bestod fulde gates og deploy. Sampling, state, offentlig UI og admin-write er fortsat deaktiveret.
 
 4.0.142-kandidaten tester kun den centrale admintransport gennem en unik midlertidig kladde. Kladden læses, opdateres og slettes igen, og de eksisterende centrale kystlinje- og retningsdokumenter skal have samme indholdshash og version før og efter. Det er rollbackbevis, ikke en lagring eller aktivering af Blåvand-forslaget.
+
+# National kildeplan for hele Danmark (4.0.143)
+
+RavRadar kan nu planlægge kystgeometri-v2 for hele den centralt effektive bestand uden at gentage Blåvand manuelt 208 gange. Efter central adminhydrering og tombstones kræver planen præcis 208 aktive zoner. Kystlinjerne fordeles på små, reproducerbare GeoDanmark-fliser, og kendte fejl samt nye centrale ændringer sendes til tydelige konfliktklasser i stedet for at blive overskrevet.
+
+Et separat privat GitHub-job kan hente de gratis officielle kyst-, havne-, vandløbs-, høfde-, klit- og skræntlag for fliserne og fjerne dubletter fra overlap. Jobbet har ingen adgang til Pages og ændrer hverken aktive zoner, admin, vejrdata eller RavScore. 4.0.143 er derfor en kilde- og planlægningsgate; den er ikke den færdige Danmarkskyst eller en aktivering.

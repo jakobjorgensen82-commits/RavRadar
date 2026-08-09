@@ -1,5 +1,12 @@
 # Aktuelt sessionshandoff – 2026-08-09
 
+## Aktiv 4.0.143-kandidat – national kildeplan
+- Worktree indeholder en central-hydreret planlægger for præcis 208 effektive zoner, maskinlæsbare konfliktklasser og deterministiske kildefliser.
+- Et nyt isoleret `geometry_v2_national`-job henter og deduplikerer de syv gratis officielle GeoDanmark-lag til et privat artifact uden Pages-rettigheder.
+- Lokale plan-, fetch-, workflow- og pilotkontrakter, RDKS, versionskontrol og release-gate er grønne. Hele validate-rækken er kørt deltest for deltest; alle bestod undtagen den kendte Windows-begrænsning i `test:pages-module-closure`, som kræver Linux/rsync. Linux-CI er det endelige fulde bevis.
+- Næste nødvendige eksterne evidens er første private nationale CI-kørsel. Derefter auditeres artifactet, og den nationale topologi-/ravstrandgenerator bygges på de faktiske kildedata.
+- Ingen aktiv geometri, admin-data, vejr, state, score eller offentlig UI er ændret.
+
 ## Hvorfor checkpointet findes
 Ejeren oplevede, at den lange chat var blevet langsommere, og bad om at fortsætte i en ny chat. Dette dokument er den permanente, genoptagelige status. Det er ikke et releasebevis.
 

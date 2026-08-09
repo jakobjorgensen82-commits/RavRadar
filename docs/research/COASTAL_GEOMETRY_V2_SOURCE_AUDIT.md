@@ -119,3 +119,10 @@ Den faktiske `js/map/map-view.js` tegner den aktive zones `coastLine` som den sy
 ## Privat central admin-roundtrip – 4.0.142-kandidat
 
 Den generelle produktionsgate beviser allerede Supabase create/read/update/delete. Den Blåvand-specifikke gate må derudover bevise isolation fra runtime-sandheden. Derfor skrives forslaget kun som et unikt midlertidigt kladdedokument, som aldrig er publiceret eller aktivt. Efter readback og update slettes dokumentet, og fraværet verificeres. `coastline-overrides` og `direction-reviews` læses før og efter; både payload-hash og version skal være identiske. Rapporten gemmer ikke payload eller adgangsoplysninger.
+# National skaleringsaudit – 4.0.143
+
+Den eksisterende implementering var fortsat hårdt bundet til `pilot-areas.json` med tre områder og ni zoner. Blåvands detail-, DMI-, state-, UI- og admin-gater kan genbruges som kontrakt, men ikke kopieres manuelt pr. zone.
+
+4.0.143 indfører derfor to forudgående nationale led. Først dannes en plan fra den centralt hydrerede aktive bestand på 208 zoner. Planen bruger deterministiske fliser og eksplicitte konfliktklasser for central admin, semantisk flytning, partition, grænser og lokale detailrettelser. Dernæst kan et isoleret privat job hente de syv eksisterende gratis GeoDanmark-lag pr. flise og deduplikere objekter fra overlap.
+
+Dette løser kildeomfang og revisionsspor, ikke selve kystpartitionen. Første private nationale artifact skal måle fliser, komplette lag, datamængde, dubletter og køretid. Først derefter bygges national havn-/å-/fjordudskæring, topologi, stednavne, lokale punkter og de efterfølgende DMI-/state-/score-/admin-gater.

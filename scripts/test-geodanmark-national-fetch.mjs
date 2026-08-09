@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+const source=await fs.readFile('scripts/fetch-geodanmark-national.py','utf8');
+assert.match(source,/sourceZoneCount.*208/s);
+assert.match(source,/validate_plan/);
+assert.match(source,/feature_key/);
+assert.match(source,/duplicateTileFeaturesRemoved/);
+assert.match(source,/automaticActivationAllowed.*False/s);
+assert.match(source,/DATAFORDELER_API_KEY/);
+assert.doesNotMatch(source,/print\([^\n]*key/);
+console.log('National GeoDanmark-fetchkontrakt: bestået.');

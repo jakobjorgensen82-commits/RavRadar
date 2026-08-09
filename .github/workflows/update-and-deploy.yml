@@ -13,6 +13,11 @@ on:
         required: false
         default: false
         type: boolean
+      geometry_v2_national:
+        description: "Kør privat national GeoDanmark-kildeplan og -hentning (ingen produktion/deploy)"
+        required: false
+        default: false
+        type: boolean
   push:
     branches: [main]
 
@@ -23,12 +28,12 @@ permissions:
 # schedule-trigger bruges bevidst ikke. Der må højst være én tung kørsel og én
 # ventende kørsel; ventende kald kontrollerer friskhed, når de får en runner.
 concurrency:
-  group: ${{ github.event_name == 'workflow_dispatch' && inputs.geometry_v2_pilot == true && 'ravradar-geometry-v2-pilot' || 'ravradar-weather-production' }}
-  cancel-in-progress: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (inputs.force == true || inputs.geometry_v2_pilot == true)) }}
+  group: ${{ github.event_name == 'workflow_dispatch' && inputs.geometry_v2_national == true && 'ravradar-geometry-v2-national' || github.event_name == 'workflow_dispatch' && inputs.geometry_v2_pilot == true && 'ravradar-geometry-v2-pilot' || 'ravradar-weather-production' }}
+  cancel-in-progress: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (inputs.force == true || inputs.geometry_v2_pilot == true || inputs.geometry_v2_national == true)) }}
 
 jobs:
   build-and-prepare:
-    if: github.event_name != 'workflow_dispatch' || inputs.geometry_v2_pilot != true
+    if: github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)
     runs-on: ubuntu-latest
     timeout-minutes: 40
     permissions:
@@ -332,6 +337,58 @@ jobs:
           path: _site
 
 
+  geometry-v2-national:
+    name: Acquire private national GeoDanmark geometry-v2 source
+    if: github.event_name == 'workflow_dispatch' && inputs.geometry_v2_national == true && inputs.geometry_v2_pilot != true
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python for private national geometry acquisition
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install free GeoDanmark geometry dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements-geometry.txt
+
+      - name: Snapshot repository zones before central hydration
+        run: |
+          mkdir -p .geometry-v2-work
+          cp data/zones.geojson .geometry-v2-work/repository-zone-baseline.geojson
+
+      - name: Sync centrally saved admin configuration for national input
+        run: python scripts/sync-admin-config.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Apply centrally approved geometry and tombstones to national input
+        run: python scripts/apply-central-zone-reviews.py
+
+      - name: Build national read-only work plan
+        run: >-
+          python scripts/build-national-geometry-v2-plan.py
+          --baseline-zones .geometry-v2-work/repository-zone-baseline.geojson
+
+      - name: Fetch and deduplicate private national official source layers
+        run: python scripts/fetch-geodanmark-national.py
+        env:
+          DATAFORDELER_API_KEY: ${{ secrets.DATAFORDELER_API_KEY }}
+
+      - name: Upload private national geometry-v2 source artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: geodanmark-geometry-v2-national-${{ github.run_id }}
+          path: .geometry-v2-work/
+          retention-days: 14
+          if-no-files-found: error
+          include-hidden-files: true
+
   geometry-v2-pilot:
     name: Run GeoDanmark geometry-v2 pilot
     if: github.event_name == 'workflow_dispatch' && inputs.geometry_v2_pilot == true
@@ -353,6 +410,11 @@ jobs:
       - name: Install DMI GRIB reader for private grid validation
         run: python -m pip install --disable-pip-version-check -r requirements-dmi.txt
 
+      - name: Snapshot repository zone baseline before central hydration
+        run: |
+          mkdir -p .geometry-v2-work
+          cp data/zones.geojson .geometry-v2-work/repository-zone-baseline.geojson
+
       - name: Sync centrally saved admin configuration for pilot input
         run: python scripts/sync-admin-config.py
         env:
@@ -361,6 +423,11 @@ jobs:
 
       - name: Apply centrally approved zone geometry and tombstones for pilot input
         run: python scripts/apply-central-zone-reviews.py
+
+      - name: Build national geometry-v2 work plan from effective zones
+        run: >-
+          python scripts/build-national-geometry-v2-plan.py
+          --baseline-zones .geometry-v2-work/repository-zone-baseline.geojson
 
       - name: Run GeoDanmark geometry-v2 pilot
         run: python scripts/fetch-geodanmark-pilot.py

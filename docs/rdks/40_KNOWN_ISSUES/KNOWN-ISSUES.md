@@ -1,6 +1,7 @@
 # Kendte åbne og overvågede forhold
 
 ## National zone- og kystgeometri – aktiv pilot efter DEC-0032
+- **ISSUE-NATIONAL-GEOMETRY-SOURCE-ACQUISITION – IMPLEMENTERET LOKALT I 4.0.143 / AFVENTER PRIVAT CI:** Den tidligere generator var hårdt begrænset til tre områder og ni zoner. En ny central-hydreret 208-zoners plan og privat flisebaseret GeoDanmark-hentning er implementeret, men faktisk national komplethed, datamængde, køretid og deduplikeret artifact skal bevises i CI før topologigeneratoren bygges på resultatet.
 - **ISSUE-ZONE-GEOMETRY-NATIONAL-CONSISTENCY – AKTIV:** Det aktuelle register indeholder geografisk misvisende navne/placeringer, utilsigtede overlap og mange kystlinjer, der fortsat bygger på ældre AI-/fallbackgeometri. Integritetstests beviser propagation, men ikke en korrekt national kystpartition.
 - **ISSUE-MULTI-ANCHOR-SAMPLING-GAP – AKTIV:** Admin og scoreforklaring understøtter flere lokale retningsankre, men den almindelige vejrproduktion bygger fortsat primært én zoneserie. Flere autogenererede punkter må ikke markedsføres som forskellig lokal vind/strøm, før sampling og provenance er implementeret pr. kystdel.
 - **ISSUE-ZONE-ID-SEMANTIC-DRIFT – AKTIV:** Omdøbning eller flytning kan få et stabilt teknisk ID til at beskrive en ny geografisk strækning. Historik, observationer, regler og adaptive data kræver en eksplicit migrationsklassifikation.

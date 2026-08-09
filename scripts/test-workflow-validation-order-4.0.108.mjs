@@ -56,9 +56,14 @@ if (!text.includes('${{ github.run_id }}-${{ github.run_attempt }}')) throw new 
 
 if (!text.includes('build-and-prepare:') || !text.includes('deploy-pages:')) throw new Error('Data/build og Pages-deploy skal være separate jobs.');
 if (!text.includes('geometry-v2-pilot:')) throw new Error('Workflow mangler det isolerede GeoDanmark geometry-v2 pilotjob.');
-if (!text.includes("if: github.event_name != 'workflow_dispatch' || inputs.geometry_v2_pilot != true")) {
-  throw new Error('En GeoDanmark-pilotdispatch skal udelukke det almindelige build- og deployjob.');
+if (!text.includes("if: github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)")) {
+  throw new Error('Private GeoDanmark-dispatches skal udelukke det almindelige build- og deployjob.');
 }
+const geometryNationalSection = text.slice(text.indexOf('geometry-v2-national:'), text.indexOf('geometry-v2-pilot:'));
+for (const marker of ['geometry_v2_national == true', 'python scripts/build-national-geometry-v2-plan.py', 'python scripts/fetch-geodanmark-national.py', 'Upload private national geometry-v2 source artifact']) {
+  if (!geometryNationalSection.includes(marker)) throw new Error(`Nationalt GeoDanmark-job mangler ${marker}`);
+}
+if (geometryNationalSection.includes('pages: write') || geometryNationalSection.includes('id-token: write')) throw new Error('Det nationale GeoDanmark-job må ikke have Pages-skriverettigheder.');
 const geometryPilotSection = text.slice(text.indexOf('geometry-v2-pilot:'), text.indexOf('deploy-pages:'));
 for (const marker of [
   "github.event_name == 'workflow_dispatch' && inputs.geometry_v2_pilot == true",
@@ -68,6 +73,7 @@ for (const marker of [
   'python scripts/fetch-geodanmark-pilot.py',
   'python scripts/analyze-geodanmark-pilot.py',
   'python scripts/audit-pilot-place-names.py',
+  'python scripts/build-national-geometry-v2-plan.py',
   'python scripts/render-geodanmark-pilot-maps.py',
   'Upload private GeoDanmark pilot artifact',
   'include-hidden-files: true'
@@ -86,7 +92,7 @@ for (const protectedPilotPath of ["--exclude 'data/geometry-v2/'", "--exclude '.
   if (!buildSection.includes(protectedPilotPath)) throw new Error(`Pages-artifact må ikke indeholde ${protectedPilotPath}`);
 }
 if (!text.includes("cancel-in-progress: ${{ github.event_name == 'push'")) throw new Error('Push-release skal kunne prioritere sig foran en ældre almindelig vejropdatering.');
-if (!text.includes("'ravradar-geometry-v2-pilot' || 'ravradar-weather-production'")) throw new Error('GeoDanmark-piloten skal have en separat concurrency-gruppe fra vejropdateringer.');
-if (!text.includes('inputs.force == true || inputs.geometry_v2_pilot == true')) throw new Error('En nyere eksplicit pilot skal kunne erstatte en ældre pilot uden at dele vejrkø.');
+if (!text.includes("'ravradar-geometry-v2-national'") || !text.includes("'ravradar-geometry-v2-pilot'")) throw new Error('Private GeoDanmark-jobs skal have separate concurrency-grupper fra vejropdateringer.');
+if (!text.includes('inputs.force == true || inputs.geometry_v2_pilot == true || inputs.geometry_v2_national == true')) throw new Error('Et nyere eksplicit geometri-job skal kunne erstatte sit ældre job uden at dele vejrkø.');
 
 console.log('Workflowinventar, rækkefølge, deployisolering og progressiv DMI-cache består.');
