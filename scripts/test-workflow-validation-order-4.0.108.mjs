@@ -66,7 +66,8 @@ for (const marker of [
   'python scripts/sync-admin-config.py',
   'python scripts/apply-central-zone-reviews.py',
   'python scripts/fetch-geodanmark-pilot.py',
-  'Upload private GeoDanmark pilot artifact'
+  'Upload private GeoDanmark pilot artifact',
+  'include-hidden-files: true'
 ]) {
   if (!geometryPilotSection.includes(marker)) throw new Error(`GeoDanmark-pilotjob mangler ${marker}`);
 }

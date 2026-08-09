@@ -23,6 +23,8 @@ WFS_URL = "https://wfs.datafordeler.dk/GEODKV/GEODKV_WFS/1.0.0/WFS"
 REQUIRED_LAYER = "Kyst"
 OPTIONAL_LAYERS = ("Havn", "Vandloebskant", "Vandloebsmidte", "Hoefde", "SandKlit", "Skraent")
 SAFE_TIMEOUT_SECONDS = 60
+PAGE_SIZE = 10000
+MAX_FEATURES_PER_LAYER_AREA = 250000
 
 
 def fail(message):
@@ -134,27 +136,54 @@ def lon_lat_bounds(feature_collection, zone_ids):
 
 def fetch_layer(layer_name, bounds, target, key):
     bbox = ",".join(f"{value:.6f}" for value in bounds) + ",EPSG:4326"
-    response = safe_get({
-        "service": "WFS",
-        "version": "2.0.0",
-        "request": "GetFeature",
-        "typeNames": layer_name,
-        "outputFormat": "application/json",
-        "srsName": "EPSG:4326",
-        "bbox": bbox,
-        "count": "50000",
-    }, key)
-    try:
-        payload = response.json()
-    except ValueError:
-        fail(f"Datafordeler leverede ikke gyldig GeoJSON for laget {layer_name}.")
-    if payload.get("type") != "FeatureCollection":
-        fail(f"Datafordeler leverede ikke en FeatureCollection for laget {layer_name}.")
+    features = []
+    payload = None
+    source_number_matched = None
+    page_count = 0
+    while True:
+        response = safe_get({
+            "service": "WFS",
+            "version": "2.0.0",
+            "request": "GetFeature",
+            "typeNames": layer_name,
+            "outputFormat": "application/json",
+            "srsName": "EPSG:4326",
+            "bbox": bbox,
+            "count": str(PAGE_SIZE),
+            "startIndex": str(len(features)),
+        }, key)
+        try:
+            page = response.json()
+        except ValueError:
+            fail(f"Datafordeler leverede ikke gyldig GeoJSON for laget {layer_name}.")
+        if page.get("type") != "FeatureCollection":
+            fail(f"Datafordeler leverede ikke en FeatureCollection for laget {layer_name}.")
+        if payload is None:
+            payload = {key: value for key, value in page.items() if key != "features"}
+            matched = page.get("numberMatched")
+            if isinstance(matched, int) or (isinstance(matched, str) and matched.isdigit()):
+                source_number_matched = int(matched)
+        page_features = page.get("features") or []
+        if not isinstance(page_features, list):
+            fail(f"Datafordeler leverede ugyldig featureliste for laget {layer_name}.")
+        page_count += 1
+        features.extend(page_features)
+        if len(features) > MAX_FEATURES_PER_LAYER_AREA:
+            fail(f"Datafordeler-laget {layer_name} overskrider pilotens sikre featuregrænse.")
+        if not page_features or len(page_features) < PAGE_SIZE:
+            break
+        if source_number_matched is not None and len(features) >= source_number_matched:
+            break
+    payload["features"] = features
+    payload["numberReturned"] = len(features)
     encoded = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     target.write_bytes(encoded + b"\n")
     return {
         "layer": layer_name,
-        "featureCount": len(payload.get("features") or []),
+        "featureCount": len(features),
+        "sourceNumberMatched": source_number_matched,
+        "pageCount": page_count,
+        "complete": source_number_matched is None or len(features) >= source_number_matched,
         "sha256": hashlib.sha256(encoded).hexdigest(),
         "file": target.name,
     }

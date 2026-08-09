@@ -15,6 +15,10 @@ for (const required of [
   '_current',
   'availableLayers',
   'required-layer-not-resolved',
+  'startIndex',
+  'sourceNumberMatched',
+  'pageCount',
+  'MAX_FEATURES_PER_LAYER_AREA',
   'not-exposed-by-source',
   'fetched-for-non-production-pilot'
 ]) assert.ok(source.includes(required), `GeoDanmark-fetch mangler ${required}`);
@@ -32,6 +36,7 @@ assert.match(workflow, /DATAFORDELER_API_KEY:\s*\$\{\{ secrets\.DATAFORDELER_API
 assert.match(workflow, /name: Run GeoDanmark geometry-v2 pilot/);
 assert.match(workflow, /--exclude 'data\/geometry-v2\/'/);
 assert.match(workflow, /--exclude '\.geometry-v2-work\/'/);
+assert.match(workflow, /include-hidden-files:\s*true/);
 
 const python = process.env.PYTHON || (process.platform === 'win32' ? 'python.exe' : 'python3');
 const layerTest = spawnSync(python, ['-c', [

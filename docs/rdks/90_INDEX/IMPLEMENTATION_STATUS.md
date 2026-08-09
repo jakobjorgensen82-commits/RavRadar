@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.127
+# Implementeringsstatus pr. 4.0.128
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.
@@ -13,7 +13,8 @@
 - [x] Tre pilotmiljøer og nul-tolerancekriterier er låst i `data/geometry-v2/pilot-areas.json`: Blåvand/Rømø, Limfjorden og Lolland/Falster.
 - [x] `DATAFORDELER_API_KEY` er oprettet som repository secret, og lokalt workflowjob/script henter kun små private pilotudsnit efter central adminhydrering. Secret værdi, rå arbejdsmappe og v2-data udelukkes fra Pages.
 - [x] Pilot #1928 bekræftede secret-injektion, central hydrering, maskering og fuld isolation fra build/deploy; den stoppede sikkert ved første lagopslag.
-- [ ] Genkør efter 4.0.127-lagrettelsen og verificér `Kyst_current`, øvrige tilgængelige lag og private artifact uden læk.
+- [x] #1931 hentede `Kyst_current` og seks supplerende `_current`-lag for alle tre pilotområder uden secretlæk eller produktionsjob.
+- [ ] Genkør 4.0.128 med pagination og råfiler inkluderet i det private artifact; verificér at ingen lag er afkortet ved serverens 10.000-featureloft.
 - [ ] Generér første parallelle forslag fra den CI-verificerede kilde.
 
 ## 4.0.126 – sikker gratis GeoDanmark-pilot, afventer CI
@@ -29,6 +30,13 @@
 - [x] Capabilities-parseren læser nu kun `FeatureType/Name` og vælger deterministisk det aktuelle entity-lag med `_current`; `_hist` og beslægtede navne accepteres ikke.
 - [x] Ved ukendt lagkontrakt gemmes en secret-fri capabilitiesrapport i det private artifact, så næste fejl kan diagnosticeres uden credential eller credential-bærende URL.
 - [ ] Genkør CI-piloten og verificér konkrete featureudtræk før forslag genereres.
+
+## 4.0.128 – komplet pagineret pilotartifact
+- [x] #1931 verificerede adgang til 140 lag og faktiske featureudtræk fra `kyst_current`, `havn_current`, `vandloebskant_current`, `vandloebsmidte_current`, `hoefde_current`, `sandklit_current` og `skraent_current` i alle tre områder.
+- [x] Kystudtrækkene gav 893, 1.392 og 1.325 features; flere maskelag ramte præcis serverloftet på 10.000 og kunne derfor ikke kaldes komplette.
+- [x] 4.0.128 paginerer med `startIndex`, rapporterer source match/page count/completeness og stopper sikkert ved 250.000 features pr. lag/område.
+- [x] GitHub artifact-upload inkluderer nu den skjulte private arbejdsmappe eksplicit; Pages ekskluderer den fortsat.
+- [ ] Grøn genkørsel skal bevise komplette sider og gøre rå pilotdata tilgængelige for parallel geometrianalyse.
 
 ## 4.0.125 – fuld timeproveniens fra STAC/GRIB
 - [x] Collection, model-run og native gyldighedstid lagres pr. rå komponenttime i bulkcachen.

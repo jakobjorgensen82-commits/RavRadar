@@ -20,6 +20,12 @@
 - Piloten stoppede ved lagvalg, fordi den aktuelle entitets-WFS udstiller bitemporale objekter som aktuelle `_current`-lag frem for kun det ældre eksakte objektnavn.
 - Parseren læser nu kun WFS `FeatureType/Name`, foretrækker eksakt navn og derefter det præcise `_current`-navn, afviser `_hist` og løse præfiksmatch og gemmer ved ukendt kontrakt kun en secret-fri lagliste i det private artifact.
 
+## 2026-08-09 – 4.0.128 pagineret GeoDanmark-pilot
+- #1931 var grøn og hentede alle syv ønskede aktuelle lag i Blåvand/Rømø, Limfjorden og Lolland/Falster. Produktionsbuild og Pages-deploy blev sprunget over.
+- Kystlagene var under serverloftet, men flere vandløbs-/skræntlag returnerede præcis 10.000 features. De er derfor ikke dokumenteret komplette.
+- Fetcheren paginerer nu via WFS `startIndex`, fører `sourceNumberMatched`, `pageCount` og `complete` og afviser ukontrolleret datamængde over 250.000 features pr. lag/område.
+- `actions/upload-artifact` får nu `include-hidden-files: true`, så `.geometry-v2-work` faktisk følger med det private 14-dages artifact. Den er fortsat udelukket fra Pages og commits.
+
 ## 2026-08-08 – 4.0.125 fuld DMI-timeproveniens
 - Brugerens godkendelse af næste roadmaptrin udløste implementering af provenance fra STAC/GRIB til beskyttede forecasttimer.
 - Bulkparsergeneration 14 gemmer collection, modelkørsel og native gyldighedstid pr. komponent; timebyggeren beregner lead time, prognosealder, temporal status og native kildetider.

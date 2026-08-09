@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.127
+**Håndbogsversion:** 4.0.128
 
 **Opdateret:** 1. august 2026
 
@@ -1419,3 +1419,5 @@ En time mellem to native modeltrin mærkes som interpoleret og henviser til begg
 # GeoDanmark-entitetslag i kystpiloten (4.0.127)
 
 GeoDanmarks entitets-WFS udstiller aktuelle bitemporale objekter som lag med endelsen `_current`, mens `_hist` indeholder historikken. RavRadars pilot vælger kun det præcise aktuelle lag. Hvis Datafordeleren ændrer lagkontrakten, stopper piloten og gemmer en credential-fri lagoversigt i sit private artifact. Den gætter ikke på et beslægtet lag og ændrer fortsat hverken aktive zoner eller RavScore.
+
+Fra 4.0.128 hentes store lag sidevis. Hver rapport angiver antal sider, kildens oplyste antal og om udtrækket er komplet. Piloten stopper ved en fast sikker maksimumgrænse frem for at acceptere en tavst afkortet å-, havne- eller terrænmaske. Råfilerne ligger kun i det private, tidsbegrænsede GitHub-artifact.

@@ -374,6 +374,7 @@ jobs:
             data/diagnostics/geodanmark-pilot-report.json
           retention-days: 14
           if-no-files-found: warn
+          include-hidden-files: true
 
   deploy-pages:
     name: Deploy prepared Pages artifact
