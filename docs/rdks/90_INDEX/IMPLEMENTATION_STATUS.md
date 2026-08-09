@@ -85,7 +85,7 @@
 - [x] Hver del får et privat land-/vandpunktpar og lokal pålandsretning, men vejrsampling og DMI-gridbrug er eksplicit deaktiveret.
 - [x] Ni GeoDanmark-høfter registreres separat som score-neutrale morfologihypoteser og indgår ikke i kystlinjen eller RavScore.
 - [x] Et særskilt detailkort viser fysisk kyst, landforskudt linje, punktpar og høfter; alle produktions-, admin-, vejr-, score- og aktiveringsflag er falske.
-- [ ] Kør privat CI-pilot og verificér 2 dele, 15 features, 9 høfter og detailkortet på centralt hydreret input.
+- [x] #1967 verificerede 208-zone central hydrering, 2 dele, 15 features, 9 høfter, detailkort og alle mutations-/vejr-/scoreflag falske. #1965 viste samtidig, at manglende central ankersandhed stopper detailtrinnet sikkert.
 - [ ] Gennemfør ortofotokontrol og DMI-gridvalidering før nogen admin-roundtrip eller produktionsbeslutning.
 
 ## 4.0.125 – fuld timeproveniens fra STAC/GRIB

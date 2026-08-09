@@ -80,8 +80,9 @@ Efter splittet dannes to private kystdele. Hvert fragment får en 15-meters para
 
 Kontrollen beviser geometrisk sidekonsistens mod central admin-sandhed, men ikke strandens aktuelle ortofotoudseende eller at et nyt vandpunkt ligger på en gyldig DMI-havcelle. Derfor er vejrsampling, adminændring, aktivering og score fortsat falske.
 
+#1965 dokumenterede fail-closed-grænsen: en timeout i central Supabase-sync gav repositoryfallback med 209 zoner og uden Blåvands to centrale retningsankre, hvorefter detailgeneratoren stoppede. #1967 gennemførte en frisk central sync med 208 aktive zoner og anker-ID'erne `primary` og `anchor-msd9s5dc`. Artifactet indeholdt 72 kystdelsforslag, to Blåvand-detaildele, 15 detailfeatures, ni høfter og detailkortet; alle produktions-, admin-, vejr-, score- og aktiveringsflag var falske.
+
 ## Næste tekniske leverance
-1. Kør 4.0.134-piloten og verificér de to dele, 15 detailfeatures, ni høfter og detailkortet.
-2. Kontrollér Blåvand visuelt mod en gratis officiel ortofotokilde og afklar reproducerbar adgang.
-3. Valider først derefter punktkandidater mod relevante DMI-gridmasker; ingen selvstændig sampling før fuld provenance-/score-/UI-plan.
-4. Design nye semantiske zoneafgrænsninger for de øvrige otte før deres land-/vandpunkter eller DMI-celler vurderes.
+1. Kontrollér Blåvand visuelt mod en gratis officiel ortofotokilde og afklar reproducerbar adgang.
+2. Valider først derefter punktkandidater mod relevante DMI-gridmasker; ingen selvstændig sampling før fuld provenance-/score-/UI-plan.
+3. Design nye semantiske zoneafgrænsninger for de øvrige otte før deres land-/vandpunkter eller DMI-celler vurderes.

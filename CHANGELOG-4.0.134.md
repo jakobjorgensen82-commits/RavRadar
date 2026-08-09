@@ -1,5 +1,7 @@
 # RavRadar 4.0.134
 
+Produktionsverificeret i #1964 på commit `3843d20`. Den private pilot #1967 verificerede artifactet mod 208 centralt effektive zoner; #1965 stoppede tidligere sikkert efter timeout i central sync og brugte derfor ikke repositoryfallback som admin-sandhed.
+
 ## Privat Blåvand-detailforslag
 - Splitter fysisk GeoDanmark-kyst ved det officielle Blåvands Huk.
 - Danner to navngivne lokale kystdele mod nord og sydøst/Hvidbjerg.

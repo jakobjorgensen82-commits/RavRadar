@@ -4,6 +4,7 @@
 - Begge dele forskydes 15 meter mod den landside, som centralt verificerede adminankre dokumenterer, og får private land-/vandpunktpar uden vejrsampling.
 - Ni høfter registreres separat og score-neutralt. Intet ændres i aktiv zone, admin, DMI eller RavScore.
 - Ortofoto, DMI-grid og admin-roundtrip er næste stopgates.
+- Commit `3843d20` blev produktionsverificeret i #1964 med begge fulde gates og Pages-deploy. Første private pilot #1965 stoppede korrekt efter central sync-timeout; #1967 lykkedes med 208-zone central sandhed og verificerede 2 dele, 15 detailfeatures, 9 høfter, detailkort og uændrede produktions-/admin-/vejr-/scoreflag.
 
 ## 2026-08-08 – kystgeometri v2 godkendt til score-neutral pilot
 - Brugeren har godkendt opstart af en grundig national geometriomlægning, men ikke en direkte overskrivning af produktionszonerne.

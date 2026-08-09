@@ -35,13 +35,12 @@ Gamle chats og chatkilder er historiske forklaringer, ikke selvstændig tilladel
 - Modelvalg er Codex' ansvar. Sol bruges ved kritisk geometri, DMI, RavScore, arkitektur, regressioner og slutvalidering. Codex skal selv bede ejeren skifte til en billigere model, når samme kvalitet kan opnås, og selv bede om Sol igen før kritisk arbejde.
 
 ## Seneste produktionsverificerede baseline
-- Version 4.0.133, commit `c1b24a885257ce77ad321f2a0c4ee000c2970bfd` på `main`.
-- Privat GeoDanmark-pilot #1959: success, 9 zoner, 72 private kystdele, 6 officielle fjord/nor-polygoner, 9 zonekort og kun Blåvand frigivet til detailanalyse.
-- Produktionskørsel #1958: success med fuld validate, release-gate, Pages-artifact og deploy på samme commit.
-- Offentlig GitHub Pages-version blev kontrolleret som 4.0.133.
+- Version 4.0.134, commit `3843d20e0fb6ffb7e76bef3a817125317a29cc40` på `main`.
+- Privat GeoDanmark-pilot #1967: success med 208 centralt effektive zoner, 72 private kystdele, to Blåvand-detaildele, 15 detailfeatures, 9 høfter og detailkort; build/Pages var skipped.
+- Produktionskørsel #1964: success med frisk data, fuld validate, release-gate, Pages-artifact og deploy på samme commit.
 
-## Igangværende, ikke frigivet 4.0.134
-Worktree står på `main` og indeholder ucommittede ændringer til 4.0.134. Der er ikke commit, push, privat CI-pilot eller produktionskørsel for 4.0.134. Intet må omtales som CI-valideret eller produktionsverificeret.
+## Produktionsverificeret 4.0.134
+4.0.134 blev committed og pushed på `main` som `3843d20`. Produktionsrun #1964 gennemførte frisk dataopbygning, fuld validate, release-gate, Pages-artifact og deploy som success. Privat pilot #1967 gennemførte central hydrering og hele GeoDanmark-/Blåvand-kæden som success, mens build og Pages-deploy var skipped.
 
 Implementeret lokalt:
 - `data/geometry-v2/blaavand-detail-policy.json` låser kun `DK-B03-13`, 15 meters landsideforskydning, to lokale dele og falske aktiverings-/vejr-/scoreflag.
@@ -66,19 +65,19 @@ Første forsøg fordelte hele råfragmenter efter nærmeste adminanker. En ny to
 - `git diff --check`: bestået før dette checkpoint.
 
 ## Lokal runtimebemærkning
-Den bundtede `pnpm.cmd` crashede i sit automatiske `pnpm install`-dependency-check med Windows-exitkode `3221226505`, før projekttests startede. De målrettede scripts blev derfor kørt direkte med de bundtede runtimes. Dette er ikke et CI-bevis. Den fulde Linux-kæde i GitHub er stadig bindende.
+Desktop-runtimepakken har Node/Python/pnpm, men ingen `npm`-kommando. Validate-deltestene blev derfor kørt i samme rækkefølge via pnpm; kun `test:pages-module-closure` stoppede lokalt, fordi Windows-miljøet mangler Linux/rsync. Den fulde Linux-kæde bestod efterfølgende i #1964.
+
+## CI- og artifactevidens
+- Lokal validate bestod alle deltests undtagen den kendte Windows-begrænsning i `test:pages-module-closure`, som kræver Linux/rsync; release-gaten bestod lokalt.
+- #1965 stoppede i Blåvand-trinnet efter central sync-timeout. Fallbackinputtet havde 209 repositoryzoner og ingen centrale Blåvand-ankre, så generatoren nægtede korrekt at fortsætte.
+- #1967 havde central sync `ok`, fjernede `DK-B02-14`, anvendte 208 aktive zoner og to Blåvand-ankre. Artifactet havde 72 `private-coastal-part-proposal`, 15 detailfeatures, 9 høfter og `DK-B03-13-detail.png`; alle produktions-, admin-, vejr-, score- og aktiveringsflag var falske.
 
 ## Resterende arbejde i næste chat
-1. Læs AGENTS og de obligatoriske RDKS-filer samt dette handoff.
-2. Inspicér `git status`, diffen og dobbelttjek, at dokumentation/webhåndbog ikke indeholder dubletter efter checkpointoprydningen.
-3. Kør RDKS-, geometri- og releaseversionkontroller igen.
-4. Kør den fulde lokale validate-kæde så langt Windows tillader; `test:pages-module-closure` kræver normalt Linux/rsync. Kør `release:gate`.
-5. Kontrollér diff og versionshukommelse samlet. Fjern kun eventuelle ugitrede dependency/cacheprodukter; bevar projektfiler.
-6. Commit og push 4.0.134 til `main` først når lokale gates er forsvarlige.
-7. Start manuelt `update-and-deploy.yml` med `force=false` og `geometry_v2_pilot=true` via `gh`.
-8. Verificér privat artifact: 2 kystdele, 15 detailfeatures, 9 høfter, detailkort, korrekt centralt input og alle mutation-/vejr-/scoreflag falske; build/deploy skal være skipped i piloten.
-9. Verificér push-kørslen: fuld validate, release-gate, artifact og Pages-deploy på samme commit.
-10. Næste faglige gate efter 4.0.134 er gratis officiel ortofotokontrol og derefter DMI-gridvalidering. Ingen admin- eller produktionsaktivering endnu.
+1. Læs AGENTS og den obligatoriske dokumentkæde samt dette handoff.
+2. Kontrollér worktree og den seneste dokumentations-/evidenscommit.
+3. Næste faglige gate er gratis officiel ortofotokontrol af Blåvand og reproducerbar kildeadgang.
+4. Først derefter må de private vandpunktkandidater valideres mod relevante DMI-gridmasker.
+5. Ingen Blåvand-geometri, land-/vandpunkter, selvstændig sampling, adminændring eller RavScore må aktiveres uden de senere systemiske gates.
 
 ## Model
 Start og afslut 4.0.134 på GPT-5.6 Sol. Geometrisk review, fuld validering og CI-artifactkontrol er kritisk. En billigere model kan først overvejes til en senere, rent mekanisk dokumentationsopgave.
