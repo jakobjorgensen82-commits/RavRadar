@@ -8,6 +8,10 @@
   "waterPointOffsetM": 250,
   "offsetToleranceM": 2,
   "headlandSplitRadiusM": 175,
+  "headlandHairpinSearchRadiusM": 400,
+  "headlandHairpinMinRouteM": 200,
+  "headlandHairpinMaxChordM": 150,
+  "headlandHairpinMinRatio": 2.5,
   "morphologySearchM": 100,
   "parts": [
     {

@@ -90,6 +90,13 @@ Desktop-runtimepakken har Node/Python/pnpm, men ingen `npm`-kommando. Validate-d
 - Normal push-run #1973 stoppede sikkert før release/deploy, fordi Pillow blev importeret før det private scripts self-test i produktionsmiljøet. Det lokale hotfix flytter både `requests` og Pillow bag self-testen og tilføjer en importordensregression. Ny commit/push og normal produktion mangler.
 - Hotfixet blev committed/pushed som `47f88a3`. Normal produktion #1976 gennemførte frisk data, fuld Linux-validate, release-gate, support-/Pages-artifacts og deploy som success; offentlig `version.json` viser 4.0.135. 4.0.135 er dermed produktionsverificeret, men det faglige ortofotoresultat for hukløkken er fortsat no-go.
 
+## Aktuel ucommittet 4.0.136-kandidat
+- Den ortofotoafviste huk-hårnål er målt til 430,0 m rute over 144,3 m chord (ratio 2,98).
+- Policy og generator bevarer det søværts apex, genforener med den sydøstlige åbne strand og fjerner 242,0 m indadgående detur på #1974-inputtet.
+- Generatoren stopper, hvis hårnålen ikke genfindes inden for de eksplicitte tærskler; syntetisk self-test og faktisk regeneration består.
+- To dele, 15,0 m offset, to punktpar og ni score-neutrale høfter bevares. Ingen aktivering, adminændring, DMI-sampling eller scoreændring.
+- Version/RDKS/changelog/begge håndbøger er opdateret. Fuld lokal validering, commit/push, privat pilot, nyt ortofotoartifact og normal produktion mangler.
+
 ## Model
 Start og afslut 4.0.134 på GPT-5.6 Sol. Geometrisk review, fuld validering og CI-artifactkontrol er kritisk. En billigere model kan først overvejes til en senere, rent mekanisk dokumentationsopgave.
 

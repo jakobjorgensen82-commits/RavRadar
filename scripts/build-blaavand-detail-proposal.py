@@ -106,6 +106,65 @@ def split_fragments_at_headland(fragments, headland, radius):
     return result
 
 
+def remove_headland_hairpin(line, headland, land_witnesses, water_witnesses, policy):
+    """Replace one measured inward hairpin while retaining its seaward apex."""
+    search_radius = policy["headlandHairpinSearchRadiusM"]
+    step = 10.0
+    start = max(0.0, line.project(headland) - search_radius * 2)
+    end = min(line.length, line.project(headland) + search_radius * 2)
+    samples = [(distance, line.interpolate(distance)) for distance in [start + index * step for index in range(int((end - start) / step) + 1)]]
+    candidates = []
+    for index, (first_distance, first) in enumerate(samples):
+        if first.distance(headland) > search_radius:
+            continue
+        for second_distance, second in samples[index + 1:]:
+            route = second_distance - first_distance
+            if route < policy["headlandHairpinMinRouteM"] or second.distance(headland) > search_radius:
+                continue
+            chord = first.distance(second)
+            if chord > policy["headlandHairpinMaxChordM"] or chord < 1:
+                continue
+            ratio = route / chord
+            if ratio < policy["headlandHairpinMinRatio"]:
+                continue
+            candidates.append((route - chord, first_distance, second_distance, route, chord, ratio))
+    if not candidates:
+        raise SystemExit("Blåvands ortofoto-no-go kunne ikke genfinde den målte huk-hårnål.")
+    _, first_distance, second_distance, route, chord, ratio = max(candidates)
+    hairpin = substring(line, first_distance, second_distance)
+    apex_distance, apex = min(
+        ((first_distance + hairpin.project(Point(coordinate)), Point(coordinate)) for coordinate in hairpin.coords),
+        key=lambda item: sum(item[1].distance(water) for water in water_witnesses) / len(water_witnesses)
+        - sum(item[1].distance(land) for land in land_witnesses) / len(land_witnesses),
+    )
+    rejoin_candidates = []
+    rejoin_end = min(line.length, second_distance + search_radius)
+    distance = max(second_distance, apex_distance + policy["headlandHairpinMinRouteM"])
+    while distance <= rejoin_end:
+        point = line.interpolate(distance)
+        route_from_apex = distance - apex_distance
+        chord_from_apex = apex.distance(point)
+        if 1 < chord_from_apex <= search_radius and route_from_apex / chord_from_apex >= 2.0:
+            rejoin_candidates.append((route_from_apex - chord_from_apex, distance, route_from_apex, chord_from_apex))
+        distance += step
+    if not rejoin_candidates:
+        raise SystemExit("Blåvands huk-hårnål havde intet sikkert genforeningspunkt efter det søværts apex.")
+    _, rejoin_distance, cleaned_route, cleaned_chord = max(rejoin_candidates)
+    prefix = list(substring(line, 0, apex_distance).coords)
+    suffix = list(substring(line, rejoin_distance, line.length).coords)
+    coordinates = prefix + [apex.coords[0]] + suffix
+    cleaned = LineString(coordinates)
+    return cleaned, {
+        "routeLengthM": round(route, 1),
+        "chordLengthM": round(chord, 1),
+        "routeChordRatio": round(ratio, 2),
+        "removedDetourM": round(line.length - cleaned.length, 1),
+        "apexDistanceToOfficialHeadlandM": round(apex.distance(headland), 1),
+        "apexToRejoinRouteM": round(cleaned_route, 1),
+        "apexToRejoinChordM": round(cleaned_chord, 1),
+    }
+
+
 def build(work_dir, policy):
     zone_id = policy["zoneId"]
     reviews = load_json(ROOT / "data" / "geometry-v2" / "pilot-geographic-review.json")
@@ -138,6 +197,11 @@ def build(work_dir, policy):
     source_fragments = [part for row in source_features for part in line_parts(project(shape(row["geometry"]))) if part.length >= 25]
     if not source_fragments:
         raise SystemExit("Blåvands kontrollerede kystdelsforslag mangler.")
+    land_witnesses = [anchor_point(anchor, "pinPoint") for anchor in anchors.values()]
+    water_witnesses = [anchor_point(anchor, "dataPoint") for anchor in anchors.values()]
+    headland_fragment = min(source_fragments, key=lambda fragment: fragment.distance(headland_point))
+    cleaned_headland, hairpin_control = remove_headland_hairpin(headland_fragment, headland_point, land_witnesses, water_witnesses, policy)
+    source_fragments = [cleaned_headland if fragment is headland_fragment else fragment for fragment in source_fragments]
     source_fragments = split_fragments_at_headland(source_fragments, headland_point, policy["headlandSplitRadiusM"])
 
     part_states = []
@@ -236,6 +300,7 @@ def build(work_dir, policy):
         "coastalParts": detail_rows,
         "morphologyHypotheses": morphology,
         "headlandSplitRadiusM": policy["headlandSplitRadiusM"],
+        "headlandHairpinControl": hairpin_control,
         "productionGeometryChanged": False,
         "adminDataChanged": False,
         "weatherSamplingChanged": False,
@@ -264,6 +329,15 @@ def self_test():
         assert land_point.y > 0 and water_point.y < 0
         split = split_fragments_at_headland([LineString([(0, 0), (100, 0), (100, 100)])], Point(100, 0), 1)
         assert len(split) == 2 and round(sum(part.length for part in split)) == 200
+        hairpin_policy = {
+            "headlandHairpinSearchRadiusM": 300,
+            "headlandHairpinMinRouteM": 200,
+            "headlandHairpinMaxChordM": 150,
+            "headlandHairpinMinRatio": 2.5,
+        }
+        hairpin = LineString([(-300, 0), (-50, 0), (0, -100), (50, 0), (0, 40), (60, 0), (300, 0)])
+        cleaned, control = remove_headland_hairpin(hairpin, Point(0, 0), [Point(0, 200)], [Point(0, -300)], hairpin_policy)
+        assert cleaned.length < hairpin.length and control["routeChordRatio"] >= 2.5
     finally:
         TO_METRES, TO_WGS84 = original_metres, original_wgs84
     policy = load_json(ROOT / "data" / "geometry-v2" / "blaavand-detail-policy.json")

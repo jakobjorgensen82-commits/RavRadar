@@ -112,6 +112,8 @@ assert.equal(blaavandPolicy.landwardOffsetM, 15);
 for (const marker of [
   'private-read-only-blaavand-detail-proposal',
   'officialHeadlandName',
+  'remove_headland_hairpin',
+  'headlandHairpinControl',
   'verified-against-central-admin-land-witness',
   'private-groyne-hypothesis',
   'weatherSamplingChanged',

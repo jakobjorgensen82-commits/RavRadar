@@ -87,6 +87,8 @@ Datafordelerens aktuelle dataoversigt angiver `GeoDanmark Ortofoto forår Web Me
 
 Det private pilottrin henter tre afgrænsede zoom-17-vinduer ved norddelen, Blåvands Huk og den sydøstlige del og tegner fysisk kyst, privat 15-meterslinje, land-/vandpunktkandidater og høfter ovenpå. Tiles og overlays forbliver i det private artifact. Scriptet logger eller gemmer aldrig credential eller credential-bærende URL og stopper ved afvist adgang. Dette etablerer reproducerbar kontrol, men udgør først et bestået ortofotobevis efter CI-fetch og manuelt visuelt review.
 
+#1974 gav visuelt go til nord- og sydøststrækningen, men no-go ved en indadgående sandtange-/laguneløkke. 4.0.136-kandidaten måler hårnålen som 430,0 m rute over 144,3 m chord (ratio 2,98), bevarer det mest søværts apex og genforener derefter med den sydøstlige åbne strand. På det verificerede input fjernes 242,0 m detur. Tærsklerne ligger i policy, og en syntetisk regression kræver faktisk hårnål; manglende match stopper generatoren.
+
 ## Næste tekniske leverance
 1. Kør 4.0.135-piloten og gennemgå de tre gratis officielle ortofoto-overlays visuelt; registrér konkret go/no-go.
 2. Valider først derefter punktkandidater mod relevante DMI-gridmasker; ingen selvstændig sampling før fuld provenance-/score-/UI-plan.

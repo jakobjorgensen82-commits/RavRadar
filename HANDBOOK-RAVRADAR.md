@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.135
+**Håndbogsversion:** 4.0.136
 
 **Opdateret:** 1. august 2026
 
@@ -19,6 +19,8 @@ Fagligt løfte: Alle væsentlige antagelser skal kunne spores til enten forsknin
 Håndbogen beskriver den aktive version. RDKS er autoritativt for bindende beslutninger, aktive krav og kendte åbne problemer. Koden er autoritativ for, hvad systemet faktisk beregner i den aktuelle release. Ved uoverensstemmelse skal uoverensstemmelsen registreres og rettes – ikke bortforklares.
 
 I den private geometri-v2-pilot kan 4.0.135 hente gratis officielt GeoDanmark Ortofoto forår 2025 via Datafordelerens moderniserede API-key-adgang. Tre højopløselige Blåvand-udsnit overlejrer fysisk kyst, privat 15-meterslinje, punktkandidater og score-neutrale høfter. Materialet er kun et manuelt kontrolgrundlag; det aktiverer hverken geometri, vejrsampling, admin-data eller RavScore.
+
+Ortofotoet afslørede ved Blåvands Huk en fysisk kysthårnål ind mod en sandtange/lagune. 4.0.136-kandidaten måler deturen, bevarer det søværts apex og springer kun den indadgående del over. Rettelsen er fortsat privat og kræver nyt ortofotogo før DMI-gridkontrol.
 
 
 ## 2. Evidensklasser, kildekritik og usikkerhed

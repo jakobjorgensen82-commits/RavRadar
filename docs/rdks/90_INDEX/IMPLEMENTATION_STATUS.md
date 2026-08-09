@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.135
+# Implementeringsstatus pr. 4.0.136
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.
@@ -20,6 +20,8 @@
 - [x] #1974 verificerede gratis ortofoto-WMTS-fetch, 108 tiles, tre private Blåvand-overlays, fail-closed credentialhåndtering og skipped build/Pages.
 - [x] Visuelt review er gennemført: nord og sydøst passer overordnet; hukudsnittet viser en uacceptabel indadgående sandtange-/laguneløkke.
 - [ ] Ret hukløkken i det private forslag og genkør ortofotokontrollen. DMI-gridgaten må ikke begynde før nyt visuelt go.
+- [x] 4.0.136-kandidaten registrerer hårnålen maskinelt (430,0/144,3 m; ratio 2,98), bevarer søværts apex og fjerner 242,0 m indadgående detur med syntetisk regression.
+- [ ] Genkør privat pilot og verificér det nye officielle ortofotooverlay før ortofotogaten kan skifte fra no-go.
 - [x] #1976 produktionsverificerede 4.0.135 efter dependency-isolationshotfix med frisk data, fuld validate, release-gate, Pages-artifact og deploy.
 
 ## 4.0.126 – sikker gratis GeoDanmark-pilot, afventer CI

@@ -1,3 +1,8 @@
+## 2026-08-09 – 4.0.136 privat huk-hårnålsrettelse
+- #1974-ortofotoet viste, at nord/sydøst overordnet passede, men at hukket fulgte en indadgående sandtange-/laguneløkke.
+- Kandidaten måler route/chord-forholdet, bevarer det søværts apex og fjerner 242,0 m indadgående detur på det verificerede input. Manglende eksakt hårnål stopper sikkert.
+- Lokal generator- og syntetisk self-test består. Nyt privat ortofotoartifact mangler; DMI-grid er fortsat blokeret.
+
 ## 2026-08-09 – 4.0.135 officiel privat ortofotokontrol
 - Den eksisterende moderniserede `DATAFORDELER_API_KEY` kan efter den officielle tjenestekontrakt bruges til gratis GeoDanmark Ortofoto forår Web Mercator WMTS; ingen ny betalt kilde eller credentialtype indføres.
 - Pilotworkflowet danner tre private zoom-17-overlays ved Blåvand og bevarer fail-closed secret-håndtering. Ingen geometri, admin-data, DMI-sampling eller RavScore aktiveres.
