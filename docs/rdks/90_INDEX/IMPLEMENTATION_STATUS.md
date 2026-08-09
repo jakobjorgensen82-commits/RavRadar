@@ -40,7 +40,9 @@
 - [x] #2008 produktionsverificerede 4.0.141 med central adminsync, Supabase-roundtrip, frisk data, fuld Linux-validate, release-gate, Pages-artifact og deploy.
 - [ ] Næste gate er privat central admin-roundtrip/rollback; ingen geometri-, sampling-, state-, admin-, UI- eller scoreaktivering før eksplicit ejer-go/no-go.
 - [x] 4.0.142-kandidaten implementerer en isoleret temp-document create/read/update/delete-gate med verificeret rollback og uændret hash/version for de to beskyttede runtime-admin-dokumenter.
-- [ ] Privat CI-artifact og normal produktion skal verificeres; derefter er kun eksplicit ejer-go/no-go tilbage før nogen aktivering.
+- [x] Privat pilot #2014 verificerede temp create/read/update/delete, fravær efter rollback og identiske digests/versioner for begge beskyttede runtime-dokumenter.
+- [x] #2013 produktionsverificerede 4.0.142 med central adminsync, Supabase-roundtrip, frisk data, fuld Linux-validate, release-gate, Pages-artifact og deploy.
+- [ ] Kun eksplicit ejer-go/no-go er tilbage før nogen Blåvand-aktivering; den må ikke udledes af “fortsæt”.
 - [x] #1976 produktionsverificerede 4.0.135 efter dependency-isolationshotfix med frisk data, fuld validate, release-gate, Pages-artifact og deploy.
 
 ## 4.0.126 – sikker gratis GeoDanmark-pilot, afventer CI

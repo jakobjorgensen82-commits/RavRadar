@@ -633,3 +633,4 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 ## 2026-08-09 – 4.0.142 privat admin-roundtrip/rollback-kandidat
 - En Blåvand-specifik gate skriver kun en unik midlertidig, aldrig aktiv kladde og kræver verificeret create/read/update/delete samt fravær efter rollback.
 - De autoritative runtime-dokumenters payload-hash og version skal være uændrede. Ingen aktivering; privat CI afventer.
+- Produktcommit `ca5f920` er pushed. Privat pilot #2014 bestod med verificeret rollback og urørte runtime-dokumenter; normal produktion #2013 bestod fulde gates og deploy. Næste trin er eksplicit ejer-go/no-go.

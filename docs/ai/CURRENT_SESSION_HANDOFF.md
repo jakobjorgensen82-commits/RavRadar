@@ -149,11 +149,14 @@ Desktop-runtimepakken har Node/Python/pnpm, men ingen `npm`-kommando. Validate-d
 - Ingen Blåvand-geometri, sampling, state, admin-data, offentlig UI eller RavScore er aktiveret. Næste gate er en privat, ikke-destruktiv central admin-roundtrip/rollback-kontrakt; derefter kræves eksplicit ejer-go/no-go.
 
 ## Model
-## Ucommittet 4.0.142-kandidat – privat admin-roundtrip/rollback
+## Produktionsverificeret 4.0.142 – privat admin-roundtrip/rollback
 - `scripts/validate-blaavand-admin-roundtrip.mjs` kræver bestået privat UI-gate og skriver kun et unikt `geometry-v2-private-roundtrip-<runId>`-dokument.
 - Gaten verificerer create/read/update/delete og fravær efter rollback. Før/efter-hash og version for `coastline-overrides` og `direction-reviews` skal være identiske.
 - Rapporten gemmer kun digests/versioner og boolske beviser, ikke adminpayload, credential eller request-URL. Alle mutations-/score-/aktiveringsflag er falske.
-- Workflow, regressionstest og version 4.0.142 er opdateret. Lokal fuld validering, commit/push, privat pilot/artifactaudit og normal produktion mangler.
+- Produktcommit `ca5f920` er pushed. Privat pilot #2014 (`31324849864`) bestod hele kæden og den nye admin-gate; build/Pages var skipped.
+- Artifactet beviser temp create/read/update/delete og fravær efter rollback. `coastline-overrides` beholdt identisk digest og version 55; `direction-reviews` identisk digest og version 314. Ingen rå payload/credential/URL eller mutation blev gemt.
+- Normal produktion #2013 (`31324840861`) bestod central adminsync, Supabase-roundtrip, frisk DMI-/vejropbygning, fuld Linux-validate, release-gate, Pages-artifact og deploy.
+- Alle private sikkerhedsgater for Blåvand-piloten er nu bestået. Næste trin er eksplicit ejer-go/no-go; ingen aktivering må ske implicit.
 
 ## Model
 Start og afslut 4.0.134 på GPT-5.6 Sol. Geometrisk review, fuld validering og CI-artifactkontrol er kritisk. En billigere model kan først overvejes til en senere, rent mekanisk dokumentationsopgave.
