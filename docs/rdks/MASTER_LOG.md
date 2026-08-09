@@ -29,6 +29,7 @@
 ## 2026-08-09 – 4.0.129 separat pilotkø
 - Den ventende komplethedspilot #1933 blev erstattet af rutinevejropdatering #1934 på grund af GitHub Actions' ene pending-plads pr. concurrency-gruppe.
 - Geometripilot og vejrproduktion bruger nu hver sin gruppe. En eksplicit nyere pilot kan annullere en ældre pilot, men vejrdiften kan ikke påvirke pilotens kø.
+- #1936 gennemførte i den nye pilotgruppe: 21/21 komplette råudtræk, seks flersidede, maksimum 72.870 features og ca. 341 MB private GeoJSON-data. Build og Pages-deploy var `skipped`; ingen secretværdi blev persisteret.
 
 ## 2026-08-08 – 4.0.125 fuld DMI-timeproveniens
 - Brugerens godkendelse af næste roadmaptrin udløste implementering af provenance fra STAC/GRIB til beskyttede forecasttimer.

@@ -1423,3 +1423,5 @@ GeoDanmarks entitets-WFS udstiller aktuelle bitemporale objekter som lag med end
 Fra 4.0.128 hentes store lag sidevis. Hver rapport angiver antal sider, kildens oplyste antal og om udtrækket er komplet. Piloten stopper ved en fast sikker maksimumgrænse frem for at acceptere en tavst afkortet å-, havne- eller terrænmaske. Råfilerne ligger kun i det private, tidsbegrænsede GitHub-artifact.
 
 Fra 4.0.129 har piloten sin egen GitHub Actions-kø. RavRadars planlagte vejropdateringer kan derfor ikke annullere en ventende eller igangværende geometri-pilot, og piloten kan ikke afbryde vejrdiften.
+
+Kørsel #1936 bekræftede hele denne kildekæde. Alle 21 lag/område-udtræk var komplette, også de seks der krævede flere WFS-sider, og de rå filer forblev i det private artifact. Det er et datagrundlag for næste analysefase, ikke en ændring af kortets aktive zoner.

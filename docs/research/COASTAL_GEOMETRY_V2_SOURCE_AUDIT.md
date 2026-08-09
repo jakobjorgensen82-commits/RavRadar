@@ -33,6 +33,8 @@ Ingen af objekterne må automatisk ændre RavScore.
 ## Adgangstilstand
 Repositoryet har nu den task-relevante GitHub Actions-secret `DATAFORDELER_API_KEY`. Dens værdi er ikke læsbar i repositoryet eller lokalt og må aldrig sendes i chat, kode, log, dokumentation, diagnostics eller artifact. Et isoleret manuelt `geometry-v2-pilot`-job bruger den kun som procesmiljøvariabel. #1931 bekræftede fungerende secret-injektion, maskering, capabilities og faktiske featureudtræk fra syv aktuelle lag. Den aktuelle entitets-WFS bruger `_current` for aktuelle bitemporale objekter og `_hist` for historik; RavRadar vælger kun det præcise aktuelle lag. Flere maskelag ramte 10.000 features, så 4.0.128 paginerer og kræver dokumenteret komplethed før anvendelse.
 
+#1936 lukkede komplethedsgaten: alle 21 kombinationer af syv lag og tre områder havde `complete=true` og samme `featureCount` som `sourceNumberMatched`. Seks kombinationer krævede 2–8 sider; maksimum var 72.870 features. Artifactet indeholdt alle 21 rå GeoJSON-filer og var cirka 341 MB. Denne evidens godkender kilden til parallel analyse, ikke automatisk zoneaktivering.
+
 Den ældre generelle GeoDanmark WFS/fildownload er markeret til udfasning i 2026. Piloten skal anvende den aktuelle entitetsbaserede WFS eller en anden dokumenteret aktuel distributionsvej, ikke bygge ny afhængighed på den udgående tjeneste.
 
 ## Kvalitetsbegrænsning

@@ -14,7 +14,7 @@
 - [x] `DATAFORDELER_API_KEY` er oprettet som repository secret, og lokalt workflowjob/script henter kun små private pilotudsnit efter central adminhydrering. Secret værdi, rå arbejdsmappe og v2-data udelukkes fra Pages.
 - [x] Pilot #1928 bekræftede secret-injektion, central hydrering, maskering og fuld isolation fra build/deploy; den stoppede sikkert ved første lagopslag.
 - [x] #1931 hentede `Kyst_current` og seks supplerende `_current`-lag for alle tre pilotområder uden secretlæk eller produktionsjob.
-- [ ] Genkør 4.0.128 med pagination og råfiler inkluderet i det private artifact; verificér at ingen lag er afkortet ved serverens 10.000-featureloft.
+- [x] #1936 verificerede pagination og privat råartifact: 21/21 lag/område-udtræk er komplette, seks er flersidede, og største udtræk har 72.870 features.
 - [ ] Generér første parallelle forslag fra den CI-verificerede kilde.
 
 ## 4.0.126 – sikker gratis GeoDanmark-pilot, afventer CI
@@ -36,13 +36,14 @@
 - [x] Kystudtrækkene gav 893, 1.392 og 1.325 features; flere maskelag ramte præcis serverloftet på 10.000 og kunne derfor ikke kaldes komplette.
 - [x] 4.0.128 paginerer med `startIndex`, rapporterer source match/page count/completeness og stopper sikkert ved 250.000 features pr. lag/område.
 - [x] GitHub artifact-upload inkluderer nu den skjulte private arbejdsmappe eksplicit; Pages ekskluderer den fortsat.
-- [ ] Grøn genkørsel skal bevise komplette sider og gøre rå pilotdata tilgængelige for parallel geometrianalyse.
+- [x] #1936 beviste komplette sider og gjorde 21 rå GeoJSON-filer (ca. 341 MB) tilgængelige i det private artifact.
 
 ## 4.0.129 – separat concurrency-kø til geometri-pilot
 - [x] #1933 dokumenterede, at en nyere 15-minutters vejropdatering kan erstatte en ventende pilot, når begge deler samme concurrency-gruppe.
 - [x] Pilotdispatch bruger nu `ravradar-geometry-v2-pilot`, mens vejrproduktion fortsat bruger `ravradar-weather-production`.
 - [x] En ny pilot kan kun erstatte en ældre pilot; rutinevejret kan ikke længere annullere den.
-- [ ] Genkør 4.0.129-piloten og verificér komplethed/artifact.
+- [x] #1936 kørte samtidig med den separate vejrproduktionskø og verificerede komplethed/artifact uden indbyrdes annullering.
+- [ ] Byg næste read-only analysetrin på den centralt hydrerede zonebestand og de komplette råfiler; ingen produktionsaktivering.
 
 ## 4.0.125 – fuld timeproveniens fra STAC/GRIB
 - [x] Collection, model-run og native gyldighedstid lagres pr. rå komponenttime i bulkcachen.
