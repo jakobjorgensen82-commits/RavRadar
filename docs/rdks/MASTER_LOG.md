@@ -2,6 +2,8 @@
 - #1974-ortofotoet viste, at nord/sydøst overordnet passede, men at hukket fulgte en indadgående sandtange-/laguneløkke.
 - Kandidaten måler route/chord-forholdet, bevarer det søværts apex og fjerner 242,0 m indadgående detur på det verificerede input. Manglende eksakt hårnål stopper sikkert.
 - Lokal generator- og syntetisk self-test består. Nyt privat ortofotoartifact mangler; DMI-grid er fortsat blokeret.
+- Privat pilot #1982 bestod med 108 tiles, tre overlays, nul credentialmatch og alle aktiveringsflag falske. Visuelt ligger den grønne linje på sand/landsiden og springer den indre omvej over; ortofotogaten er bestået.
+- Normal produktion #1981 bestod frisk data, fuld Linux-validate, release-gate, Pages-artifact og deploy på `b82e311`; offentlig version er 4.0.136.
 
 ## 2026-08-09 – 4.0.135 officiel privat ortofotokontrol
 - Den eksisterende moderniserede `DATAFORDELER_API_KEY` kan efter den officielle tjenestekontrakt bruges til gratis GeoDanmark Ortofoto forår Web Mercator WMTS; ingen ny betalt kilde eller credentialtype indføres.

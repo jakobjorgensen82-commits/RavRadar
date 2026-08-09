@@ -13,7 +13,7 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 - #1936 har produktionsverificeret komplet adgang: 21/21 lag/område-udtræk er komplette.
 - 4.0.130 bygger den første private source-QA med afstande, fragmentering, konfliktflag og kort på den centralt effektive pilotbestand. Lokal kørsel viser, at alle ni zoner kræver review; næste trin er klassificerede delstrækninger og stednavneaudit, ikke blind snapping.
 - #1959 verificerede 4.0.133 med 72 private forslag, officielle fjord-/norpolygoner, ni zonekort og reviewgate; #1958 verificerede den fulde produktionskæde. #1964 produktionsverificerede 4.0.134, og privat pilot #1967 verificerede Blåvand som to dele omkring det officielle hukpunkt med 15-meters landsideforskydning, punktpar og score-neutrale høfter. #1974 leverede tre private officielle ortofoto-overlays; reviewet gav no-go på en indadgående hukløkke. #1976 produktionsverificerede 4.0.135. Næste gate er privat rettelse og nyt ortofotogo, derefter DMI-grid, ikke aktivering.
-- 4.0.136-kandidaten retter hårnålen med en målt route/chord-gate og bevarer søværts apex. Næste trin er privat CI-pilot og visuelt ortofoto-go; DMI-grid forbliver blokeret indtil da.
+- #1982 ortofotoverificerede 4.0.136-hårnålsrettelsen, og #1981 produktionsverificerede hele releasekæden. Næste faglige gate er privat, score-neutral DMI-gridvalidering af vandpunktkandidaterne, ikke sampling eller aktivering.
 
 ## P0 – ægte Codex-baseline etableret i #1772
 - **Første opgave – implementeret lokalt:** workflowets gate-bypass er lukket. En positiv preflight kræver nu `npm run validate` og `npm run release:gate` før artifact; negativ preflight kan fortsat stoppe billigt.

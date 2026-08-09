@@ -96,6 +96,9 @@ Desktop-runtimepakken har Node/Python/pnpm, men ingen `npm`-kommando. Validate-d
 - Generatoren stopper, hvis hårnålen ikke genfindes inden for de eksplicitte tærskler; syntetisk self-test og faktisk regeneration består.
 - To dele, 15,0 m offset, to punktpar og ni score-neutrale høfter bevares. Ingen aktivering, adminændring, DMI-sampling eller scoreændring.
 - Version/RDKS/changelog/begge håndbøger er opdateret. Fuld lokal validering, commit/push, privat pilot, nyt ortofotoartifact og normal produktion mangler.
+- Kandidaten blev committed/pushed som `b82e311`. Privat pilot #1982 gennemførte central sync, 108 ortofototiles, tre overlays og privat artifact med build/Pages skipped; ingen credentialmatch og alle aktiverings-/vejr-/scoreflag falske. Det nye hukoverlay er visuelt godkendt: relevant grøn strandlinje springer den indre lagune-/sandspidsomvej over og ligger på sand/landsiden.
+- Normal produktion #1981 gennemførte frisk data, fuld Linux-validate, release-gate, Pages-artifact og deploy som success. Offentlig `version.json` viser 4.0.136.
+- Ortofotogaten er dermed bestået. Næste faglige gate er privat DMI-gridvalidering; Blåvand-geometri, punkter, sampling, admin og RavScore er fortsat ikke aktiveret.
 
 ## Model
 Start og afslut 4.0.134 på GPT-5.6 Sol. Geometrisk review, fuld validering og CI-artifactkontrol er kritisk. En billigere model kan først overvejes til en senere, rent mekanisk dokumentationsopgave.

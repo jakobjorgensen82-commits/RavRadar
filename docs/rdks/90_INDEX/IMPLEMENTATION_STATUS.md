@@ -21,7 +21,9 @@
 - [x] Visuelt review er gennemført: nord og sydøst passer overordnet; hukudsnittet viser en uacceptabel indadgående sandtange-/laguneløkke.
 - [ ] Ret hukløkken i det private forslag og genkør ortofotokontrollen. DMI-gridgaten må ikke begynde før nyt visuelt go.
 - [x] 4.0.136-kandidaten registrerer hårnålen maskinelt (430,0/144,3 m; ratio 2,98), bevarer søværts apex og fjerner 242,0 m indadgående detur med syntetisk regression.
-- [ ] Genkør privat pilot og verificér det nye officielle ortofotooverlay før ortofotogaten kan skifte fra no-go.
+- [x] #1982 verificerede det nye officielle ortofotooverlay, 108 tiles, tre kontroludsnit, nul credentialmatch og alle aktiverings-/vejr-/scoreflag falske. Den relevante grønne linje springer den indre omvej over og ligger på sand/landsiden; ortofotogaten er bestået privat.
+- [x] #1981 produktionsverificerede 4.0.136 med frisk data, fuld Linux-validate, release-gate, Pages-artifact og deploy.
+- [ ] Næste faglige gate er separat DMI-gridvalidering af de private vandpunktkandidater; ingen sampling eller aktivering må ske endnu.
 - [x] #1976 produktionsverificerede 4.0.135 efter dependency-isolationshotfix med frisk data, fuld validate, release-gate, Pages-artifact og deploy.
 
 ## 4.0.126 – sikker gratis GeoDanmark-pilot, afventer CI
