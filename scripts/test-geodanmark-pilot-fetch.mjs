@@ -13,6 +13,7 @@ const blaavandOrtho = await fs.readFile('scripts/build-blaavand-ortho-review.py'
 const blaavandDmiGrid = await fs.readFile('scripts/validate-blaavand-dmi-grid.py', 'utf8');
 const blaavandWeatherShadow = await fs.readFile('scripts/build-blaavand-weather-shadow-contract.py', 'utf8');
 const blaavandMultiStep = await fs.readFile('scripts/validate-blaavand-multi-step-series.py', 'utf8');
+const blaavandStateHistory = await fs.readFile('scripts/validate-blaavand-state-history.mjs', 'utf8');
 const blaavandWeatherPolicy = JSON.parse(await fs.readFile('data/geometry-v2/blaavand-weather-shadow-policy.json', 'utf8'));
 const blaavandPolicy = JSON.parse(await fs.readFile('data/geometry-v2/blaavand-detail-policy.json', 'utf8'));
 const mapRenderer = await fs.readFile('scripts/render-geodanmark-pilot-maps.py', 'utf8');
@@ -56,6 +57,7 @@ assert.match(workflow, /python scripts\/build-blaavand-ortho-review\.py/);
 assert.match(workflow, /python scripts\/validate-blaavand-dmi-grid\.py/);
 assert.match(workflow, /python scripts\/build-blaavand-weather-shadow-contract\.py/);
 assert.match(workflow, /python scripts\/validate-blaavand-multi-step-series\.py/);
+assert.match(workflow, /node scripts\/validate-blaavand-state-history\.mjs/);
 assert.match(workflow, /DMI_API_KEY:\s*\$\{\{ secrets\.DMI_API_KEY \}\}/);
 assert.match(workflow, /python scripts\/render-geodanmark-pilot-maps\.py/);
 assert.match(workflow, /--exclude 'data\/geometry-v2\/'/);
@@ -173,6 +175,15 @@ for (const marker of [
 for (const forbidden of ['print(API_KEY)', 'print(api_key)', 'DMI_API_KEY=']) {
   assert.ok(!blaavandMultiStep.includes(forbidden), `Blåvand flertidsseriegate kan lække secret: ${forbidden}`);
 }
+for (const marker of [
+  'passed-private-state-history-isolation',
+  'separateHistoryKeysValidated',
+  'parentHistoryReuseDetected',
+  'crossPartHistoryReadDetected',
+  'rawReplayValuesStored',
+  'scoreInfluenceObserved',
+  'transientReplayInputDeleted'
+]) assert.ok(blaavandStateHistory.includes(marker), `Blåvand state-/historikgaten mangler ${marker}`);
 assert.ok(mapRenderer.indexOf('if args.self_test:') < mapRenderer.indexOf('from PIL import'), 'Pillow må kun kræves i det faktiske private rendertrin');
 assert.ok(mapRenderer.includes('coastal-part-proposals.geojson'), 'Pilotkortet skal vise de private kystdelsforslag');
 assert.ok(mapRenderer.includes('maps') && mapRenderer.includes('zones'), 'Pilotkortet skal generere zonevise reviewkort');

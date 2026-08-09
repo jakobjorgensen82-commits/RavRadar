@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.139
+**Håndbogsversion:** 4.0.140
 
 **Opdateret:** 1. august 2026
 
@@ -1460,4 +1460,4 @@ Blåvands fysiske GeoDanmark-kyst deles ved det officielle sted Blåvands Huk. D
 
 Kystlinjen forskydes 15 meter mod land. Landsiden bestemmes separat for hver del ud fra de to centralt gemte og verificerede adminankre; det modsatte lokale normalpunkt bliver en privat vandpunktkandidat. Punkterne bruges endnu ikke til vejr eller score. Ni officielle høfter vises særskilt som mulige ravfælde-hypoteser, men de tegnes ikke ind i kystlinjen og giver ingen point.
 
-Detailforslaget er kun reviewmateriale. Ortofotogaten og den private DMI-gridgate er bestået; de to kandidater rammer forskellige celler for alle kontrollerede komponenter. 4.0.138 låser hver fremtidig delserie til egen identitet, provenance og historik. 4.0.139-kandidaten kontrollerer derefter flere aktuelle native WAM-/DKSS-tidstrin for begge dele og kræver komplette komponenter uden krydsmerge, interpolation eller fallback. Artifactet gemmer kun provenance og værdihash, ikke rå vejrværdier. Den eksisterende Blåvand-zoneserie og RavScore forbliver autoritativ. Sampling, state, part-score, UI og admin-write er fortsat deaktiveret.
+Detailforslaget er kun reviewmateriale. Ortofotogaten og den private DMI-gridgate er bestået; de to kandidater rammer forskellige celler for alle kontrollerede komponenter. 4.0.138 låser hver fremtidig delserie til egen identitet, provenance og historik, og 4.0.139 beviser komplette native flertidsserier. 4.0.140-kandidaten kontrollerer strukturelt, at hver del kan replayes med sin egen historiknøgle uden parent-genbrug, krydslæsning eller scorepåvirkning. Rå current-værdier uploades ikke. Den eksisterende Blåvand-zoneserie og RavScore forbliver autoritativ. Sampling, state, part-score, UI og admin-write er fortsat deaktiveret.

@@ -21,6 +21,7 @@ WORK = ROOT / ".geometry-v2-work"
 DEFAULT_PROPOSAL = WORK / "blaavand-detail-proposal.json"
 DEFAULT_CONTRACT = WORK / "blaavand-weather-shadow-contract.json"
 DEFAULT_REPORT = WORK / "blaavand-multi-step-series-validation.json"
+DEFAULT_STATE_INPUT = ROOT / ".cache" / "blaavand-state-replay-input.json"
 COMPONENT_FAMILY = {
     "significant-wave-height": "wave", "mean-wave-dir": "wave", "dominant-wave-period": "wave",
     "sea-mean-deviation": "waterLevel", "current-u": "current", "current-v": "current",
@@ -121,7 +122,8 @@ def validate_series(contract: dict[str, Any], snapshots: dict[str, dict[str, dic
     }
 
 
-def run(proposal_path: pathlib.Path, contract_path: pathlib.Path, report_path: pathlib.Path) -> dict[str, Any]:
+def run(proposal_path: pathlib.Path, contract_path: pathlib.Path, report_path: pathlib.Path,
+        state_input_path: pathlib.Path) -> dict[str, Any]:
     proposal = json.loads(proposal_path.read_text("utf-8"))
     contract = json.loads(contract_path.read_text("utf-8"))
     grid = load_grid_module()
@@ -158,6 +160,19 @@ def run(proposal_path: pathlib.Path, contract_path: pathlib.Path, report_path: p
     report["diagnostics"] = diagnostics
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", "utf-8")
+    contract_parts = {part["partId"]: part for part in contract["parts"]}
+    replay = {"schemaVersion": "1.0.0", "zoneId": contract["zoneId"], "series": []}
+    for part_id, by_time in snapshots.items():
+        part = contract_parts[part_id]
+        replay["series"].append({
+            "partId": part_id, "seriesId": part["seriesId"], "historyKey": part["historyKey"],
+            "onshoreDirectionDeg": part["onshoreDirectionDeg"],
+            "hours": [{"time": valid_time, "current-u": snapshot["values"]["current-u"],
+                       "current-v": snapshot["values"]["current-v"]} for valid_time, snapshot in sorted(by_time.items())
+                      if valid_time in report["sharedCompleteNativeTimes"]],
+        })
+    state_input_path.parent.mkdir(parents=True, exist_ok=True)
+    state_input_path.write_text(json.dumps(replay, ensure_ascii=False, indent=2) + "\n", "utf-8")
     return report
 
 
@@ -194,10 +209,11 @@ def main() -> int:
     parser.add_argument("--proposal", type=pathlib.Path, default=DEFAULT_PROPOSAL)
     parser.add_argument("--contract", type=pathlib.Path, default=DEFAULT_CONTRACT)
     parser.add_argument("--report", type=pathlib.Path, default=DEFAULT_REPORT)
+    parser.add_argument("--state-input", type=pathlib.Path, default=DEFAULT_STATE_INPUT)
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
     if args.self_test: self_test(); return 0
-    report = run(args.proposal, args.contract, args.report)
+    report = run(args.proposal, args.contract, args.report, args.state_input)
     print(json.dumps({"status": report["status"], "seriesCount": len(report["series"]), "sharedSteps": len(report["sharedCompleteNativeTimes"]), "scoreChanged": False}, ensure_ascii=False))
     return 0
 

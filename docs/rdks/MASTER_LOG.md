@@ -1,3 +1,8 @@
+## 2026-08-09 – 4.0.140 privat state-/historik-replaygate
+- Kodeauditten viser, at produktionens statehistorik aktuelt slås op via `previous.zones[zoneId]`; private kystdele må derfor ikke kobles direkte på uden egen nøgle.
+- En ny Node-validator bruger den faktiske `shadow-v2`-funktion med unik `historyKey` pr. del og stopper ved delt nøgle, parent-genbrug, krydslæsning eller numerisk scorepåvirkning.
+- Faktiske current-U/V-replayværdier ligger kun i `.cache`, uploades ikke og slettes efter validering. Artifactet gemmer kun kompakt state og hash; alle runtime-/state-/score-/UI-/admin-/aktiveringsflag er falske. Lokal self-test består; CI og produktion mangler.
+
 ## 2026-08-09 – 4.0.139 privat Blåvand-flertidsseriegate
 - En ny privat validator genbruger produktionens native WAM-/DKSS-parser over flere forecasttrin for begge isolerede Blåvand-dele.
 - Gaten kræver mindst to fælles komplette native tider, fuld komponentproveniens, fysiske gridpunkter og fælles current-U/V-celle og vertikallag. Krydsmerge, interpolation og fallback er forbudt.

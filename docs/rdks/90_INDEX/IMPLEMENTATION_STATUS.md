@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.139
+# Implementeringsstatus pr. 4.0.140
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.
@@ -32,7 +32,9 @@
 - [x] 4.0.139 danner private metadata-/hashbaserede flertidsserier via produktionens native DMI-parser og kræver mindst to fælles komplette trin med fuld komponentproveniens og korrekt current-U/V-parring.
 - [x] Privat pilot #1997 verificerede fire fælles komplette tider pr. del, 48 fulde DMI-komponentposter, forskellige delceller, korrekt U/V-parring, nul interpolation/fallback og ingen credential- eller råværdilæk.
 - [x] #1996 produktionsverificerede 4.0.139 med central adminsync, frisk data, fuld Linux-validate, release-gate, Pages-artifact og deploy.
-- [ ] Derefter følger separat privat state-/historikvalidering; ingen aktivering før senere UI-, admin-roundtrip-, rollback- og ejer-go/no-go.
+- [x] 4.0.140-kandidaten replay-validerer hver del med egen historiknøgle gennem den faktiske `shadow-v2`-funktion og afviser parent-genbrug, krydslæsning og scorepåvirkning. Midlertidigt råinput uploades ikke og slettes.
+- [ ] Kør privat CI-pilot, verificér state-/historikartifactet og produktionsverificér releasen.
+- [ ] Derefter følger score-neutral UI-review og senere central admin-roundtrip/rollback; ingen aktivering før ejer-go/no-go.
 - [x] #1976 produktionsverificerede 4.0.135 efter dependency-isolationshotfix med frisk data, fuld validate, release-gate, Pages-artifact og deploy.
 
 ## 4.0.126 – sikker gratis GeoDanmark-pilot, afventer CI

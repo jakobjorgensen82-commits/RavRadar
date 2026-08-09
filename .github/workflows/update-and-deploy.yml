@@ -413,6 +413,9 @@ jobs:
           DMI_BULK_FINALIZE_RESERVE_SECONDS: 60
           DMI_BULK_RAW_DIR: .cache/dmi-grid-validation
 
+      - name: Validate private isolated Blåvand state and history replay
+        run: node scripts/validate-blaavand-state-history.mjs
+
       - name: Render private GeoDanmark source review maps
         run: python scripts/render-geodanmark-pilot-maps.py
 

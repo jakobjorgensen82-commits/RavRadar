@@ -105,3 +105,9 @@ Den eksisterende multi-ankerfunktion vurderer én zones strøm mod flere lokale 
 Et enkelt gridtrin beviser kun fysisk adgang. 4.0.139 gentager derfor produktionens faktiske WAM-/DKSS-udlæsning over flere aktuelle forecasttrin for hver del. Kun tider, hvor alle seks krævede komponenter findes ved samme native gyldighedstid, tæller som komplette. Current-U/V skal fortsat dele fysisk celle og vertikallag.
 
 Rapporten fører provider, collection, modelkørsel, native tid, gridpunkt, lag, nul interpolation og nul fallback pr. komponent. Den gemmer ikke rå værdier, men en kontekstbundet hash af serie-ID, tid, komponent og værdi. Mindst to fælles komplette tider kræves for begge dele. Resultatet er fortsat privat bevis; ingen sampling, historiktilstand, score, UI, admin eller produktion aktiveres.
+
+## Privat state-/historikisolation – 4.0.140-kandidat
+
+Den aktive produktionsfunktion bygger historik fra `previous.zones[zoneId]`. En kystdel kan derfor ikke få state ved blot at genbruge parentens tekniske zone-ID. 4.0.140 udfører i stedet et privat replay med den allerede score-neutrale `shadow-v2`-funktion og hver dels kontraktfastlagte `historyKey`.
+
+Replayet bruger kun current-U/V fra de beståede fælles native trin. Råværdierne skrives midlertidigt uden for artifactmappen og slettes efter beregningen. Rapporten gemmer antal/tidsinterval, input-/historikhash og kompakte statefelter. Den kræver unikke nøgler, nul parent-genbrug, nul krydslæsning og uændret numerisk score i begge jagtformer. Dette er strukturel isolation, ikke aktivering eller langtidsvalidering af den fysiske state-model.
