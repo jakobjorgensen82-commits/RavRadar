@@ -656,3 +656,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Den private 4.0.143-nationalmåling dannede 101 fliser/707 requests og var fortsat sekventielt aktiv efter mere end ti minutter uden flisefremdrift.
 - 4.0.144 anvender højst fire samtidige fliser, logger fremdrift, validerer alle filer/hashes/lag/208 zoner og scanner for credentials før upload.
 - En rumligt indekseret national QA sammenholder de samlede officielle kystobjekter med alle effektive zoner og viderefører konfliktklasser uden mutation eller aktivering.
+# 2026-08-09 – 4.0.145 kompakt national QA-artifact
+- #2028 produktionsverificerede 4.0.144 med fuld Linux-validate, releasegate, artifacts og Pages-deploy.
+- Privat #2029 bestod central hydration/tombstones, 208-zoneplan, 101 fliser/707 requests på cirka 5:15, kildevalidator, `STRtree`-QA og privat råupload; hele jobbet tog 7:45.
+- Råartifactet er 413 MB komprimeret. 4.0.145 bevarer det og uploader samtidig plan, manifest og begge QA-filer som en separat kompakt privat pakke.
+- Ingen aktiv geometri, admin-data, vejrsampling, state, offentlig UI eller RavScore ændres.

@@ -132,3 +132,5 @@ Dette løser kildeomfang og revisionsspor, ikke selve kystpartitionen. Første p
 Den effektive plan gav 101 fliser og 707 lagrequests. Den første implementering kørte dem sekventielt og var stadig aktiv efter mere end ti minutter uden flisebaseret fremdriftsbevis. Dette er ikke et datakvalitetsproblem, men en pipelineflaskehals.
 
 4.0.144 bevarer præcis samme fliser, lag, pagination og sikkerhedsgrænser, men behandler højst fire fliser samtidig og logger afslutning. En efterfølgende validator kræver alle eksponerede lag komplette, kontrollerer filhash, zonebinding, deduplikering og credentialfravær. `STRtree` bruges derefter til national source-QA, så officielle kystobjekter kun sammenlignes med rumligt relevante zoner.
+
+#2029 verificerede kæden på faktiske nationale data: 208 centralt effektive zoner, 101 fliser og 707 lagforespørgsler blev hentet på cirka 5 minutter og 15 sekunder; validator og source-QA bestod, og hele jobbet sluttede på 7 minutter og 45 sekunder. Råartifactet er 413 MB komprimeret. 4.0.145 bevarer dette råbevis privat og tilføjer et separat kompakt artifact med plan, manifest og begge QA-filer til den efterfølgende topologiaudit.

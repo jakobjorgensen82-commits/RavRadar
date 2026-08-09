@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.144
+**Håndbogsversion:** 4.0.145
 
 **Opdateret:** 1. august 2026
 
@@ -1473,5 +1473,7 @@ Et separat privat GitHub-job kan hente de gratis officielle kyst-, havne-, vandl
 ## National skalerings- og komplethedsgate (4.0.144)
 
 Den første nationale måling gav 101 fliser og 707 lagforespørgsler. Sekventiel hentning var for langsom og viste ikke flisefremdrift. RavRadar bruger derfor højst fire samtidige fliser og logger hvert afsluttet trin, uden at øge antallet af data eller ændre kildens sikkerhedsgrænser.
+
+#2029 bekræftede hele kæden med 208 zoner: hentningen tog cirka 5 minutter og 15 sekunder, kildevalidatoren og den rumlige QA bestod, og råpakken blev bevaret privat. Fra 4.0.145 uploades plan, manifest og zone-QA også i en lille separat privat pakke, så den daglige faglige gennemgang ikke kræver download af den 413 MB store råpakke.
 
 Før et privat artifact accepteres, skal alle 208 zoner være bundet til planen, alle eksponerede lag være komplette, og filer og hashværdier stemme. Deduplikering måles, og credential- eller mutationsfund stopper kørslen. Først derefter udføres en rumligt indekseret fysisk kystsammenligning for alle zoner. Resultatet er fortsat QA og kan ikke aktivere kyst, vejr eller score.

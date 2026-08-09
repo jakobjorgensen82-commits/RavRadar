@@ -23,6 +23,7 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 - 4.0.142 implementerer admin-gaten som et isoleret midlertidigt kladdedokument. #2014 verificerede create/read/update/delete, fravær og urørte runtime-dokumenter; #2013 bestod fuld produktion. Næste trin er eksplicit ejer-go/no-go, ikke automatisk aktivering.
 - 4.0.143 starter den godkendte nationale skalering: central 208-zoners plan, deterministiske kildefliser, maskinlæsbare konfliktklasser og et isoleret privat nationalt GeoDanmark-job med deduplikering. Første private CI-artifact er næste evidensgate; derefter følger national topologi og de lokale DMI/state/UI/admin-led.
 - 4.0.144 korrigerer den målte sekventielle flaskehals med begrænset firefliseparallelitet og fremdrift, tilføjer en streng national kilde-/secretgate og en `STRtree`-baseret source-QA for alle 208 zoner. Privat national CI er næste gate før topologi-/ravstrandsgenerering.
+- #2029 verificerede 4.0.144 nationalt: 208 zoner, 101 fliser/707 requests, ca. 5:15 hentning, grøn validator og source-QA. 4.0.145 tilføjer et kompakt privat QA-artifact ved siden af råpakken på 413 MB; derefter fortsætter topologi-/ravstrandsgeneratoren fra de målte konflikt- og dækningsdata.
 
 ## P0 – ægte Codex-baseline etableret i #1772
 - **Første opgave – implementeret lokalt:** workflowets gate-bypass er lukket. En positiv preflight kræver nu `npm run validate` og `npm run release:gate` før artifact; negativ preflight kan fortsat stoppe billigt.

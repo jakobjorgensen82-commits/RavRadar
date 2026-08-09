@@ -1,15 +1,16 @@
-# Implementeringsstatus pr. 4.0.144
+# Implementeringsstatus pr. 4.0.145
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] 4.0.143 er produktionsverificeret i #2027: central sync, frisk data, fuld Linux-validate, releasegate, Pages-artifact og deploy bestod.
 - [x] Første nationaljob målte 101 fliser og 707 sekventielle lagrequests; efter mere end ti minutter var hentningen fortsat aktiv uden flisefremdrift. 4.0.144 begrænser parallelitet til fire fliser og logger deterministisk fremdrift.
 - [x] National kildevalidator kontrollerer plan/rapport, 208 zoner, samtlige eksponerede lag, komplethedsflag, filer, hashes, deduplikering, mutationer og credentialfravær før artifact-upload.
 - [x] National source-QA bruger `STRtree` til at sammenholde samlede officielle kystobjekter med alle effektive zoner og viderefører planens konfliktklasse uden at foreslå aktivering.
-- [ ] Privat 4.0.144-CI skal bevise korrigeret køretid, validator og 208-zoners source-QA på faktiske nationale data.
+- [x] Privat #2029 beviste korrigeret hentning på ca. 5:15, grøn validator og 208-zoners source-QA på faktiske nationale data; hele jobbet sluttede på 7:45.
 - [x] National planlægger bruger den centralt hydrerede effektive bestand, kræver 208 zoner og danner deterministiske, overlappende kildefliser uden 208 manuelle Blåvand-forløb.
 - [x] Kendte fejl ved Blåvand, Rømø, Limfjorden og Lolland/Falster er maskinlæsbare konfliktklasser; øvrige centrale ændringer stoppes automatisk som admin-konflikter.
 - [x] Separat privat nationalt workflowjob kan hente og deduplikere syv gratis officielle GeoDanmark-lag uden Pages-rettigheder eller mutationsadgang.
-- [ ] Første nationale private CI-kørsel skal bevise 208-zoners hydrering, komplet kildehentning, fliseantal, deduplikering og credential-frit artifact.
+- [x] #2029 beviste 208-zoners hydrering, 101 fliser/707 requests, komplethed, deduplikering og credentialkontrol; råartifactet er privat og 413 MB.
+- [x] 4.0.145 uploader plan, manifest og begge QA-filer som særskilt kompakt privat artifact ved siden af råkilden.
 - [x] Lokal RDKS, kystgeometri-v2, workflowkontrakt, releaseversion og releasegate består. Hele validate-rækken består bortset fra den kendte Windows/Linux-`rsync`-test, som skal bevises i CI.
 - [ ] National topologi, ravstrandfravalg, stednavne, lokale punkter, DMI/state/score/UI/admin og aktivering er endnu ikke implementeret.
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.
