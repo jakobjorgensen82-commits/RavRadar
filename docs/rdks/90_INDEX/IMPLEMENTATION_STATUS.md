@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.130
+# Implementeringsstatus pr. 4.0.131
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.
@@ -52,7 +52,15 @@
 - [x] Havne, vandløbsender, høfder, klit og skrænt registreres som score-neutral reviewkontekst; de fortolkes ikke automatisk som ravstrand eller åmunding.
 - [x] Tre private PNG-kort viser nuværende kyst, GeoDanmark-kilde, zoner og centrale ankre.
 - [x] Lokal analyse flaggede 9/9 zoner: Rømø har en stor forskydning, Limfjorden har manuelle konflikter/modstående bredder, og Lolland/Falster kræver egentlig zonepartition frem for simpel koordinatjustering.
-- [ ] Kør den nye kæde i GitHub og verificér privat artifact, isolation og uændret produktion.
+- [x] #1941 verificerede den nye kæde, privat artifact, score-/produktionsisolation og uændret Pages.
+
+## 4.0.131 – kystdels-, navne- og migrationstriage
+- [x] 702 fysiske kildestykker på tværs af ni zoner får privat reviewklasse ud fra afstand til eksisterende kyst; ingen må aktiveres automatisk.
+- [x] Det offentlige, nøglefri `steder`-API er verificeret som adgang til Danmarks officielle stednavneregister og forespørges kun i afgrænsede pilotpolygoner.
+- [x] Navnetokens, autoritative kandidater, afstande og manglende match gemmes uden automatisk omdøbning.
+- [x] Lokal migrationstriage: Blåvand geometriopretning; Rømø og Thisted semantisk flyttereview; Fur, Aalborg og fire Lolland/Falster-zoner grænse-/partitionsreview.
+- [ ] Kør 4.0.131 i GitHub og verificér private outputs, netværksadgang og fortsat isolation.
+- [ ] Saml de rå klassificerede stykker til kontrollerede kystdelsforslag med eksplicit havn-/å-/fjordfravalg.
 
 ## 4.0.125 – fuld timeproveniens fra STAC/GRIB
 - [x] Collection, model-run og native gyldighedstid lagres pr. rå komponenttime i bulkcachen.

@@ -26,6 +26,7 @@ REFERENCE_TOLERANCE_METRES = 250
 MASK_NEAR_COAST_METRES = 150
 RIVER_MOUTH_NEAR_COAST_METRES = 100
 MAX_SOURCE_REFS_PER_ZONE_LAYER = 200
+MIN_SOURCE_SEGMENT_METRES = 25
 
 
 def project(geometry):
@@ -217,6 +218,39 @@ def build_outputs(records, report_source_hash):
         coverage_ratio = covered_length / current.length if current.length else 0
         source_parts = line_parts(source_union)
         source_refs = sorted({feature_id for feature_id, _ in record["source"]})
+        source_segment_triage = []
+        for index, (feature_id, segment) in enumerate(record["source"], start=1):
+            if segment.length < MIN_SOURCE_SEGMENT_METRES:
+                continue
+            segment_covered = segment.intersection(current.buffer(REFERENCE_TOLERANCE_METRES)).length
+            segment_ratio = segment_covered / segment.length if segment.length else 0
+            if segment_ratio >= 0.8:
+                review_class = "existing-alignment-reference"
+            elif segment_ratio >= 0.2:
+                review_class = "partial-alignment-review"
+            else:
+                review_class = "semantic-boundary-review"
+            segment_id = f"{record['zoneId'].casefold()}-source-{len(source_segment_triage) + 1:03d}"
+            source_segment_triage.append({
+                "segmentId": segment_id,
+                "sourceRef": feature_id,
+                "lengthM": round(segment.length, 1),
+                "nearCurrentRatio250m": round(segment_ratio, 6),
+                "distanceToCurrent": rounded_distance_summary(sample_distances(segment, current)),
+                "reviewClass": review_class,
+                "automaticProposalAllowed": False,
+            })
+            map_features.append({
+                "type": "Feature",
+                "properties": {
+                    "zoneId": record["zoneId"],
+                    "segmentId": segment_id,
+                    "kind": "geodanmark-source-segment-triage",
+                    "reviewClass": review_class,
+                    "automaticProposalAllowed": False,
+                },
+                "geometry": mapping(unproject(segment)),
+            })
         props = record["properties"]
         admin_override = str(props.get("coastLineSource") or "").startswith("admin-")
         flags = []
@@ -242,6 +276,7 @@ def build_outputs(records, report_source_hash):
             "candidateSourcePartCount": len(source_parts),
             "candidateSourceObjectCount": len(source_refs),
             "candidateSourceRefs": source_refs[:MAX_SOURCE_REFS_PER_ZONE_LAYER],
+            "sourceSegmentTriage": source_segment_triage,
             "currentNearSourceRatio250m": round(coverage_ratio, 6),
             "currentToSourceDistance": rounded_distance_summary(current_distances),
             "sourceToCurrentDistance": rounded_distance_summary(source_distances),
@@ -292,6 +327,7 @@ def main():
         distances = sample_distances(line, reference, interval=250)
         assert distances and all(round(value) == 100 for value in distances)
         assert len(line_parts(unary_union([line]))) == 1
+        assert MIN_SOURCE_SEGMENT_METRES > 0
         print("GeoDanmark source-QA self-test: bestået.")
         return
     work_dir = args.work_dir.resolve()

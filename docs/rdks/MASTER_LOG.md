@@ -37,6 +37,12 @@
 - Tre private kort gør forskelle og ankre synlige. Lokal kørsel flaggede 9/9 zoner og viste, at Rømø, Limfjorden og Lolland/Falster kræver forskellige migrationsklasser; blind snapping er forkastet.
 - Aktive zoner, centrale administratorværdier, RavScore, produktionsbuild og Pages forbliver uændrede. CI-verifikation af 4.0.130 afventes.
 
+## 2026-08-09 – 4.0.131 officiel navne- og kystdelstriage
+- #1941 verificerede 4.0.130 source-QA, kort og privat artifact med build/Pages isoleret.
+- Hvert fysisk GeoDanmark-kildestykke klassificeres nu privat som eksisterende match, delvist match eller semantisk/grænsemæssigt review; lokal pilot gav 702 stykker.
+- Dataforsyningens nøglefri `steder`-API er verificeret som Danmarks officielle stednavneregister. Afgrænsede pilotkald gemmer kun kompakte kandidatfelter og afstande.
+- Migrationstriagen klassificerer Blåvand som geometriopretning, Rømø/Thisted som semantisk flyttereview og de øvrige seks som grænse-/partitionsreview. Ingen navne eller geometrier aktiveres automatisk.
+
 ## 2026-08-08 – 4.0.125 fuld DMI-timeproveniens
 - Brugerens godkendelse af næste roadmaptrin udløste implementering af provenance fra STAC/GRIB til beskyttede forecasttimer.
 - Bulkparsergeneration 14 gemmer collection, modelkørsel og native gyldighedstid pr. komponent; timebyggeren beregner lead time, prognosealder, temporal status og native kildetider.

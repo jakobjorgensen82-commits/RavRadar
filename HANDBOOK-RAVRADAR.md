@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.130
+**Håndbogsversion:** 4.0.131
 
 **Opdateret:** 1. august 2026
 
@@ -1429,5 +1429,11 @@ Fra 4.0.129 har piloten sin egen GitHub Actions-kø. RavRadars planlagte vejropd
 Piloten sammenholder nu de centralt gemte, effektive pilotzoner med GeoDanmarks kystlinjer og laver private målinger og kort. Den måler blandt andet afstand, hvor stor en del af den nuværende linje der ligger tæt på kilden, og om kilden består af mange adskilte stykker. Havne, vandløbsender, høfder, klitter og skrænter vises kun som neutral reviewkontekst.
 
 Den første lokale analyse flaggede alle ni pilotzoner. Rømø har en tydelig geografisk forskydning, Limfjorden indeholder manuelle konflikter og flere mulige bredder, og Lolland/Falster kræver en bedre zoneinddeling frem for blot at flytte enkelte koordinater. Derfor bliver den nærmeste GeoDanmark-linje ikke automatisk gjort til RavRadars kystlinje. Næste fase opdeler og klassificerer kyststrækningerne og gennemfører stednavnekontrol. Aktive zoner, adminrettelser og RavScore er fortsat uændrede.
+
+# Officiel navne- og kystdelstriage (4.0.131)
+
+#1941 bekræftede, at source-QA og kort kan dannes privat på den centralt gemte pilotbestand uden build eller Pages. Piloten opdeler nu den fysiske GeoDanmark-reference i målbare kildestykker og mærker dem som tæt på den nuværende linje, delvist match eller semantisk/grænsemæssigt review. Et råt kildestykke er stadig ikke det samme som en færdig ravstrand.
+
+Zonenavnene sammenholdes desuden med Danmarks officielle stednavneregister via Dataforsyningens offentlige, nøglefri API. Systemet gemmer kandidater, navnestatus, type og geografisk afstand, men foreslår ikke automatisk et endeligt navn. Den lokale pilot klassificerede Blåvand som geometriopretning, Rømø og Thisted som mulig semantisk flytning og de øvrige seks zoner som grænse-/partitionsarbejde. Næste skridt er at samle kontrollerede stykker til sammenhængende kystdelsforslag og anvende eksplicitte havn-, å- og fjordfravalg.
 
 Kørsel #1936 bekræftede hele denne kildekæde. Alle 21 lag/område-udtræk var komplette, også de seks der krævede flere WFS-sider, og de rå filer forblev i det private artifact. Det er et datagrundlag for næste analysefase, ikke en ændring af kortets aktive zoner.

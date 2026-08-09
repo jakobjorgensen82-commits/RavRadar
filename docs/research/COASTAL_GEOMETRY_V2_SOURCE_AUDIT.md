@@ -35,7 +35,19 @@ Repositoryet har nu den task-relevante GitHub Actions-secret `DATAFORDELER_API_K
 
 #1936 lukkede komplethedsgaten: alle 21 kombinationer af syv lag og tre områder havde `complete=true` og samme `featureCount` som `sourceNumberMatched`. Seks kombinationer krævede 2–8 sider; maksimum var 72.870 features. Artifactet indeholdt alle 21 rå GeoJSON-filer og var cirka 341 MB. Denne evidens godkender kilden til parallel analyse, ikke automatisk zoneaktivering.
 
+#1941 produktionsverificerede 4.0.130-kæden på den centralt hydrerede pilotbestand: source-QA, tre private kort og privat artifact blev genereret, mens build og Pages var sprunget over. Alle ni zoner blev flagget til review; blind snapping er derfor forkastet.
+
 Den ældre generelle GeoDanmark WFS/fildownload er markeret til udfasning i 2026. Piloten skal anvende den aktuelle entitetsbaserede WFS eller en anden dokumenteret aktuel distributionsvej, ikke bygge ny afhængighed på den udgående tjeneste.
+
+## Autoritativ stednavnekilde
+Dataforsyningens offentlige `steder`-API udstiller steder fra Danmarks officielle stednavneregister med primærnavn, navnestatus, type, geometri og visuelt center. Geografisk afgrænsning kan ske med polygon og kræver ingen autentifikation. 4.0.131 bruger kun afgrænsede pilotpolygoner og hovedtyperne bebyggelse, farvand, landskabsform, naturareal og havnebassin.
+
+- Officiel API-dokumentation: <https://dawadocs.dataforsyningen.dk/dok/api/sted>
+- Endpoint: `https://api.dataforsyningen.dk/steder`
+- Adgang: offentlig og nøglefri.
+- Anvendelse: kandidater og navne-/placeringsaudit, aldrig automatisk omdøbning.
+
+DAWA er markeret til fremtidig lukning. Adapteren og kildemetadata skal derfor forblive udskiftelige; en senere distributionsændring må stoppe navneauditten sikkert frem for at bruge uofficielle navne eller skjult fallback.
 
 ## Kvalitetsbegrænsning
 `Kyst` er den fysiske hav/land-grundreference. RavRadars ravstrandlinje er et afledt produkt, fordi den med vilje:
@@ -48,7 +60,6 @@ Den ældre generelle GeoDanmark WFS/fildownload er markeret til udfasning i 2026
 Derfor skal kildegeometri, fravalgsmasker og den endelige afledte linje opbevares separat. Et manuelt adminoverride skal kunne spores uden at slette den oprindelige kildeproveniens.
 
 ## Næste tekniske leverance
-1. Definér v2-arbejdsskema og JSON Schema for zone, kystdel, kildeproveniens, fravalg, ravfælde og ID-migration.
-2. Byg read-only audit af den eksisterende geometri og v2-fixtures.
-3. Kør det manuelle `geometry_v2_pilot=true`-job og kontroller den private pilotrapport/artifact.
-4. Sammenhold foreslåede marine punkter med faktiske DMI-celler før score-/produktionsintegration.
+1. Kør 4.0.131-piloten og verificér source-segmenttriage samt officiel navne-/migrationstriage i det private artifact.
+2. Byg kontrollerede, sammenhængende kystdelsforslag ud fra de klassificerede kildestykker; rå GeoDanmark-fragmenter må ikke forveksles med færdige ravstrande.
+3. Sammenhold foreslåede marine punkter med faktiske DMI-celler før score-/produktionsintegration.

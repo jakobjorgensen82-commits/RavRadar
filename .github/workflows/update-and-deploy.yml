@@ -367,6 +367,9 @@ jobs:
       - name: Analyze GeoDanmark source against centrally hydrated pilot zones
         run: python scripts/analyze-geodanmark-pilot.py
 
+      - name: Audit official place names and migration classes
+        run: python scripts/audit-pilot-place-names.py
+
       - name: Render private GeoDanmark source review maps
         run: python scripts/render-geodanmark-pilot-maps.py
 
