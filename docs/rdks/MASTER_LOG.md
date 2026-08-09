@@ -634,3 +634,7 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - En Blåvand-specifik gate skriver kun en unik midlertidig, aldrig aktiv kladde og kræver verificeret create/read/update/delete samt fravær efter rollback.
 - De autoritative runtime-dokumenters payload-hash og version skal være uændrede. Ingen aktivering; privat CI afventer.
 - Produktcommit `ca5f920` er pushed. Privat pilot #2014 bestod med verificeret rollback og urørte runtime-dokumenter; normal produktion #2013 bestod fulde gates og deploy. Næste trin er eksplicit ejer-go/no-go.
+## 2026-08-09 – DEC-0033 bedste kystdel bestemmer zonescoren
+- Ejeren besluttede, at højeste gyldige lokale delscore skal være zonens viste RavScore.
+- UI skal tydeligt skelne hele zonen fra navngivne delstrækninger og forklare vind, strøm, bølger, vandstand, state/historik og forskellen til andre dele.
+- Dæknings-/usikkerhedstærskler og shadow-validering mangler; beslutningen aktiverer ikke Blåvand.

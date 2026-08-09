@@ -158,6 +158,13 @@ Desktop-runtimepakken har Node/Python/pnpm, men ingen `npm`-kommando. Validate-d
 - Normal produktion #2013 (`31324840861`) bestod central adminsync, Supabase-roundtrip, frisk DMI-/vejropbygning, fuld Linux-validate, release-gate, Pages-artifact og deploy.
 - Alle private sikkerhedsgater for Blåvand-piloten er nu bestået. Næste trin er eksplicit ejer-go/no-go; ingen aktivering må ske implicit.
 
+## Ny ejerbeslutning efter 4.0.142 – score og forklaring
+- Ejeren har valgt, at den bedst vurderede gyldige lokale kystdel fremover skal bestemme zonens RavScore.
+- Det skal stå meget tydeligt, om scoren gælder hele zonen eller kun bestemte dele. Ved delvis dækning skal det lokale navn/strækning vises.
+- Detaljen skal give en forståelig ravteknisk forklaring på den vindende del og forskellen til de øvrige, inklusive vind, strøm, bølger, vandstand, historik/state og øvrige aktive komponenter.
+- DEC-0033 fastholder missing/proveniens, valg pr. tidspunkt og jagtform samt krav om senere faglige tærskler for “hele zonen”, delvis og usikker dækning.
+- Dette er produktretning, ikke aktiveringstilladelse. Næste leverance er fortsat den visuelle ejerpræsentation med rigtigt kort/ortofoto og almindeligt sprog.
+
 ## Model
 Start og afslut 4.0.134 på GPT-5.6 Sol. Geometrisk review, fuld validering og CI-artifactkontrol er kritisk. En billigere model kan først overvejes til en senere, rent mekanisk dokumentationsopgave.
 

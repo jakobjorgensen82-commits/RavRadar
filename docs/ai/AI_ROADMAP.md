@@ -3,6 +3,7 @@
 Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status skal løbende flyttes til RDKS, når noget implementeres.
 
 ## Aktiv P1 – kystgeometri v2-pilot
+- DEC-0033 er valgt som fremtidig produktretning: bedste gyldige lokale kystdel leverer zonescoren, men UI skal eksplicit skelne hele zonen fra navngivne delstrækninger og forklare den ravtekniske årsag. Før kodeaktivering bygges den forståelige ejer-reviewvisning og en score-shadow med dæknings-/usikkerhedskriterier.
 - Arbejdet følger DEC-0032 og udføres parallelt uden at ændre produktionszoner eller centrale adminoverrides.
 - Første leverance er en permanent kilde-/licenskontrakt, v2-skema, national topologi-/navneaudit og tre repræsentative pilotområder.
 - Flere lokale kystdele skal vurderes med selvstændig DMI-sampling og provenance; eksisterende multi-ankerretninger er ikke alene et dataprodukt.
