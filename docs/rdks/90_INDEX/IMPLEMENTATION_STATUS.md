@@ -29,8 +29,9 @@
 - [x] 4.0.138 låser stabil partserieidentitet, eget punkt/grid/proveniens, separat historiknøgle og forbud mod krydsmerge, fallback, part-score, state, UI, public projection, admin-write og aktivering.
 - [x] Privat pilot #1992 og artifactreview verificerer præcis to isolerede delserier, unikke serie-/historik-ID'er, korrekte gridreferencer, ingen credentialbærende URL og alle aktiverings-/mutationsflag falske.
 - [x] #1991 produktionsverificerede 4.0.138 med central adminhydrering, frisk data, fuld Linux-validate, release-gate, Pages-artifact og deploy.
-- [x] 4.0.139-kandidaten danner private metadata-/hashbaserede flertidsserier via produktionens native DMI-parser og kræver mindst to fælles komplette trin med fuld komponentproveniens og korrekt current-U/V-parring.
-- [ ] Kør privat CI-pilot, verificér faktisk WAM-/DKSS-flertidsartifact uden credential- eller råværdilæk og produktionsverificér releasen; score/state/UI/admin forbliver deaktiveret.
+- [x] 4.0.139 danner private metadata-/hashbaserede flertidsserier via produktionens native DMI-parser og kræver mindst to fælles komplette trin med fuld komponentproveniens og korrekt current-U/V-parring.
+- [x] Privat pilot #1997 verificerede fire fælles komplette tider pr. del, 48 fulde DMI-komponentposter, forskellige delceller, korrekt U/V-parring, nul interpolation/fallback og ingen credential- eller råværdilæk.
+- [x] #1996 produktionsverificerede 4.0.139 med central adminsync, frisk data, fuld Linux-validate, release-gate, Pages-artifact og deploy.
 - [ ] Derefter følger separat privat state-/historikvalidering; ingen aktivering før senere UI-, admin-roundtrip-, rollback- og ejer-go/no-go.
 - [x] #1976 produktionsverificerede 4.0.135 efter dependency-isolationshotfix med frisk data, fuld validate, release-gate, Pages-artifact og deploy.
 

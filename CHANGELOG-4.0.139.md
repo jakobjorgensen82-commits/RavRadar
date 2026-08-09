@@ -6,4 +6,4 @@
 - Gemmer kun provenance, tilstedeværelse og kontekstbundne værdihash i det private artifact; ingen rå vejrværdier.
 - Aktiverer ikke geometri, sampling, state, part-score, UI, public runtime eller admin-write. Parent-zonen og dens RavScore forbliver autoritative.
 
-Status ved kandidat: lokale self-tests og workflowkontrakt består; privat CI-pilot, artifactreview og normal produktionsverifikation afventer.
+Produktionsverificeret: privat pilot #1997 bestod med fire fælles komplette native tider pr. del og 48 komponentposter med fuld DMI-proveniens, korrekte gridpunkter, nul interpolation/fallback, korrekt U/V-parring og forskellige celler mellem delene. Artifactet har ingen rå værdifelter eller credentialbærende URL. Normal produktion #1996 bestod central adminsync, frisk DMI/vejr, fuld Linux-validate, release-gate, Pages-artifact og deploy på `f94620f`; offentlig `version.json` viser 4.0.139.

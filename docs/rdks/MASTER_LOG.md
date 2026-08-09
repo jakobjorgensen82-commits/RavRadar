@@ -1,7 +1,9 @@
 ## 2026-08-09 – 4.0.139 privat Blåvand-flertidsseriegate
 - En ny privat validator genbruger produktionens native WAM-/DKSS-parser over flere forecasttrin for begge isolerede Blåvand-dele.
 - Gaten kræver mindst to fælles komplette native tider, fuld komponentproveniens, fysiske gridpunkter og fælles current-U/V-celle og vertikallag. Krydsmerge, interpolation og fallback er forbudt.
-- Artifactet gemmer kun komponenttilstedeværelse og kontekstbundne værdihash, ikke rå vejrværdier. Geometri, sampling, state, score, UI, public runtime og admin-write forbliver falske. Lokal self-test og workflowkontrakt består; CI-pilot og produktion mangler.
+- Artifactet gemmer kun komponenttilstedeværelse og kontekstbundne værdihash, ikke rå vejrværdier. Geometri, sampling, state, score, UI, public runtime og admin-write forbliver falske.
+- Privat pilot #1997 bestod med fire fælles komplette native tider pr. del og 48 komponentposter med fuld DMI-proveniens, forskellige delceller, korrekt current-U/V-parring og nul interpolation/fallback. Artifactet har ingen rå værdifelter eller credentialbærende URL.
+- Normal produktion #1996 bestod central adminsync, frisk DMI-/vejropbygning, fuld Linux-validate, release-gate, Pages-artifact og deploy på `f94620f`. Offentlig `version.json` viser 4.0.139.
 
 ## 2026-08-09 – 4.0.138 privat weather-shadow-kontrakt
 - Den faktiske kodeaudit viser, at multi-anker-scoren i dag anvender én zones fælles vejrserie. Direkte tilkobling af to punktserier ville kunne blande en dels vejr med den anden dels kystretning.
