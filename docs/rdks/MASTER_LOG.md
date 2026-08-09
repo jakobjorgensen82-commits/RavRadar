@@ -671,3 +671,7 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Artifactet målte 90 officielle fjord-/norpolygoner, 1.225 havneobjekter, 3.347 høfter og klit-/skræntevidens i 183/168 zoner.
 - 2.868 åmundingsklynger, op til 189 i én zone, er fagligt afvist som oversegmentering trods grøn teknisk gate.
 - 4.0.147 tilbageholder åmasker i zoner over 20 og eksporterer privat egenskabsprofil samt højst 200 geometri-frie samples til næste regelrevision.
+# 2026-08-09 – 4.0.148 kildebaseret åbreddefilter
+- #2039 produktionsverificerede 4.0.147; privat #2040 verificerede 45 overdense zoner med nul anvendte åmasker.
+- Profilen viste 2.551 kandidater på 0–2,5 m, 806 på 2,5–12 m og 37 på mindst 12 m; synlighed/type skelnede ikke.
+- 4.0.148 kræver officiel midtebredde mindst 2,5 m og fysisk linjelængde mindst 100 m, rapporterer smalle/korte fravalg og bevarer >20-klynge no-go.

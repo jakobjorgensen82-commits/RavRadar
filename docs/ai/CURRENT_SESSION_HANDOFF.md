@@ -12,6 +12,7 @@
 - Råartifactet er 413 MB komprimeret og var upraktisk langsomt at downloade. 4.0.145-kandidaten tilføjer derfor et separat kompakt privat artifact med plan, manifest og begge QA-filer; råartifactet bevares uændret.
 - 4.0.145 er nu produktionsverificeret i #2032; privat #2033 verificerede både råartifact og kompakt 6,8 MB QA-artifact. Auditen viser 20 referenceklare og 188 flaggede zoner. 4.0.146 bygger read-only national topologiaudit med fjord/nor, havn, åmunding, klit/skrænt og høfter samt fail-closed 208-zonegate.
 - 4.0.146 er produktionsverificeret i #2036. Privat #2037 bestod teknisk med 90 fjord-/normasker, 1.225 havneobjekter, 3.347 høfter og 208 zoneoutputs, men artifactauditen afviste 2.868 åmundingsklynger som oversegmentering. 4.0.147 tilbageholder åmasker i zoner over 20 og eksporterer aggregeret egenskabsprofil plus højst 200 geometri-frie samples.
+- 4.0.147 er produktionsverificeret i #2039; privat #2040 beviste 45 overdense zoner og nul anvendte masker. 2.551/3.394 kandidater er kun 0–2,5 m brede. 4.0.148 filtrerer derfor på officiel bredde ≥2,5 m og fysisk linje ≥100 m, tæller fravalg og bevarer >20 no-go.
 - 4.0.143 er produktionsverificeret i #2027 med fuld Linux-validate, releasegate, artifact og Pages-deploy.
 - Første nationaljob målte 101 fliser/707 sekventielle requests og var efter mere end ti minutter fortsat i hentetrinnet uden flisefremdrift.
 - Worktree bruger nu højst fire samtidige fliser, synlig progress, streng kontrol af komplethed/filer/hashes/deduplikering/secrets og rumligt indekseret QA for alle 208 zoner.
