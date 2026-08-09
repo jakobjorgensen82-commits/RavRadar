@@ -4,6 +4,8 @@
   "groupingGapM": 120,
   "minimumPartLengthM": 100,
   "maximumPartsPerZoneBeforeFragmentationReview": 25,
+  "maximumReviewPartLengthKm": 20,
+  "maximumFragmentsPerReviewPart": 20,
   "requireOfficialPlaceNameBeforeNextStage": true,
   "inventedConnectionsAllowed": false,
   "automaticActivationAllowed": false

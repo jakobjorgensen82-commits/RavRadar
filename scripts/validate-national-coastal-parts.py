@@ -14,9 +14,13 @@ def validate(report,geo):
     ids=[p.get("partId") for p in parts]
     if len(ids)!=len(set(ids)) or any(p.get("proposedName") is not None or p.get("nameStatus")!="official-place-name-required" for p in parts):fail("Nationale dele har dublet-ID eller opdigtet navn.")
     if report.get("inventedConnectionCount")!=0 or any(p.get("inventedConnectionCount")!=0 or p.get("automaticActivationAllowed") is not False for p in parts):fail("National delgenerator har opfundet forbindelse eller aktivering.")
+    for zone in zones:
+        flagged=sum(1 for part in zone.get("coastalParts") or [] if part.get("localityReviewFlags"))
+        if zone.get("localityReviewPartCount")!=flagged:fail(f"Lokalitetsreview-antallet er inkonsistent for {zone.get('zoneId')}.")
+        if flagged and zone.get("proposalStatus")=="private-review-parts-generated":fail(f"For grov kystdel er ikke blokeret for {zone.get('zoneId')}.")
     return {"zoneCount":len(zones),"partCount":len(parts),"blockedZoneCount":sum(1 for z in zones if z.get("proposalStatus","").startswith("blocked-"))}
 def self_test():
-    zones=[{"zoneId":f"Z{i}","proposalStatus":"private-review-parts-generated","coastalParts":[]} for i in range(208)];r={"status":"private-national-read-only-coastal-parts","zoneCount":208,"coastalPartCount":0,"inventedConnectionCount":0,"zones":zones,"productionGeometryChanged":False,"adminDataChanged":False,"weatherSamplingChanged":False,"stateChanged":False,"scoreChanged":False,"automaticActivationAllowed":False};assert validate(r,{"features":[]})["zoneCount"]==208;print("National coastal parts validation self-test: bestået.")
+    zones=[{"zoneId":f"Z{i}","proposalStatus":"private-review-parts-generated","localityReviewPartCount":0,"coastalParts":[]} for i in range(208)];r={"status":"private-national-read-only-coastal-parts","zoneCount":208,"coastalPartCount":0,"inventedConnectionCount":0,"zones":zones,"productionGeometryChanged":False,"adminDataChanged":False,"weatherSamplingChanged":False,"stateChanged":False,"scoreChanged":False,"automaticActivationAllowed":False};assert validate(r,{"features":[]})["zoneCount"]==208;print("National coastal parts validation self-test: bestået.")
 def main():
     p=argparse.ArgumentParser();p.add_argument("--report",type=Path,default=ROOT/".geometry-v2-work"/"national-coastal-parts.json");p.add_argument("--geojson",type=Path,default=ROOT/".geometry-v2-work"/"national-coastal-parts.geojson");p.add_argument("--self-test",action="store_true");a=p.parse_args();
     if a.self_test:self_test();return

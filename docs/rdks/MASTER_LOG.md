@@ -678,3 +678,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 # 2026-08-09 – 4.0.149 private nationale kystdelsforslag
 - #2042 produktionsverificerede 4.0.148; privat #2043 reducerede åklynger til 489 og overdense zoner til den kendte `DK-B10-10`-partitionskonflikt.
 - En ny read-only generator grupperer kun faktiske fragmenter som multipart, kræver officielle navne og holder punkter, sampling, state, score og aktivering falske.
+
+# 2026-08-09 – 4.0.150 national lokalitetsgate
+- #2046 produktionsverificerede 4.0.149 med fuld datakæde, validate, release-gate og Pages-deploy. Privat #2047 dannede 755 dele i 194 zoner; 14 zoner havde ingen del, 54 var planlagte konflikter, og én havde over 25 dele.
+- Nul forbindelser, navne, punkter eller runtimefunktioner blev opfundet. Artifactauditen viste dog 23 dele over 20 km og 14 dele med over 20 fragmenter.
+- 4.0.150 markerer de for grove dele fail-closed til lokalitetsreview. Lokal genbygning giver 129 umiddelbart reviewbare og 79 blokerede zoner; ingen aktiv geometri ændres.

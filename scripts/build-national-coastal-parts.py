@@ -38,8 +38,15 @@ def build(topology_report,topology_geo,policy):
         if len(groups)>policy["maximumPartsPerZoneBeforeFragmentationReview"]:status="blocked-fragmentation-review";flags.append(status)
         part_rows=[]
         for index,geometry in enumerate(groups,1):
-            part_id=f"{zone_id.casefold()}-national-part-{index:02d}"; row={"partId":part_id,"proposedName":None,"nameStatus":"official-place-name-required","lengthKm":round(geometry.length/1000,3),"fragmentCount":len(lines(geometry)),"inventedConnectionCount":0,"landPointProposed":False,"marinePointProposed":False,"weatherSamplingEnabled":False,"stateEnabled":False,"scoreEnabled":False,"automaticActivationAllowed":False};part_rows.append(row);features.append({"type":"Feature","properties":{"zoneId":zone_id,**row,"kind":"private-national-coastal-part-review"},"geometry":mapping(unproject(geometry))})
-        zones.append({"zoneId":zone_id,"currentName":source.get("currentName"),"conflictClass":source.get("conflictClass"),"proposalStatus":status,"coastalPartCount":len(part_rows),"coastalParts":part_rows,"qualityFlags":flags,"officialPlaceNamesRequired":True,"landWaterPointsProposed":False,"automaticActivationAllowed":False})
+            part_id=f"{zone_id.casefold()}-national-part-{index:02d}"; length_km=round(geometry.length/1000,3); fragment_count=len(lines(geometry)); locality_flags=[]
+            if length_km>policy["maximumReviewPartLengthKm"]:locality_flags.append("part-too-long-for-local-weather-review")
+            if fragment_count>policy["maximumFragmentsPerReviewPart"]:locality_flags.append("part-too-fragmented-for-local-weather-review")
+            row={"partId":part_id,"proposedName":None,"nameStatus":"official-place-name-required","lengthKm":length_km,"fragmentCount":fragment_count,"localityReviewFlags":locality_flags,"inventedConnectionCount":0,"landPointProposed":False,"marinePointProposed":False,"weatherSamplingEnabled":False,"stateEnabled":False,"scoreEnabled":False,"automaticActivationAllowed":False};part_rows.append(row);features.append({"type":"Feature","properties":{"zoneId":zone_id,**row,"kind":"private-national-coastal-part-review"},"geometry":mapping(unproject(geometry))})
+        locality_review_count=sum(1 for row in part_rows if row["localityReviewFlags"])
+        if locality_review_count:
+            flags.append(f"locality-review-parts:{locality_review_count}")
+            if status=="private-review-parts-generated":status="blocked-locality-review"
+        zones.append({"zoneId":zone_id,"currentName":source.get("currentName"),"conflictClass":source.get("conflictClass"),"proposalStatus":status,"coastalPartCount":len(part_rows),"localityReviewPartCount":locality_review_count,"coastalParts":part_rows,"qualityFlags":flags,"officialPlaceNamesRequired":True,"landWaterPointsProposed":False,"automaticActivationAllowed":False})
     report={"schemaVersion":"1.0.0","status":"private-national-read-only-coastal-parts","generatedAt":datetime.now(timezone.utc).isoformat().replace("+00:00","Z"),"zoneCount":len(zones),"coastalPartCount":sum(r["coastalPartCount"] for r in zones),"inventedConnectionCount":0,"productionGeometryChanged":False,"adminDataChanged":False,"weatherSamplingChanged":False,"stateChanged":False,"scoreChanged":False,"automaticActivationAllowed":False,"zones":zones}
     return report,{"type":"FeatureCollection","features":features}
 def self_test():
