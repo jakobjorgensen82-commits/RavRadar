@@ -15,6 +15,7 @@ const blaavandWeatherShadow = await fs.readFile('scripts/build-blaavand-weather-
 const blaavandMultiStep = await fs.readFile('scripts/validate-blaavand-multi-step-series.py', 'utf8');
 const blaavandStateHistory = await fs.readFile('scripts/validate-blaavand-state-history.mjs', 'utf8');
 const blaavandUiReview = await fs.readFile('scripts/build-blaavand-score-neutral-ui-review.mjs', 'utf8');
+const blaavandAdminRoundtrip = await fs.readFile('scripts/validate-blaavand-admin-roundtrip.mjs', 'utf8');
 const blaavandWeatherPolicy = JSON.parse(await fs.readFile('data/geometry-v2/blaavand-weather-shadow-policy.json', 'utf8'));
 const blaavandPolicy = JSON.parse(await fs.readFile('data/geometry-v2/blaavand-detail-policy.json', 'utf8'));
 const mapRenderer = await fs.readFile('scripts/render-geodanmark-pilot-maps.py', 'utf8');
@@ -60,6 +61,7 @@ assert.match(workflow, /python scripts\/build-blaavand-weather-shadow-contract\.
 assert.match(workflow, /python scripts\/validate-blaavand-multi-step-series\.py/);
 assert.match(workflow, /node scripts\/validate-blaavand-state-history\.mjs/);
 assert.match(workflow, /node scripts\/build-blaavand-score-neutral-ui-review\.mjs/);
+assert.match(workflow, /node scripts\/validate-blaavand-admin-roundtrip\.mjs/);
 assert.match(workflow, /DMI_API_KEY:\s*\$\{\{ secrets\.DMI_API_KEY \}\}/);
 assert.match(workflow, /python scripts\/render-geodanmark-pilot-maps\.py/);
 assert.match(workflow, /--exclude 'data\/geometry-v2\/'/);
@@ -194,6 +196,7 @@ for (const marker of [
   'partInteractionForbidden',
   'productionBundleIncluded'
 ]) assert.ok(blaavandUiReview.includes(marker), `Blåvand score-neutral UI-gate mangler ${marker}`);
+for (const marker of ['passed-private-admin-roundtrip-and-rollback','protectedRuntimeUnchanged','tempDocumentAbsentAfterRollback','rawAdminPayloadStored','automaticActivationAllowed']) assert.ok(blaavandAdminRoundtrip.includes(marker), `Blåvand admin-roundtrip mangler ${marker}`);
 assert.ok(mapRenderer.indexOf('if args.self_test:') < mapRenderer.indexOf('from PIL import'), 'Pillow må kun kræves i det faktiske private rendertrin');
 assert.ok(mapRenderer.includes('coastal-part-proposals.geojson'), 'Pilotkortet skal vise de private kystdelsforslag');
 assert.ok(mapRenderer.includes('maps') && mapRenderer.includes('zones'), 'Pilotkortet skal generere zonevise reviewkort');

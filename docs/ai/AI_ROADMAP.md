@@ -18,6 +18,7 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 - 4.0.139 implementerer flertidsseriegaten som privat metadata-/hashbevis over produktionens native WAM-/DKSS-parser. #1997 verificerede fire fælles komplette tider pr. del, og #1996 bestod den fulde produktionskæde. Næste gate er separat state-/historikvalidering; score, UI, admin og produktion forbliver uændrede.
 - 4.0.140 replay-validerer separat delhistorik med unikke `historyKey`-nøgler gennem den faktiske score-neutrale `shadow-v2`-funktion. #2004 verificerede isolation og slettet transient input; #2003 bestod den fulde produktionskæde. Næste gate er score-neutral UI-review; admin-roundtrip, rollback og ejer-go/no-go ligger stadig senere.
 - 4.0.141 gør UI-gaten maskinlæsbar og privat. #2009 verificerede én aktiv parent med bevaret RavScore-præsentation og to neutrale, ikke-interaktive dele uden score eller “bedste del”; #2008 bestod den fulde produktionskæde. Næste gate er privat central admin-roundtrip/rollback.
+- 4.0.142-kandidaten implementerer denne admin-gate som et isoleret midlertidigt kladdedokument med create/read/update/delete og efterfølgende fraværsbevis, samtidig med hash-/versionsbevis for at de virkelige runtime-dokumenter er urørte.
 
 ## P0 – ægte Codex-baseline etableret i #1772
 - **Første opgave – implementeret lokalt:** workflowets gate-bypass er lukket. En positiv preflight kræver nu `npm run validate` og `npm run release:gate` før artifact; negativ preflight kan fortsat stoppe billigt.

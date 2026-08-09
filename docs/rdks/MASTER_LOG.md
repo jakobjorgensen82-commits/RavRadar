@@ -630,3 +630,6 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Et privat HTML/JSON-review bevarer parentens linje, farve, score, klikmål, tooltip og rangering; delene er kun neutrale, stiplede og ikke-interaktive forslag uden score eller “bedste del”.
 - Ingen geometri, sampling, state, admin-data, offentlig UI eller RavScore aktiveres. Privat CI-artifact og normal produktionskørsel afventer.
 - Produktcommit `67a6ebd` er pushed. Privat pilot #2009 bestod hele kæden og artifactaudit; normal produktion #2008 bestod central adminsync, Supabase-roundtrip, frisk data, fuld Linux-validate, release-gate, Pages-artifact og deploy. Offentlig version er 4.0.141.
+## 2026-08-09 – 4.0.142 privat admin-roundtrip/rollback-kandidat
+- En Blåvand-specifik gate skriver kun en unik midlertidig, aldrig aktiv kladde og kræver verificeret create/read/update/delete samt fravær efter rollback.
+- De autoritative runtime-dokumenters payload-hash og version skal være uændrede. Ingen aktivering; privat CI afventer.

@@ -115,3 +115,7 @@ Replayet bruger kun current-U/V fra de beståede fælles native trin. Råværdie
 ## Privat score-neutral UI-kontrol – 4.0.141-kandidat
 
 Den faktiske `js/map/map-view.js` tegner den aktive zones `coastLine` som den synlige farvede linje, hvor farven kommer direkte fra RavScore-niveauet. Et kystdelsreview må derfor ikke erstatte denne parentlinje. 4.0.141 danner kun et privat HTML/JSON-review: parentens linje, farve, score, klikmål, tooltip og rangering bevares, mens delene er neutrale stiplede konturer mærket “Privat forslag · ikke aktiv”. Del-scorefarver, rangering, “bedste del”, klik, tooltip, vejr- og stateværdier er forbudt. Artifactet integreres ikke i den offentlige bundle.
+
+## Privat central admin-roundtrip – 4.0.142-kandidat
+
+Den generelle produktionsgate beviser allerede Supabase create/read/update/delete. Den Blåvand-specifikke gate må derudover bevise isolation fra runtime-sandheden. Derfor skrives forslaget kun som et unikt midlertidigt kladdedokument, som aldrig er publiceret eller aktivt. Efter readback og update slettes dokumentet, og fraværet verificeres. `coastline-overrides` og `direction-reviews` læses før og efter; både payload-hash og version skal være identiske. Rapporten gemmer ikke payload eller adgangsoplysninger.
