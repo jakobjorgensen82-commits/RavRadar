@@ -42,6 +42,7 @@
 - Hvert fysisk GeoDanmark-kildestykke klassificeres nu privat som eksisterende match, delvist match eller semantisk/grænsemæssigt review; lokal pilot gav 702 stykker.
 - Dataforsyningens nøglefri `steder`-API er verificeret som Danmarks officielle stednavneregister. Afgrænsede pilotkald gemmer kun kompakte kandidatfelter og afstande.
 - Migrationstriagen klassificerer Blåvand som geometriopretning, Rømø/Thisted som semantisk flyttereview og de øvrige seks som grænse-/partitionsreview. Ingen navne eller geometrier aktiveres automatisk.
+- #1942/#1943 afslørede, at Pillow-importen i den private kort-renderer fejlagtigt blev evalueret under almindelig produktions-self-test. 4.0.131 indlæser nu Pillow først i det faktiske rendertrin, så private pilotafhængigheder ikke lækker til vejrproduktionen.
 
 ## 2026-08-08 – 4.0.125 fuld DMI-timeproveniens
 - Brugerens godkendelse af næste roadmaptrin udløste implementering af provenance fra STAC/GRIB til beskyttede forecasttimer.

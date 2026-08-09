@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process';
 const source = await fs.readFile('scripts/fetch-geodanmark-pilot.py', 'utf8');
 const analysis = await fs.readFile('scripts/analyze-geodanmark-pilot.py', 'utf8');
 const nameAudit = await fs.readFile('scripts/audit-pilot-place-names.py', 'utf8');
+const mapRenderer = await fs.readFile('scripts/render-geodanmark-pilot-maps.py', 'utf8');
 const workflow = await fs.readFile('.github/workflows/update-and-deploy.yml', 'utf8');
 
 for (const required of [
@@ -73,4 +74,5 @@ for (const marker of [
   'semantic-relocation',
   'boundary-adjustment'
 ]) assert.ok(nameAudit.includes(marker), `Stednavne-/migrationstriage mangler ${marker}`);
+assert.ok(mapRenderer.indexOf('if args.self_test:') < mapRenderer.indexOf('from PIL import'), 'Pillow må kun kræves i det faktiske private rendertrin');
 console.log('GeoDanmark pilotfetch-kontrakt: bestået.');

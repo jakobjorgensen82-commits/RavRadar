@@ -6,7 +6,6 @@ import argparse
 import json
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
 from pyproj import Transformer
 from shapely.geometry import shape
 from shapely.ops import transform
@@ -50,6 +49,8 @@ def main():
         assert line_parts(shape({"type": "LineString", "coordinates": [[10, 55], [11, 55]]}))
         print("GeoDanmark pilotkort self-test: bestået.")
         return
+    from PIL import Image, ImageDraw, ImageFont
+
     work_dir = args.work_dir.resolve()
     zones = load(work_dir / "effective-pilot-zones.geojson")
     qa_map = load(work_dir / "coastal-source-qa.geojson")

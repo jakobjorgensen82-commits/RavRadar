@@ -6,6 +6,7 @@
 - Henter nøglefrit og geografisk afgrænset kandidater fra Danmarks officielle stednavneregister.
 - Gemmer navnestatus, type, geografisk center, afstand og sporbar tokenkontrol i det private pilotartifact.
 - Klassificerer zone-ID'ernes forventede migrationsklasse uden automatisk omdøbning eller aktivering.
+- Holder Pillow isoleret til faktisk privat kort-rendering, så almindelig produktionsvalidering ikke kræver pilotens billedbibliotek.
 
 ## Ikke ændret
 

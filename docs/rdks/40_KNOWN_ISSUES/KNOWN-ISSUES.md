@@ -11,6 +11,7 @@
 - **ISSUE-GEOMETRY-PILOT-CONCURRENCY – PRODUKTIONSVERIFICERET LØST:** #1936 kørte i sin separate pilotgruppe samtidig med vejrproduktionsgruppen. Rutinevejr kan ikke længere erstatte eller afbryde piloten.
 - **ISSUE-GEODANMARK-BLIND-SNAP-RISK – AKTIV:** Lokal 4.0.130-QA flaggede alle ni pilotzoner. Kystkilden indeholder flere bredder, øer og stærkt fragmenterede dele, mens enkelte eksisterende linjer er markant forskudte eller går på tværs af semantiske zonegrænser. Automatisk nærmeste-linje-snap må derfor ikke bruges; næste fase kræver klassificerede delstrækninger og eksplicit konfliktreview.
 - **ISSUE-OFFICIAL-PLACE-API-LIFECYCLE – OVERVÅGES:** Dataforsyningens nøglefri `steder`-API giver officiel stednavnegeografi, men DAWA er varslet til fremtidig lukning. Kildeadapteren skal kunne udskiftes reproducerbart; udfald må ikke udløse uofficiel fallback eller automatisk genbrug af gamle zonenavne.
+- **ISSUE-PILOT-RENDER-DEPENDENCY-LEAK – RETTET I 4.0.131, AFVENTER CI:** #1942/#1943 stoppede almindelig fuld validering, fordi den private kort-renderers globale Pillow-import lækkede ind i produktions-self-testen. Importen er flyttet efter self-testen og kræves kun ved faktisk privat rendering; regressionstesten fastholder isolationen.
 
 ## 4.0.124 – komponenthuller og manglende timeproveniens
 - **ISSUE-FIVE-ZONES-NO-SHARED-DKSS-GRID – PRODUKTIONSVERIFICERET LØST:** Bredere kandidatsøgning lukkede tre zoner; centrale adminrettelser lukkede Nibe/Sebbersund og Falster/Nysted. Alle fem har nu direkte DKSS-vindhale.
