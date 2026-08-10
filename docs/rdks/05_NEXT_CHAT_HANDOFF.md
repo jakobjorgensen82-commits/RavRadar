@@ -1,7 +1,7 @@
 # RavRadar – aktuel overlevering til Codex
 
 **Opdateret:** 2026-08-09
-**Aktuel appversion:** 4.0.160 (national flertrinsgate lokalt grøn; afventer privat CI)
+**Aktuel appversion:** 4.0.161 (national flertrinsrouting rettet lokalt; afventer privat CI)
 **Senest verificerede main:** 4.0.151 på `6259514`
 **Produktion:** #2054 bestod frisk DMI/provenance, fuld validate, release-gate, Supabase-sync, Pages-artifact og deploy. Privat #2055 bestod navneauditen for 755/755 dele. 4.0.152's lokale evidens giver 56 forslag fra de 28 grove dele uden runtimeaktivering.
 

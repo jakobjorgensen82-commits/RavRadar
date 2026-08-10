@@ -86,7 +86,6 @@ def validate(contract: dict[str, Any], snapshots: dict[str, Any], minimum_steps:
     if contract.get("status") != "private-national-shadow-contract-ready":
         raise RuntimeError("Flertrinsgaten kræver bestået national shadow-kontrakt")
     parts = contract.get("parts") or []
-    parts_by_id = {part["partId"]: part for part in parts}
     if len(parts) != contract.get("eligiblePartCount") or contract.get("blockedPartCount", 0) != len(contract.get("blockedParts") or []):
         raise RuntimeError("Shadow-kontraktens parttal er inkonsistente")
     rows, series_ids, history_keys = [], set(), set()
@@ -139,9 +138,16 @@ def validate(contract: dict[str, Any], snapshots: dict[str, Any], minimum_steps:
             "stateChanged": False, "publicRuntimeChanged": False, "scoreChanged": False, "automaticActivationAllowed": False}
 
 
+def eligible_zones(collection: str, zones: list[dict[str, Any]], parts_by_id: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    if collection not in COLLECTION_FAMILY:
+        raise RuntimeError(f"Ukendt DMI-collection {collection}")
+    return [zone for zone in zones if collection in expected_families(parts_by_id[zone["id"]]).values()]
+
+
 def run(contract_path: pathlib.Path, report_path: pathlib.Path) -> dict[str, Any]:
     contract = json.loads(contract_path.read_text("utf-8")); grid = load_grid_module(); bulk = grid.load_bulk()
     parts = contract.get("parts") or []
+    parts_by_id = {part["partId"]: part for part in parts}
     zones = [{"id": part["partId"], "lon": float(part["samplingPoint"][0]), "lat": float(part["samplingPoint"][1]), "coastType": part["coastType"]} for part in parts]
     required = {collection for part in parts for collection in expected_families(part).values()}
     snapshots: dict[str, Any] = {part["partId"]: {} for part in parts}; diagnostics = {"messagesSeen": 0, "zoneLookups": 0, "batchedGridReads": 0}; budget = {"bytes": 0}
@@ -150,7 +156,7 @@ def run(contract_path: pathlib.Path, report_path: pathlib.Path) -> dict[str, Any
         model_run, assets, _ = bulk.list_latest_assets(collection)
         if not model_run or len(assets) < 2:
             raise RuntimeError(f"Ingen brugbar flertidsserie for {collection}")
-        eligible = [zone for zone in zones if collection in expected_families(parts_by_id[zone["id"]]).values()]
+        eligible = eligible_zones(collection, zones, parts_by_id)
         output = {"zones": {zone["id"]: {"hourly": {}, "gridPoints": {}, "collections": {}} for zone in eligible}}
         for asset in assets[:limit]:
             path, _ = bulk.download_asset(asset["href"], asset.get("size"), budget)
@@ -186,6 +192,10 @@ def self_test() -> None:
                 if family == "dkss": sources["waterLevel"] = dict(sources["current"])
                 snapshots[part_id][collection][valid] = {"values": {key: index + len(key) for key in components}, "gridPoints": {key: point(key.startswith("current-")) for key in components}, "sources": sources}
     contract = {"status": "private-national-shadow-contract-ready", "eligiblePartCount": 2, "fullCoveragePartCount": 1, "partialCoveragePartCount": 1, "blockedPartCount": 1, "blockedParts": [{}], "parts": parts}
+    zones = [{"id": part["partId"]} for part in parts]
+    parts_by_id = {part["partId"]: part for part in parts}
+    assert [zone["id"] for zone in eligible_zones("dkss_nsbs", zones, parts_by_id)] == ["p0"]
+    assert [zone["id"] for zone in eligible_zones("wam_dw", zones, parts_by_id)] == ["p1"]
     report = validate(contract, snapshots)
     assert report["status"] == "passed-private-national-multi-step-series-validation" and not report["rawWeatherValuesStored"]
     broken = json.loads(json.dumps(snapshots)); broken["p1"]["wam_dw"].pop("2026-08-10T03:00:00Z")

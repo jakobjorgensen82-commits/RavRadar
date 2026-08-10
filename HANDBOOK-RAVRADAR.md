@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.160
+**Håndbogsversion:** 4.0.161
 
 **Opdateret:** 1. august 2026
 
@@ -1497,5 +1497,7 @@ Den faktiske QA viser, at kun 20 zoner er direkte referenceklare, mens 188 er fl
 4.0.159 giver hver af de 774 gridvaliderede dele en privat, unik serieidentitet og separat historiknøgle bundet til delens eget samplingpunkt og gridproveniens. En del må aldrig låne parent-zonens eller en nabodels værdier; de 22 kendte komponentgab forbliver missing. Ni blokerede dele får ingen kontrakt. Alle 208 eksisterende zoner beholder deres autoritative runtime, historik og RavScore, mens kontrakten afventer flertidsserie-, state-, UI- og admin-gates.
 
 4.0.160 kræver mindst to komplette native tidstrin for hver WAM- eller DKSS-familie, som faktisk findes ved den enkelte del. Delvis dækning er gyldig som delvis dækning og udfyldes aldrig med nul eller parentdata. Current-U/V skal komme fra samme fysiske celle og vertikallag. Det private QA-artifact gemmer kun tilstedeværelse, digests og provenance; rå vejrdata, state, RavScore, UI, admin og offentlig runtime ændres ikke.
+
+4.0.161 retter den første livefundne routingfejl fra #2142 og sikrer med regressionstest, at en DMI-collection kun behandles for de dele, hvis validerede gridkontrakt faktisk har valgt den.
 
 Før et privat artifact accepteres, skal alle 208 zoner være bundet til planen, alle eksponerede lag være komplette, og filer og hashværdier stemme. Deduplikering måles, og credential- eller mutationsfund stopper kørslen. Først derefter udføres en rumligt indekseret fysisk kystsammenligning for alle zoner. Resultatet er fortsat QA og kan ikke aktivere kyst, vejr eller score.

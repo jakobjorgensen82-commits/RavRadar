@@ -736,3 +736,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Hver faktisk tilgængelig WAM-/DKSS-familie kræver mindst to komplette native trin; 22 kendte familiegab bevares som missing.
 - Artifactet må kun indeholde tilstedeværelse, digests og provenance. Rå værdier, state, score, UI, admin og public runtime er uændrede.
 - Tre 4.0.159 private CI-forsøg blev stoppet før den nye kontrakt af den officielle stednavnetjenestes ikke-JSON-svar. Ingen gate blev svækket.
+# 2026-08-10 – 4.0.161 livefundet routingrettelse
+
+- #2142 bestod hele den nationale upstreamkæde og 4.0.159-kontrakten, men stoppede ved start af flertrinsgaten med manglende `parts_by_id` i live-`run()`.
+- Flyttede opslagstabellen til korrekt scope og tilføjede regression for WAM-/DKSS-routing til de kontraktvalgte dele.
+- Ingen runtime-, score-, admin- eller dataaktivering.
