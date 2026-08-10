@@ -747,3 +747,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Implementerede transient state-replay for 770 DKSS-currentdækkede dele med unik historiknøgle og score-neutral `shadow-v2`.
 - Fire WAM-only dele udelukkes eksplicit som `MISSING_DKSS_CURRENT_FAMILY`; ingen parentfallback eller nulstrøm.
 - Replayinput slettes efter gate; state, score, UI, admin og public runtime forbliver deaktiveret.
+# 2026-08-10 – 4.0.163 native lokal vindgate
+
+- #2152 verificerede 770 isolerede `shadow-v2`-historikker, fire eksplicitte currentgab, slettet replay og nul scorepåvirkning.
+- Identificerede lokal vind som nødvendig manglende datagate før DEC-0033-shadow-score; parent-vind er ikke tilladt som skjult fallback.
+- Implementerede to-trins native HARMONIE wind-U/V-validering for alle 774 dele med samme-celle- og provenancekrav uden rådata eller aktivering.

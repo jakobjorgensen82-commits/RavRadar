@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.162
+**Håndbogsversion:** 4.0.163
 
 **Opdateret:** 1. august 2026
 
@@ -1503,5 +1503,7 @@ Den faktiske QA viser, at kun 20 zoner er direkte referenceklare, mens 188 er fl
 #2146 verificerede derefter 774 unikke serier, 1.526 tilgængelige WAM-/DKSS-familier og 9.156 komponentbeviser. Hver familie har præcis to native trin med komplet DMI-provenance; artifactet indeholder ingen rå vejrdata.
 
 4.0.162 afprøver isoleret `shadow-v2`-state på de 770 dele, der har komplette DKSS-currenttrin. Fire WAM-only dele forbliver eksplicit uden state og må ikke låne parentdata eller blive til nulstrøm. Replayværdierne eksisterer kun transient og slettes efter kontrollen; den gemte rapport indeholder digests og state-sammenfatninger. RavScore skal være numerisk uændret for både waders og beach.
+
+#2152 verificerede denne isolation for alle 770 mulige dele og bevarede fire current/state-gab. 4.0.163 tilføjer derefter den manglende lokale vindgate: alle 774 scorekandidater skal have mindst to native HARMONIE-trin, hvor wind-U/V deler fysisk gridcelle og bærer fuld provenance. Parent-vind må ikke bruges som fallback, og vindrapporten gemmer ikke rå værdier.
 
 Før et privat artifact accepteres, skal alle 208 zoner være bundet til planen, alle eksponerede lag være komplette, og filer og hashværdier stemme. Deduplikering måles, og credential- eller mutationsfund stopper kørslen. Først derefter udføres en rumligt indekseret fysisk kystsammenligning for alle zoner. Resultatet er fortsat QA og kan ikke aktivere kyst, vejr eller score.

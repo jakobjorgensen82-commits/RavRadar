@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.162
+# Implementeringsstatus pr. 4.0.163
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] 4.0.143 er produktionsverificeret i #2027: central sync, frisk data, fuld Linux-validate, releasegate, Pages-artifact og deploy bestod.
@@ -33,7 +33,8 @@
 - [x] 4.0.159 bygger lokalt en privat national weather-shadow-kontrakt: 774 unikke serie-/historikidentiteter, 752 fulde, 22 med eksplicitte gab, ni udelukkede blokeringer samt 208 autoritative parent-zoner. Produktionsjob #2132 bestod alle Linux-gates; tre private genopbygninger blev eksternt blokeret før kontrakten, fordi den officielle stednavnetjeneste returnerede ikke-JSON.
 - [ ] 4.0.160 tilføjede den fail-closed nationale flertrinsgate. #2142 bestod hele upstreamkæden, inklusive stednavne, 774-punkts DMI-grid og 4.0.159-kontrakt, men fandt en `parts_by_id`-scopefejl ved start af flertrinsgaten.
 - [x] 4.0.161 rettede scopefejlen og regressionstestede collection-routing pr. del. Privat #2146 bestod hele kæden: 774 serier, 1.526 tilgængelige familier med præcis to native trin og 9.156 komplette komponentbeviser; ingen råværdier, fallback, interpolation eller mutation.
-- [ ] 4.0.162 tilføjer lokal national state-/historikisolation for 770 DKSS-dækkede dele. Fire WAM-only dele forbliver eksplicit uden state; transient replay slettes og begge jagtformers RavScore skal være numerisk uændret. Afventer privat CI.
+- [x] 4.0.162 tilføjede national state-/historikisolation. Privat #2152 verificerede 770 unikke `shadow-v2`-historikker med mindst to samples, nul parent-/krydslæsning, slettet replay og nul scorepåvirkning; fire WAM-only dele forbliver eksplicit uden state.
+- [ ] 4.0.163 tilføjer lokal native HARMONIE-vindgate for alle 774 dele. To komplette wind-U/V-trin fra samme fysiske celle og fuld provenance kræves før shadow-score. Afventer privat CI.
 - [x] Lokal RDKS, kystgeometri-v2, workflowkontrakt, releaseversion og releasegate består. Hele validate-rækken består bortset fra den kendte Windows/Linux-`rsync`-test, som skal bevises i CI.
 - [ ] National topologi, ravstrandfravalg, lokal opdeling, navne og 774 punktpar er målt; ni punktpar samt DMI/state/score/UI/admin og aktivering er endnu ikke færdige.
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.
