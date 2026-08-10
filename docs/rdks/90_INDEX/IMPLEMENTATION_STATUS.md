@@ -523,4 +523,5 @@ Status: Implementeret og lokalt valideret.
 - [x] Beskyttede pipelineuploads har SHA-256-manifest og springer uændrede payloads over.
 - [x] Ny triggerkontrakt bevarer rollback for adminredigerede dokumenter, men versionskopierer ikke udskiftelige maskindiagnostikker.
 - [x] Read-only størrelsesaudit og transaktionel, bounded oprydningsmigration er versionsstyret; aktuelle `admin_documents` slettes aldrig.
-- [ ] Kør audit i den aktuelle Supabase-organisation, tag backup, anvend migrationen og verificér database/egress over næste billingperiode.
+- [x] Central audit og migration kørt 2026-08-10: 8.647 rækker/cirka 600 MB blev fjernet, `VACUUM FULL` reducerede databasen fra 699 MB til 24 MB, 14 aktuelle dokumenter er intakte, og maskinhistorik er 0.
+- [ ] Følg egress i næste billingperiode; dashboardets historiske 8,28 GB nulstilles ikke af kodeændringen.

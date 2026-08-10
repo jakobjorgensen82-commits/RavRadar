@@ -1,7 +1,7 @@
 # RavRadar – aktuel overlevering til Codex
 
 **Opdateret:** 2026-08-09
-**Aktuel appversion:** 4.0.153 (Supabase-kvotekontrol; afventer CI og central SQL-audit)
+**Aktuel appversion:** 4.0.153 (Supabase-kvotekontrol produktionsverificeret; næste billingperiodes egressmåling afventes)
 **Senest verificerede main:** 4.0.151 på `6259514`
 **Produktion:** #2054 bestod frisk DMI/provenance, fuld validate, release-gate, Supabase-sync, Pages-artifact og deploy. Privat #2055 bestod navneauditen for 755/755 dele. 4.0.152's lokale evidens giver 56 forslag fra de 28 grove dele uden runtimeaktivering.
 
@@ -22,7 +22,7 @@ Læs først `docs/ai/CODEX_START_HERE.md`, `AGENTS.md`, Current Truth, Implement
 Fejlen må ikke forstås som én enkelt scheduler- eller radiusfejl. Forløbet viste flere lag: schedulerprioritet, kandidatlogik, vertikallagsparring og faktisk forkert zonegeometri. Fremover skal hele kæden undersøges, før rodårsagen erklæres. Lokal grøn validering må ikke omtales som stabil produktionsbaseline uden frisk CI/produktionsbevis.
 
 ## Åbne opgaver med høj prioritet
-1. Kør `supabase/RavRadar-4.0.153-supabase-quota-audit.sql` read-only, tag backup og anvend derefter quota-controls-migrationen. Verificér at `admin_documents` er intakt, og følg egress/database gennem næste billingperiode.
+1. Følg Supabase-egress gennem næste billingperiode. Central audit/migration er gennemført: databasen er 24 MB, alle 14 aktuelle `admin_documents` er intakte, maskinhistorik er 0, og øvrig historik er bounded til 100 pr. dokument.
 1. CI-verificer 4.0.152's 56 lokale forslag og artifactsummer.
 2. Review den ene lokale del uden officielt kystanker og beslut alle lokale navne revisionsbart; kandidatlisten må ikke automatisk omdøbe.
 3. Bevar opdelingen read-only, indtil navn, punkter og lokal vejreksponering er valideret.

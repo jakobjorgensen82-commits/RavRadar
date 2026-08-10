@@ -352,4 +352,4 @@ Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed
 ## Supabase-kvotekontrol – 4.0.153
 - Free-planmålingen viste 8,233/5 GB egress og 0,695/0,5 GB database ved kun tre MAU. Rodårsagen er pipelineforbrug, ikke brugertrafik: `sync-admin-config.py` hentede alle payloads hvert 15. minut, mens store maskindiagnostikker blev versionskopieret uden retention.
 - 4.0.153 filtrerer readback til nødvendige adminnøgler og gør beskyttede uploads hash-idempotente. Lokal payloadækvivalent falder fra mindst 8,4 MB til cirka 144 KB pr. readback.
-- Aktuel central admin-sandhed og menneskeligt redigerede rollbackpunkter bevares. Read-only audit skal køres før den transaktionelle oprydningsmigration; aktuel databaseoprydning er endnu ikke udført.
+- Central audit 2026-08-10 fandt 8.647 overflødige historikrækker med cirka 600 MB payload. Migration og efterfølgende `VACUUM FULL` blev udført; databasen faldt fra 699 MB til 24 MB. Alle 14 aktuelle `admin_documents` er bevaret, maskinhistorik er 0, og øvrige dokumenter har højst 100 rollbackpunkter.

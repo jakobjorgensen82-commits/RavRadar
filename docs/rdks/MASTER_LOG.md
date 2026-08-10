@@ -696,4 +696,5 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Supabase varslede fair-use efter 8,233 GB egress og 0,695 GB database. Tre MAU og 274 Edge Function-kald udelukker brugertrafik som hovedårsag.
 - Kodeaudit viste ufiltreret fuld payload-readback hvert 15. minut og ubegrænset versionskopiering af bl.a. cirka 7,1 MB runtime-diagnostik.
 - Readback filtreres nu til nødvendige adminnøgler (>98 % målt payloadreduktion), beskyttede writes er hash-idempotente, og maskindiagnostik skilles fra menneskelig rollbackhistorik.
-- Central oprydning er ikke udført uden login/audit. Read-only audit og transaktionel migration er leveret separat; ingen aktuel admin-sandhed må slettes.
+- Central read-only audit fandt 8.647 oprydningsbare historikrækker med cirka 600 MB payload. Den bekræftede migration og `VACUUM FULL` blev udført i Supabase: databasen faldt fra 699 MB til 24 MB, alle 14 aktuelle admin-dokumenter er intakte, 676 rollbackrækker/8,3 MB er bevaret, maskinhistorik er 0, og maksimum er 100 versioner pr. dokument.
+- Produktionskørsel #2056 på commit `7bb97c3` bestod central adminsync, fuld Linux-validate, release-gate, beskyttet Supabase-sync, Pages-artifact og deploy.
