@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "private-national-shadow-design-only",
+  "seriesIdentityFormat": "{zoneId}::{partId}",
+  "historyIdentityFormat": "coastal-part::{zoneId}::{partId}",
+  "mergePolicy": {
+    "crossPartMergeAllowed": false,
+    "parentFallbackAllowed": false,
+    "spatialInterpolationAllowed": false,
+    "missingRemainsMissing": true
+  },
+  "statePolicy": {
+    "separatePartHistoryRequired": true,
+    "parentHistoryReuseAllowed": false,
+    "enabled": false
+  },
+  "scorePolicy": {
+    "parentZoneScoreRemainsAuthoritative": true,
+    "partScoreEnabled": false,
+    "bestPartSelectionEnabled": false
+  },
+  "runtimePolicy": {
+    "weatherSamplingEnabled": false,
+    "publicProjectionEnabled": false,
+    "uiEnabled": false,
+    "adminWriteEnabled": false,
+    "automaticActivationAllowed": false
+  }
+}

@@ -37,5 +37,6 @@ await import('./test-national-locality-partitions.mjs');
 await import('./test-national-local-part-names.mjs');
 await import('./test-national-local-part-points.mjs');
 await import('./test-national-local-part-dmi-grid.mjs');
+await import('./test-national-weather-shadow-contract.mjs');
 
 console.log('National geometry-v2-plan kontrakt: bestået.');
