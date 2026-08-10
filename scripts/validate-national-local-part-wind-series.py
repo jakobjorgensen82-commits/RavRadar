@@ -131,6 +131,27 @@ def run(contract_path: pathlib.Path, report_path: pathlib.Path, marine_input_pat
             snapshots[zone["id"]][asset["valid"]] = {"values": {key: hour[key] for key in COMPONENTS if key in hour},
                 "gridPoints": {key: point.get("gridPoints", {}).get(key) for key in COMPONENTS if key in point.get("gridPoints", {})},
                 "source": (hour.get("sources") or {}).get("wind") or {}}
+    missing_ids = {part["partId"] for part in contract.get("parts") or [] if len(snapshots.get(part["partId"]) or {}) < 2}
+    if missing_ids:
+        # Production's normal four-cell atmospheric lookup remains the first pass.
+        # Only actual gaps get the broader native-cell search; this avoids doing
+        # tens of thousands of unnecessary ecCodes lookups for all 774 parts.
+        bulk.ATMOSPHERIC_GRID_CANDIDATE_TARGET = 32
+        bulk.GRID_INDEX_CACHE.clear()
+        retry_zones = [zone for zone in zones if zone["id"] in missing_ids]
+        retry_output = {"zones": {zone["id"]: {"hourly": {}, "gridPoints": {}, "collections": {}} for zone in retry_zones}}
+        diagnostics["targetedExpandedCandidatePartCount"] = len(retry_zones)
+        for asset in selected_assets:
+            file_path, _ = bulk.download_asset(asset["href"], asset.get("size"), budget)
+            _, _, interrupted, seen, lookups = bulk.process_grib(file_path, COLLECTION, model_run, asset["valid"], retry_zones, retry_output, diagnostics)
+            diagnostics["messagesSeen"] += seen; diagnostics["zoneLookups"] += lookups
+            if interrupted: raise RuntimeError("Målrettet vindretry løb tør for tidsbudget")
+            for zone in retry_zones:
+                point = retry_output["zones"][zone["id"]]; hour = (point.get("hourly") or {}).get(asset["valid"])
+                if not hour: continue
+                snapshots[zone["id"]][asset["valid"]] = {"values": {key: hour[key] for key in COMPONENTS if key in hour},
+                    "gridPoints": {key: point.get("gridPoints", {}).get(key) for key in COMPONENTS if key in point.get("gridPoints", {})},
+                    "source": (hour.get("sources") or {}).get("wind") or {}}
     report = validate(contract, snapshots); report["diagnostics"] = diagnostics
     report_path.parent.mkdir(parents=True, exist_ok=True); report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", "utf-8")
     wind_input = build_shadow_score_wind_input(marine_input, snapshots)

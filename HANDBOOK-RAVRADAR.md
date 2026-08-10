@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.165
+**Håndbogsversion:** 4.0.166
 
 **Opdateret:** 1. august 2026
 
@@ -1504,7 +1504,7 @@ Den faktiske QA viser, at kun 20 zoner er direkte referenceklare, mens 188 er fl
 
 4.0.162 afprøver isoleret `shadow-v2`-state på de 770 dele, der har komplette DKSS-currenttrin. Fire WAM-only dele forbliver eksplicit uden state og må ikke låne parentdata eller blive til nulstrøm. Replayværdierne eksisterer kun transient og slettes efter kontrollen; den gemte rapport indeholder digests og state-sammenfatninger. RavScore skal være numerisk uændret for både waders og beach.
 
-#2152 verificerede denne isolation for alle 770 mulige dele og bevarede fire current/state-gab. 4.0.163 tilføjede derefter den manglende lokale vindgate: alle 774 scorekandidater skal have mindst to native HARMONIE-trin, hvor wind-U/V deler fysisk gridcelle og bærer fuld provenance. #2157 fandt et utilstrækkeligt tidsbudget. #2164 beviste budgetrettelsen, men fandt derefter, at Harbo Odde ikke havde et fælles gyldigt U/V-par blandt de fire nærmeste celler. 4.0.165 lader kun den private gate undersøge 32 native kandidater; samme-celle- og afstandskravet består, og parent-vind eller interpolation er fortsat forbudt.
+#2152 verificerede denne isolation for alle 770 mulige dele og bevarede fire current/state-gab. 4.0.163 tilføjede derefter den manglende lokale vindgate: alle 774 scorekandidater skal have mindst to native HARMONIE-trin, hvor wind-U/V deler fysisk gridcelle og bærer fuld provenance. #2164 fandt, at Harbo Odde ikke havde et fælles gyldigt U/V-par blandt fire nærmeste celler. #2167 viste, at 32-cellesøgning for alle 774 dele ikke skalerer. 4.0.166 bruger derfor fire celler for alle og 32 kun som målrettet retry for faktiske gab; samme-celle- og afstandskravet består.
 
 4.0.164 bygger også næste private shadow-gate. Den eksisterende RavScore-motor beregner hver lokal del udelukkende, når vind, bølger, strøm og vandstand findes på samme native tidspunkt, og når næste native vandstandstrin kan danne den faktiske tre-timers trend. Ingen nærmeste-tid eller parentdata bruges. Ved komplet sammenligning betyder højst syv points samlet spænd praktisk hele zonen; ellers navngives én eller flere dele inden for syv point af vinderen. Mangler blot én nødvendig lokal sammenligning, er dækningen usikker. Resultatet er fortsat privat og kan ikke ændre den aktive RavScore.
 

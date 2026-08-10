@@ -1,7 +1,7 @@
 # RavRadar – aktuel overlevering til Codex
 
 **Opdateret:** 2026-08-09
-**Aktuel appversion:** 4.0.165 (privat HARMONIE-kystkandidatsøgning; afventer CI)
+**Aktuel appversion:** 4.0.166 (målrettet privat HARMONIE-retry; afventer CI)
 **Senest produktionsverificerede main:** 4.0.164 i #2163/#31414155813 på `e667135`
 **Produktion:** #2163 bestod frisk DMI/provenance, fuld validate, release-gate, Supabase-sync, Pages-artifact og deploy. Privat #2164 bestod upstreamkæden og fandt derefter det konkrete fire-celle-HARMONIE-gab ved Harbo Odde.
 
@@ -24,7 +24,7 @@ Fejlen må ikke forstås som én enkelt scheduler- eller radiusfejl. Forløbet v
 ## Åbne opgaver med høj prioritet
 1. Følg Supabase-egress gennem næste billingperiode. Central audit/migration er gennemført: databasen er 24 MB, alle 14 aktuelle `admin_documents` er intakte, maskinhistorik er 0, og øvrig historik er bounded til 100 pr. dokument.
 1. Bevar de ni ikke-entydige normalsider fail-closed til manuel review; DMI gav to gyldige sider og kan derfor ikke afgøre dem.
-2. CI-verificér 4.0.165 med 32 native HARMONIE-kandidater i den private gate for alle 774 dele og den efterfølgende score-neutrale DEC-0033-shadow-score.
+2. CI-verificér 4.0.166 med fire-celle-first for alle 774 dele og 32-celle-retry kun for faktiske vindgab samt efterfølgende DEC-0033-shadow-score.
 3. Bevar opdelingen, navnene og punkterne read-only, indtil lokal vejreksponering og alle ni blokeringer er afgjort.
 4. Byg derefter lokale land-/vandpunkter, native DMI-grid/provenance og isoleret state/shadow-score før UI/admin og national aktivering.
 5. Bevar den eksisterende zoneserie og RavScore som runtime-sandhed, indtil hele den nationale kæde og rollback er verificeret.

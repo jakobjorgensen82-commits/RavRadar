@@ -767,3 +767,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Privat #2164/#31414173825 bestod geometri, topologi, navne, punkter, grid, marine flertrin og state. Vindgaten brugte det nye tidsbudget og stoppede derefter konkret ved `dk-b05-16-national-part-01` (`Harbo Odde`), som havde nul fælles gyldige wind-U/V blandt fire nærmeste celler.
 - 4.0.165 gør atmosfærisk kandidattal miljøstyret og bruger 32 kun i den private nationale gate. Normal produktion beholder fire.
 - Samme fysiske U/V-celle og den eksisterende afstandsgrænse på 24/40/32 km for Limfjorden/vest/øst valideres fortsat. Ingen interpolation eller fallback.
+
+# 2026-08-10 – 4.0.166 målrettet HARMONIE-retry
+
+- #2167 viste, at 32-kandidatsøgning for alle 774 dele er en skaleringsfejl: vindtrinnet arbejdede fortsat efter 54 minutter uden resultat og blev stoppet bevidst.
+- Første pass bruger igen produktionsstandardens fire celler for alle. Kun de faktisk manglende del-ID'er genbehandles med 32 native kandidater og ryddet gridindekscache.
+- Retrypopulationen rapporteres særskilt. Datagaten og 3.000-sekunders budgettet er uændrede.
