@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.153
+**Håndbogsversion:** 4.0.154
 
 **Opdateret:** 1. august 2026
 
@@ -1487,5 +1487,7 @@ Den faktiske QA viser, at kun 20 zoner er direkte referenceklare, mens 188 er fl
 #2040 viste, at 2.551 af 3.394 rå kandidater kun er 0–2,5 m brede. 4.0.148 tester derfor kun officielle vandløb på mindst 2,5 m med mindst 100 m fysisk linje. Små grøfter registreres som fravalgt evidens, men skærer ikke hul i en ravstrandlinje.
 
 #2043 reducerede resultatet til 489 mulige åmundinger og kun én overdense zone, som allerede kræver partitionsredesign. #2050 verificerede 755 private multipart-dele i 194 zoner uden at tegne over spring og stoppede 25 zoner/28 for grove dele til lokal opdeling. 4.0.151 henter officielle stednavnekandidater for hver faktisk del og fordeler dem mellem direkte kystnavne, lokale bebyggelser, havnekontekst og øvrig kontekst. Kandidaterne er reviewmateriale; de bliver ikke automatisk navne, og delene har endnu ingen datapunkter eller score.
+
+#2107 verificerede den friske nationale opdeling. De 28 grove dele erstattes privat af 56 kortere forslag, så den endelige reviewbestand er 783 dele. 4.0.154 giver hver del et revisionsbart, zoneunikt navneforslag med officielt sted-ID, afstand og alternativer. Den ene del uden direkte kystnavn bruger nær lokal bebyggelsesevidens ved Hou i stedet for et opdigtet navn. Forslagene aktiverer fortsat hverken geometri, admin, DMI, state eller RavScore.
 
 Før et privat artifact accepteres, skal alle 208 zoner være bundet til planen, alle eksponerede lag være komplette, og filer og hashværdier stemme. Deduplikering måles, og credential- eller mutationsfund stopper kørslen. Først derefter udføres en rumligt indekseret fysisk kystsammenligning for alle zoner. Resultatet er fortsat QA og kan ikke aktivere kyst, vejr eller score.

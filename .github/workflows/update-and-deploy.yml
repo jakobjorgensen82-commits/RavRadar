@@ -414,6 +414,12 @@ jobs:
       - name: Validate locality partitions remain on source geometry
         run: python scripts/validate-national-locality-partitions.py
 
+      - name: Build private official name suggestions for final local coastal parts
+        run: python scripts/build-national-local-part-names.py
+
+      - name: Validate final local part names remain review-only and evidence-backed
+        run: python scripts/validate-national-local-part-names.py
+
       - name: Upload compact national geometry-v2 QA artifact
         uses: actions/upload-artifact@v4
         with:
@@ -431,6 +437,7 @@ jobs:
             .geometry-v2-work/national-coastal-part-name-audit.json
             .geometry-v2-work/national-locality-partitions.json
             .geometry-v2-work/national-locality-partitions.geojson
+            .geometry-v2-work/national-local-part-name-suggestions.json
           retention-days: 14
           if-no-files-found: error
           include-hidden-files: true

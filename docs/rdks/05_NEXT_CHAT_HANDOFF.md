@@ -1,7 +1,7 @@
 # RavRadar – aktuel overlevering til Codex
 
 **Opdateret:** 2026-08-09
-**Aktuel appversion:** 4.0.153 (Supabase-kvotekontrol produktionsverificeret; næste billingperiodes egressmåling afventes)
+**Aktuel appversion:** 4.0.154 (private officielle navneforslag til 783/783 endelige lokale kystdele; afventer privat CI)
 **Senest verificerede main:** 4.0.151 på `6259514`
 **Produktion:** #2054 bestod frisk DMI/provenance, fuld validate, release-gate, Supabase-sync, Pages-artifact og deploy. Privat #2055 bestod navneauditen for 755/755 dele. 4.0.152's lokale evidens giver 56 forslag fra de 28 grove dele uden runtimeaktivering.
 
@@ -23,9 +23,9 @@ Fejlen må ikke forstås som én enkelt scheduler- eller radiusfejl. Forløbet v
 
 ## Åbne opgaver med høj prioritet
 1. Følg Supabase-egress gennem næste billingperiode. Central audit/migration er gennemført: databasen er 24 MB, alle 14 aktuelle `admin_documents` er intakte, maskinhistorik er 0, og øvrig historik er bounded til 100 pr. dokument.
-1. CI-verificer 4.0.152's 56 lokale forslag og artifactsummer.
-2. Review den ene lokale del uden officielt kystanker og beslut alle lokale navne revisionsbart; kandidatlisten må ikke automatisk omdøbe.
-3. Bevar opdelingen read-only, indtil navn, punkter og lokal vejreksponering er valideret.
+1. CI-verificer 4.0.154's 783 officielle, zoneunikke navneforslag og artifactsummer.
+2. Byg lokale land-/vandpunkter fail-closed og verificér dem mod land/kyst samt native DMI-grid/proveniens.
+3. Bevar opdelingen og navnene read-only, indtil punkter og lokal vejreksponering er valideret.
 4. Byg derefter lokale land-/vandpunkter, native DMI-grid/provenance og isoleret state/shadow-score før UI/admin og national aktivering.
 5. Bevar den eksisterende zoneserie og RavScore som runtime-sandhed, indtil hele den nationale kæde og rollback er verificeret.
 

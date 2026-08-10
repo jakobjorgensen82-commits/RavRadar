@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "private-read-only-national-local-part-name-policy",
+  "maximumCandidateDistanceM": {
+    "direct-coastal": 4000,
+    "local-settlement": 4000,
+    "harbour-context": 2000,
+    "other-context": 2500
+  },
+  "subTypePriority": [
+    "strand", "sandKlit", "odde", "næs", "hage", "tange", "pynt",
+    "klint", "skræntNaturlig", "sommerhusområde", "sommerhusområdedel",
+    "by", "bydel", "spredtBebyggelse", "halvø", "øgruppe", "ø",
+    "bugt", "sund", "bredning", "fjord", "nor", "løb", "sejlløb"
+  ],
+  "fallbackMaximumDistanceM": 6000,
+  "automaticRenameAllowed": false,
+  "automaticActivationAllowed": false
+}

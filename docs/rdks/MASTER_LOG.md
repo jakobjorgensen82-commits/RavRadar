@@ -698,3 +698,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Readback filtreres nu til nødvendige adminnøgler (>98 % målt payloadreduktion), beskyttede writes er hash-idempotente, og maskindiagnostik skilles fra menneskelig rollbackhistorik.
 - Central read-only audit fandt 8.647 oprydningsbare historikrækker med cirka 600 MB payload. Den bekræftede migration og `VACUUM FULL` blev udført i Supabase: databasen faldt fra 699 MB til 24 MB, alle 14 aktuelle admin-dokumenter er intakte, 676 rollbackrækker/8,3 MB er bevaret, maskinhistorik er 0, og maksimum er 100 versioner pr. dokument.
 - Produktionskørsel #2056 på commit `7bb97c3` bestod central adminsync, fuld Linux-validate, release-gate, beskyttet Supabase-sync, Pages-artifact og deploy.
+
+# 2026-08-10 – 4.0.154 officielle navneforslag til endelige lokale kystdele
+- Privat #2107 CI-verificerede 4.0.152's friske central-hydrerede nationale kilde-, topologi-, kystdels-, stednavne- og lokalitetskæde; build og Pages var isoleret/skipped.
+- Den endelige private bestand er 783 dele: 755 kildedele minus 28 grove erstattede dele plus 56 lokale forslag. Alle 783 får zoneunikke forslag fra officielle kandidat-ID'er med afstand og alternativer; automatisk omdøbning og aktivering er falsk.
+- Den ene del uden direkte kystanker er den nordlige Hou/Bisnap-lokalitet. Den lukkes med officiel lokal bebyggelsesevidens `Hou Syd` 508,7 m fra delen, ikke et opdigtet navn.
