@@ -444,6 +444,7 @@ jobs:
       - name: Validate isolated private native wind series for coastal parts
         env:
           DMI_BULK_MAX_RUNTIME_SECONDS: "3000"
+          DMI_BULK_ATMOSPHERIC_GRID_CANDIDATES: "32"
         run: python scripts/validate-national-local-part-wind-series.py
 
       - name: Validate private national local-part shadow score and coverage

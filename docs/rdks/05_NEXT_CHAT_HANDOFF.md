@@ -1,9 +1,9 @@
 # RavRadar – aktuel overlevering til Codex
 
 **Opdateret:** 2026-08-09
-**Aktuel appversion:** 4.0.164 (vindbudgetrettelse og national shadow-score lokalt grøn; afventer privat CI)
-**Senest produktionsverificerede main:** 4.0.163-forløbets produktionsrun #2155 på `7916c35`
-**Produktion:** #2155 bestod frisk DMI/provenance, fuld validate, release-gate, Supabase-sync, Pages-artifact og deploy. Privat #2157 bestod upstreamkæden, men vindgaten stoppede fail-closed på standardtidsbudgettet efter 16 minutter.
+**Aktuel appversion:** 4.0.165 (privat HARMONIE-kystkandidatsøgning; afventer CI)
+**Senest produktionsverificerede main:** 4.0.164 i #2163/#31414155813 på `e667135`
+**Produktion:** #2163 bestod frisk DMI/provenance, fuld validate, release-gate, Supabase-sync, Pages-artifact og deploy. Privat #2164 bestod upstreamkæden og fandt derefter det konkrete fire-celle-HARMONIE-gab ved Harbo Odde.
 
 ## Start ikke med at kode
 Læs først `docs/ai/CODEX_START_HERE.md`, `AGENTS.md`, Current Truth, Implementation Status, Active Requirements, Known Issues og de relevante beslutninger. Denne fil er et øjebliksbillede, ikke en erstatning for RDKS.
@@ -24,7 +24,7 @@ Fejlen må ikke forstås som én enkelt scheduler- eller radiusfejl. Forløbet v
 ## Åbne opgaver med høj prioritet
 1. Følg Supabase-egress gennem næste billingperiode. Central audit/migration er gennemført: databasen er 24 MB, alle 14 aktuelle `admin_documents` er intakte, maskinhistorik er 0, og øvrig historik er bounded til 100 pr. dokument.
 1. Bevar de ni ikke-entydige normalsider fail-closed til manuel review; DMI gav to gyldige sider og kan derfor ikke afgøre dem.
-2. CI-verificér 4.0.164 med det private 3.000-sekunders vindbudget for alle 774 dele og den efterfølgende score-neutrale DEC-0033-shadow-score.
+2. CI-verificér 4.0.165 med 32 native HARMONIE-kandidater i den private gate for alle 774 dele og den efterfølgende score-neutrale DEC-0033-shadow-score.
 3. Bevar opdelingen, navnene og punkterne read-only, indtil lokal vejreksponering og alle ni blokeringer er afgjort.
 4. Byg derefter lokale land-/vandpunkter, native DMI-grid/provenance og isoleret state/shadow-score før UI/admin og national aktivering.
 5. Bevar den eksisterende zoneserie og RavScore som runtime-sandhed, indtil hele den nationale kæde og rollback er verificeret.

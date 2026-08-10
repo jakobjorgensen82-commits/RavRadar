@@ -760,3 +760,10 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - En ny privat gate samler kun eksakt tidsfælles native lokale komponenter og genbruger den aktive `calculateRavScore` uden at aktivere resultatet.
 - 7-pointreglen omsættes til `whole-zone`, `only-part`, `several-parts` og `uncertain`. Manglende lokal sammenligning er altid `uncertain`.
 - Rå marine/vind-input ligger kun transient i `.cache` og slettes efter validering. Parent-runtime og alle mutationsflag forbliver uændrede/falske. Privat CI afventer.
+
+# 2026-08-10 – 4.0.165 native HARMONIE-kystkandidater
+
+- 4.0.164 blev fuldt produktionsverificeret i #2163/#31414155813: frisk DMI, Linux-validate, releasegate, Supabase-sync, Pages-artifact og deploy bestod.
+- Privat #2164/#31414173825 bestod geometri, topologi, navne, punkter, grid, marine flertrin og state. Vindgaten brugte det nye tidsbudget og stoppede derefter konkret ved `dk-b05-16-national-part-01` (`Harbo Odde`), som havde nul fælles gyldige wind-U/V blandt fire nærmeste celler.
+- 4.0.165 gør atmosfærisk kandidattal miljøstyret og bruger 32 kun i den private nationale gate. Normal produktion beholder fire.
+- Samme fysiske U/V-celle og den eksisterende afstandsgrænse på 24/40/32 km for Limfjorden/vest/øst valideres fortsat. Ingen interpolation eller fallback.

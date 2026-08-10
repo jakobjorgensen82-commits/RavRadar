@@ -19,6 +19,7 @@ DEFAULT_MARINE_INPUT = ROOT / ".cache" / "national-shadow-score-marine-input.jso
 DEFAULT_WIND_INPUT = ROOT / ".cache" / "national-shadow-score-wind-input.json"
 COLLECTION = "harmonie_dini_sf"
 COMPONENTS = ("wind-u-10m", "wind-v-10m")
+MAX_GRID_DISTANCE_KM = {"limfjord": 24.0, "west": 40.0, "east": 32.0}  # Mirrors update-dmi-bulk.py.
 
 
 def now() -> str:
@@ -56,6 +57,9 @@ def validate(contract: dict[str, Any], snapshots: dict[str, Any], minimum_steps:
                 continue
             if not grid.same_point(points[COMPONENTS[0]], points[COMPONENTS[1]]):
                 raise RuntimeError(f"{part_id} har wind-U/V fra forskellige fysiske celler")
+            max_distance = MAX_GRID_DISTANCE_KM.get(part.get("coastType") or "east", 32.0)
+            if max(float(points[key].get("distanceKm") or 1e9) for key in COMPONENTS) > max_distance:
+                raise RuntimeError(f"{part_id} har native vindcelle uden for afstandsgrænsen")
             if source.get("provider") != "dmi" or source.get("collection") != COLLECTION or source.get("nativeValidTime") != valid_time or not source.get("modelRun"):
                 raise RuntimeError(f"{part_id} har ugyldig native vindprovenance ved {valid_time}")
             components = {}

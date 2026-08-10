@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.164
+# Implementeringsstatus pr. 4.0.165
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] 4.0.143 er produktionsverificeret i #2027: central sync, frisk data, fuld Linux-validate, releasegate, Pages-artifact og deploy bestod.
@@ -36,6 +36,7 @@
 - [x] 4.0.162 tilføjede national state-/historikisolation. Privat #2152 verificerede 770 unikke `shadow-v2`-historikker med mindst to samples, nul parent-/krydslæsning, slettet replay og nul scorepåvirkning; fire WAM-only dele forbliver eksplicit uden state.
 - [ ] 4.0.163 tilføjede lokal native HARMONIE-vindgate. #2157 ramte parserens standardtidsbudget efter 16 minutter; 4.0.164 retter kun det private tidsbudget til 3.000 sekunder og afventer nyt CI-bevis for 774/774 dele.
 - [ ] 4.0.164 tilføjer privat DEC-0033-shadow-score på eksakt tidsfælles native lokale data. Den genbruger den aktive scoremotor, anvender 7-pointmarginen, sletter transient råinput og holder alle aktiverings-/mutationsflag falske. Afventer privat CI.
+- [ ] #2164 beviste, at 4.0.164-tidsbudgettet når vindresultatet, men fire nærmeste HARMONIE-celler gav intet fælles U/V ved Harbo Odde. 4.0.165 udvider kun den private native kandidatsøgning til 32 og validerer fortsat samme celle/afstand. Afventer privat CI.
 - [x] Lokal RDKS, kystgeometri-v2, workflowkontrakt, releaseversion og releasegate består. Hele validate-rækken består bortset fra den kendte Windows/Linux-`rsync`-test, som skal bevises i CI.
 - [ ] National topologi, ravstrandfravalg, lokal opdeling, navne og 774 punktpar er målt; ni punktpar samt DMI/state/score/UI/admin og aktivering er endnu ikke færdige.
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.
