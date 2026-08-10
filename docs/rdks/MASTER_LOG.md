@@ -773,3 +773,11 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - #2167 viste, at 32-kandidatsøgning for alle 774 dele er en skaleringsfejl: vindtrinnet arbejdede fortsat efter 54 minutter uden resultat og blev stoppet bevidst.
 - Første pass bruger igen produktionsstandardens fire celler for alle. Kun de faktisk manglende del-ID'er genbehandles med 32 native kandidater og ryddet gridindekscache.
 - Retrypopulationen rapporteres særskilt. Datagaten og 3.000-sekunders budgettet er uændrede.
+
+# 2026-08-11 – 4.0.167 national ejer-review og admin-roundtrip
+
+- Produktion #31425309838 bestod frisk DMI, fuld Linux-validate, releasegate, Supabase-sync, Pages-artifact og deploy.
+- Privat #31425327202 bestod hele den central-hydrerede nationale kæde, 774 native vindserier og shadow-score for 752 fuldt dækkede dele. 22 deldækkede og ni blokerede blev bevaret uden fallback eller aktivering.
+- Den private reviewside samler 783 dele med officielle navneforslag og statusfarver, som kun betyder datadækning. Del-score, scorefarve, rangering, rå vejr/state og offentlig integration er forbudt.
+- National admin-roundtrip bruger kun et unikt midlertidigt dokument, kræver 783-dels readback/update, sletter dokumentet igen og kontrollerer `coastline-overrides` og `direction-reviews` uændrede.
+- Brugerbeslutning: arbejdet fortsætter autonomt, indtil den samlede manuelle zonegennemgang er klar. Ingen implicit aktivering.

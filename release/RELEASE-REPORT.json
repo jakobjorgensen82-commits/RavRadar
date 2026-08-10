@@ -1,6 +1,6 @@
 {
-  "version": "4.0.166",
-  "checkedAt": "2026-08-10T19:38:59.182Z",
+  "version": "4.0.167",
+  "checkedAt": "2026-08-10T22:55:07.404Z",
   "status": "passed",
   "checks": {
     "versionConsistency": true,

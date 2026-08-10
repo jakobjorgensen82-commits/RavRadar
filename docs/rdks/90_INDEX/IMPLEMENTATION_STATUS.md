@@ -1,6 +1,10 @@
-# Implementeringsstatus pr. 4.0.166
+# Implementeringsstatus pr. 4.0.167
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
+- [x] Privat #31425327202 verificerede 774/774 native vindserier; kun 20 faktiske gab brugte målrettet 32-celle-retry. Samme-celle-, afstands- og provenancekrav bestod.
+- [x] Samme run verificerede DEC-0033-shadow-score for 752 fuldt dækkede dele; 22 deldækkede og ni blokerede forblev fail-closed, og alle mutationsflag var falske.
+- [x] 4.0.167 bygger en privat score-neutral ejer-reviewside med alle 783 dele og statusfordelingen 752/22/9 uden delscores, scorefarver, rangering eller rådata.
+- [ ] 4.0.167's nationale admin-roundtrip/rollback består lokalt; privat CI skal bevise tempkladde create/read/update/delete og uændrede beskyttede dokumenter.
 - [x] 4.0.143 er produktionsverificeret i #2027: central sync, frisk data, fuld Linux-validate, releasegate, Pages-artifact og deploy bestod.
 - [x] Første nationaljob målte 101 fliser og 707 sekventielle lagrequests; efter mere end ti minutter var hentningen fortsat aktiv uden flisefremdrift. 4.0.144 begrænser parallelitet til fire fliser og logger deterministisk fremdrift.
 - [x] National kildevalidator kontrollerer plan/rapport, 208 zoner, samtlige eksponerede lag, komplethedsflag, filer, hashes, deduplikering, mutationer og credentialfravær før artifact-upload.

@@ -1,4 +1,4 @@
-import { authEnabled, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.166";
+import { authEnabled, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.167";
 
 export function openAccountDialog(dialog) {
   const session = currentSession();

@@ -449,6 +449,15 @@ jobs:
       - name: Validate private national local-part shadow score and coverage
         run: node scripts/validate-national-shadow-score.mjs
 
+      - name: Build private national score-neutral owner review
+        run: node scripts/build-national-score-neutral-owner-review.mjs --work .geometry-v2-work --output-dir .owner-review/national-coastal-zone-review
+
+      - name: Validate private national central admin roundtrip and rollback
+        run: node scripts/validate-national-admin-roundtrip.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
       - name: Upload compact national geometry-v2 QA artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -475,6 +484,9 @@ jobs:
             .geometry-v2-work/national-state-history-validation.json
             .geometry-v2-work/national-local-part-wind-series.json
             .geometry-v2-work/national-shadow-score-validation.json
+            .owner-review/national-coastal-zone-review/index.html
+            .owner-review/national-coastal-zone-review/review-report.json
+            .owner-review/national-admin-roundtrip-validation.json
           retention-days: 14
           if-no-files-found: error
           include-hidden-files: true

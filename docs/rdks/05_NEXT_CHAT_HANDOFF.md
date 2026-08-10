@@ -1,9 +1,9 @@
 # RavRadar – aktuel overlevering til Codex
 
-**Opdateret:** 2026-08-09
-**Aktuel appversion:** 4.0.166 (målrettet privat HARMONIE-retry; afventer CI)
-**Senest produktionsverificerede main:** 4.0.164 i #2163/#31414155813 på `e667135`
-**Produktion:** #2163 bestod frisk DMI/provenance, fuld validate, release-gate, Supabase-sync, Pages-artifact og deploy. Privat #2164 bestod upstreamkæden og fandt derefter det konkrete fire-celle-HARMONIE-gab ved Harbo Odde.
+**Opdateret:** 2026-08-11
+**Aktuel appversion:** 4.0.167 (national ejer-review og admin-roundtrip; afventer CI)
+**Senest produktionsverificerede main:** 4.0.166 i #31425309838 på `fc20f3a`
+**Produktion:** #31425309838 bestod frisk DMI/provenance, fuld validate, release-gate, Supabase-sync, Pages-artifact og deploy. Privat #31425327202 bestod hele nationalkæden med 774 vindserier og 752 shadow-scorer.
 
 ## Start ikke med at kode
 Læs først `docs/ai/CODEX_START_HERE.md`, `AGENTS.md`, Current Truth, Implementation Status, Active Requirements, Known Issues og de relevante beslutninger. Denne fil er et øjebliksbillede, ikke en erstatning for RDKS.
@@ -24,9 +24,9 @@ Fejlen må ikke forstås som én enkelt scheduler- eller radiusfejl. Forløbet v
 ## Åbne opgaver med høj prioritet
 1. Følg Supabase-egress gennem næste billingperiode. Central audit/migration er gennemført: databasen er 24 MB, alle 14 aktuelle `admin_documents` er intakte, maskinhistorik er 0, og øvrig historik er bounded til 100 pr. dokument.
 1. Bevar de ni ikke-entydige normalsider fail-closed til manuel review; DMI gav to gyldige sider og kan derfor ikke afgøre dem.
-2. CI-verificér 4.0.166 med fire-celle-first for alle 774 dele og 32-celle-retry kun for faktiske vindgab samt efterfølgende DEC-0033-shadow-score.
-3. Bevar opdelingen, navnene og punkterne read-only, indtil lokal vejreksponering og alle ni blokeringer er afgjort.
-4. Byg derefter lokale land-/vandpunkter, native DMI-grid/provenance og isoleret state/shadow-score før UI/admin og national aktivering.
+2. CI-verificér 4.0.167's samlede score-neutrale ejer-review og nationale central-admin-roundtrip/rollback.
+3. Download og auditér reviewartifactet; giv derefter Jakob den private reviewside til manuel kontrol af 783 dele, især de 22 deldækkede og ni blokerede.
+4. Bevar opdelingen, navnene, punkterne, state og shadow-score read-only, indtil ejerreviewet og en særskilt go/no-go er gennemført.
 5. Bevar den eksisterende zoneserie og RavScore som runtime-sandhed, indtil hele den nationale kæde og rollback er verificeret.
 
 ## Ting der ikke må ændres som genvej
