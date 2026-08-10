@@ -5,4 +5,5 @@
 - Tilføjer en privat DEC-0033-shadow-scoregate, som bruger den eksisterende `calculateRavScore` for egne native vind-, bølge-, strøm- og vandstandsdata samt isoleret state.
 - Kræver eksakt fælles native tid. Nærmeste tidspunkt, interpolation, parentfallback, krydsmerge og manglende komponenter som nul er forbudt.
 - Klassificerer privat dækning som `whole-zone`, `only-part`, `several-parts` eller `uncertain` med den midlertidige 7-pointmargin.
+- Kræver faktisk shadow-score for alle 752 fuldt WAM+DKSS-dækkede dele; en delvis eller tom scorepopulation kan ikke bestå.
 - Rå transientværdier slettes efter gaten. Aktiv geometri, admin, sampling, state, RavScore, UI og offentlig runtime forbliver uændrede.

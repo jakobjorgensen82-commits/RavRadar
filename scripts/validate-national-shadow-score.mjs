@@ -54,6 +54,7 @@ export function buildNationalShadowScoreReport(contract,multi,state,wind,marineI
     }
     if(snapshots.length)partRows.push({zoneId:part.zoneId,partId:part.partId,partName:part.partName??part.name??part.partId,seriesId:part.seriesId,snapshots});
   }
+  if(partRows.length!==contract.fullCoveragePartCount)throw new Error(`Shadow-score dækkede ${partRows.length}/${contract.fullCoveragePartCount} fuldt marine-dækkede dele`);
   const rowsByZone=new Map();for(const row of partRows)(rowsByZone.get(row.zoneId)??rowsByZone.set(row.zoneId,[]).get(row.zoneId)).push(row);
   const blockedByZone=new Map();for(const row of contract.blockedParts||[])(blockedByZone.get(row.zoneId)??blockedByZone.set(row.zoneId,[]).get(row.zoneId)).push(row);
   const zones=[];
@@ -78,14 +79,14 @@ export function buildNationalShadowScoreReport(contract,multi,state,wind,marineI
 export function selfTest(){
   const times=['2026-08-10T00:00:00.000Z','2026-08-10T03:00:00.000Z'];
   const parts=['a','b'].map((partId,i)=>({zoneId:'Z',partId,partName:partId,seriesId:`Z::${partId}`,historyKey:`h::${partId}`,coastType:'west',onshoreDirectionDeg:90}));
-  const contract={status:'private-national-shadow-contract-ready',eligiblePartCount:2,blockedPartCount:0,blockedParts:[],parts,parentRuntimeTruth:'parent'};
+  const contract={status:'private-national-shadow-contract-ready',eligiblePartCount:2,fullCoveragePartCount:2,blockedPartCount:0,blockedParts:[],parts,parentRuntimeTruth:'parent'};
   const clean={productionGeometryChanged:false,adminDataChanged:false,publicRuntimeChanged:false,scoreChanged:false,automaticActivationAllowed:false};
   const multi={status:'passed-private-national-multi-step-series-validation',...clean},state={status:'passed-private-national-state-history-isolation',...clean},wind={status:'passed-private-national-native-wind-series-validation',...clean};
   const marineInput={status:'private-transient-national-shadow-score-marine-input',series:parts.map((p,i)=>({...p,hours:times.map((time,j)=>({time,'significant-wave-height':.4+i*.02,'mean-wave-dir':270,'dominant-wave-period':5,'sea-mean-deviation':.1+j*.01,'current-u':.2,'current-v':.1}))})),excluded:[]};
   const windInput={status:'private-transient-national-shadow-score-wind-input',series:parts.map(p=>({...p,hours:[{time:times[0],'wind-u-10m':-4,'wind-v-10m':0}]})),excluded:[]};
   const report=buildNationalShadowScoreReport(contract,multi,state,wind,marineInput,windInput);
   if(report.status!=='passed-private-national-shadow-score-validation'||report.scoredPartCount!==2||report.zones.length!==1||report.zones[0].evaluations.length!==2||report.rawWeatherValuesStored)throw new Error('Gyldig shadow-score blev afvist');
-  const broken=structuredClone(windInput);broken.series.pop();const uncertain=buildNationalShadowScoreReport(contract,multi,state,wind,marineInput,broken);if(!uncertain.zones[0].evaluations.every(row=>row.status==='uncertain'))throw new Error('Manglende del blev ikke fail-closed');
+  const broken=structuredClone(windInput);broken.series.pop();try{buildNationalShadowScoreReport(contract,multi,state,wind,marineInput,broken);throw new Error('Manglende fulddækket del blev accepteret');}catch(error){if(error.message==='Manglende fulddækket del blev accepteret')throw error;}
   console.log('National privat shadow-score self-test: bestået');
 }
 
