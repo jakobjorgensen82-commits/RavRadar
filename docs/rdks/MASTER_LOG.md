@@ -724,3 +724,4 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 
 - #2122 gav 752 valgte punkter med fuld WAM+DKSS, 18 med komplet DKSS uden WAM og fire med komplet WAM uden DKSS. Alle 774 har mindst én komplet native havmodelfamilie.
 - 4.0.158 accepterer dette som vand/gridbevis, men mærker 22 som delvist dækkede. Manglende komponenter forbliver missing. Ni normalsidetvivl forbliver blokeret.
+- #2126 bestod fulde produktionsgates/deploy. #2127 bestod hele den centralt hydrerede nationale kæde og bekræftede 774 gyldige valgte punkter, 752 fuldt dækkede, 22 delvist dækkede, nul ugyldige og ni fortsat blokerede; alle mutationsflag er falske.
