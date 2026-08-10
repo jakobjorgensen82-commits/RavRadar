@@ -15,8 +15,12 @@ DEFAULT_INPUT = ROOT / ".geometry-v2-work" / "national-local-part-point-pairs.js
 DEFAULT_REPORT = ROOT / ".geometry-v2-work" / "national-local-part-dmi-grid.json"
 COLLECTIONS = {
     "wam_nsb": ("significant-wave-height", "mean-wave-dir", "dominant-wave-period"),
+    "wam_dw": ("significant-wave-height", "mean-wave-dir", "dominant-wave-period"),
     "dkss_nsbs": ("sea-mean-deviation", "current-u", "current-v"),
+    "dkss_idw": ("sea-mean-deviation", "current-u", "current-v"),
+    "dkss_lf": ("sea-mean-deviation", "current-u", "current-v"),
 }
+REQUIRED_COMPONENTS = ("significant-wave-height", "mean-wave-dir", "dominant-wave-period", "sea-mean-deviation", "current-u", "current-v")
 
 
 def now() -> str:
@@ -54,7 +58,10 @@ def candidates(document: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str
             if not isinstance(point, list) or len(point) != 2:
                 raise RuntimeError(f"{part_id}/{variant} mangler gyldigt vandpunkt")
             candidate_id = f"{part_id}::{variant}"
-            rows.append({"id": candidate_id, "lon": float(point[0]), "lat": float(point[1]), "coastType": "unknown"})
+            coast_type = str(part.get("coastType") or "")
+            if coast_type not in {"west", "east", "limfjord"}:
+                raise RuntimeError(f"{part_id} mangler gyldig coastType")
+            rows.append({"id": candidate_id, "lon": float(point[0]), "lat": float(point[1]), "coastType": coast_type})
     return rows, metadata
 
 
@@ -76,14 +83,18 @@ def compact(point: dict[str, Any]) -> dict[str, Any]:
 def candidate_result(candidate: dict[str, Any], output: dict[str, Any], runs: dict[str, Any]) -> dict[str, Any]:
     points = (output.get("zones", {}).get(candidate["id"]) or {}).get("gridPoints") or {}
     failures, components = [], {}
-    for collection, required in COLLECTIONS.items():
-        missing = [key for key in required if key not in points]
-        if missing:
-            failures.append({"collection": collection, "reason": "MISSING_VALID_GRID_CELL", "components": missing})
-        else:
-            components[collection] = {"modelRun": runs[collection]["modelRun"],
-                                      "nativeValidTime": runs[collection]["nativeValidTime"],
-                                      "gridPoints": {key: compact(points[key]) for key in required}}
+    missing = [key for key in REQUIRED_COMPONENTS if key not in points]
+    if missing:
+        failures.append({"reason": "MISSING_VALID_GRID_CELL", "components": missing})
+    for component in REQUIRED_COMPONENTS:
+        if component not in points:
+            continue
+        collection = (output.get("zones", {}).get(candidate["id"]) or {}).get("collections", {}).get(component)
+        if collection not in runs:
+            failures.append({"reason": "MISSING_COLLECTION_PROVENANCE", "components": [component]})
+            continue
+        group = components.setdefault(collection, {"modelRun": runs[collection]["modelRun"], "nativeValidTime": runs[collection]["nativeValidTime"], "gridPoints": {}})
+        group["gridPoints"][component] = compact(points[component])
     shared_uv = all(key in points for key in ("current-u", "current-v")) and same_point(points["current-u"], points["current-v"])
     if not shared_uv:
         failures.append({"collection": "dkss_nsbs", "reason": "NO_SHARED_UV_GRID_POINT"})
@@ -152,17 +163,16 @@ def run(input_path: pathlib.Path, report_path: pathlib.Path) -> dict[str, Any]:
 
 
 def self_test() -> None:
-    document = {"parts": [{"zoneId": "A", "finalPartId": "a", "suggestedName": "A", "status": "private-point-pair-proposed", "waterPoint": [8, 56]},
-                           {"zoneId": "B", "finalPartId": "b", "suggestedName": "B", "status": "blocked-point-pair-evidence", "unresolvedNormalCandidates": [{"side": 1, "waterCandidate": [9, 56]}, {"side": -1, "waterCandidate": [8.9, 56]}]}]}
+    document = {"parts": [{"zoneId": "A", "coastType": "west", "finalPartId": "a", "suggestedName": "A", "status": "private-point-pair-proposed", "waterPoint": [8, 56]},
+                           {"zoneId": "B", "coastType": "east", "finalPartId": "b", "suggestedName": "B", "status": "blocked-point-pair-evidence", "unresolvedNormalCandidates": [{"side": 1, "waterCandidate": [9, 56]}, {"side": -1, "waterCandidate": [8.9, 56]}]}]}
     zones, meta = candidates(document)
     output = {"zones": {}}
     for index, zone in enumerate(zones):
         points = {}
         if index != 2:
-            for keys in COLLECTIONS.values():
-                for key in keys:
-                    points[key] = {"latitude": 56, "longitude": zone["lon"], "distanceKm": 1, "verticalLayer": "surface:0"}
-        output["zones"][zone["id"]] = {"gridPoints": points}
+            for key in REQUIRED_COMPONENTS:
+                points[key] = {"latitude": 56, "longitude": zone["lon"], "distanceKm": 1, "verticalLayer": "surface:0"}
+        output["zones"][zone["id"]] = {"gridPoints": points, "collections": {key: ("wam_nsb" if key.startswith(("significant", "mean", "dominant")) else "dkss_nsbs") for key in points}}
     runs = {key: {"modelRun": "run", "nativeValidTime": "valid"} for key in COLLECTIONS}
     report = build_report(document, zones, meta, output, runs, {})
     assert report["status"].startswith("passed") and report["uniquelyResolvedAmbiguousPartCount"] == 1

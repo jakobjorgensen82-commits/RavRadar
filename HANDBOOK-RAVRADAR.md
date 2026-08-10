@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.156
+**Håndbogsversion:** 4.0.157
 
 **Opdateret:** 1. august 2026
 
@@ -1492,6 +1492,6 @@ Den faktiske QA viser, at kun 20 zoner er direkte referenceklare, mens 188 er fl
 
 4.0.155 undersøger derefter land- og havside lokalt. Et punktpar kræver et officielt landvidne og et marinevidne på modsatte sider af den lokale kystnormal. 774 af 783 dele består denne første port. De sidste ni får ingen punkter; de sendes med to neutrale alternativer til native DMI-gridkontrol. Dermed bliver et gammelt fælles zonepunkt aldrig tavst kopieret ud på alle bugtede kystdele.
 
-4.0.156 tester de 774 valgte vandpunkter og begge alternativer for de ni blokerede dele samlet på aktuelle native DMI WAM- og DKSS-gitre. Kontrollen genbruger produktionens nærmeste gyldige marine celle og kræver, at strømkomponenterne U og V kommer fra samme fysiske celle. Kun gridkoordinater, afstand og modeltid gemmes. En blokeret del kan kun få valgt side, hvis præcis ét alternativ består; ellers forbliver den blokeret. Kontrollen ændrer ikke sampling, state, RavScore eller offentlig visning.
+4.0.156 indførte gridgaten, men #2118 afslørede, at første nationale udgave mærkede alle kandidater `unknown` og derfor filtrerede den relevante WAM-model væk. 4.0.157 arver i stedet zonens centralt gemte kysttype og tester relevante modelområder for vestkyst, indre danske farvande og Limfjorden. Kontrollen genbruger produktionens nærmeste gyldige marine celle og kræver fælles fysisk U/V-celle. Kun gridkoordinater, afstand og modeltid gemmes; tvivl, sampling, state, RavScore og offentlig visning forbliver fail-closed.
 
 Før et privat artifact accepteres, skal alle 208 zoner være bundet til planen, alle eksponerede lag være komplette, og filer og hashværdier stemme. Deduplikering måles, og credential- eller mutationsfund stopper kørslen. Først derefter udføres en rumligt indekseret fysisk kystsammenligning for alle zoner. Resultatet er fortsat QA og kan ikke aktivere kyst, vejr eller score.

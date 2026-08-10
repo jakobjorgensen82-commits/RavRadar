@@ -12,6 +12,7 @@ def validate(report):
     ids=[r.get("finalPartId") for r in rows]
     if len(ids)!=len(set(ids)):fail("Punktpar-ID'er er ikke unikke.")
     for row in rows:
+        if row.get("coastType") not in {"west","east","limfjord"}:fail(f"Punktpar mangler gyldig coastType for {row.get('finalPartId')}.")
         proposed=row.get("status")=="private-point-pair-proposed"
         if proposed != all(isinstance(row.get(key),list) and len(row[key])==2 for key in ("landPoint","waterPoint")):fail(f"Punktstatus er inkonsistent for {row.get('finalPartId')}.")
         if proposed and (row.get("blockingReasons") or row.get("weatherSamplingEnabled") is not False or row.get("automaticActivationAllowed") is not False):fail(f"Foreslået punktpar er ikke isoleret for {row.get('finalPartId')}.")

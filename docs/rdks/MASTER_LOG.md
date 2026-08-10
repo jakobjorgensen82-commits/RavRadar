@@ -714,3 +714,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - #2114 bestod fulde produktionsgates/deploy; #2115 reproducerede 783 dele, 774 punktpar og ni blokeringer fra central admin-geometri.
 - Ny privat validator sender 774 valgte vandpunkter og 18 alternativer gennem ét aktuelt WAM/DKSS forecast-step med produktionens parser, nearest-valid-cellesøgning og fælles U/V-regel.
 - Rapporten er provenance-only og fail-closed; ingen rå vejrserie, geometri, admin, state, RavScore eller aktivering ændres.
+
+# 2026-08-10 – 4.0.157 coastType-korrekt DMI-modelvalg
+
+- #2118 stoppede alle 774 valgte punkter, fordi validatoren satte `coastType=unknown`; produktionens modelrouting filtrerede derfor Nordsø-WAM væk. Fejlen var i reviewvalidatoren, ikke evidens for 774 forkerte punkter.
+- Punktartefaktet bærer nu central `coastType`, og gridgaten kører WAM NSB/DW samt DKSS NSBS/IDW/LF med produktionens egne prioriteringsregler. Ingen aktivering tillades.
