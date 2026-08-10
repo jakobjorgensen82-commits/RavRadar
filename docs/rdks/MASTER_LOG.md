@@ -741,3 +741,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - #2142 bestod hele den nationale upstreamkæde og 4.0.159-kontrakten, men stoppede ved start af flertrinsgaten med manglende `parts_by_id` i live-`run()`.
 - Flyttede opslagstabellen til korrekt scope og tilføjede regression for WAM-/DKSS-routing til de kontraktvalgte dele.
 - Ingen runtime-, score-, admin- eller dataaktivering.
+# 2026-08-10 – 4.0.162 national state-/historikisolation
+
+- #2146 verificerede 774 flertrinsserier, 1.526 familier med to native trin og 9.156 komplette komponentbeviser uden rådata eller mutation.
+- Implementerede transient state-replay for 770 DKSS-currentdækkede dele med unik historiknøgle og score-neutral `shadow-v2`.
+- Fire WAM-only dele udelukkes eksplicit som `MISSING_DKSS_CURRENT_FAMILY`; ingen parentfallback eller nulstrøm.
+- Replayinput slettes efter gate; state, score, UI, admin og public runtime forbliver deaktiveret.

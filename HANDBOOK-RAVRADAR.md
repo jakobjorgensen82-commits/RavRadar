@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.161
+**Håndbogsversion:** 4.0.162
 
 **Opdateret:** 1. august 2026
 
@@ -1499,5 +1499,9 @@ Den faktiske QA viser, at kun 20 zoner er direkte referenceklare, mens 188 er fl
 4.0.160 kræver mindst to komplette native tidstrin for hver WAM- eller DKSS-familie, som faktisk findes ved den enkelte del. Delvis dækning er gyldig som delvis dækning og udfyldes aldrig med nul eller parentdata. Current-U/V skal komme fra samme fysiske celle og vertikallag. Det private QA-artifact gemmer kun tilstedeværelse, digests og provenance; rå vejrdata, state, RavScore, UI, admin og offentlig runtime ændres ikke.
 
 4.0.161 retter den første livefundne routingfejl fra #2142 og sikrer med regressionstest, at en DMI-collection kun behandles for de dele, hvis validerede gridkontrakt faktisk har valgt den.
+
+#2146 verificerede derefter 774 unikke serier, 1.526 tilgængelige WAM-/DKSS-familier og 9.156 komponentbeviser. Hver familie har præcis to native trin med komplet DMI-provenance; artifactet indeholder ingen rå vejrdata.
+
+4.0.162 afprøver isoleret `shadow-v2`-state på de 770 dele, der har komplette DKSS-currenttrin. Fire WAM-only dele forbliver eksplicit uden state og må ikke låne parentdata eller blive til nulstrøm. Replayværdierne eksisterer kun transient og slettes efter kontrollen; den gemte rapport indeholder digests og state-sammenfatninger. RavScore skal være numerisk uændret for både waders og beach.
 
 Før et privat artifact accepteres, skal alle 208 zoner være bundet til planen, alle eksponerede lag være komplette, og filer og hashværdier stemme. Deduplikering måles, og credential- eller mutationsfund stopper kørslen. Først derefter udføres en rumligt indekseret fysisk kystsammenligning for alle zoner. Resultatet er fortsat QA og kan ikke aktivere kyst, vejr eller score.

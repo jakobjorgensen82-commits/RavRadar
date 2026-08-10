@@ -438,6 +438,9 @@ jobs:
       - name: Validate isolated private national multi-step weather series
         run: python scripts/validate-national-multi-step-series.py
 
+      - name: Validate isolated private national state and history
+        run: node scripts/validate-national-state-history.mjs
+
       - name: Upload compact national geometry-v2 QA artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -461,6 +464,7 @@ jobs:
             .geometry-v2-work/national-local-part-dmi-grid.json
             .geometry-v2-work/national-weather-shadow-contract.json
             .geometry-v2-work/national-multi-step-series-validation.json
+            .geometry-v2-work/national-state-history-validation.json
           retention-days: 14
           if-no-files-found: error
           include-hidden-files: true

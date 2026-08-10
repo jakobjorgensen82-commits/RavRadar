@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.161
+# Implementeringsstatus pr. 4.0.162
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] 4.0.143 er produktionsverificeret i #2027: central sync, frisk data, fuld Linux-validate, releasegate, Pages-artifact og deploy bestod.
@@ -32,7 +32,8 @@
 - [x] #2127 verificerede 4.0.158 fra central admin-geometri: 792 kandidater, 774 gyldige valgte vandpunkter, 752 med fuld WAM+DKSS, 22 med eksplicit deldækning og nul ugyldige valgte punkter. Alle ni tvivlsdele forbliver blokerede; alle mutationsflag er falske.
 - [x] 4.0.159 bygger lokalt en privat national weather-shadow-kontrakt: 774 unikke serie-/historikidentiteter, 752 fulde, 22 med eksplicitte gab, ni udelukkede blokeringer samt 208 autoritative parent-zoner. Produktionsjob #2132 bestod alle Linux-gates; tre private genopbygninger blev eksternt blokeret før kontrakten, fordi den officielle stednavnetjeneste returnerede ikke-JSON.
 - [ ] 4.0.160 tilføjede den fail-closed nationale flertrinsgate. #2142 bestod hele upstreamkæden, inklusive stednavne, 774-punkts DMI-grid og 4.0.159-kontrakt, men fandt en `parts_by_id`-scopefejl ved start af flertrinsgaten.
-- [ ] 4.0.161 retter scopefejlen og regressionstester collection-routing pr. del. Live national CI skal genkøres; state/score/public runtime er fortsat deaktiveret.
+- [x] 4.0.161 rettede scopefejlen og regressionstestede collection-routing pr. del. Privat #2146 bestod hele kæden: 774 serier, 1.526 tilgængelige familier med præcis to native trin og 9.156 komplette komponentbeviser; ingen råværdier, fallback, interpolation eller mutation.
+- [ ] 4.0.162 tilføjer lokal national state-/historikisolation for 770 DKSS-dækkede dele. Fire WAM-only dele forbliver eksplicit uden state; transient replay slettes og begge jagtformers RavScore skal være numerisk uændret. Afventer privat CI.
 - [x] Lokal RDKS, kystgeometri-v2, workflowkontrakt, releaseversion og releasegate består. Hele validate-rækken består bortset fra den kendte Windows/Linux-`rsync`-test, som skal bevises i CI.
 - [ ] National topologi, ravstrandfravalg, lokal opdeling, navne og 774 punktpar er målt; ni punktpar samt DMI/state/score/UI/admin og aktivering er endnu ikke færdige.
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.

@@ -20,6 +20,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 WORK = ROOT / ".geometry-v2-work"
 DEFAULT_CONTRACT = WORK / "national-weather-shadow-contract.json"
 DEFAULT_REPORT = WORK / "national-multi-step-series-validation.json"
+DEFAULT_STATE_INPUT = ROOT / ".cache" / "national-state-replay-input.json"
 FAMILY_COMPONENTS = {
     "wave": ("significant-wave-height", "mean-wave-dir", "dominant-wave-period"),
     "dkss": ("sea-mean-deviation", "current-u", "current-v"),
@@ -144,7 +145,25 @@ def eligible_zones(collection: str, zones: list[dict[str, Any]], parts_by_id: di
     return [zone for zone in zones if collection in expected_families(parts_by_id[zone["id"]]).values()]
 
 
-def run(contract_path: pathlib.Path, report_path: pathlib.Path) -> dict[str, Any]:
+def build_state_replay(contract: dict[str, Any], report: dict[str, Any], snapshots: dict[str, Any]) -> dict[str, Any]:
+    replay = {"schemaVersion": "1.0.0", "status": "private-transient-national-state-replay", "series": [], "excluded": []}
+    report_by_id = {row["partId"]: row for row in report["series"]}
+    for part in contract.get("parts") or []:
+        dkss = (report_by_id[part["partId"]].get("families") or {}).get("dkss")
+        if not dkss:
+            replay["excluded"].append({"zoneId": part["zoneId"], "partId": part["partId"], "reason": "MISSING_DKSS_CURRENT_FAMILY"})
+            continue
+        collection = dkss["collection"]
+        hours = []
+        for hour in dkss["hours"]:
+            raw = snapshots[part["partId"]][collection][hour["time"]]["values"]
+            hours.append({"time": hour["time"], "current-u": raw["current-u"], "current-v": raw["current-v"]})
+        replay["series"].append({"zoneId": part["zoneId"], "partId": part["partId"], "seriesId": part["seriesId"],
+                                 "historyKey": part["historyKey"], "onshoreDirectionDeg": part["onshoreDirectionDeg"], "hours": hours})
+    return replay
+
+
+def run(contract_path: pathlib.Path, report_path: pathlib.Path, state_input_path: pathlib.Path) -> dict[str, Any]:
     contract = json.loads(contract_path.read_text("utf-8")); grid = load_grid_module(); bulk = grid.load_bulk()
     parts = contract.get("parts") or []
     parts_by_id = {part["partId"]: part for part in parts}
@@ -172,6 +191,9 @@ def run(contract_path: pathlib.Path, report_path: pathlib.Path) -> dict[str, Any
                     "gridPoints": {key: point.get("gridPoints", {}).get(key) for key in components if key in point.get("gridPoints", {})}}
     report = validate(contract, snapshots); report["diagnostics"] = diagnostics
     report_path.parent.mkdir(parents=True, exist_ok=True); report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", "utf-8")
+    replay = build_state_replay(contract, report, snapshots)
+    state_input_path.parent.mkdir(parents=True, exist_ok=True)
+    state_input_path.write_text(json.dumps(replay, ensure_ascii=False, indent=2) + "\n", "utf-8")
     return report
 
 
@@ -181,7 +203,7 @@ def self_test() -> None:
     for index, families in enumerate(({"wave": "wam_nsb", "dkss": "dkss_nsbs"}, {"wave": "wam_dw"})):
         part_id = f"p{index}"; groups = {}
         for family, collection in families.items(): groups[collection] = {"gridPoints": {key: point(key.startswith("current-")) for key in FAMILY_COMPONENTS[family]}}
-        parts.append({"zoneId": f"Z{index}", "partId": part_id, "seriesId": f"Z{index}::{part_id}", "historyKey": f"coastal-part::Z{index}::{part_id}", "validatedGrid": groups,
+        parts.append({"zoneId": f"Z{index}", "partId": part_id, "seriesId": f"Z{index}::{part_id}", "historyKey": f"coastal-part::Z{index}::{part_id}", "onshoreDirectionDeg": 90, "validatedGrid": groups,
                       "coverage": {"fullWeatherCoverage": len(families) == 2, "waveFamilyComplete": "wave" in families, "dkssFamilyComplete": "dkss" in families, "coverageGaps": []}})
         snapshots[part_id] = {}
         for family, collection in families.items():
@@ -198,6 +220,9 @@ def self_test() -> None:
     assert [zone["id"] for zone in eligible_zones("wam_dw", zones, parts_by_id)] == ["p1"]
     report = validate(contract, snapshots)
     assert report["status"] == "passed-private-national-multi-step-series-validation" and not report["rawWeatherValuesStored"]
+    replay = build_state_replay(contract, report, snapshots)
+    assert len(replay["series"]) == 1 and replay["series"][0]["partId"] == "p0" and len(replay["series"][0]["hours"]) == 2
+    assert replay["excluded"] == [{"zoneId": "Z1", "partId": "p1", "reason": "MISSING_DKSS_CURRENT_FAMILY"}]
     broken = json.loads(json.dumps(snapshots)); broken["p1"]["wam_dw"].pop("2026-08-10T03:00:00Z")
     try: validate(contract, broken)
     except RuntimeError: pass
@@ -206,9 +231,9 @@ def self_test() -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(); parser.add_argument("--contract", type=pathlib.Path, default=DEFAULT_CONTRACT); parser.add_argument("--report", type=pathlib.Path, default=DEFAULT_REPORT); parser.add_argument("--self-test", action="store_true"); args = parser.parse_args()
+    parser = argparse.ArgumentParser(); parser.add_argument("--contract", type=pathlib.Path, default=DEFAULT_CONTRACT); parser.add_argument("--report", type=pathlib.Path, default=DEFAULT_REPORT); parser.add_argument("--state-input", type=pathlib.Path, default=DEFAULT_STATE_INPUT); parser.add_argument("--self-test", action="store_true"); args = parser.parse_args()
     if args.self_test: self_test(); return 0
-    report = run(args.contract, args.report); print(json.dumps({key: report[key] for key in ("status", "eligiblePartCount", "fullCoveragePartCount", "partialCoveragePartCount", "blockedPartCount")}, ensure_ascii=False)); return 0
+    report = run(args.contract, args.report, args.state_input); print(json.dumps({key: report[key] for key in ("status", "eligiblePartCount", "fullCoveragePartCount", "partialCoveragePartCount", "blockedPartCount")}, ensure_ascii=False)); return 0
 
 
 if __name__ == "__main__": raise SystemExit(main())
