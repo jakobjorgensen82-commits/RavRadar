@@ -703,3 +703,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Privat #2107 CI-verificerede 4.0.152's friske central-hydrerede nationale kilde-, topologi-, kystdels-, stednavne- og lokalitetskæde; build og Pages var isoleret/skipped.
 - Den endelige private bestand er 783 dele: 755 kildedele minus 28 grove erstattede dele plus 56 lokale forslag. Alle 783 får zoneunikke forslag fra officielle kandidat-ID'er med afstand og alternativer; automatisk omdøbning og aktivering er falsk.
 - Den ene del uden direkte kystanker er den nordlige Hou/Bisnap-lokalitet. Den lukkes med officiel lokal bebyggelsesevidens `Hou Syd` 508,7 m fra delen, ikke et opdigtet navn.
+
+# 2026-08-10 – 4.0.155 fail-closed nationale lokale punktpar
+- #2110 produktionsverificerede 4.0.154; privat #2111 reproducerede 783/783 officielle navneforslag og nul blokerede på friske centralt hydrerede data.
+- En lokal normalgate kombinerer officielle landvidner med officielle Farvand-vidner eller zonens centrale marinepunkt. 774/783 punktpar består; 575 bruger officielt Farvand og 199 central marineevidens.
+- Ni dele har ingen gyldig modsat-side-kombination. De får null som land-/vandpunkt og præcis to neutrale normalalternativer til næste native DMI-gridreview. Sampling, state, score, admin og aktivering er falsk.

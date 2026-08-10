@@ -420,6 +420,12 @@ jobs:
       - name: Validate final local part names remain review-only and evidence-backed
         run: python scripts/validate-national-local-part-names.py
 
+      - name: Build private land and water point pairs from opposite-side evidence
+        run: python scripts/build-national-local-part-points.py
+
+      - name: Validate ambiguous point pairs remain fail-closed
+        run: python scripts/validate-national-local-part-points.py
+
       - name: Upload compact national geometry-v2 QA artifact
         uses: actions/upload-artifact@v4
         with:
@@ -438,6 +444,7 @@ jobs:
             .geometry-v2-work/national-locality-partitions.json
             .geometry-v2-work/national-locality-partitions.geojson
             .geometry-v2-work/national-local-part-name-suggestions.json
+            .geometry-v2-work/national-local-part-point-pairs.json
           retention-days: 14
           if-no-files-found: error
           include-hidden-files: true

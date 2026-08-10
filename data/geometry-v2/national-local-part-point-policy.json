@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "private-read-only-national-local-part-point-policy",
+  "landPointOffsetM": 60,
+  "waterPointOffsetM": 250,
+  "tangentWindowM": 50,
+  "minimumWitnessNormalSeparationM": 10,
+  "maximumLandWitnessDistanceM": 6000,
+  "maximumMarineWitnessDistanceM": 30000,
+  "landWitnessMainTypes": ["Bebyggelse", "Naturareal", "Landskabsform"],
+  "weatherSamplingEnabled": false,
+  "automaticActivationAllowed": false
+}
