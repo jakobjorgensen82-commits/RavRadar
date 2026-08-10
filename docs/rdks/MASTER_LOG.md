@@ -730,3 +730,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 
 - 774 gridvaliderede dele får unik serie-/historikidentitet, samplingpoint og eksisterende gridproveniens. 22 komponentgab bevares; ni blokerede dele udelukkes.
 - 194 zoner har private delkontrakter, mens 14 zoner forbliver helt uændrede. Alle 208 parent-zoner beholder autoritativ runtime, historik og score. Ingen sampling eller aktivering.
+# 2026-08-10 – 4.0.160 national flertrinsserie-gate
+
+- Implementerede privat, fail-closed flertrinsvalidering for 774 isolerede kystdelsserier.
+- Hver faktisk tilgængelig WAM-/DKSS-familie kræver mindst to komplette native trin; 22 kendte familiegab bevares som missing.
+- Artifactet må kun indeholde tilstedeværelse, digests og provenance. Rå værdier, state, score, UI, admin og public runtime er uændrede.
+- Tre 4.0.159 private CI-forsøg blev stoppet før den nye kontrakt af den officielle stednavnetjenestes ikke-JSON-svar. Ingen gate blev svækket.

@@ -435,6 +435,9 @@ jobs:
       - name: Build isolated private weather identities for validated coastal parts
         run: python scripts/build-national-weather-shadow-contract.py
 
+      - name: Validate isolated private national multi-step weather series
+        run: python scripts/validate-national-multi-step-series.py
+
       - name: Upload compact national geometry-v2 QA artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -457,6 +460,7 @@ jobs:
             .geometry-v2-work/national-local-part-point-pairs.json
             .geometry-v2-work/national-local-part-dmi-grid.json
             .geometry-v2-work/national-weather-shadow-contract.json
+            .geometry-v2-work/national-multi-step-series-validation.json
           retention-days: 14
           if-no-files-found: error
           include-hidden-files: true

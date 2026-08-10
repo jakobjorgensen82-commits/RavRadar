@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.159
+# Implementeringsstatus pr. 4.0.160
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] 4.0.143 er produktionsverificeret i #2027: central sync, frisk data, fuld Linux-validate, releasegate, Pages-artifact og deploy bestod.
@@ -30,7 +30,8 @@
 - [x] #2118 stoppede korrekt fail-closed, men afslørede en validatorfejl: alle kandidater var mærket `unknown`, så Nordsø-WAM blev filtreret væk og alle 774 valgte punkter blev afvist.
 - [x] #2122 verificerede coastType-routing: 752 valgte punkter har komplette WAM+DKSS-familier; 18 har komplet DKSS uden WAM, og fire har komplet WAM uden DKSS. Alle 774 har mindst én komplet native havmodelfamilie.
 - [x] #2127 verificerede 4.0.158 fra central admin-geometri: 792 kandidater, 774 gyldige valgte vandpunkter, 752 med fuld WAM+DKSS, 22 med eksplicit deldækning og nul ugyldige valgte punkter. Alle ni tvivlsdele forbliver blokerede; alle mutationsflag er falske.
-- [ ] 4.0.159 bygger lokalt en privat national weather-shadow-kontrakt: 774 unikke serie-/historikidentiteter, 752 fulde, 22 med eksplicitte gab, ni udelukkede blokeringer samt 208 autoritative parent-zoner. Afventer privat CI; sampling/state/score/public runtime er fortsat deaktiveret.
+- [x] 4.0.159 bygger lokalt en privat national weather-shadow-kontrakt: 774 unikke serie-/historikidentiteter, 752 fulde, 22 med eksplicitte gab, ni udelukkede blokeringer samt 208 autoritative parent-zoner. Produktionsjob #2132 bestod alle Linux-gates; tre private genopbygninger blev eksternt blokeret før kontrakten, fordi den officielle stednavnetjeneste returnerede ikke-JSON.
+- [ ] 4.0.160 tilføjer lokalt en fail-closed national flertrinsgate. Hver tilgængelig WAM-/DKSS-familie kræver mindst to komplette native trin med korrekt provenance; rå værdier må ikke gemmes. Live national CI afventer, at den officielle stednavnetjeneste igen er tilgængelig. State/score/public runtime er fortsat deaktiveret.
 - [x] Lokal RDKS, kystgeometri-v2, workflowkontrakt, releaseversion og releasegate består. Hele validate-rækken består bortset fra den kendte Windows/Linux-`rsync`-test, som skal bevises i CI.
 - [ ] National topologi, ravstrandfravalg, lokal opdeling, navne og 774 punktpar er målt; ni punktpar samt DMI/state/score/UI/admin og aktivering er endnu ikke færdige.
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.
