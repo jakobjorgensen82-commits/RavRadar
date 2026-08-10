@@ -15,6 +15,8 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 WORK = ROOT / ".geometry-v2-work"
 DEFAULT_CONTRACT = WORK / "national-weather-shadow-contract.json"
 DEFAULT_REPORT = WORK / "national-local-part-wind-series.json"
+DEFAULT_MARINE_INPUT = ROOT / ".cache" / "national-shadow-score-marine-input.json"
+DEFAULT_WIND_INPUT = ROOT / ".cache" / "national-shadow-score-wind-input.json"
 COLLECTION = "harmonie_dini_sf"
 COMPONENTS = ("wind-u-10m", "wind-v-10m")
 
@@ -78,15 +80,43 @@ def validate(contract: dict[str, Any], snapshots: dict[str, Any], minimum_steps:
             "stateChanged": False, "publicRuntimeChanged": False, "scoreChanged": False, "automaticActivationAllowed": False}
 
 
-def run(contract_path: pathlib.Path, report_path: pathlib.Path) -> dict[str, Any]:
-    contract = json.loads(contract_path.read_text("utf-8")); grid = load_grid_module(); bulk = grid.load_bulk()
+def build_shadow_score_wind_input(marine_input: dict[str, Any], snapshots: dict[str, Any]) -> dict[str, Any]:
+    if marine_input.get("status") != "private-transient-national-shadow-score-marine-input":
+        raise RuntimeError("Vindgaten mangler transient marint shadow-input")
+    rows, excluded = [], list(marine_input.get("excluded") or [])
+    for marine in marine_input.get("series") or []:
+        marine_hours = marine.get("hours") or []
+        # The final marine step is reserved for the native +3h water-level trend.
+        score_times = {hour["time"] for hour in marine_hours[:-1]}
+        hours = []
+        for valid_time, snapshot in sorted((snapshots.get(marine["partId"]) or {}).items()):
+            if valid_time not in score_times:
+                continue
+            values = snapshot.get("values") or {}
+            if all(component in values for component in COMPONENTS):
+                hours.append({"time": valid_time, **{component: values[component] for component in COMPONENTS}})
+        if not hours:
+            excluded.append({"zoneId": marine["zoneId"], "partId": marine["partId"], "reason": "NO_EXACT_NATIVE_WIND_MARINE_TIME"})
+            continue
+        rows.append({"zoneId": marine["zoneId"], "partId": marine["partId"], "seriesId": marine["seriesId"], "hours": hours})
+    return {"schemaVersion": "1.0.0", "status": "private-transient-national-shadow-score-wind-input", "series": rows, "excluded": excluded}
+
+
+def run(contract_path: pathlib.Path, report_path: pathlib.Path, marine_input_path: pathlib.Path, wind_input_path: pathlib.Path) -> dict[str, Any]:
+    contract = json.loads(contract_path.read_text("utf-8")); marine_input = json.loads(marine_input_path.read_text("utf-8")); grid = load_grid_module(); bulk = grid.load_bulk()
     zones = [{"id": part["partId"], "lon": float(part["samplingPoint"][0]), "lat": float(part["samplingPoint"][1]), "coastType": part["coastType"]} for part in contract.get("parts") or []]
     model_run, assets, _ = bulk.list_latest_assets(COLLECTION)
     if not model_run or len(assets) < 2:
         raise RuntimeError("Ingen brugbar HARMONIE-flertrinsserie")
+    requested_times = {hour["time"] for row in marine_input.get("series") or [] for hour in (row.get("hours") or [])[:-1]}
+    selected_assets = list(assets[:2])
+    selected_valid = {asset["valid"] for asset in selected_assets}
+    for asset in assets:
+        if asset["valid"] in requested_times and asset["valid"] not in selected_valid:
+            selected_assets.append(asset); selected_valid.add(asset["valid"])
     output = {"zones": {zone["id"]: {"hourly": {}, "gridPoints": {}, "collections": {}} for zone in zones}}
     diagnostics = {"messagesSeen": 0, "zoneLookups": 0, "batchedGridReads": 0}; budget = {"bytes": 0}; snapshots = {zone["id"]: {} for zone in zones}
-    for asset in assets[:2]:
+    for asset in selected_assets:
         file_path, _ = bulk.download_asset(asset["href"], asset.get("size"), budget)
         _, _, interrupted, seen, lookups = bulk.process_grib(file_path, COLLECTION, model_run, asset["valid"], zones, output, diagnostics)
         diagnostics["messagesSeen"] += seen; diagnostics["zoneLookups"] += lookups
@@ -99,6 +129,8 @@ def run(contract_path: pathlib.Path, report_path: pathlib.Path) -> dict[str, Any
                 "source": (hour.get("sources") or {}).get("wind") or {}}
     report = validate(contract, snapshots); report["diagnostics"] = diagnostics
     report_path.parent.mkdir(parents=True, exist_ok=True); report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", "utf-8")
+    wind_input = build_shadow_score_wind_input(marine_input, snapshots)
+    wind_input_path.parent.mkdir(parents=True, exist_ok=True); wind_input_path.write_text(json.dumps(wind_input, ensure_ascii=False, indent=2) + "\n", "utf-8")
     return report
 
 
@@ -115,6 +147,9 @@ def self_test() -> None:
                 "source": {"provider": "dmi", "collection": COLLECTION, "modelRun": "run", "nativeValidTime": valid}}
     report = validate(contract, snapshots)
     assert report["eligiblePartCount"] == 2 and not report["rawWeatherValuesStored"]
+    marine_input = {"status": "private-transient-national-shadow-score-marine-input", "series": [{"zoneId": "Z", "partId": "a", "seriesId": "Z::a", "hours": [{"time": "2026-08-10T00:00:00Z"}, {"time": "2026-08-10T01:00:00Z"}]}], "excluded": []}
+    wind_input = build_shadow_score_wind_input(marine_input, snapshots)
+    assert len(wind_input["series"]) == 1 and len(wind_input["series"][0]["hours"]) == 1
     broken = json.loads(json.dumps(snapshots)); broken["b"].pop("2026-08-10T01:00:00Z")
     try: validate(contract, broken)
     except RuntimeError: pass
@@ -123,9 +158,9 @@ def self_test() -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(); parser.add_argument("--contract", type=pathlib.Path, default=DEFAULT_CONTRACT); parser.add_argument("--report", type=pathlib.Path, default=DEFAULT_REPORT); parser.add_argument("--self-test", action="store_true"); args = parser.parse_args()
+    parser = argparse.ArgumentParser(); parser.add_argument("--contract", type=pathlib.Path, default=DEFAULT_CONTRACT); parser.add_argument("--report", type=pathlib.Path, default=DEFAULT_REPORT); parser.add_argument("--marine-input", type=pathlib.Path, default=DEFAULT_MARINE_INPUT); parser.add_argument("--wind-input", type=pathlib.Path, default=DEFAULT_WIND_INPUT); parser.add_argument("--self-test", action="store_true"); args = parser.parse_args()
     if args.self_test: self_test(); return 0
-    report = run(args.contract, args.report); print(json.dumps({"status": report["status"], "eligiblePartCount": report["eligiblePartCount"], "minimumCompleteNativeSteps": report["minimumCompleteNativeSteps"], "scoreChanged": False}, ensure_ascii=False)); return 0
+    report = run(args.contract, args.report, args.marine_input, args.wind_input); print(json.dumps({"status": report["status"], "eligiblePartCount": report["eligiblePartCount"], "minimumCompleteNativeSteps": report["minimumCompleteNativeSteps"], "scoreChanged": False}, ensure_ascii=False)); return 0
 
 
 if __name__ == "__main__": raise SystemExit(main())

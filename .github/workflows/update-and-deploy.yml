@@ -442,7 +442,12 @@ jobs:
         run: node scripts/validate-national-state-history.mjs
 
       - name: Validate isolated private native wind series for coastal parts
+        env:
+          DMI_BULK_MAX_RUNTIME_SECONDS: "3000"
         run: python scripts/validate-national-local-part-wind-series.py
+
+      - name: Validate private national local-part shadow score and coverage
+        run: node scripts/validate-national-shadow-score.mjs
 
       - name: Upload compact national geometry-v2 QA artifact
         if: always()
@@ -469,6 +474,7 @@ jobs:
             .geometry-v2-work/national-multi-step-series-validation.json
             .geometry-v2-work/national-state-history-validation.json
             .geometry-v2-work/national-local-part-wind-series.json
+            .geometry-v2-work/national-shadow-score-validation.json
           retention-days: 14
           if-no-files-found: error
           include-hidden-files: true

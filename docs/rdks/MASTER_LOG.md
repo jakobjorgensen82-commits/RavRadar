@@ -752,3 +752,11 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - #2152 verificerede 770 isolerede `shadow-v2`-historikker, fire eksplicitte currentgab, slettet replay og nul scorepåvirkning.
 - Identificerede lokal vind som nødvendig manglende datagate før DEC-0033-shadow-score; parent-vind er ikke tilladt som skjult fallback.
 - Implementerede to-trins native HARMONIE wind-U/V-validering for alle 774 dele med samme-celle- og provenancekrav uden rådata eller aktivering.
+
+# 2026-08-10 – 4.0.164 privat national shadow-score og vindbudget
+
+- #2157 bestod hele upstreamkæden, men vindtrinnet ramte den importerede produktionsparsers standardarbejdsfrist efter 16 minutter. Fejlen er et utilstrækkeligt privat kørselsbudget, ikke evidens for ugyldige vindceller.
+- Det private vindtrin får 3.000 sekunders budget; alle eksisterende DMI-, samme-celle-, provenance- og fail-closed-krav bevares.
+- En ny privat gate samler kun eksakt tidsfælles native lokale komponenter og genbruger den aktive `calculateRavScore` uden at aktivere resultatet.
+- 7-pointreglen omsættes til `whole-zone`, `only-part`, `several-parts` og `uncertain`. Manglende lokal sammenligning er altid `uncertain`.
+- Rå marine/vind-input ligger kun transient i `.cache` og slettes efter validering. Parent-runtime og alle mutationsflag forbliver uændrede/falske. Privat CI afventer.
