@@ -433,6 +433,7 @@ jobs:
         run: python scripts/validate-national-local-part-dmi-grid.py
 
       - name: Upload compact national geometry-v2 QA artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: geodanmark-geometry-v2-national-qa-${{ github.run_id }}

@@ -82,36 +82,41 @@ def compact(point: dict[str, Any]) -> dict[str, Any]:
 
 def candidate_result(candidate: dict[str, Any], output: dict[str, Any], runs: dict[str, Any]) -> dict[str, Any]:
     points = (output.get("zones", {}).get(candidate["id"]) or {}).get("gridPoints") or {}
-    failures, components = [], {}
+    gaps, components = [], {}
     missing = [key for key in REQUIRED_COMPONENTS if key not in points]
     if missing:
-        failures.append({"reason": "MISSING_VALID_GRID_CELL", "components": missing})
+        gaps.append({"reason": "MISSING_VALID_GRID_CELL", "components": missing})
     for component in REQUIRED_COMPONENTS:
         if component not in points:
             continue
         collection = (output.get("zones", {}).get(candidate["id"]) or {}).get("collections", {}).get(component)
         if collection not in runs:
-            failures.append({"reason": "MISSING_COLLECTION_PROVENANCE", "components": [component]})
+            gaps.append({"reason": "MISSING_COLLECTION_PROVENANCE", "components": [component]})
             continue
         group = components.setdefault(collection, {"modelRun": runs[collection]["modelRun"], "nativeValidTime": runs[collection]["nativeValidTime"], "gridPoints": {}})
         group["gridPoints"][component] = compact(points[component])
     shared_uv = all(key in points for key in ("current-u", "current-v")) and same_point(points["current-u"], points["current-v"])
+    wave_complete = all(key in points for key in REQUIRED_COMPONENTS[:3])
+    dkss_complete = all(key in points for key in REQUIRED_COMPONENTS[3:]) and shared_uv
     if not shared_uv:
-        failures.append({"collection": "dkss_nsbs", "reason": "NO_SHARED_UV_GRID_POINT"})
+        gaps.append({"reason": "NO_SHARED_UV_GRID_POINT"})
+    valid = wave_complete or dkss_complete
     return {"candidateId": candidate["id"], "candidateWaterPoint": [candidate["lon"], candidate["lat"]],
-            "status": "valid-native-dmi-grid-cells" if not failures else "rejected", "sharedCurrentUvGridPoint": shared_uv,
-            "components": components, "failures": failures}
+            "status": "valid-native-marine-grid-evidence" if valid else "rejected", "fullWeatherCoverage": wave_complete and dkss_complete,
+            "waveFamilyComplete": wave_complete, "dkssFamilyComplete": dkss_complete, "sharedCurrentUvGridPoint": shared_uv,
+            "components": components, "coverageGaps": gaps}
 
 
 def build_report(document: dict[str, Any], zones: list[dict[str, Any]], metadata: dict[str, dict[str, Any]],
                  output: dict[str, Any], runs: dict[str, Any], diagnostics: dict[str, Any]) -> dict[str, Any]:
     results = {row["id"]: candidate_result(row, output, runs) for row in zones}
-    parts, invalid_selected, resolved, unresolved = [], 0, 0, 0
+    parts, invalid_selected, partial_selected, resolved, unresolved = [], 0, 0, 0, 0
     for part_id, source in metadata.items():
         if source["status"] == "private-point-pair-proposed":
             chosen = results[f"{part_id}::selected"]
             status = "validated-selected-water-point" if chosen["status"].startswith("valid") else "blocked-selected-water-point"
             invalid_selected += status.startswith("blocked")
+            partial_selected += chosen["status"].startswith("valid") and not chosen["fullWeatherCoverage"]
             row = {"zoneId": source["zoneId"], "finalPartId": part_id, "suggestedName": source.get("suggestedName"),
                    "status": status, "selected": chosen}
         else:
@@ -128,6 +133,8 @@ def build_report(document: dict[str, Any], zones: list[dict[str, Any]], metadata
     return {"schemaVersion": "1.0.0", "status": "passed-private-national-dmi-grid-validation" if passed else "failed-private-national-dmi-grid-validation",
             "generatedAt": now(), "method": "native DMI forecast-step GRIB; production nearest-valid-cell search; shared physical U/V; no interpolation",
             "candidateCount": len(zones), "selectedPointCount": sum(1 for row in metadata.values() if row["status"] == "private-point-pair-proposed"), "invalidSelectedPointCount": invalid_selected,
+            "fullCoverageSelectedPointCount": sum(1 for row in parts if row.get("selected", {}).get("fullWeatherCoverage") is True),
+            "partialCoverageSelectedPointCount": partial_selected,
             "ambiguousPartCount": sum(1 for row in metadata.values() if row["status"] == "blocked-point-pair-evidence"),
             "uniquelyResolvedAmbiguousPartCount": resolved, "stillBlockedAmbiguousPartCount": unresolved,
             "parts": parts, "diagnostics": {key: diagnostics.get(key, 0) for key in ("messagesSeen", "zoneLookups", "batchedGridReads")},
@@ -174,8 +181,12 @@ def self_test() -> None:
                 points[key] = {"latitude": 56, "longitude": zone["lon"], "distanceKm": 1, "verticalLayer": "surface:0"}
         output["zones"][zone["id"]] = {"gridPoints": points, "collections": {key: ("wam_nsb" if key.startswith(("significant", "mean", "dominant")) else "dkss_nsbs") for key in points}}
     runs = {key: {"modelRun": "run", "nativeValidTime": "valid"} for key in COLLECTIONS}
+    for key in REQUIRED_COMPONENTS[:3]:
+        output["zones"]["a::selected"]["gridPoints"].pop(key)
+        output["zones"]["a::selected"]["collections"].pop(key)
     report = build_report(document, zones, meta, output, runs, {})
     assert report["status"].startswith("passed") and report["uniquelyResolvedAmbiguousPartCount"] == 1
+    assert report["partialCoverageSelectedPointCount"] == 1 and report["invalidSelectedPointCount"] == 0
     assert report["automaticActivationAllowed"] is False
     print("National local part DMI-grid self-test: bestået")
 

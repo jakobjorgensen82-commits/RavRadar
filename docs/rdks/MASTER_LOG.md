@@ -719,3 +719,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 
 - #2118 stoppede alle 774 valgte punkter, fordi validatoren satte `coastType=unknown`; produktionens modelrouting filtrerede derfor Nordsø-WAM væk. Fejlen var i reviewvalidatoren, ikke evidens for 774 forkerte punkter.
 - Punktartefaktet bærer nu central `coastType`, og gridgaten kører WAM NSB/DW samt DKSS NSBS/IDW/LF med produktionens egne prioriteringsregler. Ingen aktivering tillades.
+
+# 2026-08-10 – 4.0.158 gridbevis og komponentdækning
+
+- #2122 gav 752 valgte punkter med fuld WAM+DKSS, 18 med komplet DKSS uden WAM og fire med komplet WAM uden DKSS. Alle 774 har mindst én komplet native havmodelfamilie.
+- 4.0.158 accepterer dette som vand/gridbevis, men mærker 22 som delvist dækkede. Manglende komponenter forbliver missing. Ni normalsidetvivl forbliver blokeret.

@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.157
+# Implementeringsstatus pr. 4.0.158
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] 4.0.143 er produktionsverificeret i #2027: central sync, frisk data, fuld Linux-validate, releasegate, Pages-artifact og deploy bestod.
@@ -28,7 +28,8 @@
 - [x] 4.0.155 danner 774/783 private land-/vandpunktpar fra modsat-side-evidens. 575 bruger et officielt Farvand-vidne og 199 zonens centralt hydrerede marinepunkt. Ni tvivlsomme dele forbliver uden aktive punktforslag og får to neutrale normalalternativer til native DMI-review.
 - [x] #2114 bestod fulde produktionsgates/deploy, og #2115 reproducerede præcis 783 dele, 774 punktpar og ni blokeringer fra den aktuelle centrale admin-geometri.
 - [x] #2118 stoppede korrekt fail-closed, men afslørede en validatorfejl: alle kandidater var mærket `unknown`, så Nordsø-WAM blev filtreret væk og alle 774 valgte punkter blev afvist.
-- [ ] 4.0.157 arver zonens faktiske `coastType` og kører de relevante WAM-/DKSS-modelområder for vest, øst og Limfjorden. Rettelsen afventer privat CI og ændrer ingen runtime-data.
+- [x] #2122 verificerede coastType-routing: 752 valgte punkter har komplette WAM+DKSS-familier; 18 har komplet DKSS uden WAM, og fire har komplet WAM uden DKSS. Alle 774 har mindst én komplet native havmodelfamilie.
+- [ ] 4.0.158 skelner mellem vand/gridbevis og fuld komponentdækning. De 22 delvise punkter beholder eksplicitte mangler; rettelsen afventer privat CI.
 - [x] Lokal RDKS, kystgeometri-v2, workflowkontrakt, releaseversion og releasegate består. Hele validate-rækken består bortset fra den kendte Windows/Linux-`rsync`-test, som skal bevises i CI.
 - [ ] National topologi, ravstrandfravalg, lokal opdeling, navne og 774 punktpar er målt; ni punktpar samt DMI/state/score/UI/admin og aktivering er endnu ikke færdige.
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.

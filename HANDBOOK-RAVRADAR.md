@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.157
+**Håndbogsversion:** 4.0.158
 
 **Opdateret:** 1. august 2026
 
@@ -1492,6 +1492,6 @@ Den faktiske QA viser, at kun 20 zoner er direkte referenceklare, mens 188 er fl
 
 4.0.155 undersøger derefter land- og havside lokalt. Et punktpar kræver et officielt landvidne og et marinevidne på modsatte sider af den lokale kystnormal. 774 af 783 dele består denne første port. De sidste ni får ingen punkter; de sendes med to neutrale alternativer til native DMI-gridkontrol. Dermed bliver et gammelt fælles zonepunkt aldrig tavst kopieret ud på alle bugtede kystdele.
 
-4.0.156 indførte gridgaten, men #2118 afslørede, at første nationale udgave mærkede alle kandidater `unknown` og derfor filtrerede den relevante WAM-model væk. 4.0.157 arver i stedet zonens centralt gemte kysttype og tester relevante modelområder for vestkyst, indre danske farvande og Limfjorden. Kontrollen genbruger produktionens nærmeste gyldige marine celle og kræver fælles fysisk U/V-celle. Kun gridkoordinater, afstand og modeltid gemmes; tvivl, sampling, state, RavScore og offentlig visning forbliver fail-closed.
+4.0.156 indførte gridgaten, og 4.0.157 rettede modelrouting efter central kysttype. #2122 viste 752 valgte punkter med både komplette bølge- og DKSS-familier, 18 med komplet DKSS uden WAM og fire med komplet WAM uden DKSS. 4.0.158 skelner derfor mellem vand/gridbevis og fuld vejrdækning: mindst én komplet native havmodelfamilie beviser et brugbart vandgrid, men en manglende familie forbliver eksplicit manglende og bliver aldrig nul. De ni tvivlsomme normalsider forbliver blokerede. Ingen sampling, state, RavScore eller offentlig visning aktiveres.
 
 Før et privat artifact accepteres, skal alle 208 zoner være bundet til planen, alle eksponerede lag være komplette, og filer og hashværdier stemme. Deduplikering måles, og credential- eller mutationsfund stopper kørslen. Først derefter udføres en rumligt indekseret fysisk kystsammenligning for alle zoner. Resultatet er fortsat QA og kan ikke aktivere kyst, vejr eller score.

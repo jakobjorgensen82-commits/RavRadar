@@ -1,7 +1,7 @@
 # RavRadar – aktuel overlevering til Codex
 
 **Opdateret:** 2026-08-09
-**Aktuel appversion:** 4.0.157 (coastType-korrekt national native DMI-gridgate; afventer privat CI)
+**Aktuel appversion:** 4.0.158 (vand/gridbevis adskilt fra fuld komponentdækning; afventer privat CI)
 **Senest verificerede main:** 4.0.151 på `6259514`
 **Produktion:** #2054 bestod frisk DMI/provenance, fuld validate, release-gate, Supabase-sync, Pages-artifact og deploy. Privat #2055 bestod navneauditen for 755/755 dele. 4.0.152's lokale evidens giver 56 forslag fra de 28 grove dele uden runtimeaktivering.
 
@@ -23,7 +23,7 @@ Fejlen må ikke forstås som én enkelt scheduler- eller radiusfejl. Forløbet v
 
 ## Åbne opgaver med høj prioritet
 1. Følg Supabase-egress gennem næste billingperiode. Central audit/migration er gennemført: databasen er 24 MB, alle 14 aktuelle `admin_documents` er intakte, maskinhistorik er 0, og øvrig historik er bounded til 100 pr. dokument.
-1. Kør og artifact-verificer 4.0.157's coastType-korrekte native DMI-grid/proveniens for 774 valgte vandpunkter og begge normalalternativer for de ni blokerede dele.
+1. Kør og artifact-verificer 4.0.158: forvent 774 valgte punkter med mindst én komplet havmodelfamilie, 752 fuldt dækkede, 22 delvist dækkede og ni fortsat blokerede.
 2. Bevar enhver ikke-entydig normalside fail-closed til manuel review.
 3. Bevar opdelingen, navnene og punkterne read-only, indtil lokal vejreksponering og alle ni blokeringer er afgjort.
 4. Byg derefter lokale land-/vandpunkter, native DMI-grid/provenance og isoleret state/shadow-score før UI/admin og national aktivering.

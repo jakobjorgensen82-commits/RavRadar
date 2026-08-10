@@ -8,6 +8,8 @@ for (const marker of [
   'national-local-part-dmi-grid.json',
   'production nearest-valid-cell search',
   'NO_SHARED_UV_GRID_POINT',
+  'valid-native-marine-grid-evidence',
+  'partialCoverageSelectedPointCount',
   'blocked-ambiguous-native-water-side',
   'automaticActivationAllowed',
 ]) {
