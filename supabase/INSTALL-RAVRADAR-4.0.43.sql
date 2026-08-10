@@ -174,11 +174,18 @@ set search_path=public
 set row_security=off
 as $$
 begin
-  if tg_op='UPDATE' then
+  if new.payload is not distinct from old.payload then
+    return null;
+  end if;
+  if tg_op='UPDATE' and old.document_key not in (
+    'weather-health','runtime-diagnostics','dmi-water-stations',
+    'water-station-routing-audit','ocean-diagnostics','cache-audit',
+    'implementation-audit','protected-asset-manifest'
+  ) then
     insert into public.admin_document_versions(document_key,payload,version,created_by)
     values(old.document_key,old.payload,old.version,auth.uid());
-    new.version=old.version+1;
   end if;
+  if tg_op='UPDATE' then new.version=old.version+1; end if;
   new.updated_at=now();
   new.updated_by=auth.uid();
   return new;

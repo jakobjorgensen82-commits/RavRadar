@@ -87,6 +87,7 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-ADMIN-003 – AKTIV:** Dialoglukning virker via kryds, Annuller, Escape og klik udenfor med advarsel ved ikke-gemte ændringer.
 - **REQ-ADMIN-004 – AKTIV:** Prioritet vises som Lav/Normal/Høj/Kritisk med forståelig effekt; internt tal kan bevares.
 - **REQ-ADMIN-005 – AKTIV:** Centrale ændringer har versionshistorik og rollback.
+- **REQ-ADMIN-006 – IMPLEMENTERET LOKALT I 4.0.153 / AFVENTER SUPABASE- OG PRODUKTIONSVERIFIKATION:** Scheduler-readback må kun hente payload for nødvendige centrale adminnøgler. Identiske writes må ikke skabe nye versioner. Udskiftelige maskindiagnostikker beholder kun aktuel tilstand; menneskeligt redigerede admin-data bevarer bounded rollback. Oprydning kræver read-only audit og må aldrig slette `admin_documents`.
 
 ## Projektstyring
 - **REQ-RDKS-001 – IMPLEMENTERET:** RDKS læses før arbejde og opdateres ved hver ny version.

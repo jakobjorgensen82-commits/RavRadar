@@ -692,3 +692,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - #2054 verificerede 4.0.151-produktionen, og privat #2055 verificerede officiel kandidatdækning for 755/755 kystdele.
 - De 28 grove dele opdeles i 56 read-only forslag på 2,565–19,882 km. Nærliggende kildefragmenter grupperes uden forbindelsesgeometri; 55/56 forslag har officielle direkte kystankre.
 - Ingen admin-, produktionsgeometri-, DMI-, state-, score-, navne- eller aktiveringsændring er tilladt.
+# 2026-08-10 – 4.0.153 Supabase Free-plan-kvotekontrol
+- Supabase varslede fair-use efter 8,233 GB egress og 0,695 GB database. Tre MAU og 274 Edge Function-kald udelukker brugertrafik som hovedårsag.
+- Kodeaudit viste ufiltreret fuld payload-readback hvert 15. minut og ubegrænset versionskopiering af bl.a. cirka 7,1 MB runtime-diagnostik.
+- Readback filtreres nu til nødvendige adminnøgler (>98 % målt payloadreduktion), beskyttede writes er hash-idempotente, og maskindiagnostik skilles fra menneskelig rollbackhistorik.
+- Central oprydning er ikke udført uden login/audit. Read-only audit og transaktionel migration er leveret separat; ingen aktuel admin-sandhed må slettes.

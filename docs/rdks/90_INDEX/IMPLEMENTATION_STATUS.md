@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.152
+# Implementeringsstatus pr. 4.0.153
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] 4.0.143 er produktionsverificeret i #2027: central sync, frisk data, fuld Linux-validate, releasegate, Pages-artifact og deploy bestod.
@@ -518,3 +518,9 @@ Status: Implementeret og lokalt valideret.
 - [x] Regression reproducerer id 34-konflikten og en 208-zoners rotationsprofil.
 - [x] #1831 beviste U+V i `dkss_idw`, 107 vindhalezoner ≥96 timer, fulde gates og deploy. Offentlig samlet vind: 200/208 med data, 108/208 ≥96 timer og maksimum 111,5 timer.
 - [ ] De automatiske runs skal nu rotere LF/NSBS ind og måles, så de resterende geografiske huller lukkes mod produktmålet 118–119 timer.
+## Supabase Free-plan-kvotekontrol
+- [x] Ufiltreret 15-minutters readback af alle `admin_documents.payload` er erstattet af server-side nøglefilter; central adminhydrering forbliver før preflight.
+- [x] Beskyttede pipelineuploads har SHA-256-manifest og springer uændrede payloads over.
+- [x] Ny triggerkontrakt bevarer rollback for adminredigerede dokumenter, men versionskopierer ikke udskiftelige maskindiagnostikker.
+- [x] Read-only størrelsesaudit og transaktionel, bounded oprydningsmigration er versionsstyret; aktuelle `admin_documents` slettes aldrig.
+- [ ] Kør audit i den aktuelle Supabase-organisation, tag backup, anvend migrationen og verificér database/egress over næste billingperiode.

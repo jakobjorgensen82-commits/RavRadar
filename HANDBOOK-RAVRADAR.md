@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.152
+**Håndbogsversion:** 4.0.153
 
 **Opdateret:** 1. august 2026
 
@@ -488,6 +488,8 @@ AI må strukturere fri tekst, forklare score, finde mønstre og foreslå hypotes
 
 
 ## 26. Administration, Supabase og ekspertrettigheder
+
+Supabase Free-kvoten beskyttes ved at skelne mellem central admin-sandhed og udskiftelig maskindiagnostik. Schedulerens readback henter kun de dokumentnøgler, som produktionsbygningen faktisk anvender. Identiske maskinoutputs skrives ikke igen. Regler, geometri, routing og andre menneskeligt redigerede dokumenter beholder versionshistorik og rollback, mens store runtime-diagnostikker kun beholder den aktuelle kopi. Databaseoprydning starter altid med en read-only størrelsesaudit og må aldrig slette den aktuelle række i `admin_documents`.
 
 *Hele den værdifulde adminfunktionalitet ligger bag adgangskontrol.*
 

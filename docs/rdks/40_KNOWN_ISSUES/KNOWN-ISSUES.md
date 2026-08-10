@@ -62,6 +62,7 @@
 6. **ISSUE-RULE-USABILITY – DELVIST:** Regelbyggerens fulde menneskevenlige workflow og konfliktforklaring skal løbende verificeres i browseren.
 7. **ISSUE-COASTLINE-EDITOR – RETTET I 4.0.90, OVERVÅGES:** Søgning, zonevalg, omdøbning og central gemning er samlet i én brugerrejse. Mobil browsertest og rollback overvåges fortsat.
 8. **ISSUE-CENTRAL-STORAGE – DELVIST:** Supabase-opsætning og rettigheder kræver fortsat driftsverifikation.
+9. **ISSUE-SUPABASE-FREE-QUOTA – RODÅRSAG RETTET LOKALT I 4.0.153 / AKTUEL DB AFVENTER OPRYDNING:** Alle centrale payloads blev hentet hvert 15. minut, og store maskindiagnostikker fik ubegrænset versionshistorik. 4.0.153 filtrerer readback, gør uploads idempotente og leverer sikker audit/migration. Fair-use-status kan først lukkes efter central oprydning og en ny billingperiodes måling.
 
 ## Historiske problemer, der ikke må genindføres
 - Timevis DMI/Open-Meteo-pendlen.

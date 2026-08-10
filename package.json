@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.152",
+  "version": "4.0.153",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -36,7 +36,7 @@
     "test:dmi-bulk": "node scripts/test-dmi-bulk-model-download.mjs",
     "test:dmi-bulk-forecast-integration": "node scripts/test-dmi-bulk-forecast-integration.mjs",
     "test:forecast-integrity": "node scripts/test-forecast-integrity-4.0.17.mjs",
-    "test:admin-persistence": "node scripts/test-admin-persistence-4.0.18.mjs",
+    "test:admin-persistence": "node scripts/test-admin-persistence-4.0.18.mjs && node scripts/test-supabase-quota-controls.mjs",
     "test:water-level-continuity": "node scripts/test-water-level-continuity-4.0.19.mjs",
     "test:cache-station-integrity": "node scripts/test-cache-and-station-integrity-4.0.19.mjs",
     "test:admin-station-recommendations": "node scripts/test-admin-station-recommendations-4.0.20.mjs",
@@ -67,6 +67,7 @@
     "test:geographic-areas": "node scripts/test-geographic-area-selection-4.0.63.mjs",
     "test:admin-persistence-e2e": "node scripts/test-admin-persistence-e2e-ui-4.0.63.mjs",
     "test:supabase-persistence": "node scripts/test-supabase-persistence.mjs",
+    "test:supabase-quota-controls": "node scripts/test-supabase-quota-controls.mjs",
     "test:hydrated-zone-pruning": "node scripts/test-hydrated-retired-zone-pruning-4.0.65.mjs",
     "test:auth-bootstrap": "node scripts/test-auth-bootstrap-4.0.66.mjs",
     "test:rav-assistant": "node scripts/test-rav-assistant-4.0.66.mjs",

@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import crypto from 'node:crypto';
 const url=process.env.SUPABASE_URL?.replace(/\/$/,'');
 const key=process.env.SUPABASE_SERVICE_ROLE_KEY;
 if(!url||!key)throw new Error('SUPABASE_URL og SUPABASE_SERVICE_ROLE_KEY kræves');
@@ -14,6 +15,8 @@ const assets={
  'handbook':'docs/handbook/content.json'
 };
 const lifecycleFields=['hasEverDelivered','firstObservationAt','lastObservationAt','lastObservationValueCm','consecutiveMissingObservationRuns','deliveryStatus','forecastCacheGeneratedAt','forecastCacheValidUntil','forecastCacheStatus','overallUsabilityStatus','forecastCacheZoneIds'];
+const manifestKey='protected-asset-manifest';
+const digest=payload=>crypto.createHash('sha256').update(JSON.stringify(payload)).digest('hex');
 async function existingDocument(documentKey){
  const r=await fetch(`${url}/rest/v1/admin_documents?select=payload&document_key=eq.${encodeURIComponent(documentKey)}&limit=1`,{headers});
  if(!r.ok)throw new Error(`${documentKey} readback: ${r.status} ${await r.text()}`);
@@ -36,10 +39,17 @@ function mergeStationDocuments(local,central){
  for(const old of central.stations){if(!stations.some(st=>String(st.stationId)===String(old.stationId)))stations.push(old);}
  return {...central,...local,schemaVersion:Math.max(Number(local?.schemaVersion||0),Number(central?.schemaVersion||0),3),stations};
 }
+const previousManifest=await existingDocument(manifestKey).catch(()=>null);
+const nextManifest={schemaVersion:1,assets:{}};
 for(const [document_key,file] of Object.entries(assets)){
  let payload;try{payload=JSON.parse(await fs.readFile(file,'utf8'));}catch(e){if(e.code==='ENOENT'){console.warn(`Springer over ${file}`);continue;}throw e;}
  if(document_key==='dmi-water-stations')payload=mergeStationDocuments(payload,await existingDocument(document_key));
+ const hash=digest(payload);nextManifest.assets[document_key]={sha256:hash,bytes:Buffer.byteLength(JSON.stringify(payload))};
+ if(previousManifest?.assets?.[document_key]?.sha256===hash){console.log(`Beskyttet admin-data uændret; springer skrivning over: ${document_key}`);continue;}
  const r=await fetch(`${url}/rest/v1/admin_documents?on_conflict=document_key`,{method:'POST',headers:{...headers,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({document_key,payload,updated_by:null})});
  if(!r.ok)throw new Error(`${document_key}: ${r.status} ${await r.text()}`);
  console.log(`Beskyttet admin-data synkroniseret: ${document_key}`);
 }
+nextManifest.generatedAt=new Date().toISOString();
+const manifestResponse=await fetch(`${url}/rest/v1/admin_documents?on_conflict=document_key`,{method:'POST',headers:{...headers,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({document_key:manifestKey,payload:nextManifest,updated_by:null})});
+if(!manifestResponse.ok)throw new Error(`${manifestKey}: ${manifestResponse.status} ${await manifestResponse.text()}`);
