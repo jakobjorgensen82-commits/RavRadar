@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.155
+**Håndbogsversion:** 4.0.156
 
 **Opdateret:** 1. august 2026
 
@@ -1491,5 +1491,7 @@ Den faktiske QA viser, at kun 20 zoner er direkte referenceklare, mens 188 er fl
 #2107 verificerede den friske nationale opdeling. De 28 grove dele erstattes privat af 56 kortere forslag, så den endelige reviewbestand er 783 dele. 4.0.154 giver hver del et revisionsbart, zoneunikt navneforslag med officielt sted-ID, afstand og alternativer. Den ene del uden direkte kystnavn bruger nær lokal bebyggelsesevidens ved Hou i stedet for et opdigtet navn. Forslagene aktiverer fortsat hverken geometri, admin, DMI, state eller RavScore.
 
 4.0.155 undersøger derefter land- og havside lokalt. Et punktpar kræver et officielt landvidne og et marinevidne på modsatte sider af den lokale kystnormal. 774 af 783 dele består denne første port. De sidste ni får ingen punkter; de sendes med to neutrale alternativer til native DMI-gridkontrol. Dermed bliver et gammelt fælles zonepunkt aldrig tavst kopieret ud på alle bugtede kystdele.
+
+4.0.156 tester de 774 valgte vandpunkter og begge alternativer for de ni blokerede dele samlet på aktuelle native DMI WAM- og DKSS-gitre. Kontrollen genbruger produktionens nærmeste gyldige marine celle og kræver, at strømkomponenterne U og V kommer fra samme fysiske celle. Kun gridkoordinater, afstand og modeltid gemmes. En blokeret del kan kun få valgt side, hvis præcis ét alternativ består; ellers forbliver den blokeret. Kontrollen ændrer ikke sampling, state, RavScore eller offentlig visning.
 
 Før et privat artifact accepteres, skal alle 208 zoner være bundet til planen, alle eksponerede lag være komplette, og filer og hashværdier stemme. Deduplikering måles, og credential- eller mutationsfund stopper kørslen. Først derefter udføres en rumligt indekseret fysisk kystsammenligning for alle zoner. Resultatet er fortsat QA og kan ikke aktivere kyst, vejr eller score.

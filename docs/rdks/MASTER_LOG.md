@@ -708,3 +708,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - #2110 produktionsverificerede 4.0.154; privat #2111 reproducerede 783/783 officielle navneforslag og nul blokerede på friske centralt hydrerede data.
 - En lokal normalgate kombinerer officielle landvidner med officielle Farvand-vidner eller zonens centrale marinepunkt. 774/783 punktpar består; 575 bruger officielt Farvand og 199 central marineevidens.
 - Ni dele har ingen gyldig modsat-side-kombination. De får null som land-/vandpunkt og præcis to neutrale normalalternativer til næste native DMI-gridreview. Sampling, state, score, admin og aktivering er falsk.
+
+# 2026-08-10 – 4.0.156 national native DMI-gridgate
+
+- #2114 bestod fulde produktionsgates/deploy; #2115 reproducerede 783 dele, 774 punktpar og ni blokeringer fra central admin-geometri.
+- Ny privat validator sender 774 valgte vandpunkter og 18 alternativer gennem ét aktuelt WAM/DKSS forecast-step med produktionens parser, nearest-valid-cellesøgning og fælles U/V-regel.
+- Rapporten er provenance-only og fail-closed; ingen rå vejrserie, geometri, admin, state, RavScore eller aktivering ændres.

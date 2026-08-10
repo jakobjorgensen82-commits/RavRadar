@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.155
+# Implementeringsstatus pr. 4.0.156
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] 4.0.143 er produktionsverificeret i #2027: central sync, frisk data, fuld Linux-validate, releasegate, Pages-artifact og deploy bestod.
@@ -26,6 +26,8 @@
 - [x] 4.0.154 danner 783/783 private, unikke navneforslag for den endelige bestand (755 minus 28 erstattede plus 56 lokale forslag). Hvert forslag har officielt kandidat-ID, afstand, alternativer og nul automatisk omdøbning/aktivering; Hou/Bisnap-ankergabet lukkes revisionsbart med `Hou Syd` 508,7 m fra delen.
 - [x] #2110 produktionsverificerede 4.0.154 med fuld Linux-validate, release-gate og deploy; privat #2111 verificerede 783/783 officielle navneforslag og nul blokerede.
 - [x] 4.0.155 danner 774/783 private land-/vandpunktpar fra modsat-side-evidens. 575 bruger et officielt Farvand-vidne og 199 zonens centralt hydrerede marinepunkt. Ni tvivlsomme dele forbliver uden aktive punktforslag og får to neutrale normalalternativer til native DMI-review.
+- [x] #2114 bestod fulde produktionsgates/deploy, og #2115 reproducerede præcis 783 dele, 774 punktpar og ni blokeringer fra den aktuelle centrale admin-geometri.
+- [ ] 4.0.156's nationale native DMI-gridgate er implementeret lokalt og afventer privat CI. Den samler 792 kandidater i ét WAM/DKSS-gennemløb og ændrer ingen runtime-data.
 - [x] Lokal RDKS, kystgeometri-v2, workflowkontrakt, releaseversion og releasegate består. Hele validate-rækken består bortset fra den kendte Windows/Linux-`rsync`-test, som skal bevises i CI.
 - [ ] National topologi, ravstrandfravalg, lokal opdeling, navne og 774 punktpar er målt; ni punktpar samt DMI/state/score/UI/admin og aktivering er endnu ikke færdige.
 - [x] Krav om ravstrandlinjer, fjordeksklusion, spring over havne/åer, navnekorrektion og fortsat fuld adminredigering er låst i DEC-0032.
