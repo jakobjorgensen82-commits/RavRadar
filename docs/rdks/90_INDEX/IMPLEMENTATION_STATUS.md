@@ -27,6 +27,9 @@
 - [x] #31516332559 beviste, at et samlet evidensrektangel er for bredt: 1.072 rå dele i 207 zoner. Denne variant er forkastet og må ikke flettes eller aktiveres.
 - [x] Målrettet lokal kildetest bevarer første forsøgs kandidater og genprøver kun helt tomme recoveryzoner i smalle evidensbånd. Resultatet er én resterende nul-zone: Ålsgårde/Helsingør; Nibe får 20,295 km officiel kandidat. Privat CI-bevis af topologi/slutantal mangler.
 - [x] En ny privat hovedzoneaudit måler officiel kildeafstand, hovedzonedækning, tværzoneoverlap og handlingsrelevante huller. Førmålingen på de aktive 605 dele gav nul kildeafvigelser, nul overlap og 18 manglende hovedzoner. National once-only-samling reducerer zonevise dubletter til 84 fysiske kandidater: 75 løsrevne, syv endeforlængelser og to små mellemrum.
+- [x] #31520862947 verificerede den afgrænsede tom-zone-recovery og kompakt QA. En additiv lokal kandidat bevarer de 605 godkendte dele og når 650 dele/203 hovedzoner med nul kildeafvigelser og nul overlap.
+- [x] De 84 huller uden for de fem restzoner er geometrisk sammenholdt med den tidligere ejer-godkendte før/efter-bestand og er alle tidligere bevidste udeladelser; de må ikke genindføres automatisk.
+- [ ] Fem restzoner gennemgås i `KYSTZONER-SLUTKONTROL.html`. Først derefter kan den præcise hovedzoneprojektion færdiggøres, valideres og frigives.
 - [ ] Et privat samlet hovedzonekort skal derefter bevise præcis kyst, nul overlap, ingen uforklarede almindelige kysthuller, ingen udenlandske/outlier-linjer og kun to offentlige endemarkeringer pr. hovedzone. Ingen offentlig aktivering eller adminudvidelse før dette bevis.
 
 ## Historisk kystgeometri-v2-design før aktivering

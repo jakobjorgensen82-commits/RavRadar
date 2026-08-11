@@ -72,11 +72,20 @@ def sampled_max_distance(line, reference_tree, reference_lines, interval=250, ma
 
 
 def build(zones, active_parts, official_coast, expected_coast, minimum_gap_m=100):
-    active_zone_ids = {
+    repository_active_zone_ids = {
         feature.get("properties", {}).get("id")
         for feature in zones.get("features") or []
         if feature.get("properties", {}).get("zoneStatus") == "active"
     }
+    effective_zone_ids = {
+        feature.get("properties", {}).get("zoneId")
+        for feature in expected_coast.get("features") or []
+        if feature.get("properties", {}).get("zoneId")
+    }
+    # The topology input is generated after central hydration/tombstones. It
+    # therefore owns the effective-zone set and prevents a centrally deleted
+    # repository zone from reappearing as a false public coverage gap.
+    active_zone_ids = effective_zone_ids or repository_active_zone_ids
     parts = runtime_parts(active_parts)
     represented = {zone_id for zone_id, _, _ in parts}
 
@@ -184,6 +193,7 @@ def build(zones, active_parts, official_coast, expected_coast, minimum_gap_m=100
         "schemaVersion": "1.0.0",
         "status": "private-national-public-coast-coverage-review",
         "activeMainZoneCount": len(active_zone_ids),
+        "repositoryActiveMainZoneCount": len(repository_active_zone_ids),
         "representedMainZoneCount": len(represented & active_zone_ids),
         "runtimePartCount": len(parts),
         "missingMainZoneIds": missing,
