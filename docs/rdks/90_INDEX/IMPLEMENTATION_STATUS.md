@@ -2,10 +2,10 @@
 
 ## National kystgeometri v2 – datakæde verificeret, offentlig kortvisning rettes
 - [x] Ejeren har godkendt det private seks-zoners korrektionskort. Den versionsførte godkendelse tillader samling og audit, men ikke automatisk produktion eller scoreaktivering.
-- [x] De seks godkendte rettelser er samlet med den additive kandidat til 209 præcisionsdækkede hovedzoner og 643 dele. En korrigeret symmetrisk overlapgate fjernede 11 oversete additive dubletdele; tværzoneoverlap er nu nul, og hulauditen har nul uafklarede relevante huller.
+- [x] De seks godkendte rettelser er samlet med den additive kandidat til 206 præcisionsdækkede hovedzoner og 643 dele. En korrigeret symmetrisk overlapgate fjernede 11 oversete additive dubletdele; tre helt dublerede præcisionszoner faldt sikkert tilbage til deres hovedzonelinje. Tværzoneoverlap er nu nul, og hulauditen har nul uafklarede relevante huller.
 - [x] Alle 643 dele har land-/vandpunkt; 39 nye eller ændrede dele er genereret uden blokering, mens 604 eksisterende punktpar genbruges.
-- [ ] #31531318575 beviste DMI-dækning for den før-deduplikerede bestand. Den endelige 39-punktsbestand skal nu gennem en ny isoleret native DMI-gridkontrol.
-- [ ] Efter grønt DMI-bevis bygges den score-neutrale vejridentitetskontrakt på det komplette kommende register med 212 hovedzoner.
+- [x] Privat #31532688885 beviser native DMI-dækning for den endelige 39-punktsbestand: 39 fulde, nul delvise og nul blokerede.
+- [x] Den score-neutrale vejridentitetskontrakt er bygget på det komplette kommende register med 212 hovedzoner.
 - [ ] Derefter følger samlet privat runtime-/releaseintegration af den versionslåste 643-dels kandidat før offentlig aktivering.
 - [x] Den autoritative otte-zoners ejerfil `(4)` er versionsført og anvendt fail-closed. Seks bevarede/rettede kandidater er samlet i et privat korrektionskort; to fejlagtige præcisionsforslag er forkastet uden at slette deres eksisterende hovedzoner.
 - [x] Vadehavsforslaget sammenholdes nu med hele den additive 650-dels kandidat, så den eksisterende Emmerlev-geometri ikke dobbeltregistreres. Den private Vadehavstilføjelse er 81,883 km efter denne deduplikering.

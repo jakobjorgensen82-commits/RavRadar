@@ -136,6 +136,7 @@ def build(base, corrections, approval):
     if corrected_zone_ids != {"DK-B05-20", "DK-B10-13", "DK-B12-07", "DK-B04-12", "DK-B04-13", "DK-B04-14"}:
         raise ValueError(f"Uventet korrektionssæt: {sorted(corrected_zone_ids)}")
 
+    zones = {zone_id: parts for zone_id, parts in zones.items() if parts}
     all_rows = geometry_rows(zones)
     all_geometries = [geometry for _, geometry in all_rows]
     tree = STRtree(all_geometries)

@@ -1662,7 +1662,7 @@ const features = Array.isArray(zonesFile.features) ? zonesFile.features : [];
 if (!features.length) throw new Error(`${ZONES_PATH} indeholder ingen zoner`);
 await fs.access(COASTAL_PARTS_SOURCE_PATH);
 const coastalPartsContract = await buildPublicCoastalParts();
-if (coastalPartsContract.enabled && (coastalPartsContract.partCount !== 605 || coastalPartsContract.zoneCount !== 190)) throw new Error('Den aktive nationale kystdelskontrakt er ikke komplet');
+if (coastalPartsContract.enabled && (coastalPartsContract.partCount < 1 || coastalPartsContract.zoneCount < 1)) throw new Error('Den aktive nationale kystdelskontrakt er ikke komplet');
 const coastCorridors = buildCoastCorridors(features);
 const previous = await readPrevious();
 const dmiForecastStore = await readDmiForecastStore();

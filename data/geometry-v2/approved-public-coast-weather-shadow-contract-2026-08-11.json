@@ -1,0 +1,3710 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "private-national-shadow-contract-ready",
+  "generatedAt": "2026-08-11T20:28:23.456503Z",
+  "zoneCount": 212,
+  "zonesWithCoastalPartsCount": 16,
+  "unchangedParentZoneCount": 196,
+  "unchangedParentZoneIds": [
+    "DK-B01-01",
+    "DK-B01-02",
+    "DK-B01-03",
+    "DK-B01-04",
+    "DK-B01-05",
+    "DK-B01-06",
+    "DK-B01-07",
+    "DK-B01-08",
+    "DK-B01-09",
+    "DK-B01-10",
+    "DK-B01-11",
+    "DK-B01-12",
+    "DK-B01-13",
+    "DK-B01-14",
+    "DK-B01-15",
+    "DK-B01-16",
+    "DK-B01-17",
+    "DK-B01-18",
+    "DK-B01-19",
+    "DK-B01-20",
+    "DK-B02-01",
+    "DK-B02-02",
+    "DK-B02-03",
+    "DK-B02-04",
+    "DK-B02-05",
+    "DK-B02-06",
+    "DK-B02-07",
+    "DK-B02-08",
+    "DK-B02-09",
+    "DK-B02-10",
+    "DK-B02-11",
+    "DK-B02-12",
+    "DK-B02-13",
+    "DK-B02-14",
+    "DK-B02-15",
+    "DK-B03-01",
+    "DK-B03-02",
+    "DK-B03-03",
+    "DK-B03-04",
+    "DK-B03-05",
+    "DK-B03-06",
+    "DK-B03-07",
+    "DK-B03-08",
+    "DK-B03-09",
+    "DK-B03-10",
+    "DK-B03-11",
+    "DK-B03-12",
+    "DK-B03-13",
+    "DK-B03-14",
+    "DK-B03-15",
+    "DK-B04-01",
+    "DK-B04-02",
+    "DK-B04-03",
+    "DK-B04-08",
+    "DK-B04-10",
+    "DK-B04-11",
+    "DK-B05-01",
+    "DK-B05-02",
+    "DK-B05-03",
+    "DK-B05-04",
+    "DK-B05-05",
+    "DK-B05-06",
+    "DK-B05-07",
+    "DK-B05-08",
+    "DK-B05-09",
+    "DK-B05-10",
+    "DK-B05-11",
+    "DK-B05-12",
+    "DK-B05-13",
+    "DK-B05-14",
+    "DK-B05-15",
+    "DK-B05-16",
+    "DK-B05-17",
+    "DK-B05-18",
+    "DK-B05-21",
+    "DK-B05-22",
+    "DK-B05-23",
+    "DK-B05-24",
+    "DK-B05-25",
+    "DK-B06-01",
+    "DK-B06-02",
+    "DK-B06-03",
+    "DK-B06-04",
+    "DK-B06-05",
+    "DK-B06-06",
+    "DK-B06-07",
+    "DK-B06-08",
+    "DK-B06-09",
+    "DK-B06-10",
+    "DK-B06-11",
+    "DK-B06-12",
+    "DK-B06-13",
+    "DK-B06-14",
+    "DK-B06-15",
+    "DK-B06-16",
+    "DK-B06-17",
+    "DK-B06-18",
+    "DK-B06-19",
+    "DK-B06-20",
+    "DK-B07-01",
+    "DK-B07-02",
+    "DK-B07-03",
+    "DK-B07-04",
+    "DK-B07-05",
+    "DK-B07-06",
+    "DK-B07-07",
+    "DK-B07-08",
+    "DK-B07-09",
+    "DK-B07-10",
+    "DK-B07-11",
+    "DK-B07-12",
+    "DK-B07-13",
+    "DK-B07-14",
+    "DK-B07-15",
+    "DK-B07-16",
+    "DK-B07-17",
+    "DK-B07-18",
+    "DK-B07-19",
+    "DK-B07-20",
+    "DK-B07-24",
+    "DK-B07-25",
+    "DK-B07-26",
+    "DK-B07-27",
+    "DK-B07-28",
+    "DK-B08-01",
+    "DK-B08-02",
+    "DK-B08-04",
+    "DK-B08-05",
+    "DK-B08-06",
+    "DK-B08-07",
+    "DK-B08-08",
+    "DK-B08-09",
+    "DK-B08-10",
+    "DK-B08-11",
+    "DK-B08-12",
+    "DK-B08-13",
+    "DK-B08-14",
+    "DK-B08-15",
+    "DK-B08-16",
+    "DK-B08-17",
+    "DK-B08-18",
+    "DK-B08-19",
+    "DK-B09-01",
+    "DK-B09-02",
+    "DK-B09-03",
+    "DK-B09-04",
+    "DK-B09-05",
+    "DK-B09-06",
+    "DK-B09-07",
+    "DK-B09-08",
+    "DK-B09-09",
+    "DK-B09-10",
+    "DK-B09-11",
+    "DK-B09-12",
+    "DK-B09-13",
+    "DK-B09-14",
+    "DK-B09-15",
+    "DK-B09-16",
+    "DK-B09-17",
+    "DK-B09-18",
+    "DK-B09-19",
+    "DK-B10-01",
+    "DK-B10-02",
+    "DK-B10-03",
+    "DK-B10-04",
+    "DK-B10-05",
+    "DK-B10-06",
+    "DK-B10-07",
+    "DK-B10-08",
+    "DK-B10-09",
+    "DK-B10-10",
+    "DK-B10-11",
+    "DK-B10-12",
+    "DK-B10-14",
+    "DK-B10-15",
+    "DK-B10-16",
+    "DK-B10-17",
+    "DK-B10-18",
+    "DK-B10-19",
+    "DK-B10-20",
+    "DK-B10-21",
+    "DK-B10-22",
+    "DK-B10-23",
+    "DK-B10-24",
+    "DK-B11-LAE-01",
+    "DK-B11-LAE-02",
+    "DK-B11-LAE-03",
+    "DK-B11-SAM-01",
+    "DK-B11-SAM-02",
+    "DK-B11-SAM-03",
+    "DK-B12-01",
+    "DK-B12-02",
+    "DK-B12-03",
+    "DK-B12-04",
+    "DK-B12-05",
+    "DK-B12-08"
+  ],
+  "eligiblePartCount": 39,
+  "fullCoveragePartCount": 39,
+  "partialCoveragePartCount": 0,
+  "blockedPartCount": 0,
+  "parts": [
+    {
+      "zoneId": "DK-B04-04",
+      "partId": "dk-b04-04-national-part-01",
+      "name": "DK-B04-04",
+      "coastType": "west",
+      "seriesId": "DK-B04-04::dk-b04-04-national-part-01",
+      "historyKey": "coastal-part::DK-B04-04::dk-b04-04-national-part-01",
+      "samplingPoint": [
+        8.385932,
+        55.3976854
+      ],
+      "onshoreDirectionDeg": 60.5,
+      "validatedGrid": {
+        "wam_nsb": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 55.4,
+              "longitude": 8.33333,
+              "distanceKm": 3.331
+            },
+            "mean-wave-dir": {
+              "latitude": 55.4,
+              "longitude": 8.33333,
+              "distanceKm": 3.331
+            },
+            "dominant-wave-period": {
+              "latitude": 55.4,
+              "longitude": 8.33333,
+              "distanceKm": 3.331
+            }
+          }
+        },
+        "dkss_nsbs": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 55.375,
+              "longitude": 8.37512,
+              "distanceKm": 2.613
+            },
+            "current-u": {
+              "latitude": 55.275,
+              "longitude": 8.20845,
+              "distanceKm": 17.666,
+              "verticalLayer": "depthbelowsea:13",
+              "verticalLayerRankM": 13.0
+            },
+            "current-v": {
+              "latitude": 55.275,
+              "longitude": 8.20845,
+              "distanceKm": 17.666,
+              "verticalLayer": "depthbelowsea:13",
+              "verticalLayerRankM": 13.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-05",
+      "partId": "dk-b04-05-national-part-01",
+      "name": "DK-B04-05",
+      "coastType": "west",
+      "seriesId": "DK-B04-05::dk-b04-05-national-part-01",
+      "historyKey": "coastal-part::DK-B04-05::dk-b04-05-national-part-01",
+      "samplingPoint": [
+        8.4076267,
+        55.3730835
+      ],
+      "onshoreDirectionDeg": 69.6,
+      "validatedGrid": {
+        "wam_nsb": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 55.35,
+              "longitude": 8.41667,
+              "distanceKm": 2.63
+            },
+            "mean-wave-dir": {
+              "latitude": 55.35,
+              "longitude": 8.41667,
+              "distanceKm": 2.63
+            },
+            "dominant-wave-period": {
+              "latitude": 55.35,
+              "longitude": 8.41667,
+              "distanceKm": 2.63
+            }
+          }
+        },
+        "dkss_nsbs": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 55.375,
+              "longitude": 8.37512,
+              "distanceKm": 2.065
+            },
+            "current-u": {
+              "latitude": 55.375,
+              "longitude": 8.20845,
+              "distanceKm": 12.586,
+              "verticalLayer": "depthbelowsea:11",
+              "verticalLayerRankM": 11.0
+            },
+            "current-v": {
+              "latitude": 55.375,
+              "longitude": 8.20845,
+              "distanceKm": 12.586,
+              "verticalLayer": "depthbelowsea:11",
+              "verticalLayerRankM": 11.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-06",
+      "partId": "dk-b04-06-national-part-01",
+      "name": "DK-B04-06",
+      "coastType": "west",
+      "seriesId": "DK-B04-06::dk-b04-06-national-part-01",
+      "historyKey": "coastal-part::DK-B04-06::dk-b04-06-national-part-01",
+      "samplingPoint": [
+        8.5359841,
+        55.2679241
+      ],
+      "onshoreDirectionDeg": 44.3,
+      "validatedGrid": {
+        "wam_nsb": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 55.25,
+              "longitude": 8.5,
+              "distanceKm": 3.028
+            },
+            "mean-wave-dir": {
+              "latitude": 55.25,
+              "longitude": 8.5,
+              "distanceKm": 3.028
+            },
+            "dominant-wave-period": {
+              "latitude": 55.25,
+              "longitude": 8.5,
+              "distanceKm": 3.028
+            }
+          }
+        },
+        "dkss_nsbs": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 55.225,
+              "longitude": 8.54179,
+              "distanceKm": 4.787
+            },
+            "current-u": {
+              "latitude": 55.225,
+              "longitude": 8.54179,
+              "distanceKm": 4.787,
+              "verticalLayer": "depthbelowsea:4",
+              "verticalLayerRankM": 4.0
+            },
+            "current-v": {
+              "latitude": 55.225,
+              "longitude": 8.54179,
+              "distanceKm": 4.787,
+              "verticalLayer": "depthbelowsea:4",
+              "verticalLayerRankM": 4.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-06",
+      "partId": "dk-b04-06-national-part-02",
+      "name": "DK-B04-06",
+      "coastType": "west",
+      "seriesId": "DK-B04-06::dk-b04-06-national-part-02",
+      "historyKey": "coastal-part::DK-B04-06::dk-b04-06-national-part-02",
+      "samplingPoint": [
+        8.5514576,
+        55.2958918
+      ],
+      "onshoreDirectionDeg": 154.2,
+      "validatedGrid": {
+        "wam_nsb": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 55.3,
+              "longitude": 8.58333,
+              "distanceKm": 2.069
+            },
+            "mean-wave-dir": {
+              "latitude": 55.3,
+              "longitude": 8.58333,
+              "distanceKm": 2.069
+            },
+            "dominant-wave-period": {
+              "latitude": 55.3,
+              "longitude": 8.58333,
+              "distanceKm": 2.069
+            }
+          }
+        },
+        "dkss_nsbs": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 55.325,
+              "longitude": 8.54179,
+              "distanceKm": 3.294
+            },
+            "current-u": {
+              "latitude": 55.325,
+              "longitude": 8.54179,
+              "distanceKm": 3.294,
+              "verticalLayer": "depthbelowsea:4",
+              "verticalLayerRankM": 4.0
+            },
+            "current-v": {
+              "latitude": 55.325,
+              "longitude": 8.54179,
+              "distanceKm": 3.294,
+              "verticalLayer": "depthbelowsea:4",
+              "verticalLayerRankM": 4.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-06",
+      "partId": "dk-b04-06-national-part-03",
+      "name": "DK-B04-06",
+      "coastType": "west",
+      "seriesId": "DK-B04-06::dk-b04-06-national-part-03",
+      "historyKey": "coastal-part::DK-B04-06::dk-b04-06-national-part-03",
+      "samplingPoint": [
+        8.5424035,
+        55.2917101
+      ],
+      "onshoreDirectionDeg": 123.5,
+      "validatedGrid": {
+        "wam_nsb": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 55.3,
+              "longitude": 8.58333,
+              "distanceKm": 2.75
+            },
+            "mean-wave-dir": {
+              "latitude": 55.3,
+              "longitude": 8.58333,
+              "distanceKm": 2.75
+            },
+            "dominant-wave-period": {
+              "latitude": 55.3,
+              "longitude": 8.58333,
+              "distanceKm": 2.75
+            }
+          }
+        },
+        "dkss_nsbs": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 55.325,
+              "longitude": 8.54179,
+              "distanceKm": 3.702
+            },
+            "current-u": {
+              "latitude": 55.325,
+              "longitude": 8.54179,
+              "distanceKm": 3.702,
+              "verticalLayer": "depthbelowsea:4",
+              "verticalLayerRankM": 4.0
+            },
+            "current-v": {
+              "latitude": 55.325,
+              "longitude": 8.54179,
+              "distanceKm": 3.702,
+              "verticalLayer": "depthbelowsea:4",
+              "verticalLayerRankM": 4.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-06",
+      "partId": "dk-b04-06-national-part-04",
+      "name": "DK-B04-06",
+      "coastType": "west",
+      "seriesId": "DK-B04-06::dk-b04-06-national-part-04",
+      "historyKey": "coastal-part::DK-B04-06::dk-b04-06-national-part-04",
+      "samplingPoint": [
+        8.5725595,
+        55.2957967
+      ],
+      "onshoreDirectionDeg": 180.8,
+      "validatedGrid": {
+        "wam_nsb": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 55.3,
+              "longitude": 8.58333,
+              "distanceKm": 0.827
+            },
+            "mean-wave-dir": {
+              "latitude": 55.3,
+              "longitude": 8.58333,
+              "distanceKm": 0.827
+            },
+            "dominant-wave-period": {
+              "latitude": 55.3,
+              "longitude": 8.58333,
+              "distanceKm": 0.827
+            }
+          }
+        },
+        "dkss_nsbs": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 55.325,
+              "longitude": 8.54179,
+              "distanceKm": 3.786
+            },
+            "current-u": {
+              "latitude": 55.325,
+              "longitude": 8.54179,
+              "distanceKm": 3.786,
+              "verticalLayer": "depthbelowsea:4",
+              "verticalLayerRankM": 4.0
+            },
+            "current-v": {
+              "latitude": 55.325,
+              "longitude": 8.54179,
+              "distanceKm": 3.786,
+              "verticalLayer": "depthbelowsea:4",
+              "verticalLayerRankM": 4.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-06",
+      "partId": "dk-b04-06-national-part-05",
+      "name": "DK-B04-06",
+      "coastType": "west",
+      "seriesId": "DK-B04-06::dk-b04-06-national-part-05",
+      "historyKey": "coastal-part::DK-B04-06::dk-b04-06-national-part-05",
+      "samplingPoint": [
+        8.5680818,
+        55.2942528
+      ],
+      "onshoreDirectionDeg": 16.2,
+      "validatedGrid": {
+        "wam_nsb": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 55.3,
+              "longitude": 8.58333,
+              "distanceKm": 1.158
+            },
+            "mean-wave-dir": {
+              "latitude": 55.3,
+              "longitude": 8.58333,
+              "distanceKm": 1.158
+            },
+            "dominant-wave-period": {
+              "latitude": 55.3,
+              "longitude": 8.58333,
+              "distanceKm": 1.158
+            }
+          }
+        },
+        "dkss_nsbs": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 55.325,
+              "longitude": 8.54179,
+              "distanceKm": 3.802
+            },
+            "current-u": {
+              "latitude": 55.325,
+              "longitude": 8.54179,
+              "distanceKm": 3.802,
+              "verticalLayer": "depthbelowsea:4",
+              "verticalLayerRankM": 4.0
+            },
+            "current-v": {
+              "latitude": 55.325,
+              "longitude": 8.54179,
+              "distanceKm": 3.802,
+              "verticalLayer": "depthbelowsea:4",
+              "verticalLayerRankM": 4.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-07",
+      "partId": "dk-b04-07-national-part-02",
+      "name": "DK-B04-07",
+      "coastType": "west",
+      "seriesId": "DK-B04-07::dk-b04-07-national-part-02",
+      "historyKey": "coastal-part::DK-B04-07::dk-b04-07-national-part-02",
+      "samplingPoint": [
+        8.5649678,
+        55.1588446
+      ],
+      "onshoreDirectionDeg": 125.4,
+      "validatedGrid": {
+        "wam_nsb": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 55.15,
+              "longitude": 8.58333,
+              "distanceKm": 1.526
+            },
+            "mean-wave-dir": {
+              "latitude": 55.15,
+              "longitude": 8.58333,
+              "distanceKm": 1.526
+            },
+            "dominant-wave-period": {
+              "latitude": 55.15,
+              "longitude": 8.58333,
+              "distanceKm": 1.526
+            }
+          }
+        },
+        "dkss_nsbs": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 55.175,
+              "longitude": 8.62512,
+              "distanceKm": 4.222
+            },
+            "current-u": {
+              "latitude": 55.175,
+              "longitude": 8.62512,
+              "distanceKm": 4.222,
+              "verticalLayer": "depthbelowsea:4",
+              "verticalLayerRankM": 4.0
+            },
+            "current-v": {
+              "latitude": 55.175,
+              "longitude": 8.62512,
+              "distanceKm": 4.222,
+              "verticalLayer": "depthbelowsea:4",
+              "verticalLayerRankM": 4.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-07",
+      "partId": "dk-b04-07-national-part-03",
+      "name": "DK-B04-07",
+      "coastType": "west",
+      "seriesId": "DK-B04-07::dk-b04-07-national-part-03",
+      "historyKey": "coastal-part::DK-B04-07::dk-b04-07-national-part-03",
+      "samplingPoint": [
+        8.5516727,
+        55.1328367
+      ],
+      "onshoreDirectionDeg": 74.2,
+      "validatedGrid": {
+        "wam_nsb": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 55.15,
+              "longitude": 8.58333,
+              "distanceKm": 2.773
+            },
+            "mean-wave-dir": {
+              "latitude": 55.15,
+              "longitude": 8.58333,
+              "distanceKm": 2.773
+            },
+            "dominant-wave-period": {
+              "latitude": 55.15,
+              "longitude": 8.58333,
+              "distanceKm": 2.773
+            }
+          }
+        },
+        "dkss_nsbs": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 55.125,
+              "longitude": 8.62512,
+              "distanceKm": 4.75
+            },
+            "current-u": {
+              "latitude": 55.125,
+              "longitude": 8.62512,
+              "distanceKm": 4.75,
+              "verticalLayer": "depthbelowsea:4",
+              "verticalLayerRankM": 4.0
+            },
+            "current-v": {
+              "latitude": 55.125,
+              "longitude": 8.62512,
+              "distanceKm": 4.75,
+              "verticalLayer": "depthbelowsea:4",
+              "verticalLayerRankM": 4.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-07",
+      "partId": "dk-b04-07-national-part-04",
+      "name": "DK-B04-07",
+      "coastType": "west",
+      "seriesId": "DK-B04-07::dk-b04-07-national-part-04",
+      "historyKey": "coastal-part::DK-B04-07::dk-b04-07-national-part-04",
+      "samplingPoint": [
+        8.5533854,
+        55.1133176
+      ],
+      "onshoreDirectionDeg": 90.4,
+      "validatedGrid": {
+        "wam_nsb": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 55.1,
+              "longitude": 8.58333,
+              "distanceKm": 2.413
+            },
+            "mean-wave-dir": {
+              "latitude": 55.1,
+              "longitude": 8.58333,
+              "distanceKm": 2.413
+            },
+            "dominant-wave-period": {
+              "latitude": 55.1,
+              "longitude": 8.58333,
+              "distanceKm": 2.413
+            }
+          }
+        },
+        "dkss_nsbs": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 55.125,
+              "longitude": 8.62512,
+              "distanceKm": 4.743
+            },
+            "current-u": {
+              "latitude": 55.125,
+              "longitude": 8.62512,
+              "distanceKm": 4.743,
+              "verticalLayer": "depthbelowsea:4",
+              "verticalLayerRankM": 4.0
+            },
+            "current-v": {
+              "latitude": 55.125,
+              "longitude": 8.62512,
+              "distanceKm": 4.743,
+              "verticalLayer": "depthbelowsea:4",
+              "verticalLayerRankM": 4.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-07",
+      "partId": "dk-b04-07-national-part-05",
+      "name": "DK-B04-07",
+      "coastType": "west",
+      "seriesId": "DK-B04-07::dk-b04-07-national-part-05",
+      "historyKey": "coastal-part::DK-B04-07::dk-b04-07-national-part-05",
+      "samplingPoint": [
+        8.5773809,
+        55.1765128
+      ],
+      "onshoreDirectionDeg": 143.1,
+      "validatedGrid": {
+        "wam_nsb": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 55.2,
+              "longitude": 8.58333,
+              "distanceKm": 2.639
+            },
+            "mean-wave-dir": {
+              "latitude": 55.2,
+              "longitude": 8.58333,
+              "distanceKm": 2.639
+            },
+            "dominant-wave-period": {
+              "latitude": 55.2,
+              "longitude": 8.58333,
+              "distanceKm": 2.639
+            }
+          }
+        },
+        "dkss_nsbs": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 55.175,
+              "longitude": 8.62512,
+              "distanceKm": 3.036
+            },
+            "current-u": {
+              "latitude": 55.175,
+              "longitude": 8.62512,
+              "distanceKm": 3.036,
+              "verticalLayer": "depthbelowsea:4",
+              "verticalLayerRankM": 4.0
+            },
+            "current-v": {
+              "latitude": 55.175,
+              "longitude": 8.62512,
+              "distanceKm": 3.036,
+              "verticalLayer": "depthbelowsea:4",
+              "verticalLayerRankM": 4.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-12",
+      "partId": "dk-b04-12-owner-approved-01",
+      "name": "Emmerlev og Ballum",
+      "coastType": "west",
+      "seriesId": "DK-B04-12::dk-b04-12-owner-approved-01",
+      "historyKey": "coastal-part::DK-B04-12::dk-b04-12-owner-approved-01",
+      "samplingPoint": [
+        8.642033,
+        55.075141
+      ],
+      "onshoreDirectionDeg": 101.6,
+      "validatedGrid": {
+        "wam_nsb": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 55.1,
+              "longitude": 8.66667,
+              "distanceKm": 3.178
+            },
+            "mean-wave-dir": {
+              "latitude": 55.1,
+              "longitude": 8.66667,
+              "distanceKm": 3.178
+            },
+            "dominant-wave-period": {
+              "latitude": 55.1,
+              "longitude": 8.66667,
+              "distanceKm": 3.178
+            }
+          }
+        },
+        "dkss_nsbs": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 55.075,
+              "longitude": 8.62512,
+              "distanceKm": 1.077
+            },
+            "current-u": {
+              "latitude": 55.075,
+              "longitude": 8.62512,
+              "distanceKm": 1.077,
+              "verticalLayer": "depthbelowsea:4",
+              "verticalLayerRankM": 4.0
+            },
+            "current-v": {
+              "latitude": 55.075,
+              "longitude": 8.62512,
+              "distanceKm": 1.077,
+              "verticalLayer": "depthbelowsea:4",
+              "verticalLayerRankM": 4.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-13",
+      "partId": "dk-b04-13-owner-approved-01",
+      "name": "Rejsby og Ribe Vesterå",
+      "coastType": "west",
+      "seriesId": "DK-B04-13::dk-b04-13-owner-approved-01",
+      "historyKey": "coastal-part::DK-B04-13::dk-b04-13-owner-approved-01",
+      "samplingPoint": [
+        8.6536734,
+        55.2850328
+      ],
+      "onshoreDirectionDeg": 61.7,
+      "validatedGrid": {
+        "wam_nsb": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 55.3,
+              "longitude": 8.66667,
+              "distanceKm": 1.856
+            },
+            "mean-wave-dir": {
+              "latitude": 55.3,
+              "longitude": 8.66667,
+              "distanceKm": 1.856
+            },
+            "dominant-wave-period": {
+              "latitude": 55.3,
+              "longitude": 8.66667,
+              "distanceKm": 1.856
+            }
+          }
+        },
+        "dkss_nsbs": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 55.275,
+              "longitude": 8.62512,
+              "distanceKm": 2.125
+            },
+            "current-u": {
+              "latitude": 55.275,
+              "longitude": 8.62512,
+              "distanceKm": 2.125,
+              "verticalLayer": "depthbelowsea:4",
+              "verticalLayerRankM": 4.0
+            },
+            "current-v": {
+              "latitude": 55.275,
+              "longitude": 8.62512,
+              "distanceKm": 2.125,
+              "verticalLayer": "depthbelowsea:4",
+              "verticalLayerRankM": 4.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-14",
+      "partId": "dk-b04-14-owner-approved-01",
+      "name": "Ribe Kammersluse og Esbjerg",
+      "coastType": "west",
+      "seriesId": "DK-B04-14::dk-b04-14-owner-approved-01",
+      "historyKey": "coastal-part::DK-B04-14::dk-b04-14-owner-approved-01",
+      "samplingPoint": [
+        8.5884417,
+        55.4384646
+      ],
+      "onshoreDirectionDeg": 33.3,
+      "validatedGrid": {
+        "wam_nsb": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 55.4,
+              "longitude": 8.58333,
+              "distanceKm": 4.289
+            },
+            "mean-wave-dir": {
+              "latitude": 55.4,
+              "longitude": 8.58333,
+              "distanceKm": 4.289
+            },
+            "dominant-wave-period": {
+              "latitude": 55.4,
+              "longitude": 8.58333,
+              "distanceKm": 4.289
+            }
+          }
+        },
+        "dkss_nsbs": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 55.425,
+              "longitude": 8.54179,
+              "distanceKm": 3.302
+            },
+            "current-u": {
+              "latitude": 55.425,
+              "longitude": 8.54179,
+              "distanceKm": 3.302,
+              "verticalLayer": "depthbelowsea:4",
+              "verticalLayerRankM": 4.0
+            },
+            "current-v": {
+              "latitude": 55.425,
+              "longitude": 8.54179,
+              "distanceKm": 3.302,
+              "verticalLayer": "depthbelowsea:4",
+              "verticalLayerRankM": 4.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B05-19",
+      "partId": "dk-b05-19-national-part-01",
+      "name": "DK-B05-19",
+      "coastType": "limfjord",
+      "seriesId": "DK-B05-19::dk-b05-19-national-part-01",
+      "historyKey": "coastal-part::DK-B05-19::dk-b05-19-national-part-01",
+      "samplingPoint": [
+        9.1320504,
+        56.8612896
+      ],
+      "onshoreDirectionDeg": 221.5,
+      "validatedGrid": {
+        "wam_dw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 56.86,
+              "longitude": 9.13333,
+              "distanceKm": 0.163
+            },
+            "mean-wave-dir": {
+              "latitude": 56.86,
+              "longitude": 9.13333,
+              "distanceKm": 0.163
+            },
+            "dominant-wave-period": {
+              "latitude": 56.86,
+              "longitude": 9.13333,
+              "distanceKm": 0.163
+            }
+          }
+        },
+        "dkss_lf": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 56.861,
+              "longitude": 9.13235,
+              "distanceKm": 0.037
+            },
+            "current-u": {
+              "latitude": 56.799,
+              "longitude": 9.19345,
+              "distanceKm": 7.869,
+              "verticalLayer": "depthbelowsea:13",
+              "verticalLayerRankM": 13.0
+            },
+            "current-v": {
+              "latitude": 56.799,
+              "longitude": 9.19345,
+              "distanceKm": 7.869,
+              "verticalLayer": "depthbelowsea:13",
+              "verticalLayerRankM": 13.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B05-19",
+      "partId": "dk-b05-19-national-part-02",
+      "name": "DK-B05-19",
+      "coastType": "limfjord",
+      "seriesId": "DK-B05-19::dk-b05-19-national-part-02",
+      "historyKey": "coastal-part::DK-B05-19::dk-b05-19-national-part-02",
+      "samplingPoint": [
+        9.0685863,
+        56.8445826
+      ],
+      "onshoreDirectionDeg": 183.2,
+      "validatedGrid": {
+        "wam_dw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 56.85,
+              "longitude": 9.06667,
+              "distanceKm": 0.614
+            },
+            "mean-wave-dir": {
+              "latitude": 56.85,
+              "longitude": 9.06667,
+              "distanceKm": 0.614
+            },
+            "dominant-wave-period": {
+              "latitude": 56.85,
+              "longitude": 9.06667,
+              "distanceKm": 0.614
+            }
+          }
+        },
+        "dkss_lf": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 56.863,
+              "longitude": 9.08513,
+              "distanceKm": 2.282
+            },
+            "current-u": {
+              "latitude": 56.745,
+              "longitude": 9.16845,
+              "distanceKm": 12.633,
+              "verticalLayer": "depthbelowsea:11",
+              "verticalLayerRankM": 11.0
+            },
+            "current-v": {
+              "latitude": 56.745,
+              "longitude": 9.16845,
+              "distanceKm": 12.633,
+              "verticalLayer": "depthbelowsea:11",
+              "verticalLayerRankM": 11.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B05-20",
+      "partId": "dk-b05-20-owner-approved-01",
+      "name": "DK-B05-20",
+      "coastType": "limfjord",
+      "seriesId": "DK-B05-20::dk-b05-20-owner-approved-01",
+      "historyKey": "coastal-part::DK-B05-20::dk-b05-20-owner-approved-01",
+      "samplingPoint": [
+        9.3406477,
+        57.0037375
+      ],
+      "onshoreDirectionDeg": 329.3,
+      "validatedGrid": {
+        "wam_dw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 57.01,
+              "longitude": 9.33333,
+              "distanceKm": 0.825
+            },
+            "mean-wave-dir": {
+              "latitude": 57.01,
+              "longitude": 9.33333,
+              "distanceKm": 0.825
+            },
+            "dominant-wave-period": {
+              "latitude": 57.01,
+              "longitude": 9.33333,
+              "distanceKm": 0.825
+            }
+          }
+        },
+        "dkss_lf": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 57.003,
+              "longitude": 9.14068,
+              "distanceKm": 12.11
+            },
+            "current-u": {
+              "latitude": 57.005,
+              "longitude": 9.14068,
+              "distanceKm": 12.11,
+              "verticalLayer": "depthbelowsea:7",
+              "verticalLayerRankM": 7.0
+            },
+            "current-v": {
+              "latitude": 57.005,
+              "longitude": 9.14068,
+              "distanceKm": 12.11,
+              "verticalLayer": "depthbelowsea:7",
+              "verticalLayerRankM": 7.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-21",
+      "partId": "dk-b07-21-national-part-01",
+      "name": "DK-B07-21",
+      "coastType": "west",
+      "seriesId": "DK-B07-21::dk-b07-21-national-part-01",
+      "historyKey": "coastal-part::DK-B07-21::dk-b07-21-national-part-01",
+      "samplingPoint": [
+        10.20711,
+        54.9661282
+      ],
+      "onshoreDirectionDeg": 245.3,
+      "validatedGrid": {
+        "wam_nsb": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 54.95,
+              "longitude": 10.16667,
+              "distanceKm": 3.144
+            },
+            "mean-wave-dir": {
+              "latitude": 54.95,
+              "longitude": 10.16667,
+              "distanceKm": 3.144
+            },
+            "dominant-wave-period": {
+              "latitude": 54.95,
+              "longitude": 10.16667,
+              "distanceKm": 3.144
+            }
+          }
+        },
+        "dkss_nsbs": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 54.975,
+              "longitude": 10.20847,
+              "distanceKm": 0.99
+            },
+            "current-u": {
+              "latitude": 54.975,
+              "longitude": 10.12514,
+              "distanceKm": 5.324,
+              "verticalLayer": "depthbelowsea:35",
+              "verticalLayerRankM": 35.0
+            },
+            "current-v": {
+              "latitude": 54.975,
+              "longitude": 10.12514,
+              "distanceKm": 5.324,
+              "verticalLayer": "depthbelowsea:35",
+              "verticalLayerRankM": 35.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-21",
+      "partId": "dk-b07-21-national-part-02",
+      "name": "DK-B07-21",
+      "coastType": "west",
+      "seriesId": "DK-B07-21::dk-b07-21-national-part-02",
+      "historyKey": "coastal-part::DK-B07-21::dk-b07-21-national-part-02",
+      "samplingPoint": [
+        10.3029422,
+        54.9267422
+      ],
+      "onshoreDirectionDeg": 2.5,
+      "validatedGrid": {
+        "wam_nsb": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 54.95,
+              "longitude": 10.33333,
+              "distanceKm": 3.234
+            },
+            "mean-wave-dir": {
+              "latitude": 54.95,
+              "longitude": 10.33333,
+              "distanceKm": 3.234
+            },
+            "dominant-wave-period": {
+              "latitude": 54.95,
+              "longitude": 10.33333,
+              "distanceKm": 3.234
+            }
+          }
+        },
+        "dkss_idw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 54.923,
+              "longitude": 10.29831,
+              "distanceKm": 0.51
+            },
+            "current-u": {
+              "latitude": 54.931,
+              "longitude": 10.24276,
+              "distanceKm": 3.874,
+              "verticalLayer": "depthbelowsea:31",
+              "verticalLayerRankM": 31.0
+            },
+            "current-v": {
+              "latitude": 54.931,
+              "longitude": 10.24276,
+              "distanceKm": 3.874,
+              "verticalLayer": "depthbelowsea:31",
+              "verticalLayerRankM": 31.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-22",
+      "partId": "dk-b07-22-national-part-01",
+      "name": "DK-B07-22",
+      "coastType": "west",
+      "seriesId": "DK-B07-22::dk-b07-22-national-part-01",
+      "historyKey": "coastal-part::DK-B07-22::dk-b07-22-national-part-01",
+      "samplingPoint": [
+        10.389481,
+        54.8326319
+      ],
+      "onshoreDirectionDeg": 209.1,
+      "validatedGrid": {
+        "wam_nsb": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 54.8,
+              "longitude": 10.41667,
+              "distanceKm": 4.025
+            },
+            "mean-wave-dir": {
+              "latitude": 54.8,
+              "longitude": 10.41667,
+              "distanceKm": 4.025
+            },
+            "dominant-wave-period": {
+              "latitude": 54.8,
+              "longitude": 10.41667,
+              "distanceKm": 4.025
+            }
+          }
+        },
+        "dkss_idw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 54.835,
+              "longitude": 10.38165,
+              "distanceKm": 0.567
+            },
+            "current-u": {
+              "latitude": 54.867,
+              "longitude": 10.36776,
+              "distanceKm": 4.067,
+              "verticalLayer": "depthbelowsea:18",
+              "verticalLayerRankM": 18.0
+            },
+            "current-v": {
+              "latitude": 54.867,
+              "longitude": 10.36776,
+              "distanceKm": 4.067,
+              "verticalLayer": "depthbelowsea:18",
+              "verticalLayerRankM": 18.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-22",
+      "partId": "dk-b07-22-national-part-02",
+      "name": "DK-B07-22",
+      "coastType": "west",
+      "seriesId": "DK-B07-22::dk-b07-22-national-part-02",
+      "historyKey": "coastal-part::DK-B07-22::dk-b07-22-national-part-02",
+      "samplingPoint": [
+        10.4203283,
+        54.8791095
+      ],
+      "onshoreDirectionDeg": 244.2,
+      "validatedGrid": {
+        "wam_nsb": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 54.9,
+              "longitude": 10.41667,
+              "distanceKm": 2.335
+            },
+            "mean-wave-dir": {
+              "latitude": 54.9,
+              "longitude": 10.41667,
+              "distanceKm": 2.335
+            },
+            "dominant-wave-period": {
+              "latitude": 54.9,
+              "longitude": 10.41667,
+              "distanceKm": 2.335
+            }
+          }
+        },
+        "dkss_idw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 54.883,
+              "longitude": 10.42331,
+              "distanceKm": 0.473
+            },
+            "current-u": {
+              "latitude": 54.883,
+              "longitude": 10.33998,
+              "distanceKm": 5.158,
+              "verticalLayer": "depthbelowsea:20",
+              "verticalLayerRankM": 20.0
+            },
+            "current-v": {
+              "latitude": 54.883,
+              "longitude": 10.33998,
+              "distanceKm": 5.158,
+              "verticalLayer": "depthbelowsea:20",
+              "verticalLayerRankM": 20.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "partId": "dk-b07-23-national-part-01",
+      "name": "DK-B07-23",
+      "coastType": "east",
+      "seriesId": "DK-B07-23::dk-b07-23-national-part-01",
+      "historyKey": "coastal-part::DK-B07-23::dk-b07-23-national-part-01",
+      "samplingPoint": [
+        10.5312892,
+        54.8472008
+      ],
+      "onshoreDirectionDeg": 150.7,
+      "validatedGrid": {
+        "wam_dw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 54.85,
+              "longitude": 10.53333,
+              "distanceKm": 0.338
+            },
+            "mean-wave-dir": {
+              "latitude": 54.85,
+              "longitude": 10.53333,
+              "distanceKm": 0.338
+            },
+            "dominant-wave-period": {
+              "latitude": 54.85,
+              "longitude": 10.53333,
+              "distanceKm": 0.338
+            }
+          }
+        },
+        "dkss_idw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 54.851,
+              "longitude": 10.53442,
+              "distanceKm": 0.468
+            },
+            "current-u": {
+              "latitude": 54.851,
+              "longitude": 10.45109,
+              "distanceKm": 5.152,
+              "verticalLayer": "depthbelowsea:7",
+              "verticalLayerRankM": 7.0
+            },
+            "current-v": {
+              "latitude": 54.851,
+              "longitude": 10.45109,
+              "distanceKm": 5.152,
+              "verticalLayer": "depthbelowsea:7",
+              "verticalLayerRankM": 7.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "partId": "dk-b07-23-national-part-02",
+      "name": "DK-B07-23",
+      "coastType": "east",
+      "seriesId": "DK-B07-23::dk-b07-23-national-part-02",
+      "historyKey": "coastal-part::DK-B07-23::dk-b07-23-national-part-02",
+      "samplingPoint": [
+        10.5740988,
+        54.8554146
+      ],
+      "onshoreDirectionDeg": 151.4,
+      "validatedGrid": {
+        "wam_dw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 54.86,
+              "longitude": 10.56667,
+              "distanceKm": 0.697
+            },
+            "mean-wave-dir": {
+              "latitude": 54.86,
+              "longitude": 10.56667,
+              "distanceKm": 0.697
+            },
+            "dominant-wave-period": {
+              "latitude": 54.86,
+              "longitude": 10.56667,
+              "distanceKm": 0.697
+            }
+          }
+        },
+        "dkss_idw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 54.859,
+              "longitude": 10.57609,
+              "distanceKm": 0.418
+            },
+            "current-u": {
+              "latitude": 54.875,
+              "longitude": 10.57609,
+              "distanceKm": 2.182,
+              "verticalLayer": "depthbelowsea:5",
+              "verticalLayerRankM": 5.0
+            },
+            "current-v": {
+              "latitude": 54.875,
+              "longitude": 10.57609,
+              "distanceKm": 2.182,
+              "verticalLayer": "depthbelowsea:5",
+              "verticalLayerRankM": 5.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "partId": "dk-b07-23-national-part-03",
+      "name": "DK-B07-23",
+      "coastType": "east",
+      "seriesId": "DK-B07-23::dk-b07-23-national-part-03",
+      "historyKey": "coastal-part::DK-B07-23::dk-b07-23-national-part-03",
+      "samplingPoint": [
+        10.4812463,
+        54.8823583
+      ],
+      "onshoreDirectionDeg": 207.0,
+      "validatedGrid": {
+        "wam_dw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 54.89,
+              "longitude": 10.48333,
+              "distanceKm": 0.86
+            },
+            "mean-wave-dir": {
+              "latitude": 54.89,
+              "longitude": 10.48333,
+              "distanceKm": 0.86
+            },
+            "dominant-wave-period": {
+              "latitude": 54.89,
+              "longitude": 10.48333,
+              "distanceKm": 0.86
+            }
+          }
+        },
+        "dkss_idw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 54.883,
+              "longitude": 10.47887,
+              "distanceKm": 0.168
+            },
+            "current-u": {
+              "latitude": 54.875,
+              "longitude": 10.39553,
+              "distanceKm": 5.544,
+              "verticalLayer": "depthbelowsea:18",
+              "verticalLayerRankM": 18.0
+            },
+            "current-v": {
+              "latitude": 54.875,
+              "longitude": 10.39553,
+              "distanceKm": 5.544,
+              "verticalLayer": "depthbelowsea:18",
+              "verticalLayerRankM": 18.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "partId": "dk-b07-23-national-part-04",
+      "name": "DK-B07-23",
+      "coastType": "east",
+      "seriesId": "DK-B07-23::dk-b07-23-national-part-04",
+      "historyKey": "coastal-part::DK-B07-23::dk-b07-23-national-part-04",
+      "samplingPoint": [
+        10.4763967,
+        54.8905465
+      ],
+      "onshoreDirectionDeg": 86.5,
+      "validatedGrid": {
+        "wam_dw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 54.89,
+              "longitude": 10.48333,
+              "distanceKm": 0.448
+            },
+            "mean-wave-dir": {
+              "latitude": 54.89,
+              "longitude": 10.48333,
+              "distanceKm": 0.448
+            },
+            "dominant-wave-period": {
+              "latitude": 54.89,
+              "longitude": 10.48333,
+              "distanceKm": 0.448
+            }
+          }
+        },
+        "dkss_idw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 54.891,
+              "longitude": 10.47887,
+              "distanceKm": 0.166
+            },
+            "current-u": {
+              "latitude": 54.883,
+              "longitude": 10.39553,
+              "distanceKm": 5.239,
+              "verticalLayer": "depthbelowsea:17",
+              "verticalLayerRankM": 17.0
+            },
+            "current-v": {
+              "latitude": 54.883,
+              "longitude": 10.39553,
+              "distanceKm": 5.239,
+              "verticalLayer": "depthbelowsea:17",
+              "verticalLayerRankM": 17.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "partId": "dk-b07-23-national-part-05",
+      "name": "DK-B07-23",
+      "coastType": "east",
+      "seriesId": "DK-B07-23::dk-b07-23-national-part-05",
+      "historyKey": "coastal-part::DK-B07-23::dk-b07-23-national-part-05",
+      "samplingPoint": [
+        10.466104,
+        54.8802316
+      ],
+      "onshoreDirectionDeg": 49.4,
+      "validatedGrid": {
+        "wam_dw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 54.88,
+              "longitude": 10.46667,
+              "distanceKm": 0.044
+            },
+            "mean-wave-dir": {
+              "latitude": 54.88,
+              "longitude": 10.46667,
+              "distanceKm": 0.044
+            },
+            "dominant-wave-period": {
+              "latitude": 54.88,
+              "longitude": 10.46667,
+              "distanceKm": 0.044
+            }
+          }
+        },
+        "dkss_idw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 54.883,
+              "longitude": 10.46498,
+              "distanceKm": 0.316
+            },
+            "current-u": {
+              "latitude": 54.883,
+              "longitude": 10.38165,
+              "distanceKm": 5.411,
+              "verticalLayer": "depthbelowsea:18",
+              "verticalLayerRankM": 18.0
+            },
+            "current-v": {
+              "latitude": 54.883,
+              "longitude": 10.38165,
+              "distanceKm": 5.411,
+              "verticalLayer": "depthbelowsea:18",
+              "verticalLayerRankM": 18.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "partId": "dk-b07-23-national-part-06",
+      "name": "DK-B07-23",
+      "coastType": "east",
+      "seriesId": "DK-B07-23::dk-b07-23-national-part-06",
+      "historyKey": "coastal-part::DK-B07-23::dk-b07-23-national-part-06",
+      "samplingPoint": [
+        10.4850051,
+        54.8665629
+      ],
+      "onshoreDirectionDeg": 69.9,
+      "validatedGrid": {
+        "wam_dw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 54.88,
+              "longitude": 10.5,
+              "distanceKm": 1.776
+            },
+            "mean-wave-dir": {
+              "latitude": 54.88,
+              "longitude": 10.5,
+              "distanceKm": 1.776
+            },
+            "dominant-wave-period": {
+              "latitude": 54.88,
+              "longitude": 10.5,
+              "distanceKm": 1.776
+            }
+          }
+        },
+        "dkss_idw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 54.867,
+              "longitude": 10.49275,
+              "distanceKm": 0.498
+            },
+            "current-u": {
+              "latitude": 54.867,
+              "longitude": 10.39553,
+              "distanceKm": 5.725,
+              "verticalLayer": "depthbelowsea:18",
+              "verticalLayerRankM": 18.0
+            },
+            "current-v": {
+              "latitude": 54.867,
+              "longitude": 10.39553,
+              "distanceKm": 5.725,
+              "verticalLayer": "depthbelowsea:18",
+              "verticalLayerRankM": 18.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "partId": "dk-b07-23-national-part-07",
+      "name": "DK-B07-23",
+      "coastType": "east",
+      "seriesId": "DK-B07-23::dk-b07-23-national-part-07",
+      "historyKey": "coastal-part::DK-B07-23::dk-b07-23-national-part-07",
+      "samplingPoint": [
+        10.5599435,
+        54.8593256
+      ],
+      "onshoreDirectionDeg": 118.3,
+      "validatedGrid": {
+        "wam_dw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 54.86,
+              "longitude": 10.56667,
+              "distanceKm": 0.437
+            },
+            "mean-wave-dir": {
+              "latitude": 54.86,
+              "longitude": 10.56667,
+              "distanceKm": 0.437
+            },
+            "dominant-wave-period": {
+              "latitude": 54.86,
+              "longitude": 10.56667,
+              "distanceKm": 0.437
+            }
+          }
+        },
+        "dkss_idw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 54.859,
+              "longitude": 10.5622,
+              "distanceKm": 0.149
+            },
+            "current-u": {
+              "latitude": 54.875,
+              "longitude": 10.54831,
+              "distanceKm": 1.895,
+              "verticalLayer": "depthbelowsea:5",
+              "verticalLayerRankM": 5.0
+            },
+            "current-v": {
+              "latitude": 54.875,
+              "longitude": 10.54831,
+              "distanceKm": 1.895,
+              "verticalLayer": "depthbelowsea:5",
+              "verticalLayerRankM": 5.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "partId": "dk-b07-23-national-part-08",
+      "name": "DK-B07-23",
+      "coastType": "east",
+      "seriesId": "DK-B07-23::dk-b07-23-national-part-08",
+      "historyKey": "coastal-part::DK-B07-23::dk-b07-23-national-part-08",
+      "samplingPoint": [
+        10.53925,
+        54.8599514
+      ],
+      "onshoreDirectionDeg": 177.9,
+      "validatedGrid": {
+        "wam_dw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 54.86,
+              "longitude": 10.53333,
+              "distanceKm": 0.379
+            },
+            "mean-wave-dir": {
+              "latitude": 54.86,
+              "longitude": 10.53333,
+              "distanceKm": 0.379
+            },
+            "dominant-wave-period": {
+              "latitude": 54.86,
+              "longitude": 10.53333,
+              "distanceKm": 0.379
+            }
+          }
+        },
+        "dkss_idw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 54.859,
+              "longitude": 10.53442,
+              "distanceKm": 0.327
+            },
+            "current-u": {
+              "latitude": 54.859,
+              "longitude": 10.45109,
+              "distanceKm": 5.644,
+              "verticalLayer": "depthbelowsea:6",
+              "verticalLayerRankM": 6.0
+            },
+            "current-v": {
+              "latitude": 54.859,
+              "longitude": 10.45109,
+              "distanceKm": 5.644,
+              "verticalLayer": "depthbelowsea:6",
+              "verticalLayerRankM": 6.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "partId": "dk-b07-23-national-part-09",
+      "name": "DK-B07-23",
+      "coastType": "east",
+      "seriesId": "DK-B07-23::dk-b07-23-national-part-09",
+      "historyKey": "coastal-part::DK-B07-23::dk-b07-23-national-part-09",
+      "samplingPoint": [
+        10.4661937,
+        54.872472
+      ],
+      "onshoreDirectionDeg": 46.3,
+      "validatedGrid": {
+        "wam_dw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 54.88,
+              "longitude": 10.46667,
+              "distanceKm": 0.838
+            },
+            "mean-wave-dir": {
+              "latitude": 54.88,
+              "longitude": 10.46667,
+              "distanceKm": 0.838
+            },
+            "dominant-wave-period": {
+              "latitude": 54.88,
+              "longitude": 10.46667,
+              "distanceKm": 0.838
+            }
+          }
+        },
+        "dkss_idw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 54.875,
+              "longitude": 10.46498,
+              "distanceKm": 0.292
+            },
+            "current-u": {
+              "latitude": 54.875,
+              "longitude": 10.38165,
+              "distanceKm": 5.417,
+              "verticalLayer": "depthbelowsea:18",
+              "verticalLayerRankM": 18.0
+            },
+            "current-v": {
+              "latitude": 54.875,
+              "longitude": 10.38165,
+              "distanceKm": 5.417,
+              "verticalLayer": "depthbelowsea:18",
+              "verticalLayerRankM": 18.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "partId": "dk-b07-23-national-part-10",
+      "name": "DK-B07-23",
+      "coastType": "east",
+      "seriesId": "DK-B07-23::dk-b07-23-national-part-10",
+      "historyKey": "coastal-part::DK-B07-23::dk-b07-23-national-part-10",
+      "samplingPoint": [
+        10.4698931,
+        54.8929996
+      ],
+      "onshoreDirectionDeg": 118.3,
+      "validatedGrid": {
+        "wam_dw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 54.9,
+              "longitude": 10.46667,
+              "distanceKm": 0.805
+            },
+            "mean-wave-dir": {
+              "latitude": 54.9,
+              "longitude": 10.46667,
+              "distanceKm": 0.805
+            },
+            "dominant-wave-period": {
+              "latitude": 54.9,
+              "longitude": 10.46667,
+              "distanceKm": 0.805
+            }
+          }
+        },
+        "dkss_idw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 54.891,
+              "longitude": 10.46498,
+              "distanceKm": 0.385
+            },
+            "current-u": {
+              "latitude": 54.891,
+              "longitude": 10.38165,
+              "distanceKm": 5.648,
+              "verticalLayer": "depthbelowsea:17",
+              "verticalLayerRankM": 17.0
+            },
+            "current-v": {
+              "latitude": 54.891,
+              "longitude": 10.38165,
+              "distanceKm": 5.648,
+              "verticalLayer": "depthbelowsea:17",
+              "verticalLayerRankM": 17.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "partId": "dk-b07-23-national-part-11",
+      "name": "DK-B07-23",
+      "coastType": "east",
+      "seriesId": "DK-B07-23::dk-b07-23-national-part-11",
+      "historyKey": "coastal-part::DK-B07-23::dk-b07-23-national-part-11",
+      "samplingPoint": [
+        10.459239,
+        54.8699016
+      ],
+      "onshoreDirectionDeg": 59.4,
+      "validatedGrid": {
+        "wam_dw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 54.87,
+              "longitude": 10.45,
+              "distanceKm": 0.591
+            },
+            "mean-wave-dir": {
+              "latitude": 54.87,
+              "longitude": 10.45,
+              "distanceKm": 0.591
+            },
+            "dominant-wave-period": {
+              "latitude": 54.87,
+              "longitude": 10.45,
+              "distanceKm": 0.591
+            }
+          }
+        },
+        "dkss_idw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 54.867,
+              "longitude": 10.46498,
+              "distanceKm": 0.489
+            },
+            "current-u": {
+              "latitude": 54.867,
+              "longitude": 10.39553,
+              "distanceKm": 4.089,
+              "verticalLayer": "depthbelowsea:18",
+              "verticalLayerRankM": 18.0
+            },
+            "current-v": {
+              "latitude": 54.867,
+              "longitude": 10.39553,
+              "distanceKm": 4.089,
+              "verticalLayer": "depthbelowsea:18",
+              "verticalLayerRankM": 18.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B08-03",
+      "partId": "dk-b08-03-national-part-01",
+      "name": "DK-B08-03",
+      "coastType": "west",
+      "seriesId": "DK-B08-03::dk-b08-03-national-part-01",
+      "historyKey": "coastal-part::DK-B08-03::dk-b08-03-national-part-01",
+      "samplingPoint": [
+        11.1918686,
+        55.8722141
+      ],
+      "onshoreDirectionDeg": 230.9,
+      "validatedGrid": {
+        "wam_nsb": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 55.85,
+              "longitude": 11.16667,
+              "distanceKm": 2.928
+            },
+            "mean-wave-dir": {
+              "latitude": 55.85,
+              "longitude": 11.16667,
+              "distanceKm": 2.928
+            },
+            "dominant-wave-period": {
+              "latitude": 55.85,
+              "longitude": 11.16667,
+              "distanceKm": 2.928
+            }
+          }
+        },
+        "dkss_idw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 55.875,
+              "longitude": 11.18718,
+              "distanceKm": 0.426
+            },
+            "current-u": {
+              "latitude": 55.915,
+              "longitude": 11.18718,
+              "distanceKm": 4.767,
+              "verticalLayer": "depthbelowsea:20",
+              "verticalLayerRankM": 20.0
+            },
+            "current-v": {
+              "latitude": 55.915,
+              "longitude": 11.18718,
+              "distanceKm": 4.767,
+              "verticalLayer": "depthbelowsea:20",
+              "verticalLayerRankM": 20.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B10-13",
+      "partId": "dk-b10-13-owner-approved-01",
+      "name": "Bredfjed",
+      "coastType": "east",
+      "seriesId": "DK-B10-13::dk-b10-13-owner-approved-01",
+      "historyKey": "coastal-part::DK-B10-13::dk-b10-13-owner-approved-01",
+      "samplingPoint": [
+        11.2888252,
+        54.6883936
+      ],
+      "onshoreDirectionDeg": 32.9,
+      "validatedGrid": {
+        "wam_dw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 54.69,
+              "longitude": 11.28333,
+              "distanceKm": 0.396
+            },
+            "mean-wave-dir": {
+              "latitude": 54.69,
+              "longitude": 11.28333,
+              "distanceKm": 0.396
+            },
+            "dominant-wave-period": {
+              "latitude": 54.69,
+              "longitude": 11.28333,
+              "distanceKm": 0.396
+            }
+          }
+        },
+        "dkss_idw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 54.659,
+              "longitude": 11.24274,
+              "distanceKm": 4.412
+            },
+            "current-u": {
+              "latitude": 54.651,
+              "longitude": 11.25663,
+              "distanceKm": 4.645,
+              "verticalLayer": "depthbelowsea:5",
+              "verticalLayerRankM": 5.0
+            },
+            "current-v": {
+              "latitude": 54.651,
+              "longitude": 11.25663,
+              "distanceKm": 4.645,
+              "verticalLayer": "depthbelowsea:5",
+              "verticalLayerRankM": 5.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B12-06",
+      "partId": "dk-b12-06-national-part-01",
+      "name": "DK-B12-06",
+      "coastType": "east",
+      "seriesId": "DK-B12-06::dk-b12-06-national-part-01",
+      "historyKey": "coastal-part::DK-B12-06::dk-b12-06-national-part-01",
+      "samplingPoint": [
+        9.762278,
+        54.9554375
+      ],
+      "onshoreDirectionDeg": 267.3,
+      "validatedGrid": {
+        "wam_dw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 54.95,
+              "longitude": 9.76667,
+              "distanceKm": 0.666
+            },
+            "mean-wave-dir": {
+              "latitude": 54.95,
+              "longitude": 9.76667,
+              "distanceKm": 0.666
+            },
+            "dominant-wave-period": {
+              "latitude": 54.95,
+              "longitude": 9.76667,
+              "distanceKm": 0.666
+            }
+          }
+        },
+        "dkss_idw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 54.939,
+              "longitude": 9.75666,
+              "distanceKm": 1.863
+            },
+            "current-u": {
+              "latitude": 54.939,
+              "longitude": 9.75666,
+              "distanceKm": 1.863,
+              "verticalLayer": "depthbelowsea:14",
+              "verticalLayerRankM": 14.0
+            },
+            "current-v": {
+              "latitude": 54.939,
+              "longitude": 9.75666,
+              "distanceKm": 1.863,
+              "verticalLayer": "depthbelowsea:14",
+              "verticalLayerRankM": 14.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B12-06",
+      "partId": "dk-b12-06-national-part-02",
+      "name": "DK-B12-06",
+      "coastType": "east",
+      "seriesId": "DK-B12-06::dk-b12-06-national-part-02",
+      "historyKey": "coastal-part::DK-B12-06::dk-b12-06-national-part-02",
+      "samplingPoint": [
+        9.7552664,
+        54.9434034
+      ],
+      "onshoreDirectionDeg": 242.0,
+      "validatedGrid": {
+        "wam_dw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 54.95,
+              "longitude": 9.75,
+              "distanceKm": 0.807
+            },
+            "mean-wave-dir": {
+              "latitude": 54.95,
+              "longitude": 9.75,
+              "distanceKm": 0.807
+            },
+            "dominant-wave-period": {
+              "latitude": 54.95,
+              "longitude": 9.75,
+              "distanceKm": 0.807
+            }
+          }
+        },
+        "dkss_idw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 54.947,
+              "longitude": 9.75666,
+              "distanceKm": 0.41
+            },
+            "current-u": {
+              "latitude": 54.947,
+              "longitude": 9.67333,
+              "distanceKm": 5.248,
+              "verticalLayer": "depthbelowsea:21",
+              "verticalLayerRankM": 21.0
+            },
+            "current-v": {
+              "latitude": 54.947,
+              "longitude": 9.67333,
+              "distanceKm": 5.248,
+              "verticalLayer": "depthbelowsea:21",
+              "verticalLayerRankM": 21.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B12-06",
+      "partId": "dk-b12-06-national-part-03",
+      "name": "DK-B12-06",
+      "coastType": "east",
+      "seriesId": "DK-B12-06::dk-b12-06-national-part-03",
+      "historyKey": "coastal-part::DK-B12-06::dk-b12-06-national-part-03",
+      "samplingPoint": [
+        9.7890945,
+        54.904998
+      ],
+      "onshoreDirectionDeg": 211.5,
+      "validatedGrid": {
+        "wam_dw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 54.9,
+              "longitude": 9.78333,
+              "distanceKm": 0.667
+            },
+            "mean-wave-dir": {
+              "latitude": 54.9,
+              "longitude": 9.78333,
+              "distanceKm": 0.667
+            },
+            "dominant-wave-period": {
+              "latitude": 54.9,
+              "longitude": 9.78333,
+              "distanceKm": 0.667
+            }
+          }
+        },
+        "dkss_idw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 54.915,
+              "longitude": 9.79832,
+              "distanceKm": 1.259
+            },
+            "current-u": {
+              "latitude": 54.939,
+              "longitude": 9.75666,
+              "distanceKm": 4.312,
+              "verticalLayer": "depthbelowsea:14",
+              "verticalLayerRankM": 14.0
+            },
+            "current-v": {
+              "latitude": 54.939,
+              "longitude": 9.75666,
+              "distanceKm": 4.312,
+              "verticalLayer": "depthbelowsea:14",
+              "verticalLayerRankM": 14.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B12-06",
+      "partId": "dk-b12-06-national-part-04",
+      "name": "DK-B12-06",
+      "coastType": "east",
+      "seriesId": "DK-B12-06::dk-b12-06-national-part-04",
+      "historyKey": "coastal-part::DK-B12-06::dk-b12-06-national-part-04",
+      "samplingPoint": [
+        9.7801564,
+        54.9032581
+      ],
+      "onshoreDirectionDeg": 319.6,
+      "validatedGrid": {
+        "wam_dw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 54.9,
+              "longitude": 9.78333,
+              "distanceKm": 0.415
+            },
+            "mean-wave-dir": {
+              "latitude": 54.9,
+              "longitude": 9.78333,
+              "distanceKm": 0.415
+            },
+            "dominant-wave-period": {
+              "latitude": 54.9,
+              "longitude": 9.78333,
+              "distanceKm": 0.415
+            }
+          }
+        },
+        "dkss_idw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 54.907,
+              "longitude": 9.75666,
+              "distanceKm": 1.559
+            },
+            "current-u": {
+              "latitude": 54.939,
+              "longitude": 9.75666,
+              "distanceKm": 4.249,
+              "verticalLayer": "depthbelowsea:14",
+              "verticalLayerRankM": 14.0
+            },
+            "current-v": {
+              "latitude": 54.939,
+              "longitude": 9.75666,
+              "distanceKm": 4.249,
+              "verticalLayer": "depthbelowsea:14",
+              "verticalLayerRankM": 14.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B12-07",
+      "partId": "dk-b12-07-owner-approved-01",
+      "name": "Mommark & Pøl Huk",
+      "coastType": "east",
+      "seriesId": "DK-B12-07::dk-b12-07-owner-approved-01",
+      "historyKey": "coastal-part::DK-B12-07::dk-b12-07-owner-approved-01",
+      "samplingPoint": [
+        10.0659916,
+        54.8878954
+      ],
+      "onshoreDirectionDeg": 76.5,
+      "validatedGrid": {
+        "wam_dw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "significant-wave-height": {
+              "latitude": 54.89,
+              "longitude": 10.08333,
+              "distanceKm": 1.134
+            },
+            "mean-wave-dir": {
+              "latitude": 54.89,
+              "longitude": 10.08333,
+              "distanceKm": 1.134
+            },
+            "dominant-wave-period": {
+              "latitude": 54.89,
+              "longitude": 10.08333,
+              "distanceKm": 1.134
+            }
+          }
+        },
+        "dkss_idw": {
+          "modelRun": "2026-08-11T12:00:00Z",
+          "nativeValidTime": "2026-08-11T21:00:00Z",
+          "gridPoints": {
+            "sea-mean-deviation": {
+              "latitude": 54.891,
+              "longitude": 10.06221,
+              "distanceKm": 0.422
+            },
+            "current-u": {
+              "latitude": 54.923,
+              "longitude": 10.08998,
+              "distanceKm": 4.194,
+              "verticalLayer": "depthbelowsea:37",
+              "verticalLayerRankM": 37.0
+            },
+            "current-v": {
+              "latitude": 54.923,
+              "longitude": 10.08998,
+              "distanceKm": 4.194,
+              "verticalLayer": "depthbelowsea:37",
+              "verticalLayerRankM": 37.0
+            }
+          }
+        }
+      },
+      "coverage": {
+        "fullWeatherCoverage": true,
+        "waveFamilyComplete": true,
+        "dkssFamilyComplete": true,
+        "coverageGaps": []
+      },
+      "requiredHourlyProvenance": [
+        "provider",
+        "collection",
+        "modelRun",
+        "nativeValidTime",
+        "gridPoint",
+        "verticalLayer",
+        "spatialInterpolation",
+        "fallback"
+      ],
+      "weatherSamplingEnabled": false,
+      "stateEnabled": false,
+      "scoreEnabled": false,
+      "publicProjectionEnabled": false,
+      "adminWriteEnabled": false,
+      "automaticActivationAllowed": false
+    }
+  ],
+  "blockedParts": [],
+  "parentRuntimeTruth": {
+    "zoneIds": [
+      "DK-B01-01",
+      "DK-B01-02",
+      "DK-B01-03",
+      "DK-B01-04",
+      "DK-B01-05",
+      "DK-B01-06",
+      "DK-B01-07",
+      "DK-B01-08",
+      "DK-B01-09",
+      "DK-B01-10",
+      "DK-B01-11",
+      "DK-B01-12",
+      "DK-B01-13",
+      "DK-B01-14",
+      "DK-B01-15",
+      "DK-B01-16",
+      "DK-B01-17",
+      "DK-B01-18",
+      "DK-B01-19",
+      "DK-B01-20",
+      "DK-B02-01",
+      "DK-B02-02",
+      "DK-B02-03",
+      "DK-B02-04",
+      "DK-B02-05",
+      "DK-B02-06",
+      "DK-B02-07",
+      "DK-B02-08",
+      "DK-B02-09",
+      "DK-B02-10",
+      "DK-B02-11",
+      "DK-B02-12",
+      "DK-B02-13",
+      "DK-B02-14",
+      "DK-B02-15",
+      "DK-B03-01",
+      "DK-B03-02",
+      "DK-B03-03",
+      "DK-B03-04",
+      "DK-B03-05",
+      "DK-B03-06",
+      "DK-B03-07",
+      "DK-B03-08",
+      "DK-B03-09",
+      "DK-B03-10",
+      "DK-B03-11",
+      "DK-B03-12",
+      "DK-B03-13",
+      "DK-B03-14",
+      "DK-B03-15",
+      "DK-B04-01",
+      "DK-B04-02",
+      "DK-B04-03",
+      "DK-B04-04",
+      "DK-B04-05",
+      "DK-B04-06",
+      "DK-B04-07",
+      "DK-B04-08",
+      "DK-B04-10",
+      "DK-B04-11",
+      "DK-B04-12",
+      "DK-B04-13",
+      "DK-B04-14",
+      "DK-B05-01",
+      "DK-B05-02",
+      "DK-B05-03",
+      "DK-B05-04",
+      "DK-B05-05",
+      "DK-B05-06",
+      "DK-B05-07",
+      "DK-B05-08",
+      "DK-B05-09",
+      "DK-B05-10",
+      "DK-B05-11",
+      "DK-B05-12",
+      "DK-B05-13",
+      "DK-B05-14",
+      "DK-B05-15",
+      "DK-B05-16",
+      "DK-B05-17",
+      "DK-B05-18",
+      "DK-B05-19",
+      "DK-B05-20",
+      "DK-B05-21",
+      "DK-B05-22",
+      "DK-B05-23",
+      "DK-B05-24",
+      "DK-B05-25",
+      "DK-B06-01",
+      "DK-B06-02",
+      "DK-B06-03",
+      "DK-B06-04",
+      "DK-B06-05",
+      "DK-B06-06",
+      "DK-B06-07",
+      "DK-B06-08",
+      "DK-B06-09",
+      "DK-B06-10",
+      "DK-B06-11",
+      "DK-B06-12",
+      "DK-B06-13",
+      "DK-B06-14",
+      "DK-B06-15",
+      "DK-B06-16",
+      "DK-B06-17",
+      "DK-B06-18",
+      "DK-B06-19",
+      "DK-B06-20",
+      "DK-B07-01",
+      "DK-B07-02",
+      "DK-B07-03",
+      "DK-B07-04",
+      "DK-B07-05",
+      "DK-B07-06",
+      "DK-B07-07",
+      "DK-B07-08",
+      "DK-B07-09",
+      "DK-B07-10",
+      "DK-B07-11",
+      "DK-B07-12",
+      "DK-B07-13",
+      "DK-B07-14",
+      "DK-B07-15",
+      "DK-B07-16",
+      "DK-B07-17",
+      "DK-B07-18",
+      "DK-B07-19",
+      "DK-B07-20",
+      "DK-B07-21",
+      "DK-B07-22",
+      "DK-B07-23",
+      "DK-B07-24",
+      "DK-B07-25",
+      "DK-B07-26",
+      "DK-B07-27",
+      "DK-B07-28",
+      "DK-B08-01",
+      "DK-B08-02",
+      "DK-B08-03",
+      "DK-B08-04",
+      "DK-B08-05",
+      "DK-B08-06",
+      "DK-B08-07",
+      "DK-B08-08",
+      "DK-B08-09",
+      "DK-B08-10",
+      "DK-B08-11",
+      "DK-B08-12",
+      "DK-B08-13",
+      "DK-B08-14",
+      "DK-B08-15",
+      "DK-B08-16",
+      "DK-B08-17",
+      "DK-B08-18",
+      "DK-B08-19",
+      "DK-B09-01",
+      "DK-B09-02",
+      "DK-B09-03",
+      "DK-B09-04",
+      "DK-B09-05",
+      "DK-B09-06",
+      "DK-B09-07",
+      "DK-B09-08",
+      "DK-B09-09",
+      "DK-B09-10",
+      "DK-B09-11",
+      "DK-B09-12",
+      "DK-B09-13",
+      "DK-B09-14",
+      "DK-B09-15",
+      "DK-B09-16",
+      "DK-B09-17",
+      "DK-B09-18",
+      "DK-B09-19",
+      "DK-B10-01",
+      "DK-B10-02",
+      "DK-B10-03",
+      "DK-B10-04",
+      "DK-B10-05",
+      "DK-B10-06",
+      "DK-B10-07",
+      "DK-B10-08",
+      "DK-B10-09",
+      "DK-B10-10",
+      "DK-B10-11",
+      "DK-B10-12",
+      "DK-B10-13",
+      "DK-B10-14",
+      "DK-B10-15",
+      "DK-B10-16",
+      "DK-B10-17",
+      "DK-B10-18",
+      "DK-B10-19",
+      "DK-B10-20",
+      "DK-B10-21",
+      "DK-B10-22",
+      "DK-B10-23",
+      "DK-B10-24",
+      "DK-B11-LAE-01",
+      "DK-B11-LAE-02",
+      "DK-B11-LAE-03",
+      "DK-B11-SAM-01",
+      "DK-B11-SAM-02",
+      "DK-B11-SAM-03",
+      "DK-B12-01",
+      "DK-B12-02",
+      "DK-B12-03",
+      "DK-B12-04",
+      "DK-B12-05",
+      "DK-B12-06",
+      "DK-B12-07",
+      "DK-B12-08"
+    ],
+    "remainsAuthoritative": true,
+    "scoreRemainsAuthoritative": true,
+    "historyRemainsAuthoritative": true
+  },
+  "mergePolicy": {
+    "crossPartMergeAllowed": false,
+    "parentFallbackAllowed": false,
+    "spatialInterpolationAllowed": false,
+    "missingRemainsMissing": true
+  },
+  "statePolicy": {
+    "separatePartHistoryRequired": true,
+    "parentHistoryReuseAllowed": false,
+    "enabled": false
+  },
+  "scorePolicy": {
+    "parentZoneScoreRemainsAuthoritative": true,
+    "partScoreEnabled": false,
+    "bestPartSelectionEnabled": false
+  },
+  "runtimePolicy": {
+    "weatherSamplingEnabled": false,
+    "publicProjectionEnabled": false,
+    "uiEnabled": false,
+    "adminWriteEnabled": false,
+    "automaticActivationAllowed": false
+  },
+  "activationGatesRemaining": [
+    "private-national-multi-step-series-acquisition",
+    "hourly-provenance-and-component-gap-validation",
+    "separate-state-history-validation",
+    "score-neutral-ui-review",
+    "central-admin-roundtrip-and-rollback",
+    "national-integrity-and-release-gate"
+  ],
+  "crossPartMergeDetected": false,
+  "parentFallbackDetected": false,
+  "rawWeatherValuesStored": false,
+  "productionGeometryChanged": false,
+  "adminDataChanged": false,
+  "weatherSamplingChanged": false,
+  "stateChanged": false,
+  "publicRuntimeChanged": false,
+  "scoreChanged": false,
+  "automaticActivationAllowed": false
+}
