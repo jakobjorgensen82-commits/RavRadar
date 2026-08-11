@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "status": "private-approved-public-coast-shadow-plan",
-  "sourceZoneCount": 209,
+  "sourceZoneCount": 212,
   "zones": [
     {
       "zoneId": "DK-B01-01"
@@ -101,6 +101,9 @@
     },
     {
       "zoneId": "DK-B02-13"
+    },
+    {
+      "zoneId": "DK-B02-14"
     },
     {
       "zoneId": "DK-B02-15"
@@ -463,6 +466,9 @@
       "zoneId": "DK-B08-18"
     },
     {
+      "zoneId": "DK-B08-19"
+    },
+    {
       "zoneId": "DK-B09-01"
     },
     {
@@ -563,6 +569,9 @@
     },
     {
       "zoneId": "DK-B10-15"
+    },
+    {
+      "zoneId": "DK-B10-16"
     },
     {
       "zoneId": "DK-B10-17"

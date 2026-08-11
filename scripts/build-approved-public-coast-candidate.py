@@ -8,12 +8,13 @@ import json
 from pathlib import Path
 
 from pyproj import Transformer
-from shapely.geometry import shape
+from shapely.geometry import LineString, mapping, shape
 from shapely.ops import transform, unary_union
 from shapely.strtree import STRtree
 
 ROOT = Path(__file__).resolve().parents[1]
 TO_M = Transformer.from_crs(4326, 25832, always_xy=True).transform
+TO_W = Transformer.from_crs(25832, 4326, always_xy=True).transform
 WADDEN_ZONE_IDS = {
     "wadden-mainland-01": "DK-B04-12",
     "wadden-mainland-02": "DK-B04-13",
@@ -34,6 +35,16 @@ def geometry_rows(zones):
     return rows
 
 
+def line_parts(geometry):
+    if geometry.is_empty:
+        return []
+    if geometry.geom_type in {"LineString", "LinearRing"}:
+        return [LineString(geometry.coords)]
+    if geometry.geom_type in {"MultiLineString", "GeometryCollection"}:
+        return [part for child in geometry.geoms for part in line_parts(child)]
+    return []
+
+
 def build(base, corrections, approval):
     if approval.get("productionActivationApproved") or approval.get("scoreActivationApproved"):
         raise ValueError("Den private korrektionsgodkendelse må ikke være en aktiveringsgodkendelse.")
@@ -52,6 +63,35 @@ def build(base, corrections, approval):
             else:
                 retained.append(part)
         zones[zone_id] = retained
+    # Recoverydelen er kun additiv. Hvis en ny kandidat ligger oven i en
+    # allerede aktiv fysisk kyst i en anden hovedzone, beholdes den eksisterende
+    # ejer-godkendte linje, og kun kandidatens reelt nye stykke fortsætter.
+    established_geometries = [
+        transform(TO_M, shape(part["geometry"]))
+        for parts in zones.values()
+        for part in parts
+        if part.get("geometry") and not part.get("candidateOnly")
+    ]
+    established_tree = STRtree(established_geometries)
+    incremental_deduplication_length_m = 0.0
+    for zone_id, parts in list(zones.items()):
+        retained = []
+        for part in parts:
+            if not part.get("candidateOnly") or part.get("ownerApproved"):
+                retained.append(part)
+                continue
+            metric = transform(TO_M, shape(part["geometry"]))
+            occupied = [established_geometries[int(index)] for index in established_tree.query(metric.buffer(5))]
+            deduplicated = metric.difference(unary_union(occupied).buffer(5)) if occupied else metric
+            linework = [line for line in line_parts(deduplicated) if line.length >= 10]
+            incremental_deduplication_length_m += max(0.0, metric.length - sum(line.length for line in linework))
+            if not linework:
+                continue
+            clean = json.loads(json.dumps(part))
+            clean["geometry"] = mapping(transform(TO_W, unary_union(linework)))
+            clean["technicalDeduplicationApplied"] = True
+            retained.append(clean)
+        zones[zone_id] = retained
     # The owner assigned Pøl Huk to the corrected DK-B12-07 main zone.  Remove
     # the former internal Pølshuk part from DK-B12-08 before inserting the new
     # owner-approved geometry; this is an ownership transfer, not a deletion of
@@ -62,16 +102,30 @@ def build(base, corrections, approval):
         if part.get("partId") not in transferred_part_ids
     ]
     corrected_zone_ids = set()
+    base_metric_geometries = [geometry for _, geometry in geometry_rows(zones)]
+    base_metric_tree = STRtree(base_metric_geometries)
+    technical_deduplication_length_m = 0.0
     for feature in corrections.get("features") or []:
         props = feature.get("properties") or {}
         source_id = props.get("zoneId") or props.get("proposalId")
         zone_id = WADDEN_ZONE_IDS.get(source_id, source_id)
         name = props.get("proposedMainZoneName") or props.get("name") or zone_id
         corrected_zone_ids.add(zone_id)
+        feature_geometry = feature["geometry"]
+        if source_id in WADDEN_ZONE_IDS:
+            metric = transform(TO_M, shape(feature_geometry))
+            occupied = [base_metric_geometries[int(index)] for index in base_metric_tree.query(metric.buffer(5))]
+            deduplicated = metric.difference(unary_union(occupied).buffer(5)) if occupied else metric
+            retained = [part for part in line_parts(deduplicated) if part.length >= 10]
+            if not retained:
+                raise ValueError(f"{source_id} blev tom efter teknisk overlapfjernelse")
+            normalized = unary_union(retained)
+            technical_deduplication_length_m += max(0.0, metric.length - normalized.length)
+            feature_geometry = mapping(transform(TO_W, normalized))
         zones[zone_id] = [{
             "partId": f"{zone_id.lower()}-owner-approved-01",
             "name": name,
-            "geometry": feature["geometry"],
+            "geometry": feature_geometry,
             "candidateOnly": True,
             "visualGeometryOnly": True,
             "ownerApproved": True,
@@ -86,16 +140,17 @@ def build(base, corrections, approval):
     all_geometries = [geometry for _, geometry in all_rows]
     tree = STRtree(all_geometries)
     overlaps = []
+    seen_pairs = set()
     for index, (zone_id, geometry) in enumerate(all_rows):
-        if zone_id not in corrected_zone_ids:
-            continue
         for other_index in tree.query(geometry.buffer(0.5)):
             other_index = int(other_index)
-            if other_index <= index:
+            if other_index == index:
                 continue
             other_zone_id, other = all_rows[other_index]
-            if other_zone_id == zone_id:
+            pair = tuple(sorted((index, other_index)))
+            if other_zone_id == zone_id or pair in seen_pairs:
                 continue
+            seen_pairs.add(pair)
             shared_length = geometry.intersection(other.buffer(0.5)).length
             if shared_length > 5:
                 overlaps.append({
@@ -125,6 +180,8 @@ def build(base, corrections, approval):
         "newMainZoneCount": len(WADDEN_ZONE_IDS),
         "ownershipTransferCount": len(transferred_part_ids),
         "ownershipTransferredPartIds": sorted(transferred_part_ids),
+        "technicalDeduplicationLengthM": round(technical_deduplication_length_m, 1),
+        "incrementalDeduplicationLengthM": round(incremental_deduplication_length_m, 1),
         "discardedTinyClosedPartCount": len(discarded_tiny_closed_parts),
         "discardedTinyClosedPartIds": sorted(discarded_tiny_closed_parts),
         "crossZoneOverlapCount": len(overlaps),

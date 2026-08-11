@@ -2,11 +2,11 @@
 
 ## National kystgeometri v2 – datakæde verificeret, offentlig kortvisning rettes
 - [x] Ejeren har godkendt det private seks-zoners korrektionskort. Den versionsførte godkendelse tillader samling og audit, men ikke automatisk produktion eller scoreaktivering.
-- [x] De seks godkendte rettelser er samlet med den additive kandidat til 209 hovedzoner og 654 dele. Tværzoneoverlap er nul, og den samlede hulaudit har nul uafklarede relevante huller.
-- [x] Alle 654 dele har land-/vandpunkt; 50 nye eller ændrede dele er genereret uden blokering, mens 604 eksisterende punktpar genbruges.
-- [x] Privat Linux-kørsel #31531318575 beviser native DMI-griddækning for 50/50 nye vandpunkter: alle har fuld WAM+DKSS-dækning, nul er delvise eller blokerede.
-- [x] En score-neutral vejridentitetskontrakt er bygget til de 50 nye dele under den komplette bestand på 209 hovedzoner; sampling, state, score og offentlig projektion forbliver deaktiveret.
-- [ ] Næste gate er den samlede private runtime-/releaseintegration af den versionslåste 654-dels kandidat før offentlig aktivering.
+- [x] De seks godkendte rettelser er samlet med den additive kandidat til 209 præcisionsdækkede hovedzoner og 643 dele. En korrigeret symmetrisk overlapgate fjernede 11 oversete additive dubletdele; tværzoneoverlap er nu nul, og hulauditen har nul uafklarede relevante huller.
+- [x] Alle 643 dele har land-/vandpunkt; 39 nye eller ændrede dele er genereret uden blokering, mens 604 eksisterende punktpar genbruges.
+- [ ] #31531318575 beviste DMI-dækning for den før-deduplikerede bestand. Den endelige 39-punktsbestand skal nu gennem en ny isoleret native DMI-gridkontrol.
+- [ ] Efter grønt DMI-bevis bygges den score-neutrale vejridentitetskontrakt på det komplette kommende register med 212 hovedzoner.
+- [ ] Derefter følger samlet privat runtime-/releaseintegration af den versionslåste 643-dels kandidat før offentlig aktivering.
 - [x] Den autoritative otte-zoners ejerfil `(4)` er versionsført og anvendt fail-closed. Seks bevarede/rettede kandidater er samlet i et privat korrektionskort; to fejlagtige præcisionsforslag er forkastet uden at slette deres eksisterende hovedzoner.
 - [x] Vadehavsforslaget sammenholdes nu med hele den additive 650-dels kandidat, så den eksisterende Emmerlev-geometri ikke dobbeltregistreres. Den private Vadehavstilføjelse er 81,883 km efter denne deduplikering.
 - [x] Ejeren har kontrolleret og godkendt det lille seks-zoners korrektionskort; godkendelsen er versionsført fail-closed.

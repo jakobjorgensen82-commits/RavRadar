@@ -170,11 +170,16 @@ def main():
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     args.candidate_output.write_text(json.dumps(candidate, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     if args.plan_output:
+        parent_zone_ids = sorted(set(candidate.get("zones") or {}) | {
+            str(feature.get("properties", {}).get("id"))
+            for feature in load(args.zones).get("features") or []
+            if feature.get("properties", {}).get("id")
+        })
         plan = {
             "schemaVersion": "1.0.0",
             "status": "private-approved-public-coast-shadow-plan",
-            "sourceZoneCount": len(candidate.get("zones") or {}),
-            "zones": [{"zoneId": zone_id} for zone_id in sorted(candidate.get("zones") or {})],
+            "sourceZoneCount": len(parent_zone_ids),
+            "zones": [{"zoneId": zone_id} for zone_id in parent_zone_ids],
             "automaticActivationAllowed": False,
         }
         args.plan_output.write_text(json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
