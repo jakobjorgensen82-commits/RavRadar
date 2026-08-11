@@ -1,6 +1,8 @@
 # Implementeringsstatus pr. 4.0.181
 
 ## National kystgeometri v2 – datakæde verificeret, offentlig kortvisning rettes
+- [x] Ejeren har godkendt det private seks-zoners korrektionskort. Den versionsførte godkendelse tillader samling og audit, men ikke automatisk produktion eller scoreaktivering.
+- [ ] Saml de seks godkendte rettelser med den additive 650-dels kandidat; kør national hul-/overlapaudit og generér/validér land-/vandpunkter for nye zoner.
 - [x] Den autoritative otte-zoners ejerfil `(4)` er versionsført og anvendt fail-closed. Seks bevarede/rettede kandidater er samlet i et privat korrektionskort; to fejlagtige præcisionsforslag er forkastet uden at slette deres eksisterende hovedzoner.
 - [x] Vadehavsforslaget sammenholdes nu med hele den additive 650-dels kandidat, så den eksisterende Emmerlev-geometri ikke dobbeltregistreres. Den private Vadehavstilføjelse er 81,883 km efter denne deduplikering.
 - [ ] Ejeren skal kontrollere det lille seks-zoners korrektionskort. Derefter kræves samlet national hul-/overlapaudit, nye land-/vandpunkter til nye zoner og fulde gates før aktivering.

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.0.0",
+  "approvedAt": "2026-08-11T21:00:00+02:00",
+  "approvalSource": "explicit-owner-chat-approval",
+  "sourceReview": "public-coast-residual-review-2026-08-11.json",
+  "approvedCorrectionReview": "KYSTZONER-RETTELSER-KONTROL.html",
+  "approvedParts": [
+    "corrected-dk-b05-20",
+    "corrected-dk-b10-13",
+    "corrected-dk-b12-07",
+    "corrected-wadden-mainland-01",
+    "corrected-wadden-mainland-02",
+    "corrected-wadden-mainland-03"
+  ],
+  "discardedPrecisionProposals": [
+    "DK-B08-19",
+    "DK-B10-16"
+  ],
+  "productionActivationApproved": false,
+  "scoreActivationApproved": false,
+  "note": "Ejeren godkendte de seks visuelt rettede zoner. Godkendelsen gælder den private geometri; samlet national audit og runtime-gates mangler fortsat."
+}
