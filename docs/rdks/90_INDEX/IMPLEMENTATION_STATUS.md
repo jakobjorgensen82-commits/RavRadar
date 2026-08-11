@@ -19,6 +19,10 @@
 - [x] Målrettede aktiverings-, public-runtime-, zoom- og scorepræsentationstests består. De 605 multipart-beregningsdele blev tidligere til 2.488 synlige linjer og cirka 12.440 Leaflet-objekter. Lokal browserkontrol viser nu 209 aktive hovedzonelinjer, cirka 1.045 kortobjekter og præcis 418 endemarkeringer – to pr. zone.
 - [ ] Frisk produktion skal bevise farver, tooltips, klik, indlæsning og kun to synlige endemarkeringer pr. hovedzone.
 - [ ] Auditér beregningsdækningen mod kendte relevante ravstrande; synlig hovedzonekyst og skjult beregningsdækning må ikke forveksles.
+- [x] Rodårsagen til flere manglende præcise hovedzoner er identificeret: den private kildeplan valgte fliser fra den gamle kystlinje i stedet for zonens fulde ejerskabsområde.
+- [x] Lokal plan- og analysetest dækker nu hele ejerskabsområdet (128 fliser for den seneste 208-zonebestand) og begrænser bred recovery til de 18 aktive hovedzoner uden præcise dele. De 190 repræsenterede zoner genbruger eksisterende arbejde.
+- [ ] Ny privat national CI skal hente de ekstra officielle fliser og bevise, at recoveryzonerne ikke længere mangler kildedata.
+- [ ] Et privat samlet hovedzonekort skal derefter bevise præcis kyst, nul overlap, ingen uforklarede almindelige kysthuller, ingen udenlandske/outlier-linjer og kun to offentlige endemarkeringer pr. hovedzone. Ingen offentlig aktivering eller adminudvidelse før dette bevis.
 
 ## Historisk kystgeometri-v2-design før aktivering
 Punkterne i dette afsnit er udviklingshistorik. Åbne pilotbokse er erstattet af den produktionsverificerede status ovenfor og er ikke længere aktuelle gates.

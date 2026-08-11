@@ -14,6 +14,11 @@ assert.ok(policy.gates.includes('national-release-and-pages-activation'));
 assert.match(source, /centrally hydrated active zone registry/i);
 assert.match(source, /central-admin-conflict-review/);
 assert.match(source, /automaticActivationAllowed/);
+assert.match(source, /zone-ownership-geometry-bounds/);
+
+const analysisSource = await fs.readFile('scripts/analyze-geodanmark-national.py', 'utf8');
+assert.match(analysisSource, /zone-ownership-window-recovery/);
+assert.match(analysisSource, /active-parts/);
 
 const command = process.platform === 'win32' ? 'python' : 'python3';
 const result = spawnSync(command, ['scripts/build-national-geometry-v2-plan.py', '--self-test'], {encoding: 'utf8'});

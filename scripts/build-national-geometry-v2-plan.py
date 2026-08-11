@@ -48,6 +48,33 @@ def coastline_points(feature):
     return result
 
 
+def geometry_points(feature):
+    """Return every coordinate used by the zone's geographic ownership window."""
+    coordinates = (feature.get("geometry") or {}).get("coordinates")
+    result = []
+
+    def visit(value):
+        if (
+            isinstance(value, list)
+            and len(value) >= 2
+            and isinstance(value[0], (int, float))
+            and isinstance(value[1], (int, float))
+        ):
+            lon, lat = float(value[0]), float(value[1])
+            if not (7.0 <= lon <= 16.0 and 54.0 <= lat <= 58.5):
+                fail(f"Aktiv zone har geometri uden for Danmark: {feature.get('properties', {}).get('id')}")
+            result.append((lon, lat))
+            return
+        if isinstance(value, list):
+            for child in value:
+                visit(child)
+
+    visit(coordinates)
+    if not result:
+        fail(f"Aktiv zone mangler brugbar ejerskabsgeometri: {feature.get('properties', {}).get('id')}")
+    return result
+
+
 def changed_fields(feature, baseline_by_id):
     zone_id = feature["properties"]["id"]
     baseline = baseline_by_id.get(zone_id)
@@ -100,9 +127,20 @@ def build_plan(zones, baseline, policy):
         points = coastline_points(feature)
         changes = changed_fields(feature, baseline_by_id) if baseline is not None else []
         conflict_class, reason = classify(zone_id, changes, policy)
-        touched = set()
-        for lon, lat in points:
-            touched.add(tile_key(lon, lat, width, height))
+        # The old coastLine is only a guide and can be kilometres away from the
+        # real shore. Fetch every tile covered by the zone's ownership window.
+        ownership_points = geometry_points(feature)
+        min_lon = min(point[0] for point in ownership_points)
+        max_lon = max(point[0] for point in ownership_points)
+        min_lat = min(point[1] for point in ownership_points)
+        max_lat = max(point[1] for point in ownership_points)
+        min_x, min_y = tile_key(min_lon, min_lat, width, height)
+        max_x, max_y = tile_key(max_lon, max_lat, width, height)
+        touched = {
+            (x, y)
+            for x in range(min_x, max_x + 1)
+            for y in range(min_y, max_y + 1)
+        }
         tile_ids = []
         for x, y in sorted(touched):
             tile_id = f"dk-{x:02d}-{y:02d}"
@@ -127,6 +165,7 @@ def build_plan(zones, baseline, policy):
             "reason": reason,
             "centralChangedFields": changes,
             "sourceTileIds": tile_ids,
+            "sourceCoverageBasis": "zone-ownership-geometry-bounds",
             "migrationRequired": conflict_class in {"semantic-migration-review", "partition-redesign-review"},
         })
 
@@ -154,7 +193,15 @@ def build_plan(zones, baseline, policy):
 
 def self_test():
     def feature(zone_id, coast, name="Test"):
-        return {"type": "Feature", "properties": {"id": zone_id, "name": name, "batch": "B01", "zoneStatus": "active", "coastLine": coast}}
+        lons = [point[0] for point in coast]
+        lats = [point[1] for point in coast]
+        west, east = min(lons) - 0.01, max(lons) + 0.01
+        south, north = min(lats) - 0.01, max(lats) + 0.01
+        return {
+            "type": "Feature",
+            "properties": {"id": zone_id, "name": name, "batch": "B01", "zoneStatus": "active", "coastLine": coast},
+            "geometry": {"type": "Polygon", "coordinates": [[[west, south], [east, south], [east, north], [west, north], [west, south]]]},
+        }
 
     zones = {"features": [feature("Z-1", [[8.0, 56.0], [8.2, 56.1]]), feature("Z-2", [[9.0, 56.0], [9.1, 56.1]])]}
     baseline = {"features": [feature("Z-1", [[8.0, 56.0], [8.2, 56.1]]), feature("Z-2", [[9.0, 56.0], [9.1, 56.1]], "Old name")]}
@@ -163,7 +210,8 @@ def self_test():
     rows = {row["zoneId"]: row for row in plan["zones"]}
     assert rows["Z-1"]["conflictClass"] == "semantic-migration-review"
     assert rows["Z-2"]["conflictClass"] == "central-admin-conflict-review"
-    assert plan["sourceZoneCount"] == 2 and plan["tileCount"] == 2
+    assert plan["sourceZoneCount"] == 2 and plan["tileCount"] >= 2
+    assert all(row["sourceCoverageBasis"] == "zone-ownership-geometry-bounds" for row in plan["zones"])
     print("National geometry-v2-plan self-test: bestået.")
 
 
