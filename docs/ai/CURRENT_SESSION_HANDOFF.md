@@ -5,7 +5,7 @@
 - Den nationale aktivering i 4.0.180 projicerede fejlagtigt 605 interne beregningsdele som selvstændige synlige kortzoner. Multipart-geometri gav 2.488 synlige linjer og cirka 12.440 Leaflet-objekter, sorte endemarkeringer over hele kortet, gentagne navne og meget langsom indlæsning.
 - Ejerens bindende præcisering: De eksisterende hovedzoner er de synlige zoner. Lokale kystdele er interne beregningsdele for forskellige retninger og lokale vejrserier; de må ikke fremstå som hundreder af nye offentlige zoner. Hver synlig hovedzone skal kun have én sort markering i hver ende.
 - 4.0.181 fjerner kun den fejlagtige offentlige projektion. De 605 dele og deres lokale scoredata bevares uændret. Kortet tegner igen 209 aktive hovedzoner, cirka 1.045 Leaflet-objekter og præcis 418 endemarkeringer.
-- Den visuelle reparation er lokalt verificeret. Målrettede tests, RDKS-validering og release-gate består. Fuld lokal validate rammer kun den kendte Windows-begrænsning, fordi `rsync` mangler; Linux-CI og produktionskontrol mangler ved dette checkpoint.
+- Den visuelle reparation er produktionsverificeret i #2279 (`31505747519`): frisk DMI-kæde, fuld Linux-validering, release-gate, Pages-artifact og deploy bestod. Offentlig browserkontrol viste version 4.0.181, 208 centralt aktive hovedzoner og præcis 416 endemarkeringer.
 - Mulige huller i den interne beregningsdækning, herunder kendte gode ravstrande, er fortsat et selvstændigt P0-auditpunkt. Ingen dele må slettes eller nye linjer opfindes automatisk som del af UI-reparationen.
 - Det planlagte arbejde med DMI-femdøgnsrapport/besøgstæller er pauset, indtil kortreparationen er deployet og visuelt godkendt.
 

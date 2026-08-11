@@ -6,4 +6,4 @@
 - Reducerer det første kortlag fra 2.488 synlige del-/multipartlinjer og cirka 12.440 Leaflet-objekter til 209 aktive hovedzoner og cirka 1.045 objekter.
 - Registrerer en særskilt efteraudit af kendte relevante ravstrande, som ikke dækkes af de lokale beregningsdele.
 
-Produktionsstatus: lokalt visuelt og målrettet testvalideret; frisk CI/deploy og offentlig browserkontrol afventer.
+Produktionsstatus: verificeret i GitHub-kørsel #2279 (`31505747519`) med frisk DMI-kæde, fuld Linux-validering, release-gate, Pages-artifact og deploy. Offentlig browserkontrol viser version 4.0.181, 208 centralt aktive hovedzoner og præcis 416 endemarkeringer; de 605 interne dele tegnes ikke som zoner.

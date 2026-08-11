@@ -15,6 +15,7 @@
 - [x] #31498481482 bestod fulde gates, central readback, artifact og deploy. Onlinekontrollen viste lokal score til 605/605 dele i alle 190 hovedzoner.
 - [x] Rodårsagen til det uoverskuelige kort er dokumenteret: `mapZoneCollection` gjorde hver intern del til en synlig zone, og `renderZones` tilføjede to sorte endemarkeringer samt casing, farvelinje og klikflade pr. del.
 - [x] 4.0.181 fjerner denne projektion. Kortet modtager igen de oprindelige hovedzoner; lokale scorer læses fortsat fra `conditions.coastalParts`.
+- [x] #2279 (`31505747519`) bestod frisk DMI-kæde, fuld Linux-validering, release-gate, Pages-artifact og deploy. Offentlig browserkontrol viste 208 centralt aktive hovedzoner og præcis 416 endemarkeringer.
 - [x] Målrettede aktiverings-, public-runtime-, zoom- og scorepræsentationstests består. De 605 multipart-beregningsdele blev tidligere til 2.488 synlige linjer og cirka 12.440 Leaflet-objekter. Lokal browserkontrol viser nu 209 aktive hovedzonelinjer, cirka 1.045 kortobjekter og præcis 418 endemarkeringer – to pr. zone.
 - [ ] Frisk produktion skal bevise farver, tooltips, klik, indlæsning og kun to synlige endemarkeringer pr. hovedzone.
 - [ ] Auditér beregningsdækningen mod kendte relevante ravstrande; synlig hovedzonekyst og skjult beregningsdækning må ikke forveksles.

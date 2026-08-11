@@ -1,13 +1,13 @@
 # Current truth – gældende projektviden
 
-## Aktiv national kystgeometri – 4.0.181-kandidat
+## Aktiv national kystgeometri – 4.0.181 produktionsverificeret
 - Den ejer-godkendte kandidat fra privat #31480089490 er nu aktiveret i koden: 605 lokale dele i 190 hovedzoner, nul overlap, 605 gyldige land-/vandpunktpar, 594 fulde og 11 delvise marine gridbeviser.
 - DMI-bulk sampler alle lokale vandpunkter i de samme downloadede GRIB-felter. Det giver ikke 605 særskilte DMI-kald og ændrer ikke den eksisterende hovedzonescheduler.
 - RavScore beregnes pr. lokal del. Højeste gyldige score bliver hovedzonens score, mens 7 point afgør, om visningen gælder hele zonen, én del eller flere dele. Manglende lokale data forbliver manglende; hovedzonescoren må ikke bruges som skjult fallback.
 - Kortet læser den versionerede kystdelsfil. Den kompakte centrale adminpost `coastal-parts-v2-activation` er aktiverings- og rollback-sandhed.
 - #31498481482 beviste 4.0.180 med fulde gates, central readback, artifact og deploy. Det offentlige datasæt gav lokal score til 605/605 dele i alle 190 hovedzoner. Den målrettede 32-cellegrænse vælger fortsat kun nærmeste fælles gyldige U/V; marine krav er uændrede.
 - Ejerens første offentlige kortkontrol fandt en alvorlig præsentationsfejl: appen omdannede alle lokale beregningsdele til selvstændige synlige linjer. Hver del fik to sorte endemarkeringer og egne tunge Leaflet-lag; ved Sibirien blev samme hovedzone blandt andet vist med gentaget navn, mange interne markeringer og huller.
-- 4.0.181 bevarer alle lokale dele, punkter, vejrserier og scorer, men tegner igen kun hovedzonernes autoritative kystlinjer. Dermed er de indre delgrænser usynlige, og kun hovedzonens start og slutning markeres. Femdøgns-P1 er sat på pause, indtil rettelsen er visuelt produktionsverificeret.
+- 4.0.181 bevarer alle lokale dele, punkter, vejrserier og scorer, men tegner igen kun hovedzonernes autoritative kystlinjer. Dermed er de indre delgrænser usynlige, og kun hovedzonens start og slutning markeres. #2279 (`31505747519`) bestod frisk DMI-kæde, fuld Linux-validering, release-gate, Pages-artifact og deploy. Offentlig browserkontrol viste version 4.0.181, 208 centralt aktive hovedzoner og præcis 416 endemarkeringer.
 
 ## Planlagt privat besøgsrapport
 - Ejeren har besluttet, at RavRadar senere skal have en besøgtæller, som ikke vises offentligt. En enkel rapport skal være tilgængelig i den adgangsbeskyttede admin-del.
