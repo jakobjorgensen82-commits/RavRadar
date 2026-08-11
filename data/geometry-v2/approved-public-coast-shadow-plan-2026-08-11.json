@@ -1,0 +1,635 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "private-approved-public-coast-shadow-plan",
+  "sourceZoneCount": 209,
+  "zones": [
+    {
+      "zoneId": "DK-B01-01"
+    },
+    {
+      "zoneId": "DK-B01-02"
+    },
+    {
+      "zoneId": "DK-B01-03"
+    },
+    {
+      "zoneId": "DK-B01-04"
+    },
+    {
+      "zoneId": "DK-B01-05"
+    },
+    {
+      "zoneId": "DK-B01-06"
+    },
+    {
+      "zoneId": "DK-B01-07"
+    },
+    {
+      "zoneId": "DK-B01-08"
+    },
+    {
+      "zoneId": "DK-B01-09"
+    },
+    {
+      "zoneId": "DK-B01-10"
+    },
+    {
+      "zoneId": "DK-B01-11"
+    },
+    {
+      "zoneId": "DK-B01-12"
+    },
+    {
+      "zoneId": "DK-B01-13"
+    },
+    {
+      "zoneId": "DK-B01-14"
+    },
+    {
+      "zoneId": "DK-B01-15"
+    },
+    {
+      "zoneId": "DK-B01-16"
+    },
+    {
+      "zoneId": "DK-B01-17"
+    },
+    {
+      "zoneId": "DK-B01-18"
+    },
+    {
+      "zoneId": "DK-B01-19"
+    },
+    {
+      "zoneId": "DK-B01-20"
+    },
+    {
+      "zoneId": "DK-B02-01"
+    },
+    {
+      "zoneId": "DK-B02-02"
+    },
+    {
+      "zoneId": "DK-B02-03"
+    },
+    {
+      "zoneId": "DK-B02-04"
+    },
+    {
+      "zoneId": "DK-B02-05"
+    },
+    {
+      "zoneId": "DK-B02-06"
+    },
+    {
+      "zoneId": "DK-B02-07"
+    },
+    {
+      "zoneId": "DK-B02-08"
+    },
+    {
+      "zoneId": "DK-B02-09"
+    },
+    {
+      "zoneId": "DK-B02-10"
+    },
+    {
+      "zoneId": "DK-B02-11"
+    },
+    {
+      "zoneId": "DK-B02-12"
+    },
+    {
+      "zoneId": "DK-B02-13"
+    },
+    {
+      "zoneId": "DK-B02-15"
+    },
+    {
+      "zoneId": "DK-B03-01"
+    },
+    {
+      "zoneId": "DK-B03-02"
+    },
+    {
+      "zoneId": "DK-B03-03"
+    },
+    {
+      "zoneId": "DK-B03-04"
+    },
+    {
+      "zoneId": "DK-B03-05"
+    },
+    {
+      "zoneId": "DK-B03-06"
+    },
+    {
+      "zoneId": "DK-B03-07"
+    },
+    {
+      "zoneId": "DK-B03-08"
+    },
+    {
+      "zoneId": "DK-B03-09"
+    },
+    {
+      "zoneId": "DK-B03-10"
+    },
+    {
+      "zoneId": "DK-B03-11"
+    },
+    {
+      "zoneId": "DK-B03-12"
+    },
+    {
+      "zoneId": "DK-B03-13"
+    },
+    {
+      "zoneId": "DK-B03-14"
+    },
+    {
+      "zoneId": "DK-B03-15"
+    },
+    {
+      "zoneId": "DK-B04-01"
+    },
+    {
+      "zoneId": "DK-B04-02"
+    },
+    {
+      "zoneId": "DK-B04-03"
+    },
+    {
+      "zoneId": "DK-B04-04"
+    },
+    {
+      "zoneId": "DK-B04-05"
+    },
+    {
+      "zoneId": "DK-B04-06"
+    },
+    {
+      "zoneId": "DK-B04-07"
+    },
+    {
+      "zoneId": "DK-B04-08"
+    },
+    {
+      "zoneId": "DK-B04-10"
+    },
+    {
+      "zoneId": "DK-B04-11"
+    },
+    {
+      "zoneId": "DK-B04-12"
+    },
+    {
+      "zoneId": "DK-B04-13"
+    },
+    {
+      "zoneId": "DK-B04-14"
+    },
+    {
+      "zoneId": "DK-B05-01"
+    },
+    {
+      "zoneId": "DK-B05-02"
+    },
+    {
+      "zoneId": "DK-B05-03"
+    },
+    {
+      "zoneId": "DK-B05-04"
+    },
+    {
+      "zoneId": "DK-B05-05"
+    },
+    {
+      "zoneId": "DK-B05-06"
+    },
+    {
+      "zoneId": "DK-B05-07"
+    },
+    {
+      "zoneId": "DK-B05-08"
+    },
+    {
+      "zoneId": "DK-B05-09"
+    },
+    {
+      "zoneId": "DK-B05-10"
+    },
+    {
+      "zoneId": "DK-B05-11"
+    },
+    {
+      "zoneId": "DK-B05-12"
+    },
+    {
+      "zoneId": "DK-B05-13"
+    },
+    {
+      "zoneId": "DK-B05-14"
+    },
+    {
+      "zoneId": "DK-B05-15"
+    },
+    {
+      "zoneId": "DK-B05-16"
+    },
+    {
+      "zoneId": "DK-B05-17"
+    },
+    {
+      "zoneId": "DK-B05-18"
+    },
+    {
+      "zoneId": "DK-B05-19"
+    },
+    {
+      "zoneId": "DK-B05-20"
+    },
+    {
+      "zoneId": "DK-B05-21"
+    },
+    {
+      "zoneId": "DK-B05-22"
+    },
+    {
+      "zoneId": "DK-B05-23"
+    },
+    {
+      "zoneId": "DK-B05-24"
+    },
+    {
+      "zoneId": "DK-B05-25"
+    },
+    {
+      "zoneId": "DK-B06-01"
+    },
+    {
+      "zoneId": "DK-B06-02"
+    },
+    {
+      "zoneId": "DK-B06-03"
+    },
+    {
+      "zoneId": "DK-B06-04"
+    },
+    {
+      "zoneId": "DK-B06-05"
+    },
+    {
+      "zoneId": "DK-B06-06"
+    },
+    {
+      "zoneId": "DK-B06-07"
+    },
+    {
+      "zoneId": "DK-B06-08"
+    },
+    {
+      "zoneId": "DK-B06-09"
+    },
+    {
+      "zoneId": "DK-B06-10"
+    },
+    {
+      "zoneId": "DK-B06-11"
+    },
+    {
+      "zoneId": "DK-B06-12"
+    },
+    {
+      "zoneId": "DK-B06-13"
+    },
+    {
+      "zoneId": "DK-B06-14"
+    },
+    {
+      "zoneId": "DK-B06-15"
+    },
+    {
+      "zoneId": "DK-B06-16"
+    },
+    {
+      "zoneId": "DK-B06-17"
+    },
+    {
+      "zoneId": "DK-B06-18"
+    },
+    {
+      "zoneId": "DK-B06-19"
+    },
+    {
+      "zoneId": "DK-B06-20"
+    },
+    {
+      "zoneId": "DK-B07-01"
+    },
+    {
+      "zoneId": "DK-B07-02"
+    },
+    {
+      "zoneId": "DK-B07-03"
+    },
+    {
+      "zoneId": "DK-B07-04"
+    },
+    {
+      "zoneId": "DK-B07-05"
+    },
+    {
+      "zoneId": "DK-B07-06"
+    },
+    {
+      "zoneId": "DK-B07-07"
+    },
+    {
+      "zoneId": "DK-B07-08"
+    },
+    {
+      "zoneId": "DK-B07-09"
+    },
+    {
+      "zoneId": "DK-B07-10"
+    },
+    {
+      "zoneId": "DK-B07-11"
+    },
+    {
+      "zoneId": "DK-B07-12"
+    },
+    {
+      "zoneId": "DK-B07-13"
+    },
+    {
+      "zoneId": "DK-B07-14"
+    },
+    {
+      "zoneId": "DK-B07-15"
+    },
+    {
+      "zoneId": "DK-B07-16"
+    },
+    {
+      "zoneId": "DK-B07-17"
+    },
+    {
+      "zoneId": "DK-B07-18"
+    },
+    {
+      "zoneId": "DK-B07-19"
+    },
+    {
+      "zoneId": "DK-B07-20"
+    },
+    {
+      "zoneId": "DK-B07-21"
+    },
+    {
+      "zoneId": "DK-B07-22"
+    },
+    {
+      "zoneId": "DK-B07-23"
+    },
+    {
+      "zoneId": "DK-B07-24"
+    },
+    {
+      "zoneId": "DK-B07-25"
+    },
+    {
+      "zoneId": "DK-B07-26"
+    },
+    {
+      "zoneId": "DK-B07-27"
+    },
+    {
+      "zoneId": "DK-B07-28"
+    },
+    {
+      "zoneId": "DK-B08-01"
+    },
+    {
+      "zoneId": "DK-B08-02"
+    },
+    {
+      "zoneId": "DK-B08-03"
+    },
+    {
+      "zoneId": "DK-B08-04"
+    },
+    {
+      "zoneId": "DK-B08-05"
+    },
+    {
+      "zoneId": "DK-B08-06"
+    },
+    {
+      "zoneId": "DK-B08-07"
+    },
+    {
+      "zoneId": "DK-B08-08"
+    },
+    {
+      "zoneId": "DK-B08-09"
+    },
+    {
+      "zoneId": "DK-B08-10"
+    },
+    {
+      "zoneId": "DK-B08-11"
+    },
+    {
+      "zoneId": "DK-B08-12"
+    },
+    {
+      "zoneId": "DK-B08-13"
+    },
+    {
+      "zoneId": "DK-B08-14"
+    },
+    {
+      "zoneId": "DK-B08-15"
+    },
+    {
+      "zoneId": "DK-B08-16"
+    },
+    {
+      "zoneId": "DK-B08-17"
+    },
+    {
+      "zoneId": "DK-B08-18"
+    },
+    {
+      "zoneId": "DK-B09-01"
+    },
+    {
+      "zoneId": "DK-B09-02"
+    },
+    {
+      "zoneId": "DK-B09-03"
+    },
+    {
+      "zoneId": "DK-B09-04"
+    },
+    {
+      "zoneId": "DK-B09-05"
+    },
+    {
+      "zoneId": "DK-B09-06"
+    },
+    {
+      "zoneId": "DK-B09-07"
+    },
+    {
+      "zoneId": "DK-B09-08"
+    },
+    {
+      "zoneId": "DK-B09-09"
+    },
+    {
+      "zoneId": "DK-B09-10"
+    },
+    {
+      "zoneId": "DK-B09-11"
+    },
+    {
+      "zoneId": "DK-B09-12"
+    },
+    {
+      "zoneId": "DK-B09-13"
+    },
+    {
+      "zoneId": "DK-B09-14"
+    },
+    {
+      "zoneId": "DK-B09-15"
+    },
+    {
+      "zoneId": "DK-B09-16"
+    },
+    {
+      "zoneId": "DK-B09-17"
+    },
+    {
+      "zoneId": "DK-B09-18"
+    },
+    {
+      "zoneId": "DK-B09-19"
+    },
+    {
+      "zoneId": "DK-B10-01"
+    },
+    {
+      "zoneId": "DK-B10-02"
+    },
+    {
+      "zoneId": "DK-B10-03"
+    },
+    {
+      "zoneId": "DK-B10-04"
+    },
+    {
+      "zoneId": "DK-B10-05"
+    },
+    {
+      "zoneId": "DK-B10-06"
+    },
+    {
+      "zoneId": "DK-B10-07"
+    },
+    {
+      "zoneId": "DK-B10-08"
+    },
+    {
+      "zoneId": "DK-B10-09"
+    },
+    {
+      "zoneId": "DK-B10-10"
+    },
+    {
+      "zoneId": "DK-B10-11"
+    },
+    {
+      "zoneId": "DK-B10-12"
+    },
+    {
+      "zoneId": "DK-B10-13"
+    },
+    {
+      "zoneId": "DK-B10-14"
+    },
+    {
+      "zoneId": "DK-B10-15"
+    },
+    {
+      "zoneId": "DK-B10-17"
+    },
+    {
+      "zoneId": "DK-B10-18"
+    },
+    {
+      "zoneId": "DK-B10-19"
+    },
+    {
+      "zoneId": "DK-B10-20"
+    },
+    {
+      "zoneId": "DK-B10-21"
+    },
+    {
+      "zoneId": "DK-B10-22"
+    },
+    {
+      "zoneId": "DK-B10-23"
+    },
+    {
+      "zoneId": "DK-B10-24"
+    },
+    {
+      "zoneId": "DK-B11-LAE-01"
+    },
+    {
+      "zoneId": "DK-B11-LAE-02"
+    },
+    {
+      "zoneId": "DK-B11-LAE-03"
+    },
+    {
+      "zoneId": "DK-B11-SAM-01"
+    },
+    {
+      "zoneId": "DK-B11-SAM-02"
+    },
+    {
+      "zoneId": "DK-B11-SAM-03"
+    },
+    {
+      "zoneId": "DK-B12-01"
+    },
+    {
+      "zoneId": "DK-B12-02"
+    },
+    {
+      "zoneId": "DK-B12-03"
+    },
+    {
+      "zoneId": "DK-B12-04"
+    },
+    {
+      "zoneId": "DK-B12-05"
+    },
+    {
+      "zoneId": "DK-B12-06"
+    },
+    {
+      "zoneId": "DK-B12-07"
+    },
+    {
+      "zoneId": "DK-B12-08"
+    }
+  ],
+  "automaticActivationAllowed": false
+}

@@ -118,11 +118,17 @@ def build(candidate, zones):
         })
     return {
         "schemaVersion": "1.0.0",
-        "status": "private-approved-public-coast-point-pairs",
+        "status": "private-national-read-only-local-part-point-pairs",
+        "finalPartCount": len(rows),
         "partCount": len(rows),
         "proposedPointPairCount": sum(row["status"] == "private-point-pair-proposed" for row in rows),
         "blockedPointPairCount": sum(row["status"] != "private-point-pair-proposed" for row in rows),
         "automaticActivationAllowed": False,
+        "productionGeometryChanged": False,
+        "adminDataChanged": False,
+        "weatherSamplingChanged": False,
+        "stateChanged": False,
+        "scoreChanged": False,
         "parts": rows,
     }
 
@@ -144,6 +150,10 @@ def attach(candidate, report):
     report["candidatePointPairCount"] = len(all_parts) - len(missing)
     report["candidateMissingPointPairCount"] = len(missing)
     report["candidateMissingPointPartIds"] = missing
+    output["status"] = "private-owner-approved-with-complete-point-pairs" if not missing else "private-owner-approved-with-missing-point-pairs"
+    output["pointPairCount"] = len(all_parts) - len(missing)
+    output["missingPointPairCount"] = len(missing)
+    output["automaticActivationAllowed"] = False
     return output
 
 
@@ -153,11 +163,21 @@ def main():
     parser.add_argument("--zones", type=Path, default=ROOT / "data/zones.geojson")
     parser.add_argument("--output", type=Path, default=ROOT / ".geometry-v2-work/approved-public-coast-point-pairs.json")
     parser.add_argument("--candidate-output", type=Path, default=ROOT / ".geometry-v2-work/approved-public-coast-candidate-with-points.json")
+    parser.add_argument("--plan-output", type=Path)
     args = parser.parse_args()
     report = build(load(args.candidate), load(args.zones))
     candidate = attach(load(args.candidate), report)
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     args.candidate_output.write_text(json.dumps(candidate, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+    if args.plan_output:
+        plan = {
+            "schemaVersion": "1.0.0",
+            "status": "private-approved-public-coast-shadow-plan",
+            "sourceZoneCount": len(candidate.get("zones") or {}),
+            "zones": [{"zoneId": zone_id} for zone_id in sorted(candidate.get("zones") or {})],
+            "automaticActivationAllowed": False,
+        }
+        args.plan_output.write_text(json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({key: report[key] for key in ("partCount", "proposedPointPairCount", "blockedPointPairCount")}))
 
 
