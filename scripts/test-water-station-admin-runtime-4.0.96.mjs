@@ -8,8 +8,8 @@ assert.match(admin,/stationObservationLabel\(st\).*stationCacheLabel\(st\).*stat
 assert.match(admin,/admin\?'#ff6b6b':auto\?'#38d996':retired\?'#777':'#d8a232'/,'Aktiv administratorrouting skal være rød og aktiv automatik grøn');
 assert.match(admin,/const autoIds=overrideActive\?new Set\(\):new Set\(automatic\.stations\.map\(stationSourceKey\)\)/,'Automatiske markører skal skjules ved aktivt override');
 assert.doesNotMatch(admin,/#a978ff|Begge valg/,'Lilla dobbeltstatus må ikke bruges');
-assert.match(sync,/'dmi-water-stations':'data\/live\/dmi-water-stations\.json'/);
-assert.match(sync,/'water-station-routing-audit':'data\/live\/water-station-routing-audit\.json'/);
+assert.match(sync,/["']dmi-water-stations["']\s*:\s*["']data\/live\/dmi-water-stations\.json["']/);
+assert.match(sync,/["']water-station-routing-audit["']\s*:\s*["']data\/live\/water-station-routing-audit\.json["']/);
 assert.match(updater,/deliveryStatus: previous\?\.deliveryStatus \?\? 'unknown'/);
 assert.match(updater,/overallUsabilityStatus: previous\?\.overallUsabilityStatus \?\? 'unknown'/);
 assert.match(updater,/lifecycleKnown \? 'unavailable' : 'unknown'/);
