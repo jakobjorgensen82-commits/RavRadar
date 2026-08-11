@@ -18,6 +18,8 @@ const assets={
 const lifecycleFields=['hasEverDelivered','firstObservationAt','lastObservationAt','lastObservationValueCm','consecutiveMissingObservationRuns','deliveryStatus','forecastCacheGeneratedAt','forecastCacheValidUntil','forecastCacheStatus','overallUsabilityStatus','forecastCacheZoneIds'];
 const manifestKey='protected-asset-manifest';
 const digest=payload=>crypto.createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+const stable=value=>Array.isArray(value)?value.map(stable):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,stable(value[key])])):value;
+const stableDigest=payload=>crypto.createHash('sha256').update(JSON.stringify(stable(payload))).digest('hex');
 async function existingDocument(documentKey){
  const r=await fetch(`${url}/rest/v1/admin_documents?select=payload&document_key=eq.${encodeURIComponent(documentKey)}&limit=1`,{headers});
  if(!r.ok)throw new Error(`${documentKey} readback: ${r.status} ${await r.text()}`);
@@ -56,7 +58,7 @@ const manifestResponse=await fetch(`${url}/rest/v1/admin_documents?on_conflict=d
 if(!manifestResponse.ok)throw new Error(`${manifestKey}: ${manifestResponse.status} ${await manifestResponse.text()}`);
 const activationLocal=JSON.parse(await fs.readFile(assets['coastal-parts-v2-activation'],'utf8'));
 const activationCentral=await existingDocument('coastal-parts-v2-activation');
-if(!activationCentral||digest(activationCentral)!==digest(activationLocal)||activationCentral.publicActivation!==activationLocal.publicActivation){
+if(!activationCentral||stableDigest(activationCentral)!==stableDigest(activationLocal)||activationCentral.publicActivation!==activationLocal.publicActivation){
  throw new Error('coastal-parts-v2-activation central readback matcher ikke den publicerede aktivering');
 }
 console.log(`Central kystdelsaktivering verificeret: ${activationCentral.publicActivation?'aktiv':'rollback'}`);

@@ -52,7 +52,7 @@ export async function build(){
     });
   }
   for(const parts of Object.values(zones))parts.sort((a,b)=>a.name.localeCompare(b.name,'da')||a.partId.localeCompare(b.partId));
-  const output={schemaVersion:1,enabled:manifest.publicActivation===true,datasetVersion:manifest.sourceVersion,sourceRunId:manifest.sourceRunId,generatedAt:new Date().toISOString(),partCount:features.length,zoneCount:Object.keys(zones).length,wholeZoneMarginPoints:7,zones};
+  const output={schemaVersion:1,enabled:manifest.publicActivation===true,datasetVersion:manifest.sourceVersion,sourceRunId:manifest.sourceRunId,generatedAt:`${manifest.activatedAt}T00:00:00.000Z`,partCount:features.length,zoneCount:Object.keys(zones).length,wholeZoneMarginPoints:7,zones};
   await fs.mkdir(path.dirname(OUTPUT),{recursive:true});await fs.writeFile(OUTPUT,`${JSON.stringify(output)}\n`);return output;
 }
 

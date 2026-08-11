@@ -3,6 +3,7 @@
 - Ejeren gav udtrykkeligt go til aktivering på testdomænet. Orehoved-overlappet er eksplicit tildelt Falsters nordkyst.
 - DMI-bulk sampler delpunkter i allerede downloadede GRIB-felter uden særskilte netkald. Lokale scores aggregeres med 7-punktsreglen og stopper som usikre uden skjult hovedzonefallback.
 - Offentligt kort og prognose læser lokale kystdele og afledte scores. En kompakt central aktiveringspost styrer readback og rollback; de store kilde-/QA-filer gemmes ikke i Supabase.
+- Første normale run #31489574586 bestod DMI, lokale scores, fuld Linux-validate og release-gate, men stoppede før Pages, fordi Supabase JSONB returnerede samme aktiveringsobjekt med en anden nøglerækkefølge. Readback sammenligner nu kanonisk nøglesorteret JSON i stedet for rå objektorden.
 - Produktionsverifikation af 4.0.176 afventer frisk normal GitHub Actions-kørsel og efterfølgende online smoke-test.
 
 ## 2026-08-11 – 4.0.175 retter forældet reviewfordeling
