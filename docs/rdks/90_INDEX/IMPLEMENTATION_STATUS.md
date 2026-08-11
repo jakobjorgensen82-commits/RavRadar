@@ -22,6 +22,9 @@
 - [x] Rodårsagen til flere manglende præcise hovedzoner er identificeret: den private kildeplan valgte fliser fra den gamle kystlinje i stedet for zonens fulde ejerskabsområde.
 - [x] Lokal plan- og analysetest dækker nu hele ejerskabsområdet (128 fliser for den seneste 208-zonebestand) og begrænser bred recovery til de 18 aktive hovedzoner uden præcise dele. De 190 repræsenterede zoner genbruger eksisterende arbejde.
 - [ ] Ny privat national CI skal hente de ekstra officielle fliser og bevise, at recoveryzonerne ikke længere mangler kildedata.
+- [x] Privat #31514481361 gennemførte 128-flisehentning, kildevalidering, analyse, topologi og delgenerering. 16/18 manglende hovedzoner fik kandidater; samlet privat råbestand blev 806 dele i 206 zoner. Jobbet stoppede først ved den kendt ustabile eksterne stednavnetjeneste.
+- [ ] Anden privat recovery skal bruge alle zonebeviser samlet, så den internt modstridende Nibe-zone ikke afskærer sin faktiske kyst. Den resterende Ålsgårde/Helsingør-kilde skal undersøges særskilt mod officielle lag.
+- [x] En ny privat hovedzoneaudit måler officiel kildeafstand, hovedzonedækning, tværzoneoverlap og handlingsrelevante huller. Førmålingen på de aktive 605 dele gav nul kildeafvigelser, nul overlap, 18 manglende hovedzoner og 157 hul-/forlængelseskandidater efter frasortering af 768 løsrevne indre/sidekyster.
 - [ ] Et privat samlet hovedzonekort skal derefter bevise præcis kyst, nul overlap, ingen uforklarede almindelige kysthuller, ingen udenlandske/outlier-linjer og kun to offentlige endemarkeringer pr. hovedzone. Ingen offentlig aktivering eller adminudvidelse før dette bevis.
 
 ## Historisk kystgeometri-v2-design før aktivering

@@ -5,7 +5,7 @@ import argparse, hashlib, json
 from datetime import datetime, timezone
 from pathlib import Path
 from pyproj import Transformer
-from shapely.geometry import LineString, mapping, shape
+from shapely.geometry import LineString, box, mapping, shape
 from shapely.ops import transform, unary_union
 from shapely.strtree import STRtree
 
@@ -25,6 +25,14 @@ def samples(line,reference,interval=250,max_samples=200):
 def summary(values): return {"sampleCount":len(values),"meanM":round(sum(values)/len(values),2) if values else None,"maxM":round(max(values),2) if values else None}
 def source_id(feature):
     props=feature.get("properties") or {}; return str(feature.get("id") or props.get("id_lokalId") or props.get("objectid") or "unknown")
+def evidence_window(feature):
+    geometry=shape(feature["geometry"]); west,south,east,north=geometry.bounds; props=feature.get("properties") or {}
+    evidence=list(props.get("coastLine") or [])
+    for key in ("dataPoint","pinPoint"):
+        if isinstance(props.get(key),list) and len(props[key])>=2:evidence.append(props[key])
+    if evidence:
+        west=min(west,*(float(point[0]) for point in evidence)); east=max(east,*(float(point[0]) for point in evidence)); south=min(south,*(float(point[1]) for point in evidence)); north=max(north,*(float(point[1]) for point in evidence))
+    return project(box(west,south,east,north)).buffer(1000)
 def build(zones,plan,kyst,recovery_zone_ids=None):
     recovery_zone_ids=set(recovery_zone_ids or [])
     zone_features={f["properties"]["id"]:f for f in zones.get("features") or [] if f.get("properties",{}).get("zoneStatus")=="active"}
@@ -38,7 +46,7 @@ def build(zones,plan,kyst,recovery_zone_ids=None):
     if not source:fail("Det nationale GeoDanmark Kyst-lag er tomt.")
     tree=STRtree(source); rows=[]; mapped=[]
     for zone_id in sorted(zone_features):
-        feature=zone_features[zone_id]; props=feature["properties"]; current=project(LineString(props.get("coastLine") or [])); window=project(shape(feature["geometry"])).buffer(1000); proximity=current.buffer(2000)
+        feature=zone_features[zone_id]; props=feature["properties"]; current=project(LineString(props.get("coastLine") or [])); window=evidence_window(feature); proximity=current.buffer(2000)
 
         def collect(limit):
             found=[]; found_refs=set()

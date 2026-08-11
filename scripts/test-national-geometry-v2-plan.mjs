@@ -14,11 +14,15 @@ assert.ok(policy.gates.includes('national-release-and-pages-activation'));
 assert.match(source, /centrally hydrated active zone registry/i);
 assert.match(source, /central-admin-conflict-review/);
 assert.match(source, /automaticActivationAllowed/);
-assert.match(source, /zone-ownership-geometry-bounds/);
+assert.match(source, /zone-geometry-and-coast-evidence-bounds/);
 
 const analysisSource = await fs.readFile('scripts/analyze-geodanmark-national.py', 'utf8');
 assert.match(analysisSource, /zone-ownership-window-recovery/);
 assert.match(analysisSource, /active-parts/);
+const publicCoverageAudit = await fs.readFile('scripts/audit-national-public-coast-coverage.py', 'utf8');
+for (const marker of ['missingMainZoneIds', 'officialSourceOutlierCount', 'crossZoneOverlapCount', 'uncoveredReviewPartCount', 'automaticActivationAllowed']) {
+  assert.match(publicCoverageAudit, new RegExp(marker));
+}
 
 const command = process.platform === 'win32' ? 'python' : 'python3';
 const result = spawnSync(command, ['scripts/build-national-geometry-v2-plan.py', '--self-test'], {encoding: 'utf8'});
@@ -31,6 +35,11 @@ const fetchResult = spawnSync(command, ['scripts/fetch-geodanmark-national.py', 
 if (fetchResult.status !== null) {
   assert.equal(fetchResult.status, 0, fetchResult.stderr || fetchResult.stdout);
   assert.match(fetchResult.stdout, /self-test:/);
+}
+const publicAuditResult = spawnSync(command, ['scripts/audit-national-public-coast-coverage.py', '--self-test'], {encoding: 'utf8'});
+if (publicAuditResult.status !== null) {
+  assert.equal(publicAuditResult.status, 0, publicAuditResult.stderr || publicAuditResult.stdout);
+  assert.match(publicAuditResult.stdout, /self-test:/);
 }
 await import('./test-geodanmark-national-fetch.mjs');
 await import('./test-geodanmark-national-source-validation.mjs');

@@ -49,7 +49,7 @@ def coastline_points(feature):
 
 
 def geometry_points(feature):
-    """Return every coordinate used by the zone's geographic ownership window."""
+    """Return all bounded geographic evidence that may locate the zone coast."""
     coordinates = (feature.get("geometry") or {}).get("coordinates")
     result = []
 
@@ -70,6 +70,10 @@ def geometry_points(feature):
                 visit(child)
 
     visit(coordinates)
+    properties = feature.get("properties") or {}
+    visit(properties.get("coastLine"))
+    visit(properties.get("dataPoint"))
+    visit(properties.get("pinPoint"))
     if not result:
         fail(f"Aktiv zone mangler brugbar ejerskabsgeometri: {feature.get('properties', {}).get('id')}")
     return result
@@ -165,7 +169,7 @@ def build_plan(zones, baseline, policy):
             "reason": reason,
             "centralChangedFields": changes,
             "sourceTileIds": tile_ids,
-            "sourceCoverageBasis": "zone-ownership-geometry-bounds",
+            "sourceCoverageBasis": "zone-geometry-and-coast-evidence-bounds",
             "migrationRequired": conflict_class in {"semantic-migration-review", "partition-redesign-review"},
         })
 
@@ -211,7 +215,7 @@ def self_test():
     assert rows["Z-1"]["conflictClass"] == "semantic-migration-review"
     assert rows["Z-2"]["conflictClass"] == "central-admin-conflict-review"
     assert plan["sourceZoneCount"] == 2 and plan["tileCount"] >= 2
-    assert all(row["sourceCoverageBasis"] == "zone-ownership-geometry-bounds" for row in plan["zones"])
+    assert all(row["sourceCoverageBasis"] == "zone-geometry-and-coast-evidence-bounds" for row in plan["zones"])
     print("National geometry-v2-plan self-test: bestået.")
 
 
