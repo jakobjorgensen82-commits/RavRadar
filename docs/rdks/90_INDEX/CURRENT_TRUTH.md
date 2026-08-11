@@ -1,11 +1,11 @@
 # Current truth – gældende projektviden
 
-## Aktiv national kystgeometri – 4.0.179
+## Aktiv national kystgeometri – 4.0.180
 - Den ejer-godkendte kandidat fra privat #31480089490 er nu aktiveret i koden: 605 lokale dele i 190 hovedzoner, nul overlap, 605 gyldige land-/vandpunktpar, 594 fulde og 11 delvise marine gridbeviser.
 - DMI-bulk sampler alle lokale vandpunkter i de samme downloadede GRIB-felter. Det giver ikke 605 særskilte DMI-kald og ændrer ikke den eksisterende hovedzonescheduler.
 - RavScore beregnes pr. lokal del. Højeste gyldige score bliver hovedzonens score, mens 7 point afgør, om visningen gælder hele zonen, én del eller flere dele. Manglende lokale data forbliver manglende; hovedzonescoren må ikke bruges som skjult fallback.
 - Kortet læser den versionerede kystdelsfil. Den kompakte centrale adminpost `coastal-parts-v2-activation` er aktiverings- og rollback-sandhed.
-- #31495844161 beviste det hurtige koordinatindeks, fulde gates, central aktivering og deploy. Online fik 543/605 dele score i alle 190 zoner; de sidste 62 ramte en tom nærmeste vindcelle. 4.0.179 bevarer de fire nærmeste celler og vælger fortsat kun en celle med fælles gyldig U/V. Frisk produktion skal bevise den endelige dækning.
+- #31497361674 beviste fulde gates, central aktivering og deploy; online fik 592/605 dele score i alle 190 zoner. De sidste 13 har mere end fire tomme naboceller. 4.0.180 bruger den tidligere private vindgates målrettede 32-cellegrænse og vælger fortsat kun nærmeste fælles gyldige U/V. Endelig frisk produktion afventer.
 
 ## Planlagt privat besøgsrapport
 - Ejeren har besluttet, at RavRadar senere skal have en besøgtæller, som ikke vises offentligt. En enkel rapport skal være tilgængelig i den adgangsbeskyttede admin-del.

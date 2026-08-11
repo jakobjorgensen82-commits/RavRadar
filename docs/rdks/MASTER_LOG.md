@@ -1,3 +1,9 @@
+## 2026-08-11 – 4.0.180 dækker sjældne atmosfæriske gridhuller
+- #31497361674 bestod fulde gates, central readback og deploy. Online steg lokal scoredækning til 592/605 i alle 190 zoner.
+- 13 dele mangler fortsat, fordi også de fire nærmeste HARMONIE-celler er missing. 4.0.180 bruger den tidligere private vindgates dokumenterede 32-celle-retrygrænse i det hurtige indeks.
+- Kun nærmeste fælles gyldige U/V-celle accepteres; marine krav er uændrede.
+- Endelig online scoredækning afventer.
+
 ## 2026-08-11 – 4.0.179 bevarer fire hurtige vindkandidater
 - #31495844161 beviste 4.0.178's indeks med otte HARMONIE-trin og 44 WAM-trin på 233 sekunder; fulde gates, central readback og deploy bestod.
 - Online blev 543/605 dele scoret i alle 190 zoner. Supportartifactet viste 62 dele uden vind, fordi deres nærmeste indekserede HARMONIE-celle var missing.

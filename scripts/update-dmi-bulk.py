@@ -127,7 +127,7 @@ PARAMETER_COMPONENT = {
 # not rejected merely because dry cells filled the candidate window first.
 GRID_CANDIDATE_TARGET = max(4, int(os.getenv("DMI_BULK_GRID_CANDIDATES", "64")))
 LIMFJORD_GRID_CANDIDATE_TARGET = max(GRID_CANDIDATE_TARGET, int(os.getenv("DMI_BULK_LIMFJORD_GRID_CANDIDATES", "128")))
-ATMOSPHERIC_GRID_CANDIDATE_TARGET = max(4, int(os.getenv("DMI_BULK_ATMOSPHERIC_GRID_CANDIDATES", "4")))
+ATMOSPHERIC_GRID_CANDIDATE_TARGET = max(32, int(os.getenv("DMI_BULK_ATMOSPHERIC_GRID_CANDIDATES", "32")))
 MAX_GRID_DISTANCE_KM = {"limfjord": 24.0, "west": 40.0, "east": 32.0}
 MARINE_MODEL_PENALTY_KM = {
     "limfjord": {"dkss_lf": 0.0, "dkss_idw": 8.0, "dkss_nsbs": 18.0},

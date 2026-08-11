@@ -25,6 +25,7 @@ assert.match(bulk,/COASTAL_PART_POINTS_PATH\.read_bytes/);
 assert.match(bulk,/codes_get_array\(gid, "latitudes"\)/);
 assert.match(bulk,/buckets\.setdefault\(key, \[\]\)\.append/);
 assert.match(bulk,/\[:ATMOSPHERIC_GRID_CANDIDATE_TARGET\]/);
+assert.match(bulk,/ATMOSPHERIC_GRID_CANDIDATE_TARGET = max\(32/);
 assert.match(bulk,/warm_atmospheric_grid_cache\(gid, collection, zones\)/);
 assert.match(bulk,/collection != "harmonie_dini_sf"/);
 assert.match(bulk,/GRID_INDEX_CACHE\[cache_key\] = \[/);
