@@ -6,6 +6,7 @@
 - [x] Privat #31533385967 bestod deaktiveret runtime, public-kontrakt og central admin-roundtrip/rollback uden ændring af beskyttede poster.
 - [ ] 4.0.182 mangler fuld release-kørsel, produktion og onlinekontrol, før den må kaldes produktionsverificeret.
 - [x] Første releaseforsøg #31536061680 dokumenterede, at den historiske 4.0.48-generator fjernede de tre nye Vadehavszoner før validering. Generatoren bevarer nu eksplicit de godkendte tilføjelser; intet blev deployet fra den fejlede kørsel.
+- [x] Andet releaseforsøg #31537882402 dokumenterede, at den ældre centrale aktiveringsmanifest overskrev den nyere ejer-godkendte 4.0.182-manifest før vejropbygningen. Central sync bevarer nu kun en semantisk nyere, eksplicit ejer-godkendt repositoryaktivering; ved samme eller ældre version er Supabase fortsat autoritativ, så admin-rollback bevares. Intet blev deployet fra den fejlede kørsel.
 
 ## National kystgeometri v2 – datakæde verificeret, offentlig kortvisning rettes
 - [x] Ejeren har godkendt det private seks-zoners korrektionskort. Den versionsførte godkendelse tillader samling og audit, men ikke automatisk produktion eller scoreaktivering.

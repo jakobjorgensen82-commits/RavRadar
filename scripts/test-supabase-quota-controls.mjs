@@ -10,6 +10,7 @@ const [reader,writer,migration,audit,workflow,schema]=await Promise.all([
 ]);
 assert.match(reader,/document_key.*in\.\(/s,'Admin-readback skal filtrere server-side på nødvendige nøgler');
 assert.ok(!reader.includes("admin_documents?select=document_key,payload,updated_at"),'Ufiltreret fuld payload-readback er forbudt');
+for(const token of ['preserve_newer_owner_approved_activation','local_version > central_version','automaticActivationAllowed','activationAuthority'])assert.ok(reader.includes(token),`Central sync mangler sikker engangspromotion: ${token}`);
 for(const token of ['protected-asset-manifest','sha256','springer skrivning over'])assert.ok(writer.includes(token),`Idempotent protected sync mangler ${token}`);
 for(const token of ['new.payload is not distinct from old.payload','if not machine_document','r.rn>100','VACUUM FULL is deliberately not automatic'])assert.ok(migration.includes(token),`Kvotemigration mangler ${token}`);
 for(const token of ['READ ONLY','rows_that_cleanup_will_remove','payload_that_cleanup_will_remove'])assert.ok(audit.includes(token),`Read-only kvoteaudit mangler ${token}`);

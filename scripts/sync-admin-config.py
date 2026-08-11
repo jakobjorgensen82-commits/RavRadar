@@ -1,18 +1,85 @@
 #!/usr/bin/env python3
-import json,os,pathlib,urllib.parse,urllib.request
-ROOT=pathlib.Path(__file__).resolve().parents[1]
-URL=os.getenv('SUPABASE_URL','').rstrip('/'); KEY=os.getenv('SUPABASE_SERVICE_ROLE_KEY','')
-MAP={'water-level-station-routing':'data/water-level-station-routing.json','direction-reviews':'data/admin/direction-reviews.json','rules':'data/admin/admin-rules.json','coastline-overrides':'data/admin/coastline-overrides.json','dmi-water-stations':'data/live/dmi-water-stations.json','water-station-routing-audit':'data/live/water-station-routing-audit.json','coastal-parts-v2-activation':'data/geometry-v2/active-national-coastal-parts/manifest.json'}
-if not URL or not KEY:
- print(json.dumps({'status':'fallback','reason':'missing-supabase-secrets'})); raise SystemExit(0)
-document_filter=','.join(f'"{key}"' for key in MAP)
-query=urllib.parse.urlencode({'select':'document_key,payload,updated_at','document_key':f'in.({document_filter})'})
-req=urllib.request.Request(URL+'/rest/v1/admin_documents?'+query,headers=({'apikey':KEY} if KEY.startswith('sb_secret_') else {'apikey':KEY,'Authorization':'Bearer '+KEY}))
-try:
- rows=json.load(urllib.request.urlopen(req,timeout=20))
- for row in rows:
-  path=MAP.get(row.get('document_key'))
-  if not path: continue
-  target=ROOT/pathlib.Path(path); target.parent.mkdir(parents=True,exist_ok=True); target.write_text(json.dumps(row['payload'],ensure_ascii=False,indent=2)+'\n',encoding='utf8')
- print(json.dumps({'status':'ok','documents':[r.get('document_key') for r in rows]}))
-except Exception as e: print(json.dumps({'status':'fallback','error':str(e)}))
+import json
+import os
+import pathlib
+import re
+import urllib.parse
+import urllib.request
+
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+URL = os.getenv("SUPABASE_URL", "").rstrip("/")
+KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+ACTIVATION_KEY = "coastal-parts-v2-activation"
+MAP = {
+    "water-level-station-routing": "data/water-level-station-routing.json",
+    "direction-reviews": "data/admin/direction-reviews.json",
+    "rules": "data/admin/admin-rules.json",
+    "coastline-overrides": "data/admin/coastline-overrides.json",
+    "dmi-water-stations": "data/live/dmi-water-stations.json",
+    "water-station-routing-audit": "data/live/water-station-routing-audit.json",
+    ACTIVATION_KEY: "data/geometry-v2/active-national-coastal-parts/manifest.json",
+}
+
+
+def version_tuple(value):
+    match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", str(value or ""))
+    return tuple(map(int, match.groups())) if match else None
+
+
+def preserve_newer_owner_approved_activation(local, central):
+    """Permit the reviewed repository activation to cross the central boundary once.
+
+    Equal or older repository versions never win. That keeps Supabase authoritative
+    for later admin rollback after the new activation has been written centrally.
+    """
+    local_version = version_tuple(local.get("sourceVersion")) if isinstance(local, dict) else None
+    central_version = version_tuple(central.get("sourceVersion")) if isinstance(central, dict) else None
+    explicit_approval = (
+        isinstance(local, dict)
+        and local.get("publicActivation") is True
+        and local.get("automaticActivationAllowed") is False
+        and bool(str(local.get("activationAuthority") or "").strip())
+        and str(local.get("status") or "").startswith("owner-approved-")
+    )
+    return bool(explicit_approval and local_version and central_version and local_version > central_version)
+
+
+def write_document(document_key, payload):
+    target = ROOT / pathlib.Path(MAP[document_key])
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if document_key == ACTIVATION_KEY and target.exists():
+        try:
+            local = json.loads(target.read_text(encoding="utf8"))
+        except (OSError, json.JSONDecodeError):
+            local = None
+        if preserve_newer_owner_approved_activation(local, payload):
+            return "preserved-newer-owner-approved-repository-activation"
+    target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf8")
+    return "central"
+
+
+def main():
+    if not URL or not KEY:
+        print(json.dumps({"status": "fallback", "reason": "missing-supabase-secrets"}))
+        return
+    document_filter = ",".join(f'"{key}"' for key in MAP)
+    query = urllib.parse.urlencode(
+        {"select": "document_key,payload,updated_at", "document_key": f"in.({document_filter})"}
+    )
+    headers = {"apikey": KEY} if KEY.startswith("sb_secret_") else {"apikey": KEY, "Authorization": "Bearer " + KEY}
+    request = urllib.request.Request(URL + "/rest/v1/admin_documents?" + query, headers=headers)
+    try:
+        rows = json.load(urllib.request.urlopen(request, timeout=20))
+        sources = {}
+        for row in rows:
+            document_key = row.get("document_key")
+            if document_key not in MAP:
+                continue
+            sources[document_key] = write_document(document_key, row["payload"])
+        print(json.dumps({"status": "ok", "documents": list(sources), "sources": sources}))
+    except Exception as error:
+        print(json.dumps({"status": "fallback", "error": str(error)}))
+
+
+if __name__ == "__main__":
+    main()
