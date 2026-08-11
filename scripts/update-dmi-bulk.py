@@ -28,6 +28,7 @@ from urllib3.util.retry import Retry
 try:
     from eccodes import (
         codes_get, codes_get_elements, codes_grib_find_nearest,
+        codes_grib_find_nearest_multiple,
         codes_grib_new_from_file, codes_release,
     )
 except ImportError as exc:
@@ -65,6 +66,7 @@ STARTED = time.monotonic()
 FINALIZE_RESERVE_SECONDS = max(60, int(os.getenv("DMI_BULK_FINALIZE_RESERVE_SECONDS", "180")))
 WORK_DEADLINE = STARTED + max(60, MAX_RUNTIME_SECONDS - FINALIZE_RESERVE_SECONDS)
 GRID_INDEX_CACHE: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
+GRID_BATCH_WARMED: set[tuple[Any, ...]] = set()
 
 STAC_SESSION = requests.Session()
 DOWNLOAD_SESSION = requests.Session()
@@ -627,6 +629,50 @@ def nearest_candidates(gid: int, collection: str, zone: dict[str, Any]) -> list[
     GRID_INDEX_CACHE[cache_key] = normalized
     return normalized
 
+
+def warm_atmospheric_grid_cache(gid: int, collection: str, zones: list[dict[str, Any]]) -> None:
+    """Resolve every HARMONIE point in one ecCodes call per grid.
+
+    HARMONIE is a complete atmospheric grid, so one nearest cell is sufficient.
+    Calling ``codes_grib_find_nearest`` separately for the national part registry
+    made the first wind field exceed the entire workflow budget. ecCodes exposes
+    a native multi-point lookup that performs the same nearest-cell operation for
+    the complete registry in one pass. Marine and wave grids deliberately retain
+    their broader missing-value/land-mask candidate search.
+    """
+    if collection != "harmonie_dini_sf" or not zones:
+        return
+    signature = grid_signature(gid)
+    warm_key = (collection, signature, ATMOSPHERIC_GRID_CANDIDATE_TARGET)
+    if warm_key in GRID_BATCH_WARMED:
+        return
+    try:
+        candidates = codes_grib_find_nearest_multiple(
+            gid,
+            False,
+            [float(zone["lat"]) for zone in zones],
+            [float(zone["lon"]) for zone in zones],
+        )
+    except Exception as exc:
+        progress(f"samlet HARMONIE-gridopslag fejlede; bruger enkeltopslag: {exc}")
+        GRID_BATCH_WARMED.add(warm_key)
+        return
+    for zone, candidate in zip(zones, candidates or []):
+        try:
+            index = int(candidate.get("index"))
+            lat = float(candidate.get("lat"))
+            lon = float(candidate.get("lon"))
+        except (AttributeError, TypeError, ValueError):
+            continue
+        cache_key = (collection, signature, zone["id"], ATMOSPHERIC_GRID_CANDIDATE_TARGET)
+        GRID_INDEX_CACHE[cache_key] = [{
+            "index": index,
+            "latitude": lat,
+            "longitude": lon,
+            "distanceKm": haversine_km(zone["lat"], zone["lon"], lat, lon),
+        }]
+    GRID_BATCH_WARMED.add(warm_key)
+
 def valid_candidates_batch(gid: int, collection: str, zones: list[dict[str, Any]]) -> dict[str, list[dict[str, float]]]:
     """Returner alle gyldige kandidater pr. zone for et GRIB-felt.
 
@@ -634,6 +680,7 @@ def valid_candidates_batch(gid: int, collection: str, zones: list[dict[str, Any]
     Denne funktion bevarer kandidatlisten, så U og V efterfølgende kan vælge det
     nærmeste *fælles* fysiske gitterpunkt.
     """
+    warm_atmospheric_grid_cache(gid, collection, zones)
     missing = safe_get(gid, "missingValue")
     candidates_by_zone: dict[str, list[dict[str, Any]]] = {}
     unique_indices: list[int] = []
