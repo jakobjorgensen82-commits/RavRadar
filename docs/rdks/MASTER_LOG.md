@@ -876,3 +876,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Ejeren ønsker en usynlig besøgstæller på den offentlige side og en enkel rapport i admin.
 - Kravet er registreret som en senere P2-opgave. Rapporten skal være adgangsbeskyttet, dataminimeret og kvotesikker samt skelne sidevisninger fra besøg og eventuel anslået unikhed.
 - Der er ikke givet tilladelse til profilering, fingerprinting, rå permanent IP-lagring eller offentlig visning. Statistik må ikke påvirke RavScore eller blokere siden.
+## 2026-08-11 – 4.0.182 samler hovedzoner og præcise kyststreger
+- Ejeren godkendte national slutkontrol og seks efterfølgende rettelser. Den nye bestand har 212 hovedzoner, 206 præcise kystforløb, seks sikre fallbacklinjer og 643 interne beregningsdele.
+- Kortet viser fortsat kun hovedzonerne med én score og to endemarkeringer; de præcise dele bruges til selve kyststregens placering og lokal beregning.
+- Kandidaten har nul tværzoneoverlap og nul uafklarede relevante kysthuller. Alle dele har land-/vandpunkter; 632 har fuldt og 11 delvist marint gridbevis.
+- Privat #31532688885 bestod DMI for 39 nye/ændrede punktpar. Privat #31533385967 bestod runtime, offentlig kontrakt og central admin-roundtrip/rollback. Produktion afventer fuld release-kørsel.

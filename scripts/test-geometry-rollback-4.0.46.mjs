@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { validateActiveZoneIds, expectedActiveZoneIds } from './zone-registry-integrity.mjs';
+import { validateActiveZoneIds, baselineZoneIds } from './zone-registry-integrity.mjs';
 
 const read = path => JSON.parse(fs.readFileSync(new URL(path, import.meta.url)));
 const active = read('../data/zones.geojson');
@@ -12,7 +12,7 @@ assert.ok(Array.isArray(active.features) && active.features.length > 0, 'Det akt
 const activeIds = new Set(active.features.map(feature => feature.properties?.id).filter(Boolean));
 validateActiveZoneIds(activeIds);
 
-const expectedIds = expectedActiveZoneIds();
+const expectedIds = baselineZoneIds({ ownerApprovedAdditions: [] });
 const beforeIds = new Set(before.features.map(feature => feature.properties?.id).filter(Boolean));
 const failedIds = new Set(failed.features.map(feature => feature.properties?.id).filter(Boolean));
 for (const id of expectedIds) {

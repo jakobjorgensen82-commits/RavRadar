@@ -1,6 +1,6 @@
 {
   "type": "FeatureCollection",
-  "version": "4.0.181",
+  "version": "4.0.182",
   "features": [
     {
       "type": "Feature",
@@ -17119,7 +17119,7 @@
       "type": "Feature",
       "properties": {
         "id": "DK-B10-13",
-        "name": "Lolland sydvest og Kramnitse",
+        "name": "Bredfjed",
         "region": "Lolland",
         "coastType": "east",
         "onshoreDirectionDeg": 0,
@@ -20197,7 +20197,7 @@
       "type": "Feature",
       "properties": {
         "id": "DK-B12-07",
-        "name": "Als syd og Kegnæs",
+        "name": "Mommark & Pøl Huk",
         "region": "Sydøstjylland · Als syd",
         "coastType": "east",
         "onshoreDirectionDeg": 21,
@@ -20456,13 +20456,212 @@
           ]
         ]
       }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B04-12",
+        "name": "Emmerlev og Ballum",
+        "region": "Vadehavets fastlandskyst",
+        "coastType": "west",
+        "onshoreDirectionDeg": 101.6,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "dataPoint": [
+          8.642033,
+          55.075141
+        ],
+        "pinPoint": [
+          8.6457185,
+          55.0747169
+        ],
+        "batch": "B04",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            8.646910949513188,
+            55.00470692586477
+          ],
+          [
+            8.668000000807186,
+            55.14795792899177
+          ]
+        ],
+        "coastLineSource": "Owner-approved precise public coast candidate 2026-08-11",
+        "coastLineVersion": "4.0.182",
+        "onshoreDirectionSource": "owner-approved land/water point pair",
+        "onshoreDirectionReviewStatus": "native-dmi-grid-validated",
+        "coastLineRefinementMode": "owner-approved-precise-public-coast"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8.60829419,
+              55.00170692586477
+            ],
+            [
+              8.73096477,
+              55.00170692586477
+            ],
+            [
+              8.73096477,
+              55.15095792899177
+            ],
+            [
+              8.60829419,
+              55.15095792899177
+            ],
+            [
+              8.60829419,
+              55.00170692586477
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B04-13",
+        "name": "Rejsby og Ribe Vesterå",
+        "region": "Vadehavets fastlandskyst",
+        "coastType": "west",
+        "onshoreDirectionDeg": 61.7,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "dataPoint": [
+          8.6536734,
+          55.2850328
+        ],
+        "pinPoint": [
+          8.6569927,
+          55.2860634
+        ],
+        "batch": "B04",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            8.661015641022018,
+            55.152229933106646
+          ],
+          [
+            8.668029509001544,
+            55.32005542021914
+          ]
+        ],
+        "coastLineSource": "Owner-approved precise public coast candidate 2026-08-11",
+        "coastLineVersion": "4.0.182",
+        "onshoreDirectionSource": "owner-approved land/water point pair",
+        "onshoreDirectionReviewStatus": "native-dmi-grid-validated",
+        "coastLineRefinementMode": "owner-approved-precise-public-coast"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8.617052583566547,
+              55.149229933106646
+            ],
+            [
+              8.72949459,
+              55.149229933106646
+            ],
+            [
+              8.72949459,
+              55.32305542021914
+            ],
+            [
+              8.617052583566547,
+              55.32305542021914
+            ],
+            [
+              8.617052583566547,
+              55.149229933106646
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B04-14",
+        "name": "Ribe Kammersluse og Esbjerg",
+        "region": "Vadehavets fastlandskyst",
+        "coastType": "west",
+        "onshoreDirectionDeg": 33.3,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "dataPoint": [
+          8.5884417,
+          55.4384646
+        ],
+        "pinPoint": [
+          8.5905053,
+          55.4402742
+        ],
+        "batch": "B04",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            8.6673,
+            55.3204
+          ],
+          [
+            8.54433582,
+            55.45565550999999
+          ]
+        ],
+        "coastLineSource": "Owner-approved precise public coast candidate 2026-08-11",
+        "coastLineVersion": "4.0.182",
+        "onshoreDirectionSource": "owner-approved land/water point pair",
+        "onshoreDirectionReviewStatus": "native-dmi-grid-validated",
+        "coastLineRefinementMode": "owner-approved-precise-public-coast"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8.46939315,
+              55.3174
+            ],
+            [
+              8.721465479999999,
+              55.3174
+            ],
+            [
+              8.721465479999999,
+              55.45865550999999
+            ],
+            [
+              8.46939315,
+              55.45865550999999
+            ],
+            [
+              8.46939315,
+              55.3174
+            ]
+          ]
+        ]
+      }
     }
   ],
   "metadata": {
-    "version": "4.0.48",
+    "version": "4.0.182",
     "method": "constrained nearest-point refinement",
     "rollback": "data/geometry-snapshots/zones-4.0.44.geojson",
     "refinedZones": 61,
-    "fallbackZones": 148
-  }
+    "fallbackZones": 148,
+    "preciseZoneCount": 206,
+    "fallbackZoneCount": 6
+  },
+  "status": "owner-approved-national-public-coast-active",
+  "automaticActivationAllowed": false
 }

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 const forbidden=[['rav','fund','.dk'].join(''),['rav','udsigten','.com'].join('')];
 const roots=['.'];
-const skip=new Set(['node_modules','.git','release']);
+const skip=new Set(['node_modules','.git','release','.audit','.cache','.geometry-v2-work','.owner-review','.pnpm-store']);
 const binary=/\.(?:png|jpe?g|gif|webp|zip|gz|woff2?|ttf|ico|pdf)$/i;
 const hits=[];
 function walk(dir){

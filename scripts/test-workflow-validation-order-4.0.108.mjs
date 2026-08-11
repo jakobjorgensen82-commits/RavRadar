@@ -5,9 +5,15 @@ const workflowDirectory = '.github/workflows';
 const workflowFiles = fs.readdirSync(workflowDirectory)
   .filter((name) => /\.ya?ml$/i.test(name))
   .sort();
-const expectedWorkflowFiles = ['update-and-deploy.yml'];
+const expectedWorkflowFiles = ['extract-private-geodanmark-layer.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml'];
 if (JSON.stringify(workflowFiles) !== JSON.stringify(expectedWorkflowFiles)) {
-  throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun update-and-deploy.yml må være aktivt.`);
+  throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun produktionsworkflowet og de to private, ikke-deployerende geometriworkflows må være aktive.`);
+}
+for (const privateName of expectedWorkflowFiles.filter(name => name !== 'update-and-deploy.yml')) {
+  const privateWorkflow = fs.readFileSync(`${workflowDirectory}/${privateName}`, 'utf8');
+  if (privateWorkflow.includes('pages: write') || privateWorkflow.includes('id-token: write') || privateWorkflow.includes('deploy-pages')) {
+    throw new Error(`${privateName} må ikke kunne deploye Pages.`);
+  }
 }
 const text = fs.readFileSync(path, 'utf8');
 const positions = {

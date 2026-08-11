@@ -1,4 +1,10 @@
-# Implementeringsstatus pr. 4.0.181
+# Implementeringsstatus pr. 4.0.182
+
+- [x] Ejeren har godkendt national slutkontrol og de seks sidste rettelser.
+- [x] Den frigivelsesklare bestand er 643 interne dele under 212 hovedzoner; 206 hovedzoner har præcis kyst og seks bruger sikker legacy-fallback. Der er nul tværzoneoverlap og nul uafklarede relevante huller.
+- [x] Alle 643 dele har land-/vandpunkter; 632 har fuldt og 11 delvist marint gridbevis. Privat #31532688885 bestod DMI for alle 39 nye eller ændrede punktpar.
+- [x] Privat #31533385967 bestod deaktiveret runtime, public-kontrakt og central admin-roundtrip/rollback uden ændring af beskyttede poster.
+- [ ] 4.0.182 mangler fuld release-kørsel, produktion og onlinekontrol, før den må kaldes produktionsverificeret.
 
 ## National kystgeometri v2 – datakæde verificeret, offentlig kortvisning rettes
 - [x] Ejeren har godkendt det private seks-zoners korrektionskort. Den versionsførte godkendelse tillader samling og audit, men ikke automatisk produktion eller scoreaktivering.

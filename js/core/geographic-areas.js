@@ -2,8 +2,8 @@ const fold=value=>String(value??'').toLocaleLowerCase('da-DK').normalize('NFKD')
 const rule=(label,terms)=>({label,terms:terms.map(fold)});
 
 export const GEOGRAPHIC_AREAS=Object.freeze({
-  'Vadehavet':rule('Vadehavet',['Skallingen','Blåvandshuk','Ho Bugt','Esbjerg nordkyst','Fanø','Mandø','Rømø','Sydvestjylland','Vidåslusen']),
-  'Vesterhavet':rule('Vesterhavet',['Thy','Hanstholm','Jammerbugt','Vendsyssel vest','Vendsyssel nordvest','Tannis Bugt','Skagen Odde vest','Skagen vest','Lemvig vestkyst','Bovbjerg','Holstebro vestkyst','Ulfborg vestkyst','Holmsland Klit','Ringkøbing Fjord sydvest','Varde vestkyst','Skallingen','Blåvandshuk','Ho Bugt','Esbjerg nordkyst','Fanø','Mandø','Rømø','Sydvestjylland','Vidåslusen']),
+  'Vadehavet':rule('Vadehavet',['Skallingen','Blåvandshuk','Ho Bugt','Esbjerg nordkyst','Fanø','Mandø','Rømø','Sydvestjylland','Vidåslusen','Vadehavets fastlandskyst']),
+  'Vesterhavet':rule('Vesterhavet',['Thy','Hanstholm','Jammerbugt','Vendsyssel vest','Vendsyssel nordvest','Tannis Bugt','Skagen Odde vest','Skagen vest','Lemvig vestkyst','Bovbjerg','Holstebro vestkyst','Ulfborg vestkyst','Holmsland Klit','Ringkøbing Fjord sydvest','Varde vestkyst','Skallingen','Blåvandshuk','Ho Bugt','Esbjerg nordkyst','Fanø','Mandø','Rømø','Sydvestjylland','Vidåslusen','Vadehavets fastlandskyst']),
   'Nordjyske vestkyst':rule('Nordjyske vestkyst',['Thy','Hanstholm','Jammerbugt','Vendsyssel vest','Vendsyssel nordvest','Tannis Bugt','Skagen Odde vest','Skagen vest']),
   'Nordjyske østkyst':rule('Nordjyske østkyst',['Skagen Odde nordøst','Ålbæk Bugt','Frederikshavn kyst','Sæby Bugt','Asaa kyst','Hou Bugt','Kattegat ved Hals','Lille Vildmose kyst','Kattegat ved Øster Hurup','Mariager Fjord munding','Randers Fjord munding','Læsø']),
   'Kattegat':rule('Kattegat',['Skagen Odde nordøst','Ålbæk Bugt','Frederikshavn kyst','Sæby Bugt','Asaa kyst','Hou Bugt','Kattegat ved Hals','Lille Vildmose kyst','Kattegat ved Øster Hurup','Mariager Fjord munding','Randers Fjord munding','Læsø','Norddjursland','Djursland','Grenaa','Ebeltoft','Mols','Helgenæs','Kalø Vig','Aarhus Bugt','Odderkysten','Juelsminde Bugt','Horsens Fjord','Endelave','Samsø']),

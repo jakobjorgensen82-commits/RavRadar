@@ -51,6 +51,25 @@ function boundaryTickIcon(tangentBearing, selected = false, zoom = 7) {
   });
 }
 
+function nearestBoundaryReference(lines, target, preferEnd = false) {
+  let best = null;
+  for (const line of lines) {
+    for (let index = 0; index < line.length; index += 1) {
+      const point = line[index];
+      const latScale = Math.cos((point[0] + target[0]) * Math.PI / 360);
+      const distance = ((point[0] - target[0]) ** 2) + (((point[1] - target[1]) * latScale) ** 2);
+      if (!best || distance < best.distance) best = { line, index, point, distance };
+    }
+  }
+  if (!best) return null;
+  const neighbourIndex = preferEnd
+    ? (best.index > 0 ? best.index - 1 : 1)
+    : (best.index < best.line.length - 1 ? best.index + 1 : best.index - 1);
+  const neighbour = best.line[neighbourIndex] || best.point;
+  const bearing = preferEnd ? coastBearing(neighbour, best.point) : coastBearing(best.point, neighbour);
+  return { point: best.point, bearing };
+}
+
 export function createMap(elementId) {
   const map = L.map(elementId, { zoomControl: true }).setView([56.45, 10.15], 7);
   const streetMap = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "&copy; OpenStreetMap-bidragsydere" });
@@ -86,25 +105,30 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
     const zoneId = zone._parentId || zone.id;
     const lineId = zone._mapId || zone.id;
     const result = scoreForZone(zoneId);
-    const coastLine = Array.isArray(zone.coastLine) && zone.coastLine.length > 1
+    const parentCoastLine = Array.isArray(zone.coastLine) && zone.coastLine.length > 1
       ? zone.coastLine.map(([lng, lat]) => [lat, lng])
       : null;
-    if (!coastLine) continue;
+    const publicLines = Array.isArray(zone.publicCoastLines)
+      ? zone.publicCoastLines.filter(line => Array.isArray(line) && line.length > 1).map(line => line.map(([lng, lat]) => [lat, lng]))
+      : [];
+    const coastLines = publicLines.length ? publicLines : (parentCoastLine ? [parentCoastLine] : []);
+    if (!coastLines.length || !parentCoastLine) continue;
+    const renderedCoast = coastLines.length === 1 ? coastLines[0] : coastLines;
 
-    const casing = L.polyline(coastLine, {
+    const casing = L.polyline(renderedCoast, {
       ...zoneCasingStyle(false, map.getZoom()),
       pane: "zoneCoastPane",
       interactive: false
     }).addTo(lineLayer);
 
-    const visible = L.polyline(coastLine, {
+    const visible = L.polyline(renderedCoast, {
       ...zoneLineStyle(result?.level, false, map.getZoom()),
       pane: "zoneCoastPane",
       interactive: false
     }).addTo(lineLayer);
 
     // En transparent, bred klikflade gør kystlinjen nem at vælge på mobil.
-    const hit = L.polyline(coastLine, {
+    const hit = L.polyline(renderedCoast, {
       color: "transparent",
       opacity: 0,
       weight: 24,
@@ -114,10 +138,12 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
     }).addTo(lineLayer);
 
     // Sorte tværstreger gør zonens start og slutning synlige uden at dække scorefarven.
-    const startBearing = coastBearing(coastLine[0], coastLine[1]);
-    const endBearing = coastBearing(coastLine[coastLine.length - 2], coastLine[coastLine.length - 1]);
-    const startTick = L.marker(coastLine[0], { icon: boundaryTickIcon(startBearing, false, map.getZoom()), pane: "zoneBoundaryPane", interactive: false, keyboard: false }).addTo(lineLayer);
-    const endTick = L.marker(coastLine[coastLine.length - 1], { icon: boundaryTickIcon(endBearing, false, map.getZoom()), pane: "zoneBoundaryPane", interactive: false, keyboard: false }).addTo(lineLayer);
+    const startReference = nearestBoundaryReference(coastLines, parentCoastLine[0], false);
+    const endReference = nearestBoundaryReference(coastLines, parentCoastLine[parentCoastLine.length - 1], true);
+    const startBearing = startReference.bearing;
+    const endBearing = endReference.bearing;
+    const startTick = L.marker(startReference.point, { icon: boundaryTickIcon(startBearing, false, map.getZoom()), pane: "zoneBoundaryPane", interactive: false, keyboard: false }).addTo(lineLayer);
+    const endTick = L.marker(endReference.point, { icon: boundaryTickIcon(endBearing, false, map.getZoom()), pane: "zoneBoundaryPane", interactive: false, keyboard: false }).addTo(lineLayer);
 
     hit.bindTooltip(`${escapeHtml(zone.name)} · ${result?.available ? `${result.score}/100` : "Ingen data"}`, { direction: "top", sticky: true });
     hit.on("click", () => onSelect(zone));

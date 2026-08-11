@@ -108,3 +108,7 @@ Fem sammenhængende produktionskørsler afslørede, at samme ugentlige GitHub-ca
 2. Codex fik ansvar for både at anbefale billigere model og senere kræve skift tilbage til Sol før kritiske opgaver.
 3. Kvoteudløb kræver dokumenteret checkpoint frem for reduceret analyse eller validering.
 4. Den planlagte videnskabelige RavRadar-/RavScore-analyse er som udgangspunkt Sol-arbejde; afgrænsede mekaniske støtteopgaver kan udføres billigere.
+## 2026-08-11 – 4.0.182 frigivelseskandidat
+- Godkendt slutgeometri aktiveret lokalt: 212 hovedzoner, 206 præcise, 6 fallback og 643 interne dele.
+- Nul tværzoneoverlap og nul uafklarede relevante huller; Vadehavets fastlandskyst er med.
+- Private DMI- og central-admin-gates er grønne. Fuld release og onlinekontrol udestår.

@@ -1,24 +1,16 @@
 {
   "schemaVersion": "1.0.0",
-  "status": "passed-private-national-once-only-owner-assembly",
-  "generatedAt": "2026-08-11T10:38:51.312223Z",
-  "inputPartCount": 753,
-  "inputOverlapPairCount": 311,
-  "finalPartCount": 605,
+  "status": "passed-owner-approved-public-coast-activation-assembly",
+  "sourceRunId": "31533385967",
+  "partCount": 643,
+  "preciseZoneCount": 206,
+  "fallbackZoneCount": 6,
+  "parentZoneCount": 212,
   "overlapPairCount": 0,
-  "closeOwnershipDecisionCount": 1,
-  "overlaps": [],
-  "closeOwnershipDecisions": [
-    {
-      "winnerPartId": "dk-b10-06-national-part-05",
-      "otherPartId": "dk-b09-15-national-part-02",
-      "sharedLengthM": 5171.2,
-      "coastDistanceMarginM": 0.3,
-      "dataPointDistanceMarginM": -45.4
-    }
-  ],
-  "productionGeometryChanged": false,
-  "adminDataChanged": false,
-  "scoreChanged": false,
+  "unresolvedRelevantGapCount": 0,
+  "pointPairCount": 643,
+  "fullMarineCoveragePartCount": 632,
+  "partialMarineCoveragePartCount": 11,
+  "ownerApproved": true,
   "automaticActivationAllowed": false
 }

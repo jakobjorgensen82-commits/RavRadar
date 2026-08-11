@@ -1,6 +1,12 @@
 # Current truth – gældende projektviden
 
-## Aktiv national kystgeometri – 4.0.181 produktionsverificeret
+## Aktiv national kystgeometri – 4.0.182 lokalt frigivelsesklar
+
+- Ejeren har godkendt den samlede slutkontrol og de efterfølgende seks rettelser. 4.0.182 er lokalt samlet med 212 hovedzoner: 206 bruger præcise kystforløb og seks beholder den gamle hovedzonelinje som sikker fallback.
+- De 643 interne beregningsdele bliver fortsat ikke vist som selvstændige zoner. Kortet viser én klikbar hovedzone, én scorefarve og kun hovedzonens to endemarkeringer, mens dens synlige streg samles af de præcise dele.
+- Kandidaten har nul tværzoneoverlap og nul uafklarede relevante kysthuller. Vadehavets fastlandskyst fra Emmerlev mod Esbjerg er med. 632 dele har fuldt og 11 delvist marint gridbevis; alle 643 har land-/vandpunkter.
+- Privat kørsel #31532688885 beviste DMI for alle 39 nye eller ændrede punktpar. Privat #31533385967 beviste den komplette deaktiverede runtime, offentlig kontrakt samt central create/read/update/delete/rollback uden at ændre beskyttede adminposter.
+- Offentlig produktion er stadig 4.0.181, indtil 4.0.182 har bestået fuld release-kæde og efterfølgende onlinekontrol.
 - De seks ejer-godkendte rettelser er nu samlet med den additive kandidat i en ny privat slutkandidat: 206 hovedzoner med præcis kyst og 643 lokale kystdele. En korrigeret, symmetrisk overlapgate fandt 11 additive dubletdele, som den tidligere ensidige kontrol overså; de er fjernet med eksisterende ejer-godkendt linje som autoritet. Tre præcisionszoner blev derved helt tomme og bruger derfor deres bevarede hovedzonefallback. Én 120,7 meter lukket, irrelevant småø-del er også fjernet, og ejerskabet ved Pøl Huk er overført til `Mommark & Pøl Huk`. Den samlede kandidat har nul tværzoneoverlap.
 - Den nye nationale hulaudit beskriver 161 kildeforskelle: 74 tidligere ejer-godkendte udeladelser, 73 forskelle løst af de aktuelle ejerafgørelser og 14 teknisk irrelevante små lukkede øformer. Der er nul uafklarede relevante huller.
 - Alle 643 dele har nu land- og vandpunkt. De 604 genbrugte dele bevarer deres eksisterende punktpar; alle 39 reelt nye eller ændrede dele har nye punktpar uden blokering. Privat Linux-kørsel #31532688885 godkendte den endelige bestand: 39/39 har fuld WAM+DKSS-dækning, nul er delvise eller blokerede. Det samlede kommende hovedzoneregister er 212: 206 zoner med præcis kyst og seks zoner med bevaret fallbacklinje. Intet er aktiveret offentligt endnu.

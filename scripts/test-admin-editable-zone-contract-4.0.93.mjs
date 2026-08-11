@@ -45,6 +45,7 @@ assert.equal(byId.get('DRAFT').onshoreDirectionDeg, 90, 'Ikke-godkendte ankre mÃ
 validateActiveZoneIds(new Set(output.features.map(feature => feature.properties.id)), {
   baselinePath,
   permanentlyRetired: [],
+  ownerApprovedAdditions: [],
   reviewsPath
 });
 

@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.181
+**Håndbogsversion:** 4.0.182
 
 **Opdateret:** 1. august 2026
 
@@ -1538,3 +1538,13 @@ De lokale kystdele er beregningsdele, ikke nye brugerzoner. Kortet viser derfor 
 # Driftsnote til 4.0.181
 
 De 605 lokale beregningsdele er lagt online. Vindkortets koordinater læses og indekseres én gang. For hvert lokalt punkt kan op til 32 nære celler kontrolleres ved sjældne datahuller; kun den nærmeste celle med både gyldig U- og V-vind accepteres. #31498481482 beviste score til 605/605 dele. Den første kortversion tegnede fejlagtigt hver beregningsdel som en synlig zone og blev uoverskuelig og tung. 4.0.181 genopretter hovedzonernes kystlinjer uden at fjerne de lokale beregninger. Kendte relevante ravstrande, som ikke indgår i beregningsdelene, auditeres særskilt.
+
+## Præcise hovedzonekyster i 4.0.182
+
+Kortet kombinerer nu de to nødvendige lag: hovedzonerne er fortsat de eneste synlige og klikbare zoner, mens deres viste kyststreg bygges af de præcise, gennemgåede lokale kystdele. Resultatet er 212 hovedzoner. 206 har præcis kystgeometri, og seks bruger fortsat deres gamle linje, fordi et sikkert nyt forløb enten blev forkastet eller viste sig kun at være en dublet.
+
+Der findes 643 lokale beregningsdele bag kortet. Alle har land- og vandpunkt; 632 har fuld marin DMI-dækning og 11 har dokumenteret deldækning. De 39 nye eller ændrede vandpunkter bestod native WAM- og DKSS-kontrol i #31532688885. En symmetrisk overlapkontrol fjernede 11 oversete additive dubletter, så slutbestanden har nul tværzoneoverlap og nul uafklarede relevante kysthuller.
+
+Vadehavets fastlandskyst fra Emmerlev mod Esbjerg indgår i tre hovedzoner. Rømødæmningen og økyster indgår ikke i fastlandslinjen. To ejer-godkendte forbindelser ved den fragmenterede digekyst og Ribe Å er dokumenterede undtagelser fra den direkte officielle linje.
+
+Brugeren ser fortsat én scorefarve, ét navn, én klikflade og kun en sort grænsemarkering ved hver ende af hovedzonen. Interne beregningsdele skaber ingen sorte markeringer. RavScore-reglerne er uændrede.
