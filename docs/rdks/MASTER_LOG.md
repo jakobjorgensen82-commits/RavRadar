@@ -793,3 +793,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Privat #31445033036 bekræftede, at fire marine assets og den native tretimersgate består.
 - Vindgaten stoppede senere ved downloadgrænsen, fordi den gamle overlaplogik tilføjede flere HARMONIE-assets, når marine input nu havde fire tider.
 - Vindgaten vælger nu præcis to assets: et dokumenteret marint scoretidspunkt med `t+3h`-vandstand og ét yderligere native vindtrin. Det bevarer to-trinskravet uden at udvide byteforbruget.
+# 2026-08-11 – 4.0.170 national ejerreview klar
+
+- Offentlig #31448257626 produktionsverificerede 4.0.169 med fulde gates og deploy.
+- Privat #31448258035 bestod hele den nationale kystzonekæde: 774 vindserier, 752 shadow-scorer, 22 deldækkede og ni blokerede dele.
+- Score-neutral ejerreview med 783 dele og central admin-roundtrip/rollback bestod. Beskyttede dokumenter, geometri, score og offentlig runtime var uændrede.
+- Reviewartifactet er auditeret og downloadet lokalt. Manuel ejerreview er næste gate; automatisk aktivering er fortsat forbudt.

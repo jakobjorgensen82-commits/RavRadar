@@ -1,7 +1,8 @@
-# Implementeringsstatus pr. 4.0.169
+# Implementeringsstatus pr. 4.0.170
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
-- [ ] Privat #31445033036 bestod 4.0.168's fire havtrin og tretimersgate, men vindgaten ramte downloadgrænsen, fordi alle marine scoretider blev tilføjet som store vindassets. 4.0.169 vælger præcis to vindassets, inklusive ét dokumenteret scoretidspunkt. Afventer privat CI.
+- [x] Privat #31448258035 CI-verificerede 4.0.169's begrænsede vindvalg og hele den nationale kæde: 774 vindserier, 752 shadow-scorer, 22 deldækkede og ni blokerede dele, score-neutral reviewside med 783 dele samt bestået central admin-roundtrip/rollback.
+- [ ] Manuel ejerreview af alle 783 dele er næste gate. Ingen geometri, sampling, state, score, admin-data eller offentlig runtime er aktiveret.
 - [ ] Privat #31440337378 bestod vindgaten, men stoppede shadow-score ved 0/752, fordi to på hinanden følgende midnatstrin ikke gav den krævede native `t+3h`-vandstand. 4.0.168 henter fire trin og kræver et ægte tretimerspar før scoreinput. Afventer nyt privat CI-bevis.
 - [x] Privat #31425327202 verificerede 774/774 native vindserier; kun 20 faktiske gab brugte målrettet 32-celle-retry. Samme-celle-, afstands- og provenancekrav bestod.
 - [x] Samme run verificerede DEC-0033-shadow-score for 752 fuldt dækkede dele; 22 deldækkede og ni blokerede forblev fail-closed, og alle mutationsflag var falske.

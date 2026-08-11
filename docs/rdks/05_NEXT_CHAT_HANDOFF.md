@@ -1,9 +1,9 @@
 # RavRadar – aktuel overlevering til Codex
 
 **Opdateret:** 2026-08-11
-**Aktuel appversion:** 4.0.169 (begrænset vindassetvalg med tretimersmatch; afventer CI)
-**Senest produktionsverificerede main:** 4.0.166 i #31425309838 på `fc20f3a`
-**Produktion:** #31425309838 bestod frisk DMI/provenance, fuld validate, release-gate, Supabase-sync, Pages-artifact og deploy. Privat #31425327202 bestod hele nationalkæden med 774 vindserier og 752 shadow-scorer.
+**Aktuel appversion:** 4.0.170 (national privat kæde CI-verificeret; afventer manuel ejerreview)
+**Senest produktionsverificerede main:** 4.0.169 i #31448257626 på `f4d93ee`
+**Produktion:** #31448257626 bestod frisk DMI/provenance, fuld validate, release-gate, Supabase-sync, Pages-artifact og deploy. Privat #31448258035 bestod 774 vindserier, 752 shadow-scorer, score-neutral 783-dels reviewside og central admin-roundtrip/rollback.
 
 ## Start ikke med at kode
 Læs først `docs/ai/CODEX_START_HERE.md`, `AGENTS.md`, Current Truth, Implementation Status, Active Requirements, Known Issues og de relevante beslutninger. Denne fil er et øjebliksbillede, ikke en erstatning for RDKS.
@@ -24,8 +24,8 @@ Fejlen må ikke forstås som én enkelt scheduler- eller radiusfejl. Forløbet v
 ## Åbne opgaver med høj prioritet
 1. Følg Supabase-egress gennem næste billingperiode. Central audit/migration er gennemført: databasen er 24 MB, alle 14 aktuelle `admin_documents` er intakte, maskinhistorik er 0, og øvrig historik er bounded til 100 pr. dokument.
 1. Bevar de ni ikke-entydige normalsider fail-closed til manuel review; DMI gav to gyldige sider og kan derfor ikke afgøre dem.
-2. CI-verificér 4.0.167's samlede score-neutrale ejer-review og nationale central-admin-roundtrip/rollback.
-3. Download og auditér reviewartifactet; giv derefter Jakob den private reviewside til manuel kontrol af 783 dele, især de 22 deldækkede og ni blokerede.
+2. Lad Jakob gennemgå den downloadede private reviewside med 783 dele, især de 22 deldækkede og ni blokerede.
+3. Registrér Jakobs rettelser og go/no-go; aktivér ikke automatisk.
 4. Bevar opdelingen, navnene, punkterne, state og shadow-score read-only, indtil ejerreviewet og en særskilt go/no-go er gennemført.
 5. Bevar den eksisterende zoneserie og RavScore som runtime-sandhed, indtil hele den nationale kæde og rollback er verificeret.
 

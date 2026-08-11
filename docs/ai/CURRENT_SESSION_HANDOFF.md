@@ -1,5 +1,12 @@
 # Aktuelt sessionshandoff – 2026-08-09
 
+## Nyeste checkpoint – 2026-08-11 / 4.0.170
+
+- Offentlig #31448257626 er produktionsverificeret for 4.0.169 med fulde gates og deploy.
+- Privat #31448258035 bestod hele nationalkæden: 774 native vindserier, 752 shadow-scorer, 22 deldækkede og ni blokerede dele.
+- Den score-neutrale reviewside indeholder 783 dele. Central admin-roundtrip/rollback bestod, og beskyttede dokumenter samt offentlig runtime er uændrede.
+- QA-artifactet er downloadet til `.audit/run-31448258035`. Næste trin er Jakobs manuelle gennemgang; intet må aktiveres automatisk.
+
 ## Aktiv 4.0.143-kandidat – national kildeplan
 - Worktree indeholder en central-hydreret planlægger for præcis 208 effektive zoner, maskinlæsbare konfliktklasser og deterministiske kildefliser.
 - Et nyt isoleret `geometry_v2_national`-job henter og deduplikerer de syv gratis officielle GeoDanmark-lag til et privat artifact uden Pages-rettigheder.

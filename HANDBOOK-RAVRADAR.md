@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.169
+**Håndbogsversion:** 4.0.170
 
 **Opdateret:** 1. august 2026
 
@@ -1511,6 +1511,8 @@ Den faktiske QA viser, at kun 20 zoner er direkte referenceklare, mens 188 er fl
 4.0.168 præciserer tidskravet: en lokal score må kun beregne vandstandsændringen, når DMI leverer både et native tidspunkt og et native tidspunkt tre timer senere. Fire havtrin hentes i den private kontrol; mangler et ægte tretimerspar, stoppes delen i stedet for at interpolere eller opfinde en trend.
 
 4.0.169 holder vindforbruget sikkert afgrænset: præcis to native vindfiler hentes. Den første skal passe til et dokumenteret havtidspunkt med en native vandstand tre timer senere; den anden beviser, at delen har en selvstændig vindserie over mindst to tider.
+
+Privat nationalkørsel #31448258035 har nu bestået hele kæden. Den bekræfter 774 selvstændige vindserier, 752 komplette shadow-scorer, 22 deldækkede dele og ni blokerede dele. Den samlede gennemgangsside viser alle 783 dele neutralt, og admin-testen blev rullet helt tilbage uden ændring af beskyttede data. Næste trin er ejerens manuelle kortgennemgang; intet er aktiveret automatisk.
 
 4.0.164 bygger også næste private shadow-gate. Den eksisterende RavScore-motor beregner hver lokal del udelukkende, når vind, bølger, strøm og vandstand findes på samme native tidspunkt, og når næste native vandstandstrin kan danne den faktiske tre-timers trend. Ingen nærmeste-tid eller parentdata bruges. Ved komplet sammenligning betyder højst syv points samlet spænd praktisk hele zonen; ellers navngives én eller flere dele inden for syv point af vinderen. Mangler blot én nødvendig lokal sammenligning, er dækningen usikker. Resultatet er fortsat privat og kan ikke ændre den aktive RavScore.
 

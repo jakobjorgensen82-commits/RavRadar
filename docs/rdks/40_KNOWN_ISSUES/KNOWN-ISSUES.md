@@ -1,11 +1,11 @@
 # Kendte åbne og overvågede forhold
 
 ## National zone- og kystgeometri – aktiv pilot efter DEC-0032
-- **ISSUE-NATIONAL-WIND-ASSET-BUDGET – #31445033036 DOKUMENTERET / 4.0.169 RETTET LOKALT:** Fire marine tider fik den tidligere vindvælger til at tilføje flere store HARMONIE-assets og ramme downloadgrænsen. Vindgaten vælger nu præcis to assets, hvor det første matcher et ægte marint `t`/`t+3h`-scoretidspunkt. Afventer privat CI.
-- **ISSUE-NATIONAL-SHADOW-THREE-HOUR-TREND – #31440337378 DOKUMENTERET / 4.0.168 RETTET LOKALT:** To på hinanden følgende native midnatstrin kunne ikke levere `t+3h`, så 0/752 scorer blev korrekt afvist. Fire assets indsamles nu, og manglende ægte tretimerspar stopper før shadow-score. Afventer privat CI.
+- **ISSUE-NATIONAL-WIND-ASSET-BUDGET – LØST OG CI-VERIFICERET I #31448258035:** Det begrænsede valg af præcis to HARMONIE-assets bestod for alle 774 berettigede dele inden for downloadgrænsen.
+- **ISSUE-NATIONAL-SHADOW-THREE-HOUR-TREND – LØST OG CI-VERIFICERET I #31448258035:** Et ægte native `t`/`t+3h`-par blev anvendt, og alle 752 komplette dele blev shadow-scoret uden interpolation.
 - **ISSUE-NATIONAL-PART-WIND-NOT-YET-VERIFIED – LØST PRIVAT I #31425327202:** 774/774 dele har mindst to native HARMONIE-trin; retrypopulationen var 20, og samme celle, afstand og provenance bestod uden interpolation eller parentfallback.
 - **ISSUE-NATIONAL-SHADOW-SCORE-NOT-YET-VERIFIED – LØST PRIVAT I #31425327202 / AKTIVERING LUKKET:** 752 fuldt dækkede dele blev scoret privat; 22 deldækkede og ni blokerede forblev fail-closed.
-- **ISSUE-NATIONAL-OWNER-REVIEW-AND-ADMIN-ROUNDTRIP – 4.0.167 LOKALT IMPLEMENTERET:** Reviewet samler 783 dele. Den nationale tempkladde-roundtrip skal CI-verificeres før ejerreview; ingen aktivering er tilladt.
+- **ISSUE-NATIONAL-OWNER-REVIEW-AND-ADMIN-ROUNDTRIP – CI-VERIFICERET I #31448258035 / AFVENTER EJERREVIEW:** Reviewet samler 783 dele, og tempkladde-roundtrip/rollback bestod uden ændring af beskyttede dokumenter. Ingen aktivering er tilladt før Jakobs manuelle gennemgang og særskilte beslutning.
 - **ISSUE-NATIONAL-SOURCE-SEQUENTIAL-SCALING – LØST I #2029:** Den tidligere repositoryplan gav 101 fliser/707 requests. Efter central hydration gav #2029 den autoritative plan 100 fliser/700 requests, som blev hentet med højst fire samtidige fliser på ca. 5:15; hele validator-/QA-/artifactjobbet sluttede på 7:45.
 - **ISSUE-NATIONAL-RAW-ARTIFACT-DOWNLOAD-SCALE – LØST I #2033:** Det private råartifact er 413 MB komprimeret. #2033 bevarede råbeviset og uploadede samtidig et separat kompakt 6,8 MB artifact med plan, manifest og begge 208-zone-QA-filer.
 - **ISSUE-NATIONAL-GEOMETRY-SOURCE-ACQUISITION – PRIVAT CI-VERIFICERET I #2029/#2033:** Den central-hydrerede nationale kæde bestod med 208 zoner, 100 fliser, komplette eksponerede lag, deduplikering, credentialgate og rumligt indekseret QA. 4.0.146 bygger næste read-only havn-/å-/fjord-/relevanstopologiaudit.
