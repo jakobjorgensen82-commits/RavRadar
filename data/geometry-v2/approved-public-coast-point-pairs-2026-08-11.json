@@ -1,0 +1,1714 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "private-approved-public-coast-point-pairs",
+  "partCount": 50,
+  "proposedPointPairCount": 50,
+  "blockedPointPairCount": 0,
+  "automaticActivationAllowed": false,
+  "parts": [
+    {
+      "zoneId": "DK-B04-04",
+      "partId": "dk-b04-04-national-part-01",
+      "finalPartId": "dk-b04-04-national-part-01",
+      "name": null,
+      "suggestedName": "DK-B04-04",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        8.3875736,
+        55.3982238
+      ],
+      "landPoint": [
+        8.3892152,
+        55.3987622
+      ],
+      "waterPoint": [
+        8.385932,
+        55.3976854
+      ],
+      "onshoreDirectionDeg": 60.5,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        8.32,
+        55.405
+      ],
+      "waterWitness": [
+        8.225,
+        55.405
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-05",
+      "partId": "dk-b04-05-national-part-01",
+      "finalPartId": "dk-b04-05-national-part-01",
+      "name": null,
+      "suggestedName": "DK-B04-05",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        8.4093961,
+        55.3734674
+      ],
+      "landPoint": [
+        8.4111656,
+        55.3738513
+      ],
+      "waterPoint": [
+        8.4076267,
+        55.3730835
+      ],
+      "onshoreDirectionDeg": 69.6,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        8.345,
+        55.35
+      ],
+      "waterWitness": [
+        8.255,
+        55.35
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-06",
+      "partId": "dk-b04-06-national-part-01",
+      "finalPartId": "dk-b04-06-national-part-01",
+      "name": null,
+      "suggestedName": "DK-B04-06",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        8.5372951,
+        55.2687003
+      ],
+      "landPoint": [
+        8.5386062,
+        55.2694764
+      ],
+      "waterPoint": [
+        8.5359841,
+        55.2679241
+      ],
+      "onshoreDirectionDeg": 44.3,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        8.53,
+        55.278
+      ],
+      "waterWitness": [
+        8.445,
+        55.278
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-06",
+      "partId": "dk-b04-06-national-part-02",
+      "finalPartId": "dk-b04-06-national-part-02",
+      "name": null,
+      "suggestedName": "DK-B04-06",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        8.5522916,
+        55.2949242
+      ],
+      "landPoint": [
+        8.5531256,
+        55.2939566
+      ],
+      "waterPoint": [
+        8.5514576,
+        55.2958918
+      ],
+      "onshoreDirectionDeg": 154.2,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        8.53,
+        55.278
+      ],
+      "waterWitness": [
+        8.445,
+        55.278
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-06",
+      "partId": "dk-b04-06-national-part-03",
+      "finalPartId": "dk-b04-06-national-part-03",
+      "name": null,
+      "suggestedName": "DK-B04-06",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        8.5439866,
+        55.2911214
+      ],
+      "landPoint": [
+        8.5455697,
+        55.2905326
+      ],
+      "waterPoint": [
+        8.5424035,
+        55.2917101
+      ],
+      "onshoreDirectionDeg": 123.5,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        8.53,
+        55.278
+      ],
+      "waterWitness": [
+        8.445,
+        55.278
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-06",
+      "partId": "dk-b04-06-national-part-04",
+      "finalPartId": "dk-b04-06-national-part-04",
+      "name": null,
+      "suggestedName": "DK-B04-06",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        8.5725457,
+        55.2947184
+      ],
+      "landPoint": [
+        8.5725319,
+        55.2936402
+      ],
+      "waterPoint": [
+        8.5725595,
+        55.2957967
+      ],
+      "onshoreDirectionDeg": 180.8,
+      "witnessSource": "nearest-active-local-part-direction:dk-b04-08-national-part-01-locality-02",
+      "landWitness": [
+        8.4830242,
+        55.1870083
+      ],
+      "waterWitness": [
+        8.4782895,
+        55.1876575
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-06",
+      "partId": "dk-b04-06-national-part-05",
+      "finalPartId": "dk-b04-06-national-part-05",
+      "name": null,
+      "suggestedName": "DK-B04-06",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        8.5685967,
+        55.2952903
+      ],
+      "landPoint": [
+        8.5691117,
+        55.2963278
+      ],
+      "waterPoint": [
+        8.5680818,
+        55.2942528
+      ],
+      "onshoreDirectionDeg": 16.2,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        8.53,
+        55.278
+      ],
+      "waterWitness": [
+        8.445,
+        55.278
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-07",
+      "partId": "dk-b04-07-national-part-01",
+      "finalPartId": "dk-b04-07-national-part-01",
+      "name": null,
+      "suggestedName": "DK-B04-07",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        8.4768559,
+        55.1628306
+      ],
+      "landPoint": [
+        8.4787377,
+        55.1628771
+      ],
+      "waterPoint": [
+        8.4749741,
+        55.162784
+      ],
+      "onshoreDirectionDeg": 88.0,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        8.494,
+        55.151
+      ],
+      "waterWitness": [
+        8.395,
+        55.151
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-07",
+      "partId": "dk-b04-07-national-part-02",
+      "finalPartId": "dk-b04-07-national-part-02",
+      "name": null,
+      "suggestedName": "DK-B04-07",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        8.5665089,
+        55.1582248
+      ],
+      "landPoint": [
+        8.56805,
+        55.157605
+      ],
+      "waterPoint": [
+        8.5649678,
+        55.1588446
+      ],
+      "onshoreDirectionDeg": 125.4,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        8.494,
+        55.151
+      ],
+      "waterWitness": [
+        8.395,
+        55.151
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-07",
+      "partId": "dk-b04-07-national-part-03",
+      "finalPartId": "dk-b04-07-national-part-03",
+      "name": null,
+      "suggestedName": "DK-B04-07",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        8.5534809,
+        55.133136
+      ],
+      "landPoint": [
+        8.555289,
+        55.1334353
+      ],
+      "waterPoint": [
+        8.5516727,
+        55.1328367
+      ],
+      "onshoreDirectionDeg": 74.2,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        8.494,
+        55.151
+      ],
+      "waterWitness": [
+        8.395,
+        55.151
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-07",
+      "partId": "dk-b04-07-national-part-04",
+      "finalPartId": "dk-b04-07-national-part-04",
+      "name": null,
+      "suggestedName": "DK-B04-07",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        8.5552666,
+        55.1133167
+      ],
+      "landPoint": [
+        8.5571478,
+        55.1133156
+      ],
+      "waterPoint": [
+        8.5533854,
+        55.1133176
+      ],
+      "onshoreDirectionDeg": 90.4,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        8.494,
+        55.151
+      ],
+      "waterWitness": [
+        8.395,
+        55.151
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-07",
+      "partId": "dk-b04-07-national-part-05",
+      "finalPartId": "dk-b04-07-national-part-05",
+      "name": null,
+      "suggestedName": "DK-B04-07",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        8.5785201,
+        55.1756539
+      ],
+      "landPoint": [
+        8.5796592,
+        55.1747949
+      ],
+      "waterPoint": [
+        8.5773809,
+        55.1765128
+      ],
+      "onshoreDirectionDeg": 143.1,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        8.494,
+        55.151
+      ],
+      "waterWitness": [
+        8.395,
+        55.151
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-12",
+      "partId": "dk-b04-12-owner-approved-01",
+      "finalPartId": "dk-b04-12-owner-approved-01",
+      "name": "Emmerlev og Ballum",
+      "suggestedName": "Emmerlev og Ballum",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        8.6438757,
+        55.074929
+      ],
+      "landPoint": [
+        8.6457185,
+        55.0747169
+      ],
+      "waterPoint": [
+        8.642033,
+        55.075141
+      ],
+      "onshoreDirectionDeg": 101.6,
+      "witnessSource": "documented-mainland-east-of-wadden",
+      "landWitness": [
+        8.76,
+        55.1
+      ],
+      "waterWitness": [
+        8.54,
+        55.1
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-13",
+      "partId": "dk-b04-13-owner-approved-01",
+      "finalPartId": "dk-b04-13-owner-approved-01",
+      "name": "Rejsby og Ribe Vesterå",
+      "suggestedName": "Rejsby og Ribe Vesterå",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        8.655333,
+        55.2855481
+      ],
+      "landPoint": [
+        8.6569927,
+        55.2860634
+      ],
+      "waterPoint": [
+        8.6536734,
+        55.2850328
+      ],
+      "onshoreDirectionDeg": 61.7,
+      "witnessSource": "documented-mainland-east-of-wadden",
+      "landWitness": [
+        8.76,
+        55.24
+      ],
+      "waterWitness": [
+        8.54,
+        55.24
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B04-14",
+      "partId": "dk-b04-14-owner-approved-01",
+      "finalPartId": "dk-b04-14-owner-approved-01",
+      "name": "Ribe Kammersluse og Esbjerg",
+      "suggestedName": "Ribe Kammersluse og Esbjerg",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        8.5894735,
+        55.4393694
+      ],
+      "landPoint": [
+        8.5905053,
+        55.4402742
+      ],
+      "waterPoint": [
+        8.5884417,
+        55.4384646
+      ],
+      "onshoreDirectionDeg": 33.3,
+      "witnessSource": "documented-mainland-east-of-wadden",
+      "landWitness": [
+        8.72,
+        55.39
+      ],
+      "waterWitness": [
+        8.48,
+        55.39
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B05-19",
+      "partId": "dk-b05-19-national-part-01",
+      "finalPartId": "dk-b05-19-national-part-01",
+      "name": null,
+      "suggestedName": "DK-B05-19",
+      "coastType": "limfjord",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        9.1307443,
+        56.8604832
+      ],
+      "landPoint": [
+        9.1294382,
+        56.8596768
+      ],
+      "waterPoint": [
+        9.1320504,
+        56.8612896
+      ],
+      "onshoreDirectionDeg": 221.5,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        9.09,
+        56.885
+      ],
+      "waterWitness": [
+        9.15,
+        56.885
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B05-19",
+      "partId": "dk-b05-19-national-part-02",
+      "finalPartId": "dk-b05-19-national-part-02",
+      "name": null,
+      "suggestedName": "DK-B05-19",
+      "coastType": "limfjord",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        9.0684744,
+        56.8435063
+      ],
+      "landPoint": [
+        9.0683625,
+        56.84243
+      ],
+      "waterPoint": [
+        9.0685863,
+        56.8445826
+      ],
+      "onshoreDirectionDeg": 183.2,
+      "witnessSource": "nearest-active-local-part-direction:dk-b05-17-national-part-01",
+      "landWitness": [
+        9.0722829,
+        56.829242
+      ],
+      "waterWitness": [
+        9.0728433,
+        56.83201
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B05-20",
+      "partId": "dk-b05-20-owner-approved-01",
+      "finalPartId": "dk-b05-20-owner-approved-01",
+      "name": "DK-B05-20",
+      "suggestedName": "DK-B05-20",
+      "coastType": "limfjord",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        9.339649,
+        57.0046676
+      ],
+      "landPoint": [
+        9.3386502,
+        57.0055977
+      ],
+      "waterPoint": [
+        9.3406477,
+        57.0037375
+      ],
+      "onshoreDirectionDeg": 329.3,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        9.33,
+        56.92
+      ],
+      "waterWitness": [
+        9.39,
+        56.92
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-19",
+      "partId": "dk-b07-19-national-part-01",
+      "finalPartId": "dk-b07-19-national-part-01",
+      "name": null,
+      "suggestedName": "DK-B07-19",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.7089802,
+        54.7260565
+      ],
+      "landPoint": [
+        10.7099634,
+        54.7251406
+      ],
+      "waterPoint": [
+        10.7079969,
+        54.7269723
+      ],
+      "onshoreDirectionDeg": 146.7,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        10.69,
+        54.75
+      ],
+      "waterWitness": [
+        10.69,
+        54.795
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-19",
+      "partId": "dk-b07-19-national-part-02",
+      "finalPartId": "dk-b07-19-national-part-02",
+      "name": null,
+      "suggestedName": "DK-B07-19",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.6723787,
+        54.7642369
+      ],
+      "landPoint": [
+        10.6705651,
+        54.763986
+      ],
+      "waterPoint": [
+        10.6741922,
+        54.7644877
+      ],
+      "onshoreDirectionDeg": 255.2,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        10.69,
+        54.75
+      ],
+      "waterWitness": [
+        10.69,
+        54.795
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-21",
+      "partId": "dk-b07-21-national-part-01",
+      "finalPartId": "dk-b07-21-national-part-01",
+      "name": null,
+      "suggestedName": "DK-B07-21",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.2053947,
+        54.9656938
+      ],
+      "landPoint": [
+        10.2036794,
+        54.9652593
+      ],
+      "waterPoint": [
+        10.20711,
+        54.9661282
+      ],
+      "onshoreDirectionDeg": 245.3,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        10.26,
+        54.94
+      ],
+      "waterWitness": [
+        10.295353,
+        54.905528
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-21",
+      "partId": "dk-b07-21-national-part-02",
+      "finalPartId": "dk-b07-21-national-part-02",
+      "name": null,
+      "suggestedName": "DK-B07-21",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.3030574,
+        54.9278185
+      ],
+      "landPoint": [
+        10.3031727,
+        54.9288947
+      ],
+      "waterPoint": [
+        10.3029422,
+        54.9267422
+      ],
+      "onshoreDirectionDeg": 2.5,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        10.26,
+        54.94
+      ],
+      "waterWitness": [
+        10.295353,
+        54.905528
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-22",
+      "partId": "dk-b07-22-national-part-01",
+      "finalPartId": "dk-b07-22-national-part-01",
+      "name": null,
+      "suggestedName": "DK-B07-22",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.3885417,
+        54.8316999
+      ],
+      "landPoint": [
+        10.3876023,
+        54.8307679
+      ],
+      "waterPoint": [
+        10.389481,
+        54.8326319
+      ],
+      "onshoreDirectionDeg": 209.1,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        10.35,
+        54.84
+      ],
+      "waterWitness": [
+        10.368811,
+        54.882286
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-22",
+      "partId": "dk-b07-22-national-part-02",
+      "finalPartId": "dk-b07-22-national-part-02",
+      "name": null,
+      "suggestedName": "DK-B07-22",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.4186292,
+        54.8786591
+      ],
+      "landPoint": [
+        10.41693,
+        54.8782087
+      ],
+      "waterPoint": [
+        10.4203283,
+        54.8791095
+      ],
+      "onshoreDirectionDeg": 244.2,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        10.35,
+        54.84
+      ],
+      "waterWitness": [
+        10.368811,
+        54.882286
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "partId": "dk-b07-23-national-part-01",
+      "finalPartId": "dk-b07-23-national-part-01",
+      "name": null,
+      "suggestedName": "DK-B07-23",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.5321684,
+        54.8462494
+      ],
+      "landPoint": [
+        10.5330475,
+        54.8452979
+      ],
+      "waterPoint": [
+        10.5312892,
+        54.8472008
+      ],
+      "onshoreDirectionDeg": 150.7,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        10.53,
+        54.85
+      ],
+      "waterWitness": [
+        10.478317,
+        54.865391
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "partId": "dk-b07-23-national-part-02",
+      "finalPartId": "dk-b07-23-national-part-02",
+      "name": null,
+      "suggestedName": "DK-B07-23",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.5749567,
+        54.8544567
+      ],
+      "landPoint": [
+        10.5758129,
+        54.8534983
+      ],
+      "waterPoint": [
+        10.5741004,
+        54.8554152
+      ],
+      "onshoreDirectionDeg": 151.4,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        10.53,
+        54.85
+      ],
+      "waterWitness": [
+        10.478317,
+        54.865391
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "partId": "dk-b07-23-national-part-03",
+      "finalPartId": "dk-b07-23-national-part-03",
+      "name": null,
+      "suggestedName": "DK-B07-23",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.4803612,
+        54.8814084
+      ],
+      "landPoint": [
+        10.4794761,
+        54.8804586
+      ],
+      "waterPoint": [
+        10.4812463,
+        54.8823583
+      ],
+      "onshoreDirectionDeg": 207.0,
+      "witnessSource": "nearest-active-local-part-direction:dk-b10-14-national-part-01-locality-01",
+      "landWitness": [
+        10.5962201,
+        54.8414255
+      ],
+      "waterWitness": [
+        10.5997582,
+        54.8433202
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "partId": "dk-b07-23-national-part-04",
+      "finalPartId": "dk-b07-23-national-part-04",
+      "name": null,
+      "suggestedName": "DK-B07-23",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.4782658,
+        54.8905894
+      ],
+      "landPoint": [
+        10.4801349,
+        54.8906323
+      ],
+      "waterPoint": [
+        10.4763967,
+        54.8905465
+      ],
+      "onshoreDirectionDeg": 86.5,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        10.53,
+        54.85
+      ],
+      "waterWitness": [
+        10.478317,
+        54.865391
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "partId": "dk-b07-23-national-part-05",
+      "finalPartId": "dk-b07-23-national-part-05",
+      "name": null,
+      "suggestedName": "DK-B07-23",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.4675493,
+        54.880916
+      ],
+      "landPoint": [
+        10.4689946,
+        54.8816003
+      ],
+      "waterPoint": [
+        10.466104,
+        54.8802316
+      ],
+      "onshoreDirectionDeg": 49.4,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        10.53,
+        54.85
+      ],
+      "waterWitness": [
+        10.478317,
+        54.865391
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "partId": "dk-b07-23-national-part-06",
+      "finalPartId": "dk-b07-23-national-part-06",
+      "name": null,
+      "suggestedName": "DK-B07-23",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.4867745,
+        54.8669111
+      ],
+      "landPoint": [
+        10.488544,
+        54.8672592
+      ],
+      "waterPoint": [
+        10.4850051,
+        54.8665629
+      ],
+      "onshoreDirectionDeg": 69.9,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        10.53,
+        54.85
+      ],
+      "waterWitness": [
+        10.478317,
+        54.865391
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "partId": "dk-b07-23-national-part-07",
+      "finalPartId": "dk-b07-23-national-part-07",
+      "name": null,
+      "suggestedName": "DK-B07-23",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.5615695,
+        54.8587939
+      ],
+      "landPoint": [
+        10.5631955,
+        54.858262
+      ],
+      "waterPoint": [
+        10.5599435,
+        54.8593256
+      ],
+      "onshoreDirectionDeg": 118.3,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        10.53,
+        54.85
+      ],
+      "waterWitness": [
+        10.478317,
+        54.865391
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "partId": "dk-b07-23-national-part-08",
+      "finalPartId": "dk-b07-23-national-part-08",
+      "name": null,
+      "suggestedName": "DK-B07-23",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.5392786,
+        54.8588733
+      ],
+      "landPoint": [
+        10.5393073,
+        54.8577952
+      ],
+      "waterPoint": [
+        10.53925,
+        54.8599514
+      ],
+      "onshoreDirectionDeg": 177.9,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        10.53,
+        54.85
+      ],
+      "waterWitness": [
+        10.478317,
+        54.865391
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "partId": "dk-b07-23-national-part-09",
+      "finalPartId": "dk-b07-23-national-part-09",
+      "name": null,
+      "suggestedName": "DK-B07-23",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.4675724,
+        54.8732004
+      ],
+      "landPoint": [
+        10.4689512,
+        54.8739287
+      ],
+      "waterPoint": [
+        10.4661937,
+        54.872472
+      ],
+      "onshoreDirectionDeg": 46.3,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        10.53,
+        54.85
+      ],
+      "waterWitness": [
+        10.478317,
+        54.865391
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "partId": "dk-b07-23-national-part-10",
+      "finalPartId": "dk-b07-23-national-part-10",
+      "name": null,
+      "suggestedName": "DK-B07-23",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.4715205,
+        54.8924678
+      ],
+      "landPoint": [
+        10.4731478,
+        54.891936
+      ],
+      "waterPoint": [
+        10.4698931,
+        54.8929996
+      ],
+      "onshoreDirectionDeg": 118.3,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        10.53,
+        54.85
+      ],
+      "waterWitness": [
+        10.478317,
+        54.865391
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-23",
+      "partId": "dk-b07-23-national-part-11",
+      "finalPartId": "dk-b07-23-national-part-11",
+      "name": null,
+      "suggestedName": "DK-B07-23",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.4608677,
+        54.8704312
+      ],
+      "landPoint": [
+        10.4624964,
+        54.8709607
+      ],
+      "waterPoint": [
+        10.459239,
+        54.8699016
+      ],
+      "onshoreDirectionDeg": 59.4,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        10.53,
+        54.85
+      ],
+      "waterWitness": [
+        10.478317,
+        54.865391
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B08-03",
+      "partId": "dk-b08-03-national-part-01",
+      "finalPartId": "dk-b08-03-national-part-01",
+      "name": null,
+      "suggestedName": "DK-B08-03",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        11.1903311,
+        55.8715812
+      ],
+      "landPoint": [
+        11.1887995,
+        55.8709327
+      ],
+      "waterPoint": [
+        11.1918627,
+        55.8722296
+      ],
+      "onshoreDirectionDeg": 231.2,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        11.13,
+        55.94
+      ],
+      "waterWitness": [
+        11.08,
+        56
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B08-12",
+      "partId": "dk-b08-12-national-part-01",
+      "finalPartId": "dk-b08-12-national-part-01",
+      "name": null,
+      "suggestedName": "DK-B08-12",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        11.9100374,
+        55.9945386
+      ],
+      "landPoint": [
+        11.9090941,
+        55.9954778
+      ],
+      "waterPoint": [
+        11.9109807,
+        55.9935994
+      ],
+      "onshoreDirectionDeg": 328.2,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        11.84,
+        55.93
+      ],
+      "waterWitness": [
+        11.91,
+        55.88
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B08-12",
+      "partId": "dk-b08-12-national-part-02",
+      "finalPartId": "dk-b08-12-national-part-02",
+      "name": null,
+      "suggestedName": "DK-B08-12",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        11.6930902,
+        55.9470228
+      ],
+      "landPoint": [
+        11.6925546,
+        55.9480579
+      ],
+      "waterPoint": [
+        11.6936257,
+        55.9459878
+      ],
+      "onshoreDirectionDeg": 341.6,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        11.84,
+        55.93
+      ],
+      "waterWitness": [
+        11.91,
+        55.88
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B08-12",
+      "partId": "dk-b08-12-national-part-03",
+      "finalPartId": "dk-b08-12-national-part-03",
+      "name": null,
+      "suggestedName": "DK-B08-12",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        11.7910814,
+        55.9487564
+      ],
+      "landPoint": [
+        11.7894685,
+        55.9493416
+      ],
+      "waterPoint": [
+        11.7926944,
+        55.9481711
+      ],
+      "onshoreDirectionDeg": 300.6,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        11.84,
+        55.93
+      ],
+      "waterWitness": [
+        11.91,
+        55.88
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B08-12",
+      "partId": "dk-b08-12-national-part-04",
+      "finalPartId": "dk-b08-12-national-part-04",
+      "name": null,
+      "suggestedName": "DK-B08-12",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        11.7893816,
+        55.9511713
+      ],
+      "landPoint": [
+        11.7874689,
+        55.9512708
+      ],
+      "waterPoint": [
+        11.7912943,
+        55.9510717
+      ],
+      "onshoreDirectionDeg": 273.0,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        11.84,
+        55.93
+      ],
+      "waterWitness": [
+        11.91,
+        55.88
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B08-18",
+      "partId": "dk-b08-18-national-part-01",
+      "finalPartId": "dk-b08-18-national-part-01",
+      "name": null,
+      "suggestedName": "DK-B08-18",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        12.5842241,
+        56.0552058
+      ],
+      "landPoint": [
+        12.5831231,
+        56.0543218
+      ],
+      "waterPoint": [
+        12.5853251,
+        56.0560898
+      ],
+      "onshoreDirectionDeg": 211.9,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        12.64,
+        56.09
+      ],
+      "waterWitness": [
+        12.64,
+        56.15
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B08-18",
+      "partId": "dk-b08-18-national-part-02",
+      "finalPartId": "dk-b08-18-national-part-02",
+      "name": null,
+      "suggestedName": "DK-B08-18",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        12.6101869,
+        56.0294561
+      ],
+      "landPoint": [
+        12.6116447,
+        56.0287528
+      ],
+      "waterPoint": [
+        12.608729,
+        56.0301594
+      ],
+      "onshoreDirectionDeg": 127.8,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        12.64,
+        56.09
+      ],
+      "waterWitness": [
+        12.64,
+        56.15
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B08-18",
+      "partId": "dk-b08-18-national-part-03",
+      "finalPartId": "dk-b08-18-national-part-03",
+      "name": null,
+      "suggestedName": "DK-B08-18",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        12.6220989,
+        56.0405437
+      ],
+      "landPoint": [
+        12.6213709,
+        56.0395462
+      ],
+      "waterPoint": [
+        12.6228269,
+        56.0415412
+      ],
+      "onshoreDirectionDeg": 199.2,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        12.64,
+        56.09
+      ],
+      "waterWitness": [
+        12.64,
+        56.15
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B10-13",
+      "partId": "dk-b10-13-owner-approved-01",
+      "finalPartId": "dk-b10-13-owner-approved-01",
+      "name": "Bredfjed",
+      "suggestedName": "Bredfjed",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        11.2898869,
+        54.6892791
+      ],
+      "landPoint": [
+        11.2909486,
+        54.6901646
+      ],
+      "waterPoint": [
+        11.2888252,
+        54.6883936
+      ],
+      "onshoreDirectionDeg": 32.9,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        11.13,
+        54.62
+      ],
+      "waterWitness": [
+        11.13,
+        54.54
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B12-06",
+      "partId": "dk-b12-06-national-part-01",
+      "finalPartId": "dk-b12-06-national-part-01",
+      "name": null,
+      "suggestedName": "DK-B12-06",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        9.7604055,
+        54.9553977
+      ],
+      "landPoint": [
+        9.758533,
+        54.9553578
+      ],
+      "waterPoint": [
+        9.762278,
+        54.9554375
+      ],
+      "onshoreDirectionDeg": 267.3,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        9.83,
+        54.91
+      ],
+      "waterWitness": [
+        9.91,
+        54.88
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B12-06",
+      "partId": "dk-b12-06-national-part-02",
+      "finalPartId": "dk-b12-06-national-part-02",
+      "name": null,
+      "suggestedName": "DK-B12-06",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        9.7536034,
+        54.942907
+      ],
+      "landPoint": [
+        9.7519405,
+        54.9424106
+      ],
+      "waterPoint": [
+        9.7552664,
+        54.9434034
+      ],
+      "onshoreDirectionDeg": 242.0,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        9.83,
+        54.91
+      ],
+      "waterWitness": [
+        9.91,
+        54.88
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B12-06",
+      "partId": "dk-b12-06-national-part-03",
+      "finalPartId": "dk-b12-06-national-part-03",
+      "name": null,
+      "suggestedName": "DK-B12-06",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        9.7880992,
+        54.9040848
+      ],
+      "landPoint": [
+        9.7871039,
+        54.9031716
+      ],
+      "waterPoint": [
+        9.7890945,
+        54.904998
+      ],
+      "onshoreDirectionDeg": 211.5,
+      "witnessSource": "nearest-active-local-part-direction:dk-b12-04-national-part-05",
+      "landWitness": [
+        9.7377505,
+        54.984221
+      ],
+      "waterWitness": [
+        9.7425858,
+        54.9843891
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B12-06",
+      "partId": "dk-b12-06-national-part-04",
+      "finalPartId": "dk-b12-06-national-part-04",
+      "name": null,
+      "suggestedName": "DK-B12-06",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        9.7789596,
+        54.9040871
+      ],
+      "landPoint": [
+        9.7777628,
+        54.9049161
+      ],
+      "waterPoint": [
+        9.7801564,
+        54.9032581
+      ],
+      "onshoreDirectionDeg": 319.6,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        9.83,
+        54.91
+      ],
+      "waterWitness": [
+        9.91,
+        54.88
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B12-06",
+      "partId": "dk-b12-06-national-part-05",
+      "finalPartId": "dk-b12-06-national-part-05",
+      "name": null,
+      "suggestedName": "DK-B12-06",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.0140615,
+        54.963401
+      ],
+      "landPoint": [
+        10.0124484,
+        54.962852
+      ],
+      "waterPoint": [
+        10.0156746,
+        54.9639499
+      ],
+      "onshoreDirectionDeg": 238.6,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        9.83,
+        54.91
+      ],
+      "waterWitness": [
+        9.91,
+        54.88
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B12-07",
+      "partId": "dk-b12-07-owner-approved-01",
+      "finalPartId": "dk-b12-07-owner-approved-01",
+      "name": "Mommark & Pøl Huk",
+      "suggestedName": "Mommark & Pøl Huk",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.0678172,
+        54.8881304
+      ],
+      "landPoint": [
+        10.0696429,
+        54.8883653
+      ],
+      "waterPoint": [
+        10.0659916,
+        54.8878954
+      ],
+      "onshoreDirectionDeg": 76.5,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        9.98,
+        54.86
+      ],
+      "waterWitness": [
+        9.94,
+        54.8
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    }
+  ],
+  "totalCandidatePartCount": 654,
+  "candidatePointPairCount": 654,
+  "candidateMissingPointPairCount": 0,
+  "candidateMissingPointPartIds": []
+}

@@ -2,10 +2,12 @@
 
 ## National kystgeometri v2 – datakæde verificeret, offentlig kortvisning rettes
 - [x] Ejeren har godkendt det private seks-zoners korrektionskort. Den versionsførte godkendelse tillader samling og audit, men ikke automatisk produktion eller scoreaktivering.
-- [ ] Saml de seks godkendte rettelser med den additive 650-dels kandidat; kør national hul-/overlapaudit og generér/validér land-/vandpunkter for nye zoner.
+- [x] De seks godkendte rettelser er samlet med den additive kandidat til 209 hovedzoner og 654 dele. Tværzoneoverlap er nul, og den samlede hulaudit har nul uafklarede relevante huller.
+- [x] Alle 654 dele har land-/vandpunkt; 50 nye eller ændrede dele er genereret uden blokering, mens 604 eksisterende punktpar genbruges.
+- [ ] Den isolerede Linux-kørsel skal bevise native DMI-griddækning for de 50 nye vandpunkter. Derefter følger samlet privat runtime-/releasegate før nogen offentlig aktivering.
 - [x] Den autoritative otte-zoners ejerfil `(4)` er versionsført og anvendt fail-closed. Seks bevarede/rettede kandidater er samlet i et privat korrektionskort; to fejlagtige præcisionsforslag er forkastet uden at slette deres eksisterende hovedzoner.
 - [x] Vadehavsforslaget sammenholdes nu med hele den additive 650-dels kandidat, så den eksisterende Emmerlev-geometri ikke dobbeltregistreres. Den private Vadehavstilføjelse er 81,883 km efter denne deduplikering.
-- [ ] Ejeren skal kontrollere det lille seks-zoners korrektionskort. Derefter kræves samlet national hul-/overlapaudit, nye land-/vandpunkter til nye zoner og fulde gates før aktivering.
+- [x] Ejeren har kontrolleret og godkendt det lille seks-zoners korrektionskort; godkendelsen er versionsført fail-closed.
 - [x] Den manglende relevante fastlandskyst langs Vadehavet fra Emmerlev til Esbjerg er fundet som en ejerskabsfejl. Det rettede private forslag er 81,883 km uden Rømødæmning, økyster eller runtime-overlap. To ejerbestemte forbindelser på samlet 4.671,4 meter er eksplicit dokumenteret som manuelle broer og må ikke beskrives som direkte GeoDanmark-geometri.
 - [x] Privat #31480089490 genbyggede den friske centralt hydrerede landskæde og bestod geometri, 605/605 land-/vandpunkter, 605/605 DMI-gridvalg, flertrinsserier, isoleret state/historik, lokal vind, shadow-score og central admin-roundtrip/rollback.
 - [x] Slutbestanden er 605 lokale kystdele i 190 hovedzoner, nul fysiske overlap og 594 fuldt plus 11 delvist marinedækkede dele. Den sidste tætte ejerskabsbeslutning ved Orehoved tilhører Falsters nordkyst, ikke Bøgestrømmen vest.

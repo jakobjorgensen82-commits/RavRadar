@@ -35,13 +35,14 @@ def runtime_geometries(payload):
     return rows
 
 
-def build(gaps, coastal, locality, active_parts, threshold=0.9):
+def build(gaps, coastal, locality, active_parts, residual_review=None, threshold=0.9):
     original = [transform(TO_M, shape(feature["geometry"])) for feature in original_features(coastal, locality)]
     active = runtime_geometries(active_parts)
     original_tree = STRtree(original) if original else None
     active_tree = STRtree(active) if active else None
     reviewed = []
     unresolved = []
+    residual_decisions = (residual_review or {}).get("decisions") or {}
     for feature in gaps.get("features") or []:
         geometry = transform(TO_M, shape(feature["geometry"]))
         original_near = [original[int(index)] for index in original_tree.query(geometry.buffer(5))] if original_tree is not None else []
@@ -50,21 +51,33 @@ def build(gaps, coastal, locality, active_parts, threshold=0.9):
         active_union = unary_union(active_near) if active_near else geometry.__class__()
         removed = original_union.difference(active_union.buffer(1))
         ratio = geometry.intersection(removed.buffer(2)).length / geometry.length if geometry.length else 0
-        is_prior_owner_omission = ratio >= threshold and feature.get("properties", {}).get("gapClass") != "unrepresented-main-zone"
+        properties = feature.get("properties", {})
+        zone_id = properties.get("zoneId")
+        explicit_classification = None
+        if zone_id == "DK-B05-20" and residual_decisions.get("residual-dk-b05-20", {}).get("decision") == "needs-fix":
+            explicit_classification = "owner-approved-residual-omission"
+        elif zone_id == "DK-B10-16" and residual_decisions.get("residual-dk-b10-16", {}).get("decision") == "needs-fix":
+            explicit_classification = "owner-rejected-precision-proposal"
+        elif geometry.is_closed and geometry.length < 200 and properties.get("gapClass") == "detached-candidate":
+            explicit_classification = "irrelevant-tiny-closed-island-filter"
+        is_prior_owner_omission = ratio >= threshold and properties.get("gapClass") != "unrepresented-main-zone"
+        classification = explicit_classification or ("prior-owner-approved-omission" if is_prior_owner_omission else "unresolved-public-coast-gap")
         row = {
-            **feature.get("properties", {}),
+            **properties,
             "priorOwnerRemovedOverlapRatio": round(ratio, 4),
-            "classification": "prior-owner-approved-omission" if is_prior_owner_omission else "unresolved-public-coast-gap",
+            "classification": classification,
             "automaticActivationAllowed": False,
         }
         reviewed.append(row)
-        if not is_prior_owner_omission:
+        if classification == "unresolved-public-coast-gap":
             unresolved.append({**feature, "properties": row})
     report = {
         "schemaVersion": "1.0.0",
         "status": "private-owner-approved-public-coast-gap-audit",
         "gapCount": len(reviewed),
         "priorOwnerApprovedOmissionCount": sum(row["classification"] == "prior-owner-approved-omission" for row in reviewed),
+        "currentOwnerResolvedGapCount": sum(row["classification"] in {"owner-approved-residual-omission", "owner-rejected-precision-proposal"} for row in reviewed),
+        "technicalIrrelevantGapCount": sum(row["classification"] == "irrelevant-tiny-closed-island-filter" for row in reviewed),
         "unresolvedGapCount": len(unresolved),
         "automaticActivationAllowed": False,
         "gaps": reviewed,
@@ -87,6 +100,7 @@ def main():
     parser.add_argument("--source-coastal", type=Path)
     parser.add_argument("--source-locality", type=Path)
     parser.add_argument("--active-parts", type=Path)
+    parser.add_argument("--residual-review", type=Path)
     parser.add_argument("--report", type=Path, default=ROOT / ".geometry-v2-work" / "owner-approved-public-coast-gap-audit.json")
     parser.add_argument("--unresolved-geojson", type=Path, default=ROOT / ".geometry-v2-work" / "unresolved-public-coast-gaps.geojson")
     parser.add_argument("--self-test", action="store_true")
@@ -97,7 +111,7 @@ def main():
     required = (args.gaps, args.source_coastal, args.source_locality, args.active_parts)
     if not all(required):
         parser.error("--gaps, --source-coastal, --source-locality og --active-parts er påkrævet")
-    report, unresolved = build(load(args.gaps), load(args.source_coastal), load(args.source_locality), load(args.active_parts))
+    report, unresolved = build(load(args.gaps), load(args.source_coastal), load(args.source_locality), load(args.active_parts), load(args.residual_review) if args.residual_review else None)
     args.report.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     args.unresolved_geojson.write_text(json.dumps(unresolved, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     print(json.dumps({key: report[key] for key in ("gapCount", "priorOwnerApprovedOmissionCount", "unresolvedGapCount")}, ensure_ascii=False))
