@@ -5,7 +5,7 @@ import argparse, hashlib, json
 from datetime import datetime, timezone
 from pathlib import Path
 from pyproj import Transformer
-from shapely.geometry import LineString, box, mapping, shape
+from shapely.geometry import LineString, mapping, shape
 from shapely.ops import transform, unary_union
 from shapely.strtree import STRtree
 
@@ -26,13 +26,14 @@ def summary(values): return {"sampleCount":len(values),"meanM":round(sum(values)
 def source_id(feature):
     props=feature.get("properties") or {}; return str(feature.get("id") or props.get("id_lokalId") or props.get("objectid") or "unknown")
 def evidence_window(feature):
-    geometry=shape(feature["geometry"]); west,south,east,north=geometry.bounds; props=feature.get("properties") or {}
-    evidence=list(props.get("coastLine") or [])
-    for key in ("dataPoint","pinPoint"):
-        if isinstance(props.get(key),list) and len(props[key])>=2:evidence.append(props[key])
-    if evidence:
-        west=min(west,*(float(point[0]) for point in evidence)); east=max(east,*(float(point[0]) for point in evidence)); south=min(south,*(float(point[1]) for point in evidence)); north=max(north,*(float(point[1]) for point in evidence))
-    return project(box(west,south,east,north)).buffer(1000)
+    props=feature.get("properties") or {}
+    windows=[]
+    coast=props.get("coastLine") or []
+    if len(coast)>=2:windows.append(project(LineString(coast)).buffer(2000))
+    data_point=props.get("dataPoint"); pin_point=props.get("pinPoint")
+    if isinstance(data_point,list) and len(data_point)>=2 and isinstance(pin_point,list) and len(pin_point)>=2:
+        windows.append(project(LineString([data_point,pin_point])).buffer(1000))
+    return unary_union(windows) if windows else LineString()
 def build(zones,plan,kyst,recovery_zone_ids=None):
     recovery_zone_ids=set(recovery_zone_ids or [])
     zone_features={f["properties"]["id"]:f for f in zones.get("features") or [] if f.get("properties",{}).get("zoneStatus")=="active"}
@@ -46,12 +47,12 @@ def build(zones,plan,kyst,recovery_zone_ids=None):
     if not source:fail("Det nationale GeoDanmark Kyst-lag er tomt.")
     tree=STRtree(source); rows=[]; mapped=[]
     for zone_id in sorted(zone_features):
-        feature=zone_features[zone_id]; props=feature["properties"]; current=project(LineString(props.get("coastLine") or [])); window=evidence_window(feature); proximity=current.buffer(2000)
+        feature=zone_features[zone_id]; props=feature["properties"]; current=project(LineString(props.get("coastLine") or [])); window=project(shape(feature["geometry"])).buffer(1000); proximity=current.buffer(2000)
 
-        def collect(limit):
+        def collect(limit,clip_window=window):
             found=[]; found_refs=set()
             for index in tree.query(limit):
-                clipped=source[int(index)].intersection(window).intersection(limit)
+                clipped=source[int(index)].intersection(clip_window).intersection(limit)
                 for line in parts(clipped):
                     if line.length>=5:found.append(line); found_refs.add(refs[int(index)])
             return found,found_refs
@@ -69,6 +70,10 @@ def build(zones,plan,kyst,recovery_zone_ids=None):
         if recovered:
             candidates,candidate_refs=collect(window)
             union=unary_union(candidates) if candidates else LineString()
+            if union.is_empty:
+                corridor=evidence_window(feature)
+                candidates,candidate_refs=collect(corridor,corridor)
+                union=unary_union(candidates) if candidates else LineString()
             measurement_union=union.simplify(5,preserve_topology=False)
             distances=samples(current,measurement_union)
             coverage=current.intersection(measurement_union.buffer(250)).length/current.length if current.length and not measurement_union.is_empty else 0

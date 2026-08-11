@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 
 from pyproj import Transformer
-from shapely.geometry import LineString, mapping, shape
+from shapely.geometry import LineString, Point, mapping, shape
 from shapely.ops import transform, unary_union
 from shapely.strtree import STRtree
 
@@ -127,7 +127,7 @@ def build(zones, active_parts, official_coast, expected_coast, minimum_gap_m=100
             if active.is_empty:
                 gap_class = "unrepresented-main-zone"
             else:
-                endpoints = [shape({"type": "Point", "coordinates": gap.coords[0]}), shape({"type": "Point", "coordinates": gap.coords[-1]})]
+                endpoints = [Point(gap.coords[0]), Point(gap.coords[-1])]
                 near_count = sum(point.distance(active) <= 25 for point in endpoints)
                 gap_class = "between-runtime-segments" if near_count == 2 else "runtime-edge-extension" if near_count == 1 else "detached-candidate"
             if gap_class == "detached-candidate":
@@ -147,6 +147,36 @@ def build(zones, active_parts, official_coast, expected_coast, minimum_gap_m=100
             "expectedCandidateLengthKm": round(expected.length / 1000, 3),
             "uncoveredReviewLengthKm": round(sum(gap.length for gap, _ in actionable_gaps) / 1000, 3),
             "uncoveredReviewPartCount": len(actionable_gaps),
+        })
+
+    # Build the owner review list once nationally. Per-zone candidates overlap
+    # near administrative boundaries; a national union prevents the same
+    # physical gap from appearing repeatedly under neighbouring zone IDs.
+    active_national = unary_union(geometries) if geometries else LineString()
+    expected_national = unary_union(list(expected_by_zone.values())) if expected_by_zone else LineString()
+    expected_zone_ids = list(expected_by_zone)
+    expected_zone_geometries = [expected_by_zone[zone_id] for zone_id in expected_zone_ids]
+    expected_zone_tree = STRtree(expected_zone_geometries) if expected_zone_geometries else None
+    national_gaps = [part for part in lines(expected_national.difference(active_national.buffer(5))) if part.length >= minimum_gap_m]
+    gap_features = []
+    detached_candidate_count = 0
+    for index, gap in enumerate(sorted(national_gaps, key=lambda item: -item.length), 1):
+        endpoints = [Point(gap.coords[0]), Point(gap.coords[-1])]
+        near_count = 0 if active_national.is_empty else sum(point.distance(active_national) <= 25 for point in endpoints)
+        gap_class = "between-runtime-segments" if near_count == 2 else "runtime-edge-extension" if near_count == 1 else "detached-candidate"
+        if gap_class == "detached-candidate":
+            detached_candidate_count += 1
+        owner_scores = [
+            (gap.intersection(expected_zone_geometries[int(candidate)]).length, expected_zone_ids[int(candidate)])
+            for candidate in (expected_zone_tree.query(gap.buffer(5)) if expected_zone_tree is not None else [])
+        ]
+        owner_zone_id = max(owner_scores)[1] if owner_scores else None
+        if owner_zone_id not in represented:
+            gap_class = "unrepresented-main-zone"
+        gap_features.append({
+            "type": "Feature",
+            "properties": {"zoneId": owner_zone_id, "gapId": f"national-gap-{index:03d}", "gapClass": gap_class, "lengthM": round(gap.length, 1), "status": "owner-review-required", "automaticActivationAllowed": False},
+            "geometry": mapping(unproject(gap)),
         })
 
     missing = sorted(active_zone_ids - represented)

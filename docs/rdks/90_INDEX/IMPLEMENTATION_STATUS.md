@@ -24,7 +24,9 @@
 - [ ] Ny privat national CI skal hente de ekstra officielle fliser og bevise, at recoveryzonerne ikke længere mangler kildedata.
 - [x] Privat #31514481361 gennemførte 128-flisehentning, kildevalidering, analyse, topologi og delgenerering. 16/18 manglende hovedzoner fik kandidater; samlet privat råbestand blev 806 dele i 206 zoner. Jobbet stoppede først ved den kendt ustabile eksterne stednavnetjeneste.
 - [ ] Anden privat recovery skal bruge alle zonebeviser samlet, så den internt modstridende Nibe-zone ikke afskærer sin faktiske kyst. Den resterende Ålsgårde/Helsingør-kilde skal undersøges særskilt mod officielle lag.
-- [x] En ny privat hovedzoneaudit måler officiel kildeafstand, hovedzonedækning, tværzoneoverlap og handlingsrelevante huller. Førmålingen på de aktive 605 dele gav nul kildeafvigelser, nul overlap, 18 manglende hovedzoner og 157 hul-/forlængelseskandidater efter frasortering af 768 løsrevne indre/sidekyster.
+- [x] #31516332559 beviste, at et samlet evidensrektangel er for bredt: 1.072 rå dele i 207 zoner. Denne variant er forkastet og må ikke flettes eller aktiveres.
+- [x] Målrettet lokal kildetest bevarer første forsøgs kandidater og genprøver kun helt tomme recoveryzoner i smalle evidensbånd. Resultatet er én resterende nul-zone: Ålsgårde/Helsingør; Nibe får 20,295 km officiel kandidat. Privat CI-bevis af topologi/slutantal mangler.
+- [x] En ny privat hovedzoneaudit måler officiel kildeafstand, hovedzonedækning, tværzoneoverlap og handlingsrelevante huller. Førmålingen på de aktive 605 dele gav nul kildeafvigelser, nul overlap og 18 manglende hovedzoner. National once-only-samling reducerer zonevise dubletter til 84 fysiske kandidater: 75 løsrevne, syv endeforlængelser og to små mellemrum.
 - [ ] Et privat samlet hovedzonekort skal derefter bevise præcis kyst, nul overlap, ingen uforklarede almindelige kysthuller, ingen udenlandske/outlier-linjer og kun to offentlige endemarkeringer pr. hovedzone. Ingen offentlig aktivering eller adminudvidelse før dette bevis.
 
 ## Historisk kystgeometri-v2-design før aktivering
