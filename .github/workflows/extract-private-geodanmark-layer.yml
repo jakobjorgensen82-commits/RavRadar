@@ -1,0 +1,47 @@
+name: Extract private GeoDanmark layer
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Run id containing the private national source artifact
+        required: true
+        type: string
+      source_artifact_name:
+        description: Exact private source artifact name
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  extract-kyst:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download existing private national source artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.source_artifact_name }}
+          run-id: ${{ inputs.source_run_id }}
+          github-token: ${{ github.token }}
+          path: private-source
+
+      - name: Isolate official GeoDanmark Kyst layer
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_file="$(find private-source -type f -name 'national-Kyst.geojson' -print -quit)"
+          test -n "$source_file"
+          mkdir -p private-kyst
+          cp "$source_file" private-kyst/national-Kyst.geojson
+          test -s private-kyst/national-Kyst.geojson
+
+      - name: Upload compact private Kyst layer
+        uses: actions/upload-artifact@v4
+        with:
+          name: geodanmark-private-kyst-${{ github.run_id }}
+          path: private-kyst/national-Kyst.geojson
+          if-no-files-found: error
+          retention-days: 7
