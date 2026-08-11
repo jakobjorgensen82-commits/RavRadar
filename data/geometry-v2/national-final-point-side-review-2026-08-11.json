@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "private-cartographic-land-water-side-review",
+  "reviewedAt": "2026-08-11",
+  "method": "Final once-only coastline inspected at local scale against OpenStreetMap land and water context; selected side means landCandidate is land and waterCandidate is open water.",
+  "decisions": {
+    "dk-b05-01-national-part-02": { "landSide": -1, "reason": "Thyborøn outer west coast; North Sea is west of the retained line." },
+    "dk-b06-20-national-part-01": { "landSide": 1, "reason": "Endelave east coast; open water is east of the retained line." },
+    "dk-b07-06-national-part-01": { "landSide": -1, "reason": "Flyvesandet north coast; open water is north of the retained line." },
+    "dk-b07-26-national-part-01": { "landSide": -1, "reason": "Helnæs outer southwest coast; open water is southwest of the local midpoint." },
+    "dk-b10-15-national-part-01-locality-01": { "landSide": 1, "reason": "Northwest Lolland outer coast; open water is northwest of the local midpoint." },
+    "dk-b10-20-national-part-04": { "landSide": -1, "reason": "Svaneke north/east outer coast; Baltic open water is northeast of the local midpoint." }
+  },
+  "productionGeometryChanged": false,
+  "weatherSamplingChanged": false,
+  "scoreChanged": false,
+  "automaticActivationAllowed": false
+}

@@ -1,6 +1,8 @@
 # Kendte åbne og overvågede forhold
 
 ## National zone- og kystgeometri – aktiv pilot efter DEC-0032
+- **ISSUE-NATIONAL-FINAL-CROSS-ZONE-OVERLAP – LØST LOKALT I 4.0.174 / AFVENTER PRIVAT CI:** Slutkontrollen fandt 311 overlappar mellem forskellige zoner efter ejerrettelserne. Once-only-samlingen giver lokalt 603 dele og nul overlap; én næsten lige Hammer Odde-konflikt er erstattet af en eksplicit grænse ved nordspidsen.
+- **ISSUE-NATIONAL-FINAL-POINTS-STALE-AFTER-OWNER-REVIEW – LØST LOKALT I 4.0.174 / AFVENTER PRIVAT DMI-CI:** Det tidligere 774/783-punktbevis lå før sletninger, beskæringer og tværzonededuplikering. Punkterne er nu genberegnet til 603/603 på slutgeometrien, inklusive seks kartografisk dokumenterede sideafgørelser. Native DMI- og downstreambevis mangler endnu.
 - **ISSUE-NATIONAL-INNER-WATER-FOLLOW-UP – LØST LOKALT I 4.0.173 / AFVENTER PRIVAT CI:** Ejeren har afgjort de 23 supplerende dele. En efterfølgende metrisk dubletaudit fandt 12 andre tekniske ID'er for allerede bedømte fysiske linjer og fører afgørelserne sikkert videre. Den resterende efterkontrol er nul.
 - **ISSUE-NATIONAL-OWNER-REVIEW-UNUSABLE-OVERVIEW – LØST OG VISUELT EJERBEKRÆFTET I 4.0.171:** Første review pressede hele Danmark ind i et lille, baggrundsløst kort og havde ingen godkendelsesarbejdsgang. Det er erstattet af én stor del ad gangen med baggrundskort/luftfoto, kraftig linje, automatisk zoom, beslutningsknapper, bemærkning og eksport.
 - **ISSUE-NATIONAL-WIND-ASSET-BUDGET – LØST OG CI-VERIFICERET I #31448258035:** Det begrænsede valg af præcis to HARMONIE-assets bestod for alle 774 berettigede dele inden for downloadgrænsen.

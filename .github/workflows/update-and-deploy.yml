@@ -475,6 +475,37 @@ jobs:
       - name: Build targeted private inner-water follow-up review
         run: node scripts/build-national-inner-water-owner-review.mjs --work .geometry-v2-work --output-dir .owner-review/national-inner-water-follow-up
 
+      - name: Assemble reviewed coast exactly once across neighboring zones
+        run: python scripts/assemble-national-owner-final-coast.py --work .geometry-v2-work --corrections .owner-review/national-owner-corrections --zones data/zones.geojson --output-dir .owner-review/national-owner-final
+
+      - name: Rebuild final land and water points after owner corrections and deduplication
+        run: python scripts/build-national-local-part-points.py --work-dir .geometry-v2-work --zones data/zones.geojson --final-coast .owner-review/national-owner-final/national-owner-final-coast.geojson --final-names .owner-review/national-owner-final/national-owner-final-part-names.json --output .owner-review/national-owner-final/national-local-part-point-pairs.json
+
+      - name: Validate final land and water point contract
+        run: python scripts/validate-national-local-part-points.py --work-dir .owner-review/national-owner-final
+
+      - name: Validate final water points on native DMI grids
+        run: python scripts/validate-national-local-part-dmi-grid.py --input .owner-review/national-owner-final/national-local-part-point-pairs.json --report .owner-review/national-owner-final/national-local-part-dmi-grid.json
+
+      - name: Build final isolated weather identities
+        run: python scripts/build-national-weather-shadow-contract.py --points .owner-review/national-owner-final/national-local-part-point-pairs.json --grid .owner-review/national-owner-final/national-local-part-dmi-grid.json --output .owner-review/national-owner-final/national-weather-shadow-contract.json
+
+      - name: Validate final native marine series
+        env:
+          NATIONAL_MULTI_STEP_MAX_ASSETS: "4"
+        run: python scripts/validate-national-multi-step-series.py --contract .owner-review/national-owner-final/national-weather-shadow-contract.json --report .owner-review/national-owner-final/national-multi-step-series-validation.json --state-input .cache/national-final-state-replay-input.json --score-input .cache/national-final-shadow-score-marine-input.json
+
+      - name: Validate final state and history isolation
+        run: node scripts/validate-national-state-history.mjs --contract .owner-review/national-owner-final/national-weather-shadow-contract.json --series .owner-review/national-owner-final/national-multi-step-series-validation.json --input .cache/national-final-state-replay-input.json --output .owner-review/national-owner-final/national-state-history-validation.json
+
+      - name: Validate final native wind series
+        env:
+          DMI_BULK_MAX_RUNTIME_SECONDS: "3000"
+        run: python scripts/validate-national-local-part-wind-series.py --contract .owner-review/national-owner-final/national-weather-shadow-contract.json --report .owner-review/national-owner-final/national-local-part-wind-series.json --marine-input .cache/national-final-shadow-score-marine-input.json --wind-input .cache/national-final-shadow-score-wind-input.json
+
+      - name: Validate final score-neutral shadow score
+        run: node scripts/validate-national-shadow-score.mjs --contract .owner-review/national-owner-final/national-weather-shadow-contract.json --multi .owner-review/national-owner-final/national-multi-step-series-validation.json --state .owner-review/national-owner-final/national-state-history-validation.json --wind .owner-review/national-owner-final/national-local-part-wind-series.json --marine-input .cache/national-final-shadow-score-marine-input.json --wind-input .cache/national-final-shadow-score-wind-input.json --output .owner-review/national-owner-final/national-shadow-score-validation.json
+
       - name: Validate private national central admin roundtrip and rollback
         run: node scripts/validate-national-admin-roundtrip.mjs
         env:
@@ -516,6 +547,16 @@ jobs:
             .owner-review/national-owner-corrections/index.html
             .owner-review/national-inner-water-follow-up/index.html
             .owner-review/national-inner-water-follow-up/review-report.json
+            .owner-review/national-owner-final/national-owner-final-coast-audit.json
+            .owner-review/national-owner-final/national-owner-final-coast.geojson
+            .owner-review/national-owner-final/national-owner-final-part-names.json
+            .owner-review/national-owner-final/national-local-part-point-pairs.json
+            .owner-review/national-owner-final/national-local-part-dmi-grid.json
+            .owner-review/national-owner-final/national-weather-shadow-contract.json
+            .owner-review/national-owner-final/national-multi-step-series-validation.json
+            .owner-review/national-owner-final/national-state-history-validation.json
+            .owner-review/national-owner-final/national-local-part-wind-series.json
+            .owner-review/national-owner-final/national-shadow-score-validation.json
             .owner-review/national-admin-roundtrip-validation.json
           retention-days: 14
           if-no-files-found: error

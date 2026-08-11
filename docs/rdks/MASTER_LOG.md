@@ -821,3 +821,11 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - En metrisk audit fandt 12 yderligere tekniske ID'er, som fysisk dublerer allerede afgjorte linjer. Afgørelser føres videre; ved Thyborøn bevares kun den del af dubletten, der ligger langs den rettede kystlinje.
 - Samlet korrektionsforslag dækker 60 tekniske dele: 30 sletninger, 19 uændrede godkendelser, ni korrigerede linjer og to navnerettelser. Den nye efterkontrol indeholder nul dele.
 - Alt er fortsat privat, score-neutralt og ikke aktiveret i admin, produktionsgeometri eller offentlig runtime.
+
+# 2026-08-11 – 4.0.174 once-only-slutkyst og nye punktpar
+
+- Efter den grønne 4.0.173-kørsel viste en særskilt samlet kontrol 311 fysiske overlappar mellem forskellige zoner. Det tidligere dubletbevis dækkede kun andre ID'er for ejerbedømte dele og var derfor ikke en sluttopologigate.
+- En ny once-only-samling anvender central zonekyst og datapunkt som deterministisk ejerskab. Hammer Odde splittes eksplicit ved nordspidsen mellem vest- og østsiden.
+- Lokalt resultat: 753 inputdele, 603 endelige fysiske dele, nul overlappar og nul tætte uafgjorte ejerskaber.
+- Punktpar er genberegnet på slutgeometrien. Seks tidligere blokeringer ved Thyborøn, Endelave, Flyvesandet, Helnæs, Nordvestlolland og Svaneke er kontrolleret på lokalkort og bevaret som versionsstyrede sideafgørelser. Resultatet er 603/603 punktpar.
+- Workflowet gentager native DMI-grid, marine flertrinsserie, state-/historikisolation, vindserie og score-neutral shadow-score efter slut-samlingen. Intet aktiveres automatisk.

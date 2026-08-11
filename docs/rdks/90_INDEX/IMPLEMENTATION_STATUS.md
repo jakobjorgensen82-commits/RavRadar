@@ -1,6 +1,9 @@
-# Implementeringsstatus pr. 4.0.173
+# Implementeringsstatus pr. 4.0.174
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
+- [x] Lokal slut-samling efter alle ejerafgørelser reducerer 753 tekniske dele med 311 tværzone-overlap til 603 unikke fysiske dele med nul overlap. Hammer Odde har en eksplicit geografisk nordspidsgrænse.
+- [x] Land-/vandpunkter er genberegnet på de 603 endelige linjer. Seks resterende sider er kontrolleret kartografisk og versionsstyret; lokalt resultat er 603/603 punktpar og nul blokeringer.
+- [ ] Privat national CI skal bevise native DMI-grid, marine flertrinsserier, state-/historikisolation, vind og shadow-score igen på slutbestanden på 603 dele.
 - [x] Privat #31448258035 CI-verificerede 4.0.169's begrænsede vindvalg og hele den nationale kæde: 774 vindserier, 752 shadow-scorer, 22 deldækkede og ni blokerede dele, score-neutral reviewside med 783 dele samt bestået central admin-roundtrip/rollback.
 - [x] Ejeren har gennemgået de 31 oprindelige opmærksomhedsdele. 4.0.172 bevarer beslutningerne revisionsbart og bygger et privat korrektionsforslag uden aktivering.
 - [x] Ejeren har gennemgået alle 23 supplerende dele. Afgørelserne er normaliseret til 15 sletninger, tre godkendelser og fem præcise rettelser.
