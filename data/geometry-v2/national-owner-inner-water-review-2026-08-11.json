@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "owner-reviewed-private-inner-water-follow-up",
+  "reviewedAt": "2026-08-11",
+  "reviewedPartCount": 23,
+  "automaticActivationAllowed": false,
+  "decisions": {
+    "dk-b02-09-national-part-05": { "decision": "needs-fix", "action": "delete", "note": "Lille irrelevant ø; linjen giver ikke mening." },
+    "dk-b02-10-national-part-11": { "decision": "needs-fix", "action": "delete", "note": "Små irrelevante øer." },
+    "dk-b02-11-national-part-08": { "decision": "needs-fix", "action": "delete", "note": "Små irrelevante øer." },
+    "dk-b05-01-national-part-02": { "decision": "needs-fix", "action": "trim-harbour-entrance", "note": "Behold hele strækningen mod havet; fjern de øverste knæk ind i Thyborøn Kanal." },
+    "dk-b05-06-national-part-06": { "decision": "needs-fix", "action": "delete", "note": "Ingen relevant ravtransport så langt inde." },
+    "dk-b05-06-national-part-01": { "decision": "needs-fix", "action": "trim-inner-water", "note": "Behold øst/højre for vejen eller broen; fjern alt vest/venstre for den." },
+    "dk-b05-06-national-part-05": { "decision": "approved" },
+    "dk-b05-17-national-part-06": { "decision": "needs-fix", "action": "delete", "note": "Lille irrelevant ø." },
+    "dk-b05-22-national-part-01-locality-01": { "decision": "needs-fix", "action": "trim-inner-water", "note": "Behold syd for vejen gennem vandet; fjern alt nord for den." },
+    "dk-b05-24-national-part-02": { "decision": "needs-fix", "action": "remove-two-loops", "note": "Fjern de to sløjfer." },
+    "dk-b05-24-national-part-10": { "decision": "needs-fix", "action": "delete" },
+    "dk-b06-20-national-part-01": { "decision": "approved" },
+    "dk-b07-02-national-part-10": { "decision": "needs-fix", "action": "delete", "note": "Stenmole med dybt vand; ingen relevant ravstrand." },
+    "dk-b07-02-national-part-09": { "decision": "needs-fix", "action": "delete", "note": "Stenmole." },
+    "dk-b07-06-national-part-01": { "decision": "needs-fix", "action": "retain-longest-component", "note": "Behold én lang ydre strækning; fjern de indre linjer." },
+    "dk-b08-05-national-part-04": { "decision": "needs-fix", "action": "delete" },
+    "dk-b09-04-national-part-06": { "decision": "needs-fix", "action": "delete", "note": "Havn og stenmole med dybt vand." },
+    "dk-b09-04-national-part-07": { "decision": "approved" },
+    "dk-b09-05-national-part-11": { "decision": "needs-fix", "action": "delete", "note": "Industrihavn." },
+    "dk-b10-15-national-part-12": { "decision": "needs-fix", "action": "delete", "note": "Ingen relevant ravkyst." },
+    "dk-b10-23-national-part-06": { "decision": "needs-fix", "action": "delete", "note": "Irrelevant objekt midt i havnen." },
+    "dk-b12-01-national-part-05": { "decision": "needs-fix", "action": "delete" },
+    "dk-b12-05-national-part-04": { "decision": "needs-fix", "action": "delete", "note": "Havneområde." }
+  }
+}

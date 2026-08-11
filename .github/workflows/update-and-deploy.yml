@@ -460,11 +460,17 @@ jobs:
       - name: Audit national inner-water candidates against owner decisions
         run: python scripts/audit-national-inner-water-candidates.py --work .geometry-v2-work --owner-review data/geometry-v2/national-owner-coastal-review-2026-08-11.json
 
+      - name: Audit physical duplicates of owner-reviewed parts
+        run: python scripts/audit-national-owner-review-duplicates.py --work .geometry-v2-work --output .geometry-v2-work/national-owner-review-duplicate-audit.json
+
       - name: Verify exact official fjord and nor overlap
         run: python scripts/audit-national-official-inner-water-overlap.py --work .geometry-v2-work --output .owner-review/national-official-inner-water-overlap-audit.json
 
       - name: Build private owner correction proposal
-        run: python scripts/apply-national-owner-coastal-review.py --work .geometry-v2-work --output-dir .owner-review/national-owner-corrections
+        run: python scripts/apply-national-owner-coastal-review.py --work .geometry-v2-work --duplicate-audit .geometry-v2-work/national-owner-review-duplicate-audit.json --output-dir .owner-review/national-owner-corrections
+
+      - name: Build private visual control of owner corrections
+        run: node scripts/build-national-owner-correction-review.mjs --proposal .owner-review/national-owner-corrections/owner-correction-proposal.geojson --output .owner-review/national-owner-corrections/index.html
 
       - name: Build targeted private inner-water follow-up review
         run: node scripts/build-national-inner-water-owner-review.mjs --work .geometry-v2-work --output-dir .owner-review/national-inner-water-follow-up
@@ -501,11 +507,13 @@ jobs:
             .geometry-v2-work/national-state-history-validation.json
             .geometry-v2-work/national-local-part-wind-series.json
             .geometry-v2-work/national-shadow-score-validation.json
+            .geometry-v2-work/national-owner-review-duplicate-audit.json
             .owner-review/national-coastal-zone-review/index.html
             .owner-review/national-coastal-zone-review/review-report.json
             .owner-review/national-official-inner-water-overlap-audit.json
             .owner-review/national-owner-corrections/owner-correction-proposal.json
             .owner-review/national-owner-corrections/owner-correction-proposal.geojson
+            .owner-review/national-owner-corrections/index.html
             .owner-review/national-inner-water-follow-up/index.html
             .owner-review/national-inner-water-follow-up/review-report.json
             .owner-review/national-admin-roundtrip-validation.json

@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.172
+**Håndbogsversion:** 4.0.173
 
 **Opdateret:** 1. august 2026
 
@@ -1517,6 +1517,8 @@ Privat nationalkørsel #31448258035 har nu bestået hele kæden. Den bekræfter 
 I 4.0.171 foregår gennemgangen én kystdel ad gangen på et stort almindeligt kort eller luftfoto. Den valgte del vises med en kraftig blå linje, og siden zoomer automatisk ind. De 31 dele med deldækning eller blokering kommer først. Ejeren kan godkende, markere til rettelse, skrive en bemærkning og eksportere resultatet. Alt gemmes lokalt og er fortsat score-neutralt og ikke-aktiverende.
 
 I 4.0.172 er de 31 afgørelser ført tilbage som et privat, versionsstyret review. Klare hele sletninger og løse små komponenter kan danne et teknisk forslag, mens beskæringer ved veje, havne og komplekse indre kyster fortsat skal vises igen i stedet for at blive gættet. En ekstra landskontrol bruger alle officielle farvandstyper, men sletter aldrig på baggrund af et navn eller en afstand alene. Kun dele med mindst fire uafhængige faresignaler kommer i den korte efterkontrol; identiske dubletter vises én gang. Intet aktiveres automatisk.
+
+I 4.0.173 er den korte efterkontrol afsluttet. Ejeren slettede 15 dele, godkendte tre og beskrev fem præcise rettelser. En metrisk dubletkontrol fandt 12 ekstra tekniske ID'er, som dækkede de samme fysiske linjer. De arver nu ejerens afgørelse, og en beskåret linje arver kun den del, som faktisk blev bevaret. Derfor er der ingen resterende dele til endnu en manuel gennemgang. De rettede linjer er visuelt kontrolleret, men hele pakken er fortsat privat og ændrer endnu ikke den offentlige RavRadar.
 
 4.0.164 bygger også næste private shadow-gate. Den eksisterende RavScore-motor beregner hver lokal del udelukkende, når vind, bølger, strøm og vandstand findes på samme native tidspunkt, og når næste native vandstandstrin kan danne den faktiske tre-timers trend. Ingen nærmeste-tid eller parentdata bruges. Ved komplet sammenligning betyder højst syv points samlet spænd praktisk hele zonen; ellers navngives én eller flere dele inden for syv point af vinderen. Mangler blot én nødvendig lokal sammenligning, er dækningen usikker. Resultatet er fortsat privat og kan ikke ændre den aktive RavScore.
 

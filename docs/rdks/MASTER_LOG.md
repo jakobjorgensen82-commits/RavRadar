@@ -813,3 +813,11 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - En ny audit læser alle 768 officielle Farvand-objekter i stedet for kun 90 fjord-/norobjekter. En eksakt metrisk kontrol viser nul faktisk fjord-/noroverlap i de 783 færdige linjer; nærhed er derfor ikke automatisk fejl.
 - Nye kandidater kræver mindst fire uafhængige tegn blandt stor afstand til officielt hav, officiel havnenærhed, beskyttet farvandskontekst, meget kort del og lukket ø-/søform. Identisk geometri samles. Efterkontrollen er foreløbig 23 unikke dele, heraf seks kendte målrettede rettelser.
 - Hele kæden er fortsat privat og score-neutral. Produktion, admin, sampling, state, RavScore og offentlig UI er uændrede.
+
+# 2026-08-11 – 4.0.173 afsluttet ejerreview og fysisk dubletkontrol
+
+- Ejeren gennemgik de 23 supplerende dele: 15 skal slettes, tre er godkendt, og fem er rettet præcist ved Thyborøn, Bremdal, Bjerget, Bouet og Flyvesandet.
+- De fem forslag blev kontrolleret visuelt mod kortet. Der er ingen målrettet rettelse tilbage uden geometri.
+- En metrisk audit fandt 12 yderligere tekniske ID'er, som fysisk dublerer allerede afgjorte linjer. Afgørelser føres videre; ved Thyborøn bevares kun den del af dubletten, der ligger langs den rettede kystlinje.
+- Samlet korrektionsforslag dækker 60 tekniske dele: 30 sletninger, 19 uændrede godkendelser, ni korrigerede linjer og to navnerettelser. Den nye efterkontrol indeholder nul dele.
+- Alt er fortsat privat, score-neutralt og ikke aktiveret i admin, produktionsgeometri eller offentlig runtime.
