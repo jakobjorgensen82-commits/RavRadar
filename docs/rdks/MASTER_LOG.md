@@ -787,3 +787,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Privat #31440337378 bestod hele upstreamkæden og 774-vindgaten, men stoppede shadow-score ved 0/752. Marine og vind havde tiderne 23:00/00:00, men scoremodellen kræver også native vandstand ved `t+3h`.
 - Dette er en utilstrækkelig tidsindsamling, ikke en score- eller datakonverteringsfejl. Ingen interpolation eller konstrueret trend tillades.
 - Det private job henter nu fire marine assets. Den transiente scoreinputgate kræver mindst ét reelt tretimerspar og giver ellers den præcise blokering `NO_NATIVE_THREE_HOUR_WATER_TREND`.
+
+# 2026-08-11 – 4.0.169 begrænset vindassetvalg
+
+- Privat #31445033036 bekræftede, at fire marine assets og den native tretimersgate består.
+- Vindgaten stoppede senere ved downloadgrænsen, fordi den gamle overlaplogik tilføjede flere HARMONIE-assets, når marine input nu havde fire tider.
+- Vindgaten vælger nu præcis to assets: et dokumenteret marint scoretidspunkt med `t+3h`-vandstand og ét yderligere native vindtrin. Det bevarer to-trinskravet uden at udvide byteforbruget.

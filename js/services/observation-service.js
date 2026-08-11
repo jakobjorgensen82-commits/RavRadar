@@ -1,5 +1,5 @@
-import { PUBLIC_CONFIG } from '../../config.js?v=4.0.168';
-import { currentSession } from './auth-service.js?v=4.0.168';
+import { PUBLIC_CONFIG } from '../../config.js?v=4.0.169';
+import { currentSession } from './auth-service.js?v=4.0.169';
 const enabled=Boolean(PUBLIC_CONFIG.supabaseUrl&&PUBLIC_CONFIG.supabasePublishableKey);
 const LOCAL_KEY='ravradar-observations-v2';
 const OUTBOX_KEY='ravradar-observation-outbox-v1';

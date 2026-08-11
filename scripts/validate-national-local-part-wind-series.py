@@ -8,7 +8,7 @@ import importlib.util
 import json
 import pathlib
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -84,14 +84,28 @@ def validate(contract: dict[str, Any], snapshots: dict[str, Any], minimum_steps:
             "stateChanged": False, "publicRuntimeChanged": False, "scoreChanged": False, "automaticActivationAllowed": False}
 
 
+def native_trend_times(hours: list[dict[str, Any]]) -> set[str]:
+    times = {hour["time"] for hour in hours}
+    return {time for time in times if (datetime.fromisoformat(time.replace("Z", "+00:00")) + timedelta(hours=3)).isoformat().replace("+00:00", "Z") in times}
+
+
+def select_wind_assets(assets: list[dict[str, Any]], marine_input: dict[str, Any]) -> list[dict[str, Any]]:
+    score_times = set().union(*(native_trend_times(row.get("hours") or []) for row in marine_input.get("series") or []))
+    matching = [asset for asset in assets if asset.get("valid") in score_times]
+    if not matching:
+        raise RuntimeError("Ingen HARMONIE-asset matcher et native marine t/t+3-scoretidspunkt")
+    selected = [matching[0]]
+    selected.extend(asset for asset in assets if asset.get("valid") != matching[0].get("valid"))
+    return selected[:2]
+
+
 def build_shadow_score_wind_input(marine_input: dict[str, Any], snapshots: dict[str, Any]) -> dict[str, Any]:
     if marine_input.get("status") != "private-transient-national-shadow-score-marine-input":
         raise RuntimeError("Vindgaten mangler transient marint shadow-input")
     rows, excluded = [], list(marine_input.get("excluded") or [])
     for marine in marine_input.get("series") or []:
         marine_hours = marine.get("hours") or []
-        # The final marine step is reserved for the native +3h water-level trend.
-        score_times = {hour["time"] for hour in marine_hours[:-1]}
+        score_times = native_trend_times(marine_hours)
         hours = []
         for valid_time, snapshot in sorted((snapshots.get(marine["partId"]) or {}).items()):
             if valid_time not in score_times:
@@ -112,12 +126,7 @@ def run(contract_path: pathlib.Path, report_path: pathlib.Path, marine_input_pat
     model_run, assets, _ = bulk.list_latest_assets(COLLECTION)
     if not model_run or len(assets) < 2:
         raise RuntimeError("Ingen brugbar HARMONIE-flertrinsserie")
-    requested_times = {hour["time"] for row in marine_input.get("series") or [] for hour in (row.get("hours") or [])[:-1]}
-    selected_assets = list(assets[:2])
-    selected_valid = {asset["valid"] for asset in selected_assets}
-    for asset in assets:
-        if asset["valid"] in requested_times and asset["valid"] not in selected_valid:
-            selected_assets.append(asset); selected_valid.add(asset["valid"])
+    selected_assets = select_wind_assets(assets, marine_input)
     output = {"zones": {zone["id"]: {"hourly": {}, "gridPoints": {}, "collections": {}} for zone in zones}}
     diagnostics = {"messagesSeen": 0, "zoneLookups": 0, "batchedGridReads": 0}; budget = {"bytes": 0}; snapshots = {zone["id"]: {} for zone in zones}
     for asset in selected_assets:
@@ -172,9 +181,12 @@ def self_test() -> None:
                 "source": {"provider": "dmi", "collection": COLLECTION, "modelRun": "run", "nativeValidTime": valid}}
     report = validate(contract, snapshots)
     assert report["eligiblePartCount"] == 2 and not report["rawWeatherValuesStored"]
-    marine_input = {"status": "private-transient-national-shadow-score-marine-input", "series": [{"zoneId": "Z", "partId": "a", "seriesId": "Z::a", "hours": [{"time": "2026-08-10T00:00:00Z"}, {"time": "2026-08-10T01:00:00Z"}]}], "excluded": []}
+    marine_input = {"status": "private-transient-national-shadow-score-marine-input", "series": [{"zoneId": "Z", "partId": "a", "seriesId": "Z::a", "hours": [{"time": f"2026-08-10T0{hour}:00:00Z"} for hour in range(4)]}], "excluded": []}
     wind_input = build_shadow_score_wind_input(marine_input, snapshots)
     assert len(wind_input["series"]) == 1 and len(wind_input["series"][0]["hours"]) == 1
+    assets = [{"valid": f"2026-08-10T0{hour}:00:00Z"} for hour in range(5)]
+    selected = select_wind_assets(assets, marine_input)
+    assert len(selected) == 2 and selected[0]["valid"] == "2026-08-10T00:00:00Z"
     broken = json.loads(json.dumps(snapshots)); broken["b"].pop("2026-08-10T01:00:00Z")
     try: validate(contract, broken)
     except RuntimeError: pass

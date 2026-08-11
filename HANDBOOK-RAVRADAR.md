@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.168
+**Håndbogsversion:** 4.0.169
 
 **Opdateret:** 1. august 2026
 
@@ -1509,6 +1509,8 @@ Den faktiske QA viser, at kun 20 zoner er direkte referenceklare, mens 188 er fl
 4.0.167 samler de 783 endelige kystdele i en privat ejer-reviewside. Neutral grå betyder komplet datagrundlag, gul betyder deldækning, og rød betyder geografisk blokering; farverne er aldrig RavScore. Siden viser ingen delscore, rangering, rå vejrdata eller state. En efterfølgende central admin-test bruger kun en midlertidig, aldrig aktiv kladde, som slettes igen med de beskyttede runtime-dokumenter uændrede.
 
 4.0.168 præciserer tidskravet: en lokal score må kun beregne vandstandsændringen, når DMI leverer både et native tidspunkt og et native tidspunkt tre timer senere. Fire havtrin hentes i den private kontrol; mangler et ægte tretimerspar, stoppes delen i stedet for at interpolere eller opfinde en trend.
+
+4.0.169 holder vindforbruget sikkert afgrænset: præcis to native vindfiler hentes. Den første skal passe til et dokumenteret havtidspunkt med en native vandstand tre timer senere; den anden beviser, at delen har en selvstændig vindserie over mindst to tider.
 
 4.0.164 bygger også næste private shadow-gate. Den eksisterende RavScore-motor beregner hver lokal del udelukkende, når vind, bølger, strøm og vandstand findes på samme native tidspunkt, og når næste native vandstandstrin kan danne den faktiske tre-timers trend. Ingen nærmeste-tid eller parentdata bruges. Ved komplet sammenligning betyder højst syv points samlet spænd praktisk hele zonen; ellers navngives én eller flere dele inden for syv point af vinderen. Mangler blot én nødvendig lokal sammenligning, er dækningen usikker. Resultatet er fortsat privat og kan ikke ændre den aktive RavScore.
 
