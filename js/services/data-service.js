@@ -1,6 +1,7 @@
-import { loadActiveZoneCollection } from './zone-registry.js?v=4.0.175';
+import { loadActiveZoneCollection } from './zone-registry.js?v=4.0.176';
 const DEFAULT_PUBLIC_CONDITIONS_URL='./data/live/public-conditions.json';
 const MANIFEST_URL='./data/live/manifest.json';
+const COASTAL_PARTS_URL='./data/live/coastal-parts-v2.json';
 const memory=new Map();
 async function fetchJson(url,{ttlMs=0,noStore=false}={}){
   const cached=memory.get(url);if(cached&&Date.now()-cached.at<ttlMs)return cached.value;
@@ -12,7 +13,7 @@ function publicConditionsUrl(manifest){
   const base=path.startsWith('./data/')?path:`./data/live/${path.replace(/^\.\//,'')}`;
   return manifest?.datasetId?`${base}?dataset=${encodeURIComponent(manifest.datasetId)}`:base;
 }
-export async function loadZones(){return loadActiveZoneCollection();}
+export async function loadZones(){const [zones,coastalParts]=await Promise.all([loadActiveZoneCollection(),fetchJson(COASTAL_PARTS_URL,{ttlMs:24*3600*1000}).catch(()=>null)]);return{...zones,coastalParts};}
 export async function loadDataManifest(){try{return await fetchJson(MANIFEST_URL,{noStore:true});}catch(error){console.warn('Datamanifest kunne ikke hentes',error);return null;}}
 export async function loadConditions({manifest=null}={}){try{
   const url=publicConditionsUrl(manifest);const data=await fetchJson(url,{ttlMs:2*60*1000,noStore:true});

@@ -4,9 +4,10 @@
   "generatedAt": "2026-07-31T15:52:17.621Z",
   "validUntil": "2026-08-05T12:00:00.000Z",
   "zoneCount": 209,
+  "coastalPartCount": 0,
   "conditionsPath": "./public-conditions.json",
   "fullConditionsPath": "./conditions.json",
-  "publicConditionsSha256": "dc8ecfce6f18c2a5d373308985c79aad67c3104626221a4167077deea48c374e",
-  "publicConditionsBytes": 6909829,
+  "publicConditionsSha256": "f034c933a334c2eaa77134324f926c201ba1ec477ecbb53199b1ea80b87f72a1",
+  "publicConditionsBytes": 6909849,
   "complete": true
 }

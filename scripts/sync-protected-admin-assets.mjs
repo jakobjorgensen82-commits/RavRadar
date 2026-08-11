@@ -12,6 +12,7 @@ const assets={
  'ocean-diagnostics':'data/diagnostics/dmi-ocean-diagnostics.json',
  'cache-audit':'data/diagnostics/dmi-cache-audit.json',
  'implementation-audit':'data/diagnostics/implementation-plan-audit.json',
+ 'coastal-parts-v2-activation':'data/geometry-v2/active-national-coastal-parts/manifest.json',
  'handbook':'docs/handbook/content.json'
 };
 const lifecycleFields=['hasEverDelivered','firstObservationAt','lastObservationAt','lastObservationValueCm','consecutiveMissingObservationRuns','deliveryStatus','forecastCacheGeneratedAt','forecastCacheValidUntil','forecastCacheStatus','overallUsabilityStatus','forecastCacheZoneIds'];
@@ -53,3 +54,9 @@ for(const [document_key,file] of Object.entries(assets)){
 nextManifest.generatedAt=new Date().toISOString();
 const manifestResponse=await fetch(`${url}/rest/v1/admin_documents?on_conflict=document_key`,{method:'POST',headers:{...headers,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({document_key:manifestKey,payload:nextManifest,updated_by:null})});
 if(!manifestResponse.ok)throw new Error(`${manifestKey}: ${manifestResponse.status} ${await manifestResponse.text()}`);
+const activationLocal=JSON.parse(await fs.readFile(assets['coastal-parts-v2-activation'],'utf8'));
+const activationCentral=await existingDocument('coastal-parts-v2-activation');
+if(!activationCentral||digest(activationCentral)!==digest(activationLocal)||activationCentral.publicActivation!==activationLocal.publicActivation){
+ throw new Error('coastal-parts-v2-activation central readback matcher ikke den publicerede aktivering');
+}
+console.log(`Central kystdelsaktivering verificeret: ${activationCentral.publicActivation?'aktiv':'rollback'}`);

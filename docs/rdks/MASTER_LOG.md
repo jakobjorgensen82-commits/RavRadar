@@ -1,3 +1,10 @@
+## 2026-08-11 – 4.0.176 aktiverer national lokal kystmodel
+- Privat #31480089490 bestod hele den centralt hydrerede slutkæde med 605 dele, nul overlap, 605 punktpar, 594 fulde og 11 delvise marine gridbeviser samt central roundtrip/rollback.
+- Ejeren gav udtrykkeligt go til aktivering på testdomænet. Orehoved-overlappet er eksplicit tildelt Falsters nordkyst.
+- DMI-bulk sampler delpunkter i allerede downloadede GRIB-felter uden særskilte netkald. Lokale scores aggregeres med 7-punktsreglen og stopper som usikre uden skjult hovedzonefallback.
+- Offentligt kort og prognose læser lokale kystdele og afledte scores. En kompakt central aktiveringspost styrer readback og rollback; de store kilde-/QA-filer gemmes ikke i Supabase.
+- Produktionsverifikation af 4.0.176 afventer frisk normal GitHub Actions-kørsel og efterfølgende online smoke-test.
+
 ## 2026-08-11 – 4.0.175 retter forældet reviewfordeling
 - Privat #31474672948 nåede gennem den oprindelige nationale native DMI-, state-, vind- og shadow-kæde, men stoppede i den efterfølgende score-neutrale reviewbygger.
 - De seks versionsstyrede kartografiske sideafgørelser fra 4.0.174 var allerede anvendt korrekt. Derfor var den faktiske 783-dels fordeling 758 komplette, 22 deldækkede og tre blokerede i stedet for den historiske 752/22/9-fordeling.
@@ -834,3 +841,7 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Lokalt resultat: 753 inputdele, 603 endelige fysiske dele, nul overlappar og nul tætte uafgjorte ejerskaber.
 - Punktpar er genberegnet på slutgeometrien. Seks tidligere blokeringer ved Thyborøn, Endelave, Flyvesandet, Helnæs, Nordvestlolland og Svaneke er kontrolleret på lokalkort og bevaret som versionsstyrede sideafgørelser. Resultatet er 603/603 punktpar.
 - Workflowet gentager native DMI-grid, marine flertrinsserie, state-/historikisolation, vindserie og score-neutral shadow-score efter slut-samlingen. Intet aktiveres automatisk.
+# 2026-08-11 – planlagt privat besøgsstatistik
+- Ejeren ønsker en usynlig besøgstæller på den offentlige side og en enkel rapport i admin.
+- Kravet er registreret som en senere P2-opgave. Rapporten skal være adgangsbeskyttet, dataminimeret og kvotesikker samt skelne sidevisninger fra besøg og eventuel anslået unikhed.
+- Der er ikke givet tilladelse til profilering, fingerprinting, rå permanent IP-lagring eller offentlig visning. Statistik må ikke påvirke RavScore eller blokere siden.

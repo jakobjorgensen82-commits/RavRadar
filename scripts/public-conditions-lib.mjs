@@ -29,7 +29,19 @@ export function buildPublicConditions(full){
       }
     };
   }
-  return {schemaVersion:1,datasetId:full?.datasetId||null,generatedAt:full?.generatedAt||null,source:'RavRadar public runtime projection',zones};
+  const coastalParts=full?.coastalParts?{
+    schemaVersion:full.coastalParts.schemaVersion,
+    enabled:full.coastalParts.enabled===true,
+    datasetVersion:full.coastalParts.datasetVersion||null,
+    sourceRunId:full.coastalParts.sourceRunId||null,
+    generatedAt:full.coastalParts.generatedAt||full?.generatedAt||null,
+    marginPoints:full.coastalParts.marginPoints||7,
+    expectedPartCount:full.coastalParts.expectedPartCount||0,
+    scoredPartCount:full.coastalParts.scoredPartCount||0,
+    parts:full.coastalParts.parts||{},
+    zones:full.coastalParts.zones||{}
+  }:null;
+  return {schemaVersion:2,datasetId:full?.datasetId||null,generatedAt:full?.generatedAt||null,source:'RavRadar public runtime projection',zones,coastalParts};
 }
 export function compactJson(value){return `${JSON.stringify(value)}\n`;}
 export function sha256Text(text){return crypto.createHash('sha256').update(text).digest('hex');}
@@ -43,6 +55,7 @@ export function buildPublicManifest(full, publicText){
     generatedAt,
     validUntil:validUntilValues.length?new Date(Math.max(...validUntilValues)).toISOString():new Date(Date.parse(generatedAt)+8*3600000).toISOString(),
     zoneCount:Object.keys(full?.zones||{}).length,
+    coastalPartCount:Number(full?.coastalParts?.expectedPartCount||0),
     conditionsPath:'./public-conditions.json',
     fullConditionsPath:'./conditions.json',
     publicConditionsSha256:sha256Text(publicText),

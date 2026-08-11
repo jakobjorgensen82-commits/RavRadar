@@ -83,7 +83,9 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
   for (const feature of featureCollection.features) {
     const zone = feature.properties;
     if (zone.zoneStatus !== "active") continue;
-    const result = scoreForZone(zone.id);
+    const zoneId = zone._parentId || zone.id;
+    const lineId = zone._mapId || zone.id;
+    const result = scoreForZone(zoneId);
     const coastLine = Array.isArray(zone.coastLine) && zone.coastLine.length > 1
       ? zone.coastLine.map(([lng, lat]) => [lat, lng])
       : null;
@@ -123,8 +125,8 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
     hit.on("mouseout", () => visible.setStyle(zoneLineStyle(hit.options.ravLevel, hit.options.ravSelected, map.getZoom())));
     hit.options.ravLevel = result?.level || "unavailable";
     hit.options.ravSelected = false;
-    hit.options.zoneTitle = zone.name;
-    lines.set(zone.id, { casing, visible, hit, startTick, endTick, startBearing, endBearing });
+    hit.options.zoneTitle = zone._partName || zone.name;
+    lines.set(lineId, { casing, visible, hit, startTick, endTick, startBearing, endBearing, zoneId });
   }
 
   const bounds = geometryLayer.getBounds();
@@ -133,8 +135,8 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
   const api = { geometryLayer, lineLayer, lines, map, selectedId: null };
   api.selectZone = id => {
     api.selectedId = id || null;
-    for (const [zoneId, pair] of lines.entries()) {
-      pair.hit.options.ravSelected = zoneId === api.selectedId;
+    for (const pair of lines.values()) {
+      pair.hit.options.ravSelected = pair.zoneId === api.selectedId;
       pair.casing.setStyle(zoneCasingStyle(pair.hit.options.ravSelected, map.getZoom()));
       pair.visible.setStyle(zoneLineStyle(pair.hit.options.ravLevel, pair.hit.options.ravSelected, map.getZoom()));
       pair.startTick.setIcon(boundaryTickIcon(pair.startBearing, pair.hit.options.ravSelected, map.getZoom()));
@@ -175,8 +177,8 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
 }
 
 export function refreshZoneStyles(layer, scoreForZone) {
-  for (const [id, pair] of layer.lines.entries()) {
-    const result = scoreForZone(id);
+  for (const pair of layer.lines.values()) {
+    const result = scoreForZone(pair.zoneId);
     pair.hit.options.ravLevel = result?.level || "unavailable";
     pair.visible.setStyle(zoneLineStyle(pair.hit.options.ravLevel, pair.hit.options.ravSelected, layer.map.getZoom()));
     pair.casing.setStyle(zoneCasingStyle(pair.hit.options.ravSelected, layer.map.getZoom()));
@@ -308,4 +310,3 @@ export function installFlowArrows(map, featureCollection, conditionForZone) {
   render();
   return { layer, refresh:render, counts:()=>({ ...(layer.ravFlowCounts||counts) }) };
 }
-

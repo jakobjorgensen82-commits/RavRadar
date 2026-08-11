@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "owner-approved-national-test-activation-active",
+  "sourceRunId": "31480089490",
+  "sourceCommit": "6fc74580793b3456ffa4b5450b1532e933471c4d",
+  "sourceVersion": "4.0.175",
+  "partCount": 605,
+  "zoneCount": 190,
+  "overlapPairCount": 0,
+  "pointPairCount": 605,
+  "invalidPointPairCount": 0,
+  "fullMarineCoveragePartCount": 594,
+  "partialMarineCoveragePartCount": 11,
+  "explicitOwnershipDecisions": [
+    {
+      "winnerPartId": "dk-b10-06-national-part-05",
+      "otherPartId": "dk-b09-15-national-part-02",
+      "location": "Falsters nordkyst ved Orehoved",
+      "reason": "Den fælles kystlinje ligger på Falsters nordkyst og tilhører Falster nord og Orehoved, ikke Bøgestrømmen vest."
+    }
+  ],
+  "files": {
+    "coastal-parts.geojson": "4a278d9a5c8f38f3e7eb13bf164dda9c876d520d6b7fc26ba7bf50f5c7e60c72",
+    "part-names.json": "2bf7f2c58ca09e5507c9a105ac2fcd7bdc90889d2868d10491149a62cef234d2",
+    "point-pairs.json": "b6df73fc87ee384c8061e7c3a310bc6ecd09a7fa2ffa9659c764b14e4a0cfc47",
+    "dmi-grid-proof.json": "c99deabe6c4c0d7da4e7eaab6366fb817cc79611c6131f042d83e3f530da6327"
+  },
+  "scorePolicy": {
+    "bestValidPartDeterminesZoneScore": true,
+    "wholeZoneMarginPoints": 7,
+    "missingPartDataRemainsMissing": true,
+    "parentFallbackForbidden": true
+  },
+  "environment": "pre-domain-test-site",
+  "publicActivation": true,
+  "activatedAt": "2026-08-11",
+  "activationAuthority": "explicit-owner-go-ahead-in-codex-thread",
+  "rollback": {
+    "method": "set publicActivation false in the central coastal-parts-v2-activation document and redeploy",
+    "preservesParentRuntime": true
+  },
+  "automaticActivationAllowed": false
+}

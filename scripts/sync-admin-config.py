@@ -2,7 +2,7 @@
 import json,os,pathlib,urllib.parse,urllib.request
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 URL=os.getenv('SUPABASE_URL','').rstrip('/'); KEY=os.getenv('SUPABASE_SERVICE_ROLE_KEY','')
-MAP={'water-level-station-routing':'data/water-level-station-routing.json','direction-reviews':'data/admin/direction-reviews.json','rules':'data/admin/admin-rules.json','coastline-overrides':'data/admin/coastline-overrides.json','dmi-water-stations':'data/live/dmi-water-stations.json','water-station-routing-audit':'data/live/water-station-routing-audit.json'}
+MAP={'water-level-station-routing':'data/water-level-station-routing.json','direction-reviews':'data/admin/direction-reviews.json','rules':'data/admin/admin-rules.json','coastline-overrides':'data/admin/coastline-overrides.json','dmi-water-stations':'data/live/dmi-water-stations.json','water-station-routing-audit':'data/live/water-station-routing-audit.json','coastal-parts-v2-activation':'data/geometry-v2/active-national-coastal-parts/manifest.json'}
 if not URL or not KEY:
  print(json.dumps({'status':'fallback','reason':'missing-supabase-secrets'})); raise SystemExit(0)
 document_filter=','.join(f'"{key}"' for key in MAP)

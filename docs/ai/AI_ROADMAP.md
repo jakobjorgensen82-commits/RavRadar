@@ -77,6 +77,13 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 - Bevar/udbyg startupmålinger for page load, JS-init, manifest/data fetch, parsing, scoreberegning og maprendering.
 - Hold tunge state-/historikberegninger i pipeline og send kompakte præberegnede data til public klient.
 
+## P2 – privat besøgsstatistik i admin
+- Tilføj en usynlig offentlig besøgstæller og en enkel, adgangsbeskyttet rapport i administrationen.
+- Rapporten skal mindst kunne vise sidevisninger og besøg fordelt pr. dag samt en valgt periode. Den må ikke fremstille besøg som unikke personer, medmindre metoden faktisk kan dokumentere det.
+- Løsningen skal være dataminimeret, må ikke vise en offentlig tæller og må ikke indsamle præcise lokaliteter, rå IP-adresser, fingerprintingdata eller andre unødige personoplysninger.
+- Tælleren må ikke påvirke RavScore, vejropdateringer eller offentlig opstart mærkbart. Fejl i statistik må aldrig blokere siden.
+- Designet skal tage højde for Supabase Free-planens database- og egressgrænser, eksempelvis ved kompakt daglig aggregering frem for en voksende rå hændelseslog.
+
 ## P3 – planlagt videnskabelig forskningsrunde og RavScore-modelvalidering
 - **Status: registreret, må ikke startes endnu.** Afhænger af afsluttet/klart afgrænset forecast- og schedulerstabilisering samt de højere P0/P1-opgaver.
 - **Model efter DEC-0031:** Centrale forskningsfaser, synteser, evidenskonflikter, hypoteser, RavScore-vurdering og slutkonklusion udføres med GPT-5.6 Sol. Terra må kun bruges til klart afgrænsede mekaniske støtteopgaver uden tab af faglig kvalitet.

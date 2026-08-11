@@ -38,6 +38,7 @@ except ImportError as exc:
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 ZONES_PATH = ROOT / "data/zones.geojson"
+COASTAL_PART_POINTS_PATH = ROOT / "data/geometry-v2/active-national-coastal-parts/point-pairs.json"
 WATER_SOURCES_PATH = ROOT / "data/live/dmi-water-stations.json"
 OUTPUT_PATH = ROOT / "data/live/dmi-bulk-cache.json"
 DIAGNOSTICS_JSON_PATH = ROOT / "data/diagnostics/dmi-ocean-diagnostics.json"
@@ -1208,9 +1209,22 @@ def clean_and_summarize(result: dict[str, Any], fresh_zone_ids: set[str], budget
     diag["invalidatedMismatchedVectors"] = invalidated_vectors
     diag["downloadedBytes"] = budget["bytes"]
     diag["freshZoneCount"] = len(fresh_zone_ids)
-    production_zones = {zone_id: zone for zone_id, zone in result["zones"].items() if not zone_id.startswith("SOURCE::")}
+    production_zones = {
+        zone_id: zone for zone_id, zone in result["zones"].items()
+        if not zone_id.startswith("SOURCE::") and not zone_id.startswith("PART::")
+    }
+    coastal_part_zones = {
+        zone_id: zone for zone_id, zone in result["zones"].items()
+        if zone_id.startswith("PART::")
+    }
     diag["zoneCount"] = len(production_zones)
     diag["waterSourceCount"] = sum(1 for zone_id in result["zones"] if zone_id.startswith("SOURCE::"))
+    diag["coastalPartCount"] = len(coastal_part_zones)
+    diag["coastalPartComponentHorizonCoverage"] = {
+        "wind": coverage_summary(coastal_part_zones, ("wind-speed-10m",)),
+        "wave": coverage_summary(coastal_part_zones, ("significant-wave-height",)),
+        "marine": coverage_summary(coastal_part_zones, ("sea-mean-deviation", "current-u", "current-v")),
+    }
     component_coverage = {
         "wind": coverage_summary(production_zones, ("wind-speed-10m",)),
         "windTail": coverage_summary(production_zones, ("wind-tail-speed-10m",)),
@@ -1439,7 +1453,11 @@ def main() -> int:
     progress(f"starter; arbejdsbudget={MAX_RUNTIME_SECONDS - FINALIZE_RESERVE_SECONDS}s, afslutningsreserve={FINALIZE_RESERVE_SECONDS}s")
     cache_before = raw_cache_inventory()
     previous = load_previous()
-    signature_bytes = ZONES_PATH.read_bytes() + (WATER_SOURCES_PATH.read_bytes() if WATER_SOURCES_PATH.exists() else b'')
+    signature_bytes = (
+        ZONES_PATH.read_bytes()
+        + (WATER_SOURCES_PATH.read_bytes() if WATER_SOURCES_PATH.exists() else b'')
+        + (COASTAL_PART_POINTS_PATH.read_bytes() if COASTAL_PART_POINTS_PATH.exists() else b'')
+    )
     current_zone_registry_signature = hashlib.sha256(signature_bytes).hexdigest()[:16]
     previous_zone_registry_signature = previous.get("zoneRegistrySignature")
     zone_registry_unchanged = previous_zone_registry_signature == current_zone_registry_signature
@@ -1517,6 +1535,31 @@ def main() -> int:
         if props.get("id"):
             zones.append({"id": props["id"], "lon": float(lon), "lat": float(lat), "coastType": props.get("coastType") or "east"})
 
+    # De ejer-godkendte lokale kystdele samples i de samme allerede downloadede
+    # GRIB-felter som hovedzonerne. Det øger kun lokale grid-opslag; det udløser
+    # ikke et separat DMI-kald pr. kystdel. De indgår ikke i schedulerens
+    # dækningsnævner, så den eksisterende 208-zoners indsamlingsrytme bevares.
+    if COASTAL_PART_POINTS_PATH.exists():
+        part_doc = json.loads(COASTAL_PART_POINTS_PATH.read_text("utf-8"))
+        for part in part_doc.get("parts", []):
+            part_id = part.get("finalPartId")
+            point = part.get("waterPoint")
+            if (
+                not part_id
+                or part.get("status") != "private-point-pair-proposed"
+                or not isinstance(point, list)
+                or len(point) != 2
+            ):
+                continue
+            zones.append({
+                "id": f"PART::{part_id}",
+                "lon": float(point[0]),
+                "lat": float(point[1]),
+                "coastType": part.get("coastType") or "east",
+                "coastalPart": True,
+                "parentZoneId": part.get("zoneId"),
+            })
+
     # Vandstandskilder (målestationer og DMI-prognosepunkter) samples i samme
     # DKSS-GRIB som zonerne. Dermed får begge kildetyper sammenlignelige
     # femdøgnsserier uden et stort antal ForecastEDR-kald.
@@ -1558,7 +1601,10 @@ def main() -> int:
                               "persistentFieldInventory": dict(((previous.get("diagnostics") or {}).get("persistentFieldInventory") or {}))}}
     merge_previous(result, previous, active_output_ids)
     budget = {"bytes": 0}
-    active_zones_config = [zone for zone in zones if not zone.get("waterSource")]
+    active_zones_config = [
+        zone for zone in zones
+        if not zone.get("waterSource") and not zone.get("coastalPart")
+    ]
     scheduled, schedule_coverage = collection_schedule(previous, active_zones_config)
     result["diagnostics"]["scheduledCollections"] = scheduled
     result["diagnostics"]["scheduleCoverageBeforeRun"] = schedule_coverage

@@ -42,6 +42,9 @@ def build(work,correction_dir,zones_doc):
         zid=named[pid]["zoneId"];coast=zone_lines.get(zid);point=zone_points.get(zid)
         priority[pid]=(sample_distance(g,coast) if coast is not None else math.inf,g.centroid.distance(point) if point is not None else math.inf,zid,pid)
     removal=defaultdict(list);ambiguous=[];overlap_input=0
+    explicit_owners={
+        frozenset({"dk-b10-06-national-part-05","dk-b09-15-national-part-02"}):"dk-b10-06-national-part-05",
+    }
     for i,g in enumerate(geoms):
         for raw in tree.query(g.buffer(.25)):
             j=int(raw)
@@ -56,6 +59,15 @@ def build(work,correction_dir,zones_doc):
                 shared_geometry=g.intersection(h.buffer(.25));tip=max((p for line in lines(shared_geometry) for p in line.coords),key=lambda p:p[1]);bounds=unary_union([g,h]).bounds
                 west=shared_geometry.intersection(box(bounds[0]-10,bounds[1]-10,tip[0],bounds[3]+10));east=shared_geometry.intersection(box(tip[0],bounds[1]-10,bounds[2]+10,bounds[3]+10))
                 removal["dk-b10-18-national-part-01"].append(west.buffer(.25));removal["dk-b10-24-national-part-01"].append(east.buffer(.25))
+                continue
+            explicit_winner=explicit_owners.get(frozenset(pair))
+            if explicit_winner:
+                # Den fælles linje ligger fysisk på Falsters nordkyst ved
+                # Orehoved og tilhører derfor Falster nord/Orehoved-zonen,
+                # ikke Bøgestrømmen vest. Den friske #31480089490-kørsel
+                # valgte allerede samme ejer; reglen gør afgørelsen eksplicit.
+                loser=next(pid for pid in pair if pid!=explicit_winner)
+                removal[loser].append(source[explicit_winner].buffer(.25))
                 continue
             winner,loser=sorted((ids[i],ids[j]),key=lambda pid:priority[pid])
             removal[loser].append(source[winner].buffer(.25))

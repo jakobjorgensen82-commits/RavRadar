@@ -1,5 +1,7 @@
 import fs from 'node:fs/promises';
 import { writePublicRuntimeFromFull } from './public-conditions-lib.mjs';
+import { build as buildPublicCoastalParts } from './build-public-coastal-parts-v2.mjs';
+import { calculateRavScore } from '../js/core/score-engine.js';
 import { recommendWaterStationBracket } from '../js/core/water-station-routing.js';
 import {
   DMI_FORECAST_HOURS,
@@ -18,6 +20,7 @@ import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWat
 import { applyCurrentTransportToHistory } from './lib/current-transport-history.mjs';
 
 const ZONES_PATH = 'data/zones.geojson';
+const COASTAL_PARTS_SOURCE_PATH = 'data/geometry-v2/active-national-coastal-parts/manifest.json';
 const OUTPUT_PATH = 'data/live/conditions.json';
 const DMI_ROOT = 'https://opendataapi.dmi.dk/v1/forecastedr/collections';
 const DMI_OCEAN_OBS_ROOT = 'https://opendataapi.dmi.dk/v2/oceanObs/collections';
@@ -60,6 +63,7 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const num = value => value === null || value === undefined || value === '' ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
 const round = (value, digits = 2) => Number.isFinite(value) ? Number(value.toFixed(digits)) : null;
 const normalizeDegrees = value => ((value % 360) + 360) % 360;
+const scoreDigest = value => JSON.stringify(value);
 const randomJitterMs = () => DMI_RETRY_JITTER_MIN_MS + Math.floor(Math.random() * Math.max(1, DMI_RETRY_JITTER_MAX_MS - DMI_RETRY_JITTER_MIN_MS + 1));
 function parseRetryAfterMs(value) {
   if (!value) return null;
@@ -856,6 +860,79 @@ function mergeBulkCacheIntoForecastStore(features, bulkCache, store, generatedAt
   return stats;
 }
 
+function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, generatedAt) {
+  const parentById = new Map(parentFeatures.map(feature => [feature.properties?.id, feature]));
+  const expectedByZone = new Map();
+  const partRows = [];
+  for (const [zoneId, parts] of Object.entries(contract?.zones ?? {})) {
+    expectedByZone.set(zoneId, parts.length);
+    const parent = parentById.get(zoneId);
+    if (!parent) continue;
+    for (const part of parts) {
+      const bulkId = `PART::${part.partId}`;
+      const feature = {
+        type: 'Feature', geometry: { type: 'Point', coordinates: part.waterPoint },
+        properties: { ...parent.properties, id: bulkId, name: part.name, dataPoint: part.waterPoint, pinPoint: part.landPoint, onshoreDirectionDeg: part.onshoreDirectionDeg }
+      };
+      const record = bulkZoneToForecastRecord(feature, bulkCache, generatedAt, null);
+      if (!record) continue;
+      const hourly = normalizeForecastHourly(record.hourly ?? []);
+      const currentSamples = hourly.filter(hour => hour.currentSpeedMps != null && hour.currentDirectionDeg != null).map(hour => ({
+        at: hour.time,
+        currentSpeedMps: hour.currentSpeedMps,
+        currentDirectionDeg: hour.currentDirectionDeg,
+        currentAlignment: Math.cos((Number(hour.currentDirectionDeg) - Number(part.onshoreDirectionDeg)) * Math.PI / 180),
+        currentVerified: true
+      }));
+      const zone = { ...parent.properties, id: part.partId, name: part.name, dataPoint: part.waterPoint, pinPoint: part.landPoint, onshoreDirectionDeg: part.onshoreDirectionDeg };
+      const scores = [];
+      for (const weather of hourly) {
+        const at = Date.parse(weather.time);
+        const history = applyCurrentTransportToHistory({}, currentSamples.filter(sample => Date.parse(sample.at) <= at));
+        const modes = {};
+        for (const mode of ['waders', 'beach']) {
+          const result = calculateRavScore({ mode, zone, weather, history });
+          if (result.available && Number.isFinite(result.score)) modes[mode] = { score: result.score, components: result.components };
+        }
+        if (Object.keys(modes).length) scores.push({ time: weather.time, ...modes });
+      }
+      if (scores.length) partRows.push({ zoneId, partId: part.partId, name: part.name, marineCoverage: part.marineCoverage, scores });
+    }
+  }
+
+  const partRowsByZone = new Map();
+  for (const row of partRows) (partRowsByZone.get(row.zoneId) ?? partRowsByZone.set(row.zoneId, []).get(row.zoneId)).push(row);
+  const zones = {};
+  for (const [zoneId, expectedPartCount] of expectedByZone) {
+    const rows = partRowsByZone.get(zoneId) ?? [];
+    const times = [...new Set(rows.flatMap(row => row.scores.map(score => score.time)))].sort();
+    const hourly = [];
+    for (const time of times) {
+      const result = { time };
+      for (const mode of ['waders', 'beach']) {
+        const available = rows.map(row => ({ partId: row.partId, name: row.name, score: row.scores.find(score => score.time === time)?.[mode]?.score })).filter(row => Number.isFinite(row.score));
+        if (available.length !== expectedPartCount) {
+          result[mode] = { status: 'uncertain', validPartCount: available.length, expectedPartCount };
+          continue;
+        }
+        available.sort((a, b) => b.score - a.score || a.partId.localeCompare(b.partId));
+        const high = available[0].score, low = available.at(-1).score;
+        const near = available.filter(row => high - row.score <= 7);
+        const status = high - low <= 7 ? 'whole-zone' : near.length === 1 ? 'only-part' : 'several-parts';
+        result[mode] = { status, score: high, winningPartId: available[0].partId, winningPartName: available[0].name, scoreSpread: high - low, parts: status === 'whole-zone' ? [] : near };
+      }
+      hourly.push(result);
+    }
+    zones[zoneId] = { expectedPartCount, scoredPartCount: rows.length, hourly };
+  }
+  const nearestIndex = rows => rows.reduce((best, row, index) => Math.abs(Date.parse(row.time) - Date.parse(generatedAt)) < Math.abs(Date.parse(rows[best]?.time) - Date.parse(generatedAt)) ? index : best, 0);
+  const parts = Object.fromEntries(partRows.map(row => {
+    const score = row.scores[nearestIndex(row.scores)] ?? null;
+    return [row.partId, { zoneId: row.zoneId, name: row.name, marineCoverage: row.marineCoverage, current: score }];
+  }));
+  return { schemaVersion: 1, enabled: true, datasetVersion: contract.datasetVersion, sourceRunId: contract.sourceRunId, generatedAt, marginPoints: 7, expectedPartCount: contract.partCount, scoredPartCount: partRows.length, parts, zones };
+}
+
 function dmiCollections(coastType) {
   if (coastType === 'west') return { wave: 'wam_nsb', ocean: 'dkss_nsbs' };
   if (coastType === 'limfjord') return { wave: null, ocean: 'dkss_lf' };
@@ -1583,6 +1660,9 @@ function buildWeatherHealth(previousHealth, output, nowIso) {
 const zonesFile = JSON.parse(await fs.readFile(ZONES_PATH, 'utf8'));
 const features = Array.isArray(zonesFile.features) ? zonesFile.features : [];
 if (!features.length) throw new Error(`${ZONES_PATH} indeholder ingen zoner`);
+await fs.access(COASTAL_PARTS_SOURCE_PATH);
+const coastalPartsContract = await buildPublicCoastalParts();
+if (coastalPartsContract.enabled && (coastalPartsContract.partCount !== 605 || coastalPartsContract.zoneCount !== 190)) throw new Error('Den aktive nationale kystdelskontrakt er ikke komplet');
 const coastCorridors = buildCoastCorridors(features);
 const previous = await readPrevious();
 const dmiForecastStore = await readDmiForecastStore();
@@ -1969,6 +2049,9 @@ if (dmiTransientFailure && fallbackZoneIds.length) {
 
 // Alle filer fra samme kørsel får samme dataset-id. Frontenden må ikke blande filer fra forskellige kørsler.
 output.datasetId = `rr-${generatedAt.replace(/[^0-9]/g,'').slice(0,14)}-${Object.keys(output.zones).length}`;
+output.coastalParts = coastalPartsContract.enabled
+  ? scoreCoastalPartsRuntime(coastalPartsContract, features, dmiBulkCache, generatedAt)
+  : { schemaVersion: 1, enabled: false, datasetVersion: coastalPartsContract.datasetVersion, sourceRunId: coastalPartsContract.sourceRunId, generatedAt, marginPoints: 7, expectedPartCount: coastalPartsContract.partCount, scoredPartCount: 0, parts: {}, zones: {} };
 // Conditions skrives først. Den offentlige runtime og manifestet bygges derefter af én fælles, deterministisk funktion.
 await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(output, null, 2)}\n`);
 await writePublicRuntimeFromFull(output);

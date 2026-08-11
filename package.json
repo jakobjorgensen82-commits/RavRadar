@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.175",
+  "version": "4.0.176",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -123,7 +123,8 @@
     "test:current-transport-history": "node scripts/test-current-transport-history-4.0.115.mjs",
     "test:dmi-vector-grid-integrity": "python scripts/test-dmi-vector-grid-integrity-4.0.116.py",
     "test:missing-weather-null-safety": "node scripts/test-missing-weather-null-safety-4.0.116.mjs",
-    "test:dmi-scheduler-active-zones": "node scripts/test-dmi-scheduler-active-zones-4.0.117.mjs"
+    "test:dmi-scheduler-active-zones": "node scripts/test-dmi-scheduler-active-zones-4.0.117.mjs",
+    "test:national-coastal-parts-activation": "node scripts/test-national-coastal-parts-activation-4.0.176.mjs"
   },
   "engines": {
     "node": ">=22"

@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.175
+**Håndbogsversion:** 4.0.176
 
 **Opdateret:** 1. august 2026
 
@@ -1527,3 +1527,11 @@ I 4.0.173 er den korte efterkontrol afsluttet. Ejeren slettede 15 dele, godkendt
 4.0.164 bygger også næste private shadow-gate. Den eksisterende RavScore-motor beregner hver lokal del udelukkende, når vind, bølger, strøm og vandstand findes på samme native tidspunkt, og når næste native vandstandstrin kan danne den faktiske tre-timers trend. Ingen nærmeste-tid eller parentdata bruges. Ved komplet sammenligning betyder højst syv points samlet spænd praktisk hele zonen; ellers navngives én eller flere dele inden for syv point af vinderen. Mangler blot én nødvendig lokal sammenligning, er dækningen usikker. Resultatet er fortsat privat og kan ikke ændre den aktive RavScore.
 
 Før et privat artifact accepteres, skal alle 208 zoner være bundet til planen, alle eksponerede lag være komplette, og filer og hashværdier stemme. Deduplikering måles, og credential- eller mutationsfund stopper kørslen. Først derefter udføres en rumligt indekseret fysisk kystsammenligning for alle zoner. Resultatet er fortsat QA og kan ikke aktivere kyst, vejr eller score.
+
+## National aktivering af lokale kystdele i 4.0.176
+
+Efter ejerens to kortgennemgange og privat run #31480089490 er den aktive kandidat 605 lokale kystdele i 190 hovedzoner. Samlingen har nul fysisk overlap. Alle 605 dele har et landpunkt og et vandpunkt; 594 har fuld marin modeldækning og 11 har dokumenteret deldækning. Den sidste tætte ejerskabsbeslutning ved Orehoved er lagt til Falsters nordkyst.
+
+Vejrpipelinen bruger de eksisterende samlede DMI-filer og foretager lokale gridopslag for hvert vandpunkt. Der sendes derfor ikke ét DMI-kald pr. kystdel. Hver del får sin egen lokale vejrserie og RavScore. Den højeste gyldige delscore bestemmer hovedzonens score på det pågældende tidspunkt. Er forskellen mellem bedste og dårligste del højst syv point, kan resultatet beskrives som hele zonen; ellers vises én eller flere dele inden for syv point af vinderen. Mangler en nødvendig lokal sammenligning, er resultatet usikkert, og systemet må ikke genbruge den gamle hovedzonescore.
+
+Kortet viser de nye officielle kyststrækninger, men den almindelige zonetitel og navigation bevares. Aktiveringen gemmes centralt som et lille versions- og hashdokument; de store kildefiler ligger ikke i Supabase. Rollback sker ved at slå dette dokument fra og genudgive den bevarede hovedzoneruntime.
