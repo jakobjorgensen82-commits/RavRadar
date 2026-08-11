@@ -1,3 +1,9 @@
+## 2026-08-12 – read-only nataudit af den aktive 4.0.182-kyst
+- Den produktionsverificerede, hash-låste bestand er bevaret byte-for-byte. Et nyt privat kontrolkort læser de 643 aktive dele direkte og tilbyder både samlet landsvisning og søgbar lokal visning uden mutations- eller aktiveringsvej.
+- Landskortet samt lokale stikprøver ved Voerså–Sibirien og Vadehavet er åbnet og kontrolleret i browseren. Der ses ingen udenlandsk landsgeometri i oversigten; de godkendte Vadehavsforløb er til stede.
+- Aktiveringskontrakten og alle 643 land-/vandpunktpar er genvalideret. Hele `test:coastal-geometry-v2`, RDKS-valideringen og håndbogens almindeligt-sprog-gate består.
+- Forældede dokumentationslinjer om afventende runtimegate, privat Vadehavskandidat og manglende produktion er lukket eller tydeligt markeret som historik.
+
 ## 2026-08-11 – 4.0.181 genopretter hovedzonernes kortvisning
 - Ejerens første offentlige kortkontrol viste, at 605 interne beregningsdele fejlagtigt blev gengivet som selvstændige synlige zoner med hver sin start-/slutmarkering, tooltip og tre Leaflet-linjer.
 - Resultatet var et næsten sort Danmarkskort, gentagne navne, mange interne sorte markeringer, synlige kysthuller og markant langsommere indlæsning.

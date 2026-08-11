@@ -1548,3 +1548,5 @@ Der findes 643 lokale beregningsdele bag kortet. Alle har land- og vandpunkt; 63
 Vadehavets fastlandskyst fra Emmerlev mod Esbjerg indgår i tre hovedzoner. Rømødæmningen og økyster indgår ikke i fastlandslinjen. To ejer-godkendte forbindelser ved den fragmenterede digekyst og Ribe Å er dokumenterede undtagelser fra den direkte officielle linje.
 
 Brugeren ser fortsat én scorefarve, ét navn, én klikflade og kun en sort grænsemarkering ved hver ende af hovedzonen. Interne beregningsdele skaber ingen sorte markeringer. RavScore-reglerne er uændrede.
+
+Den aktive kyst kan efterfølgende kontrolleres uden at bygge en ny kandidat. Et privat read-only kontrolkort læser den versions- og hash-låste produktionsbestand, viser først hele Danmark og kan derefter søge og zoome til hver lokal del. Kortet må dokumentere mulige problemer, men må ikke aktivere eller rette geometri automatisk. En ændring kræver fortsat dokumenteret årsag, relevant ejerafgørelse og de fulde geometri-, DMI-, runtime- og releasegates.

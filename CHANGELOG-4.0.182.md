@@ -16,3 +16,8 @@
 
 RavScore-reglerne ændres ikke. Manglende lokale data forbliver manglende, og de seks fallbackzoner får ikke opdigtet præcisionsgeometri.
 - Den historiske 4.0.48-kystgenerator bevarer nu de tre ejer-godkendte nye Vadehavszoner gennem den centrale admin- og vejrbygning.
+
+## Efterfølgende read-only kvalitetssikring
+- Tilføjer en privat visuel auditbygger, som læser den aktive hash-låste 4.0.182-bestand og kan vise både hele Danmark og hver af de 643 dele uden at ændre geometri, admin-data, vejr eller RavScore.
+- Landsvisningen og lokale stikprøver ved Voerså–Sibirien og Vadehavet er åbnet og kontrolleret i browseren. Aktiveringskontrakten og 643/643 land-/vandpunktpar er genvalideret.
+- Forældede RDKS-formuleringer om afventende runtimegate og manglende aktivering er markeret som historiske eller lukket.

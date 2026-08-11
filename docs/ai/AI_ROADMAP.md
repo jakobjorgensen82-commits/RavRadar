@@ -1,14 +1,15 @@
-# AI Roadmap – RavRadar efter 4.0.181
+# AI Roadmap – RavRadar efter 4.0.182
 
 Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status skal løbende flyttes til RDKS, når noget implementeres.
 
-## Aktiv P0-rettelse – adskil beregningsdele fra synlige zoner
+## Afsluttet P0 – hovedzoner med præcis kyst
 - 4.0.180 beviste lokal score til 605/605 dele, men den offentlige præsentation var forkert: hver intern beregningsdel blev tegnet som en synlig kortzone med egne to sorte endemarkeringer, tooltip og tre Leaflet-linjer. Det gjorde kortet uoverskueligt og tungt.
 - 4.0.181 genopretter den bindende produktmodel: de 605 lokale dele bevares til punkter, vejr og RavScore bag kulissen, mens kortet igen viser én autoritativ kystlinje, ét navn, én klikflade og kun to endemarkeringer pr. hovedzone.
 - Den næste private kandidat genbruger 605 godkendte dele og supplerer til 650 dele/203 hovedzoner med nul overlap og nul kildeafvigelser. 84 øvrige kildeforskelle er tidligere ejer-godkendte udeladelser. Kun fem geografisk modstridende hovedzoner afventer nu slutkontrol, før offentlig projektion og releasegate.
 - Efter den akutte visningsrettelse auditeres alle områder, hvor beregningsdelene ikke dækker en kendt relevant ravstrand. Der må ikke gættes nye kystforløb eller slettes deldata som genvej.
 - Ejerens efterkontrol har præciseret slutproduktet: hovedzonernes oprindelige struktur og forståelige navne kombineres med GeoDanmarks præcise strandforløb. Lokale dele forbliver tekniske data bag hovedzonen. Nye hovedzoner oprettes kun ved en konkret geografisk/navnemæssig fordel, aldrig automatisk ud fra et lokalt delnavn.
 - Den dokumenterede kildefejl rettes først privat: fliseplanen skal dække zonens ejerskabsområde og ikke kun den gamle, potentielt fejlplacerede linje. Derefter genopbygges de manglende hovedzoner og alle uforklarede nationale huller auditeres samlet for officiel kyst, overlap, havn/å/indre farvand og udenlandsk/outlier-geometri. Først et grønt privat kort kan gå videre til offentlig aktivering; adminudvidelsen venter.
+- 4.0.182 har gennemført dette forløb og er produktionsverificeret. Fortsat geometriarbejde foregår nu som read-only nataudit mod den aktive, hash-låste bestand. Det private kontrolkort viser både hele Danmark og hver enkelt del; dokumenterede problemer kan foreslås, men produktionen ændres ikke uden ny ejerafgørelse og fulde gates.
 
 ## Afsluttet datakæde – national kystgeometri v2
 - Datakæden er produktionsverificeret i 4.0.180. Push-kørsel #31498481482 bestod fulde gates, central readback, artifact og deploy; det offentlige datasæt gav lokal score til 605/605 dele i alle 190 hovedzoner. Den efterfølgende visningsfejl betyder, at milepælen først er produktmæssigt lukket, når 4.0.181 er visuelt produktionsverificeret.

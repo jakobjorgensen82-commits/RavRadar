@@ -15,7 +15,7 @@
 - [x] Alle 643 dele har land-/vandpunkt; 39 nye eller ændrede dele er genereret uden blokering, mens 604 eksisterende punktpar genbruges.
 - [x] Privat #31532688885 beviser native DMI-dækning for den endelige 39-punktsbestand: 39 fulde, nul delvise og nul blokerede.
 - [x] Den score-neutrale vejridentitetskontrakt er bygget på det komplette kommende register med 212 hovedzoner.
-- [ ] Derefter følger samlet privat runtime-/releaseintegration af den versionslåste 643-dels kandidat før offentlig aktivering.
+- [x] Den versionslåste 643-dels kandidat bestod privat runtime-/releaseintegration i #31533385967 og blev efter ejerens godkendelse produktionsverificeret i #31541126136.
 - [x] Den autoritative otte-zoners ejerfil `(4)` er versionsført og anvendt fail-closed. Seks bevarede/rettede kandidater er samlet i et privat korrektionskort; to fejlagtige præcisionsforslag er forkastet uden at slette deres eksisterende hovedzoner.
 - [x] Vadehavsforslaget sammenholdes nu med hele den additive 650-dels kandidat, så den eksisterende Emmerlev-geometri ikke dobbeltregistreres. Den private Vadehavstilføjelse er 81,883 km efter denne deduplikering.
 - [x] Ejeren har kontrolleret og godkendt det lille seks-zoners korrektionskort; godkendelsen er versionsført fail-closed.
