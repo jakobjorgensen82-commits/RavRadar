@@ -1,6 +1,7 @@
 # Kendte åbne og overvågede forhold
 
 ## National zone- og kystgeometri – aktiv pilot efter DEC-0032
+- **ISSUE-NATIONAL-OWNER-REVIEW-UNUSABLE-OVERVIEW – LØST OG VISUELT EJERBEKRÆFTET I 4.0.171:** Første review pressede hele Danmark ind i et lille, baggrundsløst kort og havde ingen godkendelsesarbejdsgang. Det er erstattet af én stor del ad gangen med baggrundskort/luftfoto, kraftig linje, automatisk zoom, beslutningsknapper, bemærkning og eksport.
 - **ISSUE-NATIONAL-WIND-ASSET-BUDGET – LØST OG CI-VERIFICERET I #31448258035:** Det begrænsede valg af præcis to HARMONIE-assets bestod for alle 774 berettigede dele inden for downloadgrænsen.
 - **ISSUE-NATIONAL-SHADOW-THREE-HOUR-TREND – LØST OG CI-VERIFICERET I #31448258035:** Et ægte native `t`/`t+3h`-par blev anvendt, og alle 752 komplette dele blev shadow-scoret uden interpolation.
 - **ISSUE-NATIONAL-PART-WIND-NOT-YET-VERIFIED – LØST PRIVAT I #31425327202:** 774/774 dele har mindst to native HARMONIE-trin; retrypopulationen var 20, og samme celle, afstand og provenance bestod uden interpolation eller parentfallback.

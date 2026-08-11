@@ -2,6 +2,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {renderOwnerReviewHtml} from './lib/national-owner-review-html.mjs';
 
 const DEFAULT_WORK='.geometry-v2-work/ci-31425327202';
 const DEFAULT_OUT='.owner-review/national-coastal-zone-review';
@@ -71,13 +72,13 @@ export function selfTest(){
   const names={finalPartCount:783,parts:ids.map((id,i)=>({zoneId:`Z${i%194}`,finalPartId:id,suggestedName:`Del ${i}`,nameStatus:'private-official-name-suggestion'}))};
   const points={finalPartCount:783,parts:ids.map((id,i)=>({finalPartId:id,status:i<9?'blocked':'private-point-pair-proposed',blockingReasons:i<9?['test']:[]}))};
   const shadow={status:'passed-private-national-shadow-score-validation',scoreChanged:false,publicRuntimeChanged:false,parts:ids.slice(9,761).map(partId=>({partId}))};
-  const report=buildReview({coastal,partitions,names,points,shadow}),html=renderHtml(report);if(report.statusCounts.complete!==752||report.statusCounts.partial!==22||report.statusCounts.blocked!==9||html.includes('"score":'))throw new Error('National owner-review self-test fejlede');
+  const report=buildReview({coastal,partitions,names,points,shadow}),html=renderOwnerReviewHtml(report);if(report.statusCounts.complete!==752||report.statusCounts.partial!==22||report.statusCounts.blocked!==9||html.includes('"score":')||!html.includes('31 kræver kontrol')||!html.includes('Luftfoto'))throw new Error('National owner-review self-test fejlede');
   console.log('National score-neutral owner-review self-test: bestået');
 }
 
 async function main(){
   if(process.argv.includes('--self-test'))return selfTest();const args=process.argv.slice(2),val=(f,d)=>{const i=args.indexOf(f);return i<0?d:args[i+1]},work=val('--work',DEFAULT_WORK),out=val('--output-dir',DEFAULT_OUT);
   const read=f=>fs.readFile(path.join(work,f),'utf8').then(JSON.parse),[coastal,partitions,names,points,shadow]=await Promise.all(['national-coastal-parts.geojson','national-locality-partitions.geojson','national-local-part-name-suggestions.json','national-local-part-point-pairs.json','national-shadow-score-validation.json'].map(read));
-  const report=buildReview({coastal,partitions,names,points,shadow});await fs.mkdir(out,{recursive:true});await Promise.all([fs.writeFile(path.join(out,'review-report.json'),JSON.stringify({...report,parts:report.parts.map(({geometry,...p})=>p)},null,2)+'\n'),fs.writeFile(path.join(out,'index.html'),renderHtml(report))]);console.log(JSON.stringify({status:report.status,partCount:report.partCount,statusCounts:report.statusCounts,scoreChanged:false}));
+  const report=buildReview({coastal,partitions,names,points,shadow});await fs.mkdir(out,{recursive:true});await Promise.all([fs.writeFile(path.join(out,'review-report.json'),JSON.stringify({...report,parts:report.parts.map(({geometry,...p})=>p)},null,2)+'\n'),fs.writeFile(path.join(out,'index.html'),renderOwnerReviewHtml(report))]);console.log(JSON.stringify({status:report.status,partCount:report.partCount,statusCounts:report.statusCounts,scoreChanged:false}));
 }
 if(process.argv[1]&&fileURLToPath(import.meta.url)===path.resolve(process.argv[1]))main().catch(e=>{console.error(e.message);process.exit(1)});

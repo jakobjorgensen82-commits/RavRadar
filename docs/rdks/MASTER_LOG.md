@@ -799,3 +799,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Privat #31448258035 bestod hele den nationale kystzonekæde: 774 vindserier, 752 shadow-scorer, 22 deldækkede og ni blokerede dele.
 - Score-neutral ejerreview med 783 dele og central admin-roundtrip/rollback bestod. Beskyttede dokumenter, geometri, score og offentlig runtime var uændrede.
 - Reviewartifactet er auditeret og downloadet lokalt. Manuel ejerreview er næste gate; automatisk aktivering er fortsat forbudt.
+# 2026-08-11 – 4.0.171 brugbar manuel kystzonegennemgang
+
+- Ejerens skærmbillede dokumenterede, at første Danmarksoverblik var for småt, manglede baggrundskort og ikke gav en meningsfuld godkendelsesarbejdsgang.
+- Reviewgeneratoren viser nu én stor del ad gangen med almindeligt kort/luftfoto, stednavne, kraftig valgt linje og automatisk zoom.
+- De 31 opmærksomhedsdele vises først. Godkend/Skal rettes, bemærkning, lokal lagring, frem/tilbage og JSON-eksport er implementeret.
+- Generatorselftest og statisk browser-JavaScript-test består. Ejeren bekræftede visuelt, at stort kort, baggrund, stednavne, automatisk zoom og kraftig blå kystlinje fungerer og ser fint ud.
