@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.177
+# Implementeringsstatus pr. 4.0.178
 
 ## National kystgeometri v2 – geometri aktiv, lokal scoreproduktion afventer nyt bevis
 - [x] Privat #31480089490 genbyggede den friske centralt hydrerede landskæde og bestod geometri, 605/605 land-/vandpunkter, 605/605 DMI-gridvalg, flertrinsserier, isoleret state/historik, lokal vind, shadow-score og central admin-roundtrip/rollback.
@@ -8,8 +8,9 @@
 - [x] Score beregnes lokalt pr. del og tidspunkt. Bedste gyldige del bærer hovedzonens score; en 7-punktsmargin afgør hel zone, én del eller flere dele. Manglende lokal sammenligning bliver `uncertain`; gammel hovedzonescore bruges ikke som fallback.
 - [x] Den offentlige kortvisning bruger de nye kyststreger. Central `coastal-parts-v2-activation` kan slå aktiveringen fra igen uden at slette den tidligere hovedzoneruntime.
 - [x] #31491319173 beviste 605 offentlige kyststreger, fulde Linux-gates, Supabase-readback, Pages-artifact og deploy for 4.0.176.
-- [x] Online audit fandt fail-closed 0/605 lokale scorer og workflowloggen dokumenterede separate gridopslag som årsag. 4.0.177 samler alle HARMONIE-punkter i ét native opslag pr. grid uden at lempe marine krav.
-- [ ] Frisk 4.0.177-produktion skal vise færdige HARMONIE-trin og lokale scorer online, før kystaktiveringen kaldes fuldt produktionsverificeret.
+- [x] Online audit fandt fail-closed 0/605 lokale scorer og workflowloggen dokumenterede separate gridopslag som årsag. #31493787424 viste derefter, at 4.0.177's ecCodes-flerpunktsfunktion stadig gentog den dyre søgning internt og færdiggjorde nul trin.
+- [x] 4.0.178 læser HARMONIE-koordinater én gang og bruger et afgrænset geografisk indeks; marine krav lempes ikke.
+- [ ] Frisk 4.0.178-produktion skal vise færdige HARMONIE-trin og lokale scorer online, før kystaktiveringen kaldes fuldt produktionsverificeret.
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] Lokal slut-samling efter alle ejerafgørelser reducerer 753 tekniske dele med 311 tværzone-overlap til 603 unikke fysiske dele med nul overlap. Hammer Odde har en eksplicit geografisk nordspidsgrænse.

@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.177
+**Håndbogsversion:** 4.0.178
 
 **Opdateret:** 1. august 2026
 
@@ -1535,6 +1535,6 @@ Efter ejerens to kortgennemgange og privat run #31480089490 er den aktive kandid
 Vejrpipelinen bruger de eksisterende samlede DMI-filer og foretager lokale gridopslag for hvert vandpunkt. Der sendes derfor ikke ét DMI-kald pr. kystdel. Hver del får sin egen lokale vejrserie og RavScore. Den højeste gyldige delscore bestemmer hovedzonens score på det pågældende tidspunkt. Er forskellen mellem bedste og dårligste del højst syv point, kan resultatet beskrives som hele zonen; ellers vises én eller flere dele inden for syv point af vinderen. Mangler en nødvendig lokal sammenligning, er resultatet usikkert, og systemet må ikke genbruge den gamle hovedzonescore.
 
 Kortet viser de nye officielle kyststrækninger, men den almindelige zonetitel og navigation bevares. Aktiveringen gemmes centralt som et lille versions- og hashdokument; de store kildefiler ligger ikke i Supabase. Rollback sker ved at slå dette dokument fra og genudgive den bevarede hovedzoneruntime.
-# Driftsnote til 4.0.177
+# Driftsnote til 4.0.178
 
-De 605 lokale kyststreger er lagt online. Første produktionskørsel nåede ikke at beregne deres lokale vind, fordi punkterne blev slået op ét ad gangen i DMI's vindkort. Fra 4.0.177 slås alle punkter op samlet én gang pr. vindkort. De strengere kontroller af bølger, strøm, land/vand og fælles U/V-punkt er uændrede. Lokal scoreproduktion skal bekræftes af en frisk online kørsel.
+De 605 lokale kyststreger er lagt online. De første produktionsforsøg nåede ikke at beregne deres lokale vind, fordi ecCodes gentog en tung søgning for hvert punkt. Fra 4.0.178 læses og indekseres vindkortets koordinater én gang. De strengere kontroller af bølger, strøm, land/vand og fælles U/V-punkt er uændrede. Lokal scoreproduktion skal bekræftes af en frisk online kørsel.

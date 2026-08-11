@@ -1,8 +1,14 @@
+## 2026-08-11 – 4.0.178 indekserer HARMONIE-gridet én gang
+- #31493787424 viste, at 4.0.177's native ecCodes-flerpunktsfunktion stadig brugte 1.008 sekunder på første vindfelt og afsluttede med nul forecasttrin. Den antagne hastighedsgevinst forkastes.
+- 4.0.178 læser gridkoordinaterne én gang, afgrænser dem til registerets danske område og slår alle punkter op via små geografiske indeksfelter. Marine/bølgekontroller er uændrede.
+- Samme run fandt også, at schedulerens isolerede ecCodes-teststub manglede den nye import; stubben følger nu den faktiske API.
+- Frisk produktion og online scorekontrol afventer.
+
 ## 2026-08-11 – 4.0.177 samler lokale HARMONIE-gridopslag
 - 4.0.176 blev deployet med 605 aktive kyststreger, grønne fulde gates, central readback og Pages, men online public conditions havde 0/605 lokale scorer.
 - Workflowloggen dokumenterede årsagen: første HARMONIE-felt brugte hele arbejdsbudgettet på separate ecCodes-nearest-opslag for det udvidede 1.186-punktsregister og færdiggjorde derfor nul forecasttrin.
 - HARMONIE er et komplet atmosfærisk grid. 4.0.177 bruger ecCodes' native flerpunktsopslag én gang pr. grid og cacher resultatet. Marine og bølgefelters bredere gyldighedssøgning er uændret.
-- Frisk produktion og online kontrol af lokale scorer afventer.
+- #31493787424 afviste løsningen: ecCodes gentog søgningen internt, første felt tog 1.008 sekunder og nul forecasttrin blev færdige. 4.0.178 erstatter metoden.
 
 ## 2026-08-11 – 4.0.176 aktiverer national lokal kystmodel
 - Privat #31480089490 bestod hele den centralt hydrerede slutkæde med 605 dele, nul overlap, 605 punktpar, 594 fulde og 11 delvise marine gridbeviser samt central roundtrip/rollback.

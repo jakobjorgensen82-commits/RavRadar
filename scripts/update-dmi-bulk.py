@@ -27,8 +27,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 try:
     from eccodes import (
-        codes_get, codes_get_elements, codes_grib_find_nearest,
-        codes_grib_find_nearest_multiple,
+        codes_get, codes_get_array, codes_get_elements, codes_grib_find_nearest,
         codes_grib_new_from_file, codes_release,
     )
 except ImportError as exc:
@@ -631,14 +630,15 @@ def nearest_candidates(gid: int, collection: str, zone: dict[str, Any]) -> list[
 
 
 def warm_atmospheric_grid_cache(gid: int, collection: str, zones: list[dict[str, Any]]) -> None:
-    """Resolve every HARMONIE point in one ecCodes call per grid.
+    """Resolve every HARMONIE point from one grid-coordinate scan.
 
     HARMONIE is a complete atmospheric grid, so one nearest cell is sufficient.
     Calling ``codes_grib_find_nearest`` separately for the national part registry
-    made the first wind field exceed the entire workflow budget. ecCodes exposes
-    a native multi-point lookup that performs the same nearest-cell operation for
-    the complete registry in one pass. Marine and wave grids deliberately retain
-    their broader missing-value/land-mask candidate search.
+    made the first wind field exceed the entire workflow budget. ecCodes' native
+    multi-point helper repeats the same costly nearest search internally, so read
+    the grid coordinates once, bucket only the Denmark-sized bounding box and
+    resolve every registry point against nearby buckets. Marine and wave grids
+    deliberately retain their broader missing-value/land-mask candidate search.
     """
     if collection != "harmonie_dini_sf" or not zones:
         return
@@ -647,23 +647,41 @@ def warm_atmospheric_grid_cache(gid: int, collection: str, zones: list[dict[str,
     if warm_key in GRID_BATCH_WARMED:
         return
     try:
-        candidates = codes_grib_find_nearest_multiple(
-            gid,
-            False,
-            [float(zone["lat"]) for zone in zones],
-            [float(zone["lon"]) for zone in zones],
-        )
+        latitudes = codes_get_array(gid, "latitudes")
+        longitudes = codes_get_array(gid, "longitudes")
     except Exception as exc:
-        progress(f"samlet HARMONIE-gridopslag fejlede; bruger enkeltopslag: {exc}")
+        progress(f"HARMONIE-gridkoordinater kunne ikke læses; bruger enkeltopslag: {exc}")
         GRID_BATCH_WARMED.add(warm_key)
         return
-    for zone, candidate in zip(zones, candidates or []):
-        try:
-            index = int(candidate.get("index"))
-            lat = float(candidate.get("lat"))
-            lon = float(candidate.get("lon"))
-        except (AttributeError, TypeError, ValueError):
+    bucket_size = 0.1
+    min_lat = min(float(zone["lat"]) for zone in zones) - 0.3
+    max_lat = max(float(zone["lat"]) for zone in zones) + 0.3
+    min_lon = min(float(zone["lon"]) for zone in zones) - 0.5
+    max_lon = max(float(zone["lon"]) for zone in zones) + 0.5
+    buckets: dict[tuple[int, int], list[tuple[int, float, float]]] = {}
+    for index, (raw_lat, raw_lon) in enumerate(zip(latitudes, longitudes)):
+        lat, lon = float(raw_lat), float(raw_lon)
+        if lat < min_lat or lat > max_lat or lon < min_lon or lon > max_lon:
             continue
+        key = (math.floor(lat / bucket_size), math.floor(lon / bucket_size))
+        buckets.setdefault(key, []).append((index, lat, lon))
+    for zone in zones:
+        zone_lat, zone_lon = float(zone["lat"]), float(zone["lon"])
+        center = (math.floor(zone_lat / bucket_size), math.floor(zone_lon / bucket_size))
+        nearby: list[tuple[int, float, float]] = []
+        for radius in range(1, 4):
+            nearby = []
+            for lat_bin in range(center[0] - radius, center[0] + radius + 1):
+                for lon_bin in range(center[1] - radius, center[1] + radius + 1):
+                    nearby.extend(buckets.get((lat_bin, lon_bin), ()))
+            if nearby:
+                break
+        if not nearby:
+            continue
+        index, lat, lon = min(
+            nearby,
+            key=lambda item: haversine_km(zone_lat, zone_lon, item[1], item[2]),
+        )
         cache_key = (collection, signature, zone["id"], ATMOSPHERIC_GRID_CANDIDATE_TARGET)
         GRID_INDEX_CACHE[cache_key] = [{
             "index": index,

@@ -22,7 +22,7 @@ const behavioral=`
 import importlib.util, sys, types
 sys.path.insert(0, 'scripts')
 eccodes=types.ModuleType('eccodes')
-for name in ('codes_get','codes_get_elements','codes_grib_find_nearest','codes_grib_new_from_file','codes_release'):
+for name in ('codes_get','codes_get_array','codes_get_elements','codes_grib_find_nearest','codes_grib_new_from_file','codes_release'):
     setattr(eccodes,name,lambda *a,**k: None)
 sys.modules['eccodes']=eccodes
 spec=importlib.util.spec_from_file_location('bulk','scripts/update-dmi-bulk.py')
