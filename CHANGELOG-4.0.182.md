@@ -8,3 +8,4 @@
 - Privat #31533385967 beviste desuden den deaktiverede runtimekontrakt og central Supabase-opret/læs/opdater/slet/rollback uden ændring af beskyttede admin-dokumenter.
 
 RavScore-reglerne ændres ikke. Manglende lokale data forbliver manglende, og de seks fallbackzoner får ikke opdigtet præcisionsgeometri.
+- Den historiske 4.0.48-kystgenerator bevarer nu de tre ejer-godkendte nye Vadehavszoner gennem den centrale admin- og vejrbygning.

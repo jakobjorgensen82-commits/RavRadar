@@ -8,6 +8,7 @@ const fail=[];
 if(!workflow.includes("refine-coastlines-constrained-4.0.48.py")) fail.push("workflow kører ikke 4.0.48-generatoren");
 if(workflow.includes("--minimum-generated 190")) fail.push("workflow indeholder stadig den brede 4.0.47-aktivering");
 if(!generator.includes("constrained-nearest-natural-coast")) fail.push("generator mangler begrænset refinement mode");
+if(!generator.includes("owner_approved_additions") || !generator.includes("owner-approved-precise-public-coast")) fail.push("generatoren bevarer ikke de ejer-godkendte nye Vadehavszoner");
 if(!pkg.scripts["build:constrained-coastlines"]) fail.push("package-script mangler");
 const approvedPreciseZones=zones.features.filter(feature=>feature?.properties?.coastLineVersion==="4.0.182").length;
 if(audit.refinedZones+audit.fallbackZones+approvedPreciseZones<zones.features.length) fail.push("audit dækker færre zoner end det aktive register");

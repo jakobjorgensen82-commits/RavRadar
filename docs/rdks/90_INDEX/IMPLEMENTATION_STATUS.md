@@ -5,6 +5,7 @@
 - [x] Alle 643 dele har land-/vandpunkter; 632 har fuldt og 11 delvist marint gridbevis. Privat #31532688885 bestod DMI for alle 39 nye eller ændrede punktpar.
 - [x] Privat #31533385967 bestod deaktiveret runtime, public-kontrakt og central admin-roundtrip/rollback uden ændring af beskyttede poster.
 - [ ] 4.0.182 mangler fuld release-kørsel, produktion og onlinekontrol, før den må kaldes produktionsverificeret.
+- [x] Første releaseforsøg #31536061680 dokumenterede, at den historiske 4.0.48-generator fjernede de tre nye Vadehavszoner før validering. Generatoren bevarer nu eksplicit de godkendte tilføjelser; intet blev deployet fra den fejlede kørsel.
 
 ## National kystgeometri v2 – datakæde verificeret, offentlig kortvisning rettes
 - [x] Ejeren har godkendt det private seks-zoners korrektionskort. Den versionsførte godkendelse tillader samling og audit, men ikke automatisk produktion eller scoreaktivering.

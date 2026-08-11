@@ -82,19 +82,32 @@ def main():
     # Bevar den aktuelle RavRadar-releaseversion. GUIDE er et historisk geometrisnapshot
     # og må ikke nedgradere topniveauets app-version, når ACTIVE regenereres.
     active_release_version = None
+    active_document = None
     if ACTIVE.exists():
         try:
-            active_release_version = json.loads(ACTIVE.read_text('utf-8')).get('version')
+            active_document = json.loads(ACTIVE.read_text('utf-8'))
+            active_release_version = active_document.get('version')
         except (json.JSONDecodeError, OSError):
             active_release_version = None
     guide=json.loads(GUIDE.read_text('utf-8')); target=json.loads(TARGET.read_text('utf-8'))
     guide['features']=[f for f in guide['features'] if f.get('properties',{}).get('id') not in RETIRED_ZONE_IDS]
+    guide_ids={f.get('properties',{}).get('id') for f in guide['features']}
+    owner_approved_additions={'DK-B04-12','DK-B04-13','DK-B04-14'}
+    for feature in (active_document or {}).get('features',[]):
+        zid=feature.get('properties',{}).get('id')
+        if zid in owner_approved_additions and zid not in guide_ids:
+            guide['features'].append(feature)
+            guide_ids.add(zid)
     if active_release_version:
         guide['version'] = active_release_version
     tm={f['properties']['id']:f for f in target['features']}
     report=[]; accepted=0
     for f in guide['features']:
         p=f['properties']; zid=p['id']; tf=tm.get(zid)
+        if zid in owner_approved_additions:
+            report.append({'zoneId':zid,'name':p.get('name'),'status':'owner-approved-precise-public-coast'})
+            accepted+=1
+            continue
         if zid in MANUAL_COASTLINE_OVERRIDES:
             p['coastLine']=MANUAL_COASTLINE_OVERRIDES[zid]
             p['name']='Rømø vest og Kongsmark'; p['region']='Rømø vest · hele vestkysten'
