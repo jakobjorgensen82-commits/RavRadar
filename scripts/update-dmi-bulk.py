@@ -678,17 +678,20 @@ def warm_atmospheric_grid_cache(gid: int, collection: str, zones: list[dict[str,
                 break
         if not nearby:
             continue
-        index, lat, lon = min(
+        nearest = sorted(
             nearby,
             key=lambda item: haversine_km(zone_lat, zone_lon, item[1], item[2]),
-        )
+        )[:ATMOSPHERIC_GRID_CANDIDATE_TARGET]
         cache_key = (collection, signature, zone["id"], ATMOSPHERIC_GRID_CANDIDATE_TARGET)
-        GRID_INDEX_CACHE[cache_key] = [{
-            "index": index,
-            "latitude": lat,
-            "longitude": lon,
-            "distanceKm": haversine_km(zone["lat"], zone["lon"], lat, lon),
-        }]
+        GRID_INDEX_CACHE[cache_key] = [
+            {
+                "index": index,
+                "latitude": lat,
+                "longitude": lon,
+                "distanceKm": haversine_km(zone_lat, zone_lon, lat, lon),
+            }
+            for index, lat, lon in nearest
+        ]
     GRID_BATCH_WARMED.add(warm_key)
 
 def valid_candidates_batch(gid: int, collection: str, zones: list[dict[str, Any]]) -> dict[str, list[dict[str, float]]]:

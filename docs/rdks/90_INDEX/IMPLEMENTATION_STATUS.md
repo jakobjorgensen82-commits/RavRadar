@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.178
+# Implementeringsstatus pr. 4.0.179
 
 ## National kystgeometri v2 – geometri aktiv, lokal scoreproduktion afventer nyt bevis
 - [x] Privat #31480089490 genbyggede den friske centralt hydrerede landskæde og bestod geometri, 605/605 land-/vandpunkter, 605/605 DMI-gridvalg, flertrinsserier, isoleret state/historik, lokal vind, shadow-score og central admin-roundtrip/rollback.
@@ -9,8 +9,9 @@
 - [x] Den offentlige kortvisning bruger de nye kyststreger. Central `coastal-parts-v2-activation` kan slå aktiveringen fra igen uden at slette den tidligere hovedzoneruntime.
 - [x] #31491319173 beviste 605 offentlige kyststreger, fulde Linux-gates, Supabase-readback, Pages-artifact og deploy for 4.0.176.
 - [x] Online audit fandt fail-closed 0/605 lokale scorer og workflowloggen dokumenterede separate gridopslag som årsag. #31493787424 viste derefter, at 4.0.177's ecCodes-flerpunktsfunktion stadig gentog den dyre søgning internt og færdiggjorde nul trin.
-- [x] 4.0.178 læser HARMONIE-koordinater én gang og bruger et afgrænset geografisk indeks; marine krav lempes ikke.
-- [ ] Frisk 4.0.178-produktion skal vise færdige HARMONIE-trin og lokale scorer online, før kystaktiveringen kaldes fuldt produktionsverificeret.
+- [x] #31495844161 beviste 4.0.178's indeks: otte HARMONIE-trin, 44 WAM-trin, 543/605 lokale scorer i alle 190 zoner, fulde gates, central readback og deploy.
+- [x] Artifactaudit viste 62 dele med en tom nærmeste vindcelle. 4.0.179 bevarer fire nærliggende kandidater og kræver fortsat fælles gyldig U/V.
+- [ ] Frisk 4.0.179-produktion skal bevise den endelige lokale scoredækning online.
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] Lokal slut-samling efter alle ejerafgørelser reducerer 753 tekniske dele med 311 tværzone-overlap til 603 unikke fysiske dele med nul overlap. Hammer Odde har en eksplicit geografisk nordspidsgrænse.

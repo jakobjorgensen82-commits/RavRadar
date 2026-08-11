@@ -1,3 +1,9 @@
+## 2026-08-11 – 4.0.179 bevarer fire hurtige vindkandidater
+- #31495844161 beviste 4.0.178's indeks med otte HARMONIE-trin og 44 WAM-trin på 233 sekunder; fulde gates, central readback og deploy bestod.
+- Online blev 543/605 dele scoret i alle 190 zoner. Supportartifactet viste 62 dele uden vind, fordi deres nærmeste indekserede HARMONIE-celle var missing.
+- 4.0.179 gemmer de fire nærmeste celler i det hurtige indeks og genbruger den eksisterende fail-closed fælles U/V-gyldighedskontrol.
+- Frisk online scoredækning afventer.
+
 ## 2026-08-11 – 4.0.178 indekserer HARMONIE-gridet én gang
 - #31493787424 viste, at 4.0.177's native ecCodes-flerpunktsfunktion stadig brugte 1.008 sekunder på første vindfelt og afsluttede med nul forecasttrin. Den antagne hastighedsgevinst forkastes.
 - 4.0.178 læser gridkoordinaterne én gang, afgrænser dem til registerets danske område og slår alle punkter op via små geografiske indeksfelter. Marine/bølgekontroller er uændrede.
