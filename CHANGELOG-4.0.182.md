@@ -5,6 +5,7 @@
 - En nyere, eksplicit ejer-godkendt kystaktivering kan nu promoveres forbi en ældre central manifest præcis én gang. Når versionerne er ens, er den centrale Supabase-version igen autoritativ, inklusive rollback.
 - En målrettet regressionstest beskytter både engangspromotionen og den efterfølgende centrale rollback.
 - Den eksisterende stations-sync-kontrakttest accepterer nu sikker, læsbar Python-formatering uden at svække kontrollen af de centrale dokumentstier.
+- Produktion #31541126136 bestod alle gates og deploy. Onlinekontrol bekræftede version 4.0.182, 211 effektive hovedzoner, 643 kystdele, alle tre nye Vadehavszoner og et synligt kort uden browserfejl.
 
 - Kombinerer de oprindelige hovedzoner med de ejer-godkendte præcise kystforløb: 212 hovedzoner, hvor 206 bruger præcis kyst og seks bevarer deres sikre gamle linje.
 - Viser fortsat kun én klikbar linje, ét navn, én scorefarve og to ydre grænsemarkeringer pr. hovedzone. De 643 lokale beregningsdele vises ikke som selvstændige zoner.
