@@ -1,6 +1,6 @@
-# Implementeringsstatus pr. 4.0.180
+# Implementeringsstatus pr. 4.0.181
 
-## National kystgeometri v2 – geometri aktiv, lokal scoreproduktion afventer nyt bevis
+## National kystgeometri v2 – datakæde verificeret, offentlig kortvisning rettes
 - [x] Privat #31480089490 genbyggede den friske centralt hydrerede landskæde og bestod geometri, 605/605 land-/vandpunkter, 605/605 DMI-gridvalg, flertrinsserier, isoleret state/historik, lokal vind, shadow-score og central admin-roundtrip/rollback.
 - [x] Slutbestanden er 605 lokale kystdele i 190 hovedzoner, nul fysiske overlap og 594 fuldt plus 11 delvist marinedækkede dele. Den sidste tætte ejerskabsbeslutning ved Orehoved tilhører Falsters nordkyst, ikke Bøgestrømmen vest.
 - [x] Ejeren har 11. august 2026 givet udtrykkeligt go til aktivering på testdomænet. De 605 dele, 605 punktpar og deres DMI-gridbevis er versionslåst med SHA-256.
@@ -12,9 +12,15 @@
 - [x] #31495844161 beviste 4.0.178's indeks: otte HARMONIE-trin, 44 WAM-trin, 543/605 lokale scorer i alle 190 zoner, fulde gates, central readback og deploy.
 - [x] #31497361674 beviste fire kandidatceller, fulde gates, central readback og deploy; online steg dækningen til 592/605 i alle 190 zoner.
 - [x] De sidste 13 kræver mere end fire naboceller. 4.0.180 genbruger den private vindgates dokumenterede 32-celle-retrygrænse og kræver fortsat fælles gyldig U/V.
-- [ ] Frisk 4.0.180-produktion skal bevise den endelige lokale scoredækning online.
+- [x] #31498481482 bestod fulde gates, central readback, artifact og deploy. Onlinekontrollen viste lokal score til 605/605 dele i alle 190 hovedzoner.
+- [x] Rodårsagen til det uoverskuelige kort er dokumenteret: `mapZoneCollection` gjorde hver intern del til en synlig zone, og `renderZones` tilføjede to sorte endemarkeringer samt casing, farvelinje og klikflade pr. del.
+- [x] 4.0.181 fjerner denne projektion. Kortet modtager igen de oprindelige hovedzoner; lokale scorer læses fortsat fra `conditions.coastalParts`.
+- [x] Målrettede aktiverings-, public-runtime-, zoom- og scorepræsentationstests består. De 605 multipart-beregningsdele blev tidligere til 2.488 synlige linjer og cirka 12.440 Leaflet-objekter. Lokal browserkontrol viser nu 209 aktive hovedzonelinjer, cirka 1.045 kortobjekter og præcis 418 endemarkeringer – to pr. zone.
+- [ ] Frisk produktion skal bevise farver, tooltips, klik, indlæsning og kun to synlige endemarkeringer pr. hovedzone.
+- [ ] Auditér beregningsdækningen mod kendte relevante ravstrande; synlig hovedzonekyst og skjult beregningsdækning må ikke forveksles.
 
-## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
+## Historisk kystgeometri-v2-design før aktivering
+Punkterne i dette afsnit er udviklingshistorik. Åbne pilotbokse er erstattet af den produktionsverificerede status ovenfor og er ikke længere aktuelle gates.
 - [x] Lokal slut-samling efter alle ejerafgørelser reducerer 753 tekniske dele med 311 tværzone-overlap til 603 unikke fysiske dele med nul overlap. Hammer Odde har en eksplicit geografisk nordspidsgrænse.
 - [x] Land-/vandpunkter er genberegnet på de 603 endelige linjer. Seks resterende sider er kontrolleret kartografisk og versionsstyret; lokalt resultat er 603/603 punktpar og nul blokeringer.
 - [ ] Privat national CI skal bevise native DMI-grid, marine flertrinsserier, state-/historikisolation, vind og shadow-score igen på slutbestanden på 603 dele.

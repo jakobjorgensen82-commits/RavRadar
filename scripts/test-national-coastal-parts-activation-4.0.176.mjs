@@ -36,7 +36,8 @@ assert.match(weather,/high - row\.score <= 7/);
 const app=fs.readFileSync('app.js','utf8');
 assert.match(app,/state\.conditions\.coastalParts\?\.enabled/);
 assert.match(app,/unavailableLocalScore/);
-assert.match(app,/mapZoneCollection/);
+assert.match(app,/renderZones\(map,zones,/);
+assert.doesNotMatch(app,/_mapId|_partName|mapZoneCollection/,'Lokale beregningsdele må ikke blive til synlige kortzoner.');
 
 const projected=buildPublicConditions({datasetId:'test',generatedAt:'2026-08-11T00:00:00Z',zones:{},coastalParts:{schemaVersion:1,enabled:true,expectedPartCount:605,scoredPartCount:605,parts:{p:{}},zones:{z:{}}}});
 assert.equal(projected.schemaVersion,2);

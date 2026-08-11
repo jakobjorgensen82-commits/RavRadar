@@ -1,5 +1,11 @@
 # RavRadar – aktuel overlevering til Codex
 
+## Kritisk aktuelt checkpoint — 4.0.181
+
+4.0.180 havde en alvorlig offentlig kortregression: 605 interne kystberegningsdele blev tegnet som selvstændige zoner. Det skabte 2.488 linjekomponenter, sorte endemarkeringer langs hele kysten og meget langsom indlæsning. Ejerens præcisering er bindende: De gamle hovedzoner skal fortsat være de synlige zoner; lokale dele bruges kun internt til forskellige retninger, lokale serier og scorevalg.
+
+4.0.181 ændrer kun projektionen i kortet. De 605 beregningsdele bevares. Kortet tegner igen 209 hovedzoner med én markering i hver ende (418 i alt). Lokale målrettede tests, RDKS og release-gate består; Linux-CI, deploy og visuel produktionskontrol mangler ved dette checkpoint. Kendte gode ravstrande, som muligvis mangler intern beregningsdækning, skal auditeres separat uden automatisk sletning eller opdigtet geometri.
+
 **Opdateret:** 2026-08-11
 **Aktuel appversion:** 4.0.170 (national privat kæde CI-verificeret; afventer manuel ejerreview)
 **Senest produktionsverificerede main:** 4.0.169 i #31448257626 på `f4d93ee`

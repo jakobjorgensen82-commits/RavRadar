@@ -1,9 +1,15 @@
-# AI Roadmap – RavRadar efter 4.0.117
+# AI Roadmap – RavRadar efter 4.0.181
 
 Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status skal løbende flyttes til RDKS, når noget implementeres.
 
-## Aktiv P1 – kystgeometri v2-pilot
-- 4.0.175 retter den eneste dokumenterede stopårsag fra privat #31474672948: den gamle 783-dels reviewgate forventede 752/22/9, selv om seks versionsstyrede sideafgørelser korrekt gav 758/22/3. Ny privat fuldkørsel skal først bevise hele 603-dels slutkæden. Derefter følger central aktivering, offentlig runtime-/browserkontrol og rollbackbevis. Ingen anden roadmap-kodeopgave startes før denne kystmilepæl er afsluttet.
+## Aktiv P0-rettelse – adskil beregningsdele fra synlige zoner
+- 4.0.180 beviste lokal score til 605/605 dele, men den offentlige præsentation var forkert: hver intern beregningsdel blev tegnet som en synlig kortzone med egne to sorte endemarkeringer, tooltip og tre Leaflet-linjer. Det gjorde kortet uoverskueligt og tungt.
+- 4.0.181 genopretter den bindende produktmodel: de 605 lokale dele bevares til punkter, vejr og RavScore bag kulissen, mens kortet igen viser én autoritativ kystlinje, ét navn, én klikflade og kun to endemarkeringer pr. hovedzone.
+- Efter den akutte visningsrettelse auditeres alle områder, hvor beregningsdelene ikke dækker en kendt relevant ravstrand. Der må ikke gættes nye kystforløb eller slettes deldata som genvej.
+
+## Afsluttet datakæde – national kystgeometri v2
+- Datakæden er produktionsverificeret i 4.0.180. Push-kørsel #31498481482 bestod fulde gates, central readback, artifact og deploy; det offentlige datasæt gav lokal score til 605/605 dele i alle 190 hovedzoner. Den efterfølgende visningsfejl betyder, at milepælen først er produktmæssigt lukket, når 4.0.181 er visuelt produktionsverificeret.
+- Afsnittet nedenfor bevares som udviklingshistorik. Formuleringer om privat pilot, manglende aktivering og næste gate er historiske og må ikke læses som aktuel status.
 - DEC-0033 er valgt som fremtidig produktretning: bedste gyldige lokale kystdel leverer zonescoren, men UI skal eksplicit skelne hele zonen fra navngivne delstrækninger og forklare den ravtekniske årsag. Før kodeaktivering bygges den forståelige ejer-reviewvisning og en score-shadow med dæknings-/usikkerhedskriterier.
 - DEC-0034 autoriserer landsdækkende aktivering på den nuværende pre-domain testside efter national gate. Arbejdsrækkefølgen går fra valideret Blåvand-reference til national central-hydreret generering, rettelse af alle kendte semantiske/topologiske fejl, automatisk navn-/kilde-QA, lokale DMI/proveniens/state/UI/admin-forløb og samlet aktivering. En fast 7-points dækningsmargin bruges midlertidigt og revideres i den store analyse. Senere domæne-/brugerrelease har sin egen nye gate.
 - Arbejdet følger DEC-0032 og udføres parallelt uden at ændre produktionszoner eller centrale adminoverrides.
@@ -38,8 +44,8 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 - #1785 bekræftede valg af 18Z frem for et kortere 21Z-run. #1788 produktionsverificerede 48-timersfastholdelsen: 18Z blev bevaret, fire assets blev genbrugt, og den progressive serie voksede fra 4 til 7 behandlede tidspunkter. Fulde gates og deploy bestod.
 - Fortsæt måling af workflowtid/schedulerbudget og DMI-coverage uden at svække marine audits.
 
-## P1 – komplette DMI-first femdøgnskæder pr. komponent
-- **Status: timeproveniens implementeret lokalt i 4.0.125; frisk produktion og de kendte Limfjord-halehuller er næste gate.** HARMONIE/cache-stabilisering og fuld vinddækning er produktionsbevist; opgaven ligger før P3 RavScore-forskningen.
+## Næste P1 efter kortrettelsen – komplette DMI-first femdøgnskæder pr. komponent
+- **Status: næste aktive roadmapopgave.** Timeproveniens og en 118-timers offentlig vindkæde er produktionsbevist; nu skal den faktiske aktuelle dækning og overgangskvalitet kortlægges separat for vind, bølger, strøm, vandstand og øvrige viste/scorede komponenter, før nye kilder eller fallback ændres.
 - **Model efter DEC-0031:** Rutinemæssig overvågning og registrering af allerede definerede LF/NSBS-coverage-målinger kan udføres med GPT-5.6 Terra. Skift til GPT-5.6 Sol før ny faglig kildesyntese, provenance-/fallbackdesign, ændring af datakæden eller endelig kritisk validering.
 - **Fase A startet:** `docs/research/DMI_FIRST_FIVE_DAY_SOURCE_AUDIT.md` kortlægger aktuel kode og officielle modelrammer. DMI dokumenterer HARMONIE til 54 timer, WAM til 5½ døgn og DKSS til 5 døgn. WAM/DKSS-vind er derfor første DMI-halekandidater, før ekstern fallback vurderes.
 - Kortlæg for vind, bølger, strøm, vandstand, vandtemperatur og alle øvrige aktive score-/forecastkomponenter: nuværende DMI-kilde, native og typisk resterende horisont, runfrekvens, alternative DMI-produkter, lovlig/teknisk anvendelighed, opløsning og kvalitet.

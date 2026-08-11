@@ -1,8 +1,14 @@
+## 2026-08-11 – 4.0.181 genopretter hovedzonernes kortvisning
+- Ejerens første offentlige kortkontrol viste, at 605 interne beregningsdele fejlagtigt blev gengivet som selvstændige synlige zoner med hver sin start-/slutmarkering, tooltip og tre Leaflet-linjer.
+- Resultatet var et næsten sort Danmarkskort, gentagne navne, mange interne sorte markeringer, synlige kysthuller og markant langsommere indlæsning.
+- 4.0.181 sender igen kun de oprindelige hovedzoner til kort-rendereren. De lokale dele, land-/vandpunkter, DMI-serier og lokale RavScore-resultater bevares uændret bag hovedzonen.
+- Optællingen viste 2.488 synlige del-/multipartlinjer og cirka 12.440 Leaflet-objekter i den fejlbehæftede visning. 4.0.181 reducerer det til 209 aktive hovedzonelinjer og cirka 1.045 objekter; lokal browserkontrol viser 418 endemarkeringer, præcis to pr. zone. En særskilt audit af manglende kendte ravstrande forbliver åben.
+
 ## 2026-08-11 – 4.0.180 dækker sjældne atmosfæriske gridhuller
 - #31497361674 bestod fulde gates, central readback og deploy. Online steg lokal scoredækning til 592/605 i alle 190 zoner.
 - 13 dele mangler fortsat, fordi også de fire nærmeste HARMONIE-celler er missing. 4.0.180 bruger den tidligere private vindgates dokumenterede 32-celle-retrygrænse i det hurtige indeks.
 - Kun nærmeste fælles gyldige U/V-celle accepteres; marine krav er uændrede.
-- Endelig online scoredækning afventer.
+- Push-kørsel #31498481482 bestod efterfølgende fulde gates, central readback, artifact og deploy. Det offentlige datasæt gav lokal score til 605/605 dele i alle 190 hovedzoner; kystmilepælen er dermed produktionsverificeret.
 
 ## 2026-08-11 – 4.0.179 bevarer fire hurtige vindkandidater
 - #31495844161 beviste 4.0.178's indeks med otte HARMONIE-trin og 44 WAM-trin på 233 sekunder; fulde gates, central readback og deploy bestod.

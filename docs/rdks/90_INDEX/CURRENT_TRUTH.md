@@ -1,23 +1,27 @@
 # Current truth – gældende projektviden
 
-## Aktiv national kystgeometri – 4.0.180
+## Aktiv national kystgeometri – 4.0.181-kandidat
 - Den ejer-godkendte kandidat fra privat #31480089490 er nu aktiveret i koden: 605 lokale dele i 190 hovedzoner, nul overlap, 605 gyldige land-/vandpunktpar, 594 fulde og 11 delvise marine gridbeviser.
 - DMI-bulk sampler alle lokale vandpunkter i de samme downloadede GRIB-felter. Det giver ikke 605 særskilte DMI-kald og ændrer ikke den eksisterende hovedzonescheduler.
 - RavScore beregnes pr. lokal del. Højeste gyldige score bliver hovedzonens score, mens 7 point afgør, om visningen gælder hele zonen, én del eller flere dele. Manglende lokale data forbliver manglende; hovedzonescoren må ikke bruges som skjult fallback.
 - Kortet læser den versionerede kystdelsfil. Den kompakte centrale adminpost `coastal-parts-v2-activation` er aktiverings- og rollback-sandhed.
-- #31497361674 beviste fulde gates, central aktivering og deploy; online fik 592/605 dele score i alle 190 zoner. De sidste 13 har mere end fire tomme naboceller. 4.0.180 bruger den tidligere private vindgates målrettede 32-cellegrænse og vælger fortsat kun nærmeste fælles gyldige U/V. Endelig frisk produktion afventer.
+- #31498481482 beviste 4.0.180 med fulde gates, central readback, artifact og deploy. Det offentlige datasæt gav lokal score til 605/605 dele i alle 190 hovedzoner. Den målrettede 32-cellegrænse vælger fortsat kun nærmeste fælles gyldige U/V; marine krav er uændrede.
+- Ejerens første offentlige kortkontrol fandt en alvorlig præsentationsfejl: appen omdannede alle lokale beregningsdele til selvstændige synlige linjer. Hver del fik to sorte endemarkeringer og egne tunge Leaflet-lag; ved Sibirien blev samme hovedzone blandt andet vist med gentaget navn, mange interne markeringer og huller.
+- 4.0.181 bevarer alle lokale dele, punkter, vejrserier og scorer, men tegner igen kun hovedzonernes autoritative kystlinjer. Dermed er de indre delgrænser usynlige, og kun hovedzonens start og slutning markeres. Femdøgns-P1 er sat på pause, indtil rettelsen er visuelt produktionsverificeret.
 
 ## Planlagt privat besøgsrapport
 - Ejeren har besluttet, at RavRadar senere skal have en besøgtæller, som ikke vises offentligt. En enkel rapport skal være tilgængelig i den adgangsbeskyttede admin-del.
 - Funktionen er endnu ikke implementeret. Designet skal være dataminimeret, skelne sidevisninger fra besøg/anslået unikhed, være kvotesikkert og aldrig blokere siden eller påvirke RavScore.
 
-## Seneste CI-status – 4.0.175
-- Privat #31474672948 stoppede efter den oprindelige native DMI-/state-/vind-/shadow-kæde, fordi seks versionsstyrede land-/vandsideafgørelser korrekt havde ændret den gamle 783-dels reviewfordeling til 758 komplette, 22 deldækkede og tre blokerede. Reviewbyggeren krævede stadig den historiske 752/22/9-fordeling.
-- Den strenge gate forventer nu 758/22/3 og 25 opmærksomhedsdele. Slutbestanden på 603 dele, nul overlap og 603/603 punktpar er uændret og afventer fortsat en fuld privat CI-kørsel.
+## Næste aktive roadmaptrin
+- P0 er kortets produktrettelse og en efterfølgende audit af relevante ravstrande, som ikke dækkes af de lokale beregningsdele. De 605 dele må ikke slettes som genvej.
+- Derefter genoptages P1-audit og design af komplette DMI-first femdøgnskæder pr. komponent under DEC-0030. Ingen ny produktionskilde eller fallback må indføres, før aktuel dækning, proveniens, overgange og regressioner er dokumenteret.
+- Supabase-egress følges gennem næste billingperiode. Den private besøgsrapport er fortsat en senere P2-opgave.
 
 Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed og udtrykkeligt planlagte næste skridt. Historik findes andre steder i RDKS.
 
-## Aktiv kystgeometri-v2-pilot – score-neutral og ikke-destruktiv
+## Historik – kystgeometri-v2-pilot før aktivering
+Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer om manglende aktivering er historiske og er erstattet af den aktive status ovenfor.
 - 4.0.174 tilføjer den manglende slutgate efter ejerrettelserne. De 753 tilbageværende tekniske dele havde 311 overlappar, alle mellem forskellige zoner. En deterministisk once-only-samling bruger den centralt gemte zonekyst og datapunkt som ejerskabsbevis samt en eksplicit Hammer Odde-grænse mellem Bornholms nordvest- og nordzone. Lokalt resultat er 603 fysiske dele, nul overlap og nul tætte uafgjorte ejerskaber. Land-/vandpunkter er genberegnet på slutgeometrien: 603/603 har punktpar efter seks dokumenterede kartografiske sideafgørelser. Ny privat CI skal nu bevise native DMI-grid, flertrinsserier, state, vind og shadow-score for netop slutbestanden. Intet er aktiveret.
 - 4.0.173 bevarer ejerens anden gennemgang af 23 dele: 15 sletninger, tre godkendelser og fem præcise rettelser ved Thyborøn, Bremdal, Bjerget, Bouet og Flyvesandet. En metrisk dubletaudit fandt 12 yderligere tekniske ID'er for allerede bedømte fysiske linjer og fører afgørelsen videre til den rettede geometri. Dermed er restlisten nul, og ingen tidligere afgørelse sendes tilbage under et nyt ID. Forslaget omfatter nu 60 tekniske dele med nul uafklarede rettelser. Det er fortsat privat, score-neutralt og ikke aktiveret.
 - 4.0.172 bevarer ejerens 31 eksporterede afgørelser som versionsstyret, privat input. De giver 11 uændrede godkendelser, 10 hele sletninger, tre sikre komponentrensninger, én navnerettelse og seks målrettede beskæringer. En supplerende audit af alle 783 dele bruger alle officielle Farvand-typer, havne, afstand til officielt åbent hav og små lukkede former, men kræver mindst fire uafhængige tegn før ny ejerreview. Dubletter samles, så den foreløbige restliste er 23 unikke dele. Ingen geometri, admin-data, sampling, state, score eller offentlig runtime er aktiveret.

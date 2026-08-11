@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.180
+**Håndbogsversion:** 4.0.181
 
 **Opdateret:** 1. august 2026
 
@@ -1534,7 +1534,7 @@ Efter ejerens to kortgennemgange og privat run #31480089490 er den aktive kandid
 
 Vejrpipelinen bruger de eksisterende samlede DMI-filer og foretager lokale gridopslag for hvert vandpunkt. Der sendes derfor ikke ét DMI-kald pr. kystdel. Hver del får sin egen lokale vejrserie og RavScore. Den højeste gyldige delscore bestemmer hovedzonens score på det pågældende tidspunkt. Er forskellen mellem bedste og dårligste del højst syv point, kan resultatet beskrives som hele zonen; ellers vises én eller flere dele inden for syv point af vinderen. Mangler en nødvendig lokal sammenligning, er resultatet usikkert, og systemet må ikke genbruge den gamle hovedzonescore.
 
-Kortet viser de nye officielle kyststrækninger, men den almindelige zonetitel og navigation bevares. Aktiveringen gemmes centralt som et lille versions- og hashdokument; de store kildefiler ligger ikke i Supabase. Rollback sker ved at slå dette dokument fra og genudgive den bevarede hovedzoneruntime.
-# Driftsnote til 4.0.180
+De lokale kystdele er beregningsdele, ikke nye brugerzoner. Kortet viser derfor hovedzonens autoritative, sammenhængende kystlinje med én zonetitel, én klikflade og kun en sort markering ved hver af hovedzonens to ender. Delene ligger bag visningen og leverer lokale målepunkter og scorer. Aktiveringen gemmes centralt som et lille versions- og hashdokument; de store kildefiler ligger ikke i Supabase. Rollback sker ved at slå dette dokument fra og genudgive den bevarede hovedzoneruntime.
+# Driftsnote til 4.0.181
 
-De 605 lokale kyststreger er lagt online. Vindkortets koordinater læses og indekseres én gang. For hvert lokalt punkt kan op til 32 nære celler kontrolleres ved sjældne datahuller; kun den nærmeste celle med både gyldig U- og V-vind accepteres. De strengere kontroller af bølger, strøm, land/vand og provenance er uændrede. Endelig scoredækning skal bekræftes online.
+De 605 lokale beregningsdele er lagt online. Vindkortets koordinater læses og indekseres én gang. For hvert lokalt punkt kan op til 32 nære celler kontrolleres ved sjældne datahuller; kun den nærmeste celle med både gyldig U- og V-vind accepteres. #31498481482 beviste score til 605/605 dele. Den første kortversion tegnede fejlagtigt hver beregningsdel som en synlig zone og blev uoverskuelig og tung. 4.0.181 genopretter hovedzonernes kystlinjer uden at fjerne de lokale beregninger. Kendte relevante ravstrande, som ikke indgår i beregningsdelene, auditeres særskilt.
