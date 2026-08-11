@@ -13,7 +13,7 @@ import json
 import os
 import pathlib
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -179,8 +179,11 @@ def build_shadow_score_marine_input(contract: dict[str, Any], report: dict[str, 
         dkss_by_time = {hour["time"]: snapshots[part["partId"]][dkss["collection"]][hour["time"]]["values"] for hour in dkss["hours"]}
         common = sorted(set(wave_by_time) & set(dkss_by_time))
         hours = [{"time": time, **wave_by_time[time], **dkss_by_time[time]} for time in common]
-        if len(hours) < 2:
-            transient["excluded"].append({"zoneId": part["zoneId"], "partId": part["partId"], "reason": "NO_TWO_SHARED_NATIVE_MARINE_STEPS"})
+        hour_times = {datetime.fromisoformat(hour["time"].replace("Z", "+00:00")) for hour in hours}
+        has_three_hour_trend = any(time + timedelta(hours=3) in hour_times for time in hour_times)
+        if len(hours) < 2 or not has_three_hour_trend:
+            reason = "NO_NATIVE_THREE_HOUR_WATER_TREND" if len(hours) >= 2 else "NO_TWO_SHARED_NATIVE_MARINE_STEPS"
+            transient["excluded"].append({"zoneId": part["zoneId"], "partId": part["partId"], "reason": reason})
             continue
         transient["series"].append({"zoneId": part["zoneId"], "partId": part["partId"], "seriesId": part["seriesId"],
                                     "historyKey": part["historyKey"], "onshoreDirectionDeg": part["onshoreDirectionDeg"],

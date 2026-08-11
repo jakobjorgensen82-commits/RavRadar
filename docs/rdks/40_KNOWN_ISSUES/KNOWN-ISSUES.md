@@ -1,6 +1,7 @@
 # Kendte åbne og overvågede forhold
 
 ## National zone- og kystgeometri – aktiv pilot efter DEC-0032
+- **ISSUE-NATIONAL-SHADOW-THREE-HOUR-TREND – #31440337378 DOKUMENTERET / 4.0.168 RETTET LOKALT:** To på hinanden følgende native midnatstrin kunne ikke levere `t+3h`, så 0/752 scorer blev korrekt afvist. Fire assets indsamles nu, og manglende ægte tretimerspar stopper før shadow-score. Afventer privat CI.
 - **ISSUE-NATIONAL-PART-WIND-NOT-YET-VERIFIED – LØST PRIVAT I #31425327202:** 774/774 dele har mindst to native HARMONIE-trin; retrypopulationen var 20, og samme celle, afstand og provenance bestod uden interpolation eller parentfallback.
 - **ISSUE-NATIONAL-SHADOW-SCORE-NOT-YET-VERIFIED – LØST PRIVAT I #31425327202 / AKTIVERING LUKKET:** 752 fuldt dækkede dele blev scoret privat; 22 deldækkede og ni blokerede forblev fail-closed.
 - **ISSUE-NATIONAL-OWNER-REVIEW-AND-ADMIN-ROUNDTRIP – 4.0.167 LOKALT IMPLEMENTERET:** Reviewet samler 783 dele. Den nationale tempkladde-roundtrip skal CI-verificeres før ejerreview; ingen aktivering er tilladt.

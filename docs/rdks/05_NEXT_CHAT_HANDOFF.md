@@ -1,7 +1,7 @@
 # RavRadar – aktuel overlevering til Codex
 
 **Opdateret:** 2026-08-11
-**Aktuel appversion:** 4.0.167 (national ejer-review og admin-roundtrip; afventer CI)
+**Aktuel appversion:** 4.0.168 (native tretimers vandstandsgate; afventer CI)
 **Senest produktionsverificerede main:** 4.0.166 i #31425309838 på `fc20f3a`
 **Produktion:** #31425309838 bestod frisk DMI/provenance, fuld validate, release-gate, Supabase-sync, Pages-artifact og deploy. Privat #31425327202 bestod hele nationalkæden med 774 vindserier og 752 shadow-scorer.
 

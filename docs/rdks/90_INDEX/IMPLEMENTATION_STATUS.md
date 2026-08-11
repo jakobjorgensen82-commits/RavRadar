@@ -1,6 +1,7 @@
-# Implementeringsstatus pr. 4.0.167
+# Implementeringsstatus pr. 4.0.168
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
+- [ ] Privat #31440337378 bestod vindgaten, men stoppede shadow-score ved 0/752, fordi to på hinanden følgende midnatstrin ikke gav den krævede native `t+3h`-vandstand. 4.0.168 henter fire trin og kræver et ægte tretimerspar før scoreinput. Afventer nyt privat CI-bevis.
 - [x] Privat #31425327202 verificerede 774/774 native vindserier; kun 20 faktiske gab brugte målrettet 32-celle-retry. Samme-celle-, afstands- og provenancekrav bestod.
 - [x] Samme run verificerede DEC-0033-shadow-score for 752 fuldt dækkede dele; 22 deldækkede og ni blokerede forblev fail-closed, og alle mutationsflag var falske.
 - [x] 4.0.167 bygger en privat score-neutral ejer-reviewside med alle 783 dele og statusfordelingen 752/22/9 uden delscores, scorefarver, rangering eller rådata.

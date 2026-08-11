@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.167
+**Håndbogsversion:** 4.0.168
 
 **Opdateret:** 1. august 2026
 
@@ -1507,6 +1507,8 @@ Den faktiske QA viser, at kun 20 zoner er direkte referenceklare, mens 188 er fl
 #2152 verificerede denne isolation for alle 770 mulige dele og bevarede fire current/state-gab. 4.0.163 tilføjede derefter den manglende lokale vindgate: alle 774 scorekandidater skal have mindst to native HARMONIE-trin, hvor wind-U/V deler fysisk gridcelle og bærer fuld provenance. #2164 fandt, at Harbo Odde ikke havde et fælles gyldigt U/V-par blandt fire nærmeste celler. #2167 viste, at 32-cellesøgning for alle 774 dele ikke skalerer. 4.0.166 bruger derfor fire celler for alle og 32 kun som målrettet retry for faktiske gab; #31425327202 verificerede 774/774 dele med 20 målrettede retries.
 
 4.0.167 samler de 783 endelige kystdele i en privat ejer-reviewside. Neutral grå betyder komplet datagrundlag, gul betyder deldækning, og rød betyder geografisk blokering; farverne er aldrig RavScore. Siden viser ingen delscore, rangering, rå vejrdata eller state. En efterfølgende central admin-test bruger kun en midlertidig, aldrig aktiv kladde, som slettes igen med de beskyttede runtime-dokumenter uændrede.
+
+4.0.168 præciserer tidskravet: en lokal score må kun beregne vandstandsændringen, når DMI leverer både et native tidspunkt og et native tidspunkt tre timer senere. Fire havtrin hentes i den private kontrol; mangler et ægte tretimerspar, stoppes delen i stedet for at interpolere eller opfinde en trend.
 
 4.0.164 bygger også næste private shadow-gate. Den eksisterende RavScore-motor beregner hver lokal del udelukkende, når vind, bølger, strøm og vandstand findes på samme native tidspunkt, og når næste native vandstandstrin kan danne den faktiske tre-timers trend. Ingen nærmeste-tid eller parentdata bruges. Ved komplet sammenligning betyder højst syv points samlet spænd praktisk hele zonen; ellers navngives én eller flere dele inden for syv point af vinderen. Mangler blot én nødvendig lokal sammenligning, er dækningen usikker. Resultatet er fortsat privat og kan ikke ændre den aktive RavScore.
 

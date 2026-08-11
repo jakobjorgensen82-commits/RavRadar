@@ -436,6 +436,8 @@ jobs:
         run: python scripts/build-national-weather-shadow-contract.py
 
       - name: Validate isolated private national multi-step weather series
+        env:
+          NATIONAL_MULTI_STEP_MAX_ASSETS: "4"
         run: python scripts/validate-national-multi-step-series.py
 
       - name: Validate isolated private national state and history

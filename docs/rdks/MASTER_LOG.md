@@ -781,3 +781,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Den private reviewside samler 783 dele med officielle navneforslag og statusfarver, som kun betyder datadækning. Del-score, scorefarve, rangering, rå vejr/state og offentlig integration er forbudt.
 - National admin-roundtrip bruger kun et unikt midlertidigt dokument, kræver 783-dels readback/update, sletter dokumentet igen og kontrollerer `coastline-overrides` og `direction-reviews` uændrede.
 - Brugerbeslutning: arbejdet fortsætter autonomt, indtil den samlede manuelle zonegennemgang er klar. Ingen implicit aktivering.
+
+# 2026-08-11 – 4.0.168 native tretimers vandstandsgate
+
+- Privat #31440337378 bestod hele upstreamkæden og 774-vindgaten, men stoppede shadow-score ved 0/752. Marine og vind havde tiderne 23:00/00:00, men scoremodellen kræver også native vandstand ved `t+3h`.
+- Dette er en utilstrækkelig tidsindsamling, ikke en score- eller datakonverteringsfejl. Ingen interpolation eller konstrueret trend tillades.
+- Det private job henter nu fire marine assets. Den transiente scoreinputgate kræver mindst ét reelt tretimerspar og giver ellers den præcise blokering `NO_NATIVE_THREE_HOUR_WATER_TREND`.
