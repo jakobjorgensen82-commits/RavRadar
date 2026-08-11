@@ -3,6 +3,7 @@
 Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status skal løbende flyttes til RDKS, når noget implementeres.
 
 ## Aktiv P1 – kystgeometri v2-pilot
+- 4.0.175 retter den eneste dokumenterede stopårsag fra privat #31474672948: den gamle 783-dels reviewgate forventede 752/22/9, selv om seks versionsstyrede sideafgørelser korrekt gav 758/22/3. Ny privat fuldkørsel skal først bevise hele 603-dels slutkæden. Derefter følger central aktivering, offentlig runtime-/browserkontrol og rollbackbevis. Ingen anden roadmap-kodeopgave startes før denne kystmilepæl er afsluttet.
 - DEC-0033 er valgt som fremtidig produktretning: bedste gyldige lokale kystdel leverer zonescoren, men UI skal eksplicit skelne hele zonen fra navngivne delstrækninger og forklare den ravtekniske årsag. Før kodeaktivering bygges den forståelige ejer-reviewvisning og en score-shadow med dæknings-/usikkerhedskriterier.
 - DEC-0034 autoriserer landsdækkende aktivering på den nuværende pre-domain testside efter national gate. Arbejdsrækkefølgen går fra valideret Blåvand-reference til national central-hydreret generering, rettelse af alle kendte semantiske/topologiske fejl, automatisk navn-/kilde-QA, lokale DMI/proveniens/state/UI/admin-forløb og samlet aktivering. En fast 7-points dækningsmargin bruges midlertidigt og revideres i den store analyse. Senere domæne-/brugerrelease har sin egen nye gate.
 - Arbejdet følger DEC-0032 og udføres parallelt uden at ændre produktionszoner eller centrale adminoverrides.

@@ -38,7 +38,8 @@ export function buildReview({coastal,partitions,names,points,shadow}){
       clickable:true,scoreShown:false,scoreColorUsed:false,rankingShown:false,bestPartBadgeShown:false,weatherDetailsShown:false,stateDetailsShown:false};
   }).sort((a,b)=>a.zoneId.localeCompare(b.zoneId)||a.name.localeCompare(b.name,'da'));
   const counts=Object.fromEntries(['complete','partial','blocked'].map(s=>[s,rows.filter(r=>r.reviewStatus===s).length]));
-  if(rows.length!==783||counts.complete!==752||counts.partial!==22||counts.blocked!==9)throw new Error(`Uventet national reviewfordeling: ${JSON.stringify(counts)}`);
+  // Six formerly blocked point sides are now resolved by versioned owner review.
+  if(rows.length!==783||counts.complete!==758||counts.partial!==22||counts.blocked!==3)throw new Error(`Uventet national reviewfordeling: ${JSON.stringify(counts)}`);
   return {schemaVersion:'1.0.0',status:'passed-private-national-score-neutral-owner-review',generatedAt:new Date().toISOString(),partCount:rows.length,zoneCount:new Set(rows.map(r=>r.zoneId)).size,statusCounts:counts,
     presentation:{privateOnly:true,neutralGeometryOnly:true,coverageStatusColorsNotScores:true,partScoresForbidden:true,partScoreColorsForbidden:true,partRankingForbidden:true,bestPartSelectionForbidden:true,rawWeatherForbidden:true,stateMetricsForbidden:true},
     parts:rows,sourceShadowGeneratedAt:shadow.generatedAt,...Object.fromEntries(flags.map(k=>[k,false])),activationGatesRemaining:['central-admin-roundtrip-and-rollback','explicit-owner-review-and-go-no-go-before-score-or-production-activation']};
@@ -70,9 +71,9 @@ export function renderHtml(report){
 export function selfTest(){
   const feature=(id,zone='Z')=>({type:'Feature',properties:{zoneId:zone,partId:id,lengthKm:1},geometry:{type:'LineString',coordinates:[[8,55],[8.1,55.1]]}}),ids=Array.from({length:783},(_,i)=>`p${i}`),coastal={features:ids.map(id=>feature(id))},partitions={features:[]};
   const names={finalPartCount:783,parts:ids.map((id,i)=>({zoneId:`Z${i%194}`,finalPartId:id,suggestedName:`Del ${i}`,nameStatus:'private-official-name-suggestion'}))};
-  const points={finalPartCount:783,parts:ids.map((id,i)=>({finalPartId:id,status:i<9?'blocked':'private-point-pair-proposed',blockingReasons:i<9?['test']:[]}))};
-  const shadow={status:'passed-private-national-shadow-score-validation',scoreChanged:false,publicRuntimeChanged:false,parts:ids.slice(9,761).map(partId=>({partId}))};
-  const report=buildReview({coastal,partitions,names,points,shadow}),html=renderOwnerReviewHtml(report);if(report.statusCounts.complete!==752||report.statusCounts.partial!==22||report.statusCounts.blocked!==9||html.includes('"score":')||!html.includes('31 kræver kontrol')||!html.includes('Luftfoto'))throw new Error('National owner-review self-test fejlede');
+  const points={finalPartCount:783,parts:ids.map((id,i)=>({finalPartId:id,status:i<3?'blocked':'private-point-pair-proposed',blockingReasons:i<3?['test']:[]}))};
+  const shadow={status:'passed-private-national-shadow-score-validation',scoreChanged:false,publicRuntimeChanged:false,parts:ids.slice(3,761).map(partId=>({partId}))};
+  const report=buildReview({coastal,partitions,names,points,shadow}),html=renderOwnerReviewHtml(report);if(report.statusCounts.complete!==758||report.statusCounts.partial!==22||report.statusCounts.blocked!==3||html.includes('"score":')||!html.includes('25 kræver kontrol')||!html.includes('Luftfoto'))throw new Error('National owner-review self-test fejlede');
   console.log('National score-neutral owner-review self-test: bestået');
 }
 

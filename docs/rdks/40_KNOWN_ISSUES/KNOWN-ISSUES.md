@@ -1,6 +1,7 @@
 # Kendte åbne og overvågede forhold
 
 ## National zone- og kystgeometri – aktiv pilot efter DEC-0032
+- **ISSUE-NATIONAL-LEGACY-REVIEW-COUNT-STALE – LØST LOKALT I 4.0.175 / AFVENTER PRIVAT CI:** Seks godkendte kartografiske sideafgørelser reducerede korrekt den gamle 783-dels reviews blokeringer fra ni til tre, men reviewgaten krævede stadig 752/22/9 og stoppede #31474672948 efter bestået upstreamkæde. Gaten kræver nu 758 komplette, 22 deldækkede og tre blokerede dele; ingen geometri eller scorelogik er ændret.
 - **ISSUE-NATIONAL-FINAL-CROSS-ZONE-OVERLAP – LØST LOKALT I 4.0.174 / AFVENTER PRIVAT CI:** Slutkontrollen fandt 311 overlappar mellem forskellige zoner efter ejerrettelserne. Once-only-samlingen giver lokalt 603 dele og nul overlap; én næsten lige Hammer Odde-konflikt er erstattet af en eksplicit grænse ved nordspidsen.
 - **ISSUE-NATIONAL-FINAL-POINTS-STALE-AFTER-OWNER-REVIEW – LØST LOKALT I 4.0.174 / AFVENTER PRIVAT DMI-CI:** Det tidligere 774/783-punktbevis lå før sletninger, beskæringer og tværzonededuplikering. Punkterne er nu genberegnet til 603/603 på slutgeometrien, inklusive seks kartografisk dokumenterede sideafgørelser. Native DMI- og downstreambevis mangler endnu.
 - **ISSUE-NATIONAL-INNER-WATER-FOLLOW-UP – LØST LOKALT I 4.0.173 / AFVENTER PRIVAT CI:** Ejeren har afgjort de 23 supplerende dele. En efterfølgende metrisk dubletaudit fandt 12 andre tekniske ID'er for allerede bedømte fysiske linjer og fører afgørelserne sikkert videre. Den resterende efterkontrol er nul.

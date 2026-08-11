@@ -1,5 +1,9 @@
 # Current truth – gældende projektviden
 
+## Seneste CI-status – 4.0.175
+- Privat #31474672948 stoppede efter den oprindelige native DMI-/state-/vind-/shadow-kæde, fordi seks versionsstyrede land-/vandsideafgørelser korrekt havde ændret den gamle 783-dels reviewfordeling til 758 komplette, 22 deldækkede og tre blokerede. Reviewbyggeren krævede stadig den historiske 752/22/9-fordeling.
+- Den strenge gate forventer nu 758/22/3 og 25 opmærksomhedsdele. Slutbestanden på 603 dele, nul overlap og 603/603 punktpar er uændret og afventer fortsat en fuld privat CI-kørsel.
+
 Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed og udtrykkeligt planlagte næste skridt. Historik findes andre steder i RDKS.
 
 ## Aktiv kystgeometri-v2-pilot – score-neutral og ikke-destruktiv

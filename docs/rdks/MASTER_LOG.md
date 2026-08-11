@@ -1,3 +1,8 @@
+## 2026-08-11 – 4.0.175 retter forældet reviewfordeling
+- Privat #31474672948 nåede gennem den oprindelige nationale native DMI-, state-, vind- og shadow-kæde, men stoppede i den efterfølgende score-neutrale reviewbygger.
+- De seks versionsstyrede kartografiske sideafgørelser fra 4.0.174 var allerede anvendt korrekt. Derfor var den faktiske 783-dels fordeling 758 komplette, 22 deldækkede og tre blokerede i stedet for den historiske 752/22/9-fordeling.
+- Reviewgaten og dens self-test forventer nu 758/22/3 og 25 opmærksomhedsdele. Slutgeometrien på 603 dele og hele aktiveringsforbuddet er uændret.
+
 ## 2026-08-09 – 4.0.140 privat state-/historik-replaygate
 - Kodeauditten viser, at produktionens statehistorik aktuelt slås op via `previous.zones[zoneId]`; private kystdele må derfor ikke kobles direkte på uden egen nøgle.
 - En ny Node-validator bruger den faktiske `shadow-v2`-funktion med unik `historyKey` pr. del og stopper ved delt nøgle, parent-genbrug, krydslæsning eller numerisk scorepåvirkning.

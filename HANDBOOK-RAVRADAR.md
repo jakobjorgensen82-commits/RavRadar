@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.174
+**Håndbogsversion:** 4.0.175
 
 **Opdateret:** 1. august 2026
 
@@ -1521,6 +1521,8 @@ I 4.0.172 er de 31 afgørelser ført tilbage som et privat, versionsstyret revie
 I 4.0.173 er den korte efterkontrol afsluttet. Ejeren slettede 15 dele, godkendte tre og beskrev fem præcise rettelser. En metrisk dubletkontrol fandt 12 ekstra tekniske ID'er, som dækkede de samme fysiske linjer. De arver nu ejerens afgørelse, og en beskåret linje arver kun den del, som faktisk blev bevaret. Derfor er der ingen resterende dele til endnu en manuel gennemgang. De rettede linjer er visuelt kontrolleret, men hele pakken er fortsat privat og ændrer endnu ikke den offentlige RavRadar.
 
 4.0.174 udfører en ekstra slutkontrol, som ikke må forveksles med reviewdubletterne. Nabozoner havde tilsammen 311 tilfælde, hvor den samme officielle kyst var med i begge zoner. Hvert fysisk stykke tildeles nu præcis én zone ud fra den centralt gemte zonekyst og datapunkt. Ved Hammer Odde bruges nordspidsen eksplicit som grænse: vestsiden tilhører nordvestzonen, og østsiden nord-/Sandvigzonen. Slutresultatet er 603 dele uden overlap. Land-/vandpunkter genberegnes først derefter; seks visuelt entydige sider er dokumenteret særskilt, så alle 603 dele lokalt har et punktpar. DMI, state, vind og shadow-score skal stadig bestå igen på disse 603 dele før aktivering.
+
+4.0.175 retter kun en forældet kontrol i den gamle 783-dels gennemgang. De seks dokumenterede land-/vandafgørelser betyder, at 758 dele nu er teknisk komplette, 22 har deldækning og tre fortsat er blokerede. Kontrollen forventede fejlagtigt stadig den tidligere fordeling 752/22/9. Kystlinjer, punktplaceringer, vejrdata og RavScore er ikke ændret af rettelsen.
 
 4.0.164 bygger også næste private shadow-gate. Den eksisterende RavScore-motor beregner hver lokal del udelukkende, når vind, bølger, strøm og vandstand findes på samme native tidspunkt, og når næste native vandstandstrin kan danne den faktiske tre-timers trend. Ingen nærmeste-tid eller parentdata bruges. Ved komplet sammenligning betyder højst syv points samlet spænd praktisk hele zonen; ellers navngives én eller flere dele inden for syv point af vinderen. Mangler blot én nødvendig lokal sammenligning, er dækningen usikker. Resultatet er fortsat privat og kan ikke ændre den aktive RavScore.
 
