@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "1.0.0",
+  "exportedAt": "2026-08-11T19:19:27.466Z",
+  "sourceGeneratedAt": "2026-08-11T19:09:22.088Z",
+  "sourceFile": "RavRadar-kystzone-gennemgang (4).json",
+  "decisions": {
+    "residual-dk-b05-20": {
+      "decision": "needs-fix",
+      "note": "Jeg ville fjerne de 2 streger på nordsiden af fjorden.",
+      "reviewedAt": "2026-08-11T19:19:10.407Z"
+    },
+    "residual-dk-b08-19": {
+      "decision": "needs-fix",
+      "note": "den skal slettes. det er i sverige",
+      "reviewedAt": "2026-08-11T19:19:12.184Z"
+    },
+    "residual-dk-b10-13": {
+      "decision": "needs-fix",
+      "note": "det er nærmere bredsted og ikke Kramnitse",
+      "reviewedAt": "2026-08-11T19:19:13.974Z"
+    },
+    "residual-dk-b10-16": {
+      "decision": "needs-fix",
+      "note": "jeg synes det hele skal slettes, da det mest er små øer",
+      "reviewedAt": "2026-08-11T19:19:16.529Z"
+    },
+    "residual-dk-b12-07": {
+      "decision": "needs-fix",
+      "note": "Jeg ville kalde den Mommark & Pøl Huk",
+      "reviewedAt": "2026-08-11T19:19:20.603Z"
+    },
+    "residual-wadden-mainland-01": {
+      "decision": "needs-fix",
+      "note": "de 2 blå streger bør vel hænge sammen",
+      "reviewedAt": "2026-08-11T19:14:37.037Z"
+    },
+    "residual-wadden-mainland-02": {
+      "decision": "approved",
+      "note": "",
+      "reviewedAt": "2026-08-11T19:17:49.978Z"
+    },
+    "residual-wadden-mainland-03": {
+      "decision": "needs-fix",
+      "note": "stregen går lidt ind i Ribe Å. den bør hoppe over åen",
+      "reviewedAt": "2026-08-11T19:19:06.210Z"
+    }
+  }
+}

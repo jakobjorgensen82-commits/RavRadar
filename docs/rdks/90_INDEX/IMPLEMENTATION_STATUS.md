@@ -1,8 +1,10 @@
 # Implementeringsstatus pr. 4.0.181
 
 ## National kystgeometri v2 – datakæde verificeret, offentlig kortvisning rettes
-- [x] Den manglende relevante fastlandskyst langs Vadehavet fra Emmerlev til Esbjerg er fundet som en ejerskabsfejl, ikke en manglende GeoDanmark-kilde. Et privat forslag tilføjer tre hovedzoner og 85,059 km officiel kyst uden Rømødæmning, økyster, kildeafvigelser eller overlap.
-- [ ] Ejeren skal kontrollere de tre Vadehavszoners linjeforløb, navne og indbyrdes grænser sammen med de fem resterende konfliktzoner. Ingen af de otte må aktiveres automatisk.
+- [x] Den autoritative otte-zoners ejerfil `(4)` er versionsført og anvendt fail-closed. Seks bevarede/rettede kandidater er samlet i et privat korrektionskort; to fejlagtige præcisionsforslag er forkastet uden at slette deres eksisterende hovedzoner.
+- [x] Vadehavsforslaget sammenholdes nu med hele den additive 650-dels kandidat, så den eksisterende Emmerlev-geometri ikke dobbeltregistreres. Den private Vadehavstilføjelse er 81,883 km efter denne deduplikering.
+- [ ] Ejeren skal kontrollere det lille seks-zoners korrektionskort. Derefter kræves samlet national hul-/overlapaudit, nye land-/vandpunkter til nye zoner og fulde gates før aktivering.
+- [x] Den manglende relevante fastlandskyst langs Vadehavet fra Emmerlev til Esbjerg er fundet som en ejerskabsfejl. Det rettede private forslag er 81,883 km uden Rømødæmning, økyster eller runtime-overlap. To ejerbestemte forbindelser på samlet 4.671,4 meter er eksplicit dokumenteret som manuelle broer og må ikke beskrives som direkte GeoDanmark-geometri.
 - [x] Privat #31480089490 genbyggede den friske centralt hydrerede landskæde og bestod geometri, 605/605 land-/vandpunkter, 605/605 DMI-gridvalg, flertrinsserier, isoleret state/historik, lokal vind, shadow-score og central admin-roundtrip/rollback.
 - [x] Slutbestanden er 605 lokale kystdele i 190 hovedzoner, nul fysiske overlap og 594 fuldt plus 11 delvist marinedækkede dele. Den sidste tætte ejerskabsbeslutning ved Orehoved tilhører Falsters nordkyst, ikke Bøgestrømmen vest.
 - [x] Ejeren har 11. august 2026 givet udtrykkeligt go til aktivering på testdomænet. De 605 dele, 605 punktpar og deres DMI-gridbevis er versionslåst med SHA-256.

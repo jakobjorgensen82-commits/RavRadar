@@ -76,17 +76,38 @@ def build(official, osm, active, guide_buffer_m=75):
     selected = selected.difference(transform(TO_M, box(8.62, 55.144, 8.668, 55.152)))
     active_geometries = runtime_geometries(active)
     active_tree = STRtree(active_geometries) if active_geometries else None
+    active_union = unary_union(active_geometries) if active_geometries else None
     features = []
     rows = []
+    official_outlier_length_m = 0.0
+    existing_overlap_length_m = 0.0
     for proposal_id, name, south, north in SECTIONS:
         geometry = selected.intersection(transform(TO_M, box(8.35, south, 8.95, north)))
         if active_tree is not None:
             occupied = [active_geometries[int(index)] for index in active_tree.query(geometry.buffer(0.25))]
             if occupied:
                 geometry = geometry.difference(unary_union(occupied).buffer(0.25))
+        if proposal_id == "wadden-mainland-01":
+            # Owner review 2026-08-11: connect the two documented mainland
+            # shore runs across GeoDanmark's fragmented straight dike section.
+            geometry = unary_union([
+                geometry,
+                transform(TO_M, LineString([(8.6388, 55.0604), (8.6489, 55.0893)])),
+            ])
+        if proposal_id == "wadden-mainland-03":
+            # Owner review 2026-08-11: jump across Ribe Å instead of following
+            # both river banks inland.
+            ribe_aa_inlet = transform(TO_M, box(8.6635, 55.3200, 8.6768, 55.3332))
+            geometry = unary_union([
+                geometry.difference(ribe_aa_inlet),
+                transform(TO_M, LineString([(8.6673, 55.3204), (8.6751, 55.3327)])),
+            ])
         geometry = unary_union([part for part in lines(geometry) if part.length >= 10])
         if geometry.is_empty:
             raise SystemExit(f"Vadehavsforslaget blev tomt for {name}.")
+        official_outlier_length_m += geometry.difference(selected.buffer(2)).length
+        if active_union is not None:
+            existing_overlap_length_m += geometry.intersection(active_union.buffer(0.25)).length
         row = {
             "proposalId": proposal_id,
             "proposedMainZoneName": name,
@@ -104,8 +125,11 @@ def build(official, osm, active, guide_buffer_m=75):
         "proposalCount": len(rows),
         "totalLengthKm": round(sum(row["lengthKm"] for row in rows), 3),
         "guideBufferM": guide_buffer_m,
-        "officialSourceOutlierCount": 0,
-        "existingRuntimeOverlapCount": 0,
+        "officialSourceOutlierCount": int(official_outlier_length_m > 1),
+        "officialSourceOutlierLengthM": round(official_outlier_length_m, 1),
+        "documentedOwnerBridgeCount": 2,
+        "existingRuntimeOverlapCount": int(existing_overlap_length_m > 1),
+        "existingRuntimeOverlapLengthM": round(existing_overlap_length_m, 1),
         "scoreChanged": False,
         "automaticActivationAllowed": False,
         "proposals": rows,
