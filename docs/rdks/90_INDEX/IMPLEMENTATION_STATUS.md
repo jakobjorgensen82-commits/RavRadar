@@ -1,8 +1,9 @@
-# Implementeringsstatus pr. 4.0.171
+# Implementeringsstatus pr. 4.0.172
 
 ## Kystgeometri v2 – aktivt design/pilotarbejde, ingen produktionsændring
 - [x] Privat #31448258035 CI-verificerede 4.0.169's begrænsede vindvalg og hele den nationale kæde: 774 vindserier, 752 shadow-scorer, 22 deldækkede og ni blokerede dele, score-neutral reviewside med 783 dele samt bestået central admin-roundtrip/rollback.
-- [ ] Manuel ejerreview af alle 783 dele er næste gate. Ingen geometri, sampling, state, score, admin-data eller offentlig runtime er aktiveret.
+- [x] Ejeren har gennemgået de 31 oprindelige opmærksomhedsdele. 4.0.172 bevarer beslutningerne revisionsbart og bygger et privat korrektionsforslag uden aktivering.
+- [ ] En skærpet landsaudit har reduceret den supplerende efterkontrol til 23 unikke dele: seks målrettede beskæringer og 17 nye dele med mindst fire uafhængige faresignaler. Ejerreview og efterfølgende CI-bevis mangler.
 - [x] 4.0.171 gør ejerreviewet praktisk anvendeligt med én stor del ad gangen, baggrundskort/luftfoto, tydelig linje, opmærksomhedsfilter, beslutningsknapper, bemærkning og lokal eksport.
 - [ ] Privat #31440337378 bestod vindgaten, men stoppede shadow-score ved 0/752, fordi to på hinanden følgende midnatstrin ikke gav den krævede native `t+3h`-vandstand. 4.0.168 henter fire trin og kræver et ægte tretimerspar før scoreinput. Afventer nyt privat CI-bevis.
 - [x] Privat #31425327202 verificerede 774/774 native vindserier; kun 20 faktiske gab brugte målrettet 32-celle-retry. Samme-celle-, afstands- og provenancekrav bestod.

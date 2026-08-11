@@ -1,6 +1,7 @@
 # Kendte åbne og overvågede forhold
 
 ## National zone- og kystgeometri – aktiv pilot efter DEC-0032
+- **ISSUE-NATIONAL-INNER-WATER-FOLLOW-UP – INDSNÆVRET LOKALT I 4.0.172 / AFVENTER EJER:** De officielle fjord-/normasker har nul faktisk overlap med de 783 færdige linjer; tidligere nærhedsflag var ikke overlap. Alle officielle Farvand-typer og havne bruges nu som supplerende evidens. Afstand eller navn alene må ikke slette en linje. En fire-signalsgate og geometrisk deduplikering har reduceret efterkontrollen til 23 unikke dele.
 - **ISSUE-NATIONAL-OWNER-REVIEW-UNUSABLE-OVERVIEW – LØST OG VISUELT EJERBEKRÆFTET I 4.0.171:** Første review pressede hele Danmark ind i et lille, baggrundsløst kort og havde ingen godkendelsesarbejdsgang. Det er erstattet af én stor del ad gangen med baggrundskort/luftfoto, kraftig linje, automatisk zoom, beslutningsknapper, bemærkning og eksport.
 - **ISSUE-NATIONAL-WIND-ASSET-BUDGET – LØST OG CI-VERIFICERET I #31448258035:** Det begrænsede valg af præcis to HARMONIE-assets bestod for alle 774 berettigede dele inden for downloadgrænsen.
 - **ISSUE-NATIONAL-SHADOW-THREE-HOUR-TREND – LØST OG CI-VERIFICERET I #31448258035:** Et ægte native `t`/`t+3h`-par blev anvendt, og alle 752 komplette dele blev shadow-scoret uden interpolation.

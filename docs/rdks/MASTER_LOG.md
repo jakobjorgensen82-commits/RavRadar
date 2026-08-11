@@ -805,3 +805,11 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Reviewgeneratoren viser nu én stor del ad gangen med almindeligt kort/luftfoto, stednavne, kraftig valgt linje og automatisk zoom.
 - De 31 opmærksomhedsdele vises først. Godkend/Skal rettes, bemærkning, lokal lagring, frem/tilbage og JSON-eksport er implementeret.
 - Generatorselftest og statisk browser-JavaScript-test består. Ejeren bekræftede visuelt, at stort kort, baggrund, stednavne, automatisk zoom og kraftig blå kystlinje fungerer og ser fint ud.
+
+# 2026-08-11 – 4.0.172 ejerafgørelser og indre-farvandsefterkontrol
+
+- Ejeren gennemgik alle 31 oprindelige opmærksomhedsdele og eksporterede afgørelserne. De er normaliseret til et versionsstyret privat dokument: 11 godkendt uændret, 10 hele sletninger, tre sikre komponentrensninger, én navnerettelse og seks målrettede beskæringer.
+- Stængerodde og Egernsund er blandt de eksplicit godkendte hele sletninger. Præcise vej-, havne- og åben-vandbeskæringer forbliver blokerede mod gæt.
+- En ny audit læser alle 768 officielle Farvand-objekter i stedet for kun 90 fjord-/norobjekter. En eksakt metrisk kontrol viser nul faktisk fjord-/noroverlap i de 783 færdige linjer; nærhed er derfor ikke automatisk fejl.
+- Nye kandidater kræver mindst fire uafhængige tegn blandt stor afstand til officielt hav, officiel havnenærhed, beskyttet farvandskontekst, meget kort del og lukket ø-/søform. Identisk geometri samles. Efterkontrollen er foreløbig 23 unikke dele, heraf seks kendte målrettede rettelser.
+- Hele kæden er fortsat privat og score-neutral. Produktion, admin, sampling, state, RavScore og offentlig UI er uændrede.
