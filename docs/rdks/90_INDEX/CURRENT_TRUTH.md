@@ -1,5 +1,12 @@
 # Current truth – gældende projektviden
 
+## 4.0.189 – budgetrotation mellem DMI-havmodeller
+
+- Produktionskørslerne #2423–#2426 bevarede den progressive cache, men den videnskabelige strømaudit stod fast på 125/210 zoner.
+- Loggene dokumenterede, at `dkss_idw` gentagne gange brugte hele arbejdsbudgettet, hvorefter schedulerens geografiske prioritet valgte samme model igen. `dkss_nsbs` og `dkss_lf` nåede derfor ikke frem til de resterende geografiske områder.
+- En tidsafbrudt marinemodel registreres nu i den private collection-state og roterer bag ikke-forsøgte eller ældre afbrudte marinemodeller ved næste recoverykørsel. Markeringen nulstilles kun efter fuld eller dokumenteret uændret gyldig behandling.
+- Kravet om mindst 90 % verificerede hovedzoner, U/V-fællespunkt, proveniens, fallback, RavScore, kyst og offentlig deploygate er uændret. Løsningen afventer CI-/produktionsbevis.
+
 ## 4.0.188 – progressiv privat DMI-zonecache
 
 - Gentagne produktionskørsler stoppede korrekt ved den strenge strømaudit, fordi kun 85/210 hovedzoner havde verificerede aktuelle marine U/V-gitterpunkter.

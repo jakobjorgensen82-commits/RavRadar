@@ -1,12 +1,14 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.188
+**Håndbogsversion:** 4.0.189
 
 **Opdateret:** 1. august 2026
 
 ## Progressiv DMI-opbygning
 
 RavRadar bygger DMI-dækningen over flere begrænsede GitHub-kørsler. Både de downloadede modelfiler og en vellykket afledt privat zonecache bevares som arbejdsfremdrift. Cachen må kun genbruges, når den passer til præcis de aktuelle zoner, kystdele og land/hav-punkter; efter en relevant adminændring begynder de berørte data derfor sikkert forfra. Hvis den strenge datakontrol stopper en kørsel, bliver de ufærdige data ikke lagt på den offentlige side, men næste kørsel kan fortsætte fra et kompatibelt grundlag. Manglende data forbliver manglende; kontrollens krav og RavScore ændres ikke.
+
+Hvis én DMI-havmodel bruger hele kørslens tidsbudget, husker den private cache også dette. Næste kørsel giver en af de andre relevante havmodeller førsteret, så eksempelvis Nordsøen, indre danske farvande og Limfjorden ikke kan blokere hinanden ved gentagne kørsler. En model betragtes først som færdig, når dens behandling faktisk er fuld eller dokumenteret uændret og gyldig.
 
 ## Aktuel afgrænsning af kystarbejdet
 

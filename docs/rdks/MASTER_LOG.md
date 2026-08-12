@@ -932,3 +932,10 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Flere runs på både før- og efter-4.0.187-kode stoppede samme sted: current-spatial-auditen fandt kun 85/210 verificerede hovedzoner.
 - GRIB-downloadcachen fortsatte, men den opbyggede DMI-zonecache blev kun bevaret ved et grønt deploy. Det nulstillede den afledte fremdrift efter hver rød releasegate.
 - GitHub Actions gemmer nu kun en vellykket zonecache privat før releasegaten og gendanner den før næste DMI-opbygning. Builderen vælger mellem privat fremdrift og senest deployede cache efter datadækning, men kun når registersignaturen matcher aktuelle zoner, dele og punkter. Uvaliderede data deployes stadig ikke, og audits er uændrede.
+
+## 2026-08-12 – 4.0.189 DMI-budgetrotation
+
+- Runs #2423–#2426 viste samme reproducerbare mønster: den progressive cache blev bevaret, men auditten stod fast på 125/210 verificerede hovedzoner.
+- `dkss_idw` brugte hele arbejdsbudgettet i hver kørsel og blev derefter valgt igen af den geografiske prioritering; de øvrige DKSS-modeller fik ikke arbejdstid.
+- Schedulerens private collection-state registrerer nu tidsafbrudte marinemodeller og roterer dem bag ikke-forsøgte/ældre afbrudte modeller i næste recoverykørsel. Fuld/uændret gyldig behandling nulstiller markeringen.
+- Kyst, land-/vandpunkter, RavScore, fallback, 90 %-grænse og deploygate er uændrede. CI-bevis mangler endnu.

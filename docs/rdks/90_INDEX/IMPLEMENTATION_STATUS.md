@@ -1,4 +1,12 @@
-# Implementeringsstatus pr. 4.0.188 – lokal releasekandidat
+# Implementeringsstatus pr. 4.0.189 – lokal releasekandidat
+
+## DMI-budgetrotation efter fastlåst 125/210-mønster
+
+- [x] #2423–#2426 er analyseret som et gentaget scheduler-loop, ikke som enkeltstående DMI-fejl.
+- [x] Tidsafbrudte DKSS-samlinger registreres i den private collection-state og roterer bag ikke-forsøgte/ældre afbrudte marinemodeller.
+- [x] Markeringen nulstilles ved fuld eller dokumenteret uændret gyldig samling.
+- [x] Målrettede scheduler-, marine-first-, cache- og syntakstests er grønne lokalt.
+- [ ] Frisk GitHub-kørsel skal bevise, at andre DKSS-samlinger nås, dækningen vokser fra 125/210, og den uændrede strømaudit til sidst består.
 
 ## Progressiv DMI-recovery uden offentlig bypass
 

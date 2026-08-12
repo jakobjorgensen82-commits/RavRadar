@@ -11,6 +11,7 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 
 ## Data og prognoser
 - **REQ-DATA-013 – IMPLEMENTERET LOKALT I 4.0.188 / AFVENTER CI:** En forbedret afledt DMI-zonecache skal kunne fortsætte privat mellem GitHub-kørsler, selv når en streng releasegate stopper offentlig deployment. Den private fremdrift må aldrig omgå fuld validering, ændre dækningskrav eller publicere uvaliderede data.
+- **REQ-DATA-014 – IMPLEMENTERET LOKALT I 4.0.189 / AFVENTER CI:** Når en DKSS-model afbrydes af workflowets tidsbudget under manglende marinedækning, skal næste kørsel give de ikke-forsøgte eller ældre afbrudte DKSS-modeller mulighed for at lukke deres geografiske huller. Rotation må ikke svække U/V-, proveniens- eller dækningsauditten.
 - **REQ-DATA-011 – IMPLEMENTERET LOKALT I 4.0.120:** Vandstandsrouting må kun ændre vandstandsfelter. Den må ikke erstatte en offentlig blandet komponentserie med den rene DMI-cache eller slette gyldig fallback.
 - **REQ-DATA-012 – IMPLEMENTERET LOKALT I 4.0.120:** En timebaseret fallbackhale skal forespørge om mindst 120 fremtidige timer; allerede forløbne timer siden midnat må ikke tælle med i produktets forecastbudget.
 - **REQ-DATA-001 – AKTIV:** DMI prioriteres; fallback må ikke skabe timevis pendlen.

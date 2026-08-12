@@ -1145,6 +1145,12 @@ def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict
     lead_marine_collection = min(
         MARINE_COLLECTIONS,
         key=lambda collection: (
+            # En model, der brugte hele tidsbudgettet, må ikke straks vinde
+            # igen alene på geografisk efterspørgsel. Ellers kan fx IDW
+            # gentage samme delresultat i hver 15-minutters kørsel, mens NSBS
+            # og Limfjorden aldrig bliver prøvet. Ikke-forsøgte/eldst
+            # afbrudte modeller kommer derfor først under recovery.
+            epoch((state.get(collection) or {}).get("lastBudgetInterruptedAt")),
             -preferred_wind_tail_demand.get(collection, 0),
             -preferred_marine_demand.get(collection, 0),
             epoch((state.get(collection) or {}).get("lastAttemptAt")),
@@ -1152,7 +1158,7 @@ def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict
         ),
     )
 
-    def priority(collection: str) -> tuple[int, int, int, int, int, float, float, int]:
+    def priority(collection: str) -> tuple[int, int, float, int, int, int, float, float, int]:
         entry = state.get(collection) or {}
         blocked_parser_version = int(entry.get("blockedParserVersion") or 0)
         parser_block_obsolete = entry.get("failureClass") == "parser-blocked" and blocked_parser_version != PARSER_VERSION
@@ -1165,6 +1171,11 @@ def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict
             entry["consecutiveFailures"] = 0
 
         family = COLLECTION_FAMILY[collection]
+        budget_rotation = (
+            epoch(entry.get("lastBudgetInterruptedAt"))
+            if family == "marine" and marine_recovery_active
+            else 0.0
+        )
         # Mangler en aktiv zone helt marinegrundlag, er DKSS ubetinget først.
         if balanced_foundation_recovery:
             # A small persistent geographic gap must not occupy both
@@ -1202,7 +1213,7 @@ def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict
         deficit_rank = -missing96.get(family, 0)
         complete_family_rank = 1 if missing96.get(family, 0) == 0 else 0
         return (
-            blocked, family_rank, marine_demand_rank, complete_family_rank, deficit_rank,
+            blocked, family_rank, budget_rotation, marine_demand_rank, complete_family_rank, deficit_rank,
             epoch(entry.get("lastAttemptAt")), epoch(entry.get("lastSuccessfulAt")),
             COLLECTION_ORDER.index(collection),
         )
@@ -1802,6 +1813,7 @@ def main() -> int:
                 state["lastCheckedAt"] = generated
                 state["referenceTime"] = run
                 state["lastError"] = None
+                state["lastBudgetInterruptedAt"] = None
                 result["diagnostics"]["collectionsUnchanged"].append(collection)
                 result["diagnostics"]["zeroProgressCollections"].append(collection)
             elif recognized >= required and run_info["assetsProcessed"]:
@@ -1810,6 +1822,7 @@ def main() -> int:
                 state["consecutiveFailures"] = 0
                 state["nextEligibleAt"] = None
                 state["lastError"] = None
+                state["lastBudgetInterruptedAt"] = None
                 result["diagnostics"]["collectionsSucceeded"].append(collection)
             elif recognized:
                 state["lastPartialAt"] = generated
@@ -1822,6 +1835,7 @@ def main() -> int:
             if made_progress:
                 productive_collections += 1
             if budget_stop:
+                state["lastBudgetInterruptedAt"] = generated
                 result["diagnostics"]["errors"].append({"collection": collection, "message": budget_stop, "partialProgressPreserved": True})
         except Exception as exc:
             message = str(exc)
