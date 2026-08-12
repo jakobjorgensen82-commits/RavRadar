@@ -1,0 +1,79 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "private-fallback-zone-recovery-candidate",
+  "productionChanged": false,
+  "automaticActivationAllowed": false,
+  "deletedZonesPreserved": [
+    "DK-B02-14"
+  ],
+  "ownershipMoves": {
+    "DK-B08-12": [
+      "dk-b08-10-national-part-01",
+      "dk-b08-10-national-part-02",
+      "dk-b08-10-national-part-03"
+    ],
+    "DK-B08-18": [
+      "dk-b08-17-national-part-01",
+      "dk-b08-17-national-part-02"
+    ],
+    "DK-B08-19": [
+      "dk-b09-01-national-part-01",
+      "dk-b09-01-national-part-05"
+    ],
+    "DK-B07-20": [
+      "dk-b10-14-national-part-01-locality-01",
+      "dk-b10-14-national-part-01-locality-02"
+    ]
+  },
+  "replacedPartsToDisableAfterDmiApproval": [
+    "dk-b10-14-national-part-02-locality-01",
+    "dk-b10-14-national-part-02-locality-02"
+  ],
+  "requiredBeforeActivation": [
+    "owner geometry review",
+    "unique main-zone ownership and zero cross-zone overlap",
+    "validated land/water points",
+    "validated DMI grid and multi-step weather series",
+    "score-neutral shadow comparison",
+    "public runtime and rollback gates"
+  ],
+  "zones": [
+    {
+      "zoneId": "DK-B07-19",
+      "zoneName": "Langeland syd og Bagenkop",
+      "candidatePartCount": 2,
+      "legacyGeometryRejected": false
+    },
+    {
+      "zoneId": "DK-B08-12",
+      "zoneName": "Nykøbing Sjælland og Rørvig",
+      "candidatePartCount": 2,
+      "legacyGeometryRejected": false
+    },
+    {
+      "zoneId": "DK-B08-18",
+      "zoneName": "Dronningmølle og Hornbæk",
+      "candidatePartCount": 2,
+      "legacyGeometryRejected": true
+    },
+    {
+      "zoneId": "DK-B08-19",
+      "zoneName": "Ålsgårde og Helsingør",
+      "candidatePartCount": 5,
+      "legacyGeometryRejected": true
+    },
+    {
+      "zoneId": "DK-B10-14",
+      "zoneName": "Lolland vest og Albuen",
+      "candidatePartCount": 5,
+      "legacyGeometryRejected": true
+    },
+    {
+      "zoneId": "DK-B10-16",
+      "zoneName": "Fejø og Femø",
+      "candidatePartCount": 5,
+      "legacyGeometryRejected": true
+    }
+  ],
+  "candidateFeatureCount": 12
+}

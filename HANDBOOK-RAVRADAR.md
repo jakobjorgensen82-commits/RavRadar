@@ -8,6 +8,8 @@
 
 DEC-0036 begrænser den aktive kystopgave til seks problemzoner: Langeland syd/Bagenkop, Nykøbing Sjælland/Rørvig, Dronningmølle/Hornbæk, Ålsgårde/Helsingør, Lolland vest/Albuen og Fejø/Femø. Havnø og Mariager Fjord øst forbliver slettet. Resten af den produktionsverificerede kyst er urørt baseline. En landsdækkende genopbygning eller ændring af fungerende funktioner kræver en ny, udtrykkelig ejerbeslutning; et uventet behov uden for de seks zoner er en stopklods, ikke en tilladelse til at udvide arbejdet.
 
+De seks zoner valideres i en særskilt privat arbejdsgang, som ikke kan udgive et kort. Tre zoner genbruger eksisterende, allerede kontrollerede kystdele under korrekt hovedzone. Tre zoner har tilsammen 12 nye officielle kystdele med egne land-/vandpunkter; de bliver først brugbare, når DMI's native grid, lokal score, runtime og rollback er kontrolleret. Admintræk flytter altid en hel valideret kystdel med dens målepunkter og vejridentitet – aldrig en løs visuel streg.
+
 ## Hvor ligger zonens kystdele? – 4.0.185
 
 Når RavRadar fortæller, at bestemte kystdele scorer højere end resten af hovedzonen, kan brugeren vælge **Hvor er det?**. Hovedkortet zoomer derefter til zonen og tegner dens allerede indlæste præcise kystdele med navn. De aktuelt bedste dele fremhæves. Hvis forskellen er højst 7 point og forholdene derfor gælder hele zonen, udpeges ingen enkelt del som bedre.

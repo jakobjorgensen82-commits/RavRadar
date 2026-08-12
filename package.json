@@ -102,7 +102,7 @@
     "test:zone-admin-propagation": "node scripts/test-zone-admin-propagation-4.0.89.mjs",
     "test:zone-deletion-runtime": "node scripts/test-zone-deletion-runtime-4.0.91.mjs",
     "test:handbook-review-archive": "node scripts/test-handbook-review-archive-4.0.91.mjs",
-    "test:admin-editable-zone-contract": "node scripts/test-admin-editable-zone-contract-4.0.93.mjs && node scripts/test-admin-part-ownership-4.0.183.mjs",
+    "test:admin-editable-zone-contract": "node scripts/test-admin-editable-zone-contract-4.0.93.mjs && node scripts/test-admin-part-ownership-4.0.183.mjs && node scripts/test-six-zone-recovery-workflow.mjs",
     "test:admin-config-production": "node scripts/test-admin-config-production-contract-4.0.94.mjs",
     "test:water-station-admin-override": "node scripts/test-water-station-admin-override-4.0.95.mjs",
     "test:water-station-admin-runtime": "node scripts/test-water-station-admin-runtime-4.0.96.mjs",

@@ -10,6 +10,7 @@
 - Det aktive kystarbejde omfatter kun Langeland syd/Bagenkop, Nykøbing Sjælland/Rørvig, Dronningmølle/Hornbæk, Ålsgårde/Helsingør, Lolland vest/Albuen og Fejø/Femø samt det direkte nødvendige adminværktøj.
 - Havnø og Mariager Fjord øst forbliver slettet. Den øvrige produktionsverificerede nationale kyst er urørt baseline.
 - Landsdækkende genopbygning, nyopdeling eller fortsættelse af den brede private nationale pipeline er ikke autoriseret. Ethvert behov uden for de seks zoner kræver, at arbejdet stopper og ejeren spørges først.
+- Den aktive private valideringsvej er `.github/workflows/validate-six-zone-recovery.yml`. Den kan hverken deploye eller ændre offentlig geometri og afviser andet end den fastlåste seks-zoneplan.
 
 ## 4.0.186-kandidat – trækbar kystgrænse og privat fallbackrecovery
 

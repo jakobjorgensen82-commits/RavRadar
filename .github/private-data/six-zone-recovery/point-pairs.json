@@ -1,0 +1,428 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "private-national-read-only-local-part-point-pairs",
+  "finalPartCount": 12,
+  "partCount": 12,
+  "proposedPointPairCount": 12,
+  "blockedPointPairCount": 0,
+  "automaticActivationAllowed": false,
+  "productionGeometryChanged": false,
+  "adminDataChanged": false,
+  "weatherSamplingChanged": false,
+  "stateChanged": false,
+  "scoreChanged": false,
+  "parts": [
+    {
+      "zoneId": "DK-B07-19",
+      "partId": "dk-b07-19-fallback-recovery-01",
+      "finalPartId": "dk-b07-19-fallback-recovery-01",
+      "name": "Langeland syd og Bagenkop",
+      "suggestedName": "Langeland syd og Bagenkop",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.6674136,
+        54.7710907
+      ],
+      "landPoint": [
+        10.6656789,
+        54.7706946
+      ],
+      "waterPoint": [
+        10.6691482,
+        54.7714868
+      ],
+      "onshoreDirectionDeg": 247.1,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        10.69,
+        54.75
+      ],
+      "waterWitness": [
+        10.69,
+        54.795
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B07-19",
+      "partId": "dk-b07-19-fallback-recovery-02",
+      "finalPartId": "dk-b07-19-fallback-recovery-02",
+      "name": "Langeland syd og Bagenkop",
+      "suggestedName": "Langeland syd og Bagenkop",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.7251944,
+        54.7334083
+      ],
+      "landPoint": [
+        10.7266134,
+        54.7327095
+      ],
+      "waterPoint": [
+        10.7237754,
+        54.7341071
+      ],
+      "onshoreDirectionDeg": 129.0,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        10.69,
+        54.75
+      ],
+      "waterWitness": [
+        10.69,
+        54.795
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B10-14",
+      "partId": "dk-b10-14-fallback-recovery-01",
+      "finalPartId": "dk-b10-14-fallback-recovery-01",
+      "name": "Lolland vest og Albuen",
+      "suggestedName": "Lolland vest og Albuen",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.9786413,
+        54.7894346
+      ],
+      "landPoint": [
+        10.9801881,
+        54.7900375
+      ],
+      "waterPoint": [
+        10.9770945,
+        54.7888317
+      ],
+      "onshoreDirectionDeg": 54.4,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        10.78,
+        54.7
+      ],
+      "waterWitness": [
+        10.67,
+        54.7
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B10-14",
+      "partId": "dk-b10-14-fallback-recovery-02",
+      "finalPartId": "dk-b10-14-fallback-recovery-02",
+      "name": "Lolland vest og Albuen",
+      "suggestedName": "Lolland vest og Albuen",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.9729282,
+        54.7962165
+      ],
+      "landPoint": [
+        10.9745343,
+        54.7967655
+      ],
+      "waterPoint": [
+        10.9713222,
+        54.7956675
+      ],
+      "onshoreDirectionDeg": 57.8,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        10.78,
+        54.7
+      ],
+      "waterWitness": [
+        10.67,
+        54.7
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B10-14",
+      "partId": "dk-b10-14-fallback-recovery-03",
+      "finalPartId": "dk-b10-14-fallback-recovery-03",
+      "name": "Lolland vest og Albuen",
+      "suggestedName": "Lolland vest og Albuen",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.9992462,
+        54.8154866
+      ],
+      "landPoint": [
+        11.0000651,
+        54.8164555
+      ],
+      "waterPoint": [
+        10.9984273,
+        54.8145176
+      ],
+      "onshoreDirectionDeg": 24.4,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        10.78,
+        54.7
+      ],
+      "waterWitness": [
+        10.67,
+        54.7
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B10-14",
+      "partId": "dk-b10-14-fallback-recovery-04",
+      "finalPartId": "dk-b10-14-fallback-recovery-04",
+      "name": "Lolland vest og Albuen",
+      "suggestedName": "Lolland vest og Albuen",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        11.0053483,
+        54.8178157
+      ],
+      "landPoint": [
+        11.0063888,
+        54.818711
+      ],
+      "waterPoint": [
+        11.0043079,
+        54.8169205
+      ],
+      "onshoreDirectionDeg": 32.2,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        10.78,
+        54.7
+      ],
+      "waterWitness": [
+        10.67,
+        54.7
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B10-14",
+      "partId": "dk-b10-14-fallback-recovery-05",
+      "finalPartId": "dk-b10-14-fallback-recovery-05",
+      "name": "Lolland vest og Albuen",
+      "suggestedName": "Lolland vest og Albuen",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        10.9760725,
+        54.7957637
+      ],
+      "landPoint": [
+        10.976979,
+        54.7948213
+      ],
+      "waterPoint": [
+        10.975166,
+        54.7967061
+      ],
+      "onshoreDirectionDeg": 149.3,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        10.78,
+        54.7
+      ],
+      "waterWitness": [
+        10.67,
+        54.7
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B10-16",
+      "partId": "dk-b10-16-fallback-recovery-01",
+      "finalPartId": "dk-b10-16-fallback-recovery-01",
+      "name": "Fejø og Femø",
+      "suggestedName": "Fejø og Femø",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        11.4110208,
+        54.9525825
+      ],
+      "landPoint": [
+        11.4128371,
+        54.9523191
+      ],
+      "waterPoint": [
+        11.4092043,
+        54.9528459
+      ],
+      "onshoreDirectionDeg": 102.2,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        11.48,
+        55
+      ],
+      "waterWitness": [
+        11.48,
+        55.1
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B10-16",
+      "partId": "dk-b10-16-fallback-recovery-02",
+      "finalPartId": "dk-b10-16-fallback-recovery-02",
+      "name": "Fejø og Femø",
+      "suggestedName": "Fejø og Femø",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        11.3635823,
+        54.9520784
+      ],
+      "landPoint": [
+        11.3617098,
+        54.9521072
+      ],
+      "waterPoint": [
+        11.3654548,
+        54.9520496
+      ],
+      "onshoreDirectionDeg": 269.6,
+      "witnessSource": "nearest-active-local-part-direction:dk-b10-15-national-part-01-locality-02",
+      "landWitness": [
+        11.3110468,
+        54.9308603
+      ],
+      "waterWitness": [
+        11.3155114,
+        54.9319314
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B10-16",
+      "partId": "dk-b10-16-fallback-recovery-03",
+      "finalPartId": "dk-b10-16-fallback-recovery-03",
+      "name": "Fejø og Femø",
+      "suggestedName": "Fejø og Femø",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        11.4308863,
+        54.942373
+      ],
+      "landPoint": [
+        11.4319965,
+        54.9415049
+      ],
+      "waterPoint": [
+        11.4297759,
+        54.9432412
+      ],
+      "onshoreDirectionDeg": 141.6,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        11.48,
+        55
+      ],
+      "waterWitness": [
+        11.48,
+        55.1
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B10-16",
+      "partId": "dk-b10-16-fallback-recovery-04",
+      "finalPartId": "dk-b10-16-fallback-recovery-04",
+      "name": "Fejø og Femø",
+      "suggestedName": "Fejø og Femø",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        11.5656158,
+        54.9758502
+      ],
+      "landPoint": [
+        11.5640662,
+        54.9752438
+      ],
+      "waterPoint": [
+        11.5671654,
+        54.9764565
+      ],
+      "onshoreDirectionDeg": 233.7,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        11.48,
+        55
+      ],
+      "waterWitness": [
+        11.48,
+        55.1
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B10-16",
+      "partId": "dk-b10-16-fallback-recovery-05",
+      "finalPartId": "dk-b10-16-fallback-recovery-05",
+      "name": "Fejø og Femø",
+      "suggestedName": "Fejø og Femø",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        11.3663872,
+        54.9559092
+      ],
+      "landPoint": [
+        11.365905,
+        54.9548674
+      ],
+      "waterPoint": [
+        11.3668694,
+        54.9569509
+      ],
+      "onshoreDirectionDeg": 193.0,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        11.48,
+        55
+      ],
+      "waterWitness": [
+        11.48,
+        55.1
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    }
+  ],
+  "totalCandidatePartCount": 12,
+  "candidatePointPairCount": 12,
+  "candidateMissingPointPairCount": 0,
+  "candidateMissingPointPartIds": []
+}

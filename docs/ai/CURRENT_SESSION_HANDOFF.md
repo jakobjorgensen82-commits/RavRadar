@@ -4,6 +4,8 @@
 
 DEC-0036 har forrang for ældre brede nationale planer. Aktivt arbejde må kun omfatte `DK-B07-19`, `DK-B08-12`, `DK-B08-18`, `DK-B08-19`, `DK-B10-14`, `DK-B10-16` og det direkte nødvendige adminværktøj til trækbar præcis kyst, følgende zoneafgrænsning, viskelæder og samlet punkt-/DMI-/runtimekontrakt. Havnø/Mariager Fjord øst forbliver slettet. Start eller fortsæt ikke en landsdækkende kystpipeline; stop og spørg ejeren før enhver udvidelse.
 
+Den indcheckede private kandidat har 12 nye kystdele og 12/12 punktpar. Lokal fail-closed kontrol viser ni planlagte ejerskabsflytninger, to erstatninger og nul overlap. `.github/workflows/validate-six-zone-recovery.yml` er næste aktive trin; den kontrollerer kun disse data på DMI's native grid, uploader privat evidens og kan ikke deploye. Først efter grønt bevis må en privat runtime-/rollbackkandidat bygges til ejerens kontrol.
+
 ## Kritisk checkpoint 2026-08-11 / 4.0.181
 
 - Den nationale aktivering i 4.0.180 projicerede fejlagtigt 605 interne beregningsdele som selvstændige synlige kortzoner. Multipart-geometri gav 2.488 synlige linjer og cirka 12.440 Leaflet-objekter, sorte endemarkeringer over hele kortet, gentagne navne og meget langsom indlæsning.

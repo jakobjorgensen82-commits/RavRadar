@@ -6,11 +6,12 @@
 - [x] Central schema-4-readback validerer både ejerskab og deaktiveringer.
 - [x] Produktionsbyggeren publicerer ikke centralt deaktiverede dele.
 - [x] Privat fallbackrecovery bevarer `DK-B02-14` som slettet, genbruger syv allerede validerede dele via ejerskabsflytning og giver 12 nye officielle kandidatdele med 12/12 foreslåede punktpar og nul overlap mod andre aktive hovedzoner.
+- [x] En separat, ikke-deployende seks-zoneworkflow validerer den låste plan og kun de 12 nye vandpunkter på DMI's native grid; den starter ingen national genopbygning.
 - [x] Fallbackrecovery og native DMI-gridkontrol er koblet på den eksisterende private nationale Linux-kørsel og uploader kun ikke-aktiverbare QA-artifacts.
 - [x] Den nationale planport er opdateret fra den historiske 208-zonebestand til den aktuelle eksplicitte politik på 211 zoner; downstream-kildegater sammenligner bestandene indbyrdes i stedet for at skjule drift med en løs konstant.
 - [x] #31589831140 bekræftede plan, officiel kildehentning, kilde-QA og fjord-/normasker for 211 zoner. Den efterfølgende topologiaudit og delgenerator er nu også afstemt til 211 med matchende validatorer og regressionstests.
 - [x] #31590992368 bekræftede 211 zoner og 131 fliser gennem topologi, dækningsaudit og delgenerator. Stednavnegaten følger nu planens faktiske fliseantal og bevarer komplet requestkontrol uden den forældede 100-fliseantagelse.
-- [ ] Fallbackkandidatens hovedzoneejerskab, DMI-grid, shadow-score, runtime og rollback skal bestå privat før ejerreview eller aktivering.
+- [ ] Seks-zonekandidatens DMI-grid, shadow-score, runtime og rollback skal bestå privat før ejerreview eller aktivering.
 
 ## 4.0.185 – produktionsverificeret
 

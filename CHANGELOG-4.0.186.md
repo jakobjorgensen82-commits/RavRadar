@@ -1,5 +1,11 @@
 # RavRadar 4.0.186
 
+## Privat seks-zonevalidering
+
+- Tilføjet en separat, ikke-deployende CI-kontrol for præcis de seks aftalte recoveryzoner.
+- Indchecket den private 12-dels kandidat med 12 punktpar, så DMI-gridkontrollen ikke kræver eller genstarter en national kystopbygning.
+- Tilføjet regression, der afviser andre zoner, national pipeline og deploy fra denne arbejdsgang.
+
 - Arbejdsomfanget er bindende låst til de seks fallbackzoner og det aftalte adminværktøj. Den øvrige produktionsverificerede kyst må ikke genopbygges eller ændres uden en ny, udtrykkelig ejerbeslutning; Havnø og Mariager Fjord øst forbliver slettet.
 
 - Tilføjer trækbare endehåndtag til den præcise kyst i administrationen. En hovedzone kan forlænges til en eksisterende valideret nabokystdel, mens zonens afgrænsning følger automatisk.
