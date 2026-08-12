@@ -1,3 +1,8 @@
+## 2026-08-12 – 4.0.186-kandidat
+
+- Den præcise admin-kyst har fået trækbare endehåndtag og et reversibelt viskelæder. Flytning og deaktivering omfatter hele den validerede delkontrakt og central readback.
+- En privat recoveryaudit forkaster de dokumenteret fejlplacerede gamle linjer som autoritet, bevarer Havnø/Mariager Fjord som slettet og bygger 21 officielle kandidatdele for seks problemzoner. Alle 21 har lokalt foreslåede punktpar, men kandidaten kan ikke aktiveres før private ejer-, DMI-, score-, runtime- og rollbackgates.
+
 ## 2026-08-12 – read-only nataudit af den aktive 4.0.182-kyst
 - Den produktionsverificerede, hash-låste bestand er bevaret byte-for-byte. Et nyt privat kontrolkort læser de 643 aktive dele direkte og tilbyder både samlet landsvisning og søgbar lokal visning uden mutations- eller aktiveringsvej.
 - Landskortet samt lokale stikprøver ved Voerså–Sibirien og Vadehavet er åbnet og kontrolleret i browseren. Der ses ingen udenlandsk landsgeometri i oversigten; de godkendte Vadehavsforløb er til stede.

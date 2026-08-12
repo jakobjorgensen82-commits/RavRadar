@@ -31,7 +31,7 @@ export async function build({source=DEFAULT_SOURCE,output:outputPath=DEFAULT_OUT
   const manifest=JSON.parse(await fs.readFile(path.join(SOURCE,'manifest.json'),'utf8'));
   const [coast,names,points,grid,admin,zonesCollection]=await Promise.all([
     ...['coastal-parts.geojson','part-names.json','point-pairs.json','dmi-grid-proof.json'].map(name=>read(SOURCE,name)),
-    optionalJson(overrides,{partOwnership:{}}),optionalJson(zonesFile,{features:[]})
+    optionalJson(overrides,{partOwnership:{},disabledParts:{}}),optionalJson(zonesFile,{features:[]})
   ]);
   for(const [name,expected] of Object.entries(manifest.files||{})){
     const source={
@@ -47,8 +47,10 @@ export async function build({source=DEFAULT_SOURCE,output:outputPath=DEFAULT_OUT
   const zones={};
   const activeZoneIds=new Set((zonesCollection.features||[]).filter(feature=>feature.properties?.zoneStatus!=='retired'&&feature.properties?.active!==false).map(feature=>feature.properties?.id));
   const ownership=admin?.partOwnership||{};
+  const disabledParts=admin?.disabledParts||{};
   for(const feature of features){
     const id=feature.properties?.finalPartId||feature.properties?.partId,sourceZoneId=feature.properties?.zoneId,n=nameById.get(id),p=pointById.get(id),g=gridById.get(id);
+    if(disabledParts[id]?.disabled===true&&disabledParts[id]?.published===true)continue;
     const requestedZoneId=ownership[id]?.targetZoneId;
     if(requestedZoneId&&!activeZoneIds.has(requestedZoneId))throw new Error(`${id}: admin-ejerskab peger på en ukendt eller slettet hovedzone (${requestedZoneId})`);
     const zoneId=requestedZoneId||sourceZoneId;

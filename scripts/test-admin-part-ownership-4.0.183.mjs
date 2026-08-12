@@ -34,9 +34,14 @@ await fs.writeFile(overrides,JSON.stringify({schemaVersion:3,partOwnership:{}}))
 const deletedWithoutReassignment=await build({source,output,overrides,zonesFile});
 assert.ok(!Object.values(deletedWithoutReassignment.zones).flat().some(part=>part.partId===ids[0].id),'En slettet hovedzones kystdel må ikke blive offentlig uden en ny ejer.');
 
+await fs.writeFile(zonesFile,JSON.stringify(zones));
+await fs.writeFile(overrides,JSON.stringify({schemaVersion:4,partOwnership:{},disabledParts:{[ids[0].id]:{disabled:true,published:true}}}));
+const erased=await build({source,output,overrides,zonesFile});
+assert.ok(!Object.values(erased.zones).flat().some(part=>part.partId===ids[0].id),'Viskelæderet skal fjerne kystdelen og dens punkt-/DMI-kontrakt samlet.');
+
 const editorSource=await fs.readFile('js/ui/admin-coastline-editor.js','utf8');
 const dashboardSource=await fs.readFile('js/ui/admin-dashboard.js','utf8');
-for(const token of ['partOwnership','Gem nye zonegrænser','landpunkt, vandpunkt og vejrdata'])assert.ok(editorSource.includes(token),`Admin-editor mangler kontrakten: ${token}`);
+for(const token of ['partOwnership','disabledParts','Viskelæder','Gem kyst og zonegrænser','landpunkt, vandpunkt og vejrdata','coastline-boundary-handle','draggable:true','Zonestregen følger automatisk med'])assert.ok(editorSource.includes(token),`Admin-editor mangler kontrakten: ${token}`);
 assert.ok(dashboardSource.includes('coastalParts'),'Admin-dashboardet skal hente de præcise kystdele til redigering.');
-assert.ok(editorSource.includes('schemaVersion=3'),'Den gamle fallback-editor må ikke nedgradere admin-dokumentet.');
+assert.ok(editorSource.includes('schemaVersion=4'),'Editoren skal bevare kystredigeringens schema 4.');
 console.log('OK: Admin kan flytte og slette zoners kystdele uden dubletter eller tab af den samlede datakontrakt.');

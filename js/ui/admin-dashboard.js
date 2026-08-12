@@ -1,21 +1,21 @@
-import { evaluateRules } from '../core/rule-engine.js?v=4.0.185';
-import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.185';
-import { historicalSummary } from '../services/historical-analysis.js?v=4.0.185';
-import { loadAdaptiveModel, applyApprovedSuggestion, recordDecision, decisionHistory, rollbackAdaptiveModel, listAdaptiveModelVersions, activateAdaptiveModelVersion } from '../core/adaptive-model.js?v=4.0.185';
-import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.185';
-import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.185';
-import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.185';
-import { interpretFreeTextRule } from '../core/free-text-rule-assistant.js?v=4.0.185';
-import { listProfiles, savePermissions, PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.185';
-import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js?v=4.0.185';
-import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.185';
-import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.185';
-import { GEOGRAPHIC_AREAS, matchingZoneIds } from '../core/geographic-areas.js?v=4.0.185';
-import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.185';
-import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.185';
-import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.185';
+import { evaluateRules } from '../core/rule-engine.js?v=4.0.186';
+import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.186';
+import { historicalSummary } from '../services/historical-analysis.js?v=4.0.186';
+import { loadAdaptiveModel, applyApprovedSuggestion, recordDecision, decisionHistory, rollbackAdaptiveModel, listAdaptiveModelVersions, activateAdaptiveModelVersion } from '../core/adaptive-model.js?v=4.0.186';
+import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.186';
+import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.186';
+import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.186';
+import { interpretFreeTextRule } from '../core/free-text-rule-assistant.js?v=4.0.186';
+import { listProfiles, savePermissions, PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.186';
+import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js?v=4.0.186';
+import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.186';
+import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.186';
+import { GEOGRAPHIC_AREAS, matchingZoneIds } from '../core/geographic-areas.js?v=4.0.186';
+import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.186';
+import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.186';
+import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.186';
 
-const VERSION='4.0.185';
+const VERSION='4.0.186';
 const SITE_TEST_MODE=new URLSearchParams(location.search).has('ravradarAdminSiteTest');
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
@@ -27,7 +27,7 @@ const getJson=async url=>{const r=await fetch(url,{cache:'no-store'});if(!r.ok)t
 const download=(name,data)=>{const blob=new Blob([typeof data==='string'?data:JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),0);};
 
 
-const state={access:null,connection:null,storageHealth:null,waterStations:[],waterStationsLoading:true,waterStationsReady:false,waterStationsError:null,stationRoutingAudit:null,waterRouting:{schemaVersion:1,zones:{}},stationMap:null,selectedRoutingZoneId:null,tab:'dashboard',rules:[],zones:[],zoneCollection:{type:'FeatureCollection',features:[]},coastalParts:{zones:{}},zoneRegistry:{counts:{registered:0,active:0,legacy:0}},coastlineDrafts:{schemaVersion:3,overrides:{},partOwnership:{}},selectedCoastlineZoneId:null,conditions:{zones:{}},health:null,runtime:null,oceanDiagnostics:null,cacheAudit:null,implementationAudit:null,editingId:null,profiles:[]};
+const state={access:null,connection:null,storageHealth:null,waterStations:[],waterStationsLoading:true,waterStationsReady:false,waterStationsError:null,stationRoutingAudit:null,waterRouting:{schemaVersion:1,zones:{}},stationMap:null,selectedRoutingZoneId:null,tab:'dashboard',rules:[],zones:[],zoneCollection:{type:'FeatureCollection',features:[]},coastalParts:{zones:{}},zoneRegistry:{counts:{registered:0,active:0,legacy:0}},coastlineDrafts:{schemaVersion:4,overrides:{},partOwnership:{},disabledParts:{}},selectedCoastlineZoneId:null,conditions:{zones:{}},health:null,runtime:null,oceanDiagnostics:null,cacheAudit:null,implementationAudit:null,editingId:null,profiles:[]};
 const content=document.querySelector('#adminContent');
 const ruleDialog=document.querySelector('#ruleDialog');
 const testDialog=document.querySelector('#testDialog');
@@ -89,7 +89,7 @@ async function boot(){
  const remoteRules=await loadAdminDocument('rules',{rules:adminRules()});if(Array.isArray(remoteRules?.rules)){localStorage.setItem(RULES_KEY,JSON.stringify(remoteRules.rules));}
  const remoteReviews=await loadAdminDocument('direction-reviews',{zones:directionReviews()});if(remoteReviews?.zones)localStorage.setItem(DIRECTION_REVIEW_KEY,JSON.stringify(remoteReviews.zones));
  const remoteHistory=await loadAdminDocument('rule-history',{entries:history()});if(Array.isArray(remoteHistory?.entries))localStorage.setItem(HISTORY_KEY,JSON.stringify(remoteHistory.entries));
- const localCoastlineDrafts=(()=>{try{return JSON.parse(localStorage.getItem(COASTLINE_DRAFT_KEY)||'{"schemaVersion":3,"overrides":{},"partOwnership":{}}')}catch{return{schemaVersion:3,overrides:{},partOwnership:{}}}})();state.coastlineDrafts=await loadAdminDocument('coastline-overrides',localCoastlineDrafts);if(!state.coastlineDrafts?.overrides)state.coastlineDrafts={schemaVersion:3,overrides:{},partOwnership:{}};state.coastlineDrafts.partOwnership||={};localStorage.setItem(COASTLINE_DRAFT_KEY,JSON.stringify(state.coastlineDrafts));
+ const localCoastlineDrafts=(()=>{try{return JSON.parse(localStorage.getItem(COASTLINE_DRAFT_KEY)||'{"schemaVersion":4,"overrides":{},"partOwnership":{},"disabledParts":{}}')}catch{return{schemaVersion:4,overrides:{},partOwnership:{},disabledParts:{}}}})();state.coastlineDrafts=await loadAdminDocument('coastline-overrides',localCoastlineDrafts);if(!state.coastlineDrafts?.overrides)state.coastlineDrafts={schemaVersion:4,overrides:{},partOwnership:{},disabledParts:{}};state.coastlineDrafts.partOwnership||={};state.coastlineDrafts.disabledParts||={};localStorage.setItem(COASTLINE_DRAFT_KEY,JSON.stringify(state.coastlineDrafts));
  const shipped=files.flatMap(f=>f.rules||[]).map(r=>({...r,_origin:'projekt'}));state.rules=[...shipped,...adminRules().map(r=>({...r,_origin:'admin'}))];
  render();document.body.dataset.adminReady='true';window.dispatchEvent(new CustomEvent('ravradar:admin-ready',{detail:{version:VERSION,tab:state.tab}}));
 }
@@ -289,7 +289,7 @@ function renderWaterStations(){
  drawAutomatic();drawSelection();drawMap();drawStationSearch();
 }
 
-async function saveCoastlineChanges(document,override){if(!guard('zones_weather_edit'))return{ok:false,error:'Du mangler rettighed til at redigere zoner.'};state.coastlineDrafts=document;localStorage.setItem(COASTLINE_DRAFT_KEY,JSON.stringify(document));const result=await saveAdminDocumentNow('coastline-overrides',document);if(!result.ok)return result;const verified=result.row?.payload;if(override&&!verified?.overrides?.[override.zoneId]?.published)return{ok:false,error:'Central readback indeholdt ikke den gemte zoneændring.'};if(!override&&JSON.stringify(verified?.partOwnership||{})!==JSON.stringify(document.partOwnership||{}))return{ok:false,error:'Central readback indeholdt ikke de gemte zonegrænser.'};state.coastlineDrafts=verified;localStorage.setItem(COASTLINE_DRAFT_KEY,JSON.stringify(verified));if(override){const zone=state.zoneCollection.features?.find(feature=>feature.properties?.id===override.zoneId);if(zone){zone.properties.name=override.zoneName;zone.properties.coastLine=structuredClone(override.coastLine);}const active=state.zones.find(feature=>feature.properties?.id===override.zoneId);if(active){active.properties.name=override.zoneName;active.properties.coastLine=structuredClone(override.coastLine);}}return{ok:true,document:verified};}
+async function saveCoastlineChanges(document,override){if(!guard('zones_weather_edit'))return{ok:false,error:'Du mangler rettighed til at redigere zoner.'};state.coastlineDrafts=document;localStorage.setItem(COASTLINE_DRAFT_KEY,JSON.stringify(document));const result=await saveAdminDocumentNow('coastline-overrides',document);if(!result.ok)return result;const verified=result.row?.payload;if(override&&!verified?.overrides?.[override.zoneId]?.published)return{ok:false,error:'Central readback indeholdt ikke den gemte zoneændring.'};if(!override&&(JSON.stringify(verified?.partOwnership||{})!==JSON.stringify(document.partOwnership||{})||JSON.stringify(verified?.disabledParts||{})!==JSON.stringify(document.disabledParts||{})))return{ok:false,error:'Central readback indeholdt ikke de gemte kyst- og zonegrænser.'};state.coastlineDrafts=verified;localStorage.setItem(COASTLINE_DRAFT_KEY,JSON.stringify(verified));if(override){const zone=state.zoneCollection.features?.find(feature=>feature.properties?.id===override.zoneId);if(zone){zone.properties.name=override.zoneName;zone.properties.coastLine=structuredClone(override.coastLine);}const active=state.zones.find(feature=>feature.properties?.id===override.zoneId);if(active){active.properties.name=override.zoneName;active.properties.coastLine=structuredClone(override.coastLine);}}return{ok:true,document:verified};}
 function renderAdminCoastlineEditor(){renderCoastlineEditor(content,{zones:state.zones,collection:state.zoneCollection,coastalParts:state.coastalParts,document:state.coastlineDrafts,selectedZoneId:state.selectedCoastlineZoneId,onZoneSelected:id=>{state.selectedCoastlineZoneId=id;},onSave:saveCoastlineChanges});}
 
 function renderZones(){content.innerHTML=`<article class="admin-card"><h2>Zoner</h2><div class="toolbar"><input id="zoneSearch" placeholder="Søg zone"><select id="zoneType"><option value="">Alle kysttyper</option>${[...new Set(state.zones.map(z=>z.properties?.coastType).filter(Boolean))].sort().map(x=>`<option>${esc(x)}</option>`).join('')}</select></div></article><div id="zoneList" class="admin-table-wrap"></div>`;const draw=()=>{const q=document.querySelector('#zoneSearch').value.toLowerCase(),t=document.querySelector('#zoneType').value;const rows=state.zones.filter(z=>(!t||z.properties?.coastType===t)&&JSON.stringify(z.properties).toLowerCase().includes(q));document.querySelector('#zoneList').innerHTML=`<table class="admin-table"><thead><tr><th>Zone</th><th>Kysttype</th><th>Område</th><th>Vejrkilde</th></tr></thead><tbody>${rows.slice(0,250).map(z=>{const p=z.properties||{},w=state.conditions.zones?.[p.id]||{};return `<tr><td>${esc(p.name||p.id)}</td><td>${esc(p.coastType||'–')}</td><td>${esc(p.region||p.area||'–')}</td><td>${esc(w.provider||'ingen data')}</td></tr>`}).join('')}</tbody></table>`};document.querySelector('#zoneSearch').oninput=draw;document.querySelector('#zoneType').onchange=draw;draw();}
@@ -373,7 +373,7 @@ function renderObservations(){const obs=JSON.parse(localStorage.getItem('ravrada
 async function renderUsers(){
  content.innerHTML=`<article class="admin-card"><h2>Eksperter og rettigheder</h2><p class="muted">Få, brede tilladelser. Du kan til enhver tid ændre dem igen.</p><div id="profilesList" class="admin-grid"><p class="muted">Henter brugere…</p></div></article>`;
  const host=document.querySelector('#profilesList');
- try{state.profiles=await listProfiles();if(!state.profiles.length){host.innerHTML='<div class="empty">Ingen profiler blev fundet. Kør SQL-opdateringen til 4.0.185 i Supabase én gang.</div>';return;}
+ try{state.profiles=await listProfiles();if(!state.profiles.length){host.innerHTML='<div class="empty">Ingen profiler blev fundet. Kør SQL-opdateringen til 4.0.186 i Supabase én gang.</div>';return;}
  host.innerHTML=state.profiles.map(profile=>{const active=new Set((profile.user_permissions||[]).filter(x=>x.enabled).map(x=>x.permission_key));return `<article class="admin-card permission-card" data-user-id="${esc(profile.id)}"><div class="rule-card-head"><div><h3>${esc(profile.display_name||profile.email)}</h3><p class="muted">${esc(profile.email||'')} · ${esc(profile.role||'expert')}</p></div><span class="badge ${profile.is_active!==false?'active':'draft'}">${profile.is_active!==false?'Aktiv':'Deaktiveret'}</span></div><div class="permission-list">${PERMISSIONS.map(p=>`<label class="permission-option"><input type="checkbox" name="${esc(p.id)}" ${active.has(p.id)||profile.role==='owner'?'checked':''} ${profile.role==='owner'?'disabled':''}><span>${esc(p.label)}</span></label>`).join('')}</div>${profile.role==='owner'?'<p class="hint">Owner har altid alle rettigheder.</p>':'<button class="admin-button save-user-permissions" type="button">Gem rettigheder</button><p class="form-status"></p>'}</article>`}).join('');
  host.querySelectorAll('.save-user-permissions').forEach(button=>button.onclick=async()=>{const card=button.closest('[data-user-id]');const status=card.querySelector('.form-status');const values={};PERMISSIONS.forEach(p=>values[p.id]=card.querySelector(`[name="${p.id}"]`).checked);button.disabled=true;status.textContent='Gemmer…';try{await savePermissions(card.dataset.userId,values);status.textContent='Rettighederne er gemt og gælder med det samme.';}catch(error){status.textContent=error.message;}finally{button.disabled=false;}});
  }catch(error){host.innerHTML=`<div class="empty">${esc(error.message)}</div>`;}

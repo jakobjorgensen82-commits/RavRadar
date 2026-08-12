@@ -5,6 +5,13 @@
 - Eksisterende funktioner må ikke forsvinde eller blive afkoblet som utilsigtet bivirkning af nyt arbejde. Bevidst fjernelse kræver en udtrykkelig aktuel ejerbeslutning og skal afgrænses til det bestilte.
 - Releasekontrol skal sammenligne den berørte funktionsflade før og efter på tværs af offentlig UI, admin, data/runtime og deployment. Tavst funktionstab er en releaseblokker.
 
+## 4.0.186-kandidat – trækbar kystgrænse og privat fallbackrecovery
+
+- Admin kan trække hovedzonens kystende til en eksisterende valideret nabokystdel. Ejerskab, geometri, land-/vandpunkt, DMI- og scoreidentitet flyttes samlet, og zoneafgrænsningen følger automatisk.
+- Et reversibelt viskelæder kan deaktivere en hel valideret del. Central schema-4-readback og produktionsbyggeren behandler geometri og datakontrakt samlet.
+- Fri ny kysttegning bliver ikke behandlet som valideret DMI-data. Helt ny geometri skal fortsat gennem private punkt-, grid-, shadow-score-, runtime- og rollbackgates.
+- Havnø/Mariager Fjord forbliver slettet. En privat, ikke-aktiverbar officiel-kystkandidat analyserer de fem øvrige fallbackzoner og den fejlplacerede Lolland vest/Albuen. Den lokale kandidat er reduceret til 21 sammenhængende dele med 21/21 foreslåede punktpar; ejer- og DMI-gates mangler.
+
 ## 4.0.185-kandidat – lokalt delkort og ryddet zonepanel
 
 - Zoneforklaringen har en behovsstyret “Hvor er det?”-knap, som viser de allerede indlæste præcise kystdele med navne på hovedkortet og zoomer til zonen. Der tilføjes ingen billedfiler eller ekstra normal datahentning.

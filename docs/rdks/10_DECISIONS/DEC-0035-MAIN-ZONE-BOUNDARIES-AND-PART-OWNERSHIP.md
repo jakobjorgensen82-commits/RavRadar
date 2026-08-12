@@ -12,6 +12,8 @@
 - Kystdelens geometri, ID, landpunkt, vandpunkt, DMI-gridbevis og lokale dataserie bevares samlet. Kun hovedzoneejeren ændres.
 - En kystdel må have præcis én aktiv hovedzoneejer. Et adminvalg til en ukendt eller slettet zone stopper bygningen.
 - Ved sletning af en hovedzone fjernes dens resterende kystdele fra offentlig runtime. Dele, som skal bevares, flyttes til en aktiv nabozone før sletningen.
+- Admin viser trækbare endehåndtag på den præcise kyst. Et træk kan kun lande på en eksisterende, valideret nabokystdel; zonens synlige afgrænsning følger automatisk det nye ejerskab.
+- Et viskelæder kan deaktivere en hel valideret kystdel og hele dens punkt-/DMI-kontrakt samlet. Handlingen er reversibel og gemmes centralt med readback.
 
 ## Begrundelse
 

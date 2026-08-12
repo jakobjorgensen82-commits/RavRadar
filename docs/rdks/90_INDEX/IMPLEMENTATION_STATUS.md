@@ -1,4 +1,13 @@
-# Implementeringsstatus pr. 4.0.185 – produktionsverificeret
+# Implementeringsstatus pr. 4.0.186 – lokal kandidat
+
+- [x] Admin-endepunkter kan trækkes til en eksisterende valideret nabokystdel.
+- [x] Viskelæder deaktiverer/gendanner en hel del og dens punkt-/DMI-kontrakt samlet.
+- [x] Central schema-4-readback validerer både ejerskab og deaktiveringer.
+- [x] Produktionsbyggeren publicerer ikke centralt deaktiverede dele.
+- [x] Privat fallbackrecovery bevarer `DK-B02-14` som slettet og giver 21 officielle kandidatdele med 21/21 foreslåede punktpar.
+- [ ] Fallbackkandidatens hovedzoneejerskab, DMI-grid, shadow-score, runtime og rollback skal bestå privat før ejerreview eller aktivering.
+
+## 4.0.185 – produktionsverificeret
 
 - [x] Offentlig “Hvad fandt du?”-formular fjernet uden at slette tur-/observationsinfrastruktur.
 - [x] “Hvor er det?” tegner eksisterende kystdele ved klik, viser navne og zoomer til hovedzonen.

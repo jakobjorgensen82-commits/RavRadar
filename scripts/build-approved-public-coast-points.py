@@ -63,10 +63,11 @@ def point_pair(geometry, land_witness, water_witness, offset=120):
     return lonlat(middle), lonlat(land_point), lonlat(water_point), bearing
 
 
-def build(candidate, zones):
+def build(candidate, zones, evidence=None):
     zone_props = {feature["properties"]["id"]: feature["properties"] for feature in zones.get("features") or []}
     local_evidence = []
-    for evidence_zone_id, evidence_parts in (candidate.get("zones") or {}).items():
+    evidence_source = evidence or candidate
+    for evidence_zone_id, evidence_parts in (evidence_source.get("zones") or {}).items():
         for evidence_part in evidence_parts:
             if evidence_part.get("geometry") and evidence_part.get("landPoint") and evidence_part.get("waterPoint"):
                 local_evidence.append((
@@ -161,11 +162,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--candidate", type=Path, default=ROOT / ".geometry-v2-work/approved-public-coast-candidate.json")
     parser.add_argument("--zones", type=Path, default=ROOT / "data/zones.geojson")
+    parser.add_argument("--evidence", type=Path, help="Optional active kystdele used only as directional land/water witnesses")
     parser.add_argument("--output", type=Path, default=ROOT / ".geometry-v2-work/approved-public-coast-point-pairs.json")
     parser.add_argument("--candidate-output", type=Path, default=ROOT / ".geometry-v2-work/approved-public-coast-candidate-with-points.json")
     parser.add_argument("--plan-output", type=Path)
     args = parser.parse_args()
-    report = build(load(args.candidate), load(args.zones))
+    report = build(load(args.candidate), load(args.zones), load(args.evidence) if args.evidence else None)
     candidate = attach(load(args.candidate), report)
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     args.candidate_output.write_text(json.dumps(candidate, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")

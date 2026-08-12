@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.185
+**Håndbogsversion:** 4.0.186
 
 **Opdateret:** 1. august 2026
 
@@ -1562,3 +1562,9 @@ Vadehavets fastlandskyst fra Emmerlev mod Esbjerg indgår i tre hovedzoner. Røm
 Brugeren ser fortsat én scorefarve, ét navn, én klikflade og kun en sort grænsemarkering ved hver ende af hovedzonen. Interne beregningsdele skaber ingen sorte markeringer. RavScore-reglerne er uændrede.
 
 Den aktive kyst kan efterfølgende kontrolleres uden at bygge en ny kandidat. Et privat read-only kontrolkort læser den versions- og hash-låste produktionsbestand, viser først hele Danmark og kan derefter søge og zoome til hver lokal del. Kortet må dokumentere mulige problemer, men må ikke aktivere eller rette geometri automatisk. En ændring kræver fortsat dokumenteret årsag, relevant ejerafgørelse og de fulde geometri-, DMI-, runtime- og releasegates.
+
+## Redigering af hovedzonens kystgrænse
+
+I administrationen redigeres den præcise kyststreg. Et endehåndtag kan trækkes hen til en eksisterende valideret nabokystdel. Når flytningen gemmes, følger kystdelens geometri, landpunkt, vandpunkt, DMI-grid og lokale scoreidentitet samlet med; zonens afgrænsning følger automatisk.
+
+Viskelæderet deaktiverer en hel valideret kystdel og dens datakontrakt samlet. Den stiplede del kan gendannes, før eller efter central gemning. Værktøjet opfinder ikke målepunkter til en frit tegnet ny linje. En helt ny kystdel skal først gennem den private geometri-, punkt-, DMI- og score-neutrale kontrol.

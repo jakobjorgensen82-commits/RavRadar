@@ -8,7 +8,7 @@ import {
   movePoint,
   removePoint,
   validateCoastLine
-} from '../core/coastline-editor-model.js?v=4.0.185';
+} from '../core/coastline-editor-model.js?v=4.0.186';
 
 let editorMap = null;
 let mapLayers = [];
@@ -73,12 +73,30 @@ function effectiveOwner(config, part) {
   return config.document.partOwnership?.[part.partId]?.targetZoneId || part.shippedZoneId;
 }
 
+function isDisabled(config, part) {
+  const row = config.document.disabledParts?.[part.partId];
+  return row?.disabled === true && row?.published === true;
+}
+
+function assignPartToSelectedZone(state, part) {
+  const selected=state.zone.properties.id;
+  state.config.document.partOwnership||={};
+  if(selected===part.sourceZoneId)delete state.config.document.partOwnership[part.partId];
+  else state.config.document.partOwnership[part.partId]={targetZoneId:selected,published:true,updatedAt:new Date().toISOString()};
+  state.config.document.schemaVersion=4;state.config.document.updatedAt=new Date().toISOString();state.config.ownershipDirty=true;state.ownershipDirty=true;
+}
+
+function squaredDistance(a,b) {
+  const dx=Number(a[0])-Number(b[0]),dy=Number(a[1])-Number(b[1]);
+  return dx*dx+dy*dy;
+}
+
 function renderOwnershipStatus(state) {
   const box=document.querySelector('#coastlineOwnershipStatus');
   if(!box)return;
   const parts=ownershipParts(state.config),selected=state.zone.properties.id;
-  const owned=parts.filter(part=>effectiveOwner(state.config,part)===selected);
-  const changed=Object.keys(state.config.document.partOwnership||{}).length;
+  const owned=parts.filter(part=>effectiveOwner(state.config,part)===selected&&!isDisabled(state.config,part));
+  const changed=Object.keys(state.config.document.partOwnership||{}).length+Object.keys(state.config.document.disabledParts||{}).length;
   box.innerHTML=`<b>${owned.length} præcise kystdele tilhører ${esc(state.zone.properties.name||selected)}</b><span>${changed} gemte eller ventende flytning(er) i alt. Klik på en grå nabostrækning på kortet for at føje den til denne hovedzone.</span>`;
   const save=document.querySelector('#saveCoastlineOwnership');
   if(save)save.disabled=!state.ownershipDirty;
@@ -93,23 +111,49 @@ function drawOwnershipOverlay(state) {
   const lons=reference.map(point=>Number(point[0])),lats=reference.map(point=>Number(point[1]));
   const box={minLon:Math.min(...lons)-.22,maxLon:Math.max(...lons)+.22,minLat:Math.min(...lats)-.14,maxLat:Math.max(...lats)+.14};
   const relevant=part=>geometryLines(part.geometry).flat().some(([lon,lat])=>lon>=box.minLon&&lon<=box.maxLon&&lat>=box.minLat&&lat<=box.maxLat);
-  for(const part of parts.filter(relevant)){
-    const owner=effectiveOwner(state.config,part),isSelected=owner===selected;
+  const nearbyParts=parts.filter(relevant);
+  for(const part of nearbyParts){
+    const owner=effectiveOwner(state.config,part),disabled=isDisabled(state.config,part),isSelected=owner===selected&&!disabled;
     for(const line of geometryLines(part.geometry)){
       if(line.length<2)continue;
-      const layer=addLayer(L.polyline(line.map(([lon,lat])=>[lat,lon]),{color:isSelected?'#ff7a2f':'#68737d',weight:isSelected?9:6,opacity:isSelected ? .92 : .55,interactive:!isSelected}));
+      const layer=addLayer(L.polyline(line.map(([lon,lat])=>[lat,lon]),{color:disabled?'#b7bec4':isSelected?'#ff7a2f':'#68737d',dashArray:disabled?'4 8':null,weight:isSelected?9:6,opacity:disabled ? .35 : (isSelected ? .92 : .55),interactive:true}));
       const ownerName=state.config.zones.find(zone=>zone.properties?.id===owner)?.properties?.name||owner;
       layer.bindTooltip(isSelected?`${part.name} · tilhører denne zone`:`${part.name} · tilhører ${ownerName} · klik for at flytte`);
-      if(!isSelected)layer.on('click',event=>{
+      layer.on('click',event=>{
         L.DomEvent.stopPropagation(event);
+        if(state.eraseMode){
+          if(owner!==selected&&state.config.document.disabledParts?.[part.partId]?.previousZoneId!==selected)return;
+          state.config.document.disabledParts||={};
+          if(disabled)delete state.config.document.disabledParts[part.partId];
+          else state.config.document.disabledParts[part.partId]={disabled:true,published:true,previousZoneId:owner,updatedAt:new Date().toISOString()};
+          state.config.document.schemaVersion=4;state.config.document.updatedAt=new Date().toISOString();state.config.ownershipDirty=true;state.ownershipDirty=true;
+          drawMap(state);renderOwnershipStatus(state);return;
+        }
+        if(isSelected||disabled)return;
         if(!confirm(`Flyt kystdelen “${part.name}” fra ${ownerName} til ${state.zone.properties.name||selected}?`))return;
-        state.config.document.partOwnership||={};
-        if(selected===part.sourceZoneId)delete state.config.document.partOwnership[part.partId];
-        else state.config.document.partOwnership[part.partId]={targetZoneId:selected,published:true,updatedAt:new Date().toISOString()};
-        state.config.document.schemaVersion=3;state.config.document.updatedAt=new Date().toISOString();state.config.ownershipDirty=true;state.ownershipDirty=true;
+        assignPartToSelectedZone(state,part);
         drawMap(state);renderOwnershipStatus(state);
       });
     }
+  }
+
+  const owned=parts.filter(part=>effectiveOwner(state.config,part)===selected&&!isDisabled(state.config,part));
+  const ownedPoints=owned.flatMap(part=>geometryLines(part.geometry).flat());
+  const guideEnds=[state.line[0],state.line.at(-1)].filter(Boolean);
+  for(const guide of guideEnds){
+    const endpoint=ownedPoints.reduce((best,point)=>!best||squaredDistance(point,guide)<squaredDistance(best,guide)?point:best,null);
+    if(!endpoint)continue;
+    const handle=addLayer(L.marker([endpoint[1],endpoint[0]],{draggable:true,icon:L.divIcon({className:'coastline-boundary-handle',html:'<span>↔</span>',iconSize:[34,34],iconAnchor:[17,17]})}));
+    handle.bindTooltip('Træk zoneenden hen på den præcise nabokyst');
+    handle.on('dragend',event=>{
+      const ll=event.target.getLatLng(),drop=[ll.lng,ll.lat];
+      const candidates=nearbyParts.filter(part=>effectiveOwner(state.config,part)!==selected&&!isDisabled(state.config,part));
+      const nearest=candidates.map(part=>({part,distance:Math.min(...geometryLines(part.geometry).flat().map(point=>squaredDistance(point,drop)))})).sort((a,b)=>a.distance-b.distance)[0];
+      if(!nearest||nearest.distance>.000025){drawMap(state);return;}
+      const owner=effectiveOwner(state.config,nearest.part),ownerName=state.config.zones.find(zone=>zone.properties?.id===owner)?.properties?.name||owner;
+      if(confirm(`Udvid ${state.zone.properties.name||selected} med kystdelen “${nearest.part.name}” fra ${ownerName}?`))assignPartToSelectedZone(state,nearest.part);
+      drawMap(state);renderOwnershipStatus(state);
+    });
   }
 }
 
@@ -203,7 +247,8 @@ function selectZone(config, zoneId) {
     note: override?.note || '',
     disabled: override?.disabled === true,
     dirty: false,
-    ownershipDirty:Boolean(config.ownershipDirty)
+    ownershipDirty:Boolean(config.ownershipDirty),
+    eraseMode:false
   };
   document.querySelector('#coastlineZone').value = zone.properties.id;
   document.querySelector('#coastlineNote').value = activeState.note;
@@ -261,7 +306,8 @@ export function renderCoastlineEditor(content, config) {
           <p>De orange strækninger tilhører den valgte hovedzone. Grå strækninger tilhører nabozoner. Klik på en grå strækning for at flytte hele den præcise kystdel med dens landpunkt, vandpunkt og vejrdata til den valgte zone.</p>
           <p>Hvis en zone skal gøres kortere, vælger du først den hovedzone, som skal overtage stykket, og klikker derefter på stykket.</p>
           <div id="coastlineOwnershipStatus" class="coastline-ownership-status" aria-live="polite"></div>
-          <div class="toolbar"><button id="saveCoastlineOwnership" class="admin-button" disabled>Gem nye zonegrænser</button></div>
+          <div class="toolbar"><button id="coastlineExtendMode" class="admin-button secondary active" type="button">Træk/udvid kyst</button><button id="coastlineEraseMode" class="admin-button danger" type="button">Viskelæder</button><button id="saveCoastlineOwnership" class="admin-button" disabled>Gem kyst og zonegrænser</button></div>
+          <p class="hint">Redigér den præcise kyststreg. Zonestregen følger automatisk med. Viskelæderet fjerner en hel kontrolleret kystdel med dens punkt- og DMI-tilknytning og kan gendannes ved at klikke på den stiplede linje igen.</p>
           <p id="coastlineOwnershipSaveStatus" class="hint">Intet offentliggøres, før ændringen er gemt centralt og har bestået produktionskontrollen.</p>
         </fieldset>
         <fieldset class="coastline-tools"><legend>Fallback-/referencelinje</legend>
@@ -339,6 +385,8 @@ export function renderCoastlineEditor(content, config) {
     selectAndSync(event.target.value);
   });
   document.querySelector('#coastlineZoneName').addEventListener('input',()=>{if(activeState)activeState.dirty=true;});
+  document.querySelector('#coastlineExtendMode').onclick=()=>{if(!activeState)return;activeState.eraseMode=false;document.querySelector('#coastlineExtendMode').classList.add('active');document.querySelector('#coastlineEraseMode').classList.remove('active');drawMap(activeState);};
+  document.querySelector('#coastlineEraseMode').onclick=()=>{if(!activeState)return;activeState.eraseMode=true;document.querySelector('#coastlineEraseMode').classList.add('active');document.querySelector('#coastlineExtendMode').classList.remove('active');drawMap(activeState);};
   document.querySelector('#saveCoastlineOwnership').addEventListener('click',async()=>{
     if(!activeState?.ownershipDirty)return;
     const button=document.querySelector('#saveCoastlineOwnership'),status=document.querySelector('#coastlineOwnershipSaveStatus');
@@ -396,7 +444,7 @@ export function renderCoastlineEditor(content, config) {
     button.disabled=true;button.textContent='Gemmer…';status.textContent='Gemmer centralt og kontrollerer readback…';
     const override = createOverride(activeState.zone, activeState.line, document.querySelector('#coastlineNote').value, zoneName);
     config.document.overrides[override.zoneId] = override;
-    config.document.schemaVersion=3;
+    config.document.schemaVersion=4;
     config.document.updatedAt = new Date().toISOString();
     const result=await config.onSave(config.document,override);
     button.disabled=false;button.textContent='Gem ændringer';
