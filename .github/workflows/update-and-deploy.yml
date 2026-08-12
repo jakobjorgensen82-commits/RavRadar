@@ -73,6 +73,11 @@ jobs:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           WEATHER_USER_AGENT: "RavRadar/4.0.29 (${{ github.server_url }}/${{ github.repository }})"
 
+      - name: Preserve deployed DMI zone cache as safe fallback
+        run: |
+          mkdir -p .cache
+          cp data/live/dmi-bulk-cache.json .cache/deployed-dmi-bulk-cache.json
+
       - name: Test Supabase persistence roundtrip
         if: github.event_name == 'push' || inputs.force == true
         run: node scripts/test-supabase-persistence.mjs
@@ -133,6 +138,16 @@ jobs:
             dmi-grib-v4-${{ runner.os }}-
             dmi-grib-v3-${{ runner.os }}-
 
+      - name: Restore progressive private DMI zone cache
+        if: steps.preflight.outputs.should_run == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: data/live/dmi-bulk-cache.json
+          key: dmi-zone-cache-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            dmi-zone-cache-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-
+            dmi-zone-cache-v1-${{ runner.os }}-
+
       - name: Update DMI bulk model cache
         if: steps.preflight.outputs.should_run == 'true'
         id: dmi-bulk
@@ -153,6 +168,7 @@ jobs:
           DMI_BULK_COMPLETE_HORIZON_HOURS: 96
           DMI_BULK_FORCE_REFRESH: ${{ steps.preflight.outputs.dmi_changed }}
           DMI_BULK_RAW_DIR: .cache/dmi-grib
+          DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/deployed-dmi-bulk-cache.json
           WEATHER_USER_AGENT: "RavRadar/4.0.29 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
@@ -162,6 +178,13 @@ jobs:
         with:
           path: .cache/dmi-grib
           key: dmi-grib-v4-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Save progressive private DMI zone cache
+        if: steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: data/live/dmi-bulk-cache.json
+          key: dmi-zone-cache-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Report DMI bulk result
         if: steps.preflight.outputs.should_run == 'true' && always()

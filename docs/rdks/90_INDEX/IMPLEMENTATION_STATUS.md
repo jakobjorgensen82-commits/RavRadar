@@ -1,4 +1,14 @@
-# Implementeringsstatus pr. 4.0.187 – lokal releasekandidat
+# Implementeringsstatus pr. 4.0.188 – lokal releasekandidat
+
+## Progressiv DMI-recovery uden offentlig bypass
+
+- [x] Dokumenteret gentagen fejl: 85/210 hovedzoner med verificeret aktuelt marine U/V-par.
+- [x] Dokumenteret, at fejlen også fandtes før 4.0.187 og ikke skyldes de seks kystzoner.
+- [x] Privat progressiv `dmi-bulk-cache.json` gendannes før DMI-builderen og gemmes før fuld validering.
+- [x] Kun en vellykket cache med aktuel registersignatur kan fortsætte; senest deployede cache bevares som kompatibel fallback, og fejl/afbrydelser gemmes ikke.
+- [x] Offentlig Pages-artifact/deploy kræver fortsat alle eksisterende gates.
+- [ ] Friske GitHub-kørsler skal bevise voksende dækning og til sidst grøn current-spatial audit.
+- [ ] Derefter opdateres land/hav-admin til lokale kystdele med eksisterende filterrangering bevaret.
 
 ## Fem-zoneaktivering
 

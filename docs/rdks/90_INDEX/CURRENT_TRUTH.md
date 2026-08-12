@@ -1,5 +1,12 @@
 # Current truth – gældende projektviden
 
+## 4.0.188 – progressiv privat DMI-zonecache
+
+- Gentagne produktionskørsler stoppede korrekt ved den strenge strømaudit, fordi kun 85/210 hovedzoner havde verificerede aktuelle marine U/V-gitterpunkter.
+- Fejlen fandtes før 4.0.187-kystændringen. De downloadede GRIB-filer blev bevaret, men den afledte `dmi-bulk-cache.json` gik tabt, når releasegaten stoppede deployment; næste kørsel begyndte derfor igen fra den samme utilstrækkelige offentlige cache.
+- Workflowet gendanner og gemmer nu kun en vellykket afledt zonecache i GitHub Actions' private cache før releasegaten. Builderen sammenligner den med den senest deployede cache og accepterer kun kandidater med signatur for præcis det aktuelle zone-, kystdels- og punktregister. Offentligt artifact og deploy er fortsat låst bag uændret fuld validering og releasegate.
+- Ingen DMI-audit, dækningsgrænse, fallback, RavScore eller kystgeometri er ændret.
+
 ## Bindende regressionsregel
 
 - Eksisterende funktioner må ikke forsvinde eller blive afkoblet som utilsigtet bivirkning af nyt arbejde. Bevidst fjernelse kræver en udtrykkelig aktuel ejerbeslutning og skal afgrænses til det bestilte.

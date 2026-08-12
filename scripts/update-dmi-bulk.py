@@ -41,6 +41,7 @@ ZONES_PATH = ROOT / "data/zones.geojson"
 COASTAL_PART_POINTS_PATH = ROOT / "data/geometry-v2/active-national-coastal-parts/point-pairs.json"
 WATER_SOURCES_PATH = ROOT / "data/live/dmi-water-stations.json"
 OUTPUT_PATH = ROOT / "data/live/dmi-bulk-cache.json"
+DEPLOYED_FALLBACK_PATH = pathlib.Path(os.getenv("DMI_BULK_DEPLOYED_FALLBACK_PATH", str(ROOT / ".cache/deployed-dmi-bulk-cache.json")))
 DIAGNOSTICS_JSON_PATH = ROOT / "data/diagnostics/dmi-ocean-diagnostics.json"
 DIAGNOSTICS_TEXT_PATH = ROOT / "data/diagnostics/dmi-ocean-summary.txt"
 RAW_DIR = pathlib.Path(os.getenv("DMI_BULK_RAW_DIR", str(ROOT / ".cache/dmi-grib")))
@@ -1029,11 +1030,31 @@ def wind_from_uv(hour: dict[str, Any]) -> None:
         hour["wind-tail-dir-10m"] = (math.degrees(math.atan2(-tail_u, -tail_v)) + 360.0) % 360.0
 
 
-def load_previous() -> dict[str, Any]:
+def load_document(path: pathlib.Path) -> dict[str, Any]:
     try:
-        return json.loads(OUTPUT_PATH.read_text("utf-8"))
+        value = json.loads(path.read_text("utf-8"))
+        return value if isinstance(value, dict) else {}
     except Exception:
-        return {"schemaVersion": 2, "zones": {}, "runs": {}}
+        return {}
+
+
+def cache_quality(document: dict[str, Any]) -> tuple[int, int, float]:
+    zones = document.get("zones") or {}
+    complete_current = 0
+    component_rows = 0
+    for zone in zones.values():
+        rows = (zone or {}).get("hourly") or {}
+        complete_current += int(any("current-u" in row and "current-v" in row for row in rows.values()))
+        component_rows += sum(len([key for key in row if key in PARAMETER_COMPONENT]) for row in rows.values())
+    return complete_current, component_rows, epoch(document.get("generatedAt"))
+
+
+def load_previous(expected_signature: str) -> dict[str, Any]:
+    candidates = [load_document(OUTPUT_PATH), load_document(DEPLOYED_FALLBACK_PATH)]
+    compatible = [document for document in candidates if document.get("zoneRegistrySignature") == expected_signature and document.get("zones")]
+    if not compatible:
+        return {"schemaVersion": 2, "zones": {}, "runs": {}, "zoneRegistrySignature": expected_signature}
+    return max(compatible, key=cache_quality)
 
 
 def merge_previous(current: dict[str, Any], previous: dict[str, Any], allowed_zone_ids: set[str] | None = None) -> None:
@@ -1520,13 +1541,13 @@ def write_failure_summary(error: Exception) -> None:
 def main() -> int:
     progress(f"starter; arbejdsbudget={MAX_RUNTIME_SECONDS - FINALIZE_RESERVE_SECONDS}s, afslutningsreserve={FINALIZE_RESERVE_SECONDS}s")
     cache_before = raw_cache_inventory()
-    previous = load_previous()
     signature_bytes = (
         ZONES_PATH.read_bytes()
         + (WATER_SOURCES_PATH.read_bytes() if WATER_SOURCES_PATH.exists() else b'')
         + (COASTAL_PART_POINTS_PATH.read_bytes() if COASTAL_PART_POINTS_PATH.exists() else b'')
     )
     current_zone_registry_signature = hashlib.sha256(signature_bytes).hexdigest()[:16]
+    previous = load_previous(current_zone_registry_signature)
     previous_zone_registry_signature = previous.get("zoneRegistrySignature")
     zone_registry_unchanged = previous_zone_registry_signature == current_zone_registry_signature
     previous_generated = epoch(previous.get("generatedAt"))

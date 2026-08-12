@@ -926,3 +926,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Fejø/Femø er fjernet fra zoneregister og præcis kystpakke og registreret som central administratorsletning i Supabase `direction-reviews` version 315.
 - Den aktive kandidat har 651 kystdele i 210 effektive zoner, 651 punktpar, nul ugyldige punktpar og nul overlap. Privat #31609637964 havde allerede bestået geometri, native DMI, runtime og rollback for det godkendte grundlag.
 - Den tidligere aktive kyst og zoneregisteret er bevaret i `data/geometry-v2/rollback-4.0.186-before-five-zone-coast/`. Ingen anden fungerende national geometri er ændret.
+
+## 2026-08-12 – 4.0.188 progressiv DMI-zonecache
+
+- Flere runs på både før- og efter-4.0.187-kode stoppede samme sted: current-spatial-auditen fandt kun 85/210 verificerede hovedzoner.
+- GRIB-downloadcachen fortsatte, men den opbyggede DMI-zonecache blev kun bevaret ved et grønt deploy. Det nulstillede den afledte fremdrift efter hver rød releasegate.
+- GitHub Actions gemmer nu kun en vellykket zonecache privat før releasegaten og gendanner den før næste DMI-opbygning. Builderen vælger mellem privat fremdrift og senest deployede cache efter datadækning, men kun når registersignaturen matcher aktuelle zoner, dele og punkter. Uvaliderede data deployes stadig ikke, og audits er uændrede.

@@ -1,8 +1,12 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.187
+**Håndbogsversion:** 4.0.188
 
 **Opdateret:** 1. august 2026
+
+## Progressiv DMI-opbygning
+
+RavRadar bygger DMI-dækningen over flere begrænsede GitHub-kørsler. Både de downloadede modelfiler og en vellykket afledt privat zonecache bevares som arbejdsfremdrift. Cachen må kun genbruges, når den passer til præcis de aktuelle zoner, kystdele og land/hav-punkter; efter en relevant adminændring begynder de berørte data derfor sikkert forfra. Hvis den strenge datakontrol stopper en kørsel, bliver de ufærdige data ikke lagt på den offentlige side, men næste kørsel kan fortsætte fra et kompatibelt grundlag. Manglende data forbliver manglende; kontrollens krav og RavScore ændres ikke.
 
 ## Aktuel afgrænsning af kystarbejdet
 

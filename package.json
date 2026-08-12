@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.187",
+  "version": "4.0.188",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -34,6 +34,7 @@
     "test:admin-direction-audit": "node scripts/test-admin-direction-audit.mjs",
     "test:direction-anchors": "node scripts/test-direction-anchors.mjs",
     "test:dmi-bulk": "node scripts/test-dmi-bulk-model-download.mjs",
+    "test:dmi-progressive-zone-cache": "node scripts/test-dmi-progressive-zone-cache-4.0.188.mjs",
     "test:dmi-bulk-forecast-integration": "node scripts/test-dmi-bulk-forecast-integration.mjs",
     "test:forecast-integrity": "node scripts/test-forecast-integrity-4.0.17.mjs",
     "test:admin-persistence": "node scripts/test-admin-persistence-4.0.18.mjs && node scripts/test-supabase-quota-controls.mjs && python scripts/test_sync_admin_config_activation.py",
