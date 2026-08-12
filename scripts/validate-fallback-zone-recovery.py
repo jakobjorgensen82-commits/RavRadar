@@ -13,6 +13,21 @@ from shapely.ops import transform
 ROOT = Path(__file__).resolve().parents[1]
 TO_M = Transformer.from_crs(4326, 25832, always_xy=True).transform
 ALLOWED = {"DK-B07-19", "DK-B10-14", "DK-B10-16"}
+EXPECTED_MOVE_OWNERS = {
+    "dk-b08-10-national-part-01": "DK-B08-10",
+    "dk-b08-10-national-part-02": "DK-B08-10",
+    "dk-b08-10-national-part-03": "DK-B08-10",
+    "dk-b08-17-national-part-01": "DK-B08-17",
+    "dk-b08-17-national-part-02": "DK-B08-17",
+    "dk-b09-01-national-part-01": "DK-B09-01",
+    "dk-b09-01-national-part-05": "DK-B09-01",
+    "dk-b10-14-national-part-01-locality-01": "DK-B10-14",
+    "dk-b10-14-national-part-01-locality-02": "DK-B10-14",
+}
+EXPECTED_REPLACED_OWNER = {
+    "dk-b10-14-national-part-02-locality-01": "DK-B10-14",
+    "dk-b10-14-national-part-02-locality-02": "DK-B10-14",
+}
 
 
 def load(path):
@@ -24,11 +39,14 @@ def main():
     parser.add_argument("--candidate", type=Path, default=ROOT / ".geometry-v2-work/fallback-zone-recovery-candidate.geojson")
     parser.add_argument("--points", type=Path, default=ROOT / ".geometry-v2-work/fallback-zone-recovery-point-pairs.json")
     parser.add_argument("--active", type=Path, default=ROOT / "data/live/coastal-parts-v2.json")
+    parser.add_argument("--plan", type=Path, default=ROOT / ".geometry-v2-work/fallback-zone-recovery-report.json")
     parser.add_argument("--output", type=Path, default=ROOT / ".geometry-v2-work/fallback-zone-recovery-validation.json")
     args = parser.parse_args()
 
     features = load(args.candidate).get("features") or []
     point_rows = load(args.points).get("parts") or []
+    active_document = load(args.active)
+    plan = load(args.plan)
     ids = [feature["properties"]["partId"] for feature in features]
     zones = {feature["properties"]["zoneId"] for feature in features}
     errors = []
@@ -38,6 +56,30 @@ def main():
         errors.append("Kandidat-ID'er er ikke unikke")
     if "DK-B02-14" in zones:
         errors.append("Den slettede Havnø/Mariager-zone er genoplivet")
+
+    active_index = {}
+    for owner, parts in (active_document.get("zones") or {}).items():
+        for part in parts:
+            active_index.setdefault(part.get("partId"), []).append(owner)
+    planned_moves = {
+        part_id: target
+        for target, part_ids in (plan.get("ownershipMoves") or {}).items()
+        for part_id in part_ids
+    }
+    if set(planned_moves) != set(EXPECTED_MOVE_OWNERS):
+        errors.append("Ejerskabsplanen har en uventet bestand af flyttede dele")
+    for part_id, source_owner in EXPECTED_MOVE_OWNERS.items():
+        owners = active_index.get(part_id) or []
+        if owners != [source_owner]:
+            errors.append(f"{part_id} findes ikke entydigt hos forventet ejer {source_owner}: {owners}")
+        if planned_moves.get(part_id) in {None, source_owner}:
+            errors.append(f"{part_id} mangler en ny, anden hovedzoneejer")
+    planned_replacements = set(plan.get("replacedPartsToDisableAfterDmiApproval") or [])
+    if planned_replacements != set(EXPECTED_REPLACED_OWNER):
+        errors.append("Erstatningsplanen har en uventet bestand af gamle dele")
+    for part_id, owner in EXPECTED_REPLACED_OWNER.items():
+        if active_index.get(part_id) != [owner]:
+            errors.append(f"{part_id} findes ikke entydigt hos forventet ejer {owner}")
 
     metric = [(feature, transform(TO_M, shape(feature["geometry"]))) for feature in features]
     for feature, geometry in metric:
@@ -62,7 +104,7 @@ def main():
         errors.append(f"{len(candidate_overlaps)} overlap mellem kandidatens hovedzoner")
 
     active_overlaps = []
-    for owner, parts in (load(args.active).get("zones") or {}).items():
+    for owner, parts in (active_document.get("zones") or {}).items():
         if owner in ALLOWED:
             continue
         for part in parts:
@@ -80,6 +122,8 @@ def main():
         "productionChanged": False,
         "candidatePartCount": len(features),
         "pointPairCount": sum(part_id in points and points[part_id].get("status") == "private-point-pair-proposed" for part_id in ids),
+        "ownershipMoveCount": len(planned_moves),
+        "replacementPartCount": len(planned_replacements),
         "candidateCrossZoneOverlaps": candidate_overlaps,
         "activeOtherZoneOverlaps": active_overlaps,
         "errors": errors,
