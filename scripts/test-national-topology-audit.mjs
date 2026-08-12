@@ -5,6 +5,7 @@ const source=await fs.readFile('scripts/analyze-national-coastal-topology.py','u
 const validator=await fs.readFile('scripts/validate-national-topology-audit.py','utf8');
 for(const marker of ['Havn','Vandloebsmidte','national-water-exclusions.geojson','sandDuneNearRatio','groyneObjectCount','allowedRiverMidWidthClasses','riverMouthMinimumLineLengthM','riverNarrowLinePartRejectedCount','riverMouthPropertyProfile','river-mouth-oversegmentation-mask-withheld','automaticActivationAllowed']) assert.ok(source.includes(marker),`Mangler ${marker}`);
 assert.doesNotMatch(source,/automaticActivationAllowed":True/);
-for(const marker of ['zoneCount")!=208','selectedExclusionCount','automaticActivationAllowed','manual-review-required']) assert.ok(validator.includes(marker),`Validator mangler ${marker}`);
+for(const marker of ['EXPECTED_ZONE_COUNT=211','zoneCount")!=EXPECTED_ZONE_COUNT','selectedExclusionCount','automaticActivationAllowed','manual-review-required']) assert.ok(validator.includes(marker),`Validator mangler ${marker}`);
+assert.ok(source.includes('EXPECTED_ZONE_COUNT=211'),'Topologianalysen skal følge den aktuelle nationale 211-zonepolitik');
 for(const marker of ['fetch-national-water-exclusions.py','analyze-national-coastal-topology.py','validate-national-topology-audit.py','national-topology-audit.json','national-topology-audit.geojson']) assert.ok(workflow.includes(marker),`Workflow mangler ${marker}`);
 console.log('National topologiaudit-kontrakt: bestået.');

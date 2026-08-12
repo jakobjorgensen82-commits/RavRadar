@@ -13,6 +13,7 @@
 - Havnø/Mariager Fjord forbliver slettet. Recoveryauditen fandt, at Nykøbing/Rørvig, Dronningmølle/Hornbæk og Ålsgårde/Helsingør allerede findes som validerede dele under forkerte ejere; de skal flyttes, ikke kopieres. Langeland syd, Lolland vest/Albuen og Fejø/Femø kræver 12 nye officielle kandidatdele med 12/12 punktpar. Den private overlapgate finder nul overlap mod andre aktive hovedzoner; ejer- og DMI-gates mangler.
 - Den eksisterende private nationale Linux-kæde er koblet til fallbackrecoveryen: kandidaten genbygges fra samme friske GeoDanmark-kyst, ejerskab/punktpar/overlap kontrolleres fail-closed, og vandpunkterne prøves på native DMI-grid. Ingen af disse trin kan aktivere offentlig geometri.
 - Første Linux-forsøg #31589561794 stoppede korrekt før kildehentning, fordi nationalpolitikken stadig krævede den historiske centrale bestand på 208 zoner, mens de tre nye Vadehavszoner giver 211. Politikken kræver nu udtrykkeligt 211 ved planporten; efterfølgende gater kræver samme positive bestand gennem plan, fliser, manifest, hydreret register og analyse.
+- Andet Linux-forsøg #31589831140 hentede og validerede den officielle nationale kilde samt fjord-/normasker, men stoppede ved en separat historisk 208-konstant i topologiauditen. Topologiaudit, delgenerator og deres fail-closed validatorer/tests er afstemt til den samme eksplicitte 211-zonepolitik; dette er en privat pipelinekorrektion og ændrer ikke den offentlige kyst.
 
 ## 4.0.185-kandidat – lokalt delkort og ryddet zonepanel
 

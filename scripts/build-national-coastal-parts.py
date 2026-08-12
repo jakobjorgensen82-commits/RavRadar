@@ -8,6 +8,7 @@ from pyproj import Transformer
 from shapely.geometry import LineString,mapping,shape
 from shapely.ops import transform,unary_union
 ROOT=Path(__file__).resolve().parents[1]; TO_M=Transformer.from_crs("EPSG:4326","EPSG:25832",always_xy=True); TO_W=Transformer.from_crs("EPSG:25832","EPSG:4326",always_xy=True)
+EXPECTED_ZONE_COUNT=211
 def fail(m):raise SystemExit(m)
 def load(p):return json.loads(p.read_text(encoding="utf-8"))
 def project(g):return transform(TO_M.transform,g)
@@ -27,7 +28,7 @@ def group_parts(parts,gap):
     return [unary_union(group) for group in groups]
 def build(topology_report,topology_geo,policy):
     report_rows={r["zoneId"]:r for r in topology_report.get("zones") or []}; geo_rows={f["properties"]["zoneId"]:f for f in topology_geo.get("features") or []}
-    if len(report_rows)!=208 or report_rows.keys()!=geo_rows.keys():fail("National delgenerator kræver samme 208 zoner i topologirapport og geometri.")
+    if len(report_rows)!=EXPECTED_ZONE_COUNT or report_rows.keys()!=geo_rows.keys():fail(f"National delgenerator kræver samme {EXPECTED_ZONE_COUNT} zoner i topologirapport og geometri.")
     zones=[];features=[]
     for zone_id in sorted(report_rows):
         source=report_rows[zone_id]; fragments=[g for g in lines(project(shape(geo_rows[zone_id]["geometry"]))) if g.length>=policy["minimumPartLengthM"]]; groups=sorted(group_parts(fragments,policy["groupingGapM"]),key=lambda g:(-g.length,g.bounds)); status="private-review-parts-generated"
@@ -50,7 +51,7 @@ def build(topology_report,topology_geo,policy):
     report={"schemaVersion":"1.0.0","status":"private-national-read-only-coastal-parts","generatedAt":datetime.now(timezone.utc).isoformat().replace("+00:00","Z"),"zoneCount":len(zones),"coastalPartCount":sum(r["coastalPartCount"] for r in zones),"inventedConnectionCount":0,"productionGeometryChanged":False,"adminDataChanged":False,"weatherSamplingChanged":False,"stateChanged":False,"scoreChanged":False,"automaticActivationAllowed":False,"zones":zones}
     return report,{"type":"FeatureCollection","features":features}
 def self_test():
-    report={"zones":[{"zoneId":f"Z{i}","currentName":f"Z{i}","conflictClass":"automatic-source-analysis","riverMouthPolicyStatus":"measured-mask-applied"} for i in range(208)]};geo={"features":[{"properties":{"zoneId":f"Z{i}"},"geometry":{"type":"LineString","coordinates":[[8+i*.02,56],[8.01+i*.02,56]]}} for i in range(208)]};policy=load(ROOT/"data"/"geometry-v2"/"national-coastal-parts-policy.json");out,g=build(report,geo,policy);assert out["zoneCount"]==208 and out["coastalPartCount"]==208 and all(r["proposedName"] is None for z in out["zones"] for r in z["coastalParts"]);print("National coastal parts self-test: bestået.")
+    report={"zones":[{"zoneId":f"Z{i}","currentName":f"Z{i}","conflictClass":"automatic-source-analysis","riverMouthPolicyStatus":"measured-mask-applied"} for i in range(EXPECTED_ZONE_COUNT)]};geo={"features":[{"properties":{"zoneId":f"Z{i}"},"geometry":{"type":"LineString","coordinates":[[8+i*.02,56],[8.01+i*.02,56]]}} for i in range(EXPECTED_ZONE_COUNT)]};policy=load(ROOT/"data"/"geometry-v2"/"national-coastal-parts-policy.json");out,g=build(report,geo,policy);assert out["zoneCount"]==EXPECTED_ZONE_COUNT and out["coastalPartCount"]==EXPECTED_ZONE_COUNT and all(r["proposedName"] is None for z in out["zones"] for r in z["coastalParts"]);print("National coastal parts self-test: bestået.")
 def main():
     p=argparse.ArgumentParser();p.add_argument("--topology-report",type=Path,default=ROOT/".geometry-v2-work"/"national-topology-audit.json");p.add_argument("--topology-geojson",type=Path,default=ROOT/".geometry-v2-work"/"national-topology-audit.geojson");p.add_argument("--policy",type=Path,default=ROOT/"data"/"geometry-v2"/"national-coastal-parts-policy.json");p.add_argument("--report",type=Path,default=ROOT/".geometry-v2-work"/"national-coastal-parts.json");p.add_argument("--geojson",type=Path,default=ROOT/".geometry-v2-work"/"national-coastal-parts.geojson");p.add_argument("--self-test",action="store_true");a=p.parse_args()
     if a.self_test:self_test();return

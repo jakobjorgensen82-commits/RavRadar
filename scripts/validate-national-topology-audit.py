@@ -4,14 +4,15 @@ from __future__ import annotations
 import argparse, json
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
+EXPECTED_ZONE_COUNT=211
 def fail(m):raise SystemExit(m)
 def load(p):return json.loads(p.read_text(encoding="utf-8"))
 def validate(report,geo,waters):
-    if report.get("status")!="private-national-read-only-topology-audit" or report.get("zoneCount")!=208:fail("Topologiaudit kræver read-only status og 208 zoner.")
+    if report.get("status")!="private-national-read-only-topology-audit" or report.get("zoneCount")!=EXPECTED_ZONE_COUNT:fail(f"Topologiaudit kræver read-only status og {EXPECTED_ZONE_COUNT} zoner.")
     for flag in ("productionGeometryChanged","adminDataChanged","weatherSamplingChanged","stateChanged","scoreChanged","automaticActivationAllowed"):
         if report.get(flag) is not False:fail(f"Ulovligt topologi-mutationsflag: {flag}")
     zones=report.get("zones") or []; zone_ids={r.get("zoneId") for r in zones}; features=geo.get("features") or []; feature_ids={f.get("properties",{}).get("zoneId") for f in features}
-    if len(zones)!=208 or len(zone_ids)!=208 or feature_ids!=zone_ids or len(features)!=208:fail("Topologiaudit mangler entydig geometri for alle 208 zoner.")
+    if len(zones)!=EXPECTED_ZONE_COUNT or len(zone_ids)!=EXPECTED_ZONE_COUNT or feature_ids!=zone_ids or len(features)!=EXPECTED_ZONE_COUNT:fail(f"Topologiaudit mangler entydig geometri for alle {EXPECTED_ZONE_COUNT} zoner.")
     if any(r.get("automaticActivationAllowed") is not False or r.get("auditStatus")!="manual-review-required" for r in zones):fail("Topologiaudit forsøger automatisk aktivering eller mangler reviewgate.")
     over=[r for r in zones if r.get("riverMouthPolicyStatus")=="oversegmentation-review-required"]
     if any(r.get("riverMasksApplied") is not False or "river-mouth-oversegmentation-mask-withheld" not in (r.get("qualityFlags") or []) for r in over):fail("Oversegmenterede åmundingsmasker blev ikke tilbageholdt.")
@@ -23,7 +24,7 @@ def validate(report,geo,waters):
     if any(r.get("retainedLengthKm",-1)<0 or r.get("removedByTopologyMasksKm",-1)<0 for r in zones):fail("Topologilængder er ugyldige.")
     return {"zoneCount":len(zones),"waterExclusionCount":len(water_features),"retainedZoneCount":sum(1 for r in zones if r.get("retainedLengthKm",0)>0),"harbourHitZones":sum(1 for r in zones if r.get("harbourObjectCount",0)>0),"riverMouthHitZones":sum(1 for r in zones if r.get("riverMouthCount",0)>0),"innerWaterHitZones":sum(1 for r in zones if r.get("officialInnerWaterCount",0)>0)}
 def self_test():
-    zones=[{"zoneId":f"Z{i}","auditStatus":"manual-review-required","retainedLengthKm":1,"removedByTopologyMasksKm":0,"riverNarrowLinePartRejectedCount":0,"riverShortLinePartRejectedCount":0,"riverMouthPolicyStatus":"measured-mask-applied","riverMasksApplied":True,"automaticActivationAllowed":False} for i in range(208)]; report={"status":"private-national-read-only-topology-audit","zoneCount":208,"zones":zones,"nationalRiverMouthPolicyAccepted":True,"riverMouthOversegmentationZoneCount":0,"riverNarrowLinePartRejectedCount":0,"riverShortLinePartRejectedCount":0,"productionGeometryChanged":False,"adminDataChanged":False,"weatherSamplingChanged":False,"stateChanged":False,"scoreChanged":False,"automaticActivationAllowed":False}; geo={"features":[{"properties":{"zoneId":f"Z{i}"}} for i in range(208)]}; waters={"metadata":{"status":"private-national-official-water-exclusions","selectedExclusionCount":1},"features":[{}]}; assert validate(report,geo,waters)["zoneCount"]==208; print("National topologiaudit-validering self-test: bestået.")
+    zones=[{"zoneId":f"Z{i}","auditStatus":"manual-review-required","retainedLengthKm":1,"removedByTopologyMasksKm":0,"riverNarrowLinePartRejectedCount":0,"riverShortLinePartRejectedCount":0,"riverMouthPolicyStatus":"measured-mask-applied","riverMasksApplied":True,"automaticActivationAllowed":False} for i in range(EXPECTED_ZONE_COUNT)]; report={"status":"private-national-read-only-topology-audit","zoneCount":EXPECTED_ZONE_COUNT,"zones":zones,"nationalRiverMouthPolicyAccepted":True,"riverMouthOversegmentationZoneCount":0,"riverNarrowLinePartRejectedCount":0,"riverShortLinePartRejectedCount":0,"productionGeometryChanged":False,"adminDataChanged":False,"weatherSamplingChanged":False,"stateChanged":False,"scoreChanged":False,"automaticActivationAllowed":False}; geo={"features":[{"properties":{"zoneId":f"Z{i}"}} for i in range(EXPECTED_ZONE_COUNT)]}; waters={"metadata":{"status":"private-national-official-water-exclusions","selectedExclusionCount":1},"features":[{}]}; assert validate(report,geo,waters)["zoneCount"]==EXPECTED_ZONE_COUNT; print("National topologiaudit-validering self-test: bestået.")
 def main():
     p=argparse.ArgumentParser(); p.add_argument("--report",type=Path,default=ROOT/".geometry-v2-work"/"national-topology-audit.json"); p.add_argument("--geojson",type=Path,default=ROOT/".geometry-v2-work"/"national-topology-audit.geojson"); p.add_argument("--water",type=Path,default=ROOT/".geometry-v2-work"/"national-water-exclusions.geojson"); p.add_argument("--self-test",action="store_true"); a=p.parse_args()
     if a.self_test:self_test();return

@@ -10,6 +10,7 @@ from shapely.ops import transform, unary_union
 from shapely.strtree import STRtree
 
 ROOT=Path(__file__).resolve().parents[1]; TO_M=Transformer.from_crs("EPSG:4326","EPSG:25832",always_xy=True); TO_W=Transformer.from_crs("EPSG:25832","EPSG:4326",always_xy=True)
+EXPECTED_ZONE_COUNT=211
 def fail(m): raise SystemExit(m)
 def load(p): return json.loads(p.read_text(encoding="utf-8"))
 def project(g): return transform(TO_M.transform,g)
@@ -36,7 +37,7 @@ def property_profile(entries):
     return {key:{"presentCount":row["presentCount"],"topValues":[{"value":value,"count":count} for value,count in sorted(row["values"].items(),key=lambda item:(-item[1],item[0]))[:20]]} for key,row in sorted(keys.items())}
 def build(zones,source_qa,source_report,waters,layers,policy):
     zone_map={f["properties"]["id"]:f for f in zones.get("features") or [] if f.get("properties",{}).get("zoneStatus")=="active"}; candidates={f["properties"]["zoneId"]:project(shape(f["geometry"])) for f in source_qa.get("features") or []}; qa_rows={r["zoneId"]:r for r in source_report.get("zones") or []}
-    if len(zone_map)!=208 or len(candidates)!=208: fail("National topologiaudit kræver 208 effektive zoner og kandidater.")
+    if len(zone_map)!=EXPECTED_ZONE_COUNT or len(candidates)!=EXPECTED_ZONE_COUNT: fail(f"National topologiaudit kræver {EXPECTED_ZONE_COUNT} effektive zoner og kandidater.")
     indexed={}; trees={}
     for name,collection in {**layers,"Water":waters}.items(): indexed[name]=prepared(collection); trees[name]=STRtree([g for g,_ in indexed[name]]) if indexed[name] else None
     output=[]; rows=[]; river_profile_entries=[]
@@ -74,9 +75,9 @@ def build(zones,source_qa,source_report,waters,layers,policy):
     return report,{"type":"FeatureCollection","features":output}
 def self_test():
     def fc(features):return {"type":"FeatureCollection","features":features}
-    zones=fc([{"type":"Feature","properties":{"id":f"Z{i}","name":f"Z{i}","zoneStatus":"active","coastType":"west"},"geometry":{"type":"Polygon","coordinates":[[[8+i*.02,56],[8.02+i*.02,56],[8.02+i*.02,56.02],[8+i*.02,56.02],[8+i*.02,56]]]}} for i in range(208)])
-    qa_features=[{"type":"Feature","properties":{"zoneId":f"Z{i}"},"geometry":{"type":"LineString","coordinates":[[8+i*.02,56.01],[8.01+i*.02,56.01]]}} for i in range(208)]; qa=fc(qa_features); qa_report={"zones":[{"zoneId":f"Z{i}","conflictClass":"automatic-source-analysis"} for i in range(208)]}
-    empty=fc([]); policy=load(ROOT/"data"/"geometry-v2"/"national-topology-audit-policy.json"); report,geo=build(zones,qa,qa_report,empty,{"Havn":empty,"Vandloebsmidte":empty,"SandKlit":empty,"Skraent":empty,"Hoefde":empty},policy); assert report["zoneCount"]==208 and len(geo["features"])==208
+    zones=fc([{"type":"Feature","properties":{"id":f"Z{i}","name":f"Z{i}","zoneStatus":"active","coastType":"west"},"geometry":{"type":"Polygon","coordinates":[[[8+i*.02,56],[8.02+i*.02,56],[8.02+i*.02,56.02],[8+i*.02,56.02],[8+i*.02,56]]]}} for i in range(EXPECTED_ZONE_COUNT)])
+    qa_features=[{"type":"Feature","properties":{"zoneId":f"Z{i}"},"geometry":{"type":"LineString","coordinates":[[8+i*.02,56.01],[8.01+i*.02,56.01]]}} for i in range(EXPECTED_ZONE_COUNT)]; qa=fc(qa_features); qa_report={"zones":[{"zoneId":f"Z{i}","conflictClass":"automatic-source-analysis"} for i in range(EXPECTED_ZONE_COUNT)]}
+    empty=fc([]); policy=load(ROOT/"data"/"geometry-v2"/"national-topology-audit-policy.json"); report,geo=build(zones,qa,qa_report,empty,{"Havn":empty,"Vandloebsmidte":empty,"SandKlit":empty,"Skraent":empty,"Hoefde":empty},policy); assert report["zoneCount"]==EXPECTED_ZONE_COUNT and len(geo["features"])==EXPECTED_ZONE_COUNT
     print("National coastal topology audit self-test: bestået.")
 def main():
     p=argparse.ArgumentParser(); p.add_argument("--zones",type=Path,default=ROOT/"data"/"zones.geojson"); p.add_argument("--source-qa",type=Path,default=ROOT/".geometry-v2-work"/"national-source-qa.geojson"); p.add_argument("--source-report",type=Path,default=ROOT/".geometry-v2-work"/"national-source-qa.json"); p.add_argument("--water",type=Path,default=ROOT/".geometry-v2-work"/"national-water-exclusions.geojson"); p.add_argument("--source-dir",type=Path,default=ROOT/".geometry-v2-work"/"national-source"); p.add_argument("--policy",type=Path,default=ROOT/"data"/"geometry-v2"/"national-topology-audit-policy.json"); p.add_argument("--report",type=Path,default=ROOT/".geometry-v2-work"/"national-topology-audit.json"); p.add_argument("--geojson",type=Path,default=ROOT/".geometry-v2-work"/"national-topology-audit.geojson"); p.add_argument("--self-test",action="store_true"); a=p.parse_args()
