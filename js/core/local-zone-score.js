@@ -1,4 +1,4 @@
-import { scoreRating } from './score-engine.js?v=4.0.191';
+import { scoreRating } from './score-engine.js?v=4.0.192';
 
 const finite = value => Number.isFinite(Number(value));
 const coverageReason = value => value?.status === 'whole-zone'

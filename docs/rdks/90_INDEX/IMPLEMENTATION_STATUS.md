@@ -1,4 +1,12 @@
-# Implementeringsstatus pr. 4.0.191 – lokal releasekandidat
+# Implementeringsstatus pr. 4.0.192 – lokal releasekandidat
+
+## Samlet land-/vandeditor
+- [x] Søg hovedzone og vis alle tilhørende aktive kyststrækninger på ét kort.
+- [x] Træk eksisterende land-/havpunkter eller sæt nye med kortklik.
+- [x] Central godkendelse med readback og kystdel-ID-bundet runtime-roundtrip.
+- [x] DMI-signatur og sampling bruger den byggede aktive kystdelskontrakt med administratorens godkendte punktrettelser.
+- [x] Eksisterende filterrækkefølge, hovedkortlink, centrale kladder og godkendelsesflow er bevaret.
+- [ ] Frisk GitHub-kørsel skal bestå fuld DMI-, validerings-, release- og deploykæde.
 
 ## Stabil DMI-sampling-signatur
 

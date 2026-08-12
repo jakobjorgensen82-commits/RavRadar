@@ -24,7 +24,8 @@ assert.equal(registry.features.some(feature=>feature.properties?.id==='DK-B10-16
 const bulk=fs.readFileSync('scripts/update-dmi-bulk.py','utf8');
 assert.match(bulk,/PART::\{part_id\}/);
 assert.match(bulk,/not zone\.get\("coastalPart"\)/);
-assert.match(bulk,/COASTAL_PART_POINTS_PATH\.read_bytes/);
+assert.match(bulk,/COASTAL_PART_POINTS_PATH = ROOT \/ "data\/live\/coastal-parts-v2\.json"/);
+assert.match(bulk,/part_doc\.get\("zones"\)/);
 assert.match(bulk,/codes_get_array\(gid, "latitudes"\)/);
 assert.match(bulk,/buckets\.setdefault\(key, \[\]\)\.append/);
 assert.match(bulk,/\[:ATMOSPHERIC_GRID_CANDIDATE_TARGET\]/);

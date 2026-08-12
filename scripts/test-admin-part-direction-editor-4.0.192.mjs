@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import {build} from './build-public-coastal-parts-v2.mjs';
+
+const ui=await fs.readFile('js/ui/admin-direction-editor.js','utf8');
+for(const needle of ['coastalParts.zones','partOverrides','Sæt nyt havpunkt','Sæt nyt landpunkt','Godkend og gem centralt'])assert.ok(ui.includes(needle),`Admin-editor mangler ${needle}`);
+const baseline=JSON.parse(await fs.readFile('data/live/coastal-parts-v2.json','utf8')),zoneId=Object.keys(baseline.zones).find(id=>baseline.zones[id].length>1)||Object.keys(baseline.zones)[0],part=baseline.zones[zoneId][0];
+const tmp=await fs.mkdtemp(path.join(os.tmpdir(),'ravradar-direction-'));
+const reviews=path.join(tmp,'direction-reviews.json'),output=path.join(tmp,'coastal-parts.json');
+const waterPoint=[part.waterPoint[0]+0.0001,part.waterPoint[1]],landPoint=[part.landPoint[0]+0.0001,part.landPoint[1]];
+await fs.writeFile(reviews,JSON.stringify({schemaVersion:3,zones:{[zoneId]:{status:'verified',partOverrides:{[part.partId]:{partId:part.partId,waterPoint,landPoint,onshoreDirectionDeg:123,verified:true}}}}}));
+const built=await build({directionReviews:reviews,output});const changed=built.zones[zoneId].find(row=>row.partId===part.partId);
+assert.deepEqual(changed.waterPoint,waterPoint);assert.deepEqual(changed.landPoint,landPoint);assert.equal(changed.onshoreDirectionDeg,123);
+await fs.writeFile(reviews,JSON.stringify({schemaVersion:3,zones:{[zoneId]:{status:'draft',partOverrides:{[part.partId]:{waterPoint:[9,55],landPoint:[9.1,55.1],onshoreDirectionDeg:9}}}}}));
+const draft=await build({directionReviews:reviews,output});assert.deepEqual(draft.zones[zoneId].find(row=>row.partId===part.partId).waterPoint,part.waterPoint,'Kladder må ikke påvirke runtime');
+console.log(`Admin land/hav-editor: ${zoneId} / ${part.partId} består central runtime-roundtrip`);

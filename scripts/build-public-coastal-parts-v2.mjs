@@ -8,6 +8,7 @@ const ROOT=path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const DEFAULT_SOURCE=path.join(ROOT,'data/geometry-v2/active-national-coastal-parts');
 const DEFAULT_OUTPUT=path.join(ROOT,'data/live/coastal-parts-v2.json');
 const DEFAULT_OVERRIDES=path.join(ROOT,'data/admin/coastline-overrides.json');
+const DEFAULT_DIRECTION_REVIEWS=path.join(ROOT,'data/admin/direction-reviews.json');
 const DEFAULT_ZONES=path.join(ROOT,'data/zones.geojson');
 const sha=text=>crypto.createHash('sha256').update(text.replace(/\r\n/g,'\n')).digest('hex');
 const read=async (source,name)=>{const text=await fs.readFile(path.join(source,name),'utf8');return{text,json:JSON.parse(text)}};
@@ -26,12 +27,12 @@ function publicGeometry(geometry){
 
 async function optionalJson(file,fallback){try{return JSON.parse(await fs.readFile(file,'utf8'))}catch(error){if(error.code==='ENOENT')return fallback;throw error}}
 
-export async function build({source=DEFAULT_SOURCE,output:outputPath=DEFAULT_OUTPUT,overrides=DEFAULT_OVERRIDES,zonesFile=DEFAULT_ZONES}={}){
+export async function build({source=DEFAULT_SOURCE,output:outputPath=DEFAULT_OUTPUT,overrides=DEFAULT_OVERRIDES,directionReviews=DEFAULT_DIRECTION_REVIEWS,zonesFile=DEFAULT_ZONES}={}){
   const SOURCE=source,OUTPUT=outputPath;
   const manifest=JSON.parse(await fs.readFile(path.join(SOURCE,'manifest.json'),'utf8'));
-  const [coast,names,points,grid,admin,zonesCollection]=await Promise.all([
+  const [coast,names,points,grid,admin,zonesCollection,directionReviewDocument]=await Promise.all([
     ...['coastal-parts.geojson','part-names.json','point-pairs.json','dmi-grid-proof.json'].map(name=>read(SOURCE,name)),
-    optionalJson(overrides,{partOwnership:{},disabledParts:{}}),optionalJson(zonesFile,{features:[]})
+    optionalJson(overrides,{partOwnership:{},disabledParts:{}}),optionalJson(zonesFile,{features:[]}),optionalJson(directionReviews,{zones:{}})
   ]);
   for(const [name,expected] of Object.entries(manifest.files||{})){
     const source={
@@ -47,7 +48,7 @@ export async function build({source=DEFAULT_SOURCE,output:outputPath=DEFAULT_OUT
   const zones={};
   const activeZoneIds=new Set((zonesCollection.features||[]).filter(feature=>feature.properties?.zoneStatus!=='retired'&&feature.properties?.active!==false).map(feature=>feature.properties?.id));
   const ownership=admin?.partOwnership||{};
-  const disabledParts=admin?.disabledParts||{};
+  const disabledParts=admin?.disabledParts||{},directionReviewZones=directionReviewDocument?.zones||{};
   for(const feature of features){
     const id=feature.properties?.finalPartId||feature.properties?.partId,sourceZoneId=feature.properties?.zoneId,n=nameById.get(id),p=pointById.get(id),g=gridById.get(id);
     if(disabledParts[id]?.disabled===true&&disabledParts[id]?.published===true)continue;
@@ -58,14 +59,17 @@ export async function build({source=DEFAULT_SOURCE,output:outputPath=DEFAULT_OUT
     // Når en hovedzone slettes, forsvinder dens kystdele også, medmindre ejeren
     // udtrykkeligt har flyttet dem til en anden aktiv hovedzone først.
     if(!activeZoneIds.has(zoneId))continue;
+    const partOverride=directionReviewZones[zoneId]?.status==='verified'?directionReviewZones[zoneId]?.partOverrides?.[id]:null;
+    const landPoint=partOverride?.landPoint||p.landPoint,waterPoint=partOverride?.waterPoint||p.waterPoint,onshoreDirectionDeg=partOverride?.onshoreDirectionDeg??p.onshoreDirectionDeg;
+    if(!Array.isArray(landPoint)||!Array.isArray(waterPoint)||!Number.isFinite(Number(onshoreDirectionDeg)))throw new Error(`${id}: centralt land-/vandreview er ugyldigt`);
     (zones[zoneId]??=[]).push({
       partId:id,
       sourceZoneId,
       name:n.suggestedName,
       geometry:publicGeometry(feature.geometry),
-      landPoint:p.landPoint,
-      waterPoint:p.waterPoint,
-      onshoreDirectionDeg:p.onshoreDirectionDeg,
+      landPoint,
+      waterPoint,
+      onshoreDirectionDeg:Number(onshoreDirectionDeg),
       marineCoverage:g.selected?.fullWeatherCoverage?'full':'partial',
       coverageGaps:g.selected?.coverageGaps||[],
     });

@@ -38,6 +38,7 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-STATION-010 – IMPLEMENTERET I 4.0.103, AFVENTER PRODUKTIONSBEKRÆFTELSE:** DMI-prognosepunkter opdages via `tidewaterstation`-collectionen. Alle vandstandskilder auditeres med kildetype, discovery-resultat, prognosehorisont, gyldighed og routingberettigelse.
 
 ## Retning, zoner og kort
+- **REQ-GEO-053 – IMPLEMENTERET LOKALT I 4.0.192:** Fanen Retning: hav → land søger på hovedzoner og viser hele den valgte zone med samtlige aktive præcise kyststrækninger og deres egne land-/havpunkter. Hvert punkt kan trækkes eller sættes på ny. Kun centralt gemte, readback-verificerede godkendelser må ændre næste DMI-sampling, lokal score og offentlig runtime; kladder er score-neutrale, og en efterfølgende DMI-/releasegate skal notificere ved afvisning.
 - **REQ-GEO-001 – IMPLEMENTERET:** Strøm er bevægelsesretning; vind er fra-retning.
 - **REQ-GEO-002 – AKTIV:** Alle zoners pålandsretning skal kunne auditeres og dokumenteres.
 - **REQ-GEO-003 – IMPLEMENTERET:** Als Odde/Helberskov er placeret nord for Mariager Fjord.

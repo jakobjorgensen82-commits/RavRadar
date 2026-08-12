@@ -1,3 +1,10 @@
+## 2026-08-12 – 4.0.192
+
+- Ejerens land-/vandbestilling er implementeret som en samlet hovedzoneeditor: søgning viser alle aktive præcise kyststrækninger, deres geometri og individuelle land-/havpunkter.
+- Markører kan trækkes eller sættes på ny. Kun verificeret central godkendelse anvendes i runtime; kladder er score-neutrale.
+- DMI-sampling er flyttet fra den låste historiske punktfil til den byggede aktive kystdelskontrakt, så central adminrettelse, cachesignatur, DMI-grid, lokal score og offentlig runtime anvender samme havpunkt.
+- Målrettede admin-, runtime-, DMI-cache- og schedulerregressioner består lokalt. Fuld validering, releasegate og frisk CI/produktion mangler ved dette checkpoint.
+
 ## 2026-08-12 – 4.0.186-kandidat
 
 - Ejeren stoppede den fejlagtige udvidelse til en landsdækkende pipeline. DEC-0036 afgrænser bindende det aktive arbejde til seks navngivne fallbackzoner og det aftalte adminværktøj. Havnø/Mariager Fjord øst forbliver slettet; resten af den produktionsverificerede kyst er urørt baseline. Nye behov uden for omfanget kræver stop og udtrykkelig godkendelse før kode eller CI.

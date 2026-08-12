@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.191
+**Håndbogsversion:** 4.0.192
 
 **Opdateret:** 1. august 2026
 
@@ -1215,6 +1215,12 @@ Når kortet zoomes ind eller ud, tilpasser RavRadar automatisk kyststregens tykk
 Hvis et enkelt flowpunkt mangler eller er ugyldigt, springes kun den pågældende pil over. Det øvrige vind- og strømpilelag vises fortsat. Alle gyldige flowpunkter omdannes til samme Leaflet-koordinattype, så en fallback ikke kan stoppe hele laget.
 
 ## Administration af kystdele og zoner
+
+### Samlet land-/vandkontrol i 4.0.192
+
+I fanen **Retning: hav → land** søger administratoren nu efter en hovedzone. Kortet viser hele zonen og alle de præcise kyststrækninger, den består af. Hver strækning har sit eget blå havpunkt og grønne landpunkt. Punkterne kan trækkes direkte, eller administratoren kan vælge **Sæt nyt havpunkt** eller **Sæt nyt landpunkt** og derefter klikke på kortet.
+
+En ændring gemmes først som kladde og påvirker ikke RavScore. Ved **Godkend og gem centralt** bindes punkterne til den konkrete kystdels ID og læses tilbage fra Supabase. Den næste produktionskørsel bruger samme aktive kystdelsfil til DMI-gridopslag, lokal vejrserie, score og offentlig visning. Hvis DMI- eller releasevalideringen ikke accepterer punktet, deployes ændringen ikke, og workflowet melder fejl.
 
 I fanen **Retning hav-land** kan ejeren nu vælge mellem to forskellige handlinger:
 

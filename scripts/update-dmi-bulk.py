@@ -38,7 +38,7 @@ except ImportError as exc:
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 ZONES_PATH = ROOT / "data/zones.geojson"
-COASTAL_PART_POINTS_PATH = ROOT / "data/geometry-v2/active-national-coastal-parts/point-pairs.json"
+COASTAL_PART_POINTS_PATH = ROOT / "data/live/coastal-parts-v2.json"
 WATER_SOURCES_PATH = ROOT / "data/live/dmi-water-stations.json"
 OUTPUT_PATH = ROOT / "data/live/dmi-bulk-cache.json"
 DEPLOYED_FALLBACK_PATH = pathlib.Path(os.getenv("DMI_BULK_DEPLOYED_FALLBACK_PATH", str(ROOT / ".cache/deployed-dmi-bulk-cache.json")))
@@ -1093,14 +1093,16 @@ def sampling_registry_signature() -> str:
     part_records: list[dict[str, Any]] = []
     if COASTAL_PART_POINTS_PATH.exists():
         part_doc = json.loads(COASTAL_PART_POINTS_PATH.read_text("utf-8"))
-        for part in part_doc.get("parts", []):
-            part_records.append({
-                "id": part.get("finalPartId"),
-                "waterPoint": part.get("waterPoint"),
-                "status": part.get("status"),
-                "coastType": part.get("coastType") or "east",
-                "parentZoneId": part.get("zoneId"),
-            })
+        for parent_zone_id, parts in (part_doc.get("zones") or {}).items():
+            zone_coast_type = next((row.get("coastType") for row in zone_records if row.get("id") == parent_zone_id), "east")
+            for part in parts or []:
+                part_records.append({
+                    "id": part.get("partId"),
+                    "waterPoint": part.get("waterPoint"),
+                    "status": "active",
+                    "coastType": zone_coast_type,
+                    "parentZoneId": parent_zone_id,
+                })
 
     source_records: list[dict[str, Any]] = []
     if WATER_SOURCES_PATH.exists():
@@ -1707,24 +1709,21 @@ def main() -> int:
     # dækningsnævner, så den eksisterende 208-zoners indsamlingsrytme bevares.
     if COASTAL_PART_POINTS_PATH.exists():
         part_doc = json.loads(COASTAL_PART_POINTS_PATH.read_text("utf-8"))
-        for part in part_doc.get("parts", []):
-            part_id = part.get("finalPartId")
-            point = part.get("waterPoint")
-            if (
-                not part_id
-                or part.get("status") != "private-point-pair-proposed"
-                or not isinstance(point, list)
-                or len(point) != 2
-            ):
-                continue
-            zones.append({
-                "id": f"PART::{part_id}",
-                "lon": float(point[0]),
-                "lat": float(point[1]),
-                "coastType": part.get("coastType") or "east",
-                "coastalPart": True,
-                "parentZoneId": part.get("zoneId"),
-            })
+        zone_coast_types = {zone["id"]: zone.get("coastType") or "east" for zone in zones if not zone.get("coastalPart")}
+        for parent_zone_id, parts in (part_doc.get("zones") or {}).items():
+            for part in parts or []:
+                part_id = part.get("partId")
+                point = part.get("waterPoint")
+                if not part_id or not isinstance(point, list) or len(point) != 2:
+                    continue
+                zones.append({
+                    "id": f"PART::{part_id}",
+                    "lon": float(point[0]),
+                    "lat": float(point[1]),
+                    "coastType": zone_coast_types.get(parent_zone_id, "east"),
+                    "coastalPart": True,
+                    "parentZoneId": parent_zone_id,
+                })
 
     # Vandstandskilder (målestationer og DMI-prognosepunkter) samples i samme
     # DKSS-GRIB som zonerne. Dermed får begge kildetyper sammenlignelige

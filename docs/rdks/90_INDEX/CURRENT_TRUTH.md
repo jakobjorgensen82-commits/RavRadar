@@ -1,5 +1,12 @@
 # Current truth – gældende projektviden
 
+## 4.0.192 – samlet land-/vandeditor pr. hovedzone
+
+- Admin søger på hovedzonens aktuelle navn og viser hele hovedzonen sammen med alle dens aktive præcise kyststrækninger.
+- Hver kyststrækning viser sit eget blå havpunkt og grønne landpunkt. Ejeren kan trække dem eller sætte nye punkter ved klik på kortet; pålandsretningen kan beregnes fra punktparret eller finjusteres.
+- Godkendte ændringer gemmes centralt i `direction-reviews` med kystdel-ID, læses tilbage og anvendes af den offentlige kystdelsbygger. Kladder påvirker ikke runtime.
+- DMI-sampleren læser nu den byggede aktive `data/live/coastal-parts-v2.json`, så adminrettet havpunkt, DMI-signatur, sampling, lokal score og offentlig visning ikke kan skilles ad. Næste fulde DMI-/releasegate er fortsat nødvendig før produktionsverifikation.
+
 ## 4.0.191 – DMI-cache signeres efter sampling, ikke driftstid
 
 - #2437 beviste, at den private GitHub-cache blev restore-/save-behandlet, men `dkss_idw` startede igen og state indeholdt kun den aktuelle kørsels tidspunkt.

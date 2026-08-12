@@ -1,21 +1,22 @@
-import { evaluateRules } from '../core/rule-engine.js?v=4.0.191';
-import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.191';
-import { historicalSummary } from '../services/historical-analysis.js?v=4.0.191';
-import { loadAdaptiveModel, applyApprovedSuggestion, recordDecision, decisionHistory, rollbackAdaptiveModel, listAdaptiveModelVersions, activateAdaptiveModelVersion } from '../core/adaptive-model.js?v=4.0.191';
-import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.191';
-import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.191';
-import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.191';
-import { interpretFreeTextRule } from '../core/free-text-rule-assistant.js?v=4.0.191';
-import { listProfiles, savePermissions, PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.191';
-import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js?v=4.0.191';
-import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.191';
-import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.191';
-import { GEOGRAPHIC_AREAS, matchingZoneIds } from '../core/geographic-areas.js?v=4.0.191';
-import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.191';
-import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.191';
-import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.191';
+import { evaluateRules } from '../core/rule-engine.js?v=4.0.192';
+import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.192';
+import { historicalSummary } from '../services/historical-analysis.js?v=4.0.192';
+import { loadAdaptiveModel, applyApprovedSuggestion, recordDecision, decisionHistory, rollbackAdaptiveModel, listAdaptiveModelVersions, activateAdaptiveModelVersion } from '../core/adaptive-model.js?v=4.0.192';
+import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.192';
+import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.192';
+import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.192';
+import { interpretFreeTextRule } from '../core/free-text-rule-assistant.js?v=4.0.192';
+import { listProfiles, savePermissions, PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.192';
+import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js?v=4.0.192';
+import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.192';
+import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.192';
+import { createDirectionEditor } from './admin-direction-editor.js?v=4.0.192';
+import { GEOGRAPHIC_AREAS, matchingZoneIds } from '../core/geographic-areas.js?v=4.0.192';
+import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.192';
+import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.192';
+import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.192';
 
-const VERSION='4.0.191';
+const VERSION='4.0.192';
 const SITE_TEST_MODE=new URLSearchParams(location.search).has('ravradarAdminSiteTest');
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
@@ -308,7 +309,7 @@ function directionLabel(deg){const labels=['N','NØ','Ø','SØ','S','SV','V','NV
 function pointDistanceKm(a,b){if(!a||!b)return null;const R=6371,[lon1,lat1]=a.map(x=>Number(x)*Math.PI/180),[lon2,lat2]=b.map(x=>Number(x)*Math.PI/180);const dLat=lat2-lat1,dLon=lon2-lon1,h=Math.sin(dLat/2)**2+Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;return 2*R*Math.asin(Math.sqrt(h));}
 function directionAuditPriority(feature,reviews){const p=feature.properties||{},r=reviews[p.id];if(r?.status==='verified')return 99;if(!p.dataPoint||!p.pinPoint)return 0;const distance=pointDistanceKm(p.dataPoint,p.pinPoint),pointBearing=bearingDeg(p.dataPoint,p.pinPoint),diff=angleDiff(p.onshoreDirectionDeg,pointBearing);if(distance<.15||distance>8||diff>45)return 1;if((p.onshoreDirectionReviewStatus||'').includes('manual')||(p.placementReview&&p.placementReview!=='verified')||p.directionAnchorAuditRecommended===true)return 2;return 3;}
 
-let directionMap=null,directionLayers=[],directionInitTimer=null;
+let directionMap=null,directionLayers=[],directionInitTimer=null,destroyPartDirectionEditor=null;
 function destroyDirectionMap(){if(directionInitTimer){clearTimeout(directionInitTimer);directionInitTimer=null;}clearDirectionLayers();if(directionMap){directionMap.remove();directionMap=null;}}
 function clearDirectionLayers(){if(directionMap)directionLayers.forEach(x=>directionMap.removeLayer(x));directionLayers=[];}
 function addDirectionLayer(layer){layer.addTo(directionMap);directionLayers.push(layer);return layer;}
@@ -331,7 +332,7 @@ function drawDirectionZone(feature,anchors,selectedAnchorId,onPointMoved){
  const bounds=directionLayers.flatMap(x=>x.getBounds?[x.getBounds()]:[]).reduce((a,b)=>a?a.extend(b):b,null);if(bounds?.isValid()&&!directionMap.__hasFit){directionMap.fitBounds(bounds.pad(.3));directionMap.__hasFit=true;}
 }
 
-function renderDirectionAudit(){destroyDirectionMap();
+function renderDirectionAudit(){destroyDirectionMap();if(destroyPartDirectionEditor)destroyPartDirectionEditor();destroyPartDirectionEditor=createDirectionEditor(content,{zones:state.zones,coastalParts:state.coastalParts,reviews:directionReviews(),saveNow:saveDirectionReviewsNow,saveDraft:saveDirectionReviews,onOpenMain:id=>window.open(`./?zone=${encodeURIComponent(id)}`,'_blank')});return;
  const reviews=directionReviews();const active=state.zones.filter(z=>z.properties?.zoneStatus==='active');const verified=active.filter(z=>reviews[z.properties?.id]?.status==='verified').length;
  content.innerHTML=`<article class="admin-card direction-intro"><div class="rule-card-head"><div><h2>Geografisk kontrol af kystdele</h2><p>Flyt punkterne direkte på kortet. <b>Blå skal ligge i havet</b>, <b>grøn ved stranden/land</b>, og den røde retning skal pege fra havet ind mod land.</p></div><span class="badge">${verified}/${active.length} zoner godkendt</span></div><ol class="direction-steps"><li>Vælg en zone og derefter den kystdel, du vil redigere.</li><li>Træk det blå og grønne punkt til de rigtige steder.</li><li>Klik <b>Beregn retning fra punkterne</b>, eller finjustér graderne.</li><li>Ved en bugtet kyst kan du tilføje flere kystdele. Hver kystdel får sit eget havpunkt, landpunkt og retning.</li><li>Godkend zonen og download til sidst en ny <code>zones.geojson</code>.</li></ol><p class="hint">Den røde cirkel er slutningen af retningen – altså den ende, retningen peger imod. Kladder gemmes lokalt og centralt. Godkendelser og sletninger synkroniseres til næste deployment, hvor zonefil, score, kort, forecast og debug bruger samme aktive geometri.</p></article>
  <div class="direction-layout"><article class="admin-card direction-queue"><div class="toolbar"><input id="directionSearch" placeholder="Søg efter zone"><select id="directionFilter"><option value="pending">Ikke godkendte først</option><option value="uncertain">Kun mistænkelige</option><option value="verified">Kun godkendte</option><option value="all">Alle zoner</option></select></div><div id="directionZoneList" class="direction-zone-list"></div></article>
@@ -373,7 +374,7 @@ function renderObservations(){const obs=JSON.parse(localStorage.getItem('ravrada
 async function renderUsers(){
  content.innerHTML=`<article class="admin-card"><h2>Eksperter og rettigheder</h2><p class="muted">Få, brede tilladelser. Du kan til enhver tid ændre dem igen.</p><div id="profilesList" class="admin-grid"><p class="muted">Henter brugere…</p></div></article>`;
  const host=document.querySelector('#profilesList');
- try{state.profiles=await listProfiles();if(!state.profiles.length){host.innerHTML='<div class="empty">Ingen profiler blev fundet. Kør SQL-opdateringen til 4.0.191 i Supabase én gang.</div>';return;}
+ try{state.profiles=await listProfiles();if(!state.profiles.length){host.innerHTML='<div class="empty">Ingen profiler blev fundet. Kør SQL-opdateringen til 4.0.192 i Supabase én gang.</div>';return;}
  host.innerHTML=state.profiles.map(profile=>{const active=new Set((profile.user_permissions||[]).filter(x=>x.enabled).map(x=>x.permission_key));return `<article class="admin-card permission-card" data-user-id="${esc(profile.id)}"><div class="rule-card-head"><div><h3>${esc(profile.display_name||profile.email)}</h3><p class="muted">${esc(profile.email||'')} · ${esc(profile.role||'expert')}</p></div><span class="badge ${profile.is_active!==false?'active':'draft'}">${profile.is_active!==false?'Aktiv':'Deaktiveret'}</span></div><div class="permission-list">${PERMISSIONS.map(p=>`<label class="permission-option"><input type="checkbox" name="${esc(p.id)}" ${active.has(p.id)||profile.role==='owner'?'checked':''} ${profile.role==='owner'?'disabled':''}><span>${esc(p.label)}</span></label>`).join('')}</div>${profile.role==='owner'?'<p class="hint">Owner har altid alle rettigheder.</p>':'<button class="admin-button save-user-permissions" type="button">Gem rettigheder</button><p class="form-status"></p>'}</article>`}).join('');
  host.querySelectorAll('.save-user-permissions').forEach(button=>button.onclick=async()=>{const card=button.closest('[data-user-id]');const status=card.querySelector('.form-status');const values={};PERMISSIONS.forEach(p=>values[p.id]=card.querySelector(`[name="${p.id}"]`).checked);button.disabled=true;status.textContent='Gemmer…';try{await savePermissions(card.dataset.userId,values);status.textContent='Rettighederne er gemt og gælder med det samme.';}catch(error){status.textContent=error.message;}finally{button.disabled=false;}});
  }catch(error){host.innerHTML=`<div class="empty">${esc(error.message)}</div>`;}
