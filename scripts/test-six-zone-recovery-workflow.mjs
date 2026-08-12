@@ -14,6 +14,8 @@ assert.deepEqual(new Set(candidate.features.map(feature=>feature.properties.zone
 assert.match(workflow,/Validate only the six approved recovery zones/);
 assert.match(workflow,/validate-fallback-zone-recovery\.py/);
 assert.match(workflow,/validate-national-local-part-dmi-grid\.py/);
+assert.match(workflow,/build-six-zone-private-runtime\.py/);
+assert.match(workflow,/validate-six-zone-private-runtime\.mjs/);
 assert.match(workflow,/shapely>=2\.0,<3/);
 assert.match(workflow,/pyproj>=3\.6,<4/);
 assert.ok(!workflow.includes('build-national-geometry-v2-plan.py'),'Seks-zoneworkflowet må ikke starte en national genopbygning.');

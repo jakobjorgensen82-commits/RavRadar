@@ -39,6 +39,21 @@ jobs:
           --input .github/private-data/six-zone-recovery/point-pairs.json
           --report six-zone-recovery-dmi-grid.json
 
+      - name: Build disabled private runtime candidate
+        run: >-
+          python scripts/build-six-zone-private-runtime.py
+          --candidate .github/private-data/six-zone-recovery/candidate.geojson
+          --points .github/private-data/six-zone-recovery/point-pairs.json
+          --grid six-zone-recovery-dmi-grid.json
+          --plan .github/private-data/six-zone-recovery/recovery-plan.json
+          --output .geometry-v2-work/six-zone-private-runtime
+
+      - name: Validate runtime isolation and rollback
+        run: >-
+          node --input-type=module -e
+          "import path from 'node:path';import{build}from'./scripts/build-public-coastal-parts-v2.mjs';await build({source:path.resolve('.geometry-v2-work/six-zone-private-runtime'),overrides:path.resolve('.geometry-v2-work/six-zone-private-runtime/coastline-overrides.json'),output:path.resolve('.geometry-v2-work/six-zone-private-public.json')});"
+          && node scripts/validate-six-zone-private-runtime.mjs
+
       - name: Upload private six-zone evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -47,5 +62,7 @@ jobs:
           path: |
             six-zone-recovery-validation.json
             six-zone-recovery-dmi-grid.json
+            .geometry-v2-work/six-zone-private-runtime/manifest.json
+            .geometry-v2-work/six-zone-private-public.json
           if-no-files-found: warn
           retention-days: 14
