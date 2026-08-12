@@ -38,7 +38,7 @@
 - [x] Kun en vellykket cache med aktuel registersignatur kan fortsætte; senest deployede cache bevares som kompatibel fallback, og fejl/afbrydelser gemmes ikke.
 - [x] Offentlig Pages-artifact/deploy kræver fortsat alle eksisterende gates.
 - [ ] Friske GitHub-kørsler skal bevise voksende dækning og til sidst grøn current-spatial audit.
-- [ ] Derefter opdateres land/hav-admin til lokale kystdele med eksisterende filterrangering bevaret.
+- [x] Land/hav-admin er i 4.0.192 opdateret til lokale kystdele med eksisterende filterrangering bevaret; produktionsverifikation afventer den friske fulde GitHub-kæde øverst i dokumentet.
 
 ## Fem-zoneaktivering
 
