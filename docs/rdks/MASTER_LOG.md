@@ -907,3 +907,6 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Ejeren besluttede, at den offentlige “Hvad fandt du?”-formular under hver zone skal fjernes.
 - Zoneforklaringen får “Hvor er det?”, som ved klik viser de eksisterende præcise kystdele med navne og zoomer kortet til hovedzonen.
 - Visningen genbruger den allerede indlæste kystkontrakt og ændrer ikke RavScore, geometri, DMI eller adminlagring.
+# 2026-08-12 – bindende beskyttelse mod funktionstab
+- Ejeren præciserede, at eksisterende funktioner ikke må smides væk under ændringer.
+- RDKS kræver nu udtrykkelig ejerbeslutning før bevidst fjernelse, før/efter-kontrol af den berørte funktionsflade og dokumentation af både det fjernede og det bevarede.

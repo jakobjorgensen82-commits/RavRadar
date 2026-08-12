@@ -2,6 +2,11 @@
 
 Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslutninger, chatkilder og kode.
 
+## Tværgående funktionsbevarelse
+- **REQ-REGRESSION-001 – BINDENDE:** En ændring må ikke utilsigtet fjerne, skjule, afkoble eller forringe en eksisterende bruger-, admin-, data-, score-, forecast-, kort-, observations- eller driftsfunktion. Bevidst fjernelse kræver en aktuel udtrykkelig ejerbeslutning, og den tekniske følgevirkning skal afgrænses, så beslægtede bagvedliggende funktioner bevares, medmindre de også udtrykkeligt er bestilt fjernet.
+- **REQ-REGRESSION-002 – BINDENDE:** Før release skal ændringens berørte funktionsflade sammenlignes før/efter på tværs af offentlig UI, admin, datafelter, runtime, tests og deployment. Nye målrettede tests må ikke erstatte kontrol af eksisterende relevante funktioner.
+- **REQ-REGRESSION-003 – BINDENDE:** Hvis en eksisterende funktion bevidst ændres eller fjernes, skal RDKS, håndbog, changelog og relevante regressionstests angive præcis hvad der ændres, hvad der bevares, og hvorfor. Tavst funktionstab er en releaseblokker.
+
 ## Data og prognoser
 - **REQ-DATA-011 – IMPLEMENTERET LOKALT I 4.0.120:** Vandstandsrouting må kun ændre vandstandsfelter. Den må ikke erstatte en offentlig blandet komponentserie med den rene DMI-cache eller slette gyldig fallback.
 - **REQ-DATA-012 – IMPLEMENTERET LOKALT I 4.0.120:** En timebaseret fallbackhale skal forespørge om mindst 120 fremtidige timer; allerede forløbne timer siden midnat må ikke tælle med i produktets forecastbudget.

@@ -22,6 +22,8 @@
 ## Konflikter
 Stop og forklar konflikten før kodeændring, hvis et nyt ønske strider mod en aktiv beslutning. Aktuel brugerbeslutning kan ændre RDKS, men ændringen skal registreres med begrundelse.
 ## Bindende release-gate
+- Før ændringen implementeres, identificér de eksisterende funktioner i det berørte UI-, data- og adminforløb. Efter ændringen kontrolleres samme funktionsflade igen. En grøn ny featuretest er ikke nok, hvis en ældre funktion kan være forsvundet.
+- Fjern kun en eksisterende funktion efter en udtrykkelig aktuel ejerbeslutning. Afgræns fjernelsen til det bestilte: at fjerne en offentlig formular giver eksempelvis ikke i sig selv tilladelse til at slette den bagvedliggende observations-, tur- eller adminfunktion.
 - Skriv aldrig, at en ZIP er færdigvalideret, medmindre de angivne kommandoer faktisk er kørt på præcis det pakkede indhold.
 - Kør hele release-gaten og gennemgå alle fejl samlet, før ny ZIP bygges.
 - Lever aldrig `.git`, secrets, caches eller `node_modules` i en brugerpakke.

@@ -1,5 +1,10 @@
 # Current truth – gældende projektviden
 
+## Bindende regressionsregel
+
+- Eksisterende funktioner må ikke forsvinde eller blive afkoblet som utilsigtet bivirkning af nyt arbejde. Bevidst fjernelse kræver en udtrykkelig aktuel ejerbeslutning og skal afgrænses til det bestilte.
+- Releasekontrol skal sammenligne den berørte funktionsflade før og efter på tværs af offentlig UI, admin, data/runtime og deployment. Tavst funktionstab er en releaseblokker.
+
 ## 4.0.185-kandidat – lokalt delkort og ryddet zonepanel
 
 - Zoneforklaringen har en behovsstyret “Hvor er det?”-knap, som viser de allerede indlæste præcise kystdele med navne på hovedkortet og zoomer til zonen. Der tilføjes ingen billedfiler eller ekstra normal datahentning.
