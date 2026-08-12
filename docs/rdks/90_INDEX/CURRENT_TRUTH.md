@@ -6,7 +6,7 @@
 - Syvpunktsreglen er uændret: højst 7 points forskel betyder hele zonen; først ved mere end 7 point fremhæves den bedste del eller flere dele inden for 7 point af maksimum.
 - Zonepanelet viser tydeligt navn og score for den bedste kystdel og advarer om, at den viste hovedzonescore ikke nødvendigvis gælder resten af zonen.
 - En audit af den offentlige 4.0.183-runtime fandt 412/412 aktuelle zone-/jagtformsvisninger med gyldig lokal score, vinder, delscorer og klassifikation. Fejlen var tab af præsentationsfelter, ikke DMI- eller scorefejl.
-- Kandidaten er lokalt målrettet valideret; frisk fuld CI og offentlig kontrol mangler.
+- Funktionen er produktionsverificeret i GitHub Actions #31575562432: frisk DMI-/scoreruntime, fuld projektvalidering, releasegate og Pages-deploy bestod. Offentlig kontrol viste version 4.0.184 og bekræftede for `DK-B09-19` score 78, vinderen `Mullerup Klint`, spredning 30 samt alle tre delscorer og forklaringsgrupper.
 
 ## 4.0.183 – entydige hovedzoneskel og redigerbart delejerskab
 
