@@ -23,7 +23,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install geometry and DMI readers
-        run: python -m pip install --disable-pip-version-check -r requirements-dmi.txt
+        run: python -m pip install --disable-pip-version-check -r requirements-dmi.txt "shapely>=2.0,<3" "pyproj>=3.6,<4"
 
       - name: Validate fixed six-zone scope and geometry contract
         run: >-

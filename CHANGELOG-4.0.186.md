@@ -5,6 +5,7 @@
 - Tilføjet en separat, ikke-deployende CI-kontrol for præcis de seks aftalte recoveryzoner.
 - Indchecket den private 12-dels kandidat med 12 punktpar, så DMI-gridkontrollen ikke kræver eller genstarter en national kystopbygning.
 - Tilføjet regression, der afviser andre zoner, national pipeline og deploy fra denne arbejdsgang.
+- Seks-zoneworkflowet installerer eksplicit de geometri-biblioteker, som den fail-closed overlapkontrol kræver på Linux.
 
 - Arbejdsomfanget er bindende låst til de seks fallbackzoner og det aftalte adminværktøj. Den øvrige produktionsverificerede kyst må ikke genopbygges eller ændres uden en ny, udtrykkelig ejerbeslutning; Havnø og Mariager Fjord øst forbliver slettet.
 
