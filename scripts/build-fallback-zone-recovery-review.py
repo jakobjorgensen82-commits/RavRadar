@@ -33,6 +33,14 @@ SELECTIONS = {
     "DK-B10-16": unary_union([box(11.34, 54.94, 11.48, 54.98), box(11.49, 54.94, 11.58, 55.00)]),
 }
 TO_M = Transformer.from_crs(4326, 25832, always_xy=True).transform
+NEW_GEOMETRY_ZONES = {"DK-B07-19", "DK-B10-14", "DK-B10-16"}
+OWNERSHIP_MOVES = {
+    "DK-B08-12": ["dk-b08-10-national-part-01", "dk-b08-10-national-part-02", "dk-b08-10-national-part-03"],
+    "DK-B08-18": ["dk-b08-17-national-part-01", "dk-b08-17-national-part-02"],
+    "DK-B08-19": ["dk-b09-01-national-part-01", "dk-b09-01-national-part-05"],
+    "DK-B07-20": ["dk-b10-14-national-part-01-locality-01", "dk-b10-14-national-part-01-locality-02"],
+}
+REPLACED_PARTS = ["dk-b10-14-national-part-02-locality-01", "dk-b10-14-national-part-02-locality-02"]
 
 
 def load(path: Path):
@@ -95,6 +103,8 @@ def candidate_geojson(reviews):
     """
     features = []
     for review in reviews:
+        if review["zoneId"] not in NEW_GEOMETRY_ZONES:
+            continue
         for index, geometry in enumerate(review["suggested"], start=1):
             features.append({
                 "type": "Feature",
@@ -138,6 +148,8 @@ def audit_report(reviews, candidate):
         "productionChanged": False,
         "automaticActivationAllowed": False,
         "deletedZonesPreserved": ["DK-B02-14"],
+        "ownershipMoves": OWNERSHIP_MOVES,
+        "replacedPartsToDisableAfterDmiApproval": REPLACED_PARTS,
         "requiredBeforeActivation": [
             "owner geometry review",
             "unique main-zone ownership and zero cross-zone overlap",

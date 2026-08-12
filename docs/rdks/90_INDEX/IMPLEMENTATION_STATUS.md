@@ -4,7 +4,7 @@
 - [x] Viskelæder deaktiverer/gendanner en hel del og dens punkt-/DMI-kontrakt samlet.
 - [x] Central schema-4-readback validerer både ejerskab og deaktiveringer.
 - [x] Produktionsbyggeren publicerer ikke centralt deaktiverede dele.
-- [x] Privat fallbackrecovery bevarer `DK-B02-14` som slettet og giver 21 officielle kandidatdele med 21/21 foreslåede punktpar.
+- [x] Privat fallbackrecovery bevarer `DK-B02-14` som slettet, genbruger syv allerede validerede dele via ejerskabsflytning og giver 12 nye officielle kandidatdele med 12/12 foreslåede punktpar og nul overlap mod andre aktive hovedzoner.
 - [ ] Fallbackkandidatens hovedzoneejerskab, DMI-grid, shadow-score, runtime og rollback skal bestå privat før ejerreview eller aktivering.
 
 ## 4.0.185 – produktionsverificeret

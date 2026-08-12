@@ -1,7 +1,7 @@
 ## 2026-08-12 – 4.0.186-kandidat
 
 - Den præcise admin-kyst har fået trækbare endehåndtag og et reversibelt viskelæder. Flytning og deaktivering omfatter hele den validerede delkontrakt og central readback.
-- En privat recoveryaudit forkaster de dokumenteret fejlplacerede gamle linjer som autoritet, bevarer Havnø/Mariager Fjord som slettet og bygger 21 officielle kandidatdele for seks problemzoner. Alle 21 har lokalt foreslåede punktpar, men kandidaten kan ikke aktiveres før private ejer-, DMI-, score-, runtime- og rollbackgates.
+- En privat recoveryaudit forkaster de dokumenteret fejlplacerede gamle linjer som autoritet og bevarer Havnø/Mariager Fjord som slettet. Overlapgaten stoppede først 11 kopier af kyst, som allerede fandtes under andre hovedzoneejere. Den rettede plan flytter syv eksisterende dele, omplacerer to Ristinge-dele og bygger kun 12 reelt nye officielle dele til Langeland syd, Lolland vest/Albuen og Fejø/Femø. De 12 har punktpar og nul overlap mod andre aktive hovedzoner, men kandidaten kan ikke aktiveres før private ejer-, DMI-, score-, runtime- og rollbackgates.
 
 ## 2026-08-12 – read-only nataudit af den aktive 4.0.182-kyst
 - Den produktionsverificerede, hash-låste bestand er bevaret byte-for-byte. Et nyt privat kontrolkort læser de 643 aktive dele direkte og tilbyder både samlet landsvisning og søgbar lokal visning uden mutations- eller aktiveringsvej.

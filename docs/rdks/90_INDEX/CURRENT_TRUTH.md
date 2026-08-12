@@ -10,7 +10,7 @@
 - Admin kan trække hovedzonens kystende til en eksisterende valideret nabokystdel. Ejerskab, geometri, land-/vandpunkt, DMI- og scoreidentitet flyttes samlet, og zoneafgrænsningen følger automatisk.
 - Et reversibelt viskelæder kan deaktivere en hel valideret del. Central schema-4-readback og produktionsbyggeren behandler geometri og datakontrakt samlet.
 - Fri ny kysttegning bliver ikke behandlet som valideret DMI-data. Helt ny geometri skal fortsat gennem private punkt-, grid-, shadow-score-, runtime- og rollbackgates.
-- Havnø/Mariager Fjord forbliver slettet. En privat, ikke-aktiverbar officiel-kystkandidat analyserer de fem øvrige fallbackzoner og den fejlplacerede Lolland vest/Albuen. Den lokale kandidat er reduceret til 21 sammenhængende dele med 21/21 foreslåede punktpar; ejer- og DMI-gates mangler.
+- Havnø/Mariager Fjord forbliver slettet. Recoveryauditen fandt, at Nykøbing/Rørvig, Dronningmølle/Hornbæk og Ålsgårde/Helsingør allerede findes som validerede dele under forkerte ejere; de skal flyttes, ikke kopieres. Langeland syd, Lolland vest/Albuen og Fejø/Femø kræver 12 nye officielle kandidatdele med 12/12 punktpar. Den private overlapgate finder nul overlap mod andre aktive hovedzoner; ejer- og DMI-gates mangler.
 
 ## 4.0.185-kandidat – lokalt delkort og ryddet zonepanel
 
