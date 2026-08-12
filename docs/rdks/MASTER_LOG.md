@@ -920,3 +920,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 # 2026-08-12 – bindende beskyttelse mod funktionstab
 - Ejeren præciserede, at eksisterende funktioner ikke må smides væk under ændringer.
 - RDKS kræver nu udtrykkelig ejerbeslutning før bevidst fjernelse, før/efter-kontrol af den berørte funktionsflade og dokumentation af både det fjernede og det bevarede.
+## 2026-08-12 – 4.0.187 fem-zoneaktivering
+
+- Ejeren godkendte fem af seks private zoner visuelt og beordrede `DK-B10-16` Fejø/Femø slettet helt.
+- Fejø/Femø er fjernet fra zoneregister og præcis kystpakke og registreret som central administratorsletning i Supabase `direction-reviews` version 315.
+- Den aktive kandidat har 651 kystdele i 210 effektive zoner, 651 punktpar, nul ugyldige punktpar og nul overlap. Privat #31609637964 havde allerede bestået geometri, native DMI, runtime og rollback for det godkendte grundlag.
+- Den tidligere aktive kyst og zoneregisteret er bevaret i `data/geometry-v2/rollback-4.0.186-before-five-zone-coast/`. Ingen anden fungerende national geometri er ændret.

@@ -20,7 +20,8 @@ const reviews={zones:{
 await fs.writeFile(zonesPath,JSON.stringify(zones));
 await fs.writeFile(reviewsPath,JSON.stringify(reviews));
 await fs.writeFile(coastPath,JSON.stringify({overrides:{}}));
-const result=spawnSync('python',['scripts/apply-central-zone-reviews.py','--zones',zonesPath,'--reviews',reviewsPath,'--coastlines',coastPath],{encoding:'utf8'});
+const python=process.env.RAVRADAR_PYTHON||process.env.PYTHON||'python';
+const result=spawnSync(python,['scripts/apply-central-zone-reviews.py','--zones',zonesPath,'--reviews',reviewsPath,'--coastlines',coastPath],{encoding:'utf8'});
 assert.equal(result.status,0,result.stderr);
 const output=JSON.parse(await fs.readFile(zonesPath,'utf8'));
 assert.deepEqual(output.features.map(f=>f.properties.id),['KEEP','DRAFT']);

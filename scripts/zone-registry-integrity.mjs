@@ -5,7 +5,7 @@ const optionalJson = path => {
   try { return readJson(path); } catch { return null; }
 };
 
-export function baselineZoneIds({ baselinePath = 'data/geometry-snapshots/zones-4.0.44.geojson', permanentlyRetired = ['DK-B04-09'], ownerApprovedAdditions = ['DK-B04-12', 'DK-B04-13', 'DK-B04-14'] } = {}) {
+export function baselineZoneIds({ baselinePath = 'data/geometry-snapshots/zones-4.0.44.geojson', permanentlyRetired = ['DK-B04-09', 'DK-B10-16'], ownerApprovedAdditions = ['DK-B04-12', 'DK-B04-13', 'DK-B04-14'] } = {}) {
   const baseline = readJson(baselinePath);
   if (baseline?.type !== 'FeatureCollection' || !Array.isArray(baseline.features)) {
     throw new Error(`Ugyldigt historisk zoneregister: ${baselinePath}`);

@@ -1,22 +1,22 @@
 {
   "schemaVersion": "1.0.0",
-  "status": "owner-approved-national-public-coast-active",
-  "sourceRunId": "31533385967",
+  "status": "owner-approved-five-zone-coast-active",
+  "sourceRunId": "31609637964",
   "sourceCommit": "806648e6634f1e1cfbb366451bee2df2d2eab9ab",
-  "sourceVersion": "4.0.182",
-  "partCount": 643,
-  "zoneCount": 206,
-  "parentZoneCount": 212,
+  "sourceVersion": "4.0.187",
+  "partCount": 651,
+  "zoneCount": 210,
+  "parentZoneCount": 211,
   "overlapPairCount": 0,
-  "pointPairCount": 643,
+  "pointPairCount": 651,
   "invalidPointPairCount": 0,
-  "fullMarineCoveragePartCount": 632,
+  "fullMarineCoveragePartCount": 640,
   "partialMarineCoveragePartCount": 11,
   "files": {
-    "coastal-parts.geojson": "932f6dea7883faca0214a4e694ac6535b1ed5b66250d1b184be018006edebc21",
-    "part-names.json": "1eb7b07e917fb613eadf20dee30ba792a0eadd4a16da1dcc81097c90a6c7a3b0",
-    "point-pairs.json": "f2a87b7a8e2822c3d68681201beac980a5e3aff028ab440e0055ef695d32c28f",
-    "dmi-grid-proof.json": "c99971eec34d99ff9a791087b7374acb729faa5c62b0186112c5d9b811261959"
+    "coastal-parts.geojson": "a56d6b075a59c9e1200a10a9f428232d213fda6ce0880614e83a93001d2ffe8a",
+    "part-names.json": "3217f0f6c32711cf7d12f9b33f59662f40e5f9e842aafa1b58d279c562801626",
+    "point-pairs.json": "b02412ae8ff5490ba3cee9ffcde980c25ffb89663e29d0d8249d497922606874",
+    "dmi-grid-proof.json": "fb4e673d5337244ac00e31d49986ff7f743a8b1d7750e56b3c87e15fa1a5fc98"
   },
   "scorePolicy": {
     "bestValidPartDeterminesZoneScore": true,
@@ -26,11 +26,11 @@
   },
   "environment": "production",
   "publicActivation": true,
-  "activationAuthority": "explicit owner approvals in Codex thread 2026-08-11",
+  "activationAuthority": "explicit owner approval in Codex thread 2026-08-12; DK-B10-16 deleted",
   "rollback": {
-    "method": "restore the prior active-national-coastal-parts bundle and zones.geojson, then redeploy",
+    "method": "C:\\Users\\jakob\\Desktop\\RavRadar\\RavRadar\\data\\geometry-v2\\rollback-4.0.186-before-five-zone-coast",
     "preservesParentRuntime": true
   },
   "automaticActivationAllowed": false,
-  "activatedAt": "2026-08-11"
+  "activatedAt": "2026-08-12"
 }

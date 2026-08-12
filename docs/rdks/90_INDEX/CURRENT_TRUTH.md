@@ -5,6 +5,14 @@
 - Eksisterende funktioner må ikke forsvinde eller blive afkoblet som utilsigtet bivirkning af nyt arbejde. Bevidst fjernelse kræver en udtrykkelig aktuel ejerbeslutning og skal afgrænses til det bestilte.
 - Releasekontrol skal sammenligne den berørte funktionsflade før og efter på tværs af offentlig UI, admin, data/runtime og deployment. Tavst funktionstab er en releaseblokker.
 
+## 4.0.187 – fem godkendte zoner og permanent sletning
+
+- Ejeren godkendte slutkortet for Langeland syd/Bagenkop, Nykøbing Sjælland/Rørvig, Dronningmølle/Hornbæk, Ålsgårde/Helsingør og Lolland vest/Albuen.
+- `DK-B10-16` Fejø/Femø er slettet helt efter udtrykkelig ejerbeslutning. Sletningen findes i repositoryets zoneregister, den aktive præcise kystpakke og centralt i Supabase `direction-reviews` version 315.
+- Den aktive pakke har 651 kystdele i 210 effektive hovedzoner, 651 punktpar, nul ugyldige punktpar og nul tværzoneoverlap. Den private native DMI-/runtimegate #31609637964 var grøn før ejerens slutgodkendelse.
+- Den tidligere 4.0.182-pakke og zoneregisteret ligger som rollback under `data/geometry-v2/rollback-4.0.186-before-five-zone-coast/`.
+- Offentlig produktion er først produktionsverificeret, når 4.0.187 har bestået frisk central hydration, fulde releasegates og deploy.
+
 ## Bindende arbejdsafgrænsning – DEC-0036
 
 - Det aktive kystarbejde omfatter kun Langeland syd/Bagenkop, Nykøbing Sjælland/Rørvig, Dronningmølle/Hornbæk, Ålsgårde/Helsingør, Lolland vest/Albuen og Fejø/Femø samt det direkte nødvendige adminværktøj.

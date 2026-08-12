@@ -1,4 +1,13 @@
-# Implementeringsstatus pr. 4.0.186 – lokal kandidat
+# Implementeringsstatus pr. 4.0.187 – lokal releasekandidat
+
+## Fem-zoneaktivering
+
+- [x] Fem visuelt godkendte zoner er indarbejdet i den aktive præcise kystpakke.
+- [x] Fejø/Femø (`DK-B10-16`) er fjernet fra zoneregister og kystpakke.
+- [x] Den centrale Supabase-sletning er skrevet og læst tilbage som `deleted: true` i `direction-reviews` version 315.
+- [x] Rollback til den tidligere 4.0.182-kyst er versionsstyret.
+- [ ] Fuld lokal validate/releasegate.
+- [ ] Frisk GitHub Actions-kørsel og offentlig verifikation.
 
 - [x] DEC-0036 låser det aktive arbejde til de seks navngivne fallbackzoner og adminværktøjet. Den fejlagtigt udvidede landsdækkende pipeline er stoppet som arbejdsretning og må ikke genoptages uden ny udtrykkelig ejergodkendelse.
 - [x] Admin-endepunkter kan trækkes til en eksisterende valideret nabokystdel.

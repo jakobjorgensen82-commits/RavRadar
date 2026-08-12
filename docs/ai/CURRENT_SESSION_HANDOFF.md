@@ -2,7 +2,7 @@
 
 ## Højeste prioritet: bindende scope fra 2026-08-12
 
-DEC-0036 har forrang for ældre brede nationale planer. Aktivt arbejde må kun omfatte `DK-B07-19`, `DK-B08-12`, `DK-B08-18`, `DK-B08-19`, `DK-B10-14`, `DK-B10-16` og det direkte nødvendige adminværktøj til trækbar præcis kyst, følgende zoneafgrænsning, viskelæder og samlet punkt-/DMI-/runtimekontrakt. Havnø/Mariager Fjord øst forbliver slettet. Start eller fortsæt ikke en landsdækkende kystpipeline; stop og spørg ejeren før enhver udvidelse.
+DEC-0036 har forrang for ældre brede nationale planer. Fem zoner (`DK-B07-19`, `DK-B08-12`, `DK-B08-18`, `DK-B08-19`, `DK-B10-14`) er godkendt til 4.0.187. `DK-B10-16` Fejø/Femø er slettet lokalt og centralt efter ejerbeslutning; Havnø/Mariager Fjord øst forbliver slettet. Det direkte nødvendige adminværktøj til trækbar præcis kyst, følgende zoneafgrænsning, viskelæder og samlet punkt-/DMI-/runtimekontrakt bevares. Start eller fortsæt ikke en landsdækkende kystpipeline; stop og spørg ejeren før enhver udvidelse.
 
 Den første 12-dels kandidat bestod DMI, men runtimekontrollen viste, at hele flytninger ville tømme to nabozoner. Den er derfor erstattet før aktivering. Den aktuelle kandidat opdeler ved grænserne og har 22 mål-/naborester, 22/22 punktpar, to Ristinge-ejerskabsflytninger, ni kontrollerede erstatninger og nul overlap. `.github/workflows/validate-six-zone-recovery.yml` skal nu gentage native DMI-kontrollen på de 22 dele; workflowet kan ikke deploye.
 

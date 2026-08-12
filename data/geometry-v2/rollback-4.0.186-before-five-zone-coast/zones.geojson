@@ -1,6 +1,6 @@
 {
   "type": "FeatureCollection",
-  "version": "4.0.187",
+  "version": "4.0.186",
   "features": [
     {
       "type": "Feature",
@@ -17419,6 +17419,81 @@
             [
               11,
               54.78
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "DK-B10-16",
+        "name": "Fejø og Femø",
+        "region": "Smålandsfarvandet",
+        "coastType": "east",
+        "onshoreDirectionDeg": 180,
+        "shallowWater": true,
+        "reefs": false,
+        "seagrass": true,
+        "dataPoint": [
+          11.48,
+          55.1
+        ],
+        "pinPoint": [
+          11.48,
+          55
+        ],
+        "batch": "B10",
+        "zoneStatus": "active",
+        "coastLine": [
+          [
+            11.22,
+            54.958736
+          ],
+          [
+            11.264969,
+            54.957085
+          ],
+          [
+            11.360809,
+            54.916641
+          ],
+          [
+            11.365559,
+            54.91
+          ]
+        ],
+        "coastLineSource": "GSHHS intermediate coastline clipped from RavRadar master coastline",
+        "coastLineVersion": "4.0.48-safe-fallback",
+        "onshoreDirectionSource": "marine dataPoint → landward pinPoint bearing, verified by map/debug direction audit",
+        "onshoreDirectionAuditedAt": "2026-07-26",
+        "onshoreDirectionReviewStatus": "geometry-consistent-v3.1.9",
+        "coastLineRefinementMode": "audited-existing-fallback",
+        "coastLineRollbackVersion": "4.0.44"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11.22,
+              54.91
+            ],
+            [
+              11.67,
+              54.91
+            ],
+            [
+              11.67,
+              55.1
+            ],
+            [
+              11.22,
+              55.1
+            ],
+            [
+              11.22,
+              54.91
             ]
           ]
         ]

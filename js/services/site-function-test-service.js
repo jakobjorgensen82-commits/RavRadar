@@ -1,7 +1,7 @@
-import { currentSession, requireFreshSession, testConnection } from './auth-service.js?v=4.0.186';
-import { adminStorageHealth } from './admin-document-store.js?v=4.0.186';
-import { runFullPersistenceTest } from './persistence-test-service.js?v=4.0.186';
-import { askRavRadar, classifyRavQuestion } from './rav-assistant.js?v=4.0.186';
+import { currentSession, requireFreshSession, testConnection } from './auth-service.js?v=4.0.187';
+import { adminStorageHealth } from './admin-document-store.js?v=4.0.187';
+import { runFullPersistenceTest } from './persistence-test-service.js?v=4.0.187';
+import { askRavRadar, classifyRavQuestion } from './rav-assistant.js?v=4.0.187';
 
 const TIMEOUT_MS=20000;
 const now=()=>performance.now();

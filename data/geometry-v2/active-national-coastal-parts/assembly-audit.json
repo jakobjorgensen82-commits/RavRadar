@@ -1,16 +1,15 @@
 {
   "schemaVersion": "1.0.0",
-  "status": "passed-owner-approved-public-coast-activation-assembly",
-  "sourceRunId": "31533385967",
-  "partCount": 643,
-  "preciseZoneCount": 206,
-  "fallbackZoneCount": 6,
-  "parentZoneCount": 212,
+  "status": "passed-owner-approved-five-zone-activation-assembly",
+  "partCount": 651,
+  "preciseZoneCount": 210,
+  "parentZoneCount": 211,
+  "deletedZoneIds": [
+    "DK-B02-14",
+    "DK-B10-16"
+  ],
   "overlapPairCount": 0,
-  "unresolvedRelevantGapCount": 0,
-  "pointPairCount": 643,
-  "fullMarineCoveragePartCount": 632,
-  "partialMarineCoveragePartCount": 11,
+  "pointPairCount": 651,
   "ownerApproved": true,
   "automaticActivationAllowed": false
 }

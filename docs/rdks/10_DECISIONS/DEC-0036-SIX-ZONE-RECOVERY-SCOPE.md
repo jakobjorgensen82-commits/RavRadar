@@ -1,6 +1,6 @@
 # DEC-0036 – Bindende afgrænsning til seks problemzoner
 
-**Status:** AKTIV
+**Status:** IMPLEMENTERET I 4.0.187
 **Dato:** 2026-08-12
 
 ## Beslutning
@@ -17,6 +17,8 @@ Det aktive kystarbejde er afgrænset til følgende seks hovedzoner:
 Havnø og Mariager Fjord øst er bevidst slettet og må ikke genoprettes.
 
 Det aftalte adminværktøj skal lade ejeren trække den præcise kyststreg, lade hovedzonens afgrænsning følge og bevare eller nyvalidere land-/vandpunkter, DMI-data, lokal scoreidentitet og øvrig runtimekontrakt. Viskelæderet skal bevares.
+
+Efter den visuelle slutkontrol besluttede ejeren, at `DK-B10-16` Fejø og Femø også skal slettes helt. De fem øvrige rettelser er godkendt til aktivering. Sletningen er registreret både i zoneregisteret, den aktive kystpakke og det centrale `direction-reviews`-dokument, så en senere adminhydrering ikke kan genoprette zonen.
 
 ## Hård stopregel
 

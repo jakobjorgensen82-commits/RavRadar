@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "passed-owner-approved-public-coast-activation-assembly",
+  "sourceRunId": "31533385967",
+  "partCount": 643,
+  "preciseZoneCount": 206,
+  "fallbackZoneCount": 6,
+  "parentZoneCount": 212,
+  "overlapPairCount": 0,
+  "unresolvedRelevantGapCount": 0,
+  "pointPairCount": 643,
+  "fullMarineCoveragePartCount": 632,
+  "partialMarineCoveragePartCount": 11,
+  "ownerApproved": true,
+  "automaticActivationAllowed": false
+}

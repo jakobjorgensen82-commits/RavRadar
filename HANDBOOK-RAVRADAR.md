@@ -1,12 +1,12 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.186
+**Håndbogsversion:** 4.0.187
 
 **Opdateret:** 1. august 2026
 
 ## Aktuel afgrænsning af kystarbejdet
 
-DEC-0036 begrænser den aktive kystopgave til seks problemzoner: Langeland syd/Bagenkop, Nykøbing Sjælland/Rørvig, Dronningmølle/Hornbæk, Ålsgårde/Helsingør, Lolland vest/Albuen og Fejø/Femø. Havnø og Mariager Fjord øst forbliver slettet. Resten af den produktionsverificerede kyst er urørt baseline. En landsdækkende genopbygning eller ændring af fungerende funktioner kræver en ny, udtrykkelig ejerbeslutning; et uventet behov uden for de seks zoner er en stopklods, ikke en tilladelse til at udvide arbejdet.
+DEC-0036 begrænsede kystopgaven til seks problemzoner. Efter slutkontrollen blev fem godkendte rettelser aktiveret: Langeland syd/Bagenkop, Nykøbing Sjælland/Rørvig, Dronningmølle/Hornbæk, Ålsgårde/Helsingør og Lolland vest/Albuen. Fejø/Femø blev efter udtrykkelig ejerbeslutning slettet helt ligesom Havnø og Mariager Fjord øst. Resten af den produktionsverificerede kyst er urørt baseline. En landsdækkende genopbygning eller ændring af fungerende funktioner kræver en ny, udtrykkelig ejerbeslutning.
 
 De seks zoner valideres i en særskilt privat arbejdsgang, som ikke kan udgive et kort. Kandidaten har 22 mål- og naborester med egne land-/vandpunkter, så nødvendige nabozoner beholder deres kyst. Delene bliver først brugbare, når DMI's native grid, lokal score, runtime og rollback er kontrolleret. Admintræk flytter altid en hel valideret kystdel med dens målepunkter og vejridentitet – aldrig en løs visuel streg. Admin viser straks en konkret fejl og udfører ikke flytningen, hvis geometri, punkter, retning eller DMI-gridbevis mangler.
 
