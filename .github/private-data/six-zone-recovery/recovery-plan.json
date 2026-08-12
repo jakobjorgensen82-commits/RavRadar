@@ -7,19 +7,6 @@
     "DK-B02-14"
   ],
   "ownershipMoves": {
-    "DK-B08-12": [
-      "dk-b08-10-national-part-01",
-      "dk-b08-10-national-part-02",
-      "dk-b08-10-national-part-03"
-    ],
-    "DK-B08-18": [
-      "dk-b08-17-national-part-01",
-      "dk-b08-17-national-part-02"
-    ],
-    "DK-B08-19": [
-      "dk-b09-01-national-part-01",
-      "dk-b09-01-national-part-05"
-    ],
     "DK-B07-20": [
       "dk-b10-14-national-part-01-locality-01",
       "dk-b10-14-national-part-01-locality-02"
@@ -27,7 +14,14 @@
   },
   "replacedPartsToDisableAfterDmiApproval": [
     "dk-b10-14-national-part-02-locality-01",
-    "dk-b10-14-national-part-02-locality-02"
+    "dk-b10-14-national-part-02-locality-02",
+    "dk-b08-10-national-part-01",
+    "dk-b08-10-national-part-02",
+    "dk-b08-10-national-part-03",
+    "dk-b08-17-national-part-01",
+    "dk-b08-17-national-part-02",
+    "dk-b09-01-national-part-01",
+    "dk-b09-01-national-part-05"
   ],
   "requiredBeforeActivation": [
     "owner geometry review",
@@ -59,7 +53,7 @@
     {
       "zoneId": "DK-B08-19",
       "zoneName": "Ålsgårde og Helsingør",
-      "candidatePartCount": 5,
+      "candidatePartCount": 2,
       "legacyGeometryRejected": true
     },
     {
@@ -75,5 +69,5 @@
       "legacyGeometryRejected": true
     }
   ],
-  "candidateFeatureCount": 12
+  "candidateFeatureCount": 22
 }

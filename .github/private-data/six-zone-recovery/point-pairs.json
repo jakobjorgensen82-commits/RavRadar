@@ -1,9 +1,9 @@
 {
   "schemaVersion": "1.0.0",
   "status": "private-national-read-only-local-part-point-pairs",
-  "finalPartCount": 12,
-  "partCount": 12,
-  "proposedPointPairCount": 12,
+  "finalPartCount": 22,
+  "partCount": 22,
+  "proposedPointPairCount": 22,
   "blockedPointPairCount": 0,
   "automaticActivationAllowed": false,
   "productionGeometryChanged": false,
@@ -75,6 +75,346 @@
       "waterWitness": [
         10.69,
         54.795
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B08-10",
+      "partId": "dk-b08-10-national-part-01-remainder-01",
+      "finalPartId": "dk-b08-10-national-part-01-remainder-01",
+      "name": "Skærby Strand",
+      "suggestedName": "Skærby Strand",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        11.6224277,
+        55.9426302
+      ],
+      "landPoint": [
+        11.6220306,
+        55.9415757
+      ],
+      "waterPoint": [
+        11.6228247,
+        55.9436848
+      ],
+      "onshoreDirectionDeg": 189.8,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        11.7,
+        56.05
+      ],
+      "waterWitness": [
+        11.66,
+        56.14
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B08-10",
+      "partId": "dk-b08-10-national-part-01-remainder-02",
+      "finalPartId": "dk-b08-10-national-part-01-remainder-02",
+      "name": "Skærby Strand",
+      "suggestedName": "Skærby Strand",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        11.6346357,
+        55.9388983
+      ],
+      "landPoint": [
+        11.6344724,
+        55.9378243
+      ],
+      "waterPoint": [
+        11.6347991,
+        55.9399722
+      ],
+      "onshoreDirectionDeg": 182.7,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        11.7,
+        56.05
+      ],
+      "waterWitness": [
+        11.66,
+        56.14
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B08-10",
+      "partId": "dk-b08-10-national-part-01-remainder-05",
+      "finalPartId": "dk-b08-10-national-part-01-remainder-05",
+      "name": "Skærby Strand",
+      "suggestedName": "Skærby Strand",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        11.6598947,
+        55.9411725
+      ],
+      "landPoint": [
+        11.6606505,
+        55.9401817
+      ],
+      "waterPoint": [
+        11.6591388,
+        55.9421633
+      ],
+      "onshoreDirectionDeg": 154.6,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        11.7,
+        56.05
+      ],
+      "waterWitness": [
+        11.66,
+        56.14
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B08-12",
+      "partId": "dk-b08-12-fallback-recovery-01",
+      "finalPartId": "dk-b08-12-fallback-recovery-01",
+      "name": "Nykøbing Sjælland og Rørvig",
+      "suggestedName": "Nykøbing Sjælland og Rørvig",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        11.767354,
+        55.9737429
+      ],
+      "landPoint": [
+        11.7664937,
+        55.9747067
+      ],
+      "waterPoint": [
+        11.7682143,
+        55.972779
+      ],
+      "onshoreDirectionDeg": 331.1,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        11.84,
+        55.93
+      ],
+      "waterWitness": [
+        11.91,
+        55.88
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B08-12",
+      "partId": "dk-b08-12-fallback-recovery-02",
+      "finalPartId": "dk-b08-12-fallback-recovery-02",
+      "name": "Nykøbing Sjælland og Rørvig",
+      "suggestedName": "Nykøbing Sjælland og Rørvig",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        11.7587875,
+        55.942933
+      ],
+      "landPoint": [
+        11.7575913,
+        55.9437763
+      ],
+      "waterPoint": [
+        11.7599837,
+        55.9420898
+      ],
+      "onshoreDirectionDeg": 319.2,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        11.84,
+        55.93
+      ],
+      "waterWitness": [
+        11.91,
+        55.88
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B08-17",
+      "partId": "dk-b08-17-national-part-01-remainder-02",
+      "finalPartId": "dk-b08-17-national-part-01-remainder-02",
+      "name": "Dronningmølle Strand",
+      "suggestedName": "Dronningmølle Strand",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        12.337806,
+        56.1201611
+      ],
+      "landPoint": [
+        12.3375959,
+        56.1190899
+      ],
+      "waterPoint": [
+        12.3380161,
+        56.1212323
+      ],
+      "onshoreDirectionDeg": 183.5,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        12.45,
+        56.11
+      ],
+      "waterWitness": [
+        12.44,
+        56.16
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B08-18",
+      "partId": "dk-b08-18-fallback-recovery-01",
+      "finalPartId": "dk-b08-18-fallback-recovery-01",
+      "name": "Dronningmølle og Hornbæk",
+      "suggestedName": "Dronningmølle og Hornbæk",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        12.4063891,
+        56.099694
+      ],
+      "landPoint": [
+        12.4061388,
+        56.0986255
+      ],
+      "waterPoint": [
+        12.4066393,
+        56.1007624
+      ],
+      "onshoreDirectionDeg": 184.6,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        12.64,
+        56.09
+      ],
+      "waterWitness": [
+        12.64,
+        56.15
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B08-18",
+      "partId": "dk-b08-18-fallback-recovery-02",
+      "finalPartId": "dk-b08-18-fallback-recovery-02",
+      "name": "Dronningmølle og Hornbæk",
+      "suggestedName": "Dronningmølle og Hornbæk",
+      "coastType": "west",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        12.4980087,
+        56.0913681
+      ],
+      "landPoint": [
+        12.497502,
+        56.0903284
+      ],
+      "waterPoint": [
+        12.4985155,
+        56.0924077
+      ],
+      "onshoreDirectionDeg": 192.3,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        12.64,
+        56.09
+      ],
+      "waterWitness": [
+        12.64,
+        56.15
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B08-19",
+      "partId": "dk-b08-19-fallback-recovery-01",
+      "finalPartId": "dk-b08-19-fallback-recovery-01",
+      "name": "Ålsgårde og Helsingør",
+      "suggestedName": "Ålsgårde og Helsingør",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        12.5687653,
+        56.063368
+      ],
+      "landPoint": [
+        12.5672048,
+        56.0627364
+      ],
+      "waterPoint": [
+        12.5703258,
+        56.0639996
+      ],
+      "onshoreDirectionDeg": 231.2,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        12.75,
+        56.04
+      ],
+      "waterWitness": [
+        12.82,
+        56.05
+      ],
+      "weatherSamplingEnabled": false,
+      "scoreEnabled": false,
+      "automaticActivationAllowed": false
+    },
+    {
+      "zoneId": "DK-B08-19",
+      "partId": "dk-b08-19-fallback-recovery-02",
+      "finalPartId": "dk-b08-19-fallback-recovery-02",
+      "name": "Ålsgårde og Helsingør",
+      "suggestedName": "Ålsgårde og Helsingør",
+      "coastType": "east",
+      "status": "private-point-pair-proposed",
+      "coastReferencePoint": [
+        12.6241482,
+        56.0394756
+      ],
+      "landPoint": [
+        12.622471,
+        56.0389469
+      ],
+      "waterPoint": [
+        12.6258254,
+        56.0400043
+      ],
+      "onshoreDirectionDeg": 237.6,
+      "witnessSource": "centrally-hydrated-parent-zone-witnesses",
+      "landWitness": [
+        12.75,
+        56.04
+      ],
+      "waterWitness": [
+        12.82,
+        56.05
       ],
       "weatherSamplingEnabled": false,
       "scoreEnabled": false,
@@ -421,8 +761,8 @@
       "automaticActivationAllowed": false
     }
   ],
-  "totalCandidatePartCount": 12,
-  "candidatePointPairCount": 12,
+  "totalCandidatePartCount": 22,
+  "candidatePointPairCount": 22,
   "candidateMissingPointPairCount": 0,
   "candidateMissingPointPartIds": []
 }

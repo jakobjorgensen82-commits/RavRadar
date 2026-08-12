@@ -8,9 +8,9 @@ const candidate=JSON.parse(await fs.readFile('.github/private-data/six-zone-reco
 const expected=new Set(['DK-B07-19','DK-B08-12','DK-B08-18','DK-B08-19','DK-B10-14','DK-B10-16']);
 const planZones=new Set((plan.zones||[]).map(row=>row.zoneId));
 assert.deepEqual(planZones,expected,'Recoveryplanen må kun og præcis omfatte de seks ejerbesluttede zoner.');
-assert.equal(candidate.features.length,12,'Den private kandidat skal fortsat have præcis 12 nye kystdele.');
-assert.equal(points.parts.length,12,'Alle 12 nye kystdele skal have et punktpar.');
-assert.deepEqual(new Set(candidate.features.map(feature=>feature.properties.zoneId)),new Set(['DK-B07-19','DK-B10-14','DK-B10-16']),'Kun tre af de seks zoner må få ny geometri.');
+assert.equal(candidate.features.length,22,'Den private kandidat skal have præcis 22 mål- og naborester.');
+assert.equal(points.parts.length,22,'Alle 22 dele skal have et punktpar.');
+assert.deepEqual(new Set(candidate.features.map(feature=>feature.properties.zoneId)),new Set(['DK-B07-19','DK-B08-12','DK-B08-18','DK-B08-19','DK-B10-14','DK-B10-16','DK-B08-10','DK-B08-17']),'Kun de seks målzoner og to nødvendige naborester må få ny geometri.');
 assert.match(workflow,/Validate only the six approved recovery zones/);
 assert.match(workflow,/validate-fallback-zone-recovery\.py/);
 assert.match(workflow,/validate-national-local-part-dmi-grid\.py/);

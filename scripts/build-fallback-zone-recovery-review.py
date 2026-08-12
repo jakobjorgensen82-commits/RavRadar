@@ -27,20 +27,26 @@ WINDOWS = {
 SELECTIONS = {
     "DK-B07-19": box(10.64, 54.70, 10.76, 54.79),
     "DK-B08-12": box(11.68, 55.94, 11.82, 56.00),
-    "DK-B08-18": box(12.36, 56.075, 12.555, 56.15),
-    "DK-B08-19": box(12.555, 55.98, 12.66, 56.10),
+    "DK-B08-18": box(12.36, 56.075, 12.53, 56.15),
+    "DK-B08-19": box(12.53, 56.035, 12.63, 56.09),
     "DK-B10-14": unary_union([box(10.86, 54.56, 11.16, 54.72), box(10.86, 54.68, 11.01, 54.82)]),
     "DK-B10-16": unary_union([box(11.34, 54.94, 11.48, 54.98), box(11.49, 54.94, 11.58, 55.00)]),
 }
 TO_M = Transformer.from_crs(4326, 25832, always_xy=True).transform
-NEW_GEOMETRY_ZONES = {"DK-B07-19", "DK-B10-14", "DK-B10-16"}
+FROM_M = Transformer.from_crs(25832, 4326, always_xy=True).transform
+NEW_GEOMETRY_ZONES = set(WINDOWS)
 OWNERSHIP_MOVES = {
+    "DK-B07-20": ["dk-b10-14-national-part-01-locality-01", "dk-b10-14-national-part-01-locality-02"],
+}
+NEIGHBOUR_SPLITS = {
     "DK-B08-12": ["dk-b08-10-national-part-01", "dk-b08-10-national-part-02", "dk-b08-10-national-part-03"],
     "DK-B08-18": ["dk-b08-17-national-part-01", "dk-b08-17-national-part-02"],
     "DK-B08-19": ["dk-b09-01-national-part-01", "dk-b09-01-national-part-05"],
-    "DK-B07-20": ["dk-b10-14-national-part-01-locality-01", "dk-b10-14-national-part-01-locality-02"],
 }
-REPLACED_PARTS = ["dk-b10-14-national-part-02-locality-01", "dk-b10-14-national-part-02-locality-02"]
+REPLACED_PARTS = [
+    "dk-b10-14-national-part-02-locality-01", "dk-b10-14-national-part-02-locality-02",
+    *[part_id for part_ids in NEIGHBOUR_SPLITS.values() for part_id in part_ids],
+]
 
 
 def load(path: Path):
@@ -95,7 +101,7 @@ def build(zones, official, active_parts):
     return reviews
 
 
-def candidate_geojson(reviews):
+def candidate_geojson(reviews, active_parts):
     """Materialise the reviewed geometry as a private, score-neutral candidate.
 
     These features intentionally have no sampling points yet. A candidate cannot
@@ -118,6 +124,30 @@ def candidate_geojson(reviews):
                 },
                 "geometry": geometry,
             })
+    active_index = {
+        part["partId"]: (owner, part)
+        for owner, parts in (active_parts.get("zones") or {}).items()
+        for part in parts
+    }
+    target = unary_union([transform(TO_M, shape(feature["geometry"])) for feature in features])
+    for target_zone, part_ids in NEIGHBOUR_SPLITS.items():
+        for part_id in part_ids:
+            owner, part = active_index[part_id]
+            remainder = transform(TO_M, shape(part["geometry"])).difference(target.buffer(2))
+            for index, line in enumerate(line_parts(remainder), start=1):
+                if line.length < 250:
+                    continue
+                replacement_id = f"{part_id}-remainder-{index:02d}"
+                features.append({
+                    "type":"Feature",
+                    "properties":{
+                        "zoneId":owner,"zoneName":part.get("name") or owner,
+                        "partId":replacement_id,"source":"validated-neighbour-remainder",
+                        "replacesPartId":part_id,"status":"private-candidate-awaiting-point-and-dmi-validation",
+                        "automaticActivationAllowed":False,
+                    },
+                    "geometry":mapping(transform(FROM_M, line)),
+                })
     return {"type": "FeatureCollection", "features": features}
 
 
@@ -185,7 +215,7 @@ def main():
     args = parser.parse_args()
     reviews = build(load(args.zones), load(args.official), load(args.parts))
     args.output.write_text(html(reviews), encoding="utf-8")
-    candidate = candidate_geojson(reviews)
+    candidate = candidate_geojson(reviews, load(args.parts))
     args.candidate.parent.mkdir(parents=True, exist_ok=True)
     args.candidate.write_text(json.dumps(candidate, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     args.bundle.write_text(json.dumps(candidate_bundle(candidate), ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")

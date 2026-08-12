@@ -78,12 +78,38 @@ function isDisabled(config, part) {
   return row?.disabled === true && row?.published === true;
 }
 
+function validateTransferPart(part) {
+  const failures=[];
+  if(!part?.partId)failures.push('kystdelen mangler et stabilt ID');
+  if(!geometryLines(part?.geometry).some(line=>line.length>1))failures.push('kystgeometrien er ugyldig');
+  if(!Array.isArray(part?.landPoint)||part.landPoint.length!==2)failures.push('landpunkt mangler');
+  if(!Array.isArray(part?.waterPoint)||part.waterPoint.length!==2)failures.push('vandpunkt mangler');
+  if(!Number.isFinite(Number(part?.onshoreDirectionDeg)))failures.push('kystretningen mangler');
+  if(!['full','partial'].includes(part?.marineCoverage))failures.push('DMI-gridbevis mangler');
+  return {ok:failures.length===0,failures};
+}
+
+function showOwnershipValidation(state,kind,message) {
+  state.validationMessage={kind,message};
+  const box=document.querySelector('#coastlineOwnershipValidation');
+  if(!box)return;
+  box.className=`coastline-validation-status ${kind}`;
+  box.textContent=message;
+}
+
 function assignPartToSelectedZone(state, part) {
+  const validation=validateTransferPart(part);
+  if(!validation.ok){
+    showOwnershipValidation(state,'failed',`Ændringen blev ikke udført: ${validation.failures.join(', ')}.`);
+    return false;
+  }
   const selected=state.zone.properties.id;
   state.config.document.partOwnership||={};
   if(selected===part.sourceZoneId)delete state.config.document.partOwnership[part.partId];
   else state.config.document.partOwnership[part.partId]={targetZoneId:selected,published:true,updatedAt:new Date().toISOString()};
   state.config.document.schemaVersion=4;state.config.document.updatedAt=new Date().toISOString();state.config.ownershipDirty=true;state.ownershipDirty=true;
+  showOwnershipValidation(state,'passed',`Godkendt: ${part.name||part.partId} har geometri, land-/vandpunkt og DMI-gridbevis. Ændringen er klar til central gemning.`);
+  return true;
 }
 
 function squaredDistance(a,b) {
@@ -306,6 +332,7 @@ export function renderCoastlineEditor(content, config) {
           <p>De orange strækninger tilhører den valgte hovedzone. Grå strækninger tilhører nabozoner. Klik på en grå strækning for at flytte hele den præcise kystdel med dens landpunkt, vandpunkt og vejrdata til den valgte zone.</p>
           <p>Hvis en zone skal gøres kortere, vælger du først den hovedzone, som skal overtage stykket, og klikker derefter på stykket.</p>
           <div id="coastlineOwnershipStatus" class="coastline-ownership-status" aria-live="polite"></div>
+          <div id="coastlineOwnershipValidation" class="coastline-validation-status" role="status" aria-live="assertive">Ingen ændring afventer validering.</div>
           <div class="toolbar"><button id="coastlineExtendMode" class="admin-button secondary active" type="button">Træk/udvid kyst</button><button id="coastlineEraseMode" class="admin-button danger" type="button">Viskelæder</button><button id="saveCoastlineOwnership" class="admin-button" disabled>Gem kyst og zonegrænser</button></div>
           <p class="hint">Redigér den præcise kyststreg. Zonestregen følger automatisk med. Viskelæderet fjerner en hel kontrolleret kystdel med dens punkt- og DMI-tilknytning og kan gendannes ved at klikke på den stiplede linje igen.</p>
           <p id="coastlineOwnershipSaveStatus" class="hint">Intet offentliggøres, før ændringen er gemt centralt og har bestået produktionskontrollen.</p>
@@ -395,7 +422,7 @@ export function renderCoastlineEditor(content, config) {
     button.textContent='Gem nye zonegrænser';
     if(!result?.ok){button.disabled=false;status.className='status-bad';status.textContent=`Zonegrænserne kunne ikke gemmes: ${result?.error||'ukendt fejl'}`;return;}
     config.document=result.document||config.document;config.ownershipDirty=false;activeState.config.document=config.document;activeState.ownershipDirty=false;
-    status.className='status-good';status.textContent='Gemt centralt og verificeret. Ved næste deployment følger kystlinje, målepunkter, DMI-data og score samlet med til den nye hovedzone.';
+    status.className='status-good';status.textContent='Gemt centralt. Den flyttede del havde et gyldigt DMI-gridbevis; produktionskontrollen gentager kontrollen før offentliggørelse.';
     renderOwnershipStatus(activeState);drawMap(activeState);
   });
 

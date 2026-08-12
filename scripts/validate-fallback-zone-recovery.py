@@ -12,8 +12,12 @@ from shapely.ops import transform
 
 ROOT = Path(__file__).resolve().parents[1]
 TO_M = Transformer.from_crs(4326, 25832, always_xy=True).transform
-ALLOWED = {"DK-B07-19", "DK-B10-14", "DK-B10-16"}
+ALLOWED = {"DK-B07-19", "DK-B08-12", "DK-B08-18", "DK-B08-19", "DK-B10-14", "DK-B10-16", "DK-B08-10", "DK-B08-17"}
 EXPECTED_MOVE_OWNERS = {
+    "dk-b10-14-national-part-01-locality-01": "DK-B10-14",
+    "dk-b10-14-national-part-01-locality-02": "DK-B10-14",
+}
+EXPECTED_REPLACED_OWNER = {
     "dk-b08-10-national-part-01": "DK-B08-10",
     "dk-b08-10-national-part-02": "DK-B08-10",
     "dk-b08-10-national-part-03": "DK-B08-10",
@@ -21,10 +25,6 @@ EXPECTED_MOVE_OWNERS = {
     "dk-b08-17-national-part-02": "DK-B08-17",
     "dk-b09-01-national-part-01": "DK-B09-01",
     "dk-b09-01-national-part-05": "DK-B09-01",
-    "dk-b10-14-national-part-01-locality-01": "DK-B10-14",
-    "dk-b10-14-national-part-01-locality-02": "DK-B10-14",
-}
-EXPECTED_REPLACED_OWNER = {
     "dk-b10-14-national-part-02-locality-01": "DK-B10-14",
     "dk-b10-14-national-part-02-locality-02": "DK-B10-14",
 }
@@ -104,10 +104,11 @@ def main():
         errors.append(f"{len(candidate_overlaps)} overlap mellem kandidatens hovedzoner")
 
     active_overlaps = []
+    ignored_active_parts = planned_replacements | set(planned_moves)
     for owner, parts in (active_document.get("zones") or {}).items():
-        if owner in ALLOWED:
-            continue
         for part in parts:
+            if part.get("partId") in ignored_active_parts:
+                continue
             active_geometry = transform(TO_M, shape(part["geometry"]))
             for feature, candidate_geometry in metric:
                 overlap = min(candidate_geometry.intersection(active_geometry.buffer(2)).length, active_geometry.intersection(candidate_geometry.buffer(2)).length)

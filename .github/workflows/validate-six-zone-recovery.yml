@@ -33,7 +33,7 @@ jobs:
           --plan .github/private-data/six-zone-recovery/recovery-plan.json
           --output six-zone-recovery-validation.json
 
-      - name: Validate the 12 new water points on native DMI grids
+      - name: Validate all 22 target and neighbour-remainder water points on native DMI grids
         run: >-
           python scripts/validate-national-local-part-dmi-grid.py
           --input .github/private-data/six-zone-recovery/point-pairs.json

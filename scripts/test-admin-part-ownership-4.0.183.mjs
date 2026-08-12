@@ -41,7 +41,7 @@ assert.ok(!Object.values(erased.zones).flat().some(part=>part.partId===ids[0].id
 
 const editorSource=await fs.readFile('js/ui/admin-coastline-editor.js','utf8');
 const dashboardSource=await fs.readFile('js/ui/admin-dashboard.js','utf8');
-for(const token of ['partOwnership','disabledParts','Viskelæder','Gem kyst og zonegrænser','landpunkt, vandpunkt og vejrdata','coastline-boundary-handle','draggable:true','Zonestregen følger automatisk med'])assert.ok(editorSource.includes(token),`Admin-editor mangler kontrakten: ${token}`);
+for(const token of ['partOwnership','disabledParts','Viskelæder','Gem kyst og zonegrænser','landpunkt, vandpunkt og vejrdata','coastline-boundary-handle','draggable:true','Zonestregen følger automatisk med','DMI-gridbevis mangler','Ændringen blev ikke udført','coastlineOwnershipValidation'])assert.ok(editorSource.includes(token),`Admin-editor mangler kontrakten: ${token}`);
 assert.ok(dashboardSource.includes('coastalParts'),'Admin-dashboardet skal hente de præcise kystdele til redigering.');
 assert.ok(editorSource.includes('schemaVersion=4'),'Editoren skal bevare kystredigeringens schema 4.');
 console.log('OK: Admin kan flytte og slette zoners kystdele uden dubletter eller tab af den samlede datakontrakt.');
