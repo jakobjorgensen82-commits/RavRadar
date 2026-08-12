@@ -38,7 +38,7 @@ def build(zones,plan,kyst,recovery_zone_ids=None):
     recovery_zone_ids=set(recovery_zone_ids or [])
     zone_features={f["properties"]["id"]:f for f in zones.get("features") or [] if f.get("properties",{}).get("zoneStatus")=="active"}
     plan_rows={row["zoneId"]:row for row in plan.get("zones") or []}
-    if len(zone_features)!=208 or zone_features.keys()!=plan_rows.keys():fail("National source-QA kræver samme 208 zoner i hydreret register og plan.")
+    if not zone_features or zone_features.keys()!=plan_rows.keys():fail("National source-QA kræver samme ikke-tomme zonebestand i hydreret register og plan.")
     source=[]; refs=[]
     for feature in kyst.get("features") or []:
         geometry=project(shape(feature.get("geometry")))

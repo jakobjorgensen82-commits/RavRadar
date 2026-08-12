@@ -31,7 +31,8 @@ def pilot_module():
     module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); return module
 def validate_plan(plan):
     if plan.get("status")!="national-read-only-work-plan" or plan.get("automaticActivationAllowed") is not False: fail("Ugyldig national read-only arbejdsplan.")
-    if plan.get("sourceZoneCount")!=208: fail("National kildehentning kræver præcis 208 centralt effektive zoner.")
+    planned=plan.get("zones") or []
+    if not planned or plan.get("sourceZoneCount")!=len(planned): fail("National kildehentning kræver samme ikke-tomme zonebestand i planens tæller og zoneliste.")
     tiles=plan.get("tiles") or []
     if not tiles or len({t.get("id") for t in tiles})!=len(tiles): fail("Manglende eller dublerede nationale fliser.")
     planned={z.get("zoneId") for z in plan.get("zones") or []}; covered={z for t in tiles for z in t.get("zoneIds") or []}

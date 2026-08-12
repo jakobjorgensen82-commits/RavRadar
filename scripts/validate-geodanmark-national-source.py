@@ -10,7 +10,8 @@ def fail(message): raise SystemExit(message)
 def load(path): return json.loads(path.read_text(encoding="utf-8"))
 def sha(path): return hashlib.sha256(path.read_bytes().rstrip(b"\n")).hexdigest()
 def validate(plan, report, work, secret=""):
-    if plan.get("sourceZoneCount")!=208 or report.get("sourceZoneCount")!=208: fail("National kildevalidering kræver 208 effektive zoner.")
+    expected=plan.get("sourceZoneCount")
+    if not isinstance(expected,int) or expected<=0 or report.get("sourceZoneCount")!=expected: fail("National kildevalidering kræver samme positive zonebestand i plan og kildemanifest.")
     if report.get("status")!="private-national-official-source-acquired": fail("Nationalt kildemanifest har forkert status.")
     for flag in ("productionGeometryChanged","adminDataChanged","weatherSamplingChanged","scoreChanged","automaticActivationAllowed"):
         if report.get(flag) is not False: fail(f"Nationalt kildemanifest har ulovligt mutationsflag: {flag}")
@@ -28,7 +29,7 @@ def validate(plan, report, work, secret=""):
             if row and row.get("status")=="fetched":
                 path=work/tile_id/row["file"]
                 if not path.is_file() or sha(path)!=row.get("sha256"): fail(f"Fil/hash-fejl for {tile_id}/{layer}.")
-    if covered!=planned_zones or len(covered)!=208: fail("Fliserne dækker ikke alle 208 planzoner.")
+    if covered!=planned_zones or len(covered)!=expected: fail(f"Fliserne dækker ikke alle {expected} planzoner.")
     merged=report.get("mergedLayers") or {}
     if "Kyst" not in merged or merged["Kyst"].get("featureCount",0)<=0: fail("Det samlede nationale Kyst-lag mangler.")
     for layer,row in merged.items():

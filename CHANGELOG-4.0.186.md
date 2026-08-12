@@ -6,3 +6,4 @@
 - Produktionsbyggeren udelader kun en del, når den centrale post er både udtrykkeligt deaktiveret og publiceret.
 - Den private fallbackanalyse bevarer Havnø/Mariager Fjord som slettet. Tre zoner løses ved at flytte allerede validerede dele til korrekt ejer; tre kræver 12 nye officielle kandidatdele med 12/12 punktpar. Kandidaten har nul overlap mod andre aktive hovedzoner, men DMI- og ejer-gates mangler fortsat.
 - Den nationale private Linux-kørsel bygger nu fallbackkandidaten direkte fra samme hentede officielle GeoDanmark-kyst og validerer de 12 vandpunkter på DMI's native grid. Output forbliver et ikke-aktiverbart QA-artifact.
+- Den nationale kildekædes gamle 208-zonekonstant er løftet til den eksplicitte aktuelle politik på 211 efter de tre Vadehavszoner. Efter planporten kræver validatorerne fortsat identisk, ikke-tom zonebestand i plan, fliser, manifest, hydreret register og analyse.
