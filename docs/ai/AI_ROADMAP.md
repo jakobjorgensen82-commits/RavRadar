@@ -2,6 +2,10 @@
 
 Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status skal løbende flyttes til RDKS, når noget implementeres.
 
+## Bindende aktivt scope – DEC-0036
+
+Ældre landsdækkende geometriopgaver er sat på pause og må ikke genoptages implicit. Næste kystarbejde omfatter kun de seks fallbackzoner i DEC-0036 og det aftalte adminværktøj. Enhver bredere geometri-, pipeline- eller funktionsændring kræver, at arbejdet stopper og ejeren godkender udvidelsen først.
+
 ## Afsluttet P0 – hovedzoner med præcis kyst
 - **Aktuel status efter 4.0.185:** 4.0.182–4.0.185 har afsluttet offentlig aktivering, entydige hovedzoneskel, redigerbart delejerskab, lokal scoreforklaring og behovsstyret “Hvor er det?”-visning. Historiske punkter nedenfor om kommende kandidat, manglende aktivering og ventende adminudvidelse er bevaret som forløb og er ikke aktuelle opgaver.
 - **Resterende kystarbejde:** Havnø/Mariager Fjord forbliver bevidst slettet. De fem øvrige fallbackzoner samt den fejlplacerede Lolland vest/Albuen analyseres i en privat officiel-kystkandidat. Admin kan trække en zoneende til en eksisterende verificeret nabodel, bruge et reversibelt viskelæder og slette en hel zone. Helt ny geometri kræver fortsat geometri-, overlap-, land-/vandpunkt-, DMI- og offentlig runtimekontrol.

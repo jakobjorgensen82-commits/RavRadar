@@ -1,5 +1,6 @@
 ## 2026-08-12 – 4.0.186-kandidat
 
+- Ejeren stoppede den fejlagtige udvidelse til en landsdækkende pipeline. DEC-0036 afgrænser bindende det aktive arbejde til seks navngivne fallbackzoner og det aftalte adminværktøj. Havnø/Mariager Fjord øst forbliver slettet; resten af den produktionsverificerede kyst er urørt baseline. Nye behov uden for omfanget kræver stop og udtrykkelig godkendelse før kode eller CI.
 - Privat #31589831140 beviste den nationale 211-zonekæde gennem officiel kildehentning, kilde-QA og fjord-/normasker. Jobbet stoppede derefter på en historisk 208-konstant i topologiauditen. Topologiaudit, delgenerator, validatorer og regressionstests er afstemt til 211; ingen offentlig geometri blev ændret.
 - Privat #31590992368 bestod videre gennem 131 fliser, topologi, dækningsaudit og delgenerator. Stednavneaudittens forældede 100-flisegate er gjort planbundet med komplet minimumsspor for alle fem stedtyper; offentlig geometri er uændret.
 - Den præcise admin-kyst har fået trækbare endehåndtag og et reversibelt viskelæder. Flytning og deaktivering omfatter hele den validerede delkontrakt og central readback.

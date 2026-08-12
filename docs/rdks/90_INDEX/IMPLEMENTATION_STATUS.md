@@ -1,5 +1,6 @@
 # Implementeringsstatus pr. 4.0.186 – lokal kandidat
 
+- [x] DEC-0036 låser det aktive arbejde til de seks navngivne fallbackzoner og adminværktøjet. Den fejlagtigt udvidede landsdækkende pipeline er stoppet som arbejdsretning og må ikke genoptages uden ny udtrykkelig ejergodkendelse.
 - [x] Admin-endepunkter kan trækkes til en eksisterende valideret nabokystdel.
 - [x] Viskelæder deaktiverer/gendanner en hel del og dens punkt-/DMI-kontrakt samlet.
 - [x] Central schema-4-readback validerer både ejerskab og deaktiveringer.

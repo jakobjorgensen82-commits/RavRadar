@@ -1,5 +1,9 @@
 # Aktuelt sessionshandoff – 2026-08-09
 
+## Højeste prioritet: bindende scope fra 2026-08-12
+
+DEC-0036 har forrang for ældre brede nationale planer. Aktivt arbejde må kun omfatte `DK-B07-19`, `DK-B08-12`, `DK-B08-18`, `DK-B08-19`, `DK-B10-14`, `DK-B10-16` og det direkte nødvendige adminværktøj til trækbar præcis kyst, følgende zoneafgrænsning, viskelæder og samlet punkt-/DMI-/runtimekontrakt. Havnø/Mariager Fjord øst forbliver slettet. Start eller fortsæt ikke en landsdækkende kystpipeline; stop og spørg ejeren før enhver udvidelse.
+
 ## Kritisk checkpoint 2026-08-11 / 4.0.181
 
 - Den nationale aktivering i 4.0.180 projicerede fejlagtigt 605 interne beregningsdele som selvstændige synlige kortzoner. Multipart-geometri gav 2.488 synlige linjer og cirka 12.440 Leaflet-objekter, sorte endemarkeringer over hele kortet, gentagne navne og meget langsom indlæsning.

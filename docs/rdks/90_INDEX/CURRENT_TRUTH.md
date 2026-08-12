@@ -5,6 +5,12 @@
 - Eksisterende funktioner må ikke forsvinde eller blive afkoblet som utilsigtet bivirkning af nyt arbejde. Bevidst fjernelse kræver en udtrykkelig aktuel ejerbeslutning og skal afgrænses til det bestilte.
 - Releasekontrol skal sammenligne den berørte funktionsflade før og efter på tværs af offentlig UI, admin, data/runtime og deployment. Tavst funktionstab er en releaseblokker.
 
+## Bindende arbejdsafgrænsning – DEC-0036
+
+- Det aktive kystarbejde omfatter kun Langeland syd/Bagenkop, Nykøbing Sjælland/Rørvig, Dronningmølle/Hornbæk, Ålsgårde/Helsingør, Lolland vest/Albuen og Fejø/Femø samt det direkte nødvendige adminværktøj.
+- Havnø og Mariager Fjord øst forbliver slettet. Den øvrige produktionsverificerede nationale kyst er urørt baseline.
+- Landsdækkende genopbygning, nyopdeling eller fortsættelse af den brede private nationale pipeline er ikke autoriseret. Ethvert behov uden for de seks zoner kræver, at arbejdet stopper og ejeren spørges først.
+
 ## 4.0.186-kandidat – trækbar kystgrænse og privat fallbackrecovery
 
 - Admin kan trække hovedzonens kystende til en eksisterende valideret nabokystdel. Ejerskab, geometri, land-/vandpunkt, DMI- og scoreidentitet flyttes samlet, og zoneafgrænsningen følger automatisk.
