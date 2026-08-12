@@ -1,4 +1,10 @@
-# Implementeringsstatus pr. 4.0.183
+# Implementeringsstatus pr. 4.0.184-kandidat
+
+- [x] Fælles lokal scoreresultatbygger bevarer totalscore, delscorer, begrundelser og geografisk dækning.
+- [x] Én eller flere bedst scorende kystdele vises tydeligt ved en spredning over 7 point; præcis 7 point gælder fortsat hele zonen.
+- [x] Aktuel zone og femdøgnsvisning anvender samme lokale resultatkontrakt.
+- [x] Offentlig 4.0.183-runtime er systemisk auditeret: 412/412 aktuelle visninger kan bygges komplet, uden manglende vinder eller scoreuoverensstemmelse.
+- [ ] Frisk GitHub-produktion skal bygge de udvidede forklaringsfelter og bestå fulde gates og Pages-deploy.
 
 - [x] Interne sorte kystdelsmarkeringer er fjernet; ét gensidigt nærmeste møde mellem to forskellige hovedzoner giver ét skel.
 - [x] Sorte skel skaleres ned ved landszoom, og tilbage-knappen gendanner Danmarksoverblikket.

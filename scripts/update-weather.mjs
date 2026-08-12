@@ -892,7 +892,12 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, generated
         const modes = {};
         for (const mode of ['waders', 'beach']) {
           const result = calculateRavScore({ mode, zone, weather, history });
-          if (result.available && Number.isFinite(result.score)) modes[mode] = { score: result.score, components: result.components };
+          if (result.available && Number.isFinite(result.score)) modes[mode] = {
+            score: result.score,
+            components: result.components,
+            componentReasons: result.componentReasons,
+            explanation: { weights: result.explanation?.weights, contributions: result.explanation?.contributions }
+          };
         }
         if (Object.keys(modes).length) scores.push({ time: weather.time, ...modes });
       }
@@ -910,7 +915,7 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, generated
     for (const time of times) {
       const result = { time };
       for (const mode of ['waders', 'beach']) {
-        const available = rows.map(row => ({ partId: row.partId, name: row.name, score: row.scores.find(score => score.time === time)?.[mode]?.score })).filter(row => Number.isFinite(row.score));
+        const available = rows.map(row => { const detail=row.scores.find(score => score.time === time)?.[mode]; return { partId:row.partId,name:row.name,score:detail?.score,components:detail?.components }; }).filter(row => Number.isFinite(row.score));
         if (available.length !== expectedPartCount) {
           result[mode] = { status: 'uncertain', validPartCount: available.length, expectedPartCount };
           continue;
@@ -919,7 +924,7 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, generated
         const high = available[0].score, low = available.at(-1).score;
         const near = available.filter(row => high - row.score <= 7);
         const status = high - low <= 7 ? 'whole-zone' : near.length === 1 ? 'only-part' : 'several-parts';
-        result[mode] = { status, score: high, winningPartId: available[0].partId, winningPartName: available[0].name, scoreSpread: high - low, parts: status === 'whole-zone' ? [] : near };
+        result[mode] = { status, score: high, winningPartId: available[0].partId, winningPartName: available[0].name, scoreSpread: high - low, components:available[0].components, parts: status === 'whole-zone' ? [] : near.map(({partId,name,score})=>({partId,name,score})) };
       }
       hourly.push(result);
     }

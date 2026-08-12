@@ -1,8 +1,14 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.183
+**Håndbogsversion:** 4.0.184
 
 **Opdateret:** 1. august 2026
+
+## Lokal scoreforklaring i 4.0.184
+
+Når en hovedzone består af flere præcise kystdele, kommer zonens viste RavScore fra den bedst scorende del. Hvis forskellen mellem bedste og dårligste del er højst 7 point, vises forholdene som gældende for hele zonen. Først når forskellen er mere end 7 point, fortæller zonepanelet tydeligt, hvilken navngiven kystdel der scorer bedst, og at den høje score ikke nødvendigvis gælder resten af zonen. Ligger flere dele inden for 7 point af den bedste, vises de alle med navn og score.
+
+Jagtbarhed, transport, mobilisering og deres forklaringer hentes fra den samme vindende kystdel. Dermed kan en grøn hovedzonescore ikke længere stå sammen med tomme delscorer eller teksten om manglende forklaringsdata, når de lokale beregninger faktisk findes. Reglen ændrer ikke RavScore; den gør den eksisterende lokale beregning forståelig i både den aktuelle visning og femdøgnsvisningen.
 
 Håndbogen er den faglige og tekniske reference for RavRadar. RDKS er bindende for aktive krav og beslutninger; koden er autoritativ for den aktive beregning.
 

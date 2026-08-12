@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {buildLocalZoneScore,localCoverageSummary} from '../js/core/local-zone-score.js';
+
+const exact={score:78,components:{huntability:72,transport:84,release:79},componentReasons:{huntability:['Rolige forhold.'],transport:['Strømmen fører materiale ind.'],release:['Materiale kan genmobiliseres.']},explanation:{weights:{huntability:.4,transport:.35,release:.25},contributions:{huntability:29,transport:29,release:20}}};
+const coastalParts={enabled:true,generatedAt:'2026-08-12T08:00:00Z',parts:{p3:{zoneId:'Z',name:'Mullerup Klint',current:{time:'2026-08-12T08:00:00Z',waders:exact}}},zones:{Z:{hourly:[{time:'2026-08-12T08:00:00Z',waders:{status:'only-part',score:78,winningPartId:'p3',winningPartName:'Mullerup Klint',scoreSpread:30,components:exact.components,parts:[{partId:'p3',name:'Mullerup Klint',score:78}]}}]}}};
+const result=buildLocalZoneScore({coastalParts,zoneId:'Z',mode:'waders',time:'2026-08-12T08:00:00Z'});
+assert.equal(result.score,78);
+assert.deepEqual(result.components,exact.components);
+assert.deepEqual(result.componentReasons,exact.componentReasons);
+assert.equal(result.localCoverageSummary.kind,'only-part');
+assert.match(result.localCoverageSummary.text,/ikke nødvendigvis resten af zonen/);
+assert.equal(localCoverageSummary({status:'whole-zone',score:60,scoreSpread:7}).kind,'whole-zone','Præcis 7 point skal fortsat gælde hele zonen.');
+assert.equal(localCoverageSummary({status:'only-part',score:60,scoreSpread:8,winningPartName:'A',parts:[{name:'A',score:60}]}).kind,'only-part','Opdeling starter først over 7 point.');
+const several=localCoverageSummary({status:'several-parts',score:70,scoreSpread:20,winningPartName:'A',parts:[{name:'A',score:70},{name:'B',score:66}]});
+assert.match(several.text,/A \(70\), B \(66\)/);
+const app=fs.readFileSync('app.js','utf8'),ui=fs.readFileSync('js/ui/info-panel.js','utf8'),weather=fs.readFileSync('scripts/update-weather.mjs','utf8');
+assert.ok(app.includes('buildLocalZoneScore'),'Zone- og prognosevisning skal bruge den fælles lokale scoreresultatbygger.');
+assert.ok(ui.includes('localCoveragePanel(result)'),'Zonepanelet skal vise den geografiske scoreforklaring før delscorerne.');
+assert.ok((ui.match(/localCoveragePanel\(/g)||[]).length >= 3,'Både aktuel zone og åbnet femdøgnsprognose skal vise den geografiske scoreforklaring.');
+assert.match(weather,/high - low <= 7 \? 'whole-zone'/,'Produktionsbygningen skal bevare 7-point-reglen.');
+assert.match(weather,/componentReasons: result\.componentReasons/,'Vinderens faglige forklaringer skal følge med til offentlig runtime.');
+console.log('OK: Lokal zonescore viser korrekt kystdel, 7-point-grænse, delscorer og forklaringer.');

@@ -1,18 +1,19 @@
-import { calculateRavScore, exceptionalScoreMark, scoreRating } from "./js/core/score-engine.js?v=4.0.183";
-import { selectBestTimeForDay } from "./js/core/best-time-selector.js?v=4.0.183";
-import { loadConditions, loadZones, loadDataManifest } from "./js/services/data-service.js?v=4.0.183";
-import { submitObservation, getLocalObservations, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.183";
-import { predictAmberChance } from "./js/core/prediction-engine.js?v=4.0.183";
-import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.183";
-import { activeTrip, answerTrip, pendingTripPrompt, resumeTripTracking, startTrip, stopTrip } from "./js/services/trip-service.js?v=4.0.183";
-import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.183";
-import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.183";
-import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.183";
-import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.183";
-import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.183";
-import { analyzeObservations } from "./js/services/learning-analysis.js?v=4.0.183";
-import { askRavRadar, QUICK_QUESTIONS } from "./js/services/rav-assistant.js?v=4.0.183";
-import { loadAdaptiveModel } from "./js/core/adaptive-model.js?v=4.0.183";
+import { calculateRavScore, exceptionalScoreMark } from "./js/core/score-engine.js?v=4.0.184";
+import { selectBestTimeForDay } from "./js/core/best-time-selector.js?v=4.0.184";
+import { loadConditions, loadZones, loadDataManifest } from "./js/services/data-service.js?v=4.0.184";
+import { submitObservation, getLocalObservations, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.184";
+import { predictAmberChance } from "./js/core/prediction-engine.js?v=4.0.184";
+import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.184";
+import { activeTrip, answerTrip, pendingTripPrompt, resumeTripTracking, startTrip, stopTrip } from "./js/services/trip-service.js?v=4.0.184";
+import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.184";
+import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.184";
+import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.184";
+import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.184";
+import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.184";
+import { analyzeObservations } from "./js/services/learning-analysis.js?v=4.0.184";
+import { askRavRadar, QUICK_QUESTIONS } from "./js/services/rav-assistant.js?v=4.0.184";
+import { loadAdaptiveModel } from "./js/core/adaptive-model.js?v=4.0.184";
+import { buildLocalZoneScore } from "./js/core/local-zone-score.js?v=4.0.184";
 
 const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, lastGps:null, flowArrows:null, adaptiveModel:loadAdaptiveModel(), currentScores:new Map(), forecastGroups:new Map(), forecastRenderId:0 };
 const map = createMap("map");
@@ -24,15 +25,7 @@ const assistantDialog=document.querySelector("#assistantDialog"), accountDialog=
 
 function zoneCondition(zone) { return state.conditions.zones?.[zone?.id] || {}; }
 function localZoneScore(zone,time=null){
-  const local=state.conditions.coastalParts?.zones?.[zone?.id];
-  const rows=local?.hourly||[];
-  if(!state.conditions.coastalParts?.enabled||!rows.length)return null;
-  const target=Date.parse(time||state.conditions.generatedAt||new Date().toISOString());
-  const row=rows.reduce((best,item)=>Math.abs(Date.parse(item.time)-target)<Math.abs(Date.parse(best.time)-target)?item:best,rows[0]);
-  const value=row?.[state.mode];
-  if(!Number.isFinite(value?.score)||value.status==='uncertain')return {available:false,score:null,level:'unavailable',label:'Lokale data mangler',localCoverage:value||null};
-  const rating=scoreRating(value.score);
-  return {available:true,score:value.score,baseScore:value.score,level:rating.level,label:rating.label,components:{},componentReasons:{},reasons:[value.status==='whole-zone'?'Forholdene gælder hele zonen.':value.status==='only-part'?`De bedste forhold er ved ${value.winningPartName}.`:`De bedste forhold gælder flere lokale kystdele.`],localCoverage:value,localPart:true};
+  return buildLocalZoneScore({coastalParts:state.conditions.coastalParts,zoneId:zone?.id,mode:state.mode,time:time||state.conditions.generatedAt});
 }
 function scoreFor(zone, weather = zoneCondition(zone).current || {}, history = zoneCondition(zone).history || {}) { return calculateRavScore({ mode:state.mode, zone, weather, history, adaptiveModel:state.adaptiveModel }); }
 function unavailableLocalScore(){return{available:false,score:null,level:'unavailable',label:'Lokale kystdata mangler',reasons:['Zonen vises ikke med en gammel hovedzonescore.'],componentReasons:{}};}
@@ -99,7 +92,7 @@ function groupHoursForZone(zone) {
 }
 function bestForDay(zone,date) {
   const localRows=state.conditions.coastalParts?.zones?.[zone.id]?.hourly?.filter(row=>String(row.time||'').slice(0,10)===date).map(row=>({row,value:row[state.mode]})).filter(item=>Number.isFinite(item.value?.score)&&item.value.status!=='uncertain');
-  if(localRows?.length){const best=localRows.sort((a,b)=>b.value.score-a.value.score||Date.parse(a.row.time)-Date.parse(b.row.time))[0];const rating=scoreRating(best.value.score);return{hour:{time:best.row.time},result:{available:true,score:best.value.score,level:rating.level,label:rating.label,localCoverage:best.value,localPart:true},recommended:true,isNow:Math.abs(Date.parse(best.row.time)-Date.now())<3600000};}
+  if(localRows?.length){const best=localRows.sort((a,b)=>b.value.score-a.value.score||Date.parse(a.row.time)-Date.parse(b.row.time))[0];return{hour:{time:best.row.time},result:buildLocalZoneScore({coastalParts:state.conditions.coastalParts,zoneId:zone.id,mode:state.mode,time:best.row.time}),recommended:true,isNow:Math.abs(Date.parse(best.row.time)-Date.now())<3600000};}
   if(state.conditions.coastalParts?.enabled)return null;
   const condition=zoneCondition(zone), day=groupHoursForZone(zone).find(item=>item.date===date); if(!day)return null;
   const currentResult=currentScoreFor(zone);
@@ -247,11 +240,11 @@ try {
   resumeTripTracking();syncPendingObservations().catch(()=>{});updateTripUi();const pending=pendingTripPrompt();if(pending)setTimeout(()=>openTripPrompt(pending),650);
 } catch(error){console.error(error);infoPanel.innerHTML='<div class="notice">Aktuelle data kunne ikke indlæses. Gamle prognoser vises ikke.</div>';dataStatus.textContent='Fejl ved indlæsning';}
 
-// RavRadar 4.0.183: versionsmanifest + sikker service-worker-opdatering.
+// RavRadar 4.0.184: versionsmanifest + sikker service-worker-opdatering.
 function installAppUpdateFlow() {
   if (!("serviceWorker" in navigator)) return;
   const banner=document.querySelector("#updateBanner"), updateButton=document.querySelector("#updateAppButton");
-  const version=window.RAVRADAR_VERSION||"4.0.183"; document.querySelector("#appVersion").textContent=version;
+  const version=window.RAVRADAR_VERSION||"4.0.184"; document.querySelector("#appVersion").textContent=version;
   let refreshing=false, registration=null, waitingWorker=null;
   const showUpdate=worker=>{waitingWorker=worker||waitingWorker;if(waitingWorker){waitingWorker.postMessage({type:'SKIP_WAITING'});return;}if(!banner||!updateButton)return;banner.hidden=false;updateButton.disabled=false;updateButton.textContent="Opdater nu";};
   const activate=()=>{updateButton.disabled=true;updateButton.textContent="Opdaterer…";(waitingWorker||registration?.waiting)?.postMessage({type:"SKIP_WAITING"});};

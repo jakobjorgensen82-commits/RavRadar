@@ -203,6 +203,10 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 
 ## 4.0.119 – produktionsbevist DKSS-parserfejl
 - **ISSUE-DKSS-WIND-TAIL-V-DROPPED – PRODUKTIONSVERIFICERET LØST I #1831:** #1828 beviste, at DKSS-id 34 blev fejlfortolket som `sst` og forkastet som tvetydigt. #1831 genkendte begge U/V-felter, gav vindhale i 107 zoner med mindst 96 timer og gennemførte fulde gates/deploy. Det offentlige datasæt havde 108/208 zoner med mindst 96 timers samlet vind og maksimum 111,5 timer.
+# 4.0.184 – løst lokalt, afventer produktionsbevis
+
+- **ISSUE-LOCAL-SCORE-EXPLANATION-DROPPED – LØST LOKALT:** 4.0.183 viste korrekt lokal totalscore og AI-prognose, men konstruerede derefter et tomt `components`/`componentReasons`-objekt. Derfor stod delscorer som `–/100` og UI hævdede fejlagtigt, at data manglede. 4.0.184 fører vinderens eksisterende scorer og forklaringer videre og viser kystdelens geografiske betydning efter den uændrede syvpunktsregel.
+
 # 4.0.183 – løst og produktionsverificeret
 
 - **ISSUE-INTERNAL-BLACK-MAIN-ZONE-MARKERS – LØST OG PRODUKTIONSVERIFICERET:** Offentlig runtime tegnede tidligere to sorte ender for hver hovedzone uden at samle fælles grænser. 4.0.183 tegner ét lille skel alene ved et gensidigt møde mellem forskellige hovedzoner. GitHub Actions #31572312647 bestod.

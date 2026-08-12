@@ -1,5 +1,13 @@
 # Current truth – gældende projektviden
 
+## 4.0.184-kandidat – lokal scoreforklaring
+
+- Når en hovedzone bruger de præcise kystdeles score, følger den vindende dels delscorer og forklaringer nu med til zonepanelet, debug, assistent og observationssnapshot.
+- Syvpunktsreglen er uændret: højst 7 points forskel betyder hele zonen; først ved mere end 7 point fremhæves den bedste del eller flere dele inden for 7 point af maksimum.
+- Zonepanelet viser tydeligt navn og score for den bedste kystdel og advarer om, at den viste hovedzonescore ikke nødvendigvis gælder resten af zonen.
+- En audit af den offentlige 4.0.183-runtime fandt 412/412 aktuelle zone-/jagtformsvisninger med gyldig lokal score, vinder, delscorer og klassifikation. Fejlen var tab af præsentationsfelter, ikke DMI- eller scorefejl.
+- Kandidaten er lokalt målrettet valideret; frisk fuld CI og offentlig kontrol mangler.
+
 ## 4.0.183 – entydige hovedzoneskel og redigerbart delejerskab
 
 - Det offentlige kort tegner kun ét sort skel ved et dokumenteret møde mellem to forskellige hovedzoner. Interne kystdele og frie ender får ingen sort markering; markeringen er lille på landsniveau.

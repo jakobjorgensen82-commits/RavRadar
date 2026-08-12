@@ -117,3 +117,9 @@ Fem sammenhængende produktionskørsler afslørede, at samme ugentlige GitHub-ca
 - Godkendt slutgeometri aktiveret lokalt: 212 hovedzoner, 206 præcise, 6 fallback og 643 interne dele.
 - Nul tværzoneoverlap og nul uafklarede relevante huller; Vadehavets fastlandskyst er med.
 - Private DMI- og central-admin-gates er grønne. Fuld release og onlinekontrol udestår.
+## 2026-08-12 – 4.0.184-kandidat
+
+1. Ejeren dokumenterede Reersø og Mullerup som grøn med RavScore 78, mens zonepanelet viste `–/100` og “ikke nok data”.
+2. Produktionsruntime viste korrekt vinder `Mullerup Klint`, score 78 og komplette delscorer; UI havde bevidst erstattet disse med tomme objekter.
+3. Hele runtime blev auditeret: 643 dele, 206 hovedzoner og 412 aktuelle zone-/jagtformsresultater havde konsistent score, vinder og delscoredata.
+4. En fælles lokal resultatbygger og tydelig geografisk forklaring genopretter den tidligere funktion med uændret grænse på mere end 7 point.

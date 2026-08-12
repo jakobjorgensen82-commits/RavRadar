@@ -896,3 +896,10 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Admin kan flytte eksisterende præcise kystdele til en anden aktiv hovedzone. Geometri, land-/vandpunkt, DMI-gridbevis og del-ID følger samlet med; hver del publiceres kun én gang.
 - Hele zonesletningen er bevaret. Ikke-flyttede dele under en slettet zone filtreres fra offentlig runtime, og ugyldigt ejerskab stopper bygningen.
 - RavScore-regler og den fysiske 643-delsbestand er uændrede. Målrettede kort-, admin-, propagation-, sletnings- og aktiveringstests består, og GitHub Actions #31572312647 bestod den fulde produktionskæde inklusive Pages-deploy.
+
+## 2026-08-12 – 4.0.184 lokal scoreforklaring
+
+- Reersø og Mullerup viste korrekt grøn RavScore 78 og AI-prognose, men tomme delscorer og en falsk tekst om manglende data.
+- Rodårsagen var `localZoneScore`, som beholdt totalscoren fra den vindende kystdel, men erstattede dens `components` og `componentReasons` med tomme objekter.
+- Produktionsdata var konsistente: alle 643 dele fandtes, og 412/412 aktuelle kombinationer af 206 præcisionszoner og to jagtformer havde gyldig vinder, score og delscorer.
+- 4.0.184 fører vinderens delscorer og faglige forklaringer videre og viser tydeligt én eller flere bedst scorende kystdele, men kun når spredningen er mere end 7 point. RavScore-regler og geometri er uændrede.

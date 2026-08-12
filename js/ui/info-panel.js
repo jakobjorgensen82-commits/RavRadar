@@ -1,5 +1,5 @@
-import { calculateRavScore, scoreRating } from "../core/score-engine.js?v=4.0.183";
-import { selectBestTimeForDay } from "../core/best-time-selector.js?v=4.0.183";
+import { calculateRavScore, scoreRating } from "../core/score-engine.js?v=4.0.184";
+import { selectBestTimeForDay } from "../core/best-time-selector.js?v=4.0.184";
 
 const hasNumber = value => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value));
 const formatNumber = (value, suffix, digits = 1) => hasNumber(value) ? `${Number(value).toFixed(digits).replace(".", ",")} ${suffix}` : "Mangler";
@@ -46,6 +46,13 @@ function componentDetails(name, key, result, definition) {
   const calculation = Number.isFinite(Number(weight)) && Number.isFinite(Number(contribution))
     ? `<p class="score-calculation"><b>Bidrag til RavScore:</b> ${componentScore} × ${Math.round(weight*100)} % = <strong>${contribution} point</strong></p>` : "";
   return `<details class="component-detail"><summary><span>${name}</span><strong class="component-score ${componentLevel}">${componentScore ?? "–"}/100</strong></summary><div class="component-explanation"><p><b>Hvad betyder det?</b> ${definition}</p>${calculation}<p><b>Hvorfor denne score?</b></p><ul>${reasons.map(reason => `<li>${escapeHtml(reason)}</li>`).join("") || "<li>Der er ikke nok data til en nærmere forklaring.</li>"}</ul></div></details>`;
+}
+
+function localCoveragePanel(result) {
+  const summary=result?.localCoverageSummary;
+  if(!summary)return '';
+  const rows=(summary.parts||[]).map(part=>`<li><b>${escapeHtml(part.name)}</b>: RavScore ${part.score}</li>`).join('');
+  return `<section class="local-coverage-panel ${escapeHtml(summary.kind)}"><p class="eyebrow dark">Hvor i zonen er forholdene bedst?</p><h3>${escapeHtml(summary.title)}</h3><p>${escapeHtml(summary.text)}</p>${rows?`<ul>${rows}</ul>`:''}</section>`;
 }
 
 
@@ -128,6 +135,7 @@ export function bindZoneInfoInteractions(element, zone, mode, history) {
       const day = summaries[index], best = day.best, h = best.hour || {}, r = best.result || {};
       forecastSection.querySelectorAll(".forecast-score-day").forEach((button,i) => { button.classList.toggle("active",i===index); button.setAttribute("aria-selected",String(i===index)); });
       detail.innerHTML = `<div class="forecast-selected"><div><h4>${capitalize(dayLabel(`${day.date}T12:00:00`))} ${dateLabel(`${day.date}T12:00:00`)}</h4>${best.recommended?`<p>Bedste beregnede tidspunkt: <b>${best.isNow?"Lige nu":hourLabel(h.time)}</b></p><p class="muted">Valgt som den højeste samlede RavScore ${best.isNow?"blandt lige nu og resten af dagen":"for dagen"}. Vandstand bruges kun som tie-breaker ved samme score.</p>${best.candidates?.length>1?`<details class="best-time-comparison"><summary>Se sammenligningen</summary><ol>${best.candidates.slice(0,5).map(candidate=>`<li><span>${candidate.isNow?"Lige nu":hourLabel(candidate.time)}</span><b>RavScore ${candidate.score}</b></li>`).join("")}</ol></details>`:""}`:`<p>Intet sikkert bedste tidspunkt. Se timeprognosen, da der mangler tilstrækkelige data.</p>`}</div><div class="score-badge ${r.level}"><strong>${r.available?r.score:"–"}</strong><span>RavScore</span></div></div>
+        ${localCoveragePanel(r)}
         <div class="component-list compact metric-sized">${componentDetails("Jagtbarhed","huntability",r,"Hvor let og sikkert det forventes at være at finde rav med den valgte jagtform. Vind og bølger betyder mest.")}${componentDetails("Transport","transport",r,"Hvor godt vind, strøm og vandstandsændringer forventes at føre rav og let materiale mod kysten.")}${componentDetails("Mobilisering","release",r,"Samlet potentiale for enten ny frigivelse eller genmobilisering af rav, som allerede ligger i nærkystzonen eller tidligere opskyl.")}</div>${r.available ? coastTransportExplanation(r) : ""}
         <div class="metric-grid weather-grid"><div class="metric"><span>Vind</span><strong>${directionMetric("wind",h.windSpeedMps,"m/s",h.windDirectionDeg)}</strong></div><div class="metric"><span>Bølger</span><strong>${formatNumber(h.waveHeightM,"m")}</strong></div><div class="metric"><span>Vandstand</span><strong>${formatNumber(h.waterLevelCm,"cm",0)}</strong></div><div class="metric"><span>Strøm</span><strong>${directionMetric("current",h.currentSpeedMps,"m/s",h.currentDirectionDeg,2)}</strong></div></div>`;
     };
@@ -152,6 +160,7 @@ export function showZoneInfo(element, zone, result, condition, mode, options = {
   const modeName = mode === "waders" ? "Waders" : "Strand", score = result.available ? result.score : "–", days = groupForecastHours(options.forecast);
   const componentHtml = result.available ? `<div class="component-list metric-sized">${componentDetails("Jagtbarhed","huntability",result,"Hvor let og sikkert det er at finde rav med den valgte jagtform. Vind og bølger betyder mest.")}${componentDetails("Transport","transport",result,"Hvor godt vind, strøm og vandstandsændringer fører rav og let materiale mod kysten.")}${componentDetails("Mobilisering","release",result,"Samlet potentiale for enten ny frigivelse eller genmobilisering af rav, som allerede ligger i nærkystzonen eller tidligere opskyl.")}</div>` : `<div class="metric-grid"><div class="metric"><span>Jagtbarhed</span><strong>–/100</strong></div><div class="metric"><span>Transport</span><strong>–/100</strong></div><div class="metric"><span>Mobilisering</span><strong>–/100</strong></div></div>`;
   element.innerHTML = `<button type="button" class="back-to-overview" data-close-zone>← Tilbage til oversigten</button><div class="zone-header"><div><h2>${escapeHtml(zone.name)}</h2><p class="zone-meta">${escapeHtml(zone.region)} · ${modeName}</p></div><div class="score-badge ${result.level}"><strong>${score}</strong><span>${escapeHtml(result.label)}</span></div></div>
+    ${localCoveragePanel(result)}
     ${componentHtml}
     ${result.available ? stateExplanationPanel(result) : ""}
     ${result.available ? coastTransportExplanation(result) : ""}

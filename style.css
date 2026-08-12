@@ -178,6 +178,9 @@ code { padding: 1px 4px; border-radius: 4px; background: var(--surface-soft); }
 .national-zone-row strong,.national-zone-row small { display: block; }.national-zone-row small { margin-top: 2px; color: var(--muted); }
 
 .component-list { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; margin-top: 16px; }
+.local-coverage-panel{margin:16px 0 0;padding:16px 18px;border:2px solid #0b6574;border-radius:16px;background:#eef9fa;color:#17343a}
+.local-coverage-panel.only-part{border-color:#b85d18;background:#fff6ed}.local-coverage-panel.several-parts{border-color:#987019;background:#fff9e8}
+.local-coverage-panel h3{margin:.2rem 0 .45rem;font-size:1.12rem}.local-coverage-panel p:last-child,.local-coverage-panel ul{margin-bottom:0}.local-coverage-panel ul{padding-left:1.25rem}
 .component-detail { min-width: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); overflow: hidden; }
 .component-detail summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 62px; padding: 11px; cursor: pointer; list-style: none; }
 .component-detail summary::-webkit-details-marker { display: none; }
