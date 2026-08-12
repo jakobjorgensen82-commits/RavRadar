@@ -1,5 +1,12 @@
 # Current truth – gældende projektviden
 
+## 4.0.190 – progressiv DMI-cache vælges efter fremdrift
+
+- Produktionskørslerne #2429–#2431 bekræftede det samme 125/210-mønster trods 4.0.189-rotationen. Det var et gentaget systemmønster, ikke tilfældige DMI-fejl.
+- Den private checkpoint-cache blev gendannet korrekt, men builderen valgte derefter cache efter flest bevarede vejrkomponenter. En ældre offentlig cache kunne derfor vinde over den nyere private checkpoint-cache og slette `collectionState`, budgetrotation og behandlede forecast-trin fra arbejdsgrundlaget.
+- Kompatible caches vælges nu først efter nyeste `checkpointedAt`/buildertid. Kvalitetsmålet bruges kun som tie-breaker. Den private checkpoint indeholder allerede den offentlige cache, som blev flettet ind ved kørslens start; gyldige data smides derfor ikke væk.
+- DMI-audit, RavScore, fallback, kystdata og offentlig deploygate er uændret. Frisk CI skal stadig bevise rotation, voksende dækning og mindst 90 % verificeret aktuel U/V-dækning.
+
 ## 4.0.189 – budgetrotation mellem DMI-havmodeller
 
 - Produktionskørslerne #2423–#2426 bevarede den progressive cache, men den videnskabelige strømaudit stod fast på 125/210 zoner.

@@ -1049,12 +1049,29 @@ def cache_quality(document: dict[str, Any]) -> tuple[int, int, float]:
     return complete_current, component_rows, epoch(document.get("generatedAt"))
 
 
+def cache_progress_time(document: dict[str, Any]) -> float:
+    """Return the newest persisted builder/checkpoint time for a compatible cache.
+
+    A progressive private checkpoint already contains the deployed data merged at
+    the beginning of its run. It must therefore win over an older public cache,
+    even when expiry cleanup has legitimately reduced its raw component count.
+    Ranking by component volume made old public data erase collection rotation and
+    processed-step progress on every new runner.
+    """
+    timestamps = [
+        document.get("checkpointedAt"),
+        document.get("generatedAt"),
+        document.get("sourceUpdatedAt"),
+    ]
+    return max((epoch(value) for value in timestamps), default=0.0)
+
+
 def load_previous(expected_signature: str) -> dict[str, Any]:
     candidates = [load_document(OUTPUT_PATH), load_document(DEPLOYED_FALLBACK_PATH)]
     compatible = [document for document in candidates if document.get("zoneRegistrySignature") == expected_signature and document.get("zones")]
     if not compatible:
         return {"schemaVersion": 2, "zones": {}, "runs": {}, "zoneRegistrySignature": expected_signature}
-    return max(compatible, key=cache_quality)
+    return max(compatible, key=lambda document: (cache_progress_time(document), cache_quality(document)))
 
 
 def merge_previous(current: dict[str, Any], previous: dict[str, Any], allowed_zone_ids: set[str] | None = None) -> None:

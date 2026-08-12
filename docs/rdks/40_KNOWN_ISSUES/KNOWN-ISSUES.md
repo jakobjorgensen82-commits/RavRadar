@@ -1,5 +1,9 @@
 # Kendte åbne og overvågede forhold
 
+## DMI-produktionskæde
+
+- **ISSUE-DMI-PROGRESS-CACHE-SELECTION – RETTET LOKALT I 4.0.190 / AFVENTER CI:** #2429–#2431 stod fast på 125/210 verificerede current-zoner. Den private cache blev gendannet, men en ældre offentlig cache kunne vinde på antal komponenter og dermed kassere nyere scheduler-/checkpointfremdrift. Nyeste kompatible checkpoint vinder nu; kvalitetsmålet er kun tie-breaker. Den uændrede 90 %-gate skal fortsat bestås i frisk CI før deploy.
+
 ## National zone- og kystgeometri – aktiv pilot efter DEC-0032
 - **ISSUE-SIX-ZONE-NATIVE-DMI-PROOF – LUKKET PRIVAT / AFVENTER EJERREVIEW:** Den første DMI-grønne kandidat blev forkastet før aktivering, fordi hele del-flytninger tømte to nabozoner. Den korrigerede 22-dels kandidat bevarer naborester, og #31609637964 bestod 22/22 native DMI-gridvalg, nul overlap, runtime-isolation og rollback. Offentlig aktivering er fortsat blokeret indtil visuel ejergodkendelse og efterfølgende releasegates.
 - **ISSUE-COAST-WORK-SCOPE-EXPANSION – STOPPET / AFGRÆNSET AF DEC-0036:** Arbejdet blev fejlagtigt udvidet fra seks fallbackzoner og adminværktøjet til en landsdækkende genkørsel. Ingen kandidat blev aktiveret offentligt. Den aktive opgave er nu bindende begrænset til de seks navngivne zoner; bred national genopbygning kræver ny, udtrykkelig ejergodkendelse.

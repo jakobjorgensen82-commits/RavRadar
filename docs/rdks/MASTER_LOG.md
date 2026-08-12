@@ -939,3 +939,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - `dkss_idw` brugte hele arbejdsbudgettet i hver kørsel og blev derefter valgt igen af den geografiske prioritering; de øvrige DKSS-modeller fik ikke arbejdstid.
 - Schedulerens private collection-state registrerer nu tidsafbrudte marinemodeller og roterer dem bag ikke-forsøgte/ældre afbrudte modeller i næste recoverykørsel. Fuld/uændret gyldig behandling nulstiller markeringen.
 - Kyst, land-/vandpunkter, RavScore, fallback, 90 %-grænse og deploygate er uændrede. CI-bevis mangler endnu.
+## 2026-08-12 – 4.0.190 bevarer den nyeste DMI-arbejdsfremdrift
+
+- #2429–#2431 gentog 125/210-dækningen, selv om 4.0.189 skrev budgetrotation. Analyse af hele kæden viste, at workflowcachen blev gendannet, men builderens kvalitetsrangering bagefter kunne vælge en ældre offentlig cache med flere rå komponenter.
+- Dermed forsvandt nyere `collectionState`, budgetafbrydelser og behandlede forecast-trin, og efterfølgende runners begyndte igen med samme DKSS-model. Det svarer til det historiske fastlåsningsmønster, men rodårsagen var denne gang cachevalg, ikke STAC- eller GRIB-klassifikation.
+- Kompatible caches rangeres nu efter nyeste checkpoint-/buildertid og først derefter datakvalitet. Checkpointet har allerede fået den offentlige cache flettet ind ved kørslens start, så gyldige data og sikker fallback bevares.
+- GitHubs 15-minutters triggere kan stå i kø bag et cirka 29-minutters job; dette er forventet. De må ikke længere nulstille fremdriften. Fuld produktionsverifikation afventer frisk CI.

@@ -1,4 +1,11 @@
-# Implementeringsstatus pr. 4.0.189 – lokal releasekandidat
+# Implementeringsstatus pr. 4.0.190 – lokal releasekandidat
+
+## DMI-checkpoint bevares som faktisk arbejdsfremdrift
+
+- [x] #2429–#2431 er analyseret som gentagen genstart fra forkert cachegrundlag.
+- [x] Nyeste kompatible checkpoint vinder nu over en ældre offentlig cache, selv hvis udløbsrensning har reduceret antallet af rå komponentrækker.
+- [x] Offentlig data er fortsat flettet ind i checkpointet ved hver kørsels start; ingen gyldig fallback eller releasegate er fjernet.
+- [ ] Frisk GitHub-kørsel skal bevise, at rotationsstate overlever til næste runner, at DKSS-modellerne faktisk skifter, og at 125/210-dækningen vokser.
 
 ## DMI-budgetrotation efter fastlåst 125/210-mønster
 

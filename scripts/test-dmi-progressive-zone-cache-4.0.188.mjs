@@ -20,9 +20,11 @@ assert.match(workflow, /DMI_BULK_DEPLOYED_FALLBACK_PATH: \.cache\/deployed-dmi-b
 
 const builder = await fs.readFile('scripts/update-dmi-bulk.py', 'utf8');
 assert.match(builder, /def cache_quality\(/);
+assert.match(builder, /def cache_progress_time\(/);
 assert.match(builder, /def load_previous\(expected_signature: str\)/);
 assert.match(builder, /document\.get\("zoneRegistrySignature"\) == expected_signature/);
-assert.match(builder, /return max\(compatible, key=cache_quality\)/);
+assert.match(builder, /document\.get\("checkpointedAt"\)/);
+assert.match(builder, /return max\(compatible, key=lambda document: \(cache_progress_time\(document\), cache_quality\(document\)\)\)/);
 
 const fullValidation = workflow.slice(validate);
 assert.match(fullValidation, /npm run validate/);

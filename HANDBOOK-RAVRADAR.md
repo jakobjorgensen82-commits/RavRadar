@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.189
+**Håndbogsversion:** 4.0.190
 
 **Opdateret:** 1. august 2026
 
