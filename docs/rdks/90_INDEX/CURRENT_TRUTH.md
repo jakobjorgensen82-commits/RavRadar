@@ -14,6 +14,7 @@
 - Den eksisterende private nationale Linux-kæde er koblet til fallbackrecoveryen: kandidaten genbygges fra samme friske GeoDanmark-kyst, ejerskab/punktpar/overlap kontrolleres fail-closed, og vandpunkterne prøves på native DMI-grid. Ingen af disse trin kan aktivere offentlig geometri.
 - Første Linux-forsøg #31589561794 stoppede korrekt før kildehentning, fordi nationalpolitikken stadig krævede den historiske centrale bestand på 208 zoner, mens de tre nye Vadehavszoner giver 211. Politikken kræver nu udtrykkeligt 211 ved planporten; efterfølgende gater kræver samme positive bestand gennem plan, fliser, manifest, hydreret register og analyse.
 - Andet Linux-forsøg #31589831140 hentede og validerede den officielle nationale kilde samt fjord-/normasker, men stoppede ved en separat historisk 208-konstant i topologiauditen. Topologiaudit, delgenerator og deres fail-closed validatorer/tests er afstemt til den samme eksplicitte 211-zonepolitik; dette er en privat pipelinekorrektion og ændrer ikke den offentlige kyst.
+- Tredje Linux-forsøg #31590992368 bestod hele den rettede kæde gennem 211 zoner, 131 fliser, topologi, offentlig-kystdækning og private dele. Det stoppede før netværkskald på stednavneaudittens historiske krav om præcis 100 fliser. Gaten kræver nu i stedet præcis overensstemmelse med den aktuelle ikke-tomme plan og et komplet minimumsspor for alle fem stedtyper pr. flise.
 
 ## 4.0.185-kandidat – lokalt delkort og ryddet zonepanel
 

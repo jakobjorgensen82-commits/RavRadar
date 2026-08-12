@@ -11,6 +11,7 @@ from shapely.geometry import Point,shape
 from shapely.ops import transform
 from shapely.strtree import STRtree
 ROOT=Path(__file__).resolve().parents[1];URL="https://api.dataforsyningen.dk/steder";TYPES=("Bebyggelse","Farvand","Landskabsform","Naturareal","Havnebassin");TO_M=Transformer.from_crs("EPSG:4326","EPSG:25832",always_xy=True);PAGE_SIZE=1000;MAX_PAGES=20;MAX_DISTANCE_M=10000;FETCH_MARGIN_DEGREES=0.12;MAX_CANDIDATES=30;WORKERS=4
+EXPECTED_ZONE_COUNT=211
 DIRECT_COASTAL_SUBTYPES={"strand","pynt","ø","bugt","næs","odde","sandKlit","halvø","sund","øgruppe","klint","nor","tange","fjord","bredning","skær","hage","løb","sejlløb","skræntNaturlig","klippeIOverfladen"};SETTLEMENT_SUBTYPES={"by","bydel","spredtBebyggelse","sommerhusområde","sommerhusområdedel"};CANDIDATE_QUOTAS={"direct-coastal":16,"local-settlement":8,"harbour-context":3,"other-context":3}
 def fail(m):print(m,file=sys.stderr);raise SystemExit(1)
 def load(p):return json.loads(p.read_text(encoding="utf-8"))
@@ -66,7 +67,7 @@ def select_candidates(candidates,status_rank):
     return sorted(selected,key=lambda p:(list(CANDIDATE_QUOTAS).index(p["coastalRelevance"]),*order(p)))
 def build(parts_report,parts_geo,places,request_count,tile_count):
     zones={z["zoneId"]:z for z in parts_report.get("zones") or []};features=parts_geo.get("features") or []
-    if len(zones)!=208 or len(features)!=parts_report.get("coastalPartCount"):fail("Navneaudit kræver komplette nationale kystdele.")
+    if len(zones)!=EXPECTED_ZONE_COUNT or len(features)!=parts_report.get("coastalPartCount"):fail("Navneaudit kræver komplette nationale kystdele.")
     points=[Point(*TO_M.transform(*p["visualCentre"])) for p in places];tree=STRtree(points) if points else None;rows=[];status_rank={"suAutoriseret":0,"officielt":1,"uofficielt":2}
     for feature in features:
         props=feature.get("properties") or {};part_id=props.get("partId");zone_id=props.get("zoneId");coast=project(shape(feature["geometry"]));candidates=[]
@@ -79,11 +80,11 @@ def build(parts_report,parts_geo,places,request_count,tile_count):
     all_candidates=[candidate for row in rows for candidate in row["officialPlaceCandidates"]];class_counts={key:sum(1 for candidate in all_candidates if candidate["coastalRelevance"]==key) for key in CANDIDATE_QUOTAS}
     return {"schemaVersion":"1.0.0","status":"private-national-read-only-official-place-name-candidates","generatedAt":datetime.now(timezone.utc).isoformat().replace("+00:00","Z"),"source":{"name":"Dataforsyningen steder API / Danmarks officielle stednavneregister","endpoint":URL,"authentication":"none","placeTypes":list(TYPES),"tileCount":tile_count,"requestCount":request_count,"fetchMarginDegrees":FETCH_MARGIN_DEGREES,"maximumCandidateDistanceM":MAX_DISTANCE_M},"zoneCount":len(zones),"partCount":len(rows),"partWithCandidateCount":sum(1 for r in rows if r["officialPlaceCandidates"]),"candidateCount":len(all_candidates),"uniqueCandidateCount":len({candidate["id"] for candidate in all_candidates}),"partAtCandidateLimitCount":sum(1 for row in rows if len(row["officialPlaceCandidates"])==MAX_CANDIDATES),"candidateClassCounts":class_counts,"productionGeometryChanged":False,"adminDataChanged":False,"weatherSamplingChanged":False,"stateChanged":False,"scoreChanged":False,"automaticRenameAllowed":False,"automaticActivationAllowed":False,"parts":rows}
 def self_test():
-    report={"coastalPartCount":1,"zones":[{"zoneId":"Z1","proposalStatus":"private-review-parts-generated"}]+[{"zoneId":f"Z{i}","proposalStatus":"blocked-no-retained-source"} for i in range(2,209)]};geo={"features":[{"properties":{"zoneId":"Z1","partId":"p1","localityReviewFlags":[]},"geometry":{"type":"LineString","coordinates":[[12,56],[12.01,56]]}}]};places=[{"id":"s1","primaryName":"Teststrand","nameStatus":"officielt","mainType":"Naturareal","subType":"strand","visualCentre":[12.005,56.001]}];out=build(report,geo,places,1,100);assert out["partWithCandidateCount"]==1 and out["parts"][0]["proposedName"] is None and out["source"]["tileCount"]==100;print("National officiel stednavneaudit self-test: bestået.")
+    report={"coastalPartCount":1,"zones":[{"zoneId":"Z1","proposalStatus":"private-review-parts-generated"}]+[{"zoneId":f"Z{i}","proposalStatus":"blocked-no-retained-source"} for i in range(2,EXPECTED_ZONE_COUNT+1)]};geo={"features":[{"properties":{"zoneId":"Z1","partId":"p1","localityReviewFlags":[]},"geometry":{"type":"LineString","coordinates":[[12,56],[12.01,56]]}}]};places=[{"id":"s1","primaryName":"Teststrand","nameStatus":"officielt","mainType":"Naturareal","subType":"strand","visualCentre":[12.005,56.001]}];out=build(report,geo,places,1,131);assert out["partWithCandidateCount"]==1 and out["parts"][0]["proposedName"] is None and out["source"]["tileCount"]==131;print("National officiel stednavneaudit self-test: bestået.")
 def main():
     p=argparse.ArgumentParser();p.add_argument("--work-dir",type=Path,default=ROOT/".geometry-v2-work");p.add_argument("--self-test",action="store_true");a=p.parse_args()
     if a.self_test:self_test();return
     plan=load(a.work_dir/"national-work-plan.json");tiles=plan.get("tiles") or []
-    if len(tiles)!=100:fail("National stednavneaudit kræver den aktuelle 100-fliseplan.")
+    if not tiles:fail("National stednavneaudit kræver en ikke-tom national fliseplan.")
     places,calls=fetch_places(plan);out=build(load(a.work_dir/"national-coastal-parts.json"),load(a.work_dir/"national-coastal-parts.geojson"),places,calls,len(tiles));(a.work_dir/"national-coastal-part-name-audit.json").write_text(json.dumps(out,ensure_ascii=False,indent=2)+"\n",encoding="utf-8");print(f"Officielle nationale stednavnekandidater: {out['partWithCandidateCount']}/{out['partCount']} dele, {len(places)} unikke steder.")
 if __name__=="__main__":main()
