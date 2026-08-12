@@ -1,9 +1,9 @@
-# Implementeringsstatus pr. 4.0.185-kandidat
+# Implementeringsstatus pr. 4.0.185 – produktionsverificeret
 
 - [x] Offentlig “Hvad fandt du?”-formular fjernet uden at slette tur-/observationsinfrastruktur.
 - [x] “Hvor er det?” tegner eksisterende kystdele ved klik, viser navne og zoomer til hovedzonen.
 - [x] Kortvisningen kræver ingen nye billeder eller ekstra datahentning ved opstart.
-- [ ] Lokal fuld validering, CI og offentlig browserkontrol.
+- [x] GitHub Actions #31578272122 bestod frisk datakæde, fuld validering, releasegate og Pages-deploy; offentlig 4.0.185-kode er kontrolleret for knap, kortlag, zonezoom og fravær af fundformular.
 
 - [x] Fælles lokal scoreresultatbygger bevarer totalscore, delscorer, begrundelser og geografisk dækning.
 - [x] Én eller flere bedst scorende kystdele vises tydeligt ved en spredning over 7 point; præcis 7 point gælder fortsat hele zonen.

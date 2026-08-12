@@ -5,7 +5,7 @@
 - Zoneforklaringen har en behovsstyret “Hvor er det?”-knap, som viser de allerede indlæste præcise kystdele med navne på hovedkortet og zoomer til zonen. Der tilføjes ingen billedfiler eller ekstra normal datahentning.
 - Aktuelt bedste dele fremhæves efter den eksisterende syvpunktsregel. Ved status hele zonen udpeges ingen enkelt del som bedre.
 - Den offentlige “Hvad fandt du?”-formular er fjernet fra zonepanelet. Turregistrering, observationstjeneste og adminanalyse er bevaret.
-- Kandidaten afventer lokal fuld validering, CI og offentlig kontrol.
+- Funktionen er produktionsverificeret i GitHub Actions #31578272122: frisk datakæde, fuld projektvalidering, releasegate og Pages-deploy bestod. Offentlig filkontrol viste version 4.0.185, “Hvor er det?”-knappen, kortlaget og zonezoom; “Hvad fandt du?”/observationsformularen findes ikke længere i zonepanelet.
 
 ## 4.0.184-kandidat – lokal scoreforklaring
 
