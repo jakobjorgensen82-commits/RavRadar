@@ -1,5 +1,13 @@
 # Current truth – gældende projektviden
 
+## 4.0.183-kandidat – entydige hovedzoneskel og redigerbart delejerskab
+
+- Det offentlige kort tegner kun ét sort skel ved et dokumenteret møde mellem to forskellige hovedzoner. Interne kystdele og frie ender får ingen sort markering; markeringen er lille på landsniveau.
+- “Tilbage til oversigten” gendanner Danmarksoverblikket.
+- Admin kan ændre en hovedzones længde ved at flytte eksisterende præcise kystdele mellem hovedzoner. Geometri, land-/vandpunkt, DMI-gridbevis og lokal scoreidentitet følger samlet med.
+- Produktionsbygningen afviser ejerskab til en ukendt/slettet zone og publicerer hver del højst én gang. En slettet zones ikke-flyttede dele fjernes fra runtime.
+- Funktionen er lokalt implementeret og målrettet testet. 4.0.182 er fortsat produktionsverificeret baseline, indtil 4.0.183 har bestået fulde gates og deploy.
+
 ## Aktiv national kystgeometri – 4.0.182 produktionsverificeret
 
 - Ejeren har godkendt den samlede slutkontrol og de efterfølgende seks rettelser. 4.0.182 er lokalt samlet med 212 hovedzoner: 206 bruger præcise kystforløb og seks beholder den gamle hovedzonelinje som sikker fallback.

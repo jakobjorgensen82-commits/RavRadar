@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.182",
+  "version": "4.0.183",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -98,11 +98,11 @@
     "test:flow-arrow-runtime": "node scripts/test-flow-arrow-runtime-4.0.87.mjs",
     "test:admin-map-lifecycle": "node scripts/test-admin-map-lifecycle-4.0.87.mjs",
     "test:module-version-closure": "node scripts/test-module-version-closure-4.0.87.mjs",
-    "test:map-zoom-refresh": "node scripts/test-map-zoom-refresh-4.0.88.mjs",
+    "test:map-zoom-refresh": "node scripts/test-map-zoom-refresh-4.0.88.mjs && node scripts/test-main-zone-boundaries-4.0.183.mjs",
     "test:zone-admin-propagation": "node scripts/test-zone-admin-propagation-4.0.89.mjs",
     "test:zone-deletion-runtime": "node scripts/test-zone-deletion-runtime-4.0.91.mjs",
     "test:handbook-review-archive": "node scripts/test-handbook-review-archive-4.0.91.mjs",
-    "test:admin-editable-zone-contract": "node scripts/test-admin-editable-zone-contract-4.0.93.mjs",
+    "test:admin-editable-zone-contract": "node scripts/test-admin-editable-zone-contract-4.0.93.mjs && node scripts/test-admin-part-ownership-4.0.183.mjs",
     "test:admin-config-production": "node scripts/test-admin-config-production-contract-4.0.94.mjs",
     "test:water-station-admin-override": "node scripts/test-water-station-admin-override-4.0.95.mjs",
     "test:water-station-admin-runtime": "node scripts/test-water-station-admin-runtime-4.0.96.mjs",

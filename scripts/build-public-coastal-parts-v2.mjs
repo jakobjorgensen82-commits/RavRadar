@@ -7,6 +7,8 @@ import {fileURLToPath} from 'node:url';
 const ROOT=path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const DEFAULT_SOURCE=path.join(ROOT,'data/geometry-v2/active-national-coastal-parts');
 const DEFAULT_OUTPUT=path.join(ROOT,'data/live/coastal-parts-v2.json');
+const DEFAULT_OVERRIDES=path.join(ROOT,'data/admin/coastline-overrides.json');
+const DEFAULT_ZONES=path.join(ROOT,'data/zones.geojson');
 const sha=text=>crypto.createHash('sha256').update(text.replace(/\r\n/g,'\n')).digest('hex');
 const read=async (source,name)=>{const text=await fs.readFile(path.join(source,name),'utf8');return{text,json:JSON.parse(text)}};
 const cleanPoint=point=>[Number(Number(point[0]).toFixed(6)),Number(Number(point[1]).toFixed(6))];
@@ -22,10 +24,15 @@ function publicGeometry(geometry){
   throw new Error(`Ikke-understøttet kystgeometri: ${geometry?.type}`);
 }
 
-export async function build({source=DEFAULT_SOURCE,output:outputPath=DEFAULT_OUTPUT}={}){
+async function optionalJson(file,fallback){try{return JSON.parse(await fs.readFile(file,'utf8'))}catch(error){if(error.code==='ENOENT')return fallback;throw error}}
+
+export async function build({source=DEFAULT_SOURCE,output:outputPath=DEFAULT_OUTPUT,overrides=DEFAULT_OVERRIDES,zonesFile=DEFAULT_ZONES}={}){
   const SOURCE=source,OUTPUT=outputPath;
   const manifest=JSON.parse(await fs.readFile(path.join(SOURCE,'manifest.json'),'utf8'));
-  const [coast,names,points,grid]=await Promise.all(['coastal-parts.geojson','part-names.json','point-pairs.json','dmi-grid-proof.json'].map(name=>read(SOURCE,name)));
+  const [coast,names,points,grid,admin,zonesCollection]=await Promise.all([
+    ...['coastal-parts.geojson','part-names.json','point-pairs.json','dmi-grid-proof.json'].map(name=>read(SOURCE,name)),
+    optionalJson(overrides,{partOwnership:{}}),optionalJson(zonesFile,{features:[]})
+  ]);
   for(const [name,expected] of Object.entries(manifest.files||{})){
     const source={
       'coastal-parts.geojson':coast,
@@ -38,11 +45,20 @@ export async function build({source=DEFAULT_SOURCE,output:outputPath=DEFAULT_OUT
   const features=coast.json.features||[],nameById=new Map((names.json.parts||[]).map(row=>[row.finalPartId,row])),pointById=new Map((points.json.parts||[]).map(row=>[row.finalPartId,row])),gridById=new Map((grid.json.parts||[]).map(row=>[row.finalPartId,row]));
   if(features.length!==manifest.partCount||nameById.size!==features.length||pointById.size!==features.length||gridById.size!==features.length)throw new Error('Aktiv kystdelskandidat er ikke 1:1 mellem geometri, navn, punktpar og DMI-grid');
   const zones={};
+  const activeZoneIds=new Set((zonesCollection.features||[]).filter(feature=>feature.properties?.zoneStatus!=='retired'&&feature.properties?.active!==false).map(feature=>feature.properties?.id));
+  const ownership=admin?.partOwnership||{};
   for(const feature of features){
-    const id=feature.properties?.finalPartId||feature.properties?.partId,zoneId=feature.properties?.zoneId,n=nameById.get(id),p=pointById.get(id),g=gridById.get(id);
+    const id=feature.properties?.finalPartId||feature.properties?.partId,sourceZoneId=feature.properties?.zoneId,n=nameById.get(id),p=pointById.get(id),g=gridById.get(id);
+    const requestedZoneId=ownership[id]?.targetZoneId;
+    if(requestedZoneId&&!activeZoneIds.has(requestedZoneId))throw new Error(`${id}: admin-ejerskab peger på en ukendt eller slettet hovedzone (${requestedZoneId})`);
+    const zoneId=requestedZoneId||sourceZoneId;
     if(!id||!zoneId||!n||!p||!g||p.status!=='private-point-pair-proposed'||g.status!=='validated-selected-water-point')throw new Error(`${id||'ukendt'}: ugyldig aktiv kystdel`);
+    // Når en hovedzone slettes, forsvinder dens kystdele også, medmindre ejeren
+    // udtrykkeligt har flyttet dem til en anden aktiv hovedzone først.
+    if(!activeZoneIds.has(zoneId))continue;
     (zones[zoneId]??=[]).push({
       partId:id,
+      sourceZoneId,
       name:n.suggestedName,
       geometry:publicGeometry(feature.geometry),
       landPoint:p.landPoint,
@@ -53,7 +69,8 @@ export async function build({source=DEFAULT_SOURCE,output:outputPath=DEFAULT_OUT
     });
   }
   for(const parts of Object.values(zones))parts.sort((a,b)=>a.name.localeCompare(b.name,'da')||a.partId.localeCompare(b.partId));
-  const output={schemaVersion:1,enabled:manifest.publicActivation===true,datasetVersion:manifest.sourceVersion,sourceRunId:manifest.sourceRunId,generatedAt:`${manifest.activatedAt}T00:00:00.000Z`,partCount:features.length,zoneCount:Object.keys(zones).length,wholeZoneMarginPoints:7,zones};
+  const publicPartCount=Object.values(zones).reduce((sum,parts)=>sum+parts.length,0);
+  const output={schemaVersion:2,enabled:manifest.publicActivation===true,datasetVersion:manifest.sourceVersion,sourceRunId:manifest.sourceRunId,generatedAt:`${manifest.activatedAt}T00:00:00.000Z`,partCount:publicPartCount,sourcePartCount:features.length,zoneCount:Object.keys(zones).length,wholeZoneMarginPoints:7,zones};
   await fs.mkdir(path.dirname(OUTPUT),{recursive:true});await fs.writeFile(OUTPUT,`${JSON.stringify(output)}\n`);return output;
 }
 

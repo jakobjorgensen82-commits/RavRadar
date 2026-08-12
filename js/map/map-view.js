@@ -35,8 +35,8 @@ function coastBearing(a, b) {
 }
 
 function boundaryTickLength(selected = false, zoom = 7) {
-  // Markørens længde følger præcis den synlige farvestregs bredde.
-  const baseWeight = zoom <= 7 ? 7 : zoom <= 9 ? 6 : zoom <= 11 ? 5.5 : 5;
+  // På landsniveau skal skellene være små nok til, at kysten ikke bliver sort.
+  const baseWeight = zoom <= 6 ? 2.5 : zoom <= 7 ? 3 : zoom <= 9 ? 5 : 6;
   return baseWeight + (selected ? 4 : 0);
 }
 
@@ -70,6 +70,44 @@ function nearestBoundaryReference(lines, target, preferEnd = false) {
   return { point: best.point, bearing };
 }
 
+function boundaryDistanceKm(left, right) {
+  const latScale = Math.cos((left[0] + right[0]) * Math.PI / 360);
+  const latKm = (left[0] - right[0]) * 111.32;
+  const lonKm = (left[1] - right[1]) * 111.32 * latScale;
+  return Math.hypot(latKm, lonKm);
+}
+
+export function sharedMainZoneBoundaries(rows, maximumDistanceKm = .35) {
+  const candidates = rows.flatMap(row => [
+    row.startReference && {...row.startReference, zoneId: row.zoneId, side: 'start'},
+    row.endReference && {...row.endReference, zoneId: row.zoneId, side: 'end'}
+  ]).filter(candidate => Array.isArray(candidate?.point));
+  const nearest = candidates.map((left, leftIndex) => {
+    let best = null;
+    candidates.forEach((right, rightIndex) => {
+      if (leftIndex === rightIndex || left.zoneId === right.zoneId) return;
+      const distanceKm = boundaryDistanceKm(left.point, right.point);
+      if (distanceKm <= maximumDistanceKm && (!best || distanceKm < best.distanceKm)) best = {rightIndex, distanceKm};
+    });
+    return best;
+  });
+  const used = new Set();
+  const boundaries = [];
+  for (let leftIndex = 0; leftIndex < candidates.length; leftIndex += 1) {
+    if (used.has(leftIndex)) continue;
+    const best = nearest[leftIndex];
+    if (!best || nearest[best.rightIndex]?.rightIndex !== leftIndex || used.has(best.rightIndex)) continue;
+    used.add(leftIndex); used.add(best.rightIndex);
+    const left = candidates[leftIndex], right = candidates[best.rightIndex];
+    boundaries.push({
+      point: [(left.point[0] + right.point[0]) / 2, (left.point[1] + right.point[1]) / 2],
+      bearing: left.bearing,
+      zoneIds: new Set([left.zoneId, right.zoneId])
+    });
+  }
+  return boundaries;
+}
+
 export function createMap(elementId) {
   const map = L.map(elementId, { zoomControl: true }).setView([56.45, 10.15], 7);
   const streetMap = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "&copy; OpenStreetMap-bidragsydere" });
@@ -88,6 +126,7 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
   const geometryLayer = L.geoJSON(featureCollection, { style: { opacity: 0, fillOpacity: 0, weight: 0 }, interactive: false });
   const lineLayer = L.layerGroup().addTo(map);
   const lines = new Map();
+  const rows = [];
 
   if (!map.getPane("zoneCoastPane")) {
     const pane = map.createPane("zoneCoastPane");
@@ -137,13 +176,8 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
       bubblingMouseEvents: false
     }).addTo(lineLayer);
 
-    // Sorte tværstreger gør zonens start og slutning synlige uden at dække scorefarven.
     const startReference = nearestBoundaryReference(coastLines, parentCoastLine[0], false);
     const endReference = nearestBoundaryReference(coastLines, parentCoastLine[parentCoastLine.length - 1], true);
-    const startBearing = startReference.bearing;
-    const endBearing = endReference.bearing;
-    const startTick = L.marker(startReference.point, { icon: boundaryTickIcon(startBearing, false, map.getZoom()), pane: "zoneBoundaryPane", interactive: false, keyboard: false }).addTo(lineLayer);
-    const endTick = L.marker(endReference.point, { icon: boundaryTickIcon(endBearing, false, map.getZoom()), pane: "zoneBoundaryPane", interactive: false, keyboard: false }).addTo(lineLayer);
 
     hit.bindTooltip(`${escapeHtml(zone.name)} · ${result?.available ? `${result.score}/100` : "Ingen data"}`, { direction: "top", sticky: true });
     hit.on("click", () => onSelect(zone));
@@ -152,23 +186,32 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
     hit.options.ravLevel = result?.level || "unavailable";
     hit.options.ravSelected = false;
     hit.options.zoneTitle = zone._partName || zone.name;
-    lines.set(lineId, { casing, visible, hit, startTick, endTick, startBearing, endBearing, zoneId });
+    const row = { casing, visible, hit, zoneId, lineId, startReference, endReference };
+    rows.push(row);
+    lines.set(lineId, row);
   }
+
+  // Ét sort skel tegnes kun, når to forskellige hovedzoners ydre ender mødes.
+  // Interne multipart-/beregningsdelgrænser og fritstående zoneender får intet skel.
+  const boundaryTicks = sharedMainZoneBoundaries(rows).map(boundary => ({
+    ...boundary,
+    marker: L.marker(boundary.point, {icon: boundaryTickIcon(boundary.bearing, false, map.getZoom()), pane:'zoneBoundaryPane', interactive:false, keyboard:false}).addTo(lineLayer)
+  }));
 
   const bounds = geometryLayer.getBounds();
   if (bounds.isValid()) map.fitBounds(bounds, { padding: [18, 18], maxZoom: 10 });
 
-  const api = { geometryLayer, lineLayer, lines, map, selectedId: null };
+  const api = { geometryLayer, lineLayer, lines, boundaryTicks, overviewBounds: bounds, map, selectedId: null };
+  api.showOverview = () => { if (api.overviewBounds?.isValid()) map.fitBounds(api.overviewBounds, {padding:[18,18], maxZoom:7}); };
   api.selectZone = id => {
     api.selectedId = id || null;
     for (const pair of lines.values()) {
       pair.hit.options.ravSelected = pair.zoneId === api.selectedId;
       pair.casing.setStyle(zoneCasingStyle(pair.hit.options.ravSelected, map.getZoom()));
       pair.visible.setStyle(zoneLineStyle(pair.hit.options.ravLevel, pair.hit.options.ravSelected, map.getZoom()));
-      pair.startTick.setIcon(boundaryTickIcon(pair.startBearing, pair.hit.options.ravSelected, map.getZoom()));
-      pair.endTick.setIcon(boundaryTickIcon(pair.endBearing, pair.hit.options.ravSelected, map.getZoom()));
       if (pair.hit.options.ravSelected) { pair.casing.bringToFront(); pair.visible.bringToFront(); pair.hit.bringToFront(); }
     }
+    for (const boundary of boundaryTicks) boundary.marker.setIcon(boundaryTickIcon(boundary.bearing, boundary.zoneIds.has(api.selectedId), map.getZoom()));
   };
   const applyZoomStyles = () => {
     const zoom = map.getZoom();
@@ -176,14 +219,13 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
       pair.casing.setStyle(zoneCasingStyle(pair.hit.options.ravSelected, zoom));
       pair.visible.setStyle(zoneLineStyle(pair.hit.options.ravLevel, pair.hit.options.ravSelected, zoom));
       pair.hit.setStyle({ weight: zoom <= 8 ? 28 : 24 });
-      pair.startTick.setIcon(boundaryTickIcon(pair.startBearing, pair.hit.options.ravSelected, zoom));
-      pair.endTick.setIcon(boundaryTickIcon(pair.endBearing, pair.hit.options.ravSelected, zoom));
       // Leaflet kan afslutte zoomanimationens SVG-transform efter zoomend.
       // redraw() sikrer, at geometri og stregbredde projekteres på det nye zoomniveau.
       pair.casing.redraw();
       pair.visible.redraw();
       pair.hit.redraw();
     }
+    for (const boundary of boundaryTicks) boundary.marker.setIcon(boundaryTickIcon(boundary.bearing, boundary.zoneIds.has(api.selectedId), zoom));
   };
   let zoomFrame = 0;
   const refreshZoomStyles = () => {

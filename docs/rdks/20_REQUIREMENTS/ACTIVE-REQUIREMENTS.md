@@ -225,6 +225,10 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **SYSTEMISK FEJLRETNING – AKTIV:** En fejl må ikke behandles som isoleret fil/test. Hele input→produktion→UI→release-kæden skal vurderes, og seneste fungerende reference skal bruges ved regressioner.
 - **STABILITETSBEGREB – AKTIV:** Lokal grøn validering er ikke bevis for CI eller produktion. DMI-/Supabase-/pipelineændringer kræver frisk ekstern verifikation før de betegnes produktionsstabile.
 - **CENTRAL ADMIN-GEOMETRI – AKTIV OG PRODUKTIONSVERIFICERET:** Centralt gemte kystlinjer, land-/havpunkter, retninger og øvrige redigerbare zonefelter skal være autoritative og propagere gennem hele produktionskæden. Tests må ikke hardcode historiske adminværdier.
+- **REQ-MAP-MAIN-ZONE-BOUNDARY-001 – IMPLEMENTERET LOKALT I 4.0.183:** Sorte offentlige skel må kun tegnes mellem forskellige hovedzoner, aldrig ved interne beregningsdele. Skellene skal være små ved landszoom.
+- **REQ-MAP-OVERVIEW-001 – IMPLEMENTERET LOKALT I 4.0.183:** “Tilbage til oversigten” skal gendanne et overblik over hele Danmark.
+- **REQ-ADMIN-PART-OWNERSHIP-001 – IMPLEMENTERET LOKALT I 4.0.183:** Hovedzonelængde redigeres ved entydig flytning af eksisterende præcise kystdele. Geometri, land-/vandpunkt, DMI-gridbevis og delidentitet skal følge samlet med, og en del må kun have én aktiv ejer.
+- **REQ-ADMIN-PART-OWNERSHIP-002 – BINDENDE:** En ukendt eller slettet modtagerzone skal stoppe produktionsbygningen. Ny fysisk kyst, som ikke findes i den godkendte delbestand, må ikke opfindes af ejerskabseditoren.
 - **DMI U/V VERTIKALLAG – AKTIV KONTRAKT:** Current-U/V må kun parres på samme forecasttid, samme fysiske DMI-gridpunkt og samme vertikallag. Kandidater fra forskellige lag må ikke overskrive eller blandes.
 - **FORECAST-EDGE-COVERAGE – AKTIV:** Yderste del af femdøgnshorisonten skal undersøges for `missing` strøm/vandstand/vind/bølge. Manglende data må ikke fyldes med stale værdi eller 0.
 - **REQ-DATA-007 – IMPLEMENTERET LOKALT, AFVENTER PRODUKTION:** Vind bruger HARMONIE først og DKSS 10-meter U/V som separat DMI-hale. HARMONIE vinder i overlap, og modellerne må ikke krydsinterpoleres.
