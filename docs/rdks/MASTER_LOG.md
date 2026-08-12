@@ -945,3 +945,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Dermed forsvandt nyere `collectionState`, budgetafbrydelser og behandlede forecast-trin, og efterfølgende runners begyndte igen med samme DKSS-model. Det svarer til det historiske fastlåsningsmønster, men rodårsagen var denne gang cachevalg, ikke STAC- eller GRIB-klassifikation.
 - Kompatible caches rangeres nu efter nyeste checkpoint-/buildertid og først derefter datakvalitet. Checkpointet har allerede fået den offentlige cache flettet ind ved kørslens start, så gyldige data og sikker fallback bevares.
 - GitHubs 15-minutters triggere kan stå i kø bag et cirka 29-minutters job; dette er forventet. De må ikke længere nulstille fremdriften. Fuld produktionsverifikation afventer frisk CI.
+## 2026-08-12 – 4.0.191 fjerner flygtige felter fra DMI-cacheidentiteten
+
+- #2437 gendannede og gemte workflowcachen, men begyndte alligevel igen med `dkss_idw`. Artifact-sammenligning viste forskellige registersignaturer mellem #2435 og #2437.
+- DMI-vandkilderegisteret ændrer driftsfelter som `lastSeenAt`, observationstid, forecaststatus og cachetid ved hver produktion. Rå filhash gjorde derfor et korrekt checkpoint inkompatibelt. Zoners releaseversionsfelt kunne udløse samme falske reset.
+- Cacheidentiteten er nu en kanonisk projektion af de stabile, samplingbestemmende felter. Reelle punkt-, geometri-, status- og ejerskabsændringer invaliderer fortsat cachen; almindelig drift gør ikke.

@@ -1066,6 +1066,60 @@ def cache_progress_time(document: dict[str, Any]) -> float:
     return max((epoch(value) for value in timestamps), default=0.0)
 
 
+def sampling_registry_signature() -> str:
+    """Hash only fields that can change which DMI grid points are sampled.
+
+    Runtime timestamps, observations, forecast health and release-version metadata
+    change on every workflow run but do not change the sampling registry. Including
+    the raw JSON bytes made every refreshed station document invalidate the private
+    progressive cache before collection rotation could be reused.
+    """
+    zones_doc = json.loads(ZONES_PATH.read_text("utf-8"))
+    zone_records: list[dict[str, Any]] = []
+    for feature in zones_doc.get("features", []):
+        props, geometry = feature.get("properties") or {}, feature.get("geometry") or {}
+        zone_id = props.get("id")
+        if not zone_id:
+            continue
+        configured = props.get("dataPoint")
+        sampling_geometry = None if isinstance(configured, list) and len(configured) == 2 else geometry
+        zone_records.append({
+            "id": str(zone_id),
+            "dataPoint": configured if isinstance(configured, list) and len(configured) == 2 else None,
+            "fallbackGeometry": sampling_geometry,
+            "coastType": props.get("coastType") or "east",
+        })
+
+    part_records: list[dict[str, Any]] = []
+    if COASTAL_PART_POINTS_PATH.exists():
+        part_doc = json.loads(COASTAL_PART_POINTS_PATH.read_text("utf-8"))
+        for part in part_doc.get("parts", []):
+            part_records.append({
+                "id": part.get("finalPartId"),
+                "waterPoint": part.get("waterPoint"),
+                "status": part.get("status"),
+                "coastType": part.get("coastType") or "east",
+                "parentZoneId": part.get("zoneId"),
+            })
+
+    source_records: list[dict[str, Any]] = []
+    if WATER_SOURCES_PATH.exists():
+        source_doc = json.loads(WATER_SOURCES_PATH.read_text("utf-8"))
+        for source in source_doc.get("stations", []):
+            source_records.append({
+                "sourceKey": source.get("sourceKey"),
+                "point": source.get("point"),
+            })
+
+    payload = {
+        "zones": sorted(zone_records, key=lambda item: item["id"]),
+        "parts": sorted(part_records, key=lambda item: str(item.get("id") or "")),
+        "waterSources": sorted(source_records, key=lambda item: str(item.get("sourceKey") or "")),
+    }
+    canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:16]
+
+
 def load_previous(expected_signature: str) -> dict[str, Any]:
     candidates = [load_document(OUTPUT_PATH), load_document(DEPLOYED_FALLBACK_PATH)]
     compatible = [document for document in candidates if document.get("zoneRegistrySignature") == expected_signature and document.get("zones")]
@@ -1569,12 +1623,7 @@ def write_failure_summary(error: Exception) -> None:
 def main() -> int:
     progress(f"starter; arbejdsbudget={MAX_RUNTIME_SECONDS - FINALIZE_RESERVE_SECONDS}s, afslutningsreserve={FINALIZE_RESERVE_SECONDS}s")
     cache_before = raw_cache_inventory()
-    signature_bytes = (
-        ZONES_PATH.read_bytes()
-        + (WATER_SOURCES_PATH.read_bytes() if WATER_SOURCES_PATH.exists() else b'')
-        + (COASTAL_PART_POINTS_PATH.read_bytes() if COASTAL_PART_POINTS_PATH.exists() else b'')
-    )
-    current_zone_registry_signature = hashlib.sha256(signature_bytes).hexdigest()[:16]
+    current_zone_registry_signature = sampling_registry_signature()
     previous = load_previous(current_zone_registry_signature)
     previous_zone_registry_signature = previous.get("zoneRegistrySignature")
     zone_registry_unchanged = previous_zone_registry_signature == current_zone_registry_signature

@@ -21,10 +21,15 @@ assert.match(workflow, /DMI_BULK_DEPLOYED_FALLBACK_PATH: \.cache\/deployed-dmi-b
 const builder = await fs.readFile('scripts/update-dmi-bulk.py', 'utf8');
 assert.match(builder, /def cache_quality\(/);
 assert.match(builder, /def cache_progress_time\(/);
+assert.match(builder, /def sampling_registry_signature\(/);
 assert.match(builder, /def load_previous\(expected_signature: str\)/);
 assert.match(builder, /document\.get\("zoneRegistrySignature"\) == expected_signature/);
 assert.match(builder, /document\.get\("checkpointedAt"\)/);
 assert.match(builder, /return max\(compatible, key=lambda document: \(cache_progress_time\(document\), cache_quality\(document\)\)\)/);
+assert.match(builder, /"sourceKey": source\.get\("sourceKey"\)/);
+assert.match(builder, /"point": source\.get\("point"\)/);
+assert.doesNotMatch(builder, /WATER_SOURCES_PATH\.read_bytes/);
+assert.doesNotMatch(builder, /ZONES_PATH\.read_bytes/);
 
 const fullValidation = workflow.slice(validate);
 assert.match(fullValidation, /npm run validate/);

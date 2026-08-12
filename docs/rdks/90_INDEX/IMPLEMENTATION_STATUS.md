@@ -1,4 +1,11 @@
-# Implementeringsstatus pr. 4.0.190 – lokal releasekandidat
+# Implementeringsstatus pr. 4.0.191 – lokal releasekandidat
+
+## Stabil DMI-sampling-signatur
+
+- [x] #2435/#2437-supportpakker er sammenlignet: signaturen skiftede fra `9c6f8338bfbe0491` til `ae6c3199488d784f` alene sammen med den løbende kilderegistrering.
+- [x] Flygtige stations-, observations-, forecast- og versionsfelter er fjernet fra kompatibilitetssignaturen.
+- [x] Faktiske samplingændringer i zone, kystdel eller vandkilde er fortsat signaturbrydende.
+- [ ] Frisk GitHub-kørsel skal oprette den nye semantiske cache; den efterfølgende ikke-overlappende kørsel skal bevise genbrug og rotation væk fra tidsafbrudt `dkss_idw`.
 
 ## DMI-checkpoint bevares som faktisk arbejdsfremdrift
 

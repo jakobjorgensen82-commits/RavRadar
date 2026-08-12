@@ -2,6 +2,7 @@
 
 ## DMI-produktionskæde
 
+- **ISSUE-DMI-VOLATILE-REGISTRY-SIGNATURE – RETTET LOKALT I 4.0.191 / AFVENTER TO CI-RUNS:** #2437 beviste, at checkpointet stadig blev afvist, fordi rå bytes fra det løbende vandkilderegister og zoneregisterets versionsmetadata indgik i signaturen. Signaturen bruger nu kun samplingbestemmende felter. Første run etablerer ny signatur; næste ikke-overlappende run skal bevise stategenbrug og rotation.
 - **ISSUE-DMI-PROGRESS-CACHE-SELECTION – RETTET LOKALT I 4.0.190 / AFVENTER CI:** #2429–#2431 stod fast på 125/210 verificerede current-zoner. Den private cache blev gendannet, men en ældre offentlig cache kunne vinde på antal komponenter og dermed kassere nyere scheduler-/checkpointfremdrift. Nyeste kompatible checkpoint vinder nu; kvalitetsmålet er kun tie-breaker. Den uændrede 90 %-gate skal fortsat bestås i frisk CI før deploy.
 
 ## National zone- og kystgeometri – aktiv pilot efter DEC-0032

@@ -1,5 +1,12 @@
 # Current truth – gældende projektviden
 
+## 4.0.191 – DMI-cache signeres efter sampling, ikke driftstid
+
+- #2437 beviste, at den private GitHub-cache blev restore-/save-behandlet, men `dkss_idw` startede igen og state indeholdt kun den aktuelle kørsels tidspunkt.
+- Supportpakkerne fra #2435 og #2437 havde forskellige `zoneRegistrySignature`, selv om samplinggeografien var uændret. Den løbende vandkilderegistrering ændrede blandt andet `lastSeenAt`, observations- og forecasttider ved hver kørsel; rå filbytes gjorde derfor enhver checkpoint-cache kunstigt inkompatibel. Også almindelige releaseversionsfelter i zoneregisteret kunne give samme falske nulstilling.
+- Signaturen bygges nu kanonisk kun af de felter, der bestemmer DMI-gridopslag: zone-ID, datapunkt/fallbackgeometri og kysttype; kystdel-ID, vandpunkt, status, kysttype og hovedzone; samt vandkildens stabile nøgle og punkt.
+- Ændres et faktisk samplingpunkt, ejerskab, status eller geometri, skifter signaturen fortsat fail-closed. Løbende helbred, observationer, forecasttider og appversion nulstiller ikke længere recovery.
+
 ## 4.0.190 – progressiv DMI-cache vælges efter fremdrift
 
 - Produktionskørslerne #2429–#2431 bekræftede det samme 125/210-mønster trods 4.0.189-rotationen. Det var et gentaget systemmønster, ikke tilfældige DMI-fejl.
