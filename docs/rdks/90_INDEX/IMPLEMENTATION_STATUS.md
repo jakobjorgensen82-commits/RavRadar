@@ -11,7 +11,8 @@
 - [x] Den nationale planport er opdateret fra den historiske 208-zonebestand til den aktuelle eksplicitte politik på 211 zoner; downstream-kildegater sammenligner bestandene indbyrdes i stedet for at skjule drift med en løs konstant.
 - [x] #31589831140 bekræftede plan, officiel kildehentning, kilde-QA og fjord-/normasker for 211 zoner. Den efterfølgende topologiaudit og delgenerator er nu også afstemt til 211 med matchende validatorer og regressionstests.
 - [x] #31590992368 bekræftede 211 zoner og 131 fliser gennem topologi, dækningsaudit og delgenerator. Stednavnegaten følger nu planens faktiske fliseantal og bevarer komplet requestkontrol uden den forældede 100-fliseantagelse.
-- [ ] Seks-zonekandidatens DMI-grid, shadow-score, runtime og rollback skal bestå privat før ejerreview eller aktivering.
+- [x] Privat #31609637964 bestod 22/22 native DMI-gridvalg, den deaktiverede 656-dels/211-zoners runtime, uændrede zoner uden for det godkendte område og rollback-isolation.
+- [ ] Ejeren skal visuelt godkende seks-zonekontrolkortet. Shadow-score og offentlig releasegate følger først derefter; automatisk aktivering er fortsat forbudt.
 
 ## 4.0.185 – produktionsverificeret
 

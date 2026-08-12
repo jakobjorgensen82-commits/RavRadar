@@ -11,6 +11,7 @@
 - Havnø og Mariager Fjord øst forbliver slettet. Den øvrige produktionsverificerede nationale kyst er urørt baseline.
 - Landsdækkende genopbygning, nyopdeling eller fortsættelse af den brede private nationale pipeline er ikke autoriseret. Ethvert behov uden for de seks zoner kræver, at arbejdet stopper og ejeren spørges først.
 - Den aktive private valideringsvej er `.github/workflows/validate-six-zone-recovery.yml`. Den kan hverken deploye eller ændre offentlig geometri og afviser andet end den fastlåste seks-zoneplan.
+- #31609637964 bestod den korrigerede 22-dels kandidats geometri, punktpar, native DMI-grid, deaktiverede runtime og rollback-isolation. Kandidaten har 656 dele i 211 zoner; alle zoner uden for de seks mål og deres nødvendige grænsenaboer matcher den aktive runtime uændret. Visuel ejergodkendelse mangler.
 
 ## 4.0.186-kandidat – trækbar kystgrænse og privat fallbackrecovery
 

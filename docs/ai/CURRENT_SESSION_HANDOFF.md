@@ -6,6 +6,8 @@ DEC-0036 har forrang for ældre brede nationale planer. Aktivt arbejde må kun o
 
 Den første 12-dels kandidat bestod DMI, men runtimekontrollen viste, at hele flytninger ville tømme to nabozoner. Den er derfor erstattet før aktivering. Den aktuelle kandidat opdeler ved grænserne og har 22 mål-/naborester, 22/22 punktpar, to Ristinge-ejerskabsflytninger, ni kontrollerede erstatninger og nul overlap. `.github/workflows/validate-six-zone-recovery.yml` skal nu gentage native DMI-kontrollen på de 22 dele; workflowet kan ikke deploye.
 
+#31609637964 bestod derefter hele den private kæde inklusive 22/22 native DMI-gridvalg, deaktiveret 656-dels/211-zoners runtime og uændrede ikke-berørte zoner. `KYSTZONER-SEKS-ZONER-KONTROL.html` er bygget lokalt til ejerreview. Næste trin er visuel ejergodkendelse; derefter shadow-score og offentlig releasegate, aldrig automatisk aktivering.
+
 ## Kritisk checkpoint 2026-08-11 / 4.0.181
 
 - Den nationale aktivering i 4.0.180 projicerede fejlagtigt 605 interne beregningsdele som selvstændige synlige kortzoner. Multipart-geometri gav 2.488 synlige linjer og cirka 12.440 Leaflet-objekter, sorte endemarkeringer over hele kortet, gentagne navne og meget langsom indlæsning.
