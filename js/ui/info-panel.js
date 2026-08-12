@@ -1,5 +1,5 @@
-import { calculateRavScore, scoreRating } from "../core/score-engine.js?v=4.0.184";
-import { selectBestTimeForDay } from "../core/best-time-selector.js?v=4.0.184";
+import { calculateRavScore, scoreRating } from "../core/score-engine.js?v=4.0.185";
+import { selectBestTimeForDay } from "../core/best-time-selector.js?v=4.0.185";
 
 const hasNumber = value => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value));
 const formatNumber = (value, suffix, digits = 1) => hasNumber(value) ? `${Number(value).toFixed(digits).replace(".", ",")} ${suffix}` : "Mangler";
@@ -48,11 +48,11 @@ function componentDetails(name, key, result, definition) {
   return `<details class="component-detail"><summary><span>${name}</span><strong class="component-score ${componentLevel}">${componentScore ?? "–"}/100</strong></summary><div class="component-explanation"><p><b>Hvad betyder det?</b> ${definition}</p>${calculation}<p><b>Hvorfor denne score?</b></p><ul>${reasons.map(reason => `<li>${escapeHtml(reason)}</li>`).join("") || "<li>Der er ikke nok data til en nærmere forklaring.</li>"}</ul></div></details>`;
 }
 
-function localCoveragePanel(result) {
+function localCoveragePanel(result, {showMapButton=true} = {}) {
   const summary=result?.localCoverageSummary;
   if(!summary)return '';
   const rows=(summary.parts||[]).map(part=>`<li><b>${escapeHtml(part.name)}</b>: RavScore ${part.score}</li>`).join('');
-  return `<section class="local-coverage-panel ${escapeHtml(summary.kind)}"><p class="eyebrow dark">Hvor i zonen er forholdene bedst?</p><h3>${escapeHtml(summary.title)}</h3><p>${escapeHtml(summary.text)}</p>${rows?`<ul>${rows}</ul>`:''}</section>`;
+  return `<section class="local-coverage-panel ${escapeHtml(summary.kind)}"><p class="eyebrow dark">Hvor i zonen er forholdene bedst?</p><h3>${escapeHtml(summary.title)}</h3><p>${escapeHtml(summary.text)}</p>${rows?`<ul>${rows}</ul>`:''}${showMapButton?'<button type="button" class="show-local-parts" data-show-local-parts>Hvor er det?</button>':''}</section>`;
 }
 
 
@@ -126,7 +126,12 @@ function tidePanel(days) {
   return `<section class="tide-section" data-tide-section><div class="section-title-row"><div><p class="eyebrow dark">Næste fem dage</p><h3>Vandstand time for time</h3></div></div>${dayTabs(days,0,"tide-day-tab")}<div data-tide-table></div><script type="application/json" class="tide-payload">${escapeScriptJson(JSON.stringify(days))}</script></section>`;
 }
 
-export function bindZoneInfoInteractions(element, zone, mode, history) {
+export function bindZoneInfoInteractions(element, zone, mode, history, options = {}) {
+  if(element._ravLocalPartsHandler)element.removeEventListener('click',element._ravLocalPartsHandler);
+  element._ravLocalPartsHandler = event => {
+    if (event.target.closest('[data-show-local-parts]')) options.onShowLocalParts?.();
+  };
+  element.addEventListener('click',element._ravLocalPartsHandler);
   const forecastSection = element.querySelector("[data-forecast-section]");
   if (forecastSection) {
     const summaries = JSON.parse(forecastSection.querySelector(".forecast-payload").textContent);
@@ -135,7 +140,7 @@ export function bindZoneInfoInteractions(element, zone, mode, history) {
       const day = summaries[index], best = day.best, h = best.hour || {}, r = best.result || {};
       forecastSection.querySelectorAll(".forecast-score-day").forEach((button,i) => { button.classList.toggle("active",i===index); button.setAttribute("aria-selected",String(i===index)); });
       detail.innerHTML = `<div class="forecast-selected"><div><h4>${capitalize(dayLabel(`${day.date}T12:00:00`))} ${dateLabel(`${day.date}T12:00:00`)}</h4>${best.recommended?`<p>Bedste beregnede tidspunkt: <b>${best.isNow?"Lige nu":hourLabel(h.time)}</b></p><p class="muted">Valgt som den højeste samlede RavScore ${best.isNow?"blandt lige nu og resten af dagen":"for dagen"}. Vandstand bruges kun som tie-breaker ved samme score.</p>${best.candidates?.length>1?`<details class="best-time-comparison"><summary>Se sammenligningen</summary><ol>${best.candidates.slice(0,5).map(candidate=>`<li><span>${candidate.isNow?"Lige nu":hourLabel(candidate.time)}</span><b>RavScore ${candidate.score}</b></li>`).join("")}</ol></details>`:""}`:`<p>Intet sikkert bedste tidspunkt. Se timeprognosen, da der mangler tilstrækkelige data.</p>`}</div><div class="score-badge ${r.level}"><strong>${r.available?r.score:"–"}</strong><span>RavScore</span></div></div>
-        ${localCoveragePanel(r)}
+        ${localCoveragePanel(r,{showMapButton:false})}
         <div class="component-list compact metric-sized">${componentDetails("Jagtbarhed","huntability",r,"Hvor let og sikkert det forventes at være at finde rav med den valgte jagtform. Vind og bølger betyder mest.")}${componentDetails("Transport","transport",r,"Hvor godt vind, strøm og vandstandsændringer forventes at føre rav og let materiale mod kysten.")}${componentDetails("Mobilisering","release",r,"Samlet potentiale for enten ny frigivelse eller genmobilisering af rav, som allerede ligger i nærkystzonen eller tidligere opskyl.")}</div>${r.available ? coastTransportExplanation(r) : ""}
         <div class="metric-grid weather-grid"><div class="metric"><span>Vind</span><strong>${directionMetric("wind",h.windSpeedMps,"m/s",h.windDirectionDeg)}</strong></div><div class="metric"><span>Bølger</span><strong>${formatNumber(h.waveHeightM,"m")}</strong></div><div class="metric"><span>Vandstand</span><strong>${formatNumber(h.waterLevelCm,"cm",0)}</strong></div><div class="metric"><span>Strøm</span><strong>${directionMetric("current",h.currentSpeedMps,"m/s",h.currentDirectionDeg,2)}</strong></div></div>`;
     };
@@ -167,8 +172,7 @@ export function showZoneInfo(element, zone, result, condition, mode, options = {
     ${result.prediction?.available ? `<section class="prediction-panel"><div><span class="eyebrow">AI-prognose</span><h3>${result.prediction.probability}% chance for ravfund</h3><p>${escapeHtml(result.prediction.label)} · sikkerhed ${result.prediction.confidence}%</p></div><details><summary>Sådan er prognosen beregnet</summary><ul>${result.prediction.reasons.map(reason=>`<li>${escapeHtml(reason)}</li>`).join("")}</ul></details></section>` : ""}
     ${result.available ? debugPanel(zone,result,condition) : ""}
     ${result.available ? `<div class="metric-grid weather-grid"><div class="metric"><span>Vind</span><strong>${directionMetric("wind",condition.windSpeedMps,"m/s",condition.windDirectionDeg)}</strong></div><div class="metric"><span>Bølger</span><strong>${formatNumber(condition.waveHeightM,"m")}</strong></div><div class="metric"><span>Vandstand</span><strong>${formatNumber(condition.waterLevelCm,"cm",0)}</strong></div><div class="metric"><span>Strøm</span><strong>${directionMetric("current",condition.currentSpeedMps,"m/s",condition.currentDirectionDeg,2)}</strong></div><div class="metric"><span>Vandtemperatur</span><strong>${formatNumber(condition.waterTemperatureC,"°C")}</strong></div><div class="metric"><span>3-timers trend</span><strong>${formatNumber(condition.waterLevelTrendCm3h,"cm",0)}</strong></div></div>` : ""}
-    ${forecastPanel(days,zone,mode,options.history||{},condition,result)}${tidePanel(days)}
-    <form id="observationForm" class="observation-form"><h3>Hvad fandt du?</h3><p>For at gøre RavRadar mere præcis vil vi gerne sammenholde dit fund med vejr, vandstand og den RavScore, der gjaldt under ravjagten.</p><label>Dato for ravjagten<input name="observedDate" type="date" required value="${new Date().toISOString().slice(0,10)}" max="${new Date().toISOString().slice(0,10)}"></label><label class="grams-field">Valgfrit antal gram<input name="grams" type="number" min="0" max="10000" step="0.1" inputmode="decimal"></label><div class="observation-buttons"><button type="submit" name="result" value="none">Intet</button><button type="submit" name="result" value="small">Små stykker</button><button type="submit" name="result" value="medium">Noget rav</button><button type="submit" name="result" value="good">Godt fund</button></div><p id="observationStatus" class="form-status" aria-live="polite"></p></form>`;
+    ${forecastPanel(days,zone,mode,options.history||{},condition,result)}${tidePanel(days)}`;
 }
 
 function capitalize(value="") { return value.charAt(0).toUpperCase()+value.slice(1); }

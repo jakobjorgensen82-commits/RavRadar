@@ -903,3 +903,7 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Rodårsagen var `localZoneScore`, som beholdt totalscoren fra den vindende kystdel, men erstattede dens `components` og `componentReasons` med tomme objekter.
 - Produktionsdata var konsistente: alle 643 dele fandtes, og 412/412 aktuelle kombinationer af 206 præcisionszoner og to jagtformer havde gyldig vinder, score og delscorer.
 - 4.0.184 fører vinderens delscorer og faglige forklaringer videre og viser tydeligt én eller flere bedst scorende kystdele, men kun når spredningen er mere end 7 point. RavScore-regler og geometri er uændrede.
+# 4.0.185 – lokalt delkort og ryddet zonepanel
+- Ejeren besluttede, at den offentlige “Hvad fandt du?”-formular under hver zone skal fjernes.
+- Zoneforklaringen får “Hvor er det?”, som ved klik viser de eksisterende præcise kystdele med navne og zoomer kortet til hovedzonen.
+- Visningen genbruger den allerede indlæste kystkontrakt og ændrer ikke RavScore, geometri, DMI eller adminlagring.

@@ -238,3 +238,8 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-DATA-009 – DELVIST IMPLEMENTERET:** Vindtimer bærer DMI-collection og fallbackstatus. Fuld model-run-, lead-time-, alder- og native/interpoleret-proveniens pr. komponenttime mangler fortsat.
 - **REQ-DATA-010 – AKTIV:** Frisk produktion skal bevise 118–119 timers faktisk dækning pr. komponent. Vandtemperaturhale og eventuelle resterende huller må ikke erklæres dækket uden dette bevis.
 - **CODEX-HUKOMMELSE – AKTIV:** `docs/ai/`, RDKS, håndbog, tests, Git-historik og chatarkiv skal vedligeholdes som projektets persistente AI-hukommelse. Væsentlige beslutninger må ikke kun leve i en samtale.
+## REQ-LOCAL-PART-MAP-001 – “Hvor er det?” for lokale kystdele (AKTIV)
+- Når zonepanelet omtaler navngivne kystdele, skal brugeren kunne vise deres placering på det eksisterende kort.
+- Visningen skal bruge allerede indlæst geometri, zoome til hovedzonen og navngive delene uden at gøre dem til permanente hovedzoner.
+- De aktuelt bedste dele må fremhæves, men syvpunktsreglen og RavScore må ikke ændres.
+- Den offentlige formular “Hvad fandt du?” skal ikke vises under hver zone. Den øvrige tur- og observationsinfrastruktur bevares.

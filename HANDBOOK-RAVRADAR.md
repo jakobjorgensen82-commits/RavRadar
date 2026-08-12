@@ -1,8 +1,14 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.184
+**Håndbogsversion:** 4.0.185
 
 **Opdateret:** 1. august 2026
+
+## Hvor ligger zonens kystdele? – 4.0.185
+
+Når RavRadar fortæller, at bestemte kystdele scorer højere end resten af hovedzonen, kan brugeren vælge **Hvor er det?**. Hovedkortet zoomer derefter til zonen og tegner dens allerede indlæste præcise kystdele med navn. De aktuelt bedste dele fremhæves. Hvis forskellen er højst 7 point og forholdene derfor gælder hele zonen, udpeges ingen enkelt del som bedre.
+
+Kortet bruger de samme kystdata, som allerede er hentet til hovedkortet. Funktionen kræver derfor ingen samling af skærmbilleder og ingen ekstra datahentning ved normal opstart. Den tidligere offentlige formular **Hvad fandt du?** vises ikke længere under hver zone; turregistreringens særskilte observation og administratorens analysefunktion er fortsat bevaret.
 
 ## Lokal scoreforklaring i 4.0.184
 

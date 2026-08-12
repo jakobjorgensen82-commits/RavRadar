@@ -1,5 +1,12 @@
 # Current truth – gældende projektviden
 
+## 4.0.185-kandidat – lokalt delkort og ryddet zonepanel
+
+- Zoneforklaringen har en behovsstyret “Hvor er det?”-knap, som viser de allerede indlæste præcise kystdele med navne på hovedkortet og zoomer til zonen. Der tilføjes ingen billedfiler eller ekstra normal datahentning.
+- Aktuelt bedste dele fremhæves efter den eksisterende syvpunktsregel. Ved status hele zonen udpeges ingen enkelt del som bedre.
+- Den offentlige “Hvad fandt du?”-formular er fjernet fra zonepanelet. Turregistrering, observationstjeneste og adminanalyse er bevaret.
+- Kandidaten afventer lokal fuld validering, CI og offentlig kontrol.
+
 ## 4.0.184-kandidat – lokal scoreforklaring
 
 - Når en hovedzone bruger de præcise kystdeles score, følger den vindende dels delscorer og forklaringer nu med til zonepanelet, debug, assistent og observationssnapshot.

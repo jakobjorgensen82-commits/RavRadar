@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const app=fs.readFileSync('app.js','utf8'),map=fs.readFileSync('js/map/map-view.js','utf8'),ui=fs.readFileSync('js/ui/info-panel.js','utf8');
+assert.ok(!ui.includes('Hvad fandt du?'),'Den offentlige zonevisning må ikke vise det gamle observationsfelt.');
+assert.ok(!ui.includes('id="observationForm"'),'Observationsformularen skal være fjernet fra zonepanelet.');
+assert.match(ui,/data-show-local-parts/,'Den lokale scoreforklaring skal have knappen Hvor er det?');
+assert.match(app,/coastalParts\?\.zones\?\.\[state\.selectedZone\.id\]/,'Kortvisningen skal genbruge allerede indlæst kystdelsgeometri.');
+assert.match(map,/showLocalParts/,'Kortlaget skal kunne vise de navngivne kystdele ved behov.');
+assert.match(map,/fitBounds\(partBounds/,'Kortet skal zoome til den valgte zones kystdele.');
+console.log('OK: Observationsfelt er fjernet, og Hvor er det? viser eksisterende kystdele uden ekstra datahentning.');

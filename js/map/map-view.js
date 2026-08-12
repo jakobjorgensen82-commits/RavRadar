@@ -202,8 +202,33 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
   if (bounds.isValid()) map.fitBounds(bounds, { padding: [18, 18], maxZoom: 10 });
 
   const api = { geometryLayer, lineLayer, lines, boundaryTicks, overviewBounds: bounds, map, selectedId: null };
+  let localPartsLayer = null;
+  api.clearLocalParts = () => {
+    if (localPartsLayer) map.removeLayer(localPartsLayer);
+    localPartsLayer = null;
+  };
+  api.showLocalParts = (zoneId, parts = [], highlightedPartIds = []) => {
+    api.clearLocalParts();
+    const highlighted = new Set(highlightedPartIds);
+    localPartsLayer = L.layerGroup().addTo(map);
+    const partBounds = L.latLngBounds([]);
+    parts.forEach((part, index) => {
+      const geometry = part?.geometry;
+      const sourceLines = geometry?.type === 'LineString' ? [geometry.coordinates] : geometry?.type === 'MultiLineString' ? geometry.coordinates : [];
+      const latLngLines = sourceLines.filter(line => Array.isArray(line) && line.length > 1).map(line => line.map(([lng,lat]) => [lat,lng]));
+      if (!latLngLines.length) return;
+      const isHighlighted = highlighted.has(part.partId);
+      const color = isHighlighted ? '#0a7b4f' : ['#1769aa','#8b5cf6','#b45309','#0f766e'][index % 4];
+      const layer = L.polyline(latLngLines.length === 1 ? latLngLines[0] : latLngLines, {pane:'zoneBoundaryPane',color,weight:isHighlighted?9:7,opacity:1,lineCap:'round',lineJoin:'round',interactive:true}).addTo(localPartsLayer);
+      layer.bindTooltip(`${escapeHtml(part.name || 'Kystdel')}${isHighlighted ? ' · blandt de bedste' : ''}`, {permanent:true,direction:'top',className:`local-part-label${isHighlighted?' highlighted':''}`});
+      partBounds.extend(layer.getBounds());
+    });
+    if (partBounds.isValid()) map.fitBounds(partBounds,{padding:[34,34],maxZoom:12});
+    api.selectedId = zoneId;
+  };
   api.showOverview = () => { if (api.overviewBounds?.isValid()) map.fitBounds(api.overviewBounds, {padding:[18,18], maxZoom:7}); };
   api.selectZone = id => {
+    api.clearLocalParts();
     api.selectedId = id || null;
     for (const pair of lines.values()) {
       pair.hit.options.ravSelected = pair.zoneId === api.selectedId;
@@ -238,6 +263,7 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
   };
   map.on("zoomend", refreshZoomStyles);
   api.destroy = () => {
+    api.clearLocalParts();
     map.off("zoomend", refreshZoomStyles);
     if (zoomFrame) cancelAnimationFrame(zoomFrame);
   };
