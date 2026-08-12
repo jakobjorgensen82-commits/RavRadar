@@ -11,6 +11,7 @@
 - Et reversibelt viskelæder kan deaktivere en hel valideret del. Central schema-4-readback og produktionsbyggeren behandler geometri og datakontrakt samlet.
 - Fri ny kysttegning bliver ikke behandlet som valideret DMI-data. Helt ny geometri skal fortsat gennem private punkt-, grid-, shadow-score-, runtime- og rollbackgates.
 - Havnø/Mariager Fjord forbliver slettet. Recoveryauditen fandt, at Nykøbing/Rørvig, Dronningmølle/Hornbæk og Ålsgårde/Helsingør allerede findes som validerede dele under forkerte ejere; de skal flyttes, ikke kopieres. Langeland syd, Lolland vest/Albuen og Fejø/Femø kræver 12 nye officielle kandidatdele med 12/12 punktpar. Den private overlapgate finder nul overlap mod andre aktive hovedzoner; ejer- og DMI-gates mangler.
+- Den eksisterende private nationale Linux-kæde er koblet til fallbackrecoveryen: kandidaten genbygges fra samme friske GeoDanmark-kyst, ejerskab/punktpar/overlap kontrolleres fail-closed, og vandpunkterne prøves på native DMI-grid. Ingen af disse trin kan aktivere offentlig geometri.
 
 ## 4.0.185-kandidat – lokalt delkort og ryddet zonepanel
 

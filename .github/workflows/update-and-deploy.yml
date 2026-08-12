@@ -515,6 +515,32 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
+      - name: Build private fallback-zone recovery from the fetched official coast
+        run: >-
+          python scripts/build-fallback-zone-recovery-review.py
+          --official .geometry-v2-work/national-source/national-Kyst.geojson
+          --output .owner-review/fallback-zone-recovery/index.html
+          --candidate .geometry-v2-work/fallback-zone-recovery-candidate.geojson
+          --bundle .geometry-v2-work/fallback-zone-recovery-candidate.json
+          --report .geometry-v2-work/fallback-zone-recovery-report.json
+
+      - name: Build private fallback-zone land and water points
+        run: >-
+          python scripts/build-approved-public-coast-points.py
+          --candidate .geometry-v2-work/fallback-zone-recovery-candidate.json
+          --evidence data/live/coastal-parts-v2.json
+          --output .geometry-v2-work/fallback-zone-recovery-point-pairs.json
+          --candidate-output .geometry-v2-work/fallback-zone-recovery-candidate-with-points.json
+
+      - name: Validate fallback geometry ownership, point pairs and zero overlap
+        run: python scripts/validate-fallback-zone-recovery.py
+
+      - name: Validate fallback water points on native DMI grids
+        run: >-
+          python scripts/validate-national-local-part-dmi-grid.py
+          --input .geometry-v2-work/fallback-zone-recovery-point-pairs.json
+          --report .geometry-v2-work/fallback-zone-recovery-dmi-grid.json
+
       - name: Upload compact national geometry-v2 QA artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -562,6 +588,11 @@ jobs:
             .owner-review/national-owner-final/national-state-history-validation.json
             .owner-review/national-owner-final/national-local-part-wind-series.json
             .owner-review/national-owner-final/national-shadow-score-validation.json
+            .geometry-v2-work/fallback-zone-recovery-report.json
+            .geometry-v2-work/fallback-zone-recovery-validation.json
+            .geometry-v2-work/fallback-zone-recovery-point-pairs.json
+            .geometry-v2-work/fallback-zone-recovery-dmi-grid.json
+            .owner-review/fallback-zone-recovery/index.html
             .owner-review/national-admin-roundtrip-validation.json
           retention-days: 14
           if-no-files-found: error
