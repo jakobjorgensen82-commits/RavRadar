@@ -1,10 +1,10 @@
-# Implementeringsstatus pr. 4.0.183-kandidat
+# Implementeringsstatus pr. 4.0.183
 
 - [x] Interne sorte kystdelsmarkeringer er fjernet; ét gensidigt nærmeste møde mellem to forskellige hovedzoner giver ét skel.
 - [x] Sorte skel skaleres ned ved landszoom, og tilbage-knappen gendanner Danmarksoverblikket.
 - [x] Admin kan flytte en eksisterende præcis kystdel til en anden aktiv hovedzone. Delen beholder geometri, land-/vandpunkt, gridbevis og del-ID gennem public runtime og scoring.
 - [x] Runtime afviser ukendte/slettede modtagere, publicerer en del én gang og filtrerer rester fra slettede hovedzoner.
-- [ ] Fuld lokal validate/release-gate og frisk produktionskørsel skal bestå, før 4.0.183 kaldes produktionsverificeret.
+- [x] GitHub Actions #31572312647 bestod fuld bygge-, data-, release- og Pages-kæde; 4.0.183 er produktionsverificeret.
 
 - [x] Ejeren har godkendt national slutkontrol og de seks sidste rettelser.
 - [x] Den frigivelsesklare bestand er 643 interne dele under 212 hovedzoner; 206 hovedzoner har præcis kyst og seks bruger sikker legacy-fallback. Der er nul tværzoneoverlap og nul uafklarede relevante huller.

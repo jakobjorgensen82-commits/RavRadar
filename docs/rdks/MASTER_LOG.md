@@ -895,4 +895,4 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - “Tilbage til oversigten” gendanner Danmarksoverblikket.
 - Admin kan flytte eksisterende præcise kystdele til en anden aktiv hovedzone. Geometri, land-/vandpunkt, DMI-gridbevis og del-ID følger samlet med; hver del publiceres kun én gang.
 - Hele zonesletningen er bevaret. Ikke-flyttede dele under en slettet zone filtreres fra offentlig runtime, og ugyldigt ejerskab stopper bygningen.
-- RavScore-regler og den fysiske 643-delsbestand er uændrede. Målrettede kort-, admin-, propagation-, sletnings- og aktiveringstests består lokalt; fuldt release- og produktionsbevis afventer.
+- RavScore-regler og den fysiske 643-delsbestand er uændrede. Målrettede kort-, admin-, propagation-, sletnings- og aktiveringstests består, og GitHub Actions #31572312647 bestod den fulde produktionskæde inklusive Pages-deploy.

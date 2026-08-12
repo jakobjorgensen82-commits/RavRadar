@@ -1,6 +1,6 @@
 # DEC-0035 – Hovedzonegrænser og ejerskab af præcise kystdele
 
-**Status:** IMPLEMENTERET LOKALT I 4.0.183, AFVENTER PRODUKTIONSBEVIS
+**Status:** AKTIV OG PRODUKTIONSVERIFICERET I 4.0.183 (GitHub Actions #31572312647)
 **Dato:** 2026-08-12
 
 ## Beslutning

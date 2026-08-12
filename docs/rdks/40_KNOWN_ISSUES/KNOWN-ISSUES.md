@@ -203,7 +203,7 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 
 ## 4.0.119 – produktionsbevist DKSS-parserfejl
 - **ISSUE-DKSS-WIND-TAIL-V-DROPPED – PRODUKTIONSVERIFICERET LØST I #1831:** #1828 beviste, at DKSS-id 34 blev fejlfortolket som `sst` og forkastet som tvetydigt. #1831 genkendte begge U/V-felter, gav vindhale i 107 zoner med mindst 96 timer og gennemførte fulde gates/deploy. Det offentlige datasæt havde 108/208 zoner med mindst 96 timers samlet vind og maksimum 111,5 timer.
-# 4.0.183 – løst lokalt, afventer produktionsbevis
+# 4.0.183 – løst og produktionsverificeret
 
-- **ISSUE-INTERNAL-BLACK-MAIN-ZONE-MARKERS – LØST LOKALT:** Offentlig runtime tegnede tidligere to sorte ender for hver hovedzone uden at samle fælles grænser. 4.0.183 tegner ét lille skel alene ved et gensidigt møde mellem forskellige hovedzoner.
+- **ISSUE-INTERNAL-BLACK-MAIN-ZONE-MARKERS – LØST OG PRODUKTIONSVERIFICERET:** Offentlig runtime tegnede tidligere to sorte ender for hver hovedzone uden at samle fælles grænser. 4.0.183 tegner ét lille skel alene ved et gensidigt møde mellem forskellige hovedzoner. GitHub Actions #31572312647 bestod.
 - **ISSUE-ADMIN-MAIN-ZONE-LENGTH-DID-NOT-PROPAGATE-LOCAL-PARTS – LØST LOKALT:** Den tidligere frie hovedlinjeredigering ændrede ikke ejerskabet af de aktive præcise kystdele. Admin kan nu flytte en eksisterende del til en anden hovedzone, og public runtime omgrupperer geometri og lokal dataidentitet samlet.

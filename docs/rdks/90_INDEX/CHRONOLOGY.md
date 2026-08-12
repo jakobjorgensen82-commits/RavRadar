@@ -1,6 +1,6 @@
 # Rekonstrueret chatkronologi
 
-## 2026-08-12 – 4.0.183-kandidat
+## 2026-08-12 – 4.0.183
 1. Ejerens kortkontrol dokumenterede fortsatte sorte markeringer inde i hovedzoner, for store skel ved landszoom og manglende Danmarksoverblik efter lukning af en zone.
 2. Kortet blev ændret til ét delt skel mellem forskellige hovedzoner og zoomafhængig størrelse.
 3. Admin-redigering af hovedzonelængde blev koblet til flytning af eksisterende, verificerede kystdele, så geometri og lokale data følger samlet med uden nye overlap.
@@ -22,7 +22,7 @@ Rækkefølgen er udledt af tekstens indhold, versionsnumre, funktionsudvikling, 
 2. Supportdata afgrænsede de fem som reelle `NO_SHARED_UV_GRID_POINT`, ikke schedulerudsultning.
 3. Vandstandsrouting overskrev den blandede offentlige serie med DMI-cachen og slettede fallback.
 4. Open-Meteos fem kalenderdage mistede dagens allerede forløbne timer; forespørgslen er ændret til 120 fremtidige timer.
-5. Rettelsen er score-neutral og afventer frisk produktionsverifikation.
+5. Rettelsen er score-neutral og blev produktionsverificeret i GitHub Actions #31572312647.
 
 ## CHAT-0001
 - **Kilde:** chat 1.txt
