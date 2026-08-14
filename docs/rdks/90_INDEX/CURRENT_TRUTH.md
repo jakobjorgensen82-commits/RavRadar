@@ -1,5 +1,14 @@
 # Current truth – gældende projektviden
 
+## 4.0.207 – ét flytbart punktpar pr. kyststrækning
+
+- Ejeren har valgt den pragmatiske model i DEC-0037: hver af de 673 aktive kyststrækninger beholder ét autoritativt blåt havpunkt og ét grønt landpunkt. Bugtede strækninger får ikke automatisk flere punktpar eller en ny landsdækkende opdeling.
+- Admin retter placeringen ved at trække det eksisterende punktpar. De uvirksomme knapper **Sæt nyt havpunkt** og **Sæt nyt landpunkt** er fjernet; træk, rød hav→land-pil, vinkelret kystkontrol, central readback, DMI-validering og rollback er bevaret.
+- Når ejeren vælger **Godkend og gem centralt**, er ændringen først aktiv efter verificeret central genlæsning og en grøn efterfølgende DMI-/releasekørsel. Indtil da forbliver den seneste produktionsverificerede placering aktiv.
+- En skrivebeskyttet orienteringsaudit fandt 199 kontrolkandidater i 122 hovedzoner ved mindst 35 graders vedvarende variation. 171 er fragmenterede `MultiLineString`-dele, så tallet er en triageliste og ikke 199 beviste fejl. Auditten giver ingen automatisk ændringstilladelse.
+- Den manuelle ejerreview af alle zoner kan udføres gradvist og er ikke en blokering for uafhængige roadmapopgaver. Den skal være afsluttet før endelig faglig godkendelse af alle lokale RavScores, større scorekalibrering og domæne-/brugerrelease.
+- 4.0.206 er fortsat produktionsverificeret baseline, indtil 4.0.207 har bestået GitHub Actions og deploy.
+
 ## 4.0.206 – ren og idempotent fallbackslutkontrol
 
 - 4.0.206 er produktionsverificeret i #31831068809 på commit `4dc464a`: kompatibel progressiv DMI-cache blev genbrugt, to modelsamlinger blev færdiggjort, og frisk central vejrbygning, fuld validering, releasegate, Supabase-synkronisering, Pages-artifact og deploy bestod. Direkte Pages-kontrol viser version 4.0.206, 210 hovedzoner og `DK-B04-12`, `DK-B04-13` og `DK-B04-14` i den offentlige runtime.
@@ -77,7 +86,7 @@
 ## 4.0.192 – samlet land-/vandeditor pr. hovedzone
 
 - Admin søger på hovedzonens aktuelle navn og viser hele hovedzonen sammen med alle dens aktive præcise kyststrækninger.
-- Hver kyststrækning viser sit eget blå havpunkt og grønne landpunkt. Ejeren kan trække dem eller sætte nye punkter ved klik på kortet; pålandsretningen kan beregnes fra punktparret eller finjusteres.
+- Hver kyststrækning viser sit eget blå havpunkt og grønne landpunkt. Ejeren kan trække de eksisterende markører; pålandsretningen beregnes fra det autoritative punktpar.
 - Godkendte ændringer gemmes centralt i `direction-reviews` med kystdel-ID, læses tilbage og anvendes af den offentlige kystdelsbygger. Kladder påvirker ikke runtime.
 - DMI-sampleren læser nu den byggede aktive `data/live/coastal-parts-v2.json`, så adminrettet havpunkt, DMI-signatur, sampling, lokal score og offentlig visning ikke kan skilles ad. Næste fulde DMI-/releasegate er fortsat nødvendig før produktionsverifikation.
 
@@ -203,9 +212,9 @@ Punkterne nedenfor bevarer beslutnings- og fejlsøgningshistorikken frem mod 4.0
 - Funktionen er endnu ikke implementeret. Designet skal være dataminimeret, skelne sidevisninger fra besøg/anslået unikhed, være kvotesikkert og aldrig blokere siden eller påvirke RavScore.
 
 ## Næste aktive roadmaptrin
-- P0 er kortets produktrettelse og en efterfølgende audit af relevante ravstrande, som ikke dækkes af de lokale beregningsdele. De 605 dele må ikke slettes som genvej.
-- Derefter genoptages P1-audit og design af komplette DMI-first femdøgnskæder pr. komponent under DEC-0030. Ingen ny produktionskilde eller fallback må indføres, før aktuel dækning, proveniens, overgange og regressioner er dokumenteret.
-- Supabase-egress følges gennem næste billingperiode. Den private besøgsrapport er fortsat en senere P2-opgave.
+- P0-ejeropgaven er en gradvis manuel gennemgang af de eksisterende land-/havpunktpar. Den kan udskydes og må ikke blokere uafhængigt udviklingsarbejde, men skal være afsluttet før endelig faglig score- og brugerreleasegodkendelse.
+- Næste aktive udviklertrin er P1-audit og design af komplette DMI-first femdøgnskæder pr. komponent under DEC-0030. Ingen ny produktionskilde eller fallback må indføres, før aktuel dækning, proveniens, overgange og regressioner er dokumenteret.
+- Supabase-egress følges gennem næste billingperiode. Den private, dataminimerede besøgstæller med enkel adminrapport er fortsat en senere P2-opgave.
 
 Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed og udtrykkeligt planlagte næste skridt. Historik findes andre steder i RDKS.
 

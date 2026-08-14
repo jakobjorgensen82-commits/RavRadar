@@ -1,5 +1,10 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.207 – manuel placering af ét punktpar
+
+- **ISSUE-ADMIN-NEW-POINT-BUTTONS – RETTET LOKALT / AFVENTER CI:** De to knapper til at sætte nye enkeltpunkter gav ikke et virksomt ekstra punktpar og passede ikke til den aktive én-par-kontrakt. De er fjernet efter udtrykkelig ejerbeslutning. Eksisterende markører er fortsat flytbare, og central gemning/DMI-gate er bevaret.
+- **ISSUE-LOCAL-PART-DIRECTION-VARIATION – ACCEPTERET KOMPROMIS / MANUEL REVIEW UDSKUDT:** En skrivebeskyttet 1 km-orienteringsaudit flagger 199 af 673 dele i 122 zoner ved mindst 35 graders vedvarende variation. 171 er fragmenterede `MultiLineString`-dele, så listen er triage og ikke dokumenterede fejl. Ejeren har fravalgt automatisk genopdeling og ekstra aktive punktpar; ét manuelt valgt repræsentativt punktpar pr. strækning bevares. Den gradvise gennemgang skal afsluttes før endelig faglig score- og brugerreleasegodkendelse, men blokerer ikke uafhængigt roadmaparbejde.
+
 ## 4.0.206 – fallback på ren runner og efter tidligere aktivering
 
 - **ISSUE-FALLBACK-CLEAN-RUNNER-OUTPUT-DIR – LUKKET I #31829349458:** #31822748625 lokaliserede den manglende private reviewmappe. Alle fire outputforældre oprettes nu eksplicit, regressionen består, og en ren fuld national runner gennemførte fallbackbygning, validering og artifactupload.

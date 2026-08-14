@@ -5,7 +5,8 @@ import path from 'node:path';
 import {build} from './build-public-coastal-parts-v2.mjs';
 
 const ui=await fs.readFile('js/ui/admin-direction-editor.js','utf8');
-for(const needle of ['coastalParts.zones','partOverrides','Sæt nyt havpunkt','Sæt nyt landpunkt','Godkend og gem centralt'])assert.ok(ui.includes(needle),`Admin-editor mangler ${needle}`);
+for(const needle of ['coastalParts.zones','partOverrides','Godkend og gem centralt','draggable:selected',"marker.on('dragend'"])assert.ok(ui.includes(needle),`Admin-editor mangler ${needle}`);
+for(const removed of ['Sæt nyt havpunkt','Sæt nyt landpunkt','Sæt nyt land-/havpunkt','id="setSeaPoint"','id="setLandPoint"','id="setPointPair"'])assert.ok(!ui.includes(removed),`Admin-editor viser stadig den fjernede funktion: ${removed}`);
 for(const needle of ['focusRequested=true','selectedZoneId!==id','map.invalidateSize()','map.fitBounds','direction-point'])assert.ok(ui.includes(needle),`Admin-editor mangler robust kortvalg: ${needle}`);
 for(const needle of ['Hav → land','pairGeometryCheck','Vinkelret kystkryds','step="1" disabled','L.polyline([water,land]'])assert.ok(ui.includes(needle),`Admin-editor mangler bindende punkt-/pilkontrol: ${needle}`);
 assert.ok(!ui.includes('requestAnimationFrame(()=>'),'Zonevalgets korttegning må ikke afhænge af en senere animation callback.');

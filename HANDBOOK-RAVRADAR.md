@@ -30,7 +30,7 @@ Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vande
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.206
+**Håndbogsversion:** 4.0.207
 
 **Opdateret:** 14. august 2026
 
@@ -1630,3 +1630,11 @@ Den aktive kyst kan efterfølgende kontrolleres uden at bygge en ny kandidat. Et
 I administrationen redigeres den præcise kyststreg. Et endehåndtag kan trækkes hen til en eksisterende valideret nabokystdel. Når flytningen gemmes, følger kystdelens geometri, landpunkt, vandpunkt, DMI-grid og lokale scoreidentitet samlet med; zonens afgrænsning følger automatisk.
 
 Viskelæderet deaktiverer en hel valideret kystdel og dens datakontrakt samlet. Den stiplede del kan gendannes, før eller efter central gemning. Værktøjet opfinder ikke målepunkter til en frit tegnet ny linje. En helt ny kystdel skal først gennem den private geometri-, punkt-, DMI- og score-neutrale kontrol.
+
+## Ét land-/havpunktpar pr. kyststrækning
+
+Hver af de 673 aktive lokale kyststrækninger har ét blåt havpunkt og ét grønt landpunkt. Punktparret er fælles sandhed for DMI-sampling, den røde hav→land-retning, lokal RavScore og offentlig forklaring. Administratoren retter en placering ved at trække de eksisterende markører; der oprettes ikke ekstra aktive punktpar på samme uændrede strækning.
+
+På bugtede strækninger vælger ejeren manuelt det sted, som bedst repræsenterer den relevante ravstrand. En bred orienteringsaudit har flagget 199 kontrolkandidater i 122 hovedzoner, men 171 er fragmenterede `MultiLineString`-dele. Listen er derfor et arbejdsredskab til gradvis kontrol og ikke 199 dokumenterede fejl eller tilladelse til automatisk genopdeling.
+
+Efter **Godkend og gem centralt** skal punktparret læses tilbage fra central lagring og bestå en frisk DMI-/releasekørsel, før det bliver autoritativt. Ved afvisning aktiveres kladden ikke. Den manuelle ejerreview kan udskydes, men skal afsluttes før endelig faglig godkendelse af alle lokale scorer, større scorekalibrering og domæne-/brugerrelease.

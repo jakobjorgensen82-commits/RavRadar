@@ -1,6 +1,19 @@
-# AI Roadmap – RavRadar efter 4.0.206
+# AI Roadmap – RavRadar efter 4.0.207
 
 Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status skal løbende flyttes til RDKS, når noget implementeres.
+
+## P0-ejerreview – ét land-/havpunktpar pr. kyststrækning
+
+- Hver af de 673 aktive kyststrækninger har præcis ét autoritativt hav-/landpunktpar. Admin må kun flytte det eksisterende par; ekstra aktive par og automatisk national genopdeling er fravalgt i DEC-0037.
+- En skrivebeskyttet retningsaudit har flagget 199 kontrolkandidater i 122 hovedzoner. Det er en prioriteringsliste, ikke 199 beviste fejl, fordi 171 kandidater er fragmenterede `MultiLineString`-dele.
+- Ejeren gennemgår senere zonerne gradvist og placerer parret repræsentativt på bugtede dele. Arbejdet blokerer ikke uafhængige roadmapopgaver, men skal være afsluttet før endelig faglig godkendelse af alle lokale scorer, større scorekalibrering og domæne-/brugerrelease.
+- En flytning bliver først aktiv efter central readback og grøn efterfølgende DMI-/releasekørsel. Afvist validering må ikke aktivere kladden.
+
+## Næste aktive udvikleropgave – DMI-first femdøgnskæder
+
+- Fortsæt P1-audit og design under DEC-0030 for vind, bølger, strøm, vandstand og øvrige viste/scorede komponenter.
+- Dokumentér først faktisk dækning, provenance, overgangskvalitet og regressionsplan. Indfør ikke ny produktionskilde, fallback eller scoreændring før denne analyse er afsluttet og godkendt.
+- Supabase-egress overvåges gennem næste billingperiode. Den private, dataminimerede besøgstæller med enkel adminrapport er fortsat P2.
 
 ## Afsluttet P0 – privat land-/vand- og fallbackkandidat teknisk verificeret
 

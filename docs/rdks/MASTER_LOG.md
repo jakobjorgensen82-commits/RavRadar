@@ -1059,3 +1059,11 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Node-requesteren og Python-hydreringen bruger samme fail-closed kontrakt. Kun den eksakte kombination ny secret key + HTTP 401 + `PGRST303` genprøves én gang; alle andre eller gentagne fejl stopper. GitHub Actions må ikke fortsætte på repositoryfallback efter central læsefejl. Ingen secrets eller komplette request-URL'er logges.
 - Beskyttet manifestsync stopper nu ved læsefejl i stedet for at antage et manglende manifest og genskrive uændrede dokumenter. Det beskytter både central sandhed og Supabase free-kvoten.
 - En ny manuel, ikke-deployerende workflow genbruger det kompakte artifact fra #31815423082 og kører kun central national roundtrip/rollback. Lokal regression og self-tests er grønne; målrettet CI, normal produktion og ny fuld privat national slutkørsel mangler ved dette checkpoint.
+
+## 2026-08-15 – 4.0.207
+
+- Ejeren har besluttet, at hver af de 673 aktive kyststrækninger fortsat har præcis ét autoritativt land-/havpunktpar. Forslaget om flere aktive par og gamle visuelle "spøgelser" er forkastet; gamle punkter bruges ikke parallelt.
+- Admin retter fremover kun ved at trække det eksisterende blå og grønne punkt. De to uvirksomme knapper **Sæt nyt havpunkt** og **Sæt nyt landpunkt** er fjernet efter udtrykkelig ejerbeslutning. Rød hav→land-pil, geometrikontrol, central readback, DMI-gate, runtimepropagering og rollback er bevaret.
+- En ny skrivebeskyttet orienteringsaudit flagger 199 af 673 dele i 122 zoner ved mindst 35 graders vedvarende variation. 171 kandidater er `MultiLineString`; tallet er triage, ikke dokumenterede fejl og ikke tilladelse til automatisk ændring.
+- Ejeren gennemgår senere zonerne gradvist og vælger en repræsentativ placering på bugtede dele. Gennemgangen blokerer ikke uafhængige roadmapopgaver, men skal afsluttes før endelig faglig godkendelse af lokale scorer, større scorekalibrering og domæne-/brugerrelease.
+- Næste aktive udviklertrin er fortsat DMI-first femdøgnsaudit under DEC-0030. Supabase-egress overvåges gennem næste billingperiode; dataminimeret besøgstæller med enkel adminrapport er P2.

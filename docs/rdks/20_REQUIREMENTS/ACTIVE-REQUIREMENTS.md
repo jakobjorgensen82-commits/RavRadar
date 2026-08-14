@@ -8,6 +8,7 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-GEO-061 – BINDENDE:** Samme punktpar er autoritativt for DMI-sampling, beregnet pålandsretning, lokal score, offentlig forklaring og adminvisning. Et separat gemt gradtal må ikke overstyre punktparret.
 - **REQ-GEO-062 – BINDENDE:** Stednavne, generelle zonecentre eller tidligere hardcodede vinkler må ikke alene afgøre land-/vandside. Automatisk korrektion kræver uafhængigt flerafstandsbevis; tvetydige tilfælde forbliver fail-closed.
 - **REQ-GEO-063 – BINDENDE:** Nye eller flyttede vandpunkter må ikke aktiveres uden native DMI-grid, score-, runtime-, central readback- og rollbackbevis.
+- **REQ-GEO-065 – BINDENDE FRA 4.0.207:** Hver aktiv kyststrækning har præcis ét autoritativt land-/havpunktpar. Admin retter det ved at trække de eksisterende markører; ekstra aktive punktpar på samme strækning og automatisk landsdækkende genopdeling er ikke autoriseret. Se DEC-0037.
 
 ## Tværgående funktionsbevarelse
 - **REQ-REGRESSION-001 – BINDENDE:** En ændring må ikke utilsigtet fjerne, skjule, afkoble eller forringe en eksisterende bruger-, admin-, data-, score-, forecast-, kort-, observations- eller driftsfunktion. Bevidst fjernelse kræver en aktuel udtrykkelig ejerbeslutning, og den tekniske følgevirkning skal afgrænses, så beslægtede bagvedliggende funktioner bevares, medmindre de også udtrykkeligt er bestilt fjernet.
@@ -46,7 +47,7 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-STATION-010 – IMPLEMENTERET I 4.0.103, AFVENTER PRODUKTIONSBEKRÆFTELSE:** DMI-prognosepunkter opdages via `tidewaterstation`-collectionen. Alle vandstandskilder auditeres med kildetype, discovery-resultat, prognosehorisont, gyldighed og routingberettigelse.
 
 ## Retning, zoner og kort
-- **REQ-GEO-053 – IMPLEMENTERET, KORTLIVSCYKLUS RETTET I 4.0.194:** Fanen Retning: hav → land søger på hovedzoner og skal ved hvert zonevalg zoome til den valgte zone, fremhæve dens valgte kyststrækning og vise de eksisterende land-/havpunkter. Hvert punkt kan trækkes eller sættes på ny. Kun centralt gemte, readback-verificerede godkendelser må ændre næste DMI-sampling, lokal score og offentlig runtime; kladder er score-neutrale, og en efterfølgende DMI-/releasegate skal notificere ved afvisning. Editorens eget kort er arbejdskortet; et særskilt link til hovedkortet indgår ikke.
+- **REQ-GEO-053 – IMPLEMENTERET, OPDATERET I 4.0.207:** Fanen Retning: hav → land søger på hovedzoner og skal ved hvert zonevalg zoome til den valgte zone, fremhæve dens valgte kyststrækning og vise de eksisterende land-/havpunkter. Det eksisterende hav- og landpunkt kan trækkes; editoren opretter ikke ekstra punktpar. Kun centralt gemte, readback-verificerede godkendelser må ændre næste DMI-sampling, lokal score og offentlig runtime; kladder er score-neutrale, og en efterfølgende DMI-/releasegate skal notificere ved afvisning. Editorens eget kort er arbejdskortet; et særskilt link til hovedkortet indgår ikke.
 - **REQ-GEO-001 – IMPLEMENTERET:** Strøm er bevægelsesretning; vind er fra-retning.
 - **REQ-GEO-002 – AKTIV:** Alle zoners pålandsretning skal kunne auditeres og dokumenteres.
 - **REQ-GEO-003 – IMPLEMENTERET:** Als Odde/Helberskov er placeret nord for Mariager Fjord.

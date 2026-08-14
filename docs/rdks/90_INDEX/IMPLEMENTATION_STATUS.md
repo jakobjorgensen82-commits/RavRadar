@@ -1,4 +1,14 @@
-# Implementeringsstatus pr. 4.0.206 – ren og idempotent fallbackslutkontrol
+# Implementeringsstatus pr. 4.0.207 – ét punktpar pr. kyststrækning
+
+## Admin land/hav og manuel ejerreview
+
+- [x] Beslutningen om præcis ét autoritativt punktpar pr. aktiv kyststrækning er registreret i DEC-0037.
+- [x] **Sæt nyt havpunkt** og **Sæt nyt landpunkt** er fjernet fra editoren.
+- [x] Trækbare eksisterende markører, rød hav→land-pil, geometrikontrol, central readback og DMI-/releasevalidering er bevaret.
+- [x] Regressionstesten afviser genindførelse af de fjernede knapper og beskytter fortsat træk- og runtime-roundtrip.
+- [ ] 4.0.207 skal bestå fuld lokal validering, releasegate og GitHub Actions/deploy.
+- [ ] Ejeren gennemgår senere alle zoner manuelt og vælger et repræsentativt punktpar på bugtede strækninger. Opgaven kan udføres gradvist og blokerer ikke uafhængige roadmapopgaver.
+- [ ] Den manuelle gennemgang skal være afsluttet før endelig faglig godkendelse af alle lokale scorer og domæne-/brugerrelease.
 
 ## Fallback efter fuld national kæde
 
@@ -78,7 +88,7 @@
 
 ## Samlet land-/vandeditor
 - [x] Søg hovedzone og vis alle tilhørende aktive kyststrækninger på ét kort.
-- [x] Træk eksisterende land-/havpunkter eller sæt nye med kortklik.
+- [x] Træk det eksisterende autoritative land-/havpunktpar; oprettelse af ekstra punktpar er bevidst fjernet i 4.0.207.
 - [x] Central godkendelse med readback og kystdel-ID-bundet runtime-roundtrip.
 - [x] DMI-signatur og sampling bruger den byggede aktive kystdelskontrakt med administratorens godkendte punktrettelser.
 - [x] Eksisterende filterrækkefølge, centrale kladder og godkendelsesflow er bevaret; det overflødige hovedkortlink er fjernet efter ejerbeslutning.
