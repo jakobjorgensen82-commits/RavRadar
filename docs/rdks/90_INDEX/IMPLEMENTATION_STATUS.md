@@ -738,3 +738,9 @@ Status: Implementeret og lokalt valideret.
 - [x] Read-only størrelsesaudit og transaktionel, bounded oprydningsmigration er versionsstyret; aktuelle `admin_documents` slettes aldrig.
 - [x] Central audit og migration kørt 2026-08-10: 8.647 rækker/cirka 600 MB blev fjernet, `VACUUM FULL` reducerede databasen fra 699 MB til 24 MB, 14 aktuelle dokumenter er intakte, og maskinhistorik er 0.
 - [ ] Følg egress i næste billingperiode; dashboardets historiske 8,28 GB nulstilles ikke af kodeændringen.
+
+## 4.0.199 – trinbevidst anvendelse af land-/vandevidens
+- [x] Foreløbig punktbestand kan udskyde rettelser til dele, der først skabes af den senere ejerrettelsesfase.
+- [x] Metadata angiver faktisk anvendte rettelser og konkrete udskudte id'er.
+- [x] Slutbestanden anvender fortsat streng kontrol uden undtagelse.
+- [ ] Privat national workflowkørsel skal bevise både den foreløbige udskydelse og den afsluttende fulde anvendelse.

@@ -453,7 +453,7 @@ jobs:
         run: python scripts/build-national-local-part-points.py
 
       - name: Apply independent 10 m land and water side evidence
-        run: python scripts/apply-national-land-water-corrections.py --input .geometry-v2-work/national-local-part-point-pairs.json --output .geometry-v2-work/national-local-part-point-pairs.json
+        run: python scripts/apply-national-land-water-corrections.py --allow-deferred --input .geometry-v2-work/national-local-part-point-pairs.json --output .geometry-v2-work/national-local-part-point-pairs.json
 
       - name: Validate ambiguous point pairs remain fail-closed
         run: python scripts/validate-national-local-part-points.py

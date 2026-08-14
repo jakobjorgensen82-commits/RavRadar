@@ -247,3 +247,7 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 - **ISSUE-SINGLE-PART-FALSE-WHOLE-ZONE – RETTET LOKALT:** Én beregnet del med spredning nul blev fejlagtigt præsenteret som bevis for hele zonen. UI kræver nu mindst to dele før en geografisk sammenligning.
 - **ISSUE-ACTIVE-POINT-TANGENT-MISMATCH – RETTET OG AKTIVERET LOKALT:** 13 punktpar afveg over 5 grader fra normalen ved deres eget kystreferencepunkt. Alle 13 er rettet; privat #31764242827 validerede de 45 berørte/nye vandpunkter med fuld native DMI-dækning, og den samlede pakke har 0 resterende afvigelser.
 - **ISSUE-COASTAL-ORIENTATION-UNDERSEGMENTED – RETTET OG AKTIVERET LOKALT:** Blandt andet Helgenæs øst havde én teknisk del trods vedvarende forskellige orienteringer. 10 enkelt-delte hovedzoner er konservativt opdelt; den aktive kandidat har 673 dele og består punkt- og overlapgates. Rejsby/Ribe Vesterå forbliver blokeret frem for at gætte.
+
+# 4.0.199 – privat national land-/vandkørsel
+
+- **ISSUE-PRELIMINARY-POINT-CORRECTIONS-REQUIRED-FUTURE-PARTS – LØST LOKALT:** Privat #31794474426 stoppede, fordi den foreløbige punktbestand blev krævet at indeholde 14 dele, som først tilføjes af ejerrettelser senere i workflowet. Første fase må nu registrere dem som udskudte. Den afsluttende fase er uændret streng og stopper fortsat, hvis blot ét evidens-id mangler.

@@ -1000,3 +1000,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Kandidaten er derefter lokalt aktiveret som 673-dels pakke med 0 punkt-/overlapfund; 4.0.192/651 dele er bevaret som rollback. Hovedzonegeometrien er uændret.
 - #31764453987 produktionsverificerede 4.0.193-kodekæden med frisk data, fuld validering, releasegate og deploy før aktiveringscommitten. Næste bevis er den deployede 673-dels pakkes progressive lokale U/V-dækning på mindst 95 %.
 - Første aktiveringsrun #31764957646 stoppede fail-closed: central sync erstattede manifestet, fordi den nye status manglede det eksisterende `owner-approved-*`-signal. Aktiveringsscript og manifest bruger nu den bindende promotionskontrakt og en repositoryrelativ rollbacksti; digest- og central readback-gater er ikke ændret.
+
+## 2026-08-14 – 4.0.199
+
+- Privat national run #31794474426 nåede 29 grønne trin og stoppede ved den første anvendelse af land-/vandevidens.
+- Rodårsagen var faseorden: 14 dokumenterede dele skabes først af senere ejerrettelser og kan derfor ikke kræves i den foreløbige punktbestand.
+- Første fase registrerer nu disse id'er som udskudte og anvender resten. Slutfasen er fortsat fail-closed og kræver alle dokumenterede rettelser før videre DMI- og aktiveringskontrol.

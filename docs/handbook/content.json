@@ -584,6 +584,13 @@
       "title": "Hvilken del af zonen scorer højest?",
       "summary": "Hovedzonens score forklares med navnet og scoren på den lokale kystdel, som faktisk leverer resultatet.",
       "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> En hovedzone kan bestå af flere præcise kystdele med forskellig retning og forskellige forhold. Når forskellen er mere end 7 point, fortæller zonepanelet tydeligt, hvilken del der scorer højest, og at resten af zonen kan være dårligere.</div><p>Ved højst 7 points forskel behandles forholdene som ens nok til at gælde hele zonen. Ved større forskel vises enten én klart bedste del eller flere dele, som ligger inden for 7 point af maksimum. Navn og RavScore vises for hver fremhævet del.</p><p>De tre delscorer og deres faglige begrundelser kommer fra den samme lokale kystdel som totalscoren. Det sikrer, at forklaring, debug, assistent og observationsdata ikke blander en lokal totalscore med den gamle hovedzonelinjes beregning.</p><div class=\"callout\"><strong>Uændret model:</strong> Funktionen forklarer den eksisterende lokale score. Den ændrer ikke RavScore-vægte, DMI-data, geometri eller syvpunktsgrænsen.</div>"
+    },
+    {
+      "id": "national-land-water-stage-gate-4-0-199",
+      "chapter": "62",
+      "title": "Land- og vandrettelser gennem hele kystbygningen",
+      "summary": "Foreløbige dele må vente på ejerrettelser, men slutbestanden skal indeholde alle dokumenterede punktrettelser.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den nationale kyst bygges i flere trin. Nogle ejer-godkendte kystdele findes først efter den foreløbige punktkontrol.</div><p>Den foreløbige kontrol anvender alle rettelser, som allerede findes, og registrerer resten med deres konkrete id som udskudte. Efter ejerrettelserne bygges punkterne igen.</p><div class=\"callout\"><strong>Streng slutkontrol:</strong> I den endelige bestand skal hver dokumenteret land-/vandrettelse findes og anvendes. Ellers stopper workflowet før DMI-kontrol, artifact og aktivering.</div>"
     }
   ]
 }
