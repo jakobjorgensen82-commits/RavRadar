@@ -1,8 +1,20 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.192
+**Håndbogsversion:** 4.0.193
 
 **Opdateret:** 1. august 2026
+
+## Lokal DMI og geografiske delscorer – 4.0.193
+
+En lokal kystdel må kun få en lokal RavScore, når dens eget DMI-punkt har både verificeret strømretning og strømhastighed. Scheduler og releasekontrol tæller derfor nu kystdelene selv – ikke kun hovedzonerne. Mindst 95 % skal have dokumenteret lokalt U/V-grid, og runtime må aldrig vise flere lokalt scorede dele end den verificerede cache indeholder.
+
+Hvis de lokale data endnu ikke er komplette, bruger siden midlertidigt den fortsat valide hovedzonescore. Den påstår i så fald ikke, hvor i zonen forholdene er bedst. Når en lokal score bruges, følger dens fulde forklaring, rå vejrdata, land-/havpunkt og pålandsretning samlet med. Den tekniske visning må derfor ikke kombinere en lokal score med hovedzonens gamle retning.
+
+Syvpointsreglen kræver en reel sammenligning. Én enkelt beregnet kystdel kan ikke bevise, at hele en bugtet zone har samme forhold. Zoner med vedvarende forskellige kystretninger skal opdeles i meningsfulde lokale beregningsdele med egne validerede punktpar; små kysthak må ikke skabe støjende kunstige dele.
+
+Den landsdækkende systemaudit fandt 13 eksisterende kystdele, hvor det gemte referencepunkt ikke passede med den lokale kystretning og land-/vandparret. Den private reparationskandidat genforankrer disse punktpar til den faktiske lokale kyst og består derefter geometri- og sidekontrollen med nul fund. En efterfølgende konservativ retningsaudit erstatter én grov del med flere meningsfulde dele i 10 bugtede hovedzoner, herunder Helgenæs øst, så kandidatens 651 dele bliver til 673. Kandidaten er fortsat privat.
+
+De 45 nye eller flyttede vandpunkter skal alle valideres mod DMI's native modelgrid i Linux-pipelinen, før kandidaten kan aktiveres. Rejsby/Ribe Vesterå ændres ikke automatisk, fordi den lokale landside ikke kan udledes entydigt; tvivl må aldrig omsættes til en tilfældig retning. Aktiv produktion og administratorens centrale sandhed forbliver urørt, indtil geometri, DMI, runtime, visning og rollback samlet er grønne.
 
 ## Progressiv DMI-opbygning
 

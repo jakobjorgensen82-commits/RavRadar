@@ -957,3 +957,13 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - #2437 gendannede og gemte workflowcachen, men begyndte alligevel igen med `dkss_idw`. Artifact-sammenligning viste forskellige registersignaturer mellem #2435 og #2437.
 - DMI-vandkilderegisteret ændrer driftsfelter som `lastSeenAt`, observationstid, forecaststatus og cachetid ved hver produktion. Rå filhash gjorde derfor et korrekt checkpoint inkompatibelt. Zoners releaseversionsfelt kunne udløse samme falske reset.
 - Cacheidentiteten er nu en kanonisk projektion af de stabile, samplingbestemmende felter. Reelle punkt-, geometri-, status- og ejerskabsændringer invaliderer fortsat cachen; almindelig drift gør ikke.
+## 2026-08-14 – 4.0.193
+
+- En landsdækkende audit dokumenterede, at DMI-schedulerens dækningsnævner kun omfattede 210 hovedzoner og derfor kunne afslutte recovery, selv om 651 lokale kystdele manglede selvstændig U/V-cache.
+- Scheduler, runtimebuilder, lokal score, teknisk visning og videnskabelig strømgate er rettet som én sammenhængende kæde. Manglende lokal strøm kan ikke længere give en lokal score, og én del kan ikke fremstilles som bevis for hele zonen.
+- Den fulde lokale forklaring, rå vejrdata, punktpar og pålandsretning følger nu vinderen. Hovedzonescoren fungerer som sikker fallback uden geografisk påstand, indtil lokal sammenligning er komplet.
+- Friske progressive GitHub-kørsler og den efterfølgende landsdækkende orienterings-/punktrevision mangler fortsat ved dette checkpoint.
+- Landsaudit af 651 aktive punktpar bruger nu hvert pars gemte kystreference og lokale tangent. 13 reelle afvigelser blev fundet; privat reparationskandidat giver 0.
+- Afstandsbaseret orienteringsaudit og privat splitter er bygget. Den konservative kandidat berører 10 enkelt-delte hovedzoner, giver 673 dele, har 0 punktgeometrifejl og bevarer tvetydige Rejsby/Ribe Vesterå uændret.
+- Helgenæs er visuelt kontrolleret som tre sider med landpunkt ind mod halvøen og vandpunkt ud fra hver side. Alle 10 foreslåede zoner har private kontrolbilleder.
+- Næste ufravigelige gate er native DMI-gridvalidering af 45 ændrede/nye vandpunkter. Ingen geometriaktivering er udført.

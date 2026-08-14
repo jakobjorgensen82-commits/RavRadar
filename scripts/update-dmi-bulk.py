@@ -1309,7 +1309,7 @@ def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict
         "preferredWindTailDemand": preferred_wind_tail_demand,
         "atmosphereDeferredDuringMarineRecovery": marine_foundation_missing and not balanced_foundation_recovery,
         "completionDefinition": f"component horizon >= {COMPLETE_HORIZON_HOURS} hours",
-        "coverageDenominator": "current-active-zone-registry",
+        "coverageDenominator": "current-active-zone-and-coastal-part-registry",
     }
     return sorted(COLLECTION_ORDER, key=priority), diagnostics
 
@@ -1766,10 +1766,10 @@ def main() -> int:
                               "persistentFieldInventory": dict(((previous.get("diagnostics") or {}).get("persistentFieldInventory") or {}))}}
     merge_previous(result, previous, active_output_ids)
     budget = {"bytes": 0}
-    active_zones_config = [
-        zone for zone in zones
-        if not zone.get("waterSource") and not zone.get("coastalPart")
-    ]
+    # Local coastal parts use the same downloaded GRIB fields as parent zones.
+    # They must remain in the coverage denominator; excluding them allowed the
+    # scheduler to stop while most public local scores still lacked current.
+    active_zones_config = [zone for zone in zones if not zone.get("waterSource")]
     scheduled, schedule_coverage = collection_schedule(previous, active_zones_config)
     result["diagnostics"]["scheduledCollections"] = scheduled
     result["diagnostics"]["scheduleCoverageBeforeRun"] = schedule_coverage

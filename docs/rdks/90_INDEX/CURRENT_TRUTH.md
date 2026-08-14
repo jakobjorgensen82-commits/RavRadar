@@ -1,5 +1,17 @@
 # Current truth – gældende projektviden
 
+## 4.0.193 – lokal DMI-kæde gøres reel og fail-closed
+
+- En systemaudit af 4.0.192 dokumenterede, at DMI-schedulerens dækningsnævner kun omfattede 210 hovedzoner. De 651 aktive lokale kystdele fandtes som samplingposter, men kunne ikke holde schedulerens recovery i gang. Det offentlige snapshot havde derfor 0/651 kystdele med dokumenteret lokal U/V-cache, selv om lokale scorer blev vist.
+- Dækningsnævneren omfatter nu både aktive hovedzoner og aktive kystdele. Den videnskabelige strømgate kræver mindst 95 % verificerede lokale U/V-punkter og afviser, hvis den offentlige runtime scorer flere dele end den verificerede cache kan bære.
+- En lokal del beregnes ikke uden både strømretning og -hastighed. Indtil en komplet lokal sammenligning findes, bruger brugersiden den fortsat valide hovedzonescore og viser ingen falsk påstand om forskelle mellem kystdele.
+- Den fulde vinderforklaring, lokale rå vejrdata, lokale punktpar og lokale pålandsretning bevares nu i runtime. Debugvisningen må ikke blande hovedzonens retning med den vindende kystdels strøm.
+- En enkelt beregnet kystdel må ikke beskrives som “forholdene gælder hele zonen”. Syvpointsreglen gælder kun en reel sammenligning mellem mindst to beregnede dele.
+- Den aktuelle ejerbestilling autoriserer en landsdækkende, systemisk revision af lokale land-/havpunkter og meningsfuld kystdelsopdeling. Fungerende geometri ændres ikke uden dokumenteret behov; offentlig aktivering kræver gates og efterkontrol.
+- Den aktive offentlige pakke er fortsat 651 dele. Punktgeometriauditen finder 13 afvigelser; den private reparationskandidat retter alle 13 og består med 0.
+- Den konservative orienteringskandidat opdeler kun en hovedzone automatisk, når den hidtil har én del og et vedvarende retningsskift på mindst 45 grader. Det giver 673 dele og 10 opdelte zoner, ikke en ny blind national masseopdeling.
+- Helgenæs øst er i kandidaten tre lokale sider med selvstændige punktpar. Rejsby/Ribe Vesterå forbliver uændret, fordi land-siden er tvetydig. 45 ændrede eller nye vandpunkter skal gennem native DMI-gridgate før aktivering.
+
 ## 4.0.192 – samlet land-/vandeditor pr. hovedzone
 
 - Admin søger på hovedzonens aktuelle navn og viser hele hovedzonen sammen med alle dens aktive præcise kyststrækninger.

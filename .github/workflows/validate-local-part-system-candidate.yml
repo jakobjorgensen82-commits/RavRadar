@@ -1,0 +1,81 @@
+name: Validate private local-part system candidate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ravradar-local-part-system-candidate
+  cancel-in-progress: true
+
+jobs:
+  validate-local-part-system-candidate:
+    name: Validate private point repairs, orientation splits and DMI grids
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install geometry and DMI readers
+        run: python -m pip install --disable-pip-version-check -r requirements-dmi.txt "shapely>=2.0,<3" "pyproj>=3.6,<4" "Pillow>=10,<12"
+
+      - name: Audit active local coast orientations
+        run: node scripts/audit-local-part-orientation-4.0.193.mjs
+
+      - name: Audit active local land and water point pairs
+        run: python scripts/audit-local-part-point-geometry-4.0.193.py --bundle data/geometry-v2/active-national-coastal-parts
+
+      - name: Build private point-repair candidate
+        run: python scripts/build-local-part-point-repair-candidate-4.0.193.py
+
+      - name: Build private combined orientation candidate
+        run: >-
+          python scripts/build-local-orientation-split-candidate-4.0.193.py
+          --active .owner-review/local-part-system-audit/point-repair-candidate
+          --output .owner-review/local-part-system-audit/combined-candidate
+
+      - name: Verify candidate geometry and point pairs
+        run: >-
+          python scripts/audit-local-part-point-geometry-4.0.193.py
+          --bundle .owner-review/local-part-system-audit/combined-candidate
+          --report .owner-review/local-part-system-audit/combined-point-audit.json
+          --geojson .owner-review/local-part-system-audit/combined-point-review.geojson
+          --png .owner-review/local-part-system-audit/combined-point-review.png
+          && python -c "import json,pathlib; r=json.loads(pathlib.Path('.owner-review/local-part-system-audit/combined-point-audit.json').read_text()); assert r['auditedPartCount']==673 and r['reviewPartCount']==0 and r['severePartCount']==0, r"
+
+      - name: Validate all changed water points on native DMI grids
+        run: >-
+          python scripts/validate-national-local-part-dmi-grid.py
+          --input .owner-review/local-part-system-audit/combined-candidate/dmi-validation-input.json
+          --report .owner-review/local-part-system-audit/combined-candidate/dmi-grid-validation.json
+
+      - name: Verify private-only contract
+        run: >-
+          python -c "import json,pathlib; p=pathlib.Path('.owner-review/local-part-system-audit/combined-candidate'); report=json.loads((p/'report.json').read_text()); dmi=json.loads((p/'dmi-validation-input.json').read_text()); assert report['candidatePartCount']==673 and report['replacementCount']==10 and report['blockedCount']==1, report; assert len(dmi['parts'])==45, len(dmi['parts']); assert report['automaticActivationAllowed'] is False and report['productionGeometryChanged'] is False"
+
+      - name: Upload private validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: local-part-system-candidate-${{ github.run_id }}
+          path: |
+            data/diagnostics/local-part-orientation-audit-4.0.193.json
+            data/diagnostics/local-part-point-audit-4.0.193.json
+            .owner-review/local-part-system-audit/combined-point-audit.json
+            .owner-review/local-part-system-audit/combined-point-review.png
+            .owner-review/local-part-system-audit/combined-candidate/report.json
+            .owner-review/local-part-system-audit/combined-candidate/dmi-validation-input.json
+            .owner-review/local-part-system-audit/combined-candidate/dmi-grid-validation.json
+            .owner-review/local-part-system-audit/combined-candidate/zone-reviews/*.png
+          if-no-files-found: warn
+          retention-days: 14

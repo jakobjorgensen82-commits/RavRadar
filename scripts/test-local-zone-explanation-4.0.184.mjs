@@ -2,15 +2,19 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {buildLocalZoneScore,localCoverageSummary} from '../js/core/local-zone-score.js';
 
-const exact={score:78,components:{huntability:72,transport:84,release:79},componentReasons:{huntability:['Rolige forhold.'],transport:['Strømmen fører materiale ind.'],release:['Materiale kan genmobiliseres.']},explanation:{weights:{huntability:.4,transport:.35,release:.25},contributions:{huntability:29,transport:29,release:20}}};
-const coastalParts={enabled:true,generatedAt:'2026-08-12T08:00:00Z',parts:{p3:{zoneId:'Z',name:'Mullerup Klint',current:{time:'2026-08-12T08:00:00Z',waders:exact}}},zones:{Z:{hourly:[{time:'2026-08-12T08:00:00Z',waders:{status:'only-part',score:78,winningPartId:'p3',winningPartName:'Mullerup Klint',scoreSpread:30,components:exact.components,parts:[{partId:'p3',name:'Mullerup Klint',score:78}]}}]}}};
+const exact={score:78,components:{huntability:72,transport:84,release:79},componentReasons:{huntability:['Rolige forhold.'],transport:['Strømmen fører materiale ind.'],release:['Materiale kan genmobiliseres.']},explanation:{weights:{huntability:.4,transport:.35,release:.25},contributions:{huntability:29,transport:29,release:20},transportDiagnostics:{currentClassification:'onshore'}}};
+const coastalParts={enabled:true,generatedAt:'2026-08-12T08:00:00Z',parts:{p3:{zoneId:'Z',name:'Mullerup Klint',waterPoint:[11,55],landPoint:[10.99,55],onshoreDirectionDeg:270,current:{time:'2026-08-12T08:00:00Z',weather:{currentSpeedMps:.2,currentDirectionDeg:270},waders:exact}}},zones:{Z:{expectedPartCount:2,hourly:[{time:'2026-08-12T08:00:00Z',waders:{status:'only-part',score:78,winningPartId:'p3',winningPartName:'Mullerup Klint',scoreSpread:30,comparisonPartCount:2,components:exact.components,parts:[{partId:'p3',name:'Mullerup Klint',score:78}]}}]}}};
 const result=buildLocalZoneScore({coastalParts,zoneId:'Z',mode:'waders',time:'2026-08-12T08:00:00Z'});
 assert.equal(result.score,78);
 assert.deepEqual(result.components,exact.components);
 assert.deepEqual(result.componentReasons,exact.componentReasons);
+assert.equal(result.explanation.transportDiagnostics.currentClassification,'onshore');
+assert.equal(result.localWeather.currentDirectionDeg,270);
+assert.equal(result.localZone.onshoreDirectionDeg,270);
 assert.equal(result.localCoverageSummary.kind,'only-part');
 assert.match(result.localCoverageSummary.text,/ikke nødvendigvis resten af zonen/);
 assert.equal(localCoverageSummary({status:'whole-zone',score:60,scoreSpread:7}).kind,'whole-zone','Præcis 7 point skal fortsat gælde hele zonen.');
+assert.equal(localCoverageSummary({status:'whole-zone',score:60,scoreSpread:0,comparisonPartCount:1}).kind,'single-part','En enkelt beregnet kystdel må ikke fremstilles som dokumentation for hele zonen.');
 assert.equal(localCoverageSummary({status:'only-part',score:60,scoreSpread:8,winningPartName:'A',parts:[{name:'A',score:60}]}).kind,'only-part','Opdeling starter først over 7 point.');
 const several=localCoverageSummary({status:'several-parts',score:70,scoreSpread:20,winningPartName:'A',parts:[{name:'A',score:70},{name:'B',score:66}]});
 assert.match(several.text,/A \(70\), B \(66\)/);
@@ -20,4 +24,6 @@ assert.ok(ui.includes('localCoveragePanel(result)'),'Zonepanelet skal vise den g
 assert.ok((ui.match(/localCoveragePanel\(/g)||[]).length >= 3,'Både aktuel zone og åbnet femdøgnsprognose skal vise den geografiske scoreforklaring.');
 assert.match(weather,/high - low <= 7 \? 'whole-zone'/,'Produktionsbygningen skal bevare 7-point-reglen.');
 assert.match(weather,/componentReasons: result\.componentReasons/,'Vinderens faglige forklaringer skal følge med til offentlig runtime.');
+assert.match(weather,/explanation: result\.explanation/,'Hele den tekniske forklaring skal følge med til offentlig runtime.');
+assert.match(app,/local\?\.available\?local:scoreFor/,'Hovedzonescoren skal bruges som sikker fallback, indtil alle lokale kystdele har komplette data.');
 console.log('OK: Lokal zonescore viser korrekt kystdel, 7-point-grænse, delscorer og forklaringer.');

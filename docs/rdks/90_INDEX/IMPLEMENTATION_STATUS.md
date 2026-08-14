@@ -1,4 +1,21 @@
-# Implementeringsstatus pr. 4.0.192 – lokal releasekandidat
+# Implementeringsstatus pr. 4.0.193 – systemisk lokal-DMI-revision
+
+## Lokal DMI, score og forklaring
+
+- [x] Rodårsag dokumenteret: schedulerens dækningsnævner udelod 651 aktive lokale kystdele.
+- [x] Hovedzoner og kystdele indgår nu i samme faktiske DMI-recovery.
+- [x] Lokale scorer kræver lokal strømretning og -hastighed; manglende lokal sammenligning falder sikkert tilbage til hovedzonescoren uden geografisk påstand.
+- [x] Fuld scoreforklaring, lokalt vejr, lokalt punktpar og lokal pålandsretning føres til offentlig runtime/debug.
+- [x] Landsdækkende gate kræver mindst 95 % verificeret lokal U/V-dækning og forbyder overpublicering.
+- [ ] Friske progressive GitHub-kørsler skal opbygge lokal cache og bestå den skærpede gate.
+- [x] Alle 651 aktive punktpar er auditeret mod eget kystreferencepunkt og lokal tangent: 13 afvigelser; privat reparationskandidat giver 0.
+- [x] Vedvarende retningsskift er auditeret afstandsbaseret. En konservativ kandidat opdeler 10 hidtil enkelt-delte hovedzoner til i alt 673 lokale dele; Helgenæs bliver tre fysisk forskellige sider.
+- [x] Kandidatens 673 punktpar består den samme geometriaudit med 0 afvigelser. Private kontrolbilleder er genereret og kontrolleret for alle 10 zoner.
+- [ ] 45 ændrede eller nye vandpunkter mangler frisk native DMI-gridvalidering. Lokal Windows-ecCodes kunne ikke indlæse sin DLL; CI er næste autoritative gate.
+- [ ] Rejsby/Ribe Vesterå er ikke automatisk opdelt, fordi ét lokalt land-sidevalg er tvetydigt. Den nuværende del bevares frem for at gætte.
+- [ ] Offentlig brugerflade, admin, ydelse og Supabase-forbrug skal efterkontrolleres samlet.
+
+## Tidligere 4.0.192-status
 
 ## Samlet land-/vandeditor
 - [x] Søg hovedzone og vis alle tilhørende aktive kyststrækninger på ét kort.

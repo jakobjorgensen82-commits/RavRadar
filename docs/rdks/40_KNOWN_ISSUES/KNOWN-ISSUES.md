@@ -220,3 +220,10 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 
 - **ISSUE-INTERNAL-BLACK-MAIN-ZONE-MARKERS – LØST OG PRODUKTIONSVERIFICERET:** Offentlig runtime tegnede tidligere to sorte ender for hver hovedzone uden at samle fælles grænser. 4.0.183 tegner ét lille skel alene ved et gensidigt møde mellem forskellige hovedzoner. GitHub Actions #31572312647 bestod.
 - **ISSUE-ADMIN-MAIN-ZONE-LENGTH-DID-NOT-PROPAGATE-LOCAL-PARTS – LØST LOKALT:** Den tidligere frie hovedlinjeredigering ændrede ikke ejerskabet af de aktive præcise kystdele. Admin kan nu flytte en eksisterende del til en anden hovedzone, og public runtime omgrupperer geometri og lokal dataidentitet samlet.
+# 4.0.193 – lokal DMI-/forklaringskæde under systemisk rettelse
+
+- **ISSUE-LOCAL-PARTS-EXCLUDED-FROM-DMI-COVERAGE – RODÅRSAG RETTET LOKALT:** Schedulerens dækning blev afsluttet ud fra hovedzonerne alene. De 651 lokale kystdele kan nu holde recovery i gang og er omfattet af en særskilt landsdækkende U/V-gate. Produktionsbevis afventer progressive CI-kørsler.
+- **ISSUE-LOCAL-EXPLANATION-AND-WEATHER-STRIPPED – RETTET LOKALT:** Runtimebuilderen gemte kun vægte og bidrag for vinderen og tabte transportdiagnostik og lokalt råvejr. Debug blandede derefter hovedzonens retning med den lokale score. Hele forklaringen og den lokale datakontekst føres nu samlet.
+- **ISSUE-SINGLE-PART-FALSE-WHOLE-ZONE – RETTET LOKALT:** Én beregnet del med spredning nul blev fejlagtigt præsenteret som bevis for hele zonen. UI kræver nu mindst to dele før en geografisk sammenligning.
+- **ISSUE-ACTIVE-POINT-TANGENT-MISMATCH – RETTET I PRIVAT KANDIDAT:** 13 aktive punktpar afveg over 5 grader fra normalen ved deres eget kystreferencepunkt. Privat kandidat retter 13/13 og giver 0 resterende afvigelser; aktivering afventer DMI-gridbevis.
+- **ISSUE-COASTAL-ORIENTATION-UNDERSEGMENTED – RETTET I PRIVAT KANDIDAT:** Blandt andet Helgenæs øst består af én teknisk del, selv om kysten omfatter vedvarende forskellige orienteringer. Den konservative kandidat opdeler 10 enkelt-delte hovedzoner og består punktgeometriauditen. Rejsby/Ribe Vesterå forbliver blokeret frem for at gætte.

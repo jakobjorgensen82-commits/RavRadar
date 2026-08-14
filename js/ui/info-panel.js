@@ -1,5 +1,5 @@
-import { calculateRavScore, scoreRating } from "../core/score-engine.js?v=4.0.192";
-import { selectBestTimeForDay } from "../core/best-time-selector.js?v=4.0.192";
+import { calculateRavScore, scoreRating } from "../core/score-engine.js?v=4.0.193";
+import { selectBestTimeForDay } from "../core/best-time-selector.js?v=4.0.193";
 
 const hasNumber = value => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value));
 const formatNumber = (value, suffix, digits = 1) => hasNumber(value) ? `${Number(value).toFixed(digits).replace(".", ",")} ${suffix}` : "Mangler";
@@ -75,24 +75,26 @@ function coastTransportExplanation(result) {
   return `<section class="coast-transport-explanation"><h3>Hvad sker der ved kysten?</h3><p>${escapeHtml(explanation.summary)}</p>${items ? `<details><summary>Se vurderingen af kystens delområder</summary><ul>${items}</ul><p class="muted">RavRadar bruger ikke et tilfældigt gennemsnit. Den kystdel, som strømmen rammer mest gunstigt, vægter højest, mens de øvrige kystdele bruges som støtte og kontrol.</p></details>` : ""}</section>`;
 }
 function debugPanel(zone, result, condition) {
+  const debugZone = result.localZone || zone;
+  const debugCondition = result.localWeather || condition;
   const d = result.explanation?.transportDiagnostics || {};
   const prediction = result.prediction || {};
   const caps = (d.capsApplied || []).map(cap => `<li><code>${escapeHtml(cap.reason)}</code>: maks. ${cap.max} transportpoint</li>`).join("") || "<li>Ingen scorelofter anvendt.</li>";
   const steps = (d.steps || []).map(step => `<tr><td>${escapeHtml(step.label)}</td><td>${step.delta > 0 ? "+" : ""}${step.delta}</td><td>${Math.round(step.scoreAfter)}</td></tr>`).join("") || '<tr><td colspan="3">Ingen mellemregninger tilgængelige.</td></tr>';
-  const provider = condition.providerLabel || condition.provider || "Ukendt";
+  const provider = debugCondition.providerLabel || debugCondition.provider || debugCondition.currentProvenance?.provider || "DMI";
   const currentDifference = Number.isFinite(Number(d.currentDirectionDifferenceDeg)) ? `${Math.round(d.currentDirectionDifferenceDeg)}°` : "Mangler";
   const classificationLabels = { onshore:"Ind mod land", "partly-onshore":"Delvist ind mod land", "cross-shore":"Langs kysten/tværgående", offshore:"Væk fra land", "strongly-offshore":"Kraftigt væk fra land", unknown:"Ukendt" };
   return `<details class="debug-panel"><summary>Debug: vis alle mellemregninger</summary><div class="debug-content">
     <p class="debug-warning"><b>Teknisk visning.</b> Bruges til at kontrollere, at rådata, retninger og score passer fysisk sammen.</p>
     <div class="debug-grid">
-      <div><span>Zone-ID</span><strong>${escapeHtml(zone.id)}</strong></div>
+      <div><span>Zone-ID</span><strong>${escapeHtml(debugZone.id)}</strong></div>
       <div><span>Datakilde</span><strong>${escapeHtml(provider)}</strong></div>
-      <div><span>Pålandsretning</span><strong>${compass(zone.onshoreDirectionDeg)}</strong></div>
-      <div><span>Retningskilde</span><strong>${escapeHtml(zone.onshoreDirectionSource || "Ikke angivet")}</strong></div>
-      <div><span>Rå strømretning</span><strong>${compass(condition.currentDirectionDeg)} (mod-retning)</strong></div>
+      <div><span>Pålandsretning</span><strong>${compass(debugZone.onshoreDirectionDeg)}</strong></div>
+      <div><span>Retningskilde</span><strong>${escapeHtml(debugZone.onshoreDirectionSource || "Ikke angivet")}</strong></div>
+      <div><span>Rå strømretning</span><strong>${compass(debugCondition.currentDirectionDeg)} (mod-retning)</strong></div>
       <div><span>Forskel strøm/land</span><strong>${currentDifference}</strong></div>
       <div><span>Strømklassifikation</span><strong>${escapeHtml(classificationLabels[d.currentClassification] || d.currentClassification || "Ukendt")}</strong></div>
-      <div><span>Rå vindretning</span><strong>${compass(condition.windDirectionDeg)} (fra-retning)</strong></div>
+      <div><span>Rå vindretning</span><strong>${compass(debugCondition.windDirectionDeg)} (fra-retning)</strong></div>
       <div><span>Vindens bevægelse</span><strong>${compass(d.windTowardDirectionDeg)}</strong></div>
       <div><span>Transport før loft</span><strong>${Number.isFinite(Number(d.scoreBeforeCaps)) ? d.scoreBeforeCaps : "–"}/100</strong></div>
       <div><span>Transport efter loft</span><strong>${Number.isFinite(Number(d.scoreAfterCaps)) ? d.scoreAfterCaps : "–"}/100</strong></div>

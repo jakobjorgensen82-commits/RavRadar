@@ -1,11 +1,12 @@
 import fs from 'node:fs/promises';
 import {directionFromComponents,arrowDirection} from '../js/core/current-direction-audit.js';
 
-const [zones,conditions,bulk,publicDoc]=await Promise.all([
+const [zones,conditions,bulk,publicDoc,coastalParts]=await Promise.all([
   fs.readFile('data/zones.geojson','utf8').then(JSON.parse),
   fs.readFile('data/live/conditions.json','utf8').then(JSON.parse),
   fs.readFile('data/live/dmi-bulk-cache.json','utf8').then(JSON.parse),
-  fs.readFile('data/live/public-conditions.json','utf8').then(JSON.parse)
+  fs.readFile('data/live/public-conditions.json','utf8').then(JSON.parse),
+  fs.readFile('data/live/coastal-parts-v2.json','utf8').then(JSON.parse)
 ]);
 const norm=v=>((Number(v)%360)+360)%360;
 const diff=(a,b)=>Math.abs(((norm(a)-norm(b)+540)%360)-180);
@@ -55,12 +56,29 @@ for(const feature of active){
 }
 if(verifiedGridZones<Math.floor(active.length*.9))failures.push(`Kun ${verifiedGridZones}/${active.length} zoner har verificerede marine u/v-gitterpunkter.`);
 if(verifiedHours<1000)failures.push(`Kun ${verifiedHours} prognosetimer kunne verificeres direkte fra u/v.`);
+const expectedParts=Object.values(coastalParts.zones||{}).flat();
+let verifiedPartGridPoints=0;
+for(const part of expectedParts){
+  const bulkId=`PART::${part.partId}`;
+  const bz=bulk.zones?.[bulkId];
+  const gu=bz?.gridPoints?.['current-u'],gv=bz?.gridPoints?.['current-v'];
+  if(!gu||!gv)continue;
+  const up=[Number(gu.longitude),Number(gu.latitude)],vp=[Number(gv.longitude),Number(gv.latitude)];
+  const validRows=Object.values(bz.hourly||{}).filter(row=>finite(row['current-u'])&&finite(row['current-v']));
+  if(!near(up,vp,1e-7)){failures.push(`${bulkId}: current-u og current-v kommer fra forskellige gitterpunkter`);continue;}
+  if(!validRows.length)continue;
+  verifiedPartGridPoints++;
+}
+const requiredPartCoverage=Math.ceil(expectedParts.length*.95);
+if(verifiedPartGridPoints<requiredPartCoverage)failures.push(`Kun ${verifiedPartGridPoints}/${expectedParts.length} lokale kystdele har verificerede marine u/v-gitterpunkter; mindst ${requiredPartCoverage} kræves.`);
+const publicScoredParts=Number(publicDoc.coastalParts?.scoredPartCount||0);
+if(publicScoredParts>verifiedPartGridPoints)failures.push(`Offentlig runtime scorer ${publicScoredParts} kystdele, men kun ${verifiedPartGridPoints} har verificeret lokal strøm.`);
 const mapSource=await fs.readFile('js/map/map-view.js','utf8');
 if(/arrowOffsetsForZoom|pairBase\.add/.test(mapSource))failures.push('Kortet fremstiller stadig kunstige pilepositioner omkring zonen.');
 if(!/flowPoints\.current/.test(mapSource))failures.push('Kortet bruger ikke dokumenteret strøm-gitterpunkt.');
-const report={schemaVersion:2,generatedAt:new Date().toISOString(),basis:{directionConvention:'oceanographic-to: 0° north, 90° east',components:'current-u=eastward velocity; current-v=northward velocity',directionFormula:'atan2(u,v)',speedFormula:'hypot(u,v)',displayRule:'current arrow points toward movement; wind arrow converts meteorological from-direction by +180°',verificationRule:'Only rows with status=verified and documented DMI grid/time provenance are compared. Missing provenance is never represented as 0/0.'},activeZones:active.length,verifiedMarineGridZones:verifiedGridZones,verifiedForecastHours:verifiedHours,unverifiedForecastHours:unverifiedHours,unverifiedReasons,warnings,failures,status:failures.length?'failed':warnings.length?'passed-with-warnings':'passed'};
+const report={schemaVersion:3,generatedAt:new Date().toISOString(),basis:{directionConvention:'oceanographic-to: 0° north, 90° east',components:'current-u=eastward velocity; current-v=northward velocity',directionFormula:'atan2(u,v)',speedFormula:'hypot(u,v)',displayRule:'current arrow points toward movement; wind arrow converts meteorological from-direction by +180°',verificationRule:'Only rows with status=verified and documented DMI grid/time provenance are compared. Missing provenance is never represented as 0/0.'},activeZones:active.length,expectedCoastalParts:expectedParts.length,verifiedCoastalPartGridPoints:verifiedPartGridPoints,requiredCoastalPartCoverage:requiredPartCoverage,publicScoredParts,verifiedMarineGridZones:verifiedGridZones,verifiedForecastHours:verifiedHours,unverifiedForecastHours:unverifiedHours,unverifiedReasons,warnings,failures,status:failures.length?'failed':warnings.length?'passed-with-warnings':'passed'};
 await fs.mkdir('data/diagnostics',{recursive:true});
 await fs.writeFile('data/diagnostics/current-spatial-audit-4.0.76.json',`${JSON.stringify(report,null,2)}\n`);
 if(failures.length)throw new Error(`Strømaudit fejlede:\n- ${failures.slice(0,40).join('\n- ')}${failures.length>40?`\n... ${failures.length-40} flere`:''}`);
-console.log(`OK: ${verifiedGridZones}/${active.length} aktive zoner har marine DMI-u/v-gitterpunkter; ${verifiedHours} timer er verificeret og ${unverifiedHours} er tydeligt ikke-verificerbare.`);
+console.log(`OK: ${verifiedGridZones}/${active.length} aktive zoner og ${verifiedPartGridPoints}/${expectedParts.length} lokale kystdele har marine DMI-u/v-gitterpunkter; ${verifiedHours} timer er verificeret og ${unverifiedHours} er tydeligt ikke-verificerbare.`);
 if(warnings.length)console.log(`ADVARSLER (${warnings.length}):\n- ${warnings.slice(0,30).join('\n- ')}`);

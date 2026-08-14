@@ -892,16 +892,34 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, generated
         const modes = {};
         for (const mode of ['waders', 'beach']) {
           const result = calculateRavScore({ mode, zone, weather, history });
-          if (result.available && Number.isFinite(result.score)) modes[mode] = {
+          const hasCurrent = weather.currentSpeedMps != null && weather.currentDirectionDeg != null;
+          if (hasCurrent && result.available && Number.isFinite(result.score)) modes[mode] = {
             score: result.score,
             components: result.components,
             componentReasons: result.componentReasons,
-            explanation: { weights: result.explanation?.weights, contributions: result.explanation?.contributions }
+            explanation: result.explanation
           };
         }
-        if (Object.keys(modes).length) scores.push({ time: weather.time, ...modes });
+        if (Object.keys(modes).length) scores.push({
+          time: weather.time,
+          weather: {
+            windSpeedMps: weather.windSpeedMps, windDirectionDeg: weather.windDirectionDeg,
+            waveHeightM: weather.waveHeightM, waveDirectionDeg: weather.waveDirectionDeg,
+            waterLevelCm: weather.waterLevelCm, waterLevelTrendCm3h: weather.waterLevelTrendCm3h,
+            currentSpeedMps: weather.currentSpeedMps, currentDirectionDeg: weather.currentDirectionDeg,
+            currentUMps: weather.currentUMps, currentVMps: weather.currentVMps,
+            currentProvenance: weather.currentProvenance
+          },
+          ...modes
+        });
       }
-      if (scores.length) partRows.push({ zoneId, partId: part.partId, name: part.name, marineCoverage: part.marineCoverage, scores });
+      if (scores.length) partRows.push({
+        zoneId, partId: part.partId, name: part.name, marineCoverage: part.marineCoverage,
+        landPoint: part.landPoint, waterPoint: part.waterPoint,
+        onshoreDirectionDeg: part.onshoreDirectionDeg,
+        onshoreDirectionSource: part.onshoreDirectionSource || 'Godkendt land-/havpunkt for kystdelen',
+        scores
+      });
     }
   }
 
@@ -924,7 +942,7 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, generated
         const high = available[0].score, low = available.at(-1).score;
         const near = available.filter(row => high - row.score <= 7);
         const status = high - low <= 7 ? 'whole-zone' : near.length === 1 ? 'only-part' : 'several-parts';
-        result[mode] = { status, score: high, winningPartId: available[0].partId, winningPartName: available[0].name, scoreSpread: high - low, components:available[0].components, parts: status === 'whole-zone' ? [] : near.map(({partId,name,score})=>({partId,name,score})) };
+        result[mode] = { status, score: high, winningPartId: available[0].partId, winningPartName: available[0].name, scoreSpread: high - low, comparisonPartCount: available.length, components:available[0].components, parts: status === 'whole-zone' ? [] : near.map(({partId,name,score})=>({partId,name,score})) };
       }
       hourly.push(result);
     }
@@ -933,7 +951,13 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, generated
   const nearestIndex = rows => rows.reduce((best, row, index) => Math.abs(Date.parse(row.time) - Date.parse(generatedAt)) < Math.abs(Date.parse(rows[best]?.time) - Date.parse(generatedAt)) ? index : best, 0);
   const parts = Object.fromEntries(partRows.map(row => {
     const score = row.scores[nearestIndex(row.scores)] ?? null;
-    return [row.partId, { zoneId: row.zoneId, name: row.name, marineCoverage: row.marineCoverage, current: score }];
+    return [row.partId, {
+      zoneId: row.zoneId, name: row.name, marineCoverage: row.marineCoverage,
+      landPoint: row.landPoint, waterPoint: row.waterPoint,
+      onshoreDirectionDeg: row.onshoreDirectionDeg,
+      onshoreDirectionSource: row.onshoreDirectionSource,
+      current: score
+    }];
   }));
   return { schemaVersion: 1, enabled: true, datasetVersion: contract.datasetVersion, sourceRunId: contract.sourceRunId, generatedAt, marginPoints: 7, expectedPartCount: contract.partCount, scoredPartCount: partRows.length, parts, zones };
 }
