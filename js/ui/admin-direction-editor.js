@@ -16,7 +16,7 @@ function reviewParts(parts,review){
 }
 
 export function createDirectionEditor(host,{zones,coastalParts,reviews,saveNow,saveDraft}){
-  let map=null,layers=[],selectedZoneId=null,selectedPartId=null,currentParts=[],placementMode=null,focusRequested=false,selectionRevision=0;
+  let map=null,layers=[],selectedZoneId=null,selectedPartId=null,currentParts=[],placementMode=null,focusRequested=false;
   const active=zones.filter(feature=>feature.properties?.zoneStatus==='active'&&Array.isArray(coastalParts.zones?.[feature.properties?.id])&&coastalParts.zones[feature.properties.id].length);
   const verifiedCount=active.filter(feature=>reviews[feature.properties.id]?.status==='verified').length;
   host.innerHTML=`<article class="admin-card direction-intro"><div class="rule-card-head"><div><h2>Land- og havpunkter for kyststrækninger</h2><p>Søg efter en hovedzone. Kortet viser hele zonen og alle de præcise kyststrækninger, som hører til den.</p></div><span class="badge">${verifiedCount}/${active.length} zoner godkendt</span></div><p><b>Blå</b> markører er havpunkter. <b>Grønne</b> markører er landpunkter. Vælg en kyststrækning i listen, og træk markørerne eller sæt nye punkter.</p><p class="hint">En kladde påvirker ikke RavRadar. Først når zonen godkendes og den centrale gemning er læst tilbage, tages ændringen med i næste DMI-validering og deployment.</p></article>
@@ -32,16 +32,19 @@ export function createDirectionEditor(host,{zones,coastalParts,reviews,saveNow,s
   const persist=()=>{if(!selectedZoneId)return;reviews[selectedZoneId]={...(reviews[selectedZoneId]||{}),status:'draft',partOverrides:snapshot(false),note:host.querySelector('#directionNote').value.trim(),updatedAt:new Date().toISOString()};saveDraft(reviews);drawList();};
   const clearLayers=()=>{if(map)layers.forEach(layer=>map.removeLayer(layer));layers=[];};
   const add=layer=>{layer.addTo(map);layers.push(layer);return layer;};
-  const redraw=()=>{if(!map)return;clearLayers();const feature=active.find(x=>x.properties.id===selectedZoneId),bounds=[];if(feature){add(L.geoJSON(feature.geometry,{style:{color:'#d8a232',weight:2,fillOpacity:.035,interactive:false}}));}
-    currentParts.forEach((part,index)=>{const selected=part.partId===selectedPartId;geometryLines(part.geometry).forEach(line=>{if(line.length){const latlngs=line.map(point=>[point[1],point[0]]);bounds.push(...latlngs);const layer=add(L.polyline(latlngs,{color:selected?'#1261a0':'#72a7bd',weight:selected?7:3,opacity:selected?1:.65}));layer.bindTooltip(`${index+1}. ${esc(part.name)}`);layer.on('click',()=>{selectedPartId=part.partId;renderPartEditor();redraw();});}});
-      [['waterPoint','sea','Havpunkt'],['landPoint','land','Landpunkt']].forEach(([key,kind,label])=>{const point=part[key];if(!validPoint(point))return;bounds.push([point[1],point[0]]);const marker=add(L.marker([point[1],point[0]],{draggable:selected,title:`${label}: ${part.name}`,icon:L.divIcon({className:'direction-point-icon',html:`<span class="direction-point ${kind} ${selected?'selected':''}">${index+1}</span>`,iconSize:[28,28],iconAnchor:[14,14]})}));marker.bindTooltip(`${label} · ${part.name}`);if(selected)marker.on('dragend',event=>{const ll=event.target.getLatLng();part[key]=[ll.lng,ll.lat];part.onshoreDirectionDeg=bearing(part.waterPoint,part.landPoint);persist();renderPartEditor();redraw();});});});
-    if(bounds.length&&focusRequested){map.fitBounds(L.latLngBounds(bounds).pad(.18),{maxZoom:14});focusRequested=false;}};
+  const redraw=()=>{if(!map)return;clearLayers();const feature=active.find(x=>x.properties.id===selectedZoneId),bounds=[];
+    currentParts.forEach(part=>{geometryLines(part.geometry).forEach(line=>{if(line.length)bounds.push(...line.map(point=>[point[1],point[0]]));});[['waterPoint'],['landPoint']].forEach(([key])=>{const point=part[key];if(validPoint(point))bounds.push([point[1],point[0]]);});});
+    if(bounds.length&&(focusRequested||!map._loaded)){map.fitBounds(L.latLngBounds(bounds).pad(.18),{maxZoom:14});focusRequested=false;}
+    if(feature)add(L.geoJSON(feature.geometry,{style:{color:'#d8a232',weight:2,fillOpacity:.035,interactive:false}}));
+    currentParts.forEach((part,index)=>{const selected=part.partId===selectedPartId;geometryLines(part.geometry).forEach(line=>{if(line.length){const latlngs=line.map(point=>[point[1],point[0]]),layer=add(L.polyline(latlngs,{color:selected?'#1261a0':'#72a7bd',weight:selected?7:3,opacity:selected?1:.65}));layer.bindTooltip(`${index+1}. ${esc(part.name)}`);layer.on('click',()=>{selectedPartId=part.partId;renderPartEditor();redraw();});}});
+      [['waterPoint','sea','Havpunkt'],['landPoint','land','Landpunkt']].forEach(([key,kind,label])=>{const point=part[key];if(!validPoint(point))return;const marker=add(L.marker([point[1],point[0]],{draggable:selected,title:`${label}: ${part.name}`,icon:L.divIcon({className:'direction-point-icon',html:`<span class="direction-point ${kind} ${selected?'selected':''}">${index+1}</span>`,iconSize:[28,28],iconAnchor:[14,14]})}));marker.bindTooltip(`${label} · ${part.name}`);if(selected)marker.on('dragend',event=>{const ll=event.target.getLatLng();part[key]=[ll.lng,ll.lat];part.onshoreDirectionDeg=bearing(part.waterPoint,part.landPoint);persist();renderPartEditor();redraw();});});});};
+  const redrawOrReport=()=>{try{redraw();}catch(error){host.dataset.mapError=error?.stack||error?.message||String(error);throw error;}};
   const updateApproval=()=>{const confirmations=['directionConfirmSea','directionConfirmLand','directionConfirmArrow'].every(id=>host.querySelector('#'+id).checked),points=currentParts.length&&currentParts.every(part=>validPoint(part.waterPoint)&&validPoint(part.landPoint));host.querySelector('#directionApprove').disabled=!(confirmations&&points);};
   const renderPartEditor=()=>{const part=selectedPart();if(!part)return;host.querySelector('#directionPartList').innerHTML=currentParts.map((item,index)=>`<button type="button" data-part-id="${esc(item.partId)}" class="anchor-tab ${item.partId===part.partId?'active':''}"><b>${index+1}. ${esc(item.name)}</b><small>${directionLabel(item.onshoreDirectionDeg)}</small></button>`).join('');host.querySelectorAll('[data-part-id]').forEach(button=>button.onclick=()=>{selectedPartId=button.dataset.partId;renderPartEditor();redraw();});host.querySelector('#directionPartName').textContent=part.name;host.querySelector('#directionPartId').textContent=part.partId;host.querySelector('#directionRange').value=Math.round(norm(part.onshoreDirectionDeg));host.querySelector('#directionNumber').value=Math.round(norm(part.onshoreDirectionDeg));host.querySelector('#directionValue').textContent=directionLabel(part.onshoreDirectionDeg);const d=distanceKm(part.waterPoint,part.landPoint);host.querySelector('#directionChecks').innerHTML=`<div class="metric-card"><span>Havpunkt</span><strong>${validPoint(part.waterPoint)?part.waterPoint.map(x=>x.toFixed(5)).join(', '):'Mangler'}</strong></div><div class="metric-card"><span>Landpunkt</span><strong>${validPoint(part.landPoint)?part.landPoint.map(x=>x.toFixed(5)).join(', '):'Mangler'}</strong></div><div class="metric-card"><span>Hav → land</span><strong>${directionLabel(part.onshoreDirectionDeg)}</strong></div><div class="metric-card"><span>Afstand</span><strong>${d==null?'–':d.toFixed(2)+' km'}</strong></div>`;updateApproval();};
   const selectZone=id=>{
     selectedZoneId=id;
     focusRequested=true;
-    const revision=++selectionRevision,feature=active.find(x=>x.properties.id===id),review=reviews[id]||{};
+    const feature=active.find(x=>x.properties.id===id),review=reviews[id]||{};
     currentParts=reviewParts(coastalParts.zones[id]||[],review);
     selectedPartId=currentParts[0]?.partId;
     drawList();
@@ -55,18 +58,15 @@ export function createDirectionEditor(host,{zones,coastalParts,reviews,saveNow,s
     host.querySelector('#directionConfirmSea').checked=Boolean(confirmations.seaPointInWater);
     host.querySelector('#directionConfirmLand').checked=Boolean(confirmations.landPointAtCoast);
     host.querySelector('#directionConfirmArrow').checked=Boolean(confirmations.arrowSeaToLand);
-    requestAnimationFrame(()=>{
-      if(revision!==selectionRevision)return;
-      if(!map){
-        map=L.map(host.querySelector('#directionMap'),{zoomControl:true});
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
-        map.on('click',event=>{if(!placementMode)return;const part=selectedPart();if(!part)return;part[placementMode]=[event.latlng.lng,event.latlng.lat];if(validPoint(part.waterPoint)&&validPoint(part.landPoint))part.onshoreDirectionDeg=bearing(part.waterPoint,part.landPoint);placementMode=null;host.querySelector('#directionPlacementHelp').hidden=true;persist();renderPartEditor();redraw();});
-      }
-      map.invalidateSize();
-      renderPartEditor();
-      redraw();
-      requestAnimationFrame(()=>{if(revision!==selectionRevision||!map)return;map.invalidateSize();focusRequested=true;redraw();});
-    });
+    if(!map){
+      map=L.map(host.querySelector('#directionMap'),{zoomControl:true});
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+      map.on('click',event=>{if(!placementMode)return;const part=selectedPart();if(!part)return;part[placementMode]=[event.latlng.lng,event.latlng.lat];if(validPoint(part.waterPoint)&&validPoint(part.landPoint))part.onshoreDirectionDeg=bearing(part.waterPoint,part.landPoint);placementMode=null;host.querySelector('#directionPlacementHelp').hidden=true;persist();renderPartEditor();redraw();});
+    }
+    map.invalidateSize();
+    renderPartEditor();
+    redrawOrReport();
+    setTimeout(()=>{if(!map||selectedZoneId!==id)return;map.invalidateSize();focusRequested=true;redrawOrReport();},50);
     updateApproval();
   };
   const changeDirection=value=>{const part=selectedPart();part.onshoreDirectionDeg=norm(value);persist();renderPartEditor();};

@@ -1,8 +1,14 @@
 # Current truth – gældende projektviden
 
-## 4.0.194 – land-/vandkort følger altid administratorens valg
+## 4.0.195 – Leaflet får position før vektorlag
 
-- Zonevalg i fanen **Retning: hav → land** nulstiller nu kortfokus deterministisk og zoomer til den valgte hovedzones aktive kystdele, også efter hurtige eller gentagne valg.
+- 4.0.194 ændrede kortets timing, men løste ikke rodårsagen. En isoleret browsertest med de rigtige 673 kystdele reproducerede Leaflet-fejlen `Cannot read properties of undefined (reading 'min')`.
+- Fejlen opstod, fordi editoren tilføjede zonepolygon og kystlinjer til et nyt Leaflet-kort, før kortet havde fået sin første geografiske position. Kaldet stoppede derfor før både linjer, markører og `fitBounds`.
+- 4.0.195 beregner først grænserne fra den valgte zones kystdele og punktpar, positionerer kortet og tegner derefter zone, kystlinjer og markører. Den isolerede browserkontrol af Rejsby/Ribe Vesterå viser korrekt område, 121 SVG-stier, to punktmarkører og ingen kortfejl.
+
+## 4.0.194 – utilstrækkelig timingrettelse (erstattet af 4.0.195)
+
+- Zonevalg blev gjort mere deterministisk, men ændringen løste ikke den manglende første Leaflet-position og er derfor erstattet af 4.0.195.
 - Alle zonens kystdele og eksisterende land-/havpunkter tegnes på ny; den valgte kystdel fremhæves og er den eneste med flytbare markører.
 - Den overflødige knap **Vis på hovedkortet** er fjernet fra arbejdsfladen. DMI, score, central lagring og det offentlige hovedkort er uændrede.
 

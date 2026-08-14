@@ -1,4 +1,4 @@
-# Implementeringsstatus pr. 4.0.194 – land-/vandkortets valglivscyklus
+# Implementeringsstatus pr. 4.0.195 – land-/vandkortets Leaflet-livscyklus
 
 ## Admin land/hav
 
@@ -6,6 +6,7 @@
 - [x] Valgt kystdel, øvrige dele samt eksisterende land- og havpunkter tegnes med entydige roller.
 - [x] Forsinkede kortcallbacks fra et tidligere valg kan ikke overskrive det seneste valg.
 - [x] **Vis på hovedkortet** er fjernet; editorens arbejdskort er den eneste relevante visning.
+- [x] Kortets geografiske grænser beregnes og anvendes før første vektorlag tilføjes; reproduceret Leaflet-fejl er væk i isoleret browserkontrol med produktionsdata.
 
 ## Lokal DMI, score og forklaring
 

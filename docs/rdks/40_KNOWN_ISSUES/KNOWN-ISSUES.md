@@ -1,6 +1,6 @@
 # Kendte åbne og overvågede forhold
 
-- **ISSUE-ADMIN-DIRECTION-MAP-STALE-SELECTION – RETTET LOKALT I 4.0.194:** Land-/vandeditorens tekstvalg kunne skifte til en ny hovedzone, mens Leaflet-kortet blev stående på en tidligere zone og derfor hverken viste den valgte kystdel eller dens punktpar. Valg og kortfokus er nu revisionsbundet, gamle callbacks ignoreres, lag genopbygges, kortstørrelsen invalideres og `fitBounds` køres for hvert zonevalg. Afventer browserkontrol efter deploy.
+- **ISSUE-ADMIN-DIRECTION-MAP-STALE-SELECTION – RODÅRSAG RETTET LOKALT I 4.0.195:** 4.0.194 ændrede timing uden at løse fejlen. Isoleret browsertest med produktionsdata viste, at Leaflet-vektorlag blev tilføjet før kortets første geografiske position og kastede `reading 'min'`; derfor udeblev linjer, markører og zoom. 4.0.195 positionerer kortet før lagene. Rejsby-testen viser korrekt område, 121 stier og to markører uden fejl. Afventer produktionsdeploy og ejerens efterkontrol.
 
 ## DMI-produktionskæde
 

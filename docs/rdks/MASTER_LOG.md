@@ -1,4 +1,10 @@
-## 2026-08-14 – 4.0.194
+## 2026-08-14 – 4.0.195
+
+- Ejerens produktionsbillede dokumenterede, at 4.0.194 ikke virkede: Rejsby var valgt i teksten, mens kortet stod på Bornholm uden vektorlag eller punkter.
+- En isoleret browserharness med de aktive zone- og kystdelsdata reproducerede den konkrete Leaflet-stacktrace. Nye kort fik zonepolygonen før deres første geografiske position, så Leaflet stoppede i `_clipPoints` før resten af tegningen.
+- Tegnerækkefølgen er vendt: beregn grænser, kør `fitBounds`, tegn derefter zone, kystdele og punktmarkører. Samme Rejsby-test viser korrekt Vadehavskort, 121 vektorstier, to markører og nul fejl.
+
+## 2026-08-14 – 4.0.194 (erstattet)
 
 - Reproduceret en kortlivscyklusfejl i land-/vandeditoren: listen kunne vise Rejsby/Ribe Vesterå, mens kortet stod på en tidligere Bornholm-zone uden valgte kystlag og punktmarkører.
 - Zonevalg er gjort revisionsbundet. Tidligere forsinkede callbacks kan ikke overskrive det seneste valg; kortet invalideres, lagene bygges igen, og fokus sættes til den valgte zones dele ved hvert valg.

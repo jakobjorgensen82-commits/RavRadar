@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.194
+**Håndbogsversion:** 4.0.195
 
 **Opdateret:** 1. august 2026
 
@@ -1232,7 +1232,7 @@ Hvis et enkelt flowpunkt mangler eller er ugyldigt, springes kun den pågældend
 
 I fanen **Retning: hav → land** søger administratoren nu efter en hovedzone. Kortet viser hele zonen og alle de præcise kyststrækninger, den består af. Hver strækning har sit eget blå havpunkt og grønne landpunkt. Punkterne kan trækkes direkte, eller administratoren kan vælge **Sæt nyt havpunkt** eller **Sæt nyt landpunkt** og derefter klikke på kortet.
 
-Når en anden hovedzone vælges, rydder editoren det tidligere kortvalg og zoomer til den nye zones egne kystdele. Den valgte kystdel vises kraftigst; dens eksisterende blå havpunkt og grønne landpunkt er flytbare, mens de øvrige dele og punkter stadig kan ses som sammenhæng. Editorens kort er selve arbejdsfladen, så den tidligere knap **Vis på hovedkortet** er fjernet.
+Når en anden hovedzone vælges, beregner editoren først grænserne for dens kystdele og punktpar og flytter kortet dertil, før linjer og markører tegnes. Denne rækkefølge er nødvendig i Leaflet; ellers kan hele vektorlaget stoppe, inden noget vises. Den valgte kystdel vises kraftigst; dens eksisterende blå havpunkt og grønne landpunkt er flytbare, mens de øvrige dele og punkter stadig kan ses som sammenhæng. Editorens kort er selve arbejdsfladen, så den tidligere knap **Vis på hovedkortet** er fjernet.
 
 En ændring gemmes først som kladde og påvirker ikke RavScore. Ved **Godkend og gem centralt** bindes punkterne til den konkrete kystdels ID og læses tilbage fra Supabase. Den næste produktionskørsel bruger samme aktive kystdelsfil til DMI-gridopslag, lokal vejrserie, score og offentlig visning. Hvis DMI- eller releasevalideringen ikke accepterer punktet, deployes ændringen ikke, og workflowet melder fejl.
 
