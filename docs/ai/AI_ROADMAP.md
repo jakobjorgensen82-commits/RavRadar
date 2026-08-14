@@ -7,6 +7,7 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 - Lokal validering kan nu skelne et udløbet repositorysnapshot fra en aktuel produktionsfejl uden at acceptere manglende zoner.
 - Den skrivebeskyttede deployaudit har bekræftet 210/210 aktive zoner og vejrdata til alle tre Vadehavszoner.
 - En fuld frisk validering følger fortsat den bindende rækkefølge: central adminhydrering og tombstones, nyt/hydreret vejr, fuld `validate`, releasegate og først derefter artifact/deploy.
+- 4.0.208 er produktionsverificeret i #31848912461 på commit `7a3382f`; direkte efterkontrol viste version 4.0.208 og datasæt `rr-20260814230422-210`.
 - Næste aktive udvikleropgave ændres ikke: DMI-first femdøgnskæderne under DEC-0030.
 
 ## P0-ejerreview – ét land-/havpunktpar pr. kyststrækning

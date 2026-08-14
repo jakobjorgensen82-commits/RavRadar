@@ -6,7 +6,7 @@
 - Repositoryets medfølgende lokale vejrsnapshot er historisk: `conditions.json` er bygget 31. juli 2026 før de tre Vadehavszoner og før de seneste centrale tombstones. Repositoryets rå zoneregister og den centralt effektive bestand må derfor ikke sammenlignes uden central adminhydrering.
 - `validate:data` stopper fortsat fail-closed ved enhver dækningsforskel. Når snapshotet samtidig er udløbet, kaldes fejlen nu **FORÆLDET LOKALT VEJRSNAPSHOT** og henviser til en skrivebeskyttet produktionsaudit i stedet for at fremstille de manglende ID'er som dokumenterede zonefejl.
 - `npm run audit:deployed-zone-weather` kontrollerer uden skrivning, at deployet zoneregister og offentligt vejr har identisk bestand, og rapporterer særskilt de tre Vadehavs-ID'er. `npm run hydrate:deployed-weather` hydrerer kun mutable vejrfiler; en fuld frisk lokal/CI-validering skal stadig anvende central adminhydrering og tombstones før vejr, præcis som produktionsworkflowet.
-- Ingen zone, geometri, DMI-kilde, score eller offentlig runtimeadfærd ændres af 4.0.208. 4.0.207 forbliver seneste produktionsverificerede baseline, indtil 4.0.208 har bestået frisk GitHub Actions-kæde.
+- Ingen zone, geometri, DMI-kilde, score eller offentlig runtimeadfærd ændres af 4.0.208. Release 4.0.208 er produktionsverificeret i GitHub Actions #31848912461 på commit `7a3382f200a72b702d814ba4d8ca205dc4523369`: central adminhydrering/tombstones, frisk vejrbygning, fuld `validate`, releasegate, Supabase-synkronisering, Pages-artifact og deploy bestod. Direkte efterkontrol viste version 4.0.208, datasæt `rr-20260814230422-210`, 210/210 zone-/vejr-ID'er og vejrdata til alle tre Vadehavszoner.
 
 ## 4.0.207 – ét flytbart punktpar pr. kyststrækning
 

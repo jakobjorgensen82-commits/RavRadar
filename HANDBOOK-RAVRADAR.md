@@ -10,6 +10,8 @@ Den lokale datavalidering er fortsat streng. Hvis zone- og vejrlisterne ikke mat
 
 `npm run hydrate:deployed-weather` opdaterer kun mutable vejrfiler. Kommandoen erstatter ikke central adminhydrering og må ikke bruges til at omgå eller skjule en reel dækningsfejl.
 
+4.0.208 er produktionsverificeret i GitHub Actions #31848912461 på commit `7a3382f200a72b702d814ba4d8ca205dc4523369`. Den fulde kæde og deploy bestod, og den direkte efterkontrol viste version 4.0.208, 210/210 matchende zoner og vejrposter samt vejrdata til alle tre Vadehavszoner.
+
 ## Ren og idempotent fallbackkontrol – 4.0.206
 
 Den private fallbackkontrol skal kunne køres både på en helt ren GitHub-runner og efter, at en tidligere godkendt kandidat allerede er blevet aktiveret. Byggeren opretter derfor selv alle sine private outputmapper. Den bruger den centralt hydrerede aktive kyst som sandhed og kan genkende de aktive naborester, selv om de oprindelige del-ID'er ikke længere findes.

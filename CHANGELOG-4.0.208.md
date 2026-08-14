@@ -15,4 +15,4 @@
 ## Produktpåvirkning
 
 - Ingen ændring af zoner, geometri, DMI-kilder, RavScore eller offentlig UI-adfærd.
-- 4.0.207 er fortsat produktionsverificeret baseline, indtil den friske 4.0.208-kæde er grøn.
+- 4.0.208 er produktionsverificeret i GitHub Actions #31848912461 på commit `7a3382f200a72b702d814ba4d8ca205dc4523369`: central adminhydrering/tombstones, frisk vejrbygning, fuld validering, releasegate, Supabase, artifact og deploy bestod. Direkte efterkontrol viste version 4.0.208, datasæt `rr-20260814230422-210`, 210/210 og alle tre Vadehavszoner med vejrdata.

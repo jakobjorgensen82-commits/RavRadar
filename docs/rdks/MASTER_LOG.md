@@ -5,6 +5,7 @@
 - `validate:data` stopper fortsat fail-closed, men klassificerer nu et udløbet snapshot særskilt fra et aktuelt dækningsbrud. En ny read-only kommando kontrollerer den deployede bestand uden at ændre data.
 - Den historiske 211-formulering er markeret erstattet af den effektive centrale bestand på 210 efter sletning af Fejø/Femø og Havnø/Mariager Fjord øst.
 - Ingen geometri, DMI-kilde, score eller offentlig funktion er ændret.
+- #31848912461 produktionsverificerede 4.0.208 på commit `7a3382f200a72b702d814ba4d8ca205dc4523369`: central adminhydrering/tombstones, frisk vejrbygning, fuld `validate`, releasegate, Supabase, Pages-artifact og deploy bestod. Direkte deployaudit viste datasæt `rr-20260814230422-210`, 210/210 og alle tre Vadehavszoner med vejrdata.
 
 ## 2026-08-14 – 4.0.206 produktions- og privatverificeret
 

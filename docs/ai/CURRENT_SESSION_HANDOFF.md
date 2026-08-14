@@ -1,11 +1,10 @@
 # Aktuelt sessionshandoff – 2026-08-15
 
-## Sikker baseline og 4.0.208-kandidat
+## Sikker baseline
 
-- Seneste produktionsverificerede release er 4.0.207 på commit `5176d2e14b2c5cff745caa428e6f1b43f45eb824`, verificeret i GitHub Actions #31845836107 med frisk vejrdata, fuld validering, releasegate, Supabase, artifact og Pages-deploy.
+- Seneste produktionsverificerede release er 4.0.208 på commit `7a3382f200a72b702d814ba4d8ca205dc4523369`, verificeret i GitHub Actions #31848912461 med central adminhydrering/tombstones, frisk vejrdata, fuld validering, releasegate, Supabase, artifact og Pages-deploy.
 - 4.0.208 ændrer kun lokal udviklerdiagnose og read-only kontrol. Ingen zone, geometri, DMI-kilde, RavScore eller offentlig UI-adfærd ændres.
-- Den direkte deployaudit 15. august 2026 gav 210/210 identiske aktive zone-ID'er mellem `zones.geojson` og `public-conditions.json`. `DK-B04-12`, `DK-B04-13` og `DK-B04-14` findes alle med vejrdata.
-- 4.0.208 er endnu kun kandidat, indtil en frisk GitHub-kørsel har bestået central adminhydrering, nyt vejr, fuld `validate`, releasegate, Supabase, artifact og deploy.
+- Den direkte deployaudit efter udgivelsen gav datasæt `rr-20260814230422-210` og 210/210 identiske aktive zone-ID'er mellem `zones.geojson` og `public-conditions.json`. `DK-B04-12`, `DK-B04-13` og `DK-B04-14` findes alle med vejrdata.
 
 ## Hvorfor de tre Vadehavszoner så ud til at fejle lokalt
 
@@ -22,10 +21,9 @@
 
 ## Næste arbejde
 
-1. Kontrollér først GitHub Actions for 4.0.208. Kald den kun produktionsverificeret, hvis frisk vejr, fuld `validate`, `release:gate`, Supabase, artifact og deploy faktisk er grønne.
-2. Næste aktive udvikleropgave er P1-audit/design af komplette DMI-first femdøgnskæder pr. komponent under DEC-0030. Ingen ny kilde, fallback eller scoreændring før dækning, provenance, overgange og regressioner er dokumenteret.
-3. Supabase-egress overvåges gennem næste billingperiode. Privat dataminimeret besøgstæller med enkel adminrapport er fortsat P2.
-4. Ejerens manuelle markørreview udføres senere gradvist.
+1. Næste aktive udvikleropgave er P1-audit/design af komplette DMI-first femdøgnskæder pr. komponent under DEC-0030. Ingen ny kilde, fallback eller scoreændring før dækning, provenance, overgange og regressioner er dokumenteret.
+2. Supabase-egress overvåges gennem næste billingperiode. Privat dataminimeret besøgstæller med enkel adminrapport er fortsat P2.
+3. Ejerens manuelle markørreview udføres senere gradvist.
 
 ## Arbejds- og modelregler
 

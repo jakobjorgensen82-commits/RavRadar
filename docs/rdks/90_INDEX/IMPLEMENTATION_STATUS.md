@@ -8,7 +8,7 @@
 - [x] Skrivebeskyttet `audit:deployed-zone-weather` sammenholder deployet `zones.geojson` og `public-conditions.json` og kontrollerer eksplicit alle tre Vadehavszoner.
 - [x] Direkte produktionsaudit 15. august 2026 gav 210/210 og vejrdata til `DK-B04-12`–`DK-B04-14`.
 - [x] Den gamle 211-formulering i kendte issues er markeret erstattet: Fejø/Femø og Havnø/Mariager Fjord øst er centralt slettede; den effektive bestand er 210.
-- [ ] 4.0.208 skal bestå frisk GitHub Actions med central adminhydrering, nyt vejr, fuld validering, releasegate, artifact og deploy, før den kaldes produktionsverificeret.
+- [x] 4.0.208 er produktionsverificeret i #31848912461 på commit `7a3382f200a72b702d814ba4d8ca205dc4523369`: central adminhydrering/tombstones, frisk vejrbygning, fuld validering, releasegate, Supabase, artifact og deploy bestod. Direkte efterkontrol viste 4.0.208 og 210/210 med alle tre Vadehavszoner.
 
 ## Admin land/hav og manuel ejerreview
 

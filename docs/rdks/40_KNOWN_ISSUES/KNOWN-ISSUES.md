@@ -2,7 +2,7 @@
 
 ## 4.0.208 – lokal snapshotdrift
 
-- **ISSUE-STALE-LOCAL-WEATHER-MISDIAGNOSED-AS-ZONE-FAILURE – RETTET LOKALT / AFVENTER CI:** Det indcheckede 31. juli-snapshot dækkede 209 historiske zoner, mens råt repositoryregister og central runtime havde nyere, forskellige bestande. Valideringen stoppede korrekt, men teksten fik de tre Vadehavszoner til at ligne defekte produktionszoner. Den nye diagnose skelner et udløbet snapshot fra et aktuelt dækningsbrud uden at lempe gaten. Skrivebeskyttet deployaudit beviser 210/210 og alle tre Vadehavszoner med vejrdata.
+- **ISSUE-STALE-LOCAL-WEATHER-MISDIAGNOSED-AS-ZONE-FAILURE – PRODUKTIONSVERIFICERET LUKKET I #31848912461:** Det indcheckede 31. juli-snapshot dækkede 209 historiske zoner, mens råt repositoryregister og central runtime havde nyere, forskellige bestande. Valideringen stoppede korrekt, men teksten fik de tre Vadehavszoner til at ligne defekte produktionszoner. Den nye diagnose skelner et udløbet snapshot fra et aktuelt dækningsbrud uden at lempe gaten. Frisk central vejrbygning, fuld validering og deploy bestod; direkte deployaudit beviser 210/210 og alle tre Vadehavszoner med vejrdata.
 - **ISSUE-LOCAL-REPOSITORY-VS-CENTRAL-TOMBSTONES – DOKUMENTERET:** Rå repositorydata kan før central hydrering stadig indeholde Havnø/Mariager Fjord øst, mens et gammelt vejrsnapshot kan indeholde Fejø/Femø. Den effektive produktionsbestand opstår først efter central adminhydrering og tombstones. Vejrhydrering alene er derfor ikke et fuldt lokalt produktionsbuild.
 
 ## 4.0.207 – manuel placering af ét punktpar
