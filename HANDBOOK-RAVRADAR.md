@@ -1,5 +1,15 @@
 # RavRadar Håndbog
 
+## Lokal validering og aktive zoner – 4.0.208
+
+RavRadars aktive zoner bestemmes af den centralt gemte administratorstatus. En historisk fil i repositoryet kan derfor indeholde en zone, som senere er slettet centralt, eller mangle en zone, som senere er godkendt. Den fil er udviklingshistorik og må ikke alene bruges som bevis for, at den offentlige side mangler en zone.
+
+Den aktuelle offentlige bestand er 210 hovedzoner. De tre Vadehavszoner `DK-B04-12`, `DK-B04-13` og `DK-B04-14` findes både i det deployede zoneregister og i det offentlige vejrdatasæt. Fejø/Femø og Havnø/Mariager Fjord øst er centralt slettede og må ikke genopstå fra ældre snapshots.
+
+Den lokale datavalidering er fortsat streng. Hvis zone- og vejrlisterne ikke matcher, stopper den. Er vejrsnapshotet samtidig udløbet, forklarer den nu, at der er tale om et **forældet lokalt vejrsnapshot**, ikke automatisk en produktionsfejl. `npm run audit:deployed-zone-weather` kan kontrollere den deployede bestand uden at skrive. En fuld frisk kørsel skal først hente central adminstatus og anvende tombstones, derefter hente eller bygge vejr og til sidst køre alle gates.
+
+`npm run hydrate:deployed-weather` opdaterer kun mutable vejrfiler. Kommandoen erstatter ikke central adminhydrering og må ikke bruges til at omgå eller skjule en reel dækningsfejl.
+
 ## Ren og idempotent fallbackkontrol – 4.0.206
 
 Den private fallbackkontrol skal kunne køres både på en helt ren GitHub-runner og efter, at en tidligere godkendt kandidat allerede er blevet aktiveret. Byggeren opretter derfor selv alle sine private outputmapper. Den bruger den centralt hydrerede aktive kyst som sandhed og kan genkende de aktive naborester, selv om de oprindelige del-ID'er ikke længere findes.
@@ -30,9 +40,9 @@ Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vande
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.207
+**Håndbogsversion:** 4.0.208
 
-**Opdateret:** 14. august 2026
+**Opdateret:** 15. august 2026
 
 ## Lokal DMI og geografiske delscorer – 4.0.193
 
@@ -1615,7 +1625,7 @@ De 605 lokale beregningsdele er lagt online. Vindkortets koordinater læses og i
 
 ## Præcise hovedzonekyster i 4.0.182
 
-Kortet kombinerer nu de to nødvendige lag: hovedzonerne er fortsat de eneste synlige og klikbare zoner, mens deres viste kyststreg bygges af de præcise, gennemgåede lokale kystdele. Resultatet er 212 hovedzoner. 206 har præcis kystgeometri, og seks bruger fortsat deres gamle linje, fordi et sikkert nyt forløb enten blev forkastet eller viste sig kun at være en dublet.
+Dette afsnit beskriver 4.0.182-bestanden som en historisk aktiveringsmilepæl. På det tidspunkt kombinerede kortet de to nødvendige lag: hovedzonerne var de eneste synlige og klikbare zoner, mens deres viste kyststreg blev bygget af de præcise, gennemgåede lokale kystdele. Bestanden omfattede da 212 hovedzoner; 206 havde præcis kystgeometri, og seks brugte fortsat deres gamle linje, fordi et sikkert nyt forløb enten blev forkastet eller viste sig kun at være en dublet. Den aktuelle centrale bestand er 210 efter senere ejerbesluttede sletninger; se afsnittet *Lokal validering og aktive zoner – 4.0.208*.
 
 Der findes 643 lokale beregningsdele bag kortet. Alle har land- og vandpunkt; 632 har fuld marin DMI-dækning og 11 har dokumenteret deldækning. De 39 nye eller ændrede vandpunkter bestod native WAM- og DKSS-kontrol i #31532688885. En symmetrisk overlapkontrol fjernede 11 oversete additive dubletter, så slutbestanden har nul tværzoneoverlap og nul uafklarede relevante kysthuller.
 

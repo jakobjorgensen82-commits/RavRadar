@@ -1,6 +1,13 @@
-# AI Roadmap – RavRadar efter 4.0.207
+# AI Roadmap – RavRadar efter 4.0.208
 
 Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status skal løbende flyttes til RDKS, når noget implementeres.
+
+## Afsluttet P0 – lokal snapshotdiagnose
+
+- Lokal validering kan nu skelne et udløbet repositorysnapshot fra en aktuel produktionsfejl uden at acceptere manglende zoner.
+- Den skrivebeskyttede deployaudit har bekræftet 210/210 aktive zoner og vejrdata til alle tre Vadehavszoner.
+- En fuld frisk validering følger fortsat den bindende rækkefølge: central adminhydrering og tombstones, nyt/hydreret vejr, fuld `validate`, releasegate og først derefter artifact/deploy.
+- Næste aktive udvikleropgave ændres ikke: DMI-first femdøgnskæderne under DEC-0030.
 
 ## P0-ejerreview – ét land-/havpunktpar pr. kyststrækning
 

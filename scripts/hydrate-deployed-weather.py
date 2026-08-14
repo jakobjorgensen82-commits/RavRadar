@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import argparse
 import os
 import pathlib
 import tempfile
@@ -12,7 +13,6 @@ from datetime import datetime
 from typing import Any
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-BASE_URL = os.getenv("RAVRADAR_DEPLOYED_BASE_URL", "").rstrip("/")
 TIMEOUT = max(5, int(os.getenv("RAVRADAR_HYDRATE_TIMEOUT_SECONDS", "20")))
 USER_AGENT = os.getenv("WEATHER_USER_AGENT", "RavRadar deployed-state hydrator")
 ATOMIC_WEATHER_FILES = (
@@ -155,8 +155,15 @@ def merge_station_documents(local: Any, remote: Any) -> Any:
     return result
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description="Hydrate mutable RavRadar state from a deployed site.")
+    parser.add_argument(
+        "--base-url",
+        default=os.getenv("RAVRADAR_DEPLOYED_BASE_URL", ""),
+        help="Deployed RavRadar base URL (or set RAVRADAR_DEPLOYED_BASE_URL).",
+    )
+    base_url = str(parser.parse_args().base_url or "").rstrip("/")
     all_files = (*ATOMIC_WEATHER_FILES, *JSON_FILES, *TEXT_FILES)
-    if not BASE_URL:
+    if not base_url:
         print(json.dumps({"hydrated": [], "skipped": list(all_files), "reason": "missing-base-url"}))
         return 0
 
@@ -170,8 +177,8 @@ def main() -> int:
     # without the other, otherwise a deployed forecast can be paired with a
     # checked-in manifest from a different run.
     try:
-        remote_manifest = json.loads(fetch(f"{BASE_URL}/data/live/manifest.json", "application/json").decode("utf-8"))
-        remote_conditions = json.loads(fetch(f"{BASE_URL}/data/live/conditions.json", "application/json").decode("utf-8"))
+        remote_manifest = json.loads(fetch(f"{base_url}/data/live/manifest.json", "application/json").decode("utf-8"))
+        remote_conditions = json.loads(fetch(f"{base_url}/data/live/conditions.json", "application/json").decode("utf-8"))
         if not isinstance(remote_manifest, dict) or not isinstance(remote_conditions, dict):
             raise RuntimeError("atomic weather response is not a JSON object")
         remote_conditions, removed_zone_ids = sanitize_remote_document(
@@ -209,7 +216,7 @@ def main() -> int:
     for relative in JSON_FILES:
         local_path = ROOT / relative
         try:
-            remote = json.loads(fetch(f"{BASE_URL}/{relative}", "application/json").decode("utf-8"))
+            remote = json.loads(fetch(f"{base_url}/{relative}", "application/json").decode("utf-8"))
             if not isinstance(remote, dict):
                 raise RuntimeError("response is not a JSON object")
             remote, removed_zone_ids = sanitize_remote_document(relative, remote, allowed_zone_ids)
@@ -236,7 +243,7 @@ def main() -> int:
     for relative in TEXT_FILES:
         local_path = ROOT / relative
         try:
-            payload = fetch(f"{BASE_URL}/{relative}", "text/plain, */*")
+            payload = fetch(f"{base_url}/{relative}", "text/plain, */*")
             text = payload.decode("utf-8")
             # Never replace a generated local report with the checked-in waiting placeholder.
             if "Waiting for the first" in text and local_path.exists() and "Generated:" in local_path.read_text("utf-8", errors="ignore"):

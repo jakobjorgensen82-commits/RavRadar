@@ -1,8 +1,10 @@
 import fs from "node:fs";
 import { validateActiveZoneIds } from "./zone-registry-integrity.mjs";
+import { classifyLocalWeatherSnapshot, formatCoverageFailure } from "./local-weather-snapshot-status.mjs";
 
 const zones = JSON.parse(fs.readFileSync("data/zones.geojson", "utf8"));
 const conditions = JSON.parse(fs.readFileSync("data/live/conditions.json", "utf8"));
+const manifest = JSON.parse(fs.readFileSync("data/live/manifest.json", "utf8"));
 
 if (zones.type !== "FeatureCollection" || !Array.isArray(zones.features)) throw new Error("Ugyldig zones.geojson");
 if (zones.features.length < 1) throw new Error('Zone Registry er tomt');
@@ -30,11 +32,10 @@ if (conditions.schemaVersion !== 4 || typeof conditions.zones !== "object" || co
 
 validateActiveZoneIds(ids);
 
-const conditionIds = new Set(Object.keys(conditions.zones));
-const missingConditionIds = [...ids].filter(id => !conditionIds.has(id));
-const unknownConditionIds = [...conditionIds].filter(id => !ids.has(id));
-if (missingConditionIds.length) throw new Error(`conditions.json mangler ${missingConditionIds.length} aktive zoner, bl.a. ${missingConditionIds.slice(0,5).join(', ')}`);
-if (unknownConditionIds.length) throw new Error(`conditions.json indeholder ${unknownConditionIds.length} slettede eller ukendte zoner, bl.a. ${unknownConditionIds.slice(0,5).join(', ')}`);
+const snapshot = classifyLocalWeatherSnapshot({ conditions, manifest, activeZoneIds: ids });
+if (!snapshot.datasetPairMatches || snapshot.missingZoneIds.length || snapshot.unknownZoneIds.length) {
+  throw new Error(formatCoverageFailure(snapshot));
+}
 
 for (const [conditionId, condition] of Object.entries(conditions.zones)) {
   if (!ids.has(conditionId)) throw new Error(`conditions.json indeholder ukendt zone: ${conditionId}`);

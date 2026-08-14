@@ -1,3 +1,11 @@
+## 2026-08-15 – 4.0.208 lokal snapshotdiagnose
+
+- En systemisk sammenligning viste, at de tre Vadehavszoner ikke fejlede i produktion. Deployet `zones.geojson` og `public-conditions.json` har 210/210 identiske zone-ID'er, inklusive `DK-B04-12`–`DK-B04-14` med vejrdata.
+- Det lokale symptom kom fra et 31. juli-snapshot på 209 historiske vejrzoner sammenholdt med et råt repositoryregister før central adminhydrering og tombstones.
+- `validate:data` stopper fortsat fail-closed, men klassificerer nu et udløbet snapshot særskilt fra et aktuelt dækningsbrud. En ny read-only kommando kontrollerer den deployede bestand uden at ændre data.
+- Den historiske 211-formulering er markeret erstattet af den effektive centrale bestand på 210 efter sletning af Fejø/Femø og Havnø/Mariager Fjord øst.
+- Ingen geometri, DMI-kilde, score eller offentlig funktion er ændret.
+
 ## 2026-08-14 – 4.0.206 produktions- og privatverificeret
 
 - 4.0.205 blev produktionsverificeret i #31822335540; målrettet central roundtrip/rollback bestod i #31822371489.

@@ -1,5 +1,13 @@
 # Current truth – gældende projektviden
 
+## 4.0.208 – stale lokale vejrsnapshots er ikke zonefejl
+
+- Den centralt anvendte og deployede runtime har 210 aktive hovedzoner. En skrivebeskyttet kontrol 15. august 2026 af det deployede zoneregister og `public-conditions.json` gav 210/210 identiske zone-ID'er; `DK-B04-12`, `DK-B04-13` og `DK-B04-14` findes med vejrdata.
+- Repositoryets medfølgende lokale vejrsnapshot er historisk: `conditions.json` er bygget 31. juli 2026 før de tre Vadehavszoner og før de seneste centrale tombstones. Repositoryets rå zoneregister og den centralt effektive bestand må derfor ikke sammenlignes uden central adminhydrering.
+- `validate:data` stopper fortsat fail-closed ved enhver dækningsforskel. Når snapshotet samtidig er udløbet, kaldes fejlen nu **FORÆLDET LOKALT VEJRSNAPSHOT** og henviser til en skrivebeskyttet produktionsaudit i stedet for at fremstille de manglende ID'er som dokumenterede zonefejl.
+- `npm run audit:deployed-zone-weather` kontrollerer uden skrivning, at deployet zoneregister og offentligt vejr har identisk bestand, og rapporterer særskilt de tre Vadehavs-ID'er. `npm run hydrate:deployed-weather` hydrerer kun mutable vejrfiler; en fuld frisk lokal/CI-validering skal stadig anvende central adminhydrering og tombstones før vejr, præcis som produktionsworkflowet.
+- Ingen zone, geometri, DMI-kilde, score eller offentlig runtimeadfærd ændres af 4.0.208. 4.0.207 forbliver seneste produktionsverificerede baseline, indtil 4.0.208 har bestået frisk GitHub Actions-kæde.
+
 ## 4.0.207 – ét flytbart punktpar pr. kyststrækning
 
 - Ejeren har valgt den pragmatiske model i DEC-0037: hver af de 673 aktive kyststrækninger beholder ét autoritativt blåt havpunkt og ét grønt landpunkt. Bugtede strækninger får ikke automatisk flere punktpar eller en ny landsdækkende opdeling.

@@ -1,4 +1,14 @@
-# Implementeringsstatus pr. 4.0.207 – ét punktpar pr. kyststrækning
+# Implementeringsstatus pr. 4.0.208 – korrekt diagnose af lokale vejrsnapshots
+
+## Lokal validering og centralt effektiv zonebestand
+
+- [x] Stale lokale `conditions.json`-data klassificeres særskilt fra en aktuel zone-/vejrdækningsfejl.
+- [x] Dækningsgaten er fortsat fail-closed; den springer hverken manglende eller ukendte zoner over.
+- [x] Atomisk mismatch mellem lokalt manifest og conditions er fortsat en hård fejl.
+- [x] Skrivebeskyttet `audit:deployed-zone-weather` sammenholder deployet `zones.geojson` og `public-conditions.json` og kontrollerer eksplicit alle tre Vadehavszoner.
+- [x] Direkte produktionsaudit 15. august 2026 gav 210/210 og vejrdata til `DK-B04-12`–`DK-B04-14`.
+- [x] Den gamle 211-formulering i kendte issues er markeret erstattet: Fejø/Femø og Havnø/Mariager Fjord øst er centralt slettede; den effektive bestand er 210.
+- [ ] 4.0.208 skal bestå frisk GitHub Actions med central adminhydrering, nyt vejr, fuld validering, releasegate, artifact og deploy, før den kaldes produktionsverificeret.
 
 ## Admin land/hav og manuel ejerreview
 
