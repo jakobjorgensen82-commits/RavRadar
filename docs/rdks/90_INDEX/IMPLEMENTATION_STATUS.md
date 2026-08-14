@@ -744,3 +744,9 @@ Status: Implementeret og lokalt valideret.
 - [x] Metadata angiver faktisk anvendte rettelser og konkrete udskudte id'er.
 - [x] Slutbestanden anvender fortsat streng kontrol uden undtagelse.
 - [ ] Privat national workflowkørsel skal bevise både den foreløbige udskydelse og den afsluttende fulde anvendelse.
+
+## 4.0.200 – konsistent status efter uafhængig punktrettelse
+- [x] En sikkert korrigeret række får forslagstatus, tomme gamle blokeringer og deaktiverede downstreamflag.
+- [x] Foreslået/blokeret-summer genberegnes efter rettelser.
+- [x] Målrettet regression flytter en syntetisk blokeret DK-B07-21-række fra 0/1 til 1/0 og består punktkontrakten.
+- [ ] Frisk privat national kørsel skal passere både den foreløbige og afsluttende punktkontrakt.

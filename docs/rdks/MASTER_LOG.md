@@ -1006,3 +1006,10 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Privat national run #31794474426 nåede 29 grønne trin og stoppede ved den første anvendelse af land-/vandevidens.
 - Rodårsagen var faseorden: 14 dokumenterede dele skabes først af senere ejerrettelser og kan derfor ikke kræves i den foreløbige punktbestand.
 - Første fase registrerer nu disse id'er som udskudte og anvender resten. Slutfasen er fortsat fail-closed og kræver alle dokumenterede rettelser før videre DMI- og aktiveringskontrol.
+- #31796921725 beviste, at faseudskydelsen virker (107 anvendt, 14 udskudt), og fandt derefter en separat statusfejl: et uafhængigt korrigeret punktpar kunne beholde builderens gamle blokerede status.
+
+## 2026-08-14 – 4.0.200
+
+- Hele den isolerede statuskontrakt normaliseres nu sammen med en uafhængig sikker punktrettelse. Vejr, state, score og aktivering forbliver slukket frem til deres egne gates.
+- Foreslået/blokeret-summer genberegnes. En målrettet DK-B07-21-regression består validatoren med 1 foreslået og 0 blokerede efter rettelsen.
+- Ejerens krav om en eksplicit anbefaling af brugerfladens indsats ved hvert nyt arbejdsafsnit er gjort permanent i AGENTS og AI-operating-rules.

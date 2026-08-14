@@ -531,6 +531,10 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - Den første punktbygning ligger før ejerrettelser og kan derfor lovligt mangle evidens-id'er, som først introduceres senere i samme private workflow. Disse registreres eksplicit som udskudte; de tælles ikke som anvendte.
 - Den afsluttende punktbygning efter ejerrettelser er fortsat fail-closed: samtlige dokumenterede rettelser skal findes og anvendes, ellers stopper kørslen før DMI, artifact og aktivering.
 
+## Korrigerede punktpars status – 4.0.200
+- Når uafhængig 10-meter-evidens leverer et sikkert korrigeret land-/vandpunktpar, normaliseres hele rækken til et isoleret forslag: gamle blokeringer fjernes, men vejr, state, score og automatisk aktivering forbliver deaktiveret.
+- Rapportens foreslået/blokeret-summer genberegnes efter rettelserne. En række må aldrig have komplette punkter og samtidig stå som blokeret.
+
 ## DMI-schedulerbalance – 2026-08-08
 - Marine recovery er ikke længere rent binær efter etableret grunddækning. Under 95 % marinegrundlag er begge produktive pladser fortsat marine-first.
 - Ved mindst 95 % marinegrundlag beholder den mest relevante DKSS-model første plads, mens anden plads går til den mest underdækkede vind-/bølgefamilie.

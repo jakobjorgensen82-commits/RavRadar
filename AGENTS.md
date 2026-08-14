@@ -30,6 +30,7 @@ Ved konflikt gælder: brugerens aktuelle instruktion > aktiv RDKS-beslutning > v
 
 ## Bindende model- og kvotestyring
 - Kvalitet kommer før kvotebesparelse. Før hvert væsentligt arbejdsafsnit vurderer Codex ræsonneringsbehov, kodebasebredde, fejlkonsekvens og påvirkning af RavScore, faglig model, DMI/fallback, dataintegritet, arkitektur og produktion.
+- Før hvert nyt arbejdsafsnit skal Codex også vurdere og tydeligt anbefale den nødvendige **Indsats** i brugerfladen. Hvis den aktuelle indsats er for lav, skal Codex bede ejeren skifte før det kritiske arbejde starter. `Let` er kun til simple tekstrettelser, status og helt mekaniske opgaver; `Høj` er normal RavRadar-udvikling; `Ekstra høj` kræves som udgangspunkt til kystgeometri, land-/vandpunkter, DMI, RavScore, ukendt rodårsag, systemiske regressioner og slutvalidering; `Ultra` reserveres til de vanskeligste kvalitet-først-analyser, hvor merforbruget er begrundet.
 - GPT-5.6 Sol bruges som udgangspunkt til kritisk analyse, ukendt rodårsag, forskning, RavScore/fysisk model, komplekse regressioner, arkitektur, DMI-/forecast-/cache-/fallbacklogik og endelig validering af større ændringer.
 - Når en aktuelt tilgængelig billigere model kan levere samme nødvendige kvalitet, skal Codex stoppe før hovedarbejdet, anbefale den konkrete model og kort begrunde valget. Codex skal tilsvarende stoppe og bede om skift tilbage til Sol, før næste kritiske del.
 - Ved reel tvivl vælges Sol. Kvoteudløb må aldrig medføre, at analyse, forskning, tests eller validering springes over.

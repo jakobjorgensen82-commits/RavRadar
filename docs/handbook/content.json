@@ -590,7 +590,7 @@
       "chapter": "62",
       "title": "Land- og vandrettelser gennem hele kystbygningen",
       "summary": "Foreløbige dele må vente på ejerrettelser, men slutbestanden skal indeholde alle dokumenterede punktrettelser.",
-      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den nationale kyst bygges i flere trin. Nogle ejer-godkendte kystdele findes først efter den foreløbige punktkontrol.</div><p>Den foreløbige kontrol anvender alle rettelser, som allerede findes, og registrerer resten med deres konkrete id som udskudte. Efter ejerrettelserne bygges punkterne igen.</p><div class=\"callout\"><strong>Streng slutkontrol:</strong> I den endelige bestand skal hver dokumenteret land-/vandrettelse findes og anvendes. Ellers stopper workflowet før DMI-kontrol, artifact og aktivering.</div>"
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den nationale kyst bygges i flere trin. Nogle ejer-godkendte kystdele findes først efter den foreløbige punktkontrol.</div><p>Den foreløbige kontrol anvender alle rettelser, som allerede findes, og registrerer resten med deres konkrete id som udskudte. Efter ejerrettelserne bygges punkterne igen.</p><p>Hvis den uafhængige 10-meterkontrol leverer et sikkert korrigeret punktpar, fjernes den gamle blokering på selve rækken, men DMI, state, score og aktivering forbliver slukket, indtil deres egne kontroller består.</p><div class=\"callout\"><strong>Streng slutkontrol:</strong> I den endelige bestand skal hver dokumenteret land-/vandrettelse findes og anvendes. Ellers stopper workflowet før DMI-kontrol, artifact og aktivering.</div>"
     }
   ]
 }

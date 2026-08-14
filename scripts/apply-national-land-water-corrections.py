@@ -40,6 +40,16 @@ def main():
         row["landPoint"] = correction["landPoint"]
         row["waterPoint"] = correction["waterPoint"]
         row["onshoreDirectionDeg"] = correction["onshoreDirectionDeg"]
+        # The independent transect evidence resolves the side ambiguity even
+        # when the preliminary witness builder had to block the row. Keep the
+        # corrected pair isolated until the later DMI and owner-review gates.
+        row["status"] = "private-point-pair-proposed"
+        row["blockingReasons"] = []
+        row["unresolvedNormalCandidates"] = []
+        row["weatherSamplingEnabled"] = False
+        row["stateEnabled"] = False
+        row["scoreEnabled"] = False
+        row["automaticActivationAllowed"] = False
         row["landWaterSideEvidence"] = {
             "source": evidence["source"],
             "auditDate": evidence["auditDate"],
@@ -55,6 +65,10 @@ def main():
     points["landWaterSideDeferredCorrectionIds"] = missing
     points["landWaterSideAmbiguousCount"] = len(ambiguous & set(by_id))
     points["landWaterSideEvidenceSource"] = evidence["source"]
+    points["proposedPointPairCount"] = sum(
+        row.get("status") == "private-point-pair-proposed" for row in rows
+    )
+    points["blockedPointPairCount"] = len(rows) - points["proposedPointPairCount"]
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(points, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     print(
