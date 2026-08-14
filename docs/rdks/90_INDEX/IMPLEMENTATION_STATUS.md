@@ -10,7 +10,8 @@
 - [x] Eksisterende validerede punktpar og deres retning bevares eksakt; manglende retning stopper fail-closed.
 - [x] ESA WorldCover 10 m er genkørt på den aktuelle 17-dels kandidat med samme 11 verificerede, fire rettelser og to blokerede dele.
 - [x] Ren lokal fallbackslutkæde består med 2/2 ejerskabsflytninger, 9/9 erstatninger og nul overlap.
-- [ ] Ny fuld privat national GitHub-kørsel skal bevise fallback-DMI, slutvalidering og artifacts samlet.
+- [x] 4.0.206 er produktionsverificeret i #31831068809 med progressiv DMI-færdiggørelse, frisk vejrbygning, fulde gates, Supabase, artifact og Pages-deploy; live runtime har 210 zoner og alle tre nye Vadehavszoner.
+- [x] Privat #31829349458 beviser fallback-DMI, slutvalidering, nul overlap, central roundtrip/rollback og begge artifacts som del af hele den friske nationale kæde.
 - [ ] Privat geometri må kun aktiveres efter særskilt ejerafgørelse.
 
 ## Supabase og privat national slutkontrol

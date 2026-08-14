@@ -1,9 +1,11 @@
-## 2026-08-14 – 4.0.206-kandidat
+## 2026-08-14 – 4.0.206 produktions- og privatverificeret
 
 - 4.0.205 blev produktionsverificeret i #31822335540; målrettet central roundtrip/rollback bestod i #31822371489.
 - Privat #31822748625 bestod hele den nationale hovedkæde og central create/read/update/delete/rollback. Kørslens eneste efterfølgende fejl var fallbackbyggerens manglende outputmappe på en ren runner.
 - Fallbackbyggeren opretter nu alle outputmapper og kan genbruges efter tidligere aktivering ved at anvende centralt aktive naborester med deres eksakte punktpar og retning.
-- ESA WorldCover 10 m blev genkørt på den aktuelle 17-dels kandidat med uændrede fire sikre rettelser og to tvivlstilfælde. Ren lokal slutkontrol består med nul overlap, 2/2 ejerskabsflytninger og 9/9 erstatninger. Fuld privat CI mangler fortsat; ingen aktivering er tilladt uden særskilt ejerafgørelse.
+- ESA WorldCover 10 m blev genkørt på den aktuelle 17-dels kandidat med uændrede fire sikre rettelser og to tvivlstilfælde. Ren lokal slutkontrol består med nul overlap, 2/2 ejerskabsflytninger og 9/9 erstatninger.
+- Produktion #31831068809 genbrugte den kompatible progressive DMI-cache, færdiggjorde to modelsamlinger og bestod frisk vejr, fuld validering, releasegate, Supabase, artifact og deploy. Live Pages viser 4.0.206, 210 zoner og alle tre nye Vadehavszoner.
+- Privat #31829349458 bestod hele den nationale kæde gennem fallback-DMI, central create/read/update/delete/rollback og begge artifacts. Ingen privat geometri blev aktiveret; det kræver fortsat særskilt ejerafgørelse.
 
 ## 2026-08-14 – 4.0.198
 

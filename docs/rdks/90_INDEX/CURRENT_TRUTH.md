@@ -2,12 +2,14 @@
 
 ## 4.0.206 – ren og idempotent fallbackslutkontrol
 
-- 4.0.205 er produktionsverificeret i #31822335540. Den målrettede centrale roundtrip/rollback bestod i #31822371489.
+- 4.0.206 er produktionsverificeret i #31831068809 på commit `4dc464a`: kompatibel progressiv DMI-cache blev genbrugt, to modelsamlinger blev færdiggjort, og frisk central vejrbygning, fuld validering, releasegate, Supabase-synkronisering, Pages-artifact og deploy bestod. Direkte Pages-kontrol viser version 4.0.206, 210 hovedzoner og `DK-B04-12`, `DK-B04-13` og `DK-B04-14` i den offentlige runtime.
+- 4.0.205 blev forinden produktionsverificeret i #31822335540. Den målrettede centrale roundtrip/rollback bestod i #31822371489.
 - Privat #31822748625 bestod officiel kilde, topologi, 835 foreløbige dele, navne, alle kandidatbundne land-/vandbeviser, begge nationale DMI-/state-/vind-/shadowkæder, ejerreview, slutaudit samt central create/read/update/delete/rollback. Den stoppede først bagefter, fordi fallbackbyggeren ikke selv oprettede `.owner-review/fallback-zone-recovery` på en ren runner.
 - Fallbackbyggeren opretter nu alle outputmapper og er idempotent efter en tidligere aktivering. Hvis et oprindeligt nabo-ID ikke længere findes, genbruger den de centralt aktive `remainder-*`-dele med samme ID, geometri, punktpar og afledte retning.
 - Punktbyggeren medtager eksisterende validerede punktpar i den samlede kandidat og stopper, hvis et sådant par mangler retning. Den kan derfor ikke stiltiende tabe centralt validerede land-/vanddata.
 - ESA WorldCover 10 m er genkørt på den aktuelle 17-dels kandidat. Resultatet er fortsat 11 verificerede, fire sikkert vendte og to blokerede dele. Kun kandidatfingeraftrykket ændres som følge af den aktuelle centralhydrerede serialisering.
-- En ren lokal fallbackslutkæde består med 17 dele, fire rettelser, to fail-closed dele, 2/2 ejerskabsflytninger, 9/9 erstatninger samt nul interne og eksterne overlap. Fuld privat GitHub-verifikation af 4.0.206 mangler endnu; ingen offentlig aktivering er tilladt uden særskilt ejerafgørelse.
+- En ren lokal fallbackslutkæde består med 17 dele, fire rettelser, to fail-closed dele, 2/2 ejerskabsflytninger, 9/9 erstatninger samt nul interne og eksterne overlap.
+- Privat national #31829349458 bestod derefter hele den friske kæde: officiel kilde/topologi, 835 foreløbige dele, navne, alle kandidatbundne land-/vandbeviser, native DMI og flertrinsvejr, state/historik, vind, score-neutral shadow-score, indre farvande, dubletter, ejerrettelser, endelig kyst/punkter, central create/read/update/delete/rollback, fallbackejerskab, nul overlap, fallback-DMI og begge artifacts. Ingen privat geometri blev aktiveret; aktivering kræver fortsat særskilt ejerafgørelse.
 
 ## 4.0.205 – snæver Supabase-genprøvning og fail-closed adminsynkronisering
 

@@ -1,12 +1,11 @@
 # Aktuelt sessionshandoff – 2026-08-14
 
-## Nyeste sikre grænse – 4.0.206-kandidat
+## Nyeste sikre grænse – 4.0.206 produktions- og privatverificeret
 
-- 4.0.205 er produktionsverificeret i #31822335540; målrettet central roundtrip bestod i #31822371489.
-- Privat #31822748625 bestod hele den friske nationale hovedkæde og central create/read/update/delete/rollback. Den stoppede først bagefter på en manglende privat fallback-outputmappe på den rene runner.
-- 4.0.206 opretter alle fallbackoutputmapper, genbruger centralt aktive naborester efter tidligere aktivering og bevarer deres eksakte validerede punktpar/retning.
-- ESA WorldCover 10 m er genkørt på den aktuelle 17-dels kandidat med uændret resultat: 11 verificerede, fire sikkert vendte og to blokerede. Ren lokal slutkontrol består med 2/2 ejerskabsflytninger, 9/9 erstatninger og nul overlap.
-- Næste rækkefølge: lokale fulde gates, commit/push, normal produktionsverifikation og en ny fuld privat national kørsel gennem fallback-DMI og artifacts. Ingen privat geometri må aktiveres uden særskilt ejerafgørelse.
+- 4.0.206 på commit `4dc464a` er produktionsverificeret i #31831068809 med genbrugt progressiv DMI-cache, to færdiggjorte modelsamlinger, frisk vejr, fuld validering, releasegate, Supabase, artifact og Pages-deploy. Live Pages viser 4.0.206, 210 zoner og alle tre Vadehavszoner.
+- Privat #31829349458 bestod hele den friske nationale kæde gennem 835 foreløbige dele, kandidatbundne land-/vandbeviser, alle DMI-/vejr-/state-/vind-/shadowtrin, ejerrettelser, slutkyst/-punkter, central create/read/update/delete/rollback og den rettede 17-dels fallback med nul overlap, native DMI og artifacts.
+- ESA WorldCover 10 m-resultatet er fortsat 11 verificerede, fire sikkert vendte og to blokerede fallbackdele. De to blokerede forbliver fail-closed.
+- Ingen privat geometri blev aktiveret. Næste geografiske skridt er en særskilt ejerafgørelse på baggrund af det private artifact; indtil da forbliver den produktionsverificerede offentlige geometri urørt.
 
 ## Nyeste sikre grænse – 4.0.205-kandidat
 

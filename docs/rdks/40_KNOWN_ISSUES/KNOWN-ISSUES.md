@@ -2,13 +2,13 @@
 
 ## 4.0.206 – fallback på ren runner og efter tidligere aktivering
 
-- **ISSUE-FALLBACK-CLEAN-RUNNER-OUTPUT-DIR – RETTET LOKALT / AFVENTER FULD PRIVAT CI:** #31822748625 bestod hele den nationale hovedkæde og central rollback, men fallbackbyggeren forsøgte derefter at skrive en privat reviewside i en mappe, som ikke findes på en ren runner. Alle fire outputforældre oprettes nu eksplicit, og en regression fastholder kontrakten.
-- **ISSUE-FALLBACK-POST-ACTIVATION-IDEMPOTENCE – RETTET LOKALT / AFVENTER FULD PRIVAT CI:** Den aktive centrale kyst har allerede erstatnings- og naborester fra en tidligere godkendt aktivering. Fallbackbyggeren krævede fejlagtigt de slettede oprindelige del-ID'er. Den genbruger nu aktive `remainder-*`-dele og deres eksakte validerede punktpar/retning. Ren lokal slutkontrol består med nul overlap.
+- **ISSUE-FALLBACK-CLEAN-RUNNER-OUTPUT-DIR – LUKKET I #31829349458:** #31822748625 lokaliserede den manglende private reviewmappe. Alle fire outputforældre oprettes nu eksplicit, regressionen består, og en ren fuld national runner gennemførte fallbackbygning, validering og artifactupload.
+- **ISSUE-FALLBACK-POST-ACTIVATION-IDEMPOTENCE – LUKKET I #31829349458:** Byggeren genbruger centralt aktive `remainder-*`-dele og deres eksakte validerede punktpar/retning, når oprindelige del-ID'er er erstattet. Den fulde private kæde bestod ejerskab, 2/2 flytninger, 9/9 erstatninger, nul overlap og fallback-DMI.
 
 ## 4.0.205 – Supabase secret-key-oversættelse
 
 - **ISSUE-SUPABASE-SECRET-TRANSLATION-PGRST303 – CI-VERIFICERET:** Privat #31815423082 dokumenterede den enkeltstående HTTP 401 / `PGRST303`. Den snævre retryregel bestod målrettet central roundtrip i #31822371489 og fuld privat create/read/update/delete/rollback i #31822748625. Andre eller gentagne auth-fejl forbliver releaseblokerende.
-- **ISSUE-PROTECTED-MANIFEST-READ-MASKED – RETTET LOKALT / AFVENTER CI:** Beskyttet adminsync kunne tidligere gøre enhver manifestlæsefejl til `null` og dermed forsøge unødvendige genskrivninger. Læsningen er nu fail-closed, så både dataintegritet og Supabase free-kvote beskyttes.
+- **ISSUE-PROTECTED-MANIFEST-READ-MASKED – LUKKET I #31829349458:** Beskyttet adminsync kan ikke længere gøre en manifestlæsefejl til `null`. Den fulde private create/read/update/delete/rollback bestod uden at maskere læsefejl eller efterlade ejerdata ændret.
 - **ISSUE-NATIONAL-ROUNDTRIP-835 – LUKKET I #31822371489 OG #31822748625:** Central create/read/update/delete/rollback er bevist både målrettet og efter hele den friske nationale hovedkæde. Beskyttede ejerdata var uændrede efter rollback; ingen privat geometri er aktiveret.
 
 ## 4.0.204 – første land-/vandbevis var ikke råt

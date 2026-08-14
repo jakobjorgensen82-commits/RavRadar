@@ -6,7 +6,7 @@ Den private fallbackkontrol skal kunne køres både på en helt ren GitHub-runne
 
 Når en aktiv naborest allerede har et valideret landpunkt, vandpunkt og en afledt pålandsretning, bevares de eksakt i den nye private kandidat. De må ikke erstattes med historiske hardcodede punkter. Et eksisterende punktpar uden retning afvises fail-closed.
 
-Det kandidatbundne ESA WorldCover-bevis er genkørt på den aktuelle 17-dels fallbackbestand. Resultatet er uændret: 11 punktpar er verificeret, fire vendes sikkert, og to forbliver blokerede. Den rene lokale slutkæde har 2/2 ejerskabsflytninger, 9/9 erstatninger og nul overlap. Dette er privat validering; offentlig aktivering kræver fortsat en fuld grøn GitHub-kørsel og en særskilt ejerafgørelse.
+Det kandidatbundne ESA WorldCover-bevis er genkørt på den aktuelle 17-dels fallbackbestand. Resultatet er uændret: 11 punktpar er verificeret, fire vendes sikkert, og to forbliver blokerede. Den rene lokale slutkæde har 2/2 ejerskabsflytninger, 9/9 erstatninger og nul overlap. Den fulde private GitHub-kæde bestod i #31829349458, inklusive native DMI, central rollback og artifacts. Det er et teknisk bevis, ikke en aktiveringsbeslutning; offentlig aktivering kræver fortsat en særskilt ejerafgørelse.
 
 ## Sikker central adminforbindelse – 4.0.205
 

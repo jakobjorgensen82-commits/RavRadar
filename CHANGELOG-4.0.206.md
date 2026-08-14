@@ -12,7 +12,9 @@
 - Privat #31822748625 bestod hele den nationale kilde-, geometri-, navn-, land-/vand-, DMI-, vejr-, state-, vind-, shadow-, review- og centrale admin-roundtrip/rollbackkæde. Den afslørede derefter den manglende outputmappe i fallbackbyggeren.
 - En ren lokal fallbackkæde bygger 17 dele og består evidensbinding, fire rettelser, to fail-closed dele, 2/2 ejerskabsflytninger, 9/9 erstatninger samt nul overlap internt og mod øvrige aktive zoner.
 - ESA WorldCover 10 m blev genkørt på den aktuelle kandidat og gav præcis samme fire rettelser og samme to tvivlstilfælde som det tidligere bevis.
+- Produktion #31831068809 genbrugte det senest gemte kompatible DMI-checkpoint, færdiggjorde to modelsamlinger og bestod frisk central vejrbygning, fuld projektvalidering, releasegate, Supabase-synkronisering, Pages-artifact og deploy. Direkte Pages-kontrol viser version 4.0.206, 210 hovedzoner og alle tre Vadehavszoner `DK-B04-12`–`DK-B04-14` i den offentlige runtime.
+- Privat national #31829349458 bestod hele kæden på commit `4dc464a`: officiel kilde og topologi, 835 foreløbige dele, navne, kandidatbundne land-/vandbeviser, native DMI, flertrinsvejr, state/historik, vind, score-neutral shadow-score, indre farvande, dubletter, ejerrettelser, endelig kyst og punkter, central create/read/update/delete/rollback samt fallbackejerskab, nul overlap, fallback-DMI og begge artifacts.
 
 ## Ikke ændret
 
-- Offentlig geometri, RavScore og centrale ejerdata ændres ikke af rettelsen. En ny fuld privat national kørsel skal stadig bevise fallback-DMI og artifacts samlet, før kandidaten kan forelægges til særskilt ejerafgørelse.
+- Offentlig geometri, RavScore og centrale ejerdata ændres ikke af rettelsen. Den fulde private tekniske kørsel er nu grøn, men selve den private geometri må fortsat kun aktiveres efter en særskilt ejerafgørelse.
