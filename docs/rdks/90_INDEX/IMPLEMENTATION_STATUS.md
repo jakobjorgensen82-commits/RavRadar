@@ -1,4 +1,17 @@
-# Implementeringsstatus pr. 4.0.198 – fysisk land-/vandkontrakt
+# Implementeringsstatus pr. 4.0.205 – central roundtrip efter fuld privat kystkæde
+
+## Supabase og privat national slutkontrol
+
+- [x] Offentlig 4.0.204 er fuldt produktionsverificeret i #31815039302.
+- [x] Privat #31815423082 har bevist hele den nationale kæde frem til og med endelig shadow-score, score-neutralt ejerreview og slutaudit for 835 dele.
+- [x] Den eneste fejl er lokaliseret til første beskyttede `direction-reviews`-læsning: HTTP 401 / `PGRST303` fra Supabases interne secret-key-oversættelse.
+- [x] Nye `sb_secret_`-nøgler sendes kun som `apikey`; en fælles requester genprøver kun den dokumenterede `PGRST303` én gang og stopper ellers fail-closed.
+- [x] Python-hydreringen før DMI følger samme snævre retryregel og stopper GitHub Actions ved central læsefejl i stedet for at fortsætte på historiske repositorydata.
+- [x] Beskyttet manifestsync kan ikke længere omdanne en læsefejl til “manifest mangler” og dermed udløse unødvendige Supabase-skrivninger.
+- [x] Lokal regression dækker headerkontrakt, præcis én genprøvning, vedvarende/andre auth-fejl, kvotebeskyttet manifestlæsning og at målrettet workflow ikke kan deploye.
+- [ ] Målrettet CI-roundtrip mod artifactet fra #31815423082 skal bestå.
+- [ ] En ny fuld privat national kørsel skal derefter bevise roundtrip, fallbackkæde og samlede artifacts i én frisk kæde.
+- [ ] Privat geometri kan fortsat kun aktiveres efter særskilt ejerafgørelse; offentlig RavScore og geometri er uændrede.
 
 ## Effektiv national zonebestand
 

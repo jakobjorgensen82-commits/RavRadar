@@ -1,6 +1,15 @@
 # Aktuelt sessionshandoff – 2026-08-14
 
-## Nyeste sikre grænse – 4.0.204-kandidat
+## Nyeste sikre grænse – 4.0.205-kandidat
+
+- Offentlig 4.0.204 er produktionsverificeret i #31815039302 og forbliver urørt baseline.
+- Privat #31815423082 bestod hele 835-dels kilde-, geometri-, punkt-, DMI-, state-, vind-, shadow- og reviewkæden. Den stoppede alene ved første centrale læsning af `direction-reviews` med HTTP 401 / `PGRST303`; reviewet tæller 667 komplette, to deldækkede og 166 blokerede dele.
+- Supabase-loggen viser korrekt `sb_secret_`-nøgletype/fingeraftryk og senere vellykkede anmodninger med samme nøgle. 4.0.205 genprøver kun denne eksakte gatewayfejl én gang. Andre eller gentagne auth-fejl stopper fortsat.
+- Beskyttet manifestsync er gjort fail-closed, så en læsefejl ikke kan udløse unødvendige skrivninger. Ny målrettet workflow genbruger #31815423082-artifactet uden DMI eller deploy.
+- Næste rækkefølge: lokale fulde gates, commit/push, målrettet roundtrip, normal produktionsverifikation af 4.0.205 og ny fuld privat national slutkørsel. Privat aktivering kræver fortsat særskilt ejerbeslutning.
+- Alle ældre “næste trin” nedenfor er historiske, når de strider mod dette checkpoint.
+
+## Tidligere sikre grænse – 4.0.204-kandidat
 
 - Den tidligere DEC-0036-stopregel er erstattet af ejerens udtrykkelige mandat til at fortsætte den landsdækkende private kyst- og land-/vandaudit. Privat arbejde må fortsætte systemisk; offentlig aktivering kræver stadig særskilt go/no-go.
 - Offentlig 4.0.203 er produktionsverificeret i #31811492510. Privat #31812035188 bestod kilde, topologi, dele og navne, men stoppede ved første eksakte bevis, fordi 4.0.203-beviset var lavet efter 107 historiske korrektioner og derfor ikke matchede den rå kandidat.

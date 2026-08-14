@@ -39,7 +39,9 @@ for(const root of ['.','js']){
     }
   };
   if(root==='.'){
-    for(const file of await fs.readdir('.'))if(/\.(?:js|html)$/.test(file))browserSources.push(file);
+    // Private, generated KYSTZONER reviewkort er lokale artifacts og må ikke
+    // omskrives som en del af en app-release.
+    for(const file of await fs.readdir('.'))if(/\.(?:js|html)$/.test(file)&&!/^KYSTZONER-/.test(file))browserSources.push(file);
   }else await walk(root);
 }
 for(const file of [...new Set(browserSources)]){

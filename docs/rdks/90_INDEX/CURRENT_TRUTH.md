@@ -1,5 +1,14 @@
 # Current truth – gældende projektviden
 
+## 4.0.205 – snæver Supabase-genprøvning og fail-closed adminsynkronisering
+
+- Offentlig 4.0.204 er produktionsverificeret i #31815039302 med frisk DMI, fuld validering, releasegate, central Supabase-synkronisering og Pages-deploy. Den offentlige geometri og RavScore er den fortsat urørte baseline.
+- Privat national #31815423082 bestod officiel kilde, topologi, 835 kandidatdele, navne, alle tre eksakte land-/vandbeviser, DMI-grid, flertrinsserier, state, vind, shadow-score, ejerreview og slutaudit. Reviewbestanden var 667 komplette, to deldækkede og 166 blokerede dele.
+- Kørslens første beskyttede læsning af `direction-reviews` fejlede alene med HTTP 401 / `PGRST303`. Supabase-loggen dokumenterer korrekt `sb_secret_`-nøgletype og samme nøglefingeraftryk som senere vellykkede læsninger og skrivninger. Det dokumenterer en enkelt fejl i Supabases interne omsætning af den uigennemsigtige nøgle, ikke en forkert Bearer-header, forkert nøgle eller for stor roundtripkladde.
+- Node- og Python-serverkaldene genprøver kun kombinationen `sb_secret_` + HTTP 401 + `PGRST303`, præcis én gang efter ét sekund. Alle andre fejl og en gentaget fejl stopper fail-closed. Python-hydreringen må ikke fortsætte med repositoryfallback i GitHub Actions efter en central læsefejl, og beskyttet manifestsync må ikke længere maskere en læsefejl som et manglende manifest.
+- En målrettet manuel workflow kan genbruge det kompakte private artifact fra #31815423082 og bevise central create/read/update/delete/rollback uden ny DMI-kørsel og uden deployrettigheder. Denne målrettede CI-kontrol og derefter en ny fuld privat national slutkørsel mangler endnu.
+- Intet i 4.0.205 giver automatisk tilladelse til at aktivere privat geometri, ændre offentlig score eller overskrive centrale ejerdata.
+
 ## 4.0.204 – rå kandidatbundet land-/vandevidens
 
 - Privat #31804967576 bestod det udvidede DMI-tidsbudget, vejridentiteter, flertrinsserier, state, vind, shadow-score, bestandsafledt ejerreview og dubletaudit. Den stoppede derefter korrekt, fordi det gamle 121-rettelsesbevis var lavet til den aktive offentlige 673-dels bestand og ikke til den private 835-/652-dels kandidat.

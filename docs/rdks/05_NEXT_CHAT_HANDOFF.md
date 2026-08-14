@@ -1,5 +1,13 @@
 # RavRadar – aktuel overlevering til Codex
 
+## Kritisk aktuelt checkpoint — 4.0.205
+
+- Offentlig 4.0.204 er produktionsverificeret i #31815039302 og er urørt baseline.
+- Privat #31815423082 bestod national kilde, geometri, 835 dele, land-/vandbeviser, DMI, state, vind, shadow-score og score-neutralt review. Den stoppede kun ved første centrale læsning af `direction-reviews` med HTTP 401 / `PGRST303`.
+- Supabase-loggen beviser korrekt `sb_secret_`-nøglefingeraftryk og senere succes med samme nøgle. 4.0.205 genprøver kun den eksakte gatewayfejl én gang og stopper ellers fail-closed.
+- Målrettet CI skal først genbruge det kompakte artifact fra #31815423082 til roundtrip/rollback uden DMI eller deploy. Derefter følger normal produktionskørsel og en ny fuld privat national slutkørsel.
+- Privat geometri eller score må ikke aktiveres uden særskilt ejerbeslutning.
+
 ## Kritisk aktuelt checkpoint — 4.0.202
 
 - Offentlig 4.0.201 er produktionsverificeret i #31801993662 med frisk DMI, fuld validering, releasegate, Supabase og Pages.

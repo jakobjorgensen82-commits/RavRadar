@@ -5,7 +5,7 @@ const workflowDirectory = '.github/workflows';
 const workflowFiles = fs.readdirSync(workflowDirectory)
   .filter((name) => /\.ya?ml$/i.test(name))
   .sort();
-const expectedWorkflowFiles = ['extract-private-geodanmark-layer.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-local-part-system-candidate.yml', 'validate-six-zone-recovery.yml'];
+const expectedWorkflowFiles = ['extract-private-geodanmark-layer.yml', 'retry-national-admin-roundtrip.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-local-part-system-candidate.yml', 'validate-six-zone-recovery.yml'];
 if (JSON.stringify(workflowFiles) !== JSON.stringify(expectedWorkflowFiles)) {
   throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun produktionsworkflowet og de registrerede private, ikke-deployerende geometriworkflows må være aktive.`);
 }

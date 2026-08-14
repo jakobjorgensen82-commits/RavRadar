@@ -3,6 +3,8 @@ import json
 import os
 import pathlib
 import re
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -58,18 +60,46 @@ def write_document(document_key, payload):
     return "central"
 
 
-def main():
-    if not URL or not KEY:
-        print(json.dumps({"status": "fallback", "reason": "missing-supabase-secrets"}))
-        return
-    document_filter = ",".join(f'"{key}"' for key in MAP)
+def fetch_admin_rows(url, key, opener=urllib.request.urlopen, sleeper=time.sleep):
+    """Read the central admin snapshot with one narrow secret-translation retry."""
+    document_filter = ",".join(f'"{document_key}"' for document_key in MAP)
     query = urllib.parse.urlencode(
         {"select": "document_key,payload,updated_at", "document_key": f"in.({document_filter})"}
     )
-    headers = {"apikey": KEY} if KEY.startswith("sb_secret_") else {"apikey": KEY, "Authorization": "Bearer " + KEY}
-    request = urllib.request.Request(URL + "/rest/v1/admin_documents?" + query, headers=headers)
+    headers = {"apikey": key} if key.startswith("sb_secret_") else {
+        "apikey": key,
+        "Authorization": "Bearer " + key,
+    }
+    request = urllib.request.Request(url + "/rest/v1/admin_documents?" + query, headers=headers)
+    for attempt in range(2):
+        try:
+            with opener(request, timeout=20) as response:
+                return json.load(response)
+        except urllib.error.HTTPError as error:
+            body = error.read().decode("utf8", errors="replace")
+            try:
+                code = json.loads(body).get("code")
+            except (json.JSONDecodeError, AttributeError):
+                code = None
+            if attempt == 0 and key.startswith("sb_secret_") and error.code == 401 and code == "PGRST303":
+                print(json.dumps({"status": "retry", "reason": "supabase-secret-translation-pgrst303"}))
+                sleeper(1)
+                continue
+            suffix = f" {code}" if code else ""
+            raise RuntimeError(f"Central admin sync failed: HTTP {error.code}{suffix}") from None
+        except Exception as error:
+            raise RuntimeError(f"Central admin sync could not be reached ({type(error).__name__})") from None
+    raise RuntimeError("Central admin sync failed after the single safe retry")
+
+
+def main():
+    if not URL or not KEY:
+        if os.getenv("GITHUB_ACTIONS", "").lower() == "true":
+            raise RuntimeError("Supabase secrets are required in GitHub Actions")
+        print(json.dumps({"status": "fallback", "reason": "missing-supabase-secrets"}))
+        return
     try:
-        rows = json.load(urllib.request.urlopen(request, timeout=20))
+        rows = fetch_admin_rows(URL, KEY)
         sources = {}
         for row in rows:
             document_key = row.get("document_key")
@@ -78,7 +108,8 @@ def main():
             sources[document_key] = write_document(document_key, row["payload"])
         print(json.dumps({"status": "ok", "documents": list(sources), "sources": sources}))
     except Exception as error:
-        print(json.dumps({"status": "fallback", "error": str(error)}))
+        print(json.dumps({"status": "error", "error": str(error)}))
+        raise
 
 
 if __name__ == "__main__":

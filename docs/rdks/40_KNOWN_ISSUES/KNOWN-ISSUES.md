@@ -1,5 +1,11 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.205 – Supabase secret-key-oversættelse
+
+- **ISSUE-SUPABASE-SECRET-TRANSLATION-PGRST303 – RETTET LOKALT / AFVENTER MÅLRETTET CI:** Privat #31815423082 bestod hele den nationale kæde frem til central roundtrip, hvor første læsning af `direction-reviews` fik HTTP 401 / `PGRST303`. Supabase-loggen viser korrekt `sb_secret_`-nøglefingeraftryk og senere vellykkede anmodninger med samme nøgle. RavRadar genprøver derfor kun denne eksakte, dokumenterede kombination én gang; andre eller gentagne auth-fejl forbliver releaseblokerende.
+- **ISSUE-PROTECTED-MANIFEST-READ-MASKED – RETTET LOKALT / AFVENTER CI:** Beskyttet adminsync kunne tidligere gøre enhver manifestlæsefejl til `null` og dermed forsøge unødvendige genskrivninger. Læsningen er nu fail-closed, så både dataintegritet og Supabase free-kvote beskyttes.
+- **ISSUE-NATIONAL-ROUNDTRIP-835 – ÅBEN KONTROL:** Reviewet fra #31815423082 har 667 komplette, to deldækkede og 166 blokerede kandidatdele. Central create/read/update/delete/rollback mangler målrettet genprøvning og efterfølgende fuld privat slutkørsel. Ingen privat geometri er aktiveret.
+
 ## 4.0.204 – første land-/vandbevis var ikke råt
 
 - **ISSUE-NATIONAL-LAND-WATER-EVIDENCE-DATASET-DRIFT – RETTET I TO TRIN / AFVENTER PRIVAT CI:** #31804967576 afslørede det historiske 673-dels bevis. #31812035188 viste derefter, at 4.0.203's første nye bevis var afledt af en fil med 107 allerede anvendte historiske korrektioner. Slut- og fallbackbeviset matcher deres rå GitHub-input præcist; det første bevis er nu genberegnet direkte fra den rå 835-dels QA-fil. Forkert input afvises fortsat før DMI.

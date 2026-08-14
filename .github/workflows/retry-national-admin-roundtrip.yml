@@ -1,0 +1,58 @@
+name: Retry private national admin roundtrip
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Run id containing the compact private national QA artifact
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  national-admin-roundtrip:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download existing compact national QA artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: geodanmark-geometry-v2-national-qa-${{ inputs.source_run_id }}
+          run-id: ${{ inputs.source_run_id }}
+          github-token: ${{ github.token }}
+          path: private-qa
+
+      - name: Verify required private inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s private-qa/.owner-review/national-coastal-zone-review/review-report.json
+          test -s private-qa/.geometry-v2-work/national-local-part-name-suggestions.json
+          test -s private-qa/.geometry-v2-work/national-local-part-point-pairs.json
+
+      - name: Test fail-closed Supabase request handling
+        run: node scripts/test-supabase-admin-rest.mjs
+
+      - name: Retry private national central admin roundtrip and rollback
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: >-
+          node scripts/validate-national-admin-roundtrip.mjs
+          --work private-qa/.geometry-v2-work
+          --review-dir private-qa/.owner-review/national-coastal-zone-review
+          --output national-admin-roundtrip-retry.json
+
+      - name: Upload roundtrip evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: national-admin-roundtrip-retry-${{ github.run_id }}
+          path: national-admin-roundtrip-retry.json
+          retention-days: 14
+          if-no-files-found: warn

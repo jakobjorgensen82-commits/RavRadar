@@ -1,5 +1,13 @@
 # RavRadar Håndbog
 
+## Sikker central adminforbindelse – 4.0.205
+
+GitHub Actions bruger Supabases nye, uigennemsigtige `sb_secret_`-nøgle som `apikey`. Den må ikke sendes som et Bearer-token. Supabase omsætter selv nøglen til et internt, kortlivet token, før Data API'et kaldes.
+
+Hvis netop denne interne omsætning én enkelt gang svarer med HTTP 401 og fejlkoden `PGRST303`, venter RavRadar ét sekund og prøver samme anmodning én gang mere. Alle andre adgangsfejl – og en gentaget `PGRST303` – stopper fortsat processen. Nøgler, komplette URL'er og rå admin-data må ikke skrives i rapporter eller logs.
+
+Reglen gælder både Node-baserede roundtrips/synkroniseringer og Python-hydreringen, der henter centrale ejerdata før DMI. Når GitHub Actions har centrale secrets, må en læsefejl ikke falde tilbage til historiske repositorydata. Beskyttet synkronisering læser altid det eksisterende manifest fail-closed; en læsefejl må ikke fortolkes som “intet manifest”, fordi det ellers kunne udløse unødvendige genskrivninger og belaste Supabase-kvoten. En særskilt målrettet workflowkontrol kan genbruge et eksisterende privat QA-artifact og prøve den centrale roundtrip/rollback igen uden ny DMI-opbygning eller mulighed for deploy.
+
 ## Kandidatbundet land-/vandkontrol – 4.0.204
 
 Den uafhængige 10-meterkontrol må kun rette den præcise punktbestand, som kontrollen faktisk blev lavet på. Hvert privat bevis indeholder derfor både antallet af kystdele og et digitalt fingeraftryk af alle ukorrigerede land-/vandpunkter. Hvis kysten, del-ID'et eller punktparret ændres, stopper workflowet i stedet for at genbruge en gammel afgørelse.
@@ -14,9 +22,9 @@ Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vande
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.204
+**Håndbogsversion:** 4.0.205
 
-**Opdateret:** 1. august 2026
+**Opdateret:** 14. august 2026
 
 ## Lokal DMI og geografiske delscorer – 4.0.193
 

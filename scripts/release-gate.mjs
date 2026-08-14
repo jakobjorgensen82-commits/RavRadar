@@ -52,7 +52,12 @@ const sql=await read('supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql');
 ok(/select\s+oid\s*,\s*conname\s+from\s+pg_constraint/i.test(sql),'Supabase SQL mangler oid-rettelsen');
 ok(sql.includes(`\"handbookVersion\":\"${version}\"`)||sql.includes(`\"handbookVersion\": \"${version}\"`),'Supabase-installationsscriptets håndbog er forældet');
 const sync=await read('scripts/sync-protected-admin-assets.mjs');
-ok(sync.includes("sb_secret_")||sync.includes("startsWith('sb_secret_')"),'Supabase sync mangler understøttelse af sb_secret_');
+const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
+const pythonAdminSync=await read('scripts/sync-admin-config.py');
+ok(sync.includes('createSupabaseAdminRequester'),'Supabase sync bruger ikke den fælles fail-closed requester');
+ok(supabaseAdminRest.includes("startsWith('sb_secret_')")&&supabaseAdminRest.includes('headers={apikey:key'),'Supabase requester mangler korrekt sb_secret_-apikey-kontrakt');
+ok(supabaseAdminRest.includes("parseJson(body)?.code==='PGRST303'")&&supabaseAdminRest.includes('attempt===1'),'Supabase requester mangler snæver én-gangs PGRST303-genprøvning');
+ok(pythonAdminSync.includes('fetch_admin_rows')&&pythonAdminSync.includes('PGRST303')&&pythonAdminSync.includes('GITHUB_ACTIONS'),'Python-adminhydrering mangler fail-closed PGRST303-kontrakt');
 const workflow=await read('.github/workflows/update-and-deploy.yml');
 for(const protectedPath of ['handbook.html','documentation.html','data/diagnostics/','data/geometry-v2/','.geometry-v2-work/','data/live/weather-health.json','data/live/ravradar-runtime-diagnostics.json','data/live/dmi-water-stations.json']){
   ok(workflow.includes(`--exclude '${protectedPath}'`)||workflow.includes(`--exclude \"${protectedPath}\"`),`Pages-workflow udelukker ikke ${protectedPath}`);
@@ -77,7 +82,7 @@ ok(decision.includes('Obligatorisk Release Governance'),'RDKS release-governance
 const rules=await read('docs/rdks/01_AI_OPERATING_RULES.md');
 ok(rules.includes('Bindende release-gate'),'AI operating rules mangler bindende release-gate');
 const trackedSecretPatterns=[/SUPABASE_SERVICE_ROLE_KEY\s*[:=]\s*["']?(sb_secret_|eyJ)/i,/DMI_API_KEY\s*[:=]\s*["'][^$]/i,/DATAFORDELER_API_KEY\s*[:=]\s*["'][^$]/i];
-for(const rel of ['config.js','.github/workflows/update-and-deploy.yml','scripts/sync-protected-admin-assets.mjs']){
+for(const rel of ['config.js','.github/workflows/update-and-deploy.yml','scripts/sync-admin-config.py','scripts/sync-protected-admin-assets.mjs','scripts/lib/supabase-admin-rest.mjs']){
   const text=await read(rel); for(const rx of trackedSecretPatterns)ok(!rx.test(text),`${rel} ser ud til at indeholde en konkret hemmelig nøgle`);
 }
 if(errors.length){console.error('\nRELEASE GATE FEJLEDE:\n- '+errors.join('\n- '));process.exit(1)}

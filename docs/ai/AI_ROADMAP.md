@@ -1,8 +1,13 @@
-# AI Roadmap – RavRadar efter 4.0.204
+# AI Roadmap – RavRadar efter 4.0.205
 
 Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status skal løbende flyttes til RDKS, når noget implementeres.
 
 ## Aktiv P0 – afslut den private land-/vandkandidat
+
+- Offentlig 4.0.204 er produktionsverificeret i #31815039302. Privat #31815423082 bestod hele den tunge 835-dels geometri-, DMI-, state-, vind-, shadow- og reviewkæde og stoppede kun ved en enkelt central `PGRST303`-læsning.
+- 4.0.205 indfører en snæver én-gangs genprøvning for netop Supabases dokumenterede interne `sb_secret_`-oversættelsesfejl og gør beskyttet manifestsync fail-closed.
+- Først køres den målrettede artifactbaserede roundtrip uden ny DMI og uden deploy. Derefter kræves normal produktionsverifikation og en ny fuld privat national kørsel inklusive fallback, central rollback og artifacts.
+- Ingen privat kandidat må aktiveres offentligt uden de resterende gates og en særskilt ejerafgørelse.
 
 - 4.0.200 er offentligt produktionsverificeret i #31798575274 med fuld validering, releasegate, DMI, Supabase og Pages.
 - Privat #31798588868 beviste foreløbige punkter, native DMI-grid, vejrserier, state, vind og score-neutral shadow-score for en konsistent 835-dels kandidat. Den stoppede alene på reviewbyggerens historiske 783-tæller.

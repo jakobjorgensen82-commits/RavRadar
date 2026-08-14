@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 import importlib.util
+import io
+import json
 import pathlib
 import unittest
+import urllib.error
 
 SCRIPT = pathlib.Path(__file__).with_name("sync-admin-config.py")
 SPEC = importlib.util.spec_from_file_location("sync_admin_config", SCRIPT)
@@ -33,6 +36,59 @@ class ActivationPrecedenceTest(unittest.TestCase):
     def test_invalid_or_older_versions_never_win(self):
         self.assertFalse(MODULE.preserve_newer_owner_approved_activation(manifest("next"), manifest("4.0.182")))
         self.assertFalse(MODULE.preserve_newer_owner_approved_activation(manifest("4.0.181"), manifest("4.0.182")))
+
+
+class CentralAdminRequestTest(unittest.TestCase):
+    def test_secret_key_retries_only_pgrst303_once(self):
+        calls = []
+        sleeps = []
+
+        def opener(request, timeout):
+            calls.append(request)
+            self.assertEqual(timeout, 20)
+            if len(calls) == 1:
+                raise urllib.error.HTTPError(
+                    request.full_url,
+                    401,
+                    "unauthorized",
+                    {},
+                    io.BytesIO(json.dumps({"code": "PGRST303"}).encode("utf8")),
+                )
+            return io.BytesIO(b'[{"document_key":"direction-reviews","payload":{}}]')
+
+        rows = MODULE.fetch_admin_rows(
+            "https://example.invalid",
+            "sb_secret_test-value",
+            opener=opener,
+            sleeper=sleeps.append,
+        )
+        self.assertEqual(rows[0]["document_key"], "direction-reviews")
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(sleeps, [1])
+        self.assertEqual(calls[0].get_header("Apikey"), "sb_secret_test-value")
+        self.assertIsNone(calls[0].get_header("Authorization"))
+
+    def test_other_auth_error_fails_without_retry(self):
+        calls = []
+
+        def opener(request, timeout):
+            calls.append(request)
+            raise urllib.error.HTTPError(
+                request.full_url,
+                401,
+                "unauthorized",
+                {},
+                io.BytesIO(json.dumps({"code": "PGRST301"}).encode("utf8")),
+            )
+
+        with self.assertRaisesRegex(RuntimeError, r"HTTP 401 PGRST301"):
+            MODULE.fetch_admin_rows(
+                "https://example.invalid",
+                "sb_secret_test-value",
+                opener=opener,
+                sleeper=lambda _: None,
+            )
+        self.assertEqual(len(calls), 1)
 
 
 if __name__ == "__main__":

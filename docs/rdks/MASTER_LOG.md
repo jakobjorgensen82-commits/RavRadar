@@ -1041,3 +1041,12 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Privat #31812035188 bestod officiel kilde, topologi, kystdele og navne, men den nye fingeraftryksgate afviste det første 835-dels bevis. Sammenligning viste samme 835 ID'er og kystreferencepunkter, men 107 punktpar afveg, fordi 4.0.203-beviset var lavet efter anvendelse af historiske korrektioner.
 - Det første bevis er genberegnet direkte fra den rå QA-punktfil fra #31812035188: 520 verificerede, 149 sikkert vendte og 166 blokerede. Slutbeviset matcher fortsat rå 652-dels GitHub-input, og fallbackbeviset matcher rå 17-dels input.
 - Den strenge gate er bevaret. Offentlig geometri og RavScore er uændret; en ny privat national kørsel kræves.
+
+## 2026-08-14 – 4.0.205
+
+- Offentlig #31815039302 produktionsverificerede 4.0.204 med frisk DMI, fuld validering, releasegate, central Supabase-synkronisering og Pages-deploy.
+- Privat #31815423082 bestod hele den nationale 835-dels kilde-, geometri-, punkt-, DMI-, state-, vind-, shadow-, review- og slutauditkæde. Det score-neutrale review indeholdt 667 komplette, to deldækkede og 166 blokerede dele.
+- Kørslens første beskyttede læsning af `direction-reviews` stoppede alene med HTTP 401 / `PGRST303`. Supabase-loggen dokumenterede korrekt `sb_secret_`-nøgletype/fingeraftryk og senere vellykkede anmodninger med samme nøgle.
+- Node-requesteren og Python-hydreringen bruger samme fail-closed kontrakt. Kun den eksakte kombination ny secret key + HTTP 401 + `PGRST303` genprøves én gang; alle andre eller gentagne fejl stopper. GitHub Actions må ikke fortsætte på repositoryfallback efter central læsefejl. Ingen secrets eller komplette request-URL'er logges.
+- Beskyttet manifestsync stopper nu ved læsefejl i stedet for at antage et manglende manifest og genskrive uændrede dokumenter. Det beskytter både central sandhed og Supabase free-kvoten.
+- En ny manuel, ikke-deployerende workflow genbruger det kompakte artifact fra #31815423082 og kører kun central national roundtrip/rollback. Lokal regression og self-tests er grønne; målrettet CI, normal produktion og ny fuld privat national slutkørsel mangler ved dette checkpoint.
