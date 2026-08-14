@@ -11,7 +11,6 @@ from pathlib import Path
 from pyproj import Transformer
 from shapely.geometry import LineString, Point, shape, mapping
 from shapely.ops import transform
-from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parents[1]
 TO_M = Transformer.from_crs("EPSG:4326", "EPSG:25832", always_xy=True)
@@ -142,6 +141,8 @@ def coordinate_lines(geometry: dict) -> list[list[list[float]]]:
 
 
 def render_review(rows: list[dict], output: Path) -> None:
+    from PIL import Image, ImageDraw, ImageFont
+
     selected = [row for row in rows if row["severe"]]
     if not selected:
         image = Image.new("RGB", (900, 140), "#f7f5ef")

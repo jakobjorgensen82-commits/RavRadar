@@ -10,7 +10,6 @@ from pathlib import Path
 from pyproj import Transformer
 from shapely.geometry import LineString, Point, Polygon, shape, mapping
 from shapely.ops import linemerge, substring, transform
-from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parents[1]
 TO_M = Transformer.from_crs(4326, 25832, always_xy=True).transform
@@ -174,6 +173,8 @@ def build(coast, points, orientation):
 
 
 def render_zone(coast, points, zone_id, output):
+    from PIL import Image, ImageDraw, ImageFont
+
     features = [feature for feature in coast["features"] if feature["properties"].get("zoneId") == zone_id]
     point_by_id = {row["finalPartId"]: row for row in points["parts"]}
     coordinates = [point for feature in features for line in lines(shape(feature["geometry"])) for point in line.coords]
