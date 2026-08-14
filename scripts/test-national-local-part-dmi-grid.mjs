@@ -22,4 +22,16 @@ for (const marker of [
 ]) {
   if (!workflow.includes(marker)) throw new Error(`Nationalt workflow mangler ${marker}`);
 }
+for (const step of [
+  'Validate all private water candidates on native DMI grids',
+  'Validate final water points on native DMI grids',
+  'Validate fallback water points on native DMI grids',
+]) {
+  const start = workflow.indexOf(`name: ${step}`);
+  const end = workflow.indexOf('\n\n', start);
+  const block = start < 0 ? '' : workflow.slice(start, end < 0 ? workflow.length : end);
+  if (!block.includes('DMI_BULK_MAX_RUNTIME_SECONDS: "3000"')) {
+    throw new Error(`${step} mangler eksplicit nationalt privat tidsbudget`);
+  }
+}
 console.log('National local part DMI-grid kontrakt: bestået.');

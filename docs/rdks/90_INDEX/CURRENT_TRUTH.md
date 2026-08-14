@@ -541,6 +541,11 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - Review og central admin-roundtrip er nu bestandsafledte og fail-closed: geometri, navne, punkter, shadow-ID'er, statusoptællinger og readback skal være 1:1. Et nyt legitimt delantal accepteres kun, når alle disse tidligere gates er indbyrdes konsistente.
 - Den offentlige 4.0.200-produktion bestod fuld validering, releasegate, DMI, Supabase og Pages i #31798575274. Den private kandidat ændrer fortsat ikke offentlig geometri, score eller admin-sandhed.
 
+## National privat DMI-gate har eksplicit fuldt tidsbudget – 4.0.202
+- Offentlig 4.0.201 er produktionsverificeret i #31801993662 med frisk DMI, fuld projektvalidering, releasegate, Supabase og Pages.
+- Privat #31802022918 bestod de første 27 nationale kyst-, navn- og punkttrin, men den native DMI-gitterkontrol nåede sit historiske standardloft under `dkss_lf` efter 11,1 minutter. #31798588868 havde bestået samme 835-dels input og datakrav på 8,5 minutter.
+- Rodårsagen er dermed et marginalt privat tidsbudget, ikke et ugyldigt land-/vandpunkt. Alle tre nationale native DMI-gates bruger nu det allerede etablerede kvalitetsbudget på 3.000 sekunder; modeller, komponentkrav, afstandsgrænser, fail-closed-adfærd og offentlig runtime er uændrede.
+
 ## DMI-schedulerbalance – 2026-08-08
 - Marine recovery er ikke længere rent binær efter etableret grunddækning. Under 95 % marinegrundlag er begge produktive pladser fortsat marine-first.
 - Ved mindst 95 % marinegrundlag beholder den mest relevante DKSS-model første plads, mens anden plads går til den mest underdækkede vind-/bølgefamilie.

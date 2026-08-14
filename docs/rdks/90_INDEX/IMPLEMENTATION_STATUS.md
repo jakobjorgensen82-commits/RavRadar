@@ -758,3 +758,10 @@ Status: Implementeret og lokalt valideret.
 - [x] Admin-roundtrip læser, skriver og rapporterer reviewets faktisk validerede delantal og afviser uoverensstemmende input.
 - [x] Målrettede 835/828/4/3-regressioner samt hele `test:coastal-geometry-v2` består lokalt.
 - [ ] Ny privat national kørsel skal bevise review, endelige 121 punktrettelser, slut-DMI, slut-shadow-score, central roundtrip/rollback og artifacts samlet.
+
+## 4.0.202 – robust tidsbudget til nationale native DMI-gates
+- [x] #31801993662 produktionsverificerede 4.0.201 med fuld validering, releasegate, frisk DMI, Supabase og Pages.
+- [x] #31802022918 bestod 27 nationale trin og reproducerede punktbestanden, men ramte standardtidsbudgettet under `dkss_lf` efter 11,1 minutter; samme gate bestod i #31798588868 på 8,5 minutter.
+- [x] Foreløbig, endelig og fallback-baseret national DMI-gate har nu eksplicit `DMI_BULK_MAX_RUNTIME_SECONDS: 3000`, som allerede bruges af den nationale vindgate.
+- [x] Workflowregressionen kræver budgettet på alle tre DMI-gates uden at ændre datakrav eller offentlig runtime.
+- [ ] Ny privat national kørsel skal fortsat bevise hele kæden gennem review, slutpunkter, slut-DMI, shadow-score, roundtrip/rollback og artifacts.

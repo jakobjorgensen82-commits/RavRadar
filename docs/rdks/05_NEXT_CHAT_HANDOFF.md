@@ -1,5 +1,12 @@
 # RavRadar – aktuel overlevering til Codex
 
+## Kritisk aktuelt checkpoint — 4.0.202
+
+- Offentlig 4.0.201 er produktionsverificeret i #31801993662 med frisk DMI, fuld validering, releasegate, Supabase og Pages.
+- Privat #31802022918 bestod 27 nationale kyst-, navn- og punkttrin, men den første native DMI-gate ramte det historiske standardbudget under `dkss_lf` efter 11,1 minutter. #31798588868 havde bestået samme 835-dels gate på 8,5 minutter.
+- 4.0.202 giver foreløbig, endelig og fallback-baseret national DMI-gate det eksisterende private 3.000-sekunders kvalitetsbudget. Datakrav og offentlig runtime ændres ikke.
+- Ny privat kørsel skal stadig bevise reviewrettelsen og hele slutkæden. Den private kandidat må ikke aktiveres automatisk.
+
 ## Kritisk aktuelt checkpoint — 4.0.201
 
 - Offentlig 4.0.200 er produktionsverificeret i #31798575274 med frisk DMI, fuld validering, releasegate, Supabase og Pages.

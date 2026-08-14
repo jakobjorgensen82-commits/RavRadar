@@ -1019,3 +1019,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Produktion #31798575274 bestod frisk DMI, fuld validering, releasegate, Supabase-synkronisering og Pages-deploy på 4.0.200.
 - Privat #31798588868 bestod den rettede foreløbige punktkontrakt, native DMI-grid, flertrinsserier, state, vind og shadow-score. Den faktiske bestand var konsistent 835/828/4/3, men score-neutral ejer-review krævede stadig historisk 783/758/22/3.
 - Review og efterfølgende admin-roundtrip er gjort dynamiske under streng 1:1-kontrol af geometri, navne, punktstatus, shadow-ID'er, optællinger og central readback. Regressionen reproducerer 835-delsfordelingen og afviser manipulerede tællinger.
+
+## 2026-08-14 – 4.0.202
+
+- Offentlig #31801993662 bestod frisk DMI, fuld validering, releasegate, Supabase og Pages på 4.0.201.
+- Privat #31802022918 bestod 27 nationale kyst-, navn- og punkttrin, men den native DMI-gate ramte standardtidsbudgettet under `dkss_lf` efter 11,1 minutter. Den forrige kørsel havde bestået samme 835-dels gate på 8,5 minutter, så logmønstret dokumenterer et marginalt budget frem for ugyldige punkter.
+- De tre private nationale native DMI-gates får det etablerede 3.000-sekunders kvalitetsbudget. En regression låser budgettet fast; fysisk validering og offentlig adfærd ændres ikke.

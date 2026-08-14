@@ -259,3 +259,7 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 # 4.0.201 – ejer-reviewets historiske delantal
 
 - **ISSUE-NATIONAL-OWNER-REVIEW-STALE-783-COUNT – LØST LOKALT / AFVENTER CI:** #31798588868 passerede kyst-, punkt-, DMI-, state-, vind- og shadow-gates med 835 indbyrdes konsistente dele, men reviewbyggeren krævede fortsat 783 fra 4.0.175. Review og admin-roundtrip bruger nu den validerede faktiske bestand og stopper ved manglende 1:1-identitet eller tælleafvigelse; ny privat slutkørsel mangler.
+
+# 4.0.202 – national DMI-gate havde marginalt standardbudget
+
+- **ISSUE-NATIONAL-DMI-GRID-DEFAULT-BUDGET – LØST LOKALT / AFVENTER CI:** #31802022918 nåede standardloftet under sidste DKSS-model efter 11,1 minutter, mens #31798588868 bestod samme 835-dels gate på 8,5 minutter. De tre private nationale DMI-gates får nu eksplicit 3.000 sekunder. Datakrav, afstandsgrænser og fail-closed-resultat er uændrede.

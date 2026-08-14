@@ -459,6 +459,8 @@ jobs:
         run: python scripts/validate-national-local-part-points.py
 
       - name: Validate all private water candidates on native DMI grids
+        env:
+          DMI_BULK_MAX_RUNTIME_SECONDS: "3000"
         run: python scripts/validate-national-local-part-dmi-grid.py
 
       - name: Build isolated private weather identities for validated coastal parts
@@ -517,6 +519,8 @@ jobs:
         run: python scripts/validate-national-local-part-points.py --work-dir .owner-review/national-owner-final
 
       - name: Validate final water points on native DMI grids
+        env:
+          DMI_BULK_MAX_RUNTIME_SECONDS: "3000"
         run: python scripts/validate-national-local-part-dmi-grid.py --input .owner-review/national-owner-final/national-local-part-point-pairs.json --report .owner-review/national-owner-final/national-local-part-dmi-grid.json
 
       - name: Build final isolated weather identities
@@ -565,6 +569,8 @@ jobs:
         run: python scripts/validate-fallback-zone-recovery.py
 
       - name: Validate fallback water points on native DMI grids
+        env:
+          DMI_BULK_MAX_RUNTIME_SECONDS: "3000"
         run: >-
           python scripts/validate-national-local-part-dmi-grid.py
           --input .geometry-v2-work/fallback-zone-recovery-point-pairs.json
