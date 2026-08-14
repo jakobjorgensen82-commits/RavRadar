@@ -9,19 +9,13 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-GEO-062 – BINDENDE:** Stednavne, generelle zonecentre eller tidligere hardcodede vinkler må ikke alene afgøre land-/vandside. Automatisk korrektion kræver uafhængigt flerafstandsbevis; tvetydige tilfælde forbliver fail-closed.
 - **REQ-GEO-063 – BINDENDE:** Nye eller flyttede vandpunkter må ikke aktiveres uden native DMI-grid, score-, runtime-, central readback- og rollbackbevis.
 
-## Land-/vandpunktpar
-
-- **REQ-GEO-060 – BINDENDE:** Hver lokal kystdel skal have et havpunkt i vand, et landpunkt på land og en hav→land-linje, som krydser egen kyst omtrent vinkelret.
-- **REQ-GEO-061 – BINDENDE:** Samme punktpar er autoritativt for DMI-sampling, beregnet pålandsretning, lokal score, offentlig forklaring og adminvisning. Et separat gemt gradtal må ikke overstyre punktparret.
-- **REQ-GEO-062 – BINDENDE:** Stednavne, generelle zonecentre eller tidligere hardcodede vinkler må ikke alene afgøre land-/vandside. Automatisk korrektion kræver uafhængigt flerafstandsbevis; tvetydige tilfælde forbliver fail-closed.
-- **REQ-GEO-063 – BINDENDE:** Nye eller flyttede vandpunkter må ikke aktiveres uden native DMI-grid, score-, runtime-, central readback- og rollbackbevis.
-
 ## Tværgående funktionsbevarelse
 - **REQ-REGRESSION-001 – BINDENDE:** En ændring må ikke utilsigtet fjerne, skjule, afkoble eller forringe en eksisterende bruger-, admin-, data-, score-, forecast-, kort-, observations- eller driftsfunktion. Bevidst fjernelse kræver en aktuel udtrykkelig ejerbeslutning, og den tekniske følgevirkning skal afgrænses, så beslægtede bagvedliggende funktioner bevares, medmindre de også udtrykkeligt er bestilt fjernet.
 - **REQ-REGRESSION-002 – BINDENDE:** Før release skal ændringens berørte funktionsflade sammenlignes før/efter på tværs af offentlig UI, admin, datafelter, runtime, tests og deployment. Nye målrettede tests må ikke erstatte kontrol af eksisterende relevante funktioner.
 - **REQ-REGRESSION-003 – BINDENDE:** Hvis en eksisterende funktion bevidst ændres eller fjernes, skal RDKS, håndbog, changelog og relevante regressionstests angive præcis hvad der ændres, hvad der bevares, og hvorfor. Tavst funktionstab er en releaseblokker.
-- **REQ-SCOPE-001 – IMPLEMENTERET I 4.0.187, DEC-0036:** Kun `DK-B07-19`, `DK-B08-12`, `DK-B08-18`, `DK-B08-19` og `DK-B10-14` aktiveres fra den godkendte kandidat. `DK-B10-16` Fejø/Femø er efter ejerbeslutning slettet centralt og lokalt. Det tilhørende adminforløb bevarer trækbar kyststreg, automatisk følgende zoneafgrænsning, viskelæder og samlet data-/punktkontrakt. Landsdækkende genopbygning eller ændring af fungerende geometri kræver en ny, udtrykkelig ejerbeslutning.
-- **REQ-SCOPE-002 – BINDENDE:** Havnø og Mariager Fjord øst forbliver slettet. Behov for ændringer uden for de seks zoner er en stopklods, som skal forelægges ejeren; det må ikke udledes som stiltiende tilladelse fra ældre nationale planer eller private artifacts.
+- **REQ-SCOPE-001 – IMPLEMENTERET I 4.0.187, HISTORISK DEC-0036:** `DK-B07-19`, `DK-B08-12`, `DK-B08-18`, `DK-B08-19` og `DK-B10-14` blev aktiveret fra den godkendte kandidat. `DK-B10-16` Fejø/Femø blev slettet centralt og lokalt. Det tilhørende adminforløb bevarer trækbar kyststreg, automatisk følgende zoneafgrænsning, viskelæder og samlet data-/punktkontrakt.
+- **REQ-SCOPE-002 – BINDENDE, OPDATERET 2026-08-14:** Ejeren har senere udtrykkeligt autoriseret en landsdækkende privat revision af kystdele og land-/vandpunkter. Den må køre gennem alle score-neutrale geometri-, DMI-, state-, admin- og rollbackgates, men må ikke ændre offentlig geometri, RavScore eller central runtime uden særskilt go/no-go. Havnø/Mariager Fjord øst og Fejø/Femø forbliver slettet i alle kandidater og artifacts.
+- **REQ-GEO-064 – BINDENDE:** Uafhængigt land-/vandevidens må kun anvendes på præcis den ukorrigerede punktbestand, som beviset blev genereret fra. Delantal og kryptografisk fingeraftryk skal matche. Tvetydige dele forbliver uden aktive punktpar og uden vejr, state, score eller automatisk aktivering.
 
 ## Data og prognoser
 - **REQ-DATA-013 – IMPLEMENTERET LOKALT I 4.0.188 / AFVENTER CI:** En forbedret afledt DMI-zonecache skal kunne fortsætte privat mellem GitHub-kørsler, selv når en streng releasegate stopper offentlig deployment. Den private fremdrift må aldrig omgå fuld validering, ændre dækningskrav eller publicere uvaliderede data.

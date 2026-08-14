@@ -1,0 +1,1352 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "reviewed-independent-land-water-side-evidence",
+  "auditDate": "2026-08-14",
+  "source": "ESA WorldCover 10m 2021 v200",
+  "sourceLicence": "CC-BY-4.0",
+  "method": "10 m land-cover transects on both sides of the exact local coast; place names are excluded as side evidence",
+  "correctionCount": 111,
+  "ambiguousCount": 114,
+  "auditedPartCount": 652,
+  "inputPointPairSha256": "8b945fdd305b458b82eed5954aaf9105e7e9da7bae27e9864e4e6801865e2c1c",
+  "corrections": {
+    "dk-b01-05-national-part-02": {
+      "landPoint": [
+        8.6275269,
+        57.122545
+      ],
+      "waterPoint": [
+        8.6292937,
+        57.1251588
+      ],
+      "onshoreDirectionDeg": 200.1
+    },
+    "dk-b01-19-national-part-01": {
+      "landPoint": [
+        10.5616847,
+        57.7093448
+      ],
+      "waterPoint": [
+        10.5653895,
+        57.7073903
+      ],
+      "onshoreDirectionDeg": 314.6
+    },
+    "dk-b02-09-national-part-01": {
+      "landPoint": [
+        10.3394563,
+        56.9967565
+      ],
+      "waterPoint": [
+        10.3443583,
+        56.9975291
+      ],
+      "onshoreDirectionDeg": 253.9
+    },
+    "dk-b02-15-national-part-05": {
+      "landPoint": [
+        10.3037532,
+        56.5911695
+      ],
+      "waterPoint": [
+        10.2993327,
+        56.5925138
+      ],
+      "onshoreDirectionDeg": 118.9
+    },
+    "dk-b03-07-national-part-02": {
+      "landPoint": [
+        8.1247388,
+        56.0292555
+      ],
+      "waterPoint": [
+        8.1293697,
+        56.0302722
+      ],
+      "onshoreDirectionDeg": 248.6
+    },
+    "dk-b03-09-national-part-02": {
+      "landPoint": [
+        8.1655186,
+        55.9524506
+      ],
+      "waterPoint": [
+        8.1685081,
+        55.9546743
+      ],
+      "onshoreDirectionDeg": 217.0
+    },
+    "dk-b04-04-national-part-01": {
+      "landPoint": [
+        8.3884058,
+        55.3984814
+      ],
+      "waterPoint": [
+        8.3841061,
+        55.3971504
+      ],
+      "onshoreDirectionDeg": 61.4
+    },
+    "dk-b04-13-national-part-04": {
+      "landPoint": [
+        8.6694014,
+        55.2129437
+      ],
+      "waterPoint": [
+        8.6650118,
+        55.2117353
+      ],
+      "onshoreDirectionDeg": 64.2
+    },
+    "dk-b05-02-national-part-01-locality-02": {
+      "landPoint": [
+        8.2505108,
+        56.7232432
+      ],
+      "waterPoint": [
+        8.2554986,
+        56.7237288
+      ],
+      "onshoreDirectionDeg": 259.9
+    },
+    "dk-b05-02-national-part-02": {
+      "landPoint": [
+        8.2687723,
+        56.7737892
+      ],
+      "waterPoint": [
+        8.2637395,
+        56.7741356
+      ],
+      "onshoreDirectionDeg": 97.2
+    },
+    "dk-b05-04-national-part-01": {
+      "landPoint": [
+        8.5012378,
+        56.6145617
+      ],
+      "waterPoint": [
+        8.4963243,
+        56.6139166
+      ],
+      "onshoreDirectionDeg": 76.6
+    },
+    "dk-b05-05-national-part-01": {
+      "landPoint": [
+        8.5909605,
+        56.658263
+      ],
+      "waterPoint": [
+        8.5871521,
+        56.6600952
+      ],
+      "onshoreDirectionDeg": 131.2
+    },
+    "dk-b05-06-national-part-02": {
+      "landPoint": [
+        8.6104272,
+        56.492728
+      ],
+      "waterPoint": [
+        8.6154179,
+        56.4930957
+      ],
+      "onshoreDirectionDeg": 262.4
+    },
+    "dk-b05-11-national-part-02": {
+      "landPoint": [
+        8.9021569,
+        56.9743402
+      ],
+      "waterPoint": [
+        8.9029502,
+        56.9715893
+      ],
+      "onshoreDirectionDeg": 351.1
+    },
+    "dk-b05-12-national-part-04": {
+      "landPoint": [
+        8.6285915,
+        56.8776867
+      ],
+      "waterPoint": [
+        8.6334223,
+        56.8785585
+      ],
+      "onshoreDirectionDeg": 251.7
+    },
+    "dk-b05-14-national-part-02": {
+      "landPoint": [
+        8.8508276,
+        56.7355389
+      ],
+      "waterPoint": [
+        8.8459395,
+        56.7362728
+      ],
+      "onshoreDirectionDeg": 105.3
+    },
+    "dk-b05-15-national-part-04": {
+      "landPoint": [
+        8.7031438,
+        56.6826338
+      ],
+      "waterPoint": [
+        8.7048151,
+        56.6800051
+      ],
+      "onshoreDirectionDeg": 340.7
+    },
+    "dk-b05-16-national-part-01": {
+      "landPoint": [
+        8.9725245,
+        56.8197682
+      ],
+      "waterPoint": [
+        8.9676724,
+        56.8189459
+      ],
+      "onshoreDirectionDeg": 72.8
+    },
+    "dk-b05-18-national-part-04": {
+      "landPoint": [
+        9.241076,
+        56.9653829
+      ],
+      "waterPoint": [
+        9.2368104,
+        56.9669083
+      ],
+      "onshoreDirectionDeg": 123.3
+    },
+    "dk-b05-21-national-part-06": {
+      "landPoint": [
+        9.5766473,
+        56.9845009
+      ],
+      "waterPoint": [
+        9.5784369,
+        56.9818931
+      ],
+      "onshoreDirectionDeg": 339.5
+    },
+    "dk-b05-22-national-part-05": {
+      "landPoint": [
+        9.7819566,
+        57.0744863
+      ],
+      "waterPoint": [
+        9.7768499,
+        57.0743465
+      ],
+      "onshoreDirectionDeg": 87.1
+    },
+    "dk-b05-24-national-part-02": {
+      "landPoint": [
+        9.9576542,
+        57.0686789
+      ],
+      "waterPoint": [
+        9.9627349,
+        57.0683699
+      ],
+      "onshoreDirectionDeg": 276.4
+    },
+    "dk-b05-24-national-part-03": {
+      "landPoint": [
+        10.0006876,
+        57.0781114
+      ],
+      "waterPoint": [
+        10.0000777,
+        57.0808762
+      ],
+      "onshoreDirectionDeg": 173.2
+    },
+    "dk-b05-25-national-part-01-locality-01": {
+      "landPoint": [
+        10.2244204,
+        56.9899907
+      ],
+      "waterPoint": [
+        10.2221054,
+        56.9875093
+      ],
+      "onshoreDirectionDeg": 26.9
+    },
+    "dk-b05-25-national-part-02": {
+      "landPoint": [
+        10.2888331,
+        56.9821363
+      ],
+      "waterPoint": [
+        10.288459,
+        56.9849135
+      ],
+      "onshoreDirectionDeg": 175.8
+    },
+    "dk-b05-25-national-part-12": {
+      "landPoint": [
+        10.2050126,
+        56.9968109
+      ],
+      "waterPoint": [
+        10.2027585,
+        56.9943127
+      ],
+      "onshoreDirectionDeg": 26.2
+    },
+    "dk-b06-17-national-part-01": {
+      "landPoint": [
+        10.2095248,
+        55.889169
+      ],
+      "waterPoint": [
+        10.2104085,
+        55.8864284
+      ],
+      "onshoreDirectionDeg": 349.8
+    },
+    "dk-b06-17-national-part-03": {
+      "landPoint": [
+        10.1952939,
+        55.8678255
+      ],
+      "waterPoint": [
+        10.1986218,
+        55.8698885
+      ],
+      "onshoreDirectionDeg": 222.2
+    },
+    "dk-b06-17-national-part-08": {
+      "landPoint": [
+        10.1922578,
+        55.8801951
+      ],
+      "waterPoint": [
+        10.1972107,
+        55.8801168
+      ],
+      "onshoreDirectionDeg": 271.6
+    },
+    "dk-b06-20-national-part-03": {
+      "landPoint": [
+        10.3041444,
+        55.7775988
+      ],
+      "waterPoint": [
+        10.30254,
+        55.7802331
+      ],
+      "onshoreDirectionDeg": 161.1
+    },
+    "dk-b07-02-national-part-04": {
+      "landPoint": [
+        9.7018041,
+        55.5154378
+      ],
+      "waterPoint": [
+        9.7051327,
+        55.5174853
+      ],
+      "onshoreDirectionDeg": 222.6
+    },
+    "dk-b07-02-national-part-06": {
+      "landPoint": [
+        9.7680479,
+        55.5606731
+      ],
+      "waterPoint": [
+        9.7726172,
+        55.5596473
+      ],
+      "onshoreDirectionDeg": 291.7
+    },
+    "dk-b07-02-national-part-08": {
+      "landPoint": [
+        9.6914435,
+        55.4974766
+      ],
+      "waterPoint": [
+        9.6931237,
+        55.5000937
+      ],
+      "onshoreDirectionDeg": 200.0
+    },
+    "dk-b07-03-national-part-02": {
+      "landPoint": [
+        9.6828527,
+        55.4987149
+      ],
+      "waterPoint": [
+        9.6859521,
+        55.5008745
+      ],
+      "onshoreDirectionDeg": 219.1
+    },
+    "dk-b07-03-national-part-03": {
+      "landPoint": [
+        9.6782301,
+        55.5127393
+      ],
+      "waterPoint": [
+        9.673474,
+        55.5120501
+      ],
+      "onshoreDirectionDeg": 75.6
+    },
+    "dk-b07-05-national-part-07": {
+      "landPoint": [
+        10.1190514,
+        55.5717128
+      ],
+      "waterPoint": [
+        10.1229897,
+        55.5733799
+      ],
+      "onshoreDirectionDeg": 233.2
+    },
+    "dk-b07-06-national-part-02": {
+      "landPoint": [
+        10.2667353,
+        55.6061717
+      ],
+      "waterPoint": [
+        10.2644972,
+        55.6086522
+      ],
+      "onshoreDirectionDeg": 153.0
+    },
+    "dk-b07-11-national-part-01": {
+      "landPoint": [
+        10.8257189,
+        55.3057476
+      ],
+      "waterPoint": [
+        10.8286518,
+        55.3079743
+      ],
+      "onshoreDirectionDeg": 216.9
+    },
+    "dk-b07-11-national-part-02": {
+      "landPoint": [
+        10.8379132,
+        55.2875227
+      ],
+      "waterPoint": [
+        10.8412926,
+        55.2855134
+      ],
+      "onshoreDirectionDeg": 316.2
+    },
+    "dk-b07-11-national-part-03": {
+      "landPoint": [
+        10.8424536,
+        55.2958452
+      ],
+      "waterPoint": [
+        10.8459589,
+        55.2977835
+      ],
+      "onshoreDirectionDeg": 225.8
+    },
+    "dk-b07-14-national-part-02": {
+      "landPoint": [
+        10.7072205,
+        55.0528322
+      ],
+      "waterPoint": [
+        10.7119577,
+        55.0534341
+      ],
+      "onshoreDirectionDeg": 257.5
+    },
+    "dk-b07-15-national-part-01": {
+      "landPoint": [
+        10.649478,
+        55.0474933
+      ],
+      "waterPoint": [
+        10.6449886,
+        55.0464378
+      ],
+      "onshoreDirectionDeg": 67.7
+    },
+    "dk-b07-15-national-part-03": {
+      "landPoint": [
+        10.6328392,
+        55.0536065
+      ],
+      "waterPoint": [
+        10.6353645,
+        55.0559849
+      ],
+      "onshoreDirectionDeg": 211.3
+    },
+    "dk-b07-16-national-part-01": {
+      "landPoint": [
+        10.718532,
+        54.9444255
+      ],
+      "waterPoint": [
+        10.7183957,
+        54.9472098
+      ],
+      "onshoreDirectionDeg": 178.4
+    },
+    "dk-b07-17-national-part-01": {
+      "landPoint": [
+        10.7700869,
+        55.1018047
+      ],
+      "waterPoint": [
+        10.7708836,
+        55.0990571
+      ],
+      "onshoreDirectionDeg": 350.6
+    },
+    "dk-b07-17-national-part-02": {
+      "landPoint": [
+        10.7833688,
+        55.1436747
+      ],
+      "waterPoint": [
+        10.78821,
+        55.1439369
+      ],
+      "onshoreDirectionDeg": 264.6
+    },
+    "dk-b07-17-national-part-03": {
+      "landPoint": [
+        10.7819901,
+        55.1365604
+      ],
+      "waterPoint": [
+        10.7850044,
+        55.1343751
+      ],
+      "onshoreDirectionDeg": 321.7
+    },
+    "dk-b07-20-national-part-01-locality-02": {
+      "landPoint": [
+        10.6572024,
+        54.8425375
+      ],
+      "waterPoint": [
+        10.6528114,
+        54.843694
+      ],
+      "onshoreDirectionDeg": 114.6
+    },
+    "dk-b07-21-national-part-02": {
+      "landPoint": [
+        10.3030026,
+        54.9272803
+      ],
+      "waterPoint": [
+        10.3032857,
+        54.9300611
+      ],
+      "onshoreDirectionDeg": 183.3
+    },
+    "dk-b07-22-national-part-01": {
+      "landPoint": [
+        10.3890205,
+        54.8321628
+      ],
+      "waterPoint": [
+        10.3865468,
+        54.8297711
+      ],
+      "onshoreDirectionDeg": 30.8
+    },
+    "dk-b07-22-national-part-02": {
+      "landPoint": [
+        10.4177939,
+        54.8784168
+      ],
+      "waterPoint": [
+        10.4221098,
+        54.8796686
+      ],
+      "onshoreDirectionDeg": 243.2
+    },
+    "dk-b07-24-national-part-04": {
+      "landPoint": [
+        10.1456507,
+        55.0646957
+      ],
+      "waterPoint": [
+        10.1496955,
+        55.0662355
+      ],
+      "onshoreDirectionDeg": 236.4
+    },
+    "dk-b07-27-national-part-03": {
+      "landPoint": [
+        9.9125761,
+        55.2353577
+      ],
+      "waterPoint": [
+        9.9097402,
+        55.2330921
+      ],
+      "onshoreDirectionDeg": 35.5
+    },
+    "dk-b08-01-national-part-01": {
+      "landPoint": [
+        11.0080475,
+        55.7393999
+      ],
+      "waterPoint": [
+        11.0115321,
+        55.7413725
+      ],
+      "onshoreDirectionDeg": 224.8
+    },
+    "dk-b08-02-national-part-01": {
+      "landPoint": [
+        10.9886655,
+        55.6565306
+      ],
+      "waterPoint": [
+        10.9890791,
+        55.6537555
+      ],
+      "onshoreDirectionDeg": 355.2
+    },
+    "dk-b08-03-national-part-01-locality-01": {
+      "landPoint": [
+        11.1081305,
+        55.9119393
+      ],
+      "waterPoint": [
+        11.1092123,
+        55.914657
+      ],
+      "onshoreDirectionDeg": 192.6
+    },
+    "dk-b08-04-national-part-03": {
+      "landPoint": [
+        11.1538541,
+        55.8913684
+      ],
+      "waterPoint": [
+        11.1576332,
+        55.8931699
+      ],
+      "onshoreDirectionDeg": 229.6
+    },
+    "dk-b08-07-national-part-01-locality-01": {
+      "landPoint": [
+        11.3747195,
+        55.8372665
+      ],
+      "waterPoint": [
+        11.3796608,
+        55.8374147
+      ],
+      "onshoreDirectionDeg": 266.9
+    },
+    "dk-b08-09-national-part-03": {
+      "landPoint": [
+        11.4912898,
+        55.9415775
+      ],
+      "waterPoint": [
+        11.4897017,
+        55.9389395
+      ],
+      "onshoreDirectionDeg": 18.6
+    },
+    "dk-b08-11-national-part-02": {
+      "landPoint": [
+        11.5588223,
+        55.9548493
+      ],
+      "waterPoint": [
+        11.5576094,
+        55.9575493
+      ],
+      "onshoreDirectionDeg": 165.9
+    },
+    "dk-b09-04-national-part-07": {
+      "landPoint": [
+        12.5822656,
+        55.7220512
+      ],
+      "waterPoint": [
+        12.5868828,
+        55.7210725
+      ],
+      "onshoreDirectionDeg": 290.6
+    },
+    "dk-b09-05-national-part-08": {
+      "landPoint": [
+        12.6211797,
+        55.6893227
+      ],
+      "waterPoint": [
+        12.6259294,
+        55.6885811
+      ],
+      "onshoreDirectionDeg": 285.5
+    },
+    "dk-b09-06-national-part-07": {
+      "landPoint": [
+        12.6798292,
+        55.6135759
+      ],
+      "waterPoint": [
+        12.6824139,
+        55.6112077
+      ],
+      "onshoreDirectionDeg": 328.4
+    },
+    "dk-b09-08-national-part-07": {
+      "landPoint": [
+        12.445916,
+        55.6109226
+      ],
+      "waterPoint": [
+        12.4411231,
+        55.6102979
+      ],
+      "onshoreDirectionDeg": 77.0
+    },
+    "dk-b09-15-national-part-05": {
+      "landPoint": [
+        12.142759,
+        54.9943702
+      ],
+      "waterPoint": [
+        12.1474713,
+        54.9937277
+      ],
+      "onshoreDirectionDeg": 283.4
+    },
+    "dk-b09-18-national-part-01": {
+      "landPoint": [
+        11.1474978,
+        55.3665475
+      ],
+      "waterPoint": [
+        11.1462937,
+        55.3692468
+      ],
+      "onshoreDirectionDeg": 165.8
+    },
+    "dk-b09-18-national-part-02": {
+      "landPoint": [
+        11.1574331,
+        55.3177265
+      ],
+      "waterPoint": [
+        11.1537179,
+        55.3159189
+      ],
+      "onshoreDirectionDeg": 49.5
+    },
+    "dk-b09-19-national-part-01-locality-02": {
+      "landPoint": [
+        11.1094555,
+        55.5346696
+      ],
+      "waterPoint": [
+        11.1074862,
+        55.5372208
+      ],
+      "onshoreDirectionDeg": 156.4
+    },
+    "dk-b10-01-national-part-01-locality-03": {
+      "landPoint": [
+        12.2799151,
+        55.0416212
+      ],
+      "waterPoint": [
+        12.2842104,
+        55.0429128
+      ],
+      "onshoreDirectionDeg": 242.3
+    },
+    "dk-b10-02-national-part-01-locality-02": {
+      "landPoint": [
+        12.2272518,
+        54.9724681
+      ],
+      "waterPoint": [
+        12.2236979,
+        54.9743585
+      ],
+      "onshoreDirectionDeg": 132.8
+    },
+    "dk-b10-02-national-part-15": {
+      "landPoint": [
+        12.1289594,
+        54.8943261
+      ],
+      "waterPoint": [
+        12.1249377,
+        54.8927835
+      ],
+      "onshoreDirectionDeg": 56.3
+    },
+    "dk-b10-05-national-part-03": {
+      "landPoint": [
+        12.071274,
+        54.9092156
+      ],
+      "waterPoint": [
+        12.069263,
+        54.9066836
+      ],
+      "onshoreDirectionDeg": 24.5
+    },
+    "dk-b10-06-national-part-08": {
+      "landPoint": [
+        11.9186002,
+        54.9970641
+      ],
+      "waterPoint": [
+        11.9234389,
+        54.9971909
+      ],
+      "onshoreDirectionDeg": 267.4
+    },
+    "dk-b10-07-national-part-04": {
+      "landPoint": [
+        12.0609105,
+        54.9117867
+      ],
+      "waterPoint": [
+        12.0604412,
+        54.9090154
+      ],
+      "onshoreDirectionDeg": 5.6
+    },
+    "dk-b10-07-national-part-10": {
+      "landPoint": [
+        12.1223764,
+        54.8055053
+      ],
+      "waterPoint": [
+        12.1262345,
+        54.803836
+      ],
+      "onshoreDirectionDeg": 306.9
+    },
+    "dk-b10-09-national-part-03": {
+      "landPoint": [
+        11.9188269,
+        54.575261
+      ],
+      "waterPoint": [
+        11.9141209,
+        54.575791
+      ],
+      "onshoreDirectionDeg": 101.0
+    },
+    "dk-b10-10-national-part-01-locality-01": {
+      "landPoint": [
+        11.6494755,
+        54.9023769
+      ],
+      "waterPoint": [
+        11.6474349,
+        54.9049014
+      ],
+      "onshoreDirectionDeg": 155.1
+    },
+    "dk-b10-10-national-part-02-locality-01": {
+      "landPoint": [
+        11.7612309,
+        54.837007
+      ],
+      "waterPoint": [
+        11.7637669,
+        54.839376
+      ],
+      "onshoreDirectionDeg": 211.7
+    },
+    "dk-b10-10-national-part-03": {
+      "landPoint": [
+        11.8056532,
+        54.8030647
+      ],
+      "waterPoint": [
+        11.8035677,
+        54.800554
+      ],
+      "onshoreDirectionDeg": 25.6
+    },
+    "dk-b10-10-national-part-13": {
+      "landPoint": [
+        11.7169311,
+        54.6534399
+      ],
+      "waterPoint": [
+        11.7187247,
+        54.6508565
+      ],
+      "onshoreDirectionDeg": 338.1
+    },
+    "dk-b10-10-national-part-24": {
+      "landPoint": [
+        11.8507149,
+        54.6843087
+      ],
+      "waterPoint": [
+        11.8493986,
+        54.6816303
+      ],
+      "onshoreDirectionDeg": 15.9
+    },
+    "dk-b10-10-national-part-30": {
+      "landPoint": [
+        11.8399428,
+        54.6835854
+      ],
+      "waterPoint": [
+        11.838634,
+        54.6809059
+      ],
+      "onshoreDirectionDeg": 15.8
+    },
+    "dk-b10-11-national-part-22": {
+      "landPoint": [
+        11.5827374,
+        54.6613628
+      ],
+      "waterPoint": [
+        11.5863459,
+        54.6632014
+      ],
+      "onshoreDirectionDeg": 228.6
+    },
+    "dk-b10-14-national-part-01-locality-02": {
+      "landPoint": [
+        10.6308169,
+        54.8214802
+      ],
+      "waterPoint": [
+        10.6275142,
+        54.8194499
+      ],
+      "onshoreDirectionDeg": 43.1
+    },
+    "dk-b10-14-national-part-02-locality-01": {
+      "landPoint": [
+        10.6769367,
+        54.7320235
+      ],
+      "waterPoint": [
+        10.6724474,
+        54.7310188
+      ],
+      "onshoreDirectionDeg": 68.8
+    },
+    "dk-b10-14-national-part-02-locality-02": {
+      "landPoint": [
+        10.7553243,
+        54.7895063
+      ],
+      "waterPoint": [
+        10.7597812,
+        54.7884456
+      ],
+      "onshoreDirectionDeg": 292.4
+    },
+    "dk-b10-15-national-part-02": {
+      "landPoint": [
+        11.5729776,
+        54.8514353
+      ],
+      "waterPoint": [
+        11.5721387,
+        54.8541778
+      ],
+      "onshoreDirectionDeg": 170.0
+    },
+    "dk-b10-18-national-part-01": {
+      "landPoint": [
+        14.7780259,
+        55.2947406
+      ],
+      "waterPoint": [
+        14.7828155,
+        55.2952558
+      ],
+      "onshoreDirectionDeg": 259.3
+    },
+    "dk-b10-19-national-part-01-locality-02": {
+      "landPoint": [
+        15.0056796,
+        55.1856811
+      ],
+      "waterPoint": [
+        15.0083382,
+        55.1880088
+      ],
+      "onshoreDirectionDeg": 213.1
+    },
+    "dk-b10-19-national-part-02": {
+      "landPoint": [
+        14.8714144,
+        55.2384399
+      ],
+      "waterPoint": [
+        14.8682198,
+        55.2405379
+      ],
+      "onshoreDirectionDeg": 139.0
+    },
+    "dk-b10-21-national-part-03": {
+      "landPoint": [
+        15.1199701,
+        55.0447757
+      ],
+      "waterPoint": [
+        15.123704,
+        55.0430053
+      ],
+      "onshoreDirectionDeg": 309.6
+    },
+    "dk-b10-22-national-part-02": {
+      "landPoint": [
+        14.9542762,
+        55.0074283
+      ],
+      "waterPoint": [
+        14.950994,
+        55.0053851
+      ],
+      "onshoreDirectionDeg": 42.7
+    },
+    "dk-b10-23-national-part-05": {
+      "landPoint": [
+        14.7109222,
+        55.2171036
+      ],
+      "waterPoint": [
+        14.7062967,
+        55.2179649
+      ],
+      "onshoreDirectionDeg": 108.1
+    },
+    "dk-b10-24-national-part-01": {
+      "landPoint": [
+        14.7623655,
+        55.292302
+      ],
+      "waterPoint": [
+        14.7616581,
+        55.2950536
+      ],
+      "onshoreDirectionDeg": 171.7
+    },
+    "dk-b11-lae-01-national-part-01-locality-02": {
+      "landPoint": [
+        10.8843708,
+        57.2508263
+      ],
+      "waterPoint": [
+        10.8821704,
+        57.2483104
+      ],
+      "onshoreDirectionDeg": 25.3
+    },
+    "dk-b11-lae-01-national-part-01-locality-04": {
+      "landPoint": [
+        10.9962145,
+        57.2187504
+      ],
+      "waterPoint": [
+        10.9976609,
+        57.216079
+      ],
+      "onshoreDirectionDeg": 343.7
+    },
+    "dk-b11-lae-03-national-part-01-locality-01": {
+      "landPoint": [
+        11.0189237,
+        57.2224436
+      ],
+      "waterPoint": [
+        11.0212725,
+        57.219968
+      ],
+      "onshoreDirectionDeg": 332.8
+    },
+    "dk-b11-lae-03-national-part-09": {
+      "landPoint": [
+        10.9647299,
+        57.2111034
+      ],
+      "waterPoint": [
+        10.9698538,
+        57.2109548
+      ],
+      "onshoreDirectionDeg": 273.1
+    },
+    "dk-b11-sam-01-national-part-04": {
+      "landPoint": [
+        10.6680165,
+        55.9311413
+      ],
+      "waterPoint": [
+        10.6643821,
+        55.9292457
+      ],
+      "onshoreDirectionDeg": 47.0
+    },
+    "dk-b11-sam-02-national-part-02": {
+      "landPoint": [
+        10.6311626,
+        55.7820738
+      ],
+      "waterPoint": [
+        10.6348418,
+        55.7802143
+      ],
+      "onshoreDirectionDeg": 311.9
+    },
+    "dk-b11-sam-03-national-part-03": {
+      "landPoint": [
+        10.5347582,
+        55.7860634
+      ],
+      "waterPoint": [
+        10.5304534,
+        55.7846949
+      ],
+      "onshoreDirectionDeg": 60.5
+    },
+    "dk-b12-01-national-part-03": {
+      "landPoint": [
+        9.6878729,
+        55.4819819
+      ],
+      "waterPoint": [
+        9.6833697,
+        55.4808779
+      ],
+      "onshoreDirectionDeg": 66.6
+    },
+    "dk-b12-02-national-part-01": {
+      "landPoint": [
+        9.6494413,
+        55.3027957
+      ],
+      "waterPoint": [
+        9.6538347,
+        55.3040114
+      ],
+      "onshoreDirectionDeg": 244.1
+    },
+    "dk-b12-02-national-part-02": {
+      "landPoint": [
+        9.6114811,
+        55.3697602
+      ],
+      "waterPoint": [
+        9.6149417,
+        55.3677917
+      ],
+      "onshoreDirectionDeg": 315.0
+    },
+    "dk-b12-03-national-part-01-locality-02": {
+      "landPoint": [
+        9.6503748,
+        55.1813176
+      ],
+      "waterPoint": [
+        9.653741,
+        55.1793054
+      ],
+      "onshoreDirectionDeg": 316.3
+    },
+    "dk-b12-03-national-part-02": {
+      "landPoint": [
+        9.6964329,
+        55.2667776
+      ],
+      "waterPoint": [
+        9.6997139,
+        55.2688392
+      ],
+      "onshoreDirectionDeg": 222.2
+    },
+    "dk-b12-03-national-part-05": {
+      "landPoint": [
+        9.732431,
+        55.2638363
+      ],
+      "waterPoint": [
+        9.7292537,
+        55.2617226
+      ],
+      "onshoreDirectionDeg": 40.6
+    },
+    "dk-b12-04-national-part-03": {
+      "landPoint": [
+        9.5356134,
+        55.0946234
+      ],
+      "waterPoint": [
+        9.5400893,
+        55.0957058
+      ],
+      "onshoreDirectionDeg": 247.1
+    },
+    "dk-b12-06-national-part-02": {
+      "landPoint": [
+        9.7527063,
+        54.9427521
+      ],
+      "waterPoint": [
+        9.7573415,
+        54.9435523
+      ],
+      "onshoreDirectionDeg": 253.3
+    },
+    "dk-b12-06-national-part-03": {
+      "landPoint": [
+        9.7886236,
+        54.9045314
+      ],
+      "waterPoint": [
+        9.7859141,
+        54.9022242
+      ],
+      "onshoreDirectionDeg": 34.0
+    },
+    "dk-b12-06-national-part-04": {
+      "landPoint": [
+        9.7784323,
+        54.9045325
+      ],
+      "waterPoint": [
+        9.7811565,
+        54.9022312
+      ],
+      "onshoreDirectionDeg": 325.8
+    }
+  },
+  "ambiguousPartIds": [
+    "dk-b02-04-national-part-07",
+    "dk-b02-07-national-part-02",
+    "dk-b02-08-national-part-02",
+    "dk-b02-08-national-part-06",
+    "dk-b02-10-national-part-01",
+    "dk-b02-10-national-part-10",
+    "dk-b02-15-national-part-02",
+    "dk-b03-04-national-part-03",
+    "dk-b03-04-national-part-04",
+    "dk-b03-08-national-part-02",
+    "dk-b04-02-national-part-02",
+    "dk-b04-03-national-part-01",
+    "dk-b04-05-national-part-01",
+    "dk-b04-06-national-part-04",
+    "dk-b04-08-national-part-01-locality-02",
+    "dk-b04-10-national-part-01",
+    "dk-b04-11-national-part-01",
+    "dk-b04-12-national-part-03",
+    "dk-b04-13-national-part-01-locality-02",
+    "dk-b04-13-national-part-05",
+    "dk-b05-01-national-part-03",
+    "dk-b05-04-national-part-02",
+    "dk-b05-06-national-part-01",
+    "dk-b05-06-national-part-05",
+    "dk-b05-11-national-part-01",
+    "dk-b05-14-national-part-04",
+    "dk-b05-17-national-part-01",
+    "dk-b05-17-national-part-02",
+    "dk-b05-19-national-part-01",
+    "dk-b05-19-national-part-02",
+    "dk-b05-21-national-part-01",
+    "dk-b05-21-national-part-04",
+    "dk-b05-22-national-part-03",
+    "dk-b05-24-national-part-01",
+    "dk-b05-24-national-part-06",
+    "dk-b06-08-national-part-04",
+    "dk-b06-08-national-part-05",
+    "dk-b06-12-national-part-01",
+    "dk-b06-12-national-part-02",
+    "dk-b06-17-national-part-04",
+    "dk-b06-17-national-part-05",
+    "dk-b06-17-national-part-06",
+    "dk-b06-17-national-part-07",
+    "dk-b06-17-national-part-09",
+    "dk-b06-20-national-part-04",
+    "dk-b07-05-national-part-02",
+    "dk-b07-05-national-part-04",
+    "dk-b07-05-national-part-05",
+    "dk-b07-05-national-part-06",
+    "dk-b07-05-national-part-08",
+    "dk-b07-05-national-part-09",
+    "dk-b07-05-national-part-10",
+    "dk-b07-05-national-part-11",
+    "dk-b07-07-national-part-01",
+    "dk-b07-13-national-part-04",
+    "dk-b07-14-national-part-01",
+    "dk-b07-15-national-part-05",
+    "dk-b07-15-national-part-08",
+    "dk-b07-21-national-part-01",
+    "dk-b07-24-national-part-01",
+    "dk-b07-24-national-part-05",
+    "dk-b07-25-national-part-05",
+    "dk-b07-28-national-part-01",
+    "dk-b08-05-national-part-01",
+    "dk-b08-05-national-part-03",
+    "dk-b08-08-national-part-01-locality-01",
+    "dk-b08-10-national-part-03",
+    "dk-b09-04-national-part-04",
+    "dk-b09-05-national-part-01",
+    "dk-b09-05-national-part-02",
+    "dk-b09-05-national-part-03",
+    "dk-b09-05-national-part-04",
+    "dk-b09-05-national-part-09",
+    "dk-b09-05-national-part-12",
+    "dk-b09-06-national-part-06",
+    "dk-b09-08-national-part-04",
+    "dk-b09-08-national-part-06",
+    "dk-b09-09-national-part-01-locality-02",
+    "dk-b09-15-national-part-01",
+    "dk-b09-16-national-part-02",
+    "dk-b09-16-national-part-05",
+    "dk-b09-17-national-part-01",
+    "dk-b10-01-national-part-05",
+    "dk-b10-02-national-part-06",
+    "dk-b10-02-national-part-08",
+    "dk-b10-06-national-part-12",
+    "dk-b10-06-national-part-16",
+    "dk-b10-10-national-part-08",
+    "dk-b10-10-national-part-12",
+    "dk-b10-10-national-part-17",
+    "dk-b10-10-national-part-19",
+    "dk-b10-10-national-part-23",
+    "dk-b10-11-national-part-20",
+    "dk-b10-12-national-part-03",
+    "dk-b10-12-national-part-04",
+    "dk-b10-12-national-part-05",
+    "dk-b10-14-national-part-01-locality-01",
+    "dk-b10-15-national-part-09",
+    "dk-b10-15-national-part-10",
+    "dk-b10-17-national-part-01-locality-01",
+    "dk-b10-17-national-part-06",
+    "dk-b11-lae-01-national-part-07",
+    "dk-b11-lae-01-national-part-09",
+    "dk-b11-lae-01-national-part-10",
+    "dk-b11-lae-01-national-part-11",
+    "dk-b11-lae-01-national-part-13",
+    "dk-b11-lae-01-national-part-14",
+    "dk-b11-lae-03-national-part-01-locality-04",
+    "dk-b11-lae-03-national-part-03",
+    "dk-b11-lae-03-national-part-04",
+    "dk-b11-lae-03-national-part-05",
+    "dk-b11-lae-03-national-part-06",
+    "dk-b11-lae-03-national-part-07",
+    "dk-b12-05-national-part-03"
+  ],
+  "automaticActivationAllowed": false
+}

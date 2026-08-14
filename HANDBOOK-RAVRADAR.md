@@ -1,12 +1,20 @@
 # RavRadar Håndbog
 
+## Kandidatbundet land-/vandkontrol – 4.0.203
+
+Den uafhængige 10-meterkontrol må kun rette den præcise punktbestand, som kontrollen faktisk blev lavet på. Hvert privat bevis indeholder derfor både antallet af kystdele og et digitalt fingeraftryk af alle ukorrigerede land-/vandpunkter. Hvis kysten, del-ID'et eller punktparret ændres, stopper workflowet i stedet for at genbruge en gammel afgørelse.
+
+Foreløbig national kandidat har 835 dele: 614 er verificeret, 54 kan sikkert vendes, og 167 forbliver blokeret. Efter ejerens geometritrin har slutkandidaten 652 dele: 427 verificerede, 111 sikkert vendte og 114 blokerede. En blokeret del har ikke aktive land-/vandpunkter; den bevarer kun to neutrale muligheder til senere kontrol og kan ikke få vejr, state, score eller automatisk aktivering.
+
+Fallbackkontrollen følger samme regel. Dens 17 dele har 11 verificerede, fire sikkert vendte og to blokerede. Fejø/Femø og Havnø/Mariager Fjord øst er bevidst slettede og må ikke genopstå fra historiske reviewfiler.
+
 ## Land- og havpunkter – fysisk kontrakt i 4.0.196
 
 Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vandet. Linjen fra det blå til det grønne punkt er pålandsretningen. Den skal krydse netop den valgte kyststrækning omtrent vinkelret. Det samme punktpar bestemmer DMI-samplingen, retningssammenligningen, den lokale score og forklaringen til brugeren; et separat gammelt retningstal kan ikke overstyre markørerne.
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.202
+**Håndbogsversion:** 4.0.203
 
 **Opdateret:** 1. august 2026
 
@@ -30,7 +38,7 @@ Hvis én DMI-havmodel bruger hele kørslens tidsbudget, husker den private cache
 
 ## Aktuel afgrænsning af kystarbejdet
 
-DEC-0036 begrænsede kystopgaven til seks problemzoner. Efter slutkontrollen blev fem godkendte rettelser aktiveret: Langeland syd/Bagenkop, Nykøbing Sjælland/Rørvig, Dronningmølle/Hornbæk, Ålsgårde/Helsingør og Lolland vest/Albuen. Fejø/Femø blev efter udtrykkelig ejerbeslutning slettet helt ligesom Havnø og Mariager Fjord øst. Resten af den produktionsverificerede kyst er urørt baseline. En landsdækkende genopbygning eller ændring af fungerende funktioner kræver en ny, udtrykkelig ejerbeslutning.
+DEC-0036 begrænsede den daværende kystopgave til seks problemzoner. Efter slutkontrollen blev fem godkendte rettelser aktiveret: Langeland syd/Bagenkop, Nykøbing Sjælland/Rørvig, Dronningmølle/Hornbæk, Ålsgårde/Helsingør og Lolland vest/Albuen. Fejø/Femø blev efter udtrykkelig ejerbeslutning slettet helt ligesom Havnø og Mariager Fjord øst. Ejeren har senere udtrykkeligt godkendt en landsdækkende privat revision. Den må gennemføre alle kontroller, men den offentlige produktionskyst er fortsat baseline og må ikke erstattes uden særskilt godkendelse og fulde gates.
 
 De seks zoner valideres i en særskilt privat arbejdsgang, som ikke kan udgive et kort. Kandidaten har 22 mål- og naborester med egne land-/vandpunkter, så nødvendige nabozoner beholder deres kyst. Delene bliver først brugbare, når DMI's native grid, lokal score, runtime og rollback er kontrolleret. Admintræk flytter altid en hel valideret kystdel med dens målepunkter og vejridentitet – aldrig en løs visuel streg. Admin viser straks en konkret fejl og udfører ikke flytningen, hvis geometri, punkter, retning eller DMI-gridbevis mangler.
 

@@ -453,7 +453,12 @@ jobs:
         run: python scripts/build-national-local-part-points.py
 
       - name: Apply independent 10 m land and water side evidence
-        run: python scripts/apply-national-land-water-corrections.py --allow-deferred --input .geometry-v2-work/national-local-part-point-pairs.json --output .geometry-v2-work/national-local-part-point-pairs.json
+        run: >-
+          python scripts/apply-national-land-water-corrections.py
+          --require-exact-evidence
+          --decisions data/geometry-v2/national-private-initial-land-water-evidence-2026-08-14.json
+          --input .geometry-v2-work/national-local-part-point-pairs.json
+          --output .geometry-v2-work/national-local-part-point-pairs.json
 
       - name: Validate ambiguous point pairs remain fail-closed
         run: python scripts/validate-national-local-part-points.py
@@ -513,7 +518,12 @@ jobs:
         run: python scripts/build-national-local-part-points.py --work-dir .geometry-v2-work --zones data/zones.geojson --final-coast .owner-review/national-owner-final/national-owner-final-coast.geojson --final-names .owner-review/national-owner-final/national-owner-final-part-names.json --output .owner-review/national-owner-final/national-local-part-point-pairs.json
 
       - name: Apply independent 10 m land and water side evidence to final points
-        run: python scripts/apply-national-land-water-corrections.py --input .owner-review/national-owner-final/national-local-part-point-pairs.json --output .owner-review/national-owner-final/national-local-part-point-pairs.json
+        run: >-
+          python scripts/apply-national-land-water-corrections.py
+          --require-exact-evidence
+          --decisions data/geometry-v2/national-private-final-land-water-evidence-2026-08-14.json
+          --input .owner-review/national-owner-final/national-local-part-point-pairs.json
+          --output .owner-review/national-owner-final/national-local-part-point-pairs.json
 
       - name: Validate final land and water point contract
         run: python scripts/validate-national-local-part-points.py --work-dir .owner-review/national-owner-final
@@ -563,6 +573,16 @@ jobs:
           --candidate .geometry-v2-work/fallback-zone-recovery-candidate.json
           --evidence data/live/coastal-parts-v2.json
           --output .geometry-v2-work/fallback-zone-recovery-point-pairs.json
+          --candidate-output .geometry-v2-work/fallback-zone-recovery-candidate-with-points.json
+
+      - name: Apply exact independent land and water evidence to fallback points
+        run: >-
+          python scripts/apply-national-land-water-corrections.py
+          --require-exact-evidence
+          --decisions data/geometry-v2/national-private-fallback-land-water-evidence-2026-08-14.json
+          --input .geometry-v2-work/fallback-zone-recovery-point-pairs.json
+          --output .geometry-v2-work/fallback-zone-recovery-point-pairs.json
+          --candidate-input .geometry-v2-work/fallback-zone-recovery-candidate-with-points.json
           --candidate-output .geometry-v2-work/fallback-zone-recovery-candidate-with-points.json
 
       - name: Validate fallback geometry ownership, point pairs and zero overlap

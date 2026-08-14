@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "reviewed-independent-land-water-side-evidence",
+  "auditDate": "2026-08-14",
+  "source": "ESA WorldCover 10m 2021 v200",
+  "sourceLicence": "CC-BY-4.0",
+  "method": "10 m land-cover transects on both sides of the exact local coast; place names are excluded as side evidence",
+  "correctionCount": 4,
+  "ambiguousCount": 2,
+  "auditedPartCount": 17,
+  "inputPointPairSha256": "d0ead87318299665cb156c7bdbc6d4553a40f4b234e8c03ceb2e1ff3848f1f58",
+  "corrections": {
+    "dk-b07-19-fallback-recovery-01": {
+      "landPoint": [
+        10.6682809,
+        54.7712888
+      ],
+      "waterPoint": [
+        10.6637998,
+        54.7702655
+      ],
+      "onshoreDirectionDeg": 68.4
+    },
+    "dk-b07-19-fallback-recovery-02": {
+      "landPoint": [
+        10.7244849,
+        54.7337577
+      ],
+      "waterPoint": [
+        10.7281506,
+        54.7319524
+      ],
+      "onshoreDirectionDeg": 310.5
+    },
+    "dk-b08-12-fallback-recovery-01": {
+      "landPoint": [
+        11.7677841,
+        55.973261
+      ],
+      "waterPoint": [
+        11.7655617,
+        55.9757508
+      ],
+      "onshoreDirectionDeg": 153.5
+    },
+    "dk-b10-14-fallback-recovery-04": {
+      "landPoint": [
+        11.0048281,
+        54.8173681
+      ],
+      "waterPoint": [
+        11.007516,
+        54.8196808
+      ],
+      "onshoreDirectionDeg": 213.8
+    }
+  },
+  "ambiguousPartIds": [
+    "dk-b10-14-fallback-recovery-02",
+    "dk-b10-14-fallback-recovery-05"
+  ],
+  "automaticActivationAllowed": false
+}

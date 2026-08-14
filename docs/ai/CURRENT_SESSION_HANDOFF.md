@@ -1,8 +1,17 @@
-# Aktuelt sessionshandoff – 2026-08-09
+# Aktuelt sessionshandoff – 2026-08-14
 
-## Højeste prioritet: bindende scope fra 2026-08-12
+## Nyeste sikre grænse – 4.0.203-kandidat
 
-DEC-0036 har forrang for ældre brede nationale planer. Fem zoner (`DK-B07-19`, `DK-B08-12`, `DK-B08-18`, `DK-B08-19`, `DK-B10-14`) er godkendt til 4.0.187. `DK-B10-16` Fejø/Femø er slettet lokalt og centralt efter ejerbeslutning; Havnø/Mariager Fjord øst forbliver slettet. Det direkte nødvendige adminværktøj til trækbar præcis kyst, følgende zoneafgrænsning, viskelæder og samlet punkt-/DMI-/runtimekontrakt bevares. Start eller fortsæt ikke en landsdækkende kystpipeline; stop og spørg ejeren før enhver udvidelse.
+- Den tidligere DEC-0036-stopregel er erstattet af ejerens udtrykkelige mandat til at fortsætte den landsdækkende private kyst- og land-/vandaudit. Privat arbejde må fortsætte systemisk; offentlig aktivering kræver stadig særskilt go/no-go.
+- Offentlig 4.0.202 er produktionsverificeret i #31804954306. Privat #31804967576 bestod DMI, serier, state, vind, shadow-score, dynamisk review og dubletaudit, men stoppede ved et stale land-/vandbevis fra 673-delsbestanden.
+- 4.0.203 har tre kandidatbundne ESA WorldCover 10 m-beviser: foreløbig 835 dele (54 rettede, 167 blokerede), endelig 652 dele (111 rettede, 114 blokerede) og fallback 17 dele (fire rettede, to blokerede). SHA-256 og delantal skal matche præcis ukorrigeret input.
+- Tvetydige dele har ingen aktive punkter og kan ikke få vejr, state, score eller aktivering. Fejø/Femø og Havnø/Mariager Fjord øst forbliver slettet i fallbackbygger og validator.
+- Lokalt består `test:coastal-geometry-v2` og `test:workflow-validation-order`. RDKS, håndbog, changelog og version 4.0.203 skal være grønne før commit/push. Derefter følges både normal release og ny privat national kørsel helt til slut.
+- Alle ældre scope-, delantal- og “næste trin”-afsnit nedenfor er historisk spor, når de strider mod dette checkpoint.
+
+## Historisk scope fra 2026-08-12 – erstattet af checkpointet ovenfor
+
+DEC-0036 afgrænsede dette daværende arbejde. Fem zoner (`DK-B07-19`, `DK-B08-12`, `DK-B08-18`, `DK-B08-19`, `DK-B10-14`) blev godkendt til 4.0.187. `DK-B10-16` Fejø/Femø blev slettet lokalt og centralt; Havnø/Mariager Fjord øst forbliver slettet. Den senere aktuelle ejerbeslutning har udvidet det private auditscope, men ikke aktiveringsmandatet.
 
 Den første 12-dels kandidat bestod DMI, men runtimekontrollen viste, at hele flytninger ville tømme to nabozoner. Den er derfor erstattet før aktivering. Den aktuelle kandidat opdeler ved grænserne og har 22 mål-/naborester, 22/22 punktpar, to Ristinge-ejerskabsflytninger, ni kontrollerede erstatninger og nul overlap. `.github/workflows/validate-six-zone-recovery.yml` skal nu gentage native DMI-kontrollen på de 22 dele; workflowet kan ikke deploye.
 

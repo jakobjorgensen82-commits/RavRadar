@@ -1025,3 +1025,12 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Offentlig #31801993662 bestod frisk DMI, fuld validering, releasegate, Supabase og Pages på 4.0.201.
 - Privat #31802022918 bestod 27 nationale kyst-, navn- og punkttrin, men den native DMI-gate ramte standardtidsbudgettet under `dkss_lf` efter 11,1 minutter. Den forrige kørsel havde bestået samme 835-dels gate på 8,5 minutter, så logmønstret dokumenterer et marginalt budget frem for ugyldige punkter.
 - De tre private nationale native DMI-gates får det etablerede 3.000-sekunders kvalitetsbudget. En regression låser budgettet fast; fysisk validering og offentlig adfærd ændres ikke.
+
+## 2026-08-14 – 4.0.203
+
+- Offentlig 4.0.202 blev produktionsverificeret i #31804954306 med frisk DMI, fuld projektvalidering, releasegate, Supabase-synkronisering og Pages-deploy.
+- Privat #31804967576 passerede det tidligere tidsproblem og nåede gennem review/dubletaudit. Den stoppede ved slutpunkterne, fordi de 121 historiske rettelser var auditeret mod 673 aktive dele og ikke mod kandidatens 835/652 dele.
+- Tre nye uafhængige 10-meterbeviser er genereret fra præcis foreløbig, endelig og fallback-punktbestand. Hvert bevis har eksakt delantal og SHA-256-fingeraftryk; forkert input stopper før DMI.
+- Tvetydige punktpar deaktiveres nu helt og beholder kun to neutrale alternativer. Ingen vejr-, state-, score- eller aktiveringsflag kan følge med et uafgjort par.
+- Den historiske fallbackbygger kunne stadig medtage Fejø/Femø. Dens vinduer er fjernet, og både Fejø/Femø og Havnø/Mariager Fjord øst er nu bindende slettet i rapport og validator.
+- Offentlig geometri og RavScore er uændret. Næste evidens er fuld normal 4.0.203-kørsel samt en ny, isoleret privat national kørsel; privat kandidat må ikke aktiveres automatisk.

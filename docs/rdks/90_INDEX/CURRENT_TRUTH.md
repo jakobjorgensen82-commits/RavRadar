@@ -1,5 +1,13 @@
 # Current truth – gældende projektviden
 
+## 4.0.203 – kandidatbundet land-/vandevidens
+
+- Privat #31804967576 bestod det udvidede DMI-tidsbudget, vejridentiteter, flertrinsserier, state, vind, shadow-score, bestandsafledt ejerreview og dubletaudit. Den stoppede derefter korrekt, fordi det gamle 121-rettelsesbevis var lavet til den aktive offentlige 673-dels bestand og ikke til den private 835-/652-dels kandidat.
+- Land-/vandevidens har nu et kryptografisk fingeraftryk af præcis den ukorrigerede punktbestand og et eksakt delantal. Workflowet afviser bevis fra en anden kandidat før DMI, score, artifact eller aktivering.
+- Den foreløbige kandidat på 835 dele har 614 verificerede, 54 sikkert vendte og 167 blokerede punktpar. Slutkandidaten på 652 dele har 427 verificerede, 111 sikkert vendte og 114 blokerede punktpar. Tvetydige dele mister aktive punkter og beholder to neutrale alternativer; vejr, state, score og automatisk aktivering forbliver falsk.
+- Fallbackkandidaten har 17 dele: 11 verificerede, fire sikkert vendte og to blokerede. Fejø/Femø samt Havnø/Mariager Fjord øst er eksplicit bevaret som slettede, og de historiske Fejø/Femø-vinduer er fjernet fra fallbackbyggeren.
+- 4.0.202 er fortsat den offentligt produktionsverificerede baseline. 4.0.203 ændrer kun private kontrolløb og må ikke aktivere ny offentlig geometri uden fuld privat slutkørsel og særskilt ejerafgørelse.
+
 ## 4.0.198 – sidste kendte 208-port fjernet
 
 - Den private kørsel #31792615992 bestod plan, officiel kilde, topologi, kystdele og officiel navneaudit med 210 zoner, men lokalitetsopdelingen havde stadig en historisk hardcodet 208-kontrol.
@@ -93,11 +101,11 @@
 - Den tidligere 4.0.182-pakke og zoneregisteret ligger som rollback under `data/geometry-v2/rollback-4.0.186-before-five-zone-coast/`.
 - Offentlig produktion er først produktionsverificeret, når 4.0.187 har bestået frisk central hydration, fulde releasegates og deploy.
 
-## Bindende arbejdsafgrænsning – DEC-0036
+## Historisk arbejdsafgrænsning – DEC-0036, senere udvidet af ejeren
 
-- Det aktive kystarbejde omfatter kun Langeland syd/Bagenkop, Nykøbing Sjælland/Rørvig, Dronningmølle/Hornbæk, Ålsgårde/Helsingør, Lolland vest/Albuen og Fejø/Femø samt det direkte nødvendige adminværktøj.
-- Havnø og Mariager Fjord øst forbliver slettet. Den øvrige produktionsverificerede nationale kyst er urørt baseline.
-- Landsdækkende genopbygning, nyopdeling eller fortsættelse af den brede private nationale pipeline er ikke autoriseret. Ethvert behov uden for de seks zoner kræver, at arbejdet stopper og ejeren spørges først.
+- DEC-0036 afgrænsede den daværende rettelse til fem godkendte zoner og den senere slettede Fejø/Femø-zone. Ejeren gav efterfølgende udtrykkeligt mandat til en landsdækkende, privat og score-neutral revision af kystdele og land-/vandpunkter. Den nyere aktuelle ejerbeslutning erstatter kun den gamle scope-stopregel, ikke sikkerhedsgates eller krav om særskilt aktivering.
+- Havnø og Mariager Fjord øst samt Fejø/Femø forbliver slettet. Den produktionsverificerede offentlige kyst er baseline, mens den brede kandidat auditeres privat.
+- Den nationale pipeline må fortsætte read-only gennem geometri, punktpar, DMI, state, shadow-score, admin-roundtrip og artifacts. Den må ikke aktivere offentlig geometri, score eller admin-sandhed automatisk.
 - Den aktive private valideringsvej er `.github/workflows/validate-six-zone-recovery.yml`. Den kan hverken deploye eller ændre offentlig geometri og afviser andet end den fastlåste seks-zoneplan.
 - #31609637964 bestod den korrigerede 22-dels kandidats geometri, punktpar, native DMI-grid, deaktiverede runtime og rollback-isolation. Kandidaten har 656 dele i 211 zoner; alle zoner uden for de seks mål og deres nødvendige grænsenaboer matcher den aktive runtime uændret. Visuel ejergodkendelse mangler.
 

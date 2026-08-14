@@ -765,3 +765,14 @@ Status: Implementeret og lokalt valideret.
 - [x] Foreløbig, endelig og fallback-baseret national DMI-gate har nu eksplicit `DMI_BULK_MAX_RUNTIME_SECONDS: 3000`, som allerede bruges af den nationale vindgate.
 - [x] Workflowregressionen kræver budgettet på alle tre DMI-gates uden at ændre datakrav eller offentlig runtime.
 - [ ] Ny privat national kørsel skal fortsat bevise hele kæden gennem review, slutpunkter, slut-DMI, shadow-score, roundtrip/rollback og artifacts.
+
+## 4.0.203 – eksakt kandidatbundet land-/vandevidens
+
+- [x] #31804967576 beviste, at 3.000-sekundersbudgettet virker, og nåede gennem første DMI, vejridentitet, flertrinsserier, state, vind, shadow-score, review og dubletaudit.
+- [x] Fejlen efter review er dokumenteret som bestandsdrift: det gamle 121-rettelsesbevis var lavet til 673 aktive dele og kunne ikke anvendes sikkert på de private 835-/652-delsbestande.
+- [x] Foreløbig, endelig og fallback-kandidat har nu hver sit eksakte delantal og SHA-256-fingeraftryk af ukorrigerede punktpar.
+- [x] Tvetydige dele blokeres uden aktive punkter. Foreløbig status er 614 verificerede, 54 rettede og 167 blokerede; slutstatus er 427 verificerede, 111 rettede og 114 blokerede; fallbackstatus er 11 verificerede, fire rettede og to blokerede.
+- [x] Fallbackbygger og validator kan ikke genindføre Fejø/Femø eller Havnø/Mariager Fjord øst.
+- [x] `test:coastal-geometry-v2` og workflowrækkefølgen består lokalt.
+- [ ] Normal 4.0.203-produktion skal bestå fulde releasegates og deploy.
+- [ ] En ny privat national kørsel skal bevise de tre eksakte beviser, DMI for valgte/alternative punkter, slut-shadow-score, admin-roundtrip/rollback og artifacts samlet.

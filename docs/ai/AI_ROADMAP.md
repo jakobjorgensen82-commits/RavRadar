@@ -1,4 +1,4 @@
-# AI Roadmap – RavRadar efter 4.0.201
+# AI Roadmap – RavRadar efter 4.0.203
 
 Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status skal løbende flyttes til RDKS, når noget implementeres.
 
@@ -8,11 +8,14 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 - Privat #31798588868 beviste foreløbige punkter, native DMI-grid, vejrserier, state, vind og score-neutral shadow-score for en konsistent 835-dels kandidat. Den stoppede alene på reviewbyggerens historiske 783-tæller.
 - 4.0.201 gør review og admin-roundtrip bestandsafledte under streng 1:1-validering. Næste trin er en fuld ny privat kørsel gennem endelige 121 rettelser, slut-DMI, slut-shadow-score, roundtrip/rollback og artifacts.
 - #31802022918 bekræftede 27 grønne nationale trin, men den første native DMI-gate ramte sit marginale standardbudget. 4.0.202 ændrer kun de tre private nationale DMI-gates til det etablerede 3.000-sekunders kvalitetsbudget og afventer ny fuld kørsel.
+- #31804967576 bekræftede tidsbudgettet og nåede gennem review/dubletaudit. Det efterfølgende stop viste, at det gamle 121-rettelsesbevis var lavet til den aktive 673-dels bestand, ikke til de private 835-/652-dels kandidater.
+- 4.0.203 binder nu foreløbig, endelig og fallback-land/vandevidens til præcis ukorrigeret punktbestand. Tvetydige par blokeres uden aktive markører; Fejø/Femø og Havnø/Mariager kan ikke genindføres af fallbackbyggeren.
+- Næste trin er normal 4.0.203-releasekørsel og derefter en ny fuld privat national kørsel gennem alle tre eksakte beviser, DMI, shadow-score, central roundtrip/rollback og artifacts.
 - Ingen privat kandidat må aktiveres offentligt uden de resterende gates og en særskilt ejerafgørelse.
 
-## Bindende aktivt scope – DEC-0036
+## Aktivt scope – nyere ejerbeslutning erstatter DEC-0036-stopreglen
 
-Ældre landsdækkende geometriopgaver er sat på pause og må ikke genoptages implicit. DEC-0036 er afsluttet med fem godkendte zoner i 4.0.187; Fejø/Femø er slettet efter ejerbeslutning. Det aftalte adminværktøj bevares. Enhver bredere geometri-, pipeline- eller funktionsændring kræver, at arbejdet stopper og ejeren godkender udvidelsen først.
+Ejeren har udtrykkeligt godkendt en landsdækkende privat revision af kystdele og land-/vandpunkter. Det giver mandat til read-only/private geometri-, DMI-, state-, score-neutral shadow-, admin- og rollbackgates. Det giver ikke automatisk mandat til offentlig aktivering. DEC-0036's fem godkendte zoner er historik; Fejø/Femø og Havnø/Mariager forbliver slettet.
 
 ## Afsluttet P0 – hovedzoner med præcis kyst
 - **Aktuel status efter 4.0.185:** 4.0.182–4.0.185 har afsluttet offentlig aktivering, entydige hovedzoneskel, redigerbart delejerskab, lokal scoreforklaring og behovsstyret “Hvor er det?”-visning. Historiske punkter nedenfor om kommende kandidat, manglende aktivering og ventende adminudvidelse er bevaret som forløb og er ikke aktuelle opgaver.

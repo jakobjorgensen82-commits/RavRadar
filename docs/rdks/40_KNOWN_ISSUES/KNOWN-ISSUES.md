@@ -1,5 +1,11 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.203 – land-/vandevidens var bundet til forkert bestand
+
+- **ISSUE-NATIONAL-LAND-WATER-EVIDENCE-DATASET-DRIFT – RETTET LOKALT / AFVENTER PRIVAT CI:** #31804967576 nåede gennem review og dubletaudit, men det gamle 121-rettelsesbevis beskrev den aktive 673-dels bestand og manglede 14 ID'er i både den foreløbige og endelige private kandidat. Hver af de tre aktuelle kandidater har nu eget delantal og SHA-256-fingeraftryk; forkert eller ændret input afvises før DMI.
+- **ISSUE-NATIONAL-LAND-WATER-AMBIGUOUS – AKTIV MED NY BESTAND:** Den foreløbige 835-dels kandidat har 167 tvetydige/manglende punktpar, slutkandidaten på 652 dele har 114, og fallbackkandidaten på 17 dele har to. De er fail-closed uden aktive punkter, vejr, state, score eller automatisk aktivering og kræver senere ejerreview, hvis resten af den private kæde består.
+- **ISSUE-FALLBACK-DELETED-ZONE-REINTRODUCTION – RETTET LOKALT / AFVENTER PRIVAT CI:** Den historiske fallbackbygger indeholdt stadig vinduer for Fejø/Femø. De er fjernet, og validatoren kræver nu både Fejø/Femø og Havnø/Mariager Fjord øst bevaret som slettede.
+
 ## 4.0.198 – lokalitetsopdeling
 
 - **ISSUE-NATIONAL-LOCALITY-PARTITION-208 – RETTET LOKALT / AFVENTER CI:** #31792615992 dokumenterede, at lokalitetsopdelingen alene stadig krævede den historiske 208-zonebestand. Den følger nu den fælles 210-zonekontrakt og har en direkte regressionstest.
@@ -10,13 +16,8 @@
 
 ## 4.0.196 – national land-/vandkontrol
 
-- **ISSUE-NATIONAL-LAND-WATER-AMBIGUOUS – AKTIV:** Den uafhængige 10 m flerafstandsaudit kan ikke sikkert klassificere 118 af 673 lokale kystdele. De ændres ikke automatisk. Efter de dokumenterede rettelser har bestået de automatiske gates, skal de præsenteres samlet til manuel kontrol.
-- **ISSUE-NATIONAL-LAND-WATER-DMI-PROMOTION – AKTIV:** 121 punktpar har dokumenteret omvendt land-/vandside og en reproducerbar rettelseskandidat. Kandidaten er ikke offentlig sandhed, før en frisk privat national kørsel har bestået punkt-, native DMI-grid-, shadow-score-, runtime- og rollbackgates.
-
-## 4.0.196 – national land-/vandkontrol
-
-- **ISSUE-NATIONAL-LAND-WATER-AMBIGUOUS – AKTIV:** Den uafhængige 10 m flerafstandsaudit kan ikke sikkert klassificere 118 af 673 lokale kystdele. De ændres ikke automatisk. Efter de dokumenterede rettelser har bestået de automatiske gates, skal de præsenteres samlet til manuel kontrol.
-- **ISSUE-NATIONAL-LAND-WATER-DMI-PROMOTION – AKTIV:** 121 punktpar har dokumenteret omvendt land-/vandside og en reproducerbar rettelseskandidat. Kandidaten er ikke offentlig sandhed, før en frisk privat national kørsel har bestået punkt-, native DMI-grid-, shadow-score-, runtime- og rollbackgates.
+- **ISSUE-NATIONAL-LAND-WATER-AMBIGUOUS – ERSTATTET AF 4.0.203-BESTANDEN:** Den oprindelige audit målte 118 tvetydige af 673 aktive dele. Tallet er historik og må ikke bruges som forventning for de nye private kandidater.
+- **ISSUE-NATIONAL-LAND-WATER-DMI-PROMOTION – ERSTATTET AF KANDIDATBUNDET BEVIS I 4.0.203:** De 121 rettelser var gyldige for 673-delsbestanden, men ikke som generel regel for senere kandidater. Nye kandidater bruger egne eksakte beviser og kræver fortsat hele den private DMI-/runtime-/rollbackkæde.
 
 - **ISSUE-ADMIN-DIRECTION-MAP-STALE-SELECTION – RODÅRSAG RETTET LOKALT I 4.0.195:** 4.0.194 ændrede timing uden at løse fejlen. Isoleret browsertest med produktionsdata viste, at Leaflet-vektorlag blev tilføjet før kortets første geografiske position og kastede `reading 'min'`; derfor udeblev linjer, markører og zoom. 4.0.195 positionerer kortet før lagene. Rejsby-testen viser korrekt område, 121 stier og to markører uden fejl. Afventer produktionsdeploy og ejerens efterkontrol.
 

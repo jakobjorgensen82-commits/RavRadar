@@ -19,6 +19,8 @@ from pyproj import Transformer
 from shapely.geometry import LineString, Point, shape
 from shapely.ops import nearest_points, transform
 
+from lib.national_land_water_evidence import part_id, point_pair_fingerprint
+
 ROOT = Path(__file__).resolve().parents[1]
 WATER_CLASS = 80
 TO_M = Transformer.from_crs("EPSG:4326", "EPSG:25832", always_xy=True)
@@ -27,6 +29,64 @@ TO_WGS84 = Transformer.from_crs("EPSG:25832", "EPSG:4326", always_xy=True)
 
 def load(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def feature_id(feature):
+    properties = feature.get("properties") or {}
+    return properties.get("finalPartId") or properties.get("proposalId") or properties.get("partId")
+
+
+def candidate_geometries(coast=None, base_coast=None, locality=None):
+    if coast is not None:
+        features = coast.get("features") or []
+    else:
+        if base_coast is None or locality is None:
+            raise RuntimeError("Kandidataudit kræver enten --coast eller både --base-coast og --locality")
+        locality_features = locality.get("features") or []
+        replaced = {
+            feature.get("properties", {}).get("sourcePartId")
+            for feature in locality_features
+            if feature.get("properties", {}).get("sourcePartId")
+        }
+        features = [
+            feature for feature in (base_coast.get("features") or [])
+            if feature.get("properties", {}).get("partId") not in replaced
+        ] + locality_features
+    by_id = {}
+    for feature in features:
+        row_id = feature_id(feature)
+        if not row_id or row_id in by_id:
+            raise RuntimeError(f"Ugyldigt eller duplikeret geometri-id i kandidataudit: {row_id!r}")
+        by_id[row_id] = feature.get("geometry")
+    return by_id
+
+
+def candidate_bundle(points, geometries):
+    rows = points.get("parts") or []
+    point_ids = {part_id(row) for row in rows}
+    if None in point_ids or len(point_ids) != len(rows):
+        raise RuntimeError("Punktbestanden har manglende eller duplikerede kystdel-id'er")
+    geometry_ids = set(geometries)
+    missing = sorted(point_ids - geometry_ids)
+    extra = sorted(geometry_ids - point_ids)
+    if missing or extra:
+        raise RuntimeError(
+            "Kandidatens punkt/geometri-id'er er ikke 1:1; "
+            f"mangler geometri={missing[:10]}, mangler punkt={extra[:10]}"
+        )
+    zones = {}
+    for row in rows:
+        row_id = part_id(row)
+        zone_id = row.get("zoneId") or row.get("sourceZoneId")
+        if not zone_id:
+            raise RuntimeError(f"{row_id}: zone-id mangler")
+        zones.setdefault(zone_id, []).append({
+            **row,
+            "partId": row_id,
+            "name": row.get("suggestedName") or row.get("name"),
+            "geometry": geometries[row_id],
+        })
+    return {"schemaVersion": "candidate-land-water-audit", "zones": zones}
 
 
 def tile_id(lon: float, lat: float) -> str:
@@ -90,6 +150,27 @@ def audit(bundle, tile_dir: Path):
     try:
         for zone_id, parts in sorted((bundle.get("zones") or {}).items()):
             for part in parts:
+                land_point = part.get("landPoint")
+                water_point = part.get("waterPoint")
+                if not (
+                    isinstance(land_point, list) and len(land_point) >= 2
+                    and isinstance(water_point, list) and len(water_point) >= 2
+                ):
+                    rows.append({
+                        "zoneId": zone_id,
+                        "partId": part["partId"],
+                        "name": part.get("name"),
+                        "status": "missing-point-pair",
+                        "landPoint": land_point,
+                        "waterPoint": water_point,
+                        "derivedOnshoreDirectionDeg": None,
+                        "landEvidence": None,
+                        "waterEvidence": None,
+                        "landSideTransect": None,
+                        "waterSideTransect": None,
+                        "safeAutomaticCorrection": None,
+                    })
+                    continue
                 coast, unit = coast_frame(part)
                 land_samples = [evidence(offset_point(coast, unit, distance))[1] for distance in (40, 60, 100, 150)]
                 water_samples = [evidence(offset_point(coast, unit, -distance))[1] for distance in (100, 200, 300, 500)]
@@ -130,6 +211,7 @@ def audit(bundle, tile_dir: Path):
         for dataset in datasets.values():
             dataset.close()
     counts = Counter(row["status"] for row in rows)
+    audited_rows = [part for parts in (bundle.get("zones") or {}).values() for part in parts]
     return {
         "schemaVersion": "1.0.0",
         "status": "private-read-only-national-land-water-audit",
@@ -138,6 +220,7 @@ def audit(bundle, tile_dir: Path):
         "sourceLicence": "CC-BY-4.0",
         "waterClass": WATER_CLASS,
         "partCount": len(rows),
+        "inputPointPairSha256": point_pair_fingerprint(audited_rows),
         "counts": dict(sorted(counts.items())),
         "automaticActivationAllowed": False,
         "scoreChanged": False,
@@ -148,16 +231,34 @@ def audit(bundle, tile_dir: Path):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--bundle", type=Path, default=ROOT / "data/live/coastal-parts-v2.json")
+    parser.add_argument("--points", type=Path)
+    parser.add_argument("--coast", type=Path)
+    parser.add_argument("--base-coast", type=Path)
+    parser.add_argument("--locality", type=Path)
     parser.add_argument("--tile-dir", type=Path, default=ROOT / ".cache/worldcover")
     parser.add_argument("--output", type=Path, default=ROOT / ".audit/national-local-part-land-water.json")
     parser.add_argument("--decisions-output", type=Path)
     args = parser.parse_args()
-    report = audit(load(args.bundle), args.tile_dir)
+    if args.points:
+        geometries = candidate_geometries(
+            coast=load(args.coast) if args.coast else None,
+            base_coast=load(args.base_coast) if args.base_coast else None,
+            locality=load(args.locality) if args.locality else None,
+        )
+        bundle = candidate_bundle(load(args.points), geometries)
+    else:
+        if args.coast or args.base_coast or args.locality:
+            parser.error("--coast/--base-coast/--locality kræver --points")
+        bundle = load(args.bundle)
+    report = audit(bundle, args.tile_dir)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     if args.decisions_output:
         corrections = {row["partId"]: row["safeAutomaticCorrection"] for row in report["parts"] if row["status"] == "reversed-land-water"}
-        ambiguous = [row["partId"] for row in report["parts"] if row["status"] == "ambiguous-land-water"]
+        ambiguous = [
+            row["partId"] for row in report["parts"]
+            if row["status"] in {"ambiguous-land-water", "missing-point-pair"}
+        ]
         decisions = {
             "schemaVersion": "1.0.0",
             "status": "reviewed-independent-land-water-side-evidence",
@@ -167,6 +268,8 @@ def main():
             "method": "10 m land-cover transects on both sides of the exact local coast; place names are excluded as side evidence",
             "correctionCount": len(corrections),
             "ambiguousCount": len(ambiguous),
+            "auditedPartCount": report["partCount"],
+            "inputPointPairSha256": report["inputPointPairSha256"],
             "corrections": corrections,
             "ambiguousPartIds": ambiguous,
             "automaticActivationAllowed": False,
