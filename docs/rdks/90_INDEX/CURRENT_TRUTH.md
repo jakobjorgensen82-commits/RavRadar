@@ -1,5 +1,11 @@
 # Current truth – gældende projektviden
 
+## 4.0.194 – land-/vandkort følger altid administratorens valg
+
+- Zonevalg i fanen **Retning: hav → land** nulstiller nu kortfokus deterministisk og zoomer til den valgte hovedzones aktive kystdele, også efter hurtige eller gentagne valg.
+- Alle zonens kystdele og eksisterende land-/havpunkter tegnes på ny; den valgte kystdel fremhæves og er den eneste med flytbare markører.
+- Den overflødige knap **Vis på hovedkortet** er fjernet fra arbejdsfladen. DMI, score, central lagring og det offentlige hovedkort er uændrede.
+
 ## 4.0.193 – lokal DMI-kæde gøres reel og fail-closed
 
 - En systemaudit af 4.0.192 dokumenterede, at DMI-schedulerens dækningsnævner kun omfattede 210 hovedzoner. De 651 aktive lokale kystdele fandtes som samplingposter, men kunne ikke holde schedulerens recovery i gang. Det offentlige snapshot havde derfor 0/651 kystdele med dokumenteret lokal U/V-cache, selv om lokale scorer blev vist.

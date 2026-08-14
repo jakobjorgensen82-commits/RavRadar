@@ -6,6 +6,9 @@ import {build} from './build-public-coastal-parts-v2.mjs';
 
 const ui=await fs.readFile('js/ui/admin-direction-editor.js','utf8');
 for(const needle of ['coastalParts.zones','partOverrides','Sæt nyt havpunkt','Sæt nyt landpunkt','Godkend og gem centralt'])assert.ok(ui.includes(needle),`Admin-editor mangler ${needle}`);
+for(const needle of ['focusRequested=true','selectionRevision','map.invalidateSize()','map.fitBounds','direction-point'])assert.ok(ui.includes(needle),`Admin-editor mangler robust kortvalg: ${needle}`);
+assert.ok(ui.includes("host.querySelector('#directionOpenMain')?.remove()"),'Den overflødige hovedkortknap fjernes ikke fra land/hav-editoren.');
+assert.ok(!ui.includes("host.querySelector('#directionOpenMain').onclick"),'Den slettede hovedkortfunktion har stadig en eventhandler.');
 const baseline=JSON.parse(await fs.readFile('data/live/coastal-parts-v2.json','utf8')),zoneId=Object.keys(baseline.zones).find(id=>baseline.zones[id].length>1)||Object.keys(baseline.zones)[0],part=baseline.zones[zoneId][0];
 const tmp=await fs.mkdtemp(path.join(os.tmpdir(),'ravradar-direction-'));
 const reviews=path.join(tmp,'direction-reviews.json'),output=path.join(tmp,'coastal-parts.json');

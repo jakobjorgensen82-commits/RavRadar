@@ -1,4 +1,11 @@
-# Implementeringsstatus pr. 4.0.193 – systemisk lokal-DMI-revision
+# Implementeringsstatus pr. 4.0.194 – land-/vandkortets valglivscyklus
+
+## Admin land/hav
+
+- [x] Hvert hovedzonevalg invaliderer kortstørrelsen, rydder tidligere lag og zoomer til den nye zones aktive kystdele.
+- [x] Valgt kystdel, øvrige dele samt eksisterende land- og havpunkter tegnes med entydige roller.
+- [x] Forsinkede kortcallbacks fra et tidligere valg kan ikke overskrive det seneste valg.
+- [x] **Vis på hovedkortet** er fjernet; editorens arbejdskort er den eneste relevante visning.
 
 ## Lokal DMI, score og forklaring
 
@@ -26,7 +33,7 @@
 - [x] Træk eksisterende land-/havpunkter eller sæt nye med kortklik.
 - [x] Central godkendelse med readback og kystdel-ID-bundet runtime-roundtrip.
 - [x] DMI-signatur og sampling bruger den byggede aktive kystdelskontrakt med administratorens godkendte punktrettelser.
-- [x] Eksisterende filterrækkefølge, hovedkortlink, centrale kladder og godkendelsesflow er bevaret.
+- [x] Eksisterende filterrækkefølge, centrale kladder og godkendelsesflow er bevaret; det overflødige hovedkortlink er fjernet efter ejerbeslutning.
 - [ ] Frisk GitHub-kørsel skal bestå fuld DMI-, validerings-, release- og deploykæde.
 
 ## Stabil DMI-sampling-signatur

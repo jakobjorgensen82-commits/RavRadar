@@ -1,3 +1,9 @@
+## 2026-08-14 – 4.0.194
+
+- Reproduceret en kortlivscyklusfejl i land-/vandeditoren: listen kunne vise Rejsby/Ribe Vesterå, mens kortet stod på en tidligere Bornholm-zone uden valgte kystlag og punktmarkører.
+- Zonevalg er gjort revisionsbundet. Tidligere forsinkede callbacks kan ikke overskrive det seneste valg; kortet invalideres, lagene bygges igen, og fokus sættes til den valgte zones dele ved hvert valg.
+- Den valgte kystdel samt eksisterende land-/havpunkter bevares i editorens kort. **Vis på hovedkortet** er fjernet efter ejerbeslutning. Ingen DMI-, score- eller hovedkortlogik er ændret.
+
 ## 2026-08-12 – 4.0.192
 
 - Ejerens land-/vandbestilling er implementeret som en samlet hovedzoneeditor: søgning viser alle aktive præcise kyststrækninger, deres geometri og individuelle land-/havpunkter.

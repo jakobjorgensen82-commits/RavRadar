@@ -1,5 +1,7 @@
 # Kendte åbne og overvågede forhold
 
+- **ISSUE-ADMIN-DIRECTION-MAP-STALE-SELECTION – RETTET LOKALT I 4.0.194:** Land-/vandeditorens tekstvalg kunne skifte til en ny hovedzone, mens Leaflet-kortet blev stående på en tidligere zone og derfor hverken viste den valgte kystdel eller dens punktpar. Valg og kortfokus er nu revisionsbundet, gamle callbacks ignoreres, lag genopbygges, kortstørrelsen invalideres og `fitBounds` køres for hvert zonevalg. Afventer browserkontrol efter deploy.
+
 ## DMI-produktionskæde
 
 - **ISSUE-DMI-VOLATILE-REGISTRY-SIGNATURE – RETTET LOKALT I 4.0.191 / AFVENTER TO CI-RUNS:** #2437 beviste, at checkpointet stadig blev afvist, fordi rå bytes fra det løbende vandkilderegister og zoneregisterets versionsmetadata indgik i signaturen. Signaturen bruger nu kun samplingbestemmende felter. Første run etablerer ny signatur; næste ikke-overlappende run skal bevise stategenbrug og rotation.
