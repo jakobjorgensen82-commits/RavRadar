@@ -1,12 +1,13 @@
 # Current truth – gældende projektviden
 
-## 4.0.203 – kandidatbundet land-/vandevidens
+## 4.0.204 – rå kandidatbundet land-/vandevidens
 
 - Privat #31804967576 bestod det udvidede DMI-tidsbudget, vejridentiteter, flertrinsserier, state, vind, shadow-score, bestandsafledt ejerreview og dubletaudit. Den stoppede derefter korrekt, fordi det gamle 121-rettelsesbevis var lavet til den aktive offentlige 673-dels bestand og ikke til den private 835-/652-dels kandidat.
 - Land-/vandevidens har nu et kryptografisk fingeraftryk af præcis den ukorrigerede punktbestand og et eksakt delantal. Workflowet afviser bevis fra en anden kandidat før DMI, score, artifact eller aktivering.
-- Den foreløbige kandidat på 835 dele har 614 verificerede, 54 sikkert vendte og 167 blokerede punktpar. Slutkandidaten på 652 dele har 427 verificerede, 111 sikkert vendte og 114 blokerede punktpar. Tvetydige dele mister aktive punkter og beholder to neutrale alternativer; vejr, state, score og automatisk aktivering forbliver falsk.
+- Offentlig 4.0.203 er produktionsverificeret i #31811492510 med frisk DMI, fuld projektvalidering, releasegate, Supabase og Pages. Privat #31812035188 stoppede korrekt ved første eksakte bevis: 4.0.203-beviset var ved en fejl afledt af en fil, hvor 107 historiske korrektioner allerede var anvendt, og var derfor ikke råt.
+- Den rå foreløbige kandidat på 835 dele har 520 verificerede, 149 sikkert vendte og 166 blokerede punktpar. Slutkandidatens allerede rå GitHub-bevis matcher fortsat 652 dele med 427 verificerede, 111 sikkert vendte og 114 blokerede punktpar. Tvetydige dele mister aktive punkter og beholder to neutrale alternativer; vejr, state, score og automatisk aktivering forbliver falsk.
 - Fallbackkandidaten har 17 dele: 11 verificerede, fire sikkert vendte og to blokerede. Fejø/Femø samt Havnø/Mariager Fjord øst er eksplicit bevaret som slettede, og de historiske Fejø/Femø-vinduer er fjernet fra fallbackbyggeren.
-- 4.0.202 er fortsat den offentligt produktionsverificerede baseline. 4.0.203 ændrer kun private kontrolløb og må ikke aktivere ny offentlig geometri uden fuld privat slutkørsel og særskilt ejerafgørelse.
+- 4.0.203 er den offentligt produktionsverificerede baseline. 4.0.204 ændrer kun privat evidens og må ikke aktivere ny offentlig geometri uden fuld privat slutkørsel og særskilt ejerafgørelse.
 
 ## 4.0.198 – sidste kendte 208-port fjernet
 

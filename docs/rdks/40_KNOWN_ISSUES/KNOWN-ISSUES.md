@@ -1,9 +1,9 @@
 # Kendte åbne og overvågede forhold
 
-## 4.0.203 – land-/vandevidens var bundet til forkert bestand
+## 4.0.204 – første land-/vandbevis var ikke råt
 
-- **ISSUE-NATIONAL-LAND-WATER-EVIDENCE-DATASET-DRIFT – RETTET LOKALT / AFVENTER PRIVAT CI:** #31804967576 nåede gennem review og dubletaudit, men det gamle 121-rettelsesbevis beskrev den aktive 673-dels bestand og manglede 14 ID'er i både den foreløbige og endelige private kandidat. Hver af de tre aktuelle kandidater har nu eget delantal og SHA-256-fingeraftryk; forkert eller ændret input afvises før DMI.
-- **ISSUE-NATIONAL-LAND-WATER-AMBIGUOUS – AKTIV MED NY BESTAND:** Den foreløbige 835-dels kandidat har 167 tvetydige/manglende punktpar, slutkandidaten på 652 dele har 114, og fallbackkandidaten på 17 dele har to. De er fail-closed uden aktive punkter, vejr, state, score eller automatisk aktivering og kræver senere ejerreview, hvis resten af den private kæde består.
+- **ISSUE-NATIONAL-LAND-WATER-EVIDENCE-DATASET-DRIFT – RETTET I TO TRIN / AFVENTER PRIVAT CI:** #31804967576 afslørede det historiske 673-dels bevis. #31812035188 viste derefter, at 4.0.203's første nye bevis var afledt af en fil med 107 allerede anvendte historiske korrektioner. Slut- og fallbackbeviset matcher deres rå GitHub-input præcist; det første bevis er nu genberegnet direkte fra den rå 835-dels QA-fil. Forkert input afvises fortsat før DMI.
+- **ISSUE-NATIONAL-LAND-WATER-AMBIGUOUS – AKTIV MED RÅ BESTAND:** Den foreløbige 835-dels kandidat har 166 tvetydige/manglende punktpar, slutkandidaten på 652 dele har 114, og fallbackkandidaten på 17 dele har to. De er fail-closed uden aktive punkter, vejr, state, score eller automatisk aktivering og kræver senere ejerreview, hvis resten af den private kæde består.
 - **ISSUE-FALLBACK-DELETED-ZONE-REINTRODUCTION – RETTET LOKALT / AFVENTER PRIVAT CI:** Den historiske fallbackbygger indeholdt stadig vinduer for Fejø/Femø. De er fjernet, og validatoren kræver nu både Fejø/Femø og Havnø/Mariager Fjord øst bevaret som slettede.
 
 ## 4.0.198 – lokalitetsopdeling

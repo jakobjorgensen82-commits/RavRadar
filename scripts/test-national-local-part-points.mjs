@@ -55,7 +55,7 @@ assert.ok(
 );
 assert.deepEqual(
   [initialEvidence.auditedPartCount, initialEvidence.correctionCount, initialEvidence.ambiguousCount],
-  [835, 54, 167]
+  [835, 149, 166]
 );
 assert.deepEqual(
   [finalEvidence.auditedPartCount, finalEvidence.correctionCount, finalEvidence.ambiguousCount],

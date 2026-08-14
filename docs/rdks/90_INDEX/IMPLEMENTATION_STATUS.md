@@ -771,8 +771,15 @@ Status: Implementeret og lokalt valideret.
 - [x] #31804967576 beviste, at 3.000-sekundersbudgettet virker, og nåede gennem første DMI, vejridentitet, flertrinsserier, state, vind, shadow-score, review og dubletaudit.
 - [x] Fejlen efter review er dokumenteret som bestandsdrift: det gamle 121-rettelsesbevis var lavet til 673 aktive dele og kunne ikke anvendes sikkert på de private 835-/652-delsbestande.
 - [x] Foreløbig, endelig og fallback-kandidat har nu hver sit eksakte delantal og SHA-256-fingeraftryk af ukorrigerede punktpar.
-- [x] Tvetydige dele blokeres uden aktive punkter. Foreløbig status er 614 verificerede, 54 rettede og 167 blokerede; slutstatus er 427 verificerede, 111 rettede og 114 blokerede; fallbackstatus er 11 verificerede, fire rettede og to blokerede.
+- [x] Tvetydige dele blokeres uden aktive punkter. 4.0.203's foreløbige optælling blev efterfølgende afvist som ikke-rå af #31812035188; den bindende rå optælling står under 4.0.204. Slutstatus er fortsat 427 verificerede, 111 rettede og 114 blokerede; fallbackstatus er 11 verificerede, fire rettede og to blokerede.
 - [x] Fallbackbygger og validator kan ikke genindføre Fejø/Femø eller Havnø/Mariager Fjord øst.
 - [x] `test:coastal-geometry-v2` og workflowrækkefølgen består lokalt.
-- [ ] Normal 4.0.203-produktion skal bestå fulde releasegates og deploy.
+- [x] Normal 4.0.203-produktion bestod fulde releasegates, DMI, Supabase og Pages i #31811492510.
+- [x] Privat #31812035188 beviste, at fingeraftryksgaten stopper et første bevis, som var lavet efter 107 historiske korrektioner.
+
+## 4.0.204 – første bevis direkte fra rå GitHub-kandidat
+
+- [x] Den rå 835-dels punktfil fra #31812035188 er auditeret direkte: 520 verificerede, 149 sikkert vendte og 166 blokerede.
+- [x] Slutbevisets fingeraftryk matcher fortsat den rå 652-dels GitHub-fil fra #31804967576; fallbackbeviset matcher sin rå 17-dels fil. De to beviser ændres ikke.
+- [ ] Normal 4.0.204-produktion skal bestå fulde releasegates og deploy.
 - [ ] En ny privat national kørsel skal bevise de tre eksakte beviser, DMI for valgte/alternative punkter, slut-shadow-score, admin-roundtrip/rollback og artifacts samlet.

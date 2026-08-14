@@ -1,12 +1,12 @@
 # Aktuelt sessionshandoff – 2026-08-14
 
-## Nyeste sikre grænse – 4.0.203-kandidat
+## Nyeste sikre grænse – 4.0.204-kandidat
 
 - Den tidligere DEC-0036-stopregel er erstattet af ejerens udtrykkelige mandat til at fortsætte den landsdækkende private kyst- og land-/vandaudit. Privat arbejde må fortsætte systemisk; offentlig aktivering kræver stadig særskilt go/no-go.
-- Offentlig 4.0.202 er produktionsverificeret i #31804954306. Privat #31804967576 bestod DMI, serier, state, vind, shadow-score, dynamisk review og dubletaudit, men stoppede ved et stale land-/vandbevis fra 673-delsbestanden.
-- 4.0.203 har tre kandidatbundne ESA WorldCover 10 m-beviser: foreløbig 835 dele (54 rettede, 167 blokerede), endelig 652 dele (111 rettede, 114 blokerede) og fallback 17 dele (fire rettede, to blokerede). SHA-256 og delantal skal matche præcis ukorrigeret input.
+- Offentlig 4.0.203 er produktionsverificeret i #31811492510. Privat #31812035188 bestod kilde, topologi, dele og navne, men stoppede ved første eksakte bevis, fordi 4.0.203-beviset var lavet efter 107 historiske korrektioner og derfor ikke matchede den rå kandidat.
+- 4.0.204 bruger et nyt råt første ESA WorldCover 10 m-bevis: 835 dele, 149 rettelser og 166 blokerede. Slutbeviset matcher fortsat den rå GitHub-fil med 652 dele, 111 rettelser og 114 blokerede; fallback matcher 17 dele, fire rettelser og to blokerede. SHA-256 og delantal skal matche præcis ukorrigeret input.
 - Tvetydige dele har ingen aktive punkter og kan ikke få vejr, state, score eller aktivering. Fejø/Femø og Havnø/Mariager Fjord øst forbliver slettet i fallbackbygger og validator.
-- Lokalt består `test:coastal-geometry-v2` og `test:workflow-validation-order`. RDKS, håndbog, changelog og version 4.0.203 skal være grønne før commit/push. Derefter følges både normal release og ny privat national kørsel helt til slut.
+- RDKS, håndbog, changelog og version 4.0.204 skal være grønne før commit/push. Derefter følges både normal release og ny privat national kørsel helt til slut.
 - Alle ældre scope-, delantal- og “næste trin”-afsnit nedenfor er historisk spor, når de strider mod dette checkpoint.
 
 ## Historisk scope fra 2026-08-12 – erstattet af checkpointet ovenfor

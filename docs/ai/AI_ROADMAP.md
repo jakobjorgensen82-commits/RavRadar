@@ -1,4 +1,4 @@
-# AI Roadmap – RavRadar efter 4.0.203
+# AI Roadmap – RavRadar efter 4.0.204
 
 Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status skal løbende flyttes til RDKS, når noget implementeres.
 
@@ -9,8 +9,9 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 - 4.0.201 gør review og admin-roundtrip bestandsafledte under streng 1:1-validering. Næste trin er en fuld ny privat kørsel gennem endelige 121 rettelser, slut-DMI, slut-shadow-score, roundtrip/rollback og artifacts.
 - #31802022918 bekræftede 27 grønne nationale trin, men den første native DMI-gate ramte sit marginale standardbudget. 4.0.202 ændrer kun de tre private nationale DMI-gates til det etablerede 3.000-sekunders kvalitetsbudget og afventer ny fuld kørsel.
 - #31804967576 bekræftede tidsbudgettet og nåede gennem review/dubletaudit. Det efterfølgende stop viste, at det gamle 121-rettelsesbevis var lavet til den aktive 673-dels bestand, ikke til de private 835-/652-dels kandidater.
-- 4.0.203 binder nu foreløbig, endelig og fallback-land/vandevidens til præcis ukorrigeret punktbestand. Tvetydige par blokeres uden aktive markører; Fejø/Femø og Havnø/Mariager kan ikke genindføres af fallbackbyggeren.
-- Næste trin er normal 4.0.203-releasekørsel og derefter en ny fuld privat national kørsel gennem alle tre eksakte beviser, DMI, shadow-score, central roundtrip/rollback og artifacts.
+- 4.0.203 bandt beviser til fingeraftryk, men #31812035188 afslørede, at det første bevis var lavet efter 107 historiske korrektioner og derfor ikke var råt. Slut- og fallbackbeviset var allerede korrekte.
+- 4.0.204 erstatter kun det første bevis med en audit direkte af GitHubs rå 835-dels kandidat: 520 verificerede, 149 sikkert vendte og 166 blokerede.
+- Næste trin er normal 4.0.204-releasekørsel og derefter en ny fuld privat national kørsel gennem alle tre eksakte beviser, DMI, shadow-score, central roundtrip/rollback og artifacts.
 - Ingen privat kandidat må aktiveres offentligt uden de resterende gates og en særskilt ejerafgørelse.
 
 ## Aktivt scope – nyere ejerbeslutning erstatter DEC-0036-stopreglen

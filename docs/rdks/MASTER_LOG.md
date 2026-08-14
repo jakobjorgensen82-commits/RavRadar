@@ -1034,3 +1034,10 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Tvetydige punktpar deaktiveres nu helt og beholder kun to neutrale alternativer. Ingen vejr-, state-, score- eller aktiveringsflag kan følge med et uafgjort par.
 - Den historiske fallbackbygger kunne stadig medtage Fejø/Femø. Dens vinduer er fjernet, og både Fejø/Femø og Havnø/Mariager Fjord øst er nu bindende slettet i rapport og validator.
 - Offentlig geometri og RavScore er uændret. Næste evidens er fuld normal 4.0.203-kørsel samt en ny, isoleret privat national kørsel; privat kandidat må ikke aktiveres automatisk.
+
+## 2026-08-14 – 4.0.204
+
+- Offentlig #31811492510 produktionsverificerede 4.0.203 med frisk DMI, fuld projektvalidering, releasegate, Supabase-synkronisering og Pages.
+- Privat #31812035188 bestod officiel kilde, topologi, kystdele og navne, men den nye fingeraftryksgate afviste det første 835-dels bevis. Sammenligning viste samme 835 ID'er og kystreferencepunkter, men 107 punktpar afveg, fordi 4.0.203-beviset var lavet efter anvendelse af historiske korrektioner.
+- Det første bevis er genberegnet direkte fra den rå QA-punktfil fra #31812035188: 520 verificerede, 149 sikkert vendte og 166 blokerede. Slutbeviset matcher fortsat rå 652-dels GitHub-input, og fallbackbeviset matcher rå 17-dels input.
+- Den strenge gate er bevaret. Offentlig geometri og RavScore er uændret; en ny privat national kørsel kræves.
