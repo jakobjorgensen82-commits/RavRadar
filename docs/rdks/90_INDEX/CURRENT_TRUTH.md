@@ -7,7 +7,7 @@
 - Når ejeren vælger **Godkend og gem centralt**, er ændringen først aktiv efter verificeret central genlæsning og en grøn efterfølgende DMI-/releasekørsel. Indtil da forbliver den seneste produktionsverificerede placering aktiv.
 - En skrivebeskyttet orienteringsaudit fandt 199 kontrolkandidater i 122 hovedzoner ved mindst 35 graders vedvarende variation. 171 er fragmenterede `MultiLineString`-dele, så tallet er en triageliste og ikke 199 beviste fejl. Auditten giver ingen automatisk ændringstilladelse.
 - Den manuelle ejerreview af alle zoner kan udføres gradvist og er ikke en blokering for uafhængige roadmapopgaver. Den skal være afsluttet før endelig faglig godkendelse af alle lokale RavScores, større scorekalibrering og domæne-/brugerrelease.
-- 4.0.206 er fortsat produktionsverificeret baseline, indtil 4.0.207 har bestået GitHub Actions og deploy.
+- 4.0.207 er produktionsverificeret i GitHub Actions #31845836107 på commit `5176d2e14b2c5cff745caa428e6f1b43f45eb824`: frisk vejrdata, fuld projektvalidering, releasegate, Supabase-synkronisering, Pages-artifact og deploy bestod.
 
 ## 4.0.206 – ren og idempotent fallbackslutkontrol
 

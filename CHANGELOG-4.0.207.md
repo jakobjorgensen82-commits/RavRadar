@@ -12,3 +12,7 @@
 - En skrivebeskyttet orienteringsaudit registreres som triage: 199 kontrolkandidater i 122 zoner, heraf 171 `MultiLineString`-dele.
 - Den gradvise manuelle ejerreview er ikke en blokering for uafhængigt roadmaparbejde, men er en forudsætning for endelig faglig score- og brugerreleasegodkendelse.
 - Sessionshandoff, RDKS, roadmap og begge håndbogsudgaver er opdateret til den aktuelle sandhed.
+
+## Produktionsbevis
+
+- GitHub Actions #31845836107 på commit `5176d2e14b2c5cff745caa428e6f1b43f45eb824` bestod frisk vejrdata, fuld projektvalidering, releasegate, Supabase-synkronisering, Pages-artifact og deploy.

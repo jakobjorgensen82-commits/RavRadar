@@ -6,7 +6,7 @@
 - [x] **Sæt nyt havpunkt** og **Sæt nyt landpunkt** er fjernet fra editoren.
 - [x] Trækbare eksisterende markører, rød hav→land-pil, geometrikontrol, central readback og DMI-/releasevalidering er bevaret.
 - [x] Regressionstesten afviser genindførelse af de fjernede knapper og beskytter fortsat træk- og runtime-roundtrip.
-- [ ] 4.0.207 skal bestå fuld lokal validering, releasegate og GitHub Actions/deploy.
+- [x] 4.0.207 er produktionsverificeret i #31845836107: frisk vejrdata, fuld projektvalidering, releasegate, Supabase-synkronisering, artifact og Pages-deploy bestod.
 - [ ] Ejeren gennemgår senere alle zoner manuelt og vælger et repræsentativt punktpar på bugtede strækninger. Opgaven kan udføres gradvist og blokerer ikke uafhængige roadmapopgaver.
 - [ ] Den manuelle gennemgang skal være afsluttet før endelig faglig godkendelse af alle lokale scorer og domæne-/brugerrelease.
 

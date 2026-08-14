@@ -1,9 +1,9 @@
 # Aktuelt sessionshandoff – 2026-08-15
 
-## Sikker baseline og kandidat
+## Sikker baseline
 
-- Seneste produktionsverificerede release er 4.0.206 på commit `4dc464a`, verificeret i GitHub Actions #31831068809 med frisk data, fuld validering, releasegate, Supabase-synkronisering, artifact og Pages-deploy.
-- 4.0.207 fjerner kun de to uvirksomme adminfunktioner **Sæt nyt havpunkt** og **Sæt nyt landpunkt**. Den må først kaldes produktionsverificeret, når dens egen fulde GitHub-kørsel og deploy er grøn.
+- Seneste produktionsverificerede release er 4.0.207 på commit `5176d2e14b2c5cff745caa428e6f1b43f45eb824`, verificeret i GitHub Actions #31845836107 med frisk vejrdata, fuld projektvalidering, releasegate, Supabase-synkronisering, artifact og Pages-deploy.
+- 4.0.207 fjerner kun de to uvirksomme adminfunktioner **Sæt nyt havpunkt** og **Sæt nyt landpunkt**.
 - Eksisterende trækbare markører, rød hav→land-pil, geometrikontrol, central gemning/readback, DMI-validering, runtimepropagering og rollback er bevaret.
 
 ## Bindende ejerbeslutning om land-/vandpunkter
@@ -16,7 +16,7 @@
 ## Næste arbejde
 
 1. Ved opstart læses `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde og DEC-0037 før kodearbejde.
-2. Kontrollér `git status`, seneste commit og den seneste 4.0.207 GitHub Actions-kørsel. Et grønt topresultat er kun releasebevis, hvis fuld `validate` og `release:gate` faktisk er kørt før artifact/deploy.
+2. Kontrollér `git status`, seneste commit og efterfølgende GitHub Actions-kørsler. 4.0.207's produktionsbevis er #31845836107; et senere grønt topresultat er kun releasebevis, hvis fuld `validate` og `release:gate` faktisk er kørt før artifact/deploy.
 3. Næste aktive udvikleropgave er P1-audit/design af komplette DMI-first femdøgnskæder pr. komponent under DEC-0030. Ingen ny kilde, fallback eller scoreændring må implementeres før dækning, provenance, overgange og regressioner er dokumenteret.
 4. Supabase-egress overvåges gennem næste billingperiode. Den private, dataminimerede besøgstæller med enkel adminrapport er fortsat P2.
 5. Ejerens manuelle markørreview udføres senere gradvist i admin og registreres kun gennem central readback plus grøn DMI-/releasevalidering.
