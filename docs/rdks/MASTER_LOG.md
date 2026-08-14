@@ -1013,3 +1013,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Hele den isolerede statuskontrakt normaliseres nu sammen med en uafhængig sikker punktrettelse. Vejr, state, score og aktivering forbliver slukket frem til deres egne gates.
 - Foreslået/blokeret-summer genberegnes. En målrettet DK-B07-21-regression består validatoren med 1 foreslået og 0 blokerede efter rettelsen.
 - Ejerens krav om en eksplicit anbefaling af brugerfladens indsats ved hvert nyt arbejdsafsnit er gjort permanent i AGENTS og AI-operating-rules.
+
+## 2026-08-14 – 4.0.201
+
+- Produktion #31798575274 bestod frisk DMI, fuld validering, releasegate, Supabase-synkronisering og Pages-deploy på 4.0.200.
+- Privat #31798588868 bestod den rettede foreløbige punktkontrakt, native DMI-grid, flertrinsserier, state, vind og shadow-score. Den faktiske bestand var konsistent 835/828/4/3, men score-neutral ejer-review krævede stadig historisk 783/758/22/3.
+- Review og efterfølgende admin-roundtrip er gjort dynamiske under streng 1:1-kontrol af geometri, navne, punktstatus, shadow-ID'er, optællinger og central readback. Regressionen reproducerer 835-delsfordelingen og afviser manipulerede tællinger.

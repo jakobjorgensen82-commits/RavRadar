@@ -1,6 +1,13 @@
-# AI Roadmap – RavRadar efter 4.0.182
+# AI Roadmap – RavRadar efter 4.0.200
 
 Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status skal løbende flyttes til RDKS, når noget implementeres.
+
+## Aktiv P0 – afslut den private land-/vandkandidat
+
+- 4.0.200 er offentligt produktionsverificeret i #31798575274 med fuld validering, releasegate, DMI, Supabase og Pages.
+- Privat #31798588868 beviste foreløbige punkter, native DMI-grid, vejrserier, state, vind og score-neutral shadow-score for en konsistent 835-dels kandidat. Den stoppede alene på reviewbyggerens historiske 783-tæller.
+- 4.0.201 gør review og admin-roundtrip bestandsafledte under streng 1:1-validering. Næste trin er en fuld ny privat kørsel gennem endelige 121 rettelser, slut-DMI, slut-shadow-score, roundtrip/rollback og artifacts.
+- Ingen privat kandidat må aktiveres offentligt uden de resterende gates og en særskilt ejerafgørelse.
 
 ## Bindende aktivt scope – DEC-0036
 

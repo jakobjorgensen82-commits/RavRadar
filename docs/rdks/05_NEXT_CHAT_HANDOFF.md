@@ -1,5 +1,14 @@
 # RavRadar – aktuel overlevering til Codex
 
+## Kritisk aktuelt checkpoint — 4.0.201
+
+- Offentlig 4.0.200 er produktionsverificeret i #31798575274 med frisk DMI, fuld validering, releasegate, Supabase og Pages.
+- Privat #31798588868 bestod den foreløbige 835-dels punkt-, DMI-, vejr-, state-, vind- og shadow-kæde og stoppede kun på en historisk fast 783-reviewkontrol.
+- 4.0.201 afleder review og central admin-roundtrip af den allerede validerede delbestand med streng 1:1-kontrol. Ny privat slutkørsel skal stadig bevise endelige 121 rettelser, slut-DMI, slut-shadow-score og rollback.
+- Den private kandidat ændrer ikke automatisk offentlig geometri, admin-sandhed eller RavScore.
+
+De ældre checkpoints nedenfor bevares som historik og er ikke aktuel status.
+
 ## Kritisk aktuelt checkpoint — 4.0.181
 
 4.0.180 havde en alvorlig offentlig kortregression: 605 interne kystberegningsdele blev tegnet som selvstændige zoner. Det skabte 2.488 linjekomponenter, sorte endemarkeringer langs hele kysten og meget langsom indlæsning. Ejerens præcisering er bindende: De gamle hovedzoner skal fortsat være de synlige zoner; lokale dele bruges kun internt til forskellige retninger, lokale serier og scorevalg.

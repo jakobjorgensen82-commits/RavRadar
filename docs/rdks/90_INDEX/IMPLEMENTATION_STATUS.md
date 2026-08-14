@@ -749,4 +749,12 @@ Status: Implementeret og lokalt valideret.
 - [x] En sikkert korrigeret række får forslagstatus, tomme gamle blokeringer og deaktiverede downstreamflag.
 - [x] Foreslået/blokeret-summer genberegnes efter rettelser.
 - [x] Målrettet regression flytter en syntetisk blokeret DK-B07-21-række fra 0/1 til 1/0 og består punktkontrakten.
-- [ ] Frisk privat national kørsel skal passere både den foreløbige og afsluttende punktkontrakt.
+- [x] #31798588868 passerede den foreløbige punktkontrakt, native DMI-grid, marine flertrinsserier, state, vind og shadow-score med 832 foreslåede og tre blokerede dele.
+- [ ] Frisk privat national kørsel skal fortsat passere den afsluttende punktkontrakt efter ejerrettelserne; #31798588868 nåede ikke dette trin på grund af den separate reviewtæller nedenfor.
+
+## 4.0.201 – bestandsafledt ejer-review og admin-roundtrip
+- [x] #31798588868 dokumenterede en indbyrdes konsistent finaliseret foreløbig bestand på 835 dele: 828 komplette, fire delvise og tre blokerede.
+- [x] Reviewgaten sammenholder nu geometri, navne, punktstatus, shadow-ID'er og alle tællinger 1:1 i stedet for at kræve det historiske 783-tal.
+- [x] Admin-roundtrip læser, skriver og rapporterer reviewets faktisk validerede delantal og afviser uoverensstemmende input.
+- [x] Målrettede 835/828/4/3-regressioner samt hele `test:coastal-geometry-v2` består lokalt.
+- [ ] Ny privat national kørsel skal bevise review, endelige 121 punktrettelser, slut-DMI, slut-shadow-score, central roundtrip/rollback og artifacts samlet.

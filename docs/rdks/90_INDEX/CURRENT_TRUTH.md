@@ -535,6 +535,12 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - Når uafhængig 10-meter-evidens leverer et sikkert korrigeret land-/vandpunktpar, normaliseres hele rækken til et isoleret forslag: gamle blokeringer fjernes, men vejr, state, score og automatisk aktivering forbliver deaktiveret.
 - Rapportens foreslået/blokeret-summer genberegnes efter rettelserne. En række må aldrig have komplette punkter og samtidig stå som blokeret.
 
+## National ejer-review følger den validerede delbestand – 4.0.201
+- Privat #31798588868 bestod den foreløbige punktkontrakt med 832 foreslåede og tre blokerede dele, native DMI-gridkontrol, flertrinsserier, state-/historikisolation, vind og score-neutral shadow-score.
+- Samme kæde dokumenterede 835 finaliserede kystdele: 828 komplette, fire med deldækning og tre blokerede. Reviewbyggeren stoppede derefter alene på den historiske faste forventning 783/758/22/3.
+- Review og central admin-roundtrip er nu bestandsafledte og fail-closed: geometri, navne, punkter, shadow-ID'er, statusoptællinger og readback skal være 1:1. Et nyt legitimt delantal accepteres kun, når alle disse tidligere gates er indbyrdes konsistente.
+- Den offentlige 4.0.200-produktion bestod fuld validering, releasegate, DMI, Supabase og Pages i #31798575274. Den private kandidat ændrer fortsat ikke offentlig geometri, score eller admin-sandhed.
+
 ## DMI-schedulerbalance – 2026-08-08
 - Marine recovery er ikke længere rent binær efter etableret grunddækning. Under 95 % marinegrundlag er begge produktive pladser fortsat marine-first.
 - Ved mindst 95 % marinegrundlag beholder den mest relevante DKSS-model første plads, mens anden plads går til den mest underdækkede vind-/bølgefamilie.

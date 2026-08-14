@@ -255,3 +255,7 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 # 4.0.200 – korrigeret punktpar skal have konsistent status
 
 - **ISSUE-INDEPENDENT-CORRECTION-LEFT-BLOCKED-STATUS – LØST LOKALT:** #31796921725 anvendte 107 rettelser og udskød de korrekte 14, men DK-B07-21 beholdt sin gamle blokerede status efter at have fået et komplet, uafhængigt dokumenteret punktpar. Rettelsen normaliserer nu hele den isolerede punktkontrakt og genberegner rapportens foreslået/blokeret-summer; DMI, state, score og automatisk aktivering forbliver deaktiveret indtil senere gates.
+
+# 4.0.201 – ejer-reviewets historiske delantal
+
+- **ISSUE-NATIONAL-OWNER-REVIEW-STALE-783-COUNT – LØST LOKALT / AFVENTER CI:** #31798588868 passerede kyst-, punkt-, DMI-, state-, vind- og shadow-gates med 835 indbyrdes konsistente dele, men reviewbyggeren krævede fortsat 783 fra 4.0.175. Review og admin-roundtrip bruger nu den validerede faktiske bestand og stopper ved manglende 1:1-identitet eller tælleafvigelse; ny privat slutkørsel mangler.
