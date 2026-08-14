@@ -452,6 +452,9 @@ jobs:
       - name: Build private land and water point pairs from opposite-side evidence
         run: python scripts/build-national-local-part-points.py
 
+      - name: Apply independent 10 m land and water side evidence
+        run: python scripts/apply-national-land-water-corrections.py --input .geometry-v2-work/national-local-part-point-pairs.json --output .geometry-v2-work/national-local-part-point-pairs.json
+
       - name: Validate ambiguous point pairs remain fail-closed
         run: python scripts/validate-national-local-part-points.py
 
@@ -506,6 +509,9 @@ jobs:
 
       - name: Rebuild final land and water points after owner corrections and deduplication
         run: python scripts/build-national-local-part-points.py --work-dir .geometry-v2-work --zones data/zones.geojson --final-coast .owner-review/national-owner-final/national-owner-final-coast.geojson --final-names .owner-review/national-owner-final/national-owner-final-part-names.json --output .owner-review/national-owner-final/national-local-part-point-pairs.json
+
+      - name: Apply independent 10 m land and water side evidence to final points
+        run: python scripts/apply-national-land-water-corrections.py --input .owner-review/national-owner-final/national-local-part-point-pairs.json --output .owner-review/national-owner-final/national-local-part-point-pairs.json
 
       - name: Validate final land and water point contract
         run: python scripts/validate-national-local-part-points.py --work-dir .owner-review/national-owner-final

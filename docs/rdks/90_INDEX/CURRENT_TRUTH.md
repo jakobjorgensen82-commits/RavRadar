@@ -1,5 +1,13 @@
 # Current truth – gældende projektviden
 
+## 4.0.196 – land/hav er én fysisk kontrakt
+
+- Hver lokal kystdel har ét blåt havpunkt i vandet og ét grønt landpunkt på land. Linjen fra hav til land skal krydse den tilhørende kyst og være vinkelret på dens lokale retning; den røde pil i admin viser netop denne beregningsretning.
+- Pålandsretningen kan ikke længere redigeres som et løsrevet tal. Den beregnes geodætisk fra havpunkt til landpunkt og er samme retningskilde for admin, DMI-sampling, lokal score og offentlig forklaring.
+- En uafhængig landsaudit med ESA WorldCover 2021 ved fire afstande på hver side af den præcise kyst fandt 434 verificerede punktpar, 121 dokumenteret omvendte punktpar og 118 tvetydige. Stednavne må ikke bruges som bevis for land- eller vandside.
+- De 121 dokumenterede rettelser genbygges som nye vinkelrette punktpar og skal bestå den private nationale punkt-, DMI-grid-, shadow-score-, runtime- og rollbackkæde før aktivering. De 118 tvetydige ændres ikke automatisk og kræver senere ejer-/kortkontrol.
+- Rejsby og Ribe Vesterå er verificeret korrekt i sideauditen og bevares. En administrator kan fortsat flytte vandpunktet længere ud, men en godkendelse kan kun gemmes, når hele zonens punktpar krydser egen kyst vinkelret og med punkterne på hver sin side.
+
 ## 4.0.195 – Leaflet får position før vektorlag
 
 - 4.0.194 ændrede kortets timing, men løste ikke rodårsagen. En isoleret browsertest med de rigtige 673 kystdele reproducerede Leaflet-fejlen `Cannot read properties of undefined (reading 'min')`.

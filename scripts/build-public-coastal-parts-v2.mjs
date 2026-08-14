@@ -13,6 +13,11 @@ const DEFAULT_ZONES=path.join(ROOT,'data/zones.geojson');
 const sha=text=>crypto.createHash('sha256').update(text.replace(/\r\n/g,'\n')).digest('hex');
 const read=async (source,name)=>{const text=await fs.readFile(path.join(source,name),'utf8');return{text,json:JSON.parse(text)}};
 const cleanPoint=point=>[Number(Number(point[0]).toFixed(6)),Number(Number(point[1]).toFixed(6))];
+const norm=value=>((Number(value)%360)+360)%360;
+function bearing(from,to){
+  const [lon1,lat1]=from.map(value=>Number(value)*Math.PI/180),[lon2,lat2]=to.map(value=>Number(value)*Math.PI/180);
+  return norm(Math.atan2(Math.sin(lon2-lon1)*Math.cos(lat2),Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(lon2-lon1))*180/Math.PI);
+}
 function simplifyLine(points,tolerance=0.000025){
   const line=points.map(cleanPoint);if(line.length<=2)return line;
   const sq=tolerance*tolerance,keep=new Uint8Array(line.length);keep[0]=keep[line.length-1]=1;const stack=[[0,line.length-1]];
@@ -60,8 +65,12 @@ export async function build({source=DEFAULT_SOURCE,output:outputPath=DEFAULT_OUT
     // udtrykkeligt har flyttet dem til en anden aktiv hovedzone først.
     if(!activeZoneIds.has(zoneId))continue;
     const partOverride=directionReviewZones[zoneId]?.status==='verified'?directionReviewZones[zoneId]?.partOverrides?.[id]:null;
-    const landPoint=partOverride?.landPoint||p.landPoint,waterPoint=partOverride?.waterPoint||p.waterPoint,onshoreDirectionDeg=partOverride?.onshoreDirectionDeg??p.onshoreDirectionDeg;
-    if(!Array.isArray(landPoint)||!Array.isArray(waterPoint)||!Number.isFinite(Number(onshoreDirectionDeg)))throw new Error(`${id}: centralt land-/vandreview er ugyldigt`);
+    const landPoint=partOverride?.landPoint||p.landPoint,waterPoint=partOverride?.waterPoint||p.waterPoint;
+    if(!Array.isArray(landPoint)||!Array.isArray(waterPoint)||landPoint.length<2||waterPoint.length<2)throw new Error(`${id}: centralt land-/vandreview er ugyldigt`);
+    // Runtime-retningen har én sandhed: den geografiske retning fra det blå
+    // vandpunkt til det grønne landpunkt. En gammel eller manuelt indtastet
+    // gradværdi må aldrig kunne afkoble pil, DMI-retning og RavScore.
+    const onshoreDirectionDeg=Number(bearing(waterPoint,landPoint).toFixed(1));
     (zones[zoneId]??=[]).push({
       partId:id,
       sourceZoneId,

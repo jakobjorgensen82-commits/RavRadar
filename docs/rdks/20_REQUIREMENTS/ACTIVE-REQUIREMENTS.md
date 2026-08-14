@@ -2,6 +2,20 @@
 
 Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslutninger, chatkilder og kode.
 
+## Land-/vandpunktpar
+
+- **REQ-GEO-060 – BINDENDE:** Hver lokal kystdel skal have et havpunkt i vand, et landpunkt på land og en hav→land-linje, som krydser egen kyst omtrent vinkelret.
+- **REQ-GEO-061 – BINDENDE:** Samme punktpar er autoritativt for DMI-sampling, beregnet pålandsretning, lokal score, offentlig forklaring og adminvisning. Et separat gemt gradtal må ikke overstyre punktparret.
+- **REQ-GEO-062 – BINDENDE:** Stednavne, generelle zonecentre eller tidligere hardcodede vinkler må ikke alene afgøre land-/vandside. Automatisk korrektion kræver uafhængigt flerafstandsbevis; tvetydige tilfælde forbliver fail-closed.
+- **REQ-GEO-063 – BINDENDE:** Nye eller flyttede vandpunkter må ikke aktiveres uden native DMI-grid, score-, runtime-, central readback- og rollbackbevis.
+
+## Land-/vandpunktpar
+
+- **REQ-GEO-060 – BINDENDE:** Hver lokal kystdel skal have et havpunkt i vand, et landpunkt på land og en hav→land-linje, som krydser egen kyst omtrent vinkelret.
+- **REQ-GEO-061 – BINDENDE:** Samme punktpar er autoritativt for DMI-sampling, beregnet pålandsretning, lokal score, offentlig forklaring og adminvisning. Et separat gemt gradtal må ikke overstyre punktparret.
+- **REQ-GEO-062 – BINDENDE:** Stednavne, generelle zonecentre eller tidligere hardcodede vinkler må ikke alene afgøre land-/vandside. Automatisk korrektion kræver uafhængigt flerafstandsbevis; tvetydige tilfælde forbliver fail-closed.
+- **REQ-GEO-063 – BINDENDE:** Nye eller flyttede vandpunkter må ikke aktiveres uden native DMI-grid, score-, runtime-, central readback- og rollbackbevis.
+
 ## Tværgående funktionsbevarelse
 - **REQ-REGRESSION-001 – BINDENDE:** En ændring må ikke utilsigtet fjerne, skjule, afkoble eller forringe en eksisterende bruger-, admin-, data-, score-, forecast-, kort-, observations- eller driftsfunktion. Bevidst fjernelse kræver en aktuel udtrykkelig ejerbeslutning, og den tekniske følgevirkning skal afgrænses, så beslægtede bagvedliggende funktioner bevares, medmindre de også udtrykkeligt er bestilt fjernet.
 - **REQ-REGRESSION-002 – BINDENDE:** Før release skal ændringens berørte funktionsflade sammenlignes før/efter på tværs af offentlig UI, admin, datafelter, runtime, tests og deployment. Nye målrettede tests må ikke erstatte kontrol af eksisterende relevante funktioner.

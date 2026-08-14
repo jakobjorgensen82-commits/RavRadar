@@ -1,4 +1,17 @@
-# Implementeringsstatus pr. 4.0.195 – land-/vandkortets Leaflet-livscyklus
+# Implementeringsstatus pr. 4.0.196 – fysisk land-/vandkontrakt
+
+## National land-/vandaudit og rettelse
+
+- [x] 673 aktive lokale kystdele er kontrolleret mod uafhængig 10 m landdækning ved flere afstande fra den præcise kyst.
+- [x] 434 punktpar er verificeret korrekte, 121 er dokumenteret omvendte, og 118 er bevaret som tvetydige uden automatisk gæt.
+- [x] De 121 rettelser har reproducerbar evidens og nye vinkelrette land-/vandpunkter.
+- [x] Admin viser rød hav→land-retning og kræver kystkryds, modsatte sider og højst 20 graders afvigelse fra vinkelret før godkendelse.
+- [x] Produktionsbyggeren beregner pålandsretningen geodætisk fra punktparret; et gammelt gemt retningstal kan ikke tilsidesætte markørerne.
+- [x] Den private nationale workflow anvender rettelserne før både første og endelige punkt-/DMI-validering.
+- [ ] Frisk privat national GitHub-kørsel skal bevise DMI-grid, score-neutralitet, runtime og rollback for rettelseskandidaten.
+- [ ] De 118 tvetydige kystdele skal samles i en særskilt manuel kontrol efter alle automatiske gates er afsluttet.
+
+## Tidligere 4.0.195-status
 
 ## Admin land/hav
 

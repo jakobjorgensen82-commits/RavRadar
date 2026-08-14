@@ -1,5 +1,15 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.196 – national land-/vandkontrol
+
+- **ISSUE-NATIONAL-LAND-WATER-AMBIGUOUS – AKTIV:** Den uafhængige 10 m flerafstandsaudit kan ikke sikkert klassificere 118 af 673 lokale kystdele. De ændres ikke automatisk. Efter de dokumenterede rettelser har bestået de automatiske gates, skal de præsenteres samlet til manuel kontrol.
+- **ISSUE-NATIONAL-LAND-WATER-DMI-PROMOTION – AKTIV:** 121 punktpar har dokumenteret omvendt land-/vandside og en reproducerbar rettelseskandidat. Kandidaten er ikke offentlig sandhed, før en frisk privat national kørsel har bestået punkt-, native DMI-grid-, shadow-score-, runtime- og rollbackgates.
+
+## 4.0.196 – national land-/vandkontrol
+
+- **ISSUE-NATIONAL-LAND-WATER-AMBIGUOUS – AKTIV:** Den uafhængige 10 m flerafstandsaudit kan ikke sikkert klassificere 118 af 673 lokale kystdele. De ændres ikke automatisk. Efter de dokumenterede rettelser har bestået de automatiske gates, skal de præsenteres samlet til manuel kontrol.
+- **ISSUE-NATIONAL-LAND-WATER-DMI-PROMOTION – AKTIV:** 121 punktpar har dokumenteret omvendt land-/vandside og en reproducerbar rettelseskandidat. Kandidaten er ikke offentlig sandhed, før en frisk privat national kørsel har bestået punkt-, native DMI-grid-, shadow-score-, runtime- og rollbackgates.
+
 - **ISSUE-ADMIN-DIRECTION-MAP-STALE-SELECTION – RODÅRSAG RETTET LOKALT I 4.0.195:** 4.0.194 ændrede timing uden at løse fejlen. Isoleret browsertest med produktionsdata viste, at Leaflet-vektorlag blev tilføjet før kortets første geografiske position og kastede `reading 'min'`; derfor udeblev linjer, markører og zoom. 4.0.195 positionerer kortet før lagene. Rejsby-testen viser korrekt område, 121 stier og to markører uden fejl. Afventer produktionsdeploy og ejerens efterkontrol.
 
 ## DMI-produktionskæde

@@ -1,3 +1,10 @@
+## 2026-08-14 – 4.0.196
+
+- Et landsdækkende symptom i admin blev fulgt gennem generator, centrale reviews, offentlig kystdelsbygger, DMI-sampling, lokal score og forklaring. Rodårsagen var, at stednavne tidligere kunne afgøre land-/vandside; øer, forter og havnenavne kunne derfor vende et ellers vinkelret punktpar forkert.
+- ESA WorldCover 2021 bruges som uafhængigt, versionsbundet sidebevis ved fire transektafstande. 434 af 673 aktive dele er verificeret, 121 er dokumenteret omvendte, og 118 er tvetydige og forbliver urørte.
+- Admin viser igen den røde hav→land-retning. Retningstal er afledte og låst; godkendelse kræver, at punktlinjen krydser egen kyst, ligger på modsatte sider og er tilnærmet vinkelret.
+- De 121 rettelser indføres først i den private nationale kandidat. DMI-grid, shadow-score, runtime og rollback skal være grønne før offentlig aktivering.
+
 ## 2026-08-14 – 4.0.195
 
 - Ejerens produktionsbillede dokumenterede, at 4.0.194 ikke virkede: Rejsby var valgt i teksten, mens kortet stod på Bornholm uden vektorlag eller punkter.

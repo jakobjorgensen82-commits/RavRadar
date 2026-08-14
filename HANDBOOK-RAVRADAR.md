@@ -1,6 +1,12 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.195
+## Land- og havpunkter – fysisk kontrakt i 4.0.196
+
+Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vandet. Linjen fra det blå til det grønne punkt er pålandsretningen. Den skal krydse netop den valgte kyststrækning omtrent vinkelret. Det samme punktpar bestemmer DMI-samplingen, retningssammenligningen, den lokale score og forklaringen til brugeren; et separat gammelt retningstal kan ikke overstyre markørerne.
+
+Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
+
+**Håndbogsversion:** 4.0.196
 
 **Opdateret:** 1. august 2026
 
