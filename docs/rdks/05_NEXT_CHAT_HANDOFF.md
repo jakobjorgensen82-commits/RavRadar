@@ -4,7 +4,7 @@
 
 - 4.0.206 på commit `4dc464a` er produktionsverificeret i #31831068809. Progressiv DMI-cache, frisk vejr, fulde gates, Supabase og Pages bestod; live Pages viser 210 zoner inklusive `DK-B04-12`–`DK-B04-14`.
 - Privat #31829349458 bestod hele den friske nationale kilde-, geometri-, navn-, land-/vand-, DMI-, vejr-, state-, vind-, shadow-, review-, slutkyst-, central rollback- og fallbackkæde samt begge artifacts.
-- Den rettede fallback har 17 dele, 11 verificerede, fire sikkert vendte og to fail-closed, med 2/2 ejerskabsflytninger, 9/9 erstatninger og nul overlap.
+- Den rettede fallback har 17 dele, 11 verificerede, fire sikkert vendte og to fail-closed, med 2/2 ejerskabsflytninger, 9/9 erstatninger og nul overlap. De to tilbageholdte dele er `dk-b10-14-fallback-recovery-02` og `dk-b10-14-fallback-recovery-05` ved Albuen: henholdsvis et længere, retningsskiftende kystforløb og en meget lille lukket kystfigur. De må ikke gættes aktive; ejerreview skal vælge den relevante ydre ravkyst og tage stilling til den lille figur.
 - Ingen privat geometri blev aktiveret. Kun en særskilt ejerbeslutning kan starte aktivering; den offentlige produktionsverificerede geometri forbliver baseline indtil da.
 
 ## Kritisk aktuelt checkpoint — 4.0.205
