@@ -1,3 +1,8 @@
+## 2026-08-14 – 4.0.198
+
+- #31792615992 bestod den korrigerede 210-zoneplan, officiel kildehentning, topologi, kystdele og navneaudit, men stoppede ved en isoleret historisk 208-kontrol i lokalitetsopdelingen.
+- Kontrollen er samlet under den fælles 210-zonekontrakt og dækket af regressionstest. Ingen runtime- eller fagdata ændres.
+
 ## 2026-08-14 – 4.0.197
 
 - Den første private land-/vandkørsel #31790559558 dokumenterede en separat, forældet planport: den krævede 211 effektive zoner, mens den centralt godkendte sletning af Fejø/Femø giver 210.

@@ -1,5 +1,9 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.198 – lokalitetsopdeling
+
+- **ISSUE-NATIONAL-LOCALITY-PARTITION-208 – RETTET LOKALT / AFVENTER CI:** #31792615992 dokumenterede, at lokalitetsopdelingen alene stadig krævede den historiske 208-zonebestand. Den følger nu den fælles 210-zonekontrakt og har en direkte regressionstest.
+
 ## 4.0.197 – national zonebestand
 
 - **ISSUE-NATIONAL-EFFECTIVE-ZONE-COUNT-STALE – RETTET LOKALT / AFVENTER CI:** #31790559558 stoppede før netværksarbejde, fordi nationalplanen forventede den tidligere bestand på 211 aktive zoner. Fejø/Femø er godkendt slettet, så central runtime har 210. Alle aktive nationale porte er afstemt til 210; historiske registre og historiske rapporter omskrives ikke.

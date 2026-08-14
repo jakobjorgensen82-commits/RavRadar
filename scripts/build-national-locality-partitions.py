@@ -8,6 +8,7 @@ from pyproj import Transformer
 from shapely.geometry import LineString,MultiLineString,Point,mapping,shape
 from shapely.ops import linemerge,substring,transform,unary_union
 ROOT=Path(__file__).resolve().parents[1];TO_M=Transformer.from_crs("EPSG:4326","EPSG:25832",always_xy=True);TO_W=Transformer.from_crs("EPSG:25832","EPSG:4326",always_xy=True)
+EXPECTED_ZONE_COUNT=210
 def fail(m):raise SystemExit(m)
 def load(p):return json.loads(p.read_text(encoding="utf-8"))
 def project(g):return transform(TO_M.transform,g)
@@ -56,7 +57,7 @@ def group_fragments(units,policy):
         left["geometries"].extend(right["geometries"]);left["boundaryEvidence"].update(right["boundaryEvidence"]);left["boundaryEvidence"].add("nearby-source-fragment-group");left["officialAnchorCandidates"].extend(right["officialAnchorCandidates"]);groups.pop(j)
 def build(parts_report,parts_geo,name_audit,policy):
     features={f["properties"]["partId"]:f for f in parts_geo.get("features") or []};names={r["partId"]:r for r in name_audit.get("parts") or []};flagged=[p for z in parts_report.get("zones") or [] for p in z.get("coastalParts") or [] if p.get("localityReviewFlags")]
-    if parts_report.get("zoneCount")!=208 or len(features)!=parts_report.get("coastalPartCount") or len(names)!=len(features):fail("Lokalitetsopdeling kræver komplette dele og officiel navneaudit.")
+    if parts_report.get("zoneCount")!=EXPECTED_ZONE_COUNT or len(features)!=parts_report.get("coastalPartCount") or len(names)!=len(features):fail("Lokalitetsopdeling kræver komplette dele og officiel navneaudit.")
     reports=[];output=[]
     for source in sorted(flagged,key=lambda p:p["partId"]):
         part_id=source["partId"];geometry=project(shape(features[part_id]["geometry"]));units=[]

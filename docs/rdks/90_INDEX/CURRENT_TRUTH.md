@@ -1,5 +1,11 @@
 # Current truth – gældende projektviden
 
+## 4.0.198 – sidste kendte 208-port fjernet
+
+- Den private kørsel #31792615992 bestod plan, officiel kilde, topologi, kystdele og officiel navneaudit med 210 zoner, men lokalitetsopdelingen havde stadig en historisk hardcodet 208-kontrol.
+- Lokalitetsopdelingen bruger nu samme eksplicitte 210-zonekontrakt som resten af kæden, og en regressionstest fastholder værdien.
+- Rettelsen ændrer ingen geometri, navne, DMI-data, punkter eller score.
+
 ## 4.0.197 – national pipeline følger 210 effektive zoner
 
 - Fejø/Femø er efter ejerbeslutning slettet centralt. Den effektive bestand er derfor 210 aktive hovedzoner, selv om det historiske forældreregister fortsat kan indeholde 211 poster.
