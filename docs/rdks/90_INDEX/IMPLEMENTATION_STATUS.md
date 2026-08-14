@@ -7,13 +7,16 @@
 - [x] Lokale scorer kræver lokal strømretning og -hastighed; manglende lokal sammenligning falder sikkert tilbage til hovedzonescoren uden geografisk påstand.
 - [x] Fuld scoreforklaring, lokalt vejr, lokalt punktpar og lokal pålandsretning føres til offentlig runtime/debug.
 - [x] Landsdækkende gate kræver mindst 95 % verificeret lokal U/V-dækning og forbyder overpublicering.
-- [ ] Friske progressive GitHub-kørsler skal opbygge lokal cache og bestå den skærpede gate.
+- [x] #31764453987 bestod frisk data, fuld validering, releasegate og deploy for 4.0.193-kodekæden før geometriaktivering.
+- [ ] Den aktiverede 673-dels pakke skal opbygge mindst 95 % lokal U/V-cache og bestå den skærpede gate i en efterfølgende produktionskørsel.
 - [x] Alle 651 aktive punktpar er auditeret mod eget kystreferencepunkt og lokal tangent: 13 afvigelser; privat reparationskandidat giver 0.
 - [x] Vedvarende retningsskift er auditeret afstandsbaseret. En konservativ kandidat opdeler 10 hidtil enkelt-delte hovedzoner til i alt 673 lokale dele; Helgenæs bliver tre fysisk forskellige sider.
 - [x] Kandidatens 673 punktpar består den samme geometriaudit med 0 afvigelser. Private kontrolbilleder er genereret og kontrolleret for alle 10 zoner.
-- [ ] 45 ændrede eller nye vandpunkter mangler frisk native DMI-gridvalidering. Lokal Windows-ecCodes kunne ikke indlæse sin DLL; CI er næste autoritative gate.
+- [x] Privat GitHub Actions #31764242827 validerede alle 45 ændrede eller nye vandpunkter mod DMI's native grid: fuld dækning og 0 ugyldige punkter.
+- [x] Kandidaten er lokalt aktiveret som 673-dels pakke med versionsstyret rollback til 4.0.192/651 dele.
 - [ ] Rejsby/Ribe Vesterå er ikke automatisk opdelt, fordi ét lokalt land-sidevalg er tvetydigt. Den nuværende del bevares frem for at gætte.
-- [ ] Offentlig brugerflade, admin, ydelse og Supabase-forbrug skal efterkontrolleres samlet.
+- [x] Målrettede regressioner for offentlig runtime, delscoreforklaring, kortvisning, adminredigering, ejerskab og aktivering består lokalt.
+- [ ] Offentlig brugerflade, ydelse og Supabase-forbrug skal efterkontrolleres på den deployede 673-dels pakke.
 
 ## Tidligere 4.0.192-status
 

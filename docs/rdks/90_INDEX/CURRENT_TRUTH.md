@@ -8,9 +8,10 @@
 - Den fulde vinderforklaring, lokale rå vejrdata, lokale punktpar og lokale pålandsretning bevares nu i runtime. Debugvisningen må ikke blande hovedzonens retning med den vindende kystdels strøm.
 - En enkelt beregnet kystdel må ikke beskrives som “forholdene gælder hele zonen”. Syvpointsreglen gælder kun en reel sammenligning mellem mindst to beregnede dele.
 - Den aktuelle ejerbestilling autoriserer en landsdækkende, systemisk revision af lokale land-/havpunkter og meningsfuld kystdelsopdeling. Fungerende geometri ændres ikke uden dokumenteret behov; offentlig aktivering kræver gates og efterkontrol.
-- Den aktive offentlige pakke er fortsat 651 dele. Punktgeometriauditen finder 13 afvigelser; den private reparationskandidat retter alle 13 og består med 0.
+- Den godkendte kandidat er lokalt aktiveret som næste produktionspakke med 673 dele. Punktgeometriaudit, overlapgate og assembly-gate består med 0 fund; den hidtidige 651-dels pakke er bevaret som versionsstyret rollback.
 - Den konservative orienteringskandidat opdeler kun en hovedzone automatisk, når den hidtil har én del og et vedvarende retningsskift på mindst 45 grader. Det giver 673 dele og 10 opdelte zoner, ikke en ny blind national masseopdeling.
-- Helgenæs øst er i kandidaten tre lokale sider med selvstændige punktpar. Rejsby/Ribe Vesterå forbliver uændret, fordi land-siden er tvetydig. 45 ændrede eller nye vandpunkter skal gennem native DMI-gridgate før aktivering.
+- Helgenæs øst har tre lokale sider med selvstændige punktpar. Rejsby/Ribe Vesterå forbliver uændret, fordi land-siden er tvetydig. Privat GitHub Actions #31764242827 validerede alle 45 ændrede eller nye vandpunkter mod native DMI-grid med fuld dækning og 0 ugyldige punkter. Offentlig produktionsverifikation af 673-dels pakken afventer den efterfølgende aktiveringskørsel og mindst 95 % lokal U/V-dækning.
+- GitHub Actions #31764453987 produktionsverificerede selve 4.0.193-kodekæden med frisk data, fuld `npm run validate`, releasegate og deploy, før geometriaktiveringen blev committed.
 
 ## 4.0.192 – samlet land-/vandeditor pr. hovedzone
 

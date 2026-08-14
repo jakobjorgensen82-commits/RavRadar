@@ -12,9 +12,9 @@ Hvis de lokale data endnu ikke er komplette, bruger siden midlertidigt den forts
 
 Syvpointsreglen kræver en reel sammenligning. Én enkelt beregnet kystdel kan ikke bevise, at hele en bugtet zone har samme forhold. Zoner med vedvarende forskellige kystretninger skal opdeles i meningsfulde lokale beregningsdele med egne validerede punktpar; små kysthak må ikke skabe støjende kunstige dele.
 
-Den landsdækkende systemaudit fandt 13 eksisterende kystdele, hvor det gemte referencepunkt ikke passede med den lokale kystretning og land-/vandparret. Den private reparationskandidat genforankrer disse punktpar til den faktiske lokale kyst og består derefter geometri- og sidekontrollen med nul fund. En efterfølgende konservativ retningsaudit erstatter én grov del med flere meningsfulde dele i 10 bugtede hovedzoner, herunder Helgenæs øst, så kandidatens 651 dele bliver til 673. Kandidaten er fortsat privat.
+Den landsdækkende systemaudit fandt 13 eksisterende kystdele, hvor det gemte referencepunkt ikke passede med den lokale kystretning og land-/vandparret. Punktparrene er genforankret til den faktiske lokale kyst og består derefter geometri- og sidekontrollen med nul fund. En konservativ retningsaudit erstatter én grov del med flere meningsfulde dele i 10 bugtede hovedzoner, herunder Helgenæs øst, så pakken går fra 651 til 673 dele.
 
-De 45 nye eller flyttede vandpunkter skal alle valideres mod DMI's native modelgrid i Linux-pipelinen, før kandidaten kan aktiveres. Rejsby/Ribe Vesterå ændres ikke automatisk, fordi den lokale landside ikke kan udledes entydigt; tvivl må aldrig omsættes til en tilfældig retning. Aktiv produktion og administratorens centrale sandhed forbliver urørt, indtil geometri, DMI, runtime, visning og rollback samlet er grønne.
+Alle 45 nye eller flyttede vandpunkter er valideret mod DMI's native modelgrid i den private Linux-pipeline med fuld dækning og nul ugyldige punkter. Den 673-dels pakke er derfor aktiveret lokalt med den tidligere 651-dels pakke som rollback. Rejsby/Ribe Vesterå ændres ikke automatisk, fordi den lokale landside ikke kan udledes entydigt; tvivl må aldrig omsættes til en tilfældig retning. Offentlig aktivering tæller først som produktionsverificeret, når den efterfølgende friske produktionskørsel også har opbygget mindst 95 % lokal U/V-dækning og bestået alle gates.
 
 ## Progressiv DMI-opbygning
 

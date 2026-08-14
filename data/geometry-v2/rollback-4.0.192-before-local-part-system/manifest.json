@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "owner-approved-five-zone-coast-active",
+  "sourceRunId": "31609637964",
+  "sourceCommit": "806648e6634f1e1cfbb366451bee2df2d2eab9ab",
+  "sourceVersion": "4.0.187",
+  "partCount": 651,
+  "zoneCount": 210,
+  "parentZoneCount": 211,
+  "overlapPairCount": 0,
+  "pointPairCount": 651,
+  "invalidPointPairCount": 0,
+  "fullMarineCoveragePartCount": 640,
+  "partialMarineCoveragePartCount": 11,
+  "files": {
+    "coastal-parts.geojson": "a56d6b075a59c9e1200a10a9f428232d213fda6ce0880614e83a93001d2ffe8a",
+    "part-names.json": "3217f0f6c32711cf7d12f9b33f59662f40e5f9e842aafa1b58d279c562801626",
+    "point-pairs.json": "b02412ae8ff5490ba3cee9ffcde980c25ffb89663e29d0d8249d497922606874",
+    "dmi-grid-proof.json": "fb4e673d5337244ac00e31d49986ff7f743a8b1d7750e56b3c87e15fa1a5fc98"
+  },
+  "scorePolicy": {
+    "bestValidPartDeterminesZoneScore": true,
+    "wholeZoneMarginPoints": 7,
+    "missingPartDataRemainsMissing": true,
+    "parentFallbackForbidden": true
+  },
+  "environment": "production",
+  "publicActivation": true,
+  "activationAuthority": "explicit owner approval in Codex thread 2026-08-12; DK-B10-16 deleted",
+  "rollback": {
+    "method": "C:\\Users\\jakob\\Desktop\\RavRadar\\RavRadar\\data\\geometry-v2\\rollback-4.0.186-before-five-zone-coast",
+    "preservesParentRuntime": true
+  },
+  "automaticActivationAllowed": false,
+  "activatedAt": "2026-08-12"
+}

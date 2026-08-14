@@ -1,15 +1,18 @@
 {
   "schemaVersion": "1.0.0",
-  "status": "passed-owner-approved-five-zone-activation-assembly",
-  "partCount": 651,
-  "preciseZoneCount": 210,
-  "parentZoneCount": 211,
-  "deletedZoneIds": [
-    "DK-B02-14",
-    "DK-B10-16"
-  ],
+  "status": "passed-local-part-system-activation-assembly",
+  "sourceRunId": "31764242827",
+  "sourcePartCount": 651,
+  "partCount": 673,
+  "replacementCount": 10,
+  "blockedUnchangedCount": 1,
+  "pointPairCount": 673,
+  "pointGeometryIssueCount": 0,
+  "changedPointDmiCandidateCount": 45,
+  "changedPointDmiFullCoverageCount": 45,
+  "invalidPointPairCount": 0,
   "overlapPairCount": 0,
-  "pointPairCount": 651,
-  "ownerApproved": true,
+  "publicMainZoneGeometryChanged": false,
+  "scoreFormulaChanged": false,
   "automaticActivationAllowed": false
 }

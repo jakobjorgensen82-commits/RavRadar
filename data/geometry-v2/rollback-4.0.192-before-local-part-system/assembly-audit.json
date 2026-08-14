@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "passed-owner-approved-five-zone-activation-assembly",
+  "partCount": 651,
+  "preciseZoneCount": 210,
+  "parentZoneCount": 211,
+  "deletedZoneIds": [
+    "DK-B02-14",
+    "DK-B10-16"
+  ],
+  "overlapPairCount": 0,
+  "pointPairCount": 651,
+  "ownerApproved": true,
+  "automaticActivationAllowed": false
+}

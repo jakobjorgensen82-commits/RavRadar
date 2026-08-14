@@ -1,36 +1,37 @@
 {
   "schemaVersion": "1.0.0",
-  "status": "owner-approved-five-zone-coast-active",
-  "sourceRunId": "31609637964",
-  "sourceCommit": "806648e6634f1e1cfbb366451bee2df2d2eab9ab",
-  "sourceVersion": "4.0.187",
-  "partCount": 651,
+  "status": "active-local-part-system-repair-4.0.193",
+  "sourceRunId": "31764242827",
+  "sourceCommit": "f52daab7fc91ca16e9549625b5c0f31dea73af13",
+  "sourceVersion": "4.0.193",
+  "partCount": 673,
   "zoneCount": 210,
   "parentZoneCount": 211,
   "overlapPairCount": 0,
-  "pointPairCount": 651,
+  "pointPairCount": 673,
   "invalidPointPairCount": 0,
-  "fullMarineCoveragePartCount": 640,
+  "fullMarineCoveragePartCount": 662,
   "partialMarineCoveragePartCount": 11,
   "files": {
-    "coastal-parts.geojson": "a56d6b075a59c9e1200a10a9f428232d213fda6ce0880614e83a93001d2ffe8a",
-    "part-names.json": "3217f0f6c32711cf7d12f9b33f59662f40e5f9e842aafa1b58d279c562801626",
-    "point-pairs.json": "b02412ae8ff5490ba3cee9ffcde980c25ffb89663e29d0d8249d497922606874",
-    "dmi-grid-proof.json": "fb4e673d5337244ac00e31d49986ff7f743a8b1d7750e56b3c87e15fa1a5fc98"
+    "coastal-parts.geojson": "3304811d70852154f523044dfc77eaa7170a6c2daffd5992d94f7c30603edf44",
+    "part-names.json": "288386a49894d68e7fe553f063756c1b9939e6f5b470716d26078759a49d337e",
+    "point-pairs.json": "1e46e6a02425b5dc1129fa7b1e9ee86e0683c95abb4b54fdd1155c4673ee478b",
+    "dmi-grid-proof.json": "f9dfc7bc82cd030bd31414975b9fa7d54626841a8f56426be67c9cfff2bbfa50"
   },
   "scorePolicy": {
     "bestValidPartDeterminesZoneScore": true,
     "wholeZoneMarginPoints": 7,
     "missingPartDataRemainsMissing": true,
-    "parentFallbackForbidden": true
+    "parentFallbackWhenLocalComparisonIncomplete": true,
+    "geographicClaimAllowedDuringParentFallback": false
   },
   "environment": "production",
   "publicActivation": true,
-  "activationAuthority": "explicit owner approval in Codex thread 2026-08-12; DK-B10-16 deleted",
+  "activationAuthority": "owner-authorized systemic land/water and local-score repair in Codex thread 2026-08-14",
   "rollback": {
-    "method": "C:\\Users\\jakob\\Desktop\\RavRadar\\RavRadar\\data\\geometry-v2\\rollback-4.0.186-before-five-zone-coast",
+    "method": "C:\\Users\\jakob\\Desktop\\RavRadar\\RavRadar\\data\\geometry-v2\\rollback-4.0.192-before-local-part-system",
     "preservesParentRuntime": true
   },
   "automaticActivationAllowed": false,
-  "activatedAt": "2026-08-12"
+  "activatedAt": "2026-08-14"
 }

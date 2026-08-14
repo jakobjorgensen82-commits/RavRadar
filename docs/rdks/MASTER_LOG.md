@@ -966,4 +966,6 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Landsaudit af 651 aktive punktpar bruger nu hvert pars gemte kystreference og lokale tangent. 13 reelle afvigelser blev fundet; privat reparationskandidat giver 0.
 - Afstandsbaseret orienteringsaudit og privat splitter er bygget. Den konservative kandidat berører 10 enkelt-delte hovedzoner, giver 673 dele, har 0 punktgeometrifejl og bevarer tvetydige Rejsby/Ribe Vesterå uændret.
 - Helgenæs er visuelt kontrolleret som tre sider med landpunkt ind mod halvøen og vandpunkt ud fra hver side. Alle 10 foreslåede zoner har private kontrolbilleder.
-- Næste ufravigelige gate er native DMI-gridvalidering af 45 ændrede/nye vandpunkter. Ingen geometriaktivering er udført.
+- Privat #31764242827 validerede alle 45 ændrede/nye vandpunkter mod native DMI-grid med fuld dækning og nul ugyldige punkter.
+- Kandidaten er derefter lokalt aktiveret som 673-dels pakke med 0 punkt-/overlapfund; 4.0.192/651 dele er bevaret som rollback. Hovedzonegeometrien er uændret.
+- #31764453987 produktionsverificerede 4.0.193-kodekæden med frisk data, fuld validering, releasegate og deploy før aktiveringscommitten. Næste bevis er den deployede 673-dels pakkes progressive lokale U/V-dækning på mindst 95 %.

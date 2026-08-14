@@ -9,5 +9,7 @@
 - Tilføjer en reproducerbar landsaudit af kystreference, lokal tangent og land-/vandpunkt. Den aktive pakke har 13 dokumenterede afvigelser; den private reparationskandidat har 0.
 - Tilføjer en konservativ privat orienteringskandidat for hovedzoner, der hidtil kun havde én kystdel trods vedvarende retningsskift. 10 zoner foreslås opdelt, herunder Helgenæs i vest-, syd- og østkyst; kandidaten har 673 dele mod 651 og 0 punktgeometrifejl.
 - Rejsby og Ribe Vesterå er bevidst ikke automatisk opdelt, fordi land-siden ikke kan udledes sikkert for alle foreslåede delstykker.
-- **AFVENTER CI/PRODUKTION:** De 45 nye eller flyttede vandpunkter skal have frisk native DMI-gridvalidering, før den private geometri må samles eller aktiveres.
+- Privat GitHub Actions #31764242827 validerede alle 45 nye eller flyttede vandpunkter mod DMI's native grid med fuld dækning og nul ugyldige punkter.
 - Tilføjer et isoleret, manuelt GitHub-job, som reproducerer kandidaten på Linux, genkører punktgeometriauditen og validerer alle 45 ændrede vandpunkter mod DMI's native grid. Jobbet har kun læseadgang og kan hverken aktivere geometri eller deploye Pages.
+- Aktiverer derefter kandidaten lokalt som en reproducerbar 673-dels pakke; 4.0.192/651 dele bevares som versionsstyret rollback. Hovedzonegeometrien ændres ikke.
+- GitHub Actions #31764453987 produktionsverificerede 4.0.193-kodekæden med frisk data, fuld validering, releasegate og deploy før aktiveringscommitten. Den efterfølgende 673-dels produktionskørsel skal fortsat bevise mindst 95 % lokal U/V-dækning.
