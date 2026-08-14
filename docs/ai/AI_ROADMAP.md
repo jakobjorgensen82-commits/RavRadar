@@ -1,8 +1,13 @@
-# AI Roadmap – RavRadar efter 4.0.205
+# AI Roadmap – RavRadar efter 4.0.206
 
 Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status skal løbende flyttes til RDKS, når noget implementeres.
 
 ## Aktiv P0 – afslut den private land-/vandkandidat
+
+- 4.0.205 er produktionsverificeret i #31822335540. Målrettet roundtrip #31822371489 og fuld privat hovedkæde/roundtrip #31822748625 beviser den centrale retry- og rollbackkontrakt.
+- #31822748625 stoppede først i fallbackbyggerens filskrivning på en ren runner. 4.0.206 opretter alle outputmapper og gør fallbacken idempotent efter tidligere aktivering ved at genbruge centralt aktive naborester og deres punktpar.
+- Den aktuelle 17-dels kandidat har et frisk eksternt 10-meterbevis med de samme 11 verificerede, fire sikre vendinger og to blokerede dele. Lokal slutkontrol har nul overlap, 2/2 ejerskabsflytninger og 9/9 erstatninger.
+- Næste P0 er én fuld privat GitHub-kørsel gennem fallback-DMI, slutvalidering og artifacts. Ingen privat aktivering må ske uden særskilt ejerafgørelse.
 
 - Offentlig 4.0.204 er produktionsverificeret i #31815039302. Privat #31815423082 bestod hele den tunge 835-dels geometri-, DMI-, state-, vind-, shadow- og reviewkæde og stoppede kun ved en enkelt central `PGRST303`-læsning.
 - 4.0.205 indfører en snæver én-gangs genprøvning for netop Supabases dokumenterede interne `sb_secret_`-oversættelsesfejl og gør beskyttet manifestsync fail-closed.

@@ -1,5 +1,13 @@
 # RavRadar Håndbog
 
+## Ren og idempotent fallbackkontrol – 4.0.206
+
+Den private fallbackkontrol skal kunne køres både på en helt ren GitHub-runner og efter, at en tidligere godkendt kandidat allerede er blevet aktiveret. Byggeren opretter derfor selv alle sine private outputmapper. Den bruger den centralt hydrerede aktive kyst som sandhed og kan genkende de aktive naborester, selv om de oprindelige del-ID'er ikke længere findes.
+
+Når en aktiv naborest allerede har et valideret landpunkt, vandpunkt og en afledt pålandsretning, bevares de eksakt i den nye private kandidat. De må ikke erstattes med historiske hardcodede punkter. Et eksisterende punktpar uden retning afvises fail-closed.
+
+Det kandidatbundne ESA WorldCover-bevis er genkørt på den aktuelle 17-dels fallbackbestand. Resultatet er uændret: 11 punktpar er verificeret, fire vendes sikkert, og to forbliver blokerede. Den rene lokale slutkæde har 2/2 ejerskabsflytninger, 9/9 erstatninger og nul overlap. Dette er privat validering; offentlig aktivering kræver fortsat en fuld grøn GitHub-kørsel og en særskilt ejerafgørelse.
+
 ## Sikker central adminforbindelse – 4.0.205
 
 GitHub Actions bruger Supabases nye, uigennemsigtige `sb_secret_`-nøgle som `apikey`. Den må ikke sendes som et Bearer-token. Supabase omsætter selv nøglen til et internt, kortlivet token, før Data API'et kaldes.
@@ -22,7 +30,7 @@ Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vande
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.205
+**Håndbogsversion:** 4.0.206
 
 **Opdateret:** 14. august 2026
 

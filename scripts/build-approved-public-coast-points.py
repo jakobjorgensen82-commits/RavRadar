@@ -79,9 +79,37 @@ def build(candidate, zones, evidence=None):
     rows = []
     for zone_id, parts in sorted((candidate.get("zones") or {}).items()):
       for part in parts:
-        if part.get("landPoint") and part.get("waterPoint"):
-            continue
         props = zone_props.get(zone_id, {})
+        if part.get("landPoint") and part.get("waterPoint"):
+            direction = part.get("onshoreDirectionDeg")
+            if not isinstance(direction, (int, float)):
+                raise ValueError(f"{part.get('partId')} har et eksisterende punktpar uden retning.")
+            land_point = part["landPoint"]
+            water_point = part["waterPoint"]
+            reference = [
+                round((land_point[0] + water_point[0]) / 2, 7),
+                round((land_point[1] + water_point[1]) / 2, 7),
+            ]
+            rows.append({
+                "zoneId": zone_id,
+                "partId": part["partId"],
+                "finalPartId": part["partId"],
+                "name": part.get("name"),
+                "suggestedName": part.get("name") or zone_id,
+                "coastType": props.get("coastType") or "east",
+                "status": "private-point-pair-proposed",
+                "coastReferencePoint": reference,
+                "landPoint": land_point,
+                "waterPoint": water_point,
+                "onshoreDirectionDeg": direction,
+                "witnessSource": "already-active-validated-point-pair",
+                "landWitness": land_point,
+                "waterWitness": water_point,
+                "weatherSamplingEnabled": False,
+                "scoreEnabled": False,
+                "automaticActivationAllowed": False,
+            })
+            continue
         if zone_id in WADDEN_WITNESSES:
             land_witness, water_witness, source = WADDEN_WITNESSES[zone_id]
         else:

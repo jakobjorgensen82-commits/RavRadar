@@ -127,10 +127,40 @@ def candidate_geojson(reviews, active_parts):
         for owner, parts in (active_parts.get("zones") or {}).items()
         for part in parts
     }
+    active_rows = [
+        (owner, part)
+        for owner, parts in (active_parts.get("zones") or {}).items()
+        for part in parts
+    ]
     target = unary_union([transform(TO_M, shape(feature["geometry"])) for feature in features])
     for target_zone, part_ids in NEIGHBOUR_SPLITS.items():
         for part_id in part_ids:
-            owner, part = active_index[part_id]
+            active = active_index.get(part_id)
+            if active is None:
+                existing_remainders = [
+                    (owner, part)
+                    for owner, part in active_rows
+                    if str(part.get("partId") or "").startswith(f"{part_id}-remainder-")
+                ]
+                for owner, part in existing_remainders:
+                    features.append({
+                        "type": "Feature",
+                        "properties": {
+                            "zoneId": owner,
+                            "zoneName": part.get("name") or owner,
+                            "partId": part["partId"],
+                            "source": "already-active-validated-neighbour-remainder",
+                            "replacesPartId": part_id,
+                            "status": "private-candidate-awaiting-point-and-dmi-validation",
+                            "automaticActivationAllowed": False,
+                            "landPoint": part.get("landPoint"),
+                            "waterPoint": part.get("waterPoint"),
+                            "onshoreDirectionDeg": part.get("onshoreDirectionDeg"),
+                        },
+                        "geometry": part["geometry"],
+                    })
+                continue
+            owner, part = active
             remainder = transform(TO_M, shape(part["geometry"])).difference(target.buffer(2))
             for index, line in enumerate(line_parts(remainder), start=1):
                 if line.length < 250:
@@ -153,14 +183,19 @@ def candidate_bundle(candidate):
     zones = {}
     for feature in candidate["features"]:
         props = feature["properties"]
-        zones.setdefault(props["zoneId"], []).append({
+        row = {
             "partId": props["partId"],
             "sourceZoneId": props["zoneId"],
             "name": props["zoneName"],
             "geometry": feature["geometry"],
             "marineCoverage": "pending-private-dmi-validation",
             "coverageGaps": [],
-        })
+        }
+        if props.get("landPoint") and props.get("waterPoint"):
+            row["landPoint"] = props["landPoint"]
+            row["waterPoint"] = props["waterPoint"]
+            row["onshoreDirectionDeg"] = props.get("onshoreDirectionDeg")
+        zones.setdefault(props["zoneId"], []).append(row)
     return {
         "schemaVersion": "2.0.0-private",
         "status": "private-fallback-zone-recovery-awaiting-point-and-dmi-validation",
@@ -212,9 +247,10 @@ def main():
     parser.add_argument("--report", type=Path, default=ROOT / ".geometry-v2-work/fallback-zone-recovery-report.json")
     args = parser.parse_args()
     reviews = build(load(args.zones), load(args.official), load(args.parts))
+    for path in (args.output, args.candidate, args.bundle, args.report):
+        path.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(html(reviews), encoding="utf-8")
     candidate = candidate_geojson(reviews, load(args.parts))
-    args.candidate.parent.mkdir(parents=True, exist_ok=True)
     args.candidate.write_text(json.dumps(candidate, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     args.bundle.write_text(json.dumps(candidate_bundle(candidate), ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     args.report.write_text(json.dumps(audit_report(reviews, candidate), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

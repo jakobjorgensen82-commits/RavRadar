@@ -1,5 +1,13 @@
 # RavRadar – aktuel overlevering til Codex
 
+## Kritisk aktuelt checkpoint — 4.0.206
+
+- 4.0.205 er produktionsverificeret i #31822335540, og målrettet central roundtrip/rollback bestod i #31822371489.
+- Privat #31822748625 bestod hele den nationale hovedkæde og central rollback. Den eneste efterfølgende fejl var en manglende privat outputmappe i fallbackbyggeren på den rene runner.
+- 4.0.206 opretter selv alle fallbackoutputmapper og genbruger centralt aktive naborester med deres eksakte validerede punktpar/retning efter tidligere aktivering.
+- ESA WorldCover 10 m er genkørt på den aktuelle 17-dels kandidat: fortsat 11 verificerede, fire sikkert vendte og to blokerede. Ren lokal slutkontrol har nul overlap, 2/2 ejerskabsflytninger og 9/9 erstatninger.
+- Næste trin er lokale fulde gates, push, normal produktionsverifikation og en ny fuld privat national kørsel gennem fallback-DMI og artifacts. Privat aktivering kræver særskilt ejerbeslutning.
+
 ## Kritisk aktuelt checkpoint — 4.0.205
 
 - Offentlig 4.0.204 er produktionsverificeret i #31815039302 og er urørt baseline.

@@ -1,5 +1,13 @@
 # Aktuelt sessionshandoff – 2026-08-14
 
+## Nyeste sikre grænse – 4.0.206-kandidat
+
+- 4.0.205 er produktionsverificeret i #31822335540; målrettet central roundtrip bestod i #31822371489.
+- Privat #31822748625 bestod hele den friske nationale hovedkæde og central create/read/update/delete/rollback. Den stoppede først bagefter på en manglende privat fallback-outputmappe på den rene runner.
+- 4.0.206 opretter alle fallbackoutputmapper, genbruger centralt aktive naborester efter tidligere aktivering og bevarer deres eksakte validerede punktpar/retning.
+- ESA WorldCover 10 m er genkørt på den aktuelle 17-dels kandidat med uændret resultat: 11 verificerede, fire sikkert vendte og to blokerede. Ren lokal slutkontrol består med 2/2 ejerskabsflytninger, 9/9 erstatninger og nul overlap.
+- Næste rækkefølge: lokale fulde gates, commit/push, normal produktionsverifikation og en ny fuld privat national kørsel gennem fallback-DMI og artifacts. Ingen privat geometri må aktiveres uden særskilt ejerafgørelse.
+
 ## Nyeste sikre grænse – 4.0.205-kandidat
 
 - Offentlig 4.0.204 er produktionsverificeret i #31815039302 og forbliver urørt baseline.

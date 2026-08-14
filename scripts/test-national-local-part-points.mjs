@@ -8,6 +8,7 @@ const audit = await fs.readFile('scripts/audit-national-local-part-land-water.py
 const apply = await fs.readFile('scripts/apply-national-land-water-corrections.py', 'utf8');
 const fallbackBuilder = await fs.readFile('scripts/build-fallback-zone-recovery-review.py', 'utf8');
 const fallbackValidator = await fs.readFile('scripts/validate-fallback-zone-recovery.py', 'utf8');
+const approvedPointBuilder = await fs.readFile('scripts/build-approved-public-coast-points.py', 'utf8');
 const initialEvidence = JSON.parse(await fs.readFile(
   'data/geometry-v2/national-private-initial-land-water-evidence-2026-08-14.json',
   'utf8'
@@ -69,6 +70,15 @@ for (const evidence of [initialEvidence, finalEvidence, fallbackEvidence])
   assert.match(evidence.inputPointPairSha256, /^[a-f0-9]{64}$/);
 assert.ok(!fallbackBuilder.includes('"DK-B10-16": ('), 'Fallback-bygger må ikke genoplive Fejø/Femø.');
 assert.ok(fallbackBuilder.includes('"deletedZonesPreserved": ["DK-B02-14", "DK-B10-16"]'));
+assert.ok(
+  fallbackBuilder.includes('for path in (args.output, args.candidate, args.bundle, args.report):')
+    && fallbackBuilder.includes('path.parent.mkdir(parents=True, exist_ok=True)'),
+  'Fallback-byggeren skal selv oprette alle outputmapper i en ren CI-runner.'
+);
+for (const token of ['active_index.get(part_id)', 'existing_remainders', 'already-active-validated-neighbour-remainder'])
+  assert.ok(fallbackBuilder.includes(token), `Fallback-byggeren mangler idempotent naboregel: ${token}`);
+for (const token of ['already-active-validated-point-pair', 'eksisterende punktpar uden retning'])
+  assert.ok(approvedPointBuilder.includes(token), `Punktbyggeren mangler idempotent punktregel: ${token}`);
 for (const token of ['Den slettede Fejø/Femø-zone er genoplivet', 'completedOwnershipMoveCount', 'completedReplacementPartCount'])
   assert.ok(fallbackValidator.includes(token), `Fallback-validator mangler ${token}`);
 

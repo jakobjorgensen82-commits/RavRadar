@@ -13,7 +13,8 @@
 
 - Nye regressioner dækker secret-/legacy-headere, præcis én tilladt genprøvning, afvisning af andre og gentagne auth-fejl, fail-closed manifestlæsning samt at den målrettede workflow ikke kan deploye.
 - Ny manuel workflow kan genbruge det kompakte private artifact fra #31815423082 og køre kun den centrale nationale roundtrip/rollback. Den har ingen Pages-skriverettighed og bygger ikke ny DMI.
-- Offentlig 4.0.204 forbliver den produktionsverificerede baseline, indtil 4.0.205 og den efterfølgende fulde private nationale kæde er grønne.
+- Den målrettede centrale roundtrip/rollback bestod i #31822371489. Den normale produktionskørsel #31822335540 bestod frisk DMI, fuld validering, releasegate, central synkronisering, artifact og deploy af 4.0.205.
+- Privat #31822748625 bestod hele den nationale kilde-, geometri-, punkt-, DMI-, state-, vind-, shadow-, ejerreview- og centrale admin-roundtrip/rollbackkæde. Kørslens eneste efterfølgende fejl var en manglende outputmappe i den private fallbackbygger; den ændrede ikke offentlig geometri eller centrale ejerdata.
 
 ## Ikke ændret
 

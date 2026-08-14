@@ -8,7 +8,7 @@
   "correctionCount": 4,
   "ambiguousCount": 2,
   "auditedPartCount": 17,
-  "inputPointPairSha256": "d0ead87318299665cb156c7bdbc6d4553a40f4b234e8c03ceb2e1ff3848f1f58",
+  "inputPointPairSha256": "9bc322888af762e868d0f842956afa594476ea385193dc7dae362c498a927cc8",
   "corrections": {
     "dk-b07-19-fallback-recovery-01": {
       "landPoint": [

@@ -1,4 +1,17 @@
-# Implementeringsstatus pr. 4.0.205 – central roundtrip efter fuld privat kystkæde
+# Implementeringsstatus pr. 4.0.206 – ren og idempotent fallbackslutkontrol
+
+## Fallback efter fuld national kæde
+
+- [x] Målrettet central roundtrip/rollback bestod i #31822371489.
+- [x] 4.0.205 blev produktionsverificeret i #31822335540 med frisk DMI, fulde gates, central synkronisering og deploy.
+- [x] Privat #31822748625 bestod hele den nationale hovedkæde og central create/read/update/delete/rollback før fallbacktrinnet.
+- [x] Den dokumenterede clean-runner-fejl er rettet: fallbackbyggeren opretter selv alle outputmapper.
+- [x] Byggeren kan genbruges efter tidligere aktivering ved at anvende centralt aktive naborester i stedet for slettede historiske del-ID'er.
+- [x] Eksisterende validerede punktpar og deres retning bevares eksakt; manglende retning stopper fail-closed.
+- [x] ESA WorldCover 10 m er genkørt på den aktuelle 17-dels kandidat med samme 11 verificerede, fire rettelser og to blokerede dele.
+- [x] Ren lokal fallbackslutkæde består med 2/2 ejerskabsflytninger, 9/9 erstatninger og nul overlap.
+- [ ] Ny fuld privat national GitHub-kørsel skal bevise fallback-DMI, slutvalidering og artifacts samlet.
+- [ ] Privat geometri må kun aktiveres efter særskilt ejerafgørelse.
 
 ## Supabase og privat national slutkontrol
 
@@ -9,8 +22,8 @@
 - [x] Python-hydreringen før DMI følger samme snævre retryregel og stopper GitHub Actions ved central læsefejl i stedet for at fortsætte på historiske repositorydata.
 - [x] Beskyttet manifestsync kan ikke længere omdanne en læsefejl til “manifest mangler” og dermed udløse unødvendige Supabase-skrivninger.
 - [x] Lokal regression dækker headerkontrakt, præcis én genprøvning, vedvarende/andre auth-fejl, kvotebeskyttet manifestlæsning og at målrettet workflow ikke kan deploye.
-- [ ] Målrettet CI-roundtrip mod artifactet fra #31815423082 skal bestå.
-- [ ] En ny fuld privat national kørsel skal derefter bevise roundtrip, fallbackkæde og samlede artifacts i én frisk kæde.
+- [x] Målrettet CI-roundtrip mod artifactet fra #31815423082 bestod i #31822371489.
+- [x] Privat #31822748625 beviste roundtrip/rollback i den fulde friske kæde; fallbacktrinnets clean-runner-fejl er afgrænset og rettet i 4.0.206.
 - [ ] Privat geometri kan fortsat kun aktiveres efter særskilt ejerafgørelse; offentlig RavScore og geometri er uændrede.
 
 ## Effektiv national zonebestand
