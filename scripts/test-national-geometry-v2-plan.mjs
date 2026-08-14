@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 const policy = JSON.parse(await fs.readFile('data/geometry-v2/national-conflict-policy.json', 'utf8'));
 const source = await fs.readFile('scripts/build-national-geometry-v2-plan.py', 'utf8');
 
-assert.equal(policy.expectedEffectiveZoneCount, 211);
+assert.equal(policy.expectedEffectiveZoneCount, 210);
 assert.equal(policy.zones['DK-B03-13'].conflictClass, 'local-geometry-refinement');
 assert.equal(policy.zones['DK-B04-08'].conflictClass, 'semantic-migration-review');
 assert.equal(policy.zones['DK-B10-17'].conflictClass, 'semantic-migration-review');

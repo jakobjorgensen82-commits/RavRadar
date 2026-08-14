@@ -1,4 +1,10 @@
-# Implementeringsstatus pr. 4.0.196 – fysisk land-/vandkontrakt
+# Implementeringsstatus pr. 4.0.197 – fysisk land-/vandkontrakt
+
+## Effektiv national zonebestand
+
+- [x] Central ejerbeslutning om sletning af Fejø/Femø giver 210 effektive aktive hovedzoner.
+- [x] National plan, topologiaudit, delgenerator, stednavneaudit, validatorer og regressionstest bruger samme 210-zonekontrakt.
+- [ ] Frisk privat national kørsel skal bekræfte hele kæden efter politikrettelsen.
 
 ## National land-/vandaudit og rettelse
 

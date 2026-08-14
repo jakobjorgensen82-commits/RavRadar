@@ -1,5 +1,9 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.197 – national zonebestand
+
+- **ISSUE-NATIONAL-EFFECTIVE-ZONE-COUNT-STALE – RETTET LOKALT / AFVENTER CI:** #31790559558 stoppede før netværksarbejde, fordi nationalplanen forventede den tidligere bestand på 211 aktive zoner. Fejø/Femø er godkendt slettet, så central runtime har 210. Alle aktive nationale porte er afstemt til 210; historiske registre og historiske rapporter omskrives ikke.
+
 ## 4.0.196 – national land-/vandkontrol
 
 - **ISSUE-NATIONAL-LAND-WATER-AMBIGUOUS – AKTIV:** Den uafhængige 10 m flerafstandsaudit kan ikke sikkert klassificere 118 af 673 lokale kystdele. De ændres ikke automatisk. Efter de dokumenterede rettelser har bestået de automatiske gates, skal de præsenteres samlet til manuel kontrol.

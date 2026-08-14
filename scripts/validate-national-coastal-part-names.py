@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse,json
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
-EXPECTED_ZONE_COUNT=211
+EXPECTED_ZONE_COUNT=210
 PLACE_TYPE_COUNT=5
 def fail(m):raise SystemExit(m)
 def validate(audit,parts,plan):

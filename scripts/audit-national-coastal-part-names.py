@@ -11,7 +11,7 @@ from shapely.geometry import Point,shape
 from shapely.ops import transform
 from shapely.strtree import STRtree
 ROOT=Path(__file__).resolve().parents[1];URL="https://api.dataforsyningen.dk/steder";TYPES=("Bebyggelse","Farvand","Landskabsform","Naturareal","Havnebassin");TO_M=Transformer.from_crs("EPSG:4326","EPSG:25832",always_xy=True);PAGE_SIZE=1000;MAX_PAGES=20;MAX_DISTANCE_M=10000;FETCH_MARGIN_DEGREES=0.12;MAX_CANDIDATES=30;WORKERS=4
-EXPECTED_ZONE_COUNT=211
+EXPECTED_ZONE_COUNT=210
 DIRECT_COASTAL_SUBTYPES={"strand","pynt","ø","bugt","næs","odde","sandKlit","halvø","sund","øgruppe","klint","nor","tange","fjord","bredning","skær","hage","løb","sejlløb","skræntNaturlig","klippeIOverfladen"};SETTLEMENT_SUBTYPES={"by","bydel","spredtBebyggelse","sommerhusområde","sommerhusområdedel"};CANDIDATE_QUOTAS={"direct-coastal":16,"local-settlement":8,"harbour-context":3,"other-context":3}
 def fail(m):print(m,file=sys.stderr);raise SystemExit(1)
 def load(p):return json.loads(p.read_text(encoding="utf-8"))

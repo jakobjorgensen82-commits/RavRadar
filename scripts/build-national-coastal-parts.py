@@ -8,7 +8,7 @@ from pyproj import Transformer
 from shapely.geometry import LineString,mapping,shape
 from shapely.ops import transform,unary_union
 ROOT=Path(__file__).resolve().parents[1]; TO_M=Transformer.from_crs("EPSG:4326","EPSG:25832",always_xy=True); TO_W=Transformer.from_crs("EPSG:25832","EPSG:4326",always_xy=True)
-EXPECTED_ZONE_COUNT=211
+EXPECTED_ZONE_COUNT=210
 def fail(m):raise SystemExit(m)
 def load(p):return json.loads(p.read_text(encoding="utf-8"))
 def project(g):return transform(TO_M.transform,g)

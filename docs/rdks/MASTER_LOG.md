@@ -1,3 +1,9 @@
+## 2026-08-14 – 4.0.197
+
+- Den første private land-/vandkørsel #31790559558 dokumenterede en separat, forældet planport: den krævede 211 effektive zoner, mens den centralt godkendte sletning af Fejø/Femø giver 210.
+- Plan, topologiaudit, kystdelsbygger, stednavneaudit og deres fail-closed validatorer/tests er afstemt til 210. Historisk forældreregister og tidligere evidens på 211 omskrives ikke.
+- Ændringen er ren pipelinepolitik og ændrer ikke geometri, DMI, score eller central admin-sandhed.
+
 ## 2026-08-14 – 4.0.196
 
 - Et landsdækkende symptom i admin blev fulgt gennem generator, centrale reviews, offentlig kystdelsbygger, DMI-sampling, lokal score og forklaring. Rodårsagen var, at stednavne tidligere kunne afgøre land-/vandside; øer, forter og havnenavne kunne derfor vende et ellers vinkelret punktpar forkert.

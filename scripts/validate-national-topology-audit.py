@@ -4,7 +4,7 @@ from __future__ import annotations
 import argparse, json
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
-EXPECTED_ZONE_COUNT=211
+EXPECTED_ZONE_COUNT=210
 def fail(m):raise SystemExit(m)
 def load(p):return json.loads(p.read_text(encoding="utf-8"))
 def validate(report,geo,waters):

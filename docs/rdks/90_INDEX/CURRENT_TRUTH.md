@@ -1,5 +1,11 @@
 # Current truth – gældende projektviden
 
+## 4.0.197 – national pipeline følger 210 effektive zoner
+
+- Fejø/Femø er efter ejerbeslutning slettet centralt. Den effektive bestand er derfor 210 aktive hovedzoner, selv om det historiske forældreregister fortsat kan indeholde 211 poster.
+- Den private nationale kørsel #31790559558 stoppede korrekt før kildehentning, fordi dens planport stadig forventede 211. Plan, topologi, kystdele, stednavne og alle tilsvarende fail-closed validatorer/tests forventer nu konsekvent 210.
+- Rettelsen ændrer ikke offentlig geometri, score eller centrale data. Den fjerner kun den forældede tælleblokering, så den private land-/vandkandidat kan gennemføre de allerede krævede gates.
+
 ## 4.0.196 – land/hav er én fysisk kontrakt
 
 - Hver lokal kystdel har ét blåt havpunkt i vandet og ét grønt landpunkt på land. Linjen fra hav til land skal krydse den tilhørende kyst og være vinkelret på dens lokale retning; den røde pil i admin viser netop denne beregningsretning.
