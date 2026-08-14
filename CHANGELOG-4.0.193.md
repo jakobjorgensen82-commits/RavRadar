@@ -13,3 +13,4 @@
 - Tilføjer et isoleret, manuelt GitHub-job, som reproducerer kandidaten på Linux, genkører punktgeometriauditen og validerer alle 45 ændrede vandpunkter mod DMI's native grid. Jobbet har kun læseadgang og kan hverken aktivere geometri eller deploye Pages.
 - Aktiverer derefter kandidaten lokalt som en reproducerbar 673-dels pakke; 4.0.192/651 dele bevares som versionsstyret rollback. Hovedzonegeometrien ændres ikke.
 - GitHub Actions #31764453987 produktionsverificerede 4.0.193-kodekæden med frisk data, fuld validering, releasegate og deploy før aktiveringscommitten. Den efterfølgende 673-dels produktionskørsel skal fortsat bevise mindst 95 % lokal U/V-dækning.
+- Første aktiveringskørsel #31764957646 stoppede sikkert før deploy, fordi manifestets status ikke udløste den eksisterende engangspromotion af en nyere ejer-godkendt repositoryaktivering. Statuskontrakten og den maskinafhængige rollbacksti er rettet; hashkontrol og central readback er bevaret uændret.

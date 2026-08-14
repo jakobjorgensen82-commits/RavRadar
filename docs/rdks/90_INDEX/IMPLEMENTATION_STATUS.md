@@ -9,6 +9,7 @@
 - [x] Landsdækkende gate kræver mindst 95 % verificeret lokal U/V-dækning og forbyder overpublicering.
 - [x] #31764453987 bestod frisk data, fuld validering, releasegate og deploy for 4.0.193-kodekæden før geometriaktivering.
 - [ ] Den aktiverede 673-dels pakke skal opbygge mindst 95 % lokal U/V-cache og bestå den skærpede gate i en efterfølgende produktionskørsel.
+- [x] #31764957646 stoppede før deploy ved central manifestreadback, fordi aktiveringsstatus ikke matchede den eksisterende `owner-approved-*`-promotionskontrakt. Status og portabel rollbacksti er rettet uden at svække hash/readback.
 - [x] Alle 651 aktive punktpar er auditeret mod eget kystreferencepunkt og lokal tangent: 13 afvigelser; privat reparationskandidat giver 0.
 - [x] Vedvarende retningsskift er auditeret afstandsbaseret. En konservativ kandidat opdeler 10 hidtil enkelt-delte hovedzoner til i alt 673 lokale dele; Helgenæs bliver tre fysisk forskellige sider.
 - [x] Kandidatens 673 punktpar består den samme geometriaudit med 0 afvigelser. Private kontrolbilleder er genereret og kontrolleret for alle 10 zoner.

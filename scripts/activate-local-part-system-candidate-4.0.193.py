@@ -110,7 +110,7 @@ def main():
     previous_manifest = load(args.rollback / "manifest.json")
     manifest = {
         **previous_manifest,
-        "status": "active-local-part-system-repair-4.0.193",
+        "status": "owner-approved-local-part-system-repair-4.0.193",
         "sourceRunId": args.source_run_id,
         "sourceCommit": "f52daab7fc91ca16e9549625b5c0f31dea73af13",
         "sourceVersion": "4.0.193",
@@ -129,7 +129,10 @@ def main():
         "environment": "production",
         "publicActivation": True,
         "activationAuthority": "owner-authorized systemic land/water and local-score repair in Codex thread 2026-08-14",
-        "rollback": {"method": str(args.rollback), "preservesParentRuntime": True},
+        "rollback": {
+            "method": args.rollback.relative_to(ROOT).as_posix(),
+            "preservesParentRuntime": True,
+        },
         "automaticActivationAllowed": False,
         "activatedAt": "2026-08-14",
     }

@@ -969,3 +969,4 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Privat #31764242827 validerede alle 45 ændrede/nye vandpunkter mod native DMI-grid med fuld dækning og nul ugyldige punkter.
 - Kandidaten er derefter lokalt aktiveret som 673-dels pakke med 0 punkt-/overlapfund; 4.0.192/651 dele er bevaret som rollback. Hovedzonegeometrien er uændret.
 - #31764453987 produktionsverificerede 4.0.193-kodekæden med frisk data, fuld validering, releasegate og deploy før aktiveringscommitten. Næste bevis er den deployede 673-dels pakkes progressive lokale U/V-dækning på mindst 95 %.
+- Første aktiveringsrun #31764957646 stoppede fail-closed: central sync erstattede manifestet, fordi den nye status manglede det eksisterende `owner-approved-*`-signal. Aktiveringsscript og manifest bruger nu den bindende promotionskontrakt og en repositoryrelativ rollbacksti; digest- og central readback-gater er ikke ændret.

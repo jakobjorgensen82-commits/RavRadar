@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "status": "active-local-part-system-repair-4.0.193",
+  "status": "owner-approved-local-part-system-repair-4.0.193",
   "sourceRunId": "31764242827",
   "sourceCommit": "f52daab7fc91ca16e9549625b5c0f31dea73af13",
   "sourceVersion": "4.0.193",
@@ -29,7 +29,7 @@
   "publicActivation": true,
   "activationAuthority": "owner-authorized systemic land/water and local-score repair in Codex thread 2026-08-14",
   "rollback": {
-    "method": "C:\\Users\\jakob\\Desktop\\RavRadar\\RavRadar\\data\\geometry-v2\\rollback-4.0.192-before-local-part-system",
+    "method": "data/geometry-v2/rollback-4.0.192-before-local-part-system",
     "preservesParentRuntime": true
   },
   "automaticActivationAllowed": false,
