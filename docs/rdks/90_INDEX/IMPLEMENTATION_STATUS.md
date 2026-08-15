@@ -7,7 +7,8 @@
 - [x] Et reelt bedre aktuelt par og recovery uden eksisterende aktuelt anker er bevaret.
 - [x] Målrettede modelvalgs-, historik-, versions-, håndbogs- og RDKS-tests samt lokal releasegate består.
 - [x] Fuld lokal `validate` består hele geometri-v2-kæden og stopper derefter forventet fail-closed ved repositoryets historiske 211-zonegrundlag mod den centralt effektive bestand på 210; forskellen er ikke omgået.
-- [ ] Frisk GitHub-produktion skal bevise central hydrering, fulde gates, deploy og aktuel strøm i de 27 tidligere berørte zoner.
+- [x] #31883707138 beviser central hydrering, DMI-bulk, fulde gates, Supabase og deploy; `rr-20260815122446-210` har aktuel verificeret strøm i 210/210 og 41 strømtrin i hver af de 27 tidligere berørte zoner.
+- [ ] Kommende modelrotationer skal eftermåles, indtil et konkurrerende sent par faktisk udløser `CURRENT_ANCHOR_PROTECTED`; den første produktion valgte NSBS uden denne konkurrence.
 
 ## 4.0.217 – samme verificerede prøve i 24- og 72-timersvinduer
 

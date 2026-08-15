@@ -5,7 +5,9 @@
 - Artifact #2750 viste en særskilt modelvalgsregression i 27 zoner: `dkss_idw` havde et marginalt bedre geografisk scoret U/V-par, men kun 19. august, og kunne derfor rydde en eksisterende `dkss_nsbs`-serie omkring nu.
 - 4.0.218 beskytter et eksisterende strømanker inden for seks timer af datasættets genereringstid. Et andet modelvalg accepteres kun, hvis kandidatens eget fælles U/V-par også ligger i ankervinduet.
 - Mangler den eksisterende model selv et aktuelt anker, er recovery fortsat tilladt. DMI-kilder, fallback, RavScore og punkter er uændrede.
-- Målrettede regressioner, versions-/håndbogs-/RDKS-kontrol og lokal releasegate består. Fuld lokal `validate` når forventet den historiske 211-mod-210-zonegrænse efter en grøn geometri-v2-kæde; frisk central produktion afventer.
+- Målrettede regressioner, versions-/håndbogs-/RDKS-kontrol og lokal releasegate består. Fuld lokal `validate` når forventet den historiske 211-mod-210-zonegrænse efter en grøn geometri-v2-kæde.
+- GitHub Actions #31883707138 bestod en fuld 21-minutters produktionskæde med central adminhydrering/tombstones, DMI-bulk, `validate`, releasegate, Supabase, Pages-artifact og deploy på commit `02fefbcffdeecce02aa8ac48218e45d9458d5ed4`.
+- Datasæt `rr-20260815122446-210` har verificeret aktuel strøm i 210/210 zoner. De 27 tidligere berørte zoner valgte `dkss_nsbs`, havde aktuelt tidsanker og 41 strømtrin hver. Denne rotation frembød ikke et konkurrerende sent IDW-par, så den eksplicitte `CURRENT_ANCHOR_PROTECTED`-gren skal fortsat eftermåles over kommende modelrotationer.
 
 ## 4.0.217 – verificeret strømhistorik bevares i begge vinduer
 

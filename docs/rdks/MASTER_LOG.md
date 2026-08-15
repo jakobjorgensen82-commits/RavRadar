@@ -1165,3 +1165,4 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Den resterende ujævnhed i 27 zoner var ikke en historikfejl: et marginalt bedre `dkss_idw`-U/V-par i den fjerne prognosehale kunne genvælge hele havmodellen og rydde en aktuel `dkss_nsbs`-serie.
 - 4.0.218 kræver, at en kandidat selv har et fælles strømpar omkring nu, før den må erstatte en allerede aktuelt dækkende model. Recovery uden eksisterende aktuelt anker er bevaret.
 - Ingen kilde, fallback, score eller punktgeometri ændres.
+- #31883707138 bestod den fulde produktionskæde og deploy efter en 21-minutters DMI-kørsel. `rr-20260815122446-210` har verificeret aktuel strøm i 210/210; de 27 tidligere berørte zoner valgte NSBS og har hver 41 strømtrin. Et konkurrerende sent IDW-par forekom ikke i denne rotation, så den nye afvisningsgren følges fortsat.
