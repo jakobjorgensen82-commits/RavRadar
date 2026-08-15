@@ -50,6 +50,23 @@ def water_source_parameter_allowed(parameter: str) -> bool:
     return parameter == "sea-mean-deviation"
 
 
+def water_temperature_surface_layer(level_type: Any, level: Any) -> tuple[str, float] | None:
+    """Accept only DKSS' explicit sea-surface temperature layer.
+
+    DKSS parameter 80 is present both at the surface and at many depths. The
+    public field is sea-surface temperature and its fallback has the same
+    meaning, so deeper layers must never overwrite the surface value.
+    """
+    normalized_type = str(level_type or "").strip().lower()
+    try:
+        numeric_level = float(level)
+    except (TypeError, ValueError):
+        return None
+    if normalized_type != "surface" or numeric_level != 0.0:
+        return None
+    return ("surface:0", 0.0)
+
+
 def vector_vertical_layer(family: str, level_type: Any, level: Any) -> tuple[str, float]:
     """Return stable layer identity/rank for U/V pairing.
 

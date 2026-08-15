@@ -1,5 +1,13 @@
 # RavRadar Håndbog
 
+## Vandtemperatur er temperaturen ved havoverfladen – 4.0.213
+
+DMI's havmodeller indeholder temperatur både ved overfladen og i mange dybder. RavRadar skelnede tidligere ikke disse lag i den skalare temperaturkæde. Et dybere lag kunne derfor overskrive overfladeværdien, selv om appen viser feltet som almindelig vandtemperatur og fallbacken leverer havoverfladetemperatur.
+
+RavRadar accepterer nu kun DMI's eksplicitte overfladelag, niveau 0, som offentlig vandtemperatur. Laget gemmes sammen med kilde, modelkørsel og tidspunkt. Dybere temperaturer bruges ikke som erstatning; hvis overfladetemperaturen mangler, forbliver den manglende eller følger den eksisterende tydeligt markerede komponentfallback.
+
+Rettelsen ændrer ikke RavScore, mobiliseringsstate, fallbackprioritet eller 72-timershistorikken. Den sikrer alene, at den viste DMI-temperatur har den samme tilsigtede fysiske betydning som feltets navn og fallbacken. De otte Limfjordszoners sidste 15 timer er fortsat en separat åben dækningsanalyse.
+
 ## Havmodelvalget bevares mellem kørsler – 4.0.211
 
 4.0.210 fandt de rigtige strømdatahuller, men produktionskontrollen viste, at DMI-filerne ikke blev læst igen. Cachen huskede, at filerne tidligere var behandlet, men havde mistet oplysningen om, hvilken havmodel der var valgt for hver zone.
@@ -66,7 +74,7 @@ Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vande
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.212
+**Håndbogsversion:** 4.0.213
 
 **Opdateret:** 15. august 2026
 

@@ -20,7 +20,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
-from lib.dmi_grid_vector import select_common_vector_candidate, same_grid_point, water_source_parameter_allowed, vector_vertical_layer, prefer_vector_layer
+from lib.dmi_grid_vector import select_common_vector_candidate, same_grid_point, water_source_parameter_allowed, water_temperature_surface_layer, vector_vertical_layer, prefer_vector_layer
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -80,7 +80,7 @@ for _session in (STAC_SESSION, DOWNLOAD_SESSION):
 STAC_SESSION.headers.update({"Accept": "application/geo+json, application/json"})
 DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octet-stream, */*"})
 
-PARSER_VERSION = 14
+PARSER_VERSION = 15
 PARAMETER_MAP_VERSION = 4
 GRID_LOOKUP_VERSION = 7
 COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw", "wam_nsb", "harmonie_dini_sf"]
@@ -850,12 +850,13 @@ def parameter_zones(collection: str, parameter: str, zones: list[dict[str, Any]]
     return base_regular
 
 
-def native_component_source(collection: str, model_run: str, valid_time: str) -> dict[str, Any]:
+def native_component_source(collection: str, model_run: str, valid_time: str, **extra: Any) -> dict[str, Any]:
     return {
         "provider": "dmi",
         "collection": collection,
         "modelRun": model_run,
         "nativeValidTime": valid_time,
+        **extra,
     }
 
 
@@ -899,6 +900,16 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                 parameter = classify_parameter(gid, collection)
                 if not parameter:
                     continue
+                scalar_layer = None
+                if parameter == "water-temperature":
+                    scalar_layer = water_temperature_surface_layer(
+                        safe_get(gid, "typeOfLevel"), safe_get(gid, "level")
+                    )
+                    if scalar_layer is None:
+                        diagnostics["rejectedNonSurfaceWaterTemperatureMessages"] = int(
+                            diagnostics.get("rejectedNonSurfaceWaterTemperatureMessages") or 0
+                        ) + 1
+                        continue
                 found.add(parameter)
                 wanted = parameter_zones(collection, parameter, zones)
                 zone_lookups += len(wanted)
@@ -1028,8 +1039,19 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                     touched.add(zone["id"])
                     hour = point["hourly"].setdefault(valid_time, {"time": valid_time})
                     hour[parameter] = nearest["value"]
-                    hour.setdefault("sources", {})[PARAMETER_COMPONENT[parameter]] = native_component_source(collection, model_run, valid_time)
-                    point["gridPoints"][parameter] = {k: round(v, 5) for k, v in nearest.items() if k != "value"}
+                    source_extra = {}
+                    point_extra = {}
+                    if parameter == "water-temperature" and scalar_layer is not None:
+                        layer_key, layer_rank = scalar_layer
+                        source_extra = {"verticalLayer": layer_key, "verticalLayerRankM": layer_rank}
+                        point_extra = source_extra
+                    hour.setdefault("sources", {})[PARAMETER_COMPONENT[parameter]] = native_component_source(
+                        collection, model_run, valid_time, **source_extra
+                    )
+                    point["gridPoints"][parameter] = {
+                        **{k: round(v, 5) for k, v in nearest.items() if k != "value"},
+                        **point_extra,
+                    }
                     point["collections"][parameter] = collection
                 if interrupted:
                     break

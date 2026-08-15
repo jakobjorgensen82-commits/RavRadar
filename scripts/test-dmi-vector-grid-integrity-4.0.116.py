@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from lib.dmi_grid_vector import select_common_vector_candidate, same_grid_point, water_source_parameter_allowed, vector_vertical_layer, prefer_vector_layer
+from lib.dmi_grid_vector import select_common_vector_candidate, same_grid_point, water_source_parameter_allowed, water_temperature_surface_layer, vector_vertical_layer, prefer_vector_layer
 
 u = [
     {"latitude": 56.0, "longitude": 10.0, "distanceKm": 1.0, "value": 0.2},
@@ -45,6 +45,13 @@ for parameter in ("current-u", "current-v", "water-temperature", "wind-u-10m", "
 print("OK: water-source helper points request water level only.")
 
 
+assert water_temperature_surface_layer("surface", 0) == ("surface:0", 0.0)
+assert water_temperature_surface_layer("SURFACE", "0") == ("surface:0", 0.0)
+for level_type, level in (("depthBelowSea", 1), ("depthBelowSea", 30), ("surface", 1), (None, None)):
+    assert water_temperature_surface_layer(level_type, level) is None
+print("OK: DMI water temperature accepts only the explicit surface layer.")
+
+
 # Regression for production #1738: Limfjord sampling must search broadly enough
 # to discover a shared wet U/V point while preserving the existing 24 km accept cap.
 from pathlib import Path
@@ -56,6 +63,8 @@ assert 'MAX_GRID_DISTANCE_KM = {"limfjord": 24.0' in bulk_source
 assert 'vector_candidates.setdefault((family, zone["id"], layer_key), {})' in bulk_source
 assert 'prefer_vector_layer(previous_layer_rank, layer_rank)' in bulk_source
 assert '"verticalLayer": layer_key' in bulk_source
+assert 'rejectedNonSurfaceWaterTemperatureMessages' in bulk_source
+assert 'water_temperature_surface_layer' in bulk_source
 assert 'family in {"current", "wind-tail"}' in bulk_source
 assert 'search.setdefault("vectorPairs", {}).setdefault(family, {})' in bulk_source
 print("OK: Marine U/V search examines broad land-mask windows, preserves physical caps, and diagnoses current and wind-tail pairs.")

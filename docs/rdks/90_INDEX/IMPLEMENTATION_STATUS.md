@@ -1,4 +1,15 @@
-# Implementeringsstatus pr. 4.0.212 – komponentkorrekt DMI-modelskift
+# Implementeringsstatus pr. 4.0.213 – entydig DMI-havoverfladetemperatur
+
+## 4.0.213 – entydig DMI-havoverfladetemperatur
+
+- [x] 4.0.212-supportartifactet dokumenterer DMI-parameter 80 ved både `surface:0` og mange `depthBelowSea`-lag i alle tre DKSS-collections.
+- [x] Den tidligere skalarkæde kunne overskrive samme zone/time i GRIB-rækkefølge og bevare det sidst læste dybdelag uden lagidentitet.
+- [x] Kun `surface`, niveau 0, accepteres nu som offentlig vandtemperatur; dybere lag afvises fail-closed.
+- [x] Temperaturens grid- og timeproveniens gemmer `verticalLayer: surface:0`.
+- [x] Parsergeneration 15 tvinger kontrolleret genbehandling af den aktuelle DMI-cache.
+- [x] Målrettede parser-, grid-, forecast-, null- og historiktests består lokalt.
+- [ ] Frisk fuldt gated GitHub-kørsel skal bevise genopbygget overfladetemperatur, bevaret strøm/vandstand, supportartifact, Supabase og Pages.
+- [ ] Den separate 15-timers `dkss_lf`-/Open-Meteo-hale for otte Limfjordszoner forbliver en åben DEC-0030-analyse.
 
 ## 4.0.212 – komponentkorrekt DMI-modelskift
 

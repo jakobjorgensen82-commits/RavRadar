@@ -1,3 +1,10 @@
+## 2026-08-15 – 4.0.213 entydig DMI-havoverfladetemperatur
+
+- Supportartifactet fra #31870747677 dokumenterede DMI-parameter 80 ved både `surface:0` og mange dybdelag i alle tre DKSS-collections.
+- Den tidligere skalarparser kunne overskrive overfladetemperaturen med et senere dybdelag uden at gemme lagidentitet.
+- 4.0.213 accepterer kun `surface:0`, gemmer laget i grid-/timeproveniens og hæver parsergenerationen til 15 for kontrolleret genopbygning.
+- Datakilde, fallbackprioritet, RavScore, state og historikvinduer er uændrede. Lokal målrettet validering består; frisk fuld CI/produktion afventes.
+
 ## 2026-08-15 – 4.0.210 sammenhængende DMI-strømdækning
 
 - 4.0.209-artifactet viste 125 hovedzoner med kun to sene strømtrin, 75 med syv sene trin og 10 med fuld serie fra nutiden.

@@ -171,11 +171,11 @@ Den verificerede kodekæde er:
 - `waterTemperatureC` vises i informationspanelet, gemmes i observationssnapshots og bevares i både `samples24h` og det score-neutrale `samples72h`.
 - Den aktive RavScore og den nuværende mobiliserings-/stateberegning bruger ikke vandtemperaturen numerisk. Historikfeltet er derfor bevaret forskningsinput, ikke et aktivt scorebidrag.
 
-### Åbent fysisk sammenlignelighedsproblem
+### Fysisk lagproblem fundet og afgrænset i 4.0.213
 
-Strøm-U/V udvælges med en eksplicit, dokumenteret vertikallagsidentitet. Det skalare DMI-felt `water-temperature` samples derimod som nærmeste gyldige felt og gemmer collection, model-run og tid, men ikke feltets `typeOfLevel`/niveau som temperaturens lagidentitet. Open-Meteo-fallbacken er eksplicit havoverfladetemperatur. Den nuværende dokumentation kan derfor ikke bevise, at DMI-værdien og fallbacken repræsenterer samme vandlag.
+4.0.212-supportartifactet viser, at lokal DMI-parameter 80 findes både ved `surface:0` og ved mange `depthBelowSea`-niveauer i `dkss_idw`, `dkss_nsbs` og `dkss_lf`. Den tidligere skalarkæde skelnede ikke disse lag og kunne overskrive overfladeværdien med det sidst læste dybdelag. Open-Meteo-fallbacken er eksplicit havoverfladetemperatur, så serierne var ikke sikkert fysisk sammenlignelige.
 
-Før et temperaturhaledesign kan godkendes, skal et frisk DKSS-field inventory dokumentere temperaturfeltets faktiske niveau i `dkss_idw`, `dkss_nsbs` og `dkss_lf`. Derefter skal overlap måles for niveauforskel, spring og geografisk mønster. Indtil da må fallbacken ikke fremstilles som fysisk identisk med DMI-temperaturen, og temperaturen må ikke få scorevirkning.
+4.0.213 accepterer derfor kun parameter 80 ved eksplicit `surface`, niveau 0, gemmer lagidentiteten og afviser dybere lag fail-closed. Det giver DMI og fallback samme tilsigtede vertikale betydning, men overlap skal stadig måles for bias, spring og geografisk mønster. Temperaturen får fortsat ingen scorevirkning.
 # 4.0.210 – rodårsag i strømdækningens horisontsmål
 
 4.0.209-supportartifactet dokumenterer tre hovedgrupper: 125 zoner med to native U/V-par fra 19. august kl. 11–12 UTC, 75 zoner med syv par fra 19. august kl. 00–12 UTC og 10 zoner med 40 par fra 14. august kl. 21 til 19. august kl. 12 UTC. Den tidligere scheduler beregnede horisont som `sidste gyldige tidspunkt - nu` og kaldte derfor alle grupper 96-timersdækkede.

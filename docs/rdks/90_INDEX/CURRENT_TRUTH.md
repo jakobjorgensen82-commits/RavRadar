@@ -1,5 +1,12 @@
 # Current truth – gældende projektviden
 
+## 4.0.213 – vandtemperatur betyder havoverfladetemperatur
+
+- 4.0.212-supportartifactet viser, at lokal DMI-parameter 80 findes ved `surface:0` og ved mange `depthBelowSea`-niveauer. Den tidligere skalarparser skelnede ikke lagene og kunne derfor lade et senere dybdelag overskrive overfladetemperaturen.
+- 4.0.213 accepterer kun parameter 80 ved eksplicit `surface`, niveau 0, og gemmer `verticalLayer: surface:0` i grid- og timeproveniens. Dybere lag afvises; de interpoleres ikke til overfladen.
+- Parsergeneration 15 genbehandler den aktuelle cache. Datakilde, fallbackprioritet, RavScore, state og 72-timersvinduer er uændrede.
+- Lokal målrettet validering er grøn. CI- og produktionsbevis afventer en frisk fuld kørsel.
+
 ## P1-bølge-/vandstandsaudit – 2026-08-15
 
 - Deployet dataset `rr-20260815071241-210` har 118 timer i 210 zoner. Bølgehøjde, -retning og -periode er samlet komplette i 209 zoner; `DK-B05-11` Mors nord/Feggesund mangler alle 118 bølgetimer.
@@ -7,7 +14,7 @@
 - Mønsteret afgrænser næste analyse til Limfjordens WAM-fravalg/fallback og den fælles `dkss_lf`-hale. Den offentlige fil har ikke timeproveniens, så et beskyttet frisk supportartifact kræves før rodårsag eller design kan godkendes.
 - Lufttemperatur findes i den offentlige timefil, men vises ikke i det aktive informationspanel og bruges ikke af den aktive RavScore. Den er ikke automatisk en ny bindende P1-komponent.
 - Vandtemperatur er komplet i 202/210 zoner i samme datasæt. De samme otte Limfjordszoner mangler samme sidste 15 timer som vandstanden, hvilket peger på en fælles `dkss_lf`-grænse.
-- Vandtemperatur vises, gemmes med observationer og bevares i 24-/72-timershistorikken, men bruges ikke numerisk i aktiv RavScore eller nuværende state. DMI-feltets vertikale lagidentitet bevares ikke, mens fallbacken er havoverfladetemperatur; fysisk sammenlignelighed er derfor åben og skal bevises før kæde- eller scoreændring.
+- Vandtemperatur vises, gemmes med observationer og bevares i 24-/72-timershistorikken, men bruges ikke numerisk i aktiv RavScore eller nuværende state. 4.0.213 afgrænser DMI-feltet til det eksplicitte overfladelag, så DMI og den eksisterende havoverfladefallback har samme tilsigtede vertikale betydning; overgangskvaliteten skal fortsat måles.
 
 ## 4.0.212 – skalarfelter må ikke rydde strømserien
 
