@@ -1,4 +1,13 @@
-# Implementeringsstatus pr. 4.0.223 – modelcyklusdækning
+# Implementeringsstatus pr. 4.0.224 – vandstandsroutingproveniens
+
+## 4.0.224 – faktisk DMI-identitet efter routing
+
+- [x] #2795 afgrænser fejlen til metadata efter den eksisterende værdirouting.
+- [x] Rå kildepunkters DMI-proveniens bevares gennem timeinterpolation.
+- [x] Enkelt- og flercollectionrouting får faktiske modelnavne, model-run, native tider, routingmetode og source keys.
+- [x] Regressionen beviser, at et gammelt forkert modelmærke erstattes i både offentlig serie og forecaststore.
+- [x] Vandstandsværdi, routing, fallback, RavScore, historik og geometri er uændrede.
+- [ ] Frisk central 210-zoneproduktion skal give fuld vandstandsproveniens og bestå validate, releasegate, Supabase og Pages.
 
 ## 4.0.223 – delvis kontra fuld modelcyklus
 

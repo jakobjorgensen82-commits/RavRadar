@@ -10,7 +10,11 @@ function sourceRecordFromBulk(source, bulk, generatedAt){
   const zone=bulk?.zones?.[`SOURCE::${sourceKey(source)}`];
   const rows=Object.values(zone?.hourly??{}).filter(r=>Number.isFinite(Date.parse(r?.time))&&finite(r?.['sea-mean-deviation'])!==null).sort((a,b)=>Date.parse(a.time)-Date.parse(b.time));
   if(!rows.length)return null;
-  const built=buildDmiForecastHourly({ocean:rows.map(r=>({step:r.time,'sea-mean-deviation':finite(r['sea-mean-deviation'])})),generatedAt,hours:118,sourceCadenceMinutes:Number(bulk?.timeStrideHours??3)*60});
+  const built=buildDmiForecastHourly({ocean:rows.map(r=>({
+    step:r.time,
+    'sea-mean-deviation':finite(r['sea-mean-deviation']),
+    provenance:{waterLevel:r?.sources?.waterLevel??null}
+  })),generatedAt,hours:118,sourceCadenceMinutes:Number(bulk?.timeStrideHours??3)*60});
   const hourly=built.hourly.filter(r=>finite(r.waterLevelCm)!==null);
   if(!hourly.length)return null;
   return {sourceKey:sourceKey(source),stationId:String(source.stationId),name:source.name,sourceType:source.sourceType,point:source.point,hourly,generatedAt:bulk.generatedAt??generatedAt,validUntil:hourly.at(-1)?.time??null,horizonHours:Math.max(0,Math.round((Date.parse(hourly.at(-1).time)-Date.parse(generatedAt))/3600000))};
@@ -48,6 +52,32 @@ function weighted(point,selected,haversineKm,method){
 }
 function byTime(rec){return new Map((rec?.hourly??[]).map(r=>[r.time,r]));}
 
+function routedWaterLevelSource(sourceRows,rows,method){
+  const sources=sourceRows.map(row=>row?.sources?.waterLevel).filter(source=>source?.provider==='dmi'&&source.collection&&source.modelRun);
+  if(sources.length!==sourceRows.length)return {provider:'dmi',fallback:false,routing:'dmi-water-source-interpolation',provenanceStatus:'incomplete'};
+  const collections=[...new Set(sources.map(source=>source.collection))].sort();
+  const modelRuns=[...new Set(sources.map(source=>source.modelRun))].sort();
+  const resolutions=[...new Set(sources.map(source=>source.temporalResolution).filter(Boolean))].sort();
+  const nativeValidTimes=[...new Set(sources.flatMap(source=>source.nativeValidTimes??[]).filter(Boolean))].sort();
+  const leadTimes=[...new Set(sources.map(source=>finite(source.leadTimeHours)).filter(value=>value!==null))];
+  const forecastAges=[...new Set(sources.map(source=>finite(source.forecastAgeHours)).filter(value=>value!==null))];
+  return {
+    provider:'dmi',
+    collection:collections.join('+'),
+    collections,
+    modelRun:modelRuns.length===1?modelRuns[0]:modelRuns.join('+'),
+    modelRuns,
+    leadTimeHours:leadTimes.length===1?leadTimes[0]:null,
+    forecastAgeHours:forecastAges.length===1?forecastAges[0]:null,
+    temporalResolution:resolutions.length===1?resolutions[0]:'mixed',
+    nativeValidTimes,
+    fallback:false,
+    routing:'dmi-water-source-interpolation',
+    routingMethod:rows.length===1?'single-water-source':(method==='manual-weights'?'manual-weights':'inverse-distance-water-sources'),
+    sourceKeys:rows.map(sourceKey)
+  };
+}
+
 export function applyWaterSourceRouting({features,output,forecastStore,sources,index,routing,haversineKm,generatedAt}){
   const byZone=new Map(features.map(f=>[f.properties?.id,f]));
   const notifications=[]; const audit={totalZones:0,adminOverride:0,automatic:0,applied:0,incomplete:0};
@@ -69,10 +99,11 @@ export function applyWaterSourceRouting({features,output,forecastStore,sources,i
     const timeMaps=rows.map(s=>byTime(index.get(sourceKey(s))));
     const routeWaterLevels=target=>{
       const routed=target.map(row=>{
-        const values=rows.map((s,i)=>finite(timeMaps[i].get(row.time)?.waterLevelCm));
+        const sourceRows=rows.map((s,i)=>timeMaps[i].get(row.time));
+        const values=sourceRows.map(sourceRow=>finite(sourceRow?.waterLevelCm));
         if(values.some(v=>v===null))return row;
         const value=values.reduce((sum,v,i)=>sum+v*rows[i].weight,0);
-        return {...row,waterLevelCm:round(value,0),waterLevelModelCm:round(value,0),waterLevelSource:'dmi-water-source-interpolation'};
+        return {...row,waterLevelCm:round(value,0),waterLevelModelCm:round(value,0),waterLevelSource:'dmi-water-source-interpolation',sources:{...(row.sources??{}),waterLevel:routedWaterLevelSource(sourceRows,rows,route?.method)}};
       });
       for(let i=0;i<routed.length;i++){
         const future=routed[i+3];

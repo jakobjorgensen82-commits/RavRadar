@@ -1,5 +1,11 @@
 # RavRadar Håndbog
 
+## Vandstand viser den model, der faktisk leverede værdien – 4.0.224
+
+RavRadar kan beregne en zones vandstand fra ét eller to valgte DMI-vandstandspunkter. Værdien var korrekt, men kildeoplysningen kunne blive stående fra zonens tidligere havmodel. Det var især misvisende, når de valgte punkter lå i to forskellige DMI-modelområder.
+
+Fra 4.0.224 følger de faktiske modelnavne, modelkørsel og kildetider med den beregnede vandstand. Hvis to modelområder indgår, vises det i data som en sammensat kilde i stedet for at vælge ét navn. Selve vandstanden, de valgte punkter, vægtene, fallbacken og RavScore er uændrede.
+
 ## Mindre Supabase-forbrug uden tab af admin-data – 4.0.219
 
 RavRadar genbygger en detaljeret rapport om vandstandsrouting ved hver vejrbygning. Tidligere blev den gamle rapport først hentet fra Supabase, selv om den straks blev erstattet. Fra 4.0.219 springes kun denne overflødige hentning over. Den nye rapport gemmes fortsat centralt og kan læses i admin; stationsregister, regler, routingvalg og andre redigerbare data hentes stadig før beregningen.
@@ -96,7 +102,7 @@ Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vande
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.223
+**Håndbogsversion:** 4.0.224
 
 **Opdateret:** 15. august 2026
 

@@ -1,4 +1,4 @@
-# AI Roadmap – RavRadar 4.0.223
+# AI Roadmap – RavRadar 4.0.224
 
 Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status skal løbende flyttes til RDKS, når noget implementeres.
 
@@ -19,6 +19,8 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 - En flytning bliver først aktiv efter central readback og grøn efterfølgende DMI-/releasekørsel. Afvist validering må ikke aktivere kladden.
 
 ## Næste aktive udvikleropgave – DMI-first femdøgnskæder
+
+- 4.0.224 retter et P1-provenienshul uden at ændre værdier: vandstand fra valgte DMI-kildepunkter mærkes nu med de faktiske enkelt- eller sammensatte DKSS-modelområder. Frisk produktionsartifact er næste gate.
 
 - Den naturlige #31894320128/#2794 ser nye 12 UTC-kandidater for WAM og DKSS, men beholder korrekt de komplette 00/06 UTC-runs, mens de stadig har ca. 107,9/109,9 timers hale over 96-timerskravet. Næste opfølgning er det faktiske beskyttede skift, når den gamle serie falder under kravet; kørslen gav samtidig 4,27–39,99 verificerede historiktimer og nul aktive vandstandscachealarmer.
 

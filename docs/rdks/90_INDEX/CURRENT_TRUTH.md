@@ -1,5 +1,12 @@
 # Current truth – gældende projektviden
 
+## 4.0.224 – sand kilde efter vandstandsrouting
+
+- #2795 viser, at vandstandsroutingen overskrev værdien korrekt, men kunne efterlade zonens tidligere modelmærke; én aktuel DMI-time pr. zone stod helt uden model-run.
+- Den centrale routing bruger 123 zoner med ét DKSS-modelområde og 87 zoner med en sammensætning af to områder. Et enkelt videreført collectionnavn var derfor ikke autoritativt.
+- 4.0.224 fører de valgte kildepunkters faktiske collection(s), model-run, native tider, routingmetode og source keys gennem den eksisterende interpolation. Manglende gammel identitet forbliver eksplicit ufuldstændig.
+- Værdier, routingvalg, vægte, continuity, fallback, RavScore, historik, UI og geometri er uændrede. Frisk produktion er næste gate.
+
 - Den naturlige #31894320128/#2794 er fuldt grøn. DMI's nye WAM-/DKSS-12 UTC-kandidater er synlige, men den aktive cache beholder korrekt WAM 00 UTC og DKSS 06 UTC, mens deres fremadrettede horisont på ca. 107,9/109,9 timer overstiger 96-timersfastholdelsen. Det er beskyttet progressiv rotation, ikke en fastlåst scheduler.
 - #2794 har verificeret aktuel strøm i 210/210 zoner, nul `CURRENT_ANCHOR_PROTECTED`, nul valgte warning/critical-vandstandskilder og 4,27–39,99 timers verificeret historik. Alle zoner er fortsat under 72-timerskravet.
 
