@@ -1,5 +1,10 @@
 # Kendte åbne og overvågede forhold
 
+## P1-bølger og vandstand – aktuel produktionsmåling
+
+- **ISSUE-LIMFJORD-WAVE-MISSING-B05-11 – ÅBEN ANALYSE:** Dataset `rr-20260815071241-210` mangler bølgehøjde, -retning og -periode i alle 118 timer for Mors nord/Feggesund. Koden vælger ingen WAM-collection for Limfjord-kysttypen; den beskyttede provenance skal vise, hvorfor ekstern fallback også er missing, før et løsningsdesign udarbejdes.
+- **ISSUE-LIMFJORD-WATER-LEVEL-15H-TAIL – ÅBEN ANALYSE:** Otte Limfjordszoner har 103/118 vandstandstimer og mangler præcis samme sidste 15 timer. Undersøg fælles `dkss_lf`-run, assetinventar, cache og native horisont i flere friske runs. Missing må ikke skjules med stale gentagelse, interpolation eller opdigtet fallback.
+
 ## 4.0.212 – skalarfelt kunne rydde valgt strømserie
 
 - **ISSUE-DMI-SCALAR-EVICTS-CURRENT-SERIES – PRODUKTIONSVERIFICERET LUKKET I #31870747677:** #31857361460 reducerede 27 tidligere komplette NSBS-zoner fra 38 strømtrin til ét sent trin. Skalare felter må nu kun følge et eksisterende valg; kun et bedre fælles strøm-U/V-par må skifte model. Frisk genindlæsning gav verificeret strøm i 210/210 zoner og mindst 100,8 timers sammenhængende marinehorisont.

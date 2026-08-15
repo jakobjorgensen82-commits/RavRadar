@@ -138,11 +138,26 @@ Mens den separate 72-timers strømhistorik opbygges naturligt gennem de planlagt
 
 ### P1-komponenternes afgrænsning
 
-Den bindende aktive liste er vind, bølger, strøm, vandstand og vandtemperatur. Vandtemperatur mangler fortsat sin selvstændige overgangs- og halekvalitetsanalyse efter bølge-/vandstandsrunden. Lufttemperatur hentes i den eksterne vejrtjeneste, men er ikke en aktiv offentlig timekomponent eller RavScore-komponent; den skal afklares som overflødig eller fremtidig funktion og må ikke automatisk udvide produktionskæden. Nedbør, skydække, lufttryk og sigtbarhed er heller ikke aktive P1-komponenter i den verificerede kode.
+Den bindende aktive liste er vind, bølger, strøm, vandstand og vandtemperatur. Vandtemperatur mangler fortsat sin selvstændige overgangs- og halekvalitetsanalyse efter bølge-/vandstandsrunden. Lufttemperatur hentes og findes i den kompakte offentlige timefil, men vises ikke i det aktive informationspanel og indgår ikke i den aktive RavScore; den skal afklares som overflødig eller fremtidig funktion og må ikke automatisk udvide den bindende P1-kæde. Nedbør, skydække, lufttryk og sigtbarhed er heller ikke aktive P1-komponenter i den verificerede kode.
 
 ### Beslutningspunkt efter målingen
 
 Først når mindst flere normale modelkørsler er sammenlignet, udarbejdes et designforslag med konsekvens for UI, RavScore/state, datamængde, GitHub-køretid og Supabase-egress. Denne analyse giver fortsat ikke mandat til nye kilder, fallbackregler eller scoreændringer.
+
+## Offentlig P1-måling 2026-08-15 – dataset `rr-20260815071241-210`
+
+Den skrivebeskyttede direkte måling af det deployede datasæt omfatter 210 zoner og 118 monotone timer fra `2026-08-15T07:00:00Z` til `2026-08-20T04:00:00Z`.
+
+| Komponent | 118 komplette timer | Ufuldstændige zoner | Mønster |
+|---|---:|---:|---|
+| Bølger, højde + retning + periode | 209/210 | 1 | `DK-B05-11` Mors nord/Feggesund mangler alle 118 bølgetimer |
+| Vandstand | 202/210 | 8 | Otte Limfjordszoner har 103 timer og mangler samme sammenhængende hale på 15 timer |
+
+De otte vandstandszoner er `DK-B05-14`, `DK-B05-16`, `DK-B05-17`, `DK-B05-18`, `DK-B05-19`, `DK-B05-22`, `DK-B05-23` og `DK-B05-24`. Alle har vandstand fra nutiden gennem `2026-08-19T13:00:00Z` og mangler `2026-08-19T14:00:00Z`–`2026-08-20T04:00:00Z`. Det ens geografiske og tidslige mønster skal først undersøges som en fælles `dkss_lf`-run-, asset-, cache- eller native horisontgrænse.
+
+`DK-B05-11` er ligeledes en Limfjordszone. Den aktuelle kysttypekobling vælger ingen WAM-collection for `limfjord`, hvilket forklarer fraværet af en direkte DMI-WAM-kæde, men ikke alene hvorfor den eksisterende eksterne fallback også er missing. Det sidste kræver den beskyttede timeproveniens fra et frisk supportartifact.
+
+Den offentlige projektion indeholder med vilje ikke timevis kildeidentitet. Målingen beviser derfor det faktiske brugerresultat, men kan ikke alene afgøre DMI-/fallbackintervaller eller model-run. Ingen kildeændring kan besluttes på dette grundlag alene.
 # 4.0.210 – rodårsag i strømdækningens horisontsmål
 
 4.0.209-supportartifactet dokumenterer tre hovedgrupper: 125 zoner med to native U/V-par fra 19. august kl. 11–12 UTC, 75 zoner med syv par fra 19. august kl. 00–12 UTC og 10 zoner med 40 par fra 14. august kl. 21 til 19. august kl. 12 UTC. Den tidligere scheduler beregnede horisont som `sidste gyldige tidspunkt - nu` og kaldte derfor alle grupper 96-timersdækkede.

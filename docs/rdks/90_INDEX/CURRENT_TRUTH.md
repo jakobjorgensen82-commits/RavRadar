@@ -1,5 +1,12 @@
 # Current truth – gældende projektviden
 
+## P1-bølge-/vandstandsaudit – 2026-08-15
+
+- Deployet dataset `rr-20260815071241-210` har 118 timer i 210 zoner. Bølgehøjde, -retning og -periode er samlet komplette i 209 zoner; `DK-B05-11` Mors nord/Feggesund mangler alle 118 bølgetimer.
+- Vandstand er komplet i 202 zoner. Otte Limfjordszoner har 103 timer og mangler samme hale fra 19. august kl. 14 UTC til 20. august kl. 04 UTC.
+- Mønsteret afgrænser næste analyse til Limfjordens WAM-fravalg/fallback og den fælles `dkss_lf`-hale. Den offentlige fil har ikke timeproveniens, så et beskyttet frisk supportartifact kræves før rodårsag eller design kan godkendes.
+- Lufttemperatur findes i den offentlige timefil, men vises ikke i det aktive informationspanel og bruges ikke af den aktive RavScore. Den er ikke automatisk en ny bindende P1-komponent.
+
 ## 4.0.212 – skalarfelter må ikke rydde strømserien
 
 - Fire successive produktionsartifacts afgrænser regressionen. #31856697202 havde 210/210 zoner med brugbar strøm fra nutiden. #31857361460 faldt til 183/210, og de 27 berørte NSBS-zoner gik fra 38 sammenhængende strømtrin til kun `2026-08-19T12:00:00Z`.
