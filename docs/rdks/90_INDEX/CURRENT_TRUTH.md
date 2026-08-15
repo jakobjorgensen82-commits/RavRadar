@@ -5,6 +5,7 @@
 - #31873118298 afviste 756 nye dybdelagsmeddelelser, men artifactet viste 29.459 ældre temperaturpunkter uden vertikal provenance mod 3.852 beviste `surface:0`-punkter.
 - 4.0.214 fjerner de umærkede punkter før genbrug. Manglende overfladetemperatur forbliver `missing`, indtil den relevante DKSS-model leverer nye `surface:0`-data.
 - Schedulerens DKSS-rotation medregner nu manglende overfladetemperatur. Alle 210 zoner havde fortsat 102 rå `samples24h` og 132 rå `samples72h`; øvrig vejrhistorik bevares.
+- P1-analysen af Limfjorden er afgrænset: `DK-B05-11` mangler bølger, fordi hverken et gyldigt DMI-bølgepunkt inden for den tilladte afstand eller den eksisterende fallback findes. De øvrige undersøgte Limfjordszoner får bølger fra `wam_dw`. Den fælles sene vandstands-/temperaturhale er et horisont-/overgangsproblem, ikke samme bølgeproblem.
 
 ## 4.0.213 – vandtemperatur betyder havoverfladetemperatur
 

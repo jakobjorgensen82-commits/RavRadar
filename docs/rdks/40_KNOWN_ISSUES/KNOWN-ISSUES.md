@@ -1,10 +1,10 @@
 # Kendte åbne og overvågede forhold
 
 - **4.0.214 PRODUKTIONSOPFØLGNING:** 4.0.213 afviste nye DMI-dybdetemperaturer, men bevarede ældre cachetimer uden lagmærkning. 4.0.214 fjerner dem fail-closed og genopbygger `surface:0` gennem DKSS-rotationen. Afsluttes først, når artifacts viser verificeret overfladelag for alle viste DMI-temperaturtimer.
+- **ISSUE-LIMFJORD-WAVE-MISSING-B05-11 – ÅBEN FAGLIG BESLUTNING:** Rodårsagen er afgrænset: Limfjordsmodellen har ingen bølgekomponent, `wam_dw` har intet accepteret gyldigt punkt ved Feggesund, og eksisterende fallback er også missing. Den nuværende korrekte adfærd er `missing`. Fjernere punkt eller ny kilde kræver særskilt godkendelse og konsekvensberegning.
 
 ## P1-bølger og vandstand – aktuel produktionsmåling
 
-- **ISSUE-LIMFJORD-WAVE-MISSING-B05-11 – ÅBEN ANALYSE:** Dataset `rr-20260815071241-210` mangler bølgehøjde, -retning og -periode i alle 118 timer for Mors nord/Feggesund. Koden vælger ingen WAM-collection for Limfjord-kysttypen; den beskyttede provenance skal vise, hvorfor ekstern fallback også er missing, før et løsningsdesign udarbejdes.
 - **ISSUE-LIMFJORD-WATER-LEVEL-15H-TAIL – ÅBEN ANALYSE:** Otte Limfjordszoner har 103/118 vandstandstimer og mangler præcis samme sidste 15 timer. Undersøg fælles `dkss_lf`-run, assetinventar, cache og native horisont i flere friske runs. Missing må ikke skjules med stale gentagelse, interpolation eller opdigtet fallback.
 - **ISSUE-WATER-TEMPERATURE-LAYER-IDENTITY – RETTET LOKALT I 4.0.213 / AFVENTER PRODUKTION:** Artifactet beviste parameter 80 ved både overflade og dybdelag. Kun `surface:0` accepteres nu, lagidentiteten bevares, og parsergeneration 15 genopbygger cachen. Den separate 15-timers Limfjordshale er fortsat åben og må ikke skjules.
 
