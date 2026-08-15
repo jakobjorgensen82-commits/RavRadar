@@ -5,7 +5,10 @@
 - Produktionsartifact #2757 viser, at routingauditten fylder cirka 0,53 MB som kompakt JSON og hidtil blev hentet centralt før hver 15-minutterskørsel, selv om den genbygges i samme kørsel.
 - 4.0.219 stopper kun denne overflødige readback. Frisk generering, beskyttet upload, central adminvisning, stationsregister og redigerbar admin-konfiguration bevares.
 - Read-only estimatoren sænker den beregnede nedre pipelinegrænse fra cirka 4,44 til 3,03 GiB pr. 30 dage ved 96 kørsler dagligt. Det er ikke billingbevis; næste Supabase-periode skal fortsat måles.
-- Målrettede Supabase/admin-regressioner, estimator, versions-/håndbogs-/RDKS-kontrol og lokal releasegate består. Fuld lokal `validate` når forventet den historiske 211-mod-210-zonegrænse efter en grøn geometri-v2-kæde. Produktion og faktisk egress-eftermåling afventer.
+- GitHub Actions #31885856568 bestod den fulde produktionskæde på commit `5c823947c9275e5234e996b3a86078613b6eee5a`: central adminhydrering/tombstones, frisk DMI, fuld `validate`, releasegate, Supabase, Pages-artifact og deploy.
+- Startloggen viser seks nødvendige centrale dokumenter og ingen `water-station-routing-audit`; slutloggen viser fortsat frisk beskyttet upload af routingauditten. Estimatoren på artifact #2764 giver 3,028 GiB/30 dage og 1,416 GiB/30 dage undgået readback. Faktisk billing-egress afventer fortsat næste Supabase-periode.
+- Offentlig version er 4.0.219 med datasæt `rr-20260815131334-210`, 210 zoner og 673 kyststrækninger.
+- Samme artifact har 149 rå `samples72h`-prøver i hver zone over 37,149 virkelige timer. Historikken vokser korrekt, men 72-timers-exitkriteriet er ikke nået, og der udfyldes ikke bagudrettet.
 
 ## 4.0.218 – et halepar må ikke rydde aktuel strøm
 

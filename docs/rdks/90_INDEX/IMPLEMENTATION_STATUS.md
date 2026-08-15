@@ -8,7 +8,9 @@
 - [x] Read-only estimator viser cirka 3,03 GiB/30 dage som nedre pipelinegrænse mod cirka 4,44 GiB før rettelsen.
 - [x] Målrettede Supabase/admin-regressioner, estimator, versions-/håndbogs-/RDKS-kontrol og lokal releasegate består.
 - [x] Fuld lokal `validate` består hele geometri-v2-kæden og stopper derefter forventet fail-closed ved repositoryets historiske 211-zonegrundlag mod den centralt effektive bestand på 210; forskellen er ikke omgået.
-- [ ] Frisk produktion og næste billingperiodes faktiske egressmåling.
+- [x] #31885856568 produktionsverificerer central hydrering uden routingaudit-readback, frisk routingaudit-upload, fulde gates, Supabase og Pages på commit `5c823947`.
+- [x] Artifact #2764 giver 3,028 GiB/30 dage som read-only nedre grænse og 1,416 GiB/30 dage undgået readback ved 96 kørsler/dag.
+- [ ] Næste billingperiodes faktiske egressmåling; estimator og grøn funktionstest er ikke billingbevis.
 
 ## 4.0.218 – tidsmæssigt sikkert havmodelskift
 
