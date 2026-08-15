@@ -1316,9 +1316,29 @@ def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict
 
 def component_horizon_hours(zone: dict[str, Any], required: tuple[str, ...], now_epoch: float | None = None) -> float:
     now_value = time.time() if now_epoch is None else now_epoch
-    valid_times = [epoch(valid) for valid, hour in (zone.get("hourly") or {}).items()
-                   if epoch(valid) >= now_value - 3600 and all(key in hour for key in required)]
-    return max(0.0, (max(valid_times) - now_value) / 3600.0) if valid_times else 0.0
+    valid_times = sorted(
+        epoch(valid) for valid, hour in (zone.get("hourly") or {}).items()
+        if epoch(valid) >= now_value - 3600
+        and all(isinstance(hour.get(key), (int, float)) and math.isfinite(float(hour[key])) for key in required)
+    )
+    if not valid_times:
+        return 0.0
+
+    # A distant forecast tail is not usable coverage for the current build.
+    # The first native DMI step must begin close to now, and every later step
+    # must remain contiguous at the configured model cadence. This prevents a
+    # four-day hole followed by a few valid DKSS steps from suppressing the
+    # next recovery attempt.
+    start_tolerance = (TIME_STRIDE_HOURS + 1) * 3600
+    max_gap = (TIME_STRIDE_HOURS + 1) * 3600
+    if valid_times[0] > now_value + start_tolerance:
+        return 0.0
+    contiguous_end = valid_times[0]
+    for valid_time in valid_times[1:]:
+        if valid_time - contiguous_end > max_gap:
+            break
+        contiguous_end = valid_time
+    return max(0.0, (contiguous_end - now_value) / 3600.0)
 
 
 def coverage_summary(zones: dict[str, Any], required: tuple[str, ...]) -> dict[str, Any]:

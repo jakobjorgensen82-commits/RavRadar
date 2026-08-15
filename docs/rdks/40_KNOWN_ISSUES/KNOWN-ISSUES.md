@@ -1,5 +1,10 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.210 – falsk komplet DMI-strømdækning
+
+- **ISSUE-DMI-CURRENT-DISTANT-TAIL-MASKS-NOW-GAP – RETTET LOKALT / AFVENTER PRODUKTION:** Schedulerens tidligere horisontsmål så kun på det sidste komplette marinetidspunkt. Derfor kunne to eller syv strømtrin fire døgn ude få en zone til at se fuldt dækket ud, selv om strøm manglede ved nutiden. 4.0.210 kræver sammenhængende komponenter fra byggetiden og prioriterer dermed de relevante DKSS-modeller igen. Ingen manglende værdi udfyldes kunstigt.
+- **ISSUE-DMI-CURRENT-HISTORY-RECOVERY-MEASUREMENT – ÅBEN:** Efter produktion skal 72 timers løb dokumentere, om de 200 berørte hovedzoner opbygger verificeret strømhistorik. Zoner uden reel DMI-dækning forbliver missing og kræver senere særskilt kildeanalyse under DEC-0030.
+
 ## 4.0.208 – lokal snapshotdrift
 
 - **ISSUE-STALE-LOCAL-WEATHER-MISDIAGNOSED-AS-ZONE-FAILURE – PRODUKTIONSVERIFICERET LUKKET I #31848912461:** Det indcheckede 31. juli-snapshot dækkede 209 historiske zoner, mens råt repositoryregister og central runtime havde nyere, forskellige bestande. Valideringen stoppede korrekt, men teksten fik de tre Vadehavszoner til at ligne defekte produktionszoner. Den nye diagnose skelner et udløbet snapshot fra et aktuelt dækningsbrud uden at lempe gaten. Frisk central vejrbygning, fuld validering og deploy bestod; direkte deployaudit beviser 210/210 og alle tre Vadehavszoner med vejrdata.

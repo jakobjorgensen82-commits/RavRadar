@@ -1,3 +1,10 @@
+## 2026-08-15 – 4.0.210 sammenhængende DMI-strømdækning
+
+- 4.0.209-artifactet viste 125 hovedzoner med kun to sene strømtrin, 75 med syv sene trin og 10 med fuld serie fra nutiden.
+- Schedulerens horisontsmål kontrollerede kun seriens slutpunkt. En fjern hale kunne derfor blokere genhentning trods et fire døgn langt hul ved nutiden.
+- Dækning kræver nu en sammenhængende serie fra byggetiden. På det faktiske artifact identificeres 200 genhentningskrævende zoner, og `dkss_idw`/`dkss_nsbs` prioriteres først.
+- Ingen datakilde, fallback eller score ændres. Produktion og 72 timers eftermåling mangler.
+
 ## 2026-08-15 – 4.0.208 lokal snapshotdiagnose
 
 - En systemisk sammenligning viste, at de tre Vadehavszoner ikke fejlede i produktion. Deployet `zones.geojson` og `public-conditions.json` har 210/210 identiske zone-ID'er, inklusive `DK-B04-12`–`DK-B04-14` med vejrdata.

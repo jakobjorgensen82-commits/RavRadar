@@ -162,3 +162,7 @@ Ejeren har udtrykkeligt godkendt en landsdækkende privat revision af kystdele o
 Roadmappet må aldrig opfyldes ved at genindføre stale data, regionale strømbånd, falske nulværdier, hardcodede administratorzoner eller ved at gøre audits svagere.
 
 Den planlagte P3-forskning må undersøge, om rumlige strømstrukturer har selvstændig fysisk informationsværdi. Det er ikke tilladelse til at genindføre regionale strømbånd i produktionen; den nuværende bindende regel gælder, indtil en senere eksplicit beslutning eventuelt erstatter den.
+# Aktuel P1-status – 4.0.210
+
+- DMI-first-komponentanalysen har lokaliseret en konkret strømschedulerfejl: en fjern DKSS-hale blev fejlagtigt regnet som sammenhængende dækning fra nutiden.
+- 4.0.210 retter kun dækning/genhentning. Næste trin er produktion og 72 timers måling, derefter klassifikation af resterende geografiske DMI-huller før enhver kilde-, fallback- eller scorebeslutning.

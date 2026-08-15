@@ -39,3 +39,10 @@
 - Funktioner må ikke fjernes eller ændres uden aktuel ejerbeslutning.
 - DMI er primær kilde. Manglende data er `missing`, aldrig nul, stale gentagelse eller skjult interpolation.
 - Gamle chats er historik, ikke ændringstilladelse.
+# 4.0.210-kandidat – DMI-strømhuller ved nutiden
+
+- 4.0.209 er produktionsverificeret i #31852633877 på commit `b157d4176c20b112728492abc29f32f7a1426389`; live datasæt er `rr-20260815000929-210` med 210 zoner og 102 `samples72h`-prøver pr. zone.
+- Artifactmålingen viste 125 hovedzoner med to strømtrin 19. august, 75 med syv sene trin og kun 10 med en sammenhængende serie fra 14. august.
+- Rodårsagen er `component_horizon_hours`: den målte kun sidste komplette tidspunkt og accepterede derfor en fjern hale som fuld dækning.
+- 4.0.210 kræver start nær byggetiden og native sammenhæng. På det faktiske artifact bliver resultatet 10 komplette og 200 genhentningskrævende hovedzoner; `dkss_idw` og `dkss_nsbs` prioriteres.
+- Ingen kilde, fallback eller score ændres. Næste bevis er frisk produktion og derefter 72 timers eftermåling af verificeret strømhistorik.

@@ -117,3 +117,8 @@ Kilder:
 - Kortlæg hvorfor komponenterne skifter gentagne gange mellem DMI og fallback i stedet for at have ét dokumenteret haleskift; skeln ægte DMI-huller, cache/run-overgange og continuity-reparation.
 - Spor og design bevaring af vandstandsproveniens gennem `repairWaterLevelContinuity` uden endnu at ændre kode.
 - Udarbejd maskinlæsbar kædekontrakt og testdesign før implementeringsforslag.
+# 4.0.210 – rodårsag i strømdækningens horisontsmål
+
+4.0.209-supportartifactet dokumenterer tre hovedgrupper: 125 zoner med to native U/V-par fra 19. august kl. 11–12 UTC, 75 zoner med syv par fra 19. august kl. 00–12 UTC og 10 zoner med 40 par fra 14. august kl. 21 til 19. august kl. 12 UTC. Den tidligere scheduler beregnede horisont som `sidste gyldige tidspunkt - nu` og kaldte derfor alle grupper 96-timersdækkede.
+
+Den korrigerede måling kræver første komplette native trin inden for fire timer fra byggetid og højst fire timer mellem komplette trin. Anvendt på samme artifact er kun 10 hovedzoner komplette, mens 200 kræver genhentning. Den geografiske efterspørgsel fordeler sig på 101 `dkss_idw`, 83 `dkss_nsbs` og 16 `dkss_lf`; schedulerens første to valg bliver IDW og NSBS. Dette er en cache-/schedulerrettelse, ikke evidens for en ny datakilde eller scoreændring.

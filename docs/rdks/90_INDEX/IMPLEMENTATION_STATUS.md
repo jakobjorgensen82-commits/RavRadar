@@ -1,4 +1,13 @@
-# Implementeringsstatus pr. 4.0.209 – længere historik og vandstandsproveniens
+# Implementeringsstatus pr. 4.0.210 – sammenhængende DMI-strømdækning
+
+## 4.0.210 – sammenhængende DMI-strømdækning
+- [x] Produktionsartifactet er målt: 125 zoner havde kun to sene strømtrin, 75 havde syv sene trin, og 10 havde fuld serie fra nutiden.
+- [x] Rodårsagen er lokaliseret til schedulerens horisontsmål, som brugte sidste gyldige tidspunkt uden at kontrollere start eller interne huller.
+- [x] Dækning kræver nu en sammenhængende serie fra nutiden ved den native DMI-cadence.
+- [x] Regression afviser en fjern prognosehale og et internt hul som komplet dækning.
+- [x] Den korrigerede scheduler prioriterer `dkss_idw` og `dkss_nsbs` for de 200 dokumenterede hovedzonehuller.
+- [ ] Frisk produktion skal bevise genhentning, fuld validate, releasegate, Supabase, artifact og deploy.
+- [ ] Mindst 72 timers eftermåling skal dokumentere, hvor mange zoner der opbygger verificeret strømhistorik; reelle geografiske DMI-huller forbliver missing.
 
 ## 4.0.209 – længere historik og vandstandsproveniens
 - [x] 4.0.208-artifactet er målt til 101 prøver/cirka 24 timer i alle 210 zoner.
@@ -6,7 +15,7 @@
 - [x] Regression beskytter 72/24-adskillelsen og udelader begge rå vinduer fra `public-conditions.json`.
 - [x] Vandstands-continuity bevarer den oprindelige DMI-identitet.
 - [x] Målrettede retention-, current-history-, water-continuity- og forecast-store-tests består lokalt.
-- [ ] Fuld lokal validate/releasegate og frisk produktion skal bevise retention, provenance, artifactstørrelse, hydrering og deploy.
+- [x] 4.0.209 er produktionsverificeret i #31852633877 med retention, provenance, artifact, Supabase og deploy; alle 210 zoner startede `samples72h` med 102 prøver.
 - [ ] Providerskift analyseres videre under DEC-0030; ingen kilde-, merge-, fallback- eller scoreændring er inkluderet.
 
 ## Lokal validering og centralt effektiv zonebestand

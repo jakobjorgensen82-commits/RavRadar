@@ -1,6 +1,13 @@
 # Current truth – gældende projektviden
 
-## 4.0.209-kandidat – tre døgns score-neutral vejrhukommelse
+## 4.0.210-kandidat – sammenhængende DMI-strøm fra nutiden
+
+- Produktionsbeviset fra 4.0.209 viste den konkrete fejl: 125 hovedzoner havde kun to native strømtrin 19. august, 75 havde syv sene trin, mens kun 10 havde en sammenhængende serie fra 14. august. Den gamle scheduler kaldte alligevel alle tre grupper dækket, fordi den kun målte sidste gyldige tidspunkt.
+- Dækning kræver nu, at alle nødvendige komponenter begynder højst én native cadence plus tolerance fra byggetiden og fortsætter uden større huller. En fjern hale giver derfor nul aktuel dækning.
+- På det faktiske 4.0.209-artifact ændrer den korrigerede diagnose resultatet fra tilsyneladende fuld marinedækning til 10 komplette og 200 genhentningskrævende hovedzoner. Schedulerens førstevalg bliver `dkss_idw` og `dkss_nsbs`, som svarer til de to dokumenterede hulgrupper.
+- Rettelsen ændrer ingen værdier, datakilder, fallback eller score. Manglende strøm forbliver missing, indtil DMI-serien faktisk er hentet.
+
+## 4.0.209 – tre døgns score-neutral vejrhukommelse
 
 - Den målte 4.0.208-produktion bevarer præcis 24 timers rå historik pr. zone: 101 prøver over cirka 24 timer ved den aktuelle 15-minutterskørsel.
 - Det er nok til den aktive `maxWind24hMps`/`maxWave24hM`-score, men ikke til analyse af hændelser 24–72 timer tilbage.

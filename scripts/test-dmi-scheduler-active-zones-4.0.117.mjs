@@ -21,6 +21,7 @@ assert.match(bulk,/elif any_data\.get\(family, 0\) == 0/);
 import {spawnSync} from 'node:child_process';
 const behavioral=`
 import importlib.util, sys, types
+from datetime import datetime, timezone, timedelta
 sys.path.insert(0, 'scripts')
 eccodes=types.ModuleType('eccodes')
 for name in ('codes_get','codes_get_array','codes_get_elements','codes_grib_find_nearest','codes_grib_new_from_file','codes_release'):
@@ -50,11 +51,13 @@ assert diag['preferredWindTailDemand']['dkss_idw']==1, diag
 # Once marine coverage is broadly established, a few persistent gaps must not
 # block a completely missing atmosphere model from both productive slots.
 active=[{'id':f'E{i}','coastType':'east'} for i in range(208)]
-future='2099-01-01T00:00:00Z'
 marine_hour={'sea-mean-deviation':0.1,'current-u':0.2,'current-v':0.3}
-zones={zone['id']:{'hourly':{future:marine_hour.copy()}} for zone in active[:203]}
+start=datetime.now(timezone.utc).replace(minute=0,second=0,microsecond=0)
+future=[(start+timedelta(hours=hour)).isoformat().replace('+00:00','Z') for hour in range(0,100,3)]
+zones={zone['id']:{'hourly':{valid:marine_hour.copy() for valid in future}} for zone in active[:203]}
 for zone in active[:175]:
-    zones.setdefault(zone['id'],{'hourly':{}})['hourly'].setdefault(future,{}).update({'significant-wave-height':0.5})
+    for valid in future:
+        zones.setdefault(zone['id'],{'hourly':{}})['hourly'].setdefault(valid,{}).update({'significant-wave-height':0.5})
 previous={'zones':zones,'collectionState':{
  'dkss_nsbs':{'lastAttemptAt':'2026-01-01T00:00:00Z'},
  'dkss_idw':{'lastAttemptAt':'2026-01-02T00:00:00Z'},
@@ -69,9 +72,10 @@ assert diag['marineFoundationRatio'] >= 0.95, diag
 # A zone's established marine selection is authoritative for wind-tail demand,
 # so completed collections fall out and the scheduler rotates to the next gap.
 for zone in active:
-    zones.setdefault(zone['id'],{'hourly':{future:{}}})['marineSelection']={'collection':'dkss_nsbs'}
+    zones.setdefault(zone['id'],{'hourly':{valid:{} for valid in future}})['marineSelection']={'collection':'dkss_nsbs'}
 for zone in active[:40]:
-    zones[zone['id']]['hourly'][future].update({'wind-tail-u-10m':1.0,'wind-tail-v-10m':2.0})
+    for valid in future:
+        zones[zone['id']]['hourly'][valid].update({'wind-tail-u-10m':1.0,'wind-tail-v-10m':2.0})
 scheduled,diag=module.collection_schedule({'zones':zones,'collectionState':previous['collectionState']},active)
 assert diag['preferredWindTailDemand']['dkss_nsbs']==168, diag
 assert scheduled[0]=='dkss_nsbs', scheduled

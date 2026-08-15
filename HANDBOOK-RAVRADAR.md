@@ -1,5 +1,13 @@
 # RavRadar Håndbog
 
+## Sammenhængende DMI-strøm fra nutiden – 4.0.210
+
+RavRadar kontrollerede tidligere strømprognosens sidste tidspunkt, men ikke om serien begyndte ved nutiden. Derfor kunne nogle få strømtrin langt ude i femdøgnsprognosen skjule, at de første døgn manglede.
+
+En strømserie tæller nu kun som dækkende, når den starter tæt på den aktuelle vejrbygning og fortsætter uden større huller. Ellers prioriteres den relevante DMI-havmodel igen. Manglende værdier forbliver manglende; rettelsen tilføjer ingen ny kilde, interpolation eller scoreændring.
+
+Det første produktionsmål er at genhente de 200 hovedzoner, som 4.0.209 fejlagtigt betragtede som dækkede. Derefter følges den verificerede 72-timers strømhistorik, før strøm får nogen ny betydning i mobiliseringsscoren.
+
 ## Tre døgns score-neutral vejrhukommelse – 4.0.209
 
 Den hidtidige pipeline gemte 101 rå prøver pr. zone over præcis cirka 24 timer. Det bærer den aktive døgnbaserede mobiliseringsscore, men ikke en senere faglig analyse af storm, transport og faldende energi gennem flere døgn.
@@ -50,7 +58,7 @@ Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vande
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.209
+**Håndbogsversion:** 4.0.210
 
 **Opdateret:** 15. august 2026
 
