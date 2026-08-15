@@ -1,5 +1,12 @@
 # Current truth – gældende projektviden
 
+## 4.0.220 – rå og verificeret strømhistorik måles hver for sig
+
+- Den read-only P1-audit viser nu aktuel verifikationsstatus, fordeling af verificerede prøver, verificeret tidsspænd og zoner under 72 verificerede timer.
+- Artifact #2764 har aktuel verificeret strøm i 210/210 zoner og 149 rå prøver over 37,149 timer i alle zoner. Verificeret historie er fortsat ujævn: 27×4, 75×5, 98×6 og 10×106 prøver; tidsspændet er 1,43 timer i 75 zoner, 18,97 timer i 125 og 37,149 timer i 10.
+- Ingen zone har endnu 72 verificerede timer. Rå historik er ikke i sig selv scoreklar, fallback tæller ikke som verificeret strøm, og fortid udfyldes ikke bagudrettet.
+- Samme artifact beviser en fuld ny `dkss_lf`-cyklus med 41/41 trin og vækst i de otte Limfjordszoners marine hale fra 98 til 115 viste timer. Ingen kilde, fallback eller RavScore er ændret.
+
 ## 4.0.219 – reduceret Supabase-readback
 
 - Produktionsartifact #2757 viser, at routingauditten fylder cirka 0,53 MB som kompakt JSON og hidtil blev hentet centralt før hver 15-minutterskørsel, selv om den genbygges i samme kørsel.

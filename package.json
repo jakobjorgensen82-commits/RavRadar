@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.219",
+  "version": "4.0.220",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -129,7 +129,7 @@
     "test:project-source-neutrality": "node scripts/test-project-source-neutrality-4.0.111.mjs",
     "build:state-reference-report": "node scripts/generate-state-reference-report-4.0.113.mjs",
     "test:state-reference-report": "node scripts/test-state-reference-report-4.0.113.mjs",
-    "test:current-transport-history": "node scripts/test-current-transport-history-4.0.115.mjs && node scripts/test-weather-history-retention-4.0.209.mjs && node scripts/test-current-history-provenance-retention-4.0.217.mjs",
+    "test:current-transport-history": "node scripts/test-current-transport-history-4.0.115.mjs && node scripts/test-weather-history-retention-4.0.209.mjs && node scripts/test-current-history-provenance-retention-4.0.217.mjs && python scripts/audit-p1-component-matrix.py --self-test",
     "test:dmi-vector-grid-integrity": "python scripts/test-dmi-vector-grid-integrity-4.0.116.py",
     "test:missing-weather-null-safety": "node scripts/test-missing-weather-null-safety-4.0.116.mjs",
     "test:dmi-scheduler-active-zones": "node scripts/test-dmi-scheduler-active-zones-4.0.117.mjs && node scripts/test-dmi-budget-rotation-4.0.189.mjs && python scripts/test-dmi-contiguous-component-horizon-4.0.210.py && node scripts/test-dmi-marine-selection-retention-4.0.211.mjs && python scripts/test-dmi-scalar-cannot-evict-current-4.0.212.py && python scripts/test-dmi-current-anchor-selection-4.0.218.py",
