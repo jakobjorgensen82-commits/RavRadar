@@ -1221,3 +1221,5 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - P1-auditten viser nu antal zoner pr. model-run og collection@run, så en delvis indfasning ikke forveksles med et fuldt forecastbevis.
 - Vindovergangene blev målt, men ingen permanent tærskel, kilde, fallback eller score er ændret.
 - Strømhistorikken er vokset til 38,965 rå timer og 3,246–38,965 verificerede timer; 72-timerskravet er fortsat åbent.
+- #31891984360 produktionsverificerede 4.0.223 og artifact #2785: HARMONIE 12 UTC voksede til 3.744 timer, 03 UTC faldt til 6.032 timer, begge i 208 zoner. Historikken nåede 39,176 rå timer og 3,457–39,176 verificerede timer.
+- En separat #31891504819 stoppede fail-closed ved ét Supabase `57014 statement timeout` på `runtime-diagnostics`; den efterfølgende release synkroniserede samme dokument grønt. Hændelsen overvåges uden forhastet retryændring.

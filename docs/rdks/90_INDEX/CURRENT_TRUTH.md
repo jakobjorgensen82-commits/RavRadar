@@ -3,9 +3,11 @@
 ## 4.0.223 – delvise modelcyklusser tælles ikke som fulde beviser
 
 - Den read-only P1-audit viser nu både timer og antal aktive zoner pr. DMI-modelkørsel og collection@run.
-- #31891391302 bestod fulde gates og deploy. Artifact #2783 har en ny HARMONIE 12 UTC-cyklus, men kun 416 timer i 208 zoner; den ældre 03 UTC-cyklus leverer fortsat 9.776 timer. WAM 00 UTC og DKSS 06 UTC er uændrede.
+- #31891391302 bestod fulde gates og deploy. Artifact #2783 havde en ny HARMONIE 12 UTC-cyklus med 416 timer i 208 zoner; den ældre 03 UTC-cyklus leverede 9.776 timer.
+- #31891984360 produktionsverificerer 4.0.223 med fulde gates, Supabase og Pages. Artifact #2785 viser indfasningsvækst til 3.744 timer fra 12 UTC og fald til 6.032 timer fra 03 UTC i 208 zoner. WAM 00 UTC og DKSS 06 UTC er fortsat uændrede.
 - Vindovergangene er bedre i dette datasætpar, men én delvis indfasning er ikke grundlag for permanente tærskler.
-- Strømhistorikken er vokset til 38,965 rå timer og 3,246–38,965 verificerede timer. Alle zoner er fortsat under 72 verificerede timer.
+- Strømhistorikken er vokset til 39,176 rå timer og 3,457–39,176 verificerede timer. Alle zoner er fortsat under 72 verificerede timer.
+- En separat workflow_dispatch-kørsel #31891504819 bestod alle vejr- og releasegates, men stoppede fail-closed på et enkelt Supabase `57014 statement timeout` ved skrivning af `runtime-diagnostics`. Den umiddelbart efterfølgende #31891984360 synkroniserede samme dokument og deployede grønt. Hændelsen overvåges; der er ikke indført en bred retry på ét transient fund.
 - Vejrdata, kilder, fallback, interpolation, RavScore og geometri er uændrede.
 
 ## 4.0.222 – modelcyklusser tælles efter run-id, ikke artifact

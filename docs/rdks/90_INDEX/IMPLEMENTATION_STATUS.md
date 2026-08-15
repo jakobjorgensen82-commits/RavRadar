@@ -5,7 +5,9 @@
 - [x] Timer pr. modelkørsel suppleres med antal aktive zoner pr. modelkørsel og collection@run.
 - [x] Selvtesten beskytter zonetællingen for både dokumenteret og udokumenteret DMI-proveniens.
 - [x] Artifact #2783 dokumenterer en ny, men delvis HARMONIE 12 UTC-cyklus: 416 timer i 208 zoner.
+- [x] #31891984360 produktionsverificerer auditten; artifact #2785 viser naturlig indfasning til 3.744 timer i 208 zoner og fortsat gamle WAM-/DKSS-run-id'er.
 - [x] Overgangstal og historikvækst er målt uden at ændre data, fallback eller score.
+- [x] Et enkelt Supabase statement-timeout i #31891504819 stoppede deploy fail-closed; næste normale release synkroniserede og deployede uden retryændring.
 - [ ] Afvent bredere HARMONIE 12 UTC-indfasning og nye WAM-/DKSS-run-id'er før permanente intervaller.
 
 # Tidligere status: 4.0.222 – modelcyklusaudit
