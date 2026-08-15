@@ -1,4 +1,4 @@
-# AI Roadmap – RavRadar efter 4.0.208
+# AI Roadmap – RavRadar 4.0.209-kandidat
 
 Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status skal løbende flyttes til RDKS, når noget implementeres.
 
@@ -8,6 +8,7 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 - Den skrivebeskyttede deployaudit har bekræftet 210/210 aktive zoner og vejrdata til alle tre Vadehavszoner.
 - En fuld frisk validering følger fortsat den bindende rækkefølge: central adminhydrering og tombstones, nyt/hydreret vejr, fuld `validate`, releasegate og først derefter artifact/deploy.
 - 4.0.208 er produktionsverificeret i #31848912461 på commit `7a3382f`; direkte efterkontrol viste version 4.0.208 og datasæt `rr-20260814230422-210`.
+- 4.0.209-kandidaten bevarer separat 72 timers rå pipelinehistorik score-neutralt og retter tabet af DMI-vandstandsidentitet. Fuld validering og produktion afventer.
 - Næste aktive udvikleropgave ændres ikke: DMI-first femdøgnskæderne under DEC-0030.
 
 ## P0-ejerreview – ét land-/havpunktpar pr. kyststrækning

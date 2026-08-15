@@ -1,5 +1,12 @@
 # Aktuelt sessionshandoff – 2026-08-15
 
+## Aktiv 4.0.209-kandidat
+
+- Separat `samples72h` bevarer tre døgns rå vejrhistorik til senere mobiliseringsanalyse; `samples24h` forbliver eneste aktive score-/statevindue.
+- Begge rå vinduer udelades fra `public-conditions.json`, og Supabase-egress påvirkes ikke.
+- Vandstands-continuity bevarer DMI-identitet. Providerskift er analyseret, men ingen kilde-, fallback-, merge- eller scoreændring er lavet.
+- Målrettede tests består; fuld validate/releasegate og produktion mangler endnu.
+
 ## Sikker baseline
 
 - Seneste produktionsverificerede release er 4.0.208 på commit `7a3382f200a72b702d814ba4d8ca205dc4523369`, verificeret i GitHub Actions #31848912461 med central adminhydrering/tombstones, frisk vejrdata, fuld validering, releasegate, Supabase, artifact og Pages-deploy.

@@ -18,6 +18,7 @@ import { repairWaterLevelContinuity } from './lib/water-level-continuity.mjs';
 import { countDmiBackedZones, createPersistentDmiStore, prioritizeDmiFeatures, summarizeAvailableCoverage } from './lib/dmi-acquisition-state.mjs';
 import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting } from './lib/water-source-forecast-routing.mjs';
 import { applyCurrentTransportToHistory } from './lib/current-transport-history.mjs';
+import { retainWeatherHistory } from './lib/weather-history-retention.mjs';
 
 const ZONES_PATH = 'data/zones.geojson';
 const COASTAL_PARTS_SOURCE_PATH = 'data/geometry-v2/active-national-coastal-parts/manifest.json';
@@ -1359,22 +1360,23 @@ function lastContiguousEvent(samples, predicate) {
   return { startAt: samples[start].at, endAt: samples[end].at, durationHours: round(Math.max(1, (endAt - startAt) / 3600000 + 1), 1) };
 }
 function historyFor(previous, zoneId, current, generatedAt, feature = null) {
-  const cutoff = Date.parse(generatedAt) - 24 * 3600000;
   const currentAlignment = effectiveCurrentAlignment(feature, current.currentDirectionDeg);
-  const samples = [...(previous?.zones?.[zoneId]?.samples24h ?? []), {
+  const sample = {
     at: generatedAt,
     windSpeedMps: current.windSpeedMps,
     windDirectionDeg: current.windDirectionDeg,
     waveHeightM: current.waveHeightM,
+    waveDirectionDeg: current.waveDirectionDeg,
+    wavePeriodS: current.wavePeriodS,
     currentSpeedMps: current.currentSpeedMps,
     currentDirectionDeg: current.currentDirectionDeg,
     currentAlignment,
     currentVerified: current.currentProvenance?.status === 'verified',
     waterLevelCm: current.waterLevelCm,
-    waterLevelTrendCm3h: current.waterLevelTrendCm3h
-  }].filter(sample => Date.parse(sample.at) >= cutoff)
-    .filter((sample, index, all) => all.findIndex(item => item.at === sample.at) === index)
-    .sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+    waterLevelTrendCm3h: current.waterLevelTrendCm3h,
+    waterTemperatureC: current.waterTemperatureC
+  };
+  const { samples24h: samples, samples72h } = retainWeatherHistory(previous?.zones?.[zoneId], sample, generatedAt);
   const winds = samples.map(s => num(s.windSpeedMps)).filter(Number.isFinite);
   const waves = samples.map(s => num(s.waveHeightM)).filter(Number.isFinite);
   const high = samples.filter(s => (num(s.windSpeedMps) ?? 0) >= 9 || (num(s.waveHeightM) ?? 0) >= 1.2).at(-1);
@@ -1392,7 +1394,7 @@ function historyFor(previous, zoneId, current, generatedAt, feature = null) {
     hoursSinceStrongEventEnd: strongHoursSinceEnd,
     mobilisationPotential: round(mobilisationPotential, 1)
   };
-  return { samples24h: samples, history: applyCurrentTransportToHistory(baseHistory, samples) };
+  return { samples24h: samples, samples72h, history: applyCurrentTransportToHistory(baseHistory, samples) };
 }
 
 

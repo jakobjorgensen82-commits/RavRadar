@@ -199,7 +199,10 @@ export function repairWaterLevelContinuity(rows, dmiByTime, fallbackByTime, opti
     rows[i].waterLevelModelCm = originalDmi ? rows[i].waterLevelCm : null;
     rows[i].waterLevelSource = provider;
     rows[i].sources ??= {};
-    const priorDmiSource = rows[i].sources.waterLevel?.provider === 'dmi' ? rows[i].sources.waterLevel : {};
+    const sourceDmi = dmiByTime.get(rows[i].time)?.sources?.waterLevel;
+    const priorDmiSource = sourceDmi?.provider === 'dmi'
+      ? sourceDmi
+      : (rows[i].sources.waterLevel?.provider === 'dmi' ? rows[i].sources.waterLevel : {});
     rows[i].sources.waterLevel = {
       ...(provider === 'dmi' ? priorDmiSource : {}),
       provider,

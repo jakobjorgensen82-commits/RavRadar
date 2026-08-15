@@ -1,5 +1,13 @@
 # RavRadar Håndbog
 
+## Tre døgns score-neutral vejrhukommelse – 4.0.209
+
+Den hidtidige pipeline gemte 101 rå prøver pr. zone over præcis cirka 24 timer. Det bærer den aktive døgnbaserede mobiliseringsscore, men ikke en senere faglig analyse af storm, transport og faldende energi gennem flere døgn.
+
+RavRadar bevarer derfor nu to adskilte vinduer. `samples24h` er fortsat det eneste rå vindue, som RavScore og `shadow-v2` bruger. `samples72h` bevarer tre døgn med vind, bølger, strøm, vandstand og temperatur til senere mobiliseringsanalyse. Det længere vindue ændrer ingen score, vægt eller tærskel.
+
+Rå historik sendes fortsat ikke i den kompakte `public-conditions.json`. En fremtidig scorebrug af timerne 24–72 kræver særskilt faglig analyse, regressioner og ejerbeslutning. Vandstands-continuity bevarer samtidig DMI-timens fulde identitet.
+
 ## Lokal validering og aktive zoner – 4.0.208
 
 RavRadars aktive zoner bestemmes af den centralt gemte administratorstatus. En historisk fil i repositoryet kan derfor indeholde en zone, som senere er slettet centralt, eller mangle en zone, som senere er godkendt. Den fil er udviklingshistorik og må ikke alene bruges som bevis for, at den offentlige side mangler en zone.
@@ -42,7 +50,7 @@ Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vande
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.208
+**Håndbogsversion:** 4.0.209
 
 **Opdateret:** 15. august 2026
 

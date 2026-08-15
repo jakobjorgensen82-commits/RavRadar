@@ -1,5 +1,14 @@
 # Current truth – gældende projektviden
 
+## 4.0.209-kandidat – tre døgns score-neutral vejrhukommelse
+
+- Den målte 4.0.208-produktion bevarer præcis 24 timers rå historik pr. zone: 101 prøver over cirka 24 timer ved den aktuelle 15-minutterskørsel.
+- Det er nok til den aktive `maxWind24hMps`/`maxWave24hM`-score, men ikke til analyse af hændelser 24–72 timer tilbage.
+- 4.0.209-kandidaten bevarer separat `samples72h`. `samples24h` er fortsat eneste rå vindue for nuværende RavScore og `shadow-v2`; ældre prøver ændrer derfor ingen aktiv score.
+- Begge rå vinduer udelades fortsat fra `public-conditions.json`. `conditions.json` synkroniseres ikke til Supabase, så ændringen øger ikke Supabase-egress.
+- Providerskiftene har flere årsager: forecastets første timekant, HARMONIE→DKSS/progressive run-overgange og komponentvis ufuldstændig DKSS-cache. Ingen merge- eller kildeændring er godkendt endnu.
+- Vandstands-continuity bevarer i kandidaten den oprindelige DMI-timeidentitet fra `dmiByTime`.
+
 ## 4.0.208 – stale lokale vejrsnapshots er ikke zonefejl
 
 - Den centralt anvendte og deployede runtime har 210 aktive hovedzoner. En skrivebeskyttet kontrol 15. august 2026 af det deployede zoneregister og `public-conditions.json` gav 210/210 identiske zone-ID'er; `DK-B04-12`, `DK-B04-13` og `DK-B04-14` findes med vejrdata.

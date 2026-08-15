@@ -5,7 +5,7 @@ const times = Array.from({length: 10}, (_, i) => `2026-07-28T${String(i).padStar
 const rows = times.map(time => ({ time, sources: {} }));
 rows[0].sources.waterLevel = { provider: 'dmi', collection: 'dkss_idw', modelRun: '2026-07-27T18:00:00.000Z', leadTimeHours: 6, forecastAgeHours: 6, temporalResolution: 'native', nativeValidTimes: [times[0]] };
 const dmi = new Map([
-  [times[0], {waterLevelCm: 10}],
+  [times[0], {waterLevelCm: 10, sources: { waterLevel: rows[0].sources.waterLevel }}],
   [times[3], {waterLevelCm: 16}],
   [times[4], {waterLevelCm: 18}],
   [times[9], {waterLevelCm: 28}]
@@ -16,6 +16,7 @@ assert.deepEqual(rows.slice(0,5).map(r=>r.waterLevelCm), [10,12,14,16,18]);
 assert.equal(rows[1].waterLevelSource, 'dmi-interpolated');
 assert.equal(rows[0].sources.waterLevel.collection, 'dkss_idw', 'vandstandskontinuitet skal bevare den originale DMI-identitet');
 assert.equal(rows[0].sources.waterLevel.modelRun, '2026-07-27T18:00:00.000Z');
+assert.equal(rows[0].sources.waterLevel.leadTimeHours, 6);
 assert.equal(rows[5].waterLevelSource, 'open-meteo-adjusted');
 assert.ok(Math.abs(rows[5].waterLevelCm - rows[4].waterLevelCm) < 10, 'fallback block must join DMI continuously');
 assert.ok(Math.abs(rows[9].waterLevelCm - rows[8].waterLevelCm) < 10, 'fallback block must return to DMI continuously');

@@ -1,4 +1,13 @@
-# Implementeringsstatus pr. 4.0.208 – korrekt diagnose af lokale vejrsnapshots
+# Implementeringsstatus pr. 4.0.209 – længere historik og vandstandsproveniens
+
+## 4.0.209 – længere historik og vandstandsproveniens
+- [x] 4.0.208-artifactet er målt til 101 prøver/cirka 24 timer i alle 210 zoner.
+- [x] Separat 72-timers pipelinehistorik er implementeret; aktiv score og `shadow-v2` bruger fortsat kun 24 timer.
+- [x] Regression beskytter 72/24-adskillelsen og udelader begge rå vinduer fra `public-conditions.json`.
+- [x] Vandstands-continuity bevarer den oprindelige DMI-identitet.
+- [x] Målrettede retention-, current-history-, water-continuity- og forecast-store-tests består lokalt.
+- [ ] Fuld lokal validate/releasegate og frisk produktion skal bevise retention, provenance, artifactstørrelse, hydrering og deploy.
+- [ ] Providerskift analyseres videre under DEC-0030; ingen kilde-, merge-, fallback- eller scoreændring er inkluderet.
 
 ## Lokal validering og centralt effektiv zonebestand
 
@@ -767,7 +776,9 @@ Status: Implementeret og lokalt valideret.
 - [x] #1788 produktionsverificerede 48-timers HARMONIE-fastholdelse, genbrug af fire assets og vækst fra fire til syv behandlede forecasttider; fulde gates og deploy bestod.
 - [ ] Kortlæg eksisterende runtimekæde, faktisk horisont/runfrekvens og alle relevante DMI-alternativer pr. komponent.
 - [x] Fase A er startet i `docs/research/DMI_FIRST_FIVE_DAY_SOURCE_AUDIT.md`: aktuel kodekæde, officielle DMI-horisonter, runfrekvenser, opløsninger, vilkår og foreløbige alternativer er dokumenteret.
-- [ ] Verificér faktiske WAM-/DKSS-vindfelter og overlap mod HARMONIE i friske runs; auditér samtidig Open-Meteo-modelidentitet og UTC-tidslinjen.
+- [x] Frisk #31849701179-audit dokumenterer 118 monotone timer i 210 zoner, komplet DMI-timeproveniens for vind/bølge/strøm/vandtemperatur og GMT/UTC i den aktive Open-Meteo-kæde.
+- [ ] Den samme audit viser mange tilbage-skift mellem DMI og fallback samt fuldt tab af vandstandsidentitet efter continuity-trinnet; spor ægte datagab, cache/run-overgange og provenancebrud før design.
+- [ ] Verificér faktiske WAM-/DKSS-vindfelter og overlap mod HARMONIE i friske runs; auditér samtidig Open-Meteo-modelidentitet.
 - [ ] Vurder først derefter tail-fallback, overgangskvalitet, proveniens, automatiske dækningsgates samt konsekvens for RavScore og UI.
 - [ ] Implementering og produktionsverifikation kræver efterfølgende dokumenteret design; ingen blind fallbackændring er godkendt.
 

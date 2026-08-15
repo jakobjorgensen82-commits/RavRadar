@@ -2,7 +2,7 @@
 
 **Status:** Fase A, aktiv analyse – ingen produktionsændring  
 **Beslutningsgrundlag:** DEC-0030  
-**Senest opdateret:** 2026-08-08
+**Senest opdateret:** 2026-08-15
 
 ## Formål
 Dette dokument kortlægger den faktiske kæde for hver forecast- og RavScore-komponent, før nye kilder eller sammensyningsregler implementeres. Produktmålet er cirka 120 timer med DMI til sidste valide DMI-time, eventuel anden relevant DMI-kilde derefter og kun ekstern fallback for den resterende hale.
@@ -26,6 +26,26 @@ De fem DKSS-vindhalehuller er lukket. Den komponentvise måling af 208 zoner og 
 De tre zoner helt uden bølger var Mors nord/Feggesund, Sallingsund/Glyngøre og Salling vest/Junget. De otte fælles marine halehuller var Sallingsund/Glyngøre, Fur nord, Fur syd, Løgstør/Aggersund, Livø/Rønbjerg, Gjøl/Attrup, Aalborg vest/Egholm og Aalborg øst/Nørresundby.
 
 Auditten viste også et selvstændigt provenienstab. Timefelterne gemmer normalt kun provider; vind gemmer delvist `harmonie_dini_sf` eller `dkss`, mens bølger og marine komponenter ikke bærer den konkrete collection. Model-run, lead time og prognosealder mangler pr. time. Disse oplysninger kan ikke sandfærdigt rekonstrueres efter merge, fordi bulkcachen kan akkumulere forecasttrin fra forskellige runs. Næste design skal derfor føre identiteten med fra STAC-asset/GRIB-felt gennem interpolation og merge.
+
+## Produktionsaudit 4.0.208 – run #31849701179, dataset `rr-20260814231726-210`
+
+Den seneste fuldt gatede automatiske kørsel på commit `dec935982e1bdb5cc12b971f80d2d1bfd7c229f1` gennemførte central adminhydrering/tombstones, frisk vejrbygning, fuld `validate`, releasegate, Supabase-synkronisering, Pages-artifact og deploy. Supportartifactets beskyttede `conditions.json` og schema-4-coverageaudit måler 210 aktive zoner og 118 monotone forecasttimer pr. zone uden dubletter.
+
+| Komponent | Komplette zoner | Zoner med missing | DMI-timer | Fallbacktimer | Missing-timer | DMI-timer med komplet krævet timeproveniens |
+|---|---:|---:|---:|---:|---:|---:|
+| Vind | 210 | 0 | 22.834 | 1.946 | 0 | 22.834 |
+| Bølger | 194 | 16 | 20.706 | 3.731 | 343 | 20.706 |
+| Strøm | 202 | 8 | 2.725 | 21.977 | 78 | 2.725 |
+| Vandstand | 202 | 8 | 22.463 | 2.245 | 72 | 0 |
+| Vandtemperatur | 202 | 8 | 2.725 | 21.977 | 78 | 2.725 |
+
+Tallene dokumenterer værdidækning, ikke en godkendt kildekæde. Der er 686 providerskift for vind, 406 for bølger, 426 for strøm, 518 for vandstand og 426 for vandtemperatur på tværs af de 210 zoner. Konkrete vindserier indeholder blandt andet `Open-Meteo → DMI → Open-Meteo → DMI → Open-Meteo`; vandstand kan skifte gentagne gange mellem `dmi`, `open-meteo-adjusted` og `dmi-interpolated`. Den aktuelle merge opfylder derfor ikke endnu DEC-0030's tilsigtede kontrakt om bedste DMI frem til sidste valide DMI-time og derefter højst én dokumenteret fallbackhale. En komplet 118-timers værdiserie må ikke forveksles med en komplet DMI-first-kæde.
+
+Mønsterudtrækket afgrænser tre årsagsklasser. Alle komponenter kan begynde med én Open-Meteo-time kl. 23 UTC, mens DMI-timebyggeren starter kl. 00. Vind har i 116 zoner et internt to-timershul ved HARMONIE→progressiv DKSS og i 17 zoner et tilsvarende hul nær halen; 77 zoner har ellers én sammenhængende DMI-blok. For strøm og vandtemperatur har 125 zoner kun fire sene DMI-timer, 73 har 15 sene DMI-timer, 10 har 110 sammenhængende timer, og to har yderligere reelle gab. Det skal analyseres som komponentvis progressiv cache-/collectiondækning, ikke skjules med en generel mergeændring.
+
+Proveniensforbedringen fra 4.0.125 virker i produktionen for vind, bølge, strøm og vandtemperatur: collection, model-run, lead time, prognosealder, temporal status og native gyldighedstider er til stede på alle deres DMI-klassificerede timer. Vandstand mister derimod alle seks felter på samtlige 22.463 DMI-klassificerede timer. Kodesporet peger på `repairWaterLevelContinuity`: funktionen genopbygger `sources.waterLevel` med provider/fallback-status, men fører ikke den oprindelige DMI-identitet videre. Dette er et dokumenteret provenancebrud; det er endnu ikke en autoriseret kodeændring.
+
+Den tidligere UTC-hypotese er samtidig afkræftet for aktuel kode. Begge Open-Meteo-forecastkald bruger nu `timezone: 'GMT'`, og de offsetløse timer konverteres eksplicit med `Z`. Den relevante resterende fallbackrisiko er modelidentitet (`best_match`) og overgangskvalitet, ikke lokal dansk tidszone.
 
 ## Verificerede DMI-modelrammer
 
@@ -58,8 +78,8 @@ Kilder:
 
 Koden bruger `mergeHourlyPreferDmi`, som prioriterer DMI separat pr. komponent og time. Det er allerede grundformen for hale-fallback. Der er dog ikke endnu dokumentation nok til at bevise et korrekt modelskift:
 
-- timeproveniens angiver normalt kun `dmi` eller `open-meteo`, ikke collection, model-run, lead time eller prognosealder;
-- Open-Meteo-kaldet bruger `Europe/Copenhagen`, mens resten af kæden kræver kanonisk UTC; de offsetløse tidsstrenge parses efter runnerens tidszone og skal auditeres for mulig 1–2 timers forskydning;
+- timeproveniens er komplet på DMI-klassificerede vind-, bølge-, strøm- og vandtemperaturtimer i 4.0.208, men vandstand mister fortsat identiteten i continuity-trinnet;
+- Open-Meteo-kaldet bruger i aktuel kode `GMT`, og tiderne kanoniseres eksplicit som UTC; den tidligere 1–2 timers lokal-tidshypotese er dermed afkræftet;
 - Open-Meteo `best_match` kan selv skifte underliggende model uden at RavRadar registrerer modellen;
 - live-DMI-grenen returnerer en DMI-only forecastserie, mens cache-DMI-grenen henter og merger fallback; ens adfærd skal verificeres;
 - `ACCEPTED_FORECAST_HOURS=118` er produktkontrakten, men den eksisterende completeness-audit tæller værdier og ikke sammenhængende kildeintervaller eller skiftets kvalitet;
@@ -94,5 +114,6 @@ Kilder:
 - Udtræk faktiske field inventories og horisonter for WAM-vind og DKSS-vind fra friske DMI-runs.
 - Mål overlap pr. repræsentativ kysttype: bias, spring, retning og komplethed mellem HARMONIE og WAM/DKSS.
 - Kortlæg præcis Open-Meteo-modelidentitet i Danmark eller konfigurer eksplicit model til en fair kandidatprøve.
-- Auditér UTC-fejlen som selvstændig rodårsagskontrol uden endnu at ændre kode.
+- Kortlæg hvorfor komponenterne skifter gentagne gange mellem DMI og fallback i stedet for at have ét dokumenteret haleskift; skeln ægte DMI-huller, cache/run-overgange og continuity-reparation.
+- Spor og design bevaring af vandstandsproveniens gennem `repairWaterLevelContinuity` uden endnu at ændre kode.
 - Udarbejd maskinlæsbar kædekontrakt og testdesign før implementeringsforslag.

@@ -1077,3 +1077,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Ejeren gennemgår senere zonerne gradvist og vælger en repræsentativ placering på bugtede dele. Gennemgangen blokerer ikke uafhængige roadmapopgaver, men skal afsluttes før endelig faglig godkendelse af lokale scorer, større scorekalibrering og domæne-/brugerrelease.
 - Næste aktive udviklertrin er fortsat DMI-first femdøgnsaudit under DEC-0030. Supabase-egress overvåges gennem næste billingperiode; dataminimeret besøgstæller med enkel adminrapport er P2.
 - 4.0.207 blev produktionsverificeret i GitHub Actions #31845836107 på commit `5176d2e14b2c5cff745caa428e6f1b43f45eb824`; frisk vejrdata, fuld projektvalidering, releasegate, Supabase-synkronisering, artifact og Pages-deploy bestod.
+## 2026-08-15 – 4.0.209 tre døgns score-neutral vejrhukommelse
+- 4.0.208-supportartifactet fra #31849701179 dokumenterede 101 rå prøver/cirka 24 timer i alle 210 zoner. Det aktive døgnsvindue var intakt, men der fandtes ingen rå evidens til mobiliseringsanalyse 24–72 timer tilbage.
+- 4.0.209 bevarer et separat 72-timersvindue i pipelinen og afleder fortsat det uændrede 24-timersvindue til aktiv RavScore og `shadow-v2`. Rå historik udelades fra public projection.
+- Vandstands-continuity bevarer nu den oprindelige DMI-timeidentitet. Provideranalysen afgrænser timekant, progressive HARMONIE/DKSS-overgange og komponentvis DKSS-dækning uden at ændre merge, fallback eller score.
+- Målrettede tests er grønne. Fuld validate, releasegate og frisk produktion afventer.
