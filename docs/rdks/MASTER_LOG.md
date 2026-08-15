@@ -1,3 +1,9 @@
+## 2026-08-15 – 4.0.216 produktionsverificeret
+
+- Første pushkørsel #31880755907 stoppede korrekt før deploy, fordi en ældre performance-regressionstest fortsat læste femdøgnstimer fra den nye startpakke. Testen blev flyttet til den integritetsbundne detaljepakke; produktionslogik og gates blev ikke ændret.
+- #31880984004 bestod derefter fuld central 210-zonehydrering, frisk vejrbygning, `validate`, releasegate, Supabase/artifact og Pages-deploy.
+- Direkte kontrol viste offentlig 4.0.216, datasæt `rr-20260815110313-210`, startpakke på 2.534.969 bytes og komplet detaljepakke på 24.748.808 bytes.
+
 ## 2026-08-15 – 4.0.216 progressiv offentlig runtime
 
 - Deployet payload blev målt til 27,11 MB: cirka 20 MB lokale kystdelsdata og 6,88 MB hovedzoneprognoser.

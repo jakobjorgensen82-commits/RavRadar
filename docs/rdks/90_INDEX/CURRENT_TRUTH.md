@@ -7,7 +7,8 @@
 - Hele femdøgnsprognosen og alle lokale kystdelsdetaljer bevares i `public-condition-details.json` og hentes straks efter første kort/rangliste.
 - Hvis detaljepakken fejler eller tilhører et andet datasæt, bevares aktuelle forhold, mens femdøgnsvisningen melder manglen. Stale data, konstruerede nuller og blandede datasæt er fortsat forbudt.
 - Direkte lokal browsertest med frisk 210-zonedata viste første klare kort/rangliste på cirka 0,7 sekund, efterfølgende komplet femdøgnsvisning og fungerende lokalt zonepanel uden browserfejl.
-- RavScore, historik, kilder, fallback og missing-regler er uændrede. CI- og produktionsverifikation af 4.0.216 afventer.
+- RavScore, historik, kilder, fallback og missing-regler er uændrede.
+- GitHub Actions #31880984004 bestod den fulde 210-zonekæde med `validate`, releasegate, Supabase/artifact og Pages-deploy. Direkte efterkontrol viste offentlig 4.0.216 og datasæt `rr-20260815110313-210`; startpakken er 2.534.969 bytes og den efterfølgende komplette detaljepakke 24.748.808 bytes.
 
 ## 4.0.215 – privat og dataminimeret besøgsstatistik
 

@@ -7,8 +7,9 @@
 - [x] Detaljepakken bevarer alle femdøgnstimer og alle lokale kystdele.
 - [x] Manifest, klient og regression afviser datasetblanding.
 - [x] Browserkontrol med frisk 210-zonedata viser kort/rangliste, færdig prognose, zonepanel og nul browserfejl.
-- [ ] Fuld lokal `validate` og `release:gate` skal bestå.
-- [ ] Frisk GitHub-kørsel skal bestå build, fulde gates, artifact og deploy; den deployede startstørrelse og browseradfærd skal efterkontrolleres.
+- [x] Lokal `release:gate` og målrettede runtime-, historik-, versions-, RDKS- og browsertests består. Fuld lokal `validate` stoppede fail-closed ved repositoryets historiske 211-zonegrundlag og blev derfor ikke omgået.
+- [x] #31880984004 bestod efter central adminhydrering den fulde 210-zonekæde med `validate`, releasegate, Supabase/artifact og Pages-deploy.
+- [x] Direkte deploykontrol viste 4.0.216, datasæt `rr-20260815110313-210`, 210 zoner, 2.534.969 bytes startpakke og 24.748.808 bytes komplet detaljepakke.
 
 ## 4.0.215 – privat besøgsstatistik
 
