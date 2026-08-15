@@ -7,6 +7,8 @@
 - 4.0.227 bevarer vinkelmålingen som synlig advarsel, men den kan ikke længere deaktivere **Godkend og gem centralt**. Admin forklarer samtidig eventuelle reelle blokeringer og angiver, når vinkeladvarslen kun er vejledende.
 - Manglende/ugyldige punkter, afstand uden for 0,05–8 km, manglende kystkryds og punkter på samme side blokerer fortsat. Central readback, DMI-gridvalidering, releasegate og rollback er uændrede.
 - Ingen eksisterende kyst, punktplacering, vejrdata eller RavScore ændres automatisk. Se DEC-0038.
+- #31908498204/#2824 på commit `6e920c297ef58f997ae95b3b6da16adfdf66bfe6` bestod central adminhydrering, frisk DMI, fuld `validate`, releasegate, supportartifact, beskyttet Supabase-sync, Pages-artifact og deploy.
+- Supportartifactets beståede releasegate og datasæt `rr-20260815210805-210` dokumenterer 210 zoner og 673 kyststrækninger; begge manifesthashes matcher. Direkte Pages-kontrol viser version 4.0.227, den vejledende advarsel og ingen hård vinkelblokering. 4.0.227 er produktionsverificeret.
 
 ## 4.0.226 – én fail-closed genprøvning ved Supabase statement-timeout
 

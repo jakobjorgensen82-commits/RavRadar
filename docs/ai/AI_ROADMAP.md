@@ -5,6 +5,7 @@
 - Admin viste en 50-graders vinkelafvigelse ved Svansodde og deaktiverede godkendelsen, fordi et cirka 461 meter langt punktpar blev sammenlignet med ét cirka 15 meter langt segment i en bugtet kyst.
 - DEC-0038 gør den lokale vinkelmåling vejledende. Ejerens helhedsvurdering efter de tre zonebekræftelser kan gemmes centralt.
 - Reelle integritetsfejl, Supabase-readback, DMI-gridvalidering, releasegate og rollback bevares.
+- #31908498204/#2824 bestod hele produktionskæden. Artifact og direkte Pages-kontrol viser 4.0.227, 210 zoner, 673 kyststrækninger, matchende manifesthashes og den ikke-blokerende vinkeladvarsel live.
 - P1-modelrotationen og 72-timershistorikken fortsætter uden faglig ændring.
 
 ## 4.0.226 – Supabase må tåle én annulleret idempotent skrivning

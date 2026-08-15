@@ -6,6 +6,9 @@
 - Ejerbeslutningen i DEC-0038 gør vinklen vejledende. Reelle punkt-/afstand-/kystkryds-/sidefejl, de tre bekræftelser, central readback, DMI-gate og releasegate bevares.
 - Admin forklarer nu ved knappen, om der findes en reel blokering, eller om den viste vinkel kun er en ikke-blokerende advarsel.
 - Ingen eksisterende geometri, punktplacering, DMI-data eller RavScore ændres automatisk.
+- #31908498204/#2824 på commit `6e920c297ef58f997ae95b3b6da16adfdf66bfe6` bestod central adminhydrering, frisk DMI, fuld `validate`, releasegate, supportartifact, beskyttet Supabase-sync, Pages-artifact og deploy.
+- Artifactets releasegate står `passed`. Datasæt `rr-20260815210805-210` er komplet med 210 zoner og 673 kyststrækninger; de to SHA-256-kontroller matcher manifestet.
+- Direkte Pages-kontrol viser version 4.0.227 og den deployede `valid:true, warning:true`-regel. Ejerteksten er til stede, og den gamle hårde vinkelblokering er væk.
 
 ## 2026-08-15 – 4.0.226 Supabase statement-timeout
 

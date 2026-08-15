@@ -11,7 +11,9 @@
 - [x] RDKS, releaseversion, browserens modulversioner, adminfrontend, admin-feature-reachability, sitetestkontrakt, håndbog og admin-persistens-/kort-/produktionskontrakter består lokalt.
 - [x] Den fulde lokale `validate` gennemfører hele geometri-v2-kæden og stopper derefter som forventet fail-closed på repositoryets historiske 209/211-vejrsnapshot før central adminhydrering; forholdet er ikke omgået eller omklassificeret.
 - [x] Lokal `release:gate` består for 4.0.227.
-- [ ] 4.0.227 skal gennem en fuld frisk produktionskørsel med central adminhydrering, DMI, alle gates, Supabase, Pages-artifact og deploy, før den kaldes produktionsverificeret.
+- [x] #31908498204/#2824 på commit `6e920c297ef58f997ae95b3b6da16adfdf66bfe6` bestod central adminhydrering, frisk DMI, fuld `validate`, releasegate, supportartifact, beskyttet Supabase-sync, Pages-artifact og deploy.
+- [x] Supportartifactets releasegate er bestået. Datasæt `rr-20260815210805-210` er komplet med 210 zoner og 673 kyststrækninger, og SHA-256 matcher manifestet for både start- og detaljepakken.
+- [x] Direkte Pages-kontrol viser 4.0.227, den vejledende vinkeladvarsel og ejerteksten; den tidligere hårde vinkelblokering findes ikke i den deployede admin-kode.
 
 # Tidligere status: 4.0.226 – Supabase statement-timeout
 

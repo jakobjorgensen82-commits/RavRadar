@@ -1,6 +1,6 @@
 # Kendte åbne og overvågede forhold
 
-- **ISSUE-ADMIN-LOCAL-COAST-ANGLE-BLOCKS-OWNER – RETTET LOKALT I 4.0.227 / AFVENTER PRODUKTION:** Admin brugte vinklen mod det nærmeste korte kystsegment som en hård 20-graders godkendelsesport. Svansodde blev derfor låst ved 50 grader, selv om ejeren havde kontrolleret hele den bugtede strækning. Vinklen er nu vejledende; reelle punkt-/kystintegritetsfejl, central readback og DMI-/releasegates bevares.
+- **ISSUE-ADMIN-LOCAL-COAST-ANGLE-BLOCKS-OWNER – PRODUKTIONSVERIFICERET LØST I 4.0.227:** Admin brugte vinklen mod det nærmeste korte kystsegment som en hård 20-graders godkendelsesport. Svansodde blev derfor låst ved 50 grader, selv om ejeren havde kontrolleret hele den bugtede strækning. Vinklen er nu vejledende; reelle punkt-/kystintegritetsfejl, central readback og DMI-/releasegates bevares. #31908498204/#2824 bestod hele produktionskæden, supportartifactets hashes matcher, og direkte Pages-kontrol viser den nye regel live.
 
 - **ISSUE-SUPABASE-RUNTIME-DIAGNOSTICS-STATEMENT-TIMEOUT – PRODUKTIONSVERIFICERET RETTET I 4.0.226:** #2814 forsøg 1 ramte HTTP 500/PostgreSQL `57014` under den cirka 17,7 MB store `runtime-diagnostics`-upsert efter alle faglige gates; uændret forsøg 2 lykkedes. Requesteren genprøver nu kun eksakt `500/57014` én gang og stopper fortsat ved gentagelse eller andre fejl. #31905211459/#2816 bestod hele produktionskæden; normalvejen skrev dokumentet i første forsøg på cirka 11,5 sekunder, mens timeoutgrenen er regressionstestet.
 
