@@ -33,3 +33,7 @@ Den nye zonetælling virker i selve produktionsartifactet. Strømhistorikken er 
 Den efterfølgende grønne dokumentationskørsel #31892505177 gav artifact #2787. HARMONIE 12 UTC voksede videre til 5.616 timer, mens 03 UTC faldt til 4.160 timer, fortsat i de samme 208 zoner. Vindens målte DMI/fallback-overgange var uændrede fra #2785. Det viser en trinvis, konsistent indfasning – ikke et nyt uafhængigt overgangsdatasæt for hvert artifact.
 
 Historikken nåede 39,364 rå timer og 3,644–39,364 verificerede timer. WAM og DKSS har fortsat ingen nye run-id'er.
+
+#31892947409 bestod igen hele kæden, inklusive Supabase og deploy. Artifact #2789 fortsætter indfasningen til 7.488 timer fra HARMONIE 12 UTC og 2.288 timer fra 03 UTC i 208 zoner. Vindovergangen ændrede sig til hastighed middel 0,824 m/s/p95 2,3 m/s og retning middel 18,102°/p95 46°. Variationen under samme indfasning bekræfter, at tidlige del-artifacts ikke må danne permanente tærskler.
+
+Historikken nåede 39,516 rå timer og 3,797–39,516 verificerede timer. WAM 00 UTC og DKSS 06 UTC er fortsat uændrede.

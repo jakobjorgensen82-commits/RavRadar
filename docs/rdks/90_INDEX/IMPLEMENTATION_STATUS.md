@@ -7,6 +7,7 @@
 - [x] Artifact #2783 dokumenterer en ny, men delvis HARMONIE 12 UTC-cyklus: 416 timer i 208 zoner.
 - [x] #31891984360 produktionsverificerer auditten; artifact #2785 viser naturlig indfasning til 3.744 timer i 208 zoner og fortsat gamle WAM-/DKSS-run-id'er.
 - [x] #31892505177/#2787 fortsætter samme indfasning til 5.616 timer fra 12 UTC med uændrede overgangsmål og historikvækst til 39,364 rå timer.
+- [x] #31892947409/#2789 fortsætter til 7.488/2.288 HARMONIE-timer fra 12/03 UTC; ændrede overgangsmål bekræfter, at delvise snapshots ikke fastsætter en permanent grænse.
 - [x] Overgangstal og historikvækst er målt uden at ændre data, fallback eller score.
 - [x] Et enkelt Supabase statement-timeout i #31891504819 stoppede deploy fail-closed; næste normale release synkroniserede og deployede uden retryændring.
 - [x] Runtime-payloaden er størrelsesmålt: 9,287 MB kompakt, heraf 8,690 MB/93,57 % i 25 rå zoneeksempler.
