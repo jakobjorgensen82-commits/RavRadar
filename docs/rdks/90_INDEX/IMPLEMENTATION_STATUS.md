@@ -1,4 +1,13 @@
-# Implementeringsstatus pr. 4.0.219 – reduceret Supabase-readback
+# Implementeringsstatus pr. 4.0.220 – verificeret historikberedskab
+
+## 4.0.220 – audit af brugbar transporthistorik
+
+- [x] Rå prøveantal og råt tidsspænd bevares som selvstændige mål.
+- [x] Aktuel DMI-verifikationsstatus, verificeret prøvefordeling og verificeret tidsspænd rapporteres uden at skrive.
+- [x] Selvtesten beviser, at uverificerede prøver ikke tælles med, og at zoner under 72 verificerede timer forbliver åbne.
+- [x] Artifact #2764 er målt til 210/210 aktuelt verificerede zoner, men kun 1,43–37,149 timers verificeret historik.
+- [x] Ny fuld `dkss_lf`-cyklus med 41/41 trin og halevækst fra 98 til 115 timer er dokumenteret.
+- [ ] Fortsæt naturlig opbygning til mindst 72 verificerede timer i alle aktive zoner; ingen bagudfyldning eller scoreændring.
 
 ## 4.0.219 – routingaudit hentes ikke før hver vejrbygning
 

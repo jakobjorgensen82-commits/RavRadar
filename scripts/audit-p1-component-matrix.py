@@ -65,9 +65,13 @@ def history_summary(zones: dict, key: str) -> dict:
     counts: list[int] = []
     spans: list[float] = []
     verified_shares: list[float] = []
+    verified_counts: list[int] = []
+    verified_spans: list[float] = []
     largest_gaps: list[float] = []
     invalid_times: list[str] = []
     zones_below_72: list[str] = []
+    zones_below_72_verified: list[str] = []
+    zones_without_verified_samples: list[str] = []
     zones_with_gap_over_hour: list[str] = []
     for zone_id, zone in zones.items():
         rows = zone.get(key) or []
@@ -86,7 +90,23 @@ def history_summary(zones: dict, key: str) -> dict:
         if largest_gap > 1.0:
             zones_with_gap_over_hour.append(zone_id)
         if rows:
-            verified_shares.append(sum(row.get("currentVerified") is True for row in rows) / len(rows))
+            verified_rows = [row for row in rows if row.get("currentVerified") is True]
+            verified_shares.append(len(verified_rows) / len(rows))
+        else:
+            verified_rows = []
+        verified_counts.append(len(verified_rows))
+        verified_times = sorted(
+            time for time in (parse_time(row.get("at")) for row in verified_rows) if time is not None
+        )
+        verified_span = (
+            (verified_times[-1] - verified_times[0]).total_seconds() / 3600
+            if len(verified_times) > 1 else 0.0
+        )
+        verified_spans.append(verified_span)
+        if not verified_rows:
+            zones_without_verified_samples.append(zone_id)
+        if key == "samples72h" and verified_span < 71.5:
+            zones_below_72_verified.append(zone_id)
     return {
         "sampleCountDistribution": dict(sorted(Counter(counts).items())),
         "spanHoursDistribution": distribution(spans),
@@ -97,8 +117,14 @@ def history_summary(zones: dict, key: str) -> dict:
             "mean": round(sum(verified_shares) / len(verified_shares), 4) if verified_shares else None,
             "maximum": round(max(verified_shares), 4) if verified_shares else None,
         },
+        "verifiedSampleCountDistribution": dict(sorted(Counter(verified_counts).items())),
+        "verifiedSpanHoursDistribution": distribution(verified_spans),
+        "minimumVerifiedSpanHours": round(min(verified_spans), 3) if verified_spans else 0,
+        "maximumVerifiedSpanHours": round(max(verified_spans), 3) if verified_spans else 0,
         "largestGapHours": round(max(largest_gaps), 3) if largest_gaps else 0,
         "zonesBelow72Hours": zones_below_72 if key == "samples72h" else [],
+        "zonesBelow72VerifiedHours": zones_below_72_verified if key == "samples72h" else [],
+        "zonesWithoutVerifiedSamples": zones_without_verified_samples,
         "zonesWithGapOverOneHour": zones_with_gap_over_hour,
         "zonesWithInvalidTimes": invalid_times,
     }
@@ -110,6 +136,10 @@ def audit(document: dict) -> dict:
         "datasetId": document.get("datasetId"),
         "generatedAt": document.get("generatedAt"),
         "zoneCount": len(zones),
+        "currentVerification": dict(sorted(Counter(
+            str(((zone.get("current") or {}).get("currentProvenance") or {}).get("status") or "missing")
+            for zone in zones.values()
+        ).items())),
         "components": {},
         "history": {},
     }
@@ -202,10 +232,47 @@ def audit(document: dict) -> dict:
     return result
 
 
+def self_test() -> None:
+    rows = [
+        {"at": "2026-08-15T00:00:00Z", "currentVerified": False},
+        {"at": "2026-08-15T01:00:00Z", "currentVerified": True},
+        {"at": "2026-08-15T02:00:00Z", "currentVerified": True},
+    ]
+    document = {
+        "datasetId": "self-test",
+        "zones": {
+            "A": {
+                "current": {"currentProvenance": {"status": "verified"}},
+                "samples24h": rows,
+                "samples72h": rows,
+            },
+            "B": {
+                "current": {"currentProvenance": {"status": "unverified"}},
+                "samples24h": rows[:1],
+                "samples72h": rows[:1],
+            },
+        },
+    }
+    result = audit(document)
+    history = result["history"]["samples72h"]
+    assert result["currentVerification"] == {"unverified": 1, "verified": 1}
+    assert history["verifiedSampleCountDistribution"] == {0: 1, 2: 1}
+    assert history["verifiedSpanHoursDistribution"] == {0.0: 1, 1.0: 1}
+    assert history["zonesWithoutVerifiedSamples"] == ["B"]
+    assert history["zonesBelow72VerifiedHours"] == ["A", "B"]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("conditions", type=Path)
+    parser.add_argument("conditions", type=Path, nargs="?")
+    parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
+    if args.self_test:
+        self_test()
+        print("OK: P1-audit skelner rå og verificeret strømhistorik.")
+        return 0
+    if args.conditions is None:
+        parser.error("conditions er påkrævet uden --self-test")
     document = json.loads(args.conditions.read_text("utf-8"))
     print(json.dumps(audit(document), ensure_ascii=False, indent=2))
     return 0

@@ -1180,3 +1180,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Artifact #2757 dokumenterede, at den genbyggede vandstandsroutingaudit stadig blev hentet centralt før hver 15-minutterskørsel.
 - 4.0.219 fjerner kun denne cirka 0,53 MB kompakte maskindiagnostik fra runtimehydreringen. Central stations-/adminstatus, frisk generering, beskyttet upload og adminvisning bevares.
 - Read-only estimat ved 96 kørsler/dag falder fra cirka 4,44 til 3,03 GiB pr. 30 dage; cirka 1,42 GiB undgås. Faktisk Supabase-billing skal stadig eftermåles.
+## 2026-08-15 – 4.0.220 verificeret historikberedskab
+
+- Read-only P1-audit skelner nu rå historik fra tidsmæssigt verificeret fælles DMI-U/V-historik.
+- Artifact #2764 viser 210/210 verificerede aktuelle zoner, 149 rå prøver/37,149 timer i alle zoner, men kun 1,43–37,149 timers verificeret spænd.
+- En ny fuld `dkss_lf`-cyklus med 41/41 trin løftede Limfjordhalen fra 98 til 115 timer uden ny fallback.
+- Ingen score, kilde, fallback eller produktionsdata er ændret; 72-timerskravet forbliver åbent.

@@ -94,7 +94,7 @@ Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vande
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.219
+**Håndbogsversion:** 4.0.220
 
 **Opdateret:** 15. august 2026
 
@@ -1720,3 +1720,11 @@ RavRadar kan hente strøm, vandstand og vandtemperatur fra overlappende DMI-havm
 Et vandstands- eller temperaturpunkt kan ligge lidt nærmere kystpunktet end strømcellens centrum. Det må ikke alene skifte hele havmodellen og slette en sammenhængende strømprognose. Fra 4.0.212 følger disse felter derfor det eksisterende modelvalg uden at ændre det. Kun en kandidat med et reelt bedre fælles strømpar kan overtage.
 
 Rettelsen ændrer ikke DMI-kilder, fallback eller RavScore. Manglende strøm forbliver manglende, og den videre femdøgnsanalyse gennemføres fortsat under DEC-0030.
+
+## Rå og verificeret strømhistorik i 4.0.220
+
+RavRadar gemmer op til 72 timers rå vejrprøver, men en gemt prøve er ikke automatisk sikker nok til transport- eller scoreanalyse. Strøm tæller kun som verificeret, når øst-/vest- og nord-/sydkomponenten har et fælles DMI-bevis for samme sted, dybde, modelkørsel og tidspunkt.
+
+Den skrivebeskyttede kontrol viser derfor både rå længde og verificeret længde. I det første målte datasæt havde alle 210 zoner 37,149 timers rå historik og verificeret strøm ved nutiden, mens det verificerede historiske spænd varierede fra 1,43 til 37,149 timer. Ingen zone var endnu på 72 verificerede timer.
+
+Det betyder, at historikken bevares som planlagt, men endnu ikke er klar som landsdækkende grundlag for et nyt mobiliserings- eller scoremodul. Systemet rekonstruerer ikke fortiden, tæller ikke fallback som DMI og gentager ikke en gammel værdi for at lukke et hul.
