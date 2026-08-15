@@ -3,8 +3,23 @@ function activeStation(station) {
   return !['retired', 'deleted', 'historical', 'inactive', 'future'].includes(status);
 }
 
-function effectiveSelections(features, routing, audit) {
+function effectiveSelections(features, routing, audit, output) {
   const selected = new Map();
+  const appliedZones = Object.entries(output?.zones ?? {});
+  if (appliedZones.length) {
+    for (const [zoneId, zone] of appliedZones) {
+      const interpolation = zone?.waterLevel?.interpolation ?? zone?.waterLevel?.diagnostic?.waterSourceRouting;
+      const source = interpolation?.mode === 'admin-override' ? 'admin-override' : 'automatic';
+      for (const station of interpolation?.stations ?? []) {
+        const stationId = String(station?.stationId ?? '');
+        if (!stationId) continue;
+        const rows = selected.get(stationId) ?? [];
+        rows.push({ zoneId, source });
+        selected.set(stationId, rows);
+      }
+    }
+    return selected;
+  }
   for (const feature of features ?? []) {
     const zoneId = String(feature?.properties?.id ?? '');
     if (!zoneId) continue;
@@ -29,9 +44,9 @@ function latestValidUntil(station) {
   return values.length ? Math.max(...values) : NaN;
 }
 
-export function buildEffectiveRoutingCacheAlerts({ document, features, routing, audit, generatedAt }) {
+export function buildEffectiveRoutingCacheAlerts({ document, features, routing, audit, output, generatedAt }) {
   const warningHours = Math.max(1, Math.min(120, Number(routing?.alertSettings?.cacheWarningHours ?? 12)));
-  const selected = effectiveSelections(features, routing, audit);
+  const selected = effectiveSelections(features, routing, audit, output);
   const now = Date.parse(generatedAt);
   const newNotifications = [];
   const stations = (document?.stations ?? []).map(station => {

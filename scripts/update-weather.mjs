@@ -2016,7 +2016,7 @@ let stationRegistry = stationLifecycle.stations;
 const activeWaterRouting = await waterStationRouting();
 const waterSourceApplication = applyWaterSourceRouting({ features, output, forecastStore: nextDmiForecastStore, sources: stationRegistry, index: waterSourceForecastIndex, routing: activeWaterRouting, haversineKm, generatedAt });
 const stationRoutingAudit = await writeWaterStationRoutingAudit(features, stationRegistry.filter(station => station.routingEligible || station.overallUsabilityStatus !== 'unavailable'), generatedAt);
-const routingAlerts = buildEffectiveRoutingCacheAlerts({ document: stationLifecycle.document, features, routing: activeWaterRouting, audit: stationRoutingAudit, generatedAt });
+const routingAlerts = buildEffectiveRoutingCacheAlerts({ document: stationLifecycle.document, features, routing: activeWaterRouting, audit: stationRoutingAudit, output, generatedAt });
 stationLifecycle = { ...stationLifecycle, document: routingAlerts.document, stations: routingAlerts.document.stations, notifications: routingAlerts.document.notifications };
 stationRegistry = stationLifecycle.stations;
 await fs.writeFile(WATER_STATION_INVENTORY_PATH, `${JSON.stringify(stationLifecycle.document, null, 2)}\n`);
