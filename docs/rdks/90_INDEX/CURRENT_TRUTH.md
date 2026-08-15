@@ -6,6 +6,8 @@
 - 4.0.214 fjerner de umærkede punkter før genbrug. Manglende overfladetemperatur forbliver `missing`, indtil den relevante DKSS-model leverer nye `surface:0`-data.
 - Schedulerens DKSS-rotation medregner nu manglende overfladetemperatur. Alle 210 zoner havde fortsat 102 rå `samples24h` og 132 rå `samples72h`; øvrig vejrhistorik bevares.
 - P1-analysen af Limfjorden er afgrænset: `DK-B05-11` mangler bølger, fordi hverken et gyldigt DMI-bølgepunkt inden for den tilladte afstand eller den eksisterende fallback findes. De øvrige undersøgte Limfjordszoner får bølger fra `wam_dw`. Den fælles sene vandstands-/temperaturhale er et horisont-/overgangsproblem, ikke samme bølgeproblem.
+- 4.0.214-datasæt `rr-20260815083802-210` giver den første fælles komponentmatrix: vind 210×118 timer; bølger 194 zoner med 118 timer, 15 med 117 og `DK-B05-11` med 0; strøm, vandstand og temperatur 202 zoner med 118 timer og otte zoner med 101. De otte deler dermed en aktuel 17-timers marinehale.
+- Alle zoner har 100 rå `samples24h` og 133 rå `samples72h`. Det er bevaret samplehistorik, ikke endnu 72 forløbne timer.
 
 ## 4.0.213 – vandtemperatur betyder havoverfladetemperatur
 

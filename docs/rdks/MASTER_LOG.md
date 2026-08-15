@@ -1,3 +1,10 @@
+## 2026-08-15 – samlet P1-komponentmatrix på 4.0.214
+
+- #31874335007 bestod hele produktionskæden og leverede `rr-20260815083802-210`.
+- En ny skrivebeskyttet audit målte vind, bølger, strøm, vandstand og vandtemperatur på samme 210×118-timers grundlag.
+- Matricen dokumenterer komplet vind, ét fuldt bølgehul ved Feggesund, 15 enkelttime-bølgehuller og en fælles 17-timers marinehale i otte Limfjordszoner.
+- Regressionsplanen er dokumenteret uden ændring af kilde, fallback eller RavScore.
+
 ## 2026-08-15 – 4.0.214 fail-closed temperaturcache
 
 - 4.0.213-run #31873118298 var grønt, men støttepakken afslørede ældre temperaturpunkter uden vertikal provenance.
