@@ -117,6 +117,32 @@ Kilder:
 - Kortlæg hvorfor komponenterne skifter gentagne gange mellem DMI og fallback i stedet for at have ét dokumenteret haleskift; skeln ægte DMI-huller, cache/run-overgange og continuity-reparation.
 - Spor og design bevaring af vandstandsproveniens gennem `repairWaterLevelContinuity` uden endnu at ændre kode.
 - Udarbejd maskinlæsbar kædekontrakt og testdesign før implementeringsforslag.
+
+## Afgrænset næste målerunde – bølger og vandstand
+
+Mens den separate 72-timers strømhistorik opbygges naturligt gennem de planlagte GitHub-kørsler, fortsætter P1 med en skrivebeskyttet analyse af bølger og vandstand. Ekstra manuelle vejrbygninger er ikke nødvendige: de kan tilføje nye snapshots, men kan ikke skabe manglende historik bagud i tiden.
+
+### Bølger
+
+- En komplet bølgetime kræver samtidig bølgehøjde, bølgeretning og dominant periode. En optælling af bølgehøjde alene er kun en driftsindikator og ikke et fuldt P1-bevis.
+- Målingen skal skelne `wam_dw`, `wam_nsb`, ekstern fallback og `missing` pr. sammenhængende interval og forklare geografiske huller, herunder Limfjorden hvor den nuværende kysttype ikke har en valgt WAM-collection.
+- For hver zone måles start ved nutiden, sidste valide time, interne huller, model-run, lead time, prognosealder og antal kildeovergange. Et komplet værdiforløb er ikke i sig selv et godkendt DMI-first-forløb.
+- WAM har allerede den officielle native horisont til produktmålet. Analysen skal derfor først forklare collection-, grid-, cache- og runovergange; den skal ikke begynde med at tilføje en ny fallback.
+
+### Vandstand
+
+- Målingen skal følge `sea-mean-deviation` fra den valgte DKSS-collection gennem kildepunktrouting, eventuel kort DMI-gap-reparation, automatisk eller administrativ afstandsvægtning og den endelige zoneserie.
+- DMI-identitet, run og tidsproveniens skal fortsat være til stede efter continuity- og routingtrinnene. En talmæssigt komplet serie uden denne identitet er ikke et fuldt P1-bevis.
+- Overgangen til Open-Meteo skal vurderes separat for datum-/niveau-forskel, tidevandsmønster og spring ved sammensyningen. Reelle Vadehavssvingninger må ikke udglattes som fejl.
+- Målingen skal skelne et ægte DMI-hul fra et hul skabt af cache, model-run, routing eller efterbehandling. Manglende timer forbliver `missing`, indtil årsagen er forklaret.
+
+### P1-komponenternes afgrænsning
+
+Den bindende aktive liste er vind, bølger, strøm, vandstand og vandtemperatur. Vandtemperatur mangler fortsat sin selvstændige overgangs- og halekvalitetsanalyse efter bølge-/vandstandsrunden. Lufttemperatur hentes i den eksterne vejrtjeneste, men er ikke en aktiv offentlig timekomponent eller RavScore-komponent; den skal afklares som overflødig eller fremtidig funktion og må ikke automatisk udvide produktionskæden. Nedbør, skydække, lufttryk og sigtbarhed er heller ikke aktive P1-komponenter i den verificerede kode.
+
+### Beslutningspunkt efter målingen
+
+Først når mindst flere normale modelkørsler er sammenlignet, udarbejdes et designforslag med konsekvens for UI, RavScore/state, datamængde, GitHub-køretid og Supabase-egress. Denne analyse giver fortsat ikke mandat til nye kilder, fallbackregler eller scoreændringer.
 # 4.0.210 – rodårsag i strømdækningens horisontsmål
 
 4.0.209-supportartifactet dokumenterer tre hovedgrupper: 125 zoner med to native U/V-par fra 19. august kl. 11–12 UTC, 75 zoner med syv par fra 19. august kl. 00–12 UTC og 10 zoner med 40 par fra 14. august kl. 21 til 19. august kl. 12 UTC. Den tidligere scheduler beregnede horisont som `sidste gyldige tidspunkt - nu` og kaldte derfor alle grupper 96-timersdækkede.
