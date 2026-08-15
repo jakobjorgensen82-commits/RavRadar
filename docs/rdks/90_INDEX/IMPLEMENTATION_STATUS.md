@@ -7,7 +7,8 @@
 - [x] Enkelt- og flercollectionrouting får faktiske modelnavne, model-run, native tider, routingmetode og source keys.
 - [x] Regressionen beviser, at et gammelt forkert modelmærke erstattes i både offentlig serie og forecaststore.
 - [x] Vandstandsværdi, routing, fallback, RavScore, historik og geometri er uændrede.
-- [ ] Frisk central 210-zoneproduktion skal give fuld vandstandsproveniens og bestå validate, releasegate, Supabase og Pages.
+- [x] #31895640397/#2797 giver 23.310/23.310 routede timer med collection og model-run, nul ufuldstændige provenienser samt grøn validate, releasegate, Supabase og Pages.
+- [x] Direkte deploykontrol viser offentlig 4.0.224, datasæt `rr-20260815163132-210` og 210 zoner.
 
 ## 4.0.223 – delvis kontra fuld modelcyklus
 

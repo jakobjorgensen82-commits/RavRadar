@@ -28,3 +28,11 @@ Ved flere modelområder er det entydige `collection` den sorterede sammensætnin
 ## Afgrænsning
 
 Rettelsen ændrer metadata efter den allerede aktive routing. Vandstandsværdier, valgte punkter, vægte, continuity, fallback, score, historik, UI og hav-/landpunkter er uændrede. Produktionsartifactet skal bevise nul udokumenterede routede DMI-vandstandstimer og bevare de fulde gates.
+
+## Produktionsresultat
+
+Pushkørsel #31895640397 på commit `82c07b54` bestod central adminhydrering og tombstones, frisk DMI-bygning, fuld `validate`, releasegate, Supabase-synkronisering, Pages-artifact og deploy. Supportartifact #2797 indeholder datasæt `rr-20260815163132-210`.
+
+Alle 23.310 routede vandstandstimer har både collection og model-run; auditten rapporterer nul DMI-vandstandstimer uden collection og nul uden model-run. Fordelingen omfatter de faktiske enkeltkilder `dkss_idw`, `dkss_nsbs` og `dkss_lf` samt de sammensatte `dkss_idw+dkss_nsbs` og `dkss_lf+dkss_nsbs`. Ingen routet time er mærket med ufuldstændig provenance.
+
+Direkte Pages-kontrol viste offentlig version 4.0.224, samme datasæt og 210 zoner. Den score-neutrale strømhistorik voksede samtidig til 40,449 rå timer og 4,730–40,449 verificerede timer; alle zoner er fortsat under 72-timerskravet.

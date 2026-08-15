@@ -3,6 +3,7 @@
 - #2795 viste én udokumenteret aktuel DMI-vandstandstime pr. zone og afslørede, at hele den routede serie kunne beholde zonens tidligere collectionmærke efter værdien var erstattet.
 - 87 zoner bruger faktisk punkter fra to DKSS-modelområder; et enkelt gammelt modelnavn var derfor utilstrækkeligt.
 - 4.0.224 bevarer kildepunkternes faktiske collection(s), model-run, native tider og source keys gennem den eksisterende routing uden at ændre tal, vægte, fallback, score eller geometri.
+- #31895640397 bestod fuld validate, releasegate, Supabase og Pages. #2797 har 23.310/23.310 routede timer med fuld modelidentitet; offentlig kontrol viser 4.0.224, datasæt `rr-20260815163132-210` og 210 zoner.
 
 ## 2026-08-15 – naturlig WAM-/DKSS-rotation og fortsat historik
 

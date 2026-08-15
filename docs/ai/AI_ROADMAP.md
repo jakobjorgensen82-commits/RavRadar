@@ -20,7 +20,7 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 
 ## Næste aktive udvikleropgave – DMI-first femdøgnskæder
 
-- 4.0.224 retter et P1-provenienshul uden at ændre værdier: vandstand fra valgte DMI-kildepunkter mærkes nu med de faktiske enkelt- eller sammensatte DKSS-modelområder. Frisk produktionsartifact er næste gate.
+- 4.0.224 retter et P1-provenienshul uden at ændre værdier: vandstand fra valgte DMI-kildepunkter mærkes nu med de faktiske enkelt- eller sammensatte DKSS-modelområder. #31895640397/#2797 og direkte deploykontrol beviser 23.310/23.310 dokumenterede routede timer, 210 zoner og offentlig 4.0.224.
 
 - Den naturlige #31894320128/#2794 ser nye 12 UTC-kandidater for WAM og DKSS, men beholder korrekt de komplette 00/06 UTC-runs, mens de stadig har ca. 107,9/109,9 timers hale over 96-timerskravet. Næste opfølgning er det faktiske beskyttede skift, når den gamle serie falder under kravet; kørslen gav samtidig 4,27–39,99 verificerede historiktimer og nul aktive vandstandscachealarmer.
 
