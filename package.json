@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.218",
+  "version": "4.0.219",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -120,7 +120,8 @@
     "test:water-source-production-chain": "node scripts/test-water-source-production-chain-4.0.103.mjs",
     "test:water-regressions": "node scripts/test-water-regressions-4.0.104.mjs",
     "test:water-station-priority-init": "node scripts/test-water-station-priority-init-4.0.105.mjs",
-    "test:water-station-storage-quota": "node scripts/test-water-station-storage-quota-4.0.106.mjs",
+    "test:water-station-storage-quota": "node scripts/test-water-station-storage-quota-4.0.106.mjs && node scripts/test-supabase-routing-audit-egress-4.0.219.mjs",
+    "audit:supabase-pipeline-egress": "node scripts/audit-supabase-pipeline-egress.mjs",
     "test:state-model-shadow": "node scripts/test-state-model-shadow-4.0.107.mjs",
     "test:workflow-validation-order": "node scripts/test-workflow-validation-order-4.0.108.mjs",
     "test:dmi-marine-first-recovery": "node scripts/test-dmi-marine-first-recovery-4.0.110.mjs",

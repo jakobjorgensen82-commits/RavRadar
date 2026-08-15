@@ -18,7 +18,6 @@ MAP = {
     "rules": "data/admin/admin-rules.json",
     "coastline-overrides": "data/admin/coastline-overrides.json",
     "dmi-water-stations": "data/live/dmi-water-stations.json",
-    "water-station-routing-audit": "data/live/water-station-routing-audit.json",
     ACTIVATION_KEY: "data/geometry-v2/active-national-coastal-parts/manifest.json",
 }
 

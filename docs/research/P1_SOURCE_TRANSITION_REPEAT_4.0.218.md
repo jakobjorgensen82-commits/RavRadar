@@ -35,4 +35,4 @@ Tre målinger bekræfter samme hovedmønster. Vandstandens kildeskift er ikke st
 
 ## Hvad der fortsat mangler
 
-4.0.217- og 4.0.218-datasættene ligger kun cirka 37 minutter fra hinanden. Den sidste kørsel indeholder en reel fuld DMI-rotation, men de er ikke to uafhængige forecastcyklusser. Permanente regressionsgrænser kræver derfor flere modelcyklusser og bør beskrives som intervaller pr. komponent og overgangsretning, ikke som ét fælles tal.
+4.0.217- og 4.0.218-datasættene ligger kun cirka 37 minutter fra hinanden. 4.0.218 indlæste en ny NSBS-cyklus fra 15. august kl. 06 mod den tidligere 14. august kl. 12, så strøm-, vandstands- og temperaturmålingen indeholder reel ny modelevidens for NSBS-zonerne. HARMONIE-vind og WAM-bølger brugte derimod samme modelkørsler i de to artifacts, og Limfjordsmodellen blev ikke færdigbehandlet i 4.0.218. Permanente regressionsgrænser kræver derfor fortsat nye modelcyklusser pr. komponent og bør beskrives som intervaller pr. overgangsretning, ikke som ét fælles tal.

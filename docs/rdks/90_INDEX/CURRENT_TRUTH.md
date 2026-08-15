@@ -1,5 +1,12 @@
 # Current truth – gældende projektviden
 
+## 4.0.219 – reduceret Supabase-readback
+
+- Produktionsartifact #2757 viser, at routingauditten fylder cirka 0,53 MB som kompakt JSON og hidtil blev hentet centralt før hver 15-minutterskørsel, selv om den genbygges i samme kørsel.
+- 4.0.219 stopper kun denne overflødige readback. Frisk generering, beskyttet upload, central adminvisning, stationsregister og redigerbar admin-konfiguration bevares.
+- Read-only estimatoren sænker den beregnede nedre pipelinegrænse fra cirka 4,44 til 3,03 GiB pr. 30 dage ved 96 kørsler dagligt. Det er ikke billingbevis; næste Supabase-periode skal fortsat måles.
+- Målrettede Supabase/admin-regressioner, estimator, versions-/håndbogs-/RDKS-kontrol og lokal releasegate består. Fuld lokal `validate` når forventet den historiske 211-mod-210-zonegrænse efter en grøn geometri-v2-kæde. Produktion og faktisk egress-eftermåling afventer.
+
 ## 4.0.218 – et halepar må ikke rydde aktuel strøm
 
 - Artifact #2750 viste en særskilt modelvalgsregression i 27 zoner: `dkss_idw` havde et marginalt bedre geografisk scoret U/V-par, men kun 19. august, og kunne derfor rydde en eksisterende `dkss_nsbs`-serie omkring nu.

@@ -1,5 +1,11 @@
 # RavRadar Håndbog
 
+## Mindre Supabase-forbrug uden tab af admin-data – 4.0.219
+
+RavRadar genbygger en detaljeret rapport om vandstandsrouting ved hver vejrbygning. Tidligere blev den gamle rapport først hentet fra Supabase, selv om den straks blev erstattet. Fra 4.0.219 springes kun denne overflødige hentning over. Den nye rapport gemmes fortsat centralt og kan læses i admin; stationsregister, regler, routingvalg og andre redigerbare data hentes stadig før beregningen.
+
+En lokal estimator viser lavere forventet pipelineforbrug, men den kan ikke erstatte Supabases faktiske forbrugstal. Derfor fortsætter overvågningen gennem næste faktureringsperiode.
+
 ## Et sent strømpar må ikke fjerne strømmen nu – 4.0.218
 
 RavRadar vælger én DMI-havmodel ad gangen for en zone. Fra 4.0.218 kan en anden model ikke overtage alene på grund af et lidt bedre punkt flere døgn ude, hvis den nuværende model allerede har et komplet strømpar omkring nu. Den anden model må stadig overtage, når den også selv har strøm omkring nu, og en zone uden aktuel strøm må stadig repareres. Der opfindes ingen data, og RavScore er ikke ændret.
@@ -88,7 +94,7 @@ Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vande
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.218
+**Håndbogsversion:** 4.0.219
 
 **Opdateret:** 15. august 2026
 

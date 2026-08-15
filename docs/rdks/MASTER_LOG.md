@@ -1170,8 +1170,13 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 
 - Tre produktionsdatasæt bekræfter, at vandstandsskift er på niveau med almindelige timer, mens vind, bølger, strøm og temperatur fortsat har større kildespring.
 - Strømretningens gennemsnitlige overgang varierede 92° / 89° / 45°, men 95-percentilen forblev 179° / 175° / 162°. Fallbackstrøm er derfor fortsat ikke en verificeret fortsættelse af DMI-strøm.
-- De to seneste datasæt er kun cirka 37 minutter fra hinanden; permanente tærskler afventer flere uafhængige forecastcyklusser. Ingen kilde, fallback eller score er ændret.
+- De to seneste datasæt er kun cirka 37 minutter fra hinanden. 4.0.218 gav en ny NSBS-cyklus, men HARMONIE/WAM var uændrede og den nye Limfjordscyklus ufærdig; permanente tærskler afventer derfor ny cyklusevidens pr. komponent. Ingen kilde, fallback eller score er ændret.
 ## 2026-08-15 – Supabase/admin-roadmap afstemt
 
 - Roadmappets ældre åbne adminpunkter er verificeret mod aktuel kode og fulde releasegates: lagringskontrol, central persistensprøve, synlig håndbogsreviewkø, lokale nødkladder og soft-delete/systemtestrydning findes allerede.
 - Ingen adminfunktion er ændret. Supabase-egress gennem næste billingperiode forbliver en særskilt åben driftsmåling.
+## 2026-08-15 – 4.0.219 reducerer Supabase-readback
+
+- Artifact #2757 dokumenterede, at den genbyggede vandstandsroutingaudit stadig blev hentet centralt før hver 15-minutterskørsel.
+- 4.0.219 fjerner kun denne cirka 0,53 MB kompakte maskindiagnostik fra runtimehydreringen. Central stations-/adminstatus, frisk generering, beskyttet upload og adminvisning bevares.
+- Read-only estimat ved 96 kørsler/dag falder fra cirka 4,44 til 3,03 GiB pr. 30 dage; cirka 1,42 GiB undgås. Faktisk Supabase-billing skal stadig eftermåles.

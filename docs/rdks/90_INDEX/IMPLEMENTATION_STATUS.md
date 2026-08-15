@@ -1,4 +1,14 @@
-# Implementeringsstatus pr. 4.0.218 – aktuelt strømanker
+# Implementeringsstatus pr. 4.0.219 – reduceret Supabase-readback
+
+## 4.0.219 – routingaudit hentes ikke før hver vejrbygning
+
+- [x] Artifact #2757 er størrelsesmålt med kompakt JSON og 96 kørsler/dag.
+- [x] Routingauditten er fjernet fra central runtimehydrering, men bevares i frisk generering, beskyttet upload og ejerens adminvisning.
+- [x] Regressionen bevarer stationsregister og redigerbar central konfiguration.
+- [x] Read-only estimator viser cirka 3,03 GiB/30 dage som nedre pipelinegrænse mod cirka 4,44 GiB før rettelsen.
+- [x] Målrettede Supabase/admin-regressioner, estimator, versions-/håndbogs-/RDKS-kontrol og lokal releasegate består.
+- [x] Fuld lokal `validate` består hele geometri-v2-kæden og stopper derefter forventet fail-closed ved repositoryets historiske 211-zonegrundlag mod den centralt effektive bestand på 210; forskellen er ikke omgået.
+- [ ] Frisk produktion og næste billingperiodes faktiske egressmåling.
 
 ## 4.0.218 – tidsmæssigt sikkert havmodelskift
 
@@ -58,7 +68,7 @@
 - [ ] Det fulde virkelige 72-timersvindue afventer fortsat måling.
 - [x] Numeriske overgangsfejl er målt på #31874335007 og sammenholdt med almindelige timer for alle fem komponenter.
 - [x] Overgangsmålingen er gentaget på 4.0.214, 4.0.217 og en fuld DMI-rotation i 4.0.218; hovedmønstret er stabilt og dokumenteret i `P1_SOURCE_TRANSITION_REPEAT_4.0.218.md`.
-- [ ] Permanente regressionsgrænser kræver fortsat flere uafhængige forecastcyklusser; 4.0.217 og 4.0.218 ligger kun cirka 37 minutter fra hinanden, og det fulde virkelige 72-timersvindue afventer.
+- [ ] Permanente regressionsgrænser kræver fortsat flere forecastcyklusser pr. komponent: 4.0.218 gav en ny NSBS-cyklus, men ikke nye HARMONIE-/WAM-cyklusser eller en færdig ny Limfjordscyklus; det fulde virkelige 72-timersvindue afventer også.
 
 ## 4.0.213 – entydig DMI-havoverfladetemperatur
 
