@@ -158,6 +158,24 @@ De otte vandstandszoner er `DK-B05-14`, `DK-B05-16`, `DK-B05-17`, `DK-B05-18`, `
 `DK-B05-11` er ligeledes en Limfjordszone. Den aktuelle kysttypekobling vælger ingen WAM-collection for `limfjord`, hvilket forklarer fraværet af en direkte DMI-WAM-kæde, men ikke alene hvorfor den eksisterende eksterne fallback også er missing. Det sidste kræver den beskyttede timeproveniens fra et frisk supportartifact.
 
 Den offentlige projektion indeholder med vilje ikke timevis kildeidentitet. Målingen beviser derfor det faktiske brugerresultat, men kan ikke alene afgøre DMI-/fallbackintervaller eller model-run. Ingen kildeændring kan besluttes på dette grundlag alene.
+
+## Vandtemperaturaudit 2026-08-15
+
+Den direkte offentlige måling af dataset `rr-20260815071241-210` viser samme haleprofil som vandstand: 202/210 zoner har alle 118 vandtemperaturtimer. `DK-B05-14`, `DK-B05-16`, `DK-B05-17`, `DK-B05-18`, `DK-B05-19`, `DK-B05-22`, `DK-B05-23` og `DK-B05-24` har 103 timer og mangler fælleshalen `2026-08-19T14:00:00Z`–`2026-08-20T04:00:00Z`. Det styrker hypotesen om en fælles `dkss_lf`-run-, asset-, cache- eller native horisontgrænse frem for otte uafhængige zonefejl.
+
+Den verificerede kodekæde er:
+
+- DMI-feltet `water-temperature` hentes fra zonens valgte DKSS-collection og interpoleres kun inden for gyldige modeltrin.
+- Manglende DMI-timer kan udfyldes komponentvis af Open-Meteos `sea_surface_temperature`; manglende værdier forbliver ellers `missing`.
+- DMI-timeproveniens føres gennem forecaststore og komponentmerge. Den kompakte offentlige projektion fjerner kildeidentiteten, så et supportartifact kræves til den aktuelle DMI-/fallbackfordeling.
+- `waterTemperatureC` vises i informationspanelet, gemmes i observationssnapshots og bevares i både `samples24h` og det score-neutrale `samples72h`.
+- Den aktive RavScore og den nuværende mobiliserings-/stateberegning bruger ikke vandtemperaturen numerisk. Historikfeltet er derfor bevaret forskningsinput, ikke et aktivt scorebidrag.
+
+### Åbent fysisk sammenlignelighedsproblem
+
+Strøm-U/V udvælges med en eksplicit, dokumenteret vertikallagsidentitet. Det skalare DMI-felt `water-temperature` samples derimod som nærmeste gyldige felt og gemmer collection, model-run og tid, men ikke feltets `typeOfLevel`/niveau som temperaturens lagidentitet. Open-Meteo-fallbacken er eksplicit havoverfladetemperatur. Den nuværende dokumentation kan derfor ikke bevise, at DMI-værdien og fallbacken repræsenterer samme vandlag.
+
+Før et temperaturhaledesign kan godkendes, skal et frisk DKSS-field inventory dokumentere temperaturfeltets faktiske niveau i `dkss_idw`, `dkss_nsbs` og `dkss_lf`. Derefter skal overlap måles for niveauforskel, spring og geografisk mønster. Indtil da må fallbacken ikke fremstilles som fysisk identisk med DMI-temperaturen, og temperaturen må ikke få scorevirkning.
 # 4.0.210 – rodårsag i strømdækningens horisontsmål
 
 4.0.209-supportartifactet dokumenterer tre hovedgrupper: 125 zoner med to native U/V-par fra 19. august kl. 11–12 UTC, 75 zoner med syv par fra 19. august kl. 00–12 UTC og 10 zoner med 40 par fra 14. august kl. 21 til 19. august kl. 12 UTC. Den tidligere scheduler beregnede horisont som `sidste gyldige tidspunkt - nu` og kaldte derfor alle grupper 96-timersdækkede.

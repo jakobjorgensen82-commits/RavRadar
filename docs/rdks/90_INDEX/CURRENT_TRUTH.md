@@ -6,6 +6,8 @@
 - Vandstand er komplet i 202 zoner. Otte Limfjordszoner har 103 timer og mangler samme hale fra 19. august kl. 14 UTC til 20. august kl. 04 UTC.
 - Mønsteret afgrænser næste analyse til Limfjordens WAM-fravalg/fallback og den fælles `dkss_lf`-hale. Den offentlige fil har ikke timeproveniens, så et beskyttet frisk supportartifact kræves før rodårsag eller design kan godkendes.
 - Lufttemperatur findes i den offentlige timefil, men vises ikke i det aktive informationspanel og bruges ikke af den aktive RavScore. Den er ikke automatisk en ny bindende P1-komponent.
+- Vandtemperatur er komplet i 202/210 zoner i samme datasæt. De samme otte Limfjordszoner mangler samme sidste 15 timer som vandstanden, hvilket peger på en fælles `dkss_lf`-grænse.
+- Vandtemperatur vises, gemmes med observationer og bevares i 24-/72-timershistorikken, men bruges ikke numerisk i aktiv RavScore eller nuværende state. DMI-feltets vertikale lagidentitet bevares ikke, mens fallbacken er havoverfladetemperatur; fysisk sammenlignelighed er derfor åben og skal bevises før kæde- eller scoreændring.
 
 ## 4.0.212 – skalarfelter må ikke rydde strømserien
 

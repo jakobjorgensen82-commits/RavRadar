@@ -4,6 +4,7 @@
 
 - **ISSUE-LIMFJORD-WAVE-MISSING-B05-11 – ÅBEN ANALYSE:** Dataset `rr-20260815071241-210` mangler bølgehøjde, -retning og -periode i alle 118 timer for Mors nord/Feggesund. Koden vælger ingen WAM-collection for Limfjord-kysttypen; den beskyttede provenance skal vise, hvorfor ekstern fallback også er missing, før et løsningsdesign udarbejdes.
 - **ISSUE-LIMFJORD-WATER-LEVEL-15H-TAIL – ÅBEN ANALYSE:** Otte Limfjordszoner har 103/118 vandstandstimer og mangler præcis samme sidste 15 timer. Undersøg fælles `dkss_lf`-run, assetinventar, cache og native horisont i flere friske runs. Missing må ikke skjules med stale gentagelse, interpolation eller opdigtet fallback.
+- **ISSUE-WATER-TEMPERATURE-LAYER-IDENTITY – ÅBEN P1-ANALYSE:** Vandtemperatur har samme 202/210-dækning og 15-timers Limfjordshale som vandstand. DMI-feltets vertikale niveau gemmes ikke som temperaturproveniens, mens fallbacken er eksplicit havoverfladetemperatur. Feltinventar og overlap skal bevise fysisk sammenlignelighed før hale- eller scoreændring.
 
 ## 4.0.212 – skalarfelt kunne rydde valgt strømserie
 
