@@ -17,6 +17,28 @@ COMPONENTS = {
     "waterTemperature": ("waterTemperatureC",),
 }
 
+CIRCULAR_FIELDS = {"windDirectionDeg", "waveDirectionDeg", "currentDirectionDeg"}
+
+
+def field_delta(field: str, before: float, after: float) -> float:
+    delta = abs(float(after) - float(before))
+    return min(delta, 360.0 - delta) if field in CIRCULAR_FIELDS else delta
+
+
+def metric_summary(rows: list[dict]) -> dict:
+    if not rows:
+        return {"count": 0, "mean": None, "p95": None, "maximum": None, "maximumAt": None}
+    ordered = sorted(rows, key=lambda row: row["delta"])
+    p95_index = max(0, min(len(ordered) - 1, (95 * len(ordered) + 99) // 100 - 1))
+    maximum = ordered[-1]
+    return {
+        "count": len(rows),
+        "mean": round(sum(row["delta"] for row in rows) / len(rows), 3),
+        "p95": round(ordered[p95_index]["delta"], 3),
+        "maximum": round(maximum["delta"], 3),
+        "maximumAt": {key: maximum[key] for key in ("zoneId", "time", "from", "to")},
+    }
+
 
 def provider_group(source: dict) -> str:
     provider = str((source or {}).get("provider") or "missing").lower()
@@ -40,11 +62,16 @@ def audit(document: dict) -> dict:
         valid_by_zone = {}
         providers = Counter()
         transitions = Counter()
+        transition_pairs = Counter()
+        transition_metrics = {field: [] for field in fields}
+        transition_metrics_by_pair = {field: {} for field in fields}
+        ordinary_metrics = {field: [] for field in fields}
         missing_zone_ids = []
         for zone_id, zone in zones.items():
             hours = (zone.get("forecast") or {}).get("hourly") or []
             valid = 0
             previous = None
+            previous_hour = None
             zone_transitions = 0
             for hour in hours:
                 present = all(hour.get(field) is not None for field in fields)
@@ -53,7 +80,38 @@ def audit(document: dict) -> dict:
                 valid += int(present)
                 if previous is not None and group != previous:
                     zone_transitions += 1
+                    transition_pairs[f"{previous}->{group}"] += 1
+                    for field in fields:
+                        before = (previous_hour or {}).get(field)
+                        after = hour.get(field)
+                        if before is None or after is None:
+                            continue
+                        transition_metrics[field].append({
+                            "delta": field_delta(field, before, after),
+                            "zoneId": zone_id,
+                            "time": hour.get("time"),
+                            "from": previous,
+                            "to": group,
+                        })
+                        pair = f"{previous}->{group}"
+                        transition_metrics_by_pair[field].setdefault(pair, []).append(
+                            transition_metrics[field][-1]
+                        )
+                elif previous is not None and group == previous and group != "missing":
+                    for field in fields:
+                        before = (previous_hour or {}).get(field)
+                        after = hour.get(field)
+                        if before is None or after is None:
+                            continue
+                        ordinary_metrics[field].append({
+                            "delta": field_delta(field, before, after),
+                            "zoneId": zone_id,
+                            "time": hour.get("time"),
+                            "from": group,
+                            "to": group,
+                        })
                 previous = group
+                previous_hour = hour
             valid_by_zone[zone_id] = valid
             transitions[zone_transitions] += 1
             if valid == 0:
@@ -68,6 +126,17 @@ def audit(document: dict) -> dict:
             "validHoursDistribution": dict(sorted(counts.items())),
             "providerHours": dict(providers),
             "sourceTransitionsPerZone": dict(sorted(transitions.items())),
+            "sourceTransitionPairs": dict(sorted(transition_pairs.items())),
+            "transitionDeltas": {
+                field: metric_summary(rows) for field, rows in transition_metrics.items()
+            },
+            "transitionDeltasByPair": {
+                field: {pair: metric_summary(rows) for pair, rows in sorted(pairs.items())}
+                for field, pairs in transition_metrics_by_pair.items()
+            },
+            "ordinaryHourlyDeltas": {
+                field: metric_summary(rows) for field, rows in ordinary_metrics.items()
+            },
             "zonesWithNoData": missing_zone_ids,
             "zonesBelowFullDisplayedHorizon": sorted(
                 zone_id for zone_id, value in valid_by_zone.items() if value < maximum

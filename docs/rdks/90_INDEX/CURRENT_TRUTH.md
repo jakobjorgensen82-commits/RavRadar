@@ -8,6 +8,8 @@
 - P1-analysen af Limfjorden er afgrænset: `DK-B05-11` mangler bølger, fordi hverken et gyldigt DMI-bølgepunkt inden for den tilladte afstand eller den eksisterende fallback findes. De øvrige undersøgte Limfjordszoner får bølger fra `wam_dw`. Den fælles sene vandstands-/temperaturhale er et horisont-/overgangsproblem, ikke samme bølgeproblem.
 - 4.0.214-datasæt `rr-20260815083802-210` giver den første fælles komponentmatrix: vind 210×118 timer; bølger 194 zoner med 118 timer, 15 med 117 og `DK-B05-11` med 0; strøm, vandstand og temperatur 202 zoner med 118 timer og otte zoner med 101. De otte deler dermed en aktuel 17-timers marinehale.
 - Alle zoner har 100 rå `samples24h` og 133 rå `samples72h`. Det er bevaret samplehistorik, ikke endnu 72 forløbne timer.
+- Overgangsauditten på samme datasæt viser, at vandstandsskiftets gennemsnit/p95 på 4,6/17 cm ikke er værre end almindelige timer på 5,0/22 cm. Vind-, bølge-, strøm- og temperaturgrænserne er derimod markant større end deres egne baselines.
+- Fallbackstrøm afviger cirka 92° i gennemsnit ved kildeskift og forbliver `unverified`. Vandtemperaturens sene DMI→fallback-skift er 3,59 °C i gennemsnit og 10,5 °C ved p95; temperatur forbliver score-neutral.
 
 ## 4.0.213 – vandtemperatur betyder havoverfladetemperatur
 

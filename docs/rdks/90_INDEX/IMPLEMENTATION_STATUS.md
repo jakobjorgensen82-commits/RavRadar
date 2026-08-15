@@ -9,7 +9,9 @@
 - [ ] Friske produktionskørsler skal genopbygge `surface:0` for alle relevante DKSS-modeller.
 - [x] #31874335007 bestod frisk DMI, fuld validering, releasegate, Supabase og Pages og leverede datasæt `rr-20260815083802-210`.
 - [x] Den fælles P1-komponentmatrix og regressionsplan er dokumenteret for vind, bølger, strøm, vandstand og vandtemperatur.
-- [ ] Numeriske overgangsfejl pr. komponent og det fulde virkelige 72-timersvindue afventer fortsat måling.
+- [ ] Det fulde virkelige 72-timersvindue afventer fortsat måling.
+- [x] Numeriske overgangsfejl er målt på #31874335007 og sammenholdt med almindelige timer for alle fem komponenter.
+- [ ] Permanente regressionsgrænser kræver gentagelse på flere uafhængige DMI-kørsler; det fulde virkelige 72-timersvindue afventer fortsat.
 
 ## 4.0.213 – entydig DMI-havoverfladetemperatur
 

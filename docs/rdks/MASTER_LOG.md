@@ -1,3 +1,9 @@
+## 2026-08-15 – P1-kildeskift målt mod normal timevariation
+
+- Den skrivebeskyttede komponentaudit måler nu overgangspar, cirkulære retningsspring og almindelige same-source nabotimer.
+- Vandstandens overgang er ikke værre end normal timevariation; vind, bølger, strøm og vandtemperatur har væsentligt større grænsespring.
+- Fallbackstrøm forbliver uverificeret, temperatur forbliver score-neutral, og permanente grænser afventer flere uafhængige kørsler.
+
 ## 2026-08-15 – samlet P1-komponentmatrix på 4.0.214
 
 - #31874335007 bestod hele produktionskæden og leverede `rr-20260815083802-210`.
