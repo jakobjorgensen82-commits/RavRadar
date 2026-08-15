@@ -1,5 +1,9 @@
 # RavRadar Håndbog
 
+## Et sent strømpar må ikke fjerne strømmen nu – 4.0.218
+
+RavRadar vælger én DMI-havmodel ad gangen for en zone. Fra 4.0.218 kan en anden model ikke overtage alene på grund af et lidt bedre punkt flere døgn ude, hvis den nuværende model allerede har et komplet strømpar omkring nu. Den anden model må stadig overtage, når den også selv har strøm omkring nu, og en zone uden aktuel strøm må stadig repareres. Der opfindes ingen data, og RavScore er ikke ændret.
+
 ## Verificeret strøm gemmes i hele tre-døgnsvinduet – 4.0.217
 
 RavRadar gemmer den samme aktuelle vejrprøve i et aktivt 24-timersvindue og et score-neutralt 72-timersvindue til senere forskning. En efterkontrol viste, at selve DMI-strømmen var verificeret, men at mærket kun blev skrevet tilbage til 24-timerslisten. Da næste kørsel viderefører den lange liste, gik mærket tabt igen.
@@ -84,7 +88,7 @@ Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vande
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.217
+**Håndbogsversion:** 4.0.218
 
 **Opdateret:** 15. august 2026
 

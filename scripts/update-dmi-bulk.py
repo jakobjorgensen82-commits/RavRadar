@@ -800,12 +800,28 @@ def marine_model_score(zone: dict[str, Any], collection: str, distance_km: float
     return float(distance_km) + float(penalty)
 
 
+def has_current_anchor(point: dict[str, Any], reference_time: str, tolerance_hours: float = 6.0) -> bool:
+    reference = epoch(reference_time)
+    if not reference:
+        return False
+    tolerance = float(tolerance_hours) * 3600.0
+    return any(
+        isinstance(hour.get("current-u"), (int, float))
+        and isinstance(hour.get("current-v"), (int, float))
+        and abs(epoch(valid_time) - reference) <= tolerance
+        for valid_time, hour in (point.get("hourly") or {}).items()
+        if epoch(valid_time)
+    )
+
+
 def accept_marine_collection(
     point: dict[str, Any],
     zone: dict[str, Any],
     collection: str,
     distance_km: float,
     allow_existing_selection_update: bool = True,
+    candidate_valid_time: str | None = None,
+    reference_time: str | None = None,
 ) -> bool:
     coast = zone.get("coastType") or "east"
     if distance_km > MAX_GRID_DISTANCE_KM.get(coast, 32.0):
@@ -817,6 +833,17 @@ def accept_marine_collection(
     # kandidatmodellen ikke har et gyldigt fælles U/V-par ved samme forecasttid.
     if selection and not allow_existing_selection_update:
         return selection.get("collection") == collection
+    # Et sent halepar må ikke genvælge hele havmodellen og dermed rydde en
+    # eksisterende strømserie omkring nu. En bedre model kan stadig overtage,
+    # når dens eget fælles U/V-par også ligger i det aktuelle anker-vindue.
+    if (
+        selection.get("collection") != collection
+        and candidate_valid_time
+        and reference_time
+        and has_current_anchor(point, reference_time)
+        and abs(epoch(candidate_valid_time) - epoch(reference_time)) > 6.0 * 3600.0
+    ):
+        return False
     score = marine_model_score(zone, collection, distance_km)
     current_score = selection.get("score")
     if current_score is not None and float(current_score) <= score and selection.get("collection") != collection:
@@ -960,8 +987,20 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                             if distance > MAX_GRID_DISTANCE_KM.get(zone.get("coastType") or "east", 32.0):
                                 search["rejectedReason"] = "VALID_POINT_TOO_FAR"
                                 continue
-                            if not accept_marine_collection(point, zone, collection, distance):
-                                search["rejectedReason"] = "BETTER_COLLECTION_SELECTED"
+                            anchor_protected = (
+                                (point.get("marineSelection") or {}).get("collection") not in {None, collection}
+                                and has_current_anchor(point, output.get("generatedAt"))
+                                and abs(epoch(valid_time) - epoch(output.get("generatedAt"))) > 6.0 * 3600.0
+                            )
+                            if not accept_marine_collection(
+                                point,
+                                zone,
+                                collection,
+                                distance,
+                                candidate_valid_time=valid_time,
+                                reference_time=output.get("generatedAt"),
+                            ):
+                                search["rejectedReason"] = "CURRENT_ANCHOR_PROTECTED" if anchor_protected else "BETTER_COLLECTION_SELECTED"
                                 continue
                             search["selected"] = True
                             search["verticalLayer"] = layer_key

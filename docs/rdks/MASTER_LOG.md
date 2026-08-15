@@ -1160,3 +1160,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Ingen vejrdata, historik, RavScore eller scoremodel ændres. Fuld CI/deploy og første rigtige produktionstal afventer slutvalidering.
 - Migrationen blev installeret og testet 2026-08-15. SQL-editoren genkørte samtidig en allerede eksisterende Havnø-tombstoneforespørgsel; det ændrede kun centraldokumentets version/opdateringstid. Payloaden blev straks gendannet fra version 324, tombstonen blev verificeret uændret, og dokumentet står derefter på version 326. Statistikfunktionerne bestod rolle- og endpointtesten, og de to testbesøg blev slettet igen.
 - #31876816700 bestod derefter hele produktionskæden. Direkte GitHub Pages-kontrol viste 4.0.215; første rigtige sideåbning blev registreret som 1 sidevisning og 1 browserbesøg, og den private rapport viste desuden 2 oprettede/2 aktive login-konti.
+## 2026-08-15 – 4.0.218 beskytter aktuel strøm ved modelskift
+
+- Den resterende ujævnhed i 27 zoner var ikke en historikfejl: et marginalt bedre `dkss_idw`-U/V-par i den fjerne prognosehale kunne genvælge hele havmodellen og rydde en aktuel `dkss_nsbs`-serie.
+- 4.0.218 kræver, at en kandidat selv har et fælles strømpar omkring nu, før den må erstatte en allerede aktuelt dækkende model. Recovery uden eksisterende aktuelt anker er bevaret.
+- Ingen kilde, fallback, score eller punktgeometri ændres.

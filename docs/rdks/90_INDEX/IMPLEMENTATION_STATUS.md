@@ -1,4 +1,13 @@
-# Implementeringsstatus pr. 4.0.217 – verificeret strømhistorik
+# Implementeringsstatus pr. 4.0.218 – aktuelt strømanker
+
+## 4.0.218 – tidsmæssigt sikkert havmodelskift
+
+- [x] De 27 zoners tilbagefald er adskilt fra 4.0.217-historikrettelsen og ført til et sent `dkss_idw`-halepar.
+- [x] Et halepar kan ikke længere rydde en eksisterende strømserie omkring nu.
+- [x] Et reelt bedre aktuelt par og recovery uden eksisterende aktuelt anker er bevaret.
+- [x] Målrettede modelvalgs-, historik-, versions-, håndbogs- og RDKS-tests samt lokal releasegate består.
+- [x] Fuld lokal `validate` består hele geometri-v2-kæden og stopper derefter forventet fail-closed ved repositoryets historiske 211-zonegrundlag mod den centralt effektive bestand på 210; forskellen er ikke omgået.
+- [ ] Frisk GitHub-produktion skal bevise central hydrering, fulde gates, deploy og aktuel strøm i de 27 tidligere berørte zoner.
 
 ## 4.0.217 – samme verificerede prøve i 24- og 72-timersvinduer
 

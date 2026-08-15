@@ -1,5 +1,12 @@
 # Current truth – gældende projektviden
 
+## 4.0.218 – et halepar må ikke rydde aktuel strøm
+
+- Artifact #2750 viste en særskilt modelvalgsregression i 27 zoner: `dkss_idw` havde et marginalt bedre geografisk scoret U/V-par, men kun 19. august, og kunne derfor rydde en eksisterende `dkss_nsbs`-serie omkring nu.
+- 4.0.218 beskytter et eksisterende strømanker inden for seks timer af datasættets genereringstid. Et andet modelvalg accepteres kun, hvis kandidatens eget fælles U/V-par også ligger i ankervinduet.
+- Mangler den eksisterende model selv et aktuelt anker, er recovery fortsat tilladt. DMI-kilder, fallback, RavScore og punkter er uændrede.
+- Målrettede regressioner, versions-/håndbogs-/RDKS-kontrol og lokal releasegate består. Fuld lokal `validate` når forventet den historiske 211-mod-210-zonegrænse efter en grøn geometri-v2-kæde; frisk central produktion afventer.
+
 ## 4.0.217 – verificeret strømhistorik bevares i begge vinduer
 
 - Produktionsartifact #2750, datasæt `rr-20260815111030-210`, har 142 rå prøver og 35,1 timers faktisk `samples72h` i alle 210 zoner. Ét fælles historisk hul er 67,6 minutter; 24-timersvinduet har ingen huller over én time.

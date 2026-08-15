@@ -208,3 +208,8 @@ Rå tællinger skjulte en proveniensfejl. Aktuel strøm havde et tidsmatchende D
 4.0.217 synkroniserer kun rækken med eksakt `conditions.generatedAt` til begge vinduer efter den eksisterende grid-, tids- og U/V-kontrol. En simulering på hele artifactet markerede 183 zoner og lod de 27 uden tidsmatch forblive `false`. Ældre `false` forbliver `false`, så manglende fortid ikke opfindes. Eftermålingen skal derfor starte fra første produktionskørsel med rettelsen og fortsætte til 72 faktiske timer.
 
 Første produktionsevidens er #31882866344 og datasæt `rr-20260815114746-210`. Alle 210 zoner nåede 145 rå prøver over 35,719 timer. Verificeret 72-timershistorik voksede én fremadrettet prøve i de 183 zoner med tidsmatch: fordelingen blev 102 zoner med én, 98 med to og 10 med 102 verificerede prøver. De 27 aktuelle `no-time-match` blev ikke fejlmarkeret som verificerede.
+## 4.0.218 – tidsankret havmodelvalg
+
+De 27 `no-time-match`-zoner i #2750 delte samme mekanisme: deres valgte `dkss_idw`-model havde kun et fælles U/V-par 19. august, mens den tidligere `dkss_nsbs`-model dækkede tiden omkring nu. Det globale modelvalg vurderede afstand og kystmodelstraf, men ikke kandidatparrets placering i tid, og et halepar kunne derfor rydde hele den aktuelle serie.
+
+Designet i 4.0.218 gør et eksisterende U/V-par inden for seks timer af `bulkCache.generatedAt` til et tidsmæssigt anker. Et andet modelvalg kan kun fortrænge det, når kandidatparret også ligger i samme ankervindue. Hvis den eksisterende model ikke selv har et aktuelt anker, må en bedre kandidat fortsat reparere zonen. Dermed forbliver missing synligt, og hverken kildehierarki, fallback eller score ændres.
