@@ -5,7 +5,10 @@
 - #31904109833/#2814 forsøg 1 bestod frisk DMI, fuld `validate`, releasegate, vejrcache og supportartifact, men `runtime-diagnostics`-upserten stoppede Supabase/Pages med HTTP 500/PostgreSQL `57014` efter cirka 19 sekunder.
 - Payloaden er cirka 17,7 MB. Samme idempotente upsert lykkedes i #2810/#2812 på cirka 11,5 sekunder og i uændret #2814 forsøg 2 på cirka 10,3 sekunder; rerunnen gennemførte Supabase og Pages.
 - 4.0.226 genprøver kun den eksakte kombination HTTP 500 + kode `57014`, højst én gang. En anden timeout og alle øvrige fejl stopper fortsat fail-closed.
-- Ingen timeoutgrænse, payload, adminversionering, manifest, DMI, vejrdata, RavScore, historik eller geometri ændres. Målrettede tests er grønne; fuld 4.0.226-produktion afventer.
+- #31905211459/#2816 på commit `2dc8253a4c7f77449d6f92dcc9c996f211f033d2` bestod central adminhydrering, frisk DMI, fuld `validate`, releasegate, supportartifact, beskyttet Supabase-sync, Pages-artifact og deploy. Den store upsert lykkedes i første forsøg på cirka 11,5 sekunder; timeout-recoveryen er derfor syntetisk regressionstestet, ikke fremprovokeret mod produktion.
+- Datasæt `rr-20260815195620-210` har 22.890/22.890 komplette routede DMI-vandstandstimer og 210/210 komplette rækker ved aktuel 19:00 UTC. Begge manifesthashes matcher artifact og direkte Pages-kontrol, som viser version 4.0.226 og samme 210-zone-datasæt.
+- Sundhedsstatus var `degraded` på grund af et supplerende DMI EDR-kald med HTTP 429, mens `userForecastStatus` var `ok`. Brugerfuldstændigheden var fortsat 209/210 på grund af det kendte Feggesund-bølgegab; strøm og vandstand var 210/210. Det er ikke en regression fra retryændringen.
+- Ingen timeoutgrænse, payload, adminversionering, manifest, DMI, vejrdata, RavScore, historik eller geometri ændres. 4.0.226 er produktionsverificeret.
 
 ## 4.0.225 – routet provenance på den igangværende klokktime
 

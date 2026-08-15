@@ -8,7 +8,10 @@
 - [x] Regressionen dækker recovery, vedvarende timeout, andre databasekoder og bevaret `PGRST303`-adfærd.
 - [x] Workflow-gatetesten normaliserer CRLF/LF, så samme obligatoriske `validate`- og `release:gate`-betingelser valideres lokalt og på GitHub uden workflowændring.
 - [x] Timeoutgrænse, payload, adminversionering, DMI, vejrdata, RavScore, historik og geometri er uændrede.
-- [ ] Fuld GitHub Actions, supportartifact, Supabase og Pages på 4.0.226.
+- [x] #31905211459/#2816 på commit `2dc8253a4c7f77449d6f92dcc9c996f211f033d2` bestod central adminhydrering, frisk DMI, fuld `validate`, releasegate, supportartifact, Supabase, Pages-artifact og deploy.
+- [x] Den virkelige `runtime-diagnostics`-upsert lykkedes i første forsøg på cirka 11,5 sekunder. Timeout-recoveryen er dækket af regressionen uden at fremprovokere produktionsfejl.
+- [x] Artifact og live Pages viser 4.0.226 og datasæt `rr-20260815195620-210`; 22.890/22.890 DMI-vandstandstimer og 210/210 aktuelle rækker har fuld provenance, og begge manifesthashes matcher.
+- [ ] Det kendte Feggesund-bølgegab holder fortsat brugerfuldstændigheden på 209/210. Et supplerende DMI EDR-kald ramte HTTP 429 i #2816, men `userForecastStatus` var `ok`; forholdet er adskilt fra 4.0.226-rettelsen.
 
 # Tidligere status: 4.0.225 – aktuel time i vandstandsrouting
 

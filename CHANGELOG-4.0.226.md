@@ -20,4 +20,6 @@
 
 - Regressionen dækker recovery efter én eksakt `500/57014`, vedvarende `57014`, andre databasekoder og den eksisterende `PGRST303`-authgenprøvning.
 - Workflow-gatetesten normaliserer CRLF og LF før trinafgrænsning, så Windows og GitHub kontrollerer samme uændrede workflowbetingelser.
-- Supabase-kvotekontrol, RDKS, håndbog, version/importlukning og releasegate skal være grønne før push; fuld produktionsverifikation af 4.0.226 afventer.
+- #31905211459/#2816 på commit `2dc8253a4c7f77449d6f92dcc9c996f211f033d2` bestod central adminhydrering, frisk DMI, fuld `validate`, releasegate, supportartifact, beskyttet Supabase-sync, Pages-artifact og deploy.
+- Den virkelige `runtime-diagnostics`-upsert lykkedes i første forsøg på cirka 11,5 sekunder. Timeoutgrenen blev derfor ikke aktiveret mod produktion; den er dækket af den målrettede regression.
+- Artifactdatasæt `rr-20260815195620-210` og direkte Pages-kontrol viser 4.0.226, 210 zoner, matchende manifesthashes, 22.890/22.890 komplette DMI-vandstandstimer og 210/210 komplette rækker ved aktuel 19:00 UTC.

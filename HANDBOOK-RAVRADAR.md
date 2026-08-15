@@ -6,6 +6,8 @@ En stor beskyttet driftsrapport kan normalt gemmes på cirka 10–12 sekunder, m
 
 Fra 4.0.226 genprøver RavRadar præcis én gang, når Supabase udtrykkeligt svarer, at PostgreSQL annullerede statementet på grund af timeout. Gentages timeouten, eller opstår en anden fejl, stopper releasekæden fortsat. Timeoutgrænsen, rapportens indhold, adminhistorik, vejrdata og RavScore er uændrede.
 
+Den fulde produktionskørsel #2816 bestod alle vejr- og releasekontroller, Supabase og Pages. Den store rapport blev denne gang gemt i første forsøg på cirka 11,5 sekunder; den særlige timeoutvej er derfor bevist i en kontrolleret test og ikke ved at fremprovokere en databasefejl.
+
 ## Den aktuelle vandstandstime beholder sin modelidentitet – 4.0.225
 
 En vejrbygning få minutter efter hel time kunne vise den rigtige vandstand, men mangle modelnavn og modelkørsel på netop den igangværende time. De senere timer var korrekt mærket.

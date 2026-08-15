@@ -2,14 +2,14 @@
   "schemaVersion": "2.0",
   "handbookVersion": "4.0.226",
   "title": "RavRadar Håndbog",
-  "updatedAt": "2026-08-15T21:50:00+02:00",
+  "updatedAt": "2026-08-15T22:06:00+02:00",
   "sections": [
     {
       "id": "supabase-statement-timeout-retry-4-0-226",
       "chapter": "82",
       "title": "Supabase genprøver én annulleret diagnostikskrivning",
       "summary": "En eksakt database-timeout genprøves én gang, mens alle andre fejl fortsat stopper releasekæden.",
-      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> En stor beskyttet driftsrapport ramte én gang databasens tidsgrænse, selv om samme skrivning normalt lykkes.</div><p>Fra 4.0.226 genprøver RavRadar præcis én gang, når Supabase svarer HTTP 500 med PostgreSQL-kode <code>57014</code>, som betyder, at statementet blev annulleret på grund af timeout. Den samme idempotente dokumentnøgle og payload sendes igen.</p><div class=\"callout\"><strong>Fortsat fail-closed:</strong> En anden timeout og alle øvrige database-, auth- og netværksfejl stopper releasekæden. Timeoutgrænsen, adminhistorik, vejrdata og RavScore er uændrede.</div>"
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> En stor beskyttet driftsrapport ramte én gang databasens tidsgrænse, selv om samme skrivning normalt lykkes.</div><p>Fra 4.0.226 genprøver RavRadar præcis én gang, når Supabase svarer HTTP 500 med PostgreSQL-kode <code>57014</code>, som betyder, at statementet blev annulleret på grund af timeout. Den samme idempotente dokumentnøgle og payload sendes igen.</p><p>Den fulde produktionskørsel #2816 bestod alle vejr- og releasekontroller, Supabase og Pages. Rapporten blev gemt i første forsøg på cirka 11,5 sekunder; timeoutvejen er derfor bevist i en kontrolleret test og ikke ved at fremprovokere en databasefejl.</p><div class=\"callout\"><strong>Fortsat fail-closed:</strong> En anden timeout og alle øvrige database-, auth- og netværksfejl stopper releasekæden. Timeoutgrænsen, adminhistorik, vejrdata og RavScore er uændrede.</div>"
     },
     {
       "id": "water-level-current-hour-provenance-4-0-225",

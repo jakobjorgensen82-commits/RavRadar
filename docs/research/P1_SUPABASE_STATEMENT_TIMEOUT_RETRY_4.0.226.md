@@ -14,4 +14,8 @@ Den fælles Supabase-requester genprøver kun, når responsen samtidig er HTTP 5
 
 ## Gate
 
-Regressionen skal bevise én recovery, præcis to kald, logget timeoutårsag, fail-closed ved to `57014` og ingen retry ved andre status-/kodekombinationer. Den eksisterende snævre `PGRST303`-genprøvning skal fortsat bestå uændret. Fuld GitHub-produktion skal derefter gennemføre Supabase og Pages på 4.0.226.
+Regressionen beviser én recovery, præcis to kald, logget timeoutårsag, fail-closed ved to `57014` og ingen retry ved andre status-/kodekombinationer. Den eksisterende snævre `PGRST303`-genprøvning består fortsat uændret.
+
+#31905211459/#2816 på commit `2dc8253a4c7f77449d6f92dcc9c996f211f033d2` gennemførte central adminhydrering, frisk DMI, fuld `validate`, releasegate, supportartifact, beskyttet Supabase-sync og Pages-deploy. `runtime-diagnostics` blev skrevet i første forsøg på cirka 11,5 sekunder, så produktionen beviser den uændrede normalvej, mens den kontrollerede regression beviser timeout-recoveryen. Der blev ikke fremprovokeret en database-timeout.
+
+Artifactet `RavRadar-support-2816` har datasæt `rr-20260815195620-210`: 210 zoner, 22.890/22.890 routede DMI-vandstandstimer med fuld collection, model-run, lead time, forecastalder, native tider, routing og source keys samt 210/210 komplette rækker ved aktuel 19:00 UTC. Begge offentlige manifesthashes matcher artifact og den direkte Pages-kontrol.
