@@ -6,7 +6,10 @@
 - [x] De 27 berørte zoner er én fælles NSBS-regression: 38 strømtrin blev reduceret til ét sent trin, ikke 27 uafhængige geografiske huller.
 - [x] Skalare marinefelter kan ikke længere genvælge en eksisterende autoritativ havmodel eller omskrive strømvalgets score.
 - [x] Et bedre fælles strøm-U/V-par kan fortsat skifte model; regressionstesten dækker begge sider.
-- [ ] Frisk 4.0.212-produktion skal genlæse DMI én gang, bestå fulde gates og dokumentere aktuel strøm, historikbevarelse og halehorisont for alle 210 zoner.
+- [x] #31870747677 genlæste NSBS én gang, bestod fulde gates/Supabase/Pages og dokumenterede verificeret aktuel strøm i 210/210 zoner.
+- [x] Alle 210 zoner når mindst 100,8 timers sammenhængende marinehorisont; 27 har 37 strømtrin, 183 har 38.
+- [ ] DEC-0030 skal forklare og designe de sidste cirka 17–19 timer fra 100,8 til reel 118–120-timers strømkæde.
+- [ ] 131 rå historikprøver pr. zone er bevaret; eftermålingen fortsætter, indtil et fuldt 72-timers vindue er dokumenteret.
 
 ## 4.0.211 – bevaret DMI-havmodel og genbehandling
 

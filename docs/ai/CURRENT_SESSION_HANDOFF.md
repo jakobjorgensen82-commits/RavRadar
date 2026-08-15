@@ -1,12 +1,13 @@
 # Aktuelt sessionshandoff – 2026-08-15
 
-## Aktiv 4.0.212-kandidat oven på produktionsverificeret 4.0.211
+## Produktionsverificeret 4.0.212
 
 - Separat `samples72h` bevarer tre døgns rå vejrhistorik til senere mobiliseringsanalyse; `samples24h` forbliver eneste aktive score-/statevindue.
 - Begge rå vinduer udelades fra `public-conditions.json`, og Supabase-egress påvirkes ikke.
 - Vandstands-continuity bevarer DMI-identitet. Providerskift er analyseret, men ingen kilde-, fallback-, merge- eller scoreændring er lavet.
 - #31854174281 og #31855164652 bestod de fulde gates og deploy. Datasæt `rr-20260815011320-210` har verificeret aktuel strøm i 210/210 zoner og 107 bevarede rå historikprøver pr. zone.
-- Senere #31857361460 dokumenterede en ny regression: 27 NSBS-zoner mistede deres 38-trins strømserie, da et skalarfelt fik lov at genvælge havmodel uden fælles strøm-U/V. 4.0.212 retter kun denne modelvalgskonflikt og tvinger én genindlæsning; frisk produktion mangler.
+- Senere #31857361460 dokumenterede en ny regression: 27 NSBS-zoner mistede deres 38-trins strømserie, da et skalarfelt fik lov at genvælge havmodel uden fælles strøm-U/V. 4.0.212 retter kun denne modelvalgskonflikt.
+- #31870747677 bestod hele releasekæden og udgav `rr-20260815071241-210`: 210/210 verificeret strøm fra nutiden, mindst 100,8 timers marinehorisont og 131 bevarede rå historikprøver pr. zone.
 
 ## Sikker baseline
 
@@ -30,7 +31,7 @@
 ## Næste arbejde
 
 1. Næste aktive udvikleropgave er P1-audit/design af komplette DMI-first femdøgnskæder pr. komponent under DEC-0030. Ingen ny kilde, fallback eller scoreændring før dækning, provenance, overgange og regressioner er dokumenteret.
-   - Strømopfølgning: klassificér de 89 zoner, som endnu ikke når 96 timers marinehorisont; alle når aktuelt mindst cirka 70,8 timer, og cirka 120 timer er fortsat målet.
+   - Strømopfølgning: alle 210 når nu mindst 100,8 timer. Klassificér den fælles sidste cirka 17–19 timers hale frem mod 118–120 timer ud fra DMI-kørsel, assetinventar, lead-time og sidste valide tid.
    - Historikopfølgning: mål de 75 sidst reparerede zoner gennem et fuldt 72-timers vindue. Alle 210 zoner skal bevare rå historik, men manglende fortid må ikke rekonstrueres kunstigt.
 2. Supabase-egress overvåges gennem næste billingperiode. Privat dataminimeret besøgstæller med enkel adminrapport er fortsat P2.
 3. Ejerens manuelle markørreview udføres senere gradvist.

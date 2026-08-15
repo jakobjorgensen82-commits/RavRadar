@@ -1,11 +1,14 @@
 # Current truth – gældende projektviden
 
-## 4.0.212-kandidat – skalarfelter må ikke rydde strømserien
+## 4.0.212 – skalarfelter må ikke rydde strømserien
 
 - Fire successive produktionsartifacts afgrænser regressionen. #31856697202 havde 210/210 zoner med brugbar strøm fra nutiden. #31857361460 faldt til 183/210, og de 27 berørte NSBS-zoner gik fra 38 sammenhængende strømtrin til kun `2026-08-19T12:00:00Z`.
 - Årsagen er verificeret i den faktiske modeludvælgelse: et IDW-vandstands-/temperaturpunkt kunne med modelstraf blive marginalt bedre end NSBS-strømparrets afstand og dermed midlertidigt skifte hele havmodellen. Skiftet ryddede alle marinefelter, selv om kandidaten ikke leverede et fælles strøm-U/V-par ved de manglende tider.
 - 4.0.212 lader skalare felter følge et eksisterende modelvalg uden at ændre valget eller dets score. Et fælles strøm-U/V-par kan fortsat skifte til en reelt bedre model. Behandlingssignaturen hæves én gang for genopbygning.
-- Ingen kilde, fallback, interpolation eller score ændres. Frisk produktion og direkte artifactkontrol kræves før lukning.
+- #31870747677 bestod central adminhydrering/tombstones, DMI-genindlæsning, fuld validering, releasegate, Supabase, artifact og Pages-deploy. Datasæt `rr-20260815071241-210` har verificeret strøm fra nutiden i 210/210 zoner; de 27 berørte zoner har 37 strømtrin og de øvrige 183 har 38.
+- Alle 210 zoner når mindst 100,8 timers sammenhængende marinehorisont. Ingen når endnu 118 timer ved denne byggetid, så de sidste cirka 17–19 timer forbliver en DEC-0030-haleanalyse, ikke et lukket femdøgnsmål.
+- Alle 210 zoner bevarer 131 rå `samples72h`-prøver. Det fulde 72-timers historikvindue er fortsat under naturlig opbygning.
+- Ingen kilde, fallback, interpolation eller score ændres.
 
 ## 4.0.211 – bevaret havmodel og reel genbehandling
 

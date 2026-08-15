@@ -2,7 +2,8 @@
 
 ## 4.0.212 – skalarfelt kunne rydde valgt strømserie
 
-- **ISSUE-DMI-SCALAR-EVICTS-CURRENT-SERIES – RETTET LOKALT / AFVENTER PRODUKTION:** #31857361460 reducerede 27 tidligere komplette NSBS-zoner fra 38 strømtrin til ét sent trin. Et lidt nærmere vandstands-/temperaturpunkt fra en anden model kunne genvælge hele havmodellen uden et gyldigt fælles strømpar og rydde serien. Skalare felter må nu kun følge et eksisterende valg; kun et bedre fælles strøm-U/V-par må skifte model. Behandlingssignaturen hæves én gang for genopbygning.
+- **ISSUE-DMI-SCALAR-EVICTS-CURRENT-SERIES – PRODUKTIONSVERIFICERET LUKKET I #31870747677:** #31857361460 reducerede 27 tidligere komplette NSBS-zoner fra 38 strømtrin til ét sent trin. Skalare felter må nu kun følge et eksisterende valg; kun et bedre fælles strøm-U/V-par må skifte model. Frisk genindlæsning gav verificeret strøm i 210/210 zoner og mindst 100,8 timers sammenhængende marinehorisont.
+- **ISSUE-DMI-CURRENT-LAST-17-19-HOURS – ÅBEN P1 UNDER DEC-0030:** 4.0.212 giver ensartet mindst 100,8 timers strøm-/marinehorisont i alle 210 zoner, men ingen når 118 timer ved den målte byggetid. Kildekørsel, assetinventar, lead-time og sidste valide time skal forklares før eventuel kædeændring. Missing må ikke skjules.
 
 ## 4.0.211 – tabt havmodelvalg og falsk genbrug
 
