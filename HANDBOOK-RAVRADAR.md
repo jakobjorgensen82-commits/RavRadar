@@ -94,7 +94,7 @@ Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vande
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.220
+**Håndbogsversion:** 4.0.221
 
 **Opdateret:** 15. august 2026
 
@@ -1728,3 +1728,11 @@ RavRadar gemmer op til 72 timers rå vejrprøver, men en gemt prøve er ikke aut
 Den skrivebeskyttede kontrol viser derfor både rå længde og verificeret længde. I det første målte datasæt havde alle 210 zoner 37,149 timers rå historik og verificeret strøm ved nutiden, mens det verificerede historiske spænd varierede fra 1,43 til 37,149 timer. Ingen zone var endnu på 72 verificerede timer.
 
 Det betyder, at historikken bevares som planlagt, men endnu ikke er klar som landsdækkende grundlag for et nyt mobiliserings- eller scoremodul. Systemet rekonstruerer ikke fortiden, tæller ikke fallback som DMI og gentager ikke en gammel værdi for at lukke et hul.
+
+## Alarm for valgte vandstandskilder i 4.0.221
+
+RavRadar skelner mellem en aktuel måling, kildens DMI-prognose og den routede forecastcache. En målestation kan holde op med at levere nye observationer, mens en allerede hentet prognose stadig er gyldig. Det er ikke straks et databrud.
+
+Kun kilder, der faktisk er valgt automatisk eller af administratoren, overvåges. Hvis en aktiv valgt kilde ikke leverer observationer, ser alarmen på det seneste gyldige tidspunkt fra både kildeprognosen og cachen. Inden for den centralt gemte tærskel vises en advarsel; ved udløb eller helt manglende gyldighed vises kritisk status. Historiske/inaktive kilder og stationer, der leverer nu, udløser ikke denne cachealarm.
+
+Alarmen ændrer ikke stationvalg, vandstandsserien eller RavScore. Den fortæller kun ejeren, hvornår en effektiv kilde nærmer sig et reelt hul.

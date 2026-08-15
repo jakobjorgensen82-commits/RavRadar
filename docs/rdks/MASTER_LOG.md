@@ -1187,3 +1187,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - En ny fuld `dkss_lf`-cyklus med 41/41 trin løftede Limfjordhalen fra 98 til 115 timer uden ny fallback.
 - Ingen score, kilde, fallback eller produktionsdata er ændret; 72-timerskravet forbliver åbent.
 - #31888082124 bestod fulde gates og deploy. Artifact #2771 beviser 210/210 aktuelt verificerede zoner og vækst til 152 rå prøver/37,722 timer; alle zoner er fortsat under 72 verificerede timer.
+## 2026-08-15 – 4.0.221 vandstandsroutingalarm
+
+- P1-audit bekræfter 373 kendte kilder, 240 med gyldig cache og 113 forecasttimer for både Hals Barre og Hals Havn.
+- Alarmfunktionen fra 4.0.98 blev fjernet i 4.0.99 uden at kravet blev lukket; gamle alarmfelter kunne derfor fremstå kritiske trods gyldig forecast.
+- 4.0.221 genberegner alarmen på effektiv routing og samlet forecast-/cachegyldighed, rydder stale mærker og bevarer kildevalg og RavScore.

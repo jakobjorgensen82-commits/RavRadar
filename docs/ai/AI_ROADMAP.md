@@ -1,4 +1,4 @@
-# AI Roadmap – RavRadar 4.0.220
+# AI Roadmap – RavRadar 4.0.221
 
 Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status skal løbende flyttes til RDKS, når noget implementeres.
 
@@ -125,12 +125,12 @@ Ejeren har udtrykkeligt godkendt en landsdækkende privat revision af kystdele o
 - **Stopregel:** Ingen ny produktionskilde, sammensyning eller scoreændring implementeres før kortlægning, design og regressionplan er dokumenteret og godkendt.
 
 ## P1 – vandstandskilder
-- Gør forecast/cache-brugbarhed uafhængig af midlertidigt observationsstop.
-- Vis observationsstatus, forecaststatus, cache gyldig til og samlet brugbarhed separat.
-- Bevar opdagede kilder i registry; vis status frem for at lade dem forsvinde.
-- Admin skal vise auto primær/sekundær, reel geodistance, vægte og metode samt tydelig override.
-- Auditér Hals/prognosepunkter og end-to-end routing i RavScore, rangliste og femdøgnsvisninger.
-- Etabler alarmtærskel for aktive observationskilder, der stopper før forecastcache udløber.
+- [x] Forecast/cache-brugbarhed er uafhængig af midlertidigt observationsstop.
+- [x] Observationsstatus, forecaststatus, cache gyldig til og samlet brugbarhed vises separat.
+- [x] Opdagede kilder bevares i registeret med status frem for at forsvinde.
+- [x] Admin viser automatisk primær/sekundær, reel geodistance, vægte, metode og tydelig override.
+- [x] Hals/prognosepunkter og end-to-end routing er auditeret i artifact #2771: begge Hals-kilder har 113 timer, og samme producerede serie går til forecaststore, zone, femdøgnsvisning og score-/ranglistekæde.
+- [x] 4.0.221 genopretter alarmtærsklen for faktisk valgte aktive kilder mod både kildeprognose og forecastcache. Frisk produktion skal fortsat rydde de observerede stale Hals-mærker.
 
 ## Afsluttet P1 – Supabase/admin drift
 - [x] **Kontroller nu** genlæser forbindelses- og lagringsstatus og viser fejl fail-closed i admin.

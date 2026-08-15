@@ -19,6 +19,7 @@ import { countDmiBackedZones, createPersistentDmiStore, prioritizeDmiFeatures, s
 import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWaterSourceRouting } from './lib/water-source-forecast-routing.mjs';
 import { applyCurrentTransportToHistory } from './lib/current-transport-history.mjs';
 import { retainWeatherHistory } from './lib/weather-history-retention.mjs';
+import { buildEffectiveRoutingCacheAlerts } from './lib/water-station-routing-alerts.mjs';
 
 const ZONES_PATH = 'data/zones.geojson';
 const COASTAL_PARTS_SOURCE_PATH = 'data/geometry-v2/active-national-coastal-parts/manifest.json';
@@ -2010,11 +2011,16 @@ const waterSourceForecastIndex = buildWaterSourceForecastIndex(rawStationRegistr
 const forecastAwareRegistry = applyWaterSourceForecastStatus(rawStationRegistry, waterSourceForecastIndex, generatedAt, { minimumHours: 96 });
 const qualityLevels = dmiObservationSkipReason ? await cachedStationLevels(generatedAt) : await dmiLatestSeaLevels().catch(() => new Map());
 const observationResultUsable = !dmiObservationSkipReason && dmiSeaLevelObservationRun.succeeded && dmiSeaLevelObservationRun.validLevelCount > 0;
-const stationLifecycle = await updateStationObservationLifecycle(forecastAwareRegistry, qualityLevels, generatedAt, { observationAttempted: observationResultUsable, forecastStore: nextDmiForecastStore });
-const stationRegistry = stationLifecycle.stations;
+let stationLifecycle = await updateStationObservationLifecycle(forecastAwareRegistry, qualityLevels, generatedAt, { observationAttempted: observationResultUsable, forecastStore: nextDmiForecastStore });
+let stationRegistry = stationLifecycle.stations;
 const activeWaterRouting = await waterStationRouting();
 const waterSourceApplication = applyWaterSourceRouting({ features, output, forecastStore: nextDmiForecastStore, sources: stationRegistry, index: waterSourceForecastIndex, routing: activeWaterRouting, haversineKm, generatedAt });
 const stationRoutingAudit = await writeWaterStationRoutingAudit(features, stationRegistry.filter(station => station.routingEligible || station.overallUsabilityStatus !== 'unavailable'), generatedAt);
+const routingAlerts = buildEffectiveRoutingCacheAlerts({ document: stationLifecycle.document, features, routing: activeWaterRouting, audit: stationRoutingAudit, generatedAt });
+stationLifecycle = { ...stationLifecycle, document: routingAlerts.document, stations: routingAlerts.document.stations, notifications: routingAlerts.document.notifications };
+stationRegistry = stationLifecycle.stations;
+await fs.writeFile(WATER_STATION_INVENTORY_PATH, `${JSON.stringify(stationLifecycle.document, null, 2)}\n`);
+await fs.writeFile(WATER_STATION_NOTIFICATIONS_PATH, `${JSON.stringify({ schemaVersion: 1, generatedAt, alertSettings: stationLifecycle.document.alertSettings, notifications: stationLifecycle.document.notifications, newNotifications: routingAlerts.newNotifications }, null, 2)}\n`);
 const qualityStations = stationRegistry;
 for (const zone of Object.values(output.zones)) enrichZoneSources(zone, generatedAt);
 const freshObservationCount = [...qualityLevels.values()].filter(level => !level?.cacheSource).length;

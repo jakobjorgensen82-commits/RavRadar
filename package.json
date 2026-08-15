@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.220",
+  "version": "4.0.221",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -113,7 +113,7 @@
     "test:admin-config-production": "node scripts/test-admin-config-production-contract-4.0.94.mjs",
     "test:water-station-admin-override": "node scripts/test-water-station-admin-override-4.0.95.mjs",
     "test:water-station-admin-runtime": "node scripts/test-water-station-admin-runtime-4.0.96.mjs",
-    "test:water-station-observation-truth": "node scripts/test-water-station-observation-truth-4.0.99.mjs",
+    "test:water-station-observation-truth": "node scripts/test-water-station-observation-truth-4.0.99.mjs && node scripts/test-water-station-routing-alerts-4.0.221.mjs",
     "test:water-source-forecast-routing": "node scripts/test-water-source-forecast-routing-4.0.100.mjs",
     "test:water-source-automatic-selection": "node scripts/test-water-source-automatic-selection-4.0.101.mjs",
     "test:water-station-active-routing-display": "node scripts/test-water-station-active-routing-display-4.0.102.mjs",

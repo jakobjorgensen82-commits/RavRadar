@@ -1,5 +1,13 @@
 # Current truth – gældende projektviden
 
+## 4.0.221 – sand alarm for effektiv vandstandsrouting
+
+- Artifact #2771 viser 373 kendte vandstandskilder og 240 med gyldig forecastcache. Hals Barre og Hals Havn har hver 113 timers DMI-prognose og bruges effektivt i henholdsvis 15 og 21 zoner.
+- Observation, DMI-kildeprognose, routet forecastcache og samlet brugbarhed er allerede adskilt. Adminoverride, automatik, forecaststore, femdøgnstabel og score-/visningskæde bruger samme producerede vandstandsserie.
+- Alarmen fra 4.0.98 blev fjernet under 4.0.99-ombygningen, mens kravet og en teksttest blev stående. Gamle alarmfelter kunne derfor videreføres uden genberegning og vise `critical` samtidig med gyldig forecast.
+- 4.0.221 genberegner kun alarmstatus for faktisk valgte aktive kilder og bruger seneste gyldige tidspunkt fra både kildens prognose og routet cache. Leverende observationer og historiske/inaktive kilder alarmerer ikke; stale mærker ryddes.
+- Kildevalg, vandstandstal, interpolation, fallback og RavScore er uændrede.
+
 ## 4.0.220 – rå og verificeret strømhistorik måles hver for sig
 
 - Den read-only P1-audit viser nu aktuel verifikationsstatus, fordeling af verificerede prøver, verificeret tidsspænd og zoner under 72 verificerede timer.

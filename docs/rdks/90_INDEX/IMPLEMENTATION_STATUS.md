@@ -1,4 +1,13 @@
-# Implementeringsstatus pr. 4.0.220 – verificeret historikberedskab
+# Implementeringsstatus pr. 4.0.221 – vandstandsroutingalarm
+
+## 4.0.221 – effektiv kildealarm
+
+- [x] Artifact #2771 dokumenterer register, forecast/cache og Hals-kildernes 113 timer.
+- [x] Fjernelsen i 4.0.99 og de stale videreførte alarmfelter er historisk afgrænset.
+- [x] Effektiv automatisk/adminrouting bestemmer præcist hvilke aktive kilder der overvåges.
+- [x] Seneste gyldighed fra DMI-kildeprognose og routet cache vurderes samlet uden at gøre observation og forecast til samme status.
+- [x] Gyldig forecast rydder stale `critical`; advarsel, udløb, aktiv levering, historisk kilde og central tærskel er funktionelt regressionstestet.
+- [ ] Frisk produktion skal bevise, at de falske Hals-alarmer ryddes, mens en reel udløbsrisiko fortsat kan notificere.
 
 ## 4.0.220 – audit af brugbar transporthistorik
 
