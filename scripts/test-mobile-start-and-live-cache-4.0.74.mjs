@@ -9,5 +9,7 @@ if(app.includes('locateButton'))throw new Error('Appen binder stadig en selvstæ
 if(!app.includes('startTrip()'))throw new Error('Start ravtur er ikke bevaret.');
 if(!sw.includes("url.pathname.includes('/data/live/')")||!sw.includes('liveNetworkOnly'))throw new Error('Live-data er ikke isoleret fra service-worker-cache.');
 if(!ds.includes('public-conditions.json'))throw new Error('Den offentlige side bruger ikke public-conditions.json.');
+if(!ds.includes('public-condition-details.json')||!ds.includes("conditions.datasetId!==details?.datasetId"))throw new Error('Den progressive detaljepakke eller dens datasetværn mangler.');
 const m=JSON.parse(manifest);if(m.conditionsPath!=='./public-conditions.json')throw new Error('Manifestet peger ikke på public-conditions.json.');
+if(m.conditionDetailsPath!=='./public-condition-details.json')throw new Error('Manifestet peger ikke på public-condition-details.json.');
 console.log('OK: mobilprioritet, GPS-flow og sikker live-cache er koblet ind.');

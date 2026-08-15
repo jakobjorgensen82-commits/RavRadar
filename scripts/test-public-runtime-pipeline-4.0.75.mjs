@@ -1,15 +1,21 @@
 import fs from 'node:fs/promises';
-import { buildPublicConditions, compactJson, sha256Text } from './public-conditions-lib.mjs';
+import { buildPublicConditions, buildPublicConditionDetails, compactJson, sha256Text } from './public-conditions-lib.mjs';
 
 const full=JSON.parse(await fs.readFile('data/live/conditions.json','utf8'));
 const publicText=await fs.readFile('data/live/public-conditions.json','utf8');
+const detailsText=await fs.readFile('data/live/public-condition-details.json','utf8');
 const manifest=JSON.parse(await fs.readFile('data/live/manifest.json','utf8'));
 const expectedText=compactJson(buildPublicConditions(full));
+const expectedDetailsText=compactJson(buildPublicConditionDetails(full));
+if(detailsText!==expectedDetailsText) throw new Error('public-condition-details.json er ikke deterministisk.');
 if(publicText!==expectedText) throw new Error('Den publicerede runtime er ikke byte-identisk med den fælles deterministiske projektion.');
 if(manifest.datasetId!==full.datasetId) throw new Error('Manifest og fuld conditions har forskelligt datasetId.');
 if(manifest.publicConditionsSha256!==sha256Text(publicText)) throw new Error('Manifestets SHA-256 for public-conditions er forkert.');
+if(manifest.publicConditionDetailsSha256!==sha256Text(detailsText)) throw new Error('Manifestets SHA-256 for public-condition-details er forkert.');
 if(manifest.publicConditionsBytes!==Buffer.byteLength(publicText)) throw new Error('Manifestets byteantal for public-conditions er forkert.');
+if(manifest.publicConditionDetailsBytes!==Buffer.byteLength(detailsText)) throw new Error('Manifestets byteantal for public-condition-details er forkert.');
 if(manifest.conditionsPath!=='./public-conditions.json') throw new Error('Manifestet peger ikke på public runtime.');
+if(manifest.conditionDetailsPath!=='./public-condition-details.json') throw new Error('Manifestet peger ikke på public-condition-details.');
 const workflow=await fs.readFile('.github/workflows/update-and-deploy.yml','utf8');
 const occurrences=(workflow.match(/node scripts\/generate-public-conditions\.mjs/g)||[]).length;
 if(occurrences!==1) throw new Error(`Workflowet skal genopbygge public runtime præcis én gang efter frisk vejr/proveniens; fandt ${occurrences}.`);

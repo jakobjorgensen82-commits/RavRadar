@@ -1,5 +1,14 @@
 # Current truth – gældende projektviden
 
+## 4.0.216 – progressiv offentlig vejrindlæsning
+
+- Den offentlige runtime er delt i en lille startpakke og en integritetsbundet detaljepakke med samme dataset-id.
+- Startpakken indeholder aktuelle hovedzoneforhold, kompakt historisk tilstand, flowpunkter, én aktuel lokal scorerække pr. zone og de kystdele, der vinder aktuelt for waders eller strand.
+- Hele femdøgnsprognosen og alle lokale kystdelsdetaljer bevares i `public-condition-details.json` og hentes straks efter første kort/rangliste.
+- Hvis detaljepakken fejler eller tilhører et andet datasæt, bevares aktuelle forhold, mens femdøgnsvisningen melder manglen. Stale data, konstruerede nuller og blandede datasæt er fortsat forbudt.
+- Direkte lokal browsertest med frisk 210-zonedata viste første klare kort/rangliste på cirka 0,7 sekund, efterfølgende komplet femdøgnsvisning og fungerende lokalt zonepanel uden browserfejl.
+- RavScore, historik, kilder, fallback og missing-regler er uændrede. CI- og produktionsverifikation af 4.0.216 afventer.
+
 ## 4.0.215 – privat og dataminimeret besøgsstatistik
 
 - Den offentlige side registrerer efter normal opstart én sidevisning og højst ét browserbesøg pr. browserfane og dansk kalenderdag. Statistikfejl blokerer aldrig appen.

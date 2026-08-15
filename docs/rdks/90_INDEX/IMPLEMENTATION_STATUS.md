@@ -1,4 +1,14 @@
-# Implementeringsstatus pr. 4.0.215 – privat besøgsstatistik
+# Implementeringsstatus pr. 4.0.216 – progressiv offentlig vejrindlæsning
+
+## 4.0.216 – progressiv offentlig vejrindlæsning
+
+- [x] Byteaudit dokumenterer den deployede flaskehals i hovedzoneprognoser og lokale kystdelsdata.
+- [x] Startpakken bevarer aktuelle scorer, kompakt historik, flowpunkter og aktuelle vindende kystdele for begge jagtformer.
+- [x] Detaljepakken bevarer alle femdøgnstimer og alle lokale kystdele.
+- [x] Manifest, klient og regression afviser datasetblanding.
+- [x] Browserkontrol med frisk 210-zonedata viser kort/rangliste, færdig prognose, zonepanel og nul browserfejl.
+- [ ] Fuld lokal `validate` og `release:gate` skal bestå.
+- [ ] Frisk GitHub-kørsel skal bestå build, fulde gates, artifact og deploy; den deployede startstørrelse og browseradfærd skal efterkontrolleres.
 
 ## 4.0.215 – privat besøgsstatistik
 

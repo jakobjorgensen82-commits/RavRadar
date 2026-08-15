@@ -1,3 +1,11 @@
+## 2026-08-15 – 4.0.216 progressiv offentlig runtime
+
+- Deployet payload blev målt til 27,11 MB: cirka 20 MB lokale kystdelsdata og 6,88 MB hovedzoneprognoser.
+- Offentlig runtime er delt i en startpakke med aktuelle forhold/historik/aktuelle lokale vindere og en efterfølgende komplet detaljepakke.
+- Dataset-id-værn, fail-open for aktuelle forhold og målrettede regressioner er tilføjet uden ændring af RavScore, data eller missing-regler.
+- Frisk lokal 210-zonebrowsertest viste kort/rangliste på cirka 0,7 sekund, komplet efterfølgende femdøgnsvisning og nul browserfejl.
+- Repositoryets historiske zoneregister indeholder fortsat en lokal ekstra `DK-B02-14`; CI skal anvende central adminhydrering/tombstones før den fulde gate og bevise den autoritative 210-zonebestand.
+
 ## 2026-08-15 – P1-kildeskift målt mod normal timevariation
 
 - Den skrivebeskyttede komponentaudit måler nu overgangspar, cirkulære retningsspring og almindelige same-source nabotimer.

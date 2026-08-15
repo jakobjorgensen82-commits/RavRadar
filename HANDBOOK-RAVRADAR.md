@@ -78,7 +78,7 @@ Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vande
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.215
+**Håndbogsversion:** 4.0.216
 
 **Opdateret:** 15. august 2026
 
@@ -1441,6 +1441,8 @@ Fundrapporten skal knyttes til den historiske vejr- og tilstandskæde på det va
 
 ### 60.7 Performance
 Historik og tilstand beregnes i pipeline. Den offentlige browser modtager kun kompakte afledte felter. Rå 24-timershistorik og store diagnostikfiler må ikke flyttes til offentlig startup. Seneste verificerede opstart omkring 3,45 sekunder er en baseline, som nye ændringer skal sammenlignes med.
+
+Fra 4.0.216 modtager browseren først en lille startpakke med aktuelle forhold, kompakt historisk tilstand, pilegrundlag og de lokale kystdele, der vinder aktuelt. Kort og dagens rangliste kan derfor vises uden at vente på hele femdøgnsprognosen og alle kystdeles timeresultater. Detaljepakken hentes straks bagefter og udfylder femdøgnsvisning, assistent og alle lokale detaljer. Begge pakker skal have samme dataset-id; ellers bruges detaljerne ikke. Ingen historiske data eller scoreinput slettes af opdelingen.
 
 ### 60.8 Sikker udviklingsmetode
 Før en ændring implementeres, skal hele kæden gennemgås:

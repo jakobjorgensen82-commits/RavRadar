@@ -151,7 +151,7 @@ Ejeren har udtrykkeligt godkendt en landsdækkende privat revision af kystdele o
 - Bevar/udbyg startupmålinger for page load, JS-init, manifest/data fetch, parsing, scoreberegning og maprendering.
 - Hold tunge state-/historikberegninger i pipeline og send kompakte præberegnede data til public klient.
 - **Analyse startet 2026-08-15:** `npm run audit:public-startup-payload` gør bytefordelingen gentagelig uden at skrive. Direkte deploymåling af `rr-20260815094833-210` viser 27,11 MB: lokale kystdele udgør 19,99 MB, og hovedzonernes prognoser 6,88 MB. Det gamle lokale 209-zonesnapshot på 6,91 MB er kun historisk baseline uden aktive kystdelsdata.
-- **Næste designkandidat:** konsekvensberegn et lille aktuelt startdatasæt efterfulgt af ikke-blokerende femdøgnstimer og detaljerede lokale kystdelsdata. Bevar datasetintegritet, missing, prognose, assistent, lokal score og historik; ingen felter eller funktioner fjernes uden fuld forbrugeraudit og ejerens godkendelse.
+- **Implementeret lokalt i 4.0.216:** Et lille aktuelt startdatasæt efterfølges af ikke-blokerende femdøgnstimer og detaljerede lokale kystdelsdata. Datasetintegritet, missing, prognose, assistent, lokal score og historik bevares; lokal frisk 210-zonebrowsertest viste cirka 0,7 sekund til kort/rangliste og efterfølgende komplet prognose uden browserfejl. Fuld gate og produktion afventer.
 
 ## P2 – privat besøgsstatistik i admin
 - [x] 4.0.215 implementerer en usynlig, ikke-blokerende offentlig tæller og en ejerbeskyttet adminrapport.
