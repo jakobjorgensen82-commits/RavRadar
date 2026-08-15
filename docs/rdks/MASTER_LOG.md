@@ -1,3 +1,10 @@
+## 2026-08-15 – 4.0.226 Supabase statement-timeout
+
+- #31904109833/#2814 forsøg 1 gennemførte frisk DMI, fuld `validate`, releasegate, vejrcache og supportartifact, men stoppede før Pages ved HTTP 500/PostgreSQL `57014` på `runtime-diagnostics`-upserten.
+- Payloaden er cirka 17,7 MB. Samme idempotente skrivning lykkedes i #2810/#2812 på cirka 11,5 sekunder og i uændret #2814 forsøg 2 på cirka 10,3 sekunder; rerunnen gennemførte Supabase og Pages.
+- 4.0.226 tilføjer højst én genprøvning kun for eksakt `500/57014`. En anden timeout og alle andre fejl stopper fortsat releasekæden fail-closed.
+- Ingen timeoutgrænse, payload, adminversionering, DMI, vejrdata, RavScore, historik eller geometri ændres. Produktion af 4.0.226 afventer.
+
 ## 2026-08-15 – 4.0.225 aktuel klokktime i vandstandsrouting
 
 - #2801 havde 210 udokumenterede DMI-vandstandstimer ved 17:00 UTC efter generering 17:02 UTC; #2800 før timegrænsen havde nul.

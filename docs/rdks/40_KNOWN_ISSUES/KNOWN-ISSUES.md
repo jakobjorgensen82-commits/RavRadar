@@ -1,5 +1,7 @@
 # Kendte åbne og overvågede forhold
 
+- **ISSUE-SUPABASE-RUNTIME-DIAGNOSTICS-STATEMENT-TIMEOUT – RETTET LOKALT I 4.0.226 / AFVENTER PRODUKTION:** #2814 forsøg 1 ramte HTTP 500/PostgreSQL `57014` under den cirka 17,7 MB store `runtime-diagnostics`-upsert efter alle faglige gates. Uændret forsøg 2 lykkedes. Requesteren genprøver nu kun eksakt `500/57014` én gang og stopper fortsat ved gentagelse eller andre fejl.
+
 - **ISSUE-WATER-ROUTING-CURRENT-HOUR-PROVENANCE – PRODUKTIONSVERIFICERET LØST I 4.0.225:** #2801 havde én DMI-vandstandstime uden collection/model-run pr. zone, alle ved den aktuelle 17:00-time efter generering 17:02. Kildeindeksets start afrundes nu ned til aktuel time, mens forecastalder fortsat bruger faktisk genereringstid. #31902872631/#2810 og #31903561423/#2812 beviser i to efterfølgende datasæt 22.890/22.890 routede timer med fuld provenance og 210/210 komplette aktuelle 19:00-rækker.
 
 - **4.0.214 PRODUKTIONSOPFØLGNING:** 4.0.213 afviste nye DMI-dybdetemperaturer, men bevarede ældre cachetimer uden lagmærkning. 4.0.214 fjerner dem fail-closed og genopbygger `surface:0` gennem DKSS-rotationen. Afsluttes først, når artifacts viser verificeret overfladelag for alle viste DMI-temperaturtimer.

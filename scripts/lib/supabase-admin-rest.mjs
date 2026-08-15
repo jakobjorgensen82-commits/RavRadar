@@ -23,6 +23,10 @@ export function isRetryableTranslatedSecretAuthError({key,status,body}){
   return parseJson(body)?.code==='PGRST303';
 }
 
+export function isRetryableStatementTimeout({status,body}){
+  return status===500&&parseJson(body)?.code==='57014';
+}
+
 export function createSupabaseAdminRequester({
   endpoint,
   key,
@@ -54,9 +58,12 @@ export function createSupabaseAdminRequester({
 
       const parsed=parseJson(body);
       const code=parsed?.code||null;
-      const retryable=attempt===1&&isRetryableTranslatedSecretAuthError({key,status:response.status,body});
+      const translatedSecretAuth=isRetryableTranslatedSecretAuthError({key,status:response.status,body});
+      const statementTimeout=isRetryableStatementTimeout({status:response.status,body});
+      const retryable=attempt===1&&(translatedSecretAuth||statementTimeout);
       if(retryable){
-        logger(`Supabase ${operation} (${method}) fik PGRST303; genprøver én gang efter ${retryDelayMs} ms`);
+        const reason=translatedSecretAuth?'PGRST303':'statement-timeout 57014';
+        logger(`Supabase ${operation} (${method}) fik ${reason}; genprøver én gang efter ${retryDelayMs} ms`);
         await delayImpl(retryDelayMs);
         continue;
       }

@@ -1,4 +1,10 @@
-# AI Roadmap – RavRadar 4.0.225
+# AI Roadmap – RavRadar 4.0.226
+
+## 4.0.226 – Supabase må tåle én annulleret idempotent skrivning
+
+- #2814 forsøg 1 viste en transient HTTP 500/PostgreSQL `57014` på den store beskyttede runtime-diagnostik efter alle faglige gates. Den uændrede rerun gennemførte samme skrivning og deploy.
+- Den fælles requester genprøver nu kun eksakt statement-timeout én gang og fejler fortsat hårdt ved gentagelse eller andre fejl.
+- Næste gate er fuld 4.0.226-produktion. Derefter fortsætter P1-modelrotationen og 72-timershistorikken uden ændring.
 
 ## 4.0.225 – aktuel vandstandstime bevarer modelidentitet
 

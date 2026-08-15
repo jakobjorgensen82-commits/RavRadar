@@ -15,7 +15,7 @@ for (const privateName of expectedWorkflowFiles.filter(name => name !== 'update-
     throw new Error(`${privateName} må ikke kunne deploye Pages.`);
   }
 }
-const text = fs.readFileSync(path, 'utf8');
+const text = fs.readFileSync(path, 'utf8').replace(/\r\n/g, '\n');
 const positions = {
   hydrate: text.indexOf('name: Hydrate latest deployed weather state'),
   preflight: text.indexOf('name: Decide whether weather needs updating'),

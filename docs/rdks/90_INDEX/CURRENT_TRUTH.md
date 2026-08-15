@@ -1,5 +1,12 @@
 # Current truth – gældende projektviden
 
+## 4.0.226 – én fail-closed genprøvning ved Supabase statement-timeout
+
+- #31904109833/#2814 forsøg 1 bestod frisk DMI, fuld `validate`, releasegate, vejrcache og supportartifact, men `runtime-diagnostics`-upserten stoppede Supabase/Pages med HTTP 500/PostgreSQL `57014` efter cirka 19 sekunder.
+- Payloaden er cirka 17,7 MB. Samme idempotente upsert lykkedes i #2810/#2812 på cirka 11,5 sekunder og i uændret #2814 forsøg 2 på cirka 10,3 sekunder; rerunnen gennemførte Supabase og Pages.
+- 4.0.226 genprøver kun den eksakte kombination HTTP 500 + kode `57014`, højst én gang. En anden timeout og alle øvrige fejl stopper fortsat fail-closed.
+- Ingen timeoutgrænse, payload, adminversionering, manifest, DMI, vejrdata, RavScore, historik eller geometri ændres. Målrettede tests er grønne; fuld 4.0.226-produktion afventer.
+
 ## 4.0.225 – routet provenance på den igangværende klokktime
 
 - #31897098322/#2801 var fuldt grøn, men artifactet afslørede 210 DMI-vandstandstimer uden collection/model-run, alle ved 17:00 UTC i et datasæt genereret 17:02 UTC.

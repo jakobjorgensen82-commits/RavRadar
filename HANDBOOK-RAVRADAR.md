@@ -1,5 +1,11 @@
 # RavRadar Håndbog
 
+## Supabase genprøver én annulleret diagnostikskrivning – 4.0.226
+
+En stor beskyttet driftsrapport kan normalt gemmes på cirka 10–12 sekunder, men én produktion ramte databasens tidsgrænse efter cirka 19 sekunder. Alle vejr- og releasekontroller var allerede grønne, og siden blev korrekt ikke deployet.
+
+Fra 4.0.226 genprøver RavRadar præcis én gang, når Supabase udtrykkeligt svarer, at PostgreSQL annullerede statementet på grund af timeout. Gentages timeouten, eller opstår en anden fejl, stopper releasekæden fortsat. Timeoutgrænsen, rapportens indhold, adminhistorik, vejrdata og RavScore er uændrede.
+
 ## Den aktuelle vandstandstime beholder sin modelidentitet – 4.0.225
 
 En vejrbygning få minutter efter hel time kunne vise den rigtige vandstand, men mangle modelnavn og modelkørsel på netop den igangværende time. De senere timer var korrekt mærket.
@@ -110,7 +116,7 @@ Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vande
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.225
+**Håndbogsversion:** 4.0.226
 
 **Opdateret:** 15. august 2026
 

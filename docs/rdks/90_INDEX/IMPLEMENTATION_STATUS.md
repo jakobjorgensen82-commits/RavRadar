@@ -1,4 +1,16 @@
-# Implementeringsstatus pr. 4.0.225 – aktuel time i vandstandsrouting
+# Implementeringsstatus pr. 4.0.226 – Supabase statement-timeout
+
+## 4.0.226 – snæver idempotent genprøvning
+
+- [x] #2814 forsøg 1 er afgrænset til HTTP 500/PostgreSQL `57014` ved den cirka 17,7 MB store `runtime-diagnostics`-upsert efter alle faglige gates.
+- [x] Uændret #2814 forsøg 2 gennemførte samme skrivning på cirka 10,3 sekunder samt Supabase og Pages.
+- [x] Requesteren genprøver kun eksakt `500/57014` og højst én gang.
+- [x] Regressionen dækker recovery, vedvarende timeout, andre databasekoder og bevaret `PGRST303`-adfærd.
+- [x] Workflow-gatetesten normaliserer CRLF/LF, så samme obligatoriske `validate`- og `release:gate`-betingelser valideres lokalt og på GitHub uden workflowændring.
+- [x] Timeoutgrænse, payload, adminversionering, DMI, vejrdata, RavScore, historik og geometri er uændrede.
+- [ ] Fuld GitHub Actions, supportartifact, Supabase og Pages på 4.0.226.
+
+# Tidligere status: 4.0.225 – aktuel time i vandstandsrouting
 
 ## 4.0.225 – samme tidsvindue i offentlig serie og kildeindeks
 
