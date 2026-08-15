@@ -6,7 +6,9 @@
 - I #2750 havde 183/210 zoner et aktuelt tidsmatchende DMI-U/V-par. De øvrige 27 havde kun en fjern `dkss_idw`-hale 19. august og forblev korrekt `unverified/no-time-match`. Efterberigelsen skrev hidtil kun resultatet tilbage til `samples24h`; næste merge bruger `samples72h` som autoritativ historik, så mærket blev tabt igen.
 - Før rettelsen havde 75 zoner nul verificerede 72-timersprøver, 125 havde én og 10 havde 101. Rå sampleantal var derfor ikke bevis for verificeret transporthistorik.
 - 4.0.217 synkroniserer kun den aktuelle prøves allerede kontrollerede DMI-U/V-resultat til begge vinduer. 210-zonesimuleringen markerede kun de 183 tidsmatchende zoner; de 27 forblev uverificerede. Ældre uverificeret fortid rekonstrueres ikke; RavScore bruger fortsat kun 24 timer og er uændret.
-- Fuld 72-timers eftermåling og produktion afventer.
+- GitHub Actions #31882866344 bestod central adminhydrering/tombstones, frisk vejrbygning, fuld validering, releasegate, Supabase, Pages-artifact og deploy på commit `abb92d438820270661b64ffac0176554d54cdd75`.
+- Første produktionsdatasæt med rettelsen er `rr-20260815114746-210`: alle 210 zoner har 145 rå prøver over 35,719 timer. Verificeret 72-timershistorik voksede som forventet til 102 zoner med én prøve, 98 med to og 10 med 102; den aktuelle prøve var verificeret i de samme 183 tidsmatchende zoner, mens de 27 uden tidsmatch forblev uverificerede.
+- Eftermålingen fortsætter til mindst 72 faktiske timer. Fortid udfyldes ikke bagudrettet.
 
 ## 4.0.216 – progressiv offentlig vejrindlæsning
 

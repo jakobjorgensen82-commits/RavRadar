@@ -3,6 +3,7 @@
 - Read-only audit af #2750 viste 142 prøver/35,1 timer i alle 210 zoner, men verificeret strøm var fordelt 75×0, 125×1 og 10×101.
 - Aktuel strøm havde et tidsmatchende DMI-U/V-bevis i 183/210 zoner. De resterende 27 havde kun en fjern `dkss_idw`-hale og blev korrekt afvist som `no-time-match`. Den særskilte historikfejl var, at `enrich-current-provenance` kun rettede den aktuelle prøve i `samples24h`, mens næste merge autoritativt læste `samples72h`.
 - 4.0.217 skriver samme eksakte aktuelle verifikationsresultat til begge vinduer. Ingen gammel prøve genfortolkes, og den aktive score ændres ikke.
+- #31882866344 bestod den fulde produktionskæde og deploy. Første datasæt `rr-20260815114746-210` har 145 prøver/35,719 timer i alle 210 zoner; fordelingen voksede til 102×1, 98×2 og 10×102 verificerede 72-timersprøver. 183 aktuelle tidsmatch blev bevaret som verificerede, og de 27 uden tidsmatch forblev uverificerede.
 
 ## 2026-08-15 – 4.0.216 produktionsverificeret
 

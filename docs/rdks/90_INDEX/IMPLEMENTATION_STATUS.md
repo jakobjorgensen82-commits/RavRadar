@@ -9,7 +9,7 @@
 - [x] Auditten måler nu faktisk tidsspænd, største hul og verificeret andel.
 - [x] Målrettede historik-/provenienstests, 210-zonesimulering, versionskontrol, RDKS og lokal releasegate består.
 - [x] Fuld lokal `validate` stopper som forventet fail-closed ved repositoryets historiske 211-zonegrundlag mod den centralt effektive bestand på 210; forskellen er ikke omgået.
-- [ ] Frisk GitHub-kørsel skal bevise central 210-zonehydrering, gates, deploy og første fremadrettede vækst i verificeret 72-timershistorik.
+- [x] #31882866344 beviser central 210-zonehydrering, fulde gates, Supabase, deploy og første fremadrettede vækst: datasæt `rr-20260815114746-210` fordelte verificerede 72-timersprøver som 102×1, 98×2 og 10×102.
 - [ ] Eftermålingen fortsætter til mindst 72 faktiske timer; fortid udfyldes ikke bagudrettet.
 
 ## 4.0.216 – progressiv offentlig vejrindlæsning
