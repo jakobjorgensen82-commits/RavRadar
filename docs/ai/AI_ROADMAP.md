@@ -1,4 +1,4 @@
-# AI Roadmap – RavRadar 4.0.214
+# AI Roadmap – RavRadar 4.0.218
 
 Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status skal løbende flyttes til RDKS, når noget implementeres.
 
@@ -132,11 +132,12 @@ Ejeren har udtrykkeligt godkendt en landsdækkende privat revision af kystdele o
 - Auditér Hals/prognosepunkter og end-to-end routing i RavScore, rangliste og femdøgnsvisninger.
 - Etabler alarmtærskel for aktive observationskilder, der stopper før forecastcache udløber.
 
-## P1 – Supabase/admin drift
-- Reparer **Kontroller nu** under Supabase-lagringskontrollen.
-- Test ekspertens håndbogsreview direkte mod Supabase: write, readback, reload og ejerens visning.
-- Gør reviewkøen i stand til at slette/arkivere automatiske systemtestposter med auditspor.
-- Bevar central autoritet for zonegeometri, regler og routing og udvid propagationstests frem for hardcoding.
+## Afsluttet P1 – Supabase/admin drift
+- [x] **Kontroller nu** genlæser forbindelses- og lagringsstatus og viser fejl fail-closed i admin.
+- [x] Den fulde persistensprøve tester midlertidig write, readback og gendannelse; håndbogsreviewets centrale kø og lokale nødkladder er synlige i ejerens admin.
+- [x] Reviewkøen kan soft-delete enkelte poster og rydde mærkede systemtestposter, mens auditsporet bevares.
+- [x] Central autoritet for zonegeometri, regler og routing er bevaret og dækket af admin-, propagation- og releasegates.
+- Den særskilte måling af Supabase-egress gennem næste billingperiode er fortsat åben; en grøn funktionstest er ikke et forbrugsmål.
 
 ## P2 – håndbog og ekspertarbejde
 - Gennemarbejd hele håndbogen sprogligt og pædagogisk i almindeligt dansk.

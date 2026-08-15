@@ -1171,3 +1171,7 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Tre produktionsdatasæt bekræfter, at vandstandsskift er på niveau med almindelige timer, mens vind, bølger, strøm og temperatur fortsat har større kildespring.
 - Strømretningens gennemsnitlige overgang varierede 92° / 89° / 45°, men 95-percentilen forblev 179° / 175° / 162°. Fallbackstrøm er derfor fortsat ikke en verificeret fortsættelse af DMI-strøm.
 - De to seneste datasæt er kun cirka 37 minutter fra hinanden; permanente tærskler afventer flere uafhængige forecastcyklusser. Ingen kilde, fallback eller score er ændret.
+## 2026-08-15 – Supabase/admin-roadmap afstemt
+
+- Roadmappets ældre åbne adminpunkter er verificeret mod aktuel kode og fulde releasegates: lagringskontrol, central persistensprøve, synlig håndbogsreviewkø, lokale nødkladder og soft-delete/systemtestrydning findes allerede.
+- Ingen adminfunktion er ændret. Supabase-egress gennem næste billingperiode forbliver en særskilt åben driftsmåling.

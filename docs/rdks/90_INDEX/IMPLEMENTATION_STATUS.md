@@ -661,6 +661,7 @@ Status er baseret på importerede chats, aktuelle RDKS-poster og projektets kode
 - Sitetest skelner 404, timeout, netværksfejl og HTTP-fejl.
 - Performanceprofil opdelt i netværk/data, beregning og rendering.
 - Reachability-test beskytter centrale adminfunktioner.
+- [x] Roadmappets P1-driftspunkter er efterkontrolleret mod aktuel kode: lagringskontrol, central persistensprøve, synlig reviewkø, lokale nødkladder og soft-delete/systemtestrydning er implementeret. Kun næste billingperiodes egressmåling står åben.
 
 ## 4.0.87 – IMPLEMENTERET
 - Deterministisk, efterstillet installation af vind- og strømpile med ready/failed-status og retry ved reel fejl.
