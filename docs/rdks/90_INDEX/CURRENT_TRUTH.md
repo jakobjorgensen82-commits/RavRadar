@@ -5,7 +5,8 @@
 - Den offentlige side registrerer efter normal opstart én sidevisning og højst ét browserbesøg pr. browserfane og dansk kalenderdag. Statistikfejl blokerer aldrig appen.
 - Supabase gemmer kun daglige totaler. Ingen rå besøg, IP-adresser, præcis lokalitet, fingerprint eller stabil besøgsidentitet gemmes.
 - Ejer/full_admin kan vælge en periode i admin og se sidevisninger, browserbesøg samt oprettede og aktive login-konti. Browserbesøg er ikke unikke personer.
-- Migrationen er installeret i Supabase og efterkontrolleret: anonym rolle kan skrive, men ikke læse rapporten; authenticated kan kalde den ejerbeskyttede rapportfunktion. Produktstatus kræver fortsat fuldt grønt CI/deploy og efterkontrol af første rigtige optælling.
+- Migrationen er installeret i Supabase og efterkontrolleret: anonym rolle kan skrive, men ikke læse rapporten; authenticated kan kalde den ejerbeskyttede rapportfunktion.
+- #31876816700 bestod frisk DMI, fuld `validate`, releasegate, Supabase-synkronisering, Pages-artifact og deploy. Direkte Pages-kontrol viste 4.0.215; én rigtig åbning gav 1 sidevisning/1 browserbesøg, og ejerens rapport viste disse tal samt 2 oprettede og 2 aktive login-konti.
 
 ## 4.0.214 – gammel umærket temperatur må ikke overleve
 

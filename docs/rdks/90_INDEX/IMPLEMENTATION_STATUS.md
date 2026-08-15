@@ -8,7 +8,8 @@
 - [x] Offentlig registrering er efter normal appstart og fail-open.
 - [x] Målrettet kontrakttest dækker sessionstælling, dataminimering, kontotal og ikke-blokerende opstart.
 - [x] Databasemigrationen er installeret og testet mod den offentlige RPC; de to afgrænsede testbesøg er fjernet igen.
-- [ ] Fuld CI/deploy og første rigtige produktionsoptælling skal verificeres.
+- [x] #31876816700 bestod fuld frisk CI/deploy; direkte kontrol viste 4.0.215 og første rigtige produktionsoptælling på 1 sidevisning/1 browserbesøg.
+- [x] Den private rapport viste dagstallet og 2 oprettede/2 aktive login-konti med korrekt forklaring af browserbesøg.
 
 # Tidligere status: 4.0.214 – fail-closed genopbygning af havoverfladetemperatur
 

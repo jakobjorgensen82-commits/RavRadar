@@ -157,7 +157,8 @@ Ejeren har udtrykkeligt godkendt en landsdækkende privat revision af kystdele o
 - [x] Browserbesøg tælles højst én gang pr. browserfane og dag og kaldes ikke unikke personer.
 - [x] Supabase gemmer kun kompakte dagstotaler uden rå hændelseslog, IP, præcis lokalitet, fingerprint eller stabil besøgsidentitet.
 - [x] Migrationen og dens roller er efterkontrolleret: offentligheden kan kun tælle, mens rapportlæsning kræver authenticated plus ejer/full_admin-kontrol.
-- [ ] Efter deploy kontrolleres første dags rigtige optælling, adminrapportens visning og Supabase-egress. Målingen skal følges for misbrug/støj, fordi en helt anonym offentlig tæller ikke kan bevise mennesker.
+- [x] #31876816700 og direkte efterkontrol beviser deploy, første rigtige 1/1-optælling og adminrapport med 2 oprettede/2 aktive login-konti.
+- [ ] Følg fortsat dagstal, anonym støj/misbrug og Supabase-egress gennem næste billingperiode; en helt anonym offentlig tæller kan ikke bevise mennesker.
 
 ## P3 – planlagt videnskabelig forskningsrunde og RavScore-modelvalidering
 - **Status: registreret, må ikke startes endnu.** Afhænger af afsluttet/klart afgrænset forecast- og schedulerstabilisering samt de højere P0/P1-opgaver.

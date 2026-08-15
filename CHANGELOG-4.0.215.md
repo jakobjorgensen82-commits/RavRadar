@@ -6,3 +6,4 @@
 - Browserbesøg beskrives udtrykkeligt som browserfaner/sessioner og ikke som unikke mennesker.
 - Vejrdata, historik, RavScore og den faglige model er uændrede.
 - Supabase-migrationen er installeret og rolle-/endpointtestet før deploy; testtallene er fjernet igen.
+- #31876816700 produktionsverificerede frisk data, fulde gates og deploy; første rigtige optælling og login-antallet er efterkontrolleret i admin.
