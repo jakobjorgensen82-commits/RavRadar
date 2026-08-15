@@ -8,8 +8,9 @@
 - Værdier, punkter, routing, vægte, continuity, fallback, RavScore, historik og geometri er uændrede.
 - Read-only replay af #2801 bevarer routing-auditten på 210 anvendte/0 ufuldstændige og dokumenterer alle 23.310 timer, inklusive 210/210 i aktuel time.
 - #31902872631/#2810 på commit `18499eb10a45f561d4440a7944b34725049cf34d` bestod central adminhydrering, frisk DMI, fuld `validate`, releasegate, Supabase, Pages-artifact og deploy.
-- Produktionsdatasæt `rr-20260815190651-210` har 22.890/22.890 routede DMI-vandstandstimer med fuld collection, model-run, lead time, forecastalder, native tider, routing og source keys; 210/210 ved aktuel 19:00-time er komplette. Manifesthashes matcher, og live Pages serverer 4.0.225 og samme datasæt.
-- Sundhedsstatus er fortsat separat `degraded` på grund af det kendte bølgegab ved Feggesund og et rate-limited direkte DMI-kald. Vandstand og strøm er 210/210, og bulk-konvertering samt horisont er sunde; 4.0.225-proveniensrettelsen er produktionsverificeret uden at lukke de andre forhold.
+- Produktionsdatasæt `rr-20260815190651-210` har 22.890/22.890 routede DMI-vandstandstimer med fuld collection, model-run, lead time, forecastalder, native tider, routing og source keys; 210/210 ved aktuel 19:00-time er komplette. Manifesthashes matcher, og direkte Pages-kontrol efter #2810 viste 4.0.225 og samme datasæt.
+- #31903561423/#2812 gentog alle fulde gates og deploy efter evidenscommitten. Datasæt `rr-20260815192135-210` gentager 22.890/22.890 og 210/210 i aktuel time; begge manifesthashes matcher live. Sundheds-, DMI-dæknings- og API-status var `ok`.
+- Det kendte bølgegab ved Feggesund holder brugerfuldstændigheden på 209/210, mens vandstand og strøm er 210/210. Det er fortsat et separat fagligt forhold og ændrer ikke, at 4.0.225-proveniensrettelsen er produktionsverificeret.
 
 ## 4.0.224 – sand kilde efter vandstandsrouting
 

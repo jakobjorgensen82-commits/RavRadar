@@ -18,4 +18,5 @@
 - Read-only replay af #2801 bevarer 210 anvendte/0 ufuldstændige routingvalg og giver collection/model-run på 23.310/23.310 DMI-vandstandstimer, inklusive 210/210 i aktuel time.
 - GitHub Actions #31902872631/#2810 bestod central adminhydrering, frisk DMI, fuld `validate`, releasegate, Supabase, Pages-artifact og deploy på commit `18499eb10a45f561d4440a7944b34725049cf34d`.
 - Supportartifactet indeholder datasæt `rr-20260815190651-210`: 22.890/22.890 routede DMI-vandstandstimer har collection, model-run, lead time, forecastalder, native tider, routing og source keys. Den aktuelle 19:00-time er komplet i 210/210 zoner.
-- Det komplette manifests to publiceringshashes matcher filerne, og det deployede Pages-site serverer version 4.0.225 og samme 210-zone-datasæt.
+- Det komplette manifests to publiceringshashes matcher filerne, og direkte kontrol efter #2810 viste version 4.0.225 og samme 210-zone-datasæt på Pages.
+- Den efterfølgende dokumentationskørsel #31903561423/#2812 gentog alle fulde gates og deploy. Datasæt `rr-20260815192135-210` har samme 22.890/22.890 komplette routede timer og 210/210 i aktuel time; sundheds-, DMI-dæknings- og API-status var `ok`.

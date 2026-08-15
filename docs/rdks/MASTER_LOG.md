@@ -5,7 +5,8 @@
 - 4.0.225 adskiller routingvinduets start fra faktisk genereringstid. Regressionen kontrollerer sammensat collection, model-run og forecastalder ved `HH:02`.
 - Ingen vandstandsværdi, kilde, vægt, fallback, score, historik eller geometri er ændret.
 - #31902872631/#2810 bestod central adminhydrering, frisk DMI, fuld `validate`, releasegate, Supabase, Pages-artifact og deploy på commit `18499eb10a45f561d4440a7944b34725049cf34d`.
-- Supportartifactets datasæt `rr-20260815190651-210` har 22.890/22.890 routede DMI-vandstandstimer med fuld provenance og 210/210 komplette aktuelle 19:00-rækker. Manifesthashes matcher, og live Pages serverer 4.0.225 og samme datasæt.
+- Supportartifactets datasæt `rr-20260815190651-210` har 22.890/22.890 routede DMI-vandstandstimer med fuld provenance og 210/210 komplette aktuelle 19:00-rækker. Manifesthashes matcher, og direkte Pages-kontrol efter #2810 viste 4.0.225 og samme datasæt.
+- #31903561423/#2812 gentog alle fulde gates og deploy efter evidenscommitten. Datasæt `rr-20260815192135-210` gentager 22.890/22.890 og 210/210, matcher begge manifesthashes live og havde `ok` sundheds-, DMI-dæknings- og API-status. Det separate kendte Feggesund-bølgegab holder fortsat brugerfuldstændigheden på 209/210.
 
 ## 2026-08-15 – 4.0.224 sand vandstandskilde efter routing
 
