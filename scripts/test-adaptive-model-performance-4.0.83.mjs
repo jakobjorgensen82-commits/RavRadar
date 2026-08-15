@@ -9,7 +9,7 @@ store[ADAPTIVE_MODEL_KEY]=JSON.stringify({schemaVersion:2,version:1,weights:{hun
 const model=loadAdaptiveModel();
 assert.equal(loadAdaptiveModel(),model,'Uændret adaptiv model skal returneres fra samme cache');
 const zones=JSON.parse(fs.readFileSync(new URL('../data/zones.geojson',import.meta.url))).features;
-const conditions=JSON.parse(fs.readFileSync(new URL('../data/live/public-conditions.json',import.meta.url))).zones;
+const conditions=JSON.parse(fs.readFileSync(new URL('../data/live/public-condition-details.json',import.meta.url))).zones;
 let count=0;const started=performance.now();
 for(const feature of zones){const zone=feature.properties,condition=conditions[zone.id];if(!condition)continue;for(const weather of condition.forecast?.hourly||[]){calculateRavScore({mode:'waders',zone,weather,history:condition.history||{},adaptiveModel:model});count++;}}
 const elapsed=performance.now()-started;
