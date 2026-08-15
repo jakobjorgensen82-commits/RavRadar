@@ -1,5 +1,12 @@
 # Current truth – gældende projektviden
 
+## 4.0.222 – modelcyklusser tælles efter run-id, ikke artifact
+
+- Artifacts #2764, #2771 og #2777 genbruger samme aktive HARMONIE-, WAM- og DKSS-modelkørsler. De beviser stabil drift og historikvækst, men er ikke tre uafhængige forecastcyklusser.
+- Den read-only P1-audit rapporterer nu DMI-collection, model-run, tidsopløsning og manglende provenance pr. komponent uden at skrive data.
+- #2777 har fuld collection-/modelrun-identitet for vind, bølger, strøm og vandtemperatur. Vandstand har 210 routede DMI-timer uden collection/modelrunfelter; manglen vises eksplicit og skal analyseres, ikke udfyldes ved gæt.
+- Vejrdata, kilder, fallback, interpolation, RavScore og geometri er uændrede.
+
 ## 4.0.221 – sand alarm for effektiv vandstandsrouting
 
 - Artifact #2771 viser 373 kendte vandstandskilder og 240 med gyldig forecastcache. Hals Barre og Hals Havn har hver 113 timers DMI-prognose. De gamle registerfelter sagde 15/21 zoner, men før/efter-kontrol af den producerede serie viser uændret faktisk brug i 5/6 zoner.
@@ -76,6 +83,7 @@
 - Alle zoner har 100 rå `samples24h` og 133 rå `samples72h`. Det er bevaret samplehistorik, ikke endnu 72 forløbne timer.
 - Overgangsauditten på samme datasæt viser, at vandstandsskiftets gennemsnit/p95 på 4,6/17 cm ikke er værre end almindelige timer på 5,0/22 cm. Vind-, bølge-, strøm- og temperaturgrænserne er derimod markant større end deres egne baselines.
 - Fallbackstrøm afviger cirka 92° i gennemsnit ved kildeskift og forbliver `unverified`. Vandtemperaturens sene DMI→fallback-skift er 3,59 °C i gennemsnit og 10,5 °C ved p95; temperatur forbliver score-neutral.
+- Artifact #2777 lukker den særskilte lagopfølgning: alle 210 hovedzoner har `surface:0`-temperaturgitter, fordelt 116 IDW/71 NSBS/23 LF, og alle 9.159 native DMI-temperaturtrin har samme eksplicitte overfladelag. Nul umærkede eller dybe temperaturtrin overlever. Otte Limfjordszoners nuværende 114 mod 118 viste timer er fortsat et separat horisontproblem.
 
 ## 4.0.213 – vandtemperatur betyder havoverfladetemperatur
 

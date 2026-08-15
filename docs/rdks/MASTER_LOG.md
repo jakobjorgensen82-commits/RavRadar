@@ -1201,3 +1201,11 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Performancebaseline og progressiv public runtime var allerede produktionsverificeret i 4.0.216/#31880984004; kun almindelig mobil-/desktopovervågning forbliver åben.
 - Ingen kode, datakilde, fallback, RavScore eller geometri er ændret.
 - Samme read-only gennemgang af artifact #2777 målte 155 rå prøver/38,278 timer og 2,559–38,278 timers verificeret spænd. Historikken vokser, men alle 210 zoner er fortsat under 72 verificerede timer.
+- Vandtemperaturens lagopfølgning kan lukkes: #2777 har `surface:0` i 210/210 hovedzonegitre og 9.159/9.159 native DMI-temperaturtrin fordelt på IDW, NSBS og LF. Det resterende firetimers Limfjordshul er horisont, ikke dybdelag.
+
+## 2026-08-15 – 4.0.222 uafhængige modelcyklusser
+
+- #2764, #2771 og #2777 har forskellige artifact-/dataset-id'er, men samme aktive HARMONIE-, WAM- og DKSS-modelruns.
+- Den read-only komponentaudit viser nu collection, model-run, tidsopløsning og manglende DMI-proveniens pr. komponent.
+- #2777 viser fuld run-identitet for vind, bølger, strøm og vandtemperatur samt 210 routede vandstandstimer uden modelrunfelter. Manglen rapporteres og udfyldes ikke.
+- Ingen produktionsdata, kilde, fallback, RavScore eller geometri ændres.

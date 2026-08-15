@@ -26,6 +26,8 @@ DMI's havmodeller indeholder temperatur både ved overfladen og i mange dybder. 
 
 RavRadar accepterer nu kun DMI's eksplicitte overfladelag, niveau 0, som offentlig vandtemperatur. Laget gemmes sammen med kilde, modelkørsel og tidspunkt. Dybere temperaturer bruges ikke som erstatning; hvis overfladetemperaturen mangler, forbliver den manglende eller følger den eksisterende tydeligt markerede komponentfallback.
 
+Produktionskontrollen i 4.0.221 viser, at genopbygningen er færdig i den aktuelle cache: alle 210 hovedzoner har et dokumenteret overfladetemperaturpunkt, og alle 9.159 kontrollerede DMI-temperaturtrin kommer fra `surface:0`. Det gælder IDW-, NSBS- og Limfjordsmodellen. Det kortere temperaturforløb i otte Limfjordszoner er et separat prognosehorisontproblem og ikke en dybdetemperatur.
+
 Rettelsen ændrer ikke RavScore, mobiliseringsstate, fallbackprioritet eller 72-timershistorikken. Den sikrer alene, at den viste DMI-temperatur har den samme tilsigtede fysiske betydning som feltets navn og fallbacken. De otte Limfjordszoners sidste 15 timer er fortsat en separat åben dækningsanalyse.
 
 ## Havmodelvalget bevares mellem kørsler – 4.0.211
@@ -94,7 +96,7 @@ Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vande
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.221
+**Håndbogsversion:** 4.0.222
 
 **Opdateret:** 15. august 2026
 
@@ -1738,3 +1740,11 @@ Kun kilder, der faktisk er valgt automatisk eller af administratoren, overvåges
 Alarmen ændrer ikke stationvalg, vandstandsserien eller RavScore. Den fortæller kun ejeren, hvornår en effektiv kilde nærmer sig et reelt hul.
 
 Den første produktionskontrol viste samtidig forskellen på gammel registrering og faktisk brug: Hals Barre og Hals Havn stod med gamle lister på 15 og 21 zoner, men den producerede serie brugte dem både før og efter rettelsen i 5 og 6 zoner. Alarmen følger nu den faktisk producerede rute. Det er en rettelse af diagnosen, ikke en ændring af stationvalget.
+
+## Sådan tæller RavRadar nye vejrcyklusser i 4.0.222
+
+En ny GitHub-kørsel er ikke nødvendigvis en ny vejrprognose. DMI udsender modellerne i bestemte modelkørsler, og flere RavRadar-kørsler kan genbruge præcis den samme. Derfor viser P1-kontrollen nu både DMI-model, modellens starttid og om timen er native eller interpoleret.
+
+Når vi senere sammenligner spring mellem DMI og fallback, tæller flere artifacts med samme model-starttid ikke som flere uafhængige vejrcyklusser. De kan stadig bevise stabil drift og voksende historik. Hvis en DMI-time mangler modelnavn eller starttid, står den som udokumenteret; RavRadar gætter ikke oplysningerne.
+
+Kontrollen ændrer ingen prognose eller RavScore. Den sikrer kun, at beslutninger om senere overgangsgrænser bygger på reelt forskellige modelkørsler.

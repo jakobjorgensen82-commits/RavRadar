@@ -146,6 +146,10 @@ def audit(document: dict) -> dict:
     for component, fields in COMPONENTS.items():
         valid_by_zone = {}
         providers = Counter()
+        dmi_collections = Counter()
+        dmi_model_runs = Counter()
+        dmi_collection_model_runs = Counter()
+        dmi_temporal_resolutions = Counter()
         transitions = Counter()
         transition_pairs = Counter()
         transition_metrics = {field: [] for field in fields}
@@ -161,7 +165,16 @@ def audit(document: dict) -> dict:
             for hour in hours:
                 present = all(hour.get(field) is not None for field in fields)
                 group = provider_group((hour.get("sources") or {}).get(component)) if present else "missing"
+                source = (hour.get("sources") or {}).get(component) or {}
                 providers[group] += 1
+                if present and group == "dmi":
+                    collection = str(source.get("collection") or "undocumented")
+                    model_run = str(source.get("modelRun") or "undocumented")
+                    temporal_resolution = str(source.get("temporalResolution") or "undocumented")
+                    dmi_collections[collection] += 1
+                    dmi_model_runs[model_run] += 1
+                    dmi_collection_model_runs[f"{collection}@{model_run}"] += 1
+                    dmi_temporal_resolutions[temporal_resolution] += 1
                 valid += int(present)
                 if previous is not None and group != previous:
                     zone_transitions += 1
@@ -210,6 +223,12 @@ def audit(document: dict) -> dict:
             "maximumValidHours": maximum,
             "validHoursDistribution": dict(sorted(counts.items())),
             "providerHours": dict(providers),
+            "dmiCollections": dict(sorted(dmi_collections.items())),
+            "dmiModelRuns": dict(sorted(dmi_model_runs.items())),
+            "dmiCollectionModelRuns": dict(sorted(dmi_collection_model_runs.items())),
+            "dmiTemporalResolutions": dict(sorted(dmi_temporal_resolutions.items())),
+            "dmiHoursWithoutCollection": dmi_collections.get("undocumented", 0),
+            "dmiHoursWithoutModelRun": dmi_model_runs.get("undocumented", 0),
             "sourceTransitionsPerZone": dict(sorted(transitions.items())),
             "sourceTransitionPairs": dict(sorted(transition_pairs.items())),
             "transitionDeltas": {
@@ -243,6 +262,25 @@ def self_test() -> None:
         "zones": {
             "A": {
                 "current": {"currentProvenance": {"status": "verified"}},
+                "forecast": {"hourly": [
+                    {
+                        "time": "2026-08-15T00:00:00Z",
+                        "windSpeedMps": 4,
+                        "windDirectionDeg": 90,
+                        "sources": {"wind": {
+                            "provider": "dmi",
+                            "collection": "harmonie",
+                            "modelRun": "2026-08-14T18:00:00Z",
+                            "temporalResolution": "native",
+                        }},
+                    },
+                    {
+                        "time": "2026-08-15T01:00:00Z",
+                        "windSpeedMps": 5,
+                        "windDirectionDeg": 95,
+                        "sources": {"wind": {"provider": "dmi"}},
+                    },
+                ]},
                 "samples24h": rows,
                 "samples72h": rows,
             },
@@ -260,6 +298,15 @@ def self_test() -> None:
     assert history["verifiedSpanHoursDistribution"] == {0.0: 1, 1.0: 1}
     assert history["zonesWithoutVerifiedSamples"] == ["B"]
     assert history["zonesBelow72VerifiedHours"] == ["A", "B"]
+    wind = result["components"]["wind"]
+    assert wind["dmiCollections"] == {"harmonie": 1, "undocumented": 1}
+    assert wind["dmiModelRuns"] == {"2026-08-14T18:00:00Z": 1, "undocumented": 1}
+    assert wind["dmiCollectionModelRuns"] == {
+        "harmonie@2026-08-14T18:00:00Z": 1,
+        "undocumented@undocumented": 1,
+    }
+    assert wind["dmiHoursWithoutCollection"] == 1
+    assert wind["dmiHoursWithoutModelRun"] == 1
 
 
 def main() -> int:

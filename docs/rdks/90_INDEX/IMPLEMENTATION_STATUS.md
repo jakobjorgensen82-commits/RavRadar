@@ -1,4 +1,14 @@
-# Implementeringsstatus pr. 4.0.221 – vandstandsroutingalarm
+# Implementeringsstatus pr. 4.0.222 – modelcyklusaudit
+
+## 4.0.222 – uafhængig forecast-evidens
+
+- [x] DMI-collection og model-run optælles pr. komponent og samlet som collection@run.
+- [x] Native/interpoleret/kantopløsning og timer uden collection/model-run rapporteres fail-closed.
+- [x] Selvtesten dækker både dokumenteret og udokumenteret DMI-proveniens.
+- [x] #2764/#2771/#2777 er sammenlignet og dokumenteret som samme aktive modelcyklusser.
+- [ ] Friske naturlige HARMONIE-, WAM- og DKSS-run-id'er skal fortsat eftermåles, før permanente overgangsintervaller kan besluttes.
+
+# Tidligere status: 4.0.221 – vandstandsroutingalarm
 
 ## 4.0.221 – effektiv kildealarm
 
@@ -84,7 +94,7 @@
 - [x] Artifactet afslørede ældre cachede temperaturtimer uden lagproveniens; 4.0.213 var derfor kun første halvdel af rettelsen.
 - [x] Parser 16 fjerner umærkede/ikke-overflade temperaturtimer fail-closed og prioriterer manglende overfladetemperatur i DKSS-rotationen.
 - [x] Øvrig vejrhistorik bevares; kun uverificeret temperatur kasseres.
-- [ ] Friske produktionskørsler skal genopbygge `surface:0` for alle relevante DKSS-modeller.
+- [x] Artifact #2777 beviser genopbygning i alle relevante modeller: 116 IDW-, 71 NSBS- og 23 LF-zoner samt 9.159/9.159 native temperaturtrin med `surface:0` og nul lagafvigelser.
 - [x] #31874335007 bestod frisk DMI, fuld validering, releasegate, Supabase og Pages og leverede datasæt `rr-20260815083802-210`.
 - [x] Den fælles P1-komponentmatrix og regressionsplan er dokumenteret for vind, bølger, strøm, vandstand og vandtemperatur.
 - [ ] Det fulde virkelige 72-timersvindue afventer fortsat måling.
@@ -100,8 +110,8 @@
 - [x] Temperaturens grid- og timeproveniens gemmer `verticalLayer: surface:0`.
 - [x] Parsergeneration 15 tvinger kontrolleret genbehandling af den aktuelle DMI-cache.
 - [x] Målrettede parser-, grid-, forecast-, null- og historiktests består lokalt.
-- [ ] Frisk fuldt gated GitHub-kørsel skal bevise genopbygget overfladetemperatur, bevaret strøm/vandstand, supportartifact, Supabase og Pages.
-- [ ] Den separate 15-timers `dkss_lf`-/Open-Meteo-hale for otte Limfjordszoner forbliver en åben DEC-0030-analyse.
+- [x] Senere fuldt gated produktion til og med #31889559758 beviser genopbygget overfladetemperatur, bevaret strøm/vandstand, supportartifact, Supabase og Pages.
+- [ ] Den separate tidligere 15-timers hale er reduceret til fire viste timer i artifact #2777: otte Limfjordszoner har 114 mod 118 temperaturtimer. DEC-0030-horisontanalysen forbliver åben.
 
 ## 4.0.212 – komponentkorrekt DMI-modelskift
 
