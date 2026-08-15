@@ -17,7 +17,9 @@
 - [x] #31911509244/#2830 forsøg 1 stoppede fail-closed ved 629/673 verificerede lokale strømpunkter efter delvis `dkss_lf`; uændret forsøg 2 nåede 670/673 og bestod fuld `validate` og releasegate.
 - [x] Forsøg 2 stoppede efter den ene tilladte genprøvning af Supabase HTTP 500/PostgreSQL `57014`; Pages blev korrekt ikke deployet.
 - [x] Artifactaudit af `rr-20260815224811-210` fandt transportfejlen: 670/670 lokale vindpunkter var zoneankre, fordi DKSS-`wind-tail-u/v` ikke blev genkendt. Read-only cache-replay finder 670/673 eksakte vindhalepar på 507 unikke gitterpunkter. Fejlen er rettet lokalt med direkte regression for primær vind, marin vindhale og U/V-mismatch.
-- [ ] Ny central produktion, supportartifact med lokale vindpunkter, Pages-deploy og direkte livekontrol mangler.
+- [x] #31913779486/#2835 på commit `93b8c0216821d02bf913f7aab369406ba2365fe9` bestod central adminhydrering, frisk DMI, fuld `validate`, releasegate, supportartifact, beskyttet Supabase-sync og Pages-deploy.
+- [x] Datasæt `rr-20260815231859-210` har 670/673 verificerede og offentliggjorte kystdele mod kravet 640; 670/670 har eksakte DMI-punkter for både strøm og vind, nul U/V-mismatch, 461 unikke strømpunkter og 544 unikke vindpunkter.
+- [x] Live manifest, startpakke og detaljepakke har samme datasætid og matchende SHA-256. Browserkontrollen viser 54 pile ved oversigten og 87 efter to zoomtrin, uden konsolfejl.
 
 # Tidligere status: 4.0.227 – vejledende lokal kystvinkel
 

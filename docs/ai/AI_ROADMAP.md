@@ -5,7 +5,7 @@
 - Kortet kan fra zoomniveau 9 vise kystdelenes egne dokumenterede DMI-vind- og strømpunkter ud over hovedzonens oversigtspil.
 - Tæthed må kun komme fra selvstændige faktiske gitterpunkter med eksakt U/V-par. Ingen pil flyttes eller kopieres for at fylde kortet.
 - Detaljepakken udløser automatisk en ny tegning af pilelaget. DMI-data, RavScore, historik og geometri ændres ikke.
-- Frisk central produktion og direkte livekontrol er næste gate.
+- #31913779486/#2835 bestod hele produktionskæden. Artifact og livefiler har 670 eksakte lokale strøm- og vindpunkter uden mismatch, og browserkontrollen viste 54 pile ved oversigten mod 87 efter to zoomtrin. 4.0.228 er produktionsverificeret.
 - Ejeren gennemgår land-/vandpunkter sideløbende. Fem-døgnsdækning og historikanalyse er midlertidigt udsat, indtil mere naturligt datagrundlag er opsamlet; de er ikke annulleret.
 
 ## 4.0.227 – ejerens repræsentative kystretning må ikke låses af en mikrotangent

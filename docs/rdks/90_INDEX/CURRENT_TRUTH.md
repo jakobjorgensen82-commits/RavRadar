@@ -1,6 +1,6 @@
 # Current truth – gældende projektviden
 
-## 4.0.228 – flere faktiske DMI-pile ved indzoomning
+## 4.0.228 – flere faktiske DMI-pile ved indzoomning, produktionsverificeret
 
 - Landsoversigten bevarer ét repræsentativt vind- og strømpunkt pr. hovedzone, så kortet fortsat er læsbart.
 - Fra zoomniveau 9 kan kortet desuden vise de lokale kystdeles egne vind- og strømpile. Hver tæt pil skal stå på det faktiske DMI-gitterpunkt, som leverede den pågældende kystdels data.
@@ -9,7 +9,10 @@
 - Ændringen flytter eller kopierer ingen pile kunstigt og ændrer ingen DMI-værdi, kilde, prognose, kyst, land-/vandpunkt, RavScore eller historik. Se DEC-0039.
 - Første produktionsforsøg i #31911509244/#2830 stoppede korrekt ved 629/673 verificerede lokale strømpunkter efter en delvis `dkss_lf`-hentning; kravet var 640. Uændret forsøg 2 brugte den progressive cache og bestod den faglige audit med 670/673 samt fuld `validate` og releasegate.
 - Forsøg 2 stoppede derefter før Pages, fordi `runtime-diagnostics`-upserten ramte HTTP 500/PostgreSQL `57014` både oprindeligt og ved den ene tilladte genprøvning. Fail-closed-reglen virkede som besluttet.
-- Efteraudit af datasæt `rr-20260815224811-210` viste korrekt 670 lokale strøm-gitterpunkter, men nul verificerede lokale vind-gitterpunkter i den offentlige detaljepakke. Årsagen var, at transporten overså DKSS-felterne `wind-tail-u-10m/v-10m`. Read-only replay af samme DMI-cache finder eksakte vindhalepar til 670/673 dele på 507 unikke gitterpunkter. Den lokale rettelse genkender nu parret som `dmi-marine-wind-grid`; ny fuld produktion og livekontrol mangler.
+- Efteraudit af datasæt `rr-20260815224811-210` viste korrekt 670 lokale strøm-gitterpunkter, men nul verificerede lokale vind-gitterpunkter i den offentlige detaljepakke. Årsagen var, at transporten overså DKSS-felterne `wind-tail-u-10m/v-10m`. Read-only replay af samme DMI-cache fandt eksakte vindhalepar til 670/673 dele på 507 unikke gitterpunkter. Rettelsen genkender parret som `dmi-marine-wind-grid` og bevarer HARMONIE som førstevalg.
+- #31913779486/#2835 på commit `93b8c0216821d02bf913f7aab369406ba2365fe9` bestod central adminhydrering, frisk DMI, fuld `validate`, releasegate, supportartifact, beskyttet Supabase-sync og Pages-deploy.
+- Produktionsdatasæt `rr-20260815231859-210` har 210 zoner, 673 forventede og 670 verificerede/offentliggjorte kystdele mod minimum 640. Alle 670 har eksakt DMI-strømpunkt og eksakt DMI-vindpunkt; der er nul U/V-koordinatmismatch. De fordeler sig på 461 unikke strømpunkter og 544 unikke vindpunkter. Begge offentlige SHA-256-værdier matcher manifestet.
+- Direkte livekontrol viser version 4.0.228 og samme datasæt. Browseren havde nul konsolfejl og gik fra 27 vind + 27 strøm ved oversigten til 45 vind + 42 strøm efter to zoomtrin. 4.0.228 er produktionsverificeret.
 - Ejeren fortsætter samtidig den manuelle land-/vandpunktgennemgang. Fem-døgnsdækning og historikanalyse er efter ejerbeslutning midlertidigt udsat, indtil flere naturlige data er opsamlet; dataopsamlingen og de eksisterende gates fortsætter uændret.
 
 ## 4.0.227 – lokal kystvinkel er en advarsel, ikke en ejerblokering

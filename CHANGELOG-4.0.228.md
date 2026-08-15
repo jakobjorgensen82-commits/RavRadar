@@ -25,7 +25,10 @@
 - Den fulde lokale `validate` gennemførte geometri-v2-kæden og stoppede derefter forventet fail-closed på repositoryets kendte historiske 209/211-vejrsnapshot før central adminhydrering. Lokal releasegate består.
 - Første centrale forsøg stoppede korrekt, da en delvis Limfjordshentning kun gav 629/673 verificerede aktuelle kystdele mod kravet 640.
 - Uændret genforsøg med den gemte progressive cache gav 670/673 og bestod fuld `validate` og releasegate, men stoppede efter én snæver genprøvning på Supabase HTTP 500/PostgreSQL `57014`; Pages blev ikke deployet.
-- Artifactefterkontrollen fandt samtidig, at alle 670 lokale vindpunkter endnu stod som zoneankre, fordi transporten kun genkendte de primære vindfelter og ikke de faktisk anvendte DKSS-`wind-tail`-felter. Read-only replay af DMI-cachen finder eksakte vindhalepar til 670/673 dele på 507 unikke gitterpunkter. Den lokale rettelse bevarer begge ægte kildetyper og afventer ny fuld produktion.
+- Artifactefterkontrollen fandt samtidig, at alle 670 lokale vindpunkter endnu stod som zoneankre, fordi transporten kun genkendte de primære vindfelter og ikke de faktisk anvendte DKSS-`wind-tail`-felter. Read-only replay af DMI-cachen fandt eksakte vindhalepar til 670/673 dele på 507 unikke gitterpunkter. Rettelsen bevarer nu begge ægte kildetyper.
+- #31913779486/#2835 på commit `93b8c0216821d02bf913f7aab369406ba2365fe9` bestod central adminhydrering, frisk DMI, fuld validering, releasegate, supportartifact, Supabase og Pages.
+- Datasæt `rr-20260815231859-210` har 670/673 verificerede/offentliggjorte kystdele mod minimum 640. Alle 670 har eksakte DMI-punkter for både strøm og vind, nul U/V-mismatch, 461 unikke strømpunkter og 544 unikke vindpunkter. Manifestets to SHA-256-kontroller matcher både artifact og livefiler.
+- Direkte livebrowserkontrol havde nul konsolfejl og viste 27 vind + 27 strøm på oversigten samt 45 vind + 42 strøm efter to zoomtrin. 4.0.228 er produktionsverificeret.
 
 ## Aktuel prioritering
 

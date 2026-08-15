@@ -6,12 +6,13 @@ Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde sa
 
 ## Aktuel sandhed
 
-- 4.0.227 er produktionsverificeret i #31908498204/#2824 med 210 zoner, 673 kyststrækninger, frisk DMI, fulde gates, Supabase og Pages.
-- 4.0.228-kandidaten viser fra zoomniveau 9 flere lokale vind- og strømpile, men kun ved kystdelenes egne eksakt parrede DMI-U/V-gitterpunkter. Vindkilden kan være HARMONIE eller den faktisk anvendte DKSS-`wind-tail`-serie og mærkes særskilt.
+- 4.0.228 er produktionsverificeret i #31913779486/#2835 på commit `93b8c0216821d02bf913f7aab369406ba2365fe9` med central adminhydrering, frisk DMI, fulde gates, Supabase og Pages.
+- Fra zoomniveau 9 viser kortet flere lokale vind- og strømpile, men kun ved kystdelenes egne eksakt parrede DMI-U/V-gitterpunkter. Vindkilden kan være HARMONIE eller den faktisk anvendte DKSS-`wind-tail`-serie og mærkes særskilt.
 - Fjernzoom bevarer hovedzonernes oversigtspile. Fallbackankre og kunstige kopier må ikke skabe ekstra tæthed.
 - Den fulde detaljepakke opdaterer automatisk pilelaget. DMI-værdier, forecast, RavScore, historik og geometri er uændrede.
-- Produktcommit `bb1892e4072deb77dbc83a203587221c666013d2` er pushed. #31911509244/#2830 forsøg 1 stoppede på en delvis Limfjordshentning med 629/673 lokale strømpunkter. Forsøg 2 nåede 670/673 og bestod fulde gates, men stoppede før Pages på gentaget Supabase `57014`.
-- Artifactauditten fandt derefter, at DKSS-`wind-tail-u/v` ikke blev ført til lokale vindpunkter. Rettelsen er implementeret og testet lokalt; ny produktion, artifactaudit og livekontrol mangler.
+- Produktcommit `bb1892e4072deb77dbc83a203587221c666013d2` førte først til #2830: forsøg 1 stoppede på en delvis Limfjordshentning med 629/673 lokale strømpunkter; forsøg 2 nåede 670/673, men stoppede før Pages på gentaget Supabase `57014`.
+- Artifactauditten fandt derefter, at DKSS-`wind-tail-u/v` ikke blev ført til lokale vindpunkter. Commit `93b8c021` rettede transporten. #2835-artifact og livefiler har 670 eksakte strøm- og vindpunkter uden mismatch, 461/544 unikke gitterpunkter og matchende manifesthashes.
+- Livebrowseren havde nul konsolfejl og viste 54 pile på oversigten mod 87 efter to zoomtrin.
 
 ## Ejerens parallelle arbejde
 
@@ -20,9 +21,9 @@ Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde sa
 
 ## Første opgave i næste chat
 
-1. Hvis 4.0.228 ikke er udgivet: færdiggør lokale gates, push, fuld central produktion, artifactaudit og livekontrol.
-2. Hvis 4.0.228 er produktionsverificeret: kontrollér at projekthukommelsen indeholder run-, artifact-, datasæt- og livebeviset, før et nyt roadmapafsnit startes.
-3. Lad ejerens manuelle punktreview fortsætte sideløbende uden automatisk national genopdeling.
+1. Kontrollér at evidenscommitten efter #2835 er på `main`, og at dens normale opfølgningskørsel ikke har afsløret en regression.
+2. Lad ejerens manuelle punktreview fortsætte sideløbende uden automatisk national genopdeling.
+3. Vælg næste uafhængige roadmapopgave; fem-døgns-/historikanalysen forbliver midlertidigt udsat efter ejerbeslutningen.
 
 ## Beskyttede beslutninger
 

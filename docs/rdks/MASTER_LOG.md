@@ -8,7 +8,10 @@
 - Den fulde detaljepakke fører alle lokale flowpunkter til browseren. Pilelaget opdateres automatisk, når pakken ankommer, og ved efterfølgende zoom eller kortflytning.
 - Ændringen påvirker kun kortvisningen. DMI-værdier, kilder, forecast, RavScore, historik, zoner, kyster og land-/vandpunkter er uændrede.
 - #31911509244/#2830 forsøg 1 stoppede korrekt ved 629/673 verificerede lokale strømpunkter efter delvis `dkss_lf`. Uændret forsøg 2 nåede 670/673, bestod fuld `validate` og releasegate, men stoppede før Pages på gentaget Supabase `57014` efter én tilladt retry.
-- Artifactaudit af forsøg 2 fandt 670 ægte lokale strømpunkter, men nul ægte lokale vindpunkter i detaljepakken. Rodårsagen var manglende transport af `wind-tail-u-10m/v-10m`; read-only cache-replay viser 670/673 eksakte par på 507 unikke vindgitterpunkter. Fejlen er rettet lokalt og regressionstestet. Ny fuld produktion er næste gate.
+- Artifactaudit af forsøg 2 fandt 670 ægte lokale strømpunkter, men nul ægte lokale vindpunkter i detaljepakken. Rodårsagen var manglende transport af `wind-tail-u-10m/v-10m`; read-only cache-replay viste 670/673 eksakte par på 507 unikke vindgitterpunkter. Fejlen blev rettet og regressionstestet før den næste fulde produktion.
+- #31913779486/#2835 på commit `93b8c0216821d02bf913f7aab369406ba2365fe9` bestod derefter central adminhydrering, frisk DMI, fuld `validate`, releasegate, supportartifact, beskyttet Supabase-sync og Pages.
+- Produktionsdatasæt `rr-20260815231859-210` har 670/673 verificerede/offentliggjorte dele mod kravet 640. Alle 670 har eksakte strøm- og vindgitterpunkter uden U/V-mismatch, fordelt på 461 unikke strøm- og 544 unikke vindpunkter. Artifact- og livehashes matcher manifestet.
+- Direkte browserkontrol viste 54 pile på oversigten og 87 efter to zoomtrin uden konsolfejl. 4.0.228 er produktionsverificeret.
 
 ## 2026-08-15 – 4.0.227 vejledende lokal kystvinkel
 
