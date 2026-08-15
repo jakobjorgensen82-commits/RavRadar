@@ -4,11 +4,12 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 
 ## Land-/vandpunktpar
 
-- **REQ-GEO-060 – BINDENDE:** Hver lokal kystdel skal have et havpunkt i vand, et landpunkt på land og en hav→land-linje, som krydser egen kyst omtrent vinkelret.
+- **REQ-GEO-060 – BINDENDE, OPDATERET I 4.0.227:** Hver lokal kystdel skal have et havpunkt i vand, et landpunkt på land og en hav→land-linje, som krydser egen kyst i en fagligt repræsentativ retning. Omtrent vinkelret er målet på den relevante kystskala; vinklen mod ét kort mikrosegment er kun vejledende og kan ikke tilsidesætte ejerens manuelle helhedsvurdering.
 - **REQ-GEO-061 – BINDENDE:** Samme punktpar er autoritativt for DMI-sampling, beregnet pålandsretning, lokal score, offentlig forklaring og adminvisning. Et separat gemt gradtal må ikke overstyre punktparret.
 - **REQ-GEO-062 – BINDENDE:** Stednavne, generelle zonecentre eller tidligere hardcodede vinkler må ikke alene afgøre land-/vandside. Automatisk korrektion kræver uafhængigt flerafstandsbevis; tvetydige tilfælde forbliver fail-closed.
 - **REQ-GEO-063 – BINDENDE:** Nye eller flyttede vandpunkter må ikke aktiveres uden native DMI-grid, score-, runtime-, central readback- og rollbackbevis.
 - **REQ-GEO-065 – BINDENDE FRA 4.0.207:** Hver aktiv kyststrækning har præcis ét autoritativt land-/havpunktpar. Admin retter det ved at trække de eksisterende markører; ekstra aktive punktpar på samme strækning og automatisk landsdækkende genopdeling er ikke autoriseret. Se DEC-0037.
+- **REQ-GEO-066 – BINDENDE FRA 4.0.227:** Admin må vise lokal vinkelafvigelse som advarsel, men ingen numerisk mikrotangentgrænse må blokere ejerens centrale godkendelse. Ugyldige/manglende punkter, urimelig afstand, manglende kryds med egen kyst og punkter på samme side forbliver blokerende. Se DEC-0038.
 
 ## Tværgående funktionsbevarelse
 - **REQ-REGRESSION-001 – BINDENDE:** En ændring må ikke utilsigtet fjerne, skjule, afkoble eller forringe en eksisterende bruger-, admin-, data-, score-, forecast-, kort-, observations- eller driftsfunktion. Bevidst fjernelse kræver en aktuel udtrykkelig ejerbeslutning, og den tekniske følgevirkning skal afgrænses, så beslægtede bagvedliggende funktioner bevares, medmindre de også udtrykkeligt er bestilt fjernet.

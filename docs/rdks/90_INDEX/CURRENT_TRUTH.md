@@ -1,5 +1,13 @@
 # Current truth – gældende projektviden
 
+## 4.0.227 – lokal kystvinkel er en advarsel, ikke en ejerblokering
+
+- Ved Svansodde afviste admin et cirka 461 meter langt visuelt kontrolleret punktpar ud fra tangenten på et cirka 15 meter langt mikrostykke af den detaljerede kystlinje. Den viste afvigelse var 50 grader mod en hård grænse på 20 grader.
+- På bugtede, takkede og fragmenterede kyster er mikrotangenten ikke et sikkert mål for den repræsentative hav→land-retning. Ejerens helhedsvurdering efter de tre eksplicitte zonebekræftelser er autoritativ.
+- 4.0.227 bevarer vinkelmålingen som synlig advarsel, men den kan ikke længere deaktivere **Godkend og gem centralt**. Admin forklarer samtidig eventuelle reelle blokeringer og angiver, når vinkeladvarslen kun er vejledende.
+- Manglende/ugyldige punkter, afstand uden for 0,05–8 km, manglende kystkryds og punkter på samme side blokerer fortsat. Central readback, DMI-gridvalidering, releasegate og rollback er uændrede.
+- Ingen eksisterende kyst, punktplacering, vejrdata eller RavScore ændres automatisk. Se DEC-0038.
+
 ## 4.0.226 – én fail-closed genprøvning ved Supabase statement-timeout
 
 - #31904109833/#2814 forsøg 1 bestod frisk DMI, fuld `validate`, releasegate, vejrcache og supportartifact, men `runtime-diagnostics`-upserten stoppede Supabase/Pages med HTTP 500/PostgreSQL `57014` efter cirka 19 sekunder.

@@ -1,4 +1,11 @@
-# AI Roadmap – RavRadar 4.0.226
+# AI Roadmap – RavRadar 4.0.227
+
+## 4.0.227 – ejerens repræsentative kystretning må ikke låses af en mikrotangent
+
+- Admin viste en 50-graders vinkelafvigelse ved Svansodde og deaktiverede godkendelsen, fordi et cirka 461 meter langt punktpar blev sammenlignet med ét cirka 15 meter langt segment i en bugtet kyst.
+- DEC-0038 gør den lokale vinkelmåling vejledende. Ejerens helhedsvurdering efter de tre zonebekræftelser kan gemmes centralt.
+- Reelle integritetsfejl, Supabase-readback, DMI-gridvalidering, releasegate og rollback bevares.
+- P1-modelrotationen og 72-timershistorikken fortsætter uden faglig ændring.
 
 ## 4.0.226 – Supabase må tåle én annulleret idempotent skrivning
 

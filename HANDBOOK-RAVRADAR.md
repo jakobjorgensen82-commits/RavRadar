@@ -1,5 +1,13 @@
 # RavRadar Håndbog
 
+## Bugtede kyster kan godkendes ud fra helhedsindtrykket – 4.0.227
+
+RavRadar viser fortsat, hvor meget linjen fra det blå havpunkt til det grønne landpunkt afviger fra den nærmeste korte kystlinje. På en lige kyst er det et nyttigt fingerpeg. På en bugtet eller meget detaljeret kyst kan et ganske kort kysthak imidlertid vende anderledes end den samlede strækning.
+
+Fra 4.0.227 er denne lokale vinkel derfor kun en advarsel. Den kan ikke længere låse **Godkend og gem centralt**, når ejeren har kontrolleret hele zonen og sat de tre flueben. Admin skriver direkte, at ejerens manuelle helhedsvurdering afgør godkendelsen.
+
+Manglende punkter, urimelig afstand, en linje der ikke rammer den valgte kyststrækning, eller punkter på samme side er fortsat reelle fejl. Central readback og den efterfølgende DMI-/releasekontrol er også uændrede. Rettelsen flytter ikke eksisterende punkter og ændrer ikke RavScore af sig selv.
+
 ## Supabase genprøver én annulleret diagnostikskrivning – 4.0.226
 
 En stor beskyttet driftsrapport kan normalt gemmes på cirka 10–12 sekunder, men én produktion ramte databasens tidsgrænse efter cirka 19 sekunder. Alle vejr- og releasekontroller var allerede grønne, og siden blev korrekt ikke deployet.
@@ -118,7 +126,7 @@ Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vande
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.226
+**Håndbogsversion:** 4.0.227
 
 **Opdateret:** 15. august 2026
 

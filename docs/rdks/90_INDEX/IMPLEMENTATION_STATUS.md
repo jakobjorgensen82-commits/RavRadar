@@ -1,4 +1,19 @@
-# Implementeringsstatus pr. 4.0.226 – Supabase statement-timeout
+# Implementeringsstatus pr. 4.0.227 – vejledende lokal kystvinkel
+
+## 4.0.227 – ejerens helhedsvurdering kan godkendes
+
+- [x] Rodårsagen er reproduceret i `pairGeometryCheck`: en afvigelse over 20 grader returnerede `valid:false` og låste hele zonen.
+- [x] Svansodde-eksemplet er afgrænset til cirka 461 meter punktlinje mod cirka 15 meter lokalt kystsegment og 50 graders beregnet afvigelse.
+- [x] Stor vinkelafvigelse returnerer nu `valid:true` og `warning:true`; den vises tydeligt som vejledende.
+- [x] Godkendelsesstatus forklarer vinkeladvarsler og eventuelle reelle blokeringer direkte ved knappen.
+- [x] Manglende punkter, ugyldig afstand, manglende kystkryds og samme side forbliver blokerende.
+- [x] Målrettet regression dækker både ikke-blokerende stor vinkelafvigelse og fortsat afvisning uden kystkryds.
+- [x] RDKS, releaseversion, browserens modulversioner, adminfrontend, admin-feature-reachability, sitetestkontrakt, håndbog og admin-persistens-/kort-/produktionskontrakter består lokalt.
+- [x] Den fulde lokale `validate` gennemfører hele geometri-v2-kæden og stopper derefter som forventet fail-closed på repositoryets historiske 209/211-vejrsnapshot før central adminhydrering; forholdet er ikke omgået eller omklassificeret.
+- [x] Lokal `release:gate` består for 4.0.227.
+- [ ] 4.0.227 skal gennem en fuld frisk produktionskørsel med central adminhydrering, DMI, alle gates, Supabase, Pages-artifact og deploy, før den kaldes produktionsverificeret.
+
+# Tidligere status: 4.0.226 – Supabase statement-timeout
 
 ## 4.0.226 – snæver idempotent genprøvning
 

@@ -1,3 +1,12 @@
+## 2026-08-15 – 4.0.227 vejledende lokal kystvinkel
+
+- Ejeren viste, at admin ved Kalø og Bornholm kunne gemme punktkladder, men ikke aktivere **Godkend og gem centralt**, selv efter alle tre zonebekræftelser.
+- Rodårsagen var `pairGeometryCheck`, som gjorde mere end 20 graders afvigelse mod ét nærmeste kystsegment til en hård fejl for hele zonen.
+- Ved Svansodde blev den cirka 461 meter lange ejerplacerede linje sammenlignet med et cirka 15 meter langt mikrostykke og fik 50 graders afvigelse. På en bugtet kyst kan mikrotangenten ikke overtrumfe det optiske helhedsindtryk.
+- Ejerbeslutningen i DEC-0038 gør vinklen vejledende. Reelle punkt-/afstand-/kystkryds-/sidefejl, de tre bekræftelser, central readback, DMI-gate og releasegate bevares.
+- Admin forklarer nu ved knappen, om der findes en reel blokering, eller om den viste vinkel kun er en ikke-blokerende advarsel.
+- Ingen eksisterende geometri, punktplacering, DMI-data eller RavScore ændres automatisk.
+
 ## 2026-08-15 – 4.0.226 Supabase statement-timeout
 
 - #31904109833/#2814 forsøg 1 gennemførte frisk DMI, fuld `validate`, releasegate, vejrcache og supportartifact, men stoppede før Pages ved HTTP 500/PostgreSQL `57014` på `runtime-diagnostics`-upserten.
