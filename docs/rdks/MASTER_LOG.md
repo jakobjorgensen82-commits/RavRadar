@@ -1215,3 +1215,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Artifact #2782 (`rr-20260815145011-210`) har fuld DMI collection/modelrun-proveniens for vind, bølger, strøm, vandstand og vandtemperatur. #2777's 210 udokumenterede vandstandstimer var ikke vedvarende.
 - De aktive HARMONIE-, WAM- og DKSS-run-id'er er fortsat de samme, så endnu en uafhængig forecastcyklus afventes.
 - Strømhistorikken er vokset naturligt til 158 rå prøver/38,760 timer i alle 210 zoner; verificeret spænd er 3,040–38,760 timer og fortsat under 72 timer overalt.
+# 2026-08-15 – 4.0.223 delvis HARMONIE-cyklus
+
+- #31891391302 og artifact #2783 viser den første nye vindcyklus efter 4.0.222: HARMONIE 12 UTC har 416 timer i 208 zoner, mens 03 UTC fortsat leverer 9.776 timer.
+- P1-auditten viser nu antal zoner pr. model-run og collection@run, så en delvis indfasning ikke forveksles med et fuldt forecastbevis.
+- Vindovergangene blev målt, men ingen permanent tærskel, kilde, fallback eller score er ændret.
+- Strømhistorikken er vokset til 38,965 rå timer og 3,246–38,965 verificerede timer; 72-timerskravet er fortsat åbent.

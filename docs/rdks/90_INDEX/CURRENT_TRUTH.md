@@ -1,5 +1,13 @@
 # Current truth – gældende projektviden
 
+## 4.0.223 – delvise modelcyklusser tælles ikke som fulde beviser
+
+- Den read-only P1-audit viser nu både timer og antal aktive zoner pr. DMI-modelkørsel og collection@run.
+- #31891391302 bestod fulde gates og deploy. Artifact #2783 har en ny HARMONIE 12 UTC-cyklus, men kun 416 timer i 208 zoner; den ældre 03 UTC-cyklus leverer fortsat 9.776 timer. WAM 00 UTC og DKSS 06 UTC er uændrede.
+- Vindovergangene er bedre i dette datasætpar, men én delvis indfasning er ikke grundlag for permanente tærskler.
+- Strømhistorikken er vokset til 38,965 rå timer og 3,246–38,965 verificerede timer. Alle zoner er fortsat under 72 verificerede timer.
+- Vejrdata, kilder, fallback, interpolation, RavScore og geometri er uændrede.
+
 ## 4.0.222 – modelcyklusser tælles efter run-id, ikke artifact
 
 - Artifacts #2764, #2771 og #2777 genbruger samme aktive HARMONIE-, WAM- og DKSS-modelkørsler. De beviser stabil drift og historikvækst, men er ikke tre uafhængige forecastcyklusser.

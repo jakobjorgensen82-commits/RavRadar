@@ -149,6 +149,8 @@ def audit(document: dict) -> dict:
         dmi_collections = Counter()
         dmi_model_runs = Counter()
         dmi_collection_model_runs = Counter()
+        dmi_model_run_zones: dict[str, set[str]] = {}
+        dmi_collection_model_run_zones: dict[str, set[str]] = {}
         dmi_temporal_resolutions = Counter()
         transitions = Counter()
         transition_pairs = Counter()
@@ -173,7 +175,10 @@ def audit(document: dict) -> dict:
                     temporal_resolution = str(source.get("temporalResolution") or "undocumented")
                     dmi_collections[collection] += 1
                     dmi_model_runs[model_run] += 1
-                    dmi_collection_model_runs[f"{collection}@{model_run}"] += 1
+                    collection_model_run = f"{collection}@{model_run}"
+                    dmi_collection_model_runs[collection_model_run] += 1
+                    dmi_model_run_zones.setdefault(model_run, set()).add(zone_id)
+                    dmi_collection_model_run_zones.setdefault(collection_model_run, set()).add(zone_id)
                     dmi_temporal_resolutions[temporal_resolution] += 1
                 valid += int(present)
                 if previous is not None and group != previous:
@@ -226,6 +231,14 @@ def audit(document: dict) -> dict:
             "dmiCollections": dict(sorted(dmi_collections.items())),
             "dmiModelRuns": dict(sorted(dmi_model_runs.items())),
             "dmiCollectionModelRuns": dict(sorted(dmi_collection_model_runs.items())),
+            "dmiModelRunZoneCounts": {
+                model_run: len(zone_ids)
+                for model_run, zone_ids in sorted(dmi_model_run_zones.items())
+            },
+            "dmiCollectionModelRunZoneCounts": {
+                collection_model_run: len(zone_ids)
+                for collection_model_run, zone_ids in sorted(dmi_collection_model_run_zones.items())
+            },
             "dmiTemporalResolutions": dict(sorted(dmi_temporal_resolutions.items())),
             "dmiHoursWithoutCollection": dmi_collections.get("undocumented", 0),
             "dmiHoursWithoutModelRun": dmi_model_runs.get("undocumented", 0),
@@ -302,6 +315,14 @@ def self_test() -> None:
     assert wind["dmiCollections"] == {"harmonie": 1, "undocumented": 1}
     assert wind["dmiModelRuns"] == {"2026-08-14T18:00:00Z": 1, "undocumented": 1}
     assert wind["dmiCollectionModelRuns"] == {
+        "harmonie@2026-08-14T18:00:00Z": 1,
+        "undocumented@undocumented": 1,
+    }
+    assert wind["dmiModelRunZoneCounts"] == {
+        "2026-08-14T18:00:00Z": 1,
+        "undocumented": 1,
+    }
+    assert wind["dmiCollectionModelRunZoneCounts"] == {
         "harmonie@2026-08-14T18:00:00Z": 1,
         "undocumented@undocumented": 1,
     }

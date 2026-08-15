@@ -96,7 +96,7 @@ Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vande
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.222
+**Håndbogsversion:** 4.0.223
 
 **Opdateret:** 15. august 2026
 
@@ -1748,3 +1748,11 @@ En ny GitHub-kørsel er ikke nødvendigvis en ny vejrprognose. DMI udsender mode
 Når vi senere sammenligner spring mellem DMI og fallback, tæller flere artifacts med samme model-starttid ikke som flere uafhængige vejrcyklusser. De kan stadig bevise stabil drift og voksende historik. Hvis en DMI-time mangler modelnavn eller starttid, står den som udokumenteret; RavRadar gætter ikke oplysningerne.
 
 Kontrollen ændrer ingen prognose eller RavScore. Den sikrer kun, at beslutninger om senere overgangsgrænser bygger på reelt forskellige modelkørsler.
+
+## Delvise nye DMI-modelkørsler i 4.0.223
+
+En ny DMI-modelkørsel kan begynde med få timer, mens den foregående kørsel stadig leverer resten af femdøgnsprognosen. Derfor viser P1-kontrollen nu både antallet af timer og antallet af zoner, som hver modelkørsel faktisk bidrager til.
+
+Artifact #2783 viste den første nye HARMONIE 12 UTC-cyklus efter 4.0.222, men kun med 416 timer fordelt på 208 zoner. Den tidligere 03 UTC-cyklus bar fortsat hovedparten af vindhorisonten. Det tæller som en ny, delvis cyklus – ikke som et fuldt landsdækkende bevis.
+
+Kontrollen ændrer ingen værdier eller kilder. Den forhindrer kun, at en tidlig indfasning bruges som grundlag for en permanent overgangsgrænse.

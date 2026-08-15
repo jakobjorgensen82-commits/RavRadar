@@ -1,4 +1,14 @@
-# Implementeringsstatus pr. 4.0.222 – modelcyklusaudit
+# Implementeringsstatus pr. 4.0.223 – modelcyklusdækning
+
+## 4.0.223 – delvis kontra fuld modelcyklus
+
+- [x] Timer pr. modelkørsel suppleres med antal aktive zoner pr. modelkørsel og collection@run.
+- [x] Selvtesten beskytter zonetællingen for både dokumenteret og udokumenteret DMI-proveniens.
+- [x] Artifact #2783 dokumenterer en ny, men delvis HARMONIE 12 UTC-cyklus: 416 timer i 208 zoner.
+- [x] Overgangstal og historikvækst er målt uden at ændre data, fallback eller score.
+- [ ] Afvent bredere HARMONIE 12 UTC-indfasning og nye WAM-/DKSS-run-id'er før permanente intervaller.
+
+# Tidligere status: 4.0.222 – modelcyklusaudit
 
 ## 4.0.222 – uafhængig forecast-evidens
 
