@@ -1,6 +1,15 @@
 # DMI-first femdøgnskæder – kilde- og runtimeaudit
 
-## 4.0.214-opfølgning
+## Aktuel status efter 4.0.223
+
+- Den bindende aktive P1-liste er vind, bølger, strøm, vandstand og vandtemperatur. Lufttemperatur findes i den offentlige timefil, men vises ikke i det aktive informationspanel og bruges ikke af RavScore.
+- 4.0.222/223-auditten viser collection, model-run og tidsopløsning pr. DMI-time for alle fem komponenter. Artifact #2782 og senere har nul DMI-timer uden collection/model-run, også for vandstand.
+- HARMONIE 12 UTC er i artifact #2790 fuldt indfaset med 45 timer i 208 zoner. To fulde HARMONIE-cyklusser er sammenlignet; WAM 00 UTC og DKSS 06 UTC afventer fortsat nye run-id'er.
+- Vandtemperaturens overfladelag er produktionsbevist: 210/210 zonegitre og alle native temperaturtrin bruger eksplicit `surface:0`.
+- Historikken er i #2790 vokset til 39,662 rå timer og 3,943–39,662 verificerede timer. Ingen zone har endnu 72 verificerede timer.
+- Ingen ny kilde, fallback, interpolation eller scoreændring er godkendt. De ældre produktionsaudits nedenfor bevares som tidsmærkede historiske fund og må ikke læses som nutidig mangel, når et nyere afsnit har lukket dem.
+
+## Historisk 4.0.214-opfølgning
 
 4.0.213 afviste nye dybdelag, men produktionsartifactet indeholdt fortsat ældre temperaturtimer uden vertikal provenance. 4.0.214 kasserer dem fail-closed og bruger manglende `surface:0` som et aktivt rotationsbehov for DKSS-modellerne. Dækningen måles efter hver kørsel; der indføres ingen ny kilde eller scoreændring.
 
@@ -76,13 +85,13 @@ Kilder:
 | Vind | `harmonie_dini_sf` | `wind-u-10m`, `wind-v-10m` | Open-Meteo Weather; MET Norway bruges kun til current snapshot hvis Open-Meteo-current fejler | timevis DMI-værdi vinder; Open-Meteo udfylder manglende time/komponent |
 | Bølger | `wam_dw` eller `wam_nsb` efter kysttype | højde, middelretning, dominant periode | Open-Meteo Marine | timevis DMI-værdi vinder |
 | Strøm | `dkss_idw`, `dkss_nsbs` eller `dkss_lf` | fælles U/V-grid og vertikallag | Open-Meteo Marine | timevis DMI-værdi vinder; transportstate tæller fortsat kun verificeret DMI-strøm |
-| Vandstand | DKSS samt DMI-stations-/prognosepunktrouting | `sea-mean-deviation` | kort DMI-gap-reparation og Open-Meteo sea level | særskilt kontinuitetsfunktion; korte DMI-huller højst 6 timer |
+| Vandstand | DKSS samt DMI-stations-/prognosepunktrouting | `sea-mean-deviation` | kort DMI-gap-reparation og Open-Meteo sea level | særskilt kontinuitetsfunktion; korte DMI-huller højst 6 timer; aktuel timeproveniens bevares |
 | Vandtemperatur | relevant DKSS | `water-temperature` | Open-Meteo Marine SST | timevis DMI-værdi vinder |
-| Lufttemperatur | ikke en del af public hourly-feltlisten/RavScore | Open-Meteo hentes, men public projection udelader feltet | ingen aktiv produktkæde | skal afklares som aktiv eller overflødig komponent |
+| Lufttemperatur | ikke en aktiv P1-/RavScore-komponent | Open-Meteo `temperature_2m` | ingen særskilt fallbackkæde | findes i public hourly, men ikke i current-projektionen eller det aktive informationspanel |
 
 Koden bruger `mergeHourlyPreferDmi`, som prioriterer DMI separat pr. komponent og time. Det er allerede grundformen for hale-fallback. Der er dog ikke endnu dokumentation nok til at bevise et korrekt modelskift:
 
-- timeproveniens er komplet på DMI-klassificerede vind-, bølge-, strøm- og vandtemperaturtimer i 4.0.208, men vandstand mister fortsat identiteten i continuity-trinnet;
+- timeproveniens er i 4.0.222/223 komplet på DMI-klassificerede timer for vind, bølge, strøm, vandstand og vandtemperatur; 4.0.208-fundet om vandstand er historisk lukket;
 - Open-Meteo-kaldet bruger i aktuel kode `GMT`, og tiderne kanoniseres eksplicit som UTC; den tidligere 1–2 timers lokal-tidshypotese er dermed afkræftet;
 - Open-Meteo `best_match` kan selv skifte underliggende model uden at RavRadar registrerer modellen;
 - live-DMI-grenen returnerer en DMI-only forecastserie, mens cache-DMI-grenen henter og merger fallback; ens adfærd skal verificeres;
