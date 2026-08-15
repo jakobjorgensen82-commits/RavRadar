@@ -1,5 +1,8 @@
 # Current truth – gældende projektviden
 
+- Den naturlige #31894320128/#2794 er fuldt grøn. DMI's nye WAM-/DKSS-12 UTC-kandidater er synlige, men den aktive cache beholder korrekt WAM 00 UTC og DKSS 06 UTC, mens deres fremadrettede horisont på ca. 107,9/109,9 timer overstiger 96-timersfastholdelsen. Det er beskyttet progressiv rotation, ikke en fastlåst scheduler.
+- #2794 har verificeret aktuel strøm i 210/210 zoner, nul `CURRENT_ANCHOR_PROTECTED`, nul valgte warning/critical-vandstandskilder og 4,27–39,99 timers verificeret historik. Alle zoner er fortsat under 72-timerskravet.
+
 ## 4.0.223 – delvise modelcyklusser tælles ikke som fulde beviser
 
 - Den read-only P1-audit viser nu både timer og antal aktive zoner pr. DMI-modelkørsel og collection@run.

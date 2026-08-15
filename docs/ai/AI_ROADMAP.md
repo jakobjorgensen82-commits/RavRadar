@@ -20,6 +20,8 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 
 ## Næste aktive udvikleropgave – DMI-first femdøgnskæder
 
+- Den naturlige #31894320128/#2794 ser nye 12 UTC-kandidater for WAM og DKSS, men beholder korrekt de komplette 00/06 UTC-runs, mens de stadig har ca. 107,9/109,9 timers hale over 96-timerskravet. Næste opfølgning er det faktiske beskyttede skift, når den gamle serie falder under kravet; kørslen gav samtidig 4,27–39,99 verificerede historiktimer og nul aktive vandstandscachealarmer.
+
 - Fortsæt P1-audit og design under DEC-0030 for vind, bølger, strøm, vandstand og øvrige viste/scorede komponenter.
 - Produktionsbevis #31855164652 og datasæt `rr-20260815011320-210` giver verificeret strøm ved nutiden i 210/210 zoner. Strømkæden når mindst cirka 70,8 timer i alle zoner, men kun 121/210 når mindst 96 timer. Den konkrete P1-opfølgning er derfor at klassificere og forklare halen i de resterende 89 zoner og designe vejen til cirka 120 timer uden at skjule `missing`.
 - Følg den verificerede strøm gennem et fuldt 72-timers vindue. Artifact #2777 viser 155 rå prøver og 38,278 timers rå historie i alle 210 zoner, men den verificerede historie spænder kun 2,559–38,278 timer afhængigt af zone. 4.0.220 gør denne forskel til et fast read-only mål. Baseline må ikke udfyldes bagudrettet.

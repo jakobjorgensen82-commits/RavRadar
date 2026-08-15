@@ -2,6 +2,9 @@
 
 ## 4.0.223 – delvis kontra fuld modelcyklus
 
+- [x] #31894320128/#2794 beviser den tilsigtede progressive rotation: nye WAM-/DKSS-kandidater fra 12 UTC er opdaget, men 00/06 UTC beholdes, mens de stadig giver ca. 107,9/109,9 timers hale over 96-timersgrænsen.
+- [x] Samme artifact har 210/210 verificeret aktuel strøm, nul valgte vandstandskilder med warning/critical og historikvækst til 4,27–39,99 verificerede timer.
+
 - [x] Timer pr. modelkørsel suppleres med antal aktive zoner pr. modelkørsel og collection@run.
 - [x] Selvtesten beskytter zonetællingen for både dokumenteret og udokumenteret DMI-proveniens.
 - [x] Artifact #2783 dokumenterer en ny, men delvis HARMONIE 12 UTC-cyklus: 416 timer i 208 zoner.

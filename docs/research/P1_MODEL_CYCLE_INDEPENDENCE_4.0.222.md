@@ -38,6 +38,14 @@ Den aktive modelcyklus er fortsat HARMONIE 03 UTC, WAM 00 UTC og DKSS 06 UTC. #2
 
 Samme artifact har 158 rå historikprøver over 38,760 timer i alle 210 zoner. Verificeret spænd er 3,040 timer i 75 zoner, 20,580 timer i 125 zoner og 38,760 timer i 10 zoner. Historikken vokser fremadrettet, men ingen zone har endnu 72 verificerede timer.
 
+## Naturlig rotationskontrol 15. august kl. 16 UTC
+
+Den fuldt gatede, automatiske kørsel #31894320128 og supportartifact #2794 viser den næste rotationsfase uden at fremkalde den manuelt. DMI havde på dette tidspunkt offentliggjort 12 UTC-kandidater for både WAM og alle tre DKSS-collections. RavRadar beholdt bevidst WAM 00 UTC og DKSS 06 UTC, fordi de eksisterende serier stadig havde henholdsvis cirka 107,9 og 109,9 timers fremadrettet horisont, altså over den bindende fastholdelsesgrænse på 96 timer. Diagnostikken markerer kandidaterne som `incompleteLatestRunDeferred`.
+
+Det er et positivt rotationsbevis: systemet ser de nye runs, men smider ikke en længere komplet serie væk for tidligt. Først når det bevarede run ikke længere opfylder 96-timerskravet, kan den nyere kandidat vælges og opbygges. Artifactet giver derfor ikke endnu en uafhængig WAM-/DKSS-cyklus til overgangsgrænserne.
+
+Samme artifact har fortsat verificeret aktuel strøm i 210/210 zoner, nul `CURRENT_ANCHOR_PROTECTED`-hændelser, nul valgte vandstandskilder med warning/critical og nul nye vandstandsalarmnotifikationer. Den verificerede strømhistorik spænder nu cirka 4,27–39,99 timer; alle 210 zoner er fortsat under exitkriteriet på 72 timer.
+
 ## Exitkriterium
 
 Permanente regressionsintervaller kræver flere forskellige model-run-id'er for den relevante komponent og overgangsretning. Gentagne artifacts fra samme run tæller som gentagelses-/driftsbevis, ikke som ny uafhængig forecastcyklus.

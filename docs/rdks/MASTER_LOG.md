@@ -1,3 +1,10 @@
+## 2026-08-15 – naturlig WAM-/DKSS-rotation og fortsat historik
+
+- #31894320128 bestod central hydrering, frisk DMI, fuld validering, releasegate, Supabase og Pages; supportartifact #2794 indeholder datasæt `rr-20260815160400-210`.
+- DMI's nye WAM-/DKSS-12 UTC-kandidater blev opdaget, men de komplette 00/06 UTC-serier blev korrekt bevaret over 96-timersgrænsen med cirka 107,9/109,9 timers resterende hale.
+- Alle 210 zoner har verificeret aktuel strøm. Der var nul `CURRENT_ANCHOR_PROTECTED`, nul valgte vandstandskilder med warning/critical og nul nye alarmnotifikationer.
+- Den verificerede strømhistorik voksede til cirka 4,27–39,99 timer. Ingen zone har endnu nået det bindende 72-timers exitkriterium, og intet er bagudfyldt.
+
 ## 2026-08-15 – 4.0.217 strømhistorikkens verifikationsmærke
 
 - Read-only audit af #2750 viste 142 prøver/35,1 timer i alle 210 zoner, men verificeret strøm var fordelt 75×0, 125×1 og 10×101.
