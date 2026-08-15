@@ -37,3 +37,18 @@ Historikken nåede 39,364 rå timer og 3,644–39,364 verificerede timer. WAM og
 #31892947409 bestod igen hele kæden, inklusive Supabase og deploy. Artifact #2789 fortsætter indfasningen til 7.488 timer fra HARMONIE 12 UTC og 2.288 timer fra 03 UTC i 208 zoner. Vindovergangen ændrede sig til hastighed middel 0,824 m/s/p95 2,3 m/s og retning middel 18,102°/p95 46°. Variationen under samme indfasning bekræfter, at tidlige del-artifacts ikke må danne permanente tærskler.
 
 Historikken nåede 39,516 rå timer og 3,797–39,516 verificerede timer. WAM 00 UTC og DKSS 06 UTC er fortsat uændrede.
+
+## Fuldt indfaset 12 UTC-cyklus
+
+#31893406911 bestod hele kæden. Artifact #2790, datasæt `rr-20260815154421-210`, har 9.360 HARMONIE 12 UTC-timer i 208 zoner, svarende til 45 timer pr. zone. 03 UTC er reduceret til 416 timer, to pr. zone. Den aktive HARMONIE-del er dermed fuldt skiftet til den nye cyklus.
+
+Sammenligning af det fulde gamle #2782-grundlag og det fulde nye #2790-grundlag viser:
+
+- DMI→fallback er identisk i begge: vindhastighed middel 0,813 m/s, p95 2,2 m/s, maksimum 2,9 m/s; vindretning middel 21,333°, p95 54°, maksimum 76°.
+- fallback→DMI ændres fra hastighed middel 0,883/p95 2,7/maksimum 3,9 m/s til 0,834/2,5/3,4 m/s.
+- fallback→DMI-retning ændres fra middel 19,495°/p95 38°/maksimum 68° til 14,871°/30°/46°.
+- almindelige vindtimer ligger i de to cyklusser omkring p95 1,0–1,1 m/s og 20–21°.
+
+Det er to uafhængige fulde vindcyklusser. De viser samme størrelsesorden, men DMI→fallback-halen er endnu ikke ny, og to cyklusser er et spinkelt grundlag for en permanent produktionsgate. Tallene registreres som foreløbig ramme, ikke som aktiveret tærskel.
+
+Historikken nåede 39,662 rå timer og 3,943–39,662 verificerede timer; alle 210 zoner er fortsat under 72 verificerede timer.

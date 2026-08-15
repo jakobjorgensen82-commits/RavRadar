@@ -7,10 +7,12 @@
 - #31891984360 produktionsverificerer 4.0.223 med fulde gates, Supabase og Pages. Artifact #2785 viser indfasningsvækst til 3.744 timer fra 12 UTC og fald til 6.032 timer fra 03 UTC i 208 zoner. WAM 00 UTC og DKSS 06 UTC er fortsat uændrede.
 - #31892505177 bestod også hele kæden. Artifact #2787 fortsætter samme HARMONIE-indfasning til 5.616 timer fra 12 UTC og 4.160 timer fra 03 UTC i 208 zoner; overgangsmålene er uændrede. Det er driftsbevis fra samme nye cyklus, ikke endnu en uafhængig cyklus.
 - #31892947409 bestod også Supabase og deploy. Artifact #2789 fortsætter HARMONIE-indfasningen til 7.488/2.288 timer fra 12/03 UTC i 208 zoner. Overgangsmålene ændrede sig igen, hvilket understøtter stopreglen mod permanente grænser fra delvise snapshots.
+- #31893406911/#2790 afslutter indfasningen: HARMONIE 12 UTC leverer 45 timer i 208 zoner; 03 UTC har kun to bevarede timer pr. zone. To fulde vindcyklusser er nu sammenlignet. DMI→fallback er identisk, mens fallback→DMI varierer; tallene er en foreløbig ramme, ikke en permanent gate.
 - Vindovergangene er bedre i dette datasætpar, men én delvis indfasning er ikke grundlag for permanente tærskler.
 - Strømhistorikken er vokset til 39,176 rå timer og 3,457–39,176 verificerede timer. Alle zoner er fortsat under 72 verificerede timer.
 - #2787 løfter historikken videre til 39,364 rå timer og 3,644–39,364 verificerede timer; alle 210 er fortsat under 72 verificerede timer.
 - #2789 løfter historikken til 39,516 rå timer og 3,797–39,516 verificerede timer; alle 210 er fortsat under 72 verificerede timer.
+- #2790 løfter historikken til 39,662 rå timer og 3,943–39,662 verificerede timer; alle 210 er fortsat under 72 verificerede timer.
 - En separat workflow_dispatch-kørsel #31891504819 bestod alle vejr- og releasegates, men stoppede fail-closed på et enkelt Supabase `57014 statement timeout` ved skrivning af `runtime-diagnostics`. Den umiddelbart efterfølgende #31891984360 synkroniserede samme dokument og deployede grønt. Hændelsen overvåges; der er ikke indført en bred retry på ét transient fund.
 - #2785 måler den kompakte runtime-diagnostik til 9.287.456 byte; 25 rå `zoneSamples` udgør 8.690.021 byte/93,57 %. Statusdelen er cirka 0,60 MB. Zoneeksemplerne bruges ikke af adminstatusfelterne, men indgår i ejerens beskyttede rå download og må derfor ikke fjernes eller flyttes uden godkendelse og bevaret adgang.
 - Vejrdata, kilder, fallback, interpolation, RavScore og geometri er uændrede.

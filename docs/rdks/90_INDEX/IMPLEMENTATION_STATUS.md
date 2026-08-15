@@ -8,11 +8,13 @@
 - [x] #31891984360 produktionsverificerer auditten; artifact #2785 viser naturlig indfasning til 3.744 timer i 208 zoner og fortsat gamle WAM-/DKSS-run-id'er.
 - [x] #31892505177/#2787 fortsætter samme indfasning til 5.616 timer fra 12 UTC med uændrede overgangsmål og historikvækst til 39,364 rå timer.
 - [x] #31892947409/#2789 fortsætter til 7.488/2.288 HARMONIE-timer fra 12/03 UTC; ændrede overgangsmål bekræfter, at delvise snapshots ikke fastsætter en permanent grænse.
+- [x] #31893406911/#2790 afslutter HARMONIE 12 UTC-indfasningen med 45 timer i 208 zoner og giver den anden fulde uafhængige vindcyklus.
+- [x] Retningsspecifik sammenligning viser identisk DMI→fallback-hale og varierende fallback→DMI-start; ingen permanent tærskel er aktiveret.
 - [x] Overgangstal og historikvækst er målt uden at ændre data, fallback eller score.
 - [x] Et enkelt Supabase statement-timeout i #31891504819 stoppede deploy fail-closed; næste normale release synkroniserede og deployede uden retryændring.
 - [x] Runtime-payloaden er størrelsesmålt: 9,287 MB kompakt, heraf 8,690 MB/93,57 % i 25 rå zoneeksempler.
 - [ ] Beslutning om eventuel separat beskyttet lagring/download af rå zoneeksempler; ejerens diagnostikfunktion må ikke reduceres, og faktisk billing-egress skal fortsat måles separat.
-- [ ] Afvent bredere HARMONIE 12 UTC-indfasning og nye WAM-/DKSS-run-id'er før permanente intervaller.
+- [ ] Afvent en ny vindhale/tredje fuld vindcyklus og nye WAM-/DKSS-run-id'er før permanente intervaller.
 
 # Tidligere status: 4.0.222 – modelcyklusaudit
 
