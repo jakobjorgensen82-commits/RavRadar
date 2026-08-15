@@ -1,7 +1,7 @@
 # P1-komponentmatrix – 4.0.214
 
-**Produktionsgrundlag:** Kørsel #31874335007, datasæt `rr-20260815083802-210`  
-**Omfang:** 210 aktive zoner og 118 viste prognosetimer pr. zone  
+**Produktionsgrundlag:** Kørsel #31874335007, datasæt `rr-20260815083802-210`
+**Omfang:** 210 aktive zoner og 118 viste prognosetimer pr. zone
 **Status:** Måling og regressionsdesign afsluttet; ingen kilde-, fallback- eller scoreændring
 
 ## Det klare billede
