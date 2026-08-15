@@ -6,6 +6,8 @@ En vejrbygning få minutter efter hel time kunne vise den rigtige vandstand, men
 
 Fra 4.0.225 starter vandstandens kildeindeks på samme aktuelle klokktime som den offentlige prognose. Den faktiske byggetid bruges fortsat til at beregne forecastalder. Vandstand, valgte punkter, vægte, fallback og RavScore er uændrede.
 
+Produktionskontrollen i #2810 gennemførte hele validerings- og deploykæden. Alle 22.890 routede DMI-vandstandstimer havde fuld kildeidentitet, inklusive 210/210 zoner i den aktuelle time, og det deployede site serverede samme komplette 210-zone-datasæt.
+
 ## Vandstand viser den model, der faktisk leverede værdien – 4.0.224
 
 RavRadar kan beregne en zones vandstand fra ét eller to valgte DMI-vandstandspunkter. Værdien var korrekt, men kildeoplysningen kunne blive stående fra zonens tidligere havmodel. Det var især misvisende, når de valgte punkter lå i to forskellige DMI-modelområder.

@@ -7,7 +7,9 @@
 - 4.0.225 lader kun kildeindekset starte ved den aktuelle hele time. Faktisk genereringstid bruges fortsat til forecastalder og provenance.
 - Værdier, punkter, routing, vægte, continuity, fallback, RavScore, historik og geometri er uændrede.
 - Read-only replay af #2801 bevarer routing-auditten på 210 anvendte/0 ufuldstændige og dokumenterer alle 23.310 timer, inklusive 210/210 i aktuel time.
-- Målrettede regressioner består. Fuld CI og produktionsartifact afventer.
+- #31902872631/#2810 på commit `18499eb10a45f561d4440a7944b34725049cf34d` bestod central adminhydrering, frisk DMI, fuld `validate`, releasegate, Supabase, Pages-artifact og deploy.
+- Produktionsdatasæt `rr-20260815190651-210` har 22.890/22.890 routede DMI-vandstandstimer med fuld collection, model-run, lead time, forecastalder, native tider, routing og source keys; 210/210 ved aktuel 19:00-time er komplette. Manifesthashes matcher, og live Pages serverer 4.0.225 og samme datasæt.
+- Sundhedsstatus er fortsat separat `degraded` på grund af det kendte bølgegab ved Feggesund og et rate-limited direkte DMI-kald. Vandstand og strøm er 210/210, og bulk-konvertering samt horisont er sunde; 4.0.225-proveniensrettelsen er produktionsverificeret uden at lukke de andre forhold.
 
 ## 4.0.224 – sand kilde efter vandstandsrouting
 

@@ -9,8 +9,9 @@
 - [x] Målrettede tests, RDKS, håndbog, version/module-closure og lokal releasegate består.
 - [x] Fuld lokal `validate` når gennem geometri-v2-kæden og stopper forventet fail-closed på det historiske stale 209/211-vejrdata før central adminhydrering.
 - [x] Read-only replay af #2801 giver uændret 210/0 routing-audit og fuld collection/model-run på 23.310/23.310 timer, inklusive 210/210 ved aktuel time.
-- [ ] GitHub Actions, supportartifact, Supabase og Pages.
-- [ ] Produktionsartifact med nul routede DMI-vandstandstimer uden collection/model-run, inklusive aktuel time.
+- [x] #31902872631/#2810 bestod central adminhydrering, frisk DMI, fuld `validate`, releasegate, supportpakke, Supabase, Pages-artifact og deploy på commit `18499eb10a45f561d4440a7944b34725049cf34d`.
+- [x] Datasæt `rr-20260815190651-210` har 22.890/22.890 routede DMI-vandstandstimer med fuld provenance og 210/210 komplette rækker ved aktuel 19:00-time; live Pages serverer 4.0.225 og samme 210-zone-datasæt.
+- [ ] Den separate kendte Feggesund-bølgemangel og DMI-EDR-rate limiting overvåges fortsat; de er ikke en del af den nu produktionsverificerede vandstandsrettelse.
 
 # Tidligere status: 4.0.224 – vandstandsroutingproveniens
 

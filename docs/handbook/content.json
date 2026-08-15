@@ -2,14 +2,14 @@
   "schemaVersion": "2.0",
   "handbookVersion": "4.0.225",
   "title": "RavRadar Håndbog",
-  "updatedAt": "2026-08-15T18:25:00+02:00",
+  "updatedAt": "2026-08-15T21:20:00+02:00",
   "sections": [
     {
       "id": "water-level-current-hour-provenance-4-0-225",
       "chapter": "81",
       "title": "Den aktuelle vandstandstime beholder sin modelidentitet",
       "summary": "Routingens kildeindeks starter nu på samme aktuelle klokktime som den offentlige prognose.",
-      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> En vejrbygning få minutter efter hel time kunne miste modelnavn og modelkørsel på netop den igangværende vandstandstime.</div><p>Fra 4.0.225 bevarer kildeindekset den aktuelle hele UTC-time, mens forecastalder fortsat beregnes fra den faktiske byggetid. De valgte DMI-punkters collection, model-run, native tider og source keys følger derfor også den aktuelle time.</p><div class=\"callout\"><strong>Uændrede tal:</strong> Vandstand, valgte punkter, vægte, continuity, fallback, RavScore og geometri er uændrede.</div>"
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> En vejrbygning få minutter efter hel time kunne miste modelnavn og modelkørsel på netop den igangværende vandstandstime.</div><p>Fra 4.0.225 bevarer kildeindekset den aktuelle hele UTC-time, mens forecastalder fortsat beregnes fra den faktiske byggetid. De valgte DMI-punkters collection, model-run, native tider og source keys følger derfor også den aktuelle time.</p><p><strong>Produktionskontrol:</strong> #2810 gennemførte hele validerings- og deploykæden. Alle 22.890 routede DMI-vandstandstimer havde fuld kildeidentitet, inklusive 210/210 zoner i den aktuelle time, og det deployede site serverede samme komplette 210-zone-datasæt.</p><div class=\"callout\"><strong>Uændrede tal:</strong> Vandstand, valgte punkter, vægte, continuity, fallback, RavScore og geometri er uændrede.</div>"
     },
     {
       "id": "water-level-routing-provenance-4-0-224",

@@ -21,3 +21,11 @@ Der ændres ikke vandstandstal, kildepunkter, routingvalg, geografiske vægte, c
 En regression genererer kl. 06:02 UTC, kræver routet provenance på 06:00 UTC og kontrollerer, at forecastalderen er 6,03 timer frem for en kunstigt afrundet seks timer. Fuld produktion skal efter push vise nul DMI-vandstandstimer uden collection/model-run, herunder den igangværende time.
 
 En read-only genafspilning af det faktiske #2801-supportartifact gennem den rettede routing gav fortsat 210 anvendte og 0 ufuldstændige zonevalg. Alle 23.310 DMI-vandstandstimer fik collection og model-run, inklusive 210/210 rækker ved `2026-08-15T17:00:00.000Z`. Det afgrænser virkningen til provenancevinduet og viser, at routingdækningen ikke ændres.
+
+## Produktionsbevis
+
+GitHub Actions #31902872631/#2810 på commit `18499eb10a45f561d4440a7944b34725049cf34d` kørte central adminhydrering, frisk DMI-bulk, fuld projektvalidering, releasegate, vejrcachevalidering, supportpakke, Supabase, Pages-artifact og deploy som grønne trin.
+
+Supportarkivet `RavRadar-support-2810.zip` har SHA-256 `4f3d6c6a05d0ee1c9b954410fe9e3069c028893ed4d5b0aa1e31ad3875b82177`. Datasæt `rr-20260815190651-210`, genereret `2026-08-15T19:06:51.916Z`, har 210 zoner og 22.890 routede DMI-vandstandstimer. Der er nul mangler i collection, model-run, lead time, forecastalder, native tider, routing og source keys. Alle 210 rækker ved den aktuelle `19:00`-time er DMI-routede og fuldt dokumenterede.
+
+Manifestet er komplet, begge publiceringsfilers SHA-256 matcher, og det deployede GitHub Pages-site serverer version 4.0.225 og samme datasæt. Sundhedsstatus er separat fortsat `degraded` på grund af det kendte bølgegab ved Feggesund og et rate-limited direkte DMI-kald; vandstand og strøm har 210/210 komponentdækning, og bulk-konvertering samt prognosehorisont er sunde.

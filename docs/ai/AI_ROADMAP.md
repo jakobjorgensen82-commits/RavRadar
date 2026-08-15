@@ -4,7 +4,8 @@
 
 - #2801 viste et tidsafhængigt provenancehul på præcis én time i alle 210 zoner efter timegrænsen.
 - Den afgrænsede rettelse holder vandstandskildeindeksets start på samme aktuelle klokktime som den offentlige serie uden at ændre forecastalder eller faglige værdier.
-- Næste gate er fuld produktionsverifikation; P1-modelrotationen og 72-timershistorikken fortsætter derefter uændret.
+- #31902872631/#2810 bestod hele produktionskæden. Supportartifactet har 22.890/22.890 fuldt dokumenterede routede DMI-vandstandstimer og 210/210 komplette rækker i aktuel time; live Pages serverer 4.0.225 og samme datasæt.
+- P1-modelrotationen, det virkelige 72-timershistorikvindue, Feggesund-bølgegabet og DMI-rate limiting fortsætter uændret som separate måle-/analyseforhold.
 
 Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status skal løbende flyttes til RDKS, når noget implementeres.
 
