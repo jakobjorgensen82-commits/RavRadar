@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.210",
+  "version": "4.0.211",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -128,7 +128,7 @@
     "test:current-transport-history": "node scripts/test-current-transport-history-4.0.115.mjs && node scripts/test-weather-history-retention-4.0.209.mjs",
     "test:dmi-vector-grid-integrity": "python scripts/test-dmi-vector-grid-integrity-4.0.116.py",
     "test:missing-weather-null-safety": "node scripts/test-missing-weather-null-safety-4.0.116.mjs",
-    "test:dmi-scheduler-active-zones": "node scripts/test-dmi-scheduler-active-zones-4.0.117.mjs && node scripts/test-dmi-budget-rotation-4.0.189.mjs && python scripts/test-dmi-contiguous-component-horizon-4.0.210.py",
+    "test:dmi-scheduler-active-zones": "node scripts/test-dmi-scheduler-active-zones-4.0.117.mjs && node scripts/test-dmi-budget-rotation-4.0.189.mjs && python scripts/test-dmi-contiguous-component-horizon-4.0.210.py && node scripts/test-dmi-marine-selection-retention-4.0.211.mjs",
     "test:local-part-system-audit": "python scripts/audit-local-part-point-geometry-4.0.193.py --self-test && python scripts/build-local-part-point-repair-candidate-4.0.193.py --self-test && python scripts/build-local-orientation-split-candidate-4.0.193.py --self-test && node scripts/audit-local-part-orientation-4.0.193.mjs --self-test",
     "test:dmi-budget-rotation": "node scripts/test-dmi-budget-rotation-4.0.189.mjs",
     "test:national-coastal-parts-activation": "node scripts/test-national-coastal-parts-activation-4.0.176.mjs"

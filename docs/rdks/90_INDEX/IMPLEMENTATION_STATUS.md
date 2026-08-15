@@ -1,4 +1,12 @@
-# Implementeringsstatus pr. 4.0.210 – sammenhængende DMI-strømdækning
+# Implementeringsstatus pr. 4.0.211 – bevaret DMI-havmodel og genbehandling
+
+## 4.0.211 – bevaret DMI-havmodel og genbehandling
+- [x] 4.0.210 efterkontrol dokumenterer, at diagnosen fandt hullerne, men alle 39 aktuelle IDW-/NSBS-filer blev sprunget over som tidligere behandlet.
+- [x] `marineSelection` bevares nu gennem cachemerge.
+- [x] Legacy-cache rekonstrueres fra faktisk collection, gitterafstand og kysttype; produktionsartifactet giver 1.138 gendannede valg.
+- [x] En dårligere havmodel kan ikke længere rydde en bevaret autoritativ serie.
+- [x] Behandlingssignaturen er hævet, så aktuelle DMI-filer genlæses præcis én gang under migrationen.
+- [ ] Frisk produktion skal bevise forbedret strømserie, fuld validate, releasegate, Supabase, artifact og deploy.
 
 ## 4.0.210 – sammenhængende DMI-strømdækning
 - [x] Produktionsartifactet er målt: 125 zoner havde kun to sene strømtrin, 75 havde syv sene trin, og 10 havde fuld serie fra nutiden.

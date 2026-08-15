@@ -1089,3 +1089,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - 4.0.209 bevarer et separat 72-timersvindue i pipelinen og afleder fortsat det uændrede 24-timersvindue til aktiv RavScore og `shadow-v2`. Rå historik udelades fra public projection.
 - Vandstands-continuity bevarer nu den oprindelige DMI-timeidentitet. Provideranalysen afgrænser timekant, progressive HARMONIE/DKSS-overgange og komponentvis DKSS-dækning uden at ændre merge, fallback eller score.
 - Målrettede tests er grønne. Fuld validate, releasegate og frisk produktion afventer.
+## 2026-08-15 – 4.0.211 bevaret havmodel og genbehandling
+
+- #31853585142 beviste 4.0.210-diagnosen og alle gates, men artifactet havde fortsat 125/75/10-grupperne uændret.
+- Alle 39 IDW- og NSBS-timer blev sprunget over som allerede behandlet. Samtidig tabte cachemerge `marineSelection`, så en senere model kunne rydde den valgte serie.
+- 4.0.211 bevarer og rekonstruerer modelvalget samt hæver behandlingssignaturen, så aktuelle filer genlæses én gang. Produktionsartifactet giver 1.138 rekonstruerbare hovedzone-/kystdelvalg.

@@ -122,3 +122,8 @@ Kilder:
 4.0.209-supportartifactet dokumenterer tre hovedgrupper: 125 zoner med to native U/V-par fra 19. august kl. 11–12 UTC, 75 zoner med syv par fra 19. august kl. 00–12 UTC og 10 zoner med 40 par fra 14. august kl. 21 til 19. august kl. 12 UTC. Den tidligere scheduler beregnede horisont som `sidste gyldige tidspunkt - nu` og kaldte derfor alle grupper 96-timersdækkede.
 
 Den korrigerede måling kræver første komplette native trin inden for fire timer fra byggetid og højst fire timer mellem komplette trin. Anvendt på samme artifact er kun 10 hovedzoner komplette, mens 200 kræver genhentning. Den geografiske efterspørgsel fordeler sig på 101 `dkss_idw`, 83 `dkss_nsbs` og 16 `dkss_lf`; schedulerens første to valg bliver IDW og NSBS. Dette er en cache-/schedulerrettelse, ikke evidens for en ny datakilde eller scoreændring.
+# 4.0.211 – modelvalgstab og behandlingsstatus
+
+4.0.210-kørslen #31853585142 prioriterede IDW og NSBS korrekt, men begge runs rapporterede 39 af 39 assets som `assetsSkippedPreviouslyProcessed`. Cacheartifactet havde fortsat de samme 125/75/10-strømgrupper. `merge_previous` kopierede `hourly`, `gridPoints` og `collections`, men ikke `marineSelection`; behandlingsregistret kunne dermed overleve den serie, som et senere modelskift havde ryddet.
+
+4.0.211 bevarer modelvalget og rekonstruerer legacy-valg fra collection, distance og kysttype. På 4.0.210-artifactet kan 1.138 hovedzone-/kystdelvalg rekonstrueres, og en dårligere IDW-kandidat afvises for en eksisterende Limfjordsserie. `GRID_LOOKUP_VERSION` hæves fra 5 til 6 for at genbehandle den aktuelle modelkørsel én gang.

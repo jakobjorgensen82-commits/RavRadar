@@ -166,3 +166,7 @@ Den planlagte P3-forskning må undersøge, om rumlige strømstrukturer har selvs
 
 - DMI-first-komponentanalysen har lokaliseret en konkret strømschedulerfejl: en fjern DKSS-hale blev fejlagtigt regnet som sammenhængende dækning fra nutiden.
 - 4.0.210 retter kun dækning/genhentning. Næste trin er produktion og 72 timers måling, derefter klassifikation af resterende geografiske DMI-huller før enhver kilde-, fallback- eller scorebeslutning.
+# Aktuel P1-status – 4.0.211
+
+- 4.0.210 beviste den korrigerede huldiagnose, men produktionsartifactet afslørede et yderligere cacheproblem: modelvalget gik tabt, mens behandlingsstatus overlevede.
+- 4.0.211 bevarer/gendanner modelvalget og tvinger én genbehandling. Næste beslutningspunkt er den direkte produktionsoptælling og derefter 72 timers verificeret historik; kilde- og scoreanalyse forbliver efterfølgende trin.

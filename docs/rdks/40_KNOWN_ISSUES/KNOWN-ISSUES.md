@@ -1,5 +1,10 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.211 – tabt havmodelvalg og falsk genbrug
+
+- **ISSUE-DMI-MARINE-SELECTION-DROPPED-ON-MERGE – RETTET LOKALT / AFVENTER PRODUKTION:** Progressiv cachemerge tabte `marineSelection`, selv om collection og gitterpunkt blev bevaret. Dermed kunne en dårligere senere model rydde en korrekt serie. Valget bevares nu og rekonstrueres fail-closed fra de eksisterende DMI-felter for legacy-cache.
+- **ISSUE-DMI-PROCESSED-STEPS-HIDE-EVICTED-CURRENT – RETTET LOKALT / AFVENTER PRODUKTION:** 4.0.210 prioriterede de rigtige modeller, men sprang alle aktuelle filer over, fordi deres gamle behandlingsstatus stadig stod komplet. En ny behandlingssignatur tvinger en kontrolleret genlæsning efter cacheudvælgelsesrettelsen.
+
 ## 4.0.210 – falsk komplet DMI-strømdækning
 
 - **ISSUE-DMI-CURRENT-DISTANT-TAIL-MASKS-NOW-GAP – RETTET LOKALT / AFVENTER PRODUKTION:** Schedulerens tidligere horisontsmål så kun på det sidste komplette marinetidspunkt. Derfor kunne to eller syv strømtrin fire døgn ude få en zone til at se fuldt dækket ud, selv om strøm manglede ved nutiden. 4.0.210 kræver sammenhængende komponenter fra byggetiden og prioriterer dermed de relevante DKSS-modeller igen. Ingen manglende værdi udfyldes kunstigt.

@@ -1,5 +1,13 @@
 # RavRadar Håndbog
 
+## Havmodelvalget bevares mellem kørsler – 4.0.211
+
+4.0.210 fandt de rigtige strømdatahuller, men produktionskontrollen viste, at DMI-filerne ikke blev læst igen. Cachen huskede, at filerne tidligere var behandlet, men havde mistet oplysningen om, hvilken havmodel der var valgt for hver zone.
+
+RavRadar bevarer nu havmodelvalget sammen med serien. For den eksisterende cache gendannes valget fra den faktisk anvendte model, dens gitterafstand og zonens kysttype. Den aktuelle DMI-kørsel genbehandles én gang, så manglende begyndelsestimer kan komme tilbage. En dårligere model må ikke rydde en bedre bevaret serie.
+
+Manglende strøm forbliver missing, og RavScore ændres ikke.
+
 ## Sammenhængende DMI-strøm fra nutiden – 4.0.210
 
 RavRadar kontrollerede tidligere strømprognosens sidste tidspunkt, men ikke om serien begyndte ved nutiden. Derfor kunne nogle få strømtrin langt ude i femdøgnsprognosen skjule, at de første døgn manglede.
@@ -58,7 +66,7 @@ Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vande
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.210
+**Håndbogsversion:** 4.0.211
 
 **Opdateret:** 15. august 2026
 

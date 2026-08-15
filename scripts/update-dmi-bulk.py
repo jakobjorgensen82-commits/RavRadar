@@ -82,7 +82,7 @@ DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octe
 
 PARSER_VERSION = 14
 PARAMETER_MAP_VERSION = 4
-GRID_LOOKUP_VERSION = 5
+GRID_LOOKUP_VERSION = 6
 COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw", "wam_nsb", "harmonie_dini_sf"]
 COLLECTION_FAMILY = {
     "dkss_idw": "marine", "dkss_nsbs": "marine", "dkss_lf": "marine",
@@ -1144,6 +1144,44 @@ def merge_previous(current: dict[str, Any], previous: dict[str, Any], allowed_zo
         for field in ("gridPoints", "collections"):
             for key, value in (old_zone.get(field) or {}).items():
                 new_zone[field].setdefault(key, value)
+        if old_zone.get("marineSelection"):
+            new_zone.setdefault("marineSelection", old_zone["marineSelection"])
+
+
+def restore_marine_selections(document: dict[str, Any], zones: list[dict[str, Any]]) -> int:
+    """Restore the authoritative marine model for legacy caches that lost it.
+
+    The selected collection and its sampled distance remained in collections/
+    gridPoints even though merge_previous historically dropped marineSelection.
+    Reconstructing it prevents a worse collection from clearing a complete
+    current series before the preferred model gets its turn.
+    """
+    zone_config = {str(zone.get("id")): zone for zone in zones if zone.get("id")}
+    restored = 0
+    for zone_id, point in (document.get("zones") or {}).items():
+        if point.get("marineSelection"):
+            continue
+        collections = point.get("collections") or {}
+        collection = collections.get("current-u") or collections.get("sea-mean-deviation")
+        if collection not in MARINE_COLLECTIONS:
+            continue
+        grid_points = point.get("gridPoints") or {}
+        grid_point = grid_points.get("current-u") or grid_points.get("sea-mean-deviation") or {}
+        distance = grid_point.get("distanceKm")
+        if not isinstance(distance, (int, float)) or not math.isfinite(float(distance)):
+            continue
+        zone = zone_config.get(str(zone_id)) or {"coastType": "east"}
+        coast = zone.get("coastType") or "east"
+        point["marineSelection"] = {
+            "collection": collection,
+            "score": round(marine_model_score(zone, collection, float(distance)), 3),
+            "distanceKm": round(float(distance), 3),
+            "coastType": coast,
+            "modelPenaltyKm": MARINE_MODEL_PENALTY_KM.get(coast, {}).get(collection, 25.0),
+            "restoredFromLegacyCache": True,
+        }
+        restored += 1
+    return restored
 
 
 def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict[str, Any]]) -> tuple[list[str], dict[str, Any]]:
@@ -1785,6 +1823,7 @@ def main() -> int:
                               "runtimeBudgetSeconds": MAX_RUNTIME_SECONDS, "finalizeReserveSeconds": FINALIZE_RESERVE_SECONDS,
                               "persistentFieldInventory": dict(((previous.get("diagnostics") or {}).get("persistentFieldInventory") or {}))}}
     merge_previous(result, previous, active_output_ids)
+    result["diagnostics"]["restoredMarineSelections"] = restore_marine_selections(result, zones)
     budget = {"bytes": 0}
     # Local coastal parts use the same downloaded GRIB fields as parent zones.
     # They must remain in the coverage denominator; excluding them allowed the

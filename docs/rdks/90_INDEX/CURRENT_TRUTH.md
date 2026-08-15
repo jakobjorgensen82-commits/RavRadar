@@ -1,5 +1,13 @@
 # Current truth – gældende projektviden
 
+## 4.0.211-kandidat – bevaret havmodel og reel genbehandling
+
+- 4.0.210 blev produktionsverificeret i #31853585142 og diagnosticerede hullerne korrekt, men efterkontrollen viste uændrede strømserier: de relevante DMI-timer blev sprunget over som tidligere behandlet.
+- Den dybere årsag var, at `merge_previous` bevarede marinefelter og collectionnavne, men tabte `marineSelection`. En senere model kunne derfor rydde den tidligere autoritative serie, mens `processedSteps` stadig kaldte de oprindelige filer komplette.
+- 4.0.211 bevarer `marineSelection`, rekonstruerer den for legacy-cache fra faktisk collection, gitterafstand og kysttype og hæver behandlingssignaturen én gang, så den aktuelle DMI-kørsel genlæses.
+- Test mod produktionsartifactet rekonstruerer 1.138 hovedzone-/kystdelvalg og beviser, at en dårligere IDW-model ikke kan rydde en eksisterende Limfjordsserie.
+- Ingen ny kilde, fallback eller scoreændring indføres.
+
 ## 4.0.210-kandidat – sammenhængende DMI-strøm fra nutiden
 
 - Produktionsbeviset fra 4.0.209 viste den konkrete fejl: 125 hovedzoner havde kun to native strømtrin 19. august, 75 havde syv sene trin, mens kun 10 havde en sammenhængende serie fra 14. august. Den gamle scheduler kaldte alligevel alle tre grupper dækket, fordi den kun målte sidste gyldige tidspunkt.

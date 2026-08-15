@@ -46,3 +46,9 @@
 - Rodårsagen er `component_horizon_hours`: den målte kun sidste komplette tidspunkt og accepterede derfor en fjern hale som fuld dækning.
 - 4.0.210 kræver start nær byggetiden og native sammenhæng. På det faktiske artifact bliver resultatet 10 komplette og 200 genhentningskrævende hovedzoner; `dkss_idw` og `dkss_nsbs` prioriteres.
 - Ingen kilde, fallback eller score ændres. Næste bevis er frisk produktion og derefter 72 timers eftermåling af verificeret strømhistorik.
+# 4.0.211-kandidat – anden rodårsag i DMI-strømcachen
+
+- #31853585142 deployede 4.0.210 og bestod alle gates, men efterartifactet viste fortsat 125 zoner med to sene strømtrin, 75 med syv og 10 med fuld serie.
+- Schedulerens nye diagnose virkede; genhentningen gjorde ikke. IDW og NSBS blev forsøgt, men alle 39 filer pr. model blev sprunget over som tidligere behandlet.
+- `merge_previous` tabte `marineSelection`. 4.0.211 bevarer valget, rekonstruerer 1.138 legacy-valg i det faktiske artifact og hæver grid-/behandlingssignaturen fra 5 til 6 for én fuld genbehandling.
+- Næste trin er frisk produktion og direkte artifactoptælling. Ingen score eller kilde ændres.
