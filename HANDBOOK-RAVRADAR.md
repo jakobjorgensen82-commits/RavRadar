@@ -1,5 +1,11 @@
 # RavRadar Håndbog
 
+## Verificeret strøm gemmes i hele tre-døgnsvinduet – 4.0.217
+
+RavRadar gemmer den samme aktuelle vejrprøve i et aktivt 24-timersvindue og et score-neutralt 72-timersvindue til senere forskning. En efterkontrol viste, at selve DMI-strømmen var verificeret, men at mærket kun blev skrevet tilbage til 24-timerslisten. Da næste kørsel viderefører den lange liste, gik mærket tabt igen.
+
+Den aktuelle prøve gemmes nu med samme strenge DMI-verifikation i begge vinduer. Gamle uverificerede prøver ændres ikke, så systemet opfinder ingen historik. RavScore, kilder og fallback er uændrede; 72-timersvinduet skal fortsat opbygges naturligt over tre døgn før faglig brug.
+
 ## Gamle temperaturer uden lagmærkning fjernes – 4.0.214
 
 RavRadar viser kun DMI-vandtemperatur, når målingen beviseligt kommer fra havoverfladen. Ældre cachede temperaturer uden lagmærkning vises som manglende, indtil DMI har genopbygget dem. Vind-, bølge-, strøm- og vandstandshistorik bevares.
@@ -78,7 +84,7 @@ Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vande
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.216
+**Håndbogsversion:** 4.0.217
 
 **Opdateret:** 15. august 2026
 

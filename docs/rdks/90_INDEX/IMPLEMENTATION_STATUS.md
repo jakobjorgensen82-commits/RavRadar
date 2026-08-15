@@ -1,4 +1,16 @@
-# Implementeringsstatus pr. 4.0.216 – progressiv offentlig vejrindlæsning
+# Implementeringsstatus pr. 4.0.217 – verificeret strømhistorik
+
+## 4.0.217 – samme verificerede prøve i 24- og 72-timersvinduer
+
+- [x] Produktionsartifact #2750 er målt: 210/210 zoner har 142 prøver og 35,1 timers rå historie.
+- [x] Rodårsagen til den ujævne verifikationshistorik er lokaliseret til efterberigelse af kun `samples24h`.
+- [x] Den eksakte aktuelle prøve synkroniseres til begge vinduer efter eksisterende DMI-U/V-verifikation.
+- [x] Regressionen bevarer ældre `false`, afviser uverificeret ny strøm og beviser akkumulering over successive merges.
+- [x] Auditten måler nu faktisk tidsspænd, største hul og verificeret andel.
+- [x] Målrettede historik-/provenienstests, 210-zonesimulering, versionskontrol, RDKS og lokal releasegate består.
+- [x] Fuld lokal `validate` stopper som forventet fail-closed ved repositoryets historiske 211-zonegrundlag mod den centralt effektive bestand på 210; forskellen er ikke omgået.
+- [ ] Frisk GitHub-kørsel skal bevise central 210-zonehydrering, gates, deploy og første fremadrettede vækst i verificeret 72-timershistorik.
+- [ ] Eftermålingen fortsætter til mindst 72 faktiske timer; fortid udfyldes ikke bagudrettet.
 
 ## 4.0.216 – progressiv offentlig vejrindlæsning
 

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 from collections import Counter
+from datetime import datetime
 from pathlib import Path
 
 
@@ -47,6 +48,60 @@ def provider_group(source: dict) -> str:
     if provider == "missing":
         return "missing"
     return "fallback"
+
+
+def parse_time(value: object) -> datetime | None:
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+
+
+def distribution(values: list[float], digits: int = 2) -> dict[str, int]:
+    return dict(sorted(Counter(round(value, digits) for value in values).items()))
+
+
+def history_summary(zones: dict, key: str) -> dict:
+    counts: list[int] = []
+    spans: list[float] = []
+    verified_shares: list[float] = []
+    largest_gaps: list[float] = []
+    invalid_times: list[str] = []
+    zones_below_72: list[str] = []
+    zones_with_gap_over_hour: list[str] = []
+    for zone_id, zone in zones.items():
+        rows = zone.get(key) or []
+        times = [parse_time(row.get("at")) for row in rows]
+        valid_times = sorted(time for time in times if time is not None)
+        counts.append(len(rows))
+        if len(valid_times) != len(rows):
+            invalid_times.append(zone_id)
+        span = ((valid_times[-1] - valid_times[0]).total_seconds() / 3600) if len(valid_times) > 1 else 0.0
+        spans.append(span)
+        if key == "samples72h" and span < 71.5:
+            zones_below_72.append(zone_id)
+        gaps = [(after - before).total_seconds() / 3600 for before, after in zip(valid_times, valid_times[1:])]
+        largest_gap = max(gaps, default=0.0)
+        largest_gaps.append(largest_gap)
+        if largest_gap > 1.0:
+            zones_with_gap_over_hour.append(zone_id)
+        if rows:
+            verified_shares.append(sum(row.get("currentVerified") is True for row in rows) / len(rows))
+    return {
+        "sampleCountDistribution": dict(sorted(Counter(counts).items())),
+        "spanHoursDistribution": distribution(spans),
+        "minimumSpanHours": round(min(spans), 3) if spans else 0,
+        "maximumSpanHours": round(max(spans), 3) if spans else 0,
+        "currentVerifiedShare": {
+            "minimum": round(min(verified_shares), 4) if verified_shares else None,
+            "mean": round(sum(verified_shares) / len(verified_shares), 4) if verified_shares else None,
+            "maximum": round(max(verified_shares), 4) if verified_shares else None,
+        },
+        "largestGapHours": round(max(largest_gaps), 3) if largest_gaps else 0,
+        "zonesBelow72Hours": zones_below_72 if key == "samples72h" else [],
+        "zonesWithGapOverOneHour": zones_with_gap_over_hour,
+        "zonesWithInvalidTimes": invalid_times,
+    }
 
 
 def audit(document: dict) -> dict:
@@ -143,7 +198,7 @@ def audit(document: dict) -> dict:
             ),
         }
     for key in ("samples24h", "samples72h"):
-        result["history"][key] = dict(sorted(Counter(len(zone.get(key) or []) for zone in zones.values()).items()))
+        result["history"][key] = history_summary(zones, key)
     return result
 
 

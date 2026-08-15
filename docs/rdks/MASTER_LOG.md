@@ -1,3 +1,9 @@
+## 2026-08-15 – 4.0.217 strømhistorikkens verifikationsmærke
+
+- Read-only audit af #2750 viste 142 prøver/35,1 timer i alle 210 zoner, men verificeret strøm var fordelt 75×0, 125×1 og 10×101.
+- Aktuel strøm havde et tidsmatchende DMI-U/V-bevis i 183/210 zoner. De resterende 27 havde kun en fjern `dkss_idw`-hale og blev korrekt afvist som `no-time-match`. Den særskilte historikfejl var, at `enrich-current-provenance` kun rettede den aktuelle prøve i `samples24h`, mens næste merge autoritativt læste `samples72h`.
+- 4.0.217 skriver samme eksakte aktuelle verifikationsresultat til begge vinduer. Ingen gammel prøve genfortolkes, og den aktive score ændres ikke.
+
 ## 2026-08-15 – 4.0.216 produktionsverificeret
 
 - Første pushkørsel #31880755907 stoppede korrekt før deploy, fordi en ældre performance-regressionstest fortsat læste femdøgnstimer fra den nye startpakke. Testen blev flyttet til den integritetsbundne detaljepakke; produktionslogik og gates blev ikke ændret.

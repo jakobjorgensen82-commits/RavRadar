@@ -1,5 +1,13 @@
 # Current truth – gældende projektviden
 
+## 4.0.217 – verificeret strømhistorik bevares i begge vinduer
+
+- Produktionsartifact #2750, datasæt `rr-20260815111030-210`, har 142 rå prøver og 35,1 timers faktisk `samples72h` i alle 210 zoner. Ét fælles historisk hul er 67,6 minutter; 24-timersvinduet har ingen huller over én time.
+- I #2750 havde 183/210 zoner et aktuelt tidsmatchende DMI-U/V-par. De øvrige 27 havde kun en fjern `dkss_idw`-hale 19. august og forblev korrekt `unverified/no-time-match`. Efterberigelsen skrev hidtil kun resultatet tilbage til `samples24h`; næste merge bruger `samples72h` som autoritativ historik, så mærket blev tabt igen.
+- Før rettelsen havde 75 zoner nul verificerede 72-timersprøver, 125 havde én og 10 havde 101. Rå sampleantal var derfor ikke bevis for verificeret transporthistorik.
+- 4.0.217 synkroniserer kun den aktuelle prøves allerede kontrollerede DMI-U/V-resultat til begge vinduer. 210-zonesimuleringen markerede kun de 183 tidsmatchende zoner; de 27 forblev uverificerede. Ældre uverificeret fortid rekonstrueres ikke; RavScore bruger fortsat kun 24 timer og er uændret.
+- Fuld 72-timers eftermåling og produktion afventer.
+
 ## 4.0.216 – progressiv offentlig vejrindlæsning
 
 - Den offentlige runtime er delt i en lille startpakke og en integritetsbundet detaljepakke med samme dataset-id.

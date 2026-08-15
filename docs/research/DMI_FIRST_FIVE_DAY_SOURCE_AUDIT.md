@@ -198,3 +198,11 @@ Successive artifacts viser, at #31856697202 havde 210/210 zoner med strøm fra n
 Den konkrete mekanisme er, at samme globale `marineSelection` tidligere kunne opdateres af både fælles strømvektor og skalare felter. For eksempel havde Røsnæs nord et valgt NSBS-strømpar på 10,999 km. Et IDW-skalarpunkt på 0,375 km plus 10 km modelstraf blev marginalt bedre og kunne rydde hele NSBS-serien, selv om IDW ikke leverede et fælles U/V-par ved de berørte tider. Et efterfølgende NSBS-skalar-/strømtrin efterlod kun sidste tidspunkt.
 
 4.0.212 gør strømparret autoritativt for et allerede etableret havmodelvalg. Vandstand og temperatur kan følge samme model, men kan ikke skifte den eller ændre dens afstandsscore. En anden model kan fortsat overtage, når den faktisk leverer et bedre fælles strøm-U/V-par. Det er en regressionsrettelse inden for de eksisterende DMI-kilder; den ændrer ikke fallback eller RavScore.
+
+# 4.0.217 – faktisk historiktid og tabt verifikationsmærke
+
+Supportartifact #2750 (`rr-20260815111030-210`) giver den første direkte tidsspændsmåling: alle 210 zoner har 142 rå `samples72h` over 35,098 timer. Det fælles største hul er 67,6 minutter mellem 14. august 02:46:57Z og 03:54:33Z. `samples24h` spænder 23,887 timer uden huller over én time.
+
+Rå tællinger skjulte en proveniensfejl. Aktuel strøm havde et tidsmatchende DMI-U/V-bevis i 183/210 zoner, mens 27 `dkss_idw`-zoner kun havde U/V 19. august og korrekt stod `unverified/no-time-match`. `samples72h` fordelte sig på 75 zoner med nul verificerede prøver, 125 med én og 10 med 101. Efterberigelsen opdaterede kun den aktuelle række i `samples24h`; næste vejrbygning videreførte autoritativt `samples72h`, hvor samme række stadig stod uverificeret.
+
+4.0.217 synkroniserer kun rækken med eksakt `conditions.generatedAt` til begge vinduer efter den eksisterende grid-, tids- og U/V-kontrol. En simulering på hele artifactet markerede 183 zoner og lod de 27 uden tidsmatch forblive `false`. Ældre `false` forbliver `false`, så manglende fortid ikke opfindes. Eftermålingen skal derfor starte fra første produktionskørsel med rettelsen og fortsætte til 72 faktiske timer.

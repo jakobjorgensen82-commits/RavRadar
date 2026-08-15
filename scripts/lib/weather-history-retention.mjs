@@ -25,3 +25,13 @@ export function retainWeatherHistory(previousZone = {}, sample, generatedAt) {
   const samples24h = samples72h.filter(row => atMs(row) >= activeCutoff);
   return { samples24h, samples72h };
 }
+
+export function attachVerifiedCurrentToSample(samples = [], current = {}, generatedAt) {
+  const verified = current?.currentProvenance?.status === 'verified';
+  return samples.map(sample => sample?.at !== generatedAt ? sample : {
+    ...sample,
+    currentVerified: verified,
+    currentSpeedMps: current?.currentSpeedMps ?? null,
+    currentDirectionDeg: current?.currentDirectionDeg ?? null
+  });
+}

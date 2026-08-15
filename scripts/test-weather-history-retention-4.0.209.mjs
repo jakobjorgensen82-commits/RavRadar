@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { ACTIVE_HISTORY_HOURS, RESEARCH_HISTORY_HOURS, retainWeatherHistory } from './lib/weather-history-retention.mjs';
+import { ACTIVE_HISTORY_HOURS, RESEARCH_HISTORY_HOURS, attachVerifiedCurrentToSample, retainWeatherHistory } from './lib/weather-history-retention.mjs';
 import { buildPublicConditions } from './public-conditions-lib.mjs';
 
 const base = Date.parse('2026-08-15T12:00:00.000Z');
@@ -10,7 +10,7 @@ const previous = {
     { at: at(80), windSpeedMps: 20 },
     { at: at(60), windSpeedMps: 18, waveHeightM: 2.1 },
     { at: at(23), windSpeedMps: 5 },
-    { at: at(1), windSpeedMps: 4 }
+    { at: at(1), windSpeedMps: 4, currentVerified: false }
   ]
 };
 const current = { at: at(0), windSpeedMps: 3, waveHeightM: .3 };
@@ -21,6 +21,12 @@ assert.deepEqual(retained.samples72h.map(row => row.at), [at(60), at(23), at(1),
 assert.deepEqual(retained.samples24h.map(row => row.at), [at(23), at(1), at(0)]);
 assert.equal(Math.max(...retained.samples24h.map(row => row.windSpeedMps)), 5, '72-timersstormen må ikke ændre den aktive 24-timersscore');
 assert.equal(Math.max(...retained.samples72h.map(row => row.windSpeedMps)), 18, 'tre-døgnsvinduet skal bevare ældre mobiliseringsevidens');
+const verifiedCurrent={currentSpeedMps:.23,currentDirectionDeg:184,currentProvenance:{status:'verified'}};
+const verified72=attachVerifiedCurrentToSample(retained.samples72h,verifiedCurrent,at(0));
+const latest=verified72.find(row=>row.at===at(0));
+assert.equal(latest.currentVerified,true,'den aktuelle DMI-prøve skal markeres verificeret i 72-timersvinduet');
+assert.equal(latest.currentSpeedMps,.23);
+assert.equal(verified72.find(row=>row.at===at(1)).currentVerified,false,'ældre uverificeret fortid må ikke omskrives');
 
 const publicDoc = buildPublicConditions({
   datasetId: 'history-retention-test', generatedAt: at(0),
