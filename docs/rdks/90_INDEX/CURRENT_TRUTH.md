@@ -6,6 +6,8 @@
 - Artifact #2764 har aktuel verificeret strøm i 210/210 zoner og 149 rå prøver over 37,149 timer i alle zoner. Verificeret historie er fortsat ujævn: 27×4, 75×5, 98×6 og 10×106 prøver; tidsspændet er 1,43 timer i 75 zoner, 18,97 timer i 125 og 37,149 timer i 10.
 - Ingen zone har endnu 72 verificerede timer. Rå historik er ikke i sig selv scoreklar, fallback tæller ikke som verificeret strøm, og fortid udfyldes ikke bagudrettet.
 - Samme artifact beviser en fuld ny `dkss_lf`-cyklus med 41/41 trin og vækst i de otte Limfjordszoners marine hale fra 98 til 115 viste timer. Ingen kilde, fallback eller RavScore er ændret.
+- GitHub Actions #31888082124 bestod den fulde produktionskæde på commit `50f2aa491483d584e1aaa922160e6253777a8fff`. Offentlig 4.0.220 bruger datasæt `rr-20260815134755-210` med 210 zoner og 673 kyststrækninger.
+- Artifact #2771 viser fortsat vækst uden rekonstruktion: 152 rå prøver/37,722 timer i alle zoner og verificerede prøveantal 27×7, 75×8, 98×9 og 10×109. Verificeret tidsspænd er 2,003 timer i 75 zoner, 19,54 timer i 125 og 37,722 timer i 10; ingen zone mangler verificerede prøver, men alle 210 er stadig under 72 timer.
 
 ## 4.0.219 – reduceret Supabase-readback
 

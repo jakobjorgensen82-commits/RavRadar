@@ -22,3 +22,7 @@ RavRadar gemmer rå vejrhistorik korrekt, men historikken er endnu ikke lang ell
 ## Exitkriterium
 
 Senere mobiliseringsanalyse må først behandle historikken som landsdækkende baseline, når alle aktive zoner har mindst 72 faktiske timer med verificeret fælles DMI-U/V-proveniens, og reelle DMI-huller er opgjort særskilt. Rå prøver, fallbackstrøm og uverificerede tider må ikke tælles som verificeret transporthistorik.
+
+## Produktionsverifikation af 4.0.220
+
+Kørsel #31888082124 bestod hele kæden og deployede datasæt `rr-20260815134755-210`. Artifact #2771 viser 210/210 verificerede aktuelle zoner. Alle zoner har 152 rå prøver over 37,722 timer; verificerede prøveantal er 27×7, 75×8, 98×9 og 10×109. Det verificerede tidsspænd er 2,003 timer i 75 zoner, 19,54 timer i 125 og 37,722 timer i 10. Ingen zone er uden verificerede prøver, men alle 210 er fortsat under exitkriteriet på 72 timer.

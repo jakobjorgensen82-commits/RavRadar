@@ -7,6 +7,7 @@
 - [x] Selvtesten beviser, at uverificerede prøver ikke tælles med, og at zoner under 72 verificerede timer forbliver åbne.
 - [x] Artifact #2764 er målt til 210/210 aktuelt verificerede zoner, men kun 1,43–37,149 timers verificeret historik.
 - [x] Ny fuld `dkss_lf`-cyklus med 41/41 trin og halevækst fra 98 til 115 timer er dokumenteret.
+- [x] #31888082124 produktionsverificerer audit, fuld `validate`, releasegate, Supabase og Pages; artifact #2771 viser 210/210 aktuelt verificerede zoner og naturlig vækst til 152 rå prøver/37,722 timer.
 - [ ] Fortsæt naturlig opbygning til mindst 72 verificerede timer i alle aktive zoner; ingen bagudfyldning eller scoreændring.
 
 ## 4.0.219 – routingaudit hentes ikke før hver vejrbygning
