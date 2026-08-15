@@ -1166,3 +1166,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - 4.0.218 kræver, at en kandidat selv har et fælles strømpar omkring nu, før den må erstatte en allerede aktuelt dækkende model. Recovery uden eksisterende aktuelt anker er bevaret.
 - Ingen kilde, fallback, score eller punktgeometri ændres.
 - #31883707138 bestod den fulde produktionskæde og deploy efter en 21-minutters DMI-kørsel. `rr-20260815122446-210` har verificeret aktuel strøm i 210/210; de 27 tidligere berørte zoner valgte NSBS og har hver 41 strømtrin. Et konkurrerende sent IDW-par forekom ikke i denne rotation, så den nye afvisningsgren følges fortsat.
+## 2026-08-15 – P1-overgange gentaget til 4.0.218
+
+- Tre produktionsdatasæt bekræfter, at vandstandsskift er på niveau med almindelige timer, mens vind, bølger, strøm og temperatur fortsat har større kildespring.
+- Strømretningens gennemsnitlige overgang varierede 92° / 89° / 45°, men 95-percentilen forblev 179° / 175° / 162°. Fallbackstrøm er derfor fortsat ikke en verificeret fortsættelse af DMI-strøm.
+- De to seneste datasæt er kun cirka 37 minutter fra hinanden; permanente tærskler afventer flere uafhængige forecastcyklusser. Ingen kilde, fallback eller score er ændret.

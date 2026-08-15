@@ -57,7 +57,8 @@
 - [x] Den fælles P1-komponentmatrix og regressionsplan er dokumenteret for vind, bølger, strøm, vandstand og vandtemperatur.
 - [ ] Det fulde virkelige 72-timersvindue afventer fortsat måling.
 - [x] Numeriske overgangsfejl er målt på #31874335007 og sammenholdt med almindelige timer for alle fem komponenter.
-- [ ] Permanente regressionsgrænser kræver gentagelse på flere uafhængige DMI-kørsler; det fulde virkelige 72-timersvindue afventer fortsat.
+- [x] Overgangsmålingen er gentaget på 4.0.214, 4.0.217 og en fuld DMI-rotation i 4.0.218; hovedmønstret er stabilt og dokumenteret i `P1_SOURCE_TRANSITION_REPEAT_4.0.218.md`.
+- [ ] Permanente regressionsgrænser kræver fortsat flere uafhængige forecastcyklusser; 4.0.217 og 4.0.218 ligger kun cirka 37 minutter fra hinanden, og det fulde virkelige 72-timersvindue afventer.
 
 ## 4.0.213 – entydig DMI-havoverfladetemperatur
 
