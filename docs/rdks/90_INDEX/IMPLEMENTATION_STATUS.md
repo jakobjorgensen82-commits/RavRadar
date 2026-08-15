@@ -6,6 +6,8 @@
 - [x] Native/interpoleret/kantopløsning og timer uden collection/model-run rapporteres fail-closed.
 - [x] Selvtesten dækker både dokumenteret og udokumenteret DMI-proveniens.
 - [x] #2764/#2771/#2777 er sammenlignet og dokumenteret som samme aktive modelcyklusser.
+- [x] #31890898143 bestod fulde gates og deploy; artifact #2782 dokumenterer fuld collection/modelrun for alle fem komponenter og afgrænser #2777's vandstandsfund som ikke-vedvarende.
+- [x] #2782 eftermåler historikvækst til 158 rå prøver/38,760 timer og 3,040–38,760 timers verificeret spænd uden bagudfyldning.
 - [ ] Friske naturlige HARMONIE-, WAM- og DKSS-run-id'er skal fortsat eftermåles, før permanente overgangsintervaller kan besluttes.
 
 # Tidligere status: 4.0.221 – vandstandsroutingalarm

@@ -4,7 +4,9 @@
 
 - Artifacts #2764, #2771 og #2777 genbruger samme aktive HARMONIE-, WAM- og DKSS-modelkørsler. De beviser stabil drift og historikvækst, men er ikke tre uafhængige forecastcyklusser.
 - Den read-only P1-audit rapporterer nu DMI-collection, model-run, tidsopløsning og manglende provenance pr. komponent uden at skrive data.
-- #2777 har fuld collection-/modelrun-identitet for vind, bølger, strøm og vandtemperatur. Vandstand har 210 routede DMI-timer uden collection/modelrunfelter; manglen vises eksplicit og skal analyseres, ikke udfyldes ved gæt.
+- #2777 havde fuld collection-/modelrun-identitet for vind, bølger, strøm og vandtemperatur, men 210 routede vandstandstimer uden felterne. Den friske 4.0.222-kæde #31890898143 bestod alle gates og deploy; artifact #2782 har fuld collection/modelrun på samtlige DMI-timer i alle fem komponenter. Det ældre fund var dermed ikke vedvarende.
+- #2782 bruger fortsat samme aktive HARMONIE 03 UTC-, WAM 00 UTC- og DKSS 06 UTC-cyklus. Det er nyt driftsbevis, men endnu ikke en uafhængig forecastcyklus.
+- Strømhistorikken er vokset til 158 rå prøver/38,760 timer i alle 210 zoner. Verificeret spænd er 3,040–38,760 timer; ingen zone har endnu 72 verificerede timer.
 - Vejrdata, kilder, fallback, interpolation, RavScore og geometri er uændrede.
 
 ## 4.0.221 – sand alarm for effektiv vandstandsrouting

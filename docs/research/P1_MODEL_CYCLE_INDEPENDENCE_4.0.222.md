@@ -28,6 +28,16 @@ Komponentrapporten viser nu for hver komponent:
 
 På #2777 har vind, bølger, strøm og vandtemperatur fuld collection-/modelrun-proveniens. Vandstand har 210 routede timer uden modelrunfelterne, som nu fremgår eksplicit; de skjules ikke som dokumenterede. Det er et provenancefund til videre analyse, ikke tilladelse til at ændre vandstandskæden.
 
+## Produktionsresultat for 4.0.222
+
+GitHub Actions-kørsel #31890898143 bestod central adminhydrering og tombstones, frisk DMI-bygning, fuld validering, releasegate, Supabase-synkronisering, Pages-artifact og deploy på commit `d5b49b32`.
+
+Artifact #2782 indeholder datasæt `rr-20260815145011-210`. Den udvidede audit viser fuld collection- og modelrun-proveniens for alle DMI-timer i vind, bølger, strøm, vandstand og vandtemperatur. De 210 udokumenterede vandstandstimer i #2777 var derfor et ældre artifactfund, ikke en vedvarende mangel i den friske 4.0.222-kæde.
+
+Den aktive modelcyklus er fortsat HARMONIE 03 UTC, WAM 00 UTC og DKSS 06 UTC. #2782 er derfor endnu et driftsbevis fra samme aktive cyklus, ikke en ny uafhængig forecastcyklus.
+
+Samme artifact har 158 rå historikprøver over 38,760 timer i alle 210 zoner. Verificeret spænd er 3,040 timer i 75 zoner, 20,580 timer i 125 zoner og 38,760 timer i 10 zoner. Historikken vokser fremadrettet, men ingen zone har endnu 72 verificerede timer.
+
 ## Exitkriterium
 
 Permanente regressionsintervaller kræver flere forskellige model-run-id'er for den relevante komponent og overgangsretning. Gentagne artifacts fra samme run tæller som gentagelses-/driftsbevis, ikke som ny uafhængig forecastcyklus.

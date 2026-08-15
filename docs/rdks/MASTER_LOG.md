@@ -1209,3 +1209,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Den read-only komponentaudit viser nu collection, model-run, tidsopløsning og manglende DMI-proveniens pr. komponent.
 - #2777 viser fuld run-identitet for vind, bølger, strøm og vandtemperatur samt 210 routede vandstandstimer uden modelrunfelter. Manglen rapporteres og udfyldes ikke.
 - Ingen produktionsdata, kilde, fallback, RavScore eller geometri ændres.
+# 2026-08-15 – 4.0.222 produktionsbevis
+
+- Push-kørsel #31890898143 på `d5b49b32` bestod central adminhydrering/tombstones, frisk DMI, fuld `validate`, releasegate, Supabase, Pages-artifact og deploy.
+- Artifact #2782 (`rr-20260815145011-210`) har fuld DMI collection/modelrun-proveniens for vind, bølger, strøm, vandstand og vandtemperatur. #2777's 210 udokumenterede vandstandstimer var ikke vedvarende.
+- De aktive HARMONIE-, WAM- og DKSS-run-id'er er fortsat de samme, så endnu en uafhængig forecastcyklus afventes.
+- Strømhistorikken er vokset naturligt til 158 rå prøver/38,760 timer i alle 210 zoner; verificeret spænd er 3,040–38,760 timer og fortsat under 72 timer overalt.
