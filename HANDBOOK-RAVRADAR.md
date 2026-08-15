@@ -1,5 +1,11 @@
 # RavRadar Håndbog
 
+## Den aktuelle vandstandstime beholder sin modelidentitet – 4.0.225
+
+En vejrbygning få minutter efter hel time kunne vise den rigtige vandstand, men mangle modelnavn og modelkørsel på netop den igangværende time. De senere timer var korrekt mærket.
+
+Fra 4.0.225 starter vandstandens kildeindeks på samme aktuelle klokktime som den offentlige prognose. Den faktiske byggetid bruges fortsat til at beregne forecastalder. Vandstand, valgte punkter, vægte, fallback og RavScore er uændrede.
+
 ## Vandstand viser den model, der faktisk leverede værdien – 4.0.224
 
 RavRadar kan beregne en zones vandstand fra ét eller to valgte DMI-vandstandspunkter. Værdien var korrekt, men kildeoplysningen kunne blive stående fra zonens tidligere havmodel. Det var især misvisende, når de valgte punkter lå i to forskellige DMI-modelområder.
@@ -102,7 +108,7 @@ Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vande
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.224
+**Håndbogsversion:** 4.0.225
 
 **Opdateret:** 15. august 2026
 

@@ -218,8 +218,8 @@ export function normalizeForecastHourly(hourly = [], { limit = DMI_FORECAST_HOUR
     .slice(0, Math.max(0, limit));
 }
 
-export function buildDmiForecastHourly({ wind = [], windTail = [], waves = [], ocean = [], observedWaterLevel = null, generatedAt, hours = DMI_FORECAST_HOURS, sourceCadenceMinutes = 180 } = {}) {
-  const canonicalStart = canonicalForecastHour(generatedAt, { ceil: true });
+export function buildDmiForecastHourly({ wind = [], windTail = [], waves = [], ocean = [], observedWaterLevel = null, generatedAt, startAt = generatedAt, hours = DMI_FORECAST_HOURS, sourceCadenceMinutes = 180 } = {}) {
+  const canonicalStart = canonicalForecastHour(startAt, { ceil: true });
   const start = Date.parse(canonicalStart);
   if (!Number.isFinite(start)) throw new Error('generatedAt must be a valid date');
   const cadenceMs = Math.max(60, Number(sourceCadenceMinutes) || 180) * 60000;

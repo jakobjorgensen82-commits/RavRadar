@@ -1,5 +1,7 @@
 # Kendte åbne og overvågede forhold
 
+- **ISSUE-WATER-ROUTING-CURRENT-HOUR-PROVENANCE – RETTET LOKALT I 4.0.225 / AFVENTER PRODUKTION:** #2801 havde én DMI-vandstandstime uden collection/model-run pr. zone, alle ved den aktuelle 17:00-time efter generering 17:02. Kildeindeksets start afrundes nu ned til aktuel time, mens forecastalder fortsat bruger faktisk genereringstid. Produktionsartifact skal bevise nul udokumenterede routede timer.
+
 - **4.0.214 PRODUKTIONSOPFØLGNING:** 4.0.213 afviste nye DMI-dybdetemperaturer, men bevarede ældre cachetimer uden lagmærkning. 4.0.214 fjerner dem fail-closed og genopbygger `surface:0` gennem DKSS-rotationen. Afsluttes først, når artifacts viser verificeret overfladelag for alle viste DMI-temperaturtimer.
 - **ISSUE-LIMFJORD-WAVE-MISSING-B05-11 – ÅBEN FAGLIG BESLUTNING:** Rodårsagen er afgrænset: Limfjordsmodellen har ingen bølgekomponent, `wam_dw` har intet accepteret gyldigt punkt ved Feggesund, og eksisterende fallback er også missing. Den nuværende korrekte adfærd er `missing`. Fjernere punkt eller ny kilde kræver særskilt godkendelse og konsekvensberegning.
 

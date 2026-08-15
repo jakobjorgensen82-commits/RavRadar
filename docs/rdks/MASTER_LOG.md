@@ -1,3 +1,10 @@
+## 2026-08-15 – 4.0.225 aktuel klokktime i vandstandsrouting
+
+- #2801 havde 210 udokumenterede DMI-vandstandstimer ved 17:00 UTC efter generering 17:02 UTC; #2800 før timegrænsen havde nul.
+- Vandstandskildeindekset startede ved næste hele time og kunne derfor ikke route den offentlige series bevarede aktuelle time.
+- 4.0.225 adskiller routingvinduets start fra faktisk genereringstid. Regressionen kontrollerer sammensat collection, model-run og forecastalder ved `HH:02`.
+- Ingen vandstandsværdi, kilde, vægt, fallback, score, historik eller geometri er ændret. Produktion afventer.
+
 ## 2026-08-15 – 4.0.224 sand vandstandskilde efter routing
 
 - #2795 viste én udokumenteret aktuel DMI-vandstandstime pr. zone og afslørede, at hele den routede serie kunne beholde zonens tidligere collectionmærke efter værdien var erstattet.

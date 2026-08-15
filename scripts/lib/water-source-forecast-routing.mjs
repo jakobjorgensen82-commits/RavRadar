@@ -1,4 +1,4 @@
-import { buildDmiForecastHourly } from './dmi-forecast-store.mjs';
+import { buildDmiForecastHourly, canonicalForecastHour } from './dmi-forecast-store.mjs';
 import { recommendWaterStationBracket } from '../../js/core/water-station-routing.js';
 
 const finite=v=>{if(v===null||v===undefined||v==='')return null;const n=Number(v);return Number.isFinite(n)?n:null;};
@@ -14,7 +14,7 @@ function sourceRecordFromBulk(source, bulk, generatedAt){
     step:r.time,
     'sea-mean-deviation':finite(r['sea-mean-deviation']),
     provenance:{waterLevel:r?.sources?.waterLevel??null}
-  })),generatedAt,hours:118,sourceCadenceMinutes:Number(bulk?.timeStrideHours??3)*60});
+  })),generatedAt,startAt:canonicalForecastHour(generatedAt),hours:118,sourceCadenceMinutes:Number(bulk?.timeStrideHours??3)*60});
   const hourly=built.hourly.filter(r=>finite(r.waterLevelCm)!==null);
   if(!hourly.length)return null;
   return {sourceKey:sourceKey(source),stationId:String(source.stationId),name:source.name,sourceType:source.sourceType,point:source.point,hourly,generatedAt:bulk.generatedAt??generatedAt,validUntil:hourly.at(-1)?.time??null,horizonHours:Math.max(0,Math.round((Date.parse(hourly.at(-1).time)-Date.parse(generatedAt))/3600000))};

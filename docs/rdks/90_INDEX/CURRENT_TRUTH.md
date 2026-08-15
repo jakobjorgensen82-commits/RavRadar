@@ -1,5 +1,14 @@
 # Current truth – gældende projektviden
 
+## 4.0.225 – routet provenance på den igangværende klokktime
+
+- #31897098322/#2801 var fuldt grøn, men artifactet afslørede 210 DMI-vandstandstimer uden collection/model-run, alle ved 17:00 UTC i et datasæt genereret 17:02 UTC.
+- Rodårsagen var et tidsvindue: offentlig prognose bevarede aktuel klokktime, mens vandstandskildeindekset startede ved næste hele time.
+- 4.0.225 lader kun kildeindekset starte ved den aktuelle hele time. Faktisk genereringstid bruges fortsat til forecastalder og provenance.
+- Værdier, punkter, routing, vægte, continuity, fallback, RavScore, historik og geometri er uændrede.
+- Read-only replay af #2801 bevarer routing-auditten på 210 anvendte/0 ufuldstændige og dokumenterer alle 23.310 timer, inklusive 210/210 i aktuel time.
+- Målrettede regressioner består. Fuld CI og produktionsartifact afventer.
+
 ## 4.0.224 – sand kilde efter vandstandsrouting
 
 - #2795 viser, at vandstandsroutingen overskrev værdien korrekt, men kunne efterlade zonens tidligere modelmærke; én aktuel DMI-time pr. zone stod helt uden model-run.

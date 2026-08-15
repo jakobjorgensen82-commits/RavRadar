@@ -1,4 +1,18 @@
-# Implementeringsstatus pr. 4.0.224 – vandstandsroutingproveniens
+# Implementeringsstatus pr. 4.0.225 – aktuel time i vandstandsrouting
+
+## 4.0.225 – samme tidsvindue i offentlig serie og kildeindeks
+
+- [x] #2801 afgrænser regressionsmønstret til 210 rækker ved samme aktuelle klokktime.
+- [x] Kildeindekset kan starte ved aktuel hele UTC-time uden at ændre den faktiske genereringstid.
+- [x] Regressionen dækker `HH:02` → `HH:00`, sammensat DKSS-identitet og ikke-afrundet forecastalder.
+- [x] Vandstandstal, routingvalg, fallback, RavScore, historik og geometri er uændrede.
+- [x] Målrettede tests, RDKS, håndbog, version/module-closure og lokal releasegate består.
+- [x] Fuld lokal `validate` når gennem geometri-v2-kæden og stopper forventet fail-closed på det historiske stale 209/211-vejrdata før central adminhydrering.
+- [x] Read-only replay af #2801 giver uændret 210/0 routing-audit og fuld collection/model-run på 23.310/23.310 timer, inklusive 210/210 ved aktuel time.
+- [ ] GitHub Actions, supportartifact, Supabase og Pages.
+- [ ] Produktionsartifact med nul routede DMI-vandstandstimer uden collection/model-run, inklusive aktuel time.
+
+# Tidligere status: 4.0.224 – vandstandsroutingproveniens
 
 ## 4.0.224 – faktisk DMI-identitet efter routing
 
