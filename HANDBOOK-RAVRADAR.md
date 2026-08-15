@@ -66,7 +66,7 @@ Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vande
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.211
+**Håndbogsversion:** 4.0.212
 
 **Opdateret:** 15. august 2026
 
@@ -1674,3 +1674,11 @@ Hver af de 673 aktive lokale kyststrækninger har ét blåt havpunkt og ét grø
 På bugtede strækninger vælger ejeren manuelt det sted, som bedst repræsenterer den relevante ravstrand. En bred orienteringsaudit har flagget 199 kontrolkandidater i 122 hovedzoner, men 171 er fragmenterede `MultiLineString`-dele. Listen er derfor et arbejdsredskab til gradvis kontrol og ikke 199 dokumenterede fejl eller tilladelse til automatisk genopdeling.
 
 Efter **Godkend og gem centralt** skal punktparret læses tilbage fra central lagring og bestå en frisk DMI-/releasekørsel, før det bliver autoritativt. Ved afvisning aktiveres kladden ikke. Den manuelle ejerreview kan udskydes, men skal afsluttes før endelig faglig godkendelse af alle lokale scorer, større scorekalibrering og domæne-/brugerrelease.
+
+## Stabilt valg af DMI-strømmodel i 4.0.212
+
+RavRadar kan hente strøm, vandstand og vandtemperatur fra overlappende DMI-havmodeller. En zones autoritative havmodel vælges ud fra et gyldigt fælles strømpar, hvor øst-/vest- og nord-/sydkomponenten kommer fra samme fysiske gittercelle.
+
+Et vandstands- eller temperaturpunkt kan ligge lidt nærmere kystpunktet end strømcellens centrum. Det må ikke alene skifte hele havmodellen og slette en sammenhængende strømprognose. Fra 4.0.212 følger disse felter derfor det eksisterende modelvalg uden at ændre det. Kun en kandidat med et reelt bedre fælles strømpar kan overtage.
+
+Rettelsen ændrer ikke DMI-kilder, fallback eller RavScore. Manglende strøm forbliver manglende, og den videre femdøgnsanalyse gennemføres fortsat under DEC-0030.

@@ -1,11 +1,12 @@
 # Aktuelt sessionshandoff – 2026-08-15
 
-## Produktionsverificeret 4.0.211
+## Aktiv 4.0.212-kandidat oven på produktionsverificeret 4.0.211
 
 - Separat `samples72h` bevarer tre døgns rå vejrhistorik til senere mobiliseringsanalyse; `samples24h` forbliver eneste aktive score-/statevindue.
 - Begge rå vinduer udelades fra `public-conditions.json`, og Supabase-egress påvirkes ikke.
 - Vandstands-continuity bevarer DMI-identitet. Providerskift er analyseret, men ingen kilde-, fallback-, merge- eller scoreændring er lavet.
 - #31854174281 og #31855164652 bestod de fulde gates og deploy. Datasæt `rr-20260815011320-210` har verificeret aktuel strøm i 210/210 zoner og 107 bevarede rå historikprøver pr. zone.
+- Senere #31857361460 dokumenterede en ny regression: 27 NSBS-zoner mistede deres 38-trins strømserie, da et skalarfelt fik lov at genvælge havmodel uden fælles strøm-U/V. 4.0.212 retter kun denne modelvalgskonflikt og tvinger én genindlæsning; frisk produktion mangler.
 
 ## Sikker baseline
 

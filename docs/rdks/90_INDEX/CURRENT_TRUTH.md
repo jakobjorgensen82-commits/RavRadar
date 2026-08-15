@@ -1,5 +1,12 @@
 # Current truth – gældende projektviden
 
+## 4.0.212-kandidat – skalarfelter må ikke rydde strømserien
+
+- Fire successive produktionsartifacts afgrænser regressionen. #31856697202 havde 210/210 zoner med brugbar strøm fra nutiden. #31857361460 faldt til 183/210, og de 27 berørte NSBS-zoner gik fra 38 sammenhængende strømtrin til kun `2026-08-19T12:00:00Z`.
+- Årsagen er verificeret i den faktiske modeludvælgelse: et IDW-vandstands-/temperaturpunkt kunne med modelstraf blive marginalt bedre end NSBS-strømparrets afstand og dermed midlertidigt skifte hele havmodellen. Skiftet ryddede alle marinefelter, selv om kandidaten ikke leverede et fælles strøm-U/V-par ved de manglende tider.
+- 4.0.212 lader skalare felter følge et eksisterende modelvalg uden at ændre valget eller dets score. Et fælles strøm-U/V-par kan fortsat skifte til en reelt bedre model. Behandlingssignaturen hæves én gang for genopbygning.
+- Ingen kilde, fallback, interpolation eller score ændres. Frisk produktion og direkte artifactkontrol kræves før lukning.
+
 ## 4.0.211 – bevaret havmodel og reel genbehandling
 
 - 4.0.210 blev produktionsverificeret i #31853585142 og diagnosticerede hullerne korrekt, men efterkontrollen viste uændrede strømserier: de relevante DMI-timer blev sprunget over som tidligere behandlet.

@@ -1,4 +1,12 @@
-# Implementeringsstatus pr. 4.0.211 – bevaret DMI-havmodel og genbehandling
+# Implementeringsstatus pr. 4.0.212 – komponentkorrekt DMI-modelskift
+
+## 4.0.212 – komponentkorrekt DMI-modelskift
+
+- [x] Produktionsforløbet #31856214946 → #31856697202 → #31857361460 → #31858042990 dokumenterer præcis overgang fra 210 til 183 zoner med aktuel strøm.
+- [x] De 27 berørte zoner er én fælles NSBS-regression: 38 strømtrin blev reduceret til ét sent trin, ikke 27 uafhængige geografiske huller.
+- [x] Skalare marinefelter kan ikke længere genvælge en eksisterende autoritativ havmodel eller omskrive strømvalgets score.
+- [x] Et bedre fælles strøm-U/V-par kan fortsat skifte model; regressionstesten dækker begge sider.
+- [ ] Frisk 4.0.212-produktion skal genlæse DMI én gang, bestå fulde gates og dokumentere aktuel strøm, historikbevarelse og halehorisont for alle 210 zoner.
 
 ## 4.0.211 – bevaret DMI-havmodel og genbehandling
 

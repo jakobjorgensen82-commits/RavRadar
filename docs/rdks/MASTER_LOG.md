@@ -1097,3 +1097,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - #31854174281 bestod hele releasekæden og deployede 4.0.211. Den næste fulde genopbygning #31855164652 behandlede NSBS, bestod DMI, fuld validering, releasegate, Supabase og Pages-deploy og udgav `rr-20260815011320-210`.
 - Efterkontrollen viser verificeret aktuel strøm og bevaret modelvalg i 210/210 zoner samt 107 rå `samples72h`-prøver pr. zone. De 75 zoner, der først blev verificeret i den sidste kørsel, følges gennem 72 timer; historiske huller udfyldes ikke bagudrettet.
 - Alle zoner har mindst cirka 70,8 timers marinegrundlag, mens 121/210 når mindst 96 timer. DEC-0030-opfølgningen klassificerer de resterende 89 zoners hale og designer cirka 120 timer før enhver kilde-, fallback- eller scoreændring.
+
+## 2026-08-15 – 4.0.212 skalarfelter må ikke genvælge strømmodel
+
+- Successive produktionsartifacts viser 210/210 zoner med strøm i #31856697202 og 183/210 i #31857361460. De 27 berørte NSBS-zoner gik ensartet fra 38 sammenhængende strømtrin til ét sent trin.
+- Et marginalt nærmere vandstands-/temperaturpunkt fra en anden DMI-havmodel kunne genvælge hele `marineSelection` og rydde strømserien uden selv at levere et fælles U/V-par.
+- 4.0.212 gør et eksisterende fælles strømpar autoritativt: skalarfelter må følge samme model, men ikke skifte den eller omskrive dens score. Et reelt bedre fælles strømpar kan fortsat skifte model. Ingen kilde, fallback eller RavScore ændres.

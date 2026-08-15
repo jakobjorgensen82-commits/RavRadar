@@ -82,7 +82,7 @@ DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octe
 
 PARSER_VERSION = 14
 PARAMETER_MAP_VERSION = 4
-GRID_LOOKUP_VERSION = 6
+GRID_LOOKUP_VERSION = 7
 COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw", "wam_nsb", "harmonie_dini_sf"]
 COLLECTION_FAMILY = {
     "dkss_idw": "marine", "dkss_nsbs": "marine", "dkss_lf": "marine",
@@ -800,11 +800,23 @@ def marine_model_score(zone: dict[str, Any], collection: str, distance_km: float
     return float(distance_km) + float(penalty)
 
 
-def accept_marine_collection(point: dict[str, Any], zone: dict[str, Any], collection: str, distance_km: float) -> bool:
+def accept_marine_collection(
+    point: dict[str, Any],
+    zone: dict[str, Any],
+    collection: str,
+    distance_km: float,
+    allow_existing_selection_update: bool = True,
+) -> bool:
     coast = zone.get("coastType") or "east"
     if distance_km > MAX_GRID_DISTANCE_KM.get(coast, 32.0):
         return False
     selection = point.get("marineSelection") or {}
+    # Vandstand, temperatur og andre skalare marinefelter må følge den allerede
+    # valgte havmodel, men må ikke genvælge modellen på deres eget gitterpunkt.
+    # Ellers kan ét lidt nærmere skalarfelt rydde en komplet strømserie, selv om
+    # kandidatmodellen ikke har et gyldigt fælles U/V-par ved samme forecasttid.
+    if selection and not allow_existing_selection_update:
+        return selection.get("collection") == collection
     score = marine_model_score(zone, collection, distance_km)
     current_score = selection.get("score")
     if current_score is not None and float(current_score) <= score and selection.get("collection") != collection:
@@ -1003,7 +1015,13 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                         if distance > MAX_GRID_DISTANCE_KM.get(zone.get("coastType") or "east", 32.0):
                             search["rejectedReason"] = "VALID_POINT_TOO_FAR"
                             continue
-                        if not accept_marine_collection(point, zone, collection, distance):
+                        if not accept_marine_collection(
+                            point,
+                            zone,
+                            collection,
+                            distance,
+                            allow_existing_selection_update=False,
+                        ):
                             search["rejectedReason"] = "BETTER_COLLECTION_SELECTED"
                             continue
                         search["selected"] = True

@@ -1,4 +1,4 @@
-import { loadActiveZoneCollection } from './zone-registry.js?v=4.0.211';
+import { loadActiveZoneCollection } from './zone-registry.js?v=4.0.212';
 const DEFAULT_PUBLIC_CONDITIONS_URL='./data/live/public-conditions.json';
 const MANIFEST_URL='./data/live/manifest.json';
 const COASTAL_PARTS_URL='./data/live/coastal-parts-v2.json';

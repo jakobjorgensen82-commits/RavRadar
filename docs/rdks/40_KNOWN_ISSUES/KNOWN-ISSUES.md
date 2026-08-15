@@ -1,5 +1,9 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.212 – skalarfelt kunne rydde valgt strømserie
+
+- **ISSUE-DMI-SCALAR-EVICTS-CURRENT-SERIES – RETTET LOKALT / AFVENTER PRODUKTION:** #31857361460 reducerede 27 tidligere komplette NSBS-zoner fra 38 strømtrin til ét sent trin. Et lidt nærmere vandstands-/temperaturpunkt fra en anden model kunne genvælge hele havmodellen uden et gyldigt fælles strømpar og rydde serien. Skalare felter må nu kun følge et eksisterende valg; kun et bedre fælles strøm-U/V-par må skifte model. Behandlingssignaturen hæves én gang for genopbygning.
+
 ## 4.0.211 – tabt havmodelvalg og falsk genbrug
 
 - **ISSUE-DMI-MARINE-SELECTION-DROPPED-ON-MERGE – PRODUKTIONSVERIFICERET LUKKET I #31855164652:** Progressiv cachemerge tabte `marineSelection`, selv om collection og gitterpunkt blev bevaret. Valget bevares og rekonstrueres fail-closed; efterkontrollen viser valg og verificeret aktuel strøm i 210/210 zoner.

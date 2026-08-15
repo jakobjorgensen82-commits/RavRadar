@@ -127,3 +127,11 @@ Den korrigerede måling kræver første komplette native trin inden for fire tim
 4.0.210-kørslen #31853585142 prioriterede IDW og NSBS korrekt, men begge runs rapporterede 39 af 39 assets som `assetsSkippedPreviouslyProcessed`. Cacheartifactet havde fortsat de samme 125/75/10-strømgrupper. `merge_previous` kopierede `hourly`, `gridPoints` og `collections`, men ikke `marineSelection`; behandlingsregistret kunne dermed overleve den serie, som et senere modelskift havde ryddet.
 
 4.0.211 bevarer modelvalget og rekonstruerer legacy-valg fra collection, distance og kysttype. På 4.0.210-artifactet kan 1.138 hovedzone-/kystdelvalg rekonstrueres, og en dårligere IDW-kandidat afvises for en eksisterende Limfjordsserie. `GRID_LOOKUP_VERSION` hæves fra 5 til 6 for at genbehandle den aktuelle modelkørsel én gang.
+
+# 4.0.212 – komponentkonflikt ved marine modelvalg
+
+Successive artifacts viser, at #31856697202 havde 210/210 zoner med strøm fra nutiden, mens #31857361460 havde 183/210. De 27 berørte NSBS-zoner gik fra 38 sammenhængende U/V-trin til ét sent trin. Det er derfor ikke en native NSBS-horisontgrænse.
+
+Den konkrete mekanisme er, at samme globale `marineSelection` tidligere kunne opdateres af både fælles strømvektor og skalare felter. For eksempel havde Røsnæs nord et valgt NSBS-strømpar på 10,999 km. Et IDW-skalarpunkt på 0,375 km plus 10 km modelstraf blev marginalt bedre og kunne rydde hele NSBS-serien, selv om IDW ikke leverede et fælles U/V-par ved de berørte tider. Et efterfølgende NSBS-skalar-/strømtrin efterlod kun sidste tidspunkt.
+
+4.0.212 gør strømparret autoritativt for et allerede etableret havmodelvalg. Vandstand og temperatur kan følge samme model, men kan ikke skifte den eller ændre dens afstandsscore. En anden model kan fortsat overtage, når den faktisk leverer et bedre fælles strøm-U/V-par. Det er en regressionsrettelse inden for de eksisterende DMI-kilder; den ændrer ikke fallback eller RavScore.
