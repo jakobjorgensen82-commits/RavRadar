@@ -1,11 +1,14 @@
 # Current truth – gældende projektviden
 
-## 4.0.211-kandidat – bevaret havmodel og reel genbehandling
+## 4.0.211 – bevaret havmodel og reel genbehandling
 
 - 4.0.210 blev produktionsverificeret i #31853585142 og diagnosticerede hullerne korrekt, men efterkontrollen viste uændrede strømserier: de relevante DMI-timer blev sprunget over som tidligere behandlet.
 - Den dybere årsag var, at `merge_previous` bevarede marinefelter og collectionnavne, men tabte `marineSelection`. En senere model kunne derfor rydde den tidligere autoritative serie, mens `processedSteps` stadig kaldte de oprindelige filer komplette.
 - 4.0.211 bevarer `marineSelection`, rekonstruerer den for legacy-cache fra faktisk collection, gitterafstand og kysttype og hæver behandlingssignaturen én gang, så den aktuelle DMI-kørsel genlæses.
 - Test mod produktionsartifactet rekonstruerer 1.138 hovedzone-/kystdelvalg og beviser, at en dårligere IDW-model ikke kan rydde en eksisterende Limfjordsserie.
+- Pushkørsel #31854174281 bestod hele releasekæden. Den efterfølgende fulde genopbygning #31855164652 bestod DMI, fuld validering, releasegate, Supabase og Pages-deploy og udgav datasæt `rr-20260815011320-210`.
+- Direkte artifactkontrol viser verificeret aktuel strøm i 210/210 zoner, bevaret `marineSelection` i 210/210 og 107 `samples72h`-prøver i hver zone. De 75 sidst genopbyggede zoner kan kun opsamle verificeret historik fremadrettet; manglende fortid rekonstrueres ikke.
+- Alle 210 zoner har sammenhængende marinegrundlag mindst cirka 70,8 timer frem, mens 121/210 når mindst 96 timer. De resterende 89 zoners hale er nu en eksplicit DEC-0030-opfølgning; cirka 120 timer er fortsat produktmålet.
 - Ingen ny kilde, fallback eller scoreændring indføres.
 
 ## 4.0.210-kandidat – sammenhængende DMI-strøm fra nutiden
@@ -19,7 +22,7 @@
 
 - Den målte 4.0.208-produktion bevarer præcis 24 timers rå historik pr. zone: 101 prøver over cirka 24 timer ved den aktuelle 15-minutterskørsel.
 - Det er nok til den aktive `maxWind24hMps`/`maxWave24hM`-score, men ikke til analyse af hændelser 24–72 timer tilbage.
-- 4.0.209-kandidaten bevarer separat `samples72h`. `samples24h` er fortsat eneste rå vindue for nuværende RavScore og `shadow-v2`; ældre prøver ændrer derfor ingen aktiv score.
+- Fra 4.0.209 bevarer pipelinen separat `samples72h`. `samples24h` er fortsat eneste rå vindue for nuværende RavScore og `shadow-v2`; ældre prøver ændrer derfor ingen aktiv score.
 - Begge rå vinduer udelades fortsat fra `public-conditions.json`. `conditions.json` synkroniseres ikke til Supabase, så ændringen øger ikke Supabase-egress.
 - Providerskiftene har flere årsager: forecastets første timekant, HARMONIE→DKSS/progressive run-overgange og komponentvis ufuldstændig DKSS-cache. Ingen merge- eller kildeændring er godkendt endnu.
 - Vandstands-continuity bevarer i kandidaten den oprindelige DMI-timeidentitet fra `dmiByTime`.

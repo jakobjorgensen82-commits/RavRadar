@@ -1094,3 +1094,6 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - #31853585142 beviste 4.0.210-diagnosen og alle gates, men artifactet havde fortsat 125/75/10-grupperne uændret.
 - Alle 39 IDW- og NSBS-timer blev sprunget over som allerede behandlet. Samtidig tabte cachemerge `marineSelection`, så en senere model kunne rydde den valgte serie.
 - 4.0.211 bevarer og rekonstruerer modelvalget samt hæver behandlingssignaturen, så aktuelle filer genlæses én gang. Produktionsartifactet giver 1.138 rekonstruerbare hovedzone-/kystdelvalg.
+- #31854174281 bestod hele releasekæden og deployede 4.0.211. Den næste fulde genopbygning #31855164652 behandlede NSBS, bestod DMI, fuld validering, releasegate, Supabase og Pages-deploy og udgav `rr-20260815011320-210`.
+- Efterkontrollen viser verificeret aktuel strøm og bevaret modelvalg i 210/210 zoner samt 107 rå `samples72h`-prøver pr. zone. De 75 zoner, der først blev verificeret i den sidste kørsel, følges gennem 72 timer; historiske huller udfyldes ikke bagudrettet.
+- Alle zoner har mindst cirka 70,8 timers marinegrundlag, mens 121/210 når mindst 96 timer. DEC-0030-opfølgningen klassificerer de resterende 89 zoners hale og designer cirka 120 timer før enhver kilde-, fallback- eller scoreændring.

@@ -1,6 +1,12 @@
 # Implementeringsstatus pr. 4.0.211 – bevaret DMI-havmodel og genbehandling
 
 ## 4.0.211 – bevaret DMI-havmodel og genbehandling
+
+- [x] #31854174281 bestod fuld releasekæde og deployede 4.0.211.
+- [x] #31855164652 genopbyggede den næste DMI-havmodel, bestod fuld validering/releasegate/Supabase/Pages og gav verificeret aktuel strøm i 210/210 zoner.
+- [x] 210/210 zoner bevarede `marineSelection`, og alle havde 107 rå `samples72h`-prøver efter den efterfølgende kørsel.
+- [ ] De 75 zoner, som først blev verificeret i #31855164652, følges gennem 72 timer; verificeret historik måles uden bagudrettet udfyldning.
+- [ ] DEC-0030 klassificerer de 89 zoner under 96 timers marinehorisont. Aktuelt minimum er cirka 70,8 timer, og kun 121/210 når mindst 96 timer; cirka 120 timer er fortsat målet.
 - [x] 4.0.210 efterkontrol dokumenterer, at diagnosen fandt hullerne, men alle 39 aktuelle IDW-/NSBS-filer blev sprunget over som tidligere behandlet.
 - [x] `marineSelection` bevares nu gennem cachemerge.
 - [x] Legacy-cache rekonstrueres fra faktisk collection, gitterafstand og kysttype; produktionsartifactet giver 1.138 gendannede valg.

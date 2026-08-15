@@ -2,13 +2,14 @@
 
 ## 4.0.211 – tabt havmodelvalg og falsk genbrug
 
-- **ISSUE-DMI-MARINE-SELECTION-DROPPED-ON-MERGE – RETTET LOKALT / AFVENTER PRODUKTION:** Progressiv cachemerge tabte `marineSelection`, selv om collection og gitterpunkt blev bevaret. Dermed kunne en dårligere senere model rydde en korrekt serie. Valget bevares nu og rekonstrueres fail-closed fra de eksisterende DMI-felter for legacy-cache.
-- **ISSUE-DMI-PROCESSED-STEPS-HIDE-EVICTED-CURRENT – RETTET LOKALT / AFVENTER PRODUKTION:** 4.0.210 prioriterede de rigtige modeller, men sprang alle aktuelle filer over, fordi deres gamle behandlingsstatus stadig stod komplet. En ny behandlingssignatur tvinger en kontrolleret genlæsning efter cacheudvælgelsesrettelsen.
+- **ISSUE-DMI-MARINE-SELECTION-DROPPED-ON-MERGE – PRODUKTIONSVERIFICERET LUKKET I #31855164652:** Progressiv cachemerge tabte `marineSelection`, selv om collection og gitterpunkt blev bevaret. Valget bevares og rekonstrueres fail-closed; efterkontrollen viser valg og verificeret aktuel strøm i 210/210 zoner.
+- **ISSUE-DMI-PROCESSED-STEPS-HIDE-EVICTED-CURRENT – PRODUKTIONSVERIFICERET LUKKET I #31855164652:** Den nye behandlingssignatur genlæste de relevante IDW-/NSBS-filer. Aktuel verificeret strømdækning steg fra 10/210 før rettelserne til 210/210 efter den progressive genopbygning.
 
 ## 4.0.210 – falsk komplet DMI-strømdækning
 
-- **ISSUE-DMI-CURRENT-DISTANT-TAIL-MASKS-NOW-GAP – RETTET LOKALT / AFVENTER PRODUKTION:** Schedulerens tidligere horisontsmål så kun på det sidste komplette marinetidspunkt. Derfor kunne to eller syv strømtrin fire døgn ude få en zone til at se fuldt dækket ud, selv om strøm manglede ved nutiden. 4.0.210 kræver sammenhængende komponenter fra byggetiden og prioriterer dermed de relevante DKSS-modeller igen. Ingen manglende værdi udfyldes kunstigt.
-- **ISSUE-DMI-CURRENT-HISTORY-RECOVERY-MEASUREMENT – ÅBEN:** Efter produktion skal 72 timers løb dokumentere, om de 200 berørte hovedzoner opbygger verificeret strømhistorik. Zoner uden reel DMI-dækning forbliver missing og kræver senere særskilt kildeanalyse under DEC-0030.
+- **ISSUE-DMI-CURRENT-DISTANT-TAIL-MASKS-NOW-GAP – PRODUKTIONSVERIFICERET LUKKET I 4.0.210–4.0.211:** Schedulerens tidligere horisontsmål så kun på det sidste komplette marinetidspunkt. 4.0.210 kræver sammenhængende komponenter fra byggetiden, og #31855164652 beviser verificeret strøm ved nutiden i 210/210 zoner. Ingen manglende værdi udfyldes kunstigt.
+- **ISSUE-DMI-CURRENT-HISTORY-RECOVERY-MEASUREMENT – ÅBEN / I MÅLING:** Alle 210 zoner bevarer nu 107 rå prøver, og 210/210 har verificeret strøm ved nutiden. De 75 zoner, der først blev dækket i #31855164652, skal følges gennem 72 timer, så deres verificerede historik opbygges ægte fremadrettet. Fortid må ikke fabrikeres.
+- **ISSUE-DMI-CURRENT-FIVE-DAY-TAIL – ÅBEN P1 UNDER DEC-0030:** Alle zoner når mindst cirka 70,8 timers marinegrundlag, men kun 121/210 når mindst 96 timer. De resterende 89 zoners DMI-produkt, overgang og sidste valide time skal klassificeres før enhver ny kilde, fallback eller scoreændring; produktmålet er fortsat cirka 120 timer.
 
 ## 4.0.208 – lokal snapshotdrift
 
@@ -260,9 +261,9 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 ## 4.0.118 – DMI-first vindhale
 - **ISSUE-FIVE-DAY-DMI-WIND-TAIL – RETTET LOKALT, AFVENTER PRODUKTION:** DKSS' dokumenterede 10-meter U/V-vind udtrækkes nu som en separat hale efter HARMONIE. Modelserier blandes ikke, og HARMONIE vinder i overlap. En frisk kørsel skal bevise feltgenkendelse, zonehorisont, kildeskift og fulde release-gates.
 - **ISSUE-OPEN-METEO-LOCAL-TIME-AMBIGUITY – RETTET LOKALT, AFVENTER PRODUKTION:** Fallback blev forespurgt med `Europe/Copenhagen` og leverede offsetløse tider. Kaldet bruger nu GMT, og tider lagres eksplicit som UTC.
-- **ISSUE-FIVE-DAY-PER-HOUR-PROVENANCE – VANDSTAND RETTET LOKALT I 4.0.209 / AFVENTER PRODUKTION:** #31849701179 bekræfter komplette identitetsfelter på DMI-klassificeret vind, bølge, strøm og vandtemperatur, men mistede dem på alle 22.463 DMI-vandstandstimer. Continuity-trinnet læser nu den oprindelige DMI-kilde fra `dmiByTime`. Regression består; frisk produktion mangler.
+- **ISSUE-FIVE-DAY-PER-HOUR-PROVENANCE – VANDSTAND PRODUKTIONSVERIFICERET I 4.0.209–4.0.211:** #31849701179 fandt tabet af identitetsfelter på DMI-vandstandstimer. Continuity-trinnet læser nu den oprindelige DMI-kilde fra `dmiByTime`; efterfølgende fulde produktioner og releasegates er grønne. Den bredere analyse af providerskift og femdøgnshale fortsætter under DEC-0030.
 - **ISSUE-DMI-FIRST-MULTIPLE-PROVIDER-REVERSALS – RODKLASSER DOKUMENTERET / DESIGN ÅBENT:** Første fallbacktime ligger før DMI-seriens start. Vindens korte interne huller ligger ved progressive HARMONIE/DKSS- og runovergange. Strøm/vandtemperatur har i 198/210 zoner hovedsageligt fallback med kun sene native DKSS-blokke; 10 zoner har sammenhængende DKSS. Ingen kilde- eller mergeændring er godkendt.
-- **ISSUE-WEATHER-HISTORY-ONLY-24H – RETTET LOKALT I 4.0.209 / AFVENTER PRODUKTION:** Den hidtidige rå historik kunne ikke bære analyse af mobilisering 24–72 timer tilbage. En separat 72-timershistorik bevares nu score-neutralt; aktiv score/state forbliver på 24 timer, og rå data udelades fortsat fra public projection.
+- **ISSUE-WEATHER-HISTORY-ONLY-24H – PRODUKTIONSVERIFICERET, 72-TIMERS MÅLING ÅBEN:** En separat 72-timershistorik bevares nu score-neutralt; #31855164652 viser 107 bevarede prøver i alle 210 zoner efter endnu en kørsel. Det fulde 72-timers vindue skal stadig gennemløbes og dokumenteres. Aktiv score/state forbliver på 24 timer, og rå data udelades fortsat fra public projection.
 
 ## 4.0.119 – produktionsbevist DKSS-parserfejl
 - **ISSUE-DKSS-WIND-TAIL-V-DROPPED – PRODUKTIONSVERIFICERET LØST I #1831:** #1828 beviste, at DKSS-id 34 blev fejlfortolket som `sst` og forkastet som tvetydigt. #1831 genkendte begge U/V-felter, gav vindhale i 107 zoner med mindst 96 timer og gennemførte fulde gates/deploy. Det offentlige datasæt havde 108/208 zoner med mindst 96 timers samlet vind og maksimum 111,5 timer.

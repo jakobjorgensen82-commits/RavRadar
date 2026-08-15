@@ -1,4 +1,4 @@
-# AI Roadmap – RavRadar 4.0.209-kandidat
+# AI Roadmap – RavRadar 4.0.211
 
 Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status skal løbende flyttes til RDKS, når noget implementeres.
 
@@ -8,7 +8,7 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 - Den skrivebeskyttede deployaudit har bekræftet 210/210 aktive zoner og vejrdata til alle tre Vadehavszoner.
 - En fuld frisk validering følger fortsat den bindende rækkefølge: central adminhydrering og tombstones, nyt/hydreret vejr, fuld `validate`, releasegate og først derefter artifact/deploy.
 - 4.0.208 er produktionsverificeret i #31848912461 på commit `7a3382f`; direkte efterkontrol viste version 4.0.208 og datasæt `rr-20260814230422-210`.
-- 4.0.209-kandidaten bevarer separat 72 timers rå pipelinehistorik score-neutralt og retter tabet af DMI-vandstandsidentitet. Fuld validering og produktion afventer.
+- 4.0.209 indførte separat 72 timers rå pipelinehistorik score-neutralt og rettede tabet af DMI-vandstandsidentitet. 4.0.211-produktionen beviser, at historikken bevares mellem kørsler; det fulde 72-timers målevindue er endnu ikke gået.
 - Næste aktive udvikleropgave ændres ikke: DMI-first femdøgnskæderne under DEC-0030.
 
 ## P0-ejerreview – ét land-/havpunktpar pr. kyststrækning
@@ -21,6 +21,9 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 ## Næste aktive udvikleropgave – DMI-first femdøgnskæder
 
 - Fortsæt P1-audit og design under DEC-0030 for vind, bølger, strøm, vandstand og øvrige viste/scorede komponenter.
+- Produktionsbevis #31855164652 og datasæt `rr-20260815011320-210` giver verificeret strøm ved nutiden i 210/210 zoner. Strømkæden når mindst cirka 70,8 timer i alle zoner, men kun 121/210 når mindst 96 timer. Den konkrete P1-opfølgning er derfor at klassificere og forklare halen i de resterende 89 zoner og designe vejen til cirka 120 timer uden at skjule `missing`.
+- Følg de 75 zoner, som først fik verificeret strøm i den afsluttende genopbygning, gennem et fuldt 72-timers vindue. Dokumentér pr. produktionskørsel bevaret historiklængde, verificeret andel og eventuelle huller; historiske mangler må ikke udfyldes bagudrettet.
+- Exitkriteriet for historikopfølgningen er mindst 72 timers faktisk bevaret pipelinehistorik i alle 210 zoner samt en særskilt liste over reelle DMI-huller. Det er analysegrundlag for senere mobiliserings-/scorearbejde og ændrer ikke den aktive 24-timersscore.
 - Dokumentér først faktisk dækning, provenance, overgangskvalitet og regressionsplan. Indfør ikke ny produktionskilde, fallback eller scoreændring før denne analyse er afsluttet og godkendt.
 - Supabase-egress overvåges gennem næste billingperiode. Den private, dataminimerede besøgstæller med enkel adminrapport er fortsat P2.
 
