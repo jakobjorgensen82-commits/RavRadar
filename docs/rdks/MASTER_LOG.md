@@ -1194,3 +1194,10 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - 4.0.221 genberegner alarmen på effektiv routing og samlet forecast-/cachegyldighed, rydder stale mærker og bevarer kildevalg og RavScore.
 - Den første push stoppede fail-closed på en forældet teksttest; den fokuserede testrettelse blev genvalideret uden gateændring. Efterkontrollen fandt derefter, at gamle 15/21-zonetal var stale registerfelter, mens faktisk runtimebrug både før og efter var 5/6.
 - #31889559758 bestod hele produktionskæden. Artifact #2777 viser 116,6 timers resttid, nul valgte warning/critical-kilder og nul nye notifikationer; central routing er uændret, og datasættet er `rr-20260815142117-210`.
+
+## 2026-08-15 – roadmapstatus ryddet op efter 4.0.221
+
+- Håndbogens 111 kapitler og ekspertens 22-punkts arbejdsplan var allerede omskrevet og permanent regressionstestet; P2-punktet er derfor markeret afsluttet.
+- Performancebaseline og progressiv public runtime var allerede produktionsverificeret i 4.0.216/#31880984004; kun almindelig mobil-/desktopovervågning forbliver åben.
+- Ingen kode, datakilde, fallback, RavScore eller geometri er ændret.
+- Samme read-only gennemgang af artifact #2777 målte 155 rå prøver/38,278 timer og 2,559–38,278 timers verificeret spænd. Historikken vokser, men alle 210 zoner er fortsat under 72 verificerede timer.

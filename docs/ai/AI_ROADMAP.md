@@ -22,7 +22,7 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 
 - Fortsæt P1-audit og design under DEC-0030 for vind, bølger, strøm, vandstand og øvrige viste/scorede komponenter.
 - Produktionsbevis #31855164652 og datasæt `rr-20260815011320-210` giver verificeret strøm ved nutiden i 210/210 zoner. Strømkæden når mindst cirka 70,8 timer i alle zoner, men kun 121/210 når mindst 96 timer. Den konkrete P1-opfølgning er derfor at klassificere og forklare halen i de resterende 89 zoner og designe vejen til cirka 120 timer uden at skjule `missing`.
-- Følg den verificerede strøm gennem et fuldt 72-timers vindue. Artifact #2764 viser 149 rå prøver og 37,149 timers rå historie i alle 210 zoner, men den verificerede historie spænder kun 1,43–37,149 timer afhængigt af zone. 4.0.220 gør denne forskel til et fast read-only mål. Baseline må ikke udfyldes bagudrettet.
+- Følg den verificerede strøm gennem et fuldt 72-timers vindue. Artifact #2777 viser 155 rå prøver og 38,278 timers rå historie i alle 210 zoner, men den verificerede historie spænder kun 2,559–38,278 timer afhængigt af zone. 4.0.220 gør denne forskel til et fast read-only mål. Baseline må ikke udfyldes bagudrettet.
 - Exitkriteriet for historikopfølgningen er mindst 72 timers faktisk bevaret pipelinehistorik i alle 210 zoner samt en særskilt liste over reelle DMI-huller. Det er analysegrundlag for senere mobiliserings-/scorearbejde og ændrer ikke den aktive 24-timersscore.
 - 4.0.212 lukker en dokumenteret overgangsregression før den videre haleanalyse: kørsel #31857361460 reducerede 27 komplette NSBS-strømserier til ét sent tidspunkt, fordi et marginalt nærmere skalarfelt kunne genvælge hele havmodellen. Kun et gyldigt fælles strøm-U/V-par må nu ændre det autoritative valg. #31870747677 genoprettede 210/210 ved nutiden og mindst 100,8 timers sammenhængende marineprognose i alle zoner.
 - 4.0.214-opfølgning: mål efter hver DMI-kørsel hvor mange zoner/timer der har eksplicit `surface:0`. Gamle umærkede temperaturtimer må ikke vende tilbage; alle tre DKSS-modeller skal gennem rotationen.
@@ -140,20 +140,21 @@ Ejeren har udtrykkeligt godkendt en landsdækkende privat revision af kystdele o
 - [x] Central autoritet for zonegeometri, regler og routing er bevaret og dækket af admin-, propagation- og releasegates.
 - Den særskilte måling af Supabase-egress gennem næste billingperiode er fortsat åben; en grøn funktionstest er ikke et forbrugsmål.
 
-## P2 – håndbog og ekspertarbejde
-- Gennemarbejd hele håndbogen sprogligt og pædagogisk i almindeligt dansk.
-- Omskriv ekspertens valideringsmatrix, så hvert punkt forklarer betydning, nuværende RavRadar-adfærd, usikkerhed, konkret ekspertspørgsmål og mulig effekt på regel/score.
+## Afsluttet P2 – håndbog og ekspertarbejde
+- [x] Alle 111 webhåndbogskapitler har fast læsehjælp og er gennemarbejdet i almindeligt dansk; den permanente regression afviser kapitler uden læsehjælp.
+- [x] Ekspertens 22-punkts valideringsmatrix er omskrevet til en arbejdsplan. Hvert punkt forklarer hvad RavRadar gør, hvorfor det kan være for simpelt, hvad eksperten konkret skal vurdere, og hvad svaret eventuelt kan bruges til. Intet ekspertinput ændrer regler eller score automatisk.
 
 ## P2 – historisk state og faglig validering
 - Bevar skyggetilstanden score-neutral, indtil faktiske produktionsdata og ekspertvalidering viser, at den er robust.
 - Når et numerisk transportbidrag senere introduceres, gør det gradvist, versioneret, forklarligt og med regressionssammenligning.
 - Bevar eksisterende pålidelige morfologidata; kræv ikke manuel landsdækkende morfologikortlægning.
 
-## P2 – performance
-- Bevar/udbyg startupmålinger for page load, JS-init, manifest/data fetch, parsing, scoreberegning og maprendering.
-- Hold tunge state-/historikberegninger i pipeline og send kompakte præberegnede data til public klient.
+## Afsluttet P2 – performancebaseline, fortsat overvågning
+- [x] Startupmålinger og en gentagelig byteaudit dokumenterer payloadens vigtigste dele.
+- [x] Tunge state-/historikberegninger ligger fortsat i pipeline, mens klienten modtager kompakte præberegnede startdata.
 - **Analyse startet 2026-08-15:** `npm run audit:public-startup-payload` gør bytefordelingen gentagelig uden at skrive. Direkte deploymåling af `rr-20260815094833-210` viser 27,11 MB: lokale kystdele udgør 19,99 MB, og hovedzonernes prognoser 6,88 MB. Det gamle lokale 209-zonesnapshot på 6,91 MB er kun historisk baseline uden aktive kystdelsdata.
-- **Implementeret lokalt i 4.0.216:** Et lille aktuelt startdatasæt efterfølges af ikke-blokerende femdøgnstimer og detaljerede lokale kystdelsdata. Datasetintegritet, missing, prognose, assistent, lokal score og historik bevares; lokal frisk 210-zonebrowsertest viste cirka 0,7 sekund til kort/rangliste og efterfølgende komplet prognose uden browserfejl. Fuld gate og produktion afventer.
+- **Produktionsverificeret i 4.0.216:** Et lille aktuelt startdatasæt efterfølges af ikke-blokerende femdøgnstimer og detaljerede lokale kystdelsdata. Datasetintegritet, missing, prognose, assistent, lokal score og historik bevares; lokal frisk 210-zonebrowsertest viste cirka 0,7 sekund til kort/rangliste og efterfølgende komplet prognose uden browserfejl. #31880984004 bestod fuld gate og deploy.
+- [ ] Fortsæt almindelig produktionsovervågning på mobil og desktop; det er drift, ikke en blokering for næste roadmapopgave.
 
 ## P2 – privat besøgsstatistik i admin
 - [x] 4.0.215 implementerer en usynlig, ikke-blokerende offentlig tæller og en ejerbeskyttet adminrapport.

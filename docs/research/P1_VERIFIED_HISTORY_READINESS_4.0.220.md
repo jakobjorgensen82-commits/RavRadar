@@ -26,3 +26,7 @@ Senere mobiliseringsanalyse må først behandle historikken som landsdækkende b
 ## Produktionsverifikation af 4.0.220
 
 Kørsel #31888082124 bestod hele kæden og deployede datasæt `rr-20260815134755-210`. Artifact #2771 viser 210/210 verificerede aktuelle zoner. Alle zoner har 152 rå prøver over 37,722 timer; verificerede prøveantal er 27×7, 75×8, 98×9 og 10×109. Det verificerede tidsspænd er 2,003 timer i 75 zoner, 19,54 timer i 125 og 37,722 timer i 10. Ingen zone er uden verificerede prøver, men alle 210 er fortsat under exitkriteriet på 72 timer.
+
+## Seneste naturlige checkpoint
+
+Artifact #2777 fra #31889559758 viser fortsat vækst uden rekonstruktion: 155 rå prøver over 38,278 timer i alle 210 zoner. Verificerede prøveantal er 27×10, 75×11, 98×12 og 10×112. Det verificerede tidsspænd er 2,559 timer i 75 zoner, 20,1 timer i 125 og 38,278 timer i 10. Alle zoner har mindst én verificeret prøve og aktuel verificeret strøm, men alle 210 er fortsat under 72 verificerede timer.

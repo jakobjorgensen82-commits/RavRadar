@@ -17,6 +17,7 @@
 - Samme artifact beviser en fuld ny `dkss_lf`-cyklus med 41/41 trin og vækst i de otte Limfjordszoners marine hale fra 98 til 115 viste timer. Ingen kilde, fallback eller RavScore er ændret.
 - GitHub Actions #31888082124 bestod den fulde produktionskæde på commit `50f2aa491483d584e1aaa922160e6253777a8fff`. Offentlig 4.0.220 bruger datasæt `rr-20260815134755-210` med 210 zoner og 673 kyststrækninger.
 - Artifact #2771 viser fortsat vækst uden rekonstruktion: 152 rå prøver/37,722 timer i alle zoner og verificerede prøveantal 27×7, 75×8, 98×9 og 10×109. Verificeret tidsspænd er 2,003 timer i 75 zoner, 19,54 timer i 125 og 37,722 timer i 10; ingen zone mangler verificerede prøver, men alle 210 er stadig under 72 timer.
+- Artifact #2777 fortsætter samme naturlige mønster: 155 rå prøver/38,278 timer, verificerede prøveantal 27×10, 75×11, 98×12 og 10×112 samt verificeret spænd på 2,559–38,278 timer. Alle 210 har aktuel verificeret strøm og mindst én verificeret historikprøve; alle er fortsat under 72-timerskravet.
 
 ## 4.0.219 – reduceret Supabase-readback
 
