@@ -363,9 +363,10 @@ export function buildFlowArrowCandidates(featureCollection, conditionForZone, co
       const point = pointCoordinates(flowPoints.current);
       if (point) candidates.push({ type:'current', zoneId:part.zoneId, partId, point, directionDeg:Number(weather.currentDirectionDeg), source:'dmi-marine-grid' });
     }
-    if (validDirection(weather.windDirectionDeg) && flowPoints?.sources?.wind === 'dmi-atmospheric-grid') {
+    const windSource = flowPoints?.sources?.wind;
+    if (validDirection(weather.windDirectionDeg) && ['dmi-atmospheric-grid', 'dmi-marine-wind-grid'].includes(windSource)) {
       const point = pointCoordinates(flowPoints.wind);
-      if (point) candidates.push({ type:'wind', zoneId:part.zoneId, partId, point, directionDeg:Number(weather.windDirectionDeg), source:'dmi-atmospheric-grid' });
+      if (point) candidates.push({ type:'wind', zoneId:part.zoneId, partId, point, directionDeg:Number(weather.windDirectionDeg), source:windSource });
     }
   }
   return candidates;

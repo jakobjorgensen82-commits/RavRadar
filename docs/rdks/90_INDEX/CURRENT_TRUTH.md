@@ -4,10 +4,12 @@
 
 - Landsoversigten bevarer ét repræsentativt vind- og strømpunkt pr. hovedzone, så kortet fortsat er læsbart.
 - Fra zoomniveau 9 kan kortet desuden vise de lokale kystdeles egne vind- og strømpile. Hver tæt pil skal stå på det faktiske DMI-gitterpunkt, som leverede den pågældende kystdels data.
-- En lokal strømpil kræver strøm-U og strøm-V på præcis samme koordinat; en lokal vindpil kræver tilsvarende vind-U og vind-V. Fallbackpunkter og ufuldstændig provenance må ikke skabe tæthed.
+- En lokal strømpil kræver strøm-U og strøm-V på præcis samme koordinat; en lokal vindpil kræver tilsvarende vind-U og vind-V. Vindpunktet kan komme fra den primære HARMONIE-serie eller den faktisk anvendte DKSS-`wind-tail`-serie, og runtime bevarer forskellen. Fallbackpunkter og ufuldstændig provenance må ikke skabe tæthed.
 - Startpakken bærer de aktuelle vinderdeles pilgrundlag. Når den fulde detaljepakke ankommer, opdateres pilelaget automatisk med alle dokumenterede lokale punkter i udsnittet.
 - Ændringen flytter eller kopierer ingen pile kunstigt og ændrer ingen DMI-værdi, kilde, prognose, kyst, land-/vandpunkt, RavScore eller historik. Se DEC-0039.
-- Den målrettede syntetiske regression samt eksisterende zoom-, provenance-, DMI- og progressiv-runtime-tests består lokalt. Frisk central produktion og livekort er næste gate.
+- Første produktionsforsøg i #31911509244/#2830 stoppede korrekt ved 629/673 verificerede lokale strømpunkter efter en delvis `dkss_lf`-hentning; kravet var 640. Uændret forsøg 2 brugte den progressive cache og bestod den faglige audit med 670/673 samt fuld `validate` og releasegate.
+- Forsøg 2 stoppede derefter før Pages, fordi `runtime-diagnostics`-upserten ramte HTTP 500/PostgreSQL `57014` både oprindeligt og ved den ene tilladte genprøvning. Fail-closed-reglen virkede som besluttet.
+- Efteraudit af datasæt `rr-20260815224811-210` viste korrekt 670 lokale strøm-gitterpunkter, men nul verificerede lokale vind-gitterpunkter i den offentlige detaljepakke. Årsagen var, at transporten overså DKSS-felterne `wind-tail-u-10m/v-10m`. Read-only replay af samme DMI-cache finder eksakte vindhalepar til 670/673 dele på 507 unikke gitterpunkter. Den lokale rettelse genkender nu parret som `dmi-marine-wind-grid`; ny fuld produktion og livekontrol mangler.
 - Ejeren fortsætter samtidig den manuelle land-/vandpunktgennemgang. Fem-døgnsdækning og historikanalyse er efter ejerbeslutning midlertidigt udsat, indtil flere naturlige data er opsamlet; dataopsamlingen og de eksisterende gates fortsætter uændret.
 
 ## 4.0.227 – lokal kystvinkel er en advarsel, ikke en ejerblokering

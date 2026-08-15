@@ -7,10 +7,11 @@ Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde sa
 ## Aktuel sandhed
 
 - 4.0.227 er produktionsverificeret i #31908498204/#2824 med 210 zoner, 673 kyststrækninger, frisk DMI, fulde gates, Supabase og Pages.
-- 4.0.228-kandidaten viser fra zoomniveau 9 flere lokale vind- og strømpile, men kun ved kystdelenes egne eksakt parrede DMI-U/V-gitterpunkter.
+- 4.0.228-kandidaten viser fra zoomniveau 9 flere lokale vind- og strømpile, men kun ved kystdelenes egne eksakt parrede DMI-U/V-gitterpunkter. Vindkilden kan være HARMONIE eller den faktisk anvendte DKSS-`wind-tail`-serie og mærkes særskilt.
 - Fjernzoom bevarer hovedzonernes oversigtspile. Fallbackankre og kunstige kopier må ikke skabe ekstra tæthed.
 - Den fulde detaljepakke opdaterer automatisk pilelaget. DMI-værdier, forecast, RavScore, historik og geometri er uændrede.
-- Lokal målrettet test er grøn; frisk central produktion og livekontrol mangler, indtil produktionsbevis senere er indarbejdet.
+- Produktcommit `bb1892e4072deb77dbc83a203587221c666013d2` er pushed. #31911509244/#2830 forsøg 1 stoppede på en delvis Limfjordshentning med 629/673 lokale strømpunkter. Forsøg 2 nåede 670/673 og bestod fulde gates, men stoppede før Pages på gentaget Supabase `57014`.
+- Artifactauditten fandt derefter, at DKSS-`wind-tail-u/v` ikke blev ført til lokale vindpunkter. Rettelsen er implementeret og testet lokalt; ny produktion, artifactaudit og livekontrol mangler.
 
 ## Ejerens parallelle arbejde
 

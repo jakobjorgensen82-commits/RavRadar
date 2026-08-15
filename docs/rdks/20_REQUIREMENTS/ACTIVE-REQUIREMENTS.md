@@ -181,7 +181,7 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 ## Vandstandsadmin – prioriteret og atomisk initialisering
 - **REQ-WATER-ADMIN-INIT-001 – IMPLEMENTERET I 4.0.105:** Vandstandsfanen må først være klikbar, når zoner, vandstandskilder og central routing er indlæst som én sammenhængende tilstand.
 - **REQ-WATER-ADMIN-INIT-002 – IMPLEMENTERET I 4.0.105:** Øvrige admin- og diagnosekald må ikke blokere eller senere overskrive brugerens aktive vandstandsrouting.
-- **REQ-MAP-ARROWS-ZOOM-001 – IMPLEMENTERET LOKALT I 4.0.228 / AFVENTER PRODUKTION:** Ved indzoomning skal kortet vise mærkbart flere verificerede vind- og strømpile, når flere faktiske DMI-gitterpunkter findes i udsnittet. Fra zoomniveau 9 må lokale pile kun komme fra kystdelenes egne dokumenterede DMI-U/V-punkter; pilene må ikke flyttes eller kunstigt kopieres, og ændringen må ikke påvirke DMI-data eller RavScore. Se DEC-0039.
+- **REQ-MAP-ARROWS-ZOOM-001 – IMPLEMENTERET LOKALT I 4.0.228 / AFVENTER PRODUKTION:** Ved indzoomning skal kortet vise mærkbart flere verificerede vind- og strømpile, når flere faktiske DMI-gitterpunkter findes i udsnittet. Fra zoomniveau 9 må lokale pile kun komme fra kystdelenes egne dokumenterede DMI-U/V-punkter, herunder den faktisk anvendte primære HARMONIE- eller DKSS-`wind-tail`-vindserie med ærligt kildemærke; pilene må ikke flyttes eller kunstigt kopieres, og ændringen må ikke påvirke DMI-data eller RavScore. Se DEC-0039.
 
 - Vandstandskortets klik, røde markører og Fjern skal reagere straks, også hvis browserens localStorage er fuld. Central Supabase-lagring må ikke afhænge af lokal cache.
 

@@ -20,6 +20,7 @@ import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWat
 import { applyCurrentTransportToHistory } from './lib/current-transport-history.mjs';
 import { retainWeatherHistory } from './lib/weather-history-retention.mjs';
 import { buildEffectiveRoutingCacheAlerts } from './lib/water-station-routing-alerts.mjs';
+import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
 
 const ZONES_PATH = 'data/zones.geojson';
 const COASTAL_PARTS_SOURCE_PATH = 'data/geometry-v2/active-national-coastal-parts/manifest.json';
@@ -878,7 +879,7 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, generated
       };
       const record = bulkZoneToForecastRecord(feature, bulkCache, generatedAt, null);
       if (!record) continue;
-      const flowPoints = flowPointsFromForecastRecord(feature, record);
+      const flowPoints = flowPointsFromForecastRecord(record, zonePoint(feature));
       const hourly = normalizeForecastHourly(record.hourly ?? []);
       const currentSamples = hourly.filter(hour => hour.currentSpeedMps != null && hour.currentDirectionDeg != null).map(hour => ({
         at: hour.time,
@@ -1079,7 +1080,7 @@ async function fromDmi(feature, generatedAt, { includeAtmosphere = false } = {})
   });
   const currentForecast = selectDmiForecastAt(forecastRecord, generatedAt) ?? dmiForecast.hourly[0];
   return {
-    point, flowPoints: flowPointsFromForecastRecord(feature, forecastRecord), provider: 'dmi', providerLabel: includeAtmosphere ? 'DMI Open Data' : 'DMI havdata + Open-Meteo fallback',
+    point, flowPoints: flowPointsFromForecastRecord(forecastRecord, zonePoint(feature)), provider: 'dmi', providerLabel: includeAtmosphere ? 'DMI Open Data' : 'DMI havdata + Open-Meteo fallback',
     modelSteps: { wind: w?.step ?? null, wave: wa?.step ?? null, ocean: o?.step ?? null },
     dmiCompleteness: completeness,
     current: {
@@ -1488,42 +1489,13 @@ async function readDmiForecastStore() {
   }
 }
 
-function flowPointsFromForecastRecord(feature, record) {
-  const fallback = zonePoint(feature);
-  const grid = record?.model?.completeness?.gridPoints ?? {};
-  const coordinate = value => value === null || value === undefined || value === '' || !Number.isFinite(Number(value)) ? null : Number(value);
-  const exactPair = (firstKey, secondKey) => {
-    const first = grid?.[firstKey], second = grid?.[secondKey];
-    const firstLon = coordinate(first?.longitude), firstLat = coordinate(first?.latitude);
-    const secondLon = coordinate(second?.longitude), secondLat = coordinate(second?.latitude);
-    if ([firstLon, firstLat, secondLon, secondLat].some(value => value === null)) return null;
-    if (Math.abs(firstLon - secondLon) > 1e-7 || Math.abs(firstLat - secondLat) > 1e-7) return null;
-    return [firstLon, firstLat];
-  };
-  const currentGrid = exactPair('current-u', 'current-v');
-  const windGrid = exactPair('wind-u-10m', 'wind-v-10m');
-  const waveRow = grid?.['significant-wave-height'];
-  const waveLon = coordinate(waveRow?.longitude), waveLat = coordinate(waveRow?.latitude);
-  const waveGrid = waveLon !== null && waveLat !== null ? [waveLon, waveLat] : null;
-  return {
-    current: currentGrid || fallback,
-    wind: windGrid || fallback,
-    wave: waveGrid || fallback,
-    sources: {
-      current: currentGrid ? 'dmi-marine-grid' : 'zone-marine-anchor',
-      wind: windGrid ? 'dmi-atmospheric-grid' : 'zone-marine-anchor',
-      wave: waveGrid ? 'dmi-wave-grid' : 'zone-marine-anchor'
-    }
-  };
-}
-
 function zoneFromDmiForecastCache(feature, record, generatedAt) {
   const selected = selectDmiForecastAt(record, generatedAt);
   if (!selected) return null;
   const remaining = (record.hourly ?? []).filter(item => Date.parse(item.time) >= Date.parse(generatedAt) - 30 * 60000);
   return {
     point: zonePoint(feature),
-    flowPoints: flowPointsFromForecastRecord(feature, record),
+    flowPoints: flowPointsFromForecastRecord(record, zonePoint(feature)),
     provider: 'dmi-cache',
     providerLabel: 'DMI 5-døgns prognosecache',
     modelSteps: { wind: selected.time, wave: selected.time, ocean: selected.time },

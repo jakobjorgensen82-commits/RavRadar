@@ -4,9 +4,11 @@
 - Fem-døgnsdækning og historikanalyse er midlertidigt udsat, indtil flere naturlige data er opsamlet. De eksisterende data- og releasegates samt den automatiske historikopsamling fortsætter.
 - Det aktive krav REQ-MAP-ARROWS-ZOOM-001 er implementeret: landsoversigten bevarer hovedzonepilene, mens zoomniveau 9 og nærmere kan vise lokale kystdeles selvstændige DMI-gitterpile.
 - Hver lokal strømpil kræver strøm-U og strøm-V på præcis samme gitterkoordinat; hver lokal vindpil kræver tilsvarende vind-U og vind-V. Fallbackankre, ufuldstændig provenance og kunstige kopier giver ingen ekstra pil.
+- Vindproveniensen dækker både det primære HARMONIE-U/V-par og DKSS-havmodellens `wind-tail`-U/V-par. Runtime mærker dem særskilt og bruger kun den serie, forecastet faktisk valgte.
 - Den fulde detaljepakke fører alle lokale flowpunkter til browseren. Pilelaget opdateres automatisk, når pakken ankommer, og ved efterfølgende zoom eller kortflytning.
 - Ændringen påvirker kun kortvisningen. DMI-værdier, kilder, forecast, RavScore, historik, zoner, kyster og land-/vandpunkter er uændrede.
-- Målrettet zoomtæthedsregression og eksisterende zoom-, provenance-, null-safety-, DMI-bulk- og progressiv-runtime-tests består lokalt. Frisk central produktion er næste gate.
+- #31911509244/#2830 forsøg 1 stoppede korrekt ved 629/673 verificerede lokale strømpunkter efter delvis `dkss_lf`. Uændret forsøg 2 nåede 670/673, bestod fuld `validate` og releasegate, men stoppede før Pages på gentaget Supabase `57014` efter én tilladt retry.
+- Artifactaudit af forsøg 2 fandt 670 ægte lokale strømpunkter, men nul ægte lokale vindpunkter i detaljepakken. Rodårsagen var manglende transport af `wind-tail-u-10m/v-10m`; read-only cache-replay viser 670/673 eksakte par på 507 unikke vindgitterpunkter. Fejlen er rettet lokalt og regressionstestet. Ny fuld produktion er næste gate.
 
 ## 2026-08-15 – 4.0.227 vejledende lokal kystvinkel
 

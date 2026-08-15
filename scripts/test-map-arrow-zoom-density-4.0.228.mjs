@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import { buildFlowArrowCandidates, installFlowArrows } from '../js/map/map-view.js';
 import { buildPublicConditions, buildPublicConditionDetails } from './public-conditions-lib.mjs';
+import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
 
 const failures=[];
 const need=(ok,message)=>{if(!ok)failures.push(message);};
@@ -16,7 +17,7 @@ const full={
   datasetId:'rr-arrow-density-test',generatedAt:'2026-08-15T12:00:00.000Z',
   zones:{Z1:{provider:'dmi',flowPoints,current:{currentDirectionDeg:80,windDirectionDeg:260},forecast:{hourly:[]}}},
   coastalParts:{schemaVersion:1,enabled:true,expectedPartCount:3,scoredPartCount:3,parts:{
-    P1:part('Z1','Del 1',[10,56],90,270),
+    P1:part('Z1','Del 1',[10,56],90,270,{flowPoints:{...flowPoints,sources:{current:'dmi-marine-grid',wind:'dmi-marine-wind-grid'}}}),
     P2:part('Z1','Del 2',[10.5,56.5],100,280,{flowPoints:{...flowPoints,sources:{current:'zone-marine-anchor',wind:'zone-marine-anchor'}}}),
     P3:part('Z1','Del 3',[11,57],110,290,{flowPoints:{current:[11.1,57.1],wind:[11.2,57.2],sources:{current:'dmi-marine-grid',wind:'dmi-atmospheric-grid'}}})
   },zones:{Z1:{expectedPartCount:3,scoredPartCount:3,hourly:[{time:'2026-08-15T12:00:00.000Z',waders:{winningPartId:'P1'},beach:{winningPartId:'P1'}}]}}}
@@ -35,6 +36,25 @@ need(overview.length===2,'Landsoversigten skal bevare ét vind- og ét strømpun
 need(close.length===6,'Indzoomning skal tilføje de fire verificerede lokale DMI-pile og afvise den uverificerede lokale kopi.');
 need(close.filter(row=>row.partId).every(row=>row.source.startsWith('dmi-')),'Lokale pile uden eksplicit DMI-gitterproveniens blev accepteret.');
 need(close.some(row=>row.partId==='P3'&&row.type==='current'&&row.point[0]===11.1),'Et selvstændigt lokalt strømgridpunkt mangler ved indzoomning.');
+need(close.some(row=>row.partId==='P1'&&row.type==='wind'&&row.source==='dmi-marine-wind-grid'),'En dokumenteret lokal DKSS-vindpil mangler ved indzoomning.');
+
+const gridPoint=(longitude,latitude)=>({longitude,latitude});
+const recordWithGrid=gridPoints=>({model:{completeness:{gridPoints}}});
+const primary=flowPointsFromForecastRecord(recordWithGrid({
+  'wind-u-10m':gridPoint(12.1,55.1),'wind-v-10m':gridPoint(12.1,55.1),
+  'wind-tail-u-10m':gridPoint(12.2,55.2),'wind-tail-v-10m':gridPoint(12.2,55.2)
+}),[9,54]);
+need(primary.wind[0]===12.1&&primary.sources.wind==='dmi-atmospheric-grid','Det primære atmosfæriske DMI-vindpunkt skal foretrækkes, når det findes som eksakt U/V-par.');
+const marine=flowPointsFromForecastRecord(recordWithGrid({
+  'wind-tail-u-10m':gridPoint(13.2,56.2),'wind-tail-v-10m':gridPoint(13.2,56.2)
+}),[9,54]);
+need(marine.wind[0]===13.2&&marine.sources.wind==='dmi-marine-wind-grid','DKSS-vindhalens eksakte U/V-punkt skal bevares som lokal vindproveniens.');
+const mismatch=flowPointsFromForecastRecord(recordWithGrid({
+  'current-u':gridPoint(10,55),'current-v':gridPoint(10.01,55),
+  'wind-tail-u-10m':gridPoint(11,56),'wind-tail-v-10m':gridPoint(11,56.01)
+}),[9,54]);
+need(mismatch.current[0]===9&&mismatch.sources.current==='zone-marine-anchor','Uens strøm-U/V-koordinater skal falde sikkert tilbage.');
+need(mismatch.wind[0]===9&&mismatch.sources.wind==='zone-marine-anchor','Uens vind-U/V-koordinater skal falde sikkert tilbage.');
 
 globalThis.L={
   latLng:(lat,lng)=>({lat,lng}),
@@ -55,8 +75,7 @@ need(closeLayer.counts().wind===2&&closeLayer.counts().current===2,'Det rendered
 
 const updateWeather=await fs.readFile('scripts/update-weather.mjs','utf8');
 const app=await fs.readFile('app.js','utf8');
-need(updateWeather.includes('const flowPoints = flowPointsFromForecastRecord(feature, record);')&&updateWeather.includes('flowPoints: row.flowPoints'),'Produktionsbygningen fører ikke de lokale gitterpunkter til runtimekontrakten.');
-need(updateWeather.includes("const exactPair = (firstKey, secondKey)")&&updateWeather.includes("current: currentGrid ? 'dmi-marine-grid' : 'zone-marine-anchor'"),'DMI-proveniens kræver ikke samme U/V-gitterpunkt fail-closed.');
+need(updateWeather.includes('const flowPoints = flowPointsFromForecastRecord(record, zonePoint(feature));')&&updateWeather.includes('flowPoints: row.flowPoints'),'Produktionsbygningen fører ikke de lokale gitterpunkter til runtimekontrakten.');
 need(app.includes('()=>state.conditions.coastalParts||null')&&app.includes('state.flowArrows?.refresh?.()'),'Pilelaget opdateres ikke med den fulde detaljepakke.');
 
 if(failures.length){console.error('Zoomtæthed for kortpile fejlede:\n- '+failures.join('\n- '));process.exit(1);}

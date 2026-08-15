@@ -15,7 +15,7 @@ De aktive 673 lokale kystdele har egne vejrrækker og kan derfor også have selv
 1. Ved fjernzoom bevarer kortet én repræsentativ vind- og strømpil pr. aktiv hovedzone.
 2. Fra zoomniveau 9 kan kortet tilføje lokale kystdeles egne pile i det synlige udsnit.
 3. En lokal strømpil kræver et eksakt fælles DMI-gitterpunkt for strøm-U og strøm-V.
-4. En lokal vindpil kræver et eksakt fælles DMI-gitterpunkt for vind-U og vind-V.
+4. En lokal vindpil kræver et eksakt fælles DMI-gitterpunkt for vind-U og vind-V. Det kan være det primære HARMONIE-punkt eller DKSS-havmodellens dokumenterede `wind-tail`-punkt, alt efter hvilken vindserie runtime faktisk bruger; kildetypen skal bevares ærligt.
 5. Ufuldstændig provenance, fallbackankre og kunstige kopier eller forskydninger må ikke skabe ekstra tæthed.
 6. Den progressive startpakke må bære aktuelle vinderdeles flowpunkter; den fulde detaljepakke bærer alle dokumenterede lokale punkter og skal udløse en opdatering af pilelaget.
 7. Den eksisterende pixelafstand og udsnitsfiltrering må fortsat begrænse visuel overlap. Den må ikke flytte pile væk fra deres datakoordinat.

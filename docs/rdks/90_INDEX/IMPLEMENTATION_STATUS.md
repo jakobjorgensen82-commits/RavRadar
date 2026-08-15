@@ -5,6 +5,7 @@
 - [x] Landsoversigten bevarer hovedzonernes eksisterende repræsentative vind- og strømpile.
 - [x] Fra zoomniveau 9 tilføjes lokale pile fra kystdelenes egne runtimeposter.
 - [x] Lokale strømpile kræver eksakt fælles DMI-gitterpunkt for strøm-U/V; lokale vindpile kræver eksakt fælles punkt for vind-U/V.
+- [x] Lokal vindproveniens følger den serie, forecastet faktisk bruger: primær HARMONIE foretrækkes, og ellers accepteres kun et eksakt DKSS-`wind-tail`-U/V-par med særskilt kildemærke.
 - [x] Uverificerede lokale anker-/fallbackpunkter må ikke bruges til at fremstille ekstra tæthed.
 - [x] Den progressive startpakke bevarer den aktuelle vinderdels flowpunkt, mens detaljepakken bevarer alle kystdeles flowpunkter.
 - [x] Pilelaget opdateres, når detaljepakken er flettet ind, og fortsætter med at opdatere ved zoom og kortflytning.
@@ -13,7 +14,10 @@
 - [x] Den fulde lokale `validate` gennemfører hele geometri-v2-kæden og stopper derefter som forventet fail-closed på repositoryets historiske 209/211-vejrsnapshot før central adminhydrering; forholdet er ikke omgået eller omklassificeret.
 - [x] Lokal `release:gate` består for 4.0.228.
 - [x] DMI-værdier, kilder, forecast, RavScore, historik og geometri er uændrede.
-- [ ] Frisk central 210-zoneproduktion, fuld `validate`, releasegate, supportartifact, Pages-deploy og direkte livekontrol mangler.
+- [x] #31911509244/#2830 forsøg 1 stoppede fail-closed ved 629/673 verificerede lokale strømpunkter efter delvis `dkss_lf`; uændret forsøg 2 nåede 670/673 og bestod fuld `validate` og releasegate.
+- [x] Forsøg 2 stoppede efter den ene tilladte genprøvning af Supabase HTTP 500/PostgreSQL `57014`; Pages blev korrekt ikke deployet.
+- [x] Artifactaudit af `rr-20260815224811-210` fandt transportfejlen: 670/670 lokale vindpunkter var zoneankre, fordi DKSS-`wind-tail-u/v` ikke blev genkendt. Read-only cache-replay finder 670/673 eksakte vindhalepar på 507 unikke gitterpunkter. Fejlen er rettet lokalt med direkte regression for primær vind, marin vindhale og U/V-mismatch.
+- [ ] Ny central produktion, supportartifact med lokale vindpunkter, Pages-deploy og direkte livekontrol mangler.
 
 # Tidligere status: 4.0.227 – vejledende lokal kystvinkel
 

@@ -1307,7 +1307,7 @@ Pilen viser modelværdien på modelgitteret. Den beviser ikke, at strømmen er p
 
 På landsoversigten viser RavRadar fortsat ét repræsentativt vind- og strømpunkt pr. hovedzone. Når brugeren zoomer ind til niveau 9 eller nærmere, kan kortet vise flere pile fra de lokale kystdele. En ekstra pil vises kun, når kystdelen har sit eget dokumenterede DMI-gitterpunkt.
 
-For strøm skal øst-/vest- og nord-/syd-komponenten komme fra præcis samme koordinat. For vind gælder samme regel for de to vindkomponenter. Et almindeligt zoneanker, et fallbackpunkt eller en kopi af en eksisterende pil bruges ikke til at gøre kortet tættere. Pilene flyttes heller ikke for at undgå overlap; hvis to punkter ligger for tæt på skærmen, kan den ene i stedet skjules ved det aktuelle zoomniveau.
+For strøm skal øst-/vest- og nord-/syd-komponenten komme fra præcis samme koordinat. For vind gælder samme regel for de to vindkomponenter. Vindpunktet kan komme fra DMI's almindelige atmosfæremodel eller fra havmodellens vindserie, alt efter hvilken serie prognosen faktisk bruger; RavRadar bevarer denne forskel i kildemærket. Et almindeligt zoneanker, et fallbackpunkt eller en kopi af en eksisterende pil bruges ikke til at gøre kortet tættere. Pilene flyttes heller ikke for at undgå overlap; hvis to punkter ligger for tæt på skærmen, kan den ene i stedet skjules ved det aktuelle zoomniveau.
 
 Den hurtige startpakke indeholder pilgrundlaget for de kystdele, der vinder aktuelt. Den fulde detaljepakke hentes bagefter og indeholder alle dokumenterede lokale punkter. Pilelaget tegnes automatisk igen, når pakken ankommer, og ved senere zoom eller kortflytning.
 
