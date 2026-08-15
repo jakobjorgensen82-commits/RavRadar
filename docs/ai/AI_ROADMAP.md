@@ -150,6 +150,8 @@ Ejeren har udtrykkeligt godkendt en landsdækkende privat revision af kystdele o
 ## P2 – performance
 - Bevar/udbyg startupmålinger for page load, JS-init, manifest/data fetch, parsing, scoreberegning og maprendering.
 - Hold tunge state-/historikberegninger i pipeline og send kompakte præberegnede data til public klient.
+- **Analyse startet 2026-08-15:** `npm run audit:public-startup-payload` gør bytefordelingen gentagelig uden at skrive. Direkte deploymåling af `rr-20260815094833-210` viser 27,11 MB: lokale kystdele udgør 19,99 MB, og hovedzonernes prognoser 6,88 MB. Det gamle lokale 209-zonesnapshot på 6,91 MB er kun historisk baseline uden aktive kystdelsdata.
+- **Næste designkandidat:** konsekvensberegn et lille aktuelt startdatasæt efterfulgt af ikke-blokerende femdøgnstimer og detaljerede lokale kystdelsdata. Bevar datasetintegritet, missing, prognose, assistent, lokal score og historik; ingen felter eller funktioner fjernes uden fuld forbrugeraudit og ejerens godkendelse.
 
 ## P2 – privat besøgsstatistik i admin
 - [x] 4.0.215 implementerer en usynlig, ikke-blokerende offentlig tæller og en ejerbeskyttet adminrapport.
@@ -165,6 +167,7 @@ Ejeren har udtrykkeligt godkendt en landsdækkende privat revision af kystdele o
 - **Model efter DEC-0031:** Centrale forskningsfaser, synteser, evidenskonflikter, hypoteser, RavScore-vurdering og slutkonklusion udføres med GPT-5.6 Sol. Terra må kun bruges til klart afgrænsede mekaniske støtteopgaver uden tab af faglig kvalitet.
 - Opbyg et permanent forskningsgrundlag i `docs/research/RAVSCORE_RESEARCH_EVIDENCE_BASE.md` baseret primært på peer-reviewed forskning, universiteter, myndigheder, oceanografi, hydrodynamik, kystteknik og sedimenttransport.
 - Hold frigivelse, transport, koncentration/aflejring og jagtbarhed analytisk adskilt; kortlæg derefter deres samspil og tidsrækkefølge som en samlet fysisk systemmodel før score og vægte vurderes.
+- Det samlede forskningsgrundlag, den fysiske systemmodel og kodeauditen skal danne grundlag for et konkret forslag til næste generation af RavScore-/scoremodulet. Det nye modul bygges ikke som en skjult fortsættelse af analysen: arkitektur, signaler, vægte, regressioner og overgang fra den nuværende score kræver ejerens særskilte godkendelse før implementering.
 - Auditér den faktiske RavScore-kode regel for regel for korrekt mekanisme, input, tids-/geografiafhængighed, evidensstyrke, overlap og risiko for dobbelt-tælling.
 - Udarbejd evidensmatrix og klassificér anbefalinger som `BEVAR`, `FORBEDR`, `TEST`, `NY MEKANISME`, `FJERN/NEDVÆGT` eller `UTILSTRÆKKELIG EVIDENS`, samt forslag i evidensklasse A–D.
 - Gennemfør en særskilt analyse af punktstrøm kontra opstrøms transporthistorik, rumlige strømfelter, konvergens/divergens, persistente transportkorridorer og det historiske begreb “strømbånd”. Det aktuelle produktionsforbud består, indtil stærk evidens, ikke-redundans, validering og særskilt godkendelse eventuelt begrunder noget andet.

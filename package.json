@@ -8,6 +8,7 @@
     "update:dmi": "node scripts/update-weather.mjs",
     "hydrate:deployed-weather": "python scripts/hydrate-deployed-weather.py --base-url https://jakobjorgensen82-commits.github.io/RavRadar",
     "audit:deployed-zone-weather": "node scripts/audit-deployed-zone-weather.mjs",
+    "audit:public-startup-payload": "node scripts/audit-public-startup-payload.mjs",
     "test:local-weather-snapshot": "node scripts/test-local-weather-snapshot-status-4.0.208.mjs",
     "validate:data": "npm run test:local-weather-snapshot && node scripts/validate-data.mjs",
     "test:score": "node scripts/test-score-engine.mjs",

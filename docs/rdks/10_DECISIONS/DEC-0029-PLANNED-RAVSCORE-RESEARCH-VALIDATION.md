@@ -27,6 +27,7 @@ Analysen skal holde disse mekanismer adskilt:
 Der skal derefter udarbejdes:
 
 - en konceptuel systemmodel før en scoremodel;
+- et konkret, forklarligt forslag til næste generation af RavScore-/scoremodulet baseret på systemmodellen og kodeauditen; forslaget er en analyseleverance og giver ikke i sig selv mandat til implementering;
 - en regel-for-regel-sammenligning af forskning og aktuel RavRadar-kode;
 - en evidensmatrix med kilder, evidenstype/-styrke, geografi, tid, overlap, datakrav og valideringsmulighed;
 - særskilt analyse af punktstrøm kontra rumlige strømstrukturer, opstrømsforhold, konvergens/divergens, transportkorridorer og persistens;
