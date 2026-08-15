@@ -15,7 +15,21 @@ const excludes=[
 ];
 const args=['-a','./',`${site}/`,...excludes.flatMap(x=>['--exclude',x])];
 const rsync=spawnSync('rsync',args,{cwd:root,encoding:'utf8'});
-if(rsync.status!==0) throw new Error(`Kunne ikke bygge testartifact: ${rsync.stderr||rsync.stdout}`);
+if(rsync.error?.code==='ENOENT'){
+ const excluded=(source)=>{
+  const rel=path.relative(root,source).split(path.sep).join('/');
+  if(!rel)return false;
+  if(/^CHANGELOG.*\.md$/i.test(rel)||/^DELIVERY.*\.md$/i.test(rel)||/^INSTALLATION-GUIDE.*\.md$/i.test(rel))return true;
+  return excludes.some(item=>rel===item.replace(/\/$/,'')||rel.startsWith(item));
+ };
+ const tracked=spawnSync('git',['ls-files','-z'],{cwd:root,encoding:'utf8'});
+ if(tracked.status!==0)throw new Error(`Kunne ikke finde projektfiler: ${tracked.stderr||tracked.stdout}`);
+ const projectFiles=new Set([...tracked.stdout.split('\0').filter(Boolean),'js/services/visit-counter.js','js/services/visitor-report-service.js']);
+ for(const rel of projectFiles){
+  const source=path.join(root,rel);if(excluded(source))continue;
+  const target=path.join(site,rel);await fs.mkdir(path.dirname(target),{recursive:true});await fs.copyFile(source,target);
+ }
+}else if(rsync.status!==0) throw new Error(`Kunne ikke bygge testartifact: ${rsync.stderr||rsync.stdout||rsync.error?.message}`);
 
 const entryHtml=['index.html','admin.html'];
 const queue=[];

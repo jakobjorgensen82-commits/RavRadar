@@ -152,11 +152,12 @@ Ejeren har udtrykkeligt godkendt en landsdækkende privat revision af kystdele o
 - Hold tunge state-/historikberegninger i pipeline og send kompakte præberegnede data til public klient.
 
 ## P2 – privat besøgsstatistik i admin
-- Tilføj en usynlig offentlig besøgstæller og en enkel, adgangsbeskyttet rapport i administrationen.
-- Rapporten skal mindst kunne vise sidevisninger og besøg fordelt pr. dag samt en valgt periode. Den må ikke fremstille besøg som unikke personer, medmindre metoden faktisk kan dokumentere det.
-- Løsningen skal være dataminimeret, må ikke vise en offentlig tæller og må ikke indsamle præcise lokaliteter, rå IP-adresser, fingerprintingdata eller andre unødige personoplysninger.
-- Tælleren må ikke påvirke RavScore, vejropdateringer eller offentlig opstart mærkbart. Fejl i statistik må aldrig blokere siden.
-- Designet skal tage højde for Supabase Free-planens database- og egressgrænser, eksempelvis ved kompakt daglig aggregering frem for en voksende rå hændelseslog.
+- [x] 4.0.215 implementerer en usynlig, ikke-blokerende offentlig tæller og en ejerbeskyttet adminrapport.
+- [x] Rapporten viser sidevisninger og browserbesøg pr. dag og valgt periode samt oprettede og aktive login-konti som særskilte tal.
+- [x] Browserbesøg tælles højst én gang pr. browserfane og dag og kaldes ikke unikke personer.
+- [x] Supabase gemmer kun kompakte dagstotaler uden rå hændelseslog, IP, præcis lokalitet, fingerprint eller stabil besøgsidentitet.
+- [x] Migrationen og dens roller er efterkontrolleret: offentligheden kan kun tælle, mens rapportlæsning kræver authenticated plus ejer/full_admin-kontrol.
+- [ ] Efter deploy kontrolleres første dags rigtige optælling, adminrapportens visning og Supabase-egress. Målingen skal følges for misbrug/støj, fordi en helt anonym offentlig tæller ikke kan bevise mennesker.
 
 ## P3 – planlagt videnskabelig forskningsrunde og RavScore-modelvalidering
 - **Status: registreret, må ikke startes endnu.** Afhænger af afsluttet/klart afgrænset forecast- og schedulerstabilisering samt de højere P0/P1-opgaver.

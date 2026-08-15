@@ -1,7 +1,10 @@
 performance.mark?.('ravradar:bootstrap-start');
-import { initializeUserDataSafety } from "./js/services/storage-safety.js?v=4.0.214";
+import { initializeUserDataSafety } from "./js/services/storage-safety.js?v=4.0.215";
 
 await initializeUserDataSafety();
 performance.mark?.('ravradar:storage-ready');
-await import("./app.js?v=4.0.214");
+await import("./app.js?v=4.0.215");
 performance.mark?.('ravradar:app-imported');
+void import("./js/services/visit-counter.js?v=4.0.215")
+  .then(({ schedulePublicPageView }) => schedulePublicPageView())
+  .catch(() => {});

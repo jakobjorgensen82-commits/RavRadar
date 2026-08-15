@@ -1,5 +1,12 @@
 # Current truth – gældende projektviden
 
+## 4.0.215 – privat og dataminimeret besøgsstatistik
+
+- Den offentlige side registrerer efter normal opstart én sidevisning og højst ét browserbesøg pr. browserfane og dansk kalenderdag. Statistikfejl blokerer aldrig appen.
+- Supabase gemmer kun daglige totaler. Ingen rå besøg, IP-adresser, præcis lokalitet, fingerprint eller stabil besøgsidentitet gemmes.
+- Ejer/full_admin kan vælge en periode i admin og se sidevisninger, browserbesøg samt oprettede og aktive login-konti. Browserbesøg er ikke unikke personer.
+- Migrationen er installeret i Supabase og efterkontrolleret: anonym rolle kan skrive, men ikke læse rapporten; authenticated kan kalde den ejerbeskyttede rapportfunktion. Produktstatus kræver fortsat fuldt grønt CI/deploy og efterkontrol af første rigtige optælling.
+
 ## 4.0.214 – gammel umærket temperatur må ikke overleve
 
 - #31873118298 afviste 756 nye dybdelagsmeddelelser, men artifactet viste 29.459 ældre temperaturpunkter uden vertikal provenance mod 3.852 beviste `surface:0`-punkter.

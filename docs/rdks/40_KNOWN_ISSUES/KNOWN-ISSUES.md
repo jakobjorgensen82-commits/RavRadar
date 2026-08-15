@@ -311,3 +311,7 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 # 4.0.202 – national DMI-gate havde marginalt standardbudget
 
 - **ISSUE-NATIONAL-DMI-GRID-DEFAULT-BUDGET – LØST LOKALT / AFVENTER CI:** #31802022918 nåede standardloftet under sidste DKSS-model efter 11,1 minutter, mens #31798588868 bestod samme 835-dels gate på 8,5 minutter. De tre private nationale DMI-gates får nu eksplicit 3.000 sekunder. Datakrav, afstandsgrænser og fail-closed-resultat er uændrede.
+# 4.0.215 – privat besøgsstatistik
+
+- **ISSUE-ANALYTICS-ANONYMOUS-NOISE – ÅBEN/OVERVÅGES:** Den dataminimerede tæller gemmer ingen vedvarende besøgsidentitet. Det beskytter privatlivet, men betyder også, at browserbesøg ikke kan bevises som unikke mennesker, og at automatiseret støj ikke kan fjernes præcist uden at indføre mere sporing. Admin bruger derfor betegnelsen browserbesøg, og dagstal/egress overvåges efter deploy.
+- **ISSUE-ANALYTICS-MIGRATION – LUKKET FØR DEPLOY:** Den versionsstyrede 4.0.215-migration er installeret i Supabase. Tabel og begge funktioner er verificeret, anonym rapportlæsning er afvist, og de to testbesøg er fjernet igen.

@@ -78,7 +78,7 @@ Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vande
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.214
+**Håndbogsversion:** 4.0.215
 
 **Opdateret:** 15. august 2026
 
@@ -602,6 +602,14 @@ AI må strukturere fri tekst, forklare score, finde mønstre og foreslå hypotes
 
 
 ## 26. Administration, Supabase og ekspertrettigheder
+
+### Privat besøgsstatistik – 4.0.215
+
+RavRadar tæller sidevisninger og browserbesøg uden at oprette en offentlig tæller. En sidevisning er hver indlæsning. Et browserbesøg tælles højst én gang pr. åben browserfane og kalenderdag, også hvis siden genindlæses. Det er derfor et mål for browser-sessioner, ikke for unikke mennesker.
+
+Supabase gemmer kun én samlet række pr. dag med de to tal. Der gemmes ingen rå besøgsliste, IP-adresse, præcis placering, browserfingeraftryk eller stabil besøgsidentitet. Tællingen startes først efter appens normale opstart og må aldrig blokere kort, vejr eller RavScore.
+
+Ejerens private adminrapport viser den valgte periode og dagstallene. Antal oprettede login-konti samt aktive konti vises separat fra besøgstallene, fordi en konto er dokumenteret i login-systemet, mens et browserbesøg ikke beviser en unik person.
 
 Supabase Free-kvoten beskyttes ved at skelne mellem central admin-sandhed og udskiftelig maskindiagnostik. Schedulerens readback henter kun de dokumentnøgler, som produktionsbygningen faktisk anvender. Identiske maskinoutputs skrives ikke igen. Regler, geometri, routing og andre menneskeligt redigerede dokumenter beholder versionshistorik og rollback, mens store runtime-diagnostikker kun beholder den aktuelle kopi. Databaseoprydning starter altid med en read-only størrelsesaudit og må aldrig slette den aktuelle række i `admin_documents`.
 

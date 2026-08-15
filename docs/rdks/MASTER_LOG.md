@@ -1131,3 +1131,10 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - 4.0.212 gør et eksisterende fælles strømpar autoritativt: skalarfelter må følge samme model, men ikke skifte den eller omskrive dens score. Et reelt bedre fælles strømpar kan fortsat skifte model. Ingen kilde, fallback eller RavScore ændres.
 - #31870747677 produktionsverificerede rettelsen gennem central hydrering/tombstones, frisk NSBS-genindlæsning, fuld validering, releasegate, Supabase og Pages. Datasæt `rr-20260815071241-210` har verificeret strøm i 210/210 zoner, 37–38 strømtrin pr. zone og mindst 100,8 timers sammenhængende marinehorisont.
 - Historikken er vokset til 131 ægte rå prøver i alle zoner. 72-timersmålingen fortsætter. Den næste DEC-0030-opgave er den fælles sidste cirka 17–19 timers hale til en reel 118–120-timers kæde.
+## 2026-08-15 – 4.0.215 privat besøgsstatistik
+
+- P2-besøgstælleren gemmer kun samlede dagstal for sidevisninger og browserbesøg og kører efter den normale offentlige opstart.
+- Browserbesøg betyder første åbning pr. browserfane og dag, ikke unikke mennesker.
+- Den ejerbeskyttede rapport viser valgt periode og separat antal oprettede og aktive login-konti.
+- Ingen vejrdata, historik, RavScore eller scoremodel ændres. Fuld CI/deploy og første rigtige produktionstal afventer slutvalidering.
+- Migrationen blev installeret og testet 2026-08-15. SQL-editoren genkørte samtidig en allerede eksisterende Havnø-tombstoneforespørgsel; det ændrede kun centraldokumentets version/opdateringstid. Payloaden blev straks gendannet fra version 324, tombstonen blev verificeret uændret, og dokumentet står derefter på version 326. Statistikfunktionerne bestod rolle- og endpointtesten, og de to testbesøg blev slettet igen.

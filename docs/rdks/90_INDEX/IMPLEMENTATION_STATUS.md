@@ -1,4 +1,16 @@
-# Implementeringsstatus pr. 4.0.214 – fail-closed genopbygning af havoverfladetemperatur
+# Implementeringsstatus pr. 4.0.215 – privat besøgsstatistik
+
+## 4.0.215 – privat besøgsstatistik
+
+- [x] Sidevisninger og browserbesøg er adskilt uden vedvarende besøgsidentitet.
+- [x] Kun én aggregeret Supabase-række pr. dag gemmes; rå person- og browserdata er udeladt.
+- [x] Ejerbeskyttet rapport viser periode, dagstal og separat antal login-konti.
+- [x] Offentlig registrering er efter normal appstart og fail-open.
+- [x] Målrettet kontrakttest dækker sessionstælling, dataminimering, kontotal og ikke-blokerende opstart.
+- [x] Databasemigrationen er installeret og testet mod den offentlige RPC; de to afgrænsede testbesøg er fjernet igen.
+- [ ] Fuld CI/deploy og første rigtige produktionsoptælling skal verificeres.
+
+# Tidligere status: 4.0.214 – fail-closed genopbygning af havoverfladetemperatur
 
 ## 4.0.214 – fail-closed genopbygning af havoverfladetemperatur
 

@@ -205,11 +205,12 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - Brugerfund skal kræve valgt zone; GPS bruges kun til plausibilitetskontrol.
 - Projektet skal være kildeneutralt og må ikke indeholde navne på eksterne analysekilder.
 
-## Privat besøgsstatistik – planlagt
-- **REQ-ANALYTICS-001 – PLANLAGT:** Den offentlige side skal kunne registrere en enkel besøgsmåling, men selve tælleren og rapporten må kun være synlig for en autoriseret administrator.
+## Privat besøgsstatistik – 4.0.215
+- **REQ-ANALYTICS-001 – IMPLEMENTERET LOKALT:** Den offentlige side registrerer en usynlig besøgsmåling, mens rapporten kun er tilgængelig for ejer/full_admin.
 - **REQ-ANALYTICS-002 – BINDENDE FOR DESIGNET:** Rapporten skal skelne dokumenterede sidevisninger, besøg/sessioner og eventuelle anslåede unikke besøg. Den må ikke kalde noget “unikke personer”, hvis målemetoden ikke beviser dette.
 - **REQ-ANALYTICS-003 – BINDENDE:** Statistikken skal være dataminimeret og må ikke kræve offentlig profilering, fingerprinting, præcis lokalitet eller permanent lagring af rå IP-adresser. Den må ikke bruges i RavScore eller brugerens vejr-/zoneoplevelse.
 - **REQ-ANALYTICS-004 – BINDENDE:** Statistikfejl må ikke blokere eller forsinke siden mærkbart. Lagring og rapportering skal begrænses og aggregeres, så løsningen er forenelig med Supabase-kvotestyringen.
+- **REQ-ANALYTICS-005 – IMPLEMENTERET LOKALT:** Rapporten viser oprettede og aktive login-konti særskilt fra sidevisninger og browserbesøg.
 
 
 ## Chat-overlevering og referencevalidering – 4.0.112
