@@ -1192,3 +1192,5 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - P1-audit bekræfter 373 kendte kilder, 240 med gyldig cache og 113 forecasttimer for både Hals Barre og Hals Havn.
 - Alarmfunktionen fra 4.0.98 blev fjernet i 4.0.99 uden at kravet blev lukket; gamle alarmfelter kunne derfor fremstå kritiske trods gyldig forecast.
 - 4.0.221 genberegner alarmen på effektiv routing og samlet forecast-/cachegyldighed, rydder stale mærker og bevarer kildevalg og RavScore.
+- Den første push stoppede fail-closed på en forældet teksttest; den fokuserede testrettelse blev genvalideret uden gateændring. Efterkontrollen fandt derefter, at gamle 15/21-zonetal var stale registerfelter, mens faktisk runtimebrug både før og efter var 5/6.
+- #31889559758 bestod hele produktionskæden. Artifact #2777 viser 116,6 timers resttid, nul valgte warning/critical-kilder og nul nye notifikationer; central routing er uændret, og datasættet er `rr-20260815142117-210`.

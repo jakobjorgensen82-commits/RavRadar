@@ -1736,3 +1736,5 @@ RavRadar skelner mellem en aktuel måling, kildens DMI-prognose og den routede f
 Kun kilder, der faktisk er valgt automatisk eller af administratoren, overvåges. Hvis en aktiv valgt kilde ikke leverer observationer, ser alarmen på det seneste gyldige tidspunkt fra både kildeprognosen og cachen. Inden for den centralt gemte tærskel vises en advarsel; ved udløb eller helt manglende gyldighed vises kritisk status. Historiske/inaktive kilder og stationer, der leverer nu, udløser ikke denne cachealarm.
 
 Alarmen ændrer ikke stationvalg, vandstandsserien eller RavScore. Den fortæller kun ejeren, hvornår en effektiv kilde nærmer sig et reelt hul.
+
+Den første produktionskontrol viste samtidig forskellen på gammel registrering og faktisk brug: Hals Barre og Hals Havn stod med gamle lister på 15 og 21 zoner, men den producerede serie brugte dem både før og efter rettelsen i 5 og 6 zoner. Alarmen følger nu den faktisk producerede rute. Det er en rettelse af diagnosen, ikke en ændring af stationvalget.

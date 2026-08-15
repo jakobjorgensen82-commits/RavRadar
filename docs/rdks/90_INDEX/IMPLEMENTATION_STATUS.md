@@ -7,7 +7,8 @@
 - [x] Effektiv automatisk/adminrouting bestemmer præcist hvilke aktive kilder der overvåges.
 - [x] Seneste gyldighed fra DMI-kildeprognose og routet cache vurderes samlet uden at gøre observation og forecast til samme status.
 - [x] Gyldig forecast rydder stale `critical`; advarsel, udløb, aktiv levering, historisk kilde og central tærskel er funktionelt regressionstestet.
-- [ ] Frisk produktion skal bevise, at de falske Hals-alarmer ryddes, mens en reel udløbsrisiko fortsat kan notificere.
+- [x] #31889559758 bestod fulde gates og deploy; artifact #2777 rydder begge falske Hals-alarmer, viser 116,6 timers resttid, nul nye notifikationer og uændret faktisk routing i 5/6 zoner.
+- [ ] En naturligt opstået warning/critical skal fortsat eftermåles i produktion; den syntetiske regression beviser allerede begge grene uden at fremkalde et kunstigt driftsbrud.
 
 ## 4.0.220 – audit af brugbar transporthistorik
 

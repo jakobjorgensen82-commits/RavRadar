@@ -130,7 +130,8 @@ Ejeren har udtrykkeligt godkendt en landsdækkende privat revision af kystdele o
 - [x] Opdagede kilder bevares i registeret med status frem for at forsvinde.
 - [x] Admin viser automatisk primær/sekundær, reel geodistance, vægte, metode og tydelig override.
 - [x] Hals/prognosepunkter og end-to-end routing er auditeret i artifact #2771: begge Hals-kilder har 113 timer, og samme producerede serie går til forecaststore, zone, femdøgnsvisning og score-/ranglistekæde.
-- [x] 4.0.221 genopretter alarmtærsklen for faktisk valgte aktive kilder mod både kildeprognose og forecastcache. Frisk produktion skal fortsat rydde de observerede stale Hals-mærker.
+- [x] 4.0.221 genopretter alarmtærsklen for faktisk valgte aktive kilder mod både kildeprognose og forecastcache. #31889559758 og artifact #2777 rydder de falske Hals-mærker, viser 116,6 timers resttid og bevarer faktisk routing i 5/6 zoner; de gamle 15/21-tal var stale diagnosefelter.
+- [ ] Eftermål den første naturlige warning/critical i drift; fremkald ikke kunstigt cacheudløb og svæk ingen gate.
 
 ## Afsluttet P1 – Supabase/admin drift
 - [x] **Kontroller nu** genlæser forbindelses- og lagringsstatus og viser fejl fail-closed i admin.
