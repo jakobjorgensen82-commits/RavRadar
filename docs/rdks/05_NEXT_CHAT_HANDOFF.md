@@ -2,27 +2,30 @@
 
 ## Start her
 
-Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde, DEC-0030, DEC-0031 og DEC-0037 før kodearbejde. Kontrollér derefter gitstatus, seneste commit og GitHub Actions.
+Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde samt DEC-0024, DEC-0030, DEC-0031, DEC-0037, DEC-0038 og DEC-0039. Kontrollér derefter gitstatus, seneste commit og GitHub Actions.
 
 ## Aktuel sandhed
 
-- 4.0.208 er seneste produktionsverificerede baseline (#31848912461, commit `7a3382f200a72b702d814ba4d8ca205dc4523369`). Central adminhydrering/tombstones, frisk vejr, fuld validering, releasegate, Supabase, Pages-artifact og deploy bestod.
-- 4.0.208 forbedrer lokal snapshotdiagnose og tilføjer en skrivebeskyttet deployaudit. Den ændrer ikke zoner, geometri, DMI-kilder, score eller offentlig UI.
-- Den faktiske deployede runtime viser version 4.0.208 og datasæt `rr-20260814230422-210` med 210/210 matchende zoner og vejrposter. Alle tre Vadehavszoner `DK-B04-12`–`DK-B04-14` findes med vejrdata.
-- Det indcheckede 31. juli-snapshot er historisk. Et råt repositoryregister er heller ikke centralt effektivt før adminhydrering og tombstones. Derfor skal et lokalt mismatch ikke omtales som en produktionszonefejl uden deployaudit.
-- `validate:data` er fortsat fail-closed. Stale mismatch forklares særskilt; aktuel mismatch eller atomisk manifest/conditions-drift er hård fejl.
-- `npm run audit:deployed-zone-weather` er read-only. `npm run hydrate:deployed-weather` hydrerer kun vejr og erstatter ikke central adminhydrering.
+- 4.0.227 er produktionsverificeret i #31908498204/#2824 med 210 zoner, 673 kyststrækninger, frisk DMI, fulde gates, Supabase og Pages.
+- 4.0.228-kandidaten viser fra zoomniveau 9 flere lokale vind- og strømpile, men kun ved kystdelenes egne eksakt parrede DMI-U/V-gitterpunkter.
+- Fjernzoom bevarer hovedzonernes oversigtspile. Fallbackankre og kunstige kopier må ikke skabe ekstra tæthed.
+- Den fulde detaljepakke opdaterer automatisk pilelaget. DMI-værdier, forecast, RavScore, historik og geometri er uændrede.
+- Lokal målrettet test er grøn; frisk central produktion og livekontrol mangler, indtil produktionsbevis senere er indarbejdet.
+
+## Ejerens parallelle arbejde
+
+- Ejeren gennemgår land-/vandpunkter zone for zone. Centralt godkendte punkter er autoritative og skal hydreres før hvert frisk produktionsbuild.
+- Fem-døgnsdækning og historikanalyse er midlertidigt udsat, indtil mere naturligt datagrundlag er opsamlet. Dataopsamling og eksisterende gates fortsætter; intet må bagudfyldes eller skjules.
 
 ## Første opgave i næste chat
 
-1. Fortsæt den aktive P1-opgave: DMI-first femdøgnskæder pr. komponent under DEC-0030. Analyse og design før enhver ny kilde, fallback eller scoreændring.
-2. Overvåg Supabase-egress gennem næste billingperiode; den private dataminimerede besøgstæller med enkel adminrapport er fortsat P2.
-3. Ejerens manuelle land-/vandmarkørreview kan fortsætte gradvist og må ikke erstattes af automatisk national genopdeling.
+1. Hvis 4.0.228 ikke er udgivet: færdiggør lokale gates, push, fuld central produktion, artifactaudit og livekontrol.
+2. Hvis 4.0.228 er produktionsverificeret: kontrollér at projekthukommelsen indeholder run-, artifact-, datasæt- og livebeviset, før et nyt roadmapafsnit startes.
+3. Lad ejerens manuelle punktreview fortsætte sideløbende uden automatisk national genopdeling.
 
 ## Beskyttede beslutninger
 
-- Én autoritativ land-/vandmarkørpar pr. aktiv kyststrækning; manuel gradvis ejerreview kan udskydes, men kræves før endelig faglig brugerrelease.
-- Central adminstatus er autoritativ; Fejø/Femø og Havnø/Mariager Fjord øst forbliver slettede.
-- Funktioner må ikke fjernes uden ejerbeslutning.
-- DMI-first, missing forbliver missing, og ingen gate må svækkes for at få grønt.
+- Ét autoritativt land-/havpunktpar pr. aktiv kyststrækning; bugtede kyster vurderes repræsentativt af ejeren.
+- Flere kortpile kræver flere faktiske dokumenterede DMI-gitterpunkter; pile må ikke kopieres eller flyttes.
+- Central adminstatus er autoritativ, `missing` forbliver `missing`, og ingen gate må svækkes for at få grønt.
 - Kritisk arbejde udføres med GPT-5.6 Sol og Ekstra høj indsats.

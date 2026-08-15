@@ -1,3 +1,13 @@
+## 2026-08-16 – 4.0.228 flere verificerede kortpile ved indzoomning
+
+- Ejeren fortsætter den manuelle land-/vandpunktgennemgang og bad om, at uafhængigt roadmaparbejde fortsætter sideløbende.
+- Fem-døgnsdækning og historikanalyse er midlertidigt udsat, indtil flere naturlige data er opsamlet. De eksisterende data- og releasegates samt den automatiske historikopsamling fortsætter.
+- Det aktive krav REQ-MAP-ARROWS-ZOOM-001 er implementeret: landsoversigten bevarer hovedzonepilene, mens zoomniveau 9 og nærmere kan vise lokale kystdeles selvstændige DMI-gitterpile.
+- Hver lokal strømpil kræver strøm-U og strøm-V på præcis samme gitterkoordinat; hver lokal vindpil kræver tilsvarende vind-U og vind-V. Fallbackankre, ufuldstændig provenance og kunstige kopier giver ingen ekstra pil.
+- Den fulde detaljepakke fører alle lokale flowpunkter til browseren. Pilelaget opdateres automatisk, når pakken ankommer, og ved efterfølgende zoom eller kortflytning.
+- Ændringen påvirker kun kortvisningen. DMI-værdier, kilder, forecast, RavScore, historik, zoner, kyster og land-/vandpunkter er uændrede.
+- Målrettet zoomtæthedsregression og eksisterende zoom-, provenance-, null-safety-, DMI-bulk- og progressiv-runtime-tests består lokalt. Frisk central produktion er næste gate.
+
 ## 2026-08-15 – 4.0.227 vejledende lokal kystvinkel
 
 - Ejeren viste, at admin ved Kalø og Bornholm kunne gemme punktkladder, men ikke aktivere **Godkend og gem centralt**, selv efter alle tre zonebekræftelser.

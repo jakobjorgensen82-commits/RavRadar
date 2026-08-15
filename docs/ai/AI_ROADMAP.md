@@ -1,4 +1,12 @@
-# AI Roadmap – RavRadar 4.0.227
+# AI Roadmap – RavRadar 4.0.228
+
+## 4.0.228 – flere ægte pile, når kortet zoomes ind
+
+- Kortet kan fra zoomniveau 9 vise kystdelenes egne dokumenterede DMI-vind- og strømpunkter ud over hovedzonens oversigtspil.
+- Tæthed må kun komme fra selvstændige faktiske gitterpunkter med eksakt U/V-par. Ingen pil flyttes eller kopieres for at fylde kortet.
+- Detaljepakken udløser automatisk en ny tegning af pilelaget. DMI-data, RavScore, historik og geometri ændres ikke.
+- Frisk central produktion og direkte livekontrol er næste gate.
+- Ejeren gennemgår land-/vandpunkter sideløbende. Fem-døgnsdækning og historikanalyse er midlertidigt udsat, indtil mere naturligt datagrundlag er opsamlet; de er ikke annulleret.
 
 ## 4.0.227 – ejerens repræsentative kystretning må ikke låses af en mikrotangent
 
@@ -31,16 +39,18 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 - En fuld frisk validering følger fortsat den bindende rækkefølge: central adminhydrering og tombstones, nyt/hydreret vejr, fuld `validate`, releasegate og først derefter artifact/deploy.
 - 4.0.208 er produktionsverificeret i #31848912461 på commit `7a3382f`; direkte efterkontrol viste version 4.0.208 og datasæt `rr-20260814230422-210`.
 - 4.0.209 indførte separat 72 timers rå pipelinehistorik score-neutralt og rettede tabet af DMI-vandstandsidentitet. 4.0.211-produktionen beviser, at historikken bevares mellem kørsler; det fulde 72-timers målevindue er endnu ikke gået.
-- Næste aktive udvikleropgave ændres ikke: DMI-first femdøgnskæderne under DEC-0030.
+- DMI-first femdøgnskæderne under DEC-0030 forbliver åbne, men næste analyse er efter ejerbeslutning midlertidigt udsat, indtil mere naturligt datagrundlag er opsamlet.
 
 ## P0-ejerreview – ét land-/havpunktpar pr. kyststrækning
 
 - Hver af de 673 aktive kyststrækninger har præcis ét autoritativt hav-/landpunktpar. Admin må kun flytte det eksisterende par; ekstra aktive par og automatisk national genopdeling er fravalgt i DEC-0037.
 - En skrivebeskyttet retningsaudit har flagget 199 kontrolkandidater i 122 hovedzoner. Det er en prioriteringsliste, ikke 199 beviste fejl, fordi 171 kandidater er fragmenterede `MultiLineString`-dele.
-- Ejeren gennemgår senere zonerne gradvist og placerer parret repræsentativt på bugtede dele. Arbejdet blokerer ikke uafhængige roadmapopgaver, men skal være afsluttet før endelig faglig godkendelse af alle lokale scorer, større scorekalibrering og domæne-/brugerrelease.
+- Ejeren gennemgår nu zonerne gradvist og placerer parret repræsentativt på bugtede dele. Arbejdet blokerer ikke uafhængige roadmapopgaver, men skal være afsluttet før endelig faglig godkendelse af alle lokale scorer, større scorekalibrering og domæne-/brugerrelease.
 - En flytning bliver først aktiv efter central readback og grøn efterfølgende DMI-/releasekørsel. Afvist validering må ikke aktivere kladden.
 
-## Næste aktive udvikleropgave – DMI-first femdøgnskæder
+## Midlertidigt udskudt P1 – DMI-first femdøgnskæder og historik
+
+- Ejeren besluttede 2026-08-16 at vente med den næste fem-døgns- og historikanalyse, indtil flere naturlige data og modelkørsler er opsamlet. Arbejdet fortsætter senere under DEC-0030 uden ændring af kilder, fallback eller score i pausen.
 
 - 4.0.224 retter et P1-provenienshul uden at ændre værdier: vandstand fra valgte DMI-kildepunkter mærkes nu med de faktiske enkelt- eller sammensatte DKSS-modelområder. #31895640397/#2797 og direkte deploykontrol beviser 23.310/23.310 dokumenterede routede timer, 210 zoner og offentlig 4.0.224.
 
@@ -141,7 +151,7 @@ Ejeren har udtrykkeligt godkendt en landsdækkende privat revision af kystdele o
 - Fortsæt måling af workflowtid/schedulerbudget og DMI-coverage uden at svække marine audits.
 
 ## Næste P1 efter kortrettelsen – komplette DMI-first femdøgnskæder pr. komponent
-- **Status: næste aktive roadmapopgave.** Timeproveniens og en 118-timers offentlig vindkæde er produktionsbevist; nu skal den faktiske aktuelle dækning og overgangskvalitet kortlægges separat for vind, bølger, strøm, vandstand og øvrige viste/scorede komponenter, før nye kilder eller fallback ændres.
+- **Status: åben, midlertidigt udsat 2026-08-16.** Timeproveniens og en 118-timers offentlig vindkæde er produktionsbevist. Den næste kortlægning af dækning og overgangskvalitet afventer mere naturligt datagrundlag; ingen nye kilder eller fallback er godkendt i pausen.
 - **Model efter DEC-0031:** Rutinemæssig overvågning og registrering af allerede definerede LF/NSBS-coverage-målinger kan udføres med GPT-5.6 Terra. Skift til GPT-5.6 Sol før ny faglig kildesyntese, provenance-/fallbackdesign, ændring af datakæden eller endelig kritisk validering.
 - **Fase A startet:** `docs/research/DMI_FIRST_FIVE_DAY_SOURCE_AUDIT.md` kortlægger aktuel kode og officielle modelrammer. DMI dokumenterer HARMONIE til 54 timer, WAM til 5½ døgn og DKSS til 5 døgn. WAM/DKSS-vind er derfor første DMI-halekandidater, før ekstern fallback vurderes.
 - Kortlæg for vind, bølger, strøm, vandstand, vandtemperatur og alle øvrige aktive score-/forecastkomponenter: nuværende DMI-kilde, native og typisk resterende horisont, runfrekvens, alternative DMI-produkter, lovlig/teknisk anvendelighed, opløsning og kvalitet.

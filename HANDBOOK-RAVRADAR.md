@@ -126,7 +126,7 @@ Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vande
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.227
+**Håndbogsversion:** 4.0.228
 
 **Opdateret:** 15. august 2026
 
@@ -1303,6 +1303,16 @@ I 4.0.76 blev 23.049 prognosetimer kontrolleret på denne måde. 197 af 209 akti
 
 Pilen viser modelværdien på modelgitteret. Den beviser ikke, at strømmen er præcis den samme helt inde ved stranden, bag en mole, i en smal rende eller på den anden side af en revle. RavRadar bruger den bedst dokumenterede modelværdi sammen med kystens retning, men lokale bundforhold kan afvige. Derfor skal ekspertens kommentarer især pege på områder, hvor modelpunktet ligger for langt fra den relevante kyst eller ikke repræsenterer lokale render og passager.
 
+### 56.4 Flere ægte pile ved indzoomning
+
+På landsoversigten viser RavRadar fortsat ét repræsentativt vind- og strømpunkt pr. hovedzone. Når brugeren zoomer ind til niveau 9 eller nærmere, kan kortet vise flere pile fra de lokale kystdele. En ekstra pil vises kun, når kystdelen har sit eget dokumenterede DMI-gitterpunkt.
+
+For strøm skal øst-/vest- og nord-/syd-komponenten komme fra præcis samme koordinat. For vind gælder samme regel for de to vindkomponenter. Et almindeligt zoneanker, et fallbackpunkt eller en kopi af en eksisterende pil bruges ikke til at gøre kortet tættere. Pilene flyttes heller ikke for at undgå overlap; hvis to punkter ligger for tæt på skærmen, kan den ene i stedet skjules ved det aktuelle zoomniveau.
+
+Den hurtige startpakke indeholder pilgrundlaget for de kystdele, der vinder aktuelt. Den fulde detaljepakke hentes bagefter og indeholder alle dokumenterede lokale punkter. Pilelaget tegnes automatisk igen, når pakken ankommer, og ved senere zoom eller kortflytning.
+
+Denne visning ændrer ikke DMI-værdier, prognoser, RavScore, historik eller land-/vandpunkter. Den viser blot mere af det selvstændige rumlige datagrundlag, som allerede findes.
+
 ## 57. Hvorfor admin ikke må starte med en tom Oversigt
 
 Når RavRadar åbner administrationen, skal systemet først kontrollere login og rettigheder. Nogle datakilder tager længere tid at hente end andre, men det må ikke efterlade fanen **Oversigt** helt tom. Efter godkendt adgang viser RavRadar derfor straks et første, brugbart overblik med de oplysninger, der allerede findes. Når de resterende data er hentet, opdateres det samme overblik automatisk.
@@ -1354,11 +1364,6 @@ Dokumentationscenteret åbner Current Truth, implementeringsstatus, aktive krav,
 
 ### Sitetestens fejl og tider
 Deploykontrollen skelner mellem en virkelig manglende fil (HTTP 404), timeout, netværksfejl og andre HTTP-fejl. Opstart rapporteres særskilt som netværk/data, beregning og rendering. Dermed må en langsom hentning ikke fejlagtigt beskrives som en langsom scoremotor.
-
-### 56.4 Automatisk opdatering ved zoom
-Når kortet zoomes ind eller ud, tilpasser RavRadar automatisk kyststregens tykkelse, den hvide kant, klikfladen og de sorte grænsetikker. Leaflet afslutter en zoom med en kort grafisk transformation. RavRadar gentager derfor stilen og beder de offentlige Leaflet-lag om at tegne sig selv igen i næste billedramme. Brugeren skal ikke længere flytte kortet en smule for at få stregerne til at passe til det nye zoomniveau.
-
-Hvis et enkelt flowpunkt mangler eller er ugyldigt, springes kun den pågældende pil over. Det øvrige vind- og strømpilelag vises fortsat. Alle gyldige flowpunkter omdannes til samme Leaflet-koordinattype, så en fallback ikke kan stoppe hele laget.
 
 ## Administration af kystdele og zoner
 

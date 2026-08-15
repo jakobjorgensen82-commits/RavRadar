@@ -878,6 +878,7 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, generated
       };
       const record = bulkZoneToForecastRecord(feature, bulkCache, generatedAt, null);
       if (!record) continue;
+      const flowPoints = flowPointsFromForecastRecord(feature, record);
       const hourly = normalizeForecastHourly(record.hourly ?? []);
       const currentSamples = hourly.filter(hour => hour.currentSpeedMps != null && hour.currentDirectionDeg != null).map(hour => ({
         at: hour.time,
@@ -920,6 +921,7 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, generated
         landPoint: part.landPoint, waterPoint: part.waterPoint,
         onshoreDirectionDeg: part.onshoreDirectionDeg,
         onshoreDirectionSource: part.onshoreDirectionSource || 'Godkendt land-/havpunkt for kystdelen',
+        flowPoints,
         scores
       });
     }
@@ -958,6 +960,7 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, generated
       landPoint: row.landPoint, waterPoint: row.waterPoint,
       onshoreDirectionDeg: row.onshoreDirectionDeg,
       onshoreDirectionSource: row.onshoreDirectionSource,
+      flowPoints: row.flowPoints,
       current: score
     }];
   }));
@@ -1488,18 +1491,30 @@ async function readDmiForecastStore() {
 function flowPointsFromForecastRecord(feature, record) {
   const fallback = zonePoint(feature);
   const grid = record?.model?.completeness?.gridPoints ?? {};
-  const pointFor = (...keys) => {
-    for (const key of keys) {
-      const row = grid?.[key];
-      const lon = Number(row?.longitude), lat = Number(row?.latitude);
-      if (Number.isFinite(lon) && Number.isFinite(lat)) return [lon, lat];
-    }
-    return fallback;
+  const coordinate = value => value === null || value === undefined || value === '' || !Number.isFinite(Number(value)) ? null : Number(value);
+  const exactPair = (firstKey, secondKey) => {
+    const first = grid?.[firstKey], second = grid?.[secondKey];
+    const firstLon = coordinate(first?.longitude), firstLat = coordinate(first?.latitude);
+    const secondLon = coordinate(second?.longitude), secondLat = coordinate(second?.latitude);
+    if ([firstLon, firstLat, secondLon, secondLat].some(value => value === null)) return null;
+    if (Math.abs(firstLon - secondLon) > 1e-7 || Math.abs(firstLat - secondLat) > 1e-7) return null;
+    return [firstLon, firstLat];
   };
-  const currentGrid = pointFor('current-u', 'current-v');
-  const windGrid = pointFor('wind-u-10m', 'wind-v-10m');
-  const waveGrid = pointFor('significant-wave-height', 'mean-wave-dir');
-  return { current: currentGrid, wind: windGrid, wave: waveGrid, sources: { current: grid?.['current-u'] && grid?.['current-v'] ? 'dmi-marine-grid' : 'zone-marine-anchor', wind: grid?.['wind-u-10m'] && grid?.['wind-v-10m'] ? 'dmi-atmospheric-grid' : 'zone-marine-anchor', wave: grid?.['significant-wave-height'] ? 'dmi-wave-grid' : 'zone-marine-anchor' } };
+  const currentGrid = exactPair('current-u', 'current-v');
+  const windGrid = exactPair('wind-u-10m', 'wind-v-10m');
+  const waveRow = grid?.['significant-wave-height'];
+  const waveLon = coordinate(waveRow?.longitude), waveLat = coordinate(waveRow?.latitude);
+  const waveGrid = waveLon !== null && waveLat !== null ? [waveLon, waveLat] : null;
+  return {
+    current: currentGrid || fallback,
+    wind: windGrid || fallback,
+    wave: waveGrid || fallback,
+    sources: {
+      current: currentGrid ? 'dmi-marine-grid' : 'zone-marine-anchor',
+      wind: windGrid ? 'dmi-atmospheric-grid' : 'zone-marine-anchor',
+      wave: waveGrid ? 'dmi-wave-grid' : 'zone-marine-anchor'
+    }
+  };
 }
 
 function zoneFromDmiForecastCache(feature, record, generatedAt) {

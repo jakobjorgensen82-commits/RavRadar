@@ -308,6 +308,69 @@ function latLngFromPoint(value, fallback = null) {
   return fallback;
 }
 
+function pointCoordinates(value, fallback = null) {
+  if (Array.isArray(value) && value.length >= 2 && Number.isFinite(Number(value[0])) && Number.isFinite(Number(value[1]))) {
+    return [Number(value[0]), Number(value[1])];
+  }
+  return fallback;
+}
+
+function validDirection(value) {
+  return value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
+}
+
+export function buildFlowArrowCandidates(featureCollection, conditionForZone, coastalParts = null, zoom = 7) {
+  const candidates = [];
+  const activeZoneIds = new Set();
+  for (const feature of featureCollection?.features || []) {
+    const zone = feature.properties || {};
+    if (zone.zoneStatus && zone.zoneStatus !== 'active') continue;
+    if (zone.id) activeZoneIds.add(zone.id);
+    const fallbackPoint = pointCoordinates(zone.dataPoint);
+    if (!fallbackPoint) continue;
+    const zoneCondition = conditionForZone(zone.id) || {};
+    const condition = zoneCondition.current || zoneCondition;
+    const flowPoints = zoneCondition.flowPoints || {};
+    const currentProvider = zoneCondition.currentSource || zoneCondition.sources?.current?.provider || null;
+    const verifiedCurrent = flowPoints?.sources?.current === 'dmi-marine-grid';
+    if (validDirection(condition.currentDirectionDeg) && (currentProvider !== 'dmi' || verifiedCurrent)) {
+      candidates.push({
+        type:'current', zoneId:zone.id, partId:null,
+        point:pointCoordinates(flowPoints.current, fallbackPoint),
+        directionDeg:Number(condition.currentDirectionDeg),
+        source:flowPoints?.sources?.current || 'provider-request-point'
+      });
+    }
+    if (validDirection(condition.windDirectionDeg)) {
+      candidates.push({
+        type:'wind', zoneId:zone.id, partId:null,
+        point:pointCoordinates(flowPoints.wind, fallbackPoint),
+        directionDeg:Number(condition.windDirectionDeg),
+        source:flowPoints?.sources?.wind || 'provider-request-point'
+      });
+    }
+  }
+
+  // Landsoversigten bevarer ét repræsentativt punkt pr. hovedzone. Først ved
+  // nærmere zoom tilføjes lokale kystdeles egne, dokumenterede DMI-punkter.
+  // Dermed vokser tætheden med kortets detaljeniveau uden kunstige kopier.
+  if (zoom < 9 || coastalParts?.enabled !== true) return candidates;
+  for (const [partId, part] of Object.entries(coastalParts.parts || {})) {
+    if (!activeZoneIds.has(part?.zoneId)) continue;
+    const weather = part?.current?.weather || {};
+    const flowPoints = part?.flowPoints || {};
+    if (validDirection(weather.currentDirectionDeg) && flowPoints?.sources?.current === 'dmi-marine-grid') {
+      const point = pointCoordinates(flowPoints.current);
+      if (point) candidates.push({ type:'current', zoneId:part.zoneId, partId, point, directionDeg:Number(weather.currentDirectionDeg), source:'dmi-marine-grid' });
+    }
+    if (validDirection(weather.windDirectionDeg) && flowPoints?.sources?.wind === 'dmi-atmospheric-grid') {
+      const point = pointCoordinates(flowPoints.wind);
+      if (point) candidates.push({ type:'wind', zoneId:part.zoneId, partId, point, directionDeg:Number(weather.windDirectionDeg), source:'dmi-atmospheric-grid' });
+    }
+  }
+  return candidates;
+}
+
 function minArrowSeparationPx(zoom) {
   if (zoom <= 7) return 34;
   if (zoom <= 9) return 28;
@@ -322,7 +385,7 @@ function canPlaceAt(map, latLng, occupied, minDistance) {
   return true;
 }
 
-export function installFlowArrows(map, featureCollection, conditionForZone) {
+export function installFlowArrows(map, featureCollection, conditionForZone, coastalPartsForMap = () => null) {
   if (!map.getPane("flowArrowsPane")) {
     const pane = map.createPane("flowArrowsPane");
     pane.style.zIndex = "440";
@@ -343,56 +406,28 @@ export function installFlowArrows(map, featureCollection, conditionForZone) {
     const minDistance = minArrowSeparationPx(zoom);
     const occupied = { current: [], wind: [] };
 
-    for (const feature of featureCollection.features || []) {
-      const zone = feature.properties || {};
-      if (zone.zoneStatus && zone.zoneStatus !== "active") continue;
+    const candidates = buildFlowArrowCandidates(featureCollection, conditionForZone, coastalPartsForMap?.(), zoom);
+    for (const candidate of candidates) {
       try {
-      const fallbackPoint = Array.isArray(zone.dataPoint) ? L.latLng(zone.dataPoint[1], zone.dataPoint[0]) : null;
-      if (!fallbackPoint) continue;
-      const zoneCondition = conditionForZone(zone.id);
-      const condition = zoneCondition?.current || zoneCondition || {};
-      const flowPoints = zoneCondition?.flowPoints || {};
-      const hasWind = condition.windDirectionDeg !== null && condition.windDirectionDeg !== undefined && condition.windDirectionDeg !== '' && Number.isFinite(Number(condition.windDirectionDeg));
-      const currentProvider = zoneCondition?.currentSource || zoneCondition?.sources?.current?.provider || null;
-      const hasCurrentValue = condition.currentDirectionDeg !== null && condition.currentDirectionDeg !== undefined && condition.currentDirectionDeg !== '' && Number.isFinite(Number(condition.currentDirectionDeg));
-      const hasVerifiedDmiPoint = flowPoints?.sources?.current === 'dmi-marine-grid';
-      const hasCurrent = hasCurrentValue && (currentProvider !== 'dmi' || hasVerifiedDmiPoint);
-
-      // Strømpilen står ved det faktiske marine DMI-gitterpunkt, som leverede
-      // current-u/current-v. Der fremstilles ikke længere kunstige kopier rundt
-      // om zonen; det gav pile på land og antydede en rumlig opløsning, vi ikke har.
-      if (hasCurrent) {
-        const currentPosition = latLngFromPoint(flowPoints.current, fallbackPoint);
-        if (bounds.contains(currentPosition) && canPlaceAt(map, currentPosition, occupied.current, minDistance)) {
-          const marker = L.marker(currentPosition, {
-            icon: flowArrowIcon("current", condition.currentDirectionDeg),
-            interactive: false,
-            keyboard: false,
-            pane: "flowArrowsPane"
-          }).addTo(layer);
-          marker.options.ravFlowMeta = { type:'current', zoneId:zone.id, point:[currentPosition.lng,currentPosition.lat], directionDeg:Number(condition.currentDirectionDeg) };
-          counts.current += 1;
-        }
-      }
-
-      // Vindpilen står ved det faktiske atmosfæriske gitterpunkt. Vindretningen
-      // er meteorologisk "fra", derfor vender ikonfunktionen pilen 180° til den
-      // retning luften bevæger sig imod.
-      if (hasWind) {
-        const windPosition = latLngFromPoint(flowPoints.wind, fallbackPoint);
-        if (bounds.contains(windPosition) && canPlaceAt(map, windPosition, occupied.wind, minDistance)) {
-          const marker = L.marker(windPosition, {
-            icon: flowArrowIcon("wind", condition.windDirectionDeg),
-            interactive: false,
-            keyboard: false,
-            pane: "flowArrowsPane"
-          }).addTo(layer);
-          marker.options.ravFlowMeta = { type:'wind', zoneId:zone.id, point:[windPosition.lng,windPosition.lat], directionDeg:(Number(condition.windDirectionDeg)+180)%360 };
-          counts.wind += 1;
-        }
-      }
+        const position = latLngFromPoint(candidate.point);
+        if (!position || !bounds.contains(position) || !canPlaceAt(map, position, occupied[candidate.type], minDistance)) continue;
+        const marker = L.marker(position, {
+          icon: flowArrowIcon(candidate.type, candidate.directionDeg),
+          interactive: false,
+          keyboard: false,
+          pane: "flowArrowsPane"
+        }).addTo(layer);
+        marker.options.ravFlowMeta = {
+          type:candidate.type,
+          zoneId:candidate.zoneId,
+          partId:candidate.partId,
+          source:candidate.source,
+          point:[position.lng,position.lat],
+          directionDeg:candidate.type === 'wind' ? (candidate.directionDeg+180)%360 : candidate.directionDeg
+        };
+        counts[candidate.type] += 1;
       } catch (error) {
-        console.warn("Pile for zone kunne ikke vises", { zoneId: zone.id || null, error });
+        console.warn("Pile for zone kunne ikke vises", { zoneId:candidate.zoneId || null, partId:candidate.partId || null, error });
       }
     }
     layer.addTo(map);

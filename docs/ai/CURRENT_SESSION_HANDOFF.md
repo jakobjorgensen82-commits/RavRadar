@@ -1,58 +1,40 @@
-# Aktuelt sessionshandoff – 2026-08-15
+# Aktuelt sessionshandoff – 2026-08-16
 
-## Produktionsverificeret 4.0.212
+## Sikker produktionsbaseline
 
-- Separat `samples72h` bevarer tre døgns rå vejrhistorik til senere mobiliseringsanalyse; `samples24h` forbliver eneste aktive score-/statevindue.
-- Begge rå vinduer udelades fra `public-conditions.json`, og Supabase-egress påvirkes ikke.
-- Vandstands-continuity bevarer DMI-identitet. Providerskift er analyseret, men ingen kilde-, fallback-, merge- eller scoreændring er lavet.
-- #31854174281 og #31855164652 bestod de fulde gates og deploy. Datasæt `rr-20260815011320-210` har verificeret aktuel strøm i 210/210 zoner og 107 bevarede rå historikprøver pr. zone.
-- Senere #31857361460 dokumenterede en ny regression: 27 NSBS-zoner mistede deres 38-trins strømserie, da et skalarfelt fik lov at genvælge havmodel uden fælles strøm-U/V. 4.0.212 retter kun denne modelvalgskonflikt.
-- #31870747677 bestod hele releasekæden og udgav `rr-20260815071241-210`: 210/210 verificeret strøm fra nutiden, mindst 100,8 timers marinehorisont og 131 bevarede rå historikprøver pr. zone.
+- 4.0.227 er seneste produktionsverificerede release.
+- Commit `6e920c297ef58f997ae95b3b6da16adfdf66bfe6` bestod i #31908498204/#2824 central adminhydrering, frisk DMI, fuld `validate`, releasegate, supportartifact, beskyttet Supabase-sync, Pages-artifact og deploy.
+- Datasæt `rr-20260815210805-210` har 210 aktive zoner og 673 kyststrækninger med matchende manifesthashes.
+- Den lokale kystvinkel er nu en vejledende advarsel. Ejerens repræsentative helhedsvurdering kan gemmes, mens reelle punkt-/kystintegritetsfejl fortsat blokerer.
 
-## Sikker baseline
+## Aktiv 4.0.228-kandidat
 
-- Seneste produktionsverificerede release er 4.0.211 på commit `7e8733eff36f0930ecaa983f8b29916c63f66c2e`. #31854174281 og #31855164652 bestod central adminhydrering/tombstones, frisk DMI, fuld validering, releasegate, Supabase, artifact og Pages-deploy.
-- 4.0.208 ændrer kun lokal udviklerdiagnose og read-only kontrol. Ingen zone, geometri, DMI-kilde, RavScore eller offentlig UI-adfærd ændres.
-- Den direkte deployaudit efter udgivelsen gav datasæt `rr-20260814230422-210` og 210/210 identiske aktive zone-ID'er mellem `zones.geojson` og `public-conditions.json`. `DK-B04-12`, `DK-B04-13` og `DK-B04-14` findes alle med vejrdata.
+- REQ-MAP-ARROWS-ZOOM-001 implementeres i den isolerede worktree `C:\Users\jakob\AppData\Local\Temp\ravradar-40228-arrows` på branch `codex/map-arrow-density-4.0.228`.
+- Landsoversigten bevarer ét repræsentativt vind- og strømpunkt pr. hovedzone.
+- Fra zoomniveau 9 tilføjes kun lokale kystdelspile, når deres egne DMI-U/V-komponenter har præcis samme gitterkoordinat.
+- Lokale fallbackankre, ufuldstændig provenance og kunstige kopier eller forskydninger afvises.
+- Den fulde kystdelsdetaljepakke bærer alle flowpunkter og udløser automatisk opdatering af pilelaget.
+- Ændringen påvirker kun kortvisning og transport af punktproveniens; DMI-værdier, kildevalg, forecast, RavScore, historik og geometri er uændrede.
+- Målrettet zoomtæthedsregression og eksisterende zoom-, provenance-, null-safety-, DMI-bulk- og progressiv-runtime-tests består lokalt. RDKS-, versions-, håndbogs- og lokal releasegate er også grønne.
+- Den fulde lokale `validate` gennemfører hele geometri-v2-kæden og stopper derefter forventet fail-closed på repositoryets historiske 209/211-vejrsnapshot før central adminhydrering.
+- Frisk central 210-zoneproduktion, fuld `validate`, releasegate, supportartifact, Pages-deploy og direkte livekontrol mangler.
 
-## Hvorfor de tre Vadehavszoner så ud til at fejle lokalt
+## Aktuel ejerbeslutning og parallelle spor
 
-- Det indcheckede `data/live/conditions.json` er fra 31. juli 2026 og dækker en historisk 209-zonebestand. Det er ældre end både Vadehavstilføjelsen og de seneste centrale tombstones.
-- Det rå repositoryregister er ikke den effektive runtimebestand før central adminhydrering. Det kan fortsat indeholde Havnø/Mariager Fjord øst, mens det gamle vejrsnapshot kan indeholde Fejø/Femø. Begge zoner er centralt slettede; den aktuelle effektive bestand er 210.
-- `validate:data` stopper fortsat ved mismatch, men siger nu **FORÆLDET LOKALT VEJRSNAPSHOT** og henviser til `npm run audit:deployed-zone-weather`. En aktuel mismatch forbliver en hård zone-/vejrdækningsfejl.
-- `npm run hydrate:deployed-weather` hydrerer kun mutable vejrfiler. Fuld frisk validering kræver også central adminhydrering/tombstones først, som i `.github/workflows/update-and-deploy.yml`.
+- Ejeren fortsætter nu den manuelle gennemgang af land-/vandpunkter. Central adminstatus er autoritativ, og nye produktioner skal hydrere de senest godkendte punkter.
+- Fem-døgnsdækning og historikanalyse er midlertidigt udsat, indtil flere naturlige data og modelkørsler er opsamlet. De er ikke annulleret.
+- Automatisk historikopsamling, DMI- og releasegates fortsætter uændret i pausen. Historik må ikke bagudfyldes kunstigt.
 
-## Bindende ejerbeslutning om land-/vandpunkter
+## Næste trin
 
-- Hver af de 673 aktive lokale kyststrækninger har ét autoritativt blåt havpunkt og ét grønt landpunkt. Ekstra aktive punktpar og automatisk national genopdeling er fravalgt i DEC-0037.
-- Ejeren flytter senere eksisterende markører gradvist. Ændringer bliver først aktive efter central readback og en grøn efterfølgende DMI-/releasekørsel.
-- Den manuelle gennemgang blokerer ikke uafhængigt roadmaparbejde, men skal være afsluttet før endelig faglig score- og brugerreleasegodkendelse.
+1. Commit og push til `main`, og kræv frisk central adminhydrering, DMI, fuld `validate`, releasegate, Supabase og Pages.
+2. Kontrollér supportartifactets lokale flowpunkter og direkte livekort ved nærzoom.
+3. Opdatér produktionsbeviset i projekthukommelsen.
 
-## Næste arbejde
+## Bindende arbejdsregler
 
-1. Næste aktive udvikleropgave er P1-audit/design af komplette DMI-first femdøgnskæder pr. komponent under DEC-0030. Ingen ny kilde, fallback eller scoreændring før dækning, provenance, overgange og regressioner er dokumenteret.
-   - Strømopfølgning: alle 210 når nu mindst 100,8 timer. Klassificér den fælles sidste cirka 17–19 timers hale frem mod 118–120 timer ud fra DMI-kørsel, assetinventar, lead-time og sidste valide tid.
-   - Historikopfølgning: mål de 75 sidst reparerede zoner gennem et fuldt 72-timers vindue. Alle 210 zoner skal bevare rå historik, men manglende fortid må ikke rekonstrueres kunstigt.
-2. Supabase-egress overvåges gennem næste billingperiode. Privat dataminimeret besøgstæller med enkel adminrapport er fortsat P2.
-3. Ejerens manuelle markørreview udføres senere gradvist.
-
-## Arbejds- og modelregler
-
-- Brug GPT-5.6 Sol og **Ekstra høj** indsats til DMI, RavScore, geometri, ukendt rodårsag, arkitektur og endelig kritisk validering. Anbefal billigere model før rent rutinearbejde og bed om Sol igen før kritisk arbejde, jf. DEC-0031.
+- Brug GPT-5.6 Sol og **Ekstra høj** indsats til DMI, RavScore, geometri, ukendt rodårsag, systemiske regressioner og endelig kritisk validering.
 - Central adminstatus er runtime-sandhed. Historiske hardcodede værdier må ikke overskrive den.
-- Funktioner må ikke fjernes eller ændres uden aktuel ejerbeslutning.
 - DMI er primær kilde. Manglende data er `missing`, aldrig nul, stale gentagelse eller skjult interpolation.
+- En grøn automatisk kørsel er kun releasebevis, når den fulde gatekæde faktisk har kørt.
 - Gamle chats er historik, ikke ændringstilladelse.
-# 4.0.210-kandidat – DMI-strømhuller ved nutiden
-
-- 4.0.209 er produktionsverificeret i #31852633877 på commit `b157d4176c20b112728492abc29f32f7a1426389`; live datasæt er `rr-20260815000929-210` med 210 zoner og 102 `samples72h`-prøver pr. zone.
-- Artifactmålingen viste 125 hovedzoner med to strømtrin 19. august, 75 med syv sene trin og kun 10 med en sammenhængende serie fra 14. august.
-- Rodårsagen er `component_horizon_hours`: den målte kun sidste komplette tidspunkt og accepterede derfor en fjern hale som fuld dækning.
-- 4.0.210 kræver start nær byggetiden og native sammenhæng. På det faktiske artifact bliver resultatet 10 komplette og 200 genhentningskrævende hovedzoner; `dkss_idw` og `dkss_nsbs` prioriteres.
-- Ingen kilde, fallback eller score ændres. Næste bevis er frisk produktion og derefter 72 timers eftermåling af verificeret strømhistorik.
-# 4.0.211 – anden rodårsag i DMI-strømcachen og produktionsbevis
-
-- #31853585142 deployede 4.0.210 og bestod alle gates, men efterartifactet viste fortsat 125 zoner med to sene strømtrin, 75 med syv og 10 med fuld serie.
-- Schedulerens nye diagnose virkede; genhentningen gjorde ikke. IDW og NSBS blev forsøgt, men alle 39 filer pr. model blev sprunget over som tidligere behandlet.
-- `merge_previous` tabte `marineSelection`. 4.0.211 bevarer valget, rekonstruerer 1.138 legacy-valg i det faktiske artifact og hæver grid-/behandlingssignaturen fra 5 til 6 for én fuld genbehandling.
-- Frisk produktion og direkte artifactoptælling er gennemført: 210/210 zoner har verificeret strøm ved nutiden. Næste trin er 72 timers historikmåling og DEC-0030-klassifikation af de 89 zoner under 96 timers marinehorisont. Ingen score eller kilde ændres.

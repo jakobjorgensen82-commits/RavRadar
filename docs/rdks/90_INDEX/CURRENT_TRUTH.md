@@ -1,5 +1,15 @@
 # Current truth – gældende projektviden
 
+## 4.0.228 – flere faktiske DMI-pile ved indzoomning
+
+- Landsoversigten bevarer ét repræsentativt vind- og strømpunkt pr. hovedzone, så kortet fortsat er læsbart.
+- Fra zoomniveau 9 kan kortet desuden vise de lokale kystdeles egne vind- og strømpile. Hver tæt pil skal stå på det faktiske DMI-gitterpunkt, som leverede den pågældende kystdels data.
+- En lokal strømpil kræver strøm-U og strøm-V på præcis samme koordinat; en lokal vindpil kræver tilsvarende vind-U og vind-V. Fallbackpunkter og ufuldstændig provenance må ikke skabe tæthed.
+- Startpakken bærer de aktuelle vinderdeles pilgrundlag. Når den fulde detaljepakke ankommer, opdateres pilelaget automatisk med alle dokumenterede lokale punkter i udsnittet.
+- Ændringen flytter eller kopierer ingen pile kunstigt og ændrer ingen DMI-værdi, kilde, prognose, kyst, land-/vandpunkt, RavScore eller historik. Se DEC-0039.
+- Den målrettede syntetiske regression samt eksisterende zoom-, provenance-, DMI- og progressiv-runtime-tests består lokalt. Frisk central produktion og livekort er næste gate.
+- Ejeren fortsætter samtidig den manuelle land-/vandpunktgennemgang. Fem-døgnsdækning og historikanalyse er efter ejerbeslutning midlertidigt udsat, indtil flere naturlige data er opsamlet; dataopsamlingen og de eksisterende gates fortsætter uændret.
+
 ## 4.0.227 – lokal kystvinkel er en advarsel, ikke en ejerblokering
 
 - Ved Svansodde afviste admin et cirka 461 meter langt visuelt kontrolleret punktpar ud fra tangenten på et cirka 15 meter langt mikrostykke af den detaljerede kystlinje. Den viste afvigelse var 50 grader mod en hård grænse på 20 grader.

@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.227",
+  "version": "4.0.228",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -102,7 +102,7 @@
     "test:adaptive-model-performance": "node scripts/test-adaptive-model-performance-4.0.83.mjs",
     "test:current-provenance-vector-consistency": "node scripts/test-current-provenance-vector-consistency-4.0.85.mjs",
     "test:admin-feature-reachability": "node scripts/test-admin-feature-reachability-4.0.86.mjs",
-    "test:flow-arrow-runtime": "node scripts/test-flow-arrow-runtime-4.0.87.mjs",
+    "test:flow-arrow-runtime": "node scripts/test-flow-arrow-runtime-4.0.87.mjs && node scripts/test-map-arrow-zoom-density-4.0.228.mjs",
     "test:admin-map-lifecycle": "node scripts/test-admin-map-lifecycle-4.0.87.mjs",
     "test:module-version-closure": "node scripts/test-module-version-closure-4.0.87.mjs",
     "test:map-zoom-refresh": "node scripts/test-map-zoom-refresh-4.0.88.mjs && node scripts/test-main-zone-boundaries-4.0.183.mjs",

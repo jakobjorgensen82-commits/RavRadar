@@ -1,5 +1,7 @@
 # Kendte åbne og overvågede forhold
 
+- **ISSUE-MAP-ARROW-DENSITY-DOES-NOT-GROW-WITH-ZOOM – RETTET LOKALT I 4.0.228 / AFVENTER PRODUKTION:** Kortet genberegnede allerede afstand mellem pile ved zoom, men runtime leverede kun ét flowpunkt pr. hovedzone. Nærzoom kan nu tilføje hver kystdels egne, eksakt parrede DMI-U/V-gitterpunkter. Uverificerede ankerpunkter og kunstige kopier afvises. Frisk produktionsartifact og livekort er næste gate.
+
 - **ISSUE-ADMIN-LOCAL-COAST-ANGLE-BLOCKS-OWNER – PRODUKTIONSVERIFICERET LØST I 4.0.227:** Admin brugte vinklen mod det nærmeste korte kystsegment som en hård 20-graders godkendelsesport. Svansodde blev derfor låst ved 50 grader, selv om ejeren havde kontrolleret hele den bugtede strækning. Vinklen er nu vejledende; reelle punkt-/kystintegritetsfejl, central readback og DMI-/releasegates bevares. #31908498204/#2824 bestod hele produktionskæden, supportartifactets hashes matcher, og direkte Pages-kontrol viser den nye regel live.
 
 - **ISSUE-SUPABASE-RUNTIME-DIAGNOSTICS-STATEMENT-TIMEOUT – PRODUKTIONSVERIFICERET RETTET I 4.0.226:** #2814 forsøg 1 ramte HTTP 500/PostgreSQL `57014` under den cirka 17,7 MB store `runtime-diagnostics`-upsert efter alle faglige gates; uændret forsøg 2 lykkedes. Requesteren genprøver nu kun eksakt `500/57014` én gang og stopper fortsat ved gentagelse eller andre fejl. #31905211459/#2816 bestod hele produktionskæden; normalvejen skrev dokumentet i første forsøg på cirka 11,5 sekunder, mens timeoutgrenen er regressionstestet.
@@ -27,8 +29,8 @@
 ## 4.0.210 – falsk komplet DMI-strømdækning
 
 - **ISSUE-DMI-CURRENT-DISTANT-TAIL-MASKS-NOW-GAP – PRODUKTIONSVERIFICERET LUKKET I 4.0.210–4.0.211:** Schedulerens tidligere horisontsmål så kun på det sidste komplette marinetidspunkt. 4.0.210 kræver sammenhængende komponenter fra byggetiden, og #31855164652 beviser verificeret strøm ved nutiden i 210/210 zoner. Ingen manglende værdi udfyldes kunstigt.
-- **ISSUE-DMI-CURRENT-HISTORY-RECOVERY-MEASUREMENT – ÅBEN / I MÅLING:** Alle 210 zoner bevarer nu 107 rå prøver, og 210/210 har verificeret strøm ved nutiden. De 75 zoner, der først blev dækket i #31855164652, skal følges gennem 72 timer, så deres verificerede historik opbygges ægte fremadrettet. Fortid må ikke fabrikeres.
-- **ISSUE-DMI-CURRENT-FIVE-DAY-TAIL – ÅBEN P1 UNDER DEC-0030:** Alle zoner når mindst cirka 70,8 timers marinegrundlag, men kun 121/210 når mindst 96 timer. De resterende 89 zoners DMI-produkt, overgang og sidste valide time skal klassificeres før enhver ny kilde, fallback eller scoreændring; produktmålet er fortsat cirka 120 timer.
+- **ISSUE-DMI-CURRENT-HISTORY-RECOVERY-MEASUREMENT – ÅBEN / MIDLERTIDIGT UDSAT 2026-08-16:** Alle 210 zoner bevarer nu rå og verificeret historik, som fortsat opsamles naturligt. Ejeren har udsat den næste 72-timersanalyse, indtil mere data findes. Fortid må fortsat ikke fabrikeres.
+- **ISSUE-DMI-CURRENT-FIVE-DAY-TAIL – ÅBEN P1 / MIDLERTIDIGT UDSAT 2026-08-16:** Den samlede fem-døgnsdækning analyseres videre, når flere naturlige modelkørsler er opsamlet. Ingen ny kilde, fallback eller scoreændring er godkendt, og `missing` må ikke skjules.
 
 ## 4.0.208 – lokal snapshotdrift
 

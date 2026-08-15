@@ -1,4 +1,21 @@
-# Implementeringsstatus pr. 4.0.227 – vejledende lokal kystvinkel
+# Implementeringsstatus pr. 4.0.228 – verificerede pile ved indzoomning
+
+## 4.0.228 – lokale DMI-gitterpunkter bliver synlige tæt på
+
+- [x] Landsoversigten bevarer hovedzonernes eksisterende repræsentative vind- og strømpile.
+- [x] Fra zoomniveau 9 tilføjes lokale pile fra kystdelenes egne runtimeposter.
+- [x] Lokale strømpile kræver eksakt fælles DMI-gitterpunkt for strøm-U/V; lokale vindpile kræver eksakt fælles punkt for vind-U/V.
+- [x] Uverificerede lokale anker-/fallbackpunkter må ikke bruges til at fremstille ekstra tæthed.
+- [x] Den progressive startpakke bevarer den aktuelle vinderdels flowpunkt, mens detaljepakken bevarer alle kystdeles flowpunkter.
+- [x] Pilelaget opdateres, når detaljepakken er flettet ind, og fortsætter med at opdatere ved zoom og kortflytning.
+- [x] Målrettet regression beviser flere fysisk adskilte pile ved nærzoom og uændret oversigt ved fjernzoom.
+- [x] Eksisterende zoom-, strømproveniens-, null-safety-, DMI-bulk- og progressiv-runtime-tests består lokalt.
+- [x] Den fulde lokale `validate` gennemfører hele geometri-v2-kæden og stopper derefter som forventet fail-closed på repositoryets historiske 209/211-vejrsnapshot før central adminhydrering; forholdet er ikke omgået eller omklassificeret.
+- [x] Lokal `release:gate` består for 4.0.228.
+- [x] DMI-værdier, kilder, forecast, RavScore, historik og geometri er uændrede.
+- [ ] Frisk central 210-zoneproduktion, fuld `validate`, releasegate, supportartifact, Pages-deploy og direkte livekontrol mangler.
+
+# Tidligere status: 4.0.227 – vejledende lokal kystvinkel
 
 ## 4.0.227 – ejerens helhedsvurdering kan godkendes
 
