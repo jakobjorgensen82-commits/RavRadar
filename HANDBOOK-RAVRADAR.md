@@ -1,5 +1,9 @@
 # RavRadar Håndbog
 
+## Gamle temperaturer uden lagmærkning fjernes – 4.0.214
+
+RavRadar viser kun DMI-vandtemperatur, når målingen beviseligt kommer fra havoverfladen. Ældre cachede temperaturer uden lagmærkning vises som manglende, indtil DMI har genopbygget dem. Vind-, bølge-, strøm- og vandstandshistorik bevares.
+
 ## Vandtemperatur er temperaturen ved havoverfladen – 4.0.213
 
 DMI's havmodeller indeholder temperatur både ved overfladen og i mange dybder. RavRadar skelnede tidligere ikke disse lag i den skalare temperaturkæde. Et dybere lag kunne derfor overskrive overfladeværdien, selv om appen viser feltet som almindelig vandtemperatur og fallbacken leverer havoverfladetemperatur.
@@ -74,7 +78,7 @@ Hver lokal kyststrækning har et grønt punkt på land og et blåt punkt i vande
 
 Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande på begge sider af den præcise kyst. Kun entydige fejl rettes automatisk. Tvetydige ø-, havne- og smalle kystforløb går til manuel kontrol, og stednavne bruges aldrig som bevis for, hvilken side der er land.
 
-**Håndbogsversion:** 4.0.213
+**Håndbogsversion:** 4.0.214
 
 **Opdateret:** 15. august 2026
 

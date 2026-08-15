@@ -80,7 +80,7 @@ for _session in (STAC_SESSION, DOWNLOAD_SESSION):
 STAC_SESSION.headers.update({"Accept": "application/geo+json, application/json"})
 DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octet-stream, */*"})
 
-PARSER_VERSION = 15
+PARSER_VERSION = 16
 PARAMETER_MAP_VERSION = 4
 GRID_LOOKUP_VERSION = 7
 COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw", "wam_nsb", "harmonie_dini_sf"]
@@ -1293,6 +1293,22 @@ def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict
             selected = min(MARINE_COLLECTIONS, key=lambda collection: (float(penalties.get(collection, 25.0)), COLLECTION_ORDER.index(collection)))
         preferred_wind_tail_demand[selected] += 1
 
+    missing_surface_temperature_zone_ids = [
+        zone_id for zone_id in active_ids
+        if component_horizon_hours(active_zones.get(zone_id, {}), ("water-temperature",)) < COMPLETE_HORIZON_HOURS
+    ]
+    preferred_surface_temperature_demand = {collection: 0 for collection in MARINE_COLLECTIONS}
+    for zone_id in missing_surface_temperature_zone_ids:
+        cached_zone = active_zones.get(zone_id, {})
+        selected = ((cached_zone.get("marineSelection") or {}).get("collection"))
+        if selected not in MARINE_COLLECTIONS:
+            coast = (active_by_id.get(zone_id) or {}).get("coastType") or "east"
+            penalties = MARINE_MODEL_PENALTY_KM.get(coast, MARINE_MODEL_PENALTY_KM["east"])
+            selected = min(MARINE_COLLECTIONS, key=lambda collection: (float(penalties.get(collection, 25.0)), COLLECTION_ORDER.index(collection)))
+        preferred_surface_temperature_demand[selected] += 1
+    surface_temperature_recovery_active = bool(missing_surface_temperature_zone_ids)
+    marine_recovery_active = marine_recovery_active or surface_temperature_recovery_active
+
     lead_marine_collection = min(
         MARINE_COLLECTIONS,
         key=lambda collection: (
@@ -1302,7 +1318,7 @@ def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict
             # og Limfjorden aldrig bliver prøvet. Ikke-forsøgte/eldst
             # afbrudte modeller kommer derfor først under recovery.
             epoch((state.get(collection) or {}).get("lastBudgetInterruptedAt")),
-            -preferred_wind_tail_demand.get(collection, 0),
+            -(preferred_wind_tail_demand.get(collection, 0) + preferred_surface_temperature_demand.get(collection, 0)),
             -preferred_marine_demand.get(collection, 0),
             epoch((state.get(collection) or {}).get("lastAttemptAt")),
             COLLECTION_ORDER.index(collection),
@@ -1360,7 +1376,8 @@ def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict
             marine_demand_rank = -preferred_wind_tail_demand.get(collection, 0)
         else:
             marine_demand_rank = -(preferred_marine_demand.get(collection, 0) * (zone_count + 1)
-                                   + preferred_wind_tail_demand.get(collection, 0))
+                                   + preferred_wind_tail_demand.get(collection, 0)
+                                   + preferred_surface_temperature_demand.get(collection, 0))
         deficit_rank = -missing96.get(family, 0)
         complete_family_rank = 1 if missing96.get(family, 0) == 0 else 0
         return (
@@ -1385,11 +1402,35 @@ def collection_schedule(previous: dict[str, Any], active_zones_config: list[dict
         "preferredMarineDemand": preferred_marine_demand,
         "missingWindTailZoneIds": missing_wind_tail_zone_ids,
         "preferredWindTailDemand": preferred_wind_tail_demand,
+        "missingSurfaceTemperatureZoneIds": missing_surface_temperature_zone_ids,
+        "preferredSurfaceTemperatureDemand": preferred_surface_temperature_demand,
+        "surfaceTemperatureRecoveryActive": surface_temperature_recovery_active,
         "atmosphereDeferredDuringMarineRecovery": marine_foundation_missing and not balanced_foundation_recovery,
         "completionDefinition": f"component horizon >= {COMPLETE_HORIZON_HOURS} hours",
         "coverageDenominator": "current-active-zone-and-coastal-part-registry",
     }
     return sorted(COLLECTION_ORDER, key=priority), diagnostics
+
+
+def sanitize_water_temperature_surface_integrity(document: dict[str, Any]) -> int:
+    """Drop cached temperature values that are not proven sea-surface data."""
+    removed = 0
+    for zone in (document.get("zones") or {}).values():
+        grid_point = (zone.get("gridPoints") or {}).get("water-temperature") or {}
+        grid_surface = grid_point.get("verticalLayer") == "surface:0"
+        for hour in (zone.get("hourly") or {}).values():
+            if "water-temperature" not in hour:
+                continue
+            source = (hour.get("sources") or {}).get("waterTemperature") or {}
+            if grid_surface and source.get("verticalLayer") == "surface:0":
+                continue
+            hour.pop("water-temperature", None)
+            (hour.get("sources") or {}).pop("waterTemperature", None)
+            removed += 1
+        if not grid_surface:
+            (zone.get("gridPoints") or {}).pop("water-temperature", None)
+            (zone.get("collections") or {}).pop("water-temperature", None)
+    return removed
 
 
 def component_horizon_hours(zone: dict[str, Any], required: tuple[str, ...], now_epoch: float | None = None) -> float:
@@ -1725,6 +1766,8 @@ def main() -> int:
     cache_before = raw_cache_inventory()
     current_zone_registry_signature = sampling_registry_signature()
     previous = load_previous(current_zone_registry_signature)
+    removed_unverified_temperature_points = sanitize_water_temperature_surface_integrity(previous)
+    previous.setdefault("diagnostics", {})["removedUnverifiedWaterTemperaturePoints"] = removed_unverified_temperature_points
     previous_zone_registry_signature = previous.get("zoneRegistrySignature")
     zone_registry_unchanged = previous_zone_registry_signature == current_zone_registry_signature
     previous_generated = epoch(previous.get("generatedAt"))
@@ -1743,6 +1786,7 @@ def main() -> int:
         int(previous_ocean.get("waterLevelZones") or 0) > 0
         and int(previous_ocean.get("currentUZones") or 0) > 0
         and int(previous_ocean.get("currentVZones") or 0) > 0
+        and int(previous_ocean.get("waterTemperatureZones") or 0) >= previous_zone_count
         and marine_horizon_healthy
         and wind_horizon_healthy
         and not previous_marine_errors

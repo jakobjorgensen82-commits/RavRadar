@@ -1,5 +1,9 @@
 # DMI-first femdøgnskæder – kilde- og runtimeaudit
 
+## 4.0.214-opfølgning
+
+4.0.213 afviste nye dybdelag, men produktionsartifactet indeholdt fortsat ældre temperaturtimer uden vertikal provenance. 4.0.214 kasserer dem fail-closed og bruger manglende `surface:0` som et aktivt rotationsbehov for DKSS-modellerne. Dækningen måles efter hver kørsel; der indføres ingen ny kilde eller scoreændring.
+
 **Status:** Fase A, aktiv analyse – ingen produktionsændring  
 **Beslutningsgrundlag:** DEC-0030  
 **Senest opdateret:** 2026-08-15

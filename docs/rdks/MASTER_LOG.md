@@ -1,3 +1,9 @@
+## 2026-08-15 – 4.0.214 fail-closed temperaturcache
+
+- 4.0.213-run #31873118298 var grønt, men støttepakken afslørede ældre temperaturpunkter uden vertikal provenance.
+- Parser 16 kasserer disse temperaturpunkter og lader DKSS-rotationen genopbygge eksplicit `surface:0`.
+- Øvrige vejrkomponenter og rå 72-timershistorik bevares.
+
 ## 2026-08-15 – 4.0.213 entydig DMI-havoverfladetemperatur
 
 - Supportartifactet fra #31870747677 dokumenterede DMI-parameter 80 ved både `surface:0` og mange dybdelag i alle tre DKSS-collections.

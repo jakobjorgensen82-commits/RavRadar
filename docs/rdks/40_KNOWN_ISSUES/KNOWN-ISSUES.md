@@ -1,5 +1,7 @@
 # Kendte åbne og overvågede forhold
 
+- **4.0.214 PRODUKTIONSOPFØLGNING:** 4.0.213 afviste nye DMI-dybdetemperaturer, men bevarede ældre cachetimer uden lagmærkning. 4.0.214 fjerner dem fail-closed og genopbygger `surface:0` gennem DKSS-rotationen. Afsluttes først, når artifacts viser verificeret overfladelag for alle viste DMI-temperaturtimer.
+
 ## P1-bølger og vandstand – aktuel produktionsmåling
 
 - **ISSUE-LIMFJORD-WAVE-MISSING-B05-11 – ÅBEN ANALYSE:** Dataset `rr-20260815071241-210` mangler bølgehøjde, -retning og -periode i alle 118 timer for Mors nord/Feggesund. Koden vælger ingen WAM-collection for Limfjord-kysttypen; den beskyttede provenance skal vise, hvorfor ekstern fallback også er missing, før et løsningsdesign udarbejdes.

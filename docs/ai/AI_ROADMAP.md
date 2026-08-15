@@ -1,4 +1,4 @@
-# AI Roadmap – RavRadar 4.0.213
+# AI Roadmap – RavRadar 4.0.214
 
 Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status skal løbende flyttes til RDKS, når noget implementeres.
 
@@ -25,6 +25,7 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 - Følg de 75 zoner, som først fik verificeret strøm i den afsluttende genopbygning, gennem et fuldt 72-timers vindue. Dokumentér pr. produktionskørsel bevaret historiklængde, verificeret andel og eventuelle huller; historiske mangler må ikke udfyldes bagudrettet.
 - Exitkriteriet for historikopfølgningen er mindst 72 timers faktisk bevaret pipelinehistorik i alle 210 zoner samt en særskilt liste over reelle DMI-huller. Det er analysegrundlag for senere mobiliserings-/scorearbejde og ændrer ikke den aktive 24-timersscore.
 - 4.0.212 lukker en dokumenteret overgangsregression før den videre haleanalyse: kørsel #31857361460 reducerede 27 komplette NSBS-strømserier til ét sent tidspunkt, fordi et marginalt nærmere skalarfelt kunne genvælge hele havmodellen. Kun et gyldigt fælles strøm-U/V-par må nu ændre det autoritative valg. #31870747677 genoprettede 210/210 ved nutiden og mindst 100,8 timers sammenhængende marineprognose i alle zoner.
+- 4.0.214-opfølgning: mål efter hver DMI-kørsel hvor mange zoner/timer der har eksplicit `surface:0`. Gamle umærkede temperaturtimer må ikke vende tilbage; alle tre DKSS-modeller skal gennem rotationen.
 - Næste strømhaleopgave under DEC-0030 er nu ensartet: dokumentér hvorfor alle zoner stopper omkring 100,8 timer ved den aktuelle byggetid, og design de sidste cirka 17–19 timer frem mod en reel 118–120-timers kæde. Ingen fallback eller scoreændring før kilde/run/lead-time og overgang er forklaret.
 - Dokumentér først faktisk dækning, provenance, overgangskvalitet og regressionsplan. Indfør ikke ny produktionskilde, fallback eller scoreændring før denne analyse er afsluttet og godkendt.
 - Supabase-egress overvåges gennem næste billingperiode. Den private, dataminimerede besøgstæller med enkel adminrapport er fortsat P2.

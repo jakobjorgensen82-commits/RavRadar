@@ -1,4 +1,12 @@
-# Implementeringsstatus pr. 4.0.213 – entydig DMI-havoverfladetemperatur
+# Implementeringsstatus pr. 4.0.214 – fail-closed genopbygning af havoverfladetemperatur
+
+## 4.0.214 – fail-closed genopbygning af havoverfladetemperatur
+
+- [x] #31873118298 afviste 756 nye dybdelagsmeddelelser og bestod hele releasekæden.
+- [x] Artifactet afslørede ældre cachede temperaturtimer uden lagproveniens; 4.0.213 var derfor kun første halvdel af rettelsen.
+- [x] Parser 16 fjerner umærkede/ikke-overflade temperaturtimer fail-closed og prioriterer manglende overfladetemperatur i DKSS-rotationen.
+- [x] Øvrig vejrhistorik bevares; kun uverificeret temperatur kasseres.
+- [ ] Friske produktionskørsler skal genopbygge `surface:0` for alle relevante DKSS-modeller.
 
 ## 4.0.213 – entydig DMI-havoverfladetemperatur
 
