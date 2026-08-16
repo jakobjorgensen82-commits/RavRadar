@@ -1,18 +1,18 @@
-import { calculateRavScore, exceptionalScoreMark } from "./js/core/score-engine.js?v=4.0.229";
-import { selectBestTimeForDay } from "./js/core/best-time-selector.js?v=4.0.229";
-import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest } from "./js/services/data-service.js?v=4.0.229";
-import { submitObservation, getLocalObservations, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.229";
-import { predictAmberChance } from "./js/core/prediction-engine.js?v=4.0.229";
-import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.229";
-import { activeTrip, answerTrip, pendingTripPrompt, resumeTripTracking, startTrip, stopTrip } from "./js/services/trip-service.js?v=4.0.229";
-import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.229";
-import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.229";
-import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.229";
-import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.229";
-import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.229";
-import { askRavRadar, QUICK_QUESTIONS } from "./js/services/rav-assistant.js?v=4.0.229";
-import { loadAdaptiveModel } from "./js/core/adaptive-model.js?v=4.0.229";
-import { buildLocalZoneScore } from "./js/core/local-zone-score.js?v=4.0.229";
+import { calculateRavScore, exceptionalScoreMark } from "./js/core/score-engine.js?v=4.0.230";
+import { selectBestTimeForDay } from "./js/core/best-time-selector.js?v=4.0.230";
+import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest } from "./js/services/data-service.js?v=4.0.230";
+import { submitObservation, getLocalObservations, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.230";
+import { predictAmberChance } from "./js/core/prediction-engine.js?v=4.0.230";
+import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.230";
+import { activeTrip, answerTrip, pendingTripPrompt, resumeTripTracking, startTrip, stopTrip } from "./js/services/trip-service.js?v=4.0.230";
+import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.230";
+import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.230";
+import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.230";
+import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.230";
+import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.230";
+import { askRavRadar, QUICK_QUESTIONS } from "./js/services/rav-assistant.js?v=4.0.230";
+import { loadAdaptiveModel } from "./js/core/adaptive-model.js?v=4.0.230";
+import { buildLocalZoneScore } from "./js/core/local-zone-score.js?v=4.0.230";
 
 const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, lastGps:null, flowArrows:null, adaptiveModel:loadAdaptiveModel(), currentScores:new Map(), forecastGroups:new Map(), forecastRenderId:0 };
 const map = createMap("map");
@@ -252,11 +252,11 @@ try {
   resumeTripTracking();syncPendingObservations().catch(()=>{});updateTripUi();const pending=pendingTripPrompt();if(pending)setTimeout(()=>openTripPrompt(pending),650);
 } catch(error){console.error(error);infoPanel.innerHTML='<div class="notice">Aktuelle data kunne ikke indlæses. Gamle prognoser vises ikke.</div>';dataStatus.textContent='Fejl ved indlæsning';}
 
-// RavRadar 4.0.229: versionsmanifest + sikker service-worker-opdatering.
+// RavRadar 4.0.230: versionsmanifest + sikker service-worker-opdatering.
 function installAppUpdateFlow() {
   if (!("serviceWorker" in navigator)) return;
   const banner=document.querySelector("#updateBanner"), updateButton=document.querySelector("#updateAppButton");
-  const version=window.RAVRADAR_VERSION||"4.0.229"; document.querySelector("#appVersion").textContent=version;
+  const version=window.RAVRADAR_VERSION||"4.0.230"; document.querySelector("#appVersion").textContent=version;
   let refreshing=false, registration=null, waitingWorker=null;
   const showUpdate=worker=>{waitingWorker=worker||waitingWorker;if(waitingWorker){waitingWorker.postMessage({type:'SKIP_WAITING'});return;}if(!banner||!updateButton)return;banner.hidden=false;updateButton.disabled=false;updateButton.textContent="Opdater nu";};
   const activate=()=>{updateButton.disabled=true;updateButton.textContent="Opdaterer…";(waitingWorker||registration?.waiting)?.postMessage({type:"SKIP_WAITING"});};

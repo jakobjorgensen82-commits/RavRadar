@@ -1,5 +1,13 @@
 # RavRadar Håndbog
 
+## Strøm vælges selvstændigt på tværs af DMI's havområder – 4.0.230
+
+RavRadar brugte tidligere ét samlet valg af havmodel til både strøm, vandstand og vandtemperatur. Det kunne skjule en god, nær strømcelle, hvis et andet modelområde var foretrukket til et skalarfelt. Ved Havknude fandtes der eksempelvis et komplet strømpar 2,80 km fra vandpunktet, men et andet modelområde var valgt til øvrige havdata.
+
+Fra 4.0.230 vurderes strømmen særskilt for hvert DMI-tidspunkt. RavRadar leder på tværs af alle aktive danske havmodelområder efter det nærmeste sted med både strøm-U og strøm-V. Først i den valgte vandkolonne tages det dybeste gyldige lag. Vandstand og overfladetemperatur beholder deres egne modelvalg og kan ikke længere fjerne eller blokere strøm.
+
+Hvis den bedste strømcelle eller model skifter mellem to DMI-tider, opfinder RavRadar ikke en glidende mellemstrøm; mellemtimen bliver manglende. Afstandsgrænsen på 5 km, administratorens punkter, RavScoreformlen og reglen om ingen uverificerede pile er uændrede. Den private syvdøgnsopsamling fortsætter samtidig score-neutralt til den senere analyse af ydre tilførsel, overgang mod kysten og lokal bundnær levering.
+
 ## Bugtede kyster kan godkendes ud fra helhedsindtrykket – 4.0.227
 
 RavRadar viser fortsat, hvor meget linjen fra det blå havpunkt til det grønne landpunkt afviger fra den nærmeste korte kystlinje. På en lige kyst er det et nyttigt fingerpeg. På en bugtet eller meget detaljeret kyst kan et ganske kort kysthak imidlertid vende anderledes end den samlede strækning.
@@ -136,7 +144,7 @@ En privat, score-neutral cache bruger DKSS-felter ved vandpunktet samt cirka 5 o
 
 Rotationen registrerer også, hvor langt der er til den nærmeste modelkolonne med et eksakt fælles U/V-par, selv når den ligger uden for 5 km. I det tilfælde gemmes kun koordinat, afstand og lagmetadata – ikke de fjerne strømværdier. En privat ejeroversigt skelner derfor mellem nær-tærskel 5–6 km til rent manuelt geometrireview, modelhul 6–8 km, strukturelt modelhul over 8 km og en datakædefejl, hvor gyldig strøm faktisk findes inden for 5 km. Selv en nær-tærskel-post må kun flyttes, hvis vandpunktet i sig selv er forkert – aldrig blot for at nå modelcellen. Oversigten flytter ingen punkter automatisk, og den offentlige 5 km-grænse er uændret.
 
-**Håndbogsversion:** 4.0.229
+**Håndbogsversion:** 4.0.230
 
 **Opdateret:** 16. august 2026
 

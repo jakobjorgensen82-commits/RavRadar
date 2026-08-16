@@ -14,7 +14,7 @@ Overfladestrøm er heller ikke automatisk det bedste mål for ravtransport. Rav 
 
 1. Hvert centralt gemt vandpunkt er samplinganker for både den viste strømpil og den strøm, som den aktive RavScore kan bruge.
 2. DMI-U og DMI-V skal være gyldige på præcis samme koordinat, forecasttid og vertikallag. Et sådant par er havmodellens bevis for en aktiv vandcelle; manglende par er `missing`.
-3. Vandkolonnen vælges før dybden: nærmeste gyldige vandkolonne vinder altid. Et dybere lag må aldrig flytte valget til en fjernere koordinat.
+3. Vandkolonnen vælges før dybden og uafhængigt af skalare havfelter: for hvert native forecasttidspunkt sammenlignes alle aktive DKSS-collections, og den nærmeste gyldige fælles U/V-vandkolonne vinder. Et dybere lag, en kysttypeprioritet eller et tidligere valg til vandstand/temperatur må aldrig flytte eller blokere strømvalget.
 4. Inden for den valgte vandkolonne bruges det dybeste gyldige fælles U/V-lag som den aktive bundnære repræsentation.
 5. 0–3 km er foretrukket afstand. En gyldig celle mellem 3 og 5 km kan accepteres, når nærmere data ikke findes. Over 5 km er fail-closed og må ikke skabe pil, verificeret provenance eller scoreinput.
 6. Pilen står på den eksakte valgte DMI-koordinat. Gamle cacher uden denne semantik, lagidentitet eller aktuelt samplingpunkt må ikke videreføres som verificeret strøm.
@@ -23,6 +23,7 @@ Overfladestrøm er heller ikke automatisk det bedste mål for ravtransport. Rav 
 9. Mellemtimer må kun interpoleres, når begge omgivende native trin har samme modelkørsel, collection, samplingpunkt, gitterkoordinat og vertikallag. Et skift i lag eller vandkolonne giver et ærligt `missing`-gab mellem de native tider; vektorer fra forskellige dybder må aldrig blandes.
 10. Den viste pil bruger den viste/valgte times egen verificerede gitterkoordinat og lag. En anden forecasts times koordinat må ikke bruges som repræsentativ pilposition.
 11. Centralt reviewede kystdelspunkter skal bygges før DMI-sampling. Når et punkt flyttes, kasseres kun cachen for netop det ændrede samplingpunkt; uændrede punkter må genbruge deres dokumenterede cache, mens ændrede punkter forbliver `missing`, indtil de er samplet igen.
+12. Skalarfelter og strøm har særskilt modelidentitet. Kysttypeprioritering må fortsat styre vandstand, overfladetemperatur og andre skalare marinefelter, men skalarvalget må aldrig rydde, overskrive eller forhindre en nærmere verificeret strømkolonne. Hvis strøm skifter collection eller celle mellem to native tider, må overgangen ikke interpoleres.
 
 ## Privat syvdøgnsopsamling
 

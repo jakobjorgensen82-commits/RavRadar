@@ -14,16 +14,16 @@ const finite=v=>v!==null&&v!==undefined&&v!==''&&typeof v!=='boolean'&&Number.is
 const near=(a,b,t=1e-6)=>Array.isArray(a)&&Array.isArray(b)&&Math.abs(Number(a[0])-Number(b[0]))<=t&&Math.abs(Number(a[1])-Number(b[1]))<=t;
 const haversineKm=(a,b)=>{if(!Array.isArray(a)||!Array.isArray(b))return Infinity;const rad=value=>Number(value)*Math.PI/180;const dLat=rad(Number(b[1])-Number(a[1])),dLon=rad(Number(b[0])-Number(a[0])),lat1=rad(a[1]),lat2=rad(b[1]);const term=Math.sin(dLat/2)**2+Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;return 6371.0088*2*Math.atan2(Math.sqrt(term),Math.sqrt(1-term));};
 const active=(zones.features||[]).filter(f=>f.properties?.zoneStatus==='active');
-const strictCurrentSemantics=Number(bulk.currentVectorSemanticsVersion)===2;
+const strictCurrentSemantics=Number(bulk.currentVectorSemanticsVersion)===3;
 const failures=[];const warnings=[];let verifiedGridZones=0,verifiedHours=0,unverifiedHours=0;
-if(!strictCurrentSemantics)warnings.push('Lokalt snapshot er fra før strømsemantik v2; produktionskørslen skal genbygge alle strømdata før deploy.');
+if(!strictCurrentSemantics)warnings.push('Lokalt snapshot er fra før strømsemantik v3; produktionskørslen skal genbygge alle strømdata før deploy.');
 const unverifiedReasons={};
 function verifiedBulkRow(bulkZone,expectedSamplingPoint,row){
   if(!finite(row?.['current-u'])||!finite(row?.['current-v']))return null;
   const source=row?.sources?.current;
   const maximumDistance=Number(bulk.currentMaxDistanceKm??5);
   if(String(source?.provider??'').toLowerCase()!=='dmi')return null;
-  if(Number(source?.vectorSemanticsVersion)!==2||!source?.verticalLayer)return null;
+  if(Number(source?.vectorSemanticsVersion)!==3||!source?.verticalLayer)return null;
   if(!near(bulkZone?.samplingPoint,expectedSamplingPoint,1e-7)||!near(source?.samplingPoint,expectedSamplingPoint,1e-7))return null;
   if(source?.vectorSelection!==bulk.currentVectorSelection)return null;
   if(!Array.isArray(source?.gridPoint)||!source.gridPoint.every(finite))return null;
@@ -53,7 +53,7 @@ for(const feature of active){
       continue;
     }
     if(!hasU||!hasV){failures.push(`${id} ${row.time}: verificeret proveniens mangler u eller v`);continue;}
-    if(strictCurrentSemantics&&Number(row.currentProvenance?.vectorSemanticsVersion)!==2)failures.push(`${id} ${row.time}: verificeret strøm mangler semantik v2`);
+    if(strictCurrentSemantics&&Number(row.currentProvenance?.vectorSemanticsVersion)!==3)failures.push(`${id} ${row.time}: verificeret strøm mangler semantik v3`);
     if(strictCurrentSemantics&&!near(row.currentProvenance?.samplingPoint,full.point,1e-7))failures.push(`${id} ${row.time}: proveniensens samplingPoint matcher ikke administratorpunktet`);
     if(strictCurrentSemantics&&Number(row.currentProvenance?.distanceKm)>Number(bulk.currentMaxDistanceKm??5))failures.push(`${id} ${row.time}: proveniensafstand overskrider 5 km`);
     if(strictCurrentSemantics&&haversineKm(full.point,row.currentProvenance?.gridPoint)>Number(bulk.currentMaxDistanceKm??5)+0.01)failures.push(`${id} ${row.time}: proveniensens koordinatafstand overskrider 5 km`);
@@ -73,6 +73,10 @@ let verifiedPartGridPoints=0;
 for(const part of expectedParts){
   const bulkId=`PART::${part.partId}`;
   const bz=bulk.zones?.[bulkId];
+  if(!bz){
+    if(strictCurrentSemantics)failures.push(`${bulkId}: mangler bulkpost efter semantik-v3-genopbygning`);
+    continue;
+  }
   const validRows=Object.values(bz.hourly||{}).filter(row=>finite(row['current-u'])&&finite(row['current-v']));
   if(strictCurrentSemantics&&!near(bz.samplingPoint,part.waterPoint,1e-7)){failures.push(`${bulkId}: samplingPoint matcher ikke det aktuelle flytbare vandpunkt`);continue;}
   if(strictCurrentSemantics&&validRows.some(row=>!verifiedBulkRow(bz,part.waterPoint,row))){failures.push(`${bulkId}: mindst én strømtime mangler selvstændigt bevis for vandkolonne, dybdelag eller afstand`);continue;}
@@ -92,7 +96,7 @@ if(publicScoredParts>verifiedPartGridPoints)failures.push(`Offentlig runtime sco
 const mapSource=await fs.readFile('js/map/map-view.js','utf8');
 if(/arrowOffsetsForZoom|pairBase\.add/.test(mapSource))failures.push('Kortet fremstiller stadig kunstige pilepositioner omkring zonen.');
 if(!/flowPoints\.current/.test(mapSource))failures.push('Kortet bruger ikke dokumenteret strøm-gitterpunkt.');
-const report={schemaVersion:4,generatedAt:new Date().toISOString(),currentVectorSemanticsVersion:bulk.currentVectorSemanticsVersion??null,basis:{directionConvention:'oceanographic-to: 0° north, 90° east',components:'current-u=eastward velocity; current-v=northward velocity',directionFormula:'atan2(u,v)',speedFormula:'hypot(u,v)',displayRule:'current arrow points toward movement; wind arrow converts meteorological from-direction by +180°',waterCellProof:'Both U and V must be finite in the exact same DMI ocean-model coordinate, forecast time and vertical layer.',selectionRule:'Nearest valid water column first; deepest valid layer only inside that column; maximum 5 km from current administrator sampling point.',verificationRule:'Only rows with status=verified and documented DMI grid/time/layer provenance are compared. Missing provenance is never represented as 0/0.'},activeZones:active.length,expectedCoastalParts:expectedParts.length,verifiedCoastalPartGridPoints:verifiedPartGridPoints,requiredCoastalPartCoverage:requiredPartCoverage,publicScoredParts,verifiedMarineGridZones:verifiedGridZones,verifiedForecastHours:verifiedHours,unverifiedForecastHours:unverifiedHours,unverifiedReasons,warnings,failures,status:failures.length?'failed':warnings.length?'passed-with-warnings':'passed'};
+const report={schemaVersion:4,generatedAt:new Date().toISOString(),currentVectorSemanticsVersion:bulk.currentVectorSemanticsVersion??null,basis:{directionConvention:'oceanographic-to: 0° north, 90° east',components:'current-u=eastward velocity; current-v=northward velocity',directionFormula:'atan2(u,v)',speedFormula:'hypot(u,v)',displayRule:'current arrow points toward movement; wind arrow converts meteorological from-direction by +180°',waterCellProof:'Both U and V must be finite in the exact same DMI ocean-model coordinate, forecast time and vertical layer.',selectionRule:'For each native time, choose the nearest valid water column across active DKSS collections; choose the deepest valid layer only inside that column; maximum 5 km from the current administrator sampling point. Scalar marine model selection cannot influence current.',verificationRule:'Only rows with status=verified and documented DMI grid/time/layer provenance are compared. Missing provenance is never represented as 0/0.'},activeZones:active.length,expectedCoastalParts:expectedParts.length,verifiedCoastalPartGridPoints:verifiedPartGridPoints,requiredCoastalPartCoverage:requiredPartCoverage,publicScoredParts,verifiedMarineGridZones:verifiedGridZones,verifiedForecastHours:verifiedHours,unverifiedForecastHours:unverifiedHours,unverifiedReasons,warnings,failures,status:failures.length?'failed':warnings.length?'passed-with-warnings':'passed'};
 await fs.mkdir('data/diagnostics',{recursive:true});
 await fs.writeFile('data/diagnostics/current-spatial-audit-4.0.76.json',`${JSON.stringify(report,null,2)}\n`);
 if(failures.length)throw new Error(`Strømaudit fejlede:\n- ${failures.slice(0,40).join('\n- ')}${failures.length>40?`\n... ${failures.length-40} flere`:''}`);

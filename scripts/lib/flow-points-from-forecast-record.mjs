@@ -38,7 +38,7 @@ function haversineKm(first, second) {
 
 function exactCurrentGrid(record, expectedSamplingPoint, at = null) {
   const completeness = record?.model?.completeness ?? {};
-  if (Number(completeness.currentVectorSemanticsVersion) !== 2) return null;
+  if (Number(completeness.currentVectorSemanticsVersion) !== 3) return null;
   if (!samePoint(completeness.samplingPoint, expectedSamplingPoint)) return null;
   const maximumDistance = coordinate(completeness.currentMaxDistanceKm) ?? 5;
   let rows = [...(record?.hourly ?? [])].sort((a, b) => Date.parse(a?.time ?? '') - Date.parse(b?.time ?? ''));
@@ -57,7 +57,7 @@ function exactCurrentGrid(record, expectedSamplingPoint, at = null) {
     if (coordinate(row?.currentUMps) === null || coordinate(row?.currentVMps) === null) continue;
     const source = row?.currentProvenance?.status === 'verified' ? row.currentProvenance : row?.sources?.current;
     if (String(source?.provider ?? '').toLowerCase() !== 'dmi') continue;
-    if (Number(source?.vectorSemanticsVersion) !== 2 || !source?.verticalLayer) continue;
+    if (Number(source?.vectorSemanticsVersion) !== 3 || !source?.verticalLayer) continue;
     if (!samePoint(source?.samplingPoint, expectedSamplingPoint)) continue;
     if (completeness.currentVectorSelection && source?.vectorSelection !== completeness.currentVectorSelection) continue;
     const point = validFallback(source?.gridPoint);

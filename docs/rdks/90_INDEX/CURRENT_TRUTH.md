@@ -1,5 +1,16 @@
 # Current truth – gældende projektviden
 
+## 4.0.230 – strømvalg adskilt fra skalare havfelter, afventer produktion
+
+- #31929171918/#2872 gav et afgørende modbevis mod 4.0.229-antagelsen om, at alle 77 lokale mangler var geografiske: Havknude havde et eksakt fælles NSBS-U/V-punkt 2,804 km fra det centrale vandpunkt, men offentlig runtime havde ingen strøm.
+- Rodårsagen var ét globalt `marineSelection`. Et IDW-skalarpunkt 5,131 km væk havde bedre kysttypeprioritet og blokerede derfor den nærmere NSBS-strøm. Kysttypeprioren var relevant for vandstand/temperatur, men fysisk forkert som filter for strøm.
+- Den bindende semantik v3 vælger nu strøm selvstændigt for hvert native forecasttidspunkt: sammenlign nærmeste komplette U/V-vandkolonne på tværs af alle aktive DKSS-collections, og vælg derefter dybeste gyldige lag i præcis den kolonne. Skalare marinefelter beholder deres separate modelvalg og kan ikke rydde, flytte eller blokere strøm.
+- Cachemigrationen invaliderer v2-strøm, men bevarer gyldige skalarfelter. Parser-signaturen er hævet, så aktuelle DKSS-assets skal genbehandles. Interpolation kræver fortsat samme collection, modelkørsel, samplingpunkt, celle og lag; et skift giver `missing`.
+- Havknude-regressionen bruger de målte produktionsafstande og beviser både, at NSBS 2,804 km accepteres trods IDW-skalarvalget, og at en fjernere IDW-strøm ikke kan overtage. Eksisterende provenance-, forecast-, integritets- og kortpilregressioner består målrettet.
+- #2872 fortsatte den private, score-neutrale rotation til cursor 240 med 873 prøver for 469 ankre/179 dele. Af de 77 offentlige lokale mangler var 36 besøgt: én inden-for-5-km pipelinefejl (Havknude), fire ved 5–6 km, fem ved 6–8 km, 23 over 8 km og tre uden observeret fælles U/V; 41 afventede fortsat rotation.
+- Offentlig 4.0.229-dækning i #2872 var fortsat 187/210 hovedzoner og 596/673 lokale dele, fordi assetet allerede var behandlet under v2. 4.0.230 er ikke deployet eller produktionsverificeret. En frisk parser-v18/semantik-v3-kørsel skal bevise Havknude og den samlede dækning gennem de uændrede gates, Supabase, Pages og direkte kortkontrol.
+- Afstandsgrænsen, administratorens punkter, RavScoreformlen, fail-closed-nullerne og den geografiske gate er uændrede. Den private 168-timers 0/5/15-km flerlagscache fortsætter, og fremtidens analyse-/scorearbejde skal stadig undersøge **ydre tilførsel → overgang mod kyst → lokal bundnær levering** uden dobbelt-tælling.
+
 ## 4.0.229 – nærmeste vandkolonne før dybde, afventer produktion
 
 - Den tidligere DMI-parser valgte det dybeste fælles strøm-U/V-lag globalt. Dermed kunne et dybt punkt 12–24 km væk slå en nær vandkolonne og blive brugt til pil og score. Det var en systemisk fejl, ikke enkelte dårlige zoner.

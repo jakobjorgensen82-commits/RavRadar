@@ -1,3 +1,13 @@
+## 2026-08-16 – 4.0.230 adskiller strøm fra skalare havmodelvalg
+
+- #31929171918/#2872 gav et systemisk rodårsagsbevis: den private audit fandt et komplet `dkss_nsbs`-U/V-par 2,804 km fra Havknudes centrale vandpunkt, mens offentlig v2-runtime var `missing`.
+- Ét globalt `marineSelection` havde valgt et `dkss_idw`-skalarpunkt 5,131 km væk på grund af kysttypeprioritet. Det relevante skalarvalg blokerede dermed fysisk forkert den nærmere strømkolonne.
+- 4.0.230 vælger strøm pr. native tid på tværs af alle aktive DKSS-collections, nærmeste U/V-kolonne først og dybeste lag i samme kolonne bagefter. Skalarfelter bevarer særskilt modelvalg og kan ikke rydde eller blokere strøm.
+- Parser v18 og strømsemantik v3 genbehandler gamle current-assets. V2-strøm invalideres selektivt; skalarfelter bevares. Forecastet interpolerer fortsat ikke over collection-, modelrun-, celle-, lag- eller samplingpunktskift.
+- En ny regression bruger Havknudes målte koordinater og afstande og beviser korrekt NSBS-valg, afvisning af fjernere current og sikker cachemigration. De berørte målrettede tests består.
+- #2872 fortsatte privat rotation til cursor 240 med 873 prøver/469 ankre/179 dele. 36 af 77 offentlige mangler var besøgt: én pipelinefejl ≤5 km, fire ved 5–6 km, fem ved 6–8 km, 23 over 8 km og tre uden observeret U/V; 41 afventede rotation. Ejeroversigten gemmer ingen rå U/V-værdier.
+- RavScore, punkter, 5-km-grænse og geografisk gate er uændrede. Versionen afventer fuld lokal validering og frisk produktion; den er ikke deployet eller produktionsverificeret.
+
 ## 2026-08-16 – 4.0.229 korrekt strømposition, bundlag og syvdøgnscache
 
 - Ejeren krævede, at pile over vand både står fysisk korrekt og bruger en fagligt relevant strøm. Den tidligere parser valgte dybeste lag på tværs af koordinater og kunne flytte aktiv strøm 12–24 km væk.

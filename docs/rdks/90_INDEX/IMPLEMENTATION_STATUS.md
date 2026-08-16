@@ -1,4 +1,19 @@
-# Implementeringsstatus pr. 4.0.229 – korrekt lokal strøm og privat feltopsamling
+# Implementeringsstatus pr. 4.0.230 – uafhængigt strømvalg på tværs af DKSS
+
+## 4.0.230 – skalare havfelter kan ikke blokere nærmeste strøm
+
+- [x] #2872-artefaktet er analyseret: Havknude har fælles NSBS-U/V 2,804 km fra vandpunktet, selv om den offentlige v2-runtime manglede strøm.
+- [x] Rodårsagen er fundet i det globale `marineSelection`: et IDW-skalarpunkt 5,131 km væk vandt kysttypeprioren og forhindrede den nærmere NSBS-strøm.
+- [x] Strøm vælges nu pr. native tid på tværs af alle aktive DKSS-collections efter nærmeste komplette U/V-kolonne og derefter dybeste lag i samme kolonne.
+- [x] Vandstand, overfladetemperatur og andre skalare havfelter beholder deres eget kysttilpassede valg og kan ikke rydde eller blokere strøm.
+- [x] Semantik v3 og parser v18 tvinger genbehandling af gammel strøm, mens gyldige skalare felter og deres provenance bevares.
+- [x] Interpolation og forecastidentitet afviser fortsat skift i collection, modelkørsel, celle, lag eller samplingpunkt.
+- [x] Ny Havknude-regression bruger de målte produktionskoordinater/-afstande og beviser både korrekt NSBS-valg og afvisning af en fjernere strømkolonne. De berørte eksisterende DMI-, forecast-, integritets- og kortpiltests består målrettet.
+- [x] DEC-0040, aktive krav, roadmap, RDKS, Weather Pipeline, Markdown-håndbogen og webhåndbogen beskriver komponentadskillelsen og bevarer den fremtidige transporthelhed.
+- [x] Målrettede DMI-, scheduler-, forecast-, integritets-, pil-, cache-, håndbogs-, RDKS- og versionskontroller består. Lokal `release:gate` består for 4.0.230.
+- [x] Fuld lokal `validate` gennemfører RDKS og hele geometri-v2-selftestkæden og stopper derefter som forventet på repositoryets forældede 31. juli-snapshot (209/211 før central adminhydrering). Den rumlige runtimeaudit mangler tilsvarende de friske 673 kystdelsserier og må ikke lempes; begge datakrav skal bevises centralt.
+- [ ] En frisk central produktion skal genbehandle parser-v18/semantik-v3-assets og bevise Havknude, samlet hovedzone-/kystdelsdækning, nul pil/grid-mismatch og fortsat privat 168-timers cache.
+- [ ] Den uændrede geografiske gate, Supabase, Pages og direkte livekort skal bestå, før 4.0.230 kan kaldes produktionsverificeret. Gaten sænkes ikke uden ejerbeslutning.
 
 ## 4.0.229 – nærmeste vandkolonne og bundnært lag
 

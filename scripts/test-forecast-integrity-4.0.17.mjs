@@ -8,7 +8,7 @@ const provenance=step=>({
   provider:'dmi',collection:'dkss_idw',modelRun,nativeValidTime:step,
   gridPoint:[14.98,55.21],samplingPoint:[14.97,55.20],
   verticalLayer:'depthbelowsea:9',verticalLayerRankM:9,distanceKm:1.4,
-  vectorSelection:'nearest-water-column-then-deepest-valid-layer',vectorSemanticsVersion:2
+  vectorSelection:'nearest-shared-uv-column-across-dmi-collections-then-deepest-valid-layer',vectorSemanticsVersion:3
  },
  waterLevel:{provider:'dmi',collection:'dkss_idw',modelRun,nativeValidTime:step}
 });

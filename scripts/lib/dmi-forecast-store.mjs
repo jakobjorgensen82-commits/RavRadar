@@ -97,8 +97,8 @@ function sameCurrentIdentity(before, after) {
   return Boolean(
     before?.verticalLayer
     && before.verticalLayer === after?.verticalLayer
-    && Number(before.vectorSemanticsVersion) === 2
-    && Number(after.vectorSemanticsVersion) === 2
+    && Number(before.vectorSemanticsVersion) === 3
+    && Number(after.vectorSemanticsVersion) === 3
     && samePoint(before.gridPoint, after.gridPoint)
     && samePoint(before.samplingPoint, after.samplingPoint)
   );

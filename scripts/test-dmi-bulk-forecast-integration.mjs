@@ -27,7 +27,7 @@ assert.match(source, /buildDmiForecastHourly\(\{ wind, windTail, waves, ocean/,
 assert.match(source, /provenance: \{ current: rowCurrentValid \? provenance\(row\)\.current : null, waterLevel: provenance\(row\)\.waterLevel/,
   'bulk-konverteringen skal føre komponentproveniens videre til interpolation');
 assert.match(source, /function verifiedBulkCurrent/,
-  'bulk-konverteringen skal afvise strøm uden semantik v2, aktuelt samplingpunkt, fælles lag og højst 5 km');
+  'bulk-konverteringen skal afvise strøm uden semantik v3, aktuelt samplingpunkt, fælles lag og højst 5 km');
 assert.match(source, /haversineKm\(expectedSamplingPoint, gridPoint\) > maximum \+ 0\.01/,
   'den faktiske koordinatafstand skal efterkontrolleres uafhængigt af cachemetadata');
 assert.match(source, /const safeRecord = withOnlyVerifiedCurrent\(record, zonePoint\(feature\)\)/,

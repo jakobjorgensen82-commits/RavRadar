@@ -2,9 +2,9 @@
 
 Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslutninger, chatkilder og kode.
 
-## Strømmens sted, dybde og kommende helhedsmodel – 4.0.229
+## Strømmens sted, dybde og kommende helhedsmodel – 4.0.230
 
-- **REQ-CURRENT-SPATIAL-FIRST-001 – BINDENDE:** Nærmeste gyldige fælles DMI-U/V-vandkolonne vælges før vertikallaget. Dybde må kun afgøre valget mellem lag på eksakt samme koordinat.
+- **REQ-CURRENT-SPATIAL-FIRST-001 – BINDENDE, PRÆCISERET I 4.0.230:** For hvert native forecasttidspunkt vælges den nærmeste gyldige fælles DMI-U/V-vandkolonne på tværs af alle aktive DKSS-collections før vertikallaget. Dybde må kun afgøre valget mellem lag på eksakt samme koordinat. Skalare marinefelters modelvalg og kysttypeprioritering må ikke påvirke strømvalget.
 - **REQ-CURRENT-BOTTOM-NEAR-001 – BINDENDE:** I den valgte vandkolonne bruges det dybeste gyldige fælles U/V-lag som aktiv bundnær repræsentation. U og V skal have samme tid, koordinat og lag.
 - **REQ-CURRENT-DISTANCE-001 – BINDENDE:** 0–3 km er foretrukket; 3–5 km må bruges, når nærmere gyldigt par mangler; over 5 km er `missing` og må ikke skabe verificeret pil eller scoreinput.
 - **REQ-CURRENT-SAMPLING-IDENTITY-001 – BINDENDE:** Centralt gemt aktuelt vandpunkt er samplinganker. Flytning eller gammel strømsemantik invaliderer cache, provenance og historisk strøm, indtil friske data findes.
@@ -34,8 +34,8 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 
 ## Data og prognoser
 - **REQ-DATA-020 – BINDENDE FRA 4.0.213:** Offentlig vandtemperatur er havoverfladetemperatur. DMI DKSS-parameter 80 må kun accepteres fra det eksplicitte `surface`, niveau 0; dybere `depthBelowSea`-lag må ikke overskrive serien. Lagidentiteten bevares i grid-/timeproveniens. Manglende overfladetemperatur forbliver missing eller bruger den allerede godkendte komponentfallback med tydelig proveniens.
-- **REQ-DATA-018 – BINDENDE FRA 4.0.211:** Den valgte DMI-havmodel og dens kvalitetsgrundlag skal overleve progressiv cachemerge. En behandlet DMI-time må genbehandles, når en cacheformat-/udvælgelsesrettelse gør den tidligere behandlingssignatur forældet; en dårligere model må ikke rydde den bevarede autoritative serie.
-- **REQ-DATA-019 – BINDENDE FRA 4.0.212:** Når en zone allerede har en autoritativ DMI-havmodel valgt fra et fælles gyldigt strøm-U/V-par, må et skalarfelt som vandstand eller vandtemperatur ikke genvælge modellen, omskrive strømvalgets afstandsscore eller rydde strømserien. Et modelskift kræver et reelt bedre fælles strømpar; manglende strøm forbliver `missing`.
+- **REQ-DATA-018 – BINDENDE FRA 4.0.211, PRÆCISERET I 4.0.230:** Gyldige marine komponentvalg og deres kvalitetsgrundlag skal overleve progressiv cachemerge hver for sig. En behandlet DMI-time må genbehandles, når cacheformat eller udvælgelsessemantik ændres. Et skalarvalg må ikke rydde strøm, og et strømvalg må ikke rydde gyldige skalare felter.
+- **REQ-DATA-019 – BINDENDE FRA 4.0.212, ERSTATTET MODELKONTRAKT I 4.0.230:** Strøm har ikke ét globalt havmodelvalg. For hvert native tidspunkt sammenlignes komplette fælles U/V-par på tværs af DKSS-collections alene efter den bindende rumlige strømregel; kysttypeprioriteringen for skalare felter må ikke påvirke sammenligningen. Vandstand, overfladetemperatur og andre skalare felter beholder deres eget modelvalg og må aldrig omskrive strømmens afstand, rydde strømserien eller skjule et nærmere fælles U/V-par. Manglende strøm forbliver `missing`.
 - **REQ-DATA-017 – BINDENDE FRA 4.0.210:** DMI-komponentdækning må kun regnes som brugbar, når serien starter ved den aktuelle byggetid inden for den native modeltolerance og fortsætter uden større huller. En fjern prognosehale må ikke skjule et hul ved nutiden eller undertrykke målrettet genhentning.
 - **REQ-DATA-016 – BINDENDE FRA 4.0.209:** Produktionspipelinen skal bevare mindst 72 timers rå zonebaseret vejrhistorik til mobiliserings-/stateanalyse, mens den aktive RavScore fortsat bruger sit uændrede 24-timersvindue, indtil en særskilt faglig scorebeslutning er godkendt. Begge rå vinduer må ikke indgå i den kompakte offentlige browserpayload.
 - **REQ-DATA-015 – BINDENDE FRA 4.0.208:** Lokal validering skal skelne et dokumenteret udløbet repositorysnapshot fra et aktuelt produktionsdækningsbrud uden at acceptere manglende eller ukendte zoner. Den centralt effektive zonebestand må kun fastslås efter adminhydrering og tombstones; en read-only deployaudit må bruges som produktionsbevis, mens vejrhyrdering alene ikke er et fuldt produktionsbuild.

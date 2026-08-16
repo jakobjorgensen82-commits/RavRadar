@@ -1,4 +1,13 @@
-# AI Roadmap – RavRadar 4.0.229
+# AI Roadmap – RavRadar 4.0.230
+
+## 4.0.230 – komponentvist strømvalg og korrekt grundlag for helhedsanalysen
+
+- #2872 viste, at et korrekt lokalt strømpar kan være skjult, selv når den private geometri-audit finder det inden for 5 km. Havknudes NSBS-U/V-celle lå 2,804 km væk, men et IDW-skalarpunkt 5,131 km væk havde vundet det gamle fælles modelvalg.
+- Strøm vælges derfor pr. native tid på tværs af alle aktive DKSS-collections: nærmeste komplette U/V-vandkolonne først, derefter dybeste gyldige lag i samme kolonne. Vandstand og temperatur har særskilte modelvalg og kan ikke blokere eller rydde strøm.
+- Semantik v3 og parser v18 genopbygger gammel strøm uden at kassere gyldige skalare havfelter. Collection-/celle-/lag-/runskift interpoleres ikke.
+- Den private syvdøgnsrotation fortsætter score-neutralt. #2872 nåede cursor 240, 873 prøver, 469 ankre og 179 dele. Blandt 36 besøgte offentlige mangler er én nu bevist pipelinefejl inden for 5 km, mens resten fordeler sig på 4/5/23 i afstandsklasserne 5–6/6–8/>8 km og tre uden observeret U/V; 41 afventer rotation.
+- Den store analyse og det senere scoremodul skal bruge et fysisk samlet felt: **ydre tilførsel → overgang mod kyst → lokal bundnær levering**, med flere lag, tidsforsinkelse, persistens og kontrol mod dobbelt-tælling. De nye data er forskningsgrundlag, ikke point.
+- Næste gate er frisk parser-v18/semantik-v3-produktion med Havknude-, provenance-, pil/grid- og dækningsbevis. Den geografiske gate sænkes ikke, og 4.0.230 må ikke kaldes produktionsverificeret før Supabase, Pages og direkte livekontrol består.
 
 ## 4.0.229 – lokal bundnær strøm og syv døgns privat strømfeltsgrundlag
 

@@ -13,6 +13,23 @@ Dette er et uforanderligt handlingssnapshot fra GitHub Actions #31923212215/#285
 
 ## Senere rotationsbevis og målrettet ejerdiagnostik
 
+### Korrigeret evidens fra #2872 og konsekvens for 4.0.230
+
+- #31929171918/#2872 fortsatte til cursor 240 med 873 private prøver for 469 ankre/179 kystdele. Coverage-auditten havde besøgt 60 dele i alt og 36 af de 77 offentlige mangler; 41 manglede fortsat første besøg.
+- Blandt de 36 besøgte offentlige mangler havde én faktisk et eksakt fælles U/V-punkt inden for 5 km, fire lå ved 5–6 km, fem ved 6–8 km, 23 over 8 km og tre havde intet observeret fælles U/V-par. Den tidligere formulering om, at alle 77 var geografiske mangler, er dermed forkastet.
+- Inden-for-5-km-posten er Havknude (`dk-b06-06-national-part-01`, DK-B06-06): centralt vandpunkt 10,8679278/56,2998934; nærmeste fælles `dkss_nsbs`-U/V-celle 10,8751453/56,2750000; afstand 2,80363 km; dybeste gyldige lag `depthBelowSea:17` ved den målte tid.
+- Den offentlige v2-cache havde valgt `dkss_idw` til skalare marinefelter ved 10,95108/56,299 og afstand 5,131 km. Den globale modelprioritet lod dette skalarvalg blokere den nærmere NSBS-strøm. Det var en pipeline-/udvælgelsesfejl, ikke et dårligt Havknude-vandpunkt.
+- 4.0.230 adskiller valgene: strøm sammenlignes pr. native tid på tværs af alle DKSS-collections, mens skalarfelter beholder deres eget valg. Havknude må først flyttes fra pipelineklassen efter frisk parser-v18/semantik-v3-produktionsbevis; ingen punktflytning er nødvendig eller autoriseret af fundet.
+- #2872-ejeroversigten indeholder fortsat ingen rå `uMps`/`vMps`. Offentlig v2-dækning var uændret 187/210 hovedzoner og 596/673 lokale dele, og gaten stoppede før Supabase/Pages.
+
+| Klasse | Zone | Kystdel | Nærmeste U/V-kolonne |
+|---|---|---|---:|
+| Pipelinefejl ≤5 km | DK-B06-06 | Havknude | 2,804 km (`dkss_nsbs`, lag 17) |
+| Nær-tærskel 5–6 km | DK-B05-22 | Gjøl | 5,301 km |
+| Nær-tærskel 5–6 km | DK-B02-10 | Skellet | 5,938 km |
+
+De to øvrige nær-tærskelposter er Aggersborgrimme 5,370 km og Nibe Badestrand 5,661 km. Den samlede #2872-fordeling – ikke den tidligere #2869-delfordeling – er nu det gældende rotationssnapshot.
+
 - #2866 på commit `f661913c4e51e64876dc68ef6bf8f6cbafbe1109` fortsatte den private rotation til cursor 150, 118 besøgte kystdele og 667 prøver. Den offentlige dækning var fortsat 187/210 og 596/673, og deploy stoppede før Supabase/Pages.
 - 17 af de 23 manglende hovedzoner har mindst én lokal kystdel med verificeret strøm og dermed et fysisk referencepunkt til ejerens optiske hovedpunktsreview. Seks zoner har ingen verificeret lokal del: `DK-B02-03`, `DK-B05-20`, `DK-B05-23`, `DK-B05-24`, `DK-B05-25` og `DK-B07-13`. En flytning af hovedpunktet alene kan derfor ikke løse deres lokale dækning.
 - Den private rotation måler afstanden til den nærmeste eksakte fælles U/V-kolonne, også over 5 km, men gemmer ingen fjerne U/V-værdier. `data/diagnostics/current-coverage-owner-audit.json` er support-only og opdeler de 77 dele i endnu ikke besøgt, intet observeret U/V-par, pipelinehul inden for 5 km, nær-tærskel 5–6 km til rent manuelt geometrireview, modelhul 6–8 km eller strukturelt modelhul over 8 km.

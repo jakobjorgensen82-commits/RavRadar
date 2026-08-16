@@ -16,7 +16,7 @@ const native = (component, collection, step, modelRun = generatedAt, overrides =
     ...(component === 'current' ? {
       gridPoint: [10.02, 56.01], samplingPoint: [10, 56],
       verticalLayer: 'depthbelowsea:7', verticalLayerRankM: 7, distanceKm: 1.7,
-      vectorSelection: 'nearest-water-column-then-deepest-valid-layer', vectorSemanticsVersion: 2
+      vectorSelection: 'nearest-shared-uv-column-across-dmi-collections-then-deepest-valid-layer', vectorSemanticsVersion: 3
     } : {}),
     ...overrides
   }

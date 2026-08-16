@@ -6,7 +6,11 @@ Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde sa
 
 ## Aktuel sandhed
 
-- 4.0.229 er en lokal kandidat, ikke endnu en produktionsverificeret release. Den retter strømvalg fra “dybeste lag globalt” til “nærmeste vandkolonne først, dybeste lag i samme kolonne” og håndhæver højst 5 km.
+- 4.0.230 er den lokale kandidat; 4.0.228 er stadig seneste produktionsverificerede release. #2872 viste, at Havknude havde gyldig NSBS-strøm 2,804 km væk, men blev blokeret af det gamle fælles havmodelvalg, fordi IDW var valgt til skalare felter 5,131 km væk.
+- Strøm vælges nu pr. native tid på tværs af alle aktive DKSS-collections, uafhængigt af vandstand/temperatur: nærmeste komplette U/V-kolonne først, dybeste lag i samme kolonne bagefter. Parser v18/semantik v3 genopbygger gammel strøm selektivt.
+- RavScore, administratorpunkter, 5-km-grænse og geografisk gate er uændrede. Havknude-regressionen og berørte målrettede tests består; fuld lokal og central produktionsvalidering mangler.
+- #2872 fortsatte privat rotation til cursor 240 med 873 prøver/469 ankre/179 dele. 36 af 77 offentlige mangler var besøgt: én pipelinefejl ≤5 km, 4 ved 5–6 km, 5 ved 6–8 km, 23 over 8 km og 3 uden observeret U/V; 41 afventer rotation.
+- 4.0.229 var den første kandidat, der rettede “dybeste lag globalt” til “nærmeste vandkolonne først, dybeste lag i samme kolonne” og håndhævede højst 5 km, men dens globale havmodelvalg var stadig utilstrækkeligt.
 - Samme aktuelle samplingpunkt, U/V-koordinat, forecasttid og dybdelag kræves gennem bulkcache, forecast, score, provenance og pil. Gamle strømdata invalideres, og direkte ForecastEDR-strøm uden samme bevis, Open-Meteos overfladestrøm samt anden fallbackstrøm lukkes ude før historik, scoring og kort.
 - Dybdelaget vælges pr. native forecasttid; interpolation kræver samme lag, celle og run. Pilen bruger den valgte times egen celle. Centralt reviewede kystdelspunkter bygges før DMI, og cache genbruges kun for uændrede samplingpunkter.
 - En privat syvdøgnscache genbruger DKSS ved 0/5/15 km og flere lag uden score- eller public-runtimepåvirkning. Helhedsmodellen er permanent gemt i DEC-0040 og DEC-0029.
@@ -31,10 +35,10 @@ Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde sa
 
 ## Første opgave i næste chat
 
-1. Følg de næste automatiske 15-delsrotationer, indtil alle 77 aktuelle mangler er klassificeret. Verificér fortsat `data/diagnostics/current-coverage-owner-audit.json`: ingen `uMps`/`vMps`, cursorfremdrift, 168-timers pruning og højst 4 GB råcache.
-2. Læs derefter `docs/rdks/40_KNOWN_ISSUES/CURRENT-COVERAGE-4.0.229.md` og brug kun ejeroversigten til at skelne optisk punktreview fra strukturelle modelhuller. Kontrollér samtidig, om ejerens seneste centrale punktrettelser har ændret de 23 hovedzone-/77 kystdelsmangler.
-3. Bevar den uændrede gate, indtil ejeren enten har skabt den krævede dækning eller udtrykkeligt godkender en fail-closed deldækningspolitik. Uverificerede poster må aldrig få pil eller strøm.
-4. Efter beslutningen: kør fuld CI-`validate`, releasegate, Supabase, Pages og direkte livekontrol af semantik v2, maksimalt 5 km, tidsbestemt lag/celle, selektiv cachemigration og privat cache-status.
+1. Afslut fuld lokal 4.0.230-validering, commit/push og frisk parser-v18/semantik-v3-produktion. Verificér Havknude, samlet dækning, pil/grid-identitet og selektiv cachemigration.
+2. Følg samtidig de automatiske 15-delsrotationer, indtil alle 77 oprindelige v2-mangler er klassificeret. Verificér ingen `uMps`/`vMps`, cursorfremdrift, 168-timers pruning og højst 4 GB råcache.
+3. Læs `docs/rdks/40_KNOWN_ISSUES/CURRENT-COVERAGE-4.0.229.md`; den indeholder både det historiske #2855-snapshot og #2872-korrektionen. Brug kun ejeroversigten til at skelne pipelinefejl fra optisk punktreview og strukturelle modelhuller.
+4. Bevar den uændrede gate. Kræv fuld CI-`validate`, releasegate, Supabase, Pages og direkte livekontrol af semantik v3, højst 5 km og tidsbestemt lag/celle før produktionsverifikation.
 
 ## Beskyttede beslutninger
 

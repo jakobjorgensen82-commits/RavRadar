@@ -39,9 +39,9 @@ need(close.some(row=>row.partId==='P3'&&row.type==='current'&&row.point[0]===11.
 need(close.some(row=>row.partId==='P1'&&row.type==='wind'&&row.source==='dmi-marine-wind-grid'),'En dokumenteret lokal DKSS-vindpil mangler ved indzoomning.');
 
 const gridPoint=(longitude,latitude,extra={})=>({longitude,latitude,...extra});
-const recordWithGrid=(gridPoints,extra={},hourly=[])=>({model:{completeness:{currentVectorSemanticsVersion:2,currentVectorSelection:'nearest-water-column-then-deepest-valid-layer',currentMaxDistanceKm:5,samplingPoint:[9,54],gridPoints,...extra}},hourly});
+const recordWithGrid=(gridPoints,extra={},hourly=[])=>({model:{completeness:{currentVectorSemanticsVersion:3,currentVectorSelection:'nearest-shared-uv-column-across-dmi-collections-then-deepest-valid-layer',currentMaxDistanceKm:5,samplingPoint:[9,54],gridPoints,...extra}},hourly});
 const recordWithCurrent=(sourceOverrides={},extra={})=>{
-  const source={provider:'dmi',vectorSemanticsVersion:2,verticalLayer:'depthbelowsea:7',samplingPoint:[9,54],gridPoint:[9.03,54.02],distanceKm:3.2,vectorSelection:'nearest-water-column-then-deepest-valid-layer',...sourceOverrides};
+  const source={provider:'dmi',vectorSemanticsVersion:3,verticalLayer:'depthbelowsea:7',samplingPoint:[9,54],gridPoint:[9.03,54.02],distanceKm:3.2,vectorSelection:'nearest-shared-uv-column-across-dmi-collections-then-deepest-valid-layer',...sourceOverrides};
   return recordWithGrid({
     'current-u':gridPoint(source.gridPoint?.[0],source.gridPoint?.[1],{distanceKm:source.distanceKm,verticalLayer:source.verticalLayer}),
     'current-v':gridPoint(source.gridPoint?.[0],source.gridPoint?.[1],{distanceKm:source.distanceKm,verticalLayer:source.verticalLayer})

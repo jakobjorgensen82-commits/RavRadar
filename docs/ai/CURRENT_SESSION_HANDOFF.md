@@ -1,6 +1,14 @@
 # Aktuelt sessionshandoff – 2026-08-16
 
-## Aktiv 4.0.229-kandidat – endnu ikke produktionsverificeret
+## Aktiv 4.0.230-kandidat – endnu ikke produktionsverificeret
+
+- #31929171918/#2872 beviste, at Havknude havde fælles NSBS-U/V 2,804 km fra vandpunktet, selv om offentlig v2-runtime manglede strøm. Et fælles `marineSelection` lod et IDW-skalarpunkt 5,131 km væk blokere det nærmere strømpar.
+- 4.0.230 vælger strøm selvstændigt for hvert native tidspunkt på tværs af alle aktive DKSS-collections: nærmeste komplette U/V-vandkolonne først, derefter dybeste gyldige lag i samme kolonne. Skalarfelter beholder separat modelvalg.
+- Parser v18/semantik v3 invaliderer gammel strøm selektivt og bevarer gyldige skalarfelter. Interpolation over collection-, run-, celle-, lag- eller samplingpunktskift forbliver forbudt.
+- Havknude-regressionen, de berørte målrettede DMI-/forecast-/piltests, RDKS/version og lokal releasegate består. Fuld `validate` stopper forventet ved det forældede lokale 209/211-vejrsnapshot efter bestået RDKS/geometri; commit, push og frisk central produktion mangler endnu.
+- #2872 nåede cursor 240, 873 private prøver, 469 ankre og 179 dele. Af 77 offentlige mangler var 36 besøgt: én pipelinefejl ≤5 km, fire ved 5–6 km, fem ved 6–8 km, 23 over 8 km og tre uden observeret fælles U/V; 41 afventer rotation.
+
+## Historisk 4.0.229-kandidat
 
 - Rodårsagen til fejlplaceret strøm var globalt dybdevalg: et dybt DMI-lag ved en fjern koordinat kunne slå den nærmeste vandkolonne.
 - Ny bindende rækkefølge er nærmeste gyldige fælles U/V-vandkolonne først, derefter dybeste gyldige lag i samme kolonne. 0–3 km foretrækkes, 3–5 km accepteres, og over 5 km er `missing`.
@@ -41,10 +49,10 @@
 
 ## Næste trin
 
-1. Kontrollér gitstatus og seneste opfølgende 4.0.229-commit på `main`.
-2. Følg de progressive centrale DMI-kørsler, indtil hovedzone- og kystdelsdækningen består, og verificér semantik v2, metadata-/koordinatafstand, lag pr. tid, privat cache, Supabase, artifact og Pages.
-3. Kontrollér det deployede kort direkte. Først derefter må 4.0.229 kaldes produktionsverificeret.
-4. Lad ejerens manuelle punktreview fortsætte; centralt gemte punkter er runtime-sandhed.
+1. Kør fuld lokal 4.0.230-validering og releasegate uden at iscenesætte worktreets kendte uvedkommende diagnose-/arbejdsfiler.
+2. Commit og push parser-v18/semantik-v3-rettelsen, og følg den friske centrale DMI-kørsel. Havknude skal få NSBS-strøm inden for 5 km; alle viste pile skal fortsat matche valgt times gittercelle.
+3. Sammenlign ny hovedzone-/kystdelsdækning mod 187/210 og 596/673. Gaten må ikke sænkes. Fortsæt rotationen og kontrollér 168-timers pruning samt fravær af rå U/V i ejeroversigten.
+4. Kræv fulde gates, Supabase, Pages og direkte livekort før 4.0.230 kaldes produktionsverificeret. Lad ejerens manuelle punktreview fortsætte sideløbende.
 
 ## Bindende arbejdsregler
 

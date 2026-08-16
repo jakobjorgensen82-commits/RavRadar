@@ -5,7 +5,7 @@ import { attachVerifiedCurrentToSample } from './lib/weather-history-retention.m
 const CONDITIONS='data/live/conditions.json';
 const BULK='data/live/dmi-bulk-cache.json';
 const FORECAST='data/live/dmi-forecast-cache.json';
-const CURRENT_VECTOR_SEMANTICS_VERSION=2;
+const CURRENT_VECTOR_SEMANTICS_VERSION=3;
 const CURRENT_MAX_DISTANCE_KM=5;
 
 // Number(null), Number('') og Number(false) er 0 i JavaScript. De værdier betyder

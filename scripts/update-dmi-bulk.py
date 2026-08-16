@@ -95,11 +95,11 @@ for _session in (STAC_SESSION, DOWNLOAD_SESSION):
 STAC_SESSION.headers.update({"Accept": "application/geo+json, application/json"})
 DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octet-stream, */*"})
 
-PARSER_VERSION = 17
+PARSER_VERSION = 18
 PARAMETER_MAP_VERSION = 4
 GRID_LOOKUP_VERSION = 7
-CURRENT_VECTOR_SEMANTICS_VERSION = 2
-CURRENT_VECTOR_SELECTION = "nearest-water-column-then-deepest-valid-layer"
+CURRENT_VECTOR_SEMANTICS_VERSION = 3
+CURRENT_VECTOR_SELECTION = "nearest-shared-uv-column-across-dmi-collections-then-deepest-valid-layer"
 CURRENT_PREFERRED_DISTANCE_KM = 3.0
 CURRENT_MAX_DISTANCE_KM = 5.0
 CURRENT_FIELD_SHADOW_PARTS_PER_RUN = max(1, int(os.getenv("CURRENT_FIELD_SHADOW_PARTS_PER_RUN", "15")))
@@ -127,6 +127,7 @@ REQUIRED_TARGETS = {
 
 MARINE_COLLECTIONS = {"dkss_idw", "dkss_nsbs", "dkss_lf"}
 MARINE_PARAMETERS = {"sea-mean-deviation", "current-u", "current-v", "water-temperature", "wind-tail-u-10m", "wind-tail-v-10m"}
+MARINE_SCALAR_PARAMETERS = MARINE_PARAMETERS - {"current-u", "current-v"}
 VECTOR_PAIRS = {
     "current-u": ("current", "current-u", "current-v"),
     "current-v": ("current", "current-u", "current-v"),
@@ -933,6 +934,65 @@ def has_current_anchor(point: dict[str, Any], reference_time: str, tolerance_hou
     )
 
 
+def prefer_current_hour_candidate(
+    point: dict[str, Any],
+    valid_time: str,
+    collection: str,
+    model_run: str,
+    candidate_choice: dict[str, Any],
+    distance_tolerance_km: float = 1e-6,
+) -> bool:
+    """Choose current independently for one native forecast time.
+
+    Scalar marine fields may legitimately prefer a coast-type model, but that
+    model prior must never block a closer exact U/V water column.  Comparing at
+    the native time also prevents a late candidate from clearing a sound series
+    around now.  Forecast interpolation remains responsible for rejecting
+    transitions across collection, run, grid point or vertical layer.
+    """
+    candidate_distance = float(candidate_choice["distanceKm"])
+    if not math.isfinite(candidate_distance) or candidate_distance > CURRENT_MAX_DISTANCE_KM:
+        return False
+    hour = (point.get("hourly") or {}).get(valid_time) or {}
+    existing_u = hour.get("current-u")
+    existing_v = hour.get("current-v")
+    source = (hour.get("sources") or {}).get("current") or {}
+    existing_grid = source.get("gridPoint")
+    if not (
+        isinstance(existing_u, (int, float)) and math.isfinite(float(existing_u))
+        and isinstance(existing_v, (int, float)) and math.isfinite(float(existing_v))
+        and isinstance(existing_grid, list) and len(existing_grid) >= 2
+        and all(isinstance(value, (int, float)) and math.isfinite(float(value)) for value in existing_grid[:2])
+        and isinstance(source.get("distanceKm"), (int, float))
+        and math.isfinite(float(source["distanceKm"]))
+    ):
+        return True
+
+    existing_distance = float(source["distanceKm"])
+    candidate_point = tuple(candidate_choice["pointKey"])
+    existing_point = (round(float(existing_grid[1]), 7), round(float(existing_grid[0]), 7))
+    if candidate_point != existing_point:
+        if candidate_distance < existing_distance - distance_tolerance_km:
+            return True
+        if candidate_distance > existing_distance + distance_tolerance_km:
+            return False
+        return candidate_point < existing_point
+
+    candidate_layer_rank = float(candidate_choice.get("layerRank") or 0.0)
+    existing_layer_rank = float(source.get("verticalLayerRankM") or 0.0)
+    if candidate_layer_rank != existing_layer_rank:
+        return candidate_layer_rank > existing_layer_rank
+
+    existing_run = str(source.get("modelRun") or "")
+    if epoch(model_run) != epoch(existing_run):
+        return epoch(model_run) > epoch(existing_run)
+    existing_collection = str(source.get("collection") or "")
+    if existing_collection != collection:
+        existing_order = COLLECTION_ORDER.index(existing_collection) if existing_collection in COLLECTION_ORDER else len(COLLECTION_ORDER)
+        return COLLECTION_ORDER.index(collection) < existing_order
+    return False
+
+
 def accept_marine_collection(
     point: dict[str, Any],
     zone: dict[str, Any],
@@ -969,9 +1029,12 @@ def accept_marine_collection(
         return False
     if selection.get("collection") != collection:
         for hour in (point.get("hourly") or {}).values():
-            for key in MARINE_PARAMETERS:
+            for key in MARINE_SCALAR_PARAMETERS:
                 hour.pop(key, None)
-        for key in MARINE_PARAMETERS:
+                component = PARAMETER_COMPONENT.get(key)
+                if component:
+                    (hour.get("sources") or {}).pop(component, None)
+        for key in MARINE_SCALAR_PARAMETERS:
             (point.get("gridPoints") or {}).pop(key, None)
             (point.get("collections") or {}).pop(key, None)
     point["marineSelection"] = {
@@ -1116,20 +1179,14 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                             if distance > CURRENT_MAX_DISTANCE_KM:
                                 search["rejectedReason"] = "CURRENT_POINT_OVER_5KM"
                                 continue
-                            anchor_protected = (
-                                (point.get("marineSelection") or {}).get("collection") not in {None, collection}
-                                and has_current_anchor(point, output.get("generatedAt"))
-                                and abs(epoch(valid_time) - epoch(output.get("generatedAt"))) > 6.0 * 3600.0
-                            )
-                            if not accept_marine_collection(
+                            if not prefer_current_hour_candidate(
                                 point,
-                                zone,
+                                valid_time,
                                 collection,
-                                distance,
-                                candidate_valid_time=valid_time,
-                                reference_time=output.get("generatedAt"),
+                                model_run,
+                                candidate_choice,
                             ):
-                                search["rejectedReason"] = "CURRENT_ANCHOR_PROTECTED" if anchor_protected else "BETTER_COLLECTION_SELECTED"
+                                search["rejectedReason"] = "CLOSER_CURRENT_COLUMN_SELECTED_FOR_NATIVE_TIME"
                                 continue
                             search["selected"] = True
                             search["verticalLayer"] = layer_key
@@ -1395,12 +1452,12 @@ def merge_previous(current: dict[str, Any], previous: dict[str, Any], allowed_zo
 
 
 def restore_marine_selections(document: dict[str, Any], zones: list[dict[str, Any]]) -> int:
-    """Restore the authoritative marine model for legacy caches that lost it.
+    """Restore the scalar marine model for legacy caches that lost it.
 
     The selected collection and its sampled distance remained in collections/
     gridPoints even though merge_previous historically dropped marineSelection.
-    Reconstructing it prevents a worse collection from clearing a complete
-    current series before the preferred model gets its turn.
+    Current is deliberately excluded: semantics v3 selects exact U/V columns
+    independently of the scalar coast-type model prior.
     """
     zone_config = {str(zone.get("id")): zone for zone in zones if zone.get("id")}
     restored = 0
@@ -1408,11 +1465,18 @@ def restore_marine_selections(document: dict[str, Any], zones: list[dict[str, An
         if point.get("marineSelection"):
             continue
         collections = point.get("collections") or {}
-        collection = collections.get("current-u")
+        scalar_key = next(
+            (
+                key for key in ("wind-tail-u-10m", "sea-mean-deviation", "water-temperature")
+                if collections.get(key) in MARINE_COLLECTIONS
+            ),
+            None,
+        )
+        collection = collections.get(scalar_key) if scalar_key else None
         if collection not in MARINE_COLLECTIONS:
             continue
         grid_points = point.get("gridPoints") or {}
-        grid_point = grid_points.get("current-u") or {}
+        grid_point = grid_points.get(scalar_key) or {}
         distance = grid_point.get("distanceKm")
         if not isinstance(distance, (int, float)) or not math.isfinite(float(distance)):
             continue
@@ -1660,7 +1724,6 @@ def invalidate_obsolete_current_semantics(document: dict[str, Any]) -> int:
         for key in ("current-u", "current-v"):
             (zone.get("gridPoints") or {}).pop(key, None)
             (zone.get("collections") or {}).pop(key, None)
-        zone.pop("marineSelection", None)
     document["currentVectorSemanticsVersion"] = CURRENT_VECTOR_SEMANTICS_VERSION
     document["currentVectorSelection"] = CURRENT_VECTOR_SELECTION
     document["currentPreferredDistanceKm"] = CURRENT_PREFERRED_DISTANCE_KM
@@ -1749,6 +1812,43 @@ def clean_and_summarize(result: dict[str, Any], fresh_zone_ids: set[str], budget
                 wind_from_uv(hour)
                 cleaned[valid] = hour
         zone["hourly"] = dict(sorted(cleaned.items(), key=lambda row: epoch(row[0])))
+        current_rows = []
+        for valid, hour in zone["hourly"].items():
+            source = (hour.get("sources") or {}).get("current") or {}
+            grid_point = source.get("gridPoint")
+            if not (
+                isinstance(hour.get("current-u"), (int, float))
+                and isinstance(hour.get("current-v"), (int, float))
+                and isinstance(grid_point, list) and len(grid_point) >= 2
+                and all(isinstance(value, (int, float)) and math.isfinite(float(value)) for value in grid_point[:2])
+                and isinstance(source.get("distanceKm"), (int, float))
+                and float(source["distanceKm"]) <= CURRENT_MAX_DISTANCE_KM
+            ):
+                continue
+            current_rows.append((
+                abs(epoch(valid) - epoch(result.get("generatedAt"))),
+                float(source["distanceKm"]),
+                -float(source.get("verticalLayerRankM") or 0.0),
+                valid,
+                source,
+            ))
+        if current_rows:
+            source = min(current_rows, key=lambda row: row[:4])[4]
+            longitude, latitude = map(float, source["gridPoint"][:2])
+            summary_point = {
+                "latitude": round(latitude, 5),
+                "longitude": round(longitude, 5),
+                "distanceKm": round(float(source["distanceKm"]), 5),
+                "verticalLayer": source.get("verticalLayer"),
+                "verticalLayerRankM": round(float(source.get("verticalLayerRankM") or 0.0), 3),
+            }
+            for key in ("current-u", "current-v"):
+                zone.setdefault("gridPoints", {})[key] = dict(summary_point)
+                zone.setdefault("collections", {})[key] = source.get("collection")
+        else:
+            for key in ("current-u", "current-v"):
+                (zone.get("gridPoints") or {}).pop(key, None)
+                (zone.get("collections") or {}).pop(key, None)
     # Bevar hele den aktive zone-/kilderegistrering. En tom hourly-map er den
     # eksplicitte, sandfærdige repræsentation af manglende direkte DMI-data og
     # må ikke forveksles med, at zonen er faldet ud af pipeline-strukturen.
