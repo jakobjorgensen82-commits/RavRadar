@@ -18,28 +18,29 @@ const strictCurrentSemantics=Number(bulk.currentVectorSemanticsVersion)===2;
 const failures=[];const warnings=[];let verifiedGridZones=0,verifiedHours=0,unverifiedHours=0;
 if(!strictCurrentSemantics)warnings.push('Lokalt snapshot er fra før strømsemantik v2; produktionskørslen skal genbygge alle strømdata før deploy.');
 const unverifiedReasons={};
+function verifiedBulkRow(bulkZone,expectedSamplingPoint,row){
+  if(!finite(row?.['current-u'])||!finite(row?.['current-v']))return null;
+  const source=row?.sources?.current;
+  const maximumDistance=Number(bulk.currentMaxDistanceKm??5);
+  if(String(source?.provider??'').toLowerCase()!=='dmi')return null;
+  if(Number(source?.vectorSemanticsVersion)!==2||!source?.verticalLayer)return null;
+  if(!near(bulkZone?.samplingPoint,expectedSamplingPoint,1e-7)||!near(source?.samplingPoint,expectedSamplingPoint,1e-7))return null;
+  if(source?.vectorSelection!==bulk.currentVectorSelection)return null;
+  if(!Array.isArray(source?.gridPoint)||!source.gridPoint.every(finite))return null;
+  if(!finite(source?.distanceKm)||Number(source.distanceKm)>maximumDistance)return null;
+  if(haversineKm(expectedSamplingPoint,source.gridPoint)>maximumDistance+0.01)return null;
+  return source;
+}
 for(const feature of active){
   const id=feature.properties.id;const full=conditions.zones?.[id];const pub=publicDoc.zones?.[id];const bz=bulk.zones?.[id];
   if(!full||!pub||!bz){failures.push(`${id}: mangler conditions/public/bulk`);continue;}
-  const gu=bz.gridPoints?.['current-u'],gv=bz.gridPoints?.['current-v'];
-  if(!gu||!gv){warnings.push(`${id}: mangler dokumenteret current-u/v-gitterpunkt`);}
-  else {
-    const up=[Number(gu.longitude),Number(gu.latitude)],vp=[Number(gv.longitude),Number(gv.latitude)];
-    if(!near(up,vp,1e-7)){failures.push(`${id}: current-u og current-v kommer fra forskellige gitterpunkter`);}
-    else {
-      if(strictCurrentSemantics&&!near(bz.samplingPoint,full.point,1e-7))failures.push(`${id}: bulkens samplingPoint matcher ikke det aktuelle administratorpunkt`);
-      if(strictCurrentSemantics&&(!gu.verticalLayer||gu.verticalLayer!==gv.verticalLayer))failures.push(`${id}: current-u/v mangler samme dokumenterede dybdelag`);
-      if(!near(full.flowPoints?.current,up)||!near(pub.flowPoints?.current,up))failures.push(`${id}: kortets strømposition matcher ikke DMI-gitterpunktet`);
-      const validRows=Object.values(bz.hourly||{}).filter(r=>finite(r['current-u'])&&finite(r['current-v']));
-      if(!validRows.length)failures.push(`${id}: strømpositionen har ingen gyldige u/v-data`);
-      else verifiedGridZones++;
-      const distance=Math.max(Number(gu.distanceKm)||0,Number(gv.distanceKm)||0);
-      if(strictCurrentSemantics&&distance>Number(bulk.currentMaxDistanceKm??5))failures.push(`${id}: strømgitterpunktet ligger ${distance.toFixed(2)} km væk og overskrider 5 km-grænsen`);
-      if(strictCurrentSemantics&&haversineKm(full.point,up)>Number(bulk.currentMaxDistanceKm??5)+0.01)failures.push(`${id}: den uafhængigt beregnede koordinatafstand overskrider 5 km`);
-      else if(!strictCurrentSemantics&&distance>20)warnings.push(`${id}: historisk strømgitterpunkt ligger ${distance.toFixed(1)} km fra zonepunktet`);
-      if(strictCurrentSemantics&&validRows.some(row=>row.sources?.current?.verticalLayer!==gu.verticalLayer))failures.push(`${id}: mindst én strømtime kommer fra et andet dybdelag end pilens dokumenterede lag`);
-    }
-  }
+  if(strictCurrentSemantics&&!near(bz.samplingPoint,full.point,1e-7))failures.push(`${id}: bulkens samplingPoint matcher ikke det aktuelle administratorpunkt`);
+  const validRows=Object.values(bz.hourly||{}).filter(r=>finite(r['current-u'])&&finite(r['current-v']));
+  if(!validRows.length)failures.push(`${id}: strømpositionen har ingen gyldige u/v-data`);
+  else if(strictCurrentSemantics&&validRows.some(row=>!verifiedBulkRow(bz,full.point,row)))failures.push(`${id}: mindst én strømtime mangler selvstændigt bevis for vandkolonne, dybdelag eller afstand`);
+  else verifiedGridZones++;
+  const currentProof=full.current?.currentProvenance?.status==='verified'?full.current.currentProvenance:null;
+  if(currentProof&&(!near(full.flowPoints?.current,currentProof.gridPoint)||!near(pub.flowPoints?.current,currentProof.gridPoint)))failures.push(`${id}: kortets strømposition matcher ikke den aktuelle times DMI-gitterpunkt`);
 
   for(const row of full.forecast?.hourly||[]){
     const status=row?.currentProvenance?.status;
@@ -53,11 +54,9 @@ for(const feature of active){
     }
     if(!hasU||!hasV){failures.push(`${id} ${row.time}: verificeret proveniens mangler u eller v`);continue;}
     if(strictCurrentSemantics&&Number(row.currentProvenance?.vectorSemanticsVersion)!==2)failures.push(`${id} ${row.time}: verificeret strøm mangler semantik v2`);
-    if(strictCurrentSemantics&&gu?.verticalLayer&&row.currentProvenance?.verticalLayer!==gu.verticalLayer)failures.push(`${id} ${row.time}: proveniensens dybdelag matcher ikke U/V-gitterlaget`);
     if(strictCurrentSemantics&&!near(row.currentProvenance?.samplingPoint,full.point,1e-7))failures.push(`${id} ${row.time}: proveniensens samplingPoint matcher ikke administratorpunktet`);
     if(strictCurrentSemantics&&Number(row.currentProvenance?.distanceKm)>Number(bulk.currentMaxDistanceKm??5))failures.push(`${id} ${row.time}: proveniensafstand overskrider 5 km`);
     if(strictCurrentSemantics&&haversineKm(full.point,row.currentProvenance?.gridPoint)>Number(bulk.currentMaxDistanceKm??5)+0.01)failures.push(`${id} ${row.time}: proveniensens koordinatafstand overskrider 5 km`);
-    if(!near(row.currentProvenance?.gridPoint,full.flowPoints?.current))failures.push(`${id} ${row.time}: provenienspunkt matcher ikke kortets strømposition`);
     if(!finite(row.currentDirectionDeg)||!finite(row.currentSpeedMps)){failures.push(`${id} ${row.time}: verificeret time mangler vist retning eller hastighed`);continue;}
     const expectedDir=directionFromComponents(row.currentUMps,row.currentVMps);
     const expectedSpeed=Math.hypot(Number(row.currentUMps),Number(row.currentVMps));
@@ -74,17 +73,16 @@ let verifiedPartGridPoints=0;
 for(const part of expectedParts){
   const bulkId=`PART::${part.partId}`;
   const bz=bulk.zones?.[bulkId];
-  const gu=bz?.gridPoints?.['current-u'],gv=bz?.gridPoints?.['current-v'];
-  if(!gu||!gv)continue;
-  const up=[Number(gu.longitude),Number(gu.latitude)],vp=[Number(gv.longitude),Number(gv.latitude)];
   const validRows=Object.values(bz.hourly||{}).filter(row=>finite(row['current-u'])&&finite(row['current-v']));
-  if(!near(up,vp,1e-7)){failures.push(`${bulkId}: current-u og current-v kommer fra forskellige gitterpunkter`);continue;}
   if(strictCurrentSemantics&&!near(bz.samplingPoint,part.waterPoint,1e-7)){failures.push(`${bulkId}: samplingPoint matcher ikke det aktuelle flytbare vandpunkt`);continue;}
-  if(strictCurrentSemantics&&(!gu.verticalLayer||gu.verticalLayer!==gv.verticalLayer)){failures.push(`${bulkId}: current-u/v mangler samme dokumenterede dybdelag`);continue;}
-  if(strictCurrentSemantics&&Math.max(Number(gu.distanceKm)||0,Number(gv.distanceKm)||0)>Number(bulk.currentMaxDistanceKm??5)){failures.push(`${bulkId}: strømgitterpunktet overskrider 5 km-grænsen`);continue;}
-  if(strictCurrentSemantics&&haversineKm(part.waterPoint,up)>Number(bulk.currentMaxDistanceKm??5)+0.01){failures.push(`${bulkId}: den uafhængigt beregnede koordinatafstand overskrider 5 km`);continue;}
-  if(strictCurrentSemantics&&validRows.some(row=>row.sources?.current?.verticalLayer!==gu.verticalLayer)){failures.push(`${bulkId}: strømserien blander dybdelag`);continue;}
+  if(strictCurrentSemantics&&validRows.some(row=>!verifiedBulkRow(bz,part.waterPoint,row))){failures.push(`${bulkId}: mindst én strømtime mangler selvstændigt bevis for vandkolonne, dybdelag eller afstand`);continue;}
   if(!validRows.length)continue;
+  const runtimePart=conditions.coastalParts?.parts?.[part.partId];
+  const currentProof=runtimePart?.current?.weather?.currentProvenance;
+  if(finite(runtimePart?.current?.weather?.currentUMps)&&finite(runtimePart?.current?.weather?.currentVMps)){
+    if(currentProof?.status!=='verified')failures.push(`${bulkId}: den viste lokale strøm mangler tidsbestemt proveniens`);
+    else if(!near(runtimePart?.flowPoints?.current,currentProof.gridPoint))failures.push(`${bulkId}: den lokale strømpil matcher ikke den viste times DMI-celle`);
+  }
   verifiedPartGridPoints++;
 }
 const requiredPartCoverage=Math.ceil(expectedParts.length*.95);

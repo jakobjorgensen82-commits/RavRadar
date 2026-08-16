@@ -1,6 +1,8 @@
 # Kendte åbne og overvågede forhold
 
-- **ISSUE-CURRENT-DEEPEST-LAYER-MOVED-SPATIALLY – RETTET LOKALT I 4.0.229 / AFVENTER PRODUKTION:** Parseren valgte tidligere det dybeste lag globalt og kunne lade et 12–24 km fjernt dybdepunkt slå den nærmeste vandkolonne. Valget er ændret til rumligt først og dybde kun inden for samme koordinat; højst 5 km. Gamle strømcachefelter invalideres. Frisk DMI-genopbygning og livekortkontrol mangler.
+- **ISSUE-CURRENT-DEEPEST-LAYER-MOVED-SPATIALLY – RETTET LOKALT I 4.0.229 / AFVENTER NY PRODUKTION:** Parseren valgte tidligere det dybeste lag globalt og kunne lade et 12–24 km fjernt dybdepunkt slå den nærmeste vandkolonne. #2846 beviste den rumligt-først rettede parser, men afdækkede, at forecast-/auditkæden fejlagtigt antog ét fast lag for hele tidsserien. Lag vælges nu pr. native tid, interpolation over lag-/celleskift afvises, og pilen bruger den viste times egen celle. Ny fuld DMI-kørsel og livekortkontrol mangler.
+
+- **ISSUE-CENTRAL-COASTAL-POINTS-BUILT-AFTER-DMI – RETTET LOKALT I 4.0.229 / AFVENTER NY PRODUKTION:** Workflowet byggede hidtil kystdelskontrakten efter DMI-bulksteppet. Centralt flyttede punkter kunne derfor blive samplet på gamle koordinater og senere afvist af runtime. Kontrakten bygges nu før DMI; cache genbruges kun for uændrede samplingpunkter, så en enkelt flytning ikke nulstiller hele Danmark. #2846-artifactreplay fandt 101 sådanne ændrede dele, som forblev korrekt `missing`, indtil ny sampling findes.
 
 - **ISSUE-CURRENT-FIELD-TRANSPORT-CHAIN-NOT-YET-SCORED – PLANLAGT FORSKNING:** Aktiv RavScore bruger fortsat lokal verificeret strøm. Den kommende analyse skal afgøre, om ydre strøm ved cirka 5/15 km, flere dybdelag, overgangskorridorer og tidsforsinkelse giver selvstændig forklaringsværdi. Privat syvdøgnsopsamling starter score-neutralt i 4.0.229; ingen ny scoremekanisme er godkendt.
 

@@ -86,6 +86,24 @@ function provenanceAt(item, component) {
   return source?.provider === 'dmi' && source.collection && source.modelRun ? source : null;
 }
 
+function samePoint(first, second, tolerance = 1e-7) {
+  return Array.isArray(first) && Array.isArray(second)
+    && first.length >= 2 && second.length >= 2
+    && first.slice(0, 2).every((value, index) => Number.isFinite(Number(value))
+      && Math.abs(Number(value) - Number(second[index])) <= tolerance);
+}
+
+function sameCurrentIdentity(before, after) {
+  return Boolean(
+    before?.verticalLayer
+    && before.verticalLayer === after?.verticalLayer
+    && Number(before.vectorSemanticsVersion) === 2
+    && Number(after.vectorSemanticsVersion) === 2
+    && samePoint(before.gridPoint, after.gridPoint)
+    && samePoint(before.samplingPoint, after.samplingPoint)
+  );
+}
+
 function sameNativeSeries(bracket, component) {
   if (!bracket || bracket.before === bracket.after) return true;
   const before = provenanceAt(bracket.before, component);
@@ -95,7 +113,11 @@ function sameNativeSeries(bracket, component) {
   // komplet proveniens og forbliver derfor synlige i auditten. Ny og gammel
   // identitet må aldrig blandes, og to kendte runs skal være ens.
   if (!before && !after) return true;
-  return Boolean(before && after && before.collection === after.collection && before.modelRun === after.modelRun);
+  if (!before || !after || before.collection !== after.collection || before.modelRun !== after.modelRun) return false;
+  // Strøm må kun interpoleres mellem to native trin, når de repræsenterer den
+  // samme fysiske vandkolonne og det samme dybdelag. Et lag- eller celleskift
+  // bliver et ærligt datagab mellem trinnene, aldrig en blandet vektor.
+  return component !== 'current' || sameCurrentIdentity(before, after);
 }
 
 function componentBracket(items, targetMs, component, options) {
@@ -112,6 +134,15 @@ function componentSource(bracket, component, targetMs, generatedAt) {
   const modelRunMs = Date.parse(selected.modelRun);
   const generatedMs = Date.parse(generatedAt);
   const nativeValidTimes = [...new Set([before?.nativeValidTime, after?.nativeValidTime].filter(Boolean))];
+  const currentIdentity = component === 'current' ? {
+    gridPoint: selected.gridPoint,
+    samplingPoint: selected.samplingPoint,
+    verticalLayer: selected.verticalLayer,
+    verticalLayerRankM: finite(selected.verticalLayerRankM),
+    distanceKm: finite(selected.distanceKm),
+    vectorSelection: selected.vectorSelection ?? null,
+    vectorSemanticsVersion: finite(selected.vectorSemanticsVersion)
+  } : {};
   return {
     provider: 'dmi',
     collection: selected.collection,
@@ -120,7 +151,8 @@ function componentSource(bracket, component, targetMs, generatedAt) {
     forecastAgeHours: Number.isFinite(modelRunMs) && Number.isFinite(generatedMs) ? round((generatedMs - modelRunMs) / 3600000, 2) : null,
     temporalResolution: bracket.mode === 'exact' ? 'native' : bracket.mode,
     nativeValidTimes,
-    fallback: false
+    fallback: false,
+    ...currentIdentity
   };
 }
 

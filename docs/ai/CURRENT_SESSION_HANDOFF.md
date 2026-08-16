@@ -5,9 +5,11 @@
 - Rodårsagen til fejlplaceret strøm var globalt dybdevalg: et dybt DMI-lag ved en fjern koordinat kunne slå den nærmeste vandkolonne.
 - Ny bindende rækkefølge er nærmeste gyldige fælles U/V-vandkolonne først, derefter dybeste gyldige lag i samme kolonne. 0–3 km foretrækkes, 3–5 km accepteres, og over 5 km er `missing`.
 - Verificeret strøm er bundet til aktuelt centralt samplingpunkt, fælles U/V-koordinat, forecasttid, lag og afstand gennem score, provenance og kort. Den geografiske afstand genberegnes som kontrol; gamle semantik-v1-data, direkte ForecastEDR-strøm uden kolonne-/lagbevis, Open-Meteos overfladestrøm og anden fallbackstrøm lukkes ude før historik, scoring og kort.
+- Laget vælges særskilt pr. native forecasttid. Interpolation er kun tilladt ved identisk lag, celle, samplingpunkt, collection og modelkørsel; ellers er mellemtimen `missing`. Pilen følger den valgte times egen celle.
+- Centralt reviewede kystdelspunkter bygges før DMI. Ved et ændret register bevares kun cacheposter med uændret eget samplingpunkt; flyttede dele nulstilles selektivt.
 - Privat 168-timers strømfeltsopsamling roterer 15 kystdele pr. DMI-kørsel ved 0/5/15 km og flere lag. Den er `scoreImpact=false`, `publicRuntime=false` og publicerer kun kompakt status. Det lille udsnit beskytter workflowets tidsbudget og når fortsat hele bestanden inden for syvdøgnsvinduet ved normal drift.
 - DEC-0040 og den udvidede DEC-0029 kræver, at kommende analyse og et eventuelt nyt scoremodul vurderer ydre tilførsel → overgang → lokal bundnær levering, inkl. tidsforsinkelse og risiko for dobbelt-tælling.
-- Målrettede tests, den øvrige lokalt kørbare valideringskæde og releasegate er grønne. Fuld lokal `validate` stopper forventet på repositoryets historiske 209/211-snapshot; commit/push og frisk produktionsbevis mangler stadig.
+- Commit `14ce8908bcfd219055d622ef88c2e94d6f9ad37c` er pushed til `main`. #31919296190/#2846 byggede frisk DMI og privat cache, men stoppede i fuld audit før deploy, fordi efterkæden antog ét fast lag for hele serien. Artifactreplay med rettelsen bevarer 11.400 verificerede prognosetimer og nul pil/grid-mismatch i 353 matchende lokale dele. Den opfølgende rettelse er pushed til `main`, men endnu ikke produktionsverificeret.
 
 ## Sikker produktionsbaseline
 
@@ -39,8 +41,8 @@
 
 ## Næste trin
 
-1. Commit og push den lokalt validerede 4.0.229-kandidat uden de genererede fejldiagnoser fra repositoryets historiske snapshot.
-2. Følg den friske centrale DMI-kørsel og verificér semantik v2, metadata- og koordinatafstand, lag, privat cache, Supabase, artifact og Pages.
+1. Kontrollér gitstatus og seneste opfølgende 4.0.229-commit på `main`.
+2. Følg de progressive centrale DMI-kørsler, indtil hovedzone- og kystdelsdækningen består, og verificér semantik v2, metadata-/koordinatafstand, lag pr. tid, privat cache, Supabase, artifact og Pages.
 3. Kontrollér det deployede kort direkte. Først derefter må 4.0.229 kaldes produktionsverificeret.
 4. Lad ejerens manuelle punktreview fortsætte; centralt gemte punkter er runtime-sandhed.
 

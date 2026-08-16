@@ -5,6 +5,8 @@ if(!/value === null \|\| value === undefined \|\| value === ''/.test(source))fai
 if(!/currentProvenance=\{status:'unverified'/.test(source))failures.push('Manglende proveniens markeres ikke eksplicit som unverified.');
 if(!/delete row\.currentUMps;\s*delete row\.currentVMps/.test(source))failures.push('Ikke-verificerbare timer rydder ikke falske u/v-felter.');
 if(!/status:'verified'/.test(source)||!/gridPoint:point/.test(source)||!/sourceTimes:raw\.sourceTimes/.test(source))failures.push('Verificeret proveniens mangler status, gitterpunkt eller kildetider.');
+if(!/sameCurrentIdentity\(before\.current,after\.current\)/.test(source))failures.push('Berigelsen kan interpolere på tværs af dybdelag eller vandkolonner.');
+if(!/Math\.abs\(edge\.timeMs-target\)<=95\*60000/.test(source)||!/method:'nearest-edge'/.test(source))failures.push('Berigelsen bevarer ikke et dokumenteret native randtrin tæt på visningstiden.');
 const audit=await fs.readFile('scripts/test-current-spatial-scientific-audit-4.0.76.mjs','utf8');
 if(!/status!==['"]verified['"]/.test(audit))failures.push('Auditten skelner ikke mellem verificeret og ikke-verificerbar proveniens.');
 if(!/Missing provenance is never represented as 0\/0/.test(audit))failures.push('Auditrapporten dokumenterer ikke nul-sikkerhedsreglen.');

@@ -107,6 +107,10 @@ jobs:
         with:
           node-version: 22
 
+      - name: Rebuild centrally reviewed coastal-part sampling points
+        if: steps.preflight.outputs.should_run == 'true'
+        run: node scripts/build-public-coastal-parts-v2.mjs
+
       - name: Refresh DMI water-source registry
         if: steps.preflight.outputs.should_run == 'true'
         run: node scripts/update-water-source-registry.mjs

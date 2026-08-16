@@ -8,6 +8,7 @@ Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde sa
 
 - 4.0.229 er en lokal kandidat, ikke endnu en produktionsverificeret release. Den retter strømvalg fra “dybeste lag globalt” til “nærmeste vandkolonne først, dybeste lag i samme kolonne” og håndhæver højst 5 km.
 - Samme aktuelle samplingpunkt, U/V-koordinat, forecasttid og dybdelag kræves gennem bulkcache, forecast, score, provenance og pil. Gamle strømdata invalideres, og direkte ForecastEDR-strøm uden samme bevis, Open-Meteos overfladestrøm samt anden fallbackstrøm lukkes ude før historik, scoring og kort.
+- Dybdelaget vælges pr. native forecasttid; interpolation kræver samme lag, celle og run. Pilen bruger den valgte times egen celle. Centralt reviewede kystdelspunkter bygges før DMI, og cache genbruges kun for uændrede samplingpunkter.
 - En privat syvdøgnscache genbruger DKSS ved 0/5/15 km og flere lag uden score- eller public-runtimepåvirkning. Helhedsmodellen er permanent gemt i DEC-0040 og DEC-0029.
 
 - 4.0.228 er produktionsverificeret i #31913779486/#2835 på commit `93b8c0216821d02bf913f7aab369406ba2365fe9` med central adminhydrering, frisk DMI, fulde gates, Supabase og Pages.
@@ -25,9 +26,9 @@ Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde sa
 
 ## Første opgave i næste chat
 
-1. Commit/push 4.0.229 fra den isolerede worktree; lokal releasegate og alle dataneutrale testtrin er grønne, mens repositoryets historiske 209/211-snapshot som forventet blokerer de centrale datatests.
-2. Følg frisk central DMI-genopbygning til fuld CI-`validate`, releasegate, Supabase, supportartifact og Pages.
-3. Auditér produktionsdata for semantik v2, maksimalt 5 km efter både metadata og koordinatberegning, samme lag/punkt og privat cache-status; kontrollér derefter kortet direkte.
+1. Kontrollér den opfølgende 4.0.229-rettelse på `main`. Produktcommit `14ce8908` førte til #31919296190/#2846, som stoppede før deploy på auditantagelsen om ét fast lag pr. serie; efterrettelsen er pushed, men mangler nyt produktionsbevis.
+2. Følg progressive centrale DMI-kørsler til fuld CI-`validate`, releasegate, Supabase, supportartifact og Pages. Artifactreplay har allerede bevaret 11.400 verificerede hovedzoneprognoser og nul pil/grid-mismatch i 353 matchende lokale dele.
+3. Auditér produktionen for semantik v2, maksimalt 5 km, tidsbestemt lag/celle, selektiv cachemigration og privat cache-status; kontrollér derefter kortet direkte.
 
 ## Beskyttede beslutninger
 

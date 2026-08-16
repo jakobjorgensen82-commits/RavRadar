@@ -8,6 +8,10 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-CURRENT-BOTTOM-NEAR-001 – BINDENDE:** I den valgte vandkolonne bruges det dybeste gyldige fælles U/V-lag som aktiv bundnær repræsentation. U og V skal have samme tid, koordinat og lag.
 - **REQ-CURRENT-DISTANCE-001 – BINDENDE:** 0–3 km er foretrukket; 3–5 km må bruges, når nærmere gyldigt par mangler; over 5 km er `missing` og må ikke skabe verificeret pil eller scoreinput.
 - **REQ-CURRENT-SAMPLING-IDENTITY-001 – BINDENDE:** Centralt gemt aktuelt vandpunkt er samplinganker. Flytning eller gammel strømsemantik invaliderer cache, provenance og historisk strøm, indtil friske data findes.
+- **REQ-CURRENT-TIME-LAYER-001 – BINDENDE:** Dybdelaget vælges selvstændigt ved hvert native forecasttidspunkt. Et forecasts lag må ikke bruges som fast lagkontrakt for hele serien.
+- **REQ-CURRENT-INTERPOLATION-001 – BINDENDE:** Strøm må kun interpoleres mellem native trin med samme collection, modelkørsel, samplingpunkt, gitterkoordinat og vertikallag. Lag-/celleskift giver `missing` mellem trinnene.
+- **REQ-CURRENT-ARROW-TIME-001 – BINDENDE:** Hver vist strøm pil skal stå ved den valgte visningstimes egen verificerede DMI-celle; en anden times celle må ikke genbruges som repræsentativ position.
+- **REQ-CURRENT-CENTRAL-POINT-ORDER-001 – BINDENDE:** Centralt reviewede kystdelspunkter bygges før DMI-sampling. Cachegenbrug sker pr. uændret samplingpunkt; kun flyttede punkter nulstilles.
 - **REQ-CURRENT-FIELD-SHADOW-001 – AKTIV:** Privat forskningsopsamling må højst bevare 168 timer, genbruge eksisterende DKSS-GRIB, holde rå vektorer ude af offentlig runtime og være teknisk markeret `scoreImpact=false`.
 - **REQ-RAVSCORE-CURRENT-CHAIN-001 – PLANLAGT UNDER DEC-0029/0040:** Den store analyse skal undersøge ydre tilførsel, overgang mod kyst, lokal bundnær levering, flere lag, rumlig persistens og tidsforsinkelse før et nyt scoremodul foreslås. Ingen automatisk aktivering eller dobbelt-tælling er tilladt.
 

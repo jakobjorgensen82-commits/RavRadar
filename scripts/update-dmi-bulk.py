@@ -29,6 +29,7 @@ from lib.current_field_shadow import (
     save_document as save_current_field_shadow,
     status as current_field_shadow_status,
 )
+from lib.dmi_cache_migration import prune_previous_sampling_mismatches
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -1256,9 +1257,15 @@ def sampling_registry_signature() -> str:
 def load_previous(expected_signature: str) -> dict[str, Any]:
     candidates = [load_document(OUTPUT_PATH), load_document(DEPLOYED_FALLBACK_PATH)]
     compatible = [document for document in candidates if document.get("zoneRegistrySignature") == expected_signature and document.get("zones")]
-    if not compatible:
-        return {"schemaVersion": 2, "zones": {}, "runs": {}, "zoneRegistrySignature": expected_signature}
-    return max(compatible, key=lambda document: (cache_progress_time(document), cache_quality(document)))
+    if compatible:
+        return max(compatible, key=lambda document: (cache_progress_time(document), cache_quality(document)))
+    # Et enkelt flyttet administratorpunkt ændrer hele registersignaturen. Genbrug
+    # derfor den bedste ældre cache som kandidat; efter at det aktuelle register
+    # er bygget, fjernes kun de zoner/kystdele hvis eget samplingPoint er ændret.
+    reusable = [document for document in candidates if document.get("zones")]
+    if reusable:
+        return max(reusable, key=lambda document: (cache_progress_time(document), cache_quality(document)))
+    return {"schemaVersion": 2, "zones": {}, "runs": {}, "zoneRegistrySignature": expected_signature}
 
 
 def merge_previous(current: dict[str, Any], previous: dict[str, Any], allowed_zone_ids: set[str] | None = None) -> None:
@@ -2036,6 +2043,7 @@ def main() -> int:
         except Exception as exc:
             print(f"Advarsel: vandstandskilder kunne ikke føjes til bulk-grid: {exc}", file=sys.stderr)
 
+    removed_sampling_mismatches = prune_previous_sampling_mismatches(previous, zones)
     generated = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     # Den aktive zone-/kilderegistrering er den strukturelle sandhed. En zone må
     # aldrig forsvinde fra bulk-cachen blot fordi den aktuelle DMI-kørsel ikke
@@ -2071,6 +2079,7 @@ def main() -> int:
               "collectionState": dict(previous.get("collectionState") or {}),
               "diagnostics": {"collectionsAttempted": [], "collectionsSucceeded": [], "collectionsPartial": [], "errors": [],
                               "downloadedBytes": 0, "reusedAssets": 0, "parametersByCollection": {}, "stacByCollection": {},
+                              "removedSamplingPointMismatches": removed_sampling_mismatches,
                               "assetsSkippedPreviouslyProcessed": 0, "assetsRetriedIncomplete": 0, "zeroProgressCollections": [], "collectionsUnchanged": [], "messagesSeen": 0, "zoneLookups": 0, "batchedGridReads": 0, "marineGridSearch": {},
                               "runtimeBudgetSeconds": MAX_RUNTIME_SECONDS, "finalizeReserveSeconds": FINALIZE_RESERVE_SECONDS,
                               "currentFieldShadow": current_field_shadow_status(current_shadow, selected_research_part_ids),

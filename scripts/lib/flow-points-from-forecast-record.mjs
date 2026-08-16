@@ -36,21 +36,37 @@ function haversineKm(first, second) {
   return 6371.0088 * 2 * Math.atan2(Math.sqrt(term), Math.sqrt(1 - term));
 }
 
-function exactCurrentGrid(record, expectedSamplingPoint) {
+function exactCurrentGrid(record, expectedSamplingPoint, at = null) {
   const completeness = record?.model?.completeness ?? {};
   if (Number(completeness.currentVectorSemanticsVersion) !== 2) return null;
   if (!samePoint(completeness.samplingPoint, expectedSamplingPoint)) return null;
-  const grid = completeness.gridPoints ?? {};
-  const first = grid['current-u'];
-  const second = grid['current-v'];
-  const point = exactGridPair(grid, 'current-u', 'current-v');
-  if (!point || !first?.verticalLayer || first.verticalLayer !== second?.verticalLayer) return null;
-  const firstDistance = coordinate(first?.distanceKm);
-  const secondDistance = coordinate(second?.distanceKm);
   const maximumDistance = coordinate(completeness.currentMaxDistanceKm) ?? 5;
-  if (firstDistance === null || secondDistance === null || Math.max(firstDistance, secondDistance) > maximumDistance) return null;
-  if (haversineKm(expectedSamplingPoint, point) > maximumDistance + 0.01) return null;
-  return point;
+  let rows = [...(record?.hourly ?? [])].sort((a, b) => Date.parse(a?.time ?? '') - Date.parse(b?.time ?? ''));
+  const target = Date.parse(at ?? '');
+  if (Number.isFinite(target) && rows.length) {
+    const selected = rows.reduce((best, row) => {
+      const distance = Math.abs(Date.parse(row?.time ?? '') - target);
+      return Number.isFinite(distance) && (!best || distance < best.distance) ? { row, distance } : best;
+    }, null);
+    // Naar en bestemt visningstid er valgt, maa pilen kun bruge netop den
+    // times celle. Manglende stroem paa tidspunktet skal ikke skjules ved at
+    // hente en anden times celle.
+    rows = selected ? [selected.row] : [];
+  }
+  for (const row of rows) {
+    if (coordinate(row?.currentUMps) === null || coordinate(row?.currentVMps) === null) continue;
+    const source = row?.currentProvenance?.status === 'verified' ? row.currentProvenance : row?.sources?.current;
+    if (String(source?.provider ?? '').toLowerCase() !== 'dmi') continue;
+    if (Number(source?.vectorSemanticsVersion) !== 2 || !source?.verticalLayer) continue;
+    if (!samePoint(source?.samplingPoint, expectedSamplingPoint)) continue;
+    if (completeness.currentVectorSelection && source?.vectorSelection !== completeness.currentVectorSelection) continue;
+    const point = validFallback(source?.gridPoint);
+    const distance = coordinate(source?.distanceKm);
+    if (!point || distance === null || distance > maximumDistance) continue;
+    if (haversineKm(expectedSamplingPoint, point) > maximumDistance + 0.01) continue;
+    return point;
+  }
+  return null;
 }
 
 function validFallback(value) {
@@ -60,10 +76,10 @@ function validFallback(value) {
   return longitude === null || latitude === null ? null : [longitude, latitude];
 }
 
-export function flowPointsFromForecastRecord(record, fallbackPoint) {
+export function flowPointsFromForecastRecord(record, fallbackPoint, at = null) {
   const fallback = validFallback(fallbackPoint);
   const grid = record?.model?.completeness?.gridPoints ?? {};
-  const currentGrid = exactCurrentGrid(record, fallback);
+  const currentGrid = exactCurrentGrid(record, fallback, at);
   const primaryWindGrid = exactGridPair(grid, 'wind-u-10m', 'wind-v-10m');
   const marineWindGrid = primaryWindGrid ? null : exactGridPair(grid, 'wind-tail-u-10m', 'wind-tail-v-10m');
   const windGrid = primaryWindGrid || marineWindGrid;

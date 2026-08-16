@@ -38,7 +38,7 @@
     "test:onshore-geometry": "node scripts/test-onshore-zone-geometry.mjs",
     "test:admin-direction-audit": "node scripts/test-admin-direction-audit.mjs && node scripts/test-admin-part-direction-editor-4.0.192.mjs",
     "test:direction-anchors": "node scripts/test-direction-anchors.mjs",
-    "test:dmi-bulk": "node scripts/test-dmi-bulk-model-download.mjs",
+    "test:dmi-bulk": "node scripts/test-dmi-bulk-model-download.mjs && python scripts/test-dmi-cache-migration-4.0.229.py",
     "test:dmi-progressive-zone-cache": "node scripts/test-dmi-progressive-zone-cache-4.0.188.mjs",
     "test:dmi-bulk-forecast-integration": "node scripts/test-dmi-bulk-forecast-integration.mjs",
     "test:forecast-integrity": "node scripts/test-forecast-integrity-4.0.17.mjs",

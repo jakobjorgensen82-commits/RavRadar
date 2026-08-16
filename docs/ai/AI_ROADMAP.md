@@ -4,9 +4,11 @@
 
 - Aktiv strøm vælges rumligt først: nærmeste gyldige DMI-vandkolonne ved det aktuelle administratorpunkt, derefter det dybeste fælles U/V-lag i netop den kolonne. 0–3 km foretrækkes; 3–5 km accepteres kun, når nærmere gyldige data mangler; over 5 km er `missing`.
 - Pil, prognose, historie og score må kun bruge samme dokumenterede U/V-koordinat, tid, lag og samplingpunkt. Gamle strømdata med den tidligere semantik kasseres og genopbygges.
+- Dybdelaget vælges pr. native forecasttid. Der interpoleres kun ved samme lag, celle og modelkørsel; et skift bliver `missing`, og pilen bruger altid den viste times egen provenienscelle.
+- Centrale kystdelspunkter bygges før DMI-sampling. Den progressive cache genbruges pr. uændret samplingpunkt, så en adminflytning ikke nulstiller hele landet eller genbruger den gamle koordinat.
 - Et roterende privat forskningslag genbruger eksisterende DKSS-GRIB ved 0, 5 og 15 km søværts og bevarer flere lag i højst 168 timer. Det påvirker hverken RavScore eller offentlig runtime.
 - Den store analyse og et eventuelt nyt scoremodul skal behandle hele kæden **ydre tilførsel → overgang mod kyst → lokal bundnær levering** med rumlighed, dybde, persistens og tidsforsinkelse. Undgå dobbelt-tælling med vind, bølger og lokal strøm. Se DEC-0040.
-- Lokal kode, målrettede regressioner, den øvrige dataneutrale valideringskæde og releasegate er grønne. Fuld lokal `validate` stopper på repositoryets kendte historiske 209/211-snapshot. Frisk central DMI-genopbygning, fuld CI-gate og produktionskontrol mangler endnu; 4.0.229 må ikke kaldes produktionsverificeret før de består.
+- #31919296190/#2846 byggede semantik-v2-DMI og forskningscachen, men stoppede før deploy på en for streng auditantagelse om ét lag for hele serien. Artifactreplay med tidsbestemt lagvalg bevarer 11.400 verificerede hovedzoneprognoser og har nul pil/grid-mismatch i 353 aktuelt matchende lokale dele. Frisk progressiv DMI-genopbygning, fuld CI-gate og produktionskontrol mangler endnu; 4.0.229 må ikke kaldes produktionsverificeret før de består.
 
 ## 4.0.228 – flere ægte pile, når kortet zoomes ind
 

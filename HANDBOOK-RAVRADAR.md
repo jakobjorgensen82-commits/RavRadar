@@ -130,6 +130,8 @@ Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande
 
 Det blå vandpunkt er samplinganker for både den viste strømpil og den strøm, som den aktive score må bruge. RavRadar vælger først den nærmeste DMI-vandkolonne med et komplet U/V-par og derefter det dybeste gyldige lag i præcis den kolonne. Op til 3 km foretrækkes, 3–5 km kan accepteres, og over 5 km er strømmen manglende. Den faktiske koordinatafstand kontrolleres særskilt. Kun verificeret DMI-GRIB-strøm må bruges aktivt; gamle cacher, direkte ForecastEDR-strøm uden fælles kolonne- og lagbevis samt Open-Meteos overfladestrøm og anden fallbackstrøm lukkes ude før historik, score og kort.
 
+DMI kan have forskellige dybeste tilgængelige lag på forskellige forecasttidspunkter. Derfor foretages lagvalget for hver native tid. RavRadar må kun beregne mellemtimer, når begge native tider har samme lag, vandcelle og modelkørsel; ellers vises strøm som manglende mellem tiderne. Pilen står altid på den valgte times egen dokumenterede celle. Centralt flyttede kystdelspunkter bygges før næste DMI-sampling, og kun cachen for det flyttede punkt nulstilles.
+
 En privat, score-neutral cache genbruger de downloadede DKSS-felter ved vandpunktet samt cirka 5 og 15 km søværts. Repræsentative overflade-, mellem- og bundlag bevares højst 168 timer. Den kommende analyse skal undersøge hele kæden **ydre tilførsel → overgang mod kysten → lokal bundnær levering**, inklusive tidsforsinkelse, persistens og risiko for dobbelt-tælling med vind og bølger. Ingen ny scorevægt er aktiveret.
 
 **Håndbogsversion:** 4.0.229

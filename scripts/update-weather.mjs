@@ -300,23 +300,21 @@ function samePoint(first, second, tolerance = 1e-7) {
     && first.slice(0, 2).every((value, index) => Number.isFinite(Number(value)) && Math.abs(Number(value) - Number(second[index])) <= tolerance);
 }
 
-function verifiedBulkCurrent(bulkCache, bulkZone, expectedSamplingPoint) {
+function verifiedBulkCurrent(bulkCache, bulkZone, expectedSamplingPoint, source) {
   if (Number(bulkCache?.currentVectorSemanticsVersion) !== CURRENT_VECTOR_SEMANTICS_VERSION) return null;
   if (!samePoint(bulkZone?.samplingPoint, expectedSamplingPoint)) return null;
-  const first = bulkZone?.gridPoints?.['current-u'];
-  const second = bulkZone?.gridPoints?.['current-v'];
-  if (!first || !second || !samePoint(
-    [first.longitude, first.latitude],
-    [second.longitude, second.latitude],
-  )) return null;
-  if (!first.verticalLayer || first.verticalLayer !== second.verticalLayer) return null;
-  const distance = Math.max(num(first.distanceKm) ?? Infinity, num(second.distanceKm) ?? Infinity);
+  if (String(source?.provider ?? '').toLowerCase() !== 'dmi') return null;
+  if (Number(source?.vectorSemanticsVersion) !== CURRENT_VECTOR_SEMANTICS_VERSION) return null;
+  if (!source?.verticalLayer || !samePoint(source?.samplingPoint, expectedSamplingPoint)) return null;
+  if (source?.vectorSelection !== bulkCache?.currentVectorSelection) return null;
+  const distance = num(source?.distanceKm) ?? Infinity;
   const maximum = num(bulkCache.currentMaxDistanceKm) ?? 5;
   if (distance > maximum) return null;
-  const gridPoint = [Number(first.longitude), Number(first.latitude)];
+  const gridPoint = Array.isArray(source?.gridPoint) ? source.gridPoint.slice(0, 2).map(Number) : null;
+  if (!gridPoint || gridPoint.some(value => !Number.isFinite(value))) return null;
   if (haversineKm(expectedSamplingPoint, gridPoint) > maximum + 0.01) return null;
   return {
-    verticalLayer: first.verticalLayer,
+    verticalLayer: source.verticalLayer,
     gridPoint,
     samplingPoint: expectedSamplingPoint,
   };
@@ -353,12 +351,36 @@ function withoutCurrent(record) {
   };
 }
 
-function verifiedForecastCurrent(record, expectedSamplingPoint) {
-  return flowPointsFromForecastRecord(record, expectedSamplingPoint).sources.current === 'dmi-marine-grid';
-}
-
 function withOnlyVerifiedCurrent(record, expectedSamplingPoint) {
-  return verifiedForecastCurrent(record, expectedSamplingPoint) ? record : withoutCurrent(record);
+  if (!record) return record;
+  const completeness = record?.model?.completeness ?? {};
+  const maximum = num(completeness.currentMaxDistanceKm) ?? 5;
+  const validSource = source => {
+    if (Number(completeness.currentVectorSemanticsVersion) !== CURRENT_VECTOR_SEMANTICS_VERSION) return false;
+    if (!samePoint(completeness.samplingPoint, expectedSamplingPoint)) return false;
+    if (String(source?.provider ?? '').toLowerCase() !== 'dmi') return false;
+    if (Number(source?.vectorSemanticsVersion) !== CURRENT_VECTOR_SEMANTICS_VERSION || !source?.verticalLayer) return false;
+    if (!samePoint(source?.samplingPoint, expectedSamplingPoint)) return false;
+    if (source?.vectorSelection !== completeness.currentVectorSelection) return false;
+    const point = Array.isArray(source?.gridPoint) ? source.gridPoint.slice(0, 2).map(Number) : null;
+    return Boolean(point && point.every(Number.isFinite)
+      && (num(source?.distanceKm) ?? Infinity) <= maximum
+      && haversineKm(expectedSamplingPoint, point) <= maximum + 0.01);
+  };
+  let verifiedRows = 0;
+  const hourly = (record.hourly ?? []).map(row => {
+    const source = row?.currentProvenance?.status === 'verified' ? row.currentProvenance : row?.sources?.current;
+    if (num(row?.currentUMps) !== null && num(row?.currentVMps) !== null && validSource(source)) {
+      verifiedRows += 1;
+      return row;
+    }
+    const sources = { ...(row.sources ?? {}) };
+    delete sources.current;
+    const clean = { ...row, sources };
+    for (const key of ['currentSpeedMps', 'currentDirectionDeg', 'currentUMps', 'currentVMps', 'currentProvenance']) delete clean[key];
+    return clean;
+  });
+  return verifiedRows ? { ...record, hourly } : withoutCurrent(record);
 }
 
 function withoutZoneCurrent(zone) {
@@ -874,8 +896,8 @@ function bulkZoneToForecastRecord(feature, bulkCache, generatedAt, previousRecor
   const compatiblePrevious = sameSamplingPoint
     ? withOnlyVerifiedCurrent(previousRecord, point)
     : null;
-  const verifiedCurrent = verifiedBulkCurrent(bulkCache, bulkZone, point);
-  const currentSemanticsValid = Boolean(verifiedCurrent);
+  const currentSemanticsValid = Number(bulkCache?.currentVectorSemanticsVersion) === CURRENT_VECTOR_SEMANTICS_VERSION
+    && samePoint(bulkZone?.samplingPoint, point);
   const rows = Object.values(bulkZone?.hourly ?? {}).filter(row => Number.isFinite(Date.parse(row?.time))).sort((a, b) => Date.parse(a.time) - Date.parse(b.time));
   if (!rows.length) return null;
   const provenance = row => ({ ...(row.sources ?? {}) });
@@ -884,15 +906,12 @@ function bulkZoneToForecastRecord(feature, bulkCache, generatedAt, previousRecor
   const waves = rows.filter(row => ['significant-wave-height','mean-wave-dir','dominant-wave-period'].some(key => num(row[key]) !== null)).map(row => ({ step: row.time, 'significant-wave-height': num(row['significant-wave-height']), 'mean-wave-dir': num(row['mean-wave-dir']), 'dominant-wave-period': num(row['dominant-wave-period']), provenance: { wave: provenance(row).wave } }));
   const ocean = rows.filter(row => ['sea-mean-deviation','current-u','current-v','water-temperature'].some(key => num(row[key]) !== null)).map(row => {
     const rowCurrent = provenance(row).current;
-    const rowCurrentValid = currentSemanticsValid
-      && rowCurrent?.verticalLayer === verifiedCurrent.verticalLayer
-      && Number(rowCurrent?.vectorSemanticsVersion) === CURRENT_VECTOR_SEMANTICS_VERSION
-      && samePoint(rowCurrent?.gridPoint, verifiedCurrent.gridPoint)
-      && samePoint(rowCurrent?.samplingPoint, verifiedCurrent.samplingPoint);
+    const rowCurrentValid = Boolean(verifiedBulkCurrent(bulkCache, bulkZone, point, rowCurrent));
     return { step: row.time, 'sea-mean-deviation': num(row['sea-mean-deviation']), 'current-u': rowCurrentValid ? num(row['current-u']) : null, 'current-v': rowCurrentValid ? num(row['current-v']) : null, 'water-temperature': num(row['water-temperature']), provenance: { current: rowCurrentValid ? provenance(row).current : null, waterLevel: provenance(row).waterLevel, waterTemperature: provenance(row).waterTemperature } };
   });
   const sourceCadenceMinutes = Number(bulkCache?.timeStrideHours ?? 3) * 60;
   const built = buildDmiForecastHourly({ wind, windTail, waves, ocean, generatedAt, hours: DMI_FORECAST_HOURS, sourceCadenceMinutes });
+  const currentAvailable = ocean.some(item => num(item['current-u']) !== null && num(item['current-v']) !== null);
   const marine = ocean.some(item => num(item['sea-mean-deviation']) !== null && num(item['current-u']) !== null && num(item['current-v']) !== null);
   const windAvailable = wind.some(item => num(item['wind-speed-10m']) !== null && num(item['wind-dir-10m']) !== null);
   const windTailAvailable = windTail.some(item => num(item['wind-speed-10m']) !== null && num(item['wind-dir-10m']) !== null);
@@ -917,7 +936,7 @@ function bulkZoneToForecastRecord(feature, bulkCache, generatedAt, previousRecor
         ...oldCompleteness,
         phase: 'bulk-stac-grib',
         ocean: marine || oldCompleteness.ocean === true,
-        current: marine || oldCompleteness.current === true,
+        current: currentAvailable || oldCompleteness.current === true,
         wind: windAvailable || windTailAvailable || oldCompleteness.wind === true,
         windPrimary: windAvailable || oldCompleteness.windPrimary === true,
         windTail: windTailAvailable || oldCompleteness.windTail === true,
@@ -926,10 +945,10 @@ function bulkZoneToForecastRecord(feature, bulkCache, generatedAt, previousRecor
         forecastCadenceMinutes: 60,
         sourceCadenceMinutes,
         samplingPoint: point,
-        currentVectorSemanticsVersion: currentSemanticsValid ? CURRENT_VECTOR_SEMANTICS_VERSION : null,
-        currentVectorSelection: currentSemanticsValid ? bulkCache.currentVectorSelection : null,
-        currentPreferredDistanceKm: currentSemanticsValid ? bulkCache.currentPreferredDistanceKm : null,
-        currentMaxDistanceKm: currentSemanticsValid ? bulkCache.currentMaxDistanceKm : null,
+        currentVectorSemanticsVersion: currentAvailable && currentSemanticsValid ? CURRENT_VECTOR_SEMANTICS_VERSION : null,
+        currentVectorSelection: currentAvailable && currentSemanticsValid ? bulkCache.currentVectorSelection : null,
+        currentPreferredDistanceKm: currentAvailable && currentSemanticsValid ? bulkCache.currentPreferredDistanceKm : null,
+        currentMaxDistanceKm: currentAvailable && currentSemanticsValid ? bulkCache.currentMaxDistanceKm : null,
         temporalInterpolation: built.interpolation,
         spatialInterpolation: false,
         gridPoints: bulkZone.gridPoints ?? {},
@@ -991,8 +1010,25 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, generated
       };
       const record = bulkZoneToForecastRecord(feature, bulkCache, generatedAt, null);
       if (!record) continue;
-      const flowPoints = flowPointsFromForecastRecord(record, zonePoint(feature));
-      const hourly = normalizeForecastHourly(record.hourly ?? []);
+      const flowPoints = flowPointsFromForecastRecord(record, zonePoint(feature), generatedAt);
+      const hourly = normalizeForecastHourly(record.hourly ?? []).map(hour => {
+        const source = hour?.sources?.current;
+        const proof = num(hour?.currentUMps) !== null && num(hour?.currentVMps) !== null
+          ? verifiedBulkCurrent(bulkCache, bulkCache?.zones?.[bulkId], part.waterPoint, source)
+          : null;
+        if (proof) return {
+          ...hour,
+          currentProvenance: { status: 'verified', ...source },
+        };
+        return {
+          ...hour,
+          currentUMps: null,
+          currentVMps: null,
+          currentSpeedMps: null,
+          currentDirectionDeg: null,
+          currentProvenance: { status: 'unverified', reason: 'no-time-specific-dmi-water-column' },
+        };
+      });
       const currentSamples = hourly.filter(hour => hour.currentSpeedMps != null && hour.currentDirectionDeg != null).map(hour => ({
         at: hour.time,
         currentSpeedMps: hour.currentSpeedMps,
@@ -1193,7 +1229,7 @@ async function fromDmi(feature, generatedAt, { includeAtmosphere = false } = {})
   }));
   const currentForecast = selectDmiForecastAt(forecastRecord, generatedAt) ?? dmiForecast.hourly[0];
   return {
-    point, flowPoints: flowPointsFromForecastRecord(forecastRecord, zonePoint(feature)), provider: 'dmi', providerLabel: includeAtmosphere ? 'DMI Open Data' : 'DMI havdata + Open-Meteo fallback',
+    point, flowPoints: flowPointsFromForecastRecord(forecastRecord, zonePoint(feature), generatedAt), provider: 'dmi', providerLabel: includeAtmosphere ? 'DMI Open Data' : 'DMI havdata + Open-Meteo fallback',
     modelSteps: { wind: w?.step ?? null, wave: wa?.step ?? null, ocean: o?.step ?? null },
     dmiCompleteness: completeness,
     current: {
@@ -1633,7 +1669,7 @@ function zoneFromDmiForecastCache(feature, record, generatedAt) {
   const remaining = (safeRecord.hourly ?? []).filter(item => Date.parse(item.time) >= Date.parse(generatedAt) - 30 * 60000);
   return {
     point: zonePoint(feature),
-    flowPoints: flowPointsFromForecastRecord(safeRecord, zonePoint(feature)),
+    flowPoints: flowPointsFromForecastRecord(safeRecord, zonePoint(feature), generatedAt),
     provider: 'dmi-cache',
     providerLabel: 'DMI 5-døgns prognosecache',
     modelSteps: { wind: selected.time, wave: selected.time, ocean: selected.time },

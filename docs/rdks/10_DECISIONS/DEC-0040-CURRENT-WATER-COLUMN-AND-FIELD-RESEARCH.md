@@ -19,6 +19,10 @@ Overfladestrøm er heller ikke automatisk det bedste mål for ravtransport. Rav 
 5. 0–3 km er foretrukket afstand. En gyldig celle mellem 3 og 5 km kan accepteres, når nærmere data ikke findes. Over 5 km er fail-closed og må ikke skabe pil, verificeret provenance eller scoreinput.
 6. Pilen står på den eksakte valgte DMI-koordinat. Gamle cacher uden denne semantik, lagidentitet eller aktuelt samplingpunkt må ikke videreføres som verificeret strøm.
 7. Kun strøm fra den verificerede DMI-GRIB-kæde må bruges aktivt. Den direkte ForecastEDR-positionstjeneste må fortsat reparere vandstand og overfladetemperatur, men dens strøm må ikke bruges, fordi svaret ikke dokumenterer den krævede fælles vandkolonne og lagidentitet. Open-Meteos overfladestrøm og enhver anden ekstern eller gammel fallbackstrøm holdes tilsvarende ude. Manglende verificeret bulkstrøm forbliver `missing` før både score og kort.
+8. Valget af dybeste gyldige lag foretages særskilt for hvert native forecasttidspunkt. DMI kan mangle et dybt lag ved ét tidspunkt og levere det igen senere; derfor må hele serien ikke låses til det lag, som tilfældigvis blev læst sidst.
+9. Mellemtimer må kun interpoleres, når begge omgivende native trin har samme modelkørsel, collection, samplingpunkt, gitterkoordinat og vertikallag. Et skift i lag eller vandkolonne giver et ærligt `missing`-gab mellem de native tider; vektorer fra forskellige dybder må aldrig blandes.
+10. Den viste pil bruger den viste/valgte times egen verificerede gitterkoordinat og lag. En anden forecasts times koordinat må ikke bruges som repræsentativ pilposition.
+11. Centralt reviewede kystdelspunkter skal bygges før DMI-sampling. Når et punkt flyttes, kasseres kun cachen for netop det ændrede samplingpunkt; uændrede punkter må genbruge deres dokumenterede cache, mens ændrede punkter forbliver `missing`, indtil de er samplet igen.
 
 ## Privat syvdøgnsopsamling
 

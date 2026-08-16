@@ -10,8 +10,16 @@ import {
 } from './lib/dmi-forecast-store.mjs';
 
 const generatedAt = '2026-07-24T12:00:00.000Z';
-const native = (component, collection, step, modelRun = generatedAt) => ({
-  [component]: { provider: 'dmi', collection, modelRun, nativeValidTime: step }
+const native = (component, collection, step, modelRun = generatedAt, overrides = {}) => ({
+  [component]: {
+    provider: 'dmi', collection, modelRun, nativeValidTime: step,
+    ...(component === 'current' ? {
+      gridPoint: [10.02, 56.01], samplingPoint: [10, 56],
+      verticalLayer: 'depthbelowsea:7', verticalLayerRankM: 7, distanceKm: 1.7,
+      vectorSelection: 'nearest-water-column-then-deepest-valid-layer', vectorSemanticsVersion: 2
+    } : {}),
+    ...overrides
+  }
 });
 const series = (parameter, mapper) => Array.from({ length: 130 }, (_, i) => ({
   step: new Date(Date.parse(generatedAt) + i * 3600000).toISOString(),
@@ -145,4 +153,22 @@ console.log('DMI 120-timers Forecast Store og Water Level Engine bestået.');
   const mixedIdentity = [mixedRuns[0], { step: laterRun, 'wind-speed-10m': 8, 'wind-dir-10m': 210 }];
   const identityGuarded = buildDmiForecastHourly({ wind: mixedIdentity, generatedAt, hours: 4 });
   assert.equal(identityGuarded.hourly[1].windSpeedMps, null, 'nyt identificeret trin må ikke interpoleres med gammel uidentificeret cache');
+}
+
+// 4.0.229 regression: DMI's dybeste gyldige lag kan variere mellem native
+// tidstrin. De eksakte trin skal bevares, men timerne imellem maa aldrig blande
+// to dybder eller to vandkolonner til en kunstig stroemvektor.
+{
+  const later = new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString();
+  const layerTransition = [
+    { step: generatedAt, 'current-u': 0.20, 'current-v': 0.05, provenance: native('current', 'dkss_idw', generatedAt, generatedAt, { verticalLayer: 'depthbelowsea:9', verticalLayerRankM: 9 }) },
+    { step: later, 'current-u': 0.05, 'current-v': 0.20, provenance: native('current', 'dkss_idw', later, generatedAt, { verticalLayer: 'surface:0', verticalLayerRankM: 0 }) }
+  ];
+  const guarded = buildDmiForecastHourly({ ocean: layerTransition, generatedAt, hours: 4, sourceCadenceMinutes: 180 });
+  assert.equal(guarded.hourly[0].currentUMps, 0.2);
+  assert.equal(guarded.hourly[0].sources.current.verticalLayer, 'depthbelowsea:9');
+  assert.equal(guarded.hourly[1].currentUMps, null, 'der maa ikke interpoleres paa tvaers af dybdelag');
+  assert.equal(guarded.hourly[2].currentVMps, null, 'lagovergangen skal vaere et aerligt datagab');
+  assert.equal(guarded.hourly[3].currentVMps, 0.2);
+  assert.equal(guarded.hourly[3].sources.current.verticalLayer, 'surface:0');
 }
