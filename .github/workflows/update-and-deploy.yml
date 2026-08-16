@@ -184,6 +184,8 @@ jobs:
           DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/deployed-dmi-bulk-cache.json
           CURRENT_FIELD_SHADOW_PATH: .cache/current-field-shadow.json
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
+          CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
+          CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
           WEATHER_USER_AGENT: "RavRadar/4.0.229 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 

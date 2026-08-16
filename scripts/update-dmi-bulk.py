@@ -55,6 +55,7 @@ DEPLOYED_FALLBACK_PATH = pathlib.Path(os.getenv("DMI_BULK_DEPLOYED_FALLBACK_PATH
 DIAGNOSTICS_JSON_PATH = ROOT / "data/diagnostics/dmi-ocean-diagnostics.json"
 DIAGNOSTICS_TEXT_PATH = ROOT / "data/diagnostics/dmi-ocean-summary.txt"
 RAW_DIR = pathlib.Path(os.getenv("DMI_BULK_RAW_DIR", str(ROOT / ".cache/dmi-grib")))
+CACHE_MANIFEST_NAME = "asset-manifest.json"
 CACHE_AUDIT_PATH = ROOT / "data/diagnostics/dmi-cache-audit.json"
 CURRENT_FIELD_SHADOW_PATH = pathlib.Path(os.getenv("CURRENT_FIELD_SHADOW_PATH", str(ROOT / ".cache/current-field-shadow.json")))
 CURRENT_FIELD_SHADOW_STATUS_PATH = ROOT / "data/diagnostics/current-field-shadow-status.json"
@@ -102,6 +103,9 @@ CURRENT_MAX_DISTANCE_KM = 5.0
 CURRENT_FIELD_SHADOW_PARTS_PER_RUN = max(1, int(os.getenv("CURRENT_FIELD_SHADOW_PARTS_PER_RUN", "15")))
 CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION = max(
     1, int(os.getenv("CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION", "5"))
+)
+CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN = max(
+    0, int(os.getenv("CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN", "3"))
 )
 COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw", "wam_nsb", "harmonie_dini_sf"]
 COLLECTION_FAMILY = {
@@ -378,7 +382,7 @@ def list_latest_assets(collection: str, preferred_run: str | None = None) -> tup
 
 def raw_cache_inventory() -> dict[str, Any]:
     RAW_DIR.mkdir(parents=True, exist_ok=True)
-    files = [path for path in RAW_DIR.iterdir() if path.is_file()]
+    files = [path for path in RAW_DIR.iterdir() if path.is_file() and path.name != CACHE_MANIFEST_NAME]
     rows = []
     for path in files:
         try:
@@ -395,20 +399,89 @@ def write_cache_audit(before: dict[str, Any], after: dict[str, Any], removed_fil
     CACHE_AUDIT_PATH.write_text(json.dumps({
         "schemaVersion": 1,
         "generatedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        "policy": {"maxBytes": RAW_CACHE_MAX_BYTES, "strategy": "least-recently-used; reused files are touched before pruning"},
+        "policy": {"maxBytes": RAW_CACHE_MAX_BYTES, "strategy": "non-reserved least-recently-used first; one eligible marine replay file per model area retained until hard ceiling"},
         "before": before, "after": after,
         "removedFiles": removed_files, "removedBytes": removed_bytes
     }, ensure_ascii=False, indent=2) + "\n", "utf-8")
 
 
+def raw_cache_manifest_path() -> pathlib.Path:
+    return RAW_DIR / CACHE_MANIFEST_NAME
+
+
+def load_raw_cache_manifest() -> dict[str, Any]:
+    try:
+        document = json.loads(raw_cache_manifest_path().read_text("utf-8"))
+    except Exception:
+        return {"schemaVersion": 1, "assets": {}}
+    if document.get("schemaVersion") != 1 or not isinstance(document.get("assets"), dict):
+        return {"schemaVersion": 1, "assets": {}}
+    return document
+
+
+def save_raw_cache_manifest(document: dict[str, Any]) -> None:
+    RAW_DIR.mkdir(parents=True, exist_ok=True)
+    path = raw_cache_manifest_path()
+    temporary = path.with_suffix(".json.tmp")
+    temporary.write_text(json.dumps(document, ensure_ascii=False, indent=2) + "\n", "utf-8")
+    temporary.replace(path)
+
+
+def register_raw_cache_asset(
+    path: pathlib.Path,
+    href: str,
+    collection: str | None,
+    model_run: str | None,
+    valid_time: str | None,
+) -> None:
+    if not collection or not model_run or not valid_time:
+        return
+    document = load_raw_cache_manifest()
+    assets = document.setdefault("assets", {})
+    assets[path.name] = {
+        "canonicalHref": href.split("?", 1)[0].split("#", 1)[0],
+        "collection": collection,
+        "modelRun": model_run,
+        "validTime": valid_time,
+        "bytes": path.stat().st_size,
+        "lastUsedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+    }
+    save_raw_cache_manifest(document)
+
+
+def reserved_current_replay_files(document: dict[str, Any], now_epoch: float | None = None) -> set[str]:
+    """Reserve one current/future marine GRIB per model area from LRU pruning."""
+    reference = time.time() if now_epoch is None else float(now_epoch)
+    by_collection: dict[str, list[tuple[float, str]]] = {}
+    for name, row in (document.get("assets") or {}).items():
+        if row.get("collection") not in MARINE_COLLECTIONS:
+            continue
+        valid_epoch = epoch(row.get("validTime"))
+        if valid_epoch < reference - 3600 or valid_epoch > reference + 12 * 3600:
+            continue
+        path = RAW_DIR / str(name)
+        if not path.is_file():
+            continue
+        by_collection.setdefault(str(row["collection"]), []).append((valid_epoch, str(name)))
+    return {
+        max(rows, key=lambda item: (item[0], item[1]))[1]
+        for rows in by_collection.values() if rows
+    }
+
+
 def prune_raw_cache(max_bytes: int = RAW_CACHE_MAX_BYTES) -> dict[str, int]:
     RAW_DIR.mkdir(parents=True, exist_ok=True)
-    files = [path for path in RAW_DIR.iterdir() if path.is_file()]
+    manifest = load_raw_cache_manifest()
+    files = [path for path in RAW_DIR.iterdir() if path.is_file() and path.name != CACHE_MANIFEST_NAME]
     total = sum(path.stat().st_size for path in files)
     removed_files = 0
     removed_bytes = 0
     if total > max_bytes:
-        for path in sorted(files, key=lambda item: item.stat().st_mtime):
+        reserved = reserved_current_replay_files(manifest)
+        # Non-reserved files are removed first.  The reserve is still bounded by
+        # the hard byte ceiling; fail-closed research collection must never make
+        # the workflow cache unbounded.
+        for path in sorted(files, key=lambda item: (item.name in reserved, item.stat().st_mtime)):
             try:
                 size = path.stat().st_size
                 path.unlink(missing_ok=True)
@@ -419,14 +492,32 @@ def prune_raw_cache(max_bytes: int = RAW_CACHE_MAX_BYTES) -> dict[str, int]:
                 continue
             if total <= max_bytes:
                 break
+    existing = {path.name for path in RAW_DIR.iterdir() if path.is_file()}
+    manifest["assets"] = {
+        name: row for name, row in (manifest.get("assets") or {}).items()
+        if name in existing
+    }
+    save_raw_cache_manifest(manifest)
     return {"removedFiles": removed_files, "removedBytes": removed_bytes}
 
 def cached_asset_path(href: str) -> pathlib.Path:
-    suffix = pathlib.Path(href.split("?", 1)[0]).suffix or ".grib"
-    return RAW_DIR / f"{hashlib.sha256(href.encode()).hexdigest()[:24]}{suffix}"
+    # The object path is the stable asset identity.  Ignore query credentials if
+    # DMI adds them in the future, so the same immutable GRIB cannot split into
+    # multiple cache entries.
+    canonical_href = href.split("?", 1)[0].split("#", 1)[0]
+    suffix = pathlib.Path(canonical_href).suffix or ".grib"
+    return RAW_DIR / f"{hashlib.sha256(canonical_href.encode()).hexdigest()[:24]}{suffix}"
 
 
-def download_asset(href: str, expected_size: int | None, budget: dict[str, int]) -> tuple[pathlib.Path, bool]:
+def download_asset(
+    href: str,
+    expected_size: int | None,
+    budget: dict[str, int],
+    *,
+    collection: str | None = None,
+    model_run: str | None = None,
+    valid_time: str | None = None,
+) -> tuple[pathlib.Path, bool]:
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     path = cached_asset_path(href)
     if path.exists() and path.stat().st_size > 0:
@@ -434,6 +525,7 @@ def download_asset(href: str, expected_size: int | None, budget: dict[str, int])
             os.utime(path, None)
         except OSError:
             pass
+        register_raw_cache_asset(path, href, collection, model_run, valid_time)
         return path, True
     if expected_size and budget["bytes"] + expected_size > MAX_DOWNLOAD_BYTES:
         raise RuntimeError("DMI bulk download budget would be exceeded")
@@ -453,6 +545,7 @@ def download_asset(href: str, expected_size: int | None, budget: dict[str, int])
                     raise RuntimeError("DMI bulk download budget exceeded during asset download")
                 tmp.write(chunk)
     tmp_path.replace(path)
+    register_raw_cache_asset(path, href, collection, model_run, valid_time)
     return path, False
 
 
@@ -1873,14 +1966,18 @@ def replay_current_field_shadow_from_cache(
     research_targets: list[dict[str, Any]],
     current_shadow: dict[str, Any],
     generated: str,
+    budget: dict[str, int],
 ) -> dict[str, Any]:
-    """Advance the private rotation from cached GRIBs without public mutation.
+    """Advance the private rotation without public output mutation.
 
     A model generation is normally processed only once.  Without this bounded
     replay, the research cursor would move only every time DMI publishes a new
     generation, which is too slow for a complete geographic sweep inside the
-    seven-day retention window.  Only files already restored in ``RAW_DIR`` are
-    read; no network download and no public zone output are allowed here.
+    seven-day retention window.  Stable cached files are preferred.  If the raw
+    cache has no current marine asset (for example while migrating from the old
+    signed-URL cache keys), at most one bounded bootstrap asset per model area is
+    downloaded inside the existing global DMI byte budget.  Processing still
+    receives only private research targets and an isolated scratch output.
     """
     summary: dict[str, Any] = {
         "attempted": False,
@@ -1891,6 +1988,9 @@ def replay_current_field_shadow_from_cache(
         "messagesSeen": 0,
         "zoneLookups": 0,
         "interrupted": False,
+        "bootstrapDownloads": 0,
+        "bootstrapDownloadedBytes": 0,
+        "errors": [],
     }
     if not research_targets:
         summary["reason"] = "no-research-targets"
@@ -1900,6 +2000,7 @@ def replay_current_field_shadow_from_cache(
         return summary
 
     scratch_output: dict[str, Any] = {"generatedAt": generated, "zones": {}}
+    bootstrap_remaining = CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN
     for collection in sorted(MARINE_COLLECTIONS, key=COLLECTION_ORDER.index):
         entry = catalog.get(collection) or {}
         model_run = str(entry.get("modelRun") or "")
@@ -1908,18 +2009,56 @@ def replay_current_field_shadow_from_cache(
             generated,
             CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION,
         )
-        cached = [asset for asset in candidates if cached_asset_path(str(asset.get("href") or "")).is_file()]
-        if not model_run or not cached:
+        resolved: list[tuple[dict[str, Any], pathlib.Path]] = [
+            (asset, cached_asset_path(str(asset.get("href") or "")))
+            for asset in candidates
+            if cached_asset_path(str(asset.get("href") or "")).is_file()
+        ]
+        if model_run and not resolved and candidates and bootstrap_remaining > 0 and not should_stop_work():
+            # Prefer the far edge of the accepted +12 h research window.  It
+            # remains eligible for many subsequent 15-minute rotations, so a
+            # legacy-cache bootstrap cannot turn into repeated downloads.
+            asset = max(candidates, key=lambda row: epoch(row.get("valid")))
+            before_bytes = int(budget.get("bytes") or 0)
+            try:
+                path, reused = download_asset(
+                    str(asset.get("href") or ""),
+                    asset.get("size"),
+                    budget,
+                    collection=collection,
+                    model_run=model_run,
+                    valid_time=str(asset.get("valid") or ""),
+                )
+                resolved.append((asset, path))
+                bootstrap_remaining -= 1
+                if not reused:
+                    summary["bootstrapDownloads"] += 1
+                    summary["bootstrapDownloadedBytes"] += max(
+                        0, int(budget.get("bytes") or 0) - before_bytes
+                    )
+            except Exception as exc:
+                summary["errors"].append({"collection": collection, "message": str(exc)[:500]})
+        if not model_run or not resolved:
             continue
         summary["attempted"] = True
         summary["collections"].append(collection)
-        summary["cachedAssetsAvailable"] += len(cached)
-        for asset in cached:
+        summary["cachedAssetsAvailable"] += len(resolved)
+        for asset, path in resolved:
             if should_stop_work():
                 summary["interrupted"] = True
                 summary["reason"] = "runtime-budget-reached"
                 return summary
-            path = cached_asset_path(str(asset["href"]))
+            try:
+                os.utime(path, None)
+            except OSError:
+                pass
+            register_raw_cache_asset(
+                path,
+                str(asset.get("href") or ""),
+                collection,
+                model_run,
+                str(asset.get("valid") or ""),
+            )
             replay_diagnostics: dict[str, Any] = {
                 "batchedGridReads": 0,
                 "messagesSeen": 0,
@@ -1948,7 +2087,7 @@ def replay_current_field_shadow_from_cache(
                 summary["assetsCompleted"] += 1
 
     if not summary["attempted"]:
-        summary["reason"] = "no-eligible-cached-current-assets"
+        summary["reason"] = "no-eligible-cached-current-assets-or-bootstrap"
     elif not summary["assetsCompleted"]:
         summary["reason"] = "cached-assets-without-current-pair"
     else:
@@ -2199,11 +2338,31 @@ def main() -> int:
     scheduled, schedule_coverage = collection_schedule(previous, active_zones_config)
     result["diagnostics"]["scheduledCollections"] = scheduled
     result["diagnostics"]["scheduleCoverageBeforeRun"] = schedule_coverage
+
+    # Prefetch the small STAC inventories once, but leave all GRIB download/time
+    # capacity to the public builder first.  If no fresh marine asset covers the
+    # private selection, the isolated replay may use only the budget left over at
+    # the end of the normal build.  Research must never starve public weather.
+    prefetched_marine: dict[str, tuple[str | None, list[dict[str, Any]], dict[str, Any]]] = {}
+    research_replay_catalog: dict[str, dict[str, Any]] = {}
+    if research_targets:
+        for collection in sorted(MARINE_COLLECTIONS, key=COLLECTION_ORDER.index):
+            try:
+                previous_run = (previous.get("runs") or {}).get(collection) or {}
+                run, assets, stac_stats = list_latest_assets(collection, previous_run.get("referenceTime"))
+                prefetched_marine[collection] = (run, assets, stac_stats)
+                research_replay_catalog[collection] = {"modelRun": run, "assets": assets}
+            except Exception as exc:
+                result["diagnostics"].setdefault("currentFieldShadowPrefetchErrors", []).append({
+                    "collection": collection,
+                    "message": str(exc)[:500],
+                })
+    replay_summary: dict[str, Any] = {"samplesWritten": 0}
+    research_rotation_completed = False
+
     fresh_zone_ids: set[str] = set()
     fresh_marine_zone_ids: set[str] = set()
     productive_collections = 0
-    research_replay_catalog: dict[str, dict[str, Any]] = {}
-    research_rotation_completed = False
 
     for collection in scheduled:
         if productive_collections >= COLLECTIONS_PER_RUN:
@@ -2218,7 +2377,10 @@ def main() -> int:
         state["lastAttemptAt"] = generated
         try:
             previous_run = (previous.get("runs") or {}).get(collection) or {}
-            run, assets, stac_stats = list_latest_assets(collection, previous_run.get("referenceTime"))
+            if collection in prefetched_marine:
+                run, assets, stac_stats = prefetched_marine[collection]
+            else:
+                run, assets, stac_stats = list_latest_assets(collection, previous_run.get("referenceTime"))
             result["diagnostics"]["stacByCollection"][collection] = stac_stats
             if not assets:
                 raise RuntimeError("no forecast-step GRIB assets found in latest STAC run")
@@ -2258,7 +2420,14 @@ def main() -> int:
                     budget_stop = "bulk runtime budget reached"
                     break
                 try:
-                    path, reused = download_asset(asset["href"], asset.get("size"), budget)
+                    path, reused = download_asset(
+                        asset["href"],
+                        asset.get("size"),
+                        budget,
+                        collection=collection,
+                        model_run=run,
+                        valid_time=asset["valid"],
+                    )
                 except RuntimeError as exc:
                     if "budget" in str(exc).lower():
                         budget_stop = str(exc)
@@ -2278,8 +2447,9 @@ def main() -> int:
                     result["diagnostics"],
                     current_shadow,
                 )
-                research_run_metrics["samplesWrittenThisRun"] = int(
-                    result["diagnostics"].get("currentFieldShadowSamplesWritten") or 0
+                research_run_metrics["samplesWrittenThisRun"] = (
+                    int(replay_summary.get("samplesWritten") or 0)
+                    + int(result["diagnostics"].get("currentFieldShadowSamplesWritten") or 0)
                 )
                 if (
                     collection in MARINE_COLLECTIONS
@@ -2377,6 +2547,8 @@ def main() -> int:
             "reason": "fresh-marine-asset-covered-selection",
             "assetsCompleted": 0,
             "samplesWritten": 0,
+            "bootstrapDownloads": 0,
+            "bootstrapDownloadedBytes": 0,
         }
     else:
         replay_summary = replay_current_field_shadow_from_cache(
@@ -2384,14 +2556,11 @@ def main() -> int:
             research_targets,
             current_shadow,
             generated,
+            budget,
         )
         result["diagnostics"]["currentFieldShadowCachedReplay"] = replay_summary
-        research_run_metrics["cachedReplayAssetsThisRun"] = int(
-            replay_summary.get("assetsCompleted") or 0
-        )
-        research_run_metrics["samplesWrittenThisRun"] = int(
-            research_run_metrics.get("samplesWrittenThisRun") or 0
-        ) + int(replay_summary.get("samplesWritten") or 0)
+        research_run_metrics["cachedReplayAssetsThisRun"] = int(replay_summary.get("assetsCompleted") or 0)
+        research_run_metrics["samplesWrittenThisRun"] = int(replay_summary.get("samplesWritten") or 0)
         if int(replay_summary.get("assetsCompleted") or 0) > 0 and not replay_summary.get("interrupted"):
             current_shadow["cursor"] = next_research_cursor
             current_shadow["lastSelectedPartIds"] = selected_research_part_ids

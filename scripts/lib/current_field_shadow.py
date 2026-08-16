@@ -141,7 +141,17 @@ def eligible_replay_assets(
         if lower <= _epoch(asset.get("valid")) <= upper
     ]
     eligible.sort(key=lambda asset: (_epoch(asset.get("valid")), str(asset.get("href") or "")))
-    return eligible[:max(1, int(max_assets))]
+    limit = max(1, int(max_assets))
+    if len(eligible) <= limit:
+        return eligible
+    if limit == 1:
+        return [eligible[-1]]
+    # Preserve the near-term and far edge of the honest +12 h window instead of
+    # selecting only the first hourly steps.  A small evenly spaced set gives
+    # better research spread and lets one retained far-edge asset remain usable
+    # across many ordinary workflow runs.
+    indices = [round(index * (len(eligible) - 1) / (limit - 1)) for index in range(limit)]
+    return [eligible[index] for index in indices]
 
 
 def _valid_point(value: Any) -> bool:
