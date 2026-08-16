@@ -164,19 +164,11 @@ def _valid_point(value: Any) -> bool:
 
 def representative_profile(choices: list[dict[str, Any]]) -> dict[str, Any] | None:
     """Return representative layers at the single nearest shared U/V column."""
-    if not choices:
+    resolved = _nearest_shared_uv_column(choices)
+    if resolved is None:
         return None
-    nearest = min(
-        choices,
-        key=lambda row: (float(row["distanceKm"]), tuple(row["pointKey"])),
-    )
+    nearest, layers = resolved
     if float(nearest["distanceKm"]) > MAX_GRID_DISTANCE_KM:
-        return None
-    point_key = tuple(nearest["pointKey"])
-    column = [row for row in choices if tuple(row["pointKey"]) == point_key]
-    by_layer = {str(row["layerKey"]): row for row in column}
-    layers = sorted(by_layer.values(), key=lambda row: (float(row["layerRank"]), str(row["layerKey"])))
-    if not layers:
         return None
     surface = next((row for row in layers if str(row["layerKey"]).startswith("surface:")), None)
     top = surface or layers[0]
@@ -211,6 +203,77 @@ def representative_profile(choices: list[dict[str, Any]]) -> dict[str, Any] | No
     }
 
 
+def _nearest_shared_uv_column(
+    choices: list[dict[str, Any]],
+) -> tuple[dict[str, Any], list[dict[str, Any]]] | None:
+    """Resolve the nearest exact U/V column without applying the public 5 km gate."""
+    if not choices:
+        return None
+    nearest = min(
+        choices,
+        key=lambda row: (float(row["distanceKm"]), tuple(row["pointKey"])),
+    )
+    point_key = tuple(nearest["pointKey"])
+    column = [row for row in choices if tuple(row["pointKey"]) == point_key]
+    by_layer = {str(row["layerKey"]): row for row in column}
+    layers = sorted(
+        by_layer.values(),
+        key=lambda row: (float(row["layerRank"]), str(row["layerKey"])),
+    )
+    return (nearest, layers) if layers else None
+
+
+def nearest_shared_uv_evidence(
+    choices: list[dict[str, Any]],
+    target_point: list[float],
+) -> dict[str, Any] | None:
+    """Describe exact paired U/V coverage without exposing or accepting its values.
+
+    This evidence may be farther than the public 5 km limit.  It is used only to
+    distinguish a reviewable point-placement edge from a structural model gap.
+    No U/V values are returned and :func:`representative_profile` still rejects
+    every column beyond five kilometres.
+    """
+    if not choices:
+        return None
+    columns: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
+    for row in choices:
+        columns.setdefault(tuple(row["pointKey"]), []).append(row)
+    _point_key, column = min(
+        columns.items(),
+        key=lambda item: (
+            haversine_km(
+                target_point,
+                [float(item[1][0]["first"]["longitude"]), float(item[1][0]["first"]["latitude"])],
+            ),
+            item[0],
+        ),
+    )
+    by_layer = {str(row["layerKey"]): row for row in column}
+    layers = sorted(
+        by_layer.values(),
+        key=lambda row: (float(row["layerRank"]), str(row["layerKey"])),
+    )
+    if not layers:
+        return None
+    nearest = layers[0]
+    grid_point = [
+        round(float(nearest["first"]["longitude"]), 7),
+        round(float(nearest["first"]["latitude"]), 7),
+    ]
+    distance = haversine_km(target_point, grid_point)
+    deepest = layers[-1]
+    return {
+        "gridPoint": grid_point,
+        "distanceKm": round(distance, 5),
+        "withinPreferred3Km": distance <= 3.0,
+        "withinAccepted5Km": distance <= MAX_GRID_DISTANCE_KM,
+        "availableLayerCount": len(layers),
+        "deepestAvailableLayer": str(deepest["layerKey"]),
+        "deepestAvailableLayerRankM": round(float(deepest["layerRank"]), 3),
+    }
+
+
 def empty_document() -> dict[str, Any]:
     return {
         "schemaVersion": SCHEMA_VERSION,
@@ -221,6 +284,7 @@ def empty_document() -> dict[str, Any]:
         "layerPolicy": "nearest-water-column; retain surface/top-available/middle/bottom layers",
         "cursor": 0,
         "anchors": {},
+        "coverageAudits": {},
     }
 
 
@@ -235,7 +299,73 @@ def load_document(path: pathlib.Path) -> dict[str, Any]:
     value["scoreImpact"] = False
     value["publicRuntime"] = False
     value["distanceBandsKm"] = list(DISTANCE_BANDS_KM)
+    if not isinstance(value.get("coverageAudits"), dict):
+        value["coverageAudits"] = {}
     return value
+
+
+def _coverage_audit_for_target(
+    document: dict[str, Any],
+    target_id: str,
+    target: dict[str, Any],
+) -> dict[str, Any]:
+    audits = document.setdefault("coverageAudits", {})
+    identity = {
+        "partId": target.get("partId"),
+        "parentZoneId": target.get("parentZoneId"),
+        "bandKm": target.get("bandKm"),
+        "targetPoint": target.get("targetPoint"),
+        "sourceWaterPoint": target.get("sourceWaterPoint"),
+        "seawardBearingDeg": target.get("seawardBearingDeg"),
+    }
+    existing = audits.get(target_id)
+    if (
+        not isinstance(existing, dict)
+        or existing.get("targetPoint") != identity["targetPoint"]
+        or existing.get("sourceWaterPoint") != identity["sourceWaterPoint"]
+    ):
+        existing = {**identity, "observations": {}}
+        audits[target_id] = existing
+    return existing
+
+
+def _record_coverage_observation(
+    document: dict[str, Any],
+    target_id: str,
+    target: dict[str, Any],
+    choices: list[dict[str, Any]],
+    collection: str,
+    model_run: str,
+    valid_time: str,
+    captured_at: str,
+) -> None:
+    audit = _coverage_audit_for_target(document, target_id, target)
+    observations = audit.setdefault("observations", {})
+    previous = observations.get(collection) or {}
+    same_capture = (
+        previous.get("capturedAt") == captured_at
+        and previous.get("modelRun") == model_run
+    )
+    prior_evidence = previous.get("nearestSharedUv") if same_capture else None
+    evidence = nearest_shared_uv_evidence(choices, target["targetPoint"])
+    if evidence is not None:
+        evidence = {**evidence, "validTime": valid_time}
+    if (
+        isinstance(prior_evidence, dict)
+        and (
+            evidence is None
+            or float(prior_evidence.get("distanceKm") or math.inf)
+            <= float(evidence.get("distanceKm") or math.inf)
+        )
+    ):
+        evidence = prior_evidence
+    observations[collection] = {
+        "capturedAt": captured_at,
+        "modelRun": model_run,
+        "latestValidTime": valid_time,
+        "status": "shared-uv-observed" if evidence is not None else "no-shared-uv-observed",
+        "nearestSharedUv": evidence,
+    }
 
 
 def record_profiles(
@@ -253,10 +383,20 @@ def record_profiles(
         return 0
     written = 0
     anchors = document.setdefault("anchors", {})
-    for target_id, choices in choices_by_target.items():
-        target = target_by_id.get(target_id)
+    for target_id, target in target_by_id.items():
+        choices = choices_by_target.get(target_id) or []
+        _record_coverage_observation(
+            document,
+            target_id,
+            target,
+            choices,
+            collection,
+            model_run,
+            valid_time,
+            captured_at,
+        )
         profile = representative_profile(choices)
-        if not target or not profile:
+        if not profile:
             continue
         if haversine_km(target["targetPoint"], profile["gridPoint"]) > MAX_GRID_DISTANCE_KM + 0.01:
             continue
@@ -303,6 +443,17 @@ def prune(document: dict[str, Any], now_iso: str) -> dict[str, int]:
         else:
             document["anchors"].pop(anchor_id, None)
             removed_anchors += 1
+    for audit_id in list((document.get("coverageAudits") or {}).keys()):
+        audit = document["coverageAudits"][audit_id]
+        observations = {
+            collection: row
+            for collection, row in (audit.get("observations") or {}).items()
+            if _epoch(row.get("capturedAt")) >= cutoff
+        }
+        if observations:
+            audit["observations"] = observations
+        else:
+            document["coverageAudits"].pop(audit_id, None)
     document["generatedAt"] = now_iso
     return {"removedSamples": removed_samples, "removedAnchors": removed_anchors}
 
@@ -323,6 +474,30 @@ def status(
     parts = {anchor.get("partId") for anchor in (document.get("anchors") or {}).values() if anchor.get("partId")}
     captured = sorted(row.get("capturedAt") for row in samples if row.get("capturedAt"))
     metrics = run_metrics or {}
+    zero_band_audits = [
+        audit for audit in (document.get("coverageAudits") or {}).values()
+        if float(audit.get("bandKm") or 0.0) == 0.0
+    ]
+    observed_coverage_parts = set()
+    accepted_coverage_parts = set()
+    beyond_coverage_parts = set()
+    no_pair_coverage_parts = set()
+    for audit in zero_band_audits:
+        observations = list((audit.get("observations") or {}).values())
+        if not observations or not audit.get("partId"):
+            continue
+        part_id = audit["partId"]
+        observed_coverage_parts.add(part_id)
+        evidence = [
+            row.get("nearestSharedUv") for row in observations
+            if isinstance(row.get("nearestSharedUv"), dict)
+        ]
+        if any(bool(row.get("withinAccepted5Km")) for row in evidence):
+            accepted_coverage_parts.add(part_id)
+        elif evidence:
+            beyond_coverage_parts.add(part_id)
+        else:
+            no_pair_coverage_parts.add(part_id)
     return {
         "schemaVersion": 1,
         "generatedAt": document.get("generatedAt") or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -340,4 +515,171 @@ def status(
         "rotationAdvancedThisRun": bool(metrics.get("rotationAdvancedThisRun")),
         "samplesWrittenThisRun": int(metrics.get("samplesWrittenThisRun") or 0),
         "cachedReplayAssetsThisRun": int(metrics.get("cachedReplayAssetsThisRun") or 0),
+        "coveragePartsVisited": len(observed_coverage_parts),
+        "coveragePartsWithSharedUvWithin5Km": len(accepted_coverage_parts),
+        "coveragePartsWithOnlyDistantSharedUv": len(beyond_coverage_parts),
+        "coveragePartsWithNoSharedUvObserved": len(no_pair_coverage_parts),
+    }
+
+
+def _runtime_has_current(zone: dict[str, Any] | None) -> bool:
+    if not isinstance(zone, dict):
+        return False
+    return any(
+        isinstance(hour.get("current-u"), (int, float))
+        and math.isfinite(float(hour["current-u"]))
+        and isinstance(hour.get("current-v"), (int, float))
+        and math.isfinite(float(hour["current-v"]))
+        for hour in (zone.get("hourly") or {}).values()
+    )
+
+
+def owner_coverage_audit(
+    document: dict[str, Any],
+    part_document: dict[str, Any],
+    bulk_document: dict[str, Any],
+    zones_geojson: dict[str, Any],
+    generated_at: str,
+) -> dict[str, Any]:
+    """Build a support-only owner action list without copying current values."""
+    bulk_zones = bulk_document.get("zones") or {}
+    part_rows: list[tuple[str, str, dict[str, Any]]] = []
+    for parent_zone_id, rows in sorted((part_document.get("zones") or {}).items()):
+        for part in rows or []:
+            part_id = str(part.get("partId") or "")
+            if part_id:
+                part_rows.append((str(parent_zone_id), part_id, part))
+
+    runtime_part_ids = {
+        part_id for _parent, part_id, _part in part_rows
+        if _runtime_has_current(bulk_zones.get(f"PART::{part_id}"))
+    }
+    missing_parts = []
+    classifications: dict[str, int] = {}
+    visited_missing_parts = 0
+    audits = document.get("coverageAudits") or {}
+    for parent_zone_id, part_id, part in part_rows:
+        if part_id in runtime_part_ids:
+            continue
+        audit = audits.get(f"RESEARCH::{part_id}::0km")
+        observations = list((audit or {}).get("observations", {}).values())
+        evidence_rows = [
+            {"collection": collection, **row["nearestSharedUv"]}
+            for collection, row in (audit or {}).get("observations", {}).items()
+            if isinstance(row.get("nearestSharedUv"), dict)
+        ]
+        evidence_rows.sort(key=lambda row: (float(row["distanceKm"]), str(row["collection"])))
+        evidence = evidence_rows[0] if evidence_rows else None
+        if audit and observations:
+            visited_missing_parts += 1
+        if not audit or not observations:
+            classification = "not-yet-visited"
+            advice = "Afvent den private rotationsmåling; flyt ikke punktet på dette grundlag."
+        elif evidence is None:
+            classification = "no-shared-uv-observed"
+            advice = "Ingen fælles U/V-vandsøjle er observeret; jagt ikke en ukendt gittercelle manuelt."
+        elif float(evidence["distanceKm"]) <= MAX_GRID_DISTANCE_KM:
+            classification = "within-5km-but-runtime-missing"
+            advice = "Punktet ligger inden for grænsen; undersøg tids-/cachekæden i stedet for at flytte det."
+        elif float(evidence["distanceKm"]) <= 8.0:
+            classification = "borderline-5-to-8km"
+            advice = "Kun en lille optisk punktjustering kan overvejes, hvis hav/land-geometrien stadig er fysisk korrekt."
+        else:
+            classification = "structural-model-gap-over-8km"
+            advice = "Flyt ikke kystpunktet flere kilometer for at jagte modellen; dette er et model-/politikspørgsmål."
+        classifications[classification] = classifications.get(classification, 0) + 1
+        missing_parts.append({
+            "partId": part_id,
+            "parentZoneId": parent_zone_id,
+            "name": part.get("name"),
+            "sourceWaterPoint": part.get("waterPoint"),
+            "classification": classification,
+            "ownerAdvice": advice,
+            "nearestSharedUv": evidence,
+            "minimumDistanceReductionTo5Km": (
+                round(max(0.0, float(evidence["distanceKm"]) - MAX_GRID_DISTANCE_KM), 3)
+                if evidence is not None else None
+            ),
+        })
+
+    part_rows_by_zone: dict[str, list[tuple[str, dict[str, Any]]]] = {}
+    for parent_zone_id, part_id, part in part_rows:
+        part_rows_by_zone.setdefault(parent_zone_id, []).append((part_id, part))
+    feature_by_id = {
+        str((feature.get("properties") or {}).get("id")): feature
+        for feature in (zones_geojson.get("features") or [])
+        if (feature.get("properties") or {}).get("id")
+    }
+    missing_main_zones = []
+    main_classifications: dict[str, int] = {}
+    runtime_main_ids = {
+        zone_id for zone_id in feature_by_id
+        if _runtime_has_current(bulk_zones.get(zone_id))
+    }
+    for zone_id, feature in sorted(feature_by_id.items()):
+        if zone_id in runtime_main_ids:
+            continue
+        local_rows = part_rows_by_zone.get(zone_id, [])
+        verified_references = []
+        for part_id, part in local_rows:
+            if part_id not in runtime_part_ids:
+                continue
+            runtime = bulk_zones.get(f"PART::{part_id}") or {}
+            grid = runtime.get("gridPoints") or {}
+            current_u = grid.get("current-u") or {}
+            current_v = grid.get("current-v") or {}
+            if (
+                current_u.get("latitude") != current_v.get("latitude")
+                or current_u.get("longitude") != current_v.get("longitude")
+            ):
+                continue
+            verified_references.append({
+                "partId": part_id,
+                "name": part.get("name"),
+                "waterPoint": part.get("waterPoint"),
+                "verifiedGridPoint": [current_u.get("longitude"), current_u.get("latitude")],
+                "distanceKm": current_u.get("distanceKm"),
+                "verticalLayer": current_u.get("verticalLayer"),
+            })
+        if verified_references:
+            classification = "main-point-review-supported-by-local-current"
+            advice = "Hovedpunktet kan optisk sammenholdes med de verificerede lokale referencepunkter; intet flyttes automatisk."
+        else:
+            classification = "zone-wide-model-gap"
+            advice = "Ingen lokal del i zonen har verificeret strøm; en hovedpunktsflytning alene løser ikke den lokale dækning."
+        main_classifications[classification] = main_classifications.get(classification, 0) + 1
+        props = feature.get("properties") or {}
+        missing_main_zones.append({
+            "zoneId": zone_id,
+            "name": props.get("name"),
+            "samplingPoint": (bulk_zones.get(zone_id) or {}).get("samplingPoint"),
+            "classification": classification,
+            "ownerAdvice": advice,
+            "verifiedLocalPartCount": len(verified_references),
+            "localPartCount": len(local_rows),
+            "verifiedLocalReferences": verified_references,
+        })
+
+    return {
+        "schemaVersion": 1,
+        "generatedAt": generated_at,
+        "source": "private seven-day current-field coverage observations plus exact public runtime provenance",
+        "scoreImpact": False,
+        "publicRuntime": False,
+        "automaticPointMovement": False,
+        "currentPreferredDistanceKm": 3.0,
+        "currentMaxDistanceKm": MAX_GRID_DISTANCE_KM,
+        "summary": {
+            "mainZones": len(feature_by_id),
+            "runtimeVerifiedMainZones": len(runtime_main_ids),
+            "runtimeMissingMainZones": len(missing_main_zones),
+            "mainMissingClassifications": main_classifications,
+            "coastalParts": len(part_rows),
+            "runtimeVerifiedCoastalParts": len(runtime_part_ids),
+            "runtimeMissingCoastalParts": len(missing_parts),
+            "visitedMissingCoastalParts": visited_missing_parts,
+            "missingPartClassifications": classifications,
+        },
+        "missingMainZones": missing_main_zones,
+        "missingCoastalParts": missing_parts,
     }

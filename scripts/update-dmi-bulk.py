@@ -25,6 +25,7 @@ from lib.current_field_shadow import (
     build_rotating_targets,
     eligible_replay_assets,
     load_document as load_current_field_shadow,
+    owner_coverage_audit,
     prune as prune_current_field_shadow,
     record_profiles as record_current_field_profiles,
     save_document as save_current_field_shadow,
@@ -59,6 +60,7 @@ CACHE_MANIFEST_NAME = "asset-manifest.json"
 CACHE_AUDIT_PATH = ROOT / "data/diagnostics/dmi-cache-audit.json"
 CURRENT_FIELD_SHADOW_PATH = pathlib.Path(os.getenv("CURRENT_FIELD_SHADOW_PATH", str(ROOT / ".cache/current-field-shadow.json")))
 CURRENT_FIELD_SHADOW_STATUS_PATH = ROOT / "data/diagnostics/current-field-shadow-status.json"
+CURRENT_COVERAGE_OWNER_AUDIT_PATH = ROOT / "data/diagnostics/current-coverage-owner-audit.json"
 RAW_CACHE_MAX_BYTES = max(256 * 1024 * 1024, int(float(os.getenv("DMI_BULK_RAW_CACHE_MAX_MB", "4096")) * 1024 * 1024))
 STAC_ROOT = os.getenv("DMI_STAC_ROOT", "https://opendataapi.dmi.dk/v1/forecastdata")
 HOURS = max(1, int(os.getenv("DMI_BULK_HOURS", "120")))
@@ -1237,7 +1239,12 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                     break
             finally:
                 codes_release(gid)
-    if current_shadow is not None and research_vector_choices:
+    if (
+        current_shadow is not None
+        and research_target_by_id
+        and not interrupted
+        and {"current-u", "current-v"} <= found
+    ):
         written = record_current_field_profiles(
             current_shadow,
             research_target_by_id,
@@ -1961,6 +1968,28 @@ def write_current_field_shadow_checkpoint(
     return summary
 
 
+def write_current_coverage_owner_audit(
+    document: dict[str, Any],
+    part_document: dict[str, Any],
+    bulk_document: dict[str, Any],
+    zones_geojson: dict[str, Any],
+    generated_at: str,
+) -> dict[str, Any]:
+    """Persist the private support-only owner action list outside Pages."""
+    report = owner_coverage_audit(
+        document,
+        part_document,
+        bulk_document,
+        zones_geojson,
+        generated_at,
+    )
+    CURRENT_COVERAGE_OWNER_AUDIT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    temporary = CURRENT_COVERAGE_OWNER_AUDIT_PATH.with_suffix(".json.tmp")
+    temporary.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", "utf-8")
+    temporary.replace(CURRENT_COVERAGE_OWNER_AUDIT_PATH)
+    return report["summary"]
+
+
 def replay_current_field_shadow_from_cache(
     catalog: dict[str, dict[str, Any]],
     research_targets: list[dict[str, Any]],
@@ -2571,6 +2600,13 @@ def main() -> int:
     )
     result["diagnostics"]["freshMarineZoneIds"] = sorted(fresh_marine_zone_ids)
     clean_and_summarize(result, fresh_zone_ids, budget)
+    result["diagnostics"]["currentCoverageOwnerAudit"] = write_current_coverage_owner_audit(
+        current_shadow,
+        part_doc,
+        result,
+        zones_geo,
+        generated,
+    )
     diag = result["diagnostics"]
     fresh_successes, fresh_partials = len(diag["collectionsSucceeded"]), len(diag["collectionsPartial"])
     if fresh_successes or fresh_partials:

@@ -16,6 +16,8 @@
 - Den eksisterende DKSS-download genbruges til et roterende privat udsnit ved kystens vandpunkt samt cirka 5 og 15 km søværts.
 - Overflade, øverste tilgængelige lag, et mellemlag og bundlag gemmes, når de findes, og slettes efter 168 timer.
 - Rå forskningsvektorer er hverken offentlig runtime eller RavScore-input. Kun en kompakt status med antal og tidsdækning udgives som diagnostik.
+- For hvert besøgt punkt gemmes desuden nærmeste eksakte fælles U/V-kolonnes koordinat, afstand og lagmetadata, også når kolonnen ligger over 5 km væk. De fjerne U/V-værdier gemmes ikke og kan ikke skabe pil eller score.
+- En support-only ejeroversigt skelner mellem pipelinehul inden for 5 km, lille optisk 5–8 km-grænsetilfælde og strukturelt modelhul over 8 km. Den flytter aldrig punkter automatisk og udelukkes fra Pages sammen med øvrig diagnostik.
 
 ## Permanent faglig retning
 
@@ -36,4 +38,6 @@
 - Et privat manifest prioriterer nu én aktuel/fremadrettet strømfil pr. havmodelområde foran almindelig LRU-pruning, mens 4 GB-loftet forbliver hårdt. Cache-ID følger objektstien og ignorerer kun eventuelle fremtidige query-legitimationsoplysninger som ekstra robusthed. Hvis en gammel eller tømt cache stadig mangler en tidsrelevant fil, må opsamlingen hente højst én bootstrapfil pr. område og højst tre pr. kørsel inden for resterende kapacitet efter den offentlige DMI-bygning. Filen behandles kun mod de private forskningsmål i et tomt scratch-output; den kan ikke skrive offentlig zonecache, pile eller score.
 - Statusdiagnostikken viser cursor, om rotationen avancerede, replayassets, bootstrapdownloads/-bytes og nye prøver. Regressioner beskytter objektsti-identitet, prioriteret retention, spredt +0–12 timers tidsvindue, privat isolation og fremdrift.
 - #2863 bootstrap-hentede præcis tre marine filer/29.783.658 byte af restkapaciteten og behandlede alle tre U/V-par: cursor 90→105, 58→73 dele og 491→531 prøver. #2864 genbrugte de samme tre filer med nul download: cursor 105→120, 73→88 dele og 531→573 prøver. Begge runs var `reason=completed`, `scoreImpact=false`, `publicRuntime=false`, og råcachen forblev under 4 GB. Den private rotation er dermed CI-verificeret på både bootstrap og uændret-model-genbrug.
+- #2866 fortsatte med tre cachede replayassets til cursor 150, 118 besøgte dele og 667 prøver; 38 prøver blev tilføjet, og råcachen på 3.755.913.193 byte krævede ingen pruning. Den uændrede coverage-gate stoppede fortsat før deploy.
+- Den udvidede afstands-/ejerdiagnostik er lokalt dækket af regressioner for korrekt haversineafstand, ingen U/V-værdier i rapporten, 5 km-isolation, klassifikationer, 168-timerspruning og uændret privat/offentlig kontrakt. Første centrale artifactbevis afventes.
 - Den uændrede geografiske gate stopper før Supabase og Pages. 4.0.229 er derfor stadig ikke deployet eller produktionsverificeret; punktrettelser eller en særskilt ejerbeslutning om fail-closed deldækning mangler.

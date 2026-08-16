@@ -134,6 +134,8 @@ DMI kan have forskellige dybeste tilgængelige lag på forskellige forecasttidsp
 
 En privat, score-neutral cache bruger DKSS-felter ved vandpunktet samt cirka 5 og 15 km søværts. Repræsentative overflade-, mellem- og bundlag bevares højst 168 timer. Også når DMI-modellen er uændret, behandler en almindelig kørsel de næste 15 kystdele i et privat arbejdsområde. Systemet genbruger først en tidsrelevant råfil med stabil identitet; mangler den, må højst én fil pr. havmodelområde og tre i alt hentes inden for det eksisterende DMI-budget og derefter bevares til genbrug. Den private behandling kan ikke skrive til offentlig vejrdata eller score. Ved den normale 15-minutters rytme besøges alle 673 dele på cirka 11 timer og 15 minutter. Den kommende analyse skal undersøge hele kæden **ydre tilførsel → overgang mod kysten → lokal bundnær levering**, inklusive tidsforsinkelse, persistens og risiko for dobbelt-tælling med vind og bølger. Ingen ny scorevægt er aktiveret.
 
+Rotationen registrerer også, hvor langt der er til den nærmeste modelkolonne med et eksakt fælles U/V-par, selv når den ligger uden for 5 km. I det tilfælde gemmes kun koordinat, afstand og lagmetadata – ikke de fjerne strømværdier. En privat ejeroversigt skelner derfor mellem en mulig lille 5–8 km-punktjustering, et egentligt modelhul over 8 km og en datakædefejl, hvor gyldig strøm faktisk findes inden for 5 km. Oversigten flytter aldrig punkter automatisk, og den offentlige 5 km-grænse er uændret.
+
 **Håndbogsversion:** 4.0.229
 
 **Opdateret:** 16. august 2026

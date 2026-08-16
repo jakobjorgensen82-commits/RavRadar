@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 import importlib.util
+import json
 import pathlib
 import sys
 import tempfile
@@ -15,6 +16,8 @@ from lib.current_field_shadow import (
     eligible_replay_assets,
     empty_document,
     load_document,
+    nearest_shared_uv_evidence,
+    owner_coverage_audit,
     prune,
     record_profiles,
     representative_profile,
@@ -103,6 +106,17 @@ assert profile["layers"]["surface"]["verticalLayer"] == "surface:0"
 assert profile["layers"]["middle"]["verticalLayer"] == "depthbelowsea:10"
 assert profile["layers"]["bottom"]["verticalLayer"] == "depthbelowsea:20"
 assert representative_profile([choice(10, 55, 5.01, "surface:0", 0, 1, 1)]) is None
+far_evidence = nearest_shared_uv_evidence(
+    [
+        choice(10.2, 55.0, 0.1, "depthbelowsea:20", 20, 1, 2),
+        choice(10.1, 55.0, 10.0, "depthbelowsea:20", 20, 1, 2),
+    ],
+    [10.01, 55.0],
+)
+assert far_evidence is not None and far_evidence["distanceKm"] > 5.0
+assert far_evidence["gridPoint"] == [10.1, 55.0]
+assert far_evidence["withinAccepted5Km"] is False
+assert "uMps" not in far_evidence and "vMps" not in far_evidence
 
 now = datetime.now(timezone.utc).replace(microsecond=0)
 now_iso = now.isoformat().replace("+00:00", "Z")
@@ -130,6 +144,8 @@ assert record_profiles(
     valid_iso,
     now_iso,
 ) == 0
+far_audit = far_document["coverageAudits"][target["id"]]
+assert far_audit["observations"]["dkss_test"]["nearestSharedUv"]["distanceKm"] > 5.0
 summary = status(document, selected, {
     "rotationAdvancedThisRun": True,
     "samplesWrittenThisRun": 1,
@@ -141,6 +157,50 @@ assert summary["rotationAdvancedThisRun"] is True
 assert summary["samplesWrittenThisRun"] == 1
 assert summary["cachedReplayAssetsThisRun"] == 1
 
+owner_audit = owner_coverage_audit(
+    far_document,
+    parts,
+    {
+        "zones": {
+            "DK-TEST": {"samplingPoint": [10.01, 55.0], "hourly": {}, "gridPoints": {}},
+            "PART::part-a": {"samplingPoint": [10.01, 55.0], "hourly": {}, "gridPoints": {}},
+            "PART::part-b": {
+                "samplingPoint": [11.01, 56.0],
+                "hourly": {valid_iso: {"current-u": 0.1, "current-v": 0.2}},
+                "gridPoints": {
+                    "current-u": {
+                        "longitude": 11.02,
+                        "latitude": 56.0,
+                        "distanceKm": 0.62,
+                        "verticalLayer": "depthbelowsea:20",
+                    },
+                    "current-v": {
+                        "longitude": 11.02,
+                        "latitude": 56.0,
+                        "distanceKm": 0.62,
+                        "verticalLayer": "depthbelowsea:20",
+                    },
+                },
+            },
+        }
+    },
+    {
+        "features": [{
+            "type": "Feature",
+            "properties": {"id": "DK-TEST", "name": "Testzone"},
+            "geometry": {"type": "Point", "coordinates": [10.01, 55.0]},
+        }]
+    },
+    now_iso,
+)
+assert owner_audit["scoreImpact"] is False and owner_audit["publicRuntime"] is False
+assert owner_audit["automaticPointMovement"] is False
+assert owner_audit["summary"]["runtimeMissingCoastalParts"] == 1
+assert owner_audit["missingCoastalParts"][0]["classification"] == "structural-model-gap-over-8km"
+assert owner_audit["missingMainZones"][0]["classification"] == "main-point-review-supported-by-local-current"
+serialized_owner_audit = json.dumps(owner_audit)
+assert '"uMps"' not in serialized_owner_audit and '"vMps"' not in serialized_owner_audit
+
 with tempfile.TemporaryDirectory() as directory:
     path = pathlib.Path(directory) / "shadow.json"
     save_document(path, document)
@@ -149,8 +209,10 @@ with tempfile.TemporaryDirectory() as directory:
 
 old_iso = (now - timedelta(hours=RETENTION_HOURS + 1)).isoformat().replace("+00:00", "Z")
 document["anchors"][target["id"]]["samples"][0]["capturedAt"] = old_iso
+document["coverageAudits"][target["id"]]["observations"]["dkss_test"]["capturedAt"] = old_iso
 removed = prune(document, now_iso)
 assert removed == {"removedSamples": 1, "removedAnchors": 1}
+assert target["id"] not in document["coverageAudits"]
 
 bulk_source = (ROOT / "scripts" / "update-dmi-bulk.py").read_text("utf-8")
 workflow = (ROOT / ".github" / "workflows" / "update-and-deploy.yml").read_text("utf-8")
@@ -167,6 +229,8 @@ assert "CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3" in workflow
 main_source = bulk_source.split("def main()", 1)[1]
 assert main_source.index("for collection in scheduled") < main_source.rindex("replay_current_field_shadow_from_cache(")
 assert "currentFieldShadowPrefetchErrors" in main_source
+assert "current-coverage-owner-audit.json" in bulk_source
+assert "write_current_coverage_owner_audit" in bulk_source
 
 # The raw cache key must ignore volatile signed query parameters, retain one
 # current marine replay file ahead of unrelated LRU entries, and permit one

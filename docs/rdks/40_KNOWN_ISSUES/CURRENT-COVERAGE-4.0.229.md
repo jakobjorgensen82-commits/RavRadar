@@ -11,6 +11,13 @@ Dette er et uforanderligt handlingssnapshot fra GitHub Actions #31923212215/#285
 - Alternative aktive DMI-modelområder gav ikke et gyldigt fælles U/V-punkt inden for 5 km for de 23 hovedzoneankre.
 - Listen er arbejdsgrundlag for ejerens punktreview, ikke tilladelse til automatisk at flytte centrale land-/vandpunkter.
 
+## Senere rotationsbevis og målrettet ejerdiagnostik
+
+- #2866 på commit `f661913c4e51e64876dc68ef6bf8f6cbafbe1109` fortsatte den private rotation til cursor 150, 118 besøgte kystdele og 667 prøver. Den offentlige dækning var fortsat 187/210 og 596/673, og deploy stoppede før Supabase/Pages.
+- 17 af de 23 manglende hovedzoner har mindst én lokal kystdel med verificeret strøm og dermed et fysisk referencepunkt til ejerens optiske hovedpunktsreview. Seks zoner har ingen verificeret lokal del: `DK-B02-03`, `DK-B05-20`, `DK-B05-23`, `DK-B05-24`, `DK-B05-25` og `DK-B07-13`. En flytning af hovedpunktet alene kan derfor ikke løse deres lokale dækning.
+- Den private rotation måler fremover afstanden til den nærmeste eksakte fælles U/V-kolonne, også over 5 km, men gemmer ingen fjerne U/V-værdier. `data/diagnostics/current-coverage-owner-audit.json` er support-only og opdeler de 77 dele i endnu ikke besøgt, intet observeret U/V-par, pipelinehul inden for 5 km, optisk 5–8 km-grænsetilfælde eller strukturelt modelhul over 8 km.
+- Ingen klassifikation flytter punkter automatisk. Kun 5–8 km-grænsetilfældet kan begrunde en lille ejerjustering, og kun hvis punktet fortsat er fysisk korrekt på vandet. Et modelhul over 8 km må ikke skjules ved at flytte et korrekt kystpunkt flere kilometer.
+
 ## Hovedzoner uden verificeret strøm
 
 | ID | Zone |

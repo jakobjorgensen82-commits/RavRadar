@@ -12,7 +12,8 @@ Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde sa
 - En privat syvdøgnscache genbruger DKSS ved 0/5/15 km og flere lag uden score- eller public-runtimepåvirkning. Helhedsmodellen er permanent gemt i DEC-0040 og DEC-0029.
 - #2853–#2855 gentager 187/210 verificerede hovedzoner og 596/673 lokale kystdele. #2855 har 20.924 verificerede timer, 3.856 `non-dmi-current`-timer og nul kendt pil/grid-mismatch blandt verificerede poster. De 23/77 rester er `null` uden pil.
 - Den private cache har 491 prøver for 153 ankre/58 dele og er fortsat 168 timer, score-neutral og ikke offentlig. #2855 tilføjede ingen dubletter fra det uændrede modelrun.
-- #2855 afdækkede, at cursoren ikke gik videre på `unchanged-valid`, og #2859 beviste LRU-gabet ved cursor 90/491 prøver/58 dele. Efterrettelsen er nu bevist: #2863 brugte tre bootstrapfiler/29,8 MB og nåede cursor 105/531 prøver/73 dele; #2864 genbrugte samme tre filer med nul download og nåede cursor 120/573 prøver/88 dele. Begge var `reason=completed`, score-neutrale og ikke-offentlige. DMI's aktuelle STAC-href er efterkontrolleret som stabil; objektsti-ID er fremtidssikring.
+- #2855 afdækkede, at cursoren ikke gik videre på `unchanged-valid`, og #2859 beviste LRU-gabet ved cursor 90/491 prøver/58 dele. Efterrettelsen er nu bevist: #2863 brugte tre bootstrapfiler/29,8 MB og nåede cursor 105/531 prøver/73 dele; #2864 genbrugte samme tre filer med nul download og nåede cursor 120/573 prøver/88 dele; #2866 fortsatte til cursor 150/667 prøver/118 dele. Alle var score-neutrale og ikke-offentlige. DMI's aktuelle STAC-href er efterkontrolleret som stabil; objektsti-ID er fremtidssikring.
+- Rotationens coverage-audit registrerer nu afstand/koordinat/lag til nærmeste eksakte fælles U/V-kolonne uden at gemme fjerne U/V-værdier. Den private ejeroversigt skelner ≤5 km-pipelinehul, 5–8 km optisk grænsetilfælde og >8 km modelhul. Den flytter aldrig punkter, og første centrale artifactbevis afventes.
 - Produktionsgaten er ikke sænket. 4.0.229 er ikke deployet; næste beslutning er fortsat punktrettelser til fuld dækning eller en udtrykkelig fail-closed deldækningspolitik.
 
 - 4.0.228 er produktionsverificeret i #31913779486/#2835 på commit `93b8c0216821d02bf913f7aab369406ba2365fe9` med central adminhydrering, frisk DMI, fulde gates, Supabase og Pages.
@@ -30,8 +31,8 @@ Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde sa
 
 ## Første opgave i næste chat
 
-1. Følg den fortsatte automatiske 15-delsrotation og 168-timers pruning. #2863/#2864 har allerede bevist bootstrap og efterfølgende genbrug; stop kun ved manglende cursorfremdrift, utilsigtet offentlig/scorepåvirkning eller overskredet 4 GB-loft.
-2. Læs derefter `docs/rdks/40_KNOWN_ISSUES/CURRENT-COVERAGE-4.0.229.md` og kontrollér, om ejerens seneste centrale punktrettelser har ændret de 23 hovedzone-/77 kystdelsmangler.
+1. Følg den næste automatiske 15-delsrotation og verificér `data/diagnostics/current-coverage-owner-audit.json`: korrekt klassifikation, ingen `uMps`/`vMps`, fortsat cursorfremdrift, 168-timers pruning og højst 4 GB råcache.
+2. Læs derefter `docs/rdks/40_KNOWN_ISSUES/CURRENT-COVERAGE-4.0.229.md` og brug kun ejeroversigten til at skelne optisk punktreview fra strukturelle modelhuller. Kontrollér samtidig, om ejerens seneste centrale punktrettelser har ændret de 23 hovedzone-/77 kystdelsmangler.
 3. Bevar den uændrede gate, indtil ejeren enten har skabt den krævede dækning eller udtrykkeligt godkender en fail-closed deldækningspolitik. Uverificerede poster må aldrig få pil eller strøm.
 4. Efter beslutningen: kør fuld CI-`validate`, releasegate, Supabase, Pages og direkte livekontrol af semantik v2, maksimalt 5 km, tidsbestemt lag/celle, selektiv cachemigration og privat cache-status.
 
