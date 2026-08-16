@@ -2,9 +2,13 @@
 
 ## Start her
 
-Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde samt DEC-0024, DEC-0030, DEC-0031, DEC-0037, DEC-0038 og DEC-0039. Kontrollér derefter gitstatus, seneste commit og GitHub Actions.
+Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde samt DEC-0024, DEC-0029, DEC-0030, DEC-0031, DEC-0037, DEC-0038, DEC-0039 og DEC-0040. Kontrollér derefter gitstatus, seneste commit og GitHub Actions.
 
 ## Aktuel sandhed
+
+- 4.0.229 er en lokal kandidat, ikke endnu en produktionsverificeret release. Den retter strømvalg fra “dybeste lag globalt” til “nærmeste vandkolonne først, dybeste lag i samme kolonne” og håndhæver højst 5 km.
+- Samme aktuelle samplingpunkt, U/V-koordinat, forecasttid og dybdelag kræves gennem bulkcache, forecast, score, provenance og pil. Gamle strømdata invalideres, og direkte ForecastEDR-strøm uden samme bevis, Open-Meteos overfladestrøm samt anden fallbackstrøm lukkes ude før historik, scoring og kort.
+- En privat syvdøgnscache genbruger DKSS ved 0/5/15 km og flere lag uden score- eller public-runtimepåvirkning. Helhedsmodellen er permanent gemt i DEC-0040 og DEC-0029.
 
 - 4.0.228 er produktionsverificeret i #31913779486/#2835 på commit `93b8c0216821d02bf913f7aab369406ba2365fe9` med central adminhydrering, frisk DMI, fulde gates, Supabase og Pages.
 - Fra zoomniveau 9 viser kortet flere lokale vind- og strømpile, men kun ved kystdelenes egne eksakt parrede DMI-U/V-gitterpunkter. Vindkilden kan være HARMONIE eller den faktisk anvendte DKSS-`wind-tail`-serie og mærkes særskilt.
@@ -21,9 +25,9 @@ Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde sa
 
 ## Første opgave i næste chat
 
-1. Kontrollér at evidenscommitten efter #2835 er på `main`, og at dens normale opfølgningskørsel ikke har afsløret en regression.
-2. Lad ejerens manuelle punktreview fortsætte sideløbende uden automatisk national genopdeling.
-3. Vælg næste uafhængige roadmapopgave; fem-døgns-/historikanalysen forbliver midlertidigt udsat efter ejerbeslutningen.
+1. Commit/push 4.0.229 fra den isolerede worktree; lokal releasegate og alle dataneutrale testtrin er grønne, mens repositoryets historiske 209/211-snapshot som forventet blokerer de centrale datatests.
+2. Følg frisk central DMI-genopbygning til fuld CI-`validate`, releasegate, Supabase, supportartifact og Pages.
+3. Auditér produktionsdata for semantik v2, maksimalt 5 km efter både metadata og koordinatberegning, samme lag/punkt og privat cache-status; kontrollér derefter kortet direkte.
 
 ## Beskyttede beslutninger
 

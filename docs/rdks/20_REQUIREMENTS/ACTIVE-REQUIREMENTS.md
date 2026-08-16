@@ -2,6 +2,15 @@
 
 Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslutninger, chatkilder og kode.
 
+## Strømmens sted, dybde og kommende helhedsmodel – 4.0.229
+
+- **REQ-CURRENT-SPATIAL-FIRST-001 – BINDENDE:** Nærmeste gyldige fælles DMI-U/V-vandkolonne vælges før vertikallaget. Dybde må kun afgøre valget mellem lag på eksakt samme koordinat.
+- **REQ-CURRENT-BOTTOM-NEAR-001 – BINDENDE:** I den valgte vandkolonne bruges det dybeste gyldige fælles U/V-lag som aktiv bundnær repræsentation. U og V skal have samme tid, koordinat og lag.
+- **REQ-CURRENT-DISTANCE-001 – BINDENDE:** 0–3 km er foretrukket; 3–5 km må bruges, når nærmere gyldigt par mangler; over 5 km er `missing` og må ikke skabe verificeret pil eller scoreinput.
+- **REQ-CURRENT-SAMPLING-IDENTITY-001 – BINDENDE:** Centralt gemt aktuelt vandpunkt er samplinganker. Flytning eller gammel strømsemantik invaliderer cache, provenance og historisk strøm, indtil friske data findes.
+- **REQ-CURRENT-FIELD-SHADOW-001 – AKTIV:** Privat forskningsopsamling må højst bevare 168 timer, genbruge eksisterende DKSS-GRIB, holde rå vektorer ude af offentlig runtime og være teknisk markeret `scoreImpact=false`.
+- **REQ-RAVSCORE-CURRENT-CHAIN-001 – PLANLAGT UNDER DEC-0029/0040:** Den store analyse skal undersøge ydre tilførsel, overgang mod kyst, lokal bundnær levering, flere lag, rumlig persistens og tidsforsinkelse før et nyt scoremodul foreslås. Ingen automatisk aktivering eller dobbelt-tælling er tilladt.
+
 ## Land-/vandpunktpar
 
 - **REQ-GEO-060 – BINDENDE, OPDATERET I 4.0.227:** Hver lokal kystdel skal have et havpunkt i vand, et landpunkt på land og en hav→land-linje, som krydser egen kyst i en fagligt repræsentativ retning. Omtrent vinkelret er målet på den relevante kystskala; vinklen mod ét kort mikrosegment er kun vejledende og kan ikke tilsidesætte ejerens manuelle helhedsvurdering.

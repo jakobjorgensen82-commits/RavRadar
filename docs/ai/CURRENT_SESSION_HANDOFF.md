@@ -1,5 +1,14 @@
 # Aktuelt sessionshandoff – 2026-08-16
 
+## Aktiv 4.0.229-kandidat – endnu ikke produktionsverificeret
+
+- Rodårsagen til fejlplaceret strøm var globalt dybdevalg: et dybt DMI-lag ved en fjern koordinat kunne slå den nærmeste vandkolonne.
+- Ny bindende rækkefølge er nærmeste gyldige fælles U/V-vandkolonne først, derefter dybeste gyldige lag i samme kolonne. 0–3 km foretrækkes, 3–5 km accepteres, og over 5 km er `missing`.
+- Verificeret strøm er bundet til aktuelt centralt samplingpunkt, fælles U/V-koordinat, forecasttid, lag og afstand gennem score, provenance og kort. Den geografiske afstand genberegnes som kontrol; gamle semantik-v1-data, direkte ForecastEDR-strøm uden kolonne-/lagbevis, Open-Meteos overfladestrøm og anden fallbackstrøm lukkes ude før historik, scoring og kort.
+- Privat 168-timers strømfeltsopsamling roterer 15 kystdele pr. DMI-kørsel ved 0/5/15 km og flere lag. Den er `scoreImpact=false`, `publicRuntime=false` og publicerer kun kompakt status. Det lille udsnit beskytter workflowets tidsbudget og når fortsat hele bestanden inden for syvdøgnsvinduet ved normal drift.
+- DEC-0040 og den udvidede DEC-0029 kræver, at kommende analyse og et eventuelt nyt scoremodul vurderer ydre tilførsel → overgang → lokal bundnær levering, inkl. tidsforsinkelse og risiko for dobbelt-tælling.
+- Målrettede tests, den øvrige lokalt kørbare valideringskæde og releasegate er grønne. Fuld lokal `validate` stopper forventet på repositoryets historiske 209/211-snapshot; commit/push og frisk produktionsbevis mangler stadig.
+
 ## Sikker produktionsbaseline
 
 - 4.0.228 er seneste produktionsverificerede release.
@@ -30,9 +39,10 @@
 
 ## Næste trin
 
-1. Lad ejerens manuelle punktreview fortsætte og behandl centralt gemte punkter som runtime-sandhed i alle nye builds.
-2. Vælg næste uafhængige roadmapopgave uden at genåbne den midlertidigt udsatte fem-døgns-/historikanalyse.
-3. Bevar 4.0.228's pileproveniens- og releasegates i alle senere versioner.
+1. Commit og push den lokalt validerede 4.0.229-kandidat uden de genererede fejldiagnoser fra repositoryets historiske snapshot.
+2. Følg den friske centrale DMI-kørsel og verificér semantik v2, metadata- og koordinatafstand, lag, privat cache, Supabase, artifact og Pages.
+3. Kontrollér det deployede kort direkte. Først derefter må 4.0.229 kaldes produktionsverificeret.
+4. Lad ejerens manuelle punktreview fortsætte; centralt gemte punkter er runtime-sandhed.
 
 ## Bindende arbejdsregler
 

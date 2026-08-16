@@ -61,6 +61,7 @@ const PROVIDER_COOLDOWN_MS = Number(process.env.WEATHER_PROVIDER_COOLDOWN_MS ?? 
 const USER_AGENT = process.env.WEATHER_USER_AGENT ?? 'RavRadar/2.4 (central weather updater)';
 const APP_VERSION = JSON.parse(await fs.readFile('package.json', 'utf8')).version;
 const PIPELINE_RUN_ID = process.env.GITHUB_RUN_ID ? `${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT ?? '1'}` : `local-${Date.now()}`;
+const CURRENT_VECTOR_SEMANTICS_VERSION = 2;
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const num = value => value === null || value === undefined || value === '' ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
@@ -291,6 +292,97 @@ function zonePoint(feature) {
     points.reduce((sum, point) => sum + point[0], 0) / points.length,
     points.reduce((sum, point) => sum + point[1], 0) / points.length
   ];
+}
+
+function samePoint(first, second, tolerance = 1e-7) {
+  return Array.isArray(first) && Array.isArray(second)
+    && first.length >= 2 && second.length >= 2
+    && first.slice(0, 2).every((value, index) => Number.isFinite(Number(value)) && Math.abs(Number(value) - Number(second[index])) <= tolerance);
+}
+
+function verifiedBulkCurrent(bulkCache, bulkZone, expectedSamplingPoint) {
+  if (Number(bulkCache?.currentVectorSemanticsVersion) !== CURRENT_VECTOR_SEMANTICS_VERSION) return null;
+  if (!samePoint(bulkZone?.samplingPoint, expectedSamplingPoint)) return null;
+  const first = bulkZone?.gridPoints?.['current-u'];
+  const second = bulkZone?.gridPoints?.['current-v'];
+  if (!first || !second || !samePoint(
+    [first.longitude, first.latitude],
+    [second.longitude, second.latitude],
+  )) return null;
+  if (!first.verticalLayer || first.verticalLayer !== second.verticalLayer) return null;
+  const distance = Math.max(num(first.distanceKm) ?? Infinity, num(second.distanceKm) ?? Infinity);
+  const maximum = num(bulkCache.currentMaxDistanceKm) ?? 5;
+  if (distance > maximum) return null;
+  const gridPoint = [Number(first.longitude), Number(first.latitude)];
+  if (haversineKm(expectedSamplingPoint, gridPoint) > maximum + 0.01) return null;
+  return {
+    verticalLayer: first.verticalLayer,
+    gridPoint,
+    samplingPoint: expectedSamplingPoint,
+  };
+}
+
+function withoutCurrent(record) {
+  if (!record) return null;
+  const completeness = { ...(record.model?.completeness ?? {}) };
+  const gridPoints = { ...(completeness.gridPoints ?? {}) };
+  const collections = { ...(completeness.collections ?? {}) };
+  delete gridPoints['current-u'];
+  delete gridPoints['current-v'];
+  delete collections['current-u'];
+  delete collections['current-v'];
+  Object.assign(completeness, {
+    current: false,
+    currentVectorSemanticsVersion: null,
+    currentVectorSelection: null,
+    currentPreferredDistanceKm: null,
+    currentMaxDistanceKm: null,
+    gridPoints,
+    collections,
+  });
+  return {
+    ...record,
+    model: { ...(record.model ?? {}), completeness },
+    hourly: (record.hourly ?? []).map(row => {
+      const sources = { ...(row.sources ?? {}) };
+      delete sources.current;
+      const clean = { ...row, sources };
+      for (const key of ['currentSpeedMps', 'currentDirectionDeg', 'currentUMps', 'currentVMps', 'currentProvenance']) delete clean[key];
+      return clean;
+    }),
+  };
+}
+
+function verifiedForecastCurrent(record, expectedSamplingPoint) {
+  return flowPointsFromForecastRecord(record, expectedSamplingPoint).sources.current === 'dmi-marine-grid';
+}
+
+function withOnlyVerifiedCurrent(record, expectedSamplingPoint) {
+  return verifiedForecastCurrent(record, expectedSamplingPoint) ? record : withoutCurrent(record);
+}
+
+function withoutZoneCurrent(zone) {
+  if (!zone) return null;
+  const sources = { ...(zone.sources ?? {}), current: { provider: 'missing', fallback: false, fallbackReason: 'Ingen verificeret DMI-vandkolonne og dybdelag' } };
+  const flowPoints = zone.flowPoints ? {
+    ...zone.flowPoints,
+    current: Array.isArray(zone.point) ? zone.point : null,
+    sources: { ...(zone.flowPoints.sources ?? {}), current: 'zone-marine-anchor' },
+  } : zone.flowPoints;
+  return {
+    ...zone,
+    sources,
+    flowPoints,
+    current: {
+      ...(zone.current ?? {}),
+      currentSpeedMps: null,
+      currentDirectionDeg: null,
+      currentUMps: null,
+      currentVMps: null,
+      currentProvenance: { status: 'unverified', reason: 'no-verified-dmi-water-column' },
+    },
+    forecast: zone.forecast ? withoutCurrent(zone.forecast) : zone.forecast,
+  };
 }
 
 
@@ -777,13 +869,28 @@ async function readDmiBulkCache() {
 function bulkZoneToForecastRecord(feature, bulkCache, generatedAt, previousRecord = null) {
   const zoneId = feature.properties?.id;
   const bulkZone = bulkCache?.zones?.[zoneId];
+  const point = zonePoint(feature);
+  const sameSamplingPoint = !previousRecord || samePoint(previousRecord.point, point);
+  const compatiblePrevious = sameSamplingPoint
+    ? withOnlyVerifiedCurrent(previousRecord, point)
+    : null;
+  const verifiedCurrent = verifiedBulkCurrent(bulkCache, bulkZone, point);
+  const currentSemanticsValid = Boolean(verifiedCurrent);
   const rows = Object.values(bulkZone?.hourly ?? {}).filter(row => Number.isFinite(Date.parse(row?.time))).sort((a, b) => Date.parse(a.time) - Date.parse(b.time));
   if (!rows.length) return null;
   const provenance = row => ({ ...(row.sources ?? {}) });
   const wind = rows.filter(row => num(row['wind-speed-10m']) !== null && num(row['wind-dir-10m']) !== null).map(row => ({ step: row.time, 'wind-speed-10m': num(row['wind-speed-10m']), 'wind-dir-10m': num(row['wind-dir-10m']), provenance: { wind: provenance(row).wind } }));
   const windTail = rows.filter(row => num(row['wind-tail-speed-10m']) !== null && num(row['wind-tail-dir-10m']) !== null).map(row => ({ step: row.time, 'wind-speed-10m': num(row['wind-tail-speed-10m']), 'wind-dir-10m': num(row['wind-tail-dir-10m']), provenance: { wind: provenance(row).windTail } }));
   const waves = rows.filter(row => ['significant-wave-height','mean-wave-dir','dominant-wave-period'].some(key => num(row[key]) !== null)).map(row => ({ step: row.time, 'significant-wave-height': num(row['significant-wave-height']), 'mean-wave-dir': num(row['mean-wave-dir']), 'dominant-wave-period': num(row['dominant-wave-period']), provenance: { wave: provenance(row).wave } }));
-  const ocean = rows.filter(row => ['sea-mean-deviation','current-u','current-v','water-temperature'].some(key => num(row[key]) !== null)).map(row => ({ step: row.time, 'sea-mean-deviation': num(row['sea-mean-deviation']), 'current-u': num(row['current-u']), 'current-v': num(row['current-v']), 'water-temperature': num(row['water-temperature']), provenance: { current: provenance(row).current, waterLevel: provenance(row).waterLevel, waterTemperature: provenance(row).waterTemperature } }));
+  const ocean = rows.filter(row => ['sea-mean-deviation','current-u','current-v','water-temperature'].some(key => num(row[key]) !== null)).map(row => {
+    const rowCurrent = provenance(row).current;
+    const rowCurrentValid = currentSemanticsValid
+      && rowCurrent?.verticalLayer === verifiedCurrent.verticalLayer
+      && Number(rowCurrent?.vectorSemanticsVersion) === CURRENT_VECTOR_SEMANTICS_VERSION
+      && samePoint(rowCurrent?.gridPoint, verifiedCurrent.gridPoint)
+      && samePoint(rowCurrent?.samplingPoint, verifiedCurrent.samplingPoint);
+    return { step: row.time, 'sea-mean-deviation': num(row['sea-mean-deviation']), 'current-u': rowCurrentValid ? num(row['current-u']) : null, 'current-v': rowCurrentValid ? num(row['current-v']) : null, 'water-temperature': num(row['water-temperature']), provenance: { current: rowCurrentValid ? provenance(row).current : null, waterLevel: provenance(row).waterLevel, waterTemperature: provenance(row).waterTemperature } };
+  });
   const sourceCadenceMinutes = Number(bulkCache?.timeStrideHours ?? 3) * 60;
   const built = buildDmiForecastHourly({ wind, windTail, waves, ocean, generatedAt, hours: DMI_FORECAST_HOURS, sourceCadenceMinutes });
   const marine = ocean.some(item => num(item['sea-mean-deviation']) !== null && num(item['current-u']) !== null && num(item['current-v']) !== null);
@@ -792,20 +899,20 @@ function bulkZoneToForecastRecord(feature, bulkCache, generatedAt, previousRecor
   const waveRequired = dmiCollections(feature.properties?.coastType).wave !== null;
   const waveAvailable = !waveRequired || waves.some(item => num(item['significant-wave-height']) !== null);
   if (!marine && !windAvailable && !windTailAvailable && !waveAvailable) return null;
-  const mergedHourly = mergeHourlyPreferDmi(built.hourly, previousRecord?.hourly ?? [], { generatedAt });
-  const oldCompleteness = previousRecord?.model?.completeness ?? {};
+  const mergedHourly = mergeHourlyPreferDmi(built.hourly, compatiblePrevious?.hourly ?? [], { generatedAt });
+  const oldCompleteness = compatiblePrevious?.model?.completeness ?? {};
   return createDmiForecastRecord({
     zoneId,
-    point: zonePoint(feature),
+    point,
     generatedAt,
     hourly: mergedHourly,
-    waterLevelInterpolation: previousRecord?.waterLevelInterpolation ?? null,
+    waterLevelInterpolation: compatiblePrevious?.waterLevelInterpolation ?? null,
     model: {
-      ...(previousRecord?.model ?? {}),
-      wind: windAvailable ? 'harmonie_dini_sf-stac-grib' : previousRecord?.model?.wind ?? null,
-      windTail: windTailAvailable ? `${bulkZone.collections?.['wind-tail-u-10m'] ?? 'dkss'}-stac-grib` : previousRecord?.model?.windTail ?? null,
-      wave: waveAvailable && waveRequired ? `${dmiCollections(feature.properties?.coastType).wave}-stac-grib` : previousRecord?.model?.wave ?? null,
-      ocean: marine ? `${dmiCollections(feature.properties?.coastType).ocean}-stac-grib` : previousRecord?.model?.ocean ?? null,
+      ...(compatiblePrevious?.model ?? {}),
+      wind: windAvailable ? 'harmonie_dini_sf-stac-grib' : compatiblePrevious?.model?.wind ?? null,
+      windTail: windTailAvailable ? `${bulkZone.collections?.['wind-tail-u-10m'] ?? 'dkss'}-stac-grib` : compatiblePrevious?.model?.windTail ?? null,
+      wave: waveAvailable && waveRequired ? `${dmiCollections(feature.properties?.coastType).wave}-stac-grib` : compatiblePrevious?.model?.wave ?? null,
+      ocean: marine ? `${dmiCollections(feature.properties?.coastType).ocean}-stac-grib` : compatiblePrevious?.model?.ocean ?? null,
       completeness: {
         ...oldCompleteness,
         phase: 'bulk-stac-grib',
@@ -818,6 +925,11 @@ function bulkZoneToForecastRecord(feature, bulkCache, generatedAt, previousRecor
         acquisitionMethod: 'whole-GRIB nearest-valid-original-grid-point',
         forecastCadenceMinutes: 60,
         sourceCadenceMinutes,
+        samplingPoint: point,
+        currentVectorSemanticsVersion: currentSemanticsValid ? CURRENT_VECTOR_SEMANTICS_VERSION : null,
+        currentVectorSelection: currentSemanticsValid ? bulkCache.currentVectorSelection : null,
+        currentPreferredDistanceKm: currentSemanticsValid ? bulkCache.currentPreferredDistanceKm : null,
+        currentMaxDistanceKm: currentSemanticsValid ? bulkCache.currentMaxDistanceKm : null,
         temporalInterpolation: built.interpolation,
         spatialInterpolation: false,
         gridPoints: bulkZone.gridPoints ?? {},
@@ -1007,14 +1119,16 @@ async function fromDmi(feature, generatedAt, { includeAtmosphere = false } = {})
   const now = Date.parse(generatedAt);
   const componentErrors = [];
 
-  // Fase 1 prioriterer de havdata, RavRadar er mest afhængig af: vandstand,
-  // strøm og temperatur. Vind og bølger hentes først, når alle zoner har en
+  // Fase 1 prioriterer de havdata, ForecastEDR kan dokumentere sikkert her:
+  // vandstand og overfladetemperatur. Vind og bølger hentes først, når zonerne har en
   // gyldig marin DMI-cache. Det holder DMI-forbruget nede under opvarmningen.
   let ocean = [];
   try {
+    // ForecastEDR's position response does not document the exact shared U/V
+    // water column and vertical layer required by the current contract. It may
+    // still repair water level and surface temperature, but never current.
     const attempts = [
-      ['sea-mean-deviation', 'current-u', 'current-v', 'water-temperature'],
-      ['sea-mean-deviation', 'current-u', 'current-v'],
+      ['sea-mean-deviation', 'water-temperature'],
       ['sea-mean-deviation']
     ];
     let lastOceanError = null;
@@ -1034,9 +1148,8 @@ async function fromDmi(feature, generatedAt, { includeAtmosphere = false } = {})
     throw error;
   }
   const oceanHasWaterLevel = ocean.some(item => num(item['sea-mean-deviation']) !== null);
-  const oceanHasCurrent = ocean.some(item => num(item['current-u']) !== null && num(item['current-v']) !== null);
   const oceanHasTemperature = ocean.some(item => num(item['water-temperature']) !== null);
-  if (!oceanHasWaterLevel && !oceanHasCurrent && !oceanHasTemperature) {
+  if (!oceanHasWaterLevel && !oceanHasTemperature) {
     const error = new Error('DMI-havdata gav ingen brugbare marine komponenter');
     error.code = 'DMI_NO_USABLE_COMPONENTS';
     throw error;
@@ -1073,11 +1186,11 @@ async function fromDmi(feature, generatedAt, { includeAtmosphere = false } = {})
     current: ocean.some(item => num(item['current-u']) !== null && num(item['current-v']) !== null),
     componentErrors
   };
-  const forecastRecord = createDmiForecastRecord({
+  const forecastRecord = withoutCurrent(createDmiForecastRecord({
     zoneId, point, generatedAt, hourly: dmiForecast.hourly,
     waterLevelInterpolation: stationWaterLevel,
     model: { wind: completeness.wind ? 'harmonie_dini_sf' : null, wave: completeness.wave && collections.wave ? collections.wave : null, ocean: collections.ocean, completeness }
-  });
+  }));
   const currentForecast = selectDmiForecastAt(forecastRecord, generatedAt) ?? dmiForecast.hourly[0];
   return {
     point, flowPoints: flowPointsFromForecastRecord(forecastRecord, zonePoint(feature)), provider: 'dmi', providerLabel: includeAtmosphere ? 'DMI Open Data' : 'DMI havdata + Open-Meteo fallback',
@@ -1286,7 +1399,7 @@ async function fromOpenMeteo(feature, generatedAt) {
   });
   const marineQuery = new URLSearchParams({
     latitude: String(latitude), longitude: String(longitude),
-    current: 'wave_height,wave_direction,wave_period,sea_level_height_msl,sea_surface_temperature,ocean_current_velocity,ocean_current_direction',
+    current: 'wave_height,wave_direction,wave_period,sea_level_height_msl,sea_surface_temperature',
     hourly: 'sea_level_height_msl', velocity_unit: 'ms', timezone: 'GMT', forecast_days: '1', cell_selection: 'sea'
   });
   const [weather, marine] = await Promise.all([
@@ -1307,8 +1420,8 @@ async function fromOpenMeteo(feature, generatedAt) {
       wavePeriodS: round(num(c.wave_period), 1),
       waterLevelCm: sea === null ? null : round(sea * 100, 0),
       waterLevelTrendCm3h: sea === null || sea3 === null ? null : round((sea3 - sea) * 100, 0),
-      currentSpeedMps: round(num(c.ocean_current_velocity), 2),
-      currentDirectionDeg: round(num(c.ocean_current_direction), 0),
+      currentSpeedMps: null,
+      currentDirectionDeg: null,
       waterTemperatureC: round(num(c.sea_surface_temperature), 1)
     }
   };
@@ -1364,6 +1477,15 @@ function lastContiguousEvent(samples, predicate) {
   const startAt = Date.parse(samples[start].at), endAt = Date.parse(samples[end].at);
   return { startAt: samples[start].at, endAt: samples[end].at, durationHours: round(Math.max(1, (endAt - startAt) / 3600000 + 1), 1) };
 }
+function withoutHistoricCurrent(samples = []) {
+  return samples.map(sample => ({
+    ...sample,
+    currentSpeedMps: null,
+    currentDirectionDeg: null,
+    currentAlignment: null,
+    currentVerified: false,
+  }));
+}
 function historyFor(previous, zoneId, current, generatedAt, feature = null) {
   const currentAlignment = effectiveCurrentAlignment(feature, current.currentDirectionDeg);
   const sample = {
@@ -1381,7 +1503,16 @@ function historyFor(previous, zoneId, current, generatedAt, feature = null) {
     waterLevelTrendCm3h: current.waterLevelTrendCm3h,
     waterTemperatureC: current.waterTemperatureC
   };
-  const { samples24h: samples, samples72h } = retainWeatherHistory(previous?.zones?.[zoneId], sample, generatedAt);
+  const previousZone = previous?.zones?.[zoneId] ?? {};
+  const currentSamplingPoint = feature ? zonePoint(feature) : null;
+  const compatibleHistory = Number(previousZone.currentVectorSemanticsVersion) === CURRENT_VECTOR_SEMANTICS_VERSION
+    && samePoint(previousZone.currentSamplingPoint, currentSamplingPoint);
+  const historyInput = compatibleHistory ? previousZone : {
+    ...previousZone,
+    samples24h: withoutHistoricCurrent(previousZone.samples24h),
+    samples72h: withoutHistoricCurrent(previousZone.samples72h),
+  };
+  const { samples24h: samples, samples72h } = retainWeatherHistory(historyInput, sample, generatedAt);
   const winds = samples.map(s => num(s.windSpeedMps)).filter(Number.isFinite);
   const waves = samples.map(s => num(s.waveHeightM)).filter(Number.isFinite);
   const high = samples.filter(s => (num(s.windSpeedMps) ?? 0) >= 9 || (num(s.waveHeightM) ?? 0) >= 1.2).at(-1);
@@ -1399,7 +1530,13 @@ function historyFor(previous, zoneId, current, generatedAt, feature = null) {
     hoursSinceStrongEventEnd: strongHoursSinceEnd,
     mobilisationPotential: round(mobilisationPotential, 1)
   };
-  return { samples24h: samples, samples72h, history: applyCurrentTransportToHistory(baseHistory, samples) };
+  return {
+    samples24h: samples,
+    samples72h,
+    history: applyCurrentTransportToHistory(baseHistory, samples),
+    currentVectorSemanticsVersion: CURRENT_VECTOR_SEMANTICS_VERSION,
+    currentSamplingPoint,
+  };
 }
 
 
@@ -1417,7 +1554,7 @@ async function forecastFromOpenMeteo(feature) {
   });
   const marineQuery = new URLSearchParams({
     latitude: String(latitude), longitude: String(longitude),
-    hourly: 'wave_height,wave_direction,wave_period,sea_level_height_msl,sea_surface_temperature,ocean_current_velocity,ocean_current_direction',
+    hourly: 'wave_height,wave_direction,wave_period,sea_level_height_msl,sea_surface_temperature',
     velocity_unit: 'ms', timezone: 'GMT', forecast_hours: '120', cell_selection: 'sea'
   });
   const [weather, marine] = await Promise.all([
@@ -1440,8 +1577,8 @@ async function forecastFromOpenMeteo(feature) {
       wavePeriodS: round(hourlyValue(marine, 'wave_period', mi), 1),
       waterLevelCm: sea === null ? null : round(sea * 100, 0),
       waterLevelTrendCm3h: sea === null || sea3 === null ? null : round((sea3 - sea) * 100, 0),
-      currentSpeedMps: round(hourlyValue(marine, 'ocean_current_velocity', mi), 2),
-      currentDirectionDeg: round(hourlyValue(marine, 'ocean_current_direction', mi), 0),
+      currentSpeedMps: null,
+      currentDirectionDeg: null,
       waterTemperatureC: round(hourlyValue(marine, 'sea_surface_temperature', mi), 1)
     };
   });
@@ -1490,12 +1627,13 @@ async function readDmiForecastStore() {
 }
 
 function zoneFromDmiForecastCache(feature, record, generatedAt) {
-  const selected = selectDmiForecastAt(record, generatedAt);
+  const safeRecord = withOnlyVerifiedCurrent(record, zonePoint(feature));
+  const selected = selectDmiForecastAt(safeRecord, generatedAt);
   if (!selected) return null;
-  const remaining = (record.hourly ?? []).filter(item => Date.parse(item.time) >= Date.parse(generatedAt) - 30 * 60000);
+  const remaining = (safeRecord.hourly ?? []).filter(item => Date.parse(item.time) >= Date.parse(generatedAt) - 30 * 60000);
   return {
     point: zonePoint(feature),
-    flowPoints: flowPointsFromForecastRecord(record, zonePoint(feature)),
+    flowPoints: flowPointsFromForecastRecord(safeRecord, zonePoint(feature)),
     provider: 'dmi-cache',
     providerLabel: 'DMI 5-døgns prognosecache',
     modelSteps: { wind: selected.time, wave: selected.time, ocean: selected.time },
@@ -1516,15 +1654,15 @@ function zoneFromDmiForecastCache(feature, record, generatedAt) {
     waterLevel: {
       source: selected.waterLevelCm != null ? (selected.waterLevelSource ?? 'dmi-model-cache') : 'missing',
       reference: 'Cached DMI model forecast',
-      interpolation: record.waterLevelInterpolation ?? null,
+      interpolation: safeRecord.waterLevelInterpolation ?? null,
       modelBiasCm: selected.waterLevelBiasCm ?? null,
-      diagnostic: waterLevelDiagnostic({ feature, point: zonePoint(feature), collections: { ocean: record?.model?.ocean }, currentForecast: selected, stationWaterLevel: record.waterLevelInterpolation ?? null, forecastRecord: record, generatedAt, fromCache: true })
+      diagnostic: waterLevelDiagnostic({ feature, point: zonePoint(feature), collections: { ocean: safeRecord?.model?.ocean }, currentForecast: selected, stationWaterLevel: safeRecord.waterLevelInterpolation ?? null, forecastRecord: safeRecord, generatedAt, fromCache: true })
     },
     forecast: {
       provider: 'dmi-cache',
       providerLabel: 'DMI cached 5-day forecast',
-      generatedAt: record.generatedAt,
-      validUntil: record.validUntil,
+      generatedAt: safeRecord.generatedAt,
+      validUntil: safeRecord.validUntil,
       hourly: remaining
     },
     dmiCache: { generatedAt: record.generatedAt, validUntil: record.validUntil, cacheAgeHours: selected.cacheAgeHours }
@@ -1539,11 +1677,11 @@ async function readPrevious() {
 async function fallbackForZone(feature, generatedAt, previous, attempts) {
   for (const [name, provider] of [['open-meteo', fromOpenMeteo], ['met-norway', fromMetNorway]]) {
     try {
-      const result = await provider(feature, generatedAt);
+      const result = withoutZoneCurrent(await provider(feature, generatedAt));
       let forecast = previous?.zones?.[feature.properties?.id]?.forecast ?? null;
       try { forecast = await forecastFromOpenMeteo(feature); }
       catch (forecastError) { attempts.push({ provider: 'open-meteo-forecast', message: forecastError instanceof Error ? forecastError.message : String(forecastError) }); }
-      return { ...result, forecast, stale: false, fallback: true, attempts };
+      return withoutZoneCurrent({ ...result, forecast, stale: false, fallback: true, attempts });
     } catch (error) {
       attempts.push({ provider: name, message: error instanceof Error ? error.message : String(error) });
     }
@@ -1609,7 +1747,11 @@ async function resolveZone(feature, generatedAt, previous, dmiForecastStore, nex
     return { ...fallback, ...history };
   }
   const cached = previous?.zones?.[zoneId];
-  if (cached?.current) return { ...cached, stale: true, fallback: true, provider: 'cache', providerLabel: 'Seneste cache', attempts };
+  if (cached?.current) {
+    const safeCached = withoutZoneCurrent(cached);
+    const history = historyFor(previous, zoneId, safeCached.current, generatedAt, feature);
+    return { ...safeCached, ...history, stale: true, fallback: true, provider: 'cache', providerLabel: 'Seneste cache', attempts };
+  }
   throw new Error(`${zoneId}: alle vejrkilder fejlede, og ingen cache findes`);
 }
 

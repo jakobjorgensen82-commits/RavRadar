@@ -2,6 +2,14 @@
 
 Prioritet: DMI → Open-Meteo Marine → MET Norway → cache.
 
+## Strømsted og dybdelag (4.0.229)
+
+Administratorens centralt gemte vandpunkt er samplinganker for både DMI-strøm, den viste strømpil og den aktive scores lokale strømgrundlag. Parseren finder først den nærmeste vandkolonne med et gyldigt fælles U/V-par og vælger derefter det dybeste gyldige lag i præcis den kolonne. Et dybere lag længere væk må aldrig vinde. Op til 3 km er foretrukket; 3–5 km er accepteret reserve; større afstand bliver manglende data.
+
+Verificeret strøm kræver samme koordinat, forecasttid og vertikallag samt et samplingpunkt, der matcher den aktuelle centralt hydrerede konfiguration. Pilen står på DMI-cellens eksakte koordinat, og den beregnede koordinatafstand efterkontrolleres uafhængigt af DMI-metadata. Cacher fra før denne kontrakt invalideres, så gammel fjern eller umærket strøm ikke kan nå score, historik eller kort. Kun den verificerede DMI-GRIB-kæde må levere aktiv strøm. Den direkte ForecastEDR-positionstjeneste kan reparere vandstand og overfladetemperatur, men dens strøm holdes ude, fordi svaret ikke beviser fælles vandkolonne og dybdelag. Open-Meteos overfladestrøm og anden fallbackstrøm fjernes også før merge, historik, score og kort; de øvrige fallbackkomponenter er fortsat tilgængelige.
+
+En separat privat forskningscache genbruger de allerede downloadede DKSS-felter. Et roterende udsnit samples ved vandpunktet samt cirka 5 og 15 km søværts, og flere repræsentative lag bevares i højst 168 timer. Rå vektorer publiceres ikke, og opsamlingen er eksplicit score-neutral. Den kommende forskning skal bruge materialet til at undersøge **ydre tilførsel → overgang mod kyst → lokal bundnær levering**, ikke til automatisk at ændre RavScore.
+
 ## Komponentvis femdøgnsaudit (4.0.124)
 
 Vind, bølger, strøm, vandstand og vandtemperatur auditeres som separate timekæder. Et interval klassificeres som DMI, fallback eller manglende ud fra både de nødvendige numeriske felter og den registrerede provider. For DMI-timer kontrolleres collection, model-run, lead time og prognosealder. Diagnostikken ændrer ikke værdier eller RavScore; den gør manglende dækning og metadata synlige før næste designfase.

@@ -71,7 +71,7 @@ jobs:
         run: python scripts/hydrate-deployed-weather.py
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
-          WEATHER_USER_AGENT: "RavRadar/4.0.29 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.229 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Preserve deployed DMI zone cache as safe fallback
         run: |
@@ -92,7 +92,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.29 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.229 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Report skipped refresh
         if: steps.preflight.outputs.should_run != 'true'
@@ -148,6 +148,15 @@ jobs:
             dmi-zone-cache-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-
             dmi-zone-cache-v1-${{ runner.os }}-
 
+      - name: Restore private seven-day current-field research cache
+        if: steps.preflight.outputs.should_run == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/current-field-shadow.json
+          key: current-field-shadow-v1-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            current-field-shadow-v1-${{ runner.os }}-
+
       - name: Update DMI bulk model cache
         if: steps.preflight.outputs.should_run == 'true'
         id: dmi-bulk
@@ -169,7 +178,9 @@ jobs:
           DMI_BULK_FORCE_REFRESH: ${{ steps.preflight.outputs.dmi_changed }}
           DMI_BULK_RAW_DIR: .cache/dmi-grib
           DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/deployed-dmi-bulk-cache.json
-          WEATHER_USER_AGENT: "RavRadar/4.0.29 (${{ github.server_url }}/${{ github.repository }})"
+          CURRENT_FIELD_SHADOW_PATH: .cache/current-field-shadow.json
+          CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
+          WEATHER_USER_AGENT: "RavRadar/4.0.229 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Save progressed DMI GRIB download cache
@@ -185,6 +196,13 @@ jobs:
         with:
           path: data/live/dmi-bulk-cache.json
           key: dmi-zone-cache-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Save private seven-day current-field research cache
+        if: steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled'
+        uses: actions/cache/save@v4
+        with:
+          path: .cache/current-field-shadow.json
+          key: current-field-shadow-v1-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Report DMI bulk result
         if: steps.preflight.outputs.should_run == 'true' && always()
@@ -218,7 +236,7 @@ jobs:
           DMI_DEPLOYED_CACHE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/live/dmi-forecast-cache.json"
           WEATHER_REQUEST_TIMEOUT_MS: 25000
           DMI_OCEAN_REQUEST_TIMEOUT_MS: 60000
-          WEATHER_USER_AGENT: "RavRadar/4.0.29 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.229 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Attach scientific current provenance and exact DMI grid points

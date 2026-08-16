@@ -1,4 +1,12 @@
-# AI Roadmap – RavRadar 4.0.228
+# AI Roadmap – RavRadar 4.0.229
+
+## 4.0.229 – lokal bundnær strøm og syv døgns privat strømfeltsgrundlag
+
+- Aktiv strøm vælges rumligt først: nærmeste gyldige DMI-vandkolonne ved det aktuelle administratorpunkt, derefter det dybeste fælles U/V-lag i netop den kolonne. 0–3 km foretrækkes; 3–5 km accepteres kun, når nærmere gyldige data mangler; over 5 km er `missing`.
+- Pil, prognose, historie og score må kun bruge samme dokumenterede U/V-koordinat, tid, lag og samplingpunkt. Gamle strømdata med den tidligere semantik kasseres og genopbygges.
+- Et roterende privat forskningslag genbruger eksisterende DKSS-GRIB ved 0, 5 og 15 km søværts og bevarer flere lag i højst 168 timer. Det påvirker hverken RavScore eller offentlig runtime.
+- Den store analyse og et eventuelt nyt scoremodul skal behandle hele kæden **ydre tilførsel → overgang mod kyst → lokal bundnær levering** med rumlighed, dybde, persistens og tidsforsinkelse. Undgå dobbelt-tælling med vind, bølger og lokal strøm. Se DEC-0040.
+- Lokal kode, målrettede regressioner, den øvrige dataneutrale valideringskæde og releasegate er grønne. Fuld lokal `validate` stopper på repositoryets kendte historiske 209/211-snapshot. Frisk central DMI-genopbygning, fuld CI-gate og produktionskontrol mangler endnu; 4.0.229 må ikke kaldes produktionsverificeret før de består.
 
 ## 4.0.228 – flere ægte pile, når kortet zoomes ind
 

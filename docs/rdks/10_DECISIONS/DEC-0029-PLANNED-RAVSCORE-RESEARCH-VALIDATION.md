@@ -51,3 +51,9 @@ Tunge historiske eller rumlige beregninger skal, hvis de senere godkendes, udfø
 Vind ved de viste pile er ikke hele vindgrundlaget for ravets fysiske årsagskæde. Pilene viser kun udvalgte verificerede datapunkter og er designet til kortlæsning, performance og provenance; fravær af en pil betyder ikke, at vinden i området er fysisk irrelevant. Den senere analyse skal derfor starte i de tilgængelige rumlige og tidslige meteorologiske felter og relevante koblinger til bølge- og havmodeller, ikke i UI-markørernes placering.
 
 Dette er et forskningskrav, ikke en forhåndskonklusion om ny score. Analysen skal kvantificere geografisk skala, lag, tidsforsinkelse, persistens, retning, overlap med eksisterende bølge-/strømvariable og risiko for dobbelt-tælling. Kun signaler med selvstændig evidens og efterfølgende virkelighedsvalidering kan senere foreslås til særskilt godkendelse.
+
+## Hele strømfeltet og transportkæden
+
+DEC-0040 gør følgende til et eksplicit analysekrav: den lokale bundnære strøm ved kystens vandpunkt er sidste led i en større transportkæde, ikke hele kæden. Analysen skal undersøge ydre tilførsel, transportkorridorer, strøm cirka 5 og 15 km søværts, overflade-/mellem-/bundlag, overgang ind mod kysten, persistens og relevante tidsforsinkelser. Den skal afprøve hypotesen om, at strøm længere ude beskriver, hvilket materiale der kan nå kystzonen senere, mens det lokale felt beskriver den sidste levering.
+
+Den private syvdøgnsopsamling er kun et observationsgrundlag. Den påvirker ikke aktiv RavScore og kan ikke alene bevise en ny mekanisme. En fremtidig scoremodel skal dokumentere selvstændig forklaringsværdi og undgå dobbelt-tælling med lokal strøm, vind, bølger og historik.

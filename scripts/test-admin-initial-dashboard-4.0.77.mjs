@@ -4,7 +4,7 @@ const site=fs.readFileSync('js/services/site-function-test-service.js','utf8');
 const html=fs.readFileSync('admin.html','utf8');
 const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));
 function ok(v,m){if(!v)throw new Error(m)}
-ok(admin.includes("render();\n }catch(error)"),'Dashboard renderes ikke straks efter godkendt adgang.');
+ok(/render\(\);\r?\n }catch\(error\)/.test(admin),'Dashboard renderes ikke straks efter godkendt adgang.');
 ok(admin.includes("document.body.dataset.adminReady='true'"),'Admin mangler entydig ready-markør.');
 ok(admin.includes('SITE_TEST_MODE'),'Admin mangler særskilt testtilstand.');
 ok(admin.includes('ravradar:test-permission-denied'),'Rettighedsafvisninger kan ikke opsamles af sitetesten.');

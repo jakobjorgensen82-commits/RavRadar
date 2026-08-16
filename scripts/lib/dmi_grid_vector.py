@@ -84,6 +84,49 @@ def vector_vertical_layer(family: str, level_type: Any, level: Any) -> tuple[str
     return (f"{normalized_type}:{numeric_level:g}", numeric_level)
 
 
-def prefer_vector_layer(previous_rank: float | None, candidate_rank: float) -> bool:
-    """Prefer the deepest valid shared current layer deterministically."""
-    return previous_rank is None or float(candidate_rank) >= float(previous_rank)
+def vector_choice(
+    first: dict[str, Any],
+    second: dict[str, Any],
+    layer_key: str,
+    layer_rank: float,
+) -> dict[str, Any]:
+    """Describe one physically paired U/V candidate.
+
+    The horizontal water column is authoritative. Depth may only break a tie
+    between layers at that exact column; it must never justify moving to a more
+    distant grid point.
+    """
+    return {
+        "first": first,
+        "second": second,
+        "layerKey": layer_key,
+        "layerRank": float(layer_rank),
+        "distanceKm": max(float(first["distanceKm"]), float(second["distanceKm"])),
+        "pointKey": physical_point_key(first),
+    }
+
+
+def prefer_vector_choice(
+    previous: dict[str, Any] | None,
+    candidate: dict[str, Any],
+    distance_tolerance_km: float = 1e-6,
+) -> bool:
+    """Choose nearest water column first, then its deepest valid U/V layer.
+
+    A deeper candidate at another coordinate is never preferred over a closer
+    column. Equal-distance columns use their coordinate as a deterministic
+    tie-breaker; depth is considered only when the physical point is identical.
+    """
+    if previous is None:
+        return True
+    previous_point = tuple(previous["pointKey"])
+    candidate_point = tuple(candidate["pointKey"])
+    if candidate_point == previous_point:
+        return float(candidate["layerRank"]) > float(previous["layerRank"])
+    previous_distance = float(previous["distanceKm"])
+    candidate_distance = float(candidate["distanceKm"])
+    if candidate_distance < previous_distance - distance_tolerance_km:
+        return True
+    if abs(candidate_distance - previous_distance) <= distance_tolerance_km:
+        return candidate_point < previous_point
+    return False

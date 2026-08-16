@@ -3,7 +3,11 @@ import fs from 'node:fs';
 const bulk=fs.readFileSync('scripts/update-dmi-bulk.py','utf8');
 assert.match(bulk,/def collection_schedule\(previous: dict\[str, Any\], active_zones_config: list\[dict\[str, Any\]\]\)/);
 assert.match(bulk,/coverageDenominator": "current-active-zone-and-coastal-part-registry"/);
-assert.match(bulk,/active_zones_config = \[zone for zone in zones if not zone\.get\("waterSource"\)\]/,'Lokale kystdele skal indgÃ¥ i schedulerens reelle DMI-dÃ¦kningsnÃ¦vner.');
+assert.match(
+  bulk,
+  /active_zones_config = \[\s*zone for zone in zones\s*if not zone\.get\("waterSource"\) and not zone\.get\("researchCurrent"\)\s*\]/,
+  'Lokale kystdele skal indgå i schedulerens reelle DMI-dækningsnævner, mens private forskningspunkter holdes udenfor.',
+);
 assert.match(bulk,/active_zones = \{zone_id: \(previous\.get\("zones"\) or \{\}\)\.get\(zone_id, \{\}\) for zone_id in active_ids\}/);
 assert.match(bulk,/missing_marine_zone_ids = \[/);
 assert.match(bulk,/preferred_marine_demand = \{collection: 0 for collection in MARINE_COLLECTIONS\}/);

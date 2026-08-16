@@ -38,8 +38,8 @@ need(close.filter(row=>row.partId).every(row=>row.source.startsWith('dmi-')),'Lo
 need(close.some(row=>row.partId==='P3'&&row.type==='current'&&row.point[0]===11.1),'Et selvstændigt lokalt strømgridpunkt mangler ved indzoomning.');
 need(close.some(row=>row.partId==='P1'&&row.type==='wind'&&row.source==='dmi-marine-wind-grid'),'En dokumenteret lokal DKSS-vindpil mangler ved indzoomning.');
 
-const gridPoint=(longitude,latitude)=>({longitude,latitude});
-const recordWithGrid=gridPoints=>({model:{completeness:{gridPoints}}});
+const gridPoint=(longitude,latitude,extra={})=>({longitude,latitude,...extra});
+const recordWithGrid=(gridPoints,extra={})=>({model:{completeness:{currentVectorSemanticsVersion:2,currentMaxDistanceKm:5,samplingPoint:[9,54],gridPoints,...extra}}});
 const primary=flowPointsFromForecastRecord(recordWithGrid({
   'wind-u-10m':gridPoint(12.1,55.1),'wind-v-10m':gridPoint(12.1,55.1),
   'wind-tail-u-10m':gridPoint(12.2,55.2),'wind-tail-v-10m':gridPoint(12.2,55.2)
@@ -55,6 +55,25 @@ const mismatch=flowPointsFromForecastRecord(recordWithGrid({
 }),[9,54]);
 need(mismatch.current[0]===9&&mismatch.sources.current==='zone-marine-anchor','Uens strøm-U/V-koordinater skal falde sikkert tilbage.');
 need(mismatch.wind[0]===9&&mismatch.sources.wind==='zone-marine-anchor','Uens vind-U/V-koordinater skal falde sikkert tilbage.');
+const verifiedCurrent=flowPointsFromForecastRecord(recordWithGrid({
+  'current-u':gridPoint(9.03,54.02,{distanceKm:3.2,verticalLayer:'depthbelowsea:7'}),
+  'current-v':gridPoint(9.03,54.02,{distanceKm:3.2,verticalLayer:'depthbelowsea:7'})
+}),[9,54]);
+need(verifiedCurrent.current[0]===9.03&&verifiedCurrent.sources.current==='dmi-marine-grid','En rumligt gyldig bundnaer U/V-celle inden for 5 km skal kunne vise pil.');
+const tooFarCurrent=flowPointsFromForecastRecord(recordWithGrid({
+  'current-u':gridPoint(9.06,54.05,{distanceKm:5.01,verticalLayer:'depthbelowsea:7'}),
+  'current-v':gridPoint(9.06,54.05,{distanceKm:5.01,verticalLayer:'depthbelowsea:7'})
+}),[9,54]);
+need(tooFarCurrent.current[0]===9&&tooFarCurrent.sources.current==='zone-marine-anchor','En stroemcelle over 5 km maa ikke vises som verificeret DMI-pil.');
+const unlayeredCurrent=flowPointsFromForecastRecord(recordWithGrid({
+  'current-u':gridPoint(10,55,{distanceKm:1}),'current-v':gridPoint(10,55,{distanceKm:1})
+}),[9,54]);
+need(unlayeredCurrent.current[0]===9&&unlayeredCurrent.sources.current==='zone-marine-anchor','Et stroempar uden faelles dokumenteret dybdelag maa ikke vises.');
+const staleSamplingPoint=flowPointsFromForecastRecord(recordWithGrid({
+  'current-u':gridPoint(9.03,54.02,{distanceKm:3.2,verticalLayer:'depthbelowsea:7'}),
+  'current-v':gridPoint(9.03,54.02,{distanceKm:3.2,verticalLayer:'depthbelowsea:7'})
+},{samplingPoint:[9.2,54.2]}),[9,54]);
+need(staleSamplingPoint.current[0]===9&&staleSamplingPoint.sources.current==='zone-marine-anchor','En pil fra et tidligere administratorvandpunkt maa ikke genbruges.');
 
 globalThis.L={
   latLng:(lat,lng)=>({lat,lng}),
@@ -76,6 +95,11 @@ need(closeLayer.counts().wind===2&&closeLayer.counts().current===2,'Det rendered
 const updateWeather=await fs.readFile('scripts/update-weather.mjs','utf8');
 const app=await fs.readFile('app.js','utf8');
 need(updateWeather.includes('const flowPoints = flowPointsFromForecastRecord(record, zonePoint(feature));')&&updateWeather.includes('flowPoints: row.flowPoints'),'Produktionsbygningen fører ikke de lokale gitterpunkter til runtimekontrakten.');
+need(updateWeather.includes('function verifiedBulkCurrent')&&updateWeather.includes('rowCurrent?.verticalLayer === verifiedCurrent.verticalLayer')&&updateWeather.includes('samePoint(rowCurrent?.gridPoint, verifiedCurrent.gridPoint)'),'Scorebygningen accepterer strøm uden samme dokumenterede vandkolonne og dybdelag.');
+need(updateWeather.includes('function withOnlyVerifiedCurrent')&&updateWeather.includes('const safeRecord = withOnlyVerifiedCurrent(record, zonePoint(feature));'),'Gamle prognosecacher kan stadig føre ikke-verificeret strøm til score eller pil.');
+const directDmiBlock=updateWeather.slice(updateWeather.indexOf('async function fromDmi('),updateWeather.indexOf('function mergeHourlyPreferDmi('));
+need(directDmiBlock.includes("['sea-mean-deviation', 'water-temperature']")&&!directDmiBlock.includes("['sea-mean-deviation', 'current-u'"),'Direkte ForecastEDR må ikke levere strøm uden dokumenteret fælles vandkolonne og dybdelag.');
+need(directDmiBlock.includes('withoutCurrent(createDmiForecastRecord('),'Direkte ForecastEDR-strøm lukkes ikke fail-closed før scoring.');
 need(app.includes('()=>state.conditions.coastalParts||null')&&app.includes('state.flowArrows?.refresh?.()'),'Pilelaget opdateres ikke med den fulde detaljepakke.');
 
 if(failures.length){console.error('Zoomtæthed for kortpile fejlede:\n- '+failures.join('\n- '));process.exit(1);}

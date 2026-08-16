@@ -1,4 +1,19 @@
-# Implementeringsstatus pr. 4.0.228 – verificerede pile ved indzoomning
+# Implementeringsstatus pr. 4.0.229 – korrekt lokal strøm og privat feltopsamling
+
+## 4.0.229 – nærmeste vandkolonne og bundnært lag
+
+- [x] Rodårsagen er fundet: dybeste lag blev tidligere valgt på tværs af forskellige koordinater og kunne flytte aktiv strøm 12–24 km væk.
+- [x] Strømvalg prioriterer nu nærmeste fælles U/V-vandkolonne før det dybeste gyldige lag i samme kolonne.
+- [x] 0–3 km er foretrukket, 3–5 km accepteret reserve, og over 5 km afvises fail-closed.
+- [x] Samplingpunkt, U/V-koordinat, tid, lag, afstand og semantik følger gennem bulkcache, forecast, provenance, score og pile.
+- [x] Den faktiske koordinatafstand efterkontrolleres uafhængigt af cachens afstandsfelt, og direkte ForecastEDR-strøm uden lag-/kolonnebevis, Open-Meteos overfladestrøm samt anden fallbackstrøm fjernes før merge, historik og scoring.
+- [x] Gamle strømdata og historisk strøm med tidligere semantik eller flyttet samplingpunkt kan ikke videreføres som verificeret.
+- [x] Privat roterende opsamling ved 0/5/15 km og flere lag har 168 timers retention, ændrer ikke score og publicerer kun kompakte antal/statusfelter.
+- [x] DEC-0040, DEC-0029, roadmap, krav, kendte issues, håndbog og changelog beskriver helhedsmodellen **ydre tilførsel → overgang → lokal bundnær levering**.
+- [x] Målrettede Python-/Node-regressioner, den øvrige lokalt kørbare valideringskæde og syntakskontrol består.
+- [x] Lokal `release:gate` består. Fuld `validate` gennemfører geometri-v2-kæden og stopper som forventet på repositoryets historiske 209/211-vejrsnapshot; de centrale datakrav må kun bevises efter adminhydrering og frisk DMI i CI.
+- [ ] Frisk central DMI-genopbygning skal bevise semantik v2, højst 5 km, samme lag/punkt, dækningsgate og privat opsamlingsstatus.
+- [ ] Supabase, supportartifact, Pages-deploy og direkte livekontrol skal bestå, før versionen kaldes produktionsverificeret.
 
 ## 4.0.228 – lokale DMI-gitterpunkter bliver synlige tæt på
 

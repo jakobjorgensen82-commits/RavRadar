@@ -15,6 +15,44 @@ function exactGridPair(grid, firstKey, secondKey) {
   return [firstLon, firstLat];
 }
 
+function samePoint(first, second, tolerance = 1e-7) {
+  const a = validFallback(first);
+  const b = validFallback(second);
+  return Boolean(a && b
+    && Math.abs(a[0] - b[0]) <= tolerance
+    && Math.abs(a[1] - b[1]) <= tolerance);
+}
+
+function haversineKm(first, second) {
+  const a = validFallback(first);
+  const b = validFallback(second);
+  if (!a || !b) return Infinity;
+  const radians = degrees => degrees * Math.PI / 180;
+  const dLat = radians(b[1] - a[1]);
+  const dLon = radians(b[0] - a[0]);
+  const lat1 = radians(a[1]);
+  const lat2 = radians(b[1]);
+  const term = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+  return 6371.0088 * 2 * Math.atan2(Math.sqrt(term), Math.sqrt(1 - term));
+}
+
+function exactCurrentGrid(record, expectedSamplingPoint) {
+  const completeness = record?.model?.completeness ?? {};
+  if (Number(completeness.currentVectorSemanticsVersion) !== 2) return null;
+  if (!samePoint(completeness.samplingPoint, expectedSamplingPoint)) return null;
+  const grid = completeness.gridPoints ?? {};
+  const first = grid['current-u'];
+  const second = grid['current-v'];
+  const point = exactGridPair(grid, 'current-u', 'current-v');
+  if (!point || !first?.verticalLayer || first.verticalLayer !== second?.verticalLayer) return null;
+  const firstDistance = coordinate(first?.distanceKm);
+  const secondDistance = coordinate(second?.distanceKm);
+  const maximumDistance = coordinate(completeness.currentMaxDistanceKm) ?? 5;
+  if (firstDistance === null || secondDistance === null || Math.max(firstDistance, secondDistance) > maximumDistance) return null;
+  if (haversineKm(expectedSamplingPoint, point) > maximumDistance + 0.01) return null;
+  return point;
+}
+
 function validFallback(value) {
   if (!Array.isArray(value) || value.length < 2) return null;
   const longitude = coordinate(value[0]);
@@ -25,7 +63,7 @@ function validFallback(value) {
 export function flowPointsFromForecastRecord(record, fallbackPoint) {
   const fallback = validFallback(fallbackPoint);
   const grid = record?.model?.completeness?.gridPoints ?? {};
-  const currentGrid = exactGridPair(grid, 'current-u', 'current-v');
+  const currentGrid = exactCurrentGrid(record, fallback);
   const primaryWindGrid = exactGridPair(grid, 'wind-u-10m', 'wind-v-10m');
   const marineWindGrid = primaryWindGrid ? null : exactGridPair(grid, 'wind-tail-u-10m', 'wind-tail-v-10m');
   const windGrid = primaryWindGrid || marineWindGrid;

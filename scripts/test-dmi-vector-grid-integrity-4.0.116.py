@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from lib.dmi_grid_vector import select_common_vector_candidate, same_grid_point, water_source_parameter_allowed, water_temperature_surface_layer, vector_vertical_layer, prefer_vector_layer
+from lib.dmi_grid_vector import select_common_vector_candidate, same_grid_point, water_source_parameter_allowed, water_temperature_surface_layer, vector_vertical_layer, vector_choice, prefer_vector_choice
 
 u = [
     {"latitude": 56.0, "longitude": 10.0, "distanceKm": 1.0, "value": 0.2},
@@ -25,7 +25,8 @@ print("OK: DMI U/V vectors require one shared physical grid point.")
 
 # Regression for production current-layer pairing: U/V components from different
 # DMI depth layers must never compete in one cache bucket. Among valid shared
-# current layers, the deepest available layer wins deterministically.
+# current layers, horizontal proximity wins first. Depth can only select among
+# layers at the already selected physical water column.
 surface = vector_vertical_layer("current", "surface", None)
 depth_1 = vector_vertical_layer("current", "depthBelowSea", 1)
 depth_7 = vector_vertical_layer("current", "depthBelowSea", 7)
@@ -33,10 +34,26 @@ assert surface == ("surface:0", 0.0)
 assert depth_1 == ("depthbelowsea:1", 1.0)
 assert depth_7 == ("depthbelowsea:7", 7.0)
 assert surface[0] != depth_1[0] != depth_7[0]
-assert prefer_vector_layer(None, depth_1[1])
-assert prefer_vector_layer(depth_1[1], depth_7[1])
-assert not prefer_vector_layer(depth_7[1], depth_1[1])
-print("OK: DMI current U/V pairing is depth-layer aware and deterministic.")
+near_surface = vector_choice(
+    {"latitude": 56.0, "longitude": 10.0, "distanceKm": 0.8},
+    {"latitude": 56.0, "longitude": 10.0, "distanceKm": 0.8},
+    surface[0], surface[1],
+)
+near_deep = vector_choice(
+    {"latitude": 56.0, "longitude": 10.0, "distanceKm": 0.8},
+    {"latitude": 56.0, "longitude": 10.0, "distanceKm": 0.8},
+    depth_7[0], depth_7[1],
+)
+far_deep = vector_choice(
+    {"latitude": 56.1, "longitude": 10.1, "distanceKm": 12.0},
+    {"latitude": 56.1, "longitude": 10.1, "distanceKm": 12.0},
+    depth_7[0], depth_7[1],
+)
+assert prefer_vector_choice(None, near_surface)
+assert prefer_vector_choice(near_surface, near_deep), "Deeper layer should win within one column"
+assert not prefer_vector_choice(near_surface, far_deep), "Depth must never move current to a farther column"
+assert prefer_vector_choice(far_deep, near_surface), "Nearest water column must win before depth"
+print("OK: DMI current selects the nearest water column before its deepest valid layer.")
 
 
 assert water_source_parameter_allowed("sea-mean-deviation")
@@ -52,8 +69,8 @@ for level_type, level in (("depthBelowSea", 1), ("depthBelowSea", 30), ("surface
 print("OK: DMI water temperature accepts only the explicit surface layer.")
 
 
-# Regression for production #1738: Limfjord sampling must search broadly enough
-# to discover a shared wet U/V point while preserving the existing 24 km accept cap.
+# Search may inspect a broad land-mask window, but verified current has a strict
+# owner-approved 5 km cap and prefers the 0-3 km band.
 from pathlib import Path
 bulk_source = Path("scripts/update-dmi-bulk.py").read_text()
 assert 'DMI_BULK_GRID_CANDIDATES", "64"' in bulk_source
@@ -61,10 +78,16 @@ assert 'DMI_BULK_LIMFJORD_GRID_CANDIDATES", "128"' in bulk_source
 assert '0.20, 0.26' in bulk_source
 assert 'MAX_GRID_DISTANCE_KM = {"limfjord": 24.0' in bulk_source
 assert 'vector_candidates.setdefault((family, zone["id"], layer_key), {})' in bulk_source
-assert 'prefer_vector_layer(previous_layer_rank, layer_rank)' in bulk_source
+assert 'CURRENT_PREFERRED_DISTANCE_KM = 3.0' in bulk_source
+assert 'CURRENT_MAX_DISTANCE_KM = 5.0' in bulk_source
+assert 'prefer_vector_choice(previous_choice, candidate_choice)' in bulk_source
+assert 'CURRENT_POINT_OVER_5KM' in bulk_source
 assert '"verticalLayer": layer_key' in bulk_source
+assert '"vectorSemanticsVersion": CURRENT_VECTOR_SEMANTICS_VERSION' in bulk_source
+assert '"gridPoint": [round(float(first["longitude"]), 7)' in bulk_source
+assert '"samplingPoint": [round(float(zone["lon"]), 7)' in bulk_source
 assert 'rejectedNonSurfaceWaterTemperatureMessages' in bulk_source
 assert 'water_temperature_surface_layer' in bulk_source
 assert 'family in {"current", "wind-tail"}' in bulk_source
 assert 'search.setdefault("vectorPairs", {}).setdefault(family, {})' in bulk_source
-print("OK: Marine U/V search examines broad land-mask windows, preserves physical caps, and diagnoses current and wind-tail pairs.")
+print("OK: Marine U/V search is broad, while verified current remains spatial-first and capped at 5 km.")

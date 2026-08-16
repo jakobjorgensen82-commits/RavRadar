@@ -20,7 +20,15 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
-from lib.dmi_grid_vector import select_common_vector_candidate, same_grid_point, water_source_parameter_allowed, water_temperature_surface_layer, vector_vertical_layer, prefer_vector_layer
+from lib.dmi_grid_vector import select_common_vector_candidate, same_grid_point, water_source_parameter_allowed, water_temperature_surface_layer, vector_vertical_layer, vector_choice, prefer_vector_choice
+from lib.current_field_shadow import (
+    build_rotating_targets,
+    load_document as load_current_field_shadow,
+    prune as prune_current_field_shadow,
+    record_profiles as record_current_field_profiles,
+    save_document as save_current_field_shadow,
+    status as current_field_shadow_status,
+)
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -46,6 +54,8 @@ DIAGNOSTICS_JSON_PATH = ROOT / "data/diagnostics/dmi-ocean-diagnostics.json"
 DIAGNOSTICS_TEXT_PATH = ROOT / "data/diagnostics/dmi-ocean-summary.txt"
 RAW_DIR = pathlib.Path(os.getenv("DMI_BULK_RAW_DIR", str(ROOT / ".cache/dmi-grib")))
 CACHE_AUDIT_PATH = ROOT / "data/diagnostics/dmi-cache-audit.json"
+CURRENT_FIELD_SHADOW_PATH = pathlib.Path(os.getenv("CURRENT_FIELD_SHADOW_PATH", str(ROOT / ".cache/current-field-shadow.json")))
+CURRENT_FIELD_SHADOW_STATUS_PATH = ROOT / "data/diagnostics/current-field-shadow-status.json"
 RAW_CACHE_MAX_BYTES = max(256 * 1024 * 1024, int(float(os.getenv("DMI_BULK_RAW_CACHE_MAX_MB", "4096")) * 1024 * 1024))
 STAC_ROOT = os.getenv("DMI_STAC_ROOT", "https://opendataapi.dmi.dk/v1/forecastdata")
 HOURS = max(1, int(os.getenv("DMI_BULK_HOURS", "120")))
@@ -80,9 +90,14 @@ for _session in (STAC_SESSION, DOWNLOAD_SESSION):
 STAC_SESSION.headers.update({"Accept": "application/geo+json, application/json"})
 DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octet-stream, */*"})
 
-PARSER_VERSION = 16
+PARSER_VERSION = 17
 PARAMETER_MAP_VERSION = 4
 GRID_LOOKUP_VERSION = 7
+CURRENT_VECTOR_SEMANTICS_VERSION = 2
+CURRENT_VECTOR_SELECTION = "nearest-water-column-then-deepest-valid-layer"
+CURRENT_PREFERRED_DISTANCE_KM = 3.0
+CURRENT_MAX_DISTANCE_KM = 5.0
+CURRENT_FIELD_SHADOW_PARTS_PER_RUN = max(1, int(os.getenv("CURRENT_FIELD_SHADOW_PARTS_PER_RUN", "15")))
 COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw", "wam_nsb", "harmonie_dini_sf"]
 COLLECTION_FAMILY = {
     "dkss_idw": "marine", "dkss_nsbs": "marine", "dkss_lf": "marine",
@@ -869,9 +884,12 @@ def parameter_zones(collection: str, parameter: str, zones: list[dict[str, Any]]
     Vandstandskilder er hjælpepunkter til DKSS-vandstand. De er ikke forecastzoner
     og må derfor ikke forbruge opslag på strøm, vind, bølger eller temperatur.
     """
-    regular = [zone for zone in zones if not zone.get("waterSource")]
+    research = [zone for zone in zones if zone.get("researchCurrent")]
+    regular = [zone for zone in zones if not zone.get("waterSource") and not zone.get("researchCurrent")]
     sources = [zone for zone in zones if zone.get("waterSource")]
     base_regular = relevant_zones(collection, regular)
+    if collection in MARINE_COLLECTIONS and parameter in {"current-u", "current-v"}:
+        return base_regular + relevant_zones(collection, research)
     if collection in MARINE_COLLECTIONS and water_source_parameter_allowed(parameter):
         return base_regular + sources
     return base_regular
@@ -888,10 +906,13 @@ def native_component_source(collection: str, model_run: str, valid_time: str, **
 
 
 def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time: str,
-                 zones: list[dict[str, Any]], output: dict[str, Any], diagnostics: dict[str, Any]) -> tuple[set[str], set[str], bool, int, int]:
+                 zones: list[dict[str, Any]], output: dict[str, Any], diagnostics: dict[str, Any],
+                 current_shadow: dict[str, Any] | None = None) -> tuple[set[str], set[str], bool, int, int]:
     found, touched = set(), set()
     vector_candidates: dict[tuple[str, str, str], dict[str, list[dict[str, Any]]]] = {}
-    selected_vector_layer_rank: dict[tuple[str, str], float] = {}
+    selected_vector_choices: dict[tuple[str, str], dict[str, Any]] = {}
+    research_vector_choices: dict[str, list[dict[str, Any]]] = {}
+    research_target_by_id = {str(zone["id"]): zone for zone in zones if zone.get("researchCurrent")}
     inventory = diagnostics.setdefault("gribFieldInventory", {}).setdefault(collection, {})
     persistent_inventory = diagnostics.setdefault("persistentFieldInventory", {}).setdefault(collection, {
         "capturedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -967,12 +988,16 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                             continue
                         first, second = pair
                         selection_key = (family, zone["id"])
-                        previous_layer_rank = selected_vector_layer_rank.get(selection_key)
-                        # Strøm: behold det dybeste gyldige fælles U/V-lag uanset
-                        # GRIB-meddelelsesrækkefølgen. Vind har kun ét relevant lag.
-                        if not prefer_vector_layer(previous_layer_rank, layer_rank):
+                        candidate_choice = vector_choice(first, second, layer_key, layer_rank)
+                        if family == "current" and zone.get("researchCurrent"):
+                            research_vector_choices.setdefault(str(zone["id"]), []).append(candidate_choice)
                             continue
-                        distance = max(float(first["distanceKm"]), float(second["distanceKm"]))
+                        previous_choice = selected_vector_choices.get(selection_key)
+                        # Strøm: vælg først den nærmeste gyldige vandkolonne og
+                        # derefter dens dybeste fælles U/V-lag. Vind har kun ét lag.
+                        if not prefer_vector_choice(previous_choice, candidate_choice):
+                            continue
+                        distance = float(candidate_choice["distanceKm"])
                         point = output["zones"].setdefault(zone["id"], {"hourly": {}, "gridPoints": {}, "collections": {}})
                         if family == "current":
                             search = diagnostics.setdefault("marineGridSearch", {}).setdefault(zone["id"], {}).setdefault(collection, {
@@ -984,8 +1009,8 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                             for key in (first_key, second_key):
                                 if key not in search["parametersFound"]:
                                     search["parametersFound"].append(key)
-                            if distance > MAX_GRID_DISTANCE_KM.get(zone.get("coastType") or "east", 32.0):
-                                search["rejectedReason"] = "VALID_POINT_TOO_FAR"
+                            if distance > CURRENT_MAX_DISTANCE_KM:
+                                search["rejectedReason"] = "CURRENT_POINT_OVER_5KM"
                                 continue
                             anchor_protected = (
                                 (point.get("marineSelection") or {}).get("collection") not in {None, collection}
@@ -1005,6 +1030,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                             search["selected"] = True
                             search["verticalLayer"] = layer_key
                             search["verticalLayerRankM"] = round(layer_rank, 3)
+                            search["distanceBand"] = "preferred-0-3km" if distance <= CURRENT_PREFERRED_DISTANCE_KM else "accepted-3-5km"
                             search.pop("rejectedReason", None)
                         if family == "wind-tail":
                             search = diagnostics.setdefault("marineGridSearch", {}).setdefault(zone["id"], {}).setdefault(collection, {
@@ -1031,7 +1057,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                                 vector_search["selected"] = False
                                 vector_search["rejectedReason"] = "BETTER_COLLECTION_SELECTED"
                                 continue
-                        selected_vector_layer_rank[selection_key] = layer_rank
+                        selected_vector_choices[selection_key] = candidate_choice
                         touched.add(zone["id"])
                         hour = point["hourly"].setdefault(valid_time, {"time": valid_time})
                         for key, candidate in ((first_key, first), (second_key, second)):
@@ -1042,7 +1068,20 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                                 "verticalLayerRankM": round(layer_rank, 3),
                             }
                             point["collections"][key] = collection
-                        hour.setdefault("sources", {})[PARAMETER_COMPONENT[first_key]] = native_component_source(collection, model_run, valid_time)
+                        source_extra = {}
+                        if family == "current":
+                            source_extra = {
+                                "verticalLayer": layer_key,
+                                "verticalLayerRankM": round(layer_rank, 3),
+                                "distanceKm": round(distance, 5),
+                                "gridPoint": [round(float(first["longitude"]), 7), round(float(first["latitude"]), 7)],
+                                "samplingPoint": [round(float(zone["lon"]), 7), round(float(zone["lat"]), 7)],
+                                "vectorSelection": CURRENT_VECTOR_SELECTION,
+                                "vectorSemanticsVersion": CURRENT_VECTOR_SEMANTICS_VERSION,
+                            }
+                        hour.setdefault("sources", {})[PARAMETER_COMPONENT[first_key]] = native_component_source(
+                            collection, model_run, valid_time, **source_extra
+                        )
                     continue
 
                 resolved = nearest_valid_batch(gid, collection, wanted)
@@ -1096,6 +1135,19 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                     break
             finally:
                 codes_release(gid)
+    if current_shadow is not None and research_vector_choices:
+        written = record_current_field_profiles(
+            current_shadow,
+            research_target_by_id,
+            research_vector_choices,
+            collection,
+            model_run,
+            valid_time,
+            str(output.get("generatedAt") or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")),
+        )
+        diagnostics["currentFieldShadowSamplesWritten"] = int(
+            diagnostics.get("currentFieldShadowSamplesWritten") or 0
+        ) + written
     return found, touched, interrupted, messages_seen, zone_lookups
 
 def wind_from_uv(hour: dict[str, Any]) -> None:
@@ -1241,11 +1293,11 @@ def restore_marine_selections(document: dict[str, Any], zones: list[dict[str, An
         if point.get("marineSelection"):
             continue
         collections = point.get("collections") or {}
-        collection = collections.get("current-u") or collections.get("sea-mean-deviation")
+        collection = collections.get("current-u")
         if collection not in MARINE_COLLECTIONS:
             continue
         grid_points = point.get("gridPoints") or {}
-        grid_point = grid_points.get("current-u") or grid_points.get("sea-mean-deviation") or {}
+        grid_point = grid_points.get("current-u") or {}
         distance = grid_point.get("distanceKm")
         if not isinstance(distance, (int, float)) or not math.isfinite(float(distance)):
             continue
@@ -1469,6 +1521,35 @@ def sanitize_water_temperature_surface_integrity(document: dict[str, Any]) -> in
         if not grid_surface:
             (zone.get("gridPoints") or {}).pop("water-temperature", None)
             (zone.get("collections") or {}).pop("water-temperature", None)
+    return removed
+
+
+def invalidate_obsolete_current_semantics(document: dict[str, Any]) -> int:
+    """Remove current selected before the spatial-first column contract.
+
+    Old caches preferred the deepest layer globally and could therefore retain a
+    vector many kilometres from the configured water point. Such values must not
+    survive a parser upgrade or be merged into a new forecast/history record.
+    """
+    if document.get("currentVectorSemanticsVersion") == CURRENT_VECTOR_SEMANTICS_VERSION:
+        return 0
+    removed = 0
+    for zone in (document.get("zones") or {}).values():
+        for hour in (zone.get("hourly") or {}).values():
+            had_current = "current-u" in hour or "current-v" in hour
+            hour.pop("current-u", None)
+            hour.pop("current-v", None)
+            (hour.get("sources") or {}).pop("current", None)
+            if had_current:
+                removed += 1
+        for key in ("current-u", "current-v"):
+            (zone.get("gridPoints") or {}).pop(key, None)
+            (zone.get("collections") or {}).pop(key, None)
+        zone.pop("marineSelection", None)
+    document["currentVectorSemanticsVersion"] = CURRENT_VECTOR_SEMANTICS_VERSION
+    document["currentVectorSelection"] = CURRENT_VECTOR_SELECTION
+    document["currentPreferredDistanceKm"] = CURRENT_PREFERRED_DISTANCE_KM
+    document["currentMaxDistanceKm"] = CURRENT_MAX_DISTANCE_KM
     return removed
 
 
@@ -1755,6 +1836,22 @@ def write_checkpoint(result: dict[str, Any], fresh_zone_ids: set[str], budget: d
     write_ocean_diagnostics(result)
 
 
+def write_current_field_shadow_checkpoint(
+    document: dict[str, Any],
+    now_iso: str,
+    selected_part_ids: list[str],
+) -> dict[str, Any]:
+    """Persist only the private samples; publish a count-only diagnostic status."""
+    prune_current_field_shadow(document, now_iso)
+    save_current_field_shadow(CURRENT_FIELD_SHADOW_PATH, document)
+    summary = current_field_shadow_status(document, selected_part_ids)
+    CURRENT_FIELD_SHADOW_STATUS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    temporary = CURRENT_FIELD_SHADOW_STATUS_PATH.with_suffix(".json.tmp")
+    temporary.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", "utf-8")
+    temporary.replace(CURRENT_FIELD_SHADOW_STATUS_PATH)
+    return summary
+
+
 def write_github_outputs(status: str, fresh_collections: int = 0, partial_collections: int = 0,
                          zone_count: int = 0, downloaded_bytes: int = 0, error: str | None = None) -> None:
     output_path = os.getenv("GITHUB_OUTPUT")
@@ -1806,7 +1903,9 @@ def main() -> int:
     current_zone_registry_signature = sampling_registry_signature()
     previous = load_previous(current_zone_registry_signature)
     removed_unverified_temperature_points = sanitize_water_temperature_surface_integrity(previous)
+    removed_obsolete_current_hours = invalidate_obsolete_current_semantics(previous)
     previous.setdefault("diagnostics", {})["removedUnverifiedWaterTemperaturePoints"] = removed_unverified_temperature_points
+    previous.setdefault("diagnostics", {})["removedObsoleteCurrentHours"] = removed_obsolete_current_hours
     previous_zone_registry_signature = previous.get("zoneRegistrySignature")
     zone_registry_unchanged = previous_zone_registry_signature == current_zone_registry_signature
     previous_generated = epoch(previous.get("generatedAt"))
@@ -1886,11 +1985,12 @@ def main() -> int:
 
     # De ejer-godkendte lokale kystdele samples i de samme allerede downloadede
     # GRIB-felter som hovedzonerne. Det øger kun lokale grid-opslag; det udløser
-    # ikke et separat DMI-kald pr. kystdel. De indgår ikke i schedulerens
-    # dækningsnævner, så den eksisterende 208-zoners indsamlingsrytme bevares.
+    # ikke et separat DMI-kald pr. kystdel. De offentlige kystdele indgår i den
+    # reelle dækningsnævner; kun private forskningsmål holdes udenfor.
+    part_doc: dict[str, Any] = {"zones": {}}
+    zone_coast_types = {zone["id"]: zone.get("coastType") or "east" for zone in zones}
     if COASTAL_PART_POINTS_PATH.exists():
         part_doc = json.loads(COASTAL_PART_POINTS_PATH.read_text("utf-8"))
-        zone_coast_types = {zone["id"]: zone.get("coastType") or "east" for zone in zones if not zone.get("coastalPart")}
         for parent_zone_id, parts in (part_doc.get("zones") or {}).items():
             for part in parts or []:
                 part_id = part.get("partId")
@@ -1906,13 +2006,25 @@ def main() -> int:
                     "parentZoneId": parent_zone_id,
                 })
 
+    # Privat, score-neutral forskningsopsamling. Kun et roterende udsnit tilføjes
+    # som midlertidige opslag i de allerede downloadede strømfelter. Disse id'er
+    # skrives aldrig til den offentlige bulk-cache eller schedulerens dækningsmål.
+    current_shadow = load_current_field_shadow(CURRENT_FIELD_SHADOW_PATH)
+    research_targets, next_research_cursor, selected_research_part_ids = build_rotating_targets(
+        part_doc,
+        zone_coast_types,
+        int(current_shadow.get("cursor") or 0),
+        CURRENT_FIELD_SHADOW_PARTS_PER_RUN,
+    )
+    zones.extend(research_targets)
+
     # Vandstandskilder (målestationer og DMI-prognosepunkter) samples i samme
     # DKSS-GRIB som zonerne. Dermed får begge kildetyper sammenlignelige
     # femdøgnsserier uden et stort antal ForecastEDR-kald.
     if WATER_SOURCES_PATH.exists():
         try:
             source_doc = json.loads(WATER_SOURCES_PATH.read_text("utf-8"))
-            zone_points = list(zones)
+            zone_points = [zone for zone in zones if not zone.get("researchCurrent")]
             for source in source_doc.get("stations", []):
                 coords = source.get("point")
                 source_key = source.get("sourceKey")
@@ -1930,20 +2042,38 @@ def main() -> int:
     # finder et gyldigt felt. Tomme poster betyder eksplicit "ingen direkte
     # bulkdata"; de må ikke udfyldes med nul eller stale data. Det gør det muligt
     # for provenance/audits at skelne datamangler fra en brudt registreringskæde.
-    active_output_ids = {str(zone["id"]) for zone in zones if zone.get("id")}
+    active_output_ids = {
+        str(zone["id"]) for zone in zones
+        if zone.get("id") and not zone.get("researchCurrent")
+    }
+    zone_config_by_id = {
+        str(zone["id"]): zone for zone in zones
+        if zone.get("id") and not zone.get("researchCurrent")
+    }
     initial_zone_records = {
-        zone_id: {"hourly": {}, "gridPoints": {}, "collections": {}}
+        zone_id: {
+            "samplingPoint": [round(float(zone_config_by_id[zone_id]["lon"]), 7), round(float(zone_config_by_id[zone_id]["lat"]), 7)],
+            "hourly": {},
+            "gridPoints": {},
+            "collections": {},
+        }
         for zone_id in active_output_ids
     }
     result = {"schemaVersion": 2, "generatedAt": generated,
               "sourceUpdatedAt": previous.get("sourceUpdatedAt") or previous.get("generatedAt"),
               "method": f"DMI STAC forecast-step GRIB inventory; collection-specific field extraction; multi-candidate nearest valid grid point with shared-grid U/V vector pairing and marine collection overlap; {TIME_STRIDE_HOURS}h model stride; no spatial interpolation",
-              "hours": HOURS, "timeStrideHours": TIME_STRIDE_HOURS, "zoneRegistrySignature": current_zone_registry_signature, "zones": initial_zone_records, "runs": {},
+              "hours": HOURS, "timeStrideHours": TIME_STRIDE_HOURS, "zoneRegistrySignature": current_zone_registry_signature,
+              "currentVectorSemanticsVersion": CURRENT_VECTOR_SEMANTICS_VERSION,
+              "currentVectorSelection": CURRENT_VECTOR_SELECTION,
+              "currentPreferredDistanceKm": CURRENT_PREFERRED_DISTANCE_KM,
+              "currentMaxDistanceKm": CURRENT_MAX_DISTANCE_KM,
+              "zones": initial_zone_records, "runs": {},
               "collectionState": dict(previous.get("collectionState") or {}),
               "diagnostics": {"collectionsAttempted": [], "collectionsSucceeded": [], "collectionsPartial": [], "errors": [],
                               "downloadedBytes": 0, "reusedAssets": 0, "parametersByCollection": {}, "stacByCollection": {},
                               "assetsSkippedPreviouslyProcessed": 0, "assetsRetriedIncomplete": 0, "zeroProgressCollections": [], "collectionsUnchanged": [], "messagesSeen": 0, "zoneLookups": 0, "batchedGridReads": 0, "marineGridSearch": {},
                               "runtimeBudgetSeconds": MAX_RUNTIME_SECONDS, "finalizeReserveSeconds": FINALIZE_RESERVE_SECONDS,
+                              "currentFieldShadow": current_field_shadow_status(current_shadow, selected_research_part_ids),
                               "persistentFieldInventory": dict(((previous.get("diagnostics") or {}).get("persistentFieldInventory") or {}))}}
     merge_previous(result, previous, active_output_ids)
     result["diagnostics"]["restoredMarineSelections"] = restore_marine_selections(result, zones)
@@ -1951,7 +2081,10 @@ def main() -> int:
     # Local coastal parts use the same downloaded GRIB fields as parent zones.
     # They must remain in the coverage denominator; excluding them allowed the
     # scheduler to stop while most public local scores still lacked current.
-    active_zones_config = [zone for zone in zones if not zone.get("waterSource")]
+    active_zones_config = [
+        zone for zone in zones
+        if not zone.get("waterSource") and not zone.get("researchCurrent")
+    ]
     scheduled, schedule_coverage = collection_schedule(previous, active_zones_config)
     result["diagnostics"]["scheduledCollections"] = scheduled
     result["diagnostics"]["scheduleCoverageBeforeRun"] = schedule_coverage
@@ -2020,7 +2153,27 @@ def main() -> int:
                     result["diagnostics"]["reusedAssets"] += 1
                     run_info["assetsReused"] += 1
                 progress(f"{collection}: behandler forecast-step {asset_number}/{len(assets)} {asset['valid']} ({'genbrugt' if reused else 'downloadet'})")
-                found, touched, interrupted, messages_seen, zone_lookups = process_grib(path, collection, run, asset["valid"], zones, result, result["diagnostics"])
+                found, touched, interrupted, messages_seen, zone_lookups = process_grib(
+                    path,
+                    collection,
+                    run,
+                    asset["valid"],
+                    zones,
+                    result,
+                    result["diagnostics"],
+                    current_shadow,
+                )
+                if (
+                    collection in MARINE_COLLECTIONS
+                    and research_targets
+                    and not interrupted
+                    and {"current-u", "current-v"} <= found
+                ):
+                    current_shadow["cursor"] = next_research_cursor
+                    current_shadow["lastSelectedPartIds"] = selected_research_part_ids
+                    result["diagnostics"]["currentFieldShadow"] = write_current_field_shadow_checkpoint(
+                        current_shadow, generated, selected_research_part_ids
+                    )
                 recognized.update(found)
                 result["diagnostics"]["messagesSeen"] += messages_seen
                 result["diagnostics"]["zoneLookups"] += zone_lookups
@@ -2098,6 +2251,9 @@ def main() -> int:
             state["nextEligibleAt"] = datetime.fromtimestamp(time.time() + delay_minutes * 60, timezone.utc).isoformat().replace("+00:00", "Z")
             result["diagnostics"]["errors"].append({"collection": collection, "message": message, "failureClass": state["failureClass"], "retryAfterMinutes": delay_minutes})
 
+    result["diagnostics"]["currentFieldShadow"] = write_current_field_shadow_checkpoint(
+        current_shadow, generated, selected_research_part_ids
+    )
     result["diagnostics"]["freshMarineZoneIds"] = sorted(fresh_marine_zone_ids)
     clean_and_summarize(result, fresh_zone_ids, budget)
     diag = result["diagnostics"]

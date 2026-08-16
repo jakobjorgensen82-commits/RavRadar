@@ -1,5 +1,9 @@
 # Kendte åbne og overvågede forhold
 
+- **ISSUE-CURRENT-DEEPEST-LAYER-MOVED-SPATIALLY – RETTET LOKALT I 4.0.229 / AFVENTER PRODUKTION:** Parseren valgte tidligere det dybeste lag globalt og kunne lade et 12–24 km fjernt dybdepunkt slå den nærmeste vandkolonne. Valget er ændret til rumligt først og dybde kun inden for samme koordinat; højst 5 km. Gamle strømcachefelter invalideres. Frisk DMI-genopbygning og livekortkontrol mangler.
+
+- **ISSUE-CURRENT-FIELD-TRANSPORT-CHAIN-NOT-YET-SCORED – PLANLAGT FORSKNING:** Aktiv RavScore bruger fortsat lokal verificeret strøm. Den kommende analyse skal afgøre, om ydre strøm ved cirka 5/15 km, flere dybdelag, overgangskorridorer og tidsforsinkelse giver selvstændig forklaringsværdi. Privat syvdøgnsopsamling starter score-neutralt i 4.0.229; ingen ny scoremekanisme er godkendt.
+
 - **ISSUE-MAP-ARROW-DENSITY-DOES-NOT-GROW-WITH-ZOOM – PRODUKTIONSVERIFICERET LØST I 4.0.228:** Kortet genberegnede allerede afstand mellem pile ved zoom, men runtime leverede kun ét flowpunkt pr. hovedzone. Nærzoom kan nu tilføje hver kystdels egne, eksakt parrede DMI-U/V-gitterpunkter. #2830 afdækkede, at DKSS-`wind-tail-u/v` blev overset; transporten genkender nu både primær HARMONIE-vind og DKSS-vindhale med særskilte kildemærker. #31913779486/#2835 bestod hele kæden. Artifact og livefiler har 670 eksakte strøm- og vindpunkter uden mismatch, og livebrowseren gik fra 54 til 87 synlige pile efter to zoomtrin uden konsolfejl.
 
 - **ISSUE-40228-DMI-LF-PARTIAL-RUN – RECOVERED I #2830 FORSØG 2:** Første forsøg ramte DMI-bulkbudgettet under `dkss_lf` og stoppede korrekt ved 629/673 verificerede lokale strømpunkter mod minimum 640. Den uændrede progressive genkørsel fuldførte nok cache til 670/673 og bestod den strenge strømaudit. Ingen gate blev sænket, og de 44 første mangler skyldtes den delvise Limfjordshentning, ikke ejerens punktrettelser.

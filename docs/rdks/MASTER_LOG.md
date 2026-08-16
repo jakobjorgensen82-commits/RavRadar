@@ -1288,3 +1288,11 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - #31893406911/#2790 afsluttede HARMONIE 12 UTC-indfasningen med 9.360 timer/45 timer pr. zone i 208 zoner. Sammenligning med #2782 viser identisk DMI→fallback-hale og lavere, varierende fallback→DMI-spring; to fulde cyklusser er dokumenteret uden aktiveret tærskel. Historikken nåede 39,662 rå timer og 3,943–39,662 verificerede timer.
 - En separat #31891504819 stoppede fail-closed ved ét Supabase `57014 statement timeout` på `runtime-diagnostics`; den efterfølgende release synkroniserede samme dokument grønt. Hændelsen overvåges uden forhastet retryændring.
 - #2785 viser 9.287.456 byte kompakt runtime-diagnostik; 8.690.021 byte/93,57 % er 25 rå zoneeksempler. Ved 96 kørsler dagligt er det cirka 23,308 GiB JSON-skrivninger over 30 dage, ikke dokumenteret billing-egress. Eventuel opdeling kræver bevaret ejerdownload og særskilt godkendelse.
+# 2026-08-16 – 4.0.229 nærmeste vandkolonne og privat strømfelt
+
+- Ejerens kortfund blev sporet til et globalt dybdevalg i DMI-parseren: et fjernere dybt lag kunne erstatte en nær vandkolonne og dermed flytte både pilens og scorens strømgrundlag.
+- Aktiv regel er nu nærmeste fælles DMI-U/V-vandkolonne først og dybeste gyldige lag kun på samme koordinat. 0–3 km foretrækkes, 3–5 km accepteres, og over 5 km er `missing`.
+- Semantik, aktuelt samplingpunkt, koordinat, tid, lag og afstand følger hele kæden. Gamle cacher og historisk strøm med anden identitet invalideres fail-closed.
+- En privat 168-timers cache genbruger eksisterende DKSS-GRIB og roterer gennem kystdele ved 0/5/15 km søværts med flere repræsentative lag. Den er score-neutral og rå vektorer publiceres ikke.
+- DEC-0040 og DEC-0029 fastholder den kommende helhedsanalyse: ydre tilførsel → overgang mod kyst → lokal bundnær levering med lag, persistens, tidsforsinkelse og kontrol mod dobbelt-tælling.
+- Målrettede tests, den øvrige dataneutrale valideringskæde og lokal releasegate består. Fuld `validate` stopper forventet på det historiske 209/211-snapshot; frisk central produktionsvalidering afventer.

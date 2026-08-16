@@ -1,5 +1,14 @@
 # Current truth – gældende projektviden
 
+## 4.0.229 – nærmeste vandkolonne før dybde, afventer produktion
+
+- Den tidligere DMI-parser valgte det dybeste fælles strøm-U/V-lag globalt. Dermed kunne et dybt punkt 12–24 km væk slå en nær vandkolonne og blive brugt til pil og score. Det var en systemisk fejl, ikke enkelte dårlige zoner.
+- Den aktive kontrakt er nu: nærmeste gyldige DMI-vandkolonne først, derefter det dybeste gyldige fælles U/V-lag i præcis den kolonne. Et dybere lag kan aldrig begrunde større afstand. 0–3 km er foretrukket, 3–5 km accepteret reserve, og over 5 km er `missing`.
+- Verificeret strøm kræver samme U/V-koordinat, forecasttid, vertikallag og aktuelt samplingpunkt. Pilen står på den eksakte DMI-vandcelle, og koordinatafstanden kontrolleres også uafhængigt af cachens afstandsmetadata. Gamle cacher uden semantik v2 invalideres. Kun verificeret DMI-GRIB-strøm må bruges aktivt; direkte ForecastEDR-strøm uden kolonne-/lagbevis, Open-Meteos overfladestrøm og anden fallbackstrøm må hverken videreføres til historik eller indgå i pil og score.
+- En privat, score-neutral syvdøgnscache opsamler et roterende udsnit ved 0, 5 og 15 km søværts med flere lag fra hver valgt vandkolonne. Kun en kompakt status uden rå vektorer er offentlig diagnostik.
+- Den kommende forskning og et eventuelt nyt scoremodul skal analysere hele transportkæden: ydre tilførsel, overgang ind mod kysten og lokal bundnær levering med tidsforsinkelse og persistens. Der er ikke godkendt nogen ny scoremekanisme. Se DEC-0040 og DEC-0029.
+- Lokal implementering, målrettede tests, den øvrige lokalt kørbare valideringskæde og releasegate er grønne. Fuld lokal `validate` stopper forventet på repositoryets historiske 209/211-snapshot; frisk central adminhydrering, DMI-genopbygning, fuld CI-`validate`, artifact, Supabase og Pages mangler endnu. 4.0.229 er ikke produktionsverificeret.
+
 ## 4.0.228 – flere faktiske DMI-pile ved indzoomning, produktionsverificeret
 
 - Landsoversigten bevarer ét repræsentativt vind- og strømpunkt pr. hovedzone, så kortet fortsat er læsbart.
