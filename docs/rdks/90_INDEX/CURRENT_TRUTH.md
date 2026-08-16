@@ -1,5 +1,15 @@
 # Current truth – gældende projektviden
 
+## 4.0.231 – lokal strømpil bindes til den faktisk viste scoretime
+
+- Den første semantik-v3-genopbygning #31930644562/#2875 behandlede `dkss_idw` og lukkede korrekt alle endnu ikke genopbyggede strømserier ude. Den målte 114/210 hovedzoner og 414/673 lokale dele; den private cache fortsatte til cursor 285 med 1.209 prøver.
+- Den næste progressive kørsel #31930976129/#2876 behandlede `dkss_nsbs`. Havknude er dermed produktionsbevist rettet: 38 native tider bruger den eksakte NSBS-U/V-kolonne 2,80363 km fra det centrale vandpunkt med semantik v3. Offentlig dækning steg til 182/210 hovedzoner og 574/673 lokale dele; `dkss_lf` afventer fortsat parser-v18-genopbygning.
+- #2876 fandt én separat pil-/cellefejl ved `PART::dk-b04-12-owner-approved-01`: den viste lokale score brugte kl. 12 og den korrekte DMI-celle, men det fælles `flowPoints` var beregnet ved byggetiden kl. 06:25, hvor den lokale serie manglede strøm, og faldt derfor tilbage til administratorens vandpunkt.
+- 4.0.231 vælger først den lokale scorepost, der faktisk vises, og beregner derefter strømpilens position ved præcis denne posts tid. Findes der ingen verificeret celle på den viste tid, bliver der ingen lokal DMI-pil. DMI-værdi, lag, RavScore, punkter og afstandsgrænse ændres ikke.
+- Målrettede pil-, DMI-, forecast-, provenance-, runtime-, versions-, håndbogs- og RDKS-kontroller består; public-runtime-testene består mod #2876-artefaktet, og lokal releasegate er grøn. Fuld lokal `validate` stopper som forventet ved det dokumenterede forældede 31. juli-snapshot før central adminhydrering.
+- Privat syvdøgnsopsamling i #2876 er fortsat `retentionHours=168`, `scoreImpact=false` og `publicRuntime=false`; den står ved cursor 300 med 1.394 prøver for 630 ankre/239 dele. Ejeroversigten indeholder fortsat ingen rå U/V-værdier.
+- Limfjordsgenopbygning, nul pil/grid-mismatch, den uændrede 640/673-gate, Supabase, Pages og direkte livekontrol mangler. 4.0.231 er derfor ikke deployet eller produktionsverificeret.
+
 ## 4.0.230 – strømvalg adskilt fra skalare havfelter, afventer produktion
 
 - #31929171918/#2872 gav et afgørende modbevis mod 4.0.229-antagelsen om, at alle 77 lokale mangler var geografiske: Havknude havde et eksakt fælles NSBS-U/V-punkt 2,804 km fra det centrale vandpunkt, men offentlig runtime havde ingen strøm.

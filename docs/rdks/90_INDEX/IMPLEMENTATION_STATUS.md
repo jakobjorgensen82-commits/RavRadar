@@ -1,4 +1,18 @@
-# Implementeringsstatus pr. 4.0.230 – uafhængigt strømvalg på tværs af DKSS
+# Implementeringsstatus pr. 4.0.231 – vist scoretime og strømpil deler DMI-celle
+
+## 4.0.231 – lokal pil beregnes efter valg af den viste scoretime
+
+- [x] #2875/#2876 har progressivt genopbygget `dkss_idw` og `dkss_nsbs` med parser v18 og strømsemantik v3 uden at lempe nogen gate.
+- [x] Havknude har i #2876 38 native NSBS-strømtider fra cellen 2,80363 km fra det centrale vandpunkt; den tidligere skalarblokering er dermed rettet i et frisk produktionsartefakt.
+- [x] #2876 afdækkede én selvstændig lokal pil/grid-afvigelse: en senere gyldig scoretime blev vist, mens pilens flowpunkt var beregnet ved byggetiden uden strøm.
+- [x] Den lokale runtime vælger nu sin viste score først og beregner derefter `flowPoints.current` ved præcis scoretidspunktet. Manglende strøm på den viste tid forbliver fail-closed.
+- [x] Zoom-/pilregressionen dækker nu et tidsligt datagab og beviser forskellen mellem byggetidens fallbackanker og scoretidens verificerede DMI-celle.
+- [x] Privat cache i #2876: 168 timer, score-neutral, ikke offentlig, cursor 300, 1.394 prøver, 630 ankre og 239 dele; ingen rå U/V i ejeroversigten.
+- [x] Målrettede pil-, DMI-, forecast-, provenance-, null-safety-, runtime-, versions-, håndbogs- og RDKS-kontroller består. Public-runtime-kontroller består mod det friske #2876-artefakt, og lokal `release:gate` består for 4.0.231.
+- [x] Fuld lokal `validate` gennemfører RDKS og hele geometri-v2-selftestkæden og stopper derefter som forventet på repositoryets forældede 31. juli-snapshot (209/211 før central adminhydrering). Den lokale rumlige audit mangler tilsvarende de friske 673 kystdelsserier og må ikke bruges til at lempe produktionsgaten.
+- [ ] Commit og push 4.0.231.
+- [ ] Genopbyg `dkss_lf`, og kræv nul pil/grid-mismatch i frisk central audit. Den uændrede 640/673-gate må ikke sænkes uden ejerbeslutning.
+- [ ] Supabase, Pages og direkte livekort skal bestå, før versionen kan kaldes produktionsverificeret.
 
 ## 4.0.230 – skalare havfelter kan ikke blokere nærmeste strøm
 
@@ -12,8 +26,8 @@
 - [x] DEC-0040, aktive krav, roadmap, RDKS, Weather Pipeline, Markdown-håndbogen og webhåndbogen beskriver komponentadskillelsen og bevarer den fremtidige transporthelhed.
 - [x] Målrettede DMI-, scheduler-, forecast-, integritets-, pil-, cache-, håndbogs-, RDKS- og versionskontroller består. Lokal `release:gate` består for 4.0.230.
 - [x] Fuld lokal `validate` gennemfører RDKS og hele geometri-v2-selftestkæden og stopper derefter som forventet på repositoryets forældede 31. juli-snapshot (209/211 før central adminhydrering). Den rumlige runtimeaudit mangler tilsvarende de friske 673 kystdelsserier og må ikke lempes; begge datakrav skal bevises centralt.
-- [ ] En frisk central produktion skal genbehandle parser-v18/semantik-v3-assets og bevise Havknude, samlet hovedzone-/kystdelsdækning, nul pil/grid-mismatch og fortsat privat 168-timers cache.
-- [ ] Den uændrede geografiske gate, Supabase, Pages og direkte livekort skal bestå, før 4.0.230 kan kaldes produktionsverificeret. Gaten sænkes ikke uden ejerbeslutning.
+- [x] #2875/#2876 genbehandlede IDW og NSBS. Havknude er frisk artefaktbevist med 38 tider fra NSBS-cellen 2,80363 km væk; `dkss_lf` mangler fortsat.
+- [ ] Den uændrede geografiske gate, Supabase, Pages og direkte livekort skal bestå, før denne kandidatlinje kan kaldes produktionsverificeret. Gaten sænkes ikke uden ejerbeslutning.
 
 ## 4.0.229 – nærmeste vandkolonne og bundnært lag
 

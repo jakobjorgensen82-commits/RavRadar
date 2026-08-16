@@ -68,6 +68,11 @@ const timedRecord=recordWithCurrent();
 timedRecord.hourly.push({time:'2026-08-15T15:00:00.000Z',currentUMps:0.2,currentVMps:0.1,sources:{current:{...timedRecord.hourly[0].sources.current,gridPoint:[9.04,54.02],distanceKm:3.3}}});
 const timedCurrent=flowPointsFromForecastRecord(timedRecord,[9,54],'2026-08-15T15:00:00.000Z');
 need(timedCurrent.current[0]===9.04,'Strømpilen skal stå i den valgte times egen dokumenterede DMI-celle.');
+const gapRecord=recordWithCurrent();
+gapRecord.hourly.unshift({time:'2026-08-15T09:00:00.000Z',currentUMps:null,currentVMps:null,sources:{}});
+const gapNow=flowPointsFromForecastRecord(gapRecord,[9,54],'2026-08-15T09:00:00.000Z');
+const gapSelectedScore=flowPointsFromForecastRecord(gapRecord,[9,54],'2026-08-15T12:00:00.000Z');
+need(gapNow.sources.current==='zone-marine-anchor'&&gapSelectedScore.sources.current==='dmi-marine-grid','En lokal pil skal bruge den viste scoretimes DMI-celle, selv om tidspunktet nu mangler strøm.');
 const tooFarCurrent=flowPointsFromForecastRecord(recordWithCurrent({gridPoint:[9.06,54.05],distanceKm:5.01}),[9,54]);
 need(tooFarCurrent.current[0]===9&&tooFarCurrent.sources.current==='zone-marine-anchor','En stroemcelle over 5 km maa ikke vises som verificeret DMI-pil.');
 const unlayeredCurrent=flowPointsFromForecastRecord(recordWithCurrent({verticalLayer:null}),[9,54]);
@@ -94,7 +99,7 @@ need(closeLayer.counts().wind===2&&closeLayer.counts().current===2,'Det rendered
 
 const updateWeather=await fs.readFile('scripts/update-weather.mjs','utf8');
 const app=await fs.readFile('app.js','utf8');
-need(updateWeather.includes('const flowPoints = flowPointsFromForecastRecord(record, zonePoint(feature), generatedAt);')&&updateWeather.includes('flowPoints: row.flowPoints'),'Produktionsbygningen fører ikke de lokale gitterpunkter til runtimekontrakten.');
+need(updateWeather.includes('const selectedScore = scores[nearestIndex(scores)] ?? null;')&&updateWeather.includes('flowPointsFromForecastRecord(record, zonePoint(feature), selectedScore?.time ?? generatedAt)')&&updateWeather.includes('flowPoints: row.flowPoints'),'Produktionsbygningen fører ikke den viste lokale scoretimes gitterpunkt til runtimekontrakten.');
 need(updateWeather.includes('function verifiedBulkCurrent')&&updateWeather.includes('verifiedBulkCurrent(bulkCache, bulkZone, point, rowCurrent)')&&updateWeather.includes('samePoint(source?.samplingPoint, expectedSamplingPoint)'),'Scorebygningen accepterer strøm uden hver times dokumenterede vandkolonne og dybdelag.');
 need(updateWeather.includes('function withOnlyVerifiedCurrent')&&updateWeather.includes('const safeRecord = withOnlyVerifiedCurrent(record, zonePoint(feature));'),'Gamle prognosecacher kan stadig føre ikke-verificeret strøm til score eller pil.');
 const directDmiBlock=updateWeather.slice(updateWeather.indexOf('async function fromDmi('),updateWeather.indexOf('function mergeHourlyPreferDmi('));

@@ -1,3 +1,12 @@
+## 2026-08-16 – 4.0.231 binder den lokale pil til den viste scoretime
+
+- #31930644562/#2875 genopbyggede IDW under semantik v3 og stoppede korrekt ved 114/210 hovedzoner og 414/673 lokale dele uden deploy. #31930976129/#2876 genopbyggede derefter NSBS og nåede 182/210 samt 574/673; Limfjord afventer.
+- Havknude er frisk artefaktbevist: 38 native tider fra `dkss_nsbs`, afstand 2,80363 km, semantik v3 og dybeste gyldige lag i den valgte kolonne. Skalarfelternes fortsatte IDW-valg blokerer ikke længere strømmen.
+- Den strenge audit fandt én ny, reel afvigelse. `PART::dk-b04-12-owner-approved-01` viste en verificeret score fra kl. 12, men pilens flowpunkt var tidligere beregnet ved byggetiden kl. 06:25 uden strøm og faldt derfor tilbage til vandpunktet.
+- 4.0.231 vælger den lokale scorepost først og beregner derefter pilens DMI-celle ved præcis scoretiden. Et tidsligt datagab er tilføjet zoom-/pilregressionen. Værdi, score, lag, geometri og afstandsgrænse er uændrede.
+- Den private syvdøgnscache fortsatte til cursor 300, 1.394 prøver, 630 ankre og 239 dele med `scoreImpact=false` og `publicRuntime=false`. Ingen rå U/V findes i ejeroversigten.
+- Næste trin er lokale gates, push, Limfjordsgenopbygning og frisk nul-mismatch-audit. Den geografiske gate sænkes ikke.
+
 ## 2026-08-16 – 4.0.230 adskiller strøm fra skalare havmodelvalg
 
 - #31929171918/#2872 gav et systemisk rodårsagsbevis: den private audit fandt et komplet `dkss_nsbs`-U/V-par 2,804 km fra Havknudes centrale vandpunkt, mens offentlig v2-runtime var `missing`.

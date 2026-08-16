@@ -1,4 +1,12 @@
-# AI Roadmap – RavRadar 4.0.230
+# AI Roadmap – RavRadar 4.0.231
+
+## 4.0.231 – samme tidspunkt styrer lokal score og strømpil
+
+- Semantik-v3-genopbygningen er progressiv: #2875 behandlede IDW, og #2876 behandlede NSBS. Havknude har nu 38 native strømtrin fra cellen 2,80363 km væk. Den samlede dækning er foreløbig 182/210 hovedzoner og 574/673 kystdele; Limfjord skal stadig genopbygges.
+- Den strenge #2876-audit fandt én anden tidskoblingsfejl. En lokal score kunne vise den nærmeste senere gyldige time, mens pilens flowpunkt var beregnet ved byggetiden uden strøm og derfor faldt tilbage til vandpunktet.
+- 4.0.231 vælger først den lokale scorepost, som vises, og beregner derefter pilens placering ved præcis samme tid. Manglende strøm på den viste time giver ingen DMI-pil; en anden times celle må ikke lånes.
+- Næste driftsmål er parser-v18-Limfjord, nul pil/grid-mismatch og den uændrede 640/673-gate. Først derefter må Supabase, Pages og direkte livekort indgå som releasebevis.
+- Forskningssporet er uændret: den private syvdøgnscache skal fortsat belyse **ydre tilførsel → overgang mod kyst → lokal bundnær levering**, flere lag, tidsforsinkelse, persistens og ikke-redundans. Den må ikke påvirke den aktive score.
 
 ## 4.0.230 – komponentvist strømvalg og korrekt grundlag for helhedsanalysen
 

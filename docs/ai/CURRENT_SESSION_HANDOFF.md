@@ -1,6 +1,14 @@
 # Aktuelt sessionshandoff – 2026-08-16
 
-## Aktiv 4.0.230-kandidat – endnu ikke produktionsverificeret
+## Aktiv 4.0.231-kandidat – vist lokal scoretime og pil deler DMI-celle
+
+- Commit `7dd1fbf2aaa7f037395a5d38c8003c09ba1dac67` med 4.0.230 er pushed til `main`. #2875 genopbyggede IDW og #2876 NSBS under parser v18/semantik v3; ingen gate blev lempet, og begge runs stoppede før Supabase/Pages på den strenge strømaudit.
+- Havknude er rettet i #2876-artefaktet: 38 native tider bruger `dkss_nsbs`-cellen 2,80363 km fra det centralt hydrerede vandpunkt. Dækningen efter IDW+NSBS er 182/210 hovedzoner og 574/673 lokale dele; Limfjord parser v18 mangler endnu.
+- #2876 fandt én selvstændig pil/grid-afvigelse ved `PART::dk-b04-12-owner-approved-01`. Den viste lokale score var fra kl. 12 med verificeret DMI-celle, men pilen var beregnet ved byggetiden kl. 06:25 uden strøm og stod derfor på vandpunktet.
+- 4.0.231 vælger nu den viste lokale scorepost før `flowPoints.current` beregnes ved samme tid. Zoom-/piltesten dækker et datagab mellem byggetid og scoretid. DMI-værdi, lag, RavScore, geometri, 5-km-grænse og gate er uændrede.
+- Privat strømfeltscache står efter #2876 ved cursor 300, 1.394 prøver, 630 ankre og 239 dele med 168 timers retention, `scoreImpact=false` og `publicRuntime=false`. Ejeroversigten indeholder ingen rå U/V.
+
+## Historisk 4.0.230-kandidat
 
 - #31929171918/#2872 beviste, at Havknude havde fælles NSBS-U/V 2,804 km fra vandpunktet, selv om offentlig v2-runtime manglede strøm. Et fælles `marineSelection` lod et IDW-skalarpunkt 5,131 km væk blokere det nærmere strømpar.
 - 4.0.230 vælger strøm selvstændigt for hvert native tidspunkt på tværs af alle aktive DKSS-collections: nærmeste komplette U/V-vandkolonne først, derefter dybeste gyldige lag i samme kolonne. Skalarfelter beholder separat modelvalg.
@@ -49,10 +57,10 @@
 
 ## Næste trin
 
-1. Kør fuld lokal 4.0.230-validering og releasegate uden at iscenesætte worktreets kendte uvedkommende diagnose-/arbejdsfiler.
-2. Commit og push parser-v18/semantik-v3-rettelsen, og følg den friske centrale DMI-kørsel. Havknude skal få NSBS-strøm inden for 5 km; alle viste pile skal fortsat matche valgt times gittercelle.
-3. Sammenlign ny hovedzone-/kystdelsdækning mod 187/210 og 596/673. Gaten må ikke sænkes. Fortsæt rotationen og kontrollér 168-timers pruning samt fravær af rå U/V i ejeroversigten.
-4. Kræv fulde gates, Supabase, Pages og direkte livekort før 4.0.230 kaldes produktionsverificeret. Lad ejerens manuelle punktreview fortsætte sideløbende.
+1. Kør målrettede pil-, provenance-, public-runtime-, RDKS-, versions- og releasekontroller for 4.0.231 uden at iscenesætte worktreets kendte uvedkommende diagnose-/arbejdsfiler.
+2. Commit og push den tidsbundne lokale pilrettelse. Følg den friske centrale audit og kræv nul pil/grid-mismatch.
+3. Lad den progressive modelrotation genopbygge `dkss_lf`, og sammenlign den fulde semantik-v3-dækning mod den uændrede grænse 640/673. Gaten må ikke sænkes uden ejerbeslutning.
+4. Fortsæt privat 168-timers rotation og kontrollér pruning samt fravær af rå U/V. Kræv fulde gates, Supabase, Pages og direkte livekort, før 4.0.231 kaldes produktionsverificeret.
 
 ## Bindende arbejdsregler
 

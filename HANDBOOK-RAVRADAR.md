@@ -1,5 +1,13 @@
 # RavRadar Håndbog
 
+## Den lokale strømpil følger den scoretime, der faktisk vises – 4.0.231
+
+En lokal kystdel kan mangle verificeret strøm omkring byggetidspunktet, men have et senere gyldigt DMI-tidspunkt, som bliver den nærmeste scorepost på kortet. Tidligere blev scoren og pilens sted valgt i to forskellige rækkefølger: scoren kunne være fra den senere gyldige time, mens pilen blev forsøgt placeret ved byggetiden og derfor faldt tilbage til det blå vandpunkt.
+
+Fra 4.0.231 vælger RavRadar først den lokale scorepost, som faktisk vises. Derefter hentes pilens position fra netop denne times verificerede DMI-proveniens. Hvis den viste time ikke har en dokumenteret DMI-celle, vises ingen lokal DMI-strømpil. En anden times celle eller administratorens vandpunkt må ikke ligne et målepunkt.
+
+Rettelsen ændrer ikke strømværdien, det valgte dybdelag, RavScore, land-/vandpunkter eller femkilometergrænsen. Den sikrer alene, at tal, tid og pilested er ét sammenhængende fysisk udsagn. Den private syvdøgnsopsamling og den planlagte analyse af hele transportkæden fortsætter uændret.
+
 ## Strøm vælges selvstændigt på tværs af DMI's havområder – 4.0.230
 
 RavRadar brugte tidligere ét samlet valg af havmodel til både strøm, vandstand og vandtemperatur. Det kunne skjule en god, nær strømcelle, hvis et andet modelområde var foretrukket til et skalarfelt. Ved Havknude fandtes der eksempelvis et komplet strømpar 2,80 km fra vandpunktet, men et andet modelområde var valgt til øvrige havdata.
@@ -138,13 +146,13 @@ Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande
 
 Det blå vandpunkt er samplinganker for både den viste strømpil og den strøm, som den aktive score må bruge. RavRadar vælger først den nærmeste DMI-vandkolonne med et komplet U/V-par og derefter det dybeste gyldige lag i præcis den kolonne. Op til 3 km foretrækkes, 3–5 km kan accepteres, og over 5 km er strømmen manglende. Den faktiske koordinatafstand kontrolleres særskilt. Kun verificeret DMI-GRIB-strøm må bruges aktivt; gamle cacher, direkte ForecastEDR-strøm uden fælles kolonne- og lagbevis samt Open-Meteos overfladestrøm og anden fallbackstrøm lukkes ude før historik, score og kort.
 
-DMI kan have forskellige dybeste tilgængelige lag på forskellige forecasttidspunkter. Derfor foretages lagvalget for hver native tid. RavRadar må kun beregne mellemtimer, når begge native tider har samme lag, vandcelle og modelkørsel; ellers vises strøm som manglende mellem tiderne. Pilen står altid på den valgte times egen dokumenterede celle. Centralt flyttede kystdelspunkter bygges før næste DMI-sampling, og kun cachen for det flyttede punkt nulstilles.
+DMI kan have forskellige dybeste tilgængelige lag på forskellige forecasttidspunkter. Derfor foretages lagvalget for hver native tid. RavRadar må kun beregne mellemtimer, når begge native tider har samme lag, vandcelle og modelkørsel; ellers vises strøm som manglende mellem tiderne. Pilen står altid på den valgte times egen dokumenterede celle. For en lokal del vælges den viste scoretime først, så pilen ikke kan falde tilbage til byggetidens vandpunkt, mens tallet kommer fra en senere DMI-time. Centralt flyttede kystdelspunkter bygges før næste DMI-sampling, og kun cachen for det flyttede punkt nulstilles.
 
 En privat, score-neutral cache bruger DKSS-felter ved vandpunktet samt cirka 5 og 15 km søværts. Repræsentative overflade-, mellem- og bundlag bevares højst 168 timer. Også når DMI-modellen er uændret, behandler en almindelig kørsel de næste 15 kystdele i et privat arbejdsområde. Systemet genbruger først en tidsrelevant råfil med stabil identitet; mangler den, må højst én fil pr. havmodelområde og tre i alt hentes inden for det eksisterende DMI-budget og derefter bevares til genbrug. Den private behandling kan ikke skrive til offentlig vejrdata eller score. Ved den normale 15-minutters rytme besøges alle 673 dele på cirka 11 timer og 15 minutter. Den kommende analyse skal undersøge hele kæden **ydre tilførsel → overgang mod kysten → lokal bundnær levering**, inklusive tidsforsinkelse, persistens og risiko for dobbelt-tælling med vind og bølger. Ingen ny scorevægt er aktiveret.
 
 Rotationen registrerer også, hvor langt der er til den nærmeste modelkolonne med et eksakt fælles U/V-par, selv når den ligger uden for 5 km. I det tilfælde gemmes kun koordinat, afstand og lagmetadata – ikke de fjerne strømværdier. En privat ejeroversigt skelner derfor mellem nær-tærskel 5–6 km til rent manuelt geometrireview, modelhul 6–8 km, strukturelt modelhul over 8 km og en datakædefejl, hvor gyldig strøm faktisk findes inden for 5 km. Selv en nær-tærskel-post må kun flyttes, hvis vandpunktet i sig selv er forkert – aldrig blot for at nå modelcellen. Oversigten flytter ingen punkter automatisk, og den offentlige 5 km-grænse er uændret.
 
-**Håndbogsversion:** 4.0.230
+**Håndbogsversion:** 4.0.231
 
 **Opdateret:** 16. august 2026
 

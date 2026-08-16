@@ -998,6 +998,7 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, generated
   const parentById = new Map(parentFeatures.map(feature => [feature.properties?.id, feature]));
   const expectedByZone = new Map();
   const partRows = [];
+  const nearestIndex = rows => rows.reduce((best, row, index) => Math.abs(Date.parse(row.time) - Date.parse(generatedAt)) < Math.abs(Date.parse(rows[best]?.time) - Date.parse(generatedAt)) ? index : best, 0);
   for (const [zoneId, parts] of Object.entries(contract?.zones ?? {})) {
     expectedByZone.set(zoneId, parts.length);
     const parent = parentById.get(zoneId);
@@ -1010,7 +1011,6 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, generated
       };
       const record = bulkZoneToForecastRecord(feature, bulkCache, generatedAt, null);
       if (!record) continue;
-      const flowPoints = flowPointsFromForecastRecord(record, zonePoint(feature), generatedAt);
       const hourly = normalizeForecastHourly(record.hourly ?? []).map(hour => {
         const source = hour?.sources?.current;
         const proof = num(hour?.currentUMps) !== null && num(hour?.currentVMps) !== null
@@ -1065,14 +1065,18 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, generated
           ...modes
         });
       }
-      if (scores.length) partRows.push({
-        zoneId, partId: part.partId, name: part.name, marineCoverage: part.marineCoverage,
-        landPoint: part.landPoint, waterPoint: part.waterPoint,
-        onshoreDirectionDeg: part.onshoreDirectionDeg,
-        onshoreDirectionSource: part.onshoreDirectionSource || 'Godkendt land-/havpunkt for kystdelen',
-        flowPoints,
-        scores
-      });
+      if (scores.length) {
+        const selectedScore = scores[nearestIndex(scores)] ?? null;
+        const flowPoints = flowPointsFromForecastRecord(record, zonePoint(feature), selectedScore?.time ?? generatedAt);
+        partRows.push({
+          zoneId, partId: part.partId, name: part.name, marineCoverage: part.marineCoverage,
+          landPoint: part.landPoint, waterPoint: part.waterPoint,
+          onshoreDirectionDeg: part.onshoreDirectionDeg,
+          onshoreDirectionSource: part.onshoreDirectionSource || 'Godkendt land-/havpunkt for kystdelen',
+          flowPoints,
+          scores
+        });
+      }
     }
   }
 
@@ -1101,7 +1105,6 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, generated
     }
     zones[zoneId] = { expectedPartCount, scoredPartCount: rows.length, hourly };
   }
-  const nearestIndex = rows => rows.reduce((best, row, index) => Math.abs(Date.parse(row.time) - Date.parse(generatedAt)) < Math.abs(Date.parse(rows[best]?.time) - Date.parse(generatedAt)) ? index : best, 0);
   const parts = Object.fromEntries(partRows.map(row => {
     const score = row.scores[nearestIndex(row.scores)] ?? null;
     return [row.partId, {
