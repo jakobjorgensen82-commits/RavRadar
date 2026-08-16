@@ -157,40 +157,42 @@ assert summary["rotationAdvancedThisRun"] is True
 assert summary["samplesWrittenThisRun"] == 1
 assert summary["cachedReplayAssetsThisRun"] == 1
 
+owner_bulk = {
+    "zones": {
+        "DK-TEST": {"samplingPoint": [10.01, 55.0], "hourly": {}, "gridPoints": {}},
+        "PART::part-a": {"samplingPoint": [10.01, 55.0], "hourly": {}, "gridPoints": {}},
+        "PART::part-b": {
+            "samplingPoint": [11.01, 56.0],
+            "hourly": {valid_iso: {"current-u": 0.1, "current-v": 0.2}},
+            "gridPoints": {
+                "current-u": {
+                    "longitude": 11.02,
+                    "latitude": 56.0,
+                    "distanceKm": 0.62,
+                    "verticalLayer": "depthbelowsea:20",
+                },
+                "current-v": {
+                    "longitude": 11.02,
+                    "latitude": 56.0,
+                    "distanceKm": 0.62,
+                    "verticalLayer": "depthbelowsea:20",
+                },
+            },
+        },
+    }
+}
+owner_zones = {
+    "features": [{
+        "type": "Feature",
+        "properties": {"id": "DK-TEST", "name": "Testzone"},
+        "geometry": {"type": "Point", "coordinates": [10.01, 55.0]},
+    }]
+}
 owner_audit = owner_coverage_audit(
     far_document,
     parts,
-    {
-        "zones": {
-            "DK-TEST": {"samplingPoint": [10.01, 55.0], "hourly": {}, "gridPoints": {}},
-            "PART::part-a": {"samplingPoint": [10.01, 55.0], "hourly": {}, "gridPoints": {}},
-            "PART::part-b": {
-                "samplingPoint": [11.01, 56.0],
-                "hourly": {valid_iso: {"current-u": 0.1, "current-v": 0.2}},
-                "gridPoints": {
-                    "current-u": {
-                        "longitude": 11.02,
-                        "latitude": 56.0,
-                        "distanceKm": 0.62,
-                        "verticalLayer": "depthbelowsea:20",
-                    },
-                    "current-v": {
-                        "longitude": 11.02,
-                        "latitude": 56.0,
-                        "distanceKm": 0.62,
-                        "verticalLayer": "depthbelowsea:20",
-                    },
-                },
-            },
-        }
-    },
-    {
-        "features": [{
-            "type": "Feature",
-            "properties": {"id": "DK-TEST", "name": "Testzone"},
-            "geometry": {"type": "Point", "coordinates": [10.01, 55.0]},
-        }]
-    },
+    owner_bulk,
+    owner_zones,
     now_iso,
 )
 assert owner_audit["scoreImpact"] is False and owner_audit["publicRuntime"] is False
@@ -200,6 +202,29 @@ assert owner_audit["missingCoastalParts"][0]["classification"] == "structural-mo
 assert owner_audit["missingMainZones"][0]["classification"] == "main-point-review-supported-by-local-current"
 serialized_owner_audit = json.dumps(owner_audit)
 assert '"uMps"' not in serialized_owner_audit and '"vMps"' not in serialized_owner_audit
+
+for longitude, expected_classification in (
+    (10.1, "near-threshold-5-to-6km-manual-review"),
+    (10.12, "model-gap-6-to-8km"),
+):
+    threshold_document = empty_document()
+    assert record_profiles(
+        threshold_document,
+        {target["id"]: target},
+        {target["id"]: [choice(longitude, 55.0, 1.0, "surface:0", 0, 1, 2)]},
+        "dkss_test",
+        now_iso,
+        valid_iso,
+        now_iso,
+    ) == 0
+    threshold_audit = owner_coverage_audit(
+        threshold_document,
+        parts,
+        owner_bulk,
+        owner_zones,
+        now_iso,
+    )
+    assert threshold_audit["missingCoastalParts"][0]["classification"] == expected_classification
 
 with tempfile.TemporaryDirectory() as directory:
     path = pathlib.Path(directory) / "shadow.json"

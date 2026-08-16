@@ -581,9 +581,12 @@ def owner_coverage_audit(
         elif float(evidence["distanceKm"]) <= MAX_GRID_DISTANCE_KM:
             classification = "within-5km-but-runtime-missing"
             advice = "Punktet ligger inden for grænsen; undersøg tids-/cachekæden i stedet for at flytte det."
+        elif float(evidence["distanceKm"]) <= 6.0:
+            classification = "near-threshold-5-to-6km-manual-review"
+            advice = "Kontrollér punktet optisk; ret det kun, hvis selve hav/land-placeringen er forkert, aldrig alene for at nå en modelcelle."
         elif float(evidence["distanceKm"]) <= 8.0:
-            classification = "borderline-5-to-8km"
-            advice = "Kun en lille optisk punktjustering kan overvejes, hvis hav/land-geometrien stadig er fysisk korrekt."
+            classification = "model-gap-6-to-8km"
+            advice = "Flyt ikke et fysisk korrekt kystpunkt for at nå modellen; afstanden er for stor til en ren tærskeljustering."
         else:
             classification = "structural-model-gap-over-8km"
             advice = "Flyt ikke kystpunktet flere kilometer for at jagte modellen; dette er et model-/politikspørgsmål."

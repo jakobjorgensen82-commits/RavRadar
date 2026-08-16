@@ -15,8 +15,23 @@ Dette er et uforanderligt handlingssnapshot fra GitHub Actions #31923212215/#285
 
 - #2866 på commit `f661913c4e51e64876dc68ef6bf8f6cbafbe1109` fortsatte den private rotation til cursor 150, 118 besøgte kystdele og 667 prøver. Den offentlige dækning var fortsat 187/210 og 596/673, og deploy stoppede før Supabase/Pages.
 - 17 af de 23 manglende hovedzoner har mindst én lokal kystdel med verificeret strøm og dermed et fysisk referencepunkt til ejerens optiske hovedpunktsreview. Seks zoner har ingen verificeret lokal del: `DK-B02-03`, `DK-B05-20`, `DK-B05-23`, `DK-B05-24`, `DK-B05-25` og `DK-B07-13`. En flytning af hovedpunktet alene kan derfor ikke løse deres lokale dækning.
-- Den private rotation måler fremover afstanden til den nærmeste eksakte fælles U/V-kolonne, også over 5 km, men gemmer ingen fjerne U/V-værdier. `data/diagnostics/current-coverage-owner-audit.json` er support-only og opdeler de 77 dele i endnu ikke besøgt, intet observeret U/V-par, pipelinehul inden for 5 km, optisk 5–8 km-grænsetilfælde eller strukturelt modelhul over 8 km.
-- Ingen klassifikation flytter punkter automatisk. Kun 5–8 km-grænsetilfældet kan begrunde en lille ejerjustering, og kun hvis punktet fortsat er fysisk korrekt på vandet. Et modelhul over 8 km må ikke skjules ved at flytte et korrekt kystpunkt flere kilometer.
+- Den private rotation måler afstanden til den nærmeste eksakte fælles U/V-kolonne, også over 5 km, men gemmer ingen fjerne U/V-værdier. `data/diagnostics/current-coverage-owner-audit.json` er support-only og opdeler de 77 dele i endnu ikke besøgt, intet observeret U/V-par, pipelinehul inden for 5 km, nær-tærskel 5–6 km til rent manuelt geometrireview, modelhul 6–8 km eller strukturelt modelhul over 8 km.
+- #31928382898/#2869 besøgte de næste 15 dele. Fire havde U/V inden for 5 km; blandt de 11 aktuelle mangler lå 2 ved 5,37–5,66 km, 4 ved 7,80–7,93 km og 5 ved 8,26–12,11 km. De sidste 66 mangler er endnu ikke besøgt af den nye audit. Ejerfilens 64.156 byte indeholder hverken `uMps` eller `vMps`; offentlig dækning forblev 187/210 og 596/673.
+- Ingen klassifikation flytter punkter automatisk. Selv 5–6 km-nær-tærskel må kun føre til en ejerrettelse, hvis punktet i sig selv er fysisk forkert. Fra 6 km og opefter er afstanden for stor til en ren tærskeljustering og må ikke skjules ved at flytte et korrekt kystpunkt.
+
+| Klasse | Zone | Kystdel | Nærmeste U/V-kolonne |
+|---|---|---|---:|
+| Nær-tærskel 5–6 km | DK-B05-18 | Aggersborgrimme | 5,370 km |
+| Nær-tærskel 5–6 km | DK-B05-21 | Nibe Badestrand | 5,661 km |
+| Modelhul 6–8 km | DK-B05-18 | Løgstør | 7,934 km |
+| Modelhul 6–8 km | DK-B05-18 | Petersborg | 7,846 km |
+| Modelhul 6–8 km | DK-B05-21 | Klosterholm | 7,892 km |
+| Modelhul 6–8 km | DK-B05-21 | Binderup Mølle | 7,799 km |
+| Strukturelt modelhul >8 km | DK-B05-20 | DK-B05-20 | 12,110 km |
+| Strukturelt modelhul >8 km | DK-B05-21 | Lundbæk Huse | 9,815 km |
+| Strukturelt modelhul >8 km | DK-B05-21 | Nibe | 8,262 km |
+| Strukturelt modelhul >8 km | DK-B05-21 | Valsted | 9,786 km |
+| Strukturelt modelhul >8 km | DK-B05-21 | Sebbersund | 9,800 km |
 
 ## Hovedzoner uden verificeret strøm
 
