@@ -10,7 +10,7 @@
 - [x] Privat cache i #2876: 168 timer, score-neutral, ikke offentlig, cursor 300, 1.394 prøver, 630 ankre og 239 dele; ingen rå U/V i ejeroversigten.
 - [x] Målrettede pil-, DMI-, forecast-, provenance-, null-safety-, runtime-, versions-, håndbogs- og RDKS-kontroller består. Public-runtime-kontroller består mod det friske #2876-artefakt, og lokal `release:gate` består for 4.0.231.
 - [x] Fuld lokal `validate` gennemfører RDKS og hele geometri-v2-selftestkæden og stopper derefter som forventet på repositoryets forældede 31. juli-snapshot (209/211 før central adminhydrering). Den lokale rumlige audit mangler tilsvarende de friske 673 kystdelsserier og må ikke bruges til at lempe produktionsgaten.
-- [ ] Commit og push 4.0.231.
+- [x] Produktrettelsen er samlet i commit `4181976c2a54862f3377582d4c25ca94b8f8f977`; push og central verifikation afventer.
 - [ ] Genopbyg `dkss_lf`, og kræv nul pil/grid-mismatch i frisk central audit. Den uændrede 640/673-gate må ikke sænkes uden ejerbeslutning.
 - [ ] Supabase, Pages og direkte livekort skal bestå, før versionen kan kaldes produktionsverificeret.
 

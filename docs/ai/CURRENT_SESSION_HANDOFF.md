@@ -6,6 +6,7 @@
 - Havknude er rettet i #2876-artefaktet: 38 native tider bruger `dkss_nsbs`-cellen 2,80363 km fra det centralt hydrerede vandpunkt. Dækningen efter IDW+NSBS er 182/210 hovedzoner og 574/673 lokale dele; Limfjord parser v18 mangler endnu.
 - #2876 fandt én selvstændig pil/grid-afvigelse ved `PART::dk-b04-12-owner-approved-01`. Den viste lokale score var fra kl. 12 med verificeret DMI-celle, men pilen var beregnet ved byggetiden kl. 06:25 uden strøm og stod derfor på vandpunktet.
 - 4.0.231 vælger nu den viste lokale scorepost før `flowPoints.current` beregnes ved samme tid. Zoom-/piltesten dækker et datagab mellem byggetid og scoretid. DMI-værdi, lag, RavScore, geometri, 5-km-grænse og gate er uændrede.
+- Produktrettelsen er samlet i commit `4181976c2a54862f3377582d4c25ca94b8f8f977`; push og central verifikation afventer.
 - Privat strømfeltscache står efter #2876 ved cursor 300, 1.394 prøver, 630 ankre og 239 dele med 168 timers retention, `scoreImpact=false` og `publicRuntime=false`. Ejeroversigten indeholder ingen rå U/V.
 
 ## Historisk 4.0.230-kandidat
@@ -13,7 +14,7 @@
 - #31929171918/#2872 beviste, at Havknude havde fælles NSBS-U/V 2,804 km fra vandpunktet, selv om offentlig v2-runtime manglede strøm. Et fælles `marineSelection` lod et IDW-skalarpunkt 5,131 km væk blokere det nærmere strømpar.
 - 4.0.230 vælger strøm selvstændigt for hvert native tidspunkt på tværs af alle aktive DKSS-collections: nærmeste komplette U/V-vandkolonne først, derefter dybeste gyldige lag i samme kolonne. Skalarfelter beholder separat modelvalg.
 - Parser v18/semantik v3 invaliderer gammel strøm selektivt og bevarer gyldige skalarfelter. Interpolation over collection-, run-, celle-, lag- eller samplingpunktskift forbliver forbudt.
-- Havknude-regressionen, de berørte målrettede DMI-/forecast-/piltests, RDKS/version og lokal releasegate består. Fuld `validate` stopper forventet ved det forældede lokale 209/211-vejrsnapshot efter bestået RDKS/geometri; commit, push og frisk central produktion mangler endnu.
+- Havknude-regressionen, de berørte målrettede DMI-/forecast-/piltests, RDKS/version og lokal releasegate består. 4.0.230 blev pushed i `7dd1fbf2aaa7f037395a5d38c8003c09ba1dac67`; frisk central produktion af alle tre modelområder og efterfølgende 4.0.231-verifikation mangler endnu.
 - #2872 nåede cursor 240, 873 private prøver, 469 ankre og 179 dele. Af 77 offentlige mangler var 36 besøgt: én pipelinefejl ≤5 km, fire ved 5–6 km, fem ved 6–8 km, 23 over 8 km og tre uden observeret fælles U/V; 41 afventer rotation.
 
 ## Historisk 4.0.229-kandidat
@@ -57,10 +58,9 @@
 
 ## Næste trin
 
-1. Kør målrettede pil-, provenance-, public-runtime-, RDKS-, versions- og releasekontroller for 4.0.231 uden at iscenesætte worktreets kendte uvedkommende diagnose-/arbejdsfiler.
-2. Commit og push den tidsbundne lokale pilrettelse. Følg den friske centrale audit og kræv nul pil/grid-mismatch.
-3. Lad den progressive modelrotation genopbygge `dkss_lf`, og sammenlign den fulde semantik-v3-dækning mod den uændrede grænse 640/673. Gaten må ikke sænkes uden ejerbeslutning.
-4. Fortsæt privat 168-timers rotation og kontrollér pruning samt fravær af rå U/V. Kræv fulde gates, Supabase, Pages og direkte livekort, før 4.0.231 kaldes produktionsverificeret.
+1. Følg den friske centrale 4.0.231-audit og kræv nul pil/grid-mismatch.
+2. Lad den progressive modelrotation genopbygge `dkss_lf`, og sammenlign den fulde semantik-v3-dækning mod den uændrede grænse 640/673. Gaten må ikke sænkes uden ejerbeslutning.
+3. Fortsæt privat 168-timers rotation og kontrollér pruning samt fravær af rå U/V. Kræv fulde gates, Supabase, Pages og direkte livekort, før 4.0.231 kaldes produktionsverificeret.
 
 ## Bindende arbejdsregler
 
