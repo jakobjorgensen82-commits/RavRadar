@@ -9,6 +9,7 @@ import tempfile
 from lib.current_field_shadow import (
     RETENTION_HOURS,
     build_rotating_targets,
+    eligible_replay_assets,
     empty_document,
     load_document,
     prune,
@@ -47,6 +48,40 @@ assert len(targets) == 3 and {row["bandKm"] for row in targets} == {0.0, 5.0, 15
 assert all(row["researchCurrent"] is True for row in targets)
 assert targets[0]["targetPoint"] == [10.01, 55.0]
 assert targets[-1]["targetPoint"] != targets[-1]["sourceWaterPoint"]
+
+national_parts = {
+    "zones": {
+        "DK-ROTATION": [
+            {
+                "partId": f"part-{index:03d}",
+                "landPoint": [10.0, 55.0],
+                "waterPoint": [10.01, 55.0],
+            }
+            for index in range(673)
+        ]
+    }
+}
+rotation_cursor = 0
+visited: set[str] = set()
+for _run in range(45):
+    _targets, rotation_cursor, rotation_ids = build_rotating_targets(
+        national_parts,
+        {"DK-ROTATION": "east"},
+        cursor=rotation_cursor,
+        parts_per_run=15,
+    )
+    visited.update(rotation_ids)
+assert len(visited) == 673 and rotation_cursor == 2
+
+captured = datetime(2026, 8, 16, 3, 0, tzinfo=timezone.utc)
+captured_iso = captured.isoformat().replace("+00:00", "Z")
+replay_assets = eligible_replay_assets([
+    {"valid": (captured - timedelta(hours=2)).isoformat().replace("+00:00", "Z"), "href": "too-old"},
+    {"valid": (captured + timedelta(hours=6)).isoformat().replace("+00:00", "Z"), "href": "middle"},
+    {"valid": (captured + timedelta(hours=1)).isoformat().replace("+00:00", "Z"), "href": "first"},
+    {"valid": (captured + timedelta(hours=13)).isoformat().replace("+00:00", "Z"), "href": "too-new"},
+], captured_iso, max_assets=2)
+assert [asset["href"] for asset in replay_assets] == ["first", "middle"]
 
 profile = representative_profile([
     choice(10.1, 55.1, 4.0, "depthbelowsea:100", 100, 9, 9),
@@ -87,9 +122,16 @@ assert record_profiles(
     valid_iso,
     now_iso,
 ) == 0
-summary = status(document, selected)
+summary = status(document, selected, {
+    "rotationAdvancedThisRun": True,
+    "samplesWrittenThisRun": 1,
+    "cachedReplayAssetsThisRun": 1,
+})
 assert summary["scoreImpact"] is False and summary["publicRuntime"] is False
 assert summary["samples"] == 1 and summary["retentionHours"] == 168
+assert summary["rotationAdvancedThisRun"] is True
+assert summary["samplesWrittenThisRun"] == 1
+assert summary["cachedReplayAssetsThisRun"] == 1
 
 with tempfile.TemporaryDirectory() as directory:
     path = pathlib.Path(directory) / "shadow.json"
@@ -107,6 +149,9 @@ workflow = (ROOT / ".github" / "workflows" / "update-and-deploy.yml").read_text(
 assert 'not zone.get("researchCurrent")' in bulk_source
 assert 'parameter in {"current-u", "current-v"}' in bulk_source
 assert "record_current_field_profiles" in bulk_source
+assert "replay_current_field_shadow_from_cache" in bulk_source
+assert "no-eligible-cached-current-assets" in bulk_source
+assert '"fresh-marine-asset-covered-selection"' in bulk_source
 assert "current-field-shadow.json" in workflow
 assert "Save private seven-day current-field research cache" in workflow
 

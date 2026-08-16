@@ -31,6 +31,8 @@ Overfladestrøm er heller ikke automatisk det bedste mål for ravtransport. Rav 
 3. Rå forskningsprøver opbevares højst 168 timer i en privat workflowcache. Den offentlige diagnostik må kun vise ufølsomme antal/statusfelter, ikke vektorerne.
 4. Opsamlingen er `scoreImpact=false` og `publicRuntime=false`. Den må ikke ændre pile, aktiv RavScore, historik, zoner eller administratorens punkter.
 5. Et flyttet vandpunkt nulstiller den pågældende forskningsankers gamle prøver, så forskellige fysiske steder ikke blandes.
+6. Den geografiske rotation skal kunne gå videre på hver almindelig vellykket workflowkørsel, også når DMI-modelgenerationen er uændret. Kun allerede downloadede, tidsrelevante GRIB-filer må genlæses, og genlæsningen må kun modtage private forskningsmål. Den må ikke skrive til offentlig zonecache eller udløse ekstra DMI-download.
+7. Med 15 kystdele pr. 15-minutters kørsel er én fuld 673-dels rotation 45 kørsler eller cirka 11 timer og 15 minutter. Dermed kan hele geografien besøges mange gange inden for 168-timersretentionen; en rotation, der kun flytter sig ved nye modelgenerationer, er utilstrækkelig.
 
 ## Krav til den kommende analyse og scoremodel
 

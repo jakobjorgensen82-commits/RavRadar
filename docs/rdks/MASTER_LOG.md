@@ -8,6 +8,8 @@
 - #2853–#2855 gentager 187/210 verificerede hovedzoner og 596/673 lokale kystdele. #2855 har 20.924 verificerede timer og 3.856 fail-closed `non-dmi-current`-timer. Der er ingen kendt pil/grid-fejl i verificerede poster.
 - De 23 hovedzoner og 77 lokale dele uden fælles U/V inden for 5 km står uden strøm og pil. Den geografiske gate er ikke sænket, så Supabase og Pages blev korrekt sprunget over. 4.0.229 er ikke deployet eller produktionsverificeret.
 - Den private cache har 491 prøver for 153 ankre/58 dele; #2855 havde uændrede DKSS-samlinger og tilføjede derfor ingen dubletter. Den præcise handlingsliste er gemt i `docs/rdks/40_KNOWN_ISSUES/CURRENT-COVERAGE-4.0.229.md`.
+- At #2855 heller ikke flyttede videre til nye dele afslørede en separat rotationsfejl: cursoren avancerede kun ved behandling af et nyt marineasset. Med 15 dele pr. modelgeneration ville hele landet ikke kunne gennemløbes inden for syv døgn.
+- Den lokale rettelse genlæser højst fem aktuelle/fremadrettede, allerede cachede assets pr. tilgængeligt DKSS-område for kun de 15 private forskningsdele. Replayet har en tom, isoleret outputcache, downloader aldrig og avancerer cursoren efter et fuldført forsøg. 45 normale 15-minutters kørsler dækker én 673-dels rotation. Frisk CI-bevis mangler.
 
 ## 2026-08-16 – 4.0.228 flere verificerede kortpile ved indzoomning
 

@@ -23,6 +23,7 @@ from typing import Any
 from lib.dmi_grid_vector import select_common_vector_candidate, same_grid_point, water_source_parameter_allowed, water_temperature_surface_layer, vector_vertical_layer, vector_choice, prefer_vector_choice
 from lib.current_field_shadow import (
     build_rotating_targets,
+    eligible_replay_assets,
     load_document as load_current_field_shadow,
     prune as prune_current_field_shadow,
     record_profiles as record_current_field_profiles,
@@ -99,6 +100,9 @@ CURRENT_VECTOR_SELECTION = "nearest-water-column-then-deepest-valid-layer"
 CURRENT_PREFERRED_DISTANCE_KM = 3.0
 CURRENT_MAX_DISTANCE_KM = 5.0
 CURRENT_FIELD_SHADOW_PARTS_PER_RUN = max(1, int(os.getenv("CURRENT_FIELD_SHADOW_PARTS_PER_RUN", "15")))
+CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION = max(
+    1, int(os.getenv("CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION", "5"))
+)
 COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw", "wam_nsb", "harmonie_dini_sf"]
 COLLECTION_FAMILY = {
     "dkss_idw": "marine", "dkss_nsbs": "marine", "dkss_lf": "marine",
@@ -417,10 +421,14 @@ def prune_raw_cache(max_bytes: int = RAW_CACHE_MAX_BYTES) -> dict[str, int]:
                 break
     return {"removedFiles": removed_files, "removedBytes": removed_bytes}
 
+def cached_asset_path(href: str) -> pathlib.Path:
+    suffix = pathlib.Path(href.split("?", 1)[0]).suffix or ".grib"
+    return RAW_DIR / f"{hashlib.sha256(href.encode()).hexdigest()[:24]}{suffix}"
+
+
 def download_asset(href: str, expected_size: int | None, budget: dict[str, int]) -> tuple[pathlib.Path, bool]:
     RAW_DIR.mkdir(parents=True, exist_ok=True)
-    suffix = pathlib.Path(href.split("?", 1)[0]).suffix or ".grib"
-    path = RAW_DIR / f"{hashlib.sha256(href.encode()).hexdigest()[:24]}{suffix}"
+    path = cached_asset_path(href)
     if path.exists() and path.stat().st_size > 0:
         try:
             os.utime(path, None)
@@ -1847,15 +1855,104 @@ def write_current_field_shadow_checkpoint(
     document: dict[str, Any],
     now_iso: str,
     selected_part_ids: list[str],
+    run_metrics: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Persist only the private samples; publish a count-only diagnostic status."""
     prune_current_field_shadow(document, now_iso)
     save_current_field_shadow(CURRENT_FIELD_SHADOW_PATH, document)
-    summary = current_field_shadow_status(document, selected_part_ids)
+    summary = current_field_shadow_status(document, selected_part_ids, run_metrics)
     CURRENT_FIELD_SHADOW_STATUS_PATH.parent.mkdir(parents=True, exist_ok=True)
     temporary = CURRENT_FIELD_SHADOW_STATUS_PATH.with_suffix(".json.tmp")
     temporary.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", "utf-8")
     temporary.replace(CURRENT_FIELD_SHADOW_STATUS_PATH)
+    return summary
+
+
+def replay_current_field_shadow_from_cache(
+    catalog: dict[str, dict[str, Any]],
+    research_targets: list[dict[str, Any]],
+    current_shadow: dict[str, Any],
+    generated: str,
+) -> dict[str, Any]:
+    """Advance the private rotation from cached GRIBs without public mutation.
+
+    A model generation is normally processed only once.  Without this bounded
+    replay, the research cursor would move only every time DMI publishes a new
+    generation, which is too slow for a complete geographic sweep inside the
+    seven-day retention window.  Only files already restored in ``RAW_DIR`` are
+    read; no network download and no public zone output are allowed here.
+    """
+    summary: dict[str, Any] = {
+        "attempted": False,
+        "collections": [],
+        "cachedAssetsAvailable": 0,
+        "assetsCompleted": 0,
+        "samplesWritten": 0,
+        "messagesSeen": 0,
+        "zoneLookups": 0,
+        "interrupted": False,
+    }
+    if not research_targets:
+        summary["reason"] = "no-research-targets"
+        return summary
+    if should_stop_work():
+        summary["reason"] = "runtime-budget-reached"
+        return summary
+
+    scratch_output: dict[str, Any] = {"generatedAt": generated, "zones": {}}
+    for collection in sorted(MARINE_COLLECTIONS, key=COLLECTION_ORDER.index):
+        entry = catalog.get(collection) or {}
+        model_run = str(entry.get("modelRun") or "")
+        candidates = eligible_replay_assets(
+            list(entry.get("assets") or []),
+            generated,
+            CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION,
+        )
+        cached = [asset for asset in candidates if cached_asset_path(str(asset.get("href") or "")).is_file()]
+        if not model_run or not cached:
+            continue
+        summary["attempted"] = True
+        summary["collections"].append(collection)
+        summary["cachedAssetsAvailable"] += len(cached)
+        for asset in cached:
+            if should_stop_work():
+                summary["interrupted"] = True
+                summary["reason"] = "runtime-budget-reached"
+                return summary
+            path = cached_asset_path(str(asset["href"]))
+            replay_diagnostics: dict[str, Any] = {
+                "batchedGridReads": 0,
+                "messagesSeen": 0,
+                "zoneLookups": 0,
+            }
+            found, _touched, interrupted, messages_seen, zone_lookups = process_grib(
+                path,
+                collection,
+                model_run,
+                str(asset["valid"]),
+                research_targets,
+                scratch_output,
+                replay_diagnostics,
+                current_shadow,
+            )
+            summary["messagesSeen"] += messages_seen
+            summary["zoneLookups"] += zone_lookups
+            summary["samplesWritten"] += int(
+                replay_diagnostics.get("currentFieldShadowSamplesWritten") or 0
+            )
+            if interrupted:
+                summary["interrupted"] = True
+                summary["reason"] = "runtime-budget-reached-inside-cached-grib"
+                return summary
+            if {"current-u", "current-v"} <= found:
+                summary["assetsCompleted"] += 1
+
+    if not summary["attempted"]:
+        summary["reason"] = "no-eligible-cached-current-assets"
+    elif not summary["assetsCompleted"]:
+        summary["reason"] = "cached-assets-without-current-pair"
+    else:
+        summary["reason"] = "completed"
     return summary
 
 
@@ -2023,6 +2120,11 @@ def main() -> int:
         int(current_shadow.get("cursor") or 0),
         CURRENT_FIELD_SHADOW_PARTS_PER_RUN,
     )
+    research_run_metrics: dict[str, Any] = {
+        "rotationAdvancedThisRun": False,
+        "samplesWrittenThisRun": 0,
+        "cachedReplayAssetsThisRun": 0,
+    }
     zones.extend(research_targets)
 
     # Vandstandskilder (målestationer og DMI-prognosepunkter) samples i samme
@@ -2082,7 +2184,7 @@ def main() -> int:
                               "removedSamplingPointMismatches": removed_sampling_mismatches,
                               "assetsSkippedPreviouslyProcessed": 0, "assetsRetriedIncomplete": 0, "zeroProgressCollections": [], "collectionsUnchanged": [], "messagesSeen": 0, "zoneLookups": 0, "batchedGridReads": 0, "marineGridSearch": {},
                               "runtimeBudgetSeconds": MAX_RUNTIME_SECONDS, "finalizeReserveSeconds": FINALIZE_RESERVE_SECONDS,
-                              "currentFieldShadow": current_field_shadow_status(current_shadow, selected_research_part_ids),
+                              "currentFieldShadow": current_field_shadow_status(current_shadow, selected_research_part_ids, research_run_metrics),
                               "persistentFieldInventory": dict(((previous.get("diagnostics") or {}).get("persistentFieldInventory") or {}))}}
     merge_previous(result, previous, active_output_ids)
     result["diagnostics"]["restoredMarineSelections"] = restore_marine_selections(result, zones)
@@ -2100,6 +2202,8 @@ def main() -> int:
     fresh_zone_ids: set[str] = set()
     fresh_marine_zone_ids: set[str] = set()
     productive_collections = 0
+    research_replay_catalog: dict[str, dict[str, Any]] = {}
+    research_rotation_completed = False
 
     for collection in scheduled:
         if productive_collections >= COLLECTIONS_PER_RUN:
@@ -2118,6 +2222,8 @@ def main() -> int:
             result["diagnostics"]["stacByCollection"][collection] = stac_stats
             if not assets:
                 raise RuntimeError("no forecast-step GRIB assets found in latest STAC run")
+            if collection in MARINE_COLLECTIONS:
+                research_replay_catalog[collection] = {"modelRun": run, "assets": assets}
             zone_registry_signature = current_zone_registry_signature
             processing_signature = f"parser:{PARSER_VERSION}|params:{PARAMETER_MAP_VERSION}|grid:{GRID_LOOKUP_VERSION}|zones:{zone_registry_signature}"
             same_processing = previous_run.get("processingSignature") == processing_signature
@@ -2172,6 +2278,9 @@ def main() -> int:
                     result["diagnostics"],
                     current_shadow,
                 )
+                research_run_metrics["samplesWrittenThisRun"] = int(
+                    result["diagnostics"].get("currentFieldShadowSamplesWritten") or 0
+                )
                 if (
                     collection in MARINE_COLLECTIONS
                     and research_targets
@@ -2180,8 +2289,10 @@ def main() -> int:
                 ):
                     current_shadow["cursor"] = next_research_cursor
                     current_shadow["lastSelectedPartIds"] = selected_research_part_ids
+                    research_rotation_completed = True
+                    research_run_metrics["rotationAdvancedThisRun"] = True
                     result["diagnostics"]["currentFieldShadow"] = write_current_field_shadow_checkpoint(
-                        current_shadow, generated, selected_research_part_ids
+                        current_shadow, generated, selected_research_part_ids, research_run_metrics
                     )
                 recognized.update(found)
                 result["diagnostics"]["messagesSeen"] += messages_seen
@@ -2260,8 +2371,34 @@ def main() -> int:
             state["nextEligibleAt"] = datetime.fromtimestamp(time.time() + delay_minutes * 60, timezone.utc).isoformat().replace("+00:00", "Z")
             result["diagnostics"]["errors"].append({"collection": collection, "message": message, "failureClass": state["failureClass"], "retryAfterMinutes": delay_minutes})
 
+    if research_rotation_completed:
+        result["diagnostics"]["currentFieldShadowCachedReplay"] = {
+            "attempted": False,
+            "reason": "fresh-marine-asset-covered-selection",
+            "assetsCompleted": 0,
+            "samplesWritten": 0,
+        }
+    else:
+        replay_summary = replay_current_field_shadow_from_cache(
+            research_replay_catalog,
+            research_targets,
+            current_shadow,
+            generated,
+        )
+        result["diagnostics"]["currentFieldShadowCachedReplay"] = replay_summary
+        research_run_metrics["cachedReplayAssetsThisRun"] = int(
+            replay_summary.get("assetsCompleted") or 0
+        )
+        research_run_metrics["samplesWrittenThisRun"] = int(
+            research_run_metrics.get("samplesWrittenThisRun") or 0
+        ) + int(replay_summary.get("samplesWritten") or 0)
+        if int(replay_summary.get("assetsCompleted") or 0) > 0 and not replay_summary.get("interrupted"):
+            current_shadow["cursor"] = next_research_cursor
+            current_shadow["lastSelectedPartIds"] = selected_research_part_ids
+            research_run_metrics["rotationAdvancedThisRun"] = True
+
     result["diagnostics"]["currentFieldShadow"] = write_current_field_shadow_checkpoint(
-        current_shadow, generated, selected_research_part_ids
+        current_shadow, generated, selected_research_part_ids, research_run_metrics
     )
     result["diagnostics"]["freshMarineZoneIds"] = sorted(fresh_marine_zone_ids)
     clean_and_summarize(result, fresh_zone_ids, budget)

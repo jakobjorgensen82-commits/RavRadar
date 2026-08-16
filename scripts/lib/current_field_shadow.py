@@ -119,6 +119,31 @@ def build_rotating_targets(
     return targets, (start + count) % len(parts), selected_ids
 
 
+def eligible_replay_assets(
+    assets: list[dict[str, Any]],
+    captured_at: str,
+    max_assets: int = 5,
+) -> list[dict[str, Any]]:
+    """Select cached forecast steps that can add useful research profiles.
+
+    Ordinary workflow runs must be able to advance the geographic rotation even
+    when DMI has not published a new model generation.  The caller still checks
+    that the corresponding GRIB file exists locally; this helper only applies the
+    same honest time window as :func:`record_profiles` and bounds replay work.
+    """
+    captured_epoch = _epoch(captured_at)
+    if not captured_epoch:
+        return []
+    lower = captured_epoch - 3600
+    upper = captured_epoch + FORECAST_LEAD_MAX_HOURS * 3600
+    eligible = [
+        asset for asset in assets
+        if lower <= _epoch(asset.get("valid")) <= upper
+    ]
+    eligible.sort(key=lambda asset: (_epoch(asset.get("valid")), str(asset.get("href") or "")))
+    return eligible[:max(1, int(max_assets))]
+
+
 def _valid_point(value: Any) -> bool:
     return (
         isinstance(value, list)
@@ -279,10 +304,15 @@ def save_document(path: pathlib.Path, document: dict[str, Any]) -> None:
     temporary.replace(path)
 
 
-def status(document: dict[str, Any], selected_part_ids: list[str] | None = None) -> dict[str, Any]:
+def status(
+    document: dict[str, Any],
+    selected_part_ids: list[str] | None = None,
+    run_metrics: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     samples = [sample for anchor in (document.get("anchors") or {}).values() for sample in (anchor.get("samples") or [])]
     parts = {anchor.get("partId") for anchor in (document.get("anchors") or {}).values() if anchor.get("partId")}
     captured = sorted(row.get("capturedAt") for row in samples if row.get("capturedAt"))
+    metrics = run_metrics or {}
     return {
         "schemaVersion": 1,
         "generatedAt": document.get("generatedAt") or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -296,4 +326,8 @@ def status(document: dict[str, Any], selected_part_ids: list[str] | None = None)
         "oldestCapturedAt": captured[0] if captured else None,
         "newestCapturedAt": captured[-1] if captured else None,
         "selectedPartsThisRun": len(selected_part_ids or []),
+        "rotationCursor": int(document.get("cursor") or 0),
+        "rotationAdvancedThisRun": bool(metrics.get("rotationAdvancedThisRun")),
+        "samplesWrittenThisRun": int(metrics.get("samplesWrittenThisRun") or 0),
+        "cachedReplayAssetsThisRun": int(metrics.get("cachedReplayAssetsThisRun") or 0),
     }

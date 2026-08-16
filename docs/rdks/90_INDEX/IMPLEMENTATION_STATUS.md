@@ -19,6 +19,9 @@
 - [x] Korrigeret artifactreplay bevarer 11.400 verificerede hovedzone-prognosetimer; 353 matchende lokale kystdele har tidsbestemt provenance og nul pil/grid-mismatch. Manglende progressiv dækning forbliver fail-closed.
 - [x] #2850–#2855 beviser semantik v2, højst 5 km, tidsbestemt lag/punkt, selektiv cachemigration, fail-closed nuller og privat opsamlingsstatus. #2855 har 20.924 verificerede prognosetimer og nul kendt pil/grid-mismatch.
 - [x] Den private cache er 168 timer, score-neutral og ikke offentlig runtime. Den har 491 prøver for 153 ankre/58 kystdele ved 0/5/15 km; et uændret DMI-run tilføjer ikke dubletprøver.
+- [x] Det målte rotationsgab ved uændret modelrun er rettet lokalt: almindelige runs genlæser kun tidsrelevante filer, der allerede findes i den private råcache, for næste 15-dels udsnit. Replayet har isoleret output, nul downloadvej og cursorfremdrift efter et afsluttet forsøg.
+- [x] Regressionen dækker replayets tidsvindue, maksimale assetantal, statusfelter, rotationsfremdrift og kildekontrakt. DMI-bulk, acquisition, forecastintegration, workflowrækkefølge, RDKS og lokal releasegate består.
+- [ ] Frisk CI skal bevise `rotationAdvancedThisRun=true`, cache-replayassets og vækst til nye dele på et faktisk `unchanged-valid`-run.
 - [ ] Den geografiske gate stopper på 187/210 hovedzoner og 596/673 lokale dele. 23 hovedzoner og 77 lokale dele har ingen verificeret fælles U/V-celle inden for 5 km og forbliver uden strøm/pil.
 - [ ] Ejeren fortsætter punktrettelser eller træffer særskilt beslutning om fail-closed deldækning. Gaten sænkes ikke uden denne beslutning.
 - [ ] Supabase, Pages-deploy og direkte livekontrol skal bestå, før versionen kaldes produktionsverificeret. Supportartifacts fra de fejlede runs findes og dokumenterer den sikre stoptilstand.

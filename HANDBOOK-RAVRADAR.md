@@ -132,7 +132,7 @@ Det blå vandpunkt er samplinganker for både den viste strømpil og den strøm,
 
 DMI kan have forskellige dybeste tilgængelige lag på forskellige forecasttidspunkter. Derfor foretages lagvalget for hver native tid. RavRadar må kun beregne mellemtimer, når begge native tider har samme lag, vandcelle og modelkørsel; ellers vises strøm som manglende mellem tiderne. Pilen står altid på den valgte times egen dokumenterede celle. Centralt flyttede kystdelspunkter bygges før næste DMI-sampling, og kun cachen for det flyttede punkt nulstilles.
 
-En privat, score-neutral cache genbruger de downloadede DKSS-felter ved vandpunktet samt cirka 5 og 15 km søværts. Repræsentative overflade-, mellem- og bundlag bevares højst 168 timer. Den kommende analyse skal undersøge hele kæden **ydre tilførsel → overgang mod kysten → lokal bundnær levering**, inklusive tidsforsinkelse, persistens og risiko for dobbelt-tælling med vind og bølger. Ingen ny scorevægt er aktiveret.
+En privat, score-neutral cache genbruger de downloadede DKSS-felter ved vandpunktet samt cirka 5 og 15 km søværts. Repræsentative overflade-, mellem- og bundlag bevares højst 168 timer. Også når DMI-modellen er uændret, kan en almindelig kørsel genlæse de allerede cachede filer for de næste 15 kystdele uden ny download eller skrivning til offentlig vejrdata. Ved den normale 15-minutters rytme besøges alle 673 dele på cirka 11 timer og 15 minutter. Den kommende analyse skal undersøge hele kæden **ydre tilførsel → overgang mod kysten → lokal bundnær levering**, inklusive tidsforsinkelse, persistens og risiko for dobbelt-tælling med vind og bølger. Ingen ny scorevægt er aktiveret.
 
 **Håndbogsversion:** 4.0.229
 

@@ -12,6 +12,7 @@ Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde sa
 - En privat syvdøgnscache genbruger DKSS ved 0/5/15 km og flere lag uden score- eller public-runtimepåvirkning. Helhedsmodellen er permanent gemt i DEC-0040 og DEC-0029.
 - #2853–#2855 gentager 187/210 verificerede hovedzoner og 596/673 lokale kystdele. #2855 har 20.924 verificerede timer, 3.856 `non-dmi-current`-timer og nul kendt pil/grid-mismatch blandt verificerede poster. De 23/77 rester er `null` uden pil.
 - Den private cache har 491 prøver for 153 ankre/58 dele og er fortsat 168 timer, score-neutral og ikke offentlig. #2855 tilføjede ingen dubletter fra det uændrede modelrun.
+- #2855 afdækkede samtidig, at cursoren ikke gik videre på `unchanged-valid`. En lokal rettelse genlæser nu kun allerede cachede, tidsrelevante GRIB-filer for næste 15 private dele, uden download eller offentlig outputmutation. En fuld 673-dels runde er 45 normale kørsler/cirka 11 timer og 15 minutter. Frisk CI skal bevise cursor- og delvækst.
 - Produktionsgaten er ikke sænket. 4.0.229 er ikke deployet; næste beslutning er fortsat punktrettelser til fuld dækning eller en udtrykkelig fail-closed deldækningspolitik.
 
 - 4.0.228 er produktionsverificeret i #31913779486/#2835 på commit `93b8c0216821d02bf913f7aab369406ba2365fe9` med central adminhydrering, frisk DMI, fulde gates, Supabase og Pages.
@@ -29,9 +30,10 @@ Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde sa
 
 ## Første opgave i næste chat
 
-1. Læs `docs/rdks/40_KNOWN_ISSUES/CURRENT-COVERAGE-4.0.229.md` og kontrollér, om ejerens seneste centrale punktrettelser har ændret de 23 hovedzone-/77 kystdelsmangler.
-2. Bevar den uændrede gate, indtil ejeren enten har skabt den krævede dækning eller udtrykkeligt godkender en fail-closed deldækningspolitik. Uverificerede poster må aldrig få pil eller strøm.
-3. Efter beslutningen: kør fuld CI-`validate`, releasegate, Supabase, Pages og direkte livekontrol af semantik v2, maksimalt 5 km, tidsbestemt lag/celle, selektiv cachemigration og privat cache-status.
+1. Følg den første CI-kørsel med cache-replayrettelsen og kræv `rotationAdvancedThisRun=true`, mindst ét `cachedReplayAssetsThisRun` og flere end 58 dækkede dele på et `unchanged-valid`-run.
+2. Læs derefter `docs/rdks/40_KNOWN_ISSUES/CURRENT-COVERAGE-4.0.229.md` og kontrollér, om ejerens seneste centrale punktrettelser har ændret de 23 hovedzone-/77 kystdelsmangler.
+3. Bevar den uændrede gate, indtil ejeren enten har skabt den krævede dækning eller udtrykkeligt godkender en fail-closed deldækningspolitik. Uverificerede poster må aldrig få pil eller strøm.
+4. Efter beslutningen: kør fuld CI-`validate`, releasegate, Supabase, Pages og direkte livekontrol af semantik v2, maksimalt 5 km, tidsbestemt lag/celle, selektiv cachemigration og privat cache-status.
 
 ## Beskyttede beslutninger
 
