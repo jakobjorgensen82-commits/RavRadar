@@ -1,3 +1,14 @@
+## 2026-08-16 – 4.0.229 korrekt strømposition, bundlag og syvdøgnscache
+
+- Ejeren krævede, at pile over vand både står fysisk korrekt og bruger en fagligt relevant strøm. Den tidligere parser valgte dybeste lag på tværs af koordinater og kunne flytte aktiv strøm 12–24 km væk.
+- Semantik v2 vælger nærmeste fælles DMI-U/V-vandkolonne først og derefter dybeste gyldige lag i samme kolonne. 0–3 km foretrækkes, 3–5 km accepteres, og alt længere væk bliver `missing` uden pil.
+- Tidspunkt, lag, celle og samplingpunkt følger nu forecast, provenance, historik, score og pil. Interpolation over lag-/celle-/runskift er forbudt; ForecastEDR-/Open-Meteo-/fallbackstrøm uden samme bevis fjernes før aktiv anvendelse.
+- En privat, score-neutral 168-timers cache opsamler roterende 0/5/15-km-transekter og flere lag. DEC-0040 og DEC-0029 fastholder fremtidens transportkæde: ydre tilførsel → overgang mod kyst → lokal bundnær levering, med lag, persistens, tidsforsinkelse og kontrol mod dobbelttælling.
+- #2846 fandt en forældet antagelse om ét fast lag pr. serie. #2850 fandt en forældet forecastfixture. Begge blev rettet uden at ændre strømdata eller gates.
+- #2853–#2855 gentager 187/210 verificerede hovedzoner og 596/673 lokale kystdele. #2855 har 20.924 verificerede timer og 3.856 fail-closed `non-dmi-current`-timer. Der er ingen kendt pil/grid-fejl i verificerede poster.
+- De 23 hovedzoner og 77 lokale dele uden fælles U/V inden for 5 km står uden strøm og pil. Den geografiske gate er ikke sænket, så Supabase og Pages blev korrekt sprunget over. 4.0.229 er ikke deployet eller produktionsverificeret.
+- Den private cache har 491 prøver for 153 ankre/58 dele; #2855 havde uændrede DKSS-samlinger og tilføjede derfor ingen dubletter. Den præcise handlingsliste er gemt i `docs/rdks/40_KNOWN_ISSUES/CURRENT-COVERAGE-4.0.229.md`.
+
 ## 2026-08-16 – 4.0.228 flere verificerede kortpile ved indzoomning
 
 - Ejeren fortsætter den manuelle land-/vandpunktgennemgang og bad om, at uafhængigt roadmaparbejde fortsætter sideløbende.
