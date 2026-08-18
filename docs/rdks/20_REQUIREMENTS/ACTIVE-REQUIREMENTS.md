@@ -2,6 +2,12 @@
 
 Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslutninger, chatkilder og kode.
 
+## Offentlig lokal sammenhæng – bindende efter browseraudit 2026-08-18
+
+- **REQ-PUBLIC-LOCAL-CONSISTENCY-001 – BINDENDE:** Når zonepanelet udpeger en lokal kystdel som vinder, skal kortfremhævning, delnavn, score, forklaring, debug, vind, bølger, vandstand, strøm, vandtemperatur og trend komme fra samme lokale del og samme valgte tidspunkt. Hovedzonens `condition.current` må ikke vises som om den tilhører vinderdelen. Hvis en lokal række reelt mangler, skal fallbacken være tydeligt mærket og må ikke fremstilles som lokalt bevis.
+- **REQ-PUBLIC-LOCAL-FORECAST-001 – BINDENDE:** Hver femdøgnsfane i zonepanelet skal bruge samme lokale `bestForDay`-valg, kystdel, tidspunkt, score og vejrpost som den nationale lokale prognose. En generisk hovedzone-`selectBestTimeForDay` må ikke skabe en anden score, tid, forklaring eller pil under samme viste lokale vinder.
+- **REQ-CURRENT-COMMON-HOUR-COVERAGE-001 – BINDENDE:** Samlet 673/673-proveniens over artifactet må ikke alene betegnes som komplet aktuel timedækning. Produktions- og browserbevis skal særskilt oplyse, om alle 673 dele har en tilladt, verificeret U/V-post ved den samme valgte aktuelle time. Manglende dele forbliver fail-closed; fulddækningskravet og kildeordenen må ikke sænkes eller udvides uden ejerbeslutning.
+
 ## Strømmens sted, dybde og kommende helhedsmodel – næste kandidat efter 4.0.231
 
 - **REQ-CURRENT-SPATIAL-FIRST-001 – BINDENDE, PRÆCISERET I 4.0.230:** For hvert native forecasttidspunkt vælges den nærmeste gyldige fælles DMI-U/V-vandkolonne på tværs af alle aktive DKSS-collections før vertikallaget. Dybde må kun afgøre valget mellem lag på eksakt samme koordinat. Skalare marinefelters modelvalg og kysttypeprioritering må ikke påvirke strømvalget.

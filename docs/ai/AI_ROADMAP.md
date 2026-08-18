@@ -1,5 +1,16 @@
 # AI Roadmap – RavRadar 4.0.233
 
+## Næste P1 efter browseraudit 2026-08-18 – én lokal sandhed i hele zonepanelet
+
+1. Reproducer det aktuelle live-datasæt og fastlås Blåvand-modbeviset: lokal vinder/debug NV 315° må ikke ledsages af hovedzonens synlige N 11°.
+2. Før den aktuelle lokale vinderdels eksakte vejrpost og tidspunkt gennem kort, navn, RavScore, forklaring, debug og alle synlige metrikker. Fallback må kun ske ved reel mangel og skal mærkes.
+3. Genbrug den nationale prognoses lokale `bestForDay`-beslutning i zonepanelets femdøgnsfaner, så score, tid, kystdel, tekst og vejr ikke kan komme fra forskellige poster.
+4. Tilføj landsdækkende maskinel browser-/regressionstest for 210 zoner, 673 dele, begge jagtformer og alle fem døgn. Testen skal sammenligne identitet, tidspunkt, score, retninger og de viste metrikker – ikke kun DOM-tilstedeværelse.
+5. Indfør særskilt bevis for 673/673 ved den samme valgte aktuelle time. Den eksisterende samlede 100 %-gate bevares; de tre observerede Limfjordszoner må ikke løses med en ny/fjern kilde uden ejerens planbeslutning.
+6. Afslut med fuld RDKS-, release-, central produktions- og direkte browservalidering. Den bestående 4.0.233-retningsisolation, kildeorden, afstandsgrænser, rollback og ejerpunkter må ikke ændres utilsigtet.
+
+Status ved checkpoint: analyse og rodårsag er gemt; implementering er ikke startet. Krævet model/indsats ved genoptagelse: GPT-5.6 Sol, Ekstra høj.
+
 ## Aktuelt P1-fix 2026-08-18 – lokal scoreretning må ikke komme fra en anden kystdel
 
 - Liveaudit beviser, at de nye strømpile fysisk følger deres U/V-vektor og faktiske modelcelle i alle 673 dele. De skal vise vandets bevægelse og peger derfor ikke nødvendigvis mod land.

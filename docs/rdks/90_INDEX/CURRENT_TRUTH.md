@@ -1,5 +1,13 @@
 # Current truth – gældende projektviden
 
+## Åben P1 efter systematisk Chromium-audit 2026-08-18 – lokal data vises ikke konsekvent i zonepanelet
+
+- Audit af 210 zoner og 673 kystdele bekræfter, at ejerens land-/vandpunkter er bevaret og faktisk bruges i den lokale scorekæde. Alle 673 har gyldig strømproveniens; kildefordelingen er 622 DMI, 43 Copernicus og otte godkendte regionalproxyer. U/V-retning, pilcelle, kildeklasse og afstand er konsistente. 4.0.233's ankerrettelse er derfor fortsat gyldig.
+- Den direkte browser fandt en anden systemisk fejl: den lokale vinder, RavScore, tekst og debug bygges fra vinderdelen, men det synlige aktuelle vejrkort bygges fortsat fra hovedzonens `condition.current`. Blandt 414 sammenlignelige zone-/jagtformvisninger afveg strømretningen i 371, strømstyrken i 324 og vandtemperaturen i 414. Blåvand viste lokal NV 315° i debug, men N 11° i det synlige strømkort.
+- Femdøgnsfanerne bruger hovedzonens generiske dagsvalg i stedet for den nationale prognoses lokale `bestForDay`. Af 1.964 sammenlignelige faner afveg score i 1.660 og bedste tidspunkt i 897. Dette kan også give hovedzonetekster som `Nord for fyret`/`Syd for fyret`, selv om den lokale kystdel har et andet præcist navn.
+- Datasættet `rr-20260818201755-210` havde samlet 673/673-proveniens, men den fælles aktuelle 20:00-række var ufuldstændig i tre Limfjordszoner (`DK-B05-12`, `DK-B05-17`, `DK-B05-18`). Samlet artifactdækning er derfor ikke i sig selv bevis for 673/673 ved præcis samme aktuelle time.
+- Der er ikke lavet en produktrettelse i denne session. Ingen punkter, vejrdata, score, kildeorden, 100 %-gate eller deployment er ændret. Rettelsen afventer Sol/Ekstra høj og skal samle kort, vinder, score, tekst, debug og metrikker om samme lokale del og tidspunkt samt gøre fallback og fælles timedækning eksplicit.
+
 ## 4.0.233 live og produktionsverificeret 2026-08-18 – hver kystdel bruger kun sin egen kystretning
 
 - Ejerens Blåvand-billeder dokumenterede en reel systemisk modsigelse: `Havsande – nordkyst` blev vist som bedste del, mens transportforklaringen og RavScore valgte moderzonens anker `Syd for fyret`. Debug viste samtidig delens korrekte pålandsretning omkring 117°, men beregnede retningsforskellen mod 29°. Historikken brugte allerede delens egen retning og kunne derfor sige udtransport, mens den aktuelle score sagde indtransport.

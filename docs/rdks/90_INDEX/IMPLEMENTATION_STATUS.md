@@ -1,4 +1,15 @@
-# Implementeringsstatus – lokal retningsisolation i 4.0.233
+# Implementeringsstatus – 4.0.233 og åbne browserfund
+
+## Åben P1 – én lokal del og ét tidspunkt gennem hele zonepanelet
+
+- [x] Chromium-audit gennemførte 210 zoner, 673 dele, 420 aktuelle zone-/jagtformvisninger og 2.100 femdøgnsfaner uden at ændre projektdata.
+- [x] 673/673 ejerland-/vandpunkter matcher runtime; alle 673 strømvektorer, pilceller, kildeklasser og afstande er konsistente. Den tidligere 4.0.233-retningsisolation er ikke tilbagefaldet.
+- [x] Rodårsagen til den aktuelle visuelle modsigelse er afgrænset: `app.js` sender hovedzonens `condition.current` til zonepanelets metrikker, mens vinder/score/debug bruger den lokale vinderdel; `js/ui/info-panel.js` vælger femdøgnstid generisk på hovedzonen i stedet for den lokale `bestForDay`.
+- [ ] Ret nuvisningen, så alle synlige metrikker bruger vinderdelens eksakte lokale vejrpost og tidspunkt, med tydeligt mærket fallback når posten mangler.
+- [ ] Ret femdøgnsfanerne, så kort, delnavn, score, bedste tid, forklaring, debug og metrikker bruger samme lokale `bestForDay`-post som den nationale prognose.
+- [ ] Tilføj systemisk browser-/regressionstest for alle zoner og begge jagtformer samt et eksplicit Blåvand-modbevis (lokal NV 315° må ikke vises som N 11°).
+- [ ] Adskil samlet 673/673-proveniens fra 673/673 ved én eksakt fælles aktuel time. Tre Limfjordszoner havde ufuldstændig 20:00-række i det auditerede datasæt; eventuel kildeplan kræver ejerens dialog og må ikke sænke gaten.
+- [ ] Kør fuld lokal og central RDKS-/release-/produktionsvalidering efter rettelsen. Ingen kode-, data- eller deployændring er udført i checkpointsessionen.
 
 ## 4.0.233 – score, historik, forklaring og kystdel deler ét punktpar
 

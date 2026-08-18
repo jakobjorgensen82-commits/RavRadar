@@ -1,4 +1,14 @@
-# Aktuelt sessionshandoff – 2026-08-16
+# Aktuelt sessionshandoff – 2026-08-18
+
+## Nedlukningscheckpoint 2026-08-18 – fuld Chromium-audit, rettelse afventer
+
+- Ejeren bad om en systematisk direkte browserkontrol af 210 zoner og 673 kystdele. Den blev gennemført med lokalt Chromium/Playwright, fordi det bundne browserplugin fejlede på sin trusted-code-path. Auditkørslen ændrede ingen projektfiler, land-/vandpunkter eller live-data.
+- Grundlaget er sundt: ejerpunkterne matcher runtime 673/673; kilderne er 622 DMI, 43 Copernicus og otte allowlistede proxyer; U/V-retninger, kildeceller, lag, afstande og pile er konsistente. 4.0.233's lokale retningsisolation står ved magt.
+- Ny P1: zonepanelets aktuelle synlige vejrkort bruger hovedzonens `condition.current`, mens lokal vinder, score, forklaring og debug bruger vinderdelen. 371/414 sammenlignelige aktuelle visninger havde forskellig strømretning. Blåvand: lokal/debug NV 315°, synligt strømkort N 11°.
+- Ny P1: femdøgnspanelet vælger generisk hovedzonetid, mens national forecast bruger lokal `bestForDay`. 1.660/1.964 sammenlignelige faner havde forskellig score og 897 forskelligt tidspunkt.
+- Ny P1-kontrol: samlet 673/673 skjulte, at den fælles aktuelle 20:00-række var ufuldstændig i `DK-B05-12`, `DK-B05-17` og `DK-B05-18`. Der må ikke ændres kilder eller sænkes gate uden ejerens planbeslutning.
+- Næste session skal begynde i `C:\Users\jakob\AppData\Local\Temp\ravradar-40232-current`, læse RDKS, verificere aktuel live-reproduktion og derefter samle nu- og femdøgnsvisningen om samme lokale del/tid/vejrpost. Tilføj landsdækkende tests og særskilt fælles-time-dækningsbevis. Brug Sol/Ekstra høj.
+- Kun dokumentation er opdateret i checkpointet; ingen version, kode, data, geometri, score, release eller deploy er ændret.
 
 ## Handoff 2026-08-18 – Copernicus-pilot under opbygning
 

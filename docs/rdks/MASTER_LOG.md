@@ -1,3 +1,12 @@
+## 2026-08-18 – nedlukningscheckpoint efter fuld Chromium-audit
+
+- En direkte Chromium/Playwright-kontrol gennemgik 210 zoner, 673 kystdele, 420 aktuelle zone-/jagtformvisninger, 545 unikke strømpositioner og 2.100 femdøgnsfaner. Ingen projektdata eller ejerpunkter blev ændret.
+- Audit bekræftede 673/673 match mellem ejerens land-/vandpunkter og runtime, 622 DMI + 43 Copernicus + otte godkendte regionalproxyer samt konsistente U/V-retninger, pilceller, afstande og kildeklasser. En enkelt rå pilemarkering var en DOM-overlap-falsk positiv; alle 545 unikke positioner havde en pil.
+- Ny P1 blev afgrænset til offentlig præsentation: det aktuelle vejrkort viser hovedzonens `condition.current`, mens lokal vinder, score, tekst og debug bruger vinderdelen. 371/414 sammenlignelige aktuelle visninger havde forskellig strømretning; Blåvand viste lokal NV 315° mod synlig N 11°.
+- Femdøgnspanelet bruger hovedzonens generiske dagsvalg i stedet for lokal `bestForDay`. 1.660/1.964 sammenlignelige faner havde forskellig score, og 897 havde forskelligt bedste tidspunkt.
+- Datasæt `rr-20260818201755-210` havde samlet 673/673, men manglede dele på den fælles 20:00-række i `DK-B05-12`, `DK-B05-17` og `DK-B05-18`. Dette kræver særskilt timedækningsbevis og eventuel ejerplan, ikke en lavere gate.
+- Kun RDKS-, status-, handoff- og roadmapdokumentation blev ændret. Programkode, geometri, score, kilder, live-data og deployment blev ikke rørt; rettelsen afventer næste session med Sol/Ekstra høj.
+
 ## 2026-08-18 – 4.0.233 isolerer hver lokal score til eget punktpar
 
 - Ejerens seks Blåvand-billeder viste tre samtidige udsagn, der ikke kunne være sande: bedste del var `Havsande – nordkyst`, teksten valgte `Syd for fyret`, og debug viste lokal pålandsretning 117° men retningsforskel 29°.
