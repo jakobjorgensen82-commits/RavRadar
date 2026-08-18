@@ -12,6 +12,7 @@ import types
 
 from lib.current_field_shadow import (
     RETENTION_HOURS,
+    build_regional_proxy_targets,
     build_rotating_targets,
     eligible_replay_assets,
     empty_document,
@@ -20,6 +21,7 @@ from lib.current_field_shadow import (
     owner_coverage_audit,
     prune,
     record_profiles,
+    regional_proxy_safe_report,
     representative_profile,
     save_document,
     status,
@@ -106,6 +108,48 @@ assert profile["layers"]["surface"]["verticalLayer"] == "surface:0"
 assert profile["layers"]["middle"]["verticalLayer"] == "depthbelowsea:10"
 assert profile["layers"]["bottom"]["verticalLayer"] == "depthbelowsea:20"
 assert representative_profile([choice(10, 55, 5.01, "surface:0", 0, 1, 1)]) is None
+
+# The regional exception is created only from the exact eight-row owner policy,
+# only against matching current central points, and never as a global 15 km rule.
+regional_policy = json.loads((ROOT / "data/current-regional-proxy-policy.json").read_text("utf-8"))
+regional_parts = {
+    "zones": {
+        "DK-LIMFJORD-TEST": [
+            {
+                "partId": row["partId"],
+                "name": row["name"],
+                "landPoint": [row["approvedSamplingPoint"][0], row["approvedSamplingPoint"][1] + 0.01],
+                "waterPoint": row["approvedSamplingPoint"],
+            }
+            for row in regional_policy["parts"]
+        ]
+    }
+}
+regional_targets = build_regional_proxy_targets(
+    regional_policy,
+    regional_parts,
+    {"DK-LIMFJORD-TEST": "limfjord"},
+)
+assert len(regional_targets) == 8
+assert len({target["partId"] for target in regional_targets}) == 8
+assert all(target["requiredCollection"] == "dkss_lf" for target in regional_targets)
+assert all(target["maximumDistanceKm"] == 15.0 for target in regional_targets)
+assert all(target["researchCurrent"] and target["regionalProxyCandidate"] for target in regional_targets)
+
+changed_parts = json.loads(json.dumps(regional_parts))
+changed_parts["zones"]["DK-LIMFJORD-TEST"][0]["waterPoint"][0] += 0.001
+try:
+    build_regional_proxy_targets(regional_policy, changed_parts, {"DK-LIMFJORD-TEST": "limfjord"})
+    raise AssertionError("A changed central regional-proxy point must fail closed")
+except ValueError as exc:
+    assert "reapproval required" in str(exc)
+
+try:
+    build_regional_proxy_targets(regional_policy, regional_parts, {"DK-LIMFJORD-TEST": "west"})
+    raise AssertionError("A regional proxy outside the Limfjord class must fail closed")
+except ValueError as exc:
+    assert "Limfjord zone class" in str(exc)
+
 far_evidence = nearest_shared_uv_evidence(
     [
         choice(10.2, 55.0, 0.1, "depthbelowsea:20", 20, 1, 2),
@@ -134,6 +178,39 @@ written = record_profiles(
 )
 assert written == 1
 assert record_profiles(document, {target["id"]: target}, {target["id"]: []}, "dkss_test", now_iso, valid_iso, now_iso) == 0
+
+# Additive policy metadata must upgrade old schema-v1 anchors in place instead
+# of deleting their still-valid seven-day observations.
+legacy_document = empty_document()
+legacy_document["anchors"][target["id"]] = {
+    "partId": target["partId"],
+    "parentZoneId": target["parentZoneId"],
+    "bandKm": target["bandKm"],
+    "targetPoint": target["targetPoint"],
+    "sourceWaterPoint": target["sourceWaterPoint"],
+    "seawardBearingDeg": target["seawardBearingDeg"],
+    "samples": [{
+        "sampleKey": "legacy-sample",
+        "capturedAt": now_iso,
+        "collection": "dkss_test",
+        "modelRun": now_iso,
+        "validTime": now_iso,
+        "gridPoint": target["targetPoint"],
+        "distanceKm": 0.0,
+        "layers": {},
+    }],
+}
+assert record_profiles(
+    legacy_document,
+    {target["id"]: target},
+    {target["id"]: [choice(10.01, 55.0, 1.0, "surface:0", 0, 1, 2)]},
+    "dkss_test",
+    now_iso,
+    valid_iso,
+    now_iso,
+) == 1
+assert len(legacy_document["anchors"][target["id"]]["samples"]) == 2
+assert legacy_document["anchors"][target["id"]]["researchClass"] == "transect"
 far_document = empty_document()
 assert record_profiles(
     far_document,
@@ -146,6 +223,70 @@ assert record_profiles(
 ) == 0
 far_audit = far_document["coverageAudits"][target["id"]]
 assert far_audit["observations"]["dkss_test"]["nearestSharedUv"]["distanceKm"] > 5.0
+
+regional_target = regional_targets[0]
+regional_lon, regional_lat = regional_target["targetPoint"]
+regional_choices = [
+    choice(regional_lon + 0.1, regional_lat, 8.0, "depthbelowsea:5", 5, 0.11, 0.12),
+    choice(regional_lon + 0.1, regional_lat, 8.0, "depthbelowsea:20", 20, 0.21, 0.22),
+]
+regional_document = empty_document()
+assert record_profiles(
+    regional_document,
+    {regional_target["id"]: regional_target},
+    {regional_target["id"]: regional_choices},
+    "dkss_idw",
+    now_iso,
+    valid_iso,
+    now_iso,
+) == 0
+assert regional_target["id"] not in regional_document["anchors"]
+assert regional_target["id"] not in regional_document["coverageAudits"]
+assert record_profiles(
+    regional_document,
+    {regional_target["id"]: regional_target},
+    {regional_target["id"]: regional_choices},
+    "dkss_lf",
+    now_iso,
+    valid_iso,
+    now_iso,
+) == 1
+regional_anchor = regional_document["anchors"][regional_target["id"]]
+assert regional_anchor["regionalProxyCandidate"] is True
+assert regional_anchor["requiredCollection"] == "dkss_lf"
+assert regional_anchor["samples"][0]["distanceKm"] == 8.0
+
+# The same distant column remains forbidden for an ordinary rotating target,
+# and even an allowlisted target cannot exceed the 15 km physical cap.
+ordinary_distant_document = empty_document()
+assert record_profiles(
+    ordinary_distant_document,
+    {target["id"]: target},
+    {target["id"]: regional_choices},
+    "dkss_lf",
+    now_iso,
+    valid_iso,
+    now_iso,
+) == 0
+over_cap_document = empty_document()
+over_cap_choices = [choice(regional_lon + 0.3, regional_lat, 20.0, "depthbelowsea:20", 20, 0.4, 0.5)]
+assert record_profiles(
+    over_cap_document,
+    {regional_target["id"]: regional_target},
+    {regional_target["id"]: over_cap_choices},
+    "dkss_lf",
+    now_iso,
+    valid_iso,
+    now_iso,
+) == 0
+assert regional_target["id"] in over_cap_document["coverageAudits"]
+
+regional_report = regional_proxy_safe_report(regional_document, regional_targets, now_iso)
+assert regional_report["configuredParts"] == 8
+assert regional_report["partsWithSamples"] == 1 and regional_report["samples"] == 1
+assert regional_report["rawVectorsIncluded"] is False
+serialized_regional_report = json.dumps(regional_report)
+assert '"uMps"' not in serialized_regional_report and '"vMps"' not in serialized_regional_report
 summary = status(document, selected, {
     "rotationAdvancedThisRun": True,
     "samplesWrittenThisRun": 1,
@@ -156,6 +297,10 @@ assert summary["samples"] == 1 and summary["retentionHours"] == 168
 assert summary["rotationAdvancedThisRun"] is True
 assert summary["samplesWrittenThisRun"] == 1
 assert summary["cachedReplayAssetsThisRun"] == 1
+regional_summary = status(regional_document, run_metrics={"regionalProxyConfiguredThisRun": 8})
+assert regional_summary["regionalProxyConfiguredThisRun"] == 8
+assert regional_summary["regionalProxyPartsWithSamples"] == 1
+assert regional_summary["regionalProxySamples"] == 1
 
 owner_bulk = {
     "zones": {
@@ -246,16 +391,21 @@ assert 'parameter in {"current-u", "current-v"}' in bulk_source
 assert "record_current_field_profiles" in bulk_source
 assert "replay_current_field_shadow_from_cache" in bulk_source
 assert "no-eligible-cached-current-assets" in bulk_source
-assert '"fresh-marine-asset-covered-selection"' in bulk_source
+assert '"fresh-marine-assets-covered-private-targets"' in bulk_source
 assert "current-field-shadow.json" in workflow
 assert "Save private seven-day current-field research cache" in workflow
 assert "CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5" in workflow
 assert "CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3" in workflow
+assert "--exclude 'data/diagnostics/'" in workflow
+assert "--exclude '.cache/'" in workflow
 main_source = bulk_source.split("def main()", 1)[1]
 assert main_source.index("for collection in scheduled") < main_source.rindex("replay_current_field_shadow_from_cache(")
 assert "currentFieldShadowPrefetchErrors" in main_source
 assert "current-coverage-owner-audit.json" in bulk_source
 assert "write_current_coverage_owner_audit" in bulk_source
+assert "build_regional_proxy_targets" in bulk_source
+assert "current-regional-proxy-pilot.json" in bulk_source
+assert "regional_proxy_targets" in bulk_source
 
 # The raw cache key must ignore volatile signed query parameters, retain one
 # current marine replay file ahead of unrelated LRU entries, and permit one
@@ -272,6 +422,11 @@ spec = importlib.util.spec_from_file_location("ravradar_bulk_cache_test", ROOT /
 assert spec and spec.loader
 bulk = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(bulk)
+
+ordinary_parameter_targets = bulk.parameter_zones("dkss_idw", "current-u", [target, regional_target])
+assert target in ordinary_parameter_targets and regional_target not in ordinary_parameter_targets
+limfjord_parameter_targets = bulk.parameter_zones("dkss_lf", "current-u", [target, regional_target])
+assert target in limfjord_parameter_targets and regional_target in limfjord_parameter_targets
 
 with tempfile.TemporaryDirectory() as directory:
     original_raw_dir = bulk.RAW_DIR
@@ -333,6 +488,43 @@ with tempfile.TemporaryDirectory() as directory:
         bulk.download_asset = original_download
         bulk.process_grib = original_process
         bulk.CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN = original_limit
+        bulk.RAW_DIR = original_raw_dir
+
+# A proxy-only replay must not even inspect/process IDW or NSBS vector files.
+original_process = bulk.process_grib
+with tempfile.TemporaryDirectory() as directory:
+    original_raw_dir = bulk.RAW_DIR
+    bulk.RAW_DIR = pathlib.Path(directory)
+    seen_collections: list[str] = []
+    try:
+        valid = (captured + timedelta(hours=1)).isoformat().replace("+00:00", "Z")
+        catalog = {}
+        for collection in ("dkss_idw", "dkss_lf"):
+            href = f"https://example.test/{collection}.grib"
+            bulk.cached_asset_path(href).write_bytes(collection.encode("utf-8"))
+            catalog[collection] = {
+                "modelRun": captured_iso,
+                "assets": [{"valid": valid, "href": href, "size": len(collection)}],
+            }
+
+        def fake_proxy_process(path, collection, model_run, valid_time, zones, output, diagnostics, shadow):
+            seen_collections.append(collection)
+            assert collection == "dkss_lf"
+            assert zones == [regional_target]
+            return {"current-u", "current-v"}, set(), False, 2, len(zones)
+
+        bulk.process_grib = fake_proxy_process
+        replay = bulk.replay_current_field_shadow_from_cache(
+            catalog,
+            [regional_target],
+            empty_document(),
+            captured_iso,
+            {"bytes": 0},
+        )
+        assert replay["assetsCompleted"] == 1
+        assert seen_collections == ["dkss_lf"]
+    finally:
+        bulk.process_grib = original_process
         bulk.RAW_DIR = original_raw_dir
 
 print("Current-field shadow regression: OK")

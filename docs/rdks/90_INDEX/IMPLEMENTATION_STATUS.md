@@ -1,4 +1,4 @@
-# Implementeringsstatus – privat supplerende strømkandidat efter 4.0.231
+# Implementeringsstatus – privat supplerende strømkandidat i 4.0.232
 
 ## Copernicus-pilot og otte regionale Limfjordsproxyer
 
@@ -8,10 +8,14 @@
 - [x] Rå U/V opbevares højst 168 timer i Actions-cache; supportrapporten fjerner rå vektorer og tester credentiallæk. `scoreImpact=false` og `publicRuntime=false` er hårde kontrakter.
 - [x] Lokal syntetisk regression beviser tør nærmeste celle, dybeste fælles lag, samme U/V-celle/-tid/-lag, 5-km-afvisning, syvdøgnspruning og sikkert rapportoutput.
 - [x] DEC-0041 og en maskinlæsbar politik afgrænser regionalproxy til præcis otte Limfjordsdele, `dkss_lf`, uændret samplingpunkt og højst 15 km. Lokal test mod #3079 består.
+- [x] 4.0.232-kandidaten opretter de otte regionale mål ved hver DMI-kørsel fra den centralt hydrerede registrering og gemmer deres faktiske U/V privat op til 15 km. Almindelige mål bevarer 5 km; forkert collection, ændret punkt, anden zoneklasse og over 15 km afvises.
+- [x] Privat DMI-evidensrapport indeholder kun del, samplingpunkt, collection, run, tid, grid, afstand og lag. Regressionen afviser rå `uMps`/`vMps`, beviser Pages-udelukkelse og isolerer proxy-replay til `dkss_lf`.
+- [x] Målrettede DMI-, forecast-, scheduler-, cache-, policy-, RDKS-, håndbogs-, versions- og modulregressioner samt lokal releasegate består. Fuld lokal `validate` gennemfører RDKS og geometri-v2-kæden og stopper derefter som forventet på repositoryets forældede 31. juli-snapshot; friske centrale data må ikke erstattes af dette snapshot.
 - [x] Commit `0c010090` er på `main`; autentificeret run `#32129799346` bestod på 1:59, og renset artifact bekræftede 39 Baltic + 4 AMM15 af DMI's 51 huller, ingen credential-/U/V-læk og præcis otte resterende allowlistdele.
 - [x] Privat timeplan ved minut 17 opsamler ét eksakt aktuelt 3D-tidssnit pr. run og beskærer rå skyggehistorik til 168 timer.
 - [x] Run `#32131021153` beviste cache restore/deduplikering og sikker flerrunsaggregation: 629 records, 625 unikke mål, 629 mål/kildepar, én gyldig time, nul grid-/lagskift og nul rå U/V i artifactet.
 - [ ] Opsaml flere modelruns, før Copernicus eller regionalproxy kobles til aktiv pile-/scorepipeline.
+- [ ] Kør 4.0.232-kandidaten mod frisk central DMI og bekræft prøver til alle otte samt syvdøgnspruning i Actions-cachen. Lokal kode og tests er ikke produktionsbevis.
 - [ ] Bekræft første faktiske `schedule`-event og mindst to forskellige `validTime`-værdier; to manuelle runs i samme time tæller kun som ét tidspunkt.
 - [ ] Aktiv integration kræver fuld validering, releasegate, frisk produktionsworkflow og direkte livekontrol. Den almindelige produktion er fortsat DMI-only og fail-closed over 5 km.
 - [x] Pushrun `#32129778162` beviste, at den eksisterende gate ikke blev omgået: fuld validering stoppede ved 622/673 og intet blev deployet.

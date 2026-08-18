@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "private-pilot-owner-approved-after-gates",
+  "status": "private-collection-enabled-public-activation-gated",
   "decidedAt": "2026-08-18T10:25:00Z",
   "regularMaximumDistanceKm": 5,
   "regionalProxyMaximumDistanceKm": 15,
@@ -11,6 +11,8 @@
   "globalOverrideAllowed": false,
   "scoreImpact": false,
   "publicRuntime": false,
+  "rawRetentionHours": 168,
+  "supportReportRawVectors": false,
   "activationRequires": [
     "fresh-dmi-and-copernicus-pilot",
     "same-time-cell-layer-provenance",

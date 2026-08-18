@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-## Supplerende strøm afprøves privat – kandidat efter 4.0.231
+## Supplerende strøm afprøves privat – 4.0.232-kandidat
 
 RavRadar bruger fortsat kun den verificerede DMI-kæde i den offentlige score og på kortet. En separat privat pilot afprøver nu to officielle tredimensionelle Copernicus-havmodeller som supplement, når DMI mangler et fælles strømpar tæt på kystpunktet. Piloten vælger først nærmeste vandkolonne med både øst-vest- og nord-syd-strøm på samme tidspunkt og vælger derefter det dybeste fælles lag i netop denne kolonne. Der interpoleres ikke mellem celler eller lag, og Copernicus-afstanden er fortsat højst 5 km.
 
@@ -9,6 +9,10 @@ Pilotdata opbevares højst syv døgn og påvirker hverken RavScore, offentlige p
 Den første autentificerede timeprøve dækkede 43 af de 51 aktuelle DMI-huller: 39 fra Baltic og fire fra AMM15. Sammen med DMI svarer det til 665/673, mens præcis de otte dokumenterede Limfjordsdele fortsat mangler lokal strøm. Prøven er ikke en aktivering; piloten kører privat hver time for at opbygge syv døgns stabilitetsbevis.
 
 Otte dokumenterede modelhuller i den vestlige Limfjord har en særskilt ejerbeslutning. Når alle gates senere er bestået, må kun disse otte bruge nærmeste eksakte DMI-Limfjordsstrøm som tydeligt mærket regional proxy op til 15 km. Alle andre områder beholder 5-km-grænsen. Pilen skal fortsat stå på den faktiske modelcelle, og et ændret administratorpunkt kræver ny kontrol.
+
+Fra 4.0.232-kandidaten samles de otte deles faktiske DMI-strøm privat ved hver vejrbygning. Før opsamlingen kontrollerer systemet, at hvert centralt vandpunkt stadig er præcis det ejer-godkendte punkt, at delen stadig tilhører Limfjorden, og at data kommer fra Limfjordsmodellen. Forkert model eller mere end 15 km bliver afvist. Denne undtagelse ændrer ikke 5-km-grænsen for nogen anden del.
+
+De rå øst-vest- og nord-syd-værdier ligger kun i den private cache og slettes efter højst syv døgn. Supportpakken viser navn, samplingpunkt, modelkørsel, tidspunkt, modelcelle, afstand og dybdelag, men ikke strømværdierne. Den offentlige app bruger stadig ikke regionalproxyen; først friske fler-kørselsbeviser og de fulde releasegates kan åbne en senere aktivering.
 
 ## Den lokale strømpil følger den scoretime, der faktisk vises – 4.0.231
 
@@ -162,7 +166,7 @@ En privat, score-neutral cache bruger DKSS-felter ved vandpunktet samt cirka 5 o
 
 Rotationen registrerer også, hvor langt der er til den nærmeste modelkolonne med et eksakt fælles U/V-par, selv når den ligger uden for 5 km. I det tilfælde gemmes kun koordinat, afstand og lagmetadata – ikke de fjerne strømværdier. En privat ejeroversigt skelner derfor mellem nær-tærskel 5–6 km til rent manuelt geometrireview, modelhul 6–8 km, strukturelt modelhul over 8 km og en datakædefejl, hvor gyldig strøm faktisk findes inden for 5 km. Selv en nær-tærskel-post må kun flyttes, hvis vandpunktet i sig selv er forkert – aldrig blot for at nå modelcellen. Oversigten flytter ingen punkter automatisk, og den offentlige 5 km-grænse er uændret.
 
-**Håndbogsversion:** 4.0.231
+**Håndbogsversion:** 4.0.232
 
 **Opdateret:** 16. august 2026
 

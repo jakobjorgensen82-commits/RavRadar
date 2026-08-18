@@ -22,11 +22,14 @@ from typing import Any
 
 from lib.dmi_grid_vector import select_common_vector_candidate, same_grid_point, water_source_parameter_allowed, water_temperature_surface_layer, vector_vertical_layer, vector_choice, prefer_vector_choice
 from lib.current_field_shadow import (
+    REGIONAL_PROXY_REQUIRED_COLLECTION,
+    build_regional_proxy_targets,
     build_rotating_targets,
     eligible_replay_assets,
     load_document as load_current_field_shadow,
     owner_coverage_audit,
     prune as prune_current_field_shadow,
+    regional_proxy_safe_report,
     record_profiles as record_current_field_profiles,
     save_document as save_current_field_shadow,
     status as current_field_shadow_status,
@@ -61,6 +64,8 @@ CACHE_AUDIT_PATH = ROOT / "data/diagnostics/dmi-cache-audit.json"
 CURRENT_FIELD_SHADOW_PATH = pathlib.Path(os.getenv("CURRENT_FIELD_SHADOW_PATH", str(ROOT / ".cache/current-field-shadow.json")))
 CURRENT_FIELD_SHADOW_STATUS_PATH = ROOT / "data/diagnostics/current-field-shadow-status.json"
 CURRENT_COVERAGE_OWNER_AUDIT_PATH = ROOT / "data/diagnostics/current-coverage-owner-audit.json"
+CURRENT_REGIONAL_PROXY_POLICY_PATH = ROOT / "data/current-regional-proxy-policy.json"
+CURRENT_REGIONAL_PROXY_REPORT_PATH = ROOT / "data/diagnostics/current-regional-proxy-pilot.json"
 RAW_CACHE_MAX_BYTES = max(256 * 1024 * 1024, int(float(os.getenv("DMI_BULK_RAW_CACHE_MAX_MB", "4096")) * 1024 * 1024))
 STAC_ROOT = os.getenv("DMI_STAC_ROOT", "https://opendataapi.dmi.dk/v1/forecastdata")
 HOURS = max(1, int(os.getenv("DMI_BULK_HOURS", "120")))
@@ -1051,7 +1056,11 @@ def parameter_zones(collection: str, parameter: str, zones: list[dict[str, Any]]
     Vandstandskilder er hjælpepunkter til DKSS-vandstand. De er ikke forecastzoner
     og må derfor ikke forbruge opslag på strøm, vind, bølger eller temperatur.
     """
-    research = [zone for zone in zones if zone.get("researchCurrent")]
+    research = [
+        zone for zone in zones
+        if zone.get("researchCurrent")
+        and (not zone.get("requiredCollection") or zone.get("requiredCollection") == collection)
+    ]
     regular = [zone for zone in zones if not zone.get("waterSource") and not zone.get("researchCurrent")]
     sources = [zone for zone in zones if zone.get("waterSource")]
     base_regular = relevant_zones(collection, regular)
@@ -1079,7 +1088,11 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
     vector_candidates: dict[tuple[str, str, str], dict[str, list[dict[str, Any]]]] = {}
     selected_vector_choices: dict[tuple[str, str], dict[str, Any]] = {}
     research_vector_choices: dict[str, list[dict[str, Any]]] = {}
-    research_target_by_id = {str(zone["id"]): zone for zone in zones if zone.get("researchCurrent")}
+    research_target_by_id = {
+        str(zone["id"]): zone for zone in zones
+        if zone.get("researchCurrent")
+        and (not zone.get("requiredCollection") or zone.get("requiredCollection") == collection)
+    }
     inventory = diagnostics.setdefault("gribFieldInventory", {}).setdefault(collection, {})
     persistent_inventory = diagnostics.setdefault("persistentFieldInventory", {}).setdefault(collection, {
         "capturedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -2056,8 +2069,9 @@ def write_current_field_shadow_checkpoint(
     now_iso: str,
     selected_part_ids: list[str],
     run_metrics: dict[str, Any] | None = None,
+    regional_proxy_targets: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Persist only the private samples; publish a count-only diagnostic status."""
+    """Persist private samples and safe support-only diagnostics."""
     prune_current_field_shadow(document, now_iso)
     save_current_field_shadow(CURRENT_FIELD_SHADOW_PATH, document)
     summary = current_field_shadow_status(document, selected_part_ids, run_metrics)
@@ -2065,6 +2079,14 @@ def write_current_field_shadow_checkpoint(
     temporary = CURRENT_FIELD_SHADOW_STATUS_PATH.with_suffix(".json.tmp")
     temporary.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", "utf-8")
     temporary.replace(CURRENT_FIELD_SHADOW_STATUS_PATH)
+    proxy_report = regional_proxy_safe_report(document, regional_proxy_targets or [], now_iso)
+    proxy_serialized = json.dumps(proxy_report, ensure_ascii=False, indent=2) + "\n"
+    if '"uMps"' in proxy_serialized or '"vMps"' in proxy_serialized:
+        raise RuntimeError("Regional current proxy support report contains raw vectors")
+    CURRENT_REGIONAL_PROXY_REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    proxy_temporary = CURRENT_REGIONAL_PROXY_REPORT_PATH.with_suffix(".json.tmp")
+    proxy_temporary.write_text(proxy_serialized, "utf-8")
+    proxy_temporary.replace(CURRENT_REGIONAL_PROXY_REPORT_PATH)
     return summary
 
 
@@ -2130,7 +2152,17 @@ def replay_current_field_shadow_from_cache(
 
     scratch_output: dict[str, Any] = {"generatedAt": generated, "zones": {}}
     bootstrap_remaining = CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN
-    for collection in sorted(MARINE_COLLECTIONS, key=COLLECTION_ORDER.index):
+    unrestricted = any(not target.get("requiredCollection") for target in research_targets)
+    required_collections = {
+        str(target.get("requiredCollection")) for target in research_targets
+        if target.get("requiredCollection")
+    }
+    replay_collections = (
+        set(MARINE_COLLECTIONS)
+        if unrestricted
+        else set(MARINE_COLLECTIONS) & required_collections
+    )
+    for collection in sorted(replay_collections, key=COLLECTION_ORDER.index):
         entry = catalog.get(collection) or {}
         model_run = str(entry.get("modelRun") or "")
         candidates = eligible_replay_assets(
@@ -2378,20 +2410,30 @@ def main() -> int:
                     "parentZoneId": parent_zone_id,
                 })
 
-    # Privat, score-neutral forskningsopsamling. Kun et roterende udsnit tilføjes
-    # som midlertidige opslag i de allerede downloadede strømfelter. Disse id'er
-    # skrives aldrig til den offentlige bulk-cache eller schedulerens dækningsmål.
+    # Privat, score-neutral forskningsopsamling. Det roterende udsnit belyser det
+    # ydre felt. De otte ejer-godkendte Limfjordsdele tilføjes samtidig som en
+    # separat fail-closed allowlist, så kun dkss_lf-værdier op til 15 km kan
+    # gemmes i den private syvdøgnscache. Ingen research-id'er skrives til den
+    # offentlige bulk-cache eller schedulerens dækningsmål.
     current_shadow = load_current_field_shadow(CURRENT_FIELD_SHADOW_PATH)
-    research_targets, next_research_cursor, selected_research_part_ids = build_rotating_targets(
+    rotating_research_targets, next_research_cursor, selected_research_part_ids = build_rotating_targets(
         part_doc,
         zone_coast_types,
         int(current_shadow.get("cursor") or 0),
         CURRENT_FIELD_SHADOW_PARTS_PER_RUN,
     )
+    regional_proxy_policy = json.loads(CURRENT_REGIONAL_PROXY_POLICY_PATH.read_text("utf-8"))
+    regional_proxy_targets = build_regional_proxy_targets(
+        regional_proxy_policy,
+        part_doc,
+        zone_coast_types,
+    )
+    research_targets = rotating_research_targets + regional_proxy_targets
     research_run_metrics: dict[str, Any] = {
         "rotationAdvancedThisRun": False,
         "samplesWrittenThisRun": 0,
         "cachedReplayAssetsThisRun": 0,
+        "regionalProxyConfiguredThisRun": len(regional_proxy_targets),
     }
     zones.extend(research_targets)
 
@@ -2488,6 +2530,7 @@ def main() -> int:
                 })
     replay_summary: dict[str, Any] = {"samplesWritten": 0}
     research_rotation_completed = False
+    regional_proxy_collection_completed = False
 
     fresh_zone_ids: set[str] = set()
     fresh_marine_zone_ids: set[str] = set()
@@ -2591,8 +2634,19 @@ def main() -> int:
                     research_rotation_completed = True
                     research_run_metrics["rotationAdvancedThisRun"] = True
                     result["diagnostics"]["currentFieldShadow"] = write_current_field_shadow_checkpoint(
-                        current_shadow, generated, selected_research_part_ids, research_run_metrics
+                        current_shadow,
+                        generated,
+                        selected_research_part_ids,
+                        research_run_metrics,
+                        regional_proxy_targets,
                     )
+                if (
+                    collection == REGIONAL_PROXY_REQUIRED_COLLECTION
+                    and regional_proxy_targets
+                    and not interrupted
+                    and {"current-u", "current-v"} <= found
+                ):
+                    regional_proxy_collection_completed = True
                 recognized.update(found)
                 result["diagnostics"]["messagesSeen"] += messages_seen
                 result["diagnostics"]["zoneLookups"] += zone_lookups
@@ -2670,10 +2724,16 @@ def main() -> int:
             state["nextEligibleAt"] = datetime.fromtimestamp(time.time() + delay_minutes * 60, timezone.utc).isoformat().replace("+00:00", "Z")
             result["diagnostics"]["errors"].append({"collection": collection, "message": message, "failureClass": state["failureClass"], "retryAfterMinutes": delay_minutes})
 
-    if research_rotation_completed:
+    replay_targets: list[dict[str, Any]] = []
+    if not research_rotation_completed:
+        replay_targets.extend(rotating_research_targets)
+    if not regional_proxy_collection_completed:
+        replay_targets.extend(regional_proxy_targets)
+
+    if not replay_targets:
         result["diagnostics"]["currentFieldShadowCachedReplay"] = {
             "attempted": False,
-            "reason": "fresh-marine-asset-covered-selection",
+            "reason": "fresh-marine-assets-covered-private-targets",
             "assetsCompleted": 0,
             "samplesWritten": 0,
             "bootstrapDownloads": 0,
@@ -2682,21 +2742,33 @@ def main() -> int:
     else:
         replay_summary = replay_current_field_shadow_from_cache(
             research_replay_catalog,
-            research_targets,
+            replay_targets,
             current_shadow,
             generated,
             budget,
         )
         result["diagnostics"]["currentFieldShadowCachedReplay"] = replay_summary
         research_run_metrics["cachedReplayAssetsThisRun"] = int(replay_summary.get("assetsCompleted") or 0)
-        research_run_metrics["samplesWrittenThisRun"] = int(replay_summary.get("samplesWritten") or 0)
-        if int(replay_summary.get("assetsCompleted") or 0) > 0 and not replay_summary.get("interrupted"):
+        research_run_metrics["samplesWrittenThisRun"] = (
+            int(result["diagnostics"].get("currentFieldShadowSamplesWritten") or 0)
+            + int(replay_summary.get("samplesWritten") or 0)
+        )
+        if (
+            not research_rotation_completed
+            and rotating_research_targets
+            and int(replay_summary.get("assetsCompleted") or 0) > 0
+            and not replay_summary.get("interrupted")
+        ):
             current_shadow["cursor"] = next_research_cursor
             current_shadow["lastSelectedPartIds"] = selected_research_part_ids
             research_run_metrics["rotationAdvancedThisRun"] = True
 
     result["diagnostics"]["currentFieldShadow"] = write_current_field_shadow_checkpoint(
-        current_shadow, generated, selected_research_part_ids, research_run_metrics
+        current_shadow,
+        generated,
+        selected_research_part_ids,
+        research_run_metrics,
+        regional_proxy_targets,
     )
     result["diagnostics"]["freshMarineZoneIds"] = sorted(fresh_marine_zone_ids)
     clean_and_summarize(result, fresh_zone_ids, budget)

@@ -7,6 +7,7 @@
 - Begge Copernicus Actions-secrets findes. Deres værdier er ikke læst eller vist.
 - Commit `0c01009033bfb36ec0f7ef0101ccc19e4ea2eaf3` er fast-forwardet til `main`. Den private workflow bruger de aktuelle officielle Baltic/AMM15-datasæt, ét afgrænset 3D-tidssnit pr. time, samme-celle/-tid/-lag U/V, højst 5 km, nul interpolation og 168 timers privat cache.
 - `data/current-regional-proxy-policy.json` har præcis otte ejerbesluttede vestlige Limfjordsdele. Kun `dkss_lf`, samme samplingpunkt og højst 15 km er tilladt; policytesten består mod #3079-artifactets centralt hydrerede `coastal-parts-v2.json`.
+- 4.0.232-kandidaten bygger nu alle otte private mål på hver DMI-kørsel og gemmer deres U/V i den eksisterende 168-timers shadow-cache. Almindelige mål forbliver på 5 km; forkert collection, ændret punkt, forkert zoneklasse og over 15 km afvises. `data/diagnostics/current-regional-proxy-pilot.json` er en support-only rapport uden rå vektorer.
 - Autentificeret privat run `#32129799346` bestod på Toolbox 2.4.1: 39/51 DMI-huller fik Baltic og yderligere fire AMM15, så potentialet er 665/673. Præcis allowlistens otte Limfjordsdele mangler fortsat. Ingen af de 43 var kun overfladelag ved 11:00Z. Pushrun `#32129778162` stoppede korrekt ved den uændrede strømgate på 622/673 og deployede ikke. Timeplan ved minut 17 samler nu flerruns-bevis; intet kobles til offentlig score eller pile før efterfølgende gates.
 - Gentaget manuelt run `#32131021153` på commit `406353be` bestod og gendannede/deduplikerede cachen til 629 records ved én gyldig time, 625 unikke mål og 629 mål/kildepar. Den rensede flerrunsrapport havde nul mål/kildepar med grid- eller lagskift og ingen rå U/V-nøgler. Det er cache-/rapportsikkerhed, ikke et nyt modeltidspunkt. GitHub har registreret cron `17 * * * *`; første faktiske schedule-event var endnu ikke synligt ved handoff.
 
@@ -68,9 +69,9 @@
 
 ## Næste trin
 
-1. Følg den friske centrale 4.0.231-audit og kræv nul pil/grid-mismatch.
-2. Lad den progressive modelrotation genopbygge `dkss_lf`, og sammenlign den fulde semantik-v3-dækning mod den uændrede grænse 640/673. Gaten må ikke sænkes uden ejerbeslutning.
-3. Fortsæt privat 168-timers rotation og kontrollér pruning samt fravær af rå U/V. Kræv fulde gates, Supabase, Pages og direkte livekort, før 4.0.231 kaldes produktionsverificeret.
+1. Commit/push 4.0.232-kandidaten og kræv frisk central `dkss_lf`-evidens i den private regionalproxyrapport; alle otte skal være policyvaliderede, og rå U/V må kun findes i Actions-cachen.
+2. Følg Copernicus-cron og kræv mindst to forskellige gyldige tider/modelruns. To manuelle runs på samme 11:00Z-time tæller fortsat kun som ét tidsbevis.
+3. Bevar offentlig DMI-only-adfærd og den eksisterende coveragegate, mens privat 168-timers pruning og stabilitet bevises. Aktiv kildefletning, pile og score er en senere særskilt gated ændring.
 
 ## Bindende arbejdsregler
 

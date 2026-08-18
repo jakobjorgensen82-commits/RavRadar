@@ -19,6 +19,10 @@ RETENTION_HOURS = 7 * 24
 DISTANCE_BANDS_KM = (0.0, 5.0, 15.0)
 FORECAST_LEAD_MAX_HOURS = 12.0
 MAX_GRID_DISTANCE_KM = 5.0
+REGIONAL_PROXY_POLICY_SCHEMA_VERSION = 1
+REGIONAL_PROXY_REQUIRED_COLLECTION = "dkss_lf"
+REGIONAL_PROXY_MAX_GRID_DISTANCE_KM = 15.0
+REGIONAL_PROXY_TARGET_PREFIX = "REGIONAL_PROXY::"
 
 
 def _epoch(value: Any) -> float:
@@ -119,6 +123,94 @@ def build_rotating_targets(
     return targets, (start + count) % len(parts), selected_ids
 
 
+def build_regional_proxy_targets(
+    policy_document: dict[str, Any],
+    part_document: dict[str, Any],
+    zone_coast_types: dict[str, str],
+) -> list[dict[str, Any]]:
+    """Build the eight fail-closed private Limfjord proxy targets.
+
+    The checked-in policy is only an allowlist.  The current centrally hydrated
+    coastal-part registry remains runtime truth, so every approved point is
+    compared with that registry before any distant U/V values may be retained.
+    """
+    if policy_document.get("schemaVersion") != REGIONAL_PROXY_POLICY_SCHEMA_VERSION:
+        raise ValueError("Unsupported regional current proxy policy schema")
+    if policy_document.get("scoreImpact") is not False or policy_document.get("publicRuntime") is not False:
+        raise ValueError("Regional current proxy policy must remain private and score-neutral")
+    if policy_document.get("status") != "private-collection-enabled-public-activation-gated":
+        raise ValueError("Regional current proxy policy is not approved for private-only collection")
+    if int(policy_document.get("rawRetentionHours") or -1) != RETENTION_HOURS:
+        raise ValueError("Regional current proxy policy must retain the seven-day raw limit")
+    if policy_document.get("supportReportRawVectors") is not False:
+        raise ValueError("Regional current proxy support reports cannot contain raw vectors")
+    if policy_document.get("globalOverrideAllowed") is not False or policy_document.get("interpolation") is not False:
+        raise ValueError("Regional current proxy policy cannot enable interpolation or a global override")
+    if float(policy_document.get("regularMaximumDistanceKm") or -1) != MAX_GRID_DISTANCE_KM:
+        raise ValueError("Regional current proxy policy changed the ordinary 5 km limit")
+    if float(policy_document.get("regionalProxyMaximumDistanceKm") or -1) != REGIONAL_PROXY_MAX_GRID_DISTANCE_KM:
+        raise ValueError("Regional current proxy policy must retain the 15 km cap")
+    if policy_document.get("requiredCollection") != REGIONAL_PROXY_REQUIRED_COLLECTION:
+        raise ValueError("Regional current proxy policy must use only dkss_lf")
+    if policy_document.get("sameConnectedWaterBody") != "Limfjorden":
+        raise ValueError("Regional current proxy policy must remain restricted to Limfjorden")
+
+    indexed_parts: dict[str, tuple[str, dict[str, Any]]] = {}
+    for parent_zone_id, rows in (part_document.get("zones") or {}).items():
+        for part in rows or []:
+            part_id = str(part.get("partId") or "")
+            if part_id:
+                indexed_parts[part_id] = (str(parent_zone_id), part)
+
+    policy_rows = list(policy_document.get("parts") or [])
+    policy_ids = [str(row.get("partId") or "") for row in policy_rows]
+    if len(policy_rows) != 8 or len(set(policy_ids)) != 8 or any(not part_id for part_id in policy_ids):
+        raise ValueError("Regional current proxy policy must contain exactly eight unique parts")
+
+    targets: list[dict[str, Any]] = []
+    for row in policy_rows:
+        part_id = str(row["partId"])
+        indexed = indexed_parts.get(part_id)
+        if indexed is None:
+            raise ValueError(f"Regional current proxy part is absent from central registry: {part_id}")
+        parent_zone_id, part = indexed
+        water = part.get("waterPoint")
+        approved = row.get("approvedSamplingPoint")
+        if not _valid_point(water) or not _valid_point(approved):
+            raise ValueError(f"Regional current proxy point is invalid: {part_id}")
+        current_point = [round(float(water[0]), 7), round(float(water[1]), 7)]
+        approved_point = [round(float(approved[0]), 7), round(float(approved[1]), 7)]
+        if current_point != approved_point:
+            raise ValueError(f"Regional current proxy sampling point changed; reapproval required: {part_id}")
+        if zone_coast_types.get(parent_zone_id) != "limfjord":
+            raise ValueError(f"Regional current proxy left the Limfjord zone class: {part_id}")
+        audit_distance = float(row.get("auditDistanceKm") or math.inf)
+        if not math.isfinite(audit_distance) or audit_distance > REGIONAL_PROXY_MAX_GRID_DISTANCE_KM:
+            raise ValueError(f"Regional current proxy exceeds its approved distance cap: {part_id}")
+        targets.append({
+            "id": f"{REGIONAL_PROXY_TARGET_PREFIX}{part_id}",
+            "lon": float(current_point[0]),
+            "lat": float(current_point[1]),
+            "coastType": "limfjord",
+            "researchCurrent": True,
+            "regionalProxyCandidate": True,
+            "researchClass": "owner-approved-regional-proxy",
+            "partId": part_id,
+            "parentZoneId": parent_zone_id,
+            "name": str(row.get("name") or part.get("name") or part_id),
+            "bandKm": 0.0,
+            "targetPoint": current_point,
+            "sourceWaterPoint": current_point,
+            "approvedSamplingPoint": approved_point,
+            "requiredCollection": REGIONAL_PROXY_REQUIRED_COLLECTION,
+            "maximumDistanceKm": REGIONAL_PROXY_MAX_GRID_DISTANCE_KM,
+            "sameConnectedWaterBody": "Limfjorden",
+            "scoreImpact": False,
+            "publicRuntime": False,
+        })
+    return targets
+
+
 def eligible_replay_assets(
     assets: list[dict[str, Any]],
     captured_at: str,
@@ -162,13 +254,16 @@ def _valid_point(value: Any) -> bool:
     )
 
 
-def representative_profile(choices: list[dict[str, Any]]) -> dict[str, Any] | None:
+def representative_profile(
+    choices: list[dict[str, Any]],
+    maximum_distance_km: float = MAX_GRID_DISTANCE_KM,
+) -> dict[str, Any] | None:
     """Return representative layers at the single nearest shared U/V column."""
     resolved = _nearest_shared_uv_column(choices)
     if resolved is None:
         return None
     nearest, layers = resolved
-    if float(nearest["distanceKm"]) > MAX_GRID_DISTANCE_KM:
+    if float(nearest["distanceKm"]) > float(maximum_distance_km):
         return None
     surface = next((row for row in layers if str(row["layerKey"]).startswith("surface:")), None)
     top = surface or layers[0]
@@ -304,29 +399,64 @@ def load_document(path: pathlib.Path) -> dict[str, Any]:
     return value
 
 
+def _target_identity(target: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "partId": target.get("partId"),
+        "parentZoneId": target.get("parentZoneId"),
+        "name": target.get("name"),
+        "bandKm": target.get("bandKm"),
+        "targetPoint": target.get("targetPoint"),
+        "sourceWaterPoint": target.get("sourceWaterPoint"),
+        "seawardBearingDeg": target.get("seawardBearingDeg"),
+        "researchClass": target.get("researchClass") or "transect",
+        "regionalProxyCandidate": bool(target.get("regionalProxyCandidate")),
+        "requiredCollection": target.get("requiredCollection"),
+        "maximumDistanceKm": target.get("maximumDistanceKm") or MAX_GRID_DISTANCE_KM,
+        "sameConnectedWaterBody": target.get("sameConnectedWaterBody"),
+        "scoreImpact": False,
+        "publicRuntime": False,
+    }
+
+
+def _same_target_identity(existing: dict[str, Any], identity: dict[str, Any]) -> bool:
+    required = ("partId", "parentZoneId", "bandKm", "targetPoint", "sourceWaterPoint")
+    if any(existing.get(key) != identity.get(key) for key in required):
+        return False
+    # Schema-v1 caches predate the policy metadata.  Missing additive fields are
+    # upgraded in place; a conflicting value still invalidates the target.
+    return all(key not in existing or existing.get(key) == value for key, value in identity.items())
+
+
 def _coverage_audit_for_target(
     document: dict[str, Any],
     target_id: str,
     target: dict[str, Any],
 ) -> dict[str, Any]:
     audits = document.setdefault("coverageAudits", {})
-    identity = {
-        "partId": target.get("partId"),
-        "parentZoneId": target.get("parentZoneId"),
-        "bandKm": target.get("bandKm"),
-        "targetPoint": target.get("targetPoint"),
-        "sourceWaterPoint": target.get("sourceWaterPoint"),
-        "seawardBearingDeg": target.get("seawardBearingDeg"),
-    }
+    identity = _target_identity(target)
     existing = audits.get(target_id)
-    if (
-        not isinstance(existing, dict)
-        or existing.get("targetPoint") != identity["targetPoint"]
-        or existing.get("sourceWaterPoint") != identity["sourceWaterPoint"]
-    ):
+    if not isinstance(existing, dict) or not _same_target_identity(existing, identity):
         existing = {**identity, "observations": {}}
         audits[target_id] = existing
+    else:
+        existing.update(identity)
     return existing
+
+
+def _target_maximum_distance_km(target: dict[str, Any], collection: str) -> float | None:
+    if not target.get("regionalProxyCandidate"):
+        return MAX_GRID_DISTANCE_KM
+    if target.get("requiredCollection") != REGIONAL_PROXY_REQUIRED_COLLECTION:
+        return None
+    if collection != REGIONAL_PROXY_REQUIRED_COLLECTION:
+        return None
+    try:
+        maximum = float(target.get("maximumDistanceKm"))
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(maximum) or maximum <= MAX_GRID_DISTANCE_KM or maximum > REGIONAL_PROXY_MAX_GRID_DISTANCE_KM:
+        return None
+    return maximum
 
 
 def _record_coverage_observation(
@@ -384,6 +514,9 @@ def record_profiles(
     written = 0
     anchors = document.setdefault("anchors", {})
     for target_id, target in target_by_id.items():
+        maximum_distance = _target_maximum_distance_km(target, collection)
+        if maximum_distance is None:
+            continue
         choices = choices_by_target.get(target_id) or []
         _record_coverage_observation(
             document,
@@ -395,23 +528,18 @@ def record_profiles(
             valid_time,
             captured_at,
         )
-        profile = representative_profile(choices)
+        profile = representative_profile(choices, maximum_distance)
         if not profile:
             continue
-        if haversine_km(target["targetPoint"], profile["gridPoint"]) > MAX_GRID_DISTANCE_KM + 0.01:
+        if haversine_km(target["targetPoint"], profile["gridPoint"]) > maximum_distance + 0.01:
             continue
         anchor = anchors.get(target_id)
-        if not anchor or anchor.get("targetPoint") != target.get("targetPoint") or anchor.get("sourceWaterPoint") != target.get("sourceWaterPoint"):
-            anchor = {
-                "partId": target.get("partId"),
-                "parentZoneId": target.get("parentZoneId"),
-                "bandKm": target.get("bandKm"),
-                "targetPoint": target.get("targetPoint"),
-                "sourceWaterPoint": target.get("sourceWaterPoint"),
-                "seawardBearingDeg": target.get("seawardBearingDeg"),
-                "samples": [],
-            }
+        identity = _target_identity(target)
+        if not isinstance(anchor, dict) or not _same_target_identity(anchor, identity):
+            anchor = {**identity, "samples": []}
             anchors[target_id] = anchor
+        else:
+            anchor.update(identity)
         sample_key = f"{collection}|{model_run}|{valid_time}"
         samples = list(anchor.get("samples") or [])
         if any(row.get("sampleKey") == sample_key for row in samples):
@@ -428,6 +556,80 @@ def record_profiles(
         written += 1
     document["generatedAt"] = captured_at
     return written
+
+
+def regional_proxy_safe_report(
+    document: dict[str, Any],
+    targets: list[dict[str, Any]],
+    generated_at: str,
+) -> dict[str, Any]:
+    """Return support-only evidence without copying private current values."""
+    rows: list[dict[str, Any]] = []
+    for target in sorted(targets, key=lambda row: str(row.get("partId") or "")):
+        target_id = str(target["id"])
+        anchor = (document.get("anchors") or {}).get(target_id) or {}
+        samples = [
+            sample for sample in (anchor.get("samples") or [])
+            if sample.get("collection") == REGIONAL_PROXY_REQUIRED_COLLECTION
+        ]
+        audit = (document.get("coverageAudits") or {}).get(target_id) or {}
+        observation = (audit.get("observations") or {}).get(REGIONAL_PROXY_REQUIRED_COLLECTION) or {}
+        evidence = observation.get("nearestSharedUv") if isinstance(observation.get("nearestSharedUv"), dict) else None
+        grid_points = sorted({
+            tuple(round(float(value), 7) for value in sample.get("gridPoint", [])[:2])
+            for sample in samples
+            if _valid_point(sample.get("gridPoint"))
+        })
+        distances = sorted({round(float(sample["distanceKm"]), 5) for sample in samples if isinstance(sample.get("distanceKm"), (int, float))})
+        layers = sorted({
+            str(layer.get("verticalLayer"))
+            for sample in samples
+            for layer in (sample.get("layers") or {}).values()
+            if isinstance(layer, dict) and layer.get("verticalLayer")
+        })
+        valid_times = sorted({str(sample.get("validTime")) for sample in samples if sample.get("validTime")}, key=_epoch)
+        model_runs = sorted({str(sample.get("modelRun")) for sample in samples if sample.get("modelRun")}, key=_epoch)
+        if samples:
+            state = "private-vector-samples-collected"
+        elif evidence and float(evidence.get("distanceKm") or math.inf) > REGIONAL_PROXY_MAX_GRID_DISTANCE_KM:
+            state = "nearest-shared-uv-beyond-15km"
+        elif evidence:
+            state = "shared-uv-observed-without-stored-profile"
+        elif observation:
+            state = "no-shared-uv-observed"
+        else:
+            state = "not-yet-observed"
+        rows.append({
+            "partId": target.get("partId"),
+            "name": target.get("name"),
+            "parentZoneId": target.get("parentZoneId"),
+            "samplingPoint": target.get("targetPoint"),
+            "requiredCollection": REGIONAL_PROXY_REQUIRED_COLLECTION,
+            "maximumDistanceKm": REGIONAL_PROXY_MAX_GRID_DISTANCE_KM,
+            "qualityClass": "regional-proxy-candidate",
+            "status": state,
+            "sampleCount": len(samples),
+            "modelRuns": model_runs,
+            "validTimes": valid_times,
+            "gridPoints": [list(point) for point in grid_points],
+            "distanceKmValues": distances,
+            "verticalLayers": layers,
+            "latestObservedAt": observation.get("capturedAt"),
+        })
+    return {
+        "schemaVersion": 1,
+        "generatedAt": generated_at,
+        "retentionHours": RETENTION_HOURS,
+        "scoreImpact": False,
+        "publicRuntime": False,
+        "rawVectorsIncluded": False,
+        "requiredCollection": REGIONAL_PROXY_REQUIRED_COLLECTION,
+        "maximumDistanceKm": REGIONAL_PROXY_MAX_GRID_DISTANCE_KM,
+        "configuredParts": len(rows),
+        "partsWithSamples": sum(1 for row in rows if row["sampleCount"] > 0),
+        "samples": sum(int(row["sampleCount"]) for row in rows),
+        "parts": rows,
+    }
 
 
 def prune(document: dict[str, Any], now_iso: str) -> dict[str, int]:
@@ -498,6 +700,11 @@ def status(
             beyond_coverage_parts.add(part_id)
         else:
             no_pair_coverage_parts.add(part_id)
+    regional_anchors = [
+        anchor for anchor in (document.get("anchors") or {}).values()
+        if anchor.get("regionalProxyCandidate")
+    ]
+    regional_samples = [sample for anchor in regional_anchors for sample in (anchor.get("samples") or [])]
     return {
         "schemaVersion": 1,
         "generatedAt": document.get("generatedAt") or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -519,6 +726,9 @@ def status(
         "coveragePartsWithSharedUvWithin5Km": len(accepted_coverage_parts),
         "coveragePartsWithOnlyDistantSharedUv": len(beyond_coverage_parts),
         "coveragePartsWithNoSharedUvObserved": len(no_pair_coverage_parts),
+        "regionalProxyConfiguredThisRun": int(metrics.get("regionalProxyConfiguredThisRun") or 0),
+        "regionalProxyPartsWithSamples": len({anchor.get("partId") for anchor in regional_anchors if anchor.get("partId")}),
+        "regionalProxySamples": len(regional_samples),
     }
 
 

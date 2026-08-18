@@ -7,6 +7,8 @@ import math
 import os
 from pathlib import Path
 
+from lib.current_field_shadow import build_regional_proxy_targets
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -24,6 +26,12 @@ def main() -> None:
     policy = json.loads((ROOT / "data/current-regional-proxy-policy.json").read_text(encoding="utf-8"))
     registry_path = Path(os.getenv("COASTAL_PARTS_PATH", str(ROOT / "data/live/coastal-parts-v2.json")))
     registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    zones = json.loads((ROOT / "data/zones.geojson").read_text(encoding="utf-8"))
+    zone_coast_types = {
+        str((feature.get("properties") or {}).get("id")): str((feature.get("properties") or {}).get("coastType") or "east")
+        for feature in zones.get("features", [])
+        if (feature.get("properties") or {}).get("id")
+    }
     indexed = {}
     for raw_parts in registry["zones"].values():
         for part in raw_parts if isinstance(raw_parts, list) else [raw_parts]:
@@ -39,11 +47,18 @@ def main() -> None:
     need(policy.get("globalOverrideAllowed") is False, "The policy must not create a global distance override")
     need(policy.get("interpolation") is False, "Regional proxy interpolation must remain forbidden")
     need(policy.get("scoreImpact") is False and policy.get("publicRuntime") is False, "Policy must stay private until gates pass")
+    need(policy.get("rawRetentionHours") == 168, "Private regional raw vectors must expire after seven days")
+    need(policy.get("supportReportRawVectors") is False, "Support reports must not contain raw vectors")
     need(max(float(row["auditDistanceKm"]) for row in parts) < 15, "Every approved audit distance must fit the bounded cap")
     for row in parts:
         current = indexed.get(row["partId"])
         need(current is not None, f"Policy part is absent from central registry: {row['partId']}")
         need(close(current.get("waterPoint") or [], row["approvedSamplingPoint"]), f"Sampling point changed for {row['partId']}; reapproval required")
+    targets = build_regional_proxy_targets(policy, registry, zone_coast_types)
+    need(len(targets) == 8, "Runtime builder must produce exactly eight private targets")
+    need(all(target.get("researchCurrent") is True for target in targets), "Every proxy target must remain private research")
+    need(all(target.get("requiredCollection") == "dkss_lf" for target in targets), "Runtime builder must isolate dkss_lf")
+    need(all(target.get("maximumDistanceKm") == 15.0 for target in targets), "Runtime builder must preserve the 15 km cap")
     print("OK: eight explicit Limfjord regional proxies, 15 km cap, no global override")
 
 
