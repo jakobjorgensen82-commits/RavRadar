@@ -9,6 +9,7 @@
 - [x] Landsdækkende regression beviser 673/673 identiske punkt-, navn- og retningsidentiteter gennem scorekonstruktionen samt offshore-klassifikation for det konkrete Havsande-modbevis.
 - [x] Eksisterende score-, retningsanker- og kortpiltests består målrettet.
 - [x] RDKS-, release-, versions-, geometri- og målrettede runtimevalideringer består lokalt. Den fulde lokale kæde passerer RDKS og hele geometri-v2-kæden og stopper derefter som forventet på repositoryets forældede 209/211-vejrsnapshot; frisk datavalidering skal derfor ske centralt.
+- [x] Første centrale forsøg `#32165003851` stoppede før release/deploy, fordi fire aktive workflow-User-Agents stadig bar versionsmærket 4.0.232. De er versionslukket til 4.0.233; ingen data-, score- eller gatebetingelse er ændret.
 - [ ] Commit/push, central 673/673-kørsel, releasegate, Supabase, Pages og direkte liveaudit.
 
 ## Kontrolleret supplerende live-strøm i 4.0.232

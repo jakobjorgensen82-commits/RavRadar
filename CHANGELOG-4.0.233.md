@@ -8,6 +8,7 @@
 - Score, historik, debug og forklaring bruger dermed samme lokale geometriske sandhed. Moderzonens øvrige statiske kystegenskaber bevares.
 - Strømpilene ændres ikke: auditten bekræfter nul U/V/retning-, pil/grid-, provenance-, kildeklasse- eller afstandsfejl i det kontrollerede live-datasæt.
 - Ny landsdækkende regression dækker 673/673 dele og et direkte Blåvand-modbevis.
+- De fire aktive workflow-User-Agents er versionslukket til 4.0.233, så den centrale versionstest ikke kan afvise releasen på et efterladt 4.0.232-mærke.
 
 ## Uændret
 
