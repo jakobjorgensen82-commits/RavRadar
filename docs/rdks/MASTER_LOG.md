@@ -25,6 +25,8 @@
 - `7f22e8e1`/`#32143798560` CI-verificerede retentiontesten efter frisk central hydrering og DMI-bygning. 100 %-kontrakten bestod, faktiske 622/673 stoppede release/deploy, og tre-timers-Copernicus-cachen fandtes fortsat efter cachearbejdet.
 - GitHubs native timeplan var aktiv, men runhistorikken havde kun ét forsinket schedule-event og ingen efterfølgende timer. Det er samme platformrisiko, som tidligere førte produktionen over på ekstern `workflow_dispatch`.
 - Keepalive bruger nu `workflow_run: requested` fra den eksternt startede produktionskørsel som heartbeat. Den gendanner cachen read-only og validerer schema, 168 timer, score-neutralitet og aktuel UTC-time uden rå U/V-log. Ved manglende time dispatcher et separat to-minutters job den eksisterende private pilot; kun dette job har `actions: write`, og ingen hjælpekæde kan gemme cache, uploade artifact eller deploye. Lokale heartbeat-, pilot- og workflowtests består; central automatisk kæde afventer.
+- Forsinket schedule-run `#32146584311` tilføjede 14:00Z og gav 2.516 private records ved fire tider, 625 mål, 629 mål/kildepar og nul grid-/lagskift eller supportlæk. Det første automatiske heartbeat `#32146699458` ventede på piloten, gendannede den nye cache, bestod kontrollen og sprang dispatchjobbet over, fordi aktuel time allerede fandtes. Central manglende-time-dispatch afventer næste UTC-time.
+- Pushrun `#32146695718` bekræftede heartbeatregressionen sammen med cachebeskyttelse, 168-timers-retention og dynamisk 673/673-kontrakt i den fulde centrale validering. Den faktiske dækning var fortsat 622/673, så releasegate, Supabase og Pages blev korrekt sprunget over.
 
 ## 2026-08-16 – 4.0.231 binder den lokale pil til den viste scoretime
 
