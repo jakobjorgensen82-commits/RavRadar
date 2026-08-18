@@ -8,6 +8,7 @@
 - Commit `0c01009033bfb36ec0f7ef0101ccc19e4ea2eaf3` er fast-forwardet til `main`. Den private workflow bruger de aktuelle officielle Baltic/AMM15-datasæt, ét afgrænset 3D-tidssnit pr. time, samme-celle/-tid/-lag U/V, højst 5 km, nul interpolation og 168 timers privat cache.
 - `data/current-regional-proxy-policy.json` har præcis otte ejerbesluttede vestlige Limfjordsdele. Kun `dkss_lf`, samme samplingpunkt og højst 15 km er tilladt; policytesten består mod #3079-artifactets centralt hydrerede `coastal-parts-v2.json`.
 - Autentificeret privat run `#32129799346` bestod på Toolbox 2.4.1: 39/51 DMI-huller fik Baltic og yderligere fire AMM15, så potentialet er 665/673. Præcis allowlistens otte Limfjordsdele mangler fortsat. Ingen af de 43 var kun overfladelag ved 11:00Z. Pushrun `#32129778162` stoppede korrekt ved den uændrede strømgate på 622/673 og deployede ikke. Timeplan ved minut 17 samler nu flerruns-bevis; intet kobles til offentlig score eller pile før efterfølgende gates.
+- Gentaget manuelt run `#32131021153` på commit `406353be` bestod og gendannede/deduplikerede cachen til 629 records ved én gyldig time, 625 unikke mål og 629 mål/kildepar. Den rensede flerrunsrapport havde nul mål/kildepar med grid- eller lagskift og ingen rå U/V-nøgler. Det er cache-/rapportsikkerhed, ikke et nyt modeltidspunkt. GitHub har registreret cron `17 * * * *`; første faktiske schedule-event var endnu ikke synligt ved handoff.
 
 ## Aktiv 4.0.231-kandidat – vist lokal scoretime og pil deler DMI-celle
 

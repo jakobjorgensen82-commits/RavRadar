@@ -1,6 +1,6 @@
 # Kendte åbne og overvågede forhold
 
-- **ISSUE-COPERNICUS-CURRENT-PILOT – FØRSTE AUTENTIFICEREDE RUN GRØN / AFVENTER FLERRUNS:** `#32129799346` brugte Toolbox 2.4.1 og friske centralt hydrerede 673 kystdele. Det bekræftede 39 Baltic + 4 AMM15 blandt de 51 DMI-huller, altså 665/673 kombineret potentiale, med samme-celle/-tid/-lag U/V, højst 5 km og ingen `surface-only` blandt de 43 ved 11:00Z. Den private timeplan beholder højst 168 timer. Ingen offentlig runtime eller score er ændret.
+- **ISSUE-COPERNICUS-CURRENT-PILOT – AUTENTIFICERET OG CACHEVERIFICERET / AFVENTER NYE TIDER:** `#32129799346` brugte Toolbox 2.4.1 og friske centralt hydrerede 673 kystdele. Det bekræftede 39 Baltic + 4 AMM15 blandt de 51 DMI-huller, altså 665/673 kombineret potentiale, med samme-celle/-tid/-lag U/V, højst 5 km og ingen `surface-only` blandt de 43 ved 11:00Z. `#32131021153` gendannede/deduplikerede 629 records og producerede en rekursivt U/V-fri stabilitetsrapport uden grid-/lagskift, men ved samme 11:00Z-time. Cron er registreret; første faktiske schedule-event og mindst to forskellige gyldige tider mangler. Ingen offentlig runtime eller score er ændret.
 
 - **ISSUE-EIGHT-LIMFJORD-REGIONAL-PROXIES – EJERGODKENDT / IKKE AKTIVERET:** Hanklit, Harbo Odde, Knudeklinter, Stenerodde, Aggersborgrimme, Løgstør, Petersborg og `DK-B05-20` må efter DEC-0041 bruge nærmeste eksakte `dkss_lf`-par op til 15 km. Den målte spændvidde er 5,416–12,110 km. Allowlisten og samplingpunkterne er testet mod #3079-artifactet; aktiv pipeline-, pil-, score- og produktionsvalidering mangler.
 

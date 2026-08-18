@@ -8,6 +8,7 @@
 - Ejeren har besluttet en afgrænset regional fallback for de sidste otte vestlige Limfjordsdele. `data/current-regional-proxy-policy.json` tillader kun disse, kun `dkss_lf`, kun uændret samplingpunkt og højst 15 km. Det målte spænd er 5,416–12,110 km. Allowlisten er lokaltestet mod #3079, men endnu ikke aktiveret.
 - Den planlagte rækkefølge efter alle gates er DMI ≤5 km → Copernicus Baltic ≤5 km → AMM15 ≤5 km → regional `dkss_lf`-proxy for de otte dele ≤15 km. Se DEC-0041. Indtil aktivering er den nuværende offentlige DMI-kontrakt uændret.
 - Pushrun `#32129778162` stoppede korrekt før release/deploy på den uændrede strømgate: 12 hovedzoner og 51 lokale dele manglede DMI, og dækningen var 622/673. Gaten er ikke lempet.
+- Run `#32131021153` på commit `406353be` bestod cachegendannelse og den rekursive lækagegate. Cachen havde 629 deduplikerede records, 625 unikke mål og én gyldig time; ingen mål/kildepar havde grid- eller lagskift. Det er endnu ikke flertidsbevis. Cron `17 * * * *` er registreret, men første schedule-event var ikke startet ved seneste kontrol.
 
 ## 4.0.231 – lokal strømpil bindes til den faktisk viste scoretime
 
