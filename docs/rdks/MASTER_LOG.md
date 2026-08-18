@@ -19,6 +19,7 @@
 - Commit `9e2164b8` og central `#32139054129` beviser den nye gate i den fulde kæde: regressionen er grøn, auditten fejler på 622/673 med krav om alle 673, og releasegate, Supabase-sync og Pages er sprunget over.
 - GitHubs automatiske keepalive leverede intet event før samme runs 2,704-GiB DMI-save. Copernicus-cachen blev igen fortrængt, og manuel `#32139755594` fandt den manglende. Cacheindekset havde tre store DMI-cacher og 8,126 GiB efter eviction. Produktionsjobbet gendanner derfor restore-only Copernicus-cachen før DMI-cachearbejdet; en statisk fuld-validate-regression forbyder save/artifact/credentials/rå U/V i dette blok.
 - #32140001424/#32140470201 genopbyggede 11/12 UTC. Det sidste rensede artifact har 1.258 records, to tider, 625 unikke mål, 629 mål/kildepar og nul grid-/lagskift; ingen rå U/V eller credentialnavne findes i supportoutputtet.
+- `b6cf0383`/#32140865173 gendannede præcis den cache før DMI, gemte derefter en ny 2.905.014.468-byte DMI-cache og efterlod Copernicus-cachen intakt. Begge nye regressioner bestod centralt, hvorefter fulddækningsgaten stoppede på 622/673 uden Supabase/Pages. #32141443152 ramte og validerede samme cache efter DMI-save uden recordlog.
 
 ## 2026-08-16 – 4.0.231 binder den lokale pil til den viste scoretime
 

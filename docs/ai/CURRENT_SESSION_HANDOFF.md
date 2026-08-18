@@ -17,6 +17,7 @@
 - Slutkontrol fandt, at `test-current-spatial-scientific-audit-4.0.76.mjs` stadig krævede historiske 95 %/640, ikke ejerens nyere 100 %. Kandidaten kræver nu `expectedParts.length`, aktuelt 673/673; `test-current-full-coverage-gate-4.0.232.mjs` beskytter kravet. Replay mod #3094 giver korrekt 622/673 og “alle 673 kræves”.
 - Commit `9e2164b8` er på `main`. Central #32139054129 bestod regressionen og stoppede præcis på “622/673; alle 673 kræves”; releasegate, Supabase og Pages blev sprunget over.
 - Ingen automatisk keepalive-event ankom før #32139054129 gemte næste store DMI-cache, så Copernicus-cachen blev fortrængt igen. #32139755594 beviser miss. Kandidaten gendanner nu restore-only cachen direkte før DMI-cachearbejde; regressionen forbyder rå log, artifact og save i blokken. #32140001424/#32140470201 har genopbygget 11/12 UTC til 1.258 records og to tider uden grid-/lagskift eller supportlæk.
+- Commit `b6cf0383` er på `main`. #32140865173 ramte to-timers-cachen før DMI, gemte en ny 2,905-GB DMI-cache og efterlod Copernicus-cachen intakt. Cache- og 100 %-regressionerne bestod centralt; auditten stoppede fortsat på 622/673 uden deploy. #32141443152 ramte samme cache efter DMI-save og validerede den uden recordlog.
 
 ## Aktiv 4.0.231-kandidat – vist lokal scoretime og pil deler DMI-celle
 

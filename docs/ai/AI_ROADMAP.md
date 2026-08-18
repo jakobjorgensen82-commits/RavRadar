@@ -14,7 +14,7 @@
 - `#32135079819` passerede den versionsrobuste test og stoppede korrekt ved 622/673. Første Copernicus-cron `#32134686185` hentede et nyt 12:00Z-tidspunkt, men Actions-cachekvoten havde allerede fortrængt 11:00Z-råhistorikken.
 - Restore-only keepalive #32136328681, kontrolleret 11:00Z-backfill #32136391556 og efterkontrol #32136642330 beviser nu 1.258 records ved to tider i samme råcache uden gitter-/lagskift eller supportlæk. Næste 4.0.232-bevis er automatisk keepalive, næste naturlige time samt senere syvdøgnspruning. Først derefter designes aktiv kildefletning.
 - Aktiv kildefletning skal ende på alle aktuelle kystdele, ikke blot den historiske 95 %-grænse. Produktionsgaten er nu 100 % dynamisk (aktuelt 673/673) og skal ved integration verificere kildeklassens egne afstande, celle, lag og tid for hver eneste del.
-- #32139054129 har centralt bevist 100 %-gaten. Næste cachebevis er den nye pre-DMI-refresh: efter kontrolleret genopbygning skal et produktionsrun ramme Copernicus-cachen før DMI-save, og næste pilot skal stadig se flere tider. Automatisk GitHub-schedule alene regnes ikke som driftssikkert, fordi ingen event ankom før den anden målte eviction.
+- #32139054129 har centralt bevist 100 %-gaten. #32140865173 har derefter bevist den nye pre-DMI-refresh: to-timers-cachen blev ramt før en ny 2,905-GB DMI-save og fandtes stadig bagefter; #32141443152 validerede den uafhængigt. Næste naturlige pilot skal nu bevare og udvide de flere tider. Automatisk GitHub-schedule alene regnes ikke som driftssikkert, fordi ingen event ankom før den anden målte eviction.
 
 ## 4.0.231 – samme tidspunkt styrer lokal score og strømpil
 
