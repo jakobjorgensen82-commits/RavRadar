@@ -9,6 +9,8 @@
 - Commit `0c010090` blev fast-forwardet til `main`. Første autentificerede private run `#32129799346` bestod på 1:59 og bekræftede præcis 39 Baltic + 4 AMM15 blandt DMI's 51 huller; alle 43 havde et dybere fælles lag ved 11:00Z. Kombineret potentiale er dermed 665/673, og de sidste otte er præcis allowlisten.
 - Pushrun `#32129778162` stoppede korrekt uden deploy på den eksisterende 622/673-gate. En privat timeplan ved minut 17 samler nu højst syv døgns Copernicus-bevis; aktiv integration afventer fortsat flerruns og fulde gates.
 - Commit `406353be` gjorde cachehistorikken sikkert aggregerbar uden rå U/V. Gentaget run `#32131021153` bestod, gendannede og deduplikerede 629 records, rapporterede 625 unikke mål/629 mål-kildepar og nul grid-/lagskift. Begge autentificerede runs lå ved samme 11:00Z-time, så et nyt tidsbevis og første cron-event afventer fortsat.
+- Commit `cda7358b` er på `main`. Central `#32134021410`/artifact `#3094` hydrerede de friske centrale punkter og samlede 32 private `dkss_lf`-prøver til alle otte regionale allowlistdele ved fire forecasttider. Afstandene var 5,416–12,110 km; rapporten var råvektorfri, og `.cache` blev ikke publiceret.
+- Kørslens releasekæde stoppede sikkert før Supabase og Pages på én mekanisk regression: workflowets User-Agent var løftet til 4.0.232, mens testen stadig forventede 4.0.229. Testen bruger nu `package.json`-versionen; offentlig runtime, 622/673-gate, pile og RavScore er fortsat uændrede.
 
 ## 2026-08-16 – 4.0.231 binder den lokale pil til den viste scoretime
 

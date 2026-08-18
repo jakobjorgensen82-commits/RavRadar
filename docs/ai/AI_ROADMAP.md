@@ -10,7 +10,8 @@
 - 4.0.232-kandidaten opsamler nu de otte deles faktiske `dkss_lf`-vektorer privat ved hver kørsel. Den friske centrale registrering valideres før opsamling; kun råcachen ser U/V, mens supportbeviset kun må vise run, tid, celle, afstand og lag. Offentlige pile og score er fortsat uændrede.
 - Aktiv pile-/scoreintegration begynder først efter autentificeret CI, flerruns-stabilitet, fuld validering og releasegate. Den senere DEC-0029-analyse skal kunne skelne lokale data fra regionalproxy og hele det ydre strømfelt.
 - Første autentificerede timeprøve `#32129799346` var grøn og bekræftede præcis 39 Baltic + 4 AMM15 af de 51 DMI-huller, svarende til 665/673 kombineret. En privat timeplan ved minut 17 samler nu højst syv døgn; næste gate er stabilitet på tværs af tider og modelruns, ikke øjeblikkelig aktivering.
-- Næste 4.0.232-bevis er en frisk central DMI-kørsel, der viser private regionale prøver til alle otte uden Pages-læk, efterfulgt af syvdøgnspruning og fortsat Copernicus-flertidsbevis. Først derefter designes aktiv kildefletning.
+- `#32134021410`/artifact `#3094` har nu leveret det friske centrale 8/8-bevis: 32 private `dkss_lf`-prøver ved fire forecasttider, ingen rå U/V i supportoutput og ingen cache i artifactet. Kørslens senere stop var en fastkodet versionsstreng i en test og ændrede ingen data eller offentlig runtime.
+- Næste 4.0.232-bevis er en ny central kørsel med den versionsrobuste test, efterfulgt af syvdøgnspruning og fortsat Copernicus-flertidsbevis. Først derefter designes aktiv kildefletning.
 
 ## 4.0.231 – samme tidspunkt styrer lokal score og strømpil
 

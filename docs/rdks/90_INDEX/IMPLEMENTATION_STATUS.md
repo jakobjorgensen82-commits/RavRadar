@@ -14,8 +14,11 @@
 - [x] Commit `0c010090` er på `main`; autentificeret run `#32129799346` bestod på 1:59, og renset artifact bekræftede 39 Baltic + 4 AMM15 af DMI's 51 huller, ingen credential-/U/V-læk og præcis otte resterende allowlistdele.
 - [x] Privat timeplan ved minut 17 opsamler ét eksakt aktuelt 3D-tidssnit pr. run og beskærer rå skyggehistorik til 168 timer.
 - [x] Run `#32131021153` beviste cache restore/deduplikering og sikker flerrunsaggregation: 629 records, 625 unikke mål, 629 mål/kildepar, én gyldig time, nul grid-/lagskift og nul rå U/V i artifactet.
+- [x] Central `#32134021410`/artifact `#3094` beviste 8/8 regionale dele og 32 private `dkss_lf`-prøver ved fire forecasttider. Afstandene var 5,416–12,110 km, både overflade- og dybere lag var repræsenteret, supportrapporten havde ingen rå U/V, og `.cache` nåede ikke artifactet.
+- [x] Samme kørsel stoppede før Supabase/Pages på en historisk fastkodet User-Agent-test efter 4.0.232-versionsløftet. Testen læser nu versionen fra `package.json`; DMI-download-, cachemigration-, tværmodel- og workflowrækkefølgetest består lokalt.
 - [ ] Opsaml flere modelruns, før Copernicus eller regionalproxy kobles til aktiv pile-/scorepipeline.
-- [ ] Kør 4.0.232-kandidaten mod frisk central DMI og bekræft prøver til alle otte samt syvdøgnspruning i Actions-cachen. Lokal kode og tests er ikke produktionsbevis.
+- [x] Kør 4.0.232-kandidaten mod frisk central DMI og bekræft prøver til alle otte uden offentlig aktivering.
+- [ ] Bekræft syvdøgnspruning efter et naturligt fuldt retentionvindue; den nuværende cache går kun tilbage til 16. august.
 - [ ] Bekræft første faktiske `schedule`-event og mindst to forskellige `validTime`-værdier; to manuelle runs i samme time tæller kun som ét tidspunkt.
 - [ ] Aktiv integration kræver fuld validering, releasegate, frisk produktionsworkflow og direkte livekontrol. Den almindelige produktion er fortsat DMI-only og fail-closed over 5 km.
 - [x] Pushrun `#32129778162` beviste, at den eksisterende gate ikke blev omgået: fuld validering stoppede ved 622/673 og intet blev deployet.

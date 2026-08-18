@@ -1,13 +1,15 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
-const [bulk, updater, workflow, hydrator, preflight] = await Promise.all([
+const [bulk, updater, workflow, hydrator, preflight, packageJson] = await Promise.all([
   fs.readFile('scripts/update-dmi-bulk.py', 'utf8'),
   fs.readFile('scripts/update-weather.mjs', 'utf8'),
   fs.readFile('.github/workflows/update-and-deploy.yml', 'utf8'),
   fs.readFile('scripts/hydrate-deployed-weather.py', 'utf8'),
-  fs.readFile('scripts/check-weather-update.py', 'utf8')
+  fs.readFile('scripts/check-weather-update.py', 'utf8'),
+  fs.readFile('package.json', 'utf8')
 ]);
+const { version: appVersion } = JSON.parse(packageJson);
 
 for (const collection of ['dkss_idw', 'dkss_nsbs', 'dkss_lf', 'harmonie_dini_sf', 'wam_dw', 'wam_nsb']) {
   assert.match(bulk, new RegExp(collection));
@@ -78,7 +80,7 @@ assert.match(updater, /lastObservationSuccessMs/);
 assert.match(updater, /repairWaterLevelContinuity/);
 assert.match(updater, /open-meteo-adjusted|fallbackPolicy/);
 assert.match(bulk, /write_ocean_diagnostics/);
-assert.match(workflow, /RavRadar\/4\.0\.229/);
+assert.match(workflow, new RegExp(`RavRadar/${appVersion.replaceAll('.', '\\.')}`));
 assert.match(workflow, /current-field-shadow\.json/);
 assert.match(workflow, /DMI_BULK_FINALIZE_RESERVE_SECONDS/);
 assert.match(workflow, /timeout-minutes: 18/);
