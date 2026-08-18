@@ -9,7 +9,8 @@
 - Nye Python-/Node-regressioner dækker credentialfri onlinehistorik, U/V-publicering, DMI-first, eksakt tid, afstandsgrænser, pilcelle, start ved aktuel hele time, 100 %-gate og rollback.
 - Første liveintegrationsrun `#32156725504` nåede 665/673 og stoppede sikkert før release: 622 dele brugte lokal DMI og 43 Copernicus. Support `#3125` viste 40 gyldige `dkss_lf`-prøver for alle otte resterende dele. Livebyggerens ankerkontrol er rettet fra et ikke-gemt `approvedSamplingPoint` til shadow-cachens kanoniske punkt-, del-, zone-, klasse-, vandområde-, collection- og afstandsfelter.
 - Commit `5a7780e4` og central `#32158041877`/support `#3127` beviser rettelsen og den fulde aktive kildekæde: 622 DMI + 43 Copernicus + 8 regionalproxy = 673/673. Fuld validering, releasegate, Supabase, Pages-artifact og deploy bestod.
-- Datasæt `rr-20260818160548-210` er direkte live- og hashverificeret mod manifestet. Den credentialfri historik indeholder ved første release 1.915 poster for 633 dele og syv tider. Startup-pakken har 221 kompakte strømpile fra 210 DMI-, 10 Copernicus- og én regionalproxycelle og ingen ikke-godkendt pilkildeklasse. Den naturlige syvdøgnseftermåling fortsætter på den fungerende side.
+- Det første aktiveringsdatasæt `rr-20260818160548-210` blev direkte live- og hashverificeret mod manifestet. Den credentialfri historik indeholdt ved første release 1.915 poster for 633 dele og syv tider. Startup-pakken havde 221 kompakte strømpile fra 210 DMI-, 10 Copernicus- og én regionalproxycelle og ingen ikke-godkendt pilkildeklasse. Den naturlige syvdøgnseftermåling fortsætter på den fungerende side.
+- Dokumentationscommittets efterkontrol `#32160090899`/support `#3129` bestod igen hele kæden og 673/673. Dens nye datasæt og offentlige historik matchede supportartifactet byte- og hashpræcist; dette registreres som rutinebevis uden at gøre et skiftende datasæt-ID til permanent “current truth”.
 
 ## Privat regional DMI-opsamling
 

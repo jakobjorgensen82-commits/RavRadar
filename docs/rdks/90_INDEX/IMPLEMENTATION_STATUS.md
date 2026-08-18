@@ -11,7 +11,7 @@
 - [x] Nye Python-/Node-regressioner beviser online U/V uden credentials, DMI-first, eksakt-tidsfletning, afvisning over afstandsgrænserne, rigtig pilcelle, normal 673/673-gate og fail-closed DMI-only rollback.
 - [x] `#32156725504` byggede den nye offentlige historik og scorede 665/673: 622 lokal DMI + 43 Copernicus. Support `#3125` viste samtidig 40 gyldige prøver fordelt på alle otte regionalproxyer. Manglen var en integrationsfejl: livebyggeren krævede et ikke-kanonisk anchorfelt. Valideringen følger nu shadow-cachens faktiske identitet (`targetPoint`, `sourceWaterPoint`, del/zone, klasse, vandområde, collection og maksimumafstand).
 - [x] Commit `5a7780e4` og central `#32158041877`/support `#3127` byggede præcis 673/673 (622 DMI + 43 Copernicus + 8 regionalproxy) og bestod fuld validering, releasegate, Supabase, Pages-artifact og deploy.
-- [x] Direkte live-HTTP-kontrol bekræfter version 4.0.232, datasæt `rr-20260818160548-210`, manifestmatch, 673/673 scorede dele, credentialfri historik og 221 kompakte startup-strømpile fra kun de tre godkendte gitterkildeklasser.
+- [x] Direkte live-HTTP-kontrol af det første aktiveringsdatasæt bekræftede version 4.0.232, manifestmatch, 673/673 scorede dele, credentialfri historik og 221 kompakte startup-strømpile fra kun de tre godkendte gitterkildeklasser. `#32160090899`/support `#3129` gentog fuld kæde, 673/673 og live artifactmatch.
 - [ ] Følg nu den naturlige drift i syv døgn på den fungerende side. Direkte visuel kliktest gentages, når Codex' lokale browser-plugin igen kan starte; pluginfejlen ændrer ikke det beståede artifact-, hash-, HTTP- eller deploybevis.
 
 - [x] Begge påkrævede Copernicus Actions-secrets findes; værdierne er ikke læst eller logget.

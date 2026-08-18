@@ -1,6 +1,6 @@
 # Kendte åbne og overvågede forhold
 
-- **ISSUE-COPERNICUS-CURRENT-PILOT – LIVE OG PRODUKTIONSVERIFICERET / SYVDØGNSOVERVÅGNING ÅBEN:** `#32158041877`/support `#3127` bestod 673/673, fuld validering, releasegate, Supabase og Pages. Datasæt `rr-20260818160548-210` er hashverificeret live med credentialfri U/V-historik, DMI-first kildevalg, eksakt celle/tid/lag, nye pile og versionsstyret DMI-only rollback. Kun den naturlige syvdøgnseftermåling og et gentaget visuelt browsertjek er åbne.
+- **ISSUE-COPERNICUS-CURRENT-PILOT – LIVE OG PRODUKTIONSVERIFICERET / SYVDØGNSOVERVÅGNING ÅBEN:** `#32158041877`/support `#3127` bestod 673/673, fuld validering, releasegate, Supabase og Pages. Det første aktiveringsdatasæt blev hashverificeret live med credentialfri U/V-historik, DMI-first kildevalg, eksakt celle/tid/lag, nye pile og versionsstyret DMI-only rollback; `#32160090899`/support `#3129` gentog hele beviset. Kun den naturlige syvdøgnseftermåling og et gentaget visuelt browsertjek er åbne.
 
 - **ISSUE-EIGHT-LIMFJORD-REGIONAL-PROXIES – 8/8 LIVE- OG CI-VERIFICERET:** De otte eksplicitte dele bruger efter DEC-0041 kun nærmeste eksakte `dkss_lf`-par op til 15 km. Commit `5a7780e4` rettede livebyggeren til den kanoniske anchoridentitet, og `#32158041877` beviste alle otte i runtime som den sidste del af samlet 673/673. Support `#3127` viser 40 gyldige proxyprøver uden credentiallæk.
 
