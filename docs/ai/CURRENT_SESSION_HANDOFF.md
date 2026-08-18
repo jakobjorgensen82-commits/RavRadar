@@ -14,6 +14,7 @@
 - #32134021410 stoppede før Supabase og Pages, fordi `test-dmi-bulk-model-download.mjs` stadig forventede User-Agent 4.0.229 efter versionsløftet. Testen følger nu `package.json`, og de berørte lokale og centrale regressioner består. Offentlig coverage er stadig bevidst 622/673.
 - Test-/evidensrettelsen er pushed som `d00d55bc4e7a73c2fb44f048d0d33cc38e933b5c`. #32135079819 passerede den rettede test og stoppede først ved 622/673-auditten; intet blev deployet.
 - Første schedule-run #32134686185 var grønt ved 12:00Z, men havde kun én rå tid, fordi 11:00Z-cachen var LRU-fortrængt. Cacheforbruget var cirka 10,2 GB med flere 2,5 GB DMI-cacher. Restore-only keepalive er pushed i `0224ea6a`: #32136328681 ramte 12:00Z, #32136391556 backfillede 11:00Z til 1.258 records/to tider uden grid-/lagskift eller supportlæk, og #32136642330 ramte derefter den nye cache. Første automatiske keepalive og næste naturlige time afventer. En rå artifactløsning er forkastet, fordi repoet er offentligt.
+- Slutkontrol fandt, at `test-current-spatial-scientific-audit-4.0.76.mjs` stadig krævede historiske 95 %/640, ikke ejerens nyere 100 %. Kandidaten kræver nu `expectedParts.length`, aktuelt 673/673; `test-current-full-coverage-gate-4.0.232.mjs` beskytter kravet. Replay mod #3094 giver korrekt 622/673 og “alle 673 kræves”.
 
 ## Aktiv 4.0.231-kandidat – vist lokal scoretime og pil deler DMI-celle
 
@@ -47,7 +48,7 @@
 
 - 4.0.228 er seneste produktionsverificerede release.
 - Commit `93b8c0216821d02bf913f7aab369406ba2365fe9` bestod i #31913779486/#2835 central adminhydrering, frisk DMI, fuld `validate`, releasegate, supportartifact, beskyttet Supabase-sync, Pages-artifact og deploy.
-- Datasæt `rr-20260815231859-210` har 210 aktive zoner, 673 forventede og 670 verificerede/offentliggjorte kystdele mod minimum 640. Alle 670 har eksakte DMI-strøm- og vindpunkter uden U/V-mismatch; manifesthashes matcher artifact og live.
+- Datasæt `rr-20260815231859-210` har 210 aktive zoner, 673 forventede og 670 verificerede/offentliggjorte kystdele mod det daværende minimum 640. Alle 670 har eksakte DMI-strøm- og vindpunkter uden U/V-mismatch; manifesthashes matcher artifact og live. Dette er historisk produktionsbevis, ikke længere en tilstrækkelig gate for en ny release.
 - Den lokale kystvinkel er nu en vejledende advarsel. Ejerens repræsentative helhedsvurdering kan gemmes, mens reelle punkt-/kystintegritetsfejl fortsat blokerer.
 
 ## Afsluttet 4.0.228
@@ -75,7 +76,7 @@
 
 1. Commit/push 4.0.232-kandidaten og kræv frisk central `dkss_lf`-evidens i den private regionalproxyrapport; alle otte skal være policyvaliderede, og rå U/V må kun findes i Actions-cachen.
 2. Følg Copernicus-cron og kræv mindst to forskellige gyldige tider/modelruns. To manuelle runs på samme 11:00Z-time tæller fortsat kun som ét tidsbevis.
-3. Bevar offentlig DMI-only-adfærd og den eksisterende coveragegate, mens privat 168-timers pruning og stabilitet bevises. Aktiv kildefletning, pile og score er en senere særskilt gated ændring.
+3. Bevar offentlig DMI-only-adfærd og den nye dynamiske 100 %-gate, mens privat 168-timers pruning og stabilitet bevises. Aktiv kildefletning, pile og score er en senere særskilt gated ændring.
 
 ## Bindende arbejdsregler
 

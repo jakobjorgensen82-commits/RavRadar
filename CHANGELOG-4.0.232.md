@@ -17,8 +17,10 @@
 - Opfølgende pushrun `#32135079819` passerede den rettede versionstest og hele den centrale kæde frem til den uændrede rumlige strømgate. Den stoppede korrekt på 622/673 uden Supabase eller Pages.
 - Første faktiske Copernicus-`schedule`-run `#32134686185` var grønt og hentede et nyt 12:00Z-tidspunkt, men GitHubs cachekvote på cirka 10,2 GB havde allerede fortrængt 11:00Z-råcachen mellem de store DMI-cacher. En separat lille keepalive-workflow gendanner derfor kun den eksisterende private cache hvert tiende minut og uploader intet. Manuel pilotkørsel kan genhente en eksakt citeret UTC-time, så tabet kan repareres kontrolleret.
 - Keepalive `#32136328681` ramte 12:00Z-cachen uden at logge poster. Kontrolleret 11:00Z-backfill `#32136391556` samlede derefter 1.258 prøver ved to tider i samme cache: 625 unikke mål, 629 mål/kildepar, nul gitter- eller lagskift og nul rå U/V/credentials i supportartifactet. Afsluttende keepalive `#32136642330` ramte præcis den nye to-timers-cache.
+- Den historiske 95 %-gate er erstattet af ejerens nyere bindende krav om fuld strømdækning. Den rumlige produktionsgate kræver nu dynamisk alle aktive kystdele, aktuelt 673/673, og rapporterer `requiredCoastalPartCoverageRatio=1`. En særskilt regression forbyder genindførelse af `*.95`-grænsen.
 
 ## Bevidst uændret og åbent
 
-- Offentlig runtime, RavScore, pile, kildeorden, geografisk coveragegate og deployadfærd er uændret og fortsat DMI-only med 5-km-grænse. Regionalproxyen er ikke aktiveret.
+- Offentlig runtime, RavScore, pile, kildeorden og datakilder er fortsat DMI-only med 5-km-grænse. Regionalproxyen er ikke aktiveret, og gateændringen tillader derfor ikke deploy af den ufuldstændige kandidat.
+- Den skærpede gate ændrer ingen data og udfylder ingen mangler. Den betyder kun, at hverken den nuværende 622/673-kandidat eller den tidligere 670/673-tilstand kan blive en ny release; de supplerende kilder skal senere levere verificeret proveniens til alle mangler.
 - Første automatiske keepalive-event, syvdøgnspruning og flere naturlige modelruns mangler fortsat. Først derefter kan aktiv kildefletning designes og gennemgå alle releasegates.

@@ -28,6 +28,7 @@
 - [ ] Bekræft første automatiske keepalive-event og et efterfølgende naturligt Copernicus-tidspunkt uden ny LRU-fortrængning.
 - [ ] Aktiv integration kræver fuld validering, releasegate, frisk produktionsworkflow og direkte livekontrol. Den almindelige produktion er fortsat DMI-only og fail-closed over 5 km.
 - [x] Pushrun `#32129778162` beviste, at den eksisterende gate ikke blev omgået: fuld validering stoppede ved 622/673 og intet blev deployet.
+- [x] Ejerens 100 %-krav er nu den faktiske produktionsgate: `requiredPartCoverage` er lig det dynamiske antal aktive kystdele, aktuelt 673. Separat regression forbyder den historiske 95 %-formel; #3094-replay stopper på 622/673 med krav om alle 673.
 
 # Implementeringsstatus pr. 4.0.231 – vist scoretime og strømpil deler DMI-celle
 
@@ -108,7 +109,7 @@
 - [x] Forsøg 2 stoppede efter den ene tilladte genprøvning af Supabase HTTP 500/PostgreSQL `57014`; Pages blev korrekt ikke deployet.
 - [x] Artifactaudit af `rr-20260815224811-210` fandt transportfejlen: 670/670 lokale vindpunkter var zoneankre, fordi DKSS-`wind-tail-u/v` ikke blev genkendt. Read-only cache-replay finder 670/673 eksakte vindhalepar på 507 unikke gitterpunkter. Fejlen er rettet lokalt med direkte regression for primær vind, marin vindhale og U/V-mismatch.
 - [x] #31913779486/#2835 på commit `93b8c0216821d02bf913f7aab369406ba2365fe9` bestod central adminhydrering, frisk DMI, fuld `validate`, releasegate, supportartifact, beskyttet Supabase-sync og Pages-deploy.
-- [x] Datasæt `rr-20260815231859-210` har 670/673 verificerede og offentliggjorte kystdele mod kravet 640; 670/670 har eksakte DMI-punkter for både strøm og vind, nul U/V-mismatch, 461 unikke strømpunkter og 544 unikke vindpunkter.
+- [x] Datasæt `rr-20260815231859-210` har 670/673 verificerede og offentliggjorte kystdele mod det daværende krav 640; 670/670 har eksakte DMI-punkter for både strøm og vind, nul U/V-mismatch, 461 unikke strømpunkter og 544 unikke vindpunkter. Beviset er historisk og opfylder ikke 4.0.232's nye fulddækningsgate.
 - [x] Live manifest, startpakke og detaljepakke har samme datasætid og matchende SHA-256. Browserkontrollen viser 54 pile ved oversigten og 87 efter to zoomtrin, uden konsolfejl.
 
 # Tidligere status: 4.0.227 – vejledende lokal kystvinkel
@@ -431,9 +432,9 @@
 - [x] Hovedzoner og kystdele indgår nu i samme faktiske DMI-recovery.
 - [x] Lokale scorer kræver lokal strømretning og -hastighed; manglende lokal sammenligning falder sikkert tilbage til hovedzonescoren uden geografisk påstand.
 - [x] Fuld scoreforklaring, lokalt vejr, lokalt punktpar og lokal pålandsretning føres til offentlig runtime/debug.
-- [x] Landsdækkende gate kræver mindst 95 % verificeret lokal U/V-dækning og forbyder overpublicering.
+- [x] 4.0.193 indførte historisk mindst 95 % verificeret lokal U/V-dækning og forbud mod overpublicering. Procentgrænsen er erstattet af 100 %-gaten i 4.0.232; overpubliceringsforbuddet består.
 - [x] #31764453987 bestod frisk data, fuld validering, releasegate og deploy for 4.0.193-kodekæden før geometriaktivering.
-- [ ] Den aktiverede 673-dels pakke skal opbygge mindst 95 % lokal U/V-cache og bestå den skærpede gate i en efterfølgende produktionskørsel.
+- [x] Den historiske 95 %-indfasningsopgave er lukket som erstattet; nye releases kræver alle aktuelle dele under REQ-CURRENT-COVERAGE-100-001.
 - [x] #31764957646 stoppede før deploy ved central manifestreadback, fordi aktiveringsstatus ikke matchede den eksisterende `owner-approved-*`-promotionskontrakt. Status og portabel rollbacksti er rettet uden at svække hash/readback.
 - [x] Alle 651 aktive punktpar er auditeret mod eget kystreferencepunkt og lokal tangent: 13 afvigelser; privat reparationskandidat giver 0.
 - [x] Vedvarende retningsskift er auditeret afstandsbaseret. En konservativ kandidat opdeler 10 hidtil enkelt-delte hovedzoner til i alt 673 lokale dele; Helgenæs bliver tre fysisk forskellige sider.

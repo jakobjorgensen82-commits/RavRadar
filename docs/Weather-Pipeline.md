@@ -10,6 +10,8 @@ Workflowen kører ved minut 17 hver time og kan også startes manuelt med en eks
 
 Den fælles Actions-cache ligger omkring GitHubs kvoteloft, fordi få DMI-GRIB-cacher hver fylder cirka 2,5 GB. Første schedule-run ved 12:00Z viste derfor, at en lille timestrømcaches gamle nøgle kunne blive LRU-fortrængt på under en time. En særskilt keepalive-workflow gendanner nu kun den eksisterende private Copernicus-cache hvert tiende minut. Gendannelsen opdaterer cachens seneste brug, logger ingen poster og uploader intet; mangler cachen, fejler jobbet synligt. Rå U/V må fortsat kun ligge i workflowcachen.
 
+Produktionsgaten kræver fuld verificeret dækning af alle aktive kystdele, aktuelt 673/673. Den tidligere 95 %-grænse var en historisk indfasningsregel og er erstattet af ejerens nyere beslutning. En kystdel uden tilladt, dokumenteret U/V-proveniens stopper hele den nye release; den bliver ikke nuludfyldt, skjult eller lånt fra en anden del.
+
 Otte dokumenterede modelhuller i den vestlige Limfjord har en særskilt ejerbeslutning. Efter fulde aktiveringsgates må kun disse dele bruge nærmeste `dkss_lf`-kolonne op til 15 km som `regional-proxy`. Det er ikke en global afstandslempelse. Et ændret samplingpunkt invaliderer godkendelsen, og pilen skal stå på den faktiske modelcelle. Se DEC-0041 og `data/current-regional-proxy-policy.json`.
 
 ## Strømsted, dybdelag og vist scoretime (4.0.231)

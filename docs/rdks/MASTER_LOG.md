@@ -15,6 +15,7 @@
 - Første cron-run `#32134686185` var grønt og hentede et nyt Copernicus-tidspunkt 12:00Z, men 11:00Z-råcachen var væk. Cache-API'en viste cirka 10,2 GB aktive caches, især fire samtidige DMI-GRIB-generationer på cirka 2,5 GB; LRU-fortrængning er dermed bevist.
 - En råcache-artifact blev overvejet og forkastet, fordi repositoryet er offentligt. Den valgte løsning holder i stedet den allerede private cache nyligt anvendt med en credentialfri restore hvert tiende minut, nul upload og nul recordlogning. Eksakt manuel UTC-backfill kan reparere 11:00Z efter keepalive-bevis.
 - Keepalive `#32136328681` ramte den bevarede 12:00Z-cache. Den ene kontrollerede backfill `#32136391556` genhentede 11:00Z og samlede 1.258 private records ved to tider, 625 unikke mål og 629 mål/kildepar med nul gitter-/lagskift og nul rå/credentiallæk i supportoutput. `#32136642330` ramte bagefter den nye backfill-cache. Aktiv integration er fortsat ikke autoriseret.
+- En slutkontrol mod ejerens ord “vi beholder 100 % dækningskravet” fandt, at den faktiske rumlige audit stadig brugte den historiske 95 %-formel og derfor ville acceptere 640/673. Gaten kræver nu dynamisk alle aktive dele, aktuelt 673/673. En særskilt regression forbyder 95 %-formlen; replay af #3094 fejler korrekt på 622/673 med “alle 673 kræves”.
 
 ## 2026-08-16 – 4.0.231 binder den lokale pil til den viste scoretime
 
@@ -65,7 +66,7 @@
 - #31911509244/#2830 forsøg 1 stoppede korrekt ved 629/673 verificerede lokale strømpunkter efter delvis `dkss_lf`. Uændret forsøg 2 nåede 670/673, bestod fuld `validate` og releasegate, men stoppede før Pages på gentaget Supabase `57014` efter én tilladt retry.
 - Artifactaudit af forsøg 2 fandt 670 ægte lokale strømpunkter, men nul ægte lokale vindpunkter i detaljepakken. Rodårsagen var manglende transport af `wind-tail-u-10m/v-10m`; read-only cache-replay viste 670/673 eksakte par på 507 unikke vindgitterpunkter. Fejlen blev rettet og regressionstestet før den næste fulde produktion.
 - #31913779486/#2835 på commit `93b8c0216821d02bf913f7aab369406ba2365fe9` bestod derefter central adminhydrering, frisk DMI, fuld `validate`, releasegate, supportartifact, beskyttet Supabase-sync og Pages.
-- Produktionsdatasæt `rr-20260815231859-210` har 670/673 verificerede/offentliggjorte dele mod kravet 640. Alle 670 har eksakte strøm- og vindgitterpunkter uden U/V-mismatch, fordelt på 461 unikke strøm- og 544 unikke vindpunkter. Artifact- og livehashes matcher manifestet.
+- Produktionsdatasæt `rr-20260815231859-210` har 670/673 verificerede/offentliggjorte dele mod det daværende krav 640. Alle 670 har eksakte strøm- og vindgitterpunkter uden U/V-mismatch, fordelt på 461 unikke strøm- og 544 unikke vindpunkter. Artifact- og livehashes matcher manifestet. 4.0.232 erstatter senere denne 95 %-gate for alle nye releases.
 - Direkte browserkontrol viste 54 pile på oversigten og 87 efter to zoomtrin uden konsolfejl. 4.0.228 er produktionsverificeret.
 
 ## 2026-08-15 – 4.0.227 vejledende lokal kystvinkel
@@ -1186,7 +1187,7 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Helgenæs er visuelt kontrolleret som tre sider med landpunkt ind mod halvøen og vandpunkt ud fra hver side. Alle 10 foreslåede zoner har private kontrolbilleder.
 - Privat #31764242827 validerede alle 45 ændrede/nye vandpunkter mod native DMI-grid med fuld dækning og nul ugyldige punkter.
 - Kandidaten er derefter lokalt aktiveret som 673-dels pakke med 0 punkt-/overlapfund; 4.0.192/651 dele er bevaret som rollback. Hovedzonegeometrien er uændret.
-- #31764453987 produktionsverificerede 4.0.193-kodekæden med frisk data, fuld validering, releasegate og deploy før aktiveringscommitten. Næste bevis er den deployede 673-dels pakkes progressive lokale U/V-dækning på mindst 95 %.
+- #31764453987 produktionsverificerede 4.0.193-kodekæden med frisk data, fuld validering, releasegate og deploy før aktiveringscommitten. Den daværende næste gate var mindst 95 % lokal U/V-dækning; 4.0.232 erstatter den for alle nye releases med 100 %.
 - Første aktiveringsrun #31764957646 stoppede fail-closed: central sync erstattede manifestet, fordi den nye status manglede det eksisterende `owner-approved-*`-signal. Aktiveringsscript og manifest bruger nu den bindende promotionskontrakt og en repositoryrelativ rollbacksti; digest- og central readback-gater er ikke ændret.
 
 ## 2026-08-14 – 4.0.199

@@ -13,13 +13,14 @@
 - `#32134021410`/artifact `#3094` har nu leveret det friske centrale 8/8-bevis: 32 private `dkss_lf`-prøver ved fire forecasttider, ingen rå U/V i supportoutput og ingen cache i artifactet. Kørslens senere stop var en fastkodet versionsstreng i en test og ændrede ingen data eller offentlig runtime.
 - `#32135079819` passerede den versionsrobuste test og stoppede korrekt ved 622/673. Første Copernicus-cron `#32134686185` hentede et nyt 12:00Z-tidspunkt, men Actions-cachekvoten havde allerede fortrængt 11:00Z-råhistorikken.
 - Restore-only keepalive #32136328681, kontrolleret 11:00Z-backfill #32136391556 og efterkontrol #32136642330 beviser nu 1.258 records ved to tider i samme råcache uden gitter-/lagskift eller supportlæk. Næste 4.0.232-bevis er automatisk keepalive, næste naturlige time samt senere syvdøgnspruning. Først derefter designes aktiv kildefletning.
+- Aktiv kildefletning skal ende på alle aktuelle kystdele, ikke blot den historiske 95 %-grænse. Produktionsgaten er nu 100 % dynamisk (aktuelt 673/673) og skal ved integration verificere kildeklassens egne afstande, celle, lag og tid for hver eneste del.
 
 ## 4.0.231 – samme tidspunkt styrer lokal score og strømpil
 
 - Semantik-v3-genopbygningen er progressiv: #2875 behandlede IDW, og #2876 behandlede NSBS. Havknude har nu 38 native strømtrin fra cellen 2,80363 km væk. Den samlede dækning er foreløbig 182/210 hovedzoner og 574/673 kystdele; Limfjord skal stadig genopbygges.
 - Den strenge #2876-audit fandt én anden tidskoblingsfejl. En lokal score kunne vise den nærmeste senere gyldige time, mens pilens flowpunkt var beregnet ved byggetiden uden strøm og derfor faldt tilbage til vandpunktet.
 - 4.0.231 vælger først den lokale scorepost, som vises, og beregner derefter pilens placering ved præcis samme tid. Manglende strøm på den viste time giver ingen DMI-pil; en anden times celle må ikke lånes.
-- Næste driftsmål er parser-v18-Limfjord, nul pil/grid-mismatch og den uændrede 640/673-gate. Først derefter må Supabase, Pages og direkte livekort indgå som releasebevis.
+- Næste driftsmål er parser-v18-Limfjord, nul pil/grid-mismatch og den nu bindende fulddækningsgate på 673/673. Først derefter må Supabase, Pages og direkte livekort indgå som releasebevis.
 - Forskningssporet er uændret: den private syvdøgnscache skal fortsat belyse **ydre tilførsel → overgang mod kyst → lokal bundnær levering**, flere lag, tidsforsinkelse, persistens og ikke-redundans. Den må ikke påvirke den aktive score.
 
 ## 4.0.230 – komponentvist strømvalg og korrekt grundlag for helhedsanalysen

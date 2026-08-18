@@ -29,6 +29,7 @@ Privat kode og data må ikke nå offentlig runtime, pile eller score, før følg
 - flere modelruns med stabil kilde-, tids-, celle- og lagidentitet,
 - højst 5 km for alle Copernicus-par og højst 15 km for de otte eksplicitte DMI-proxyer,
 - korrekt placering af pile på den faktiske kildecelle,
+- fuld verificeret strømdækning af alle aktive kystdele, aktuelt 673/673; den tidligere 95 %-indfasningsgate er erstattet,
 - fuld projektvalidering, releasegate og frisk produktionsworkflow,
 - samt sikker fallback til DMI eller `missing`, hvis en supplerende kilde fejler.
 
@@ -41,3 +42,5 @@ Første cron `#32134686185` hentede 12:00Z, men afslørede LRU-fortrængning af 
 ## Konsekvens
 
 Beslutningen fastholder kvaliteten af lokale data for resten af landet og giver en kontrolleret vej mod fuld geografisk dækning. Den påstår ikke, at en strøm 12 km væk er lige så lokal som en strøm 1 km væk. Forskellen bliver maskinlæsbar og kan derfor indgå ærligt i den kommende analyse af hele transportkæden.
+
+Ejerens efterfølgende præcisering om at bevare 100 % dækning er implementeret fail-closed i 4.0.232: produktionsaudittens krævede antal er altid lig det aktuelle antal aktive kystdele. Det ændrer ikke pilotdata eller kildeorden; det forhindrer blot release ved 672 eller færre verificerede dele.

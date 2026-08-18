@@ -128,4 +128,4 @@ Kolonnen viser `manglende dele / alle dele i zonen`. De individuelle del-ID'er, 
 
 1. Ejerens centralt gemte punktrettelser er autoritative og genopbygges før næste DMI-sampling.
 2. Efter relevante rettelser sammenlignes en frisk kørsel mod dette snapshot; der må ikke genbruges strøm fra et flyttet punkt.
-3. Hvis fuld geografisk dækning ikke er et produktkrav, kræver en alternativ fail-closed deldækningsgate en udtrykkelig ejerbeslutning. Kravet om 100 % dokumentation for hver vist pil ændres aldrig.
+3. Ejeren har nu udtrykkeligt fastholdt fuld geografisk dækning. Den historiske 95 %-deldækningsgate er derfor erstattet af et dynamisk krav om alle aktive kystdele, aktuelt 673/673. En lavere gate må kun genindføres ved en ny udtrykkelig ejerbeslutning; kravet om 100 % dokumentation for hver vist pil ændres aldrig.
