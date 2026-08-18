@@ -263,7 +263,12 @@ def regional_entries(
             not anchor.get("regionalProxyCandidate")
             or anchor.get("requiredCollection") != "dkss_lf"
             or not same_point(anchor.get("targetPoint"), approved)
-            or not same_point(anchor.get("approvedSamplingPoint"), approved)
+            or not same_point(anchor.get("sourceWaterPoint"), approved)
+            or anchor.get("partId") != part_id
+            or anchor.get("parentZoneId") != target["parentZoneId"]
+            or anchor.get("researchClass") != "owner-approved-regional-proxy"
+            or anchor.get("sameConnectedWaterBody") != "Limfjorden"
+            or finite(anchor.get("maximumDistanceKm")) != REGIONAL_MAX_KM
         ):
             continue
         for sample in anchor.get("samples") or []:

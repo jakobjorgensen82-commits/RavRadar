@@ -3,9 +3,10 @@
 ## Handoff 2026-08-18 – Copernicus-pilot under opbygning
 
 - Nyeste ejerbeslutning: den nuværende RavRadar-side er ikke offentlig, så den gyldige Copernicus-/regionalproxyprojektion inklusive U/V og nye pile må gå online. Kun credentials er hemmelige. Syvdøgnstesten køres live efter første grønne 673/673-release.
-- Den aktuelle worktree implementerer endnu ikke-pushet kontrolleret live-fletning: `data/current-live-pilot-control.json`, `scripts/build-live-current-pilot.py`, `scripts/lib/live-current-pilot.mjs`, workflowtrin før vejrscoring, nye kortkildeklasser og en multi-provider rumlig audit.
+- Commit `161ba79e` er fast-forwardet til `main` med kontrolleret live-fletning: `data/current-live-pilot-control.json`, `scripts/build-live-current-pilot.py`, `scripts/lib/live-current-pilot.mjs`, workflowtrin før vejrscoring, nye kortkildeklasser og en multi-provider rumlig audit.
 - Normaltilstanden er DMI ≤5 km → Baltic ≤5 km → AMM15 ≤5 km → otte `dkss_lf`-proxyer ≤15 km og kræver 673/673. Nødtilstanden `dmi-only-rollback` deaktiverer supplementet, bevarer friske andre prognoser og viser reduceret strøm som `missing` uden fulddækningspåstand.
 - Målrettede Python-/Node-, pil-, workflow-, null-safety- og 100 %-gates består lokalt. Der findes ingen private råcaches i worktreen, så frisk central 673/673, fuld releasegate, Pages og direkte livebrowser er det nødvendige slutbevis.
+- Pushrun `#32156725504`/support `#3125` beviste DMI 622 + Copernicus 43 = 665/673 og stoppede korrekt før release. Alle otte regionalproxyer havde 40 gyldige `dkss_lf`-prøver, men livebyggeren krævede fejlagtigt et `approvedSamplingPoint`-felt, som den kanoniske shadow-anchor ikke gemmer. Kandidaten validerer nu i stedet anchorens faktiske `targetPoint`, `sourceWaterPoint`, del/zone, forskningsklasse, Limfjord-vandområde, collection og 15-km-loft; næste centrale run skal bevise 8/8 og samlet 673/673.
 
 - Arbejd i den rene worktree `C:\Users\jakob\AppData\Local\Temp\ravradar-40232-current`; ejerens oprindelige workspace er fortsat dirty og må ikke overskrives.
 - `main`/`origin/main` var ved start `a8eaa9ca` (4.0.231-handoff). Grenen er `codex/current-coverage-4.0.232`.

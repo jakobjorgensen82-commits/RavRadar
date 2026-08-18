@@ -5,6 +5,7 @@
 - Score, detaljepakke og kort bruger samme U/V-post. Copernicus-/proxypile accepteres kun ved den faktiske kildecelle; et vandpunkt, en anden time eller en for fjern celle giver ingen verificeret pil.
 - En versionsstyret kontrol har normal `controlled-live` med præcis 673/673 og nødtilstanden `dmi-only-rollback`. Nødtilstanden fjerner supplementet fra score/pile og mærker strøm som `missing`, men bevarer friske øvrige prognoser og må aldrig rapportere falsk fulddækning.
 - Målrettede lokale regressioner for online U/V uden credentials, DMI-first, eksakt tid, afstand, pilcelle, 100 %-gate, rollback, workflowrækkefølge og null-safety består. Frisk central 673/673, fuld releasekæde og direkte livekontrol mangler.
+- Commit `161ba79e` blev fast-forwardet til `main`. `#32156725504` byggede historikken og nåede 665/673 (622 DMI + 43 Copernicus), hvorefter 100 %-gaten stoppede release. Support `#3125` viste 40 gyldige prøver på alle otte regionalproxyer; livebyggeren havde afvist dem på et ikke-kanonisk anchorfelt. Kontrollen er rettet til shadow-cachens faktiske identitetsfelter og skal nu genbevises centralt.
 
 ## 2026-08-18 – privat supplerende strømkandidat og afgrænset Limfjordsproxy
 

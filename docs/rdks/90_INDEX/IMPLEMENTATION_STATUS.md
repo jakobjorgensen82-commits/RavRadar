@@ -9,6 +9,7 @@
 - [x] Lokale Copernicus- og regionalproxypile bruger den viste scoretimes faktiske kildecelle. Kortet accepterer de nye eksplicitte gitterkildeklasser og accepterer fortsat ikke vandpunktet eller en anden times celle som verificeret pil.
 - [x] Den rumlige audit tæller i normaltilstanden kun runtimeposter med fuld kildeproveniens og eksakt match til onlinehistorikkens U/V-post. Alle 673 kræves stadig. Rollbackgrenen afviser enhver supplerende runtimepost og må ikke rapportere reduceret DMI-dækning som 100 %.
 - [x] Nye Python-/Node-regressioner beviser online U/V uden credentials, DMI-first, eksakt-tidsfletning, afvisning over afstandsgrænserne, rigtig pilcelle, normal 673/673-gate og fail-closed DMI-only rollback.
+- [x] `#32156725504` byggede den nye offentlige historik og scorede 665/673: 622 lokal DMI + 43 Copernicus. Support `#3125` viste samtidig 40 gyldige prøver fordelt på alle otte regionalproxyer. Manglen var en integrationsfejl: livebyggeren krævede et ikke-kanonisk anchorfelt. Valideringen følger nu shadow-cachens faktiske identitet (`targetPoint`, `sourceWaterPoint`, del/zone, klasse, vandområde, collection og maksimumafstand).
 - [ ] Frisk central workflowkørsel skal nu bygge 673/673, bestå fuld validering/releasegate/Supabase/Pages og derefter verificeres direkte i livebrowseren. Før dette er kandidaten implementeret, men ikke produktionsverificeret.
 
 - [x] Begge påkrævede Copernicus Actions-secrets findes; værdierne er ikke læst eller logget.

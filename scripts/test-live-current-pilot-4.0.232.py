@@ -105,7 +105,10 @@ with tempfile.TemporaryDirectory(prefix="ravradar-live-current-") as raw_folder:
         grid = [sampling[0] + 0.1, sampling[1]]
         anchors[f"REGIONAL_PROXY::{row['partId']}"] = {
             "regionalProxyCandidate": True, "requiredCollection": "dkss_lf",
-            "targetPoint": sampling, "approvedSamplingPoint": sampling,
+            "partId": row["partId"], "parentZoneId": row["sourceZoneId"],
+            "targetPoint": sampling, "sourceWaterPoint": sampling,
+            "researchClass": "owner-approved-regional-proxy",
+            "sameConnectedWaterBody": "Limfjorden", "maximumDistanceKm": 15,
             "samples": [{
                 "collection": "dkss_lf", "modelRun": "2026-08-18T12:00:00Z",
                 "validTime": "2026-08-18T15:00:00Z", "capturedAt": "2026-08-18T15:20:00Z",

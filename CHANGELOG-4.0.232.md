@@ -7,6 +7,7 @@
 - RavScore og den viste strømpil bruger den samme valgte U/V-post. Copernicus- og regionalproxypile står ved den faktiske modelcelle og har egne kildeklasser; et fallback-vandpunkt kan ikke fremstå som verificeret pil.
 - Normal `controlled-live` består fortsat kun ved 673/673. Den versionsstyrede nødtilstand `dmi-only-rollback` fjerner Copernicus/proxy fra score og pile, bevarer friske øvrige prognoser og viser de manglende strømdele ærligt; den kan ikke foregive fuld dækning.
 - Nye Python-/Node-regressioner dækker credentialfri onlinehistorik, U/V-publicering, DMI-first, eksakt tid, afstandsgrænser, pilcelle, start ved aktuel hele time, 100 %-gate og rollback. Frisk central release og direkte livekontrol mangler endnu.
+- Første liveintegrationsrun `#32156725504` nåede 665/673 og stoppede sikkert før release: 622 dele brugte lokal DMI og 43 Copernicus. Support `#3125` viste 40 gyldige `dkss_lf`-prøver for alle otte resterende dele. Livebyggerens ankerkontrol er rettet fra et ikke-gemt `approvedSamplingPoint` til shadow-cachens kanoniske punkt-, del-, zone-, klasse-, vandområde-, collection- og afstandsfelter.
 
 ## Privat regional DMI-opsamling
 
