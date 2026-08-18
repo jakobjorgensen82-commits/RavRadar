@@ -4,8 +4,10 @@
 - Kandidaten bygger en separat online syvdøgnshistorik fra de private caches efter central geometri/DMI og før score. DMI er førstevalg; Baltic, AMM15 og de otte godkendte Limfjordsproxyer kan kun udfylde en manglende eksakt time med fuld celle-, lag-, afstands- og kildeproveniens.
 - Score, detaljepakke og kort bruger samme U/V-post. Copernicus-/proxypile accepteres kun ved den faktiske kildecelle; et vandpunkt, en anden time eller en for fjern celle giver ingen verificeret pil.
 - En versionsstyret kontrol har normal `controlled-live` med præcis 673/673 og nødtilstanden `dmi-only-rollback`. Nødtilstanden fjerner supplementet fra score/pile og mærker strøm som `missing`, men bevarer friske øvrige prognoser og må aldrig rapportere falsk fulddækning.
-- Målrettede lokale regressioner for online U/V uden credentials, DMI-first, eksakt tid, afstand, pilcelle, 100 %-gate, rollback, workflowrækkefølge og null-safety består. Frisk central 673/673, fuld releasekæde og direkte livekontrol mangler.
+- Målrettede lokale regressioner for online U/V uden credentials, DMI-first, eksakt tid, afstand, pilcelle, 100 %-gate, rollback, workflowrækkefølge og null-safety består.
 - Commit `161ba79e` blev fast-forwardet til `main`. `#32156725504` byggede historikken og nåede 665/673 (622 DMI + 43 Copernicus), hvorefter 100 %-gaten stoppede release. Support `#3125` viste 40 gyldige prøver på alle otte regionalproxyer; livebyggeren havde afvist dem på et ikke-kanonisk anchorfelt. Kontrollen er rettet til shadow-cachens faktiske identitetsfelter og skal nu genbevises centralt.
+- Commit `5a7780e4` rettede ankerkontrakten og blev fast-forwardet til `main`. `#32158041877`/support `#3127` bestod derefter hele produktionskæden med 622 DMI + 43 Copernicus + 8 regionalproxy = 673/673, fuld validering, releasegate, Supabase, Pages-artifact og deploy.
+- Den aktive GitHub Pages-side leverer version 4.0.232 og datasæt `rr-20260818160548-210`. `public-conditions.json` matcher manifestet byte- og SHA-256-præcist (`aa05a23795a4a1b232ef30274746acaad373fb9512572c1a8d4ec2b1d5e67ca3`). Første livehistorik har 1.915 poster, 633 dele og syv tider uden credentials. Syvdøgnseftermålingen er dermed startet på den fungerende side; rollback forbliver versionsstyret og klar.
 
 ## 2026-08-18 – privat supplerende strømkandidat og afgrænset Limfjordsproxy
 

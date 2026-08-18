@@ -6,8 +6,10 @@
 - Kystdelene bruger nu kildeordenen lokal DMI ≤5 km, Baltic NEMO ≤5 km, AMM15 ≤5 km og til sidst de otte eksplicit godkendte `dkss_lf`-proxyer ≤15 km. Kun en eksakt manglende time udfyldes; ingen skjult tids-, celle- eller laginterpolation.
 - RavScore og den viste strømpil bruger den samme valgte U/V-post. Copernicus- og regionalproxypile står ved den faktiske modelcelle og har egne kildeklasser; et fallback-vandpunkt kan ikke fremstå som verificeret pil.
 - Normal `controlled-live` består fortsat kun ved 673/673. Den versionsstyrede nødtilstand `dmi-only-rollback` fjerner Copernicus/proxy fra score og pile, bevarer friske øvrige prognoser og viser de manglende strømdele ærligt; den kan ikke foregive fuld dækning.
-- Nye Python-/Node-regressioner dækker credentialfri onlinehistorik, U/V-publicering, DMI-first, eksakt tid, afstandsgrænser, pilcelle, start ved aktuel hele time, 100 %-gate og rollback. Frisk central release og direkte livekontrol mangler endnu.
+- Nye Python-/Node-regressioner dækker credentialfri onlinehistorik, U/V-publicering, DMI-first, eksakt tid, afstandsgrænser, pilcelle, start ved aktuel hele time, 100 %-gate og rollback.
 - Første liveintegrationsrun `#32156725504` nåede 665/673 og stoppede sikkert før release: 622 dele brugte lokal DMI og 43 Copernicus. Support `#3125` viste 40 gyldige `dkss_lf`-prøver for alle otte resterende dele. Livebyggerens ankerkontrol er rettet fra et ikke-gemt `approvedSamplingPoint` til shadow-cachens kanoniske punkt-, del-, zone-, klasse-, vandområde-, collection- og afstandsfelter.
+- Commit `5a7780e4` og central `#32158041877`/support `#3127` beviser rettelsen og den fulde aktive kildekæde: 622 DMI + 43 Copernicus + 8 regionalproxy = 673/673. Fuld validering, releasegate, Supabase, Pages-artifact og deploy bestod.
+- Datasæt `rr-20260818160548-210` er direkte live- og hashverificeret mod manifestet. Den credentialfri historik indeholder ved første release 1.915 poster for 633 dele og syv tider. Startup-pakken har 221 kompakte strømpile fra 210 DMI-, 10 Copernicus- og én regionalproxycelle og ingen ikke-godkendt pilkildeklasse. Den naturlige syvdøgnseftermåling fortsætter på den fungerende side.
 
 ## Privat regional DMI-opsamling
 
