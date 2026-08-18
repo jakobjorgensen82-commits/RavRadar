@@ -1,4 +1,11 @@
-# AI Roadmap – RavRadar 4.0.232
+# AI Roadmap – RavRadar 4.0.233
+
+## Aktuelt P1-fix 2026-08-18 – lokal scoreretning må ikke komme fra en anden kystdel
+
+- Liveaudit beviser, at de nye strømpile fysisk følger deres U/V-vektor og faktiske modelcelle i alle 673 dele. De skal vise vandets bevægelse og peger derfor ikke nødvendigvis mod land.
+- Den fundne systemiske fejl lå i fortolkningen: 216 dele i 52 zoner arvede moderzonens retningsankre, og 49 aktuelle zonevindere brugte dermed ikke deres eget godkendte land-/havpunkt som scoregrundlag.
+- 4.0.233 isolerer hver del til ét lokalt anker med samme navn, vandpunkt, landpunkt og retning som vejr-, historik- og scoreidentiteten. Havsande nordkyst kan ikke længere vælge `Syd for fyret`.
+- Næste gate er fuld central 673/673-kørsel og direkte livekontrol af score, tekst, historik og pile. Kildeordenen, 100 %-kravet, Copernicus-piloten og syvdøgnsovervågningen er uændrede.
 
 ## Aktuelt P1-spor 2026-08-18 – kontrolleret live-strøm med sikker rollback
 

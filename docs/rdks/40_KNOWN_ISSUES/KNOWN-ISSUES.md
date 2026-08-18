@@ -1,5 +1,7 @@
 # Kendte åbne og overvågede forhold
 
+- **ISSUE-LOCAL-PART-INHERITED-PARENT-DIRECTION – RETTET LOKALT I 4.0.233 / AFVENTER PRODUKTION:** Live `rr-20260818164751-210` havde korrekte strømvektorer og pilceller, men 216/673 lokale dele i 52 zoner arvede moderzonens retningsankre. 49 aktuelle zonevindere kunne derfor vise én del og score eller forklare mod en anden. Blåvand viste konkret `Havsande – nordkyst` med lokal retning 117,3°, men scoreanker `Syd for fyret` 29°. 4.0.233 giver hver del præcis ét eget anker og en 673/673-regression. Central frisk release og liveaudit afventer.
+
 - **ISSUE-COPERNICUS-CURRENT-PILOT – LIVE OG PRODUKTIONSVERIFICERET / SYVDØGNSOVERVÅGNING ÅBEN:** `#32158041877`/support `#3127` bestod 673/673, fuld validering, releasegate, Supabase og Pages. Det første aktiveringsdatasæt blev hashverificeret live med credentialfri U/V-historik, DMI-first kildevalg, eksakt celle/tid/lag, nye pile og versionsstyret DMI-only rollback; `#32160090899`/support `#3129` gentog hele beviset. Kun den naturlige syvdøgnseftermåling og et gentaget visuelt browsertjek er åbne.
 
 - **ISSUE-EIGHT-LIMFJORD-REGIONAL-PROXIES – 8/8 LIVE- OG CI-VERIFICERET:** De otte eksplicitte dele bruger efter DEC-0041 kun nærmeste eksakte `dkss_lf`-par op til 15 km. Commit `5a7780e4` rettede livebyggeren til den kanoniske anchoridentitet, og `#32158041877` beviste alle otte i runtime som den sidste del af samlet 673/673. Support `#3127` viser 40 gyldige proxyprøver uden credentiallæk.

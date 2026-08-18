@@ -1,5 +1,13 @@
 # RavRadar Håndbog
 
+## Hver lokal kystdel vurderes mod sin egen kyst – 4.0.233
+
+Strømpilen viser, hvor vandet bevæger sig. Den skal derfor ikke altid pege mod land. Ved Havsande viste pilen en nordgående strøm korrekt, men tekst og RavScore kunne samtidig kalde den gunstig indtransport, fordi `Havsande – nordkyst` arvede de ældre retninger `Nord for fyret` og `Syd for fyret` fra hele Blåvand-zonen. Systemet kunne vælge den sydlige retning, selv om panelet viste nordkysten.
+
+Fra 4.0.233 har hver lokal kystdel præcis ét aktivt scoreanker: dens eget blå vandpunkt, grønne landpunkt, lokale navn og retningen fra vand mod land. Moderzonens eller en nabodels retningsankre må ikke bruges i delens score, historik, debug eller forklaring. Det betyder eksempelvis, at `Havsande – nordkyst` kun forklares og scores som `Havsande – nordkyst`; navnet `Syd for fyret` kan ikke længere optræde som dens valgte transportgrundlag.
+
+Den landsdækkende kontrol omfatter alle 673 dele. Den ændrer ikke strømværdien, pilens retning, modelcellen, kildeordenen eller kravet om 673/673. Den retter forbindelsen mellem de allerede godkendte lokale punkter og den beregning, brugeren ser.
+
 ## Supplerende strøm kører som kontrolleret live-pilot – 4.0.232-kandidat
 
 RavRadar bruger fortsat DMI som førstevalg, men ejeren har godkendt, at de verificerede supplerende strømdata går online på den nuværende ikke-offentlige udviklingsside. Når lokal DMI mangler ved en præcis time, prøver systemet Baltic NEMO og derefter AMM15 inden for 5 km. Kun for de otte udtrykkeligt godkendte Limfjordsdele må nærmeste `dkss_lf`-celle til sidst bruges som regional proxy inden for 15 km. Nærmeste komplette vandkolonne vælges før dybeste fælles lag, og der interpoleres ikke mellem Copernicus-/proxytider, celler eller lag.
@@ -170,7 +178,7 @@ En privat, score-neutral cache bruger DKSS-felter ved vandpunktet samt cirka 5 o
 
 Rotationen registrerer også, hvor langt der er til den nærmeste modelkolonne med et eksakt fælles U/V-par, selv når den ligger uden for 5 km. I det tilfælde gemmes kun koordinat, afstand og lagmetadata – ikke de fjerne strømværdier. En privat ejeroversigt skelner derfor mellem nær-tærskel 5–6 km til rent manuelt geometrireview, modelhul 6–8 km, strukturelt modelhul over 8 km og en datakædefejl, hvor gyldig strøm faktisk findes inden for 5 km. Selv en nær-tærskel-post må kun flyttes, hvis vandpunktet i sig selv er forkert – aldrig blot for at nå modelcellen. Oversigten flytter ingen punkter automatisk, og den offentlige 5 km-grænse er uændret.
 
-**Håndbogsversion:** 4.0.232
+**Håndbogsversion:** 4.0.233
 
 **Opdateret:** 18. august 2026
 

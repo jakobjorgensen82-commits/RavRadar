@@ -1,3 +1,11 @@
+## 2026-08-18 – 4.0.233 isolerer hver lokal score til eget punktpar
+
+- Ejerens seks Blåvand-billeder viste tre samtidige udsagn, der ikke kunne være sande: bedste del var `Havsande – nordkyst`, teksten valgte `Syd for fyret`, og debug viste lokal pålandsretning 117° men retningsforskel 29°.
+- Direkte audit af den aktuelle livepakke fandt nul fejl i 673 U/V-retninger, pilceller, provenance, kildeklasser og afstande. Pilen mod nord var fysisk konsistent; scorefortolkningen var ikke.
+- 216 dele i 52 zoner brugte en anden scoreretning end deres eget punktpar, og 49 aktuelle zonevindere var berørt. Rodårsagen var spredningen af `parent.properties`, som lod lokale dele arve moderzonens `directionAnchors`.
+- Ny runtimebygger erstatter ankerlisten med præcis ét lokalt anker. Regressionen gennemgår alle 673 dele og reproducerer Havsande som offshore mod nordkystens egen retning.
+- Kildeorden, strømdata, pileplacering, 168-timersopsamling og 100 %-gate ændres ikke. Central releaseverifikation afventer.
+
 ## 2026-08-18 – ejer godkender kontrolleret live-strøm og auditerbar rollback
 
 - Ejeren præciserede, at siden ikke er offentlig i udviklingsfasen. Gyldige Copernicus-/regionalproxydata inklusive U/V og nye strømpile må derfor gå online; kun loginoplysningerne er hemmelige. Det naturlige 168-timersbevis køres i den virkelige runtime i stedet for som syv dages spøgelsestest.

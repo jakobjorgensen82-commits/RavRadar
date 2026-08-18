@@ -1,4 +1,17 @@
-# Implementeringsstatus – kontrolleret supplerende live-strøm i 4.0.232
+# Implementeringsstatus – lokal retningsisolation i 4.0.233
+
+## 4.0.233 – score, historik, forklaring og kystdel deler ét punktpar
+
+- [x] Seks ejerbilleder og live detaljedata er sammenholdt. Blåvand-modsigelsen er reproduceret: `Havsande – nordkyst` havde lokal retning 117,3°, men scorede mod moderanker 29° ved `Syd for fyret`.
+- [x] Alle 673 aktuelle strømrecords er auditeret uden at ændre kilder eller dækningskrav. Der er nul U/V/retning-mismatch, nul pil/grid-mismatch, nul uverificeret provenance, nul ugyldige kildeklasser og nul afstandsbrud.
+- [x] Den systemiske scoreaudit finder 216 dele i 52 zoner, hvor den anvendte scoreretning afviger fra delens godkendte punktpar. 49 af de aktuelle 210 zonevindere er direkte berørt.
+- [x] `localPartRuntimeProperties` erstatter moderzonens retningsankre med præcis ét lokalt anker, men bevarer øvrige statiske kystegenskaber.
+- [x] Landsdækkende regression beviser 673/673 identiske punkt-, navn- og retningsidentiteter gennem scorekonstruktionen samt offshore-klassifikation for det konkrete Havsande-modbevis.
+- [x] Eksisterende score-, retningsanker- og kortpiltests består målrettet.
+- [x] RDKS-, release-, versions-, geometri- og målrettede runtimevalideringer består lokalt. Den fulde lokale kæde passerer RDKS og hele geometri-v2-kæden og stopper derefter som forventet på repositoryets forældede 209/211-vejrsnapshot; frisk datavalidering skal derfor ske centralt.
+- [ ] Commit/push, central 673/673-kørsel, releasegate, Supabase, Pages og direkte liveaudit.
+
+## Kontrolleret supplerende live-strøm i 4.0.232
 
 ## Copernicus-pilot og otte regionale Limfjordsproxyer
 

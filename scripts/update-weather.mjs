@@ -21,6 +21,7 @@ import { applyCurrentTransportToHistory } from './lib/current-transport-history.
 import { retainWeatherHistory } from './lib/weather-history-retention.mjs';
 import { buildEffectiveRoutingCacheAlerts } from './lib/water-station-routing-alerts.mjs';
 import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
+import { localPartRuntimeProperties } from './lib/local-part-runtime.mjs';
 import { mergeLiveCurrentPilotIntoRecord, verifiedLivePilotSource } from './lib/live-current-pilot.mjs';
 
 const ZONES_PATH = 'data/zones.geojson';
@@ -1019,7 +1020,7 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, liveCurre
       const bulkId = `PART::${part.partId}`;
       const feature = {
         type: 'Feature', geometry: { type: 'Point', coordinates: part.waterPoint },
-        properties: { ...parent.properties, id: bulkId, name: part.name, dataPoint: part.waterPoint, pinPoint: part.landPoint, onshoreDirectionDeg: part.onshoreDirectionDeg }
+        properties: localPartRuntimeProperties(parent.properties, part, bulkId)
       };
       const dmiRecord = bulkZoneToForecastRecord(feature, bulkCache, generatedAt, null, { startAt: partForecastStartAt });
       if (!dmiRecord) continue;
@@ -1052,7 +1053,7 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, liveCurre
         currentAlignment: Math.cos((Number(hour.currentDirectionDeg) - Number(part.onshoreDirectionDeg)) * Math.PI / 180),
         currentVerified: true
       }));
-      const zone = { ...parent.properties, id: part.partId, name: part.name, dataPoint: part.waterPoint, pinPoint: part.landPoint, onshoreDirectionDeg: part.onshoreDirectionDeg };
+      const zone = localPartRuntimeProperties(parent.properties, part, part.partId);
       const scores = [];
       for (const weather of hourly) {
         const at = Date.parse(weather.time);

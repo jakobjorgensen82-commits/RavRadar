@@ -1,6 +1,6 @@
 # DEC-0033 – Bedste lokale kystdel bestemmer zonescoren med tydelig dækningsforklaring
 
-**Status:** Aktiv produktbeslutning, 2026-08-09. Implementering og aktivering kræver fortsat særskilt validering.
+**Status:** Aktiv produktbeslutning, 2026-08-09. Landsdækkende aktiveret; 4.0.233 præciserer den bindende lokale retningsisolation.
 
 ## Beslutning
 Når en zone har flere selvstændigt validerede lokale kystdele, bestemmes zonens viste RavScore af den kystdel, der har den højeste gyldige RavScore for det valgte tidspunkt og den valgte jagtform. Resultatet må ikke fremstilles som dækkende hele zonen, hvis de øvrige dele har mærkbart dårligere eller utilstrækkeligt dokumenterede forhold.
@@ -20,10 +20,11 @@ Ved delvis dækning skal forklaringen vise, hvorfor den valgte del klarer sig be
 - Kortets zonefarve følger den valgte zonescore, men ledsages af en umiddelbart synlig delvis-dækningstekst; farven alene må ikke antyde, at hele zonen er lige god.
 - Vindende del vælges pr. tidspunkt og jagtform og kan derfor skifte. Identitet og provenance skal følge resultatet hele vejen til UI og debug.
 - Manglende lokale data må ikke erstattes af parentdata, nul, interpolation eller en anden dels data for at skabe en vinder.
+- En lokal del må heller ikke arve moderzonens retningsankre. Dens score, state/historik, debug og forklaring skal bruge præcis samme eget land-/havpunktpar og eget lokale navn; et anker fra en anden navngiven del må aldrig blive valgt som dens transportgrundlag.
 - Ligheds-, dæknings- og usikkerhedstærskler fastlægges og valideres fagligt før aktivering; de må ikke vælges alene for at give flere høje scorer.
 - Den midlertidige produktionsregel er 7 point. Den er bevidst foreløbig og skal undersøges igen i den store analyse.
 - Lokale delnavne skal være stedbaserede og forståelige uden teknisk kompasjargon, fx `Nord for Blåvands Huk`, `Syd for Hvide Sande` eller `Nord for havnemolen`. Korte former som `Nord for hukket` må kun bruges, når zonekonteksten er synlig.
 - National rangliste må gerne bruge zonescoren fra den bedste del, men zonerækken og detaljevisningen skal kunne kommunikere delvis dækning uden at kræve, at brugeren gætter.
 
 ## Afgrænsning
-Beslutningen giver ikke i sig selv tilladelse til at aktivere Blåvand-geometri, lokal sampling, state, part-score eller offentlig UI. Først leveres en forståelig visuel ejerpræsentation og derefter en shadow-validering af scorevalg og dækningsstatus.
+Den historiske før-aktiveringsafgrænsning er afsluttet af de senere nationale geometri-, DMI-, score- og releasegates. Fremtidige scoreændringer kræver fortsat særskilt validering; 4.0.233 ændrer ikke kildeorden, punktplacering eller dækningskrav, men retter identiteten mellem den allerede aktive lokale kystdel og dens beregning.
