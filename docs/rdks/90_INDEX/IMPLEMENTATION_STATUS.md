@@ -1,3 +1,17 @@
+# Implementeringsstatus – privat supplerende strømkandidat efter 4.0.231
+
+## Copernicus-pilot og otte regionale Limfjordsproxyer
+
+- [x] Begge påkrævede Copernicus Actions-secrets findes; værdierne er ikke læst eller logget.
+- [x] De aktuelle officielle dataset-id'er og U/V-variabler er katalogverificeret med Copernicus Marine Toolbox 2.4.1.
+- [x] Separat privat workflowkode henter et begrænset én-times 3D-udsnit, bruger alle 673 friske centralt hydrerede kystdele, vælger nærmeste fælles vandkolonne før dybeste fælles lag og interpolerer ikke.
+- [x] Rå U/V opbevares højst 168 timer i Actions-cache; supportrapporten fjerner rå vektorer og tester credentiallæk. `scoreImpact=false` og `publicRuntime=false` er hårde kontrakter.
+- [x] Lokal syntetisk regression beviser tør nærmeste celle, dybeste fælles lag, samme U/V-celle/-tid/-lag, 5-km-afvisning, syvdøgnspruning og sikkert rapportoutput.
+- [x] DEC-0041 og en maskinlæsbar politik afgrænser regionalproxy til præcis otte Limfjordsdele, `dkss_lf`, uændret samplingpunkt og højst 15 km. Lokal test mod #3079 består.
+- [ ] Commit og push pilotkandidaten, kør den autentificerede workflow og gennemgå dataset, afstande, lag, filstørrelse, køretid og sikre artifact.
+- [ ] Opsaml flere modelruns, før Copernicus eller regionalproxy kobles til aktiv pile-/scorepipeline.
+- [ ] Aktiv integration kræver fuld validering, releasegate, frisk produktionsworkflow og direkte livekontrol. Den almindelige produktion er fortsat DMI-only og fail-closed over 5 km.
+
 # Implementeringsstatus pr. 4.0.231 – vist scoretime og strømpil deler DMI-celle
 
 ## 4.0.231 – lokal pil beregnes efter valg af den viste scoretime

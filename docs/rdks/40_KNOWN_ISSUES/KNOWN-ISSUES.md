@@ -1,5 +1,9 @@
 # Kendte åbne og overvågede forhold
 
+- **ISSUE-COPERNICUS-CURRENT-PILOT – LOKALT IMPLEMENTERET / AFVENTER AUTENTIFICERET CI:** Den separate workflowkandidat bruger Copernicus Marine Toolbox, friske centralt hydrerede 673 kystdele, samme-celle/-tid/-lag U/V, nærmeste vandkolonne før dybeste fælles lag, højst 5 km, 168 timers privat cache og sikre reports uden credentials eller rå vektorer. Lokale deterministiske tests består; ingen offentlig runtime eller score er ændret. Første autentificerede workflowrun mangler.
+
+- **ISSUE-EIGHT-LIMFJORD-REGIONAL-PROXIES – EJERGODKENDT / IKKE AKTIVERET:** Hanklit, Harbo Odde, Knudeklinter, Stenerodde, Aggersborgrimme, Løgstør, Petersborg og `DK-B05-20` må efter DEC-0041 bruge nærmeste eksakte `dkss_lf`-par op til 15 km. Den målte spændvidde er 5,416–12,110 km. Allowlisten og samplingpunkterne er testet mod #3079-artifactet; aktiv pipeline-, pil-, score- og produktionsvalidering mangler.
+
 - **ISSUE-LOCAL-CURRENT-ARROW-USED-BUILD-TIME – LOKALT RETTET I 4.0.231 / AFVENTER CI:** #2876 viste én lokal pil/grid-afvigelse ved `PART::dk-b04-12-owner-approved-01`. Scoreposten brugte verificeret NSBS-strøm kl. 12, men `flowPoints` var beregnet ved byggetiden kl. 06:25, hvor strøm manglede, og faldt tilbage til vandpunktet. Runtime vælger nu den viste score først og beregner pilen ved præcis scoretiden. En datagabsregression beskytter kontrakten; frisk central nul-mismatch-audit mangler.
 
 - **ISSUE-CURRENT-SCALAR-MODEL-BLOCKED-NEAREST-UV – CI-VERIFICERET RETTET I #2876 / AFVENTER DEPLOY:** #2872 fandt Havknudes eksakte fælles NSBS-U/V-kolonne 2,804 km fra vandpunktet, mens offentlig runtime var `missing`. Ét globalt `marineSelection` lod et IDW-skalarpunkt 5,131 km væk med bedre kysttypeprioritet blokere strømmen. #2876 genbehandlede NSBS med semantik v3 og gav Havknude 38 native tider fra cellen 2,80363 km væk. Fuld national gate og deploy afventer fortsat Limfjordsgenopbygningen og 4.0.231-efterkontrollen.

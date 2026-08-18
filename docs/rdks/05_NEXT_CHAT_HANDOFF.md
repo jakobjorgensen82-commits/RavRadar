@@ -2,9 +2,15 @@
 
 ## Start her
 
-Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde samt DEC-0024, DEC-0029, DEC-0030, DEC-0031, DEC-0037, DEC-0038, DEC-0039 og DEC-0040. Kontrollér derefter gitstatus, seneste commit og GitHub Actions.
+Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde samt DEC-0024, DEC-0029, DEC-0030, DEC-0031, DEC-0037, DEC-0038, DEC-0039, DEC-0040 og DEC-0041. Kontrollér derefter gitstatus, seneste commit og GitHub Actions.
 
 ## Aktuel sandhed
+
+- Nyeste arbejde er en privat, endnu upushet Copernicus-kandidat efter 4.0.231. Den offentlige app er fortsat DMI-only; ingen supplerende strøm eller regionalproxy er aktiv.
+- #3079 efter ejerens fulde centrale punktgennemgang gav 622/673 lokale DMI-strømpunkter. Alle 51 mangler er auditeret.
+- Direkte officiel rågridtest gav Baltic-par til 39/51 og AMM15-par til yderligere fire; to AMM15-celler er `surface-only`. En separat Toolbox-workflow skal nu bekræfte tallene autentificeret på friske centrale punkter og over flere runs.
+- DEC-0041 og `data/current-regional-proxy-policy.json` tillader efter fulde gates kun otte vestlige Limfjordsdele at bruge nærmeste `dkss_lf`-par op til 15 km. Policytesten består mod #3079; aktiv pipeline mangler.
+- Næste konkrete opgave er commit/push af den private pilot, kørsel af `validate-copernicus-current-pilot.yml` og artifactaudit. Intet kobles til score/pile før flerruns-stabilitet og alle aktiveringsgates.
 
 - 4.0.230 er den lokale kandidat; 4.0.228 er stadig seneste produktionsverificerede release. #2872 viste, at Havknude havde gyldig NSBS-strøm 2,804 km væk, men blev blokeret af det gamle fælles havmodelvalg, fordi IDW var valgt til skalare felter 5,131 km væk.
 - Strøm vælges nu pr. native tid på tværs af alle aktive DKSS-collections, uafhængigt af vandstand/temperatur: nærmeste komplette U/V-kolonne først, dybeste lag i samme kolonne bagefter. Parser v18/semantik v3 genopbygger gammel strøm selektivt.

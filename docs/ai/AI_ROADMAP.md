@@ -1,5 +1,14 @@
 # AI Roadmap – RavRadar 4.0.231
 
+## Aktuelt P1-spor 2026-08-18 – supplerende strøm uden skjult lempelse
+
+- Bevar offentlig DMI-first-adfærd, mens en separat score-neutral Copernicus-pilot validerer Baltic NEMO og AMM15 på de friske centralt hydrerede 673 kystdele.
+- Første pilottrin er ét aktuelt 3D-tidssnit med eksakt U/V i samme celle og lag, højst 5 km og nul interpolation. Derefter udvides kun de valgte celler til flere forecasttider/modelruns, så datamængde og workflowtid holdes målbar.
+- Gem højst 168 timers private råprøver. Offentligt/sikkert bevis må kun indeholde produkt, tidspunkt, grid, lag, afstand, kvalitetsklasse og antal; credentials og rå U/V må ikke nå artifact eller Pages.
+- Efter stabil pilot er kilderækkefølgen DMI ≤5 km → Baltic ≤5 km → AMM15 ≤5 km. AMM15-punkter med kun 0 m lag forbliver særskilt `surface-only` og må ikke fremstilles som bundnære.
+- De otte sidste vestlige Limfjordsdele har en separat ejerallowlist: kun `dkss_lf`, uændret samplingpunkt, samme Limfjord og højst 15 km. Ingen global distanceoverride eller automatisk tilføjelse er tilladt. Se DEC-0041.
+- Aktiv pile-/scoreintegration begynder først efter autentificeret CI, flerruns-stabilitet, fuld validering og releasegate. Den senere DEC-0029-analyse skal kunne skelne lokale data fra regionalproxy og hele det ydre strømfelt.
+
 ## 4.0.231 – samme tidspunkt styrer lokal score og strømpil
 
 - Semantik-v3-genopbygningen er progressiv: #2875 behandlede IDW, og #2876 behandlede NSBS. Havknude har nu 38 native strømtrin fra cellen 2,80363 km væk. Den samlede dækning er foreløbig 182/210 hovedzoner og 574/673 kystdele; Limfjord skal stadig genopbygges.

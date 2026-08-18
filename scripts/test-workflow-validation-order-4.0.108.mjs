@@ -5,9 +5,9 @@ const workflowDirectory = '.github/workflows';
 const workflowFiles = fs.readdirSync(workflowDirectory)
   .filter((name) => /\.ya?ml$/i.test(name))
   .sort();
-const expectedWorkflowFiles = ['extract-private-geodanmark-layer.yml', 'retry-national-admin-roundtrip.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-local-part-system-candidate.yml', 'validate-six-zone-recovery.yml'];
+const expectedWorkflowFiles = ['extract-private-geodanmark-layer.yml', 'retry-national-admin-roundtrip.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-six-zone-recovery.yml'];
 if (JSON.stringify(workflowFiles) !== JSON.stringify(expectedWorkflowFiles)) {
-  throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun produktionsworkflowet og de registrerede private, ikke-deployerende geometriworkflows må være aktive.`);
+  throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun produktionsworkflowet og de registrerede private, ikke-deployerende workflows må være aktive.`);
 }
 for (const privateName of expectedWorkflowFiles.filter(name => name !== 'update-and-deploy.yml')) {
   const privateWorkflow = fs.readFileSync(`${workflowDirectory}/${privateName}`, 'utf8');
@@ -15,6 +15,23 @@ for (const privateName of expectedWorkflowFiles.filter(name => name !== 'update-
     throw new Error(`${privateName} må ikke kunne deploye Pages.`);
   }
 }
+const copernicusPilot = fs.readFileSync(`${workflowDirectory}/validate-copernicus-current-pilot.yml`, 'utf8');
+for (const marker of [
+  'workflow_dispatch:',
+  'permissions:\n  contents: read',
+  'COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}',
+  'COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}',
+  'python scripts/test-copernicus-current-pilot.py',
+  'python scripts/test-current-regional-proxy-policy.py',
+  'python scripts/run-copernicus-current-pilot.py',
+  'data/diagnostics/copernicus-current-pilot.json',
+  'retention-days: 7',
+]) {
+  if (!copernicusPilot.includes(marker)) throw new Error(`Den private Copernicus-pilot mangler ${marker}`);
+}
+if (/\b(?:push|schedule|pull_request):/.test(copernicusPilot)) throw new Error('Copernicus-piloten må kun kunne startes manuelt.');
+const copernicusUpload = copernicusPilot.slice(copernicusPilot.indexOf('- name: Upload private support evidence'));
+if (copernicusUpload.includes('.cache/')) throw new Error('Den rå Copernicus-cache må ikke uploades som supportartefakt.');
 const text = fs.readFileSync(path, 'utf8').replace(/\r\n/g, '\n');
 const positions = {
   hydrate: text.indexOf('name: Hydrate latest deployed weather state'),

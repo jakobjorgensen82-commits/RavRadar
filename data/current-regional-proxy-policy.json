@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "status": "private-pilot-owner-approved-after-gates",
+  "decidedAt": "2026-08-18T10:25:00Z",
+  "regularMaximumDistanceKm": 5,
+  "regionalProxyMaximumDistanceKm": 15,
+  "selectionRule": "nearest-exact-shared-uv-column-then-deepest-common-layer",
+  "requiredCollection": "dkss_lf",
+  "sameConnectedWaterBody": "Limfjorden",
+  "interpolation": false,
+  "globalOverrideAllowed": false,
+  "scoreImpact": false,
+  "publicRuntime": false,
+  "activationRequires": [
+    "fresh-dmi-and-copernicus-pilot",
+    "same-time-cell-layer-provenance",
+    "full-project-validation",
+    "release-gate",
+    "fresh-production-workflow"
+  ],
+  "parts": [
+    {
+      "partId": "dk-b05-12-national-part-01",
+      "name": "Hanklit",
+      "approvedSamplingPoint": [8.7023271, 56.8922937],
+      "auditDistanceKm": 5.42878
+    },
+    {
+      "partId": "dk-b05-17-national-part-03",
+      "name": "Harbo Odde",
+      "approvedSamplingPoint": [8.9834498, 56.7994019],
+      "auditDistanceKm": 8.02035
+    },
+    {
+      "partId": "dk-b05-17-national-part-02",
+      "name": "Knudeklinter",
+      "approvedSamplingPoint": [9.0068744, 56.7944235],
+      "auditDistanceKm": 8.48651
+    },
+    {
+      "partId": "dk-b05-17-national-part-04",
+      "name": "Stenerodde",
+      "approvedSamplingPoint": [9.0337645, 56.8023004],
+      "auditDistanceKm": 5.4158
+    },
+    {
+      "partId": "dk-b05-18-national-part-02",
+      "name": "Aggersborgrimme",
+      "approvedSamplingPoint": [9.258383962626155, 56.9820339049709],
+      "auditDistanceKm": 5.44991
+    },
+    {
+      "partId": "dk-b05-18-national-part-03",
+      "name": "Løgstør",
+      "approvedSamplingPoint": [9.264221376897154, 56.97464362024522],
+      "auditDistanceKm": 7.83104
+    },
+    {
+      "partId": "dk-b05-18-national-part-05",
+      "name": "Petersborg",
+      "approvedSamplingPoint": [9.27469309187314, 56.975672735123716],
+      "auditDistanceKm": 7.97416
+    },
+    {
+      "partId": "dk-b05-20-owner-approved-01",
+      "name": "DK-B05-20",
+      "approvedSamplingPoint": [9.3406477, 57.0037375],
+      "auditDistanceKm": 12.10954
+    }
+  ]
+}

@@ -1,5 +1,14 @@
 # Aktuelt sessionshandoff – 2026-08-16
 
+## Handoff 2026-08-18 – Copernicus-pilot under opbygning
+
+- Arbejd i den rene worktree `C:\Users\jakob\AppData\Local\Temp\ravradar-40232-current`; ejerens oprindelige workspace er fortsat dirty og må ikke overskrives.
+- `main`/`origin/main` var ved start `a8eaa9ca` (4.0.231-handoff). Grenen er `codex/current-coverage-4.0.232`.
+- Begge Copernicus Actions-secrets findes. Deres værdier er ikke læst eller vist.
+- Ny privat workflowkandidat, kravfil, downloader/selector, cache-retention og regressioner er lokale og upushede. Piloten bruger de aktuelle officielle Baltic/AMM15-datasæt, ét afgrænset 3D-tidssnit, samme-celle/-tid/-lag U/V, højst 5 km, nul interpolation og 168 timers privat cache.
+- `data/current-regional-proxy-policy.json` har præcis otte ejerbesluttede vestlige Limfjordsdele. Kun `dkss_lf`, samme samplingpunkt og højst 15 km er tilladt; policytesten består mod #3079-artifactets centralt hydrerede `coastal-parts-v2.json`.
+- Lokale Copernicus-selektions-/retentionstests består i et isoleret Toolbox 2.4.1-miljø. Den autentificerede GitHub-pilot er næste obligatoriske bevis; intet må kobles til offentlig score eller pile før den og efterfølgende flerruns-gates.
+
 ## Aktiv 4.0.231-kandidat – vist lokal scoretime og pil deler DMI-celle
 
 - Commit `7dd1fbf2aaa7f037395a5d38c8003c09ba1dac67` med 4.0.230 er pushed til `main`. #2875 genopbyggede IDW og #2876 NSBS under parser v18/semantik v3; ingen gate blev lempet, og begge runs stoppede før Supabase/Pages på den strenge strømaudit.

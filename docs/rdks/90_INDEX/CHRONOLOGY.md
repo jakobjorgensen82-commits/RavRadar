@@ -1,5 +1,14 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-18 – supplerende strøm og afgrænset Limfjordsproxy
+
+1. Ejeren afsluttede den manuelle rettelse af land-/vandpunkter og vandstandsrouting. Frisk central #3079 gav 622/673 lokale DMI-strømpunkter; alle 51 mangler blev auditeret.
+2. Direkte officielle gittertests fandt fælles bundnære Baltic U/V-par inden for 5 km til 39 mangler og AMM15-par til yderligere fire vestkystpunkter. To AMM15-celler havde kun 0 m som dybeste tilgængelige lag.
+3. Otte resterende modelhuller lå i den vestlige Limfjord. Nærmeste observerede `dkss_lf`-par lå 5,416–12,110 km væk.
+4. Ejeren besluttede, at disse otte hellere skal bruge nærmeste tilgængelige strøm end stå uden strøm, og oprettede en gratis Copernicus-konto samt de to påkrævede GitHub Actions-secrets.
+5. DEC-0041 fortolker beslutningen fail-safe som en eksplicit allowlist og et 15-km-loft, som dækker alle otte uden at skabe en global ubegrænset regel. Alle øvrige dele og alle Copernicus-kilder beholder 5-km-grænsen.
+6. En separat privat pilotkandidat bruger den officielle Toolbox, friske centrale punkter, samme-celle/-tid/-lag U/V, nul interpolation, 168 timers retention og sikre reports uden credentials eller rå vektorer. Lokal test består; autentificeret CI og aktiv integration afventer.
+
 ## 2026-08-16 – 4.0.229 strømsted, bundlag og privat feltgrundlag
 
 1. Ejerens kortkontrol viste blå strømpile over land og krævede bevis for både placering og den anvendte strøm.

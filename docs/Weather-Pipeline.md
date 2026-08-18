@@ -2,6 +2,12 @@
 
 Prioritet: DMI → Open-Meteo Marine → MET Norway → cache.
 
+## Supplerende 3D-strøm og regional proxy (privat kandidat efter 4.0.231)
+
+Den almindelige aktive kontrakt nedenfor er fortsat uændret i produktion. En separat privat workflowkandidat undersøger først Copernicus Baltic NEMO og derefter AMM15 for kystdele, hvor DMI ikke har et eksakt fælles U/V-par inden for 5 km. Piloten bruger officielle timebaserede 3D-datasæt, vælger nærmeste fælles U/V-vandkolonne og derefter dybeste fælles lag uden interpolation. Rå vektorer opbevares højst 168 timer i privat Actions-cache; supportrapporten indeholder kun kilde, tid, grid, lag, afstand og antal og kan ikke påvirke score eller offentlig runtime.
+
+Otte dokumenterede modelhuller i den vestlige Limfjord har en særskilt ejerbeslutning. Efter fulde aktiveringsgates må kun disse dele bruge nærmeste `dkss_lf`-kolonne op til 15 km som `regional-proxy`. Det er ikke en global afstandslempelse. Et ændret samplingpunkt invaliderer godkendelsen, og pilen skal stå på den faktiske modelcelle. Se DEC-0041 og `data/current-regional-proxy-policy.json`.
+
 ## Strømsted, dybdelag og vist scoretime (4.0.231)
 
 Administratorens centralt gemte vandpunkt er samplinganker for både DMI-strøm, den viste strømpil og den aktive scores lokale strømgrundlag. For hvert native forecasttidspunkt finder parseren først den nærmeste vandkolonne med et gyldigt fælles U/V-par på tværs af alle aktive DKSS-collections og vælger derefter det dybeste gyldige lag i præcis den kolonne. Et dybere lag længere væk må aldrig vinde. Op til 3 km er foretrukket; 3–5 km er accepteret reserve; større afstand bliver manglende data.

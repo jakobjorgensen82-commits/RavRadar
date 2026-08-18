@@ -1,5 +1,13 @@
 # RavRadar Håndbog
 
+## Supplerende strøm afprøves privat – kandidat efter 4.0.231
+
+RavRadar bruger fortsat kun den verificerede DMI-kæde i den offentlige score og på kortet. En separat privat pilot afprøver nu to officielle tredimensionelle Copernicus-havmodeller som supplement, når DMI mangler et fælles strømpar tæt på kystpunktet. Piloten vælger først nærmeste vandkolonne med både øst-vest- og nord-syd-strøm på samme tidspunkt og vælger derefter det dybeste fælles lag i netop denne kolonne. Der interpoleres ikke mellem celler eller lag, og Copernicus-afstanden er fortsat højst 5 km.
+
+Pilotdata opbevares højst syv døgn og påvirker hverken RavScore, offentlige pile eller historik. En sikker rapport må vise kilde, tidspunkt, grid, dybde, afstand og kvalitetsklasse, men ikke loginoplysninger eller rå strømvektorer. Særligt lavvandede celler med kun overfladelag mærkes `surface-only` og må ikke fremstilles som bundnære.
+
+Otte dokumenterede modelhuller i den vestlige Limfjord har en særskilt ejerbeslutning. Når alle gates senere er bestået, må kun disse otte bruge nærmeste eksakte DMI-Limfjordsstrøm som tydeligt mærket regional proxy op til 15 km. Alle andre områder beholder 5-km-grænsen. Pilen skal fortsat stå på den faktiske modelcelle, og et ændret administratorpunkt kræver ny kontrol.
+
 ## Den lokale strømpil følger den scoretime, der faktisk vises – 4.0.231
 
 En lokal kystdel kan mangle verificeret strøm omkring byggetidspunktet, men have et senere gyldigt DMI-tidspunkt, som bliver den nærmeste scorepost på kortet. Tidligere blev scoren og pilens sted valgt i to forskellige rækkefølger: scoren kunne være fra den senere gyldige time, mens pilen blev forsøgt placeret ved byggetiden og derfor faldt tilbage til det blå vandpunkt.

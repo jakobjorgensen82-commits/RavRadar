@@ -1,3 +1,12 @@
+## 2026-08-18 – privat supplerende strømkandidat og afgrænset Limfjordsproxy
+
+- Ejerens fulde centrale punktgennemgang gav i #3079 622/673 lokale DMI-strømpunkter; alle 51 mangler er eftermålt.
+- Direkte officiel kildetest fandt 39/51 mangler med Baltic U/V inden for 5 km og fire yderligere med AMM15. To AMM15-punkter er eksplicit `surface-only`. Resultatet er endnu ikke en flerruns produktionsgaranti.
+- Ejeren oprettede de to Copernicus Actions-secrets. Kun navn og oprettelsestid blev kontrolleret; værdier blev ikke læst.
+- En separat privat pilotkandidat bruger Toolbox, friske centrale kystdele, samme-celle/-tid/-lag U/V, nærmeste vandkolonne før dybeste fælles lag, nul interpolation, 168 timers retention og supportoutput uden rå vektorer eller credentials.
+- DEC-0041 indfører efter fremtidige aktiveringsgates en eksplicit regional `dkss_lf`-proxy for Hanklit, Harbo Odde, Knudeklinter, Stenerodde, Aggersborgrimme, Løgstør, Petersborg og `DK-B05-20`. Højeste tilladte afstand er 15 km; målte afstande var 5,416–12,110 km. Alle andre dele beholder 5-km-grænsen.
+- Lokale deterministiske tests og policytest mod #3079 består. Intet er endnu aktivt, deployet eller produktionsverificeret.
+
 ## 2026-08-16 – 4.0.231 binder den lokale pil til den viste scoretime
 
 - #31930644562/#2875 genopbyggede IDW under semantik v3 og stoppede korrekt ved 114/210 hovedzoner og 414/673 lokale dele uden deploy. #31930976129/#2876 genopbyggede derefter NSBS og nåede 182/210 samt 574/673; Limfjord afventer.

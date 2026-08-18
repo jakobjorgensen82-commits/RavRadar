@@ -1,0 +1,108 @@
+name: Validate private Copernicus current pilot
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: private-copernicus-current-pilot
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-copernicus.txt
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install central geometry and Copernicus dependencies
+        run: |
+          python -m pip install --disable-pip-version-check "shapely>=2.0,<3" "pyproj>=3.6,<4"
+          python -m pip install --disable-pip-version-check -r requirements-copernicus.txt
+
+      - name: Rebuild the latest centrally approved sampling points
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          python scripts/refine-coastlines-constrained-4.0.48.py
+          python scripts/sync-admin-config.py
+          python scripts/apply-central-zone-reviews.py
+          node scripts/build-public-coastal-parts-v2.mjs
+
+      - name: Verify Copernicus secrets are configured
+        env:
+          COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
+          COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
+        run: |
+          test -n "$COPERNICUSMARINE_SERVICE_USERNAME"
+          test -n "$COPERNICUSMARINE_SERVICE_PASSWORD"
+
+      - name: Run deterministic pilot tests
+        run: |
+          python scripts/test-copernicus-current-pilot.py
+          python scripts/test-current-regional-proxy-policy.py
+
+      - name: Restore private seven-day Copernicus shadow cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/copernicus-current-shadow.json
+          key: copernicus-current-shadow-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            copernicus-current-shadow-v1-
+
+      - name: Run authenticated score-neutral current pilot
+        env:
+          COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
+          COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
+        run: python scripts/run-copernicus-current-pilot.py
+
+      - name: Save private seven-day Copernicus shadow cache
+        if: success()
+        uses: actions/cache/save@v4
+        with:
+          path: .cache/copernicus-current-shadow.json
+          key: copernicus-current-shadow-v1-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Reject secret or raw-vector leakage from support report
+        env:
+          COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
+          COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
+        run: |
+          python - <<'PY'
+          import json, os, pathlib
+          path=pathlib.Path('data/diagnostics/copernicus-current-pilot.json')
+          text=path.read_text(encoding='utf-8')
+          data=json.loads(text)
+          assert data['scoreImpact'] is False and data['publicRuntime'] is False
+          assert not any('uMps' in row or 'vMps' in row for row in data['verifiedTargets'])
+          for name in ('COPERNICUSMARINE_SERVICE_USERNAME','COPERNICUSMARINE_SERVICE_PASSWORD'):
+              value=os.environ.get(name,'')
+              assert value and value not in text
+          print('Safe support report: no credentials and no raw U/V values')
+          PY
+
+      - name: Upload private support evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: copernicus-current-pilot-${{ github.run_number }}
+          if-no-files-found: error
+          retention-days: 7
+          path: |
+            data/diagnostics/copernicus-current-pilot.json
+            data/diagnostics/copernicus-current-pilot.txt
