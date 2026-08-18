@@ -23,6 +23,7 @@
 19. Forsinket native `#32146584311` tilføjede 14 UTC og gav fire tider/2.516 records uden stabilitets- eller lækagefejl. Automatisk heartbeat `#32146699458` ventede på samme concurrencygruppe, ramte cachen og sprang dubletdispatch over. Manglende-time-grenen afventer næste UTC-time.
 20. Pushrun `#32146695718` bestod heartbeat-, cache-, retention- og fulddækningsregressionerne centralt. Faktiske 622/673 stoppede fortsat releasegate, Supabase og Pages.
 21. Efteraudit af dubletreglen viste, at “timen findes” ikke beviser, at den blev hentet til de nuværende centrale vandpunkter. 4.0.232 binder derfor hver afsluttet time til SHA-256 af alle del-ID'er/parentzoner/vandpunkter og et eksakt recordantal. Flyttet punkt, legacycache eller ufuldstændig time genindsamles samlet; lokal regression består, central migration afventer.
+22. `#32149556595` fandt automatisk legacycachen og kørte dispatchjobbet. Den startede pilot `#32149592195` hydrerede 673 punkter, genindsamlede 14 UTC og gemte ny manifestcache med fire tider/2.516 records uden læk. `#32149552657` bestod de nye normale regressioner og stoppede igen på 622/673 før release/Supabase/Pages.
 
 ## 2026-08-16 – 4.0.229 strømsted, bundlag og privat feltgrundlag
 

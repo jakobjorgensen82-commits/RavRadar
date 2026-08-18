@@ -41,9 +41,9 @@
 - [x] Lokal heartbeat-, pilot- og workflowinventarregression består for manglende, forældet, aktuel og usikker cache uden rå U/V-log.
 - [x] `#32146584311` udvidede cachen til 2.516 records ved 11–14 UTC uden gitter-/lagskift eller supportlæk. Automatisk heartbeat `#32146699458` ventede korrekt, ramte den nye cache og sprang dispatch over, fordi aktuel time allerede fandtes.
 - [x] Pushrun `#32146695718` bestod heartbeat-, cache-, retention- og 100 %-regressionerne centralt og stoppede derefter korrekt på faktiske 622/673 uden releasegate, Supabase eller Pages.
-- [x] Lokalt: afsluttede timer har nu et SHA-256-fingeraftryk af alle centralt hydrerede del-ID'er og vandpunkter samt forventet recordantal. Samme time/samme geometri springes over; samme time/flyttet punkt, legacycache eller ufuldstændigt recordantal genindsamles og erstattes samlet.
-- [ ] CI-verificér den geometribundne dubletkontrol og migrér den eksisterende legacycache gennem én frisk privat pilot. Bevar manglende-time-dispatch som selvstændigt driftsbevis.
-- [ ] Bekræft automatisk centralt manglende-time-dispatch og efterfølgende udvidet cache ved næste UTC-time. GitHubs native schedule er herefter kun reservebevis, ikke eneste driftstrigger.
+- [x] Afsluttede timer har et SHA-256-fingeraftryk af alle centralt hydrerede del-ID'er og vandpunkter samt forventet recordantal. Samme time/samme geometri springes over; samme time/flyttet punkt, legacycache eller ufuldstændigt recordantal genindsamles og erstattes samlet. Ældre poster for flyttede dele fjernes selektivt.
+- [x] `#32149556595` beviser automatisk legacycache-detektion og dispatch. Pilot `#32149592195` migrerede 14 UTC til nyt manifest og ny cache med fire tider/2.516 records uden læk; `#32149552657` bestod de nye regressioner før det forventede 622/673-stop.
+- [x] Automatisk centralt manglende/legacy-time-dispatch er bevist i `#32149556595` → `#32149592195`. Næste nye UTC-time skal fortsat vise almindelig naturlig udvidelse; GitHubs native schedule er kun reserve, ikke eneste driftstrigger.
 
 # Implementeringsstatus pr. 4.0.231 – vist scoretime og strømpil deler DMI-celle
 
