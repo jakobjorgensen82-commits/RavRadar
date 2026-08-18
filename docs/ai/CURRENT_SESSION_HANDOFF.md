@@ -5,9 +5,9 @@
 - Arbejd i den rene worktree `C:\Users\jakob\AppData\Local\Temp\ravradar-40232-current`; ejerens oprindelige workspace er fortsat dirty og må ikke overskrives.
 - `main`/`origin/main` var ved start `a8eaa9ca` (4.0.231-handoff). Grenen er `codex/current-coverage-4.0.232`.
 - Begge Copernicus Actions-secrets findes. Deres værdier er ikke læst eller vist.
-- Ny privat workflowkandidat, kravfil, downloader/selector, cache-retention og regressioner er lokale og upushede. Piloten bruger de aktuelle officielle Baltic/AMM15-datasæt, ét afgrænset 3D-tidssnit, samme-celle/-tid/-lag U/V, højst 5 km, nul interpolation og 168 timers privat cache.
+- Commit `0c01009033bfb36ec0f7ef0101ccc19e4ea2eaf3` er fast-forwardet til `main`. Den private workflow bruger de aktuelle officielle Baltic/AMM15-datasæt, ét afgrænset 3D-tidssnit pr. time, samme-celle/-tid/-lag U/V, højst 5 km, nul interpolation og 168 timers privat cache.
 - `data/current-regional-proxy-policy.json` har præcis otte ejerbesluttede vestlige Limfjordsdele. Kun `dkss_lf`, samme samplingpunkt og højst 15 km er tilladt; policytesten består mod #3079-artifactets centralt hydrerede `coastal-parts-v2.json`.
-- Lokale Copernicus-selektions-/retentionstests består i et isoleret Toolbox 2.4.1-miljø. Den autentificerede GitHub-pilot er næste obligatoriske bevis; intet må kobles til offentlig score eller pile før den og efterfølgende flerruns-gates.
+- Autentificeret privat run `#32129799346` bestod på Toolbox 2.4.1: 39/51 DMI-huller fik Baltic og yderligere fire AMM15, så potentialet er 665/673. Præcis allowlistens otte Limfjordsdele mangler fortsat. Ingen af de 43 var kun overfladelag ved 11:00Z. Pushrun `#32129778162` stoppede korrekt ved den uændrede strømgate på 622/673 og deployede ikke. Timeplan ved minut 17 samler nu flerruns-bevis; intet kobles til offentlig score eller pile før efterfølgende gates.
 
 ## Aktiv 4.0.231-kandidat – vist lokal scoretime og pil deler DMI-celle
 

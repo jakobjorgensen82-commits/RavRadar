@@ -6,6 +6,8 @@ Prioritet: DMI → Open-Meteo Marine → MET Norway → cache.
 
 Den almindelige aktive kontrakt nedenfor er fortsat uændret i produktion. En separat privat workflowkandidat undersøger først Copernicus Baltic NEMO og derefter AMM15 for kystdele, hvor DMI ikke har et eksakt fælles U/V-par inden for 5 km. Piloten bruger officielle timebaserede 3D-datasæt, vælger nærmeste fælles U/V-vandkolonne og derefter dybeste fælles lag uden interpolation. Rå vektorer opbevares højst 168 timer i privat Actions-cache; supportrapporten indeholder kun kilde, tid, grid, lag, afstand og antal og kan ikke påvirke score eller offentlig runtime.
 
+Workflowen kører ved minut 17 hver time og kan også startes manuelt. Første autentificerede run `#32129799346` ved 2026-08-18 11:00Z bestod og fandt 39 Baltic- samt fire AMM15-par blandt de 51 DMI-huller, altså et kombineret potentiale på 665/673 før regionalproxy. Ingen af de 43 var `surface-only` i dette run. Timeplanen er observationsopsamling, ikke produktionsaktivering.
+
 Otte dokumenterede modelhuller i den vestlige Limfjord har en særskilt ejerbeslutning. Efter fulde aktiveringsgates må kun disse dele bruge nærmeste `dkss_lf`-kolonne op til 15 km som `regional-proxy`. Det er ikke en global afstandslempelse. Et ændret samplingpunkt invaliderer godkendelsen, og pilen skal stå på den faktiske modelcelle. Se DEC-0041 og `data/current-regional-proxy-policy.json`.
 
 ## Strømsted, dybdelag og vist scoretime (4.0.231)

@@ -4,9 +4,10 @@
 
 - Frisk central #3079 efter ejerens fulde punktgennemgang gav 198/210 hovedzoner og 622/673 lokale dele med verificeret DMI-U/V inden for 5 km. Alle 51 lokale mangler er besøgt af coverage-auditten.
 - Officiel rågridtest viser et supplementpotentiale: Copernicus Baltic havde eksakt fælles U/V inden for 5 km til 39 af de 51 mangler, og AMM15 havde fire yderligere vestkystpar. To af AMM15-parrene havde kun 0 m som dybeste tilgængelige lag. Tallene er et enkelt tids-/gitterbevis og ikke en stabil produktionsgaranti.
-- Begge Copernicus-secrets findes i GitHub. En separat workflowkandidat bruger den officielle Toolbox, friske centralt hydrerede punkter, højst 5 km, samme-celle/-tid/-lag U/V, 168 timers privat cache og supportoutput uden credentials eller rå vektorer. Den er endnu ikke kørt autentificeret i CI og påvirker ikke offentlig runtime eller score.
+- Begge Copernicus-secrets findes i GitHub. Privat autentificeret run `#32129799346` brugte Toolbox 2.4.1 og friske centrale punkter. Det bekræftede 39 Baltic + 4 AMM15 blandt de 51 DMI-huller, så kombineret potentiale er 665/673. Alle 43 havde dybere fælles lag ved 11:00Z. Piloten kører privat hver time med højst 168 timers cache og supportoutput uden credentials eller rå vektorer; den påvirker ikke offentlig runtime eller score.
 - Ejeren har besluttet en afgrænset regional fallback for de sidste otte vestlige Limfjordsdele. `data/current-regional-proxy-policy.json` tillader kun disse, kun `dkss_lf`, kun uændret samplingpunkt og højst 15 km. Det målte spænd er 5,416–12,110 km. Allowlisten er lokaltestet mod #3079, men endnu ikke aktiveret.
 - Den planlagte rækkefølge efter alle gates er DMI ≤5 km → Copernicus Baltic ≤5 km → AMM15 ≤5 km → regional `dkss_lf`-proxy for de otte dele ≤15 km. Se DEC-0041. Indtil aktivering er den nuværende offentlige DMI-kontrakt uændret.
+- Pushrun `#32129778162` stoppede korrekt før release/deploy på den uændrede strømgate: 12 hovedzoner og 51 lokale dele manglede DMI, og dækningen var 622/673. Gaten er ikke lempet.
 
 ## 4.0.231 – lokal strømpil bindes til den faktisk viste scoretime
 

@@ -2,14 +2,14 @@
   "schemaVersion": "2.0",
   "handbookVersion": "4.0.231",
   "title": "RavRadar Håndbog",
-  "updatedAt": "2026-08-18T12:45:00+02:00",
+  "updatedAt": "2026-08-18T13:15:00+02:00",
   "sections": [
     {
       "id": "supplementary-current-private-pilot-2026-08-18",
       "chapter": "87",
       "title": "Supplerende strøm afprøves privat og fail-closed",
       "summary": "Copernicus og otte afgrænsede Limfjordsproxyer kan først nå pile og score efter særskilte datagates.",
-      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> RavRadar undersøger flere officielle 3D-strømkilder, men den offentlige app bruger fortsat kun den verificerede DMI-kæde.</div><p>Den private pilot prøver først Baltic NEMO og derefter AMM15, når DMI mangler lokalt. U og V skal komme fra samme produkt, tidspunkt, gittercelle og dybdelag. RavRadar vælger nærmeste gyldige vandkolonne før dybeste fælles lag, interpolerer ikke og accepterer højst 5 km. Data opbevares højst syv døgn med <code>scoreImpact=false</code> og <code>publicRuntime=false</code>.</p><p>Otte dokumenterede modelhuller i den vestlige Limfjord har en særskilt ejerallowlist. Efter alle aktiveringsgates må kun disse bruge nærmeste eksakte <code>dkss_lf</code>-par som regional proxy op til 15 km. Alle øvrige dele beholder 5-km-grænsen. Pilen står på den faktiske modelcelle, og et ændret administratorpunkt kræver ny kontrol.</p><div class=\"callout\"><strong>Ærlig kvalitet:</strong> Regional proxy mærkes som regional, og AMM15-celler med kun 0 m lag mærkes <code>surface-only</code>. Ingen af delene må fremstilles som en lokal bundmåling.</div>"
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> RavRadar undersøger flere officielle 3D-strømkilder, men den offentlige app bruger fortsat kun den verificerede DMI-kæde.</div><p>Den private pilot prøver først Baltic NEMO og derefter AMM15, når DMI mangler lokalt. U og V skal komme fra samme produkt, tidspunkt, gittercelle og dybdelag. RavRadar vælger nærmeste gyldige vandkolonne før dybeste fælles lag, interpolerer ikke og accepterer højst 5 km. Data opbevares højst syv døgn med <code>scoreImpact=false</code> og <code>publicRuntime=false</code>. Første autentificerede timeprøve fandt 39 Baltic- og fire AMM15-par blandt de 51 DMI-huller, svarende til et kombineret potentiale på 665/673. Piloten kører privat hver time for at bevise stabilitet.</p><p>Otte dokumenterede modelhuller i den vestlige Limfjord har en særskilt ejerallowlist. Efter alle aktiveringsgates må kun disse bruge nærmeste eksakte <code>dkss_lf</code>-par som regional proxy op til 15 km. Alle øvrige dele beholder 5-km-grænsen. Pilen står på den faktiske modelcelle, og et ændret administratorpunkt kræver ny kontrol.</p><div class=\"callout\"><strong>Ærlig kvalitet:</strong> Regional proxy mærkes som regional, og celler med kun øverste lag mærkes <code>surface-only</code>. Ingen af delene må fremstilles som en lokal bundmåling.</div>"
     },
     {
       "id": "local-current-arrow-score-time-4-0-231",

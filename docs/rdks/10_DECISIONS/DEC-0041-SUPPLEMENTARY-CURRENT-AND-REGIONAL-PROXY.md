@@ -32,6 +32,8 @@ Privat kode og data må ikke nå offentlig runtime, pile eller score, før følg
 - fuld projektvalidering, releasegate og frisk produktionsworkflow,
 - samt sikker fallback til DMI eller `missing`, hvis en supplerende kilde fejler.
 
+Første autentificerede private bevis `#32129799346` ved 2026-08-18 11:00Z fandt 39 Baltic- og fire AMM15-par blandt de 51 DMI-huller; de sidste otte var præcis regionalproxyens allowlist. Det opfylder én timeprøve, men ikke kravet om flere modelruns. Derfor forbliver integrationen inaktiv, mens en privat timeplan opbygger højst syv døgns stabilitetshistorik.
+
 ## Konsekvens
 
 Beslutningen fastholder kvaliteten af lokale data for resten af landet og giver en kontrolleret vej mod fuld geografisk dækning. Den påstår ikke, at en strøm 12 km væk er lige så lokal som en strøm 1 km væk. Forskellen bliver maskinlæsbar og kan derfor indgå ærligt i den kommende analyse af hele transportkæden.

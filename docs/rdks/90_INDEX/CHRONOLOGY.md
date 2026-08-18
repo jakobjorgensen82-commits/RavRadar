@@ -8,6 +8,7 @@
 4. Ejeren besluttede, at disse otte hellere skal bruge nærmeste tilgængelige strøm end stå uden strøm, og oprettede en gratis Copernicus-konto samt de to påkrævede GitHub Actions-secrets.
 5. DEC-0041 fortolker beslutningen fail-safe som en eksplicit allowlist og et 15-km-loft, som dækker alle otte uden at skabe en global ubegrænset regel. Alle øvrige dele og alle Copernicus-kilder beholder 5-km-grænsen.
 6. En separat privat pilotkandidat bruger den officielle Toolbox, friske centrale punkter, samme-celle/-tid/-lag U/V, nul interpolation, 168 timers retention og sikre reports uden credentials eller rå vektorer. Lokal test består; autentificeret CI og aktiv integration afventer.
+7. Commit `0c010090` blev fast-forwardet til `main`. Autentificeret run `#32129799346` bestod og bekræftede 39 Baltic + 4 AMM15 af de 51 DMI-huller. De sidste otte var præcis Limfjordsallowlisten. Pushrun `#32129778162` beholdt 100 %-gaten og stoppede ved DMI's 622/673 uden deploy. Piloten blev derefter sat til privat timeopsamling med syv døgns retention.
 
 ## 2026-08-16 – 4.0.229 strømsted, bundlag og privat feltgrundlag
 

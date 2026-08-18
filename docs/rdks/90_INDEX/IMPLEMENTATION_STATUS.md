@@ -8,9 +8,11 @@
 - [x] Rå U/V opbevares højst 168 timer i Actions-cache; supportrapporten fjerner rå vektorer og tester credentiallæk. `scoreImpact=false` og `publicRuntime=false` er hårde kontrakter.
 - [x] Lokal syntetisk regression beviser tør nærmeste celle, dybeste fælles lag, samme U/V-celle/-tid/-lag, 5-km-afvisning, syvdøgnspruning og sikkert rapportoutput.
 - [x] DEC-0041 og en maskinlæsbar politik afgrænser regionalproxy til præcis otte Limfjordsdele, `dkss_lf`, uændret samplingpunkt og højst 15 km. Lokal test mod #3079 består.
-- [ ] Commit og push pilotkandidaten, kør den autentificerede workflow og gennemgå dataset, afstande, lag, filstørrelse, køretid og sikre artifact.
+- [x] Commit `0c010090` er på `main`; autentificeret run `#32129799346` bestod på 1:59, og renset artifact bekræftede 39 Baltic + 4 AMM15 af DMI's 51 huller, ingen credential-/U/V-læk og præcis otte resterende allowlistdele.
+- [x] Privat timeplan ved minut 17 opsamler ét eksakt aktuelt 3D-tidssnit pr. run og beskærer rå skyggehistorik til 168 timer.
 - [ ] Opsaml flere modelruns, før Copernicus eller regionalproxy kobles til aktiv pile-/scorepipeline.
 - [ ] Aktiv integration kræver fuld validering, releasegate, frisk produktionsworkflow og direkte livekontrol. Den almindelige produktion er fortsat DMI-only og fail-closed over 5 km.
+- [x] Pushrun `#32129778162` beviste, at den eksisterende gate ikke blev omgået: fuld validering stoppede ved 622/673 og intet blev deployet.
 
 # Implementeringsstatus pr. 4.0.231 – vist scoretime og strømpil deler DMI-celle
 

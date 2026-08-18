@@ -18,6 +18,8 @@ for (const privateName of expectedWorkflowFiles.filter(name => name !== 'update-
 const copernicusPilot = fs.readFileSync(`${workflowDirectory}/validate-copernicus-current-pilot.yml`, 'utf8');
 for (const marker of [
   'workflow_dispatch:',
+  'schedule:',
+  '- cron: "17 * * * *"',
   'permissions:\n  contents: read',
   'COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}',
   'COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}',
@@ -29,7 +31,7 @@ for (const marker of [
 ]) {
   if (!copernicusPilot.includes(marker)) throw new Error(`Den private Copernicus-pilot mangler ${marker}`);
 }
-if (/\b(?:push|schedule|pull_request):/.test(copernicusPilot)) throw new Error('Copernicus-piloten må kun kunne startes manuelt.');
+if (/\b(?:push|pull_request):/.test(copernicusPilot)) throw new Error('Copernicus-piloten må kun kunne startes manuelt eller af sin private timeplan.');
 const copernicusUpload = copernicusPilot.slice(copernicusPilot.indexOf('- name: Upload private support evidence'));
 if (copernicusUpload.includes('.cache/')) throw new Error('Den rå Copernicus-cache må ikke uploades som supportartefakt.');
 const text = fs.readFileSync(path, 'utf8').replace(/\r\n/g, '\n');

@@ -6,6 +6,8 @@
 - En separat privat pilotkandidat bruger Toolbox, friske centrale kystdele, samme-celle/-tid/-lag U/V, nærmeste vandkolonne før dybeste fælles lag, nul interpolation, 168 timers retention og supportoutput uden rå vektorer eller credentials.
 - DEC-0041 indfører efter fremtidige aktiveringsgates en eksplicit regional `dkss_lf`-proxy for Hanklit, Harbo Odde, Knudeklinter, Stenerodde, Aggersborgrimme, Løgstør, Petersborg og `DK-B05-20`. Højeste tilladte afstand er 15 km; målte afstande var 5,416–12,110 km. Alle andre dele beholder 5-km-grænsen.
 - Lokale deterministiske tests og policytest mod #3079 består. Intet er endnu aktivt, deployet eller produktionsverificeret.
+- Commit `0c010090` blev fast-forwardet til `main`. Første autentificerede private run `#32129799346` bestod på 1:59 og bekræftede præcis 39 Baltic + 4 AMM15 blandt DMI's 51 huller; alle 43 havde et dybere fælles lag ved 11:00Z. Kombineret potentiale er dermed 665/673, og de sidste otte er præcis allowlisten.
+- Pushrun `#32129778162` stoppede korrekt uden deploy på den eksisterende 622/673-gate. En privat timeplan ved minut 17 samler nu højst syv døgns Copernicus-bevis; aktiv integration afventer fortsat flerruns og fulde gates.
 
 ## 2026-08-16 – 4.0.231 binder den lokale pil til den viste scoretime
 

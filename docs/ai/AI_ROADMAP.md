@@ -8,6 +8,7 @@
 - Efter stabil pilot er kilderækkefølgen DMI ≤5 km → Baltic ≤5 km → AMM15 ≤5 km. AMM15-punkter med kun 0 m lag forbliver særskilt `surface-only` og må ikke fremstilles som bundnære.
 - De otte sidste vestlige Limfjordsdele har en separat ejerallowlist: kun `dkss_lf`, uændret samplingpunkt, samme Limfjord og højst 15 km. Ingen global distanceoverride eller automatisk tilføjelse er tilladt. Se DEC-0041.
 - Aktiv pile-/scoreintegration begynder først efter autentificeret CI, flerruns-stabilitet, fuld validering og releasegate. Den senere DEC-0029-analyse skal kunne skelne lokale data fra regionalproxy og hele det ydre strømfelt.
+- Første autentificerede timeprøve `#32129799346` var grøn og bekræftede præcis 39 Baltic + 4 AMM15 af de 51 DMI-huller, svarende til 665/673 kombineret. En privat timeplan ved minut 17 samler nu højst syv døgn; næste gate er stabilitet på tværs af tider og modelruns, ikke øjeblikkelig aktivering.
 
 ## 4.0.231 – samme tidspunkt styrer lokal score og strømpil
 
