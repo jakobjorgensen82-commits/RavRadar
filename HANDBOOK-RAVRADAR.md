@@ -6,6 +6,8 @@ RavRadar bruger fortsat kun den verificerede DMI-kæde i den offentlige score og
 
 Pilotdata opbevares højst syv døgn og påvirker hverken RavScore, offentlige pile eller historik. En sikker rapport må vise kilde, tidspunkt, grid, dybde, afstand og kvalitetsklasse, men ikke loginoplysninger eller rå strømvektorer. Særligt lavvandede celler med kun overfladelag mærkes `surface-only` og må ikke fremstilles som bundnære.
 
+Syvdøgnsgrænsen kontrolleres nu også ved hver normal releasevalidering. Systemet beholder en prøve på selve 168-timersgrænsen, fjerner ældre, fremtidige eller beskadigede poster fra en gendannet cache og samler identiske prøver. En helt ny prøve accepteres kun, når punkt, modelcelle, afstand og begge strømkomponenter opfylder samme-tid/celle/lag-reglen; ellers stopper den private pilot. Det naturlige syvdøgnsforløb skal stadig observeres i drift.
+
 Den første autentificerede timeprøve dækkede 43 af de 51 aktuelle DMI-huller: 39 fra Baltic og fire fra AMM15. Sammen med DMI svarer det til 665/673, mens præcis de otte dokumenterede Limfjordsdele fortsat mangler lokal strøm. Prøven er ikke en aktivering; piloten kører privat hver time for at opbygge syv døgns stabilitetsbevis.
 
 Otte dokumenterede modelhuller i den vestlige Limfjord har en særskilt ejerbeslutning. Når alle gates senere er bestået, må kun disse otte bruge nærmeste eksakte DMI-Limfjordsstrøm som tydeligt mærket regional proxy op til 15 km. Alle andre områder beholder 5-km-grænsen. Pilen skal fortsat stå på den faktiske modelcelle, og et ændret administratorpunkt kræver ny kontrol.

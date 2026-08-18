@@ -7,6 +7,7 @@
 - [x] Separat privat workflowkode henter et begrænset én-times 3D-udsnit, bruger alle 673 friske centralt hydrerede kystdele, vælger nærmeste fælles vandkolonne før dybeste fælles lag og interpolerer ikke.
 - [x] Rå U/V opbevares højst 168 timer i Actions-cache; supportrapporten fjerner rå vektorer og tester credentiallæk. `scoreImpact=false` og `publicRuntime=false` er hårde kontrakter.
 - [x] Lokal syntetisk regression beviser tør nærmeste celle, dybeste fælles lag, samme U/V-celle/-tid/-lag, 5-km-afvisning, syvdøgnspruning og sikkert rapportoutput.
+- [x] En særskilt ren retentionregression indgår nu i normal `npm run validate` og i Copernicus-workflowet. Den beviser præcis 168-timersgrænse, deduplikering, rensning af beskadigede/ældre/fremtidige restoreposter samt fail-closed afvisning af nye ugyldige eller for fjerne poster.
 - [x] DEC-0041 og en maskinlæsbar politik afgrænser regionalproxy til præcis otte Limfjordsdele, `dkss_lf`, uændret samplingpunkt og højst 15 km. Lokal test mod #3079 består.
 - [x] 4.0.232-kandidaten opretter de otte regionale mål ved hver DMI-kørsel fra den centralt hydrerede registrering og gemmer deres faktiske U/V privat op til 15 km. Almindelige mål bevarer 5 km; forkert collection, ændret punkt, anden zoneklasse og over 15 km afvises.
 - [x] Privat DMI-evidensrapport indeholder kun del, samplingpunkt, collection, run, tid, grid, afstand og lag. Regressionen afviser rå `uMps`/`vMps`, beviser Pages-udelukkelse og isolerer proxy-replay til `dkss_lf`.
@@ -22,7 +23,7 @@
 - [x] Keepalive `#32136328681` ramte 12:00Z-cachen; backfill `#32136391556` samlede 1.258 records ved 11/12 UTC med nul grid-/lagskift og nul rå/credentiallæk; `#32136642330` ramte derefter præcis den nye to-timers-cache.
 - [ ] Opsaml flere modelruns, før Copernicus eller regionalproxy kobles til aktiv pile-/scorepipeline.
 - [x] Kør 4.0.232-kandidaten mod frisk central DMI og bekræft prøver til alle otte uden offentlig aktivering.
-- [ ] Bekræft syvdøgnspruning efter et naturligt fuldt retentionvindue; den nuværende cache går kun tilbage til 16. august.
+- [ ] Bekræft syvdøgnspruning efter et naturligt fuldt retentionvindue. Kodegrænsen er nu regressionsbevist, men faktisk drift over hele vinduet kan ikke erstattes af en syntetisk test.
 - [x] Bekræft første faktiske `schedule`-event.
 - [x] Verificér keepalive centralt, genhent 11:00Z kontrolleret og bekræft mindst to `validTime`-værdier i samme råcache.
 - [ ] Bekræft første automatiske keepalive-event og et efterfølgende naturligt Copernicus-tidspunkt uden ny LRU-fortrængning.

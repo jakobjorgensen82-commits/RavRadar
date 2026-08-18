@@ -24,9 +24,10 @@
 - Kontrollerede genopbygninger `#32140001424` og `#32140470201` genskabte 11:00Z og 12:00Z efter evictionen. Sidste rensede artifact har igen 1.258 records, to tider, 625 unikke mål, 629 mål/kildepar og nul gitter-/lagskift uden rå U/V eller credentials.
 - Central produktionskørsel `#32140865173` ramte præcis to-timers-cachen før DMI, gemte derefter en ny 2,905-GB DMI-cache og efterlod Copernicus-cachen intakt. Begge nye regressioner bestod, hvorefter 100 %-gaten igen stoppede på 622/673 før release/deploy. Uafhængig restore-only efterkontrol `#32141443152` ramte og validerede samme cache efter DMI-save.
 - Manuel aktuel-time-driftsprøve `#32141772134` tilføjede derefter 13:00Z uden backfill-parameter. Det rensede artifact har 1.887 records ved tre tider 11/12/13 UTC, 625 mål, 629 mål/kildepar og nul gitter-/lagskift; offentlig runtime og score er fortsat slået fra.
+- Syvdøgnsgrænsen er nu også en del af den normale releasevalidering. En ny ren cachetest bevarer præcis 168-timersgrænsen, beskærer ældre og fremtidige gendannelsesposter, deduplikerer identiske beviser og kræver gyldigt samplingpunkt, gitterpunkt, råt U/V-par, højst 5 km samt samme tid/celle/lag uden interpolation. Beskadigede gamle poster genbruges ikke, og nye ugyldige poster stopper piloten lukket.
 
 ## Bevidst uændret og åbent
 
 - Offentlig runtime, RavScore, pile, kildeorden og datakilder er fortsat DMI-only med 5-km-grænse. Regionalproxyen er ikke aktiveret, og gateændringen tillader derfor ikke deploy af den ufuldstændige kandidat.
 - Den skærpede gate ændrer ingen data og udfylder ingen mangler. Den betyder kun, at hverken den nuværende 622/673-kandidat eller den tidligere 670/673-tilstand kan blive en ny release; de supplerende kilder skal senere levere verificeret proveniens til alle mangler.
-- Central bekræftelse af den nye pre-DMI-cachebeskyttelse, første automatiske keepalive-event, syvdøgnspruning og flere naturlige modelruns mangler fortsat. Først derefter kan aktiv kildefletning designes og gennemgå alle releasegates.
+- Pre-DMI-cachebeskyttelsen er centralt bekræftet, og syvdøgnspruningens kodekontrakt er lokalt regressionsbevist. Første automatiske keepalive-event, et naturligt fuldt retentionvindue og flere naturlige modelruns mangler fortsat. Først derefter kan aktiv kildefletning designes og gennemgå alle releasegates.

@@ -244,16 +244,59 @@ def load_shadow(path: Path) -> dict[str, Any]:
     return document
 
 
+def _parse_shadow_time(value: Any) -> datetime:
+    parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        raise ValueError("Copernicus shadow time must include a timezone")
+    return parsed.astimezone(timezone.utc)
+
+
+def _finite_pair(value: Any) -> bool:
+    return (
+        isinstance(value, (list, tuple))
+        and len(value) == 2
+        and all(isinstance(item, (int, float)) and math.isfinite(float(item)) for item in value)
+    )
+
+
+def _validate_shadow_record(record: Any) -> datetime:
+    """Validate the minimum raw evidence contract before private retention."""
+    if not isinstance(record, dict):
+        raise ValueError("record is not an object")
+    for field in ("partId", "source", "datasetId"):
+        if not str(record.get(field) or "").strip():
+            raise ValueError(f"record is missing {field}")
+    if not _finite_pair(record.get("samplingPoint")) or not _finite_pair(record.get("gridPoint")):
+        raise ValueError("record has invalid sampling or grid coordinates")
+    for field in ("distanceKm", "verticalLayerM", "uMps", "vMps"):
+        value = record.get(field)
+        if not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+            raise ValueError(f"record has invalid {field}")
+    if float(record["distanceKm"]) < 0 or float(record["distanceKm"]) > LOCAL_MAX_DISTANCE_KM + 1e-9:
+        raise ValueError("record exceeds the local Copernicus distance limit")
+    if record.get("componentPair") != "same-time-cell-layer" or record.get("interpolation") is not False:
+        raise ValueError("record violates the same-time/cell/layer contract")
+    return _parse_shadow_time(record.get("validTime"))
+
+
 def update_shadow(path: Path, records: list[dict[str, Any]], now: datetime) -> dict[str, Any]:
     document = load_shadow(path)
-    cutoff = now.astimezone(timezone.utc) - timedelta(hours=RETENTION_HOURS)
+    if now.tzinfo is None:
+        raise ValueError("Copernicus shadow update time must include a timezone")
+    now_utc = now.astimezone(timezone.utc)
+    cutoff = now_utc - timedelta(hours=RETENTION_HOURS)
     retained: dict[tuple[Any, ...], dict[str, Any]] = {}
-    for record in list(document.get("records") or []) + records:
+    existing_records = list(document.get("records") or [])
+    for index, record in enumerate(existing_records + records):
         try:
-            valid_time = datetime.fromisoformat(str(record["validTime"]).replace("Z", "+00:00"))
-        except (KeyError, TypeError, ValueError):
-            continue
-        if valid_time < cutoff:
+            valid_time = _validate_shadow_record(record)
+        except (TypeError, ValueError) as error:
+            if index >= len(existing_records):
+                raise RuntimeError(f"New Copernicus shadow record failed validation: {error}") from None
+            continue  # damaged restored evidence is discarded rather than reused
+        if valid_time < cutoff or valid_time > now_utc:
+            if index >= len(existing_records):
+                raise RuntimeError("New Copernicus shadow record is outside the 168-hour retention window")
             continue
         key = (
             record.get("partId"), record.get("source"), record.get("datasetId"),
@@ -264,7 +307,7 @@ def update_shadow(path: Path, records: list[dict[str, Any]], now: datetime) -> d
         "retentionHours": RETENTION_HOURS,
         "scoreImpact": False,
         "publicRuntime": False,
-        "updatedAt": utc_iso(now),
+        "updatedAt": utc_iso(now_utc),
         "records": sorted(retained.values(), key=lambda row: (row.get("validTime", ""), row.get("partId", ""), row.get("source", ""))),
     })
     path.parent.mkdir(parents=True, exist_ok=True)

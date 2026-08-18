@@ -24,6 +24,7 @@ for (const marker of [
   'COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}',
   'COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}',
   'python scripts/test-copernicus-current-pilot.py',
+  'python scripts/test-copernicus-shadow-retention-4.0.232.py',
   'python scripts/test-current-regional-proxy-policy.py',
   'python scripts/run-copernicus-current-pilot.py',
   'def raw_vector_present(value):',

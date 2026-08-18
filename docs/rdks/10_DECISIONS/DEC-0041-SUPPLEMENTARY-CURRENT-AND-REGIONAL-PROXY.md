@@ -37,6 +37,8 @@ Første autentificerede private bevis `#32129799346` ved 2026-08-18 11:00Z fandt
 
 Første cron `#32134686185` hentede 12:00Z, men afslørede LRU-fortrængning af 11:00Z under cirka 10,2 GB fælles Actions-cache. En rå artifactløsning blev forkastet, fordi repositoryet er offentligt. Restore-only keepalive `#32136328681`, kontrolleret backfill `#32136391556` og efterkontrol `#32136642330` beviser nu to tider/1.258 records i samme private cache uden gitter-/lagskift eller rå/credentiallæk i supportoutput. Det er flertidslagringsbevis, men endnu ikke syv døgn eller flere modelruns og giver ingen aktiveringstilladelse.
 
+Retentionkontrakten er derefter ført ind i normal releasevalidering. Den bevarer grænseposten ved præcis 168 timer, beskærer ældre, fremtidige og strukturelt ugyldige restoreposter, deduplikerer eksakt og stopper ved nye poster uden lokalt samme-tid/celle/lag-U/V-bevis. Dette er kodebevis; det naturlige fulde syvdøgnsvindue og flere modelruns kræves fortsat før aktiveringsdesign.
+
 4.0.232-kandidaten implementerer den private DMI-del af beslutningen. Alle otte allowlistmål bygges på hver kørsel fra den aktuelt centralt hydrerede kystdelsregistrering. Kun `dkss_lf` kan levere dem, almindelige mål bevarer 5-km-grænsen, og en ændret godkendt koordinat eller afstand over 15 km stopper lukket. Rå U/V opbevares kun i den private 168-timers cache; den artifactegnede supportreport indeholder kun tid, run, gitter, lag og afstand. Dette er indsamling, ikke offentlig aktivering.
 
 ## Konsekvens

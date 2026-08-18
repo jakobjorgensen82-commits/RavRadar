@@ -63,6 +63,7 @@ jobs:
       - name: Run deterministic pilot tests
         run: |
           python scripts/test-copernicus-current-pilot.py
+          python scripts/test-copernicus-shadow-retention-4.0.232.py
           python scripts/test-current-regional-proxy-policy.py
 
       - name: Restore private seven-day Copernicus shadow cache
