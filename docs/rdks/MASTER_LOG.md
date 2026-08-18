@@ -4,7 +4,8 @@
 - Direkte audit af den aktuelle livepakke fandt nul fejl i 673 U/V-retninger, pilceller, provenance, kildeklasser og afstande. Pilen mod nord var fysisk konsistent; scorefortolkningen var ikke.
 - 216 dele i 52 zoner brugte en anden scoreretning end deres eget punktpar, og 49 aktuelle zonevindere var berørt. Rodårsagen var spredningen af `parent.properties`, som lod lokale dele arve moderzonens `directionAnchors`.
 - Ny runtimebygger erstatter ankerlisten med præcis ét lokalt anker. Regressionen gennemgår alle 673 dele og reproducerer Havsande som offshore mod nordkystens egen retning.
-- Kildeorden, strømdata, pileplacering, 168-timersopsamling og 100 %-gate ændres ikke. Central releaseverifikation afventer.
+- Kildeorden, strømdata, pileplacering, 168-timersopsamling og 100 %-gate ændres ikke.
+- Commit `286ea9e5` bestod den fulde friske produktionskæde i `#32165688946` og den efterfølgende fulde kørsel `#32165969786`. Direkte liveaudit af `rr-20260818173528-210` kontrollerede alle 673 dele og 43.064 prognose-/jagtformstimer med nul lokale anker-, vinder/navn/score-, retning-, pil/grid-, provenance-, kildeklasse- eller afstandsfejl; manifestets byteantal og SHA-256 matcher.
 
 ## 2026-08-18 – ejer godkender kontrolleret live-strøm og auditerbar rollback
 

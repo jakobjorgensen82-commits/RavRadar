@@ -9,6 +9,9 @@
 - Strømpilene ændres ikke: auditten bekræfter nul U/V/retning-, pil/grid-, provenance-, kildeklasse- eller afstandsfejl i det kontrollerede live-datasæt.
 - Ny landsdækkende regression dækker 673/673 dele og et direkte Blåvand-modbevis.
 - De fire aktive workflow-User-Agents er versionslukket til 4.0.233, så den centrale versionstest ikke kan afvise releasen på et efterladt 4.0.232-mærke.
+- Commit `286ea9e5` er produktionsverificeret i `#32165688946` og den efterfølgende fulde kørsel `#32165969786`: frisk central geometri og vejr, 673/673, fuld validering, releasegate, Supabase, Pages-artifact og deploy er grønne.
+- Direkte liveaudit af datasæt `rr-20260818173528-210` kontrollerer 673 dele og 43.064 prognose-/jagtformstimer. Der er nul lokale anker-, vinder/navn/score-, vand→land-retning-, U/V-retning-, pil/grid-, provenance- eller afstandsfejl; detaljefilens byteantal og SHA-256 matcher manifestet.
+- Håndbogens to efterladte historiske 95 %-formuleringer er rettet til den bindende dynamiske 100 %-gate, aktuelt 673/673.
 
 ## Uændret
 

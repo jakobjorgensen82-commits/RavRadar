@@ -8,7 +8,9 @@ Fra 4.0.233 har hver lokal kystdel præcis ét aktivt scoreanker: dens eget blå
 
 Den landsdækkende kontrol omfatter alle 673 dele. Den ændrer ikke strømværdien, pilens retning, modelcellen, kildeordenen eller kravet om 673/673. Den retter forbindelsen mellem de allerede godkendte lokale punkter og den beregning, brugeren ser.
 
-## Supplerende strøm kører som kontrolleret live-pilot – 4.0.232-kandidat
+4.0.233 er produktionsverificeret i de fulde centrale kørsler `#32165688946` og `#32165969786`. En direkte livekontrol af 673 dele og 43.064 prognose-/jagtformstimer fandt ingen uoverensstemmelser mellem delnavn, lokal retning, vinder, score, strømretning, pilens modelcelle, provenance eller afstandsgrænse.
+
+## Supplerende strøm kører som kontrolleret live-pilot – aktiv fra 4.0.232
 
 RavRadar bruger fortsat DMI som førstevalg, men ejeren har godkendt, at de verificerede supplerende strømdata går online på den nuværende ikke-offentlige udviklingsside. Når lokal DMI mangler ved en præcis time, prøver systemet Baltic NEMO og derefter AMM15 inden for 5 km. Kun for de otte udtrykkeligt godkendte Limfjordsdele må nærmeste `dkss_lf`-celle til sidst bruges som regional proxy inden for 15 km. Nærmeste komplette vandkolonne vælges før dybeste fælles lag, og der interpoleres ikke mellem Copernicus-/proxytider, celler eller lag.
 
@@ -184,7 +186,7 @@ Rotationen registrerer også, hvor langt der er til den nærmeste modelkolonne m
 
 ## Lokal DMI og geografiske delscorer – 4.0.193
 
-En lokal kystdel må kun få en lokal RavScore, når dens eget DMI-punkt har både verificeret strømretning og strømhastighed. Scheduler og releasekontrol tæller derfor nu kystdelene selv – ikke kun hovedzonerne. Mindst 95 % skal have dokumenteret lokalt U/V-grid, og runtime må aldrig vise flere lokalt scorede dele end den verificerede cache indeholder.
+En lokal kystdel må kun få en lokal RavScore, når den har en tilladt, fuldt verificeret strømretning og strømhastighed. Scheduler og releasekontrol tæller derfor kystdelene selv – ikke kun hovedzonerne. Alle aktive dele skal have dokumenteret DMI-, Copernicus- eller særskilt tilladt regionalproxy-U/V, aktuelt 673/673, og runtime må aldrig vise flere lokalt scorede dele end den verificerede cache indeholder. Den historiske 95 %-indfasningsgrænse er erstattet.
 
 Hvis de lokale data endnu ikke er komplette, bruger siden midlertidigt den fortsat valide hovedzonescore. Den påstår i så fald ikke, hvor i zonen forholdene er bedst. Når en lokal score bruges, følger dens fulde forklaring, rå vejrdata, land-/havpunkt og pålandsretning samlet med. Den tekniske visning må derfor ikke kombinere en lokal score med hovedzonens gamle retning.
 
@@ -192,7 +194,7 @@ Syvpointsreglen kræver en reel sammenligning. Én enkelt beregnet kystdel kan i
 
 Den landsdækkende systemaudit fandt 13 eksisterende kystdele, hvor det gemte referencepunkt ikke passede med den lokale kystretning og land-/vandparret. Punktparrene er genforankret til den faktiske lokale kyst og består derefter geometri- og sidekontrollen med nul fund. En konservativ retningsaudit erstatter én grov del med flere meningsfulde dele i 10 bugtede hovedzoner, herunder Helgenæs øst, så pakken går fra 651 til 673 dele.
 
-Alle 45 nye eller flyttede vandpunkter er valideret mod DMI's native modelgrid i den private Linux-pipeline med fuld dækning og nul ugyldige punkter. Den 673-dels pakke er derfor aktiveret lokalt med den tidligere 651-dels pakke som rollback. Rejsby/Ribe Vesterå ændres ikke automatisk, fordi den lokale landside ikke kan udledes entydigt; tvivl må aldrig omsættes til en tilfældig retning. Offentlig aktivering tæller først som produktionsverificeret, når den efterfølgende friske produktionskørsel også har opbygget mindst 95 % lokal U/V-dækning og bestået alle gates.
+Alle 45 nye eller flyttede vandpunkter blev valideret mod DMI's native modelgrid i den private Linux-pipeline med fuld dækning og nul ugyldige punkter. Den 673-dels pakke blev derfor aktiveret med den tidligere 651-dels pakke som rollback. Rejsby/Ribe Vesterå blev ikke ændret automatisk, fordi den lokale landside ikke kunne udledes entydigt; tvivl må aldrig omsættes til en tilfældig retning. Den senere bindende produktionsgate kræver nu verificeret tilladt U/V-dækning til alle aktive dele, aktuelt 673/673, samt alle øvrige releasegates.
 
 ## Progressiv DMI-opbygning
 

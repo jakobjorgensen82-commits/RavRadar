@@ -10,7 +10,7 @@
 - [x] Eksisterende score-, retningsanker- og kortpiltests består målrettet.
 - [x] RDKS-, release-, versions-, geometri- og målrettede runtimevalideringer består lokalt. Den fulde lokale kæde passerer RDKS og hele geometri-v2-kæden og stopper derefter som forventet på repositoryets forældede 209/211-vejrsnapshot; frisk datavalidering skal derfor ske centralt.
 - [x] Første centrale forsøg `#32165003851` stoppede før release/deploy, fordi fire aktive workflow-User-Agents stadig bar versionsmærket 4.0.232. De er versionslukket til 4.0.233; ingen data-, score- eller gatebetingelse er ændret.
-- [ ] Commit/push, central 673/673-kørsel, releasegate, Supabase, Pages og direkte liveaudit.
+- [x] Commit `286ea9e5` er på `main`. `#32165688946` og `#32165969786` bestod central 673/673, fuld validering, releasegate, Supabase og Pages. Direkte liveaudit af `rr-20260818173528-210` kontrollerede 673 dele og 43.064 prognose-/jagtformstimer med nul lokale anker-, vinder-, retning-, pil/grid-, provenance- eller afstandsfejl og matchende manifesthash.
 
 ## Kontrolleret supplerende live-strøm i 4.0.232
 
