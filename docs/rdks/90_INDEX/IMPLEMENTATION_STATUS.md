@@ -43,6 +43,7 @@
 - [x] Pushrun `#32146695718` bestod heartbeat-, cache-, retention- og 100 %-regressionerne centralt og stoppede derefter korrekt på faktiske 622/673 uden releasegate, Supabase eller Pages.
 - [x] Afsluttede timer har et SHA-256-fingeraftryk af alle centralt hydrerede del-ID'er og vandpunkter samt forventet recordantal. Samme time/samme geometri springes over; samme time/flyttet punkt, legacycache eller ufuldstændigt recordantal genindsamles og erstattes samlet. Ældre poster for flyttede dele fjernes selektivt.
 - [x] `#32149556595` beviser automatisk legacycache-detektion og dispatch. Pilot `#32149592195` migrerede 14 UTC til nyt manifest og ny cache med fire tider/2.516 records uden læk; `#32149552657` bestod de nye regressioner før det forventede 622/673-stop.
+- [x] `#32150318931` beviser den modsatte gren: ny manifestcache med samme time og geometri giver grønt preservejob og `dispatch-pilot` som skipped.
 - [x] Automatisk centralt manglende/legacy-time-dispatch er bevist i `#32149556595` → `#32149592195`. Næste nye UTC-time skal fortsat vise almindelig naturlig udvidelse; GitHubs native schedule er kun reserve, ikke eneste driftstrigger.
 
 # Implementeringsstatus pr. 4.0.231 – vist scoretime og strømpil deler DMI-celle

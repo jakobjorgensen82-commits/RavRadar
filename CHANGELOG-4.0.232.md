@@ -32,6 +32,7 @@
 - Pushrun `#32146695718` kørte derefter den nye heartbeat-regression, cachebeskyttelsen, retentiontesten og den dynamiske 100 %-kontrakt grønt i den fulde centrale kæde. Den faktiske audit stoppede fortsat fail-closed på 622/673; releasegate, Supabase og Pages blev sprunget over.
 - Hver afsluttet Copernicus-time bindes nu til et SHA-256-fingeraftryk af den fulde centralt hydrerede kystdelsbestand og dens vandpunkter samt et eksakt recordantal. Samme time kan kun springes over, når begge dele matcher. Et flyttet punkt, en legacycache uden manifest eller et ufuldstændigt recordantal kræver frisk privat indsamling, som erstatter hele den gamle time. Målrettede pilot-, retention- og heartbeattests er grønne lokalt; central verifikation af migrationen afventer.
 - Central heartbeat `#32149556595` fandt legacycachen og gennemførte automatisk dispatch. Pilot `#32149592195` genindsamlede 14 UTC på 673 centralt hydrerede punkter og gemte et SHA-256-bundet manifest i en ny privat cache. Det rensede artifact har 2.516 records ved fire gyldige tider, 625 unikke mål, nul grid-/lagskift og nul rå U/V/credentials. Pushrun `#32149552657` bestod de nye tests og stoppede korrekt ved 622/673 uden release, Supabase eller Pages.
+- Efterfølgende heartbeat `#32150318931` ramte samme nye manifestcache og sprang pilotdispatch over. Legacy/mismatch-genindsamling og sikker samme-time-dubletundertrykkelse er dermed begge CI-bevist.
 
 ## Bevidst uændret og åbent
 
