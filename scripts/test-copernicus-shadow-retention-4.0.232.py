@@ -95,6 +95,35 @@ def main() -> None:
         else:
             raise AssertionError("A new future record must not be silently accepted")
 
+        geometry_path = Path(directory) / "copernicus-geometry-shadow.json"
+        first_time = now - timedelta(hours=2)
+        first_fingerprint = "sha256:" + "1" * 64
+        first = update_shadow(
+            geometry_path,
+            [record(first_time)],
+            now,
+            collection_time=first_time,
+            target_fingerprint=first_fingerprint,
+            target_points={"part-1": [9.0, 57.0]},
+        )
+        need(first["collections"][0]["targetFingerprint"] == first_fingerprint,
+             "A completed collection must retain its target-geometry fingerprint")
+        moved_time = now - timedelta(hours=1)
+        moved_fingerprint = "sha256:" + "2" * 64
+        moved_record = {**record(moved_time), "samplingPoint": [9.1, 57.0]}
+        moved = update_shadow(
+            geometry_path,
+            [moved_record],
+            now,
+            collection_time=moved_time,
+            target_fingerprint=moved_fingerprint,
+            target_points={"part-1": [9.1, 57.0]},
+        )
+        need(len(moved["records"]) == 1 and moved["records"][0]["samplingPoint"] == [9.1, 57.0],
+             "Moving a central point must prune that part's older retained geometry")
+        need(len(moved["collections"]) == 1 and moved["collections"][0]["recordCount"] == 1,
+             "A stale manifest must be removed and the new hour must match its retained records")
+
     print("OK: Copernicus shadow retention is bounded, deduplicated and fail-closed")
 
 

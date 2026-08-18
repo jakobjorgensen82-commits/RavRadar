@@ -52,14 +52,6 @@ jobs:
           python scripts/apply-central-zone-reviews.py
           node scripts/build-public-coastal-parts-v2.mjs
 
-      - name: Verify Copernicus secrets are configured
-        env:
-          COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
-          COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
-        run: |
-          test -n "$COPERNICUSMARINE_SERVICE_USERNAME"
-          test -n "$COPERNICUSMARINE_SERVICE_PASSWORD"
-
       - name: Run deterministic pilot tests
         run: |
           python scripts/test-copernicus-current-pilot.py
@@ -74,7 +66,28 @@ jobs:
           restore-keys: |
             copernicus-current-shadow-v1-
 
+      - name: Inspect requested hour and authoritative target geometry
+        id: cache-state
+        env:
+          PILOT_SAMPLE_TIME: ${{ inputs.sample_time }}
+        run: |
+          if [ -n "$PILOT_SAMPLE_TIME" ]; then
+            python scripts/check-copernicus-current-hour.py --at "$PILOT_SAMPLE_TIME" --targets data/live/coastal-parts-v2.json --github-output "$GITHUB_OUTPUT"
+          else
+            python scripts/check-copernicus-current-hour.py --targets data/live/coastal-parts-v2.json --github-output "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify Copernicus secrets are configured
+        if: steps.cache-state.outputs.current_hour_present != 'true'
+        env:
+          COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
+          COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
+        run: |
+          test -n "$COPERNICUSMARINE_SERVICE_USERNAME"
+          test -n "$COPERNICUSMARINE_SERVICE_PASSWORD"
+
       - name: Run authenticated score-neutral current pilot
+        if: steps.cache-state.outputs.current_hour_present != 'true'
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
@@ -87,13 +100,14 @@ jobs:
           fi
 
       - name: Save private seven-day Copernicus shadow cache
-        if: success()
+        if: steps.cache-state.outputs.current_hour_present != 'true' && success()
         uses: actions/cache/save@v4
         with:
           path: .cache/copernicus-current-shadow.json
           key: copernicus-current-shadow-v1-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Reject secret or raw-vector leakage from support report
+        if: steps.cache-state.outputs.current_hour_present != 'true'
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
@@ -118,6 +132,7 @@ jobs:
           PY
 
       - name: Upload private support evidence
+        if: steps.cache-state.outputs.current_hour_present != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: copernicus-current-pilot-${{ github.run_number }}
@@ -126,3 +141,7 @@ jobs:
           path: |
             data/diagnostics/copernicus-current-pilot.json
             data/diagnostics/copernicus-current-pilot.txt
+
+      - name: Report safe duplicate suppression
+        if: steps.cache-state.outputs.current_hour_present == 'true'
+        run: echo "Requested UTC hour already exists for the centrally approved target geometry; authenticated download skipped."

@@ -11,6 +11,7 @@ import numpy as np
 import xarray as xr
 
 from lib.copernicus_current import load_targets, nearest_shared_uv, safe_record, safe_shadow_summary, update_shadow
+from lib.copernicus_target_identity import target_fingerprint
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -104,6 +105,40 @@ def main() -> None:
         two_time_evidence = safe_shadow_summary(two_times)
         need(len(two_times["records"]) == 2, "A restored shadow must retain both different valid times")
         need(two_time_evidence["validTimeCount"] == 2, "Safe evidence must prove multi-time aggregation")
+
+        original_fingerprint = target_fingerprint([target])
+        collected = update_shadow(
+            path,
+            [{**record, "validTime": now.isoformat().replace("+00:00", "Z")}],
+            now,
+            collection_time=now,
+            target_fingerprint=original_fingerprint,
+            target_points={"p1": [9.0, 57.0]},
+        )
+        need(collected["collections"][-1]["targetFingerprint"] == original_fingerprint,
+             "A completed hour must be bound to the authoritative target geometry")
+        moved_target = {**target, "waterPoint": [9.01, 57.0]}
+        moved_fingerprint = target_fingerprint([moved_target])
+        moved_record = {
+            **record,
+            "samplingPoint": [9.01, 57.0],
+            "validTime": now.isoformat().replace("+00:00", "Z"),
+        }
+        replaced = update_shadow(
+            path,
+            [moved_record],
+            now,
+            collection_time=now,
+            target_fingerprint=moved_fingerprint,
+            target_points={"p1": [9.01, 57.0]},
+        )
+        same_hour = [row for row in replaced["records"] if row["validTime"] == moved_record["validTime"]]
+        need(len(same_hour) == 1 and same_hour[0]["samplingPoint"] == [9.01, 57.0],
+             "Recollection after a point move must replace the whole hour, not retain stale rows")
+        need(replaced["collections"][-1]["targetFingerprint"] == moved_fingerprint,
+             "Recollected hour must carry the new geometry fingerprint")
+        need(not any(row["samplingPoint"] == [9.0, 57.0] for row in replaced["records"]),
+             "A moved point must invalidate its retained history at older hours as well")
 
     pilot_workflow = (ROOT / ".github/workflows/validate-copernicus-current-pilot.yml").read_text(encoding="utf-8")
     keepalive_workflow = (ROOT / ".github/workflows/preserve-copernicus-current-shadow.yml").read_text(encoding="utf-8")

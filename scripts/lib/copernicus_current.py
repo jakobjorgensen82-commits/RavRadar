@@ -236,6 +236,7 @@ def load_shadow(path: Path) -> dict[str, Any]:
             "retentionHours": RETENTION_HOURS,
             "scoreImpact": False,
             "publicRuntime": False,
+            "collections": [],
             "records": [],
         }
     document = json.loads(path.read_text(encoding="utf-8"))
@@ -279,12 +280,53 @@ def _validate_shadow_record(record: Any) -> datetime:
     return _parse_shadow_time(record.get("validTime"))
 
 
-def update_shadow(path: Path, records: list[dict[str, Any]], now: datetime) -> dict[str, Any]:
+def _validate_fingerprint(value: Any) -> str:
+    text = str(value or "")
+    prefix = "sha256:"
+    digest = text[len(prefix):] if text.startswith(prefix) else ""
+    if len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest):
+        raise ValueError("target fingerprint is invalid")
+    return text
+
+
+def _validate_collection(collection: Any) -> tuple[datetime, str, int]:
+    if not isinstance(collection, dict):
+        raise ValueError("collection is not an object")
+    valid_time = _parse_shadow_time(collection.get("validTime"))
+    fingerprint = _validate_fingerprint(collection.get("targetFingerprint"))
+    record_count = collection.get("recordCount")
+    if not isinstance(record_count, int) or record_count <= 0:
+        raise ValueError("collection record count must be positive")
+    return valid_time, fingerprint, record_count
+
+
+def update_shadow(
+    path: Path,
+    records: list[dict[str, Any]],
+    now: datetime,
+    *,
+    collection_time: datetime | None = None,
+    target_fingerprint: str | None = None,
+    target_points: dict[str, list[float]] | None = None,
+) -> dict[str, Any]:
     document = load_shadow(path)
     if now.tzinfo is None:
         raise ValueError("Copernicus shadow update time must include a timezone")
     now_utc = now.astimezone(timezone.utc)
     cutoff = now_utc - timedelta(hours=RETENTION_HOURS)
+    collection_metadata = (collection_time, target_fingerprint, target_points)
+    if any(value is not None for value in collection_metadata) and not all(value is not None for value in collection_metadata):
+        raise ValueError("Collection time, target fingerprint and target points must be supplied together")
+    collection_time_utc = None
+    if collection_time is not None:
+        if collection_time.tzinfo is None:
+            raise ValueError("Copernicus collection time must include a timezone")
+        collection_time_utc = collection_time.astimezone(timezone.utc)
+        _validate_fingerprint(target_fingerprint)
+        if collection_time_utc < cutoff or collection_time_utc > now_utc:
+            raise RuntimeError("Copernicus collection time is outside the 168-hour retention window")
+        if not records:
+            raise RuntimeError("A completed Copernicus collection must contain verified records")
     retained: dict[tuple[Any, ...], dict[str, Any]] = {}
     existing_records = list(document.get("records") or [])
     for index, record in enumerate(existing_records + records):
@@ -298,16 +340,57 @@ def update_shadow(path: Path, records: list[dict[str, Any]], now: datetime) -> d
             if index >= len(existing_records):
                 raise RuntimeError("New Copernicus shadow record is outside the 168-hour retention window")
             continue
+        if target_points is not None:
+            expected_point = target_points.get(str(record.get("partId") or ""))
+            actual_point = record.get("samplingPoint")
+            same_sampling_point = (
+                expected_point is not None
+                and _finite_pair(actual_point)
+                and tuple(round(float(value), 7) for value in actual_point)
+                == tuple(round(float(value), 7) for value in expected_point)
+            )
+            if not same_sampling_point:
+                if index >= len(existing_records):
+                    raise RuntimeError("New Copernicus record does not match the current central sampling point")
+                continue  # a moved or removed central point invalidates its retained history
+        if collection_time_utc is not None:
+            if index < len(existing_records) and valid_time == collection_time_utc:
+                continue  # replace the whole hour when authoritative target geometry changed
+            if index >= len(existing_records) and valid_time != collection_time_utc:
+                raise RuntimeError("New Copernicus record does not match the declared collection hour")
         key = (
             record.get("partId"), record.get("source"), record.get("datasetId"),
             record.get("validTime"), tuple(record.get("gridPoint") or []), record.get("verticalLayerM"),
         )
         retained[key] = record
+    collections: dict[str, dict[str, Any]] = {}
+    existing_collections = document.get("collections") or []
+    if not isinstance(existing_collections, list):
+        existing_collections = []
+    for collection in existing_collections:
+        try:
+            valid_time, _fingerprint, record_count = _validate_collection(collection)
+        except (TypeError, ValueError):
+            continue
+        valid_time_text = utc_iso(valid_time)
+        actual_count = sum(row.get("validTime") == valid_time_text for row in retained.values())
+        if cutoff <= valid_time <= now_utc and actual_count == record_count:
+            collections[utc_iso(valid_time)] = collection
+    if collection_time_utc is not None:
+        valid_time_text = utc_iso(collection_time_utc)
+        collected_records = [row for row in retained.values() if row.get("validTime") == valid_time_text]
+        collections[valid_time_text] = {
+            "validTime": valid_time_text,
+            "targetFingerprint": target_fingerprint,
+            "recordCount": len(collected_records),
+            "uniqueTargetCount": len({str(row.get("partId") or "") for row in collected_records}),
+        }
     document.update({
         "retentionHours": RETENTION_HOURS,
         "scoreImpact": False,
         "publicRuntime": False,
         "updatedAt": utc_iso(now_utc),
+        "collections": [collections[key] for key in sorted(collections)],
         "records": sorted(retained.values(), key=lambda row: (row.get("validTime", ""), row.get("partId", ""), row.get("source", ""))),
     })
     path.parent.mkdir(parents=True, exist_ok=True)

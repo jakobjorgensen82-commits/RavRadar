@@ -2,8 +2,15 @@
   "schemaVersion": "2.0",
   "handbookVersion": "4.0.232",
   "title": "RavRadar Håndbog",
-  "updatedAt": "2026-08-18T16:09:01+02:00",
+  "updatedAt": "2026-08-18T16:31:33+02:00",
   "sections": [
+    {
+      "id": "copernicus-target-geometry-identity-2026-08-18",
+      "chapter": "89",
+      "title": "En strømtime hører til de vandpunkter, den blev hentet til",
+      "summary": "Flyttes et centralt vandpunkt, kan den samme UTC-time ikke genbruges fra den gamle punktbestand.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Det er ikke nok, at Copernicus-cachen indeholder den rigtige klokktime. Den skal også være hentet til præcis de vandpunkter, som er centralt godkendt nu.</div><p>Efter den centrale hydrering laver piloten et digitalt SHA-256-fingeraftryk af alle kystdels-ID'er, parentzoner og vandpunkter. Hver færdig indsamling gemmer fingeraftrykket sammen med tidspunktet og det forventede antal råposter. En download springes kun over, når både time, fingeraftryk og recordantal matcher.</p><p>Hvis ejeren har flyttet blot ét vandpunkt, hvis en ældre cache mangler indsamlingsmanifestet, eller hvis recordantallet er ufuldstændigt, hentes timen igen privat. Alle gamle poster for netop den time erstattes samlet, og ældre historik for den flyttede eller slettede del fjernes. Uændrede deles historik kan bevares, så data fra gammel og ny geometri aldrig blandes.</p><div class=\"callout\"><strong>Fortsat privat:</strong> Fingeraftrykket indeholder ingen rå strømvektorer eller loginoplysninger. Ændringen aktiverer hverken Copernicus, regionalproxy, pile eller RavScore og ændrer ikke kravet om 673/673.</div>"
+    },
     {
       "id": "copernicus-external-heartbeat-2026-08-18",
       "chapter": "88",

@@ -17,6 +17,7 @@ import copernicusmarine
 import xarray as xr
 
 from lib.copernicus_current import LOCAL_MAX_DISTANCE_KM, load_targets, nearest_shared_uv, safe_record, safe_shadow_summary, update_shadow, utc_iso
+from lib.copernicus_target_identity import target_fingerprint
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -149,6 +150,11 @@ def main() -> int:
     args = arguments()
     at = selected_time(args.at)
     targets = load_targets(args.targets)
+    targets_fingerprint = target_fingerprint(targets)
+    target_points = {
+        target["partId"]: [round(float(target["waterPoint"][0]), 7), round(float(target["waterPoint"][1]), 7)]
+        for target in targets
+    }
     if not args.fixture_directory:
         if not os.getenv("COPERNICUSMARINE_SERVICE_USERNAME") or not os.getenv("COPERNICUSMARINE_SERVICE_PASSWORD"):
             raise RuntimeError("Copernicus credentials are required through environment secrets")
@@ -190,7 +196,14 @@ def main() -> int:
     finally:
         shutil.rmtree(temporary, ignore_errors=True)
 
-    shadow = update_shadow(args.shadow, raw_records, datetime.now(timezone.utc))
+    shadow = update_shadow(
+        args.shadow,
+        raw_records,
+        datetime.now(timezone.utc),
+        collection_time=at,
+        target_fingerprint=targets_fingerprint,
+        target_points=target_points,
+    )
     selected = [safe_record(selected_by_part[key]) for key in sorted(selected_by_part)]
     report = {
         "schemaVersion": 1,
@@ -206,6 +219,7 @@ def main() -> int:
         "publicRuntime": False,
         "retentionHours": 168,
         "targetCount": len(targets),
+        "targetFingerprint": targets_fingerprint,
         "verifiedUniqueTargetCount": len(selected),
         "missingTargetCount": len(targets) - len(selected),
         "shadowRecordCount": len(shadow.get("records") or []),

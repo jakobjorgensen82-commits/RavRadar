@@ -8,6 +8,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from lib.copernicus_target_identity import target_fingerprint_from_registry
+
 
 ROOT = Path(__file__).resolve().parents[1]
 CHECKER = ROOT / "scripts/check-copernicus-current-hour.py"
@@ -20,9 +22,12 @@ def need(condition: bool, message: str) -> None:
         raise AssertionError(message)
 
 
-def run_checker(shadow: Path, output: Path) -> subprocess.CompletedProcess[str]:
+def run_checker(shadow: Path, output: Path, targets: Path | None = None) -> subprocess.CompletedProcess[str]:
+    command = [sys.executable, str(CHECKER), "--shadow", str(shadow), "--at", NOW, "--github-output", str(output)]
+    if targets:
+        command.extend(["--targets", str(targets)])
     return subprocess.run(
-        [sys.executable, str(CHECKER), "--shadow", str(shadow), "--at", NOW, "--github-output", str(output)],
+        command,
         cwd=ROOT,
         check=False,
         capture_output=True,
@@ -30,13 +35,14 @@ def run_checker(shadow: Path, output: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
-def document(valid_times: list[str]) -> dict:
+def document(valid_times: list[str], fingerprint: str = "sha256:" + "0" * 64) -> dict:
     return {
         "schemaVersion": 1,
         "retentionHours": 168,
         "scoreImpact": False,
         "publicRuntime": False,
-        "records": [{"validTime": value, "uMps": 0.123, "vMps": -0.456} for value in valid_times],
+        "records": [{"partId": "part-1", "samplingPoint": [9.0, 57.0], "validTime": value, "uMps": 0.123, "vMps": -0.456} for value in valid_times],
+        "collections": [{"validTime": value, "targetFingerprint": fingerprint, "recordCount": 1, "uniqueTargetCount": 1} for value in valid_times],
     }
 
 
@@ -45,6 +51,12 @@ def main() -> None:
         base = Path(directory)
         shadow = base / "shadow.json"
         output = base / "github-output.txt"
+        targets = base / "targets.json"
+        targets.write_text(json.dumps({
+            "partCount": 1,
+            "zones": {"zone-1": [{"partId": "part-1", "waterPoint": [9.0, 57.0]}]},
+        }), encoding="utf-8")
+        fingerprint = target_fingerprint_from_registry(targets)
 
         missing = run_checker(shadow, output)
         need(missing.returncode == 0, "A missing cache must request collection without failing the heartbeat")
@@ -58,10 +70,30 @@ def main() -> None:
         need("0.123" not in stale.stdout and "-0.456" not in stale.stdout, "Inspection must never log raw U/V")
 
         output.unlink()
-        shadow.write_text(json.dumps(document(["2026-08-18T14:00:00Z"])), encoding="utf-8")
-        current = run_checker(shadow, output)
+        legacy = document(["2026-08-18T14:00:00Z"])
+        legacy.pop("collections")
+        shadow.write_text(json.dumps(legacy), encoding="utf-8")
+        legacy_result = run_checker(shadow, output)
+        need(legacy_result.returncode == 0, "A legacy cache must be migrated through recollection")
+        need("current_hour_present=false" in output.read_text(encoding="utf-8"),
+             "Raw records without a completed collection manifest must not suppress migration")
+
+        output.unlink()
+        shadow.write_text(json.dumps(document(["2026-08-18T14:00:00Z"], fingerprint)), encoding="utf-8")
+        current = run_checker(shadow, output, targets)
         need(current.returncode == 0, "The current-hour cache must pass")
         need("current_hour_present=true" in output.read_text(encoding="utf-8"), "Current evidence must suppress duplicate download")
+
+        output.unlink()
+        targets.write_text(json.dumps({
+            "partCount": 1,
+            "zones": {"zone-1": [{"partId": "part-1", "waterPoint": [9.1, 57.0]}]},
+        }), encoding="utf-8")
+        moved = run_checker(shadow, output, targets)
+        need(moved.returncode == 0, "A moved central point must request safe recollection, not crash")
+        moved_output = output.read_text(encoding="utf-8")
+        need("current_hour_present=false" in moved_output and "target_fingerprint_match=false" in moved_output,
+             "Same-hour evidence from old target geometry must not suppress recollection")
 
         output.unlink()
         unsafe = document(["2026-08-18T14:00:00Z"])
@@ -86,6 +118,14 @@ def main() -> None:
         need(marker in workflow, f"Heartbeat workflow is missing {marker}")
     need("actions/cache/save@v4" not in workflow, "workflow_run heartbeat must not try to write a read-only cache")
     need("actions/upload-artifact" not in workflow, "Heartbeat must never export raw cache evidence")
+    pilot_workflow = (ROOT / ".github/workflows/validate-copernicus-current-pilot.yml").read_text(encoding="utf-8")
+    for marker in (
+        "Inspect requested hour and authoritative target geometry",
+        "--targets data/live/coastal-parts-v2.json",
+        "steps.cache-state.outputs.current_hour_present != 'true'",
+        "Report safe duplicate suppression",
+    ):
+        need(marker in pilot_workflow, f"Pilot workflow is missing geometry-aware duplicate control: {marker}")
     preserve_section = workflow[workflow.index("  preserve:"):workflow.index("  dispatch-pilot:")]
     need("actions: write" not in preserve_section, "Only the minimal dispatch job may receive Actions write permission")
 

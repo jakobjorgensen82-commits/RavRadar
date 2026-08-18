@@ -27,7 +27,7 @@
 - [ ] Bekræft syvdøgnspruning efter et naturligt fuldt retentionvindue. Kodegrænsen er nu regressionsbevist, men faktisk drift over hele vinduet kan ikke erstattes af en syntetisk test.
 - [x] Bekræft første faktiske `schedule`-event.
 - [x] Verificér keepalive centralt, genhent 11:00Z kontrolleret og bekræft mindst to `validTime`-værdier i samme råcache.
-- [ ] Bekræft første automatiske keepalive-event og et efterfølgende naturligt Copernicus-tidspunkt uden ny LRU-fortrængning.
+- [x] Første automatiske heartbeat-event er bevist i `#32146699458`, og den forudgående naturlige pilot `#32146584311` udvidede cachen til 14 UTC uden ny LRU-fortrængning.
 - [ ] Aktiv integration kræver fuld validering, releasegate, frisk produktionsworkflow og direkte livekontrol. Den almindelige produktion er fortsat DMI-only og fail-closed over 5 km.
 - [x] Pushrun `#32129778162` beviste, at den eksisterende gate ikke blev omgået: fuld validering stoppede ved 622/673 og intet blev deployet.
 - [x] Ejerens 100 %-krav er nu den faktiske produktionsgate: `requiredPartCoverage` er lig det dynamiske antal aktive kystdele, aktuelt 673. Separat regression forbyder den historiske 95 %-formel; #3094-replay stopper på 622/673 med krav om alle 673.
@@ -41,6 +41,8 @@
 - [x] Lokal heartbeat-, pilot- og workflowinventarregression består for manglende, forældet, aktuel og usikker cache uden rå U/V-log.
 - [x] `#32146584311` udvidede cachen til 2.516 records ved 11–14 UTC uden gitter-/lagskift eller supportlæk. Automatisk heartbeat `#32146699458` ventede korrekt, ramte den nye cache og sprang dispatch over, fordi aktuel time allerede fandtes.
 - [x] Pushrun `#32146695718` bestod heartbeat-, cache-, retention- og 100 %-regressionerne centralt og stoppede derefter korrekt på faktiske 622/673 uden releasegate, Supabase eller Pages.
+- [x] Lokalt: afsluttede timer har nu et SHA-256-fingeraftryk af alle centralt hydrerede del-ID'er og vandpunkter samt forventet recordantal. Samme time/samme geometri springes over; samme time/flyttet punkt, legacycache eller ufuldstændigt recordantal genindsamles og erstattes samlet.
+- [ ] CI-verificér den geometribundne dubletkontrol og migrér den eksisterende legacycache gennem én frisk privat pilot. Bevar manglende-time-dispatch som selvstændigt driftsbevis.
 - [ ] Bekræft automatisk centralt manglende-time-dispatch og efterfølgende udvidet cache ved næste UTC-time. GitHubs native schedule er herefter kun reservebevis, ikke eneste driftstrigger.
 
 # Implementeringsstatus pr. 4.0.231 – vist scoretime og strømpil deler DMI-celle
