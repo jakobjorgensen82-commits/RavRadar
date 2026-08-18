@@ -16,8 +16,9 @@
 - Samme kørsel stoppede sikkert før Supabase og Pages, fordi DMI-workflowtesten stadig havde den historiske User-Agent-version `4.0.229` skrevet fast. Testen følger nu `package.json`-versionen og består sammen med DMI-cache-, tværmodel- og workflowregressionerne.
 - Opfølgende pushrun `#32135079819` passerede den rettede versionstest og hele den centrale kæde frem til den uændrede rumlige strømgate. Den stoppede korrekt på 622/673 uden Supabase eller Pages.
 - Første faktiske Copernicus-`schedule`-run `#32134686185` var grønt og hentede et nyt 12:00Z-tidspunkt, men GitHubs cachekvote på cirka 10,2 GB havde allerede fortrængt 11:00Z-råcachen mellem de store DMI-cacher. En separat lille keepalive-workflow gendanner derfor kun den eksisterende private cache hvert tiende minut og uploader intet. Manuel pilotkørsel kan genhente en eksakt citeret UTC-time, så tabet kan repareres kontrolleret.
+- Keepalive `#32136328681` ramte 12:00Z-cachen uden at logge poster. Kontrolleret 11:00Z-backfill `#32136391556` samlede derefter 1.258 prøver ved to tider i samme cache: 625 unikke mål, 629 mål/kildepar, nul gitter- eller lagskift og nul rå U/V/credentials i supportartifactet. Afsluttende keepalive `#32136642330` ramte præcis den nye to-timers-cache.
 
 ## Bevidst uændret og åbent
 
 - Offentlig runtime, RavScore, pile, kildeorden, geografisk coveragegate og deployadfærd er uændret og fortsat DMI-only med 5-km-grænse. Regionalproxyen er ikke aktiveret.
-- Keepalive og en kontrolleret 11:00Z-genhentning mangler central bekræftelse. Syvdøgnspruning mangler fortsat et naturligt syv-døgnsvindue, og Copernicus-piloten mangler flere modelruns. Først derefter kan aktiv kildefletning designes og gennemgå alle releasegates.
+- Første automatiske keepalive-event, syvdøgnspruning og flere naturlige modelruns mangler fortsat. Først derefter kan aktiv kildefletning designes og gennemgå alle releasegates.

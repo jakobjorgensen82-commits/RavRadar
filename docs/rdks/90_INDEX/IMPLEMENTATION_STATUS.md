@@ -19,11 +19,13 @@
 - [x] Pushrun `#32135079819` passerede den rettede versionstest og stoppede først ved den forventede uændrede rumlige gate på 622/673. Intet blev deployet.
 - [x] Første faktiske `schedule`-event `#32134686185` var grønt og hentede 12:00Z, men målte kun én bevaret tid, fordi 11:00Z-cachen var fortrængt af repositoryets cirka 10,2 GB Actions-cache.
 - [x] Rodårsagen er LRU-pres fra flere 2,48–2,52 GB DMI-GRIB-cacher, ikke deduplikeringskoden. En lokal regression beviser to-timers merge; en credentialfri keepalive gendanner uden upload eller rå log hvert tiende minut, og manuel citeret UTC-backfill er tilføjet.
+- [x] Keepalive `#32136328681` ramte 12:00Z-cachen; backfill `#32136391556` samlede 1.258 records ved 11/12 UTC med nul grid-/lagskift og nul rå/credentiallæk; `#32136642330` ramte derefter præcis den nye to-timers-cache.
 - [ ] Opsaml flere modelruns, før Copernicus eller regionalproxy kobles til aktiv pile-/scorepipeline.
 - [x] Kør 4.0.232-kandidaten mod frisk central DMI og bekræft prøver til alle otte uden offentlig aktivering.
 - [ ] Bekræft syvdøgnspruning efter et naturligt fuldt retentionvindue; den nuværende cache går kun tilbage til 16. august.
 - [x] Bekræft første faktiske `schedule`-event.
-- [ ] Verificér keepalive centralt, genhent 11:00Z kontrolleret og bekræft mindst to `validTime`-værdier i samme råcache; adskilte safe artifacts alene er ikke nok.
+- [x] Verificér keepalive centralt, genhent 11:00Z kontrolleret og bekræft mindst to `validTime`-værdier i samme råcache.
+- [ ] Bekræft første automatiske keepalive-event og et efterfølgende naturligt Copernicus-tidspunkt uden ny LRU-fortrængning.
 - [ ] Aktiv integration kræver fuld validering, releasegate, frisk produktionsworkflow og direkte livekontrol. Den almindelige produktion er fortsat DMI-only og fail-closed over 5 km.
 - [x] Pushrun `#32129778162` beviste, at den eksisterende gate ikke blev omgået: fuld validering stoppede ved 622/673 og intet blev deployet.
 

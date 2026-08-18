@@ -14,6 +14,7 @@
 - Pushrun `#32135079819` passerede den mekaniske testrettelse og stoppede derefter korrekt på den uændrede 622/673-audit uden deploy.
 - Første cron-run `#32134686185` var grønt og hentede et nyt Copernicus-tidspunkt 12:00Z, men 11:00Z-råcachen var væk. Cache-API'en viste cirka 10,2 GB aktive caches, især fire samtidige DMI-GRIB-generationer på cirka 2,5 GB; LRU-fortrængning er dermed bevist.
 - En råcache-artifact blev overvejet og forkastet, fordi repositoryet er offentligt. Den valgte løsning holder i stedet den allerede private cache nyligt anvendt med en credentialfri restore hvert tiende minut, nul upload og nul recordlogning. Eksakt manuel UTC-backfill kan reparere 11:00Z efter keepalive-bevis.
+- Keepalive `#32136328681` ramte den bevarede 12:00Z-cache. Den ene kontrollerede backfill `#32136391556` genhentede 11:00Z og samlede 1.258 private records ved to tider, 625 unikke mål og 629 mål/kildepar med nul gitter-/lagskift og nul rå/credentiallæk i supportoutput. `#32136642330` ramte bagefter den nye backfill-cache. Aktiv integration er fortsat ikke autoriseret.
 
 ## 2026-08-16 – 4.0.231 binder den lokale pil til den viste scoretime
 
