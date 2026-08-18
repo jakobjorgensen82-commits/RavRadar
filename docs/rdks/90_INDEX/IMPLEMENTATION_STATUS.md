@@ -33,7 +33,8 @@
 - [x] Ny cachepres-rodårsag er målt: ingen automatisk keepalive-event ankom før næste 2,704-GiB DMI-save, og `#32139755594` fandt Copernicus-cachen fortrængt. Produktionsjobbet har nu en restore-only pre-DMI-refresh med fuld-validate-regression og uden rå log/upload.
 - [x] `#32140001424` og `#32140470201` genopbyggede kontrolleret 11/12 UTC: 1.258 records, to tider, 625 mål, 629 mål/kildepar og nul grid-/lagskift uden supportlæk.
 - [x] `b6cf0383`/#32140865173 bekræftede centralt cache-hit før DMI og overlevelse efter en ny 2,905-GB DMI-save. #32141443152 ramte samme cache bagefter uden recordlog.
-- [ ] Bekræft i næste naturlige pilot, at den bevarede to-timers-cache udvides med et nyt tidspunkt.
+- [x] Manuel aktuel-time-pilot #32141772134 udvidede efterfølgende cachen til 1.887 records ved 11/12/13 UTC med nul grid-/lagskift og nul supportlæk.
+- [ ] Bekræft samme bevarelse og udvidelse i første nye naturlige schedule-event efter rettelsen.
 
 # Implementeringsstatus pr. 4.0.231 – vist scoretime og strømpil deler DMI-celle
 

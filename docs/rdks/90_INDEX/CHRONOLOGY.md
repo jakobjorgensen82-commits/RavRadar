@@ -16,6 +16,7 @@
 12. GitHubs keepalive-cron leverede stadig intet event før #32139054129 gemte endnu en stor DMI-cache. #32139755594 fandt Copernicus-cachen væk. Produktionsjobbet fik derfor en restore-only pre-DMI-refresh, så den lille private cache røres umiddelbart før den cacheaktivitet, der kan udløse LRU-fortrængning.
 13. #32140001424/#32140470201 genopbyggede 11/12 UTC kontrolleret. Det rensede slutartifact bekræfter igen 1.258 records ved to tider, 625 unikke mål og nul grid-/lagskift uden rå U/V- eller credentiallæk.
 14. `b6cf0383`/#32140865173 ramte to-timers-cachen før DMI og bevarede den gennem en ny 2,905-GB DMI-save. Regressionerne bestod, 622/673 blev fortsat afvist, og #32141443152 ramte samme cache efterfølgende. LRU-beskyttelsen er dermed centralt bevist; næste naturlige pilot skal udvide tidsserien.
+15. Manuel aktuel-time-pilot #32141772134 tilføjede 13:00Z uden backfill og gav 1.887 records ved tre tider med nul grid-/lagskift og nul supportlæk. Selve udvidelsen er bevist; naturligt schedule-event efter rettelsen afventer fortsat.
 
 ## 2026-08-16 – 4.0.229 strømsted, bundlag og privat feltgrundlag
 

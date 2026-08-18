@@ -23,6 +23,7 @@
 - Workflowinventartesten registrerer nu også keepalive-filen og afviser både cache-save, artifact-upload og deployrettigheder i den private hjælpekæde.
 - Kontrollerede genopbygninger `#32140001424` og `#32140470201` genskabte 11:00Z og 12:00Z efter evictionen. Sidste rensede artifact har igen 1.258 records, to tider, 625 unikke mål, 629 mål/kildepar og nul gitter-/lagskift uden rå U/V eller credentials.
 - Central produktionskørsel `#32140865173` ramte præcis to-timers-cachen før DMI, gemte derefter en ny 2,905-GB DMI-cache og efterlod Copernicus-cachen intakt. Begge nye regressioner bestod, hvorefter 100 %-gaten igen stoppede på 622/673 før release/deploy. Uafhængig restore-only efterkontrol `#32141443152` ramte og validerede samme cache efter DMI-save.
+- Manuel aktuel-time-driftsprøve `#32141772134` tilføjede derefter 13:00Z uden backfill-parameter. Det rensede artifact har 1.887 records ved tre tider 11/12/13 UTC, 625 mål, 629 mål/kildepar og nul gitter-/lagskift; offentlig runtime og score er fortsat slået fra.
 
 ## Bevidst uændret og åbent
 
