@@ -26,6 +26,7 @@ for (const marker of [
   'python scripts/test-copernicus-current-pilot.py',
   'python scripts/test-current-regional-proxy-policy.py',
   'python scripts/run-copernicus-current-pilot.py',
+  'def raw_vector_present(value):',
   'data/diagnostics/copernicus-current-pilot.json',
   'retention-days: 7',
 ]) {

@@ -92,7 +92,13 @@ jobs:
           text=path.read_text(encoding='utf-8')
           data=json.loads(text)
           assert data['scoreImpact'] is False and data['publicRuntime'] is False
-          assert not any('uMps' in row or 'vMps' in row for row in data['verifiedTargets'])
+          def raw_vector_present(value):
+              if isinstance(value, dict):
+                  return any(key in {'uMps','vMps'} or raw_vector_present(child) for key, child in value.items())
+              if isinstance(value, list):
+                  return any(raw_vector_present(child) for child in value)
+              return False
+          assert not raw_vector_present(data)
           for name in ('COPERNICUSMARINE_SERVICE_USERNAME','COPERNICUSMARINE_SERVICE_PASSWORD'):
               value=os.environ.get(name,'')
               assert value and value not in text

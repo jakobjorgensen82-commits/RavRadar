@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 
-from lib.copernicus_current import load_targets, nearest_shared_uv, safe_record, update_shadow
+from lib.copernicus_current import load_targets, nearest_shared_uv, safe_record, safe_shadow_summary, update_shadow
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -93,6 +93,11 @@ def main() -> None:
         shadow = update_shadow(path, [fresh], now)
         need(len(shadow["records"]) == 1, "Shadow cache must prune records older than seven days")
         need(shadow["scoreImpact"] is False and shadow["publicRuntime"] is False, "Pilot must stay private and score-neutral")
+        evidence = safe_shadow_summary(shadow)
+        need(evidence["recordCount"] == 1 and evidence["validTimeCount"] == 1, "Safe evidence must summarize retained times")
+        need(evidence["gridUnstableTargetSourceCount"] == 0 and evidence["layerUnstableTargetSourceCount"] == 0, "One observation must be stable")
+        serialized = json.dumps(evidence)
+        need("uMps" not in serialized and "vMps" not in serialized, "Multi-run evidence must omit raw vectors")
 
     print("OK: private Copernicus current selection, provenance safety and 168-hour retention")
 

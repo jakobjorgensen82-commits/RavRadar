@@ -164,6 +164,71 @@ def safe_record(record: dict[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in record.items() if key not in {"uMps", "vMps"}}
 
 
+def safe_shadow_summary(document: dict[str, Any]) -> dict[str, Any]:
+    """Aggregate multi-run stability without exposing any current vector."""
+    records = list(document.get("records") or [])
+    by_source: dict[str, list[dict[str, Any]]] = {}
+    by_target_source: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for record in records:
+        source = str(record.get("source") or "unknown")
+        part_id = str(record.get("partId") or "")
+        by_source.setdefault(source, []).append(record)
+        by_target_source.setdefault((part_id, source), []).append(record)
+
+    def span(rows: list[dict[str, Any]], field: str) -> tuple[float | None, float | None]:
+        values = [float(row[field]) for row in rows if isinstance(row.get(field), (int, float)) and math.isfinite(float(row[field]))]
+        return (round(min(values), 5), round(max(values), 5)) if values else (None, None)
+
+    def stability(rows: list[dict[str, Any]]) -> dict[str, Any]:
+        distances = span(rows, "distanceKm")
+        depths = span(rows, "verticalLayerM")
+        grids = {tuple(row.get("gridPoint") or []) for row in rows}
+        layers = {row.get("verticalLayerM") for row in rows}
+        times = {str(row.get("validTime") or "") for row in rows if row.get("validTime")}
+        return {
+            "observationCount": len(rows),
+            "validTimeCount": len(times),
+            "gridPointCount": len(grids),
+            "verticalLayerCount": len(layers),
+            "minimumDistanceKm": distances[0],
+            "maximumDistanceKm": distances[1],
+            "minimumLayerM": depths[0],
+            "maximumLayerM": depths[1],
+            "surfaceOnlyCount": sum(row.get("layerQuality") == "surface-only" for row in rows),
+        }
+
+    source_rows = []
+    for source, rows in sorted(by_source.items()):
+        source_rows.append({
+            "source": source,
+            "uniqueTargetCount": len({str(row.get("partId") or "") for row in rows}),
+            **stability(rows),
+        })
+    target_rows = []
+    for (part_id, source), rows in sorted(by_target_source.items()):
+        first = rows[0]
+        target_rows.append({
+            "partId": part_id,
+            "parentZoneId": first.get("parentZoneId"),
+            "name": first.get("name"),
+            "source": source,
+            **stability(rows),
+        })
+    valid_times = sorted({str(row.get("validTime")) for row in records if row.get("validTime")})
+    return {
+        "recordCount": len(records),
+        "validTimeCount": len(valid_times),
+        "firstValidTime": valid_times[0] if valid_times else None,
+        "lastValidTime": valid_times[-1] if valid_times else None,
+        "uniqueTargetCount": len({str(row.get("partId") or "") for row in records}),
+        "targetSourcePairCount": len(target_rows),
+        "gridUnstableTargetSourceCount": sum(row["gridPointCount"] > 1 for row in target_rows),
+        "layerUnstableTargetSourceCount": sum(row["verticalLayerCount"] > 1 for row in target_rows),
+        "sources": source_rows,
+        "targets": target_rows,
+    }
+
+
 def load_shadow(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {

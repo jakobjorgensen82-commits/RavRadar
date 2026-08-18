@@ -16,7 +16,7 @@ from typing import Any
 import copernicusmarine
 import xarray as xr
 
-from lib.copernicus_current import LOCAL_MAX_DISTANCE_KM, load_targets, nearest_shared_uv, safe_record, update_shadow, utc_iso
+from lib.copernicus_current import LOCAL_MAX_DISTANCE_KM, load_targets, nearest_shared_uv, safe_record, safe_shadow_summary, update_shadow, utc_iso
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -209,6 +209,7 @@ def main() -> int:
         "verifiedUniqueTargetCount": len(selected),
         "missingTargetCount": len(targets) - len(selected),
         "shadowRecordCount": len(shadow.get("records") or []),
+        "shadowEvidence": safe_shadow_summary(shadow),
         "products": product_reports,
         "verifiedTargets": selected,
     }
