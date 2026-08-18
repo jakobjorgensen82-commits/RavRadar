@@ -21,6 +21,7 @@ import { applyCurrentTransportToHistory } from './lib/current-transport-history.
 import { retainWeatherHistory } from './lib/weather-history-retention.mjs';
 import { buildEffectiveRoutingCacheAlerts } from './lib/water-station-routing-alerts.mjs';
 import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
+import { mergeLiveCurrentPilotIntoRecord, verifiedLivePilotSource } from './lib/live-current-pilot.mjs';
 
 const ZONES_PATH = 'data/zones.geojson';
 const COASTAL_PARTS_SOURCE_PATH = 'data/geometry-v2/active-national-coastal-parts/manifest.json';
@@ -30,6 +31,7 @@ const DMI_OCEAN_OBS_ROOT = 'https://opendataapi.dmi.dk/v2/oceanObs/collections';
 const HEALTH_PATH = 'data/live/weather-health.json';
 const DMI_FORECAST_STORE_PATH = 'data/live/dmi-forecast-cache.json';
 const DMI_BULK_CACHE_PATH = 'data/live/dmi-bulk-cache.json';
+const LIVE_CURRENT_PILOT_PATH = 'data/live/current-pilot-history.json';
 const RUNTIME_DIAGNOSTICS_PATH = 'data/live/ravradar-runtime-diagnostics.json';
 const WATER_STATION_ROUTING_PATH = 'data/water-level-station-routing.json';
 const WATER_STATION_INVENTORY_PATH = 'data/live/dmi-water-stations.json';
@@ -888,7 +890,16 @@ async function readDmiBulkCache() {
   }
 }
 
-function bulkZoneToForecastRecord(feature, bulkCache, generatedAt, previousRecord = null) {
+async function readLiveCurrentPilot() {
+  try {
+    const parsed = JSON.parse(await fs.readFile(LIVE_CURRENT_PILOT_PATH, 'utf8'));
+    return Number(parsed?.schemaVersion) === 1 && parsed?.controlledLivePilot === true ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function bulkZoneToForecastRecord(feature, bulkCache, generatedAt, previousRecord = null, { startAt = generatedAt } = {}) {
   const zoneId = feature.properties?.id;
   const bulkZone = bulkCache?.zones?.[zoneId];
   const point = zonePoint(feature);
@@ -910,7 +921,7 @@ function bulkZoneToForecastRecord(feature, bulkCache, generatedAt, previousRecor
     return { step: row.time, 'sea-mean-deviation': num(row['sea-mean-deviation']), 'current-u': rowCurrentValid ? num(row['current-u']) : null, 'current-v': rowCurrentValid ? num(row['current-v']) : null, 'water-temperature': num(row['water-temperature']), provenance: { current: rowCurrentValid ? provenance(row).current : null, waterLevel: provenance(row).waterLevel, waterTemperature: provenance(row).waterTemperature } };
   });
   const sourceCadenceMinutes = Number(bulkCache?.timeStrideHours ?? 3) * 60;
-  const built = buildDmiForecastHourly({ wind, windTail, waves, ocean, generatedAt, hours: DMI_FORECAST_HOURS, sourceCadenceMinutes });
+  const built = buildDmiForecastHourly({ wind, windTail, waves, ocean, generatedAt, startAt, hours: DMI_FORECAST_HOURS, sourceCadenceMinutes });
   const currentAvailable = ocean.some(item => num(item['current-u']) !== null && num(item['current-v']) !== null);
   const marine = ocean.some(item => num(item['sea-mean-deviation']) !== null && num(item['current-u']) !== null && num(item['current-v']) !== null);
   const windAvailable = wind.some(item => num(item['wind-speed-10m']) !== null && num(item['wind-dir-10m']) !== null);
@@ -994,10 +1005,11 @@ function mergeBulkCacheIntoForecastStore(features, bulkCache, store, generatedAt
   return stats;
 }
 
-function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, generatedAt) {
+function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, liveCurrentPilot, generatedAt) {
   const parentById = new Map(parentFeatures.map(feature => [feature.properties?.id, feature]));
   const expectedByZone = new Map();
   const partRows = [];
+  const partForecastStartAt = new Date(Math.floor(Date.parse(generatedAt) / 3600000) * 3600000).toISOString();
   const nearestIndex = rows => rows.reduce((best, row, index) => Math.abs(Date.parse(row.time) - Date.parse(generatedAt)) < Math.abs(Date.parse(rows[best]?.time) - Date.parse(generatedAt)) ? index : best, 0);
   for (const [zoneId, parts] of Object.entries(contract?.zones ?? {})) {
     expectedByZone.set(zoneId, parts.length);
@@ -1009,12 +1021,16 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, generated
         type: 'Feature', geometry: { type: 'Point', coordinates: part.waterPoint },
         properties: { ...parent.properties, id: bulkId, name: part.name, dataPoint: part.waterPoint, pinPoint: part.landPoint, onshoreDirectionDeg: part.onshoreDirectionDeg }
       };
-      const record = bulkZoneToForecastRecord(feature, bulkCache, generatedAt, null);
-      if (!record) continue;
+      const dmiRecord = bulkZoneToForecastRecord(feature, bulkCache, generatedAt, null, { startAt: partForecastStartAt });
+      if (!dmiRecord) continue;
+      const record = mergeLiveCurrentPilotIntoRecord(dmiRecord, { ...part, zoneId }, liveCurrentPilot, {
+        primaryCurrentVerified: hour => Boolean(verifiedBulkCurrent(bulkCache, bulkCache?.zones?.[bulkId], part.waterPoint, hour?.sources?.current)),
+      });
       const hourly = normalizeForecastHourly(record.hourly ?? []).map(hour => {
-        const source = hour?.sources?.current;
+        const source = hour?.currentProvenance?.status === 'verified' ? hour.currentProvenance : hour?.sources?.current;
         const proof = num(hour?.currentUMps) !== null && num(hour?.currentVMps) !== null
           ? verifiedBulkCurrent(bulkCache, bulkCache?.zones?.[bulkId], part.waterPoint, source)
+            || verifiedLivePilotSource(source, part.waterPoint, { requireStatus: true })
           : null;
         if (proof) return {
           ...hour,
@@ -1026,7 +1042,7 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, generated
           currentVMps: null,
           currentSpeedMps: null,
           currentDirectionDeg: null,
-          currentProvenance: { status: 'unverified', reason: 'no-time-specific-dmi-water-column' },
+          currentProvenance: { status: 'unverified', reason: 'no-time-specific-verified-water-column' },
         };
       });
       const currentSamples = hourly.filter(hour => hour.currentSpeedMps != null && hour.currentDirectionDeg != null).map(hour => ({
@@ -1116,7 +1132,13 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, generated
       current: score
     }];
   }));
-  return { schemaVersion: 1, enabled: true, datasetVersion: contract.datasetVersion, sourceRunId: contract.sourceRunId, generatedAt, marginPoints: 7, expectedPartCount: contract.partCount, scoredPartCount: partRows.length, parts, zones };
+  return {
+    schemaVersion: 1, enabled: true, datasetVersion: contract.datasetVersion, sourceRunId: contract.sourceRunId,
+    generatedAt, marginPoints: 7, expectedPartCount: contract.partCount, scoredPartCount: partRows.length,
+    currentPilotMode: liveCurrentPilot?.mode ?? 'unavailable',
+    currentPilotEnabled: liveCurrentPilot?.mode === 'controlled-live' && liveCurrentPilot?.enabled === true,
+    parts, zones
+  };
 }
 
 function dmiCollections(coastType) {
@@ -1867,6 +1889,7 @@ const coastCorridors = buildCoastCorridors(features);
 const previous = await readPrevious();
 const dmiForecastStore = await readDmiForecastStore();
 const dmiBulkCache = await readDmiBulkCache();
+const liveCurrentPilot = await readLiveCurrentPilot();
 const generatedAt = new Date().toISOString();
 const activeZoneIds = features.map(feature => feature.properties?.id).filter(Boolean);
 const nextDmiForecastStore = createPersistentDmiStore(dmiForecastStore, activeZoneIds, DMI_FORECAST_HOURS);
@@ -2254,8 +2277,15 @@ if (dmiTransientFailure && fallbackZoneIds.length) {
 
 // Alle filer fra samme kørsel får samme dataset-id. Frontenden må ikke blande filer fra forskellige kørsler.
 output.datasetId = `rr-${generatedAt.replace(/[^0-9]/g,'').slice(0,14)}-${Object.keys(output.zones).length}`;
+output.controlledLiveCurrentPilot = {
+  mode: liveCurrentPilot?.mode ?? 'unavailable',
+  enabled: liveCurrentPilot?.mode === 'controlled-live' && liveCurrentPilot?.enabled === true,
+  historyPath: './current-pilot-history.json',
+  credentialsIncluded: false,
+  generatedAt: liveCurrentPilot?.generatedAt ?? null,
+};
 output.coastalParts = coastalPartsContract.enabled
-  ? scoreCoastalPartsRuntime(coastalPartsContract, features, dmiBulkCache, generatedAt)
+  ? scoreCoastalPartsRuntime(coastalPartsContract, features, dmiBulkCache, liveCurrentPilot, generatedAt)
   : { schemaVersion: 1, enabled: false, datasetVersion: coastalPartsContract.datasetVersion, sourceRunId: coastalPartsContract.sourceRunId, generatedAt, marginPoints: 7, expectedPartCount: coastalPartsContract.partCount, scoredPartCount: 0, parts: {}, zones: {} };
 // Conditions skrives først. Den offentlige runtime og manifestet bygges derefter af én fælles, deterministisk funktion.
 await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(output, null, 2)}\n`);

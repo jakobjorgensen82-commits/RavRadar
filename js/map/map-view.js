@@ -320,6 +320,7 @@ function validDirection(value) {
 }
 
 export function buildFlowArrowCandidates(featureCollection, conditionForZone, coastalParts = null, zoom = 7) {
+  const verifiedCurrentGridSources = new Set(['dmi-marine-grid', 'copernicus-current-grid', 'dmi-regional-proxy-grid']);
   const candidates = [];
   const activeZoneIds = new Set();
   for (const feature of featureCollection?.features || []) {
@@ -332,7 +333,7 @@ export function buildFlowArrowCandidates(featureCollection, conditionForZone, co
     const condition = zoneCondition.current || zoneCondition;
     const flowPoints = zoneCondition.flowPoints || {};
     const currentProvider = zoneCondition.currentSource || zoneCondition.sources?.current?.provider || null;
-    const verifiedCurrent = flowPoints?.sources?.current === 'dmi-marine-grid';
+    const verifiedCurrent = verifiedCurrentGridSources.has(flowPoints?.sources?.current);
     if (validDirection(condition.currentDirectionDeg) && (currentProvider !== 'dmi' || verifiedCurrent)) {
       candidates.push({
         type:'current', zoneId:zone.id, partId:null,
@@ -359,9 +360,9 @@ export function buildFlowArrowCandidates(featureCollection, conditionForZone, co
     if (!activeZoneIds.has(part?.zoneId)) continue;
     const weather = part?.current?.weather || {};
     const flowPoints = part?.flowPoints || {};
-    if (validDirection(weather.currentDirectionDeg) && flowPoints?.sources?.current === 'dmi-marine-grid') {
+    if (validDirection(weather.currentDirectionDeg) && verifiedCurrentGridSources.has(flowPoints?.sources?.current)) {
       const point = pointCoordinates(flowPoints.current);
-      if (point) candidates.push({ type:'current', zoneId:part.zoneId, partId, point, directionDeg:Number(weather.currentDirectionDeg), source:'dmi-marine-grid' });
+      if (point) candidates.push({ type:'current', zoneId:part.zoneId, partId, point, directionDeg:Number(weather.currentDirectionDeg), source:flowPoints.sources.current });
     }
     const windSource = flowPoints?.sources?.wind;
     if (validDirection(weather.windDirectionDeg) && ['dmi-atmospheric-grid', 'dmi-marine-wind-grid'].includes(windSource)) {

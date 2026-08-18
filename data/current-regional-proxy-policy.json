@@ -11,6 +11,7 @@
   "globalOverrideAllowed": false,
   "scoreImpact": false,
   "publicRuntime": false,
+  "controlledLivePilotAllowed": true,
   "rawRetentionHours": 168,
   "supportReportRawVectors": false,
   "activationRequires": [

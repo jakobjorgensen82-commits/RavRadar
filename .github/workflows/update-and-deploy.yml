@@ -244,6 +244,10 @@ jobs:
             echo "::warning::DMI bulk refresh failed. RavRadar preserves the previous DMI cache and uses fallback providers where necessary."
           fi
 
+      - name: Build public seven-day current history and controlled live selection
+        if: steps.preflight.outputs.should_run == 'true'
+        run: python scripts/build-live-current-pilot.py
+
       - name: Update central weather cache
         if: steps.preflight.outputs.should_run == 'true'
         id: weather

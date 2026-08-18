@@ -1,24 +1,22 @@
 # RavRadar Håndbog
 
-## Supplerende strøm afprøves privat – 4.0.232-kandidat
+## Supplerende strøm kører som kontrolleret live-pilot – 4.0.232-kandidat
 
-RavRadar bruger fortsat kun den verificerede DMI-kæde i den offentlige score og på kortet. En separat privat pilot afprøver nu to officielle tredimensionelle Copernicus-havmodeller som supplement, når DMI mangler et fælles strømpar tæt på kystpunktet. Piloten vælger først nærmeste vandkolonne med både øst-vest- og nord-syd-strøm på samme tidspunkt og vælger derefter det dybeste fælles lag i netop denne kolonne. Der interpoleres ikke mellem celler eller lag, og Copernicus-afstanden er fortsat højst 5 km.
+RavRadar bruger fortsat DMI som førstevalg, men ejeren har godkendt, at de verificerede supplerende strømdata går online på den nuværende ikke-offentlige udviklingsside. Når lokal DMI mangler ved en præcis time, prøver systemet Baltic NEMO og derefter AMM15 inden for 5 km. Kun for de otte udtrykkeligt godkendte Limfjordsdele må nærmeste `dkss_lf`-celle til sidst bruges som regional proxy inden for 15 km. Nærmeste komplette vandkolonne vælges før dybeste fælles lag, og der interpoleres ikke mellem Copernicus-/proxytider, celler eller lag.
 
-Pilotdata opbevares højst syv døgn og påvirker hverken RavScore, offentlige pile eller historik. En sikker rapport må vise kilde, tidspunkt, grid, dybde, afstand og kvalitetsklasse, men ikke loginoplysninger eller rå strømvektorer. Særligt lavvandede celler med kun overfladelag mærkes `surface-only` og må ikke fremstilles som bundnære.
+Kildernes autentificerede råcache opbevares højst syv døgn og forbliver privat. Den validerede liveprojektion ligger derimod online i den separate fil `data/live/current-pilot-history.json` med U/V, kilde, tidspunkt, grid, dybde, afstand og kvalitetsklasse. Filen hentes ikke ved normal sidestart, så hele historikken ikke gør kortet langsommere. Copernicus-loginoplysninger kommer aldrig med. Den aktuelt valgte post må påvirke RavScore og de nye pile, og særligt lavvandede celler med kun overfladelag mærkes `surface-only` frem for at blive kaldt bundnære.
 
-Syvdøgnsgrænsen kontrolleres nu også ved hver normal releasevalidering. Systemet beholder en prøve på selve 168-timersgrænsen, fjerner ældre, fremtidige eller beskadigede poster fra en gendannet cache og samler identiske prøver. En helt ny prøve accepteres kun, når punkt, modelcelle, afstand og begge strømkomponenter opfylder samme-tid/celle/lag-reglen; ellers stopper den private pilot. Det naturlige syvdøgnsforløb skal stadig observeres i drift.
+Syvdøgnsgrænsen kontrolleres ved hver normal releasevalidering. Systemet beholder en prøve på selve 168-timersgrænsen, fjerner ældre, fremtidige eller beskadigede poster og samler identiske prøver. En helt ny prøve accepteres kun, når punkt, modelcelle, afstand og begge strømkomponenter opfylder samme-tid/celle/lag-reglen. Det naturlige syvdøgnsforløb observeres i den virkelige live-runtime og er ikke længere et krav om syv dages spøgelsestest før første aktivering.
 
-Den første autentificerede timeprøve dækkede 43 af de 51 aktuelle DMI-huller: 39 fra Baltic og fire fra AMM15. Sammen med DMI svarer det til 665/673, mens præcis de otte dokumenterede Limfjordsdele fortsat mangler lokal strøm. Prøven er ikke en aktivering; piloten kører privat hver time for at opbygge syv døgns stabilitetsbevis.
+Den første autentificerede timeprøve dækkede 43 af de 51 aktuelle DMI-huller: 39 fra Baltic og fire fra AMM15. De sidste otte er præcis de godkendte Limfjordsproxyer. Sammen med DMI giver kildekæden derfor et 673/673-potentiale. Normal live-drift åbnes kun, når alle 673 faktisk findes i samme friske produktionsbygning med fuld provenance og alle releasegates grønne.
 
-GitHubs egen timeplan viste sig ikke stabil nok: workflowet var aktivt, men efter ét forsinket event udeblev de næste timer. RavRadar bruger derfor den samme eksterne tidsstarter, som allerede starter vejropdateringen, som et sikkert hjerteslag. Et privat job ser kun efter, om cachen indeholder den aktuelle UTC-time. Mangler timen, starter det den eksisterende Copernicus-pilot; findes timen allerede, downloades den ikke igen. Kontrollen kan ikke ændre produktion, RavScore eller kort og skriver aldrig rå strømværdier i loggen.
+GitHubs egen timeplan viste sig ikke stabil nok. RavRadar bruger derfor den samme eksterne tidsstarter, som allerede starter vejropdateringen, som et sikkert hjerteslag. Et privat job ser kun efter, om cachen indeholder den aktuelle UTC-time. Mangler timen, starter det den eksisterende Copernicus-collector; findes timen allerede, downloades den ikke igen. Kontrollen skriver aldrig rå strømværdier eller credentials i loggen.
 
-En UTC-time tæller kun som færdig for den punktbestand, den faktisk blev hentet til. Piloten laver derfor et digitalt fingeraftryk af alle centrale del-ID'er og vandpunkter og gemmer det sammen med timens forventede antal råposter. Hvis ejeren flytter blot ét vandpunkt, hvis en gammel cache mangler dette manifest, eller hvis recordantallet ikke passer, hentes timen igen privat. Alle gamle poster for netop den time erstattes samlet, og ældre historik for selve den flyttede del fjernes; uændrede deles historik kan bevares. Data fra gammel og ny geometri blandes dermed ikke.
+En UTC-time tæller kun som færdig for den punktbestand, den faktisk blev hentet til. Collectoren laver derfor et digitalt fingeraftryk af alle centrale del-ID'er og vandpunkter og gemmer det sammen med timens forventede antal råposter. Hvis ejeren flytter blot ét vandpunkt, hvis en gammel cache mangler dette manifest, eller hvis recordantallet ikke passer, hentes timen igen. Data fra gammel og ny geometri blandes dermed ikke.
 
-Otte dokumenterede modelhuller i den vestlige Limfjord har en særskilt ejerbeslutning. Når alle gates senere er bestået, må kun disse otte bruge nærmeste eksakte DMI-Limfjordsstrøm som tydeligt mærket regional proxy op til 15 km. Alle andre områder beholder 5-km-grænsen. Pilen skal fortsat stå på den faktiske modelcelle, og et ændret administratorpunkt kræver ny kontrol.
+Før de otte regionale poster anvendes, kontrollerer systemet, at hvert centralt vandpunkt stadig er præcis det ejer-godkendte punkt, at delen stadig tilhører Limfjorden, at kilden er `dkss_lf`, og at den faktiske modelcelle højst ligger 15 km væk. Denne undtagelse ændrer ikke 5-km-grænsen for nogen anden del. Den viste score og pil bruger samme præcise U/V-post, og pilen står på den faktiske modelcelle.
 
-Fra 4.0.232-kandidaten samles de otte deles faktiske DMI-strøm privat ved hver vejrbygning. Før opsamlingen kontrollerer systemet, at hvert centralt vandpunkt stadig er præcis det ejer-godkendte punkt, at delen stadig tilhører Limfjorden, og at data kommer fra Limfjordsmodellen. Forkert model eller mere end 15 km bliver afvist. Denne undtagelse ændrer ikke 5-km-grænsen for nogen anden del.
-
-De rå øst-vest- og nord-syd-værdier ligger kun i den private cache og slettes efter højst syv døgn. Supportpakken viser navn, samplingpunkt, modelkørsel, tidspunkt, modelcelle, afstand og dybdelag, men ikke strømværdierne. Den offentlige app bruger stadig ikke regionalproxyen; først friske fler-kørselsbeviser og de fulde releasegates kan åbne en senere aktivering.
+En versionsstyret driftskontrol fungerer som sikker rollback. Normaltilstanden `controlled-live` kræver 673/673. Hvis supplementet viser en reel fejl, kan `dmi-only-rollback` slå Copernicus og regionalproxy ud af score og pile igen, mens friske vind-, bølge-, vandstands- og øvrige prognoser fortsætter. De berørte strømdele bliver tydeligt `missing`; rollback må aldrig foregive fuld strømdækning.
 
 ## Den lokale strømpil følger den scoretime, der faktisk vises – 4.0.231
 
@@ -164,7 +162,7 @@ Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande
 
 ## Strømsted, bundnært lag og syvdøgnsforskning – 4.0.229
 
-Det blå vandpunkt er samplinganker for både den viste strømpil og den strøm, som den aktive score må bruge. RavRadar vælger først den nærmeste DMI-vandkolonne med et komplet U/V-par og derefter det dybeste gyldige lag i præcis den kolonne. Op til 3 km foretrækkes, 3–5 km kan accepteres, og over 5 km er strømmen manglende. Den faktiske koordinatafstand kontrolleres særskilt. Kun verificeret DMI-GRIB-strøm må bruges aktivt; gamle cacher, direkte ForecastEDR-strøm uden fælles kolonne- og lagbevis samt Open-Meteos overfladestrøm og anden fallbackstrøm lukkes ude før historik, score og kort.
+Det blå vandpunkt er samplinganker for både den viste strømpil og den strøm, som den aktive score må bruge. RavRadar prøver først den nærmeste DMI-vandkolonne med et komplet U/V-par og vælger derefter det dybeste gyldige lag i præcis den kolonne. Op til 3 km foretrækkes, 3–5 km kan accepteres, og over 5 km går kæden videre til de godkendte supplementer. Baltic og AMM15 må højst ligge 5 km væk; kun de otte udtrykkeligt godkendte Limfjordsproxyer må ligge op til 15 km væk. Gamle cacher, direkte ForecastEDR-strøm uden fælles kolonne- og lagbevis, Open-Meteos overfladestrøm og andre ikke-godkendte fallbacks lukkes ude før historik, score og kort.
 
 DMI kan have forskellige dybeste tilgængelige lag på forskellige forecasttidspunkter. Derfor foretages lagvalget for hver native tid. RavRadar må kun beregne mellemtimer, når begge native tider har samme lag, vandcelle og modelkørsel; ellers vises strøm som manglende mellem tiderne. Pilen står altid på den valgte times egen dokumenterede celle. For en lokal del vælges den viste scoretime først, så pilen ikke kan falde tilbage til byggetidens vandpunkt, mens tallet kommer fra en senere DMI-time. Centralt flyttede kystdelspunkter bygges før næste DMI-sampling, og kun cachen for det flyttede punkt nulstilles.
 
@@ -174,7 +172,7 @@ Rotationen registrerer også, hvor langt der er til den nærmeste modelkolonne m
 
 **Håndbogsversion:** 4.0.232
 
-**Opdateret:** 16. august 2026
+**Opdateret:** 18. august 2026
 
 ## Lokal DMI og geografiske delscorer – 4.0.193
 
@@ -1325,7 +1323,7 @@ Denne opdeling ændrer ikke RavScore, kortfarver, bedste tidspunkt eller de vist
 
 En strømpil er ikke blot pynt. Den skal vise en bestemt beregnet vandbevægelse ved et bestemt sted. RavRadar viser derfor ikke længere flere kopier af den samme pil spredt tilfældigt omkring en zone. Den tidligere visning kunne placere pile på land og kunne få kortet til at ligne et tæt målenet, selv om alle pilene byggede på den samme zoneværdi.
 
-Når strømmen kommer direkte fra DMI, placeres pilen nu ved det modelgitterpunkt, hvor DMI leverede de to strømkomponenter. Den ene komponent beskriver bevægelsen mod øst eller vest, og den anden beskriver bevægelsen mod nord eller syd. Punktet betragtes som et gyldigt marint modelpunkt, fordi begge strømkomponenter findes dér. Hvis RavRadar ikke kan dokumentere dette punkt, vises der ikke en DMI-strømpil.
+Hver strømpil placeres ved det modelgitterpunkt, hvor den valgte kilde leverede de to strømkomponenter. Det gælder både lokal DMI, Copernicus og de otte godkendte regionale Limfjordsproxyer. Den ene komponent beskriver bevægelsen mod øst eller vest, og den anden beskriver bevægelsen mod nord eller syd. Hvis RavRadar ikke kan dokumentere fælles tidspunkt, celle, lag, afstand og kilde, vises der ingen verificeret strømpil.
 
 ### 56.1 Sådan beregnes retningen
 
@@ -1337,13 +1335,13 @@ Pilene tilføjes først, når dagens rangliste og femdøgnsprognosen er klar. De
 
 ### 56.2 Sådan kontrolleres zoneværdien
 
-For hver DMI-time kan RavRadar efterprøve tre ting:
+For hver valgt strømtime kan RavRadar efterprøve tre ting:
 
 1. Om øst-/vest- og nord-/syd-komponenten kommer fra samme modelpunkt.
 2. Om den viste hastighed svarer til længden af de to komponenter tilsammen.
 3. Om den viste retning og kortpil svarer til komponenternes faktiske bevægelsesretning.
 
-I 4.0.76 blev 23.049 prognosetimer kontrolleret på denne måde. 197 af 209 aktive zoner havde et direkte dokumenteret DMI-marinepunkt i den medfølgende modelcache. De resterende zoner har enten fallback, manglende strøm eller ældre DMI-data uden tilstrækkelig punktproveniens. RavRadar viser ikke en direkte DMI-pil uden denne dokumentation.
+Den aktive audit kontrollerer fortsat hovedzonernes DMI-timer og kontrollerer derudover alle 673 lokale kystdele. I normal live-tilstand skal hver del have enten gyldig lokal DMI eller en eksakt onlinehistorikpost fra den tilladte Copernicus-/proxyklasse. Den viste U/V, scoretid og pilcelle skal være identiske. Mangler dokumentationen for blot én del, stopper normal release.
 
 ### 56.3 Hvad betyder pilens sted ikke?
 
@@ -1351,13 +1349,13 @@ Pilen viser modelværdien på modelgitteret. Den beviser ikke, at strømmen er p
 
 ### 56.4 Flere ægte pile ved indzoomning
 
-På landsoversigten viser RavRadar fortsat ét repræsentativt vind- og strømpunkt pr. hovedzone. Når brugeren zoomer ind til niveau 9 eller nærmere, kan kortet vise flere pile fra de lokale kystdele. En ekstra pil vises kun, når kystdelen har sit eget dokumenterede DMI-gitterpunkt.
+På landsoversigten viser RavRadar fortsat ét repræsentativt vind- og strømpunkt pr. hovedzone. Når brugeren zoomer ind til niveau 9 eller nærmere, kan kortet vise flere pile fra de lokale kystdele. En ekstra pil vises kun, når kystdelen har sit eget dokumenterede DMI-, Copernicus- eller godkendte regionalproxy-gitterpunkt.
 
 For strøm skal øst-/vest- og nord-/syd-komponenten komme fra præcis samme koordinat. For vind gælder samme regel for de to vindkomponenter. Vindpunktet kan komme fra DMI's almindelige atmosfæremodel eller fra havmodellens vindserie, alt efter hvilken serie prognosen faktisk bruger; RavRadar bevarer denne forskel i kildemærket. Et almindeligt zoneanker, et fallbackpunkt eller en kopi af en eksisterende pil bruges ikke til at gøre kortet tættere. Pilene flyttes heller ikke for at undgå overlap; hvis to punkter ligger for tæt på skærmen, kan den ene i stedet skjules ved det aktuelle zoomniveau.
 
 Den hurtige startpakke indeholder pilgrundlaget for de kystdele, der vinder aktuelt. Den fulde detaljepakke hentes bagefter og indeholder alle dokumenterede lokale punkter. Pilelaget tegnes automatisk igen, når pakken ankommer, og ved senere zoom eller kortflytning.
 
-Denne visning ændrer ikke DMI-værdier, prognoser, RavScore, historik eller land-/vandpunkter. Den viser blot mere af det selvstændige rumlige datagrundlag, som allerede findes.
+Visningen ændrer ikke land-/vandpunkterne eller flytter modeldata. Den viser det selvstændige rumlige datagrundlag, som den valgte strøm og RavScore faktisk bruger på den pågældende time.
 
 ## 57. Hvorfor admin ikke må starte med en tom Oversigt
 

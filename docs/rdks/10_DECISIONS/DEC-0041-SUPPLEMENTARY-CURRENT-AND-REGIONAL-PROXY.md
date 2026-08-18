@@ -1,6 +1,6 @@
 # DEC-0041 – Supplerende 3D-strøm og afgrænset regional Limfjordsproxy
 
-- **Status:** Aktiv beslutning, privat pilot før produktionsaktivering
+- **Status:** Aktiv beslutning, kontrolleret live-pilot godkendt på ejerens ikke-offentlige side
 - **Besluttet:** 2026-08-18
 - **Ejerbeslutning:** Ja
 
@@ -23,21 +23,29 @@ Otte resterende modelhuller ligger i den vestlige Limfjord. Deres nærmeste obse
 
 ## Aktiveringsgate
 
+### Ejerpræcisering 2026-08-18 – syvdøgnsbeviset køres live
+
+Ejeren har præciseret, at RavRadar-siden ikke er offentlig i den aktuelle udviklingsfase. Den tidligere arbejdsantagelse om, at hele 168-timersobservationen skulle afsluttes i et isoleret testspor før enhver live-aktivering, er derfor erstattet. En spøgelsestest er ikke målet: når kildefletningen på de friske centrale punkter giver præcis 673/673 med fuld provenance og består projektets fulde validerings-, release- og rollbackgates, må den køre som en tydeligt kontrolleret live-pilot på den fuldt fungerende side. Stabilitet, kilde-/celle-/lagdrift og fejlgrene eftermåles derefter i syv døgn i den virkelige runtime.
+
+Præciseringen sænker ikke 673/673-kravet og giver ikke tilladelse til stale data, nuludfyldning, skjult interpolation, vilkårlige fjernkilder eller ukorrekte pilplaceringer. Credentials forbliver hemmelige, men ejerens gyldige Copernicus- og regionalproxydata må publiceres på den ikke-offentlige live-side med U/V, tid, celle, lag, afstand og kilde. Den fulde syvdøgnshistorik lægges i en separat dovent indlæst live-diagnostikfil, mens kun de tids-, celle-, lag-, afstands- og geometriverificerede valgte strømme føres ind i score og kort; DMI er fortsat førstevalg.
+
+Live-piloten skal have en versionsstyret rollbackkontrol. Normaltilstanden kræver præcis 673/673. En udtrykkeligt aktiveret nødtilstand må slå Copernicus og regionalproxy helt ud af score og pile og deploye friske almindelige prognoser med de berørte strømdele tydeligt `missing`; den må ikke fremstille den reducerede DMI-dækning som 673/673. Formålet er sikker tilbagevenden ved en pilotfejl, ikke en skjult permanent lempelse. Centrale administratorpunkter og den seneste kendte fungerende tilstand må ikke overskrives.
+
 Privat kode og data må ikke nå offentlig runtime, pile eller score, før følgende er dokumenteret på friske centrale punkter:
 
 - gyldig autentificeret Copernicus-download uden credentiallæk,
-- flere modelruns med stabil kilde-, tids-, celle- og lagidentitet,
+- mindst ét frisk komplet 673/673-produktionsgrundlag før første live-aktivering; flere modelruns og hele 168-timersvinduet eftermåles derefter i den kontrollerede live-pilot,
 - højst 5 km for alle Copernicus-par og højst 15 km for de otte eksplicitte DMI-proxyer,
 - korrekt placering af pile på den faktiske kildecelle,
 - fuld verificeret strømdækning af alle aktive kystdele, aktuelt 673/673; den tidligere 95 %-indfasningsgate er erstattet,
 - fuld projektvalidering, releasegate og frisk produktionsworkflow,
 - samt sikker fallback til DMI eller `missing`, hvis en supplerende kilde fejler.
 
-Første autentificerede private bevis `#32129799346` ved 2026-08-18 11:00Z fandt 39 Baltic- og fire AMM15-par blandt de 51 DMI-huller; de sidste otte var præcis regionalproxyens allowlist. Det opfylder én timeprøve, men ikke kravet om flere modelruns. Derfor forbliver integrationen inaktiv, mens en privat timeplan opbygger højst syv døgns stabilitetshistorik.
+Første autentificerede private bevis `#32129799346` ved 2026-08-18 11:00Z fandt 39 Baltic- og fire AMM15-par blandt de 51 DMI-huller; de sidste otte var præcis regionalproxyens allowlist. Det opfylder én timeprøve. Efter ejerpræciseringen er et afsluttet syvdøgnsvindue ikke længere en forudsætning for en kontrolleret live-pilot, men integrationen må fortsat ikke aktiveres, før den faktiske kildefletning, 673/673-gaten, fuld provenance, pile, score, rollback og den komplette releasekæde er implementeret og grøn.
 
 Første cron `#32134686185` hentede 12:00Z, men afslørede LRU-fortrængning af 11:00Z under cirka 10,2 GB fælles Actions-cache. En rå artifactløsning blev forkastet, fordi repositoryet er offentligt. Restore-only keepalive `#32136328681`, kontrolleret backfill `#32136391556` og efterkontrol `#32136642330` beviser nu to tider/1.258 records i samme private cache uden gitter-/lagskift eller rå/credentiallæk i supportoutput. Det er flertidslagringsbevis, men endnu ikke syv døgn eller flere modelruns og giver ingen aktiveringstilladelse.
 
-Retentionkontrakten er derefter ført ind i normal releasevalidering. Den bevarer grænseposten ved præcis 168 timer, beskærer ældre, fremtidige og strukturelt ugyldige restoreposter, deduplikerer eksakt og stopper ved nye poster uden lokalt samme-tid/celle/lag-U/V-bevis. Dette er kodebevis; det naturlige fulde syvdøgnsvindue og flere modelruns kræves fortsat før aktiveringsdesign.
+Retentionkontrakten er derefter ført ind i normal releasevalidering. Den bevarer grænseposten ved præcis 168 timer, beskærer ældre, fremtidige og strukturelt ugyldige restoreposter, deduplikerer eksakt og stopper ved nye poster uden lokalt samme-tid/celle/lag-U/V-bevis. Dette er kodebevis; det naturlige fulde syvdøgnsvindue og flere modelruns kræves fortsat som live-eftermåling og endeligt stabilitetsbevis, men ikke som adgangsbillet til første kontrollerede live-aktivering.
 
 GitHubs native schedule viste sig efterfølgende ikke driftssikkert: workflowet var aktivt og manuel dispatch virkede, men kun ét forsinket schedule-event blev leveret. Piloten beholder native schedule som reserve, mens den normale opsamling kobles til `requested`-eventet fra det eksisterende eksternt startede produktionsworkflow. Keepalive må kun gendanne og kontrollere privat cache read-only. Mangler aktuel UTC-time, må et særskilt minimalt job med `actions: write` dispatch'e den eksisterende private pilot på `main`; det må ikke skrive cache, uploade rådata, ændre produktionsworkflow eller deploye. Denne driftsrettelse ændrer ingen aktiveringsgate.
 
@@ -45,7 +53,7 @@ Timeidentiteten er ikke tilstrækkelig alene, fordi ejeren kan flytte et central
 
 4.0.232-kandidaten implementerer den private DMI-del af beslutningen. Alle otte allowlistmål bygges på hver kørsel fra den aktuelt centralt hydrerede kystdelsregistrering. Kun `dkss_lf` kan levere dem, almindelige mål bevarer 5-km-grænsen, og en ændret godkendt koordinat eller afstand over 15 km stopper lukket. Rå U/V opbevares kun i den private 168-timers cache; den artifactegnede supportreport indeholder kun tid, run, gitter, lag og afstand. Dette er indsamling, ikke offentlig aktivering.
 
-Den første centrale manifestmigration er gennemført: `#32149556595` identificerede legacycachen og dispatch'ede `#32149592195`, som hydrerede 673 aktuelle punkter, genindsamlede 14 UTC og gemte den nye fingeraftryksbundne cache uden rå/credentiallæk i supportartifactet. Det beviser driftssikker identitet og migration, men ændrer ingen af aktiveringsgaterne eller kravet om flere modelruns og et naturligt 168-timersvindue.
+Den første centrale manifestmigration er gennemført: `#32149556595` identificerede legacycachen og dispatch'ede `#32149592195`, som hydrerede 673 aktuelle punkter, genindsamlede 14 UTC og gemte den nye fingeraftryksbundne cache uden rå/credentiallæk i supportartifactet. Det beviser driftssikker identitet og migration. Ejerpræciseringen ændrer ikke de tekniske aktiveringsgates, men flytter flere modelruns og det naturlige 168-timersvindue fra førkrav til kontrolleret live-eftermåling.
 
 ## Konsekvens
 

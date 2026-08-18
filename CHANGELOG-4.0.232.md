@@ -1,5 +1,13 @@
 # RavRadar 4.0.232
 
+## Kontrolleret live-strøm, nye strømpile og rollback
+
+- Ejerens ikke-offentlige udviklingsside må nu køre den supplerende strøm live, mens syvdøgnsstabiliteten eftermåles. Kun Copernicus-credentials holdes hemmelige; gyldige U/V-, tid-, celle-, lag-, afstands- og kildeoplysninger publiceres i en separat `data/live/current-pilot-history.json`, som ikke belaster den hurtige startpakke.
+- Kystdelene bruger nu kildeordenen lokal DMI ≤5 km, Baltic NEMO ≤5 km, AMM15 ≤5 km og til sidst de otte eksplicit godkendte `dkss_lf`-proxyer ≤15 km. Kun en eksakt manglende time udfyldes; ingen skjult tids-, celle- eller laginterpolation.
+- RavScore og den viste strømpil bruger den samme valgte U/V-post. Copernicus- og regionalproxypile står ved den faktiske modelcelle og har egne kildeklasser; et fallback-vandpunkt kan ikke fremstå som verificeret pil.
+- Normal `controlled-live` består fortsat kun ved 673/673. Den versionsstyrede nødtilstand `dmi-only-rollback` fjerner Copernicus/proxy fra score og pile, bevarer friske øvrige prognoser og viser de manglende strømdele ærligt; den kan ikke foregive fuld dækning.
+- Nye Python-/Node-regressioner dækker credentialfri onlinehistorik, U/V-publicering, DMI-first, eksakt tid, afstandsgrænser, pilcelle, start ved aktuel hele time, 100 %-gate og rollback. Frisk central release og direkte livekontrol mangler endnu.
+
 ## Privat regional DMI-opsamling
 
 - De otte ejer-godkendte Limfjordsdele oprettes nu som særskilte private forskningsmål på hver DMI-kørsel. Kun `dkss_lf`, det uændrede centralt godkendte samplingpunkt, Limfjord-zoneklasse og en eksakt fælles U/V-celle højst 15 km væk accepteres.
@@ -36,6 +44,6 @@
 
 ## Bevidst uændret og åbent
 
-- Offentlig runtime, RavScore, pile, kildeorden og datakilder er fortsat DMI-only med 5-km-grænse. Regionalproxyen er ikke aktiveret, og gateændringen tillader derfor ikke deploy af den ufuldstændige kandidat.
-- Den skærpede gate ændrer ingen data og udfylder ingen mangler. Den betyder kun, at hverken den nuværende 622/673-kandidat eller den tidligere 670/673-tilstand kan blive en ny release; de supplerende kilder skal senere levere verificeret proveniens til alle mangler.
-- Pre-DMI-cachebeskyttelsen er centralt bekræftet, og syvdøgnspruningens kodekontrakt er regressionsbevist. Det nye eksterne heartbeat skal nu bevises centralt gennem automatisk keepalive og efterfølgende privat pilotdispatch. Et naturligt fuldt retentionvindue og flere modelruns mangler fortsat; først derefter kan aktiv kildefletning designes og gennemgå alle releasegates.
+- Den historiske DMI-only-plan er erstattet af ejerens kontrollerede livebeslutning. Normal drift bruger den validerede kildeorden og kan først deploye ved 673/673; en eksplicit `dmi-only-rollback` bevarer friske vind-, bølge- og vandstandsprognoser, men lader supplerende strøm og pile være `missing`.
+- Den skærpede gate må fortsat ikke omgås: hverken den historiske 622/673-kandidat eller den tidligere 670/673-tilstand kan blive en normal release. Den centrale kandidat skal nu bevise, at de supplerende kilder leverer kildekorrekt provenance til alle resterende dele.
+- Pre-DMI-cachebeskyttelsen og 168-timers pruning er regressionsbevist. Den credentialfri U/V-projektion, kildefletningen og pileplaceringen er implementeret; frisk central 673/673, alle releasegates, livekontrol og det naturlige syvdøgnsvindue mangler fortsat.

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
+import os from 'node:os';
+import path from 'node:path';
 import { build } from './build-public-coastal-parts-v2.mjs';
 import { buildPublicConditions } from './public-conditions-lib.mjs';
 
@@ -13,7 +15,13 @@ assert.equal(manifest.overlapPairCount,0);
 assert.equal(manifest.pointPairCount,673);
 for(const [name,digest] of Object.entries(manifest.files))assert.equal(crypto.createHash('sha256').update(fs.readFileSync(`${root}/${name}`,'utf8').replace(/\r\n/g,'\n')).digest('hex'),digest,`${name} er ændret efter ejergodkendelsen`);
 
-const contract=await build();
+const scratch=fs.mkdtempSync(path.join(os.tmpdir(),'ravradar-coastal-contract-'));
+let contract;
+try{
+  contract=await build({output:path.join(scratch,'coastal-parts-v2.json')});
+}finally{
+  fs.rmSync(scratch,{recursive:true,force:true});
+}
 assert.equal(contract.partCount,673);
 assert.equal(Object.values(contract.zones).flat().length,673);
 assert.equal(Object.values(contract.zones).flat().filter(part=>part.landPoint&&part.waterPoint).length,673);
@@ -23,7 +31,7 @@ assert.equal(registry.features.some(feature=>feature.properties?.id==='DK-B10-16
 
 const bulk=fs.readFileSync('scripts/update-dmi-bulk.py','utf8');
 assert.match(bulk,/PART::\{part_id\}/);
-assert.match(bulk,/active_zones_config = \[zone for zone in zones if not zone\.get\("waterSource"\)\]/);
+assert.match(bulk,/active_zones_config = \[[\s\S]{0,180}if not zone\.get\("waterSource"\) and not zone\.get\("researchCurrent"\)/);
 assert.match(bulk,/COASTAL_PART_POINTS_PATH = ROOT \/ "data\/live\/coastal-parts-v2\.json"/);
 assert.match(bulk,/part_doc\.get\("zones"\)/);
 assert.match(bulk,/codes_get_array\(gid, "latitudes"\)/);

@@ -54,7 +54,13 @@ export function buildPublicConditions(full){
     };
   }
   const coastalParts=buildStartupCoastalParts(full);
-  return {schemaVersion:2,datasetId:full?.datasetId||null,generatedAt:full?.generatedAt||null,source:'RavRadar public runtime projection',zones,coastalParts};
+  const currentPilot=full?.controlledLiveCurrentPilot?{
+    mode:full.controlledLiveCurrentPilot.mode||null,
+    enabled:full.controlledLiveCurrentPilot.enabled===true,
+    historyPath:full.controlledLiveCurrentPilot.historyPath||'./current-pilot-history.json',
+    generatedAt:full.controlledLiveCurrentPilot.generatedAt||null,
+  }:null;
+  return {schemaVersion:2,datasetId:full?.datasetId||null,generatedAt:full?.generatedAt||null,source:'RavRadar public runtime projection',currentPilot,zones,coastalParts};
 }
 
 export function buildPublicConditionDetails(full){
@@ -62,7 +68,7 @@ export function buildPublicConditionDetails(full){
     const forecast=zone?.forecast||{};
     return [zoneId,{forecast:{provider:forecast.provider||zone?.provider||null,providerLabel:forecast.providerLabel||zone?.providerLabel||null,generatedAt:forecast.generatedAt||full?.generatedAt||null,validUntil:forecast.validUntil||null,hourly:(forecast.hourly||[]).map(hour=>pick(hour,HOURLY_FIELDS))}}];
   }));
-  return {schemaVersion:1,datasetId:full?.datasetId||null,generatedAt:full?.generatedAt||null,zones,coastalParts:buildDetailedCoastalParts(full)};
+  return {schemaVersion:1,datasetId:full?.datasetId||null,generatedAt:full?.generatedAt||null,currentPilot:full?.controlledLiveCurrentPilot||null,zones,coastalParts:buildDetailedCoastalParts(full)};
 }
 export function compactJson(value){return `${JSON.stringify(value)}\n`;}
 export function sha256Text(text){return crypto.createHash('sha256').update(text).digest('hex');}
@@ -80,6 +86,8 @@ export function buildPublicManifest(full, publicText, detailsText){
     conditionsPath:'./public-conditions.json',
     conditionDetailsPath:'./public-condition-details.json',
     fullConditionsPath:'./conditions.json',
+    currentPilotHistoryPath:'./current-pilot-history.json',
+    currentPilotMode:full?.controlledLiveCurrentPilot?.mode||null,
     publicConditionsSha256:sha256Text(publicText),
     publicConditionsBytes:Buffer.byteLength(publicText),
     publicConditionDetailsSha256:sha256Text(detailsText),

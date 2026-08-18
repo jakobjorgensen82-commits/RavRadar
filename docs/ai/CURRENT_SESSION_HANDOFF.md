@@ -2,6 +2,11 @@
 
 ## Handoff 2026-08-18 – Copernicus-pilot under opbygning
 
+- Nyeste ejerbeslutning: den nuværende RavRadar-side er ikke offentlig, så den gyldige Copernicus-/regionalproxyprojektion inklusive U/V og nye pile må gå online. Kun credentials er hemmelige. Syvdøgnstesten køres live efter første grønne 673/673-release.
+- Den aktuelle worktree implementerer endnu ikke-pushet kontrolleret live-fletning: `data/current-live-pilot-control.json`, `scripts/build-live-current-pilot.py`, `scripts/lib/live-current-pilot.mjs`, workflowtrin før vejrscoring, nye kortkildeklasser og en multi-provider rumlig audit.
+- Normaltilstanden er DMI ≤5 km → Baltic ≤5 km → AMM15 ≤5 km → otte `dkss_lf`-proxyer ≤15 km og kræver 673/673. Nødtilstanden `dmi-only-rollback` deaktiverer supplementet, bevarer friske andre prognoser og viser reduceret strøm som `missing` uden fulddækningspåstand.
+- Målrettede Python-/Node-, pil-, workflow-, null-safety- og 100 %-gates består lokalt. Der findes ingen private råcaches i worktreen, så frisk central 673/673, fuld releasegate, Pages og direkte livebrowser er det nødvendige slutbevis.
+
 - Arbejd i den rene worktree `C:\Users\jakob\AppData\Local\Temp\ravradar-40232-current`; ejerens oprindelige workspace er fortsat dirty og må ikke overskrives.
 - `main`/`origin/main` var ved start `a8eaa9ca` (4.0.231-handoff). Grenen er `codex/current-coverage-4.0.232`.
 - Begge Copernicus Actions-secrets findes. Deres værdier er ikke læst eller vist.
@@ -83,9 +88,9 @@
 
 ## Næste trin
 
-1. Commit/push 4.0.232-kandidaten og kræv frisk central `dkss_lf`-evidens i den private regionalproxyrapport; alle otte skal være policyvaliderede, og rå U/V må kun findes i Actions-cachen.
-2. Følg Copernicus-cron og kræv mindst to forskellige gyldige tider/modelruns. To manuelle runs på samme 11:00Z-time tæller fortsat kun som ét tidsbevis.
-3. Bevar offentlig DMI-only-adfærd og den nye dynamiske 100 %-gate, mens privat 168-timers pruning og stabilitet bevises. Aktiv kildefletning, pile og score er en senere særskilt gated ændring.
+1. Commit/push 4.0.232-kandidaten og kræv, at den friske centrale kæde bygger præcis 673/673 med DMI-first, Copernicus og de otte policyvaliderede `dkss_lf`-proxyer.
+2. Kræv fuld validering, releasegate, Supabase, Pages og direkte livekontrol af farver, prognose og de nye pile. Onlinehistorikken må indeholde valideret U/V og provenance, men aldrig credentials.
+3. Lad den naturlige syvdøgnstest køre i den fungerende live-runtime. Ved fejl skiftes den versionsstyrede kontrol til `dmi-only-rollback`; øvrigt frisk vejr bevares, og manglende strøm må ikke fremstilles som fuld dækning.
 
 ## Bindende arbejdsregler
 

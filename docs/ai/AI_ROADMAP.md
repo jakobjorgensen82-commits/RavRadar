@@ -1,14 +1,20 @@
 # AI Roadmap – RavRadar 4.0.232
 
-## Aktuelt P1-spor 2026-08-18 – supplerende strøm uden skjult lempelse
+## Aktuelt P1-spor 2026-08-18 – kontrolleret live-strøm med sikker rollback
 
-- Bevar offentlig DMI-first-adfærd, mens en separat score-neutral Copernicus-pilot validerer Baltic NEMO og AMM15 på de friske centralt hydrerede 673 kystdele.
+- Ejeren har godkendt, at gyldige Copernicus-/regionalproxydata inklusive U/V, provenance og nye pile går online på den nuværende ikke-offentlige side. Kun credentials skal forblive hemmelige. Det naturlige syvdøgnsvindue observeres live og er ikke et krav om syv dages spøgelsestest før første aktivering.
+- 4.0.232-kandidaten implementerer DMI ≤5 km → Baltic ≤5 km → AMM15 ≤5 km → præcis otte ejerallowlistede `dkss_lf`-proxyer ≤15 km. Supplementet må kun udfylde en manglende strøm ved eksakt samme time, celle og lag; ingen skjult tidslig eller rumlig interpolation.
+- Den credentialfri `data/live/current-pilot-history.json` ligger online som en separat fil og er derfor ikke en del af den hurtige startpayload. Den aktuelt valgte U/V-post og fuld provenance følger ind i score/detaljepakke, og pilen står på postens faktiske modelcelle.
+- Normal `controlled-live` kræver fortsat alle 673 kystdele. Den versionsstyrede `dmi-only-rollback` kan fjerne Copernicus/proxy fra score og pile, bevare friske øvrige prognoser og mærke de berørte strømme `missing`; den må aldrig foregive 673/673.
+- Næste gate er frisk central 673/673 med fuld validering, releasegate, Supabase, Pages og direkte livekort. Derefter følges drift, kilde-/celle-/lagstabilitet og rollbackberedskab i syv døgn uden at tage siden offline.
+
+- Bevar DMI som førstevalg, mens den autentificerede collector fortsat validerer Baltic NEMO og AMM15 på de friske centralt hydrerede 673 kystdele.
 - Første pilottrin er ét aktuelt 3D-tidssnit med eksakt U/V i samme celle og lag, højst 5 km og nul interpolation. Derefter udvides kun de valgte celler til flere forecasttider/modelruns, så datamængde og workflowtid holdes målbar.
-- Gem højst 168 timers private råprøver. Offentligt/sikkert bevis må kun indeholde produkt, tidspunkt, grid, lag, afstand, kvalitetsklasse og antal; credentials og rå U/V må ikke nå artifact eller Pages.
+- Gem højst 168 timers kilderåcache privat. Den validerede liveprojektion må indeholde U/V, produkt, tidspunkt, grid, lag, afstand og kvalitetsklasse; credentials må aldrig nå fil, artifact eller Pages.
 - Efter stabil pilot er kilderækkefølgen DMI ≤5 km → Baltic ≤5 km → AMM15 ≤5 km. AMM15-punkter med kun 0 m lag forbliver særskilt `surface-only` og må ikke fremstilles som bundnære.
 - De otte sidste vestlige Limfjordsdele har en separat ejerallowlist: kun `dkss_lf`, uændret samplingpunkt, samme Limfjord og højst 15 km. Ingen global distanceoverride eller automatisk tilføjelse er tilladt. Se DEC-0041.
 - 4.0.232-kandidaten opsamler nu de otte deles faktiske `dkss_lf`-vektorer privat ved hver kørsel. Den friske centrale registrering valideres før opsamling; kun råcachen ser U/V, mens supportbeviset kun må vise run, tid, celle, afstand og lag. Offentlige pile og score er fortsat uændrede.
-- Aktiv pile-/scoreintegration begynder først efter autentificeret CI, flerruns-stabilitet, fuld validering og releasegate. Den senere DEC-0029-analyse skal kunne skelne lokale data fra regionalproxy og hele det ydre strømfelt.
+- Aktiv pile-/scoreintegration er implementeret lokalt og begynder live efter autentificeret 673/673-CI, fuld validering og releasegate. Flerruns-/syvdøgnsstabilitet eftermåles derefter live. Den senere DEC-0029-analyse skal kunne skelne lokale data fra regionalproxy og hele det ydre strømfelt.
 - Første autentificerede timeprøve `#32129799346` var grøn og bekræftede præcis 39 Baltic + 4 AMM15 af de 51 DMI-huller, svarende til 665/673 kombineret. En privat timeplan ved minut 17 samler nu højst syv døgn; næste gate er stabilitet på tværs af tider og modelruns, ikke øjeblikkelig aktivering.
 - `#32134021410`/artifact `#3094` har nu leveret det friske centrale 8/8-bevis: 32 private `dkss_lf`-prøver ved fire forecasttider, ingen rå U/V i supportoutput og ingen cache i artifactet. Kørslens senere stop var en fastkodet versionsstreng i en test og ændrede ingen data eller offentlig runtime.
 - `#32135079819` passerede den versionsrobuste test og stoppede korrekt ved 622/673. Første Copernicus-cron `#32134686185` hentede et nyt 12:00Z-tidspunkt, men Actions-cachekvoten havde allerede fortrængt 11:00Z-råhistorikken.

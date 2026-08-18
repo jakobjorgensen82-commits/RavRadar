@@ -1,3 +1,11 @@
+## 2026-08-18 – ejer godkender kontrolleret live-strøm og auditerbar rollback
+
+- Ejeren præciserede, at siden ikke er offentlig i udviklingsfasen. Gyldige Copernicus-/regionalproxydata inklusive U/V og nye strømpile må derfor gå online; kun loginoplysningerne er hemmelige. Det naturlige 168-timersbevis køres i den virkelige runtime i stedet for som syv dages spøgelsestest.
+- Kandidaten bygger en separat online syvdøgnshistorik fra de private caches efter central geometri/DMI og før score. DMI er førstevalg; Baltic, AMM15 og de otte godkendte Limfjordsproxyer kan kun udfylde en manglende eksakt time med fuld celle-, lag-, afstands- og kildeproveniens.
+- Score, detaljepakke og kort bruger samme U/V-post. Copernicus-/proxypile accepteres kun ved den faktiske kildecelle; et vandpunkt, en anden time eller en for fjern celle giver ingen verificeret pil.
+- En versionsstyret kontrol har normal `controlled-live` med præcis 673/673 og nødtilstanden `dmi-only-rollback`. Nødtilstanden fjerner supplementet fra score/pile og mærker strøm som `missing`, men bevarer friske øvrige prognoser og må aldrig rapportere falsk fulddækning.
+- Målrettede lokale regressioner for online U/V uden credentials, DMI-first, eksakt tid, afstand, pilcelle, 100 %-gate, rollback, workflowrækkefølge og null-safety består. Frisk central 673/673, fuld releasekæde og direkte livekontrol mangler.
+
 ## 2026-08-18 – privat supplerende strømkandidat og afgrænset Limfjordsproxy
 
 - Ejerens fulde centrale punktgennemgang gav i #3079 622/673 lokale DMI-strømpunkter; alle 51 mangler er eftermålt.

@@ -6,11 +6,16 @@ Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde sa
 
 ## Aktuel sandhed
 
-- Commit `cda7358b` med både den private Copernicus-pilot og den private regionale DMI-collector er på `main`. Den offentlige app er fortsat DMI-only; ingen supplerende strøm eller regionalproxy er aktiv.
+- Ejeren har godkendt kontrolleret live-aktivering af Copernicus/regionalproxy på den nuværende ikke-offentlige side. Gyldige U/V-data, fuld provenance og nye pile må publiceres; kun credentials forbliver hemmelige. Syvdøgnsstabiliteten eftermåles live.
+- 4.0.232-kandidaten bygger en separat online `data/live/current-pilot-history.json`, fletter eksakt DMI-first strøm til RavScore og kort og placerer hver pil på den valgte posts faktiske kildecelle. Normal gate er fortsat 673/673.
+- `data/current-live-pilot-control.json` giver en auditerbar `dmi-only-rollback`, som fjerner supplementet fra score/pile og lader berørte strømme være `missing`, mens friske vind-, bølge-, vandstands- og øvrige prognoser fortsætter. Rollback må ikke kalde reduceret dækning fuld.
+- Næste operation er målrettet/full lokal validering, commit/push og frisk central 673/673. Først derefter direkte livekontrol af farver, prognoser, Copernicus-/proxypile, historikfil, credentials-fravær og rollbackberedskab.
+
+- Commit `cda7358b` med den autentificerede Copernicus-pilot og den regionale DMI-collector er på `main`. Seneste deploy er fortsat DMI-only; den nye aktive liveintegration ligger i den aktuelle kandidat og er endnu ikke centralt verificeret/deployeret.
 - #3079 efter ejerens fulde centrale punktgennemgang gav 622/673 lokale DMI-strømpunkter. Alle 51 mangler er auditeret.
 - Autentificeret privat Toolbox-run `#32129799346` bekræftede på friske centrale punkter Baltic-par til 39/51 og AMM15-par til yderligere fire. Alle 43 var dybere end øverste lag ved 11:00Z. Samlet potentiale er 665/673; en privat timeplan samler nu op til syv døgns flerruns-bevis.
 - DEC-0041 og `data/current-regional-proxy-policy.json` tillader efter fulde gates kun otte vestlige Limfjordsdele at bruge nærmeste `dkss_lf`-par op til 15 km. Policytesten består mod #3079; aktiv pipeline mangler.
-- Næste konkrete opgave er at overvåge timeprøvernes stabilitet og derefter implementere den aktive kildeorden samt de otte regionale proxyer bag fulde gates. Pushrun `#32129778162` stoppede korrekt på 622/673 og deployede ikke. Intet kobles til score/pile før flerruns-stabilitet og alle aktiveringsgates.
+- Den aktive kildeorden og de otte regionale proxyer er nu implementeret bag fulde gates. Pushrun `#32129778162` er historisk bevis for det gamle 622/673-stop; næste kørsel skal bevise den nye 673/673-runtime og deploy.
 - Run `#32131021153` bekræftede cachegendannelse, deduplikering og rekursivt sikker flerrunsrapport på commit `406353be`: 629 records, én gyldig time, 625 unikke mål, nul mål/kildepar med grid-/lagskift og ingen rå U/V. Første cron-event er siden bevist i #32134686185; to tider i samme cache afventer keepalive og backfill.
 - Central `#32134021410`/artifact `#3094` beviste private `dkss_lf`-data til alle otte regionale mål: 32 prøver ved fire forecasttider, 5,416–12,110 km, dybere lag til alle mål, ingen rå U/V i supportrapporten og ingen `.cache` i artifactet. Offentlig dækning forblev 622/673 som tilsigtet.
 - #32134021410 stoppede sikkert før deploy, fordi én test stadig forventede workflowets gamle User-Agent 4.0.229. Testen følger nu `package.json`; rettelsen er centralt verificeret i #32135079819.

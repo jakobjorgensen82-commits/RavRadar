@@ -1,11 +1,20 @@
-# Implementeringsstatus – privat supplerende strømkandidat i 4.0.232
+# Implementeringsstatus – kontrolleret supplerende live-strøm i 4.0.232
 
 ## Copernicus-pilot og otte regionale Limfjordsproxyer
+
+- [x] Ejeren har godkendt kontrolleret live-aktivering på den nuværende ikke-offentlige side. Syvdøgnsvinduet eftermåles i den virkelige runtime og er ikke længere et førkrav; præcis 673/673, fuld provenance og alle releasegates er fortsat førkrav til normal live-drift.
+- [x] `data/current-live-pilot-control.json` er den versionsstyrede driftskontrol. `controlled-live` bruger supplementet; `dmi-only-rollback` fjerner det fra score og pile, bevarer friske øvrige prognoser og markerer de berørte strømme `missing` uden falsk fulddækning.
+- [x] Produktionsworkflowet bygger `data/live/current-pilot-history.json` efter private cache-restore/DMI-bygning og før score. Filen indeholder kun geometri-, tid-, celle-, lag- og afstandsverificerede Copernicus-/regionalproxyrecords inklusive U/V; credentials er ikke med. Historikken er online, men indgår ikke i startpayloaden.
+- [x] Den aktive kildefletning er implementeret lokalt som DMI ≤5 km → Baltic NEMO ≤5 km → AMM15 ≤5 km → otte ejerallowlistede `dkss_lf`-proxyer ≤15 km. Supplementet udfylder kun præcis samme forecasttime; ingen celle-, lag- eller tidsinterpolation er tilladt.
+- [x] Lokale Copernicus- og regionalproxypile bruger den viste scoretimes faktiske kildecelle. Kortet accepterer de nye eksplicitte gitterkildeklasser og accepterer fortsat ikke vandpunktet eller en anden times celle som verificeret pil.
+- [x] Den rumlige audit tæller i normaltilstanden kun runtimeposter med fuld kildeproveniens og eksakt match til onlinehistorikkens U/V-post. Alle 673 kræves stadig. Rollbackgrenen afviser enhver supplerende runtimepost og må ikke rapportere reduceret DMI-dækning som 100 %.
+- [x] Nye Python-/Node-regressioner beviser online U/V uden credentials, DMI-first, eksakt-tidsfletning, afvisning over afstandsgrænserne, rigtig pilcelle, normal 673/673-gate og fail-closed DMI-only rollback.
+- [ ] Frisk central workflowkørsel skal nu bygge 673/673, bestå fuld validering/releasegate/Supabase/Pages og derefter verificeres direkte i livebrowseren. Før dette er kandidaten implementeret, men ikke produktionsverificeret.
 
 - [x] Begge påkrævede Copernicus Actions-secrets findes; værdierne er ikke læst eller logget.
 - [x] De aktuelle officielle dataset-id'er og U/V-variabler er katalogverificeret med Copernicus Marine Toolbox 2.4.1.
 - [x] Separat privat workflowkode henter et begrænset én-times 3D-udsnit, bruger alle 673 friske centralt hydrerede kystdele, vælger nærmeste fælles vandkolonne før dybeste fælles lag og interpolerer ikke.
-- [x] Rå U/V opbevares højst 168 timer i Actions-cache; supportrapporten fjerner rå vektorer og tester credentiallæk. `scoreImpact=false` og `publicRuntime=false` er hårde kontrakter.
+- [x] Kildernes rå restorecache opbevares højst 168 timer med `scoreImpact=false`/`publicRuntime=false`. Den validerede, credentialfri liveprojektion må efter ejerbeslutningen publicere U/V og provenance; den sikre supportrapport forbliver vektorfri.
 - [x] Lokal syntetisk regression beviser tør nærmeste celle, dybeste fælles lag, samme U/V-celle/-tid/-lag, 5-km-afvisning, syvdøgnspruning og sikkert rapportoutput.
 - [x] En særskilt ren retentionregression indgår nu i normal `npm run validate` og i Copernicus-workflowet. Den beviser præcis 168-timersgrænse, deduplikering, rensning af beskadigede/ældre/fremtidige restoreposter samt fail-closed afvisning af nye ugyldige eller for fjerne poster.
 - [x] `7f22e8e1`/`#32143798560` CI-verificerer den nye retentiontest i den fulde centrale kæde. Den bestod før det forventede 622/673-stop; ingen Supabase-/Pages-aktivering skete, og tre-timers-Copernicus-cachen overlevede DMI-cachearbejdet.
@@ -22,13 +31,13 @@
 - [x] Første faktiske `schedule`-event `#32134686185` var grønt og hentede 12:00Z, men målte kun én bevaret tid, fordi 11:00Z-cachen var fortrængt af repositoryets cirka 10,2 GB Actions-cache.
 - [x] Rodårsagen er LRU-pres fra flere 2,48–2,52 GB DMI-GRIB-cacher, ikke deduplikeringskoden. En lokal regression beviser to-timers merge; en credentialfri keepalive gendanner uden upload eller rå log hvert tiende minut, og manuel citeret UTC-backfill er tilføjet.
 - [x] Keepalive `#32136328681` ramte 12:00Z-cachen; backfill `#32136391556` samlede 1.258 records ved 11/12 UTC med nul grid-/lagskift og nul rå/credentiallæk; `#32136642330` ramte derefter præcis den nye to-timers-cache.
-- [ ] Opsaml flere modelruns, før Copernicus eller regionalproxy kobles til aktiv pile-/scorepipeline.
+- [x] Ejerens live-pilotbeslutning erstatter kravet om et afsluttet flerruns-/syvdøgnsvindue før første aktivering. Flere runs og hele vinduet eftermåles fortsat live og skal senere afslutte stabilitetsbeviset.
 - [x] Kør 4.0.232-kandidaten mod frisk central DMI og bekræft prøver til alle otte uden offentlig aktivering.
 - [ ] Bekræft syvdøgnspruning efter et naturligt fuldt retentionvindue. Kodegrænsen er nu regressionsbevist, men faktisk drift over hele vinduet kan ikke erstattes af en syntetisk test.
 - [x] Bekræft første faktiske `schedule`-event.
 - [x] Verificér keepalive centralt, genhent 11:00Z kontrolleret og bekræft mindst to `validTime`-værdier i samme råcache.
 - [x] Første automatiske heartbeat-event er bevist i `#32146699458`, og den forudgående naturlige pilot `#32146584311` udvidede cachen til 14 UTC uden ny LRU-fortrængning.
-- [ ] Aktiv integration kræver fuld validering, releasegate, frisk produktionsworkflow og direkte livekontrol. Den almindelige produktion er fortsat DMI-only og fail-closed over 5 km.
+- [ ] Den aktive integration er lokalt implementeret, men kræver stadig fuld central validering, releasegate, frisk produktionsworkflow og direkte livekontrol. Seneste deploy er fortsat den gamle DMI-only-runtime, indtil denne gate er grøn.
 - [x] Pushrun `#32129778162` beviste, at den eksisterende gate ikke blev omgået: fuld validering stoppede ved 622/673 og intet blev deployet.
 - [x] Ejerens 100 %-krav er nu den faktiske produktionsgate: `requiredPartCoverage` er lig det dynamiske antal aktive kystdele, aktuelt 673. Separat regression forbyder den historiske 95 %-formel; #3094-replay stopper på 622/673 med krav om alle 673.
 - [x] `#32139054129` bekræftede gaten centralt: regressionen bestod, auditten stoppede med 622/673 og “alle 673 kræves”, og releasegate, Supabase samt Pages blev ikke kørt.

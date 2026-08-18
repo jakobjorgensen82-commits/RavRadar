@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "mode": "controlled-live",
+  "decidedAt": "2026-08-18T15:20:00Z",
+  "normalCoverageRequirement": "all-active-coastal-parts",
+  "rollbackMode": "dmi-only-rollback",
+  "rollbackBehavior": "disable-supplemental-current-score-and-arrows; keep-fresh-weather; mark-uncovered-current-missing",
+  "credentialsPublic": false,
+  "currentDataPublic": true,
+  "historyPublic": true
+}
