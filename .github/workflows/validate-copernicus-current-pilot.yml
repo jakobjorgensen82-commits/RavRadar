@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "17 * * * *"
   workflow_dispatch:
+    inputs:
+      sample_time:
+        description: "Optional exact UTC hour for controlled private backfill"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -72,7 +77,13 @@ jobs:
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
-        run: python scripts/run-copernicus-current-pilot.py
+          PILOT_SAMPLE_TIME: ${{ inputs.sample_time }}
+        run: |
+          if [ -n "$PILOT_SAMPLE_TIME" ]; then
+            python scripts/run-copernicus-current-pilot.py --at "$PILOT_SAMPLE_TIME"
+          else
+            python scripts/run-copernicus-current-pilot.py
+          fi
 
       - name: Save private seven-day Copernicus shadow cache
         if: success()

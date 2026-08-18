@@ -2,6 +2,12 @@
 
 ## Status og fortolkning
 
+### 4.0.232 – Copernicus-cachekvote
+
+- Første planlagte Copernicus-run `#32134686185` hentede et nyt 12:00Z-tidspunkt, men den tidligere 11:00Z-råcache var allerede fortrængt. GitHub API viste cirka 10,2 GB aktiv Actions-cache, domineret af flere DMI-GRIB-nøgler på 2,48–2,52 GB.
+- Deduplikering og to-timers merge består syntetisk; fejlen er cache-LRU, ikke datamodellen. En separat restore-only keepalive opdaterer derfor cachens brugstid hvert tiende minut uden credentials, upload eller rå logning. Den skal bevises centralt, hvorefter 11:00Z kan genhentes med et eksakt citeret workflowinput.
+- En råcache-artifact er udtrykkeligt forkastet, fordi repositoryet er offentligt. Den må ikke indføres uden ny eksplicit ejerbeslutning og særskilt sikkerhedsdesign.
+
 Dette er et uforanderligt handlingssnapshot fra GitHub Actions #31923212215/#2855, genereret 16. august 2026 kl. 03:21 UTC på commit `a24a13d87de379eef0b2bab5a5d6b1c7a2ae4548`.
 
 - 187/210 hovedzoner har verificeret fælles DMI-U/V inden for 5 km.

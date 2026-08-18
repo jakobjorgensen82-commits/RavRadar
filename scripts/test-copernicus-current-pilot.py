@@ -99,6 +99,27 @@ def main() -> None:
         serialized = json.dumps(evidence)
         need("uMps" not in serialized and "vMps" not in serialized, "Multi-run evidence must omit raw vectors")
 
+        next_hour = {**record, "validTime": (now - timedelta(hours=1)).isoformat().replace("+00:00", "Z")}
+        two_times = update_shadow(path, [next_hour], now)
+        two_time_evidence = safe_shadow_summary(two_times)
+        need(len(two_times["records"]) == 2, "A restored shadow must retain both different valid times")
+        need(two_time_evidence["validTimeCount"] == 2, "Safe evidence must prove multi-time aggregation")
+
+    pilot_workflow = (ROOT / ".github/workflows/validate-copernicus-current-pilot.yml").read_text(encoding="utf-8")
+    keepalive_workflow = (ROOT / ".github/workflows/preserve-copernicus-current-shadow.yml").read_text(encoding="utf-8")
+    need("sample_time:" in pilot_workflow and '--at "$PILOT_SAMPLE_TIME"' in pilot_workflow,
+         "Manual pilot runs must support a quoted exact-hour backfill")
+    need("7,17,27,37,47,57 * * * *" in keepalive_workflow,
+         "The small private cache must be refreshed more often than DMI cache churn can evict it")
+    need("actions/cache/restore@v4" in keepalive_workflow and "actions/cache/save@v4" not in keepalive_workflow,
+         "Keepalive must only refresh the existing private cache, not create redundant copies")
+    need("actions/upload-artifact" not in keepalive_workflow,
+         "Keepalive must never export the raw shadow to an artifact")
+    need("private-copernicus-current-pilot" in keepalive_workflow,
+         "Pilot and keepalive must serialize access to the same cache")
+    need("data['records']" in keepalive_workflow and "uMps" not in keepalive_workflow and "vMps" not in keepalive_workflow,
+         "Keepalive must validate presence without logging raw record contents")
+
     print("OK: private Copernicus current selection, provenance safety and 168-hour retention")
 
 

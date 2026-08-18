@@ -11,7 +11,8 @@
 - Aktiv pile-/scoreintegration begynder først efter autentificeret CI, flerruns-stabilitet, fuld validering og releasegate. Den senere DEC-0029-analyse skal kunne skelne lokale data fra regionalproxy og hele det ydre strømfelt.
 - Første autentificerede timeprøve `#32129799346` var grøn og bekræftede præcis 39 Baltic + 4 AMM15 af de 51 DMI-huller, svarende til 665/673 kombineret. En privat timeplan ved minut 17 samler nu højst syv døgn; næste gate er stabilitet på tværs af tider og modelruns, ikke øjeblikkelig aktivering.
 - `#32134021410`/artifact `#3094` har nu leveret det friske centrale 8/8-bevis: 32 private `dkss_lf`-prøver ved fire forecasttider, ingen rå U/V i supportoutput og ingen cache i artifactet. Kørslens senere stop var en fastkodet versionsstreng i en test og ændrede ingen data eller offentlig runtime.
-- Næste 4.0.232-bevis er en ny central kørsel med den versionsrobuste test, efterfulgt af syvdøgnspruning og fortsat Copernicus-flertidsbevis. Først derefter designes aktiv kildefletning.
+- `#32135079819` passerede den versionsrobuste test og stoppede korrekt ved 622/673. Første Copernicus-cron `#32134686185` hentede et nyt 12:00Z-tidspunkt, men Actions-cachekvoten havde allerede fortrængt 11:00Z-råhistorikken.
+- Næste 4.0.232-bevis er restore-only keepalive-cachehit, kontrolleret 11:00Z-backfill og mindst to tider i samme råcache, efterfulgt af syvdøgnspruning og fortsat Copernicus-flertidsbevis. Først derefter designes aktiv kildefletning.
 
 ## 4.0.231 – samme tidspunkt styrer lokal score og strømpil
 

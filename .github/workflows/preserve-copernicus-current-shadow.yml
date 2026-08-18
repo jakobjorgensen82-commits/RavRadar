@@ -1,0 +1,42 @@
+name: Preserve private Copernicus current shadow
+
+on:
+  schedule:
+    - cron: "7,17,27,37,47,57 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: private-copernicus-current-pilot
+  cancel-in-progress: false
+
+jobs:
+  preserve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Restore and refresh private seven-day Copernicus shadow cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/copernicus-current-shadow.json
+          key: copernicus-current-shadow-v1-keepalive-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            copernicus-current-shadow-v1-
+
+      - name: Verify private cache without logging raw vectors
+        shell: bash
+        run: |
+          test -s .cache/copernicus-current-shadow.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path('.cache/copernicus-current-shadow.json').read_text(encoding='utf-8'))
+          assert data.get('schemaVersion') == 1
+          assert data.get('retentionHours') == 168
+          assert data.get('scoreImpact') is False
+          assert data.get('publicRuntime') is False
+          assert isinstance(data.get('records'), list) and data['records']
+          print('Private Copernicus shadow cache refreshed without exposing record contents')
+          PY

@@ -16,10 +16,14 @@
 - [x] Run `#32131021153` beviste cache restore/deduplikering og sikker flerrunsaggregation: 629 records, 625 unikke mål, 629 mål/kildepar, én gyldig time, nul grid-/lagskift og nul rå U/V i artifactet.
 - [x] Central `#32134021410`/artifact `#3094` beviste 8/8 regionale dele og 32 private `dkss_lf`-prøver ved fire forecasttider. Afstandene var 5,416–12,110 km, både overflade- og dybere lag var repræsenteret, supportrapporten havde ingen rå U/V, og `.cache` nåede ikke artifactet.
 - [x] Samme kørsel stoppede før Supabase/Pages på en historisk fastkodet User-Agent-test efter 4.0.232-versionsløftet. Testen læser nu versionen fra `package.json`; DMI-download-, cachemigration-, tværmodel- og workflowrækkefølgetest består lokalt.
+- [x] Pushrun `#32135079819` passerede den rettede versionstest og stoppede først ved den forventede uændrede rumlige gate på 622/673. Intet blev deployet.
+- [x] Første faktiske `schedule`-event `#32134686185` var grønt og hentede 12:00Z, men målte kun én bevaret tid, fordi 11:00Z-cachen var fortrængt af repositoryets cirka 10,2 GB Actions-cache.
+- [x] Rodårsagen er LRU-pres fra flere 2,48–2,52 GB DMI-GRIB-cacher, ikke deduplikeringskoden. En lokal regression beviser to-timers merge; en credentialfri keepalive gendanner uden upload eller rå log hvert tiende minut, og manuel citeret UTC-backfill er tilføjet.
 - [ ] Opsaml flere modelruns, før Copernicus eller regionalproxy kobles til aktiv pile-/scorepipeline.
 - [x] Kør 4.0.232-kandidaten mod frisk central DMI og bekræft prøver til alle otte uden offentlig aktivering.
 - [ ] Bekræft syvdøgnspruning efter et naturligt fuldt retentionvindue; den nuværende cache går kun tilbage til 16. august.
-- [ ] Bekræft første faktiske `schedule`-event og mindst to forskellige `validTime`-værdier; to manuelle runs i samme time tæller kun som ét tidspunkt.
+- [x] Bekræft første faktiske `schedule`-event.
+- [ ] Verificér keepalive centralt, genhent 11:00Z kontrolleret og bekræft mindst to `validTime`-værdier i samme råcache; adskilte safe artifacts alene er ikke nok.
 - [ ] Aktiv integration kræver fuld validering, releasegate, frisk produktionsworkflow og direkte livekontrol. Den almindelige produktion er fortsat DMI-only og fail-closed over 5 km.
 - [x] Pushrun `#32129778162` beviste, at den eksisterende gate ikke blev omgået: fuld validering stoppede ved 622/673 og intet blev deployet.
 
