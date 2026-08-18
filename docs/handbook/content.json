@@ -2,8 +2,15 @@
   "schemaVersion": "2.0",
   "handbookVersion": "4.0.232",
   "title": "RavRadar Håndbog",
-  "updatedAt": "2026-08-18T15:36:41+02:00",
+  "updatedAt": "2026-08-18T16:09:01+02:00",
   "sections": [
+    {
+      "id": "copernicus-external-heartbeat-2026-08-18",
+      "chapter": "88",
+      "title": "Privat timeopsamling bruger et stabilt hjerteslag",
+      "summary": "Den eksisterende eksterne vejrstarter sikrer, at en manglende Copernicus-time bliver bestilt uden at røre produktion eller score.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> GitHubs egen timeplan kan blive forsinket eller springe en kørsel over. RavRadar bruger derfor den allerede eksternt startede vejropdatering som et privat hjerteslag.</div><p>Når en vejropdatering bliver bestilt, gendanner et separat privat job kun Copernicus-cachen og ser efter den aktuelle UTC-time. Findes timen allerede, sker der ingen ny download. Mangler timen, starter et lille særskilt job den eksisterende private Copernicus-pilot på hovedgrenen.</p><p>Cachekontrollen accepterer kun det kendte schema, præcis 168 timers retention samt <code>scoreImpact=false</code> og <code>publicRuntime=false</code>. En usikker cache stopper lukket, og kontrollen skriver aldrig rå øst-vest- eller nord-syd-strøm i loggen.</p><p>Kun dispatchjobbet har ret til at starte en GitHub-kørsel. Heartbeatet kan ikke gemme en ny cachekopi, uploade et artifact eller deploye Pages. Produktionsworkflowet, DMI-kæden, pile og RavScore er uændrede. Den oprindelige GitHub-timeplan beholdes som reserve, men er ikke længere eneste driftsstart.</p>"
+    },
     {
       "id": "supplementary-current-private-pilot-2026-08-18",
       "chapter": "87",

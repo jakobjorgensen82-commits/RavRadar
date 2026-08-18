@@ -37,12 +37,14 @@ if (/\b(?:push|pull_request):/.test(copernicusPilot)) throw new Error('Copernicu
 const copernicusUpload = copernicusPilot.slice(copernicusPilot.indexOf('- name: Upload private support evidence'));
 if (copernicusUpload.includes('.cache/')) throw new Error('Den rå Copernicus-cache må ikke uploades som supportartefakt.');
 const copernicusKeepalive = fs.readFileSync(`${workflowDirectory}/preserve-copernicus-current-shadow.yml`, 'utf8');
-for (const marker of ['actions/cache/restore@v4', 'copernicus-current-shadow-v1-', 'private-copernicus-current-pilot']) {
+for (const marker of ['actions/cache/restore@v4', 'copernicus-current-shadow-v1-', 'private-copernicus-current-pilot', 'workflow_run:', 'workflows: ["Update weather and deploy RavRadar"]', 'types: [requested]', 'python3 scripts/check-copernicus-current-hour.py', 'validate-copernicus-current-pilot.yml/dispatches']) {
   if (!copernicusKeepalive.includes(marker)) throw new Error(`Copernicus-keepalive mangler ${marker}`);
 }
 if (copernicusKeepalive.includes('actions/cache/save@v4') || copernicusKeepalive.includes('actions/upload-artifact')) {
   throw new Error('Copernicus-keepalive må hverken oprette en ny cachekopi eller eksportere rådata.');
 }
+const copernicusPreserveSection = copernicusKeepalive.slice(copernicusKeepalive.indexOf('  preserve:'), copernicusKeepalive.indexOf('  dispatch-pilot:'));
+if (copernicusPreserveSection.includes('actions: write')) throw new Error('Kun det minimale Copernicus-dispatchjob må få Actions-skriveret.');
 const text = fs.readFileSync(path, 'utf8').replace(/\r\n/g, '\n');
 const positions = {
   hydrate: text.indexOf('name: Hydrate latest deployed weather state'),

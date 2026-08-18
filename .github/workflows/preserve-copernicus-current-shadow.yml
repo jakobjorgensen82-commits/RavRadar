@@ -3,6 +3,10 @@ name: Preserve private Copernicus current shadow
 on:
   schedule:
     - cron: "7,17,27,37,47,57 * * * *"
+  workflow_run:
+    workflows: ["Update weather and deploy RavRadar"]
+    types: [requested]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -16,7 +20,12 @@ jobs:
   preserve:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      current_hour_present: ${{ steps.cache-state.outputs.current_hour_present }}
     steps:
+      - name: Check out trusted default-branch helper
+        uses: actions/checkout@v4
+
       - name: Restore and refresh private seven-day Copernicus shadow cache
         uses: actions/cache/restore@v4
         with:
@@ -25,18 +34,25 @@ jobs:
           restore-keys: |
             copernicus-current-shadow-v1-
 
-      - name: Verify private cache without logging raw vectors
-        shell: bash
+      - name: Inspect current-hour coverage without logging raw vectors
+        id: cache-state
+        run: python3 scripts/check-copernicus-current-hour.py --github-output "$GITHUB_OUTPUT"
+
+  dispatch-pilot:
+    needs: preserve
+    if: github.event_name == 'workflow_run' && needs.preserve.outputs.current_hour_present != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Dispatch private current-hour pilot from external production heartbeat
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          test -s .cache/copernicus-current-shadow.json
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-          data = json.loads(Path('.cache/copernicus-current-shadow.json').read_text(encoding='utf-8'))
-          assert data.get('schemaVersion') == 1
-          assert data.get('retentionHours') == 168
-          assert data.get('scoreImpact') is False
-          assert data.get('publicRuntime') is False
-          assert isinstance(data.get('records'), list) and data['records']
-          print('Private Copernicus shadow cache refreshed without exposing record contents')
-          PY
+          gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "repos/${{ github.repository }}/actions/workflows/validate-copernicus-current-pilot.yml/dispatches" \
+            -f ref=main

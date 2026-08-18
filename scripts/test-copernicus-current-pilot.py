@@ -117,8 +117,12 @@ def main() -> None:
          "Keepalive must never export the raw shadow to an artifact")
     need("private-copernicus-current-pilot" in keepalive_workflow,
          "Pilot and keepalive must serialize access to the same cache")
-    need("data['records']" in keepalive_workflow and "uMps" not in keepalive_workflow and "vMps" not in keepalive_workflow,
-         "Keepalive must validate presence without logging raw record contents")
+    need("python3 scripts/check-copernicus-current-hour.py" in keepalive_workflow
+         and "uMps" not in keepalive_workflow and "vMps" not in keepalive_workflow,
+         "Keepalive must inspect presence without logging raw record contents")
+    need('workflows: ["Update weather and deploy RavRadar"]' in keepalive_workflow
+         and "validate-copernicus-current-pilot.yml/dispatches" in keepalive_workflow,
+         "The reliable external production heartbeat must dispatch a missing current hour")
 
     print("OK: private Copernicus current selection, provenance safety and 168-hour retention")
 

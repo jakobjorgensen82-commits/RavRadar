@@ -36,7 +36,10 @@
 - [x] `#32140001424` og `#32140470201` genopbyggede kontrolleret 11/12 UTC: 1.258 records, to tider, 625 mål, 629 mål/kildepar og nul grid-/lagskift uden supportlæk.
 - [x] `b6cf0383`/#32140865173 bekræftede centralt cache-hit før DMI og overlevelse efter en ny 2,905-GB DMI-save. #32141443152 ramte samme cache bagefter uden recordlog.
 - [x] Manuel aktuel-time-pilot #32141772134 udvidede efterfølgende cachen til 1.887 records ved 11/12/13 UTC med nul grid-/lagskift og nul supportlæk.
-- [ ] Bekræft samme bevarelse og udvidelse i første nye naturlige schedule-event efter rettelsen.
+- [x] GitHub-schedule blev afgrænset som ikke driftssikkert: workflowet er aktivt og manuel dispatch virker, men kun ét forsinket schedule-event kom, mens efterfølgende timer udeblev. Dette matcher platformens dokumenterede drop-/delay-risiko og projektets eksisterende eksterne schedulerarkitektur.
+- [x] Keepalive bruger nu det eksternt startede produktionsworkflows `requested`-event som heartbeat. Den gendanner read-only, validerer schema/168 timer/score-neutralitet og dispatcher kun den eksisterende private pilot, når aktuel UTC-time mangler. Kun dispatchjobbet har `actions: write`; cache-save, artifact og deploy er fortsat forbudt.
+- [x] Lokal heartbeat-, pilot- og workflowinventarregression består for manglende, forældet, aktuel og usikker cache uden rå U/V-log.
+- [ ] Bekræft automatisk centralt heartbeat, manglende-time-dispatch og efterfølgende udvidet cache. GitHubs native schedule er herefter kun reservebevis, ikke eneste driftstrigger.
 
 # Implementeringsstatus pr. 4.0.231 – vist scoretime og strømpil deler DMI-celle
 

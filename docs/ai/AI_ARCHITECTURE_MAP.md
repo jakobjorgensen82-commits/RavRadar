@@ -1,7 +1,9 @@
 # AI Architecture Map – RavRadar
 
 ## Data- og buildpipeline
-- `.github/workflows/update-and-deploy.yml` – repositoryets eneste aktive workflow; samlet produktionsorkestrering og Pages-deploy. `pages-build-deployment` er GitHubs egen Pages-mekanisme, ikke en fil i repositoryet.
+- `.github/workflows/update-and-deploy.yml` – samlet produktionsorkestrering og eneste repositoryworkflow med Pages-deploy. Det startes normalt eksternt via `workflow_dispatch`.
+- `.github/workflows/validate-copernicus-current-pilot.yml` og `preserve-copernicus-current-shadow.yml` – privat, score-neutral strømopsamling og read-only cacheheartbeat. Heartbeatet kan kun dispatch'e piloten ved manglende aktuel UTC-time; ingen af dem har Pages-rettigheder.
+- De øvrige workflowfiler er registrerede private, manuelle QA-/recoveryjobs uden Pages-deploy. `scripts/test-workflow-validation-order-4.0.108.mjs` er det bindende aktive inventar. `pages-build-deployment` er GitHubs egen Pages-mekanisme, ikke en repositoryfil.
 - `scripts/sync-admin-config.py` – henter central admin-konfiguration.
 - `scripts/apply-central-zone-reviews.py` – anvender godkendte zone-/geometriændringer.
 - `scripts/hydrate-deployed-weather.py` – hydrering af senest deployede weather state.

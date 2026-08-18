@@ -10,6 +10,8 @@ Syvdøgnsgrænsen kontrolleres nu også ved hver normal releasevalidering. Syste
 
 Den første autentificerede timeprøve dækkede 43 af de 51 aktuelle DMI-huller: 39 fra Baltic og fire fra AMM15. Sammen med DMI svarer det til 665/673, mens præcis de otte dokumenterede Limfjordsdele fortsat mangler lokal strøm. Prøven er ikke en aktivering; piloten kører privat hver time for at opbygge syv døgns stabilitetsbevis.
 
+GitHubs egen timeplan viste sig ikke stabil nok: workflowet var aktivt, men efter ét forsinket event udeblev de næste timer. RavRadar bruger derfor den samme eksterne tidsstarter, som allerede starter vejropdateringen, som et sikkert hjerteslag. Et privat job ser kun efter, om cachen indeholder den aktuelle UTC-time. Mangler timen, starter det den eksisterende Copernicus-pilot; findes timen allerede, downloades den ikke igen. Kontrollen kan ikke ændre produktion, RavScore eller kort og skriver aldrig rå strømværdier i loggen.
+
 Otte dokumenterede modelhuller i den vestlige Limfjord har en særskilt ejerbeslutning. Når alle gates senere er bestået, må kun disse otte bruge nærmeste eksakte DMI-Limfjordsstrøm som tydeligt mærket regional proxy op til 15 km. Alle andre områder beholder 5-km-grænsen. Pilen skal fortsat stå på den faktiske modelcelle, og et ændret administratorpunkt kræver ny kontrol.
 
 Fra 4.0.232-kandidaten samles de otte deles faktiske DMI-strøm privat ved hver vejrbygning. Før opsamlingen kontrollerer systemet, at hvert centralt vandpunkt stadig er præcis det ejer-godkendte punkt, at delen stadig tilhører Limfjorden, og at data kommer fra Limfjordsmodellen. Forkert model eller mere end 15 km bliver afvist. Denne undtagelse ændrer ikke 5-km-grænsen for nogen anden del.

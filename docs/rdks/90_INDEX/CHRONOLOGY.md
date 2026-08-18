@@ -19,6 +19,7 @@
 15. Manuel aktuel-time-pilot #32141772134 tilføjede 13:00Z uden backfill og gav 1.887 records ved tre tider med nul grid-/lagskift og nul supportlæk. Selve udvidelsen er bevist; naturligt schedule-event efter rettelsen afventer fortsat.
 16. Mens naturlig drift opsamles, blev syvdøgnsgrænsen gjort til en normal release-regression: præcis 168 timer bevares, beskadigede/ældre/fremtidige restoreposter fjernes, dubletter samles, og nye ugyldige poster stopper lukket. Det naturlige fulde syvdøgnsvindue afventer stadig.
 17. `7f22e8e1`/`#32143798560` beviste retentionregressionen centralt. Den bestod sammen med 100 %-kontrakttesten; den faktiske 622/673-audit forhindrede Supabase/Pages, og tre-timers-Copernicus-cachen overlevede igen DMI-cachearbejdet.
+18. GitHub leverede fortsat ingen nye native timeevents. Keepalive blev derfor koblet til `requested` fra den allerede eksternt startede produktionskørsel. Den gendanner read-only, kontrollerer aktuel UTC-time uden rå log og dispatcher kun den private pilot ved en manglende time. Lokal fail-closed regression består; central automatisk hændelseskæde afventer første pushbevis.
 
 ## 2026-08-16 – 4.0.229 strømsted, bundlag og privat feltgrundlag
 

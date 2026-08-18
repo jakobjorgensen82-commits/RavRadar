@@ -23,6 +23,8 @@
 - Manuel aktuel-time-pilot #32141772134 tilføjede 13:00Z efter DMI-beviset. Det sikre artifact viser 1.887 records ved 11/12/13 UTC, 625 mål, 629 mål/kildepar og nul grid-/lagskift; `scoreImpact=false`, `publicRuntime=false` og nul rå U/V/credentialmatches.
 - Parallelt roadmaparbejde gjorde 168-timersgrænsen til en normal releasekontrakt. En ren regression bevarer den præcise grænsetime, fjerner ældre/fremtidige og beskadigede restoreposter, deduplikerer og kræver fail-closed gyldigt lokalt samme-tid/celle/lag-U/V-bevis for nye poster. Naturlig syvdøgnsdrift er fortsat et særskilt åbent bevis.
 - `7f22e8e1`/`#32143798560` CI-verificerede retentiontesten efter frisk central hydrering og DMI-bygning. 100 %-kontrakten bestod, faktiske 622/673 stoppede release/deploy, og tre-timers-Copernicus-cachen fandtes fortsat efter cachearbejdet.
+- GitHubs native timeplan var aktiv, men runhistorikken havde kun ét forsinket schedule-event og ingen efterfølgende timer. Det er samme platformrisiko, som tidligere førte produktionen over på ekstern `workflow_dispatch`.
+- Keepalive bruger nu `workflow_run: requested` fra den eksternt startede produktionskørsel som heartbeat. Den gendanner cachen read-only og validerer schema, 168 timer, score-neutralitet og aktuel UTC-time uden rå U/V-log. Ved manglende time dispatcher et separat to-minutters job den eksisterende private pilot; kun dette job har `actions: write`, og ingen hjælpekæde kan gemme cache, uploade artifact eller deploye. Lokale heartbeat-, pilot- og workflowtests består; central automatisk kæde afventer.
 
 ## 2026-08-16 – 4.0.231 binder den lokale pil til den viste scoretime
 
