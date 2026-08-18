@@ -17,6 +17,7 @@
 - #32139054129 har centralt bevist 100 %-gaten. #32140865173 har derefter bevist den nye pre-DMI-refresh: to-timers-cachen blev ramt før en ny 2,905-GB DMI-save og fandtes stadig bagefter; #32141443152 validerede den uafhængigt. Næste naturlige pilot skal nu bevare og udvide de flere tider. Automatisk GitHub-schedule alene regnes ikke som driftssikkert, fordi ingen event ankom før den anden målte eviction.
 - Manuel aktuel-time-pilot #32141772134 har allerede bevist selve udvidelsen efter DMI: 1.887 records ved 11/12/13 UTC med nul grid-/lagskift og nul supportlæk. Første nye naturlige schedule-event efter rettelsen afventer fortsat som særskilt driftsbevis.
 - Syvdøgnsgrænsen er samtidig gjort til en normal releasekontrakt: en ren regression bevarer præcis 168 timer, beskærer ældre/fremtidige eller beskadigede restoreposter, deduplikerer og afviser nye ugyldige poster fail-closed. Det reducerer risikoen, mens den naturlige syvdøgnsdrift fortsat opsamles; testen er ikke i sig selv et flerruns- eller aktiveringsbevis.
+- `7f22e8e1`/`#32143798560` har CI-verificeret denne kontrakt i den centrale kæde. Retention og 100 %-kontrakten bestod, den faktiske 622/673-dækning stoppede fortsat release/deploy, og den private cache overlevede DMI-cachearbejdet. Næste selvstændige bevis er fortsat naturlig schedule-/syvdøgnsdrift, ikke mere kode til samme fixture.
 
 ## 4.0.231 – samme tidspunkt styrer lokal score og strømpil
 

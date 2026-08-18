@@ -9,6 +9,7 @@
 - En råcache-artifact er udtrykkeligt forkastet, fordi repositoryet er offentligt. Den må ikke indføres uden ny eksplicit ejerbeslutning og særskilt sikkerhedsdesign.
 - Den manuelle verifikationskæde er nu lukket: #32136328681 ramte 12:00Z-cachen, #32136391556 genhentede 11:00Z og producerede 1.258 records/to tider med nul grid-/lagskift, og #32136642330 ramte den nye cache. Issue forbliver åbent kun for første automatiske keepalive-event og efterfølgende naturlig time under fortsat kvotepres.
 - Selve retentionkoden er nu lukket med en normal release-regression: præcis 168 timer bevares, ældre/fremtidige eller beskadigede restoreposter genbruges ikke, dubletter samles, og nye poster uden gyldigt lokalt samme-tid/celle/lag-U/V-bevis stopper lukket. Det åbne driftsbevis er stadig første naturlige fulde syvdøgnsvindue under cachepres.
+- `#32143798560` CI-verificerede regressionen i normal produktionsvalidering og stoppede først bagefter på den tilsigtede 622/673-gate. Cache-API'en viste fortsat `copernicus-current-shadow-v1-32141772134-1` efter kørslen. Det lukker kode-/integrationsdelen, men ikke det naturlige syvdøgnsvindue.
 
 Dette er et uforanderligt handlingssnapshot fra GitHub Actions #31923212215/#2855, genereret 16. august 2026 kl. 03:21 UTC på commit `a24a13d87de379eef0b2bab5a5d6b1c7a2ae4548`.
 

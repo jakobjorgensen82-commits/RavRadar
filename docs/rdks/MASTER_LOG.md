@@ -22,6 +22,7 @@
 - `b6cf0383`/#32140865173 gendannede præcis den cache før DMI, gemte derefter en ny 2.905.014.468-byte DMI-cache og efterlod Copernicus-cachen intakt. Begge nye regressioner bestod centralt, hvorefter fulddækningsgaten stoppede på 622/673 uden Supabase/Pages. #32141443152 ramte og validerede samme cache efter DMI-save uden recordlog.
 - Manuel aktuel-time-pilot #32141772134 tilføjede 13:00Z efter DMI-beviset. Det sikre artifact viser 1.887 records ved 11/12/13 UTC, 625 mål, 629 mål/kildepar og nul grid-/lagskift; `scoreImpact=false`, `publicRuntime=false` og nul rå U/V/credentialmatches.
 - Parallelt roadmaparbejde gjorde 168-timersgrænsen til en normal releasekontrakt. En ren regression bevarer den præcise grænsetime, fjerner ældre/fremtidige og beskadigede restoreposter, deduplikerer og kræver fail-closed gyldigt lokalt samme-tid/celle/lag-U/V-bevis for nye poster. Naturlig syvdøgnsdrift er fortsat et særskilt åbent bevis.
+- `7f22e8e1`/`#32143798560` CI-verificerede retentiontesten efter frisk central hydrering og DMI-bygning. 100 %-kontrakten bestod, faktiske 622/673 stoppede release/deploy, og tre-timers-Copernicus-cachen fandtes fortsat efter cachearbejdet.
 
 ## 2026-08-16 – 4.0.231 binder den lokale pil til den viste scoretime
 

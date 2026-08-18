@@ -25,6 +25,7 @@
 - Central produktionskørsel `#32140865173` ramte præcis to-timers-cachen før DMI, gemte derefter en ny 2,905-GB DMI-cache og efterlod Copernicus-cachen intakt. Begge nye regressioner bestod, hvorefter 100 %-gaten igen stoppede på 622/673 før release/deploy. Uafhængig restore-only efterkontrol `#32141443152` ramte og validerede samme cache efter DMI-save.
 - Manuel aktuel-time-driftsprøve `#32141772134` tilføjede derefter 13:00Z uden backfill-parameter. Det rensede artifact har 1.887 records ved tre tider 11/12/13 UTC, 625 mål, 629 mål/kildepar og nul gitter-/lagskift; offentlig runtime og score er fortsat slået fra.
 - Syvdøgnsgrænsen er nu også en del af den normale releasevalidering. En ny ren cachetest bevarer præcis 168-timersgrænsen, beskærer ældre og fremtidige gendannelsesposter, deduplikerer identiske beviser og kræver gyldigt samplingpunkt, gitterpunkt, råt U/V-par, højst 5 km samt samme tid/celle/lag uden interpolation. Beskadigede gamle poster genbruges ikke, og nye ugyldige poster stopper piloten lukket.
+- Central pushkørsel `#32143798560` beviste kontrakten i den fulde produktionsvalidering: retentiontesten og den dynamiske 100 %-test bestod, hvorefter den rumlige audit stoppede som forventet på 622/673. Releasegate, Supabase og Pages blev ikke kørt. Cacheindekset viste fortsat tre-timers-Copernicus-cachen efter den nye DMI-cacheaktivitet.
 
 ## Bevidst uændret og åbent
 

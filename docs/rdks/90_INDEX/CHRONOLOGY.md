@@ -18,6 +18,7 @@
 14. `b6cf0383`/#32140865173 ramte to-timers-cachen før DMI og bevarede den gennem en ny 2,905-GB DMI-save. Regressionerne bestod, 622/673 blev fortsat afvist, og #32141443152 ramte samme cache efterfølgende. LRU-beskyttelsen er dermed centralt bevist; næste naturlige pilot skal udvide tidsserien.
 15. Manuel aktuel-time-pilot #32141772134 tilføjede 13:00Z uden backfill og gav 1.887 records ved tre tider med nul grid-/lagskift og nul supportlæk. Selve udvidelsen er bevist; naturligt schedule-event efter rettelsen afventer fortsat.
 16. Mens naturlig drift opsamles, blev syvdøgnsgrænsen gjort til en normal release-regression: præcis 168 timer bevares, beskadigede/ældre/fremtidige restoreposter fjernes, dubletter samles, og nye ugyldige poster stopper lukket. Det naturlige fulde syvdøgnsvindue afventer stadig.
+17. `7f22e8e1`/`#32143798560` beviste retentionregressionen centralt. Den bestod sammen med 100 %-kontrakttesten; den faktiske 622/673-audit forhindrede Supabase/Pages, og tre-timers-Copernicus-cachen overlevede igen DMI-cachearbejdet.
 
 ## 2026-08-16 – 4.0.229 strømsted, bundlag og privat feltgrundlag
 

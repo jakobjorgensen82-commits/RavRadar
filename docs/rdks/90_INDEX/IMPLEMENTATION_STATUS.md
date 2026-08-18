@@ -8,6 +8,7 @@
 - [x] Rå U/V opbevares højst 168 timer i Actions-cache; supportrapporten fjerner rå vektorer og tester credentiallæk. `scoreImpact=false` og `publicRuntime=false` er hårde kontrakter.
 - [x] Lokal syntetisk regression beviser tør nærmeste celle, dybeste fælles lag, samme U/V-celle/-tid/-lag, 5-km-afvisning, syvdøgnspruning og sikkert rapportoutput.
 - [x] En særskilt ren retentionregression indgår nu i normal `npm run validate` og i Copernicus-workflowet. Den beviser præcis 168-timersgrænse, deduplikering, rensning af beskadigede/ældre/fremtidige restoreposter samt fail-closed afvisning af nye ugyldige eller for fjerne poster.
+- [x] `7f22e8e1`/`#32143798560` CI-verificerer den nye retentiontest i den fulde centrale kæde. Den bestod før det forventede 622/673-stop; ingen Supabase-/Pages-aktivering skete, og tre-timers-Copernicus-cachen overlevede DMI-cachearbejdet.
 - [x] DEC-0041 og en maskinlæsbar politik afgrænser regionalproxy til præcis otte Limfjordsdele, `dkss_lf`, uændret samplingpunkt og højst 15 km. Lokal test mod #3079 består.
 - [x] 4.0.232-kandidaten opretter de otte regionale mål ved hver DMI-kørsel fra den centralt hydrerede registrering og gemmer deres faktiske U/V privat op til 15 km. Almindelige mål bevarer 5 km; forkert collection, ændret punkt, anden zoneklasse og over 15 km afvises.
 - [x] Privat DMI-evidensrapport indeholder kun del, samplingpunkt, collection, run, tid, grid, afstand og lag. Regressionen afviser rå `uMps`/`vMps`, beviser Pages-udelukkelse og isolerer proxy-replay til `dkss_lf`.
