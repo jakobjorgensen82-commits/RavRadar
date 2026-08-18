@@ -5,7 +5,7 @@ const workflowDirectory = '.github/workflows';
 const workflowFiles = fs.readdirSync(workflowDirectory)
   .filter((name) => /\.ya?ml$/i.test(name))
   .sort();
-const expectedWorkflowFiles = ['extract-private-geodanmark-layer.yml', 'retry-national-admin-roundtrip.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-six-zone-recovery.yml'];
+const expectedWorkflowFiles = ['extract-private-geodanmark-layer.yml', 'preserve-copernicus-current-shadow.yml', 'retry-national-admin-roundtrip.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-six-zone-recovery.yml'];
 if (JSON.stringify(workflowFiles) !== JSON.stringify(expectedWorkflowFiles)) {
   throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun produktionsworkflowet og de registrerede private, ikke-deployerende workflows må være aktive.`);
 }
@@ -35,6 +35,13 @@ for (const marker of [
 if (/\b(?:push|pull_request):/.test(copernicusPilot)) throw new Error('Copernicus-piloten må kun kunne startes manuelt eller af sin private timeplan.');
 const copernicusUpload = copernicusPilot.slice(copernicusPilot.indexOf('- name: Upload private support evidence'));
 if (copernicusUpload.includes('.cache/')) throw new Error('Den rå Copernicus-cache må ikke uploades som supportartefakt.');
+const copernicusKeepalive = fs.readFileSync(`${workflowDirectory}/preserve-copernicus-current-shadow.yml`, 'utf8');
+for (const marker of ['actions/cache/restore@v4', 'copernicus-current-shadow-v1-', 'private-copernicus-current-pilot']) {
+  if (!copernicusKeepalive.includes(marker)) throw new Error(`Copernicus-keepalive mangler ${marker}`);
+}
+if (copernicusKeepalive.includes('actions/cache/save@v4') || copernicusKeepalive.includes('actions/upload-artifact')) {
+  throw new Error('Copernicus-keepalive må hverken oprette en ny cachekopi eller eksportere rådata.');
+}
 const text = fs.readFileSync(path, 'utf8').replace(/\r\n/g, '\n');
 const positions = {
   hydrate: text.indexOf('name: Hydrate latest deployed weather state'),

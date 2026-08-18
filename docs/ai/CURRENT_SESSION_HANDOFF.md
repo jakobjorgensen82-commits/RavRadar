@@ -15,6 +15,8 @@
 - Test-/evidensrettelsen er pushed som `d00d55bc4e7a73c2fb44f048d0d33cc38e933b5c`. #32135079819 passerede den rettede test og stoppede først ved 622/673-auditten; intet blev deployet.
 - Første schedule-run #32134686185 var grønt ved 12:00Z, men havde kun én rå tid, fordi 11:00Z-cachen var LRU-fortrængt. Cacheforbruget var cirka 10,2 GB med flere 2,5 GB DMI-cacher. Restore-only keepalive er pushed i `0224ea6a`: #32136328681 ramte 12:00Z, #32136391556 backfillede 11:00Z til 1.258 records/to tider uden grid-/lagskift eller supportlæk, og #32136642330 ramte derefter den nye cache. Første automatiske keepalive og næste naturlige time afventer. En rå artifactløsning er forkastet, fordi repoet er offentligt.
 - Slutkontrol fandt, at `test-current-spatial-scientific-audit-4.0.76.mjs` stadig krævede historiske 95 %/640, ikke ejerens nyere 100 %. Kandidaten kræver nu `expectedParts.length`, aktuelt 673/673; `test-current-full-coverage-gate-4.0.232.mjs` beskytter kravet. Replay mod #3094 giver korrekt 622/673 og “alle 673 kræves”.
+- Commit `9e2164b8` er på `main`. Central #32139054129 bestod regressionen og stoppede præcis på “622/673; alle 673 kræves”; releasegate, Supabase og Pages blev sprunget over.
+- Ingen automatisk keepalive-event ankom før #32139054129 gemte næste store DMI-cache, så Copernicus-cachen blev fortrængt igen. #32139755594 beviser miss. Kandidaten gendanner nu restore-only cachen direkte før DMI-cachearbejde; regressionen forbyder rå log, artifact og save i blokken. #32140001424/#32140470201 har genopbygget 11/12 UTC til 1.258 records og to tider uden grid-/lagskift eller supportlæk.
 
 ## Aktiv 4.0.231-kandidat – vist lokal scoretime og pil deler DMI-celle
 

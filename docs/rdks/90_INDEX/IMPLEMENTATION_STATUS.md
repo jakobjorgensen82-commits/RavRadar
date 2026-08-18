@@ -29,6 +29,10 @@
 - [ ] Aktiv integration kræver fuld validering, releasegate, frisk produktionsworkflow og direkte livekontrol. Den almindelige produktion er fortsat DMI-only og fail-closed over 5 km.
 - [x] Pushrun `#32129778162` beviste, at den eksisterende gate ikke blev omgået: fuld validering stoppede ved 622/673 og intet blev deployet.
 - [x] Ejerens 100 %-krav er nu den faktiske produktionsgate: `requiredPartCoverage` er lig det dynamiske antal aktive kystdele, aktuelt 673. Separat regression forbyder den historiske 95 %-formel; #3094-replay stopper på 622/673 med krav om alle 673.
+- [x] `#32139054129` bekræftede gaten centralt: regressionen bestod, auditten stoppede med 622/673 og “alle 673 kræves”, og releasegate, Supabase samt Pages blev ikke kørt.
+- [x] Ny cachepres-rodårsag er målt: ingen automatisk keepalive-event ankom før næste 2,704-GiB DMI-save, og `#32139755594` fandt Copernicus-cachen fortrængt. Produktionsjobbet har nu en restore-only pre-DMI-refresh med fuld-validate-regression og uden rå log/upload.
+- [x] `#32140001424` og `#32140470201` genopbyggede kontrolleret 11/12 UTC: 1.258 records, to tider, 625 mål, 629 mål/kildepar og nul grid-/lagskift uden supportlæk.
+- [ ] Bekræft centralt, at pre-DMI-refresh rammer en genopbygget Copernicus-cache, at efterfølgende DMI-save ikke fortrænger den, og at næste pilot bevarer flere tider.
 
 # Implementeringsstatus pr. 4.0.231 – vist scoretime og strømpil deler DMI-celle
 

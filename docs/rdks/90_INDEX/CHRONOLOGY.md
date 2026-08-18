@@ -12,6 +12,9 @@
 8. Første cron `#32134686185` hentede 12:00Z, men cirka 10,2 GB DMI-domineret Actions-cache havde LRU-fortrængt 11:00Z. En restore-only keepalive blev valgt frem for artifact i det offentlige repository. #32136328681/#32136391556/#32136642330 beviser keepalive, kontrolleret backfill og en samlet 11/12 UTC-cache med 1.258 records uden supportlæk.
 9. En efterkontrol viste, at “100 %-gaten” endnu kun stod i beslutningshukommelsen; koden brugte fortsat historiske 95 %/640. 4.0.232 gør kravet reelt og dynamisk: alle aktive kystdele, aktuelt 673/673, skal have verificeret strøm før release.
 10. Commit `406353be` tilføjede en renset historikaggregation. Run `#32131021153` gendannede og deduplikerede første times 629 records, rapporterede 625 unikke mål samt nul grid-/lagskift og bestod rekursiv rå-U/V-afvisning. Fordi begge runs brugte 11:00Z, var der fortsat kun ét selvstændigt tidspunkt; første cron-event afventede.
+11. Commit `9e2164b8` gjorde 100 %-kravet reelt. Central #32139054129 bestod regressionen, stoppede med “622/673; alle 673 kræves” og sprang releasegate, Supabase og Pages over.
+12. GitHubs keepalive-cron leverede stadig intet event før #32139054129 gemte endnu en stor DMI-cache. #32139755594 fandt Copernicus-cachen væk. Produktionsjobbet fik derfor en restore-only pre-DMI-refresh, så den lille private cache røres umiddelbart før den cacheaktivitet, der kan udløse LRU-fortrængning.
+13. #32140001424/#32140470201 genopbyggede 11/12 UTC kontrolleret. Det rensede slutartifact bekræfter igen 1.258 records ved to tider, 625 unikke mål og nul grid-/lagskift uden rå U/V- eller credentiallæk.
 
 ## 2026-08-16 – 4.0.229 strømsted, bundlag og privat feltgrundlag
 

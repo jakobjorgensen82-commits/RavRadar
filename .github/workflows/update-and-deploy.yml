@@ -130,6 +130,28 @@ jobs:
         id: dmi-cache-generation
         run: echo "generation=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
 
+      - name: Refresh private Copernicus cache before DMI cache churn
+        if: steps.preflight.outputs.should_run == 'true'
+        id: copernicus-shadow-refresh
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/copernicus-current-shadow.json
+          key: copernicus-current-shadow-v1-pre-dmi-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            copernicus-current-shadow-v1-
+
+      - name: Report private Copernicus cache preservation
+        if: steps.preflight.outputs.should_run == 'true'
+        shell: bash
+        env:
+          MATCHED_CACHE_KEY: ${{ steps.copernicus-shadow-refresh.outputs.cache-matched-key }}
+        run: |
+          if test -n "$MATCHED_CACHE_KEY"; then
+            echo "Private Copernicus shadow cache was refreshed before DMI cache churn"
+          else
+            echo "::warning title=Private Copernicus cache absent::No private Copernicus shadow cache was available before DMI cache churn"
+          fi
+
       - name: Restore bounded DMI GRIB download cache
         if: steps.preflight.outputs.should_run == 'true'
         uses: actions/cache/restore@v4
