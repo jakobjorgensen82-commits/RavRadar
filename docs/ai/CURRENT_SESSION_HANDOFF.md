@@ -1,4 +1,13 @@
-# Aktuelt sessionshandoff – 2026-08-18
+# Aktuelt sessionshandoff – 2026-08-19
+
+## Aktiv 4.0.234-kandidat – GitHub-ejet kvartersdrift og tabsfri Supabase-diagnostik
+
+- Ejeren har godkendt begge driftsrettelser: GitHub Actions skal overtage kvartersstarten fra cron-job.org, og den beskyttede `runtime-diagnostics`-synkronisering skal gøres robust mod Supabase/PostgreSQL `57014`-timeout.
+- Produktionsworkflowet har nu GitHubs egen plan ved minut 14/29/44/59. Et let forjob kontrollerer, at den private Copernicus-cache indeholder den aktuelle eksakte UTC-time, før frisk produktion må starte; mangler timen, springes det tunge build/deploy sikkert over. Den private pilot er flyttet til minut 06. Normal 673/673-gate og kildeorden er uændret.
+- `runtime-diagnostics` gemmes tabsfrit som et versionsstyret gzip/base64-arkiv med SHA-256, bytekontrol og et lille læsbart resumé. Den repræsentative lokale payload falder fra 4.014.169 til 208.874 bytes (5,2 %), mens admin-download pakker og verificerer den fulde originale JSON. Rå data fjernes ikke.
+- Målrettede workflow-, heartbeat-, admin-, kvote- og arkivtests er grønne. RDKS, version, geometri-v2, alle runtimeuafhængige rester af testmatrixen og lokal `release:gate` er grønne. Den samlede lokale `validate` stopper som forventet på det forældede 209/211-vejrsnapshot og manglende centralt bygget `public-condition-details.json`; push, frisk central Supabase-/Pages-verifikation og første naturlige GitHub-schedule-kørsel mangler endnu.
+- Cron-job.org må **ikke** deaktiveres endnu. Ejeren skal først få besked, når 4.0.234 er centralverificeret og mindst én naturlig GitHub-ejet kvarterskørsel har bevist den nye drift.
+- Der er ikke ændret land-/vandpunkter, kystgeometri, strømvektorer, scoremodel, kildeafstande eller dækningskrav. De fire allerede dirty diagnostik-/geometrifiler og `data/live/coastal-parts-v2.json` må ikke stages med denne ændring.
 
 ## Nedlukningscheckpoint 2026-08-18 – fuld Chromium-audit, rettelse afventer
 

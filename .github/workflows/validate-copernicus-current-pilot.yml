@@ -2,7 +2,8 @@ name: Validate private Copernicus current pilot
 
 on:
   schedule:
-    - cron: "17 * * * *"
+    # Byg den nye UTC-time før produktionskadencens første kørsel ved :14.
+    - cron: "6 * * * *"
   workflow_dispatch:
     inputs:
       sample_time:

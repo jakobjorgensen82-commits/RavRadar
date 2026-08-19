@@ -1,4 +1,16 @@
-# Implementeringsstatus – 4.0.233 og åbne browserfund
+# Implementeringsstatus – 4.0.234-kandidat og åbne browserfund
+
+## 4.0.234 – GitHub-plan og Supabase runtime-arkiv
+
+- [x] Timeskifteroden er afgrænset: ekstern `:00`-produktion kunne løbe samtidig med den nye Copernicus-time og stoppe sikkert på 630/673.
+- [x] GitHub-ejet produktionsplan er implementeret ved minut 14/29/44/59; piloten er flyttet til minut 6.
+- [x] Planlagt produktion har en separat current-hour-readiness-gate og bygger/deployer intet, når aktuel UTC-time endnu mangler.
+- [x] Push/manual release, fulde gates og dynamisk 673/673 er uændrede.
+- [x] `runtime-diagnostics` pakkes tabsfrit med gzip/base64, SHA-256 og byteantal under samme beskyttede nøgle; admin kan verificere og genskabe originalen, inklusive legacy-format.
+- [x] Repræsentativ kompakt payload er reduceret fra 4.014.169 til 208.874 byte; målrettede roundtrip-, korruptions-, workflow-, heartbeat-, Supabase- og adminregressioner består.
+- [x] RDKS, version, geometri-v2 og alle tests, som ikke kræver et frisk centralt runtimeartifact, består lokalt på 4.0.234; `release:gate` er grøn. Den samlede lokale `validate` stopper som forventet på repositoryets forældede 209/211-vejrsnapshot og manglende frisk `public-condition-details.json`, så friskdata-delene skal bevises centralt.
+- [ ] Pushrun skal bevise central geometri, 673/673, komprimeret Supabase-upsert/readback, Pages-artifact og deploy.
+- [ ] Mindst én efterfølgende naturlig GitHub-`schedule`-kørsel skal verificeres, før ejeren bliver bedt om at deaktivere cron-job.org.
 
 ## Åben P1 – én lokal del og ét tidspunkt gennem hele zonepanelet
 

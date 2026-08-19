@@ -1,3 +1,10 @@
+## 2026-08-19 – 4.0.234 retter timeskifterace og Supabase-diagnostik ved rodårsagen
+
+- Actions-runs blev fulgt systemisk: hel-timeskørsler stoppede ved 630/673, fordi 43 Copernicus-dele for den nye eksakte time endnu ikke var indsamlet, mens senere fulddækkede runs kunne stoppe på Supabase HTTP 500/PostgreSQL `57014` ved den store `runtime-diagnostics`-upsert.
+- Ejeren besluttede at flytte den normale 15-minuttersstart fra cron-job.org til GitHub. Produktion ligger ved minut 14/29/44/59, piloten ved minut 6, og en lille readiness-gate udsætter en planlagt build sikkert, hvis aktuel time mangler.
+- Den fulde runtime-diagnostik pakkes tabsfrit under samme beskyttede Supabase-nøgle. Den repræsentative payload falder fra 4.014.169 til 208.874 byte og genskabes kun efter browserkontrol af størrelser, SHA-256, version og tidspunkt.
+- Målrettede lokale regressioner består. Ingen ejerpunkter, kilder, U/V, score, pile eller 673/673-gate er ændret. Fuld validering, central push/deploy og naturlig GitHub-schedule afventer, før cron-job.org må slukkes.
+
 ## 2026-08-18 – nedlukningscheckpoint efter fuld Chromium-audit
 
 - En direkte Chromium/Playwright-kontrol gennemgik 210 zoner, 673 kystdele, 420 aktuelle zone-/jagtformvisninger, 545 unikke strømpositioner og 2.100 femdøgnsfaner. Ingen projektdata eller ejerpunkter blev ændret.

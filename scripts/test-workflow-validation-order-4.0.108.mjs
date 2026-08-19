@@ -19,7 +19,7 @@ const copernicusPilot = fs.readFileSync(`${workflowDirectory}/validate-copernicu
 for (const marker of [
   'workflow_dispatch:',
   'schedule:',
-  '- cron: "17 * * * *"',
+  '- cron: "6 * * * *"',
   'permissions:\n  contents: read',
   'COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}',
   'COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}',
@@ -46,6 +46,17 @@ if (copernicusKeepalive.includes('actions/cache/save@v4') || copernicusKeepalive
 const copernicusPreserveSection = copernicusKeepalive.slice(copernicusKeepalive.indexOf('  preserve:'), copernicusKeepalive.indexOf('  dispatch-pilot:'));
 if (copernicusPreserveSection.includes('actions: write')) throw new Error('Kun det minimale Copernicus-dispatchjob må få Actions-skriveret.');
 const text = fs.readFileSync(path, 'utf8').replace(/\r\n/g, '\n');
+for (const marker of [
+  'schedule:',
+  '- cron: "14,29,44,59 * * * *"',
+  'current-hour-readiness:',
+  'python3 scripts/check-copernicus-current-hour.py --github-output "$GITHUB_OUTPUT"',
+  'Scheduled refresh deferred',
+  "needs.current-hour-readiness.outputs.ready == 'true'",
+]) {
+  if (!text.includes(marker)) throw new Error(`Den GitHub-ejede 15-minuttersproduktion mangler ${marker}`);
+}
+if (text.includes('cron-job.org')) throw new Error('Produktionsworkflowet må ikke længere afhænge af cron-job.org.');
 const positions = {
   hydrate: text.indexOf('name: Hydrate latest deployed weather state'),
   preflight: text.indexOf('name: Decide whether weather needs updating'),
@@ -92,7 +103,7 @@ if (!text.includes('${{ github.run_id }}-${{ github.run_attempt }}')) throw new 
 
 if (!text.includes('build-and-prepare:') || !text.includes('deploy-pages:')) throw new Error('Data/build og Pages-deploy skal være separate jobs.');
 if (!text.includes('geometry-v2-pilot:')) throw new Error('Workflow mangler det isolerede GeoDanmark geometry-v2 pilotjob.');
-if (!text.includes("if: github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)")) {
+if (!text.includes("github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)")) {
   throw new Error('Private GeoDanmark-dispatches skal udelukke det almindelige build- og deployjob.');
 }
 const geometryNationalSection = text.slice(text.indexOf('geometry-v2-national:'), text.indexOf('geometry-v2-pilot:'));

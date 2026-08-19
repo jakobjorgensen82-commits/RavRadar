@@ -1,6 +1,10 @@
 name: Update weather and deploy RavRadar
 
 on:
+  schedule:
+    # GitHub-ejet 15-minutterskadence. Minutterne ligger forskudt fra
+    # timeskiftet, så den private Copernicus-pilot normalt er færdig først.
+    - cron: "14,29,44,59 * * * *"
   workflow_dispatch:
     inputs:
       force:
@@ -24,16 +28,58 @@ on:
 permissions:
   contents: read
 
-# cron-job.org starter workflow_dispatch hvert 15. minut. GitHubs egen
-# schedule-trigger bruges bevidst ikke. Der må højst være én tung kørsel og én
-# ventende kørsel; ventende kald kontrollerer friskhed, når de får en runner.
+# GitHub starter den normale vejropdatering hvert 15. minut. En særskilt
+# current-hour-gate springer en planlagt produktion rent over, hvis den private
+# Copernicus-cache endnu ikke har den nye UTC-time. Der må højst være én tung
+# kørsel og én ventende kørsel; ventende kald kontrollerer friskhed igen.
 concurrency:
   group: ${{ github.event_name == 'workflow_dispatch' && inputs.geometry_v2_national == true && 'ravradar-geometry-v2-national' || github.event_name == 'workflow_dispatch' && inputs.geometry_v2_pilot == true && 'ravradar-geometry-v2-pilot' || 'ravradar-weather-production' }}
   cancel-in-progress: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (inputs.force == true || inputs.geometry_v2_pilot == true || inputs.geometry_v2_national == true)) }}
 
 jobs:
+  current-hour-readiness:
+    name: Check scheduled current-hour readiness
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      ready: ${{ steps.readiness.outputs.ready }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore private Copernicus current cache for scheduled gate
+        if: github.event_name == 'schedule'
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/copernicus-current-shadow.json
+          key: copernicus-current-shadow-v1-production-gate-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            copernicus-current-shadow-v1-
+
+      - name: Inspect scheduled UTC hour without exposing raw vectors
+        if: github.event_name == 'schedule'
+        id: cache-state
+        run: python3 scripts/check-copernicus-current-hour.py --github-output "$GITHUB_OUTPUT"
+
+      - name: Decide whether production may start
+        id: readiness
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          CURRENT_HOUR_PRESENT: ${{ steps.cache-state.outputs.current_hour_present }}
+        run: |
+          if [ "$EVENT_NAME" != "schedule" ] || [ "$CURRENT_HOUR_PRESENT" = "true" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "Production trigger may continue."
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Scheduled refresh deferred::The exact current UTC hour is not ready in the private Copernicus cache. No production artifact will be built; the private pilot is being dispatched and the next scheduled run will retry."
+          fi
+
   build-and-prepare:
-    if: github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)
+    needs: current-hour-readiness
+    if: (github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)) && needs.current-hour-readiness.outputs.ready == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     permissions:
@@ -71,7 +117,7 @@ jobs:
         run: python scripts/hydrate-deployed-weather.py
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
-          WEATHER_USER_AGENT: "RavRadar/4.0.233 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.234 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Preserve deployed DMI zone cache as safe fallback
         run: |
@@ -92,7 +138,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.233 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.234 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Report skipped refresh
         if: steps.preflight.outputs.should_run != 'true'
@@ -208,7 +254,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.233 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.234 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Save progressed DMI GRIB download cache
@@ -268,7 +314,7 @@ jobs:
           DMI_DEPLOYED_CACHE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/live/dmi-forecast-cache.json"
           WEATHER_REQUEST_TIMEOUT_MS: 25000
           DMI_OCEAN_REQUEST_TIMEOUT_MS: 60000
-          WEATHER_USER_AGENT: "RavRadar/4.0.233 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.234 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Attach scientific current provenance and exact DMI grid points

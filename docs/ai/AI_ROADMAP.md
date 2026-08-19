@@ -1,4 +1,12 @@
-# AI Roadmap – RavRadar 4.0.233
+# AI Roadmap – RavRadar 4.0.234
+
+## Aktiv driftsrelease – GitHub-plan og Supabase-timeout
+
+1. GitHub Actions overtager 15-minuttersproduktionen ved minut 14/29/44/59; Copernicus-piloten kører ved minut 6.
+2. En manglende eksakt aktuel Copernicus-time skal udsætte den planlagte produktion uden artifact/deploy og lade heartbeatet bestille timen. 673/673 sænkes ikke.
+3. Den fulde runtime-diagnostik gemmes tabsfrit komprimeret med SHA-256 og begge byteantal. Admin-download skal verificere og genskabe originalen; legacy-format bevares.
+4. Afslut fuld lokal validering/releasegate, pushrun med Supabase/Pages og mindst én naturlig GitHub-schedule-kørsel.
+5. Først derefter skal ejeren få besked om at deaktivere cron-job.org. Den åbne browser-P1 fortsætter som særskilt næste produktopgave.
 
 ## Næste P1 efter browseraudit 2026-08-18 – én lokal sandhed i hele zonepanelet
 
@@ -42,7 +50,7 @@ Status ved checkpoint: analyse og rodårsag er gemt; implementering er ikke star
 - Manuel aktuel-time-pilot #32141772134 har allerede bevist selve udvidelsen efter DMI: 1.887 records ved 11/12/13 UTC med nul grid-/lagskift og nul supportlæk. Første nye naturlige schedule-event efter rettelsen afventer fortsat som særskilt driftsbevis.
 - Syvdøgnsgrænsen er samtidig gjort til en normal releasekontrakt: en ren regression bevarer præcis 168 timer, beskærer ældre/fremtidige eller beskadigede restoreposter, deduplikerer og afviser nye ugyldige poster fail-closed. Det reducerer risikoen, mens den naturlige syvdøgnsdrift fortsat opsamles; testen er ikke i sig selv et flerruns- eller aktiveringsbevis.
 - `7f22e8e1`/`#32143798560` har CI-verificeret denne kontrakt i den centrale kæde. Retention og 100 %-kontrakten bestod, den faktiske 622/673-dækning stoppede fortsat release/deploy, og den private cache overlevede DMI-cachearbejdet. Næste selvstændige bevis er fortsat naturlig schedule-/syvdøgnsdrift, ikke mere kode til samme fixture.
-- GitHubs aktive timeplan leverede kun ét forsinket `schedule`-event og ingen efterfølgende timer; GitHub dokumenterer selv, at schedule-events kan forsinkes eller droppes. 4.0.232 bruger derfor det eksisterende eksternt udløste produktionsworkflow som privat heartbeat: et `workflow_run: requested`-job gendanner kun cachen og dispatcher den eksisterende `workflow_dispatch`-pilot, hvis den aktuelle UTC-time mangler. Det ændrer ikke produktionsworkflow, DMI, score eller deploy. Lokal fail-closed regression er grøn; næste bevis er automatisk centralt heartbeat → dispatch → ny cachetime.
+- Historisk leverede GitHubs aktive timeplan kun ét forsinket `schedule`-event. 4.0.232 brugte derfor det eksternt udløste produktionsworkflow som privat heartbeat. Ejerens nyere DEC-0042 erstatter selve produktionsstarteren med GitHubs forskudte 15-minuttersplan og en eksplicit current-hour-gate; heartbeatets minimale dispatchrolle bevares.
 - `#32146584311` gav 2.516 records ved fire tider 11–14 UTC uden stabilitets- eller lækagefejl. Det første automatiske heartbeat `#32146699458` ventede korrekt på piloten, ramte den nye cache og sprang dispatch over, fordi timen allerede fandtes. Næste selvstændige bevis er manglende-time-grenen ved en ny UTC-time, hvor heartbeatet skal dispatch'e piloten og udvide samme cache.
 - `#32146695718` har samtidig CI-verificeret den nye heartbeat-regression i normal fuld validering før det forventede 622/673-stop. Supabase og Pages forblev lukkede. Schedulerbeviset kan derfor fortsætte uafhængigt uden at lempe den geografiske gate.
 - Det private dataintegritetstrin er nu CI-bevist: hver fuldført time får et deterministisk fingeraftryk af alle 673 centralt hydrerede vandpunkter. Dubletskip kræver både samme time, samme fingeraftryk og samme recordantal. `#32149556595` fandt legacycachen og dispatch'ede automatisk `#32149592195`, som genindsamlede 14 UTC og gemte et manifestbundet fire-timersvindue uden læk. Næste åbne driftsmål er naturlig udvidelse ved en ny UTC-time og senere hele 168-timersvinduet.

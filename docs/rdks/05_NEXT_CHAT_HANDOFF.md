@@ -1,5 +1,13 @@
 # RavRadar – overlevering til næste chat
 
+## Aktiv kandidat 4.0.234 – afslut før andre kodeopgaver
+
+- Begge godkendte driftsrettelser er implementeret lokalt: GitHub-ejet plan `14,29,44,59 * * * *` med fail-closed kontrol af den aktuelle private Copernicus-time, samt tabsfri komprimering og integritetskontrol af den beskyttede Supabase-`runtime-diagnostics`-payload.
+- Copernicus-piloten kører ved minut 06, så dens time kan være klar før første produktionsforsøg. Manglende time giver et billigt sikkert skip; den normale produktion må stadig kun frigive præcis 673/673 efter DMI ≤5 km → Baltic ≤5 km → AMM15 ≤5 km → otte ejerallowlistede `dkss_lf`-proxyer ≤15 km.
+- Arkivet indeholder hele originalen som deterministisk gzip/base64 med SHA-256 og bytekontrol. Admin-download dekoder og verificerer filen efter sædvanlig adgangskontrol. Den målte repræsentative størrelse er 208.874 bytes mod 4.014.169 bytes kompakt original.
+- Lokal RDKS, version, geometri-v2, runtimeuafhængig testmatrix og releasegate er grønne. De kendte lokalgenererede friskdatafiler er forældede/mangler, så næste rækkefølge er: eksplicit stage uden de allerede dirty ejer-/diagnostikfiler → commit og fast-forward push → frisk central workflow/Supabase/Pages-kontrol → mindst én naturlig GitHub-schedule-kørsel. Først derefter skal ejeren instrueres i at deaktivere cron-job.org.
+- `cron-job.org` er fortsat aktivt under overgangen. Deaktiver det ikke på antagelse alene. Der er ikke ændret ejerens land-/vandpunkter eller anden geometri.
+
 ## Start her
 
 Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde samt DEC-0024, DEC-0029, DEC-0030, DEC-0031, DEC-0037, DEC-0038, DEC-0039, DEC-0040 og DEC-0041. Kontrollér derefter gitstatus, seneste commit og GitHub Actions.

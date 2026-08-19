@@ -47,7 +47,7 @@ jobs:
       actions: write
       contents: read
     steps:
-      - name: Dispatch private current-hour pilot from external production heartbeat
+      - name: Dispatch private current-hour pilot when production requests a missing hour
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

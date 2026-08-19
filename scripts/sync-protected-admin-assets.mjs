@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import {createSupabaseAdminRequester} from './lib/supabase-admin-rest.mjs';
+import {buildRuntimeDiagnosticsEnvelope} from './lib/runtime-diagnostics-envelope.mjs';
 const url=process.env.SUPABASE_URL?.replace(/\/$/,'');
 const key=process.env.SUPABASE_SERVICE_ROLE_KEY;
 if(!url||!key)throw new Error('SUPABASE_URL og SUPABASE_SERVICE_ROLE_KEY kræves');
@@ -47,6 +48,11 @@ const nextManifest={schemaVersion:1,assets:{}};
 for(const [document_key,file] of Object.entries(assets)){
  let payload;try{payload=JSON.parse(await fs.readFile(file,'utf8'));}catch(e){if(e.code==='ENOENT'){console.warn(`Springer over ${file}`);continue;}throw e;}
  if(document_key==='dmi-water-stations')payload=mergeStationDocuments(payload,await existingDocument(document_key));
+ if(document_key==='runtime-diagnostics'){
+  const packed=buildRuntimeDiagnosticsEnvelope(payload);
+  payload=packed.payload;
+  console.log(`Beskyttet runtime-diagnostik pakket tabsfrit: ${packed.originalBytes} -> ${packed.storedBytes} byte`);
+ }
  const hash=digest(payload);nextManifest.assets[document_key]={sha256:hash,bytes:Buffer.byteLength(JSON.stringify(payload))};
  if(previousManifest?.assets?.[document_key]?.sha256===hash){console.log(`Beskyttet admin-data uændret; springer skrivning over: ${document_key}`);continue;}
  await request('?on_conflict=document_key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({document_key,payload,updated_by:null})},`beskyttet sync: skriv ${document_key}`);

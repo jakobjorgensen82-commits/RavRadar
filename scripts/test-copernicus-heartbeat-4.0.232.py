@@ -129,7 +129,7 @@ def main() -> None:
     preserve_section = workflow[workflow.index("  preserve:"):workflow.index("  dispatch-pilot:")]
     need("actions: write" not in preserve_section, "Only the minimal dispatch job may receive Actions write permission")
 
-    print("OK: external production heartbeat safely dispatches one private pilot per missing UTC hour")
+    print("OK: GitHub-owned production heartbeat safely dispatches one private pilot per missing UTC hour")
 
 
 if __name__ == "__main__":

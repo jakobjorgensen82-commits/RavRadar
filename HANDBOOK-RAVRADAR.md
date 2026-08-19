@@ -1,5 +1,21 @@
 # RavRadar Håndbog
 
+## GitHub ejer 15-minuttersproduktionen – 4.0.234
+
+RavRadar starter nu selv den normale vejropdatering i GitHub Actions ved minut 14, 29, 44 og 59. Copernicus-piloten kører ved minut 6, så den nye UTC-time normalt er klar før den første produktion efter et timeskifte.
+
+En lille gate kontrollerer den private cache, før det tunge job starter. Mangler den eksakte aktuelle time, bygges der intet vejr, Supabase-dokument eller Pages-artifact. Det private heartbeat bestiller piloten, og næste planlagte 15-minutterskørsel prøver igen. Dermed bliver en normal forsinkelse ved timeskiftet ikke fejlagtigt til en 630/673-releasefejl. Manuelle og push-udløste releases er fortsat fail-closed.
+
+cron-job.org må først deaktiveres, når mindst én naturlig GitHub-planlagt kørsel er verificeret. Ændringen flytter ingen land-/vandpunkter og ændrer hverken kildeorden, score, pile eller kravet om præcis 673/673.
+
+## Supabase gemmer den fulde diagnostik kompakt og tabsfrit – 4.0.234
+
+Den beskyttede runtime-diagnostik var vokset til cirka 24 MB som indrykket fil. Supabase kunne derfor bruge så lang tid på ét JSONB-upsert, at PostgreSQL afbrød skrivningen med kode `57014` — i et senere run både ved første forsøg og ved den ene tilladte genprøvning.
+
+RavRadar gemmer nu en lille direkte oversigt og et gzip-komprimeret, base64-kodet arkiv under den samme beskyttede dokumentnøgle. Den lokale repræsentative rapport fylder 4.014.169 byte som kompakt original og 208.874 byte i Supabase-formatet. Ingen zonedata eller forsøgsoplysninger fjernes.
+
+Når en administrator downloader rapporten, kontrollerer browseren komprimeret og udpakket størrelse, SHA-256-fingeraftryk, version og genereringstid, før den oprindelige komplette JSON frigives. Ældre ukomprimerede dokumenter virker fortsat. Den snævre én-gangs genprøvning bevares, og korruption eller en gentaget databasefejl stopper fortsat fail-closed.
+
 ## Hver lokal kystdel vurderes mod sin egen kyst – 4.0.233
 
 Strømpilen viser, hvor vandet bevæger sig. Den skal derfor ikke altid pege mod land. Ved Havsande viste pilen en nordgående strøm korrekt, men tekst og RavScore kunne samtidig kalde den gunstig indtransport, fordi `Havsande – nordkyst` arvede de ældre retninger `Nord for fyret` og `Syd for fyret` fra hele Blåvand-zonen. Systemet kunne vælge den sydlige retning, selv om panelet viste nordkysten.
@@ -20,7 +36,7 @@ Syvdøgnsgrænsen kontrolleres ved hver normal releasevalidering. Systemet behol
 
 Den første autentificerede timeprøve dækkede 43 af de 51 aktuelle DMI-huller: 39 fra Baltic og fire fra AMM15. De sidste otte er præcis de godkendte Limfjordsproxyer. Den centrale produktionskørsel `#32158041877` bekræftede derefter hele kildekæden med 622 lokale DMI-dele, 43 Copernicus-dele og otte regionalproxyer, altså præcis 673/673. Fuld validering, releasegate, Supabase og Pages bestod, og datasættet er hashverificeret på den aktive side. Normal `controlled-live` er derfor åbnet, mens syvdøgnsstabiliteten eftermåles live.
 
-GitHubs egen timeplan viste sig ikke stabil nok. RavRadar bruger derfor den samme eksterne tidsstarter, som allerede starter vejropdateringen, som et sikkert hjerteslag. Et privat job ser kun efter, om cachen indeholder den aktuelle UTC-time. Mangler timen, starter det den eksisterende Copernicus-collector; findes timen allerede, downloades den ikke igen. Kontrollen skriver aldrig rå strømværdier eller credentials i loggen.
+Det private heartbeat ser fortsat kun efter, om cachen indeholder den aktuelle UTC-time. Mangler timen, starter det den eksisterende Copernicus-collector; findes timen allerede, downloades den ikke igen. Fra 4.0.234 udløses den normale produktion af GitHubs egen forskudte 15-minuttersplan, og en særskilt gate forhindrer, at produktionen løber foran collectoren. Kontrollen skriver aldrig rå strømværdier eller credentials i loggen.
 
 En UTC-time tæller kun som færdig for den punktbestand, den faktisk blev hentet til. Collectoren laver derfor et digitalt fingeraftryk af alle centrale del-ID'er og vandpunkter og gemmer det sammen med timens forventede antal råposter. Hvis ejeren flytter blot ét vandpunkt, hvis en gammel cache mangler dette manifest, eller hvis recordantallet ikke passer, hentes timen igen. Data fra gammel og ny geometri blandes dermed ikke.
 
@@ -52,13 +68,13 @@ Fra 4.0.227 er denne lokale vinkel derfor kun en advarsel. Den kan ikke længere
 
 Manglende punkter, urimelig afstand, en linje der ikke rammer den valgte kyststrækning, eller punkter på samme side er fortsat reelle fejl. Central readback og den efterfølgende DMI-/releasekontrol er også uændrede. Rettelsen flytter ikke eksisterende punkter og ændrer ikke RavScore af sig selv.
 
-## Supabase genprøver én annulleret diagnostikskrivning – 4.0.226
+## Supabase genprøver én annulleret diagnostikskrivning – historisk 4.0.226
 
 En stor beskyttet driftsrapport kan normalt gemmes på cirka 10–12 sekunder, men én produktion ramte databasens tidsgrænse efter cirka 19 sekunder. Alle vejr- og releasekontroller var allerede grønne, og siden blev korrekt ikke deployet.
 
 Fra 4.0.226 genprøver RavRadar præcis én gang, når Supabase udtrykkeligt svarer, at PostgreSQL annullerede statementet på grund af timeout. Gentages timeouten, eller opstår en anden fejl, stopper releasekæden fortsat. Timeoutgrænsen, rapportens indhold, adminhistorik, vejrdata og RavScore er uændrede.
 
-Den fulde produktionskørsel #2816 bestod alle vejr- og releasekontroller, Supabase og Pages. Den store rapport blev denne gang gemt i første forsøg på cirka 11,5 sekunder; den særlige timeoutvej er derfor bevist i en kontrolleret test og ikke ved at fremprovokere en databasefejl.
+Den fulde produktionskørsel #2816 bestod alle vejr- og releasekontroller, Supabase og Pages. Den store rapport blev denne gang gemt i første forsøg på cirka 11,5 sekunder; den særlige timeoutvej er derfor bevist i en kontrolleret test og ikke ved at fremprovokere en databasefejl. Fra 4.0.234 er selve rodårsagen reduceret ved tabsfri komprimering som beskrevet ovenfor; genprøvningen er stadig sidste sikkerhedsnet.
 
 ## Den aktuelle vandstandstime beholder sin modelidentitet – 4.0.225
 
@@ -180,7 +196,7 @@ En privat, score-neutral cache bruger DKSS-felter ved vandpunktet samt cirka 5 o
 
 Rotationen registrerer også, hvor langt der er til den nærmeste modelkolonne med et eksakt fælles U/V-par, selv når den ligger uden for 5 km. I det tilfælde gemmes kun koordinat, afstand og lagmetadata – ikke de fjerne strømværdier. En privat ejeroversigt skelner derfor mellem nær-tærskel 5–6 km til rent manuelt geometrireview, modelhul 6–8 km, strukturelt modelhul over 8 km og en datakædefejl, hvor gyldig strøm faktisk findes inden for 5 km. Selv en nær-tærskel-post må kun flyttes, hvis vandpunktet i sig selv er forkert – aldrig blot for at nå modelcellen. Oversigten flytter ingen punkter automatisk, og den offentlige 5 km-grænse er uændret.
 
-**Håndbogsversion:** 4.0.233
+**Håndbogsversion:** 4.0.234
 
 **Opdateret:** 18. august 2026
 

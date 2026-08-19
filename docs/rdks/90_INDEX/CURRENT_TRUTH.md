@@ -1,5 +1,13 @@
 # Current truth – gældende projektviden
 
+## 4.0.234-kandidat – GitHub-plan og tabsfri Supabase-diagnostik
+
+- Ejeren har besluttet, at GitHub Actions skal eje den normale 15-minuttersproduktion. Kandidaten kører ved UTC-minut 14/29/44/59, mens Copernicus-piloten ligger ved minut 6. Dette erstatter den tidligere aktive afhængighed af cron-job.org; ekstern cron slukkes først efter et naturligt GitHub-schedule-bevis.
+- En planlagt kørsel uden eksakt aktuel Copernicus-time springer hele produktionsbygningen sikkert over. Heartbeatet dispatcher piloten, og næste kørsel prøver igen. Push/manual release og 673/673-gaten er ikke lempet.
+- Gentagne Supabase `57014` blev afgrænset til den meget store `runtime-diagnostics`-upsert. Kandidaten gemmer samme komplette JSON tabsfrit i et gzip/base64-arkiv med SHA-256 og byteantal. Den lokale repræsentative payload falder fra 4.014.169 til 208.874 byte; admin-download verificerer og genskaber originalen.
+- Målrettede workflow-, heartbeat-, Supabase-, archive- og adminregressioner er grønne. RDKS, version, geometri-v2, de runtimeuafhængige dele af den fulde testmatrix og lokal releasegate er også grønne. Den samlede lokale `validate` rammer kun de kendte friskdata-stop: repositoryets forældede 209/211-vejrsnapshot og manglende centralt genereret `public-condition-details.json`. Pushrun, frisk 673/673, Supabase-readback, Pages-deploy og naturlig schedule-kørsel afventer; 4.0.234 er derfor endnu ikke produktionsverificeret.
+- Ingen centrale land-/vandpunkter, U/V-data, pile, score, kildeorden eller afstandsgrænser er ændret.
+
 ## Åben P1 efter systematisk Chromium-audit 2026-08-18 – lokal data vises ikke konsekvent i zonepanelet
 
 - Audit af 210 zoner og 673 kystdele bekræfter, at ejerens land-/vandpunkter er bevaret og faktisk bruges i den lokale scorekæde. Alle 673 har gyldig strømproveniens; kildefordelingen er 622 DMI, 43 Copernicus og otte godkendte regionalproxyer. U/V-retning, pilcelle, kildeklasse og afstand er konsistente. 4.0.233's ankerrettelse er derfor fortsat gyldig.

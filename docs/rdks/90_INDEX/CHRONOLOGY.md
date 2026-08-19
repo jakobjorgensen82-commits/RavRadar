@@ -1,5 +1,13 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-19 – GitHub-ejet produktion og Supabase-timeout
+
+1. Ejeren konstaterede gentagne røde 15-minutterskørsler og bad om både timeoutrettelsen og Supabase-rettelsen samt om at flytte startansvaret fra cron-job.org til GitHub.
+2. Actions-evidensen delte fejlene i to: ved timeskift manglede den nye eksakte Copernicus-time og produktionen stoppede på 630/673; senere fulddækkede runs kunne stoppe på Supabase/PostgreSQL `57014` ved den store runtime-diagnostik.
+3. DEC-0042 forskyder GitHub-produktionen til minut 14/29/44/59, piloten til minut 6 og kræver en readiness-gate uden artifact/deploy ved manglende time. cron-job.org slukkes først efter naturligt schedule-bevis.
+4. DEC-0043 bevarer den komplette diagnostik tabsfrit som gzip/base64 med SHA-256 og byteantal under samme beskyttede nøgle. Den repræsentative payload falder fra 4.014.169 til 208.874 byte.
+5. Målrettede lokale regressioner består. Fuld validering, releasegate, push/deploy og naturlig GitHub-kørsel afventer.
+
 ## 2026-08-18 – supplerende strøm og afgrænset Limfjordsproxy
 
 1. Ejeren afsluttede den manuelle rettelse af land-/vandpunkter og vandstandsrouting. Frisk central #3079 gav 622/673 lokale DMI-strømpunkter; alle 51 mangler blev auditeret.

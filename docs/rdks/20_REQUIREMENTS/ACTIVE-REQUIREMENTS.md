@@ -2,6 +2,11 @@
 
 Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslutninger, chatkilder og kode.
 
+## Produktionsplan og beskyttet diagnostik – 4.0.234
+
+- **REQ-WORKFLOW-GITHUB-SCHEDULE-001 – BINDENDE EJERBESLUTNING:** GitHub Actions skal eje den normale 15-minuttersproduktion. Tidsplanen skal være forskudt fra hel time, og en planlagt kørsel uden den eksakte aktuelle Copernicus-time skal afsluttes sikkert uden nyt vejrartifact, Supabase-sync eller Pages-deploy. Heartbeatet må bestille den manglende time, hvorefter næste kørsel prøver igen. Push/manual release forbliver fuldt fail-closed. cron-job.org må først deaktiveres efter et naturligt GitHub-schedule-bevis. Se DEC-0042.
+- **REQ-PROTECTED-RUNTIME-ARCHIVE-001 – BINDENDE:** Den fulde beskyttede `runtime-diagnostics` må komprimeres tabsfrit for at undgå PostgreSQL `57014`, men ingen rå felter må kasseres. Download kræver eksisterende rettighed og verificeret schema, komprimeret/ukomprimeret størrelse, SHA-256, version og genereringstid. Ældre ukomprimerede dokumenter skal fortsat kunne læses. Gentagne Supabase- eller integritetsfejl stopper fail-closed. Se DEC-0043.
+
 ## Offentlig lokal sammenhæng – bindende efter browseraudit 2026-08-18
 
 - **REQ-PUBLIC-LOCAL-CONSISTENCY-001 – BINDENDE:** Når zonepanelet udpeger en lokal kystdel som vinder, skal kortfremhævning, delnavn, score, forklaring, debug, vind, bølger, vandstand, strøm, vandtemperatur og trend komme fra samme lokale del og samme valgte tidspunkt. Hovedzonens `condition.current` må ikke vises som om den tilhører vinderdelen. Hvis en lokal række reelt mangler, skal fallbacken være tydeligt mærket og må ikke fremstilles som lokalt bevis.

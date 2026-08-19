@@ -10,5 +10,5 @@ for(const required of ['.direction-layout','.direction-map','.direction-zone-row
 console.log('Adminens geografiske multi-ankerkontrol er dokumenteret og tilgængelig.');
 
 if(js.includes('ravradar-runtime-diagnostics.json?t=${Date.now()}'))throw new Error('Admin må ikke hente beskyttet runtime fra offentlig URL');
-if(!js.includes("allowed('diagnostics_download')")||!js.includes("download('ravradar-runtime-diagnostics.json',state.runtime)"))throw new Error('Admin mangler rettighedskontrolleret download af beskyttet runtime');
+if(!js.includes("allowed('diagnostics_download')")||!js.includes('decodeRuntimeDiagnosticsEnvelope(state.runtime)')||!js.includes("download('ravradar-runtime-diagnostics.json',runtime)"))throw new Error('Admin mangler rettighedskontrolleret og verificeret download af beskyttet runtime');
 if(!js.includes('conditions.json?t=${Date.now()}'))throw new Error('Admin henter ikke friske conditions ved download');
