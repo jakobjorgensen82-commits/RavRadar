@@ -50,6 +50,15 @@ for(const file of [...new Set(browserSources)]){
   await fs.writeFile(file,text);
 }
 
+// Aktive produktionsworkflows sender releaseversionen i deres User-Agent.
+// Hold den tæt koblet til package-versionen, så et versionsløft ikke først
+// opdages efter den dyre centrale datahydrering.
+for(const file of ['.github/workflows/update-and-deploy.yml']){
+  let text=await fs.readFile(file,'utf8');
+  text=text.replace(/RavRadar\/\d+\.\d+\.\d+/g,`RavRadar/${version}`);
+  await fs.writeFile(file,text);
+}
+
 // Releasebærende dokumenter kan være gledet fra package-versionen. Normalisér deres
 // eksplicitte versionsfelter i stedet for kun at erstatte previousVersion.
 {

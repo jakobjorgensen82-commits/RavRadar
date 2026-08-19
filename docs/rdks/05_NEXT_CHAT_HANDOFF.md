@@ -6,6 +6,7 @@
 - National prognose og zonepanel bruger samme `selectLocalBestForDay`; runtime bevarer vinderdelens kompakte præsentationsfelter pr. fælles time.
 - Manglende lokal post låner ikke hovedzoneværdier. En ufuldstændig fælles lokal række vises som tydeligt mærket, samlet hovedzonefallback.
 - Syntetisk landsregression består for 210 zoner, 673 dele, begge jagtformer og 2.100 femdøgnsvisninger. RDKS, versionslukning og lokal releasegate er grønne; fuld lokal `validate` stopper forventet på det gamle 209/211-vejrsnapshot efter geometri-v2. Central 673/673/Supabase/Pages og direkte livebrowser mangler endnu.
+- Commit `2bd30234` er på `main`. Første pushrun `#32248949564`/`#3215` stoppede sikkert før release, Supabase og Pages, fordi workflowets fire User-Agents stadig bar 4.0.234. Workflowet er rettet til 4.0.235, fremtidige versionsløft opdaterer feltet automatisk, og både versionskontrol og releasegate kontrollerer nu alle forekomster før push. Push og central genkørsel af denne lille rettelse er næste trin.
 - Ingen ejerpunkter, geometri, U/V, pilceller, scoreformel, kildeorden, afstandsgrænser eller dækningskrav er ændret. De fire dirty diagnostik-/geometrifiler og `data/live/coastal-parts-v2.json` må ikke stages.
 - Fælles aktuel timedækning for alle 673 dele er fortsat et særskilt åbent bevis; ændret kildeplan kræver ejerens beslutning.
 

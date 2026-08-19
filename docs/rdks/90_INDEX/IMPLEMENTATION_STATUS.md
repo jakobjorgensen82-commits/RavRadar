@@ -9,7 +9,8 @@
 - [x] Landsdækkende syntetisk regression består for 210 zoner, 673 dele, begge jagtformer og 2.100 femdøgnsvisninger med identisk vinder, tid, score, vejr og forklaring gennem startup-/detailfletningen.
 - [x] Lokale forklarings-, kort-, scorepresentation-, null-safety-, progressive payload- og versionsregressioner består målrettet før versionsløftet.
 - [x] RDKS, målrettede tests, versionslukning og lokal `release:gate` er grønne på 4.0.235. Fuld lokal `validate` gennemfører RDKS og hele geometri-v2-kæden og stopper derefter som forventet ved den kendte beskyttelse mod repositoryets forældede 209/211-vejrsnapshot; friskdata-leddene skal bevises centralt.
-- [ ] Commit/push kun de tilsigtede filer; verificér frisk central 673/673, Supabase, Pages, artifact og direkte livebrowser før produktionslukning.
+- [x] Første centrale pushrun `#32248949564`/`#3215` stoppede fail-closed før release, Supabase og Pages på fire efterladte 4.0.234-User-Agents. Fejlen er mekanisk og ændrer ikke data, score eller 673/673-gaten. Workflow, versionsværktøj, versionskontrol og releasegate er rettet lokalt, så drift nu afvises før push.
+- [ ] Push den afgrænsede versionsrettelse; verificér frisk central 673/673, Supabase, Pages, artifact og direkte livebrowser før produktionslukning.
 - [ ] Fælles aktuel timedækning er fortsat et særskilt åbent bevis. Kildeorden og 100 %-gate må ikke ændres uden ejerbeslutning.
 
 ## 4.0.234 – GitHub-plan og Supabase runtime-arkiv

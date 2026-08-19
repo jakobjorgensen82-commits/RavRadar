@@ -5,6 +5,7 @@
 - Vejrbyggeren bevarer vinderdelens kompakte scorekomponenter, årsager, transportforklaring og viste vejrdata ved hver fælles time. En manglende lokal post låner ikke hovedzonedata; fallback mærkes og kommer samlet fra hovedzonen.
 - Ny syntetisk regression består for 210 zoner, 673 dele, begge jagtformer og 2.100 femdøgnsvisninger gennem offentlig startup-/detailfletning. Målrettede eksisterende score-, kort-, forklarings-, null-safety- og payloadtests er grønne.
 - Ejerens land-/vandpunkter, kystgeometri, retningsankre, U/V, pilceller, scoreformel, kildeorden, afstandsgrænser, rollback og 673/673-gate er urørte. RDKS, versionslukning og lokal releasegate er grønne; fuld lokal `validate` stopper ved det kendte forældede 209/211-snapshot efter bestået geometri-v2. Central produktions-/browserverifikation af kandidaten afventer.
+- Commit `2bd30234` blev fast-forwardet til `main`. Pushrun `#32248949564`/`#3215` hydrerede frisk central data og nåede den fulde projektvalidering, men stoppede fail-closed før release, Supabase og Pages, fordi fire aktive workflow-User-Agents stadig viste 4.0.234. Workflowet og versionsværktøjet er rettet, og både `validate-release-version` og `release-gate` håndhæver nu samme version før push.
 
 ## 2026-08-19 – 4.0.234 retter timeskifterace og Supabase-diagnostik ved rodårsagen
 

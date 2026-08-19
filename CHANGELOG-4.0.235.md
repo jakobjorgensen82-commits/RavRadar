@@ -22,4 +22,5 @@
 ## Verifikation
 
 - Lokalt: RDKS og den nye landsdækkende regression består på 4.0.235. Den fulde lokale `validate` når den kendte fail-closed kontrol af repositoryets forældede 209/211-vejrsnapshot; frisk data skal som hidtil hydreres og bygges centralt.
+- Første centrale pushrun `#32248949564`/`#3215` hydrerede og byggede frisk data, men stoppede sikkert før release, Supabase og Pages, fordi fire workflow-User-Agents stadig viste 4.0.234. De er rettet til 4.0.235, versionsværktøjet opdaterer dem nu automatisk, og både versionskontrol og releasegate afviser fremover enhver sådan drift lokalt.
 - Afventer: fuld central validering, releasegate, præcis 673/673, Supabase, Pages, artifactmatch og direkte livebrowser.
