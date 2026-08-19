@@ -8,6 +8,7 @@
 - Arkivet indeholder hele originalen som deterministisk gzip/base64 med SHA-256 og bytekontrol. Admin-download dekoder og verificerer filen efter sædvanlig adgangskontrol. Den målte repræsentative størrelse er 208.874 bytes mod 4.014.169 bytes kompakt original.
 - Lokal RDKS, version, geometri-v2, runtimeuafhængig testmatrix og releasegate er grønne. Commit `7409d461` er fast-forwardet til `main`; pushrun `#32237507059`/`#3202` bestod frisk central geometri, fuld validering, releasegate, 673/673, Supabase på otte sekunder, Pages og deploy. Overgangscommit `4ab7a659` bestod derefter i pushrun `#32242510084`/`#3207` og eksterne gentagelser `#3208`/`#3209`.
 - Det første nye naturlige GitHub-`schedule`-event `#32244914347`/`#3210` startede 2026-08-19T10:53:50Z og bestod current-hour-gate, fuld validering, releasegate, Supabase, Pages-artifact og deploy. Overdragelsesgaten er opfyldt, og ejeren er bedt om at deaktivere RavRadar-jobbene i cron-job.org. Bekræft ved næste opstart, at de faktisk er slået fra, og verificér derefter mindst én efterfølgende native kørsel uden ekstern dublet.
+- Eksternt hel-timeskald `#32245473213`/`#3211` beviste samtidig den nye sikre udsættelse: readiness var grøn, mens build, Supabase og Pages blev sprunget over. Dokumentationspush `#32245605472`/`#3212` bestod derefter hele den centrale kæde.
 - Der er ikke ændret ejerens land-/vandpunkter eller anden geometri.
 
 ## Start her

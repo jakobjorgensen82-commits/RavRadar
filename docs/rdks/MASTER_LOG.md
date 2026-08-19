@@ -8,6 +8,7 @@
 - Den fortsat aktive eksterne hel-timesdispatch `#3205` startede 10:00:40Z før den automatisk bestilte pilot var færdig 10:02:55Z og stoppede fail-closed i datavalideringen før release, Supabase og Pages. Overgangens almindelige ikke-tvungne `workflow_dispatch` føres derfor også gennem current-hour-gaten; push og manuel `force=true` omgår kun udsættelsen for at bevare fuld releasekontrol.
 - Overgangscommit `4ab7a659` bestod i pushrun `#32242510084`/`#3207`; de efterfølgende eksterne dispatches `#3208` og `#3209` bestod også. Live datasæt `rr-20260819102736-210` blev metadata-verificeret med 210 zoner, præcis 673/673, `controlled-live`, credentialfri historik, 168 timers retention og uændret kildeorden.
 - GitHubs første nye naturlige produktionsschedule `#32244914347`/`#3210` blev oprettet 2026-08-19T10:53:50Z, cirka ti minutter efter 10:44-planpunktet, og bestod current-hour-gate, fuld validering, releasegate, Supabase, Pages-artifact og deploy. Ejeren blev derfor bedt om at deaktivere RavRadar-jobbene i cron-job.org. Faktisk deaktivering og næste native kørsel uden ekstern dublet skal bekræftes ved næste mulighed.
+- Det efterfølgende eksterne hel-timeskald `#32245473213`/`#3211` fandt korrekt den manglende aktuelle time og sluttede grønt med build, Supabase og Pages sprunget over. Den oprindelige røde 630/673-timeskifterace er dermed direkte produktionsverificeret som løst. Dokumentationspush `#32245605472`/`#3212` bestod bagefter hele den centrale kæde.
 
 ## 2026-08-18 – nedlukningscheckpoint efter fuld Chromium-audit
 

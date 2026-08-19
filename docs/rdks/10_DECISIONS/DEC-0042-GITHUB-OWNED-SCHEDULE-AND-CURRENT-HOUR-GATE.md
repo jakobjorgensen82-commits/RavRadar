@@ -25,6 +25,7 @@ Ejeren bad samtidig om at lade GitHub styre den normale 15-minutterskørsel og f
 
 - Pushrun `#32242510084`/`#3207` på overgangscommit `4ab7a659` bestod hele den fail-closed kæde, inklusive Supabase og Pages.
 - Det første nye naturlige GitHub-`schedule`-event `#32244914347`/`#3210` startede 2026-08-19T10:53:50Z, cirka ti minutter efter 10:44-planpunktet, og bestod current-hour-gate, fuld validering, releasegate, Supabase, Pages-artifact og deploy.
+- Eksternt hel-timeskald `#32245473213`/`#3211` startede 2026-08-19T11:00:39Z uden den nye eksakte time. Readiness-jobbet bestod, mens `build-and-prepare` og Pages-deploy blev sprunget over; ingen Supabase-sync eller artifact blev udført. Den tidligere røde 630/673-race er dermed direkte verificeret som et grønt sikkert skip.
 - Overdragelseskravet i punkt 7 er dermed opfyldt. Ejeren er instrueret i at deaktivere RavRadar-jobbene i cron-job.org; faktisk deaktivering og en efterfølgende native kørsel uden ekstern dublet skal kontrolleres ved næste mulighed.
 
 ## Uændret
