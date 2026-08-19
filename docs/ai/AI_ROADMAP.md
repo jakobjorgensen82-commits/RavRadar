@@ -178,6 +178,8 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 
 ## Midlertidigt udskudt P1 – DMI-first femdøgnskæder og historik
 
+- **Ny read-only DEC-0030-maaling 2026-08-20:** Produktionskoersel `#3237`/datasæt `rr-20260819213342-210` giver nye WAM 18Z- og DKSS 12Z-beviser; HARMONIE 12Z er kun delvist indfaset. Overgangene varierer fortsat kraftigt efter komponent og retning, saa ingen permanent graense laases. Det kompatible 4.0.232-`controlled-live`-historikvindue er 28,903 timer og dermed under 72-timerskravet. Se `docs/research/P1_COMPONENT_TRANSITIONS_4.0.237_RUN3237.md`.
+
 - Ejeren besluttede 2026-08-16 at vente med den næste fem-døgns- og historikanalyse, indtil flere naturlige data og modelkørsler er opsamlet. Arbejdet fortsætter senere under DEC-0030 uden ændring af kilder, fallback eller score i pausen.
 
 - 4.0.224 retter et P1-provenienshul uden at ændre værdier: vandstand fra valgte DMI-kildepunkter mærkes nu med de faktiske enkelt- eller sammensatte DKSS-modelområder. #31895640397/#2797 og direkte deploykontrol beviser 23.310/23.310 dokumenterede routede timer, 210 zoner og offentlig 4.0.224.

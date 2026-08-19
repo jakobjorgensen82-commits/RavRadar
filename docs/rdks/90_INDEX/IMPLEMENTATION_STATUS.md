@@ -1309,3 +1309,5 @@ Status: Implementeret og lokalt valideret.
 - [x] Slutbevisets fingeraftryk matcher fortsat den rå 652-dels GitHub-fil fra #31804967576; fallbackbeviset matcher sin rå 17-dels fil. De to beviser ændres ikke.
 - [ ] Normal 4.0.204-produktion skal bestå fulde releasegates og deploy.
 - [ ] En ny privat national kørsel skal bevise de tre eksakte beviser, DMI for valgte/alternative punkter, slut-shadow-score, admin-roundtrip/rollback og artifacts samlet.
+- [x] DEC-0030 er eftermaalt read-only paa 4.0.237-produktionsartifact `#3237` med nye WAM 18Z- og DKSS 12Z-beviser samt delvis HARMONIE 12Z-indfasning.
+- [ ] Det kompatible `controlled-live`-historikvindue er 28,903 timer fra 4.0.232-aktiveringen og skal fortsat opbygges naturligt til mindst 72 timer; ingen bagudfyldning.

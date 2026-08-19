@@ -985,3 +985,8 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - Free-planmålingen viste 8,233/5 GB egress og 0,695/0,5 GB database ved kun tre MAU. Rodårsagen er pipelineforbrug, ikke brugertrafik: `sync-admin-config.py` hentede alle payloads hvert 15. minut, mens store maskindiagnostikker blev versionskopieret uden retention.
 - 4.0.153 filtrerer readback til nødvendige adminnøgler og gør beskyttede uploads hash-idempotente. Lokal payloadækvivalent falder fra mindst 8,4 MB til cirka 144 KB pr. readback.
 - Central audit 2026-08-10 fandt 8.647 overflødige historikrækker med cirka 600 MB payload. Migration og efterfølgende `VACUUM FULL` blev udført; databasen faldt fra 699 MB til 24 MB. Alle 14 aktuelle `admin_documents` er bevaret, maskinhistorik er 0, og øvrige dokumenter har højst 100 rollbackpunkter.
+# 4.0.237 – ny DEC-0030-komponentmaaling
+
+- Supportartifactet fra naturlig produktion `#3237`/`rr-20260819213342-210` giver nye uafhaengige WAM 18Z- og DKSS 12Z-beviser; HARMONIE 12Z er kun delvist indfaset.
+- Komponentovergangene varierer fortsat efter felt, retning og modelindfasning. Stroemmens 198 haleovergange er `dmi -> missing` uden konstrueret tal. Der laases ingen permanent graense og aendres ingen score eller kilde.
+- Alle 210 zoners kompatible `controlled-live`-historik starter ved 4.0.232-aktiveringen og spaender 28,903 timer. Aeldre parent-zonehistorik er ikke kompatibelt lokalt stroembevis og bagudfyldes ikke. 72-timers-exitkriteriet er aabent. Se `docs/research/P1_COMPONENT_TRANSITIONS_4.0.237_RUN3237.md`.

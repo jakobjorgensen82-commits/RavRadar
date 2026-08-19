@@ -3,6 +3,7 @@
 ## Online browserkontrol afsluttet 2026-08-20
 
 - Faktisk live DOM-/kliktest er grøn på 4.0.237 og senest datasæt `rr-20260819213342-210` efter naturlig produktion `#3237`.
+- DEC-0030 er eftermaalt read-only paa supportartifactet fra samme koersel. WAM 18Z og DKSS 12Z er nye uafhaengige beviser; HARMONIE 12Z er delvist indfaset. Det kompatible `controlled-live`-historikvindue starter ved 4.0.232-aktiveringen og er 28,903 timer, saa 72-timers-exitkriteriet er ikke naaet. Se `docs/research/P1_COMPONENT_TRANSITIONS_4.0.237_RUN3237.md`.
 - 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdøgnsvisninger er kontrolleret med 0 mismatch i score, farve, pile, forklaringer, lokal kontekst og debug-ID.
 - Browser-pluginets trusted-code-path fejlede før navigation; den godkendte Chromium-fallback blev brugt.
 - Eneste HTTP-fejl var manglende favicon. Der var ingen page errors.

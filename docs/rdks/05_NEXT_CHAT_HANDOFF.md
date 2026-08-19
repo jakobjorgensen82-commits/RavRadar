@@ -139,3 +139,6 @@ Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde sa
 - Flere kortpile kræver flere faktiske dokumenterede DMI-gitterpunkter; pile må ikke kopieres eller flyttes.
 - Central adminstatus er autoritativ, `missing` forbliver `missing`, og ingen gate må svækkes for at få grønt.
 - Kritisk arbejde udføres med GPT-5.6 Sol og Ekstra høj indsats.
+# DEC-0030-status 2026-08-20
+
+Produktionskoersel `#3237` er maelt read-only. Nye WAM 18Z- og DKSS 12Z-cyklusser er dokumenteret; HARMONIE 12Z er kun delvist indfaset. 4.0.232's kompatible `controlled-live`-historik har 28,903 timer og maa fortsat opbygges naturligt til 72 timer. Ingen kilde-, fallback-, score- eller geometriaendring er godkendt. Se `docs/research/P1_COMPONENT_TRANSITIONS_4.0.237_RUN3237.md`.
