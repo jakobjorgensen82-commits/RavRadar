@@ -101,6 +101,7 @@
 - [x] #31870747677 genlæste NSBS én gang, bestod fulde gates/Supabase/Pages og dokumenterede verificeret aktuel strøm i 210/210 zoner.
 - [x] Alle 210 zoner når mindst 100,8 timers sammenhængende marinehorisont; 27 har 37 strømtrin, 183 har 38.
 - [ ] DEC-0030 skal forklare og designe de sidste cirka 17–19 timer fra 100,8 til reel 118–120-timers strømkæde.
+- [ ] Lokal P1-audit (`data/diagnostics/p1-component-matrix-audit.json`, dataset `rr-20260815101737-210`) dokumenterer fortsat front-justeret hale-fallback for vind/bølge/strøm/vandtemperatur i starttimerne; ingen kodeændring er foretaget på dette tidspunkt.
 - [ ] 131 rå historikprøver pr. zone er bevaret; eftermålingen fortsætter, indtil et fuldt 72-timers vindue er dokumenteret.
 
 ## 4.0.211 – bevaret DMI-havmodel og genbehandling
@@ -968,3 +969,4 @@ Status: Implementeret og lokalt valideret.
 - [x] Slutbevisets fingeraftryk matcher fortsat den rå 652-dels GitHub-fil fra #31804967576; fallbackbeviset matcher sin rå 17-dels fil. De to beviser ændres ikke.
 - [ ] Normal 4.0.204-produktion skal bestå fulde releasegates og deploy.
 - [ ] En ny privat national kørsel skal bevise de tre eksakte beviser, DMI for valgte/alternative punkter, slut-shadow-score, admin-roundtrip/rollback og artifacts samlet.
+- [ ] DEC-0030 fortsætter med transitionprofil-afledt dokumentation: `data/diagnostics/p1-component-transition-profile-live-20260819-2302.json` og `...-2302.md` viser fortsat åben begrænsning på 6-8 limfjordszoner med fælles post-DMI mangler i `current`/`waterTemperature`/`waterLevel` og 15 wave-tomrumsz. Indtil produktionsartifact validerer samme mønster i fresh output, forbliver design og fallbackkæde uændret.
