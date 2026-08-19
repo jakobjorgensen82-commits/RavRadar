@@ -11,7 +11,8 @@
 - [x] Repræsentativ kompakt payload er reduceret fra 4.014.169 til 208.874 byte; målrettede roundtrip-, korruptions-, workflow-, heartbeat-, Supabase- og adminregressioner består.
 - [x] RDKS, version, geometri-v2 og alle tests, som ikke kræver et frisk centralt runtimeartifact, består lokalt på 4.0.234; `release:gate` er grøn. Den samlede lokale `validate` stopper som forventet på repositoryets forældede 209/211-vejrsnapshot og manglende frisk `public-condition-details.json`, så friskdata-delene skal bevises centralt.
 - [x] Commit `7409d461` og pushrun `#32237507059`/`#3202` beviser central geometri, fuld validering, releasegate, 673/673, komprimeret Supabase-sync på otte sekunder, Pages-artifact og deploy. Live 4.0.234/datasæt `rr-20260819093242-210` er direkte metadata-verificeret med 210 zoner, 673/673, `controlled-live`, credentialfri historik og 168 timers retention.
-- [ ] Mindst én efterfølgende naturlig GitHub-`schedule`-kørsel skal verificeres, før ejeren bliver bedt om at deaktivere cron-job.org.
+- [x] Naturligt GitHub-`schedule`-event `#32244914347`/`#3210` på `4ab7a659` bestod current-hour-gate, fuld validering, releasegate, Supabase, Pages-artifact og deploy. Ejeren er bedt om at deaktivere RavRadar-jobbene i cron-job.org.
+- [ ] Bekræft, at cron-job.org-jobbene faktisk er deaktiveret, og verificér mindst én efterfølgende native kørsel uden ekstern dublet.
 
 ## Åben P1 – én lokal del og ét tidspunkt gennem hele zonepanelet
 

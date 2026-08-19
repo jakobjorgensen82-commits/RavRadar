@@ -28,3 +28,5 @@
 - Commit `7409d461` og pushrun `#32237507059`/`#3202` bestod frisk central geometri, fuld validering, releasegate, præcis 673/673, Supabase-sync på otte sekunder, Pages-artifact og deploy.
 - Live version 4.0.234/datasæt `rr-20260819093242-210` er direkte metadata-verificeret med 210 zoner, 673/673, `controlled-live`, `credentialsIncluded=false` og 168 timers historikretention.
 - Eksterne gentagelser `#3203` og `#3204` bestod også. cron-job.org forbliver aktivt, indtil et naturligt `schedule`-event for produktionsworkflowet er observeret og verificeret.
+- Overgangscommit `4ab7a659` udvidede timegaten til almindelige ikke-tvungne dispatches. Pushrun `#32242510084`/`#3207` og de eksterne gentagelser `#3208`/`#3209` bestod hele kæden.
+- Det første nye naturlige GitHub-`schedule`-event `#32244914347`/`#3210` startede 2026-08-19T10:53:50Z, cirka ti minutter forsinket fra 10:44-planpunktet, og bestod current-hour-gate, fuld validering, releasegate, Supabase, Pages-artifact og deploy. Overdragelsesgaten er dermed opfyldt, og ejeren er bedt om at deaktivere RavRadar-jobbene i cron-job.org.

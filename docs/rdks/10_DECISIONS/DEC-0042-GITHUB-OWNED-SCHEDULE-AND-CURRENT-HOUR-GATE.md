@@ -21,6 +21,12 @@ Ejeren bad samtidig om at lade GitHub styre den normale 15-minutterskørsel og f
 7. cron-job.org deaktiveres først efter mindst én naturlig GitHub-`schedule`-kørsel på `main`, hvor readiness-job, normal preflight og den forventede build/skip-adfærd er verificeret. Indtil da kan begge triggere kortvarigt eksistere under den fælles concurrency-kø.
 8. Overgangens almindelige cron-dispatch er omfattet af samme timegate, så en ny hel time udsættes grønt i stedet for at skabe et forventeligt rødt 630/673-run; en bevidst manuel tvangskørsel kræver fortsat `force=true`.
 
+## Produktionsbevis 2026-08-19
+
+- Pushrun `#32242510084`/`#3207` på overgangscommit `4ab7a659` bestod hele den fail-closed kæde, inklusive Supabase og Pages.
+- Det første nye naturlige GitHub-`schedule`-event `#32244914347`/`#3210` startede 2026-08-19T10:53:50Z, cirka ti minutter efter 10:44-planpunktet, og bestod current-hour-gate, fuld validering, releasegate, Supabase, Pages-artifact og deploy.
+- Overdragelseskravet i punkt 7 er dermed opfyldt. Ejeren er instrueret i at deaktivere RavRadar-jobbene i cron-job.org; faktisk deaktivering og en efterfølgende native kørsel uden ekstern dublet skal kontrolleres ved næste mulighed.
+
 ## Uændret
 
 - Land-/vandpunkter og central admin-sandhed ændres ikke.
