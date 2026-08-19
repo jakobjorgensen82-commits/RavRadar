@@ -70,7 +70,12 @@ function stateExplanationPanel(result) {
 
 function coastTransportExplanation(result) {
   const explanation = result?.explanation?.transportDiagnostics?.coastTransportExplanation;
-  if (!explanation?.summary) return "";
+  if (!explanation?.summary) {
+    const coverage = result?.localCoverageSummary;
+    if (!result?.localPart || !coverage?.text) return "";
+    const partName = result.localPartName || result.localCoverage?.winningPartName || "Den bedst vurderede kystdel";
+    return `<section class="coast-transport-explanation"><h3>Hvad sker der ved kysten?</h3><p>${escapeHtml(`${partName} er den kystdel, som den viste RavScore bygger på. ${coverage.text}`)}</p><p class="muted">Den detaljerede retningsforklaring er ikke tilgængelig for dette tidspunkt, men kystdelen, scoren og komponentårsagerne hører til samme beregning.</p></section>`;
+  }
   const items = (explanation.items || []).map(item => `<li class="${item.selected ? "selected" : ""}"><b>${escapeHtml(item.name)}</b>: ${escapeHtml(item.text.replace(`${item.name}: `,""))}${item.selected && explanation.items.length > 1 ? " <span class=\"anchor-used\">Vægter højest nu</span>" : ""}</li>`).join("");
   return `<section class="coast-transport-explanation"><h3>Hvad sker der ved kysten?</h3><p>${escapeHtml(explanation.summary)}</p>${items ? `<details><summary>Se vurderingen af kystens delområder</summary><ul>${items}</ul><p class="muted">RavRadar bruger ikke et tilfældigt gennemsnit. Den kystdel, som strømmen rammer mest gunstigt, vægter højest, mens de øvrige kystdele bruges som støtte og kontrol.</p></details>` : ""}</section>`;
 }

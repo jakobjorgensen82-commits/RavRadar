@@ -108,3 +108,18 @@ Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde, D
   - `wave`: 7 zoner uden registreret DMI-front før første komponent-mangel; 15 zoner mangler først fra `2026-08-20T06:00:00Z`.
 - Afgrænsning: stadig lokal audit af DMI-first transition; ingen kilde-/fallbackændring er udført endnu.
 - Næste skridt: bruge samme profil-output i produktionsartifact, når nyt public-run kan hentes stabilt, før nogen designbeslutning aktiveres.
+## 2026-08-19 (browser-kontrol fortsætter)
+- Kørte Playwright-fallback via `scripts/temp-browser-zone-check.py` mod lokal app-state.
+- Ny kørsel gemt i:
+  - `data/diagnostics/browser-zone-check-20260819-2315.json`
+  - `data/diagnostics/browser-zone-check-20260819-2315-summary.md`
+- Resultat fra kørsel:
+  - Baseline 210 zoner / 673 dele.
+  - `partsMismatchCount=0`, `partsTotal=673`, `partsTotalMismatch=false`.
+  - `zoneScoreMismatches=0`, `zoneArrowMismatches=0`, `zoneExplanationMismatches=0`.
+  - `conditionsCoverage`: `zonesWithConditions=0`, `conditionsMissing=210`, `resultsMissing=210`.
+- Tolkning: Playwright/DOM-kontrol fungerer for zone/part åbning, men runtime rapporterer ikke `conditions` i lokal state i denne version, så fuld score/komponent-match kan ikke valideres i denne kontrolrunde.
+- Næste skridt: fortsæt med at køre kontrol, når conditions indlæses korrekt (eller fallback-injicér conditions i debug-hook), så transition + scoreforklaring også kan valideres zonevis.
+## Checkpoint 2026-08-20 - browserkontrol afsluttet
+
+Den systematiske browserkontrol er afsluttet på 210 zoner, 673 kystdele og 1.050 prognosedage. Endelig måling har 0 mismatch for aktuel og prognosticeret score, label/niveau, vind-/strømpile og forklaring. Se `data/diagnostics/browser-zone-check-final-20260820-0200.json` og tilhørende summary. Browser-pluginet fejlede i trusted-path-opstart, så den godkendte Chromium-fallback blev brugt. Næste roadmaparbejde fortsætter med DEC-0030 P1 og nye modelcyklus-/overgangsbeviser; browserresultatet må ikke kaldes frisk produktionsverifikation.

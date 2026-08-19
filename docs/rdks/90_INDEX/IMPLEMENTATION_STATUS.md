@@ -970,3 +970,11 @@ Status: Implementeret og lokalt valideret.
 - [ ] Normal 4.0.204-produktion skal bestå fulde releasegates og deploy.
 - [ ] En ny privat national kørsel skal bevise de tre eksakte beviser, DMI for valgte/alternative punkter, slut-shadow-score, admin-roundtrip/rollback og artifacts samlet.
 - [ ] DEC-0030 fortsætter med transitionprofil-afledt dokumentation: `data/diagnostics/p1-component-transition-profile-live-20260819-2302.json` og `...-2302.md` viser fortsat åben begrænsning på 6-8 limfjordszoner med fælles post-DMI mangler i `current`/`waterTemperature`/`waterLevel` og 15 wave-tomrumsz. Indtil produktionsartifact validerer samme mønster i fresh output, forbliver design og fallbackkæde uændret.
+- [ ] Browser-baseret zonecheck (`scripts/temp-browser-zone-check.py`) er gennemført på lokal runtime uden score/conditions-kobling: zoner+dele tælles korrekt (210/673), men `conditions` mangler i runtime-state (`zonesWithConditions=0`). Kørende designafklaring for næste trin: sikre conditions-injektion før score/pointer-validitet.
+## 2026-08-20 - systematisk browseraudit
+
+- Implementeret reproducerbar Chromium-audit i `scripts/audit-browser-zones.py`.
+- Verificeret 210/210 zoner, 673/673 kystdele og 1.050/1.050 prognosedage.
+- Rettet misvisende Spark-audit, som målte uden conditions og før zoneåbning.
+- Rettet 55 prognosedage med gyldig lokal score, men manglende fallbackforklaring.
+- Aktive scorer, kilder, fallbackkæder og geometri er uændrede.

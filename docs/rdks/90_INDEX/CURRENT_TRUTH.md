@@ -737,3 +737,7 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - 4.0.153 filtrerer readback til nødvendige adminnøgler og gør beskyttede uploads hash-idempotente. Lokal payloadækvivalent falder fra mindst 8,4 MB til cirka 144 KB pr. readback.
 - Central audit 2026-08-10 fandt 8.647 overflødige historikrækker med cirka 600 MB payload. Migration og efterfølgende `VACUUM FULL` blev udført; databasen faldt fra 699 MB til 24 MB. Alle 14 aktuelle `admin_documents` er bevaret, maskinhistorik er 0, og øvrige dokumenter har højst 100 rollbackpunkter.
 - `scripts/audit-p1-component-transition-profiles.py` er tilføjet som supplerende DEC-0030 overgangsdiagnose for at give zonevis førende DMI-front/tidsmønstre uden runtimeændring.
+- Browser-fallback kontrollen bekræfter 210 zoner/673 dele med korrekt part-matching, men `data/live/conditions.json` er ikke synlig i debug-state under den aktuelle app-run (`conditionsCoverage`: 0/210). Derfor kan `scorePanel`/component-resultat-matching ikke verificeres i denne runde.
+## Browserkontrol 2026-08-20
+
+Den fulde lokale UI-kontrol dækker 210 runtimezoner, 673 kystdele og 1.050 prognosedage. Efter én UI-rettelse er der 0 målte mismatch i score, scorelabel/niveau, vind-/strømpile og kystforklaring. Datasættets friskhed blev kun overstyret i browserhukommelsen; dette er UI-regressionsbevis, ikke frisk produktionsverifikation. `DK-B02-14` er fortsat en kendt central tombstone i parent-GeoJSON og er korrekt udeladt fra runtime. Ingen land-/vandpunkter er ændret.
