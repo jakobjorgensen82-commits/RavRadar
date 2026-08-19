@@ -306,6 +306,7 @@ Ejeren har udtrykkeligt godkendt en landsdækkende privat revision af kystdele o
 - [x] Hals/prognosepunkter og end-to-end routing er auditeret i artifact #2771: begge Hals-kilder har 113 timer, og samme producerede serie går til forecaststore, zone, femdøgnsvisning og score-/ranglistekæde.
 - [x] 4.0.221 genopretter alarmtærsklen for faktisk valgte aktive kilder mod både kildeprognose og forecastcache. #31889559758 og artifact #2777 rydder de falske Hals-mærker, viser 116,6 timers resttid og bevarer faktisk routing i 5/6 zoner; de gamle 15/21-tal var stale diagnosefelter.
 - [ ] Eftermål den første naturlige warning/critical i drift; fremkald ikke kunstigt cacheudløb og svæk ingen gate.
+- [x] 4.0.237/`#3237` registrerede de foerste naturlige `forecast-cache-expired`-haendelser efter rettelsen. Alle fire udloebne observationscacher var ikke-valgte (`effectiveRoutingSources=[]`, `routingCacheAlertLevel=null`), mens frisk kildeprognose og 210/210 aktiv vandstand var intakt. Det aabne delkriterium er fortsat en naturlig warning/critical paa en faktisk valgt kilde.
 
 ## Afsluttet P1 – Supabase/admin drift
 - [x] **Kontroller nu** genlæser forbindelses- og lagringsstatus og viser fejl fail-closed i admin.

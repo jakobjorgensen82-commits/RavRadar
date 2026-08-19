@@ -2,6 +2,14 @@
 
 **Grundlag:** 4.0.220 artifact #2771, aktuel kode og git-historik 4.0.98–4.0.220
 
+## Naturlig eftermaaling i 4.0.237 / koersel 3237
+
+Produktionsartifactet fra `#3237` registrerer fire naturlige `forecast-cache-expired`-haendelser: Hvide Sande Fjord, Hvide Sande Havn, Thorsminde Havn og Hesnaes Havn I. Hvide Sande-stationerne og Thorsminde havde samtidig naturlige `delivery-stopped`-haendelser; Klintholm havde `delivery-resumed`.
+
+Ingen af de fire udloebne observationscacher var en effektiv valgt routingkilde: `effectiveRoutingSources` og `effectiveRoutingZoneIds` er tomme, og `routingCacheAlertLevel` er `null`. Friske kildeprognoser var modtaget med gyldighed til 24. august 13 UTC, aktiv vandstand var 210/210, og bulk-konverteringen havde nul tabte zoner. Haendelsesregistreringen virker derfor, uden at en udloebet cache forurener brugerforecastet.
+
+Det aabne exitkriterium er nu smallere: en naturligt opstaet `warning`/`critical` paa en faktisk valgt effektiv routingkilde skal stadig eftermaales. Der fremkaldes ikke kunstigt cacheudloeb.
+
 ## Faktisk dækning
 
 - Registeret indeholder 373 kendte kilder: 181 leverer observationer, 30 leverer ikke, og 162 har aldrig leveret en observation.

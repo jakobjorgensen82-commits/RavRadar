@@ -244,6 +244,7 @@ Den private Copernicus-shadow havde ved pilot `#54` 35 gyldige timer, 22.015 pos
 - 4.0.221 genberegner kun alarmstatus for faktisk valgte aktive kilder og bruger seneste gyldige tidspunkt fra både kildens prognose og routet cache. Leverende observationer og historiske/inaktive kilder alarmerer ikke; stale mærker ryddes.
 - Kildevalg, vandstandstal, interpolation, fallback og RavScore er uændrede.
 - #31889559758 bestod frisk DMI, fuld `validate`, releasegate, Supabase og Pages på commit `3f6c7661`. Artifact #2777 har nul valgte warning/critical-kilder og nul nye notifikationer; begge Hals-kilder har 116,6 timers resttid og ingen alarm. Datasættet er `rr-20260815142117-210` med 210 zoner.
+- 4.0.237-artifact `#3237` giver den foerste naturlige udloebseftermaaling: fire gamle observationscacher udloeb og blev notificeret, men ingen var en valgt effektiv routingkilde. Friske kildeprognoser og 210/210 aktiv vandstand var intakte. En naturlig warning/critical paa en faktisk valgt kilde er fortsat ikke observeret.
 
 ## 4.0.220 – rå og verificeret strømhistorik måles hver for sig
 

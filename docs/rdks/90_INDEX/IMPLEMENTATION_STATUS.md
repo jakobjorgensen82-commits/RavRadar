@@ -341,6 +341,8 @@
 - [x] Gyldig forecast rydder stale `critical`; advarsel, udløb, aktiv levering, historisk kilde og central tærskel er funktionelt regressionstestet.
 - [x] #31889559758 bestod fulde gates og deploy; artifact #2777 rydder begge falske Hals-alarmer, viser 116,6 timers resttid, nul nye notifikationer og uændret faktisk routing i 5/6 zoner.
 - [ ] En naturligt opstået warning/critical skal fortsat eftermåles i produktion; den syntetiske regression beviser allerede begge grene uden at fremkalde et kunstigt driftsbrud.
+- [x] 4.0.237/`#3237` eftermaalte fire naturlige cacheudloeb: notifikationerne blev dannet, ingen udloebet cache var effektivt valgt, og aktiv vandstand forblev 210/210.
+- [ ] En naturligt opstået warning/critical paa en faktisk valgt effektiv kilde skal fortsat eftermåles; der fremkaldes ikke kunstigt cacheudloeb.
 
 ## 4.0.220 – audit af brugbar transporthistorik
 
