@@ -1,5 +1,15 @@
 # RavRadar – overlevering til næste chat
 
+## Afslutningscheckpoint 2026-08-20 - online browserkontrol grøn
+
+- Live index og bootstrap er 4.0.237; auditeret datasæt er `rr-20260819211124-210`.
+- Chromium klikkede gennem 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdøgnsvisninger med 0 mismatch i score, farve, pile, forklaringer, lokal vinderkontekst og debug-ID.
+- Browser-pluginet blev forsøgt først og fejlede i trusted-code-path. Chromium-fallbacken var tidligere ejer-godkendt.
+- Eneste HTTP-fejl var favicon 404; ingen page errors.
+- Evidens: `data/diagnostics/online-browser-audit-4.0.237-20260820.json` og `data/diagnostics/ONLINE_BROWSER_AUDIT_4.0.237_20260820.md`.
+- Spark-kørslen i den gamle desktopkopi er forkastet. `codex/browser-zone-audit-20260820`/`526509f2` må ikke flettes.
+- Næste driftspunkt er højst daglig syvdøgnseftermåling; fortsæt derefter næste ikke-blokerede roadmappunkt. De fire beskyttede dirty datafiler må fortsat ikke ændres eller stages.
+
 ## Afslutningscheckpoint 2026-08-19 – GitHub alene, 30 timers cache og browservej
 
 - Ejeren har slettet/deaktiveret RavRadar-jobbene i cron-job.org. Efter denne overdragelse bestod GitHubs egen naturlige produktion `#32272470720`, cachebevaring `#32272473716` og `#32272598725` samt Copernicus-pilot `#32273634626`. GitHub Actions er dermed eneste normale scheduler.

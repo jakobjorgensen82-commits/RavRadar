@@ -1,5 +1,14 @@
 # Implementeringsstatus – 4.0.237 produktionsverificeret
 
+## Online browseraudit 2026-08-20
+
+- [x] Reproducerbar liveaudit: `scripts/audit-online-browser-4.0.237.py`.
+- [x] 210/210 zoner og 673/673 kystdele indlæst.
+- [x] 420/420 aktuelle visninger og 2.100/2.100 femdøgnsvisninger kontrolleret.
+- [x] 0 mismatch i score, farve, pile, forklaringer, lokal kontekst og debug-ID.
+- [x] Browser-plugin diagnosticeret før godkendt Chromium-fallback.
+- [x] Ingen land-/vandpunkter eller produktionslogik ændret.
+
 ## 4.0.237 – fælles aktuel zonetime
 
 - [x] Livegrundlaget er auditeret sikkert uden rå U/V: alle 210 zoner har en komplet fælles lokal time; den hidtidige runtime har 642/673 dele på den valgte zonetime og 31 på en anden nær-time.

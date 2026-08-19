@@ -1,5 +1,13 @@
 # AI Roadmap – RavRadar 4.0.237
 
+## Afsluttet P1 - systematisk online browserkontrol 2026-08-20
+
+- [x] Browser-plugin forsøgt først og diagnosticeret til trusted-code-path-fejl; ejer-godkendt Chromium-fallback anvendt.
+- [x] Live 4.0.237 og datasæt `rr-20260819211124-210` kontrolleret i 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdøgnsvisninger.
+- [x] Score, label, farveniveau, vind-/strømpile, komponent- og kystforklaringer, lokal vinderkontekst og debug-ID havde 0 mismatch.
+- [x] Ingen land-/vandpunkter, geometri, U/V, score, kilder eller live-data blev ændret.
+- Næste aktive driftspunkt er fortsat højst daglig eftermåling af den naturlige syvdøgnscache. DEC-0030 fortsætter først, når en ny relevant modelcyklus giver selvstændig evidens.
+
 ## Produktionsverificeret P1 – én komplet aktuel time inden for hver zone
 
 1. **Rodårsag afgrænset:** 673/673-kildegaten var gyldig, men den hidtidige runtime valgte hver dels nærmeste gyldige række uafhængigt. Den offentlige selector kunne samtidig foretrække en nærmere, ufuldstændig zonerække.

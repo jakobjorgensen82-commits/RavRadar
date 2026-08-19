@@ -1,5 +1,14 @@
 # Aktuelt sessionshandoff – 2026-08-19
 
+## Online browserkontrol afsluttet 2026-08-20
+
+- Faktisk live DOM-/kliktest er grøn på 4.0.237 og datasæt `rr-20260819211124-210`.
+- 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdøgnsvisninger er kontrolleret med 0 mismatch i score, farve, pile, forklaringer, lokal kontekst og debug-ID.
+- Browser-pluginets trusted-code-path fejlede før navigation; den godkendte Chromium-fallback blev brugt.
+- Eneste HTTP-fejl var manglende favicon. Der var ingen page errors.
+- Spark arbejdede tidligere i den forkerte 4.0.220-desktopkopi. Branch `codex/browser-zone-audit-20260820`/commit `526509f2` må ikke flettes.
+- Næste opgave er højst daglig eftermåling af syvdøgnscachen og derefter næste ikke-blokerede roadmappunkt. Ingen land-/vandpunkter er ændret.
+
 ## Klar til ny chat – gældende checkpoint
 
 - Gældende liveversion er 4.0.237. Commit `9c971bc1` låste den aktuelle lokale visning til én komplet zonetime; dokumentationscommit `11f30b5c` er seneste verificerede udgangspunkt før dette checkpoint.
