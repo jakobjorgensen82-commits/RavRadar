@@ -215,3 +215,31 @@ De 27 `no-time-match`-zoner i #2750 delte samme mekanisme: deres valgte `dkss_id
 Designet i 4.0.218 gør et eksisterende U/V-par inden for seks timer af `bulkCache.generatedAt` til et tidsmæssigt anker. Et andet modelvalg kan kun fortrænge det, når kandidatparret også ligger i samme ankervindue. Hvis den eksisterende model ikke selv har et aktuelt anker, må en bedre kandidat fortsat reparere zonen. Dermed forbliver missing synligt, og hverken kildehierarki, fallback eller score ændres.
 
 Første produktionsevidens er #31883707138 og `rr-20260815122446-210`. Alle 210 zoner havde verificeret strøm omkring nu. De 27 tidligere berørte zoner valgte `dkss_nsbs` og havde 41 strømtrin hver. Diagnostikken registrerede ingen `CURRENT_ANCHOR_PROTECTED` i netop denne rotation, fordi et konkurrerende sent IDW-par ikke blev behandlet; derfor er regressionen produktionssund, men beskyttelsesgrenens faktiske aktivering er fortsat en eksplicit eftermåling.
+## 2026-08-19 – DK-B05 lokal transition-opsamling (automatiseret)
+- Lokal analyse på data/diagnostics/p1-component-zone-transitions-B05-detail-20260819-221839.json viser to klare klynge-mønstre i dette snapshot:
+  - 8 zoner med samtidigt første manglende current/waterLevel/waterTemperature kl. 2026-08-19T14:00:00Z: DK-B05-14, DK-B05-16, DK-B05-17, DK-B05-18, DK-B05-19, DK-B05-22, DK-B05-23, DK-B05-24.
+  - 15 zoner med første manglende bølge først kl. 2026-08-20T06:00:00Z (inkl. DK-B05-11 total wave-manglende og 14 andre).
+- Foreløbig årsagsklassifikation (lokal snapshot): wave-only vs wave+current/waterLevel/waterTemperature. Se data/diagnostics/p1-component-B05-transition-classified-20260819-221839.json og data/diagnostics/p1-component-B05-cause-hypothesis-20260819-221839.md for zone-liste og tidsmønster.
+- Konklusion i denne trinvise fase: denne profil ligner en fælles run/collection-grænse (ikke zone-snit), så næste P1-trin er at validere mod næste produktionsartifact før overgangsdesign og før nogen model-/fallbackændring.
+## 2026-08-19 – DK-B05 lokal transition-opfølgning
+
+Den lokale P1-transition på `data/live/conditions.json` bekræfter igen de to DK-B05-halestrukturer:
+- 15 zoner går første gang missing på `wave` 2026-08-20T06:00:00Z.
+- 8 zoner har first-missing samtidigt for `current`, `waterLevel` og `waterTemperature` 2026-08-19T14:00:00Z.
+- Klassifikation fra `data/diagnostics/p1-component-B05-transition-classified-live-20260819-2237.json`:
+  - `waveOnlyGap`: 7 zoner.
+  - `waveCurrentLevelTempSimulGap`: 8 zoner.
+  - `waveTotalGap`: 0 zoner i denne måling.
+
+Det betyder, at den udtømmende årsagstrekant stadig står klart: fælles DKSS-siden af halekæden, sandsynligvis run-/asset-/cache-relateret, ikke otte uafhængige zonelokale defects.
+
+Begrænsning: offentlig production-JSON kunne ikke hentes sikkert i denne gennemløb, så overgangs-kontrakt skal stadig bekræftes i en kommende produktionsovertræk.
+## 2026-08-19 (lokal suppleringsrunde)
+- Ny komplet transitionprofil (lokal) gemt: `data/diagnostics/p1-component-transition-profile-live-20260819-2302.json`.
+- Kort resume: `data/diagnostics/p1-component-transition-profile-live-20260819-2302.md`.
+- De vigtigste overgangsmarkører i denne kørsel:
+  - `current`: 8 zoner med første manglende efter DMI-front ved 2026-08-19T14:00:00Z.
+  - `waterTemperature`: samme 8 zoner som `current`.
+  - `waterLevel`: samme 8 zoner med parallel `firstMissingAfterDmiAt`.
+  - `wave`: 15 zoner med første manglende fra 2026-08-20T06:00:00Z i 15-zone-klyngen.
+- Ingen produktionskode er ændret på baggrund af denne afledte output; den ligger som beslutningsunderlag i DEC-0030.
