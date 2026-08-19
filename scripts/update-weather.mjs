@@ -1075,6 +1075,7 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, liveCurre
             windSpeedMps: weather.windSpeedMps, windDirectionDeg: weather.windDirectionDeg,
             waveHeightM: weather.waveHeightM, waveDirectionDeg: weather.waveDirectionDeg,
             waterLevelCm: weather.waterLevelCm, waterLevelTrendCm3h: weather.waterLevelTrendCm3h,
+            waterTemperatureC: weather.waterTemperatureC,
             currentSpeedMps: weather.currentSpeedMps, currentDirectionDeg: weather.currentDirectionDeg,
             currentUMps: weather.currentUMps, currentVMps: weather.currentVMps,
             currentProvenance: weather.currentProvenance
@@ -1107,16 +1108,32 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, liveCurre
     for (const time of times) {
       const result = { time };
       for (const mode of ['waders', 'beach']) {
-        const available = rows.map(row => { const detail=row.scores.find(score => score.time === time)?.[mode]; return { partId:row.partId,name:row.name,score:detail?.score,components:detail?.components }; }).filter(row => Number.isFinite(row.score));
+        const available = rows.map(row => {
+          const scoreRow=row.scores.find(score => score.time === time);
+          const detail=scoreRow?.[mode];
+          return {partId:row.partId,name:row.name,score:detail?.score,detail,weather:scoreRow?.weather};
+        }).filter(row => Number.isFinite(row.score));
         if (available.length !== expectedPartCount) {
           result[mode] = { status: 'uncertain', validPartCount: available.length, expectedPartCount };
           continue;
         }
         available.sort((a, b) => b.score - a.score || a.partId.localeCompare(b.partId));
-        const high = available[0].score, low = available.at(-1).score;
+        const winner=available[0],high = winner.score, low = available.at(-1).score;
         const near = available.filter(row => high - row.score <= 7);
         const status = high - low <= 7 ? 'whole-zone' : near.length === 1 ? 'only-part' : 'several-parts';
-        result[mode] = { status, score: high, winningPartId: available[0].partId, winningPartName: available[0].name, scoreSpread: high - low, comparisonPartCount: available.length, components:available[0].components, parts: status === 'whole-zone' ? [] : near.map(({partId,name,score})=>({partId,name,score})) };
+        const weather=winner.weather||{};
+        const explanation=winner.detail?.explanation||{};
+        result[mode] = {
+          status,score:high,winningPartId:winner.partId,winningPartName:winner.name,scoreSpread:high-low,comparisonPartCount:available.length,
+          components:winner.detail?.components||{},componentReasons:winner.detail?.componentReasons||{},
+          explanation:{formula:explanation.formula,weights:explanation.weights,contributions:explanation.contributions,transportDiagnostics:{coastTransportExplanation:explanation.transportDiagnostics?.coastTransportExplanation}},
+          weather:{
+            windSpeedMps:weather.windSpeedMps,windDirectionDeg:weather.windDirectionDeg,waveHeightM:weather.waveHeightM,waveDirectionDeg:weather.waveDirectionDeg,
+            waterLevelCm:weather.waterLevelCm,waterLevelTrendCm3h:weather.waterLevelTrendCm3h,currentSpeedMps:weather.currentSpeedMps,currentDirectionDeg:weather.currentDirectionDeg,
+            waterTemperatureC:weather.waterTemperatureC,currentProvenance:weather.currentProvenance
+          },
+          parts:status==='whole-zone'?[]:near.map(({partId,name,score})=>({partId,name,score}))
+        };
       }
       hourly.push(result);
     }

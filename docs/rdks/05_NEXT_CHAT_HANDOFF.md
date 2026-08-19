@@ -1,6 +1,15 @@
 # RavRadar – overlevering til næste chat
 
-## Aktiv kandidat 4.0.234 – afslut før andre kodeopgaver
+## Aktiv kandidat 4.0.235 – afslut før andre kodeopgaver
+
+- Browser-P1 er implementeret lokalt: én lokal visningskontekst bærer del, tid, score, forklaring, debug og vejr gennem nuvisning og femdøgnsfaner.
+- National prognose og zonepanel bruger samme `selectLocalBestForDay`; runtime bevarer vinderdelens kompakte præsentationsfelter pr. fælles time.
+- Manglende lokal post låner ikke hovedzoneværdier. En ufuldstændig fælles lokal række vises som tydeligt mærket, samlet hovedzonefallback.
+- Syntetisk landsregression består for 210 zoner, 673 dele, begge jagtformer og 2.100 femdøgnsvisninger. RDKS, versionslukning og lokal releasegate er grønne; fuld lokal `validate` stopper forventet på det gamle 209/211-vejrsnapshot efter geometri-v2. Central 673/673/Supabase/Pages og direkte livebrowser mangler endnu.
+- Ingen ejerpunkter, geometri, U/V, pilceller, scoreformel, kildeorden, afstandsgrænser eller dækningskrav er ændret. De fire dirty diagnostik-/geometrifiler og `data/live/coastal-parts-v2.json` må ikke stages.
+- Fælles aktuel timedækning for alle 673 dele er fortsat et særskilt åbent bevis; ændret kildeplan kræver ejerens beslutning.
+
+## Produktionsverificeret 4.0.234-drift
 
 - Begge godkendte driftsrettelser er implementeret lokalt: GitHub-ejet plan `14,29,44,59 * * * *` med fail-closed kontrol af den aktuelle private Copernicus-time, samt tabsfri komprimering og integritetskontrol af den beskyttede Supabase-`runtime-diagnostics`-payload.
 - Copernicus-piloten kører ved minut 06, så dens time kan være klar før første produktionsforsøg. Manglende time giver et billigt sikkert skip; den normale produktion må stadig kun frigive præcis 673/673 efter DMI ≤5 km → Baltic ≤5 km → AMM15 ≤5 km → otte ejerallowlistede `dkss_lf`-proxyer ≤15 km.
@@ -13,7 +22,7 @@
 
 ## Start her
 
-Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde samt DEC-0024, DEC-0029, DEC-0030, DEC-0031, DEC-0037, DEC-0038, DEC-0039, DEC-0040 og DEC-0041. Kontrollér derefter gitstatus, seneste commit og GitHub Actions.
+Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde samt DEC-0024, DEC-0029, DEC-0030, DEC-0031, DEC-0037, DEC-0038, DEC-0039, DEC-0040, DEC-0041, DEC-0042, DEC-0043 og DEC-0044. Kontrollér derefter gitstatus, seneste commit og GitHub Actions.
 
 ## Aktuel sandhed
 

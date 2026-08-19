@@ -1,3 +1,11 @@
+## 2026-08-19 – 4.0.235 samler hele zonepanelet om én lokal del og tid
+
+- Den landsdækkende Chromium-audit viste, at den lokale vinder, RavScore, tekst og debug var korrekte, mens de synlige nu-metrikker stadig kom fra hovedzonen, og femdøgnsfanerne valgte tidspunkt med hovedzonens generiske algoritme.
+- 4.0.235 indfører én fælles lokal visningskontekst. Aktuel visning bruger vinderdelens eksakte vejrpost, og både national prognose og zonepanelets femdøgnsfaner bruger samme `selectLocalBestForDay`.
+- Vejrbyggeren bevarer vinderdelens kompakte scorekomponenter, årsager, transportforklaring og viste vejrdata ved hver fælles time. En manglende lokal post låner ikke hovedzonedata; fallback mærkes og kommer samlet fra hovedzonen.
+- Ny syntetisk regression består for 210 zoner, 673 dele, begge jagtformer og 2.100 femdøgnsvisninger gennem offentlig startup-/detailfletning. Målrettede eksisterende score-, kort-, forklarings-, null-safety- og payloadtests er grønne.
+- Ejerens land-/vandpunkter, kystgeometri, retningsankre, U/V, pilceller, scoreformel, kildeorden, afstandsgrænser, rollback og 673/673-gate er urørte. RDKS, versionslukning og lokal releasegate er grønne; fuld lokal `validate` stopper ved det kendte forældede 209/211-snapshot efter bestået geometri-v2. Central produktions-/browserverifikation af kandidaten afventer.
+
 ## 2026-08-19 – 4.0.234 retter timeskifterace og Supabase-diagnostik ved rodårsagen
 
 - Actions-runs blev fulgt systemisk: hel-timeskørsler stoppede ved 630/673, fordi 43 Copernicus-dele for den nye eksakte time endnu ikke var indsamlet, mens senere fulddækkede runs kunne stoppe på Supabase HTTP 500/PostgreSQL `57014` ved den store `runtime-diagnostics`-upsert.

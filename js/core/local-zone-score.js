@@ -1,4 +1,4 @@
-import { scoreRating } from './score-engine.js?v=4.0.234';
+import { scoreRating } from './score-engine.js?v=4.0.235';
 
 const finite = value => Number.isFinite(Number(value));
 const coverageReason = value => Number(value?.comparisonPartCount) <= 1
@@ -44,7 +44,7 @@ export function buildLocalZoneScore({coastalParts,zoneId,mode,time}) {
   const winner=coastalParts.parts?.[value.winningPartId];
   const exact=winner?.current?.time === row.time ? winner.current?.[mode] : null;
   const components=exact?.components || value.components || {};
-  const detailedReasons=exact?.componentReasons || {};
+  const detailedReasons=exact?.componentReasons || value.componentReasons || {};
   const generic=coverageReason(value);
   const componentReasons=Object.fromEntries(['huntability','transport','release'].map(key=>[
     key,
@@ -53,14 +53,33 @@ export function buildLocalZoneScore({coastalParts,zoneId,mode,time}) {
   return {
     available:true,score:value.score,baseScore:value.score,level:rating.level,label:rating.label,
     components,componentReasons,reasons:[generic],localCoverage:value,localCoverageSummary:localCoverageSummary(value),
-    explanation:exact?.explanation || null,localPart:true,time:row.time,
+    explanation:exact?.explanation || value.explanation || null,localPart:true,time:row.time,
     localPartId:value.winningPartId,localPartName:value.winningPartName,
-    localWeather:winner?.current?.weather || null,
+    localWeather:value.weather ? {...value.weather,time:row.time} : exact ? {...(winner?.current?.weather || {}),time:row.time} : null,
     localZone:winner ? {
       id:value.winningPartId,name:winner.name,
       dataPoint:winner.waterPoint,pinPoint:winner.landPoint,
       onshoreDirectionDeg:winner.onshoreDirectionDeg,
       onshoreDirectionSource:winner.onshoreDirectionSource || 'Godkendt land-/havpunkt for kystdelen'
     } : null
+  };
+}
+
+export function selectLocalBestForDay({coastalParts,zoneId,mode,date,now=Date.now()}) {
+  const candidates=(coastalParts?.zones?.[zoneId]?.hourly || [])
+    .filter(row=>String(row.time||'').slice(0,10)===date)
+    .map(row=>({row,result:buildLocalZoneScore({coastalParts,zoneId,mode,time:row.time})}))
+    .filter(item=>item.result?.available)
+    .sort((a,b)=>Number(b.result.score)-Number(a.result.score)||Date.parse(a.row.time)-Date.parse(b.row.time));
+  if(!candidates.length)return null;
+  const best=candidates[0];
+  return {
+    hour:{...(best.result.localWeather||{}),time:best.row.time},
+    result:best.result,
+    recommended:true,
+    isNow:Math.abs(Date.parse(best.row.time)-Number(now))<3600000,
+    source:'local-coastal-part',
+    displayScope:'local',
+    candidates:candidates.map(item=>({time:item.row.time,score:item.result.score,source:'local-coastal-part',isNow:Math.abs(Date.parse(item.row.time)-Number(now))<3600000}))
   };
 }

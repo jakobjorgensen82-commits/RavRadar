@@ -1,6 +1,15 @@
 # Current truth – gældende projektviden
 
-## 4.0.234-kandidat – GitHub-plan og tabsfri Supabase-diagnostik
+## 4.0.235-kandidat – én lokal del og ét tidspunkt i hele den offentlige visning
+
+- Browseraudittens P1-rodårsag er rettet lokalt uden at ændre ejerens land-/vandpunkter: zonepanelet bygger nu score, tekst, debug og synlige vejrmetrikker fra samme lokale vinderdel og eksakte tidspunkt.
+- Den nationale prognose og zonepanelets femdøgnsfaner bruger samme fælles lokale `selectLocalBestForDay`. Runtime bevarer for hver fælles time vinderdelens scorekomponenter, forklaringsårsager, kompakte transportforklaring og viste vejrdata.
+- En lokal score uden lokal vejrpost låner ikke længere hovedzonens værdier. Ved ufuldstændig fælles lokal række bruges kun en tydeligt mærket hovedzonefallback, hvor score, tekst, debug og vejr kommer samlet fra hovedzonen, og ingen lokal del udpeges.
+- Den nye syntetiske landsregression er grøn for 210 zoner, 673 dele, begge jagtformer og 2.100 femdøgnsvisninger. Den sammenligner vinder, tidspunkt, score, strøm-/vindretning, vandtemperatur, årsager og transportforklaring gennem offentlig startup-/detailfletning.
+- 4.0.235 er endnu en lokal kandidat. RDKS, målrettede tests, versionslukning og `release:gate` er grønne; den fulde lokale `validate` stopper som forventet på det kendte forældede 209/211-vejrsnapshot efter bestået geometri-v2. Frisk central 673/673-produktion, Supabase, Pages og direkte livebrowser mangler, før problemet kan lukkes som produktionsverificeret. Se DEC-0044.
+- Kystgeometri, centrale punkter, U/V, pilceller, scoreformel, kildeorden, afstandsgrænser, rollback og 673/673-gaten er uændrede.
+
+## 4.0.234 produktionsverificeret – GitHub-plan og tabsfri Supabase-diagnostik
 
 - Ejeren har besluttet, at GitHub Actions skal eje den normale 15-minuttersproduktion. Kandidaten kører ved UTC-minut 14/29/44/59, mens Copernicus-piloten ligger ved minut 6. Dette erstatter den tidligere aktive afhængighed af cron-job.org; ekstern cron slukkes først efter et naturligt GitHub-schedule-bevis.
 - En planlagt kørsel uden eksakt aktuel Copernicus-time springer hele produktionsbygningen sikkert over. Heartbeatet dispatcher piloten, og næste kørsel prøver igen. Push/manual release og 673/673-gaten er ikke lempet.
@@ -9,13 +18,13 @@
 - Målrettede workflow-, heartbeat-, Supabase-, archive- og adminregressioner er grønne. Commit `7409d461` og pushrun `#32237507059`/`#3202` bestod derefter frisk central geometri, fuld `validate`, releasegate, præcis 673/673, den komprimerede Supabase-sync på otte sekunder, Pages-artifact og deploy. Overgangscommit `4ab7a659` bestod i pushrun `#32242510084`/`#3207` og eksterne gentagelser `#3208`/`#3209`. Det første nye naturlige GitHub-`schedule`-event `#32244914347`/`#3210` bestod current-hour-gate, fuld validering, releasegate, Supabase og Pages. Hel-timesdispatch `#32245473213`/`#3211` beviste derefter den sikre grønne udsættelse uden build, Supabase eller Pages, da aktuel time manglede. Ejeren er derfor bedt om at deaktivere RavRadar-jobbene i cron-job.org; faktisk deaktivering og næste native kørsel uden ekstern dublet mangler kun driftsbekræftelse.
 - Ingen centrale land-/vandpunkter, U/V-data, pile, score, kildeorden eller afstandsgrænser er ændret.
 
-## Åben P1 efter systematisk Chromium-audit 2026-08-18 – lokal data vises ikke konsekvent i zonepanelet
+## Chromium-audit 2026-08-18 – fund lokalt rettet i 4.0.235, livebevis afventer
 
 - Audit af 210 zoner og 673 kystdele bekræfter, at ejerens land-/vandpunkter er bevaret og faktisk bruges i den lokale scorekæde. Alle 673 har gyldig strømproveniens; kildefordelingen er 622 DMI, 43 Copernicus og otte godkendte regionalproxyer. U/V-retning, pilcelle, kildeklasse og afstand er konsistente. 4.0.233's ankerrettelse er derfor fortsat gyldig.
 - Den direkte browser fandt en anden systemisk fejl: den lokale vinder, RavScore, tekst og debug bygges fra vinderdelen, men det synlige aktuelle vejrkort bygges fortsat fra hovedzonens `condition.current`. Blandt 414 sammenlignelige zone-/jagtformvisninger afveg strømretningen i 371, strømstyrken i 324 og vandtemperaturen i 414. Blåvand viste lokal NV 315° i debug, men N 11° i det synlige strømkort.
 - Femdøgnsfanerne bruger hovedzonens generiske dagsvalg i stedet for den nationale prognoses lokale `bestForDay`. Af 1.964 sammenlignelige faner afveg score i 1.660 og bedste tidspunkt i 897. Dette kan også give hovedzonetekster som `Nord for fyret`/`Syd for fyret`, selv om den lokale kystdel har et andet præcist navn.
 - Datasættet `rr-20260818201755-210` havde samlet 673/673-proveniens, men den fælles aktuelle 20:00-række var ufuldstændig i tre Limfjordszoner (`DK-B05-12`, `DK-B05-17`, `DK-B05-18`). Samlet artifactdækning er derfor ikke i sig selv bevis for 673/673 ved præcis samme aktuelle time.
-- Der er ikke lavet en produktrettelse i denne session. Ingen punkter, vejrdata, score, kildeorden, 100 %-gate eller deployment er ændret. Rettelsen afventer Sol/Ekstra høj og skal samle kort, vinder, score, tekst, debug og metrikker om samme lokale del og tidspunkt samt gøre fallback og fælles timedækning eksplicit.
+- 4.0.235 samler nu kort, vinder, score, tekst, debug og metrikker om samme lokale del og tidspunkt og mærker fallback eksplicit. Ingen punkter, kilder, scoreformel eller 100 %-gate er ændret. Central produktion og direkte livebrowser afventer.
 
 ## 4.0.233 live og produktionsverificeret 2026-08-18 – hver kystdel bruger kun sin egen kystretning
 

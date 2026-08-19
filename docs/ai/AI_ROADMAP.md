@@ -1,6 +1,15 @@
-# AI Roadmap – RavRadar 4.0.234
+# AI Roadmap – RavRadar 4.0.235
 
-## Aktiv driftsrelease – GitHub-plan og Supabase-timeout
+## Aktiv kandidat – én lokal sandhed i hele zonepanelet
+
+1. **Implementeret lokalt:** nuvisningens score, tekst, debug og vejr kommer fra samme lokale vinder og tidspunkt; lokal mangel låner ikke hovedzonedata.
+2. **Implementeret lokalt:** zonepanelets femdøgnsfaner og den nationale prognose bruger samme lokale `selectLocalBestForDay`.
+3. **Implementeret lokalt:** runtime bærer kompakt vinderforklaring og viste vejrmetrikker pr. fælles time, og regressionen dækker 210 zoner, 673 dele, begge jagtformer og 2.100 femdøgnsvisninger.
+4. **Lokal gate bestået:** RDKS, målrettede tests, versionslukning og releasegate er grønne. Den fulde lokale kæde stopper kun på det kendte gamle 209/211-vejrsnapshot efter bestået geometri-v2. **Næste gate:** frisk central 673/673, Supabase, Pages, artifactmatch og direkte livebrowser.
+5. **Fortsat åbent uden kodeændring:** særskilt bevis for 673/673 ved samme aktuelle time. Hvis Limfjordshullet fortsat findes, kræver enhver ny kilde eller policyændring ejerens beslutning.
+6. **Drift:** bekræft cron-job.org deaktiveret, verificér native GitHub-kørsler uden dublet, og fortsæt den daglige syvdøgnseftermåling.
+
+## Afsluttet driftsrelease – GitHub-plan og Supabase-timeout
 
 1. GitHub Actions overtager 15-minuttersproduktionen ved minut 14/29/44/59; Copernicus-piloten kører ved minut 6.
 2. En manglende eksakt aktuel Copernicus-time skal udsætte den planlagte produktion uden artifact/deploy og lade heartbeatet bestille timen. 673/673 sænkes ikke.
@@ -17,7 +26,7 @@
 5. Indfør særskilt bevis for 673/673 ved den samme valgte aktuelle time. Den eksisterende samlede 100 %-gate bevares; de tre observerede Limfjordszoner må ikke løses med en ny/fjern kilde uden ejerens planbeslutning.
 6. Afslut med fuld RDKS-, release-, central produktions- og direkte browservalidering. Den bestående 4.0.233-retningsisolation, kildeorden, afstandsgrænser, rollback og ejerpunkter må ikke ændres utilsigtet.
 
-Status ved checkpoint: analyse og rodårsag er gemt; implementering er ikke startet. Krævet model/indsats ved genoptagelse: GPT-5.6 Sol, Ekstra høj.
+Status: implementeret lokalt i 4.0.235 med landsdækkende regression. Central produktions- og direkte livebrowserverifikation afventer. Krævet model/indsats til slutvalideringen: GPT-5.6 Sol, Ekstra høj.
 
 ## Aktuelt P1-fix 2026-08-18 – lokal scoreretning må ikke komme fra en anden kystdel
 

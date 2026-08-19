@@ -1,5 +1,13 @@
 # RavRadar Håndbog
 
+## Zonepanelet viser nu én sammenhængende lokal virkelighed – 4.0.235
+
+Når RavRadar udpeger en bestemt kystdel som bedst, kommer delnavn, tidspunkt, RavScore, forklaring, debug og alle synlige vejrdata nu fra den samme lokale beregning. Tidligere kunne den lokale score eksempelvis beskrive Havsande sydkyst, mens strømfeltet i samme panel viste hovedzonens strøm. Det var to hver for sig gyldige dataposter, men en forkert kombination.
+
+Femdøgnsvisningen bruger nu præcis samme lokale dagsvinder som den nationale prognose. Vind, bølger, vandstand, strøm, vandtemperatur og trend følger derfor den score og det klokkeslæt, som panelet faktisk anbefaler. Hvis en komplet fælles lokal time mangler, siger panelet tydeligt, at hovedzonen vises midlertidigt, og score, tekst, debug og vejr kommer da samlet fra hovedzonen. Det låner aldrig skjulte hovedzoneværdier ind under en lokal vinder.
+
+Den landsdækkende test gennemgår 210 zoner, alle 673 kystdele, begge jagtformer og 2.100 femdøgnsvisninger. Rettelsen flytter ingen blå/grønne land-/vandpunkter og ændrer ikke strømvektorer, pile, kildeorden, RavScoreformel eller kravet om 673/673.
+
 ## GitHub ejer 15-minuttersproduktionen – 4.0.234
 
 RavRadar starter nu selv den normale vejropdatering i GitHub Actions ved minut 14, 29, 44 og 59. Copernicus-piloten kører ved minut 6, så den nye UTC-time normalt er klar før den første produktion efter et timeskifte.
@@ -196,7 +204,7 @@ En privat, score-neutral cache bruger DKSS-felter ved vandpunktet samt cirka 5 o
 
 Rotationen registrerer også, hvor langt der er til den nærmeste modelkolonne med et eksakt fælles U/V-par, selv når den ligger uden for 5 km. I det tilfælde gemmes kun koordinat, afstand og lagmetadata – ikke de fjerne strømværdier. En privat ejeroversigt skelner derfor mellem nær-tærskel 5–6 km til rent manuelt geometrireview, modelhul 6–8 km, strukturelt modelhul over 8 km og en datakædefejl, hvor gyldig strøm faktisk findes inden for 5 km. Selv en nær-tærskel-post må kun flyttes, hvis vandpunktet i sig selv er forkert – aldrig blot for at nå modelcellen. Oversigten flytter ingen punkter automatisk, og den offentlige 5 km-grænse er uændret.
 
-**Håndbogsversion:** 4.0.234
+**Håndbogsversion:** 4.0.235
 
 **Opdateret:** 18. august 2026
 

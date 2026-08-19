@@ -1,4 +1,16 @@
-# Implementeringsstatus – 4.0.234-kandidat og åbne browserfund
+# Implementeringsstatus – 4.0.235-kandidat
+
+## 4.0.235 – én lokal visningskontekst
+
+- [x] Aktuel zonevisning bruger vinderdelens eksakte lokale vejrpost sammen med samme lokale score, forklaring og debug.
+- [x] Manglende lokal vejrpost låner ikke hovedzonens værdier; ufuldstændig fælles lokal række giver en tydeligt mærket, samlet hovedzonefallback.
+- [x] National prognose og zonepanelets femdøgnsfaner bruger samme `selectLocalBestForDay`-beslutning.
+- [x] Runtime bevarer vinderdelens kompakte komponenter, årsager, transportforklaring og viste vejrdata pr. fælles time uden rå U/V eller credentials.
+- [x] Landsdækkende syntetisk regression består for 210 zoner, 673 dele, begge jagtformer og 2.100 femdøgnsvisninger med identisk vinder, tid, score, vejr og forklaring gennem startup-/detailfletningen.
+- [x] Lokale forklarings-, kort-, scorepresentation-, null-safety-, progressive payload- og versionsregressioner består målrettet før versionsløftet.
+- [x] RDKS, målrettede tests, versionslukning og lokal `release:gate` er grønne på 4.0.235. Fuld lokal `validate` gennemfører RDKS og hele geometri-v2-kæden og stopper derefter som forventet ved den kendte beskyttelse mod repositoryets forældede 209/211-vejrsnapshot; friskdata-leddene skal bevises centralt.
+- [ ] Commit/push kun de tilsigtede filer; verificér frisk central 673/673, Supabase, Pages, artifact og direkte livebrowser før produktionslukning.
+- [ ] Fælles aktuel timedækning er fortsat et særskilt åbent bevis. Kildeorden og 100 %-gate må ikke ændres uden ejerbeslutning.
 
 ## 4.0.234 – GitHub-plan og Supabase runtime-arkiv
 
@@ -15,16 +27,16 @@
 - [x] Eksternt hel-timeskald `#32245473213`/`#3211` uden den nye eksakte time sluttede grønt med `build-and-prepare` og Pages-deploy sprunget over; den tidligere røde 630/673-race er direkte produktionsverificeret som løst.
 - [ ] Bekræft, at cron-job.org-jobbene faktisk er deaktiveret, og verificér mindst én efterfølgende native kørsel uden ekstern dublet.
 
-## Åben P1 – én lokal del og ét tidspunkt gennem hele zonepanelet
+## Browser-P1 – lokalt implementeret i 4.0.235, central verifikation afventer
 
 - [x] Chromium-audit gennemførte 210 zoner, 673 dele, 420 aktuelle zone-/jagtformvisninger og 2.100 femdøgnsfaner uden at ændre projektdata.
 - [x] 673/673 ejerland-/vandpunkter matcher runtime; alle 673 strømvektorer, pilceller, kildeklasser og afstande er konsistente. Den tidligere 4.0.233-retningsisolation er ikke tilbagefaldet.
 - [x] Rodårsagen til den aktuelle visuelle modsigelse er afgrænset: `app.js` sender hovedzonens `condition.current` til zonepanelets metrikker, mens vinder/score/debug bruger den lokale vinderdel; `js/ui/info-panel.js` vælger femdøgnstid generisk på hovedzonen i stedet for den lokale `bestForDay`.
-- [ ] Ret nuvisningen, så alle synlige metrikker bruger vinderdelens eksakte lokale vejrpost og tidspunkt, med tydeligt mærket fallback når posten mangler.
-- [ ] Ret femdøgnsfanerne, så kort, delnavn, score, bedste tid, forklaring, debug og metrikker bruger samme lokale `bestForDay`-post som den nationale prognose.
-- [ ] Tilføj systemisk browser-/regressionstest for alle zoner og begge jagtformer samt et eksplicit Blåvand-modbevis (lokal NV 315° må ikke vises som N 11°).
+- [x] Nuvisningen bruger vinderdelens eksakte lokale vejrpost og tidspunkt med tydeligt mærket fallback ved reel mangel.
+- [x] Femdøgnsfanerne bruger samme lokale `bestForDay`-post som den nationale prognose.
+- [x] Systemisk regression dækker alle zoner, begge jagtformer og fem døgn samt det afgrænsede lokale-mod-hovedzone-modbevis.
 - [ ] Adskil samlet 673/673-proveniens fra 673/673 ved én eksakt fælles aktuel time. Tre Limfjordszoner havde ufuldstændig 20:00-række i det auditerede datasæt; eventuel kildeplan kræver ejerens dialog og må ikke sænke gaten.
-- [ ] Kør fuld lokal og central RDKS-/release-/produktionsvalidering efter rettelsen. Ingen kode-, data- eller deployændring er udført i checkpointsessionen.
+- [ ] Afslut fuld lokal og central RDKS-/release-/produktions- og browservalidering af 4.0.235.
 
 ## 4.0.233 – score, historik, forklaring og kystdel deler ét punktpar
 
