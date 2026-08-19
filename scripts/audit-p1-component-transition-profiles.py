@@ -154,13 +154,54 @@ def audit(conditions: dict) -> dict:
     return result
 
 
+def self_test() -> None:
+    fixture = {
+        "datasetId": "self-test",
+        "zones": {
+            "z1": {
+                "forecast": {
+                    "hourly": [
+                        {
+                            "time": "2026-08-19T00:00:00Z",
+                            "windSpeedMps": 5,
+                            "windDirectionDeg": 90,
+                            "sources": {"wind": {"provider": "dmi", "fallback": False}},
+                        },
+                        {
+                            "time": "2026-08-19T01:00:00Z",
+                            "windSpeedMps": 5,
+                            "windDirectionDeg": 95,
+                            "sources": {"wind": {"provider": "open-meteo", "fallback": True}},
+                        },
+                    ]
+                }
+            }
+        },
+    }
+    output = audit(fixture)
+    wind = output["components"]["wind"]
+    first = wind["transitionProfiles"][0]
+    assert first["leadingDmiHours"] == 1
+    assert first["zoneTransitionCount"] == 1
+    assert first["firstMissingAfterDmiAt"] is None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("conditions", type=Path)
+    parser.add_argument("conditions", type=Path, nargs="?")
     parser.add_argument("--output", type=Path, default=None)
+    parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
 
-    conditions = json.loads(args.conditions.read_text("utf-8"))
+    if args.self_test:
+        self_test()
+        print("OK: transition profile script self-test passed")
+        return 0
+
+    if args.conditions is None:
+        raise SystemExit("conditions er påkrævet uden --self-test")
+
+    conditions = json.loads(args.conditions.read_text(encoding="utf-8"))
     data = audit(conditions)
 
     if args.output is None:
@@ -176,4 +217,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
