@@ -9,6 +9,8 @@ Det nye uafhaengige WAM 18Z-bevis aendrer ikke beslutningen. Supportartifactet f
 
 Det er dermed endnu en naturlig modelcyklus, som bekraefter den kendte geografiske kildegraense. `missing` bevares. Et fjernere punkt, en ny kilde eller en punktflytning er fortsat en ny faglig beslutning og er ikke godkendt.
 
+Den samme koersel forklarer ogsaa den aktuelle hale. WAM 18Z har 54 native rækker fra 19. august 18 UTC til 23. august 22 UTC. Det bliver til 97 viste boelgetimer frem til 23 UTC i 15 Limfjordszoner; 194 andre zoner naar 118 timer gennem den eksisterende reservekaede. DKSS har 51 native marine rækker til 24. august 12 UTC og giver 113 viste timer til 13 UTC. Reservekaeden udfylder de sidste fem timer i 202 zoner, mens `DK-B05-14`, `DK-B05-16`, `DK-B05-17`, `DK-B05-18`, `DK-B05-19`, `DK-B05-22`, `DK-B05-23` og `DK-B05-24` korrekt forbliver `missing` for baade vandstand og vandtemperatur. Det er dokumenteret kildehorisont, ikke tabte rækker i merge eller visning.
+
 ## Kort konklusion
 
 Der er data nok til at forklare de to resterende Limfjordproblemer. De er ikke samme fejl:

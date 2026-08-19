@@ -285,6 +285,7 @@
 - [x] #31903561423/#2812 gentog alle fulde gates/deploy efter evidenscommitten. Det senest auditerede datasæt `rr-20260815192135-210` gentager 22.890/22.890 og 210/210, matcher begge manifesthashes live og har `ok` sundheds-, DMI-dæknings- og API-status.
 - [ ] Den separate kendte Feggesund-bølgemangel holder brugerfuldstændigheden på 209/210 og overvåges fortsat; den er ikke en del af den nu produktionsverificerede vandstandsrettelse.
 - [x] Ny WAM 18Z-cyklus i 4.0.237/`#3237` bekraefter, at Feggesund har fungerende `dkss_lf`-marine data, men ingen boelgecollection; korrekt `missing` er eftermaalt uden punkt- eller kildeaendring.
+- [x] 4.0.237/`#3237` afgraenser de aktuelle 97-/113-timershaler til de native WAM 18Z-/DKSS-sluttider og dokumenterer, hvor eksisterende fallback udfylder til 118 timer. Ingen tabt merge eller skjult udfyldning er fundet.
 
 # Tidligere status: 4.0.224 – vandstandsroutingproveniens
 
