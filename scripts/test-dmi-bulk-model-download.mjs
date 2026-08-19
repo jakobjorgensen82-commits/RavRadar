@@ -92,6 +92,8 @@ assert.match(workflow, /workflow_dispatch/);
 assert.match(workflow, /^\s+schedule:/m);
 assert.match(workflow, /cron: ["']14,29,44,59 \* \* \* \*["']/);
 assert.match(workflow, /current-hour-readiness/);
+assert.match(workflow, /github\.event_name == 'workflow_dispatch' && inputs\.force != true/);
+assert.match(workflow, /CHECK_CURRENT_HOUR/);
 assert.doesNotMatch(workflow, /cron-job\.org/);
 assert.match(workflow, /python scripts\/hydrate-deployed-weather\.py/);
 assert.match(workflow, /python scripts\/check-weather-update\.py/);

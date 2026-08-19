@@ -38,7 +38,7 @@ concurrency:
 
 jobs:
   current-hour-readiness:
-    name: Check scheduled current-hour readiness
+    name: Check timed current-hour readiness
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -48,8 +48,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Restore private Copernicus current cache for scheduled gate
-        if: github.event_name == 'schedule'
+      - name: Restore private Copernicus current cache for timed gate
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force != true && inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)
         uses: actions/cache/restore@v4
         with:
           path: .cache/copernicus-current-shadow.json
@@ -57,8 +57,8 @@ jobs:
           restore-keys: |
             copernicus-current-shadow-v1-
 
-      - name: Inspect scheduled UTC hour without exposing raw vectors
-        if: github.event_name == 'schedule'
+      - name: Inspect timed UTC hour without exposing raw vectors
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force != true && inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)
         id: cache-state
         run: python3 scripts/check-copernicus-current-hour.py --github-output "$GITHUB_OUTPUT"
 
@@ -66,15 +66,15 @@ jobs:
         id: readiness
         shell: bash
         env:
-          EVENT_NAME: ${{ github.event_name }}
+          CHECK_CURRENT_HOUR: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force != true && inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true) }}
           CURRENT_HOUR_PRESENT: ${{ steps.cache-state.outputs.current_hour_present }}
         run: |
-          if [ "$EVENT_NAME" != "schedule" ] || [ "$CURRENT_HOUR_PRESENT" = "true" ]; then
+          if [ "$CHECK_CURRENT_HOUR" != "true" ] || [ "$CURRENT_HOUR_PRESENT" = "true" ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
             echo "Production trigger may continue."
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Scheduled refresh deferred::The exact current UTC hour is not ready in the private Copernicus cache. No production artifact will be built; the private pilot is being dispatched and the next scheduled run will retry."
+            echo "::notice title=Timed refresh deferred::The exact current UTC hour is not ready in the private Copernicus cache. No production artifact will be built; the private pilot is being dispatched and the next timed run will retry."
           fi
 
   build-and-prepare:

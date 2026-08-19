@@ -14,11 +14,12 @@ Ejeren bad samtidig om at lade GitHub styre den normale 15-minutterskørsel og f
 
 1. `.github/workflows/update-and-deploy.yml` ejer den normale tidsplan ved UTC-minut 14, 29, 44 og 59.
 2. Den private Copernicus-pilot bestilles ved UTC-minut 6, så den aktuelle hele time normalt findes før første produktion ved minut 14.
-3. Et minimalt `current-hour-readiness`-job gendanner kun den private cache og kontrollerer sikre metadata før en planlagt produktion.
-4. Mangler den aktuelle UTC-time, får den planlagte kørsel status som sikkert udsat: den bygger ingen nye vejrdata, kører ingen Supabase-sync og uploader/deployer intet Pages-artifact. Heartbeatet dispatcher piloten, og næste planlagte 15-minutterskørsel prøver igen.
-5. Push og manuel tvungen release forbliver fail-closed gennem den fulde kæde. De må ikke bruge den planlagte udsættelse til at springe validering, releasegate eller 673/673 over.
+3. Et minimalt `current-hour-readiness`-job gendanner kun den private cache og kontrollerer sikre metadata før en GitHub-planlagt produktion samt under overgangens almindelige, ikke-tvungne `workflow_dispatch` fra cron-job.org.
+4. Mangler den aktuelle UTC-time, får den tidsstyrede kørsel status som sikkert udsat: den bygger ingen nye vejrdata, kører ingen Supabase-sync og uploader/deployer intet Pages-artifact. Heartbeatet dispatcher piloten, og næste tidsstyrede 15-minutterskørsel prøver igen.
+5. Push og manuel `force=true`-release forbliver fail-closed gennem den fulde kæde. De bruger ikke den tidsstyrede udsættelse og må ikke springe validering, releasegate eller 673/673 over.
 6. Cachen må ikke logge eller uploade rå U/V eller credentials. Retention er fortsat præcis 168 timer med de eksisterende schema-, fingeraftryks-, celle-, tid- og lagkrav.
 7. cron-job.org deaktiveres først efter mindst én naturlig GitHub-`schedule`-kørsel på `main`, hvor readiness-job, normal preflight og den forventede build/skip-adfærd er verificeret. Indtil da kan begge triggere kortvarigt eksistere under den fælles concurrency-kø.
+8. Overgangens almindelige cron-dispatch er omfattet af samme timegate, så en ny hel time udsættes grønt i stedet for at skabe et forventeligt rødt 630/673-run; en bevidst manuel tvangskørsel kræver fortsat `force=true`.
 
 ## Uændret
 

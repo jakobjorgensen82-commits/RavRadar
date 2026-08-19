@@ -5,6 +5,7 @@
 - Flytter den normale tidsplan fra cron-job.org til GitHub Actions ved UTC-minut 14, 29, 44 og 59.
 - Flytter den private Copernicus-pilot til minut 6, før første produktion efter timeskiftet.
 - Tilføjer en lille readiness-gate, som ved en manglende eksakt aktuel Copernicus-time udsætter den planlagte produktion uden nyt vejr, Supabase eller Pages. Heartbeatet bestiller timen, og næste 15-minutterskørsel prøver igen.
+- Under overgangen bruger almindelige ikke-tvungne `workflow_dispatch`-kald fra cron-job.org samme readiness-gate. Dermed udsættes et hel-timeskald sikkert, mens en bevidst manuel `force=true`-release fortsat går gennem hele den fail-closed kæde.
 - Push og manuel release er fortsat fail-closed. Fuld validering, releasegate og præcis 673/673 kan ikke springes over.
 - cron-job.org skal først deaktiveres efter et naturligt GitHub-schedule-bevis på `main`.
 
@@ -21,3 +22,9 @@
 - Ingen land-/vandpunkter, central geometri, U/V-værdier, scorevægte, pile, dybdelag eller kilder ændres.
 - Kildeordenen og den dynamiske 100 %-gate er uændrede, aktuelt præcis 673/673.
 - Den åbne browser-P1 om at føre samme lokale del og tidspunkt gennem hele zonepanelet er ikke løst af denne driftsrelease.
+
+## Centralt produktionsbevis
+
+- Commit `7409d461` og pushrun `#32237507059`/`#3202` bestod frisk central geometri, fuld validering, releasegate, præcis 673/673, Supabase-sync på otte sekunder, Pages-artifact og deploy.
+- Live version 4.0.234/datasæt `rr-20260819093242-210` er direkte metadata-verificeret med 210 zoner, 673/673, `controlled-live`, `credentialsIncluded=false` og 168 timers historikretention.
+- Eksterne gentagelser `#3203` og `#3204` bestod også. cron-job.org forbliver aktivt, indtil et naturligt `schedule`-event for produktionsworkflowet er observeret og verificeret.

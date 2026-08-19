@@ -3,7 +3,9 @@
 - Actions-runs blev fulgt systemisk: hel-timeskørsler stoppede ved 630/673, fordi 43 Copernicus-dele for den nye eksakte time endnu ikke var indsamlet, mens senere fulddækkede runs kunne stoppe på Supabase HTTP 500/PostgreSQL `57014` ved den store `runtime-diagnostics`-upsert.
 - Ejeren besluttede at flytte den normale 15-minuttersstart fra cron-job.org til GitHub. Produktion ligger ved minut 14/29/44/59, piloten ved minut 6, og en lille readiness-gate udsætter en planlagt build sikkert, hvis aktuel time mangler.
 - Den fulde runtime-diagnostik pakkes tabsfrit under samme beskyttede Supabase-nøgle. Den repræsentative payload falder fra 4.014.169 til 208.874 byte og genskabes kun efter browserkontrol af størrelser, SHA-256, version og tidspunkt.
-- Målrettede lokale regressioner består. Ingen ejerpunkter, kilder, U/V, score, pile eller 673/673-gate er ændret. Fuld validering, central push/deploy og naturlig GitHub-schedule afventer, før cron-job.org må slukkes.
+- Målrettede lokale regressioner består. Ingen ejerpunkter, kilder, U/V, score, pile eller 673/673-gate er ændret.
+- Commit `7409d461` og pushrun `#32237507059`/`#3202` bestod frisk central geometri, fuld validering, releasegate, 673/673, Supabase-sync på otte sekunder, Pages-artifact og deploy. Live datasæt `rr-20260819093242-210` viser 210 zoner, 673/673, `controlled-live`, 168 timers credentialfri historik og version 4.0.234. To efterfølgende eksterne dispatches `#3203` og `#3204` bestod også. Kun et naturligt schedule-event for selve produktionsworkflowet afventer, før cron-job.org må slukkes.
+- Den fortsat aktive eksterne hel-timesdispatch `#3205` startede 10:00:40Z før den automatisk bestilte pilot var færdig 10:02:55Z og stoppede fail-closed i datavalideringen før release, Supabase og Pages. Overgangens almindelige ikke-tvungne `workflow_dispatch` føres derfor også gennem current-hour-gaten; push og manuel `force=true` omgår kun udsættelsen for at bevare fuld releasekontrol.
 
 ## 2026-08-18 – nedlukningscheckpoint efter fuld Chromium-audit
 

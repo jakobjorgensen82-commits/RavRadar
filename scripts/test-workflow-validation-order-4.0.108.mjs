@@ -51,7 +51,9 @@ for (const marker of [
   '- cron: "14,29,44,59 * * * *"',
   'current-hour-readiness:',
   'python3 scripts/check-copernicus-current-hour.py --github-output "$GITHUB_OUTPUT"',
-  'Scheduled refresh deferred',
+  'Timed refresh deferred',
+  "github.event_name == 'workflow_dispatch' && inputs.force != true",
+  'CHECK_CURRENT_HOUR',
   "needs.current-hour-readiness.outputs.ready == 'true'",
 ]) {
   if (!text.includes(marker)) throw new Error(`Den GitHub-ejede 15-minuttersproduktion mangler ${marker}`);

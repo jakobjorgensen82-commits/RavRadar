@@ -5,11 +5,12 @@
 - [x] Timeskifteroden er afgrænset: ekstern `:00`-produktion kunne løbe samtidig med den nye Copernicus-time og stoppe sikkert på 630/673.
 - [x] GitHub-ejet produktionsplan er implementeret ved minut 14/29/44/59; piloten er flyttet til minut 6.
 - [x] Planlagt produktion har en separat current-hour-readiness-gate og bygger/deployer intet, når aktuel UTC-time endnu mangler.
+- [x] Overgangens almindelige, ikke-tvungne cron-`workflow_dispatch` bruger samme gate; manuel `force=true` og push bevarer den fulde fail-closed releasekæde.
 - [x] Push/manual release, fulde gates og dynamisk 673/673 er uændrede.
 - [x] `runtime-diagnostics` pakkes tabsfrit med gzip/base64, SHA-256 og byteantal under samme beskyttede nøgle; admin kan verificere og genskabe originalen, inklusive legacy-format.
 - [x] Repræsentativ kompakt payload er reduceret fra 4.014.169 til 208.874 byte; målrettede roundtrip-, korruptions-, workflow-, heartbeat-, Supabase- og adminregressioner består.
 - [x] RDKS, version, geometri-v2 og alle tests, som ikke kræver et frisk centralt runtimeartifact, består lokalt på 4.0.234; `release:gate` er grøn. Den samlede lokale `validate` stopper som forventet på repositoryets forældede 209/211-vejrsnapshot og manglende frisk `public-condition-details.json`, så friskdata-delene skal bevises centralt.
-- [ ] Pushrun skal bevise central geometri, 673/673, komprimeret Supabase-upsert/readback, Pages-artifact og deploy.
+- [x] Commit `7409d461` og pushrun `#32237507059`/`#3202` beviser central geometri, fuld validering, releasegate, 673/673, komprimeret Supabase-sync på otte sekunder, Pages-artifact og deploy. Live 4.0.234/datasæt `rr-20260819093242-210` er direkte metadata-verificeret med 210 zoner, 673/673, `controlled-live`, credentialfri historik og 168 timers retention.
 - [ ] Mindst én efterfølgende naturlig GitHub-`schedule`-kørsel skal verificeres, før ejeren bliver bedt om at deaktivere cron-job.org.
 
 ## Åben P1 – én lokal del og ét tidspunkt gennem hele zonepanelet
