@@ -21,6 +21,7 @@ import { applyCurrentTransportToHistory } from './lib/current-transport-history.
 import { retainWeatherHistory } from './lib/weather-history-retention.mjs';
 import { buildEffectiveRoutingCacheAlerts } from './lib/water-station-routing-alerts.mjs';
 import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
+import { selectNearestCompleteLocalScoreRow } from './lib/local-current-reference.mjs';
 import { localPartRuntimeProperties } from './lib/local-part-runtime.mjs';
 import { mergeLiveCurrentPilotIntoRecord, verifiedLivePilotSource } from './lib/live-current-pilot.mjs';
 import { resolveProductionReferenceTime } from './lib/production-reference-time.mjs';
@@ -1085,14 +1086,12 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, liveCurre
         });
       }
       if (scores.length) {
-        const selectedScore = scores[nearestIndex(scores)] ?? null;
-        const flowPoints = flowPointsFromForecastRecord(record, zonePoint(feature), selectedScore?.time ?? generatedAt);
         partRows.push({
           zoneId, partId: part.partId, name: part.name, marineCoverage: part.marineCoverage,
           landPoint: part.landPoint, waterPoint: part.waterPoint,
           onshoreDirectionDeg: part.onshoreDirectionDeg,
           onshoreDirectionSource: part.onshoreDirectionSource || 'Godkendt land-/havpunkt for kystdelen',
-          flowPoints,
+          record,
           scores
         });
       }
@@ -1102,6 +1101,7 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, liveCurre
   const partRowsByZone = new Map();
   for (const row of partRows) (partRowsByZone.get(row.zoneId) ?? partRowsByZone.set(row.zoneId, []).get(row.zoneId)).push(row);
   const zones = {};
+  const currentReferenceByZone = new Map();
   for (const [zoneId, expectedPartCount] of expectedByZone) {
     const rows = partRowsByZone.get(zoneId) ?? [];
     const times = [...new Set(rows.flatMap(row => row.scores.map(score => score.time)))].sort();
@@ -1138,16 +1138,22 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, liveCurre
       }
       hourly.push(result);
     }
-    zones[zoneId] = { expectedPartCount, scoredPartCount: rows.length, hourly };
+    const currentRow = selectNearestCompleteLocalScoreRow(hourly, generatedAt, expectedPartCount);
+    currentReferenceByZone.set(zoneId, currentRow?.time ?? null);
+    zones[zoneId] = { expectedPartCount, scoredPartCount: rows.length, currentReferenceAt: currentRow?.time ?? null, hourly };
   }
   const parts = Object.fromEntries(partRows.map(row => {
-    const score = row.scores[nearestIndex(row.scores)] ?? null;
+    const currentReferenceAt = currentReferenceByZone.get(row.zoneId);
+    const score = (currentReferenceAt
+      ? row.scores.find(candidate => Date.parse(candidate.time) === Date.parse(currentReferenceAt))
+      : row.scores[nearestIndex(row.scores)]) ?? null;
+    const flowPoints = flowPointsFromForecastRecord(row.record, row.waterPoint, score?.time ?? generatedAt);
     return [row.partId, {
       zoneId: row.zoneId, name: row.name, marineCoverage: row.marineCoverage,
       landPoint: row.landPoint, waterPoint: row.waterPoint,
       onshoreDirectionDeg: row.onshoreDirectionDeg,
       onshoreDirectionSource: row.onshoreDirectionSource,
-      flowPoints: row.flowPoints,
+      flowPoints,
       current: score
     }];
   }));
@@ -1273,7 +1279,7 @@ async function fromDmi(feature, generatedAt, { includeAtmosphere = false } = {})
   }));
   const currentForecast = selectDmiForecastAt(forecastRecord, generatedAt) ?? dmiForecast.hourly[0];
   return {
-    point, flowPoints: flowPointsFromForecastRecord(forecastRecord, zonePoint(feature), generatedAt), provider: 'dmi', providerLabel: includeAtmosphere ? 'DMI Open Data' : 'DMI havdata + Open-Meteo fallback',
+    point, flowPoints: flowPointsFromForecastRecord(forecastRecord, zonePoint(feature), currentForecast?.time ?? generatedAt), provider: 'dmi', providerLabel: includeAtmosphere ? 'DMI Open Data' : 'DMI havdata + Open-Meteo fallback',
     modelSteps: { wind: w?.step ?? null, wave: wa?.step ?? null, ocean: o?.step ?? null },
     dmiCompleteness: completeness,
     current: {
@@ -1713,7 +1719,7 @@ function zoneFromDmiForecastCache(feature, record, generatedAt) {
   const remaining = (safeRecord.hourly ?? []).filter(item => Date.parse(item.time) >= Date.parse(generatedAt) - 30 * 60000);
   return {
     point: zonePoint(feature),
-    flowPoints: flowPointsFromForecastRecord(safeRecord, zonePoint(feature), generatedAt),
+    flowPoints: flowPointsFromForecastRecord(safeRecord, zonePoint(feature), selected.time),
     provider: 'dmi-cache',
     providerLabel: 'DMI 5-døgns prognosecache',
     modelSteps: { wind: selected.time, wave: selected.time, ocean: selected.time },

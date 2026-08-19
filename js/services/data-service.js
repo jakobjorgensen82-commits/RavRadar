@@ -1,4 +1,4 @@
-import { loadActiveZoneCollection } from './zone-registry.js?v=4.0.236';
+import { loadActiveZoneCollection } from './zone-registry.js?v=4.0.237';
 const DEFAULT_PUBLIC_CONDITIONS_URL='./data/live/public-conditions.json';
 const DEFAULT_PUBLIC_DETAILS_URL='./data/live/public-condition-details.json';
 const MANIFEST_URL='./data/live/manifest.json';
@@ -34,7 +34,8 @@ export async function loadConditionDetails({manifest=null}={}){
 }
 export function mergeConditionDetails(conditions,details){
   if(!conditions?.datasetId||conditions.datasetId!==details?.datasetId)throw new Error('Vejrdetaljer kan ikke blandes mellem datasæt.');
+  if(conditions?.productionReferenceAt&&details?.productionReferenceAt&&Date.parse(conditions.productionReferenceAt)!==Date.parse(details.productionReferenceAt))throw new Error('Vejrdetaljer og startdata bruger ikke samme produktionstidspunkt.');
   const zones=Object.fromEntries(Object.entries(conditions.zones||{}).map(([zoneId,zone])=>[zoneId,{...zone,forecast:details.zones?.[zoneId]?.forecast||zone.forecast}]));
-  return {...conditions,zones,coastalParts:details.coastalParts||conditions.coastalParts,detailsAvailable:true};
+  return {...conditions,productionReferenceAt:details?.productionReferenceAt||conditions.productionReferenceAt||null,zones,coastalParts:details.coastalParts||conditions.coastalParts,detailsAvailable:true};
 }
 export function clearDataMemoryCache(){memory.clear();}

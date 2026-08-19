@@ -360,12 +360,15 @@ export function buildFlowArrowCandidates(featureCollection, conditionForZone, co
     if (!activeZoneIds.has(part?.zoneId)) continue;
     const weather = part?.current?.weather || {};
     const flowPoints = part?.flowPoints || {};
-    if (validDirection(weather.currentDirectionDeg) && verifiedCurrentGridSources.has(flowPoints?.sources?.current)) {
+    const currentReferenceAt = Date.parse(coastalParts.zones?.[part.zoneId]?.currentReferenceAt || '');
+    const partCurrentAt = Date.parse(part?.current?.time || '');
+    const sharesZoneReference = Number.isFinite(currentReferenceAt) && partCurrentAt === currentReferenceAt;
+    if (sharesZoneReference && validDirection(weather.currentDirectionDeg) && verifiedCurrentGridSources.has(flowPoints?.sources?.current)) {
       const point = pointCoordinates(flowPoints.current);
       if (point) candidates.push({ type:'current', zoneId:part.zoneId, partId, point, directionDeg:Number(weather.currentDirectionDeg), source:flowPoints.sources.current });
     }
     const windSource = flowPoints?.sources?.wind;
-    if (validDirection(weather.windDirectionDeg) && ['dmi-atmospheric-grid', 'dmi-marine-wind-grid'].includes(windSource)) {
+    if (sharesZoneReference && validDirection(weather.windDirectionDeg) && ['dmi-atmospheric-grid', 'dmi-marine-wind-grid'].includes(windSource)) {
       const point = pointCoordinates(flowPoints.wind);
       if (point) candidates.push({ type:'wind', zoneId:part.zoneId, partId, point, directionDeg:Number(weather.windDirectionDeg), source:windSource });
     }

@@ -44,14 +44,10 @@ function exactCurrentGrid(record, expectedSamplingPoint, at = null) {
   let rows = [...(record?.hourly ?? [])].sort((a, b) => Date.parse(a?.time ?? '') - Date.parse(b?.time ?? ''));
   const target = Date.parse(at ?? '');
   if (Number.isFinite(target) && rows.length) {
-    const selected = rows.reduce((best, row) => {
-      const distance = Math.abs(Date.parse(row?.time ?? '') - target);
-      return Number.isFinite(distance) && (!best || distance < best.distance) ? { row, distance } : best;
-    }, null);
     // Naar en bestemt visningstid er valgt, maa pilen kun bruge netop den
     // times celle. Manglende stroem paa tidspunktet skal ikke skjules ved at
     // hente en anden times celle.
-    rows = selected ? [selected.row] : [];
+    rows = rows.filter(row => Date.parse(row?.time ?? '') === target);
   }
   for (const row of rows) {
     if (coordinate(row?.currentUMps) === null || coordinate(row?.currentVMps) === null) continue;

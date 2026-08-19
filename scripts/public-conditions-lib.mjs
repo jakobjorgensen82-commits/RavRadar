@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
+import { isCompleteLocalScoreRow, selectNearestCompleteLocalScoreRow } from './lib/local-current-reference.mjs';
 
 const HOURLY_FIELDS = [
   'time','windSpeedMps','windDirectionDeg','airTemperatureC','waveHeightM','waveDirectionDeg','wavePeriodS',
@@ -8,29 +9,38 @@ const HOURLY_FIELDS = [
 const CURRENT_FIELDS = HOURLY_FIELDS.filter(key => key !== 'time' && key !== 'airTemperatureC');
 const HISTORY_FIELDS = ['maxWind24hMps','maxWave24hM','hoursSinceHighEnergy','strongEventDurationHours','hoursSinceStrongEventEnd','inboundCurrentDurationHours','inboundCurrentMomentum','outboundCurrentDurationHours','outboundCurrentPressure','activeCurrentRegime','activeCurrentRegimeDurationHours','activeCurrentRegimeMomentum','activeCurrentRegimeStability','activeCurrentRegimeSampleCount','verifiedCurrentCoverageHours','unverifiedCurrentSampleCount','currentDirectionStability','mobilisationPotential','nearshorePotential','eventPhase','stateModelMode'];
 const pick=(source,fields)=>Object.fromEntries(fields.filter(key=>source?.[key]!==undefined).map(key=>[key,source[key]]));
-const nearestRow=(rows,time)=>{
-  const target=Date.parse(time||'');
-  const valid=(rows||[]).filter(row=>Number.isFinite(Date.parse(row?.time)));
-  if(!valid.length)return null;
-  if(!Number.isFinite(target))return valid[0];
-  return valid.reduce((best,row)=>Math.abs(Date.parse(row.time)-target)<Math.abs(Date.parse(best.time)-target)?row:best,valid[0]);
+const currentLocalRow=(zone,source,full)=>{
+  const expected=Number(zone?.expectedPartCount||0);
+  const explicit=Date.parse(zone?.currentReferenceAt||'');
+  const exact=Number.isFinite(explicit)
+    ? (zone?.hourly||[]).find(row=>Date.parse(row?.time||'')===explicit&&isCompleteLocalScoreRow(row,expected))
+    : null;
+  return exact||selectNearestCompleteLocalScoreRow(
+    zone?.hourly,
+    full?.productionReferenceAt||source?.productionReferenceAt||full?.generatedAt||source?.generatedAt,
+    expected
+  );
 };
 
 function buildStartupCoastalParts(full){
   const source=full?.coastalParts;if(!source)return null;
   const zones={};const winnerIds=new Set();
   for(const [zoneId,zone] of Object.entries(source.zones||{})){
-    const row=nearestRow(zone.hourly,full?.generatedAt);
+    const row=currentLocalRow(zone,source,full);
     for(const mode of ['waders','beach'])if(row?.[mode]?.winningPartId)winnerIds.add(row[mode].winningPartId);
-    zones[zoneId]={expectedPartCount:zone.expectedPartCount||0,scoredPartCount:zone.scoredPartCount||0,hourly:row?[row]:[]};
+    zones[zoneId]={expectedPartCount:zone.expectedPartCount||0,scoredPartCount:zone.scoredPartCount||0,currentReferenceAt:row?.time||null,hourly:row?[row]:[]};
   }
   const parts=Object.fromEntries([...winnerIds].filter(id=>source.parts?.[id]).map(id=>[id,source.parts[id]]));
-  return {schemaVersion:source.schemaVersion,enabled:source.enabled===true,datasetVersion:source.datasetVersion||null,sourceRunId:source.sourceRunId||null,generatedAt:source.generatedAt||full?.generatedAt||null,marginPoints:source.marginPoints||7,expectedPartCount:source.expectedPartCount||0,scoredPartCount:source.scoredPartCount||0,parts,zones};
+  return {schemaVersion:source.schemaVersion,enabled:source.enabled===true,datasetVersion:source.datasetVersion||null,sourceRunId:source.sourceRunId||null,generatedAt:source.generatedAt||full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||source.productionReferenceAt||null,marginPoints:source.marginPoints||7,expectedPartCount:source.expectedPartCount||0,scoredPartCount:source.scoredPartCount||0,parts,zones};
 }
 
 function buildDetailedCoastalParts(full){
   const source=full?.coastalParts;if(!source)return null;
-  return {schemaVersion:source.schemaVersion,enabled:source.enabled===true,datasetVersion:source.datasetVersion||null,sourceRunId:source.sourceRunId||null,generatedAt:source.generatedAt||full?.generatedAt||null,marginPoints:source.marginPoints||7,expectedPartCount:source.expectedPartCount||0,scoredPartCount:source.scoredPartCount||0,parts:source.parts||{},zones:source.zones||{}};
+  const zones=Object.fromEntries(Object.entries(source.zones||{}).map(([zoneId,zone])=>{
+    const row=currentLocalRow(zone,source,full);
+    return [zoneId,{...zone,currentReferenceAt:row?.time||null}];
+  }));
+  return {schemaVersion:source.schemaVersion,enabled:source.enabled===true,datasetVersion:source.datasetVersion||null,sourceRunId:source.sourceRunId||null,generatedAt:source.generatedAt||full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||source.productionReferenceAt||null,marginPoints:source.marginPoints||7,expectedPartCount:source.expectedPartCount||0,scoredPartCount:source.scoredPartCount||0,parts:source.parts||{},zones};
 }
 
 export function buildPublicConditions(full){
@@ -60,7 +70,7 @@ export function buildPublicConditions(full){
     historyPath:full.controlledLiveCurrentPilot.historyPath||'./current-pilot-history.json',
     generatedAt:full.controlledLiveCurrentPilot.generatedAt||null,
   }:null;
-  return {schemaVersion:2,datasetId:full?.datasetId||null,generatedAt:full?.generatedAt||null,source:'RavRadar public runtime projection',currentPilot,zones,coastalParts};
+  return {schemaVersion:2,datasetId:full?.datasetId||null,generatedAt:full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||null,source:'RavRadar public runtime projection',currentPilot,zones,coastalParts};
 }
 
 export function buildPublicConditionDetails(full){
@@ -68,7 +78,7 @@ export function buildPublicConditionDetails(full){
     const forecast=zone?.forecast||{};
     return [zoneId,{forecast:{provider:forecast.provider||zone?.provider||null,providerLabel:forecast.providerLabel||zone?.providerLabel||null,generatedAt:forecast.generatedAt||full?.generatedAt||null,validUntil:forecast.validUntil||null,hourly:(forecast.hourly||[]).map(hour=>pick(hour,HOURLY_FIELDS))}}];
   }));
-  return {schemaVersion:1,datasetId:full?.datasetId||null,generatedAt:full?.generatedAt||null,currentPilot:full?.controlledLiveCurrentPilot||null,zones,coastalParts:buildDetailedCoastalParts(full)};
+  return {schemaVersion:1,datasetId:full?.datasetId||null,generatedAt:full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||null,currentPilot:full?.controlledLiveCurrentPilot||null,zones,coastalParts:buildDetailedCoastalParts(full)};
 }
 export function compactJson(value){return `${JSON.stringify(value)}\n`;}
 export function sha256Text(text){return crypto.createHash('sha256').update(text).digest('hex');}
@@ -80,6 +90,7 @@ export function buildPublicManifest(full, publicText, detailsText){
     schemaVersion:2,
     datasetId:full?.datasetId||null,
     generatedAt,
+    productionReferenceAt:full?.productionReferenceAt||null,
     validUntil:validUntilValues.length?new Date(Math.max(...validUntilValues)).toISOString():new Date(Date.parse(generatedAt)+8*3600000).toISOString(),
     zoneCount:Object.keys(full?.zones||{}).length,
     coastalPartCount:Number(full?.coastalParts?.expectedPartCount||0),

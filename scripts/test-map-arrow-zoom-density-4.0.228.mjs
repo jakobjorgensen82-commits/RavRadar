@@ -11,7 +11,7 @@ const flowPoints={
 };
 const part=(zoneId,name,point,currentDirectionDeg,windDirectionDeg,overrides={})=>({
   zoneId,name,waterPoint:point,landPoint:[point[0]+.01,point[1]+.01],flowPoints,
-  current:{weather:{currentDirectionDeg,windDirectionDeg}},...overrides
+  current:{time:'2026-08-15T12:00:00.000Z',weather:{currentDirectionDeg,windDirectionDeg}},...overrides
 });
 const full={
   datasetId:'rr-arrow-density-test',generatedAt:'2026-08-15T12:00:00.000Z',
@@ -20,7 +20,7 @@ const full={
     P1:part('Z1','Del 1',[10,56],90,270,{flowPoints:{...flowPoints,sources:{current:'dmi-marine-grid',wind:'dmi-marine-wind-grid'}}}),
     P2:part('Z1','Del 2',[10.5,56.5],100,280,{flowPoints:{...flowPoints,sources:{current:'zone-marine-anchor',wind:'zone-marine-anchor'}}}),
     P3:part('Z1','Del 3',[11,57],110,290,{flowPoints:{current:[11.1,57.1],wind:[11.2,57.2],sources:{current:'dmi-marine-grid',wind:'dmi-atmospheric-grid'}}})
-  },zones:{Z1:{expectedPartCount:3,scoredPartCount:3,hourly:[{time:'2026-08-15T12:00:00.000Z',waders:{winningPartId:'P1'},beach:{winningPartId:'P1'}}]}}}
+  },zones:{Z1:{expectedPartCount:3,scoredPartCount:3,hourly:[{time:'2026-08-15T12:00:00.000Z',waders:{status:'only-part',score:70,comparisonPartCount:3,winningPartId:'P1'},beach:{status:'only-part',score:70,comparisonPartCount:3,winningPartId:'P1'}}]}}}
 };
 const startup=buildPublicConditions(full),details=buildPublicConditionDetails(full);
 need(Object.keys(startup.coastalParts.parts).join(',')==='P1','Startpakken skal kun bære det aktuelle vinderpunkts flowdata.');
@@ -68,6 +68,8 @@ const timedRecord=recordWithCurrent();
 timedRecord.hourly.push({time:'2026-08-15T15:00:00.000Z',currentUMps:0.2,currentVMps:0.1,sources:{current:{...timedRecord.hourly[0].sources.current,gridPoint:[9.04,54.02],distanceKm:3.3}}});
 const timedCurrent=flowPointsFromForecastRecord(timedRecord,[9,54],'2026-08-15T15:00:00.000Z');
 need(timedCurrent.current[0]===9.04,'Strømpilen skal stå i den valgte times egen dokumenterede DMI-celle.');
+const absentExactTime=flowPointsFromForecastRecord(timedRecord,[9,54],'2026-08-15T14:00:00.000Z');
+need(absentExactTime.current[0]===9&&absentExactTime.sources.current==='zone-marine-anchor','En pil må ikke låne den nærmeste times celle, når den valgte eksakte time mangler.');
 const gapRecord=recordWithCurrent();
 gapRecord.hourly.unshift({time:'2026-08-15T09:00:00.000Z',currentUMps:null,currentVMps:null,sources:{}});
 const gapNow=flowPointsFromForecastRecord(gapRecord,[9,54],'2026-08-15T09:00:00.000Z');
@@ -99,7 +101,7 @@ need(closeLayer.counts().wind===2&&closeLayer.counts().current===2,'Det rendered
 
 const updateWeather=await fs.readFile('scripts/update-weather.mjs','utf8');
 const app=await fs.readFile('app.js','utf8');
-need(updateWeather.includes('const selectedScore = scores[nearestIndex(scores)] ?? null;')&&updateWeather.includes('flowPointsFromForecastRecord(record, zonePoint(feature), selectedScore?.time ?? generatedAt)')&&updateWeather.includes('flowPoints: row.flowPoints'),'Produktionsbygningen fører ikke den viste lokale scoretimes gitterpunkt til runtimekontrakten.');
+need(updateWeather.includes('selectNearestCompleteLocalScoreRow(hourly, generatedAt, expectedPartCount)')&&updateWeather.includes('row.scores.find(candidate => Date.parse(candidate.time) === Date.parse(currentReferenceAt))')&&updateWeather.includes('flowPointsFromForecastRecord(row.record, row.waterPoint, score?.time ?? generatedAt)'),'Produktionsbygningen låser ikke score og pile til zonens samme komplette time.');
 need(updateWeather.includes('function verifiedBulkCurrent')&&updateWeather.includes('verifiedBulkCurrent(bulkCache, bulkZone, point, rowCurrent)')&&updateWeather.includes('samePoint(source?.samplingPoint, expectedSamplingPoint)'),'Scorebygningen accepterer strøm uden hver times dokumenterede vandkolonne og dybdelag.');
 need(updateWeather.includes('function withOnlyVerifiedCurrent')&&updateWeather.includes('const safeRecord = withOnlyVerifiedCurrent(record, zonePoint(feature));'),'Gamle prognosecacher kan stadig føre ikke-verificeret strøm til score eller pil.');
 const directDmiBlock=updateWeather.slice(updateWeather.indexOf('async function fromDmi('),updateWeather.indexOf('function mergeHourlyPreferDmi('));

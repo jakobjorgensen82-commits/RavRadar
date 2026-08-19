@@ -1,3 +1,10 @@
+## 2026-08-19 – 4.0.237 låser den aktuelle lokale visning pr. zone
+
+- En sikker metadataaudit af det aktuelle 210-zone/673-dels livegrundlag fandt en komplet fælles række i alle 210 zoner, men kun 642 dele stod allerede på deres zones nærmeste komplette række; 31 dele brugte en anden nær-time.
+- 4.0.237 indfører `currentReferenceAt` pr. zone, vælger kun en række hvor begge jagtformer og alle forventede dele er komplette, bygger hver dels aktuelle score og pil på præcis denne tid og fører referencen gennem offentlig runtime, manifest, detailfletning og frontend.
+- 673/673-kildegaten er ikke ændret. Forskellige zoner må vælge forskellige nærmeste komplette timer; kravet er én sammenhængende lokal sammenligning pr. zone, ikke én national klokktime. Ejerens land-/vandpunkter, kildeorden, afstandsgrænser og scoreformel er urørte.
+- Målrettede lokale regressioner er grønne. Frisk central 673/673-, release- og liveverifikation af 4.0.237 afventer.
+
 ## 2026-08-19 – 4.0.236 låser schedule-jobbet til readiness-timen
 
 - Naturlig schedule `#32249924919`/`#3217` godkendte komplet 11:00-cache kl. 11:59, men den tunge bygning krydsede kl. 12 og valgte derefter 12:00. De 43 Copernicus-dele manglede, og 673/673-gaten stoppede korrekt ved 630/673 før releasegate, Supabase og Pages.

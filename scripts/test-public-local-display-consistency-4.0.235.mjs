@@ -69,6 +69,7 @@ const merged=mergeConditionDetails({...buildPublicConditions(full),available:tru
 let checkedTabs=0;
 for(const [zoneId,zone] of Object.entries(merged.coastalParts.zones)){
   assert.equal(zone.scoredPartCount,zone.expectedPartCount,`${zoneId}: lokal deldækning er ikke komplet.`);
+  assert.equal(zone.currentReferenceAt,generatedAt,`${zoneId}: aktuel lokal visning er ikke låst til zonens komplette fælles time.`);
   for(const mode of ['waders','beach']){
     for(const row of zone.hourly){
       const selected=selectLocalBestForDay({coastalParts:merged.coastalParts,zoneId,mode,date:row.time.slice(0,10),now:Date.parse(generatedAt)});
@@ -93,10 +94,12 @@ const app=fs.readFileSync('app.js','utf8');
 const ui=fs.readFileSync('js/ui/info-panel.js','utf8');
 const producer=fs.readFileSync('scripts/update-weather.mjs','utf8');
 assert.match(app,/display\.result,display\.weather/,'Zonepanelet får ikke score og vejr fra samme aktuelle kontekst.');
+assert.match(app,/zoneReferenceAt\|\|state\.conditions\.productionReferenceAt\|\|state\.conditions\.generatedAt/,'Aktuel lokal score bruger ikke zonens komplette fælles current-reference.');
 assert.match(app,/bestByDate/,'Zonepanelet genbruger ikke den nationale lokale dagsbeslutning.');
 assert.match(ui,/bestByDate\?\.\[day\.date\]/,'Femdøgnspanelet bruger ikke den fælles lokale dagsbeslutning.');
 assert.match(ui,/Hovedzone vises midlertidigt/,'Hovedzonefallback er ikke tydeligt mærket.');
 assert.match(producer,/componentReasons:winner\.detail\?\.componentReasons/,'Producenten fører ikke vinderens forklaring med til prognosen.');
 assert.match(producer,/waterTemperatureC:weather\.waterTemperatureC/,'Producenten fører ikke vinderens vandtemperatur med til prognosen.');
+assert.match(producer,/selectNearestCompleteLocalScoreRow\(hourly, generatedAt, expectedPartCount\)/,'Producenten vælger ikke nærmeste komplette fælles time pr. zone.');
 
 console.log(`OK: ${zoneCount} zoner, ${partCount} kystdele og ${checkedTabs} lokale femdøgnsvisninger bruger samme vinder, tidspunkt, score, vejr og forklaring.`);

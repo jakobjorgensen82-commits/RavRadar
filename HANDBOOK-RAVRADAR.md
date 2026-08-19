@@ -1,5 +1,17 @@
 # RavRadar Håndbog
 
+## Aktuel lokal score og pile deler én komplet zonetime – 4.0.237
+
+RavRadar har to forskellige krav, som ikke må forveksles. Produktionsgaten kræver verificeret strøm til alle 673 kystdele. Den lokale visning skal derudover sammenligne alle dele i den konkrete zone ved præcis samme tidspunkt. Det sidste krav betyder ikke, at hele Danmark skal bruge én national klokktime.
+
+Den tidligere udvælger fandt først den nærmeste gyldige strømrecord for hver del. Når DMI og en tilladt supplerende kilde havde forskellige nærmeste tider, kunne delene i samme zone derfor stå på hver sin time. Zonepanelet valgte bagefter den række, der lå tættest på byggetiden, selv hvis rækken var ufuldstændig, og viste unødigt hovedzonefallback.
+
+Fra 4.0.237 finder RavRadar i stedet den nærmeste komplette fælles række pr. zone. Begge jagtformer og alle zonens forventede kystdele skal være beregnelige på samme eksakte tid. Denne tid gemmes som `currentReferenceAt` og bruges samlet til vinder, RavScore, vejr, forklaring, debug og lokale pile. En pil må kun bruge den dokumenterede modelcelle fra netop denne time; nabotimens celle lånes ikke.
+
+Den sikre kontrol af det aktuelle livegrundlag fandt en komplet fælles time i alle 210 zoner. 192 kan bruge produktionsreferencetimen, 14 bruger nærmeste komplette time én time før, og fire én time efter. Den hidtidige runtime havde 31 af 673 dele på en anden nær-time; de samles nu med resten af deres zone ved næste friske bygning.
+
+Rettelsen ændrer ikke ejerens blå/grønne land-/vandpunkter, U/V-data, kildeorden, afstandsgrænser, scoreformel, rollback eller kravet om præcis 673/673. Fuld produktions- og liveverifikation af 4.0.237 afventer den centrale kæde.
+
 ## Én planlagt kørsel beholder den time, som blev godkendt – 4.0.236
 
 GitHubs lette readiness-kontrol kan begynde få sekunder før et UTC-timeskifte, mens den tunge vejrbygning fortsætter efter timeskiftet. En naturlig kørsel godkendte eksempelvis den komplette time kl. 11, men den gamle bygning kiggede senere på væguret, valgte kl. 12 og manglede derfor de 43 Copernicus-dele, som endnu ikke var indsamlet for den nye time. Sikkerhedsgaten stoppede korrekt ved 630/673 og deployede intet.
@@ -218,7 +230,7 @@ En privat, score-neutral cache bruger DKSS-felter ved vandpunktet samt cirka 5 o
 
 Rotationen registrerer også, hvor langt der er til den nærmeste modelkolonne med et eksakt fælles U/V-par, selv når den ligger uden for 5 km. I det tilfælde gemmes kun koordinat, afstand og lagmetadata – ikke de fjerne strømværdier. En privat ejeroversigt skelner derfor mellem nær-tærskel 5–6 km til rent manuelt geometrireview, modelhul 6–8 km, strukturelt modelhul over 8 km og en datakædefejl, hvor gyldig strøm faktisk findes inden for 5 km. Selv en nær-tærskel-post må kun flyttes, hvis vandpunktet i sig selv er forkert – aldrig blot for at nå modelcellen. Oversigten flytter ingen punkter automatisk, og den offentlige 5 km-grænse er uændret.
 
-**Håndbogsversion:** 4.0.236
+**Håndbogsversion:** 4.0.237
 
 **Opdateret:** 18. august 2026
 

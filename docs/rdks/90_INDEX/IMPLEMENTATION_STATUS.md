@@ -1,4 +1,16 @@
-# Implementeringsstatus – 4.0.236 produktionsverificeret
+# Implementeringsstatus – 4.0.237 lokal kandidat
+
+## 4.0.237 – fælles aktuel zonetime
+
+- [x] Livegrundlaget er auditeret sikkert uden rå U/V: alle 210 zoner har en komplet fælles lokal time; den hidtidige runtime har 642/673 dele på den valgte zonetime og 31 på en anden nær-time.
+- [x] `currentReferenceAt` vælges som nærmeste komplette række, hvor begge jagtformer og alle forventede kystdele findes ved samme eksakte tidspunkt.
+- [x] Producenten låser hver dels `current`, score og `flowPoints` til zonens reference. Pilcellen må ikke længere lånes fra nærmeste nabotime.
+- [x] Startpakke, detaljepakke, manifest, detaljefletning og frontend fører produktions- og zonereferencen sammenhængende.
+- [x] Nærzoom accepterer kun lokale pile, hvis delens current-tid er identisk med zonens reference.
+- [x] Målrettede regressioner består for progressiv runtime, 210 zoner, 673 dele, 2.100 femdøgnsvisninger, kortpile, DMI-bulk/forecast og kontrolleret Copernicus-livefletning.
+- [x] Ejerens punkter, geometri, U/V, scoreformel, kildeorden, afstande, rollback og dynamiske 673/673-gate er uændrede.
+- [ ] Kør RDKS-, versions- og releasevalidering, commit kun tilsigtede filer, og push kandidaten.
+- [ ] Kræv frisk central 210-zone/673-dels produktion, fulde gates, Supabase, Pages og direkte livekontrol af 673/673 dele på deres respektive `currentReferenceAt`.
 
 ## 4.0.236 – låst produktionsreferencetime
 
@@ -28,7 +40,7 @@
 - [x] Versionsrettelsen blev pushet, og `#32249770288`/`#3216` bestod frisk 673/673, fuld validering, releasegate, Supabase, Pages-artifact og deploy.
 - [x] Live datasæt `rr-20260819115558-210` er metadata-, hash- og runtimeverificeret. 420 aktuelle og 2.100 femdøgnsvisninger bruger kun en komplet lokal kontekst eller en eksplicit samlet hovedzonefallback.
 - [ ] Gentag den faktiske visuelle DOM-/kliktest, når Codex-browserpluginets Chrome native host/trusted-code-path er repareret. Maskinel runtimekontrol er grøn; browserkontrolværktøjet er den eneste blok.
-- [x] Fælles aktuel timedækning er bevist i frisk live 4.0.236 ved `productionReferenceAt=2026-08-19T12:00:00Z`: 673/673 dele har `verified` strømproveniens. Kildeorden og 100 %-gate er uændrede.
+- [x] Frisk live 4.0.236 beviser 673/673 verificerede strømrecords ved den godkendte kildeorden. Det er deldækning, ikke bevis for én national eller automatisk valgt komplet lokal række; 4.0.237 retter den særskilte zoneudvælgelse.
 
 ## 4.0.234 – GitHub-plan og Supabase runtime-arkiv
 
@@ -53,7 +65,7 @@
 - [x] Nuvisningen bruger vinderdelens eksakte lokale vejrpost og tidspunkt med tydeligt mærket fallback ved reel mangel.
 - [x] Femdøgnsfanerne bruger samme lokale `bestForDay`-post som den nationale prognose.
 - [x] Systemisk regression dækker alle zoner, begge jagtformer og fem døgn samt det afgrænsede lokale-mod-hovedzone-modbevis.
-- [ ] Adskil samlet 673/673-proveniens fra 673/673 ved én eksakt fælles aktuel time. Tre Limfjordszoner havde ufuldstændig 20:00-række i det auditerede datasæt; eventuel kildeplan kræver ejerens dialog og må ikke sænke gaten.
+- [x] Samlet 673/673-proveniens er adskilt fra lokal fælles timedækning. Livegrundlaget har en komplet fælles time i hver af de 210 zoner, men ikke nødvendigvis samme nationale time; 4.0.237 vælger og publicerer den rigtige zonetime. Ingen ny kildeplan er nødvendig, og gaten er ikke sænket.
 - [x] Central RDKS-/release-/produktionsvalidering og live runtimeaudit er afsluttet i `#32249770288`/`#3216` og datasæt `rr-20260819115558-210`.
 - [ ] Faktisk DOM-/kliktest af farver, pile, vinderområde, tekst, score og debug gentages efter reparation/geninstallation af Browser-pluginets native host. Manuelle registry- eller CDP-omveje er bevidst ikke brugt.
 
@@ -111,7 +123,7 @@
 - [x] Bekræft første faktiske `schedule`-event.
 - [x] Verificér keepalive centralt, genhent 11:00Z kontrolleret og bekræft mindst to `validTime`-værdier i samme råcache.
 - [x] Første automatiske heartbeat-event er bevist i `#32146699458`, og den forudgående naturlige pilot `#32146584311` udvidede cachen til 14 UTC uden ny LRU-fortrængning.
-- [ ] Den aktive integration er lokalt implementeret, men kræver stadig fuld central validering, releasegate, frisk produktionsworkflow og direkte livekontrol. Seneste deploy er fortsat den gamle DMI-only-runtime, indtil denne gate er grøn.
+- [x] Den aktive integration er centralt produktions- og liveverificeret. Fra `#32158041877` og senest 4.0.236-kæden er fuld validering, releasegate, frisk produktionsworkflow, Supabase, Pages og direkte runtimekontrol grøn med præcis 673/673; den gamle DMI-only-status er historisk og ikke længere aktiv normaltilstand.
 - [x] Pushrun `#32129778162` beviste, at den eksisterende gate ikke blev omgået: fuld validering stoppede ved 622/673 og intet blev deployet.
 - [x] Ejerens 100 %-krav er nu den faktiske produktionsgate: `requiredPartCoverage` er lig det dynamiske antal aktive kystdele, aktuelt 673. Separat regression forbyder den historiske 95 %-formel; #3094-replay stopper på 622/673 med krav om alle 673.
 - [x] `#32139054129` bekræftede gaten centralt: regressionen bestod, auditten stoppede med 622/673 og “alle 673 kræves”, og releasegate, Supabase samt Pages blev ikke kørt.

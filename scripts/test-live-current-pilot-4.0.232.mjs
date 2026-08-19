@@ -55,8 +55,10 @@ const tooFar = { ...merged.hourly[1].currentProvenance, gridPoint: [10.3, 55], d
 assert.equal(verifiedLivePilotSource(tooFar, part.waterPoint, { requireStatus: true }), null, 'En fjern, ikke-godkendt celle skal afvises.');
 
 const features = { type: 'FeatureCollection', features: [{ properties: { id: 'Z1', zoneStatus: 'active', dataPoint: [10, 55] } }] };
-const coastalParts = { enabled: true, parts: {
-  P1: { zoneId: 'Z1', flowPoints: flow, current: { weather: { currentDirectionDeg: 143 } } },
+const coastalParts = { enabled: true, zones: {
+  Z1: { currentReferenceAt: '2026-08-18T13:00:00.000Z' },
+}, parts: {
+  P1: { zoneId: 'Z1', flowPoints: flow, current: { time: '2026-08-18T13:00:00.000Z', weather: { currentDirectionDeg: 143 } } },
 } };
 const arrows = buildFlowArrowCandidates(features, () => ({ current: {}, flowPoints: {} }), coastalParts, 10);
 assert.equal(arrows.length, 1);

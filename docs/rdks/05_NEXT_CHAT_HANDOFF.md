@@ -1,6 +1,14 @@
 # RavRadar – overlevering til næste chat
 
-## Aktiv kandidat 4.0.236 – lås hele schedule-kørslen til readiness-timen
+## Aktiv kandidat 4.0.237 – én komplet aktuel time pr. zone
+
+- Metadataaudit af det nuværende 210-zone/673-dels livegrundlag viser en komplet fælles række i alle zoner, men den hidtidige runtime havde kun 642/673 dele på deres zones nærmeste komplette time. 31 dele brugte en anden nær-time.
+- 673/673-kildegaten er fortsat gyldig og uændret. Den nye særskilte regel er, at den viste lokale sammenligning låses pr. zone til én eksakt komplet time; der kræves ikke én national klokktime for hele landet.
+- 4.0.237 beregner `currentReferenceAt`, bygger delens current/flowpunkt på den tid og fører referencen gennem offentlig runtime, manifest, fletning og frontend. Nærzoom viser kun tidsjusterede lokale pile.
+- Målrettede regressioner for 210 zoner, 673 dele, 2.100 femdøgnsvisninger, pile, DMI og Copernicus er grønne. Næste trin er RDKS/releasevalidering, tilsigtet commit/push og frisk central/live 673/673-verifikation.
+- Ejerens land-/vandpunkter er ikke flyttet eller omskrevet. De fire kendte dirty datafiler og alle untracked verify/cachefiler må ikke stages.
+
+## Produktionsverificeret 4.0.236 – lås hele schedule-kørslen til readiness-timen
 
 - Naturlig schedule `#32249924919`/`#3217` godkendte den komplette 11:00-time kl. 11:59, men den tunge bygning krydsede kl. 12 og valgte derefter 12:00. De 43 Copernicus-dele manglede på den nye time, så den uændrede gate stoppede sikkert ved 630/673 før releasegate, Supabase og Pages.
 - 4.0.236 eksporterer `current-hour-readiness`-timen og sætter den som `RAVRADAR_PRODUCTION_TARGET_HOUR` for hele `build-and-prepare`. Live-pilot og vejrbygning bruger dermed samme eksakte time gennem hele kørslen.
@@ -38,8 +46,8 @@ Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde sa
 - **Nyeste åbne P1 er browserpræsentationen, ikke ejerens punktpar eller strømvektorer.** En fuld Chromium-audit 2026-08-18 bekræftede 210 zoner, 673 dele, 622 DMI + 43 Copernicus + 8 godkendte proxyer, ejersource = runtimepunkt for 673/673 og korrekte U/V-retninger/pilceller inden for tolerancen. Ingen land-/vandpunkter blev ændret.
 - Zonepanelet blander imidlertid hovedzonens aktuelle vejrkort med den lokale vinderdels score, forklaring og debug. 371/414 sammenlignelige aktuelle visninger havde forskellig synlig og lokal strømretning. Blåvand viste vinderen `Havsande – sydkyst` og lokal NV 315° i debug, men N 11° i det synlige strømkort.
 - Femdøgnspanelet bruger tilsvarende hovedzonens generiske dagsvalg i stedet for den lokale kystdels `bestForDay`: 1.660/1.964 sammenlignelige faner havde forskellig score, og 897 havde forskelligt bedste tidspunkt. En rettelse skal føre én og samme lokale del/tid/vejrpost gennem navn, kort, score, tekst, debug og alle metrikker; fallback skal være eksplicit.
-- Samlet 673/673 må desuden adskilles fra fuld fælles timedækning. I det auditerede datasæt manglede den aktuelle 20:00-række dele i `DK-B05-12`, `DK-B05-17` og `DK-B05-18`, selv om artifactet rapporterede 673/673 samlet. Hvis det stadig gælder ved genoptagelsen, skal ejeren have en plan før nogen kildeændring. Sænk aldrig dækningskravet.
-- **Næste sikre kodeforløb:** reproducer mod det aktuelle live-datasæt; saml nuvisning og femdøgnsvisning om samme lokale vinderpost; tilføj landsdækkende browser-/regressionstest for begge jagtformer og Blåvand-modbeviset; indfør særskilt metadata/gate for eksakt fælles aktuel time; kør fuld RDKS-, release- og produktionsvalidering. Brug GPT-5.6 Sol med Ekstra høj. Der blev ikke ændret programkode, geometri, score, live-data eller deploy i checkpointsessionen.
+- Det historiske 20:00-eksempel med ufuldstændige rækker i `DK-B05-12`, `DK-B05-17` og `DK-B05-18` er nu afklaret som et zonevist udvælgelsesproblem, ikke som behov for én national fælles time. 4.0.237 vælger nærmeste komplette række særskilt pr. zone og bevarer fortsat 673/673-kildegaten.
+- **Næste sikre kodeforløb er erstattet af kandidatsektionen øverst:** den sammenhængende lokale visning er produktionsverificeret i 4.0.235, og 4.0.237 afventer nu central/live verifikation af den zonevise current-reference. Brug fortsat GPT-5.6 Sol med Ekstra høj til slutvalideringen.
 
 - Ejeren har godkendt kontrolleret live-aktivering af Copernicus/regionalproxy på den nuværende ikke-offentlige side. Gyldige U/V-data, fuld provenance og nye pile må publiceres; kun credentials forbliver hemmelige. Syvdøgnsstabiliteten eftermåles live.
 - 4.0.233 er gældende produktionsverificeret liveversion. Commit `286ea9e5`, `#32165688946` og `#32165969786` bestod frisk central geometri, vejrbygning, 673/673, fuld validering, releasegate, Supabase og Pages. Direkte liveaudit af `rr-20260818173528-210` kontrollerede 673 dele og 43.064 prognose-/jagtformstimer med nul lokale anker-, vinder-, retning-, pil/grid-, provenance- eller afstandsfejl.
