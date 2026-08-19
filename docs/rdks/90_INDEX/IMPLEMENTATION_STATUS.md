@@ -1,4 +1,4 @@
-# Implementeringsstatus – 4.0.236-kandidat
+# Implementeringsstatus – 4.0.236 produktionsverificeret
 
 ## 4.0.236 – låst produktionsreferencetime
 
@@ -9,7 +9,10 @@
 - [x] Regression simulerer 11:00 → 12:04-løbet, beviser den låste time og afviser ikke-timeskarp konfiguration. Workflow-, DMI- og heartbeat-regressionerne består målrettet.
 - [x] `#32249924919`/`#3217` er dokumenteret som sikkert 630/673-stop uden releasegate, Supabase eller Pages; det var ikke en deployet datafejl.
 - [x] RDKS, målrettede regressionssuiter, versionslukning og lokal `release:gate` er grønne. Fuld lokal `validate` passerer geometri-v2 og stopper derefter på det kendte forældede 209/211-snapshot; runtimepipeline-testen mangler tilsvarende den centralt byggede `public-condition-details.json`.
-- [ ] Push den afgrænsede rettelse og verificér en frisk central schedule-/produktionskørsel med fortsat præcis 673/673.
+- [x] Commit `668a1cdd` er på `main`, og normal ikke-tvungen produktion `#32253251841`/`#3219` bestod readiness med låst 12:00-time, frisk 673/673, fuld validering, releasegate, Supabase, Pages-artifact og deploy.
+- [x] Live 4.0.236/datasæt `rr-20260819123607-210` er direkte metadata-verificeret med 210 zoner, 673/673, 622 DMI + 39 Baltic + fire AMM15 + otte tilladte proxyer, `productionReferenceAt=12:00`, `controlled-live` og `credentialsIncluded=false`.
+- [x] Manuel pilot `#32257195240`/`#42` udvidede cachen til 27 gyldige timer med 625 mål, 629 mål/kilde-par og nul gitter-/lagustabilitet. Normal `#32257480030`/`#3220` bestod derefter 13:00-readiness, 673/673, fuld validering, releasegate, Supabase og Pages; live `rr-20260819132304-210` matcher 13:00.
+- [ ] Ophæv først schedulerholdet efter et nyt naturligt event. Alle tre workflows er aktive og korrekt deklareret på `main`, men ingen native schedule-events er oprettet efter cirka 11:58 UTC. cron-job.org må ikke deaktiveres inden nyt bevis.
 - [ ] Bekræft ejerens faktiske deaktivering af cron-job.org. GitHub forbliver den ønskede normale scheduler.
 
 ## 4.0.235 – én lokal visningskontekst, produktionsverificeret
@@ -25,7 +28,7 @@
 - [x] Versionsrettelsen blev pushet, og `#32249770288`/`#3216` bestod frisk 673/673, fuld validering, releasegate, Supabase, Pages-artifact og deploy.
 - [x] Live datasæt `rr-20260819115558-210` er metadata-, hash- og runtimeverificeret. 420 aktuelle og 2.100 femdøgnsvisninger bruger kun en komplet lokal kontekst eller en eksplicit samlet hovedzonefallback.
 - [ ] Gentag den faktiske visuelle DOM-/kliktest, når Codex-browserpluginets Chrome native host/trusted-code-path er repareret. Maskinel runtimekontrol er grøn; browserkontrolværktøjet er den eneste blok.
-- [ ] Fælles aktuel timedækning er fortsat et særskilt åbent bevis. Kildeorden og 100 %-gate må ikke ændres uden ejerbeslutning.
+- [x] Fælles aktuel timedækning er bevist i frisk live 4.0.236 ved `productionReferenceAt=2026-08-19T12:00:00Z`: 673/673 dele har `verified` strømproveniens. Kildeorden og 100 %-gate er uændrede.
 
 ## 4.0.234 – GitHub-plan og Supabase runtime-arkiv
 

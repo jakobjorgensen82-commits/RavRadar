@@ -1,12 +1,16 @@
 # Current truth – gældende projektviden
 
-## 4.0.236-kandidat – én planlagt produktion beholder sin godkendte UTC-time
+## 4.0.236 produktionsverificeret – én planlagt produktion beholder sin godkendte UTC-time
 
 - Den naturlige GitHub-schedule-kørsel `#32249924919`/`#3217` afdækkede et nyt, snævert løb over timeskiftet. Readiness-gaten godkendte den komplette 11:00-time kl. 11:59, men den tunge bygning fortsatte efter kl. 12 og valgte derfor 12:00. De 43 Copernicus-dele manglede på den nye time, så den uændrede 673/673-gate stoppede korrekt ved 630/673 før releasegate, Supabase og Pages.
 - 4.0.236 lader `current-hour-readiness` eksportere den godkendte eksakte time og binder hele `build-and-prepare` til den samme `RAVRADAR_PRODUCTION_TARGET_HOUR`. Både live-pilotbygningen og `update-weather.mjs` bruger dermed én sammenhængende referencetime, selv når arbejdet krydser et timeskifte.
 - Datasættets `generatedAt`, dataset-ID og sundhedsrapport bruger fortsat den virkelige byggetid. Den låste faglige time rapporteres særskilt som `productionReferenceAt`, så kvarterskørsler bevarer friskhed og unik identitet.
 - Push og bevidst manuel release uden en planlagt readiness-time bruger fortsat den aktuelle tid. Eksisterende friskheds-, 673/673-, release-, Supabase- og Pages-gates er uændrede og forbliver fail-closed.
-- Den nye regression simulerer godkendelse kl. 11 og bygning kl. 12:04, kræver fortsat 11:00, beviser normal nutid uden lås og afviser ikke-timeskarpe værdier. Central produktionsverifikation af 4.0.236 afventer push.
+- Den nye regression simulerer godkendelse kl. 11 og bygning kl. 12:04, kræver fortsat 11:00, beviser normal nutid uden lås og afviser ikke-timeskarpe værdier.
+- Commit `668a1cdd` er på `main`. Den normale ikke-tvungne produktion `#32253251841`/`#3219` eksporterede 12:00 fra readiness, bar samme time gennem hele bygningen og bestod frisk 673/673, fuld `validate`, releasegate, Supabase, Pages-artifact og deploy.
+- Live version 4.0.236/datasæt `rr-20260819123607-210` er direkte metadata-verificeret: virkelig byggetid 12:36, `productionReferenceAt=12:00`, 210 zoner og præcis 673/673 dele. Fordelingen er 622 almindelige DMI-dele, 39 Baltic, fire AMM15 og de otte godkendte `dkss_lf`-proxyer. Alle 673 strømprovenienser er `verified`, alle 673 bruger `Godkendt land-/havpunkt for kystdelen`, `controlled-live` er aktivt og `credentialsIncluded=false`.
+- Manuel pilot `#32257195240`/`#42` udvidede efterfølgende den private cache til 27 gyldige timer, 625 mål og 629 mål/kilde-par med nul gitter-/lagustabilitet, `scoreImpact=false` og `publicRuntime=false`. Normal `#32257480030`/`#3220` bestod derefter samme fulde kæde ved 13:00. Live `rr-20260819132304-210` har 210 zoner, præcis 673 forventede/scorede/verificerede dele, 622 DMI + 39 Baltic + fire AMM15 + otte tilladte proxyer og `productionReferenceAt=13:00`.
+- Dermed er den tidligere særskilte tvivl om fælles aktuel timedækning også afklaret for friske 12:00- og 13:00-datasæt. Alle tre native workflows står aktive med korrekte schedules på `main`, men GitHub oprettede ingen nye naturlige events efter cirka 11:58 UTC. Det er et eksternt driftsmæssigt hold, ikke et datamodbevis. cron-job.org må ikke deaktiveres, før et nyt naturligt event igen er verificeret.
 - Ingen ejerpunkter, geometri, U/V, pilceller, score, kildeorden, afstandsgrænser eller rollback er ændret.
 
 ## 4.0.235 produktionsverificeret – én lokal del og ét tidspunkt i hele den offentlige visning

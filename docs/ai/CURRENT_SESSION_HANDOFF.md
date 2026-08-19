@@ -1,12 +1,14 @@
 # Aktuelt sessionshandoff – 2026-08-19
 
-## Aktiv 4.0.236-kandidat – samme godkendte time gennem hele produktionskørslen
+## Produktionsverificeret 4.0.236 – samme godkendte time gennem hele produktionskørslen
 
 - Schedule `#32249924919`/`#3217` godkendte 11:00 lige før timeskiftet, men den efterfølgende bygning valgte vægurets 12:00. Derfor manglede præcis de 43 Copernicus-dele, og 673/673-gaten stoppede korrekt på 630/673 uden release, Supabase eller Pages.
 - Workflowet eksporterer nu readiness-timen og binder `build-and-prepare`, live-piloten og `update-weather.mjs` til samme `RAVRADAR_PRODUCTION_TARGET_HOUR`. Push/manual uden lås bruger fortsat den aktuelle tid.
-- En målrettet regression simulerer 11:00 → 12:04, kræver fortsat 11:00 og afviser ikke-timeskarp input. DMI-, workflow- og heartbeatregressioner, RDKS, versionslukning og releasegate er grønne. Fuld lokal `validate` stopper efter grøn geometri-v2 på det kendte forældede 209/211-snapshot; commit/push og central frisk efterkontrol er næste trin.
+- En målrettet regression simulerer 11:00 → 12:04, kræver fortsat 11:00 og afviser ikke-timeskarp input. DMI-, workflow- og heartbeatregressioner, RDKS, versionslukning og releasegate er grønne. Fuld lokal `validate` stopper efter grøn geometri-v2 på det kendte forældede 209/211-snapshot; friskdata-leddene er derfor efterprøvet centralt.
+- Commit `668a1cdd` er på `main`. Normal ikke-tvungen `#32253251841`/`#3219` eksporterede 12:00 fra readiness og bestod 673/673, fuld validering, releasegate, Supabase, Pages-artifact og deploy. Live 4.0.236/datasæt `rr-20260819123607-210` viser 210 zoner, 673 verificerede dele, virkelig byggetid 12:36 og særskilt `productionReferenceAt=12:00`.
+- Manuel pilot `#32257195240`/`#42` udvidede senere den private cache til 27 gyldige timer, 625 mål og 629 mål/kilde-par med nul gitter-/lagustabilitet. Normal `#32257480030`/`#3220` bestod derefter 13:00-readiness, 673/673, fuld validering, releasegate, Supabase, Pages-artifact og deploy. Live `rr-20260819132304-210` viser 210 zoner, 673 forventede/scorede/verificerede dele og `productionReferenceAt=13:00`.
 - Ejerens tre dirty diagnostik-/geometrifiler samt `data/live/coastal-parts-v2.json` må ikke stages. Ingen ejerpunkter, geometri, U/V, pile, score, kildeorden eller 673/673 er ændret.
-- Cron-job.org-deaktivering er endnu ikke bekræftet af ejeren. GitHub skal fortsat være normal scheduler; bed først ejeren om handling, når den centrale 4.0.236-kæde er verificeret.
+- Cron-job.org må ikke deaktiveres endnu. Produktion, pilot og cachebevaring står alle `active` med korrekte schedules på standardbranchen `main`, men GitHub oprettede ingen nye naturlige events efter cirka 11:58 UTC. Manuel drift er grøn, så dette er et schedulerleveringshold; ophæv det først efter et nyt naturligt event og en efterfølgende native kørsel uden ekstern dublet.
 - Browserpluginets Chrome native host mangler, og trusted-code-path fejler. Den visuelle DOM-/kliktest gentages efter pluginreparation; register/CDP-bypass er ikke tilladt som projektrettelse.
 
 ## Produktionsverificeret 4.0.235 – lokal score, vejr og forklaring er samme post

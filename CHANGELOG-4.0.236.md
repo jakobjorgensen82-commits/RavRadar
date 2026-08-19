@@ -12,6 +12,10 @@
 - Den naturlige schedule-kørsel `#32249924919`/`#3217` dokumenterede løbet: 11:00 blev godkendt før kl. 12, hvorefter den gamle kode skiftede til 12:00 og stoppede sikkert på 630/673. Releasegate, Supabase og Pages blev ikke kørt.
 - En ny regression simulerer timeskiftet, kræver at 11:00 bevares, kræver normal nutid uden lås og afviser en ikke-timeskarp værdi.
 - Ingen land-/vandpunkter, kystlinjer, U/V, pilceller, scoreformel, kildeorden, afstandsgrænser, rollback eller 673/673-gate er ændret.
+- Commit `668a1cdd` er på `main`. Normal ikke-tvungen kørsel `#32253251841`/`#3219` eksporterede 12:00 fra readiness, bar samme time gennem hele bygningen og bestod frisk 673/673, fuld validering, releasegate, Supabase, Pages-artifact og deploy.
+- Den direkte livekontrol af version 4.0.236/datasæt `rr-20260819123607-210` fandt 210 zoner, præcis 673 verificerede dele, virkelig byggetid 12:36 og særskilt `productionReferenceAt=12:00`. Kilderne er fortsat 622 DMI, 39 Baltic, fire AMM15 og otte godkendte `dkss_lf`-proxyer; alle 673 bruger de centralt godkendte land-/vandpunkter.
+- Manuel pilot `#32257195240`/`#42` udvidede cachen til 27 gyldige timer med 625 mål, 629 mål/kilde-par og nul gitter-/lagustabilitet. Den efterfølgende normale `#32257480030`/`#3220` bestod hele kæden igen. Live `rr-20260819132304-210` bruger 13:00 som `productionReferenceAt` og har 210 zoner samt præcis 673/673 verificerede og scorede dele.
+- GitHubs tre aktive native schedules oprettede ingen nye events efter cirka 11:58 UTC trods korrekte cronudtryk på standardbranchen. Det er registreret som et eksternt driftsmæssigt hold; cron-job.org må ikke deaktiveres, før et nyt naturligt GitHub-event igen er verificeret.
 
 ## 4.0.235-produktionsbevis indarbejdet
 

@@ -10,6 +10,8 @@ Datasættets eget byggetidspunkt og ID følger stadig den virkelige kørselstid.
 
 Ændringen lemper ingen friskhedskontrol og ændrer ikke land-/vandpunkter, kystgeometri, strømdata, pile, scoreformel, kildeorden eller afstandsgrænser. En release kræver fortsat præcis 673/673 og alle fulde gates.
 
+Den centrale normale kørsel `#32253251841` beviste rettelsen i produktion: readiness valgte 12:00, hele bygningen beholdt 12:00, og fuld validering, releasegate, Supabase og Pages bestod. Den efterfølgende livekontrol fandt version 4.0.236 med 210 zoner og præcis 673 verificerede kystdele. Datasættets virkelige byggetid var 12:36, mens den faglige `productionReferenceAt` korrekt var 12:00.
+
 ## Zonepanelet viser nu én sammenhængende lokal virkelighed – 4.0.235
 
 Når RavRadar udpeger en bestemt kystdel som bedst, kommer delnavn, tidspunkt, RavScore, forklaring, debug og alle synlige vejrdata nu fra den samme lokale beregning. Tidligere kunne den lokale score eksempelvis beskrive Havsande sydkyst, mens strømfeltet i samme panel viste hovedzonens strøm. Det var to hver for sig gyldige dataposter, men en forkert kombination.

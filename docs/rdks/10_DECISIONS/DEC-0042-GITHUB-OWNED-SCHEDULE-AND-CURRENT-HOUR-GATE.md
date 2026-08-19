@@ -1,6 +1,6 @@
 # DEC-0042 – GitHub-ejet 15-minuttersplan og Copernicus-timegate
 
-- **Status:** Aktiv ejerbeslutning, lokalt implementeret i 4.0.234; naturligt GitHub-bevis afventer
+- **Status:** Aktiv og implementeret; cron-overdragelsen er midlertidigt sat på hold af manglende native eventlevering
 - **Besluttet:** 2026-08-19
 - **Ejerbeslutning:** Ja
 
@@ -26,7 +26,8 @@ Ejeren bad samtidig om at lade GitHub styre den normale 15-minutterskørsel og f
 - Pushrun `#32242510084`/`#3207` på overgangscommit `4ab7a659` bestod hele den fail-closed kæde, inklusive Supabase og Pages.
 - Det første nye naturlige GitHub-`schedule`-event `#32244914347`/`#3210` startede 2026-08-19T10:53:50Z, cirka ti minutter efter 10:44-planpunktet, og bestod current-hour-gate, fuld validering, releasegate, Supabase, Pages-artifact og deploy.
 - Eksternt hel-timeskald `#32245473213`/`#3211` startede 2026-08-19T11:00:39Z uden den nye eksakte time. Readiness-jobbet bestod, mens `build-and-prepare` og Pages-deploy blev sprunget over; ingen Supabase-sync eller artifact blev udført. Den tidligere røde 630/673-race er dermed direkte verificeret som et grønt sikkert skip.
-- Overdragelseskravet i punkt 7 er dermed opfyldt. Ejeren er instrueret i at deaktivere RavRadar-jobbene i cron-job.org; faktisk deaktivering og en efterfølgende native kørsel uden ekstern dublet skal kontrolleres ved næste mulighed.
+- Det historiske overdragelseskrav i punkt 7 blev dermed opfyldt. En senere driftsobservation samme dag viste imidlertid, at ingen af de tre aktive schedules fik nye events efter cirka 11:58 UTC, selv om `main` fortsat er standardbranch, workflowene står som `active`, og cronudtrykkene findes på `main`. GitHub dokumenterer, at planlagte events kan blive forsinket og ved høj belastning også droppet. Derfor er den faktiske cron-overdragelse sat på hold, indtil et nyt naturligt event igen er set.
+- Manuel pilot `#32257195240`/`#42` udvidede sikkert den private cache til 27 gyldige timer, 625 mål og 629 mål/kilde-par med nul gitter-/lagustabilitet. Normal ikke-tvungen produktion `#32257480030`/`#3220` bestod derefter 13:00-readiness, præcis 673/673, fuld validering, releasegate, Supabase, Pages-artifact og deploy. Det beviser workflowadfærden, men erstatter ikke beviset for, at GitHub selv leverer schedule-eventet.
 
 ## Uændret
 
