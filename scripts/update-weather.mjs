@@ -23,6 +23,7 @@ import { buildEffectiveRoutingCacheAlerts } from './lib/water-station-routing-al
 import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
 import { localPartRuntimeProperties } from './lib/local-part-runtime.mjs';
 import { mergeLiveCurrentPilotIntoRecord, verifiedLivePilotSource } from './lib/live-current-pilot.mjs';
+import { resolveProductionReferenceTime } from './lib/production-reference-time.mjs';
 
 const ZONES_PATH = 'data/zones.geojson';
 const COASTAL_PARTS_SOURCE_PATH = 'data/geometry-v2/active-national-coastal-parts/manifest.json';
@@ -1908,7 +1909,8 @@ const previous = await readPrevious();
 const dmiForecastStore = await readDmiForecastStore();
 const dmiBulkCache = await readDmiBulkCache();
 const liveCurrentPilot = await readLiveCurrentPilot();
-const generatedAt = new Date().toISOString();
+const buildGeneratedAt = new Date().toISOString();
+const generatedAt = resolveProductionReferenceTime(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR, new Date(buildGeneratedAt));
 const activeZoneIds = features.map(feature => feature.properties?.id).filter(Boolean);
 const nextDmiForecastStore = createPersistentDmiStore(dmiForecastStore, activeZoneIds, DMI_FORECAST_HOURS);
 const dmiBulkMergeStats = mergeBulkCacheIntoForecastStore(features, dmiBulkCache, nextDmiForecastStore, generatedAt);
@@ -1931,7 +1933,7 @@ async function writeDmiForecastStoreCheckpoint() {
   return dmiStoreWriteChain;
 }
 const output = {
-  schemaVersion: 4, generatedAt,
+  schemaVersion: 4, generatedAt: buildGeneratedAt, productionReferenceAt: generatedAt,
   source: 'Central RavRadar weather service',
   providerPriority: ['dmi', 'dmi-cache', 'open-meteo', 'met-norway', 'cache'],
   directionConventions: { windDirectionDeg: 'from', currentDirectionDeg: 'toward', waveDirectionDeg: 'from' },
@@ -2294,7 +2296,7 @@ if (dmiTransientFailure && fallbackZoneIds.length) {
 }
 
 // Alle filer fra samme kørsel får samme dataset-id. Frontenden må ikke blande filer fra forskellige kørsler.
-output.datasetId = `rr-${generatedAt.replace(/[^0-9]/g,'').slice(0,14)}-${Object.keys(output.zones).length}`;
+output.datasetId = `rr-${buildGeneratedAt.replace(/[^0-9]/g,'').slice(0,14)}-${Object.keys(output.zones).length}`;
 output.controlledLiveCurrentPilot = {
   mode: liveCurrentPilot?.mode ?? 'unavailable',
   enabled: liveCurrentPilot?.mode === 'controlled-live' && liveCurrentPilot?.enabled === true,
@@ -2309,7 +2311,7 @@ output.coastalParts = coastalPartsContract.enabled
 await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(output, null, 2)}\n`);
 await writePublicRuntimeFromFull(output);
 const previousHealth = await readHealth();
-const weatherHealth = buildWeatherHealth(previousHealth, output, generatedAt);
+const weatherHealth = buildWeatherHealth(previousHealth, output, buildGeneratedAt);
 await fs.writeFile(HEALTH_PATH, `${JSON.stringify(weatherHealth, null, 2)}\n`);
 await fs.writeFile(RUNTIME_DIAGNOSTICS_PATH, `${JSON.stringify(buildRuntimeDiagnostics(output, weatherHealth), null, 2)}\n`);
 

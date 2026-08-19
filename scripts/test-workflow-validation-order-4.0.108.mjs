@@ -54,6 +54,8 @@ for (const marker of [
   'Timed refresh deferred',
   "github.event_name == 'workflow_dispatch' && inputs.force != true",
   'CHECK_CURRENT_HOUR',
+  'target_hour: ${{ steps.cache-state.outputs.target_hour }}',
+  'RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ needs.current-hour-readiness.outputs.target_hour }}',
   "needs.current-hour-readiness.outputs.ready == 'true'",
 ]) {
   if (!text.includes(marker)) throw new Error(`Den GitHub-ejede 15-minuttersproduktion mangler ${marker}`);

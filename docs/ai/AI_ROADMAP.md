@@ -1,13 +1,21 @@
-# AI Roadmap – RavRadar 4.0.235
+# AI Roadmap – RavRadar 4.0.236
 
-## Aktiv kandidat – én lokal sandhed i hele zonepanelet
+## Aktiv P0 – planlagt produktion skal beholde den godkendte UTC-time
+
+1. **Rodårsag bevist:** `#32249924919`/`#3217` godkendte 11:00 ved readiness, krydsede kl. 12 under bygningen og valgte derefter 12:00. Den uændrede gate stoppede på 630/673 før release/deploy.
+2. **Implementeret lokalt:** readiness eksporterer sin eksakte time, og hele det planlagte `build-and-prepare` bruger samme `RAVRADAR_PRODUCTION_TARGET_HOUR` i Copernicus-fletning og vejrscoring.
+3. **Uændret sikkerhed:** push/manual uden readiness-lås bruger nutiden; alle friskheds-, 673/673-, release-, Supabase- og Pages-gates forbliver fail-closed.
+4. **Næste gate:** fuld lokal validering, afgrænset commit/push og central frisk 673/673-kørsel, helst inklusive et naturligt schedule-event.
+5. **Drift:** bekræft derefter, at cron-job.org er deaktiveret. GitHub er den ønskede normale scheduler. Syvdøgnseftermålingen kontrolleres højst dagligt, ikke hver time.
+
+## Produktionsverificeret – én lokal sandhed i hele zonepanelet
 
 1. **Implementeret lokalt:** nuvisningens score, tekst, debug og vejr kommer fra samme lokale vinder og tidspunkt; lokal mangel låner ikke hovedzonedata.
 2. **Implementeret lokalt:** zonepanelets femdøgnsfaner og den nationale prognose bruger samme lokale `selectLocalBestForDay`.
 3. **Implementeret lokalt:** runtime bærer kompakt vinderforklaring og viste vejrmetrikker pr. fælles time, og regressionen dækker 210 zoner, 673 dele, begge jagtformer og 2.100 femdøgnsvisninger.
-4. **Lokal gate bestået:** RDKS, målrettede tests, versionslukning og releasegate er grønne. Den fulde lokale kæde stopper kun på det kendte gamle 209/211-vejrsnapshot efter bestået geometri-v2. **Næste gate:** frisk central 673/673, Supabase, Pages, artifactmatch og direkte livebrowser.
-5. **Fortsat åbent uden kodeændring:** særskilt bevis for 673/673 ved samme aktuelle time. Hvis Limfjordshullet fortsat findes, kræver enhver ny kilde eller policyændring ejerens beslutning.
-6. **Drift:** bekræft cron-job.org deaktiveret, verificér native GitHub-kørsler uden dublet, og fortsæt den daglige syvdøgnseftermåling.
+4. **Central gate bestået:** `#32249770288`/`#3216` bestod frisk 673/673, fuld validering, releasegate, Supabase og Pages; live datasæt `rr-20260819115558-210` matcher artifactet.
+5. **Runtimeaudit bestået:** 420 aktuelle og 2.100 femdøgnsvisninger bruger kun én komplet lokal kontekst eller en eksplicit samlet hovedzonefallback.
+6. **Åben ekstern kontrol:** faktisk DOM-/kliktest af kort, pile, vinderområde, tekst, score og debug gentages efter reparation af Browser-pluginets native host/trusted-code-path.
 
 ## Afsluttet driftsrelease – GitHub-plan og Supabase-timeout
 
@@ -26,7 +34,7 @@
 5. Indfør særskilt bevis for 673/673 ved den samme valgte aktuelle time. Den eksisterende samlede 100 %-gate bevares; de tre observerede Limfjordszoner må ikke løses med en ny/fjern kilde uden ejerens planbeslutning.
 6. Afslut med fuld RDKS-, release-, central produktions- og direkte browservalidering. Den bestående 4.0.233-retningsisolation, kildeorden, afstandsgrænser, rollback og ejerpunkter må ikke ændres utilsigtet.
 
-Status: implementeret lokalt i 4.0.235 med landsdækkende regression. Central produktions- og direkte livebrowserverifikation afventer. Krævet model/indsats til slutvalideringen: GPT-5.6 Sol, Ekstra høj.
+Status: produktions- og runtimeverificeret i 4.0.235. Kun faktisk visuel plugin-kontrol afventer ekstern browserreparation. Krævet model/indsats til slutvalideringen: GPT-5.6 Sol, Ekstra høj.
 
 ## Aktuelt P1-fix 2026-08-18 – lokal scoreretning må ikke komme fra en anden kystdel
 

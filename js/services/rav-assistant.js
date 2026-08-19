@@ -1,5 +1,5 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.235";
-import { calculateRavScore } from "../core/score-engine.js?v=4.0.235";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.236";
+import { calculateRavScore } from "../core/score-engine.js?v=4.0.236";
 
 const KNOWLEDGE={
  equipment:'Til almindelig ravjagt er de mest nyttige ting: polariserede briller i dagslys, en god ravlygte i mørke, handsker, vindtæt tøj, en lille beholder til fund og kun waders/vadestav hvor forholdene er rolige og kendte.',

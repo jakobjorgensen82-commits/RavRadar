@@ -1,14 +1,23 @@
 # Aktuelt sessionshandoff – 2026-08-19
 
-## Aktiv 4.0.235-kandidat – lokal score, vejr og forklaring er samme post
+## Aktiv 4.0.236-kandidat – samme godkendte time gennem hele produktionskørslen
+
+- Schedule `#32249924919`/`#3217` godkendte 11:00 lige før timeskiftet, men den efterfølgende bygning valgte vægurets 12:00. Derfor manglede præcis de 43 Copernicus-dele, og 673/673-gaten stoppede korrekt på 630/673 uden release, Supabase eller Pages.
+- Workflowet eksporterer nu readiness-timen og binder `build-and-prepare`, live-piloten og `update-weather.mjs` til samme `RAVRADAR_PRODUCTION_TARGET_HOUR`. Push/manual uden lås bruger fortsat den aktuelle tid.
+- En målrettet regression simulerer 11:00 → 12:04, kræver fortsat 11:00 og afviser ikke-timeskarp input. DMI-, workflow- og heartbeatregressioner, RDKS, versionslukning og releasegate er grønne. Fuld lokal `validate` stopper efter grøn geometri-v2 på det kendte forældede 209/211-snapshot; commit/push og central frisk efterkontrol er næste trin.
+- Ejerens tre dirty diagnostik-/geometrifiler samt `data/live/coastal-parts-v2.json` må ikke stages. Ingen ejerpunkter, geometri, U/V, pile, score, kildeorden eller 673/673 er ændret.
+- Cron-job.org-deaktivering er endnu ikke bekræftet af ejeren. GitHub skal fortsat være normal scheduler; bed først ejeren om handling, når den centrale 4.0.236-kæde er verificeret.
+- Browserpluginets Chrome native host mangler, og trusted-code-path fejler. Den visuelle DOM-/kliktest gentages efter pluginreparation; register/CDP-bypass er ikke tilladt som projektrettelse.
+
+## Produktionsverificeret 4.0.235 – lokal score, vejr og forklaring er samme post
 
 - Browseraudittens præsentationsfejl er rettet lokalt: nuvisningen bruger vinderdelens eksakte lokale vejr og tid sammen med samme score, forklaring og debug.
 - Femdøgnsfanerne og den nationale prognose bruger samme `selectLocalBestForDay`. Runtime bærer vinderdelens kompakte komponenter, årsager, transportforklaring og viste vejrmetrikker pr. fælles time.
 - Lokal mangel låner aldrig hovedzonens værdier. Ufuldstændig fælles lokal række giver en tydeligt mærket hovedzonefallback, hvor score, tekst, debug og vejr kommer samlet fra hovedzonen.
 - Den nye regression er grøn for 210 zoner, 673 dele, begge jagtformer og 2.100 femdøgnsvisninger gennem offentlig startup-/detailfletning. Målrettede ældre tests er også grønne.
-- Ejerens fire dirty diagnostik-/geometrifiler og `data/live/coastal-parts-v2.json` skal fortsat holdes uden for commit. Der er ikke ændret land-/vandpunkter, kystgeometri, U/V, pilceller, scoreformel, kilder eller 673/673.
-- Lokal RDKS, målrettede tests, versionslukning og releasegate er grønne. Fuld `validate` stopper forventet på det forældede 209/211-vejrsnapshot efter bestået geometri-v2. Næste rækkefølge: commit/push kun tilsigtede filer; frisk central 673/673/Supabase/Pages; direkte livebrowser; opdatér dokumenterne med slutbevis.
-- Fælles aktuel timedækning er stadig et særskilt åbent bevis. Hvis de tre Limfjordszoner fortsat mangler en komplet fælles time, stoppes der til ejerens planbeslutning frem for at ændre kildeorden eller gate.
+- Ejerens tre dirty diagnostik-/geometrifiler samt `data/live/coastal-parts-v2.json` skal fortsat holdes uden for commit. Der er ikke ændret land-/vandpunkter, kystgeometri, U/V, pilceller, scoreformel, kilder eller 673/673.
+- `#32249770288`/`#3216` bestod frisk central 673/673, fuld validering, releasegate, Supabase og Pages. Live datasæt `rr-20260819115558-210` er hash-/runtimeverificeret for 420 aktuelle og 2.100 femdøgnsvisninger.
+- Maskinel runtimekontrol er afsluttet; kun den faktiske DOM-/kliktest af den online side afventer browserpluginets eksterne reparation.
 - Naturligt GitHub-schedule-bevis er allerede opnået. Bekræft fortsat, at cron-job.org faktisk er slået fra, og at næste native kørsel ikke har en ekstern dublet. Syvdøgnsovervågningen kører højst dagligt.
 
 ## Produktionsverificeret 4.0.234 – GitHub-ejet kvartersdrift og tabsfri Supabase-diagnostik
@@ -18,7 +27,7 @@
 - `runtime-diagnostics` gemmes tabsfrit som et versionsstyret gzip/base64-arkiv med SHA-256, bytekontrol og et lille læsbart resumé. Den repræsentative lokale payload falder fra 4.014.169 til 208.874 bytes (5,2 %), mens admin-download pakker og verificerer den fulde originale JSON. Rå data fjernes ikke.
 - Commit `7409d461` og `#32237507059`/`#3202` bestod frisk central 673/673, fuld validering, releasegate, komprimeret Supabase-sync og Pages. Naturligt schedule `#32244914347`/`#3210` bestod, og hel-timesdispatch `#32245473213`/`#3211` beviste sikkert skip uden build/deploy.
 - Ejeren er bedt om at deaktivere RavRadar-jobbene i cron-job.org. Faktisk deaktivering og mindst én efterfølgende native kørsel uden ekstern dublet skal fortsat bekræftes.
-- Der er ikke ændret land-/vandpunkter, kystgeometri, strømvektorer, scoremodel, kildeafstande eller dækningskrav. De fire allerede dirty diagnostik-/geometrifiler og `data/live/coastal-parts-v2.json` må ikke stages med denne ændring.
+- Der er ikke ændret land-/vandpunkter, kystgeometri, strømvektorer, scoremodel, kildeafstande eller dækningskrav. De tre allerede dirty diagnostik-/geometrifiler samt `data/live/coastal-parts-v2.json` må ikke stages med denne ændring.
 
 ## Nedlukningscheckpoint 2026-08-18 – fuld Chromium-audit, rettelse afventer
 

@@ -45,7 +45,11 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--control", type=Path, default=DEFAULT_CONTROL)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
-    parser.add_argument("--at", help="UTC build time; defaults to now")
+    parser.add_argument(
+        "--at",
+        default=os.getenv("RAVRADAR_PRODUCTION_TARGET_HOUR"),
+        help="UTC build time; defaults to the workflow-approved production hour or now",
+    )
     return parser.parse_args()
 
 

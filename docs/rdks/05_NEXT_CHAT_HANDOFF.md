@@ -1,14 +1,22 @@
 # RavRadar – overlevering til næste chat
 
-## Aktiv kandidat 4.0.235 – afslut før andre kodeopgaver
+## Aktiv kandidat 4.0.236 – lås hele schedule-kørslen til readiness-timen
+
+- Naturlig schedule `#32249924919`/`#3217` godkendte den komplette 11:00-time kl. 11:59, men den tunge bygning krydsede kl. 12 og valgte derefter 12:00. De 43 Copernicus-dele manglede på den nye time, så den uændrede gate stoppede sikkert ved 630/673 før releasegate, Supabase og Pages.
+- 4.0.236 eksporterer `current-hour-readiness`-timen og sætter den som `RAVRADAR_PRODUCTION_TARGET_HOUR` for hele `build-and-prepare`. Live-pilot og vejrbygning bruger dermed samme eksakte time gennem hele kørslen.
+- Push og bevidst manuel release uden readiness-output bruger fortsat nutiden og alle fulde gates. Ingen punkter, geometri, U/V, pile, score, kilder, afstande eller dækningskrav er ændret.
+- Ny timegrænseregression og målrettede workflow-/DMI-/heartbeattests er grønne. Næste trin er fuld validering, commit/push af kun tilsigtede filer og central 673/673-verifikation.
+- De tre allerede dirty diagnostik-/geometrifiler samt `data/live/coastal-parts-v2.json` er ejerens og må ikke stages. Untracked verify/cache-filer må heller ikke medtages.
+
+## Produktionsverificeret 4.0.235 – én sammenhængende lokal visning
 
 - Browser-P1 er implementeret lokalt: én lokal visningskontekst bærer del, tid, score, forklaring, debug og vejr gennem nuvisning og femdøgnsfaner.
 - National prognose og zonepanel bruger samme `selectLocalBestForDay`; runtime bevarer vinderdelens kompakte præsentationsfelter pr. fælles time.
 - Manglende lokal post låner ikke hovedzoneværdier. En ufuldstændig fælles lokal række vises som tydeligt mærket, samlet hovedzonefallback.
-- Syntetisk landsregression består for 210 zoner, 673 dele, begge jagtformer og 2.100 femdøgnsvisninger. RDKS, versionslukning og lokal releasegate er grønne; fuld lokal `validate` stopper forventet på det gamle 209/211-vejrsnapshot efter geometri-v2. Central 673/673/Supabase/Pages og direkte livebrowser mangler endnu.
-- Commit `2bd30234` er på `main`. Første pushrun `#32248949564`/`#3215` stoppede sikkert før release, Supabase og Pages, fordi workflowets fire User-Agents stadig bar 4.0.234. Workflowet er rettet til 4.0.235, fremtidige versionsløft opdaterer feltet automatisk, og både versionskontrol og releasegate kontrollerer nu alle forekomster før push. Push og central genkørsel af denne lille rettelse er næste trin.
-- Ingen ejerpunkter, geometri, U/V, pilceller, scoreformel, kildeorden, afstandsgrænser eller dækningskrav er ændret. De fire dirty diagnostik-/geometrifiler og `data/live/coastal-parts-v2.json` må ikke stages.
-- Fælles aktuel timedækning for alle 673 dele er fortsat et særskilt åbent bevis; ændret kildeplan kræver ejerens beslutning.
+- Syntetisk landsregression består for 210 zoner, 673 dele, begge jagtformer og 2.100 femdøgnsvisninger. `#32249770288`/`#3216` bestod derefter frisk central 673/673, fuld validering, releasegate, Supabase og Pages.
+- Live datasæt `rr-20260819115558-210` er metadata-, hash- og runtimeverificeret. Audit af 420 aktuelle og 2.100 femdøgnsvisninger fandt kun komplette lokale kontekster eller eksplicitte samlede hovedzonefallbacks.
+- Ingen ejerpunkter, geometri, U/V, pilceller, scoreformel, kildeorden, afstandsgrænser eller dækningskrav er ændret. De tre dirty diagnostik-/geometrifiler samt `data/live/coastal-parts-v2.json` må ikke stages.
+- Faktisk DOM-/kliktest af den online side afventer reparation/geninstallation af Codex-browserpluginets manglende Chrome native host og trusted-code-path. Det er ikke et runtime-modbevis, og der må ikke laves en projekt- eller registryomvej.
 
 ## Produktionsverificeret 4.0.234-drift
 

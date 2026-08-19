@@ -1,6 +1,18 @@
-# Implementeringsstatus – 4.0.235-kandidat
+# Implementeringsstatus – 4.0.236-kandidat
 
-## 4.0.235 – én lokal visningskontekst
+## 4.0.236 – låst produktionsreferencetime
+
+- [x] `current-hour-readiness` eksporterer den eksakte time, som blev godkendt mod den private Copernicus-cache.
+- [x] Planlagt `build-and-prepare` binder live-pilot og vejrbygning til samme `RAVRADAR_PRODUCTION_TARGET_HOUR`, også når jobbet krydser et UTC-timeskifte.
+- [x] Root-`generatedAt`, dataset-ID og health bruger stadig virkelig byggetid; den faglige lås ligger særskilt som `productionReferenceAt`.
+- [x] Push og manuel release uden readiness-output bevarer normal nutidsadfærd og hele den fail-closed kæde.
+- [x] Regression simulerer 11:00 → 12:04-løbet, beviser den låste time og afviser ikke-timeskarp konfiguration. Workflow-, DMI- og heartbeat-regressionerne består målrettet.
+- [x] `#32249924919`/`#3217` er dokumenteret som sikkert 630/673-stop uden releasegate, Supabase eller Pages; det var ikke en deployet datafejl.
+- [x] RDKS, målrettede regressionssuiter, versionslukning og lokal `release:gate` er grønne. Fuld lokal `validate` passerer geometri-v2 og stopper derefter på det kendte forældede 209/211-snapshot; runtimepipeline-testen mangler tilsvarende den centralt byggede `public-condition-details.json`.
+- [ ] Push den afgrænsede rettelse og verificér en frisk central schedule-/produktionskørsel med fortsat præcis 673/673.
+- [ ] Bekræft ejerens faktiske deaktivering af cron-job.org. GitHub forbliver den ønskede normale scheduler.
+
+## 4.0.235 – én lokal visningskontekst, produktionsverificeret
 
 - [x] Aktuel zonevisning bruger vinderdelens eksakte lokale vejrpost sammen med samme lokale score, forklaring og debug.
 - [x] Manglende lokal vejrpost låner ikke hovedzonens værdier; ufuldstændig fælles lokal række giver en tydeligt mærket, samlet hovedzonefallback.
@@ -10,7 +22,9 @@
 - [x] Lokale forklarings-, kort-, scorepresentation-, null-safety-, progressive payload- og versionsregressioner består målrettet før versionsløftet.
 - [x] RDKS, målrettede tests, versionslukning og lokal `release:gate` er grønne på 4.0.235. Fuld lokal `validate` gennemfører RDKS og hele geometri-v2-kæden og stopper derefter som forventet ved den kendte beskyttelse mod repositoryets forældede 209/211-vejrsnapshot; friskdata-leddene skal bevises centralt.
 - [x] Første centrale pushrun `#32248949564`/`#3215` stoppede fail-closed før release, Supabase og Pages på fire efterladte 4.0.234-User-Agents. Fejlen er mekanisk og ændrer ikke data, score eller 673/673-gaten. Workflow, versionsværktøj, versionskontrol og releasegate er rettet lokalt, så drift nu afvises før push.
-- [ ] Push den afgrænsede versionsrettelse; verificér frisk central 673/673, Supabase, Pages, artifact og direkte livebrowser før produktionslukning.
+- [x] Versionsrettelsen blev pushet, og `#32249770288`/`#3216` bestod frisk 673/673, fuld validering, releasegate, Supabase, Pages-artifact og deploy.
+- [x] Live datasæt `rr-20260819115558-210` er metadata-, hash- og runtimeverificeret. 420 aktuelle og 2.100 femdøgnsvisninger bruger kun en komplet lokal kontekst eller en eksplicit samlet hovedzonefallback.
+- [ ] Gentag den faktiske visuelle DOM-/kliktest, når Codex-browserpluginets Chrome native host/trusted-code-path er repareret. Maskinel runtimekontrol er grøn; browserkontrolværktøjet er den eneste blok.
 - [ ] Fælles aktuel timedækning er fortsat et særskilt åbent bevis. Kildeorden og 100 %-gate må ikke ændres uden ejerbeslutning.
 
 ## 4.0.234 – GitHub-plan og Supabase runtime-arkiv
@@ -28,7 +42,7 @@
 - [x] Eksternt hel-timeskald `#32245473213`/`#3211` uden den nye eksakte time sluttede grønt med `build-and-prepare` og Pages-deploy sprunget over; den tidligere røde 630/673-race er direkte produktionsverificeret som løst.
 - [ ] Bekræft, at cron-job.org-jobbene faktisk er deaktiveret, og verificér mindst én efterfølgende native kørsel uden ekstern dublet.
 
-## Browser-P1 – lokalt implementeret i 4.0.235, central verifikation afventer
+## Browser-P1 – runtime- og produktionsverificeret i 4.0.235, visuel plugin-test afventer
 
 - [x] Chromium-audit gennemførte 210 zoner, 673 dele, 420 aktuelle zone-/jagtformvisninger og 2.100 femdøgnsfaner uden at ændre projektdata.
 - [x] 673/673 ejerland-/vandpunkter matcher runtime; alle 673 strømvektorer, pilceller, kildeklasser og afstande er konsistente. Den tidligere 4.0.233-retningsisolation er ikke tilbagefaldet.
@@ -37,7 +51,8 @@
 - [x] Femdøgnsfanerne bruger samme lokale `bestForDay`-post som den nationale prognose.
 - [x] Systemisk regression dækker alle zoner, begge jagtformer og fem døgn samt det afgrænsede lokale-mod-hovedzone-modbevis.
 - [ ] Adskil samlet 673/673-proveniens fra 673/673 ved én eksakt fælles aktuel time. Tre Limfjordszoner havde ufuldstændig 20:00-række i det auditerede datasæt; eventuel kildeplan kræver ejerens dialog og må ikke sænke gaten.
-- [ ] Afslut fuld lokal og central RDKS-/release-/produktions- og browservalidering af 4.0.235.
+- [x] Central RDKS-/release-/produktionsvalidering og live runtimeaudit er afsluttet i `#32249770288`/`#3216` og datasæt `rr-20260819115558-210`.
+- [ ] Faktisk DOM-/kliktest af farver, pile, vinderområde, tekst, score og debug gentages efter reparation/geninstallation af Browser-pluginets native host. Manuelle registry- eller CDP-omveje er bevidst ikke brugt.
 
 ## 4.0.233 – score, historik, forklaring og kystdel deler ét punktpar
 

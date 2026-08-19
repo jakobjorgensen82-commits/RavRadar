@@ -1,13 +1,24 @@
 # Current truth – gældende projektviden
 
-## 4.0.235-kandidat – én lokal del og ét tidspunkt i hele den offentlige visning
+## 4.0.236-kandidat – én planlagt produktion beholder sin godkendte UTC-time
+
+- Den naturlige GitHub-schedule-kørsel `#32249924919`/`#3217` afdækkede et nyt, snævert løb over timeskiftet. Readiness-gaten godkendte den komplette 11:00-time kl. 11:59, men den tunge bygning fortsatte efter kl. 12 og valgte derfor 12:00. De 43 Copernicus-dele manglede på den nye time, så den uændrede 673/673-gate stoppede korrekt ved 630/673 før releasegate, Supabase og Pages.
+- 4.0.236 lader `current-hour-readiness` eksportere den godkendte eksakte time og binder hele `build-and-prepare` til den samme `RAVRADAR_PRODUCTION_TARGET_HOUR`. Både live-pilotbygningen og `update-weather.mjs` bruger dermed én sammenhængende referencetime, selv når arbejdet krydser et timeskifte.
+- Datasættets `generatedAt`, dataset-ID og sundhedsrapport bruger fortsat den virkelige byggetid. Den låste faglige time rapporteres særskilt som `productionReferenceAt`, så kvarterskørsler bevarer friskhed og unik identitet.
+- Push og bevidst manuel release uden en planlagt readiness-time bruger fortsat den aktuelle tid. Eksisterende friskheds-, 673/673-, release-, Supabase- og Pages-gates er uændrede og forbliver fail-closed.
+- Den nye regression simulerer godkendelse kl. 11 og bygning kl. 12:04, kræver fortsat 11:00, beviser normal nutid uden lås og afviser ikke-timeskarpe værdier. Central produktionsverifikation af 4.0.236 afventer push.
+- Ingen ejerpunkter, geometri, U/V, pilceller, score, kildeorden, afstandsgrænser eller rollback er ændret.
+
+## 4.0.235 produktionsverificeret – én lokal del og ét tidspunkt i hele den offentlige visning
 
 - Browseraudittens P1-rodårsag er rettet lokalt uden at ændre ejerens land-/vandpunkter: zonepanelet bygger nu score, tekst, debug og synlige vejrmetrikker fra samme lokale vinderdel og eksakte tidspunkt.
 - Den nationale prognose og zonepanelets femdøgnsfaner bruger samme fælles lokale `selectLocalBestForDay`. Runtime bevarer for hver fælles time vinderdelens scorekomponenter, forklaringsårsager, kompakte transportforklaring og viste vejrdata.
 - En lokal score uden lokal vejrpost låner ikke længere hovedzonens værdier. Ved ufuldstændig fælles lokal række bruges kun en tydeligt mærket hovedzonefallback, hvor score, tekst, debug og vejr kommer samlet fra hovedzonen, og ingen lokal del udpeges.
 - Den nye syntetiske landsregression er grøn for 210 zoner, 673 dele, begge jagtformer og 2.100 femdøgnsvisninger. Den sammenligner vinder, tidspunkt, score, strøm-/vindretning, vandtemperatur, årsager og transportforklaring gennem offentlig startup-/detailfletning.
-- Første centrale pushrun `#32248949564`/`#3215` hydrerede og byggede frisk data, men stoppede fail-closed før release, Supabase og Pages på fire workflow-User-Agents med den forrige version 4.0.234. Det er en mekanisk versionslukningsfejl, ikke et data- eller fysikmodbevis. Workflowet er rettet, `set-version.mjs` opdaterer nu aktive workflow-User-Agents, og både versionskontrol og lokal releasegate håndhæver samsvar.
-- 4.0.235 er fortsat kandidat. RDKS, målrettede tests, versionslukning og `release:gate` er grønne; den fulde lokale `validate` stopper som forventet på det kendte forældede 209/211-vejrsnapshot efter bestået geometri-v2. En ny frisk central 673/673-produktion, Supabase, Pages og direkte livebrowser mangler, før problemet kan lukkes som produktionsverificeret. Se DEC-0044.
+- Første centrale pushrun `#32248949564`/`#3215` stoppede fail-closed på fire workflow-User-Agents med den forrige version. Efter versionslukningen bestod `#32249770288`/`#3216` frisk central geometri, fuld `validate`, releasegate, præcis 673/673, Supabase, Pages-artifact og deploy.
+- Det aktive datasæt `rr-20260819115558-210` er direkte metadata-, hash- og runtimeverificeret: 210 zoner, 673 dele, 622 DMI + 43 Copernicus + otte godkendte proxyer, `controlled-live`, 168 timers retention og `credentialsIncluded=false`.
+- Den maskinelle liveaudit dækker 420 aktuelle zone-/jagtformvisninger og 2.100 femdøgnsvisninger. 400 aktuelle visninger er komplette lokale kontekster og 20 eksplicitte hovedzonefallbacks; femdøgnsvisningen har 1.956 lokale kontekster og 144 eksplicitte fallbacks. Identitet, tidspunkt, score, retninger, metrikker og forklaring hænger sammen i begge grene.
+- Den faktiske DOM-/kliktest er fortsat blokeret af Codex-browserpluginets manglende Chrome native-host-registrering og særskilte trusted-code-path-fejl. Det er et eksternt kontrolværktøjsproblem, ikke et modbevis mod datasæt eller runtime. Geninstallér Browser-pluginet og gentag den visuelle test, når ejeren er tilbage. Se DEC-0044.
 - Kystgeometri, centrale punkter, U/V, pilceller, scoreformel, kildeorden, afstandsgrænser, rollback og 673/673-gaten er uændrede.
 
 ## 4.0.234 produktionsverificeret – GitHub-plan og tabsfri Supabase-diagnostik

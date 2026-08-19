@@ -1,6 +1,6 @@
 # DEC-0044 – Én lokal visningskontekst gennem hele zonepanelet
 
-- **Status:** Aktiv beslutning, lokalt implementeret i 4.0.235; central produktion og direkte livebrowser afventer
+- **Status:** Aktiv og produktionsverificeret i 4.0.235; direkte visuel plugin-kontrol afventer ekstern browserreparation
 - **Dato:** 2026-08-19
 
 ## Beslutning
@@ -21,3 +21,9 @@ Beslutningen flytter eller omskriver ingen centralt gemte land-/vandpunkter, kys
 - Eksisterende lokale score-, forklarings-, kort-, null-safety- og payloadtests skal bestå.
 - Frisk central validering, releasegate, Supabase, Pages og direkte livebrowser skal bestå, før rettelsen kaldes produktionsverificeret.
 - Fælles aktuel timedækning skal fortsat rapporteres særskilt fra artifactets samlede 673/673-proveniens. En ny kilde eller lavere gate kræver ejerbeslutning.
+
+## Produktionsbevis
+
+`#32249770288`/`#3216` bestod frisk central 673/673, fuld validering, releasegate, Supabase og Pages. Live datasæt `rr-20260819115558-210` er hash- og runtimeverificeret for 210 zoner, 673 dele, 420 aktuelle visninger og 2.100 femdøgnsvisninger. Alle visninger bruger enten én komplet lokal kontekst eller en eksplicit samlet hovedzonefallback.
+
+Den faktiske DOM-/kliktest af den online side skal gentages, når Codex-browserpluginets Chrome native host og trusted-code-path virker igen. Dette ændrer ikke det centrale data-, runtime- eller deploybevis.

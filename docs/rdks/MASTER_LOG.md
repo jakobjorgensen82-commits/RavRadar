@@ -1,3 +1,11 @@
+## 2026-08-19 – 4.0.236 låser schedule-jobbet til readiness-timen
+
+- Naturlig schedule `#32249924919`/`#3217` godkendte komplet 11:00-cache kl. 11:59, men den tunge bygning krydsede kl. 12 og valgte derefter 12:00. De 43 Copernicus-dele manglede, og 673/673-gaten stoppede korrekt ved 630/673 før releasegate, Supabase og Pages.
+- `current-hour-readiness` eksporterer nu den godkendte time, og `build-and-prepare` binder live-pilot samt `update-weather.mjs` til den samme `RAVRADAR_PRODUCTION_TARGET_HOUR`. Push/manual uden readiness-output bruger fortsat nutiden.
+- Root-`generatedAt`, dataset-ID og health bruger fortsat virkelig byggetid; den låste faglige time fremgår særskilt som `productionReferenceAt`.
+- Ny regression simulerer timeskiftet og afviser ikke-timeskarpt input. DMI-, workflow- og heartbeatregressioner består målrettet. Ingen punkter, geometri, U/V, pile, score, kildeorden, afstand eller 673/673-gate er ændret.
+- 4.0.235 er samtidig afsluttet som produktions-/runtimeverificeret: `#32249770288`/`#3216` bestod hele kæden, og live datasæt `rr-20260819115558-210` er hash-/runtimeauditeret for 420 aktuelle og 2.100 femdøgnsvisninger. Faktisk DOM-/kliktest afventer Browser-pluginets eksterne native-host/trusted-code-path-reparation.
+
 ## 2026-08-19 – 4.0.235 samler hele zonepanelet om én lokal del og tid
 
 - Den landsdækkende Chromium-audit viste, at den lokale vinder, RavScore, tekst og debug var korrekte, mens de synlige nu-metrikker stadig kom fra hovedzonen, og femdøgnsfanerne valgte tidspunkt med hovedzonens generiske algoritme.
