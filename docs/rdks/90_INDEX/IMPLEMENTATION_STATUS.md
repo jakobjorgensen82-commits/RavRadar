@@ -1,4 +1,4 @@
-# Implementeringsstatus – 4.0.237 lokal kandidat
+# Implementeringsstatus – 4.0.237 produktionsverificeret
 
 ## 4.0.237 – fælles aktuel zonetime
 
@@ -9,8 +9,8 @@
 - [x] Nærzoom accepterer kun lokale pile, hvis delens current-tid er identisk med zonens reference.
 - [x] Målrettede regressioner består for progressiv runtime, 210 zoner, 673 dele, 2.100 femdøgnsvisninger, kortpile, DMI-bulk/forecast og kontrolleret Copernicus-livefletning.
 - [x] Ejerens punkter, geometri, U/V, scoreformel, kildeorden, afstande, rollback og dynamiske 673/673-gate er uændrede.
-- [ ] Kør RDKS-, versions- og releasevalidering, commit kun tilsigtede filer, og push kandidaten.
-- [ ] Kræv frisk central 210-zone/673-dels produktion, fulde gates, Supabase, Pages og direkte livekontrol af 673/673 dele på deres respektive `currentReferenceAt`.
+- [x] RDKS-, versions- og releasevalidering er grøn; commit `9c971bc1` er pushet til `main` uden de fire beskyttede dirty datafiler.
+- [x] `#32264833170` bestod frisk central 210-zone/673-dels produktion, fuld `validate`, releasegate, Supabase og Pages. Live `rr-20260819143933-210` har 210/210 komplette zoner og 673/673 dele på deres respektive `currentReferenceAt`; 196 zoner bruger 15:00Z og 14 bruger 14:00Z.
 
 ## 4.0.236 – låst produktionsreferencetime
 
@@ -24,7 +24,7 @@
 - [x] Commit `668a1cdd` er på `main`, og normal ikke-tvungen produktion `#32253251841`/`#3219` bestod readiness med låst 12:00-time, frisk 673/673, fuld validering, releasegate, Supabase, Pages-artifact og deploy.
 - [x] Live 4.0.236/datasæt `rr-20260819123607-210` er direkte metadata-verificeret med 210 zoner, 673/673, 622 DMI + 39 Baltic + fire AMM15 + otte tilladte proxyer, `productionReferenceAt=12:00`, `controlled-live` og `credentialsIncluded=false`.
 - [x] Manuel pilot `#32257195240`/`#42` udvidede cachen til 27 gyldige timer med 625 mål, 629 mål/kilde-par og nul gitter-/lagustabilitet. Normal `#32257480030`/`#3220` bestod derefter 13:00-readiness, 673/673, fuld validering, releasegate, Supabase og Pages; live `rr-20260819132304-210` matcher 13:00.
-- [ ] Ophæv først schedulerholdet efter et nyt naturligt event. Alle tre workflows er aktive og korrekt deklareret på `main`, men ingen native schedule-events er oprettet efter cirka 11:58 UTC. cron-job.org må ikke deaktiveres inden nyt bevis.
+- [x] Schedulerholdet er ophævet efter tre nye naturlige grønne events: produktion `#32262008874`, Copernicus-pilot `#32262250342` og cachebevaring `#32262276171`.
 - [ ] Bekræft ejerens faktiske deaktivering af cron-job.org. GitHub forbliver den ønskede normale scheduler.
 
 ## 4.0.235 – én lokal visningskontekst, produktionsverificeret
@@ -55,7 +55,8 @@
 - [x] Commit `7409d461` og pushrun `#32237507059`/`#3202` beviser central geometri, fuld validering, releasegate, 673/673, komprimeret Supabase-sync på otte sekunder, Pages-artifact og deploy. Live 4.0.234/datasæt `rr-20260819093242-210` er direkte metadata-verificeret med 210 zoner, 673/673, `controlled-live`, credentialfri historik og 168 timers retention.
 - [x] Naturligt GitHub-`schedule`-event `#32244914347`/`#3210` på `4ab7a659` bestod current-hour-gate, fuld validering, releasegate, Supabase, Pages-artifact og deploy. Ejeren er bedt om at deaktivere RavRadar-jobbene i cron-job.org.
 - [x] Eksternt hel-timeskald `#32245473213`/`#3211` uden den nye eksakte time sluttede grønt med `build-and-prepare` og Pages-deploy sprunget over; den tidligere røde 630/673-race er direkte produktionsverificeret som løst.
-- [ ] Bekræft, at cron-job.org-jobbene faktisk er deaktiveret, og verificér mindst én efterfølgende native kørsel uden ekstern dublet.
+- [x] Efterfølgende native produktion, pilot og cachebevaring er hver verificeret grønne i `#32262008874`, `#32262250342` og `#32262276171`.
+- [ ] Bekræft, at cron-job.org-jobbene faktisk er deaktiveret.
 
 ## Browser-P1 – runtime- og produktionsverificeret i 4.0.235, visuel plugin-test afventer
 

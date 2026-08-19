@@ -1,11 +1,12 @@
 # RavRadar – overlevering til næste chat
 
-## Aktiv kandidat 4.0.237 – én komplet aktuel time pr. zone
+## Produktionsverificeret 4.0.237 – én komplet aktuel time pr. zone
 
 - Metadataaudit af det nuværende 210-zone/673-dels livegrundlag viser en komplet fælles række i alle zoner, men den hidtidige runtime havde kun 642/673 dele på deres zones nærmeste komplette time. 31 dele brugte en anden nær-time.
 - 673/673-kildegaten er fortsat gyldig og uændret. Den nye særskilte regel er, at den viste lokale sammenligning låses pr. zone til én eksakt komplet time; der kræves ikke én national klokktime for hele landet.
 - 4.0.237 beregner `currentReferenceAt`, bygger delens current/flowpunkt på den tid og fører referencen gennem offentlig runtime, manifest, fletning og frontend. Nærzoom viser kun tidsjusterede lokale pile.
-- Målrettede regressioner for 210 zoner, 673 dele, 2.100 femdøgnsvisninger, pile, DMI og Copernicus er grønne. Næste trin er RDKS/releasevalidering, tilsigtet commit/push og frisk central/live 673/673-verifikation.
+- Målrettede regressioner for 210 zoner, 673 dele, 2.100 femdøgnsvisninger, pile, DMI og Copernicus er grønne. Commit `9c971bc1` og `#32264833170` bestod frisk 673/673, fuld `validate`, releasegate, Supabase og Pages.
+- Direkte liveaudit af `rr-20260819143933-210` fandt 210/210 komplette zoner og 673/673 dele på zonens valgte `currentReferenceAt`; 196 zoner bruger 15:00Z og 14 bruger 14:00Z. Start-/detailhashes matcher, `controlled-live` er aktivt, og historikken er credentialfri med 168 timers retention.
 - Ejerens land-/vandpunkter er ikke flyttet eller omskrevet. De fire kendte dirty datafiler og alle untracked verify/cachefiler må ikke stages.
 
 ## Produktionsverificeret 4.0.236 – lås hele schedule-kørslen til readiness-timen
@@ -13,7 +14,8 @@
 - Naturlig schedule `#32249924919`/`#3217` godkendte den komplette 11:00-time kl. 11:59, men den tunge bygning krydsede kl. 12 og valgte derefter 12:00. De 43 Copernicus-dele manglede på den nye time, så den uændrede gate stoppede sikkert ved 630/673 før releasegate, Supabase og Pages.
 - 4.0.236 eksporterer `current-hour-readiness`-timen og sætter den som `RAVRADAR_PRODUCTION_TARGET_HOUR` for hele `build-and-prepare`. Live-pilot og vejrbygning bruger dermed samme eksakte time gennem hele kørslen.
 - Push og bevidst manuel release uden readiness-output bruger fortsat nutiden og alle fulde gates. Ingen punkter, geometri, U/V, pile, score, kilder, afstande eller dækningskrav er ændret.
-- Ny timegrænseregression og målrettede workflow-/DMI-/heartbeattests er grønne. Næste trin er fuld validering, commit/push af kun tilsigtede filer og central 673/673-verifikation.
+- Ny timegrænseregression og målrettede workflow-/DMI-/heartbeattests er grønne. Den fulde centrale validering er efterfølgende afsluttet, senest i `#32264833170` på 4.0.237.
+- GitHubs egne naturlige events er igen leveret og grønne for produktion `#32262008874`, Copernicus-pilot `#32262250342` og cachebevaring `#32262276171`. Ejeren kan nu deaktivere RavRadar-jobbene i cron-job.org; bekræftelsen af den faktiske deaktivering er fortsat åben.
 - De tre allerede dirty diagnostik-/geometrifiler samt `data/live/coastal-parts-v2.json` er ejerens og må ikke stages. Untracked verify/cache-filer må heller ikke medtages.
 
 ## Produktionsverificeret 4.0.235 – én sammenhængende lokal visning
@@ -33,7 +35,7 @@
 - Overgangens almindelige cron-job.org-`workflow_dispatch` bruger nu samme current-hour-gate, så et hel-timeskald uden den nye Copernicus-time udsættes uden rød release. Push og en bevidst manuel `force=true`-release bevarer hele kæden.
 - Arkivet indeholder hele originalen som deterministisk gzip/base64 med SHA-256 og bytekontrol. Admin-download dekoder og verificerer filen efter sædvanlig adgangskontrol. Den målte repræsentative størrelse er 208.874 bytes mod 4.014.169 bytes kompakt original.
 - Lokal RDKS, version, geometri-v2, runtimeuafhængig testmatrix og releasegate er grønne. Commit `7409d461` er fast-forwardet til `main`; pushrun `#32237507059`/`#3202` bestod frisk central geometri, fuld validering, releasegate, 673/673, Supabase på otte sekunder, Pages og deploy. Overgangscommit `4ab7a659` bestod derefter i pushrun `#32242510084`/`#3207` og eksterne gentagelser `#3208`/`#3209`.
-- Det første nye naturlige GitHub-`schedule`-event `#32244914347`/`#3210` startede 2026-08-19T10:53:50Z og bestod current-hour-gate, fuld validering, releasegate, Supabase, Pages-artifact og deploy. Overdragelsesgaten er opfyldt, og ejeren er bedt om at deaktivere RavRadar-jobbene i cron-job.org. Bekræft ved næste opstart, at de faktisk er slået fra, og verificér derefter mindst én efterfølgende native kørsel uden ekstern dublet.
+- Det første nye naturlige GitHub-`schedule`-event `#32244914347`/`#3210` startede 2026-08-19T10:53:50Z og bestod current-hour-gate, fuld validering, releasegate, Supabase, Pages-artifact og deploy. Senere naturlige events er også grønne for produktion `#32262008874`, pilot `#32262250342` og cachebevaring `#32262276171`. Overdragelsesgaten er opfyldt; kun ejerens faktiske deaktivering af RavRadar-jobbene i cron-job.org skal bekræftes.
 - Eksternt hel-timeskald `#32245473213`/`#3211` beviste samtidig den nye sikre udsættelse: readiness var grøn, mens build, Supabase og Pages blev sprunget over. Dokumentationspush `#32245605472`/`#3212` bestod derefter hele den centrale kæde.
 - Der er ikke ændret ejerens land-/vandpunkter eller anden geometri.
 
@@ -43,14 +45,13 @@ Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde sa
 
 ## Aktuel sandhed
 
-- **Nyeste åbne P1 er browserpræsentationen, ikke ejerens punktpar eller strømvektorer.** En fuld Chromium-audit 2026-08-18 bekræftede 210 zoner, 673 dele, 622 DMI + 43 Copernicus + 8 godkendte proxyer, ejersource = runtimepunkt for 673/673 og korrekte U/V-retninger/pilceller inden for tolerancen. Ingen land-/vandpunkter blev ændret.
-- Zonepanelet blander imidlertid hovedzonens aktuelle vejrkort med den lokale vinderdels score, forklaring og debug. 371/414 sammenlignelige aktuelle visninger havde forskellig synlig og lokal strømretning. Blåvand viste vinderen `Havsande – sydkyst` og lokal NV 315° i debug, men N 11° i det synlige strømkort.
-- Femdøgnspanelet bruger tilsvarende hovedzonens generiske dagsvalg i stedet for den lokale kystdels `bestForDay`: 1.660/1.964 sammenlignelige faner havde forskellig score, og 897 havde forskelligt bedste tidspunkt. En rettelse skal føre én og samme lokale del/tid/vejrpost gennem navn, kort, score, tekst, debug og alle metrikker; fallback skal være eksplicit.
+- **Den åbne browser-P1 er nu kun den faktiske visuelle DOM-/kliktest, ikke projektets data- eller runtimekobling.** En fuld Chromium-audit 2026-08-18 bekræftede 210 zoner, 673 dele, 622 DMI + 43 Copernicus + 8 godkendte proxyer, ejersource = runtimepunkt for 673/673 og korrekte U/V-retninger/pilceller inden for tolerancen. Ingen land-/vandpunkter blev ændret.
+- Den tidligere blanding af hovedzonens vejrkort med den lokale vinderdels score, forklaring og debug er rettet og produktionsverificeret i 4.0.235. Zonepanelet, femdøgnspanelet og national prognose bruger nu samme lokale del/tid/vejrpost eller en samlet, eksplicit hovedzonefallback.
 - Det historiske 20:00-eksempel med ufuldstændige rækker i `DK-B05-12`, `DK-B05-17` og `DK-B05-18` er nu afklaret som et zonevist udvælgelsesproblem, ikke som behov for én national fælles time. 4.0.237 vælger nærmeste komplette række særskilt pr. zone og bevarer fortsat 673/673-kildegaten.
-- **Næste sikre kodeforløb er erstattet af kandidatsektionen øverst:** den sammenhængende lokale visning er produktionsverificeret i 4.0.235, og 4.0.237 afventer nu central/live verifikation af den zonevise current-reference. Brug fortsat GPT-5.6 Sol med Ekstra høj til slutvalideringen.
+- **Den zonevise current-reference er afsluttet:** 4.0.237 er centralt og live produktionsverificeret som beskrevet øverst. Næste browsertrin er den faktiske systematiske visuelle kontrol, når Codex-browserpluginets eksterne native-host/trusted-code-path-fejl er repareret. Brug fortsat GPT-5.6 Sol med Ekstra høj til den slutkontrol.
 
 - Ejeren har godkendt kontrolleret live-aktivering af Copernicus/regionalproxy på den nuværende ikke-offentlige side. Gyldige U/V-data, fuld provenance og nye pile må publiceres; kun credentials forbliver hemmelige. Syvdøgnsstabiliteten eftermåles live.
-- 4.0.233 er gældende produktionsverificeret liveversion. Commit `286ea9e5`, `#32165688946` og `#32165969786` bestod frisk central geometri, vejrbygning, 673/673, fuld validering, releasegate, Supabase og Pages. Direkte liveaudit af `rr-20260818173528-210` kontrollerede 673 dele og 43.064 prognose-/jagtformstimer med nul lokale anker-, vinder-, retning-, pil/grid-, provenance- eller afstandsfejl.
+- 4.0.237 er gældende produktionsverificeret liveversion. Commit `9c971bc1` og `#32264833170` bestod frisk central geometri, vejrbygning, 673/673, fuld validering, releasegate, Supabase og Pages. Direkte liveaudit af `rr-20260819143933-210` kontrollerede 210/210 komplette zoner og 673/673 tidsjusterede dele; den tidligere 4.0.233-anker-/pilintegritet er bevaret.
 - Den aktive runtime bygger en separat online `data/live/current-pilot-history.json`, fletter eksakt DMI-first strøm til RavScore og kort og placerer hver pil på den valgte posts faktiske kildecelle. Normal gate er fortsat 673/673.
 - `data/current-live-pilot-control.json` giver en auditerbar `dmi-only-rollback`, som fjerner supplementet fra score/pile og lader berørte strømme være `missing`, mens friske vind-, bølge-, vandstands- og øvrige prognoser fortsætter. Rollback må ikke kalde reduceret dækning fuld.
 - Commit `5a7780e4` og central `#32158041877`/support `#3127` har bestået præcis 673/673, fuld validering, releasegate, Supabase, Pages-artifact og deploy. Det første aktiveringsdatasæt `rr-20260818160548-210` blev direkte HTTP-/hashverificeret live med 673 scorede dele og credentialfri historik. Efterkontrol `#32160090899`/support `#3129` bestod igen hele kæden og live artifactmatch.

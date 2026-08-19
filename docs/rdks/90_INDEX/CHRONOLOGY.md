@@ -6,7 +6,7 @@
 2. Ejeren krævede en systemisk rettelse for alle 210 zoner og 673 kystdele uden ændring af de centralt godkendte land-/vandpunkter.
 3. DEC-0044 fastlægger én fælles lokal visningskontekst for del, tid, score, forklaring, debug og vejr samt eksplicit samlet hovedzonefallback ved reel lokal mangel.
 4. 4.0.235 implementerer samme lokale `selectLocalBestForDay` i national prognose og zonepanel og bærer vinderdelens kompakte præsentationsgrundlag pr. fælles time.
-5. Den syntetiske landsregression består for 210 zoner, 673 dele, begge jagtformer og 2.100 femdøgnsvisninger. Central produktion og direkte livebrowser afventer.
+5. Den syntetiske landsregression består for 210 zoner, 673 dele, begge jagtformer og 2.100 femdøgnsvisninger. 4.0.235 blev centralt/runtimeverificeret, og den efterfølgende zonevise tidslås i 4.0.237 blev produktionsverificeret i `#32264833170` og live `rr-20260819143933-210`. Kun den faktiske visuelle pluginbaserede DOM-/kliktest afventer ekstern browserreparation.
 
 ## 2026-08-19 – GitHub-ejet produktion og Supabase-timeout
 
@@ -14,7 +14,7 @@
 2. Actions-evidensen delte fejlene i to: ved timeskift manglede den nye eksakte Copernicus-time og produktionen stoppede på 630/673; senere fulddækkede runs kunne stoppe på Supabase/PostgreSQL `57014` ved den store runtime-diagnostik.
 3. DEC-0042 forskyder GitHub-produktionen til minut 14/29/44/59, piloten til minut 6 og kræver en readiness-gate uden artifact/deploy ved manglende time. cron-job.org slukkes først efter naturligt schedule-bevis.
 4. DEC-0043 bevarer den komplette diagnostik tabsfrit som gzip/base64 med SHA-256 og byteantal under samme beskyttede nøgle. Den repræsentative payload falder fra 4.014.169 til 208.874 byte.
-5. Commit `7409d461` og pushrun `#32237507059`/`#3202` bestod fuld validering, releasegate, 673/673, Supabase og Pages. Naturligt schedule `#32244914347`/`#3210` bestod også; kun ejerens bekræftelse af deaktiveret cron-job.org og en efterfølgende native kørsel uden dublet mangler.
+5. Commit `7409d461` og pushrun `#32237507059`/`#3202` bestod fuld validering, releasegate, 673/673, Supabase og Pages. Naturligt schedule `#32244914347`/`#3210` bestod også; senere naturlige events er grønne for produktion `#32262008874`, pilot `#32262250342` og cachebevaring `#32262276171`. Kun ejerens faktiske deaktivering af cron-job.org mangler.
 
 ## 2026-08-18 – supplerende strøm og afgrænset Limfjordsproxy
 
@@ -32,7 +32,7 @@
 12. GitHubs keepalive-cron leverede stadig intet event før #32139054129 gemte endnu en stor DMI-cache. #32139755594 fandt Copernicus-cachen væk. Produktionsjobbet fik derfor en restore-only pre-DMI-refresh, så den lille private cache røres umiddelbart før den cacheaktivitet, der kan udløse LRU-fortrængning.
 13. #32140001424/#32140470201 genopbyggede 11/12 UTC kontrolleret. Det rensede slutartifact bekræfter igen 1.258 records ved to tider, 625 unikke mål og nul grid-/lagskift uden rå U/V- eller credentiallæk.
 14. `b6cf0383`/#32140865173 ramte to-timers-cachen før DMI og bevarede den gennem en ny 2,905-GB DMI-save. Regressionerne bestod, 622/673 blev fortsat afvist, og #32141443152 ramte samme cache efterfølgende. LRU-beskyttelsen er dermed centralt bevist; næste naturlige pilot skal udvide tidsserien.
-15. Manuel aktuel-time-pilot #32141772134 tilføjede 13:00Z uden backfill og gav 1.887 records ved tre tider med nul grid-/lagskift og nul supportlæk. Selve udvidelsen er bevist; naturligt schedule-event efter rettelsen afventer fortsat.
+15. Manuel aktuel-time-pilot #32141772134 tilføjede 13:00Z uden backfill og gav 1.887 records ved tre tider med nul grid-/lagskift og nul supportlæk. Senere naturlige pilot- og cachebevaringsruns `#32262250342` og `#32262276171` er grønne; det fulde naturlige 168-timersvindue afventer fortsat.
 16. Mens naturlig drift opsamles, blev syvdøgnsgrænsen gjort til en normal release-regression: præcis 168 timer bevares, beskadigede/ældre/fremtidige restoreposter fjernes, dubletter samles, og nye ugyldige poster stopper lukket. Det naturlige fulde syvdøgnsvindue afventer stadig.
 17. `7f22e8e1`/`#32143798560` beviste retentionregressionen centralt. Den bestod sammen med 100 %-kontrakttesten; den faktiske 622/673-audit forhindrede Supabase/Pages, og tre-timers-Copernicus-cachen overlevede igen DMI-cachearbejdet.
 18. GitHub leverede fortsat ingen nye native timeevents. Keepalive blev derfor koblet til `requested` fra den allerede eksternt startede produktionskørsel. Den gendanner read-only, kontrollerer aktuel UTC-time uden rå log og dispatcher kun den private pilot ved en manglende time. Lokal fail-closed regression består; central automatisk hændelseskæde afventer første pushbevis.

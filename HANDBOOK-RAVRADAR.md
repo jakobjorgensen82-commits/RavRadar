@@ -8,9 +8,9 @@ Den tidligere udvælger fandt først den nærmeste gyldige strømrecord for hver
 
 Fra 4.0.237 finder RavRadar i stedet den nærmeste komplette fælles række pr. zone. Begge jagtformer og alle zonens forventede kystdele skal være beregnelige på samme eksakte tid. Denne tid gemmes som `currentReferenceAt` og bruges samlet til vinder, RavScore, vejr, forklaring, debug og lokale pile. En pil må kun bruge den dokumenterede modelcelle fra netop denne time; nabotimens celle lånes ikke.
 
-Den sikre kontrol af det aktuelle livegrundlag fandt en komplet fælles time i alle 210 zoner. 192 kan bruge produktionsreferencetimen, 14 bruger nærmeste komplette time én time før, og fire én time efter. Den hidtidige runtime havde 31 af 673 dele på en anden nær-time; de samles nu med resten af deres zone ved næste friske bygning.
+Kontrollen før frigivelsen fandt en komplet fælles time i alle 210 zoner. Den hidtidige runtime havde 31 af 673 dele på en anden nær-time. I det produktionsverificerede datasæt `rr-20260819143933-210` står alle 673 dele nu på deres zones valgte fælles time: 196 zoner bruger 15:00Z og 14 bruger 14:00Z.
 
-Rettelsen ændrer ikke ejerens blå/grønne land-/vandpunkter, U/V-data, kildeorden, afstandsgrænser, scoreformel, rollback eller kravet om præcis 673/673. Fuld produktions- og liveverifikation af 4.0.237 afventer den centrale kæde.
+Rettelsen ændrer ikke ejerens blå/grønne land-/vandpunkter, U/V-data, kildeorden, afstandsgrænser, scoreformel, rollback eller kravet om præcis 673/673. Commit `9c971bc1` og den fulde centrale kørsel `#32264833170` bestod frisk data, validering, releasegate, Supabase og Pages; direkte liveaudit fandt 210/210 komplette zoner og 673/673 tidsjusterede dele.
 
 ## Én planlagt kørsel beholder den time, som blev godkendt – 4.0.236
 
@@ -40,7 +40,7 @@ RavRadar starter nu selv den normale vejropdatering i GitHub Actions ved minut 1
 
 En lille gate kontrollerer den private cache, før det tunge job starter. Mangler den eksakte aktuelle time, bygges der intet vejr, Supabase-dokument eller Pages-artifact. Det private heartbeat bestiller piloten, og næste planlagte 15-minutterskørsel prøver igen. Fra 4.0.236 følger den time, som gaten faktisk godkendte, med gennem hele bygningen; det lukker også løbet, hvor jobbet starter før og fortsætter efter et timeskifte. Manuelle og push-udløste releases er fortsat fail-closed.
 
-cron-job.org må først deaktiveres, når mindst én naturlig GitHub-planlagt kørsel er verificeret. Ændringen flytter ingen land-/vandpunkter og ændrer hverken kildeorden, score, pile eller kravet om præcis 673/673.
+GitHubs naturlige schedules er nu verificeret grønne for produktion `#32262008874`, Copernicus-pilot `#32262250342` og cachebevaring `#32262276171`. RavRadar-jobbene i cron-job.org kan derfor deaktiveres; ejerens faktiske deaktivering skal bagefter bekræftes. Ændringen flytter ingen land-/vandpunkter og ændrer hverken kildeorden, score, pile eller kravet om præcis 673/673.
 
 ## Supabase gemmer den fulde diagnostik kompakt og tabsfrit – 4.0.234
 
