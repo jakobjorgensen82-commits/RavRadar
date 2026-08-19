@@ -3,6 +3,12 @@
 **Status:** Analyse afsluttet, produktionsændring ikke godkendt
 **Grundlag:** 4.0.213-artifact fra kørsel #31873118298, datasæt `rr-20260815080914-210`
 
+## Eftermaaling paa 4.0.237 / koersel 3237
+
+Det nye uafhaengige WAM 18Z-bevis aendrer ikke beslutningen. Supportartifactet fra `#3237`/`rr-20260819213342-210` viser 118 prognosetimer i `DK-B05-11`, men nul komplette boelgetimer og ingen boelgecollection i bulkcachen. Zonen har samtidig 53 marine rækker fra `dkss_lf`, saa manglen er specifik for boelger og ikke et generelt Limfjords- eller pipelineudfald. Nabozonerne `DK-B05-10` og `DK-B05-12` har begge `wam_dw` og 54 native boelgerækker; i den viste kaede har de 97 komplette boelgetimer.
+
+Det er dermed endnu en naturlig modelcyklus, som bekraefter den kendte geografiske kildegraense. `missing` bevares. Et fjernere punkt, en ny kilde eller en punktflytning er fortsat en ny faglig beslutning og er ikke godkendt.
+
 ## Kort konklusion
 
 Der er data nok til at forklare de to resterende Limfjordproblemer. De er ikke samme fejl:
