@@ -9,6 +9,8 @@
 - Evidens: `data/diagnostics/online-browser-audit-4.0.237-20260820.json` og `data/diagnostics/ONLINE_BROWSER_AUDIT_4.0.237_20260820.md`.
 - Spark-kørslen i den gamle desktopkopi er forkastet. `codex/browser-zone-audit-20260820`/`526509f2` må ikke flettes.
 - Næste driftspunkt er højst daglig syvdøgnseftermåling; fortsæt derefter næste ikke-blokerede roadmappunkt. De fire beskyttede dirty datafiler må fortsat ikke ændres eller stages.
+- Dagens cacheeftermåling er udført: pilot `#54` har 35 gyldige timer, 22.015 poster, 625 mål og 629 mål/kilde-par med nul gitter-/lagustabilitet. Næste måling tidligst næste kalenderdag; 168 timer er ikke nået.
+- Produktion `#3237` havde bestået readiness og var stadig i buildfasen ved dokumentationscheckpointet.
 
 ## Afslutningscheckpoint 2026-08-19 – GitHub alene, 30 timers cache og browservej
 

@@ -8,6 +8,12 @@
 - [x] Ingen land-/vandpunkter, geometri, U/V, score, kilder eller live-data blev ændret.
 - Næste aktive driftspunkt er fortsat højst daglig eftermåling af den naturlige syvdøgnscache. DEC-0030 fortsætter først, når en ny relevant modelcyklus giver selvstændig evidens.
 
+## Daglig syvdøgnseftermåling 2026-08-20
+
+- Pilot `#54` udvidede den private cache til 35 gyldige timer, 22.015 poster, 625 mål og 629 mål/kilde-par.
+- Gitter- og lagustabilitet er fortsat 0; `scoreImpact=false`, `publicRuntime=false`, 168 timers retention og ingen interpolation er bevaret.
+- Næste måling udføres tidligst næste kalenderdag. 168-timers exitkriteriet er ikke nået.
+
 ## Produktionsverificeret P1 – én komplet aktuel time inden for hver zone
 
 1. **Rodårsag afgrænset:** 673/673-kildegaten var gyldig, men den hidtidige runtime valgte hver dels nærmeste gyldige række uafhængigt. Den offentlige selector kunne samtidig foretrække en nærmere, ufuldstændig zonerække.
