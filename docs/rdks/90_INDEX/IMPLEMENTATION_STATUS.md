@@ -23,7 +23,7 @@
 - [x] `#32264833170` bestod frisk central 210-zone/673-dels produktion, fuld `validate`, releasegate, Supabase og Pages. Live `rr-20260819143933-210` har 210/210 komplette zoner og 673/673 dele på deres respektive `currentReferenceAt`; 196 zoner bruger 15:00Z og 14 bruger 14:00Z.
 - [x] Ejeren har slettet cron-job.org-jobbene. Efterfølgende native produktion `#32272470720`, cachebevaring `#32272473716`/`#32272598725` og pilot `#32273634626` er grønne; GitHub er eneste normale scheduler.
 - [x] Live `rr-20260819155614-210` er sikkert auditeret for 210 zoner, 673 dele, 420 aktuelle visninger, 2.100 femdøgnsvalg og 673 pile. Den private cache har samtidig 30 gyldige timer, 18.870 poster, 625 mål, 629 mål/kilde-par og nul gitter-/lagustabilitet.
-- [ ] Gennemfør den faktiske online DOM-/kliktest af alle 210 zoner/673 dele. Browser-plugin og diagnostik forsøges først; Chromium/Playwright er ejer-godkendt fallback, hvis der ikke findes en konkret pluginreparation.
+- [x] Faktisk online DOM-/kliktest er gennemfoert paa 4.0.237 efter produktion `#3237`: 210 zoner, 673 dele, 420 aktuelle visninger og 2.100 femdoegnsvalg er groenne. Browser-pluginet blev diagnosticeret foerst; trusted-RPC-opstartsfejlen gav ingen konkret lokal reparation, saa godkendt Chromium/Playwright-fallback blev brugt.
 
 ## 4.0.236 – låst produktionsreferencetime
 
@@ -52,7 +52,7 @@
 - [x] Første centrale pushrun `#32248949564`/`#3215` stoppede fail-closed før release, Supabase og Pages på fire efterladte 4.0.234-User-Agents. Fejlen er mekanisk og ændrer ikke data, score eller 673/673-gaten. Workflow, versionsværktøj, versionskontrol og releasegate er rettet lokalt, så drift nu afvises før push.
 - [x] Versionsrettelsen blev pushet, og `#32249770288`/`#3216` bestod frisk 673/673, fuld validering, releasegate, Supabase, Pages-artifact og deploy.
 - [x] Live datasæt `rr-20260819115558-210` er metadata-, hash- og runtimeverificeret. 420 aktuelle og 2.100 femdøgnsvisninger bruger kun en komplet lokal kontekst eller en eksplicit samlet hovedzonefallback.
-- [ ] Gentag den faktiske visuelle DOM-/kliktest. Forsøg Browser-plugin og målrettet diagnostik først; brug Chromium/Playwright som ejer-godkendt fallback, hvis der ikke findes en konkret reparationsvej. Maskinel runtimekontrol er grøn.
+- [x] Den faktiske visuelle DOM-/kliktest er gentaget mod live 4.0.237 og datasæt `rr-20260819213342-210`; score, farve/level, pile, forklaring, lokal kontekst og femdoegnsvalg passer sammen uden fejl.
 - [x] Frisk live 4.0.236 beviser 673/673 verificerede strømrecords ved den godkendte kildeorden. Det er deldækning, ikke bevis for én national eller automatisk valgt komplet lokal række; 4.0.237 retter den særskilte zoneudvælgelse.
 
 ## 4.0.234 – GitHub-plan og Supabase runtime-arkiv
@@ -81,7 +81,7 @@
 - [x] Systemisk regression dækker alle zoner, begge jagtformer og fem døgn samt det afgrænsede lokale-mod-hovedzone-modbevis.
 - [x] Samlet 673/673-proveniens er adskilt fra lokal fælles timedækning. Livegrundlaget har en komplet fælles time i hver af de 210 zoner, men ikke nødvendigvis samme nationale time; 4.0.237 vælger og publicerer den rigtige zonetime. Ingen ny kildeplan er nødvendig, og gaten er ikke sænket.
 - [x] Central RDKS-/release-/produktionsvalidering og live runtimeaudit er afsluttet i `#32249770288`/`#3216` og datasæt `rr-20260819115558-210`.
-- [ ] Faktisk DOM-/kliktest af farver, pile, vinderområde, tekst, score og debug gentages for alle 210 zoner/673 dele. Browser-plugin og diagnostik forsøges først; hvis det ikke fører til en konkret løsning, bruges den ejer-godkendte Chromium/Playwright-fallback. Registryændringer er ikke en RavRadar-løsning.
+- [x] Fuld DOM-/kliktest af farver, pile, vinderomraade, tekst, score og debug er gennemfoert for alle 210 zoner/673 dele med godkendt fallback efter plugin-diagnose. Se `data/diagnostics/ONLINE_BROWSER_AUDIT_4.0.237_20260820.md` og `docs/research/ONLINE_RESPONSIVE_AUDIT_4.0.237_20260820.md`.
 
 ## 4.0.233 – score, historik, forklaring og kystdel deler ét punktpar
 
