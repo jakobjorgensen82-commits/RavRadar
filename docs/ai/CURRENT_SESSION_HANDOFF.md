@@ -2,7 +2,7 @@
 
 ## Online browserkontrol afsluttet 2026-08-20
 
-- Faktisk live DOM-/kliktest er grøn på 4.0.237 og datasæt `rr-20260819211124-210`.
+- Faktisk live DOM-/kliktest er grøn på 4.0.237 og senest datasæt `rr-20260819213342-210` efter naturlig produktion `#3237`.
 - 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdøgnsvisninger er kontrolleret med 0 mismatch i score, farve, pile, forklaringer, lokal kontekst og debug-ID.
 - Browser-pluginets trusted-code-path fejlede før navigation; den godkendte Chromium-fallback blev brugt.
 - Eneste HTTP-fejl var manglende favicon. Der var ingen page errors.
@@ -13,7 +13,7 @@
 
 - Naturlig pilot `#54` er grøn med 35 gyldige timer, 22.015 poster, 625 mål og 629 mål/kilde-par.
 - Der er nul gitter-/lagustabilitet; shadow forbliver score- og public-runtime-neutral med 168 timers retention.
-- Samtidig produktion `#3237` havde bestået readiness og var i buildfasen ved checkpointet.
+- Samtidig produktion `#3237` bestod readiness, hele `build-and-prepare` og Pages-deploy. Fuldauditen blev derefter gentaget grønt på det nye datasæt.
 - Næste cachemåling må tidligst udføres næste kalenderdag.
 
 ## Klar til ny chat – gældende checkpoint

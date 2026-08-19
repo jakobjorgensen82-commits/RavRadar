@@ -3,7 +3,7 @@
 ## Resultat
 
 - Live index og bootstrap returnerede begge version `4.0.237` med HTTP 200.
-- Auditeret live datasæt: `rr-20260819211124-210`.
+- Auditeret live datasæt efter grøn naturlig produktion `#3237`: `rr-20260819213342-210`.
 - 210/210 zoner og 673/673 kystdele blev indlæst.
 - 420/420 aktuelle zonevisninger blev åbnet og kontrolleret i både Waders og Strand.
 - 2.100/2.100 femdøgnsvisninger blev klikket og kontrolleret.

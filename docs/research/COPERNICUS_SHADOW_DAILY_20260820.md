@@ -25,7 +25,7 @@ Piloten verificerede 625 af 673 mål inden for 5 km; 48 havde fortsat intet Cope
 
 - Pilot `#54` var grøn.
 - Preserve `#153` og workflow-run-preserve `#154` var grønne.
-- Den samtidige naturlige produktion `#3237` bestod current-hour readiness og var fortsat i `build-and-prepare` ved checkpointet.
+- Den samtidige naturlige produktion `#3237` bestod current-hour readiness, hele `build-and-prepare` og Pages-deploy. Den efterfølgende fulde livebrowseraudit var grøn på datasæt `rr-20260819213342-210`.
 - Der er ikke fremkaldt ekstra pilot- eller produktionsruns.
 
 ## Næste kontrol

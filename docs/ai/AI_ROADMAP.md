@@ -3,7 +3,7 @@
 ## Afsluttet P1 - systematisk online browserkontrol 2026-08-20
 
 - [x] Browser-plugin forsøgt først og diagnosticeret til trusted-code-path-fejl; ejer-godkendt Chromium-fallback anvendt.
-- [x] Live 4.0.237 og datasæt `rr-20260819211124-210` kontrolleret i 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdøgnsvisninger.
+- [x] Live 4.0.237 og senest datasæt `rr-20260819213342-210` fra grøn naturlig produktion `#3237` kontrolleret i 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdøgnsvisninger.
 - [x] Score, label, farveniveau, vind-/strømpile, komponent- og kystforklaringer, lokal vinderkontekst og debug-ID havde 0 mismatch.
 - [x] Ingen land-/vandpunkter, geometri, U/V, score, kilder eller live-data blev ændret.
 - Næste aktive driftspunkt er fortsat højst daglig eftermåling af den naturlige syvdøgnscache. DEC-0030 fortsætter først, når en ny relevant modelcyklus giver selvstændig evidens.
@@ -13,6 +13,12 @@
 - Pilot `#54` udvidede den private cache til 35 gyldige timer, 22.015 poster, 625 mål og 629 mål/kilde-par.
 - Gitter- og lagustabilitet er fortsat 0; `scoreImpact=false`, `publicRuntime=false`, 168 timers retention og ingen interpolation er bevaret.
 - Næste måling udføres tidligst næste kalenderdag. 168-timers exitkriteriet er ikke nået.
+
+## P2 produktionsovervågning - mobil og desktop 2026-08-20
+
+- [x] Live 4.0.237 åbner uden horisontal overflow ved 390 × 844 og 1440 × 900.
+- [x] Kort, zonepanel, score, lokal kontekst, tre komponenter, to pile og fem prognosedage er synlige i begge viewports.
+- [x] Ingen page errors eller funktionelle HTTP-fejl.
 
 ## Produktionsverificeret P1 – én komplet aktuel time inden for hver zone
 

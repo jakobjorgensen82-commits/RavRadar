@@ -6,7 +6,7 @@
     "parts": 673,
     "partZones": 210,
     "detailsAvailable": true,
-    "datasetId": "rr-20260819211124-210"
+    "datasetId": "rr-20260819213342-210"
   },
   "zoneCount": 210,
   "totals": {
@@ -26,11 +26,5 @@
       "status": 404,
       "url": "https://jakobjorgensen82-commits.github.io/favicon.ico"
     }
-  ],
-  "liveVersionVerification": {
-    "indexStatus": 200,
-    "appVersion": "4.0.237",
-    "bootstrapVersion": "4.0.237",
-    "verifiedAt": "2026-08-19T21:28:59.3616321Z"
-  }
+  ]
 }

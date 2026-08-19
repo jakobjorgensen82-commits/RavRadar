@@ -8,6 +8,7 @@
 - [x] 0 mismatch i score, farve, pile, forklaringer, lokal kontekst og debug-ID.
 - [x] Browser-plugin diagnosticeret før godkendt Chromium-fallback.
 - [x] Ingen land-/vandpunkter eller produktionslogik ændret.
+- [x] Mobil 390 × 844 og desktop 1440 × 900 kontrolleret uden overflow eller funktionelle browserfejl.
 
 ## 4.0.237 – fælles aktuel zonetime
 

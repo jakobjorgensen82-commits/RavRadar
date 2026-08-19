@@ -2,7 +2,7 @@
 
 ## Online DOM-/kliktest 2026-08-20
 
-Live 4.0.237 er systematisk kontrolleret med Chromium mod datasæt `rr-20260819211124-210`: 210 zoner, 673 kystdele, begge jagtformer, 420 aktuelle paneler og 2.100 femdøgnspaneler. Der er 0 mismatch i score, label, farveniveau, vind-/strømpile, forklaringer, lokal vinderkontekst og debug-ID. Eneste HTTP-fejl er favicon 404; ingen page errors. Ingen produktionsdata eller geometri er ændret.
+Live 4.0.237 er systematisk kontrolleret med Chromium mod seneste datasæt `rr-20260819213342-210` efter grøn naturlig produktion `#3237`: 210 zoner, 673 kystdele, begge jagtformer, 420 aktuelle paneler og 2.100 femdøgnspaneler. Der er 0 mismatch i score, label, farveniveau, vind-/strømpile, forklaringer, lokal vinderkontekst og debug-ID. Eneste HTTP-fejl er favicon 404; ingen page errors. Ingen produktionsdata eller geometri er ændret.
 
 Den private Copernicus-shadow havde ved pilot `#54` 35 gyldige timer, 22.015 poster, 625 mål og 629 mål/kilde-par med nul gitter-/lagustabilitet. Syvdøgnsvinduet er fortsat uafsluttet og måles højst dagligt.
 

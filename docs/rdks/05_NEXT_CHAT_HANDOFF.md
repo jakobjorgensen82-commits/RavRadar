@@ -2,7 +2,7 @@
 
 ## Afslutningscheckpoint 2026-08-20 - online browserkontrol grøn
 
-- Live index og bootstrap er 4.0.237; auditeret datasæt er `rr-20260819211124-210`.
+- Live index og bootstrap er 4.0.237; senest auditerede datasæt er `rr-20260819213342-210` fra grøn naturlig produktion `#3237`.
 - Chromium klikkede gennem 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdøgnsvisninger med 0 mismatch i score, farve, pile, forklaringer, lokal vinderkontekst og debug-ID.
 - Browser-pluginet blev forsøgt først og fejlede i trusted-code-path. Chromium-fallbacken var tidligere ejer-godkendt.
 - Eneste HTTP-fejl var favicon 404; ingen page errors.
@@ -10,7 +10,8 @@
 - Spark-kørslen i den gamle desktopkopi er forkastet. `codex/browser-zone-audit-20260820`/`526509f2` må ikke flettes.
 - Næste driftspunkt er højst daglig syvdøgnseftermåling; fortsæt derefter næste ikke-blokerede roadmappunkt. De fire beskyttede dirty datafiler må fortsat ikke ændres eller stages.
 - Dagens cacheeftermåling er udført: pilot `#54` har 35 gyldige timer, 22.015 poster, 625 mål og 629 mål/kilde-par med nul gitter-/lagustabilitet. Næste måling tidligst næste kalenderdag; 168 timer er ikke nået.
-- Produktion `#3237` havde bestået readiness og var stadig i buildfasen ved dokumentationscheckpointet.
+- Produktion `#3237` bestod readiness, hele `build-and-prepare` og Pages-deploy. Den fulde 420/2.100-browseraudit blev derefter gentaget grønt på det nye datasæt.
+- Separat mobil-/desktopaudit er grøn ved 390 × 844 og 1440 × 900 uden overflow, page errors eller funktionelle HTTP-fejl. Evidens: `data/diagnostics/online-responsive-audit-4.0.237-20260820.json`.
 
 ## Afslutningscheckpoint 2026-08-19 – GitHub alene, 30 timers cache og browservej
 
