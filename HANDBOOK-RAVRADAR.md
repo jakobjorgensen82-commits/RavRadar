@@ -32,7 +32,7 @@ Femdøgnsvisningen bruger nu præcis samme lokale dagsvinder som den nationale p
 
 Den landsdækkende test gennemgår 210 zoner, alle 673 kystdele, begge jagtformer og 2.100 femdøgnsvisninger. Rettelsen flytter ingen blå/grønne land-/vandpunkter og ændrer ikke strømvektorer, pile, kildeorden, RavScoreformel eller kravet om 673/673.
 
-Den centrale kørsel `#32249770288` bestod derefter frisk 673/673, fuld validering, releasegate, Supabase og Pages. Det aktive datasæt `rr-20260819115558-210` er hash- og runtimekontrolleret for 420 aktuelle visninger og 2.100 femdøgnsvisninger. En visning bruger enten én komplet lokal kontekst eller en tydeligt mærket, samlet hovedzonefallback. Den faktiske automatiserede kliktest i DOM'en gentages, når Codex-browserpluginets eksterne native-host-fejl er repareret.
+Den centrale kørsel `#32249770288` bestod derefter frisk 673/673, fuld validering, releasegate, Supabase og Pages. Det aktive datasæt `rr-20260819115558-210` er hash- og runtimekontrolleret for 420 aktuelle visninger og 2.100 femdøgnsvisninger. En visning bruger enten én komplet lokal kontekst eller en tydeligt mærket, samlet hovedzonefallback. Den faktiske automatiserede kliktest i DOM'en forsøges først med Codex-browserpluginet og målrettet diagnostik; hvis der ikke findes en konkret reparationsvej, bruges den ejer-godkendte Chromium/Playwright-fallback.
 
 ## GitHub ejer 15-minuttersproduktionen – 4.0.234
 
@@ -40,7 +40,7 @@ RavRadar starter nu selv den normale vejropdatering i GitHub Actions ved minut 1
 
 En lille gate kontrollerer den private cache, før det tunge job starter. Mangler den eksakte aktuelle time, bygges der intet vejr, Supabase-dokument eller Pages-artifact. Det private heartbeat bestiller piloten, og næste planlagte 15-minutterskørsel prøver igen. Fra 4.0.236 følger den time, som gaten faktisk godkendte, med gennem hele bygningen; det lukker også løbet, hvor jobbet starter før og fortsætter efter et timeskifte. Manuelle og push-udløste releases er fortsat fail-closed.
 
-GitHubs naturlige schedules er nu verificeret grønne for produktion `#32262008874`, Copernicus-pilot `#32262250342` og cachebevaring `#32262276171`. RavRadar-jobbene i cron-job.org kan derfor deaktiveres; ejerens faktiske deaktivering skal bagefter bekræftes. Ændringen flytter ingen land-/vandpunkter og ændrer hverken kildeorden, score, pile eller kravet om præcis 673/673.
+Ejeren har slettet RavRadar-jobbene i cron-job.org. GitHubs efterfølgende naturlige produktion `#32272470720`, Copernicus-pilot `#32273634626` og cachebevaring `#32272473716`/`#32272598725` er grønne, så GitHub Actions er eneste normale scheduler. Ændringen flytter ingen land-/vandpunkter og ændrer hverken kildeorden, score, pile eller kravet om præcis 673/673.
 
 ## Supabase gemmer den fulde diagnostik kompakt og tabsfrit – 4.0.234
 
@@ -232,7 +232,7 @@ Rotationen registrerer også, hvor langt der er til den nærmeste modelkolonne m
 
 **Håndbogsversion:** 4.0.237
 
-**Opdateret:** 18. august 2026
+**Opdateret:** 19. august 2026
 
 ## Lokal DMI og geografiske delscorer – 4.0.193
 

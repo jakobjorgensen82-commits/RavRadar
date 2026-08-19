@@ -1,5 +1,15 @@
 # Aktuelt sessionshandoff – 2026-08-19
 
+## Klar til ny chat – gældende checkpoint
+
+- Gældende liveversion er 4.0.237. Commit `9c971bc1` låste den aktuelle lokale visning til én komplet zonetime; dokumentationscommit `11f30b5c` er seneste verificerede udgangspunkt før dette checkpoint.
+- Ejeren har slettet RavRadar-jobbene i cron-job.org. Efter sletningen bestod GitHubs naturlige produktion `#32272470720`, cachebevaring `#32272473716`/`#32272598725` og Copernicus-pilot `#32273634626`. GitHub Actions er nu eneste normale scheduler.
+- Live datasæt `rr-20260819155614-210` bestod præcis 673/673 og direkte sikker audit af 210 zoner, 673 dele, 420 aktuelle visninger, 2.100 femdøgnsvalg og 673 pile. Kilderne er 622 DMI, 43 Copernicus og otte tilladte proxyer; `controlled-live`, credentialfri offentlig historik og 168 timers retention er bevaret.
+- Den private cache fra `#32273634626` har 30 gyldige timer, 18.870 poster, 625 mål og 629 mål/kilde-par med nul gitter-/lagustabilitet, `scoreImpact=false` og `publicRuntime=false`. Det naturlige syvdøgnsvindue er ikke afsluttet og kontrolleres højst dagligt.
+- Første opgave i næste chat er en faktisk online DOM-/kliktest for alle 210 zoner og 673 dele. Forsøg Browser-pluginet og diagnosticér først. Hvis fejlen består, og diagnostikken ikke giver en konkret løsning, har ejeren godkendt Chromium/Playwright som fallback. Testen må ikke ændre land-/vandpunkter, geometri, U/V, score eller kildeorden.
+- Arbejd i `C:\Users\jakob\AppData\Local\Temp\ravradar-40232-current`, ikke i den ældre desktopkopi. De fire allerede dirty datafiler `data/diagnostics/current-spatial-audit-4.0.76.json`, `data/diagnostics/state-reference-zones.json`, `data/diagnostics/zone-geometry-audit.json` og `data/live/coastal-parts-v2.json` må ikke ændres eller stages.
+- Anbefalet model og indsats til browserens landsdækkende slutkontrol er GPT-5.6 Sol, Ekstra høj.
+
 ## Produktionsverificeret 4.0.236 – samme godkendte time gennem hele produktionskørslen
 
 - Schedule `#32249924919`/`#3217` godkendte 11:00 lige før timeskiftet, men den efterfølgende bygning valgte vægurets 12:00. Derfor manglede præcis de 43 Copernicus-dele, og 673/673-gaten stoppede korrekt på 630/673 uden release, Supabase eller Pages.
@@ -8,8 +18,8 @@
 - Commit `668a1cdd` er på `main`. Normal ikke-tvungen `#32253251841`/`#3219` eksporterede 12:00 fra readiness og bestod 673/673, fuld validering, releasegate, Supabase, Pages-artifact og deploy. Live 4.0.236/datasæt `rr-20260819123607-210` viser 210 zoner, 673 verificerede dele, virkelig byggetid 12:36 og særskilt `productionReferenceAt=12:00`.
 - Manuel pilot `#32257195240`/`#42` udvidede senere den private cache til 27 gyldige timer, 625 mål og 629 mål/kilde-par med nul gitter-/lagustabilitet. Normal `#32257480030`/`#3220` bestod derefter 13:00-readiness, 673/673, fuld validering, releasegate, Supabase, Pages-artifact og deploy. Live `rr-20260819132304-210` viser 210 zoner, 673 forventede/scorede/verificerede dele og `productionReferenceAt=13:00`.
 - Ejerens tre dirty diagnostik-/geometrifiler samt `data/live/coastal-parts-v2.json` må ikke stages. Ingen ejerpunkter, geometri, U/V, pile, score, kildeorden eller 673/673 er ændret.
-- Cron-job.org må ikke deaktiveres endnu. Produktion, pilot og cachebevaring står alle `active` med korrekte schedules på standardbranchen `main`, men GitHub oprettede ingen nye naturlige events efter cirka 11:58 UTC. Manuel drift er grøn, så dette er et schedulerleveringshold; ophæv det først efter et nyt naturligt event og en efterfølgende native kørsel uden ekstern dublet.
-- Browserpluginets Chrome native host mangler, og trusted-code-path fejler. Den visuelle DOM-/kliktest gentages efter pluginreparation; register/CDP-bypass er ikke tilladt som projektrettelse.
+- Dette historiske schedulerhold er siden ophævet. Ejeren har slettet cron-job.org-jobbene, og efterfølgende naturlige GitHub-runs `#32272470720`, `#32272473716`, `#32272598725` og `#32273634626` er grønne.
+- Browserpluginets Chrome native host har manglet, og trusted-code-path har fejlet. Plugin og diagnostik forsøges først; hvis der ikke findes en konkret reparationsvej, bruges den ejer-godkendte Chromium/Playwright-fallback. Registryændringer er ikke en projektrettelse.
 
 ## Produktionsverificeret 4.0.235 – lokal score, vejr og forklaring er samme post
 
@@ -19,8 +29,8 @@
 - Den nye regression er grøn for 210 zoner, 673 dele, begge jagtformer og 2.100 femdøgnsvisninger gennem offentlig startup-/detailfletning. Målrettede ældre tests er også grønne.
 - Ejerens tre dirty diagnostik-/geometrifiler samt `data/live/coastal-parts-v2.json` skal fortsat holdes uden for commit. Der er ikke ændret land-/vandpunkter, kystgeometri, U/V, pilceller, scoreformel, kilder eller 673/673.
 - `#32249770288`/`#3216` bestod frisk central 673/673, fuld validering, releasegate, Supabase og Pages. Live datasæt `rr-20260819115558-210` er hash-/runtimeverificeret for 420 aktuelle og 2.100 femdøgnsvisninger.
-- Maskinel runtimekontrol er afsluttet; kun den faktiske DOM-/kliktest af den online side afventer browserpluginets eksterne reparation.
-- Naturligt GitHub-schedule-bevis er allerede opnået. Bekræft fortsat, at cron-job.org faktisk er slået fra, og at næste native kørsel ikke har en ekstern dublet. Syvdøgnsovervågningen kører højst dagligt.
+- Maskinel runtimekontrol er afsluttet; kun den faktiske DOM-/kliktest af den online side er åben. Pluginet forsøges først, og Chromium/Playwright er godkendt fallback.
+- Cron-job.org er bekræftet slettet, og næste native kørsel uden ekstern scheduler er grøn. Syvdøgnsovervågningen kører fortsat højst dagligt.
 
 ## Produktionsverificeret 4.0.234 – GitHub-ejet kvartersdrift og tabsfri Supabase-diagnostik
 
@@ -28,7 +38,7 @@
 - Produktionsworkflowet har nu GitHubs egen plan ved minut 14/29/44/59. Et let forjob kontrollerer, at den private Copernicus-cache indeholder den aktuelle eksakte UTC-time, før frisk produktion må starte; mangler timen, springes det tunge build/deploy sikkert over. Den private pilot er flyttet til minut 06. Normal 673/673-gate og kildeorden er uændret.
 - `runtime-diagnostics` gemmes tabsfrit som et versionsstyret gzip/base64-arkiv med SHA-256, bytekontrol og et lille læsbart resumé. Den repræsentative lokale payload falder fra 4.014.169 til 208.874 bytes (5,2 %), mens admin-download pakker og verificerer den fulde originale JSON. Rå data fjernes ikke.
 - Commit `7409d461` og `#32237507059`/`#3202` bestod frisk central 673/673, fuld validering, releasegate, komprimeret Supabase-sync og Pages. Naturligt schedule `#32244914347`/`#3210` bestod, og hel-timesdispatch `#32245473213`/`#3211` beviste sikkert skip uden build/deploy.
-- Ejeren er bedt om at deaktivere RavRadar-jobbene i cron-job.org. Faktisk deaktivering og mindst én efterfølgende native kørsel uden ekstern dublet skal fortsat bekræftes.
+- Ejeren har siden slettet RavRadar-jobbene i cron-job.org, og mindst én efterfølgende native produktion, pilot og cachebevaring er verificeret grøn.
 - Der er ikke ændret land-/vandpunkter, kystgeometri, strømvektorer, scoremodel, kildeafstande eller dækningskrav. De tre allerede dirty diagnostik-/geometrifiler samt `data/live/coastal-parts-v2.json` må ikke stages med denne ændring.
 
 ## Nedlukningscheckpoint 2026-08-18 – fuld Chromium-audit, rettelse afventer
@@ -133,9 +143,9 @@
 
 ## Næste trin
 
-1. Commit/push 4.0.232-kandidaten og kræv, at den friske centrale kæde bygger præcis 673/673 med DMI-first, Copernicus og de otte policyvaliderede `dkss_lf`-proxyer.
-2. Kræv fuld validering, releasegate, Supabase, Pages og direkte livekontrol af farver, prognose og de nye pile. Onlinehistorikken må indeholde valideret U/V og provenance, men aldrig credentials.
-3. Lad den naturlige syvdøgnstest køre i den fungerende live-runtime. Ved fejl skiftes den versionsstyrede kontrol til `dmi-only-rollback`; øvrigt frisk vejr bevares, og manglende strøm må ikke fremstilles som fuld dækning.
+1. Forsøg Browser-pluginet og diagnosticér dets native-host/trusted-code-path. Hvis der ikke findes en konkret reparationsvej, brug den godkendte Chromium/Playwright-fallback.
+2. Gennemfør den systematiske online kontrol af kort, farver, pile, vinderområde, beskrivelser, score og debug for alle 210 zoner og 673 dele uden at ændre ejerens punkter.
+3. Lad den naturlige syvdøgnstest fortsætte højst dagligt i live-runtime. Ved reproducerbar dataintegritetsfejl bruges `dmi-only-rollback`; en enkelt platform-, kø- eller netværksfejl er ikke et datamodbevis.
 
 ## Bindende arbejdsregler
 

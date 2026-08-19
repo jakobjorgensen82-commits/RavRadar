@@ -1,3 +1,10 @@
+## 2026-08-19 – scheduler overdraget, 30-timerscache og browserfallback
+
+- Ejeren slettede RavRadar-jobbene i cron-job.org. Efterfølgende naturlig produktion `#32272470720`, cachebevaring `#32272473716`/`#32272598725` og Copernicus-pilot `#32273634626` bestod, så GitHub Actions er eneste normale scheduler.
+- Live `rr-20260819155614-210` bestod præcis 673/673 og sikker audit af 210 zoner, 673 dele, 420 aktuelle visninger, 2.100 femdøgnsvalg og 673 pile. Den offentlige historik er credentialfri med 168 timers retention.
+- Den private cache nåede 30 gyldige timer og 18.870 poster med 625 mål, 629 mål/kilde-par og nul gitter-/lagustabilitet. `scoreImpact=false` og `publicRuntime=false` er bevaret; det fulde naturlige 168-timersvindue er fortsat åbent og kontrolleres højst dagligt.
+- Den faktiske online DOM-/kliktest forsøges først med Browser-plugin og målrettet diagnostik. Hvis der ikke findes en konkret reparationsvej, har ejeren godkendt Chromium/Playwright som fallback for alle 210 zoner/673 dele. Testen må ikke ændre ejerens land-/vandpunkter.
+
 ## 2026-08-19 – 4.0.237 låser den aktuelle lokale visning pr. zone
 
 - En sikker metadataaudit af det aktuelle 210-zone/673-dels livegrundlag fandt en komplet fælles række i alle 210 zoner, men kun 642 dele stod allerede på deres zones nærmeste komplette række; 31 dele brugte en anden nær-time.
@@ -16,8 +23,8 @@
 - Normal ikke-tvungen `#32253251841`/`#3219` eksporterede 12:00 fra readiness, bar samme time gennem hele `build-and-prepare` og bestod 673/673, fuld validering, releasegate, Supabase, Pages-artifact og deploy. Cachebevaring `#32253254239` bestod også.
 - Live version 4.0.236/datasæt `rr-20260819123607-210` er direkte metadata-verificeret med virkelig byggetid 12:36, `productionReferenceAt=12:00`, 210 zoner og 673 verificerede dele: 622 almindelige DMI, 39 Baltic, fire AMM15 og otte godkendte `dkss_lf`-proxyer. Alle 673 bruger ejerens centralt godkendte land-/vandpunkter.
 - Manuel pilot `#32257195240`/`#42` udvidede den private 168-timerscache til 27 gyldige timer, 625 mål og 629 mål/kilde-par med nul gitter-/lagustabilitet. Normal produktion `#32257480030`/`#3220` bestod derefter 13:00-readiness, 673/673, fuld validering, releasegate, Supabase, Pages-artifact og deploy. Live `rr-20260819132304-210` bekræfter 210 zoner, 673/673 og `productionReferenceAt=13:00`.
-- GitHubs midlertidige leveringshul er lukket med nye naturlige grønne events for produktion `#32262008874`, Copernicus-pilot `#32262250342` og cachebevaring `#32262276171`. Schedulerholdet er ophævet; ejeren kan deaktivere RavRadar-jobbene i cron-job.org, mens faktisk deaktivering endnu skal bekræftes.
-- 4.0.235 er samtidig afsluttet som produktions-/runtimeverificeret: `#32249770288`/`#3216` bestod hele kæden, og live datasæt `rr-20260819115558-210` er hash-/runtimeauditeret for 420 aktuelle og 2.100 femdøgnsvisninger. Faktisk DOM-/kliktest afventer Browser-pluginets eksterne native-host/trusted-code-path-reparation.
+- GitHubs midlertidige leveringshul blev lukket med nye naturlige grønne events for produktion, pilot og cachebevaring. Ejeren har siden slettet cron-job.org-jobbene, og efter-deaktiveringsruns er dokumenteret i det nyere checkpoint ovenfor.
+- 4.0.235 er samtidig afsluttet som produktions-/runtimeverificeret: `#32249770288`/`#3216` bestod hele kæden, og live datasæt `rr-20260819115558-210` er hash-/runtimeauditeret for 420 aktuelle og 2.100 femdøgnsvisninger. Faktisk DOM-/kliktest afventer fortsat; plugin forsøges først, og Chromium/Playwright er ejer-godkendt fallback.
 
 ## 2026-08-19 – 4.0.235 samler hele zonepanelet om én lokal del og tid
 

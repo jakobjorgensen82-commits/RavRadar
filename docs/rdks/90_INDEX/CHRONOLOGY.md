@@ -1,12 +1,20 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-19 – scheduler overdraget og næste browservej fastlagt
+
+1. Ejeren bekræftede, at RavRadar-jobbene i cron-job.org er slettet.
+2. Naturlig GitHub-produktion `#32272470720`, cachebevaring `#32272473716`/`#32272598725` og Copernicus-pilot `#32273634626` bestod efter sletningen. GitHub er dermed eneste normale scheduler.
+3. Live `rr-20260819155614-210` blev sikkert auditeret for 210 zoner, 673 dele, 420 aktuelle visninger, 2.100 femdøgnsvalg og 673 pile ved præcis 673/673.
+4. Den private cache nåede 30 gyldige timer og 18.870 poster med 625 mål, 629 mål/kilde-par og nul gitter-/lagustabilitet. Det fulde naturlige 168-timersvindue forbliver åbent og kontrolleres højst dagligt.
+5. Ejeren besluttede, at næste systematiske online DOM-/kliktest først forsøger Browser-plugin og målrettet diagnostik. Hvis der ikke findes en konkret reparationsvej, må Chromium/Playwright bruges som fallback for alle 210 zoner og 673 dele. Ingen land-/vandpunkter må ændres i kontrollen.
+
 ## 2026-08-19 – én lokal visningskontekst
 
 1. Den systematiske Chromium-audit viste, at lokale scoredata var korrekte, men zonepanelet blandede dem med hovedzonens synlige vejr og et andet femdøgnstidsvalg.
 2. Ejeren krævede en systemisk rettelse for alle 210 zoner og 673 kystdele uden ændring af de centralt godkendte land-/vandpunkter.
 3. DEC-0044 fastlægger én fælles lokal visningskontekst for del, tid, score, forklaring, debug og vejr samt eksplicit samlet hovedzonefallback ved reel lokal mangel.
 4. 4.0.235 implementerer samme lokale `selectLocalBestForDay` i national prognose og zonepanel og bærer vinderdelens kompakte præsentationsgrundlag pr. fælles time.
-5. Den syntetiske landsregression består for 210 zoner, 673 dele, begge jagtformer og 2.100 femdøgnsvisninger. 4.0.235 blev centralt/runtimeverificeret, og den efterfølgende zonevise tidslås i 4.0.237 blev produktionsverificeret i `#32264833170` og live `rr-20260819143933-210`. Kun den faktiske visuelle pluginbaserede DOM-/kliktest afventer ekstern browserreparation.
+5. Den syntetiske landsregression består for 210 zoner, 673 dele, begge jagtformer og 2.100 femdøgnsvisninger. 4.0.235 blev centralt/runtimeverificeret, og den efterfølgende zonevise tidslås i 4.0.237 blev produktionsverificeret i `#32264833170` og live `rr-20260819143933-210`. Kun den faktiske visuelle online DOM-/kliktest afventer; Browser-plugin forsøges først, og Chromium/Playwright er godkendt fallback.
 
 ## 2026-08-19 – GitHub-ejet produktion og Supabase-timeout
 

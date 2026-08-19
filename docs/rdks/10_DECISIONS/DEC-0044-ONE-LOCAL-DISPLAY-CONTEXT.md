@@ -1,6 +1,6 @@
 # DEC-0044 – Én lokal visningskontekst gennem hele zonepanelet
 
-- **Status:** Aktiv og produktionsverificeret i 4.0.235; direkte visuel plugin-kontrol afventer ekstern browserreparation
+- **Status:** Aktiv og produktionsverificeret i 4.0.235/4.0.237; direkte visuel onlinekontrol afventer Browser-plugin-diagnostik med ejer-godkendt Chromium/Playwright-fallback
 - **Dato:** 2026-08-19
 
 ## Beslutning
@@ -26,4 +26,4 @@ Beslutningen flytter eller omskriver ingen centralt gemte land-/vandpunkter, kys
 
 `#32249770288`/`#3216` bestod frisk central 673/673, fuld validering, releasegate, Supabase og Pages. Live datasæt `rr-20260819115558-210` er hash- og runtimeverificeret for 210 zoner, 673 dele, 420 aktuelle visninger og 2.100 femdøgnsvisninger. Alle visninger bruger enten én komplet lokal kontekst eller en eksplicit samlet hovedzonefallback.
 
-Den faktiske DOM-/kliktest af den online side skal gentages, når Codex-browserpluginets Chrome native host og trusted-code-path virker igen. Dette ændrer ikke det centrale data-, runtime- eller deploybevis.
+Den faktiske DOM-/kliktest af den online side skal gentages. Codex-browserpluginet og målrettet diagnostik forsøges først; hvis der ikke findes en konkret reparationsvej, bruges den ejer-godkendte Chromium/Playwright-fallback. Dette ændrer ikke det centrale data-, runtime- eller deploybevis og må ikke ændre ejerens land-/vandpunkter.

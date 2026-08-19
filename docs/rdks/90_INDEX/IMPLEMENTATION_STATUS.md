@@ -11,6 +11,9 @@
 - [x] Ejerens punkter, geometri, U/V, scoreformel, kildeorden, afstande, rollback og dynamiske 673/673-gate er uændrede.
 - [x] RDKS-, versions- og releasevalidering er grøn; commit `9c971bc1` er pushet til `main` uden de fire beskyttede dirty datafiler.
 - [x] `#32264833170` bestod frisk central 210-zone/673-dels produktion, fuld `validate`, releasegate, Supabase og Pages. Live `rr-20260819143933-210` har 210/210 komplette zoner og 673/673 dele på deres respektive `currentReferenceAt`; 196 zoner bruger 15:00Z og 14 bruger 14:00Z.
+- [x] Ejeren har slettet cron-job.org-jobbene. Efterfølgende native produktion `#32272470720`, cachebevaring `#32272473716`/`#32272598725` og pilot `#32273634626` er grønne; GitHub er eneste normale scheduler.
+- [x] Live `rr-20260819155614-210` er sikkert auditeret for 210 zoner, 673 dele, 420 aktuelle visninger, 2.100 femdøgnsvalg og 673 pile. Den private cache har samtidig 30 gyldige timer, 18.870 poster, 625 mål, 629 mål/kilde-par og nul gitter-/lagustabilitet.
+- [ ] Gennemfør den faktiske online DOM-/kliktest af alle 210 zoner/673 dele. Browser-plugin og diagnostik forsøges først; Chromium/Playwright er ejer-godkendt fallback, hvis der ikke findes en konkret pluginreparation.
 
 ## 4.0.236 – låst produktionsreferencetime
 
@@ -23,9 +26,9 @@
 - [x] RDKS, målrettede regressionssuiter, versionslukning og lokal `release:gate` er grønne. Fuld lokal `validate` passerer geometri-v2 og stopper derefter på det kendte forældede 209/211-snapshot; runtimepipeline-testen mangler tilsvarende den centralt byggede `public-condition-details.json`.
 - [x] Commit `668a1cdd` er på `main`, og normal ikke-tvungen produktion `#32253251841`/`#3219` bestod readiness med låst 12:00-time, frisk 673/673, fuld validering, releasegate, Supabase, Pages-artifact og deploy.
 - [x] Live 4.0.236/datasæt `rr-20260819123607-210` er direkte metadata-verificeret med 210 zoner, 673/673, 622 DMI + 39 Baltic + fire AMM15 + otte tilladte proxyer, `productionReferenceAt=12:00`, `controlled-live` og `credentialsIncluded=false`.
-- [x] Manuel pilot `#32257195240`/`#42` udvidede cachen til 27 gyldige timer med 625 mål, 629 mål/kilde-par og nul gitter-/lagustabilitet. Normal `#32257480030`/`#3220` bestod derefter 13:00-readiness, 673/673, fuld validering, releasegate, Supabase og Pages; live `rr-20260819132304-210` matcher 13:00.
+- [x] Manuel pilot `#32257195240`/`#42` udvidede først cachen til 27 gyldige timer. Naturlig pilot `#32273634626` har siden udvidet den til 30 gyldige timer og 18.870 poster med fortsat 625 mål, 629 mål/kilde-par og nul gitter-/lagustabilitet.
 - [x] Schedulerholdet er ophævet efter tre nye naturlige grønne events: produktion `#32262008874`, Copernicus-pilot `#32262250342` og cachebevaring `#32262276171`.
-- [ ] Bekræft ejerens faktiske deaktivering af cron-job.org. GitHub forbliver den ønskede normale scheduler.
+- [x] Ejeren har faktisk slettet cron-job.org-jobbene, og efterfølgende native produktion, pilot og cachebevaring er verificeret grønne. GitHub er den normale scheduler.
 
 ## 4.0.235 – én lokal visningskontekst, produktionsverificeret
 
@@ -39,7 +42,7 @@
 - [x] Første centrale pushrun `#32248949564`/`#3215` stoppede fail-closed før release, Supabase og Pages på fire efterladte 4.0.234-User-Agents. Fejlen er mekanisk og ændrer ikke data, score eller 673/673-gaten. Workflow, versionsværktøj, versionskontrol og releasegate er rettet lokalt, så drift nu afvises før push.
 - [x] Versionsrettelsen blev pushet, og `#32249770288`/`#3216` bestod frisk 673/673, fuld validering, releasegate, Supabase, Pages-artifact og deploy.
 - [x] Live datasæt `rr-20260819115558-210` er metadata-, hash- og runtimeverificeret. 420 aktuelle og 2.100 femdøgnsvisninger bruger kun en komplet lokal kontekst eller en eksplicit samlet hovedzonefallback.
-- [ ] Gentag den faktiske visuelle DOM-/kliktest, når Codex-browserpluginets Chrome native host/trusted-code-path er repareret. Maskinel runtimekontrol er grøn; browserkontrolværktøjet er den eneste blok.
+- [ ] Gentag den faktiske visuelle DOM-/kliktest. Forsøg Browser-plugin og målrettet diagnostik først; brug Chromium/Playwright som ejer-godkendt fallback, hvis der ikke findes en konkret reparationsvej. Maskinel runtimekontrol er grøn.
 - [x] Frisk live 4.0.236 beviser 673/673 verificerede strømrecords ved den godkendte kildeorden. Det er deldækning, ikke bevis for én national eller automatisk valgt komplet lokal række; 4.0.237 retter den særskilte zoneudvælgelse.
 
 ## 4.0.234 – GitHub-plan og Supabase runtime-arkiv
@@ -56,9 +59,9 @@
 - [x] Naturligt GitHub-`schedule`-event `#32244914347`/`#3210` på `4ab7a659` bestod current-hour-gate, fuld validering, releasegate, Supabase, Pages-artifact og deploy. Ejeren er bedt om at deaktivere RavRadar-jobbene i cron-job.org.
 - [x] Eksternt hel-timeskald `#32245473213`/`#3211` uden den nye eksakte time sluttede grønt med `build-and-prepare` og Pages-deploy sprunget over; den tidligere røde 630/673-race er direkte produktionsverificeret som løst.
 - [x] Efterfølgende native produktion, pilot og cachebevaring er hver verificeret grønne i `#32262008874`, `#32262250342` og `#32262276171`.
-- [ ] Bekræft, at cron-job.org-jobbene faktisk er deaktiveret.
+- [x] Cron-job.org-jobbene er slettet, og efterfølgende native produktion, pilot og cachebevaring er grønne.
 
-## Browser-P1 – runtime- og produktionsverificeret i 4.0.235, visuel plugin-test afventer
+## Browser-P1 – runtime- og produktionsverificeret i 4.0.235, visuel sluttest afventer
 
 - [x] Chromium-audit gennemførte 210 zoner, 673 dele, 420 aktuelle zone-/jagtformvisninger og 2.100 femdøgnsfaner uden at ændre projektdata.
 - [x] 673/673 ejerland-/vandpunkter matcher runtime; alle 673 strømvektorer, pilceller, kildeklasser og afstande er konsistente. Den tidligere 4.0.233-retningsisolation er ikke tilbagefaldet.
@@ -68,7 +71,7 @@
 - [x] Systemisk regression dækker alle zoner, begge jagtformer og fem døgn samt det afgrænsede lokale-mod-hovedzone-modbevis.
 - [x] Samlet 673/673-proveniens er adskilt fra lokal fælles timedækning. Livegrundlaget har en komplet fælles time i hver af de 210 zoner, men ikke nødvendigvis samme nationale time; 4.0.237 vælger og publicerer den rigtige zonetime. Ingen ny kildeplan er nødvendig, og gaten er ikke sænket.
 - [x] Central RDKS-/release-/produktionsvalidering og live runtimeaudit er afsluttet i `#32249770288`/`#3216` og datasæt `rr-20260819115558-210`.
-- [ ] Faktisk DOM-/kliktest af farver, pile, vinderområde, tekst, score og debug gentages efter reparation/geninstallation af Browser-pluginets native host. Manuelle registry- eller CDP-omveje er bevidst ikke brugt.
+- [ ] Faktisk DOM-/kliktest af farver, pile, vinderområde, tekst, score og debug gentages for alle 210 zoner/673 dele. Browser-plugin og diagnostik forsøges først; hvis det ikke fører til en konkret løsning, bruges den ejer-godkendte Chromium/Playwright-fallback. Registryændringer er ikke en RavRadar-løsning.
 
 ## 4.0.233 – score, historik, forklaring og kystdel deler ét punktpar
 

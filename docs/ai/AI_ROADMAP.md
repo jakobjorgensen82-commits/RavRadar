@@ -14,7 +14,7 @@
 2. **Implementeret lokalt:** readiness eksporterer sin eksakte time, og hele det planlagte `build-and-prepare` bruger samme `RAVRADAR_PRODUCTION_TARGET_HOUR` i Copernicus-fletning og vejrscoring.
 3. **Uændret sikkerhed:** push/manual uden readiness-lås bruger nutiden; alle friskheds-, 673/673-, release-, Supabase- og Pages-gates forbliver fail-closed.
 4. **Central gate bestået:** commit `668a1cdd` og normal ikke-tvungen `#32253251841`/`#3219` bestod låst 12:00-time, frisk 673/673, fuld validering, releasegate, Supabase og Pages. Manuel pilot `#32257195240` og normal produktion `#32257480030` gentog beviset ved 13:00; live `rr-20260819132304-210` har 210 zoner og 673 verificerede dele ved samme `productionReferenceAt`.
-5. **Schedulerbevis bestået:** GitHubs egne naturlige events er igen leveret og grønne for produktion `#32262008874`, Copernicus-pilot `#32262250342` og cachebevaring `#32262276171`. Ejeren kan derfor deaktivere RavRadar-jobbene i cron-job.org; faktisk deaktivering skal blot bekræftes. Syvdøgnseftermålingen kontrolleres højst dagligt, ikke hver time.
+5. **Scheduler overdraget:** ejeren har slettet RavRadar-jobbene i cron-job.org. Efterfølgende naturlig produktion `#32272470720`, cachebevaring `#32272473716`/`#32272598725` og pilot `#32273634626` er grønne. GitHub er eneste normale scheduler; syvdøgnseftermålingen kontrolleres højst dagligt, ikke hver time.
 
 ## Produktionsverificeret – én lokal sandhed i hele zonepanelet
 
@@ -23,7 +23,7 @@
 3. **Implementeret lokalt:** runtime bærer kompakt vinderforklaring og viste vejrmetrikker pr. fælles time, og regressionen dækker 210 zoner, 673 dele, begge jagtformer og 2.100 femdøgnsvisninger.
 4. **Central gate bestået:** `#32249770288`/`#3216` bestod frisk 673/673, fuld validering, releasegate, Supabase og Pages; live datasæt `rr-20260819115558-210` matcher artifactet.
 5. **Runtimeaudit bestået:** 420 aktuelle og 2.100 femdøgnsvisninger bruger kun én komplet lokal kontekst eller en eksplicit samlet hovedzonefallback.
-6. **Åben ekstern kontrol:** faktisk DOM-/kliktest af kort, pile, vinderområde, tekst, score og debug gentages efter reparation af Browser-pluginets native host/trusted-code-path.
+6. **Åben visuel slutkontrol:** faktisk DOM-/kliktest af kort, pile, vinderområde, tekst, score og debug gennemføres for alle 210 zoner/673 dele. Browser-plugin og diagnostik forsøges først; Chromium/Playwright er ejer-godkendt fallback, hvis der ikke findes en konkret reparationsvej.
 
 ## Afsluttet driftsrelease – GitHub-plan og Supabase-timeout
 
@@ -31,7 +31,7 @@
 2. En manglende eksakt aktuel Copernicus-time skal udsætte den planlagte produktion uden artifact/deploy og lade heartbeatet bestille timen. 673/673 sænkes ikke.
 3. Den fulde runtime-diagnostik gemmes tabsfrit komprimeret med SHA-256 og begge byteantal. Admin-download skal verificere og genskabe originalen; legacy-format bevares.
 4. Afslut fuld lokal validering/releasegate, pushrun med Supabase/Pages og mindst én naturlig GitHub-schedule-kørsel.
-5. Denne gate er opfyldt af de tre naturlige schedule-runs `#32262008874`, `#32262250342` og `#32262276171`. Ejeren skal nu deaktivere RavRadar-jobbene i cron-job.org og bagefter bekræfte det. Den åbne visuelle browserkontrol fortsætter som særskilt opgave.
+5. Gaten er opfyldt, cron-job.org-jobbene er slettet, og efterfølgende native produktion, pilot og cachebevaring er grønne i `#32272470720`, `#32273634626`, `#32272473716` og `#32272598725`. Den åbne visuelle browserkontrol fortsætter som særskilt opgave.
 
 ## Næste P1 efter browseraudit 2026-08-18 – én lokal sandhed i hele zonepanelet
 
@@ -42,7 +42,7 @@
 5. Indfør særskilt bevis for én komplet valgt aktuel række inden for hver zone. Den eksisterende samlede 100 %-gate bevares, men forskellige zoner må vælge forskellige nærmeste komplette timer; der kræves ikke én national fælles time.
 6. Afslut med fuld RDKS-, release-, central produktions- og direkte browservalidering. Den bestående 4.0.233-retningsisolation, kildeorden, afstandsgrænser, rollback og ejerpunkter må ikke ændres utilsigtet.
 
-Status: både den sammenhængende lokale præsentation og den særskilte zonevise current-reference er produktions- og runtimeverificeret, senest i `#32264833170` og live datasæt `rr-20260819143933-210`. Faktisk visuel plugin-kontrol afventer fortsat ekstern browserreparation. Krævet model/indsats til den visuelle slutkontrol: GPT-5.6 Sol, Ekstra høj.
+Status: både den sammenhængende lokale præsentation og den særskilte zonevise current-reference er produktions- og runtimeverificeret, senest igen i native `#32272470720` og live `rr-20260819155614-210`. Faktisk visuel onlinekontrol afventer; pluginet forsøges først, og Chromium/Playwright bruges ved manglende konkret reparationsvej. Krævet model/indsats: GPT-5.6 Sol, Ekstra høj.
 
 ## Aktuelt P1-fix 2026-08-18 – lokal scoreretning må ikke komme fra en anden kystdel
 
@@ -72,7 +72,7 @@ Status: både den sammenhængende lokale præsentation og den særskilte zonevis
 - Restore-only keepalive #32136328681, kontrolleret 11:00Z-backfill #32136391556 og efterkontrol #32136642330 beviste 1.258 records ved to tider i samme råcache uden gitter-/lagskift eller supportlæk. Den aktive kildefletning er siden implementeret og produktionsverificeret; det resterende bevis er naturlig udvidelse og pruning gennem hele syvdøgnsvinduet.
 - Aktiv kildefletning skal ende på alle aktuelle kystdele, ikke blot den historiske 95 %-grænse. Produktionsgaten er nu 100 % dynamisk (aktuelt 673/673) og skal ved integration verificere kildeklassens egne afstande, celle, lag og tid for hver eneste del.
 - #32139054129 har centralt bevist 100 %-gaten. #32140865173 har derefter bevist den nye pre-DMI-refresh: to-timers-cachen blev ramt før en ny 2,905-GB DMI-save og fandtes stadig bagefter; #32141443152 validerede den uafhængigt. Næste naturlige pilot skal nu bevare og udvide de flere tider. Automatisk GitHub-schedule alene regnes ikke som driftssikkert, fordi ingen event ankom før den anden målte eviction.
-- Manuel aktuel-time-pilot #32141772134 beviste den tidlige udvidelse efter DMI. Ny manuel `#32257195240`/`#42` beviste et sammenhængende privat vindue med 27 gyldige timer, 625 mål, 629 mål/kilde-par og nul grid-/lagskift. GitHubs naturlige pilot `#32262250342` og cachebevaring `#32262276171` er siden begge grønne; det fulde naturlige 168-timersvindue afventer fortsat den højst daglige kontrol.
+- Manuel aktuel-time-pilot #32141772134 beviste den tidlige udvidelse efter DMI, og `#32257195240` nåede 27 timer. Naturlig pilot `#32273634626` har siden nået 30 gyldige timer og 18.870 poster med 625 mål, 629 mål/kilde-par og nul grid-/lagskift; efterfølgende cachebevaring er grøn. Det fulde naturlige 168-timersvindue afventer fortsat den højst daglige kontrol.
 - Syvdøgnsgrænsen er samtidig gjort til en normal releasekontrakt: en ren regression bevarer præcis 168 timer, beskærer ældre/fremtidige eller beskadigede restoreposter, deduplikerer og afviser nye ugyldige poster fail-closed. Det reducerer risikoen, mens den naturlige syvdøgnsdrift fortsat opsamles; testen er ikke i sig selv et flerruns- eller aktiveringsbevis.
 - `7f22e8e1`/`#32143798560` har CI-verificeret denne kontrakt i den centrale kæde. Retention og 100 %-kontrakten bestod, den faktiske 622/673-dækning stoppede fortsat release/deploy, og den private cache overlevede DMI-cachearbejdet. Næste selvstændige bevis er fortsat naturlig schedule-/syvdøgnsdrift, ikke mere kode til samme fixture.
 - Historisk leverede GitHubs aktive timeplan kun ét forsinket `schedule`-event. 4.0.232 brugte derfor det eksternt udløste produktionsworkflow som privat heartbeat. Ejerens nyere DEC-0042 erstatter selve produktionsstarteren med GitHubs forskudte 15-minuttersplan og en eksplicit current-hour-gate; heartbeatets minimale dispatchrolle bevares.

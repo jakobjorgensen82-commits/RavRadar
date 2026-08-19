@@ -19,3 +19,9 @@
 - Målrettede regressioner er grønne for progressiv offentlig runtime, 210 zoner, 673 dele, 2.100 femdøgnsvisninger, pile, DMI-bulk/forecast og kontrolleret Copernicus-livefletning.
 - Commit `9c971bc1` er frigivet gennem `#32264833170`, som bestod frisk 673/673, fuld `npm run validate`, releasegate, Supabase og Pages.
 - Direkte liveaudit af `rr-20260819143933-210` fandt 210/210 komplette zoner og 673/673 dele på deres respektive `currentReferenceAt`: 196 zoner bruger 15:00Z og 14 bruger 14:00Z. Fordelingen er 622 DMI, 39 Baltic, fire AMM15 og otte godkendte regionale proxyer. Start-/detailhashes matcher, `controlled-live` er aktivt, historikken er credentialfri med 168 timers retention, og ingen auditfejl blev fundet.
+
+## Efterrelease-drift og næste slutkontrol
+
+- Ejeren har slettet RavRadar-jobbene i cron-job.org. GitHubs efterfølgende naturlige produktion `#32272470720`, cachebevaring `#32272473716`/`#32272598725` og Copernicus-pilot `#32273634626` er grønne, så GitHub Actions nu er eneste normale scheduler.
+- Live datasæt `rr-20260819155614-210` er sikkert auditeret for 210 zoner, 673 dele, 420 aktuelle visninger, 2.100 femdøgnsvalg og 673 pile ved præcis 673/673. Den private cache har 30 gyldige timer, 18.870 poster, 625 mål og 629 mål/kilde-par med nul gitter-/lagustabilitet.
+- Den åbne visuelle slutkontrol forsøger Browser-pluginet og målrettet diagnostik først. Hvis der ikke findes en konkret reparationsvej, har ejeren godkendt Chromium/Playwright til den systematiske online DOM-/kliktest af alle 210 zoner og 673 dele. Ingen land-/vandpunkter ændres som led i kontrollen.
