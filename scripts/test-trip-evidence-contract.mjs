@@ -17,6 +17,7 @@ import {
   loadActiveTripEvidence,
   markTripEvidenceSubmitted
 } from '../js/services/trip-evidence-store.js';
+import { uploadPendingTripEvidence } from '../js/services/trip-evidence-upload.js';
 
 class MemoryStorage {
   values = new Map();
@@ -162,6 +163,60 @@ assert.equal(listPendingTripEvidence(storage).length, 1);
 assert.equal(markTripEvidenceSubmitted(queued.tripId, storage), true);
 assert.equal(listPendingTripEvidence(storage).length, 0);
 assert.equal(markTripEvidenceSubmitted(queued.tripId, storage), false);
+
+beginTripEvidence({
+  tripId: 'trip-upload-success',
+  startedAt: input.startedAt,
+  mode: input.mode,
+  zoneId: input.zoneId,
+  coastalPartId: input.coastalPartId,
+  forecastSnapshot: input.forecastSnapshot,
+  calibrationFeatures
+}, storage);
+finishTripEvidence({
+  endedAt: input.endedAt,
+  zoneId: input.zoneId,
+  coastalPartId: input.coastalPartId,
+  searchCoverage: 'normal',
+  found: true,
+  grams: 4
+}, storage);
+const persisted = [];
+const uploadSuccess = await uploadPendingTripEvidence({
+  storage,
+  persist: async (payload, options) => {
+    assertTripEvidencePrivacy(payload);
+    assert.equal(options.conflictTarget, 'trip_id');
+    persisted.push(payload);
+  }
+});
+assert.deepEqual({ ...uploadSuccess, failures: [] }, { attempted: 1, submitted: 1, failed: 0, failures: [] });
+assert.equal(persisted[0].trip_id, 'trip-upload-success');
+assert.equal(listPendingTripEvidence(storage).length, 0);
+
+beginTripEvidence({
+  tripId: 'trip-upload-retry',
+  startedAt: input.startedAt,
+  mode: input.mode,
+  zoneId: input.zoneId,
+  coastalPartId: input.coastalPartId,
+  forecastSnapshot: input.forecastSnapshot,
+  calibrationFeatures
+}, storage);
+finishTripEvidence({
+  endedAt: input.endedAt,
+  zoneId: input.zoneId,
+  coastalPartId: input.coastalPartId,
+  searchCoverage: 'normal',
+  found: false
+}, storage);
+const uploadFailure = await uploadPendingTripEvidence({
+  storage,
+  persist: async () => { throw new Error('offline'); }
+});
+assert.equal(uploadFailure.failed, 1);
+assert.equal(uploadFailure.failures[0].message, 'offline');
+assert.equal(listPendingTripEvidence(storage).length, 1);
 
 const noFind = buildTripEvidence({ ...input, found: false, grams: 99 });
 assert.equal(noFind.grams, null);

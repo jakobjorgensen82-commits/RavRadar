@@ -32,6 +32,8 @@ Turstart og ventende uploads gemmes under nye, versionsstyrede lokale nøgler. V
 
 Den nye kø ændrer eller sletter ikke historiske ruter fra det gamle turflow. Nye v2-poster accepterer ikke rute eller koordinater, heller ikke hvis en kalder ved en fejl sender dem med.
 
+Uploadadapteren bygger databasepayloaden fra en fast tilladelsesliste og kontrollerer privatlivskontrakten igen lige før afsendelse. Hver tur har et unikt `trip_id` i databasen, så et uklart netværkssvar kan genforsøges idempotent. Ved en fejl bliver posten i den lokale kø, og statusresultatet indeholder kun tur-id og en kort fejltekst, aldrig den fulde payload.
+
 ## Dataminimering
 
 GPS-punkter, ruter, koordinater og spor indgår ikke i fjernkontrakten. Den faktiske kystdel er præcis nok til faglig kalibrering og langt mindre følsom end brugerens bevægelsesspor. Lokale historiske ruter ændres eller slettes ikke af denne kontrakt.

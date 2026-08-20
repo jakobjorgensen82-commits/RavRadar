@@ -65,6 +65,10 @@ begin
   end if;
 end $$;
 
+create unique index if not exists ravradar_observations_trip_id_v2_uidx
+  on public.ravradar_observations (trip_id)
+  where schema_version = 2 and trip_id is not null;
+
 comment on column public.ravradar_observations.schema_version is
   '1 = historisk observation, 2 = komplet dataminimeret søgetur.';
 comment on column public.ravradar_observations.coastal_part_id is
