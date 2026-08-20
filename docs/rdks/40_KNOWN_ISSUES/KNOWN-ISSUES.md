@@ -408,3 +408,7 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 - `observed_at` sættes til kl. 12 på valgt dato, og jagtformen kan komme fra appens senere tilstand frem for turstart.
 - Eksisterende rækker bevares og må bruges coverage-only. De må ikke bruges til koefficientfit uden fuldt feltbevis.
 - Løsningen er den dataminimerede tripkontrakt i DEC-0042; præcis GPS må fortsat ikke sendes centralt.
+
+## Åben gate 4.0.243: Supabase-turkontrakt
+
+Den nye appkode må ikke merges, før migrationen 20260821_trip_evidence_contract.sql er anvendt og verificeret på public.observations. Uden migration bevares turen lokalt/outbox, men fjernsynk vil fejle på manglende kolonner. Dette må ikke skjules af grønne kildechecks. 4.0.242 forbliver produktion indtil gate, deploy og browserkontrol er fuldført.

@@ -1617,3 +1617,10 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - 2026-08-20: 4.0.242-vægtaudit består 9.261 syntetiske kombinationer og 42.846 offentlige scoreposter på 673 dele. De 420 viste zoner falder i gennemsnit 6,314 point; kun 7 skifter vindende del. Ingen data, regler, tærskler, pile, geometri eller punkter ændres.
 - **DEC-0042:** Tripniveau, faktisk indsats, lokal kystdel og immutable forecast-link er obligatorisk kalibreringsevidens. Enkeltfund og ufuldstændige historiske observationer er ikke fit-klare.
 - **Fase D observeret audit:** 4.0.242 er målt score-neutralt på 41.116 zonevinderposter og 1.346 aktuelle kystdel-/jagtformposter. Se `docs/research/RAVSCORE_PHASE_D_OBSERVED_ABLATION_4.0.242.md`.
+
+## 4.0.243 - komplette ture som kalibreringsevidens (releasekandidat)
+
+- DEC-0043 fastlægger komplette ture, søgeindsats, faktisk kystdel og uforanderligt startgrundlag som v2-evidens.
+- GPS/rute er udelukket fra fjernkontrakten; historiske v1-rækker bevares som dækningsdata.
+- RavScore 25/40/35 og land-/vandpunkter er uændrede.
+- Kandidaten afventer Supabase-migration, fulde gates, PR/deploy og 210/673-browserkontrol.

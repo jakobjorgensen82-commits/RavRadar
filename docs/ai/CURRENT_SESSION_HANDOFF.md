@@ -186,3 +186,13 @@ Der må ikke flyttes land-/vandpunkter.
 - DEC-0042 og tripprotokollen afviser enkeltfund som fit-enhed.
 - Næste kodeopgave er tripkontrakten: faktisk start/slut, søgetid, jagtform, lokal del, dækningsgrad og immutable forecast-link; præcis GPS forbliver lokal.
 - Aktiv score, 25/40/35, regler, geometri og punkter er uændrede.
+
+## Handoff 2026-08-21 - 4.0.243 turdata
+
+Aktiv branch: codex/trip-evidence-contract-4.0.243. Seneste browserverificerede funktionscommit før versions-/dokumentationscommit: 8a7016c7; databaseskema-korrektion: 85b6385d; legacy-bro: 00dcd50b. Lokal kontrakt-, privatlivs-, syntaks- og Browser-plugin-kontrol er grøn. Browserflowet viste 210 zoner, korrekt start/stop og samme kystdel; intet testsvar blev indsendt.
+
+Næste trin: anvend/verificer Supabase-migration, kør validate:source og release:gate, commit/push dokumentations- og versionsdelta, opret kort PR, følg gates og merge/deploy kun ved fuld grøn evidens. Efter produktion kræves fuld 210/673-kontrol. De fire beskyttede dirty datafiler i Desktop-worktreeet må ikke røres. Ingen punkter er flyttet.
+
+### Gatecheckpoint 2026-08-21 01:40 CEST
+
+validate:source og release:gate er grønne for 4.0.243, inklusive den nye turkontrakt og observationsprivatliv. Supabase-migrationen er næste og eneste eksterne gate før PR/merge. Kør ikke den fulde 210/673-browserkontrol før exact-commit deploy; lokal integreret Browser-plugin-kontrol er allerede grøn.

@@ -1502,3 +1502,7 @@ Status: Implementeret og lokalt valideret.
 - Dokumenteret: nationale fordelinger, komponentablation, driveroverlap og zonevinderbias i 4.0.242.
 - Besluttet i DEC-0042: tripniveau, indsats, faktisk kystdel og immutable forecast-link er obligatorisk før senere fit.
 - Åben implementering: den nuværende turformular skal erstattes af den dataminimerede tripkontrakt, mens GPS-redaktion og kalibreringslås bevares.
+
+## 4.0.243 kandidatstatus
+
+Implementeret og målrettet testet: v2-kontrakt, JSON Schema, korrekt observationsmigration, start-/slutdialog, lokal kø, observations-outbox, offentlig scoreadapter, legacy-bro og app-tilkobling. Lokal Browser-plugin-kontrol bestod med 210 zoner og nul browserfejl. Ikke implementeret i produktion: Supabase-migration og efterfølgende deployverifikation. RavScore er ikke ændret.

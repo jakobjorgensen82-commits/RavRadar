@@ -485,3 +485,7 @@ Den planlagte P3-forskning må undersøge, om rumlige strømstrukturer har selvs
 - En tur, ikke et enkeltfund, er kalibreringsenheden efter DEC-0042.
 - Næste kodeopgave er dataminimeret tripkontrakt og coverage-only rapport. Bevar GPS-redaktion, tomme scoreforslag, 25/40/35, geometri og alle land-/vandpunkter.
 - Ingen kandidat må fittes eller aktiveres, før tripdækning, event-/geografihold-out og ejerbeslutning er dokumenteret.
+
+## Aktivt P1-deltrin: turdata v2 i 4.0.243
+
+Koden er lokalt implementeret og browserkontrolleret. Næste bindende trin er Supabase-migrationen, derefter fulde releasegates, PR/deploy og 210/673-kontrol. Vægtene og scorereglerne må ikke ændres i dette deltrin. Når turdata er i drift, fortsætter roadmapet med repræsentativ turkalibrering og ikke med enkeltfund.

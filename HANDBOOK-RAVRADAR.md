@@ -240,7 +240,7 @@ En privat, score-neutral cache bruger DKSS-felter ved vandpunktet samt cirka 5 o
 
 Rotationen registrerer også, hvor langt der er til den nærmeste modelkolonne med et eksakt fælles U/V-par, selv når den ligger uden for 5 km. I det tilfælde gemmes kun koordinat, afstand og lagmetadata – ikke de fjerne strømværdier. En privat ejeroversigt skelner derfor mellem nær-tærskel 5–6 km til rent manuelt geometrireview, modelhul 6–8 km, strukturelt modelhul over 8 km og en datakædefejl, hvor gyldig strøm faktisk findes inden for 5 km. Selv en nær-tærskel-post må kun flyttes, hvis vandpunktet i sig selv er forkert – aldrig blot for at nå modelcellen. Oversigten flytter ingen punkter automatisk, og den offentlige 5 km-grænse er uændret.
 
-**Håndbogsversion:** 4.0.242
+**Håndbogsversion:** 4.0.243
 
 **Opdateret:** 19. august 2026
 
@@ -1919,3 +1919,11 @@ De seks bølgehuller, som blev set ved den låste time i #3246, har nu hver 118 
 Den systematiske onlinekontrol sammenholder begge jagtformer i alle 210 zoner, alle 673 kystdele, 420 aktuelle paneler og 2.100 femdøgnsvalg. Score, label, farve, vind- og strømpile, tre scorekomponenter, forklaring, lokal kontekst, debug og seks vejrmetrikker passer sammen uden fund. Mobil 390 x 844 og desktop 1440 x 900 er kontrolleret uden vandret overflow eller funktionsfejl.
 
 Den fulde produktion er grøn, men en naturlig kørsel, som faktisk krydser en UTC-timegrænse, følges fortsat som et afgrænset driftsbevis. Readiness-gaten må ikke omgås manuelt, og ingen land-/vandpunkter er flyttet.
+
+## Turrapporter og læring fra version 4.0.243
+
+RavRadar lærer af hele ture, ikke af hvert enkelt ravstykke. Når en tur startes, vælger brugeren søgemetode, zone og kystdel. Ved afslutning spørger appen om fund eller intet fund, faktisk kystdel og om søgningen var et kort kig, en normal tur eller grundig. Gram er frivilligt.
+
+Start, slut og søgetid gemmes, og prognosen ved turstart fastholdes. Hvis brugeren søgte et andet sted end valgt ved start, gemmes turen stadig, men den bruges ikke automatisk til scorejustering.
+
+RavRadar sender ikke turens GPS-spor, rute eller præcise position. Kystdelen er det mest præcise stedniveau i læringsdata. Vægtene 25 procent jagtbarhed, 40 procent transport og 35 procent mobilisering er fortsat foreløbige og ændres ikke af denne registrering alene.
