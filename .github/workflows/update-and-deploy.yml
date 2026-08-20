@@ -47,11 +47,11 @@ jobs:
       ready: ${{ steps.readiness.outputs.ready }}
       target_hour: ${{ steps.cache-state.outputs.target_hour }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Restore private Copernicus current cache for timed gate
         if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force != true && inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: .cache/copernicus-current-shadow.json
           key: copernicus-current-shadow-v1-production-gate-${{ github.run_id }}-${{ github.run_attempt }}
@@ -93,10 +93,10 @@ jobs:
       should_deploy: ${{ steps.preflight.outputs.should_run }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Python preflight
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -154,7 +154,7 @@ jobs:
 
       - name: Set up Node.js
         if: steps.preflight.outputs.should_run == 'true'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
 
@@ -184,7 +184,7 @@ jobs:
       - name: Refresh private Copernicus cache before DMI cache churn
         if: steps.preflight.outputs.should_run == 'true'
         id: copernicus-shadow-refresh
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: .cache/copernicus-current-shadow.json
           key: copernicus-current-shadow-v1-pre-dmi-${{ github.run_id }}-${{ github.run_attempt }}
@@ -205,7 +205,7 @@ jobs:
 
       - name: Restore bounded DMI GRIB download cache
         if: steps.preflight.outputs.should_run == 'true'
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         id: dmi-grib-cache-restore
         with:
           path: .cache/dmi-grib
@@ -217,7 +217,7 @@ jobs:
 
       - name: Restore progressive private DMI zone cache
         if: steps.preflight.outputs.should_run == 'true'
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: data/live/dmi-bulk-cache.json
           key: dmi-zone-cache-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
@@ -227,7 +227,7 @@ jobs:
 
       - name: Restore private seven-day current-field research cache
         if: steps.preflight.outputs.should_run == 'true'
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: .cache/current-field-shadow.json
           key: current-field-shadow-v1-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
@@ -264,21 +264,21 @@ jobs:
 
       - name: Save progressed DMI GRIB download cache
         if: steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: .cache/dmi-grib
           key: dmi-grib-v4-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Save progressive private DMI zone cache
         if: steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome == 'success'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: data/live/dmi-bulk-cache.json
           key: dmi-zone-cache-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Save private seven-day current-field research cache
         if: steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: .cache/current-field-shadow.json
           key: current-field-shadow-v1-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
@@ -393,7 +393,7 @@ jobs:
 
       - name: Upload RavRadar support package
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: RavRadar-support-${{ github.run_number }}
           path: RavRadar-support-${{ github.run_number }}.zip
@@ -452,11 +452,11 @@ jobs:
 
       - name: Configure GitHub Pages
         if: steps.preflight.outputs.should_run == 'true'
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - name: Upload GitHub Pages artifact
         if: steps.preflight.outputs.should_run == 'true'
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: _site
 
@@ -469,10 +469,10 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Python for private national geometry acquisition
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -699,7 +699,7 @@ jobs:
 
       - name: Upload compact national geometry-v2 QA artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: geodanmark-geometry-v2-national-qa-${{ github.run_id }}
           path: |
@@ -756,7 +756,7 @@ jobs:
 
       - name: Upload private national geometry-v2 source artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: geodanmark-geometry-v2-national-${{ github.run_id }}
           path: .geometry-v2-work/
@@ -772,10 +772,10 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Python for private geometry pilot
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -872,7 +872,7 @@ jobs:
 
       - name: Upload private GeoDanmark pilot artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: geodanmark-geometry-v2-pilot-${{ github.run_id }}
           path: |
@@ -897,4 +897,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

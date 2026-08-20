@@ -116,7 +116,7 @@ def main() -> None:
         "-f ref=main",
     ):
         need(marker in workflow, f"Heartbeat workflow is missing {marker}")
-    need("actions/cache/save@v4" not in workflow, "workflow_run heartbeat must not try to write a read-only cache")
+    need("actions/cache/save@v6" not in workflow, "workflow_run heartbeat must not try to write a read-only cache")
     need("actions/upload-artifact" not in workflow, "Heartbeat must never export raw cache evidence")
     pilot_workflow = (ROOT / ".github/workflows/validate-copernicus-current-pilot.yml").read_text(encoding="utf-8")
     for marker in (

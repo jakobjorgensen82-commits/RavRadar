@@ -17,10 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Download existing compact national QA artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: geodanmark-geometry-v2-national-qa-${{ inputs.source_run_id }}
           run-id: ${{ inputs.source_run_id }}
@@ -50,7 +50,7 @@ jobs:
 
       - name: Upload roundtrip evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: national-admin-roundtrip-retry-${{ github.run_id }}
           path: national-admin-roundtrip-retry.json

@@ -1028,3 +1028,11 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - Den efterfølgende onlinekontrol gennemgik 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 prognosevisninger med nul fejl i score, label, farve, pile, forklaringer, vejrtal, komponenter, kontekst, konsol, side eller HTTP.
 - P0.3 og den låste Open-Meteo-times issue er lukket. P1's naturlige 72/168-timersobservationer og uafhængige modelcyklusser er fortsat åbne.
 - Codex må permanent merge egne RavRadar-PR'er efter fuld systemisk verifikation og datasikker PR-kontrol; grøn topstatus alene er ikke tilstrækkelig ved modstridende evidens.
+
+## 2026-08-20 - post-merge produktion og P1 #3256
+- Mergecommit `e1f835a3` er produktionsverificeret i `#32354210495`: support `RavRadar-support-3256`, datasæt `rr-20260820093508-210`, fuld validering, releasegate, Supabase, Pages og komplet browserkontrol bestod.
+- `samples72h` er 70 rå prøver og 41,489 timers spænd i alle 210 zoner. 198 geografisk verificerbare zoner har verificeret spænd 41,489 timer; de 12 kendte parenthuller har nul verificerede prøver. Alle 210 er under 72-timerskravet.
+- Supplementhistorikken har 45 unikke validtider over 45 timer for 633 dele. Shadow-cachen har cirka 104 timers capture-spænd og har besøgt alle 673 dele; 168-timerskravet er åbent.
+- HARMONIE 20. august 00Z, WAM 19. august 18Z og DKSS 19. august 12Z er fortsat nyeste modelstarter. Overgangsmålene er uændrede, Feggesund er wave-missing, og ingen permanent grænse er godkendt.
+- Produktionstiden var 410 sekunder; syv fulde builds har median 473 sekunder med uændrede gates.
+- Node 20-deprecation har en lokal kandidat med officielle Node 24-majorer i ni workflows. Gates og betingelser er uændrede; PR-CI og frisk produktion mangler.

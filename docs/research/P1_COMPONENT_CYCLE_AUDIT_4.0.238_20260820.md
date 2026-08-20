@@ -32,3 +32,9 @@ Kørslen tæller derfor som stabil drift, releasebevis og naturlig historikvæks
 ## Konklusion
 
 4.0.238 viser ingen overgangsregression, men giver heller ikke et nyt uafhængigt cyklusgrundlag. Permanente tærskler, ny fallback eller scoreændringer er derfor fortsat ikke fagligt godkendt. Næste kvalificerede artifact skal indeholde en ny modelstart for den komponent, der vurderes.
+
+## Post-merge artifact #3256
+- `#32354210495`/`RavRadar-support-3256`/`rr-20260820093508-210` har fortsat HARMONIE 20. august 00Z, WAM 19. august 18Z og DKSS 19. august 12Z som nyeste modelstarter.
+- Vindens DMI-til-fallback-delta er fortsat 1,027/2,5 m/s og 37,957/128 grader for middel/p95. Bølgeovergangene er fortsat 0,107/0,38 m, 21,121/106 grader og 0,344/1,3 s.
+- De 198 verificerbare strømzoner går fortsat `dmi -> missing`; de 12 geografiske huller har ingen konstrueret strøm. Feggesund er fortsat den ene zone uden bølgedata.
+- Artifactet tæller som stabil drift og historikvækst, ikke som ny uafhængig cyklus. Ingen tærskel, fallback, score, geometri eller punkt ændres.
