@@ -1,5 +1,9 @@
 # Kendte åbne og overvågede forhold
 
+## Copernicus-pilot #70 - 2026-08-20
+
+- **ISSUE-COPERNICUS-CURRENT-PILOT - FORTSAT SUND / 168 TIMER IKKE NÅET:** Naturlig `#32342023293` har 45 eksakte timer, 28.305 private poster, 625 unikke mål og 629 mål/kilde-par med nul gitter- eller lagustabilitet. Pilotens 48 Copernicus-huller er uændrede kildedækningshuller og udfyldes ikke. Scorepåvirkning, offentlig runtime og interpolation er fortsat deaktiveret; syvdøgnsanalysen forbliver åben.
+
 ## 4.0.238-kandidat
 
 - **ISSUE-VERIFIED-HISTORY-GENERATEDAT-MISMATCH - RETTET I KANDIDAT / AFVENTER PRODUKTION:** Historikprøven ligger ved `productionReferenceAt`, men efterberigelsen søgte tidligere ved den senere `generatedAt`. 198 zoner havde derfor verificeret aktuel strøm uden naturlig vækst ud over 22,563 timers verificeret spænd. Matcheren bruger nu produktionsreferencen med bagudkompatibel fallback. De 12 reelle gitterhuller forbliver `missing`.

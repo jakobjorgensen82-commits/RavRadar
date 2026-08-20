@@ -1,5 +1,13 @@
 # Current truth – gældende projektviden
 
+## Naturlig Copernicus-pilot #70 - fortsat sund 168-timersopsamling
+
+- Den planlagte pilot `#32342023293`/artifact `copernicus-current-pilot-70` blev genereret 2026-08-20 07:02Z mod den centralt godkendte bestand på 673 dele.
+- Den private cache har 45 eksakte timetidspunkter fra 2026-08-18 11:00Z til 2026-08-20 07:00Z, 28.305 observationer, 625 unikke mål og 629 mål/kilde-par.
+- Baltic dækker 552/567 berettigede mål og AMM15 77/125. Summen er større end 625, fordi fire mål har evidens fra begge kilder.
+- Der er nul ustabile mål/kilde-par for både gitterpunkt og lag. Interpolation, scorepåvirkning og offentlig runtime er fortsat slået fra, og supportgaten afviste secret- eller råvektorlæk.
+- Syvdøgnskravet er endnu ikke opfyldt; der mangler fortsat naturlig vækst fra 45 til et fuldt 168-timersvindue.
+
 ## 4.0.238 er releasekandidat - endnu ikke main eller produktionsverificeret
 
 - Draft-PR #1 samler rettelsen af den verificerede histories referencetime, Open-Meteos låste timeskifte og den kildebaserede PR-gate.

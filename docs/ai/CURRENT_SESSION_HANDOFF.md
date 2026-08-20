@@ -17,24 +17,24 @@ Disse fire eksisterende dirty filer må aldrig ændres, stages eller committes:
 
 Der må ikke flyttes land-/vandpunkter.
 
-## Aktuel kandidat
+## 4.0.238-kandidat
 
-- 4.0.238 samler historikmatch på `productionReferenceAt`, et låst Open-Meteo-vindue over UTC-timeskifte, den kildebaserede PR-gate og et versionsbundet browserbevis.
-- PR-kontrollen må ikke hente secrets, hydrere central sandhed, bygge produktionsdata eller deploye.
-- Browserbeviset kræver liveversion 4.0.238 og kontrollerer 210 zoner, 673 delreferencer, 420 aktuelle paneler, 2.100 femdøgnsvalg, score/farve/pile/forklaring og seks vejrmetrikker.
-- Ingen geometri, punkter, U/V, kildeorden, afstandsgrænser eller RavScore er ændret.
+- P0.1 er afsluttet i `2db2cd2b` og `e197a196`.
+- `release/RavRadar-4.0.238.zip` er bygget reproducerbart fra committen: 972 filer og 13.878.902 byte.
+- Lokal RDKS, historik, timeskiftelås, DMI, forecastintegration, vandkæde, workflowrækkefølge, browser-syntaks, versionskontrol og releasegate er grønne.
+- GitHub PR-gate `#32342936407` er grøn på `e197a196`.
+- PR #1 er fortsat draft og må ikke merges uden ejerens udtrykkelige beslutning.
 
-## Seneste eksterne evidens
+## Seneste naturlige evidens
 
-- PR #1 var draft, mergeable og grøn på `Source validation and release gate` før 4.0.238-pakken.
-- Naturlig produktion #3249 på gammel `main` bestod begge fulde gates, Supabase og Pages.
-- #3249 har 198 zoner med verificeret aktuel strøm og 12 reelle `NO_SHARED_MARINE_GRID_POINT`-huller, men verificeret historik står stadig på 22,563 timer. Det er gammelkodens symptom og ikke kandidatbevis.
-- Feggesund (`DK-B05-11`) mangler fortsat reelle bølgedata og må ikke udfyldes kunstigt.
+- Produktion #3249 på gammel `main` bestod fuld validering, releasegate, Supabase og Pages, men er ikke kandidatbevis.
+- Naturlig Copernicus-pilot `#32342023293`/artifact #70 har 45 eksakte timer, 28.305 private poster, 625 unikke mål, 629 mål/kilde-par og nul gitter-/lagustabilitet.
+- Piloten er fortsat score-neutral, privat og uden interpolation. Det fulde 168-timersvindue er endnu ikke nået.
+- De 12 reelle hovedzonehuller for verificeret strøm og Feggesunds reelle bølgemangel skal fortsat være `missing`.
 
 ## Næste bindende trin
 
-1. Kør kandidatens relevante kildechecks og releasegate uden at skrive de beskyttede datafiler.
-2. Commit og push kun den afgrænsede 4.0.238-pakke; kontroller PR-gaten.
-3. Merge ikke PR #1 uden ejerens udtrykkelige beslutning.
-4. Efter sikker merge: kør frisk fuld central produktion over et UTC-timeskifte og bevis historik, bølgehuller, DMI-first-hale og alle gates.
-5. Forsøg Browser-pluginet først. Hvis den kendte hostfejl ikke har en konkret løsning, brug den godkendte Playwright/Chromium-fallback og gentag hele 210/673/420/2.100-kontrollen.
+1. Merge ikke PR #1 uden ejerens udtrykkelige beslutning.
+2. Fortsæt ikke-blokeret naturlig Copernicus-overvågning mod 168 timer og Supabase-forbrugsovervågning.
+3. Efter sikker merge: kør frisk fuld central produktion over et UTC-timeskifte og bevis historik, bølgehuller, DMI-first-hale og alle gates.
+4. Forsøg Browser-pluginet først. Hvis hostfejlen ikke har en konkret løsning, brug den godkendte Playwright/Chromium-fallback og gentag 210/673/420/2.100-kontrollen mod live 4.0.238.

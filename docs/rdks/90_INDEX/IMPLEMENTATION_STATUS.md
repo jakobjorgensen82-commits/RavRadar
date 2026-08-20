@@ -1,5 +1,13 @@
 # Implementeringsstatus – 4.0.237 produktionsverificeret
 
+## P1-driftsevidens - Copernicus-pilot #70
+
+- **STATUS:** Grøn naturlig schedule-kørsel og supportartifact.
+- **VINDUE:** 45 eksakte timetidspunkter, 28.305 poster, første 2026-08-18 11:00Z og seneste 2026-08-20 07:00Z.
+- **STABILITET:** 625 unikke mål, 629 mål/kilde-par og nul gitter-/lagustabilitet.
+- **ISOLATION:** `scoreImpact=false`, `publicRuntime=false`, `interpolation=false`; ingen rå U/V eller credentials i supportbeviset.
+- **RESTERENDE:** Fortsæt naturlig opsamling til et fuldt 168-timersvindue før afsluttende forskningsanalyse.
+
 ## Status for 4.0.238-kandidaten
 
 - **KODE OG PR-GATE:** Implementeret i draft-PR #1. Historikmatcher, låst Open-Meteo-vindue og kildebaseret PR-validering har målrettede regressioner.

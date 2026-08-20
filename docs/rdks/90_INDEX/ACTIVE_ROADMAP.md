@@ -2,9 +2,10 @@
 
 ## Aktuel P0-status - 4.0.238-kandidat
 
-- P0.1, PR-review og korrekt 4.0.238-pakke: afsluttes på kandidatbranchen med versionsbundet browserbevis og fuld dokumentationskæde.
+- P0.1, PR-review og korrekt 4.0.238-pakke: afsluttet på kandidatbranchen i `2db2cd2b` + `e197a196`; lokal ZIP og GitHub PR-gate `#32342936407` er grønne.
 - P0.2, sikker overførsel til `main`: ikke udført; PR'en må ikke merges uden ejerens udtrykkelige beslutning.
 - P0.3-P0.6: afventer live 4.0.238. De kræver frisk fuld central produktion, bevis for seks tidligere #3246-bølgehuller, voksende verificeret historik i 198 zoner og gentaget browseraudit af 210/673/420/2.100.
+- P1-observation: naturlig Copernicus-pilot #70 har 45 eksakte timer, 28.305 poster og nul gitter-/lagustabilitet. Fortsæt mod 168 timer.
 - Ikke-blokeret driftsevidens og P1-analyse kan fortsætte, mens merge afventer. Ingen missing værdi må skjules, og ingen land-/vandpunkter må flyttes.
 
 **Opdateret:** 2026-08-20  

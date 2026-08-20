@@ -18,3 +18,7 @@
 - PR-kontrollen er kildebaseret og må hverken hente secrets, hydrere central admin-sandhed, bygge produktionsdata eller deploye. Den kontrollerer de relevante regressions- og releasekontrakter før merge.
 - Ingen land-/vandpunkter, kystgeometri, U/V-værdier, afstandsgrænser, kildeorden eller RavScoreformel er ændret.
 - Kandidaten er ikke produktionsverificeret, før den er ført sikkert til `main`, har bestået en frisk fuld central produktionskørsel og derefter den komplette online browserkontrol.
+## Naturlig P1-driftsevidens
+
+- Copernicus-pilot #70 fortsætter den private score-neutrale opsamling med 45 eksakte timetidspunkter, 28.305 observationer, 625 unikke mål og 629 mål/kilde-par.
+- Nul mål/kilde-par har skiftet gitterpunkt eller lag. `scoreImpact=false`, `publicRuntime=false` og `interpolation=false` er bevaret; det fulde 168-timersvindue er endnu ikke nået.
