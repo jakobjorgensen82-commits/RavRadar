@@ -34,6 +34,12 @@
 - [x] Kort, zonepanel, score, lokal kontekst, tre komponenter, to pile og fem prognosedage er synlige i begge viewports.
 - [x] Ingen page errors eller funktionelle HTTP-fejl.
 
+## Aktiv P1 - naturlig 72-timers vejrhistorik
+
+- `#3237` har ensartet 62 samples og 28,903 timers `samples72h` i alle 210 zoner; `#3242` voksede videre til 64 samples og 30,903 timer.
+- Forloebet starter ved den kontrollerede 4.0.232-liveaktivering og viser ikke tilfaeldigt zonevist tab.
+- Naeste gyldige exitmaaling er en naturlig produktion efter `2026-08-21T16:05:48Z`. Ingen backfill, scoreaendring eller punktflytning er godkendt.
+
 ## Produktionsverificeret P1 – én komplet aktuel time inden for hver zone
 
 1. **Rodårsag afgrænset:** 673/673-kildegaten var gyldig, men den hidtidige runtime valgte hver dels nærmeste gyldige række uafhængigt. Den offentlige selector kunne samtidig foretrække en nærmere, ufuldstændig zonerække.
