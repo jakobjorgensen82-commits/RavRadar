@@ -34,6 +34,10 @@ Den nye kø ændrer eller sletter ikke historiske ruter fra det gamle turflow. N
 
 Uploadadapteren bygger databasepayloaden fra en fast tilladelsesliste og kontrollerer privatlivskontrakten igen lige før afsendelse. Hver tur har et unikt `trip_id` i databasen, så et uklart netværkssvar kan genforsøges idempotent. Ved en fejl bliver posten i den lokale kø, og statusresultatet indeholder kun tur-id og en kort fejltekst, aldrig den fulde payload.
 
+## Enkel brugerformular
+
+Den isolerede dialog spørger kun om fund/ikke fund, faktisk zone og kystdel, søgegrundighed og frivillige gram. Den forklarer tydeligt, at den præcise position og ruten ikke gemmes. Hvis stedet ændres i forhold til turstart, forklarer dialogen også, at turen bevares men ikke bruges til automatisk scorejustering. “Svar senere” lukker dialogen uden at færdiggøre eller slette turdata.
+
 ## Dataminimering
 
 GPS-punkter, ruter, koordinater og spor indgår ikke i fjernkontrakten. Den faktiske kystdel er præcis nok til faglig kalibrering og langt mindre følsom end brugerens bevægelsesspor. Lokale historiske ruter ændres eller slettes ikke af denne kontrakt.

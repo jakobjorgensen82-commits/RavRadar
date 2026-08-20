@@ -241,4 +241,12 @@ for (const column of [
 assert.doesNotMatch(migration, /\b(?:delete|update)\s+(?:from\s+)?ravradar_observations\b/i);
 assert.doesNotMatch(migration, /\b(?:latitude|longitude|gps|route|track)\b/i);
 
+const dialogSource = fs.readFileSync('js/ui/trip-evidence-dialog.js', 'utf8');
+for (const text of ['Hvordan gik ravturen?', 'Fandt du rav?', 'Hvilken kystdel?', 'Kort kig', 'Normal tur', 'Grundigt', 'Svar senere', 'Gem tur']) {
+  assert.match(dialogSource, new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+}
+assert.match(dialogSource, /ikke din præcise position eller rute/);
+assert.doesNotMatch(dialogSource, /\.innerHTML\s*=/);
+assert.doesNotMatch(dialogSource, /\b(?:fetch|geolocation|localStorage)\b/);
+
 console.log('Trip evidence contract: OK');
