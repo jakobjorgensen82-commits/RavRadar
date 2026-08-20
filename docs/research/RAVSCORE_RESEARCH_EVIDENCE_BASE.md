@@ -158,3 +158,10 @@ Ingen kilde i den første runde leverer endnu klasse A for RavRadars numeriske t
 - Definér dataformat og etik for fund, nulfund, søgeindsats og ekspertvurdering.
 - Design score-neutrale features og hold-out-validering; ingen af dem aktiveres automatisk.
 - Fremlæg samlet anbefaling, usikkerheder og forventet cost/benefit før forslag til ny RavScore-arkitektur.
+## Fase C - deterministisk kodefølsomhed
+
+Den permanente audit `scripts/audit-ravscore-sensitivity.mjs` gennemgår 54 tærskelrækker, 18 missing-scenarier, otte overlapsscenarier og 86.400 syntetiske gridscenarier uden scorepåvirkning.
+
+De største lokale slutscore-spring er -18 lige over 6 m/s vind for waders, -12 lige over 13 m/s for strand og +10-11 ved 0,15 m/s strøm. Strømstyrke og -retning påvirker både transport og mobilisering; kombinationen flytter slutscoren 32 point og giver 4-5 points ikke-additivitet. Det syntetiske grid har transport-mobilisering-korrelation 0,402 i begge jagtformer.
+
+Missing-auditten viser desuden asymmetri: vind er eneste absolutte gate, bølger reducerer basisscoren 2-3 point ved fravær, mens manglende strøm reducerer 19-20 og aktiverer et loft. Dette er kodeadfærd, ikke en anbefaling. Se `docs/research/RAVSCORE_SENSITIVITY_AUDIT_4.0.238.md`.

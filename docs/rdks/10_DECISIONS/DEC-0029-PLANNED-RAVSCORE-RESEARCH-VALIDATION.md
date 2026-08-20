@@ -63,3 +63,6 @@ Den private syvdøgnsopsamling er kun et observationsgrundlag. Den påvirker ikk
 Ejeren har godkendt fortsat autonomt roadmaparbejde, mens P1's naturlige 72/168-timersvinduer afventer tid. Fase A-B er derfor igangsat uden produktionskode: aktiv kodevej, tærskler, overlap, konceptuel systemmodel, første primærkilder og valideringsforsøg er dokumenteret i `docs/research/RAVSCORE_RESEARCH_EVIDENCE_BASE.md`.
 
 Adgangskriteriet er kun åbnet for score-neutral forskning. Alle stopregler består: ingen ny mekanisme, vægt, tærskel, kilde eller score må aktiveres uden fase C-D, virkelighedsvalidering og særskilt ejerbeslutning.
+## Fase C - kodefølsomhed 2026-08-20
+
+En score-neutral, permanent følsomhedsaudit måler nu aktive tærskelspring, missing-adfærd, overlap og syntetisk scorefordeling. Resultatet dokumenterer store diskrete spring og delt påvirkning fra strøm, bølger og kysttags. Det er prioritering af senere validering, ikke tilladelse til ændring. Se `docs/research/RAVSCORE_SENSITIVITY_AUDIT_4.0.238.md`.

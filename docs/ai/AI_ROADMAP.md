@@ -432,3 +432,7 @@ Den planlagte P3-forskning må undersøge, om rumlige strømstrukturer har selvs
 +- Den permanente evidensbase er oprettet med verificeret aktiv kodevej, fysisk systemmodel, første primærkilder, evidensklasser og valideringsdesign.
 +- Aktive tærskler og vægte er arbejdshypoteser. Vind, bølger, strøm og kysttags kan være dobbelt-talt; dette skal måles før forslag.
 +- Fase C-D fortsætter score-neutralt med materialefysik, overførbarhed, kodefølsomhed, ablation og bias-kontrolleret fund-/nulvalidering.
+## RavScore-forskning fase C
++- Den aktive score har nu en gentagelig, score-neutral følsomheds- og overlapaudit med self-test.
++- Resultatet prioriterer store diskrete tærskler, missing-asymmetri og delt inputpåvirkning til fase D-validering.
++- Ingen scoreændring er godkendt; næste trin er ablation og bias-kontrolleret virkelighedsdesign.

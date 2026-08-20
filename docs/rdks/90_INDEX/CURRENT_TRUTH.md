@@ -1084,3 +1084,9 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 +- Kodeauditen finder uvaliderede numeriske tærskler og mulig dobbelt-tælling af vind, bølger, strøm, alignment og kysttags. Bølgeretning/-periode og shadow-state findes, men påvirker ikke aktiv score direkte.
 +- Første primærkilder støtter den overordnede kæde stormerosion -> transport -> aflejring, men ingen leverer klasse A-bevis for RavRadars tærskler eller vægte.
 +- Ingen produktionskode, score, datakilde, fallback eller geometri er ændret. Se `docs/research/RAVSCORE_RESEARCH_EVIDENCE_BASE.md`.
+## RavScore fase C - syntetisk følsomhed
++- En permanent score-neutral audit finder 40 scoreændrende rækker blandt 54 aktive tærskelrækker.
++- Største lokale spring er -18 ved waders-vind over 6 m/s, -12 ved strandvind over 13 m/s og +10-11 ved strøm 0,15 m/s.
++- Strømstyrke/-retning påvirker både transport og mobilisering; kombinationen flytter slutscoren 32 point i basisscenariet. Det syntetiske transport-/mobiliseringsoverlap er 0,402.
++- Missing-adfærden er asymmetrisk: vind er hard gate, bølgefravær koster 2-3 baselinepoint, og strømfravær koster 19-20 plus loft.
++- Resultaterne beskriver kode, ikke ravfund. Ingen tærskel, vægt, score, kilde eller geometri er ændret.
