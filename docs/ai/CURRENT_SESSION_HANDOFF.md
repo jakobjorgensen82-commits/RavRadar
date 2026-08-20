@@ -146,5 +146,5 @@ Der må ikke flyttes land-/vandpunkter.
 
 - Arbejdsbranch: codex/ravscore-safety-language.
 - Formål: adskil praktisk jagtbarhed fra sikkerhed uden score- eller geometriændring.
-- Kildeændringer, lokale kilde-/releasegates og Browser-kontrol er færdige; PR-gate, merge og produktion mangler.
+- PR #23 er merged som 961beab1 og produktionsverificeret med frisk fuld gate, direkte kildekontrol og fejlfri onlineaudit af 210 zoner/673 kystdele.
 - Beskyt fortsat de fire dirty datafiler i hovedarbejdstræet, og flyt ingen land-/vandpunkter.

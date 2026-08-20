@@ -1134,4 +1134,4 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - Jagtbarhed forklares som praktisk søgemulighed og ikke som en sikkerhedsgodkendelse.
 - Aktuel visning og fem-døgnsvisning har samme særskilte sikkerhedsnote.
 - RavScore, pile, vægte, tærskler, data og geometri er uændrede.
-- Kilden har bestået målrettede tests, validate:source, release-gate samt lokal Browser-kontrol på desktop og mobil med aktuelle offentlige data; PR, merge og produktion mangler.
+- 4.0.240 er merged i PR #23 og produktionsverificeret på mergecommit 961beab1. Frisk produktionsvalidering og release-gate bestod, den deployede kilde indeholder begge nye tekster, og den systematiske onlineaudit bestod 210 zoner, 673 kystdele, 420 aktuelle visninger og 2100 femdøgnsvisninger uden fejl.
