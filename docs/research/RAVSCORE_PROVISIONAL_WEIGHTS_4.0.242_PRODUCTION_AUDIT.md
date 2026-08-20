@@ -64,4 +64,3 @@ System-Chromium blev kørt ved 390 x 844:
 ## Status
 
 4.0.242 er produktionsverificeret. Vægtningen er fortsat fagligt foreløbig og skal senere kalibreres mod et tilstrækkeligt stort og repræsentativt datasæt af både fund- og nul-fundsture. Enkeltfund bruges ikke som selvstændigt kalibreringsgrundlag.
-
