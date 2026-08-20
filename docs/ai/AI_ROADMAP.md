@@ -78,7 +78,7 @@
 3. **Implementeret lokalt:** runtime bærer kompakt vinderforklaring og viste vejrmetrikker pr. fælles time, og regressionen dækker 210 zoner, 673 dele, begge jagtformer og 2.100 femdøgnsvisninger.
 4. **Central gate bestået:** `#32249770288`/`#3216` bestod frisk 673/673, fuld validering, releasegate, Supabase og Pages; live datasæt `rr-20260819115558-210` matcher artifactet.
 5. **Runtimeaudit bestået:** 420 aktuelle og 2.100 femdøgnsvisninger bruger kun én komplet lokal kontekst eller en eksplicit samlet hovedzonefallback.
-6. **Åben visuel slutkontrol:** faktisk DOM-/kliktest af kort, pile, vinderområde, tekst, score og debug gennemføres for alle 210 zoner/673 dele. Browser-plugin og diagnostik forsøges først; Chromium/Playwright er ejer-godkendt fallback, hvis der ikke findes en konkret reparationsvej.
+6. **Visuel slutkontrol afsluttet:** faktisk DOM-/kliktest af pile, vinderområde, tekst, score og debug er gennemfoert for alle 210 zoner/673 dele, begge jagtformer og fem doegn. Seneste Playwright-gentagelse paa `rr-20260819235244-210` havde nul mismatch og nul browser-/HTTP-fejl.
 
 ## Afsluttet driftsrelease – GitHub-plan og Supabase-timeout
 
@@ -97,7 +97,7 @@
 5. Indfør særskilt bevis for én komplet valgt aktuel række inden for hver zone. Den eksisterende samlede 100 %-gate bevares, men forskellige zoner må vælge forskellige nærmeste komplette timer; der kræves ikke én national fælles time.
 6. Afslut med fuld RDKS-, release-, central produktions- og direkte browservalidering. Den bestående 4.0.233-retningsisolation, kildeorden, afstandsgrænser, rollback og ejerpunkter må ikke ændres utilsigtet.
 
-Status: både den sammenhængende lokale præsentation og den særskilte zonevise current-reference er produktions- og runtimeverificeret, senest igen i native `#32272470720` og live `rr-20260819155614-210`. Faktisk visuel onlinekontrol afventer; pluginet forsøges først, og Chromium/Playwright bruges ved manglende konkret reparationsvej. Krævet model/indsats: GPT-5.6 Sol, Ekstra høj.
+Status: både den sammenhængende lokale præsentation og den særskilte zonevise current-reference er produktions- og runtimeverificeret. Den faktiske visuelle onlinekontrol er afsluttet og gentaget med Playwright paa `rr-20260819235244-210`: 210 zoner, 673 dele, 420 aktuelle visninger, 2.100 femdoegnsvisninger og nul mismatch. Krævet model/indsats: GPT-5.6 Sol, Ekstra høj.
 
 ## Aktuelt P1-fix 2026-08-18 – lokal scoreretning må ikke komme fra en anden kystdel
 
