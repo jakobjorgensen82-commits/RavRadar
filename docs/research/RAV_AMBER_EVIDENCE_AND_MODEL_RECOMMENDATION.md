@@ -173,9 +173,9 @@ B0 er nyttig som gennemsigtig forskningsbaseline, men endnu ikke en videnskabeli
 
 | B0-del | Det gode | Faglig risiko | Anbefaling |
 | --- | --- | --- | --- |
-| Huntability, 40 % | Skelner aktuelle søgeforhold fra hændelseshistorik | Kan dominere fysisk ravchance; vejrkomfort og tilstedeværelse blandes let | Vis søgeforhold separat; brug det kun begrænset i fysisk chance |
-| Transport, 35 % | Bruger strøm, retning, vind, vandstandstrend og kysttags | Overfladelag kan være forkert for bundrav; mulig dobbeltregning af samme forcing | Opdel i transportmåde og mærk strømdybden; undgå én ravpil |
-| Release, 25 % | Anerkender 24-timers energi og tid siden hændelse | Maksimum uden varighed/periode/retning; 24 timer kan være for kort | Udvid til mindst 72 timers hændelsesbeskrivelse og test stormfaser |
+| Huntability, 25 % | Skelner aktuelle søgeforhold fra hændelseshistorik | Kan dominere fysisk ravchance; vejrkomfort og tilstedeværelse blandes let | Vis søgeforhold separat; brug det kun begrænset i fysisk chance |
+| Transport, 40 % | Bruger strøm, retning, vind, vandstandstrend og kysttags | Overfladelag kan være forkert for bundrav; mulig dobbeltregning af samme forcing | Opdel i transportmåde og mærk strømdybden; undgå én ravpil |
+| Release, 35 % | Anerkender 24-timers energi og tid siden hændelse | Maksimum uden varighed/periode/retning; 24 timer kan være for kort | Udvid til mindst 72 timers hændelsesbeskrivelse og test stormfaser |
 | Faste vægte | Let at forstå og reproducere | Vægte kan kompensere for manglende nødvendige led og ligne falsk præcision | Bevar kun som baseline; sammenlign med en kæde-/gate-model |
 | 0-100 resultat | Godt til rangering og UI | Kan fejllæses som procent chance | Kald det indeks, indtil observationer dokumenterer kalibrering |
 

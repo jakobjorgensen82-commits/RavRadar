@@ -169,7 +169,13 @@ Validering skal deles i tid og geografi, så modellen ikke kun lærer de mest ak
 
 ## Implementeringsstatus 4.0.241
 
-- Bølgeretning og periode er omsat til en begrænset aktiv transportprior efter DEC-0032.
+- Bølgeretning og periode er omsat til en begrænset aktiv transportprior efter DEC-0040.
 - Den relative energiproxy og retningsfaktoren er genbrugt fra den diagnostiske fase D-kandidat.
 - Effekten er højst plus/minus 12 transportpoint, har nul-fallback og må ikke omtales som bundforskydning.
 - Vægtforslaget 25/40/35 er fortsat et separat næste delmål.
+
+## 4.0.242 - foreløbig aktiv vægtning
+
+Efter den isolerede aktivering af bølgeretning og periode gennemfører 4.0.242 den særskilte vægtændring til 25 % jagtbarhed, 40 % transport og 35 % mobilisering. Det følger fase D-kandidatens additive prior og undgår, at jagtbarhed alene dominerer den fysiske kæde.
+
+Fordelingen er fortsat en arbejdsmodel. Den må først genkalibreres efter et tilstrækkeligt sammenhængende datasæt med både fund og reelle nul-fund; enkelte fund kan ikke identificere vægtene.

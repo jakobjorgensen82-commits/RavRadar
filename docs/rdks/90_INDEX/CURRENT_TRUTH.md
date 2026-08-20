@@ -1080,7 +1080,7 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 +- En gentaget GitHub exit-2-annotation på det grønne fulde valideringstrin findes også i #3259/#3261; ingen fejlet deltest eller gate blev fundet.
 ## RavScore-forskning fase A-B
 +- DEC-0029 er igangsat score-neutralt, fordi P1's næste 72/168-timersbevis afventer naturlig tid.
-+- Den aktive score kommer fra `js/core/score-engine.js`, ikke den historiske rodprototype `ravscore.js`. Standardvægtene er 40 % jagtbarhed, 35 % transport og 25 % mobilisering/tilgængelighed.
++- Den aktive score kommer fra `js/core/score-engine.js`, ikke den historiske rodprototype `ravscore.js`. Fra 4.0.242 er de foreløbige produktionsvægte 25 % jagtbarhed, 40 % transport og 35 % mobilisering/tilgængelighed efter DEC-0041.
 +- Kodeauditen finder uvaliderede numeriske tærskler og mulig dobbelt-tælling af vind, bølger, strøm, alignment og kysttags. Bølgeretning/-periode og shadow-state findes, men påvirker ikke aktiv score direkte.
 +- Første primærkilder støtter den overordnede kæde stormerosion -> transport -> aflejring, men ingen leverer klasse A-bevis for RavRadars tærskler eller vægte.
 +- Ingen produktionskode, score, datakilde, fallback eller geometri er ændret. Se `docs/research/RAVSCORE_RESEARCH_EVIDENCE_BASE.md`.
@@ -1138,8 +1138,17 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 
 ## 4.0.241 aktiv bølgeprior - source
 
-- Bølgehøjde, periode og retning kan nu justere transportkomponenten efter DEC-0032.
+- Bølgehøjde, periode og retning kan nu justere transportkomponenten efter DEC-0040.
 - Justeringen er begrænset til plus/minus 12 transportpoint og sker før eksisterende fralandsstrømlofter.
 - Manglende bølgeinput eller lokal pålandsretning giver nul effekt.
 - Vægte, øvrige tærskler, pilekonventioner, data og geometri er uændrede.
 - Syntetisk audit holdt transport inden for plus/minus 12 og samlet score inden for plus/minus 5. National public-audit gav minus 1 til plus 1, ingen farveskift og sikker fallback ved én manglende periode. PR #25 er merged som `eb66b280`. Produktion `#32405699346` bestod frisk data, fuld validering, release-gate, Supabase, Pages-build og deploy; direkte Pages-kontrol viser 4.0.241 og den aktive bølgejustering. Onlineaudit på `rr-20260820185733-210` bestod 210 zoner, 673 kystdele, 420 aktuelle og 2.100 prognosevisninger uden fejl.
+
+## Foreløbige produktionsvægte - 4.0.242 source
+
+- DEC-0041 ændrer isoleret den aktive vægtning til 25 % jagtbarhed, 40 % transport og 35 % mobilisering/tilgængelighed.
+- Vægtene er en forskningsbaseret prior før turdata, ikke en endelig kalibrering. Revurdering kræver senere fund og reelle nul-fund.
+- Komponentregler, tærskler, scoregrænser, bølgeprior, pile, data, geometri og land-/vandpunkter er uændrede.
+- Bølgepriorens tidligere kolliderende ID er rettet til DEC-0040; kystgeometri er fortsat DEC-0032.
+
+- National vægtaudit på rr-20260820204808-210 dækker 673 kystdele og 42.846 scoreposter. De 420 viste zone-/jagtformsvisninger falder i gennemsnit 6,314 point; 7 skifter vindende del, og 110 krydser referencegrænserne 35/55/75. Det dokumenterer en reel reduktion af jagtbarhedsdominans, ikke en fundkalibrering.

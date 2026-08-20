@@ -1474,3 +1474,18 @@ Status: Implementeret og lokalt valideret.
 - [x] `validate:source`, release-gate og lokal desktop-/mobilbrowserkontrol.
 - [x] PR #25, merge `eb66b280`, frisk fuld produktion `#32405699346` og direkte deploykontrol.
 - [x] Onlineaudit på `rr-20260820185733-210`: 210 zoner, 673 kystdele, 420 aktuelle og 2.100 prognosevisninger uden fejl.
+
+## 4.0.242 - foreløbige RavScore-vægte
+
+- [x] Aktiv kodekandidat bruger 25 % jagtbarhed, 40 % transport og 35 % mobilisering.
+- [x] DEC-0041 afgrænser ændringen til vægte og kræver senere fund-/nul-fundkalibrering.
+- [x] DEC-0032-ID-kollisionen for bølgeprioren er rettet til DEC-0040.
+- [x] Syntetisk audit af 9.261 kombinationer og national audit af 673 dele/42.846 scoreposter; 420 viste zoner ændres i gennemsnit minus 6,314 point og kun 7 skifter vindende del.
+- [ ] Source-/release-gate og lokal browserkontrol.
+- [ ] PR, frisk produktion og systematisk onlineaudit.
+## 4.0.242 lokal gate-status (2026-08-20)
+
+- Kildevalidering og lokal release-gate: bestaaet.
+- Browser-plugin, desktop og mobilbredde: teknisk indlaesning bestaaet.
+- Frisk 4.0.242-produktionsdata og visuel 25/40/35-konsistens: afventer deploy og er en bindende merge-efterkontrol.
+- Fuld online browserkontrol af 210 zoner og 673 kystdele: afventer det friske 4.0.242-datasat.

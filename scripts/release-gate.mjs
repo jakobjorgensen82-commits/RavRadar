@@ -33,7 +33,7 @@ for(const marker of ['0,15–0,65 m/s','stærk offshore-strøm','3–18 timer','
   ok(handbookTextLower.includes(marker.toLowerCase()),`Håndbogen mangler obligatorisk sporbarhedsmarkør: ${marker}`);
 }
 const scoreEngine=await read('js/core/score-engine.js');
-for(const marker of ['huntability: 0.40','transport: 0.35','release: 0.25','current >= .15 && current <= .65','max: 28','max: 42','hours >= 3 && hours <= 18','nearshore-remobilisation','dominantPathway']){
+for(const marker of ['huntability: 0.25','transport: 0.40','release: 0.35','current >= .15 && current <= .65','max: 28','max: 42','hours >= 3 && hours <= 18','nearshore-remobilisation','dominantPathway']){
   ok(scoreEngine.includes(marker),`Scoremotorens forventede auditkonstant mangler: ${marker}`);
 }
 ok(await exists('docs/rdks/10_DECISIONS/DEC-0015-HANDBOOK-EVIDENCE-TRACEABILITY.md'),'RDKS mangler DEC-0015 om håndbogens sporbarhed');

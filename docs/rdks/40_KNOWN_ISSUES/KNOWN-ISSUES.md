@@ -398,3 +398,7 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 - Den relative bølgeproxy er en forskningsbaseret arbejdsprior og ikke lokalt kalibreret bundfysik.
 - Effekten er derfor begrænset og falder til nul ved manglende input.
 - Luk først efter nationale audits, fulde gates, browserkontrol og produktionsverifikation.
+
+## Foreløbige RavScore-vægte kræver senere kalibrering
+
+25/40/35 i DEC-0041 er en forskningsbaseret prior og ikke en empirisk dansk fundkalibrering. Revurdering kræver mindst cirka seks måneders brugbare ture med både fund og reelle nul-fund; enkelte fund må ikke bruges som genvej.
