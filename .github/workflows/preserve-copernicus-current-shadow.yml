@@ -24,10 +24,10 @@ jobs:
       current_hour_present: ${{ steps.cache-state.outputs.current_hour_present }}
     steps:
       - name: Check out trusted default-branch helper
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Restore and refresh private seven-day Copernicus shadow cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: .cache/copernicus-current-shadow.json
           key: copernicus-current-shadow-v1-keepalive-${{ github.run_id }}-${{ github.run_attempt }}

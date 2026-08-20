@@ -30,3 +30,12 @@
 
 - Copernicus-pilot #72 fortsætter den private score-neutrale opsamling med 46 eksakte timetidspunkter, 28.934 observationer, 625 unikke mål og 629 mål/kilde-par.
 - Nul mål/kilde-par har skiftet gitterpunkt eller lag. `scoreImpact=false`, `publicRuntime=false` og `interpolation=false` er bevaret; det fulde 168-timersvindue er endnu ikke nået.
+
+## Post-merge produktion og P1-checkpoint
+- PR #2 blev merged som `e1f835a3`. Push-kørsel `#32354210495` byggede support `RavRadar-support-3256` og datasæt `rr-20260820093508-210`; fuld validering, releasegate, Supabase, Pages-artifact og deploy bestod.
+- Den efterfølgende onlinekontrol var grøn for 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 prognosevisninger med nul fejl.
+- `samples72h` er vokset naturligt til 70 prøver og 41,489 timers spænd i alle 210 zoner. De 198 verificerbare zoner har samme verificerede spænd; de 12 dokumenterede parenthuller har fortsat ingen verificerede prøver. 72 timer er endnu ikke nået.
+- HARMONIE 20. august 00Z, WAM 19. august 18Z og DKSS 19. august 12Z er uændrede; artifactet er stabil drift, ikke en ny uafhængig modelcyklus.
+- Den kontrollerede supplementhistorik har 45 unikke validtider over 45 timer. Shadow-cachen har cirka 104 timers capture-spænd, men 168-timersmålet er ikke nået.
+- De ni workflows med forældede action-runtimes bruger nu officielle Node 24-majorer. Gates, jobrækkefølge, inputs og betingelser er uændrede; PR-CI og produktion kræves før lukning.
+- Ingen score, kildeorden, fallback, geometri eller land-/vandpunkter er ændret.

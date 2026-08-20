@@ -363,3 +363,6 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 
 - **ISSUE-ANALYTICS-ANONYMOUS-NOISE – ÅBEN/OVERVÅGES:** Den dataminimerede tæller gemmer ingen vedvarende besøgsidentitet. Det beskytter privatlivet, men betyder også, at browserbesøg ikke kan bevises som unikke mennesker, og at automatiseret støj ikke kan fjernes præcist uden at indføre mere sporing. Admin bruger derfor betegnelsen browserbesøg, og dagstal/egress overvåges efter deploy.
 - **ISSUE-ANALYTICS-MIGRATION – LUKKET FØR DEPLOY:** Den versionsstyrede 4.0.215-migration er installeret i Supabase. Tabel og begge funktioner er verificeret, anonym rapportlæsning er afvist, og de to testbesøg er fjernet igen.
+
+## GitHub Actions Node-runtime - 2026-08-20
+- **ISSUE-GITHUB-ACTIONS-NODE20-DEPRECATION - LØST LOKALT / AFVENTER CI OG PRODUKTION:** Produktion `#32354210495` var grøn, men advarede om Node 20. De ni berørte workflows bruger nu de officielle Node 24-majorer: checkout v7, cache v6, setup-python v7, setup-node v7, upload-artifact v7, download-artifact v8, configure-pages v6, upload-pages-artifact v5 og deploy-pages v5. Gates, jobrækkefølge, inputs og betingelser er uændrede; fuld PR- og produktionskontrol mangler.

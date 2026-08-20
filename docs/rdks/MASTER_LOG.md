@@ -1500,3 +1500,12 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Browser-pluginet blev forsøgt først, men kunne ikke løse DNS. Godkendt system-Chrome/Playwright gennemgik derefter 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 prognosevisninger med nul fejl.
 - P0.3 og `ISSUE-OPEN-METEO-LOCKED-HOUR-WINDOW` er lukket uden ændring af punkter, geometri, U/V, score, afstandsgrænser eller kildeorden.
 - Ejerens nye permanente regel giver Codex betinget autoritet til at merge egne datasikre RavRadar-PR'er efter fuld systemisk verifikation; røde/uafklarede gates og konkret fejlevidens blokerer fortsat merge.
+
+# 2026-08-20 - PR #2 post-merge og P1 support #3256
+- PR #2 blev merged som `e1f835a3`. Push `#32354210495` byggede `RavRadar-support-3256` og `rr-20260820093508-210`; fuld validering, releasegate, Supabase, Pages og 210/673-browserkontrol var grøn.
+- P1-matrixen viser 70 rå `samples72h` over 41,489 timer i alle 210 zoner. 198 har verificeret spænd 41,489 timer; 12 kendte parenthuller står ved nul. 72-timerskravet er åbent.
+- Supplementhistorikken har 45 unikke validtider over 45 timer for 625 Copernicus- og 8 regionalproxydele. Shadow-cachen spænder cirka 104 timer, har besøgt 673/673 og er fortsat score-neutral; 168 timer er åbent.
+- Ingen ny HARMONIE-, WAM- eller DKSS-start blev fundet. Overgangsmål, Feggesund wave-missing og parent-currenthuller er uændrede.
+- Buildet tog 410 sekunder; medianen for syv fulde builds er 473 sekunder.
+- Naturlig pilot `#32355447654` blev korrekt duplicate-suppressed. Den tæller ikke som ny time.
+- GitHub Actions varslede Node 20-deprecation i #3256. En lokal kandidat opgraderer de ni berørte workflows til officielle Node 24-majorer uden ændrede gates eller betingelser; PR-CI og produktion afventer.

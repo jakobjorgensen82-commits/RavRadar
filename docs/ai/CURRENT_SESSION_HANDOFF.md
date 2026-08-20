@@ -45,3 +45,12 @@ Der må ikke flyttes land-/vandpunkter.
 - P0.3 og `ISSUE-OPEN-METEO-LOCKED-HOUR-WINDOW` er dermed lukket. Ingen land-/vandpunkter, geometri, U/V, kildeorden, afstandsgrænser eller RavScore er ændret.
 - Codex har permanent betinget autoritet til at oprette, opdatere og merge egne datasikre PR'er efter fuld systemisk verifikation. Usædvanligt risikable, destruktive, irreversible eller ikke-godkendte beslutninger kræver fortsat ejeraccept.
 - Næste ikke-blokerede arbejde er P1: naturlige 72/168-timersvinduer, nye uafhængige modelcyklusser, de 12 eksplicitte parent-currenthuller, Feggesund wave-missing og produktionsvarighed.
+
+## 2026-08-20 - post-merge P1-checkpoint #3256
+- PR #2 er sikkert merged som `e1f835a3`. Produktion `#32354210495`, support `RavRadar-support-3256` og datasæt `rr-20260820093508-210` bestod fuld validering, releasegate, Supabase, Pages og efterfølgende 210/673-browserkontrol.
+- Rå `samples72h` er 70 prøver over 41,489 timer i alle 210 zoner. 198 zoner har verificeret spænd 41,489 timer; 12 kendte geografiske parenthuller står fortsat ved nul. Næste mulige 72-timersbevis er efter 2026-08-21T16:05:48Z.
+- Supplementhistorikken har 45 unikke validtider over 45 timer for 625 Copernicus-dele og 8 regionalproxydele. Shadow-cachen spænder cirka 104 timer og har besøgt 673/673 dele, men 168 timer er ikke nået.
+- Ingen ny HARMONIE-, WAM- eller DKSS-modelstart er observeret. Feggesund er fortsat den ene bølge-missing, og de 12 parent-currenthuller er uændrede.
+- Den naturlige pilot `#32355447654` blev korrekt duplicate-suppressed og tæller ikke som ny time.
+- Push-buildet tog 410 sekunder; medianen for syv fulde builds er nu 473 sekunder uden reducerede gates.
+- De ni berørte workflowfiler er opgraderet mekanisk til de officielle Node 24-majorer uden ændrede gates eller betingelser. Kandidaten afventer PR-CI og frisk produktion.

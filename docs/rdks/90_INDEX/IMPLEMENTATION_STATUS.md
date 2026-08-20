@@ -1357,3 +1357,11 @@ Status: Implementeret og lokalt valideret.
 - Fuld online regression er grøn: 210 zoner, 673 kystdele, 420 aktuelle og 2.100 prognosevisninger, nul fejl.
 - Mergeautoritet er opdateret i `AGENTS.md`, Codex-starten, AI Working Rules og RDKS operating rules.
 - Implementeringen er uændret; denne blok flytter ingen punkter og ændrer ingen score-, data-, geometri- eller runtimekontrakter.
+
+## 2026-08-20 - post-merge P1 #3256
+- [x] PR #2 merge `e1f835a3` er verificeret i frisk produktion, artifacts, Supabase, Pages og 210/673-browserkontrol.
+- [x] P1 #3256 er målt read-only med det eksisterende komponentmatrix-audit: 70 rå prøver/41,489 timer i alle zoner, 198 verificerbare zoner med samme spænd og 12 uændrede parenthuller.
+- [x] Modelcyklusser og overgangsmål er klassificeret som stabil drift uden ny uafhængig HARMONIE-, WAM- eller DKSS-start.
+- [ ] 72-timers rå/verificeret historik og 168-timers supplement/shadow er fortsat naturlige tidskrav og må ikke backfilles.
+- [x] De ni berørte workflows er mekanisk opgraderet til officielle Node 24-actionmajorer uden ændrede gates, jobrækkefølger eller betingelser. PR-CI og frisk produktion afventer.
+- Ingen kode-, score-, data-, geometri- eller punktaftale er ændret af checkpointet.

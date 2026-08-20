@@ -24,3 +24,8 @@ Readiness-kørslerne `#32318506884`, `#32323804299`, `#32332623657`, `#323348392
 ## Konklusion
 
 4.0.238 viser ingen performanceforringelse i den fulde centrale kæde. Kørsel `#32344813967` gennemførte fortsat central adminhydrering, frisk DMI, fuld validering, releasegate, supportartifact, Supabase og Pages. Målingen er driftsevidens, ikke et nyt uafhængigt modelrotationsbevis; varighed skal fortsat følges, når nye HARMONIE-, WAM- og DKSS-cyklusser faktisk optræder.
+
+## Post-merge måling #3256
+- `build-and-prepare` i `#32354210495` tog 410 sekunder og gennemførte fortsat frisk DMI, fuld validering, releasegate, supportartifact, Supabase og Pages.
+- De syv målte fulde builds er nu 689, 473, 478, 451, 544, 415 og 410 sekunder; medianen er 473 sekunder.
+- Resultatet er fortsat stabilt og begrunder ingen reduktion af gates, marine audits eller datakrav. Målingen gentages ved en reel ny modelrotation.
