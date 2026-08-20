@@ -1461,3 +1461,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Naturlig `#3242` viste 64 raa proever/30,903 timer, men et verificeret spaend fast paa 22,563 timer, selv om 198 hovedzoner havde verificeret aktuel DMI-stroem.
 - Rodarsagen var et tidsmatch mellem sample paa `productionReferenceAt` og efterberigelse paa den senere `generatedAt`. Kandidaten bruger nu produktionsreferencen med bagudkompatibel fallback. Maalrettede retention-/transporttests er groenne; frisk central produktion mangler.
 - Ingen score, state, kilde, fallback, geometri eller land-/vandpunkt er aendret.
+# 2026-08-20 - 4.0.238 releasekandidat
+
+- Draft-PR #1 er gennemgået som samlet kildekandidat. Historikrettelsen vælger `productionReferenceAt`, og Open-Meteo-fallbacken bevarer den låste første time over et UTC-timeskifte med et afgrænset fortidsvindue og 120 fremtidige timer.
+- Den versionsbundne browserkontrol dækker begge jagtformer, 210 zoner, 673 kystdele, 420 aktuelle paneler, 2.100 femdøgnsvalg, score/label/farve, pile, tre komponenter, forklaring, lokal kontekst og seks vejrmetrikker. Liveversionen skal nu matche 4.0.238.
+- Naturlig #3249 på gammel `main` bestod fuld validering, releasegate, Supabase og Pages, men viste fortsat 198 verificerede aktuelle zoner med fast 22,563 timers verificeret historik. Den dokumenterer behovet, ikke kandidatens produktionsresultat.
+- Ingen land-/vandpunkter, kystgeometri, U/V, kildeorden, afstandsgrænser eller RavScore er ændret. Kandidaten må først kaldes produktionsverificeret efter sikker merge, frisk fuld central kørsel og gentaget online audit.

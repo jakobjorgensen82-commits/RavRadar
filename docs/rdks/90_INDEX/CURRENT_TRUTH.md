@@ -1,5 +1,14 @@
 # Current truth – gældende projektviden
 
+## 4.0.238 er releasekandidat - endnu ikke main eller produktionsverificeret
+
+- Draft-PR #1 samler rettelsen af den verificerede histories referencetime, Open-Meteos låste timeskifte og den kildebaserede PR-gate.
+- Historikrettelsen bruger `productionReferenceAt`; 198 zoner med verificeret aktuelt DMI-U/V kan dermed vokse naturligt. De 12 reelle `NO_SHARED_MARINE_GRID_POINT`-huller skal fortsat være `missing`.
+- Open-Meteo-vinduet beregner et afgrænset `past_hours` og leverer fortsat højst 120 fremtidige timer fra den låste reference. DMI-first-rækkefølgen er uændret.
+- 4.0.238-browserauditten kræver den synlige liveversion 4.0.238 og sammenholder 210 zoner, 673 dele, 420 aktuelle paneler, 2.100 femdøgnsvalg, score/farve/pile/forklaring og seks vejrmetrikker.
+- Naturlig produktion #3249 på den ældre `main` var fuldt grøn, men beviser samtidig den gamle historikfejl: 198 zoner har verificeret aktuel strøm, mens verificeret spænd stadig er 22,563 timer. Den kørsel er ikke kandidatbevis.
+- Ingen punkter, geometri, U/V, kildeorden, afstandsgrænser eller RavScore er ændret. Næste bindende trin er sikker merge efter ejerbeslutning, frisk fuld central produktion og online browseraudit.
+
 ## Online DOM-/kliktest 2026-08-20
 
 Live 4.0.237 er systematisk kontrolleret med Chromium mod seneste datasæt `rr-20260819213342-210` efter grøn naturlig produktion `#3237`: 210 zoner, 673 kystdele, begge jagtformer, 420 aktuelle paneler og 2.100 femdøgnspaneler. Der er 0 mismatch i score, label, farveniveau, vind-/strømpile, forklaringer, lokal vinderkontekst og debug-ID. Eneste HTTP-fejl er favicon 404; ingen page errors. Ingen produktionsdata eller geometri er ændret.

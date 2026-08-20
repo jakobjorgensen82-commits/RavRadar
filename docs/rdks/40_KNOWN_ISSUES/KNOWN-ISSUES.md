@@ -1,5 +1,11 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.238-kandidat
+
+- **ISSUE-VERIFIED-HISTORY-GENERATEDAT-MISMATCH - RETTET I KANDIDAT / AFVENTER PRODUKTION:** Historikprøven ligger ved `productionReferenceAt`, men efterberigelsen søgte tidligere ved den senere `generatedAt`. 198 zoner havde derfor verificeret aktuel strøm uden naturlig vækst ud over 22,563 timers verificeret spænd. Matcheren bruger nu produktionsreferencen med bagudkompatibel fallback. De 12 reelle gitterhuller forbliver `missing`.
+- **ISSUE-OPEN-METEO-LOCKED-HOUR-WINDOW - RETTET I KANDIDAT / AFVENTER TIMESKIFTEBEVIS:** En kørsel, der passerede UTC-timeskiftet, kunne bede Open-Meteo om for få fortidstimer og dermed miste den låste første forecasttime. Et afgrænset `past_hours` beregnes nu fra forskellen til `productionReferenceAt`; serien trimmes fortsat til 120 fremtidige timer.
+- **ISSUE-ONLINE-AUDIT-VERSION-BINDING - RETTET I KANDIDAT / AFVENTER LIVE 4.0.238:** Browserauditten injicerer kandidatens lokale `app.js` for at få adgang til interne sammenligninger. Den kræver nu samtidig, at livesidens synlige version er præcis 4.0.238, så en ældre deployment ikke kan give et falsk grønt kandidatbevis.
+
 - **ISSUE-GITHUB-SCHEDULE-COPERNICUS-HOUR-RACE – PRODUKTIONSVERIFICERET LØST I 4.0.236:** `#32249924919`/`#3217` godkendte 11:00 kl. 11:59, men den gamle bygning skiftede efter timeskiftet til 12:00 og stoppede sikkert ved 630/673. 4.0.236 låser hele det planlagte build til readiness-timen. Commit `668a1cdd`, `#32253251841`/`#3219` og gentagelsen `#32257480030`/`#3220` bestod to låste timer med 673/673, fuld validering, releasegate, Supabase og Pages. 673/673 er ikke sænket.
 - **ISSUE-GITHUB-NATIVE-SCHEDULE-DELIVERY – LUKKET / OVERDRAGELSE VERIFICERET:** GitHub havde et midlertidigt leveringshul, men ejeren har nu slettet RavRadar-jobbene i cron-job.org. Efter sletningen bestod naturlig produktion `#32272470720`, cachebevaring `#32272473716`/`#32272598725` og Copernicus-pilot `#32273634626`. GitHub Actions er dermed eneste normale scheduler, og repositoryets tre naturlige kæder er direkte bevist uden ekstern dublet.
 

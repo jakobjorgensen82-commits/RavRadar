@@ -1,5 +1,13 @@
 # Implementeringsstatus – 4.0.237 produktionsverificeret
 
+## Status for 4.0.238-kandidaten
+
+- **KODE OG PR-GATE:** Implementeret i draft-PR #1. Historikmatcher, låst Open-Meteo-vindue og kildebaseret PR-validering har målrettede regressioner.
+- **RELEASEPAKKE:** Version, changelog, Markdown-/webhåndbog, RDKS og versionsbunden browseraudit er samlet på kandidatbranchen.
+- **PRODUKTION:** Ikke gennemført på kandidaten. #3249 er en grøn kontrol af gammel `main`, ikke bevis for 4.0.238.
+- **BROWSER:** Den tidligere komplette kontrol dækkede 210 zoner, 673 dele, 420 aktuelle og 2.100 forecastvisninger. Den skal gentages mod live 4.0.238; versionsmatch er nu en hård del af kontrollen.
+- **DATAINTEGRITET:** Ingen land-/vandpunkter eller beskyttede dirty datafiler indgår. De 12 dokumenterede strømhuller og Feggesunds reelle bølgemangel forbliver `missing`.
+
 > **Aktiv opgavestyring:** Se `ACTIVE_ROADMAP.md`. Aeldre tomme afkrydsningsbokse i denne fil er historisk revisionsspor og er kun aktive, hvis de ogsaa findes i det aktive roadmap.
 
 ## Online browseraudit 2026-08-20

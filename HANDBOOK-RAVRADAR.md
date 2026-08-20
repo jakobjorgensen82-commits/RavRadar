@@ -1,5 +1,15 @@
 # RavRadar Håndbog
 
+## Låst time bevares i fallback, historik og browserbevis - 4.0.238
+
+En planlagt vejrproduktion kan godkende én komplet UTC-time og først afslutte efter næste timeskifte. Den faglige referencetime skal stadig være den godkendte time. 4.0.238 lader derfor Open-Meteo anmode om netop nok historiske timer til, at den låste starttime fortsat findes i svaret. Serien trimmes derefter til denne time og højst 120 fremtidige timer. DMI er uændret førstevalg; fallback må kun udfylde reelle huller og en manglende hale.
+
+Den samme tidsregel gælder den verificerede strømhistorik. En prøve gemmes ved `productionReferenceAt`, mens `generatedAt` beskriver den senere virkelige byggetid. Historikberigelsen bruger nu produktionsreferencen, så de 198 zoner med et dokumenteret fælles DMI-U/V-par kan vokse naturligt. De 12 zoner uden et fælles marint gitterpunkt forbliver `missing`; systemet opfinder hverken fortid, nul eller gentagne nabotimer.
+
+Slutkontrollen er også strammet. Den versionsbundne browseraudit gennemgår begge jagtformer i alle 210 zoner, 420 aktuelle paneler, 2.100 femdøgnsvalg og alle 673 kystdele. Den sammenholder score, label, farveniveau, pile, forklaring, lokal del/tid og vind, bølger, vandstand, strøm, vandtemperatur samt tretimerstrend. Et grønt resultat kræver desuden, at den synlige liveside faktisk er version 4.0.238.
+
+Rettelsen flytter ingen land-/vandpunkter og ændrer ikke geometri, strømvektorer, kildeorden, afstandsgrænser eller RavScore. Produktionsbevis kræver fortsat frisk central hydrering, fuld validering, releasegate, Supabase, Pages og efterfølgende online browserkontrol.
+
 ## Aktuel lokal score og pile deler én komplet zonetime – 4.0.237
 
 RavRadar har to forskellige krav, som ikke må forveksles. Produktionsgaten kræver verificeret strøm til alle 673 kystdele. Den lokale visning skal derudover sammenligne alle dele i den konkrete zone ved præcis samme tidspunkt. Det sidste krav betyder ikke, at hele Danmark skal bruge én national klokktime.
@@ -230,7 +240,7 @@ En privat, score-neutral cache bruger DKSS-felter ved vandpunktet samt cirka 5 o
 
 Rotationen registrerer også, hvor langt der er til den nærmeste modelkolonne med et eksakt fælles U/V-par, selv når den ligger uden for 5 km. I det tilfælde gemmes kun koordinat, afstand og lagmetadata – ikke de fjerne strømværdier. En privat ejeroversigt skelner derfor mellem nær-tærskel 5–6 km til rent manuelt geometrireview, modelhul 6–8 km, strukturelt modelhul over 8 km og en datakædefejl, hvor gyldig strøm faktisk findes inden for 5 km. Selv en nær-tærskel-post må kun flyttes, hvis vandpunktet i sig selv er forkert – aldrig blot for at nå modelcellen. Oversigten flytter ingen punkter automatisk, og den offentlige 5 km-grænse er uændret.
 
-**Håndbogsversion:** 4.0.237
+**Håndbogsversion:** 4.0.238
 
 **Opdateret:** 19. august 2026
 
