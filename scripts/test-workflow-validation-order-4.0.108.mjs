@@ -59,10 +59,10 @@ if (/\b(?:push|pull_request):/.test(copernicusPilot)) throw new Error('Copernicu
 const copernicusUpload = copernicusPilot.slice(copernicusPilot.indexOf('- name: Upload private support evidence'));
 if (copernicusUpload.includes('.cache/')) throw new Error('Den rå Copernicus-cache må ikke uploades som supportartefakt.');
 const copernicusKeepalive = fs.readFileSync(`${workflowDirectory}/preserve-copernicus-current-shadow.yml`, 'utf8');
-for (const marker of ['actions/cache/restore@v4', 'copernicus-current-shadow-v1-', 'private-copernicus-current-pilot', 'workflow_run:', 'workflows: ["Update weather and deploy RavRadar"]', 'types: [requested]', 'python3 scripts/check-copernicus-current-hour.py', 'validate-copernicus-current-pilot.yml/dispatches']) {
+for (const marker of ['actions/cache/restore@v6', 'copernicus-current-shadow-v1-', 'private-copernicus-current-pilot', 'workflow_run:', 'workflows: ["Update weather and deploy RavRadar"]', 'types: [requested]', 'python3 scripts/check-copernicus-current-hour.py', 'validate-copernicus-current-pilot.yml/dispatches']) {
   if (!copernicusKeepalive.includes(marker)) throw new Error(`Copernicus-keepalive mangler ${marker}`);
 }
-if (copernicusKeepalive.includes('actions/cache/save@v4') || copernicusKeepalive.includes('actions/upload-artifact')) {
+if (copernicusKeepalive.includes('actions/cache/save@v6') || copernicusKeepalive.includes('actions/upload-artifact')) {
   throw new Error('Copernicus-keepalive må hverken oprette en ny cachekopi eller eksportere rådata.');
 }
 const copernicusPreserveSection = copernicusKeepalive.slice(copernicusKeepalive.indexOf('  preserve:'), copernicusKeepalive.indexOf('  dispatch-pilot:'));
@@ -123,7 +123,7 @@ for (const step of ['validate', 'gate']) {
     throw new Error(`${step} må ikke kunne springes over ud fra trigger eller force-input.`);
   }
 }
-if (!text.includes('uses: actions/cache/restore@v4') || !text.includes('uses: actions/cache/save@v4')) throw new Error('DMI GRIB-cachen skal både gendannes og gemmes med fremdrift.');
+if (!text.includes('uses: actions/cache/restore@v6') || !text.includes('uses: actions/cache/save@v6')) throw new Error('DMI GRIB-cachen skal både gendannes og gemmes med fremdrift.');
 if (/uses: actions\/cache@v4[\s\S]{0,300}key: dmi-grib-v3-/.test(text)) throw new Error('Den uforanderlige ugentlige primærnøgle må ikke genindføres.');
 if (!text.includes('${{ github.run_id }}-${{ github.run_attempt }}')) throw new Error('Den gemte DMI-cache skal have en unik nøgle pr. kørsel.');
 

@@ -146,7 +146,7 @@ def main() -> None:
          "Manual pilot runs must support a quoted exact-hour backfill")
     need("7,17,27,37,47,57 * * * *" in keepalive_workflow,
          "The small private cache must be refreshed more often than DMI cache churn can evict it")
-    need("actions/cache/restore@v4" in keepalive_workflow and "actions/cache/save@v4" not in keepalive_workflow,
+    need("actions/cache/restore@v6" in keepalive_workflow and "actions/cache/save@v6" not in keepalive_workflow,
          "Keepalive must only refresh the existing private cache, not create redundant copies")
     need("actions/upload-artifact" not in keepalive_workflow,
          "Keepalive must never export the raw shadow to an artifact")
