@@ -1564,3 +1564,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 +- PR #11 blev merged som `e85de36d`. Produktion `#32366326503` bestod self-test, fuld validate, releasegate, Supabase og Pages på 327 sekunders build-and-prepare.
 +- `RavRadar-support-3265` og live `rr-20260820115954-210` matcher byte for byte. Fuld 210/673-browseraudit gav nul fejl.
 +- P1 voksede samtidig til 74 prøver/43,90 verificerede timer i 198 zoner og cirka 106,34 timers shadow-capture; de 12 parenthuller er uændrede.
+## 2026-08-20 - RavScore phase D candidate gate
+- Converted phase A-C evidence into a score-neutral candidate and calibration protocol.
+- Recorded that synthetic grids cannot justify new production weights.
+- Added a data-minimized observation schema without precise coordinates, identity fields, notes, images or copied diagnostics.
+- Kept the active RavScore and all land/water points unchanged.

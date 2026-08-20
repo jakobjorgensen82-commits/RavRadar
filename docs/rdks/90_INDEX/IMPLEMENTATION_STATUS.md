@@ -1424,3 +1424,7 @@ Status: Implementeret og lokalt valideret.
 +- [x] Artifact/live-hash og fuld browseraudit bekræfter 210/673 og nul synlige regressioner.
 +- [x] Følsomhedsauditen er permanent og score-neutral.
 +- [ ] Fase D og virkelighedsvalidering mangler fortsat.
+## RavScore phase D design status - 2026-08-20
+- Complete: candidate architecture, anti-double-counting constraints, sensitivity/calibration/product gates, privacy rules and observation JSON Schema.
+- Not implemented: candidate coefficients, candidate runtime, observation intake or production score changes.
+- Next: internal immutable forecast-snapshot linkage and an anonymized coverage report.
