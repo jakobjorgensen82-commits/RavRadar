@@ -90,6 +90,23 @@ for (const marker of [
   if (!text.includes(marker)) throw new Error(`Den GitHub-ejede 15-minuttersproduktion mangler ${marker}`);
 }
 if (text.includes('cron-job.org')) throw new Error('Produktionsworkflowet må ikke længere afhænge af cron-job.org.');
+const pushBlock = text.slice(text.indexOf('  push:'), text.indexOf('\n\npermissions:'));
+for (const marker of [
+  'branches: [main]',
+  'paths-ignore:',
+  "'docs/ai/**'",
+  "'docs/rdks/**'",
+  "'docs/research/**'",
+  "'CHANGELOG-*.md'",
+  "'AGENTS.md'",
+  "'release/RELEASE-REPORT.json'",
+  "'release/RELEASE-REPORT.md'",
+]) {
+  if (!pushBlock.includes(marker)) throw new Error('Dokumentationsskip mangler ' + marker);
+}
+for (const forbidden of ["'docs/**'", "'*.md'", "'data/**'", "'scripts/**'", "'.github/**'", "'*.html'"]) {
+  if (pushBlock.includes(forbidden)) throw new Error('Dokumentationsskip er for bredt: ' + forbidden);
+}
 const positions = {
   hydrate: text.indexOf('name: Hydrate latest deployed weather state'),
   preflight: text.indexOf('name: Decide whether weather needs updating'),
