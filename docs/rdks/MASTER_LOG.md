@@ -1494,3 +1494,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - De seks seneste fulde `build-and-prepare`-jobs tog 689, 473, 478, 451, 544 og 415 sekunder; medianen er 475,5 sekunder.
 - 4.0.238-kørsel `#32344813967` tog 415 sekunder, cirka 12,7 procent under medianen, og gennemførte fortsat alle faglige gates, Supabase og Pages.
 - Readiness-skip uden artifact er ikke talt som produktion. Resultatet er stabil drift, ikke et nyt modelrotationsbevis; opfølgningen fortsætter ved nye HARMONIE-, WAM- og DKSS-cyklusser.
+
+# 2026-08-20 - naturligt timeskifte, fuld browserkontrol og mergeautoritet
+- GitHub schedule `#32351140886` byggede frisk `rr-20260820085852-210`, kørte fuld `validate` og releasegate, synkroniserede Supabase og deployede Pages.
+- Browser-pluginet blev forsøgt først, men kunne ikke løse DNS. Godkendt system-Chrome/Playwright gennemgik derefter 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 prognosevisninger med nul fejl.
+- P0.3 og `ISSUE-OPEN-METEO-LOCKED-HOUR-WINDOW` er lukket uden ændring af punkter, geometri, U/V, score, afstandsgrænser eller kildeorden.
+- Ejerens nye permanente regel giver Codex betinget autoritet til at merge egne datasikre RavRadar-PR'er efter fuld systemisk verifikation; røde/uafklarede gates og konkret fejlevidens blokerer fortsat merge.

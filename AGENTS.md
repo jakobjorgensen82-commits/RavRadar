@@ -43,3 +43,11 @@ Ved konflikt gælder: brugerens aktuelle instruktion > aktiv RDKS-beslutning > v
 - **Første kodeopgave i Codex:** ret workflowet, så ethvert nyt produktionsartifact/deploy, der bygger frisk produktionsdata, ikke kan passere uden de relevante fulde gates. Bevar muligheden for billigt preflight-skip, når der slet ikke bygges/deployes nyt artifact.
 - Første strenge post-fix-kørsel skal bruge den aktuelle `main`-kode og den senest centralt gemte admin-geometri. Først når den fulde kæde inkl. `npm run validate` og `npm run release:gate` faktisk har kørt og er grøn, må baselinen kaldes stabil/produktionsverificeret.
 - Denne overgangspakke må **ikke** selv ændre de eksisterende workflow-gatebetingelser; det er bevidst udskudt til den første Codex-session, så Codex kan ændre, teste, committe og verificere rettelsen direkte i repositoryet.
+
+## Permanent PR- og mergeautoritet
+- Codex må oprette og opdatere korte, datasikre Pull Requests fra RavRadar-branches, som Codex selv har pushet.
+- Codex må merge disse PR'er til `main` uden særskilt ejergodkendelse, men kun efter selvstændig verifikation af alle relevante tests, release-gates, regressioner, dataintegritetskrav, produktionskontrakter og nødvendig RDKS-/håndbogs-/changelogdokumentation.
+- En grøn GitHub-status er aldrig tilstrækkelig, hvis konkret evidens viser en fejl eller væsentlig usikkerhed. Røde eller uafklarede gates må ikke omgås; fejlen skal undersøges eller rettes før merge.
+- PR-tekst og commits må ikke indeholde secrets, credentials, private produktionsdata, komplette diagnostikpayloads, U/V-værdier eller andre følsomme oplysninger.
+- Efter en sikker merge skal Codex følge deployet, verificere den mergede commit og relevante produktionsresultater og fortsætte til næste ikke-blokerede roadmap-punkt.
+- Irreversible, usædvanligt risikable eller destruktive merges samt beslutninger uden for allerede godkendte RavRadar-krav kræver fortsat ejerens udtrykkelige godkendelse.

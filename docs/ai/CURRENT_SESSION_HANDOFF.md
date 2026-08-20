@@ -38,3 +38,10 @@ Der må ikke flyttes land-/vandpunkter.
 2. Fortsæt naturlig Copernicus-overvågning fra 46 mod 168 timer og Supabase-forbrugsovervågning.
 3. Fortsæt DEC-0030 med nye uafhængige HARMONIE-, WAM- og DKSS-cyklusser samt de kendte strøm-, bølge- og Limfjordshuller uden kunstig udfyldning.
 4. Commit og push kun den afsluttede dokumentationsopfølgning; stage aldrig de fire beskyttede lokale datafiler eller verifikationsmapperne.
+
+## 2026-08-20 - P0.3 afsluttet og permanent mergeautoritet
+- Naturlig schedule `#32351140886` byggede og deployede datasæt `rr-20260820085852-210` med frisk data, fuld `validate`, releasegate, Supabase og Pages.
+- Browser-pluginet blev forsøgt først og diagnosticeret til DNS-fejl. Den godkendte Chromium/Playwright-fallback gennemgik derefter 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 prognosevisninger med nul fejl i score, label, farveniveau, pile, forklaringer, vejrtal, komponenter, kontekst, konsol, side eller HTTP.
+- P0.3 og `ISSUE-OPEN-METEO-LOCKED-HOUR-WINDOW` er dermed lukket. Ingen land-/vandpunkter, geometri, U/V, kildeorden, afstandsgrænser eller RavScore er ændret.
+- Codex har permanent betinget autoritet til at oprette, opdatere og merge egne datasikre PR'er efter fuld systemisk verifikation. Usædvanligt risikable, destruktive, irreversible eller ikke-godkendte beslutninger kræver fortsat ejeraccept.
+- Næste ikke-blokerede arbejde er P1: naturlige 72/168-timersvinduer, nye uafhængige modelcyklusser, de 12 eksplicitte parent-currenthuller, Feggesund wave-missing og produktionsvarighed.

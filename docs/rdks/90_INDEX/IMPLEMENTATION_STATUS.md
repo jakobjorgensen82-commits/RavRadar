@@ -1350,4 +1350,10 @@ Status: Implementeret og lokalt valideret.
 - [ ] Det kompatible `controlled-live`-historikvindue er 28,903 timer fra 4.0.232-aktiveringen og skal fortsat opbygges naturligt til mindst 72 timer; ingen bagudfyldning.
 - [x] `#3242` afgraenser falsk fastlaast verificeret historik til mismatch mellem sampletidens `productionReferenceAt` og efterberigelsens `generatedAt`; kode og maalrettede tests er rettet/groenne.
 - [x] Isoleret fuldt artifactreplay loefter `#3242` fra 22,563 til 30,903 verificerede timer i 198 zoner og bevarer de samme 12 reelle parent-zonehuller.
-- [ ] Frisk central produktion skal bevise, at 198 verificerede hovedzoners historiespaend igen vokser efter den timeskarpe rettelse; 12 reelle parent-zonehuller forbliver eksplicitte.
+- [x] Frisk central produktion `#32344813967` beviste, at de 198 verificerbare hovedzoners historiespaend igen vokser efter den timeskarpe rettelse; de 12 reelle parent-zonehuller forbliver eksplicitte.
+
+## 2026-08-20 - P0.3 afsluttet
+- Naturlig produktion `#32351140886` byggede og deployede `rr-20260820085852-210` med alle relevante gates, Supabase og Pages.
+- Fuld online regression er grøn: 210 zoner, 673 kystdele, 420 aktuelle og 2.100 prognosevisninger, nul fejl.
+- Mergeautoritet er opdateret i `AGENTS.md`, Codex-starten, AI Working Rules og RDKS operating rules.
+- Implementeringen er uændret; denne blok flytter ingen punkter og ændrer ingen score-, data-, geometri- eller runtimekontrakter.

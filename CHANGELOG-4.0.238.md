@@ -19,13 +19,13 @@
 - Supportartifact `RavRadar-support-3252` byggede datasæt `rr-20260820074127-210` med 210 zoner. De seks bølgehuller fra #3246 har nu alle 118 timer uden ændret DMI-first-kildeorden; Feggesund forbliver det ene dokumenterede bølge-missing.
 - Verificeret strømhistorik vokser igen: 198 verificerbare zoner har op til 56 prøver over 39,594 timer mod det tidligere fastlåste spænd på 22,563 timer. De 12 dokumenterede parent-huller er fortsat eksplicit `missing`.
 - Den fulde online Playwright-kontrol er grøn for 210 zoner, 673 kystdele, 420 aktuelle paneler og 2.100 femdøgnsvalg. Mobil 390 x 844 og desktop 1440 x 900 er desuden kontrolleret uden overflow eller funktionsfejl.
-- Den særskilte naturlige kontrol over et faktisk UTC-timeskift er fortsat åben. Schedule `#32347036227` sprang korrekt produktionen over, da time 08 endnu ikke var komplet, og pilot #72 gjorde derefter timen klar uden at omgå readiness-gaten.
+- Den særskilte naturlige timeskiftekontrol er afsluttet. Schedule `#32351140886` byggede og deployede datasæt `rr-20260820085852-210` med fuld `validate`, releasegate, Supabase og Pages; den efterfølgende 210/673-browserkontrol var uden fejl.
 
 ## Sikkerhed og status
 
 - PR-kontrollen er kildebaseret og må hverken hente secrets, hydrere central admin-sandhed, bygge produktionsdata eller deploye. Den kontrollerer de relevante regressions- og releasekontrakter før merge.
 - Ingen land-/vandpunkter, kystgeometri, U/V-værdier, afstandsgrænser, kildeorden eller RavScoreformel er ændret.
-- 4.0.238 er produktions- og browserverificeret. Det åbne timeskiftebevis er en afgrænset driftsopfølgning og må ikke erstattes af en manuel genvej.
+- 4.0.238 er produktions- og browserverificeret, inklusive det naturlige timeskiftebevis. Ingen manuel genvej eller gateomgåelse blev brugt.
 ## Naturlig P1-driftsevidens
 
 - Copernicus-pilot #72 fortsætter den private score-neutrale opsamling med 46 eksakte timetidspunkter, 28.934 observationer, 625 unikke mål og 629 mål/kilde-par.

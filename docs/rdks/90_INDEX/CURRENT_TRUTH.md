@@ -1022,3 +1022,9 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - Naturlig `#3242` tilfoejer en ny WAM 2026-08-19 18Z-cyklus. De 15 korte Limfjordsserier vokser fra 97 til 115 boelgetimer; hoejde-/retnings-/periodeovergange er 0,109/0,44, 20,07/100 og 0,353/1,3 (middel/P95). Feggesund forbliver korrekt `missing`.
 - Komponentovergangene varierer fortsat efter felt, retning og modelindfasning. Stroemmens 198 haleovergange er `dmi -> missing` uden konstrueret tal. Der laases ingen permanent graense og aendres ingen score eller kilde.
 - Alle 210 zoners kompatible `controlled-live`-historik starter ved 4.0.232-aktiveringen og spaender 28,903 timer. Aeldre parent-zonehistorik er ikke kompatibelt lokalt stroembevis og bagudfyldes ikke. 72-timers-exitkriteriet er aabent. Se `docs/research/P1_COMPONENT_TRANSITIONS_4.0.237_RUN3237.md`.
+
+## 2026-08-20 - 4.0.238 naturligt timeskifte og mergeautoritet
+- Schedule `#32351140886` er det krævede naturlige P0.3-bevis: frisk datasæt `rr-20260820085852-210`, begge fulde gates, Supabase og Pages bestod uden manuel omgåelse.
+- Den efterfølgende onlinekontrol gennemgik 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 prognosevisninger med nul fejl i score, label, farve, pile, forklaringer, vejrtal, komponenter, kontekst, konsol, side eller HTTP.
+- P0.3 og den låste Open-Meteo-times issue er lukket. P1's naturlige 72/168-timersobservationer og uafhængige modelcyklusser er fortsat åbne.
+- Codex må permanent merge egne RavRadar-PR'er efter fuld systemisk verifikation og datasikker PR-kontrol; grøn topstatus alene er ikke tilstrækkelig ved modstridende evidens.
