@@ -34,6 +34,8 @@ Den nye kø ændrer eller sletter ikke historiske ruter fra det gamle turflow. N
 
 Uploadadapteren bygger databasepayloaden fra en fast tilladelsesliste og kontrollerer privatlivskontrakten igen lige før afsendelse. Hver tur har et unikt `trip_id` i databasen, så et uklart netværkssvar kan genforsøges idempotent. Ved en fejl bliver posten i den lokale kø, og statusresultatet indeholder kun tur-id og en kort fejltekst, aldrig den fulde payload.
 
+Den aktive `observations`-tabel bruger UUID til `trip_id` og kolonnen `hunt_mode`. Hele v2-kæden følger derfor disse eksisterende typer i stedet for at oprette en parallel tabel eller et tekst-id. Den særskilte observationsfunktion genbruger en allerede lokal række med samme `trip_id`, så både den gamle outbox og den nye turkø genforsøger med samme primærnøgle.
+
 ## Enkel brugerformular
 
 Den isolerede dialog spørger kun om fund/ikke fund, faktisk zone og kystdel, søgegrundighed og frivillige gram. Den forklarer tydeligt, at den præcise position og ruten ikke gemmes. Hvis stedet ændres i forhold til turstart, forklarer dialogen også, at turen bevares men ikke bruges til automatisk scorejustering. “Svar senere” lukker dialogen uden at færdiggøre eller slette turdata.

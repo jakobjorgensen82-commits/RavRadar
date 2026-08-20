@@ -28,7 +28,7 @@
   ],
   "properties": {
     "schemaVersion": { "const": 2 },
-    "tripId": { "$ref": "#/$defs/id" },
+    "tripId": { "type": "string", "format": "uuid" },
     "tripStartedAt": { "$ref": "#/$defs/dateTime" },
     "tripEndedAt": { "$ref": "#/$defs/dateTime" },
     "observedAt": { "$ref": "#/$defs/dateTime" },

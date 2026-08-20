@@ -77,7 +77,7 @@ assert.throws(() => createForecastSnapshotReference({
 }), /ikke samme datasæt/);
 
 const input = {
-  tripId: 'trip-20260821-001',
+  tripId: '11111111-1111-4111-8111-111111111111',
   startedAt: '2026-08-21T03:10:00.000Z',
   endedAt: '2026-08-21T04:00:00.000Z',
   mode: 'waders',
@@ -170,7 +170,7 @@ assert.equal(listPendingTripEvidence(storage).length, 0);
 assert.equal(markTripEvidenceSubmitted(queued.tripId, storage), false);
 
 beginTripEvidence({
-  tripId: 'trip-upload-success',
+  tripId: '22222222-2222-4222-8222-222222222222',
   startedAt: input.startedAt,
   mode: input.mode,
   zoneId: input.zoneId,
@@ -196,11 +196,11 @@ const uploadSuccess = await uploadPendingTripEvidence({
   }
 });
 assert.deepEqual({ ...uploadSuccess, failures: [] }, { attempted: 1, submitted: 1, failed: 0, failures: [] });
-assert.equal(persisted[0].trip_id, 'trip-upload-success');
+assert.equal(persisted[0].trip_id, '22222222-2222-4222-8222-222222222222');
 assert.equal(listPendingTripEvidence(storage).length, 0);
 
 beginTripEvidence({
-  tripId: 'trip-upload-retry',
+  tripId: '33333333-3333-4333-8333-333333333333',
   startedAt: input.startedAt,
   mode: input.mode,
   zoneId: input.zoneId,
@@ -231,7 +231,7 @@ const controller = createTripEvidenceController({
   persist: async payload => assertTripEvidencePrivacy(payload)
 });
 controller.start({
-  tripId: 'trip-controller',
+  tripId: '44444444-4444-4444-8444-444444444444',
   startedAt: input.startedAt,
   mode: input.mode,
   zoneId: input.zoneId,
@@ -262,7 +262,7 @@ assert.equal(controller.active(), null);
 assert.equal(listPendingTripEvidence(controllerStorage).length, 0);
 
 const publicStart = createTripStartFromPublicState({
-  tripId: 'trip-public-adapter',
+  tripId: '55555555-5555-4555-8555-555555555555',
   startedAt: input.startedAt,
   mode: 'waders',
   zoneId: 'zone-42',
@@ -354,7 +354,7 @@ const runtime = createPublicTripEvidenceRuntime({
   storage: runtimeStorage,
   getContext: () => runtimeContext,
   now: () => runtimeNow,
-  createTripId: () => 'trip-runtime',
+  createTripId: () => '66666666-6666-4666-8666-666666666666',
   openStartDialog: async () => ({ mode: 'waders', zoneId: 'zone-42', coastalPartId: 'zone-42-part-2' }),
   openDialog: async () => ({
     zoneId: 'zone-42',
@@ -365,7 +365,7 @@ const runtime = createPublicTripEvidenceRuntime({
   }),
   persist: async payload => assertTripEvidencePrivacy(payload)
 });
-assert.equal(runtime.start().tripId, 'trip-runtime');
+assert.equal(runtime.start().tripId, '66666666-6666-4666-8666-666666666666');
 assert.equal(runtime.active().startedAt, input.startedAt);
 runtimeNow = input.endedAt;
 const runtimeResult = await runtime.stop();
@@ -377,13 +377,13 @@ const promptedRuntime = createPublicTripEvidenceRuntime({
   storage: promptedRuntimeStorage,
   getContext: selection => ({ ...runtimeContext, ...selection }),
   now: () => input.startedAt,
-  createTripId: () => 'trip-prompted-runtime',
+  createTripId: () => '77777777-7777-4777-8777-777777777777',
   openStartDialog: async () => ({ mode: 'waders', zoneId: 'zone-42', coastalPartId: 'zone-42-part-2' }),
   openDialog: async () => null
 });
 const promptedStart = await promptedRuntime.startWithPrompt();
 assert.equal(promptedStart.status, 'started');
-assert.equal(promptedRuntime.active().tripId, 'trip-prompted-runtime');
+assert.equal(promptedRuntime.active().tripId, '77777777-7777-4777-8777-777777777777');
 
 const noFind = buildTripEvidence({ ...input, found: false, grams: 99 });
 assert.equal(noFind.grams, null);
@@ -405,7 +405,9 @@ for (const column of [
   'calibration_eligible', 'calibration_features', 'found', 'forecast_snapshot_id',
   'forecast_issued_at', 'forecast_valid_at', 'forecast_captured_at'
 ]) assert.match(migration, new RegExp(`\\b${column}\\b`));
-assert.doesNotMatch(migration, /\b(?:delete|update)\s+(?:from\s+)?ravradar_observations\b/i);
+assert.match(migration, /alter table public\.observations/);
+assert.doesNotMatch(migration, /public\.ravradar_observations/);
+assert.doesNotMatch(migration, /\b(?:delete|update)\s+(?:from\s+)?observations\b/i);
 assert.doesNotMatch(migration, /\b(?:latitude|longitude|gps|route|track)\b/i);
 
 const dialogSource = fs.readFileSync('js/ui/trip-evidence-dialog.js', 'utf8');
@@ -415,6 +417,12 @@ for (const text of ['Hvordan gik ravturen?', 'Fandt du rav?', 'Hvilken kystdel?'
 assert.match(dialogSource, /ikke din præcise position eller rute/);
 assert.doesNotMatch(dialogSource, /\.innerHTML\s*=/);
 assert.doesNotMatch(dialogSource, /\b(?:fetch|geolocation|localStorage)\b/);
+
+const observationServiceSource = fs.readFileSync('js/services/observation-service.js', 'utf8');
+assert.match(observationServiceSource, /export async function submitTripEvidenceObservation/);
+assert.match(observationServiceSource, /hunt_mode:columns\.hunt_mode/);
+assert.match(observationServiceSource, /id:existing\?\.id\|\|crypto\.randomUUID\(\)/);
+assert.match(observationServiceSource, /route,track,position,coordinates,latitude,longitude,location/);
 
 const evidenceSchemaSource = fs.readFileSync('docs/research/trip-evidence-v2.schema.json', 'utf8');
 const evidenceSchema = JSON.parse(evidenceSchemaSource);

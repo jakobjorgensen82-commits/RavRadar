@@ -1,9 +1,8 @@
 -- Bagudkompatibel turkontrakt. Eksisterende observationer bliver schema_version 1.
 -- Nye komplette ture bruger schema_version 2. Ingen præcis position eller rute lagres.
 
-alter table public.ravradar_observations
+alter table public.observations
   add column if not exists schema_version smallint not null default 1,
-  add column if not exists trip_id text,
   add column if not exists trip_started_at timestamptz,
   add column if not exists trip_ended_at timestamptz,
   add column if not exists search_minutes integer,
@@ -24,9 +23,9 @@ begin
   if not exists (
     select 1 from pg_constraint
     where conname = 'ravradar_observations_schema_version_check'
-      and conrelid = 'public.ravradar_observations'::regclass
+      and conrelid = 'public.observations'::regclass
   ) then
-    alter table public.ravradar_observations
+    alter table public.observations
       add constraint ravradar_observations_schema_version_check
       check (schema_version in (1, 2));
   end if;
@@ -34,9 +33,9 @@ begin
   if not exists (
     select 1 from pg_constraint
     where conname = 'ravradar_observations_trip_v2_check'
-      and conrelid = 'public.ravradar_observations'::regclass
+      and conrelid = 'public.observations'::regclass
   ) then
-    alter table public.ravradar_observations
+    alter table public.observations
       add constraint ravradar_observations_trip_v2_check
       check (
         schema_version = 1 or (
@@ -65,13 +64,13 @@ begin
   end if;
 end $$;
 
-create unique index if not exists ravradar_observations_trip_id_v2_uidx
-  on public.ravradar_observations (trip_id)
+create unique index if not exists observations_trip_id_v2_uidx
+  on public.observations (trip_id)
   where schema_version = 2 and trip_id is not null;
 
-comment on column public.ravradar_observations.schema_version is
+comment on column public.observations.schema_version is
   '1 = historisk observation, 2 = komplet dataminimeret søgetur.';
-comment on column public.ravradar_observations.coastal_part_id is
+comment on column public.observations.coastal_part_id is
   'Den faktiske kystdel brugeren søgte på; ikke en præcis position.';
-comment on column public.ravradar_observations.forecast_snapshot_id is
+comment on column public.observations.forecast_snapshot_id is
   'Uforanderligt id for det prognosedatasæt, der var tilgængeligt ved turstart.';

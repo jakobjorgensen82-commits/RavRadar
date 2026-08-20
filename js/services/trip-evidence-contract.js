@@ -4,6 +4,7 @@ export const TRIP_SEARCH_MODES = Object.freeze(['waders', 'beach']);
 
 const MAX_SEARCH_MINUTES = 24 * 60;
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const FORBIDDEN_REMOTE_KEY = /(lat(?:itude)?|lon(?:gitude)?|lng|gps|coord|position|route|track)/i;
 const CALIBRATION_RANGES = Object.freeze({
   totalScore: [0, 100],
@@ -28,6 +29,12 @@ function requiredId(value, label) {
   const normalized = String(value || '').trim();
   if (!ID_PATTERN.test(normalized)) throw new Error(`${label} mangler eller har ugyldigt format.`);
   return normalized;
+}
+
+function requiredUuid(value, label) {
+  const normalized = String(value || '').trim();
+  if (!UUID_PATTERN.test(normalized)) throw new Error(`${label} skal være en UUID.`);
+  return normalized.toLowerCase();
 }
 
 function requiredIso(value, label) {
@@ -115,7 +122,7 @@ export function createTripStartRecord(input = {}) {
   const started = requiredIso(input.startedAt, 'Starttid');
   const record = {
     schemaVersion: TRIP_EVIDENCE_SCHEMA_VERSION,
-    tripId: requiredId(input.tripId, 'Tur-id'),
+    tripId: requiredUuid(input.tripId, 'Tur-id'),
     startedAt: started.iso,
     mode: assertChoice(input.mode, TRIP_SEARCH_MODES, 'Søgemetode'),
     forecastZoneId: requiredId(input.zoneId, 'Zone ved turstart'),
@@ -170,7 +177,7 @@ export function buildTripEvidence(input = {}) {
   const forecastCoastalPartId = requiredId(input.forecastCoastalPartId || coastalPartId, 'Kystdel ved turstart');
   const evidence = Object.freeze({
     schemaVersion: TRIP_EVIDENCE_SCHEMA_VERSION,
-    tripId: requiredId(input.tripId, 'Tur-id'),
+    tripId: requiredUuid(input.tripId, 'Tur-id'),
     tripStartedAt: started.iso,
     tripEndedAt: ended.iso,
     observedAt: new Date(started.time + (ended.time - started.time) / 2).toISOString(),
@@ -206,7 +213,7 @@ export function toObservationTripColumns(evidence) {
     observed_at: evidence.observedAt,
     search_minutes: evidence.searchMinutes,
     search_coverage: evidence.searchCoverage,
-    mode: evidence.mode,
+    hunt_mode: evidence.mode,
     zone_id: evidence.zoneId,
     coastal_part_id: evidence.coastalPartId,
     forecast_zone_id: evidence.forecastZoneId,

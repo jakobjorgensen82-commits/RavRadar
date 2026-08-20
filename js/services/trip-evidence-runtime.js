@@ -3,8 +3,12 @@ import { createTripStartFromPublicState } from './trip-evidence-public-adapter.j
 import { openTripEvidenceStartDialog } from '../ui/trip-evidence-dialog.js?v=4.0.242';
 
 function defaultTripId() {
-  if (globalThis.crypto?.randomUUID) return `trip-${globalThis.crypto.randomUUID()}`;
-  return `trip-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, character => {
+    const random = Math.floor(Math.random() * 16);
+    const value = character === 'x' ? random : (random & 0x3) | 0x8;
+    return value.toString(16);
+  });
 }
 
 export function createPublicTripEvidenceRuntime({
