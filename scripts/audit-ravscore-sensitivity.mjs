@@ -247,7 +247,7 @@ function scenarioGrid(mode) {
     levels[level] += 1;
   }
   const scoreLevel = score => score >= 75 ? 'good' : score >= 55 ? 'fair' : score >= 35 ? 'weak' : 'poor';
-  const candidateIds = ['b0', 'phaseDAdditive', 'equalAdditive', 'phaseDChain', 'phaseDFullChain'];
+  const candidateIds = ['b0', 'phaseDAdditive', 'equalAdditive', 'phaseDSoftGate', 'phaseDChain', 'phaseDFullChain'];
   const candidateComparisons = Object.fromEntries(candidateIds.map(id => {
     const candidateScores = rows.map(row => row.candidateScores[id]);
     const deltas = rows.map((row, index) => candidateScores[index] - row.score);
@@ -340,6 +340,11 @@ function buildAudit() {
     activeWeights: SCORE_WEIGHTS,
     candidateDefinitions: {
       ...SCORE_CANDIDATE_WEIGHTS,
+      phaseDSoftGate: {
+        base: 'phaseDAdditive',
+        weakestStageFullCreditAt: 50,
+        maximumReductionPercent: 25,
+      },
       phaseDChain: {
         huntabilityShare: 25,
         physicalShare: 75,
@@ -371,6 +376,7 @@ function buildAudit() {
       'Non-additivity can come from clamping, rounding, caps, maximum-path selection or explicit synergy.',
       'Candidate comparisons reuse B0 components and therefore test score structure, not revised physical rules.',
       'The harmonic chain is a diagnostic soft-gate candidate, not an approved production formula.',
+      'The soft-gate candidate reduces the additive score gradually only while the weakest stage is below 50.',
       'The full harmonic chain tests a now-findable headline score; the physical chain tests physical opportunity plus separate searchability.',
       'No result authorises production score changes.',
     ],
@@ -384,7 +390,7 @@ if (selfTest) {
   assert.equal(audit.overlaps.length, 8);
   assert.equal(audit.grids.length, 2);
   assert.ok(audit.grids.every(grid => grid.scenarios === 43200));
-  assert.ok(audit.grids.every(grid => Object.keys(grid.candidateComparisons).length === 5));
+  assert.ok(audit.grids.every(grid => Object.keys(grid.candidateComparisons).length === 6));
   assert.ok(audit.grids.every(grid => Object.values(grid.archetypes).some(value => value.scenarios > 0)));
   assert.equal(audit.baseline.waders.available, true);
   assert.equal(audit.baseline.beach.available, true);
@@ -396,6 +402,7 @@ if (selfTest) {
     components: { huntability: 100, transport: 100, release: 0 },
   });
   assert.equal(missingMobilisation.scores.phaseDAdditive, 65);
+  assert.equal(missingMobilisation.scores.phaseDSoftGate, 49);
   assert.equal(missingMobilisation.scores.phaseDChain, 25);
   assert.equal(missingMobilisation.scores.phaseDFullChain, 0);
   assert.equal(missingMobilisation.physicalChainScore, 0);

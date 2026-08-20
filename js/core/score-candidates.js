@@ -40,10 +40,13 @@ export function compareScoreCandidates(result) {
   const b0 = rounded(clamp(result.score));
   const phaseDAdditive = additiveScore(components, SCORE_CANDIDATE_WEIGHTS.phaseDAdditive);
   const equalAdditive = additiveScore(components, SCORE_CANDIDATE_WEIGHTS.equalAdditive);
+  const weakestStage = Math.min(components.huntability, components.transport, components.mobilisation);
+  const softGateFactor = 0.75 + 0.25 * Math.min(1, weakestStage / 50);
+  const phaseDSoftGate = rounded(phaseDAdditive * softGateFactor);
   const physicalChain = weightedHarmonic(components, { transport: 40, mobilisation: 35 });
   const phaseDChain = rounded(components.huntability * 0.25 + physicalChain * 0.75);
   const phaseDFullChain = rounded(weightedHarmonic(components, SCORE_CANDIDATE_WEIGHTS.phaseDAdditive));
-  const scores = { b0, phaseDAdditive, equalAdditive, phaseDChain, phaseDFullChain };
+  const scores = { b0, phaseDAdditive, equalAdditive, phaseDSoftGate, phaseDChain, phaseDFullChain };
 
   return {
     available: true,
@@ -52,9 +55,16 @@ export function compareScoreCandidates(result) {
     scores,
     deltasFromB0: Object.fromEntries(Object.entries(scores).map(([key, value]) => [key, value - b0])),
     physicalChainScore: Number(physicalChain.toFixed(3)),
+    weakestStage,
+    softGateFactor: Number(softGateFactor.toFixed(3)),
     definitions: {
       phaseDAdditive: SCORE_CANDIDATE_WEIGHTS.phaseDAdditive,
       equalAdditive: SCORE_CANDIDATE_WEIGHTS.equalAdditive,
+      phaseDSoftGate: {
+        base: 'phaseDAdditive',
+        weakestStageFullCreditAt: 50,
+        maximumReductionPercent: 25,
+      },
       phaseDChain: {
         huntabilityShare: 25,
         physicalShare: 75,
