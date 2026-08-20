@@ -40,6 +40,12 @@
 - Forloebet starter ved den kontrollerede 4.0.232-liveaktivering og viser ikke tilfaeldigt zonevist tab.
 - Naeste gyldige exitmaaling er en naturlig produktion efter `2026-08-21T16:05:48Z`. Ingen backfill, scoreaendring eller punktflytning er godkendt.
 
+## Aktiv P2 - produktionsworkflowets varighed
+
+- De fire seneste fulde builds `#3237`, `#3238`, `#3240` og `#3242` varede 14,70, 7,30, 18,45 og 11,48 minutter; gennemsnit 12,98 minutter.
+- Preflight-runs `#3239`, `#3241`, `#3243` og `#3244` sprang korrekt build/deploy over. Der er ikke observeret samtidig tung produktion eller Pages-koe i dette udsnit.
+- Issuet forbliver aktivt. Naeste langsomme fulde build skal profileres pr. trin; DMI-, marine-, 673/673-, validerings- og releasekrav maa ikke svaekkes som genvej.
+
 ## Produktionsverificeret P1 – én komplet aktuel time inden for hver zone
 
 1. **Rodårsag afgrænset:** 673/673-kildegaten var gyldig, men den hidtidige runtime valgte hver dels nærmeste gyldige række uafhængigt. Den offentlige selector kunne samtidig foretrække en nærmere, ufuldstændig zonerække.
