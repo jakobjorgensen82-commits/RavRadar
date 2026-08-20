@@ -1115,3 +1115,9 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - En hurtig `validate:source`-gate kører nu før den dyre DMI-opdatering. Den fulde data- og releasevalidering efter friske data er uændret.
 - Produktionen gendanner Copernicus-cachen både før og efter DMI-opdateringen, så en privat pilot, der afsluttes under DMI-arbejdet, kan bruges samme kørsel.
 - Den fulde online browseraudit af 210 zoner og 673 kystdele køres ugentligt eller ved relevante score-, UI- eller datakontraktændringer, ikke ved enhver dokumentations- eller workflowændring.
+
+## Tidskorrekt strømdækning - produktionsbevis 2026-08-20
+- PR #18 skelner nu mellem bevaret syvdageshistorik og en verificeret strømpost, der kan bruges i den aktuelle runtime-tidslinje. Historik slettes ikke, og strømvalg/RavScore er uændret.
+- En push-produktion, der krydsede 13→14 UTC uden target-hour, rapporterede korrekt 630/673 scoreklare dele og blev stoppet før deploy i run `32377002921`.
+- PR #19 låser nu alle normale produktionsbyg til readiness-jobbets starttime. Kun timed schedule/ikke-forceret dispatch kan fortsat udsættes ved manglende current-hour-cache.
+- Main-commit `c73a10d32f2aab15c63787ecb71893fd9275bbf6` er produktionsverificeret i run `32379229853`: target hour 14:00, 673/673 scoreklare dele, 673/673 streng strømaudit og grøn Pages-deployment.

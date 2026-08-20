@@ -457,3 +457,8 @@ Den planlagte P3-forskning må undersøge, om rumlige strømstrukturer har selvs
 - Browser: kør den fulde 210/673-audit ugentligt eller ved ændringer i score, forklaring, pile, UI eller offentlig datakontrakt. Brug målrettet browser-/HTTP-kontrol ved afgrænsede workflow- og dokumentationsændringer.
 - En grøn statisk gate erstatter aldrig produktionsbevis for DMI, Supabase, cache, fallback eller deployment.
 - En rød datagate må aldrig omgås. Diagnose skal skelne mellem manglende kilde, cache-race, tidsmatch og reel geometri-/scorefejl.
+
+## Timesikker produktionsregel - 2026-08-20
+- Enhver produktion skal bruge readiness-jobbets eksakte `target_hour` i livehistorik, vejrbyg, fallback og proveniens, også når et push/force-job krydser en UTC-time.
+- En historikpost tæller ikke som scoreklar dækning, medmindre dens gyldige tidspunkt findes i kystdelens faktiske runtime-tidslinje fra target hour og frem.
+- En scoreklar rapport på under 673/673 er et reelt stop-signal. Vent på korrekt cache/time eller ret årsagen; omgå aldrig den fulde strømaudit.

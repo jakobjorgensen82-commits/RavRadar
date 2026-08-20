@@ -1582,3 +1582,10 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - PR #16, commits `673b1612` og `0191dca7`, lagde den hurtige kildekodegate før DMI og en ny Copernicus-cachegendannelse efter DMI. Merge-commit: `b1d0e422a3322d393a7eeb32d5af4837cd6a779f`.
 - Produktion `32374202688` bestod alle gates, verificerede 673/673 kystdele og deployede præcis merge-committen. Målrettet Pages-kontrol bekræftede version 4.0.239, GPS-redaktion, kalibreringslås og adminforklaring.
 - Ingen beskyttede dirty datafiler blev staged, ingen land-/vandpunkter blev flyttet, og ingen gate blev omgået.
+
+## 2026-08-20 - PR #18/#19 og UTC-timeskifterace
+- PR #18, commit `8755c308`, gjorde live-current-rapporten tidskorrekt og lagde selvtesten i `validate:source`. Merge-commit: `af5e2af4352a74377239279057101daa524d89db`.
+- Produktion `32377002921` startede før og sluttede efter et UTC-timeskifte. Da push tidligere ikke fik `RAVRADAR_PRODUCTION_TARGET_HOUR`, viste den nye rapport korrekt 630/673 scoreklare dele; den fulde gate stoppede deploy.
+- PR #19, commit `7f293a83`, lod readiness beregne target hour for alle normale produktionsbyg uden at ændre den timed cacheblokering. Merge-commit: `c73a10d32f2aab15c63787ecb71893fd9275bbf6`.
+- Produktion `32379229853` beholdt 14:00 UTC gennem alle trin, rapporterede 673/673 scoreklare dele, bestod den fulde 673/673-audit og deployede præcis merge-committen.
+- Ingen koordinater, kildeprioriteter eller scoreberegninger blev ændret.
