@@ -1403,3 +1403,8 @@ Status: Implementeret og lokalt valideret.
 ## Lokal kildekontrol på Windows
 +- [x] Python-pakkekontrollen er gjort kompatibel med både Windows PowerShell og PowerShell 7.
 +- [x] En kildekontrakt afviser den tidligere citatform, som Windows PowerShell ændrede på vej til Python.
+## Post-merge verifikation #3263
++- [x] PR #8/merge `6d63ac3a` bestod fuld central produktion, releasegate, Supabase og Pages.
++- [x] Artifact/live-hash og fuld 210/673-browseraudit er grønne med nul fejl.
++- [x] Den portable Windows PowerShell-kildekontrol er dermed også gennemført i PR-CI og frisk produktion.
++- [ ] P1 er vokset til 43,31 verificerede timer i 198 zoner og cirka 105,75 timers shadow-capture; 72/168-timerskravene er fortsat åbne.

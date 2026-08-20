@@ -1546,3 +1546,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 ## 2026-08-20 - portabel lokal kildekontrol
 +- Den samlede lokale kontrol afslørede, at Windows PowerShell fjernede dobbelte citater fra inline Python, selv om samme hjælper virkede under PowerShell 7.
 +- Python-koden sendes nu som én eksplicit argumentvariabel med portable citater, og workflowkontrakten beskytter formen fremover.
+## 2026-08-20 - PR #8 og produktion #3263
++- PR #8 blev merged som `6d63ac3a`. Produktion `#32363403425` bestod fuld validering, releasegate, Supabase, Pages-build og deploy på 336 sekunders build-and-prepare.
++- `RavRadar-support-3263` og live `rr-20260820112436-210` matcher byte for byte. Fuld browseraudit gav 210/673, 420 aktuelle, 2.100 prognosevisninger og nul fejl.
++- P1 voksede til 73 rå prøver/43,31 timer; 198 verificerede zoner voksede med, mens 12 kendte parenthuller blev bevaret ved nul. Shadow-cachen spænder cirka 105,75 timer.
++- Ingen ny DMI-collection blev hentet, og ingen datakæde, score eller geometri blev ændret.

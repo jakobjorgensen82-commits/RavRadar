@@ -90,3 +90,7 @@ Der må ikke flyttes land-/vandpunkter.
 - Det fulde checkpoint ligger i `docs/research/P1_DRIFT_CHECKPOINT_4.0.238_RUN3261.md`.
 ## Lokal valideringsrettelse
 +- `scripts/validate-source.ps1` er gjort kompatibel med både Windows PowerShell og PowerShell 7; en kontrakttest forhindrer den tidligere citatfejl i at vende tilbage.
+## PR #8 produktionsverificeret
++- Merge `6d63ac3a`, produktion `#32363403425`, support `RavRadar-support-3263` og datasæt `rr-20260820112436-210` er fuldt grønne og byte-for-byte/live-browserverificerede.
++- Browseraudit: 210 zoner, 673 dele, 420 aktuelle og 2.100 prognosevisninger, nul fejl.
++- P1: 73 rå prøver/43,31 timer, 198 verificerede zoner, 12 uændrede parenthuller og cirka 105,75 timers shadow-capture. Fortsæt næste ikke-blokerede roadmaparbejde; 72/168 timer afventer naturlig tid.
