@@ -44,4 +44,16 @@ DMI bulk stod alene for 13,28 minutter og cirka 72 % af hele buildjobbet. Releas
 
 Den konkrete driver var altsaa indfasning af en ny WAM-cyklus uden raasset-hit, foerst hele `wam_dw` og derefter progressiv `wam_nsb`. Det forklarer baade varigheden og, hvorfor kun to collections blev behandlet under `DMI_BULK_COLLECTIONS_PER_RUN=2`.
 
-Varighedsissuet forbliver aktivt. Der aendres ikke paa DMI-budgetter, collection-raekkefoelge, cache, marine audits, 673/673-gate, validering eller releasegate alene for at reducere tiden. Naeste meningsfulde trin er at sammenligne en senere cache-hit-kørsel med samme WAM-cyklus og maale, om foerste-step-omkostningen gentager sig.
+## Senere progressiv kørsel #3242
+
+Den senere fulde produktion brugte 386 sekunder i DMI bulk mod 797 i `#3240`, en reduktion paa 411 sekunder eller 51,6 %.
+
+- Den faerdige `wam_dw` blev ikke behandlet igen.
+- HARMONIE fortsatte med tre nye downloadede vindtrin.
+- `wam_nsb` fortsatte fra forecasttrin 22 og naaede 46/46.
+- Foerste NSB-trin var genbrugt fra raasset-cachen, men brugte stadig cirka 53 sekunder frem til checkpoint.
+- De efterfoelgende 24 NSB-trin var downloads og brugte typisk cirka 7-8 sekunder hver inklusive overhead.
+
+Den progressive collection-cache fjernede dermed den dyre gentagelse af hele `wam_dw` og halverede DMI-tiden. Samtidig viser det foerste genbrugte NSB-trin, at foerste-step-parsning/initialisering er en selvstaendig omkostning, ikke kun netvaerksdownload.
+
+Varighedsissuet forbliver aktivt. Der aendres ikke paa DMI-budgetter, collection-raekkefoelge, cache, marine audits, 673/673-gate, validering eller releasegate alene for at reducere tiden. Naeste meningsfulde trin er at profilere foerste-step-initialisering i en senere collection uden at aendre datakrav eller progressiv prioritering.
