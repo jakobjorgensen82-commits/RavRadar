@@ -1515,3 +1515,10 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Produktion 32358538559 bestod hydrering, vejrbygning og referencegenerering, men fuld validering fandt fem gamle testforventninger og stoppede før release-gate/deploy.
 - En afgrænset reparationsbranch retter forventningerne, tilføjer en central Action-versionskontrakt samt reproducerbar lokal Codex-opsætning og kildekontrol.
 - Lokal kildekontrol og release-gate er grønne. Ingen land-/vandpunkter eller beskyttede datafiler er ændret.
+## Workflowoptimering produktionsverificeret, 2026-08-20
+- PR #4 blev merged som 8e4c11c3 efter grøn 17-sekunders kildegate.
+- Push-produktion 32359944007 bestod fuld validering, release-gate, supportupload, Supabase, Pages-build og Pages-deploy.
+- Supportartifactet er RavRadar-support-3259. Den offentlige dataset er rr-20260820104155-210 med 210 zoner og 673 kystdele.
+- Fuld Playwright-kontrol bestod 420 aktuelle visninger og 2.100 prognosevisninger uden score-, pile-, farve-, forklarings-, konsol-, side- eller HTTP-fejl.
+- De tidligere Node 20-advarsler er væk. Den officielle Pages-action skriver fortsat en ikke-blokerende punycode-deprecation fra sin egen afhængighed.
+- Arbejdsgangsopgaven er afsluttet; næste aktive arbejde er igen P1-historik og modelcyklusser.

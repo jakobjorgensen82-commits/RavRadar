@@ -46,3 +46,10 @@
 - PR-kildegaten er samlet i validate:source og udvidet med de hurtige workflowkontrakter, som tidligere først blev nået i fuld produktion.
 - setup-codex.ps1 og validate-source.ps1 fjerner gentagen manuel opsætning af Node/Python-stier og afhængigheder på friske Codex-runtimes.
 - Ingen score-, geometri-, land-/vandpunkt- eller produktionsdataændring.
+## Workflowoptimering produktionsverificeret, 2026-08-20
+- PR #4 blev merged som 8e4c11c3 efter grøn 17-sekunders kildegate.
+- Push-produktion 32359944007 bestod fuld validering, release-gate, supportupload, Supabase, Pages-build og Pages-deploy.
+- Supportartifactet er RavRadar-support-3259. Den offentlige dataset er rr-20260820104155-210 med 210 zoner og 673 kystdele.
+- Fuld Playwright-kontrol bestod 420 aktuelle visninger og 2.100 prognosevisninger uden score-, pile-, farve-, forklarings-, konsol-, side- eller HTTP-fejl.
+- De tidligere Node 20-advarsler er væk. Den officielle Pages-action skriver fortsat en ikke-blokerende punycode-deprecation fra sin egen afhængighed.
+- Arbejdsgangsopgaven er afsluttet; næste aktive arbejde er igen P1-historik og modelcyklusser.
