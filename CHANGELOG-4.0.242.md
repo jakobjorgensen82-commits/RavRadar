@@ -10,3 +10,9 @@
 ## Validering
 - Målrettet vægttest, syntetisk 9.261-scenarieaudit og national audit af 673 dele/42.846 scoreposter er grøn. De 420 viste zoner falder i gennemsnit 6,314 point, og 7 skifter vindende del.
 - Fuld source-/release-gate, browserkontrol og produktionsverifikation udføres før afslutning.
+## Produktionsverificering
+
+- PR #28 blev merged som `4f3481f272de11554fb64ad602555804f362b715`.
+- Produktionsworkflow `32421188352` bestod frisk datagenerering, fuld validering, release-gate, Supabase-synkronisering og Pages-deploy.
+- Onlinekontrollen bestod 210 zoner, 673 kystdele, 420 aktuelle visninger, 2.100 prognosevisninger og 7.560 vægt-/bidragsforklaringer uden fejl.
+- Mobilvisningen bestod ved 390 x 844.

@@ -1152,3 +1152,11 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - Bølgepriorens tidligere kolliderende ID er rettet til DEC-0040; kystgeometri er fortsat DEC-0032.
 
 - National vægtaudit på rr-20260820204808-210 dækker 673 kystdele og 42.846 scoreposter. De 420 viste zone-/jagtformsvisninger falder i gennemsnit 6,314 point; 7 skifter vindende del, og 110 krydser referencegrænserne 35/55/75. Det dokumenterer en reel reduktion af jagtbarhedsdominans, ikke en fundkalibrering.
+## Produktionsverificering af 4.0.242 (2026-08-21)
+
+- Den aktive foreløbige RavScore-vægtning er 25 % jagtbarhed, 40 % transport og 35 % mobilisering.
+- PR #28 er merged som `4f3481f272de11554fb64ad602555804f362b715`.
+- Produktionsworkflow `32421188352` bestod frisk datagenerering, fuld validering, release-gate, Supabase og Pages-deploy.
+- Den fulde onlinekontrol bestod 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 prognosevisninger uden fejl.
+- En supplerende kontrol bestod alle 7.560 viste vægt- og bidragsforklaringer samt mobilvisning ved 390 x 844.
+- Tidligere status om afventende 4.0.242-produktionskontrol er dermed erstattet. Se `docs/research/RAVSCORE_PROVISIONAL_WEIGHTS_4.0.242_PRODUCTION_AUDIT.md`.
