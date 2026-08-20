@@ -29,3 +29,8 @@ Readiness-kørslerne `#32318506884`, `#32323804299`, `#32332623657`, `#323348392
 - `build-and-prepare` i `#32354210495` tog 410 sekunder og gennemførte fortsat frisk DMI, fuld validering, releasegate, supportartifact, Supabase og Pages.
 - De syv målte fulde builds er nu 689, 473, 478, 451, 544, 415 og 410 sekunder; medianen er 473 sekunder.
 - Resultatet er fortsat stabilt og begrunder ingen reduktion af gates, marine audits eller datakrav. Målingen gentages ved en reel ny modelrotation.
+
+## Produktion 3259 efter workflowoptimering
+- Push-produktion 32359944007 på merge-commit 8e4c11c3 brugte 328 sekunder på build-and-prepare og cirka seks minutter samlet inklusive Pages-deploy.
+- De seneste otte fulde buildtider er 689, 473, 478, 451, 544, 415, 410 og 328 sekunder; medianen er nu 462 sekunder.
+- Kilde-PR-gaten brugte 17 sekunder trods de ekstra workflowkontrakter, så den tidligere produktionsfejlklasse er flyttet frem uden mærkbar PR-ventetid.

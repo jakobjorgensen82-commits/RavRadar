@@ -24,6 +24,14 @@ on:
         type: boolean
   push:
     branches: [main]
+    paths-ignore:
+      - 'docs/ai/**'
+      - 'docs/rdks/**'
+      - 'docs/research/**'
+      - 'CHANGELOG-*.md'
+      - 'AGENTS.md'
+      - 'release/RELEASE-REPORT.json'
+      - 'release/RELEASE-REPORT.md'
 
 permissions:
   contents: read

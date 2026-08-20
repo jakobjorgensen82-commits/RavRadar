@@ -1041,3 +1041,15 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - main indeholder Action-opgraderingen fra PR #3, men den første push-produktion blev stoppet før deploy af gamle versionsforventninger i fem regressionstests.
 - Den offentlige side er derfor fortsat den senest verificerede 4.0.238-dataset fra før PR #3; merge-commit 4c6b7e3a er endnu ikke produktionsverificeret.
 - Reparationskandidaten gør PR-gaten i stand til at opdage denne klasse af fejl før merge og ændrer ikke produktdata eller modeladfærd.
+## Workflowoptimering produktionsverificeret, 2026-08-20
+- PR #4 blev merged som 8e4c11c3 efter grøn 17-sekunders kildegate.
+- Push-produktion 32359944007 bestod fuld validering, release-gate, supportupload, Supabase, Pages-build og Pages-deploy.
+- Supportartifactet er RavRadar-support-3259. Den offentlige dataset er rr-20260820104155-210 med 210 zoner og 673 kystdele.
+- Fuld Playwright-kontrol bestod 420 aktuelle visninger og 2.100 prognosevisninger uden score-, pile-, farve-, forklarings-, konsol-, side- eller HTTP-fejl.
+- De tidligere Node 20-advarsler er væk. Den officielle Pages-action skriver fortsat en ikke-blokerende punycode-deprecation fra sin egen afhængighed.
+- Arbejdsgangsopgaven er afsluttet; næste aktive arbejde er igen P1-historik og modelcyklusser.
+## Selektiv skip af ren intern dokumentation, 2026-08-20
+- Push til main springer nu kun produktionsworkflowet over, når alle ændringer er afgrænset til interne AI-, RDKS- eller forskningsdokumenter, versionschangelog, AGENTS.md eller de to genererede release-rapporter.
+- Kode, data, scripts, workflows, HTML og øvrige offentlige filer udløser fortsat fuld produktion.
+- En regressionstest kræver den præcise allowlist og afviser brede docs-, markdown-, data-, script-, workflow- og HTML-undtagelser.
+- Formålet er at spare cirka seks minutters produktion og efterfølgende browserkontrol ved rene interne checkpoints uden at svække releasekæden.

@@ -22,3 +22,8 @@ HARMONIE 20. august 00Z, WAM 19. august 18Z og DKSS 19. august 12Z er uændrede 
 GitHub runneren varslede Node 20-deprecation for flere officielle actions. Den lokale kandidat opgraderer alle ni berørte workflows til de officielle Node 24-majorer uden ændrede gates, jobrækkefølger, inputs eller betingelser. PR-CI og frisk produktionskontrol mangler.
 
 Ingen rå/private payloads, U/V-værdier, credentials, score-, kilde-, fallback-, geometri- eller land-/vandpunktsændringer indgår i checkpointet.
+
+## Produktionscheckpoint 3259
+- Workflowreparationen blev produktionsverificeret på merge-commit 8e4c11c3.
+- Supportartifact RavRadar-support-3259 er næste sikre P1-analysegrundlag.
+- Browserkontrollen af dataset rr-20260820104155-210 er fuldt grøn for 210 zoner og 673 kystdele.
