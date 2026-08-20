@@ -27,6 +27,7 @@
 - [x] Naturlig produktion `#3245` gentager vandkildekontrollen: fire historiske cacheudloeb er ikke valgt i effektiv zonerouting, og vandstand/vandtemperatur har fortsat data i 210/210 zoner. Det naturlige exitkriterium for en valgt warning/critical-kilde er fortsat aabent.
 - [x] DEC-0030-komponentmatricen for `#3245` omfatter nu ogsaa vandstand og vandtemperatur: 202 zoner har 118 timer, otte Limfjordszoner har 107 timer, og de sidste 88 zonetimer forbliver eksplicit missing frem for kunstig udfyldning.
 - [x] De otte Limfjordshaler er afgraenset til manglende raa Open-Meteo Marine-vandstands- og temperaturfelter efter den fælles DKSS-modelkant; nabozoner skifter paa samme time til fallback. Routing og merge taber ikke eksisterende fallbackvaerdier, og ingen punkter flyttes.
+- [x] Naturlig Copernicus-pilot `#64` genkendte samme UTC-time og centrale geometri fra `#63` og sprang authenticated download/cache/artifact over. Cachen forbliver korrekt paa 41 gyldige timer; duplikat-skippen taelles ikke som ny evidens.
 
 ## 4.0.236 – låst produktionsreferencetime
 

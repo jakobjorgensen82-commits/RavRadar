@@ -4,6 +4,8 @@
 
 Den naturlige private cache vokser fortsat uden tegn på gitter- eller lagdrift. Naturlig pilot `#63` (`32326984175`) indsamlede den nye 03:00 UTC-time og udvidede evidensen fra 40 til 41 gyldige timer. De naturlige pilot- og preserve-kørsler mellem målingerne var grønne.
 
+Naturlig pilot `#64` (`32329974163`) startede senere samme time og sluttede groen paa 37 sekunder. Den gendannede cachen fra `#63`, bekræftede at den oenskede UTC-time allerede fandtes for den aktuelt centralt godkendte maalgometri og sprang derefter secret-kontrol, authenticated download, cacheskrivning og supportartifact over. Den taelles derfor korrekt ikke som en 42. cachetime.
+
 ## Måling
 
 | Felt | Resultat |
@@ -24,6 +26,7 @@ Piloten verificerede 625 af 673 mål inden for 5 km; 48 havde fortsat intet Cope
 ## Drift
 
 - Naturlig pilot `#63` var groen med ny 03 UTC-time; de forudgaaende pilot- og preserve-kørsler var også grønne.
+- Naturlig pilot `#64` var et sikkert duplikat-skip mod samme time og samme centrale geometri. Den aendrede ingen cache og skabte intet artifact.
 - Produktionsrun `#3244` bestod current-hour readiness og sprang korrekt både `build-and-prepare` og deploy over; det skabte intet nyt produktionsartifact.
 - Preserve `#153` og workflow-run-preserve `#154` var grønne.
 - Den samtidige naturlige produktion `#3237` bestod current-hour readiness, hele `build-and-prepare` og Pages-deploy. Den efterfølgende fulde livebrowseraudit var grøn på datasæt `rr-20260819213342-210`.
