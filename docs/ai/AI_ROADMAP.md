@@ -10,7 +10,7 @@
 
 ## Daglig syvdøgnseftermåling 2026-08-20
 
-- Pilot `#62` udvidede den private cache til 40 gyldige timer, 25.160 poster, 625 mål og 629 mål/kilde-par; nul gitter-/lagustabilitet. De mellemliggende naturlige pilot- og preserve-kørsler var grønne.
+- Naturlig pilot `#63` udvidede den private cache til 41 gyldige timer, 25.789 poster, 625 mål og 629 mål/kilde-par; nul gitter-/lagustabilitet. De mellemliggende naturlige pilot- og preserve-kørsler var grønne.
 - Gitter- og lagustabilitet er fortsat 0; `scoreImpact=false`, `publicRuntime=false`, 168 timers retention og ingen interpolation er bevaret.
 - Næste måling udføres tidligst næste kalenderdag. 168-timers exitkriteriet er ikke nået.
 
