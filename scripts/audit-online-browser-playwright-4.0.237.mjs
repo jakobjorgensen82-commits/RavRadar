@@ -4,10 +4,18 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
-const { chromium } = require('playwright');
+let chromium;
+try {
+  ({ chromium } = require('playwright'));
+} catch (error) {
+  throw new Error('Playwright er ikke tilgaengelig. Koer runneren i Codex-runtime eller installer Playwright lokalt.', { cause: error });
+}
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const liveUrl = 'https://jakobjorgensen82-commits.github.io/RavRadar/';
 const chromePath = process.env.RAVRADAR_CHROME || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+if (!fs.existsSync(chromePath)) {
+  throw new Error(`Chrome blev ikke fundet paa ${chromePath}. Saet RAVRADAR_CHROME til den installerede binær.`);
+}
 
 const pythonAudit = fs.readFileSync(path.join(root, 'scripts/audit-online-browser-4.0.237.py'), 'utf8');
 const injectionMatch = pythonAudit.match(/DEBUG_INJECTION = r"""([\s\S]*?)"""/);
