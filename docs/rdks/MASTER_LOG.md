@@ -1575,3 +1575,10 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Remote serialization now nulls GPS and strips local sync metadata for both fresh and queued rows.
 - The former low-sample learning heuristic is retained only as history; runtime analysis is coverage-only and returns no score patch.
 - No score, geometry, weather source or production data was changed.
+
+## 2026-08-20 - Observation-sikkerhed, gateoptimering og produktionsbevis
+- PR #14 indførte 4.0.239 med fjern-GPS-redaktion og scorelåst observationsanalyse. Første produktion `32369531789` stoppede korrekt på en statisk admintekstkontrakt før deploy.
+- PR #15 rettede den konkrete adminforklaring. Produktion `32371852397` stoppede korrekt før deploy, fordi kun 630/673 dele havde tidsmatchende verificeret strøm; 43 Copernicus-dele fandtes kun i bevaret historik, fordi den friske private cache blev klar efter produktionsjobbets første cacheforsøg.
+- PR #16, commits `673b1612` og `0191dca7`, lagde den hurtige kildekodegate før DMI og en ny Copernicus-cachegendannelse efter DMI. Merge-commit: `b1d0e422a3322d393a7eeb32d5af4837cd6a779f`.
+- Produktion `32374202688` bestod alle gates, verificerede 673/673 kystdele og deployede præcis merge-committen. Målrettet Pages-kontrol bekræftede version 4.0.239, GPS-redaktion, kalibreringslås og adminforklaring.
+- Ingen beskyttede dirty datafiler blev staged, ingen land-/vandpunkter blev flyttet, og ingen gate blev omgået.

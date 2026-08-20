@@ -1434,3 +1434,11 @@ Status: Implementeret og lokalt valideret.
 - Implemented locally: phase D coverage report with score suggestions locked.
 - Pending: PR/production verification, immutable forecast-snapshot linkage and explicit search-effort capture.
 - Pending owner-authorized migration: remove any historical central GPS values after a count-only audit and rollback plan.
+
+## Status 2026-08-20 - RavScore fase D og workflow
+- Afsluttet: observationstransport er GPS-redigeret før fjernlagring, inklusive outbox-genforsøg.
+- Afsluttet: læringsanalysen er dæknings-only og kan ikke oprette modelpatches eller scoreforslag.
+- Afsluttet: hurtig kildekodegate før DMI og sen Copernicus-cachegendannelse er merged og produktionsverificeret.
+- Produktionsbevis: run `32374202688`, commit `b1d0e422a3322d393a7eeb32d5af4837cd6a779f`, 673/673 kystdele, Pages-deployment grøn.
+- Næste sikre delmål: gør livehistorikkens tidlige dækningsrapport tidskorrekt, så historisk dækning ikke forveksles med en scorebar post fra aktuel time og frem. Dette må ikke ændre strømvalg eller score.
+- Fortsat låst: RavScore-model B0 ændres ikke uden fase D-kalibreringsgate og særskilt evidens.

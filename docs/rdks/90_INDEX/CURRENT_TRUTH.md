@@ -1106,3 +1106,12 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - The existing observation analysis now reports coverage only. It emits no actionable model suggestion and cannot create a new score patch from the former 12-row/four-per-outcome heuristic.
 - Active RavScore and existing local adaptive-model versions are unchanged.
 - Historical central rows have not been inspected or destructively modified; older rows may still require a separately approved GPS cleanup migration.
+
+## Produktionsverificeret fase D-sikkerhed og hurtigere gates - 2026-08-20
+- RavRadar 4.0.239 er produktionsverificeret på main-commit `b1d0e422a3322d393a7eeb32d5af4837cd6a779f` via run `32374202688`.
+- Fjernobservationer indeholder ikke præcis tur-GPS. Lokal GPS bevares kun lokalt, også når en ældre outbox-post genforsøges.
+- Observationer måler kun datadækning. Automatisk scorekalibrering og scoreforslag er låst, indtil fase D-gaten er dokumenteret og særskilt godkendt.
+- Den fulde produktionsgate verificerede 673/673 kystdele med kilde-, tids-, gitter-, pil-, score- og forklaringskonsistens. Ingen land-/vandpunkter blev flyttet.
+- En hurtig `validate:source`-gate kører nu før den dyre DMI-opdatering. Den fulde data- og releasevalidering efter friske data er uændret.
+- Produktionen gendanner Copernicus-cachen både før og efter DMI-opdateringen, så en privat pilot, der afsluttes under DMI-arbejdet, kan bruges samme kørsel.
+- Den fulde online browseraudit af 210 zoner og 673 kystdele køres ugentligt eller ved relevante score-, UI- eller datakontraktændringer, ikke ved enhver dokumentations- eller workflowændring.
