@@ -113,7 +113,9 @@ async def main():
     console_errors = []
     page_errors = []
     http_errors = []
+    print("Browseraudit: starter Chrome", file=sys.stderr, flush=True)
     browser = await launch(headless=True, executablePath=r"C:\Program Files\Google\Chrome\Application\chrome.exe", args=["--no-sandbox", "--disable-dev-shm-usage"])
+    print("Browseraudit: Chrome startet", file=sys.stderr, flush=True)
     try:
         page = await browser.newPage()
         page.on("console", lambda message: console_errors.append(message.text) if message.type == "error" else None)
@@ -134,6 +136,7 @@ async def main():
             "window.__ravradarOnlineAudit && window.__ravradarOnlineAudit.state().conditionsZones === 210 && window.__ravradarOnlineAudit.state().detailsAvailable",
             {"timeout": 90000},
         )
+        print("Browseraudit: live-data klar", file=sys.stderr, flush=True)
         state = await page.evaluate("window.__ravradarOnlineAudit.state()")
         zone_ids = await page.evaluate("window.__ravradarOnlineAudit.zoneIds()")
         totals = {"currentViews": 0, "forecastViews": 0, "partReferences": 0}
