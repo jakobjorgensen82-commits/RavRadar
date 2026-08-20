@@ -450,3 +450,10 @@ Den planlagte P3-forskning må undersøge, om rumlige strømstrukturer har selvs
 - Verify and release remote GPS redaction plus the phase D score-suggestion lock.
 - After release, implement immutable forecast-snapshot linkage and search-effort capture as the next non-blocked phase D step.
 - Keep historical central GPS cleanup separate because it is an irreversible production-data operation.
+
+## Effektiv valideringsstrategi - 2026-08-20
+- PR og pre-DMI: kør `validate:source`, inklusive observation-, admin-, RavScore-, workflow- og releasekontrakter.
+- Produktion: behold fuld `npm run validate`, `release:gate` og datavalidering efter friske vejr- og proveniensdata.
+- Browser: kør den fulde 210/673-audit ugentligt eller ved ændringer i score, forklaring, pile, UI eller offentlig datakontrakt. Brug målrettet browser-/HTTP-kontrol ved afgrænsede workflow- og dokumentationsændringer.
+- En grøn statisk gate erstatter aldrig produktionsbevis for DMI, Supabase, cache, fallback eller deployment.
+- En rød datagate må aldrig omgås. Diagnose skal skelne mellem manglende kilde, cache-race, tidsmatch og reel geometri-/scorefejl.

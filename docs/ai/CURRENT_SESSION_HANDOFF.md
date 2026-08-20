@@ -119,3 +119,11 @@ Der må ikke flyttes land-/vandpunkter.
 - Active score and existing local adaptive-model versions are unchanged.
 - Run targeted tests, full source/release validation, PR gates and targeted production UI/runtime verification. Do not run the full 210/673 browser audit for this unrelated change.
 - Do not inspect or delete historical central GPS without a separately approved migration.
+
+## Checkpoint 2026-08-20 - main `b1d0e422`
+- Live version: 4.0.239. Grøn produktionsrun: `32374202688`.
+- Observationer sendes uden tur-GPS; lokal GPS forbliver lokal. Observationsanalyse er dæknings-only og kan ikke ændre RavScore.
+- PR #16 er merged og verificeret: `validate:source` kører før DMI, og Copernicus-cachen gendannes igen efter DMI før livehistorikken.
+- Seneste fulde produktionsbevis: 673/673 kystdele med verificeret strøm samt konsistente pile, score og forklaringer. Genkør ikke fuld browseraudit uden ugentlig termin eller relevant score/UI/datakontraktændring.
+- Næste opgave: gør `build-live-current-pilot.py`-rapportens dækningsbegreb tidskorrekt. Bevar historikken, alle kilder, score, DMI-først og koordinater uændret. Tilføj selvtest for frisk historik uden aktuel/fremtidig scorepost.
+- Fire beskyttede dirty datafiler må fortsat ikke røres eller stages.

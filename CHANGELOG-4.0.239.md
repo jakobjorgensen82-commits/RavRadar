@@ -19,3 +19,9 @@ Dato: 2026-08-20
 ## Follow-up
 
 - Existing central observation rows may contain GPS written by older versions. They are not inspected or deleted by this release; any irreversible production-data cleanup requires a separately approved and audited migration.
+
+## Produktionsverifikation 2026-08-20
+- 4.0.239 er deployet fra main-commit `b1d0e422a3322d393a7eeb32d5af4837cd6a779f` efter fuld grøn produktionsvalidering.
+- Fjern-GPS-redaktion, dæknings-only observationsanalyse og kalibreringslås er verificeret i det officielle Pages-artifact.
+- Workflowet stopper nu billige kildekodefejl før DMI og genlæser den private Copernicus-cache efter DMI uden at svække de fulde slutgates.
+- Produktionsauditen bestod for alle 673 kystdele; ingen land-/vandpunkter blev flyttet.
