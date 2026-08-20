@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ravradar.dk/schemas/trip-evidence-v2.schema.json",
+  "title": "RavRadar complete trip evidence v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "tripId",
+    "tripStartedAt",
+    "tripEndedAt",
+    "observedAt",
+    "searchMinutes",
+    "searchCoverage",
+    "mode",
+    "zoneId",
+    "coastalPartId",
+    "forecastZoneId",
+    "forecastCoastalPartId",
+    "calibrationEligible",
+    "found",
+    "grams",
+    "forecastSnapshotId",
+    "forecastIssuedAt",
+    "forecastValidAt",
+    "forecastCapturedAt",
+    "calibrationFeatures"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "tripId": { "$ref": "#/$defs/id" },
+    "tripStartedAt": { "$ref": "#/$defs/dateTime" },
+    "tripEndedAt": { "$ref": "#/$defs/dateTime" },
+    "observedAt": { "$ref": "#/$defs/dateTime" },
+    "searchMinutes": { "type": "integer", "minimum": 1, "maximum": 1440 },
+    "searchCoverage": { "enum": ["partial", "normal", "thorough"] },
+    "mode": { "enum": ["waders", "beach"] },
+    "zoneId": { "$ref": "#/$defs/id" },
+    "coastalPartId": { "$ref": "#/$defs/id" },
+    "forecastZoneId": { "$ref": "#/$defs/id" },
+    "forecastCoastalPartId": { "$ref": "#/$defs/id" },
+    "calibrationEligible": { "type": "boolean" },
+    "found": { "type": "boolean" },
+    "grams": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "number", "minimum": 0, "maximum": 100000 }
+      ]
+    },
+    "forecastSnapshotId": { "$ref": "#/$defs/id" },
+    "forecastIssuedAt": { "$ref": "#/$defs/dateTime" },
+    "forecastValidAt": { "$ref": "#/$defs/dateTime" },
+    "forecastCapturedAt": { "$ref": "#/$defs/dateTime" },
+    "calibrationFeatures": { "$ref": "#/$defs/calibrationFeatures" }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "dateTime": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "nullableNumber": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "number" }
+      ]
+    },
+    "score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "calibrationFeatures": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "modelVersion",
+        "appVersion",
+        "totalScore",
+        "huntabilityScore",
+        "transportScore",
+        "mobilisationScore",
+        "windSpeedMs",
+        "windDirectionDeg",
+        "waveHeightM",
+        "wavePeriodS",
+        "waveDirectionDeg",
+        "currentSpeedMs",
+        "currentDirectionDeg",
+        "waterLevelM",
+        "waterLevelTrendM3h",
+        "maxWaveHeight24hM",
+        "hoursSinceEnergyPeak",
+        "sustainedOnshoreHours",
+        "reasonCodes"
+      ],
+      "properties": {
+        "modelVersion": { "$ref": "#/$defs/id" },
+        "appVersion": { "$ref": "#/$defs/id" },
+        "totalScore": { "$ref": "#/$defs/score" },
+        "huntabilityScore": { "$ref": "#/$defs/score" },
+        "transportScore": { "$ref": "#/$defs/score" },
+        "mobilisationScore": { "$ref": "#/$defs/score" },
+        "windSpeedMs": { "$ref": "#/$defs/nullableNumber" },
+        "windDirectionDeg": { "$ref": "#/$defs/nullableNumber" },
+        "waveHeightM": { "$ref": "#/$defs/nullableNumber" },
+        "wavePeriodS": { "$ref": "#/$defs/nullableNumber" },
+        "waveDirectionDeg": { "$ref": "#/$defs/nullableNumber" },
+        "currentSpeedMs": { "$ref": "#/$defs/nullableNumber" },
+        "currentDirectionDeg": { "$ref": "#/$defs/nullableNumber" },
+        "waterLevelM": { "$ref": "#/$defs/nullableNumber" },
+        "waterLevelTrendM3h": { "$ref": "#/$defs/nullableNumber" },
+        "maxWaveHeight24hM": { "$ref": "#/$defs/nullableNumber" },
+        "hoursSinceEnergyPeak": { "$ref": "#/$defs/nullableNumber" },
+        "sustainedOnshoreHours": { "$ref": "#/$defs/nullableNumber" },
+        "reasonCodes": {
+          "type": "array",
+          "maxItems": 12,
+          "items": { "$ref": "#/$defs/id" }
+        }
+      }
+    }
+  }
+}

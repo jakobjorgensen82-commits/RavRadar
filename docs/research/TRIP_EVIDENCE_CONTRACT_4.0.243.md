@@ -38,6 +38,8 @@ Uploadadapteren bygger databasepayloaden fra en fast tilladelsesliste og kontrol
 
 Den isolerede dialog spørger kun om fund/ikke fund, faktisk zone og kystdel, søgegrundighed og frivillige gram. Den forklarer tydeligt, at den præcise position og ruten ikke gemmes. Hvis stedet ændres i forhold til turstart, forklarer dialogen også, at turen bevares men ikke bruges til automatisk scorejustering. “Svar senere” lukker dialogen uden at færdiggøre eller slette turdata.
 
+Den kanoniske objektform findes også som `trip-evidence-v2.schema.json`. Skemaet afviser ukendte felter både på topniveau og i kalibreringssnapshotten. Dermed er det ikke nok, at UI-koden ser rigtig ud; producenter og forbrugere har samme maskinlæsbare tilladelsesliste.
+
 ## Dataminimering
 
 GPS-punkter, ruter, koordinater og spor indgår ikke i fjernkontrakten. Den faktiske kystdel er præcis nok til faglig kalibrering og langt mindre følsom end brugerens bevægelsesspor. Lokale historiske ruter ændres eller slettes ikke af denne kontrakt.

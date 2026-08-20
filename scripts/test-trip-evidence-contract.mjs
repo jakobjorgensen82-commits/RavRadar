@@ -249,4 +249,14 @@ assert.match(dialogSource, /ikke din præcise position eller rute/);
 assert.doesNotMatch(dialogSource, /\.innerHTML\s*=/);
 assert.doesNotMatch(dialogSource, /\b(?:fetch|geolocation|localStorage)\b/);
 
+const evidenceSchemaSource = fs.readFileSync('docs/research/trip-evidence-v2.schema.json', 'utf8');
+const evidenceSchema = JSON.parse(evidenceSchemaSource);
+assert.equal(evidenceSchema.properties.schemaVersion.const, 2);
+assert.equal(evidenceSchema.additionalProperties, false);
+assert.equal(evidenceSchema.$defs.calibrationFeatures.additionalProperties, false);
+for (const key of ['tripStartedAt', 'tripEndedAt', 'searchMinutes', 'coastalPartId', 'forecastSnapshotId', 'calibrationFeatures']) {
+  assert.ok(evidenceSchema.required.includes(key), `${key} skal være påkrævet i JSON-kontrakten`);
+}
+assert.doesNotMatch(evidenceSchemaSource, /"(?:latitude|longitude|gps|route|track|u|v)"\s*:/i);
+
 console.log('Trip evidence contract: OK');
