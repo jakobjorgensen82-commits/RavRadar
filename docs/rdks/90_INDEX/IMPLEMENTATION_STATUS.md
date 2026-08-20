@@ -1408,3 +1408,9 @@ Status: Implementeret og lokalt valideret.
 +- [x] Artifact/live-hash og fuld 210/673-browseraudit er grønne med nul fejl.
 +- [x] Den portable Windows PowerShell-kildekontrol er dermed også gennemført i PR-CI og frisk produktion.
 +- [ ] P1 er vokset til 43,31 verificerede timer i 198 zoner og cirka 105,75 timers shadow-capture; 72/168-timerskravene er fortsat åbne.
+## RavScore-forskning fase A-B
++- [x] Autoritativ aktiv scorekode og alle direkte justeringsveje er kortlagt.
++- [x] Konceptuel model adskiller lager, mobilisering, transport, levering/aflejring og jagtbarhed.
++- [x] Første evidensmatrix klassificerer amber-, Baltic-, sediment-, bølge-/strøm- og analogkilder med begrænsninger.
++- [x] Aktuelle tærskler og 40/35/25-vægte er markeret som arbejdshypoteser uden klasse A-kalibrering.
++- [ ] Fase C-D: materialefysik, dansk overførbarhed, kodefølsomhed, overlap/ablation, fund-/nuldata og hold-out-validering.

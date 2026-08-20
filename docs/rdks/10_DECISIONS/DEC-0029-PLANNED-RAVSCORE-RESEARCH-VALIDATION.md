@@ -1,6 +1,6 @@
 # DEC-0029 – Planlagt videnskabelig forskningsrunde for RavScore
 
-**Status:** PLANLAGT
+**Status:** IGANGSAT SCORE-NEUTRALT
 **Registreret:** 2026-08-08
 
 ## Formål
@@ -57,3 +57,9 @@ Dette er et forskningskrav, ikke en forhåndskonklusion om ny score. Analysen sk
 DEC-0040 gør følgende til et eksplicit analysekrav: den lokale bundnære strøm ved kystens vandpunkt er sidste led i en større transportkæde, ikke hele kæden. Analysen skal undersøge ydre tilførsel, transportkorridorer, strøm cirka 5 og 15 km søværts, overflade-/mellem-/bundlag, overgang ind mod kysten, persistens og relevante tidsforsinkelser. Den skal afprøve hypotesen om, at strøm længere ude beskriver, hvilket materiale der kan nå kystzonen senere, mens det lokale felt beskriver den sidste levering.
 
 Den private syvdøgnsopsamling er kun et observationsgrundlag. Den påvirker ikke aktiv RavScore og kan ikke alene bevise en ny mekanisme. En fremtidig scoremodel skal dokumentere selvstændig forklaringsværdi og undgå dobbelt-tælling med lokal strøm, vind, bølger og historik.
+
+## Igangsættelse 2026-08-20
+
+Ejeren har godkendt fortsat autonomt roadmaparbejde, mens P1's naturlige 72/168-timersvinduer afventer tid. Fase A-B er derfor igangsat uden produktionskode: aktiv kodevej, tærskler, overlap, konceptuel systemmodel, første primærkilder og valideringsforsøg er dokumenteret i `docs/research/RAVSCORE_RESEARCH_EVIDENCE_BASE.md`.
+
+Adgangskriteriet er kun åbnet for score-neutral forskning. Alle stopregler består: ingen ny mekanisme, vægt, tærskel, kilde eller score må aktiveres uden fase C-D, virkelighedsvalidering og særskilt ejerbeslutning.

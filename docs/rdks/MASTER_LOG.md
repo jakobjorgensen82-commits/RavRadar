@@ -1551,3 +1551,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 +- `RavRadar-support-3263` og live `rr-20260820112436-210` matcher byte for byte. Fuld browseraudit gav 210/673, 420 aktuelle, 2.100 prognosevisninger og nul fejl.
 +- P1 voksede til 73 rå prøver/43,31 timer; 198 verificerede zoner voksede med, mens 12 kendte parenthuller blev bevaret ved nul. Shadow-cachen spænder cirka 105,75 timer.
 +- Ingen ny DMI-collection blev hentet, og ingen datakæde, score eller geometri blev ændret.
+## 2026-08-20 - RavScore forskning fase A-B
++- DEC-0029 er igangsat score-neutralt, mens P1-retention afventer naturlig tid.
++- Aktiv kodeaudit afgrænser `score-engine.js`, lokal kystdelsscore, adaptive justeringer og regler; `ravscore.js` i roden er en ubrugt prototype.
++- Evidensbasen dokumenterer uvaliderede tærskler, overlap/dobbelt-tælling, en femleddet fysisk systemmodel, første primærkilder og ni valideringsforsøg.
++- Ingen score, vægt, kilde, fallback, data eller geometri er ændret.
