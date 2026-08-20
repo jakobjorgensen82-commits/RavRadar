@@ -78,3 +78,7 @@ Der må ikke flyttes land-/vandpunkter.
 - Den offentlige dataset rr-20260820105744-210 indeholder 210 zoner og 673 kystdele.
 - Fuld Playwright-kontrol bestod 420 aktuelle visninger og 2.100 prognosevisninger uden score-, pile-, farve-, forklarings-, konsol-, side- eller HTTP-fejl.
 - Merge af dette rene interne dokumentationscheckpoint er den praktiske kontrol af paths-ignore-reglen og skal ikke starte produktionsworkflowet.
+
+## Docs-skip bekræftet, 2026-08-20
+- Den rene dokumentationsmerge 2ebd601e oprettede ingen push-produktionskørsel. Seneste push-produktion er fortsat den fuldt verificerede 0d29a512.
+- Paths-ignore-optimeringen er dermed produktionsbevist og workflowopgaven er afsluttet.
