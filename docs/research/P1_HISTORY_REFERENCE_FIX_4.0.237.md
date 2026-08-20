@@ -26,3 +26,15 @@ Den eksisterende retentionstest beviser nu:
 - successive verificerede proever akkumuleres stadig.
 
 Ingen raa vaerdier, score, state, kilde, fallback, geometri eller land-/vandpunkt aendres. Frisk central produktion skal vise, at det verificerede spaend igen vokser naturligt.
+
+## Replay paa produktionsartifact
+
+Den rettede berigelse er koert paa en isoleret kopi af hele `#3242`-artifactet. Den berigede 21.978 verificerede prognosetimer og bevarede 2.802 ikke-verificerbare timer. Resultatet i historikmatricen er:
+
+- 197 zoner vokser fra 55 til 56 verificerede proever;
+- en zone vokser fra 49 til 50;
+- verificeret spaend vokser fra 22,563 til 30,903 timer i alle 198 verificerede zoner;
+- de samme 12 reelle parent-zonehuller forbliver ved nul;
+- ingen fortid rekonstrueres eller omskrives.
+
+Replayet beviser rettelsen mod faktiske produktionsdata. Frisk central produktion er fortsat noedvendig som drift-/deploybevis.
