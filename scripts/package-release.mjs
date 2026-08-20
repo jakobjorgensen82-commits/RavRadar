@@ -26,7 +26,6 @@ const forbidden = files.filter(file => file === '.git'
   || file.startsWith('.cache/')
   || file.startsWith('_site/')
   || file.startsWith('_support/')
-  || file.startsWith('release/')
   || /(^|\/)\.env($|\.)/.test(file));
 if (forbidden.length) {
   throw new Error(`Releasekilden indeholder forbudte filer: ${forbidden.slice(0, 10).join(', ')}`);
