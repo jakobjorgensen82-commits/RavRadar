@@ -329,6 +329,8 @@
 - [x] #31890898143 bestod fulde gates og deploy; artifact #2782 dokumenterer fuld collection/modelrun for alle fem komponenter og afgrænser #2777's vandstandsfund som ikke-vedvarende.
 - [x] #2782 eftermåler historikvækst til 158 rå prøver/38,760 timer og 3,040–38,760 timers verificeret spænd uden bagudfyldning.
 - [ ] Friske naturlige HARMONIE-, WAM- og DKSS-run-id'er skal fortsat eftermåles, før permanente overgangsintervaller kan besluttes.
+- [x] Ny WAM 2026-08-19 18Z-cyklus er eftermaalt i `#3242`: 15 Limfjordszoner vokser til 115 timer, og alle tre boelgeovergange er dokumenteret.
+- [ ] Ny fuldt indfaset HARMONIE-cyklus og flere uafhaengige komponentcyklusser mangler fortsat foer permanente overgangsintervaller.
 
 # Tidligere status: 4.0.221 – vandstandsroutingalarm
 

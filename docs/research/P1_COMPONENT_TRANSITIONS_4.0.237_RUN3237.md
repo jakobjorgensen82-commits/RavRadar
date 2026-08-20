@@ -49,3 +49,17 @@ Det kortere vindue er ikke tilfaeldigt retentiontab. Starttidspunktet er den foe
 2. Gentag matrixen efter en fuldt indfaset ny HARMONIE-cyklus og efter naeste naturlige WAM-/DKSS-run.
 3. Hold parent-zonehuller og den aktive 673-dels lokale daekning adskilt i alle konklusioner.
 4. Overvej foerst permanente komponent-/retningsspecifikke intervaller, naar flere uafhaengige fulde cyklusser og 72 timers kompatibel historik foreligger.
+
+## Opfoelgning: ny WAM-cyklus i produktion 3242
+
+Naturlig produktion `#3242`/`rr-20260819235244-210` indfaser `wam_dw` og `wam_nsb` fra 2026-08-19 18Z. Det er et nyt uafhaengigt WAM-bevis, ikke blot endnu et artifact fra 18Z-cyklussen dagen foer.
+
+De 15 Limfjordszoner med kort hale vokser fra 97 til 115 viste boelgetimer; Feggesund forbliver korrekt nul. Overgangene maales nu til:
+
+| Felt | Middel | P95 | Tidligere #3237 |
+|---|---:|---:|---:|
+| Boelgehoejde | 0,109 m | 0,44 | 0,134 / 0,53 |
+| Boelgeretning | 20,070 grader | 100 | 17,974 / 75 |
+| Boelgeperiode | 0,353 s | 1,3 | 0,401 / 1,5 |
+
+Det nye run styrker konklusionen: hoejde og periode bliver mindre ved denne cyklus, mens retningens P95 vokser. Permanente intervaller skal derfor fortsat vaere komponent- og retningsspecifikke og bygge paa flere fulde cyklusser. Ingen aktiv score eller kilde aendres.
