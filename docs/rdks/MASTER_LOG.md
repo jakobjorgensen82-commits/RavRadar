@@ -1610,4 +1610,4 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Ingen land-/vandpunkter eller geometri er ændret.
 - 55.296 aktive syntetiske scenarier og 436 aktuelle public-beregninger bestod; national scoreændring var minus 1 til plus 1 uden farveskift.
 
-- 2026-08-20: 4.0.241 feature `ae4c86c6` merged via PR #25 som `eb66b280`. Produktion `#32405699346` bestod frisk fuld validering, release-gate, Supabase og Pages-deploy; direkte version-/kildekontrol er grøn. Systematisk onlineaudit afventer.
+- 2026-08-20: 4.0.241 feature `ae4c86c6` merged via PR #25 som `eb66b280`. Produktion `#32405699346` bestod frisk fuld validering, release-gate, Supabase og Pages-deploy; direkte version-/kildekontrol er grøn. Onlineaudit på `rr-20260820185733-210` bestod 210 zoner, 673 kystdele, 420 aktuelle og 2.100 prognosevisninger uden fejl.

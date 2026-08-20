@@ -1473,4 +1473,4 @@ Status: Implementeret og lokalt valideret.
 - [x] Syntetisk audit af 55.296 scenarier og national offentlig audit af 210 zoner/673 beregnede kystdele.
 - [x] `validate:source`, release-gate og lokal desktop-/mobilbrowserkontrol.
 - [x] PR #25, merge `eb66b280`, frisk fuld produktion `#32405699346` og direkte deploykontrol.
-- [ ] Systematisk onlineaudit efter deploy.
+- [x] Onlineaudit på `rr-20260820185733-210`: 210 zoner, 673 kystdele, 420 aktuelle og 2.100 prognosevisninger uden fejl.

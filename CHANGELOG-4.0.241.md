@@ -17,4 +17,4 @@
 
 ## Validering
 
-- Målrettede regressionskontroller er grønne. 55.296 syntetiske scenarier holdt scoreændringen inden for plus/minus 5; national public-audit gav minus 1 til plus 1 og ingen farveskift. PR #25 og frisk produktion `#32405699346` er grønne gennem fuld validering, release-gate og Pages-deploy på `eb66b280`; direkte Pages-kontrol viser 4.0.241. Systematisk onlineaudit gennemføres som sidste trin.
+- Målrettede regressionskontroller er grønne. 55.296 syntetiske scenarier holdt scoreændringen inden for plus/minus 5; national public-audit gav minus 1 til plus 1 og ingen farveskift. PR #25 og frisk produktion `#32405699346` er grønne gennem fuld validering, release-gate og Pages-deploy på `eb66b280`; direkte Pages-kontrol viser 4.0.241. Onlineaudit bestod 210 zoner, 673 kystdele, 420 aktuelle og 2.100 prognosevisninger uden fejl.
