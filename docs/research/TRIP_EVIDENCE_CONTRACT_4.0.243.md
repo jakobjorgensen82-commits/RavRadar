@@ -46,6 +46,10 @@ Når turen stoppes, gemmes sluttidspunktet lokalt før dialogen åbnes. Vælger 
 
 En controller samler start, stop, genoptagelse, dialog, lokal kø og upload bag et lille interface. Den returnerer kun kort status og tur-id til UI-laget. Hvis upload mangler eller fejler, er status `queued`; den komplette payload bliver ikke lagt i fejlstatus eller konsollog.
 
+## Adapter til den offentlige score
+
+En særskilt adapter bygger turstarten fra den allerede viste offentlige kystdel og zone. Den kræver samme datasæt i manifest og vejrdata, kontrollerer at kystdelen tilhører zonen og kræver totalscore plus alle tre komponenter for den valgte søgemetode. Vandstand og tretimerstendens omregnes eksplicit fra centimeter til meter. Ukendte felter kopieres ikke, og rå vektorkomponenter findes ikke i tilladelseslisten.
+
 ## Dataminimering
 
 GPS-punkter, ruter, koordinater og spor indgår ikke i fjernkontrakten. Den faktiske kystdel er præcis nok til faglig kalibrering og langt mindre følsom end brugerens bevægelsesspor. Lokale historiske ruter ændres eller slettes ikke af denne kontrakt.

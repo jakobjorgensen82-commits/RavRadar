@@ -20,6 +20,7 @@ import {
 } from '../js/services/trip-evidence-store.js';
 import { uploadPendingTripEvidence } from '../js/services/trip-evidence-upload.js';
 import { createTripEvidenceController } from '../js/services/trip-evidence-controller.js';
+import { createTripStartFromPublicState } from '../js/services/trip-evidence-public-adapter.js';
 
 class MemoryStorage {
   values = new Map();
@@ -258,6 +259,55 @@ const submitted = await controller.resume({
 assert.equal(submitted.status, 'submitted');
 assert.equal(controller.active(), null);
 assert.equal(listPendingTripEvidence(controllerStorage).length, 0);
+
+const publicStart = createTripStartFromPublicState({
+  tripId: 'trip-public-adapter',
+  startedAt: input.startedAt,
+  mode: 'waders',
+  zoneId: 'zone-42',
+  coastalPartId: 'zone-42-part-2',
+  manifest: { datasetId: 'rr-20260821025000-210' },
+  conditions: {
+    available: true,
+    datasetId: 'rr-20260821025000-210',
+    productionReferenceAt: '2026-08-21T02:00:00.000Z',
+    generatedAt: '2026-08-21T02:50:00.000Z',
+    zones: {
+      'zone-42': {
+        current: {
+          windSpeedMps: 8.4,
+          windDirectionDeg: 275,
+          waveHeightM: 1.4,
+          wavePeriodS: 6.8,
+          waveDirectionDeg: 282,
+          currentSpeedMps: 0.31,
+          currentDirectionDeg: 268,
+          waterLevelCm: 22,
+          waterLevelTrendCm3h: -8
+        },
+        history: { maxWave24hM: 2.1, hoursSinceHighEnergy: 7 }
+      }
+    }
+  },
+  coastalPart: {
+    zoneId: 'zone-42',
+    current: {
+      time: '2026-08-21T03:00:00.000Z',
+      waders: { score: 63, components: { huntability: 74, transport: 61, release: 58 } }
+    }
+  },
+  appVersion: '4.0.242',
+  modelVersion: 'ravscore-4.0.242'
+});
+assert.equal(publicStart.calibrationFeatures.waterLevelM, 0.22);
+assert.equal(publicStart.calibrationFeatures.waterLevelTrendM3h, -0.08);
+assert.equal(publicStart.calibrationFeatures.mobilisationScore, 58);
+assert.equal(publicStart.forecastSnapshot.validAt, '2026-08-21T03:00:00.000Z');
+assert.throws(() => createTripStartFromPublicState({
+  ...publicStart,
+  zoneId: 'zone-99',
+  coastalPart: { zoneId: 'zone-42' }
+}), /tilhører ikke den valgte zone/);
 
 const noFind = buildTripEvidence({ ...input, found: false, grams: 99 });
 assert.equal(noFind.grams, null);
