@@ -1473,3 +1473,30 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Den private 168-timerscache er vokset til 45 eksakte timer og 28.305 poster: 625 unikke mål, 629 mål/kilde-par og nul gitter-/lagustabilitet.
 - Baltic har 552/567 og AMM15 77/125 verificerede mål inden for 5 km. 48 mål mangler fortsat Copernicus-par og bliver ikke udfyldt kunstigt.
 - Piloten er fortsat score-neutral, privat og uden interpolation eller råvektorlæk. Den endelige analyse afventer et fuldt naturligt 168-timersvindue.
+
+# 2026-08-20 - 4.0.238 produktions- og browserverificeret
+
+- PR #1 blev merged med ejerens godkendelse som `b8844841`. Push `#32344813967` bestod central adminhydrering, frisk DMI, fuld `validate`, releasegate, Supabase, Pages-artifact og deploy.
+- Support `RavRadar-support-3252`/datasæt `rr-20260820074127-210` har 210 zoner. De seks #3246-bølgehuller har nu 118 timer med uændret DMI-first-kildeorden; Feggesund er fortsat dokumenteret missing.
+- Verificeret currenthistorik vokser igen: op til 56 verificerede prøver og 39,594 timers spænd i de 198 verificerbare zoner mod tidligere 22,563 timer. De 12 reelle parenthuller forbliver missing.
+- Browser-pluginet åbnede live 4.0.238. Godkendt Playwright-fallback kontrollerede 210 zoner, 673 kystdele, 420 aktuelle paneler og 2.100 femdøgnsvalg med nul score-, farve-, pil-, forklarings-, kontekst-, metrik-, konsol-, side- eller HTTP-fejl. Mobil og desktop er grønne.
+- Naturlig schedule `#32347036227` stoppede korrekt uden produktionsartifact, da UTC-time 08 ikke var komplet. Automatisk pilot `#32347060320`/artifact #72 udvidede derefter den private cache til 46 eksakte timer og 28.934 poster med nul gitter-/lagustabilitet.
+- Kun det særskilte naturlige produktionsbevis over et faktisk UTC-timeskift og de langsigtede 72/168-timersmålinger er åbne. Ingen land-/vandpunkter, geometri, U/V, kildeorden, afstandsgrænser eller RavScore er ændret.
+
+# 2026-08-20 - P1-komponentcyklus efter 4.0.238
+
+- Read-only sammenligning af #3246, #3249 og #3252 viser ingen ny modelstart i 4.0.238-artifactet: HARMONIE 20. august 00Z, WAM 19. august 18Z og DKSS 19. august 12Z fortsætter.
+- Vindens DMI-til-fallback-delta er ikke forværret, bølgeovergangsmålene er uændrede, og de seks tidligere `missing->fallback`-bølgehændelser er væk uden ændret kildeorden.
+- #3252 tæller som stabil drift og historikvækst, ikke som en ny uafhængig DEC-0030-cyklus. Ingen tærskel, fallback, score eller geometri er ændret.
+
+# 2026-08-20 - P1-produktionsvarighed efter 4.0.238
+
+- De seks seneste fulde `build-and-prepare`-jobs tog 689, 473, 478, 451, 544 og 415 sekunder; medianen er 475,5 sekunder.
+- 4.0.238-kørsel `#32344813967` tog 415 sekunder, cirka 12,7 procent under medianen, og gennemførte fortsat alle faglige gates, Supabase og Pages.
+- Readiness-skip uden artifact er ikke talt som produktion. Resultatet er stabil drift, ikke et nyt modelrotationsbevis; opfølgningen fortsætter ved nye HARMONIE-, WAM- og DKSS-cyklusser.
+
+# 2026-08-20 - naturligt timeskifte, fuld browserkontrol og mergeautoritet
+- GitHub schedule `#32351140886` byggede frisk `rr-20260820085852-210`, kørte fuld `validate` og releasegate, synkroniserede Supabase og deployede Pages.
+- Browser-pluginet blev forsøgt først, men kunne ikke løse DNS. Godkendt system-Chrome/Playwright gennemgik derefter 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 prognosevisninger med nul fejl.
+- P0.3 og `ISSUE-OPEN-METEO-LOCKED-HOUR-WINDOW` er lukket uden ændring af punkter, geometri, U/V, score, afstandsgrænser eller kildeorden.
+- Ejerens nye permanente regel giver Codex betinget autoritet til at merge egne datasikre RavRadar-PR'er efter fuld systemisk verifikation; røde/uafklarede gates og konkret fejlevidens blokerer fortsat merge.

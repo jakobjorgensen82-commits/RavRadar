@@ -1,26 +1,29 @@
-# Implementeringsstatus – 4.0.237 produktionsverificeret
+# Implementeringsstatus – 4.0.238 produktionsverificeret
 
-## P1-driftsevidens - Copernicus-pilot #70
+## P1-driftsevidens - Copernicus-pilot #72
 
 - **STATUS:** Grøn naturlig schedule-kørsel og supportartifact.
-- **VINDUE:** 45 eksakte timetidspunkter, 28.305 poster, første 2026-08-18 11:00Z og seneste 2026-08-20 07:00Z.
+- **VINDUE:** 46 eksakte timetidspunkter, 28.934 poster, første 2026-08-18 11:00Z og seneste 2026-08-20 08:00Z.
 - **STABILITET:** 625 unikke mål, 629 mål/kilde-par og nul gitter-/lagustabilitet.
 - **ISOLATION:** `scoreImpact=false`, `publicRuntime=false`, `interpolation=false`; ingen rå U/V eller credentials i supportbeviset.
 - **RESTERENDE:** Fortsæt naturlig opsamling til et fuldt 168-timersvindue før afsluttende forskningsanalyse.
+- **KOMPONENTCYKLUS:** #3252 har ingen ny HARMONIE-, WAM- eller DKSS-modelstart i forhold til det foregående grundlag. Overgangene er stabile, men artifactet tæller ikke som en ny uafhængig DEC-0030-cyklus.
+- **PRODUKTIONSVARIGHED:** 4.0.238's fulde build var 415 sekunder mod 475,5 sekunders median for seks fulde builds. Ingen gate blev reduceret; næste kvalificerede måling kræver en reel ny modelrotation.
 
-## Status for 4.0.238-kandidaten
+## Status for 4.0.238
 
-- **KODE OG PR-GATE:** Implementeret i draft-PR #1. Historikmatcher, låst Open-Meteo-vindue og kildebaseret PR-validering har målrettede regressioner.
-- **RELEASEPAKKE:** Version, changelog, Markdown-/webhåndbog, RDKS og versionsbunden browseraudit er samlet på kandidatbranchen.
-- **PRODUKTION:** Ikke gennemført på kandidaten. #3249 er en grøn kontrol af gammel `main`, ikke bevis for 4.0.238.
-- **BROWSER:** Den tidligere komplette kontrol dækkede 210 zoner, 673 dele, 420 aktuelle og 2.100 forecastvisninger. Den skal gentages mod live 4.0.238; versionsmatch er nu en hård del af kontrollen.
+- **KODE OG MERGE:** PR #1 er merged som `b8844841`; historikmatcher, låst Open-Meteo-vindue og kildebaseret PR-validering er på `main`.
+- **PRODUKTION:** `#32344813967` bestod central adminhydrering, frisk DMI, fuld `validate`, releasegate, Supabase og Pages. Support `RavRadar-support-3252` indeholder datasæt `rr-20260820074127-210`.
+- **BØLGER OG HISTORIK:** Seks #3246-huller er lukket til 118 timer med uændret kildeorden. Verificeret currenthistorik vokser igen til 39,594 timer i de 198 verificerbare zoner; 12 reelle huller forbliver `missing`.
+- **BROWSER:** Live 4.0.238 er grøn for 210 zoner, 673 dele, 420 aktuelle og 2.100 forecastvisninger med nul funktionelle, konsol-, side- eller HTTP-fejl. Mobil og desktop er responsive uden overflow.
+- **ÅBENT P0:** En naturlig fuld produktion skal stadig observeres over et faktisk UTC-timeskift. Readiness-skip `#32347036227` og pilot #72 viser den korrekte fail-closed forberedelse, men ikke selve grænsekrydsningen.
 - **DATAINTEGRITET:** Ingen land-/vandpunkter eller beskyttede dirty datafiler indgår. De 12 dokumenterede strømhuller og Feggesunds reelle bølgemangel forbliver `missing`.
 
 > **Aktiv opgavestyring:** Se `ACTIVE_ROADMAP.md`. Aeldre tomme afkrydsningsbokse i denne fil er historisk revisionsspor og er kun aktive, hvis de ogsaa findes i det aktive roadmap.
 
 ## Online browseraudit 2026-08-20
 
-- [x] Reproducerbar liveaudit: `scripts/audit-online-browser-4.0.237.py`.
+- [x] Reproducerbar liveaudit: `scripts/audit-online-browser-playwright-4.0.238.mjs`.
 - [x] 210/210 zoner og 673/673 kystdele indlæst.
 - [x] 420/420 aktuelle visninger og 2.100/2.100 femdøgnsvisninger kontrolleret.
 - [x] 0 mismatch i score, farve, pile, forklaringer, lokal kontekst og debug-ID.
@@ -1347,4 +1350,10 @@ Status: Implementeret og lokalt valideret.
 - [ ] Det kompatible `controlled-live`-historikvindue er 28,903 timer fra 4.0.232-aktiveringen og skal fortsat opbygges naturligt til mindst 72 timer; ingen bagudfyldning.
 - [x] `#3242` afgraenser falsk fastlaast verificeret historik til mismatch mellem sampletidens `productionReferenceAt` og efterberigelsens `generatedAt`; kode og maalrettede tests er rettet/groenne.
 - [x] Isoleret fuldt artifactreplay loefter `#3242` fra 22,563 til 30,903 verificerede timer i 198 zoner og bevarer de samme 12 reelle parent-zonehuller.
-- [ ] Frisk central produktion skal bevise, at 198 verificerede hovedzoners historiespaend igen vokser efter den timeskarpe rettelse; 12 reelle parent-zonehuller forbliver eksplicitte.
+- [x] Frisk central produktion `#32344813967` beviste, at de 198 verificerbare hovedzoners historiespaend igen vokser efter den timeskarpe rettelse; de 12 reelle parent-zonehuller forbliver eksplicitte.
+
+## 2026-08-20 - P0.3 afsluttet
+- Naturlig produktion `#32351140886` byggede og deployede `rr-20260820085852-210` med alle relevante gates, Supabase og Pages.
+- Fuld online regression er grøn: 210 zoner, 673 kystdele, 420 aktuelle og 2.100 prognosevisninger, nul fejl.
+- Mergeautoritet er opdateret i `AGENTS.md`, Codex-starten, AI Working Rules og RDKS operating rules.
+- Implementeringen er uændret; denne blok flytter ingen punkter og ændrer ingen score-, data-, geometri- eller runtimekontrakter.

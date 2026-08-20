@@ -1905,3 +1905,13 @@ En ny DMI-modelkørsel kan begynde med få timer, mens den foregående kørsel s
 Artifact #2783 viste den første nye HARMONIE 12 UTC-cyklus efter 4.0.222, men kun med 416 timer fordelt på 208 zoner. Den tidligere 03 UTC-cyklus bar fortsat hovedparten af vindhorisonten. Det tæller som en ny, delvis cyklus – ikke som et fuldt landsdækkende bevis.
 
 Kontrollen ændrer ingen værdier eller kilder. Den forhindrer kun, at en tidlig indfasning bruges som grundlag for en permanent overgangsgrænse.
+
+## Produktionsverifikation af 4.0.238
+
+RavRadar 4.0.238 er ført til `main` og verificeret i den fulde centrale kæde. Produktionskørsel `#32344813967` gennemførte central adminhydrering, frisk DMI, samlet validering, releasegate, Supabase og Pages. Det producerede datasæt `rr-20260820074127-210` indeholder 210 zoner.
+
+De seks bølgehuller, som blev set ved den låste time i #3246, har nu hver 118 prognosetimer uden ændring af DMI-first-kildeordenen. Feggesund mangler fortsat bølger af den dokumenterede faglige årsag. Verificeret strømhistorik vokser igen i de 198 geografisk verificerbare parentzoner og spænder nu op til 39,594 timer; de 12 reelle gitterhuller forbliver `Mangler`.
+
+Den systematiske onlinekontrol sammenholder begge jagtformer i alle 210 zoner, alle 673 kystdele, 420 aktuelle paneler og 2.100 femdøgnsvalg. Score, label, farve, vind- og strømpile, tre scorekomponenter, forklaring, lokal kontekst, debug og seks vejrmetrikker passer sammen uden fund. Mobil 390 x 844 og desktop 1440 x 900 er kontrolleret uden vandret overflow eller funktionsfejl.
+
+Den fulde produktion er grøn, men en naturlig kørsel, som faktisk krydser en UTC-timegrænse, følges fortsat som et afgrænset driftsbevis. Readiness-gaten må ikke omgås manuelt, og ingen land-/vandpunkter er flyttet.

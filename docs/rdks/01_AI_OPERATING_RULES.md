@@ -59,3 +59,11 @@ En halvfærdig version må ikke fremstilles som releaseklar. Ucommittede filer, 
 - Rutinearbejde må ikke automatisk bruge Sol af bekvemmelighed. En tilladt arbejdsdeling er Sol til analyse/design, billigere model til klart specificeret mekanik og Sol til kritisk integration/review; den vurderes konkret og er ikke en tvungen skabelon.
 - En kvotegrænse må aldrig sænke analyse-, forsknings-, test- eller valideringskrav. Ved pause opdateres et permanent checkpoint med udført arbejde, evidens, konklusioner, åbne og afviste hypoteser, ændringer, tests, mangler, næste konkrete trin og anbefalet model.
 - Den planlagte videnskabelige RavRadar-/RavScore-analyse kræver som udgangspunkt Sol til centrale synteser, evidenskonflikter, hypoteser, scorebeslutninger og endelig vurdering.
+
+## Permanent PR- og mergeautoritet - 2026-08-20
+- Codex må oprette og opdatere korte Pull Requests fra RavRadar-branches, som Codex selv har pushet.
+- PR-tekst skal være datasikker og må ikke indeholde secrets, credentials, private produktionsdata, komplette diagnostikpayloads, U/V-værdier eller andre følsomme oplysninger.
+- Codex må selv merge en sådan PR til `main` uden særskilt ejergodkendelse, når alle relevante tests og release-gates er bestået, ingen kendt kritisk fejl er ignoreret, systemiske konsekvenser og nødvendige regressioner er vurderet, dataintegritet og produktionskontrakter er bevaret, og krævet RDKS-/AI-/håndbogs-/changelogdokumentation er opdateret.
+- Grøn GitHub-topstatus er ikke i sig selv mergebevis ved konkret modstridende evidens. Røde eller uafklarede gates må ikke omgås. Ved reel fejl eller væsentlig usikkerhed skal Codex undersøge eller rette før merge.
+- Efter sikker merge følger Codex den efterfølgende produktions-/deploykørsel, verificerer at korrekt commit er i produktion, kontrollerer relevante produktionsresultater og fortsætter direkte til næste ikke-blokerede roadmap-punkt.
+- Irreversible, destruktive, usædvanligt risikable merges eller beslutninger uden for allerede godkendte RavRadar-krav kræver fortsat ejerens udtrykkelige godkendelse.

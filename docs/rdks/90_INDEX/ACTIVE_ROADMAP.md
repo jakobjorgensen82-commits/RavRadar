@@ -1,26 +1,28 @@
 # RavRadar - aktivt roadmap
 
-## Aktuel P0-status - 4.0.238-kandidat
+## Aktuel P0-status - 4.0.238 produktion
 
-- P0.1, PR-review og korrekt 4.0.238-pakke: afsluttet på kandidatbranchen i `2db2cd2b` + `e197a196`; lokal ZIP og GitHub PR-gate `#32342936407` er grønne.
-- P0.2, sikker overførsel til `main`: ikke udført; PR'en må ikke merges uden ejerens udtrykkelige beslutning.
-- P0.3-P0.6: afventer live 4.0.238. De kræver frisk fuld central produktion, bevis for seks tidligere #3246-bølgehuller, voksende verificeret historik i 198 zoner og gentaget browseraudit af 210/673/420/2.100.
-- P1-observation: naturlig Copernicus-pilot #70 har 45 eksakte timer, 28.305 poster og nul gitter-/lagustabilitet. Fortsæt mod 168 timer.
-- Ikke-blokeret driftsevidens og P1-analyse kan fortsætte, mens merge afventer. Ingen missing værdi må skjules, og ingen land-/vandpunkter må flyttes.
+- P0.1 og P0.2 er afsluttet: PR #1 blev merged som `b8844841`, og den korrekte 4.0.238-pakke blev ført til `main` uden de fire beskyttede lokale datafiler.
+- P0.4-P0.6 er afsluttet i `#32344813967`/support `RavRadar-support-3252`/datasæt `rr-20260820074127-210`: seks bølgehuller lukket, verificeret historik vokset til 39,594 timer og browseraudit grøn for 210/673/420/2.100.
+- P0.3 er afsluttet: naturlig schedule `#32351140886` byggede frisk datasæt `rr-20260820085852-210`, gennemførte begge fulde gates, Supabase og Pages og bevarede den låste referencetime på tværs af UTC-timeskiftet uden manuel omgåelse.
+- P1-observation: Copernicus-pilot #72 har 46 eksakte timer, 28.934 poster og nul gitter-/lagustabilitet. Fortsæt mod 168 timer.
+- P1-cykluskontrol: 4.0.238-artifact #3252 bruger fortsat HARMONIE 20. august 00Z, WAM 19. august 18Z og DKSS 19. august 12Z. Det er stabil drift, ikke en ny uafhængig cyklus; ingen grænse ændres.
+- P1-performance: 4.0.238's fulde build tog 415 sekunder mod 475,5 sekunders median for seks fulde builds. Ingen gate er reduceret; målingen gentages ved reelle nye modelrotationer.
+- P1-driftsevidens og analyse fortsætter efter den afsluttende dokumentationsmerge. Ingen missing værdi må skjules, og ingen land-/vandpunkter må flyttes.
 
 **Opdateret:** 2026-08-20  
-**Statusgrundlag:** 4.0.237 live, draft-PR #1 paa `codex/current-coverage-4.0.232`
+**Statusgrundlag:** 4.0.238 live på merge `b8844841`; verifikationsbranch `codex/verify-4.0.238`
 
 Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre forsknings-/versionsafsnit bevares som revisionsspor. En tom afkrydsningsboks i historikken er ikke en aktiv opgave, medmindre punktet ogsaa findes her.
 
 ## P0 - luk den aktuelle kandidat
 
-- [ ] Gennemgaa draft-PR #1 og saml den korrekte 4.0.238-versionspakke med RDKS, changelog og haandbog.
-- [ ] Foer kandidaten sikkert til `main` uden de fire beskyttede lokale dataaendringer.
-- [ ] Koer frisk fuld produktion med alle gates, Supabase og Pages. Et timeskifte er paakraevet som bevis for den laaste Open-Meteo-fallbacktime.
-- [ ] Bevis i frisk main-produktion, at de seks #3246-boelgehuller paa referencetimen er lukket, uden kortere hale eller aendret kildeorden.
-- [ ] Bevis i frisk main-produktion, at reference-time-rettelsen igen faar verificeret currenthistorik til at vokse i de 198 verificerbare parent-zoner; de 12 reelle huller skal forblive missing.
-- [ ] Gentag den fulde browseraudit: 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdoegnsvisninger med score, farve, pile, forklaringer, seks vejrmetrikker og `Mangler` i samme lokale kontekst.
+- [x] Gennemgaa draft-PR #1 og saml den korrekte 4.0.238-versionspakke med RDKS, changelog og haandbog.
+- [x] Foer kandidaten sikkert til `main` uden de fire beskyttede lokale dataaendringer.
+- [x] Koer frisk fuld produktion med alle gates, Supabase og Pages over et naturligt timeskifte; `#32351140886` og datasæt `rr-20260820085852-210` leverede beviset.
+- [x] Bevis i frisk main-produktion, at de seks #3246-boelgehuller paa referencetimen er lukket, uden kortere hale eller aendret kildeorden.
+- [x] Bevis i frisk main-produktion, at reference-time-rettelsen igen faar verificeret currenthistorik til at vokse i de 198 verificerbare parent-zoner; de 12 reelle huller skal forblive missing.
+- [x] Gentag den fulde browseraudit: 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdoegnsvisninger med score, farve, pile, forklaringer, seks vejrmetrikker og `Mangler` i samme lokale kontekst.
 
 ## P1 - naturlig drift og DEC-0030
 
