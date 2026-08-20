@@ -1090,3 +1090,8 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 +- Strømstyrke/-retning påvirker både transport og mobilisering; kombinationen flytter slutscoren 32 point i basisscenariet. Det syntetiske transport-/mobiliseringsoverlap er 0,402.
 +- Missing-adfærden er asymmetrisk: vind er hard gate, bølgefravær koster 2-3 baselinepoint, og strømfravær koster 19-20 plus loft.
 +- Resultaterne beskriver kode, ikke ravfund. Ingen tærskel, vægt, score, kilde eller geometri er ændret.
+## RavScore fase C produktionsverificeret
++- Merge `e85de36d` bestod produktion `#32366326503` med den nye score-neutrale self-test, fuld validering, releasegate, Supabase og Pages. Build-and-prepare tog 327 sekunder.
++- Support `RavRadar-support-3265` og live `rr-20260820115954-210` matcher byte for byte.
++- Browserkontrollen bestod 210 zoner, 673 dele, 420 aktuelle og 2.100 prognosevisninger med nul fejl. Aktiv scorekode og scoreadfærd er ikke ændret af fase C.
++- Samme artifact har 74 rå prøver/43,90 timer og samme verificerede spænd i 198 zoner; 12 parenthuller står ved nul. Shadow-cachen spænder cirka 106,34 timer.

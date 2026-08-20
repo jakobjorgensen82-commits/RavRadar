@@ -99,3 +99,11 @@ Ingen aktiv tærskel eller vægt ændres på dette grundlag.
 3. Definér fund/nulfund/søgeindsats og geografisk hold-out, før predictive performance måles.
 4. Test glatte kandidatfunktioner offline mod den låste nuværende score og senere mod hold-out-observationer.
 5. Hold jagtbarhed/sikkerhed og fysisk ravtilstedeværelse som separate evalueringsmål.
+## Produktionsverifikation #3265
+
+- PR #11 blev merged som `e85de36d` og kørt i produktion `#32366326503`.
+- Den fulde validering inkluderede følsomhedsauditens self-test og bestod sammen med releasegate, Supabase, Pages-build og deploy.
+- Build-and-prepare tog 327 sekunder.
+- Support `RavRadar-support-3265` og live `rr-20260820115954-210` matcher byte for byte.
+- Den fulde browseraudit bestod 210 zoner, 673 dele, 420 aktuelle visninger og 2.100 prognosevisninger med nul score-, pile-, forklarings-, konsol-, side- eller HTTP-fejl.
+- Auditværktøjet er dermed produktionsverificeret som score-neutralt; den aktive scorekode er uændret.

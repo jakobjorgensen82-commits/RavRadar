@@ -1560,3 +1560,7 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 +- Ny score-neutral audit gennemløber 86.400 syntetiske scenarier plus tærskel-, missing- og overlapstests.
 +- Auditen finder store diskrete spring ved 6 m/s waders-vind, 13 m/s strandvind, 0,15 m/s strøm og 0,7 m waders-bølge.
 +- Samme strøm- og kystinput påvirker flere komponenter. Resultatet prioriterer ablation og hold-out-validering; ingen scorekode er ændret.
+## 2026-08-20 - RavScore fase C produktion #3265
++- PR #11 blev merged som `e85de36d`. Produktion `#32366326503` bestod self-test, fuld validate, releasegate, Supabase og Pages på 327 sekunders build-and-prepare.
++- `RavRadar-support-3265` og live `rr-20260820115954-210` matcher byte for byte. Fuld 210/673-browseraudit gav nul fejl.
++- P1 voksede samtidig til 74 prøver/43,90 verificerede timer i 198 zoner og cirka 106,34 timers shadow-capture; de 12 parenthuller er uændrede.
