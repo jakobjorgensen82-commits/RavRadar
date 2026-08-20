@@ -196,3 +196,9 @@ Næste trin: anvend/verificer Supabase-migration, kør validate:source og releas
 ### Gatecheckpoint 2026-08-21 01:40 CEST
 
 validate:source og release:gate er grønne for 4.0.243, inklusive den nye turkontrakt og observationsprivatliv. Supabase-migrationen er næste og eneste eksterne gate før PR/merge. Kør ikke den fulde 210/673-browserkontrol før exact-commit deploy; lokal integreret Browser-plugin-kontrol er allerede grøn.
+## 2026-08-21 - Trip evidence v2: ekstern databasegate
+
+- PR #31 er oprettet som kladde fra den allerede push'ede commit `8a7016c7`; GitHub-run `32430076625` bestod den fulde PR-kilde- og releasegate paa praecis dette head.
+- En laesebaseret nul-raekkers PostgREST-kontrol bekraeftede, at `trip_id` findes (`HTTP 200`), mens v2-kolonnerne endnu ikke findes (`HTTP 400`, PostgreSQL `42703`).
+- Repositoryet har ingen automatisk migrationsworkflow, og maskinen har hverken Supabase CLI, `psql` eller databaseforbindelsesmiljoevariabler. Migrationen maa derfor anvendes via en eksisterende godkendt databasekanal, foer PR'en kan goeres klar til merge.
+- Det lokale releasecommit `95022593` indeholder fire utilsigtede byggeartefakter. De er ikke pushet. En sikker oprydning er forberedt, men sletningen kraever ejerens udtrykkelige godkendelse efter vaerktoejsafvisning.

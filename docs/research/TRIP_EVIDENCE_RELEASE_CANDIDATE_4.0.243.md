@@ -31,3 +31,9 @@ Status: lokal kandidat; ikke produktion
 ## Åben releasegate
 
 Supabase-migrationen skal anvendes og verificeres før PR-merge. Efter det kræves fulde gates, PR, exact-commit produktion og fuld 210/673-kontrol. Indtil da er 4.0.242 fortsat produktionssandhed.
+## Produktionsskema kontrolleret 2026-08-21
+
+- En laesebaseret PostgREST-kontrol med `limit=0` bekraeftede, at den eksisterende `trip_id`-kolonne kan forespoerges (`HTTP 200`).
+- Samme nul-raekkers kontrol med de nye v2-kolonner blev afvist med PostgreSQL-kode `42703` (`HTTP 400`). Migrationen er derfor ikke anvendt i produktion endnu.
+- Kontrollen hentede eller aendrede ingen observationsraekker og udskrev ingen noegler eller private data.
+- Merge og produktionsudrulning forbliver blokeret, indtil migrationen er anvendt gennem en godkendt databasekanal og skemaet er verificeret igen.
