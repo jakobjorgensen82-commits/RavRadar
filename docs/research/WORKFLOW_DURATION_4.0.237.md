@@ -34,4 +34,14 @@ Det langsomste build er profileret pr. GitHub-step:
 
 DMI bulk stod alene for 13,28 minutter og cirka 72 % af hele buildjobbet. Releasevalidering, Supabase og Pages er ikke den dominerende aarsag i dette run.
 
-Varighedsissuet forbliver aktivt. Der aendres ikke paa DMI-budgetter, collection-raekkefoelge, cache, marine audits, 673/673-gate, validering eller releasegate alene for at reducere tiden. Naeste meningsfulde trin er profilering af collections, downloadede kontra genbrugte assets og finalize-reserve inde i et nyt langsomt DMI bulk-trin.
+## DMI bulk internt i #3240
+
+- Arbejdsbudgettet var 780 sekunder med 120 sekunders afslutningsreserve.
+- `wam_dw` behandlede og checkpointede alle 47 forecasttrin. Foerste trin brugte cirka 168 sekunder frem til checkpoint; hele collectionen brugte cirka 559 sekunder.
+- `wam_nsb` checkpointede 21 af 46 forecasttrin. Foerste trin brugte cirka 53 sekunder; de efterfoelgende trin cirka 8 sekunder hver inklusive overhead.
+- De viste trin var `downloadet`, ikke genbrugt fra raasset-cache.
+- Et 22. NSB-trin blev paabegyndt ved 780,7 sekunder, men checkpointet forblev paa 21 trin, da arbejdsbudgettet var overskredet. Delvis fremdrift blev dermed ikke fremstillet som gemt.
+
+Den konkrete driver var altsaa indfasning af en ny WAM-cyklus uden raasset-hit, foerst hele `wam_dw` og derefter progressiv `wam_nsb`. Det forklarer baade varigheden og, hvorfor kun to collections blev behandlet under `DMI_BULK_COLLECTIONS_PER_RUN=2`.
+
+Varighedsissuet forbliver aktivt. Der aendres ikke paa DMI-budgetter, collection-raekkefoelge, cache, marine audits, 673/673-gate, validering eller releasegate alene for at reducere tiden. Naeste meningsfulde trin er at sammenligne en senere cache-hit-kørsel med samme WAM-cyklus og maale, om foerste-step-omkostningen gentager sig.

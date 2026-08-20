@@ -45,7 +45,8 @@
 - De fire seneste fulde builds `#3237`, `#3238`, `#3240` og `#3242` varede 14,70, 7,30, 18,45 og 11,48 minutter; gennemsnit 12,98 minutter.
 - Preflight-runs `#3239`, `#3241`, `#3243` og `#3244` sprang korrekt build/deploy over. Der er ikke observeret samtidig tung produktion eller Pages-koe i dette udsnit.
 - `#3240` er profileret pr. trin: DMI bulk brugte 797 sekunder, cirka 72 % af hele buildet; naeste trin var weather update 72 sekunder, validering 50 og hydrering 40.
-- Issuet forbliver aktivt. Naeste langsomme DMI bulk-trin skal opdeles paa collections og downloadede/genbrugte assets; DMI-, marine-, 673/673-, validerings- og releasekrav maa ikke svaekkes som genvej.
+- DMI-loggen viser hele `wam_dw` 47/47 paa 559 sekunder og progressiv `wam_nsb` 21/46; de viste assets var downloads, og et trin efter 780-sekunders arbejdsbudget blev korrekt ikke talt som gemt.
+- Issuet forbliver aktivt. Naeste sammenligning er et senere cache-hit paa samme WAM-cyklus; DMI-, marine-, 673/673-, validerings- og releasekrav maa ikke svaekkes som genvej.
 
 ## Aktiv P1 - state-shadow over flere produktionstimer
 
