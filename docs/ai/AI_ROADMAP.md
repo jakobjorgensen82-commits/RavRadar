@@ -436,3 +436,7 @@ Den planlagte P3-forskning må undersøge, om rumlige strømstrukturer har selvs
 +- Den aktive score har nu en gentagelig, score-neutral følsomheds- og overlapaudit med self-test.
 +- Resultatet prioriterer store diskrete tærskler, missing-asymmetri og delt inputpåvirkning til fase D-validering.
 +- Ingen scoreændring er godkendt; næste trin er ablation og bias-kontrolleret virkelighedsdesign.
+## RavScore fase C produktionsbevis
++- Den permanente følsomhedsaudit er merged og produktionsverificeret uden aktiv scoreændring.
++- Fuld 210/673-browseraudit er grøn på det eksakte fase C-deploy.
++- Næste analyse er fase D: observerede fordelinger, ablation, fund/nulfund, hold-out og samlet cost/benefit før enhver arkitekturændring.

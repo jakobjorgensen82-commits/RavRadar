@@ -102,3 +102,7 @@ Der må ikke flyttes land-/vandpunkter.
 +- `scripts/audit-ravscore-sensitivity.mjs` og `docs/research/RAVSCORE_SENSITIVITY_AUDIT_4.0.238.md` dokumenterer 54 tærskelrækker, 18 missing-scenarier, otte overlap og 86.400 syntetiske scenarier.
 +- Største spring er -18 ved waders-vind over 6 m/s, -12 ved strandvind over 13 m/s og +10-11 ved strøm 0,15 m/s. Det er kodeadfærd, ikke faglig ændringsgodkendelse.
 +- Næste sikre forskning er observerede inputfordelinger, ablation samt fund-/nul- og hold-out-design.
+## RavScore fase C produktionsverificeret
++- PR #11/`e85de36d`, produktion `#32366326503`, support `RavRadar-support-3265` og live `rr-20260820115954-210` er fuldt grønne og hash-/browserverificerede.
++- Browseraudit: 210 zoner, 673 dele, 420 aktuelle, 2.100 prognosevisninger og nul fejl. Aktiv scorekode er uændret.
++- P1 er nu 43,90 verificerede timer i 198 zoner og cirka 106,34 timers shadow-capture. Næste ikke-blokerede forskning er fase D-design, mens 72/168 timer vokser naturligt.

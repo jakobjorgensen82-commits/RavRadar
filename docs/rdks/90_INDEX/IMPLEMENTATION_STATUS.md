@@ -1419,3 +1419,8 @@ Status: Implementeret og lokalt valideret.
 +- [x] Kildegaten og den fulde scoretest inkluderer auditens deterministiske kontrakt.
 +- [x] Tærskelspring, missing-asymmetri, overlap og syntetiske komponentkorrelationer er dokumenteret.
 +- [ ] Virkelighedsvalidering, ablation og glatte kandidatfunktioner mangler; aktiv score er uændret.
+## RavScore fase C produktion
++- [x] PR #11/`e85de36d` er grøn i lokal gate, PR-CI og frisk fuld produktion `#32366326503`.
++- [x] Artifact/live-hash og fuld browseraudit bekræfter 210/673 og nul synlige regressioner.
++- [x] Følsomhedsauditen er permanent og score-neutral.
++- [ ] Fase D og virkelighedsvalidering mangler fortsat.

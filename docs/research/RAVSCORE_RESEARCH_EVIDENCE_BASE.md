@@ -165,3 +165,6 @@ Den permanente audit `scripts/audit-ravscore-sensitivity.mjs` gennemgår 54 tær
 De største lokale slutscore-spring er -18 lige over 6 m/s vind for waders, -12 lige over 13 m/s for strand og +10-11 ved 0,15 m/s strøm. Strømstyrke og -retning påvirker både transport og mobilisering; kombinationen flytter slutscoren 32 point og giver 4-5 points ikke-additivitet. Det syntetiske grid har transport-mobilisering-korrelation 0,402 i begge jagtformer.
 
 Missing-auditten viser desuden asymmetri: vind er eneste absolutte gate, bølger reducerer basisscoren 2-3 point ved fravær, mens manglende strøm reducerer 19-20 og aktiverer et loft. Dette er kodeadfærd, ikke en anbefaling. Se `docs/research/RAVSCORE_SENSITIVITY_AUDIT_4.0.238.md`.
+## Fase C produktionsstatus
+
+PR #11/merge `e85de36d` er produktionsverificeret i `#32366326503`. Den nye self-test kørte i den fulde gate, og det deployede datasæt samt 210/673-browserauditten er grønne. Følsomhedsværktøjet ændrer ingen aktiv score.
