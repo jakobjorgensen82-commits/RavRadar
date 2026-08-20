@@ -1063,3 +1063,12 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 ## Docs-skip bekræftet, 2026-08-20
 - Den rene dokumentationsmerge 2ebd601e oprettede ingen push-produktionskørsel. Seneste push-produktion er fortsat den fuldt verificerede 0d29a512.
 - Paths-ignore-optimeringen er dermed produktionsbevist og workflowopgaven er afsluttet.
+
+## P1-drift efter produktion #3261
+- Datasæt `rr-20260820105744-210` har 72 rå prøver over 42,866 timer i alle 210 zoner. 198 zoner har samme verificerede spænd; 12 kendte parenthuller har fortsat nul verificerede prøver.
+- Shadow-cachen spænder cirka 105,3 timer og har besøgt alle 673 dele. Den kontrollerede livepilot dækker 673/673 med 622 lokal DMI, 43 lokal Copernicus og otte godkendte regionale proxyer.
+- Pilothistorikkens globale validtidsinterval er 57 timer og er ikke et 168-timers driftsbevis. Hverken 72- eller 168-timerskravet er nået.
+- Der er ingen ny uafhængig HARMONIE-, WAM- eller DKSS-modelstart. Ingen kilde, fallback, score, tærskel eller geometri ændres. Se `docs/research/P1_DRIFT_CHECKPOINT_4.0.238_RUN3261.md`.
+## Lokal kildekontrol på Windows
++- `scripts/validate-source.ps1` sender nu Python-afhængighedskontrollen som ét portabelt argument med citater, der bevares af både Windows PowerShell og PowerShell 7.
++- Den centrale workflowkontrakttest afviser den tidligere ikke-portable form. Produktionskode, data og releasegates er uændrede.

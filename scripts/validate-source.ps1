@@ -25,7 +25,8 @@ $npmShim = Join-Path $shimDir 'npm.cmd'
 Set-Content -LiteralPath $npmShim -Encoding Ascii -Value ('@call "' + $pnpm + '" %*')
 $env:PATH = @($shimDir, $nodeDir, $pythonDir, $pythonScripts, $overrideDir, $fallbackDir, $env:PATH) -join ';'
 
-& $python -c 'import importlib.util, sys; names = ("requests", "eccodes", "shapely", "pyproj", "copernicusmarine", "xarray", "PIL"); missing = [name for name in names if importlib.util.find_spec(name) is None]; print("Missing Python packages: " + ", ".join(missing)) if missing else None; sys.exit(1 if missing else 0)'
+$dependencyCheck = "import importlib.util, sys; names = ('requests', 'eccodes', 'shapely', 'pyproj', 'copernicusmarine', 'xarray', 'PIL'); missing = [name for name in names if importlib.util.find_spec(name) is None]; print('Missing Python packages: ' + ', '.join(missing)) if missing else None; sys.exit(1 if missing else 0)"
+& $python -c $dependencyCheck
 if ($LASTEXITCODE -ne 0) {
   throw 'Codex Python dependencies are incomplete. Run scripts\setup-codex.ps1.'
 }

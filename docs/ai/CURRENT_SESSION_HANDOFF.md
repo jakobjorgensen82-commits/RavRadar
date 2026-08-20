@@ -82,3 +82,11 @@ Der må ikke flyttes land-/vandpunkter.
 ## Docs-skip bekræftet, 2026-08-20
 - Den rene dokumentationsmerge 2ebd601e oprettede ingen push-produktionskørsel. Seneste push-produktion er fortsat den fuldt verificerede 0d29a512.
 - Paths-ignore-optimeringen er dermed produktionsbevist og workflowopgaven er afsluttet.
+
+## P1-checkpoint #3261
+- `rr-20260820105744-210` har 72 rå prøver/42,866 timer i 210 zoner; 198 har samme verificerede spænd, og 12 kendte parenthuller står ved nul.
+- Shadow-cachen spænder cirka 105,3 timer. Livepiloten dækker 673/673 med 622 lokal DMI, 43 lokal Copernicus og otte regionale proxyer.
+- 72/168 timer er ikke nået, og der er ingen ny uafhængig modelstart. Fortsæt næste ikke-blokerede roadmaparbejde uden at ændre score, fallback eller geometri.
+- Det fulde checkpoint ligger i `docs/research/P1_DRIFT_CHECKPOINT_4.0.238_RUN3261.md`.
+## Lokal valideringsrettelse
++- `scripts/validate-source.ps1` er gjort kompatibel med både Windows PowerShell og PowerShell 7; en kontrakttest forhindrer den tidligere citatfejl i at vende tilbage.

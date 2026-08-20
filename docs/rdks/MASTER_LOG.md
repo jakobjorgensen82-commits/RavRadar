@@ -1537,3 +1537,12 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 ## Docs-skip bekræftet, 2026-08-20
 - Den rene dokumentationsmerge 2ebd601e oprettede ingen push-produktionskørsel. Seneste push-produktion er fortsat den fuldt verificerede 0d29a512.
 - Paths-ignore-optimeringen er dermed produktionsbevist og workflowopgaven er afsluttet.
+
+## 2026-08-20 - P1-driftcheckpoint #3261
+- Produktion `#32361218606`, support `RavRadar-support-3261` og datasæt `rr-20260820105744-210` er eftermålt skrivebeskyttet.
+- Historikken er vokset til 72 rå prøver/42,866 timer i alle 210 zoner. 198 har samme verificerede spænd; de 12 kendte parenthuller står ved nul.
+- Shadow-cachen spænder cirka 105,3 timer, mens livepiloten fortsat dækker 673/673 dele med 622 lokal DMI, 43 lokal Copernicus og otte godkendte regionale proxyer.
+- Der er ingen ny uafhængig modelstart. 72/168 timer er fortsat åbne, og ingen kilde, fallback, score, tærskel eller geometri er ændret.
+## 2026-08-20 - portabel lokal kildekontrol
++- Den samlede lokale kontrol afslørede, at Windows PowerShell fjernede dobbelte citater fra inline Python, selv om samme hjælper virkede under PowerShell 7.
++- Python-koden sendes nu som én eksplicit argumentvariabel med portable citater, og workflowkontrakten beskytter formen fremover.
