@@ -24,6 +24,7 @@
 - [x] Ejeren har slettet cron-job.org-jobbene. Efterfølgende native produktion `#32272470720`, cachebevaring `#32272473716`/`#32272598725` og pilot `#32273634626` er grønne; GitHub er eneste normale scheduler.
 - [x] Live `rr-20260819155614-210` er sikkert auditeret for 210 zoner, 673 dele, 420 aktuelle visninger, 2.100 femdøgnsvalg og 673 pile. Den private cache har samtidig 30 gyldige timer, 18.870 poster, 625 mål, 629 mål/kilde-par og nul gitter-/lagustabilitet.
 - [x] Faktisk online DOM-/kliktest er gennemfoert paa 4.0.237 efter produktion `#3237`: 210 zoner, 673 dele, 420 aktuelle visninger og 2.100 femdoegnsvalg er groenne. Browser-pluginet blev diagnosticeret foerst; trusted-RPC-opstartsfejlen gav ingen konkret lokal reparation, saa godkendt Chromium/Playwright-fallback blev brugt.
+- [x] Naturlig produktion `#3245` gentager vandkildekontrollen: fire historiske cacheudloeb er ikke valgt i effektiv zonerouting, og vandstand/vandtemperatur har fortsat data i 210/210 zoner. Det naturlige exitkriterium for en valgt warning/critical-kilde er fortsat aabent.
 
 ## 4.0.236 – låst produktionsreferencetime
 
