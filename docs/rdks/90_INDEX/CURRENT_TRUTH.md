@@ -991,6 +991,7 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - Central audit 2026-08-10 fandt 8.647 overflødige historikrækker med cirka 600 MB payload. Migration og efterfølgende `VACUUM FULL` blev udført; databasen faldt fra 699 MB til 24 MB. Alle 14 aktuelle `admin_documents` er bevaret, maskinhistorik er 0, og øvrige dokumenter har højst 100 rollbackpunkter.
 # 4.0.237 – ny DEC-0030-komponentmaaling
 
+- Naturlig produktion `#3242` voksede den kompatible raa historik til 64 proever/30,903 timer, men de nye timeskarpe proever blev falsk ikke-verificerede. `productionReferenceAt` var 23:00, mens efterberigelsen matchede den senere `generatedAt` 23:52. Kandidaten bruger nu den gemte timeskarpe reference med fallback for aeldre dokumenter; frisk central produktion mangler.
 - Supportartifactet fra naturlig produktion `#3237`/`rr-20260819213342-210` giver nye uafhaengige WAM 18Z- og DKSS 12Z-beviser; HARMONIE 12Z er kun delvist indfaset.
 - Komponentovergangene varierer fortsat efter felt, retning og modelindfasning. Stroemmens 198 haleovergange er `dmi -> missing` uden konstrueret tal. Der laases ingen permanent graense og aendres ingen score eller kilde.
 - Alle 210 zoners kompatible `controlled-live`-historik starter ved 4.0.232-aktiveringen og spaender 28,903 timer. Aeldre parent-zonehistorik er ikke kompatibelt lokalt stroembevis og bagudfyldes ikke. 72-timers-exitkriteriet er aabent. Se `docs/research/P1_COMPONENT_TRANSITIONS_4.0.237_RUN3237.md`.

@@ -1456,3 +1456,8 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - De regionale rå vektorer gemmes kun i den eksisterende 168-timers private cache. En ny support-only rapport viser modelrun, tid, celle, afstand og lag, men afviser rå `uMps`/`vMps`; både cache og diagnostik er udelukket fra Pages.
 - Replay er samlingsafgrænset, så en ren regional indhentning kun behandler `dkss_lf`. Offentlig DMI, score, pile, kildemerge, coveragegate og deployment er uændret.
 - Målrettede tests for allowlist, ændret centralt punkt, forkert zoneklasse/collection, 5-/15-km-grænser, cache-/reportisolering samt eksisterende DMI-, forecast-, scheduler- og workflowkontrakter består lokalt. RDKS, håndbog, version, modulclosure og releasegate er grønne. Fuld lokal `validate` når gennem geometri-v2 og stopper derefter forventet på det forældede 31. juli-snapshot; frisk central DMI- og Actions-cacheevidens mangler fortsat.
+# 2026-08-20 – timeskarp reference i verificeret stroemhistorik
+
+- Naturlig `#3242` viste 64 raa proever/30,903 timer, men et verificeret spaend fast paa 22,563 timer, selv om 198 hovedzoner havde verificeret aktuel DMI-stroem.
+- Rodarsagen var et tidsmatch mellem sample paa `productionReferenceAt` og efterberigelse paa den senere `generatedAt`. Kandidaten bruger nu produktionsreferencen med bagudkompatibel fallback. Maalrettede retention-/transporttests er groenne; frisk central produktion mangler.
+- Ingen score, state, kilde, fallback, geometri eller land-/vandpunkt er aendret.

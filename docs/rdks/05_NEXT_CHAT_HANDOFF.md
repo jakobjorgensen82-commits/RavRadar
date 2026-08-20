@@ -141,4 +141,6 @@ Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde sa
 - Kritisk arbejde udføres med GPT-5.6 Sol og Ekstra høj indsats.
 # DEC-0030-status 2026-08-20
 
+Aktiv kodekandidat retter verifikationsmaerket i timeskarp historik: brug `productionReferenceAt`, fallback til `generatedAt`. Produktionsbevis `#3242` har 64 raa proever/30,903 timer, men falsk fastlaast verificeret spaend paa 22,563 timer. Maalrettede tests er groenne; frisk central produktion skal eftermaales. Se `docs/research/P1_HISTORY_REFERENCE_FIX_4.0.237.md`.
+
 Produktionskoersel `#3237` er maelt read-only. Nye WAM 18Z- og DKSS 12Z-cyklusser er dokumenteret; HARMONIE 12Z er kun delvist indfaset. 4.0.232's kompatible `controlled-live`-historik har 28,903 timer og maa fortsat opbygges naturligt til 72 timer. Ingen kilde-, fallback-, score- eller geometriaendring er godkendt. Se `docs/research/P1_COMPONENT_TRANSITIONS_4.0.237_RUN3237.md`.

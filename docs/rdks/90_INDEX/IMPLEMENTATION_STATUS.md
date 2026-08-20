@@ -1317,3 +1317,5 @@ Status: Implementeret og lokalt valideret.
 - [ ] En ny privat national kørsel skal bevise de tre eksakte beviser, DMI for valgte/alternative punkter, slut-shadow-score, admin-roundtrip/rollback og artifacts samlet.
 - [x] DEC-0030 er eftermaalt read-only paa 4.0.237-produktionsartifact `#3237` med nye WAM 18Z- og DKSS 12Z-beviser samt delvis HARMONIE 12Z-indfasning.
 - [ ] Det kompatible `controlled-live`-historikvindue er 28,903 timer fra 4.0.232-aktiveringen og skal fortsat opbygges naturligt til mindst 72 timer; ingen bagudfyldning.
+- [x] `#3242` afgraenser falsk fastlaast verificeret historik til mismatch mellem sampletidens `productionReferenceAt` og efterberigelsens `generatedAt`; kode og maalrettede tests er rettet/groenne.
+- [ ] Frisk central produktion skal bevise, at 198 verificerede hovedzoners historiespaend igen vokser efter den timeskarpe rettelse; 12 reelle parent-zonehuller forbliver eksplicitte.

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { attachVerifiedCurrentToSample, retainWeatherHistory } from './lib/weather-history-retention.mjs';
+import { attachVerifiedCurrentToSample, historySampleReferenceAt, retainWeatherHistory } from './lib/weather-history-retention.mjs';
 
 const at0='2026-08-15T12:00:00.000Z';
 const at1='2026-08-15T12:15:00.000Z';
@@ -21,4 +21,12 @@ assert.equal(nextVerified.filter(row=>row.currentVerified===true).length,2,'succ
 
 const rejected=attachVerifiedCurrentToSample(next.samples72h,{currentSpeedMps:.3,currentDirectionDeg:190,currentProvenance:{status:'unverified'}},at1);
 assert.equal(rejected.find(row=>row.at===at1)?.currentVerified,false,'uverificeret strøm blev fejlagtigt godkendt');
+
+const productionReferenceAt='2026-08-15T13:00:00.000Z';
+const generatedAt='2026-08-15T13:52:44.856Z';
+assert.equal(historySampleReferenceAt({productionReferenceAt,generatedAt}),productionReferenceAt,'timeskarp produktion skal berige den faktisk gemte historikprøve');
+assert.equal(historySampleReferenceAt({generatedAt}),generatedAt,'ældre dokumenter skal fortsat bruge generatedAt');
+const timedSample=[{at:productionReferenceAt,currentVerified:false,currentSpeedMps:.2,currentDirectionDeg:170}];
+const timedVerified=attachVerifiedCurrentToSample(timedSample,verified,historySampleReferenceAt({productionReferenceAt,generatedAt}));
+assert.equal(timedVerified[0].currentVerified,true,'productionReferenceAt-prøven blev ikke verificeret efter den senere byggetid');
 console.log('OK: Verificeret DMI-strøm bevares i både 24- og 72-timershistorikken på tværs af successive kørsler.');
