@@ -1556,3 +1556,7 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 +- Aktiv kodeaudit afgrænser `score-engine.js`, lokal kystdelsscore, adaptive justeringer og regler; `ravscore.js` i roden er en ubrugt prototype.
 +- Evidensbasen dokumenterer uvaliderede tærskler, overlap/dobbelt-tælling, en femleddet fysisk systemmodel, første primærkilder og ni valideringsforsøg.
 +- Ingen score, vægt, kilde, fallback, data eller geometri er ændret.
+## 2026-08-20 - RavScore fase C følsomhed
++- Ny score-neutral audit gennemløber 86.400 syntetiske scenarier plus tærskel-, missing- og overlapstests.
++- Auditen finder store diskrete spring ved 6 m/s waders-vind, 13 m/s strandvind, 0,15 m/s strøm og 0,7 m waders-bølge.
++- Samme strøm- og kystinput påvirker flere komponenter. Resultatet prioriterer ablation og hold-out-validering; ingen scorekode er ændret.

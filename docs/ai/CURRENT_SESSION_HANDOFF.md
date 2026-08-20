@@ -98,3 +98,7 @@ Der må ikke flyttes land-/vandpunkter.
 +- `docs/research/RAVSCORE_RESEARCH_EVIDENCE_BASE.md` er nu hovedgrundlaget: aktiv kode, tærskler, overlap, systemmodel, evidensklasser, første primærkilder og valideringsforsøg.
 +- Vigtigste fund er risiko for dobbelt-tælling og manglende direkte kalibrering af numeriske tærskler/40-35-25-vægte. Bølgeretning, periode og historisk/spatial transport er kun testkandidater.
 +- Næste sikre trin er fase C: materialefysik, dansk overførbarhed og deterministisk følsomheds-/overlapmatrix. Ingen produktionsscore må ændres.
+## RavScore fase C
++- `scripts/audit-ravscore-sensitivity.mjs` og `docs/research/RAVSCORE_SENSITIVITY_AUDIT_4.0.238.md` dokumenterer 54 tærskelrækker, 18 missing-scenarier, otte overlap og 86.400 syntetiske scenarier.
++- Største spring er -18 ved waders-vind over 6 m/s, -12 ved strandvind over 13 m/s og +10-11 ved strøm 0,15 m/s. Det er kodeadfærd, ikke faglig ændringsgodkendelse.
++- Næste sikre forskning er observerede inputfordelinger, ablation samt fund-/nul- og hold-out-design.

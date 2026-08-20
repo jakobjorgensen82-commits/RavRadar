@@ -113,3 +113,8 @@ Arbejdet tages i P0 -> P1 -> P2 -> P3. Et blokeret naturligt observationspunkt b
 +- [x] Opret den permanente evidensbase med konceptuel systemmodel, første primærkilder og prioriterede valideringsforsøg.
 +- [ ] Udvid fase C med ambermaterialets egenskaber, dansk/nordisk overførbarhed og deterministisk følsomheds-/overlapmatrix.
 +- [ ] Fremlæg fase D og cost/benefit før enhver ny scorearkitektur. Ingen scoreændring er godkendt.
+## P2 RavScore-forskning fase C, 2026-08-20
++- [x] Tilføj en permanent score-neutral følsomhedsaudit med self-test og PR-gate.
++- [x] Mål 54 tærskelrækker, 18 missing-scenarier, otte overlapsscenarier og 86.400 syntetiske gridscenarier.
++- [x] Dokumentér de største spring og overlap uden at ændre aktiv score.
++- [ ] Næste fase er observerede inputfordelinger, ablation og bias-kontrolleret fund-/nuldesign; ingen produktionsmodel er godkendt.

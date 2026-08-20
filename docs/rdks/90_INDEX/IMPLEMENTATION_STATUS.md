@@ -1414,3 +1414,8 @@ Status: Implementeret og lokalt valideret.
 +- [x] Første evidensmatrix klassificerer amber-, Baltic-, sediment-, bølge-/strøm- og analogkilder med begrænsninger.
 +- [x] Aktuelle tærskler og 40/35/25-vægte er markeret som arbejdshypoteser uden klasse A-kalibrering.
 +- [ ] Fase C-D: materialefysik, dansk overførbarhed, kodefølsomhed, overlap/ablation, fund-/nuldata og hold-out-validering.
+## RavScore fase C
++- [x] `scripts/audit-ravscore-sensitivity.mjs` er implementeret som skrivebeskyttet audit og self-test.
++- [x] Kildegaten og den fulde scoretest inkluderer auditens deterministiske kontrakt.
++- [x] Tærskelspring, missing-asymmetri, overlap og syntetiske komponentkorrelationer er dokumenteret.
++- [ ] Virkelighedsvalidering, ablation og glatte kandidatfunktioner mangler; aktiv score er uændret.
