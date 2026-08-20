@@ -240,7 +240,7 @@ En privat, score-neutral cache bruger DKSS-felter ved vandpunktet samt cirka 5 o
 
 Rotationen registrerer også, hvor langt der er til den nærmeste modelkolonne med et eksakt fælles U/V-par, selv når den ligger uden for 5 km. I det tilfælde gemmes kun koordinat, afstand og lagmetadata – ikke de fjerne strømværdier. En privat ejeroversigt skelner derfor mellem nær-tærskel 5–6 km til rent manuelt geometrireview, modelhul 6–8 km, strukturelt modelhul over 8 km og en datakædefejl, hvor gyldig strøm faktisk findes inden for 5 km. Selv en nær-tærskel-post må kun flyttes, hvis vandpunktet i sig selv er forkert – aldrig blot for at nå modelcellen. Oversigten flytter ingen punkter automatisk, og den offentlige 5 km-grænse er uændret.
 
-**Håndbogsversion:** 4.0.239
+**Håndbogsversion:** 4.0.240
 
 **Opdateret:** 19. august 2026
 
@@ -385,7 +385,7 @@ Den klassiske kæde er:
 
 - Eksponering: vandstand og bølger gør aflejringen synlig eller tilgængelig.
 
-- Jagtbarhed: sigt, sikkerhed, bølgehøjde og adgang gør eftersøgning realistisk.
+- Jagtbarhed: sigt, bølgehøjde og praktisk adgang gør eftersøgning realistisk; sikkerhed vurderes separat.
 
 Den aktive RavScore har tre numeriske hovedkomponenter: jagtbarhed, transport og mobilisering/tilgængelighed. Den sidste komponent vælger nu det stærkeste af ny frigivelse og nærkystnær genmobilisering. Tilstedeværelse og koncentration er endnu ikke selvstændige scoringskomponenter. De optræder kun indirekte gennem kystegenskaber, historik og ekspertregler. Det er en vigtig modelbegrænsning.
 
@@ -611,10 +611,12 @@ Jagtbarhed er den højst vægtede komponent i den aktive score (40 %). Den skal 
 
 For waders starter jagtbarhed på 60. Vind højst 3 m/s giver +28; 3–6 m/s +8; 6–8 m/s -35; over 8 m/s -60. Bølger højst 0,3 m giver +12, mens over 0,7 m giver -25. For strandjagt giver vind højst 8 m/s +15, 8–13 m/s +5 og over 13 m/s -25; bølger over 2,5 m giver -12.
 
-Disse tærskler er hovedsageligt sikkerheds- og observationsarbejdsværdier. Lokal bund, mørke, strømstyrke, temperatur, is, adgang og brugerens erfaring indgår ikke fuldt. Appen må ikke erstatte egen sikkerhedsvurdering.
+Disse tærskler er observations- og produktarbejdsværdier. Lokal bund, mørke, strømstyrke, temperatur, is, adgang og brugerens erfaring indgår ikke fuldt. Appen må ikke erstatte egen sikkerhedsvurdering.
 
 Ekspertpunkt E-14: Valider wadersgrænserne for forskellige kyster og vurder om strøm, temperatur og bølgeperiode skal kunne blokere anbefalingen helt.
 
+
+**Sikkerhed:** RavScore vurderer ravmuligheden, ikke om det er sikkert at gå i vandet. En høj score kan godt optræde samtidig med farlige lokale forhold. Appen må aldrig erstatte egen sikkerhedsvurdering.
 
 ## 18. Præcis implementering i RavScore 4.0.60
 
@@ -921,7 +923,7 @@ Kilder om plast bruges kun som mekanistisk analogi. Ravets egen transport skal s
 
 - Frigivelse: mobilisering fra bund, sediment, vegetation eller depot.
 
-- Jagtbarhed: sikker og praktisk mulighed for at finde rav.
+- Jagtbarhed: praktisk mulighed for at finde rav. Jagtbarhed er ikke en sikkerhedsgodkendelse.
 
 - OnshoreDirectionDeg: lokal retning fra hav mod land.
 
@@ -1339,7 +1341,7 @@ RavRadar beregner ikke ravfund ud fra én enkelt vejrregel. Systemet vurderer en
 
 ### 54.1 De tre aktive hoveddele
 
-**Jagtbarhed** beskriver, om forholdene er praktisk egnede til at lede. Vind, bølger, sigtbarhed, vandstand og jagtformen strand eller waders påvirker denne del. En zone kan godt have god fysisk transport, men stadig være dårlig eller usikker at lede i.
+**Jagtbarhed** beskriver, om forholdene er praktisk egnede til at lede. Vind, bølger, sigtbarhed, vandstand og jagtformen strand eller waders påvirker denne del. En zone kan godt have god fysisk transport, men stadig være praktisk vanskelig at lede i.
 
 **Transport** beskriver, om strømmen og kystens retning sandsynligvis fører materiale mod den relevante kyst, langs kysten eller væk fra den. RavRadar sammenholder strømretningen med zonens lokale kystretning og eventuelle retningsankre. Kraftig strøm væk fra land kan begrænse transportscoren, også når andre forhold ser gode ud.
 

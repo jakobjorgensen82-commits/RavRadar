@@ -1595,3 +1595,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Der blev forberedt en idempotent `NOT VALID` constraint og skærpede anon/authenticated policies. De blokerer nye GPS-/lokationsfelter uden at ændre historiske rækker.
 - `test:observation-db-privacy` låser klientredaktion, SQL-kontrakt, ingen historisk `UPDATE`/`DELETE`/`TRUNCATE` og placering i pre-DMI-gaten.
 - Produktionsstatus for SQL forbliver åben, indtil migration og målrettet Supabase-verifikation er gennemført.
+
+## 4.0.240 jagtbarhed og sikkerhed
+
+- Startet som et lille, score-neutralt delmål efter RavScore fase D.
+- Brugerforklaringen, begge håndbøger og en automatisk kopikontrol er opdateret.
+- Ingen land-/vandpunkter eller scoreparametre er ændret.

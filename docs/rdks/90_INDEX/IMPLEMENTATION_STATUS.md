@@ -1455,3 +1455,12 @@ Status: Implementeret og lokalt valideret.
 - Valideret lokalt: `test:observation-db-privacy` indgår i både fuld validering og den hurtige pre-DMI-gate.
 - Ikke endnu produktionsverificeret: selve SQL-migrationen er ikke anvendt på den centrale Supabase-database.
 - Næste gate: kontrolleret migration, positiv GPS-null insert-test og negativ GPS/lokationsnøgle-test uden eksport af rå payloads.
+
+## 4.0.240 jagtbarhed og sikkerhed
+
+- [x] UI-kopi adskiller praktisk jagtbarhed fra sikkerhed.
+- [x] Markdown-håndbog og webhåndbog har samme kontrakt.
+- [x] Automatisk kildekontrol er tilføjet.
+- [x] Målrettede tests, validate:source og release-gate.
+- [x] Lokal Browser-kontrol af aktuel visning og fem-døgnsvisning på desktop og mobil.
+- [ ] PR, merge, frisk produktionsdatagate og produktionsverifikation.

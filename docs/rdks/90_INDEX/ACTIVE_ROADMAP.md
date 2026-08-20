@@ -152,3 +152,9 @@ Arbejdet tages i P0 -> P1 -> P2 -> P3. Et blokeret naturligt observationspunkt b
 - Driftsdelmål: anvend migrationen kontrolleret i Supabase og verificér kun udfald/status, aldrig rå observationer i logs eller PR.
 - Historiske GPS-rækker bevares. Enhver sletning kræver fortsat udtrykkelig ejergodkendelse.
 - Først derefter fortsættes observationernes dæknings- og datakvalitetsaudit; RavScore B0 og automatisk kalibrering forbliver låst.
+
+## P1 - 4.0.240 jagtbarhed og sikkerhed
+
+- Adskil jagtbarhed og sikkerhed i brugerflade og håndbog uden at ændre score eller geometri.
+- Lokale kilde-/releasegates og Browser-kontrol er grønne; luk delmålet efter PR-gate, merge og produktionsverifikation.
+- Næste RavScore-implementering er kontrolleret bølgeinput på alle 673 kystdele efter særskilt beslutning og regressionstest.

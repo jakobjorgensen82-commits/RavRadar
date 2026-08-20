@@ -1128,3 +1128,10 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - Checken er `NOT VALID`: den håndhæves for nye/ændrede rækker uden at scanne, ændre eller slette historiske observationer.
 - Migrationen er ikke produktionsaktiv, før den er kørt kontrolleret mod den centrale database og både tilladt GPS-null insert og afvist GPS-insert er verificeret.
 - Historisk central GPS må fortsat ikke slettes uden udtrykkelig ejergodkendelse.
+
+## 4.0.240 jagtbarhed og sikkerhed - source
+
+- Jagtbarhed forklares som praktisk søgemulighed og ikke som en sikkerhedsgodkendelse.
+- Aktuel visning og fem-døgnsvisning har samme særskilte sikkerhedsnote.
+- RavScore, pile, vægte, tærskler, data og geometri er uændrede.
+- Kilden har bestået målrettede tests, validate:source, release-gate samt lokal Browser-kontrol på desktop og mobil med aktuelle offentlige data; PR, merge og produktion mangler.

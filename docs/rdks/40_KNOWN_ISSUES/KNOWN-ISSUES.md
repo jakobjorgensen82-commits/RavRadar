@@ -386,3 +386,9 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 - Merge af dette rene interne dokumentationscheckpoint er den praktiske kontrol af paths-ignore-reglen og skal ikke starte produktionsworkflowet.
 ## Observation privacy follow-up - 2026-08-20
 - **ISSUE-HISTORICAL-OBSERVATION-GPS - OWNER DECISION REQUIRED:** 4.0.239 prevents precise trip GPS from entering new or retried central observation payloads. Rows written by older versions may still contain GPS. Do not inspect, export or delete those values ad hoc. A count-only audit, migration, rollback/backup decision and explicit owner approval are required before irreversible cleanup.
+
+## ISSUE-HUNTABILITY-SAFETY-CONFLATION - RETTET I 4.0.240 SOURCE / AFVENTER PRODUKTION
+
+- Jagtbarhed blev tidligere omtalt som både praktisk mulighed og sikkerhed.
+- Kilden adskiller nu begreberne og viser en fast sikkerhedsnote.
+- Luk først issue efter grønne gates, browserkontrol og produktionsverifikation.
