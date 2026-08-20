@@ -17,4 +17,4 @@
 
 ## Validering
 
-- Målrettede regressionskontroller er grønne. 55.296 syntetiske scenarier holdt scoreændringen inden for plus/minus 5; national public-audit gav minus 1 til plus 1 og ingen farveskift. `validate:source`, release-gate og lokal desktop-/mobilbrowserkontrol er grøn før PR; frisk fuld produktionsvalidering og onlineaudit gennemføres efter merge.
+- Målrettede regressionskontroller er grønne. 55.296 syntetiske scenarier holdt scoreændringen inden for plus/minus 5; national public-audit gav minus 1 til plus 1 og ingen farveskift. PR #25 og frisk produktion `#32405699346` er grønne gennem fuld validering, release-gate og Pages-deploy på `eb66b280`; direkte Pages-kontrol viser 4.0.241. Systematisk onlineaudit gennemføres som sidste trin.
