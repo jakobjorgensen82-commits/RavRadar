@@ -46,6 +46,28 @@ export function assertTripEvidencePrivacy(value, path = 'tripEvidence') {
   return true;
 }
 
+export function createForecastSnapshotReference({ manifest = null, conditions = null, validAt = null, capturedAt = null } = {}) {
+  const manifestId = String(manifest?.datasetId || '').trim();
+  const conditionsId = String(conditions?.datasetId || '').trim();
+  if (manifestId && conditionsId && manifestId !== conditionsId) {
+    throw new Error('Manifest og prognose tilhører ikke samme datasæt.');
+  }
+  const captured = requiredIso(capturedAt || new Date().toISOString(), 'Prognosens hentetid');
+  const issuedValue = conditions?.productionReferenceAt
+    || manifest?.productionReferenceAt
+    || conditions?.generatedAt
+    || manifest?.generatedAt;
+  const issued = requiredIso(issuedValue, 'Prognosens udstedelsestid');
+  if (issued.time > captured.time) throw new Error('Prognosen kan ikke være udstedt efter den blev hentet.');
+  const valid = requiredIso(validAt || captured.iso, 'Prognosens gyldighedstid');
+  return Object.freeze({
+    id: requiredId(conditionsId || manifestId, 'Prognose-id'),
+    issuedAt: issued.iso,
+    validAt: valid.iso,
+    capturedAt: captured.iso
+  });
+}
+
 export function buildTripEvidence(input = {}) {
   const started = requiredIso(input.startedAt, 'Starttid');
   const ended = requiredIso(input.endedAt, 'Sluttid');

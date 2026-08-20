@@ -4,8 +4,31 @@ import {
   TRIP_EVIDENCE_SCHEMA_VERSION,
   assertTripEvidencePrivacy,
   buildTripEvidence,
+  createForecastSnapshotReference,
   toObservationTripColumns
 } from '../js/services/trip-evidence-contract.js';
+
+const snapshotReference = createForecastSnapshotReference({
+  manifest: { datasetId: 'rr-20260821025000-210' },
+  conditions: {
+    datasetId: 'rr-20260821025000-210',
+    generatedAt: '2026-08-21T02:50:00.000Z',
+    productionReferenceAt: '2026-08-21T02:00:00.000Z'
+  },
+  validAt: '2026-08-21T03:30:00.000Z',
+  capturedAt: '2026-08-21T03:10:00.000Z'
+});
+assert.deepEqual(snapshotReference, {
+  id: 'rr-20260821025000-210',
+  issuedAt: '2026-08-21T02:00:00.000Z',
+  validAt: '2026-08-21T03:30:00.000Z',
+  capturedAt: '2026-08-21T03:10:00.000Z'
+});
+assert.throws(() => createForecastSnapshotReference({
+  manifest: { datasetId: 'dataset-a' },
+  conditions: { datasetId: 'dataset-b', generatedAt: '2026-08-21T02:50:00.000Z' },
+  capturedAt: '2026-08-21T03:10:00.000Z'
+}), /ikke samme datasæt/);
 
 const input = {
   tripId: 'trip-20260821-001',

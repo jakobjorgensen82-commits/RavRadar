@@ -20,6 +20,8 @@ En ny komplet tur gemmer:
 
 Turens repræsentative observationstid er midtpunktet mellem start og slut. Dermed undgår vi den hidtidige kunstige middagstid fra en senere kalenderbesvarelse.
 
+Ved turstart fastholdes en lille prognosereference fra det allerede indlæste manifest og datasæt. Referencen indeholder kun datasæt-id, udstedelsestid, gyldighedstid og hentetid. Den indeholder hverken rå vejrdata eller følsomme brugerdata, og manifest og prognose skal have samme datasæt-id.
+
 ## Dataminimering
 
 GPS-punkter, ruter, koordinater og spor indgår ikke i fjernkontrakten. Den faktiske kystdel er præcis nok til faglig kalibrering og langt mindre følsom end brugerens bevægelsesspor. Lokale historiske ruter ændres eller slettes ikke af denne kontrakt.
