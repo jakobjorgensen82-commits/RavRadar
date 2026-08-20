@@ -1,12 +1,12 @@
-import { loadAdaptiveModel, modelAdjustment } from './adaptive-model.js?v=4.0.241';
-import { evaluateDirectionAnchors, anchorClassification, buildCoastTransportExplanation } from './direction-anchors.js?v=4.0.241';
-import { evaluateTransportEvent, classifyCoastalZone } from './coastal-process-model.js?v=4.0.241';
-import { buildScoreDebugTrace } from './debug-trace.js?v=4.0.241';
-import { boundedWaveTransportAdjustment } from './wave-approach.js?v=4.0.241';
+import { loadAdaptiveModel, modelAdjustment } from './adaptive-model.js?v=4.0.242';
+import { evaluateDirectionAnchors, anchorClassification, buildCoastTransportExplanation } from './direction-anchors.js?v=4.0.242';
+import { evaluateTransportEvent, classifyCoastalZone } from './coastal-process-model.js?v=4.0.242';
+import { buildScoreDebugTrace } from './debug-trace.js?v=4.0.242';
+import { boundedWaveTransportAdjustment } from './wave-approach.js?v=4.0.242';
 const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, value));
 const numberOrNull = value => (value === null || value === undefined || value === '' || typeof value === 'boolean') ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
 
-export const SCORE_WEIGHTS = Object.freeze({ huntability: 0.40, transport: 0.35, release: 0.25 });
+export const SCORE_WEIGHTS = Object.freeze({ huntability: 0.25, transport: 0.40, release: 0.35 });
 
 export const SCORE_PRESENTATION = Object.freeze({
   exceptionalMinimum: 90,

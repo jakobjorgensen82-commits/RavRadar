@@ -5,7 +5,7 @@ export const DEFAULT_ADAPTIVE_MODEL = Object.freeze({
   schemaVersion: 2,
   version: 1,
   updatedAt: null,
-  weights: { huntability: 0.40, transport: 0.35, release: 0.25 },
+  weights: { huntability: 0.25, transport: 0.40, release: 0.35 },
   scoreAdjustment: 0,
   zoneAdjustments: {},
   metricAdjustments: [],

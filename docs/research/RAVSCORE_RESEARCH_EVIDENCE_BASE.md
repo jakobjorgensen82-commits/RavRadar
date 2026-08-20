@@ -34,9 +34,9 @@ Den aktive kæde er:
 
 | Del | Aktiv kode | Input og centrale spring | Maksimal direkte betydning | Evidensstatus nu |
 |---|---|---|---|---|
-| Jagtbarhed | Grundscore 60 | Jagtform, aktuel vindhastighed og bølgehøjde | 40 % standardvægt | Brugerrelevant, men tærsklerne er ikke videnskabeligt kalibreret mod sikkerhed, synlighed eller fund |
-| Transport | Grundscore 34 | Aktuel strømstyrke/-retning, lokal kystretning, vindretning, 3-timers vandstandstrend og statiske kysttags | 35 % standardvægt | Retningslogikken er fysisk plausibel og lokalt sporbar; hastighedsbånd, bonusser og lofter mangler direkte ravvalidering |
-| Mobilisering/tilgængelighed | Stærkeste af to spor | 24-timers maksimumvind/-bølge, tid siden høj energi, aktuel bølge/strøm, vandstandstrend og kysttags | 25 % standardvægt plus 7-points samspilsbonus inde i komponenten | Mekanismerne er plausible, men summering, tærskler og maksimumvalg er arbejdshypoteser |
+| Jagtbarhed | Grundscore 60 | Jagtform, aktuel vindhastighed og bølgehøjde | 25 % foreløbig produktionsvægt | Brugerrelevant, men tærsklerne er ikke videnskabeligt kalibreret mod sikkerhed, synlighed eller fund |
+| Transport | Grundscore 34 | Aktuel strømstyrke/-retning, lokal kystretning, vindretning, 3-timers vandstandstrend og statiske kysttags | 40 % foreløbig produktionsvægt | Retningslogikken er fysisk plausibel og lokalt sporbar; hastighedsbånd, bonusser og lofter mangler direkte ravvalidering |
+| Mobilisering/tilgængelighed | Stærkeste af to spor | 24-timers maksimumvind/-bølge, tid siden høj energi, aktuel bølge/strøm, vandstandstrend og kysttags | 35 % foreløbig produktionsvægt plus 7-points samspilsbonus inde i komponenten | Mekanismerne er plausible, men summering, tærskler og maksimumvalg er arbejdshypoteser |
 | Adaptive justeringer | Normaliserede vægte og op til +/-25 slutpoint | Global, zone- og metrikjustering i browserlager | Kan ændre både vægte og slutscore | Skal auditeres særskilt mod ejerautoritet, reproducerbarhed og valideringsdata |
 | Regler | Gate, override, bonus, penalty eller persistence | Geografi, jagtform, basisscore og udvalgte vejr-/historikfelter | Kan blokere eller overskrive hele scoren | Forklarlig mekanisme, men hver aktiv regel kræver separat faglig evidens |
 
@@ -49,7 +49,7 @@ Den aktive kæde er:
 - Ny frigivelse skifter ved 9 og 14 m/s maksimumvind, 1,5 m maksimumsbølge og 3-18/48 timers hændelsesalder.
 - Genmobilisering bruger 0,25-1,2 m aktuelle bølger og 0,12-0,65 m/s strøm som særligt gunstige intervaller.
 - Vestkyst giver fem ekstra frigivelsespoint. Lavt vand, rev og vegetation kan påvirke både transport og genmobilisering.
-- Den endelige standardvægt er 40 % jagtbarhed, 35 % transport og 25 % mobilisering/tilgængelighed.
+- Den foreløbige produktionsvægt fra 4.0.242 er 25 % jagtbarhed, 40 % transport og 35 % mobilisering/tilgængelighed. Den er en forskningsbaseret prior, ikke en fundkalibreret sandhed.
 
 Disse værdier er kodefakta, ikke dokumenterede naturkonstanter.
 

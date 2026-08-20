@@ -164,3 +164,7 @@ Arbejdet tages i P0 -> P1 -> P2 -> P3. Et blokeret naturligt observationspunkt b
 - Mål den begrænsede bølgeeffekt syntetisk og på det aktuelle nationale offentlige datasæt.
 - Aktivér kun efter grønne gates og systematisk browserkontrol.
 - Hold vægtændringen 25/40/35 i næste særskilte delmål, så årsagen til scoreændringer kan måles.
+
+## 4.0.242 - foreløbige RavScore-vægte
+
+Aktiv kandidat: 25/40/35 efter DEC-0041. Konsekvensauditterne er grønne. Næste gate er fuld validering, browserkontrol og frisk produktion. Ingen komponentregler, tærskler, geometri eller punkter må ændres i dette delmål.

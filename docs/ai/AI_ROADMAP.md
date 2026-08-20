@@ -471,3 +471,11 @@ Den planlagte P3-forskning må undersøge, om rumlige strømstrukturer har selvs
 - Brug `NOT VALID` til at beskytte nye/ændrede rækker uden automatisk at ændre historiske data.
 - Udfør aldrig historisk GPS-oprydning uden udtrykkelig ejergodkendelse.
 - En migration er kun source-verificeret, indtil den centrale database har bestået målrettede positive og negative insert-tests.
+
+## Næste RavScore-del: 4.0.242 vægte
+
+- Vægtene ændres isoleret til 25 % jagtbarhed, 40 % transport og 35 % mobilisering efter DEC-0041.
+- Bølgeprioren er fortsat uændret og har fået det entydige ID DEC-0040.
+- Kandidaten kræver konsekvensaudit, source-/release-gate, browserkontrol og frisk produktion før aktivering.
+
+- National vægtaudit på rr-20260820204808-210 dækker 673 dele og 42.846 scoreposter. De 420 viste zoner falder i gennemsnit 6,314 point; 7 skifter vindende del. Effekten accepteres som foreløbig reduktion af jagtbarhedsdominans, ikke som fundkalibrering.

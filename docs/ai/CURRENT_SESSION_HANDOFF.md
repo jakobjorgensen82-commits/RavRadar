@@ -156,3 +156,16 @@ Der må ikke flyttes land-/vandpunkter.
 - Featurecommit `ae4c86c6` er merged via PR #25 som `eb66b280`. Produktion `#32405699346` bestod frisk data, fuld validering, release-gate, Supabase, Pages-build og deploy; direkte Pages-kontrol viser 4.0.241 og den aktive bølgejustering. Onlineaudit på datasæt `rr-20260820185733-210` bestod 210 zoner, 673 kystdele, 420 aktuelle og 2.100 prognosevisninger uden fejl. Næste trin er den særskilte, foreløbige vægtændring til 25/40/35.
 - Næste delmål efter stabil produktion er den særskilte vægtændring 25/40/35.
 - Flyt ingen land-/vandpunkter, og beskyt fortsat de fire dirty datafiler.
+
+## 4.0.242 foreløbige vægte
+
+- Branchen codex/ravscore-provisional-weights er oprettet fra main efter fuldt verificeret 4.0.241.
+- Aktiv kandidat ændrer kun vægtene til 25/40/35 og retter bølgebeslutningens ID til DEC-0040.
+- DEC-0041, målrettet test, syntetisk audit og national audit af 673 dele/42.846 scoreposter er grøn. De 420 viste zoner falder i gennemsnit 6,314 point, 7 skifter vindende del, og 110 krydser referencegrænser. Source-gate, browser, PR og produktion mangler.
+- Ingen land-/vandpunkter, zoner, kystdele, komponentregler, tærskler eller pile må ændres.
+## Lokal validering af 4.0.242 (2026-08-20)
+
+- `pnpm run validate:source` er groen, inklusive den fulde lokale release-gate og de nye vaegt-/auditchecks.
+- Browser-pluginet har indlaest 4.0.242 korrekt paa desktop og ved 390 x 844 med zoner, pile, femdoegnsvisning, score og alle tre forklaringsafsnit.
+- Den lokale browsertest brugte det seneste offentlige 4.0.241-datasnapshot. Dets indlejrede forklaringstekster viser derfor fortsat 40/35/25 og er ikke produktionsbevis for den nye vaegtning.
+- Efter merge skal workflowet bygge friske data med 4.0.242. Deployment maa kun godkendes, hvis score, delscorer, bidrag og forklaring stemmer med 25/40/35; derefter koeres den fulde onlinekontrol af 210 zoner og 673 kystdele.

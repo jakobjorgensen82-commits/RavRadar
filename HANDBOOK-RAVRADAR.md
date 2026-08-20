@@ -240,7 +240,7 @@ En privat, score-neutral cache bruger DKSS-felter ved vandpunktet samt cirka 5 o
 
 Rotationen registrerer også, hvor langt der er til den nærmeste modelkolonne med et eksakt fælles U/V-par, selv når den ligger uden for 5 km. I det tilfælde gemmes kun koordinat, afstand og lagmetadata – ikke de fjerne strømværdier. En privat ejeroversigt skelner derfor mellem nær-tærskel 5–6 km til rent manuelt geometrireview, modelhul 6–8 km, strukturelt modelhul over 8 km og en datakædefejl, hvor gyldig strøm faktisk findes inden for 5 km. Selv en nær-tærskel-post må kun flyttes, hvis vandpunktet i sig selv er forkert – aldrig blot for at nå modelcellen. Oversigten flytter ingen punkter automatisk, og den offentlige 5 km-grænse er uændret.
 
-**Håndbogsversion:** 4.0.241
+**Håndbogsversion:** 4.0.242
 
 **Opdateret:** 19. august 2026
 
@@ -607,7 +607,7 @@ Ekspertpunkt E-13: Beskriv hvilke kombinationer af faldende vand, bølgeaftagnin
 
 *Fysisk transportpotentiale er ikke det samme som et godt eller sikkert jagttidspunkt.*
 
-Jagtbarhed er den højst vægtede komponent i den aktive score (40 %). Den skal afspejle, om brugeren realistisk kan se og nå ravet. RavRadar har to jagtformer: waders og beach.
+Fra 4.0.242 vægter den foreløbige aktive score jagtbarhed 25 %, transport 40 % og mobilisering 35 %. Jagtbarhed skal afspejle, om brugeren realistisk kan se og nå ravet, men må ikke dominere de to fysiske procesled. RavRadar har to jagtformer: waders og beach.
 
 For waders starter jagtbarhed på 60. Vind højst 3 m/s giver +28; 3–6 m/s +8; 6–8 m/s -35; over 8 m/s -60. Bølger højst 0,3 m giver +12, mens over 0,7 m giver -25. For strandjagt giver vind højst 8 m/s +15, 8–13 m/s +5 og over 13 m/s -25; bølger over 2,5 m giver -12.
 

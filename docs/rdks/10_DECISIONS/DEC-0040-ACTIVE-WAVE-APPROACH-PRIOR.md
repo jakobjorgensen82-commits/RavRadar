@@ -1,4 +1,4 @@
-# DEC-0032 - Aktiv, begrænset bølgeretning og bølgeperiode
+# DEC-0040 - Aktiv, begrænset bølgeretning og bølgeperiode
 
 ## Status
 

@@ -1605,9 +1605,13 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 
 ## 4.0.241 aktiv bølgeprior
 
-- DEC-0032 aktiverer retning og periode som en begrænset transportjustering.
+- DEC-0040 aktiverer retning og periode som en begrænset transportjustering.
 - Vægtning og øvrige scoredele er bevidst uændrede for at isolere effekten.
 - Ingen land-/vandpunkter eller geometri er ændret.
 - 55.296 aktive syntetiske scenarier og 436 aktuelle public-beregninger bestod; national scoreændring var minus 1 til plus 1 uden farveskift.
 
 - 2026-08-20: 4.0.241 feature `ae4c86c6` merged via PR #25 som `eb66b280`. Produktion `#32405699346` bestod frisk fuld validering, release-gate, Supabase og Pages-deploy; direkte version-/kildekontrol er grøn. Onlineaudit på `rr-20260820185733-210` bestod 210 zoner, 673 kystdele, 420 aktuelle og 2.100 prognosevisninger uden fejl.
+
+- 2026-08-20: 4.0.242 / DEC-0041 fastlægger foreløbigt 25/40/35 for jagtbarhed, transport og mobilisering. Bølgepriorens kolliderende DEC-ID rettes til DEC-0040; geometri beholder DEC-0032. Kandidaten ændrer ingen regler, tærskler, pile, data, geometri eller punkter.
+
+- 2026-08-20: 4.0.242-vægtaudit består 9.261 syntetiske kombinationer og 42.846 offentlige scoreposter på 673 dele. De 420 viste zoner falder i gennemsnit 6,314 point; kun 7 skifter vindende del. Ingen data, regler, tærskler, pile, geometri eller punkter ændres.
