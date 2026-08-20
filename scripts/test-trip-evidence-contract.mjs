@@ -10,6 +10,20 @@ import {
   createTripStartRecord,
   toObservationTripColumns
 } from '../js/services/trip-evidence-contract.js';
+import {
+  beginTripEvidence,
+  finishTripEvidence,
+  listPendingTripEvidence,
+  loadActiveTripEvidence,
+  markTripEvidenceSubmitted
+} from '../js/services/trip-evidence-store.js';
+
+class MemoryStorage {
+  values = new Map();
+  getItem(key) { return this.values.has(key) ? this.values.get(key) : null; }
+  setItem(key, value) { this.values.set(key, String(value)); }
+  removeItem(key) { this.values.delete(key); }
+}
 
 const calibrationFeatures = createCalibrationFeatureSnapshot({
   modelVersion: 'ravscore-4.0.242',
@@ -113,6 +127,41 @@ const completed = completeTripEvidence(startRecord, {
 assert.equal(completed.calibrationEligible, false);
 assert.equal(completed.forecastCoastalPartId, 'zone-42-part-2');
 assert.equal(completed.coastalPartId, 'zone-42-part-3');
+
+const storage = new MemoryStorage();
+beginTripEvidence({
+  tripId: input.tripId,
+  startedAt: input.startedAt,
+  mode: input.mode,
+  zoneId: input.zoneId,
+  coastalPartId: input.coastalPartId,
+  forecastSnapshot: input.forecastSnapshot,
+  calibrationFeatures,
+  route: [{ latitude: 55.1, longitude: 8.2 }]
+}, storage);
+assert.equal(loadActiveTripEvidence(storage).tripId, input.tripId);
+assert.doesNotMatch([...storage.values.values()].join(''), /latitude|longitude|route/i);
+assert.throws(() => beginTripEvidence(input, storage), /allerede en aktiv/);
+assert.throws(() => finishTripEvidence({
+  endedAt: input.endedAt,
+  zoneId: input.zoneId,
+  coastalPartId: input.coastalPartId,
+  searchCoverage: 'invalid',
+  found: false
+}, storage), /Søgegrundighed/);
+assert.equal(loadActiveTripEvidence(storage).tripId, input.tripId);
+const queued = finishTripEvidence({
+  endedAt: input.endedAt,
+  zoneId: input.zoneId,
+  coastalPartId: input.coastalPartId,
+  searchCoverage: 'normal',
+  found: false
+}, storage);
+assert.equal(loadActiveTripEvidence(storage), null);
+assert.equal(listPendingTripEvidence(storage).length, 1);
+assert.equal(markTripEvidenceSubmitted(queued.tripId, storage), true);
+assert.equal(listPendingTripEvidence(storage).length, 0);
+assert.equal(markTripEvidenceSubmitted(queued.tripId, storage), false);
 
 const noFind = buildTripEvidence({ ...input, found: false, grams: 99 });
 assert.equal(noFind.grams, null);

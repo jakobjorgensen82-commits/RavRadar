@@ -26,6 +26,12 @@ Der fastholdes desuden et lille, eksplicit tilladt sæt kalibreringstal: den vis
 
 Zone og kystdel ved turstart gemmes adskilt fra den kystdel, brugeren bagefter bekræfter at have afsøgt. Hvis de ikke er ens, bevares turen som dækningsdata, men `calibrationEligible` bliver falsk. Dermed lærer modellen ikke af et vejrsnapshot fra det forkerte sted.
 
+## Lokal kø og fejltolerance
+
+Turstart og ventende uploads gemmes under nye, versionsstyrede lokale nøgler. Ved afslutning skrives den komplette tur til uploadkøen, før den aktive tur fjernes. Hvis lokal lagring fejler, bliver startposten derfor liggende. En køpost fjernes kun af den særskilte succesfunktion, som senere skal kaldes efter en bekræftet databaseindsættelse.
+
+Den nye kø ændrer eller sletter ikke historiske ruter fra det gamle turflow. Nye v2-poster accepterer ikke rute eller koordinater, heller ikke hvis en kalder ved en fejl sender dem med.
+
 ## Dataminimering
 
 GPS-punkter, ruter, koordinater og spor indgår ikke i fjernkontrakten. Den faktiske kystdel er præcis nok til faglig kalibrering og langt mindre følsom end brugerens bevægelsesspor. Lokale historiske ruter ændres eller slettes ikke af denne kontrakt.
