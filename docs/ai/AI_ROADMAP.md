@@ -462,3 +462,9 @@ Den planlagte P3-forskning må undersøge, om rumlige strømstrukturer har selvs
 - Enhver produktion skal bruge readiness-jobbets eksakte `target_hour` i livehistorik, vejrbyg, fallback og proveniens, også når et push/force-job krydser en UTC-time.
 - En historikpost tæller ikke som scoreklar dækning, medmindre dens gyldige tidspunkt findes i kystdelens faktiske runtime-tidslinje fra target hour og frem.
 - En scoreklar rapport på under 673/673 er et reelt stop-signal. Vent på korrekt cache/time eller ret årsagen; omgå aldrig den fulde strømaudit.
+
+## Observationsdatabase-regel - 2026-08-20
+- Klientredaktion er ikke tilstrækkelig alene; Supabase skal også afvise nye præcise lokationsfelter via RLS og databaseconstraint.
+- Brug `NOT VALID` til at beskytte nye/ændrede rækker uden automatisk at ændre historiske data.
+- Udfør aldrig historisk GPS-oprydning uden udtrykkelig ejergodkendelse.
+- En migration er kun source-verificeret, indtil den centrale database har bestået målrettede positive og negative insert-tests.

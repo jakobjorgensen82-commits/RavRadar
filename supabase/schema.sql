@@ -40,6 +40,22 @@ alter table public.observations add column if not exists current_speed_mps numer
 alter table public.observations add column if not exists current_direction_deg numeric;
 alter table public.observations add column if not exists water_temperature_c numeric;
 
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.observations'::regclass
+      and conname = 'observations_remote_location_null'
+  ) then
+    alter table public.observations
+      add constraint observations_remote_location_null
+      check (
+        gps is null
+        and not (coalesce(weather_snapshot, '{}'::jsonb) ?| array['gps','latitude','longitude','coordinates','position'])
+      ) not valid;
+  end if;
+end $$;
+
 create index if not exists observations_zone_time_idx on public.observations (zone_id, observed_at desc);
 create index if not exists observations_created_idx on public.observations (created_at desc);
 create index if not exists observations_user_idx on public.observations (user_id, observed_at desc);
@@ -47,11 +63,20 @@ alter table public.observations enable row level security;
 
 drop policy if exists "anonymous observations can be inserted" on public.observations;
 create policy "anonymous observations can be inserted" on public.observations for insert to anon
-with check (user_id is null and observed_at between now() - interval '2 days' and now() + interval '10 minutes');
+with check (
+  user_id is null
+  and gps is null
+  and not (coalesce(weather_snapshot, '{}'::jsonb) ?| array['gps','latitude','longitude','coordinates','position'])
+  and observed_at between now() - interval '2 days' and now() + interval '10 minutes'
+);
 
 drop policy if exists "authenticated observations can be inserted" on public.observations;
 create policy "authenticated observations can be inserted" on public.observations for insert to authenticated
-with check (user_id is null or user_id = auth.uid());
+with check (
+  (user_id is null or user_id = auth.uid())
+  and gps is null
+  and not (coalesce(weather_snapshot, '{}'::jsonb) ?| array['gps','latitude','longitude','coordinates','position'])
+);
 
 drop policy if exists "observations are publicly readable" on public.observations;
 drop policy if exists "users can read own observations" on public.observations;

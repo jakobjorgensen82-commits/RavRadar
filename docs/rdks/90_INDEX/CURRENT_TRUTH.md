@@ -1121,3 +1121,10 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - En push-produktion, der krydsede 13→14 UTC uden target-hour, rapporterede korrekt 630/673 scoreklare dele og blev stoppet før deploy i run `32377002921`.
 - PR #19 låser nu alle normale produktionsbyg til readiness-jobbets starttime. Kun timed schedule/ikke-forceret dispatch kan fortsat udsættes ved manglende current-hour-cache.
 - Main-commit `c73a10d32f2aab15c63787ecb71893fd9275bbf6` er produktionsverificeret i run `32379229853`: target hour 14:00, 673/673 scoreklare dele, 673/673 streng strømaudit og grøn Pages-deployment.
+
+## Observationsprivacy i databasen - forberedt 2026-08-20
+- Browserens fjernpayload sender allerede `gps: null` og afviser lokationsfelter i observationsflowet.
+- Supabase-skema og migration `20260820_observation_remote_privacy.sql` forbereder en server-side check samt skærpede anon/authenticated insert-policies, der afviser ny præcis lokation i `gps` og kendte lokationsnøgler i `weather_snapshot`.
+- Checken er `NOT VALID`: den håndhæves for nye/ændrede rækker uden at scanne, ændre eller slette historiske observationer.
+- Migrationen er ikke produktionsaktiv, før den er kørt kontrolleret mod den centrale database og både tilladt GPS-null insert og afvist GPS-insert er verificeret.
+- Historisk central GPS må fortsat ikke slettes uden udtrykkelig ejergodkendelse.

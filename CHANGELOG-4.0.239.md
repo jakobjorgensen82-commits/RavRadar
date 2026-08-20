@@ -30,3 +30,8 @@ Dato: 2026-08-20
 - Live-current-diagnostikken skelner mellem bevaret syvdageshistorik og scoreklar aktuel/fremtidig dækning.
 - Alle normale produktionsbyg bindes nu til readiness-jobbets UTC-time, så lange DMI-kørsler ikke skifter scoretid undervejs.
 - Produktionsrun `32379229853` bestod med 673/673 scoreklare og verificerede kystdele og deployede commit `c73a10d32f2aab15c63787ecb71893fd9275bbf6`.
+
+## Forberedt databaseprivacy 2026-08-20
+- Supabase-skemaet og en idempotent migration afviser nye observationsrækker med præcis GPS eller kendte lokationsnøgler i weather snapshot.
+- Historiske rækker ændres ikke; constrainten er `NOT VALID` og kræver kontrolleret central anvendelse før produktionsstatus.
+- Den nye databaseprivacy-test indgår i den hurtige kildekodegate.

@@ -1449,3 +1449,9 @@ Status: Implementeret og lokalt valideret.
 - Afsluttet: push, schedule og normal/forceret produktion bindes til readiness-jobbets eksakte UTC-time gennem hele bygget.
 - Produktionsbevis: commit `c73a10d32f2aab15c63787ecb71893fd9275bbf6`, run `32379229853`, 673/673 scoreklare og verificerede kystdele.
 - Næste roadmapdel: RavScore fase D-observationsdækning og evidensgate. Produktionsmodel B0 og kandidaternes scorepåvirkning forbliver låst.
+
+## Status 2026-08-20 - databaseprivacy
+- Implementeret i source: idempotent Supabase-migration, RLS-checks og `NOT VALID` databaseconstraint for ny fjern-GPS.
+- Valideret lokalt: `test:observation-db-privacy` indgår i både fuld validering og den hurtige pre-DMI-gate.
+- Ikke endnu produktionsverificeret: selve SQL-migrationen er ikke anvendt på den centrale Supabase-database.
+- Næste gate: kontrolleret migration, positiv GPS-null insert-test og negativ GPS/lokationsnøgle-test uden eksport af rå payloads.
