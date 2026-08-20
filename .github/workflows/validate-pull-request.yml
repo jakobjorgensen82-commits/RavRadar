@@ -45,6 +45,12 @@ jobs:
       - name: Validate production-hour lock
         run: npm run test:production-hour-lock
 
+      - name: Validate DMI and fallback integration
+        run: |
+          npm run test:dmi-acquisition
+          npm run test:dmi-bulk-forecast-integration
+          npm run test:water-source-production-chain
+
       - name: Validate production workflow gate order
         run: npm run test:workflow-validation-order
 

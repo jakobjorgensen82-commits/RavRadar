@@ -18,6 +18,8 @@ Regressionen simulerer 11:00 -> 12:04, kraever 11:00 som foerste fallbacktime og
 
 Den udvidede Playwright-audit er gentaget mod det deployede #3246-datasæt: 210 zoner, 673 dele, 420 aktuelle visninger og 2.100 femdoegnsvisninger med nul mismatch, consolefejl, pagefejl eller HTTP-fejl. De seks reelle boelge-nullfelter blev vist som `Mangler`; UI laante ingen vaerdi fra en anden time.
 
+PR-kildegaten koerer nu ogsaa DMI-acquisition, DMI-bulk/fallback-integration og vandkilde-produktionskæden sammen med production-hour-lock-testen. Workflowkontrakten kraever alle fire og bevarer fortsat pull-request-only, read-only permissions, ingen secrets og intet deploy.
+
 ## Historik og state
 
 #3246 genbrugte samme 03:00-reference som #3245. Alle 210 zoner har derfor fortsat 65 raasamples og 34,903 timers spaend; der er ikke skabt en falsk ekstra historiktime. Den gamle main-enrichment har fortsat 55 verificerede samples i 197 zoner, 49 i en zone og nul i de 12 reelle parent-huller. State er fortsat 4/4, score-neutral og uden aktivt current-regime.

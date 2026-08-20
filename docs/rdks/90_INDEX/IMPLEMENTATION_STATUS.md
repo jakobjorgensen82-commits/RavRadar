@@ -31,6 +31,7 @@
 - [x] Online browseraudit sammenligner nu alle seks viste vejrmetrikker mod den valgte lokale runtimepost i 420 aktuelle og 2.100 femdoegnsvisninger, inklusive at reelle `null`-felter vises som `Mangler`.
 - [x] Naturlig produktion `#3246` afsloerede seks boelgehuller paa den laaste 03-time, da buildet passerede 04 UTC og Open-Meteo kun leverede fremtid fra 04. Kandidaten henter et dynamisk bagudvindue, filtrerer til referencetimen og bevarer 120 timer; frisk main-produktion mangler fortsat som bevis.
 - [x] Fuld livebrowseraudit efter `#3246` er groen for 210 zoner, 673 dele, 420 aktuelle og 2.100 femdoegnsvisninger. De seks boelge-nullfelter vises som `Mangler` uden laan fra en anden time; det aabne punkt er fortsat produktionsbevis for kandidatrettelsen.
+- [x] Den ikke-deployende PR-gate beskytter nu timeskifterettelsen med production-hour-lock, DMI-acquisition, DMI-bulk/fallback-integration og vandkilde-produktionskæden; workflowkontrakten kraever alle fire.
 
 ## 4.0.236 – låst produktionsreferencetime
 
