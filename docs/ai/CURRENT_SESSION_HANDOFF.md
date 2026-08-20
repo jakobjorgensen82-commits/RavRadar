@@ -112,3 +112,10 @@ Der må ikke flyttes land-/vandpunkter.
 - Active score is unchanged; all candidates are shadow-only.
 - Next executable roadmap step is internal observation intake plus immutable forecast-snapshot linkage, followed by a coverage-only report. Do not fit coefficients before that gate.
 - Continue to avoid the four protected dirty data files and do not move land/water points.
+
+## 4.0.239 observation safety handoff
+- Branch: `codex/observation-safety-40239` from main `866a8a20`.
+- Runtime code now redacts trip GPS from all remote observation payloads and locks new observation-driven model suggestions.
+- Active score and existing local adaptive-model versions are unchanged.
+- Run targeted tests, full source/release validation, PR gates and targeted production UI/runtime verification. Do not run the full 210/673 browser audit for this unrelated change.
+- Do not inspect or delete historical central GPS without a separately approved migration.

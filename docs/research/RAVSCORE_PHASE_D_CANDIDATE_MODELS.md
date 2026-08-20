@@ -155,3 +155,6 @@ Primary references:
 ## Next executable step
 
 Implement an internal, non-public observation intake and immutable forecast-snapshot link. Then generate a coverage-only report. Do not implement candidate coefficients until that report demonstrates adequate positive/negative, temporal and geographic coverage.
+
+## 4.0.239 implementation guard
+The existing browser-side learning analysis previously produced actionable metric patches from a minimum of 12 rows with four outcomes in each class. Version 4.0.239 replaces that behavior with a coverage-only report and an explicit calibration lock. Existing active/local model versions remain untouched; new observation-driven patches require the full phase D gate.

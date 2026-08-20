@@ -1428,3 +1428,9 @@ Status: Implementeret og lokalt valideret.
 - Complete: candidate architecture, anti-double-counting constraints, sensitivity/calibration/product gates, privacy rules and observation JSON Schema.
 - Not implemented: candidate coefficients, candidate runtime, observation intake or production score changes.
 - Next: internal immutable forecast-snapshot linkage and an anonymized coverage report.
+
+## 4.0.239 observation safety - 2026-08-20
+- Implemented locally: remote GPS redaction, legacy-outbox redaction and local sync-metadata removal.
+- Implemented locally: phase D coverage report with score suggestions locked.
+- Pending: PR/production verification, immutable forecast-snapshot linkage and explicit search-effort capture.
+- Pending owner-authorized migration: remove any historical central GPS values after a count-only audit and rollback plan.
