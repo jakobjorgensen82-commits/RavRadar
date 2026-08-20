@@ -24,11 +24,31 @@ if (typeof window !== 'undefined') {
     return match?Number(match[1]):null;
   };
   const number = node => {
-    const value=String(node?.textContent||'').replace(/[^0-9,.-]/g,'').replace(',','.');
-    return value && Number.isFinite(Number(value)) ? Number(value) : null;
+    const match=String(node?.textContent||'').replace(',','.').match(/-?\d+(?:\.\d+)?/);
+    return match&&Number.isFinite(Number(match[0]))?Number(match[0]):null;
   };
   const failures=[];
   const fail=(kind,detail)=>failures.push({kind,...detail});
+  const checkWeatherMetrics=(root,weather,kind,detail)=>{
+    const expectedFields=[
+      ['Vind','windSpeedMps',1],
+      ['Bølger','waveHeightM',1],
+      ['Vandstand','waterLevelCm',0],
+      ['Strøm','currentSpeedMps',2],
+      ['Vandtemperatur','waterTemperatureC',1],
+      ['3-timers trend','waterLevelTrendCm3h',0]
+    ];
+    const metrics=[...(root?.querySelectorAll?.(':scope > .metric')||[])];
+    for(const [label,field,digits] of expectedFields){
+      const metric=metrics.find(item=>item.querySelector('span')?.textContent?.trim()===label);
+      const strong=metric?.querySelector('strong');
+      const text=strong?.textContent?.trim()||'';
+      const shown=number(strong);
+      const expected=finite(weather?.[field])?Number(Number(weather[field]).toFixed(digits)):null;
+      const missing=/Mangler/i.test(text);
+      if(!metric||shown!==expected||(expected===null)!==missing)fail(`${kind}-weather-metric`,{...detail,label,field,expected,shown,text});
+    }
+  };
   window.__ravradarOnlineAudit={
     state:()=>({
       version:document.querySelector('#appVersion')?.textContent?.trim()||globalThis.RAVRADAR_VERSION||null,
@@ -61,6 +81,7 @@ if (typeof window !== 'undefined') {
       const expectedWind=rotation(weather.windDirectionDeg,'wind'),expectedCurrent=rotation(weather.currentDirectionDeg,'current');
       if(shownWind!==expectedWind)fail('current-wind-arrow',{zoneId,mode:state.mode,expected:expectedWind,shown:shownWind});
       if(shownCurrent!==expectedCurrent)fail('current-current-arrow',{zoneId,mode:state.mode,expected:expectedCurrent,shown:shownCurrent});
+      checkWeatherMetrics(weatherGrid,weather,'current',{zoneId,mode:state.mode});
       const components=panel?.querySelectorAll(':scope > .component-list .component-detail').length||0;
       const reasons=panel?.querySelectorAll(':scope > .component-list .component-detail li').length||0;
       if(components!==3||reasons<3)fail('current-components',{zoneId,mode:state.mode,components,reasons});
@@ -92,6 +113,7 @@ if (typeof window !== 'undefined') {
         const sw=arrow(grid,'wind'),sc=arrow(grid,'current');
         if(sw!==ew)fail('forecast-wind-arrow',{zoneId,mode:state.mode,index,date:days[index].date,expected:ew,shown:sw});
         if(sc!==ec)fail('forecast-current-arrow',{zoneId,mode:state.mode,index,date:days[index].date,expected:ec,shown:sc});
+        checkWeatherMetrics(grid,expected?.hour,'forecast',{zoneId,mode:state.mode,index,date:days[index].date});
         const count=detail?.querySelectorAll('.component-list .component-detail').length||0;
         const reasonCount=detail?.querySelectorAll('.component-list .component-detail li').length||0;
         if(count!==3||reasonCount<3)fail('forecast-components',{zoneId,mode:state.mode,index,date:days[index].date,components:count,reasons:reasonCount});
