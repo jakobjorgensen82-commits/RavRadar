@@ -21,6 +21,7 @@ import {
 import { uploadPendingTripEvidence } from '../js/services/trip-evidence-upload.js';
 import { createTripEvidenceController } from '../js/services/trip-evidence-controller.js';
 import { createTripStartFromPublicState } from '../js/services/trip-evidence-public-adapter.js';
+import { createPublicTripEvidenceRuntime } from '../js/services/trip-evidence-runtime.js';
 
 class MemoryStorage {
   values = new Map();
@@ -308,6 +309,67 @@ assert.throws(() => createTripStartFromPublicState({
   zoneId: 'zone-99',
   coastalPart: { zoneId: 'zone-42' }
 }), /tilhører ikke den valgte zone/);
+
+const runtimeStorage = new MemoryStorage();
+let runtimeNow = input.startedAt;
+const runtimeContext = {
+  mode: 'waders',
+  zoneId: 'zone-42',
+  coastalPartId: 'zone-42-part-2',
+  manifest: { datasetId: 'rr-20260821025000-210' },
+  conditions: {
+    available: true,
+    datasetId: 'rr-20260821025000-210',
+    productionReferenceAt: '2026-08-21T02:00:00.000Z',
+    zones: {
+      'zone-42': {
+        current: {
+          windSpeedMps: 8.4,
+          windDirectionDeg: 275,
+          waveHeightM: 1.4,
+          wavePeriodS: 6.8,
+          waveDirectionDeg: 282,
+          currentSpeedMps: 0.31,
+          currentDirectionDeg: 268,
+          waterLevelCm: 22,
+          waterLevelTrendCm3h: -8
+        },
+        history: { maxWave24hM: 2.1, hoursSinceHighEnergy: 7 }
+      }
+    }
+  },
+  coastalPart: {
+    zoneId: 'zone-42',
+    current: {
+      time: '2026-08-21T03:00:00.000Z',
+      waders: { score: 63, components: { huntability: 74, transport: 61, release: 58 } }
+    }
+  },
+  zones: [{ id: 'zone-42', name: 'Testzone' }],
+  coastalParts: [{ id: 'zone-42-part-2', zoneId: 'zone-42', name: 'Testdel' }],
+  appVersion: '4.0.242',
+  modelVersion: 'ravscore-4.0.242'
+};
+const runtime = createPublicTripEvidenceRuntime({
+  storage: runtimeStorage,
+  getContext: () => runtimeContext,
+  now: () => runtimeNow,
+  createTripId: () => 'trip-runtime',
+  openDialog: async () => ({
+    zoneId: 'zone-42',
+    coastalPartId: 'zone-42-part-2',
+    searchCoverage: 'thorough',
+    found: false,
+    grams: null
+  }),
+  persist: async payload => assertTripEvidencePrivacy(payload)
+});
+assert.equal(runtime.start().tripId, 'trip-runtime');
+assert.equal(runtime.active().startedAt, input.startedAt);
+runtimeNow = input.endedAt;
+const runtimeResult = await runtime.stop();
+assert.equal(runtimeResult.status, 'submitted');
+assert.equal(runtime.active(), null);
 
 const noFind = buildTripEvidence({ ...input, found: false, grams: 99 });
 assert.equal(noFind.grams, null);
