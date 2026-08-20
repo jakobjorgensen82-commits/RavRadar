@@ -56,6 +56,8 @@ En tynd offentlig runtime samler kontekstadapteren og controlleren. Den eksister
 
 Hvis appen ikke allerede har en entydig valgt kystdel, kan den kalde `startWithPrompt()`. Startdialogen beder om søgemetode, zone og kystdel før uret starter. Det giver et korrekt lokalt prognosesnapshot uden at kræve GPS eller antage, at nærmeste kystdel er den, brugeren faktisk vil afsøge.
 
+Den afgrænsede bro til det gamle turflow lytter til de eksisterende start/stop-hændelser og bruger den gamle turs UUID og starttid. Når v2-dialogen er besvaret eller udskudt, markeres den gamle dagsformular lokalt som håndteret, så samme tur ikke giver to spørgsmål. Annulleres startdialogen, oprettes ingen v2-tur, og det gamle flow fortsætter uændret.
+
 ## Dataminimering
 
 GPS-punkter, ruter, koordinater og spor indgår ikke i fjernkontrakten. Den faktiske kystdel er præcis nok til faglig kalibrering og langt mindre følsom end brugerens bevægelsesspor. Lokale historiske ruter ændres eller slettes ikke af denne kontrakt.

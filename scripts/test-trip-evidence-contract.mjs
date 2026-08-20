@@ -370,6 +370,7 @@ assert.equal(runtime.active().startedAt, input.startedAt);
 runtimeNow = input.endedAt;
 const runtimeResult = await runtime.stop();
 assert.equal(runtimeResult.status, 'submitted');
+assert.deepEqual(runtimeResult.answer, { found: false, grams: null, zoneId: 'zone-42', observedDate: '2026-08-21' });
 assert.equal(runtime.active(), null);
 
 const promptedRuntimeStorage = new MemoryStorage();
@@ -423,6 +424,12 @@ assert.match(observationServiceSource, /export async function submitTripEvidence
 assert.match(observationServiceSource, /hunt_mode:columns\.hunt_mode/);
 assert.match(observationServiceSource, /id:existing\?\.id\|\|crypto\.randomUUID\(\)/);
 assert.match(observationServiceSource, /route,track,position,coordinates,latitude,longitude,location/);
+
+const legacyBridgeSource = fs.readFileSync('js/services/trip-evidence-legacy-bridge.js', 'utf8');
+assert.match(legacyBridgeSource, /onTripChange\(handle\)/);
+assert.match(legacyBridgeSource, /trip\.id, startedAt: trip\.startedAt/);
+assert.match(legacyBridgeSource, /response: answer \? \(answer\.found \? 'yes' : 'no'\) : 'v2-deferred'/);
+assert.doesNotMatch(legacyBridgeSource, /\b(?:gps|geolocation|coordinates|route|track)\b/i);
 
 const evidenceSchemaSource = fs.readFileSync('docs/research/trip-evidence-v2.schema.json', 'utf8');
 const evidenceSchema = JSON.parse(evidenceSchemaSource);

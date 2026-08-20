@@ -26,13 +26,14 @@ export function createTripEvidenceController({ storage = null, openDialog = open
 
     const evidence = finishTripEvidence(answer, storage);
     if (typeof persist !== 'function') {
-      return { status: 'queued', tripId: evidence.tripId, calibrationEligible: evidence.calibrationEligible };
+      return { status: 'queued', tripId: evidence.tripId, calibrationEligible: evidence.calibrationEligible, answer: { found: evidence.found, grams: evidence.grams, zoneId: evidence.zoneId, observedDate: evidence.observedAt.slice(0, 10) } };
     }
     const upload = await uploadPendingTripEvidence({ persist, storage });
     return {
       status: upload.failed ? 'queued' : 'submitted',
       tripId: evidence.tripId,
       calibrationEligible: evidence.calibrationEligible,
+      answer: { found: evidence.found, grams: evidence.grams, zoneId: evidence.zoneId, observedDate: evidence.observedAt.slice(0, 10) },
       submitted: upload.submitted,
       failed: upload.failed
     };

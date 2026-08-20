@@ -30,11 +30,10 @@ export function createPublicTripEvidenceRuntime({
   };
 
   return Object.freeze({
-    start(selection = null) {
+    start(selection = null, { tripId = createTripId(), startedAt = now() } = {}) {
       const context = readContext(selection);
-      const startedAt = now();
       const prepared = createTripStartFromPublicState({
-        tripId: createTripId(),
+        tripId,
         startedAt,
         mode: selection?.mode || context.mode,
         zoneId: selection?.zoneId || context.zoneId,
@@ -55,7 +54,7 @@ export function createPublicTripEvidenceRuntime({
         calibrationFeatures: prepared.calibrationFeatures
       });
     },
-    async startWithPrompt() {
+    async startWithPrompt({ tripId = createTripId(), startedAt = now() } = {}) {
       const context = readContext();
       const selection = await openStartDialog({
         mode: context.mode,
@@ -65,7 +64,7 @@ export function createPublicTripEvidenceRuntime({
         coastalParts: context.coastalParts
       });
       if (!selection) return { status: 'cancelled' };
-      const record = this.start(selection);
+      const record = this.start(selection, { tripId, startedAt });
       return { status: 'started', tripId: record.tripId };
     },
     stop() {
