@@ -1,25 +1,26 @@
 # Current truth – gældende projektviden
 
-## Naturlig Copernicus-pilot #70 - fortsat sund 168-timersopsamling
+## Copernicus-pilot #72 - fortsat sund 168-timersopsamling
 
-- Den planlagte pilot `#32342023293`/artifact `copernicus-current-pilot-70` blev genereret 2026-08-20 07:02Z mod den centralt godkendte bestand på 673 dele.
-- Den private cache har 45 eksakte timetidspunkter fra 2026-08-18 11:00Z til 2026-08-20 07:00Z, 28.305 observationer, 625 unikke mål og 629 mål/kilde-par.
+- Readiness-skip `#32347036227` udløste automatisk `#32347060320`/artifact `copernicus-current-pilot-72` mod den centralt godkendte bestand på 673 dele.
+- Den private cache har 46 eksakte timetidspunkter fra 2026-08-18 11:00Z til 2026-08-20 08:00Z, 28.934 observationer, 625 unikke mål og 629 mål/kilde-par.
 - Baltic dækker 552/567 berettigede mål og AMM15 77/125. Summen er større end 625, fordi fire mål har evidens fra begge kilder.
 - Der er nul ustabile mål/kilde-par for både gitterpunkt og lag. Interpolation, scorepåvirkning og offentlig runtime er fortsat slået fra, og supportgaten afviste secret- eller råvektorlæk.
-- Syvdøgnskravet er endnu ikke opfyldt; der mangler fortsat naturlig vækst fra 45 til et fuldt 168-timersvindue.
+- Syvdøgnskravet er endnu ikke opfyldt; der mangler fortsat naturlig vækst fra 46 til et fuldt 168-timersvindue.
 
-## 4.0.238 er releasekandidat - endnu ikke main eller produktionsverificeret
+## 4.0.238 er merged, produktionsverificeret og browserverificeret
 
-- Draft-PR #1 samler rettelsen af den verificerede histories referencetime, Open-Meteos låste timeskifte og den kildebaserede PR-gate.
-- Historikrettelsen bruger `productionReferenceAt`; 198 zoner med verificeret aktuelt DMI-U/V kan dermed vokse naturligt. De 12 reelle `NO_SHARED_MARINE_GRID_POINT`-huller skal fortsat være `missing`.
-- Open-Meteo-vinduet beregner et afgrænset `past_hours` og leverer fortsat højst 120 fremtidige timer fra den låste reference. DMI-first-rækkefølgen er uændret.
-- 4.0.238-browserauditten kræver den synlige liveversion 4.0.238 og sammenholder 210 zoner, 673 dele, 420 aktuelle paneler, 2.100 femdøgnsvalg, score/farve/pile/forklaring og seks vejrmetrikker.
-- Naturlig produktion #3249 på den ældre `main` var fuldt grøn, men beviser samtidig den gamle historikfejl: 198 zoner har verificeret aktuel strøm, mens verificeret spænd stadig er 22,563 timer. Den kørsel er ikke kandidatbevis.
-- Ingen punkter, geometri, U/V, kildeorden, afstandsgrænser eller RavScore er ændret. Næste bindende trin er sikker merge efter ejerbeslutning, frisk fuld central produktion og online browseraudit.
+- PR #1 blev merged med ejerens godkendelse som `b8844841d036925057a1f768c4392940f6117ad7`.
+- Push-kørsel `#32344813967` bestod frisk central adminhydrering, DMI, fuld `validate`, releasegate, supportartifact, Supabase, Pages-artifact og deploy. Live datasæt er `rr-20260820074127-210` med 210 zoner.
+- Support `RavRadar-support-3252` viser, at alle seks tidligere #3246-bølgehuller nu har 118 timer uden ændret DMI-first-kildeorden. Feggesund er fortsat det ene reelle bølge-missing.
+- Historikrettelsen virker i produktion: de 198 verificerbare zoner har op til 56 verificerede prøver over 39,594 timer mod den tidligere lås på 22,563 timer. De 12 reelle `NO_SHARED_MARINE_GRID_POINT`-huller er fortsat `missing`.
+- Browser-pluginet åbnede live 4.0.238. Den godkendte Playwright-fallback kontrollerede derefter 210 zoner, 673 dele, 420 aktuelle paneler og 2.100 femdøgnsvalg med nul fejl i score, label, farve, pile, tre komponenter, forklaring, lokal kontekst, debug og seks vejrmetrikker. Mobil 390 x 844 og desktop 1440 x 900 har ingen overflow eller funktionsfejl.
+- Den fulde produktionskæde er bevist, men det særskilt krævede naturlige build over en UTC-grænse er endnu ikke observeret. `#32347036227` viste korrekt fail-closed skip uden artifact, da time 08 ikke var komplet; pilot #72 gjorde derefter timen klar.
+- Ingen punkter, geometri, U/V, kildeorden, afstandsgrænser eller RavScore er ændret.
 
-## Online DOM-/kliktest 2026-08-20
+## Online DOM-/kliktest af live 4.0.238 - 2026-08-20
 
-Live 4.0.237 er systematisk kontrolleret med Chromium mod seneste datasæt `rr-20260819213342-210` efter grøn naturlig produktion `#3237`: 210 zoner, 673 kystdele, begge jagtformer, 420 aktuelle paneler og 2.100 femdøgnspaneler. Der er 0 mismatch i score, label, farveniveau, vind-/strømpile, forklaringer, lokal vinderkontekst og debug-ID. Eneste HTTP-fejl er favicon 404; ingen page errors. Ingen produktionsdata eller geometri er ændret.
+Live 4.0.238 er systematisk kontrolleret med Playwright mod datasæt `rr-20260820074127-210` efter grøn produktion `#32344813967`: 210 zoner, 673 kystdele, begge jagtformer, 420 aktuelle paneler og 2.100 femdøgnspaneler. Der er nul mismatch i score, label, farveniveau, vind-/strømpile, tre komponenter, forklaringer, lokal vinderkontekst, debug-ID og seks synlige vejrmetrikker samt nul console-, page- eller HTTP-fejl. Ingen produktionsdata eller geometri er ændret.
 
 Den private Copernicus-shadow har ved pilot `#58` 37 gyldige timer, 23.273 poster, 625 maal og 629 maal/kilde-par med nul gitter-/lagustabilitet. Planlagt `#59` dubletskippede korrekt uden artifact. Syvdoegnsvinduet er fortsat uafsluttet og maales hoejst dagligt.
 

@@ -843,6 +843,13 @@
       "title": "Når en ny DMI-kørsel kun er delvist indfaset",
       "summary": "P1-kontrollen viser både timer og zoner pr. modelkørsel, så en tidlig delvis cyklus ikke kaldes et fuldt bevis.",
       "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> En ny DMI-modelkørsel kan begynde med få timer, mens den forrige stadig leverer resten af prognosen.</div><p>Kontrollen viser derfor både antal timer og antal aktive zoner pr. modelkørsel. Artifact #2783 havde en ny HARMONIE 12 UTC-cyklus med 416 timer i 208 zoner, mens 03 UTC stadig bar hovedparten af vindhorisonten.</p><div class=\"callout\"><strong>Ingen modelændring:</strong> En delvis cyklus tæller som ny evidens, men fastsætter ingen permanent overgangsgrænse og ændrer ingen prognose, fallback eller RavScore.</div>"
+    },
+    {
+      "id": "production-verification-4-0-238",
+      "chapter": "60",
+      "title": "Produktionsverifikation af 4.0.238",
+      "summary": "Live 4.0.238 har grøn fuld produktion, voksende verificeret strømhistorik og systematisk browserbevis for alle zoner og kystdele.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Produktionskørsel #32344813967 gennemførte central adminhydrering, frisk DMI, samlet validering, releasegate, Supabase og Pages. Datasæt rr-20260820074127-210 indeholder 210 zoner.</div><p>De seks bølgehuller fra #3246 har nu 118 prognosetimer uden ændret DMI-first-kildeorden. Feggesund er fortsat dokumenteret bølge-missing. Verificeret strømhistorik vokser igen i de 198 geografisk verificerbare parentzoner og spænder op til 39,594 timer; de 12 reelle gitterhuller forbliver <em>Mangler</em>.</p><p>Onlinekontrollen dækker begge jagtformer, 210 zoner, 673 kystdele, 420 aktuelle paneler og 2.100 femdøgnsvalg. Score, label, farve, pile, tre scorekomponenter, forklaring, lokal kontekst, debug og seks vejrmetrikker passer sammen uden fund. Mobil og desktop har ingen overflow eller funktionsfejl.</p><div class=\"callout\"><strong>Åben driftsevidens:</strong> En naturlig produktion, som faktisk krydser en UTC-timegrænse, følges fortsat uden manuel omgåelse af readiness-gaten. Ingen land-/vandpunkter er flyttet.</div>"
     }
   ]
 }

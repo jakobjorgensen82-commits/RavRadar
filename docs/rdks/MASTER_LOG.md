@@ -1473,3 +1473,12 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Den private 168-timerscache er vokset til 45 eksakte timer og 28.305 poster: 625 unikke mål, 629 mål/kilde-par og nul gitter-/lagustabilitet.
 - Baltic har 552/567 og AMM15 77/125 verificerede mål inden for 5 km. 48 mål mangler fortsat Copernicus-par og bliver ikke udfyldt kunstigt.
 - Piloten er fortsat score-neutral, privat og uden interpolation eller råvektorlæk. Den endelige analyse afventer et fuldt naturligt 168-timersvindue.
+
+# 2026-08-20 - 4.0.238 produktions- og browserverificeret
+
+- PR #1 blev merged med ejerens godkendelse som `b8844841`. Push `#32344813967` bestod central adminhydrering, frisk DMI, fuld `validate`, releasegate, Supabase, Pages-artifact og deploy.
+- Support `RavRadar-support-3252`/datasæt `rr-20260820074127-210` har 210 zoner. De seks #3246-bølgehuller har nu 118 timer med uændret DMI-first-kildeorden; Feggesund er fortsat dokumenteret missing.
+- Verificeret currenthistorik vokser igen: op til 56 verificerede prøver og 39,594 timers spænd i de 198 verificerbare zoner mod tidligere 22,563 timer. De 12 reelle parenthuller forbliver missing.
+- Browser-pluginet åbnede live 4.0.238. Godkendt Playwright-fallback kontrollerede 210 zoner, 673 kystdele, 420 aktuelle paneler og 2.100 femdøgnsvalg med nul score-, farve-, pil-, forklarings-, kontekst-, metrik-, konsol-, side- eller HTTP-fejl. Mobil og desktop er grønne.
+- Naturlig schedule `#32347036227` stoppede korrekt uden produktionsartifact, da UTC-time 08 ikke var komplet. Automatisk pilot `#32347060320`/artifact #72 udvidede derefter den private cache til 46 eksakte timer og 28.934 poster med nul gitter-/lagustabilitet.
+- Kun det særskilte naturlige produktionsbevis over et faktisk UTC-timeskift og de langsigtede 72/168-timersmålinger er åbne. Ingen land-/vandpunkter, geometri, U/V, kildeorden, afstandsgrænser eller RavScore er ændret.

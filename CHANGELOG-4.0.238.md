@@ -1,6 +1,6 @@
 # RavRadar 4.0.238
 
-## Releasekandidat: låst produktionstime bevares i fallback og historik
+## Produktionsverificeret: låst produktionstime bevares i fallback og historik
 
 - Open-Meteo-forespørgslen udvider nu sit tilladte fortidsvindue ud fra forskellen mellem den låste `productionReferenceAt` og den faktiske byggetid. En planlagt produktion, der krydser en UTC-time, mister derfor ikke den allerede godkendte første forecasttime.
 - Fallbackserien trimmes fortsat til den låste referencetime og højst 120 fremtidige timer. DMI er stadig førstevalg, og fallback må kun udfylde reelle huller eller en manglende hale.
@@ -13,12 +13,20 @@
 - Kontrollen sammenholder score, label, farveniveau, vind- og strømpile, tre scorekomponenter, forklaring, lokal del/tid og alle seks synlige vejrmetrikker: vind, bølger, vandstand, strøm, vandtemperatur og tretimerstrend.
 - Browserkontrollen fejler nu også, hvis livesidens synlige version ikke er præcis 4.0.238. Lokal JavaScript kan derfor ikke alene få en ældre liveside til at fremstå som den nye kandidat.
 
+## Produktionsbevis
+
+- PR #1 blev merged som `b8844841`. Push-kørsel `#32344813967` bestod central adminhydrering, frisk DMI, fuld `validate`, releasegate, Supabase, Pages-artifact og deploy.
+- Supportartifact `RavRadar-support-3252` byggede datasæt `rr-20260820074127-210` med 210 zoner. De seks bølgehuller fra #3246 har nu alle 118 timer uden ændret DMI-first-kildeorden; Feggesund forbliver det ene dokumenterede bølge-missing.
+- Verificeret strømhistorik vokser igen: 198 verificerbare zoner har op til 56 prøver over 39,594 timer mod det tidligere fastlåste spænd på 22,563 timer. De 12 dokumenterede parent-huller er fortsat eksplicit `missing`.
+- Den fulde online Playwright-kontrol er grøn for 210 zoner, 673 kystdele, 420 aktuelle paneler og 2.100 femdøgnsvalg. Mobil 390 x 844 og desktop 1440 x 900 er desuden kontrolleret uden overflow eller funktionsfejl.
+- Den særskilte naturlige kontrol over et faktisk UTC-timeskift er fortsat åben. Schedule `#32347036227` sprang korrekt produktionen over, da time 08 endnu ikke var komplet, og pilot #72 gjorde derefter timen klar uden at omgå readiness-gaten.
+
 ## Sikkerhed og status
 
 - PR-kontrollen er kildebaseret og må hverken hente secrets, hydrere central admin-sandhed, bygge produktionsdata eller deploye. Den kontrollerer de relevante regressions- og releasekontrakter før merge.
 - Ingen land-/vandpunkter, kystgeometri, U/V-værdier, afstandsgrænser, kildeorden eller RavScoreformel er ændret.
-- Kandidaten er ikke produktionsverificeret, før den er ført sikkert til `main`, har bestået en frisk fuld central produktionskørsel og derefter den komplette online browserkontrol.
+- 4.0.238 er produktions- og browserverificeret. Det åbne timeskiftebevis er en afgrænset driftsopfølgning og må ikke erstattes af en manuel genvej.
 ## Naturlig P1-driftsevidens
 
-- Copernicus-pilot #70 fortsætter den private score-neutrale opsamling med 45 eksakte timetidspunkter, 28.305 observationer, 625 unikke mål og 629 mål/kilde-par.
+- Copernicus-pilot #72 fortsætter den private score-neutrale opsamling med 46 eksakte timetidspunkter, 28.934 observationer, 625 unikke mål og 629 mål/kilde-par.
 - Nul mål/kilde-par har skiftet gitterpunkt eller lag. `scoreImpact=false`, `publicRuntime=false` og `interpolation=false` er bevaret; det fulde 168-timersvindue er endnu ikke nået.

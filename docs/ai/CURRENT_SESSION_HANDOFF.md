@@ -3,7 +3,7 @@
 ## Arbejdssted og branch
 
 - Brug kun `C:\Users\jakob\AppData\Local\Temp\ravradar-40232-current`.
-- Aktiv branch er `codex/current-coverage-4.0.232`; draft-PR #1 peger mod `main`.
+- Aktiv branch er `codex/verify-4.0.238` fra merge-commit `b8844841` på `main`.
 - Desktop-klonen er gammel og dirty og må ikke bruges til dette spor.
 
 ## Beskyttet lokalt arbejde
@@ -17,24 +17,24 @@ Disse fire eksisterende dirty filer må aldrig ændres, stages eller committes:
 
 Der må ikke flyttes land-/vandpunkter.
 
-## 4.0.238-kandidat
+## 4.0.238 produktion
 
-- P0.1 er afsluttet i `2db2cd2b` og `e197a196`.
-- `release/RavRadar-4.0.238.zip` er bygget reproducerbart fra committen: 972 filer og 13.878.902 byte.
-- Lokal RDKS, historik, timeskiftelås, DMI, forecastintegration, vandkæde, workflowrækkefølge, browser-syntaks, versionskontrol og releasegate er grønne.
-- GitHub PR-gate `#32342936407` er grøn på `e197a196`.
-- PR #1 er fortsat draft og må ikke merges uden ejerens udtrykkelige beslutning.
+- Kandidaten blev afsluttet i `2db2cd2b`, `e197a196`, `3dcd93c6` og `e89778f9`; PR #1 er merged som `b8844841` efter ejerens udtrykkelige godkendelse.
+- `release/RavRadar-4.0.238.zip` er bygget reproducerbart: 972 filer og 13.880.034 byte før denne dokumentationsopfølgning. Den skal genbygges fra slutcommitten.
+- Push-kørsel `#32344813967` bestod central adminhydrering, frisk DMI, fuld validering, releasegate, Supabase og Pages.
+- Support `RavRadar-support-3252`/datasæt `rr-20260820074127-210` viser 210 zoner, de seks tidligere bølgehuller lukket til 118 timer og verificeret historik vokset til 39,594 timer.
+- Live 4.0.238 er browserkontrolleret med nul fejl i 210 zoner, 673 dele, 420 aktuelle paneler og 2.100 femdøgnsvalg samt mobil og desktop.
 
 ## Seneste naturlige evidens
 
-- Produktion #3249 på gammel `main` bestod fuld validering, releasegate, Supabase og Pages, men er ikke kandidatbevis.
-- Naturlig Copernicus-pilot `#32342023293`/artifact #70 har 45 eksakte timer, 28.305 private poster, 625 unikke mål, 629 mål/kilde-par og nul gitter-/lagustabilitet.
+- Readiness-run `#32347036227` sprang korrekt produktionen over uden artifact, fordi UTC-time 08 endnu ikke var komplet.
+- Automatisk Copernicus-pilot `#32347060320`/artifact #72 gjorde time 08 klar og har nu 46 eksakte timer, 28.934 private poster, 625 unikke mål, 629 mål/kilde-par og nul gitter-/lagustabilitet.
 - Piloten er fortsat score-neutral, privat og uden interpolation. Det fulde 168-timersvindue er endnu ikke nået.
 - De 12 reelle hovedzonehuller for verificeret strøm og Feggesunds reelle bølgemangel skal fortsat være `missing`.
 
 ## Næste bindende trin
 
-1. Merge ikke PR #1 uden ejerens udtrykkelige beslutning.
-2. Fortsæt ikke-blokeret naturlig Copernicus-overvågning mod 168 timer og Supabase-forbrugsovervågning.
-3. Efter sikker merge: kør frisk fuld central produktion over et UTC-timeskifte og bevis historik, bølgehuller, DMI-first-hale og alle gates.
-4. Forsøg Browser-pluginet først. Hvis hostfejlen ikke har en konkret løsning, brug den godkendte Playwright/Chromium-fallback og gentag 210/673/420/2.100-kontrollen mod live 4.0.238.
+1. Følg næste kvalificerede naturlige produktion, som starter før og slutter efter et UTC-timeskift; ingen manuel omgåelse af readiness-gaten.
+2. Fortsæt naturlig Copernicus-overvågning fra 46 mod 168 timer og Supabase-forbrugsovervågning.
+3. Fortsæt DEC-0030 med nye uafhængige HARMONIE-, WAM- og DKSS-cyklusser samt de kendte strøm-, bølge- og Limfjordshuller uden kunstig udfyldning.
+4. Commit og push kun den afsluttede dokumentationsopfølgning; stage aldrig de fire beskyttede lokale datafiler eller verifikationsmapperne.
