@@ -168,3 +168,8 @@ Arbejdet tages i P0 -> P1 -> P2 -> P3. Et blokeret naturligt observationspunkt b
 ## 4.0.242 - foreløbige RavScore-vægte
 
 Aktiv kandidat: 25/40/35 efter DEC-0041. Konsekvensauditterne er grønne. Næste gate er fuld validering, browserkontrol og frisk produktion. Ingen komponentregler, tærskler, geometri eller punkter må ændres i dette delmål.
+## Afsluttet roadmap-delmål: foreløbige RavScore-vægte
+
+- 4.0.242 med 25/40/35 er implementeret, merged og produktionsverificeret 2026-08-21.
+- Den fulde browserkontrol og den supplerende score-/forklaringskontrol er grønne.
+- Næste arbejde vælges fra det næste ikke-blokerede punkt efter den foreløbige vægtning; senere empirisk kalibrering kræver repræsentative fund- og nul-fundsture.

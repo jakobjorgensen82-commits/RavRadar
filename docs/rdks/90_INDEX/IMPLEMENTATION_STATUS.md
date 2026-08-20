@@ -1489,3 +1489,10 @@ Status: Implementeret og lokalt valideret.
 - Browser-plugin, desktop og mobilbredde: teknisk indlaesning bestaaet.
 - Frisk 4.0.242-produktionsdata og visuel 25/40/35-konsistens: afventer deploy og er en bindende merge-efterkontrol.
 - Fuld online browserkontrol af 210 zoner og 673 kystdele: afventer det friske 4.0.242-datasat.
+## 4.0.242 afsluttet (2026-08-21)
+
+- Implementeret og produktionsverificeret: 25 % jagtbarhed, 40 % transport og 35 % mobilisering.
+- Kildegate, fuld friskdata-validering, release-gate, deployment, fuld onlinekontrol og mobilkontrol er bestået.
+- 7.560 synlige delscoreforklaringer er kontrolleret for korrekt vægt, delscore og pointbidrag.
+- Den tidligere status om afventende deploy og onlinekontrol er erstattet af dette resultat.
+- Vægtningen forbliver foreløbig, indtil repræsentative fund- og nul-fundsture giver grundlag for kalibrering.

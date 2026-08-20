@@ -169,3 +169,12 @@ Der må ikke flyttes land-/vandpunkter.
 - Browser-pluginet har indlaest 4.0.242 korrekt paa desktop og ved 390 x 844 med zoner, pile, femdoegnsvisning, score og alle tre forklaringsafsnit.
 - Den lokale browsertest brugte det seneste offentlige 4.0.241-datasnapshot. Dets indlejrede forklaringstekster viser derfor fortsat 40/35/25 og er ikke produktionsbevis for den nye vaegtning.
 - Efter merge skal workflowet bygge friske data med 4.0.242. Deployment maa kun godkendes, hvis score, delscorer, bidrag og forklaring stemmer med 25/40/35; derefter koeres den fulde onlinekontrol af 210 zoner og 673 kystdele.
+## Checkpoint efter 4.0.242-produktionsverificering
+
+- PR #28 er merged og produktionsworkflow `32421188352` er grønt på mergecommit `4f3481f272de11554fb64ad602555804f362b715`.
+- 4.0.242 viser og beregner 25/40/35 korrekt.
+- Fuld kontrol: 210 zoner, 673 kystdele, 420 aktuelle visninger, 2.100 prognosevisninger og 7.560 delscoreforklaringer uden fejl.
+- Mobilkontrol ved 390 x 844 er grøn.
+- Browser-pluginet fejlede kun på DNS-opløsning; system-Chromium/Playwright-fallbacken bestod.
+- Ingen geometri eller land-/vandpunkter er flyttet.
+- Fortsæt med næste ikke-blokerede roadmap-punkt. Den foreløbige vægtning skal først genkalibreres, når der findes et repræsentativt grundlag af fund- og nul-fundsture.
