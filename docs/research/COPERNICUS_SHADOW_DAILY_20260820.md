@@ -2,28 +2,29 @@
 
 ## Konklusion
 
-Den naturlige private cache vokser fortsat uden tegn på gitter- eller lagdrift. Pilot `#60` (`32318523452`) indsamlede den nye 00:00 UTC-time og udvidede evidensen fra 37 til 38 gyldige timer. Den forudgående planlagte pilot `#59` var groen og uploadede korrekt intet nyt artifact, fordi samme UTC-time allerede fandtes.
+Den naturlige private cache vokser fortsat uden tegn på gitter- eller lagdrift. Pilot `#62` (`32323819599`) indsamlede den nye 02:00 UTC-time og udvidede evidensen fra 38 til 40 gyldige timer. De naturlige pilot- og preserve-kørsler mellem målingerne var grønne.
 
 ## Måling
 
 | Felt | Resultat |
 |---|---:|
-| Gyldige timer | 38 |
+| Gyldige timer | 40 |
 | Første tid | 2026-08-18 11:00 UTC |
-| Seneste tid | 2026-08-20 00:00 UTC |
-| Shadow-poster | 23.902 |
+| Seneste tid | 2026-08-20 02:00 UTC |
+| Shadow-poster | 25.160 |
 | Unikke mål | 625 |
 | Mål/kilde-par | 629 |
 | Gitterustabile mål/kilde-par | 0 |
 | Lagustabile mål/kilde-par | 0 |
-| Baltic-observationer | 20.976 |
-| AMM15-observationer | 2.926 |
+| Baltic-observationer | 22.080 |
+| AMM15-observationer | 3.080 |
 
 Piloten verificerede 625 af 673 mål inden for 5 km; 48 havde fortsat intet Copernicus-par. Dette er forventet shadowdækning og ændrer ikke den aktive DMI-first-livekæde. `scoreImpact=false`, `publicRuntime=false`, retention er 168 timer, og interpolation er deaktiveret.
 
 ## Drift
 
-- Pilot `#60` var groen med ny 00 UTC-time; den forudgående planlagte dubletkontrol `#59` var groen uden nyt artifact.
+- Pilot `#62` var groen med ny 02 UTC-time; den mellemliggende naturlige pilot `#61` var også groen.
+- Produktionsrun `#3244` bestod current-hour readiness og sprang korrekt både `build-and-prepare` og deploy over; det skabte intet nyt produktionsartifact.
 - Preserve `#153` og workflow-run-preserve `#154` var grønne.
 - Den samtidige naturlige produktion `#3237` bestod current-hour readiness, hele `build-and-prepare` og Pages-deploy. Den efterfølgende fulde livebrowseraudit var grøn på datasæt `rr-20260819213342-210`.
 - Der er ikke fremkaldt ekstra pilot- eller produktionsruns.
