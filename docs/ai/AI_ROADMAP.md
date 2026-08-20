@@ -46,6 +46,12 @@
 - Preflight-runs `#3239`, `#3241`, `#3243` og `#3244` sprang korrekt build/deploy over. Der er ikke observeret samtidig tung produktion eller Pages-koe i dette udsnit.
 - Issuet forbliver aktivt. Naeste langsomme fulde build skal profileres pr. trin; DMI-, marine-, 673/673-, validerings- og releasekrav maa ikke svaekkes som genvej.
 
+## Aktiv P1 - state-shadow over flere produktionstimer
+
+- `#3240` har 4/4 verificerede referencezoner, 4/4 shadow-states og nul numerisk scorepaavirkning.
+- Alle fire har 15 verificerede current-timer og 8 uverificerede samples; `activeCurrentRegime=unavailable` er derfor korrekt fail-closed.
+- Potentialerne varierer mellem zonerne, men checkpointet er ikke kalibrerings- eller scorebevis. Fortsat naturlig drift og fysisk forklarlige overgange afventes.
+
 ## Produktionsverificeret P1 – én komplet aktuel time inden for hver zone
 
 1. **Rodårsag afgrænset:** 673/673-kildegaten var gyldig, men den hidtidige runtime valgte hver dels nærmeste gyldige række uafhængigt. Den offentlige selector kunne samtidig foretrække en nærmere, ufuldstændig zonerække.
