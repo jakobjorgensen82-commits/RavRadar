@@ -1463,4 +1463,4 @@ Status: Implementeret og lokalt valideret.
 - [x] Automatisk kildekontrol er tilføjet.
 - [x] Målrettede tests, validate:source og release-gate.
 - [x] Lokal Browser-kontrol af aktuel visning og fem-døgnsvisning på desktop og mobil.
-- [ ] PR, merge, frisk produktionsdatagate og produktionsverifikation.
+- [x] PR #23, merge, frisk produktionsdatagate, deploy, direkte kildekontrol og systematisk onlineaudit.

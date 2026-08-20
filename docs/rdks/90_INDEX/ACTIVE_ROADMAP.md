@@ -156,5 +156,5 @@ Arbejdet tages i P0 -> P1 -> P2 -> P3. Et blokeret naturligt observationspunkt b
 ## P1 - 4.0.240 jagtbarhed og sikkerhed
 
 - Adskil jagtbarhed og sikkerhed i brugerflade og håndbog uden at ændre score eller geometri.
-- Lokale kilde-/releasegates og Browser-kontrol er grønne; luk delmålet efter PR-gate, merge og produktionsverifikation.
+- Delmålet er lukket i produktion efter PR #23, frisk produktionsdatagate og fejlfri onlineaudit af 210 zoner og 673 kystdele.
 - Næste RavScore-implementering er kontrolleret bølgeinput på alle 673 kystdele efter særskilt beslutning og regressionstest.

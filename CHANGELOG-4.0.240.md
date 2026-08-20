@@ -16,4 +16,4 @@
 
 ## Validering
 
-- Målrettet kopikontrol, RDKS-validering, fuld validering, release-gate og browserkontrol køres før merge.
+- validate:source og release-gate bestod lokalt og i PR-gaten. Efter merge bestod frisk fuld produktionsvalidering, deploykontrol og systematisk onlineaudit af 210 zoner, 673 kystdele, 420 aktuelle visninger og 2100 femdøgnsvisninger uden fejl.

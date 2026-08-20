@@ -440,7 +440,8 @@ Den planlagte P3-forskning må undersøge, om rumlige strømstrukturer har selvs
 +- Den permanente følsomhedsaudit er merged og produktionsverificeret uden aktiv scoreændring.
 +- Fuld 210/673-browseraudit er grøn på det eksakte fase C-deploy.
 +- Fase D er afsluttet med evidensmatrix, syntetisk afprøvning og national audit; den offentlige score er endnu uændret.
-+- Næste sikre implementering er at adskille jagtbarhed og sikkerhed i brugerforklaringerne, før bølgeinput indføres i selve scoren.
++- Jagtbarhed og sikkerhed er adskilt og produktionsverificeret i 4.0.240 uden scoreændring.
+- Næste sikre RavScore-implementering er kontrolleret bølgeinput med regressionstest og national audit før vægte eller tærskler ændres.
 ## RavScore phase D - candidate and calibration gate
 - Candidate design is documented and score-neutral.
 - Use B0 as exact production control; keep C1-C3 shadow-only.

@@ -1601,3 +1601,4 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Startet som et lille, score-neutralt delmål efter RavScore fase D.
 - Brugerforklaringen, begge håndbøger og en automatisk kopikontrol er opdateret.
 - Ingen land-/vandpunkter eller scoreparametre er ændret.
+- PR #23 blev merged som 961beab1; produktionen bestod frisk fuld validering, release-gate og onlineaudit af 210 zoner/673 kystdele uden fejl.
