@@ -114,4 +114,3 @@ node scripts/audit-ravscore-observed-ablation.mjs <sti-til-public-condition-deta
 ```
 
 Den fulde audit skriver kun aggregeret JSON til standardoutput og ændrer ingen produktionsdata.
-

@@ -83,4 +83,3 @@ Den næste sikre produktændring er en datakontrakt, ikke en scoreændring:
 5. Vis en dækningsrapport i admin, mens kalibreringslåsen forbliver aktiv.
 
 Først efter reel dækning træffes en ny beslutning om numeriske minimumskrav og eventuel kandidattilpasning.
-

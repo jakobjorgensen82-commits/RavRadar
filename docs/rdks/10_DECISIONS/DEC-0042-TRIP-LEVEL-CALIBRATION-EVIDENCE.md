@@ -1,6 +1,6 @@
 # DEC-0042: Tripniveau er kalibreringsenheden
 
-**Status:** Gældende  
+**Status:** Gældende
 **Dato:** 2026-08-21
 
 ## Beslutning
@@ -34,4 +34,3 @@ Den observerede 4.0.242-audit viser desuden en gennemsnitlig forskel på 6,67 po
 - `docs/research/RAVSCORE_PHASE_D_OBSERVED_ABLATION_4.0.242.md`
 - `docs/research/RAVSCORE_TRIP_CALIBRATION_PROTOCOL.md`
 - `docs/research/RAVSCORE_PHASE_D_CANDIDATE_MODELS.md`
-
