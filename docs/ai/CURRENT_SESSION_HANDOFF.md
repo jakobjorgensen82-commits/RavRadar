@@ -5,6 +5,7 @@
 - Faktisk live DOM-/kliktest er grøn på 4.0.237 og senest datasæt `rr-20260819213342-210` efter naturlig produktion `#3237`.
 - DEC-0030 er eftermaalt read-only paa supportartifactet fra samme koersel. WAM 18Z og DKSS 12Z er nye uafhaengige beviser; HARMONIE 12Z er delvist indfaset. Det kompatible `controlled-live`-historikvindue starter ved 4.0.232-aktiveringen og er 28,903 timer, saa 72-timers-exitkriteriet er ikke naaet. Se `docs/research/P1_COMPONENT_TRANSITIONS_4.0.237_RUN3237.md`.
 - Naturlig `#3242` afsloer et efterfoelgende historikmatchproblem: raa historik voksede til 30,903 timer, men verificeret spaend stod paa 22,563 timer, fordi proeven bruger `productionReferenceAt` og efterberigelsen brugte `generatedAt`. Rettelsen og maalrettede tests er groenne; frisk central produktion mangler. Se `docs/research/P1_HISTORY_REFERENCE_FIX_4.0.237.md`.
+- Rettelsen er pushed og ligger i draft-PR `#1` (`Fix verified history reference hour`). GitHub rapporterer ingen automatiske checks paa featuregrenen. PR'en er derfor ikke produktionsverificeret og maa ikke beskrives som deployet.
 - 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdøgnsvisninger er kontrolleret med 0 mismatch i score, farve, pile, forklaringer, lokal kontekst og debug-ID.
 - Browser-pluginets trusted-code-path fejlede før navigation; den godkendte Chromium-fallback blev brugt.
 - Eneste HTTP-fejl var manglende favicon. Der var ingen page errors.
