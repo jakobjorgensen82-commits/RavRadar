@@ -1589,3 +1589,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - PR #19, commit `7f293a83`, lod readiness beregne target hour for alle normale produktionsbyg uden at ændre den timed cacheblokering. Merge-commit: `c73a10d32f2aab15c63787ecb71893fd9275bbf6`.
 - Produktion `32379229853` beholdt 14:00 UTC gennem alle trin, rapporterede 673/673 scoreklare dele, bestod den fulde 673/673-audit og deployede præcis merge-committen.
 - Ingen koordinater, kildeprioriteter eller scoreberegninger blev ændret.
+
+## 2026-08-20 - server-side observationsprivacy forberedt
+- Audit viste, at den centrale `observations.gps`-kolonne og eksisterende insert-policies teknisk kunne acceptere GPS fra en direkte REST-klient, selv om RavRadar-browseren allerede redigerer GPS væk.
+- Der blev forberedt en idempotent `NOT VALID` constraint og skærpede anon/authenticated policies. De blokerer nye GPS-/lokationsfelter uden at ændre historiske rækker.
+- `test:observation-db-privacy` låser klientredaktion, SQL-kontrakt, ingen historisk `UPDATE`/`DELETE`/`TRUNCATE` og placering i pre-DMI-gaten.
+- Produktionsstatus for SQL forbliver åben, indtil migration og målrettet Supabase-verifikation er gennemført.

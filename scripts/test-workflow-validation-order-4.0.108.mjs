@@ -28,6 +28,7 @@ const sourceValidation = packageJson?.scripts?.['validate:source'] || '';
 for (const marker of [
   'npm run validate:rdks',
   'npm run test:feedback-learning',
+  'npm run test:observation-db-privacy',
   'npm run test:adaptive-prediction',
   'npm run test:admin-feature-reachability',
   'npm run test:current-transport-history',

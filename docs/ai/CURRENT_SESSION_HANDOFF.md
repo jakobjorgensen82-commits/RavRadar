@@ -134,3 +134,10 @@ Der må ikke flyttes land-/vandpunkter.
 - Alle normale produktionsbyg er låst til readiness-jobbets UTC-time, også push/force. Timed schedule/ikke-forceret dispatch er fortsat de eneste triggere, der kan udsættes ved cachemangel.
 - Seneste bevis: 673/673 scoreklare dele fra låst time og 673/673 i den fulde audit. Ingen land-/vandpunkter blev flyttet.
 - Næste opgave: RavScore fase D-observationsdækning/evidensgate. Bevar GPS-redaktion, kalibreringslås og produktionsmodel B0.
+
+## Fase D privacy-checkpoint - source
+- Aktiv branchdel ændrer kun Supabase-schema/migration og tests; ingen historiske observationsrækker eller land-/vandpunkter ændres.
+- Migration: `supabase/migrations/20260820_observation_remote_privacy.sql`.
+- Source-gate: `npm run validate:source` inkluderer `test:observation-db-privacy` og er grøn.
+- Efter merge må SQL ikke beskrives som produktionsaktiv, før den centrale migration og en sikker positiv/negativ insert-verifikation er bestået.
+- Rå observationspayloads, direkte identiteter og GPS må ikke skrives i PR, log eller supportartifact.
