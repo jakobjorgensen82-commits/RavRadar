@@ -178,3 +178,11 @@ Der må ikke flyttes land-/vandpunkter.
 - Browser-pluginet fejlede kun på DNS-opløsning; system-Chromium/Playwright-fallbacken bestod.
 - Ingen geometri eller land-/vandpunkter er flyttet.
 - Fortsæt med næste ikke-blokerede roadmap-punkt. Den foreløbige vægtning skal først genkalibreres, når der findes et repræsentativt grundlag af fund- og nul-fundsture.
+## Fase D handoff efter observeret ablation
+
+- Branch: `codex/ravscore-phase-d-observed-ablation` fra main `2226bef5`.
+- Nyt værktøj: `scripts/audit-ravscore-observed-ablation.mjs`; real audit på `rr-20260820220004-210` er grøn med 0 kontraktfejl.
+- Hovedfund: 6,67 points zonevinderbias, aktuel strandjagtbarhed fast 75, transport-/mobiliseringskorrelation 0,69-0,74 og nul aktiv bølgejustering i snapshotet.
+- DEC-0042 og tripprotokollen afviser enkeltfund som fit-enhed.
+- Næste kodeopgave er tripkontrakten: faktisk start/slut, søgetid, jagtform, lokal del, dækningsgrad og immutable forecast-link; præcis GPS forbliver lokal.
+- Aktiv score, 25/40/35, regler, geometri og punkter er uændrede.

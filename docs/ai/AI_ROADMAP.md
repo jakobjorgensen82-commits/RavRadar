@@ -479,3 +479,9 @@ Den planlagte P3-forskning må undersøge, om rumlige strømstrukturer har selvs
 - Kandidaten kræver konsekvensaudit, source-/release-gate, browserkontrol og frisk produktion før aktivering.
 
 - National vægtaudit på rr-20260820204808-210 dækker 673 dele og 42.846 scoreposter. De 420 viste zoner falder i gennemsnit 6,314 point; 7 skifter vindende del. Effekten accepteres som foreløbig reduktion af jagtbarhedsdominans, ikke som fundkalibrering.
+## Aktiv fase D efter 4.0.242
+
+- Observerede produktionsfordelinger og komponentablation er gennemført score-neutralt.
+- En tur, ikke et enkeltfund, er kalibreringsenheden efter DEC-0042.
+- Næste kodeopgave er dataminimeret tripkontrakt og coverage-only rapport. Bevar GPS-redaktion, tomme scoreforslag, 25/40/35, geometri og alle land-/vandpunkter.
+- Ingen kandidat må fittes eller aktiveres, før tripdækning, event-/geografihold-out og ejerbeslutning er dokumenteret.

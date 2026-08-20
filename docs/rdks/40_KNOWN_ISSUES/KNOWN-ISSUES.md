@@ -402,3 +402,9 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 ## Foreløbige RavScore-vægte kræver senere kalibrering
 
 25/40/35 i DEC-0041 er en forskningsbaseret prior og ikke en empirisk dansk fundkalibrering. Revurdering kræver mindst cirka seks måneders brugbare ture med både fund og reelle nul-fund; enkelte fund må ikke bruges som genvej.
+## Åben: eksisterende tripobservationer er ikke kalibreringsklare
+
+- Den aktuelle formular gemmer dato/zone/Ja-Nej/gram, men ikke faktisk lokal kystdel, søgetid, dækningsgrad eller stabil prognosereference.
+- `observed_at` sættes til kl. 12 på valgt dato, og jagtformen kan komme fra appens senere tilstand frem for turstart.
+- Eksisterende rækker bevares og må bruges coverage-only. De må ikke bruges til koefficientfit uden fuldt feltbevis.
+- Løsningen er den dataminimerede tripkontrakt i DEC-0042; præcis GPS må fortsat ikke sendes centralt.

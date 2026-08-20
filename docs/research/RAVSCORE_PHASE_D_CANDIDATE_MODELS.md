@@ -158,3 +158,8 @@ Implement an internal, non-public observation intake and immutable forecast-snap
 
 ## 4.0.239 implementation guard
 The existing browser-side learning analysis previously produced actionable metric patches from a minimum of 12 rows with four outcomes in each class. Version 4.0.239 replaces that behavior with a coverage-only report and an explicit calibration lock. Existing active/local model versions remain untouched; new observation-driven patches require the full phase D gate.
+# Observeret fase D-checkpoint, 2026-08-21
+
+Den score-neutrale produktionsaudit af 4.0.242 dækker 41.116 zonevinderposter og 1.346 aktuelle kystdel-/jagtformposter. Den viser blandt andet 6,67 points zonevinderbias, næsten konstant aktuel strandjagtbarhed og 0,69-0,74 korrelation mellem transport og mobilisering. Se `RAVSCORE_PHASE_D_OBSERVED_ABLATION_4.0.242.md`.
+
+DEC-0042 fastslår, at næste kalibreringsenhed er en komplet tur med indsats, faktisk kystdel og uforanderligt prognosesnapshot. Enkeltfund og ufuldstændige historiske observationer må ikke bruges til koefficientfit.

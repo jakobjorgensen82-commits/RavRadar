@@ -1160,3 +1160,11 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - Den fulde onlinekontrol bestod 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 prognosevisninger uden fejl.
 - En supplerende kontrol bestod alle 7.560 viste vægt- og bidragsforklaringer samt mobilvisning ved 390 x 844.
 - Tidligere status om afventende 4.0.242-produktionskontrol er dermed erstattet. Se `docs/research/RAVSCORE_PROVISIONAL_WEIGHTS_4.0.242_PRODUCTION_AUDIT.md`.
+## RavScore fase D observeret checkpoint, 2026-08-21
+
+- Den reproducerbare score-neutrale audit dækker 41.116 produktionsposter og 1.346 aktuelle kystdel-/jagtformposter fra `rr-20260820220004-210`.
+- Zonevinderen ligger gennemsnitligt 6,67 point over alle aktuelle kystdele; kalibrering kræver derfor faktisk kystdel.
+- Aktuel strandjagtbarhed er 75 i alle 673 dele. Transport og mobilisering korrelerer 0,69-0,74 og kræver senere kontrolleret overlapstest.
+- Ingen god aktuel zonevinder har et fysisk led under 35. 25/40/35 forbliver den foreløbige produktionsprior.
+- DEC-0042 gør hele ture med indsats og uforanderligt prognosesnapshot til kalibreringsenheden. Enkeltfund er ikke fit-bevis.
+- Kalibreringslåsen er fortsat aktiv; ingen scoreadfærd er ændret.
