@@ -33,7 +33,13 @@ Kontrollen måler den aktive, begrænsede bølgeeffekt isoleret fra den planlagt
 Den aktive prior er konservativ i de aktuelle forhold, reagerer i den forventede retning i det syntetiske rum og overholder alle aftalte lofter. Resultatet er go til fulde gates og browserkontrol. Det er ikke i sig selv en lokal kalibrering af bundfysik eller en tilladelse til at ændre vægte samtidig.
 
 ## Lokal browserkontrol før PR
-- Browser-pluginet indlæste lokal 4.0.241-kode med det friske offentlige datasæt r-20260820181214-210 fra et grønt Pages-artefakt.
+- Browser-pluginet indlæste lokal 4.0.241-kode med det friske offentlige datasæt
+r-20260820181214-210 fra et grønt Pages-artefakt.
 - Desktop viste rangliste, 5-døgnsprognose, pile, lokal kystdel, RavScore og transportforklaring uden konsol-, side- eller HTTP-fejl.
 - System-Chrome/Playwright-fallback bestod ved 390 x 844 px uden vandret overløb, manglende data, manglende ressourcer eller skjult transportforklaring.
 - Den fulde systematiske onlineaudit af 210 zoner og 673 kystdele udføres efter deploy, fordi produktionssiden før merge fortsat bruger 4.0.240.
+## Produktionscheckpoint
+- Featurecommit: `ae4c86c6`; PR #25; mergecommit: `eb66b280`.
+- Produktion `#32405699346` bestod frisk data, fuld projektvalidering, release-gate, Supabase, Pages-build og deploy.
+- Direkte Pages-kontrol returnerede version 4.0.241 og den aktive import/anvendelse af den begrænsede bølgejustering.
+- Resterende gate: systematisk onlineaudit af 210 zoner og 673 kystdele.

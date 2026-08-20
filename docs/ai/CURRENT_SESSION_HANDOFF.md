@@ -153,6 +153,6 @@ Der må ikke flyttes land-/vandpunkter.
 
 - Arbejdsbranch: codex/ravscore-active-wave-approach.
 - Kernen, forklaringen, fallbacken og testværktøjerne er implementeret.
-- Syntetisk og national public-audit, `validate:source`, release-gate og lokal desktop-/mobilbrowserkontrol er grøn; PR-gate, frisk produktionsvalidering, onlineaudit og produktion mangler.
+- Featurecommit `ae4c86c6` er merged via PR #25 som `eb66b280`. Produktion `#32405699346` bestod frisk data, fuld validering, release-gate, Supabase, Pages-build og deploy; direkte Pages-kontrol viser 4.0.241 og den aktive bølgejustering. Kun den systematiske onlineaudit efter deploy mangler.
 - Næste delmål efter stabil produktion er den særskilte vægtændring 25/40/35.
 - Flyt ingen land-/vandpunkter, og beskyt fortsat de fire dirty datafiler.

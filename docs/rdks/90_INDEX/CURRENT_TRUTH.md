@@ -1142,4 +1142,4 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - Justeringen er begrænset til plus/minus 12 transportpoint og sker før eksisterende fralandsstrømlofter.
 - Manglende bølgeinput eller lokal pålandsretning giver nul effekt.
 - Vægte, øvrige tærskler, pilekonventioner, data og geometri er uændrede.
-- Syntetisk audit holdt transport inden for plus/minus 12 og samlet score inden for plus/minus 5. National public-audit gav minus 1 til plus 1, ingen farveskift og sikker fallback ved én manglende periode. `validate:source`, release-gate og lokal desktop-/mobilbrowserkontrol er grøn; PR-gate, frisk produktionsvalidering, onlineaudit og produktion mangler.
+- Syntetisk audit holdt transport inden for plus/minus 12 og samlet score inden for plus/minus 5. National public-audit gav minus 1 til plus 1, ingen farveskift og sikker fallback ved én manglende periode. PR #25 er merged som `eb66b280`. Produktion `#32405699346` bestod frisk data, fuld validering, release-gate, Supabase, Pages-build og deploy; direkte Pages-kontrol viser 4.0.241 og den aktive bølgejustering. Den systematiske onlineaudit efter deploy mangler.

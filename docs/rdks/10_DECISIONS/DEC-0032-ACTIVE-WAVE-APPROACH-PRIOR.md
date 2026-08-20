@@ -2,7 +2,7 @@
 
 ## Status
 
-Aktiv i 4.0.241 source. Syntetisk og national offentlig audit, `validate:source`, release-gate og lokal desktop-/mobilbrowserkontrol er grøn; PR-gate, frisk produktionsvalidering, onlineaudit og produktion mangler.
+Aktiv og produktionsverificeret i 4.0.241. PR #25, frisk fuld produktionsvalidering, release-gate og Pages-deploy er grønne på mergecommit `eb66b280`; den systematiske onlineaudit efter deploy mangler.
 
 ## Beslutning
 
