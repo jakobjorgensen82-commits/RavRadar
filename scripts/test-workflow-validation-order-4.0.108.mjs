@@ -34,6 +34,7 @@ for (const marker of [
   'npm run test:production-hour-lock',
   'npm run test:dmi-acquisition',
   'npm run test:dmi-bulk-forecast-integration',
+  'npm run test:live-current-pilot',
   'npm run test:water-source-production-chain',
   'npm run test:workflow-action-contracts',
   'node --check scripts/audit-online-browser-playwright-4.0.237.mjs',
