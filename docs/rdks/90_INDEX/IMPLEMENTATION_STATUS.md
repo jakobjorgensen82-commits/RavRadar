@@ -1,5 +1,7 @@
 # Implementeringsstatus – 4.0.237 produktionsverificeret
 
+> **Aktiv opgavestyring:** Se `ACTIVE_ROADMAP.md`. Aeldre tomme afkrydsningsbokse i denne fil er historisk revisionsspor og er kun aktive, hvis de ogsaa findes i det aktive roadmap.
+
 ## Online browseraudit 2026-08-20
 
 - [x] Reproducerbar liveaudit: `scripts/audit-online-browser-4.0.237.py`.
