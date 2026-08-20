@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { calculateRavScore, SCORE_WEIGHTS } from '../js/core/score-engine.js';
+import { compareScoreCandidates, SCORE_CANDIDATE_WEIGHTS } from '../js/core/score-candidates.js';
 
 const selfTest = process.argv.includes('--self-test');
 const clone = value => structuredClone(value);
@@ -39,11 +40,13 @@ function setPath(context, path, value) {
 
 function calculate(context) {
   const result = calculateRavScore(context);
+  const candidates = compareScoreCandidates(result);
   return {
     available: result.available,
     score: result.score,
     level: result.level,
     components: result.available ? result.components : null,
+    candidateScores: candidates.available ? candidates.scores : null,
     dominantPathway: result.explanation?.mobilisationDiagnostics?.dominantPathway || null,
     caps: result.explanation?.transportDiagnostics?.capsApplied?.map(cap => cap.reason) || [],
   };
@@ -226,7 +229,7 @@ function scenarioGrid(mode) {
                     Object.assign(context.history, { maxWind24hMps: maxWind, maxWave24hM: maxWave, hoursSinceHighEnergy: eventAge });
                     Object.assign(context.zone, { shallowWater: coastFeatures, reefs: coastFeatures, seagrass: coastFeatures, coastType: coastFeatures ? 'west' : 'east' });
                     const result = calculate(context);
-                    rows.push({ score: result.score, ...result.components });
+                    rows.push({ score: result.score, ...result.components, candidateScores: result.candidateScores });
                   }
   const scores = rows.map(row => row.score);
   const componentRange = component => {
@@ -238,6 +241,27 @@ function scenarioGrid(mode) {
     const level = row.score >= 75 ? 'good' : row.score >= 55 ? 'fair' : row.score >= 35 ? 'weak' : 'poor';
     levels[level] += 1;
   }
+  const scoreLevel = score => score >= 75 ? 'good' : score >= 55 ? 'fair' : score >= 35 ? 'weak' : 'poor';
+  const candidateIds = ['b0', 'phaseDAdditive', 'equalAdditive', 'phaseDChain'];
+  const candidateComparisons = Object.fromEntries(candidateIds.map(id => {
+    const candidateScores = rows.map(row => row.candidateScores[id]);
+    const deltas = rows.map((row, index) => candidateScores[index] - row.score);
+    return [id, {
+      minimum: Math.min(...candidateScores),
+      maximum: Math.max(...candidateScores),
+      mean: round(candidateScores.reduce((sum, value) => sum + value, 0) / candidateScores.length),
+      meanDeltaFromB0: round(deltas.reduce((sum, value) => sum + value, 0) / deltas.length),
+      lowerThanB0: deltas.filter(value => value < 0).length,
+      equalToB0: deltas.filter(value => value === 0).length,
+      higherThanB0: deltas.filter(value => value > 0).length,
+      changedLevel: rows.filter((row, index) => scoreLevel(candidateScores[index]) !== scoreLevel(row.score)).length,
+      correlationToB0: round(pearson(rows.map((row, index) => ({ b0: row.score, candidate: candidateScores[index] })), 'b0', 'candidate')),
+    }];
+  }));
+  const candidateSpread = rows.map(row => {
+    const candidateScores = Object.values(row.candidateScores);
+    return Math.max(...candidateScores) - Math.min(...candidateScores);
+  });
   return {
     mode,
     scenarios: rows.length,
@@ -258,6 +282,12 @@ function scenarioGrid(mode) {
       transportFinal: round(pearson(rows, 'transport', 'score')),
       releaseFinal: round(pearson(rows, 'release', 'score')),
     },
+    candidateComparisons,
+    candidateDisagreement: {
+      maximumSpread: Math.max(...candidateSpread),
+      scenariosAtLeast10PointsApart: candidateSpread.filter(value => value >= 10).length,
+      scenariosAtLeast20PointsApart: candidateSpread.filter(value => value >= 20).length,
+    },
     levels,
   };
 }
@@ -274,6 +304,14 @@ function buildAudit() {
     scoreImpact: 'none',
     method: 'synthetic deterministic sensitivity audit; not observational calibration',
     activeWeights: SCORE_WEIGHTS,
+    candidateDefinitions: {
+      ...SCORE_CANDIDATE_WEIGHTS,
+      phaseDChain: {
+        huntabilityShare: 25,
+        physicalShare: 75,
+        physicalMethod: 'weighted-harmonic-transport-40-mobilisation-35',
+      },
+    },
     baseline: Object.fromEntries(modes.map(mode => [mode, calculate(baseContext(mode))])),
     thresholdSummary: {
       rows: thresholds.length,
@@ -294,6 +332,8 @@ function buildAudit() {
       'Synthetic correlations describe the score formula, not nature or amber finds.',
       'A threshold jump identifies a discontinuity that needs validation; it is not evidence that the threshold is wrong.',
       'Non-additivity can come from clamping, rounding, caps, maximum-path selection or explicit synergy.',
+      'Candidate comparisons reuse B0 components and therefore test score structure, not revised physical rules.',
+      'The harmonic chain is a diagnostic soft-gate candidate, not an approved production formula.',
       'No result authorises production score changes.',
     ],
   };
@@ -306,10 +346,19 @@ if (selfTest) {
   assert.equal(audit.overlaps.length, 8);
   assert.equal(audit.grids.length, 2);
   assert.ok(audit.grids.every(grid => grid.scenarios === 43200));
+  assert.ok(audit.grids.every(grid => Object.keys(grid.candidateComparisons).length === 4));
   assert.equal(audit.baseline.waders.available, true);
   assert.equal(audit.baseline.beach.available, true);
   assert.equal(audit.missingInputs.find(row => row.mode === 'waders' && row.input === 'wind').available, false);
   assert.ok(audit.thresholdSummary.rowsWithFinalScoreJump > 0);
+  const missingMobilisation = compareScoreCandidates({
+    available: true,
+    score: 65,
+    components: { huntability: 100, transport: 100, release: 0 },
+  });
+  assert.equal(missingMobilisation.scores.phaseDAdditive, 65);
+  assert.equal(missingMobilisation.scores.phaseDChain, 25);
+  assert.equal(missingMobilisation.physicalChainScore, 0);
   console.log('OK: RavScore sensitivity audit is deterministic, score-neutral and complete.');
 } else {
   console.log(JSON.stringify(audit, null, 2));
