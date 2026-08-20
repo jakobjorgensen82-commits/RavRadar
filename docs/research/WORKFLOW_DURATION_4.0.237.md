@@ -56,7 +56,16 @@ Den senere fulde produktion brugte 386 sekunder i DMI bulk mod 797 i `#3240`, en
 
 Den progressive collection-cache fjernede dermed den dyre gentagelse af hele `wam_dw` og halverede DMI-tiden. Samtidig viser det foerste genbrugte NSB-trin, at foerste-step-parsning/initialisering er en selvstaendig omkostning, ikke kun netvaerksdownload.
 
-Varighedsissuet forbliver aktivt. Der aendres ikke paa DMI-budgetter, collection-raekkefoelge, cache, marine audits, 673/673-gate, validering eller releasegate alene for at reducere tiden. Naeste meningsfulde trin er at profilere foerste-step-initialisering i en senere collection uden at aendre datakrav eller progressiv prioritering.
+## Naturlig fuld produktion #3245
+
+Det efterfoelgende fulde build brugte 7,88 minutter. DMI bulk faldt videre til 168 sekunder:
+
+- 56,5 % under `#3242` paa 386 sekunder
+- 78,9 % under `#3240` paa 797 sekunder
+
+Weather update var 73 sekunder, fuld validering 48 sekunder og hydrering 39 sekunder, omtrent samme niveau som de tidligere runs. Den store variation ligger fortsat i DMI bulk og foelger progressiv model-/cachefremdrift.
+
+Varighedsissuet nedgraderes til overvågning, ikke lukket: nyere cacheprogression giver nu et fuldt build under otte minutter, men en ny WAM-cyklus har dokumenteret 18,45 minutter. Der aendres ikke paa DMI-budgetter, collection-raekkefoelge, cache, marine audits, 673/673-gate, validering eller releasegate alene for at reducere tiden.
 
 ## GitHub Actions runtime-advarsel
 

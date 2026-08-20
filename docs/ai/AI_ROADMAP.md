@@ -47,7 +47,7 @@
 - `#3240` er profileret pr. trin: DMI bulk brugte 797 sekunder, cirka 72 % af hele buildet; naeste trin var weather update 72 sekunder, validering 50 og hydrering 40.
 - DMI-loggen viser hele `wam_dw` 47/47 paa 559 sekunder og progressiv `wam_nsb` 21/46; de viste assets var downloads, og et trin efter 780-sekunders arbejdsbudget blev korrekt ikke talt som gemt.
 - `#3242` faldt til 386 sekunders DMI bulk, 51,6 % under `#3240`: faerdig `wam_dw` blev ikke gentaget, tre HARMONIE-trin blev hentet, og `wam_nsb` fortsatte fra 22 til 46/46.
-- Issuet forbliver aktivt omkring foerste-step-initialisering; DMI-, marine-, 673/673-, validerings- og releasekrav maa ikke svaekkes som genvej.
+- Naturlig fuld `#3245` faldt videre til 168 sekunders DMI bulk og 7,88 minutters samlet build. Issuet er nu overvågning af nye modelcyklusser, ikke grund til at svaekke DMI-, marine-, 673/673-, validerings- eller releasekrav.
 
 ## Aktiv P1 - state-shadow over flere produktionstimer
 
