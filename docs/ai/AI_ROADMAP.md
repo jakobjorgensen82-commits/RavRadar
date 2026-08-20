@@ -3,7 +3,7 @@
 ## Afsluttet P1 - systematisk online browserkontrol 2026-08-20
 
 - [x] Browser-plugin forsøgt først og diagnosticeret til trusted-code-path-fejl; ejer-godkendt Chromium-fallback anvendt.
-- [x] Live 4.0.237 og senest datasæt `rr-20260819213342-210` fra grøn naturlig produktion `#3237` kontrolleret i 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdøgnsvisninger.
+- [x] Live 4.0.237 er senest gentaget grønt med Playwright/system-Chrome paa datasæt `rr-20260819235244-210` fra naturlig produktion `#3242`: 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdøgnsvisninger.
 - [x] Score, label, farveniveau, vind-/strømpile, komponent- og kystforklaringer, lokal vinderkontekst og debug-ID havde 0 mismatch.
 - [x] Ingen land-/vandpunkter, geometri, U/V, score, kilder eller live-data blev ændret.
 - Næste aktive driftspunkt er fortsat højst daglig eftermåling af den naturlige syvdøgnscache. DEC-0030 fortsætter først, når en ny relevant modelcyklus giver selvstændig evidens.
