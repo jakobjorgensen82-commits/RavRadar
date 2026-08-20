@@ -22,6 +22,10 @@ Turens repræsentative observationstid er midtpunktet mellem start og slut. Derm
 
 Ved turstart fastholdes en lille prognosereference fra det allerede indlæste manifest og datasæt. Referencen indeholder kun datasæt-id, udstedelsestid, gyldighedstid og hentetid. Den indeholder hverken rå vejrdata eller følsomme brugerdata, og manifest og prognose skal have samme datasæt-id.
 
+Der fastholdes desuden et lille, eksplicit tilladt sæt kalibreringstal: den viste total og de tre delscorer samt de centrale vind-, bølge-, strøm-, vandstands- og hændelsesmål. Der gemmes retning og fart, ikke rå U/V-komponenter eller komplette diagnostikpayloads. Det gør turen analyserbar efter et halvt år, selv hvis det gamle live-datasæt ikke længere er tilgængeligt.
+
+Zone og kystdel ved turstart gemmes adskilt fra den kystdel, brugeren bagefter bekræfter at have afsøgt. Hvis de ikke er ens, bevares turen som dækningsdata, men `calibrationEligible` bliver falsk. Dermed lærer modellen ikke af et vejrsnapshot fra det forkerte sted.
+
 ## Dataminimering
 
 GPS-punkter, ruter, koordinater og spor indgår ikke i fjernkontrakten. Den faktiske kystdel er præcis nok til faglig kalibrering og langt mindre følsom end brugerens bevægelsesspor. Lokale historiske ruter ændres eller slettes ikke af denne kontrakt.

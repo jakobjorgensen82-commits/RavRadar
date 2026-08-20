@@ -9,11 +9,15 @@ alter table public.ravradar_observations
   add column if not exists search_minutes integer,
   add column if not exists search_coverage text,
   add column if not exists coastal_part_id text,
+  add column if not exists forecast_zone_id text,
+  add column if not exists forecast_coastal_part_id text,
+  add column if not exists calibration_eligible boolean,
   add column if not exists found boolean,
   add column if not exists forecast_snapshot_id text,
   add column if not exists forecast_issued_at timestamptz,
   add column if not exists forecast_valid_at timestamptz,
-  add column if not exists forecast_captured_at timestamptz;
+  add column if not exists forecast_captured_at timestamptz,
+  add column if not exists calibration_features jsonb;
 
 do $$
 begin
@@ -42,11 +46,18 @@ begin
           and search_minutes between 1 and 1440
           and search_coverage in ('partial', 'normal', 'thorough')
           and coastal_part_id is not null
+          and forecast_zone_id is not null
+          and forecast_coastal_part_id is not null
+          and calibration_eligible = (
+            zone_id = forecast_zone_id
+            and coastal_part_id = forecast_coastal_part_id
+          )
           and found is not null
           and forecast_snapshot_id is not null
           and forecast_issued_at is not null
           and forecast_valid_at is not null
           and forecast_captured_at is not null
+          and jsonb_typeof(calibration_features) = 'object'
           and forecast_issued_at <= forecast_captured_at
           and forecast_captured_at <= trip_started_at + interval '5 minutes'
         )

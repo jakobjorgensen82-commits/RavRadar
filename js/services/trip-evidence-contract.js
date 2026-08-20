@@ -5,6 +5,24 @@ export const TRIP_SEARCH_MODES = Object.freeze(['waders', 'beach']);
 const MAX_SEARCH_MINUTES = 24 * 60;
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const FORBIDDEN_REMOTE_KEY = /(lat(?:itude)?|lon(?:gitude)?|lng|gps|coord|position|route|track)/i;
+const CALIBRATION_RANGES = Object.freeze({
+  totalScore: [0, 100],
+  huntabilityScore: [0, 100],
+  transportScore: [0, 100],
+  mobilisationScore: [0, 100],
+  windSpeedMs: [0, 100],
+  windDirectionDeg: [0, 360],
+  waveHeightM: [0, 30],
+  wavePeriodS: [0, 40],
+  waveDirectionDeg: [0, 360],
+  currentSpeedMs: [0, 10],
+  currentDirectionDeg: [0, 360],
+  waterLevelM: [-20, 20],
+  waterLevelTrendM3h: [-10, 10],
+  maxWaveHeight24hM: [0, 30],
+  hoursSinceEnergyPeak: [0, 168],
+  sustainedOnshoreHours: [0, 168]
+});
 
 function requiredId(value, label) {
   const normalized = String(value || '').trim();
@@ -33,6 +51,16 @@ function assertChoice(value, allowed, label) {
   return normalized;
 }
 
+function rangedNumber(value, key) {
+  if (value == null || value === '') return null;
+  const number = Number(value);
+  const [minimum, maximum] = CALIBRATION_RANGES[key];
+  if (!Number.isFinite(number) || number < minimum || number > maximum) {
+    throw new Error(`${key} ligger uden for det tilladte interval.`);
+  }
+  return number;
+}
+
 export function assertTripEvidencePrivacy(value, path = 'tripEvidence') {
   if (Array.isArray(value)) {
     value.forEach((entry, index) => assertTripEvidencePrivacy(entry, `${path}[${index}]`));
@@ -46,14 +74,15 @@ export function assertTripEvidencePrivacy(value, path = 'tripEvidence') {
   return true;
 }
 
-export function createForecastSnapshotReference({ manifest = null, conditions = null, validAt = null, capturedAt = null } = {}) {
+export function createForecastSnapshotReference({ manifest = null, conditions = null, id = null, issuedAt = null, validAt = null, capturedAt = null } = {}) {
   const manifestId = String(manifest?.datasetId || '').trim();
   const conditionsId = String(conditions?.datasetId || '').trim();
   if (manifestId && conditionsId && manifestId !== conditionsId) {
     throw new Error('Manifest og prognose tilhører ikke samme datasæt.');
   }
   const captured = requiredIso(capturedAt || new Date().toISOString(), 'Prognosens hentetid');
-  const issuedValue = conditions?.productionReferenceAt
+  const issuedValue = issuedAt
+    || conditions?.productionReferenceAt
     || manifest?.productionReferenceAt
     || conditions?.generatedAt
     || manifest?.generatedAt;
@@ -61,10 +90,59 @@ export function createForecastSnapshotReference({ manifest = null, conditions = 
   if (issued.time > captured.time) throw new Error('Prognosen kan ikke være udstedt efter den blev hentet.');
   const valid = requiredIso(validAt || captured.iso, 'Prognosens gyldighedstid');
   return Object.freeze({
-    id: requiredId(conditionsId || manifestId, 'Prognose-id'),
+    id: requiredId(id || conditionsId || manifestId, 'Prognose-id'),
     issuedAt: issued.iso,
     validAt: valid.iso,
     capturedAt: captured.iso
+  });
+}
+
+export function createCalibrationFeatureSnapshot(input = {}) {
+  const snapshot = {
+    modelVersion: requiredId(input.modelVersion, 'Modelversion'),
+    appVersion: requiredId(input.appVersion, 'Appversion')
+  };
+  for (const key of Object.keys(CALIBRATION_RANGES)) snapshot[key] = rangedNumber(input[key], key);
+  for (const key of ['totalScore', 'huntabilityScore', 'transportScore', 'mobilisationScore']) {
+    if (snapshot[key] == null) throw new Error(`${key} mangler.`);
+  }
+  snapshot.reasonCodes = Object.freeze((input.reasonCodes || []).map(value => requiredId(value, 'Årsagskode')).slice(0, 12));
+  assertTripEvidencePrivacy(snapshot);
+  return Object.freeze(snapshot);
+}
+
+export function createTripStartRecord(input = {}) {
+  const started = requiredIso(input.startedAt, 'Starttid');
+  const record = {
+    schemaVersion: TRIP_EVIDENCE_SCHEMA_VERSION,
+    tripId: requiredId(input.tripId, 'Tur-id'),
+    startedAt: started.iso,
+    mode: assertChoice(input.mode, TRIP_SEARCH_MODES, 'Søgemetode'),
+    forecastZoneId: requiredId(input.zoneId, 'Zone ved turstart'),
+    forecastCoastalPartId: requiredId(input.coastalPartId, 'Kystdel ved turstart'),
+    forecastSnapshot: createForecastSnapshotReference(input.forecastSnapshot || {}),
+    calibrationFeatures: createCalibrationFeatureSnapshot(input.calibrationFeatures || {})
+  };
+  assertTripEvidencePrivacy(record);
+  return Object.freeze(record);
+}
+
+export function completeTripEvidence(startRecord, completion = {}) {
+  if (startRecord?.schemaVersion !== TRIP_EVIDENCE_SCHEMA_VERSION) throw new Error('Turstart mangler den aktuelle kontrakt.');
+  return buildTripEvidence({
+    tripId: startRecord.tripId,
+    startedAt: startRecord.startedAt,
+    endedAt: completion.endedAt,
+    mode: startRecord.mode,
+    zoneId: completion.zoneId,
+    coastalPartId: completion.coastalPartId,
+    forecastZoneId: startRecord.forecastZoneId,
+    forecastCoastalPartId: startRecord.forecastCoastalPartId,
+    searchCoverage: completion.searchCoverage,
+    found: completion.found,
+    grams: completion.grams,
+    forecastSnapshot: startRecord.forecastSnapshot,
+    calibrationFeatures: startRecord.calibrationFeatures
   });
 }
 
@@ -86,6 +164,10 @@ export function buildTripEvidence(input = {}) {
   }
 
   if (typeof input.found !== 'boolean') throw new Error('Fund eller intet fund skal angives.');
+  const zoneId = requiredId(input.zoneId, 'Zone');
+  const coastalPartId = requiredId(input.coastalPartId, 'Kystdel');
+  const forecastZoneId = requiredId(input.forecastZoneId || zoneId, 'Zone ved turstart');
+  const forecastCoastalPartId = requiredId(input.forecastCoastalPartId || coastalPartId, 'Kystdel ved turstart');
   const evidence = Object.freeze({
     schemaVersion: TRIP_EVIDENCE_SCHEMA_VERSION,
     tripId: requiredId(input.tripId, 'Tur-id'),
@@ -95,14 +177,18 @@ export function buildTripEvidence(input = {}) {
     searchMinutes,
     searchCoverage: assertChoice(input.searchCoverage, TRIP_SEARCH_COVERAGE, 'Søgegrundighed'),
     mode: assertChoice(input.mode, TRIP_SEARCH_MODES, 'Søgemetode'),
-    zoneId: requiredId(input.zoneId, 'Zone'),
-    coastalPartId: requiredId(input.coastalPartId, 'Kystdel'),
+    zoneId,
+    coastalPartId,
+    forecastZoneId,
+    forecastCoastalPartId,
+    calibrationEligible: zoneId === forecastZoneId && coastalPartId === forecastCoastalPartId,
     found: input.found,
     grams: optionalGrams(input.grams, input.found),
     forecastSnapshotId: requiredId(snapshot.id, 'Prognose-id'),
     forecastIssuedAt: issued.iso,
     forecastValidAt: valid.iso,
-    forecastCapturedAt: captured.iso
+    forecastCapturedAt: captured.iso,
+    calibrationFeatures: createCalibrationFeatureSnapshot(input.calibrationFeatures || {})
   });
   assertTripEvidencePrivacy(evidence);
   return evidence;
@@ -123,13 +209,17 @@ export function toObservationTripColumns(evidence) {
     mode: evidence.mode,
     zone_id: evidence.zoneId,
     coastal_part_id: evidence.coastalPartId,
+    forecast_zone_id: evidence.forecastZoneId,
+    forecast_coastal_part_id: evidence.forecastCoastalPartId,
+    calibration_eligible: evidence.calibrationEligible,
     found: evidence.found,
     result: evidence.found ? 'medium' : 'none',
     grams: evidence.grams,
     forecast_snapshot_id: evidence.forecastSnapshotId,
     forecast_issued_at: evidence.forecastIssuedAt,
     forecast_valid_at: evidence.forecastValidAt,
-    forecast_captured_at: evidence.forecastCapturedAt
+    forecast_captured_at: evidence.forecastCapturedAt,
+    calibration_features: evidence.calibrationFeatures
   };
   assertTripEvidencePrivacy(columns);
   return columns;
