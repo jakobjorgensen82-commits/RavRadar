@@ -366,3 +366,8 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 
 ## GitHub Actions Node-runtime - 2026-08-20
 - **ISSUE-GITHUB-ACTIONS-NODE20-DEPRECATION - LØST LOKALT / AFVENTER CI OG PRODUKTION:** Produktion `#32354210495` var grøn, men advarede om Node 20. De ni berørte workflows bruger nu de officielle Node 24-majorer: checkout v7, cache v6, setup-python v7, setup-node v7, upload-artifact v7, download-artifact v8, configure-pages v6, upload-pages-artifact v5 og deploy-pages v5. Gates, jobrækkefølge, inputs og betingelser er uændrede; fuld PR- og produktionskontrol mangler.
+
+## Aktuel workflow-sandhed, 2026-08-20
+- main indeholder Action-opgraderingen fra PR #3, men den første push-produktion blev stoppet før deploy af gamle versionsforventninger i fem regressionstests.
+- Den offentlige side er derfor fortsat den senest verificerede 4.0.238-dataset fra før PR #3; merge-commit 4c6b7e3a er endnu ikke produktionsverificeret.
+- Reparationskandidaten gør PR-gaten i stand til at opdage denne klasse af fejl før merge og ændrer ikke produktdata eller modeladfærd.

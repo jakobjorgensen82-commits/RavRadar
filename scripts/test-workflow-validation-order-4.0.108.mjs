@@ -19,17 +19,24 @@ const pullRequestValidation = fs.readFileSync(`${workflowDirectory}/validate-pul
 for (const marker of [
   'pull_request:',
   'permissions:\n  contents: read',
+  'npm run validate:source',
+]) {
+  if (!pullRequestValidation.includes(marker)) throw new Error(`PR-kildegaten mangler ${marker}`);
+}
+const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+const sourceValidation = packageJson?.scripts?.['validate:source'] || '';
+for (const marker of [
   'npm run validate:rdks',
   'npm run test:current-transport-history',
   'npm run test:production-hour-lock',
   'npm run test:dmi-acquisition',
   'npm run test:dmi-bulk-forecast-integration',
   'npm run test:water-source-production-chain',
-  'npm run test:workflow-validation-order',
+  'npm run test:workflow-action-contracts',
   'node --check scripts/audit-online-browser-playwright-4.0.237.mjs',
   'npm run release:gate',
 ]) {
-  if (!pullRequestValidation.includes(marker)) throw new Error(`PR-kildegaten mangler ${marker}`);
+  if (!sourceValidation.includes(marker)) throw new Error('validate:source mangler ' + marker);
 }
 if (/\b(?:push|schedule|workflow_dispatch):/.test(pullRequestValidation)) {
   throw new Error('PR-kildegaten maa kun kunne startes af pull_request.');

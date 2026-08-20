@@ -39,3 +39,10 @@
 - Den kontrollerede supplementhistorik har 45 unikke validtider over 45 timer. Shadow-cachen har cirka 104 timers capture-spænd, men 168-timersmålet er ikke nået.
 - De ni workflows med forældede action-runtimes bruger nu officielle Node 24-majorer. Gates, jobrækkefølge, inputs og betingelser er uændrede; PR-CI og produktion kræves før lukning.
 - Ingen score, kildeorden, fallback, geometri eller land-/vandpunkter er ændret.
+
+## Workflowreparation og lokal effektivisering, 2026-08-20
+- PR #3 opgraderede de officielle GitHub Actions, men den første produktion på merge-committen blev korrekt stoppet af fuld validering før release-gate og deploy, fordi fem regressionstests stadig forventede gamle Action-versioner.
+- Alle resterende versionsforventninger er rettet, og en ny samlet Action-versionskontrakt kontrollerer både workflows og testfiler.
+- PR-kildegaten er samlet i validate:source og udvidet med de hurtige workflowkontrakter, som tidligere først blev nået i fuld produktion.
+- setup-codex.ps1 og validate-source.ps1 fjerner gentagen manuel opsætning af Node/Python-stier og afhængigheder på friske Codex-runtimes.
+- Ingen score-, geometri-, land-/vandpunkt- eller produktionsdataændring.

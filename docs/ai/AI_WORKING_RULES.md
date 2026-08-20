@@ -56,3 +56,9 @@ Kvoteudløb må aldrig føre til overfladisk analyse eller udeladte tests. Ved p
 Codex må oprette og opdatere korte, datasikre PR'er fra egne push-branches og må selv merge dem til `main`, når den fulde relevante systemkontrol er bestået. Det kræver passende lokale tests, release-gates, regressionstest, dataintegritet, produktionskontrakter og nødvendig RDKS-/håndbogs-/changelogopdatering. Secrets, credentials, private produktionsdata, komplette diagnostikpayloads og U/V-værdier må aldrig indgå i PR-tekst eller utilsigtet eksponeres.
 
 En grøn GitHub-status kan ikke tilsidesætte konkret fejlevidens. Ved reel fejl eller væsentlig usikkerhed stoppes merge, og forholdet undersøges eller rettes. Efter en sikker merge følger Codex deployet, verificerer commit og relevante produktionsresultater og fortsætter direkte til næste ikke-blokerede roadmap-punkt. Irreversible, destruktive, usædvanligt risikable eller ikke-godkendte beslutninger kræver fortsat ejerens udtrykkelige godkendelse.
+
+## Lokal Codex-klargøring og kildekontrol
+- På en frisk Windows/Codex-runtime køres scripts/setup-codex.ps1 én gang. Scriptet installerer projektets tre eksisterende Python-afhængighedssæt og ændrer ikke repositorydata.
+- Før en kilde-PR køres scripts/validate-source.ps1. Den svarer til GitHubs kildegate og kræver ikke central adminhydrering eller frisk produktionsdata.
+- validate:source er aldrig en erstatning for den fulde npm run validate og npm run release:gate, som fortsat skal køre efter central hydrering og frisk vejr før deploy.
+- Midlertidige runtime-shims skrives kun i systemets temp-mappe og må ikke stages.

@@ -51,3 +51,9 @@ Ved konflikt gælder: brugerens aktuelle instruktion > aktiv RDKS-beslutning > v
 - PR-tekst og commits må ikke indeholde secrets, credentials, private produktionsdata, komplette diagnostikpayloads, U/V-værdier eller andre følsomme oplysninger.
 - Efter en sikker merge skal Codex følge deployet, verificere den mergede commit og relevante produktionsresultater og fortsætte til næste ikke-blokerede roadmap-punkt.
 - Irreversible, usædvanligt risikable eller destruktive merges samt beslutninger uden for allerede godkendte RavRadar-krav kræver fortsat ejerens udtrykkelige godkendelse.
+
+## Lokal Codex-klargøring og kildekontrol
+- På en frisk Windows/Codex-runtime køres scripts/setup-codex.ps1 én gang. Scriptet installerer projektets tre eksisterende Python-afhængighedssæt og ændrer ikke repositorydata.
+- Før en kilde-PR køres scripts/validate-source.ps1. Den svarer til GitHubs kildegate og kræver ikke central adminhydrering eller frisk produktionsdata.
+- validate:source er aldrig en erstatning for den fulde npm run validate og npm run release:gate, som fortsat skal køre efter central hydrering og frisk vejr før deploy.
+- Midlertidige runtime-shims skrives kun i systemets temp-mappe og må ikke stages.
