@@ -425,6 +425,14 @@ assert.match(observationServiceSource, /hunt_mode:columns\.hunt_mode/);
 assert.match(observationServiceSource, /id:existing\?\.id\|\|crypto\.randomUUID\(\)/);
 assert.match(observationServiceSource, /route,track,position,coordinates,latitude,longitude,location/);
 
+const appSource = fs.readFileSync('app.js', 'utf8');
+assert.match(appSource, /const TRIP_EVIDENCE_INTEGRATION_V2 = true/);
+assert.match(appSource, /createPublicTripEvidenceRuntime/);
+assert.match(appSource, /installTripEvidenceLegacyBridge/);
+assert.match(appSource, /persist: submitTripEvidenceObservation/);
+assert.match(appSource, /state\.conditions\?\.coastalParts\?\.parts/);
+assert.doesNotMatch(appSource.slice(appSource.indexOf('const TRIP_EVIDENCE_INTEGRATION_V2 = true')), /\b(?:geolocation|latitude|longitude|coordinates|route|track)\b/i);
+
 const legacyBridgeSource = fs.readFileSync('js/services/trip-evidence-legacy-bridge.js', 'utf8');
 assert.match(legacyBridgeSource, /onTripChange\(handle\)/);
 assert.match(legacyBridgeSource, /trip\.id, startedAt: trip\.startedAt/);

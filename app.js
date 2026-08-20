@@ -283,3 +283,57 @@ function installAppUpdateFlow() {
   addEventListener("load",async()=>{try{registration=await navigator.serviceWorker.register(`./service-worker.js?v=${version}`,{updateViaCache:"none"});if(registration.waiting&&navigator.serviceWorker.controller)showUpdate(registration.waiting);registration.addEventListener("updatefound",()=>{const worker=registration.installing;worker?.addEventListener("statechange",()=>{if(worker.state==="installed"&&navigator.serviceWorker.controller)showUpdate(worker);});});await registration.update();await checkVersion();document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){registration?.update();checkVersion();}});setInterval(checkVersion,30*60*1000);}catch(error){console.warn("Service worker kunne ikke registreres",error);}});
 }
 installAppUpdateFlow();
+const TRIP_EVIDENCE_INTEGRATION_V2 = true;
+import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.242';
+import { installTripEvidenceLegacyBridge } from './js/services/trip-evidence-legacy-bridge.js?v=4.0.242';
+import { submitTripEvidenceObservation } from './js/services/observation-service.js?v=4.0.242';
+
+function publicTripEvidenceContext(selection = null) {
+  const partsById = state.conditions?.coastalParts?.parts || {};
+  const coastalParts = Object.entries(partsById)
+    .filter(([, part]) => part?.zoneId && part?.current)
+    .map(([id, part]) => ({ id, zoneId: part.zoneId, name: part.name || id }));
+  const zonesWithParts = new Set(coastalParts.map(part => part.zoneId));
+  const zones = (state.zones?.features || [])
+    .map(feature => feature?.properties)
+    .filter(zone => zone?.id && zonesWithParts.has(zone.id))
+    .map(zone => ({ id: zone.id, name: zone.name || zone.id }))
+    .sort((left, right) => left.name.localeCompare(right.name, 'da'));
+  if (!zones.length || !coastalParts.length) throw new Error('Kystdelene er ikke klar endnu.');
+
+  const zoneId = selection?.zoneId || zones[0].id;
+  const coastalPartId = selection?.coastalPartId
+    || coastalParts.find(part => part.zoneId === zoneId)?.id;
+  const coastalPart = partsById[coastalPartId];
+  if (!coastalPart) throw new Error('Den valgte kystdel findes ikke i det aktive datasæt.');
+
+  const versionText = String(globalThis.RAVRADAR_VERSION || document.querySelector('#appVersion')?.textContent || '4.0.242');
+  const appVersion = versionText.match(/\d+\.\d+\.\d+/)?.[0] || '4.0.242';
+  return {
+    mode: selection?.mode || state.mode,
+    zoneId,
+    coastalPartId,
+    manifest: {
+      datasetId: state.conditions?.datasetId,
+      generatedAt: state.conditions?.generatedAt,
+      productionReferenceAt: state.conditions?.productionReferenceAt
+    },
+    conditions: state.conditions,
+    coastalPart,
+    zones,
+    coastalParts,
+    appVersion,
+    modelVersion: 'ravscore-' + appVersion
+  };
+}
+
+const publicTripEvidenceRuntime = createPublicTripEvidenceRuntime({
+  getContext: publicTripEvidenceContext,
+  persist: submitTripEvidenceObservation
+});
+const uninstallTripEvidenceBridge = installTripEvidenceLegacyBridge({
+  runtime: publicTripEvidenceRuntime,
+  onError: error => console.warn('Den nye turregistrering kunne ikke bruges; det gamle turflow er bevaret.', error?.message || error)
+});
+void TRIP_EVIDENCE_INTEGRATION_V2;
+void uninstallTripEvidenceBridge;

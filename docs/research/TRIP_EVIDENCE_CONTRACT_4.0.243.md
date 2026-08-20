@@ -58,6 +58,12 @@ Hvis appen ikke allerede har en entydig valgt kystdel, kan den kalde `startWithP
 
 Den afgrænsede bro til det gamle turflow lytter til de eksisterende start/stop-hændelser og bruger den gamle turs UUID og starttid. Når v2-dialogen er besvaret eller udskudt, markeres den gamle dagsformular lokalt som håndteret, så samme tur ikke giver to spørgsmål. Annulleres startdialogen, oprettes ingen v2-tur, og det gamle flow fortsætter uændret.
 
+Tilkoblingen i `app.js` bygger kun konteksten fra `state.conditions`, aktive kystdele og zoneegenskaber, som allerede er indlæst til den offentlige side. Hvis detaljerne endnu ikke er klar, logges en kort fejl og den gamle tur fortsætter. Tilkoblingen bruger ikke browserens positionsdata og har ingen kode, der kan flytte eller ændre land-/vandpunkter.
+
+## Lokal browserkontrol 2026-08-21
+
+Den integrerede lokale app blev kørt i Browser-pluginet med det seneste offentlige produktionsdatasæt gennem en midlertidig read-only proxy. Startknappen åbnede v2-dialogen med 210 zoner, skiftede derefter til “Afslut tur”, og stop åbnede slutdialogen med samme zone og kystdel samt den målte varighed. Mobilvisningen havde ingen vandret overflow og browserloggen havde nul fejl. Intet testsvar blev indsendt til Supabase.
+
 ## Dataminimering
 
 GPS-punkter, ruter, koordinater og spor indgår ikke i fjernkontrakten. Den faktiske kystdel er præcis nok til faglig kalibrering og langt mindre følsom end brugerens bevægelsesspor. Lokale historiske ruter ændres eller slettes ikke af denne kontrakt.
