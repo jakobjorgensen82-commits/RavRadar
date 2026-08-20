@@ -1393,3 +1393,13 @@ Status: Implementeret og lokalt valideret.
 ## Docs-skip bekræftet, 2026-08-20
 - Den rene dokumentationsmerge 2ebd601e oprettede ingen push-produktionskørsel. Seneste push-produktion er fortsat den fuldt verificerede 0d29a512.
 - Paths-ignore-optimeringen er dermed produktionsbevist og workflowopgaven er afsluttet.
+
+## P1-checkpoint efter produktion #3261
+- [x] Read-only eftermåling dokumenterer 72 rå prøver/42,866 timer i alle 210 zoner og 42,866 verificerede timer i 198 geografisk verificerbare zoner.
+- [x] De 12 parenthuller er fortsat nul og klassificeret; 673/673 lokale dele er fortsat dækket af den kontrollerede livepilot uden punktflytning.
+- [ ] Det naturlige 72-timerskrav er ikke nået. Ingen historik må bagudfyldes.
+- [ ] Shadow-cachens cirka 105,3 timer skal vokse til 168 naturlige timer; pilothistorikkens 57 timers globale validtidsinterval er ikke i sig selv retentionbevis.
+- [ ] Nye uafhængige modelstarter skal eftermåles før permanent komponentgrænse. #3261 er stabil drift, ikke en ny DEC-0030-cyklus.
+## Lokal kildekontrol på Windows
++- [x] Python-pakkekontrollen er gjort kompatibel med både Windows PowerShell og PowerShell 7.
++- [x] En kildekontrakt afviser den tidligere citatform, som Windows PowerShell ændrede på vej til Python.

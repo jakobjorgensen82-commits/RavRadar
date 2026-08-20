@@ -419,3 +419,8 @@ Den planlagte P3-forskning må undersøge, om rumlige strømstrukturer har selvs
 
 - 4.0.210 beviste den korrigerede huldiagnose, men produktionsartifactet afslørede et yderligere cacheproblem: modelvalget gik tabt, mens behandlingsstatus overlevede.
 - 4.0.211 bevarer/gendanner modelvalget og tvinger én genbehandling. Næste beslutningspunkt er den direkte produktionsoptælling og derefter 72 timers verificeret historik; kilde- og scoreanalyse forbliver efterfølgende trin.
+
+## P1-driftcheckpoint #3261
+- 72 rå prøver spænder 42,866 timer i alle 210 zoner; 198 zoner har samme verificerede spænd, og de 12 kendte parenthuller forbliver nul.
+- Shadow-cachen spænder cirka 105,3 timer, og livepiloten dækker fortsat 673/673 dele. 72- og 168-timerskravene er åbne.
+- Der er ingen ny uafhængig modelstart. Afvent naturlig evidens uden backfill og fortsæt imens næste ikke-blokerede roadmappunkt. Se `docs/research/P1_DRIFT_CHECKPOINT_4.0.238_RUN3261.md`.
