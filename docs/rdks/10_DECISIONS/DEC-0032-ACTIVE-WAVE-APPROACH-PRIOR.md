@@ -2,7 +2,7 @@
 
 ## Status
 
-Aktiv og produktionsverificeret i 4.0.241. PR #25, frisk fuld produktionsvalidering, release-gate og Pages-deploy er grønne på mergecommit `eb66b280`; den systematiske onlineaudit efter deploy mangler.
+Aktiv og fuldt produktionsverificeret i 4.0.241. PR #25, frisk fuld produktionsvalidering, release-gate og Pages-deploy er grønne på mergecommit `eb66b280`; onlineaudit af 210 zoner, 673 kystdele, 420 aktuelle og 2.100 prognosevisninger bestod uden fejl.
 
 ## Beslutning
 

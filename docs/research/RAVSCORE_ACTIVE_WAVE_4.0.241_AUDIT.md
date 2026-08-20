@@ -37,9 +37,9 @@ Den aktive prior er konservativ i de aktuelle forhold, reagerer i den forventede
 r-20260820181214-210 fra et grønt Pages-artefakt.
 - Desktop viste rangliste, 5-døgnsprognose, pile, lokal kystdel, RavScore og transportforklaring uden konsol-, side- eller HTTP-fejl.
 - System-Chrome/Playwright-fallback bestod ved 390 x 844 px uden vandret overløb, manglende data, manglende ressourcer eller skjult transportforklaring.
-- Den fulde systematiske onlineaudit af 210 zoner og 673 kystdele udføres efter deploy, fordi produktionssiden før merge fortsat bruger 4.0.240.
+- Den fulde systematiske onlineaudit udføres efter deploy, fordi produktionssiden før merge fortsat brugte 4.0.240.
 ## Produktionscheckpoint
 - Featurecommit: `ae4c86c6`; PR #25; mergecommit: `eb66b280`.
 - Produktion `#32405699346` bestod frisk data, fuld projektvalidering, release-gate, Supabase, Pages-build og deploy.
 - Direkte Pages-kontrol returnerede version 4.0.241 og den aktive import/anvendelse af den begrænsede bølgejustering.
-- Resterende gate: systematisk onlineaudit af 210 zoner og 673 kystdele.
+- Onlineaudit på `rr-20260820185733-210` bestod 210 zoner, 673 kystdele, 420 aktuelle og 2.100 prognosevisninger uden konsol-, side-, HTTP- eller indholdsfejl.

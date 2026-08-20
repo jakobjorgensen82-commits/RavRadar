@@ -153,6 +153,6 @@ Der må ikke flyttes land-/vandpunkter.
 
 - Arbejdsbranch: codex/ravscore-active-wave-approach.
 - Kernen, forklaringen, fallbacken og testværktøjerne er implementeret.
-- Featurecommit `ae4c86c6` er merged via PR #25 som `eb66b280`. Produktion `#32405699346` bestod frisk data, fuld validering, release-gate, Supabase, Pages-build og deploy; direkte Pages-kontrol viser 4.0.241 og den aktive bølgejustering. Kun den systematiske onlineaudit efter deploy mangler.
+- Featurecommit `ae4c86c6` er merged via PR #25 som `eb66b280`. Produktion `#32405699346` bestod frisk data, fuld validering, release-gate, Supabase, Pages-build og deploy; direkte Pages-kontrol viser 4.0.241 og den aktive bølgejustering. Onlineaudit på datasæt `rr-20260820185733-210` bestod 210 zoner, 673 kystdele, 420 aktuelle og 2.100 prognosevisninger uden fejl. Næste trin er den særskilte, foreløbige vægtændring til 25/40/35.
 - Næste delmål efter stabil produktion er den særskilte vægtændring 25/40/35.
 - Flyt ingen land-/vandpunkter, og beskyt fortsat de fire dirty datafiler.
