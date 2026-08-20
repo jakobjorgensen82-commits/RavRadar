@@ -27,6 +27,9 @@ const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const sourceValidation = packageJson?.scripts?.['validate:source'] || '';
 for (const marker of [
   'npm run validate:rdks',
+  'npm run test:feedback-learning',
+  'npm run test:adaptive-prediction',
+  'npm run test:admin-feature-reachability',
   'npm run test:current-transport-history',
   'npm run test:production-hour-lock',
   'npm run test:dmi-acquisition',
@@ -110,6 +113,8 @@ for (const forbidden of ["'docs/**'", "'*.md'", "'data/**'", "'scripts/**'", "'.
 const positions = {
   hydrate: text.indexOf('name: Hydrate latest deployed weather state'),
   preflight: text.indexOf('name: Decide whether weather needs updating'),
+  sourceGate: text.indexOf('name: Run fast source gate before expensive data refresh'),
+  dmiBulk: text.indexOf('name: Update DMI bulk model cache'),
   weather: text.indexOf('name: Update central weather cache'),
   provenance: text.indexOf('name: Attach scientific current provenance and exact DMI grid points'),
   runtime: text.indexOf('name: Rebuild deterministic public weather runtime before validation and deploy'),
@@ -121,7 +126,7 @@ const positions = {
 for (const [name, pos] of Object.entries(positions)) {
   if (pos < 0) throw new Error(`Mangler workflowtrin: ${name}`);
 }
-const expected = ['hydrate','preflight','weather','provenance','runtime','reference','validate','gate','artifact'];
+const expected = ['hydrate','preflight','sourceGate','dmiBulk','weather','provenance','runtime','reference','validate','gate','artifact'];
 for (let i = 1; i < expected.length; i += 1) {
   const before = expected[i - 1];
   const after = expected[i];
@@ -130,11 +135,16 @@ for (let i = 1; i < expected.length; i += 1) {
   }
 }
 const beforeWeather = text.slice(0, positions.weather);
-if (beforeWeather.includes('npm run validate') || beforeWeather.includes('npm run release:gate')) {
-  throw new Error('Validering/release gate må ikke køre før frisk vejr og u/v-proveniens er bygget.');
+if (/run:\s+npm run validate(?:\n|$)/.test(beforeWeather) || beforeWeather.includes('npm run release:gate')) {
+  throw new Error('Fuld validering/release gate må ikke køre før frisk vejr og u/v-proveniens er bygget.');
 }
 if (beforeWeather.includes('npm run build:current-provenance')) {
   throw new Error('Hydrerede data må ikke tvinges gennem strømaudit før frisk DMI-kørsel på tvungne/source runs.');
+}
+const sourceGateBlockEnd = text.indexOf('\n\n', positions.sourceGate);
+const sourceGateBlock = text.slice(positions.sourceGate, sourceGateBlockEnd < 0 ? text.length : sourceGateBlockEnd);
+if (!sourceGateBlock.includes("if: steps.preflight.outputs.should_run == 'true'") || !sourceGateBlock.includes('run: npm run validate:source')) {
+  throw new Error('Den hurtige kildekodegate skal køre før DMI-opdateringen ved enhver reel produktionsopbygning.');
 }
 
 for (const step of ['validate', 'gate']) {

@@ -166,6 +166,10 @@ jobs:
         with:
           node-version: 22
 
+      - name: Run fast source gate before expensive data refresh
+        if: steps.preflight.outputs.should_run == 'true'
+        run: npm run validate:source
+
       - name: Rebuild centrally reviewed coastal-part sampling points
         if: steps.preflight.outputs.should_run == 'true'
         run: node scripts/build-public-coastal-parts-v2.mjs
@@ -302,6 +306,16 @@ jobs:
           if [ "${{ steps.dmi-bulk.outputs.status }}" = "failed" ]; then
             echo "::warning::DMI bulk refresh failed. RavRadar preserves the previous DMI cache and uses fallback providers where necessary."
           fi
+
+      - name: Refresh private Copernicus cache after DMI cache churn
+        if: steps.preflight.outputs.should_run == 'true'
+        id: copernicus-shadow-post-dmi
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/copernicus-current-shadow.json
+          key: copernicus-current-shadow-v1-post-dmi-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            copernicus-current-shadow-v1-
 
       - name: Build public seven-day current history and controlled live selection
         if: steps.preflight.outputs.should_run == 'true'
