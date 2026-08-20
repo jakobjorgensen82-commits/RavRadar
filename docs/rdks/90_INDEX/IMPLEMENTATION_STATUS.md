@@ -365,6 +365,8 @@
 - [x] #31885856568 produktionsverificerer central hydrering uden routingaudit-readback, frisk routingaudit-upload, fulde gates, Supabase og Pages på commit `5c823947`.
 - [x] Artifact #2764 giver 3,028 GiB/30 dage som read-only nedre grænse og 1,416 GiB/30 dage undgået readback ved 96 kørsler/dag.
 - [ ] Næste billingperiodes faktiske egressmåling; estimator og grøn funktionstest er ikke billingbevis.
+- [x] 4.0.237-supportartifact `#3238` er estimator-maalt til 3,644 GiB/30 dage ved 96 koersler dagligt; stigningen fra cirka 3,03 GiB er afgraenset til stations-/notifikationsdokumentet.
+- [ ] Naeste billingperiodes faktiske dashboardmaaling er fortsat noedvendig; estimatorens 3,644 GiB er ikke billingbevis.
 
 ## 4.0.218 – tidsmæssigt sikkert havmodelskift
 

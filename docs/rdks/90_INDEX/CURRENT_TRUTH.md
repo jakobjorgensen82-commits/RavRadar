@@ -593,6 +593,7 @@ Punkterne nedenfor bevarer beslutnings- og fejlsøgningshistorikken frem mod 4.0
 - P0-ejeropgaven er en gradvis manuel gennemgang af de eksisterende land-/havpunktpar. Den kan udskydes og må ikke blokere uafhængigt udviklingsarbejde, men skal være afsluttet før endelig faglig score- og brugerreleasegodkendelse.
 - Næste aktive udviklertrin er P1-audit og design af komplette DMI-first femdøgnskæder pr. komponent under DEC-0030. Ingen ny produktionskilde eller fallback må indføres, før aktuel dækning, proveniens, overgange og regressioner er dokumenteret.
 - Supabase-egress følges gennem næste billingperiode. Den private, dataminimerede besøgstæller med enkel adminrapport er fortsat en senere P2-opgave.
+- 4.0.237-estimatoren paa supportartifact `#3238` beregner en nedre pipelinegraense paa 3,644 GiB/30 dage mod cirka 3,03 GiB i 4.0.219. `dmi-water-stations` er nu 565.218 bytes med 373 stationer og 250 notifikationer. Tallet er ikke billing-egress; payload eller ejerdiagnostik er ikke aendret.
 
 Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed og udtrykkeligt planlagte næste skridt. Historik findes andre steder i RDKS.
 

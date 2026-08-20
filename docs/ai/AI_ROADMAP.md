@@ -314,6 +314,7 @@ Ejeren har udtrykkeligt godkendt en landsdækkende privat revision af kystdele o
 - [x] Reviewkøen kan soft-delete enkelte poster og rydde mærkede systemtestposter, mens auditsporet bevares.
 - [x] Central autoritet for zonegeometri, regler og routing er bevaret og dækket af admin-, propagation- og releasegates.
 - Den særskilte måling af Supabase-egress gennem næste billingperiode er fortsat åben; en grøn funktionstest er ikke et forbrugsmål.
+- Read-only estimator paa 4.0.237-supportartifact `#3238` giver nu 1.358.425 bytes pr. koersel og 3,644 GiB pr. 30 dage mod cirka 3,03 GiB i 4.0.219. Stigningen er afgraenset til det voksede stations-/notifikationsdokument; routingauditbesparelsen er fortsat cirka 1,416 GiB. Dette er ikke billing-egress, og ingen ejerdiagnostik splittes uden separat design. Se `docs/research/SUPABASE_PIPELINE_EGRESS_4.0.237.md`.
 - #31891504819 ramte ét `57014 statement timeout` ved skrivning af `runtime-diagnostics` og stoppede korrekt før deploy. #31891984360 synkroniserede umiddelbart efter samme dokument og deployede grønt. Gentagelser overvåges, før en snæver retry eventuelt designes; en bred retry indføres ikke på ét transient fund.
 - Artifact #2785 måler den kompakte runtime-diagnostik til 9,287 MB. De 25 rå zoneeksempler udgør 8,690 MB/93,57 % og cirka 23,308 GiB JSON-skrivninger over 30 dage ved 96 kørsler dagligt. En senere opdeling kan mindske timeout-risikoen, men må bevare ejerens rå download og kræver særskilt godkendelse; tallet er skrivevolumen, ikke billing-egress.
 
