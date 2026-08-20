@@ -57,3 +57,7 @@ Den senere fulde produktion brugte 386 sekunder i DMI bulk mod 797 i `#3240`, en
 Den progressive collection-cache fjernede dermed den dyre gentagelse af hele `wam_dw` og halverede DMI-tiden. Samtidig viser det foerste genbrugte NSB-trin, at foerste-step-parsning/initialisering er en selvstaendig omkostning, ikke kun netvaerksdownload.
 
 Varighedsissuet forbliver aktivt. Der aendres ikke paa DMI-budgetter, collection-raekkefoelge, cache, marine audits, 673/673-gate, validering eller releasegate alene for at reducere tiden. Naeste meningsfulde trin er at profilere foerste-step-initialisering i en senere collection uden at aendre datakrav eller progressiv prioritering.
+
+## GitHub Actions runtime-advarsel
+
+Naturlig Copernicus-pilot `#63` bestod, men GitHub advarede om, at `actions/cache@v4`, `actions/checkout@v4`, `actions/setup-node@v4`, `actions/setup-python@v5` og `actions/upload-artifact@v4` stadig deklarerer Node 20 og aktuelt tvinges til Node 24 paa runneren. Det er ikke en aktuel failure, og workflowet maa ikke skifte til opdigtede eller uverificerede majorversioner. Advarslen overvåges, indtil officielle understøttede opgraderinger findes og kan valideres.

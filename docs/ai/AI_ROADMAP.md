@@ -55,6 +55,11 @@
 - Alle fire har 15 verificerede current-timer og 8 uverificerede samples; `activeCurrentRegime=unavailable` er derfor korrekt fail-closed.
 - Potentialerne varierer mellem zonerne, men checkpointet er ikke kalibrerings- eller scorebevis. Fortsat naturlig drift og fysisk forklarlige overgange afventes.
 
+## Aktiv P2 - GitHub Actions Node-runtime
+
+- Naturlig pilot `#63` bestod, men GitHub runneren tvinger flere officielle Node 20-baserede actions til Node 24 og viser en deprecation-advarsel.
+- Ingen aktuel funktionel fejl er observeret. Opgrader først, naar officielle nyere action-majorer findes og er valideret; versionsnumre maa ikke gaettes.
+
 ## Produktionsverificeret P1 – én komplet aktuel time inden for hver zone
 
 1. **Rodårsag afgrænset:** 673/673-kildegaten var gyldig, men den hidtidige runtime valgte hver dels nærmeste gyldige række uafhængigt. Den offentlige selector kunne samtidig foretrække en nærmere, ufuldstændig zonerække.
