@@ -48,11 +48,27 @@ export function beginTripEvidence(input, storage = null) {
   return record;
 }
 
+export function markTripEvidenceStopped(endedAt, storage = null) {
+  const target = resolveStorage(storage);
+  const active = loadActiveTripEvidence(target);
+  if (!active) throw new Error('Der er ingen aktiv ravtur at stoppe.');
+  const startedTime = Date.parse(active.startedAt);
+  const endedTime = Date.parse(String(endedAt || ''));
+  if (!Number.isFinite(endedTime) || endedTime <= startedTime) throw new Error('Sluttid skal ligge efter starttid.');
+  if (endedTime - startedTime > 24 * 60 * 60000) throw new Error('En søgetur kan højst vare 24 timer.');
+  const stopped = { ...active, stoppedAt: new Date(endedTime).toISOString() };
+  target.setItem(ACTIVE_KEY, JSON.stringify(stopped));
+  return stopped;
+}
+
 export function finishTripEvidence(completion, storage = null) {
   const target = resolveStorage(storage);
   const active = loadActiveTripEvidence(target);
   if (!active) throw new Error('Der er ingen aktiv ravtur at afslutte.');
-  const evidence = completeTripEvidence(active, completion);
+  const evidence = completeTripEvidence(active, {
+    ...completion,
+    endedAt: active.stoppedAt || completion?.endedAt
+  });
   const pending = listPendingTripEvidence(target);
   const next = [...pending.filter(item => item?.tripId !== evidence.tripId), evidence];
 

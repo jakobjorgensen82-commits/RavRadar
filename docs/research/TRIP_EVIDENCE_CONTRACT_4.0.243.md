@@ -40,6 +40,12 @@ Den isolerede dialog spørger kun om fund/ikke fund, faktisk zone og kystdel, s�
 
 Den kanoniske objektform findes også som `trip-evidence-v2.schema.json`. Skemaet afviser ukendte felter både på topniveau og i kalibreringssnapshotten. Dermed er det ikke nok, at UI-koden ser rigtig ud; producenter og forbrugere har samme maskinlæsbare tilladelsesliste.
 
+## Stop nu, svar senere
+
+Når turen stoppes, gemmes sluttidspunktet lokalt før dialogen åbnes. Vælger brugeren “Svar senere”, bevares både start og slut uændret. En senere besvarelse kan derfor ikke gøre turen kunstigt længere eller flytte observationen til besvarelsestidspunktet.
+
+En controller samler start, stop, genoptagelse, dialog, lokal kø og upload bag et lille interface. Den returnerer kun kort status og tur-id til UI-laget. Hvis upload mangler eller fejler, er status `queued`; den komplette payload bliver ikke lagt i fejlstatus eller konsollog.
+
 ## Dataminimering
 
 GPS-punkter, ruter, koordinater og spor indgår ikke i fjernkontrakten. Den faktiske kystdel er præcis nok til faglig kalibrering og langt mindre følsom end brugerens bevægelsesspor. Lokale historiske ruter ændres eller slettes ikke af denne kontrakt.

@@ -15,9 +15,11 @@ import {
   finishTripEvidence,
   listPendingTripEvidence,
   loadActiveTripEvidence,
+  markTripEvidenceStopped,
   markTripEvidenceSubmitted
 } from '../js/services/trip-evidence-store.js';
 import { uploadPendingTripEvidence } from '../js/services/trip-evidence-upload.js';
+import { createTripEvidenceController } from '../js/services/trip-evidence-controller.js';
 
 class MemoryStorage {
   values = new Map();
@@ -141,6 +143,8 @@ beginTripEvidence({
   route: [{ latitude: 55.1, longitude: 8.2 }]
 }, storage);
 assert.equal(loadActiveTripEvidence(storage).tripId, input.tripId);
+markTripEvidenceStopped(input.endedAt, storage);
+assert.equal(loadActiveTripEvidence(storage).stoppedAt, input.endedAt);
 assert.doesNotMatch([...storage.values.values()].join(''), /latitude|longitude|route/i);
 assert.throws(() => beginTripEvidence(input, storage), /allerede en aktiv/);
 assert.throws(() => finishTripEvidence({
@@ -152,7 +156,6 @@ assert.throws(() => finishTripEvidence({
 }, storage), /Søgegrundighed/);
 assert.equal(loadActiveTripEvidence(storage).tripId, input.tripId);
 const queued = finishTripEvidence({
-  endedAt: input.endedAt,
   zoneId: input.zoneId,
   coastalPartId: input.coastalPartId,
   searchCoverage: 'normal',
@@ -217,6 +220,44 @@ const uploadFailure = await uploadPendingTripEvidence({
 assert.equal(uploadFailure.failed, 1);
 assert.equal(uploadFailure.failures[0].message, 'offline');
 assert.equal(listPendingTripEvidence(storage).length, 1);
+
+const controllerStorage = new MemoryStorage();
+let dialogAnswer = null;
+const controller = createTripEvidenceController({
+  storage: controllerStorage,
+  openDialog: async () => dialogAnswer,
+  persist: async payload => assertTripEvidencePrivacy(payload)
+});
+controller.start({
+  tripId: 'trip-controller',
+  startedAt: input.startedAt,
+  mode: input.mode,
+  zoneId: input.zoneId,
+  coastalPartId: input.coastalPartId,
+  forecastSnapshot: input.forecastSnapshot,
+  calibrationFeatures
+});
+const deferred = await controller.stop({
+  endedAt: input.endedAt,
+  zones: [{ id: input.zoneId, name: 'Testzone' }],
+  coastalParts: [{ id: input.coastalPartId, zoneId: input.zoneId, name: 'Testdel' }]
+});
+assert.equal(deferred.status, 'deferred');
+assert.equal(controller.active().stoppedAt, input.endedAt);
+dialogAnswer = {
+  zoneId: input.zoneId,
+  coastalPartId: input.coastalPartId,
+  searchCoverage: 'normal',
+  found: false,
+  grams: null
+};
+const submitted = await controller.resume({
+  zones: [{ id: input.zoneId, name: 'Testzone' }],
+  coastalParts: [{ id: input.coastalPartId, zoneId: input.zoneId, name: 'Testdel' }]
+});
+assert.equal(submitted.status, 'submitted');
+assert.equal(controller.active(), null);
+assert.equal(listPendingTripEvidence(controllerStorage).length, 0);
 
 const noFind = buildTripEvidence({ ...input, found: false, grams: 99 });
 assert.equal(noFind.grams, null);
