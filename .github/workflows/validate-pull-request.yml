@@ -48,5 +48,8 @@ jobs:
       - name: Validate production workflow gate order
         run: npm run test:workflow-validation-order
 
+      - name: Validate online browser audit syntax
+        run: node --check scripts/audit-online-browser-playwright-4.0.237.mjs
+
       - name: Run release governance gate
         run: npm run release:gate

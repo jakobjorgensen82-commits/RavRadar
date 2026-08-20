@@ -23,6 +23,7 @@ for (const marker of [
   'npm run test:current-transport-history',
   'npm run test:production-hour-lock',
   'npm run test:workflow-validation-order',
+  'node --check scripts/audit-online-browser-playwright-4.0.237.mjs',
   'npm run release:gate',
 ]) {
   if (!pullRequestValidation.includes(marker)) throw new Error(`PR-kildegaten mangler ${marker}`);
