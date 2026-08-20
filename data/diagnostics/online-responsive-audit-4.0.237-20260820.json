@@ -1,0 +1,88 @@
+{
+  "liveUrl": "https://jakobjorgensen82-commits.github.io/RavRadar/",
+  "version": "4.0.237",
+  "viewports": [
+    {
+      "name": "mobile",
+      "metrics": {
+        "version": "4.0.237",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "documentWidth": 390,
+        "horizontalOverflow": false,
+        "map": {
+          "x": 0,
+          "y": -533.765625,
+          "width": 390,
+          "height": 472.625
+        },
+        "infoPanel": {
+          "x": 14,
+          "y": 11.859375,
+          "width": 362,
+          "height": 3258.21875
+        },
+        "zoneHeader": {
+          "x": 33,
+          "y": 79.859375,
+          "width": 324,
+          "height": 89
+        },
+        "score": "71",
+        "currentArrowCount": 2,
+        "forecastDayCount": 5,
+        "componentCount": 3,
+        "contextVisible": true
+      },
+      "failures": [],
+      "pageErrors": [],
+      "httpErrors": [
+        {
+          "status": 404,
+          "url": "https://jakobjorgensen82-commits.github.io/favicon.ico"
+        }
+      ]
+    },
+    {
+      "name": "desktop",
+      "metrics": {
+        "version": "4.0.237",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "documentWidth": 1440,
+        "horizontalOverflow": false,
+        "map": {
+          "x": 144,
+          "y": -638.53125,
+          "width": 1152,
+          "height": 576
+        },
+        "infoPanel": {
+          "x": 144,
+          "y": 12.46875,
+          "width": 1152,
+          "height": 2544.015625
+        },
+        "zoneHeader": {
+          "x": 163,
+          "y": 80.46875,
+          "width": 1114,
+          "height": 67.796875
+        },
+        "score": "71",
+        "currentArrowCount": 2,
+        "forecastDayCount": 5,
+        "componentCount": 3,
+        "contextVisible": true
+      },
+      "failures": [],
+      "pageErrors": [],
+      "httpErrors": []
+    }
+  ],
+  "failureCount": 0
+}

@@ -5,7 +5,7 @@ const workflowDirectory = '.github/workflows';
 const workflowFiles = fs.readdirSync(workflowDirectory)
   .filter((name) => /\.ya?ml$/i.test(name))
   .sort();
-const expectedWorkflowFiles = ['extract-private-geodanmark-layer.yml', 'preserve-copernicus-current-shadow.yml', 'retry-national-admin-roundtrip.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-six-zone-recovery.yml'];
+const expectedWorkflowFiles = ['extract-private-geodanmark-layer.yml', 'preserve-copernicus-current-shadow.yml', 'retry-national-admin-roundtrip.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml'];
 if (JSON.stringify(workflowFiles) !== JSON.stringify(expectedWorkflowFiles)) {
   throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun produktionsworkflowet og de registrerede private, ikke-deployerende workflows må være aktive.`);
 }
@@ -14,6 +14,28 @@ for (const privateName of expectedWorkflowFiles.filter(name => name !== 'update-
   if (privateWorkflow.includes('pages: write') || privateWorkflow.includes('id-token: write') || privateWorkflow.includes('deploy-pages')) {
     throw new Error(`${privateName} må ikke kunne deploye Pages.`);
   }
+}
+const pullRequestValidation = fs.readFileSync(`${workflowDirectory}/validate-pull-request.yml`, 'utf8').replace(/\r\n/g, '\n');
+for (const marker of [
+  'pull_request:',
+  'permissions:\n  contents: read',
+  'npm run validate:rdks',
+  'npm run test:current-transport-history',
+  'npm run test:production-hour-lock',
+  'npm run test:dmi-acquisition',
+  'npm run test:dmi-bulk-forecast-integration',
+  'npm run test:water-source-production-chain',
+  'npm run test:workflow-validation-order',
+  'node --check scripts/audit-online-browser-playwright-4.0.237.mjs',
+  'npm run release:gate',
+]) {
+  if (!pullRequestValidation.includes(marker)) throw new Error(`PR-kildegaten mangler ${marker}`);
+}
+if (/\b(?:push|schedule|workflow_dispatch):/.test(pullRequestValidation)) {
+  throw new Error('PR-kildegaten maa kun kunne startes af pull_request.');
+}
+if (pullRequestValidation.includes('secrets.') || pullRequestValidation.includes('pages: write') || pullRequestValidation.includes('id-token: write') || pullRequestValidation.includes('deploy-pages')) {
+  throw new Error('PR-kildegaten maa ikke bruge hemmeligheder eller kunne deploye.');
 }
 const copernicusPilot = fs.readFileSync(`${workflowDirectory}/validate-copernicus-current-pilot.yml`, 'utf8');
 for (const marker of [

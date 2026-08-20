@@ -1,0 +1,30 @@
+{
+  "liveUrl": "https://jakobjorgensen82-commits.github.io/RavRadar/",
+  "state": {
+    "version": "4.0.237",
+    "conditionsZones": 210,
+    "parts": 673,
+    "partZones": 210,
+    "detailsAvailable": true,
+    "datasetId": "rr-20260819213342-210"
+  },
+  "zoneCount": 210,
+  "totals": {
+    "currentViews": 420,
+    "forecastViews": 2100,
+    "partReferences": 673
+  },
+  "failureCount": 0,
+  "failureKinds": {},
+  "failures": [],
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 404 ()"
+  ],
+  "pageErrors": [],
+  "httpErrors": [
+    {
+      "status": 404,
+      "url": "https://jakobjorgensen82-commits.github.io/favicon.ico"
+    }
+  ]
+}

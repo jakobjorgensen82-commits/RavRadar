@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import { applyCurrentTransportToHistory } from './lib/current-transport-history.mjs';
-import { attachVerifiedCurrentToSample } from './lib/weather-history-retention.mjs';
+import { attachVerifiedCurrentToSample, historySampleReferenceAt } from './lib/weather-history-retention.mjs';
 
 const CONDITIONS='data/live/conditions.json';
 const BULK='data/live/dmi-bulk-cache.json';
@@ -137,6 +137,7 @@ async function read(path){try{return JSON.parse(await fs.readFile(path,'utf8'));
 const conditions=await read(CONDITIONS);const bulk=await read(BULK);const forecast=await read(FORECAST);
 if(!conditions?.zones||!bulk?.zones){console.log('Ingen conditions/bulk-cache at berige.');process.exit(0);}
 let zones=0,verifiedHours=0,unverifiedHours=0;
+const historyReferenceAt=historySampleReferenceAt(conditions);
 for(const [zoneId,zone] of Object.entries(conditions.zones)){
   const bz=bulk.zones[zoneId];if(!bz)continue;
   const currentRows=rawRows(bz.hourly,bulk,bz,zone.point);
@@ -149,8 +150,8 @@ for(const [zoneId,zone] of Object.entries(conditions.zones)){
   if(currentProvider && currentProvider!=='dmi') clearProvenance(zone.current,'non-dmi-current');
   else if(!applyProvenance(zone.current,rawNow)) clearProvenance(zone.current,currentRows.length?'no-time-match':'no-marine-grid-point');
 
-  zone.samples24h=attachVerifiedCurrentToSample(Array.isArray(zone.samples24h)?zone.samples24h:[],zone.current,conditions.generatedAt);
-  zone.samples72h=attachVerifiedCurrentToSample(Array.isArray(zone.samples72h)?zone.samples72h:[],zone.current,conditions.generatedAt);
+  zone.samples24h=attachVerifiedCurrentToSample(Array.isArray(zone.samples24h)?zone.samples24h:[],zone.current,historyReferenceAt);
+  zone.samples72h=attachVerifiedCurrentToSample(Array.isArray(zone.samples72h)?zone.samples72h:[],zone.current,historyReferenceAt);
   zone.history=applyCurrentTransportToHistory(zone.history||{},zone.samples24h);
 
   for(const row of zone.forecast?.hourly||[]){

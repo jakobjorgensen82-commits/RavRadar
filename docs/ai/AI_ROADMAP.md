@@ -1,5 +1,72 @@
 # AI Roadmap – RavRadar 4.0.237
 
+## Afsluttet P1 - systematisk online browserkontrol 2026-08-20
+
+- [x] Browser-plugin forsøgt først og diagnosticeret til trusted-code-path-fejl; ejer-godkendt Chromium-fallback anvendt.
+- [x] Live 4.0.237 er senest gentaget grønt med Playwright/system-Chrome efter naturligt fuldt deploy `#3245` paa datasæt `rr-20260820031545-210`: 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdøgnsvisninger.
+- [x] Score, label, farveniveau, vind-/strømpile, komponent- og kystforklaringer, lokal vinderkontekst og debug-ID havde 0 mismatch.
+- [x] Ingen land-/vandpunkter, geometri, U/V, score, kilder eller live-data blev ændret.
+- Næste aktive driftspunkt er fortsat højst daglig eftermåling af den naturlige syvdøgnscache. DEC-0030 fortsætter først, når en ny relevant modelcyklus giver selvstændig evidens.
+
+## Daglig syvdøgnseftermåling 2026-08-20
+
+- Naturlig pilot `#63` udvidede den private cache til 41 gyldige timer, 25.789 poster, 625 mål og 629 mål/kilde-par; nul gitter-/lagustabilitet. De mellemliggende naturlige pilot- og preserve-kørsler var grønne.
+- Gitter- og lagustabilitet er fortsat 0; `scoreImpact=false`, `publicRuntime=false`, 168 timers retention og ingen interpolation er bevaret.
+- Næste måling udføres tidligst næste kalenderdag. 168-timers exitkriteriet er ikke nået.
+
+## Afsluttet P1 - ikke-deployerende PR-kildegate 2026-08-20
+
+- [x] Kladde-PR `#1` udløser nu en separat read-only kildegate uden secrets, Pages-rettigheder eller deploymulighed.
+- [x] RDKS, current-historik/reference-time, production-hour-lock, workflowisolering og releasegate bestod i `#32324379165` og efterfølgende runs.
+- [x] Workflowinventartesten afviser nye triggere, secrets og deployrettigheder i PR-gaten.
+- Fuld produktionsvalidering kræver fortsat central adminhydrering, frisk vejr/current-proveniens og den normale produktionsgate. PR `#1` er fortsat kladde og ikke deployet.
+
+## Afsluttet P1 - klassifikation af parent-current-huller 2026-08-20
+
+- [x] De 12 parent-zoner uden verificeret current er samlet klassificeret som `no-marine-grid-point`, `flowPoints.current=null` og eksplicit missing uden fallback.
+- [x] Deres 47 lokale kystdele har egne marine flowpunkter; den lokale runtime forbliver 673/673.
+- [x] Reference-time-replay bevarer hullerne fail-closed og backfiller dem ikke.
+- Ingen land-/vandpunkter, kilder, fallback eller score er ændret. Parent- og lokal identitet må ikke blandes for at lukke tallet kosmetisk.
+
+## P2 produktionsovervågning - mobil og desktop 2026-08-20
+
+- [x] Live 4.0.237 åbner uden horisontal overflow ved 390 × 844 og 1440 × 900.
+- [x] Kort, zonepanel, score, lokal kontekst, tre komponenter, to pile og fem prognosedage er synlige i begge viewports.
+- [x] Ingen page errors eller funktionelle HTTP-fejl.
+
+## Aktiv P1 - naturlig 72-timers vejrhistorik
+
+- `#3237` havde ensartet 62 samples og 28,903 timers `samples72h` i alle 210 zoner; naturlig fuld produktion `#3245` er vokset til 65 samples og 34,903 timer.
+- Forloebet starter ved den kontrollerede 4.0.232-liveaktivering og viser ikke tilfaeldigt zonevist tab.
+- Naeste gyldige exitmaaling er en naturlig produktion efter `2026-08-21T16:05:48Z`. Ingen backfill, scoreaendring eller punktflytning er godkendt.
+
+## Aktiv P2 - produktionsworkflowets varighed
+
+- De fire seneste fulde builds `#3237`, `#3238`, `#3240` og `#3242` varede 14,70, 7,30, 18,45 og 11,48 minutter; gennemsnit 12,98 minutter.
+- Preflight-runs `#3239`, `#3241`, `#3243` og `#3244` sprang korrekt build/deploy over. Der er ikke observeret samtidig tung produktion eller Pages-koe i dette udsnit.
+- `#3240` er profileret pr. trin: DMI bulk brugte 797 sekunder, cirka 72 % af hele buildet; naeste trin var weather update 72 sekunder, validering 50 og hydrering 40.
+- DMI-loggen viser hele `wam_dw` 47/47 paa 559 sekunder og progressiv `wam_nsb` 21/46; de viste assets var downloads, og et trin efter 780-sekunders arbejdsbudget blev korrekt ikke talt som gemt.
+- `#3242` faldt til 386 sekunders DMI bulk, 51,6 % under `#3240`: faerdig `wam_dw` blev ikke gentaget, tre HARMONIE-trin blev hentet, og `wam_nsb` fortsatte fra 22 til 46/46.
+- Naturlig fuld `#3245` faldt videre til 168 sekunders DMI bulk og 7,88 minutters samlet build. Issuet er nu overvågning af nye modelcyklusser, ikke grund til at svaekke DMI-, marine-, 673/673-, validerings- eller releasekrav.
+
+## Aktiv P1 - state-shadow over flere produktionstimer
+
+- `#3240` har 4/4 verificerede referencezoner, 4/4 shadow-states og nul numerisk scorepaavirkning.
+- Alle fire har 15 verificerede current-timer og 8 uverificerede samples; `activeCurrentRegime=unavailable` er derfor korrekt fail-closed.
+- Potentialerne varierer mellem zonerne, men checkpointet er ikke kalibrerings- eller scorebevis. Fortsat naturlig drift og fysisk forklarlige overgange afventes.
+- `#3245` har fortsat 4/4 verificerede referencezoner og nul scorepaavirkning, men verificeret dækning faldt fra 15,0 til 10,1 timer, mens uverificerede samples steg 8 til 10. Det er nyt foer-fix-bevis for reference-time-fejlen paa gammel `main`, ikke retentiontab.
+
+## Aktiv P1 - DEC-0030 komponentovergange efter #3245
+
+- Vind er 118/118 timer i 210 zoner; ny HARMONIE 00Z er kun delvist indfaset med 624 zonetimer, og halen har eet `dmi -> fallback`-skift pr. zone.
+- Boelger er 194 zoner med 118 timer, 15 Limfjordszoner med 115 og Feggesund korrekt missing. WAM 19/18Z dominerer den nye cyklus.
+- Current er 198 zoner med 107 timer og de samme 12 reelle parent-huller. Ingen kilde-, merge-, fallback- eller punktændring er godkendt ud fra checkpointet.
+
+## Aktiv P2 - GitHub Actions Node-runtime
+
+- Naturlig pilot `#63` bestod, men GitHub runneren tvinger flere officielle Node 20-baserede actions til Node 24 og viser en deprecation-advarsel.
+- Ingen aktuel funktionel fejl er observeret. Opgrader først, naar officielle nyere action-majorer findes og er valideret; versionsnumre maa ikke gaettes.
+
 ## Produktionsverificeret P1 – én komplet aktuel time inden for hver zone
 
 1. **Rodårsag afgrænset:** 673/673-kildegaten var gyldig, men den hidtidige runtime valgte hver dels nærmeste gyldige række uafhængigt. Den offentlige selector kunne samtidig foretrække en nærmere, ufuldstændig zonerække.
@@ -23,7 +90,7 @@
 3. **Implementeret lokalt:** runtime bærer kompakt vinderforklaring og viste vejrmetrikker pr. fælles time, og regressionen dækker 210 zoner, 673 dele, begge jagtformer og 2.100 femdøgnsvisninger.
 4. **Central gate bestået:** `#32249770288`/`#3216` bestod frisk 673/673, fuld validering, releasegate, Supabase og Pages; live datasæt `rr-20260819115558-210` matcher artifactet.
 5. **Runtimeaudit bestået:** 420 aktuelle og 2.100 femdøgnsvisninger bruger kun én komplet lokal kontekst eller en eksplicit samlet hovedzonefallback.
-6. **Åben visuel slutkontrol:** faktisk DOM-/kliktest af kort, pile, vinderområde, tekst, score og debug gennemføres for alle 210 zoner/673 dele. Browser-plugin og diagnostik forsøges først; Chromium/Playwright er ejer-godkendt fallback, hvis der ikke findes en konkret reparationsvej.
+6. **Visuel slutkontrol afsluttet:** faktisk DOM-/kliktest af pile, vinderområde, tekst, score og debug er gennemfoert for alle 210 zoner/673 dele, begge jagtformer og fem doegn. Seneste Playwright-gentagelse efter `#3245` paa `rr-20260820031545-210` havde nul mismatch og nul browser-/HTTP-fejl.
 
 ## Afsluttet driftsrelease – GitHub-plan og Supabase-timeout
 
@@ -42,7 +109,7 @@
 5. Indfør særskilt bevis for én komplet valgt aktuel række inden for hver zone. Den eksisterende samlede 100 %-gate bevares, men forskellige zoner må vælge forskellige nærmeste komplette timer; der kræves ikke én national fælles time.
 6. Afslut med fuld RDKS-, release-, central produktions- og direkte browservalidering. Den bestående 4.0.233-retningsisolation, kildeorden, afstandsgrænser, rollback og ejerpunkter må ikke ændres utilsigtet.
 
-Status: både den sammenhængende lokale præsentation og den særskilte zonevise current-reference er produktions- og runtimeverificeret, senest igen i native `#32272470720` og live `rr-20260819155614-210`. Faktisk visuel onlinekontrol afventer; pluginet forsøges først, og Chromium/Playwright bruges ved manglende konkret reparationsvej. Krævet model/indsats: GPT-5.6 Sol, Ekstra høj.
+Status: både den sammenhængende lokale præsentation og den særskilte zonevise current-reference er produktions- og runtimeverificeret. Den faktiske visuelle onlinekontrol er afsluttet og gentaget efter `#3245` med Playwright paa `rr-20260820031545-210`: 210 zoner, 673 dele, 420 aktuelle visninger, 2.100 femdoegnsvisninger og nul mismatch. Krævet model/indsats: GPT-5.6 Sol, Ekstra høj.
 
 ## Aktuelt P1-fix 2026-08-18 – lokal scoreretning må ikke komme fra en anden kystdel
 
@@ -158,6 +225,11 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 
 ## Midlertidigt udskudt P1 – DMI-first femdøgnskæder og historik
 
+- **Aktiv P1-rettelse 2026-08-20:** Naturlig `#3242` voksede til 64 raa proever/30,903 timer, men 22:00/23:00-proeverne blev ikke verificeret, fordi de gemmes paa `productionReferenceAt`, mens efterberigelsen matchede `generatedAt`. Kandidaten bruger nu den timeskarpe reference med bagudkompatibel fallback; maalrettede tests er groenne. Frisk central produktion skal bevise voksende verificeret spaend. Se `docs/research/P1_HISTORY_REFERENCE_FIX_4.0.237.md`.
+- Isoleret replay paa hele `#3242`-artifactet loefter verificeret spaend fra 22,563 til 30,903 timer i praecis de 198 verificerede zoner og bevarer de samme 12 reelle huller. Replayet aendrer ingen score eller fortid; frisk central produktion er sidste gate.
+- **Ny read-only DEC-0030-maaling 2026-08-20:** Produktionskoersel `#3237`/datasæt `rr-20260819213342-210` giver nye WAM 18Z- og DKSS 12Z-beviser; HARMONIE 12Z er kun delvist indfaset. Overgangene varierer fortsat kraftigt efter komponent og retning, saa ingen permanent graense laases. Det kompatible 4.0.232-`controlled-live`-historikvindue er 28,903 timer og dermed under 72-timerskravet. Se `docs/research/P1_COMPONENT_TRANSITIONS_4.0.237_RUN3237.md`.
+- Naturlig `#3242` giver derefter en ny WAM 2026-08-19 18Z-cyklus: 15 Limfjordszoner vokser fra 97 til 115 boelgetimer, og overgangene flytter sig til hoejde 0,109/0,44, retning 20,07/100 og periode 0,353/1,3 (middel/P95). Variationen bekraefter fortsat, at permanente graenser ikke maa laases endnu.
+
 - Ejeren besluttede 2026-08-16 at vente med den næste fem-døgns- og historikanalyse, indtil flere naturlige data og modelkørsler er opsamlet. Arbejdet fortsætter senere under DEC-0030 uden ændring af kilder, fallback eller score i pausen.
 
 - 4.0.224 retter et P1-provenienshul uden at ændre værdier: vandstand fra valgte DMI-kildepunkter mærkes nu med de faktiske enkelt- eller sammensatte DKSS-modelområder. #31895640397/#2797 og direkte deploykontrol beviser 23.310/23.310 dokumenterede routede timer, 210 zoner og offentlig 4.0.224.
@@ -171,6 +243,8 @@ Roadmappet prioriterer stabilitet og verificerbarhed før nye features. Status s
 - 4.0.212 lukker en dokumenteret overgangsregression før den videre haleanalyse: kørsel #31857361460 reducerede 27 komplette NSBS-strømserier til ét sent tidspunkt, fordi et marginalt nærmere skalarfelt kunne genvælge hele havmodellen. Kun et gyldigt fælles strøm-U/V-par må nu ændre det autoritative valg. #31870747677 genoprettede 210/210 ved nutiden og mindst 100,8 timers sammenhængende marineprognose i alle zoner.
 - 4.0.214-opfølgningen er lukket af artifact #2777: 210/210 temperaturgitre og 9.159/9.159 native DMI-temperaturtrin har eksplicit `surface:0`, fordelt på IDW, NSBS og LF. Gamle umærkede/dybe temperaturer er ikke vendt tilbage.
 - Limfjordens bølge-/haleanalyse er nu afsluttet på 4.0.213-artifactet: `DK-B05-11` har ingen gyldig bølgekilde, og otte zoners vandstands-/temperaturhale skyldes en kortere DMI-havhorisont. `missing` bevares. Næste P1-trin er en samlet komponentmatrix og regressionsplan; ingen ny kilde eller scoreændring er godkendt.
+- Ny WAM 18Z-eftermaaling i 4.0.237/`#3237` bekraefter samme graense: `DK-B05-11` har 53 `dkss_lf`-marinerækker, men ingen boelgecollection og nul boelgetimer; naboerne har `wam_dw`. `missing` er fortsat korrekt, og hverken punkt, kilde eller fallback aendres.
+- Samme artifact afgraenser halen: WAM 18Z slutter native 23. august 22 UTC og giver 97 viste timer i 15 Limfjordszoner; DKSS slutter 24. august 12 UTC og giver 113 timer. Eksisterende fallback fylder til 118 i henholdsvis 194 boelgezoner og 202 vandstands-/temperaturzoner; de resterende kendte gab bevares eksplicit.
 - Den samlede komponentmatrix er nu målt på 4.0.214-datasæt `rr-20260815083802-210`. Vind er komplet; bølger har ét fuldt hul og 15 enkelttimehuller; strøm, vandstand og temperatur deler samme 17-timers hale i otte zoner. Næste P1-trin er numerisk overgangsmåling pr. komponent, mens 72-timershistorikken fortsat bygges.
 - Kildeskiftene er nu målt i fire produktionsdatasæt til og med 4.0.219. Vandstand er fortsat stabil; vind, bølger, strøm og temperatur har fortsat større grænsespring end almindelige timer, men størrelsen varierer. Næste P1-trin er stadig uafhængige nye modelcyklusser pr. komponent før valg af regressionsintervaller – fortsat uden scoreændring.
 - 4.0.222 gør uafhængighed maskinlæsbar: komponentauditen viser collection/model-run og udokumenterede DMI-timer. #2764, #2771 og #2777 bruger samme aktive HARMONIE-, WAM- og DKSS-run-id'er og tæller derfor kun som én forecastcyklus pr. model, selv om de fortsat er gyldige drifts- og historikbeviser.
@@ -282,6 +356,7 @@ Ejeren har udtrykkeligt godkendt en landsdækkende privat revision af kystdele o
 - [x] Hals/prognosepunkter og end-to-end routing er auditeret i artifact #2771: begge Hals-kilder har 113 timer, og samme producerede serie går til forecaststore, zone, femdøgnsvisning og score-/ranglistekæde.
 - [x] 4.0.221 genopretter alarmtærsklen for faktisk valgte aktive kilder mod både kildeprognose og forecastcache. #31889559758 og artifact #2777 rydder de falske Hals-mærker, viser 116,6 timers resttid og bevarer faktisk routing i 5/6 zoner; de gamle 15/21-tal var stale diagnosefelter.
 - [ ] Eftermål den første naturlige warning/critical i drift; fremkald ikke kunstigt cacheudløb og svæk ingen gate.
+- [x] 4.0.237/`#3237` registrerede de foerste naturlige `forecast-cache-expired`-haendelser efter rettelsen. Alle fire udloebne observationscacher var ikke-valgte (`effectiveRoutingSources=[]`, `routingCacheAlertLevel=null`), mens frisk kildeprognose og 210/210 aktiv vandstand var intakt. Det aabne delkriterium er fortsat en naturlig warning/critical paa en faktisk valgt kilde.
 
 ## Afsluttet P1 – Supabase/admin drift
 - [x] **Kontroller nu** genlæser forbindelses- og lagringsstatus og viser fejl fail-closed i admin.
@@ -289,6 +364,7 @@ Ejeren har udtrykkeligt godkendt en landsdækkende privat revision af kystdele o
 - [x] Reviewkøen kan soft-delete enkelte poster og rydde mærkede systemtestposter, mens auditsporet bevares.
 - [x] Central autoritet for zonegeometri, regler og routing er bevaret og dækket af admin-, propagation- og releasegates.
 - Den særskilte måling af Supabase-egress gennem næste billingperiode er fortsat åben; en grøn funktionstest er ikke et forbrugsmål.
+- Read-only estimator paa 4.0.237-supportartifact `#3238` giver nu 1.358.425 bytes pr. koersel og 3,644 GiB pr. 30 dage mod cirka 3,03 GiB i 4.0.219. Stigningen er afgraenset til det voksede stations-/notifikationsdokument; routingauditbesparelsen er fortsat cirka 1,416 GiB. Dette er ikke billing-egress, og ingen ejerdiagnostik splittes uden separat design. Se `docs/research/SUPABASE_PIPELINE_EGRESS_4.0.237.md`.
 - #31891504819 ramte ét `57014 statement timeout` ved skrivning af `runtime-diagnostics` og stoppede korrekt før deploy. #31891984360 synkroniserede umiddelbart efter samme dokument og deployede grønt. Gentagelser overvåges, før en snæver retry eventuelt designes; en bred retry indføres ikke på ét transient fund.
 - Artifact #2785 måler den kompakte runtime-diagnostik til 9,287 MB. De 25 rå zoneeksempler udgør 8,690 MB/93,57 % og cirka 23,308 GiB JSON-skrivninger over 30 dage ved 96 kørsler dagligt. En senere opdeling kan mindske timeout-risikoen, men må bevare ejerens rå download og kræver særskilt godkendelse; tallet er skrivevolumen, ikke billing-egress.
 

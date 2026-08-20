@@ -1456,3 +1456,20 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - De regionale rå vektorer gemmes kun i den eksisterende 168-timers private cache. En ny support-only rapport viser modelrun, tid, celle, afstand og lag, men afviser rå `uMps`/`vMps`; både cache og diagnostik er udelukket fra Pages.
 - Replay er samlingsafgrænset, så en ren regional indhentning kun behandler `dkss_lf`. Offentlig DMI, score, pile, kildemerge, coveragegate og deployment er uændret.
 - Målrettede tests for allowlist, ændret centralt punkt, forkert zoneklasse/collection, 5-/15-km-grænser, cache-/reportisolering samt eksisterende DMI-, forecast-, scheduler- og workflowkontrakter består lokalt. RDKS, håndbog, version, modulclosure og releasegate er grønne. Fuld lokal `validate` når gennem geometri-v2 og stopper derefter forventet på det forældede 31. juli-snapshot; frisk central DMI- og Actions-cacheevidens mangler fortsat.
+# 2026-08-20 – timeskarp reference i verificeret stroemhistorik
+
+- Naturlig `#3242` viste 64 raa proever/30,903 timer, men et verificeret spaend fast paa 22,563 timer, selv om 198 hovedzoner havde verificeret aktuel DMI-stroem.
+- Rodarsagen var et tidsmatch mellem sample paa `productionReferenceAt` og efterberigelse paa den senere `generatedAt`. Kandidaten bruger nu produktionsreferencen med bagudkompatibel fallback. Maalrettede retention-/transporttests er groenne; frisk central produktion mangler.
+- Ingen score, state, kilde, fallback, geometri eller land-/vandpunkt er aendret.
+# 2026-08-20 - 4.0.238 releasekandidat
+
+- Draft-PR #1 er gennemgået som samlet kildekandidat. Historikrettelsen vælger `productionReferenceAt`, og Open-Meteo-fallbacken bevarer den låste første time over et UTC-timeskifte med et afgrænset fortidsvindue og 120 fremtidige timer.
+- Den versionsbundne browserkontrol dækker begge jagtformer, 210 zoner, 673 kystdele, 420 aktuelle paneler, 2.100 femdøgnsvalg, score/label/farve, pile, tre komponenter, forklaring, lokal kontekst og seks vejrmetrikker. Liveversionen skal nu matche 4.0.238.
+- Naturlig #3249 på gammel `main` bestod fuld validering, releasegate, Supabase og Pages, men viste fortsat 198 verificerede aktuelle zoner med fast 22,563 timers verificeret historik. Den dokumenterer behovet, ikke kandidatens produktionsresultat.
+- Ingen land-/vandpunkter, kystgeometri, U/V, kildeorden, afstandsgrænser eller RavScore er ændret. Kandidaten må først kaldes produktionsverificeret efter sikker merge, frisk fuld central kørsel og gentaget online audit.
+# 2026-08-20 - naturlig Copernicus-pilot #70
+
+- Planlagt `#32342023293` producerede artifact `copernicus-current-pilot-70` mod 673 centralt godkendte mål.
+- Den private 168-timerscache er vokset til 45 eksakte timer og 28.305 poster: 625 unikke mål, 629 mål/kilde-par og nul gitter-/lagustabilitet.
+- Baltic har 552/567 og AMM15 77/125 verificerede mål inden for 5 km. 48 mål mangler fortsat Copernicus-par og bliver ikke udfyldt kunstigt.
+- Piloten er fortsat score-neutral, privat og uden interpolation eller råvektorlæk. Den endelige analyse afventer et fuldt naturligt 168-timersvindue.

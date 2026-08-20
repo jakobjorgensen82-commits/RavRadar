@@ -1,5 +1,18 @@
 # RavRadar – overlevering til næste chat
 
+## Afslutningscheckpoint 2026-08-20 - online browserkontrol grøn
+
+- Live index og bootstrap er 4.0.237; senest auditerede datasæt er `rr-20260819213342-210` fra grøn naturlig produktion `#3237`.
+- Chromium klikkede gennem 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdøgnsvisninger med 0 mismatch i score, farve, pile, forklaringer, lokal vinderkontekst og debug-ID.
+- Browser-pluginet blev forsøgt først og fejlede i trusted-code-path. Chromium-fallbacken var tidligere ejer-godkendt.
+- Eneste HTTP-fejl var favicon 404; ingen page errors.
+- Evidens: `data/diagnostics/online-browser-audit-4.0.237-20260820.json` og `data/diagnostics/ONLINE_BROWSER_AUDIT_4.0.237_20260820.md`.
+- Spark-kørslen i den gamle desktopkopi er forkastet. `codex/browser-zone-audit-20260820`/`526509f2` må ikke flettes.
+- Næste driftspunkt er højst daglig syvdøgnseftermåling; fortsæt derefter næste ikke-blokerede roadmappunkt. De fire beskyttede dirty datafiler må fortsat ikke ændres eller stages.
+- Dagens cacheeftermaaling er udfoert: pilot `#58` har 37 gyldige timer, 23.273 poster, 625 maal og 629 maal/kilde-par med nul gitter-/lagustabilitet. Planlagt `#59` dubletskippede korrekt uden artifact. Naeste maaling tidligst naeste kalenderdag; 168 timer er ikke naaet.
+- Produktion `#3237` bestod readiness, hele `build-and-prepare` og Pages-deploy. Den fulde 420/2.100-browseraudit blev derefter gentaget grønt på det nye datasæt.
+- Separat mobil-/desktopaudit er grøn ved 390 × 844 og 1440 × 900 uden overflow, page errors eller funktionelle HTTP-fejl. Evidens: `data/diagnostics/online-responsive-audit-4.0.237-20260820.json`.
+
 ## Afslutningscheckpoint 2026-08-19 – GitHub alene, 30 timers cache og browservej
 
 - Ejeren har slettet/deaktiveret RavRadar-jobbene i cron-job.org. Efter denne overdragelse bestod GitHubs egen naturlige produktion `#32272470720`, cachebevaring `#32272473716` og `#32272598725` samt Copernicus-pilot `#32273634626`. GitHub Actions er dermed eneste normale scheduler.
@@ -126,3 +139,10 @@ Læs `AGENTS.md`, `docs/ai/CODEX_START_HERE.md`, den obligatoriske RDKS-kæde sa
 - Flere kortpile kræver flere faktiske dokumenterede DMI-gitterpunkter; pile må ikke kopieres eller flyttes.
 - Central adminstatus er autoritativ, `missing` forbliver `missing`, og ingen gate må svækkes for at få grønt.
 - Kritisk arbejde udføres med GPT-5.6 Sol og Ekstra høj indsats.
+# DEC-0030-status 2026-08-20
+
+Aktiv kodekandidat retter verifikationsmaerket i timeskarp historik: brug `productionReferenceAt`, fallback til `generatedAt`. Produktionsbevis `#3242` har 64 raa proever/30,903 timer, men falsk fastlaast verificeret spaend paa 22,563 timer. Maalrettede tests er groenne; frisk central produktion skal eftermaales. Se `docs/research/P1_HISTORY_REFERENCE_FIX_4.0.237.md`.
+
+Kandidaten ligger i draft-PR `#1`. Featuregrenen har ingen automatiske PR-checks; den er ikke paa `main` og ikke produktionsverificeret.
+
+Produktionskoersel `#3237` er maelt read-only. Nye WAM 18Z- og DKSS 12Z-cyklusser er dokumenteret; HARMONIE 12Z er kun delvist indfaset. 4.0.232's kompatible `controlled-live`-historik har 28,903 timer og maa fortsat opbygges naturligt til 72 timer. Ingen kilde-, fallback-, score- eller geometriaendring er godkendt. Se `docs/research/P1_COMPONENT_TRANSITIONS_4.0.237_RUN3237.md`.

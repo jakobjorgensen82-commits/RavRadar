@@ -61,7 +61,8 @@ assert.match(registry,/\/tidewaterstation\/items/,'DMI bruger den singulære tid
 assert.doesNotMatch(registry,/\/tidewaterstations\/items/,'Det fejlagtige plurale endpoint må ikke bruges.');
 assert.match(registry,/discovery/,'Kilderegisteret skal dokumentere discovery-resultatet.');
 const updater=await fs.readFile('scripts/update-weather.mjs','utf8');
-assert.match(updater,/forecast_hours:\s*'120'/,'Fallback must request 120 future hours instead of five calendar days from midnight.');
+assert.match(updater,/forecast_hours:\s*String\(OPEN_METEO_FUTURE_HOURS\)/,'Fallback must request the named 120-hour future window instead of five calendar days from midnight.');
+assert.match(updater,/past_hours:\s*String\(fallbackPastHours\)/,'Fallback must include the locked reference hour when a build crosses UTC hour boundaries.');
 assert.doesNotMatch(updater,/forecast_days:\s*'5'/,'Five calendar days truncate the future fallback horizon later in the day.');
 assert.match(updater,/water-source-audit\.json/,'Vejrkørslen skal skrive en fuld audit af alle vandstandskilder.');
 

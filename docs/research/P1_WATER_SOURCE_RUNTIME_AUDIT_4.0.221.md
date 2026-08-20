@@ -2,6 +2,22 @@
 
 **Grundlag:** 4.0.220 artifact #2771, aktuel kode og git-historik 4.0.98–4.0.220
 
+## Gentaget naturlig eftermaaling i 4.0.237 / koersel #3245
+
+Det friske produktionsartifact `rr-20260820031545-210` registrerer fortsat de fire historiske `forecast-cache-expired`-haendelser for Hvide Sande Fjord (`9005210`), Hvide Sande Havn (`9005201`), Thorsminde Havn (`9005101`) og Hesnaes Havn I (`9030301`).
+
+Routing-auditten viser, at stationerne kun optraeder blandt mulige kandidater. Ingen af de fire er valgt i `stations` for de berørte zoner; den effektive routing bruger andre aktive observations- eller prognosepunkter. Komponentmatricen har samtidig vandstand og vandtemperatur i 210/210 zoner. Vandstand har 22.470 DMI-zonetimer, 2.222 fallbacktimer og 88 manglende haletimer; ingen zone er helt uden data.
+
+Fundet gentager derfor #3237-konklusionen paa et senere naturligt run: notifikationerne er historisk diagnose, ikke aktiv anvendelse af en udloebet cache. Det resterende exitkriterium er uændret: en naturlig `warning` eller `critical` paa en faktisk valgt effektiv routingkilde skal stadig eftermaales. Der er ikke fremkaldt kunstigt cacheudloeb, og ingen kilde-, fallback-, score-, geometri-, land- eller vandpunkter er aendret.
+
+## Naturlig eftermaaling i 4.0.237 / koersel 3237
+
+Produktionsartifactet fra `#3237` registrerer fire naturlige `forecast-cache-expired`-haendelser: Hvide Sande Fjord, Hvide Sande Havn, Thorsminde Havn og Hesnaes Havn I. Hvide Sande-stationerne og Thorsminde havde samtidig naturlige `delivery-stopped`-haendelser; Klintholm havde `delivery-resumed`.
+
+Ingen af de fire udloebne observationscacher var en effektiv valgt routingkilde: `effectiveRoutingSources` og `effectiveRoutingZoneIds` er tomme, og `routingCacheAlertLevel` er `null`. Friske kildeprognoser var modtaget med gyldighed til 24. august 13 UTC, aktiv vandstand var 210/210, og bulk-konverteringen havde nul tabte zoner. Haendelsesregistreringen virker derfor, uden at en udloebet cache forurener brugerforecastet.
+
+Det aabne exitkriterium er nu smallere: en naturligt opstaet `warning`/`critical` paa en faktisk valgt effektiv routingkilde skal stadig eftermaales. Der fremkaldes ikke kunstigt cacheudloeb.
+
 ## Faktisk dækning
 
 - Registeret indeholder 373 kendte kilder: 181 leverer observationer, 30 leverer ikke, og 162 har aldrig leveret en observation.

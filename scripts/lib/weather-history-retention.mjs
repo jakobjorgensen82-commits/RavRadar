@@ -1,6 +1,10 @@
 export const ACTIVE_HISTORY_HOURS = 24;
 export const RESEARCH_HISTORY_HOURS = 72;
 
+export function historySampleReferenceAt(conditions = {}) {
+  return conditions?.productionReferenceAt ?? conditions?.generatedAt;
+}
+
 const atMs = sample => Date.parse(sample?.at ?? '');
 
 function orderedUnique(samples = []) {

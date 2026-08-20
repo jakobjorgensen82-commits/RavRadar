@@ -1,5 +1,28 @@
 # Current truth – gældende projektviden
 
+## Naturlig Copernicus-pilot #70 - fortsat sund 168-timersopsamling
+
+- Den planlagte pilot `#32342023293`/artifact `copernicus-current-pilot-70` blev genereret 2026-08-20 07:02Z mod den centralt godkendte bestand på 673 dele.
+- Den private cache har 45 eksakte timetidspunkter fra 2026-08-18 11:00Z til 2026-08-20 07:00Z, 28.305 observationer, 625 unikke mål og 629 mål/kilde-par.
+- Baltic dækker 552/567 berettigede mål og AMM15 77/125. Summen er større end 625, fordi fire mål har evidens fra begge kilder.
+- Der er nul ustabile mål/kilde-par for både gitterpunkt og lag. Interpolation, scorepåvirkning og offentlig runtime er fortsat slået fra, og supportgaten afviste secret- eller råvektorlæk.
+- Syvdøgnskravet er endnu ikke opfyldt; der mangler fortsat naturlig vækst fra 45 til et fuldt 168-timersvindue.
+
+## 4.0.238 er releasekandidat - endnu ikke main eller produktionsverificeret
+
+- Draft-PR #1 samler rettelsen af den verificerede histories referencetime, Open-Meteos låste timeskifte og den kildebaserede PR-gate.
+- Historikrettelsen bruger `productionReferenceAt`; 198 zoner med verificeret aktuelt DMI-U/V kan dermed vokse naturligt. De 12 reelle `NO_SHARED_MARINE_GRID_POINT`-huller skal fortsat være `missing`.
+- Open-Meteo-vinduet beregner et afgrænset `past_hours` og leverer fortsat højst 120 fremtidige timer fra den låste reference. DMI-first-rækkefølgen er uændret.
+- 4.0.238-browserauditten kræver den synlige liveversion 4.0.238 og sammenholder 210 zoner, 673 dele, 420 aktuelle paneler, 2.100 femdøgnsvalg, score/farve/pile/forklaring og seks vejrmetrikker.
+- Naturlig produktion #3249 på den ældre `main` var fuldt grøn, men beviser samtidig den gamle historikfejl: 198 zoner har verificeret aktuel strøm, mens verificeret spænd stadig er 22,563 timer. Den kørsel er ikke kandidatbevis.
+- Ingen punkter, geometri, U/V, kildeorden, afstandsgrænser eller RavScore er ændret. Næste bindende trin er sikker merge efter ejerbeslutning, frisk fuld central produktion og online browseraudit.
+
+## Online DOM-/kliktest 2026-08-20
+
+Live 4.0.237 er systematisk kontrolleret med Chromium mod seneste datasæt `rr-20260819213342-210` efter grøn naturlig produktion `#3237`: 210 zoner, 673 kystdele, begge jagtformer, 420 aktuelle paneler og 2.100 femdøgnspaneler. Der er 0 mismatch i score, label, farveniveau, vind-/strømpile, forklaringer, lokal vinderkontekst og debug-ID. Eneste HTTP-fejl er favicon 404; ingen page errors. Ingen produktionsdata eller geometri er ændret.
+
+Den private Copernicus-shadow har ved pilot `#58` 37 gyldige timer, 23.273 poster, 625 maal og 629 maal/kilde-par med nul gitter-/lagustabilitet. Planlagt `#59` dubletskippede korrekt uden artifact. Syvdoegnsvinduet er fortsat uafsluttet og maales hoejst dagligt.
+
 ## 4.0.237 produktionsverificeret – én komplet aktuel time pr. lokal zone
 
 - Den seneste systematiske metadataaudit skelner nu korrekt mellem to forskellige krav: 673/673 er verificeret strømproveniens for alle kystdele, mens den offentlige lokale sammenligning derudover skal bruge samme eksakte time for alle dele i den konkrete zone. Kravet er lokalt pr. zone, ikke én fælles national klokktime.
@@ -238,6 +261,7 @@
 - 4.0.221 genberegner kun alarmstatus for faktisk valgte aktive kilder og bruger seneste gyldige tidspunkt fra både kildens prognose og routet cache. Leverende observationer og historiske/inaktive kilder alarmerer ikke; stale mærker ryddes.
 - Kildevalg, vandstandstal, interpolation, fallback og RavScore er uændrede.
 - #31889559758 bestod frisk DMI, fuld `validate`, releasegate, Supabase og Pages på commit `3f6c7661`. Artifact #2777 har nul valgte warning/critical-kilder og nul nye notifikationer; begge Hals-kilder har 116,6 timers resttid og ingen alarm. Datasættet er `rr-20260815142117-210` med 210 zoner.
+- 4.0.237-artifact `#3237` giver den foerste naturlige udloebseftermaaling: fire gamle observationscacher udloeb og blev notificeret, men ingen var en valgt effektiv routingkilde. Friske kildeprognoser og 210/210 aktiv vandstand var intakte. En naturlig warning/critical paa en faktisk valgt kilde er fortsat ikke observeret.
 
 ## 4.0.220 – rå og verificeret strømhistorik måles hver for sig
 
@@ -302,6 +326,8 @@
 - 4.0.214 fjerner de umærkede punkter før genbrug. Manglende overfladetemperatur forbliver `missing`, indtil den relevante DKSS-model leverer nye `surface:0`-data.
 - Schedulerens DKSS-rotation medregner nu manglende overfladetemperatur. Alle 210 zoner havde fortsat 102 rå `samples24h` og 132 rå `samples72h`; øvrig vejrhistorik bevares.
 - P1-analysen af Limfjorden er afgrænset: `DK-B05-11` mangler bølger, fordi hverken et gyldigt DMI-bølgepunkt inden for den tilladte afstand eller den eksisterende fallback findes. De øvrige undersøgte Limfjordszoner får bølger fra `wam_dw`. Den fælles sene vandstands-/temperaturhale er et horisont-/overgangsproblem, ikke samme bølgeproblem.
+- Frisk 4.0.237-produktion `#3237` gentager resultatet paa en ny WAM 18Z-cyklus: Feggesund har 53 gyldige `dkss_lf`-marinerækker, men ingen boelgecollection og nul komplette boelgetimer. Nabozonerne har `wam_dw`. Det er et vedvarende kildegab, ikke et generelt pipelineudfald; `missing` bevares.
+- WAM 18Z slutter native 23. august 22 UTC og forklarer de 15 Limfjordszoner med 97 viste boelgetimer. DKSS slutter 24. august 12 UTC og forklarer 113 viste timer for stroem samt otte zoners vandstand og temperatur. Hvor den eksisterende reservekaede har vaerdier, naar visningen 118 timer; ellers bevares `missing`. Der er ikke evidens for tab i merge eller UI.
 - 4.0.214-datasæt `rr-20260815083802-210` giver den første fælles komponentmatrix: vind 210×118 timer; bølger 194 zoner med 118 timer, 15 med 117 og `DK-B05-11` med 0; strøm, vandstand og temperatur 202 zoner med 118 timer og otte zoner med 101. De otte deler dermed en aktuel 17-timers marinehale.
 - Alle zoner har 100 rå `samples24h` og 133 rå `samples72h`. Det er bevaret samplehistorik, ikke endnu 72 forløbne timer.
 - Overgangsauditten på samme datasæt viser, at vandstandsskiftets gennemsnit/p95 på 4,6/17 cm ikke er værre end almindelige timer på 5,0/22 cm. Vind-, bølge-, strøm- og temperaturgrænserne er derimod markant større end deres egne baselines.
@@ -584,6 +610,7 @@ Punkterne nedenfor bevarer beslutnings- og fejlsøgningshistorikken frem mod 4.0
 - P0-ejeropgaven er en gradvis manuel gennemgang af de eksisterende land-/havpunktpar. Den kan udskydes og må ikke blokere uafhængigt udviklingsarbejde, men skal være afsluttet før endelig faglig score- og brugerreleasegodkendelse.
 - Næste aktive udviklertrin er P1-audit og design af komplette DMI-first femdøgnskæder pr. komponent under DEC-0030. Ingen ny produktionskilde eller fallback må indføres, før aktuel dækning, proveniens, overgange og regressioner er dokumenteret.
 - Supabase-egress følges gennem næste billingperiode. Den private, dataminimerede besøgstæller med enkel adminrapport er fortsat en senere P2-opgave.
+- 4.0.237-estimatoren paa supportartifact `#3238` beregner en nedre pipelinegraense paa 3,644 GiB/30 dage mod cirka 3,03 GiB i 4.0.219. `dmi-water-stations` er nu 565.218 bytes med 373 stationer og 250 notifikationer. Tallet er ikke billing-egress; payload eller ejerdiagnostik er ikke aendret.
 
 Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed og udtrykkeligt planlagte næste skridt. Historik findes andre steder i RDKS.
 
@@ -979,3 +1006,11 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - Free-planmålingen viste 8,233/5 GB egress og 0,695/0,5 GB database ved kun tre MAU. Rodårsagen er pipelineforbrug, ikke brugertrafik: `sync-admin-config.py` hentede alle payloads hvert 15. minut, mens store maskindiagnostikker blev versionskopieret uden retention.
 - 4.0.153 filtrerer readback til nødvendige adminnøgler og gør beskyttede uploads hash-idempotente. Lokal payloadækvivalent falder fra mindst 8,4 MB til cirka 144 KB pr. readback.
 - Central audit 2026-08-10 fandt 8.647 overflødige historikrækker med cirka 600 MB payload. Migration og efterfølgende `VACUUM FULL` blev udført; databasen faldt fra 699 MB til 24 MB. Alle 14 aktuelle `admin_documents` er bevaret, maskinhistorik er 0, og øvrige dokumenter har højst 100 rollbackpunkter.
+# 4.0.237 – ny DEC-0030-komponentmaaling
+
+- Naturlig produktion `#3242` voksede den kompatible raa historik til 64 proever/30,903 timer, men de nye timeskarpe proever blev falsk ikke-verificerede. `productionReferenceAt` var 23:00, mens efterberigelsen matchede den senere `generatedAt` 23:52. Kandidaten bruger nu den gemte timeskarpe reference med fallback for aeldre dokumenter; frisk central produktion mangler.
+- Isoleret replay af rettelsen paa hele `#3242`-artifactet giver 56 verificerede proever i 197 zoner, 50 i en zone og 30,903 timers verificeret spaend i alle 198 verificerede zoner. De samme 12 parent-zonehuller forbliver nul; ingen fortid er bagudfyldt.
+- Supportartifactet fra naturlig produktion `#3237`/`rr-20260819213342-210` giver nye uafhaengige WAM 18Z- og DKSS 12Z-beviser; HARMONIE 12Z er kun delvist indfaset.
+- Naturlig `#3242` tilfoejer en ny WAM 2026-08-19 18Z-cyklus. De 15 korte Limfjordsserier vokser fra 97 til 115 boelgetimer; hoejde-/retnings-/periodeovergange er 0,109/0,44, 20,07/100 og 0,353/1,3 (middel/P95). Feggesund forbliver korrekt `missing`.
+- Komponentovergangene varierer fortsat efter felt, retning og modelindfasning. Stroemmens 198 haleovergange er `dmi -> missing` uden konstrueret tal. Der laases ingen permanent graense og aendres ingen score eller kilde.
+- Alle 210 zoners kompatible `controlled-live`-historik starter ved 4.0.232-aktiveringen og spaender 28,903 timer. Aeldre parent-zonehistorik er ikke kompatibelt lokalt stroembevis og bagudfyldes ikke. 72-timers-exitkriteriet er aabent. Se `docs/research/P1_COMPONENT_TRANSITIONS_4.0.237_RUN3237.md`.
