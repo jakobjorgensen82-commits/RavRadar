@@ -67,3 +67,9 @@ En halvfærdig version må ikke fremstilles som releaseklar. Ucommittede filer, 
 - Grøn GitHub-topstatus er ikke i sig selv mergebevis ved konkret modstridende evidens. Røde eller uafklarede gates må ikke omgås. Ved reel fejl eller væsentlig usikkerhed skal Codex undersøge eller rette før merge.
 - Efter sikker merge følger Codex den efterfølgende produktions-/deploykørsel, verificerer at korrekt commit er i produktion, kontrollerer relevante produktionsresultater og fortsætter direkte til næste ikke-blokerede roadmap-punkt.
 - Irreversible, destruktive, usædvanligt risikable merges eller beslutninger uden for allerede godkendte RavRadar-krav kræver fortsat ejerens udtrykkelige godkendelse.
+
+## Lokal Codex-klargøring og kildekontrol
+- På en frisk Windows/Codex-runtime køres scripts/setup-codex.ps1 én gang. Scriptet installerer projektets tre eksisterende Python-afhængighedssæt og ændrer ikke repositorydata.
+- Før en kilde-PR køres scripts/validate-source.ps1. Den svarer til GitHubs kildegate og kræver ikke central adminhydrering eller frisk produktionsdata.
+- validate:source er aldrig en erstatning for den fulde npm run validate og npm run release:gate, som fortsat skal køre efter central hydrering og frisk vejr før deploy.
+- Midlertidige runtime-shims skrives kun i systemets temp-mappe og må ikke stages.

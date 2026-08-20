@@ -1509,3 +1509,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Buildet tog 410 sekunder; medianen for syv fulde builds er 473 sekunder.
 - Naturlig pilot `#32355447654` blev korrekt duplicate-suppressed. Den tæller ikke som ny time.
 - GitHub Actions varslede Node 20-deprecation i #3256. En lokal kandidat opgraderer de ni berørte workflows til officielle Node 24-majorer uden ændrede gates eller betingelser; PR-CI og produktion afventer.
+
+## 2026-08-20 - Action-opgradering stoppet sikkert og kildegate styrket
+- PR #3 blev merged som 4c6b7e3a.
+- Produktion 32358538559 bestod hydrering, vejrbygning og referencegenerering, men fuld validering fandt fem gamle testforventninger og stoppede før release-gate/deploy.
+- En afgrænset reparationsbranch retter forventningerne, tilføjer en central Action-versionskontrakt samt reproducerbar lokal Codex-opsætning og kildekontrol.
+- Lokal kildekontrol og release-gate er grønne. Ingen land-/vandpunkter eller beskyttede datafiler er ændret.

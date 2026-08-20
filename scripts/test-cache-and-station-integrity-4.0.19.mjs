@@ -4,8 +4,8 @@ const workflow=fs.readFileSync('.github/workflows/update-and-deploy.yml','utf8')
 const bulk=fs.readFileSync('scripts/update-dmi-bulk.py','utf8');
 const update=fs.readFileSync('scripts/update-weather.mjs','utf8');
 assert.match(workflow,/github\.run_id/);
-assert.match(workflow,/actions\/cache\/restore@v4/);
-assert.match(workflow,/actions\/cache\/save@v4/);
+assert.match(workflow,/actions\/cache\/restore@v6/);
+assert.match(workflow,/actions\/cache\/save@v6/);
 assert.match(workflow,/dmi-grib-v4/);
 assert.match(workflow,/DMI_BULK_RAW_CACHE_MAX_MB: 4096/);
 assert.match(bulk,/raw_cache_inventory/);

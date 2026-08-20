@@ -1036,3 +1036,8 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - HARMONIE 20. august 00Z, WAM 19. august 18Z og DKSS 19. august 12Z er fortsat nyeste modelstarter. Overgangsmålene er uændrede, Feggesund er wave-missing, og ingen permanent grænse er godkendt.
 - Produktionstiden var 410 sekunder; syv fulde builds har median 473 sekunder med uændrede gates.
 - Node 20-deprecation har en lokal kandidat med officielle Node 24-majorer i ni workflows. Gates og betingelser er uændrede; PR-CI og frisk produktion mangler.
+
+## Aktuel workflow-sandhed, 2026-08-20
+- main indeholder Action-opgraderingen fra PR #3, men den første push-produktion blev stoppet før deploy af gamle versionsforventninger i fem regressionstests.
+- Den offentlige side er derfor fortsat den senest verificerede 4.0.238-dataset fra før PR #3; merge-commit 4c6b7e3a er endnu ikke produktionsverificeret.
+- Reparationskandidaten gør PR-gaten i stand til at opdage denne klasse af fejl før merge og ændrer ikke produktdata eller modeladfærd.

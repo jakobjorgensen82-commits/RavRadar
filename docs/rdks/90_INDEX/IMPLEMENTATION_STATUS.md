@@ -1365,3 +1365,9 @@ Status: Implementeret og lokalt valideret.
 - [ ] 72-timers rå/verificeret historik og 168-timers supplement/shadow er fortsat naturlige tidskrav og må ikke backfilles.
 - [x] De ni berørte workflows er mekanisk opgraderet til officielle Node 24-actionmajorer uden ændrede gates, jobrækkefølger eller betingelser. PR-CI og frisk produktion afventer.
 - Ingen kode-, score-, data-, geometri- eller punktaftale er ændret af checkpointet.
+
+## Aktiv reparation og workflowforbedring, 2026-08-20
+- PR #3 er merged som 4c6b7e3a, men push-produktion 32358538559 blev fail-closed stoppet i fuld validering før release-gate og deploy.
+- Årsagen er fem resterende testforventninger til gamle GitHub Action-majors; live-produktionen blev ikke erstattet.
+- Branchen codex/workflow-bootstrap-and-gate retter alle fem, tilføjer central versionskontrol, samler PR-gaten i validate:source og tilføjer reproducerbar Codex-klargøring.
+- Lokal scripts/validate-source.ps1 er grøn. Næste trin er PR-gate, merge, fuld produktion og browserkontrol af den nye produktionsdataset.

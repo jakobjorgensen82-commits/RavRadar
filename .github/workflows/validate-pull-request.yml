@@ -36,26 +36,5 @@ jobs:
       # En ra PR-checkout har med vilje ikke Supabase-hemmeligheder og kan
       # derfor ikke hydrere den centrale admin-sandhed, som fuld produktion
       # kraever. De kildebaserede gates her maa aldrig bygge eller deploye.
-      - name: Validate project memory
-        run: npm run validate:rdks
-
-      - name: Validate current history and reference-hour handling
-        run: npm run test:current-transport-history
-
-      - name: Validate production-hour lock
-        run: npm run test:production-hour-lock
-
-      - name: Validate DMI and fallback integration
-        run: |
-          npm run test:dmi-acquisition
-          npm run test:dmi-bulk-forecast-integration
-          npm run test:water-source-production-chain
-
-      - name: Validate production workflow gate order
-        run: npm run test:workflow-validation-order
-
-      - name: Validate online browser audit syntax
-        run: node --check scripts/audit-online-browser-playwright-4.0.237.mjs
-
-      - name: Run release governance gate
-        run: npm run release:gate
+      - name: Validate source contracts and release governance
+        run: npm run validate:source

@@ -13,7 +13,7 @@ assert.ok(refreshStart < dmiRestoreStart && refreshStart < dmiSaveStart,
   'Private Copernicus cache must be touched before large DMI cache restore/save churn');
 
 const refreshBlock = workflow.slice(refreshStart, dmiRestoreStart);
-assert.match(refreshBlock, /uses: actions\/cache\/restore@v4/);
+assert.match(refreshBlock, /uses: actions\/cache\/restore@v6/);
 assert.match(refreshBlock, /path: \.cache\/copernicus-current-shadow\.json/);
 assert.match(refreshBlock, /copernicus-current-shadow-v1-/);
 assert.match(refreshBlock, /cache-matched-key/);

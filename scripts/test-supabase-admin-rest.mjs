@@ -70,7 +70,7 @@ const [retryWorkflow,protectedSync,versionSetter]=await Promise.all([
   fs.readFile('scripts/set-version.mjs','utf8')
 ]);
 assert.match(retryWorkflow,/source_run_id:/,'målrettet workflow skal kræve et eksisterende privat run');
-assert.match(retryWorkflow,/actions\/download-artifact@v4/,'målrettet workflow skal genbruge det private artifact');
+assert.match(retryWorkflow,/actions\/download-artifact@v8/,'målrettet workflow skal genbruge det private artifact');
 assert.match(retryWorkflow,/validate-national-admin-roundtrip\.mjs/,'målrettet workflow skal køre den centrale roundtrip');
 assert.doesNotMatch(retryWorkflow,/deploy-pages|pages:\s*write/,'målrettet roundtrip må aldrig kunne deploye');
 assert.match(protectedSync,/const previousManifest=await existingDocument\(manifestKey\);/,'manifestet skal læses fail-closed');
