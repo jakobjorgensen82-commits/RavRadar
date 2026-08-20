@@ -3,7 +3,7 @@
 ## Afsluttet P1 - systematisk online browserkontrol 2026-08-20
 
 - [x] Browser-plugin forsøgt først og diagnosticeret til trusted-code-path-fejl; ejer-godkendt Chromium-fallback anvendt.
-- [x] Live 4.0.237 er senest gentaget grønt med Playwright/system-Chrome paa datasæt `rr-20260819235244-210` fra naturlig produktion `#3242`: 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdøgnsvisninger.
+- [x] Live 4.0.237 er senest gentaget grønt med Playwright/system-Chrome efter naturligt fuldt deploy `#3245` paa datasæt `rr-20260820031545-210`: 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdøgnsvisninger.
 - [x] Score, label, farveniveau, vind-/strømpile, komponent- og kystforklaringer, lokal vinderkontekst og debug-ID havde 0 mismatch.
 - [x] Ingen land-/vandpunkter, geometri, U/V, score, kilder eller live-data blev ændret.
 - Næste aktive driftspunkt er fortsat højst daglig eftermåling af den naturlige syvdøgnscache. DEC-0030 fortsætter først, når en ny relevant modelcyklus giver selvstændig evidens.
@@ -84,7 +84,7 @@
 3. **Implementeret lokalt:** runtime bærer kompakt vinderforklaring og viste vejrmetrikker pr. fælles time, og regressionen dækker 210 zoner, 673 dele, begge jagtformer og 2.100 femdøgnsvisninger.
 4. **Central gate bestået:** `#32249770288`/`#3216` bestod frisk 673/673, fuld validering, releasegate, Supabase og Pages; live datasæt `rr-20260819115558-210` matcher artifactet.
 5. **Runtimeaudit bestået:** 420 aktuelle og 2.100 femdøgnsvisninger bruger kun én komplet lokal kontekst eller en eksplicit samlet hovedzonefallback.
-6. **Visuel slutkontrol afsluttet:** faktisk DOM-/kliktest af pile, vinderområde, tekst, score og debug er gennemfoert for alle 210 zoner/673 dele, begge jagtformer og fem doegn. Seneste Playwright-gentagelse paa `rr-20260819235244-210` havde nul mismatch og nul browser-/HTTP-fejl.
+6. **Visuel slutkontrol afsluttet:** faktisk DOM-/kliktest af pile, vinderområde, tekst, score og debug er gennemfoert for alle 210 zoner/673 dele, begge jagtformer og fem doegn. Seneste Playwright-gentagelse efter `#3245` paa `rr-20260820031545-210` havde nul mismatch og nul browser-/HTTP-fejl.
 
 ## Afsluttet driftsrelease – GitHub-plan og Supabase-timeout
 
@@ -103,7 +103,7 @@
 5. Indfør særskilt bevis for én komplet valgt aktuel række inden for hver zone. Den eksisterende samlede 100 %-gate bevares, men forskellige zoner må vælge forskellige nærmeste komplette timer; der kræves ikke én national fælles time.
 6. Afslut med fuld RDKS-, release-, central produktions- og direkte browservalidering. Den bestående 4.0.233-retningsisolation, kildeorden, afstandsgrænser, rollback og ejerpunkter må ikke ændres utilsigtet.
 
-Status: både den sammenhængende lokale præsentation og den særskilte zonevise current-reference er produktions- og runtimeverificeret. Den faktiske visuelle onlinekontrol er afsluttet og gentaget med Playwright paa `rr-20260819235244-210`: 210 zoner, 673 dele, 420 aktuelle visninger, 2.100 femdoegnsvisninger og nul mismatch. Krævet model/indsats: GPT-5.6 Sol, Ekstra høj.
+Status: både den sammenhængende lokale præsentation og den særskilte zonevise current-reference er produktions- og runtimeverificeret. Den faktiske visuelle onlinekontrol er afsluttet og gentaget efter `#3245` med Playwright paa `rr-20260820031545-210`: 210 zoner, 673 dele, 420 aktuelle visninger, 2.100 femdoegnsvisninger og nul mismatch. Krævet model/indsats: GPT-5.6 Sol, Ekstra høj.
 
 ## Aktuelt P1-fix 2026-08-18 – lokal scoreretning må ikke komme fra en anden kystdel
 
