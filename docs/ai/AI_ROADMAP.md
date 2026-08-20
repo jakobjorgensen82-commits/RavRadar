@@ -445,3 +445,8 @@ Den planlagte P3-forskning må undersøge, om rumlige strømstrukturer har selvs
 - Use B0 as exact production control; keep C1-C3 shadow-only.
 - Build the observation/snapshot evidence path before coefficient fitting.
 - Run the full 210/673 browser audit only weekly, for a relevant score/UI/data-contract change, before launch, or after a concrete regression signal.
+
+## 4.0.239 observation safety
+- Verify and release remote GPS redaction plus the phase D score-suggestion lock.
+- After release, implement immutable forecast-snapshot linkage and search-effort capture as the next non-blocked phase D step.
+- Keep historical central GPS cleanup separate because it is an irreversible production-data operation.

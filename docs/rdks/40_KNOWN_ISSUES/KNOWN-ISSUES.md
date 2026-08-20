@@ -384,3 +384,5 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 - Den offentlige dataset rr-20260820105744-210 indeholder 210 zoner og 673 kystdele.
 - Fuld Playwright-kontrol bestod 420 aktuelle visninger og 2.100 prognosevisninger uden score-, pile-, farve-, forklarings-, konsol-, side- eller HTTP-fejl.
 - Merge af dette rene interne dokumentationscheckpoint er den praktiske kontrol af paths-ignore-reglen og skal ikke starte produktionsworkflowet.
+## Observation privacy follow-up - 2026-08-20
+- **ISSUE-HISTORICAL-OBSERVATION-GPS - OWNER DECISION REQUIRED:** 4.0.239 prevents precise trip GPS from entering new or retried central observation payloads. Rows written by older versions may still contain GPS. Do not inspect, export or delete those values ad hoc. A count-only audit, migration, rollback/backup decision and explicit owner approval are required before irreversible cleanup.

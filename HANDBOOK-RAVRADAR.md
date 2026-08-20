@@ -240,7 +240,7 @@ En privat, score-neutral cache bruger DKSS-felter ved vandpunktet samt cirka 5 o
 
 Rotationen registrerer også, hvor langt der er til den nærmeste modelkolonne med et eksakt fælles U/V-par, selv når den ligger uden for 5 km. I det tilfælde gemmes kun koordinat, afstand og lagmetadata – ikke de fjerne strømværdier. En privat ejeroversigt skelner derfor mellem nær-tærskel 5–6 km til rent manuelt geometrireview, modelhul 6–8 km, strukturelt modelhul over 8 km og en datakædefejl, hvor gyldig strøm faktisk findes inden for 5 km. Selv en nær-tærskel-post må kun flyttes, hvis vandpunktet i sig selv er forkert – aldrig blot for at nå modelcellen. Oversigten flytter ingen punkter automatisk, og den offentlige 5 km-grænse er uændret.
 
-**Håndbogsversion:** 4.0.238
+**Håndbogsversion:** 4.0.239
 
 **Opdateret:** 19. august 2026
 
@@ -272,7 +272,7 @@ De seks zoner valideres i en særskilt privat arbejdsgang, som ikke kan udgive e
 
 Når RavRadar fortæller, at bestemte kystdele scorer højere end resten af hovedzonen, kan brugeren vælge **Hvor er det?**. Hovedkortet zoomer derefter til zonen og tegner dens allerede indlæste præcise kystdele med navn. De aktuelt bedste dele fremhæves. Hvis forskellen er højst 7 point og forholdene derfor gælder hele zonen, udpeges ingen enkelt del som bedre.
 
-Kortet bruger de samme kystdata, som allerede er hentet til hovedkortet. Funktionen kræver derfor ingen samling af skærmbilleder og ingen ekstra datahentning ved normal opstart. Den tidligere offentlige formular **Hvad fandt du?** vises ikke længere under hver zone; turregistreringens særskilte observation og administratorens analysefunktion er fortsat bevaret.
+Kortet bruger de samme kystdata, som allerede er hentet til hovedkortet. Funktionen kræver derfor ingen samling af skærmbilleder og ingen ekstra datahentning ved normal opstart. Den tidligere offentlige formular **Hvad fandt du?** vises ikke længere under hver zone; turregistreringens særskilte observation og administratorens analysefunktion er fortsat bevaret. Turens præcise GPS-spor bliver på brugerens enhed og fjernes udtrykkeligt fra den centrale observationspayload.
 
 ## Lokal scoreforklaring i 4.0.184
 
@@ -1602,9 +1602,9 @@ Fire zoner bruges til automatiseret kontrol af geometri, strøm og skyggetilstan
 Als Odde og Helberskov er åben kyst nord for Mariager Fjord og må ikke behandles som fjordzone. Referencezonerapporten samler zonegeometri, pålandsretning, morfologi, verificeret strømproveniens og historiske state-felter. Rapporten ændrer ikke scoren. Nye manuelle billedserier skal kun kræves, hvis projekt-ZIP, logs, sitetest og automatisk diagnostik ikke kan afgøre en konkret fejl.
 
 ### 60.6 Brugerfund og GPS
-En fremtidig fundrapport skal kræve, at brugeren vælger den zone, hvor jagten foregik. GPS må bruges til at kontrollere, om valget virker plausibelt, men må ikke automatisk blive jagtstedet. Brugeren kan oprette rapporten hjemmefra, og telefonens aktuelle position kan derfor være irrelevant.
+En fundrapport skal kræve, at brugeren vælger den zone, hvor jagten foregik. GPS må bruges lokalt til at kontrollere, om valget virker plausibelt, men må ikke automatisk blive jagtstedet eller sendes til den centrale observationstabel. Brugeren kan oprette rapporten hjemmefra, og telefonens aktuelle position kan derfor være irrelevant.
 
-Fundrapporten skal knyttes til den historiske vejr- og tilstandskæde på det valgte tidspunkt. AI kan senere finde mønstre og foreslå nye regler, men en produktionsregel kræver menneskelig godkendelse, versionering og efterfølgende effektkontrol. Manglende fund er svagere evidens end et dokumenteret fund, fordi erfaring, udstyr, søgetid og konkurrence påvirker resultatet.
+Fundrapporten skal knyttes til den historiske vejr- og tilstandskæde på det valgte tidspunkt. Observationer bruges foreløbig kun til dækningskontrol. Automatiske scoreforslag er låst, indtil søgeindsats, uforanderligt forecastlink, tidsmæssig test og geografisk hold-out er dokumenteret og godkendt i RDKS. Manglende fund er svagere evidens end et dokumenteret fund, fordi erfaring, udstyr, søgetid og konkurrence påvirker resultatet.
 
 ### 60.7 Performance
 Historik og tilstand beregnes i pipeline. Den offentlige browser modtager kun kompakte afledte felter. Rå 24-timershistorik og store diagnostikfiler må ikke flyttes til offentlig startup. Seneste verificerede opstart omkring 3,45 sekunder er en baseline, som nye ændringer skal sammenlignes med.

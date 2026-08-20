@@ -305,3 +305,5 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - Visningen skal bruge allerede indlæst geometri, zoome til hovedzonen og navngive delene uden at gøre dem til permanente hovedzoner.
 - De aktuelt bedste dele må fremhæves, men syvpunktsreglen og RavScore må ikke ændres.
 - Den offentlige formular “Hvad fandt du?” skal ikke vises under hver zone. Den øvrige tur- og observationsinfrastruktur bevares.
+- Præcise GPS-punkter fra turregistrering må kun ligge på brugerens enhed og må aldrig indgå i den centrale observationspayload.
+- Observationer må bruges til dækningskontrol, men må ikke skabe handlingsklare scoreændringer før RavScore-kalibreringsgaten er opfyldt og godkendt i RDKS.

@@ -1569,3 +1569,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Recorded that synthetic grids cannot justify new production weights.
 - Added a data-minimized observation schema without precise coordinates, identity fields, notes, images or copied diagnostics.
 - Kept the active RavScore and all land/water points unchanged.
+
+## 2026-08-20 - 4.0.239 observation privacy and calibration guard
+- System review found that the UI promised local-only GPS while the remote observation row still contained the final trip point.
+- Remote serialization now nulls GPS and strips local sync metadata for both fresh and queued rows.
+- The former low-sample learning heuristic is retained only as history; runtime analysis is coverage-only and returns no score patch.
+- No score, geometry, weather source or production data was changed.

@@ -127,3 +127,9 @@ Arbejdet tages i P0 -> P1 -> P2 -> P3. Et blokeret naturligt observationspunkt b
 - B0 is the unchanged production baseline; C1-C3 remain shadow-only.
 - No production weights or score behavior changed.
 - Next non-blocked step: design internal observation intake and generate a coverage-only report before any fitting.
+
+## 4.0.239 observation safety checkpoint - 2026-08-20
+- In progress: precise trip GPS is redacted from all new and retried remote observation payloads.
+- In progress: observation analysis is coverage-only and cannot emit score patches while phase D is locked.
+- Next after production verification: add an immutable forecast-snapshot identifier and search-effort fields without reintroducing the removed per-zone public form.
+- Separate owner decision required: audited removal of any GPS already stored in historical central rows.

@@ -1100,3 +1100,9 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - Synthetic sensitivity evidence is not accepted as calibration evidence.
 - Three candidate directions are defined as shadow-only: smoothed baseline, process-separated model, and uncertainty-aware process model.
 - Production activation requires real find/no-find observations, temporal and geographic holdout evaluation, a new explicit RDKS decision, and full relevant release validation.
+
+## 4.0.239 observation safety truth - 2026-08-20
+- Trip GPS remains available locally for the existing trip feature, but remote serialization replaces it with `null`, including retries from an older outbox.
+- The existing observation analysis now reports coverage only. It emits no actionable model suggestion and cannot create a new score patch from the former 12-row/four-per-outcome heuristic.
+- Active RavScore and existing local adaptive-model versions are unchanged.
+- Historical central rows have not been inspected or destructively modified; older rows may still require a separately approved GPS cleanup migration.
