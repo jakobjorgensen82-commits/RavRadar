@@ -158,3 +158,9 @@ Arbejdet tages i P0 -> P1 -> P2 -> P3. Et blokeret naturligt observationspunkt b
 - Adskil jagtbarhed og sikkerhed i brugerflade og håndbog uden at ændre score eller geometri.
 - Delmålet er lukket i produktion efter PR #23, frisk produktionsdatagate og fejlfri onlineaudit af 210 zoner og 673 kystdele.
 - Næste RavScore-implementering er kontrolleret bølgeinput på alle 673 kystdele efter særskilt beslutning og regressionstest.
+
+## P1 - 4.0.241 aktiv bølgeprior
+
+- Mål den begrænsede bølgeeffekt syntetisk og på det aktuelle nationale offentlige datasæt.
+- Aktivér kun efter grønne gates og systematisk browserkontrol.
+- Hold vægtændringen 25/40/35 i næste særskilte delmål, så årsagen til scoreændringer kan måles.

@@ -240,7 +240,7 @@ En privat, score-neutral cache bruger DKSS-felter ved vandpunktet samt cirka 5 o
 
 Rotationen registrerer også, hvor langt der er til den nærmeste modelkolonne med et eksakt fælles U/V-par, selv når den ligger uden for 5 km. I det tilfælde gemmes kun koordinat, afstand og lagmetadata – ikke de fjerne strømværdier. En privat ejeroversigt skelner derfor mellem nær-tærskel 5–6 km til rent manuelt geometrireview, modelhul 6–8 km, strukturelt modelhul over 8 km og en datakædefejl, hvor gyldig strøm faktisk findes inden for 5 km. Selv en nær-tærskel-post må kun flyttes, hvis vandpunktet i sig selv er forkert – aldrig blot for at nå modelcellen. Oversigten flytter ingen punkter automatisk, og den offentlige 5 km-grænse er uændret.
 
-**Håndbogsversion:** 4.0.240
+**Håndbogsversion:** 4.0.241
 
 **Opdateret:** 19. august 2026
 
@@ -615,6 +615,8 @@ Disse tærskler er observations- og produktarbejdsværdier. Lokal bund, mørke, 
 
 Ekspertpunkt E-14: Valider wadersgrænserne for forskellige kyster og vurder om strøm, temperatur og bølgeperiode skal kunne blokere anbefalingen helt.
 
+
+**Bølger i transporten:** Fra 4.0.241 vurderer RavRadar ikke kun bølgehøjden. En længere bølgeperiode betyder mere relativ bølgeenergi, og bølgernes bevægelsesretning sammenholdes med den lokale retning fra hav mod land. Effekten kan højst flytte transportdelen 12 point op eller ned. Mangler periode, retning, højde eller lokal kystretning, ændrer bølgerne ikke transportscoren. Dette er en forsigtig arbejdsmodel og ikke en beregning af bundforskydning.
 
 **Sikkerhed:** RavScore vurderer ravmuligheden, ikke om det er sikkert at gå i vandet. En høj score kan godt optræde samtidig med farlige lokale forhold. Appen må aldrig erstatte egen sikkerhedsvurdering.
 

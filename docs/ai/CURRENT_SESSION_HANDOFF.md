@@ -148,3 +148,11 @@ Der må ikke flyttes land-/vandpunkter.
 - Formål: adskil praktisk jagtbarhed fra sikkerhed uden score- eller geometriændring.
 - PR #23 er merged som 961beab1 og produktionsverificeret med frisk fuld gate, direkte kildekontrol og fejlfri onlineaudit af 210 zoner/673 kystdele.
 - Beskyt fortsat de fire dirty datafiler i hovedarbejdstræet, og flyt ingen land-/vandpunkter.
+
+## 4.0.241 aktiv bølgeprior
+
+- Arbejdsbranch: codex/ravscore-active-wave-approach.
+- Kernen, forklaringen, fallbacken og testværktøjerne er implementeret.
+- Syntetisk og national public-audit, `validate:source`, release-gate og lokal desktop-/mobilbrowserkontrol er grøn; PR-gate, frisk produktionsvalidering, onlineaudit og produktion mangler.
+- Næste delmål efter stabil produktion er den særskilte vægtændring 25/40/35.
+- Flyt ingen land-/vandpunkter, og beskyt fortsat de fire dirty datafiler.

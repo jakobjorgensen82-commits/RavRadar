@@ -1,7 +1,8 @@
-import { loadAdaptiveModel, modelAdjustment } from './adaptive-model.js?v=4.0.240';
-import { evaluateDirectionAnchors, anchorClassification, buildCoastTransportExplanation } from './direction-anchors.js?v=4.0.240';
-import { evaluateTransportEvent, classifyCoastalZone } from './coastal-process-model.js?v=4.0.240';
-import { buildScoreDebugTrace } from './debug-trace.js?v=4.0.240';
+import { loadAdaptiveModel, modelAdjustment } from './adaptive-model.js?v=4.0.241';
+import { evaluateDirectionAnchors, anchorClassification, buildCoastTransportExplanation } from './direction-anchors.js?v=4.0.241';
+import { evaluateTransportEvent, classifyCoastalZone } from './coastal-process-model.js?v=4.0.241';
+import { buildScoreDebugTrace } from './debug-trace.js?v=4.0.241';
+import { boundedWaveTransportAdjustment } from './wave-approach.js?v=4.0.241';
 const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, value));
 const numberOrNull = value => (value === null || value === undefined || value === '' || typeof value === 'boolean') ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
 
@@ -104,6 +105,17 @@ function calculateTransport(zone, weather, reasons, diagnostics) {
     if (zone.seagrass) { add('Tang og ålegræs',3); reasons.push("Tang og ålegræs kan fastholde materiale, der allerede føres ind."); }
   }
 
+  const waveApproach = boundedWaveTransportAdjustment({
+    baseTransportScore: score,
+    weather,
+    onshoreDirectionDeg: onshore
+  });
+  if (waveApproach.available && waveApproach.adjustment !== 0) {
+    add('Bølgeretning og periode', waveApproach.adjustment);
+    if (waveApproach.adjustment >= 2) reasons.push("Bølgernes retning og periode understøtter transport ind mod kysten.");
+    else if (waveApproach.adjustment <= -2) reasons.push("Bølgernes retning og periode understøtter kun lidt transport ind mod kysten.");
+  }
+
   if (currentAlignment !== null && current >= .15) {
     if (currentAlignment <= -.75) caps.push({ max: 28, reason: 'strongly-offshore-current' });
     else if (currentAlignment <= -.35) caps.push({ max: 42, reason: 'offshore-current' });
@@ -130,6 +142,21 @@ function calculateTransport(zone, weather, reasons, diagnostics) {
   diagnostics.anchorSelectionMethod = anchorEvaluation.method;
   diagnostics.coastTransportExplanation = buildCoastTransportExplanation(anchorEvaluation);
   diagnostics.windClassification = windAlignment === null ? 'unknown' : windAlignment >= .65 ? 'onshore' : windAlignment >= .2 ? 'partly-onshore' : windAlignment <= -.35 ? 'offshore' : 'cross-shore';
+  diagnostics.waveApproach = {
+    available: waveApproach.available,
+    modelVersion: waveApproach.modelVersion,
+    adjustment: waveApproach.adjustment,
+    maxAdjustment: waveApproach.maxAdjustment,
+    missing: waveApproach.missing || [],
+    waveDirectionFromDeg: waveApproach.waveDirectionFromDeg ?? null,
+    waveDirectionTowardDeg: waveApproach.waveDirectionTowardDeg ?? null,
+    waveOnshoreDifferenceDeg: waveApproach.differenceDeg ?? null,
+    waveOnshoreAlignment: waveApproach.alignment ?? null,
+    waveEnergyProxy: waveApproach.energyProxy ?? null,
+    waveEnergyScore: waveApproach.energyScore ?? null,
+    waveActivity: waveApproach.waveActivity ?? null,
+    waveApproachSupportScore: waveApproach.supportScore ?? null
+  };
   diagnostics.scoreBeforeCaps = Math.round(scoreBeforeCaps);
   diagnostics.scoreAfterCaps = Math.round(score);
   diagnostics.capsApplied = caps;

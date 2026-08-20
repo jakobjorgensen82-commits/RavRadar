@@ -1464,3 +1464,12 @@ Status: Implementeret og lokalt valideret.
 - [x] Målrettede tests, validate:source og release-gate.
 - [x] Lokal Browser-kontrol af aktuel visning og fem-døgnsvisning på desktop og mobil.
 - [x] PR #23, merge, frisk produktionsdatagate, deploy, direkte kildekontrol og systematisk onlineaudit.
+
+## 4.0.241 aktiv bølgeprior
+
+- [x] Fælles bølgeretning-/periodefunktion og begrænset transportjustering.
+- [x] Sikker fallback, forklaring og diagnostik.
+- [x] Målrettet test og national offentlig auditværktøj.
+- [x] Syntetisk audit af 55.296 scenarier og national offentlig audit af 210 zoner/673 beregnede kystdele.
+- [x] `validate:source`, release-gate og lokal desktop-/mobilbrowserkontrol.
+- [ ] PR-gate, merge, frisk produktionsvalidering og systematisk onlineaudit.

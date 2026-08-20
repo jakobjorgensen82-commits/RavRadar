@@ -166,3 +166,10 @@ Turrapporter skal indsamle både fund og nul-fund samt søgetid, metode og tilst
 - og lokale kysttypeeffekter.
 
 Validering skal deles i tid og geografi, så modellen ikke kun lærer de mest aktive brugere eller de mest besøgte strande. Den forskningsbaserede før-lancering-model er startpunktet; observationerne skal forbedre den, ikke undskylde en svag model i de første måneder.
+
+## Implementeringsstatus 4.0.241
+
+- Bølgeretning og periode er omsat til en begrænset aktiv transportprior efter DEC-0032.
+- Den relative energiproxy og retningsfaktoren er genbrugt fra den diagnostiske fase D-kandidat.
+- Effekten er højst plus/minus 12 transportpoint, har nul-fallback og må ikke omtales som bundforskydning.
+- Vægtforslaget 25/40/35 er fortsat et separat næste delmål.
