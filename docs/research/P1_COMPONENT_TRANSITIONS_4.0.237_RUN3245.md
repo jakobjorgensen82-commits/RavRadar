@@ -33,6 +33,24 @@ De 203 WAM-daekkede zoner har skift mellem DMI og fallback omkring progressive h
 
 Den kortere viste current-horisont end i tidligere artifacts afspejler reference-tidens fremrykning mod den uændrede DKSS-modelkant. Den er ikke i sig selv historikretention eller tab af de 673 lokale liveidentiteter.
 
+## Vandstand
+
+- 202 zoner har alle 118 viste timer; otte Limfjordszoner har 107 timer.
+- 22.470 zonetimer er DMI, 2.222 fallback og 88 eksplicit missing.
+- Alle 210 zoner har eet kildeskift: 202 `dmi -> fallback` og otte `dmi -> missing`.
+- Ved de 202 numeriske DMI/fallback-overgange er forskellen i vandstand middel 2,099 cm, p95 9 cm og maksimum 22 cm.
+
+De otte `dmi -> missing`-haler ligger i `DK-B05-14`, `DK-B05-16`, `DK-B05-17`, `DK-B05-18`, `DK-B05-19`, `DK-B05-22`, `DK-B05-23` og `DK-B05-24`. De fremstilles ikke som numeriske overgange og udfyldes ikke kunstigt.
+
+## Vandtemperatur
+
+- Den samme fordeling gaelder: 202 zoner har 118 timer, og de otte Limfjordszoner har 107 timer.
+- 22.470 zonetimer er DMI, 2.222 fallback og 88 eksplicit missing.
+- Alle 210 zoner har eet kildeskift: 202 `dmi -> fallback` og otte `dmi -> missing`.
+- Ved de 202 numeriske DMI/fallback-overgange er forskellen i vandtemperatur middel 1,653 grader C, p95 2,9 og maksimum 5,0.
+
+Vandstand og vandtemperatur har altsaa data i alle zoner, men ikke fuld vist hale i otte zoner. Maalingen dokumenterer den eksisterende progressive merge; den er ikke i sig selv grundlag for nye permanente graenser eller aendret fallback.
+
 ## 72-timers historik
 
 Alle 210 zoner har 65 raasamples og 34,903 timer. Den gamle `main`-enrichment har fortsat kun 55 verificerede samples i 197 zoner, 49 i en zone og nul i de 12 reelle huller; verificeret spaend er 22,563 timer i 198 zoner. Det er nyt foer-fix-bevis for reference-time-fejlen.
