@@ -166,6 +166,10 @@ jobs:
         with:
           node-version: 22
 
+      - name: Run fast source gate before expensive data refresh
+        if: steps.preflight.outputs.should_run == 'true'
+        run: npm run validate:source
+
       - name: Rebuild centrally reviewed coastal-part sampling points
         if: steps.preflight.outputs.should_run == 'true'
         run: node scripts/build-public-coastal-parts-v2.mjs
