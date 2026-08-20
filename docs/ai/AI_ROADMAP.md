@@ -36,7 +36,7 @@
 
 ## Aktiv P1 - naturlig 72-timers vejrhistorik
 
-- `#3237` har ensartet 62 samples og 28,903 timers `samples72h` i alle 210 zoner; `#3242` voksede videre til 64 samples og 30,903 timer.
+- `#3237` havde ensartet 62 samples og 28,903 timers `samples72h` i alle 210 zoner; naturlig fuld produktion `#3245` er vokset til 65 samples og 34,903 timer.
 - Forloebet starter ved den kontrollerede 4.0.232-liveaktivering og viser ikke tilfaeldigt zonevist tab.
 - Naeste gyldige exitmaaling er en naturlig produktion efter `2026-08-21T16:05:48Z`. Ingen backfill, scoreaendring eller punktflytning er godkendt.
 
@@ -54,6 +54,7 @@
 - `#3240` har 4/4 verificerede referencezoner, 4/4 shadow-states og nul numerisk scorepaavirkning.
 - Alle fire har 15 verificerede current-timer og 8 uverificerede samples; `activeCurrentRegime=unavailable` er derfor korrekt fail-closed.
 - Potentialerne varierer mellem zonerne, men checkpointet er ikke kalibrerings- eller scorebevis. Fortsat naturlig drift og fysisk forklarlige overgange afventes.
+- `#3245` har fortsat 4/4 verificerede referencezoner og nul scorepaavirkning, men verificeret dækning faldt fra 15,0 til 10,1 timer, mens uverificerede samples steg 8 til 10. Det er nyt foer-fix-bevis for reference-time-fejlen paa gammel `main`, ikke retentiontab.
 
 ## Aktiv P2 - GitHub Actions Node-runtime
 
