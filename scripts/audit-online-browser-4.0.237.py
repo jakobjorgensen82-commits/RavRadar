@@ -139,7 +139,13 @@ async def main():
         totals = {"currentViews": 0, "forecastViews": 0, "partReferences": 0}
         for mode in ("waders", "beach"):
             await page.evaluate("mode => window.__ravradarOnlineAudit.setMode(mode)", mode)
-            for zone_id in zone_ids:
+            for zone_index, zone_id in enumerate(zone_ids, start=1):
+                if zone_index == 1 or zone_index % 10 == 0 or zone_index == len(zone_ids):
+                    print(
+                        f"Browseraudit {mode}: zone {zone_index}/{len(zone_ids)} ({zone_id})",
+                        file=sys.stderr,
+                        flush=True,
+                    )
                 checked = await page.evaluate("zoneId => window.__ravradarOnlineAudit.checkZone(zoneId)", zone_id)
                 totals["currentViews"] += 1
                 totals["forecastViews"] += checked["days"]
