@@ -428,3 +428,7 @@ Den planlagte P3-forskning må undersøge, om rumlige strømstrukturer har selvs
 +- PR #8/`6d63ac3a` er fuldt produktions- og browserverificeret på `rr-20260820112436-210` med nul fejl i 210 zoner og 673 dele.
 +- P1 er vokset til 43,31 verificerede timer i 198 zoner og cirka 105,75 timers shadow-capture. De 12 parenthuller forbliver korrekt missing.
 +- Ingen ny modelcollection blev hentet. Mens 72/168 timer opbygges naturligt, fortsættes næste ikke-blokerede P2-analyse uden produktionskode eller scoreændring.
+## RavScore-forskning fase A-B aktiv
++- Den permanente evidensbase er oprettet med verificeret aktiv kodevej, fysisk systemmodel, første primærkilder, evidensklasser og valideringsdesign.
++- Aktive tærskler og vægte er arbejdshypoteser. Vind, bølger, strøm og kysttags kan være dobbelt-talt; dette skal måles før forslag.
++- Fase C-D fortsætter score-neutralt med materialefysik, overførbarhed, kodefølsomhed, ablation og bias-kontrolleret fund-/nulvalidering.

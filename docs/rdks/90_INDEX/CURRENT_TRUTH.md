@@ -1078,3 +1078,9 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 +- P1-historikken er 73 rå prøver/43,31 timer i alle zoner og samme verificerede spænd i 198 zoner. De 12 parenthuller står ved nul; shadow-cachen spænder cirka 105,75 timer.
 +- Ingen ny DMI-collection blev hentet. Der ændres ingen kilde, fallback, score, tærskel eller geometri.
 +- En gentaget GitHub exit-2-annotation på det grønne fulde valideringstrin findes også i #3259/#3261; ingen fejlet deltest eller gate blev fundet.
+## RavScore-forskning fase A-B
++- DEC-0029 er igangsat score-neutralt, fordi P1's næste 72/168-timersbevis afventer naturlig tid.
++- Den aktive score kommer fra `js/core/score-engine.js`, ikke den historiske rodprototype `ravscore.js`. Standardvægtene er 40 % jagtbarhed, 35 % transport og 25 % mobilisering/tilgængelighed.
++- Kodeauditen finder uvaliderede numeriske tærskler og mulig dobbelt-tælling af vind, bølger, strøm, alignment og kysttags. Bølgeretning/-periode og shadow-state findes, men påvirker ikke aktiv score direkte.
++- Første primærkilder støtter den overordnede kæde stormerosion -> transport -> aflejring, men ingen leverer klasse A-bevis for RavRadars tærskler eller vægte.
++- Ingen produktionskode, score, datakilde, fallback eller geometri er ændret. Se `docs/research/RAVSCORE_RESEARCH_EVIDENCE_BASE.md`.

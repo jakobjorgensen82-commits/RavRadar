@@ -94,3 +94,7 @@ Der må ikke flyttes land-/vandpunkter.
 +- Merge `6d63ac3a`, produktion `#32363403425`, support `RavRadar-support-3263` og datasæt `rr-20260820112436-210` er fuldt grønne og byte-for-byte/live-browserverificerede.
 +- Browseraudit: 210 zoner, 673 dele, 420 aktuelle og 2.100 prognosevisninger, nul fejl.
 +- P1: 73 rå prøver/43,31 timer, 198 verificerede zoner, 12 uændrede parenthuller og cirka 105,75 timers shadow-capture. Fortsæt næste ikke-blokerede roadmaparbejde; 72/168 timer afventer naturlig tid.
+## RavScore fase A-B igangsat score-neutralt
++- `docs/research/RAVSCORE_RESEARCH_EVIDENCE_BASE.md` er nu hovedgrundlaget: aktiv kode, tærskler, overlap, systemmodel, evidensklasser, første primærkilder og valideringsforsøg.
++- Vigtigste fund er risiko for dobbelt-tælling og manglende direkte kalibrering af numeriske tærskler/40-35-25-vægte. Bølgeretning, periode og historisk/spatial transport er kun testkandidater.
++- Næste sikre trin er fase C: materialefysik, dansk overførbarhed og deterministisk følsomheds-/overlapmatrix. Ingen produktionsscore må ændres.
