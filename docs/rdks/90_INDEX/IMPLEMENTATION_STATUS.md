@@ -8,6 +8,7 @@
 - **ISOLATION:** `scoreImpact=false`, `publicRuntime=false`, `interpolation=false`; ingen rå U/V eller credentials i supportbeviset.
 - **RESTERENDE:** Fortsæt naturlig opsamling til et fuldt 168-timersvindue før afsluttende forskningsanalyse.
 - **KOMPONENTCYKLUS:** #3252 har ingen ny HARMONIE-, WAM- eller DKSS-modelstart i forhold til det foregående grundlag. Overgangene er stabile, men artifactet tæller ikke som en ny uafhængig DEC-0030-cyklus.
+- **PRODUKTIONSVARIGHED:** 4.0.238's fulde build var 415 sekunder mod 475,5 sekunders median for seks fulde builds. Ingen gate blev reduceret; næste kvalificerede måling kræver en reel ny modelrotation.
 
 ## Status for 4.0.238
 

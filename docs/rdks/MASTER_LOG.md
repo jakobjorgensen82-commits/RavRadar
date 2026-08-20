@@ -1488,3 +1488,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Read-only sammenligning af #3246, #3249 og #3252 viser ingen ny modelstart i 4.0.238-artifactet: HARMONIE 20. august 00Z, WAM 19. august 18Z og DKSS 19. august 12Z fortsætter.
 - Vindens DMI-til-fallback-delta er ikke forværret, bølgeovergangsmålene er uændrede, og de seks tidligere `missing->fallback`-bølgehændelser er væk uden ændret kildeorden.
 - #3252 tæller som stabil drift og historikvækst, ikke som en ny uafhængig DEC-0030-cyklus. Ingen tærskel, fallback, score eller geometri er ændret.
+
+# 2026-08-20 - P1-produktionsvarighed efter 4.0.238
+
+- De seks seneste fulde `build-and-prepare`-jobs tog 689, 473, 478, 451, 544 og 415 sekunder; medianen er 475,5 sekunder.
+- 4.0.238-kørsel `#32344813967` tog 415 sekunder, cirka 12,7 procent under medianen, og gennemførte fortsat alle faglige gates, Supabase og Pages.
+- Readiness-skip uden artifact er ikke talt som produktion. Resultatet er stabil drift, ikke et nyt modelrotationsbevis; opfølgningen fortsætter ved nye HARMONIE-, WAM- og DKSS-cyklusser.

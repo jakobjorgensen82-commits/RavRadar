@@ -27,6 +27,7 @@ Live 4.0.238 er systematisk kontrolleret med Playwright mod datasæt `rr-2026082
 - #3252 introducerer ingen ny modelstart: HARMONIE er fortsat 2026-08-20 00Z, WAM 2026-08-19 18Z og DKSS 2026-08-19 12Z.
 - Vindovergangens middel/p95 er 1,027/2,5 m/s og 37,957/128 grader; bølgeovergangene er uændrede fra #3246. De seks tidligere `missing->fallback`-bølgeovergange er væk uden ændret kildeorden.
 - Resultatet tæller som stabil drift og historikvækst, ikke som en ny uafhængig DEC-0030-cyklus. Ingen permanent tærskel, fallback eller scoreændring er godkendt. Se `docs/research/P1_COMPONENT_CYCLE_AUDIT_4.0.238_20260820.md`.
+- Det fulde 4.0.238-job tog 415 sekunder mod 475,5 sekunders median for de seks seneste fulde builds. Alle gates, Supabase og Pages kørte; korrekt readiness-skip uden artifact er ikke medregnet som produktion. Se `docs/research/P1_PRODUCTION_DURATION_4.0.238_20260820.md`.
 
 Den private Copernicus-shadow har ved pilot `#58` 37 gyldige timer, 23.273 poster, 625 maal og 629 maal/kilde-par med nul gitter-/lagustabilitet. Planlagt `#59` dubletskippede korrekt uden artifact. Syvdoegnsvinduet er fortsat uafsluttet og maales hoejst dagligt.
 

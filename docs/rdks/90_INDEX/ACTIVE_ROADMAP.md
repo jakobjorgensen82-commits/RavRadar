@@ -7,6 +7,7 @@
 - P0.3 er kun åbent for det krævede naturlige timeskiftebevis. Den fulde produktionskæde er allerede grøn; næste kvalificerede schedule skal starte før og afslutte efter en UTC-grænse uden manuel omgåelse.
 - P1-observation: Copernicus-pilot #72 har 46 eksakte timer, 28.934 poster og nul gitter-/lagustabilitet. Fortsæt mod 168 timer.
 - P1-cykluskontrol: 4.0.238-artifact #3252 bruger fortsat HARMONIE 20. august 00Z, WAM 19. august 18Z og DKSS 19. august 12Z. Det er stabil drift, ikke en ny uafhængig cyklus; ingen grænse ændres.
+- P1-performance: 4.0.238's fulde build tog 415 sekunder mod 475,5 sekunders median for seks fulde builds. Ingen gate er reduceret; målingen gentages ved reelle nye modelrotationer.
 - Ikke-blokeret driftsevidens og P1-analyse kan fortsætte, mens merge afventer. Ingen missing værdi må skjules, og ingen land-/vandpunkter må flyttes.
 
 **Opdateret:** 2026-08-20  

@@ -1,0 +1,26 @@
+# P1-produktionsvarighed for 4.0.238
+
+## Formål
+
+Roadmapet kræver, at produktionsvarigheden følges uden at reducere gates, marine audits eller datakvalitet. Denne måling bruger GitHub-jobbets faktiske `build-and-prepare`-tider og ændrer ingen workflowbetingelser.
+
+## Seneste fulde builds
+
+| Run | Event | Buildtid |
+|---|---|---:|
+| `#32314498838` | schedule | 689 sekunder |
+| `#32327270685` | schedule | 473 sekunder |
+| `#32330101853` | schedule | 478 sekunder |
+| `#32337383441` | schedule | 451 sekunder |
+| `#32343974644` | schedule | 544 sekunder |
+| `#32344813967` | push, 4.0.238 | 415 sekunder |
+
+Medianen for de seks fulde builds er 475,5 sekunder. 4.0.238-buildet ligger 60,5 sekunder eller cirka 12,7 procent under medianen.
+
+## Skip-adfærd
+
+Readiness-kørslerne `#32318506884`, `#32323804299`, `#32332623657`, `#32334839264`, `#32339983386` og `#32347036227` sprang `build-and-prepare` over og producerede intet artifact, når den eksakte aktuelle Copernicus-time ikke var klar. Det er forventet fail-closed adfærd og skal ikke tælles som hurtige produktioner.
+
+## Konklusion
+
+4.0.238 viser ingen performanceforringelse i den fulde centrale kæde. Kørsel `#32344813967` gennemførte fortsat central adminhydrering, frisk DMI, fuld validering, releasegate, supportartifact, Supabase og Pages. Målingen er driftsevidens, ikke et nyt uafhængigt modelrotationsbevis; varighed skal fortsat følges, når nye HARMONIE-, WAM- og DKSS-cyklusser faktisk optræder.
