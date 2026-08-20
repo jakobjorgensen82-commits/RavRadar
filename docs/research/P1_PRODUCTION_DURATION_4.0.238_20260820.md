@@ -34,3 +34,6 @@ Readiness-kørslerne `#32318506884`, `#32323804299`, `#32332623657`, `#323348392
 - Push-produktion 32359944007 på merge-commit 8e4c11c3 brugte 328 sekunder på build-and-prepare og cirka seks minutter samlet inklusive Pages-deploy.
 - De seneste otte fulde buildtider er 689, 473, 478, 451, 544, 415, 410 og 328 sekunder; medianen er nu 462 sekunder.
 - Kilde-PR-gaten brugte 17 sekunder trods de ekstra workflowkontrakter, så den tidligere produktionsfejlklasse er flyttet frem uden mærkbar PR-ventetid.
+## Produktion 3261
+- Build-and-prepare brugte 335 sekunder. De seneste ni fulde buildtider har nu median 451 sekunder.
+- Dette er den sidste forventede fulde produktion for en ændring af selve docs-skipworkflowet; efterfølgende rene interne dokumentationsmerges skal ikke starte workflowet.
