@@ -20,3 +20,13 @@
 ## Konklusion
 
 P1 fungerer som tiltænkt og vokser uden backfill, men 72- og 168-timerskravene er ikke nået. Der er ingen evidens for at ændre kildeorden, fallback, tærskler, RavScore eller geometri. Næste kontrol skal bruge et naturligt nyere artifact; gentagne identiske modelcyklusser tæller ikke som selvstændigt overgangsbevis.
+## Post-merge produktion #3263
+
+- PR #8 blev merged som `6d63ac3a` og bygget i produktion `#32363403425`.
+- Fuld validering, releasegate, Supabase, Pages-build og deploy bestod. Build-and-prepare tog 336 sekunder.
+- Support `RavRadar-support-3263` og det deployede datasæt `rr-20260820112436-210` matcher byte for byte.
+- Den fulde Chromium/Playwright-kontrol bestod 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 prognosevisninger med nul data-, score-, pile-, forklarings-, konsol-, side- eller HTTP-fejl.
+- Historikken voksede til 73 rå prøver/43,31 timer i alle zoner. 198 zoner har samme verificerede spænd, mens de 12 kendte parenthuller fortsat står ved nul.
+- Shadow-cachen spænder cirka 105,75 timer og har 62.225 prøver. Livepiloten dækker fortsat 673/673 dele med uændret kildefordeling.
+- DMI-bulktrinnet hentede ingen ny collection. #3263 er derfor fortsat driftsevidens, ikke en ny uafhængig komponentcyklus.
+- GitHub viser en exit-2-annotation på det fulde valideringstrin, selv om alle deltests, trinnet, jobbet og runnet er grønne. Den samme annotation findes i #3259 og #3261; ingen skjult fejlet deltest blev fundet.

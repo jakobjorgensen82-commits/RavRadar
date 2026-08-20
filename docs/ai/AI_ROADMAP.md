@@ -424,3 +424,7 @@ Den planlagte P3-forskning må undersøge, om rumlige strømstrukturer har selvs
 - 72 rå prøver spænder 42,866 timer i alle 210 zoner; 198 zoner har samme verificerede spænd, og de 12 kendte parenthuller forbliver nul.
 - Shadow-cachen spænder cirka 105,3 timer, og livepiloten dækker fortsat 673/673 dele. 72- og 168-timerskravene er åbne.
 - Der er ingen ny uafhængig modelstart. Afvent naturlig evidens uden backfill og fortsæt imens næste ikke-blokerede roadmappunkt. Se `docs/research/P1_DRIFT_CHECKPOINT_4.0.238_RUN3261.md`.
+## Produktion #3263 og næste arbejde
++- PR #8/`6d63ac3a` er fuldt produktions- og browserverificeret på `rr-20260820112436-210` med nul fejl i 210 zoner og 673 dele.
++- P1 er vokset til 43,31 verificerede timer i 198 zoner og cirka 105,75 timers shadow-capture. De 12 parenthuller forbliver korrekt missing.
++- Ingen ny modelcollection blev hentet. Mens 72/168 timer opbygges naturligt, fortsættes næste ikke-blokerede P2-analyse uden produktionskode eller scoreændring.

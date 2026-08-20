@@ -1072,3 +1072,9 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 ## Lokal kildekontrol på Windows
 +- `scripts/validate-source.ps1` sender nu Python-afhængighedskontrollen som ét portabelt argument med citater, der bevares af både Windows PowerShell og PowerShell 7.
 +- Den centrale workflowkontrakttest afviser den tidligere ikke-portable form. Produktionskode, data og releasegates er uændrede.
+## Produktion og P1 efter PR #8
++- Merge `6d63ac3a` er produktionsverificeret i `#32363403425`; fuld validering, releasegate, Supabase, Pages og deploy bestod. Build-and-prepare tog 336 sekunder.
++- Support `RavRadar-support-3263` og det deployede `rr-20260820112436-210` matcher byte for byte. Browserkontrollen bestod 210 zoner, 673 dele, 420 aktuelle og 2.100 prognosevisninger med nul fejl.
++- P1-historikken er 73 rå prøver/43,31 timer i alle zoner og samme verificerede spænd i 198 zoner. De 12 parenthuller står ved nul; shadow-cachen spænder cirka 105,75 timer.
++- Ingen ny DMI-collection blev hentet. Der ændres ingen kilde, fallback, score, tærskel eller geometri.
++- En gentaget GitHub exit-2-annotation på det grønne fulde valideringstrin findes også i #3259/#3261; ingen fejlet deltest eller gate blev fundet.
