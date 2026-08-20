@@ -10,9 +10,23 @@
 
 ## Daglig syvdøgnseftermåling 2026-08-20
 
-- Pilot `#58` udvidede den private cache til 37 gyldige timer, 23.273 poster, 625 mål og 629 mål/kilde-par; nul gitter-/lagustabilitet. Planlagt `#59` sprang korrekt samme UTC-time over uden artifact.
+- Pilot `#62` udvidede den private cache til 40 gyldige timer, 25.160 poster, 625 mål og 629 mål/kilde-par; nul gitter-/lagustabilitet. De mellemliggende naturlige pilot- og preserve-kørsler var grønne.
 - Gitter- og lagustabilitet er fortsat 0; `scoreImpact=false`, `publicRuntime=false`, 168 timers retention og ingen interpolation er bevaret.
 - Næste måling udføres tidligst næste kalenderdag. 168-timers exitkriteriet er ikke nået.
+
+## Afsluttet P1 - ikke-deployerende PR-kildegate 2026-08-20
+
+- [x] Kladde-PR `#1` udløser nu en separat read-only kildegate uden secrets, Pages-rettigheder eller deploymulighed.
+- [x] RDKS, current-historik/reference-time, production-hour-lock, workflowisolering og releasegate bestod i `#32324379165` og efterfølgende runs.
+- [x] Workflowinventartesten afviser nye triggere, secrets og deployrettigheder i PR-gaten.
+- Fuld produktionsvalidering kræver fortsat central adminhydrering, frisk vejr/current-proveniens og den normale produktionsgate. PR `#1` er fortsat kladde og ikke deployet.
+
+## Afsluttet P1 - klassifikation af parent-current-huller 2026-08-20
+
+- [x] De 12 parent-zoner uden verificeret current er samlet klassificeret som `no-marine-grid-point`, `flowPoints.current=null` og eksplicit missing uden fallback.
+- [x] Deres 47 lokale kystdele har egne marine flowpunkter; den lokale runtime forbliver 673/673.
+- [x] Reference-time-replay bevarer hullerne fail-closed og backfiller dem ikke.
+- Ingen land-/vandpunkter, kilder, fallback eller score er ændret. Parent- og lokal identitet må ikke blandes for at lukke tallet kosmetisk.
 
 ## P2 produktionsovervågning - mobil og desktop 2026-08-20
 
