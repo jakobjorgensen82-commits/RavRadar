@@ -12,7 +12,7 @@ assert.equal(
 assert.equal(
   resolveProductionReferenceTime('', new Date('2026-08-19T12:04:00Z')),
   '2026-08-19T12:04:00.000Z',
-  'Push and forced runs without a timed approval must keep their real build time.'
+  'Local execution without a workflow-approved hour must keep its real build time.'
 );
 assert.throws(
   () => resolveProductionReferenceTime('2026-08-19T11:37:00Z'),
@@ -38,6 +38,17 @@ for (const marker of [
 ]) {
   assert.ok(workflow.includes(marker), `Workflowet mangler timeslåsen: ${marker}`);
 }
+const productionTargetCondition = "if: github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)";
+assert.equal(
+  workflow.split(productionTargetCondition).length - 1,
+  2,
+  'Både cachegendannelse og timeinspektion skal beregne target_hour for push, schedule og normale/forcerede produktioner.'
+);
+assert.match(
+  workflow,
+  /CHECK_CURRENT_HOUR: \$\{\{ github\.event_name == 'schedule' \|\| \(github\.event_name == 'workflow_dispatch' && inputs\.force != true/,
+  'Kun timed schedule og ikke-forceret dispatch må udsættes ved manglende current-hour-cache.'
+);
 assert.match(updater, /resolveProductionReferenceTime\(process\.env\.RAVRADAR_PRODUCTION_TARGET_HOUR, new Date\(buildGeneratedAt\)\)/);
 assert.match(updater, /generatedAt: buildGeneratedAt, productionReferenceAt: generatedAt/);
 assert.match(updater, /output\.datasetId = `rr-\$\{buildGeneratedAt/);
@@ -46,4 +57,4 @@ assert.match(updater, /forecastFromOpenMeteo\(feature, generatedAt\)/);
 assert.match(updater, /past_hours: String\(fallbackPastHours\)/);
 assert.match(liveBuilder, /default=os\.getenv\("RAVRADAR_PRODUCTION_TARGET_HOUR"\)/);
 
-console.log('OK: en planlagt produktion forbliver bundet til den preflight-godkendte UTC-time.');
+console.log('OK: enhver produktion forbliver bundet til readiness-jobbets UTC-time uden at gøre push/force cacheblokeret.');
