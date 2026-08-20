@@ -157,6 +157,26 @@ def valid_dmi_parts(document: dict[str, Any], targets: dict[str, dict[str, Any]]
     return covered, times
 
 
+def runtime_times_by_part(
+    document: dict[str, Any],
+    targets: dict[str, dict[str, Any]],
+    reference: datetime,
+) -> dict[str, set[str]]:
+    times: dict[str, set[str]] = {}
+    for part_id, target in targets.items():
+        zone = (document.get("zones") or {}).get(f"PART::{part_id}") or {}
+        if not same_point(zone.get("samplingPoint"), target["waterPoint"]):
+            continue
+        for row in (zone.get("hourly") or {}).values():
+            try:
+                parsed = parse_time((row or {}).get("time"))
+            except Exception:
+                continue
+            if parsed >= reference:
+                times.setdefault(part_id, set()).add(utc_iso(parsed))
+    return times
+
+
 def copernicus_entries(
     document: dict[str, Any],
     targets: dict[str, dict[str, Any]],
@@ -349,7 +369,9 @@ def main() -> int:
     targets = {row["partId"]: row for row in targets_list}
     fingerprint = target_fingerprint(targets_list)
     dmi = read_json(args.dmi)
-    dmi_parts, _dmi_times = valid_dmi_parts(dmi, targets)
+    dmi_parts, dmi_times = valid_dmi_parts(dmi, targets)
+    coverage_reference = now.replace(minute=0, second=0, microsecond=0)
+    runtime_times = runtime_times_by_part(dmi, targets, coverage_reference)
 
     # The history remains available for live diagnosis in rollback mode.  Only
     # its use in score and arrows is disabled by ``enabled`` below.
@@ -358,17 +380,38 @@ def main() -> int:
     regional = regional_entries(read_json(args.regional, optional=True), policy, targets, now)
     entries = sorted(copernicus + regional, key=lambda row: (row["validTime"], row["partId"], row["sourceClass"]))
 
-    supplemental_parts = {row["partId"] for row in copernicus}
-    regional_parts = {row["partId"] for row in regional}
-    source_by_part: dict[str, str] = {}
+    historical_supplemental_parts = {row["partId"] for row in copernicus}
+    historical_regional_parts = {row["partId"] for row in regional}
+    supplemental_parts = {
+        row["partId"] for row in copernicus
+        if row["validTime"] in runtime_times.get(row["partId"], set())
+    }
+    regional_parts = {
+        row["partId"] for row in regional
+        if row["validTime"] in runtime_times.get(row["partId"], set())
+    }
+    score_ready_dmi_parts = {
+        part_id for part_id, times in dmi_times.items()
+        if times.intersection(runtime_times.get(part_id, set()))
+    }
+    history_source_by_part: dict[str, str] = {}
     for part_id in targets:
         if part_id in dmi_parts:
+            history_source_by_part[part_id] = "dmi-local"
+        elif part_id in historical_supplemental_parts:
+            history_source_by_part[part_id] = "copernicus-local"
+        elif part_id in historical_regional_parts:
+            history_source_by_part[part_id] = "dmi-regional-proxy"
+    source_by_part: dict[str, str] = {}
+    for part_id in targets:
+        if part_id in score_ready_dmi_parts:
             source_by_part[part_id] = "dmi-local"
         elif part_id in supplemental_parts:
             source_by_part[part_id] = "copernicus-local"
         elif part_id in regional_parts:
             source_by_part[part_id] = "dmi-regional-proxy"
     counts = {source: sum(value == source for value in source_by_part.values()) for source in ("dmi-local", "copernicus-local", "dmi-regional-proxy")}
+    history_counts = {source: sum(value == source for value in history_source_by_part.values()) for source in ("dmi-local", "copernicus-local", "dmi-regional-proxy")}
     missing = sorted(set(targets) - set(source_by_part))
 
     raw_projection = {
@@ -398,9 +441,12 @@ def main() -> int:
         "credentialsIncluded": False,
         "targetFingerprint": fingerprint,
         "expectedPartCount": len(targets),
+        "coverageReferenceAt": utc_iso(coverage_reference),
         "verifiedPartCount": len(source_by_part),
         "missingPartCount": len(missing),
         "partsBySelectedSource": counts,
+        "retainedHistoryPartCount": len(history_source_by_part),
+        "historyPartsBySelectedSource": history_counts,
         "supplementalRecordCount": len(entries),
         "copernicusRecordCount": len(copernicus),
         "regionalProxyRecordCount": len(regional),
@@ -414,7 +460,7 @@ def main() -> int:
     write_json(args.report, safe_report)
     print(
         f"Kontrolleret live-strømhistorik ({mode}): "
-        f"{len(source_by_part)}/{len(targets)} dele; "
+        f"{len(source_by_part)}/{len(targets)} scoreklare dele fra {utc_iso(coverage_reference)}; "
         f"DMI {counts['dmi-local']}, Copernicus {counts['copernicus-local']}, "
         f"regionalproxy {counts['dmi-regional-proxy']}."
     )

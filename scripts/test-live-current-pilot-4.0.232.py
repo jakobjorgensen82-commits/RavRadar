@@ -69,12 +69,20 @@ with tempfile.TemporaryDirectory(prefix="ravradar-live-current-") as raw_folder:
         "vectorSelection": selection, "samplingPoint": [10.0, 55.0], "gridPoint": [10.0, 55.0],
         "distanceKm": 0,
     }
+    dmi_zones = {
+        f"PART::{part['partId']}": {
+            "samplingPoint": part["waterPoint"],
+            "hourly": {"2026-08-18T15:00:00Z": {"time": "2026-08-18T15:00:00Z"}},
+        }
+        for part in all_parts
+    }
+    dmi_zones["PART::dmi-part"]["hourly"]["2026-08-18T15:00:00Z"].update({
+        "current-u": 0.1, "current-v": 0.2, "sources": {"current": dmi_source},
+    })
     write(folder / "dmi.json", {
         "schemaVersion": 2, "currentVectorSemanticsVersion": 3,
         "currentVectorSelection": selection, "currentMaxDistanceKm": 5,
-        "zones": {"PART::dmi-part": {"samplingPoint": [10.0, 55.0], "hourly": {
-            "2026-08-18T15:00:00Z": {"time": "2026-08-18T15:00:00Z", "current-u": 0.1, "current-v": 0.2, "sources": {"current": dmi_source}}
-        }}},
+        "zones": dmi_zones,
     })
     cop_record = {
         "partId": "cop-part", "parentZoneId": "Z-COP", "validTime": "2026-08-18T15:00:00Z",
@@ -132,6 +140,9 @@ with tempfile.TemporaryDirectory(prefix="ravradar-live-current-") as raw_folder:
     assert all("uMps" in row and "vMps" in row for row in history["entries"])
     assert report["verifiedPartCount"] == 10 and report["coverageRequirementMet"] is True
     assert report["partsBySelectedSource"] == {"dmi-local": 1, "copernicus-local": 1, "dmi-regional-proxy": 8}
+    assert report["coverageReferenceAt"] == "2026-08-18T15:00:00Z"
+    assert report["retainedHistoryPartCount"] == 10
+    assert report["historyPartsBySelectedSource"] == report["partsBySelectedSource"]
     serialized = json.dumps(history).lower()
     assert "password" not in serialized and "username" not in serialized and "credential" not in serialized.replace("credentialsincluded", "")
 
@@ -141,5 +152,20 @@ with tempfile.TemporaryDirectory(prefix="ravradar-live-current-") as raw_folder:
     assert rollback_history["enabled"] is False and rollback_history["mode"] == "dmi-only-rollback"
     assert len(rollback_history["entries"]) == 9
     assert rollback_report["verifiedPartCount"] == 10
+
+    recent_history_record = {**cop_record, "validTime": "2026-08-18T14:00:00Z"}
+    write(folder / "copernicus.json", {
+        "scoreImpact": False, "publicRuntime": False, "records": [recent_history_record],
+        "collections": [{"validTime": "2026-08-18T14:00:00Z", "targetFingerprint": fingerprint, "recordCount": 1}],
+    })
+    live_control["mode"] = "controlled-live"
+    write(folder / "control.json", live_control)
+    history_only, history_only_report = run_builder(folder)
+    assert len(history_only["entries"]) == 9, "Historikken skal fortsat bevare den friske, men for gamle post"
+    assert history_only_report["retainedHistoryPartCount"] == 10
+    assert history_only_report["verifiedPartCount"] == 9
+    assert history_only_report["coverageRequirementMet"] is False
+    assert history_only_report["missingPartIds"] == ["cop-part"]
+    assert history_only_report["partsBySelectedSource"] == {"dmi-local": 1, "copernicus-local": 0, "dmi-regional-proxy": 8}
 
 print("OK: offentlig livehistorik bevarer U/V uden credentials, DMI står først, og rollback slår kun anvendelsen fra.")
