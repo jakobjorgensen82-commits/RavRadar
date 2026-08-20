@@ -1095,3 +1095,8 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 +- Support `RavRadar-support-3265` og live `rr-20260820115954-210` matcher byte for byte.
 +- Browserkontrollen bestod 210 zoner, 673 dele, 420 aktuelle og 2.100 prognosevisninger med nul fejl. Aktiv scorekode og scoreadfærd er ikke ændret af fase C.
 +- Samme artifact har 74 rå prøver/43,90 timer og samme verificerede spænd i 198 zoner; 12 parenthuller står ved nul. Shadow-cachen spænder cirka 106,34 timer.
+## RavScore phase D truth - 2026-08-20
+- The active RavScore implementation remains unchanged.
+- Synthetic sensitivity evidence is not accepted as calibration evidence.
+- Three candidate directions are defined as shadow-only: smoothed baseline, process-separated model, and uncertainty-aware process model.
+- Production activation requires real find/no-find observations, temporal and geographic holdout evaluation, a new explicit RDKS decision, and full relevant release validation.

@@ -440,3 +440,8 @@ Den planlagte P3-forskning må undersøge, om rumlige strømstrukturer har selvs
 +- Den permanente følsomhedsaudit er merged og produktionsverificeret uden aktiv scoreændring.
 +- Fuld 210/673-browseraudit er grøn på det eksakte fase C-deploy.
 +- Næste analyse er fase D: observerede fordelinger, ablation, fund/nulfund, hold-out og samlet cost/benefit før enhver arkitekturændring.
+## RavScore phase D - candidate and calibration gate
+- Candidate design is documented and score-neutral.
+- Use B0 as exact production control; keep C1-C3 shadow-only.
+- Build the observation/snapshot evidence path before coefficient fitting.
+- Run the full 210/673 browser audit only weekly, for a relevant score/UI/data-contract change, before launch, or after a concrete regression signal.

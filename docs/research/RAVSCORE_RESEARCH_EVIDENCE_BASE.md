@@ -168,3 +168,5 @@ Missing-auditten viser desuden asymmetri: vind er eneste absolutte gate, bølger
 ## Fase C produktionsstatus
 
 PR #11/merge `e85de36d` er produktionsverificeret i `#32366326503`. Den nye self-test kørte i den fulde gate, og det deployede datasæt samt 210/673-browserauditten er grønne. Følsomhedsværktøjet ændrer ingen aktiv score.
+## Phase D synthesis - 2026-08-20
+The evidence supports a process-separated shadow comparison, but not numeric production recalibration. Phase D therefore retains the exact production implementation as B0, defines C1-C3 as non-production candidates, and requires timestamped find/no-find observations with effort, temporal holdout and coast-group holdout before fitting. See `RAVSCORE_PHASE_D_CANDIDATE_MODELS.md`.

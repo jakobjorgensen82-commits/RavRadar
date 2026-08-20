@@ -106,3 +106,9 @@ Der må ikke flyttes land-/vandpunkter.
 +- PR #11/`e85de36d`, produktion `#32366326503`, support `RavRadar-support-3265` og live `rr-20260820115954-210` er fuldt grønne og hash-/browserverificerede.
 +- Browseraudit: 210 zoner, 673 dele, 420 aktuelle, 2.100 prognosevisninger og nul fejl. Aktiv scorekode er uændret.
 +- P1 er nu 43,90 verificerede timer i 198 zoner og cirka 106,34 timers shadow-capture. Næste ikke-blokerede forskning er fase D-design, mens 72/168 timer vokser naturligt.
+## Continuation checkpoint - RavScore phase D
+- Branch: `codex/ravscore-phase-d` from merged main `0739a45e`.
+- Added `docs/research/RAVSCORE_PHASE_D_CANDIDATE_MODELS.md` and `docs/research/ravscore-observation.schema.json`.
+- Active score is unchanged; all candidates are shadow-only.
+- Next executable roadmap step is internal observation intake plus immutable forecast-snapshot linkage, followed by a coverage-only report. Do not fit coefficients before that gate.
+- Continue to avoid the four protected dirty data files and do not move land/water points.

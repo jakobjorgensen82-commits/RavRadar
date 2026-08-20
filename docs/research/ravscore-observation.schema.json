@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ravradar.dk/schemas/ravscore-observation-v1.json",
+  "title": "RavScore calibration observation",
+  "description": "Data-minimized, non-public observation linked to the forecast available at search time.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "observationId",
+    "zoneId",
+    "coastalPartId",
+    "observedAt",
+    "mode",
+    "outcome",
+    "searchMinutes",
+    "coverage",
+    "confidence",
+    "forecastSnapshotId",
+    "forecastIssuedAt"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "observationId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "zoneId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "coastalPartId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "observedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "mode": {
+      "enum": ["waders", "beach"]
+    },
+    "outcome": {
+      "enum": ["none", "trace", "find"]
+    },
+    "findCountBand": {
+      "enum": ["one", "two-to-five", "six-or-more"]
+    },
+    "searchMinutes": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 720
+    },
+    "coverage": {
+      "enum": ["partial", "normal", "thorough"]
+    },
+    "confidence": {
+      "enum": ["low", "medium", "high"]
+    },
+    "forecastSnapshotId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "forecastIssuedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "outcome": {
+            "const": "find"
+          }
+        },
+        "required": ["outcome"]
+      },
+      "then": {
+        "required": ["findCountBand"]
+      },
+      "else": {
+        "not": {
+          "required": ["findCountBand"]
+        }
+      }
+    }
+  ]
+}
