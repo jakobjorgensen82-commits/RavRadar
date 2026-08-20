@@ -2,7 +2,7 @@
 
 ## Seneste fulde resultat
 
-Playwright med den installerede system-Chrome kontrollerede senest den offentlige 4.0.237-runtime paa datasæt `rr-20260820031545-210` fra naturlig fuld produktion `#3245`.
+Playwright med den installerede system-Chrome kontrollerede senest den offentlige 4.0.237-runtime paa datasæt `rr-20260820040308-210` fra naturlig fuld produktion `#3246`.
 
 | Kontrol | Resultat |
 |---|---:|
@@ -18,6 +18,8 @@ Playwright med den installerede system-Chrome kontrollerede senest den offentlig
 For hver zone og begge jagtformer kontrollerede runneren den viste totalscore, label, farveniveau, vindpil, stroempil, tre komponenter og deres begrundelser, kystforklaring, lokal vinderkontekst og debugscore/-del. For hver af fem dage kontrollerede den dagsscore, detaljens score, begge pile, komponenter/begrundelser, kystforklaring og lokal kontekst.
 
 Kontrollen sammenligner nu ogsaa alle seks viste vejrmetrikker felt for felt mod den samme valgte lokale runtimepost: vind, boelger, vandstand, stroem, vandtemperatur og tretimerstrend. Et manglende runtimefelt skal vises som `Mangler`; en numerisk vaerdi maa ikke skjules som manglende eller erstattes af en anden times vaerdi. Det gaelder baade de 420 aktuelle visninger og de 2.100 femdoegnsvisninger.
+
+#3246-auditten omfattede de seks zoner, som manglede boelge paa den laaste aktuelle 03-time. De viste `Mangler` i stedet for et laant tal, mens score, pile, komponentforklaringer og lokal kontekst fortsat matchede runtimebeslutningen. Auditresultatet er groen, men det goer ikke selve fallbackhullet acceptabelt; kandidatrettelsen afventer frisk main-produktion.
 
 ## Browserdiagnose
 

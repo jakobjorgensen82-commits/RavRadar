@@ -30,6 +30,7 @@
 - [x] Naturlig Copernicus-pilot `#64` genkendte samme UTC-time og centrale geometri fra `#63` og sprang authenticated download/cache/artifact over. Cachen forbliver korrekt paa 41 gyldige timer; duplikat-skippen taelles ikke som ny evidens.
 - [x] Online browseraudit sammenligner nu alle seks viste vejrmetrikker mod den valgte lokale runtimepost i 420 aktuelle og 2.100 femdoegnsvisninger, inklusive at reelle `null`-felter vises som `Mangler`.
 - [x] Naturlig produktion `#3246` afsloerede seks boelgehuller paa den laaste 03-time, da buildet passerede 04 UTC og Open-Meteo kun leverede fremtid fra 04. Kandidaten henter et dynamisk bagudvindue, filtrerer til referencetimen og bevarer 120 timer; frisk main-produktion mangler fortsat som bevis.
+- [x] Fuld livebrowseraudit efter `#3246` er groen for 210 zoner, 673 dele, 420 aktuelle og 2.100 femdoegnsvisninger. De seks boelge-nullfelter vises som `Mangler` uden laan fra en anden time; det aabne punkt er fortsat produktionsbevis for kandidatrettelsen.
 
 ## 4.0.236 – låst produktionsreferencetime
 
