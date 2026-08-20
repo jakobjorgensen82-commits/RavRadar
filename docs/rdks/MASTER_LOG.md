@@ -1602,3 +1602,10 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Brugerforklaringen, begge håndbøger og en automatisk kopikontrol er opdateret.
 - Ingen land-/vandpunkter eller scoreparametre er ændret.
 - PR #23 blev merged som 961beab1; produktionen bestod frisk fuld validering, release-gate og onlineaudit af 210 zoner/673 kystdele uden fejl.
+
+## 4.0.241 aktiv bølgeprior
+
+- DEC-0032 aktiverer retning og periode som en begrænset transportjustering.
+- Vægtning og øvrige scoredele er bevidst uændrede for at isolere effekten.
+- Ingen land-/vandpunkter eller geometri er ændret.
+- 55.296 aktive syntetiske scenarier og 436 aktuelle public-beregninger bestod; national scoreændring var minus 1 til plus 1 uden farveskift.

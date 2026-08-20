@@ -392,3 +392,9 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 - Jagtbarhed blev tidligere omtalt som både praktisk mulighed og sikkerhed.
 - Kilden adskiller nu begreberne og viser en fast sikkerhedsnote.
 - Lukket efter PR #23, frisk produktionsvalidering, deployet kildekontrol og fejlfri onlineaudit.
+
+## ISSUE-ACTIVE-WAVE-APPROACH-VALIDATION - ÅBEN I 4.0.241 SOURCE
+
+- Den relative bølgeproxy er en forskningsbaseret arbejdsprior og ikke lokalt kalibreret bundfysik.
+- Effekten er derfor begrænset og falder til nul ved manglende input.
+- Luk først efter nationale audits, fulde gates, browserkontrol og produktionsverifikation.

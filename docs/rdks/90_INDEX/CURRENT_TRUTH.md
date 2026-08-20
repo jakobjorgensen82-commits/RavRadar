@@ -1135,3 +1135,11 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - Aktuel visning og fem-døgnsvisning har samme særskilte sikkerhedsnote.
 - RavScore, pile, vægte, tærskler, data og geometri er uændrede.
 - 4.0.240 er merged i PR #23 og produktionsverificeret på mergecommit 961beab1. Frisk produktionsvalidering og release-gate bestod, den deployede kilde indeholder begge nye tekster, og den systematiske onlineaudit bestod 210 zoner, 673 kystdele, 420 aktuelle visninger og 2100 femdøgnsvisninger uden fejl.
+
+## 4.0.241 aktiv bølgeprior - source
+
+- Bølgehøjde, periode og retning kan nu justere transportkomponenten efter DEC-0032.
+- Justeringen er begrænset til plus/minus 12 transportpoint og sker før eksisterende fralandsstrømlofter.
+- Manglende bølgeinput eller lokal pålandsretning giver nul effekt.
+- Vægte, øvrige tærskler, pilekonventioner, data og geometri er uændrede.
+- Syntetisk audit holdt transport inden for plus/minus 12 og samlet score inden for plus/minus 5. National public-audit gav minus 1 til plus 1, ingen farveskift og sikker fallback ved én manglende periode. `validate:source`, release-gate og lokal desktop-/mobilbrowserkontrol er grøn; PR-gate, frisk produktionsvalidering, onlineaudit og produktion mangler.

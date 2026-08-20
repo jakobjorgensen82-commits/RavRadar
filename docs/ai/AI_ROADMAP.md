@@ -441,7 +441,8 @@ Den planlagte P3-forskning må undersøge, om rumlige strømstrukturer har selvs
 +- Fuld 210/673-browseraudit er grøn på det eksakte fase C-deploy.
 +- Fase D er afsluttet med evidensmatrix, syntetisk afprøvning og national audit; den offentlige score er endnu uændret.
 +- Jagtbarhed og sikkerhed er adskilt og produktionsverificeret i 4.0.240 uden scoreændring.
-- Næste sikre RavScore-implementering er kontrolleret bølgeinput med regressionstest og national audit før vægte eller tærskler ændres.
+- Kontrolleret bølgeinput er implementeret i 4.0.241 source med nul-fallback og et loft på plus/minus 12 transportpoint.
+- Syntetisk audit af 55.296 scenarier, national public-audit, `validate:source`, release-gate og lokal desktop-/mobilbrowserkontrol er grøn. Før aktivering mangler PR-gate, frisk produktionsvalidering og systematisk onlineaudit. Vægtene ændres fortsat først i næste særskilte delmål.
 ## RavScore phase D - candidate and calibration gate
 - Candidate design is documented and score-neutral.
 - Use B0 as exact production control; keep C1-C3 shadow-only.
