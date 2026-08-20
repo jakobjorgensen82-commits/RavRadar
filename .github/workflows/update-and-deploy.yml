@@ -58,7 +58,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Restore private Copernicus current cache for timed gate
-        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force != true && inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)
+        if: github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)
         uses: actions/cache/restore@v6
         with:
           path: .cache/copernicus-current-shadow.json
@@ -67,7 +67,7 @@ jobs:
             copernicus-current-shadow-v1-
 
       - name: Inspect timed UTC hour without exposing raw vectors
-        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force != true && inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)
+        if: github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)
         id: cache-state
         run: python3 scripts/check-copernicus-current-hour.py --github-output "$GITHUB_OUTPUT"
 
@@ -94,8 +94,9 @@ jobs:
     permissions:
       contents: read
     env:
-      # Timed runs remain bound to the exact hour that passed the private
-      # Copernicus readiness gate, even if the job crosses a UTC hour boundary.
+      # Every production build remains bound to the UTC hour resolved at
+      # readiness, even if the job crosses an hour boundary. Only timed runs
+      # are deferred when that hour is absent from the private cache.
       RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ needs.current-hour-readiness.outputs.target_hour }}
     outputs:
       should_deploy: ${{ steps.preflight.outputs.should_run }}
