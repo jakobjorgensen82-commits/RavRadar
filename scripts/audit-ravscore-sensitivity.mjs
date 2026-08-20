@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { calculateRavScore, SCORE_WEIGHTS } from '../js/core/score-engine.js';
+import { compareScoreCandidates, SCORE_CANDIDATE_WEIGHTS } from '../js/core/score-candidates.js';
+import { evaluatePhaseDProcessCandidate } from '../js/core/phase-d-process-candidate.js';
 
 const selfTest = process.argv.includes('--self-test');
 const clone = value => structuredClone(value);
@@ -39,11 +41,17 @@ function setPath(context, path, value) {
 
 function calculate(context) {
   const result = calculateRavScore(context);
+  const candidates = compareScoreCandidates(result);
+  const processCandidate = evaluatePhaseDProcessCandidate(context);
   return {
     available: result.available,
     score: result.score,
     level: result.level,
     components: result.available ? result.components : null,
+    candidateScores: candidates.available ? {
+      ...candidates.scores,
+      phaseDProcessPrior: processCandidate.available ? processCandidate.score : null,
+    } : null,
     dominantPathway: result.explanation?.mobilisationDiagnostics?.dominantPathway || null,
     caps: result.explanation?.transportDiagnostics?.capsApplied?.map(cap => cap.reason) || [],
   };
@@ -226,7 +234,12 @@ function scenarioGrid(mode) {
                     Object.assign(context.history, { maxWind24hMps: maxWind, maxWave24hM: maxWave, hoursSinceHighEnergy: eventAge });
                     Object.assign(context.zone, { shallowWater: coastFeatures, reefs: coastFeatures, seagrass: coastFeatures, coastType: coastFeatures ? 'west' : 'east' });
                     const result = calculate(context);
-                    rows.push({ score: result.score, ...result.components });
+                    rows.push({
+                      score: result.score,
+                      ...result.components,
+                      candidateScores: result.candidateScores,
+                      inputs: { wind, wave, current, currentDirection, trend, maxWind, maxWave, eventAge, coastFeatures },
+                    });
                   }
   const scores = rows.map(row => row.score);
   const componentRange = component => {
@@ -238,6 +251,88 @@ function scenarioGrid(mode) {
     const level = row.score >= 75 ? 'good' : row.score >= 55 ? 'fair' : row.score >= 35 ? 'weak' : 'poor';
     levels[level] += 1;
   }
+  const scoreLevel = score => score >= 75 ? 'good' : score >= 55 ? 'fair' : score >= 35 ? 'weak' : 'poor';
+  const candidateIds = ['b0', 'phaseDAdditive', 'equalAdditive', 'phaseDSoftGate', 'phaseDChain', 'phaseDFullChain', 'phaseDProcessPrior'];
+  const candidateComparisons = Object.fromEntries(candidateIds.map(id => {
+    const candidateScores = rows.map(row => row.candidateScores[id]);
+    const deltas = rows.map((row, index) => candidateScores[index] - row.score);
+    const examples = rows.map((row, index) => ({ row, delta: deltas[index] }));
+    const compactExample = value => ({
+      deltaFromB0: value.delta,
+      inputs: value.row.inputs,
+      b0Components: Object.fromEntries(['huntability', 'transport', 'release'].map(key => [key, value.row[key]])),
+      scores: { b0: value.row.score, candidate: value.row.candidateScores[id] },
+    });
+    return [id, {
+      minimum: Math.min(...candidateScores),
+      maximum: Math.max(...candidateScores),
+      mean: round(candidateScores.reduce((sum, value) => sum + value, 0) / candidateScores.length),
+      meanDeltaFromB0: round(deltas.reduce((sum, value) => sum + value, 0) / deltas.length),
+      lowerThanB0: deltas.filter(value => value < 0).length,
+      equalToB0: deltas.filter(value => value === 0).length,
+      higherThanB0: deltas.filter(value => value > 0).length,
+      changedLevel: rows.filter((row, index) => scoreLevel(candidateScores[index]) !== scoreLevel(row.score)).length,
+      correlationToB0: round(pearson(rows.map((row, index) => ({ b0: row.score, candidate: candidateScores[index] })), 'b0', 'candidate')),
+      largestIncrease: compactExample([...examples].sort((a, b) => b.delta - a.delta)[0]),
+      largestDecrease: compactExample([...examples].sort((a, b) => a.delta - b.delta)[0]),
+    }];
+  }));
+  const historyConsistentRows = rows.filter(row => row.inputs.maxWind >= row.inputs.wind && row.inputs.maxWave >= row.inputs.wave);
+  const processPriorConsistentPairs = historyConsistentRows.map(row => ({
+    row,
+    candidate: row.candidateScores.phaseDProcessPrior,
+    delta: row.candidateScores.phaseDProcessPrior - row.score,
+  }));
+  const compactConsistentExample = value => ({
+    deltaFromB0: value.delta,
+    inputs: value.row.inputs,
+    b0Components: Object.fromEntries(['huntability', 'transport', 'release'].map(key => [key, value.row[key]])),
+    scores: { b0: value.row.score, candidate: value.candidate },
+  });
+  const processPriorConsistent = {
+    scenarios: historyConsistentRows.length,
+    excludedInconsistentScenarios: rows.length - historyConsistentRows.length,
+    consistencyRule: 'maxWind >= currentWind and maxWave >= currentWave',
+    mean: round(processPriorConsistentPairs.reduce((sum, value) => sum + value.candidate, 0) / processPriorConsistentPairs.length),
+    meanB0: round(processPriorConsistentPairs.reduce((sum, value) => sum + value.row.score, 0) / processPriorConsistentPairs.length),
+    meanDeltaFromB0: round(processPriorConsistentPairs.reduce((sum, value) => sum + value.delta, 0) / processPriorConsistentPairs.length),
+    changedLevel: processPriorConsistentPairs.filter(value => scoreLevel(value.candidate) !== scoreLevel(value.row.score)).length,
+    correlationToB0: round(pearson(processPriorConsistentPairs.map(value => ({ b0: value.row.score, candidate: value.candidate })), 'b0', 'candidate')),
+    largestIncrease: compactConsistentExample([...processPriorConsistentPairs].sort((a, b) => b.delta - a.delta)[0]),
+    largestDecrease: compactConsistentExample([...processPriorConsistentPairs].sort((a, b) => a.delta - b.delta)[0]),
+  };
+  const candidateSpread = rows.map(row => {
+    const candidateScores = Object.values(row.candidateScores);
+    return Math.max(...candidateScores) - Math.min(...candidateScores);
+  });
+  const archetypeDefinitions = {
+    easySearchLowMobilisation: row => row.huntability >= 70 && row.release <= 30,
+    mobilisedPoorTransport: row => row.release >= 70 && row.transport <= 30,
+    physicalOpportunityHardSearch: row => row.release >= 60 && row.transport >= 60 && row.huntability <= 35,
+    balancedHigh: row => row.release >= 60 && row.transport >= 60 && row.huntability >= 60,
+    balancedLow: row => row.release <= 40 && row.transport <= 40 && row.huntability <= 40,
+  };
+  const archetypes = Object.fromEntries(Object.entries(archetypeDefinitions).map(([id, predicate]) => {
+    const matches = rows.filter(predicate).map(row => ({
+      ...row,
+      candidateSpread: Math.max(...Object.values(row.candidateScores)) - Math.min(...Object.values(row.candidateScores)),
+    }));
+    const candidateMeans = Object.fromEntries(candidateIds.map(candidateId => [
+      candidateId,
+      matches.length ? round(matches.reduce((sum, row) => sum + row.candidateScores[candidateId], 0) / matches.length) : null,
+    ]));
+    const example = [...matches].sort((a, b) => b.candidateSpread - a.candidateSpread)[0];
+    return [id, {
+      scenarios: matches.length,
+      candidateMeans,
+      largestDisagreement: example ? {
+        spread: example.candidateSpread,
+        inputs: example.inputs,
+        components: Object.fromEntries(['huntability', 'transport', 'release'].map(key => [key, example[key]])),
+        candidateScores: example.candidateScores,
+      } : null,
+    }];
+  }));
   return {
     mode,
     scenarios: rows.length,
@@ -258,6 +353,14 @@ function scenarioGrid(mode) {
       transportFinal: round(pearson(rows, 'transport', 'score')),
       releaseFinal: round(pearson(rows, 'release', 'score')),
     },
+    candidateComparisons,
+    processPriorConsistent,
+    candidateDisagreement: {
+      maximumSpread: Math.max(...candidateSpread),
+      scenariosAtLeast10PointsApart: candidateSpread.filter(value => value >= 10).length,
+      scenariosAtLeast20PointsApart: candidateSpread.filter(value => value >= 20).length,
+    },
+    archetypes,
     levels,
   };
 }
@@ -268,12 +371,55 @@ function buildAudit() {
   const largestJumps = [...thresholds]
     .sort((a, b) => Math.max(Math.abs(b.scoreJumpIntoThreshold), Math.abs(b.scoreJumpOutOfThreshold)) - Math.max(Math.abs(a.scoreJumpIntoThreshold), Math.abs(a.scoreJumpOutOfThreshold)))
     .slice(0, 15);
+  const anchorZone = { id: 'PHASE-D-ANCHOR', coastType: 'east', onshoreDirectionDeg: 90, shallowWater: false, reefs: false, seagrass: false };
+  const deliveredContext = {
+    mode: 'beach',
+    zone: anchorZone,
+    weather: { windSpeedMps: 4, windDirectionDeg: 270, waveHeightM: 0.4, currentSpeedMps: 0.3, currentDirectionDeg: 90, waterLevelTrendCm3h: -4 },
+    history: { maxWind24hMps: 15, maxWave24hM: 2.5, strongEventDurationHours: 6, hoursSinceStrongEventEnd: 8, hoursSinceHighEnergy: 8 },
+  };
+  const anchorContexts = {
+    calmNoEvent: {
+      mode: 'beach', zone: anchorZone,
+      weather: { windSpeedMps: 2, waveHeightM: 0.1, currentSpeedMps: 0.03, currentDirectionDeg: 90, waterLevelTrendCm3h: 0 },
+      history: { maxWind24hMps: 5, maxWave24hM: 0.3, strongEventDurationHours: 0, hoursSinceStrongEventEnd: 120, hoursSinceHighEnergy: 120 },
+    },
+    freshDelivered: deliveredContext,
+    freshOffshore: { ...clone(deliveredContext), weather: { ...deliveredContext.weather, currentDirectionDeg: 270 } },
+    staleDelivered: { ...clone(deliveredContext), history: { ...deliveredContext.history, hoursSinceStrongEventEnd: 120, hoursSinceHighEnergy: 120 } },
+    hardToSearch: { ...clone(deliveredContext), mode: 'waders', weather: { ...deliveredContext.weather, windSpeedMps: 10, waveHeightM: 1.2 } },
+  };
+  const anchorScenarios = Object.fromEntries(Object.entries(anchorContexts).map(([id, context]) => {
+    const result = evaluatePhaseDProcessCandidate(context);
+    return [id, { score: result.score, components: result.components, confidence: result.confidence }];
+  }));
   return {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
     scoreImpact: 'none',
     method: 'synthetic deterministic sensitivity audit; not observational calibration',
     activeWeights: SCORE_WEIGHTS,
+    candidateDefinitions: {
+      ...SCORE_CANDIDATE_WEIGHTS,
+      phaseDSoftGate: {
+        base: 'phaseDAdditive',
+        weakestStageFullCreditAt: 50,
+        maximumReductionPercent: 25,
+      },
+      phaseDChain: {
+        huntabilityShare: 25,
+        physicalShare: 75,
+        physicalMethod: 'weighted-harmonic-transport-40-mobilisation-35',
+      },
+      phaseDFullChain: {
+        method: 'weighted-harmonic-huntability-25-transport-40-mobilisation-35',
+      },
+      phaseDProcessPrior: {
+        module: 'js/core/phase-d-process-candidate.js',
+        structure: 'smooth-huntability-mobilisation-transport-delivery-with-25-percent-soft-gate',
+        scoreImpact: 'diagnostic-only',
+      },
+    },
     baseline: Object.fromEntries(modes.map(mode => [mode, calculate(baseContext(mode))])),
     thresholdSummary: {
       rows: thresholds.length,
@@ -283,6 +429,7 @@ function buildAudit() {
     missingInputs: modes.flatMap(missingAudit),
     overlaps: modes.flatMap(overlapAudit),
     grids: modes.map(scenarioGrid),
+    anchorScenarios,
     routeInventory: {
       wind: ['huntability-current-speed', 'transport-current-direction', 'release-historical-maximum'],
       wave: ['huntability-current-height', 'release-current-height', 'release-historical-maximum'],
@@ -294,6 +441,11 @@ function buildAudit() {
       'Synthetic correlations describe the score formula, not nature or amber finds.',
       'A threshold jump identifies a discontinuity that needs validation; it is not evidence that the threshold is wrong.',
       'Non-additivity can come from clamping, rounding, caps, maximum-path selection or explicit synergy.',
+      'Candidate comparisons reuse B0 components and therefore test score structure, not revised physical rules.',
+      'The harmonic chain is a diagnostic soft-gate candidate, not an approved production formula.',
+      'The soft-gate candidate reduces the additive score gradually only while the weakest stage is below 50.',
+      'The full harmonic chain tests a now-findable headline score; the physical chain tests physical opportunity plus separate searchability.',
+      'The process prior replaces B0 subrules with smooth evidence-informed research priors and remains diagnostic-only.',
       'No result authorises production score changes.',
     ],
   };
@@ -306,10 +458,33 @@ if (selfTest) {
   assert.equal(audit.overlaps.length, 8);
   assert.equal(audit.grids.length, 2);
   assert.ok(audit.grids.every(grid => grid.scenarios === 43200));
+  assert.ok(audit.grids.every(grid => Object.keys(grid.candidateComparisons).length === 7));
+  assert.ok(audit.grids.every(grid => Number.isFinite(grid.candidateComparisons.phaseDProcessPrior.largestIncrease.deltaFromB0)));
+  assert.ok(audit.grids.every(grid => grid.processPriorConsistent.scenarios > 0 && grid.processPriorConsistent.scenarios < grid.scenarios));
+  assert.ok(audit.anchorScenarios.freshDelivered.score >= audit.anchorScenarios.calmNoEvent.score + 30);
+  assert.ok(audit.anchorScenarios.freshDelivered.score >= audit.anchorScenarios.freshOffshore.score + 15);
+  assert.ok(audit.anchorScenarios.freshDelivered.score >= audit.anchorScenarios.staleDelivered.score + 10);
+  assert.ok(audit.anchorScenarios.freshDelivered.score > audit.anchorScenarios.hardToSearch.score);
+  assert.ok(Object.values(audit.anchorScenarios).every(value => value.confidence.modelConfidence === 'low'));
+  assert.ok(audit.grids.every(grid => Object.values(grid.archetypes).some(value => value.scenarios > 0)));
   assert.equal(audit.baseline.waders.available, true);
   assert.equal(audit.baseline.beach.available, true);
   assert.equal(audit.missingInputs.find(row => row.mode === 'waders' && row.input === 'wind').available, false);
   assert.ok(audit.thresholdSummary.rowsWithFinalScoreJump > 0);
+  const missingMobilisation = compareScoreCandidates({
+    available: true,
+    score: 65,
+    components: { huntability: 100, transport: 100, release: 0 },
+  });
+  assert.equal(missingMobilisation.scores.phaseDAdditive, 65);
+  assert.equal(missingMobilisation.scores.phaseDSoftGate, 49);
+  assert.equal(missingMobilisation.scores.phaseDChain, 25);
+  assert.equal(missingMobilisation.scores.phaseDFullChain, 0);
+  assert.equal(missingMobilisation.physicalChainScore, 0);
+  const justBelow = evaluatePhaseDProcessCandidate({ ...baseContext('waders'), weather: { ...baseContext('waders').weather, windSpeedMps: 5.999 } });
+  const justAbove = evaluatePhaseDProcessCandidate({ ...baseContext('waders'), weather: { ...baseContext('waders').weather, windSpeedMps: 6.001 } });
+  assert.ok(justBelow.available && justAbove.available);
+  assert.ok(Math.abs(justAbove.score - justBelow.score) <= 1, 'Fase D-prior må ikke springe ved 6 m/s vind.');
   console.log('OK: RavScore sensitivity audit is deterministic, score-neutral and complete.');
 } else {
   console.log(JSON.stringify(audit, null, 2));
