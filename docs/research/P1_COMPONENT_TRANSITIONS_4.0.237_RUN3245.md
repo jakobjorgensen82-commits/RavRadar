@@ -42,6 +42,14 @@ Den kortere viste current-horisont end i tidligere artifacts afspejler reference
 
 De otte `dmi -> missing`-haler ligger i `DK-B05-14`, `DK-B05-16`, `DK-B05-17`, `DK-B05-18`, `DK-B05-19`, `DK-B05-22`, `DK-B05-23` og `DK-B05-24`. De fremstilles ikke som numeriske overgange og udfyldes ikke kunstigt.
 
+### Klassifikation af de otte Limfjordshaler
+
+Artifactets timeposter viser en ens, skarp modelkant: sidste gyldige DKSS-vandstand og -temperatur er 24. august kl. 13 UTC, og begge felter er `missing` fra kl. 14 til 00 i alle otte zoner. Nabozonerne `DK-B05-13`, `DK-B05-15`, `DK-B05-20` og `DK-B05-21` har samme DKSS-sluttid, men skifter paa kl. 14 til henholdsvis `open-meteo-adjusted` og `open-meteo`.
+
+Den aktuelle mergekode kopierer Open-Meteo Marine-vaerdien direkte, naar DMI-feltet er tomt. Den markerer kun komponenten `missing`, hvis den tilsvarende raa marine fallbackvaerdi er `null`; der findes ingen zone-, routing- eller afstandsfiltrering i dette mergeled. Halerne er derfor klassificeret som manglende raa marine fallbackfelter ved de otte eksisterende zonepunkter, ikke som tab i vandstandsrouting eller en senere mergefejl.
+
+Der flyttes ingen punkter, og der indfoeres ingen syntetisk udfyldning. En eventuel forbedring kraever foerst et særskilt dokumenteret fallbackdesign med proveniens og konsekvensanalyse for RavScore/UI.
+
 ## Vandtemperatur
 
 - Den samme fordeling gaelder: 202 zoner har 118 timer, og de otte Limfjordszoner har 107 timer.

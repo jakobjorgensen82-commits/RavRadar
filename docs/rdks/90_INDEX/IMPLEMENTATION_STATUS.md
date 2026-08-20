@@ -26,6 +26,7 @@
 - [x] Faktisk online DOM-/kliktest er gennemfoert paa 4.0.237 efter produktion `#3237`: 210 zoner, 673 dele, 420 aktuelle visninger og 2.100 femdoegnsvalg er groenne. Browser-pluginet blev diagnosticeret foerst; trusted-RPC-opstartsfejlen gav ingen konkret lokal reparation, saa godkendt Chromium/Playwright-fallback blev brugt.
 - [x] Naturlig produktion `#3245` gentager vandkildekontrollen: fire historiske cacheudloeb er ikke valgt i effektiv zonerouting, og vandstand/vandtemperatur har fortsat data i 210/210 zoner. Det naturlige exitkriterium for en valgt warning/critical-kilde er fortsat aabent.
 - [x] DEC-0030-komponentmatricen for `#3245` omfatter nu ogsaa vandstand og vandtemperatur: 202 zoner har 118 timer, otte Limfjordszoner har 107 timer, og de sidste 88 zonetimer forbliver eksplicit missing frem for kunstig udfyldning.
+- [x] De otte Limfjordshaler er afgraenset til manglende raa Open-Meteo Marine-vandstands- og temperaturfelter efter den fælles DKSS-modelkant; nabozoner skifter paa samme time til fallback. Routing og merge taber ikke eksisterende fallbackvaerdier, og ingen punkter flyttes.
 
 ## 4.0.236 – låst produktionsreferencetime
 
