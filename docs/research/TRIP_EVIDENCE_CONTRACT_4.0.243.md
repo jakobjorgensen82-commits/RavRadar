@@ -52,6 +52,8 @@ En særskilt adapter bygger turstarten fra den allerede viste offentlige kystdel
 
 En tynd offentlig runtime samler kontekstadapteren og controlleren. Den eksisterende app skal derfor kun levere den allerede valgte tilstand gennem `getContext()` og kalde `start()`, `stop()`, `resume()` eller `flush()`. Runtime-koden læser ikke kortets position, flytter ingen punkter og ændrer ikke scoreberegningen.
 
+Hvis appen ikke allerede har en entydig valgt kystdel, kan den kalde `startWithPrompt()`. Startdialogen beder om søgemetode, zone og kystdel før uret starter. Det giver et korrekt lokalt prognosesnapshot uden at kræve GPS eller antage, at nærmeste kystdel er den, brugeren faktisk vil afsøge.
+
 ## Dataminimering
 
 GPS-punkter, ruter, koordinater og spor indgår ikke i fjernkontrakten. Den faktiske kystdel er præcis nok til faglig kalibrering og langt mindre følsom end brugerens bevægelsesspor. Lokale historiske ruter ændres eller slettes ikke af denne kontrakt.

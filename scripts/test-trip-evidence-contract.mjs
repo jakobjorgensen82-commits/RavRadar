@@ -355,6 +355,7 @@ const runtime = createPublicTripEvidenceRuntime({
   getContext: () => runtimeContext,
   now: () => runtimeNow,
   createTripId: () => 'trip-runtime',
+  openStartDialog: async () => ({ mode: 'waders', zoneId: 'zone-42', coastalPartId: 'zone-42-part-2' }),
   openDialog: async () => ({
     zoneId: 'zone-42',
     coastalPartId: 'zone-42-part-2',
@@ -370,6 +371,19 @@ runtimeNow = input.endedAt;
 const runtimeResult = await runtime.stop();
 assert.equal(runtimeResult.status, 'submitted');
 assert.equal(runtime.active(), null);
+
+const promptedRuntimeStorage = new MemoryStorage();
+const promptedRuntime = createPublicTripEvidenceRuntime({
+  storage: promptedRuntimeStorage,
+  getContext: selection => ({ ...runtimeContext, ...selection }),
+  now: () => input.startedAt,
+  createTripId: () => 'trip-prompted-runtime',
+  openStartDialog: async () => ({ mode: 'waders', zoneId: 'zone-42', coastalPartId: 'zone-42-part-2' }),
+  openDialog: async () => null
+});
+const promptedStart = await promptedRuntime.startWithPrompt();
+assert.equal(promptedStart.status, 'started');
+assert.equal(promptedRuntime.active().tripId, 'trip-prompted-runtime');
 
 const noFind = buildTripEvidence({ ...input, found: false, grams: 99 });
 assert.equal(noFind.grams, null);
@@ -395,7 +409,7 @@ assert.doesNotMatch(migration, /\b(?:delete|update)\s+(?:from\s+)?ravradar_obser
 assert.doesNotMatch(migration, /\b(?:latitude|longitude|gps|route|track)\b/i);
 
 const dialogSource = fs.readFileSync('js/ui/trip-evidence-dialog.js', 'utf8');
-for (const text of ['Hvordan gik ravturen?', 'Fandt du rav?', 'Hvilken kystdel?', 'Kort kig', 'Normal tur', 'Grundigt', 'Svar senere', 'Gem tur']) {
+for (const text of ['Hvordan gik ravturen?', 'Fandt du rav?', 'Hvilken kystdel?', 'Kort kig', 'Normal tur', 'Grundigt', 'Svar senere', 'Gem tur', 'Hvor vil du lede?', 'Hvordan vil du søge?', 'Start tur']) {
   assert.match(dialogSource, new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 }
 assert.match(dialogSource, /ikke din præcise position eller rute/);

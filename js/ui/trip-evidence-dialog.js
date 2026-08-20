@@ -164,3 +164,80 @@ export function openTripEvidenceDialog({
     dialog.showModal();
   });
 }
+
+export function openTripEvidenceStartDialog({
+  mode = 'waders',
+  zoneId = null,
+  coastalPartId = null,
+  zones = [],
+  coastalParts = []
+} = {}) {
+  if (typeof document === 'undefined') throw new Error('Turformularen kræver en browser.');
+  if (!Array.isArray(zones) || !zones.length) throw new Error('Zonelisten mangler.');
+  if (!Array.isArray(coastalParts) || !coastalParts.length) throw new Error('Kystdelslisten mangler.');
+  ensureStyles();
+
+  const dialog = createElement('dialog', { className: 'trip-evidence-dialog', 'aria-labelledby': 'tripEvidenceStartTitle' });
+  const form = createElement('form', { className: 'trip-evidence-form', method: 'dialog' });
+  form.append(createElement('h2', { id: 'tripEvidenceStartTitle' }, 'Hvor vil du lede?'));
+  form.append(createElement('p', { className: 'trip-evidence-intro' }, 'Vælg søgemetode og kystdel. Så gemmer RavRadar den prognose, du faktisk starter turen med.'));
+
+  const modeField = createElement('fieldset', { className: 'trip-evidence-field trip-evidence-fieldset' });
+  modeField.append(createElement('legend', {}, 'Hvordan vil du søge?'));
+  const modeChoices = createElement('div', { className: 'trip-evidence-choices' });
+  appendRadio(modeChoices, { name: 'mode', value: 'waders', label: 'I vandet', checked: mode === 'waders' });
+  appendRadio(modeChoices, { name: 'mode', value: 'beach', label: 'På stranden', checked: mode === 'beach' });
+  modeField.append(modeChoices);
+  form.append(modeField);
+
+  const zoneLabel = createElement('label', { className: 'trip-evidence-field' });
+  zoneLabel.append(createElement('span', {}, 'Hvilken zone?'));
+  const zoneSelect = createElement('select', { name: 'zoneId', required: '' });
+  appendOptions(zoneSelect, zones, zoneId || zones[0]?.id);
+  zoneLabel.append(zoneSelect);
+  form.append(zoneLabel);
+
+  const partLabel = createElement('label', { className: 'trip-evidence-field' });
+  partLabel.append(createElement('span', {}, 'Hvilken kystdel?'));
+  const partSelect = createElement('select', { name: 'coastalPartId', required: '' });
+  partLabel.append(partSelect);
+  form.append(partLabel);
+  form.append(createElement('p', { className: 'trip-evidence-note' }, 'Vi bruger dit valgte kystafsnit. Din præcise position og rute bliver ikke sendt.'));
+
+  const actions = createElement('div', { className: 'trip-evidence-actions' });
+  actions.append(
+    createElement('button', { className: 'trip-evidence-later', type: 'button' }, 'Annuller'),
+    createElement('button', { className: 'trip-evidence-save', type: 'submit' }, 'Start tur')
+  );
+  form.append(actions);
+  dialog.append(form);
+  document.body.append(dialog);
+
+  const updateParts = () => {
+    const options = coastalParts.filter(part => part.zoneId === zoneSelect.value);
+    appendOptions(partSelect, options, options.some(part => part.id === coastalPartId) ? coastalPartId : options[0]?.id);
+    partSelect.disabled = !options.length;
+  };
+  zoneSelect.addEventListener('change', updateParts);
+  updateParts();
+
+  return new Promise(resolve => {
+    let answer = null;
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+      answer = {
+        mode: form.elements.mode.value,
+        zoneId: zoneSelect.value,
+        coastalPartId: partSelect.value
+      };
+      dialog.close('start');
+    });
+    actions.querySelector('.trip-evidence-later').addEventListener('click', () => dialog.close('cancel'));
+    dialog.addEventListener('close', () => {
+      dialog.remove();
+      resolve(dialog.returnValue === 'start' ? answer : null);
+    }, { once: true });
+    dialog.showModal();
+  });
+}

@@ -1,5 +1,6 @@
 import { createTripEvidenceController } from './trip-evidence-controller.js?v=4.0.242';
 import { createTripStartFromPublicState } from './trip-evidence-public-adapter.js?v=4.0.242';
+import { openTripEvidenceStartDialog } from '../ui/trip-evidence-dialog.js?v=4.0.242';
 
 function defaultTripId() {
   if (globalThis.crypto?.randomUUID) return `trip-${globalThis.crypto.randomUUID()}`;
@@ -11,28 +12,29 @@ export function createPublicTripEvidenceRuntime({
   persist = null,
   storage = null,
   openDialog,
+  openStartDialog = openTripEvidenceStartDialog,
   now = () => new Date().toISOString(),
   createTripId = defaultTripId
 } = {}) {
   if (typeof getContext !== 'function') throw new Error('RavRadar-konteksten mangler.');
   const controller = createTripEvidenceController({ storage, persist, openDialog });
 
-  const readContext = () => {
-    const context = getContext();
+  const readContext = selection => {
+    const context = getContext(selection);
     if (!context || typeof context !== 'object') throw new Error('RavRadar-konteksten er ikke klar.');
     return context;
   };
 
   return Object.freeze({
-    start() {
-      const context = readContext();
+    start(selection = null) {
+      const context = readContext(selection);
       const startedAt = now();
       const prepared = createTripStartFromPublicState({
         tripId: createTripId(),
         startedAt,
-        mode: context.mode,
-        zoneId: context.zoneId,
-        coastalPartId: context.coastalPartId,
+        mode: selection?.mode || context.mode,
+        zoneId: selection?.zoneId || context.zoneId,
+        coastalPartId: selection?.coastalPartId || context.coastalPartId,
         manifest: context.manifest,
         conditions: context.conditions,
         coastalPart: context.coastalPart,
@@ -48,6 +50,19 @@ export function createPublicTripEvidenceRuntime({
         forecastSnapshot: prepared.forecastSnapshot,
         calibrationFeatures: prepared.calibrationFeatures
       });
+    },
+    async startWithPrompt() {
+      const context = readContext();
+      const selection = await openStartDialog({
+        mode: context.mode,
+        zoneId: context.zoneId,
+        coastalPartId: context.coastalPartId,
+        zones: context.zones,
+        coastalParts: context.coastalParts
+      });
+      if (!selection) return { status: 'cancelled' };
+      const record = this.start(selection);
+      return { status: 'started', tripId: record.tripId };
     },
     stop() {
       const context = readContext();
