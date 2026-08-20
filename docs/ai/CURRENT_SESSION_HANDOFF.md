@@ -72,3 +72,9 @@ Der må ikke flyttes land-/vandpunkter.
 - Kode, data, scripts, workflows, HTML og øvrige offentlige filer udløser fortsat fuld produktion.
 - En regressionstest kræver den præcise allowlist og afviser brede docs-, markdown-, data-, script-, workflow- og HTML-undtagelser.
 - Formålet er at spare cirka seks minutters produktion og efterfølgende browserkontrol ved rene interne checkpoints uden at svække releasekæden.
+## Endelig workflowproduktion 3261, 2026-08-20
+- PR #5 blev merged som 0d29a512 og udløste den forventede sidste fulde produktion, fordi selve workflowfilen var ændret.
+- Produktion 32361218606 bestod fuld validering, release-gate, supportupload, Supabase og Pages-deploy. Supportartifactet er RavRadar-support-3261.
+- Den offentlige dataset rr-20260820105744-210 indeholder 210 zoner og 673 kystdele.
+- Fuld Playwright-kontrol bestod 420 aktuelle visninger og 2.100 prognosevisninger uden score-, pile-, farve-, forklarings-, konsol-, side- eller HTTP-fejl.
+- Merge af dette rene interne dokumentationscheckpoint er den praktiske kontrol af paths-ignore-reglen og skal ikke starte produktionsworkflowet.
