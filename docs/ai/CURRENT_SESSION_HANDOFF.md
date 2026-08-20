@@ -12,7 +12,7 @@
 
 ## Daglig cacheeftermåling 2026-08-20
 
-- Naturlig pilot `#54` er grøn med 35 gyldige timer, 22.015 poster, 625 mål og 629 mål/kilde-par.
+- Pilot `#58` er groen med 37 gyldige timer, 23.273 poster, 625 maal og 629 maal/kilde-par; nul gitter-/lagustabilitet. Planlagt `#59` dubletskippede korrekt uden artifact.
 - Der er nul gitter-/lagustabilitet; shadow forbliver score- og public-runtime-neutral med 168 timers retention.
 - Samtidig produktion `#3237` bestod readiness, hele `build-and-prepare` og Pages-deploy. Fuldauditen blev derefter gentaget grønt på det nye datasæt.
 - Næste cachemåling må tidligst udføres næste kalenderdag.

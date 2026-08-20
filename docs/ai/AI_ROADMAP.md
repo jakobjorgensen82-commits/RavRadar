@@ -10,7 +10,7 @@
 
 ## Daglig syvdøgnseftermåling 2026-08-20
 
-- Pilot `#54` udvidede den private cache til 35 gyldige timer, 22.015 poster, 625 mål og 629 mål/kilde-par.
+- Pilot `#58` udvidede den private cache til 37 gyldige timer, 23.273 poster, 625 mål og 629 mål/kilde-par; nul gitter-/lagustabilitet. Planlagt `#59` sprang korrekt samme UTC-time over uden artifact.
 - Gitter- og lagustabilitet er fortsat 0; `scoreImpact=false`, `publicRuntime=false`, 168 timers retention og ingen interpolation er bevaret.
 - Næste måling udføres tidligst næste kalenderdag. 168-timers exitkriteriet er ikke nået.
 

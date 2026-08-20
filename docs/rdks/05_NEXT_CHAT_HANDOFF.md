@@ -9,7 +9,7 @@
 - Evidens: `data/diagnostics/online-browser-audit-4.0.237-20260820.json` og `data/diagnostics/ONLINE_BROWSER_AUDIT_4.0.237_20260820.md`.
 - Spark-kørslen i den gamle desktopkopi er forkastet. `codex/browser-zone-audit-20260820`/`526509f2` må ikke flettes.
 - Næste driftspunkt er højst daglig syvdøgnseftermåling; fortsæt derefter næste ikke-blokerede roadmappunkt. De fire beskyttede dirty datafiler må fortsat ikke ændres eller stages.
-- Dagens cacheeftermåling er udført: pilot `#54` har 35 gyldige timer, 22.015 poster, 625 mål og 629 mål/kilde-par med nul gitter-/lagustabilitet. Næste måling tidligst næste kalenderdag; 168 timer er ikke nået.
+- Dagens cacheeftermaaling er udfoert: pilot `#58` har 37 gyldige timer, 23.273 poster, 625 maal og 629 maal/kilde-par med nul gitter-/lagustabilitet. Planlagt `#59` dubletskippede korrekt uden artifact. Naeste maaling tidligst naeste kalenderdag; 168 timer er ikke naaet.
 - Produktion `#3237` bestod readiness, hele `build-and-prepare` og Pages-deploy. Den fulde 420/2.100-browseraudit blev derefter gentaget grønt på det nye datasæt.
 - Separat mobil-/desktopaudit er grøn ved 390 × 844 og 1440 × 900 uden overflow, page errors eller funktionelle HTTP-fejl. Evidens: `data/diagnostics/online-responsive-audit-4.0.237-20260820.json`.
 
