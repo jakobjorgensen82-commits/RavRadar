@@ -56,6 +56,12 @@
 - Potentialerne varierer mellem zonerne, men checkpointet er ikke kalibrerings- eller scorebevis. Fortsat naturlig drift og fysisk forklarlige overgange afventes.
 - `#3245` har fortsat 4/4 verificerede referencezoner og nul scorepaavirkning, men verificeret dækning faldt fra 15,0 til 10,1 timer, mens uverificerede samples steg 8 til 10. Det er nyt foer-fix-bevis for reference-time-fejlen paa gammel `main`, ikke retentiontab.
 
+## Aktiv P1 - DEC-0030 komponentovergange efter #3245
+
+- Vind er 118/118 timer i 210 zoner; ny HARMONIE 00Z er kun delvist indfaset med 624 zonetimer, og halen har eet `dmi -> fallback`-skift pr. zone.
+- Boelger er 194 zoner med 118 timer, 15 Limfjordszoner med 115 og Feggesund korrekt missing. WAM 19/18Z dominerer den nye cyklus.
+- Current er 198 zoner med 107 timer og de samme 12 reelle parent-huller. Ingen kilde-, merge-, fallback- eller punktændring er godkendt ud fra checkpointet.
+
 ## Aktiv P2 - GitHub Actions Node-runtime
 
 - Naturlig pilot `#63` bestod, men GitHub runneren tvinger flere officielle Node 20-baserede actions til Node 24 og viser en deprecation-advarsel.
