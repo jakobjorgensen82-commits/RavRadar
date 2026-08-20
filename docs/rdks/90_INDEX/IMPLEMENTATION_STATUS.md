@@ -1496,3 +1496,9 @@ Status: Implementeret og lokalt valideret.
 - 7.560 synlige delscoreforklaringer er kontrolleret for korrekt vægt, delscore og pointbidrag.
 - Den tidligere status om afventende deploy og onlinekontrol er erstattet af dette resultat.
 - Vægtningen forbliver foreløbig, indtil repræsentative fund- og nul-fundsture giver grundlag for kalibrering.
+## Fase D observerede fordelinger og tripgate
+
+- Implementeret score-neutralt: `scripts/audit-ravscore-observed-ablation.mjs` med deterministisk self-test i `validate:source`.
+- Dokumenteret: nationale fordelinger, komponentablation, driveroverlap og zonevinderbias i 4.0.242.
+- Besluttet i DEC-0042: tripniveau, indsats, faktisk kystdel og immutable forecast-link er obligatorisk før senere fit.
+- Åben implementering: den nuværende turformular skal erstattes af den dataminimerede tripkontrakt, mens GPS-redaktion og kalibreringslås bevares.

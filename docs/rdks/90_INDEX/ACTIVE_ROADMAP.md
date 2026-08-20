@@ -173,3 +173,11 @@ Aktiv kandidat: 25/40/35 efter DEC-0041. Konsekvensauditterne er grønne. Næste
 - 4.0.242 med 25/40/35 er implementeret, merged og produktionsverificeret 2026-08-21.
 - Den fulde browserkontrol og den supplerende score-/forklaringskontrol er grønne.
 - Næste arbejde vælges fra det næste ikke-blokerede punkt efter den foreløbige vægtning; senere empirisk kalibrering kræver repræsentative fund- og nul-fundsture.
+## Næste ikke-blokerede fase D-delmål, 2026-08-21
+
+- [x] Mål observerede 4.0.242-input-/scorefordelinger og komponentablation score-neutralt.
+- [x] Fastlæg tripniveau som kalibreringsenhed i DEC-0042; enkeltfund må ikke styre fit.
+- [ ] Implementér dataminimeret tripkontrakt med start/slut, søgetid, jagtform, faktisk kystdel, dækningsgrad og immutable forecast-link.
+- [ ] Bevar præcis GPS lokalt, og hold observationsanalysen coverage-only med tomme scoreforslag.
+- [ ] Generér første aggregerede kvalitets-/dækningsrapport før enhver beslutning om numeriske fit-minimummer.
+- P1's naturlige 72/168-timersdrift fortsætter uden backfill og vurderes først, når tidskravene faktisk er nået.

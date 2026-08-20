@@ -1615,3 +1615,5 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - 2026-08-20: 4.0.242 / DEC-0041 fastlægger foreløbigt 25/40/35 for jagtbarhed, transport og mobilisering. Bølgepriorens kolliderende DEC-ID rettes til DEC-0040; geometri beholder DEC-0032. Kandidaten ændrer ingen regler, tærskler, pile, data, geometri eller punkter.
 
 - 2026-08-20: 4.0.242-vægtaudit består 9.261 syntetiske kombinationer og 42.846 offentlige scoreposter på 673 dele. De 420 viste zoner falder i gennemsnit 6,314 point; kun 7 skifter vindende del. Ingen data, regler, tærskler, pile, geometri eller punkter ændres.
+- **DEC-0042:** Tripniveau, faktisk indsats, lokal kystdel og immutable forecast-link er obligatorisk kalibreringsevidens. Enkeltfund og ufuldstændige historiske observationer er ikke fit-klare.
+- **Fase D observeret audit:** 4.0.242 er målt score-neutralt på 41.116 zonevinderposter og 1.346 aktuelle kystdel-/jagtformposter. Se `docs/research/RAVSCORE_PHASE_D_OBSERVED_ABLATION_4.0.242.md`.
