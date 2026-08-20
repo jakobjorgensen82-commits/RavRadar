@@ -7,6 +7,7 @@
 - **STABILITET:** 625 unikke mål, 629 mål/kilde-par og nul gitter-/lagustabilitet.
 - **ISOLATION:** `scoreImpact=false`, `publicRuntime=false`, `interpolation=false`; ingen rå U/V eller credentials i supportbeviset.
 - **RESTERENDE:** Fortsæt naturlig opsamling til et fuldt 168-timersvindue før afsluttende forskningsanalyse.
+- **KOMPONENTCYKLUS:** #3252 har ingen ny HARMONIE-, WAM- eller DKSS-modelstart i forhold til det foregående grundlag. Overgangene er stabile, men artifactet tæller ikke som en ny uafhængig DEC-0030-cyklus.
 
 ## Status for 4.0.238
 

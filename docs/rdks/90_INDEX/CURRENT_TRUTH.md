@@ -22,6 +22,12 @@
 
 Live 4.0.238 er systematisk kontrolleret med Playwright mod datasæt `rr-20260820074127-210` efter grøn produktion `#32344813967`: 210 zoner, 673 kystdele, begge jagtformer, 420 aktuelle paneler og 2.100 femdøgnspaneler. Der er nul mismatch i score, label, farveniveau, vind-/strømpile, tre komponenter, forklaringer, lokal vinderkontekst, debug-ID og seks synlige vejrmetrikker samt nul console-, page- eller HTTP-fejl. Ingen produktionsdata eller geometri er ændret.
 
+## P1-komponentcyklus efter 4.0.238
+
+- #3252 introducerer ingen ny modelstart: HARMONIE er fortsat 2026-08-20 00Z, WAM 2026-08-19 18Z og DKSS 2026-08-19 12Z.
+- Vindovergangens middel/p95 er 1,027/2,5 m/s og 37,957/128 grader; bølgeovergangene er uændrede fra #3246. De seks tidligere `missing->fallback`-bølgeovergange er væk uden ændret kildeorden.
+- Resultatet tæller som stabil drift og historikvækst, ikke som en ny uafhængig DEC-0030-cyklus. Ingen permanent tærskel, fallback eller scoreændring er godkendt. Se `docs/research/P1_COMPONENT_CYCLE_AUDIT_4.0.238_20260820.md`.
+
 Den private Copernicus-shadow har ved pilot `#58` 37 gyldige timer, 23.273 poster, 625 maal og 629 maal/kilde-par med nul gitter-/lagustabilitet. Planlagt `#59` dubletskippede korrekt uden artifact. Syvdoegnsvinduet er fortsat uafsluttet og maales hoejst dagligt.
 
 ## 4.0.237 produktionsverificeret – én komplet aktuel time pr. lokal zone

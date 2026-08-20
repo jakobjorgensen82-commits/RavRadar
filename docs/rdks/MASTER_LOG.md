@@ -1482,3 +1482,9 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Browser-pluginet åbnede live 4.0.238. Godkendt Playwright-fallback kontrollerede 210 zoner, 673 kystdele, 420 aktuelle paneler og 2.100 femdøgnsvalg med nul score-, farve-, pil-, forklarings-, kontekst-, metrik-, konsol-, side- eller HTTP-fejl. Mobil og desktop er grønne.
 - Naturlig schedule `#32347036227` stoppede korrekt uden produktionsartifact, da UTC-time 08 ikke var komplet. Automatisk pilot `#32347060320`/artifact #72 udvidede derefter den private cache til 46 eksakte timer og 28.934 poster med nul gitter-/lagustabilitet.
 - Kun det særskilte naturlige produktionsbevis over et faktisk UTC-timeskift og de langsigtede 72/168-timersmålinger er åbne. Ingen land-/vandpunkter, geometri, U/V, kildeorden, afstandsgrænser eller RavScore er ændret.
+
+# 2026-08-20 - P1-komponentcyklus efter 4.0.238
+
+- Read-only sammenligning af #3246, #3249 og #3252 viser ingen ny modelstart i 4.0.238-artifactet: HARMONIE 20. august 00Z, WAM 19. august 18Z og DKSS 19. august 12Z fortsætter.
+- Vindens DMI-til-fallback-delta er ikke forværret, bølgeovergangsmålene er uændrede, og de seks tidligere `missing->fallback`-bølgehændelser er væk uden ændret kildeorden.
+- #3252 tæller som stabil drift og historikvækst, ikke som en ny uafhængig DEC-0030-cyklus. Ingen tærskel, fallback, score eller geometri er ændret.
