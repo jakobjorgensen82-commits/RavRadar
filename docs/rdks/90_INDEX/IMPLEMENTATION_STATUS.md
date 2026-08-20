@@ -29,6 +29,7 @@
 - [x] De otte Limfjordshaler er afgraenset til manglende raa Open-Meteo Marine-vandstands- og temperaturfelter efter den fælles DKSS-modelkant; nabozoner skifter paa samme time til fallback. Routing og merge taber ikke eksisterende fallbackvaerdier, og ingen punkter flyttes.
 - [x] Naturlig Copernicus-pilot `#64` genkendte samme UTC-time og centrale geometri fra `#63` og sprang authenticated download/cache/artifact over. Cachen forbliver korrekt paa 41 gyldige timer; duplikat-skippen taelles ikke som ny evidens.
 - [x] Online browseraudit sammenligner nu alle seks viste vejrmetrikker mod den valgte lokale runtimepost i 420 aktuelle og 2.100 femdoegnsvisninger, inklusive at reelle `null`-felter vises som `Mangler`.
+- [x] Naturlig produktion `#3246` afsloerede seks boelgehuller paa den laaste 03-time, da buildet passerede 04 UTC og Open-Meteo kun leverede fremtid fra 04. Kandidaten henter et dynamisk bagudvindue, filtrerer til referencetimen og bevarer 120 timer; frisk main-produktion mangler fortsat som bevis.
 
 ## 4.0.236 – låst produktionsreferencetime
 

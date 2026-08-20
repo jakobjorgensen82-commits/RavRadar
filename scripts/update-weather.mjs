@@ -25,6 +25,7 @@ import { selectNearestCompleteLocalScoreRow } from './lib/local-current-referenc
 import { localPartRuntimeProperties } from './lib/local-part-runtime.mjs';
 import { mergeLiveCurrentPilotIntoRecord, verifiedLivePilotSource } from './lib/live-current-pilot.mjs';
 import { resolveProductionReferenceTime } from './lib/production-reference-time.mjs';
+import { OPEN_METEO_FUTURE_HOURS, openMeteoPastHours, trimOpenMeteoForecast } from './lib/open-meteo-forecast-window.mjs';
 
 const ZONES_PATH = 'data/zones.geojson';
 const COASTAL_PARTS_SOURCE_PATH = 'data/geometry-v2/active-national-coastal-parts/manifest.json';
@@ -1631,17 +1632,18 @@ function hourlyValue(data, variable, index) {
   return num(value);
 }
 
-async function forecastFromOpenMeteo(feature) {
+async function forecastFromOpenMeteo(feature, generatedAt) {
   const [longitude, latitude] = zonePoint(feature);
+  const fallbackPastHours = openMeteoPastHours(generatedAt);
   const weatherQuery = new URLSearchParams({
     latitude: String(latitude), longitude: String(longitude),
     hourly: 'wind_speed_10m,wind_direction_10m,temperature_2m',
-    wind_speed_unit: 'ms', timezone: 'GMT', forecast_hours: '120'
+    wind_speed_unit: 'ms', timezone: 'GMT', forecast_hours: String(OPEN_METEO_FUTURE_HOURS), past_hours: String(fallbackPastHours)
   });
   const marineQuery = new URLSearchParams({
     latitude: String(latitude), longitude: String(longitude),
     hourly: 'wave_height,wave_direction,wave_period,sea_level_height_msl,sea_surface_temperature',
-    velocity_unit: 'ms', timezone: 'GMT', forecast_hours: '120', cell_selection: 'sea'
+    velocity_unit: 'ms', timezone: 'GMT', forecast_hours: String(OPEN_METEO_FUTURE_HOURS), past_hours: String(fallbackPastHours), cell_selection: 'sea'
   });
   const [weather, marine] = await Promise.all([
     fetchJson(`https://api.open-meteo.com/v1/forecast?${weatherQuery}`, { provider: 'Open-Meteo forecast', retries: 2 }),
@@ -1649,7 +1651,7 @@ async function forecastFromOpenMeteo(feature) {
   ]);
   const times = weather?.hourly?.time ?? marine?.hourly?.time ?? [];
   const marineIndex = new Map((marine?.hourly?.time ?? []).map((time, index) => [time, index]));
-  const hourly = times.slice(0, 120).map((time, index) => {
+  const hourly = trimOpenMeteoForecast(times.map((time, index) => {
     const mi = marineIndex.get(time) ?? index;
     const sea = hourlyValue(marine, 'sea_level_height_msl', mi);
     const sea3 = hourlyValue(marine, 'sea_level_height_msl', Math.min(mi + 3, (marine?.hourly?.time?.length ?? 1) - 1));
@@ -1667,7 +1669,7 @@ async function forecastFromOpenMeteo(feature) {
       currentDirectionDeg: null,
       waterTemperatureC: round(hourlyValue(marine, 'sea_surface_temperature', mi), 1)
     };
-  });
+  }), generatedAt);
   if (!hourly.some(item => item.windSpeedMps !== null)) throw new Error('5-dages prognose mangler vinddata');
   return { provider: 'open-meteo', providerLabel: 'Open-Meteo 5-day forecast', hourly };
 }
@@ -1765,7 +1767,7 @@ async function fallbackForZone(feature, generatedAt, previous, attempts) {
     try {
       const result = withoutZoneCurrent(await provider(feature, generatedAt));
       let forecast = previous?.zones?.[feature.properties?.id]?.forecast ?? null;
-      try { forecast = await forecastFromOpenMeteo(feature); }
+      try { forecast = await forecastFromOpenMeteo(feature, generatedAt); }
       catch (forecastError) { attempts.push({ provider: 'open-meteo-forecast', message: forecastError instanceof Error ? forecastError.message : String(forecastError) }); }
       return withoutZoneCurrent({ ...result, forecast, stale: false, fallback: true, attempts });
     } catch (error) {
