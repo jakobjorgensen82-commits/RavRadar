@@ -141,3 +141,10 @@ Der må ikke flyttes land-/vandpunkter.
 - Source-gate: `npm run validate:source` inkluderer `test:observation-db-privacy` og er grøn.
 - Efter merge må SQL ikke beskrives som produktionsaktiv, før den centrale migration og en sikker positiv/negativ insert-verifikation er bestået.
 - Rå observationspayloads, direkte identiteter og GPS må ikke skrives i PR, log eller supportartifact.
+
+## 4.0.240 jagtbarhed og sikkerhed
+
+- Arbejdsbranch: codex/ravscore-safety-language.
+- Formål: adskil praktisk jagtbarhed fra sikkerhed uden score- eller geometriændring.
+- Kildeændringer, lokale kilde-/releasegates og Browser-kontrol er færdige; PR-gate, merge og produktion mangler.
+- Beskyt fortsat de fire dirty datafiler i hovedarbejdstræet, og flyt ingen land-/vandpunkter.

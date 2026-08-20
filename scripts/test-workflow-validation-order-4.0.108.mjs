@@ -49,7 +49,7 @@ if (/\b(?:push|schedule|workflow_dispatch):/.test(pullRequestValidation)) {
 if (pullRequestValidation.includes('secrets.') || pullRequestValidation.includes('pages: write') || pullRequestValidation.includes('id-token: write') || pullRequestValidation.includes('deploy-pages')) {
   throw new Error('PR-kildegaten maa ikke bruge hemmeligheder eller kunne deploye.');
 }
-const copernicusPilot = fs.readFileSync(`${workflowDirectory}/validate-copernicus-current-pilot.yml`, 'utf8');
+const copernicusPilot = fs.readFileSync(`${workflowDirectory}/validate-copernicus-current-pilot.yml`, 'utf8').replace(/\r\n/g, '\n');
 for (const marker of [
   'workflow_dispatch:',
   'schedule:',
