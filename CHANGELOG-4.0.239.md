@@ -25,3 +25,8 @@ Dato: 2026-08-20
 - Fjern-GPS-redaktion, dæknings-only observationsanalyse og kalibreringslås er verificeret i det officielle Pages-artifact.
 - Workflowet stopper nu billige kildekodefejl før DMI og genlæser den private Copernicus-cache efter DMI uden at svække de fulde slutgates.
 - Produktionsauditen bestod for alle 673 kystdele; ingen land-/vandpunkter blev flyttet.
+
+## Tidsdækning og produktionstime 2026-08-20
+- Live-current-diagnostikken skelner mellem bevaret syvdageshistorik og scoreklar aktuel/fremtidig dækning.
+- Alle normale produktionsbyg bindes nu til readiness-jobbets UTC-time, så lange DMI-kørsler ikke skifter scoretid undervejs.
+- Produktionsrun `32379229853` bestod med 673/673 scoreklare og verificerede kystdele og deployede commit `c73a10d32f2aab15c63787ecb71893fd9275bbf6`.

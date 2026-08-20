@@ -1442,3 +1442,10 @@ Status: Implementeret og lokalt valideret.
 - Produktionsbevis: run `32374202688`, commit `b1d0e422a3322d393a7eeb32d5af4837cd6a779f`, 673/673 kystdele, Pages-deployment grøn.
 - Næste sikre delmål: gør livehistorikkens tidlige dækningsrapport tidskorrekt, så historisk dækning ikke forveksles med en scorebar post fra aktuel time og frem. Dette må ikke ændre strømvalg eller score.
 - Fortsat låst: RavScore-model B0 ændres ikke uden fase D-kalibreringsgate og særskilt evidens.
+
+## Status 2026-08-20 - tidsdækning afsluttet
+- Afsluttet: live-current-rapporten måler scoreklar aktuel/fremtidig dækning separat fra bevaret historik.
+- Afsluttet: live-current-selvtesten indgår i den hurtige pre-DMI-kildegate.
+- Afsluttet: push, schedule og normal/forceret produktion bindes til readiness-jobbets eksakte UTC-time gennem hele bygget.
+- Produktionsbevis: commit `c73a10d32f2aab15c63787ecb71893fd9275bbf6`, run `32379229853`, 673/673 scoreklare og verificerede kystdele.
+- Næste roadmapdel: RavScore fase D-observationsdækning og evidensgate. Produktionsmodel B0 og kandidaternes scorepåvirkning forbliver låst.

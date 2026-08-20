@@ -127,3 +127,10 @@ Der må ikke flyttes land-/vandpunkter.
 - Seneste fulde produktionsbevis: 673/673 kystdele med verificeret strøm samt konsistente pile, score og forklaringer. Genkør ikke fuld browseraudit uden ugentlig termin eller relevant score/UI/datakontraktændring.
 - Næste opgave: gør `build-live-current-pilot.py`-rapportens dækningsbegreb tidskorrekt. Bevar historikken, alle kilder, score, DMI-først og koordinater uændret. Tilføj selvtest for frisk historik uden aktuel/fremtidig scorepost.
 - Fire beskyttede dirty datafiler må fortsat ikke røres eller stages.
+
+## Checkpoint 2026-08-20 - main `c73a10d3`
+- Grøn produktion: run `32379229853`; liveversion 4.0.239; Pages deployede commit `c73a10d32f2aab15c63787ecb71893fd9275bbf6`.
+- Live-current-rapporten skelner nu bevaret historie fra scoreklar dækning og er dækket af den hurtige pre-DMI-gate.
+- Alle normale produktionsbyg er låst til readiness-jobbets UTC-time, også push/force. Timed schedule/ikke-forceret dispatch er fortsat de eneste triggere, der kan udsættes ved cachemangel.
+- Seneste bevis: 673/673 scoreklare dele fra låst time og 673/673 i den fulde audit. Ingen land-/vandpunkter blev flyttet.
+- Næste opgave: RavScore fase D-observationsdækning/evidensgate. Bevar GPS-redaktion, kalibreringslås og produktionsmodel B0.
