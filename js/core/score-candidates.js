@@ -24,11 +24,11 @@ function additiveScore(components, weights) {
   return rounded(Object.entries(weights).reduce((sum, [key, weight]) => sum + components[key] * weight, 0) / weightTotal);
 }
 
-function weightedPhysicalChain(components) {
-  const transport = components.transport;
-  const mobilisation = components.mobilisation;
-  if (transport <= 0 || mobilisation <= 0) return 0;
-  return (40 + 35) / (40 / transport + 35 / mobilisation);
+function weightedHarmonic(components, weights) {
+  const entries = Object.entries(weights);
+  if (entries.some(([key]) => components[key] <= 0)) return 0;
+  const weightTotal = entries.reduce((sum, [, weight]) => sum + weight, 0);
+  return weightTotal / entries.reduce((sum, [key, weight]) => sum + weight / components[key], 0);
 }
 
 export function compareScoreCandidates(result) {
@@ -40,9 +40,10 @@ export function compareScoreCandidates(result) {
   const b0 = rounded(clamp(result.score));
   const phaseDAdditive = additiveScore(components, SCORE_CANDIDATE_WEIGHTS.phaseDAdditive);
   const equalAdditive = additiveScore(components, SCORE_CANDIDATE_WEIGHTS.equalAdditive);
-  const physicalChain = weightedPhysicalChain(components);
+  const physicalChain = weightedHarmonic(components, { transport: 40, mobilisation: 35 });
   const phaseDChain = rounded(components.huntability * 0.25 + physicalChain * 0.75);
-  const scores = { b0, phaseDAdditive, equalAdditive, phaseDChain };
+  const phaseDFullChain = rounded(weightedHarmonic(components, SCORE_CANDIDATE_WEIGHTS.phaseDAdditive));
+  const scores = { b0, phaseDAdditive, equalAdditive, phaseDChain, phaseDFullChain };
 
   return {
     available: true,
@@ -58,6 +59,9 @@ export function compareScoreCandidates(result) {
         huntabilityShare: 25,
         physicalShare: 75,
         physicalMethod: 'weighted-harmonic-transport-40-mobilisation-35',
+      },
+      phaseDFullChain: {
+        method: 'weighted-harmonic-huntability-25-transport-40-mobilisation-35',
       },
     },
   };

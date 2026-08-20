@@ -247,7 +247,7 @@ function scenarioGrid(mode) {
     levels[level] += 1;
   }
   const scoreLevel = score => score >= 75 ? 'good' : score >= 55 ? 'fair' : score >= 35 ? 'weak' : 'poor';
-  const candidateIds = ['b0', 'phaseDAdditive', 'equalAdditive', 'phaseDChain'];
+  const candidateIds = ['b0', 'phaseDAdditive', 'equalAdditive', 'phaseDChain', 'phaseDFullChain'];
   const candidateComparisons = Object.fromEntries(candidateIds.map(id => {
     const candidateScores = rows.map(row => row.candidateScores[id]);
     const deltas = rows.map((row, index) => candidateScores[index] - row.score);
@@ -345,6 +345,9 @@ function buildAudit() {
         physicalShare: 75,
         physicalMethod: 'weighted-harmonic-transport-40-mobilisation-35',
       },
+      phaseDFullChain: {
+        method: 'weighted-harmonic-huntability-25-transport-40-mobilisation-35',
+      },
     },
     baseline: Object.fromEntries(modes.map(mode => [mode, calculate(baseContext(mode))])),
     thresholdSummary: {
@@ -368,6 +371,7 @@ function buildAudit() {
       'Non-additivity can come from clamping, rounding, caps, maximum-path selection or explicit synergy.',
       'Candidate comparisons reuse B0 components and therefore test score structure, not revised physical rules.',
       'The harmonic chain is a diagnostic soft-gate candidate, not an approved production formula.',
+      'The full harmonic chain tests a now-findable headline score; the physical chain tests physical opportunity plus separate searchability.',
       'No result authorises production score changes.',
     ],
   };
@@ -380,7 +384,7 @@ if (selfTest) {
   assert.equal(audit.overlaps.length, 8);
   assert.equal(audit.grids.length, 2);
   assert.ok(audit.grids.every(grid => grid.scenarios === 43200));
-  assert.ok(audit.grids.every(grid => Object.keys(grid.candidateComparisons).length === 4));
+  assert.ok(audit.grids.every(grid => Object.keys(grid.candidateComparisons).length === 5));
   assert.ok(audit.grids.every(grid => Object.values(grid.archetypes).some(value => value.scenarios > 0)));
   assert.equal(audit.baseline.waders.available, true);
   assert.equal(audit.baseline.beach.available, true);
@@ -393,6 +397,7 @@ if (selfTest) {
   });
   assert.equal(missingMobilisation.scores.phaseDAdditive, 65);
   assert.equal(missingMobilisation.scores.phaseDChain, 25);
+  assert.equal(missingMobilisation.scores.phaseDFullChain, 0);
   assert.equal(missingMobilisation.physicalChainScore, 0);
   console.log('OK: RavScore sensitivity audit is deterministic, score-neutral and complete.');
 } else {
