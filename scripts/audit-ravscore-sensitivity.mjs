@@ -229,7 +229,12 @@ function scenarioGrid(mode) {
                     Object.assign(context.history, { maxWind24hMps: maxWind, maxWave24hM: maxWave, hoursSinceHighEnergy: eventAge });
                     Object.assign(context.zone, { shallowWater: coastFeatures, reefs: coastFeatures, seagrass: coastFeatures, coastType: coastFeatures ? 'west' : 'east' });
                     const result = calculate(context);
-                    rows.push({ score: result.score, ...result.components, candidateScores: result.candidateScores });
+                    rows.push({
+                      score: result.score,
+                      ...result.components,
+                      candidateScores: result.candidateScores,
+                      inputs: { wind, wave, current, currentDirection, trend, maxWind, maxWave, eventAge, coastFeatures },
+                    });
                   }
   const scores = rows.map(row => row.score);
   const componentRange = component => {
@@ -262,6 +267,34 @@ function scenarioGrid(mode) {
     const candidateScores = Object.values(row.candidateScores);
     return Math.max(...candidateScores) - Math.min(...candidateScores);
   });
+  const archetypeDefinitions = {
+    easySearchLowMobilisation: row => row.huntability >= 70 && row.release <= 30,
+    mobilisedPoorTransport: row => row.release >= 70 && row.transport <= 30,
+    physicalOpportunityHardSearch: row => row.release >= 60 && row.transport >= 60 && row.huntability <= 35,
+    balancedHigh: row => row.release >= 60 && row.transport >= 60 && row.huntability >= 60,
+    balancedLow: row => row.release <= 40 && row.transport <= 40 && row.huntability <= 40,
+  };
+  const archetypes = Object.fromEntries(Object.entries(archetypeDefinitions).map(([id, predicate]) => {
+    const matches = rows.filter(predicate).map(row => ({
+      ...row,
+      candidateSpread: Math.max(...Object.values(row.candidateScores)) - Math.min(...Object.values(row.candidateScores)),
+    }));
+    const candidateMeans = Object.fromEntries(candidateIds.map(candidateId => [
+      candidateId,
+      matches.length ? round(matches.reduce((sum, row) => sum + row.candidateScores[candidateId], 0) / matches.length) : null,
+    ]));
+    const example = [...matches].sort((a, b) => b.candidateSpread - a.candidateSpread)[0];
+    return [id, {
+      scenarios: matches.length,
+      candidateMeans,
+      largestDisagreement: example ? {
+        spread: example.candidateSpread,
+        inputs: example.inputs,
+        components: Object.fromEntries(['huntability', 'transport', 'release'].map(key => [key, example[key]])),
+        candidateScores: example.candidateScores,
+      } : null,
+    }];
+  }));
   return {
     mode,
     scenarios: rows.length,
@@ -288,6 +321,7 @@ function scenarioGrid(mode) {
       scenariosAtLeast10PointsApart: candidateSpread.filter(value => value >= 10).length,
       scenariosAtLeast20PointsApart: candidateSpread.filter(value => value >= 20).length,
     },
+    archetypes,
     levels,
   };
 }
@@ -347,6 +381,7 @@ if (selfTest) {
   assert.equal(audit.grids.length, 2);
   assert.ok(audit.grids.every(grid => grid.scenarios === 43200));
   assert.ok(audit.grids.every(grid => Object.keys(grid.candidateComparisons).length === 4));
+  assert.ok(audit.grids.every(grid => Object.values(grid.archetypes).some(value => value.scenarios > 0)));
   assert.equal(audit.baseline.waders.available, true);
   assert.equal(audit.baseline.beach.available, true);
   assert.equal(audit.missingInputs.find(row => row.mode === 'waders' && row.input === 'wind').available, false);
