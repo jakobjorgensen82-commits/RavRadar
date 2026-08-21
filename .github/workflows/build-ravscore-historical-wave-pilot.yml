@@ -55,6 +55,7 @@ jobs:
         run: |
           python scripts/test-ravscore-historical-wave-pilot.py
           python scripts/test-ravscore-historical-forcing-pilot.py
+          node scripts/compare-ravscore-historical-candidate-f.mjs --self-test
 
       - name: Verify private Copernicus credentials
         env:
@@ -77,6 +78,14 @@ jobs:
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
         run: python scripts/build-ravscore-historical-forcing-pilot.py
 
+      - name: Compare candidate E and F on derived historical features
+        run: >-
+          node scripts/compare-ravscore-historical-candidate-f.mjs
+          .cache/ravscore-historical-forcing-features.json
+          .cache/ravscore-historical-wave-features.json
+          --output .cache/ravscore-historical-candidate-f-comparison.json
+          --summary .cache/ravscore-historical-candidate-f-comparison.txt
+
       - name: Reject credential or coordinate leakage
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
@@ -87,6 +96,7 @@ jobs:
           paths = (
               pathlib.Path('.cache/ravscore-historical-wave-features.json'),
               pathlib.Path('.cache/ravscore-historical-forcing-features.json'),
+              pathlib.Path('.cache/ravscore-historical-candidate-f-comparison.json'),
           )
           texts = [path.read_text(encoding='utf-8') for path in paths]
           documents = [json.loads(text) for text in texts]
@@ -95,6 +105,7 @@ jobs:
               assert data['coordinateValuesStored'] is False
           assert documents[0]['rawNetcdfStored'] is False
           assert documents[1]['rawUvStored'] is False
+          assert documents[2]['rawUvStored'] is False and documents[2]['rawWeatherValuesStored'] is False
           forbidden = {'u', 'v', 'uo', 'vo', 'waterpoint', 'landpoint', 'longitude', 'latitude', 'geometry', 'umps', 'vmps'}
           def inspect(value):
               if isinstance(value, dict):
@@ -121,3 +132,5 @@ jobs:
             .cache/ravscore-historical-wave-features.txt
             .cache/ravscore-historical-forcing-features.json
             .cache/ravscore-historical-forcing-features.txt
+            .cache/ravscore-historical-candidate-f-comparison.json
+            .cache/ravscore-historical-candidate-f-comparison.txt
