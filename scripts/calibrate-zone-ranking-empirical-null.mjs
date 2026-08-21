@@ -8,7 +8,8 @@ import {buildDirectionalWeights,normalizedSoftMaximum} from './calibrate-zone-ra
 
 const EXPECTED_ZONES=210;
 const EXPECTED_PARTS=673;
-const TAUS=[1,2,4,6,10,15,20];
+const NULL_TAU=20;
+const CORRECTION_SHARES=[.05,.1,.15,.2,.25,.3,.35,.4,.45,.5,.55,.6,.65,.7,.75,.8,.85,.9,.95,1];
 const MODES=['waders','beach'];
 const REGIMES=[
  {id:'quiet',wind:3,wave:.2,period:4,current:.05,windOffset:35,waveOffset:55,currentOffset:75,maxWind:4,maxWave:.3,age:120,trend:0},
@@ -42,6 +43,12 @@ export function empiricalMidrank(sortedValues,value){
 export function mapToReferenceEquivalent(value,zoneDistribution,referenceDistribution){
  const percentile=empiricalMidrank(zoneDistribution,value);
  return {percentile,equivalent:quantile(referenceDistribution,percentile)};
+}
+
+export function partialNullCorrection(rawScore,referenceEquivalent,correctionShare,partCount){
+ if(partCount<=1)return rawScore;
+ const fullCorrection=Math.max(0,rawScore-referenceEquivalent);
+ return rawScore-correctionShare*fullCorrection;
 }
 
 function pearson(left,right){
@@ -81,7 +88,7 @@ function scoresFor(profile,bearing,mode,regime,lookup){
 
 function statistic(scores,weights,tau){return tau===null?Math.max(...scores):normalizedSoftMaximum(scores,weights,tau);}
 
-function summarize({profiles,lookup,tau,zoneDistributions,referenceDistributions}){
+function summarize({profiles,lookup,tau,correctionShare=0,zoneDistributions,referenceDistributions}){
  const bucketZones={'1-2':0,'3-5':0,'6+':0};for(const profile of profiles)bucketZones[profile.bucket]+=1;
  const topCounts={'1-2':0,'3-5':0,'6+':0};
  const all=[];let contexts=0,changedTop1=0;
@@ -94,7 +101,7 @@ function summarize({profiles,lookup,tau,zoneDistributions,referenceDistributions
    let adjusted=rawScore,percentile=null;
    if(tau!==null){
     const mapped=mapToReferenceEquivalent(statistic(scores,weights,tau),zoneDistributions.get(`${profile.zoneId}|${mode}`),referenceDistributions.get(mode));
-    percentile=mapped.percentile;adjusted=Math.min(rawScore,mapped.equivalent);
+    percentile=mapped.percentile;adjusted=partialNullCorrection(rawScore,mapped.equivalent,correctionShare,profile.partCount);
    }
    const row={...profile,rawScore,adjusted,adjustment:rawScore-adjusted,supportShare,percentile,tie:stableHash(`${mode}|${regime.id}|${bearing}|${profile.zoneId}`)};
    all.push(row);return row;
@@ -179,16 +186,17 @@ export function calibrateEmpiricalNull({partsData,zonesData}){
   return {zoneDistributions,referenceDistributions};
  };
  const baseline=summarize({profiles,lookup,tau:null,zoneDistributions:new Map(),referenceDistributions:new Map()});
- const candidates=TAUS.map(tau=>{
-  const distributions=buildDistributions(tau),holdout=summarize({profiles,lookup,tau,...distributions});
-  return {id:`empirical-null-softmax-${tau}`,tau,holdout};
+ const distributions=buildDistributions(NULL_TAU);
+ const candidates=CORRECTION_SHARES.map(correctionShare=>{
+  const holdout=summarize({profiles,lookup,tau:NULL_TAU,correctionShare,...distributions});
+  return {id:`empirical-null-${Math.round(correctionShare*100)}pct`,tau:NULL_TAU,correctionShare,holdout};
  });
  const eligible=candidates.filter(candidate=>Object.values(candidate.holdout.top5Overrepresentation).every(value=>value>=.75&&value<=1.25)
-  && Math.abs(candidate.holdout.scoreOpportunityCorrelation)<=.08
+  && Math.abs(candidate.holdout.scoreOpportunityCorrelation)<=Math.abs(baseline.scoreOpportunityCorrelation)/2
   && candidate.holdout.maximumSinglePartAdjustment<=.01
   && candidate.holdout.meanBroadSupportAdjustment<candidate.holdout.meanIsolatedAdjustment);
- const selected=[...eligible].sort((a,b)=>a.holdout.meanBroadSupportAdjustment-b.holdout.meanBroadSupportAdjustment||a.holdout.meanAdjustment-b.holdout.meanAdjustment)[0]||null;
- return {schemaVersion:1,generatedAt:new Date().toISOString(),status:'private-score-neutral-empirical-null-calibration',zoneCount:profiles.length,partCount:parts.length,trainContextCount:180*REGIMES.length*MODES.length,holdoutContextCount:180*REGIMES.length*MODES.length,method:'even-bearing empirical null mapped to one-direction reference; odd-bearing holdout',baseline:{id:'raw-maximum',holdout:baseline},candidates,selectedCandidate:selected,scoreImpact:false,publicRuntimeImpact:false,landOrWaterPointsChanged:false,automaticActivationAllowed:false};
+ const selected=[...eligible].sort((a,b)=>a.holdout.meanAdjustment-b.holdout.meanAdjustment||a.holdout.meanBroadSupportAdjustment-b.holdout.meanBroadSupportAdjustment)[0]||null;
+ return {schemaVersion:2,generatedAt:new Date().toISOString(),status:'private-score-neutral-partial-empirical-null-calibration',zoneCount:profiles.length,partCount:parts.length,trainContextCount:180*REGIMES.length*MODES.length,holdoutContextCount:180*REGIMES.length*MODES.length,method:'tau-20 empirical null with calibrated partial correction; even-bearing training and odd-bearing holdout',baseline:{id:'raw-maximum',holdout:baseline},candidates,selectedCandidate:selected,scoreImpact:false,publicRuntimeImpact:false,landOrWaterPointsChanged:false,automaticActivationAllowed:false};
 }
 
 function parseArgs(argv){const result={};for(let i=0;i<argv.length;i+=1)if(argv[i].startsWith('--')){const key=argv[i].slice(2),next=argv[i+1];if(next&&!next.startsWith('--')){result[key]=next;i+=1;}else result[key]=true;}return result;}
