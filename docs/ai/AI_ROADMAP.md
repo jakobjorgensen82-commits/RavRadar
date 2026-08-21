@@ -601,4 +601,45 @@ Maks. 4 point er fortsat den bedste balance i dette materiale. Seks point flytte
 
 **Permanent produktkrav:** Zoner med mange dele maa stadig kunne opnaa en hoej national placering, naar den er reel. En hel-zone-vinder faar nul korrektion, flere stoettende dele reducerer korrektionen, og en markant enkeltvinder kan fortsat beholde placeringen, hvis dens scoreforspring er stoerre end det begraensede loft.
 
+Den direkte foerstepladskontrol understoetter kravet for 4-pointsvarianten:
+
+- 113 af 127 foerstepladser for zoner med mindst seks dele blev bevaret.
+- Ingen hel-zone-vinder blev flyttet.
+- Kun oprindelige vindere med hoejst 2 points forspring blev flyttet i dette materiale.
+
+Det betyder, at en klart bedre stor zone fortsat ligger oeverst. Kandidaten paavirker kun taette nationale sammenligninger, hvor den hoejeste score samtidig kommer fra en relativt isoleret kystdel.
+
 **Begraensning:** Blok-bootstrap viser intern stabilitet i det samme prognoseforloeb. Den erstatter ikke landsdaekkende historiske vejrbegivenheder.
+
+### Naer-lighedsvariant for tydelig brugerlogik
+
+En ekstra kandidat bruger samme stoettebaserede maks. 4 point, men tillader kun omrokering inden for en gruppe, hvor raascorerne ligger hoejst 2 point fra gruppens bedste.
+
+- 214 timerangeringer: `3,41x` overrepraesentation mod `3,68x` uden korrektion og `3,23x` med den frie 4-pointsvariant.
+- 72 nye top-5-medlemmer mod 95 med den frie variant.
+- 17 aendrede foerstepladser, 113 af 127 store zonevindere bevaret og ingen hel-zone-vinder flyttet.
+- En raascore mere end 2 point under gruppevinderen kan aldrig placeres over den via korrektionen.
+
+**Foreloebig vurdering:** Naer-lighedsvarianten er mindre effektiv, men sikrere og lettere at forklare. Den boer sammenlignes direkte med den frie 4-pointsvariant i den senere landsdaekkende replaykontrakt. Ingen af dem er endnu aktiveret.
+
+## National rangering: stærkere mulighedsnormalisering (igangværende 2026-08-21)
+
+- Den tidligere kandidat med højst 4 points støttekorrektion og 2-points nærhedsgrænse er forkastet som utilstrækkelig. Den reducerede kun 6+-zonernes målte overrepræsentation fra cirka 3,68x til 3,41x.
+- Næste analyse bruger den aktive RavScore på en neutral, global scenariomatrix og adskilte trænings-/holdoutretninger.
+- Kandidaten skal normalisere zonens `bedst-af-mange`-fordel, sammenlægge næsten ens retninger og samtidig belønne støtte fra flere stærke retninger.
+- Intet må aktiveres offentligt, før en markant effekt er dokumenteret, ejerbeslutningen er taget, og de relevante release- og browserkontroller er bestået.
+
+### Foreløbig forskningsanbefaling: `direction-broad-19`
+
+- 107-timers analyse: 1-2 dele 0,90x, 3-5 dele 1,12x og 6+ dele 1,11x mod 6+-baseline 3,68x.
+- Tidsopdelt 12-timers holdout: 6+-gruppen 1,30x mod 0,97x i kalibreringsblokkene.
+- 1.000 blok-bootstrap: 6+-median 1,11x, 5-95 % 0,94-1,30x.
+- Ingen hel-zone-vinder og ingen vinder med mindst 50 % støtte blev flyttet.
+- Kandidaten er kun analyseret og må ikke aktiveres uden ejerbeslutning, separat implementering og fuld relevant produktionskontrol.
+
+## 2026-08-21 - ejerbeslutning om national rangering
+
+- Ejeren godkendte `direction-broad-19-v1` efter den forståelige gennemgang.
+- Modellen gælder alle 210 zoner i både Bedste områder og 5-dages RavRadar; Falster Nord og Falster Vest var kun eksempler.
+- Den ændrer kun intern sortering. Vist RavScore, lokale scoredele, pile og forklaringer bevares.
+- Efter implementering kræves målrettet regression, exact-head-gate, produktion og fuld 210/673-browserkontrol.

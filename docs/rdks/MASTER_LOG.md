@@ -1682,3 +1682,7 @@ Den nationale geometrikoersel stoppede fail-closed, fordi det uafhaengige land-/
 ## 2026-08-21 - 4.0.251 sammenhaengende DMI-familier
 
 Privat run `32479158213` kontrollerede alle 673 aktive punkter og stoppede derefter, fordi den tidlige gate accepterede DKSS-komponenter paa tværs af collections, mens flertrinsgaten korrekt krævede én collection. 4.0.251 flytter den strenge regel frem: en familie er kun komplet inden for samme collection, og U/V skal dele baade gridpunkt og collection. Ingen offentlig score eller punkter er ændret.
+
+## 2026-08-21 - 4.0.252 fair landsrangering
+
+Ejeren godkendte den landsdækkende `direction-broad-19-v1`-model efter analyse af 210 zoner, 673 kystdele, 107 timer og 214 jagtformskontekster. Begge nationale top-5-lister bruger samme interne korrektion for retningsmulighed og vinderstøtte. Den viste RavScore, lokale resultater, pile, forklaringer, geometri og land-/vandpunkter er uændrede.

@@ -241,3 +241,12 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - 4.0.251 retter klassifikationen fail-closed: kun komponenter i samme DMI-collection danner en komplet familie.
 - Naeste konkrete trin er exact-head gate, produktion og genkoersel af `ravscore_active_shadow`.
 - Foerst en helt groen genkoersels kompakte A/B/C-rapport indgaar i den videnskabelige scoreanalyse.
+
+## Godkendt delmål: fair landsrangering 4.0.252
+
+- [x] Mål skævheden for alle 210 zoner og 673 kystdele over 107 timer og 214 jagtformskontekster.
+- [x] Forkast for svage og for hårde kandidater, og fastlæg `direction-broad-19-v1` med tidsdeling og blokbootstrap.
+- [x] Ejer godkendte modellen efter forklaring i almindeligt sprog.
+- [x] Implementér samme interne sortering i Bedste områder og 5-dages RavRadar uden at ændre vist RavScore.
+- [ ] Kør målrettede checks, exact-head-gate, fuld produktion og 210/673-browserkontrol.
+- [ ] Fortsæt derefter den store faglige scoreanalyse; landsrangering og selve RavScore-vægtene er to forskellige problemer.
