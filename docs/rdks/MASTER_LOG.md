@@ -1678,3 +1678,7 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 ## 2026-08-21 - 4.0.250 aktiv-kyst RavScore-shadow
 
 Den nationale geometrikoersel stoppede fail-closed, fordi det uafhaengige land-/vandbevis ikke matchede kandidatens praecise punktbestand. Vi omgaas ikke gaten og flytter ingen punkter. I stedet er RavScore-analysen adskilt fra geometripiloten: et nyt laese-only job kan koere den eksisterende DMI- og A/B/C-shadowkaede paa den aktive offentlige bestand. Realistisk lokal opbygning verificerede 210 zoner og 673 kystdele med alle aendrings- og aktiveringsflag sat til falsk.
+
+## 2026-08-21 - 4.0.251 sammenhaengende DMI-familier
+
+Privat run `32479158213` kontrollerede alle 673 aktive punkter og stoppede derefter, fordi den tidlige gate accepterede DKSS-komponenter paa tværs af collections, mens flertrinsgaten korrekt krævede én collection. 4.0.251 flytter den strenge regel frem: en familie er kun komplet inden for samme collection, og U/V skal dele baade gridpunkt og collection. Ingen offentlig score eller punkter er ændret.

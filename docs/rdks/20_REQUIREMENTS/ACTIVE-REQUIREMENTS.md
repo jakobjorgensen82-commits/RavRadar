@@ -323,3 +323,10 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - Aktivt input skal vaere komplet og bruge eksisterende validerede land-/vandpunkter. Mangler skal stoppe jobbet.
 - Kun kompakte, dataminimerede resultater maa bevares som artifact.
 - Kandidater forbliver private og score-neutrale, indtil videnskabelig analyse og relevante gates begrunder en saerskilt beslutning.
+
+## Praecisering i 4.0.251: sammenhaengende DMI-familier
+
+- En komplet privat boelgefamilie skal have hoejde, retning og periode fra samme DMI-collection.
+- En komplet privat DKSS-familie skal have vandstand og faelles U/V-stroem fra samme DMI-collection; U/V skal ogsaa dele fysisk gitterpunkt.
+- Komponenter fra forskellige collections maa ikke samles til falsk fuld dækning.
+- Deldaekning maa bevares synligt, men maa ikke gaa videre som fuld state- eller scoreevidens.

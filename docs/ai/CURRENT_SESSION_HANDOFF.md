@@ -270,3 +270,7 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 ## Checkpoint 4.0.250 - aktiv RavScore-shadow
 
 Den tidligere nationale geometrikoersel `32474884163` fejlede korrekt paa det uafhaengige punktbevis. Ingen punkter er flyttet, og gaten er ikke omgaaet. Branchens nye manuelle job bygger i stedet et midlertidigt read-only input fra den aktive public-details-bestand og repoets zoneopslag. Den realistiske lokale prøve gav dataset `rr-20260821105135-210`, 210 zoner og 673 dele; score/public runtime/automatisk aktivering var alle falsk. Efter merge skal exact-commit produktion foelges, derefter koeres `ravscore_active_shadow=true`, og kun den kompakte rapport analyseres. Aktiv score er fortsat 25/40/35.
+
+## Checkpoint 4.0.251 - foerste aktive shadowrun fandt collection-mismatch
+
+Run `32479158213` paa merge `34ed1dbc39c18aaefcb77aac89028ebb29c45468` sprang produktion/deploy over, byggede aktivt 210/673-input og verificerede 673 native DMI-punkter. Kontrakten rapporterede foreloebigt 622 fuld og 51 delvis dækning, men flertrinsgaten stoppede foer state/score ved `dk-b01-02-national-part-01`, fordi DKSS-komponenter var fordelt over collections. 4.0.251 klassificerer nu kun en familie som komplet inden for samme collection og kræver U/V i samme punkt og collection. Koer ny PR, produktion og shadow; brug ikke den fejlede rapports 622/51 som scoreevidens.

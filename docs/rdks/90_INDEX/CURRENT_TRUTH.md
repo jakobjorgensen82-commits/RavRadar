@@ -1242,3 +1242,7 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 ## Aktuel sandhed i 4.0.250
 
 +RavRadar har nu et separat privat, manuelt RavScore-shadow-job, som laeser de aktive 210 zoner og 673 kystdele uden at aendre dem. Jobbet bruger den eksisterende native DMI-kaede og kan hverken deploye, skrive til admin eller aktivere score. Den offentlige vaegtning er stadig 25/40/35. A/B/C er analysemodeller, ikke produktionsregler. GeoDanmark-koersel `32474884163` stoppede korrekt paa et forældet punktbevis; den gate er ikke omgaaet.
+
+## Aktuel sandhed i 4.0.251
+
+Foerste private aktive RavScore-shadowrun stoppede korrekt foer state og score, fordi DKSS-komponenter fra forskellige collections var blevet klassificeret som én komplet familie. 4.0.251 goer den tidlige gridgate lige saa streng som marinegaten: en komplet familie skal komme fra samme collection, og U/V skal fortsat dele punkt. Den offentlige score, fallback og alle aktive punkter er uændrede.
