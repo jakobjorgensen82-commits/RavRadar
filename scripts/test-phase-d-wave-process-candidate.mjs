@@ -73,7 +73,23 @@ assert.equal(missingDirection.score, originalWithoutDirection.score, 'Manglende 
 assert.ok(missingDirection.confidence.limitations.includes('wave-direction-missing'));
 assert.equal(missingDirection.diagnostics.waveApproachAvailable, false);
 
-for (const result of [onshore, offshore, shortPeriod, longPeriod, wrapA, wrapB, missingDirection]) {
+const withoutStaticCoastFeatures = evaluate({
+  zone: { reefs: false, shallowWater: false, seagrass: false }
+});
+const withStaticCoastFeatures = evaluate({
+  zone: { reefs: true, shallowWater: true, seagrass: true }
+});
+assert.deepEqual(
+  withStaticCoastFeatures.candidateScores,
+  withoutStaticCoastFeatures.candidateScores,
+  'Uvaliderede statiske kysttræk må ikke ændre forskningskandidaternes score'
+);
+assert.equal(withStaticCoastFeatures.components.mobilisation, withoutStaticCoastFeatures.components.mobilisation);
+assert.equal(withStaticCoastFeatures.components.delivery, withoutStaticCoastFeatures.components.delivery);
+assert.equal(withStaticCoastFeatures.diagnostics.retentionPoints, 0);
+assert.equal(withStaticCoastFeatures.diagnostics.staticRetentionScoreImpact, false);
+
+for (const result of [onshore, offshore, shortPeriod, longPeriod, wrapA, wrapB, missingDirection, withoutStaticCoastFeatures, withStaticCoastFeatures]) {
   assert.ok(result.score >= 0 && result.score <= 100, 'Kandidatscoren skal være 0-100');
   assert.equal(result.scoreImpact, 'diagnostic-only');
   assert.equal(result.diagnostics.staticRetentionScoreImpact, false);

@@ -80,7 +80,6 @@ function mobilisation(history, weather, zone) {
   const eventAge = number(history?.hoursSinceStrongEventEnd ?? history?.hoursSinceHighEnergy);
   const ageFactor = interpolate(eventAge, [[0, 1], [18, 1], [36, 0.8], [72, 0.45], [120, 0.15], [240, 0]]);
   const freshEffective = fresh.value === null ? null : fresh.value * (ageFactor ?? 0.5);
-  const retention = Math.min(100, (zone?.reefs ? 40 : 0) + (zone?.shallowWater ? 30 : 0) + (zone?.seagrass ? 20 : 0));
   const remobilisation = weightedKnown([
     {
       id: 'current-wave',
@@ -92,7 +91,6 @@ function mobilisation(history, weather, zone) {
       value: interpolate(weather?.currentSpeedMps, [[0, 0], [0.1, 15], [0.2, 40], [0.4, 75], [0.65, 100], [1, 90], [1.5, 65]]),
       weight: 25,
     },
-    { id: 'retention', value: retention, weight: 10 },
   ]);
   const remobilisationEffective = remobilisation.value === null ? null : Math.min(80, remobilisation.value * 0.8);
   const pathways = [
@@ -160,8 +158,10 @@ function delivery(history, weather, zone, transportResult) {
     { id: 'current-direction', value: direction, weight: 35 },
   ]);
   if (base.value === null) return { ...base, timing, waveRatio, decliningEnergy, retention: 0 };
-  const retention = Math.min(10, (zone?.reefs ? 4 : 0) + (zone?.shallowWater ? 3 : 0) + (zone?.seagrass ? 2 : 0));
-  return { value: clamp(base.value + retention), coverage: base.coverage, timing, waveRatio, decliningEnergy, retention };
+  // Reefs, shallow water and seagrass remain explanatory uncertainty only.
+  // There is not yet evidence for a universal static RavScore bonus.
+  const retention = 0;
+  return { value: clamp(base.value), coverage: base.coverage, timing, waveRatio, decliningEnergy, retention };
 }
 
 function confidenceLabel(coverage) {

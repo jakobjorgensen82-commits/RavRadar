@@ -1,5 +1,9 @@
 # RavScore candidate D/E - canonical results 2026-08-21
 
+## Korrigering efter modelaudit
+
+Resultaterne nedenfor dokumenterer den oprindelige D/E-kørsel, men de må ikke bruges som endeligt kandidatbevis. Den private procesmodel lod stadig rev, lavt vand og ålegræs påvirke enkelte delkomponenter, selv om disse statiske kysttræk ikke har tilstrækkelig evidens til universelle point. Den offentlige RavScore var ikke berørt. D/E skal genkøres score-neutralt med den rettede nul-effekt-kontrakt, før de numeriske resultater anvendes videre.
+
 ## Formaal
 
 Dette er et privat forskningsresultat. Det aendrer ikke den aktive RavScore og maa ikke bruges som automatisk aktiveringsbevis.
