@@ -51,8 +51,10 @@ jobs:
           python scripts/apply-central-zone-reviews.py
           node scripts/build-public-coastal-parts-v2.mjs
 
-      - name: Run targeted fixture contract
-        run: python scripts/test-ravscore-historical-wave-pilot.py
+      - name: Run targeted fixture contracts
+        run: |
+          python scripts/test-ravscore-historical-wave-pilot.py
+          python scripts/test-ravscore-historical-forcing-pilot.py
 
       - name: Verify private Copernicus credentials
         env:
@@ -69,6 +71,12 @@ jobs:
           PILOT_YEAR: ${{ inputs.year }}
         run: python scripts/build-ravscore-historical-wave-pilot.py --year "$PILOT_YEAR"
 
+      - name: Enrich selected windows with bounded current and sea level
+        env:
+          COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
+          COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
+        run: python scripts/build-ravscore-historical-forcing-pilot.py
+
       - name: Reject credential or coordinate leakage
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
@@ -76,23 +84,30 @@ jobs:
         run: |
           python - <<'PY'
           import json, os, pathlib
-          path = pathlib.Path('.cache/ravscore-historical-wave-features.json')
-          text = path.read_text(encoding='utf-8')
-          data = json.loads(text)
-          assert data['scoreImpact'] is False and data['publicRuntime'] is False
-          assert data['coordinateValuesStored'] is False and data['rawNetcdfStored'] is False
-          forbidden = {'waterpoint', 'landpoint', 'longitude', 'latitude', 'geometry', 'umps', 'vmps'}
+          paths = (
+              pathlib.Path('.cache/ravscore-historical-wave-features.json'),
+              pathlib.Path('.cache/ravscore-historical-forcing-features.json'),
+          )
+          texts = [path.read_text(encoding='utf-8') for path in paths]
+          documents = [json.loads(text) for text in texts]
+          for data in documents:
+              assert data['scoreImpact'] is False and data['publicRuntime'] is False
+              assert data['coordinateValuesStored'] is False
+          assert documents[0]['rawNetcdfStored'] is False
+          assert documents[1]['rawUvStored'] is False
+          forbidden = {'u', 'v', 'uo', 'vo', 'waterpoint', 'landpoint', 'longitude', 'latitude', 'geometry', 'umps', 'vmps'}
           def inspect(value):
               if isinstance(value, dict):
                   assert not (forbidden & {str(key).lower() for key in value})
                   for child in value.values(): inspect(child)
               elif isinstance(value, list):
                   for child in value: inspect(child)
-          inspect(data)
+          for data in documents: inspect(data)
+          text = '\n'.join(texts)
           for name in ('COPERNICUSMARINE_SERVICE_USERNAME', 'COPERNICUSMARINE_SERVICE_PASSWORD'):
               value = os.environ.get(name, '')
               assert value and value not in text
-          print('Safe historical artifact: no credentials, coordinates, raw vectors or NetCDF')
+          print('Safe historical artifacts: no credentials, coordinates, raw vectors or NetCDF')
           PY
 
       - name: Upload private historical research evidence
@@ -104,3 +119,5 @@ jobs:
           path: |
             .cache/ravscore-historical-wave-features.json
             .cache/ravscore-historical-wave-features.txt
+            .cache/ravscore-historical-forcing-features.json
+            .cache/ravscore-historical-forcing-features.txt
