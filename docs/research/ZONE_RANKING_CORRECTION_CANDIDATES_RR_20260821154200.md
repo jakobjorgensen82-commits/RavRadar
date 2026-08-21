@@ -74,3 +74,9 @@ En hel-zone-vinder faar nul stoettebaseret justering. En isoleret vinder kan for
 ## Kontrol
 
 Alle 12 rekonstruerede baseline-rangeringer matchede den eksisterende top-5-rangering eksakt foer korrektion. Score impact: nej. Public runtime impact: nej. Land-/vandpunkter: uaendrede.
+
+## Ejerens skærpelse og forkastelse af nærhedsreglen
+
+Den 2026-08-21 blev `direction-support-4-near2` forkastet som produktionskandidat. Den bevarede 89 % af de eksisterende 6+-førstepladser, men reducerede kun gruppens målte overrepræsentation fra cirka 3,68x til 3,41x. Bevarelse af eksisterende vindere var dermed blevet vægtet for højt i forhold til selve fairnessmålet.
+
+Den videre analyse skal estimere den faktiske `bedst-af-mange`-fordel. En stor zone må fortsat vinde ved et reelt stort forspring eller bred støtte, men ikke primært fordi én af mange forskelligt vendte dele tilfældigt rammer højt.

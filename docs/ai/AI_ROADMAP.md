@@ -621,3 +621,10 @@ En ekstra kandidat bruger samme stoettebaserede maks. 4 point, men tillader kun 
 - En raascore mere end 2 point under gruppevinderen kan aldrig placeres over den via korrektionen.
 
 **Foreloebig vurdering:** Naer-lighedsvarianten er mindre effektiv, men sikrere og lettere at forklare. Den boer sammenlignes direkte med den frie 4-pointsvariant i den senere landsdaekkende replaykontrakt. Ingen af dem er endnu aktiveret.
+
+## National rangering: stærkere mulighedsnormalisering (igangværende 2026-08-21)
+
+- Den tidligere kandidat med højst 4 points støttekorrektion og 2-points nærhedsgrænse er forkastet som utilstrækkelig. Den reducerede kun 6+-zonernes målte overrepræsentation fra cirka 3,68x til 3,41x.
+- Næste analyse bruger den aktive RavScore på en neutral, global scenariomatrix og adskilte trænings-/holdoutretninger.
+- Kandidaten skal normalisere zonens `bedst-af-mange`-fordel, sammenlægge næsten ens retninger og samtidig belønne støtte fra flere stærke retninger.
+- Intet må aktiveres offentligt, før en markant effekt er dokumenteret, ejerbeslutningen er taget, og de relevante release- og browserkontroller er bestået.
