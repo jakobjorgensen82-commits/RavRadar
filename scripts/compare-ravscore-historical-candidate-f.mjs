@@ -9,6 +9,16 @@ const LEGACY_WEIGHTS = Object.freeze({ huntability: 0.40, transport: 0.35, relea
 const ACTIVE_WEIGHTS = Object.freeze({ huntability: 0.25, transport: 0.40, release: 0.35 });
 const ACTIVE_PRIOR_WEIGHTS = Object.freeze({ huntability: 0.25, transportAndDelivery: 0.40, mobilisation: 0.35 });
 const CANDIDATE_F_WEIGHTS = Object.freeze({ huntability: 0.15, transportAndDelivery: 0.50, mobilisation: 0.35 });
+const RESEARCH_WEIGHT_PRIORS = Object.freeze([
+  Object.freeze({ id: 'E-25-40-35', weights: ACTIVE_PRIOR_WEIGHTS }),
+  Object.freeze({ id: 'P-20-45-35', weights: Object.freeze({ huntability: 0.20, transportAndDelivery: 0.45, mobilisation: 0.35 }) }),
+  Object.freeze({ id: 'P-20-50-30', weights: Object.freeze({ huntability: 0.20, transportAndDelivery: 0.50, mobilisation: 0.30 }) }),
+  Object.freeze({ id: 'P-15-45-40', weights: Object.freeze({ huntability: 0.15, transportAndDelivery: 0.45, mobilisation: 0.40 }) }),
+  Object.freeze({ id: 'F-15-50-35', weights: CANDIDATE_F_WEIGHTS }),
+  Object.freeze({ id: 'P-15-55-30', weights: Object.freeze({ huntability: 0.15, transportAndDelivery: 0.55, mobilisation: 0.30 }) }),
+  Object.freeze({ id: 'P-10-50-40', weights: Object.freeze({ huntability: 0.10, transportAndDelivery: 0.50, mobilisation: 0.40 }) }),
+  Object.freeze({ id: 'P-10-55-35', weights: Object.freeze({ huntability: 0.10, transportAndDelivery: 0.55, mobilisation: 0.35 }) }),
+]);
 const clamp = (value, minimum = 0, maximum = 100) => Math.max(minimum, Math.min(maximum, Number(value)));
 const rounded = value => Math.round(clamp(value));
 const mean = values => values.reduce((sum, value) => sum + value, 0) / values.length;
@@ -47,15 +57,26 @@ function windFromDirection(alignment) {
   return (Math.acos(clamp(alignment, -1, 1)) * 180 / Math.PI + 180) % 360;
 }
 
-function candidateF(candidate) {
+function reweightedCandidate(candidate, weights) {
   const components = candidate.components;
-  const additive = components.huntability * CANDIDATE_F_WEIGHTS.huntability
-    + components.transportAndDelivery * CANDIDATE_F_WEIGHTS.transportAndDelivery
-    + components.mobilisation * CANDIDATE_F_WEIGHTS.mobilisation;
+  const additive = components.huntability * weights.huntability
+    + components.transportAndDelivery * weights.transportAndDelivery
+    + components.mobilisation * weights.mobilisation;
   return {
     additiveScore: round3(additive),
     score: rounded(additive * candidate.gateFactor),
   };
+}
+
+function candidateF(candidate) {
+  return reweightedCandidate(candidate, CANDIDATE_F_WEIGHTS);
+}
+
+function researchWeightScores(candidate) {
+  return Object.fromEntries(RESEARCH_WEIGHT_PRIORS.map(prior => [
+    prior.id,
+    reweightedCandidate(candidate, prior.weights).score,
+  ]));
 }
 
 function eventHistory(event, sampleTime, samples, windSamples) {
@@ -169,6 +190,34 @@ function summarizeDirectionPairs(rows, onshoreKey, offshoreKey) {
   };
 }
 
+function summarizeWeightPrior(rows, priorId) {
+  const scores = rows.map(row => row.researchWeightScores[priorId]);
+  const deltas = rows.map((row, index) => scores[index] - row.active);
+  return {
+    evaluations: rows.length,
+    mean: round3(mean(scores)),
+    meanDeltaFromActive: round3(mean(deltas)),
+    minimumDeltaFromActive: Math.min(...deltas),
+    maximumDeltaFromActive: Math.max(...deltas),
+    changedBandFromActive: rows.filter((row, index) => scoreBand(row.active) !== scoreBand(scores[index])).length,
+  };
+}
+
+function summarizeWeightPriorDirection(rows, priorId) {
+  const onshore = rows.map(row => row.pairedResearchWeightScoresOnshore[priorId]);
+  const offshore = rows.map(row => row.pairedResearchWeightScoresOffshore[priorId]);
+  const differences = rows.map((row, index) => onshore[index] - offshore[index]);
+  return {
+    evaluations: rows.length,
+    onshoreMean: round3(mean(onshore)),
+    offshoreMean: round3(mean(offshore)),
+    meanOnshoreMinusOffshore: round3(mean(differences)),
+    minimumOnshoreMinusOffshore: Math.min(...differences),
+    maximumOnshoreMinusOffshore: Math.max(...differences),
+    onshoreLower: differences.filter(value => value < 0).length,
+  };
+}
+
 function compareDocuments(forcing, wave, wind, partById, zoneById) {
   assert.equal(forcing.status, 'OK');
   assert.equal(forcing.rawUvStored, false);
@@ -237,6 +286,7 @@ function compareDocuments(forcing, wave, wind, partById, zoneById) {
           });
           assert.equal(candidate.available, true, `Candidate unavailable for ${event.eventId}/${mode}`);
           const candidateFResult = candidateF(candidate);
+          const weightScores = researchWeightScores(candidate);
           const evaluateDirectionPair = alignment => {
             const pairedWeather = {
               windSpeedMps: windSample.windSpeedMps,
@@ -267,6 +317,7 @@ function compareDocuments(forcing, wave, wind, partById, zoneById) {
               active: pairedActive.baseScore,
               candidateE: pairedCandidate.candidateScores.candidateE,
               candidateF: candidateF(pairedCandidate).score,
+              researchWeightScores: researchWeightScores(pairedCandidate),
             };
           };
           const pairedOnshore = evaluateDirectionPair(1);
@@ -279,6 +330,9 @@ function compareDocuments(forcing, wave, wind, partById, zoneById) {
             active: active.baseScore,
             candidateE: candidate.candidateScores.candidateE,
             candidateF: candidateFResult.score,
+            researchWeightScores: weightScores,
+            pairedResearchWeightScoresOnshore: pairedOnshore.researchWeightScores,
+            pairedResearchWeightScoresOffshore: pairedOffshore.researchWeightScores,
             pairedActiveOnshore: pairedOnshore.active,
             pairedActiveOffshore: pairedOffshore.active,
             pairedCandidateEOnshore: pairedOnshore.candidateE,
@@ -378,8 +432,31 @@ function compareDocuments(forcing, wave, wind, partById, zoneById) {
   assert.ok(pairedDirectionChecks.active.meanOnshoreMinusOffshore > 0);
   assert.ok(pairedDirectionChecks.candidateE.meanOnshoreMinusOffshore > 0);
   assert.ok(pairedDirectionChecks.candidateF.meanOnshoreMinusOffshore > 0);
+  const weightSensitivity = RESEARCH_WEIGHT_PRIORS.map(prior => ({
+    id: prior.id,
+    weights: prior.weights,
+    natural: {
+      overall: summarizeWeightPrior(rows, prior.id),
+      byMode: modes.map(mode => ({
+        mode,
+        ...summarizeWeightPrior(rows.filter(row => row.mode === mode), prior.id),
+      })),
+    },
+    pairedDirection: {
+      overall: summarizeWeightPriorDirection(rows, prior.id),
+      byMovementCapacity: ['low', 'medium', 'high'].map(capacity => ({
+        capacity,
+        ...summarizeWeightPriorDirection(rows.filter(row => row.movementCapacityClass === capacity), prior.id),
+      })),
+      byMode: modes.map(mode => ({
+        mode,
+        ...summarizeWeightPriorDirection(rows.filter(row => row.mode === mode), prior.id),
+      })),
+    },
+  }));
+  assert.ok(weightSensitivity.every(prior => prior.pairedDirection.overall.onshoreLower === 0));
   return {
-    schemaVersion: '1.4.0',
+    schemaVersion: '1.5.0',
     status: 'passed-private-historical-active-and-candidate-f-comparison',
     generatedAt: new Date().toISOString(),
     method: 'legacy-vs-active-base-engine-plus-candidate-e-vs-f-on-wave-selected-derived-historical-features',
@@ -396,6 +473,7 @@ function compareDocuments(forcing, wave, wind, partById, zoneById) {
     eventSummaries,
     pairChecks,
     pairedDirectionChecks,
+    weightSensitivity,
     transportBelowHuntabilityEvaluations: rows.filter(
       row => row.transportAndDelivery < row.huntability
     ).length,
