@@ -5,7 +5,7 @@ const workflowDirectory = '.github/workflows';
 const workflowFiles = fs.readdirSync(workflowDirectory)
   .filter((name) => /\.ya?ml$/i.test(name))
   .sort();
-const expectedWorkflowFiles = ['extract-private-geodanmark-layer.yml', 'preserve-copernicus-current-shadow.yml', 'retry-national-admin-roundtrip.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml'];
+const expectedWorkflowFiles = ['build-ravscore-historical-wave-pilot.yml', 'extract-private-geodanmark-layer.yml', 'preserve-copernicus-current-shadow.yml', 'retry-national-admin-roundtrip.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml'];
 if (JSON.stringify(workflowFiles) !== JSON.stringify(expectedWorkflowFiles)) {
   throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun produktionsworkflowet og de registrerede private, ikke-deployerende workflows må være aktive.`);
 }
@@ -14,6 +14,24 @@ for (const privateName of expectedWorkflowFiles.filter(name => name !== 'update-
   if (privateWorkflow.includes('pages: write') || privateWorkflow.includes('id-token: write') || privateWorkflow.includes('deploy-pages')) {
     throw new Error(`${privateName} må ikke kunne deploye Pages.`);
   }
+}
+const historicalWavePilot = fs.readFileSync(`${workflowDirectory}/build-ravscore-historical-wave-pilot.yml`, 'utf8').replace(/\r\n/g, '\n');
+for (const marker of [
+  'workflow_dispatch:',
+  'permissions:\n  contents: read',
+  'python scripts/test-ravscore-historical-wave-pilot.py',
+  'python scripts/build-ravscore-historical-wave-pilot.py --year "$PILOT_YEAR"',
+  'coordinateValuesStored',
+  'rawNetcdfStored',
+  'retention-days: 7',
+]) {
+  if (!historicalWavePilot.includes(marker)) throw new Error(`Den private historiske bølgepilot mangler ${marker}`);
+}
+if (/\b(?:push|pull_request|schedule|workflow_run):/.test(historicalWavePilot)) {
+  throw new Error('Den historiske bølgepilot må kun kunne startes manuelt.');
+}
+if (/\.nc(?:\s|$)/m.test(historicalWavePilot)) {
+  throw new Error('Den historiske bølgepilot må ikke uploade NetCDF-filer.');
 }
 const pullRequestValidation = fs.readFileSync(`${workflowDirectory}/validate-pull-request.yml`, 'utf8').replace(/\r\n/g, '\n');
 for (const marker of [
@@ -38,6 +56,7 @@ for (const marker of [
   'npm run test:live-current-pilot',
   'npm run test:water-source-production-chain',
   'npm run test:workflow-action-contracts',
+  'python -m py_compile scripts/build-ravscore-historical-wave-pilot.py scripts/test-ravscore-historical-wave-pilot.py',
   'node --check scripts/audit-online-browser-playwright-4.0.237.mjs',
   'npm run release:gate',
 ]) {

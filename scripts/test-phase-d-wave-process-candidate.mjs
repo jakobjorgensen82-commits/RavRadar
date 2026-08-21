@@ -48,6 +48,11 @@ assert.equal(offshore.available, true);
 assert.ok(onshore.score >= offshore.score + 5, 'Pålandsbølger skal give tydeligt større støtte end fralandsbølger');
 assert.ok(onshore.diagnostics.waveOnshoreAlignment > 0.99);
 assert.ok(offshore.diagnostics.waveOnshoreAlignment < -0.99);
+assert.ok(Number.isFinite(onshore.candidateScores.candidateD));
+assert.ok(Number.isFinite(onshore.candidateScores.candidateE));
+assert.ok(onshore.candidateScores.candidateD > offshore.candidateScores.candidateD, 'Kandidat D skal bruge bølgeretningen i leveringsvejen');
+assert.ok(onshore.candidateScores.candidateE >= offshore.candidateScores.candidateE + 5, 'Kandidat E skal dæmpe en fysisk svag leveringsvej');
+assert.ok(onshore.candidateScores.candidateE <= onshore.candidateScores.candidateD, 'Den fysiske gate må ikke løfte scoren');
 
 const shortPeriod = evaluate({ weather: { wavePeriodS: 3 } });
 const longPeriod = evaluate({ weather: { wavePeriodS: 10 } });
@@ -71,6 +76,7 @@ assert.equal(missingDirection.diagnostics.waveApproachAvailable, false);
 for (const result of [onshore, offshore, shortPeriod, longPeriod, wrapA, wrapB, missingDirection]) {
   assert.ok(result.score >= 0 && result.score <= 100, 'Kandidatscoren skal være 0-100');
   assert.equal(result.scoreImpact, 'diagnostic-only');
+  assert.equal(result.diagnostics.staticRetentionScoreImpact, false);
 }
 
 console.log('OK: fase D-bølgekandidat bruger retning og periode diagnostisk og falder sikkert tilbage.');
