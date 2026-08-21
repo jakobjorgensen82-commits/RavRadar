@@ -1,5 +1,11 @@
 # Historisk sammenligning af gammel, aktiv og kandidat F
 
+## Korrigering efter modelaudit
+
+De gamle og aktive grundmodeltal samt selve den historiske datakæde er fortsat gyldige. Kandidat E/F-tallene er derimod foreløbige: audit viste, at den private forskningsmodel stadig gav en lille skjult effekt fra rev, lavt vand og ålegræs. Det var i strid med den aftalte regel om, at sådanne statiske kysttræk ikke må give point uden bedre evidens.
+
+Fejlen havde ingen virkning på den offentlige RavScore. E/F-konklusionerne skal bekræftes af en ny score-neutral historisk kørsel med den rettede forskningskontrakt, før tallene bruges videre.
+
 GitHub-run `32498207764` bestod paa commit `1eb8f2da`. Sammenligningen bruger 12 boelgeudvalgte haendelser ved fire pilotsteder, historiske boelger, stroem, vandstand og DMI-vind samt begge jagtformer.
 
 ## Hovedresultat
