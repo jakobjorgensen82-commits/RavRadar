@@ -503,3 +503,10 @@ Den planlagte P3-forskning må undersøge, om rumlige strømstrukturer har selvs
 ## Aktivt P1-deltrin: turdata v2 i 4.0.243
 
 Koden er lokalt implementeret og browserkontrolleret. Næste bindende trin er Supabase-migrationen, derefter fulde releasegates, PR/deploy og 210/673-kontrol. Vægtene og scorereglerne må ikke ændres i dette deltrin. Når turdata er i drift, fortsætter roadmapet med repræsentativ turkalibrering og ikke med enkeltfund.
+
+## Næste rækkefølge fra 4.0.244
+1. Verificér og frigiv målrettet Copernicus uden punktændringer.
+2. Fortsæt den allerede igangsatte brede videnskabelige evidensanalyse.
+3. Byg score-neutrale kandidatregler og forskningsbaserede vægte.
+4. Sammenlign gammel og ny model automatisk lokalt, før en produktionsbeslutning.
+5. Implementér Rav-vinduer, hændelsesmodel, enklere forklaringer og læringsmodul i sikre delmål.

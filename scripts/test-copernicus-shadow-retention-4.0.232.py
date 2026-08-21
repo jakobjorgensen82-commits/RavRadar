@@ -108,6 +108,8 @@ def main() -> None:
         )
         need(first["collections"][0]["targetFingerprint"] == first_fingerprint,
              "A completed collection must retain its target-geometry fingerprint")
+        need(first["collections"][0]["targetPartIds"] == ["part-1"],
+             "A completed collection must retain its exact selected target ids")
         moved_time = now - timedelta(hours=1)
         moved_fingerprint = "sha256:" + "2" * 64
         moved_record = {**record(moved_time), "samplingPoint": [9.1, 57.0]}

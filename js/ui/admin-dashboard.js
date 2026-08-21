@@ -1,24 +1,24 @@
-import { evaluateRules } from '../core/rule-engine.js?v=4.0.243';
-import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.243';
-import { historicalSummary } from '../services/historical-analysis.js?v=4.0.243';
-import { loadAdaptiveModel, applyApprovedSuggestion, recordDecision, decisionHistory, rollbackAdaptiveModel, listAdaptiveModelVersions, activateAdaptiveModelVersion } from '../core/adaptive-model.js?v=4.0.243';
-import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.243';
-import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.243';
-import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.243';
-import { interpretFreeTextRule } from '../core/free-text-rule-assistant.js?v=4.0.243';
-import { listProfiles, savePermissions, PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.243';
-import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js?v=4.0.243';
-import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.243';
-import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.243';
-import { createDirectionEditor } from './admin-direction-editor.js?v=4.0.243';
-import { GEOGRAPHIC_AREAS, matchingZoneIds } from '../core/geographic-areas.js?v=4.0.243';
-import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.243';
-import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.243';
-import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.243';
-import { loadVisitorReport } from '../services/visitor-report-service.js?v=4.0.243';
-import { decodeRuntimeDiagnosticsEnvelope } from '../services/runtime-diagnostics-archive.js?v=4.0.243';
+import { evaluateRules } from '../core/rule-engine.js?v=4.0.244';
+import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.244';
+import { historicalSummary } from '../services/historical-analysis.js?v=4.0.244';
+import { loadAdaptiveModel, applyApprovedSuggestion, recordDecision, decisionHistory, rollbackAdaptiveModel, listAdaptiveModelVersions, activateAdaptiveModelVersion } from '../core/adaptive-model.js?v=4.0.244';
+import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.244';
+import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.244';
+import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.244';
+import { interpretFreeTextRule } from '../core/free-text-rule-assistant.js?v=4.0.244';
+import { listProfiles, savePermissions, PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.244';
+import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js?v=4.0.244';
+import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.244';
+import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.244';
+import { createDirectionEditor } from './admin-direction-editor.js?v=4.0.244';
+import { GEOGRAPHIC_AREAS, matchingZoneIds } from '../core/geographic-areas.js?v=4.0.244';
+import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.244';
+import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.244';
+import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.244';
+import { loadVisitorReport } from '../services/visitor-report-service.js?v=4.0.244';
+import { decodeRuntimeDiagnosticsEnvelope } from '../services/runtime-diagnostics-archive.js?v=4.0.244';
 
-const VERSION='4.0.243';
+const VERSION='4.0.244';
 const SITE_TEST_MODE=new URLSearchParams(location.search).has('ravradarAdminSiteTest');
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
@@ -378,7 +378,7 @@ function renderObservations(){const obs=JSON.parse(localStorage.getItem('ravrada
 async function renderUsers(){
  content.innerHTML=`<article class="admin-card"><h2>Eksperter og rettigheder</h2><p class="muted">Få, brede tilladelser. Du kan til enhver tid ændre dem igen.</p><div id="profilesList" class="admin-grid"><p class="muted">Henter brugere…</p></div></article>`;
  const host=document.querySelector('#profilesList');
- try{state.profiles=await listProfiles();if(!state.profiles.length){host.innerHTML='<div class="empty">Ingen profiler blev fundet. Kør SQL-opdateringen til 4.0.243 i Supabase én gang.</div>';return;}
+ try{state.profiles=await listProfiles();if(!state.profiles.length){host.innerHTML='<div class="empty">Ingen profiler blev fundet. Kør SQL-opdateringen til 4.0.244 i Supabase én gang.</div>';return;}
  host.innerHTML=state.profiles.map(profile=>{const active=new Set((profile.user_permissions||[]).filter(x=>x.enabled).map(x=>x.permission_key));return `<article class="admin-card permission-card" data-user-id="${esc(profile.id)}"><div class="rule-card-head"><div><h3>${esc(profile.display_name||profile.email)}</h3><p class="muted">${esc(profile.email||'')} · ${esc(profile.role||'expert')}</p></div><span class="badge ${profile.is_active!==false?'active':'draft'}">${profile.is_active!==false?'Aktiv':'Deaktiveret'}</span></div><div class="permission-list">${PERMISSIONS.map(p=>`<label class="permission-option"><input type="checkbox" name="${esc(p.id)}" ${active.has(p.id)||profile.role==='owner'?'checked':''} ${profile.role==='owner'?'disabled':''}><span>${esc(p.label)}</span></label>`).join('')}</div>${profile.role==='owner'?'<p class="hint">Owner har altid alle rettigheder.</p>':'<button class="admin-button save-user-permissions" type="button">Gem rettigheder</button><p class="form-status"></p>'}</article>`}).join('');
  host.querySelectorAll('.save-user-permissions').forEach(button=>button.onclick=async()=>{const card=button.closest('[data-user-id]');const status=card.querySelector('.form-status');const values={};PERMISSIONS.forEach(p=>values[p.id]=card.querySelector(`[name="${p.id}"]`).checked);button.disabled=true;status.textContent='Gemmer…';try{await savePermissions(card.dataset.userId,values);status.textContent='Rettighederne er gemt og gælder med det samme.';}catch(error){status.textContent=error.message;}finally{button.disabled=false;}});
  }catch(error){host.innerHTML=`<div class="empty">${esc(error.message)}</div>`;}
@@ -425,7 +425,7 @@ function renderVisitors(){
  const period=defaultVisitorPeriod();
  content.innerHTML=`<article class="admin-card"><div class="section-head"><div><h2>Privat besøgsstatistik</h2><p class="muted">Kun samlede dagstal. Ingen IP-adresser, præcis placering, browserfingeraftryk eller personprofiler.</p></div></div><form id="visitorPeriod" class="toolbar"><label>Fra <input type="date" name="from" value="${period.from}" required></label><label>Til <input type="date" name="to" value="${period.to}" required></label><button class="admin-button">Vis periode</button></form></article><div id="visitorReport"><article class="admin-card"><p>Henter besøgstal…</p></article></div>`;
  const form=document.querySelector('#visitorPeriod');
- const load=async()=>{const box=document.querySelector('#visitorReport');box.innerHTML='<article class="admin-card"><p>Henter besøgstal…</p></article>';try{const report=await loadVisitorReport(form.elements.from.value,form.elements.to.value);const rows=(report.days||[]).map(row=>`<tr><td>${new Date(`${row.day}T12:00:00`).toLocaleDateString('da-DK')}</td><td>${Number(row.pageViews).toLocaleString('da-DK')}</td><td>${Number(row.browserVisits).toLocaleString('da-DK')}</td></tr>`).join('');box.innerHTML=`<div class="admin-grid"><article class="admin-card"><h2>Sidevisninger</h2><div class="metric">${Number(report.pageViews||0).toLocaleString('da-DK')}</div><p class="muted">Alle indlæsninger i perioden</p></article><article class="admin-card"><h2>Browserbesøg</h2><div class="metric">${Number(report.browserVisits||0).toLocaleString('da-DK')}</div><p class="muted">Første åbning pr. browserfane og dag – ikke unikke personer</p></article><article class="admin-card"><h2>Oprettede login</h2><div class="metric">${Number(report.registeredAccounts||0).toLocaleString('da-DK')}</div><p class="muted">${Number(report.activeAccounts||0).toLocaleString('da-DK')} aktive konti</p></article></div><article class="admin-card"><h2>Dag for dag</h2><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Dato</th><th>Sidevisninger</th><th>Browserbesøg</th></tr></thead><tbody>${rows||'<tr><td colspan="3">Ingen registrerede besøg i perioden.</td></tr>'}</tbody></table></div></article>`;}catch(error){box.innerHTML=`<article class="admin-card"><p class="status-bad"><b>Besøgstallene kunne ikke hentes.</b></p><p>${esc(error.message)}</p><p class="hint">RavRadar virker fortsat normalt. Kontrollér at databasemigreringen til 4.0.243 er installeret.</p></article>`;}};
+ const load=async()=>{const box=document.querySelector('#visitorReport');box.innerHTML='<article class="admin-card"><p>Henter besøgstal…</p></article>';try{const report=await loadVisitorReport(form.elements.from.value,form.elements.to.value);const rows=(report.days||[]).map(row=>`<tr><td>${new Date(`${row.day}T12:00:00`).toLocaleDateString('da-DK')}</td><td>${Number(row.pageViews).toLocaleString('da-DK')}</td><td>${Number(row.browserVisits).toLocaleString('da-DK')}</td></tr>`).join('');box.innerHTML=`<div class="admin-grid"><article class="admin-card"><h2>Sidevisninger</h2><div class="metric">${Number(report.pageViews||0).toLocaleString('da-DK')}</div><p class="muted">Alle indlæsninger i perioden</p></article><article class="admin-card"><h2>Browserbesøg</h2><div class="metric">${Number(report.browserVisits||0).toLocaleString('da-DK')}</div><p class="muted">Første åbning pr. browserfane og dag – ikke unikke personer</p></article><article class="admin-card"><h2>Oprettede login</h2><div class="metric">${Number(report.registeredAccounts||0).toLocaleString('da-DK')}</div><p class="muted">${Number(report.activeAccounts||0).toLocaleString('da-DK')} aktive konti</p></article></div><article class="admin-card"><h2>Dag for dag</h2><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Dato</th><th>Sidevisninger</th><th>Browserbesøg</th></tr></thead><tbody>${rows||'<tr><td colspan="3">Ingen registrerede besøg i perioden.</td></tr>'}</tbody></table></div></article>`;}catch(error){box.innerHTML=`<article class="admin-card"><p class="status-bad"><b>Besøgstallene kunne ikke hentes.</b></p><p>${esc(error.message)}</p><p class="hint">RavRadar virker fortsat normalt. Kontrollér at databasemigreringen til 4.0.244 er installeret.</p></article>`;}};
  form.addEventListener('submit',event=>{event.preventDefault();load();});load();
 }
 

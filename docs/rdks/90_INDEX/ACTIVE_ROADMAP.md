@@ -204,3 +204,6 @@ Aktiv kandidat: 25/40/35 efter DEC-0041. Konsekvensauditterne er grønne. Næste
 - [x] Eksisterende score-/pil-/forklaringskontrol genbruges. Fuld 210/673 køres ugentligt eller ved relevante score-, UI- og datakontraktændringer.
 - Fravalgt: separat offentlig scoresikkerhed og historisk “hvorfor ændrede scoren sig?”-funktion.
 - Bindende beslutning: DEC-0044.
+
+## Aktuelt delmål efter DEC-0044
+Copernicus-afgrænsningen er implementeret som 4.0.244-kandidat: normal drift bruger kun aktuelle DMI-huller; 673-dels kontrol er manuel. Når kandidaten er produktionsverificeret, fortsætter roadmapet med den allerede igangsatte store evidensanalyse af mobilisering, transport, aflejring og jagtbarhed.

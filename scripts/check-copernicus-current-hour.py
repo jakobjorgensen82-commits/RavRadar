@@ -100,13 +100,21 @@ def inspect(
                 sampling_identity_match = False
                 break
     declared_record_count = matching_collection.get("recordCount") if matching_collection else None
+    declared_target_ids = matching_collection.get("targetPartIds") if matching_collection else None
+    target_ids_match = bool(
+        expected_points is None
+        or declared_target_ids is None
+        or (isinstance(declared_target_ids, list) and set(map(str, declared_target_ids)) == set(expected_points))
+    )
+    empty_target_collection = declared_record_count == 0 and declared_target_ids == []
     structurally_complete = (
         matching_collection is not None
         and isinstance(declared_record_count, int)
-        and declared_record_count > 0
+        and (declared_record_count > 0 or empty_target_collection)
         and declared_record_count == matching_record_count
         and valid_target_fingerprint(matching_collection.get("targetFingerprint"))
         and sampling_identity_match
+        and target_ids_match
     )
     fingerprint_match = bool(
         structurally_complete

@@ -1632,3 +1632,6 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - DEC-0044 samler ejerens nye retning: ravvinduer, hændelsesmodel, enkle forklaringer, læringsmodul, internt evidensregister og lokal automatisk gammel-mod-ny-scorekontrol i samarbejde med Codex.
 - Separat scoresikkerhed og gårsdagsforklaring er fravalgt; varsler er udskudt. DMI forbliver førstevalg, og normal Copernicus-pilot skal begrænses til godkendte DMI-huller.
 - RavScore 25/40/35 forbliver aktiv, indtil den store analyse og en særskilt fuldt valideret kandidatbeslutning er gennemført.
+
+## 2026-08-21 - Copernicus-afgrænsning
+4.0.244-kandidaten implementerer DEC-0044's DMI-først-princip i indsamlingen: den normale Copernicus-målliste består kun af kystdele uden en gyldig lokal DMI-vektor for den ønskede time. Manuel landsforskning bevares, og alle punkter forbliver uændrede.

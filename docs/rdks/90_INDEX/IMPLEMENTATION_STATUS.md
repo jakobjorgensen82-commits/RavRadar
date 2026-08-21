@@ -1528,3 +1528,10 @@ Implementeret og målrettet testet: v2-kontrakt, JSON Schema, korrekt observatio
 - Ikke implementeret: omfattende offentligt læringsmodul.
 - Udskudt: gemte områder og varsler.
 - Fravalgt: separat offentlig scoresikkerhed og gårsdagsbaseret scoreforklaring.
+
+## 4.0.244-kandidat
+- Implementeret: automatisk Copernicus-målliste med kun aktuelle lokale DMI-huller.
+- Implementeret: manuel full_coast-funktion til sjælden landsdækkende forskning.
+- Implementeret: målliste-id'er og fingeraftryk bindes til hver cache-samling.
+- Bevaret: DMI-først, kontrolleret regional DMI-proxy, uændrede kystpunkter og uændret offentlig RavScore-kontrakt.
+- Åben gate: målrettede tests, fuld release-gate, PR og præcis produktionsverifikation.

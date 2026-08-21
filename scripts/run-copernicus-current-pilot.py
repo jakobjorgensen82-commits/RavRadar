@@ -60,6 +60,7 @@ PRODUCTS = [
 def arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--targets", type=Path, default=DEFAULT_TARGETS)
+    parser.add_argument("--authoritative-targets", type=Path, default=DEFAULT_TARGETS)
     parser.add_argument("--shadow", type=Path, default=DEFAULT_SHADOW)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     parser.add_argument("--summary", type=Path, default=DEFAULT_SUMMARY)
@@ -150,12 +151,23 @@ def main() -> int:
     args = arguments()
     at = selected_time(args.at)
     targets = load_targets(args.targets)
+    authoritative_targets = load_targets(args.authoritative_targets)
+    authoritative_by_part = {target["partId"]: target for target in authoritative_targets}
+    for target in targets:
+        authoritative = authoritative_by_part.get(target["partId"])
+        if (
+            authoritative is None
+            or authoritative["parentZoneId"] != target["parentZoneId"]
+            or [round(float(value), 7) for value in authoritative["waterPoint"]]
+            != [round(float(value), 7) for value in target["waterPoint"]]
+        ):
+            raise RuntimeError(f"Selected Copernicus target is not identical to central geometry: {target['partId']}")
     targets_fingerprint = target_fingerprint(targets)
     target_points = {
         target["partId"]: [round(float(target["waterPoint"][0]), 7), round(float(target["waterPoint"][1]), 7)]
-        for target in targets
+        for target in authoritative_targets
     }
-    if not args.fixture_directory:
+    if targets and not args.fixture_directory:
         if not os.getenv("COPERNICUSMARINE_SERVICE_USERNAME") or not os.getenv("COPERNICUSMARINE_SERVICE_PASSWORD"):
             raise RuntimeError("Copernicus credentials are required through environment secrets")
 
@@ -166,20 +178,22 @@ def main() -> int:
     try:
         for product in PRODUCTS:
             product_targets = eligible_targets(targets, product)
-            path = fixture_path(args.fixture_directory, product) if args.fixture_directory else download_subset(product, product_targets, at, temporary)
-            with xr.open_dataset(path) as dataset:
-                records = [
-                    record for target in product_targets
-                    if (record := nearest_shared_uv(
-                        dataset,
-                        target,
-                        source=product["source"],
-                        product_id=product["productId"],
-                        dataset_id=product["datasetId"],
-                        dataset_version=product["datasetVersion"],
-                        expected_time=at,
-                    )) is not None
-                ]
+            records: list[dict[str, Any]] = []
+            if product_targets:
+                path = fixture_path(args.fixture_directory, product) if args.fixture_directory else download_subset(product, product_targets, at, temporary)
+                with xr.open_dataset(path) as dataset:
+                    records = [
+                        record for target in product_targets
+                        if (record := nearest_shared_uv(
+                            dataset,
+                            target,
+                            source=product["source"],
+                            product_id=product["productId"],
+                            dataset_id=product["datasetId"],
+                            dataset_version=product["datasetVersion"],
+                            expected_time=at,
+                        )) is not None
+                    ]
             raw_records.extend(records)
             for record in records:
                 selected_by_part.setdefault(record["partId"], record)
@@ -203,6 +217,7 @@ def main() -> int:
         collection_time=at,
         target_fingerprint=targets_fingerprint,
         target_points=target_points,
+        target_part_ids=[target["partId"] for target in targets],
     )
     selected = [safe_record(selected_by_part[key]) for key in sorted(selected_by_part)]
     report = {
