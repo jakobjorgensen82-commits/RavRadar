@@ -1,6 +1,6 @@
 # DEC-0045 - Omkostningsbevidst testmatrix
 
-- **Status:** AKTIV
+- **Status:** IMPLEMENTERET
 - **Dato:** 2026-08-21
 - **Besluttet af:** Ejer og Codex
 
@@ -20,3 +20,7 @@ RavRadar brugte for meget tid på at gentage den samme kildekodekontrol lokalt, 
 ## Sikkerhedsgrænse
 
 Beslutningen ændrer kun placeringen og hyppigheden af dublerede kontroller. Den sænker ingen datakrav, 673/673-gate, releasegate, DMI-first-regel, scorekontrol eller mergekrav.
+
+## Produktionsbevis
+
+PR #37 blev merged som 3dc331ca. Exact-head-kildegaten og push-produktion 32468752244 bestod. Push-kørslen beholdt den tidlige kildekodegate og gennemførte derefter frisk data, fuld validering, releasegate, Supabase, artifact og Pages. Live viser 4.0.247 med 210 zoner og 673 kystdele.

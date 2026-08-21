@@ -244,3 +244,9 @@ Normal Copernicus er ændret fra alle 673 kystdele til en automatisk liste over 
 - DMI leverer 622 lokale dele; målrettet Copernicus udfylder 43 reelle huller, og de otte godkendte regionale proxyer er uændrede. Ingen punkter er flyttet.
 - 4.0.247-kandidaten fjerner kun gentaget validate:source fra planlagte same-source vejropdateringer. Push/manuelle builds, exact-head PR-gate og fuld post-data validate/releasegate bevares.
 - Den fulde browseraudit køres ikke for denne workflow-/dokumentationsændring. Næste roadmappunkt efter produktionsbevis er den allerede CI-grønne forskningssyntese og automatisk gammel-mod-ny-scoreanalyse.
+
+## Checkpoint: 4.0.247 produktionsverificeret
+- PR #37 er merged som 3dc331ca, og produktion 32468752244 er grøn på den eksakte mergecommit.
+- Live viser 4.0.247, datasæt rr-20260821094303-210, 210 zoner, 673 kystdele og reference 09:00Z.
+- Fuld post-data validering, releasegate, Supabase, artifact og Pages bestod. Ingen browseraudit var relevant for workflowændringen.
+- PR #34 er opdateret til den aktuelle main og indeholder den samlede RavScore-evidenssyntese. Næste trin er ny exact-head-gate, merge og derefter automatisk gammel-mod-ny-scoreanalyse.

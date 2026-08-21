@@ -11,3 +11,8 @@
 
 ## Uændret
 - RavScore, DMI-first, Copernicus-afgrænsning, regionale proxyer, geometri og alle land-/vandpunkter er uændrede.
+
+## Produktionsbevis
+- PR #37 er merged som 3dc331ca.
+- Produktion 32468752244 bestod frisk data, fuld validering, releasegate, Supabase og Pages.
+- Live datasæt rr-20260821094303-210 viser 4.0.247, 210 zoner og 673 kystdele.

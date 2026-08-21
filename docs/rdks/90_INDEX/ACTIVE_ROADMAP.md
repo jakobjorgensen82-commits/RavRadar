@@ -212,5 +212,5 @@ Copernicus-afgrænsningen er implementeret som 4.0.244-kandidat: normal drift br
 
 - [x] Indfør DEC-0045: målrettet udviklingstest, én exact-head PR-kildegate og fuld post-data produktionsgate.
 - [x] Fjern kun den gentagne kildekodegate fra planlagte vejropdateringer på samme kontrollerede kode.
-- [ ] Verificér kandidaten i PR og præcis produktion; kør ikke 210/673-browseraudit for denne uvedkommende workflowændring.
-- [ ] Fortsæt derefter den store evidenssyntese og automatisk gammel-mod-ny-scoreanalyse.
+- [x] PR #37, merge 3dc331ca og præcis produktion 32468752244 er grønne; 210/673-browseraudit var ikke relevant for workflowændringen.
+- [ ] Fortsæt den store evidenssyntese og automatisk gammel-mod-ny-scoreanalyse.

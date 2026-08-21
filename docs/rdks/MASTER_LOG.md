@@ -1656,3 +1656,10 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - DEC-0045 reducerer dublerede kildekodekontroller, men bevarer exact-head PR-gate, push/manual pre-data-gate samt fuld post-data validate/releasegate før artifact/deploy.
 - Browseraudit 210/673 forbliver ugentlig eller relevant ved UI-, score- og datakontraktændring.
 - Ingen score, dataregel, geometri eller land-/vandpunkter ændres.
+
+## 2026-08-21 - 4.0.247 produktionsverificeret
+
+- PR #37 blev merged som 3dc331ca efter grøn exact-head-kildegate.
+- Produktion 32468752244 bestod frisk data, fuld validering, releasegate, Supabase, artifact og Pages.
+- Live datasæt rr-20260821094303-210 viser 4.0.247, 210 zoner og 673 kystdele.
+- Ingen browseraudit var relevant, fordi UI, score og offentlig datakontrakt var uændret.
