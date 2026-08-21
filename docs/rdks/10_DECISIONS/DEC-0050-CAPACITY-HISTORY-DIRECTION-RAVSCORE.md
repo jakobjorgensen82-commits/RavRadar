@@ -70,3 +70,11 @@ Et groent teknisk job er ikke i sig selv godkendelse af en ny RavScore.
 - `docs/research/RAVSCORE_HISTORICAL_ACTIVE_F_COMPARISON_RUN_32498207764.md`
 - `docs/research/RAVSCORE_PRELAUNCH_WEIGHTING_PRIOR_2026-08-21.md`
 - `docs/research/RAVSCORE_MODEL_REGISTRY_2026-08-21.md`
+
+## Resultat af foerste historikhukommelsesanalyse
+
+Den foerste score-neutrale koersel paa 12 eksisterende 96-timersforloeb har afproevet 6, 12, 24 og 48 timers eksponentiel hukommelse for stroem, boelgeenergi og vind.
+
+6 timer reagerer kraftigt paa en enkelt svag modtime og er ikke foerstevalg til et flerdages transportforloeb. 24 timer er den foreloebige aktive regimeshortlist, mens 48 timer er den foreloebige langsomme baggrundsshortlist. Ingen af dem er en godkendt produktionskoefficient.
+
+Naeste kandidat G-test skal sammenligne 24 timer alene, 48 timer alene og en lille matrix af dobbelte spor. Stroem, boelger og vind skal ablateres separat, og hvert forecasttidspunkt maa kun bruge historik frem til det paagaeldende tidspunkt. Se `docs/research/RAVSCORE_REGIME_MEMORY_RESULT_2026-08-21.md`.

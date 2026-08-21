@@ -43,3 +43,12 @@ Alle kandidater er score-neutrale forskningsfunktioner. Se DEC-0046 og den samle
 - `RRS-H2` (planlagt): Vindens direkte og indirekte virkning skal adskilles, saa boelger, stroem, vandstand og direkte vind ikke dobbeltregner samme haendelse.
 
 Det reproducerbare resultat og den fulde beslutning findes i `RAVSCORE_PAIRED_DIRECTION_AND_WEIGHT_RESULT_2026-08-21.md`.
+
+## Kandidat G historikspor
+
+- `RRS-G-HISTORY-ACTIVE-24H` er den foreloebige aktive regimeshortlist.
+- `RRS-G-HISTORY-BACKGROUND-48H` er den foreloebige langsomme baggrundsshortlist.
+- Ingen af ID'erne er en produktionsregel eller pointkoefficient.
+- Naeste private matrix sammenligner hvert spor alene og sammen i en lille, foruddefineret foelsomhedstest.
+- Direkte vind, vindstressproxy, boelgeenergi og stroem skal kunne slaas fra hver for sig, saa samme fysiske paavirkning ikke dobbeltregnes.
+- Evidens: `RAVSCORE_REGIME_MEMORY_RESULT_2026-08-21.md`.

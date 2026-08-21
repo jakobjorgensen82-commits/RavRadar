@@ -1259,3 +1259,12 @@ Foerste private aktive RavScore-shadowrun stoppede korrekt foer state og score, 
 - Kandidat G er naeste private arbejdshypotese: korrigeret procesmodel, kapacitetsstyret retning, historisk stroem-/vindhukommelse, ingen udokumenterede statiske kystbonusser og foreloebigt vaegtcentrum 20/45/35.
 - En kort og svag vending skal kun aendre lidt; en vedvarende og kraftig vending skal aendre mere. Tidligere timers og dages nettoforloeb skal medregnes med aftagende vaegt.
 - Den aktive offentlige RavScore 25/40/35, DMI-first, geometri og land-/vandpunkter er uændrede. Se DEC-0050.
+
+## RavScore historikhukommelse - foerste resultat 2026-08-21
+
+- Et nyt privat, score-neutralt vaerktoej har analyseret 12 eksisterende 96-timersforloeb med 6, 12, 24 og 48 timers hukommelse.
+- Ved 24 timer aendrede en syntetisk svag modtime den opbyggede tilstand 3,796 procent, mens en dobbelt staerk vedvarende modretning brugte cirka 12 timer paa at vende nettofortegnet. Ved 48 timer var tallene 2,151 procent og cirka 16 timer.
+- I 828 observerede stromtimer vendte ingen svag stroemepisode nettotilstanden. Ved 24 timer var der 36 modepisoder og 14 nettovendinger; episoder varede typisk seks timer.
+- Vind og boelger viste samme hovedprincip: svage korte vendinger aendrede lidt og vendte ikke hukommelsen, mens staerke vedvarende episoder kunne.
+- Naeste shortlist er et 24-timers aktivt regimespor og et 48-timers baggrundsspor. Blandingsandel og scorepoint er ikke valgt; stroem, boelger og vind skal foerst ablateres uden dobbeltregning.
+- Aktiv RavScore 25/40/35 og offentlig runtime er uændret. Se DEC-0050 og `docs/research/RAVSCORE_REGIME_MEMORY_RESULT_2026-08-21.md`.

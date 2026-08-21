@@ -1620,3 +1620,13 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [ ] Afspil centrale ekspertregler og kontrollér pile, score, komponenter, forklaring, jagtbarhed og vadesikkerhed samlet.
 - [ ] Fremlaeg den endelige vaegtbegrundelse grundigt og forstaaeligt for ejeren foer go/no-go.
 - Aktiv offentlig score, UI, geometri og alle land-/vandpunkter er uændrede. Bindende metode: DEC-0050.
+
+## Kandidat G historikhukommelse - checkpoint 2026-08-21
+
+- [x] Generisk score-neutral eksponentiel regimehukommelse implementeret med styrke, retning og faktisk tidsafstand.
+- [x] Syntetisk kontrakt beviser, at en kort svag vending ikke sletter et opbygget forloeb, og at en kraftig vedvarende vending kan overtage.
+- [x] 12 historiske forloeb analyseret for stroem, boelgeenergi, lineart vindspor og vindstressspor ved 6/12/24/48 timer.
+- [x] Episodeanalyse maaler varighed og nettovendinger uden at gemme raa vejrvaerdier.
+- [ ] Sammenlign 24-timers aktivt spor, 48-timers baggrundsspor og en lille dobbeltsporsmatrix i kandidat G.
+- [ ] Koer separate ablationer og integrér de bedste score-neutrale varianter i historisk replay/parret retning.
+- [ ] National matrix, shadow, ekspertregler, jagtbarhed, sikkerhed og pil-/score-/forklaringskontrol mangler fortsat.

@@ -19,3 +19,9 @@
 - Analysen viser, at den aktive score reagerer for ens paa retning ved svag og kraftig flytteevne.
 - Kandidat G er registreret som privat arbejdshypotese med historisk stroem-/vindhukommelse og foreloebigt vaegtcentrum 20/45/35.
 - Den offentlige RavScore, UI, DMI-first, geometri og alle land-/vandpunkter er uændrede.
+
+## Privat RavScore-regimehukommelse (2026-08-21)
+
+- Nyt score-neutralt analysevaerktoej tester styrke-, varigheds- og historikstyrede vendinger for stroem, boelger og vind.
+- 12 historiske 96-timersforloeb peger foreloebigt paa 24 timers aktivt regimespor og 48 timers baggrundsspor som naeste foelsomhedstest.
+- Ingen point, produktionsscore, UI, datafelter, geometri eller land-/vandpunkter er ændret.
