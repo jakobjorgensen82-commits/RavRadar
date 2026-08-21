@@ -1,0 +1,106 @@
+name: Build private RavScore historical wave pilot
+
+on:
+  workflow_dispatch:
+    inputs:
+      year:
+        description: "Complete year for bounded wave event discovery (1993-current)"
+        required: true
+        default: "2024"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: private-ravscore-historical-wave-pilot
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-copernicus.txt
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Install central geometry and Copernicus dependencies
+        run: |
+          python -m pip install --disable-pip-version-check "shapely>=2.0,<3" "pyproj>=3.6,<4"
+          python -m pip install --disable-pip-version-check -r requirements-copernicus.txt
+
+      - name: Rebuild latest centrally approved sampling points
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          python scripts/refine-coastlines-constrained-4.0.48.py
+          python scripts/sync-admin-config.py
+          python scripts/apply-central-zone-reviews.py
+          node scripts/build-public-coastal-parts-v2.mjs
+
+      - name: Run targeted fixture contract
+        run: python scripts/test-ravscore-historical-wave-pilot.py
+
+      - name: Verify private Copernicus credentials
+        env:
+          COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
+          COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
+        run: |
+          test -n "$COPERNICUSMARINE_SERVICE_USERNAME"
+          test -n "$COPERNICUSMARINE_SERVICE_PASSWORD"
+
+      - name: Build bounded private wave features
+        env:
+          COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
+          COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
+          PILOT_YEAR: ${{ inputs.year }}
+        run: python scripts/build-ravscore-historical-wave-pilot.py --year "$PILOT_YEAR"
+
+      - name: Reject credential or coordinate leakage
+        env:
+          COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
+          COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
+        run: |
+          python - <<'PY'
+          import json, os, pathlib
+          path = pathlib.Path('.cache/ravscore-historical-wave-features.json')
+          text = path.read_text(encoding='utf-8')
+          data = json.loads(text)
+          assert data['scoreImpact'] is False and data['publicRuntime'] is False
+          assert data['coordinateValuesStored'] is False and data['rawNetcdfStored'] is False
+          forbidden = {'waterpoint', 'landpoint', 'longitude', 'latitude', 'geometry', 'umps', 'vmps'}
+          def inspect(value):
+              if isinstance(value, dict):
+                  assert not (forbidden & {str(key).lower() for key in value})
+                  for child in value.values(): inspect(child)
+              elif isinstance(value, list):
+                  for child in value: inspect(child)
+          inspect(data)
+          for name in ('COPERNICUSMARINE_SERVICE_USERNAME', 'COPERNICUSMARINE_SERVICE_PASSWORD'):
+              value = os.environ.get(name, '')
+              assert value and value not in text
+          print('Safe historical artifact: no credentials, coordinates, raw vectors or NetCDF')
+          PY
+
+      - name: Upload private historical research evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: ravscore-historical-wave-pilot-${{ github.run_number }}
+          if-no-files-found: error
+          retention-days: 7
+          path: |
+            .cache/ravscore-historical-wave-features.json
+            .cache/ravscore-historical-wave-features.txt
