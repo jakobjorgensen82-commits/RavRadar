@@ -238,3 +238,9 @@ Normal Copernicus er ændret fra alle 673 kystdele til en automatisk liste over 
 - 4.0.246 vælger kun ved nul eksakt dækning den højest dækkede og derefter nærmeste DMI-strømtime inden for tre timer og binder hele den efterfølgende produktionskæde til den valgte time.
 - Hvis ingen nærliggende verificeret DMI-strømtime findes, stopper målbyggeren fortsat. DMI-først, 673/673, score, proxyer, geometri og punkter er uændrede.
 - Næste trin: tests, versionslukning, commit/push/PR, exact-head-gates og præcis produktion. Først derefter fortsættes RavScore-analysen.
+
+## Checkpoint: 4.0.246 produktion og 4.0.247 testmatrix
+- PR #36 blev merged som c2e0d024; produktion 32467031990 bestod hele kæden og live viser 4.0.246, 210 zoner, 673 dele og reference 09:00Z.
+- DMI leverer 622 lokale dele; målrettet Copernicus udfylder 43 reelle huller, og de otte godkendte regionale proxyer er uændrede. Ingen punkter er flyttet.
+- 4.0.247-kandidaten fjerner kun gentaget validate:source fra planlagte same-source vejropdateringer. Push/manuelle builds, exact-head PR-gate og fuld post-data validate/releasegate bevares.
+- Den fulde browseraudit køres ikke for denne workflow-/dokumentationsændring. Næste roadmappunkt efter produktionsbevis er den allerede CI-grønne forskningssyntese og automatisk gammel-mod-ny-scoreanalyse.

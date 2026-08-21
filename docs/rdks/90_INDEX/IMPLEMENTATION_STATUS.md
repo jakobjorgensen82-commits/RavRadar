@@ -1550,3 +1550,11 @@ Implementeret og målrettet testet: v2-kontrakt, JSON Schema, korrekt observatio
 - Implementeret: den valgte time eksporteres maskinelt og bindes før Copernicus, livefletning og den øvrige vejr-/scorekæde.
 - Bevaret: fuldt stop uden nærliggende DMI-time, DMI-først, 673/673, proxyer, score, geometri og punkter.
 - Åben gate: målrettede tests, fuld kildekodegate, PR, exact-head-gates og præcis produktionsverifikation.
+
+## 4.0.247 - testmatrix
+
+- [x] Cost/benefit er målt og dokumenteret i docs/research/TEST_VALIDATION_COST_BENEFIT_2026-08-21.md.
+- [x] Workflowregressionen kræver kildekodegate på push/manuelle builds og tillader skip alene på planlagte same-source builds.
+- [x] Fuld post-data validate/releasegate er uændret obligatorisk ved ethvert nyt deploybart artifact.
+- [ ] Exact-head PR-kildegate, merge og frisk produktionsverifikation mangler for kandidaten.
+- [x] Ingen browseraudit kræves, fordi UI, score og offentlig datakontrakt er uændret.

@@ -59,6 +59,8 @@ En grøn GitHub-status kan ikke tilsidesætte konkret fejlevidens. Ved reel fejl
 
 ## Lokal Codex-klargøring og kildekontrol
 - På en frisk Windows/Codex-runtime køres scripts/setup-codex.ps1 én gang. Scriptet installerer projektets tre eksisterende Python-afhængighedssæt og ændrer ikke repositorydata.
-- Før en kilde-PR køres scripts/validate-source.ps1. Den svarer til GitHubs kildegate og kræver ikke central adminhydrering eller frisk produktionsdata.
-- validate:source er aldrig en erstatning for den fulde npm run validate og npm run release:gate, som fortsat skal køre efter central hydrering og frisk vejr før deploy.
+- Under udvikling køres målrettede tests. Den fulde validate:source skal bestå på PR'ens eksakte head i GitHub og køres kun også lokalt ved bred/tværgående risiko, manglende CI eller konkret fejlevidens.
+- Push og manuelle produktionsbyg beholder den tidlige kildekodegate. Planlagte vejropdateringer på samme allerede kontrollerede main-kode må springe netop denne gentagelse over.
+- validate:source erstatter aldrig den fulde npm run validate og npm run release:gate efter central hydrering og frisk vejr. De fulde gates forbliver obligatoriske før hvert nyt deploybart artifact.
+- Fuld 210/673-browserkontrol køres ugentligt eller ved ændret UI, score eller offentlig datakontrakt; ellers bruges målrettet kontrol. Se DEC-0045.
 - Midlertidige runtime-shims skrives kun i systemets temp-mappe og må ikke stages.

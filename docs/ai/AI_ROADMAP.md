@@ -510,3 +510,9 @@ Koden er lokalt implementeret og browserkontrolleret. Næste bindende trin er Su
 3. Byg score-neutrale kandidatregler og forskningsbaserede vægte.
 4. Sammenlign gammel og ny model automatisk lokalt, før en produktionsbeslutning.
 5. Implementér Rav-vinduer, hændelsesmodel, enklere forklaringer og læringsmodul i sikre delmål.
+
+## Cost/benefit-testmatrix 4.0.247
+
+- [x] DEC-0045 afgrænser målrettede udviklingstests, exact-head PR-kildegate, obligatorisk fuld post-data produktionsgate og hændelsesstyret browserkontrol.
+- [ ] Kandidaten mangler exact-head PR og præcis produktionsverifikation.
+- [ ] Derefter fortsættes den store RavScore-analyse og automatisk gammel-mod-ny-sammenligning uden ny offentlig AI/API.
