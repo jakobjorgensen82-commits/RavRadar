@@ -144,6 +144,23 @@ function summarizeRows(rows) {
   };
 }
 
+function summarizeDirectionPairs(rows, onshoreKey, offshoreKey) {
+  const onshore = rows.map(row => row[onshoreKey]);
+  const offshore = rows.map(row => row[offshoreKey]);
+  const differences = rows.map((row, index) => onshore[index] - offshore[index]);
+  return {
+    evaluations: rows.length,
+    onshoreMean: round3(mean(onshore)),
+    offshoreMean: round3(mean(offshore)),
+    meanOnshoreMinusOffshore: round3(mean(differences)),
+    minimumOnshoreMinusOffshore: Math.min(...differences),
+    maximumOnshoreMinusOffshore: Math.max(...differences),
+    onshoreHigher: differences.filter(value => value > 0).length,
+    unchanged: differences.filter(value => value === 0).length,
+    onshoreLower: differences.filter(value => value < 0).length,
+  };
+}
+
 function compareDocuments(forcing, wave, wind, partById, zoneById) {
   assert.equal(forcing.status, 'OK');
   assert.equal(forcing.rawUvStored, false);
@@ -212,6 +229,40 @@ function compareDocuments(forcing, wave, wind, partById, zoneById) {
           });
           assert.equal(candidate.available, true, `Candidate unavailable for ${event.eventId}/${mode}`);
           const candidateFResult = candidateF(candidate);
+          const evaluateDirectionPair = alignment => {
+            const pairedWeather = {
+              windSpeedMps: windSample.windSpeedMps,
+              windDirectionDeg: windFromDirection(alignment),
+              waveHeightM: sample.waveHeightM,
+              wavePeriodS: sample.wavePeriodS,
+              waveDirectionDeg: waveFromDirection(alignment),
+              currentSpeedMps: sample.currentSpeedMps,
+              currentDirectionDeg: currentToDirection(alignment),
+              currentAlignment: alignment,
+              waterLevelTrendCm3h: waterLevelTrendCm3h(sample.time, eventSamples),
+            };
+            const pairedActive = calculateRavScore({
+              mode,
+              zone: normalizedZone,
+              weather: pairedWeather,
+              history,
+            });
+            const pairedCandidate = evaluatePhaseDWaveProcessCandidate({
+              mode,
+              zone: normalizedZone,
+              weather: pairedWeather,
+              history,
+            });
+            assert.equal(pairedActive.available, true, `Paired active unavailable for ${event.eventId}/${mode}`);
+            assert.equal(pairedCandidate.available, true, `Paired candidate unavailable for ${event.eventId}/${mode}`);
+            return {
+              active: pairedActive.baseScore,
+              candidateE: pairedCandidate.candidateScores.candidateE,
+              candidateF: candidateF(pairedCandidate).score,
+            };
+          };
+          const pairedOnshore = evaluateDirectionPair(1);
+          const pairedOffshore = evaluateDirectionPair(-1);
           rows.push({
             eventId: event.eventId,
             classification: catalogEvent.classification,
@@ -220,6 +271,12 @@ function compareDocuments(forcing, wave, wind, partById, zoneById) {
             active: active.baseScore,
             candidateE: candidate.candidateScores.candidateE,
             candidateF: candidateFResult.score,
+            pairedActiveOnshore: pairedOnshore.active,
+            pairedActiveOffshore: pairedOffshore.active,
+            pairedCandidateEOnshore: pairedOnshore.candidateE,
+            pairedCandidateEOffshore: pairedOffshore.candidateE,
+            pairedCandidateFOnshore: pairedOnshore.candidateF,
+            pairedCandidateFOffshore: pairedOffshore.candidateF,
             activeHuntability: active.components.huntability,
             activeTransport: active.components.transport,
             activeMobilisation: active.components.release,
@@ -274,8 +331,17 @@ function compareDocuments(forcing, wave, wind, partById, zoneById) {
   };
   assert.ok(pairChecks.candidateEOnshoreMinusOffshore > 0);
   assert.ok(pairChecks.candidateFOnshoreMinusOffshore > 0);
+  const pairedDirectionChecks = {
+    method: 'same-historical-magnitudes-timing-and-history-with-wave-current-and-wind-forced-onshore-vs-offshore',
+    active: summarizeDirectionPairs(rows, 'pairedActiveOnshore', 'pairedActiveOffshore'),
+    candidateE: summarizeDirectionPairs(rows, 'pairedCandidateEOnshore', 'pairedCandidateEOffshore'),
+    candidateF: summarizeDirectionPairs(rows, 'pairedCandidateFOnshore', 'pairedCandidateFOffshore'),
+  };
+  assert.ok(pairedDirectionChecks.active.meanOnshoreMinusOffshore > 0);
+  assert.ok(pairedDirectionChecks.candidateE.meanOnshoreMinusOffshore > 0);
+  assert.ok(pairedDirectionChecks.candidateF.meanOnshoreMinusOffshore > 0);
   return {
-    schemaVersion: '1.1.0',
+    schemaVersion: '1.2.0',
     status: 'passed-private-historical-active-and-candidate-f-comparison',
     generatedAt: new Date().toISOString(),
     method: 'legacy-vs-active-base-engine-plus-candidate-e-vs-f-on-wave-selected-derived-historical-features',
@@ -291,6 +357,7 @@ function compareDocuments(forcing, wave, wind, partById, zoneById) {
     classSummaries,
     eventSummaries,
     pairChecks,
+    pairedDirectionChecks,
     transportBelowHuntabilityEvaluations: rows.filter(
       row => row.transportAndDelivery < row.huntability
     ).length,
