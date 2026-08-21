@@ -18,6 +18,8 @@ The implementation uses lazy remote access and tight spatial bounds around the e
 
 Provider timestamps are paired without interpolation. Baltic physics must match the wave timestamp exactly. The North Sea physics products use half-hour-centred hourly fields, so their nearest provider time may differ by at most 31 minutes. The actual current and sea-level offsets are retained as derived control fields.
 
+The nearest coordinate is not assumed to be wet. Current components must share a finite model column, and sea level must be finite at its selected cell. The search remains bounded to 5 km for the Baltic grid and 12 km for the coarser 7 km North Sea research grid. Distances are retained without storing either target or grid coordinates.
+
 ## Stored evidence
 
 The private seven-day artifact stores only the values needed for later comparison:

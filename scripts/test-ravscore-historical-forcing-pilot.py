@@ -103,16 +103,18 @@ def main() -> int:
             provider_offset = timedelta(minutes=30) if basin == "nws" else timedelta(0)
             provider_times = [value + provider_offset for value in times]
             time_values = np.asarray([np.datetime64(value.replace(tzinfo=None), "ns") for value in provider_times])
-            shape_4d = (len(times), 1, 1, 1)
-            shape_3d = (len(times), 1, 1)
-            u_values = np.zeros(shape_4d, dtype=float)
-            v_values = np.zeros(shape_4d, dtype=float)
-            sea_values = np.zeros(shape_3d, dtype=float)
+            longitudes = [longitude, longitude + 0.07] if basin == "nws" else [longitude]
+            wet_index = len(longitudes) - 1
+            shape_4d = (len(times), 1, 1, len(longitudes))
+            shape_3d = (len(times), 1, len(longitudes))
+            u_values = np.full(shape_4d, np.nan, dtype=float)
+            v_values = np.full(shape_4d, np.nan, dtype=float)
+            sea_values = np.full(shape_3d, np.nan, dtype=float)
             for index, at in enumerate(provider_times):
                 current_sign = (1.0, -1.0, -1.0)[peaks.index(min(peaks, key=lambda peak: abs((peak - at).total_seconds())))]
-                u_values[index, 0, 0, 0] = 0.0
-                v_values[index, 0, 0, 0] = 0.2 * current_sign
-                sea_values[index, 0, 0] = 0.001 * ((at - peaks[0]).total_seconds() / 3600 % 48)
+                u_values[index, 0, 0, wet_index] = 0.0
+                v_values[index, 0, 0, wet_index] = 0.2 * current_sign
+                sea_values[index, 0, wet_index] = 0.001 * ((at - peaks[0]).total_seconds() / 3600 % 48)
             dataset = xr.Dataset(
                 data_vars={
                     "uo": (("time", "depth", "latitude", "longitude"), u_values),
@@ -123,7 +125,7 @@ def main() -> int:
                     "time": time_values,
                     "depth": [0.5],
                     "latitude": [latitude],
-                    "longitude": [longitude],
+                    "longitude": longitudes,
                 },
             )
             dataset.to_netcdf(fixtures / f"historical-forcing-{part_id}.nc")
@@ -153,6 +155,8 @@ def main() -> int:
         by_region = {region["regionId"]: region for region in document["regions"]}
         assert by_region["dk-b03-07-national-part-01"]["maximumCurrentTimeOffsetMinutes"] == 30.0
         assert by_region["dk-b03-07-national-part-01"]["maximumSeaLevelTimeOffsetMinutes"] == 30.0
+        assert 0.0 < by_region["dk-b03-07-national-part-01"]["currentGridDistanceKm"] <= 12.0
+        assert 0.0 < by_region["dk-b03-07-national-part-01"]["seaLevelGridDistanceKm"] <= 12.0
         assert all(
             region["maximumCurrentTimeOffsetMinutes"] == 0.0
             for part_id, region in by_region.items() if part_id != "dk-b03-07-national-part-01"

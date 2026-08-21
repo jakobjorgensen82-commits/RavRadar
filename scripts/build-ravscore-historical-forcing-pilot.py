@@ -39,6 +39,9 @@ PRODUCTS = {
         "minimumLatitude": 46.0,
         "maximumLatitude": 63.0,
         "maximumTimeOffsetMinutes": 31.0,
+        "longitudePadding": 0.15,
+        "latitudePadding": 0.10,
+        "maximumGridDistanceKm": 12.0,
     },
     "baltic": {
         "source": "copernicus-baltic-physics-analysis-forecast",
@@ -50,6 +53,9 @@ PRODUCTS = {
         "minimumLatitude": 53.01,
         "maximumLatitude": 65.91,
         "maximumTimeOffsetMinutes": 0.0,
+        "longitudePadding": 0.05,
+        "latitudePadding": 0.04,
+        "maximumGridDistanceKm": 5.0,
     },
 }
 
@@ -106,28 +112,43 @@ def variable_name(dataset: xr.Dataset, aliases: tuple[str, ...]) -> str:
     raise RuntimeError(f"Historical physics subset lacks variable aliases: {', '.join(aliases)}")
 
 
-def nearest_selection(dataset: xr.Dataset, target: dict[str, Any]) -> tuple[dict[str, int], float]:
+def spatial_candidates(
+    dataset: xr.Dataset, target: dict[str, Any], maximum_distance_km: float
+) -> list[tuple[dict[str, int], float]]:
     longitude_name = coordinate_name(dataset, ("longitude", "lon"))
     latitude_name = coordinate_name(dataset, ("latitude", "lat"))
     longitude = dataset[longitude_name]
     latitude = dataset[latitude_name]
     target_longitude, target_latitude = (float(value) for value in target["waterPoint"])
+    candidates: list[tuple[dict[str, int], float]] = []
     if longitude.ndim == latitude.ndim == 1 and longitude.dims != latitude.dims:
-        lon_index = int(np.nanargmin(np.abs(np.asarray(longitude.values, dtype=float) - target_longitude)))
-        lat_index = int(np.nanargmin(np.abs(np.asarray(latitude.values, dtype=float) - target_latitude)))
-        selection = {longitude.dims[0]: lon_index, latitude.dims[0]: lat_index}
-        grid_point = [float(longitude.values[lon_index]), float(latitude.values[lat_index])]
+        for lat_index, latitude_value in enumerate(np.asarray(latitude.values, dtype=float)):
+            for lon_index, longitude_value in enumerate(np.asarray(longitude.values, dtype=float)):
+                grid_point = [float(longitude_value), float(latitude_value)]
+                distance = haversine_km(target["waterPoint"], grid_point)
+                if distance <= maximum_distance_km + 1e-9:
+                    candidates.append((
+                        {longitude.dims[0]: lon_index, latitude.dims[0]: lat_index}, round(distance, 3)
+                    ))
     else:
         lon_values, lat_values = np.broadcast_arrays(
             np.asarray(longitude.values, dtype=float), np.asarray(latitude.values, dtype=float)
         )
-        scale = max(0.1, math.cos(math.radians(target_latitude)))
-        distances = ((lon_values - target_longitude) * scale) ** 2 + (lat_values - target_latitude) ** 2
-        indexes = np.unravel_index(int(np.nanargmin(distances)), distances.shape)
         dims = longitude.dims if longitude.ndim >= latitude.ndim else latitude.dims
-        selection = {dimension: int(indexes[position]) for position, dimension in enumerate(dims)}
-        grid_point = [float(lon_values[indexes]), float(lat_values[indexes])]
-    return selection, round(haversine_km(target["waterPoint"], grid_point), 3)
+        for indexes in np.ndindex(lon_values.shape):
+            grid_point = [float(lon_values[indexes]), float(lat_values[indexes])]
+            distance = haversine_km(target["waterPoint"], grid_point)
+            if distance <= maximum_distance_km + 1e-9:
+                candidates.append((
+                    {dimension: int(indexes[position]) for position, dimension in enumerate(dims)},
+                    round(distance, 3),
+                ))
+    candidates.sort(key=lambda row: row[1])
+    if not candidates:
+        raise RuntimeError(
+            f"Historical physics has no model cell within {maximum_distance_km:g} km for {target['partId']}"
+        )
+    return candidates
 
 
 def series(dataset: xr.Dataset, name: str, selection: dict[str, int], time_name: str) -> xr.DataArray:
@@ -140,17 +161,36 @@ def series(dataset: xr.Dataset, name: str, selection: dict[str, int], time_name:
     return array.transpose(time_name)
 
 
-def indexed_series(
-    dataset: xr.Dataset, aliases: tuple[str, ...], target: dict[str, Any]
-) -> tuple[tuple[list[datetime], list[float]], float]:
+def nearest_finite_selection(
+    dataset: xr.Dataset,
+    target: dict[str, Any],
+    variable_names: tuple[str, ...],
+    maximum_distance_km: float,
+) -> tuple[dict[str, int], float]:
     time_name = coordinate_name(dataset, ("time", "valid_time"))
-    selection, distance_km = nearest_selection(dataset, target)
-    values = np.asarray(series(dataset, variable_name(dataset, aliases), selection, time_name).values, dtype=float)
+    for selection, distance_km in spatial_candidates(dataset, target, maximum_distance_km):
+        shared: np.ndarray | None = None
+        for name in variable_names:
+            finite = np.isfinite(np.asarray(series(dataset, name, selection, time_name).values, dtype=float))
+            shared = finite if shared is None else shared & finite
+        if shared is not None and int(np.count_nonzero(shared)) >= MINIMUM_EVENT_SAMPLES:
+            return selection, distance_km
+    raise RuntimeError(
+        f"Historical physics has no sufficiently covered wet model cell within "
+        f"{maximum_distance_km:g} km for {target['partId']}"
+    )
+
+
+def indexed_series(
+    dataset: xr.Dataset, name: str, selection: dict[str, int]
+) -> tuple[list[datetime], list[float]]:
+    time_name = coordinate_name(dataset, ("time", "valid_time"))
+    values = np.asarray(series(dataset, name, selection, time_name).values, dtype=float)
     times = [utc(time_text(value)) for value in dataset[time_name].values]
     if len(times) != len(values) or len(times) != len(set(times)):
         raise RuntimeError("Historical physics subset has mismatched or duplicate times")
     ordered = sorted(zip(times, (float(value) for value in values)), key=lambda row: row[0])
-    return ([row[0] for row in ordered], [row[1] for row in ordered]), distance_km
+    return [row[0] for row in ordered], [row[1] for row in ordered]
 
 
 def nearest_value(
@@ -223,10 +263,10 @@ def open_remote_dataset(dataset_id: str, product: dict[str, Any], target: dict[s
     longitude, latitude = (float(value) for value in target["waterPoint"])
     return copernicusmarine.open_dataset(
         dataset_id=dataset_id,
-        minimum_longitude=max(product["minimumLongitude"], longitude - 0.04),
-        maximum_longitude=min(product["maximumLongitude"], longitude + 0.04),
-        minimum_latitude=max(product["minimumLatitude"], latitude - 0.03),
-        maximum_latitude=min(product["maximumLatitude"], latitude + 0.03),
+        minimum_longitude=max(product["minimumLongitude"], longitude - product["longitudePadding"]),
+        maximum_longitude=min(product["maximumLongitude"], longitude + product["longitudePadding"]),
+        minimum_latitude=max(product["minimumLatitude"], latitude - product["latitudePadding"]),
+        maximum_latitude=min(product["maximumLatitude"], latitude + product["latitudePadding"]),
         start_datetime=start,
         end_datetime=end,
         chunk_size_limit=0,
@@ -415,11 +455,18 @@ def main() -> int:
                 else open_remote_dataset(product["seaLevelDatasetId"], product, target, min(starts), max(ends))
             )
         try:
-            current_u, current_distance = indexed_series(current_dataset, VARIABLES["u"], target)
-            current_v, current_v_distance = indexed_series(current_dataset, VARIABLES["v"], target)
-            sea_level, sea_distance = indexed_series(sea_dataset, VARIABLES["seaLevel"], target)
-            if current_distance != current_v_distance:
-                raise RuntimeError(f"Historical current components use different grids for {part_id}")
+            u_name = variable_name(current_dataset, VARIABLES["u"])
+            v_name = variable_name(current_dataset, VARIABLES["v"])
+            sea_name = variable_name(sea_dataset, VARIABLES["seaLevel"])
+            current_selection, current_distance = nearest_finite_selection(
+                current_dataset, target, (u_name, v_name), float(product["maximumGridDistanceKm"])
+            )
+            sea_selection, sea_distance = nearest_finite_selection(
+                sea_dataset, target, (sea_name,), float(product["maximumGridDistanceKm"])
+            )
+            current_u = indexed_series(current_dataset, u_name, current_selection)
+            current_v = indexed_series(current_dataset, v_name, current_selection)
+            sea_level = indexed_series(sea_dataset, sea_name, sea_selection)
             region_samples: dict[str, dict[str, Any]] = {}
             for event in sorted(part_windows, key=lambda row: row["peakTime"]):
                 wave_rows = wave_rows_for_event(records, event)
