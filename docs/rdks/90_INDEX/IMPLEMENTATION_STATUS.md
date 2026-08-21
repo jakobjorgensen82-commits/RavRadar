@@ -1607,3 +1607,16 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [x] Kort forklaring er tilføjet ved begge landslister.
 - [x] Målrettet 210/673-regression er tilføjet til den normale valideringskæde.
 - [x] PR #52 exact-head-gate, merge `ad70fbca`, exact-commit-produktion `32515757957` og fuld online 210/673-browserkontrol er grønne.
+
+## RavScore kandidat G - analyse implementeret, model ikke aktiveret
+
+- [x] Parret historisk retningskontrol isolerer retning fra forskelle i tidspunkt og styrke.
+- [x] Retningsresultatet er opdelt efter lav, mellem og hoej fysisk bevaegelseskapacitet samt jagtform.
+- [x] Foreloebige vaegte er sammenlignet reproducerbart; 20/45/35 er valgt som naeste private analysecentrum, ikke som produktionsvaegt.
+- [x] Kandidat F er omklassificeret til foelsomhedsmaessig yderkant, og den sammenblandede gamle retningskonklusion er korrigeret.
+- [ ] Udled stroem- og vindhukommelse fra 96-timers historik med styrke, varighed, stabilitet, vendingsalder og nettoeffekt.
+- [ ] Koer separate stroem-, boelge- og vindablationer samt svage/kraftige vendinger.
+- [ ] Gentag historisk replay, national scenariematrix og national shadow med kandidat G.
+- [ ] Afspil centrale ekspertregler og kontrollér pile, score, komponenter, forklaring, jagtbarhed og vadesikkerhed samlet.
+- [ ] Fremlaeg den endelige vaegtbegrundelse grundigt og forstaaeligt for ejeren foer go/no-go.
+- Aktiv offentlig score, UI, geometri og alle land-/vandpunkter er uændrede. Bindende metode: DEC-0050.

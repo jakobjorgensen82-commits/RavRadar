@@ -12,3 +12,10 @@
 - Begge nationale top-5-lister korrigerer nu for mange forskelligt vendte kystdele med den godkendte `direction-broad-19-v1`-model.
 - Bred støtte i zonen beskytter reelt stærke placeringer; ved mindst 50 procent støtte er korrektionen nul.
 - Den viste RavScore, lokale resultater, pile, forklaringer, geometri og land-/vandpunkter er uændrede.
+
+## Intern RavScore-forskning efter 4.0.252 (2026-08-21)
+
+- En parret historisk kontrol isolerer nu retning fra styrke og tidspunkt paa 1.460 modelpar.
+- Analysen viser, at den aktive score reagerer for ens paa retning ved svag og kraftig flytteevne.
+- Kandidat G er registreret som privat arbejdshypotese med historisk stroem-/vindhukommelse og foreloebigt vaegtcentrum 20/45/35.
+- Den offentlige RavScore, UI, DMI-first, geometri og alle land-/vandpunkter er uændrede.

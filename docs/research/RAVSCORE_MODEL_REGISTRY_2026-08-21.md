@@ -27,3 +27,19 @@
 | RRS-G2-PHYSICAL-BOTTLENECK | E | Højst 15 % reduktion ved svag mobilisering eller samlet transport/levering | Forskningsprior, ikke fundkalibreret |
 
 Alle kandidater er score-neutrale forskningsfunktioner. Se DEC-0046 og den samlede evidensanbefaling.
+
+## Registertilfoejelse efter exact-commit-koersel 32521046654
+
+| Model | Vaegt | Status | Kort begrundelse |
+|---|---:|---|---|
+| Kandidat F | 15/50/35 | Afvist som direkte produktionskandidat; beholdt som foelsomhedsmaessig yderkant | Bedre kapacitetsafhaengig retning, men for bred niveausaenkning og stor scorebaandsudskiftning |
+| Kandidat G | Foreloebigt 20/45/35 | Naeste private arbejdshypotese | Korrigeret E-procesmodel, mild gate, ingen udokumenterede statiske kystbonusser og planlagt historisk stroem-/vindhukommelse |
+
+### Praecisering af transportregler
+
+- `RRS-T3`: Dynamisk lokal fastholdelse er endnu ikke implementeret. Statiske bonuspoint for rev, lavt vand og aalegraes er sat til nul, indtil der findes tilstraekkelig evidens og en dynamisk mekanisme.
+- `RRS-T5`: Retningsvirkning skal vaere kapacitetsstyret. Svag stroem eller lav boelgeenergi maa ikke give samme retningspoint som en kraftig haendelse.
+- `RRS-H1` (planlagt): Stroem og vind skal have regimehukommelse baseret paa retning, styrke, varighed, stabilitet, vendingsalder og nettoeffekt med aftagende vaegt bagud i tiden.
+- `RRS-H2` (planlagt): Vindens direkte og indirekte virkning skal adskilles, saa boelger, stroem, vandstand og direkte vind ikke dobbeltregner samme haendelse.
+
+Det reproducerbare resultat og den fulde beslutning findes i `RAVSCORE_PAIRED_DIRECTION_AND_WEIGHT_RESULT_2026-08-21.md`.
