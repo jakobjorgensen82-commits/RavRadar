@@ -34,6 +34,19 @@ Det samme kandidatinterval er desuden koert paa 214 nationale timerangeringer fr
 | Retning og vinderstoette, maks. 4 point | 412/1070 | 3.23x | 95 | 17 | 1.78 | 3.78 | Falster nord og Orehoved: 90/214; Falster vest og Nysted Nor munding: 117/214 |
 | Retning og vinderstoette, maks. 6 point | 375/1070 | 2.94x | 149 | 34 | 2.49 | 5.68 | Falster nord og Orehoved: 83/214; Falster vest og Nysted Nor munding: 103/214 |
 
+### Stabilitet ved sammenhaengende vejrfaser
+
+En deterministisk blok-bootstrap med 1000 gentagelser og 12-timers blokke bevarer korte sammenhaengende vejrfaser og de to tilstande som par. Intervallerne er 5.-95.-percentiler og er en foelsomhedstest, ikke uafhaengige historiske aar.
+
+| Kandidat | 6+ overrepraesentation, median (5-95%) | Aendrede foerstepladser | Nye top-5-medlemmer |
+| --- | ---: | ---: | ---: |
+| Ingen korrektion | 3.69x (3.20-4.21) | 0.0% (0.0-0.0%) | 0.0% (0.0-0.0%) |
+| Raa antal-straf, maks. 4 point | 3.15x (2.76-3.60) | 9.3% (6.1-12.6%) | 8.1% (6.3-9.7%) |
+| Retningsmulighed, maks. 4 point | 3.26x (2.83-3.73) | 8.9% (7.0-10.8%) | 10.6% (8.1-12.9%) |
+| Retning og vinderstoette, maks. 2 point | 3.54x (3.12-4.04) | 4.7% (2.8-6.5%) | 4.9% (3.6-6.0%) |
+| Retning og vinderstoette, maks. 4 point | 3.23x (2.83-3.69) | 7.9% (5.6-10.3%) | 8.9% (6.8-10.7%) |
+| Retning og vinderstoette, maks. 6 point | 2.95x (2.61-3.31) | 15.9% (13.6-18.2%) | 13.9% (11.3-16.2%) |
+
 ## Vurdering
 
 - Den raa antal-straf er kun en negativ kontrol. Den kan ikke skelne mellem mange ens retninger og mange reelt forskellige retninger.

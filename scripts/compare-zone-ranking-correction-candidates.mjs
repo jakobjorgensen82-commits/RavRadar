@@ -18,6 +18,37 @@ function mean(values) {
   return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
 }
 
+function quantile(values, probability) {
+  const sorted = [...values].sort((left, right) => left - right);
+  if (!sorted.length) return 0;
+  const position = (sorted.length - 1) * probability;
+  const lower = Math.floor(position);
+  const upper = Math.ceil(position);
+  if (lower === upper) return sorted[lower];
+  return sorted[lower] + (sorted[upper] - sorted[lower]) * (position - lower);
+}
+
+function seededRandom(seed) {
+  let state = seed >>> 0;
+  return () => {
+    state ^= state << 13;
+    state ^= state >>> 17;
+    state ^= state << 5;
+    return (state >>> 0) / 4294967296;
+  };
+}
+
+export function buildBootstrapHourIndices({ hourCount, blockSizeHours, random }) {
+  const indices = [];
+  while (indices.length < hourCount) {
+    const start = Math.floor(random() * hourCount);
+    for (let offset = 0; offset < blockSizeHours && indices.length < hourCount; offset += 1) {
+      indices.push((start + offset) % hourCount);
+    }
+  }
+  return indices;
+}
+
 function parseArgs(argv) {
   const args = {};
   for (let index = 0; index < argv.length; index += 1) {
@@ -226,6 +257,71 @@ function candidateSummary(candidate, baselineRankings, candidateRankings, zoneBu
   };
 }
 
+function compactBootstrapMetrics(baselineRankings, candidateRankings, selectedContextIndices, sixPlusZoneShare) {
+  let sixPlusSlots = 0;
+  let changedTop1 = 0;
+  let changedMembers = 0;
+  for (const contextIndex of selectedContextIndices) {
+    const baseline = baselineRankings[contextIndex].top5;
+    const candidate = candidateRankings[contextIndex].top5;
+    const baselineSet = new Set(baseline.map((row) => row.zoneId));
+    sixPlusSlots += candidate.filter((row) => row.partCount >= 6).length;
+    if (candidate[0].zoneId !== baseline[0].zoneId) changedTop1 += 1;
+    changedMembers += candidate.filter((row) => !baselineSet.has(row.zoneId)).length;
+  }
+  const contextCount = selectedContextIndices.length;
+  return {
+    sixPlusOverrepresentation: (sixPlusSlots / (contextCount * 5)) / sixPlusZoneShare,
+    changedTop1Rate: changedTop1 / contextCount,
+    changedMemberRate: changedMembers / (contextCount * 5),
+  };
+}
+
+function summarizeBootstrap(values) {
+  return {
+    p05: round(quantile(values, 0.05), 4),
+    median: round(quantile(values, 0.5), 4),
+    p95: round(quantile(values, 0.95), 4),
+  };
+}
+
+function buildHourlyBootstrap({ hourlyTimes, rankingsByCandidate, zoneBucketCounts, iterations = 1000, blockSizeHours = 12, seed = 20260821 }) {
+  const random = seededRandom(seed);
+  const sixPlusZoneShare = zoneBucketCounts['6+'] / EXPECTED_ZONES;
+  const samples = new Map(CANDIDATES.map((candidate) => [candidate.id, {
+    sixPlusOverrepresentation: [],
+    changedTop1Rate: [],
+    changedMemberRate: [],
+  }]));
+  const baselineRankings = rankingsByCandidate.get('baseline');
+  for (let iteration = 0; iteration < iterations; iteration += 1) {
+    const selectedHours = buildBootstrapHourIndices({ hourCount: hourlyTimes.length, blockSizeHours, random });
+    const selectedContexts = selectedHours.flatMap((hourIndex) => [hourIndex * 2, hourIndex * 2 + 1]);
+    for (const candidate of CANDIDATES) {
+      const metrics = compactBootstrapMetrics(
+        baselineRankings,
+        rankingsByCandidate.get(candidate.id),
+        selectedContexts,
+        sixPlusZoneShare,
+      );
+      for (const key of Object.keys(metrics)) samples.get(candidate.id)[key].push(metrics[key]);
+    }
+  }
+  return {
+    method: 'circular paired-mode block bootstrap',
+    iterations,
+    blockSizeHours,
+    seed,
+    candidates: CANDIDATES.map((candidate) => ({
+      id: candidate.id,
+      label: candidate.label,
+      sixPlusOverrepresentation: summarizeBootstrap(samples.get(candidate.id).sixPlusOverrepresentation),
+      changedTop1Rate: summarizeBootstrap(samples.get(candidate.id).changedTop1Rate),
+      changedMemberRate: summarizeBootstrap(samples.get(candidate.id).changedMemberRate),
+    })),
+  };
+}
+
 function markdownFor(report) {
   const exampleNames = Object.fromEntries(report.ownerExamples.map((row) => [row.zoneId, row.name]));
   const tableRows = (candidates, contextCount) => candidates.map((candidate) => {
@@ -237,6 +333,9 @@ function markdownFor(report) {
   const candidateRows = tableRows(report.candidates, report.contextCount);
   const hourlyRows = tableRows(report.hourlySensitivity.candidates, report.hourlySensitivity.contextCount)
     .map((row) => row.replace('/60 |', `/${report.hourlySensitivity.contextCount * 5} |`));
+  const bootstrapRows = report.hourlyBootstrap.candidates.map((candidate) =>
+    `| ${candidate.label} | ${candidate.sixPlusOverrepresentation.median.toFixed(2)}x (${candidate.sixPlusOverrepresentation.p05.toFixed(2)}-${candidate.sixPlusOverrepresentation.p95.toFixed(2)}) | ${(candidate.changedTop1Rate.median * 100).toFixed(1)}% (${(candidate.changedTop1Rate.p05 * 100).toFixed(1)}-${(candidate.changedTop1Rate.p95 * 100).toFixed(1)}%) | ${(candidate.changedMemberRate.median * 100).toFixed(1)}% (${(candidate.changedMemberRate.p05 * 100).toFixed(1)}-${(candidate.changedMemberRate.p95 * 100).toFixed(1)}%) |`,
+  );
   return `# Sammenligning af korrektioner for national zonerangering
 
 Dato: 2026-08-21
@@ -262,6 +361,14 @@ Det samme kandidatinterval er desuden koert paa ${report.hourlySensitivity.conte
 | Kandidat | 6+ dele i top-5 | Overrepraesentation | Nye top-5-medlemmer | Aendrede foerstepladser | Gns. top-5-justering | Maks. justering | Eksempler |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
 ${hourlyRows.join('\n')}
+
+### Stabilitet ved sammenhaengende vejrfaser
+
+En deterministisk blok-bootstrap med ${report.hourlyBootstrap.iterations} gentagelser og ${report.hourlyBootstrap.blockSizeHours}-timers blokke bevarer korte sammenhaengende vejrfaser og de to tilstande som par. Intervallerne er 5.-95.-percentiler og er en foelsomhedstest, ikke uafhaengige historiske aar.
+
+| Kandidat | 6+ overrepraesentation, median (5-95%) | Aendrede foerstepladser | Nye top-5-medlemmer |
+| --- | ---: | ---: | ---: |
+${bootstrapRows.join('\n')}
 
 ## Vurdering
 
@@ -326,6 +433,7 @@ export function compareCandidates({ conditions, details, baselineReport, directi
   ]));
   const hourlyBaselineRankings = hourlyRankingsByCandidate.get('baseline');
   const hourlyAvailableZoneCounts = hourlyContexts.map((context) => context.rows.length);
+  const hourlyBootstrap = buildHourlyBootstrap({ hourlyTimes, rankingsByCandidate: hourlyRankingsByCandidate, zoneBucketCounts });
   return {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
@@ -360,6 +468,7 @@ export function compareCandidates({ conditions, details, baselineReport, directi
         ownerZoneIds,
       )),
     },
+    hourlyBootstrap,
   };
 }
 
@@ -389,6 +498,9 @@ function main() {
   console.log(`Hourly sensitivity: ${report.hourlySensitivity.contextCount} contexts (${report.hourlySensitivity.uniqueHourCount} hours)`);
   for (const candidate of report.hourlySensitivity.candidates) {
     console.log(`hourly ${candidate.id}: 6+ overrepresentation ${candidate.sixPlusOverrepresentation}x, new top-5 members ${candidate.changedTop5Members}, top-1 changes ${candidate.changedTop1Contexts}, max penalty ${candidate.maximumPenalty}`);
+  }
+  for (const candidate of report.hourlyBootstrap.candidates) {
+    console.log(`bootstrap ${candidate.id}: 6+ median ${candidate.sixPlusOverrepresentation.median}x [${candidate.sixPlusOverrepresentation.p05}, ${candidate.sixPlusOverrepresentation.p95}], top-1 median ${round(candidate.changedTop1Rate.median * 100, 2)}%`);
   }
   console.log('Score impact: no');
 }
