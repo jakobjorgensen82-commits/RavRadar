@@ -55,6 +55,7 @@ jobs:
         run: |
           python scripts/test-ravscore-historical-wave-pilot.py
           python scripts/test-ravscore-historical-forcing-pilot.py
+          python scripts/test-ravscore-historical-wind-pilot.py
           node scripts/compare-ravscore-historical-candidate-f.mjs --self-test
 
       - name: Verify private Copernicus credentials
@@ -78,11 +79,15 @@ jobs:
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
         run: python scripts/build-ravscore-historical-forcing-pilot.py
 
+      - name: Enrich selected windows with bounded DMI observed wind
+        run: python scripts/build-ravscore-historical-wind-pilot.py
+
       - name: Compare candidate E and F on derived historical features
         run: >-
           node scripts/compare-ravscore-historical-candidate-f.mjs
           .cache/ravscore-historical-forcing-features.json
           .cache/ravscore-historical-wave-features.json
+          .cache/ravscore-historical-wind-features.json
           --output .cache/ravscore-historical-candidate-f-comparison.json
           --summary .cache/ravscore-historical-candidate-f-comparison.txt
 
@@ -96,6 +101,7 @@ jobs:
           paths = (
               pathlib.Path('.cache/ravscore-historical-wave-features.json'),
               pathlib.Path('.cache/ravscore-historical-forcing-features.json'),
+              pathlib.Path('.cache/ravscore-historical-wind-features.json'),
               pathlib.Path('.cache/ravscore-historical-candidate-f-comparison.json'),
           )
           texts = [path.read_text(encoding='utf-8') for path in paths]
@@ -105,7 +111,8 @@ jobs:
               assert data['coordinateValuesStored'] is False
           assert documents[0]['rawNetcdfStored'] is False
           assert documents[1]['rawUvStored'] is False
-          assert documents[2]['rawUvStored'] is False and documents[2]['rawWeatherValuesStored'] is False
+          assert documents[2]['credentialsStored'] is False and documents[2]['rawApiPayloadStored'] is False
+          assert documents[3]['rawUvStored'] is False and documents[3]['rawWeatherValuesStored'] is False
           forbidden = {'u', 'v', 'uo', 'vo', 'waterpoint', 'landpoint', 'longitude', 'latitude', 'geometry', 'umps', 'vmps'}
           def inspect(value):
               if isinstance(value, dict):
@@ -132,5 +139,7 @@ jobs:
             .cache/ravscore-historical-wave-features.txt
             .cache/ravscore-historical-forcing-features.json
             .cache/ravscore-historical-forcing-features.txt
+            .cache/ravscore-historical-wind-features.json
+            .cache/ravscore-historical-wind-features.txt
             .cache/ravscore-historical-candidate-f-comparison.json
             .cache/ravscore-historical-candidate-f-comparison.txt
