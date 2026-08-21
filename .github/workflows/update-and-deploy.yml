@@ -857,7 +857,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Set up Python for private active-point shadow
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -865,7 +865,7 @@ jobs:
         run: python -m pip install --disable-pip-version-check -r requirements-dmi.txt
 
       - name: Set up Node.js for private candidate score
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: "24"
 
@@ -902,7 +902,7 @@ jobs:
         run: node scripts/validate-national-shadow-score.mjs
 
       - name: Upload dataminimized active-point RavScore shadow
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ravradar-active-ravscore-shadow-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
