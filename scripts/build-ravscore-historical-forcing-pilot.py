@@ -329,6 +329,17 @@ def event_samples(
     return samples
 
 
+def finite_match_count(
+    indexed: tuple[list[datetime], list[float]],
+    wave_rows: list[dict[str, Any]],
+    maximum_time_offset_minutes: float,
+) -> int:
+    return sum(
+        nearest_value(indexed, utc(row["validTime"]), maximum_time_offset_minutes) is not None
+        for row in wave_rows
+    )
+
+
 def summarize_event(event: dict[str, Any], samples: list[dict[str, Any]]) -> dict[str, Any]:
     energy_rows = [{**row, "waveEnergy": row["waveHeightM"] ** 2 * row["wavePeriodS"]} for row in samples]
     wave_alignment = weighted_average(energy_rows, "waveOnshoreAlignment", "waveEnergy")
@@ -411,13 +422,20 @@ def main() -> int:
                 raise RuntimeError(f"Historical current components use different grids for {part_id}")
             region_samples: dict[str, dict[str, Any]] = {}
             for event in sorted(part_windows, key=lambda row: row["peakTime"]):
+                wave_rows = wave_rows_for_event(records, event)
                 samples = event_samples(
-                    wave_rows_for_event(records, event), current_u, current_v, sea_level,
+                    wave_rows, current_u, current_v, sea_level,
                     float(target["onshoreDirectionDeg"]), float(product["maximumTimeOffsetMinutes"]),
                 )
                 if len(samples) < MINIMUM_EVENT_SAMPLES:
                     raise RuntimeError(
-                        f"Historical forcing event {event['eventId']} has only {len(samples)} exact finite samples"
+                        f"Historical forcing event {event['eventId']} has {len(samples)} paired samples; "
+                        f"wave={len(wave_rows)}, "
+                        f"u={finite_match_count(current_u, wave_rows, product['maximumTimeOffsetMinutes'])}, "
+                        f"v={finite_match_count(current_v, wave_rows, product['maximumTimeOffsetMinutes'])}, "
+                        f"sea={finite_match_count(sea_level, wave_rows, product['maximumTimeOffsetMinutes'])}, "
+                        f"currentGridDistanceKm={current_distance}, seaLevelGridDistanceKm={sea_distance}, "
+                        f"maximumTimeOffsetMinutes={product['maximumTimeOffsetMinutes']}"
                     )
                 event_catalog.append(summarize_event(event, samples))
                 for sample in samples:
