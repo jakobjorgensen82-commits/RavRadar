@@ -78,10 +78,24 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
 workflow = (ROOT / ".github/workflows/validate-copernicus-current-pilot.yml").read_text(encoding="utf-8")
 for marker in (
     "full_coast:",
+    "dmi-zone-cache-v1-${{ runner.os }}-",
     "build-copernicus-target-registry.py",
     "--targets .cache/copernicus-current-targets.json",
     "--authoritative-targets data/live/coastal-parts-v2.json",
 ):
     assert marker in workflow, f"Copernicus workflow is missing {marker}"
+
+production = (ROOT / ".github/workflows/update-and-deploy.yml").read_text(encoding="utf-8")
+for marker in (
+    "Select exact-hour DMI gaps for targeted Copernicus supplement",
+    'build-copernicus-target-registry.py\n          --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
+    "Inspect targeted Copernicus coverage after fresh DMI",
+    "Fill only exact-hour DMI gaps from Copernicus",
+    "--targets .cache/copernicus-current-targets.json",
+    "Save targeted private Copernicus supplement",
+):
+    assert marker in production, f"Production workflow is missing {marker}"
+assert production.index("Update DMI bulk model cache") < production.index("Select exact-hour DMI gaps for targeted Copernicus supplement")
+assert production.index("Save targeted private Copernicus supplement") < production.index("Build public seven-day current history and controlled live selection")
 
 print("OK: normal Copernicus collection targets only exact-hour DMI gaps; full coast is explicit and points are unchanged.")

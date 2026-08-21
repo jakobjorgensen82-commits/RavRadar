@@ -22,6 +22,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       current_hour_present: ${{ steps.cache-state.outputs.current_hour_present }}
+      target_hour: ${{ steps.cache-state.outputs.target_hour }}
     steps:
       - name: Check out trusted default-branch helper
         uses: actions/checkout@v7
@@ -55,4 +56,5 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "repos/${{ github.repository }}/actions/workflows/validate-copernicus-current-pilot.yml/dispatches" \
-            -f ref=main
+            -f ref=main \
+            -f "inputs[sample_time]=${{ needs.preserve.outputs.target_hour }}"

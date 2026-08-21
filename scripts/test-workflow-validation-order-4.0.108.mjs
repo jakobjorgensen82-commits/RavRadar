@@ -60,6 +60,7 @@ for (const marker of [
   'python scripts/test-copernicus-current-pilot.py',
   'python scripts/test-copernicus-shadow-retention-4.0.232.py',
   'python scripts/test-current-regional-proxy-policy.py',
+  'dmi-zone-cache-v1-${{ runner.os }}-',
   'python scripts/run-copernicus-current-pilot.py',
   'def raw_vector_present(value):',
   'data/diagnostics/copernicus-current-pilot.json',
@@ -71,7 +72,7 @@ if (/\b(?:push|pull_request):/.test(copernicusPilot)) throw new Error('Copernicu
 const copernicusUpload = copernicusPilot.slice(copernicusPilot.indexOf('- name: Upload private support evidence'));
 if (copernicusUpload.includes('.cache/')) throw new Error('Den rå Copernicus-cache må ikke uploades som supportartefakt.');
 const copernicusKeepalive = fs.readFileSync(`${workflowDirectory}/preserve-copernicus-current-shadow.yml`, 'utf8');
-for (const marker of ['actions/cache/restore@v6', 'copernicus-current-shadow-v1-', 'private-copernicus-current-pilot', 'workflow_run:', 'workflows: ["Update weather and deploy RavRadar"]', 'types: [requested]', 'python3 scripts/check-copernicus-current-hour.py', 'validate-copernicus-current-pilot.yml/dispatches']) {
+for (const marker of ['actions/cache/restore@v6', 'copernicus-current-shadow-v1-', 'private-copernicus-current-pilot', 'workflow_run:', 'workflows: ["Update weather and deploy RavRadar"]', 'types: [requested]', 'python3 scripts/check-copernicus-current-hour.py', 'target_hour: ${{ steps.cache-state.outputs.target_hour }}', 'inputs[sample_time]=${{ needs.preserve.outputs.target_hour }}', 'validate-copernicus-current-pilot.yml/dispatches']) {
   if (!copernicusKeepalive.includes(marker)) throw new Error(`Copernicus-keepalive mangler ${marker}`);
 }
 if (copernicusKeepalive.includes('actions/cache/save@v6') || copernicusKeepalive.includes('actions/upload-artifact')) {
@@ -85,12 +86,16 @@ for (const marker of [
   '- cron: "14,29,44,59 * * * *"',
   'current-hour-readiness:',
   'python3 scripts/check-copernicus-current-hour.py --github-output "$GITHUB_OUTPUT"',
-  'Timed refresh deferred',
+  'Targeted supplement pending',
   "github.event_name == 'workflow_dispatch' && inputs.force != true",
   'CHECK_CURRENT_HOUR',
   'target_hour: ${{ steps.cache-state.outputs.target_hour }}',
   'RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ needs.current-hour-readiness.outputs.target_hour }}',
   "needs.current-hour-readiness.outputs.ready == 'true'",
+  'Select exact-hour DMI gaps for targeted Copernicus supplement',
+  'Inspect targeted Copernicus coverage after fresh DMI',
+  'Fill only exact-hour DMI gaps from Copernicus',
+  'Save targeted private Copernicus supplement',
 ]) {
   if (!text.includes(marker)) throw new Error(`Den GitHub-ejede 15-minuttersproduktion mangler ${marker}`);
 }
@@ -117,6 +122,7 @@ const positions = {
   preflight: text.indexOf('name: Decide whether weather needs updating'),
   sourceGate: text.indexOf('name: Run fast source gate before expensive data refresh'),
   dmiBulk: text.indexOf('name: Update DMI bulk model cache'),
+  targetedCopernicus: text.indexOf('name: Select exact-hour DMI gaps for targeted Copernicus supplement'),
   weather: text.indexOf('name: Update central weather cache'),
   provenance: text.indexOf('name: Attach scientific current provenance and exact DMI grid points'),
   runtime: text.indexOf('name: Rebuild deterministic public weather runtime before validation and deploy'),
@@ -128,7 +134,7 @@ const positions = {
 for (const [name, pos] of Object.entries(positions)) {
   if (pos < 0) throw new Error(`Mangler workflowtrin: ${name}`);
 }
-const expected = ['hydrate','preflight','sourceGate','dmiBulk','weather','provenance','runtime','reference','validate','gate','artifact'];
+const expected = ['hydrate','preflight','sourceGate','dmiBulk','targetedCopernicus','weather','provenance','runtime','reference','validate','gate','artifact'];
 for (let i = 1; i < expected.length; i += 1) {
   const before = expected[i - 1];
   const after = expected[i];

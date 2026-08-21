@@ -37,9 +37,9 @@ permissions:
   contents: read
 
 # GitHub starter den normale vejropdatering hvert 15. minut. En særskilt
-# current-hour-gate springer en planlagt produktion rent over, hvis den private
-# Copernicus-cache endnu ikke har den nye UTC-time. Der må højst være én tung
-# kørsel og én ventende kørsel; ventende kald kontrollerer friskhed igen.
+# current-hour-gate låser den eksakte UTC-time. Den endelige Copernicus-målliste
+# dannes først efter frisk DMI, så normal produktion aldrig kræver landsdækkende
+# Copernicus-data som forhåndsbetingelse. Der må højst være én tung kørsel.
 concurrency:
   group: ${{ github.event_name == 'workflow_dispatch' && inputs.geometry_v2_national == true && 'ravradar-geometry-v2-national' || github.event_name == 'workflow_dispatch' && inputs.geometry_v2_pilot == true && 'ravradar-geometry-v2-pilot' || 'ravradar-weather-production' }}
   cancel-in-progress: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (inputs.force == true || inputs.geometry_v2_pilot == true || inputs.geometry_v2_national == true)) }}
@@ -78,12 +78,10 @@ jobs:
           CHECK_CURRENT_HOUR: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force != true && inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true) }}
           CURRENT_HOUR_PRESENT: ${{ steps.cache-state.outputs.current_hour_present }}
         run: |
-          if [ "$CHECK_CURRENT_HOUR" != "true" ] || [ "$CURRENT_HOUR_PRESENT" = "true" ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-            echo "Production trigger may continue."
-          else
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Timed refresh deferred::The exact current UTC hour is not ready in the private Copernicus cache. No production artifact will be built; the private pilot is being dispatched and the next timed run will retry."
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+          echo "Production trigger may continue."
+          if [ "$CHECK_CURRENT_HOUR" = "true" ] && [ "$CURRENT_HOUR_PRESENT" != "true" ]; then
+            echo "::notice title=Targeted supplement pending::The exact Copernicus supplement will be resolved after fresh DMI gap selection; nationwide Copernicus coverage is not required."
           fi
 
   build-and-prepare:
@@ -95,8 +93,8 @@ jobs:
       contents: read
     env:
       # Every production build remains bound to the UTC hour resolved at
-      # readiness, even if the job crosses an hour boundary. Only timed runs
-      # are deferred when that hour is absent from the private cache.
+      # readiness, even if the job crosses an hour boundary. The authoritative
+      # Copernicus target list is derived from fresh DMI for this exact hour.
       RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ needs.current-hour-readiness.outputs.target_hour }}
     outputs:
       should_deploy: ${{ steps.preflight.outputs.should_run }}
@@ -131,7 +129,7 @@ jobs:
         run: python scripts/hydrate-deployed-weather.py
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
-          WEATHER_USER_AGENT: "RavRadar/4.0.244 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.245 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Preserve deployed DMI zone cache as safe fallback
         run: |
@@ -152,7 +150,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.244 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.245 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Report skipped refresh
         if: steps.preflight.outputs.should_run != 'true'
@@ -272,7 +270,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.244 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.245 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Save progressed DMI GRIB download cache
@@ -318,6 +316,55 @@ jobs:
           restore-keys: |
             copernicus-current-shadow-v1-
 
+      - name: Select exact-hour DMI gaps for targeted Copernicus supplement
+        if: steps.preflight.outputs.should_run == 'true'
+        run: >-
+          python scripts/build-copernicus-target-registry.py
+          --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          --output .cache/copernicus-current-targets.json
+
+      - name: Inspect targeted Copernicus coverage after fresh DMI
+        if: steps.preflight.outputs.should_run == 'true'
+        id: targeted-copernicus-cache
+        run: >-
+          python scripts/check-copernicus-current-hour.py
+          --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          --targets .cache/copernicus-current-targets.json
+          --github-output "$GITHUB_OUTPUT"
+
+      - name: Install targeted Copernicus dependencies
+        if: steps.preflight.outputs.should_run == 'true' && steps.targeted-copernicus-cache.outputs.current_hour_present != 'true'
+        run: python -m pip install --disable-pip-version-check -r requirements-copernicus.txt
+
+      - name: Verify targeted Copernicus credentials
+        if: steps.preflight.outputs.should_run == 'true' && steps.targeted-copernicus-cache.outputs.current_hour_present != 'true'
+        env:
+          COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
+          COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
+        run: |
+          if [ -z "$COPERNICUSMARINE_SERVICE_USERNAME" ] || [ -z "$COPERNICUSMARINE_SERVICE_PASSWORD" ]; then
+            echo "::error::Targeted Copernicus credentials are unavailable."
+            exit 1
+          fi
+
+      - name: Fill only exact-hour DMI gaps from Copernicus
+        if: steps.preflight.outputs.should_run == 'true' && steps.targeted-copernicus-cache.outputs.current_hour_present != 'true'
+        env:
+          COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
+          COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
+        run: >-
+          python scripts/run-copernicus-current-pilot.py
+          --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          --targets .cache/copernicus-current-targets.json
+          --authoritative-targets data/live/coastal-parts-v2.json
+
+      - name: Save targeted private Copernicus supplement
+        if: steps.preflight.outputs.should_run == 'true' && success()
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/copernicus-current-shadow.json
+          key: copernicus-current-shadow-v1-production-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+
       - name: Build public seven-day current history and controlled live selection
         if: steps.preflight.outputs.should_run == 'true'
         run: python scripts/build-live-current-pilot.py
@@ -342,7 +389,7 @@ jobs:
           DMI_DEPLOYED_CACHE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/live/dmi-forecast-cache.json"
           WEATHER_REQUEST_TIMEOUT_MS: 25000
           DMI_OCEAN_REQUEST_TIMEOUT_MS: 60000
-          WEATHER_USER_AGENT: "RavRadar/4.0.244 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.245 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Attach scientific current provenance and exact DMI grid points

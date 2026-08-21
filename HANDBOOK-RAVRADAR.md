@@ -22,6 +22,14 @@ Kontrollen før frigivelsen fandt en komplet fælles time i alle 210 zoner. Den 
 
 Rettelsen ændrer ikke ejerens blå/grønne land-/vandpunkter, U/V-data, kildeorden, afstandsgrænser, scoreformel, rollback eller kravet om præcis 673/673. Commit `9c971bc1` og den fulde centrale kørsel `#32264833170` bestod frisk data, validering, releasegate, Supabase og Pages; direkte liveaudit fandt 210/210 komplette zoner og 673/673 tidsjusterede dele.
 
+## Copernicus henter kun den låste times DMI-huller - 4.0.245-kandidat
+
+RavRadar bruger fortsat DMI som førstevalg. Den præcise liste over manglende lokale DMI-strømposter kan først kendes efter den friske DMI-kørsel. Produktionen danner derfor listen på dette tidspunkt og kontrollerer eller henter kun disse kystdele fra Copernicus. Den normale drift kræver ikke længere en landsdækkende Copernicus-cache på forhånd.
+
+Den første 4.0.244-kørsel beviste sikkerhedsnettet ved at stoppe ved 630/673 før release og deploy. 4.0.245 svækker ikke kontrollen: efter DMI og det målrettede supplement skal alle 673 kystdele stadig have dokumenteret strøm fra en tilladt kilde, ellers frigives intet. En landsdækkende Copernicus-kørsel er kun et særskilt manuelt forskningsvalg.
+
+Den private timepilot får den seneste progressive DMI-dækning og den eksakte ønskede time, så den kan forvarme de samme konkrete huller. Credentials og rå U/V forbliver private. Regionale proxyer, RavScore, pile, geometri og alle land-/vandpunkter er uændrede. Kandidaten er først produktionsverificeret efter exact-head gates og en fuld grøn kørsel af den præcise merge-commit.
+
 ## Én planlagt kørsel beholder den time, som blev godkendt – 4.0.236
 
 GitHubs lette readiness-kontrol kan begynde få sekunder før et UTC-timeskifte, mens den tunge vejrbygning fortsætter efter timeskiftet. En naturlig kørsel godkendte eksempelvis den komplette time kl. 11, men den gamle bygning kiggede senere på væguret, valgte kl. 12 og manglede derfor de 43 Copernicus-dele, som endnu ikke var indsamlet for den nye time. Sikkerhedsgaten stoppede korrekt ved 630/673 og deployede intet.
@@ -240,7 +248,7 @@ En privat, score-neutral cache bruger DKSS-felter ved vandpunktet samt cirka 5 o
 
 Rotationen registrerer også, hvor langt der er til den nærmeste modelkolonne med et eksakt fælles U/V-par, selv når den ligger uden for 5 km. I det tilfælde gemmes kun koordinat, afstand og lagmetadata – ikke de fjerne strømværdier. En privat ejeroversigt skelner derfor mellem nær-tærskel 5–6 km til rent manuelt geometrireview, modelhul 6–8 km, strukturelt modelhul over 8 km og en datakædefejl, hvor gyldig strøm faktisk findes inden for 5 km. Selv en nær-tærskel-post må kun flyttes, hvis vandpunktet i sig selv er forkert – aldrig blot for at nå modelcellen. Oversigten flytter ingen punkter automatisk, og den offentlige 5 km-grænse er uændret.
 
-**Håndbogsversion:** 4.0.244
+**Håndbogsversion:** 4.0.245
 
 **Opdateret:** 19. august 2026
 
