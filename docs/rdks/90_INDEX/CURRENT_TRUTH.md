@@ -1201,3 +1201,9 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 Den normale Copernicus-kørsel bygger sin målliste fra eksakt-timede lokale DMI-huller. Hele kysten kan kun vælges manuelt til sjælden forskning. DMI er fortsat førstevalg, de otte regionale DMI-proxyer ændres ikke, og ingen land- eller vandpunkter flyttes.
 
 Den første 4.0.244-produktionskørsel stoppede korrekt ved 630/673 før release og deploy. Årsagen var, at en autoritativ DMI-hulliste først kan dannes efter den friske DMI-kørsel; den selvstændige pilot havde kun ældre deployet DMI-dækning og manglede den eksakte time. 4.0.245 flytter derfor den endelige måludvælgelse ind efter frisk DMI og henter kun disse mål før den uændrede fulde 673/673-gate. Den selvstændige pilot får samtidig seneste private DMI-cache og eksakt dispatch-time. Ingen score-, kildeprioritets-, proxy- eller koordinatregel ændres.
+
+## 4.0.246-kandidat: lås til nærmeste verificerede DMI-strømtime
+
+4.0.245 blev merged som `b461e7a5`, men den præcise produktion `32465245055` stoppede sikkert før livefletning, validering, release og deploy. Den låste 08:00-time fandtes i DMI-cachen for andre felter, men havde 0/673 lokale DMI-strømme; 09:00 havde 622/673. Målbyggeren afviste derfor korrekt en implicit landsdækkende Copernicus-kørsel.
+
+4.0.246 må kun ved nul eksakt DMI-strømdækning vælge den bedst dækkede og derefter nærmeste verificerede DMI-strømtime inden for tre timer. Ved tidsmæssig lighed foretrækkes den fremtidige prognosetime. Den valgte time bindes samlet til målregister, Copernicus, livefletning, vejr, score og forklaring. Findes ingen nærliggende DMI-time, stopper produktionen fortsat. DMI-først, 673/673-gaten, proxyer, score og alle punkter er uændrede.

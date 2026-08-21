@@ -1542,3 +1542,11 @@ Implementeret og målrettet testet: v2-kontrakt, JSON Schema, korrekt observatio
 - Implementeret: privat timepilot gendanner seneste progressive DMI-cache, og cachebevaringen sender den eksakte mål-time videre.
 - Bevaret: DMI-først, regionale proxyer, RavScore, land-/vandpunkter og ingen offentlig rå U/V eller credentials.
 - Åben gate: målrettede regressioner, fuld kildekodegate, PR-gates og præcis produktionsverifikation.
+
+## 4.0.246-kandidat
+- 4.0.245 er merged som `b461e7a5`, men produktion `32465245055` stoppede fail-closed i måludvælgelsen. Ingen release eller deploy skete.
+- Dokumenteret årsag: den låste 08:00-time havde ingen lokal DMI-strøm, mens den nærliggende 09:00-time havde 622/673 og dermed 51 reelle supplementmål.
+- Implementeret: ved nul eksakt dækning vælges den højest dækkede, derefter nærmeste verificerede DMI-strømtime inden for højst tre timer; ved lighed foretrækkes fremtidig prognosetime.
+- Implementeret: den valgte time eksporteres maskinelt og bindes før Copernicus, livefletning og den øvrige vejr-/scorekæde.
+- Bevaret: fuldt stop uden nærliggende DMI-time, DMI-først, 673/673, proxyer, score, geometri og punkter.
+- Åben gate: målrettede tests, fuld kildekodegate, PR, exact-head-gates og præcis produktionsverifikation.

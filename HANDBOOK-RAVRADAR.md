@@ -22,13 +22,13 @@ Kontrollen før frigivelsen fandt en komplet fælles time i alle 210 zoner. Den 
 
 Rettelsen ændrer ikke ejerens blå/grønne land-/vandpunkter, U/V-data, kildeorden, afstandsgrænser, scoreformel, rollback eller kravet om præcis 673/673. Commit `9c971bc1` og den fulde centrale kørsel `#32264833170` bestod frisk data, validering, releasegate, Supabase og Pages; direkte liveaudit fandt 210/210 komplette zoner og 673/673 tidsjusterede dele.
 
-## Copernicus henter kun den låste times DMI-huller - 4.0.245-kandidat
+## Copernicus henter kun en verificeret DMI-strømtimes huller - 4.0.246-kandidat
 
-RavRadar bruger fortsat DMI som førstevalg. Den præcise liste over manglende lokale DMI-strømposter kan først kendes efter den friske DMI-kørsel. Produktionen danner derfor listen på dette tidspunkt og kontrollerer eller henter kun disse kystdele fra Copernicus. Den normale drift kræver ikke længere en landsdækkende Copernicus-cache på forhånd.
+RavRadar bruger fortsat DMI som førstevalg. Den præcise liste over manglende lokale DMI-strømposter kan først kendes efter den friske DMI-kørsel. Produktionen danner derfor listen på dette tidspunkt og kontrollerer eller henter kun disse kystdele fra Copernicus. Den normale drift kræver ikke en landsdækkende Copernicus-cache på forhånd.
 
-Den første 4.0.244-kørsel beviste sikkerhedsnettet ved at stoppe ved 630/673 før release og deploy. 4.0.245 svækker ikke kontrollen: efter DMI og det målrettede supplement skal alle 673 kystdele stadig have dokumenteret strøm fra en tilladt kilde, ellers frigives intet. En landsdækkende Copernicus-kørsel er kun et særskilt manuelt forskningsvalg.
+Den første 4.0.245-kørsel viste, at en time godt kan findes i DMI-cachen for vind eller andre felter uden at have lokal DMI-strøm. Den ønskede 08:00-time havde ingen lokale strømme, mens 09:00 havde 622 af 673. 4.0.246 må derfor ved nul eksakt strømdækning vælge den bedst dækkede og derefter nærmeste verificerede DMI-strømtime højst tre timer væk. Findes ingen, stopper produktionen.
 
-Den private timepilot får den seneste progressive DMI-dækning og den eksakte ønskede time, så den kan forvarme de samme konkrete huller. Credentials og rå U/V forbliver private. Regionale proxyer, RavScore, pile, geometri og alle land-/vandpunkter er uændrede. Kandidaten er først produktionsverificeret efter exact-head gates og en fuld grøn kørsel af den præcise merge-commit.
+Den valgte time bruges samlet til Copernicus, livefletning, vejr, score og forklaring. Efter supplementet skal alle 673 kystdele stadig have dokumenteret strøm, ellers frigives intet. Credentials og rå U/V forbliver private. Regionale proxyer, RavScore, pile, geometri og alle land-/vandpunkter er uændrede. Kandidaten er først produktionsverificeret efter exact-head-gates og en fuld grøn kørsel af den præcise merge-commit.
 
 ## Én planlagt kørsel beholder den time, som blev godkendt – 4.0.236
 
@@ -248,7 +248,7 @@ En privat, score-neutral cache bruger DKSS-felter ved vandpunktet samt cirka 5 o
 
 Rotationen registrerer også, hvor langt der er til den nærmeste modelkolonne med et eksakt fælles U/V-par, selv når den ligger uden for 5 km. I det tilfælde gemmes kun koordinat, afstand og lagmetadata – ikke de fjerne strømværdier. En privat ejeroversigt skelner derfor mellem nær-tærskel 5–6 km til rent manuelt geometrireview, modelhul 6–8 km, strukturelt modelhul over 8 km og en datakædefejl, hvor gyldig strøm faktisk findes inden for 5 km. Selv en nær-tærskel-post må kun flyttes, hvis vandpunktet i sig selv er forkert – aldrig blot for at nå modelcellen. Oversigten flytter ingen punkter automatisk, og den offentlige 5 km-grænse er uændret.
 
-**Håndbogsversion:** 4.0.245
+**Håndbogsversion:** 4.0.246
 
 **Opdateret:** 19. august 2026
 

@@ -35,6 +35,8 @@ const [workflow, updater, liveBuilder] = await Promise.all([
 for (const marker of [
   'target_hour: ${{ steps.cache-state.outputs.target_hour }}',
   'RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ needs.current-hour-readiness.outputs.target_hour }}',
+  'Bind production to resolved DMI current hour',
+  'RAVRADAR_PRODUCTION_TARGET_HOUR=${{ steps.copernicus-targets.outputs.target_hour }}',
 ]) {
   assert.ok(workflow.includes(marker), `Workflowet mangler timeslåsen: ${marker}`);
 }
@@ -47,7 +49,12 @@ assert.equal(
 assert.match(
   workflow,
   /CHECK_CURRENT_HOUR: \$\{\{ github\.event_name == 'schedule' \|\| \(github\.event_name == 'workflow_dispatch' && inputs\.force != true/,
-  'Kun timed schedule og ikke-forceret dispatch må udsættes ved manglende current-hour-cache.'
+  'Timed schedule og ikke-forceret dispatch skal fortsat identificeres før den efterfølgende DMI-timeresolution.'
+);
+assert.ok(
+  workflow.indexOf('Update DMI bulk model cache') < workflow.indexOf('Bind production to resolved DMI current hour') &&
+    workflow.indexOf('Bind production to resolved DMI current hour') < workflow.indexOf('Build public seven-day current history and controlled live selection'),
+  'Den endelige produktionstime skal bindes efter frisk DMI og før livefletning.'
 );
 assert.match(updater, /resolveProductionReferenceTime\(process\.env\.RAVRADAR_PRODUCTION_TARGET_HOUR, new Date\(buildGeneratedAt\)\)/);
 assert.match(updater, /generatedAt: buildGeneratedAt, productionReferenceAt: generatedAt/);
@@ -57,4 +64,4 @@ assert.match(updater, /forecastFromOpenMeteo\(feature, generatedAt\)/);
 assert.match(updater, /past_hours: String\(fallbackPastHours\)/);
 assert.match(liveBuilder, /default=os\.getenv\("RAVRADAR_PRODUCTION_TARGET_HOUR"\)/);
 
-console.log('OK: enhver produktion forbliver bundet til readiness-jobbets UTC-time uden at gøre push/force cacheblokeret.');
+console.log('OK: produktionen låser først triggerens time og binder derefter sikkert til nærmeste verificerede DMI-strømtime.');
