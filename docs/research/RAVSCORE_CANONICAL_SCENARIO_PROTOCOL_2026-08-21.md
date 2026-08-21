@@ -43,7 +43,8 @@ Scenarierne er fysiske arbejdshypoteser. De er ikke påstande om en bestemt fund
 - En kandidat skal reagere bedre på levering mod kysten end på transport væk fra kysten.
 - En frisk relevant hændelse skal reagere stærkere end en ellers tilsvarende gammel hændelse.
 - Venstre og højre passage langs kysten skal være symmetrisk, medmindre en dokumenteret lokal egenskab begrunder andet.
-- Kandidat C må kun reducere kandidat B; den må aldrig skabe et kunstigt løft.
+- Kandidat C bevares som historisk reference og må kun reducere kandidat B.
+- Kandidat E må kun reducere kandidat D og må kun bruge den fysiske kæde, ikke jagtbarhed, som flaskehals.
 - Store ændringer skal forklares på hændelsesniveau, ikke skjules i et nationalt gennemsnit.
 - Resultaterne kan afvise en dårlig regel, men kan ikke alene bevise en fundchance.
 

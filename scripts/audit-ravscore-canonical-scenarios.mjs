@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { calculateRavScore, scoreRating } from '../js/core/score-engine.js';
-import { evaluatePhaseDProcessCandidate } from '../js/core/phase-d-process-candidate.js';
+import { evaluatePhaseDWaveProcessCandidate } from '../js/core/phase-d-wave-process-candidate.js';
 
 const selfTest = process.argv.includes('--self-test');
 const pointsPath = 'data/geometry-v2/active-national-coastal-parts/point-pairs.json';
@@ -91,6 +91,8 @@ function modelScores(result, candidate) {
     candidateA: candidate.candidateScores.candidateA,
     candidateB: candidate.candidateScores.candidateB,
     candidateC: candidate.candidateScores.candidateC,
+    candidateD: candidate.candidateScores.candidateD,
+    candidateE: candidate.candidateScores.candidateE,
   };
 }
 
@@ -100,7 +102,7 @@ for (const scenario of scenarios) {
     for (const part of parts) {
       const input = context(part, scenario, mode);
       const active = calculateRavScore(input);
-      const candidate = evaluatePhaseDProcessCandidate(input);
+      const candidate = evaluatePhaseDWaveProcessCandidate(input);
       rows.push({
         scenarioId: scenario.id,
         phase: scenario.phase,
@@ -113,7 +115,7 @@ for (const scenario of scenarios) {
   }
 }
 
-const modelIds = ['active', 'candidateA', 'candidateB', 'candidateC'];
+const modelIds = ['active', 'candidateA', 'candidateB', 'candidateC', 'candidateD', 'candidateE'];
 function summarize(selected) {
   const available = selected.filter(row => row.activeAvailable && row.candidateAvailable && row.scores);
   const models = Object.fromEntries(modelIds.map(model => {
@@ -128,6 +130,7 @@ function summarize(selected) {
     }];
   }));
   const gateDeltas = available.map(row => row.scores.candidateC - row.scores.candidateB);
+  const physicalGateDeltas = available.map(row => row.scores.candidateE - row.scores.candidateD);
   return {
     records: selected.length,
     available: available.length,
@@ -138,6 +141,13 @@ function summarize(selected) {
       maximumDeltaBtoC: Math.max(...gateDeltas),
       lowered: gateDeltas.filter(value => value < 0).length,
       unchanged: gateDeltas.filter(value => value === 0).length,
+    },
+    physicalBottleneckGate: {
+      meanDeltaDtoE: rounded(mean(physicalGateDeltas)),
+      minimumDeltaDtoE: Math.min(...physicalGateDeltas),
+      maximumDeltaDtoE: Math.max(...physicalGateDeltas),
+      lowered: physicalGateDeltas.filter(value => value < 0).length,
+      unchanged: physicalGateDeltas.filter(value => value === 0).length,
     },
   };
 }
@@ -179,6 +189,12 @@ const report = {
     candidateBAlongshoreLeftVsRightWaders: compare('post-storm-alongshore-left', 'post-storm-alongshore-right', 'waders', 'candidateB'),
     activeRisingVsFallingWaterBeach: compare('post-storm-rising-water', 'post-storm-falling-water', 'beach', 'active'),
     candidateBRisingVsFallingWaterBeach: compare('post-storm-rising-water', 'post-storm-falling-water', 'beach', 'candidateB'),
+    candidateDOnshoreVsOffshoreBeach: compare('post-storm-onshore-delivery', 'post-storm-offshore-removal', 'beach', 'candidateD'),
+    candidateDOnshoreVsOffshoreWaders: compare('post-storm-onshore-delivery', 'post-storm-offshore-removal', 'waders', 'candidateD'),
+    candidateDRecentVsStaleBeach: compare('post-storm-onshore-delivery', 'stale-event-onshore', 'beach', 'candidateD'),
+    candidateDRecentVsStaleWaders: compare('post-storm-onshore-delivery', 'stale-event-onshore', 'waders', 'candidateD'),
+    candidateDAlongshoreLeftVsRightBeach: compare('post-storm-alongshore-left', 'post-storm-alongshore-right', 'beach', 'candidateD'),
+    candidateDAlongshoreLeftVsRightWaders: compare('post-storm-alongshore-left', 'post-storm-alongshore-right', 'waders', 'candidateD'),
   },
   rawWeatherValuesStored: false,
   coordinateValuesStored: false,
@@ -197,6 +213,7 @@ assert.equal(report.evaluationCount, 673 * scenarios.length * 2);
 assert.ok(summaries.every(row => row.available === 673), 'Alle scenarier skal kunne beregnes for alle kystdele');
 assert.ok(summaries.every(row => modelIds.every(model => row.models[model].minimum >= 0 && row.models[model].maximum <= 100)));
 assert.ok(summaries.every(row => row.weakestLinkGate.maximumDeltaBtoC <= 0), 'Kandidat C maa aldrig loefte kandidat B');
+assert.ok(summaries.every(row => row.physicalBottleneckGate.maximumDeltaDtoE <= 0), 'Kandidat E maa aldrig loefte kandidat D');
 assert.ok(report.pairChecks.candidateBOnshoreVsOffshoreBeach > 0 && report.pairChecks.candidateBOnshoreVsOffshoreWaders > 0,
   'Levering mod kysten skal vaere bedre end transport vaek fra kysten');
 assert.ok(report.pairChecks.candidateBRecentVsStaleBeach > 0 && report.pairChecks.candidateBRecentVsStaleWaders > 0,
@@ -204,6 +221,13 @@ assert.ok(report.pairChecks.candidateBRecentVsStaleBeach > 0 && report.pairCheck
 assert.ok(Math.abs(report.pairChecks.candidateBAlongshoreLeftVsRightBeach) <= 0.01
   && Math.abs(report.pairChecks.candidateBAlongshoreLeftVsRightWaders) <= 0.01,
   'Venstre og hoejre langs kysten skal vaere symmetriske uden lokal retningsprior');
+assert.ok(report.pairChecks.candidateDOnshoreVsOffshoreBeach > 20 && report.pairChecks.candidateDOnshoreVsOffshoreWaders > 20,
+  'Den nye leveringsvej skal skelne tydeligt mellem transport mod og vaek fra kysten');
+assert.ok(report.pairChecks.candidateDRecentVsStaleBeach > 0 && report.pairChecks.candidateDRecentVsStaleWaders > 0,
+  'Den nye leveringsvej skal bevare haendelseshukommelsen');
+assert.ok(Math.abs(report.pairChecks.candidateDAlongshoreLeftVsRightBeach) <= 0.01
+  && Math.abs(report.pairChecks.candidateDAlongshoreLeftVsRightWaders) <= 0.01,
+  'Den nye leveringsvej skal vaere symmetrisk langs kysten uden lokal prior');
 
 if (selfTest) {
   console.log('OK: 15 canonical scenarios x 673 parts x 2 modes are deterministic and score-neutral.');

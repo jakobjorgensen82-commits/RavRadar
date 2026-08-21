@@ -14,6 +14,8 @@ export const SCORE_MODEL_IDS = Object.freeze({
   candidateA: 'RRS-CAND-A-SMOOTH-EVENT',
   candidateB: 'RRS-CAND-B-DELIVERY-RETENTION',
   candidateC: 'RRS-CAND-C-WEAKEST-LINK',
+  candidateD: 'RRS-CAND-D-WAVE-DELIVERY-PATH',
+  candidateE: 'RRS-CAND-E-PHYSICAL-BOTTLENECK',
 });
 
 function normaliseComponents(result) {

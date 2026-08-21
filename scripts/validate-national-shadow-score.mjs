@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { calculateRavScore } from '../js/core/score-engine.js';
-import { evaluatePhaseDProcessCandidate } from '../js/core/phase-d-process-candidate.js';
+import { evaluatePhaseDWaveProcessCandidate } from '../js/core/phase-d-wave-process-candidate.js';
 import { SCORE_MODEL_IDS } from '../js/core/score-candidates.js';
 import { applyCurrentTransportToHistory } from './lib/current-transport-history.mjs';
 
@@ -71,9 +71,9 @@ function summarizeDeltas(rows,from,to){
 
 function buildCandidateShadow(partRows){
   const rows=partRows.flatMap(part=>part.snapshots.flatMap(snapshot=>Object.entries(snapshot.modes).map(([mode,result])=>({zoneId:part.zoneId,partId:part.partId,time:snapshot.time,mode,currentRegime:result.currentRegime,active:result.score,...result.shadowCandidates}))));
-  const byMode=Object.fromEntries(['waders','beach'].map(mode=>{const selected=rows.filter(row=>row.mode===mode);return [mode,{activeToA:summarizeDeltas(selected,'active','candidateA'),activeToB:summarizeDeltas(selected,'active','candidateB'),activeToC:summarizeDeltas(selected,'active','candidateC'),aToB:summarizeDeltas(selected,'candidateA','candidateB'),bToC:summarizeDeltas(selected,'candidateB','candidateC')}];}));
-  const deliveryDirectionAudit=Object.fromEntries(['onshore-delivery','alongshore-passage','offshore-removal','unknown'].map(regime=>{const selected=rows.filter(row=>row.currentRegime===regime);return [regime,{candidateBMinusA:summarizeDeltas(selected,'candidateA','candidateB')}];}));
-  const extremes=rows.flatMap(row=>['candidateA','candidateB','candidateC'].map(candidate=>({...row,candidate,delta:row[candidate]-row.active,candidateScore:row[candidate]}))).sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta)||a.partId.localeCompare(b.partId)).slice(0,5).map(row=>({zoneId:row.zoneId,partId:row.partId,time:row.time,mode:row.mode,currentRegime:row.currentRegime,candidate:row.candidate,activeScore:row.active,candidateScore:row.candidateScore,delta:row.delta}));
+  const byMode=Object.fromEntries(['waders','beach'].map(mode=>{const selected=rows.filter(row=>row.mode===mode);return [mode,{activeToA:summarizeDeltas(selected,'active','candidateA'),activeToB:summarizeDeltas(selected,'active','candidateB'),activeToC:summarizeDeltas(selected,'active','candidateC'),activeToD:summarizeDeltas(selected,'active','candidateD'),activeToE:summarizeDeltas(selected,'active','candidateE'),aToB:summarizeDeltas(selected,'candidateA','candidateB'),bToC:summarizeDeltas(selected,'candidateB','candidateC'),cToD:summarizeDeltas(selected,'candidateC','candidateD'),dToE:summarizeDeltas(selected,'candidateD','candidateE')}];}));
+  const deliveryDirectionAudit=Object.fromEntries(['onshore-delivery','alongshore-passage','offshore-removal','unknown'].map(regime=>{const selected=rows.filter(row=>row.currentRegime===regime);return [regime,{candidateBMinusA:summarizeDeltas(selected,'candidateA','candidateB'),candidateDMinusA:summarizeDeltas(selected,'candidateA','candidateD'),candidateEMinusD:summarizeDeltas(selected,'candidateD','candidateE')}];}));
+  const extremes=rows.flatMap(row=>['candidateA','candidateB','candidateC','candidateD','candidateE'].map(candidate=>({...row,candidate,delta:row[candidate]-row.active,candidateScore:row[candidate]}))).sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta)||a.partId.localeCompare(b.partId)).slice(0,5).map(row=>({zoneId:row.zoneId,partId:row.partId,time:row.time,mode:row.mode,currentRegime:row.currentRegime,candidate:row.candidate,activeScore:row.active,candidateScore:row.candidateScore,delta:row.delta}));
   const retentionFeatureContextCount=partRows.reduce((sum,part)=>sum+(part.retentionFeaturesAvailable?part.snapshots.length*2:0),0);
   return {status:'private-score-neutral-ravscore-candidate-shadow',modelIds:SCORE_MODEL_IDS,contextCount:rows.length,retentionFeatureContextCount,retentionFeatureCoverage:rows.length?round(retentionFeatureContextCount/rows.length,3):0,limitations:retentionFeatureContextCount===rows.length?[]:['NATIONAL_CONTRACT_HAS_NO_COMPLETE_LOCAL_RETENTION_FEATURES'],byMode,deliveryDirectionAudit,extremes,eventHistory:{windowHours:24,currentWindowHours:72,samplingAwareStrongEventDuration:true},rawWeatherValuesStored:false,scoreChanged:false,publicRuntimeChanged:false,automaticActivationAllowed:false};
 }
@@ -113,7 +113,7 @@ export function buildNationalShadowScoreReport(contract,multi,state,wind,marineI
       for(const mode of ['waders','beach']){
         const result=calculateRavScore({mode,zone,weather,history});
         if(!result.available||!Number.isFinite(result.score))throw new Error(`${part.partId}/${hour.time}/${mode} gav ikke gyldig RavScore`);
-        const shadow=evaluatePhaseDProcessCandidate({mode,zone,weather,history});
+        const shadow=evaluatePhaseDWaveProcessCandidate({mode,zone,weather,history});
         if(!shadow.available||!Object.values(shadow.candidateScores||{}).every(Number.isFinite))throw new Error(`${part.partId}/${hour.time}/${mode} gav ikke gyldige RavScore-kandidater`);
         modes[mode]={score:result.score,components:result.components,contributions:result.explanation?.contributions,dominantPathway:result.explanation?.mobilisationDiagnostics?.dominantPathway??null,currentRegime:currentRegime(weather,zone),shadowCandidates:shadow.candidateScores};
       }
@@ -155,8 +155,8 @@ export function selfTest(){
   if(report.status!=='passed-private-national-shadow-score-validation'||report.scoredPartCount!==2||report.zones.length!==1||report.zones[0].evaluations.length!==2||report.rawWeatherValuesStored)throw new Error('Gyldig shadow-score blev afvist');
   if(report.candidateShadow?.status!=='private-score-neutral-ravscore-candidate-shadow'||report.candidateShadow.contextCount!==4||report.candidateShadow.rawWeatherValuesStored||report.candidateShadow.scoreChanged||report.candidateShadow.automaticActivationAllowed)throw new Error('Kandidat-shadow mangler eller kan aktivere score');
   if(report.candidateShadow.retentionFeatureCoverage!==0||!report.candidateShadow.limitations.includes('NATIONAL_CONTRACT_HAS_NO_COMPLETE_LOCAL_RETENTION_FEATURES'))throw new Error('Kandidat-shadow skjuler manglende fastholdelsesfeatures');
-  if(!report.candidateShadow.modelIds?.candidateA||!Object.values(report.parts[0].snapshots[0].modes.waders.shadowCandidates).every(Number.isFinite))throw new Error('Kandidat-shadow mangler stabile modeller eller scorer');
-  if(report.candidateShadow.deliveryDirectionAudit['onshore-delivery'].candidateBMinusA.count!==4)throw new Error('Retningsaudit dækkede ikke alle score-contexts');
+  if(!report.candidateShadow.modelIds?.candidateA||!report.candidateShadow.modelIds?.candidateD||!Object.values(report.parts[0].snapshots[0].modes.waders.shadowCandidates).every(Number.isFinite))throw new Error('Kandidat-shadow mangler stabile modeller eller scorer');
+  if(report.candidateShadow.deliveryDirectionAudit['onshore-delivery'].candidateDMinusA.count!==4)throw new Error('Retningsaudit dækkede ikke alle score-contexts');
   const broken=structuredClone(windInput);broken.series.pop();try{buildNationalShadowScoreReport(contract,multi,state,wind,marineInput,broken);throw new Error('Manglende fulddækket del blev accepteret');}catch(error){if(error.message==='Manglende fulddækket del blev accepteret')throw error;}
   console.log('National privat shadow-score self-test: bestået');
 }
