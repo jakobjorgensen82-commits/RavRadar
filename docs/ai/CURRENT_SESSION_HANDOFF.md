@@ -231,3 +231,10 @@ Normal Copernicus er ændret fra alle 673 kystdele til en automatisk liste over 
 - Den selvstændige pilot gendanner seneste private DMI-cache, og preserve-workflowet sender den eksakte time videre.
 - DMI er fortsat førstevalg. Score, regionale proxyer, geometri og alle land-/vandpunkter er uændrede.
 - Næste trin: målrettede regressioner, kildekodegate, version, commit/push/PR, exact-head gates og kun derefter eventuel merge og præcis produktionsverifikation.
+
+## Checkpoint: 4.0.246 DMI-strømtime
+- PR #35/4.0.245 blev merged som `b461e7a5`. Exact-head-gaten var grøn, men produktion `32465245055` stoppede sikkert i det nye målregistertrin; livefletning, fuld validering, release og deploy blev ikke kørt.
+- Artifactet beviser, at 08:00 fandtes for andre DMI-felter, men gav 0/673 gyldige lokale strømme. 09:00 gav 622/673 og 51 reelle huller. Fejlen var derfor timeresolution, ikke manglende frisk DMI-cache.
+- 4.0.246 vælger kun ved nul eksakt dækning den højest dækkede og derefter nærmeste DMI-strømtime inden for tre timer og binder hele den efterfølgende produktionskæde til den valgte time.
+- Hvis ingen nærliggende verificeret DMI-strømtime findes, stopper målbyggeren fortsat. DMI-først, 673/673, score, proxyer, geometri og punkter er uændrede.
+- Næste trin: tests, versionslukning, commit/push/PR, exact-head-gates og præcis produktion. Først derefter fortsættes RavScore-analysen.

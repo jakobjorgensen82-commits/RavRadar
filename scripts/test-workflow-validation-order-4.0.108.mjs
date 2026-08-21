@@ -93,6 +93,8 @@ for (const marker of [
   'RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ needs.current-hour-readiness.outputs.target_hour }}',
   "needs.current-hour-readiness.outputs.ready == 'true'",
   'Select exact-hour DMI gaps for targeted Copernicus supplement',
+  'Bind production to resolved DMI current hour',
+  '--nearest-dmi-hour',
   'Inspect targeted Copernicus coverage after fresh DMI',
   'Fill only exact-hour DMI gaps from Copernicus',
   'Save targeted private Copernicus supplement',
@@ -123,6 +125,7 @@ const positions = {
   sourceGate: text.indexOf('name: Run fast source gate before expensive data refresh'),
   dmiBulk: text.indexOf('name: Update DMI bulk model cache'),
   targetedCopernicus: text.indexOf('name: Select exact-hour DMI gaps for targeted Copernicus supplement'),
+  resolvedCurrentHour: text.indexOf('name: Bind production to resolved DMI current hour'),
   weather: text.indexOf('name: Update central weather cache'),
   provenance: text.indexOf('name: Attach scientific current provenance and exact DMI grid points'),
   runtime: text.indexOf('name: Rebuild deterministic public weather runtime before validation and deploy'),
@@ -134,7 +137,7 @@ const positions = {
 for (const [name, pos] of Object.entries(positions)) {
   if (pos < 0) throw new Error(`Mangler workflowtrin: ${name}`);
 }
-const expected = ['hydrate','preflight','sourceGate','dmiBulk','targetedCopernicus','weather','provenance','runtime','reference','validate','gate','artifact'];
+const expected = ['hydrate','preflight','sourceGate','dmiBulk','targetedCopernicus','resolvedCurrentHour','weather','provenance','runtime','reference','validate','gate','artifact'];
 for (let i = 1; i < expected.length; i += 1) {
   const before = expected[i - 1];
   const after = expected[i];

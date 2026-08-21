@@ -30,6 +30,13 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--at", help="UTC hour to inspect; defaults to the current hour")
     parser.add_argument("--full-coast", action="store_true", help="Explicit manual nationwide research run")
+    parser.add_argument(
+        "--nearest-dmi-hour",
+        action="store_true",
+        help="Resolve a zero-coverage request to the best nearby verified DMI current hour",
+    )
+    parser.add_argument("--max-hour-offset", type=int, default=3)
+    parser.add_argument("--github-output", type=Path)
     return parser.parse_args()
 
 
@@ -105,6 +112,55 @@ def has_local_dmi(document: dict[str, Any], target: dict[str, Any], target_hour:
     return False
 
 
+def local_dmi_parts(
+    document: dict[str, Any], targets: list[dict[str, Any]], target_hour: datetime
+) -> set[str]:
+    return {target["partId"] for target in targets if has_local_dmi(document, target, target_hour)}
+
+
+def available_dmi_hours(document: dict[str, Any]) -> set[datetime]:
+    hours: set[datetime] = set()
+    for zone in (document.get("zones") or {}).values():
+        for key, row in ((zone or {}).get("hourly") or {}).items():
+            parsed = row_hour((row or {}).get("time") or key)
+            if parsed is not None:
+                hours.add(parsed)
+    return hours
+
+
+def resolve_dmi_hour(
+    document: dict[str, Any],
+    targets: list[dict[str, Any]],
+    requested_hour: datetime,
+    allow_nearest: bool,
+    max_hour_offset: int,
+) -> tuple[datetime, set[str]]:
+    exact = local_dmi_parts(document, targets, requested_hour)
+    if exact or not allow_nearest:
+        return requested_hour, exact
+    if max_hour_offset < 0:
+        raise ValueError("Copernicus DMI-hour offset must be non-negative")
+    candidates: list[tuple[datetime, set[str]]] = []
+    for candidate in available_dmi_hours(document):
+        offset_seconds = abs((candidate - requested_hour).total_seconds())
+        if candidate == requested_hour or offset_seconds > max_hour_offset * 3600:
+            continue
+        covered = local_dmi_parts(document, targets, candidate)
+        if covered:
+            candidates.append((candidate, covered))
+    if not candidates:
+        return requested_hour, set()
+    return min(
+        candidates,
+        key=lambda item: (
+            -len(item[1]),
+            abs((item[0] - requested_hour).total_seconds()),
+            0 if item[0] >= requested_hour else 1,
+            item[0],
+        ),
+    )
+
+
 def write_registry(path: Path, targets: list[dict[str, Any]], source_count: int, at: datetime, mode: str) -> None:
     zones: dict[str, list[dict[str, Any]]] = {}
     for target in targets:
@@ -129,9 +185,19 @@ def write_registry(path: Path, targets: list[dict[str, Any]], source_count: int,
     temporary.replace(path)
 
 
+def write_github_output(path: Path | None, at: datetime, dmi_count: int, target_count: int) -> None:
+    if path is None:
+        return
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(f"target_hour={at.isoformat().replace('+00:00', 'Z')}\n")
+        handle.write(f"local_dmi_count={dmi_count}\n")
+        handle.write(f"target_part_count={target_count}\n")
+
+
 def main() -> int:
     args = arguments()
-    at = utc_hour(args.at)
+    requested_at = utc_hour(args.at)
+    at = requested_at
     all_targets = load_targets(args.targets)
     if args.full_coast:
         selected = all_targets
@@ -142,16 +208,25 @@ def main() -> int:
             dmi = json.loads(args.dmi.read_text(encoding="utf-8"))
         except Exception as error:
             raise RuntimeError(f"Cannot read deployed DMI coverage: {error}") from None
-        covered = {target["partId"] for target in all_targets if has_local_dmi(dmi, target, at)}
+        at, covered = resolve_dmi_hour(
+            dmi,
+            all_targets,
+            requested_at,
+            args.nearest_dmi_hour,
+            args.max_hour_offset,
+        )
         dmi_count = len(covered)
         if all_targets and dmi_count == 0:
             raise RuntimeError("No local DMI coverage found for the requested hour; refusing implicit nationwide Copernicus collection")
         selected = [target for target in all_targets if target["partId"] not in covered]
         mode = "dmi-gaps-only"
     write_registry(args.output, selected, len(all_targets), at, mode)
+    write_github_output(args.github_output, at, dmi_count, len(selected))
     print(
         f"Copernicus targets ({mode}): {len(selected)}/{len(all_targets)}; "
-        f"local DMI at requested hour: {dmi_count}. Coordinates changed: no."
+        f"local DMI at resolved hour: {dmi_count}; "
+        f"requested={requested_at.isoformat().replace('+00:00', 'Z')}; "
+        f"resolved={at.isoformat().replace('+00:00', 'Z')}. Coordinates changed: no."
     )
     return 0
 
