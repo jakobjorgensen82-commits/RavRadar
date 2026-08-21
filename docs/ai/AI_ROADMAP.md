@@ -542,3 +542,20 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 2. Genkoer den private aktive 210/673-shadow paa præcis main-commit.
 3. Hvis den stopper paa reelt manglende sammenhaengende DMI-dækning, behold blokeringen og opgoer dækningen; bland ikke collections og brug ikke fallback.
 4. Hvis hele kaeden er grøn, analyser kun den kompakte A/B/C-rapport som del af den videnskabelige RavScore-analyse.
+
+## Aktivt roadmap-punkt: fair national zonerangering (2026-08-21)
+
+**Problem:** Nationale top-5-lister bruger i dag zonens hoejeste kystdel. Zoner med mange forskelligt vendte dele kan derfor faa flere muligheder for at ramme en gunstig retning.
+
+**Evidens nu:** Et komplet produktionssnapshot med 210 zoner og 673 kystdele viste, at zoner med mindst seks dele var tydeligt overrepraesenterede i de 12 undersoegte top-5-lister. Gruppen med 3-5 dele var samlet omtrent proportional. Falster nord/Orehoved og Falster vest/Nysted Nor munding var blandt de tydelige eksempler.
+
+**Bindende afgraensning:**
+
+- Den lokale RavScore og den vindende kystdel aendres ikke alene paa grund af zonens stoerrelse.
+- Der indfoeres ikke en vilkaarlig regel om straf ved mere end to kystdele.
+- Naeste analyse isolerer den vejruafhaengige fordel ved forskellige kystretninger.
+- Derefter sammenlignes faa, begraensede kandidater til en intern korrektion, som kun bruges i "Bedste omraader" og "5 dages RavRadar".
+- En kandidat skal tage hoejde for baade effektiv retningsdaekning og hvor mange af zonens dele der faktisk stoetter vinderen.
+- Ingen korrektion aktiveres uden landsdaekkende regression, forklarlig brugerlogik og kontrol af sammenhaengen mellem score, pil og forklaring.
+
+**Status:** Analyse aktiv. Ingen produktions- eller scoreaendring er besluttet.
