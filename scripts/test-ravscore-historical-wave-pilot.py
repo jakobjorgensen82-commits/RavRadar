@@ -17,13 +17,17 @@ SCRIPT = ROOT / "scripts/build-ravscore-historical-wave-pilot.py"
 SENTINELS = [
     ("dk-b03-07-national-part-01", "DK-B03-07", "West", "copernicus-nws-wave-reanalysis", 8.2, 56.1),
     ("dk-b01-16-national-part-01", "DK-B01-16", "North", "copernicus-baltic-wave-hindcast", 10.2, 57.5),
-    ("dk-b10-01-national-part-01-locality-01", "DK-B10-01", "Inner", "copernicus-baltic-wave-hindcast", 12.3, 55.0),
+    ("dk-b07-19-fallback-recovery-01", "DK-B07-19", "Inner", "copernicus-baltic-wave-hindcast", 11.0, 55.0),
     ("dk-b10-21-national-part-01", "DK-B10-21", "Baltic", "copernicus-baltic-wave-hindcast", 15.0, 55.0),
 ]
 
 
 def dataset(longitude: float, latitude: float) -> xr.Dataset:
-    times = np.arange("2024-01-01T00", "2024-01-02T00", dtype="datetime64[3h]")
+    times = np.arange(
+        np.datetime64("2024-01-01T00", "h"),
+        np.datetime64("2024-01-02T00", "h"),
+        np.timedelta64(3, "h"),
+    )
     longitudes = np.array([longitude - 0.02, longitude, longitude + 0.02])
     latitudes = np.array([latitude - 0.02, latitude, latitude + 0.02])
     shape = (len(times), len(latitudes), len(longitudes))
@@ -54,6 +58,7 @@ def main() -> int:
             "sourceZoneId": zone_id,
             "name": name,
             "waterPoint": [longitude, latitude],
+            "onshoreDirectionDeg": 180.0,
         })
         dataset(longitude, latitude).to_netcdf(fixtures / f"{source}-{part_id}.nc")
     targets.write_text(json.dumps({"zones": zones}), encoding="utf-8")
@@ -74,8 +79,11 @@ def main() -> int:
     document = json.loads(output.read_text(encoding="utf-8"))
     assert document["status"] == "OK"
     assert document["sentinelCount"] == 4
+    assert document["requestedSentinelCount"] == 4
+    assert document["coveredSentinelCount"] == 4
     assert document["recordCount"] == 32
     assert document["eventCandidateCount"] >= 4
+    assert document["selectedWaveWindowCount"] >= 4
     assert document["scoreImpact"] is False
     assert document["publicRuntime"] is False
     assert document["productionGeometryChanged"] is False
@@ -83,6 +91,8 @@ def main() -> int:
     assert document["coordinateValuesStored"] is False
     assert document["rawNetcdfStored"] is False
     assert all(row["gridDistanceKm"] == 0 for row in document["records"])
+    assert all(-1 <= row["waveOnshoreAlignment"] <= 1 for row in document["records"])
+    assert all(row["waveDirectionClass"] in {"onshore", "alongshore", "offshore"} for row in document["records"])
     forbidden_keys = {"waterpoint", "landpoint", "longitude", "latitude", "geometry", "umps", "vmps"}
     def inspect(value):
         if isinstance(value, dict):
