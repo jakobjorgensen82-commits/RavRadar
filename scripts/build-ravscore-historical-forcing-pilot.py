@@ -38,7 +38,7 @@ PRODUCTS = {
         "maximumLongitude": 13.0,
         "minimumLatitude": 46.0,
         "maximumLatitude": 63.0,
-        "maximumTimeOffsetMinutes": 31.0,
+        "maximumTimeOffsetMinutes": 0.0,
         "longitudePadding": 0.15,
         "latitudePadding": 0.10,
         "maximumGridDistanceKm": 12.0,

@@ -100,7 +100,7 @@ def main() -> int:
 
         for part_index, (part_id, basin, longitude, latitude) in enumerate(PARTS):
             times = sorted(all_times_by_part[part_id])
-            provider_offset = timedelta(minutes=30) if basin == "nws" else timedelta(0)
+            provider_offset = timedelta(0)
             provider_times = [value + provider_offset for value in times]
             time_values = np.asarray([np.datetime64(value.replace(tzinfo=None), "ns") for value in provider_times])
             longitudes = [longitude, longitude + 0.07] if basin == "nws" else [longitude]
@@ -153,8 +153,8 @@ def main() -> int:
             "onshore-delivery", "offshore-removal", "conflicting-wave-current", "alongshore-mixed"
         }
         by_region = {region["regionId"]: region for region in document["regions"]}
-        assert by_region["dk-b03-07-national-part-01"]["maximumCurrentTimeOffsetMinutes"] == 30.0
-        assert by_region["dk-b03-07-national-part-01"]["maximumSeaLevelTimeOffsetMinutes"] == 30.0
+        assert by_region["dk-b03-07-national-part-01"]["maximumCurrentTimeOffsetMinutes"] == 0.0
+        assert by_region["dk-b03-07-national-part-01"]["maximumSeaLevelTimeOffsetMinutes"] == 0.0
         assert 0.0 < by_region["dk-b03-07-national-part-01"]["currentGridDistanceKm"] <= 12.0
         assert 0.0 < by_region["dk-b03-07-national-part-01"]["seaLevelGridDistanceKm"] <= 12.0
         assert all(
