@@ -196,7 +196,18 @@ def copernicus_entries(
         except Exception:
             continue
         actual_count = sum(1 for row in records if row.get("validTime") == valid_time)
-        if collection.get("targetFingerprint") == fingerprint and expected_count > 0 and actual_count == expected_count:
+        raw_target_ids = collection.get("targetPartIds")
+        if raw_target_ids is None:
+            target_identity_valid = collection.get("targetFingerprint") == fingerprint
+        else:
+            target_ids = [str(value or "") for value in raw_target_ids] if isinstance(raw_target_ids, list) else []
+            target_identity_valid = bool(
+                len(target_ids) == len(set(target_ids))
+                and all(part_id in targets for part_id in target_ids)
+                and collection.get("targetFingerprint")
+                == target_fingerprint([targets[part_id] for part_id in target_ids])
+            )
+        if target_identity_valid and expected_count >= 0 and actual_count == expected_count:
             authorized_times.add(valid_time)
 
     selected: dict[tuple[str, str], dict[str, Any]] = {}

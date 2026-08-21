@@ -289,15 +289,26 @@ def _validate_fingerprint(value: Any) -> str:
     return text
 
 
-def _validate_collection(collection: Any) -> tuple[datetime, str, int]:
+def _validate_collection(collection: Any) -> tuple[datetime, str, int, list[str] | None]:
     if not isinstance(collection, dict):
         raise ValueError("collection is not an object")
     valid_time = _parse_shadow_time(collection.get("validTime"))
     fingerprint = _validate_fingerprint(collection.get("targetFingerprint"))
     record_count = collection.get("recordCount")
-    if not isinstance(record_count, int) or record_count <= 0:
-        raise ValueError("collection record count must be positive")
-    return valid_time, fingerprint, record_count
+    if not isinstance(record_count, int) or record_count < 0:
+        raise ValueError("collection record count must be non-negative")
+    raw_part_ids = collection.get("targetPartIds")
+    target_part_ids: list[str] | None = None
+    if raw_part_ids is not None:
+        if not isinstance(raw_part_ids, list):
+            raise ValueError("collection target ids must be a list")
+        target_part_ids = [str(value or "").strip() for value in raw_part_ids]
+        if any(not value for value in target_part_ids) or len(target_part_ids) != len(set(target_part_ids)):
+            raise ValueError("collection target ids must be non-empty and unique")
+        target_part_ids.sort()
+    if record_count == 0 and target_part_ids != []:
+        raise ValueError("only an explicit empty target set may have no records")
+    return valid_time, fingerprint, record_count, target_part_ids
 
 
 def update_shadow(
@@ -308,6 +319,7 @@ def update_shadow(
     collection_time: datetime | None = None,
     target_fingerprint: str | None = None,
     target_points: dict[str, list[float]] | None = None,
+    target_part_ids: list[str] | None = None,
 ) -> dict[str, Any]:
     document = load_shadow(path)
     if now.tzinfo is None:
@@ -325,7 +337,10 @@ def update_shadow(
         _validate_fingerprint(target_fingerprint)
         if collection_time_utc < cutoff or collection_time_utc > now_utc:
             raise RuntimeError("Copernicus collection time is outside the 168-hour retention window")
-        if not records:
+        selected_part_ids = sorted(target_part_ids if target_part_ids is not None else target_points)
+        if len(selected_part_ids) != len(set(selected_part_ids)) or any(part_id not in target_points for part_id in selected_part_ids):
+            raise RuntimeError("Copernicus collection target ids do not match authoritative central geometry")
+        if not records and selected_part_ids:
             raise RuntimeError("A completed Copernicus collection must contain verified records")
     retained: dict[tuple[Any, ...], dict[str, Any]] = {}
     existing_records = list(document.get("records") or [])
@@ -369,7 +384,7 @@ def update_shadow(
         existing_collections = []
     for collection in existing_collections:
         try:
-            valid_time, _fingerprint, record_count = _validate_collection(collection)
+            valid_time, _fingerprint, record_count, _target_part_ids = _validate_collection(collection)
         except (TypeError, ValueError):
             continue
         valid_time_text = utc_iso(valid_time)
@@ -379,9 +394,13 @@ def update_shadow(
     if collection_time_utc is not None:
         valid_time_text = utc_iso(collection_time_utc)
         collected_records = [row for row in retained.values() if row.get("validTime") == valid_time_text]
+        collected_part_ids = {str(row.get("partId") or "") for row in collected_records}
+        if not collected_part_ids.issubset(set(selected_part_ids)):
+            raise RuntimeError("Copernicus collection contains a record outside its selected target set")
         collections[valid_time_text] = {
             "validTime": valid_time_text,
             "targetFingerprint": target_fingerprint,
+            "targetPartIds": selected_part_ids,
             "recordCount": len(collected_records),
             "uniqueTargetCount": len({str(row.get("partId") or "") for row in collected_records}),
         }

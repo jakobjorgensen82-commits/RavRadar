@@ -1196,3 +1196,6 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - Gemte områder/varsler er udskudt mindst cirka et halvt år eller til en senere brugerdata-sektion.
 - Gammel-mod-ny-scorekontrol skal være lokal og automatisk; ejer og Codex samarbejder om få vigtige afvigelser i almindeligt sprog. Ingen OpenAI API bygges ind i offentlig runtime.
 - DMI forbliver førstevalg. Normal Copernicus-kørsel skal begrænses til godkendte DMI-huller; landsdækkende 673-kontrol er kun sjælden/manual forskning.
+
+## 4.0.244-kandidat: Copernicus kun til DMI-huller
+Den normale Copernicus-kørsel bygger nu sin målliste fra den senest deployede, eksakt-timede lokale DMI-dækning. Hele kysten kan kun vælges manuelt til sjælden forskning. DMI er fortsat førstevalg, de otte regionale DMI-proxyer ændres ikke, og ingen land- eller vandpunkter flyttes. Kandidaten er ikke produktionsverificeret, før PR-gates og den præcise efterfølgende produktionskørsel er grønne.

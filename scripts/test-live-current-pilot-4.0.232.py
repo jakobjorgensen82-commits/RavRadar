@@ -63,6 +63,8 @@ with tempfile.TemporaryDirectory(prefix="ravradar-live-current-") as raw_folder:
     write(folder / "targets.json", {"schemaVersion": 2, "partCount": len(all_parts), "zones": zones})
     targets = targets_from_registry(folder / "targets.json")
     fingerprint = target_fingerprint(targets)
+    copernicus_target_ids = ["cop-part"]
+    copernicus_fingerprint = target_fingerprint([row for row in targets if row["partId"] in copernicus_target_ids])
     selection = "nearest-shared-uv-column-across-dmi-collections-then-deepest-valid-layer"
     dmi_source = {
         "provider": "dmi", "vectorSemanticsVersion": 3, "verticalLayer": "depthbelowsea:7",
@@ -101,8 +103,8 @@ with tempfile.TemporaryDirectory(prefix="ravradar-live-current-") as raw_folder:
     write(folder / "copernicus.json", {
         "scoreImpact": False, "publicRuntime": False, "records": [stale_cop_record, cop_record],
         "collections": [
-            {"validTime": "2026-08-10T15:00:00Z", "targetFingerprint": fingerprint, "recordCount": 1},
-            {"validTime": "2026-08-18T15:00:00Z", "targetFingerprint": fingerprint, "recordCount": 1},
+            {"validTime": "2026-08-10T15:00:00Z", "targetFingerprint": copernicus_fingerprint, "targetPartIds": copernicus_target_ids, "recordCount": 1},
+            {"validTime": "2026-08-18T15:00:00Z", "targetFingerprint": copernicus_fingerprint, "targetPartIds": copernicus_target_ids, "recordCount": 1},
         ],
     })
     policy_rows = [{"partId": row["partId"], "approvedSamplingPoint": row["waterPoint"]} for row in proxy_parts]
@@ -156,7 +158,7 @@ with tempfile.TemporaryDirectory(prefix="ravradar-live-current-") as raw_folder:
     recent_history_record = {**cop_record, "validTime": "2026-08-18T14:00:00Z"}
     write(folder / "copernicus.json", {
         "scoreImpact": False, "publicRuntime": False, "records": [recent_history_record],
-        "collections": [{"validTime": "2026-08-18T14:00:00Z", "targetFingerprint": fingerprint, "recordCount": 1}],
+        "collections": [{"validTime": "2026-08-18T14:00:00Z", "targetFingerprint": copernicus_fingerprint, "targetPartIds": copernicus_target_ids, "recordCount": 1}],
     })
     live_control["mode"] = "controlled-live"
     write(folder / "control.json", live_control)

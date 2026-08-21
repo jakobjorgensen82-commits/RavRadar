@@ -221,3 +221,6 @@ validate:source og release:gate er grønne for 4.0.243, inklusive den nye turkon
 - Næste P1 er en lille separat ændring, der begrænser normal Copernicus-pilot til godkendte DMI-huller. DMI-først, score og punkter må ikke ændres.
 - Derefter gennemføres den store analyse og DEC-0044-planen: evidensregister, kandidatregler/vægte, lokal gammel-mod-ny-automatik, ejer/Codex-gennemgang, hændelsesmodel, ravvinduer, forklaringer og læringsmodul.
 - Brug `docs/research/RAVSCORE_RESEARCH_PRODUCT_PLAN_2026-08-21.md` som den forståelige oversigt og DEC-0044 som bindende krav.
+
+## Checkpoint: 4.0.244-kandidat
+Normal Copernicus er ændret fra alle 673 kystdele til en automatisk liste over aktuelle lokale DMI-huller. En bred landskørsel kræver det manuelle full_coast-valg. Ingen koordinater er ændret. Næste skridt er målrettede tests, release-gate, PR, præcis produktionsverifikation og derefter fortsættelse af den allerede igangsatte store RavScore-evidensanalyse.

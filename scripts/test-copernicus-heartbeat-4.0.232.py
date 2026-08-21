@@ -121,7 +121,9 @@ def main() -> None:
     pilot_workflow = (ROOT / ".github/workflows/validate-copernicus-current-pilot.yml").read_text(encoding="utf-8")
     for marker in (
         "Inspect requested hour and authoritative target geometry",
-        "--targets data/live/coastal-parts-v2.json",
+        "--targets .cache/copernicus-current-targets.json",
+        "build-copernicus-target-registry.py",
+        "full_coast:",
         "steps.cache-state.outputs.current_hour_present != 'true'",
         "Report safe duplicate suppression",
     ):

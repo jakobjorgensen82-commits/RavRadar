@@ -47,7 +47,7 @@ def synthetic_dataset() -> xr.Dataset:
 
 def main() -> None:
     targets = load_targets(ROOT / "data/live/coastal-parts-v2.json")
-    need(len(targets) == 673, "Pilot must use every centrally generated coastal part")
+    need(len(targets) == 673, "The explicit full-coast research source must retain every central coastal part")
     target = {"partId": "p1", "parentZoneId": "z1", "name": "test", "waterPoint": [9.0, 57.0]}
     record = nearest_shared_uv(
         synthetic_dataset(), target,
@@ -144,6 +144,9 @@ def main() -> None:
     keepalive_workflow = (ROOT / ".github/workflows/preserve-copernicus-current-shadow.yml").read_text(encoding="utf-8")
     need("sample_time:" in pilot_workflow and '--at "$PILOT_SAMPLE_TIME"' in pilot_workflow,
          "Manual pilot runs must support a quoted exact-hour backfill")
+    need("build-copernicus-target-registry.py" in pilot_workflow
+         and "--targets .cache/copernicus-current-targets.json" in pilot_workflow,
+         "Normal pilot runs must use the derived DMI-gap target registry")
     need("7,17,27,37,47,57 * * * *" in keepalive_workflow,
          "The small private cache must be refreshed more often than DMI cache churn can evict it")
     need("actions/cache/restore@v6" in keepalive_workflow and "actions/cache/save@v6" not in keepalive_workflow,
