@@ -1,7 +1,7 @@
 # Releasekandidat 4.0.243: komplette ture
 
-Dato: 2026-08-21  
-Branch: codex/trip-evidence-contract-4.0.243  
+Dato: 2026-08-21
+Branch: codex/trip-evidence-contract-4.0.243
 Status: lokal kandidat; ikke produktion
 
 ## Leveret

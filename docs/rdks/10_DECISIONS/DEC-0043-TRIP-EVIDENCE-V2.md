@@ -1,7 +1,7 @@
 # DEC-0043: Komplette ture som RavScore-evidens v2
 
-Status: Aktiv releasekandidat  
-Dato: 2026-08-21  
+Status: Aktiv releasekandidat
+Dato: 2026-08-21
 Version: 4.0.243
 
 ## Beslutning
