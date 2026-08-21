@@ -1558,3 +1558,9 @@ Implementeret og målrettet testet: v2-kontrakt, JSON Schema, korrekt observatio
 - [x] Fuld post-data validate/releasegate er uændret obligatorisk ved ethvert nyt deploybart artifact.
 - [ ] Exact-head PR-kildegate, merge og frisk produktionsverifikation mangler for kandidaten.
 - [x] Ingen browseraudit kræves, fordi UI, score og offentlig datakontrakt er uændret.
+
+### Produktionslukning
+
+- [x] PR #37 exact-head-kildegate bestod.
+- [x] Merge 3dc331ca og produktion 32468752244 bestod fuld post-data validering, releasegate, Supabase, artifact og Pages.
+- [x] Live 4.0.247 viser 210 zoner og 673 kystdele.

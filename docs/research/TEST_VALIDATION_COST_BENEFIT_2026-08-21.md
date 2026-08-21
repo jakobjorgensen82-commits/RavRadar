@@ -35,3 +35,7 @@ Koden er enklere end et særskilt SHA-cache-/artifactsystem og kan derfor betale
 ## Ikke ændret
 
 Ingen RavScore, DMI/Copernicus-prioritet, geometri, U/V, kystdel eller land-/vandpunkt ændres.
+
+## Produktionsresultat
+
+PR #37's exact-head-kildegate bestod på 34 sekunder. Push-produktionen beholdt kildekodegaten og brugte 8 minutter og 41 sekunder på build/data før Pages-deploy. Frisk data, fuld validering, releasegate, Supabase og Pages bestod. Det understøtter konklusionen: hovedtiden ligger i dataarbejdet, mens den fjernede schedule-gentagelse gav dubleret kildekodebevis.

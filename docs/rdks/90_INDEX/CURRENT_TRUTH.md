@@ -1215,3 +1215,10 @@ Den første 4.0.244-produktionskørsel stoppede korrekt ved 630/673 før release
 - Push/manuelle builds og exact-head PR-gaten bevarer kildekodekontrollen. Hvert nyt artifact kræver fortsat fuld validate og releasegate efter frisk DMI/Copernicus/proveniens.
 - Browserkontrollen er ugentlig eller hændelsesstyret ved UI-, score- eller offentlig datakontraktændring.
 - Ingen score, kildeprioritet, geometri eller land-/vandpunkter er ændret.
+
+## 4.0.247 er produktionsverificeret
+
+- PR #37 blev merged som 3dc331ca; exact-head-kildegaten og push-produktion 32468752244 er grønne.
+- Push beholdt den tidlige kildekodegate. Frisk data, fuld validering, releasegate, Supabase, artifact og Pages bestod.
+- Live datasæt rr-20260821094303-210 viser version 4.0.247, 210 zoner, 673 kystdele og reference 09:00Z.
+- Den store browseraudit var ikke relevant, fordi workflowændringen ikke ændrede UI, score eller offentlig datakontrakt.

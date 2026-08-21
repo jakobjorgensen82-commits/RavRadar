@@ -514,5 +514,5 @@ Koden er lokalt implementeret og browserkontrolleret. Næste bindende trin er Su
 ## Cost/benefit-testmatrix 4.0.247
 
 - [x] DEC-0045 afgrænser målrettede udviklingstests, exact-head PR-kildegate, obligatorisk fuld post-data produktionsgate og hændelsesstyret browserkontrol.
-- [ ] Kandidaten mangler exact-head PR og præcis produktionsverifikation.
+- [x] PR #37, merge 3dc331ca og produktion 32468752244 er grønne; live viser 4.0.247.
 - [ ] Derefter fortsættes den store RavScore-analyse og automatisk gammel-mod-ny-sammenligning uden ny offentlig AI/API.
