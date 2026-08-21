@@ -90,6 +90,14 @@ function waterLevelTrendCm3h(sampleTime, samples) {
   return current && previous ? round3((current.seaLevelM - previous.seaLevelM) * 100) : null;
 }
 
+function movementCapacityClass(sample) {
+  const currentSpeed = Math.max(0, Number(sample.currentSpeedMps));
+  const waveEnergy = Math.max(0, Number(sample.waveHeightM)) ** 2 * Math.max(0, Number(sample.wavePeriodS));
+  if (currentSpeed < 0.12 && waveEnergy < 1) return 'low';
+  if (currentSpeed < 0.4 && waveEnergy < 7) return 'medium';
+  return 'high';
+}
+
 function reweightedActiveBase(result, weights) {
   const components = result.components;
   const weighted = Math.round(
@@ -277,6 +285,7 @@ function compareDocuments(forcing, wave, wind, partById, zoneById) {
             pairedCandidateEOffshore: pairedOffshore.candidateE,
             pairedCandidateFOnshore: pairedOnshore.candidateF,
             pairedCandidateFOffshore: pairedOffshore.candidateF,
+            movementCapacityClass: movementCapacityClass(sample),
             activeHuntability: active.components.huntability,
             activeTransport: active.components.transport,
             activeMobilisation: active.components.release,
@@ -336,12 +345,22 @@ function compareDocuments(forcing, wave, wind, partById, zoneById) {
     active: summarizeDirectionPairs(rows, 'pairedActiveOnshore', 'pairedActiveOffshore'),
     candidateE: summarizeDirectionPairs(rows, 'pairedCandidateEOnshore', 'pairedCandidateEOffshore'),
     candidateF: summarizeDirectionPairs(rows, 'pairedCandidateFOnshore', 'pairedCandidateFOffshore'),
+    byMovementCapacity: ['low', 'medium', 'high'].map(capacity => {
+      const selected = rows.filter(row => row.movementCapacityClass === capacity);
+      return {
+        capacity,
+        evaluations: selected.length,
+        active: summarizeDirectionPairs(selected, 'pairedActiveOnshore', 'pairedActiveOffshore'),
+        candidateE: summarizeDirectionPairs(selected, 'pairedCandidateEOnshore', 'pairedCandidateEOffshore'),
+        candidateF: summarizeDirectionPairs(selected, 'pairedCandidateFOnshore', 'pairedCandidateFOffshore'),
+      };
+    }),
   };
   assert.ok(pairedDirectionChecks.active.meanOnshoreMinusOffshore > 0);
   assert.ok(pairedDirectionChecks.candidateE.meanOnshoreMinusOffshore > 0);
   assert.ok(pairedDirectionChecks.candidateF.meanOnshoreMinusOffshore > 0);
   return {
-    schemaVersion: '1.2.0',
+    schemaVersion: '1.3.0',
     status: 'passed-private-historical-active-and-candidate-f-comparison',
     generatedAt: new Date().toISOString(),
     method: 'legacy-vs-active-base-engine-plus-candidate-e-vs-f-on-wave-selected-derived-historical-features',
