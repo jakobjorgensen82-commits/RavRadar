@@ -1246,3 +1246,7 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 ## Aktuel sandhed i 4.0.251
 
 Foerste private aktive RavScore-shadowrun stoppede korrekt foer state og score, fordi DKSS-komponenter fra forskellige collections var blevet klassificeret som én komplet familie. 4.0.251 goer den tidlige gridgate lige saa streng som marinegaten: en komplet familie skal komme fra samme collection, og U/V skal fortsat dele punkt. Den offentlige score, fallback og alle aktive punkter er uændrede.
+
+## Aktuel sandhed i 4.0.252-kandidaten
+
+Ejeren har godkendt `direction-broad-19-v1` til de to nationale top-5-lister. Modellen korrigerer kun sorteringsrækkefølgen for zoners forskellige antal reelle retningsmuligheder og beskytter bredt støttede resultater. Den viste RavScore, alle lokale kystdelsresultater, pile, forklaringer, geometri og land-/vandpunkter er uændrede. Kandidaten er først produktionssandhed efter exact-head-gate, fuld produktionskæde og online 210/673-kontrol.

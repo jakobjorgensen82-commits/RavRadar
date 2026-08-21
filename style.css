@@ -69,6 +69,7 @@ footer p { margin: 4px 0; }
 .ranking-panel { padding: 16px; }
 .section-heading h2, .about-panel h2 { margin: 0; }
 .eyebrow.dark { color: var(--brand-2); opacity: 1; }
+.ranking-note { max-width: 58rem; margin: 7px 0 0; color: var(--muted); font-size: .86rem; line-height: 1.42; }
 .ranking { display: grid; gap: 8px; margin-top: 14px; }
 .ranking-item { width: 100%; display: grid; grid-template-columns: 28px 1fr 42px; align-items: center; gap: 9px; border: 1px solid var(--line); border-radius: 11px; padding: 9px; text-align: left; background: white; cursor: pointer; }
 .ranking-item:hover, .ranking-item:focus-visible { border-color: var(--brand-2); }

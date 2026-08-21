@@ -264,7 +264,15 @@ En privat, score-neutral cache bruger DKSS-felter ved vandpunktet samt cirka 5 o
 
 Rotationen registrerer også, hvor langt der er til den nærmeste modelkolonne med et eksakt fælles U/V-par, selv når den ligger uden for 5 km. I det tilfælde gemmes kun koordinat, afstand og lagmetadata – ikke de fjerne strømværdier. En privat ejeroversigt skelner derfor mellem nær-tærskel 5–6 km til rent manuelt geometrireview, modelhul 6–8 km, strukturelt modelhul over 8 km og en datakædefejl, hvor gyldig strøm faktisk findes inden for 5 km. Selv en nær-tærskel-post må kun flyttes, hvis vandpunktet i sig selv er forkert – aldrig blot for at nå modelcellen. Oversigten flytter ingen punkter automatisk, og den offentlige 5 km-grænse er uændret.
 
-**Håndbogsversion:** 4.0.251
+## Mere fair placering mellem store og små zoner – 4.0.252
+
+RavRadar viser fortsat den bedste lokale kystdels rigtige RavScore. På de to landslister tager rækkefølgen nu også højde for, at en zone med mange forskelligt vendte kystdele ellers får mange flere chancer for at ramme en gunstig strøm- eller vindretning end en zone med én del.
+
+Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvdelen af zonens dele ligger tæt nok på den bedste del, er der ingen korrektion. En helzonevurdering ændres heller ikke. Mange næsten ensrettede dele tæller ikke som mange nye chancer.
+
+Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
+
+**Håndbogsversion:** 4.0.252
 
 **Opdateret:** 19. august 2026
 

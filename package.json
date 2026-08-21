@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.251",
+  "version": "4.0.252",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -12,9 +12,10 @@
     "test:progressive-public-conditions": "node scripts/test-progressive-public-conditions-4.0.216.mjs",
     "test:local-weather-snapshot": "node scripts/test-local-weather-snapshot-status-4.0.208.mjs",
     "validate:data": "npm run test:local-weather-snapshot && node scripts/validate-data.mjs",
-    "test:score": "node scripts/test-score-engine.mjs && node scripts/audit-ravscore-sensitivity.mjs --self-test && node scripts/audit-ravscore-canonical-scenarios.mjs --self-test && node scripts/test-phase-d-wave-process-candidate.mjs && python scripts/select-ravscore-historical-events.py --self-test && node scripts/test-active-wave-approach-4.0.241.mjs",
+    "test:score": "node scripts/test-score-engine.mjs && node scripts/audit-ravscore-sensitivity.mjs --self-test && node scripts/audit-ravscore-canonical-scenarios.mjs --self-test && node scripts/test-phase-d-wave-process-candidate.mjs && python scripts/select-ravscore-historical-events.py --self-test && node scripts/test-active-wave-approach-4.0.241.mjs && node scripts/test-zone-ranking-broad-support-4.0.252.mjs",
     "test:active-wave-approach": "node scripts/test-active-wave-approach-4.0.241.mjs",
     "test:provisional-score-weights": "node scripts/test-provisional-score-weights-4.0.242.mjs",
+    "test:zone-ranking-broad-support": "node scripts/test-zone-ranking-broad-support-4.0.252.mjs",
     "test:ravscore-observed-ablation": "node scripts/audit-ravscore-observed-ablation.mjs --self-test",
     "audit:active-wave-national": "node scripts/audit-active-wave-approach-national-public.mjs",
     "audit:active-wave-synthetic": "node scripts/audit-active-wave-approach-synthetic.mjs",

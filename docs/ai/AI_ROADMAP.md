@@ -636,3 +636,10 @@ En ekstra kandidat bruger samme stoettebaserede maks. 4 point, men tillader kun 
 - 1.000 blok-bootstrap: 6+-median 1,11x, 5-95 % 0,94-1,30x.
 - Ingen hel-zone-vinder og ingen vinder med mindst 50 % støtte blev flyttet.
 - Kandidaten er kun analyseret og må ikke aktiveres uden ejerbeslutning, separat implementering og fuld relevant produktionskontrol.
+
+## 2026-08-21 - ejerbeslutning om national rangering
+
+- Ejeren godkendte `direction-broad-19-v1` efter den forståelige gennemgang.
+- Modellen gælder alle 210 zoner i både Bedste områder og 5-dages RavRadar; Falster Nord og Falster Vest var kun eksempler.
+- Den ændrer kun intern sortering. Vist RavScore, lokale scoredele, pile og forklaringer bevares.
+- Efter implementering kræves målrettet regression, exact-head-gate, produktion og fuld 210/673-browserkontrol.

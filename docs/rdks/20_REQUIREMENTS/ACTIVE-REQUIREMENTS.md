@@ -324,6 +324,17 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - Kun kompakte, dataminimerede resultater maa bevares som artifact.
 - Kandidater forbliver private og score-neutrale, indtil videnskabelig analyse og relevante gates begrunder en saerskilt beslutning.
 
+## Krav i 4.0.252: fair national zonerangering
+
+- `Bedste områder` og `5-dages RavRadar` skal bruge samme interne landsrangeringsmodel.
+- Modellen skal korrigere for zonens forskellige retningsmuligheder, ikke blot råt antal kystdele.
+- Den højeste lokale RavScore må fortsat vises uændret sammen med samme delscore, farve, pil og forklaring.
+- En helzonevurdering eller støtte fra mindst halvdelen af zonens dele må ikke få fradrag.
+- Manglende eller uoverensstemmende delkontrakt skal falde tilbage til råscore uden korrektion.
+- Den godkendte produktionsmodel er `direction-broad-19-v1` fra DEC-0049.
+- Ingen geometri eller land-/vandpunkter må flyttes.
+- Da synlig rangering og UI ændres, kræves fuld 210/673-browserkontrol efter produktion.
+
 ## Praecisering i 4.0.251: sammenhaengende DMI-familier
 
 - En komplet privat boelgefamilie skal have hoejde, retning og periode fra samme DMI-collection.
