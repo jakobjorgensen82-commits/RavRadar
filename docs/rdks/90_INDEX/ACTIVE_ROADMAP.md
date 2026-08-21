@@ -248,5 +248,5 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [x] Forkast for svage og for hårde kandidater, og fastlæg `direction-broad-19-v1` med tidsdeling og blokbootstrap.
 - [x] Ejer godkendte modellen efter forklaring i almindeligt sprog.
 - [x] Implementér samme interne sortering i Bedste områder og 5-dages RavRadar uden at ændre vist RavScore.
-- [ ] Kør målrettede checks, exact-head-gate, fuld produktion og 210/673-browserkontrol.
+- [x] Målrettede checks, exact-head-gate, merge `ad70fbca`, fuld produktion `32515757957` og 210/673-browserkontrol er grønne.
 - [ ] Fortsæt derefter den store faglige scoreanalyse; landsrangering og selve RavScore-vægtene er to forskellige problemer.

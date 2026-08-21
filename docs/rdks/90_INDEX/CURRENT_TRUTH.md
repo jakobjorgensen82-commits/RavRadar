@@ -1247,6 +1247,6 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 
 Foerste private aktive RavScore-shadowrun stoppede korrekt foer state og score, fordi DKSS-komponenter fra forskellige collections var blevet klassificeret som én komplet familie. 4.0.251 goer den tidlige gridgate lige saa streng som marinegaten: en komplet familie skal komme fra samme collection, og U/V skal fortsat dele punkt. Den offentlige score, fallback og alle aktive punkter er uændrede.
 
-## Aktuel sandhed i 4.0.252-kandidaten
+## Aktuel sandhed i 4.0.252
 
-Ejeren har godkendt `direction-broad-19-v1` til de to nationale top-5-lister. Modellen korrigerer kun sorteringsrækkefølgen for zoners forskellige antal reelle retningsmuligheder og beskytter bredt støttede resultater. Den viste RavScore, alle lokale kystdelsresultater, pile, forklaringer, geometri og land-/vandpunkter er uændrede. Kandidaten er først produktionssandhed efter exact-head-gate, fuld produktionskæde og online 210/673-kontrol.
+`direction-broad-19-v1` er produktionsverificeret i begge nationale top-5-lister. PR #52 bestod exact-head-gaten på `f23214c8` og blev merged som `ad70fbca`. Exact-commit-produktion `32515757957` bestod frisk DMI, fuld validering, releasegate, Supabase og Pages. Live datasæt `rr-20260821185936-210` viser 4.0.252 med 210 zoner og 673 kystdele. Den godkendte Playwright-fallback kontrollerede 420 aktuelle visninger og 2.100 femdøgnsvisninger med nul score-, forklarings-, konsol-, side- eller HTTP-fejl. Den viste RavScore, alle lokale kystdelsresultater, pile, forklaringer, geometri og land-/vandpunkter er uændrede.

@@ -1686,3 +1686,5 @@ Privat run `32479158213` kontrollerede alle 673 aktive punkter og stoppede deref
 ## 2026-08-21 - 4.0.252 fair landsrangering
 
 Ejeren godkendte den landsdækkende `direction-broad-19-v1`-model efter analyse af 210 zoner, 673 kystdele, 107 timer og 214 jagtformskontekster. Begge nationale top-5-lister bruger samme interne korrektion for retningsmulighed og vinderstøtte. Den viste RavScore, lokale resultater, pile, forklaringer, geometri og land-/vandpunkter er uændrede.
+
+PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produktion `32515757957` bestod hele kæden og udgav datasæt `rr-20260821185936-210`. Browser-pluginet fejlede konkret på DNS; den godkendte Playwright-fallback gennemførte derefter 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdøgnsvisninger med nul fejl.
