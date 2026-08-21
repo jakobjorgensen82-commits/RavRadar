@@ -1,4 +1,18 @@
-# AI Roadmap – RavRadar 4.0.237
+# AI Roadmap – RavRadar 4.0.243+
+
+## Aktiv samlet retning efter v4.0.243 – 2026-08-21
+
+- [x] v4.0.243 er merged som `2ded7943`, og produktion `32455335962` bestod frisk data, fuld validering, releasegate, Supabase og Pages.
+- [x] Browser-plugin bekræftede liveversionen. Godkendt Playwright-fallback kontrollerede datasæt `rr-20260821071436-210`: 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 prognosevisninger uden fejl.
+- [ ] Begræns den normale Copernicus-pilot til de få godkendte DMI-huller. Bevar DMI-først og score-neutralitet; 673-delskontrol bliver sjælden/manual forskning.
+- [ ] Gennemfør den store RavScore-/ravtransportanalyse og opret det interne forsknings- og regelregister efter DEC-0044.
+- [ ] Udled score-neutrale kandidatregler og foreløbig vægtning. 25/40/35 forbliver aktiv, indtil en særskilt kandidat er bedre dokumenteret og godkendt.
+- [ ] Automatisér gammel-mod-ny-sammenligning lokalt. Vis kun de vigtigste konsekvenser til ejeren gennem almindelig Codex-samtale; ingen OpenAI API i offentlig runtime.
+- [ ] Implementér godkendt hændelsesmodel, ravvinduer og lagdelte aktuelle forklaringer.
+- [ ] Byg et omfattende offentligt læringsmodul på den kvalitetssikrede forskning.
+- [ ] Udskyd gemte områder/varsler mindst cirka et halvt år eller til en senere brugerdata-sektion.
+- Fravalgt nu: særskilt offentlig scoresikkerhed og forklaring af forskel fra gårsdagen.
+- Se `docs/rdks/10_DECISIONS/DEC-0044-SCORE-RESEARCH-PRODUCT-PLAN.md` og `docs/research/RAVSCORE_RESEARCH_PRODUCT_PLAN_2026-08-21.md`.
 
 ## Afsluttet P1 - systematisk online browserkontrol 2026-08-20
 

@@ -1624,3 +1624,11 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - GPS/rute er udelukket fra fjernkontrakten; historiske v1-rækker bevares som dækningsdata.
 - RavScore 25/40/35 og land-/vandpunkter er uændrede.
 - Kandidaten afventer Supabase-migration, fulde gates, PR/deploy og 210/673-browserkontrol.
+
+## 2026-08-21 - v4.0.243 produktionsverificeret og DEC-0044
+
+- PR #31 blev merged som `2ded7943`. Produktion `32455335962` bestod frisk fuld validering, releasegate, Supabase, Pages-build og deploy.
+- Live 4.0.243/datasæt `rr-20260821071436-210` bestod Browser-plugin-kontrol og fuld fallback-audit: 210 zoner, 673 kystdele, 420 aktuelle og 2.100 prognosevisninger med nul fejl.
+- DEC-0044 samler ejerens nye retning: ravvinduer, hændelsesmodel, enkle forklaringer, læringsmodul, internt evidensregister og lokal automatisk gammel-mod-ny-scorekontrol i samarbejde med Codex.
+- Separat scoresikkerhed og gårsdagsforklaring er fravalgt; varsler er udskudt. DMI forbliver førstevalg, og normal Copernicus-pilot skal begrænses til godkendte DMI-huller.
+- RavScore 25/40/35 forbliver aktiv, indtil den store analyse og en særskilt fuldt valideret kandidatbeslutning er gennemført.

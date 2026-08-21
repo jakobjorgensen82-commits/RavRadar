@@ -1511,3 +1511,20 @@ Implementeret og målrettet testet: v2-kontrakt, JSON Schema, korrekt observatio
 - **Implementeret i produktionens skema:** additive v2-felter, identity-kompatibilitet, klient-UUID-indeks, unik v2-tur, v2-checkconstraint og stramme privacy-politikker.
 - **Verificeret:** offentlig kolonnekontrol, metadata for identity/constraints/indeks, anonym insert i en fuldt tilbagerullet transaktion og efterfølgende nul rækker.
 - **Ikke udgivet endnu:** browserkoden på den lokale 4.0.243-kandidat. PR #31 peger fortsat på den tidligere push'ede commit og forbliver kladde.
+
+## 2026-08-21 - Trip evidence v2 udgivet
+
+- **Implementeret og udgivet:** v2-turkontrakt, dataminimeret fjernpayload, lokal kø, idempotent upload, produktionsschema, stram RLS, start/stop-flow og offentlig integration.
+- **Produktionsverificeret:** merge `2ded7943`, run `32455335962`, live 4.0.243 og fuld 210/673-browserkontrol uden fejl.
+- **Uændret:** RavScore 25/40/35, DMI-først, geometri og land-/vandpunkter.
+- Tidligere status om kladde-PR, ikke-pushet kode og manglende produktion er erstattet.
+
+## Næste implementeringsfaser efter DEC-0044
+
+- Ikke implementeret: afgrænset normal Copernicus-pilot kun for godkendte DMI-huller.
+- Ikke implementeret: færdig evidenssyntese og internt forsknings-/regelregister.
+- Ikke implementeret: score-neutrale kandidatregler og automatisk gammel-mod-ny-rapport til Codex-samarbejdet.
+- Ikke implementeret: hændelsesmodel, ravvinduer og nye lagdelte forklaringer.
+- Ikke implementeret: omfattende offentligt læringsmodul.
+- Udskudt: gemte områder og varsler.
+- Fravalgt: separat offentlig scoresikkerhed og gårsdagsbaseret scoreforklaring.
