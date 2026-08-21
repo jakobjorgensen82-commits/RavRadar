@@ -1534,4 +1534,27 @@ Implementeret og målrettet testet: v2-kontrakt, JSON Schema, korrekt observatio
 - Implementeret: manuel full_coast-funktion til sjælden landsdækkende forskning.
 - Implementeret: målliste-id'er og fingeraftryk bindes til hver cache-samling.
 - Bevaret: DMI-først, kontrolleret regional DMI-proxy, uændrede kystpunkter og uændret offentlig RavScore-kontrakt.
-- Åben gate: målrettede tests, fuld release-gate, PR og præcis produktionsverifikation.
+- Produktionsresultat: den første 4.0.244-kørsel stoppede fail-closed ved 630/673 før release og deploy, fordi den eksakte DMI-hulliste ikke kunne dannes autoritativt før frisk DMI.
+
+## 4.0.245-kandidat
+- Implementeret: endelig eksakt-times måludvælgelse efter frisk DMI i produktionsjobbet.
+- Implementeret: inline Copernicus-hentning kun for den dannede DMI-hulliste, efterfulgt af den uændrede fulde 673/673-gate.
+- Implementeret: privat timepilot gendanner seneste progressive DMI-cache, og cachebevaringen sender den eksakte mål-time videre.
+- Bevaret: DMI-først, regionale proxyer, RavScore, land-/vandpunkter og ingen offentlig rå U/V eller credentials.
+- Åben gate: målrettede regressioner, fuld kildekodegate, PR-gates og præcis produktionsverifikation.
+
+## 4.0.246-kandidat
+- 4.0.245 er merged som `b461e7a5`, men produktion `32465245055` stoppede fail-closed i måludvælgelsen. Ingen release eller deploy skete.
+- Dokumenteret årsag: den låste 08:00-time havde ingen lokal DMI-strøm, mens den nærliggende 09:00-time havde 622/673 og dermed 51 reelle supplementmål.
+- Implementeret: ved nul eksakt dækning vælges den højest dækkede, derefter nærmeste verificerede DMI-strømtime inden for højst tre timer; ved lighed foretrækkes fremtidig prognosetime.
+- Implementeret: den valgte time eksporteres maskinelt og bindes før Copernicus, livefletning og den øvrige vejr-/scorekæde.
+- Bevaret: fuldt stop uden nærliggende DMI-time, DMI-først, 673/673, proxyer, score, geometri og punkter.
+- Åben gate: målrettede tests, fuld kildekodegate, PR, exact-head-gates og præcis produktionsverifikation.
+
+## 4.0.247 - testmatrix
+
+- [x] Cost/benefit er målt og dokumenteret i docs/research/TEST_VALIDATION_COST_BENEFIT_2026-08-21.md.
+- [x] Workflowregressionen kræver kildekodegate på push/manuelle builds og tillader skip alene på planlagte same-source builds.
+- [x] Fuld post-data validate/releasegate er uændret obligatorisk ved ethvert nyt deploybart artifact.
+- [ ] Exact-head PR-kildegate, merge og frisk produktionsverifikation mangler for kandidaten.
+- [x] Ingen browseraudit kræves, fordi UI, score og offentlig datakontrakt er uændret.

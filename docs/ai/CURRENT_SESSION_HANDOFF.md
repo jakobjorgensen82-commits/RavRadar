@@ -224,3 +224,23 @@ validate:source og release:gate er grønne for 4.0.243, inklusive den nye turkon
 
 ## Checkpoint: 4.0.244-kandidat
 Normal Copernicus er ændret fra alle 673 kystdele til en automatisk liste over aktuelle lokale DMI-huller. En bred landskørsel kræver det manuelle full_coast-valg. Ingen koordinater er ændret. Næste skridt er målrettede tests, release-gate, PR, præcis produktionsverifikation og derefter fortsættelse af den allerede igangsatte store RavScore-evidensanalyse.
+
+## Checkpoint: 4.0.245 Copernicus-target hotfix
+- 4.0.244 blev merged, men den præcise produktion stoppede sikkert ved 630/673 før release og deploy. Den selvstændige pilot kunne ikke danne en eksakt-times DMI-hulliste fra ældre deployet dækning.
+- 4.0.245 danner den autoritative hulliste efter frisk DMI i produktionen, kontrollerer den private shadow mod netop listen og henter kun manglende mål før livefletning og den uændrede 673/673-gate.
+- Den selvstændige pilot gendanner seneste private DMI-cache, og preserve-workflowet sender den eksakte time videre.
+- DMI er fortsat førstevalg. Score, regionale proxyer, geometri og alle land-/vandpunkter er uændrede.
+- Næste trin: målrettede regressioner, kildekodegate, version, commit/push/PR, exact-head gates og kun derefter eventuel merge og præcis produktionsverifikation.
+
+## Checkpoint: 4.0.246 DMI-strømtime
+- PR #35/4.0.245 blev merged som `b461e7a5`. Exact-head-gaten var grøn, men produktion `32465245055` stoppede sikkert i det nye målregistertrin; livefletning, fuld validering, release og deploy blev ikke kørt.
+- Artifactet beviser, at 08:00 fandtes for andre DMI-felter, men gav 0/673 gyldige lokale strømme. 09:00 gav 622/673 og 51 reelle huller. Fejlen var derfor timeresolution, ikke manglende frisk DMI-cache.
+- 4.0.246 vælger kun ved nul eksakt dækning den højest dækkede og derefter nærmeste DMI-strømtime inden for tre timer og binder hele den efterfølgende produktionskæde til den valgte time.
+- Hvis ingen nærliggende verificeret DMI-strømtime findes, stopper målbyggeren fortsat. DMI-først, 673/673, score, proxyer, geometri og punkter er uændrede.
+- Næste trin: tests, versionslukning, commit/push/PR, exact-head-gates og præcis produktion. Først derefter fortsættes RavScore-analysen.
+
+## Checkpoint: 4.0.246 produktion og 4.0.247 testmatrix
+- PR #36 blev merged som c2e0d024; produktion 32467031990 bestod hele kæden og live viser 4.0.246, 210 zoner, 673 dele og reference 09:00Z.
+- DMI leverer 622 lokale dele; målrettet Copernicus udfylder 43 reelle huller, og de otte godkendte regionale proxyer er uændrede. Ingen punkter er flyttet.
+- 4.0.247-kandidaten fjerner kun gentaget validate:source fra planlagte same-source vejropdateringer. Push/manuelle builds, exact-head PR-gate og fuld post-data validate/releasegate bevares.
+- Den fulde browseraudit køres ikke for denne workflow-/dokumentationsændring. Næste roadmappunkt efter produktionsbevis er den allerede CI-grønne forskningssyntese og automatisk gammel-mod-ny-scoreanalyse.

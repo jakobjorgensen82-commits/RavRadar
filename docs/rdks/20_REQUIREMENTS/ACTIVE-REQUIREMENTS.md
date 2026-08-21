@@ -307,3 +307,5 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - Den offentlige formular “Hvad fandt du?” skal ikke vises under hver zone. Den øvrige tur- og observationsinfrastruktur bevares.
 - Præcise GPS-punkter fra turregistrering må kun ligge på brugerens enhed og må aldrig indgå i den centrale observationspayload.
 - Observationer må bruges til dækningskontrol, men må ikke skabe handlingsklare scoreændringer før RavScore-kalibreringsgaten er opfyldt og godkendt i RDKS.
+
+- **REQ-VALIDATION-COST-MATRIX-001 - AKTIV:** Udvikling bruger målrettede tests; en kilde-PR kræver én fuld exact-head GitHub-kildegate; hvert nyt deploybart produktionsartifact kræver fuld post-data validering og releasegate. Planlagte same-source vejropdateringer må springe den dublerede pre-data kildekodegate over. Fuld browserkontrol er ugentlig eller udløses af relevant UI-, score- eller offentlig datakontraktændring. Konkret fejlevidens kræver altid nødvendig ekstra kontrol. Se DEC-0045.

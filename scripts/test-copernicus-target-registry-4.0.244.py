@@ -12,6 +12,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts/build-copernicus-target-registry.py"
 AT = "2026-08-21T06:00:00Z"
+REQUESTED_BETWEEN_DMI_HOURS = "2026-08-21T08:00:00Z"
+NEXT_DMI_HOUR = "2026-08-21T09:00:00Z"
 SELECTION = "nearest-shared-uv-column-across-dmi-collections-then-deepest-valid-layer"
 
 
@@ -19,13 +21,13 @@ def write(path: Path, value: dict) -> None:
     path.write_text(json.dumps(value), encoding="utf-8")
 
 
-def run(folder: Path, *extra: str) -> subprocess.CompletedProcess[str]:
+def run(folder: Path, *extra: str, at: str = AT) -> subprocess.CompletedProcess[str]:
     return subprocess.run([
         sys.executable, "-B", str(SCRIPT),
         "--targets", str(folder / "targets.json"),
         "--dmi", str(folder / "dmi.json"),
         "--output", str(folder / "selected.json"),
-        "--at", AT,
+        "--at", at,
         *extra,
     ], cwd=ROOT, capture_output=True, text=True, check=False)
 
@@ -46,9 +48,10 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
     write(folder / "dmi.json", {
         "currentVectorSemanticsVersion": 3, "currentVectorSelection": SELECTION, "currentMaxDistanceKm": 5,
         "zones": {
-            "PART::dmi-ok": {"samplingPoint": [9.0, 57.0], "hourly": {AT: {
-                "time": AT, "current-u": 0.1, "current-v": 0.2, "sources": {"current": source},
-            }}},
+            "PART::dmi-ok": {"samplingPoint": [9.0, 57.0], "hourly": {
+                AT: {"time": AT, "current-u": 0.1, "current-v": 0.2, "sources": {"current": source}},
+                NEXT_DMI_HOUR: {"time": NEXT_DMI_HOUR, "current-u": 0.1, "current-v": 0.2, "sources": {"current": source}},
+            }},
             "PART::dmi-far": {"samplingPoint": [9.1, 57.0], "hourly": {AT: {
                 "time": AT, "current-u": 0.1, "current-v": 0.2,
                 "sources": {"current": {**source, "samplingPoint": [9.1, 57.0], "gridPoint": [9.3, 57.0], "distanceKm": 12}},
@@ -66,6 +69,20 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
     assert all(part["waterPoint"] == original_points[part["partId"]] for part in selected_parts)
     assert selected["coordinatesChanged"] is False
 
+    github_output = folder / "github-output.txt"
+    nearest = run(
+        folder,
+        "--nearest-dmi-hour",
+        "--github-output",
+        str(github_output),
+        at=REQUESTED_BETWEEN_DMI_HOURS,
+    )
+    assert nearest.returncode == 0, nearest.stdout + nearest.stderr
+    resolved = json.loads((folder / "selected.json").read_text(encoding="utf-8"))
+    assert resolved["targetHour"] == NEXT_DMI_HOUR and resolved["partCount"] == 2
+    output_values = dict(line.split("=", 1) for line in github_output.read_text(encoding="utf-8").splitlines())
+    assert output_values == {"target_hour": NEXT_DMI_HOUR, "local_dmi_count": "1", "target_part_count": "2"}
+
     full = run(folder, "--full-coast")
     assert full.returncode == 0, full.stdout + full.stderr
     nationwide = json.loads((folder / "selected.json").read_text(encoding="utf-8"))
@@ -78,10 +95,30 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
 workflow = (ROOT / ".github/workflows/validate-copernicus-current-pilot.yml").read_text(encoding="utf-8")
 for marker in (
     "full_coast:",
+    "dmi-zone-cache-v1-${{ runner.os }}-",
     "build-copernicus-target-registry.py",
+    "--nearest-dmi-hour",
+    "steps.target-registry.outputs.target_hour",
     "--targets .cache/copernicus-current-targets.json",
     "--authoritative-targets data/live/coastal-parts-v2.json",
 ):
     assert marker in workflow, f"Copernicus workflow is missing {marker}"
+
+production = (ROOT / ".github/workflows/update-and-deploy.yml").read_text(encoding="utf-8")
+for marker in (
+    "Select exact-hour DMI gaps for targeted Copernicus supplement",
+    'build-copernicus-target-registry.py\n          --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
+    "--nearest-dmi-hour",
+    "steps.copernicus-targets.outputs.target_hour",
+    "Bind production to resolved DMI current hour",
+    "Inspect targeted Copernicus coverage after fresh DMI",
+    "Fill only exact-hour DMI gaps from Copernicus",
+    "--targets .cache/copernicus-current-targets.json",
+    "Save targeted private Copernicus supplement",
+):
+    assert marker in production, f"Production workflow is missing {marker}"
+assert production.index("Update DMI bulk model cache") < production.index("Select exact-hour DMI gaps for targeted Copernicus supplement")
+assert production.index("Select exact-hour DMI gaps for targeted Copernicus supplement") < production.index("Bind production to resolved DMI current hour")
+assert production.index("Save targeted private Copernicus supplement") < production.index("Build public seven-day current history and controlled live selection")
 
 print("OK: normal Copernicus collection targets only exact-hour DMI gaps; full coast is explicit and points are unchanged.")

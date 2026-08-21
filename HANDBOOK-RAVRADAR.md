@@ -22,6 +22,22 @@ Kontrollen før frigivelsen fandt en komplet fælles time i alle 210 zoner. Den 
 
 Rettelsen ændrer ikke ejerens blå/grønne land-/vandpunkter, U/V-data, kildeorden, afstandsgrænser, scoreformel, rollback eller kravet om præcis 673/673. Commit `9c971bc1` og den fulde centrale kørsel `#32264833170` bestod frisk data, validering, releasegate, Supabase og Pages; direkte liveaudit fandt 210/210 komplette zoner og 673/673 tidsjusterede dele.
 
+## Vi tester det rigtige på det rigtige tidspunkt - 4.0.247
+
+RavRadar gentager ikke længere hele kildekodekontrollen ved hver planlagt vejropdatering, når koden på main allerede er kontrolleret. Push og manuelle produktionsbyg kontrollerer fortsat kildekoden før de dyre datatrin. En Pull Request skal desuden have en grøn kontrol på præcis den commit, der ønskes merged.
+
+Det vigtigste sikkerhedsnet er uændret: Hver gang der bygges et nyt produktionsdatasæt, køres den fulde validering efter frisk DMI/Copernicus, beregninger og proveniens. Derefter skal releasegaten være grøn, før artifact, Supabase og Pages kan fortsætte. En kendt fejl eller reel usikkerhed kan aldrig tilsidesættes med henvisning til den hurtigere testplan.
+
+Den store browserkontrol af alle 210 zoner og 673 kystdele bruges ugentligt eller efter ændringer i score, brugerflade eller den offentlige datakontrakt. Små workflow- og dokumentationsændringer får målrettede kontroller. Det giver mere udviklingstid uden at reducere kontrollen dér, hvor rigtige datafejl faktisk kan opstå.
+
+## Copernicus henter kun en verificeret DMI-strømtimes huller - 4.0.246-kandidat
+
+RavRadar bruger fortsat DMI som førstevalg. Den præcise liste over manglende lokale DMI-strømposter kan først kendes efter den friske DMI-kørsel. Produktionen danner derfor listen på dette tidspunkt og kontrollerer eller henter kun disse kystdele fra Copernicus. Den normale drift kræver ikke en landsdækkende Copernicus-cache på forhånd.
+
+Den første 4.0.245-kørsel viste, at en time godt kan findes i DMI-cachen for vind eller andre felter uden at have lokal DMI-strøm. Den ønskede 08:00-time havde ingen lokale strømme, mens 09:00 havde 622 af 673. 4.0.246 må derfor ved nul eksakt strømdækning vælge den bedst dækkede og derefter nærmeste verificerede DMI-strømtime højst tre timer væk. Findes ingen, stopper produktionen.
+
+Den valgte time bruges samlet til Copernicus, livefletning, vejr, score og forklaring. Efter supplementet skal alle 673 kystdele stadig have dokumenteret strøm, ellers frigives intet. Credentials og rå U/V forbliver private. Regionale proxyer, RavScore, pile, geometri og alle land-/vandpunkter er uændrede. Kandidaten er først produktionsverificeret efter exact-head-gates og en fuld grøn kørsel af den præcise merge-commit.
+
 ## Én planlagt kørsel beholder den time, som blev godkendt – 4.0.236
 
 GitHubs lette readiness-kontrol kan begynde få sekunder før et UTC-timeskifte, mens den tunge vejrbygning fortsætter efter timeskiftet. En naturlig kørsel godkendte eksempelvis den komplette time kl. 11, men den gamle bygning kiggede senere på væguret, valgte kl. 12 og manglede derfor de 43 Copernicus-dele, som endnu ikke var indsamlet for den nye time. Sikkerhedsgaten stoppede korrekt ved 630/673 og deployede intet.
@@ -240,7 +256,7 @@ En privat, score-neutral cache bruger DKSS-felter ved vandpunktet samt cirka 5 o
 
 Rotationen registrerer også, hvor langt der er til den nærmeste modelkolonne med et eksakt fælles U/V-par, selv når den ligger uden for 5 km. I det tilfælde gemmes kun koordinat, afstand og lagmetadata – ikke de fjerne strømværdier. En privat ejeroversigt skelner derfor mellem nær-tærskel 5–6 km til rent manuelt geometrireview, modelhul 6–8 km, strukturelt modelhul over 8 km og en datakædefejl, hvor gyldig strøm faktisk findes inden for 5 km. Selv en nær-tærskel-post må kun flyttes, hvis vandpunktet i sig selv er forkert – aldrig blot for at nå modelcellen. Oversigten flytter ingen punkter automatisk, og den offentlige 5 km-grænse er uændret.
 
-**Håndbogsversion:** 4.0.244
+**Håndbogsversion:** 4.0.247
 
 **Opdateret:** 19. august 2026
 

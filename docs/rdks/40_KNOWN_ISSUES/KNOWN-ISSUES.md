@@ -422,3 +422,10 @@ Den nye appkode må ikke merges, før migrationen 20260821_trip_evidence_contrac
 - Usage-grafen viste tidligere cirka 700-1.500 MB pr. dag, men kun 64 MB den 20. august. Trafikken var 100% PostgREST; Functions var ubetydelig.
 - Den kraftige reduktion falder sammen med den allerede indførte pakning af runtime-diagnostik. Ved cirka 64 MB pr. dag er en simpel månedsfremskrivning under 2 GB og dermed under gratisgrænsen på 5 GB.
 - **Beslutning:** Ingen ny cache- eller manifestarkitektur nu. Overvåg næste betalingsperiode og grib kun ind, hvis dagsforbruget igen stiger varigt over cirka 160 MB.
+
+## ISSUE-COPERNICUS-DMI-REFERENCE-HOUR-4.0.246 - LUKKET I PRODUKTION
+
+- 4.0.245-produktion `32465245055` stoppede korrekt, fordi triggerens 08:00-time havde 0/673 lokale DMI-strømme, selv om DMI-cachen var frisk og indeholdt andre felter på timen.
+- Nærmeste verificerede DMI-strømtime var 09:00 med 622/673 og 51 reelle supplementhuller.
+- 4.0.246 løser timen inden for højst tre timer og binder efterfølgende DMI/Copernicus/live/score til samme time.
+- PR #36 blev merged som c2e0d024. Produktion 32467031990 bestod 673/673, fuld validering, releasegate, Supabase og Pages; live viser version 4.0.246 og den løste 09:00-reference.

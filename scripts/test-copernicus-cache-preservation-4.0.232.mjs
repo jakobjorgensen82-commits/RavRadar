@@ -9,13 +9,22 @@ const dmiRestoreStart = workflow.indexOf('- name: Restore bounded DMI GRIB downl
 const dmiUpdateStart = workflow.indexOf('- name: Update DMI bulk model cache');
 const dmiSaveStart = workflow.indexOf('- name: Save progressed DMI GRIB download cache');
 const postDmiRefreshStart = workflow.indexOf('- name: Refresh private Copernicus cache after DMI cache churn');
+const targetSelectStart = workflow.indexOf('- name: Select exact-hour DMI gaps for targeted Copernicus supplement');
+const targetInspectStart = workflow.indexOf('- name: Inspect targeted Copernicus coverage after fresh DMI');
+const targetRunStart = workflow.indexOf('- name: Fill only exact-hour DMI gaps from Copernicus');
+const targetSaveStart = workflow.indexOf('- name: Save targeted private Copernicus supplement');
 const historyBuildStart = workflow.indexOf('- name: Build public seven-day current history and controlled live selection');
 
 assert.ok(refreshStart >= 0, 'Production workflow must refresh the private Copernicus cache');
 assert.ok(refreshStart < dmiRestoreStart && refreshStart < dmiSaveStart,
   'Private Copernicus cache must be touched before large DMI cache restore/save churn');
-assert.ok(dmiUpdateStart < postDmiRefreshStart && postDmiRefreshStart < historyBuildStart,
-  'Production must refresh Copernicus again after DMI churn and before building live current history');
+assert.ok(dmiUpdateStart < postDmiRefreshStart &&
+  postDmiRefreshStart < targetSelectStart &&
+  targetSelectStart < targetInspectStart &&
+  targetInspectStart < targetRunStart &&
+  targetRunStart < targetSaveStart &&
+  targetSaveStart < historyBuildStart,
+  'Production must derive and fill the targeted Copernicus supplement after DMI and before live current history');
 
 const refreshBlock = workflow.slice(refreshStart, dmiRestoreStart);
 assert.match(refreshBlock, /uses: actions\/cache\/restore@v6/);
@@ -29,8 +38,12 @@ const postDmiRefreshBlock = workflow.slice(postDmiRefreshStart, historyBuildStar
 assert.match(postDmiRefreshBlock, /uses: actions\/cache\/restore@v6/);
 assert.match(postDmiRefreshBlock, /path: \.cache\/copernicus-current-shadow\.json/);
 assert.match(postDmiRefreshBlock, /key: copernicus-current-shadow-v1-post-dmi-/);
-assert.doesNotMatch(postDmiRefreshBlock, /actions\/cache\/save|actions\/upload-artifact/);
-assert.doesNotMatch(postDmiRefreshBlock, /COPERNICUSMARINE_|uMps|vMps/);
+assert.match(postDmiRefreshBlock, /build-copernicus-target-registry\.py/);
+assert.match(postDmiRefreshBlock, /--at "\$RAVRADAR_PRODUCTION_TARGET_HOUR"/);
+assert.match(postDmiRefreshBlock, /--targets \.cache\/copernicus-current-targets\.json/);
+assert.match(postDmiRefreshBlock, /--authoritative-targets data\/live\/coastal-parts-v2\.json/);
+assert.match(postDmiRefreshBlock, /uses: actions\/cache\/save@v6/);
+assert.doesNotMatch(postDmiRefreshBlock, /actions\/upload-artifact|uMps|vMps/);
 
 const supportStart = workflow.indexOf('- name: Build RavRadar support package');
 const supportEnd = workflow.indexOf('- name: Sync protected admin data to Supabase');

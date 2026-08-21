@@ -22,6 +22,14 @@ En version må ikke afleveres, hvis projektets hukommelse stadig beskriver en ti
 
 Ved konflikt gælder: brugerens aktuelle instruktion > aktiv RDKS-beslutning > verificeret aktuel kodeadfærd > håndbog > changelog > gamle chats.
 
+## Omkostningsbevidst testmatrix
+- Under udvikling køres kun målrettede tests for den berørte kontrakt samt nødvendige versions- og RDKS-kontroller.
+- Den fulde validate:source skal bestå én gang på PR'ens eksakte head i GitHub. Lokal gentagelse er kun nødvendig ved bred/tværgående risiko, manglende CI eller konkret fejlevidens.
+- Push og manuelle produktionsbyg beholder den tidlige kildekodegate. Planlagte vejropdateringer på den allerede kontrollerede main-kode gentager den ikke.
+- Hvert nyt produktionsartifact skal fortsat bestå fuld validering og releasegate efter central hydrering og frisk vejr/proveniens.
+- Fuld 210/673-browserkontrol køres ugentligt eller efter relevante ændringer i UI, score eller offentlig datakontrakt. Små afgrænsede ændringer får målrettet kontrol.
+- Ingen kontrol må springes over ved en kendt fejl, væsentlig usikkerhed eller konkret modstridende evidens. Se DEC-0045.
+
 ## Codex og systemisk arbejdsmodel
 - `docs/ai/CODEX_START_HERE.md` er obligatorisk indgang for Codex.
 - Tænk hele brættet: en fejl i én test/zone er et symptom, indtil input, central admin-konfiguration, scheduler, cache, DMI/GRIB, provenance, score/state, public runtime, UI, tests og deployment er gennemgået.

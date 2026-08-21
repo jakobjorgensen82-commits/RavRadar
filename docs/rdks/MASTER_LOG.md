@@ -1635,3 +1635,24 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 
 ## 2026-08-21 - Copernicus-afgrænsning
 4.0.244-kandidaten implementerer DEC-0044's DMI-først-princip i indsamlingen: den normale Copernicus-målliste består kun af kystdele uden en gyldig lokal DMI-vektor for den ønskede time. Manuel landsforskning bevares, og alle punkter forbliver uændrede.
+
+## 2026-08-21 - 4.0.245 måludvælgelse efter frisk DMI
+
+- 4.0.244-produktionen stoppede korrekt ved 630/673 før release og deploy, fordi en autoritativ eksakt-times DMI-hulliste ikke kunne dannes fra ældre deployet DMI-dækning.
+- 4.0.245 danner derfor målregisteret efter frisk DMI og henter kun disse mål fra Copernicus før den uændrede fulde 673/673-gate.
+- Den private pilot gendanner seneste progressive DMI-cache, og cachebevaringen sender den eksakte time videre.
+- DMI-først, regionale proxyer, RavScore, geometri og alle land-/vandpunkter er uændrede.
+
+## 2026-08-21 - 4.0.246 DMI-understøttet referencetime
+
+- PR #35 blev merged som `b461e7a5`; produktion `32465245055` stoppede før release/deploy, fordi den ønskede 08:00-time havde nul lokal DMI-strøm.
+- Den friske cache havde 622/673 lokale strømme kl. 09:00. 4.0.246 vælger derfor kun ved nul eksakt dækning den bedst dækkede og nærmeste DMI-strømtime inden for tre timer.
+- Den valgte time bindes til målregister, målrettet Copernicus, livefletning, vejr og score. Uden en nærliggende DMI-time er udfaldet fortsat stop.
+- Ingen score-, proxy-, geometri- eller punktregel ændres.
+
+## 2026-08-21 - 4.0.247 cost/benefit-testmatrix
+
+- 4.0.246 er produktionsverificeret i run 32467031990; live viser 210 zoner, 673 dele og reference 09:00Z.
+- DEC-0045 reducerer dublerede kildekodekontroller, men bevarer exact-head PR-gate, push/manual pre-data-gate samt fuld post-data validate/releasegate før artifact/deploy.
+- Browseraudit 210/673 forbliver ugentlig eller relevant ved UI-, score- og datakontraktændring.
+- Ingen score, dataregel, geometri eller land-/vandpunkter ændres.

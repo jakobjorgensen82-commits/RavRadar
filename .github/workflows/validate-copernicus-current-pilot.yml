@@ -64,7 +64,16 @@ jobs:
           WEATHER_USER_AGENT: "RavRadar Copernicus target selector (${{ github.server_url }}/${{ github.repository }})"
         run: python scripts/hydrate-deployed-weather.py
 
+      - name: Restore latest progressive private DMI coverage for target selection
+        uses: actions/cache/restore@v6
+        with:
+          path: data/live/dmi-bulk-cache.json
+          key: dmi-zone-cache-v1-${{ runner.os }}-copernicus-pilot-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            dmi-zone-cache-v1-${{ runner.os }}-
+
       - name: Select only current DMI gaps unless a full-coast audit was explicitly requested
+        id: target-registry
         env:
           PILOT_SAMPLE_TIME: ${{ inputs.sample_time }}
           PILOT_FULL_COAST: ${{ inputs.full_coast }}
@@ -73,6 +82,7 @@ jobs:
           args=()
           if [ -n "$PILOT_SAMPLE_TIME" ]; then args+=(--at "$PILOT_SAMPLE_TIME"); fi
           if [ "$PILOT_FULL_COAST" = "true" ]; then args+=(--full-coast); fi
+          args+=(--nearest-dmi-hour --github-output "$GITHUB_OUTPUT")
           python scripts/build-copernicus-target-registry.py "${args[@]}"
 
       - name: Run deterministic pilot tests
@@ -91,14 +101,11 @@ jobs:
 
       - name: Inspect requested hour and authoritative target geometry
         id: cache-state
-        env:
-          PILOT_SAMPLE_TIME: ${{ inputs.sample_time }}
-        run: |
-          if [ -n "$PILOT_SAMPLE_TIME" ]; then
-            python scripts/check-copernicus-current-hour.py --at "$PILOT_SAMPLE_TIME" --targets .cache/copernicus-current-targets.json --github-output "$GITHUB_OUTPUT"
-          else
-            python scripts/check-copernicus-current-hour.py --targets .cache/copernicus-current-targets.json --github-output "$GITHUB_OUTPUT"
-          fi
+        run: >-
+          python scripts/check-copernicus-current-hour.py
+          --at "${{ steps.target-registry.outputs.target_hour }}"
+          --targets .cache/copernicus-current-targets.json
+          --github-output "$GITHUB_OUTPUT"
 
       - name: Verify Copernicus secrets are configured
         if: steps.cache-state.outputs.current_hour_present != 'true'
@@ -114,13 +121,11 @@ jobs:
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
-          PILOT_SAMPLE_TIME: ${{ inputs.sample_time }}
-        run: |
-          if [ -n "$PILOT_SAMPLE_TIME" ]; then
-            python scripts/run-copernicus-current-pilot.py --targets .cache/copernicus-current-targets.json --authoritative-targets data/live/coastal-parts-v2.json --at "$PILOT_SAMPLE_TIME"
-          else
-            python scripts/run-copernicus-current-pilot.py --targets .cache/copernicus-current-targets.json --authoritative-targets data/live/coastal-parts-v2.json
-          fi
+        run: >-
+          python scripts/run-copernicus-current-pilot.py
+          --targets .cache/copernicus-current-targets.json
+          --authoritative-targets data/live/coastal-parts-v2.json
+          --at "${{ steps.target-registry.outputs.target_hour }}"
 
       - name: Save private seven-day Copernicus shadow cache
         if: steps.cache-state.outputs.current_hour_present != 'true' && success()
