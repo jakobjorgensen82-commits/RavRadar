@@ -56,6 +56,7 @@ for (const marker of [
   'npm run test:live-current-pilot',
   'npm run test:water-source-production-chain',
   'npm run test:workflow-action-contracts',
+  'python -m py_compile scripts/build-ravscore-historical-wave-pilot.py scripts/test-ravscore-historical-wave-pilot.py',
   'node --check scripts/audit-online-browser-playwright-4.0.237.mjs',
   'npm run release:gate',
 ]) {
