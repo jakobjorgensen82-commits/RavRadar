@@ -264,7 +264,7 @@ En privat, score-neutral cache bruger DKSS-felter ved vandpunktet samt cirka 5 o
 
 Rotationen registrerer også, hvor langt der er til den nærmeste modelkolonne med et eksakt fælles U/V-par, selv når den ligger uden for 5 km. I det tilfælde gemmes kun koordinat, afstand og lagmetadata – ikke de fjerne strømværdier. En privat ejeroversigt skelner derfor mellem nær-tærskel 5–6 km til rent manuelt geometrireview, modelhul 6–8 km, strukturelt modelhul over 8 km og en datakædefejl, hvor gyldig strøm faktisk findes inden for 5 km. Selv en nær-tærskel-post må kun flyttes, hvis vandpunktet i sig selv er forkert – aldrig blot for at nå modelcellen. Oversigten flytter ingen punkter automatisk, og den offentlige 5 km-grænse er uændret.
 
-**Håndbogsversion:** 4.0.249
+**Håndbogsversion:** 4.0.250
 
 **Opdateret:** 19. august 2026
 
@@ -1955,3 +1955,13 @@ RavRadar sender ikke turens GPS-spor, rute eller præcise position. Kystdelen er
 ## v4.0.249: privat RavScore-kandidat-shadow
 
 Den eksisterende private nationale shadow-validator beregner nu A, B og C på samme lokale context som den aktive score. Den bruger 24 timers hændelseshistorik og 72 timers strømforløb, opdeler kandidat B i strøm mod, langs og væk fra kysten og gemmer kun dataminimerede forskelle. Den aktive vægtning 25/40/35, offentlig score, UI, vejrsampling, admin-data og geometri ændres ikke. Koden er målrettet selftestet; næste evidens er én virkelig privat national shadow-kørsel efter merge. Se DEC-0047 og `docs/research/RAVSCORE_PRIVATE_SHADOW_METHOD_2026-08-21.md`.
+
+## Privat sammenligning af RavScore paa den kyst brugerne ser (4.0.250)
+
+**Kort fortalt:** Vi kan nu sammenligne den gamle score, den aktive score og kandidaterne A, B og C paa alle aktive 210 zoner og 673 kystdele uden at aendre det, brugerne ser.
+
+Sammenligningen laeser de eksisterende land- og vandpunkter og henter DMI-data gennem den samme strenge private kaede som den nationale pilot. Den flytter ingen punkter, skriver ikke til administrationen og kan ikke udgive en ny score. Resultatet er en kort privat rapport, som bruges af ejeren, Codex og eventuelle eksperter i den store faglige analyse.
+
+Det er vigtigt, fordi scorearbejdet dermed kan fortsaette, selv om en separat ny geometrikandidat er stoppet af sin egen sikkerhedskontrol. Sikkerhedskontrollen omgaas ikke; de to opgaver er blot adskilt korrekt.
+
+Den aktive vaegtning er stadig 25 % jagtbarhed, 40 % transport og 35 % mobilisering. Nye vaegte besluttes foerst efter den videnskabelige analyse og sammenligning af reglerne. Senere funddata kan bruges til justering, men systemet skal have den bedst begrundede model foer lancering.

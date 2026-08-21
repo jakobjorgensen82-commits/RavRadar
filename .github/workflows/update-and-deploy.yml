@@ -22,6 +22,11 @@ on:
         required: false
         default: false
         type: boolean
+      ravscore_active_shadow:
+        description: "Kør privat A/B/C-shadow på de aktive 210/673-punkter (ingen produktion/deploy)"
+        required: false
+        default: false
+        type: boolean
   push:
     branches: [main]
     paths-ignore:
@@ -41,8 +46,8 @@ permissions:
 # dannes først efter frisk DMI, så normal produktion aldrig kræver landsdækkende
 # Copernicus-data som forhåndsbetingelse. Der må højst være én tung kørsel.
 concurrency:
-  group: ${{ github.event_name == 'workflow_dispatch' && inputs.geometry_v2_national == true && 'ravradar-geometry-v2-national' || github.event_name == 'workflow_dispatch' && inputs.geometry_v2_pilot == true && 'ravradar-geometry-v2-pilot' || 'ravradar-weather-production' }}
-  cancel-in-progress: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (inputs.force == true || inputs.geometry_v2_pilot == true || inputs.geometry_v2_national == true)) }}
+  group: ${{ github.event_name == 'workflow_dispatch' && inputs.ravscore_active_shadow == true && 'ravradar-active-ravscore-shadow' || github.event_name == 'workflow_dispatch' && inputs.geometry_v2_national == true && 'ravradar-geometry-v2-national' || github.event_name == 'workflow_dispatch' && inputs.geometry_v2_pilot == true && 'ravradar-geometry-v2-pilot' || 'ravradar-weather-production' }}
+  cancel-in-progress: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (inputs.force == true || inputs.geometry_v2_pilot == true || inputs.geometry_v2_national == true || inputs.ravscore_active_shadow == true)) }}
 
 jobs:
   current-hour-readiness:
@@ -58,7 +63,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Restore private Copernicus current cache for timed gate
-        if: github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)
+        if: github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true && inputs.ravscore_active_shadow != true)
         uses: actions/cache/restore@v6
         with:
           path: .cache/copernicus-current-shadow.json
@@ -67,7 +72,7 @@ jobs:
             copernicus-current-shadow-v1-
 
       - name: Inspect timed UTC hour without exposing raw vectors
-        if: github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)
+        if: github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true && inputs.ravscore_active_shadow != true)
         id: cache-state
         run: python3 scripts/check-copernicus-current-hour.py --github-output "$GITHUB_OUTPUT"
 
@@ -75,7 +80,7 @@ jobs:
         id: readiness
         shell: bash
         env:
-          CHECK_CURRENT_HOUR: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force != true && inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true) }}
+          CHECK_CURRENT_HOUR: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force != true && inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true && inputs.ravscore_active_shadow != true) }}
           CURRENT_HOUR_PRESENT: ${{ steps.cache-state.outputs.current_hour_present }}
         run: |
           echo "ready=true" >> "$GITHUB_OUTPUT"
@@ -86,7 +91,7 @@ jobs:
 
   build-and-prepare:
     needs: current-hour-readiness
-    if: (github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)) && needs.current-hour-readiness.outputs.ready == 'true'
+    if: (github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true && inputs.ravscore_active_shadow != true)) && needs.current-hour-readiness.outputs.ready == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     permissions:
@@ -129,7 +134,7 @@ jobs:
         run: python scripts/hydrate-deployed-weather.py
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
-          WEATHER_USER_AGENT: "RavRadar/4.0.249 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.250 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Preserve deployed DMI zone cache as safe fallback
         run: |
@@ -150,7 +155,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.249 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.250 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Report skipped refresh
         if: steps.preflight.outputs.should_run != 'true'
@@ -270,7 +275,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.249 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.250 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Save progressed DMI GRIB download cache
@@ -396,7 +401,7 @@ jobs:
           DMI_DEPLOYED_CACHE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/live/dmi-forecast-cache.json"
           WEATHER_REQUEST_TIMEOUT_MS: 25000
           DMI_OCEAN_REQUEST_TIMEOUT_MS: 60000
-          WEATHER_USER_AGENT: "RavRadar/4.0.249 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.250 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Attach scientific current provenance and exact DMI grid points
@@ -540,7 +545,7 @@ jobs:
 
   geometry-v2-national:
     name: Acquire private national GeoDanmark geometry-v2 source
-    if: github.event_name == 'workflow_dispatch' && inputs.geometry_v2_national == true && inputs.geometry_v2_pilot != true
+    if: github.event_name == 'workflow_dispatch' && inputs.geometry_v2_national == true && inputs.geometry_v2_pilot != true && inputs.ravscore_active_shadow != true
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
@@ -841,9 +846,75 @@ jobs:
           if-no-files-found: error
           include-hidden-files: true
 
+  ravscore-active-shadow:
+    name: Validate active 210/673 points in private RavScore candidate shadow
+    if: github.event_name == 'workflow_dispatch' && inputs.ravscore_active_shadow == true && inputs.geometry_v2_national != true && inputs.geometry_v2_pilot != true
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python for private active-point shadow
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install DMI native-grid reader
+        run: python -m pip install --disable-pip-version-check -r requirements-dmi.txt
+
+      - name: Set up Node.js for private candidate score
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      - name: Build read-only shadow input from active 210/673 runtime
+        run: |
+          mkdir -p .cache .geometry-v2-work
+          curl --fail --location --retry 3 --retry-all-errors --max-time 120 \
+            --output .cache/active-public-condition-details.json \
+            https://jakobjorgensen82-commits.github.io/RavRadar/data/live/public-condition-details.json
+          python scripts/build-active-runtime-shadow-input.py
+
+      - name: Validate active points on native DMI grids
+        env:
+          DMI_BULK_MAX_RUNTIME_SECONDS: "3000"
+        run: python scripts/validate-national-local-part-dmi-grid.py
+
+      - name: Build isolated active-point weather identities
+        run: python scripts/build-national-weather-shadow-contract.py
+
+      - name: Validate active-point native marine series
+        env:
+          NATIONAL_MULTI_STEP_MAX_ASSETS: "4"
+        run: python scripts/validate-national-multi-step-series.py
+
+      - name: Validate active-point state and history isolation
+        run: node scripts/validate-national-state-history.mjs
+
+      - name: Validate active-point native wind series
+        env:
+          DMI_BULK_MAX_RUNTIME_SECONDS: "3000"
+        run: python scripts/validate-national-local-part-wind-series.py
+
+      - name: Validate active-point private RavScore candidate shadow
+        run: node scripts/validate-national-shadow-score.mjs
+
+      - name: Upload dataminimized active-point RavScore shadow
+        uses: actions/upload-artifact@v7
+        with:
+          name: ravradar-active-ravscore-shadow-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .geometry-v2-work/active-runtime-shadow-input-summary.json
+            .geometry-v2-work/national-shadow-score-validation.json
+          retention-days: 14
+          if-no-files-found: error
+          include-hidden-files: true
+
   geometry-v2-pilot:
     name: Run GeoDanmark geometry-v2 pilot
-    if: github.event_name == 'workflow_dispatch' && inputs.geometry_v2_pilot == true
+    if: github.event_name == 'workflow_dispatch' && inputs.geometry_v2_pilot == true && inputs.ravscore_active_shadow != true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:

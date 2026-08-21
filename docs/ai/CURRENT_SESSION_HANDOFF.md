@@ -266,3 +266,7 @@ Den automatiske ejeroversigt og den faglige gennemgang er nu genereret. Dette af
 ## v4.0.249: privat RavScore-kandidat-shadow
 
 Den eksisterende private nationale shadow-validator beregner nu A, B og C på samme lokale context som den aktive score. Den bruger 24 timers hændelseshistorik og 72 timers strømforløb, opdeler kandidat B i strøm mod, langs og væk fra kysten og gemmer kun dataminimerede forskelle. Den aktive vægtning 25/40/35, offentlig score, UI, vejrsampling, admin-data og geometri ændres ikke. Koden er målrettet selftestet; næste evidens er én virkelig privat national shadow-kørsel efter merge. Se DEC-0047 og `docs/research/RAVSCORE_PRIVATE_SHADOW_METHOD_2026-08-21.md`.
+
+## Checkpoint 4.0.250 - aktiv RavScore-shadow
+
+Den tidligere nationale geometrikoersel `32474884163` fejlede korrekt paa det uafhaengige punktbevis. Ingen punkter er flyttet, og gaten er ikke omgaaet. Branchens nye manuelle job bygger i stedet et midlertidigt read-only input fra den aktive public-details-bestand og repoets zoneopslag. Den realistiske lokale prøve gav dataset `rr-20260821105135-210`, 210 zoner og 673 dele; score/public runtime/automatisk aktivering var alle falsk. Efter merge skal exact-commit produktion foelges, derefter koeres `ravscore_active_shadow=true`, og kun den kompakte rapport analyseres. Aktiv score er fortsat 25/40/35.

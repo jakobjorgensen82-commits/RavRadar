@@ -1238,3 +1238,7 @@ Den automatiske ejeroversigt og den faglige gennemgang er nu genereret. Dette af
 ## v4.0.249: privat RavScore-kandidat-shadow
 
 Den eksisterende private nationale shadow-validator beregner nu A, B og C på samme lokale context som den aktive score. Den bruger 24 timers hændelseshistorik og 72 timers strømforløb, opdeler kandidat B i strøm mod, langs og væk fra kysten og gemmer kun dataminimerede forskelle. Den aktive vægtning 25/40/35, offentlig score, UI, vejrsampling, admin-data og geometri ændres ikke. Koden er målrettet selftestet; næste evidens er én virkelig privat national shadow-kørsel efter merge. Se DEC-0047 og `docs/research/RAVSCORE_PRIVATE_SHADOW_METHOD_2026-08-21.md`.
+
+## Aktuel sandhed i 4.0.250
+
++RavRadar har nu et separat privat, manuelt RavScore-shadow-job, som laeser de aktive 210 zoner og 673 kystdele uden at aendre dem. Jobbet bruger den eksisterende native DMI-kaede og kan hverken deploye, skrive til admin eller aktivere score. Den offentlige vaegtning er stadig 25/40/35. A/B/C er analysemodeller, ikke produktionsregler. GeoDanmark-koersel `32474884163` stoppede korrekt paa et forældet punktbevis; den gate er ikke omgaaet.

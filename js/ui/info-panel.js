@@ -1,5 +1,5 @@
-import { calculateRavScore, scoreRating } from "../core/score-engine.js?v=4.0.249";
-import { selectBestTimeForDay } from "../core/best-time-selector.js?v=4.0.249";
+import { calculateRavScore, scoreRating } from "../core/score-engine.js?v=4.0.250";
+import { selectBestTimeForDay } from "../core/best-time-selector.js?v=4.0.250";
 
 const hasNumber = value => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value));
 const formatNumber = (value, suffix, digits = 1) => hasNumber(value) ? `${Number(value).toFixed(digits).replace(".", ",")} ${suffix}` : "Mangler";
