@@ -211,3 +211,4 @@ validate:source og release:gate er grønne for 4.0.243, inklusive den nye turkon
 - Supabase varsler mulig projektbegrænsning fra 9. september 2026 på grund af egress over gratisgrænsen. Dette er registreret som kendt issue.
 - Lokal commitkæde indeholder fortsat de fire ikke-push'ede byggeartefakter fra commit `95022593`. De må først fjernes efter ejerens udtrykkelige godkendelse; PR #31 og remote branch indeholder dem ikke.
 - Efter den endelige kode- og migrationsrettelse bestod hele `validate:source`, inklusive `release:gate`, for 4.0.243.
+- Egress blev undersøgt i Usage, Unified Logs, dokumentstørrelser og `pg_stat_statements`. Den seneste fulde dag var 64 MB (100% PostgREST) efter tidligere 700-1.500 MB-dage. Den eksisterende diagnostikpakning ser ud til at have løst problemet; overvågning er bedre cost/benefit end ny cachekode nu.

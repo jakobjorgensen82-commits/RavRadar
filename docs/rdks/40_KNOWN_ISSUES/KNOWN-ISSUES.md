@@ -417,3 +417,8 @@ Den nye appkode må ikke merges, før migrationen 20260821_trip_evidence_contrac
 - **Status:** Åben driftsrisiko, ikke en kodefejl i 4.0.243.
 - Supabase-dashboardet viser, at organisationen overskred egresskvoten i forrige betalingsperiode og varsler begrænsning fra 9. september 2026, hvis forbruget fortsat ligger over grænsen.
 - Næste sikre trin er at identificere de største egresskilder og reducere unødvendige kald eller vælge en passende plan. Denne analyse må ikke eksponere private payloads.
+### Egress-analyse 2026-08-21
+
+- Usage-grafen viste tidligere cirka 700-1.500 MB pr. dag, men kun 64 MB den 20. august. Trafikken var 100% PostgREST; Functions var ubetydelig.
+- Den kraftige reduktion falder sammen med den allerede indførte pakning af runtime-diagnostik. Ved cirka 64 MB pr. dag er en simpel månedsfremskrivning under 2 GB og dermed under gratisgrænsen på 5 GB.
+- **Beslutning:** Ingen ny cache- eller manifestarkitektur nu. Overvåg næste betalingsperiode og grib kun ind, hvis dagsforbruget igen stiger varigt over cirka 160 MB.

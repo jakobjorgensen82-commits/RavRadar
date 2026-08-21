@@ -1178,3 +1178,4 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - Produktionstabellens legacy `id` og `zone_id` er numeriske. Klient-UUID og offentlige område-id'er gemmes derfor separat; ingen typecast eller historisk omskrivning anvendes.
 - Observationernes RLS har nu særskilte stramme insert-politikker for anon og authenticated. Den tidligere permissive policy er fjernet, og præcis GPS/lokationsnøgler afvises server-side.
 - Appversion 4.0.242 er fortsat aktiv. 4.0.243-koden er endnu ikke pushet/merget fra det lokale releasecheckpoint.
+- Supabase-egressvarslet skyldes historisk forbrug. Seneste fulde dag var 64 MB mod tidligere cirka 700-1.500 MB pr. dag; nuværende niveau fremskrives under gratisgrænsen. Der bygges derfor ikke ny cachearkitektur uden ny evidens.
