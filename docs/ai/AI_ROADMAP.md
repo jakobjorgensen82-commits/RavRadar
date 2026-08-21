@@ -587,3 +587,18 @@ Det historiske RavScore-artifact viste sig at omfatte fire sentinelzoner og kan 
 Maks. 4 point fastholdes som foreloebig midterkandidat. Justeringen er lille nok til, at en markant og reel hoej delscore stadig kan vinde; den kan kun flytte en placering, naar forskellen til konkurrenterne er inden for den begraensede justering. Dette er fortsat privat analyse og ikke en aktiveret regel.
 
 **Revideret naeste trin:** Afklar en historisk eller syntetisk landsdaekkende replaykontrakt. De fire sentinelzoner maa ikke fejlagtigt fremstilles som national evidens.
+
+### Stabilitetstest af de 107 prognosetimer
+
+En deterministisk blok-bootstrap med 1.000 gentagelser og sammenhaengende 12-timers blokke tester, om enkelte vejrfaser driver resultatet. Begge brugertilstande holdes sammen som par.
+
+- Baseline: median `3,69x` overrepraesentation; 5-95%-interval `3,20-4,21x`.
+- Stoettebaseret maks. 2 point: median `3,54x`; cirka `4,67%` aendrede foerstepladser.
+- Stoettebaseret maks. 4 point: median `3,23x`; interval `2,83-3,69x`; cirka `7,94%` aendrede foerstepladser.
+- Stoettebaseret maks. 6 point: median `2,95x`; interval `2,61-3,31x`; cirka `15,89%` aendrede foerstepladser.
+
+Maks. 4 point er fortsat den bedste balance i dette materiale. Seks point flytter for mange foerstepladser. To point reducerer for lidt. Resultatet viser samtidig, at loftet alene ikke kan loese hele problemet; kriteriet for en isoleret vinder skal vaere fagligt staerkt.
+
+**Permanent produktkrav:** Zoner med mange dele maa stadig kunne opnaa en hoej national placering, naar den er reel. En hel-zone-vinder faar nul korrektion, flere stoettende dele reducerer korrektionen, og en markant enkeltvinder kan fortsat beholde placeringen, hvis dens scoreforspring er stoerre end det begraensede loft.
+
+**Begraensning:** Blok-bootstrap viser intern stabilitet i det samme prognoseforloeb. Den erstatter ikke landsdaekkende historiske vejrbegivenheder.
