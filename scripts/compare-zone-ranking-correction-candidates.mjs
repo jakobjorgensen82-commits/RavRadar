@@ -149,6 +149,31 @@ function buildContextRows({ context, conditions, details, directionByZone, zoneO
   return rows;
 }
 
+function buildExactHourRows({ time, mode, details, directionByZone, zoneOrder }) {
+  const rows = [];
+  for (let sourceOrder = 0; sourceOrder < zoneOrder.length; sourceOrder += 1) {
+    const zoneId = zoneOrder[sourceOrder];
+    const direction = directionByZone.get(zoneId);
+    if (!direction) continue;
+    const hour = (details?.coastalParts?.zones?.[zoneId]?.hourly || []).find((row) => row?.time === time);
+    const result = hour?.[mode];
+    const score = Number(result?.score);
+    if (!Number.isFinite(score)) continue;
+    rows.push({
+      zoneId,
+      zoneName: direction.name,
+      sourceOrder,
+      score,
+      partCount: direction.partCount,
+      opportunityIndex: direction.opportunityIndex,
+      supportRatio: supportRatio(result, direction.partCount),
+      localCoverageStatus: result?.status || 'unknown',
+    });
+  }
+  if (!rows.length) throw new Error(`Hourly context ${time}/${mode} has no local zone scores.`);
+  return rows;
+}
+
 function validateBaseline(context, rows) {
   const actual = rankRows(rows, CANDIDATES[0]).slice(0, 5);
   const expected = context.top5 || [];
@@ -203,12 +228,15 @@ function candidateSummary(candidate, baselineRankings, candidateRankings, zoneBu
 
 function markdownFor(report) {
   const exampleNames = Object.fromEntries(report.ownerExamples.map((row) => [row.zoneId, row.name]));
-  const candidateRows = report.candidates.map((candidate) => {
+  const tableRows = (candidates, contextCount) => candidates.map((candidate) => {
     const examples = Object.entries(candidate.ownerExamples)
-      .map(([zoneId, count]) => `${exampleNames[zoneId] || zoneId}: ${count}/12`)
+      .map(([zoneId, count]) => `${exampleNames[zoneId] || zoneId}: ${count}/${contextCount}`)
       .join('; ');
     return `| ${candidate.label} | ${candidate.top5BucketCounts['6+']}/60 | ${candidate.sixPlusOverrepresentation.toFixed(2)}x | ${candidate.changedTop5Members} | ${candidate.changedTop1Contexts} | ${candidate.meanPenaltyTop5.toFixed(2)} | ${candidate.maximumPenalty.toFixed(2)} | ${examples} |`;
   });
+  const candidateRows = tableRows(report.candidates, report.contextCount);
+  const hourlyRows = tableRows(report.hourlySensitivity.candidates, report.hourlySensitivity.contextCount)
+    .map((row) => row.replace('/60 |', `/${report.hourlySensitivity.contextCount * 5} |`));
   return `# Sammenligning af korrektioner for national zonerangering
 
 Dato: 2026-08-21
@@ -226,6 +254,14 @@ Hver rangering indeholder ${report.minimumAvailableZones}-${report.maximumAvaila
 | Kandidat | 6+ dele i top-5 | Overrepraesentation | Nye top-5-medlemmer | Aendrede foerstepladser | Gns. top-5-justering | Maks. justering | Eksempler |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
 ${candidateRows.join('\n')}
+
+## Timed foelsomhedsanalyse
+
+Det samme kandidatinterval er desuden koert paa ${report.hourlySensitivity.contextCount} nationale timerangeringer fra ${report.hourlySensitivity.uniqueHourCount} forskellige prognosetimer og begge tilstande. Hver time indeholder ${report.hourlySensitivity.minimumAvailableZones}-${report.hourlySensitivity.maximumAvailableZones} zoner med en gyldig lokal score.
+
+| Kandidat | 6+ dele i top-5 | Overrepraesentation | Nye top-5-medlemmer | Aendrede foerstepladser | Gns. top-5-justering | Maks. justering | Eksempler |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+${hourlyRows.join('\n')}
 
 ## Vurdering
 
@@ -271,6 +307,25 @@ export function compareCandidates({ conditions, details, baselineReport, directi
   const ownerExamples = baselineReport.ownerExamples.map((row) => ({ zoneId: row.zoneId, name: row.zoneName }));
   const ownerZoneIds = ownerExamples.map((row) => row.zoneId);
   const availableZoneCounts = contexts.map((context) => context.rows.length);
+  const hourlyTimes = [...new Set(zoneOrder.flatMap((zoneId) =>
+    (details?.coastalParts?.zones?.[zoneId]?.hourly || []).map((row) => row?.time).filter(Boolean),
+  ))].sort();
+  const hourlyContexts = hourlyTimes.flatMap((time) => ['waders', 'beach'].map((mode) => ({
+    context: 'hourly-sensitivity',
+    mode,
+    date: String(time).slice(0, 10),
+    time,
+    rows: buildExactHourRows({ time, mode, details, directionByZone, zoneOrder }),
+  })));
+  const hourlyRankingsByCandidate = new Map(CANDIDATES.map((candidate) => [
+    candidate.id,
+    hourlyContexts.map((context) => {
+      const all = rankRows(context.rows, candidate);
+      return { context: context.context, mode: context.mode, date: context.date, time: context.time, all, top5: all.slice(0, 5) };
+    }),
+  ]));
+  const hourlyBaselineRankings = hourlyRankingsByCandidate.get('baseline');
+  const hourlyAvailableZoneCounts = hourlyContexts.map((context) => context.rows.length);
   return {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
@@ -292,6 +347,19 @@ export function compareCandidates({ conditions, details, baselineReport, directi
       zoneBucketCounts,
       ownerZoneIds,
     )),
+    hourlySensitivity: {
+      uniqueHourCount: hourlyTimes.length,
+      contextCount: hourlyContexts.length,
+      minimumAvailableZones: Math.min(...hourlyAvailableZoneCounts),
+      maximumAvailableZones: Math.max(...hourlyAvailableZoneCounts),
+      candidates: CANDIDATES.map((candidate) => candidateSummary(
+        candidate,
+        hourlyBaselineRankings,
+        hourlyRankingsByCandidate.get(candidate.id),
+        zoneBucketCounts,
+        ownerZoneIds,
+      )),
+    },
   };
 }
 
@@ -317,6 +385,10 @@ function main() {
   console.log(`Baseline reconstruction: ${report.baselineReconstruction} (${report.contextCount} contexts)`);
   for (const candidate of report.candidates) {
     console.log(`${candidate.id}: 6+ overrepresentation ${candidate.sixPlusOverrepresentation}x, new top-5 members ${candidate.changedTop5Members}, top-1 changes ${candidate.changedTop1Contexts}, max penalty ${candidate.maximumPenalty}`);
+  }
+  console.log(`Hourly sensitivity: ${report.hourlySensitivity.contextCount} contexts (${report.hourlySensitivity.uniqueHourCount} hours)`);
+  for (const candidate of report.hourlySensitivity.candidates) {
+    console.log(`hourly ${candidate.id}: 6+ overrepresentation ${candidate.sixPlusOverrepresentation}x, new top-5 members ${candidate.changedTop5Members}, top-1 changes ${candidate.changedTop1Contexts}, max penalty ${candidate.maximumPenalty}`);
   }
   console.log('Score impact: no');
 }

@@ -574,3 +574,16 @@ Den eksakte rekonstruktion af 12 aktuelle top-5-lister sammenlignede ingen korre
 **Haardt krav:** En stor zone skal stadig kunne ligge nummer et, naar det er reelt. En stoettebaseret kandidat giver derfor nul justering, hvis hele zonen har gode forhold, og gradvist mindre justering naar flere dele stoetter vinderen.
 
 **Naeste trin:** Koer 2/4/6-pointsintervallet paa de allerede indsamlede historiske vejrsituationer. Vaelg ikke produktionsregel paa baggrund af et enkelt produktionsforloeb.
+
+### Timed foelsomhed uden ventetid
+
+Det historiske RavScore-artifact viste sig at omfatte fire sentinelzoner og kan derfor ikke bruges som landsdaekkende rangeringstest. I stedet er kandidatintervallet koert paa alle 107 allerede tilgaengelige prognosetimer i begge tilstande, i alt 214 nationale rangeringer.
+
+- Baseline for zoner med mindst seks dele: `3,68x` overrepraesentation.
+- Stoettebaseret maks. 2 point: `3,55x`; 10 af 214 foerstepladser blev aendret.
+- Stoettebaseret maks. 4 point: `3,23x`; 17 af 214 foerstepladser blev aendret.
+- Stoettebaseret maks. 6 point: `2,94x`; 34 af 214 foerstepladser blev aendret.
+
+Maks. 4 point fastholdes som foreloebig midterkandidat. Justeringen er lille nok til, at en markant og reel hoej delscore stadig kan vinde; den kan kun flytte en placering, naar forskellen til konkurrenterne er inden for den begraensede justering. Dette er fortsat privat analyse og ikke en aktiveret regel.
+
+**Revideret naeste trin:** Afklar en historisk eller syntetisk landsdaekkende replaykontrakt. De fire sentinelzoner maa ikke fejlagtigt fremstilles som national evidens.
