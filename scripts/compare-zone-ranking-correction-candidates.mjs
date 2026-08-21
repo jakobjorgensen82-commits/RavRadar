@@ -97,6 +97,20 @@ export function supportAwarePenalty(row, capPoints) {
   return capPoints * opportunityFactor(row.opportunityIndex) * (1 - clamp(row.supportRatio, 0, 1));
 }
 
+export function repeatedSupportPenalty(row, capPoints, evidenceScale) {
+  const ratio = clamp(row.supportRatio, 0, 1);
+  const supportingPartCount = Math.max(1, Math.round(ratio * Math.max(1, row.partCount)));
+  const unsupportedShare = (1 - ratio) * Math.exp(-(supportingPartCount - 1) / evidenceScale);
+  return capPoints * opportunityFactor(row.opportunityIndex) * unsupportedShare;
+}
+
+export function broadSupportSafeguardPenalty(row, capPoints) {
+  const ratio = clamp(row.supportRatio, 0, 1);
+  if (ratio >= 0.5) return 0;
+  const broadSupportFactor = ratio <= 0.25 ? 1 : (0.5 - ratio) / 0.25;
+  return supportAwarePenalty(row, capPoints) * broadSupportFactor;
+}
+
 export const CANDIDATES = [
   {
     id: 'baseline',
@@ -116,11 +130,23 @@ export const CANDIDATES = [
     family: 'negative-control',
     penalty: (row) => 4 * opportunityFactor(row.opportunityIndex),
   },
-  ...[2, 4, 6].map((capPoints) => ({
+  ...[2, 4, 6, 8, 10, 12, 14, 16, 18, 20].map((capPoints) => ({
     id: `direction-support-${capPoints}`,
     label: `Retning og vinderstoette, maks. ${capPoints} point`,
     family: 'support-aware',
     penalty: (row) => supportAwarePenalty(row, capPoints),
+  })),
+  ...[18, 22, 26, 30].flatMap((capPoints) => [2, 4, 8].map((evidenceScale) => ({
+    id: `direction-repeat-${capPoints}-s${evidenceScale}`,
+    label: `Retning og gentaget støtte, maks. ${capPoints} point, skala ${evidenceScale}`,
+    family: 'repeated-support-aware',
+    penalty: (row) => repeatedSupportPenalty(row, capPoints, evidenceScale),
+  }))),
+  ...[18, 19, 20, 22, 24].map((capPoints) => ({
+    id: `direction-broad-${capPoints}`,
+    label: `Retning med bredt støtteværn, maks. ${capPoints} point`,
+    family: 'broad-support-safeguard',
+    penalty: (row) => broadSupportSafeguardPenalty(row, capPoints),
   })),
   {
     id: 'direction-support-4-near2',
@@ -249,6 +275,7 @@ function candidateSummary(candidate, baselineRankings, candidateRankings, zoneBu
   let baselineSixPlusTop1Contexts = 0;
   let retainedSixPlusTop1Contexts = 0;
   const changedTop1Leads = [];
+  const changedTop1SupportRatios = [];
   const changedTop1ByStatus = { 'only-part': 0, 'several-parts': 0, 'whole-zone': 0, unknown: 0 };
   const changedTop1ByLead = { '0-1': 0, '1-2': 0, '2-4': 0, '4+': 0 };
   for (let index = 0; index < candidateRankings.length; index += 1) {
@@ -265,6 +292,7 @@ function candidateSummary(candidate, baselineRankings, candidateRankings, zoneBu
       changedTop1Contexts += 1;
       const lead = Math.max(0, baseline[0].score - baseline[1].score);
       changedTop1Leads.push(lead);
+      changedTop1SupportRatios.push(baseline[0].supportRatio);
       const status = Object.hasOwn(changedTop1ByStatus, baseline[0].localCoverageStatus)
         ? baseline[0].localCoverageStatus
         : 'unknown';
@@ -301,6 +329,9 @@ function candidateSummary(candidate, baselineRankings, candidateRankings, zoneBu
       changedTop1ByLead,
       meanChangedWinnerLead: round(mean(changedTop1Leads), 4),
       maximumChangedWinnerLead: round(changedTop1Leads.length ? Math.max(...changedTop1Leads) : 0, 4),
+      maximumChangedWinnerSupportRatio: round(changedTop1SupportRatios.length ? Math.max(...changedTop1SupportRatios) : 0, 4),
+      changedWinnersWithQuarterZoneSupport: changedTop1SupportRatios.filter((value) => value >= 0.25).length,
+      changedWinnersWithHalfZoneSupport: changedTop1SupportRatios.filter((value) => value >= 0.5).length,
     },
     ownerExamples,
   };
@@ -498,6 +529,18 @@ export function compareCandidates({ conditions, details, baselineReport, directi
   const hourlyBaselineRankings = hourlyRankingsByCandidate.get('baseline');
   const hourlyAvailableZoneCounts = hourlyContexts.map((context) => context.rows.length);
   const hourlyBootstrap = buildHourlyBootstrap({ hourlyTimes, rankingsByCandidate: hourlyRankingsByCandidate, zoneBucketCounts });
+  const temporalIndices = { calibration: [], holdout: [] };
+  for (let hourIndex = 0; hourIndex < hourlyTimes.length; hourIndex += 1) {
+    const target = Math.floor(hourIndex / 12) % 2 === 0 ? temporalIndices.calibration : temporalIndices.holdout;
+    target.push(hourIndex * 2, hourIndex * 2 + 1);
+  }
+  const temporalCandidates = indices => CANDIDATES.map((candidate) => candidateSummary(
+    candidate,
+    indices.map(index => hourlyBaselineRankings[index]),
+    indices.map(index => hourlyRankingsByCandidate.get(candidate.id)[index]),
+    zoneBucketCounts,
+    ownerZoneIds,
+  ));
   return {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
@@ -533,6 +576,13 @@ export function compareCandidates({ conditions, details, baselineReport, directi
       )),
     },
     hourlyBootstrap,
+    hourlyTemporalSplit: {
+      method: 'alternating 12-hour blocks with paired modes',
+      calibrationContextCount: temporalIndices.calibration.length,
+      holdoutContextCount: temporalIndices.holdout.length,
+      calibrationCandidates: temporalCandidates(temporalIndices.calibration),
+      holdoutCandidates: temporalCandidates(temporalIndices.holdout),
+    },
   };
 }
 
@@ -561,7 +611,7 @@ function main() {
   }
   console.log(`Hourly sensitivity: ${report.hourlySensitivity.contextCount} contexts (${report.hourlySensitivity.uniqueHourCount} hours)`);
   for (const candidate of report.hourlySensitivity.candidates) {
-    console.log(`hourly ${candidate.id}: 6+ overrepresentation ${candidate.sixPlusOverrepresentation}x, new top-5 members ${candidate.changedTop5Members}, top-1 changes ${candidate.changedTop1Contexts}, max penalty ${candidate.maximumPenalty}, whole-zone changes ${candidate.top1Safeguards.wholeZoneWinnerChanges}, max changed lead ${candidate.top1Safeguards.maximumChangedWinnerLead}, retained 6+ top-1 ${candidate.top1Safeguards.retainedSixPlusTop1Contexts}/${candidate.top1Safeguards.baselineSixPlusTop1Contexts}`);
+    console.log(`hourly ${candidate.id}: 6+ overrepresentation ${candidate.sixPlusOverrepresentation}x, new top-5 members ${candidate.changedTop5Members}, top-1 changes ${candidate.changedTop1Contexts}, max penalty ${candidate.maximumPenalty}, whole-zone changes ${candidate.top1Safeguards.wholeZoneWinnerChanges}, isolated changes ${candidate.top1Safeguards.changedTop1ByStatus['only-part']}, multi-part changes ${candidate.top1Safeguards.changedTop1ByStatus['several-parts']}, quarter-zone changes ${candidate.top1Safeguards.changedWinnersWithQuarterZoneSupport}, half-zone changes ${candidate.top1Safeguards.changedWinnersWithHalfZoneSupport}, max support ${candidate.top1Safeguards.maximumChangedWinnerSupportRatio}, max changed lead ${candidate.top1Safeguards.maximumChangedWinnerLead}, retained 6+ top-1 ${candidate.top1Safeguards.retainedSixPlusTop1Contexts}/${candidate.top1Safeguards.baselineSixPlusTop1Contexts}`);
   }
   for (const candidate of report.hourlyBootstrap.candidates) {
     console.log(`bootstrap ${candidate.id}: 6+ median ${candidate.sixPlusOverrepresentation.median}x [${candidate.sixPlusOverrepresentation.p05}, ${candidate.sixPlusOverrepresentation.p95}], top-1 median ${round(candidate.changedTop1Rate.median * 100, 2)}%`);
@@ -569,7 +619,7 @@ function main() {
   console.log('Score impact: no');
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     main();
   } catch (error) {

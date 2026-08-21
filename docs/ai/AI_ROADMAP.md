@@ -628,3 +628,11 @@ En ekstra kandidat bruger samme stoettebaserede maks. 4 point, men tillader kun 
 - Næste analyse bruger den aktive RavScore på en neutral, global scenariomatrix og adskilte trænings-/holdoutretninger.
 - Kandidaten skal normalisere zonens `bedst-af-mange`-fordel, sammenlægge næsten ens retninger og samtidig belønne støtte fra flere stærke retninger.
 - Intet må aktiveres offentligt, før en markant effekt er dokumenteret, ejerbeslutningen er taget, og de relevante release- og browserkontroller er bestået.
+
+### Foreløbig forskningsanbefaling: `direction-broad-19`
+
+- 107-timers analyse: 1-2 dele 0,90x, 3-5 dele 1,12x og 6+ dele 1,11x mod 6+-baseline 3,68x.
+- Tidsopdelt 12-timers holdout: 6+-gruppen 1,30x mod 0,97x i kalibreringsblokkene.
+- 1.000 blok-bootstrap: 6+-median 1,11x, 5-95 % 0,94-1,30x.
+- Ingen hel-zone-vinder og ingen vinder med mindst 50 % støtte blev flyttet.
+- Kandidaten er kun analyseret og må ikke aktiveres uden ejerbeslutning, separat implementering og fuld relevant produktionskontrol.
