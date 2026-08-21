@@ -136,6 +136,11 @@ function summarizeRows(rows) {
       transportAndDelivery: round3(mean(rows.map(row => row.transportAndDelivery))),
       mobilisation: round3(mean(rows.map(row => row.mobilisation))),
     },
+    meanActiveComponents: {
+      huntability: round3(mean(rows.map(row => row.activeHuntability))),
+      transport: round3(mean(rows.map(row => row.activeTransport))),
+      mobilisation: round3(mean(rows.map(row => row.activeMobilisation))),
+    },
   };
 }
 
@@ -215,6 +220,9 @@ function compareDocuments(forcing, wave, wind, partById, zoneById) {
             active: active.baseScore,
             candidateE: candidate.candidateScores.candidateE,
             candidateF: candidateFResult.score,
+            activeHuntability: active.components.huntability,
+            activeTransport: active.components.transport,
+            activeMobilisation: active.components.release,
             huntability: candidate.components.huntability,
             transportAndDelivery: candidate.components.transportAndDelivery,
             mobilisation: candidate.components.mobilisation,
@@ -253,11 +261,21 @@ function compareDocuments(forcing, wave, wind, partById, zoneById) {
       onshore.meanDeltaFMinusE - offshore.meanDeltaFMinusE
     ),
     activeOnshoreMinusOffshore: round3(onshore.activeMean - offshore.activeMean),
+    activeComponentDeltaOnshoreMinusOffshore: {
+      huntability: round3(onshore.meanActiveComponents.huntability - offshore.meanActiveComponents.huntability),
+      transport: round3(onshore.meanActiveComponents.transport - offshore.meanActiveComponents.transport),
+      mobilisation: round3(onshore.meanActiveComponents.mobilisation - offshore.meanActiveComponents.mobilisation),
+    },
+    candidateComponentDeltaOnshoreMinusOffshore: {
+      huntability: round3(onshore.meanComponents.huntability - offshore.meanComponents.huntability),
+      transportAndDelivery: round3(onshore.meanComponents.transportAndDelivery - offshore.meanComponents.transportAndDelivery),
+      mobilisation: round3(onshore.meanComponents.mobilisation - offshore.meanComponents.mobilisation),
+    },
   };
   assert.ok(pairChecks.candidateEOnshoreMinusOffshore > 0);
   assert.ok(pairChecks.candidateFOnshoreMinusOffshore > 0);
   return {
-    schemaVersion: '1.0.0',
+    schemaVersion: '1.1.0',
     status: 'passed-private-historical-active-and-candidate-f-comparison',
     generatedAt: new Date().toISOString(),
     method: 'legacy-vs-active-base-engine-plus-candidate-e-vs-f-on-wave-selected-derived-historical-features',
