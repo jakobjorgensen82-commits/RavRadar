@@ -1179,3 +1179,20 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - Observationernes RLS har nu særskilte stramme insert-politikker for anon og authenticated. Den tidligere permissive policy er fjernet, og præcis GPS/lokationsnøgler afvises server-side.
 - Appversion 4.0.242 er fortsat aktiv. 4.0.243-koden er endnu ikke pushet/merget fra det lokale releasecheckpoint.
 - Supabase-egressvarslet skyldes historisk forbrug. Seneste fulde dag var 64 MB mod tidligere cirka 700-1.500 MB pr. dag; nuværende niveau fremskrives under gratisgrænsen. Der bygges derfor ikke ny cachearkitektur uden ny evidens.
+
+## 2026-08-21 - 4.0.243 er produktions- og browserverificeret
+
+- PR #31 er merged som `2ded7943d3d90463ac5aa26b46fc23c77c937151`.
+- Produktion `32455335962` bestod central adminhydrering, frisk vejr/current, fuld validering, releasegate, Supabase-synk, Pages-artifact og deploy.
+- Liveversion 4.0.243 og datasæt `rr-20260821071436-210` blev kontrolleret med Browser-plugin først og derefter den godkendte fallback.
+- Kontrollen dækkede 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdøgnsvisninger med nul model-, konsol-, side- eller HTTP-fejl.
+- Ingen land-/vandpunkter eller koordinater blev flyttet; de to datafiler i PR'en ændrede kun versionsnummer.
+- Den aktive score er fortsat 25/40/35. Næste retning følger DEC-0044; ingen ny scorekandidat er endnu godkendt.
+
+## 2026-08-21 - Aftalt produkt- og forskningsretning
+
+- Der bygges ravvinduer, hændelsesbaseret procesmodel, enkle lagdelte forklaringer, et omfattende læringsmodul og et internt forsknings-/regelregister.
+- Der bygges ikke separat offentlig scoresikkerhed eller en funktion om forskel fra gårsdagens score.
+- Gemte områder/varsler er udskudt mindst cirka et halvt år eller til en senere brugerdata-sektion.
+- Gammel-mod-ny-scorekontrol skal være lokal og automatisk; ejer og Codex samarbejder om få vigtige afvigelser i almindeligt sprog. Ingen OpenAI API bygges ind i offentlig runtime.
+- DMI forbliver førstevalg. Normal Copernicus-kørsel skal begrænses til godkendte DMI-huller; landsdækkende 673-kontrol er kun sjælden/manual forskning.

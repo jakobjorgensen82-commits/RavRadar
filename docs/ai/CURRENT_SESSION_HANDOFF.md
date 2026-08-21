@@ -212,3 +212,12 @@ validate:source og release:gate er grønne for 4.0.243, inklusive den nye turkon
 - Lokal commitkæde indeholder fortsat de fire ikke-push'ede byggeartefakter fra commit `95022593`. De må først fjernes efter ejerens udtrykkelige godkendelse; PR #31 og remote branch indeholder dem ikke.
 - Efter den endelige kode- og migrationsrettelse bestod hele `validate:source`, inklusive `release:gate`, for 4.0.243.
 - Egress blev undersøgt i Usage, Unified Logs, dokumentstørrelser og `pg_stat_statements`. Den seneste fulde dag var 64 MB (100% PostgREST) efter tidligere 700-1.500 MB-dage. Den eksisterende diagnostikpakning ser ud til at have løst problemet; overvågning er bedre cost/benefit end ny cachekode nu.
+
+## Handoff 2026-08-21 - v4.0.243 afsluttet og næste hovedfase
+
+- PR #31 er merged som `2ded7943`; exact-commit produktion `32455335962` er grøn og live viser 4.0.243.
+- Browser-plugin bekræftede den nye side. Fallback-audit gennemgik 210 zoner, 673 kystdele, begge jagtformer, 420 aktuelle og 2.100 prognosevisninger med nul fejl.
+- De fire utilsigtede byggeartefakter blev fjernet i korrektionscommit `f6a268bb`; de fire beskyttede dirty Desktop-datafiler blev ikke rørt.
+- Næste P1 er en lille separat ændring, der begrænser normal Copernicus-pilot til godkendte DMI-huller. DMI-først, score og punkter må ikke ændres.
+- Derefter gennemføres den store analyse og DEC-0044-planen: evidensregister, kandidatregler/vægte, lokal gammel-mod-ny-automatik, ejer/Codex-gennemgang, hændelsesmodel, ravvinduer, forklaringer og læringsmodul.
+- Brug `docs/research/RAVSCORE_RESEARCH_PRODUCT_PLAN_2026-08-21.md` som den forståelige oversigt og DEC-0044 som bindende krav.
