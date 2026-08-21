@@ -328,8 +328,10 @@ def selected_wave_windows(events: list[dict[str, Any]], requested: int = 12) -> 
             selected.append(event)
 
     part_ids = sorted({event["partId"] for event in events})
-    for classification in ("onshore", "alongshore", "offshore"):
-        for part_id in part_ids:
+    per_part_target = max(1, requested // max(1, len(part_ids)))
+    for part_id in part_ids:
+        part_selected_before = len(selected)
+        for classification in ("onshore", "alongshore", "offshore"):
             candidates = sorted(
                 (
                     event for event in events
@@ -338,6 +340,19 @@ def selected_wave_windows(events: list[dict[str, Any]], requested: int = 12) -> 
                 key=lambda event: (-event["peakHeightToThreshold"], event["peakTime"]),
             )
             add(candidates[0] if candidates else None)
+        part_selected = len(selected) - part_selected_before
+        if part_selected < per_part_target:
+            for event in sorted(
+                (
+                    event for event in events
+                    if event["partId"] == part_id and event["eventId"] not in used
+                ),
+                key=lambda event: (-event["peakHeightToThreshold"], event["peakTime"]),
+            ):
+                add(event)
+                part_selected += 1
+                if part_selected >= per_part_target:
+                    break
     for event in sorted(
         (event for event in events if event["eventId"] not in used),
         key=lambda event: (-event["peakHeightToThreshold"], event["partId"], event["peakTime"]),

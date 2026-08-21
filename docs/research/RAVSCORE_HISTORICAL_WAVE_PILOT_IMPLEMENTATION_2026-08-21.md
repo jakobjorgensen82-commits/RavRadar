@@ -38,7 +38,7 @@ The pilot starts at 1993 so selected events can later be paired with the North W
 
 ## Event discovery
 
-For each sentinel, the script calculates its own 90th-percentile wave-height threshold, with a 0.5 m lower floor, and groups energetic samples separated by no more than six hours. Wave-from direction is converted to propagation alignment against the existing onshore direction, without storing either coordinate. The script selects up to 12 windows balanced across onshore, alongshore and offshore classes. The result is a candidate list, not a claim that each window transported amber.
+For each sentinel, the script calculates its own 90th-percentile wave-height threshold, with a 0.5 m lower floor, and groups energetic samples separated by no more than six hours. Wave-from direction is converted to propagation alignment against the existing onshore direction, without storing either coordinate. The script selects up to 12 windows, first balanced equally across sentinels and then across the onshore, alongshore and offshore classes that actually exist at each sentinel. The result is a candidate list, not a claim that each window transported amber.
 
 The relative threshold is used only to obtain varied real event shapes across differently exposed coasts. It must not become a universal RavScore threshold.
 
