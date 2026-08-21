@@ -51,3 +51,15 @@ Det naeste forskningsspor boer forbedre selve transport-og-leveringskomponenten 
 - Historiske centralt redigerbare ekspertregler er ikke afspillet; tallene er grundscorefoer disse regler.
 - Der er endnu ingen komplette fundture at kalibrere mod.
 - Rapporten er privat og score-neutral. Ingen offentlig score, fallback, geometri eller land-/vandpunkter blev aendret.
+
+## Korrigerende opfoelgning: parret retningsanalyse
+
+Den oprindelige uparrede forskel mellem naturligt klassificerede paalands- og fralandsforloeb var sammenblandet med energi, styrke og jagtbarhed. Den maa derfor ikke bruges som isoleret bevis for modellens retningsvirkning.
+
+En efterfoelgende exact-commit-koersel (`32521046654`, commit `64ee7b7a260cc7505b31a3a916fba5860aa66b0b`) holdt styrke, tidspunkt og historik ens og vendte kun boelge-, stroem- og vindretning. Den viste en gennemsnitlig retningsforskel paa 29,890 point for den aktive model, 14,490 for kandidat E og 16,655 for kandidat F.
+
+Den aktive models forskel var naesten uafhaengig af lav, mellem eller hoej bevaegelseskapacitet. Det er en strukturel advarsel. Kandidat E og F voksede derimod fra lille retningsvirkning ved lav kapacitet til stoerre virkning ved hoej kapacitet.
+
+Den tidligere retningstekniske begrundelse for at afvise F traekkes derfor tilbage. F er fortsat ikke produktionsklar, fordi den saenker scorefordelingen for bredt, aendrer mange scorebaand og ikke er valideret mod den fulde regelkaede eller faktiske fund.
+
+Se `RAVSCORE_PAIRED_DIRECTION_AND_WEIGHT_RESULT_2026-08-21.md` for metode, tal og naeste arbejdshypotese.

@@ -1250,3 +1250,21 @@ Foerste private aktive RavScore-shadowrun stoppede korrekt foer state og score, 
 ## Aktuel sandhed i 4.0.252
 
 `direction-broad-19-v1` er produktionsverificeret i begge nationale top-5-lister. PR #52 bestod exact-head-gaten på `f23214c8` og blev merged som `ad70fbca`. Exact-commit-produktion `32515757957` bestod frisk DMI, fuld validering, releasegate, Supabase og Pages. Live datasæt `rr-20260821185936-210` viser 4.0.252 med 210 zoner og 673 kystdele. Den godkendte Playwright-fallback kontrollerede 420 aktuelle visninger og 2.100 femdøgnsvisninger med nul score-, forklarings-, konsol-, side- eller HTTP-fejl. Den viste RavScore, alle lokale kystdelsresultater, pile, forklaringer, geometri og land-/vandpunkter er uændrede.
+
+## RavScore parret retning og naeste private kandidat, 2026-08-21
+
+- Exact-commit-koersel `32521046654` paa `64ee7b7a` gennemfoerte 1.460 private, score-neutrale par over 12 historiske forloeb og fire omraader.
+- Den aktive model gav naesten samme retningsforskel ved lav og hoej bevaegelseskapacitet: 30,450 mod 30,327 point. Retning er derfor for lidt koblet til faktisk styrke i den aktive transportberegning.
+- Kandidat E/F voksede derimod tydeligt med kapaciteten. F afvises fortsat som direkte produktionskandidat paa grund af bred niveausaenkning og stor scorebaandsudskiftning; den tidligere uparrede retningsbegrundelse for afvisningen er erstattet.
+- Kandidat G er naeste private arbejdshypotese: korrigeret procesmodel, kapacitetsstyret retning, historisk stroem-/vindhukommelse, ingen udokumenterede statiske kystbonusser og foreloebigt vaegtcentrum 20/45/35.
+- En kort og svag vending skal kun aendre lidt; en vedvarende og kraftig vending skal aendre mere. Tidligere timers og dages nettoforloeb skal medregnes med aftagende vaegt.
+- Den aktive offentlige RavScore 25/40/35, DMI-first, geometri og land-/vandpunkter er uændrede. Se DEC-0050.
+
+## RavScore historikhukommelse - foerste resultat 2026-08-21
+
+- Et nyt privat, score-neutralt vaerktoej har analyseret 12 eksisterende 96-timersforloeb med 6, 12, 24 og 48 timers hukommelse.
+- Ved 24 timer aendrede en syntetisk svag modtime den opbyggede tilstand 3,796 procent, mens en dobbelt staerk vedvarende modretning brugte cirka 12 timer paa at vende nettofortegnet. Ved 48 timer var tallene 2,151 procent og cirka 16 timer.
+- I 828 observerede stromtimer vendte ingen svag stroemepisode nettotilstanden. Ved 24 timer var der 36 modepisoder og 14 nettovendinger; episoder varede typisk seks timer.
+- Vind og boelger viste samme hovedprincip: svage korte vendinger aendrede lidt og vendte ikke hukommelsen, mens staerke vedvarende episoder kunne.
+- Naeste shortlist er et 24-timers aktivt regimespor og et 48-timers baggrundsspor. Blandingsandel og scorepoint er ikke valgt; stroem, boelger og vind skal foerst ablateres uden dobbeltregning.
+- Aktiv RavScore 25/40/35 og offentlig runtime er uændret. Se DEC-0050 og `docs/research/RAVSCORE_REGIME_MEMORY_RESULT_2026-08-21.md`.

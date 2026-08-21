@@ -76,3 +76,11 @@ Vi venter ikke et halvt år med at forbedre den nuværende forskningsbaserede mo
 5. Gennemgå kandidaten sammen i almindeligt sprog.
 6. Implementér den godkendte model, ravvinduer og forklaringer.
 7. Byg læringsmodulet på den kvalitetssikrede viden.
+
+## Aktuel placering i planen efter parret retningsanalyse
+
+Den private historiske analyse har nu vist, at den aktive RavScore reagerer naesten lige kraftigt paa retning ved lav og hoej fysisk flytteevne. Kandidat E/F reagerer mere rimeligt, men ingen af dem er klar til offentlig brug.
+
+Naeste samlede forskningsblok er kandidat G. Den kombinerer den korrigerede procesmodel med et foreloebigt vaegtcentrum paa 20/45/35 og historisk hukommelse for stroem og vind. Foerst udledes score-neutrale historikmaal og separate ablationer; derefter gentages historisk replay, national matrix og shadow-sammenligning. En offentlig scoreaendring kommer foerst efter samlet kontrol af score, pile, forklaringer, jagtbarhed, sikkerhed og centrale ekspertregler.
+
+Detaljer og acceptkaede: `RAVSCORE_PAIRED_DIRECTION_AND_WEIGHT_RESULT_2026-08-21.md`.

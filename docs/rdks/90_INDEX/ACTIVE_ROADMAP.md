@@ -250,3 +250,27 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [x] Implementér samme interne sortering i Bedste områder og 5-dages RavRadar uden at ændre vist RavScore.
 - [x] Målrettede checks, exact-head-gate, merge `ad70fbca`, fuld produktion `32515757957` og 210/673-browserkontrol er grønne.
 - [ ] Fortsæt derefter den store faglige scoreanalyse; landsrangering og selve RavScore-vægtene er to forskellige problemer.
+
+## Aktiv RavScore-forskningsblok efter DEC-0050
+
+- [x] Korrigér den uparrede retningsanalyse med 1.460 parrede modforloeb paa samme styrker og historik.
+- [x] Paavis, at den aktive model giver naesten samme retningsvirkning ved lav og hoej flytteevne.
+- [x] Sammenlign foreloebige vaegtmatricer og vaelg 20/45/35 som naeste private analysecentrum uden offentlig aktivering.
+- [ ] Udled historisk stroemhukommelse fra de eksisterende 96-timers forloeb: styrke, retning, varighed, stabilitet, vendingsalder og nettoforloeb.
+- [ ] Udled tilsvarende vindhukommelse og adskil direkte vind fra indirekte virkning gennem boelger, stroem og vandstand.
+- [ ] Koer separate ablationer og kontroller svage/korte samt kraftige/langvarige vendinger.
+- [ ] Byg og sammenlign kandidat G i historisk replay, national scenariematrix og national shadow.
+- [ ] Kontrollér den fulde ekspertregelkaede, jagtbarhed, vadesikkerhed og at pile, score og forklaring passer sammen.
+- [ ] Fremlaeg en grundig forklaring i almindeligt sprog paa den endelige vaegtmatrix og dens konsekvenser; offentlig aendring kraever derefter ejer-go/no-go.
+- [ ] Fortsaet efter godkendt scoremodel med haendelsesmodel, ravvinduer, lagdelte brugerforklaringer og det omfattende laeringsmodul i den allerede vedtagne roadmapraekkefoelge.
+
+Kandidat G er privat og score-neutral. Aktiv RavScore 25/40/35, DMI-first, geometri og land-/vandpunkter forbliver uændrede under analysen.
+
+## RavScore historikhukommelse - fremdrift 2026-08-21
+
+- [x] Udled score-neutrale historikmaal for stroem, boelgeenergi og vind fra de eksisterende 96-timersforloeb.
+- [x] Dokumentér syntetisk og observeret, at styrke og varighed bestemmer hvor hurtigt en vending slaar igennem.
+- [x] Afgræns 24 timer som foreloebigt aktivt regimespor og 48 timer som foreloebigt baggrundsspor uden at vaelge point eller blandingsandel.
+- [ ] Test 24 alene, 48 alene og en lille dobbeltsporsmatrix uden fremtidslaek.
+- [ ] Ablatér stroem, boelger, lineart vindspor og vindstressspor, foer kandidat G faar en samlet transportfunktion.
+- [ ] Fortsaet derefter den allerede bindende kandidat G-, national shadow-, forklarings- og sikkerhedskaede i DEC-0050.

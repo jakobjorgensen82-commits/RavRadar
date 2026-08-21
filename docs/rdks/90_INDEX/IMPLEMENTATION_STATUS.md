@@ -1607,3 +1607,26 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [x] Kort forklaring er tilføjet ved begge landslister.
 - [x] Målrettet 210/673-regression er tilføjet til den normale valideringskæde.
 - [x] PR #52 exact-head-gate, merge `ad70fbca`, exact-commit-produktion `32515757957` og fuld online 210/673-browserkontrol er grønne.
+
+## RavScore kandidat G - analyse implementeret, model ikke aktiveret
+
+- [x] Parret historisk retningskontrol isolerer retning fra forskelle i tidspunkt og styrke.
+- [x] Retningsresultatet er opdelt efter lav, mellem og hoej fysisk bevaegelseskapacitet samt jagtform.
+- [x] Foreloebige vaegte er sammenlignet reproducerbart; 20/45/35 er valgt som naeste private analysecentrum, ikke som produktionsvaegt.
+- [x] Kandidat F er omklassificeret til foelsomhedsmaessig yderkant, og den sammenblandede gamle retningskonklusion er korrigeret.
+- [ ] Udled stroem- og vindhukommelse fra 96-timers historik med styrke, varighed, stabilitet, vendingsalder og nettoeffekt.
+- [ ] Koer separate stroem-, boelge- og vindablationer samt svage/kraftige vendinger.
+- [ ] Gentag historisk replay, national scenariematrix og national shadow med kandidat G.
+- [ ] Afspil centrale ekspertregler og kontrollér pile, score, komponenter, forklaring, jagtbarhed og vadesikkerhed samlet.
+- [ ] Fremlaeg den endelige vaegtbegrundelse grundigt og forstaaeligt for ejeren foer go/no-go.
+- Aktiv offentlig score, UI, geometri og alle land-/vandpunkter er uændrede. Bindende metode: DEC-0050.
+
+## Kandidat G historikhukommelse - checkpoint 2026-08-21
+
+- [x] Generisk score-neutral eksponentiel regimehukommelse implementeret med styrke, retning og faktisk tidsafstand.
+- [x] Syntetisk kontrakt beviser, at en kort svag vending ikke sletter et opbygget forloeb, og at en kraftig vedvarende vending kan overtage.
+- [x] 12 historiske forloeb analyseret for stroem, boelgeenergi, lineart vindspor og vindstressspor ved 6/12/24/48 timer.
+- [x] Episodeanalyse maaler varighed og nettovendinger uden at gemme raa vejrvaerdier.
+- [ ] Sammenlign 24-timers aktivt spor, 48-timers baggrundsspor og en lille dobbeltsporsmatrix i kandidat G.
+- [ ] Koer separate ablationer og integrér de bedste score-neutrale varianter i historisk replay/parret retning.
+- [ ] National matrix, shadow, ekspertregler, jagtbarhed, sikkerhed og pil-/score-/forklaringskontrol mangler fortsat.

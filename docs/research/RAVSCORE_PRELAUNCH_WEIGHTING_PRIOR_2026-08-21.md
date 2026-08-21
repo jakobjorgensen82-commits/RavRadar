@@ -173,3 +173,11 @@ Det vigtige er, at hovedscore, pile, forklaring og læringskort kommer fra samme
 - Erstat ikke bølge-/strømrollen med ét nyt fast internt vægtpar.
 - Brug faste scenarier og historisk reanalyse i stedet for at vente på kommende storme.
 - Tag først en offentlig ændringsbeslutning efter samlet scenario-, historik- og national shadow-sammenligning.
+
+## Opfoelgning efter parret retnings- og vaegttest
+
+Kandidat F med 15/50/35 var en nyttig foelsomhedsmaessig yderkant, men er ikke den naeste direkte produktionskandidat. Den saenker niveauet for bredt og giver stor scorebaandsudskiftning.
+
+Den mest lovende naeste private midte er foreloebigt 20/45/35. Den holder transport som stoerste komponent, giver mindre generel nedjustering end F og bevarer en retningsvirkning, der vokser med reel bevaegelseskapacitet. Vaegten maa ikke laases, foer modellen ogsaa medregner stroemmens og vindens styrke, varighed, vendinger og historiske nettoeffekt.
+
+Den offentlige vaegt 25/40/35 forbliver uændret, indtil kandidat G har bestaaet historik-, ablations-, national shadow-, forklarings- og sikkerhedskontrollerne i `RAVSCORE_PAIRED_DIRECTION_AND_WEIGHT_RESULT_2026-08-21.md`.
