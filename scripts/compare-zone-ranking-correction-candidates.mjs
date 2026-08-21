@@ -122,15 +122,35 @@ export const CANDIDATES = [
     family: 'support-aware',
     penalty: (row) => supportAwarePenalty(row, capPoints),
   })),
+  {
+    id: 'direction-support-4-near2',
+    label: 'Retning og vinderstoette, maks. 4 point, kun naesten lige scorer',
+    family: 'support-aware-near-tie',
+    nearTieBandPoints: 2,
+    penalty: (row) => supportAwarePenalty(row, 4),
+  },
 ];
 
-function rankRows(rows, candidate) {
-  return rows
-    .map((row) => {
-      const penalty = candidate.penalty(row);
-      return { ...row, penalty, rankingScore: row.score - penalty };
-    })
-    .sort((left, right) => right.rankingScore - left.rankingScore || left.sourceOrder - right.sourceOrder);
+export function rankRows(rows, candidate) {
+  const decorated = rows.map((row) => {
+    const penalty = candidate.penalty(row);
+    return { ...row, penalty, rankingScore: row.score - penalty };
+  });
+  if (!candidate.nearTieBandPoints) {
+    return decorated.sort((left, right) => right.rankingScore - left.rankingScore || left.sourceOrder - right.sourceOrder);
+  }
+  const rawOrder = decorated.sort((left, right) => right.score - left.score || left.sourceOrder - right.sourceOrder);
+  const ranked = [];
+  for (let start = 0; start < rawOrder.length;) {
+    const anchorScore = rawOrder[start].score;
+    let end = start + 1;
+    while (end < rawOrder.length && anchorScore - rawOrder[end].score <= candidate.nearTieBandPoints) end += 1;
+    ranked.push(...rawOrder.slice(start, end).sort(
+      (left, right) => right.rankingScore - left.rankingScore || right.score - left.score || left.sourceOrder - right.sourceOrder,
+    ));
+    start = end;
+  }
+  return ranked;
 }
 
 function bucketFor(partCount) {
@@ -366,7 +386,7 @@ function markdownFor(report) {
     `| ${candidate.label} | ${candidate.sixPlusOverrepresentation.median.toFixed(2)}x (${candidate.sixPlusOverrepresentation.p05.toFixed(2)}-${candidate.sixPlusOverrepresentation.p95.toFixed(2)}) | ${(candidate.changedTop1Rate.median * 100).toFixed(1)}% (${(candidate.changedTop1Rate.p05 * 100).toFixed(1)}-${(candidate.changedTop1Rate.p95 * 100).toFixed(1)}%) | ${(candidate.changedMemberRate.median * 100).toFixed(1)}% (${(candidate.changedMemberRate.p05 * 100).toFixed(1)}-${(candidate.changedMemberRate.p95 * 100).toFixed(1)}%) |`,
   );
   const safeguardRows = report.hourlySensitivity.candidates
-    .filter((candidate) => candidate.family === 'support-aware')
+    .filter((candidate) => candidate.family.startsWith('support-aware'))
     .map((candidate) => {
       const safeguards = candidate.top1Safeguards;
       return `| ${candidate.label} | ${safeguards.retainedSixPlusTop1Contexts}/${safeguards.baselineSixPlusTop1Contexts} | ${safeguards.wholeZoneWinnerChanges} | ${safeguards.changedTop1ByStatus['only-part']} | ${safeguards.changedTop1ByStatus['several-parts']} | ${safeguards.maximumChangedWinnerLead.toFixed(2)} |`;
@@ -419,6 +439,7 @@ En hel-zone-vinder faar nul stoettebaseret justering. En isoleret vinder kan for
 - Den rene retningsstraf er ogsaa en negativ kontrol. Den straffer en zone, selv naar flere kystdele faktisk understoetter det gode resultat.
 - De stoettebaserede kandidater justerer kun meget, naar zonen baade har stor retningsmulighed og en isoleret vinder.
 - En stor zone skal fortsat kunne blive nummer et. Naar hele zonen er god, er den stoettebaserede justering derfor nul; flere stoettende dele reducerer den gradvist.
+- Naer-lighedsvarianten maa kun omrokere zoner inden for to point fra gruppens bedste raascore. Den er mindre effektiv mod skaevheden, men giver en enkel garanti mod at klart forskellige scorer bytter plads.
 - Ingen kandidat aktiveres paa baggrund af dette ene produktionsforloeb. Resultatet bruges til at udpege et lille interval, som efterfoelgende skal koeres paa de historiske vejrsituationer.
 - En fremtidig justering er en intern rangeringstilpasning. Den maa ikke fremstilles som en lavere lokal ravchance.
 

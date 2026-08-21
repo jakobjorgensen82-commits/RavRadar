@@ -610,3 +610,14 @@ Den direkte foerstepladskontrol understoetter kravet for 4-pointsvarianten:
 Det betyder, at en klart bedre stor zone fortsat ligger oeverst. Kandidaten paavirker kun taette nationale sammenligninger, hvor den hoejeste score samtidig kommer fra en relativt isoleret kystdel.
 
 **Begraensning:** Blok-bootstrap viser intern stabilitet i det samme prognoseforloeb. Den erstatter ikke landsdaekkende historiske vejrbegivenheder.
+
+### Naer-lighedsvariant for tydelig brugerlogik
+
+En ekstra kandidat bruger samme stoettebaserede maks. 4 point, men tillader kun omrokering inden for en gruppe, hvor raascorerne ligger hoejst 2 point fra gruppens bedste.
+
+- 214 timerangeringer: `3,41x` overrepraesentation mod `3,68x` uden korrektion og `3,23x` med den frie 4-pointsvariant.
+- 72 nye top-5-medlemmer mod 95 med den frie variant.
+- 17 aendrede foerstepladser, 113 af 127 store zonevindere bevaret og ingen hel-zone-vinder flyttet.
+- En raascore mere end 2 point under gruppevinderen kan aldrig placeres over den via korrektionen.
+
+**Foreloebig vurdering:** Naer-lighedsvarianten er mindre effektiv, men sikrere og lettere at forklare. Den boer sammenlignes direkte med den frie 4-pointsvariant i den senere landsdaekkende replaykontrakt. Ingen af dem er endnu aktiveret.

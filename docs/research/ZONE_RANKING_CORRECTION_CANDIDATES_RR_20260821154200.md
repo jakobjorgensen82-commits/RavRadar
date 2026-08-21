@@ -20,6 +20,7 @@ Hver rangering indeholder 192-210 zoner med en gyldig lokal kystdelsscore. Zoner
 | Retning og vinderstoette, maks. 2 point | 25/60 | 3.50x | 2 | 2 | 0.96 | 1.89 | Falster nord og Orehoved: 8/12; Falster vest og Nysted Nor munding: 6/12 |
 | Retning og vinderstoette, maks. 4 point | 21/60 | 2.94x | 5 | 3 | 1.70 | 3.78 | Falster nord og Orehoved: 6/12; Falster vest og Nysted Nor munding: 4/12 |
 | Retning og vinderstoette, maks. 6 point | 19/60 | 2.66x | 8 | 3 | 2.32 | 5.68 | Falster nord og Orehoved: 6/12; Falster vest og Nysted Nor munding: 2/12 |
+| Retning og vinderstoette, maks. 4 point, kun naesten lige scorer | 21/60 | 2.94x | 5 | 3 | 1.70 | 3.78 | Falster nord og Orehoved: 6/12; Falster vest og Nysted Nor munding: 4/12 |
 
 ## Timed foelsomhedsanalyse
 
@@ -33,6 +34,7 @@ Det samme kandidatinterval er desuden koert paa 214 nationale timerangeringer fr
 | Retning og vinderstoette, maks. 2 point | 452/1070 | 3.55x | 52 | 10 | 0.94 | 1.89 | Falster nord og Orehoved: 96/214; Falster vest og Nysted Nor munding: 126/214 |
 | Retning og vinderstoette, maks. 4 point | 412/1070 | 3.23x | 95 | 17 | 1.78 | 3.78 | Falster nord og Orehoved: 90/214; Falster vest og Nysted Nor munding: 117/214 |
 | Retning og vinderstoette, maks. 6 point | 375/1070 | 2.94x | 149 | 34 | 2.49 | 5.68 | Falster nord og Orehoved: 83/214; Falster vest og Nysted Nor munding: 103/214 |
+| Retning og vinderstoette, maks. 4 point, kun naesten lige scorer | 434/1070 | 3.41x | 72 | 17 | 1.84 | 3.78 | Falster nord og Orehoved: 94/214; Falster vest og Nysted Nor munding: 120/214 |
 
 ### Stabilitet ved sammenhaengende vejrfaser
 
@@ -46,6 +48,7 @@ En deterministisk blok-bootstrap med 1000 gentagelser og 12-timers blokke bevare
 | Retning og vinderstoette, maks. 2 point | 3.54x (3.12-4.04) | 4.7% (2.8-6.5%) | 4.9% (3.6-6.0%) |
 | Retning og vinderstoette, maks. 4 point | 3.23x (2.83-3.69) | 7.9% (5.6-10.3%) | 8.9% (6.8-10.7%) |
 | Retning og vinderstoette, maks. 6 point | 2.95x (2.61-3.31) | 15.9% (13.6-18.2%) | 13.9% (11.3-16.2%) |
+| Retning og vinderstoette, maks. 4 point, kun naesten lige scorer | 3.40x (2.98-3.91) | 7.9% (5.6-10.3%) | 6.7% (5.1-8.4%) |
 
 ### Beskyttelse af reelle foerstepladser
 
@@ -54,6 +57,7 @@ En deterministisk blok-bootstrap med 1000 gentagelser og 12-timers blokke bevare
 | Retning og vinderstoette, maks. 2 point | 119/127 | 0 | 8 | 2 | 1.00 |
 | Retning og vinderstoette, maks. 4 point | 113/127 | 0 | 10 | 7 | 2.00 |
 | Retning og vinderstoette, maks. 6 point | 101/127 | 0 | 24 | 10 | 4.00 |
+| Retning og vinderstoette, maks. 4 point, kun naesten lige scorer | 113/127 | 0 | 10 | 7 | 2.00 |
 
 En hel-zone-vinder faar nul stoettebaseret justering. En isoleret vinder kan fortsat beholde foerstepladsen, naar dens oprindelige scoreforspring er stoerre end den konkrete, begraensede justering.
 
@@ -63,6 +67,7 @@ En hel-zone-vinder faar nul stoettebaseret justering. En isoleret vinder kan for
 - Den rene retningsstraf er ogsaa en negativ kontrol. Den straffer en zone, selv naar flere kystdele faktisk understoetter det gode resultat.
 - De stoettebaserede kandidater justerer kun meget, naar zonen baade har stor retningsmulighed og en isoleret vinder.
 - En stor zone skal fortsat kunne blive nummer et. Naar hele zonen er god, er den stoettebaserede justering derfor nul; flere stoettende dele reducerer den gradvist.
+- Naer-lighedsvarianten maa kun omrokere zoner inden for to point fra gruppens bedste raascore. Den er mindre effektiv mod skaevheden, men giver en enkel garanti mod at klart forskellige scorer bytter plads.
 - Ingen kandidat aktiveres paa baggrund af dette ene produktionsforloeb. Resultatet bruges til at udpege et lille interval, som efterfoelgende skal koeres paa de historiske vejrsituationer.
 - En fremtidig justering er en intern rangeringstilpasning. Den maa ikke fremstilles som en lavere lokal ravchance.
 
