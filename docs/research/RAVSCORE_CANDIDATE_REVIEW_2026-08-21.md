@@ -47,3 +47,15 @@ Denne gennemgang sammenligner den gamle vaegtning, den aktive model og tre forsk
 - Modelregister: `docs/research/RAVSCORE_MODEL_REGISTRY_2026-08-21.md`
 - Syntetisk analyse: 86.400 scenarier fordelt paa waders og strand.
 - Virkelig analyse: det offentlige, dataminimerede snapshot ovenfor. Raapayloaden er ikke gemt i repositoryet.
+
+## Opfølgning efter den aktive 4.0.251-skyggekørsel
+
+Den grønne private kørsel på den aktive 210/673-bestand ændrer ikke beslutningen om offentlig aktivering:
+
+- 243 af 673 kystdele kunne scores på komplette, sammenhængende DMI-familier ved et fælles tidspunkt.
+- A lå nær den aktive model i gennemsnit, men skjulte lokale ændringer på omtrent plus/minus 24 point.
+- B løftede især levering mod kysten og næsten ikke transport væk fra kysten. Det er et lovende retningssignal.
+- B kunne ikke vurdere en komplet lokal fastholdelsesfunktion; denne dækning var nul.
+- C sænkede 238 af 243 scorede kystdele i begge søgemåder og sænkede enkelte kontekster med op til 27 point. Gaten er derfor for bred til aktivering uden yderligere begrundelse.
+
+Den fulde, dataminimerede fortolkning står i `docs/research/RAVSCORE_ACTIVE_SHADOW_4.0.251.md`. Næste udvikling bruger den faste nationale scenarieprotokol frem for at vente på tilfældige aktuelle vejrsituationer.
