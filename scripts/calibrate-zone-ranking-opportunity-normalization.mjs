@@ -7,7 +7,12 @@ import {analyzeZoneDirections} from './audit-zone-direction-opportunity.mjs';
 
 const EXPECTED_ZONES=210;
 const EXPECTED_PARTS=673;
-const TAU_CANDIDATES=[1,2,3,4,5,6,8,10,12,15,20,30];
+const TAU_CANDIDATES=[1,2,4,6,10,15,20];
+const ALPHA_CANDIDATES=[.1,.2,.3,.4,.5,.6,.8,1];
+const RESOLUTION_CANDIDATES=[.5,1,2];
+const CANDIDATE_CONFIGS=TAU_CANDIDATES.flatMap(tau=>ALPHA_CANDIDATES.flatMap(alpha=>RESOLUTION_CANDIDATES.map(resolution=>({
+ id:`softmax-t${tau}-a${alpha}-r${resolution}`,tau,alpha,resolution,
+}))));
 const MODES=['waders','beach'];
 const REGIMES=[
  {id:'quiet',wind:3,wave:.2,period:4,current:.05,windOffset:35,waveOffset:55,currentOffset:75,maxWind:4,maxWave:.3,age:120,trend:0},
@@ -61,6 +66,14 @@ export function normalizedSoftMaximum(scores,weights,tau){
  return maximum+tau*Math.log(weightedExponentials);
 }
 
+export function blendedOpportunityScore(scores,weights,{tau,alpha,resolution}){
+ const rawScore=Math.max(...scores);
+ const normalized=normalizedSoftMaximum(scores,weights,tau);
+ const continuous=rawScore-alpha*(rawScore-normalized);
+ const rounded=Math.round(continuous/resolution)*resolution;
+ return Math.min(rawScore,rounded);
+}
+
 export function buildScenarioMatrix(){
  const rows=[];
  for(const split of ['train','holdout']){
@@ -101,7 +114,7 @@ function stableHash(value){
  return hash>>>0;
 }
 
-function summarizeCandidate(contexts,profiles,tau){
+function summarizeCandidate(contexts,profiles,candidate){
  const buckets={'1-2':0,'3-5':0,'6+':0};
  for(const profile of profiles)buckets[profile.bucket]+=1;
  const topCounts={'1-2':0,'3-5':0,'6+':0};
@@ -109,7 +122,7 @@ function summarizeCandidate(contexts,profiles,tau){
  let changedTop1=0;
  for(const context of contexts){
   const rows=context.rows.map(row=>{
-   const adjusted=tau===null?row.rawScore:normalizedSoftMaximum(row.scores,row.weights,tau);
+   const adjusted=candidate===null?row.rawScore:blendedOpportunityScore(row.scores,row.weights,candidate);
    const adjustment=row.rawScore-adjusted;
    const supportShare=row.weights.reduce((sum,weight,index)=>sum+(row.scores[index]>=row.rawScore-4?weight:0),0);
    const value={...row,adjusted,adjustment,supportShare,tie:stableHash(`${context.scenarioId}|${row.zoneId}`)};
@@ -117,7 +130,7 @@ function summarizeCandidate(contexts,profiles,tau){
    return value;
   });
   const raw=[...rows].sort((a,b)=>b.rawScore-a.rawScore||a.tie-b.tie);
-  const ranked=[...rows].sort((a,b)=>b.adjusted-a.adjusted||b.rawScore-a.rawScore||a.tie-b.tie);
+  const ranked=[...rows].sort((a,b)=>b.adjusted-a.adjusted||a.tie-b.tie);
   if(raw[0].zoneId!==ranked[0].zoneId)changedTop1+=1;
   for(const row of ranked.slice(0,5))topCounts[row.bucket]+=1;
  }
@@ -130,8 +143,10 @@ function summarizeCandidate(contexts,profiles,tau){
  const single=all.filter(row=>row.partCount===1);
  const fairnessError=mean(Object.values(overrepresentation).map(value=>Math.abs(Math.log(Math.max(value,.0001)))))+Math.abs(pearson(all.map(row=>row.adjusted),all.map(row=>row.opportunityIndex)));
  return {
-  id:tau===null?'raw-maximum':`softmax-tau-${tau}`,
-  tau,
+  id:candidate?.id||'raw-maximum',
+  tau:candidate?.tau??null,
+  alpha:candidate?.alpha??null,
+  resolution:candidate?.resolution??null,
   scoreOpportunityCorrelation:round(pearson(all.map(row=>row.adjusted),all.map(row=>row.opportunityIndex)),4),
   top5BucketCounts:topCounts,
   top5Overrepresentation:overrepresentation,
@@ -147,7 +162,7 @@ function summarizeCandidate(contexts,profiles,tau){
 }
 
 function markdown(report){
- const rows=report.candidates.map(candidate=>`| ${candidate.id} | ${candidate.train.top5Overrepresentation['1-2'].toFixed(2)}x | ${candidate.train.top5Overrepresentation['3-5'].toFixed(2)}x | ${candidate.train.top5Overrepresentation['6+'].toFixed(2)}x | ${candidate.holdout.top5Overrepresentation['6+'].toFixed(2)}x | ${candidate.holdout.scoreOpportunityCorrelation.toFixed(3)} | ${candidate.holdout.meanAdjustment.toFixed(2)} | ${candidate.holdout.meanBroadSupportAdjustment.toFixed(2)} | ${(candidate.holdout.changedTop1Rate*100).toFixed(1)}% |`);
+ const rows=report.shortlist.map(candidate=>`| ${candidate.id} | ${candidate.train.top5Overrepresentation['1-2'].toFixed(2)}x | ${candidate.train.top5Overrepresentation['3-5'].toFixed(2)}x | ${candidate.train.top5Overrepresentation['6+'].toFixed(2)}x | ${candidate.holdout.top5Overrepresentation['6+'].toFixed(2)}x | ${candidate.holdout.scoreOpportunityCorrelation.toFixed(3)} | ${candidate.holdout.meanAdjustment.toFixed(2)} | ${candidate.holdout.meanBroadSupportAdjustment.toFixed(2)} | ${(candidate.holdout.changedTop1Rate*100).toFixed(1)}% |`);
  const selected=report.selectedCandidate;
  return `# Kalibrering af mulighedsnormaliseret zonerangering
 
@@ -159,7 +174,7 @@ Status: Privat, score-neutral analyse. Ingen produktionsregel er aktiveret.
 
 Zonens nuværende maksimum favoriserer zoner med mange forskelligt vendte kystdele. Analysen bruger den aktive RavScore på en neutral kyst og roterer de samme ${report.scenarioCount} scenarier over hele Danmark. Dermed skyldes forskelle mellem zoner kun deres antal og kombination af kystretninger.
 
-Kandidaten er et vægtet og normaliseret soft-maximum. Én kystdel er uændret. Hvis alle retninger er lige gode, er resultatet også uændret. En enkelt høj score blandt mange retninger korrigeres derimod mere. Retninger, der næsten er ens, tælles ikke som fulde uafhængige lodder.
+Kandidaten er et vægtet og normaliseret soft-maximum blandet med den rå maksimumscore. Én kystdel er uændret. Hvis alle retninger er lige gode, er resultatet også uændret. En enkelt høj score blandt mange retninger korrigeres derimod mere. Retninger, der næsten er ens, tælles ikke som fulde uafhængige lodder. Rangeringens opløsning kalibreres samtidig, så ubegrundede decimaler ikke afgør mellem heltallige RavScore.
 
 ## Resultater
 
@@ -200,11 +215,11 @@ export function calibrate({partsData,zonesData}){
   grouped.get(part.zoneId).push(part);
  }
  assert.equal(grouped.size,EXPECTED_ZONES,'Kalibreringen kræver 210 zoner.');
- const baseline=analyzeZoneDirections([0]).meanPositiveAlignment;
+ const directionBaseline=analyzeZoneDirections([0]).meanPositiveAlignment;
  const profiles=[...grouped.entries()].map(([zoneId,zoneParts])=>{
   const directions=zoneParts.map(part=>Number(part.onshoreDirectionDeg));
   const weights=buildDirectionalWeights(directions);
-  const opportunity=analyzeZoneDirections(directions).meanPositiveAlignment/baseline;
+  const opportunity=analyzeZoneDirections(directions).meanPositiveAlignment/directionBaseline;
   return {zoneId,partCount:zoneParts.length,bucket:bucketFor(zoneParts.length),opportunityIndex:opportunity,directions:weights};
  });
  const contexts=buildScenarioMatrix().map(scenario=>({
@@ -216,20 +231,22 @@ export function calibrate({partsData,zonesData}){
  }));
  const train=contexts.filter(context=>context.split==='train');
  const holdout=contexts.filter(context=>context.split==='holdout');
- const taus=[null,...TAU_CANDIDATES];
- const candidates=taus.map(tau=>({id:tau===null?'raw-maximum':`softmax-tau-${tau}`,tau,train:summarizeCandidate(train,profiles,tau),holdout:summarizeCandidate(holdout,profiles,tau)}));
- const eligible=candidates.filter(candidate=>candidate.tau!==null
-  && candidate.train.top5Overrepresentation['6+']>=.75&&candidate.train.top5Overrepresentation['6+']<=1.25
+ const baseline={id:'raw-maximum',tau:null,alpha:null,resolution:null,train:summarizeCandidate(train,profiles,null),holdout:summarizeCandidate(holdout,profiles,null)};
+ const candidates=CANDIDATE_CONFIGS.map(candidate=>({...candidate,train:summarizeCandidate(train,profiles,candidate),holdout:summarizeCandidate(holdout,profiles,candidate)}));
+ const eligible=candidates.filter(candidate=>
+  candidate.train.top5Overrepresentation['6+']>=.75&&candidate.train.top5Overrepresentation['6+']<=1.25
   && Math.abs(candidate.train.scoreOpportunityCorrelation)<=.08
   && candidate.holdout.top5Overrepresentation['6+']>=.7&&candidate.holdout.top5Overrepresentation['6+']<=1.3
   && Math.abs(candidate.holdout.scoreOpportunityCorrelation)<=.1
   && candidate.holdout.maximumSinglePartAdjustment===0);
- const selected=eligible.sort((a,b)=>a.tau-b.tau||a.holdout.fairnessError-b.holdout.fairnessError)[0]||null;
+ const selected=eligible.sort((a,b)=>a.holdout.meanAdjustment-b.holdout.meanAdjustment||a.holdout.fairnessError-b.holdout.fairnessError)[0]||null;
+ const shortlist=[...candidates].sort((a,b)=>a.holdout.fairnessError-b.holdout.fairnessError||a.holdout.meanAdjustment-b.holdout.meanAdjustment).slice(0,12);
+ if(selected&&!shortlist.some(candidate=>candidate.id===selected.id))shortlist.push(selected);
  return {
   schemaVersion:1,generatedAt:new Date().toISOString(),status:'private-score-neutral-opportunity-normalization-calibration',
   scenarioCount:contexts.length,trainScenarioCount:train.length,holdoutScenarioCount:holdout.length,zoneCount:profiles.length,partCount:parts.length,
   method:'global direction rotation + neutral coast + circular Voronoi weights + normalized soft maximum',
-  baseline:candidates[0],candidates:candidates.slice(1),selectedCandidate:selected,
+  baseline,candidates,shortlist,selectedCandidate:selected,
   scoreImpact:false,publicRuntimeImpact:false,landOrWaterPointsChanged:false,automaticActivationAllowed:false,
  };
 }
@@ -249,10 +266,9 @@ function main(){
  if(options['markdown-out']){fs.mkdirSync(path.dirname(options['markdown-out']),{recursive:true});fs.writeFileSync(options['markdown-out'],markdown(report));}
  console.log(`Scenarier: ${report.trainScenarioCount} træning + ${report.holdoutScenarioCount} holdout`);
  console.log(`Baseline holdout 6+: ${report.baseline.holdout.top5Overrepresentation['6+']}x; korrelation ${report.baseline.holdout.scoreOpportunityCorrelation}`);
- for(const candidate of report.candidates)console.log(`${candidate.id}: holdout 6+ ${candidate.holdout.top5Overrepresentation['6+']}x; corr ${candidate.holdout.scoreOpportunityCorrelation}; justering ${candidate.holdout.meanAdjustment}; bred ${candidate.holdout.meanBroadSupportAdjustment}`);
+ for(const candidate of report.shortlist)console.log(`${candidate.id}: holdout 6+ ${candidate.holdout.top5Overrepresentation['6+']}x; corr ${candidate.holdout.scoreOpportunityCorrelation}; justering ${candidate.holdout.meanAdjustment}; bred ${candidate.holdout.meanBroadSupportAdjustment}`);
  console.log(`Valgt kandidat: ${report.selectedCandidate?.id||'ingen'}`);
  console.log('Produktionspåvirkning: nej');
 }
 
 if(import.meta.url===pathToFileURL(process.argv[1]).href)main();
-
