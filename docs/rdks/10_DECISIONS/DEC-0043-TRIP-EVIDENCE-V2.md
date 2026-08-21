@@ -28,3 +28,6 @@ Den aktive 25/40/35-vægtning og alle scoreregler er uændrede. V2-kontrakten g�
 ## Releasekrav
 
 Migrationen 20260821_trip_evidence_contract.sql skal være anvendt og verificeret i Supabase før merge. Derefter kræves fuld kilde-/release-gate, målrettet mobil turkontrol, PR-gates, exact-commit deploy og fuld 210/673-browserkontrol, fordi brugerflade og datakontrakt ændres.
+## Produktionsafstemning 2026-08-21
+
+Den aktive `public.observations`-tabel har en historisk numerisk identity-nøgle og numerisk legacy-zone-reference. DEC-0043 implementeres derfor med en separat unik `client_observation_id` samt tekstfelterne `actual_zone_id` og `actual_coastal_part_id`. Dette bevarer legacy-skemaet, undgår typecasts og giver idempotente genforsøg uden at gemme præcis position.

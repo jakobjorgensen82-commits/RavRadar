@@ -1172,3 +1172,9 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 ## Kandidatsandhed 4.0.243 - komplette ture
 
 4.0.242 er fortsat produktionssandhed. Branch codex/trip-evidence-contract-4.0.243 indeholder en lokalt verificeret v2-turkontrakt. Den bruger komplette ture, uforanderligt prognosegrundlag, søgeindsats og faktisk kystdel; individuelle fund er ikke kalibreringsenheden. RavScore og 25/40/35 er uændret. Supabase-migration, fulde gates, merge, exact-commit deploy og 210/673-browserkontrol mangler. Ingen land-/vandpunkter er flyttet.
+## 2026-08-21 - Produktionsdatabase for turbevis v2
+
+- De additive v2-kolonner, constraints og unikke indeks er anvendt på den tomme `public.observations`-tabel og verificeret gennem både database-metadata og offentlig nul-rækkers PostgREST.
+- Produktionstabellens legacy `id` og `zone_id` er numeriske. Klient-UUID og offentlige område-id'er gemmes derfor separat; ingen typecast eller historisk omskrivning anvendes.
+- Observationernes RLS har nu særskilte stramme insert-politikker for anon og authenticated. Den tidligere permissive policy er fjernet, og præcis GPS/lokationsnøgler afvises server-side.
+- Appversion 4.0.242 er fortsat aktiv. 4.0.243-koden er endnu ikke pushet/merget fra det lokale releasecheckpoint.

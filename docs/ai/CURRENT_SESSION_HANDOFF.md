@@ -202,3 +202,12 @@ validate:source og release:gate er grønne for 4.0.243, inklusive den nye turkon
 - En laesebaseret nul-raekkers PostgREST-kontrol bekraeftede, at `trip_id` findes (`HTTP 200`), mens v2-kolonnerne endnu ikke findes (`HTTP 400`, PostgreSQL `42703`).
 - Repositoryet har ingen automatisk migrationsworkflow, og maskinen har hverken Supabase CLI, `psql` eller databaseforbindelsesmiljoevariabler. Migrationen maa derfor anvendes via en eksisterende godkendt databasekanal, foer PR'en kan goeres klar til merge.
 - Det lokale releasecommit `95022593` indeholder fire utilsigtede byggeartefakter. De er ikke pushet. En sikker oprydning er forberedt, men sletningen kraever ejerens udtrykkelige godkendelse efter vaerktoejsafvisning.
+## 2026-08-21 - Databasegaten er lukket
+
+- Browser-pluginet fandt en aktiv Supabase-session og det korrekte RavRadar-projekt. Ingen tabeller med private rækker blev åbnet.
+- Produktionstabellen var tom, men havde historisk `bigint` identity for `id` og `bigint` for `zone_id`. Den første v2-migration ramte derfor en typefejl og blev fuldt rullet tilbage; den næste ramte identity-detektion og blev også fuldt rullet tilbage.
+- Kode og migration blev afstemt til den virkelige tabel. Den endelige v2-migration og den eksisterende, korrigerede privacy-migration blev derefter anvendt grønt i transaktioner.
+- PostgREST, metadata og anonym rollback-insert er grønne; tabellen har fortsat nul rækker.
+- Supabase varsler mulig projektbegrænsning fra 9. september 2026 på grund af egress over gratisgrænsen. Dette er registreret som kendt issue.
+- Lokal commitkæde indeholder fortsat de fire ikke-push'ede byggeartefakter fra commit `95022593`. De må først fjernes efter ejerens udtrykkelige godkendelse; PR #31 og remote branch indeholder dem ikke.
+- Efter den endelige kode- og migrationsrettelse bestod hele `validate:source`, inklusive `release:gate`, for 4.0.243.

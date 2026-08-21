@@ -412,3 +412,8 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 ## Åben gate 4.0.243: Supabase-turkontrakt
 
 Den nye appkode må ikke merges, før migrationen 20260821_trip_evidence_contract.sql er anvendt og verificeret på public.observations. Uden migration bevares turen lokalt/outbox, men fjernsynk vil fejle på manglende kolonner. Dette må ikke skjules af grønne kildechecks. 4.0.242 forbliver produktion indtil gate, deploy og browserkontrol er fuldført.
+## KI-2026-08-21-SUPABASE-EGRESS
+
+- **Status:** Åben driftsrisiko, ikke en kodefejl i 4.0.243.
+- Supabase-dashboardet viser, at organisationen overskred egresskvoten i forrige betalingsperiode og varsler begrænsning fra 9. september 2026, hvis forbruget fortsat ligger over grænsen.
+- Næste sikre trin er at identificere de største egresskilder og reducere unødvendige kald eller vælge en passende plan. Denne analyse må ikke eksponere private payloads.

@@ -21,3 +21,5 @@
 - Supabase-migrationen skal anvendes og verificeres på public.observations.
 - Derefter kræves release-gate, PR-gates, exact-commit deploy og fuld 210/673-browserkontrol.
 - 4.0.242 er fortsat produktionssandhed indtil alle krav er afsluttet.
+- Afstemt turupload med produktionens historiske bigint-skema via unik klient-UUID og eksplicitte tekst-id'er for faktisk zone/kystdel.
+- Anvendt og verificeret de additive v2-databasefelter samt server-side privacy-politikker uden historiske rækker eller præcise positioner.

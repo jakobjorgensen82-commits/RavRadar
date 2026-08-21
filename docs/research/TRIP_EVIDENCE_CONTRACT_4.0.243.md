@@ -75,3 +75,9 @@ Eksisterende observationer bevares som kontraktversion 1 og må fortsat kun brug
 ## Før kontrakten må bruges til vægtændringer
 
 Brugerflowet skal kobles på, privatlivstesten skal være grøn, og ture skal have repræsentativ spredning på årstid, område, vejr og både fund/ikke-fund. Først derefter må 25/40/35 eller andre RavScore-regler genestimeres. Enkeltfund må ikke blive fit-enheden.
+## Produktionsskema og idempotens
+
+- Browserens lokale UUID gemmes som `client_observation_id`; den gamle numeriske databasekolonne `id` tildeles af PostgreSQL identity.
+- Offentlige RavRadar-id'er gemmes som tekst i `actual_zone_id` og `actual_coastal_part_id`. Den gamle numeriske `zone_id` bruges ikke til at gemme et offentligt zone-id.
+- En gentaget upload bruger `client_observation_id` som konfliktmål og ignorerer en allerede modtaget identisk tur.
+- Databasen afviser v2-rækker, hvor faktisk område, startprognose, varighed, søgegrundighed eller kalibreringssnapshot mangler.

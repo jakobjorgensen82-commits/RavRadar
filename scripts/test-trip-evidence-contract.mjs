@@ -107,7 +107,9 @@ assert.equal('route' in evidence, false);
 const columns = toObservationTripColumns(evidence);
 assert.equal(columns.schema_version, 2);
 assert.equal(columns.result, 'medium');
-assert.equal(columns.coastal_part_id, 'zone-42-part-2');
+assert.equal(columns.actual_zone_id, 'zone-42');
+assert.equal(columns.actual_coastal_part_id, 'zone-42-part-2');
+assert.equal('zone_id' in columns, false);
 assert.equal(columns.forecast_snapshot_id, 'rr-20260821025000-210');
 assert.equal(columns.calibration_features.totalScore, 63);
 assertTripEvidencePrivacy(columns);
@@ -402,11 +404,15 @@ assert.throws(() => assertTripEvidencePrivacy({ nested: { gpsTrack: [] } }), /Pr
 const migration = fs.readFileSync('supabase/migrations/20260821_trip_evidence_contract.sql', 'utf8');
 for (const column of [
   'schema_version', 'trip_id', 'trip_started_at', 'trip_ended_at', 'search_minutes',
-  'search_coverage', 'coastal_part_id', 'forecast_zone_id', 'forecast_coastal_part_id',
+  'client_observation_id', 'search_coverage', 'actual_zone_id', 'actual_coastal_part_id',
+  'forecast_zone_id', 'forecast_coastal_part_id',
   'calibration_eligible', 'calibration_features', 'found', 'forecast_snapshot_id',
   'forecast_issued_at', 'forecast_valid_at', 'forecast_captured_at'
 ]) assert.match(migration, new RegExp(`\\b${column}\\b`));
 assert.match(migration, /alter table public\.observations/);
+assert.match(migration, /observations_id_seq/);
+assert.match(migration, /actual_zone_id = forecast_zone_id/);
+assert.doesNotMatch(migration, /\bzone_id = forecast_zone_id/);
 assert.doesNotMatch(migration, /public\.ravradar_observations/);
 assert.doesNotMatch(migration, /\b(?:delete|update)\s+(?:from\s+)?observations\b/i);
 assert.doesNotMatch(migration, /\b(?:latitude|longitude|gps|route|track)\b/i);
@@ -422,7 +428,10 @@ assert.doesNotMatch(dialogSource, /\b(?:fetch|geolocation|localStorage)\b/);
 const observationServiceSource = fs.readFileSync('js/services/observation-service.js', 'utf8');
 assert.match(observationServiceSource, /export async function submitTripEvidenceObservation/);
 assert.match(observationServiceSource, /hunt_mode:columns\.hunt_mode/);
-assert.match(observationServiceSource, /id:existing\?\.id\|\|crypto\.randomUUID\(\)/);
+assert.match(observationServiceSource, /id:existing\?\.id\|\|columns\.trip_id/);
+assert.match(observationServiceSource, /on_conflict=client_observation_id/);
+assert.match(observationServiceSource, /resolution=ignore-duplicates/);
+assert.match(observationServiceSource, /client_observation_id:clientObservationId/);
 assert.match(observationServiceSource, /route,track,position,coordinates,latitude,longitude,location/);
 
 const appSource = fs.readFileSync('app.js', 'utf8');

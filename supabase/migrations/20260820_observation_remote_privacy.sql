@@ -16,6 +16,7 @@ begin
 end $$;
 
 drop policy if exists "anonymous observations can be inserted" on public.observations;
+drop policy if exists "Insert observations" on public.observations;
 create policy "anonymous observations can be inserted" on public.observations for insert to anon
 with check (
   user_id is null
