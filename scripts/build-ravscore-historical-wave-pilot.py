@@ -7,8 +7,6 @@ import hashlib
 import json
 import math
 import os
-import shutil
-import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -29,7 +27,7 @@ MAX_RANGE_DAYS = 366
 SENTINELS = {
     "dk-b03-07-national-part-01": "nws",
     "dk-b01-16-national-part-01": "baltic",
-    "dk-b10-01-national-part-01-locality-01": "baltic",
+    "dk-b07-19-fallback-recovery-01": "baltic",
     "dk-b10-21-national-part-01": "baltic",
 }
 
@@ -108,6 +106,17 @@ def iso(value: datetime) -> str:
 def selected_targets(path: Path) -> list[dict[str, Any]]:
     targets = load_targets(path)
     by_id = {str(row["partId"]): row for row in targets}
+    raw_document = json.loads(path.read_text(encoding="utf-8"))
+    raw_rows = []
+    for value in (raw_document.get("zones") or {}).values():
+        if isinstance(value, list):
+            raw_rows.extend(value)
+        elif isinstance(value, dict):
+            raw_rows.extend(value.get("parts") or [])
+    onshore_by_id = {
+        str(row.get("partId") or ""): row.get("onshoreDirectionDeg")
+        for row in raw_rows if isinstance(row, dict)
+    }
     missing = sorted(set(SENTINELS) - set(by_id))
     if missing:
         raise RuntimeError(f"Historical sentinel is missing from authoritative geometry: {', '.join(missing)}")
@@ -123,15 +132,22 @@ def selected_targets(path: Path) -> list[dict[str, Any]]:
             and product["minimumLatitude"] <= float(point[1]) <= product["maximumLatitude"]
         ):
             raise RuntimeError(f"Historical sentinel lies outside its research product: {part_id}")
-        selected.append({**target, "historicalProductKey": product_key})
+        onshore_direction = onshore_by_id.get(part_id)
+        if not isinstance(onshore_direction, (int, float)) or not math.isfinite(float(onshore_direction)):
+            raise RuntimeError(f"Historical sentinel has no valid onshore direction: {part_id}")
+        selected.append({
+            **target,
+            "onshoreDirectionDeg": float(onshore_direction) % 360.0,
+            "historicalProductKey": product_key,
+        })
     return selected
 
 
-def download_subset(
-    product: dict[str, Any], target: dict[str, Any], start: datetime, end: datetime, directory: Path
-) -> Path:
+def open_remote_dataset(
+    product: dict[str, Any], target: dict[str, Any], start: datetime, end: datetime
+) -> xr.Dataset:
     longitude, latitude = (float(value) for value in target["waterPoint"])
-    response = copernicusmarine.subset(
+    return copernicusmarine.open_dataset(
         dataset_id=product["datasetId"],
         variables=[aliases[0] for aliases in VARIABLES.values()],
         minimum_longitude=max(product["minimumLongitude"], longitude - 0.035),
@@ -140,19 +156,8 @@ def download_subset(
         maximum_latitude=min(product["maximumLatitude"], latitude + 0.025),
         start_datetime=start,
         end_datetime=end,
-        coordinates_selection_method="nearest",
-        output_filename=f"{product['source']}-{target['partId']}.nc",
-        output_directory=directory,
-        file_format="netcdf",
-        service="geoseries",
-        overwrite=True,
-        disable_progress_bar=True,
-        netcdf_compression_level=1,
+        chunk_size_limit=0,
     )
-    path = Path(response.file_path)
-    if not path.exists() or path.stat().st_size <= 0:
-        raise RuntimeError(f"Copernicus returned no historical wave subset for {target['partId']}")
-    return path
 
 
 def fixture_path(directory: Path, product: dict[str, Any], target: dict[str, Any]) -> Path:
@@ -217,7 +222,27 @@ def time_text(value: Any) -> str:
     return timestamp if timestamp.endswith("Z") else f"{timestamp}Z"
 
 
-def extract_records(dataset: xr.Dataset, target: dict[str, Any], product: dict[str, Any]) -> list[dict[str, Any]]:
+def direction_class(value: float) -> str:
+    if value >= 0.2:
+        return "onshore"
+    if value <= -0.35:
+        return "offshore"
+    return "alongshore"
+
+
+def wave_onshore_alignment(wave_from_direction: float, onshore_direction: float) -> float:
+    propagation_direction = (wave_from_direction + 180.0) % 360.0
+    difference = (propagation_direction - onshore_direction + 180.0) % 360.0 - 180.0
+    return math.cos(math.radians(difference))
+
+
+def extract_records(
+    dataset: xr.Dataset,
+    target: dict[str, Any],
+    product: dict[str, Any],
+    start: datetime,
+    end: datetime,
+) -> list[dict[str, Any]]:
     time_name = coordinate_name(dataset, ("time", "valid_time"))
     selection, distance_km = nearest_selection(dataset, target)
     names = {field: variable_name(dataset, aliases) for field, aliases in VARIABLES.items()}
@@ -225,11 +250,15 @@ def extract_records(dataset: xr.Dataset, target: dict[str, Any], product: dict[s
     times = dataset[time_name].values
     records = []
     for index, value in enumerate(times):
+        valid_time = utc(time_text(value))
+        if valid_time < start or valid_time > end:
+            continue
         height = float(arrays["significantWaveHeightM"].values[index])
         direction = float(arrays["waveFromDirectionDeg"].values[index])
         period = float(arrays["peakPeriodS"].values[index])
         if not all(math.isfinite(item) for item in (height, direction, period)):
             continue
+        alignment = wave_onshore_alignment(direction, float(target["onshoreDirectionDeg"]))
         records.append({
             "partId": target["partId"],
             "sourceZoneId": target["parentZoneId"],
@@ -238,10 +267,12 @@ def extract_records(dataset: xr.Dataset, target: dict[str, Any], product: dict[s
             "source": product["source"],
             "productId": product["productId"],
             "datasetId": product["datasetId"],
-            "validTime": time_text(value),
+            "validTime": iso(valid_time),
             "significantWaveHeightM": round(max(0.0, height), 3),
             "waveFromDirectionDeg": round(direction % 360.0, 1),
             "peakPeriodS": round(max(0.0, period), 2),
+            "waveOnshoreAlignment": round(alignment, 4),
+            "waveDirectionClass": direction_class(alignment),
             "gridDistanceKm": distance_km,
         })
     return records
@@ -277,11 +308,42 @@ def event_windows(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "endTime": group[-1]["validTime"],
                 "peakSignificantWaveHeightM": peak["significantWaveHeightM"],
                 "peakWaveFromDirectionDeg": peak["waveFromDirectionDeg"],
+                "peakWaveOnshoreAlignment": peak["waveOnshoreAlignment"],
+                "waveDirectionClass": peak["waveDirectionClass"],
                 "peakPeriodS": peak["peakPeriodS"],
                 "selectionThresholdM": round(threshold, 3),
+                "peakHeightToThreshold": round(peak["significantWaveHeightM"] / max(threshold, 1e-9), 3),
                 "sampleCount": len(group),
             })
     return sorted(windows, key=lambda row: (row["peakTime"], row["partId"]))
+
+
+def selected_wave_windows(events: list[dict[str, Any]], requested: int = 12) -> list[dict[str, Any]]:
+    selected: list[dict[str, Any]] = []
+    used: set[str] = set()
+
+    def add(event: dict[str, Any] | None) -> None:
+        if event and event["eventId"] not in used and len(selected) < requested:
+            used.add(event["eventId"])
+            selected.append(event)
+
+    part_ids = sorted({event["partId"] for event in events})
+    for classification in ("onshore", "alongshore", "offshore"):
+        for part_id in part_ids:
+            candidates = sorted(
+                (
+                    event for event in events
+                    if event["partId"] == part_id and event["waveDirectionClass"] == classification
+                ),
+                key=lambda event: (-event["peakHeightToThreshold"], event["peakTime"]),
+            )
+            add(candidates[0] if candidates else None)
+    for event in sorted(
+        (event for event in events if event["eventId"] not in used),
+        key=lambda event: (-event["peakHeightToThreshold"], event["partId"], event["peakTime"]),
+    ):
+        add(event)
+    return selected
 
 
 def reject_sensitive_output(value: Any) -> None:
@@ -313,33 +375,41 @@ def main() -> int:
     ):
         raise RuntimeError("Copernicus credentials are required through environment secrets")
 
-    temporary = Path(tempfile.mkdtemp(prefix="ravradar-historical-wave-"))
     records: list[dict[str, Any]] = []
-    try:
-        for target in targets:
-            product = PRODUCTS[target["historicalProductKey"]]
-            path = (
-                fixture_path(args.fixture_directory, product, target)
-                if args.fixture_directory
-                else download_subset(product, target, start, end, temporary)
-            )
-            with xr.open_dataset(path) as dataset:
-                records.extend(extract_records(dataset, target, product))
-    finally:
-        shutil.rmtree(temporary, ignore_errors=True)
+    for target in targets:
+        product = PRODUCTS[target["historicalProductKey"]]
+        dataset = (
+            xr.open_dataset(fixture_path(args.fixture_directory, product, target))
+            if args.fixture_directory
+            else open_remote_dataset(product, target, start, end)
+        )
+        try:
+            records.extend(extract_records(dataset, target, product, start, end))
+        finally:
+            dataset.close()
 
     if not records:
         raise RuntimeError("Historical wave pilot produced no finite records")
+    covered_part_ids = {row["partId"] for row in records}
+    missing_part_ids = sorted(set(SENTINELS) - covered_part_ids)
+    if missing_part_ids:
+        raise RuntimeError(
+            "Historical wave pilot has no finite coverage for required sentinels: " + ", ".join(missing_part_ids)
+        )
     events = event_windows(records)
+    selected_events = selected_wave_windows(events)
     document = {
         "schemaVersion": 1,
         "status": "OK",
         "generatedAt": iso(datetime.now(timezone.utc)),
         "range": {"start": iso(start), "end": iso(end)},
         "method": "four-authoritative-sentinels-wave-first-event-discovery",
-        "sentinelCount": len(targets),
+        "requestedSentinelCount": len(targets),
+        "coveredSentinelCount": len(covered_part_ids),
+        "sentinelCount": len(covered_part_ids),
         "recordCount": len(records),
         "eventCandidateCount": len(events),
+        "selectedWaveWindowCount": len(selected_events),
         "sources": sorted({row["source"] for row in records}),
         "privateDerivedWeatherFeaturesStored": True,
         "coordinateValuesStored": False,
@@ -352,6 +422,7 @@ def main() -> int:
         "automaticActivationAllowed": False,
         "records": sorted(records, key=lambda row: (row["validTime"], row["partId"])),
         "eventCandidates": events,
+        "selectedWaveWindows": selected_events,
     }
     reject_sensitive_output(document)
     reject_credentials(document)
@@ -361,13 +432,15 @@ def main() -> int:
     args.summary.write_text(
         "Historical RavScore wave pilot: OK\n"
         f"Range: {iso(start)} to {iso(end)}\n"
-        f"Sentinels: {len(targets)}\nRecords: {len(records)}\nEvent candidates: {len(events)}\n"
+        f"Sentinels: {len(covered_part_ids)}/{len(targets)}\nRecords: {len(records)}\n"
+        f"Event candidates: {len(events)}\nSelected wave windows: {len(selected_events)}\n"
         "Coordinates stored: no\nRaw NetCDF stored: no\nScore impact: no\nDMI fallback changed: no\n",
         encoding="utf-8",
     )
     print(
         f"Historical wave pilot: {len(records)} coordinate-free samples, {len(events)} event candidates, "
-        f"{len(targets)} sentinels. Score/DMI/geometri ændret: nej."
+        f"{len(selected_events)} selected wave windows, {len(covered_part_ids)}/{len(targets)} sentinels. "
+        "Score/DMI/geometri ændret: nej."
     )
     return 0
 
