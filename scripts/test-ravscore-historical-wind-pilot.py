@@ -48,28 +48,24 @@ assert len(selected["samples"]) == 4
 assert set(selected["samples"][0]) == {"time", "windSpeedMps", "windDirectionFromDeg"}
 
 synthetic = {
-    "sentinels": [{
-        "sentinelId": "zone-a",
-        "events": [{
-            "eventId": "event-1",
-            "samples": [{"time": MODULE.iso_z(value), "waveHeightM": 1.0} for value in times],
-        }],
+    "eventCatalog": [{
+        "eventId": "event-1",
+        "regionId": "part-a",
+        "windowStart": MODULE.iso_z(times[0]),
+        "windowEnd": MODULE.iso_z(times[-1]),
+    }],
+    "regions": [{
+        "regionId": "part-a",
+        "samples": [{"time": MODULE.iso_z(value), "waveHeightM": 1.0} for value in times],
     }],
 }
 events = MODULE.extract_event_windows(synthetic)
 assert len(events) == 1
-assert events[0]["sentinelRef"] == "zone-a"
+assert events[0]["sentinelRef"] == "part-a"
 assert events[0]["eventId"] == "event-1"
 assert events[0]["sampleTimes"] == times
 
-catalog = MODULE.zone_catalog({
-    "features": [{
-        "id": "zone-a",
-        "properties": {"id": "zone-a", "name": "Testzone", "dataPoint": [10.0, 56.0]},
-        "geometry": {"type": "Polygon", "coordinates": []},
-    }],
-})
-assert MODULE.resolve_target("zone-a", catalog) == (10.0, 56.0)
+assert MODULE.resolve_target("part-a", {"part-a": (10.0, 56.0)}) == (10.0, 56.0)
 assert len(MODULE.station_alias("06123")) == 12
 assert "06123" not in MODULE.station_alias("06123")
 

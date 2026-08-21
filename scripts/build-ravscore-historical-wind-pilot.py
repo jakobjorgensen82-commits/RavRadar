@@ -15,6 +15,8 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
+from lib.copernicus_current import load_targets
+
 
 DMI_OBSERVATIONS = "https://opendataapi.dmi.dk/v2/metObs/collections/observation/items"
 SPEED_PARAMETER = "wind_speed_past1h"
@@ -22,9 +24,6 @@ DIRECTION_PARAMETER = "wind_dir_past1h"
 MAX_STATION_DISTANCE_KM = 60.0
 MAX_TIME_OFFSET_MINUTES = 10.0
 MIN_EVENT_COVERAGE = 0.75
-TIME_KEYS = ("time", "validTime", "validAt", "timestamp", "observedAt")
-ROW_KEYS = ("samples", "hourly", "rows", "timeSeries")
-IDENTITY_KEYS = ("sentinelId", "zoneId", "zone_id", "sentinel", "name")
 
 
 def parse_time(value: object) -> datetime | None:
@@ -44,115 +43,59 @@ def iso_z(value: datetime) -> str:
     return value.astimezone(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
-def row_time(row: object) -> datetime | None:
-    if not isinstance(row, dict):
-        return None
-    for key in TIME_KEYS:
-        parsed = parse_time(row.get(key))
-        if parsed is not None:
-            return parsed
-    return None
-
-
-def scalar_identity(value: object) -> str | None:
-    if isinstance(value, (str, int)) and str(value).strip():
-        return str(value).strip()
-    if isinstance(value, dict):
-        for key in ("id", "zoneId", "sentinelId", "name"):
-            nested = scalar_identity(value.get(key))
-            if nested:
-                return nested
-    return None
-
-
 def extract_event_windows(document: object) -> list[dict]:
-    events: list[dict] = []
-
-    def visit(node: object, inherited: dict[str, str], path: tuple[str, ...]) -> None:
-        if isinstance(node, list):
-            for index, child in enumerate(node):
-                visit(child, inherited, (*path, str(index)))
-            return
-        if not isinstance(node, dict):
-            return
-
-        context = dict(inherited)
-        for key in IDENTITY_KEYS:
-            identity = scalar_identity(node.get(key))
-            if identity:
-                context[key] = identity
-
-        for rows_key in ROW_KEYS:
-            rows = node.get(rows_key)
-            if not isinstance(rows, list):
-                continue
-            times = sorted({row_time(row) for row in rows if row_time(row) is not None})
-            if len(times) < 2:
-                continue
-            sentinel = next((context.get(key) for key in ("sentinelId", "zoneId", "zone_id", "sentinel", "name") if context.get(key)), None)
-            event_id = scalar_identity(node.get("eventId")) or scalar_identity(node.get("id")) or "/".join(path)
-            events.append({
-                "sentinelRef": sentinel,
-                "eventId": event_id,
-                "sampleTimes": times,
-                "windowStart": times[0],
-                "windowEnd": times[-1],
-            })
-            break
-
-        for key, child in node.items():
-            if key not in ROW_KEYS:
-                visit(child, context, (*path, str(key)))
-
-    visit(document, {}, ())
-    unique: dict[tuple[str, str, str, str], dict] = {}
-    for event in events:
-        key = (
-            str(event["sentinelRef"]),
-            str(event["eventId"]),
-            iso_z(event["windowStart"]),
-            iso_z(event["windowEnd"]),
-        )
-        unique[key] = event
-    return list(unique.values())
-
-
-def normalized(value: object) -> str:
-    return re.sub(r"[^a-z0-9]+", "", str(value or "").lower())
-
-
-def zone_catalog(zones_document: dict) -> list[dict]:
-    catalog = []
-    for feature in zones_document.get("features", []):
-        properties = feature.get("properties") or {}
-        point = properties.get("dataPoint")
-        if not (isinstance(point, list) and len(point) >= 2 and all(isinstance(value, (int, float)) for value in point[:2])):
+    if not isinstance(document, dict):
+        raise ValueError("Historical forcing input must be an object")
+    regions = {
+        str(region.get("regionId")): region
+        for region in document.get("regions", [])
+        if isinstance(region, dict) and region.get("regionId")
+    }
+    events = []
+    for event in document.get("eventCatalog", []):
+        if not isinstance(event, dict):
             continue
-        aliases = {
-            scalar_identity(feature.get("id")),
-            scalar_identity(properties.get("id")),
-            scalar_identity(properties.get("zoneId")),
-            scalar_identity(properties.get("name")),
-            scalar_identity(properties.get("nameDa")),
-        }
-        catalog.append({
-            "aliases": {normalized(alias) for alias in aliases if alias},
-            "point": (float(point[0]), float(point[1])),
+        region_id = str(event.get("regionId") or "")
+        event_id = str(event.get("eventId") or "")
+        start = parse_time(event.get("windowStart"))
+        end = parse_time(event.get("windowEnd"))
+        region = regions.get(region_id)
+        if not region_id or not event_id or start is None or end is None or region is None:
+            raise ValueError("Historical forcing event catalog is incomplete")
+        sample_times = sorted({
+            parsed
+            for row in region.get("samples", [])
+            if isinstance(row, dict)
+            and (parsed := parse_time(row.get("time"))) is not None
+            and start <= parsed <= end
         })
+        if len(sample_times) < 2:
+            raise ValueError(f"Historical forcing event {event_id} has no bounded sample series")
+        events.append({
+            "sentinelRef": region_id,
+            "eventId": event_id,
+            "sampleTimes": sample_times,
+            "windowStart": start,
+            "windowEnd": end,
+        })
+    return events
+
+
+def target_catalog(path: Path) -> dict[str, tuple[float, float]]:
+    catalog = {}
+    for target in load_targets(path):
+        part_id = str(target.get("partId") or "")
+        point = target.get("waterPoint")
+        if part_id and isinstance(point, list) and len(point) >= 2:
+            catalog[part_id] = (float(point[0]), float(point[1]))
     return catalog
 
 
-def resolve_target(reference: str | None, catalog: list[dict]) -> tuple[float, float]:
-    needle = normalized(reference)
-    if not needle:
-        raise ValueError("Historical event is missing a sentinel or zone reference")
-    exact = [zone for zone in catalog if needle in zone["aliases"]]
-    if len(exact) == 1:
-        return exact[0]["point"]
-    partial = [zone for zone in catalog if any(needle in alias or alias in needle for alias in zone["aliases"] if len(alias) >= 4)]
-    if len(partial) == 1:
-        return partial[0]["point"]
-    raise ValueError(f"Could not resolve one unambiguous approved data point for sentinel {reference!r}")
+def resolve_target(reference: str | None, catalog: dict[str, tuple[float, float]]) -> tuple[float, float]:
+    target = catalog.get(str(reference or ""))
+    if target is None:
+        raise ValueError(f"Could not resolve the approved coastal-part water point for {reference!r}")
+    return target
 
 
 def haversine_km(first: tuple[float, float], second: tuple[float, float]) -> float:
@@ -284,13 +227,12 @@ def station_alias(station_id: str) -> str:
     return hashlib.sha256(f"ravradar-dmi-wind:{station_id}".encode("utf-8")).hexdigest()[:12]
 
 
-def build(forcing_path: Path, zones_path: Path) -> dict:
+def build(forcing_path: Path, targets_path: Path) -> dict:
     forcing = json.loads(forcing_path.read_text(encoding="utf-8"))
-    zones = json.loads(zones_path.read_text(encoding="utf-8"))
     events = extract_event_windows(forcing)
     if len(events) != 12:
         raise ValueError(f"Expected exactly 12 bounded historical events, found {len(events)}")
-    catalog = zone_catalog(zones)
+    catalog = target_catalog(targets_path)
     output_events = []
     for event in events:
         target = resolve_target(event["sentinelRef"], catalog)
@@ -355,11 +297,11 @@ def summary_text(result: dict) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--forcing", default=".cache/ravscore-historical-forcing-features.json")
-    parser.add_argument("--zones", default="data/zones.geojson")
+    parser.add_argument("--targets", default="data/live/coastal-parts-v2.json")
     parser.add_argument("--output", default=".cache/ravscore-historical-wind-features.json")
     parser.add_argument("--summary", default=".cache/ravscore-historical-wind-features.txt")
     args = parser.parse_args()
-    result = build(Path(args.forcing), Path(args.zones))
+    result = build(Path(args.forcing), Path(args.targets))
     output = Path(args.output)
     summary = Path(args.summary)
     output.parent.mkdir(parents=True, exist_ok=True)

@@ -13,7 +13,7 @@ Denne pilot supplerer kun de 12 allerede udvalgte boelgehaendelser ved Kjul, Hol
 - Vindretning: `wind_dir_past1h`, meteorologisk fra-retning for seneste time.
 - Valg: naermeste station inden for 60 km, naar mindst 75 procent af haendelsens tidspunkter har parret fart og retning.
 - Tid: eksakt tidspunkt eller hoejst 10 minutters afvigelse.
-- Datapunkt: det eksisterende, centralt godkendte zonedatapunkt laeses uden at blive aendret.
+- Datapunkt: det eksisterende, centralt godkendte kystdels-vandpunkt laeses uden at blive aendret eller gemt i artefaktet.
 
 ## Sikkerhedsafgraensning
 
