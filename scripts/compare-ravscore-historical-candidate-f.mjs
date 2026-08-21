@@ -355,12 +355,31 @@ function compareDocuments(forcing, wave, wind, partById, zoneById) {
         candidateF: summarizeDirectionPairs(selected, 'pairedCandidateFOnshore', 'pairedCandidateFOffshore'),
       };
     }),
+    byMode: ['waders', 'beach'].map(mode => {
+      const modeRows = rows.filter(row => row.mode === mode);
+      return {
+        mode,
+        active: summarizeDirectionPairs(modeRows, 'pairedActiveOnshore', 'pairedActiveOffshore'),
+        candidateE: summarizeDirectionPairs(modeRows, 'pairedCandidateEOnshore', 'pairedCandidateEOffshore'),
+        candidateF: summarizeDirectionPairs(modeRows, 'pairedCandidateFOnshore', 'pairedCandidateFOffshore'),
+        byMovementCapacity: ['low', 'medium', 'high'].map(capacity => {
+          const selected = modeRows.filter(row => row.movementCapacityClass === capacity);
+          return {
+            capacity,
+            evaluations: selected.length,
+            active: summarizeDirectionPairs(selected, 'pairedActiveOnshore', 'pairedActiveOffshore'),
+            candidateE: summarizeDirectionPairs(selected, 'pairedCandidateEOnshore', 'pairedCandidateEOffshore'),
+            candidateF: summarizeDirectionPairs(selected, 'pairedCandidateFOnshore', 'pairedCandidateFOffshore'),
+          };
+        }),
+      };
+    }),
   };
   assert.ok(pairedDirectionChecks.active.meanOnshoreMinusOffshore > 0);
   assert.ok(pairedDirectionChecks.candidateE.meanOnshoreMinusOffshore > 0);
   assert.ok(pairedDirectionChecks.candidateF.meanOnshoreMinusOffshore > 0);
   return {
-    schemaVersion: '1.3.0',
+    schemaVersion: '1.4.0',
     status: 'passed-private-historical-active-and-candidate-f-comparison',
     generatedAt: new Date().toISOString(),
     method: 'legacy-vs-active-base-engine-plus-candidate-e-vs-f-on-wave-selected-derived-historical-features',
