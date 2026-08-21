@@ -559,3 +559,18 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - Ingen korrektion aktiveres uden landsdaekkende regression, forklarlig brugerlogik og kontrol af sammenhaengen mellem score, pil og forklaring.
 
 **Status:** Analyse aktiv. Ingen produktions- eller scoreaendring er besluttet.
+
+### Foerste kandidatsammenligning
+
+Den eksakte rekonstruktion af 12 aktuelle top-5-lister sammenlignede ingen korrektion, en raa antal-straf, en ren retningsstraf og tre stoettebaserede varianter.
+
+- Baseline for zoner med mindst seks dele var `3,50x` overrepraesentation.
+- Raa antal-straf reducerede tallet, men afvises som fagligt for grov.
+- Ren retningsstraf reducerede naesten ikke skaevheden og kan ramme reelt gode zoner.
+- Stoettebaseret maks. 2 point var for svag i dette forloeb.
+- Stoettebaseret maks. 4 point reducerede overrepraesentationen til `2,94x` og er foreloebig midterkandidat.
+- Stoettebaseret maks. 6 point reducerede den til `2,66x`, men flyttede flere top-5-medlemmer og skal behandles som oevre graense, ikke anbefaling.
+
+**Haardt krav:** En stor zone skal stadig kunne ligge nummer et, naar det er reelt. En stoettebaseret kandidat giver derfor nul justering, hvis hele zonen har gode forhold, og gradvist mindre justering naar flere dele stoetter vinderen.
+
+**Naeste trin:** Koer 2/4/6-pointsintervallet paa de allerede indsamlede historiske vejrsituationer. Vaelg ikke produktionsregel paa baggrund af et enkelt produktionsforloeb.
