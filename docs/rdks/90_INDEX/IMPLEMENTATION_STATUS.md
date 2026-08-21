@@ -1630,3 +1630,11 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [ ] Sammenlign 24-timers aktivt spor, 48-timers baggrundsspor og en lille dobbeltsporsmatrix i kandidat G.
 - [ ] Koer separate ablationer og integrér de bedste score-neutrale varianter i historisk replay/parret retning.
 - [ ] National matrix, shadow, ekspertregler, jagtbarhed, sikkerhed og pil-/score-/forklaringskontrol mangler fortsat.
+
+## Regimehukommelse - merge- og driftsstatus
+
+- [x] PR #56 exact-head-kildegate og merge `cd229466`.
+- [x] Exact-commit-produktion `32523092260`: fuld validate, releasegate, Supabase, Pages-artifact og deploy groen.
+- [x] GitHub Pages deployment `6028771928` peger paa korrekt commit; live 4.0.252 serverer forskningsmodulet.
+- [x] Ingen offentlig score/UI/datakontrakt; ingen gentaget 210/673-browseraudit noedvendig.
+- [ ] Kandidat G 24/48-dobbeltsporsmatrix og ablationer er naeste ikke-blokerede analysepunkt.

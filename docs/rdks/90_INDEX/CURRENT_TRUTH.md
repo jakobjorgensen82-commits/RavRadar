@@ -1268,3 +1268,12 @@ Foerste private aktive RavScore-shadowrun stoppede korrekt foer state og score, 
 - Vind og boelger viste samme hovedprincip: svage korte vendinger aendrede lidt og vendte ikke hukommelsen, mens staerke vedvarende episoder kunne.
 - Naeste shortlist er et 24-timers aktivt regimespor og et 48-timers baggrundsspor. Blandingsandel og scorepoint er ikke valgt; stroem, boelger og vind skal foerst ablateres uden dobbeltregning.
 - Aktiv RavScore 25/40/35 og offentlig runtime er uændret. Se DEC-0050 og `docs/research/RAVSCORE_REGIME_MEMORY_RESULT_2026-08-21.md`.
+
+## RavScore regimehukommelse merged og produktionsverificeret
+
+- PR #56 er merged som `cd229466`; exact-head-gate `32522938958` var groen.
+- Exact-commit-produktion `32523092260` bestod readiness, frisk DMI, centrale admin-/punktkontrakter, fuld validate, releasegate, Supabase, Pages-artifact og deploy.
+- GitHub deployment `6028771928` er `success` paa praecis mergecommittet. GitHub Pages viser fortsat 4.0.252 og serverer den nye, ubrugte forskningsmodulfil.
+- Custom-domaenets DNS kunne ikke oploeses fra den lokale Windows-session; GitHubs officielle Pages-adresse var tilgaengelig. Der er ingen evidens for en RavRadar-regression.
+- Ingen offentlig score-, UI-, data- eller geometrikontrakt er ændret; derfor var fuld browseraudit ikke relevant for dette delmaal.
+- Naeste trin er den private 24/48-timers dobbeltsporsmatrix og separate ablationer. Se `docs/research/RAVSCORE_REGIME_MEMORY_PRODUCTION_CHECKPOINT_2026-08-21.md`.
