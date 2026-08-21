@@ -186,3 +186,29 @@ Der må ikke flyttes land-/vandpunkter.
 - DEC-0042 og tripprotokollen afviser enkeltfund som fit-enhed.
 - Næste kodeopgave er tripkontrakten: faktisk start/slut, søgetid, jagtform, lokal del, dækningsgrad og immutable forecast-link; præcis GPS forbliver lokal.
 - Aktiv score, 25/40/35, regler, geometri og punkter er uændrede.
+
+## Handoff 2026-08-21 - 4.0.243 turdata
+
+Aktiv branch: codex/trip-evidence-contract-4.0.243. Seneste browserverificerede funktionscommit før versions-/dokumentationscommit: 8a7016c7; databaseskema-korrektion: 85b6385d; legacy-bro: 00dcd50b. Lokal kontrakt-, privatlivs-, syntaks- og Browser-plugin-kontrol er grøn. Browserflowet viste 210 zoner, korrekt start/stop og samme kystdel; intet testsvar blev indsendt.
+
+Næste trin: anvend/verificer Supabase-migration, kør validate:source og release:gate, commit/push dokumentations- og versionsdelta, opret kort PR, følg gates og merge/deploy kun ved fuld grøn evidens. Efter produktion kræves fuld 210/673-kontrol. De fire beskyttede dirty datafiler i Desktop-worktreeet må ikke røres. Ingen punkter er flyttet.
+
+### Gatecheckpoint 2026-08-21 01:40 CEST
+
+validate:source og release:gate er grønne for 4.0.243, inklusive den nye turkontrakt og observationsprivatliv. Supabase-migrationen er næste og eneste eksterne gate før PR/merge. Kør ikke den fulde 210/673-browserkontrol før exact-commit deploy; lokal integreret Browser-plugin-kontrol er allerede grøn.
+## 2026-08-21 - Trip evidence v2: ekstern databasegate
+
+- PR #31 er oprettet som kladde fra den allerede push'ede commit `8a7016c7`; GitHub-run `32430076625` bestod den fulde PR-kilde- og releasegate paa praecis dette head.
+- En laesebaseret nul-raekkers PostgREST-kontrol bekraeftede, at `trip_id` findes (`HTTP 200`), mens v2-kolonnerne endnu ikke findes (`HTTP 400`, PostgreSQL `42703`).
+- Repositoryet har ingen automatisk migrationsworkflow, og maskinen har hverken Supabase CLI, `psql` eller databaseforbindelsesmiljoevariabler. Migrationen maa derfor anvendes via en eksisterende godkendt databasekanal, foer PR'en kan goeres klar til merge.
+- Det lokale releasecommit `95022593` indeholder fire utilsigtede byggeartefakter. De er ikke pushet. En sikker oprydning er forberedt, men sletningen kraever ejerens udtrykkelige godkendelse efter vaerktoejsafvisning.
+## 2026-08-21 - Databasegaten er lukket
+
+- Browser-pluginet fandt en aktiv Supabase-session og det korrekte RavRadar-projekt. Ingen tabeller med private rækker blev åbnet.
+- Produktionstabellen var tom, men havde historisk `bigint` identity for `id` og `bigint` for `zone_id`. Den første v2-migration ramte derfor en typefejl og blev fuldt rullet tilbage; den næste ramte identity-detektion og blev også fuldt rullet tilbage.
+- Kode og migration blev afstemt til den virkelige tabel. Den endelige v2-migration og den eksisterende, korrigerede privacy-migration blev derefter anvendt grønt i transaktioner.
+- PostgREST, metadata og anonym rollback-insert er grønne; tabellen har fortsat nul rækker.
+- Supabase varsler mulig projektbegrænsning fra 9. september 2026 på grund af egress over gratisgrænsen. Dette er registreret som kendt issue.
+- Lokal commitkæde indeholder fortsat de fire ikke-push'ede byggeartefakter fra commit `95022593`. De må først fjernes efter ejerens udtrykkelige godkendelse; PR #31 og remote branch indeholder dem ikke.
+- Efter den endelige kode- og migrationsrettelse bestod hele `validate:source`, inklusive `release:gate`, for 4.0.243.
+- Egress blev undersøgt i Usage, Unified Logs, dokumentstørrelser og `pg_stat_statements`. Den seneste fulde dag var 64 MB (100% PostgREST) efter tidligere 700-1.500 MB-dage. Den eksisterende diagnostikpakning ser ud til at have løst problemet; overvågning er bedre cost/benefit end ny cachekode nu.

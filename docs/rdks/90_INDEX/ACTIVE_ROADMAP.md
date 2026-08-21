@@ -181,3 +181,12 @@ Aktiv kandidat: 25/40/35 efter DEC-0041. Konsekvensauditterne er grønne. Næste
 - [ ] Bevar præcis GPS lokalt, og hold observationsanalysen coverage-only med tomme scoreforslag.
 - [ ] Generér første aggregerede kvalitets-/dækningsrapport før enhver beslutning om numeriske fit-minimummer.
 - P1's naturlige 72/168-timersdrift fortsætter uden backfill og vurderes først, når tidskravene faktisk er nået.
+
+## Næste P1: frigiv 4.0.243 sikkert
+
+1. Anvend og verificer 20260821_trip_evidence_contract.sql på den aktive Supabase observations-tabel.
+2. Kør målrettede tests, validate:source og release:gate for 4.0.243.
+3. Opdater kort PR, følg exact-head gates og merge kun hvis alle krav er grønne.
+4. Følg exact-commit produktion og Supabase-synk.
+5. Kør mobil turkontrol og fuld 210 zoner / 673 kystdele-kontrol, fordi UI og datakontrakt er ændret.
+6. Fortsæt derefter turbaseret kalibreringsroadmap; ændr ikke 25/40/35 uden repræsentative ture.

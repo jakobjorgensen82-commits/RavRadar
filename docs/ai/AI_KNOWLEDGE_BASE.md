@@ -69,3 +69,7 @@ Gatehullet er lukket ved at lade både fuld validering og releasegate følge sam
 
 ### Endelig admin-geometri før Codex
 Efter #1758 blev yderligere fire zoner gennemgået manuelt og konstateret klart geografisk forkerte: **Fur syd**, **Gjøl og Attrup**, **Aalborg vest og Egholm** samt **Aalborg øst og Nørresundby**. Administratoren rettede deres kystlinje og/eller land-/havpunkter centralt. #1760 blev startet efter disse sidste rettelser og viste, at den efterfølgende DMI/weather/provenance/public/deploy-kæde kunne gennemføres. Da de fulde releasegates var `skipped`, er dette bevis for propagation/deployment, ikke fuld releasegodkendelse.
+
+## Turdata v2 - permanent viden
+
+Komplette ture med søgetid, grundighed, faktisk kystdel og startprognose er kalibreringsevidens. Enkeltfund og ældre ufuldstændige svar er kun dækningsdata. Stedskift mellem start og afslutning gør calibrationEligible falsk. Fjernlagring er kystdelsbaseret og må ikke indeholde GPS/rute. 25/40/35 er fortsat foreløbig produktionsvægt.
