@@ -527,3 +527,11 @@ Koden er lokalt implementeret og browserkontrolleret. Næste bindende trin er Su
 ## v4.0.249: privat RavScore-kandidat-shadow
 
 Den eksisterende private nationale shadow-validator beregner nu A, B og C på samme lokale context som den aktive score. Den bruger 24 timers hændelseshistorik og 72 timers strømforløb, opdeler kandidat B i strøm mod, langs og væk fra kysten og gemmer kun dataminimerede forskelle. Den aktive vægtning 25/40/35, offentlig score, UI, vejrsampling, admin-data og geometri ændres ikke. Koden er målrettet selftestet; næste evidens er én virkelig privat national shadow-kørsel efter merge. Se DEC-0047 og `docs/research/RAVSCORE_PRIVATE_SHADOW_METHOD_2026-08-21.md`.
+
+## Naeste AI-trin efter 4.0.250
+
+1. Merge kun efter exact-head source gate og relevante releasechecks.
+2. Foelg produktionen for den eksakte mergecommit uden fuld browserkontrol, fordi offentlig UI og score er uændret.
+3. Koer `ravscore_active_shadow=true` manuelt paa `main` og laes kun den kompakte rapport.
+4. Brug rapporten som ét input i den store videnskabelige analyse; aktivér ikke A/B/C ud fra én koersel.
+5. Fortsaet derefter forskning, regelgennemgang og begrundet forslag til vaegte for jagtbarhed, transport og mobilisering.

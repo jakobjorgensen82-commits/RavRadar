@@ -1581,3 +1581,11 @@ Den automatiske ejeroversigt og den faglige gennemgang er nu genereret. Dette af
 ## v4.0.249: privat RavScore-kandidat-shadow
 
 Den eksisterende private nationale shadow-validator beregner nu A, B og C på samme lokale context som den aktive score. Den bruger 24 timers hændelseshistorik og 72 timers strømforløb, opdeler kandidat B i strøm mod, langs og væk fra kysten og gemmer kun dataminimerede forskelle. Den aktive vægtning 25/40/35, offentlig score, UI, vejrsampling, admin-data og geometri ændres ikke. Koden er målrettet selftestet; næste evidens er én virkelig privat national shadow-kørsel efter merge. Se DEC-0047 og `docs/research/RAVSCORE_PRIVATE_SHADOW_METHOD_2026-08-21.md`.
+
+## 4.0.250 - implementeret, afventer foerste naturlige shadow-artifact
+
+- Implementeret: `ravscore_active_shadow` som separat manuelt workflowjob med `contents: read`.
+- Implementeret: aktivt 210/673-runtimeinput i den eksisterende private punkt-/plankontrakt.
+- Implementeret: native DMI-grid, flertrins marine, state/historik, vind og A/B/C-shadow uden deploy eller aktivering.
+- Lokalt verificeret: builder-selftest, workflowkontrakt og realistisk komplet 210/673-input.
+- Afventer efter merge: exact-commit PR-gate, produktion og foerste manuelle nationale shadowkoersel.
