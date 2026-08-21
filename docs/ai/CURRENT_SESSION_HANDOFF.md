@@ -250,3 +250,15 @@ Normal Copernicus er ændret fra alle 673 kystdele til en automatisk liste over 
 - Live viser 4.0.247, datasæt rr-20260821094303-210, 210 zoner, 673 kystdele og reference 09:00Z.
 - Fuld post-data validering, releasegate, Supabase, artifact og Pages bestod. Ingen browseraudit var relevant for workflowændringen.
 - PR #34 er opdateret til den aktuelle main og indeholder den samlede RavScore-evidenssyntese. Næste trin er ny exact-head-gate, merge og derefter automatisk gammel-mod-ny-scoreanalyse.
+
+## Checkpoint: 4.0.248 RavScore-sammenligning
+
+- Branchen codex/ravscore-candidate-comparison implementerer stabile model-ID'er og Kandidat A-C som score-neutrale forskningsresultater.
+- Observeret audit sammenligner gammel 40/35/25 med aktiv 25/40/35 på samme offentlige poster.
+- En ny tynd rapportgenerator genbruger syntetisk og observeret audit og skriver kun en kort dansk ejer-rapport.
+- Næste trin: generér rapport på live public-condition-details, kør målrettede self-tests/RDKS/release, commit/push/PR og præcis produktion.
+- Ingen produktionsscore, forklaring, pil, datakilde, geometri eller punkt er ændret.
+
+## v4.0.248-kandidatgennemgang (2026-08-21)
+
+Den automatiske ejeroversigt og den faglige gennemgang er nu genereret. Dette afsnit erstatter tidligere status om, at rapporten manglede. Konklusionen er at beholde den aktive vaegtning 25/40/35 og ikke aktivere A, B eller C samlet. A er for volatil, B skal skelne levering fra passage, og C er en mulig mild fysisk gate, men der er kun 3 af 1.346 aktuelle kystdele med mindst middel score og et tydeligt svagt fysisk led. Naeste trin er derfor score-neutral intern skyggekoersel og maalrettet retningskontrol, ikke en offentlig scoreaendring. Se `docs/research/RAVSCORE_CANDIDATE_REVIEW_2026-08-21.md`.

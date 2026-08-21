@@ -1222,3 +1222,15 @@ Den første 4.0.244-produktionskørsel stoppede korrekt ved 630/673 før release
 - Push beholdt den tidlige kildekodegate. Frisk data, fuld validering, releasegate, Supabase, artifact og Pages bestod.
 - Live datasæt rr-20260821094303-210 viser version 4.0.247, 210 zoner, 673 kystdele og reference 09:00Z.
 - Den store browseraudit var ikke relevant, fordi workflowændringen ikke ændrede UI, score eller offentlig datakontrakt.
+
+## 4.0.248 - automatisk RavScore-sammenligning
+
+- DEC-0046 fastlægger stabile ID'er for gammel, nuværende og kandidat A-C.
+- Gammel 40/35/25 sammenlignes direkte med aktiv 25/40/35 på samme offentlige scoreposter.
+- A-C genbruger den eksisterende fysiske proceskandidat og 86.400 scenarier; en tynd read-only rapport udvælger de vigtigste forskelle.
+- Kandidaterne er diagnostic-only og kan ikke ændre produktionsscore, forklaring, pile eller data.
+- Ingen geometri eller land-/vandpunkter er ændret.
+
+## v4.0.248-kandidatgennemgang (2026-08-21)
+
+Den automatiske ejeroversigt og den faglige gennemgang er nu genereret. Dette afsnit erstatter tidligere status om, at rapporten manglede. Konklusionen er at beholde den aktive vaegtning 25/40/35 og ikke aktivere A, B eller C samlet. A er for volatil, B skal skelne levering fra passage, og C er en mulig mild fysisk gate, men der er kun 3 af 1.346 aktuelle kystdele med mindst middel score og et tydeligt svagt fysisk led. Naeste trin er derfor score-neutral intern skyggekoersel og maalrettet retningskontrol, ikke en offentlig scoreaendring. Se `docs/research/RAVSCORE_CANDIDATE_REVIEW_2026-08-21.md`.

@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 const MODES = ['waders', 'beach'];
 const COMPONENTS = ['huntability', 'transport', 'release'];
 const WEIGHTS = Object.freeze({ huntability: 0.25, transport: 0.40, release: 0.35 });
+const LEGACY_WEIGHTS = Object.freeze({ huntability: 0.40, transport: 0.35, release: 0.25 });
 const WEATHER_FIELDS = ['windSpeedMps', 'waveHeightM', 'currentSpeedMps', 'waterLevelTrendCm3h'];
 const DRIVER_PATTERNS = Object.freeze({
   wind: /vind|wind/i,
@@ -94,6 +95,8 @@ function normalizeRecord(value, metadata) {
   const weightedExact = COMPONENTS.reduce((sum, key) => sum + components[key] * WEIGHTS[key], 0);
   const roundedWeightedScore = clampScore(weightedExact);
   const nonWeightOffset = score - roundedWeightedScore;
+  const legacyWeightedExact = COMPONENTS.reduce((sum, key) => sum + components[key] * LEGACY_WEIGHTS[key], 0);
+  const legacyScore = Math.max(0, Math.min(100, clampScore(legacyWeightedExact) + nonWeightOffset));
   const contributions = Object.fromEntries(COMPONENTS.map(key => [key, components[key] * WEIGHTS[key]]));
   const ablations = Object.fromEntries(COMPONENTS.map(key => {
     const scoreWithout = clampScore(weightedExact - contributions[key]) + nonWeightOffset;
@@ -112,6 +115,8 @@ function normalizeRecord(value, metadata) {
     weightedExact,
     roundedWeightedScore,
     nonWeightOffset,
+    legacyWeightedExact,
+    legacyScore,
     ablations,
     explanation: value.explanation || {},
     componentReasons: value.componentReasons || {},
@@ -307,6 +312,20 @@ function analyse(rows) {
       scoreWithout: distribution(rows.map(row => row.ablations[key].scoreWithout)),
     }];
   }));
+  const oldVsCurrentDeltas = rows.map(row => row.score - row.legacyScore);
+  const oldVsCurrent = {
+    method: 'same observed components and non-weight offset; only 40/35/25 versus 25/40/35 changes',
+    legacyWeights: LEGACY_WEIGHTS,
+    currentWeights: WEIGHTS,
+    legacyScore: distribution(rows.map(row => row.legacyScore)),
+    currentScore: distribution(rows.map(row => row.score)),
+    deltaCurrentMinusLegacy: distribution(oldVsCurrentDeltas),
+    currentLower: oldVsCurrentDeltas.filter(value => value < 0).length,
+    equal: oldVsCurrentDeltas.filter(value => value === 0).length,
+    currentHigher: oldVsCurrentDeltas.filter(value => value > 0).length,
+    changedBand: rows.filter(row => scoreBand(row.score) !== scoreBand(row.legacyScore)).length,
+    correlation: pearson(rows, row => row.legacyScore, row => row.score),
+  };
 
   return {
     records: rows.length,
@@ -323,6 +342,7 @@ function analyse(rows) {
     weatherOverlapProxy,
     reasonOverlapProxy: reasonSummary(rows),
     conflicts: conflictSummary(rows),
+    oldVsCurrent,
     ablation,
     validation: validationSummary(rows),
   };
@@ -346,6 +366,7 @@ function buildAudit(dataset) {
       parts: Object.keys(dataset.coastalParts?.parts || {}).length,
     },
     activeWeights: WEIGHTS,
+    legacyWeights: LEGACY_WEIGHTS,
     coverage: {
       zoneWinnerHourlyRecords: zoneWinnerHourly.length,
       currentWinnerRecords: currentWinners.length,
@@ -415,6 +436,8 @@ if (selfTest) {
   assert.equal(audit.validation.contributionMismatchCount, 0);
   assert.equal(audit.validation.invalidScoreCount, 0);
   assert.equal(audit.conflicts.easySearchWeakPhysicalChain.count, 1);
+  assert.equal(audit.oldVsCurrent.legacyScore.count, 3);
+  assert.ok(finite(audit.oldVsCurrent.deltaCurrentMinusLegacy.mean));
   assert.ok(audit.ablation.transport.scoreDrop.mean > audit.ablation.huntability.scoreDrop.mean);
   assert.equal(audit.weatherOverlapProxy.windDirectionDeg, undefined);
   console.log('OK: observeret RavScore-fordeling og komponentablation er deterministisk og score-neutral.');

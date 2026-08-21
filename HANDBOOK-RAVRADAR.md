@@ -22,6 +22,14 @@ Kontrollen før frigivelsen fandt en komplet fælles time i alle 210 zoner. Den 
 
 Rettelsen ændrer ikke ejerens blå/grønne land-/vandpunkter, U/V-data, kildeorden, afstandsgrænser, scoreformel, rollback eller kravet om præcis 673/673. Commit `9c971bc1` og den fulde centrale kørsel `#32264833170` bestod frisk data, validering, releasegate, Supabase og Pages; direkte liveaudit fandt 210/210 komplette zoner og 673/673 tidsjusterede dele.
 
+## Gammel, nuværende og nye RavScore-regler sammenlignes automatisk - 4.0.248
+
+RavRadar har nu et internt read-only værktøj, som sammenligner den tidligere 40/35/25-vægtning, den aktive 25/40/35-model og tre forskningskandidater. Kandidat A bruger glatte kurver og hændelseshukommelse. B tilføjer levering og fastholdelse. C tilføjer en mild begrænsning, når et nødvendigt fysisk led er klart svagt.
+
+Ejeren skal ikke gennemgå tusindvis af rå rækker. Værktøjet samler forskellene i en kort dansk rapport og fremhæver automatisk situationer som godt søgevejr uden fysisk transport, mobilisering uden levering og stærk fysisk mulighed under dårlige søgeforhold.
+
+Rapporten kan ikke ændre produktionen. Gammel mod nuværende måles på de virkelige offentlige scoreposter. A-C afprøves først på et bredt scenariegitter, fordi den offentlige post ikke indeholder hele den rå hændelseshistorik. Før en kandidat kan aktiveres, kræves en særskilt beslutning, fulde regressioner, frisk produktion og relevant browserkontrol.
+
 ## Vi tester det rigtige på det rigtige tidspunkt - 4.0.247
 
 RavRadar gentager ikke længere hele kildekodekontrollen ved hver planlagt vejropdatering, når koden på main allerede er kontrolleret. Push og manuelle produktionsbyg kontrollerer fortsat kildekoden før de dyre datatrin. En Pull Request skal desuden have en grøn kontrol på præcis den commit, der ønskes merged.
@@ -256,7 +264,7 @@ En privat, score-neutral cache bruger DKSS-felter ved vandpunktet samt cirka 5 o
 
 Rotationen registrerer også, hvor langt der er til den nærmeste modelkolonne med et eksakt fælles U/V-par, selv når den ligger uden for 5 km. I det tilfælde gemmes kun koordinat, afstand og lagmetadata – ikke de fjerne strømværdier. En privat ejeroversigt skelner derfor mellem nær-tærskel 5–6 km til rent manuelt geometrireview, modelhul 6–8 km, strukturelt modelhul over 8 km og en datakædefejl, hvor gyldig strøm faktisk findes inden for 5 km. Selv en nær-tærskel-post må kun flyttes, hvis vandpunktet i sig selv er forkert – aldrig blot for at nå modelcellen. Oversigten flytter ingen punkter automatisk, og den offentlige 5 km-grænse er uændret.
 
-**Håndbogsversion:** 4.0.247
+**Håndbogsversion:** 4.0.248
 
 **Opdateret:** 19. august 2026
 

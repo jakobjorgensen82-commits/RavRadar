@@ -197,10 +197,13 @@ export function evaluatePhaseDProcessCandidate({ mode = 'beach', history = {}, w
     transportAndDelivery: rounded(transportAndDelivery.value),
     mobilisation: rounded(mobilisationResult.value),
   };
+  const candidateA = rounded(components.huntability * 0.25 + components.transport * 0.4 + components.mobilisation * 0.35);
+  const candidateB = rounded(components.huntability * 0.25 + components.transportAndDelivery * 0.4 + components.mobilisation * 0.35);
   const additive = components.huntability * 0.25 + components.transportAndDelivery * 0.4 + components.mobilisation * 0.35;
-  const weakestStage = Math.min(components.huntability, components.transportAndDelivery, components.mobilisation);
+  const weakestStage = Math.min(components.mobilisation, components.delivery);
   const gateFactor = 0.75 + 0.25 * Math.min(1, weakestStage / 50);
-  const score = rounded(additive * gateFactor);
+  const candidateC = rounded(additive * gateFactor);
+  const score = candidateC;
   const coverage = (search.coverage + mobilisationResult.coverage + transportResult.coverage + deliveryResult.coverage) / 4;
   const limitations = [];
   if (!finite(weather?.wavePeriodS)) limitations.push('wave-period-missing');
@@ -216,8 +219,18 @@ export function evaluatePhaseDProcessCandidate({ mode = 'beach', history = {}, w
     available: true,
     score,
     scoreImpact: 'diagnostic-only',
-    modelVersion: 'phase-d-process-prior-0.1',
+    modelVersion: 'phase-d-process-prior-0.2',
     components,
+    candidateScores: {
+      candidateA,
+      candidateB,
+      candidateC,
+    },
+    candidateDefinitions: {
+      candidateA: 'glatte kurver og hændelseshukommelse uden særskilt levering eller svageste-led-gate',
+      candidateB: 'candidateA plus levering og fastholdelse',
+      candidateC: 'candidateB plus mild glat begrænsning fra det svageste nødvendige fysiske led: mobilisering eller levering',
+    },
     additiveScore: rounded(additive),
     weakestStage,
     gateFactor: Number(gateFactor.toFixed(3)),

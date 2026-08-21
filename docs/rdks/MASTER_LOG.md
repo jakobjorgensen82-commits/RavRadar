@@ -1663,3 +1663,10 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Produktion 32468752244 bestod frisk data, fuld validering, releasegate, Supabase, artifact og Pages.
 - Live datasæt rr-20260821094303-210 viser 4.0.247, 210 zoner og 673 kystdele.
 - Ingen browseraudit var relevant, fordi UI, score og offentlig datakontrakt var uændret.
+
+## 2026-08-21 - 4.0.248 automatisk RavScore-sammenligning
+
+- DEC-0046 registrerer gammel, aktiv og Kandidat A-C med stabile ID'er.
+- Eksisterende audits udvides i stedet for at bygge et nyt beregningssystem.
+- Ejer-rapporten er read-only, dataminimeret og udvælger kun de vigtigste forskelle og fysiske paradokser.
+- Ingen kandidat er godkendt til produktion; 25/40/35 og alle aktive regler er uændrede.
