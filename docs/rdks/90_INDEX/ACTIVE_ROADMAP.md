@@ -214,3 +214,11 @@ Copernicus-afgrænsningen er implementeret som 4.0.244-kandidat: normal drift br
 - [x] Fjern kun den gentagne kildekodegate fra planlagte vejropdateringer på samme kontrollerede kode.
 - [x] PR #37, merge 3dc331ca og præcis produktion 32468752244 er grønne; 210/673-browseraudit var ikke relevant for workflowændringen.
 - [ ] Fortsæt den store evidenssyntese og automatisk gammel-mod-ny-scoreanalyse.
+
+## RavScore sammenligningsfase 4.0.248
+
+- [x] Fastlæg gammel, nuværende og Kandidat A-C i DEC-0046.
+- [x] Genbrug de eksisterende syntetiske og observerede audits.
+- [ ] Generér og gennemgå kun den korte automatiske ejer-rapport.
+- [ ] Vælg eller forkast kandidatdele skriftligt før enhver produktionsscoreændring.
+- [ ] Hændelsesmodel, ravvinduer, lagdelte forklaringer og læringsmodul følger først efter kandidatbeslutningen.

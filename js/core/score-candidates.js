@@ -3,8 +3,17 @@ const finite = value => Number.isFinite(Number(value));
 const rounded = value => Math.round(Number(value));
 
 export const SCORE_CANDIDATE_WEIGHTS = Object.freeze({
+  legacyAdditive: Object.freeze({ huntability: 40, transport: 35, mobilisation: 25 }),
   phaseDAdditive: Object.freeze({ huntability: 25, transport: 40, mobilisation: 35 }),
   equalAdditive: Object.freeze({ huntability: 34, transport: 33, mobilisation: 33 }),
+});
+
+export const SCORE_MODEL_IDS = Object.freeze({
+  legacy: 'RRS-LEGACY-WEIGHTS-4.0.241',
+  current: 'RRS-CURRENT-B0-4.0.247',
+  candidateA: 'RRS-CAND-A-SMOOTH-EVENT',
+  candidateB: 'RRS-CAND-B-DELIVERY-RETENTION',
+  candidateC: 'RRS-CAND-C-WEAKEST-LINK',
 });
 
 function normaliseComponents(result) {
@@ -38,6 +47,7 @@ export function compareScoreCandidates(result) {
   }
 
   const b0 = rounded(clamp(result.score));
+  const legacyAdditive = additiveScore(components, SCORE_CANDIDATE_WEIGHTS.legacyAdditive);
   const phaseDAdditive = additiveScore(components, SCORE_CANDIDATE_WEIGHTS.phaseDAdditive);
   const equalAdditive = additiveScore(components, SCORE_CANDIDATE_WEIGHTS.equalAdditive);
   const weakestStage = Math.min(components.huntability, components.transport, components.mobilisation);
@@ -46,7 +56,7 @@ export function compareScoreCandidates(result) {
   const physicalChain = weightedHarmonic(components, { transport: 40, mobilisation: 35 });
   const phaseDChain = rounded(components.huntability * 0.25 + physicalChain * 0.75);
   const phaseDFullChain = rounded(weightedHarmonic(components, SCORE_CANDIDATE_WEIGHTS.phaseDAdditive));
-  const scores = { b0, phaseDAdditive, equalAdditive, phaseDSoftGate, phaseDChain, phaseDFullChain };
+  const scores = { b0, legacyAdditive, phaseDAdditive, equalAdditive, phaseDSoftGate, phaseDChain, phaseDFullChain };
 
   return {
     available: true,

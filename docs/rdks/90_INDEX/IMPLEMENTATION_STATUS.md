@@ -1564,3 +1564,16 @@ Implementeret og målrettet testet: v2-kontrakt, JSON Schema, korrekt observatio
 - [x] PR #37 exact-head-kildegate bestod.
 - [x] Merge 3dc331ca og produktion 32468752244 bestod fuld post-data validering, releasegate, Supabase, artifact og Pages.
 - [x] Live 4.0.247 viser 210 zoner og 673 kystdele.
+
+## 4.0.248 - gammel/nuværende/kandidat-værktøj
+
+- [x] Registrér stabile model- og regel-ID'er.
+- [x] Opdel procesprioren i Kandidat A, B og C uden produktionspåvirkning.
+- [x] Tilføj gammel-mod-nuværende vægtsammenligning på offentlige produktionsposter.
+- [x] Tilføj dataminimeret dansk ejer-rapport oven på eksisterende audits.
+- [ ] Generér rapporten på den aktuelle live-dataset og dokumentér de vigtigste fund.
+- [ ] Kør målrettede tests, exact-head PR-gate og præcis produktion. Ingen 210/673-browseraudit kræves før en reel score/UI-ændring.
+
+## v4.0.248-kandidatgennemgang (2026-08-21)
+
+Den automatiske ejeroversigt og den faglige gennemgang er nu genereret. Dette afsnit erstatter tidligere status om, at rapporten manglede. Konklusionen er at beholde den aktive vaegtning 25/40/35 og ikke aktivere A, B eller C samlet. A er for volatil, B skal skelne levering fra passage, og C er en mulig mild fysisk gate, men der er kun 3 af 1.346 aktuelle kystdele med mindst middel score og et tydeligt svagt fysisk led. Naeste trin er derfor score-neutral intern skyggekoersel og maalrettet retningskontrol, ikke en offentlig scoreaendring. Se `docs/research/RAVSCORE_CANDIDATE_REVIEW_2026-08-21.md`.

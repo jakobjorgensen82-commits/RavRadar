@@ -516,3 +516,10 @@ Koden er lokalt implementeret og browserkontrolleret. Næste bindende trin er Su
 - [x] DEC-0045 afgrænser målrettede udviklingstests, exact-head PR-kildegate, obligatorisk fuld post-data produktionsgate og hændelsesstyret browserkontrol.
 - [x] PR #37, merge 3dc331ca og produktion 32468752244 er grønne; live viser 4.0.247.
 - [ ] Derefter fortsættes den store RavScore-analyse og automatisk gammel-mod-ny-sammenligning uden ny offentlig AI/API.
+
+## Aktiv RavScore-sammenligning 4.0.248
+
+- Gammel 40/35/25, aktiv 25/40/35 og Kandidat A-C har stabile ID'er efter DEC-0046.
+- Den lokale rapport genbruger de to eksisterende audits og viser kun aggregater, niveauændringer og automatisk udvalgte paradokser.
+- Næste trin er rapport på live-data, målrettede tests, PR/produktion og derefter ejer/Codex-beslutning om kandidatreglerne.
+- Ingen offentlig AI/API og ingen automatisk scoreaktivering.

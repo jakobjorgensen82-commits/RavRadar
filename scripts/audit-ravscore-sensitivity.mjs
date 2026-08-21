@@ -50,7 +50,10 @@ function calculate(context) {
     components: result.available ? result.components : null,
     candidateScores: candidates.available ? {
       ...candidates.scores,
-      phaseDProcessPrior: processCandidate.available ? processCandidate.score : null,
+      phaseDProcessA: processCandidate.available ? processCandidate.candidateScores.candidateA : null,
+      phaseDProcessB: processCandidate.available ? processCandidate.candidateScores.candidateB : null,
+      phaseDProcessC: processCandidate.available ? processCandidate.candidateScores.candidateC : null,
+      phaseDProcessPrior: processCandidate.available ? processCandidate.candidateScores.candidateC : null,
     } : null,
     dominantPathway: result.explanation?.mobilisationDiagnostics?.dominantPathway || null,
     caps: result.explanation?.transportDiagnostics?.capsApplied?.map(cap => cap.reason) || [],
@@ -252,7 +255,7 @@ function scenarioGrid(mode) {
     levels[level] += 1;
   }
   const scoreLevel = score => score >= 75 ? 'good' : score >= 55 ? 'fair' : score >= 35 ? 'weak' : 'poor';
-  const candidateIds = ['b0', 'phaseDAdditive', 'equalAdditive', 'phaseDSoftGate', 'phaseDChain', 'phaseDFullChain', 'phaseDProcessPrior'];
+  const candidateIds = ['legacyAdditive', 'b0', 'phaseDAdditive', 'equalAdditive', 'phaseDSoftGate', 'phaseDChain', 'phaseDFullChain', 'phaseDProcessA', 'phaseDProcessB', 'phaseDProcessC'];
   const candidateComparisons = Object.fromEntries(candidateIds.map(id => {
     const candidateScores = rows.map(row => row.candidateScores[id]);
     const deltas = rows.map((row, index) => candidateScores[index] - row.score);
@@ -277,11 +280,43 @@ function scenarioGrid(mode) {
       largestDecrease: compactExample([...examples].sort((a, b) => a.delta - b.delta)[0]),
     }];
   }));
+  const compareCandidatePair = (fromId, toId) => {
+    const pairs = rows.map(row => ({
+      row,
+      from: row.candidateScores[fromId],
+      to: row.candidateScores[toId],
+      delta: row.candidateScores[toId] - row.candidateScores[fromId],
+    }));
+    const compact = value => ({
+      delta: value.delta,
+      inputs: value.row.inputs,
+      scores: { from: value.from, to: value.to },
+    });
+    return {
+      from: fromId,
+      to: toId,
+      meanDelta: round(pairs.reduce((sum, value) => sum + value.delta, 0) / pairs.length),
+      minimumDelta: Math.min(...pairs.map(value => value.delta)),
+      maximumDelta: Math.max(...pairs.map(value => value.delta)),
+      lower: pairs.filter(value => value.delta < 0).length,
+      equal: pairs.filter(value => value.delta === 0).length,
+      higher: pairs.filter(value => value.delta > 0).length,
+      changedLevel: pairs.filter(value => scoreLevel(value.from) !== scoreLevel(value.to)).length,
+      largestIncrease: compact([...pairs].sort((a, b) => b.delta - a.delta)[0]),
+      largestDecrease: compact([...pairs].sort((a, b) => a.delta - b.delta)[0]),
+    };
+  };
+  const processStageComparisons = {
+    oldToCurrent: compareCandidatePair('legacyAdditive', 'b0'),
+    smoothRulesVsCurrent: compareCandidatePair('b0', 'phaseDProcessA'),
+    deliveryAndRetention: compareCandidatePair('phaseDProcessA', 'phaseDProcessB'),
+    weakestLinkGate: compareCandidatePair('phaseDProcessB', 'phaseDProcessC'),
+  };
   const historyConsistentRows = rows.filter(row => row.inputs.maxWind >= row.inputs.wind && row.inputs.maxWave >= row.inputs.wave);
   const processPriorConsistentPairs = historyConsistentRows.map(row => ({
     row,
-    candidate: row.candidateScores.phaseDProcessPrior,
-    delta: row.candidateScores.phaseDProcessPrior - row.score,
+    candidate: row.candidateScores.phaseDProcessC,
+    delta: row.candidateScores.phaseDProcessC - row.score,
   }));
   const compactConsistentExample = value => ({
     deltaFromB0: value.delta,
@@ -302,7 +337,7 @@ function scenarioGrid(mode) {
     largestDecrease: compactConsistentExample([...processPriorConsistentPairs].sort((a, b) => a.delta - b.delta)[0]),
   };
   const candidateSpread = rows.map(row => {
-    const candidateScores = Object.values(row.candidateScores);
+    const candidateScores = candidateIds.map(id => row.candidateScores[id]);
     return Math.max(...candidateScores) - Math.min(...candidateScores);
   });
   const archetypeDefinitions = {
@@ -315,7 +350,7 @@ function scenarioGrid(mode) {
   const archetypes = Object.fromEntries(Object.entries(archetypeDefinitions).map(([id, predicate]) => {
     const matches = rows.filter(predicate).map(row => ({
       ...row,
-      candidateSpread: Math.max(...Object.values(row.candidateScores)) - Math.min(...Object.values(row.candidateScores)),
+      candidateSpread: Math.max(...candidateIds.map(id => row.candidateScores[id])) - Math.min(...candidateIds.map(id => row.candidateScores[id])),
     }));
     const candidateMeans = Object.fromEntries(candidateIds.map(candidateId => [
       candidateId,
@@ -329,7 +364,7 @@ function scenarioGrid(mode) {
         spread: example.candidateSpread,
         inputs: example.inputs,
         components: Object.fromEntries(['huntability', 'transport', 'release'].map(key => [key, example[key]])),
-        candidateScores: example.candidateScores,
+        candidateScores: Object.fromEntries(candidateIds.map(id => [id, example.candidateScores[id]])),
       } : null,
     }];
   }));
@@ -354,6 +389,7 @@ function scenarioGrid(mode) {
       releaseFinal: round(pearson(rows, 'release', 'score')),
     },
     candidateComparisons,
+    processStageComparisons,
     processPriorConsistent,
     candidateDisagreement: {
       maximumSpread: Math.max(...candidateSpread),
@@ -391,7 +427,7 @@ function buildAudit() {
   };
   const anchorScenarios = Object.fromEntries(Object.entries(anchorContexts).map(([id, context]) => {
     const result = evaluatePhaseDProcessCandidate(context);
-    return [id, { score: result.score, components: result.components, confidence: result.confidence }];
+    return [id, { score: result.score, candidateScores: result.candidateScores, components: result.components, confidence: result.confidence }];
   }));
   return {
     schemaVersion: 1,
@@ -418,6 +454,18 @@ function buildAudit() {
         module: 'js/core/phase-d-process-candidate.js',
         structure: 'smooth-huntability-mobilisation-transport-delivery-with-25-percent-soft-gate',
         scoreImpact: 'diagnostic-only',
+      },
+      phaseDProcessA: {
+        modelId: 'RRS-CAND-A-SMOOTH-EVENT',
+        structure: 'smooth rules and event memory with unchanged 25/40/35 weights',
+      },
+      phaseDProcessB: {
+        modelId: 'RRS-CAND-B-DELIVERY-RETENTION',
+        structure: 'candidate A plus delivery and retention',
+      },
+      phaseDProcessC: {
+        modelId: 'RRS-CAND-C-WEAKEST-LINK',
+        structure: 'candidate B plus maximum 25 percent smooth weakest-link reduction',
       },
     },
     baseline: Object.fromEntries(modes.map(mode => [mode, calculate(baseContext(mode))])),
@@ -458,8 +506,9 @@ if (selfTest) {
   assert.equal(audit.overlaps.length, 8);
   assert.equal(audit.grids.length, 2);
   assert.ok(audit.grids.every(grid => grid.scenarios === 43200));
-  assert.ok(audit.grids.every(grid => Object.keys(grid.candidateComparisons).length === 7));
-  assert.ok(audit.grids.every(grid => Number.isFinite(grid.candidateComparisons.phaseDProcessPrior.largestIncrease.deltaFromB0)));
+  assert.ok(audit.grids.every(grid => Object.keys(grid.candidateComparisons).length === 10));
+  assert.ok(audit.grids.every(grid => Number.isFinite(grid.candidateComparisons.phaseDProcessC.largestIncrease.deltaFromB0)));
+  assert.ok(audit.grids.every(grid => grid.processStageComparisons.weakestLinkGate.maximumDelta <= 0));
   assert.ok(audit.grids.every(grid => grid.processPriorConsistent.scenarios > 0 && grid.processPriorConsistent.scenarios < grid.scenarios));
   assert.ok(audit.anchorScenarios.freshDelivered.score >= audit.anchorScenarios.calmNoEvent.score + 30);
   assert.ok(audit.anchorScenarios.freshDelivered.score >= audit.anchorScenarios.freshOffshore.score + 15);
@@ -485,6 +534,7 @@ if (selfTest) {
   const justAbove = evaluatePhaseDProcessCandidate({ ...baseContext('waders'), weather: { ...baseContext('waders').weather, windSpeedMps: 6.001 } });
   assert.ok(justBelow.available && justAbove.available);
   assert.ok(Math.abs(justAbove.score - justBelow.score) <= 1, 'Fase D-prior må ikke springe ved 6 m/s vind.');
+  assert.ok(Object.values(justBelow.candidateScores).every(Number.isFinite));
   console.log('OK: RavScore sensitivity audit is deterministic, score-neutral and complete.');
 } else {
   console.log(JSON.stringify(audit, null, 2));
