@@ -1598,7 +1598,7 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - Foerste 4.0.250-run `32479158213`: 673 gyldige punkter; stoppet foer state/score paa inkonsistent DKSS-dækning.
 - Afventer: PR-gate, 4.0.251-produktion og groen aktiv 210/673-shadowgenkoersel.
 
-## 4.0.252 - fair landsrangering implementeret som kandidat
+## 4.0.252 - fair landsrangering produktionsverificeret
 
 - [x] Fælles `direction-broad-19-v1`-funktion for dagens og femdøgnets nationale lister.
 - [x] Retningsmulighed bruger samme 360-graders matematik som den nationale analyse.
@@ -1606,4 +1606,4 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [x] Den viste RavScore og alle lokale resultater er uændrede.
 - [x] Kort forklaring er tilføjet ved begge landslister.
 - [x] Målrettet 210/673-regression er tilføjet til den normale valideringskæde.
-- [ ] Exact-head-gate, merge, produktion og fuld online browserkontrol mangler.
+- [x] PR #52 exact-head-gate, merge `ad70fbca`, exact-commit-produktion `32515757957` og fuld online 210/673-browserkontrol er grønne.

@@ -4,9 +4,9 @@
 
 - **ISSUE-COPERNICUS-CURRENT-PILOT - FORTSAT SUND / 168 TIMER IKKE NÅET:** Automatisk dispatch `#32347060320`/artifact `copernicus-current-pilot-72` har 46 eksakte timer til og med 2026-08-20 08:00Z, 28.934 private poster, 625 unikke mål og 629 mål/kilde-par med nul gitter- eller lagustabilitet. Pilotens 48 Copernicus-huller er uændrede kildedækningshuller og udfyldes ikke. Scorepåvirkning, offentlig runtime og interpolation er fortsat deaktiveret; syvdøgnsanalysen forbliver åben.
 
-## 4.0.252-kandidat
+## 4.0.252 produktion
 
-- **ISSUE-NATIONAL-RANKING-OPPORTUNITY-BIAS - IMPLEMENTERET, AFVENTER PRODUKTION:** Zoner med mange forskelligt vendte kystdele havde flere muligheder for at levere top-5-listens maksimum. `direction-broad-19-v1` korrigerer nu kun landsrækkefølgen og beskytter helzone samt mindst 50 procent støtte. Den viste RavScore er uændret. Lukning kræver exact-head-gate, produktion og online 210/673-kontrol.
+- **ISSUE-NATIONAL-RANKING-OPPORTUNITY-BIAS - PRODUKTIONSVERIFICERET LØST:** `direction-broad-19-v1` korrigerer kun landsrækkefølgen og beskytter helzone samt mindst 50 procent støtte. PR #52, merge `ad70fbca`, produktion `32515757957` og livekontrollen af 210 zoner, 673 dele, 420 aktuelle og 2.100 femdøgnsvisninger er grønne. Den viste RavScore er uændret.
 
 ## 4.0.238 produktion
 

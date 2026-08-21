@@ -643,3 +643,4 @@ En ekstra kandidat bruger samme stoettebaserede maks. 4 point, men tillader kun 
 - Modellen gælder alle 210 zoner i både Bedste områder og 5-dages RavRadar; Falster Nord og Falster Vest var kun eksempler.
 - Den ændrer kun intern sortering. Vist RavScore, lokale scoredele, pile og forklaringer bevares.
 - Efter implementering kræves målrettet regression, exact-head-gate, produktion og fuld 210/673-browserkontrol.
+- Afsluttet: PR #52, merge `ad70fbca`, produktion `32515757957` og den fulde 210/673-kontrol er grønne. Næste arbejde er den store faglige RavScore-analyse, ikke flere ændringer i landsrangeringen.
