@@ -1534,4 +1534,11 @@ Implementeret og målrettet testet: v2-kontrakt, JSON Schema, korrekt observatio
 - Implementeret: manuel full_coast-funktion til sjælden landsdækkende forskning.
 - Implementeret: målliste-id'er og fingeraftryk bindes til hver cache-samling.
 - Bevaret: DMI-først, kontrolleret regional DMI-proxy, uændrede kystpunkter og uændret offentlig RavScore-kontrakt.
-- Åben gate: målrettede tests, fuld release-gate, PR og præcis produktionsverifikation.
+- Produktionsresultat: den første 4.0.244-kørsel stoppede fail-closed ved 630/673 før release og deploy, fordi den eksakte DMI-hulliste ikke kunne dannes autoritativt før frisk DMI.
+
+## 4.0.245-kandidat
+- Implementeret: endelig eksakt-times måludvælgelse efter frisk DMI i produktionsjobbet.
+- Implementeret: inline Copernicus-hentning kun for den dannede DMI-hulliste, efterfulgt af den uændrede fulde 673/673-gate.
+- Implementeret: privat timepilot gendanner seneste progressive DMI-cache, og cachebevaringen sender den eksakte mål-time videre.
+- Bevaret: DMI-først, regionale proxyer, RavScore, land-/vandpunkter og ingen offentlig rå U/V eller credentials.
+- Åben gate: målrettede regressioner, fuld kildekodegate, PR-gates og præcis produktionsverifikation.

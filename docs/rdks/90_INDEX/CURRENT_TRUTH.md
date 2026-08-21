@@ -1198,4 +1198,6 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - DMI forbliver førstevalg. Normal Copernicus-kørsel skal begrænses til godkendte DMI-huller; landsdækkende 673-kontrol er kun sjælden/manual forskning.
 
 ## 4.0.244-kandidat: Copernicus kun til DMI-huller
-Den normale Copernicus-kørsel bygger nu sin målliste fra den senest deployede, eksakt-timede lokale DMI-dækning. Hele kysten kan kun vælges manuelt til sjælden forskning. DMI er fortsat førstevalg, de otte regionale DMI-proxyer ændres ikke, og ingen land- eller vandpunkter flyttes. Kandidaten er ikke produktionsverificeret, før PR-gates og den præcise efterfølgende produktionskørsel er grønne.
+Den normale Copernicus-kørsel bygger sin målliste fra eksakt-timede lokale DMI-huller. Hele kysten kan kun vælges manuelt til sjælden forskning. DMI er fortsat førstevalg, de otte regionale DMI-proxyer ændres ikke, og ingen land- eller vandpunkter flyttes.
+
+Den første 4.0.244-produktionskørsel stoppede korrekt ved 630/673 før release og deploy. Årsagen var, at en autoritativ DMI-hulliste først kan dannes efter den friske DMI-kørsel; den selvstændige pilot havde kun ældre deployet DMI-dækning og manglede den eksakte time. 4.0.245 flytter derfor den endelige måludvælgelse ind efter frisk DMI og henter kun disse mål før den uændrede fulde 673/673-gate. Den selvstændige pilot får samtidig seneste private DMI-cache og eksakt dispatch-time. Ingen score-, kildeprioritets-, proxy- eller koordinatregel ændres.

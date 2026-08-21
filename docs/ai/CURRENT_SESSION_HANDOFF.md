@@ -224,3 +224,10 @@ validate:source og release:gate er grønne for 4.0.243, inklusive den nye turkon
 
 ## Checkpoint: 4.0.244-kandidat
 Normal Copernicus er ændret fra alle 673 kystdele til en automatisk liste over aktuelle lokale DMI-huller. En bred landskørsel kræver det manuelle full_coast-valg. Ingen koordinater er ændret. Næste skridt er målrettede tests, release-gate, PR, præcis produktionsverifikation og derefter fortsættelse af den allerede igangsatte store RavScore-evidensanalyse.
+
+## Checkpoint: 4.0.245 Copernicus-target hotfix
+- 4.0.244 blev merged, men den præcise produktion stoppede sikkert ved 630/673 før release og deploy. Den selvstændige pilot kunne ikke danne en eksakt-times DMI-hulliste fra ældre deployet dækning.
+- 4.0.245 danner den autoritative hulliste efter frisk DMI i produktionen, kontrollerer den private shadow mod netop listen og henter kun manglende mål før livefletning og den uændrede 673/673-gate.
+- Den selvstændige pilot gendanner seneste private DMI-cache, og preserve-workflowet sender den eksakte time videre.
+- DMI er fortsat førstevalg. Score, regionale proxyer, geometri og alle land-/vandpunkter er uændrede.
+- Næste trin: målrettede regressioner, kildekodegate, version, commit/push/PR, exact-head gates og kun derefter eventuel merge og præcis produktionsverifikation.

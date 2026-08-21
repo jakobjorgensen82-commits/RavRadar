@@ -1635,3 +1635,10 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 
 ## 2026-08-21 - Copernicus-afgrænsning
 4.0.244-kandidaten implementerer DEC-0044's DMI-først-princip i indsamlingen: den normale Copernicus-målliste består kun af kystdele uden en gyldig lokal DMI-vektor for den ønskede time. Manuel landsforskning bevares, og alle punkter forbliver uændrede.
+
+## 2026-08-21 - 4.0.245 måludvælgelse efter frisk DMI
+
+- 4.0.244-produktionen stoppede korrekt ved 630/673 før release og deploy, fordi en autoritativ eksakt-times DMI-hulliste ikke kunne dannes fra ældre deployet DMI-dækning.
+- 4.0.245 danner derfor målregisteret efter frisk DMI og henter kun disse mål fra Copernicus før den uændrede fulde 673/673-gate.
+- Den private pilot gendanner seneste progressive DMI-cache, og cachebevaringen sender den eksakte time videre.
+- DMI-først, regionale proxyer, RavScore, geometri og alle land-/vandpunkter er uændrede.

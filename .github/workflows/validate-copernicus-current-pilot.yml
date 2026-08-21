@@ -64,6 +64,14 @@ jobs:
           WEATHER_USER_AGENT: "RavRadar Copernicus target selector (${{ github.server_url }}/${{ github.repository }})"
         run: python scripts/hydrate-deployed-weather.py
 
+      - name: Restore latest progressive private DMI coverage for target selection
+        uses: actions/cache/restore@v6
+        with:
+          path: data/live/dmi-bulk-cache.json
+          key: dmi-zone-cache-v1-${{ runner.os }}-copernicus-pilot-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            dmi-zone-cache-v1-${{ runner.os }}-
+
       - name: Select only current DMI gaps unless a full-coast audit was explicitly requested
         env:
           PILOT_SAMPLE_TIME: ${{ inputs.sample_time }}
