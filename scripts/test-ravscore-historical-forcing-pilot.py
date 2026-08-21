@@ -98,15 +98,17 @@ def main() -> int:
             "records": wave_records,
         }), encoding="utf-8")
 
-        for part_index, (part_id, _basin, longitude, latitude) in enumerate(PARTS):
+        for part_index, (part_id, basin, longitude, latitude) in enumerate(PARTS):
             times = sorted(all_times_by_part[part_id])
-            time_values = np.asarray([np.datetime64(value.replace(tzinfo=None), "ns") for value in times])
+            provider_offset = timedelta(minutes=30) if basin == "nws" else timedelta(0)
+            provider_times = [value + provider_offset for value in times]
+            time_values = np.asarray([np.datetime64(value.replace(tzinfo=None), "ns") for value in provider_times])
             shape_4d = (len(times), 1, 1, 1)
             shape_3d = (len(times), 1, 1)
             u_values = np.zeros(shape_4d, dtype=float)
             v_values = np.zeros(shape_4d, dtype=float)
             sea_values = np.zeros(shape_3d, dtype=float)
-            for index, at in enumerate(times):
+            for index, at in enumerate(provider_times):
                 current_sign = (1.0, -1.0, -1.0)[peaks.index(min(peaks, key=lambda peak: abs((peak - at).total_seconds())))]
                 u_values[index, 0, 0, 0] = 0.0
                 v_values[index, 0, 0, 0] = 0.2 * current_sign
@@ -148,6 +150,13 @@ def main() -> int:
         assert set(document["eventClassificationCounts"]) == {
             "onshore-delivery", "offshore-removal", "conflicting-wave-current", "alongshore-mixed"
         }
+        by_region = {region["regionId"]: region for region in document["regions"]}
+        assert by_region["dk-b03-07-national-part-01"]["maximumCurrentTimeOffsetMinutes"] == 30.0
+        assert by_region["dk-b03-07-national-part-01"]["maximumSeaLevelTimeOffsetMinutes"] == 30.0
+        assert all(
+            region["maximumCurrentTimeOffsetMinutes"] == 0.0
+            for part_id, region in by_region.items() if part_id != "dk-b03-07-national-part-01"
+        )
         forbidden = {"u", "v", "uo", "vo", "waterpoint", "landpoint", "longitude", "latitude", "geometry"}
 
         def inspect(value):

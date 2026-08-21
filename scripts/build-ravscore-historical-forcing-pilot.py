@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from bisect import bisect_left
 import json
 import math
 import os
@@ -37,6 +38,7 @@ PRODUCTS = {
         "maximumLongitude": 13.0,
         "minimumLatitude": 46.0,
         "maximumLatitude": 63.0,
+        "maximumTimeOffsetMinutes": 31.0,
     },
     "baltic": {
         "source": "copernicus-baltic-physics-analysis-forecast",
@@ -47,6 +49,7 @@ PRODUCTS = {
         "maximumLongitude": 30.21,
         "minimumLatitude": 53.01,
         "maximumLatitude": 65.91,
+        "maximumTimeOffsetMinutes": 0.0,
     },
 }
 
@@ -137,14 +140,35 @@ def series(dataset: xr.Dataset, name: str, selection: dict[str, int], time_name:
     return array.transpose(time_name)
 
 
-def indexed_series(dataset: xr.Dataset, aliases: tuple[str, ...], target: dict[str, Any]) -> tuple[dict[str, float], float]:
+def indexed_series(
+    dataset: xr.Dataset, aliases: tuple[str, ...], target: dict[str, Any]
+) -> tuple[tuple[list[datetime], list[float]], float]:
     time_name = coordinate_name(dataset, ("time", "valid_time"))
     selection, distance_km = nearest_selection(dataset, target)
     values = np.asarray(series(dataset, variable_name(dataset, aliases), selection, time_name).values, dtype=float)
-    times = [iso(utc(time_text(value))) for value in dataset[time_name].values]
+    times = [utc(time_text(value)) for value in dataset[time_name].values]
     if len(times) != len(values) or len(times) != len(set(times)):
         raise RuntimeError("Historical physics subset has mismatched or duplicate times")
-    return {timestamp: float(value) for timestamp, value in zip(times, values)}, distance_km
+    ordered = sorted(zip(times, (float(value) for value in values)), key=lambda row: row[0])
+    return ([row[0] for row in ordered], [row[1] for row in ordered]), distance_km
+
+
+def nearest_value(
+    indexed: tuple[list[datetime], list[float]],
+    target_time: datetime,
+    maximum_offset_minutes: float,
+) -> tuple[datetime, float, float] | None:
+    times, values = indexed
+    position = bisect_left(times, target_time)
+    indexes = [index for index in (position - 1, position) if 0 <= index < len(times)]
+    if not indexes:
+        return None
+    selected = min(indexes, key=lambda index: (abs((times[index] - target_time).total_seconds()), times[index]))
+    offset_minutes = abs((times[selected] - target_time).total_seconds()) / 60.0
+    value = values[selected]
+    if offset_minutes > maximum_offset_minutes + 1e-9 or not math.isfinite(value):
+        return None
+    return times[selected], value, offset_minutes
 
 
 def raw_onshore_directions(path: Path) -> dict[str, float]:
@@ -276,26 +300,31 @@ def wave_rows_for_event(records: list[dict[str, Any]], event: dict[str, Any]) ->
 
 def event_samples(
     wave_rows: list[dict[str, Any]],
-    current_u: dict[str, float],
-    current_v: dict[str, float],
-    sea_level: dict[str, float],
+    current_u: tuple[list[datetime], list[float]],
+    current_v: tuple[list[datetime], list[float]],
+    sea_level: tuple[list[datetime], list[float]],
     onshore_direction: float,
+    maximum_time_offset_minutes: float,
 ) -> list[dict[str, Any]]:
     samples = []
     for row in wave_rows:
-        timestamp = iso(utc(row["validTime"]))
-        values = (current_u.get(timestamp), current_v.get(timestamp), sea_level.get(timestamp))
-        if not all(isinstance(value, (int, float)) and math.isfinite(float(value)) for value in values):
+        wave_time = utc(row["validTime"])
+        u_match = nearest_value(current_u, wave_time, maximum_time_offset_minutes)
+        v_match = nearest_value(current_v, wave_time, maximum_time_offset_minutes)
+        sea_match = nearest_value(sea_level, wave_time, maximum_time_offset_minutes)
+        if not u_match or not v_match or not sea_match or u_match[0] != v_match[0]:
             continue
-        speed, current_alignment = alignment(float(values[0]), float(values[1]), onshore_direction)
+        speed, current_alignment = alignment(u_match[1], v_match[1], onshore_direction)
         samples.append({
-            "time": timestamp,
+            "time": iso(wave_time),
             "waveHeightM": round(max(0.0, float(row["significantWaveHeightM"])), 3),
             "wavePeriodS": round(max(0.0, float(row["peakPeriodS"])), 2),
             "waveOnshoreAlignment": round(max(-1.0, min(1.0, float(row["waveOnshoreAlignment"]))), 4),
             "currentSpeedMps": round(speed, 4),
             "currentOnshoreAlignment": round(current_alignment, 4),
-            "seaLevelM": round(float(values[2]), 4),
+            "seaLevelM": round(sea_match[1], 4),
+            "currentTimeOffsetMinutes": round(u_match[2], 2),
+            "seaLevelTimeOffsetMinutes": round(sea_match[2], 2),
         })
     return samples
 
@@ -384,7 +413,7 @@ def main() -> int:
             for event in sorted(part_windows, key=lambda row: row["peakTime"]):
                 samples = event_samples(
                     wave_rows_for_event(records, event), current_u, current_v, sea_level,
-                    float(target["onshoreDirectionDeg"]),
+                    float(target["onshoreDirectionDeg"]), float(product["maximumTimeOffsetMinutes"]),
                 )
                 if len(samples) < MINIMUM_EVENT_SAMPLES:
                     raise RuntimeError(
@@ -402,6 +431,12 @@ def main() -> int:
                 "sampleCount": len(region_samples),
                 "currentGridDistanceKm": current_distance,
                 "seaLevelGridDistanceKm": sea_distance,
+                "maximumCurrentTimeOffsetMinutes": max(
+                    sample["currentTimeOffsetMinutes"] for sample in region_samples.values()
+                ),
+                "maximumSeaLevelTimeOffsetMinutes": max(
+                    sample["seaLevelTimeOffsetMinutes"] for sample in region_samples.values()
+                ),
                 "samples": [region_samples[key] for key in sorted(region_samples)],
             })
         finally:
@@ -418,6 +453,7 @@ def main() -> int:
         "method": "wave-selected-96-hour-current-and-sea-level-enrichment",
         "windowBeforeHours": WINDOW_BEFORE_HOURS,
         "windowAfterHours": WINDOW_AFTER_HOURS,
+        "timePairingMethod": "nearest-provider-time-with-explicit-product-bound-no-interpolation",
         "selectedWaveWindowCount": len(windows),
         "enrichedEventCount": len(event_catalog),
         "regionCount": len(regions),

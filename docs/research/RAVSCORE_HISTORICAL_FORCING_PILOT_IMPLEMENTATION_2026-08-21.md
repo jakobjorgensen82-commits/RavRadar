@@ -16,6 +16,8 @@ The wave-first pilot now identifies 12 useful historical windows across four Dan
 
 The implementation uses lazy remote access and tight spatial bounds around the existing authoritative water point. It does not move or replace any land or water point.
 
+Provider timestamps are paired without interpolation. Baltic physics must match the wave timestamp exactly. The North Sea physics products use half-hour-centred hourly fields, so their nearest provider time may differ by at most 31 minutes. The actual current and sea-level offsets are retained as derived control fields.
+
 ## Stored evidence
 
 The private seven-day artifact stores only the values needed for later comparison:
