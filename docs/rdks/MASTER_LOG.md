@@ -1649,3 +1649,10 @@ Tilstandsmodellen er startet i score-neutral skyggetilstand. Pipelinen opsamler 
 - Den friske cache havde 622/673 lokale strømme kl. 09:00. 4.0.246 vælger derfor kun ved nul eksakt dækning den bedst dækkede og nærmeste DMI-strømtime inden for tre timer.
 - Den valgte time bindes til målregister, målrettet Copernicus, livefletning, vejr og score. Uden en nærliggende DMI-time er udfaldet fortsat stop.
 - Ingen score-, proxy-, geometri- eller punktregel ændres.
+
+## 2026-08-21 - 4.0.247 cost/benefit-testmatrix
+
+- 4.0.246 er produktionsverificeret i run 32467031990; live viser 210 zoner, 673 dele og reference 09:00Z.
+- DEC-0045 reducerer dublerede kildekodekontroller, men bevarer exact-head PR-gate, push/manual pre-data-gate samt fuld post-data validate/releasegate før artifact/deploy.
+- Browseraudit 210/673 forbliver ugentlig eller relevant ved UI-, score- og datakontraktændring.
+- Ingen score, dataregel, geometri eller land-/vandpunkter ændres.

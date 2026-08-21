@@ -1,6 +1,6 @@
-import { PUBLIC_CONFIG } from '../../config.js?v=4.0.246';
-import { currentSession } from './auth-service.js?v=4.0.246';
-import { assertTripEvidencePrivacy } from './trip-evidence-contract.js?v=4.0.246';
+import { PUBLIC_CONFIG } from '../../config.js?v=4.0.247';
+import { currentSession } from './auth-service.js?v=4.0.247';
+import { assertTripEvidencePrivacy } from './trip-evidence-contract.js?v=4.0.247';
 const enabled=Boolean(PUBLIC_CONFIG.supabaseUrl&&PUBLIC_CONFIG.supabasePublishableKey);
 const LOCAL_KEY='ravradar-observations-v2';
 const OUTBOX_KEY='ravradar-observation-outbox-v1';

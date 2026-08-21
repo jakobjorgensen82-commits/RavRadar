@@ -154,8 +154,8 @@ if (beforeWeather.includes('npm run build:current-provenance')) {
 }
 const sourceGateBlockEnd = text.indexOf('\n\n', positions.sourceGate);
 const sourceGateBlock = text.slice(positions.sourceGate, sourceGateBlockEnd < 0 ? text.length : sourceGateBlockEnd);
-if (!sourceGateBlock.includes("if: steps.preflight.outputs.should_run == 'true'") || !sourceGateBlock.includes('run: npm run validate:source')) {
-  throw new Error('Den hurtige kildekodegate skal køre før DMI-opdateringen ved enhver reel produktionsopbygning.');
+if (!sourceGateBlock.includes("if: steps.preflight.outputs.should_run == 'true' && github.event_name != 'schedule'") || !sourceGateBlock.includes('run: npm run validate:source')) {
+  throw new Error('Den hurtige kildekodegate skal køre før DMI på push/manuelle builds, mens planlagte same-source kørsler må genbruge PR-/pushbeviset.');
 }
 
 for (const step of ['validate', 'gate']) {

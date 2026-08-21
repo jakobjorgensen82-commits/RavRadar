@@ -207,3 +207,10 @@ Aktiv kandidat: 25/40/35 efter DEC-0041. Konsekvensauditterne er grønne. Næste
 
 ## Aktuelt delmål efter DEC-0044
 Copernicus-afgrænsningen er implementeret som 4.0.244-kandidat: normal drift bruger kun aktuelle DMI-huller; 673-dels kontrol er manuel. Når kandidaten er produktionsverificeret, fortsætter roadmapet med den allerede igangsatte store evidensanalyse af mobilisering, transport, aflejring og jagtbarhed.
+
+## Arbejdsgangsoptimering 4.0.247
+
+- [x] Indfør DEC-0045: målrettet udviklingstest, én exact-head PR-kildegate og fuld post-data produktionsgate.
+- [x] Fjern kun den gentagne kildekodegate fra planlagte vejropdateringer på samme kontrollerede kode.
+- [ ] Verificér kandidaten i PR og præcis produktion; kør ikke 210/673-browseraudit for denne uvedkommende workflowændring.
+- [ ] Fortsæt derefter den store evidenssyntese og automatisk gammel-mod-ny-scoreanalyse.
