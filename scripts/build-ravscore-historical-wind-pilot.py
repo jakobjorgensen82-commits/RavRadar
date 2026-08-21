@@ -7,8 +7,6 @@ import argparse
 import hashlib
 import json
 import math
-import os
-import re
 import time
 import urllib.parse
 import urllib.request
@@ -81,21 +79,37 @@ def extract_event_windows(document: object) -> list[dict]:
     return events
 
 
-def target_catalog(path: Path) -> dict[str, tuple[float, float]]:
+def target_catalog(path: Path) -> dict[str, dict]:
+    document = json.loads(path.read_text(encoding="utf-8"))
+    directions = {}
+    for value in (document.get("zones") or {}).values():
+        rows = value if isinstance(value, list) else (value.get("parts") or []) if isinstance(value, dict) else []
+        for row in rows:
+            if isinstance(row, dict) and isinstance(row.get("onshoreDirectionDeg"), (int, float)):
+                directions[str(row.get("partId") or "")] = float(row["onshoreDirectionDeg"]) % 360
     catalog = {}
     for target in load_targets(path):
         part_id = str(target.get("partId") or "")
         point = target.get("waterPoint")
-        if part_id and isinstance(point, list) and len(point) >= 2:
-            catalog[part_id] = (float(point[0]), float(point[1]))
+        if part_id and part_id in directions and isinstance(point, list) and len(point) >= 2:
+            catalog[part_id] = {
+                "point": (float(point[0]), float(point[1])),
+                "onshoreDirectionDeg": directions[part_id],
+            }
     return catalog
 
 
-def resolve_target(reference: str | None, catalog: dict[str, tuple[float, float]]) -> tuple[float, float]:
+def resolve_target(reference: str | None, catalog: dict[str, dict]) -> dict:
     target = catalog.get(str(reference or ""))
     if target is None:
         raise ValueError(f"Could not resolve the approved coastal-part water point for {reference!r}")
     return target
+
+
+def wind_toward_onshore_alignment(wind_from_direction: float, onshore_direction: float) -> float:
+    wind_toward = (float(wind_from_direction) + 180.0) % 360.0
+    difference = math.radians(wind_toward - float(onshore_direction))
+    return max(-1.0, min(1.0, math.cos(difference)))
 
 
 def haversine_km(first: tuple[float, float], second: tuple[float, float]) -> float:
@@ -236,11 +250,17 @@ def build(forcing_path: Path, targets_path: Path) -> dict:
     output_events = []
     for event in events:
         target = resolve_target(event["sentinelRef"], catalog)
-        speed = fetch_features(SPEED_PARAMETER, event["windowStart"], event["windowEnd"], target)
-        direction = fetch_features(DIRECTION_PARAMETER, event["windowStart"], event["windowEnd"], target)
-        selected = choose_station(speed, direction, target, event["sampleTimes"])
+        speed = fetch_features(SPEED_PARAMETER, event["windowStart"], event["windowEnd"], target["point"])
+        direction = fetch_features(DIRECTION_PARAMETER, event["windowStart"], event["windowEnd"], target["point"])
+        selected = choose_station(speed, direction, target["point"], event["sampleTimes"])
         if selected is None:
             raise ValueError(f"No DMI wind station met the coverage and distance contract for {event['sentinelRef']} / {event['eventId']}")
+        samples = [{
+            **sample,
+            "windTowardOnshoreAlignment": round(wind_toward_onshore_alignment(
+                sample["windDirectionFromDeg"], target["onshoreDirectionDeg"]
+            ), 4),
+        } for sample in selected["samples"]]
         output_events.append({
             "sentinelRef": event["sentinelRef"],
             "eventId": event["eventId"],
@@ -249,10 +269,10 @@ def build(forcing_path: Path, targets_path: Path) -> dict:
             "stationAlias": station_alias(selected["stationId"]),
             "stationDistanceKm": round(selected["distanceKm"], 3),
             "expectedSamples": len(event["sampleTimes"]),
-            "pairedSamples": len(selected["samples"]),
+            "pairedSamples": len(samples),
             "coverageRatio": round(selected["coverageRatio"], 4),
             "maxTimeOffsetMinutes": round(selected["maxTimeOffsetMinutes"], 2),
-            "samples": selected["samples"],
+            "samples": samples,
         })
     return {
         "schemaVersion": 1,

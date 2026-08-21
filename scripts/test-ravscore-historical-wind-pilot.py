@@ -65,7 +65,9 @@ assert events[0]["sentinelRef"] == "part-a"
 assert events[0]["eventId"] == "event-1"
 assert events[0]["sampleTimes"] == times
 
-assert MODULE.resolve_target("part-a", {"part-a": (10.0, 56.0)}) == (10.0, 56.0)
+assert MODULE.resolve_target("part-a", {"part-a": {"point": (10.0, 56.0)}})["point"] == (10.0, 56.0)
+assert MODULE.wind_toward_onshore_alignment(270, 90) == 1.0
+assert MODULE.wind_toward_onshore_alignment(90, 90) == -1.0
 assert len(MODULE.station_alias("06123")) == 12
 assert "06123" not in MODULE.station_alias("06123")
 

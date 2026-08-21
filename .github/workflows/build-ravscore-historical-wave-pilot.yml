@@ -87,6 +87,7 @@ jobs:
           node scripts/compare-ravscore-historical-candidate-f.mjs
           .cache/ravscore-historical-forcing-features.json
           .cache/ravscore-historical-wave-features.json
+          .cache/ravscore-historical-wind-features.json
           --output .cache/ravscore-historical-candidate-f-comparison.json
           --summary .cache/ravscore-historical-candidate-f-comparison.txt
 

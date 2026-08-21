@@ -22,6 +22,7 @@ Denne pilot supplerer kun de 12 allerede udvalgte boelgehaendelser ved Kjul, Hol
 - Ra API-svar og stationskoordinater gemmes ikke.
 - Stations-id pseudonymiseres i det private artefakt.
 - Det private artefakt gemmer kun de parrede vindvaerdier og aggregeret kvalitetsinformation.
+- Vindens retning omsaettes desuden til en afledt ind-mod-land-vaerdi, saa scoreafspilningen kan bruge den korrekte lokale kystretning uden at gemme punktet.
 - `scoreImpact=false` og `publicRuntime=false` er bindende kontraktfelter.
 
 ## Beslutningsport
