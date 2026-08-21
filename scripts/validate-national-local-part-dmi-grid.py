@@ -95,9 +95,12 @@ def candidate_result(candidate: dict[str, Any], output: dict[str, Any], runs: di
             continue
         group = components.setdefault(collection, {"modelRun": runs[collection]["modelRun"], "nativeValidTime": runs[collection]["nativeValidTime"], "gridPoints": {}})
         group["gridPoints"][component] = compact(points[component])
-    shared_uv = all(key in points for key in ("current-u", "current-v")) and same_point(points["current-u"], points["current-v"])
-    wave_complete = all(key in points for key in REQUIRED_COMPONENTS[:3])
-    dkss_complete = all(key in points for key in REQUIRED_COMPONENTS[3:]) and shared_uv
+    point_collections = (output.get("zones", {}).get(candidate["id"]) or {}).get("collections", {})
+    shared_uv = (all(key in points for key in ("current-u", "current-v"))
+                 and same_point(points["current-u"], points["current-v"])
+                 and point_collections.get("current-u") == point_collections.get("current-v"))
+    wave_complete = any(set(REQUIRED_COMPONENTS[:3]).issubset(set(group["gridPoints"])) for group in components.values())
+    dkss_complete = shared_uv and any(set(REQUIRED_COMPONENTS[3:]).issubset(set(group["gridPoints"])) for group in components.values())
     if not shared_uv:
         gaps.append({"reason": "NO_SHARED_UV_GRID_POINT"})
     valid = wave_complete or dkss_complete
@@ -188,6 +191,10 @@ def self_test() -> None:
     assert report["status"].startswith("passed") and report["uniquelyResolvedAmbiguousPartCount"] == 1
     assert report["partialCoverageSelectedPointCount"] == 1 and report["invalidSelectedPointCount"] == 0
     assert report["automaticActivationAllowed"] is False
+    mixed_output = json.loads(json.dumps(output))
+    mixed_output["zones"]["a::selected"]["collections"]["current-v"] = "dkss_idw"
+    mixed_report = build_report(document, zones, meta, mixed_output, runs, {})
+    assert mixed_report["status"].startswith("failed") and mixed_report["invalidSelectedPointCount"] == 1
     print("National local part DMI-grid self-test: bestået")
 
 

@@ -535,3 +535,10 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 3. Koer `ravscore_active_shadow=true` manuelt paa `main` og laes kun den kompakte rapport.
 4. Brug rapporten som ét input i den store videnskabelige analyse; aktivér ikke A/B/C ud fra én koersel.
 5. Fortsaet derefter forskning, regelgennemgang og begrundet forslag til vaegte for jagtbarhed, transport og mobilisering.
+
+## Naeste AI-trin efter 4.0.251
+
+1. Verificer 4.0.251 paa exact-head PR-gaten og i produktion.
+2. Genkoer den private aktive 210/673-shadow paa præcis main-commit.
+3. Hvis den stopper paa reelt manglende sammenhaengende DMI-dækning, behold blokeringen og opgoer dækningen; bland ikke collections og brug ikke fallback.
+4. Hvis hele kaeden er grøn, analyser kun den kompakte A/B/C-rapport som del af den videnskabelige RavScore-analyse.

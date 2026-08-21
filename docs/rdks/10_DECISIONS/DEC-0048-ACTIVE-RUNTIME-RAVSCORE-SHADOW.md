@@ -40,3 +40,9 @@ Fastholdelse og aflejring bruger foreloebigt grove, afledte egenskaber paa paren
 ## Konsekvens
 
 RavScore-arbejdet er ikke laengere blokeret af GeoDanmark-kandidatens separate punktbevis. Geometripiloten bevarer sin strenge gate, mens scorekandidater kan sammenlignes sikkert paa den aktive kyst, som brugerne faktisk ser.
+
+## Driftspraecisering i 4.0.251
+
+Foerste koersel `32479158213` verificerede 673/673 aktive punkter paa mindst ét native DMI-havgitter. Shadowkontrakten viste foreloebigt 622 fulddaekkede og 51 deldaekkede dele, men marinegaten stoppede paa en del, hvor DKSS-komponenter var fordelt over flere collections. Gridgaten var mindre streng end den eksisterende flertrinskontrakt.
+
+En familie maa derfor kun maerkes komplet, naar alle dens komponenter findes i samme collection. U/V skal desuden dele fysisk gitterpunkt og collection. Blandede collections er ikke fuld dækning og maa ikke fortsætte til state eller score. Tallene fra den fejlede koersel er diagnostik, ikke faglig A/B/C-evidens.

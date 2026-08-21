@@ -1589,3 +1589,11 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - Implementeret: native DMI-grid, flertrins marine, state/historik, vind og A/B/C-shadow uden deploy eller aktivering.
 - Lokalt verificeret: builder-selftest, workflowkontrakt og realistisk komplet 210/673-input.
 - Afventer efter merge: exact-commit PR-gate, produktion og foerste manuelle nationale shadowkoersel.
+
+## 4.0.251 - implementeret, afventer national genkoersel
+
+- Implementeret: collection-sammenhaeng indgaar i wave- og DKSS-familieklassifikation.
+- Implementeret: U/V-sammenhaeng kraever baade samme fysiske punkt og samme collection.
+- Testet lokalt: national grid-selftest, shadowkontrakt og marine flertrinsserie.
+- Foerste 4.0.250-run `32479158213`: 673 gyldige punkter; stoppet foer state/score paa inkonsistent DKSS-dækning.
+- Afventer: PR-gate, 4.0.251-produktion og groen aktiv 210/673-shadowgenkoersel.
