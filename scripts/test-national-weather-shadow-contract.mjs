@@ -16,4 +16,5 @@ for(const marker of ['harmonie_dini_sf','passed-private-national-native-wind-ser
 for(const marker of ['missing_ids','ATMOSPHERIC_GRID_CANDIDATE_TARGET = 32','targetedExpandedCandidatePartCount'])if(!wind.includes(marker))throw new Error(`National vindvalidator mangler målrettet retry: ${marker}`);
 const score=fs.readFileSync('scripts/validate-national-shadow-score.mjs','utf8');
 for(const marker of ['passed-private-national-shadow-score-validation','whole-zone','only-part','several-parts','uncertain','marginPoints:7','transientInputsDeleted','interpolationDetected','parentFallbackDetected'])if(!score.includes(marker))throw new Error(`National shadow-scorevalidator mangler ${marker}`);
+for(const marker of ['private-score-neutral-ravscore-candidate-shadow','SCORE_MODEL_IDS','deliveryDirectionAudit','alongshore-passage','samplingAwareStrongEventDuration','retentionFeatureCoverage','NATIONAL_CONTRACT_HAS_NO_COMPLETE_LOCAL_RETENTION_FEATURES','candidate-shadow-direction-review'])if(!score.includes(marker))throw new Error(`National RavScore-kandidat-shadow mangler ${marker}`);
 console.log('National weather-shadow kontrakt: bestået.');

@@ -264,7 +264,7 @@ En privat, score-neutral cache bruger DKSS-felter ved vandpunktet samt cirka 5 o
 
 Rotationen registrerer også, hvor langt der er til den nærmeste modelkolonne med et eksakt fælles U/V-par, selv når den ligger uden for 5 km. I det tilfælde gemmes kun koordinat, afstand og lagmetadata – ikke de fjerne strømværdier. En privat ejeroversigt skelner derfor mellem nær-tærskel 5–6 km til rent manuelt geometrireview, modelhul 6–8 km, strukturelt modelhul over 8 km og en datakædefejl, hvor gyldig strøm faktisk findes inden for 5 km. Selv en nær-tærskel-post må kun flyttes, hvis vandpunktet i sig selv er forkert – aldrig blot for at nå modelcellen. Oversigten flytter ingen punkter automatisk, og den offentlige 5 km-grænse er uændret.
 
-**Håndbogsversion:** 4.0.248
+**Håndbogsversion:** 4.0.249
 
 **Opdateret:** 19. august 2026
 
@@ -1951,3 +1951,7 @@ RavRadar lærer af hele ture, ikke af hvert enkelt ravstykke. Når en tur starte
 Start, slut og søgetid gemmes, og prognosen ved turstart fastholdes. Hvis brugeren søgte et andet sted end valgt ved start, gemmes turen stadig, men den bruges ikke automatisk til scorejustering.
 
 RavRadar sender ikke turens GPS-spor, rute eller præcise position. Kystdelen er det mest præcise stedniveau i læringsdata. Vægtene 25 procent jagtbarhed, 40 procent transport og 35 procent mobilisering er fortsat foreløbige og ændres ikke af denne registrering alene.
+
+## v4.0.249: privat RavScore-kandidat-shadow
+
+Den eksisterende private nationale shadow-validator beregner nu A, B og C på samme lokale context som den aktive score. Den bruger 24 timers hændelseshistorik og 72 timers strømforløb, opdeler kandidat B i strøm mod, langs og væk fra kysten og gemmer kun dataminimerede forskelle. Den aktive vægtning 25/40/35, offentlig score, UI, vejrsampling, admin-data og geometri ændres ikke. Koden er målrettet selftestet; næste evidens er én virkelig privat national shadow-kørsel efter merge. Se DEC-0047 og `docs/research/RAVSCORE_PRIVATE_SHADOW_METHOD_2026-08-21.md`.
