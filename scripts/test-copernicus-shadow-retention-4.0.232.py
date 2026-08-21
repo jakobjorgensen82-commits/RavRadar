@@ -7,7 +7,7 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from lib.copernicus_current import RETENTION_HOURS, safe_shadow_summary, update_shadow
+from lib.copernicus_current import FORECAST_HOURS, RETENTION_HOURS, safe_shadow_summary, update_shadow
 
 
 def need(condition: bool, message: str) -> None:
@@ -40,6 +40,7 @@ def record(valid_time: datetime, *, u_mps: float = 0.1) -> dict:
 
 def main() -> None:
     need(RETENTION_HOURS == 168, "The private retention contract must remain exactly seven days")
+    need(FORECAST_HOURS == 3, "Declared production forecasts must remain bounded to three hours")
     now = datetime(2026, 8, 18, 12, tzinfo=timezone.utc)
     boundary = record(now - timedelta(hours=RETENTION_HOURS))
     expired = record(now - timedelta(hours=RETENTION_HOURS, seconds=1))
@@ -94,6 +95,37 @@ def main() -> None:
                  "A new future record must fail closed as outside retention")
         else:
             raise AssertionError("A new future record must not be silently accepted")
+
+        forecast_path = Path(directory) / "copernicus-forecast-shadow.json"
+        forecast_time = now + timedelta(hours=FORECAST_HOURS)
+        forecast_fingerprint = "sha256:" + "f" * 64
+        forecast = update_shadow(
+            forecast_path,
+            [record(forecast_time)],
+            now,
+            collection_time=forecast_time,
+            target_fingerprint=forecast_fingerprint,
+            target_points={"part-1": [9.0, 57.0]},
+        )
+        need(len(forecast["records"]) == 1 and forecast["records"][0]["validTime"] == record(forecast_time)["validTime"],
+             "A complete declared collection at the bounded production forecast hour must be retained")
+        need(forecast["collections"][0]["targetFingerprint"] == forecast_fingerprint,
+             "A retained forecast hour must remain bound to its authoritative target geometry")
+        too_far = forecast_time + timedelta(seconds=1)
+        try:
+            update_shadow(
+                forecast_path,
+                [record(too_far)],
+                now,
+                collection_time=too_far,
+                target_fingerprint=forecast_fingerprint,
+                target_points={"part-1": [9.0, 57.0]},
+            )
+        except RuntimeError as error:
+            need("outside the 168-hour retention window" in str(error),
+                 "A declared collection beyond the three-hour forecast bound must fail closed")
+        else:
+            raise AssertionError("A collection beyond the production forecast bound must not be retained")
 
         geometry_path = Path(directory) / "copernicus-geometry-shadow.json"
         first_time = now - timedelta(hours=2)

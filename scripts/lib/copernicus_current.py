@@ -16,6 +16,7 @@ import numpy as np
 
 
 RETENTION_HOURS = 168
+FORECAST_HOURS = 3
 LOCAL_MAX_DISTANCE_KM = 5.0
 
 
@@ -326,6 +327,7 @@ def update_shadow(
         raise ValueError("Copernicus shadow update time must include a timezone")
     now_utc = now.astimezone(timezone.utc)
     cutoff = now_utc - timedelta(hours=RETENTION_HOURS)
+    forecast_limit = now_utc + timedelta(hours=FORECAST_HOURS)
     collection_metadata = (collection_time, target_fingerprint, target_points)
     if any(value is not None for value in collection_metadata) and not all(value is not None for value in collection_metadata):
         raise ValueError("Collection time, target fingerprint and target points must be supplied together")
@@ -335,13 +337,28 @@ def update_shadow(
             raise ValueError("Copernicus collection time must include a timezone")
         collection_time_utc = collection_time.astimezone(timezone.utc)
         _validate_fingerprint(target_fingerprint)
-        if collection_time_utc < cutoff or collection_time_utc > now_utc:
-            raise RuntimeError("Copernicus collection time is outside the 168-hour retention window")
+        if collection_time_utc < cutoff or collection_time_utc > forecast_limit:
+            raise RuntimeError(
+                "Copernicus collection time is outside the 168-hour retention window "
+                "or 3-hour forecast window"
+            )
         selected_part_ids = sorted(target_part_ids if target_part_ids is not None else target_points)
         if len(selected_part_ids) != len(set(selected_part_ids)) or any(part_id not in target_points for part_id in selected_part_ids):
             raise RuntimeError("Copernicus collection target ids do not match authoritative central geometry")
         if not records and selected_part_ids:
             raise RuntimeError("A completed Copernicus collection must contain verified records")
+    existing_collections = document.get("collections") or []
+    if not isinstance(existing_collections, list):
+        existing_collections = []
+    restored_forecast_hours: set[datetime] = set()
+    for collection in existing_collections:
+        try:
+            valid_time, _fingerprint, _record_count, _target_part_ids = _validate_collection(collection)
+        except (TypeError, ValueError):
+            continue
+        if now_utc < valid_time <= forecast_limit:
+            restored_forecast_hours.add(valid_time)
+
     retained: dict[tuple[Any, ...], dict[str, Any]] = {}
     existing_records = list(document.get("records") or [])
     for index, record in enumerate(existing_records + records):
@@ -351,8 +368,18 @@ def update_shadow(
             if index >= len(existing_records):
                 raise RuntimeError(f"New Copernicus shadow record failed validation: {error}") from None
             continue  # damaged restored evidence is discarded rather than reused
-        if valid_time < cutoff or valid_time > now_utc:
-            if index >= len(existing_records):
+        is_new = index >= len(existing_records)
+        time_allowed = cutoff <= valid_time <= now_utc
+        if now_utc < valid_time <= forecast_limit:
+            time_allowed = (
+                (is_new and collection_time_utc is not None and valid_time == collection_time_utc)
+                or (
+                    not is_new
+                    and (valid_time in restored_forecast_hours or valid_time == collection_time_utc)
+                )
+            )
+        if not time_allowed:
+            if is_new:
                 raise RuntimeError("New Copernicus shadow record is outside the 168-hour retention window")
             continue
         if target_points is not None:
@@ -379,9 +406,6 @@ def update_shadow(
         )
         retained[key] = record
     collections: dict[str, dict[str, Any]] = {}
-    existing_collections = document.get("collections") or []
-    if not isinstance(existing_collections, list):
-        existing_collections = []
     for collection in existing_collections:
         try:
             valid_time, _fingerprint, record_count, _target_part_ids = _validate_collection(collection)
@@ -389,7 +413,7 @@ def update_shadow(
             continue
         valid_time_text = utc_iso(valid_time)
         actual_count = sum(row.get("validTime") == valid_time_text for row in retained.values())
-        if cutoff <= valid_time <= now_utc and actual_count == record_count:
+        if cutoff <= valid_time <= forecast_limit and actual_count == record_count:
             collections[utc_iso(valid_time)] = collection
     if collection_time_utc is not None:
         valid_time_text = utc_iso(collection_time_utc)
@@ -404,6 +428,11 @@ def update_shadow(
             "recordCount": len(collected_records),
             "uniqueTargetCount": len({str(row.get("partId") or "") for row in collected_records}),
         }
+    retained = {
+        key: record for key, record in retained.items()
+        if _parse_shadow_time(record.get("validTime")) <= now_utc
+        or str(record.get("validTime") or "") in collections
+    }
     document.update({
         "retentionHours": RETENTION_HOURS,
         "scoreImpact": False,
