@@ -226,13 +226,32 @@ function candidateSummary(candidate, baselineRankings, candidateRankings, zoneBu
   let changedRankSlots = 0;
   let changedTop5Members = 0;
   let changedTop1Contexts = 0;
+  let baselineSixPlusTop1Contexts = 0;
+  let retainedSixPlusTop1Contexts = 0;
+  const changedTop1Leads = [];
+  const changedTop1ByStatus = { 'only-part': 0, 'several-parts': 0, 'whole-zone': 0, unknown: 0 };
+  const changedTop1ByLead = { '0-1': 0, '1-2': 0, '2-4': 0, '4+': 0 };
   for (let index = 0; index < candidateRankings.length; index += 1) {
     const baseline = baselineRankings[index].top5;
     const current = candidateRankings[index].top5;
     const baselineSet = new Set(baseline.map((row) => row.zoneId));
     changedRankSlots += current.filter((row, rank) => row.zoneId !== baseline[rank].zoneId).length;
     changedTop5Members += current.filter((row) => !baselineSet.has(row.zoneId)).length;
-    if (current[0].zoneId !== baseline[0].zoneId) changedTop1Contexts += 1;
+    if (baseline[0].partCount >= 6) {
+      baselineSixPlusTop1Contexts += 1;
+      if (current[0].zoneId === baseline[0].zoneId) retainedSixPlusTop1Contexts += 1;
+    }
+    if (current[0].zoneId !== baseline[0].zoneId) {
+      changedTop1Contexts += 1;
+      const lead = Math.max(0, baseline[0].score - baseline[1].score);
+      changedTop1Leads.push(lead);
+      const status = Object.hasOwn(changedTop1ByStatus, baseline[0].localCoverageStatus)
+        ? baseline[0].localCoverageStatus
+        : 'unknown';
+      changedTop1ByStatus[status] += 1;
+      const leadBucket = lead <= 1 ? '0-1' : lead <= 2 ? '1-2' : lead <= 4 ? '2-4' : '4+';
+      changedTop1ByLead[leadBucket] += 1;
+    }
   }
   const ownerExamples = Object.fromEntries(ownerZoneIds.map((zoneId) => [
     zoneId,
@@ -253,6 +272,16 @@ function candidateSummary(candidate, baselineRankings, candidateRankings, zoneBu
     sixPlusTop5Share: round(bucketCounts['6+'] / slots.length, 4),
     sixPlusOverrepresentation: round((bucketCounts['6+'] / slots.length) / sixPlusZoneShare, 4),
     meanTop5SupportRatio: round(mean(slots.map((row) => row.supportRatio)), 4),
+    top1Safeguards: {
+      baselineSixPlusTop1Contexts,
+      retainedSixPlusTop1Contexts,
+      changedSixPlusTop1Contexts: baselineSixPlusTop1Contexts - retainedSixPlusTop1Contexts,
+      wholeZoneWinnerChanges: changedTop1ByStatus['whole-zone'],
+      changedTop1ByStatus,
+      changedTop1ByLead,
+      meanChangedWinnerLead: round(mean(changedTop1Leads), 4),
+      maximumChangedWinnerLead: round(changedTop1Leads.length ? Math.max(...changedTop1Leads) : 0, 4),
+    },
     ownerExamples,
   };
 }
@@ -336,6 +365,12 @@ function markdownFor(report) {
   const bootstrapRows = report.hourlyBootstrap.candidates.map((candidate) =>
     `| ${candidate.label} | ${candidate.sixPlusOverrepresentation.median.toFixed(2)}x (${candidate.sixPlusOverrepresentation.p05.toFixed(2)}-${candidate.sixPlusOverrepresentation.p95.toFixed(2)}) | ${(candidate.changedTop1Rate.median * 100).toFixed(1)}% (${(candidate.changedTop1Rate.p05 * 100).toFixed(1)}-${(candidate.changedTop1Rate.p95 * 100).toFixed(1)}%) | ${(candidate.changedMemberRate.median * 100).toFixed(1)}% (${(candidate.changedMemberRate.p05 * 100).toFixed(1)}-${(candidate.changedMemberRate.p95 * 100).toFixed(1)}%) |`,
   );
+  const safeguardRows = report.hourlySensitivity.candidates
+    .filter((candidate) => candidate.family === 'support-aware')
+    .map((candidate) => {
+      const safeguards = candidate.top1Safeguards;
+      return `| ${candidate.label} | ${safeguards.retainedSixPlusTop1Contexts}/${safeguards.baselineSixPlusTop1Contexts} | ${safeguards.wholeZoneWinnerChanges} | ${safeguards.changedTop1ByStatus['only-part']} | ${safeguards.changedTop1ByStatus['several-parts']} | ${safeguards.maximumChangedWinnerLead.toFixed(2)} |`;
+    });
   return `# Sammenligning af korrektioner for national zonerangering
 
 Dato: 2026-08-21
@@ -369,6 +404,14 @@ En deterministisk blok-bootstrap med ${report.hourlyBootstrap.iterations} gentag
 | Kandidat | 6+ overrepraesentation, median (5-95%) | Aendrede foerstepladser | Nye top-5-medlemmer |
 | --- | ---: | ---: | ---: |
 ${bootstrapRows.join('\n')}
+
+### Beskyttelse af reelle foerstepladser
+
+| Kandidat | Bevarede 6+-foerstepladser | Aendrede hel-zone-vindere | Aendrede isolerede vindere | Aendrede fler-del-vindere | Stoerste oprindelige forspring der flyttes |
+| --- | ---: | ---: | ---: | ---: | ---: |
+${safeguardRows.join('\n')}
+
+En hel-zone-vinder faar nul stoettebaseret justering. En isoleret vinder kan fortsat beholde foerstepladsen, naar dens oprindelige scoreforspring er stoerre end den konkrete, begraensede justering.
 
 ## Vurdering
 
@@ -497,7 +540,7 @@ function main() {
   }
   console.log(`Hourly sensitivity: ${report.hourlySensitivity.contextCount} contexts (${report.hourlySensitivity.uniqueHourCount} hours)`);
   for (const candidate of report.hourlySensitivity.candidates) {
-    console.log(`hourly ${candidate.id}: 6+ overrepresentation ${candidate.sixPlusOverrepresentation}x, new top-5 members ${candidate.changedTop5Members}, top-1 changes ${candidate.changedTop1Contexts}, max penalty ${candidate.maximumPenalty}`);
+    console.log(`hourly ${candidate.id}: 6+ overrepresentation ${candidate.sixPlusOverrepresentation}x, new top-5 members ${candidate.changedTop5Members}, top-1 changes ${candidate.changedTop1Contexts}, max penalty ${candidate.maximumPenalty}, whole-zone changes ${candidate.top1Safeguards.wholeZoneWinnerChanges}, max changed lead ${candidate.top1Safeguards.maximumChangedWinnerLead}, retained 6+ top-1 ${candidate.top1Safeguards.retainedSixPlusTop1Contexts}/${candidate.top1Safeguards.baselineSixPlusTop1Contexts}`);
   }
   for (const candidate of report.hourlyBootstrap.candidates) {
     console.log(`bootstrap ${candidate.id}: 6+ median ${candidate.sixPlusOverrepresentation.median}x [${candidate.sixPlusOverrepresentation.p05}, ${candidate.sixPlusOverrepresentation.p95}], top-1 median ${round(candidate.changedTop1Rate.median * 100, 2)}%`);

@@ -601,4 +601,12 @@ Maks. 4 point er fortsat den bedste balance i dette materiale. Seks point flytte
 
 **Permanent produktkrav:** Zoner med mange dele maa stadig kunne opnaa en hoej national placering, naar den er reel. En hel-zone-vinder faar nul korrektion, flere stoettende dele reducerer korrektionen, og en markant enkeltvinder kan fortsat beholde placeringen, hvis dens scoreforspring er stoerre end det begraensede loft.
 
+Den direkte foerstepladskontrol understoetter kravet for 4-pointsvarianten:
+
+- 113 af 127 foerstepladser for zoner med mindst seks dele blev bevaret.
+- Ingen hel-zone-vinder blev flyttet.
+- Kun oprindelige vindere med hoejst 2 points forspring blev flyttet i dette materiale.
+
+Det betyder, at en klart bedre stor zone fortsat ligger oeverst. Kandidaten paavirker kun taette nationale sammenligninger, hvor den hoejeste score samtidig kommer fra en relativt isoleret kystdel.
+
 **Begraensning:** Blok-bootstrap viser intern stabilitet i det samme prognoseforloeb. Den erstatter ikke landsdaekkende historiske vejrbegivenheder.

@@ -47,6 +47,16 @@ En deterministisk blok-bootstrap med 1000 gentagelser og 12-timers blokke bevare
 | Retning og vinderstoette, maks. 4 point | 3.23x (2.83-3.69) | 7.9% (5.6-10.3%) | 8.9% (6.8-10.7%) |
 | Retning og vinderstoette, maks. 6 point | 2.95x (2.61-3.31) | 15.9% (13.6-18.2%) | 13.9% (11.3-16.2%) |
 
+### Beskyttelse af reelle foerstepladser
+
+| Kandidat | Bevarede 6+-foerstepladser | Aendrede hel-zone-vindere | Aendrede isolerede vindere | Aendrede fler-del-vindere | Stoerste oprindelige forspring der flyttes |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Retning og vinderstoette, maks. 2 point | 119/127 | 0 | 8 | 2 | 1.00 |
+| Retning og vinderstoette, maks. 4 point | 113/127 | 0 | 10 | 7 | 2.00 |
+| Retning og vinderstoette, maks. 6 point | 101/127 | 0 | 24 | 10 | 4.00 |
+
+En hel-zone-vinder faar nul stoettebaseret justering. En isoleret vinder kan fortsat beholde foerstepladsen, naar dens oprindelige scoreforspring er stoerre end den konkrete, begraensede justering.
+
 ## Vurdering
 
 - Den raa antal-straf er kun en negativ kontrol. Den kan ikke skelne mellem mange ens retninger og mange reelt forskellige retninger.
