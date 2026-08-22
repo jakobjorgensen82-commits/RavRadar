@@ -131,6 +131,23 @@ export function evaluateRavScoreCandidateG(
   const weakestPhysicalStage = Math.min(transportAndDelivery, mobilisation);
   const gateFactor = physicalBottleneckGate(weakestPhysicalStage);
   const candidateG = round(additiveScore * gateFactor);
+  const scoreCalculation = {
+    components: {
+      huntability,
+      transportAndDelivery,
+      mobilisation,
+    },
+    weights: CANDIDATE_G_WEIGHTS,
+    weightedContributions: {
+      huntability: huntability * CANDIDATE_G_WEIGHTS.huntability,
+      transportAndDelivery: transportAndDelivery * CANDIDATE_G_WEIGHTS.transportAndDelivery,
+      mobilisation: mobilisation * CANDIDATE_G_WEIGHTS.mobilisation,
+    },
+    additiveScore,
+    gateFactor,
+    gatedScore: additiveScore * gateFactor,
+    roundedScore: candidateG,
+  };
   const limitations = new Set(base.confidence?.limitations || []);
   limitations.add('directional-history-is-research-prior');
   limitations.add('history-gain-is-uncalibrated');
@@ -155,6 +172,7 @@ export function evaluateRavScoreCandidateG(
       candidateG: 'Candidate E process path with capacity-preserving causal direction memory, 20/45/35 weights and the same mild physical bottleneck',
     },
     additiveScore: Number(additiveScore.toFixed(3)),
+    scoreCalculation,
     weakestStage: Number(weakestPhysicalStage.toFixed(3)),
     weakestPhysicalStage: Number(weakestPhysicalStage.toFixed(3)),
     gateFactor: Number(gateFactor.toFixed(3)),

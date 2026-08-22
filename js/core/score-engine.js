@@ -1,8 +1,8 @@
-import { loadAdaptiveModel, modelAdjustment } from './adaptive-model.js?v=4.0.252';
-import { evaluateDirectionAnchors, anchorClassification, buildCoastTransportExplanation } from './direction-anchors.js?v=4.0.252';
-import { evaluateTransportEvent, classifyCoastalZone } from './coastal-process-model.js?v=4.0.252';
-import { buildScoreDebugTrace } from './debug-trace.js?v=4.0.252';
-import { boundedWaveTransportAdjustment } from './wave-approach.js?v=4.0.252';
+import { loadAdaptiveModel, modelAdjustment } from './adaptive-model.js?v=4.0.253';
+import { evaluateDirectionAnchors, anchorClassification, buildCoastTransportExplanation } from './direction-anchors.js?v=4.0.253';
+import { evaluateTransportEvent, classifyCoastalZone } from './coastal-process-model.js?v=4.0.253';
+import { buildScoreDebugTrace } from './debug-trace.js?v=4.0.253';
+import { boundedWaveTransportAdjustment } from './wave-approach.js?v=4.0.253';
 const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, value));
 const numberOrNull = value => (value === null || value === undefined || value === '' || typeof value === 'boolean') ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
 

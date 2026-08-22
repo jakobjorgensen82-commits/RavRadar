@@ -133,6 +133,20 @@ GitHub Actions-run `32554012542` kørte den centralt hydrerede shadow på PR #59
 
 Shadowen lukker kørselsgaten, men ikke aktiveringsgaten. Den nationale kontrakt havde nul komplette lokale retention-features, og kun 243 af 673 dele kunne scores. Resultatet er et stærkt teknisk og aktuelt retningscheck, men ikke fundkalibrering eller fuld national effektmåling. Det dataminimerede artefakt forbliver privat.
 
+## Produktkontraktaudit i 4.0.253
+
+Den efterfølgende score-neutrale audit af den foretrukne `G-50-50-NO-DIRECT-WIND`-variant lukker tre præcisionsspørgsmål uden at aktivere kandidaten:
+
+- Eksakte komponenter, vægtede bidrag og fysisk gate rekonstruerer den samme slutscore i 1.460 af 1.460 evalueringer. Afrundede visningskomponenter alene gav tidligere 118 tilsyneladende afvigelser og må derfor ikke bruges som matematisk facit.
+- Af 730 waders-evalueringer har 219 jagtbarhed under 35, og 7 af disse har samtidig mindst 55 point på den foretrukne variant. Det kanoniske højenergiforløb er fortsat jagtbarhed 0 og score 79.
+- Blandt 872 tydeligt retningsbestemte contexts er aktuel retning og historik modrettet i 332; i 100 flytter historikken den afrundede score. Den aktuelle pil skal derfor fortsat vise strøm nu, mens historikken forklares særskilt som forløbet før nu.
+
+Forskningsanbefalingen er at beholde én samlet RavScore som ravpotentiale og vise waders-metodens tilgængelighed tydeligt ved siden af. En utilgængelig metode må ikke præsenteres som anbefalet. Sikkerhed forbliver en uafhængig kontrakt, og problemet må ikke skjules med en ny koefficient.
+
+Coveragegaten er samtidig gjort eksplicit i den nationale shadowrapport. Parentzonens rev-, lavtvands- og vegetationsfelter accepteres ikke som lokal del-evidens. De 12 udvalgte historiske vinduer på fire referencekyster kan heller ikke i sig selv lukke national coverage.
+
+Se `docs/research/RAVSCORE_CANDIDATE_G_PRODUCT_CONTRACT_AUDIT_2026-08-22.md`.
+
 ## Samlet anbefaling til ejerreview
 
 Kandidat G bør **ikke aktiveres i sin nuværende form**. Den er en bedre forskningsramme end kandidat E/F til kapacitetsstyret retning, og 20/45/35 er fortsat et rimeligt analysecentrum. Men følgende taler imod go nu:

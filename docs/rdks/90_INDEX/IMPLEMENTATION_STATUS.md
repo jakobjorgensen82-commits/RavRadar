@@ -1,4 +1,13 @@
-# Implementeringsstatus – 4.0.238 produktionsverificeret
+# Implementeringsstatus – 4.0.253 score-neutral forskningskandidat
+
+## Candidate G-produktkontrakt i 4.0.253
+
+- **SCOREKONTRAKT:** 1.460/1.460 private evalueringer kan rekonstrueres fra eksakte komponenter, vægtede bidrag og fysisk gate; offentlig scorelogik er ikke ændret.
+- **WADERS:** 219/730 evalueringer har jagtbarhed under 35, 7 af dem har mindst 55 point på den foretrukne no-direct-wind-variant, og det kanoniske højenergiforløb er 0/79.
+- **PRODUKTANBEFALING:** Én RavScore som ravpotentiale med separat tydelig metodeegnethed; utilgængelig waders må ikke anbefales. Sikkerhed er fortsat uafhængig. Ejerbeslutning er åben.
+- **PIL/HISTORIK:** Pilen er aktuel lokal strøm. Historik forklares separat; 332/872 tydelige contexts er modrettede, og 100 har ændret afrundet score.
+- **COVERAGE:** National shadow er fortsat 243/673 scorede dele med nul komplette lokale retention-features. Parentzonemorfologi accepteres ikke som lokal del-evidens.
+- **ISOLATION:** Ingen offentlig UI-/scorekobling, geometri-, punkt-, DMI/fallback-, admin- eller protected-dataændring.
 
 ## P1-driftsevidens - Copernicus-pilot #72
 

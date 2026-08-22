@@ -141,6 +141,11 @@ function runAudit() {
     strongReversal24Minus48: round3(summary('strong-sustained-reversal').candidateG24Mean - summary('strong-sustained-reversal').candidateG48Mean),
     weakReversal24Minus48: round3(summary('weak-short-reversal').candidateG24Mean - summary('weak-short-reversal').candidateG48Mean),
     maximumDirectWindDelta: Math.max(...rows.map(row => Math.abs(row.candidateG5050 - row.candidateGNoDirectWind))),
+    highEnergyWaderHuntability: summary('high-energy-wader-warning', 'waders').huntabilityMean,
+    highEnergyWaderPreferredScore: summary('high-energy-wader-warning', 'waders').candidateGNoDirectWindMean,
+    highEnergyWaderRequiresExplicitMethodStatus:
+      summary('high-energy-wader-warning', 'waders').huntabilityMean === 0
+      && summary('high-energy-wader-warning', 'waders').candidateGNoDirectWindMean >= 55,
   };
   const report = {
     schemaVersion: '1.0.0',
@@ -174,6 +179,7 @@ function runAudit() {
   assert.equal(pairChecks.zeroCapacityTransportAndDelivery, 0, 'Inbound memory must not create transport at zero capacity');
   assert.ok(pairChecks.strongReversal24Minus48 <= 0, 'The 24h track must react at least as fast as the 48h track to a strong reversal');
   assert.ok(pairChecks.highEnergyWaderHuntabilityMinusPostStorm < 0, 'High energy must remain visibly less huntable for waders');
+  assert.equal(pairChecks.highEnergyWaderRequiresExplicitMethodStatus, true, 'High physical opportunity with zero wader huntability must require an explicit method status');
   assert.ok(rows.every(row => row.scoreIsSafetyAdvice === false));
   assert.ok(pairChecks.maximumDirectWindDelta <= 2, 'The capped direct-wind prior must remain minor in canonical scenarios');
   return report;
