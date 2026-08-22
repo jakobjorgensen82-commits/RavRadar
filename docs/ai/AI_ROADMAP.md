@@ -652,6 +652,7 @@ En ekstra kandidat bruger samme stoettebaserede maks. 4 point, men tillader kun 
 - [x] Fastlæg forskningsanbefalingen: én ravpotentialescore, separat tydelig metodeegnethed, ingen anbefaling af utilgængelig metode, sikkerhed uafhængig og ingen skjult koefficient.
 - [x] Fastlæg pil/historik: pilen viser aktuel lokal strøm; historik forklares særskilt på samme context. 332/872 tydelige contexts er modrettede, 100 med scoreeffekt.
 - [x] Udvid den nationale shadowrapport med en fail-closed coveragegate og afvis parentzonemorfologi som lokal del-evidens.
+- [x] Før 4.0.253 gennem PR #62, exact-head-gate `32568914124`, merge `b2951d90` og fuld produktion `32568958136`; live 210/673 er grønt.
 - [ ] Ejerreview: vælg offentlig waders-/forklaringskontrakt eller behold kandidaten helt privat.
 - [ ] Udvid dokumenteret lokal retention- og scoreinputcoverage ud over 243/673 før enhver aktiveringsbeslutning.
 

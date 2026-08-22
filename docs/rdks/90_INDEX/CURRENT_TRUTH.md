@@ -1,13 +1,17 @@
 # Current truth – gældende projektviden
 
-## 4.0.253 – Candidate G-produktkontrakt er auditeret score-neutralt
+## 4.0.253 – Candidate G-produktkontrakt er merged og produktionsverificeret
 
+- PR #62 bestod exact-head-kildegate `32568914124` på `d272c6ca` og blev merged som `b2951d90`.
+- Pushproduktion `32568958136` bestod central adminhydrering, frisk DMI, fuld `validate`, releasegate, support `RavRadar-support-3379`, Supabase, Pages-artifact og deploy. Pages-deployment `6036054331` er `success`.
+- Live viser version 4.0.253 og datasæt `rr-20260822110004-210` med 210 zoner og 673/673 scorede kystdele.
 - Den Git-ignorerede 12-vinduescache er genafspillet uden private payloads i Git. Kandidatens eksakte komponenter, bidrag og fysiske gate rekonstruerer 1.460/1.460 scorer.
 - På den foretrukne `G-50-50-NO-DIRECT-WIND`-variant har 219/730 waders-evalueringer jagtbarhed under 35; 7 af dem har mindst 55 point. Det kanoniske højenergiforløb er jagtbarhed 0 og score 79.
 - Forskningsanbefalingen er én RavScore som ravpotentiale plus en tydelig separat metodestatus. En utilgængelig waders-metode må ikke anbefales, sikkerhed forbliver uafhængig, og ingen skjult koefficient er tilladt. Offentlig kobling afventer ejerbeslutning.
 - I 332 af 872 tydeligt retningsbestemte contexts modvirker historikken den aktuelle retning; i 100 påvirker det den afrundede score. Pilen betyder fortsat strøm nu, mens historikken skal forklares særskilt.
 - National coverage er fortsat utilstrækkelig: 243/673 scorede dele og nul komplette lokale retention-features. Parentzonens morfologi må ikke arves som lokal kystdelsevidens.
 - Aktiv score 25/40/35, offentlig UI, geometri, land-/vandpunkter, DMI/fallback, central admin og beskyttede data er uændrede. Kandidat G er ikke aktiveret.
+- Fuld 210/673-browseraudit gentages ikke for dette checkpoint, fordi offentlig score, UI-adfærd og offentlig datakontrakt er uændrede; målrettet live metadata- og 673/673-kontrol er grøn.
 
 ## Copernicus-pilot #72 - fortsat sund 168-timersopsamling
 

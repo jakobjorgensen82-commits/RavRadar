@@ -441,6 +441,7 @@ Den nye appkode må ikke merges, før migrationen 20260821_trip_evidence_contrac
 - Dette er ikke en offentlig regression, fordi Candidate G er diagnostic-only. Det er en aktiveringsstopklods for betydning, UI og forklaring.
 - 4.0.253 anbefaler score-neutralt én RavScore som ravpotentiale og en separat tydelig waders-metodestatus; en utilgængelig metode må ikke præsenteres som anbefalet, og sikkerhed forbliver en uafhængig kontrakt.
 - Offentlig kobling kræver fortsat ejerbeslutning. Der må ikke tilføjes en skjult sikkerheds- eller jagtbarhedsgate alene for at få modellen til at se rigtig ud.
+- 4.0.253-koden er produktionsverificeret i `32568958136`, men Candidate G er ikke koblet offentligt; produktbeslutningen er derfor fortsat åben og ikke skjult af en grøn deploystatus.
 
 ## ISSUE-CANDIDATE-G-FRESH-NATIONAL-SHADOW - KØRSELSGATE LUKKET, COVERAGEGATE ÅBEN
 
@@ -449,6 +450,7 @@ Den nye appkode må ikke merges, før migrationen 20260821_trip_evidence_contrac
 - 4.0.253 rapporterer nu coverage samlet og fail-closed. Parentzonens morfologifelter accepteres udtrykkeligt ikke som dokumentation for den lokale kystdel.
 - Aktuelle centrale regler var hydreret, men havde nul aktive regler og nul matches.
 - Kørselsgaten er dermed lukket. Coverage-, ekstrem-, forklarings- og ejer-gaten er fortsat åbne; ingen aktivering må ske på dette grundlag alene.
+- Den nye fail-closed coverageklassifikation bestod PR #62's exact-head-gate og den fulde 4.0.253-produktion. Den klassificerer manglen; den fylder ikke 430 u-scorede dele kunstigt ud.
 
 ## ISSUE-CANDIDATE-G-ARROW-HISTORY-EXPLANATION - FORSKNINGSKONTRAKT LUKKET / OFFENTLIG KOBLING ÅBEN
 
@@ -456,6 +458,7 @@ Den nye appkode må ikke merges, før migrationen 20260821_trip_evidence_contrac
 - Blandt 872 tydeligt retningsbestemte contexts var aktuel retning og historik modrettet i 332; i 100 flyttede historikken den afrundede score.
 - Pilen skal fortsat betyde aktuel lokal strøm. Historisk nettoforløb skal forklares separat på samme kystdel, tidspunkt og jagtform og må ikke skjult ændre pilens betydning.
 - Den score-neutrale kontrakt er lukket. Endelig offentlig UI-/forklaringskobling kræver ejerbeslutning og efterfølgende browservalidering.
+- Kontrakten er merged og produktionsverificeret i 4.0.253 (`b2951d90`/`32568958136`) uden offentlig UI-kobling.
 
 ## ISSUE-RAVSCORE-SHADOW-ADMIN-CONTRACT - LUKKET I PRODUKTION
 

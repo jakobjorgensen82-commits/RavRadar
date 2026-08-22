@@ -6,6 +6,7 @@
 - Pilen fastholdes som aktuel lokal strøm; historik får en separat forklaringskontrakt, når den modvirker den aktuelle retning.
 - Den nationale shadow klassificerer coverage samlet og afviser parentzonens morfologi som lokal kystdelsevidens.
 - Aktiv RavScore 25/40/35, offentlig UI, geometri, land-/vandpunkter, DMI/fallback og central admin er uændrede. Kandidat G er fortsat ikke aktiveret.
+- PR #62 blev merged som `b2951d90`; produktion `32568958136`, support `RavRadar-support-3379`, Supabase og Pages-deployment `6036054331` er grønne. Live `rr-20260822110004-210` har 210 zoner og 673/673 scorede dele.
 
 ## 4.0.243 - releasekandidat: komplette ture (2026-08-21)
 
