@@ -4,7 +4,7 @@
 
 - [x] Afgræns fuld-produktionsfejlen til en forældet intern waders-gatemarkør; frisk data, kandidatkode og scoreberegning var ikke rodårsagen.
 - [x] Opdatér kontrakttesten til den aktuelle regelrækkefølge-/produktreviewgate og tilføj testen til `validate:source`.
-- [ ] Bestå ny exact-head PR-gate og fuld post-data-produktion, før Candidate G-roadmapet fortsætter.
+- [x] PR #67 exact-head-gate `32575697204`, merge `af8f30cf` og fuld post-data-produktion `32575740539` er grønne; Candidate G-roadmapet kan fortsætte.
 
 ## Aktiv samlet retning efter v4.0.243 – 2026-08-21
 

@@ -120,3 +120,5 @@ Fortsat åbent før offentlig aktivering:
 ## Valideringsopfølgning efter PR #66
 
 PR #66 bestod den hurtige exact-head-kildegate, men den fulde post-data-validering forventede fortsat det gamle interne gatenavn `candidate-waders-product-decision`. Koden bar allerede den nyere, mere præcise åbne gate for regelrækkefølge og offentlig produktreview. Produktionen stoppede derfor korrekt før release og deploy. 4.0.255 opdaterer testen og gør den obligatorisk i kildegaten; analysens kurve, replay og scorer er uændrede.
+
+PR #67's exact-head-gate `32575697204` og den fulde post-data-produktion `32575740539` bestod efter rettelsen. Den offentlige 4.0.255-runtime er integritetskontrolleret, men Candidate G er fortsat privat og ikke aktiveret.
