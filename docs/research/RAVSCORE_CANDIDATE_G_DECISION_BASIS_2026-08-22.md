@@ -3,6 +3,8 @@
 > **Efterfølgende beslutning:** DEC-0051 vælger `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT` som næste score-neutrale analysecentrum. Den tidligere no-direct-variant i dette dokument bevares som reference. Se `RAVSCORE_MODE_SPECIFIC_HUNTABILITY_ANALYSIS_2026-08-22.md`.
 >
 > **Efterfølgende coveragepræcisering:** DEC-0052 holder statiske lokale retention-/stedfeatures helt ude af Candidate G. Den friske centrale shadow på 243/673 lukker fortsat ikke den dynamiske scoreinputgate; manglende statiske felter er kun diagnostik.
+>
+> **Efterfølgende samling til ejerreview:** DEC-0053 fører kun `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT` videre som samlet forslag. De øvrige modeller er revisions- og følsomhedsspor. De 243 komplette dele bruges som mekanisk snapshot uden nye rådata; endelig vægtning afventer komplette ture. Se `RAVSCORE_CANDIDATE_G_OWNER_REVIEW_2026-08-22.md`.
 
 ## Kort konklusion
 

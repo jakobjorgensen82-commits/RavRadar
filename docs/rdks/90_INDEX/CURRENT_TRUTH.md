@@ -1,5 +1,15 @@
 # Current truth – gældende projektviden
 
+## Candidate G-beslutningsgrundlag – samlet på produktionsverificeret 4.0.257
+
+- PR #70 blev merged som `bb16ffe9546a4668084045c1526702d01a54566f`. Produktion `32580314866` bestod central hydrering, frisk DMI/proveniens, fuld validering, releasegate, support, Supabase, Pages-artifact og deploy. Live datasæt `rr-20260822150210-210` har 210 zoner og 673 dele med komplet `controlled-live`-manifest.
+- Frisk privat exact-merge-shadow `32580774128` bestod score-neutralt. De 243 allerede komplette dele bruges kun som aktuelt mekanisk kontrolsnapshot; der hentes ikke yderligere rådata til de øvrige dele i dette analyseafsnit.
+- DEC-0053 samler én ejerreviewvariant: `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT`. A-C, D-E, F og G 24/48 bevares som sammenlignings-, udviklings- og følsomhedsevidens, ikke som parallelle produktforslag.
+- Replayets 730 strandscorer er uændrede, ingen af 730 waders-scorer overstiger jagtbarheden, og ingen af 216 waders-evalueringer under jagtbarhed 35 får mindst 55 point.
+- Det friske 243-deles snapshot ligger mod aktiv model i gennemsnit -5,49 for strand og -0,97 for waders. Det viser reel omfordeling og kontraktmekanik, men er ikke landsdækkende fundkalibrering.
+- Candidate G beholder `20/45/35` som analysecentrum. Endelig vægtning af jagtbarhed, transport og mobilisering afventer komplette ture med fund/nul-fund og hold-out. Offentlig `25/40/35` er uændret.
+- Ingen ekstra rådata, offentlig score, UI, DMI/fallback, geometri, land-/vandpunkter, artifact eller protected-dirty-data er ændret.
+
 ## 4.0.257-kandidat – ærlig Candidate G-coverage uden skjult stedmodel
 
 - Frisk central shadow `32578554928` på den produktionsverificerede 4.0.256-merge `d629177a` bestod alle private score-neutrale trin for 210 zoner og 673 aktive dele.

@@ -1,5 +1,16 @@
 # RavRadar - aktuelt Codex-handoff
 
+## Checkpoint 2026-08-22 – Candidate G-ejerreview samlet
+
+- Aktiv arbejdsgren er `codex/ravscore-candidate-g-owner-review` fra 4.0.257-merge `bb16ffe9546a4668084045c1526702d01a54566f`.
+- PR #70, produktion `32580314866`, live `rr-20260822150210-210` og exact-merge-shadow `32580774128` er grønne.
+- Ingen yderligere rådata skal hentes til de 430 dele, som ikke indgik i den strenge private scorekørsel. De 243 komplette dele bruges kun som mekanisk aktuelt snapshot.
+- Privat replay er genkørt: 1.460 evalueringer, 730 uændrede strandscorer, nul waders-score over jagtbarheden og nul af 216 lave waders-jagtbarheder med mindst 55 point.
+- DEC-0053 og `docs/research/RAVSCORE_CANDIDATE_G_OWNER_REVIEW_2026-08-22.md` samler ét forslag til review: `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT`.
+- `20/45/35` er fortsat analysecentrum. Offentlig `25/40/35` ændres ikke, og endelig vægtning afventer komplette ture med fund/nul-fund og hold-out.
+- Næste faglige trin er ejerens samlede review. En eventuel offentlig score-/UI-ændring er en senere særskilt opgave med fulde gates.
+- Artifact, protected-dirty-data, geometri, land-/vandpunkter og offentlig runtime er urørte.
+
 ## Checkpoint 2026-08-22 - Candidate G-coveragekontrakt 4.0.257
 
 - Aktiv branch er `codex/ravscore-candidate-g-coverage-checkpoint` fra 4.0.256-merge `d629177a`.
