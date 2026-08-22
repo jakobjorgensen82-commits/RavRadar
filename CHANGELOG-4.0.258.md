@@ -1,0 +1,28 @@
+# RavRadar 4.0.258
+
+## Candidate G: vindstyret waders-jagtbarhed
+
+- Den foretrukne private forskningsvariant er `G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED` med analyseprioren `20/50/30`.
+- Vind er waders-jagtbarhedens hovedsignal: 100 til og med 6 m/s, derefter 7/80, 8/60, 10/35, 13/10 og 15/0.
+- WAM's signifikante bølgehøjde kan kun give et blødt fradrag på 20 procent af et negativt gab, højst 20 point. Bølger kan ikke hæve jagtbarheden eller alene give et hårdt stop.
+- Waders-score er højst jagtbarheden, også efter centrale regler. Strandscore er uændret og har intet jagtbarhedsloft.
+- `20/45/35`, 18 m/s-stop og den tidligere bølgekobling er historiske referencespor efter DEC-0054.
+
+## Evidens
+
+- Det private replay har 1.460 evalueringer og 730 uændrede strandscorer.
+- Ingen waders-score overstiger jagtbarheden; ingen af 138 lave jagtbarheder får mindst 55 point.
+- Bølgefradraget er gennemsnitligt 4,002 point og højst 20. Alle seks replaytilfælde ved mindst 15 m/s ender på 0.
+- Målrettede kandidat-, mode-, scenarie- og nationale shadow-self-tests består.
+
+## Uændret
+
+- Offentlig RavScore er fortsat `25/40/35`; Candidate G er diagnostic-only og kan ikke aktivere sig selv.
+- Ingen nye rådata er hentet. Private cachepayloads er Git-ignorerede og indgår ikke i committen.
+- DMI/fallback, central admin, offentlig UI-adfærd, koordinater, geometri og land-/vandpunkter er uændrede. Kun releaseversionens metadata i de versionsbærende datafiler er løftet.
+- Artifact og protected-dirty-data er urørte.
+
+## Validering
+
+- Første lokale `scripts/validate-source.ps1` bestod alle kildechecks og stoppede alene ved det endnu manglende versionsspecifikke changelog. Efter oprettelsen bestod releasegaten.
+- Den afsluttende samlede lokale `scripts/validate-source.ps1`, inklusive releasegaten, er grøn. Exact-head PR-kildegaten skal fortsat være grøn før merge.

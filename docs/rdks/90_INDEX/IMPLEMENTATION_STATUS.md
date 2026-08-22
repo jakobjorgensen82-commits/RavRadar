@@ -1,4 +1,18 @@
-# Implementeringsstatus – Candidate G-beslutningsgrundlag efter 4.0.257
+# Implementeringsstatus – Candidate G 4.0.258 vindstyret waders-jagtbarhed
+
+## 4.0.258-kandidat
+
+- [x] Fastlæg Candidate G's private analyseprior til `20/50/30`; offentlig `25/40/35` forbliver aktiv og uændret.
+- [x] Implementér vindkurven 6/100, 7/80, 8/60, 10/35, 13/10 og 15/0 som særskilt diagnostic-only waders-profil.
+- [x] Gør WAM-bølger til et ensrettet blødt fradrag på 20 procent af et negativt gab og højst 20 point, uden bølge-only hard stop.
+- [x] Bevar waders-scoreloftet efter centrale ekspertregler og nul påvirkning af strandscore.
+- [x] Genkør 1.460-evalueringsreplay, kanoniske scenarier, modeaudit og national shadow-self-test.
+- [x] Dokumentér DEC-0054, ejerreview, håndbøger, RDKS og changelog uden private payloads.
+- [x] Kør fuld lokal kildegate/releasegate på den samlede kandidat; alle kildechecks og den efterfølgende releasegate er grønne.
+- [ ] Få exact-head PR-kildegate grøn, merge sikkert og verificér relevant efterkæde.
+- [ ] Offentlig aktivering forbliver et senere særskilt ejer-go/no-go efter turkalibrering, komplet scoreinputcoverage og produktkontrol.
+
+Nedenstående 4.0.257-afsnit er historisk revisionsspor og er erstattet af DEC-0054, hvor de omtaler foretrukken variant, `20/45/35`, 18 m/s-stop eller selvstændig bølgevægt.
 
 ## Aktuelt score-neutralt beslutningscheckpoint
 

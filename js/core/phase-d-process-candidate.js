@@ -6,6 +6,7 @@ const rounded = value => Math.round(Number(value));
 export const PHASE_D_HUNTABILITY_PROFILES = Object.freeze({
   BASELINE: 'phase-d-huntability-baseline-v1',
   WADERS_UNDER_6_PROGRESSIVE: 'waders-under-6-progressive-v1',
+  WADERS_WIND_LED_WAVE_20: 'waders-wind-led-wave-20-v1',
 });
 
 const BASELINE_WADERS_WIND_POINTS = Object.freeze([
@@ -13,6 +14,9 @@ const BASELINE_WADERS_WIND_POINTS = Object.freeze([
 ]);
 const WADERS_UNDER_6_PROGRESSIVE_WIND_POINTS = Object.freeze([
   [0, 100], [6, 100], [7, 80], [8, 60], [10, 35], [13, 10], [18, 0],
+]);
+const WADERS_WIND_LED_WAVE_20_WIND_POINTS = Object.freeze([
+  [0, 100], [6, 100], [7, 80], [8, 60], [10, 35], [13, 10], [15, 0],
 ]);
 const BEACH_WIND_POINTS = Object.freeze([
   [0, 100], [5, 100], [8, 90], [13, 60], [18, 25], [25, 0],
@@ -68,19 +72,38 @@ export function evaluatePhaseDHuntability(
   if (!Object.values(PHASE_D_HUNTABILITY_PROFILES).includes(profile)) {
     throw new Error(`Unknown Phase D huntability profile: ${profile}`);
   }
+  const windLedWaders = mode === 'waders'
+    && profile === PHASE_D_HUNTABILITY_PROFILES.WADERS_WIND_LED_WAVE_20;
   const windPoints = mode === 'waders'
-    ? profile === PHASE_D_HUNTABILITY_PROFILES.WADERS_UNDER_6_PROGRESSIVE
-      ? WADERS_UNDER_6_PROGRESSIVE_WIND_POINTS
-      : BASELINE_WADERS_WIND_POINTS
+    ? windLedWaders
+      ? WADERS_WIND_LED_WAVE_20_WIND_POINTS
+      : profile === PHASE_D_HUNTABILITY_PROFILES.WADERS_UNDER_6_PROGRESSIVE
+        ? WADERS_UNDER_6_PROGRESSIVE_WIND_POINTS
+        : BASELINE_WADERS_WIND_POINTS
     : BEACH_WIND_POINTS;
   const wavePoints = mode === 'waders' ? WADERS_WAVE_POINTS : BEACH_WAVE_POINTS;
   const parts = [
-    { id: 'wind', value: interpolate(weather?.windSpeedMps, windPoints), weight: mode === 'waders' ? 40 : 55 },
-    { id: 'wave', value: interpolate(weather?.waveHeightM, wavePoints), weight: mode === 'waders' ? 60 : 45 },
+    { id: 'wind', value: interpolate(weather?.windSpeedMps, windPoints), weight: windLedWaders ? 80 : mode === 'waders' ? 40 : 55 },
+    { id: 'wave', value: interpolate(weather?.waveHeightM, wavePoints), weight: windLedWaders ? 20 : mode === 'waders' ? 60 : 45 },
   ];
   const average = weightedKnown(parts);
   const knownValues = parts.filter(part => finite(part.value)).map(part => Number(part.value));
   if (!knownValues.length || average.value === null) return average;
+  if (windLedWaders) {
+    const windScore = number(parts[0].value);
+    const waveScore = number(parts[1].value);
+    if (windScore === null) return { value: null, coverage: average.coverage };
+    const wavePenalty = waveScore === null ? 0 : Math.max(0, windScore - waveScore) * 0.20;
+    return {
+      value: windScore - wavePenalty,
+      coverage: average.coverage,
+      profile,
+      windScore,
+      waveScore,
+      wavePenalty,
+      windHardStopApplied: windScore === 0,
+    };
+  }
   return {
     value: Math.min(...knownValues) * 0.6 + average.value * 0.4,
     coverage: average.coverage,

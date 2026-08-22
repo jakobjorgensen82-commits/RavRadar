@@ -15,6 +15,7 @@ const TRACKS = Object.freeze({
 });
 const WEIGHT_PRIORS = Object.freeze([
   Object.freeze({ id: 'E-25-40-35', huntability: 0.25, transportAndDelivery: 0.40, mobilisation: 0.35 }),
+  Object.freeze({ id: 'G-20-50-30', huntability: 0.20, transportAndDelivery: 0.50, mobilisation: 0.30 }),
   Object.freeze({ id: 'G-20-45-35', huntability: 0.20, transportAndDelivery: 0.45, mobilisation: 0.35 }),
   Object.freeze({ id: 'F-15-50-35', huntability: 0.15, transportAndDelivery: 0.50, mobilisation: 0.35 }),
 ]);
@@ -114,7 +115,7 @@ function runAudit() {
           variantId: 'G-50-50-NO-DIRECT-WIND', memory: memories.candidateG5050,
         });
         const ownerApproved = evaluateRavScoreCandidateG(context, {
-          variantId: 'G-50-50-NO-DIRECT-WIND-WADERS-LIMIT', memory: memories.candidateG5050,
+          variantId: 'G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED', memory: memories.candidateG5050,
         });
         assert.ok(Object.values(results).every(result => result.available));
         rows.push({

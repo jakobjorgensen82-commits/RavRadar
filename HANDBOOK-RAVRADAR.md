@@ -1,5 +1,19 @@
 # RavRadar Håndbog
 
+## Candidate G bruger vindstyret waders-jagtbarhed – 4.0.258
+
+RavRadars offentlige score er stadig `25 % jagtbarhed`, `40 % transport` og `35 % mobilisering`. Den nye Candidate G er et privat beslutningsforslag med `20/50/30`; den ændrer ikke det, brugerne ser.
+
+Ved wadersjagt er vinden nu hovedsignalet for, hvor godt man kan lyse gennem vandet. Jagtbarheden er 100 til og med 6 m/s og falder gennem 80 ved 7 m/s, 60 ved 8, 35 ved 10, 10 ved 13 og 0 ved 15 m/s. Den samlede waders-score kan aldrig være højere end denne jagtbarhed.
+
+DMI's WAM-bølgehøjde bruges kun som en forsigtig korrektion. Hvis bølgesignalet er dårligere end vindforholdene, trækkes 20 procent af forskellen fra. Bølger kan dermed højst koste 20 point, aldrig forbedre jagtbarheden og aldrig alene give et hårdt stop. Det passer til, at revler ofte dæmper de større bølger lokalt, mens vindskabte krusninger typisk er det, der forstyrrer lyset. RavRadar prøver ikke at gætte den præcise bølge ved jægerens ben.
+
+Strandjagt har fortsat intet jagtbarhedsloft. En strand kan derfor vise højt ravpotentiale under kraftig vind, hvis transport og mobilisering er gode. Modellen beskriver søgeeffektivitet og giver ikke sikkerhedsadvarsler. Bund, dybde, render, revler, adgang og automatisk stedegnethed indgår ikke.
+
+Det private replay har 1.460 evalueringer. Alle 730 strandscorer er uændrede, ingen waders-score overstiger jagtbarheden, bølgefradraget er gennemsnitligt cirka fire point og højst 20, og alle seks replaytilfælde ved mindst 15 m/s ender på 0. Det beviser modelkontrakten, men er ikke statistisk bevis for ravfund. Komplette ture skal senere efterprøve vægtene.
+
+De tidligere modeller er ikke slettet. A-C er sammenligninger, D-E udviklingstrin, F historikpilot, G 24/48 følsomhedsgrænser og den tidligere waders-limit en bølgefølsom reference. Kun den vindstyrede variant føres videre som samlet forslag.
+
 ## Låst time bevares i fallback, historik og browserbevis - 4.0.238
 
 En planlagt vejrproduktion kan godkende én komplet UTC-time og først afslutte efter næste timeskifte. Den faglige referencetime skal stadig være den godkendte time. 4.0.238 lader derfor Open-Meteo anmode om netop nok historiske timer til, at den låste starttime fortsat findes i svaret. Serien trimmes derefter til denne time og højst 120 fremtidige timer. DMI er uændret førstevalg; fallback må kun udfylde reelle huller og en manglende hale.
@@ -272,7 +286,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.257
+**Håndbogsversion:** 4.0.258
 
 **Opdateret:** 19. august 2026
 

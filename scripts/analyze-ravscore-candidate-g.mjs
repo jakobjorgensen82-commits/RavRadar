@@ -28,6 +28,7 @@ const TRACKS = Object.freeze([
 const WEIGHT_PRIORS = Object.freeze([
   Object.freeze({ id: 'E-25-40-35', huntability: 0.25, transportAndDelivery: 0.40, mobilisation: 0.35 }),
   Object.freeze({ id: 'G-20-45-35', huntability: 0.20, transportAndDelivery: 0.45, mobilisation: 0.35 }),
+  Object.freeze({ id: 'G-20-50-30', huntability: 0.20, transportAndDelivery: 0.50, mobilisation: 0.30 }),
   Object.freeze({ id: 'F-15-50-35', huntability: 0.15, transportAndDelivery: 0.50, mobilisation: 0.35 }),
 ]);
 const HISTORY_GAINS = Object.freeze([0.25, 0.40, 0.55]);
@@ -89,6 +90,37 @@ function percentile(values, probability) {
   const upper = Math.ceil(position);
   if (lower === upper) return ordered[lower];
   return ordered[lower] + (ordered[upper] - ordered[lower]) * (position - lower);
+}
+
+function summarizeNumbers(values) {
+  const finiteValues = values.map(Number).filter(Number.isFinite);
+  return {
+    count: finiteValues.length,
+    mean: round3(mean(finiteValues)),
+    median: round3(percentile(finiteValues, 0.5)),
+    p10: round3(percentile(finiteValues, 0.1)),
+    p90: round3(percentile(finiteValues, 0.9)),
+    minimum: finiteValues.length ? Math.min(...finiteValues) : null,
+    maximum: finiteValues.length ? Math.max(...finiteValues) : null,
+  };
+}
+
+function windHuntabilityBand(value) {
+  const wind = Number(value);
+  if (wind <= 6) return 'at-most-6';
+  if (wind < 8) return 'over-6-under-8';
+  if (wind < 10) return '8-under-10';
+  if (wind < 13) return '10-under-13';
+  if (wind < 15) return '13-under-15';
+  return '15-plus';
+}
+
+function waveHuntabilityBand(value) {
+  const wave = Number(value);
+  if (wave < 0.7) return 'under-0.7';
+  if (wave < 1.2) return '0.7-under-1.2';
+  if (wave < 2.5) return '1.2-under-2.5';
+  return '2.5-plus';
 }
 
 function waveFromDirection(alignment) {
@@ -340,8 +372,8 @@ function aggregate(rows) {
       summarizeDifference(rows, row => row.weightSensitivity[weights.id], row => row.active),
     ])),
     ownerApprovedWeightSensitivity: {
-      variantId: 'G-50-50-NO-DIRECT-WIND-WADERS-LIMIT',
-      referencePrior: 'G-20-45-35',
+      variantId: 'G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED',
+      referencePrior: 'G-20-50-30',
       priors: Object.fromEntries(WEIGHT_PRIORS.map(weights => {
         const waders = rows.filter(row => row.mode === 'waders');
         const beach = rows.filter(row => row.mode === 'beach');
@@ -438,8 +470,13 @@ function aggregate(rows) {
       }];
     })),
     ownerApprovedModeVariant: {
-      variantId: 'G-50-50-NO-DIRECT-WIND-WADERS-LIMIT',
+      variantId: 'G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED',
       overallVsPreviousPreferred: summarizeScores(rows, row => row.approvedModeScore, row => row.noDirectWind),
+      overallVsPreviousWadersLimit: summarizeScores(
+        rows,
+        row => row.approvedModeScore,
+        row => row.previousWadersLimitScore,
+      ),
       beachVsPreviousPreferred: summarizeScores(
         rows.filter(row => row.mode === 'beach'),
         row => row.approvedModeScore,
@@ -453,7 +490,7 @@ function aggregate(rows) {
       wadersVsPreviousVisibleCap: summarizeScores(
         rows.filter(row => row.mode === 'waders'),
         row => row.approvedModeScore,
-        row => row.modeCoupling['W-HUNTABILITY-CAP'],
+        row => row.previousWadersLimitScore,
       ),
       wadersHuntability: summarizeScores(
         rows.filter(row => row.mode === 'waders'),
@@ -469,6 +506,40 @@ function aggregate(rows) {
       wadersScoreAboveHuntabilityCount: rows.filter(row =>
         row.mode === 'waders' && row.approvedModeScore > row.approvedHuntability).length,
     },
+    windLedWadersHuntability: (() => {
+      const waders = rows.filter(row => row.mode === 'waders');
+      const compareBand = (key, value) => {
+        const selected = waders.filter(row => row[key] === value);
+        return selected.length ? {
+          evaluations: selected.length,
+          scoreVsPreviousWadersLimit: summarizeScores(
+            selected,
+            row => row.approvedModeScore,
+            row => row.previousWadersLimitScore,
+          ),
+          huntabilityVsPreviousWadersLimit: summarizeScores(
+            selected,
+            row => row.approvedHuntability,
+            row => row.previousWadersLimitHuntability,
+          ),
+        } : null;
+      };
+      return {
+        evaluations: waders.length,
+        windHardStopCount: waders.filter(row => row.approvedWindHardStopApplied).length,
+        positiveWavePenaltyCount: waders.filter(row => row.approvedWavePenalty > 0).length,
+        wavePenaltyPoints: summarizeNumbers(waders.map(row => row.approvedWavePenalty)),
+        byWindBand: Object.fromEntries([
+          'at-most-6', 'over-6-under-8', '8-under-10', '10-under-13', '13-under-15', '15-plus',
+        ].map(band => [band, compareBand('windHuntabilityBand', band)])),
+        byWaveBand: Object.fromEntries([
+          'under-0.7', '0.7-under-1.2', '1.2-under-2.5', '2.5-plus',
+        ].map(band => [band, compareBand('waveHuntabilityBand', band)])),
+        waveCanOnlyReduceWindScore: true,
+        maximumWaveDeductionShare: 0.20,
+        windHardStopMps: 15,
+      };
+    })(),
     waderHuntability: {
       evaluations: rows.filter(row => row.mode === 'waders').length,
       lowHuntabilityEvaluations: rows.filter(row => row.mode === 'waders' && row.huntability < 35).length,
@@ -545,7 +616,7 @@ function productContractAudit(rows) {
   });
   return {
     comparisonBaselineVariant: 'G-50-50-NO-DIRECT-WIND',
-    ownerApprovedResearchVariant: 'G-50-50-NO-DIRECT-WIND-WADERS-LIMIT',
+    ownerApprovedResearchVariant: 'G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED',
     evaluationCount: rows.length,
     componentScoreConsistency: {
       checkedEvaluationCount: rows.length,
@@ -651,8 +722,11 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
           const noDirectWind = evaluateRavScoreCandidateG(context, {
             variantId: 'G-50-50-NO-DIRECT-WIND', memory: primaryMemory,
           });
-          const approvedModeVariant = evaluateRavScoreCandidateG(context, {
+          const previousWadersLimitVariant = evaluateRavScoreCandidateG(context, {
             variantId: 'G-50-50-NO-DIRECT-WIND-WADERS-LIMIT', memory: primaryMemory,
+          });
+          const approvedModeVariant = evaluateRavScoreCandidateG(context, {
+            variantId: 'G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED', memory: primaryMemory,
           });
           const noHistory = evaluateRavScoreCandidateG(context, {
             variantId: 'G-50-50-NO-DIRECT-WIND',
@@ -702,8 +776,14 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
             candidateE: primary.candidateScores.candidateE,
             variants,
             noDirectWind: noDirectWind.score,
+            previousWadersLimitScore: previousWadersLimitVariant.score,
+            previousWadersLimitHuntability: previousWadersLimitVariant.components.huntability,
             approvedModeScore: approvedModeVariant.score,
             approvedHuntability: approvedModeVariant.components.huntability,
+            approvedWavePenalty: approvedModeVariant.diagnostics.candidateGHuntabilityWavePenalty ?? 0,
+            approvedWindHardStopApplied: approvedModeVariant.diagnostics.candidateGHuntabilityWindHardStopApplied,
+            windHuntabilityBand: windHuntabilityBand(context.weather.windSpeedMps),
+            waveHuntabilityBand: waveHuntabilityBand(context.weather.waveHeightM),
             approvedScoreCalculation: approvedModeVariant.scoreCalculation,
             approvedResearchExplanation: approvedModeVariant.researchExplanation,
             windStress: windStress.score,
@@ -896,7 +976,7 @@ function main() {
     assert.equal(report.aggregate.productContractAudit.ownerApprovedVariantConsistency.mismatchCount, 0);
     assert.equal(report.aggregate.productContractAudit.explanationContract.mismatchCount, 0);
     assert.equal(report.aggregate.ownerApprovedWeightSensitivity
-      .priors['G-20-45-35'].vsApprovedVariant.meanAbsoluteDelta, 0);
+      .priors['G-20-50-30'].vsApprovedVariant.meanAbsoluteDelta, 0);
     for (const prior of Object.values(report.aggregate.ownerApprovedWeightSensitivity.priors)) {
       assert.equal(prior.wadersScoreAboveHuntabilityCount, 0);
       assert.equal(prior.lowHuntabilityFairOrGoodCount, 0);

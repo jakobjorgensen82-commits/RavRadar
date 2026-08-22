@@ -198,3 +198,8 @@ Fem sammenhængende produktionskørsler afslørede, at samme ugentlige GitHub-ca
 # 4.0.185 – lokalt delkort og fjernet offentlig fundformular
 - “Hvor er det?” blev bygget som et behovsstyret lag på det eksisterende hovedkort med navngivne kystdele og automatisk zonezoom.
 - Den offentlige “Hvad fandt du?”-formular blev fjernet; turbaseret observation og bagvedliggende adminanalyse blev bevaret.
+## 2026-08-22 – 4.0.258 Candidate G vindstyret waders-jagtbarhed
+
+- Ejerbeslutning: privat analyseprior `20/50/30`, vindkurve med nul ved 15 m/s og WAM-bølger kun som blødt fradrag på højst 20 point.
+- DEC-0054 og `G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED` erstatter den tidligere reviewvariant, men ændrer ingen offentlig score.
+- 1.460-evalueringsreplay og kanoniske/nationale self-tests består uden nye rådata, geometri eller punktændringer.

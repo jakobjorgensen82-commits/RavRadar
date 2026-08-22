@@ -6,8 +6,8 @@ import {
 
 export const CANDIDATE_G_WEIGHTS = Object.freeze({
   huntability: 0.20,
-  transportAndDelivery: 0.45,
-  mobilisation: 0.35,
+  transportAndDelivery: 0.50,
+  mobilisation: 0.30,
 });
 
 export const CANDIDATE_G_HISTORY_MIX = Object.freeze({
@@ -49,6 +49,15 @@ export const CANDIDATE_G_VARIANTS = Object.freeze({
     directWindPower: null,
     directWindIncluded: false,
     huntabilityProfile: PHASE_D_HUNTABILITY_PROFILES.WADERS_UNDER_6_PROGRESSIVE,
+    wadersHuntabilityLimit: true,
+  }),
+  'G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED': Object.freeze({
+    id: 'G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED',
+    modelId: 'RRS-CANDIDATE-G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED-4.0.258',
+    memoryTrack: '24h-48h-50-50',
+    directWindPower: null,
+    directWindIncluded: false,
+    huntabilityProfile: PHASE_D_HUNTABILITY_PROFILES.WADERS_WIND_LED_WAVE_20,
     wadersHuntabilityLimit: true,
   }),
 });
@@ -289,7 +298,7 @@ export function evaluateRavScoreCandidateG(
     },
     candidateDefinitions: {
       ...base.candidateDefinitions,
-      candidateG: 'Candidate E process path with capacity-preserving causal direction memory, 20/45/35 weights and the same mild physical bottleneck',
+      candidateG: 'Candidate E process path with capacity-preserving causal direction memory, 20/50/30 weights and the same mild physical bottleneck',
     },
     additiveScore: Number(additiveScore.toFixed(3)),
     scoreCalculation,
@@ -317,6 +326,8 @@ export function evaluateRavScoreCandidateG(
       candidateGWadersHuntabilityMaximum: wadersHuntabilityMaximum,
       candidateGHuntabilityWindScore: huntabilityResult?.windScore ?? null,
       candidateGHuntabilityWaveScore: huntabilityResult?.waveScore ?? null,
+      candidateGHuntabilityWavePenalty: huntabilityResult?.wavePenalty ?? null,
+      candidateGHuntabilityWindHardStopApplied: huntabilityResult?.windHardStopApplied ?? false,
       candidateGDirectionalHistorySignal: Number(directionalHistorySignal.toFixed(6)),
       candidateGHistoryFactor: Number(historyFactor.toFixed(6)),
       candidateGBaseTransportAndDelivery: baseTransportAndDelivery,

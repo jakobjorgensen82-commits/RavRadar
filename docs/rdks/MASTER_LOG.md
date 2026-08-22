@@ -1,3 +1,12 @@
+## 2026-08-22 – RavRadar 4.0.258: vindstyret waders-jagtbarhed i Candidate G
+
+- Ejeren har valgt `20/50/30` som Candidate G's private faglige analyseprior. Offentlig RavScore `25/40/35` er uændret.
+- `G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED` bruger vind som hovedsignal: fuld jagtbarhed til 6 m/s og nul ved 15 m/s. WAM-bølger kan kun give et ensrettet blødt fradrag på højst 20 point.
+- Privat replay på 1.460 evalueringer bevarer 730/730 strandscorer, holder alle waders-scorer under jagtbarheden og giver gennemsnitligt 4,002 points bølgefradrag.
+- Den nationale score-neutrale shadow følger varianten gennem centrale regler og waders-loft. Automatisk aktivering er fortsat deaktiveret.
+- DEC-0054 erstatter DEC-0053's variant, `20/45/35`, 18 m/s-stop og mere selvstændige bølgekobling. Tidligere modeller bevares som evidensspor.
+- Ingen nye rådata er hentet. Private caches, artifact, protected-dirty-data, geometri og land-/vandpunkter er urørte.
+
 ## 2026-08-22 – Candidate G-beslutningsgrundlag samlet efter 4.0.257
 
 - PR #70 blev merged som `bb16ffe9`; produktion `32580314866` og live `rr-20260822150210-210` bestod den fulde kæde for 210 zoner/673 dele.

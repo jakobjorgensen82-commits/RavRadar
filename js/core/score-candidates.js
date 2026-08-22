@@ -21,6 +21,7 @@ export const SCORE_MODEL_IDS = Object.freeze({
   candidateG48: 'RRS-CANDIDATE-G-48H-LIN-4.0.252',
   candidateGNoDirectWind: 'RRS-CANDIDATE-G-50-50-NO-DIRECT-WIND-4.0.252',
   candidateGWadersLimit: 'RRS-CANDIDATE-G-50-50-NO-DIRECT-WIND-WADERS-LIMIT-4.0.254',
+  candidateGWindLedWaders: 'RRS-CANDIDATE-G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED-4.0.258',
 });
 
 function normaliseComponents(result) {
