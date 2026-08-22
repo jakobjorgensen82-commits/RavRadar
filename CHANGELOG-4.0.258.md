@@ -1,5 +1,13 @@
 # RavRadar 4.0.258
 
+## Efterfølgende score-neutralt forskningscheckpoint
+
+- DEC-0055 tilføjer en privat Candidate G-variant, hvor verificeret kystnormal strøm styrer transportpotentialet.
+- Fuld indgående strøm bygger 10 point pr. effektiv time; fuld udgående strøm reducerer straks med 8 point pr. effektiv time og når 0 fra 13 timer.
+- Bølger kan ikke skabe transport og har højst en 15 procents afhængig leveringsrolle.
+- Replayet viser korrekt mekanik, men også at strømgrænsen og reservoirtilstanden ved start er åbne aktiveringsblokeringer.
+- Dette checkpoint ændrer ikke version, offentlig score, UI, data, geometri eller land-/vandpunkter og er ikke en produktionsaktivering.
+
 ## Candidate G: vindstyret waders-jagtbarhed
 
 - Den foretrukne private forskningsvariant er `G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED` med analyseprioren `20/50/30`.

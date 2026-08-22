@@ -1,5 +1,16 @@
 # RavRadar - aktuelt Codex-handoff
 
+## Checkpoint 2026-08-22 – strømstyret Candidate G efter 4.0.258
+
+- Aktiv branch er `codex/ravscore-current-led-memory` fra produktionsverificeret 4.0.258/main `0070b25b`.
+- Ejeren har godkendt den eksakte udtransportkurve på det interne 0–100-potentiale: straks-tab på 8 point pr. effektiv fuldstyrketime og 0 fra 13 timer. Indtransport bygger 10 point pr. effektiv fuldstyrketime mod 100.
+- `G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED` gør verificeret kystnormal strøm til transportleddet. Bølger kan ikke skabe transport og må kun påvirke leveringen inden for 0,85–1,00, når strømmen allerede har skabt potentiale.
+- Candidate G beholder `20/50/30`, DEC-0054's vindstyrede waders-jagtbarhed og waders-loft. Offentlig RavScore `25/40/35` er uændret.
+- Privat replay på 1.460 evalueringer og målrettede self-tests er grønne. Følsomheden viser, at kystnormal strømgrænse samt start-/forældelsesregel skal afgøres før enhver aktivering; warm-start 50 flyttede kandidatens gennemsnitsscore +21,136 mod fail-closed start 0.
+- DEC-0055 og forskningsrapporten samler mekanik, evidens og aktiveringsblokeringer. G 24/48 bevares som historisk følsomhedsspor.
+- Samlet RDKS-/håndbogsvalidering og fuld lokal `scripts/validate-source.ps1`, inklusive releasegate, er grønne. Exact-head PR og merge mangler ved dette checkpoint. En merge er fortsat score-neutral og må ikke fremstilles som offentlig aktivering.
+- Ingen nye rådata er hentet. Private cachepayloads, artifact, protected-dirty-data, DMI/fallback, geometri og land-/vandpunkter må ikke stages eller ændres.
+
 ## Checkpoint 2026-08-22 – Candidate G 4.0.258 vindstyret waders-jagtbarhed
 
 - Kandidaten blev leveret i PR #73. Exact-head-kildegate `32586707063` bestod på `2abc5a4c96945247679341f8e9b47c43844af7a3`, og PR'en blev merged som `9bdb8de8d73ab5b62622600e207646e98a4efe8c`.

@@ -12,6 +12,8 @@ import {
 } from '../js/core/ravscore-candidate-g.js';
 import {
   buildBlendedRegimeMemory,
+  buildCurrentTransportPotential,
+  CURRENT_TRANSPORT_POTENTIAL_PRIOR,
   normalizeMemoryTrackCausally,
   signedDirectionalForce,
 } from '../js/core/ravscore-regime-memory.js';
@@ -32,6 +34,21 @@ const WEIGHT_PRIORS = Object.freeze([
   Object.freeze({ id: 'F-15-50-35', huntability: 0.15, transportAndDelivery: 0.50, mobilisation: 0.35 }),
 ]);
 const HISTORY_GAINS = Object.freeze([0.25, 0.40, 0.55]);
+const CURRENT_LED_SENSITIVITY_PROFILES = Object.freeze([
+  Object.freeze({ id: 'owner-outflow-reference', options: Object.freeze({}) }),
+  Object.freeze({
+    id: 'normal-current-0.03-to-0.15',
+    options: Object.freeze({ deadbandNormalSpeedMps: 0.03, fullStrengthNormalSpeedMps: 0.15 }),
+  }),
+  Object.freeze({
+    id: 'normal-current-0.02-to-0.12',
+    options: Object.freeze({ deadbandNormalSpeedMps: 0.02, fullStrengthNormalSpeedMps: 0.12 }),
+  }),
+  Object.freeze({
+    id: 'warm-start-50-diagnostic-edge',
+    options: Object.freeze({ initialPotential: 50 }),
+  }),
+]);
 const HISTORY_MIXES = Object.freeze([
   Object.freeze({ id: 'direct-0-neutral-slot', mix: CANDIDATE_G_HISTORY_MIX, includeDirectWind: false }),
   Object.freeze({ id: 'direct-5', mix: Object.freeze({ current: 0.575, wave: 0.375, directWind: 0.05 }), includeDirectWind: true }),
@@ -213,6 +230,25 @@ function buildMemoryTrack(samples, getForce, activeWeight, minimumScale) {
   });
 }
 
+function buildCurrentTransportMemory(samples, options = {}) {
+  const records = buildCurrentTransportPotential(samples, {
+    ...options,
+    getTime: sample => sample.time,
+    getSpeed: sample => sample.currentSpeedMps,
+    getAlignment: sample => sample.currentOnshoreAlignment,
+  });
+  return new Map(records.map(record => [utc(record.time).getTime(), {
+    transportPotential: record.transportPotential,
+    outboundEpisodeEffectiveHours: record.outboundEpisodeEffectiveHours,
+    outboundEpisodeLossPoints: record.outboundEpisodeLossPoints,
+    actualOutboundTransport: record.actualOutboundTransport,
+    inboundNormalSpeedMps: record.inboundNormalSpeedMps,
+    outboundNormalSpeedMps: record.outboundNormalSpeedMps,
+    inboundStrength: record.inboundStrength,
+    outboundStrength: record.outboundStrength,
+  }]));
+}
+
 function buildMemories(samples, activeWeight, directWindPower = 1) {
   const current = buildMemoryTrack(samples, sample => signedDirectionalForce({
     magnitude: sample.currentSpeedMps,
@@ -227,10 +263,12 @@ function buildMemories(samples, activeWeight, directWindPower = 1) {
     alignment: sample.windTowardOnshoreAlignment,
     power: directWindPower,
   }), activeWeight, directWindPower === 1 ? MEMORY_SCALES.directWindLinear : MEMORY_SCALES.directWindStress);
+  const transportMemory = buildCurrentTransportMemory(samples);
   return new Map(samples.map((sample, index) => [utc(sample.time).getTime(), {
     current: current[index].boundedState,
     wave: wave[index].boundedState,
     directWind: directWind[index].boundedState,
+    ...transportMemory.get(utc(sample.time).getTime()),
   }]));
 }
 
@@ -506,6 +544,71 @@ function aggregate(rows) {
       wadersScoreAboveHuntabilityCount: rows.filter(row =>
         row.mode === 'waders' && row.approvedModeScore > row.approvedHuntability).length,
     },
+    currentLedRevision: {
+      variantId: 'G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED',
+      overallVsPreviousPreferred: summarizeScores(
+        rows,
+        row => row.currentLedScore,
+        row => row.approvedModeScore,
+      ),
+      beachVsPreviousPreferred: summarizeScores(
+        rows.filter(row => row.mode === 'beach'),
+        row => row.currentLedScore,
+        row => row.approvedModeScore,
+      ),
+      wadersVsPreviousPreferred: summarizeScores(
+        rows.filter(row => row.mode === 'waders'),
+        row => row.currentLedScore,
+        row => row.approvedModeScore,
+      ),
+      transportPotential: summarizeNumbers(rows.map(row => row.currentLedTransportPotential)),
+      transportAndDelivery: summarizeNumbers(rows.map(row => row.currentLedTransportAndDelivery)),
+      inboundNormalCurrentMps: summarizeNumbers(rows.map(row => row.currentLedInboundNormalSpeedMps)),
+      outboundNormalCurrentMps: summarizeNumbers(rows.map(row => row.currentLedOutboundNormalSpeedMps)),
+      actualOutboundTransportCount: rows.filter(row => row.currentLedActualOutboundTransport).length,
+      parameterSensitivity: Object.fromEntries(CURRENT_LED_SENSITIVITY_PROFILES.map(profile => [
+        profile.id,
+        {
+          options: profile.options,
+          scoreVsOwnerOutflowReference: summarizeScores(
+            rows,
+            row => row.currentLedSensitivity[profile.id].score,
+            row => row.currentLedSensitivity['owner-outflow-reference'].score,
+          ),
+          transportPotential: summarizeNumbers(
+            rows.map(row => row.currentLedSensitivity[profile.id].transportPotential),
+          ),
+          transportAndDelivery: summarizeNumbers(
+            rows.map(row => row.currentLedSensitivity[profile.id].transportAndDelivery),
+          ),
+          actualOutboundTransportCount: rows.filter(row =>
+            row.currentLedSensitivity[profile.id].actualOutboundTransport).length,
+          byEventClassification: Object.fromEntries(
+            [...new Set(rows.map(row => row.classification))].sort().map(classification => {
+              const selected = rows.filter(row => row.classification === classification);
+              return [classification, {
+                evaluations: selected.length,
+                score: summarizeNumbers(
+                  selected.map(row => row.currentLedSensitivity[profile.id].score),
+                ),
+                transportPotential: summarizeNumbers(
+                  selected.map(row => row.currentLedSensitivity[profile.id].transportPotential),
+                ),
+                actualOutboundTransportCount: selected.filter(row =>
+                  row.currentLedSensitivity[profile.id].actualOutboundTransport).length,
+              }];
+            }),
+          ),
+        },
+      ])),
+      waveCanCreateTransport: false,
+      waveLandingMaximumShare: 0.15,
+      inboundPointsPerEffectiveStrongHour: 10,
+      pointsLostPerEffectiveStrongOutboundHour: 8,
+      actualOutboundTransportAfterEffectiveHours: 13,
+      findOutcomeCalibration: false,
+      automaticActivationAllowed: false,
+    },
     windLedWadersHuntability: (() => {
       const waders = rows.filter(row => row.mode === 'waders');
       const compareBand = (key, value) => {
@@ -698,6 +801,12 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
       const memories = Object.fromEntries(TRACKS.map(track => [track.id,
         buildMemories(samples, track.activeWeight, 1),
       ]));
+      const currentLedSensitivityMemories = Object.fromEntries(
+        CURRENT_LED_SENSITIVITY_PROFILES.map(profile => [
+          profile.id,
+          buildCurrentTransportMemory(samples, profile.options),
+        ]),
+      );
       const stressMemory = buildMemories(samples, 0.5, 2);
       const evaluationSamples = samples.filter(sample => utc(sample.time) >= utc(waveEvent.peakTime));
       for (const sample of evaluationSamples) {
@@ -728,6 +837,24 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
           const approvedModeVariant = evaluateRavScoreCandidateG(context, {
             variantId: 'G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED', memory: primaryMemory,
           });
+          const currentLedVariant = evaluateRavScoreCandidateG(context, {
+            variantId: 'G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED', memory: primaryMemory,
+          });
+          const currentLedSensitivity = Object.fromEntries(
+            CURRENT_LED_SENSITIVITY_PROFILES.map(profile => {
+              const transportMemory = currentLedSensitivityMemories[profile.id].get(timeKey);
+              const result = evaluateRavScoreCandidateG(context, {
+                variantId: 'G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED',
+                memory: { ...primaryMemory, ...transportMemory },
+              });
+              return [profile.id, {
+                score: result.score,
+                transportPotential: result.diagnostics.candidateGCurrentLedTransportPotential,
+                transportAndDelivery: result.components.transportAndDelivery,
+                actualOutboundTransport: result.diagnostics.candidateGActualOutboundTransport,
+              }];
+            }),
+          );
           const noHistory = evaluateRavScoreCandidateG(context, {
             variantId: 'G-50-50-NO-DIRECT-WIND',
             memory: { current: 0, wave: 0, directWind: 0 },
@@ -782,6 +909,14 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
             approvedHuntability: approvedModeVariant.components.huntability,
             approvedWavePenalty: approvedModeVariant.diagnostics.candidateGHuntabilityWavePenalty ?? 0,
             approvedWindHardStopApplied: approvedModeVariant.diagnostics.candidateGHuntabilityWindHardStopApplied,
+            currentLedScore: currentLedVariant.score,
+            currentLedHuntability: currentLedVariant.components.huntability,
+            currentLedTransportPotential: currentLedVariant.diagnostics.candidateGCurrentLedTransportPotential,
+            currentLedTransportAndDelivery: currentLedVariant.components.transportAndDelivery,
+            currentLedActualOutboundTransport: currentLedVariant.diagnostics.candidateGActualOutboundTransport,
+            currentLedInboundNormalSpeedMps: primaryMemory.inboundNormalSpeedMps,
+            currentLedOutboundNormalSpeedMps: primaryMemory.outboundNormalSpeedMps,
+            currentLedSensitivity,
             windHuntabilityBand: windHuntabilityBand(context.weather.windSpeedMps),
             waveHuntabilityBand: waveHuntabilityBand(context.weather.waveHeightM),
             approvedScoreCalculation: approvedModeVariant.scoreCalculation,
@@ -817,10 +952,15 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
   assert.ok(rows.length > 0);
   assert.ok(rows.every(row => Object.values(row.variants).every(score => score >= 0 && score <= 100)));
   assert.ok(rows.every(row => row.approvedModeScore >= 0 && row.approvedModeScore <= 100));
+  assert.ok(rows.every(row => row.currentLedScore >= 0 && row.currentLedScore <= 100));
+  assert.ok(rows.every(row =>
+    row.currentLedSensitivity['owner-outflow-reference'].score === row.currentLedScore));
   assert.ok(rows.filter(row => row.mode === 'beach')
     .every(row => row.approvedModeScore === row.noDirectWind));
   assert.ok(rows.filter(row => row.mode === 'waders')
     .every(row => row.approvedModeScore <= row.approvedHuntability));
+  assert.ok(rows.filter(row => row.mode === 'waders')
+    .every(row => row.currentLedScore <= row.currentLedHuntability));
   return {
     schemaVersion: '1.0.0',
     status: 'passed-private-candidate-g-decision-analysis',
@@ -829,13 +969,24 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
     candidate: {
       publicScoreChanged: false,
       productionActivationAllowed: false,
-      weights: { huntability: 0.20, transportAndDelivery: 0.45, mobilisation: 0.35 },
+      weights: { huntability: 0.20, transportAndDelivery: 0.50, mobilisation: 0.30 },
       historyMix: CANDIDATE_G_HISTORY_MIX,
       historyGain: 0.40,
       variants: Object.values(CANDIDATE_G_VARIANTS),
       modeCouplingPolicies: MODE_COUPLING_POLICIES,
       capacityContract: 'history-multiplies-existing-transport-and-delivery-and-cannot-create-a-zero-capacity-path',
       physicalBottleneck: 'same-mild-gate-as-candidate-e-recomputed-after-history-modulation',
+      currentLedRevision: {
+        variantId: 'G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED',
+        transportDriver: 'coast-normal-current-only',
+        referencePrior: CURRENT_TRANSPORT_POTENTIAL_PRIOR,
+        parameterSensitivityProfiles: CURRENT_LED_SENSITIVITY_PROFILES,
+        inboundPointsPerEffectiveStrongHour: 10,
+        outboundLossPointsPerEffectiveHour: 8,
+        actualOutboundTransportAfterEffectiveHours: 13,
+        waveRole: 'dependent-landing-only',
+        waveCanCreateTransport: false,
+      },
     },
     historicalWindowCount: forcing.enrichedEventCount,
     regionCount: forcing.regionCount,
@@ -863,6 +1014,8 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
       'FRESH_CENTRAL_HYDRATED_EXPERT_RULES_NOT_AVAILABLE_LOCALLY',
       'NO_COMPLETE_TRIP_OR_FIND_OUTCOMES',
       'MODEL_COMPONENTS_AND_HISTORY_GAIN_ARE_RESEARCH_PRIORS',
+      'CURRENT_NORMAL_SPEED_THRESHOLDS_ARE_UNCALIBRATED_RESEARCH_PRIORS',
+      'CURRENT_TRANSPORT_REPLAY_START_STATE_IS_NOT_OBSERVED',
       'EVENT_CLASS_IS_DIRECTIONAL_NOT_DELIVERY_STRENGTH',
       'NATIONAL_PRIVATE_SHADOW_REQUIRES_CENTRAL_HYDRATED_INPUT',
     ],
@@ -954,6 +1107,10 @@ function summaryText(report) {
     `Mean linear minus stress-wind difference: ${aggregate.directWind.linearMinusStress.meanDelta}`,
     `Wader low-huntability evaluations: ${aggregate.waderHuntability.lowHuntabilityEvaluations}`,
     `Owner-approved waders mean delta: ${aggregate.ownerApprovedModeVariant.wadersVsPreviousPreferred.meanDeltaFromBaseline}`,
+    `Current-led mean: ${aggregate.currentLedRevision.overallVsPreviousPreferred.mean}`,
+    `Current-led mean transport potential: ${aggregate.currentLedRevision.transportPotential.mean}`,
+    `Current-led lower-threshold mean transport potential: ${aggregate.currentLedRevision.parameterSensitivity['normal-current-0.02-to-0.12'].transportPotential.mean}`,
+    `Current-led warm-start mean transport potential: ${aggregate.currentLedRevision.parameterSensitivity['warm-start-50-diagnostic-edge'].transportPotential.mean}`,
     'Protected geometry read: no',
     'Coordinates/raw weather/raw U/V stored: no',
     'Public score impact: no',
@@ -973,6 +1130,12 @@ function main() {
     assert.equal(report.aggregate.waderHuntability.scoreIsSafetyAdvice, false);
     assert.equal(report.aggregate.ownerApprovedModeVariant.beachChangedCount, 0);
     assert.equal(report.aggregate.ownerApprovedModeVariant.wadersScoreAboveHuntabilityCount, 0);
+    assert.equal(report.aggregate.currentLedRevision.waveCanCreateTransport, false);
+    assert.equal(report.aggregate.currentLedRevision.inboundPointsPerEffectiveStrongHour, 10);
+    assert.equal(report.aggregate.currentLedRevision.pointsLostPerEffectiveStrongOutboundHour, 8);
+    assert.equal(report.aggregate.currentLedRevision.actualOutboundTransportAfterEffectiveHours, 13);
+    assert.equal(Object.keys(report.aggregate.currentLedRevision.parameterSensitivity).length,
+      CURRENT_LED_SENSITIVITY_PROFILES.length);
     assert.equal(report.aggregate.productContractAudit.ownerApprovedVariantConsistency.mismatchCount, 0);
     assert.equal(report.aggregate.productContractAudit.explanationContract.mismatchCount, 0);
     assert.equal(report.aggregate.ownerApprovedWeightSensitivity

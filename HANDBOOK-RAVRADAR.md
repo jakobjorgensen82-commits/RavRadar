@@ -1,5 +1,19 @@
 # RavRadar Håndbog
 
+## Candidate G lader strømmen styre transporthukommelsen
+
+RavRadars offentlige score er fortsat `25 % jagtbarhed`, `40 % transport` og `35 % mobilisering`. Det nye arbejde er en privat Candidate G med `20/50/30`; det ændrer ikke det, brugerne ser.
+
+I kandidaten er det den verificerede strøm vinkelret på kysten, der flytter transportpotentialet. Kraftig strøm mod kysten bygger potentialet op med 10 point pr. effektiv time og når 100 efter cirka 10 timer. Kraftig strøm væk fra kysten trækker 8 point fra allerede fra første effektive time: 100 bliver til 92, 84, 76 og så videre, indtil potentialet er 0 fra 13 timer.
+
+Svagere strøm tæller som en del af en effektiv time. Manglende eller ikke-verificeret strøm ændrer ingenting; den må ikke foregives at være nulstrøm. Bølger kan ikke skabe transport. De kan kun give en lille korrektion af den sidste levering over en revle eller op på stranden, når strømmen allerede har bygget et potentiale.
+
+Den private genafspilning består de mekaniske kontroller og skelner tydeligt mellem ind- og udtransport. Den viser samtidig, at resultatet afhænger meget af to ubesluttede forhold: hvor stærk den kystnormale strøm skal være for at tælle fuldt, og hvor stort et ravpotentiale der allerede findes ved analysens første time. Om potentialet skal falde passivt gennem 24–48 timer med neutral strøm, er heller ikke besluttet.
+
+Derfor er kandidaten ikke klar til offentlig aktivering. Den godkendte udtransportkurve bevares, mens strømgrænse og start-/forældelsesregel undersøges videre. Den vindstyrede waders-jagtbarhed fortsætter uændret: fuld til 6 m/s, trinvis fald og 0 ved 15 m/s, mens strandjagt ikke får et jagtbarhedsloft.
+
+Ingen nye rådata, bundmodel, dybde, render, geometri eller land-/vandpunkter indgår i dette arbejde.
+
 ## Candidate G bruger vindstyret waders-jagtbarhed – 4.0.258
 
 RavRadars offentlige score er stadig `25 % jagtbarhed`, `40 % transport` og `35 % mobilisering`. Den nye Candidate G er et privat beslutningsforslag med `20/50/30`; den ændrer ikke det, brugerne ser.

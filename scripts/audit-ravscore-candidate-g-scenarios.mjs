@@ -2,7 +2,11 @@
 import assert from 'node:assert/strict';
 
 import { evaluateRavScoreCandidateG } from '../js/core/ravscore-candidate-g.js';
-import { buildBlendedRegimeMemory, normalizeMemoryTrackCausally } from '../js/core/ravscore-regime-memory.js';
+import {
+  buildBlendedRegimeMemory,
+  buildCurrentTransportPotential,
+  normalizeMemoryTrackCausally,
+} from '../js/core/ravscore-regime-memory.js';
 import {
   MODE_COUPLING_POLICIES,
   evaluateModeHuntabilityCoupling,
@@ -46,6 +50,7 @@ const scenarios = Object.freeze([
   Object.freeze({ id: 'alongshore-left', current: 0.3, wave: 0.8, period: 6, wind: 6, currentOffset: -90, waveOffset: -90, windOffset: -90, history: [[48, 0, 0, 0]], maxWave: 2, maxWind: 14, duration: 8, age: 8 }),
   Object.freeze({ id: 'alongshore-right', current: 0.3, wave: 0.8, period: 6, wind: 6, currentOffset: 90, waveOffset: 90, windOffset: 90, history: [[48, 0, 0, 0]], maxWave: 2, maxWind: 14, duration: 8, age: 8 }),
   Object.freeze({ id: 'inbound-memory-zero-capacity', current: 0, wave: 0, period: 0, wind: 3, currentOffset: 0, waveOffset: 0, windOffset: 0, history: [[72, 1, 1, 1]], maxWave: 2, maxWind: 14, duration: 8, age: 8 }),
+  Object.freeze({ id: 'no-current-transport-high-wave', current: 0, wave: 3, period: 8, wind: 8, currentOffset: 0, waveOffset: 0, windOffset: 0, history: [[72, 0, 1, 1]], maxWave: 3, maxWind: 14, duration: 8, age: 8 }),
   Object.freeze({ id: 'high-energy-wader-warning', current: 0.45, wave: 3, period: 8, wind: 18, currentOffset: 0, waveOffset: 0, windOffset: 0, history: [[48, 1, 1, 1]], maxWave: 3, maxWind: 18, duration: 10, age: 0 }),
   Object.freeze({ id: 'post-storm-huntable', current: 0.25, wave: 0.4, period: 6, wind: 4, currentOffset: 0, waveOffset: 0, windOffset: 0, history: [[48, 1, 1, 1]], maxWave: 3, maxWind: 18, duration: 10, age: 10 }),
 ]);
@@ -59,6 +64,8 @@ function memoryFor(scenario, activeWeight) {
       samples.push({
         time: new Date(start + offset * 3_600_000).toISOString(),
         current: current * 0.3,
+        currentSpeedMps: Math.abs(current * 0.3),
+        currentAlignment: Math.sign(current),
         wave: wave * 7,
         directWind: directWind * 8,
       });
@@ -72,7 +79,16 @@ function memoryFor(scenario, activeWeight) {
     getTime: sample => sample.time,
     getForce: sample => sample[key],
   }), { initialScale: scale, minimumScale: scale }).at(-1).boundedState;
-  return { current: track('current', 0.3), wave: track('wave', 7), directWind: track('directWind', 8) };
+  const transport = buildCurrentTransportPotential(samples).at(-1);
+  return {
+    current: track('current', 0.3),
+    wave: track('wave', 7),
+    directWind: track('directWind', 8),
+    transportPotential: transport.transportPotential,
+    outboundEpisodeEffectiveHours: transport.outboundEpisodeEffectiveHours,
+    outboundEpisodeLossPoints: transport.outboundEpisodeLossPoints,
+    actualOutboundTransport: transport.actualOutboundTransport,
+  };
 }
 
 function contextFor(scenario, mode, onshore) {
@@ -117,6 +133,9 @@ function runAudit() {
         const ownerApproved = evaluateRavScoreCandidateG(context, {
           variantId: 'G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED', memory: memories.candidateG5050,
         });
+        const currentLed = evaluateRavScoreCandidateG(context, {
+          variantId: 'G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED', memory: memories.candidateG5050,
+        });
         assert.ok(Object.values(results).every(result => result.available));
         rows.push({
           scenarioId: scenario.id,
@@ -129,6 +148,10 @@ function runAudit() {
           candidateGNoDirectWind: noDirect.score,
           ownerApprovedModeScore: ownerApproved.score,
           ownerApprovedHuntability: ownerApproved.components.huntability,
+          currentLedScore: currentLed.score,
+          currentLedTransportPotential: currentLed.diagnostics.candidateGCurrentLedTransportPotential,
+          currentLedTransportAndDelivery: currentLed.components.transportAndDelivery,
+          currentLedActualOutboundTransport: currentLed.diagnostics.candidateGActualOutboundTransport,
           ownerApprovedWeightScores: Object.fromEntries(WEIGHT_PRIORS.map(weights => [
             weights.id,
             scoreWithWeights(ownerApproved, weights),
@@ -159,6 +182,9 @@ function runAudit() {
       candidateGNoDirectWindMean: value('candidateGNoDirectWind'),
       ownerApprovedModeScoreMean: value('ownerApprovedModeScore'),
       ownerApprovedHuntabilityMean: value('ownerApprovedHuntability'),
+      currentLedScoreMean: value('currentLedScore'),
+      currentLedTransportPotentialMean: value('currentLedTransportPotential'),
+      currentLedTransportAndDeliveryMean: value('currentLedTransportAndDelivery'),
       ownerApprovedWeightMeans: Object.fromEntries(WEIGHT_PRIORS.map(weights => [
         weights.id,
         round3(mean(selected.map(row => row.ownerApprovedWeightScores[weights.id]))),
@@ -180,6 +206,11 @@ function runAudit() {
     alongshoreLeftMinusRightBeach: delta('alongshore-left', 'alongshore-right'),
     highEnergyWaderHuntabilityMinusPostStorm: delta('high-energy-wader-warning', 'post-storm-huntable', 'huntabilityMean', 'waders'),
     zeroCapacityTransportAndDelivery: summary('inbound-memory-zero-capacity').transportAndDeliveryMean,
+    currentLedRetainedPotentialAtZeroCurrent: summary('inbound-memory-zero-capacity').currentLedTransportPotentialMean,
+    currentLedWaveOnlyTransportAndDelivery: summary('no-current-transport-high-wave').currentLedTransportAndDeliveryMean,
+    currentLedWeakMinusStrongReversalBeach: delta('weak-short-reversal', 'strong-sustained-reversal', 'currentLedScoreMean'),
+    currentLedWeakReversalPotential: summary('weak-short-reversal').currentLedTransportPotentialMean,
+    currentLedStrongReversalPotential: summary('strong-sustained-reversal').currentLedTransportPotentialMean,
     strongReversal24Minus48: round3(summary('strong-sustained-reversal').candidateG24Mean - summary('strong-sustained-reversal').candidateG48Mean),
     weakReversal24Minus48: round3(summary('weak-short-reversal').candidateG24Mean - summary('weak-short-reversal').candidateG48Mean),
     maximumDirectWindDelta: Math.max(...rows.map(row => Math.abs(row.candidateG5050 - row.candidateGNoDirectWind))),
@@ -238,6 +269,13 @@ function runAudit() {
   assert.ok(pairChecks.weakMinusStrongReversalBeach > 0, 'Weak short reversal must retain more prior delivery support than a strong sustained reversal');
   assert.equal(pairChecks.alongshoreLeftMinusRightBeach, 0);
   assert.equal(pairChecks.zeroCapacityTransportAndDelivery, 0, 'Inbound memory must not create transport at zero capacity');
+  assert.equal(pairChecks.currentLedRetainedPotentialAtZeroCurrent, 100,
+    'Den strømstyrede revision skal bevare allerede opbygget potentiale, når den aktuelle strøm kortvarigt stopper');
+  assert.equal(pairChecks.currentLedWaveOnlyTransportAndDelivery, 0,
+    'Bølger må ikke skabe transport uden et strømopbygget potentiale');
+  assert.ok(pairChecks.currentLedWeakMinusStrongReversalBeach > 0);
+  assert.ok(pairChecks.currentLedWeakReversalPotential > pairChecks.currentLedStrongReversalPotential);
+  assert.equal(pairChecks.currentLedStrongReversalPotential, 0);
   assert.ok(pairChecks.strongReversal24Minus48 <= 0, 'The 24h track must react at least as fast as the 48h track to a strong reversal');
   assert.ok(pairChecks.highEnergyWaderHuntabilityMinusPostStorm < 0, 'High energy must remain visibly less huntable for waders');
   assert.equal(pairChecks.highEnergyWaderRequiresModeSpecificLimit, true, 'High physical opportunity with zero wader huntability must require a mode-specific score limit');

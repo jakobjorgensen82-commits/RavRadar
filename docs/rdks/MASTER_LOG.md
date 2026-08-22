@@ -1,3 +1,12 @@
+## 2026-08-22 – Candidate G strømstyret transporthukommelse efter 4.0.258
+
+- Ejeren har godkendt, at fuld kraftig udgående strøm straks reducerer det interne transportpotentiale med 8 point pr. effektiv time og når 0 fra 13 timer. Fuld indgående strøm bygger 10 point pr. effektiv time mod 100.
+- Candidate G-varianten `G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED` gør verificeret kystnormal strøm til transportleddet. Bølger alene giver nul transport og har kun en afhængig leveringsrolle på højst 15 procent.
+- Privat replay på 1.460 evalueringer består mekanisk. Referencegrænser 0,05→0,20 m/s giver gennemsnitspotentiale 7,246; lavere følsomhedsgrænser flytter Candidate G-scoren +3,068 til +4,296, og diagnostisk start 50 flytter den +21,136.
+- DEC-0055 klassificerer derfor strømgrænsen og start-/forældelsesreglen som åbne aktiveringsblokeringer. Offentlig RavScore `25/40/35`, UI og runtime er uændret.
+- Candidate G beholder `20/50/30` og DEC-0054's waders-regler. Ingen nye rådata, geometri eller punktændringer indgår.
+- Målrettede tests, samlet RDKS-/håndbogsvalidering og fuld lokal `scripts/validate-source.ps1` inklusive releasegate er grønne.
+
 ## 2026-08-22 – RavRadar 4.0.258: vindstyret waders-jagtbarhed i Candidate G
 
 - Ejeren har valgt `20/50/30` som Candidate G's private faglige analyseprior. Offentlig RavScore `25/40/35` er uændret.

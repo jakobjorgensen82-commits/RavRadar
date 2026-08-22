@@ -5,6 +5,13 @@
   "updatedAt": "2026-08-22",
   "sections": [
     {
+      "id": "ravscore-current-led-transport-memory-2026-08-22",
+      "chapter": "18B",
+      "title": "Candidate G: strømstyret transporthukommelse",
+      "summary": "Den private kandidat lader strømmen bygge og nedbryde ravpotentialet; offentlig 25/40/35 er uændret.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Verificeret strøm mod kysten bygger transportpotentiale, og kraftig strøm væk fra kysten reducerer det straks. Bølger kan ikke skabe transport og må kun hjælpe lidt med den sidste levering.</div><p>Fuld indgående strøm bygger 10 point pr. effektiv time mod 100. Fuld udgående strøm trækker 8 point pr. effektiv time: 100, 92, 84, 76, 68, 60, 52, 44, 36, 28, 20, 12, 4 og 0 fra 13 timer. Svagere strøm skaleres forholdsmæssigt, mens manglende eller ikke-verificeret strøm pauser beregningen.</p><p>Bølger og hændelsestiming kan samlet kun justere leveringen inden for 0,85–1,00, og kun når strømmen allerede har skabt potentiale. Candidate G bruger fortsat den private analyseprior 20/50/30 og den vindstyrede waders-jagtbarhed fra DEC-0054.</p><p>Det private replay på 1.460 evalueringer består mekanisk, men resultatet flytter sig mærkbart, når grænsen for fuld kystnormal strøm eller potentialet ved replayets start ændres. Et eventuelt passivt 24–48-timers tab under neutral strøm er heller ikke besluttet.</p><div class=\"callout\"><strong>Ingen offentlig ændring:</strong> RavRadar bruger fortsat 25/40/35. Strømgrænse og start-/forældelsesregel skal afklares og valideres før et særskilt ejer-go/no-go. Ingen nye rådata, geometri eller land-/vandpunkter indgår.</div>"
+    },
+    {
       "id": "ravscore-candidate-g-owner-review-2026-08-22",
       "chapter": "18B",
       "title": "Candidate G: vindstyret waders-jagtbarhed",

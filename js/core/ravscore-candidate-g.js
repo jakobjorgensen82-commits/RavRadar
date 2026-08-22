@@ -60,6 +60,17 @@ export const CANDIDATE_G_VARIANTS = Object.freeze({
     huntabilityProfile: PHASE_D_HUNTABILITY_PROFILES.WADERS_WIND_LED_WAVE_20,
     wadersHuntabilityLimit: true,
   }),
+  'G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED': Object.freeze({
+    id: 'G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED',
+    modelId: 'RRS-CANDIDATE-G-CURRENT-LED-OUTFLOW-8-RESEARCH-1',
+    memoryTrack: 'current-led-transport-potential-with-event-context',
+    directWindPower: null,
+    directWindIncluded: false,
+    huntabilityProfile: PHASE_D_HUNTABILITY_PROFILES.WADERS_WIND_LED_WAVE_20,
+    wadersHuntabilityLimit: true,
+    currentLedTransportPotential: true,
+    waveLandingMaximumShare: 0.15,
+  }),
 });
 
 const finite = value => value !== null
@@ -111,6 +122,7 @@ function buildResearchExplanation({
   finalScore,
   modeHuntabilityPolicy,
   modeHuntabilityMaximum,
+  currentLedTransport,
 }) {
   return {
     contractVersion: '1.0.0',
@@ -144,12 +156,27 @@ function buildResearchExplanation({
       timeMeaning: 'NOW',
     },
     directionalHistory: {
-      meaning: 'CAUSAL_DIRECTIONAL_CONTEXT_BEFORE_NOW',
+      meaning: currentLedTransport
+        ? 'CURRENT_LED_TRANSPORT_POTENTIAL_BEFORE_NOW'
+        : 'CAUSAL_DIRECTIONAL_CONTEXT_BEFORE_NOW',
       effect: directionalHistoryEffect(directionalHistorySignal),
       signal: directionalHistorySignal,
       factor: historyFactor,
       canCreateTransportFromZeroCapacity: false,
     },
+    currentLedTransport: currentLedTransport ? {
+      meaning: 'CURRENT_MOVES_AMBER_WAVES_ONLY_MODULATE_DEPENDENT_LANDING',
+      transportPotential: currentLedTransport.transportPotential,
+      delivery: currentLedTransport.delivery,
+      transportAndDelivery: currentLedTransport.transportAndDelivery,
+      eventTimingReadiness: currentLedTransport.eventTimingReadiness,
+      waveLandingReadiness: currentLedTransport.waveLandingReadiness,
+      waveLandingMaximumShare: currentLedTransport.waveLandingMaximumShare,
+      waveCanCreateTransport: false,
+      outboundEpisodeEffectiveHours: currentLedTransport.outboundEpisodeEffectiveHours,
+      outboundEpisodeLossPoints: currentLedTransport.outboundEpisodeLossPoints,
+      actualOutboundTransport: currentLedTransport.actualOutboundTransport,
+    } : null,
     physicalBottleneck: {
       meaning: 'MILD_TRANSPORT_MOBILISATION_BOTTLENECK',
       factor: gateFactor,
@@ -168,15 +195,49 @@ function buildResearchExplanation({
   };
 }
 
+function currentLedTransportAndDelivery(base, memory, variant) {
+  if (!variant.currentLedTransportPotential) return null;
+  if (!finite(memory?.transportPotential)) return null;
+  const transportPotential = clamp(memory.transportPotential);
+  const eventTimingReadiness = finite(base.diagnostics?.eventTimingScore)
+    ? clamp(base.diagnostics.eventTimingScore) / 100
+    : 0.5;
+  const waveLandingReadiness = finite(base.diagnostics?.waveApproachSupportScore)
+    ? clamp(base.diagnostics.waveApproachSupportScore) / 100
+    : 0.5;
+  const landingReadiness = 0.60 * eventTimingReadiness + 0.40 * waveLandingReadiness;
+  const waveLandingMaximumShare = clamp(variant.waveLandingMaximumShare, 0, 1);
+  const deliveryFactor = (1 - waveLandingMaximumShare)
+    + waveLandingMaximumShare * landingReadiness;
+  const delivery = transportPotential * deliveryFactor;
+  const transportAndDelivery = 0.65 * transportPotential + 0.35 * delivery;
+  return {
+    transportPotential,
+    delivery,
+    transportAndDelivery,
+    eventTimingReadiness,
+    waveLandingReadiness,
+    landingReadiness,
+    deliveryFactor,
+    waveLandingMaximumShare,
+    outboundEpisodeEffectiveHours: finite(memory.outboundEpisodeEffectiveHours)
+      ? Math.max(0, Number(memory.outboundEpisodeEffectiveHours))
+      : 0,
+    outboundEpisodeLossPoints: finite(memory.outboundEpisodeLossPoints)
+      ? clamp(memory.outboundEpisodeLossPoints)
+      : 0,
+    actualOutboundTransport: memory.actualOutboundTransport === true,
+  };
+}
+
 /**
  * Score-neutral Candidate G research evaluator.
  *
- * Directional history can only modulate an already available physical
- * transport-and-delivery path. A neutral history leaves that path unchanged,
- * and history can never create transport from a zero-capacity base. Direct
- * wind is deliberately capped at ten percent of the history signal and can be
- * removed without redistributing its weight, so the mandatory no-direct-wind
- * comparison has a neutral, interpretable reference.
+ * Legacy variants modulate Candidate E's existing physical path. The newer
+ * current-led revision instead receives a causal 0-100 transport reservoir:
+ * current builds or erodes it, while waves can only modulate dependent landing.
+ * All variants remain diagnostic-only and preserve zero at zero transport
+ * capacity/potential.
  */
 export function evaluateRavScoreCandidateG(
   context = {},
@@ -201,7 +262,7 @@ export function evaluateRavScoreCandidateG(
   const currentState = memoryState(memory.current);
   const waveState = memoryState(memory.wave);
   const directWindState = resolvedIncludeDirectWind ? memoryState(memory.directWind) : null;
-  if (currentState === null || waveState === null) {
+  if (!variant.currentLedTransportPotential && (currentState === null || waveState === null)) {
     return {
       ...base,
       available: false,
@@ -212,14 +273,26 @@ export function evaluateRavScoreCandidateG(
   }
 
   const directWindContribution = directWindState === null ? 0 : mix.directWind * directWindState;
-  const directionalHistorySignal = clamp(
-    mix.current * currentState + mix.wave * waveState + directWindContribution,
-    -1,
-    1,
-  );
-  const historyFactor = clamp(1 + Number(historyGain) * directionalHistorySignal, 0, 2);
+  const currentLedTransport = currentLedTransportAndDelivery(base, memory, variant);
+  if (variant.currentLedTransportPotential && currentLedTransport === null) {
+    return {
+      ...base,
+      available: false,
+      score: null,
+      scoreImpact: 'diagnostic-only',
+      reason: 'MISSING_REQUIRED_CURRENT_LED_TRANSPORT_POTENTIAL',
+    };
+  }
+  const directionalHistorySignal = currentLedTransport === null
+    ? clamp(mix.current * currentState + mix.wave * waveState + directWindContribution, -1, 1)
+    : null;
+  const historyFactor = currentLedTransport === null
+    ? clamp(1 + Number(historyGain) * directionalHistorySignal, 0, 2)
+    : 1;
   const baseTransportAndDelivery = Number(base.components.transportAndDelivery);
-  const transportAndDelivery = clamp(baseTransportAndDelivery * historyFactor);
+  const transportAndDelivery = currentLedTransport === null
+    ? clamp(baseTransportAndDelivery * historyFactor)
+    : currentLedTransport.transportAndDelivery;
   const huntabilityResult = variant.huntabilityProfile
     ? evaluatePhaseDHuntability(context.mode || 'beach', context.weather || {}, {
       profile: variant.huntabilityProfile,
@@ -273,6 +346,7 @@ export function evaluateRavScoreCandidateG(
     finalScore: candidateG,
     modeHuntabilityPolicy: scoreCalculation.modeHuntabilityPolicy,
     modeHuntabilityMaximum: wadersHuntabilityMaximum,
+    currentLedTransport,
   });
   const limitations = new Set(base.confidence?.limitations || []);
   limitations.add('directional-history-is-research-prior');
@@ -281,6 +355,14 @@ export function evaluateRavScoreCandidateG(
   if (directWindState === null) limitations.add('direct-wind-history-omitted');
   if (variant.huntabilityProfile) limitations.add('waders-wind-curve-is-owner-prior');
   if (variant.wadersHuntabilityLimit) limitations.add('waders-huntability-limit-is-owner-prior');
+  if (variant.currentLedTransportPotential) {
+    limitations.add('current-led-transport-potential-is-owner-prior');
+    limitations.add('outbound-eight-points-per-effective-hour-is-owner-prior');
+    limitations.add('inbound-ten-points-per-effective-hour-follows-shadow-state-requirement');
+    limitations.add('current-normal-speed-thresholds-are-uncalibrated-research-priors');
+    limitations.add('initial-transport-potential-is-unobserved-at-replay-boundary');
+    limitations.add('wave-landing-share-is-uncalibrated-secondary-prior');
+  }
 
   return {
     ...base,
@@ -290,6 +372,10 @@ export function evaluateRavScoreCandidateG(
     components: {
       ...base.components,
       huntability,
+      ...(currentLedTransport ? {
+        transport: round(currentLedTransport.transportPotential),
+        delivery: round(currentLedTransport.delivery),
+      } : {}),
       transportAndDelivery: round(transportAndDelivery),
     },
     candidateScores: {
@@ -298,7 +384,9 @@ export function evaluateRavScoreCandidateG(
     },
     candidateDefinitions: {
       ...base.candidateDefinitions,
-      candidateG: 'Candidate E process path with capacity-preserving causal direction memory, 20/50/30 weights and the same mild physical bottleneck',
+      candidateG: currentLedTransport
+        ? 'Current-led transport potential with immediate strength-scaled outbound loss, secondary dependent wave landing, 20/50/30 weights and the same mild physical bottleneck'
+        : 'Candidate E process path with capacity-preserving causal direction memory, 20/50/30 weights and the same mild physical bottleneck',
     },
     additiveScore: Number(additiveScore.toFixed(3)),
     scoreCalculation,
@@ -328,8 +416,16 @@ export function evaluateRavScoreCandidateG(
       candidateGHuntabilityWaveScore: huntabilityResult?.waveScore ?? null,
       candidateGHuntabilityWavePenalty: huntabilityResult?.wavePenalty ?? null,
       candidateGHuntabilityWindHardStopApplied: huntabilityResult?.windHardStopApplied ?? false,
-      candidateGDirectionalHistorySignal: Number(directionalHistorySignal.toFixed(6)),
+      candidateGDirectionalHistorySignal: directionalHistorySignal === null
+        ? null
+        : Number(directionalHistorySignal.toFixed(6)),
       candidateGHistoryFactor: Number(historyFactor.toFixed(6)),
+      candidateGCurrentLedTransportPotential: currentLedTransport?.transportPotential ?? null,
+      candidateGCurrentLedDelivery: currentLedTransport?.delivery ?? null,
+      candidateGWaveLandingMaximumShare: currentLedTransport?.waveLandingMaximumShare ?? null,
+      candidateGOutboundEpisodeEffectiveHours: currentLedTransport?.outboundEpisodeEffectiveHours ?? null,
+      candidateGOutboundEpisodeLossPoints: currentLedTransport?.outboundEpisodeLossPoints ?? null,
+      candidateGActualOutboundTransport: currentLedTransport?.actualOutboundTransport ?? false,
       candidateGBaseTransportAndDelivery: baseTransportAndDelivery,
       scoreIsSafetyAdvice: false,
       automaticActivationAllowed: false,

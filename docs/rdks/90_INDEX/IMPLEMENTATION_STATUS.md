@@ -1,4 +1,19 @@
-# Implementeringsstatus – Candidate G 4.0.258 vindstyret waders-jagtbarhed
+# Implementeringsstatus – Candidate G efter 4.0.258
+
+## Strømstyret transporthukommelse – score-neutralt forskningscheckpoint
+
+- [x] Gør verificeret kystnormal strøm til transportpotentialets eneste opbygnings-/nedbrydningssignal.
+- [x] Implementér ejerens fuldstyrkekurve med straks-tab på 8 point pr. effektiv udgående time og nul fra 13 timer.
+- [x] Bevar REQ-STATE-003's cirka 10-timers opbygning som 10 point pr. effektiv indgående time.
+- [x] Begræns bølger/hændelsestiming til en afhængig leveringskorrektion på højst 15 procent; bølger alene giver nul transport.
+- [x] Genafspil 1.460 private evalueringer med reference- og følsomhedsgrænser samt en særskilt warm-start-kontrol.
+- [x] Bevar `20/50/30`, DEC-0054's waders-kontrakt og offentlig `25/40/35` uændret.
+- [x] Kør målrettede regime-, Candidate G-, scenarie-, analyse- og nationale shadow-self-tests.
+- [x] Kør samlet RDKS-/håndbogsvalidering og fuld lokal `scripts/validate-source.ps1`, inklusive releasegate.
+- [ ] Kalibrér eller afvis strømgrænsen, beslut start-/24–48-timers forældelsesregel og valider senere mod komplette ture/hold-out.
+- [ ] Offentlig aktivering kræver et senere særskilt ejer-go/no-go og fulde produktgates.
+
+Nedenstående 4.0.258-afsnit gælder fortsat for jagtbarhed. DEC-0055 erstatter kun den foretrukne transportfortolkning.
 
 ## 4.0.258-kandidat
 
