@@ -10,6 +10,7 @@
 - Den afgrænsede efterkontrol viser, at alle 12 eventvinduer kun har 24 timers forhistorie. Neutral halvering på 24/48 timer flytter start-0-scoren -1,182/-0,697 point, men kan ikke løse den ukendte starttilstand eller vælge en fysisk levetid. Begge er følsomhedsspor; referenceadfærden er fortsat start 0 uden passivt tab.
 - Referencegrænsen 0,05→0,20 m/s rammer ingen fuldstyrkeevalueringer i replayet. De lavere profiler rammer kun 0/10 og 2/44 fulde ind-/udgående evalueringer og mangler fundlabels. Strømgrænsen er derfor fortsat ukalibreret.
 - PR #75's exact-head-kørsel `32598284279` bestod på `d37d15fe`, og checkpointet blev merged som `4379606e`. Der blev ikke bygget eller aktiveret et nyt produktionsartifact.
+- Efterkontrollen bestod exact-head-kildegate `32599255165` på `ed1f0297` og blev merged via PR #77 som `75ed93d6`. Produktion `32599309735` bestod frisk vejr/proveniens, fuld validering, releasegate, Supabase og Pages. Live `rr-20260822212612-210` har 210 zoner og 673/673 scoreklare dele med ens dataset-id i manifest/start/detaljer; offentlig score er stadig `25/40/35`.
 - G 24/48 og tidligere kandidater bevares som historisk evidens. Ingen nye rådata er hentet; private cachepayloads, artifact, protected-dirty-data, geometri og land-/vandpunkter er urørte.
 
 ## Candidate G 4.0.258 – vind er hovedsignal for waders-jagtbarhed

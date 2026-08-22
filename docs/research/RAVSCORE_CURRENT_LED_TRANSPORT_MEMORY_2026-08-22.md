@@ -79,3 +79,5 @@ Ikke besluttet:
 Behold den strømstyrede variant som det foretrukne private Candidate G-spor, fordi den matcher ejerens faglige forståelse og har tydeligere årsagssammenhæng. Aktivér den ikke offentligt endnu. Behold fail-closed start 0 og intet passivt tab som mekanisk reference, ikke som påstået naturregel. Brug 24- og 48-timers halvering som dokumenterede følsomhedsgrænser, indtil et mindst 72-timers forløb før evalueringen eller senere komplette ture kan skelne dem. Strømgrænsen kræver tilsvarende uafhængig fysisk eller fundbaseret evidens.
 
 Offentlig RavScore forbliver `25/40/35`. Der er ikke ændret UI, data, geometri, land-/vandpunkter, artifact eller protected-dirty-data.
+
+Efterkontrollen bestod exact-head-kildegate `32599255165` på `ed1f0297` og blev merged i PR #77 som `75ed93d6`. Den efterfølgende produktion `32599309735` bestod frisk vejr/proveniens, fuld validering, releasegate, Supabase og Pages. Live datasæt `rr-20260822212612-210` har 210 zoner og 673/673 scoreklare dele med sammenhængende dataset-id. Candidate G blev ikke aktiveret offentligt.

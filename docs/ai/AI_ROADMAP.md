@@ -6,7 +6,7 @@
 - [x] Genafspil den eksisterende private cache score-neutralt og auditér startgrænsen uden nye rådata.
 - [x] Fastslå, at 12/12 vinduer kun har 24 timers forhistorie, og at hverken fysisk levetid eller starttilstand kan vælges herfra.
 - [x] Fastslå, at referencegrænsen har nul fuldstyrkeevalueringer, mens lavere grænser kun har sparsom dækning uden fundlabels.
-- [ ] Før checkpointet gennem samlet kildegate og exact-head-PR. Offentlig score og Candidate G-aktivering forbliver uændret.
+- [x] Før checkpointet gennem samlet kildegate, exact-head `32599255165`, PR #77/merge `75ed93d6` og fuld produktion `32599309735`; offentlig score og Candidate G-aktivering forbliver uændret.
 - [ ] Kalibrering af fysisk levetid og strømgrænse afventer mindst 72 timers forhistorie eller senere komplette ture/hold-out.
 
 ## Candidate G – samlet beslutningsgrundlag efter 4.0.257

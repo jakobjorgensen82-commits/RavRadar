@@ -12,7 +12,8 @@
 - Ingen nye rådata er hentet. Private cachepayloads, artifact, protected-dirty-data, DMI/fallback, geometri og land-/vandpunkter må ikke stages eller ændres.
 - Branch `codex/ravscore-current-decay-sensitivity` udvider efterfølgende kun analyseværktøjet med valgfri neutral halvering på 24/48 timer. Referenceprofilen har fortsat `neutralPassiveHalfLifeHours=null`.
 - Den private randkontrol viser 24 timers forhistorie i alle 12 eventvinduer og nul vinduer med 48/72 timer. Start-0-scoren flytter -1,182/-0,697 point, men warm-start-forskellen forbliver væsentlig; ingen fysisk levetid er valgt.
-- Referencegrænsen 0,05→0,20 m/s har nul fuldstyrkeevalueringer. De lavere følsomheder giver mere modelaktivitet, men uden fundlabels ingen kalibrering. Næste sikre trin er samlet kildegate/PR for dette score-neutrale checkpoint; ikke offentlig aktivering.
+- Referencegrænsen 0,05→0,20 m/s har nul fuldstyrkeevalueringer. De lavere følsomheder giver mere modelaktivitet, men uden fundlabels ingen kalibrering.
+- Checkpointet bestod exact-head `32599255165` på `ed1f0297`, blev merged via PR #77 som `75ed93d6` og produktionsverificeret i `32599309735`. Live `rr-20260822212612-210` har 210 zoner, 673/673 dele og identisk dataset-id i manifest/start/detaljer. Offentlig Candidate G er ikke aktiveret.
 
 ## Checkpoint 2026-08-22 – Candidate G 4.0.258 vindstyret waders-jagtbarhed
 

@@ -9,6 +9,7 @@
 - PR #75's exact-head-kildegate `32598284279` bestod på `d37d15fe`; PR'en blev merged som `4379606e` uden et nyt produktionsartifact eller offentlig scoreaktivering.
 - Efterkontrollen tilføjer valgfri neutral halvering på 24/48 timer som diagnostic-only følsomhed. Den flytter start-0-scoren -1,182/-0,697 point og ændrer ikke den godkendte 10-/8-pointskurve eller missing-pause.
 - Alle 12 private eventvinduer har kun 24 timers forhistorie; ingen har 48/72. Referencegrænsen har samtidig nul fuldstyrkeevalueringer. Replayet kan derfor ikke vælge fysisk levetid eller strømgrænse, og offentlig aktivering forbliver lukket.
+- Efterkontrollen bestod exact-head `32599255165` på `ed1f0297`, blev merged i PR #77 som `75ed93d6` og bestod fuld produktion `32599309735`. Live `rr-20260822212612-210` har 210 zoner og 673/673 scoreklare dele; offentlig `25/40/35` er uændret.
 
 ## 2026-08-22 – RavRadar 4.0.258: vindstyret waders-jagtbarhed i Candidate G
 
