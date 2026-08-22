@@ -23,7 +23,7 @@ Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre for
 - [x] Genafspil den eksisterende private cache uden nye rådata og kør målrettede følsomheder.
 - [x] Dokumentér, at strømgrænsen og replayets start-/forældelsesregel har væsentlig betydning og endnu ikke er kalibreret.
 - [x] Afslut samlet RDKS-/håndbogskontrol og fuld lokal kildegate inklusive releasegate.
-- [ ] Før beslutningsgrundlaget gennem exact-head PR og score-neutral merge.
+- [x] Før beslutningsgrundlaget gennem exact-head-kørsel `32598284279`, PR #75 og score-neutral merge `4379606e` uden nyt produktionsartifact.
 - [ ] Undersøg derefter en afgrænset 24–48-timers forældelsesregel og strømgrænse uden offentlig aktivering.
 - [ ] En eventuel offentlig Candidate G-aktivering forbliver et særskilt ejer-go/no-go med validering og fulde produktgates.
 
