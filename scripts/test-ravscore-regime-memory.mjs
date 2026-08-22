@@ -20,6 +20,7 @@ assert.deepEqual(CURRENT_TRANSPORT_POTENTIAL_PRIOR, {
   outboundPointsPerEffectiveHour: 8,
   exhaustedAfterEffectiveHours: 13,
   preExhaustionMaximumLossPoints: 96,
+  neutralPassiveHalfLifeHours: null,
 });
 
 const strongOutbound = Array.from({ length: 14 }, (_, hour) => ({
@@ -90,9 +91,56 @@ const unverifiedPauseTrack = buildCurrentTransportPotential([
 ], { initialPotential: 100, isVerified: sample => sample.currentVerified });
 assert.equal(unverifiedPauseTrack[1].transportPotential, 100);
 assert.equal(unverifiedPauseTrack[1].phase, 'UNVERIFIED_PAUSE');
+
+const neutralSamples = [0, 24, 48].map(hour => ({
+  time: new Date(Date.UTC(2024, 0, 3, hour)).toISOString(),
+  currentSpeedMps: 0.2,
+  currentAlignment: 0,
+  currentVerified: true,
+}));
+const neutralHalfLife24Track = buildCurrentTransportPotential(neutralSamples, {
+  initialPotential: 100,
+  neutralPassiveHalfLifeHours: 24,
+  isVerified: sample => sample.currentVerified,
+});
+assert.deepEqual(neutralHalfLife24Track.map(record => record.transportPotential), [100, 50, 25]);
+assert.equal(neutralHalfLife24Track[1].phase, 'PASSIVE_NEUTRAL_DECAY');
+assert.equal(neutralHalfLife24Track[1].neutralPassiveDecayPoints, 50);
+
+const neutralHalfLife48Track = buildCurrentTransportPotential(neutralSamples, {
+  initialPotential: 100,
+  neutralPassiveHalfLifeHours: 48,
+  isVerified: sample => sample.currentVerified,
+});
+assert.ok(Math.abs(neutralHalfLife48Track[1].transportPotential - Math.sqrt(0.5) * 100) < 1e-9);
+assert.ok(Math.abs(neutralHalfLife48Track[2].transportPotential - 50) < 1e-9);
+
+const missingDoesNotDecayTrack = buildCurrentTransportPotential([
+  neutralSamples[0],
+  { ...neutralSamples[1], currentVerified: false },
+], {
+  initialPotential: 100,
+  neutralPassiveHalfLifeHours: 24,
+  isVerified: sample => sample.currentVerified,
+});
+assert.equal(missingDoesNotDecayTrack[1].transportPotential, 100);
+
+const outboundWithPassiveSensitivity = buildCurrentTransportPotential(strongOutbound, {
+  initialPotential: 100,
+  neutralPassiveHalfLifeHours: 24,
+  isVerified: sample => sample.currentVerified,
+});
+assert.deepEqual(
+  outboundWithPassiveSensitivity.map(record => record.transportPotential),
+  strongOutboundTrack.map(record => record.transportPotential),
+  'Passiv neutral forældelse må ikke ændre den godkendte udtransportkurve',
+);
 assert.throws(() => buildCurrentTransportPotential(strongOutbound, {
   deadbandNormalSpeedMps: 0.2,
   fullStrengthNormalSpeedMps: 0.2,
+}));
+assert.throws(() => buildCurrentTransportPotential(strongOutbound, {
+  neutralPassiveHalfLifeHours: 0,
 }));
 
 assert.equal(signedDirectionalForce({ magnitude: 0.4, alignment: 0.5 }), 0.2);

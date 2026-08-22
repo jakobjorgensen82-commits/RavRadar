@@ -7,6 +7,8 @@
 - Den private kandidat beholder `20/50/30` og DEC-0054's vindstyrede waders-jagtbarhed. Offentlig RavScore er fortsat `25/40/35`; ingen score- eller UI-aktivering er foretaget.
 - Referencegrænserne 0,05→0,20 m/s og replaystart 0 er forskningspriorer, ikke naturkonstanter. Følsomhed 0,03→0,15 og 0,02→0,12 flytter Candidate G-scoren henholdsvis +3,068 og +4,296 point, mens diagnostisk start 50 flytter den +21,136.
 - Mekanikken består målrettede tests og det private 1.460-evalueringsreplay, men strømgrænsen, starttilstanden og et eventuelt passivt 24–48-timers tab er åbne aktiveringsblokeringer.
+- Den afgrænsede efterkontrol viser, at alle 12 eventvinduer kun har 24 timers forhistorie. Neutral halvering på 24/48 timer flytter start-0-scoren -1,182/-0,697 point, men kan ikke løse den ukendte starttilstand eller vælge en fysisk levetid. Begge er følsomhedsspor; referenceadfærden er fortsat start 0 uden passivt tab.
+- Referencegrænsen 0,05→0,20 m/s rammer ingen fuldstyrkeevalueringer i replayet. De lavere profiler rammer kun 0/10 og 2/44 fulde ind-/udgående evalueringer og mangler fundlabels. Strømgrænsen er derfor fortsat ukalibreret.
 - PR #75's exact-head-kørsel `32598284279` bestod på `d37d15fe`, og checkpointet blev merged som `4379606e`. Der blev ikke bygget eller aktiveret et nyt produktionsartifact.
 - G 24/48 og tidligere kandidater bevares som historisk evidens. Ingen nye rådata er hentet; private cachepayloads, artifact, protected-dirty-data, geometri og land-/vandpunkter er urørte.
 

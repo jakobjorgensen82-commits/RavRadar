@@ -24,7 +24,8 @@ Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre for
 - [x] Dokumentér, at strømgrænsen og replayets start-/forældelsesregel har væsentlig betydning og endnu ikke er kalibreret.
 - [x] Afslut samlet RDKS-/håndbogskontrol og fuld lokal kildegate inklusive releasegate.
 - [x] Før beslutningsgrundlaget gennem exact-head-kørsel `32598284279`, PR #75 og score-neutral merge `4379606e` uden nyt produktionsartifact.
-- [ ] Undersøg derefter en afgrænset 24–48-timers forældelsesregel og strømgrænse uden offentlig aktivering.
+- [x] Undersøg en afgrænset 24–48-timers forældelsesregel og strømgrænse uden offentlig aktivering. Resultat: 12/12 vinduer har kun 24 timers forhistorie, referencegrænsen har ingen fuldstyrkeevalueringer, og replayet kan derfor afgrænse men ikke vælge reglerne.
+- [ ] Bevar start 0 uden passivt tab som mekanisk reference og 24/48 som følsomhedsspor, indtil mindst 72 timers forhistorie eller komplette ture/hold-out giver et forsvarligt valg.
 - [ ] En eventuel offentlig Candidate G-aktivering forbliver et særskilt ejer-go/no-go med validering og fulde produktgates.
 
 ## Aktuelt Candidate G-review – 4.0.258 vindstyret waders-kandidat

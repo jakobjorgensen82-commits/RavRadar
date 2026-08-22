@@ -1,5 +1,14 @@
 # AI Roadmap – RavRadar 4.0.243+
 
+## Candidate G – strømstyret rand- og tærskelkontrol efter DEC-0055
+
+- [x] Implementér valgfri neutral halvering på 24/48 timer uden at ændre den godkendte ind-/udtransport eller missing-pause.
+- [x] Genafspil den eksisterende private cache score-neutralt og auditér startgrænsen uden nye rådata.
+- [x] Fastslå, at 12/12 vinduer kun har 24 timers forhistorie, og at hverken fysisk levetid eller starttilstand kan vælges herfra.
+- [x] Fastslå, at referencegrænsen har nul fuldstyrkeevalueringer, mens lavere grænser kun har sparsom dækning uden fundlabels.
+- [ ] Før checkpointet gennem samlet kildegate og exact-head-PR. Offentlig score og Candidate G-aktivering forbliver uændret.
+- [ ] Kalibrering af fysisk levetid og strømgrænse afventer mindst 72 timers forhistorie eller senere komplette ture/hold-out.
+
 ## Candidate G – samlet beslutningsgrundlag efter 4.0.257
 
 - [x] Produktionsverificér PR #70/merge `bb16ffe9` i `32580314866` og kontrollér live 210/673.

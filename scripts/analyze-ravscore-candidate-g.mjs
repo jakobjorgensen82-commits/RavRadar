@@ -48,6 +48,42 @@ const CURRENT_LED_SENSITIVITY_PROFILES = Object.freeze([
     id: 'warm-start-50-diagnostic-edge',
     options: Object.freeze({ initialPotential: 50 }),
   }),
+  Object.freeze({
+    id: 'warm-start-100-diagnostic-upper-bound',
+    options: Object.freeze({ initialPotential: 100 }),
+  }),
+  Object.freeze({
+    id: 'neutral-passive-half-life-24',
+    options: Object.freeze({ neutralPassiveHalfLifeHours: 24 }),
+  }),
+  Object.freeze({
+    id: 'neutral-passive-half-life-48',
+    options: Object.freeze({ neutralPassiveHalfLifeHours: 48 }),
+  }),
+  Object.freeze({
+    id: 'warm-start-50-neutral-passive-half-life-24',
+    options: Object.freeze({ initialPotential: 50, neutralPassiveHalfLifeHours: 24 }),
+  }),
+  Object.freeze({
+    id: 'warm-start-50-neutral-passive-half-life-48',
+    options: Object.freeze({ initialPotential: 50, neutralPassiveHalfLifeHours: 48 }),
+  }),
+  Object.freeze({
+    id: 'warm-start-100-neutral-passive-half-life-24',
+    options: Object.freeze({ initialPotential: 100, neutralPassiveHalfLifeHours: 24 }),
+  }),
+  Object.freeze({
+    id: 'warm-start-100-neutral-passive-half-life-48',
+    options: Object.freeze({ initialPotential: 100, neutralPassiveHalfLifeHours: 48 }),
+  }),
+  Object.freeze({
+    id: 'normal-current-0.02-to-0.12-neutral-passive-half-life-48',
+    options: Object.freeze({
+      deadbandNormalSpeedMps: 0.02,
+      fullStrengthNormalSpeedMps: 0.12,
+      neutralPassiveHalfLifeHours: 48,
+    }),
+  }),
 ]);
 const HISTORY_MIXES = Object.freeze([
   Object.freeze({ id: 'direct-0-neutral-slot', mix: CANDIDATE_G_HISTORY_MIX, includeDirectWind: false }),
@@ -119,6 +155,47 @@ function summarizeNumbers(values) {
     p90: round3(percentile(finiteValues, 0.9)),
     minimum: finiteValues.length ? Math.min(...finiteValues) : null,
     maximum: finiteValues.length ? Math.max(...finiteValues) : null,
+  };
+}
+
+function historyBoundaryAudit(eventCatalog, waveEvents) {
+  const windows = (eventCatalog || []).map(event => {
+    const waveEvent = waveEvents.get(event.eventId);
+    assert.ok(waveEvent, `Missing wave event for history boundary audit: ${event.eventId}`);
+    const start = utc(event.windowStart);
+    const peak = utc(waveEvent.peakTime);
+    const end = utc(event.windowEnd);
+    assert.ok(Number.isFinite(start.getTime()) && Number.isFinite(peak.getTime())
+      && Number.isFinite(end.getTime()), `Invalid history boundary for ${event.eventId}`);
+    assert.ok(start <= peak && peak <= end, `Peak outside history window for ${event.eventId}`);
+    return {
+      preRollHours: hours(peak - start),
+      postRollHours: hours(end - peak),
+      totalHours: hours(end - start),
+    };
+  });
+  const preRollHours = windows.map(window => window.preRollHours);
+  const countAtLeast = threshold => preRollHours.filter(value => value >= threshold).length;
+  const minimumPreRollHours = preRollHours.length ? Math.min(...preRollHours) : 0;
+  const residualPercent = halfLifeHours => round3(100 * (2 ** (-minimumPreRollHours / halfLifeHours)));
+  return {
+    windowCount: windows.length,
+    preRollHours: summarizeNumbers(preRollHours),
+    postRollHours: summarizeNumbers(windows.map(window => window.postRollHours)),
+    totalHours: summarizeNumbers(windows.map(window => window.totalHours)),
+    preRollWindowCounts: {
+      atLeast24Hours: countAtLeast(24),
+      atLeast48Hours: countAtLeast(48),
+      atLeast72Hours: countAtLeast(72),
+    },
+    publicCurrentHistoryTargetHours: 72,
+    windowsCoveringPublicTargetBeforeEvaluation: countAtLeast(72),
+    replayStartStateObserved: false,
+    passiveDecaySensitivityOnly: true,
+    hypotheticalUnknownPriorResidualAtMinimumPreRollPercent: {
+      neutralHalfLife24Hours: residualPercent(24),
+      neutralHalfLife48Hours: residualPercent(48),
+    },
   };
 }
 
@@ -246,6 +323,8 @@ function buildCurrentTransportMemory(samples, options = {}) {
     outboundNormalSpeedMps: record.outboundNormalSpeedMps,
     inboundStrength: record.inboundStrength,
     outboundStrength: record.outboundStrength,
+    neutralPassiveHalfLifeHours: record.neutralPassiveHalfLifeHours,
+    neutralPassiveDecayPoints: record.neutralPassiveDecayPoints,
   }]));
 }
 
@@ -583,6 +662,19 @@ function aggregate(rows) {
           ),
           actualOutboundTransportCount: rows.filter(row =>
             row.currentLedSensitivity[profile.id].actualOutboundTransport).length,
+          passiveNeutralDecay: summarizeNumbers(
+            rows.map(row => row.currentLedSensitivity[profile.id].neutralPassiveDecayPoints),
+          ),
+          positivePassiveNeutralDecayCount: rows.filter(row =>
+            row.currentLedSensitivity[profile.id].neutralPassiveDecayPoints > 0).length,
+          positiveInboundStrengthCount: rows.filter(row =>
+            row.currentLedSensitivity[profile.id].inboundStrength > 0).length,
+          fullInboundStrengthCount: rows.filter(row =>
+            row.currentLedSensitivity[profile.id].inboundStrength >= 1).length,
+          positiveOutboundStrengthCount: rows.filter(row =>
+            row.currentLedSensitivity[profile.id].outboundStrength > 0).length,
+          fullOutboundStrengthCount: rows.filter(row =>
+            row.currentLedSensitivity[profile.id].outboundStrength >= 1).length,
           byEventClassification: Object.fromEntries(
             [...new Set(rows.map(row => row.classification))].sort().map(classification => {
               const selected = rows.filter(row => row.classification === classification);
@@ -788,6 +880,7 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
   const forcingEvents = new Map((forcing.eventCatalog || []).map(event => [event.eventId, event]));
   const waveEvents = new Map((wave.selectedWaveWindows || []).map(event => [event.eventId, event]));
   const windEvents = new Map((wind.events || []).map(event => [event.eventId, event]));
+  const boundaryAudit = historyBoundaryAudit(forcing.eventCatalog, waveEvents);
   const rows = [];
 
   for (const region of forcing.regions || []) {
@@ -852,6 +945,9 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
                 transportPotential: result.diagnostics.candidateGCurrentLedTransportPotential,
                 transportAndDelivery: result.components.transportAndDelivery,
                 actualOutboundTransport: result.diagnostics.candidateGActualOutboundTransport,
+                neutralPassiveDecayPoints: transportMemory.neutralPassiveDecayPoints,
+                inboundStrength: transportMemory.inboundStrength,
+                outboundStrength: transportMemory.outboundStrength,
               }];
             }),
           );
@@ -962,7 +1058,7 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
   assert.ok(rows.filter(row => row.mode === 'waders')
     .every(row => row.currentLedScore <= row.currentLedHuntability));
   return {
-    schemaVersion: '1.0.0',
+    schemaVersion: '1.1.0',
     status: 'passed-private-candidate-g-decision-analysis',
     generatedAt: new Date().toISOString(),
     method: 'causal-capacity-preserving-candidate-g-replay-on-private-derived-event-windows',
@@ -989,6 +1085,7 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
       },
     },
     historicalWindowCount: forcing.enrichedEventCount,
+    historyBoundaryAudit: boundaryAudit,
     regionCount: forcing.regionCount,
     evaluationCount: rows.length,
     aggregate: aggregate(rows),
@@ -1016,6 +1113,8 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
       'MODEL_COMPONENTS_AND_HISTORY_GAIN_ARE_RESEARCH_PRIORS',
       'CURRENT_NORMAL_SPEED_THRESHOLDS_ARE_UNCALIBRATED_RESEARCH_PRIORS',
       'CURRENT_TRANSPORT_REPLAY_START_STATE_IS_NOT_OBSERVED',
+      'EVENT_WINDOWS_HAVE_ONLY_TWENTY_FOUR_HOURS_BEFORE_EVALUATION',
+      'PASSIVE_DECAY_PROFILES_ARE_BOUNDARY_SENSITIVITIES_NOT_SELECTED_PRODUCT_RULES',
       'EVENT_CLASS_IS_DIRECTIONAL_NOT_DELIVERY_STRENGTH',
       'NATIONAL_PRIVATE_SHADOW_REQUIRES_CENTRAL_HYDRATED_INPUT',
     ],
@@ -1098,6 +1197,8 @@ function summaryText(report) {
   return [
     'Candidate G private decision analysis: OK',
     `Historical windows: ${report.historicalWindowCount}`,
+    `Minimum pre-roll before evaluation: ${report.historyBoundaryAudit.preRollHours.minimum} hours`,
+    `Windows with at least 72h pre-roll: ${report.historyBoundaryAudit.preRollWindowCounts.atLeast72Hours}`,
     `Regions: ${report.regionCount}`,
     `Evaluations: ${report.evaluationCount}`,
     `Candidate G 50/50 mean: ${primary.mean}`,
@@ -1111,6 +1212,8 @@ function summaryText(report) {
     `Current-led mean transport potential: ${aggregate.currentLedRevision.transportPotential.mean}`,
     `Current-led lower-threshold mean transport potential: ${aggregate.currentLedRevision.parameterSensitivity['normal-current-0.02-to-0.12'].transportPotential.mean}`,
     `Current-led warm-start mean transport potential: ${aggregate.currentLedRevision.parameterSensitivity['warm-start-50-diagnostic-edge'].transportPotential.mean}`,
+    `Current-led neutral 24h half-life mean transport potential: ${aggregate.currentLedRevision.parameterSensitivity['neutral-passive-half-life-24'].transportPotential.mean}`,
+    `Current-led neutral 48h half-life mean transport potential: ${aggregate.currentLedRevision.parameterSensitivity['neutral-passive-half-life-48'].transportPotential.mean}`,
     'Protected geometry read: no',
     'Coordinates/raw weather/raw U/V stored: no',
     'Public score impact: no',
@@ -1124,6 +1227,15 @@ function main() {
     const report = compareDocuments(sample.forcing, sample.wave, sample.wind, []);
     assert.equal(report.status, 'passed-private-candidate-g-decision-analysis');
     assert.equal(report.historicalWindowCount, 12);
+    assert.equal(report.historyBoundaryAudit.preRollHours.minimum, 24);
+    assert.equal(report.historyBoundaryAudit.preRollHours.maximum, 24);
+    assert.equal(report.historyBoundaryAudit.preRollWindowCounts.atLeast24Hours, 12);
+    assert.equal(report.historyBoundaryAudit.preRollWindowCounts.atLeast48Hours, 0);
+    assert.equal(report.historyBoundaryAudit.preRollWindowCounts.atLeast72Hours, 0);
+    assert.equal(report.historyBoundaryAudit
+      .hypotheticalUnknownPriorResidualAtMinimumPreRollPercent.neutralHalfLife24Hours, 50);
+    assert.equal(report.historyBoundaryAudit
+      .hypotheticalUnknownPriorResidualAtMinimumPreRollPercent.neutralHalfLife48Hours, 70.711);
     assert.ok(report.evaluationCount > 0);
     assert.equal(report.protectedGeometryRead, false);
     assert.equal(report.scoreImpact, false);

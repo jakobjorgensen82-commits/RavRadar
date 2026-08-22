@@ -211,3 +211,11 @@ Fem sammenhængende produktionskørsler afslørede, at samme ugentlige GitHub-ca
 3. Den nye private variant og nationale shadowkontrakt implementerer retningen uden at ændre offentlig `25/40/35`.
 4. Replayet viser korrekt mekanik, men også stor følsomhed over for strømgrænsen og reservoirværdien ved start. DEC-0055 holder derfor aktiveringen lukket.
 5. Ingen nye rådata, geometri, land-/vandpunkter, artifact eller protected-dirty-data er ændret.
+
+## 2026-08-22 – Candidate G 24/48-randkontrol
+
+1. Neutral passiv halvering på 24 og 48 timer blev implementeret som valgfri diagnostic-only følsomhed; den godkendte ind-/udtransportkurve og missing-pause er uændret.
+2. Start-0-scoren flytter -1,182/-0,697 point, men warm-start-kontroller viser fortsat væsentlig randfølsomhed.
+3. Alle 12 eventvinduer har præcis 24 timers forhistorie og nul har 48/72 timer; de kan derfor ikke vælge fysisk levetid.
+4. Referencegrænsen har ingen fuldstyrkeevalueringer, og lavere profiler har kun sparsom fuldstyrkedækning uden fundlabels; strømgrænsen forbliver ukalibreret.
+5. Ingen offentlig score, nye rådata, geometri, punkter eller artifacts er ændret.

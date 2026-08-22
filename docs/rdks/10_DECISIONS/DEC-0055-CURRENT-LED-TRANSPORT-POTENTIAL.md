@@ -51,6 +51,8 @@ Den private historik begynder uden et observeret tidligere reservoir. Hovedrepla
 
 Neutral strøm holder i den aktuelle mekaniske kandidat reservoirværdien uændret. Om et opbygget potentiale skal have et særskilt passivt 24–48-timers tab, og hvordan analysen skal rekonstruere tilstanden før replayets første time, er åbent. Det må ikke opfindes uden evidens og en ny beslutning.
 
+En efterfølgende score-neutral følsomhedskontrol implementerer valgfri neutral halvering på 24 eller 48 timer. Den ændrer ikke den mekaniske reference, hvor passivt tab er slået fra. Passivt tab gælder kun verificeret neutral strøm; det må ikke ændre den godkendte ind-/udtransportkurve, og missing pauser fortsat.
+
 ## Evidens
 
 Den private, Git-ignorerede genafspilning omfatter 1.460 evalueringer uden nye rådata:
@@ -63,6 +65,16 @@ Den private, Git-ignorerede genafspilning omfatter 1.460 evalueringer uden nye r
 - bølger alene giver fortsat nul transport, og alle målrettede monotoni-, retning-, missing-, waders- og nationale shadow-self-tests består.
 
 Tallene viser, at den godkendte kurve har den ønskede mekaniske adfærd. De viser samtidig, at strømgrænse og start-/forældelsesregel kan flytte scoren for meget til at blive valgt skjult.
+
+Den afgrænsede efterkontrol viser desuden:
+
+- alle 12 eventvinduer har 24 timers forhistorie og nul vinduer har 48 eller 72 timers forhistorie;
+- neutral halvering på 24 timer flytter gennemsnitsscoren -1,182 point fra start-0-referencen, mens 48 timer flytter den -0,697;
+- den beskedne start-0-forskel skjuler fortsat randusikkerhed: start 50/100 flytter cirka 6,2/11,1 point mod samme 24-timers profil og cirka 11,2/19,5 point mod samme 48-timers profil;
+- referencegrænsen 0,05→0,20 m/s har ingen fuldstyrkeevalueringer i replayet. Selv 0,03→0,15 har nul fulde indgående og kun 10 fulde udgående; 0,02→0,12 har to og 44;
+- den eksisterende eksterne evidens giver ingen fundvalideret dansk kystnormal m/s-grænse.
+
+Kontrollen afviser derfor, at de 12 bølgeudvalgte vinduer alene kan vælge 24 mod 48 timer eller kalibrere strømgrænsen. Fail-closed start 0 uden passivt tab forbliver den mekaniske reference, mens begge halveringer bevares som følsomhedsspor. Dette er ikke en produktbeslutning om, at potentiale fysisk aldrig ældes.
 
 ## Aktiveringsblokeringer
 

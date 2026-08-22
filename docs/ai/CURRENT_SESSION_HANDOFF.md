@@ -10,6 +10,9 @@
 - DEC-0055 og forskningsrapporten samler mekanik, evidens og aktiveringsblokeringer. G 24/48 bevares som historisk følsomhedsspor.
 - Samlet RDKS-/håndbogsvalidering og fuld lokal `scripts/validate-source.ps1`, inklusive releasegate, er grønne. PR #75's exact-head-kørsel `32598284279` bestod på `d37d15fe`, og merge `4379606e` er verificeret. Der blev som forventet ikke startet et nyt produktionsartifact; merge er score-neutral og må ikke fremstilles som offentlig aktivering.
 - Ingen nye rådata er hentet. Private cachepayloads, artifact, protected-dirty-data, DMI/fallback, geometri og land-/vandpunkter må ikke stages eller ændres.
+- Branch `codex/ravscore-current-decay-sensitivity` udvider efterfølgende kun analyseværktøjet med valgfri neutral halvering på 24/48 timer. Referenceprofilen har fortsat `neutralPassiveHalfLifeHours=null`.
+- Den private randkontrol viser 24 timers forhistorie i alle 12 eventvinduer og nul vinduer med 48/72 timer. Start-0-scoren flytter -1,182/-0,697 point, men warm-start-forskellen forbliver væsentlig; ingen fysisk levetid er valgt.
+- Referencegrænsen 0,05→0,20 m/s har nul fuldstyrkeevalueringer. De lavere følsomheder giver mere modelaktivitet, men uden fundlabels ingen kalibrering. Næste sikre trin er samlet kildegate/PR for dette score-neutrale checkpoint; ikke offentlig aktivering.
 
 ## Checkpoint 2026-08-22 – Candidate G 4.0.258 vindstyret waders-jagtbarhed
 

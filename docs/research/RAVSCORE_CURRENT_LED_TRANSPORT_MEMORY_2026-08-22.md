@@ -34,6 +34,28 @@ Referenceprofilen giver i gennemsnit potentiale 21,03 i de 436 indgående forlø
 
 Samtidig er forskellen mellem profilerne for stor til at kalde en af strømgrænserne “rigtig” uden yderligere evidens. Warm-start-kørslen viser endnu tydeligere, at replayets begyndelsestilstand ikke er en detalje: en start på 50 flytter Candidate G-scoren mere end 21 point i gennemsnit.
 
+## Afgrænset 24–48-timers kontrol
+
+Analyseværktøjet understøtter nu et valgfrit passivt tab, men kun i timer med **verificeret neutral strøm**. Indgående og udgående strøm følger fortsat den godkendte 10-/8-pointsmekanik, og manglende strøm pauser fortsat modellen. Den passive regel er dermed en følsomhedskontrol, ikke en skjult ny produktregel.
+
+| Privat profil, start 0 | Gennemsnitlig Candidate G-score | Forskel fra reference | Gennemsnitligt potentiale | Scorebånd ændret |
+|---|---:|---:|---:|---:|
+| Intet passivt tab | 31,052 | reference | 7,246 | 0 |
+| Neutral halvering på 24 timer | 29,871 | -1,182 | 4,895 | 107 |
+| Neutral halvering på 48 timer | 30,355 | -0,697 | 5,815 | 36 |
+
+Det ser umiddelbart beskedent ud, fordi hovedkørslen starter fail-closed på 0. En startværdi på 50 eller 100 viser, at problemet ikke er løst: mod samme 24-timers halveringsprofil flytter den ukendte start stadig gennemsnitsscoren cirka 6,2 eller 11,1 point; ved 48 timer er forskellen cirka 11,2 eller 19,5 point.
+
+En ny grænseaudit forklarer hvorfor. Alle 12 historiske hændelsesvinduer indeholder præcis 24 timer før evalueringens start, 72 timer efter og 96 timer i alt. Ingen har 48 eller 72 timers forhistorie. Hvis hele den ukendte startværdi lå i neutral strøm, ville der derfor stadig være 50 procent tilbage efter en 24-timers halvering og 70,711 procent efter en 48-timers halvering ved evalueringens begyndelse. Det er en matematisk randkontrol, ikke en antagelse om den faktiske strøm i perioden.
+
+Denne begrænsning gælder den udvalgte historiske eventcache og må ikke forveksles med RavRadars separate offentlige mål om op til 72 timers strømhistorik. Replayet kan sammenligne regler på ens datagrundlag, men kan ikke alene vælge en fysisk 24- eller 48-timers levetid.
+
+## Strømgrænsen kan heller ikke kalibreres her
+
+Den eksisterende forskningsbase støtter kontinuerlig kystnormal retning og styrke, men giver ingen dokumenteret dansk ravgrænse i m/s. Replayet har samtidig nul evalueringer med fuld ind- eller udgående styrke ved referencegrænsen 0,05→0,20 m/s. Profilen 0,03→0,15 har nul fulde indgående og 10 fulde udgående evalueringer; 0,02→0,12 har to og 44. De 12 vinduer er udvalgt efter bølgehændelser og har ingen fund/nul-fund-labels. Lavere tærskler giver derfor mere modelaktivitet, men ikke bevis for større præcision.
+
+Konklusionen er, at referencegrænsen fortsat kun er en forsigtig mekanisk prior. Den må ikke vælges, sænkes eller optimeres på dette replay alene.
+
 ## Hvad der er besluttet, og hvad der ikke er
 
 Besluttet:
@@ -54,6 +76,6 @@ Ikke besluttet:
 
 ## Anbefaling
 
-Behold den strømstyrede variant som det foretrukne private Candidate G-spor, fordi den matcher ejerens faglige forståelse og har tydeligere årsagssammenhæng. Aktivér den ikke offentligt endnu. Næste beslutningsarbejde skal især vælge eller afvise en passiv 24–48-timers forældelsesregel og fastlægge strømstyrken på baggrund af bedre evidens, før tur-/hold-out-validering og et endeligt ejer-go/no-go.
+Behold den strømstyrede variant som det foretrukne private Candidate G-spor, fordi den matcher ejerens faglige forståelse og har tydeligere årsagssammenhæng. Aktivér den ikke offentligt endnu. Behold fail-closed start 0 og intet passivt tab som mekanisk reference, ikke som påstået naturregel. Brug 24- og 48-timers halvering som dokumenterede følsomhedsgrænser, indtil et mindst 72-timers forløb før evalueringen eller senere komplette ture kan skelne dem. Strømgrænsen kræver tilsvarende uafhængig fysisk eller fundbaseret evidens.
 
 Offentlig RavScore forbliver `25/40/35`. Der er ikke ændret UI, data, geometri, land-/vandpunkter, artifact eller protected-dirty-data.
