@@ -78,3 +78,13 @@ Den foerste score-neutrale koersel paa 12 eksisterende 96-timersforloeb har afpr
 6 timer reagerer kraftigt paa en enkelt svag modtime og er ikke foerstevalg til et flerdages transportforloeb. 24 timer er den foreloebige aktive regimeshortlist, mens 48 timer er den foreloebige langsomme baggrundsshortlist. Ingen af dem er en godkendt produktionskoefficient.
 
 Naeste kandidat G-test skal sammenligne 24 timer alene, 48 timer alene og en lille matrix af dobbelte spor. Stroem, boelger og vind skal ablateres separat, og hvert forecasttidspunkt maa kun bruge historik frem til det paagaeldende tidspunkt. Se `docs/research/RAVSCORE_REGIME_MEMORY_RESULT_2026-08-21.md`.
+
+## Resultat af 24/48-matrix og separate ablationer
+
+Den kausale matrix paa de samme 12 historiske forloeb viser kun 1-2 procent direkte fortegnsuenighed mellem 24- og 48-timerssporene. 48 timer reducerer stroemsporets fortegnsskift fra 14 til 10; de oevrige spor er mere ens. Yderblandingerne 75/25 og 25/75 tilfoejer ikke en tydelig selvstaendig adfaerd.
+
+Naeste historiske kandidat-G-replay afgraenses derfor til 24 timer alene, 50/50 og 48 timer alene. Det vaelger ikke en produktionskoefficient.
+
+Ablationen viser samtidig betydeligt boelge-/vindoverlap inden for haendelser. Lineaer vind er den konservative hovedanalyse, mens vindstressproxy kun er en foelsomhedsmaessig yderkant. En variant uden direkte vind er obligatorisk, foer et direkte vindbidrag kan foreslaas; direkte og indirekte vind maa ikke summeres som fulde uafhaengige bidrag.
+
+Ingen point, aktiv score eller offentlig kontrakt er aendret. Se `docs/research/RAVSCORE_HISTORY_TRACK_ABLATION_RESULT_2026-08-22.md`.

@@ -74,6 +74,94 @@ export function buildExponentialRegimeMemory(
   });
 }
 
+export function buildBlendedRegimeMemory(
+  samples,
+  {
+    activeHalfLifeHours = 24,
+    backgroundHalfLifeHours = 48,
+    activeWeight = 0.5,
+    getTime = (sample) => sample?.time,
+    getForce = (sample) => sample?.force,
+  } = {},
+) {
+  const safeActiveWeight = finiteNumber(activeWeight, Number.NaN);
+  if (!(safeActiveWeight >= 0 && safeActiveWeight <= 1)) {
+    throw new Error("activeWeight must be between zero and one");
+  }
+
+  const active = buildExponentialRegimeMemory(samples, {
+    halfLifeHours: activeHalfLifeHours,
+    getTime,
+    getForce,
+  });
+  const background = buildExponentialRegimeMemory(samples, {
+    halfLifeHours: backgroundHalfLifeHours,
+    getTime,
+    getForce,
+  });
+
+  if (active.length !== background.length) {
+    throw new Error("active and background memory tracks must have equal length");
+  }
+
+  return active.map((activeRecord, index) => {
+    const backgroundRecord = background[index];
+    if (activeRecord.time !== backgroundRecord?.time) {
+      throw new Error("active and background memory tracks must share timestamps");
+    }
+    const backgroundWeight = 1 - safeActiveWeight;
+    return {
+      time: activeRecord.time,
+      force: activeRecord.force,
+      elapsedHours: activeRecord.elapsedHours,
+      activeHalfLifeHours,
+      backgroundHalfLifeHours,
+      activeWeight: safeActiveWeight,
+      backgroundWeight,
+      activeState: activeRecord.state,
+      backgroundState: backgroundRecord.state,
+      blendedState: (safeActiveWeight * activeRecord.state)
+        + (backgroundWeight * backgroundRecord.state),
+      trackSignDisagreement: Math.sign(activeRecord.state) !== 0
+        && Math.sign(backgroundRecord.state) !== 0
+        && Math.sign(activeRecord.state) !== Math.sign(backgroundRecord.state),
+    };
+  });
+}
+
+export function normalizeMemoryTrackCausally(
+  records,
+  {
+    getState = (record) => record?.blendedState,
+    initialScale = 1,
+  } = {},
+) {
+  const safeInitialScale = finiteNumber(initialScale, Number.NaN);
+  if (!(safeInitialScale > 0)) {
+    throw new Error("initialScale must be greater than zero");
+  }
+  let priorAbsoluteStateSum = 0;
+  let priorStateCount = 0;
+
+  return (Array.isArray(records) ? records : []).map((record) => {
+    const state = finiteNumber(getState(record));
+    const causalScale = priorStateCount > 0
+      ? Math.max(priorAbsoluteStateSum / priorStateCount, EPSILON)
+      : safeInitialScale;
+    const normalizedState = state / causalScale;
+    const boundedState = normalizedState / (1 + Math.abs(normalizedState));
+
+    priorAbsoluteStateSum += Math.abs(state);
+    priorStateCount += 1;
+    return {
+      ...record,
+      causalScale,
+      normalizedState,
+      boundedState,
+    };
+  });
+}
+
 export function reversalStrengthClass(ratio) {
   const safeRatio = finiteNumber(ratio, Number.POSITIVE_INFINITY);
   if (safeRatio < 0.5) return "weak-under-half";

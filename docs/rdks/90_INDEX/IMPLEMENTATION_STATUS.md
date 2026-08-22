@@ -1614,8 +1614,8 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [x] Retningsresultatet er opdelt efter lav, mellem og hoej fysisk bevaegelseskapacitet samt jagtform.
 - [x] Foreloebige vaegte er sammenlignet reproducerbart; 20/45/35 er valgt som naeste private analysecentrum, ikke som produktionsvaegt.
 - [x] Kandidat F er omklassificeret til foelsomhedsmaessig yderkant, og den sammenblandede gamle retningskonklusion er korrigeret.
-- [ ] Udled stroem- og vindhukommelse fra 96-timers historik med styrke, varighed, stabilitet, vendingsalder og nettoeffekt.
-- [ ] Koer separate stroem-, boelge- og vindablationer samt svage/kraftige vendinger.
+- [x] Udled stroem- og vindhukommelse fra 96-timers historik med styrke, varighed, stabilitet, vendingsalder og nettoeffekt.
+- [x] Koer separate stroem-, boelge- og vindablationer samt svage/kraftige vendinger.
 - [ ] Gentag historisk replay, national scenariematrix og national shadow med kandidat G.
 - [ ] Afspil centrale ekspertregler og kontrollér pile, score, komponenter, forklaring, jagtbarhed og vadesikkerhed samlet.
 - [ ] Fremlaeg den endelige vaegtbegrundelse grundigt og forstaaeligt for ejeren foer go/no-go.
@@ -1627,8 +1627,9 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [x] Syntetisk kontrakt beviser, at en kort svag vending ikke sletter et opbygget forloeb, og at en kraftig vedvarende vending kan overtage.
 - [x] 12 historiske forloeb analyseret for stroem, boelgeenergi, lineart vindspor og vindstressspor ved 6/12/24/48 timer.
 - [x] Episodeanalyse maaler varighed og nettovendinger uden at gemme raa vejrvaerdier.
-- [ ] Sammenlign 24-timers aktivt spor, 48-timers baggrundsspor og en lille dobbeltsporsmatrix i kandidat G.
-- [ ] Koer separate ablationer og integrér de bedste score-neutrale varianter i historisk replay/parret retning.
+- [x] Sammenlign 24-timers aktivt spor, 48-timers baggrundsspor og en lille dobbeltsporsmatrix i kandidat G.
+- [x] Koer separate ablationer af stroem, boelgeenergi, lineaer vind og vindstressproxy.
+- [ ] Integrér 24 alene, 50/50 og 48 alene i historisk replay/parret retning med en obligatorisk variant uden direkte vind.
 - [ ] National matrix, shadow, ekspertregler, jagtbarhed, sikkerhed og pil-/score-/forklaringskontrol mangler fortsat.
 
 ## Regimehukommelse - merge- og driftsstatus
@@ -1637,4 +1638,15 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [x] Exact-commit-produktion `32523092260`: fuld validate, releasegate, Supabase, Pages-artifact og deploy groen.
 - [x] GitHub Pages deployment `6028771928` peger paa korrekt commit; live 4.0.252 serverer forskningsmodulet.
 - [x] Ingen offentlig score/UI/datakontrakt; ingen gentaget 210/673-browseraudit noedvendig.
-- [ ] Kandidat G 24/48-dobbeltsporsmatrix og ablationer er naeste ikke-blokerede analysepunkt.
+- [x] Kandidat G 24/48-dobbeltsporsmatrix og separate ablationer er gennemført score-neutralt.
+
+## Kandidat G 24/48-matrix og ablation - 2026-08-22
+
+- [x] Nyt analyseværktøj bruger kun den Git-ignorerede private cache og gemmer ingen rå vejrværdier, U/V, koordinater eller credentials.
+- [x] Fem foruddefinerede historikvarianter er kørt på 12 forløb med kausal normalisering og nul fremtidslæk i selvtesten.
+- [x] 24 og 48 timer er ens i fortegn 98-99 procent af tiden; baggrundssporet er roligere for strøm.
+- [x] Hændelsescentreret audit skelner ægte inden-for-hændelse-overlap fra forskelle mellem udvalgte hændelser.
+- [x] Bølge/vind-overlap og klasseafhængige ablationer afviser vindstress som uafhængigt fuldt direkte bidrag.
+- [x] Målrettet kerne-/analysetest, RDKS, lokal `validate:source` og releasegate er grønne.
+- [ ] Kør exact-head PR-kildegate og merge før næste replaydel.
+- [ ] Ingen produktionsscore, offentlig runtime, geometri eller punkter er ændret; derfor kræves ingen frisk data-/browserproduktion for selve forskningscheckpointet.

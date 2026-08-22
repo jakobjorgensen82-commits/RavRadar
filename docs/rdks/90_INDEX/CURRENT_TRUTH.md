@@ -1277,3 +1277,12 @@ Foerste private aktive RavScore-shadowrun stoppede korrekt foer state og score, 
 - Custom-domaenets DNS kunne ikke oploeses fra den lokale Windows-session; GitHubs officielle Pages-adresse var tilgaengelig. Der er ingen evidens for en RavRadar-regression.
 - Ingen offentlig score-, UI-, data- eller geometrikontrakt er ændret; derfor var fuld browseraudit ikke relevant for dette delmaal.
 - Naeste trin er den private 24/48-timers dobbeltsporsmatrix og separate ablationer. Se `docs/research/RAVSCORE_REGIME_MEMORY_PRODUCTION_CHECKPOINT_2026-08-21.md`.
+
+## RavScore 24/48-matrix og ablation - 2026-08-22
+
+- Den private, score-neutrale analyse på de samme 12 historiske forløb sammenligner 24 timer, 48 timer og tre blandinger uden fremtidslæk.
+- 24- og 48-timerssporene er enige om fortegnet i 98-99 procent af timerne. 48 timer reducerer strømsporets fortegnsskift fra 14 til 10; de øvrige spor ændrer sig mindre.
+- Næste replay afgrænses til 24 alene, 50/50 og 48 alene. 75/25 og 25/75 tilføjede ikke tydeligt særskilt adfærd og udgår af næste matrix.
+- Samlet korrelation overvurderer dele af overlap på grund af forskelle mellem hændelser. Bølge/vind-overlap består dog inden for hændelser, og vindstressproxy giver ikke et mere uafhængigt direkte vindbidrag.
+- Lineær vind er derfor konservativ hovedanalyse. Vindstress bevares som yderkant, og replay skal have en variant uden direkte vind.
+- Aktiv RavScore 25/40/35, offentlig runtime, DMI-first, geometri og alle land-/vandpunkter er uændrede. Se `docs/research/RAVSCORE_HISTORY_TRACK_ABLATION_RESULT_2026-08-22.md`.

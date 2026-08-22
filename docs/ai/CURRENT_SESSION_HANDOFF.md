@@ -1,5 +1,16 @@
 # RavRadar - aktuelt Codex-handoff
 
+## Checkpoint 2026-08-22 - efter PR #57
+
+- Dette checkpoint erstatter de ældre arbejdssteds- og branchangivelser nedenfor.
+- Autoritativt repository er `C:\Users\Lenovo T14\Documents\GitHub\RavRadar`; baseline var `main`/merge `ca7c8caa` fra PR #57.
+- Aktiv arbejdsbranch er `codex/ravscore-history-track-ablation`.
+- Den private cache ligger lokalt i `.cache/ravscore-historical-wave-pilot-12` og ignoreres snævert gennem `.git/info/exclude`; cachefiler må aldrig stages.
+- 24/48-matrixen og separate ablationer er gennemført score-neutralt. Næste forskningsdel er kandidat-G-replay med 24 alene, 50/50 og 48 alene, lineær vind som hovedanalyse og obligatorisk no-direct-wind.
+- Målrettede tests, RDKS, lokal `validate:source` og releasegate er grønne; exact-head PR-gate og merge mangler.
+- `private-research-artifact`, `protected-dirty-data`, de fire historisk beskyttede datafiler og alle land-/vandpunkter må fortsat ikke ændres eller stages.
+- Aktiv RavScore 25/40/35 og offentlig runtime er uændrede.
+
 ## Arbejdssted og branch
 
 - Brug kun `C:\Users\jakob\AppData\Local\Temp\ravradar-40232-current`.

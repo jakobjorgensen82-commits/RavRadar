@@ -1688,3 +1688,12 @@ Privat run `32479158213` kontrollerede alle 673 aktive punkter og stoppede deref
 Ejeren godkendte den landsdækkende `direction-broad-19-v1`-model efter analyse af 210 zoner, 673 kystdele, 107 timer og 214 jagtformskontekster. Begge nationale top-5-lister bruger samme interne korrektion for retningsmulighed og vinderstøtte. Den viste RavScore, lokale resultater, pile, forklaringer, geometri og land-/vandpunkter er uændrede.
 
 PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produktion `32515757957` bestod hele kæden og udgav datasæt `rr-20260821185936-210`. Browser-pluginet fejlede konkret på DNS; den godkendte Playwright-fallback gennemførte derefter 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdøgnsvisninger med nul fejl.
+
+## 2026-08-22 - kandidat G 24/48-historik og ablation
+
+- Et nyt privat analyseværktøj sammenligner 24 timer, 48 timer og tre dobbeltsportsblandinger kausalt på de 12 eksisterende historiske forløb.
+- En regression beviser, at fremtidige prøver ikke ændrer tidligere hukommelse eller normalisering.
+- Separate strøm-, bølge- og vindablationer er gennemført med lineær vind og vindstress som alternative, aldrig samtidige beskrivelser.
+- 24/48-sporene er enige om fortegnet i 98-99 procent af timerne; næste replay begrænses til 24 alene, 50/50 og 48 alene.
+- Bølge/vind-overlap består inden for hændelser. Lineær vind går videre som konservativ hovedanalyse; vindstress er yderkant, og no-direct-wind forbliver obligatorisk.
+- Cacheinput og output er Git-ignoreret. Beskyttede data, artifact, geometri, land-/vandpunkter, aktiv score og offentlig runtime er ikke ændret.

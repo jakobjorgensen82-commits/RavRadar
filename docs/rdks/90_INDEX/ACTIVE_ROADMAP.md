@@ -256,9 +256,9 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [x] Korrigér den uparrede retningsanalyse med 1.460 parrede modforloeb paa samme styrker og historik.
 - [x] Paavis, at den aktive model giver naesten samme retningsvirkning ved lav og hoej flytteevne.
 - [x] Sammenlign foreloebige vaegtmatricer og vaelg 20/45/35 som naeste private analysecentrum uden offentlig aktivering.
-- [ ] Udled historisk stroemhukommelse fra de eksisterende 96-timers forloeb: styrke, retning, varighed, stabilitet, vendingsalder og nettoforloeb.
-- [ ] Udled tilsvarende vindhukommelse og adskil direkte vind fra indirekte virkning gennem boelger, stroem og vandstand.
-- [ ] Koer separate ablationer og kontroller svage/korte samt kraftige/langvarige vendinger.
+- [x] Udled historisk stroemhukommelse fra de eksisterende 96-timers forloeb: styrke, retning, varighed, stabilitet, vendingsalder og nettoforloeb.
+- [x] Udled tilsvarende vindhukommelse og adskil direkte vind fra indirekte virkning gennem boelger, stroem og vandstand.
+- [x] Koer separate ablationer og kontroller svage/korte samt kraftige/langvarige vendinger.
 - [ ] Byg og sammenlign kandidat G i historisk replay, national scenariematrix og national shadow.
 - [ ] Kontrollér den fulde ekspertregelkaede, jagtbarhed, vadesikkerhed og at pile, score og forklaring passer sammen.
 - [ ] Fremlaeg en grundig forklaring i almindeligt sprog paa den endelige vaegtmatrix og dens konsekvenser; offentlig aendring kraever derefter ejer-go/no-go.
@@ -271,6 +271,15 @@ Kandidat G er privat og score-neutral. Aktiv RavScore 25/40/35, DMI-first, geome
 - [x] Udled score-neutrale historikmaal for stroem, boelgeenergi og vind fra de eksisterende 96-timersforloeb.
 - [x] Dokumentér syntetisk og observeret, at styrke og varighed bestemmer hvor hurtigt en vending slaar igennem.
 - [x] Afgræns 24 timer som foreloebigt aktivt regimespor og 48 timer som foreloebigt baggrundsspor uden at vaelge point eller blandingsandel.
-- [ ] Test 24 alene, 48 alene og en lille dobbeltsporsmatrix uden fremtidslaek.
-- [ ] Ablatér stroem, boelger, lineart vindspor og vindstressspor, foer kandidat G faar en samlet transportfunktion.
+- [x] Test 24 alene, 48 alene og en lille dobbeltsporsmatrix uden fremtidslaek.
+- [x] Ablatér stroem, boelger, lineart vindspor og vindstressspor, foer kandidat G faar en samlet transportfunktion.
 - [ ] Fortsaet derefter den allerede bindende kandidat G-, national shadow-, forklarings- og sikkerhedskaede i DEC-0050.
+
+## RavScore 24/48-matrix og ablation - resultat 2026-08-22
+
+- [x] Kausalitetstest beviser, at senere prøver ikke ændrer tidligere hukommelse eller normalisering.
+- [x] 24/48-fortegnsuenighed er kun 1-2 procent; 48 timer reducerer strømsporets fortegnsskift fra 14 til 10.
+- [x] Næste replay er afgrænset til 24 alene, 50/50 og 48 alene; 75/25 og 25/75 udgår som redundante følsomhedspunkter.
+- [x] Lineær vind er konservativ hovedanalyse; vindstressproxy er yderkant, og en variant uden direkte vind er obligatorisk.
+- [ ] Integrér de tre historikvarianter i kandidat-G-replay og den parrede retningskontrol uden pointaktivering.
+- [ ] Kør derefter national scenariematrix og national shadow før ekspertregel-, sikkerheds- og forklaringsgaten.
