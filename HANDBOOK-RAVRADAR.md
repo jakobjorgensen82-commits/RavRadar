@@ -272,7 +272,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.254
+**Håndbogsversion:** 4.0.255
 
 **Opdateret:** 19. august 2026
 
@@ -2007,6 +2007,8 @@ På referencevarianten uden direkte vind har 219 af 730 waders-evalueringer jagt
 I den nye variant giver vinddelen 100 point til og med 6 m/s. Over 6 m/s falder den glidende gennem 80 ved 7 m/s, 60 ved 8 m/s, 35 ved 10 m/s, 10 ved 13 m/s og 0 ved 18 m/s. Bølger indgår fortsat separat. Bund, dybdeprofil, render, vadebredde og adgang indgår ikke, fordi automatisk lokal grundegnethed kan være misvisende uden lokalkendskab.
 
 Genafspilningen gav nul ændringer i 730 strandscorer og ingen waders-score over jagtbarheden. Waders-gennemsnittet gik fra 35,465 til 27,351 i de udvalgte vejrhændelser. Varianten er fortsat privat og er ikke en kalibreret produktionsmodel.
+
+Den nationale shadowkontrakt kontrolleres nu også i kildegaten. Det betyder, at ændrede interne gate-navne for waders-regelrækkefølge og produktreview skal stemme med shadowkoden før merge; kontrollen ændrer ikke selve scoren.
 
 Pilen og historikken beskriver heller ikke samme tid. Pilen skal fortsat vise den aktuelle lokale strøm. Historikken fortæller, hvad forløbet før nu har gjort ved transportpotentialet. I 332 af 872 tydeligt retningsbestemte kontrolsituationer pegede de to oplysninger modsat; i 100 flyttede historikken den afrundede score. Derfor skal en senere forklaring vise historikken særskilt og aldrig ændre pilens betydning i det skjulte.
 

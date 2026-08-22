@@ -54,3 +54,5 @@ De endelige vægte kan ikke afgøres før komponenternes indhold og den jagtform
 - `scripts/audit-ravscore-candidate-g-scenarios.mjs`
 - `scripts/validate-national-shadow-score.mjs`
 - `js/core/score-candidates.js`
+
+Produktionsbeviset fra PR #66 fandt én dokumentations-/testkonflikt: den fulde nationale shadowkontrakt forventede stadig den erstattede gate `candidate-waders-product-decision`, mens koden korrekt bar `candidate-waders-rule-order-public-product-review`. Produktion `32575055644` stoppede før release og deploy. 4.0.255 opdaterer kontrakttesten og fører den ind i `validate:source`; selve beslutningen og scoreberegningen ændres ikke.

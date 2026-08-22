@@ -1,4 +1,14 @@
-# Implementeringsstatus – 4.0.254 score-neutral waders-kandidat
+# Implementeringsstatus – 4.0.255 national waders-kontraktgate
+
+## 4.0.255-kandidat – reparationsstatus efter PR #66
+
+- [x] PR #66 exact-head-kildegate `32575000140` og merge `95e3064d`.
+- [x] Produktion `32575055644` stoppede fail-closed i fuld validering før release, Supabase og Pages på den forældede nationale waders-markør.
+- [x] Kontrakttesten forventer nu `candidate-waders-rule-order-public-product-review` og indgår i `validate:source`.
+- [x] Målrettet national kontrakttest og shadow-selftest er grønne lokalt.
+- [x] Fuld lokal `scripts/validate-source.ps1` og releasegate er grønne for 4.0.255.
+- [ ] Exact-head PR-gate og ny fuld post-data-produktionsverifikation.
+- [x] Ingen score, kandidatberegning, geometri, land-/vandpunkter eller beskyttede data er ændret.
 
 ## 4.0.254-kandidat – modeafhængig jagtbarhed
 

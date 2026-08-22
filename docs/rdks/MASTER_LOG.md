@@ -1,3 +1,9 @@
+## 2026-08-22 – 4.0.255 lukker hullet mellem kilde- og fuld shadowkontrakt
+
+- PR #66 bestod exact-head-kildegaten og blev merged som `95e3064d`, men produktion `32575055644` stoppede fail-closed i fuld validering. Den nationale kontrakttest forventede stadig den erstattede gate `candidate-waders-product-decision`; releasegate, Supabase og Pages blev korrekt sprunget over.
+- 4.0.255 forventer den aktuelle åbne gate `candidate-waders-rule-order-public-product-review` og kører selve den nationale weather-/score-shadow-kontrakttest i `validate:source`.
+- Rettelsen ændrer ingen score, kandidatberegning, vejrdata, geometri, land-/vandpunkter eller beskyttede data. Ny exact-head-kildegate og fuld post-data-validering er obligatorisk.
+
 ## 2026-08-22 – 4.0.254 score-neutral waders-kandidat
 
 - Ejeren har valgt, at waders-jagtbarhed får fuld vindkomponent til og med 6 m/s og derefter falder progressivt ved højere vind. Forskningskurvens ankre er 6/100, 7/80, 8/60, 10/35, 13/10 og 18/0 med lineær interpolation.

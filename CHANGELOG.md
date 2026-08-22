@@ -1,3 +1,9 @@
+## 4.0.255 - national waders-kontrakt i kildegaten (2026-08-22)
+
+- PR #66's fulde post-data-validering stoppede korrekt på den gamle interne markør `candidate-waders-product-decision`; release, Supabase og Pages blev ikke kørt.
+- Kontrakttesten følger nu den aktuelle åbne gate `candidate-waders-rule-order-public-product-review` og kører også i `validate:source`, så samme forskel stoppes før merge.
+- Waders-kandidat, vindkurve, replayresultater, aktiv 25/40/35-score, geometri og land-/vandpunkter er uændrede.
+
 
 ## 4.0.253 - score-neutral Candidate G-produktkontrakt (2026-08-22)
 
