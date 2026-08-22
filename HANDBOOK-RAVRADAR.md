@@ -272,7 +272,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.256
+**Håndbogsversion:** 4.0.257
 
 **Opdateret:** 19. august 2026
 
@@ -652,7 +652,7 @@ Ekspertpunkt E-14: Valider wadersgrænserne for forskellige kyster og vurder om 
 
 **Sikkerhed:** RavScore vurderer ravmuligheden, ikke om det er sikkert at gå i vandet. En høj score kan godt optræde samtidig med farlige lokale forhold. Appen må aldrig erstatte egen sikkerhedsvurdering.
 
-## 18. Præcis implementering i RavScore 4.0.256
+## 18. Præcis implementering i RavScore 4.0.257
 
 *Den faktiske kodevirkning, trin for trin.*
 
@@ -1990,7 +1990,7 @@ Kandidat G starter med den eksisterende forskningsmodel for mobilisering, transp
 
 Den private kontrol omfatter 1.460 beregninger på 12 historiske vejrhændelser. Et hukommelsesspor på 24 timer, en 50/50-blanding af 24 og 48 timer samt 48 timer alene giver næsten samme score. Direkte vind giver kun en meget lille selvstændig forskel og overlapper de virkninger, vinden allerede har gennem bølger, strøm, vandstand, mobilisering og jagtbarhed. Næste foretrukne analysevariant er derfor 50/50 uden direkte vind.
 
-Den centralt hydrerede nationale shadow kontrollerede derefter alle 673 aktive dele i 210 zoner. 243 dele havde komplette scoreinput i begge jagtformer, mens 430 stod tydeligt som u-scorede. G 50/50 lå i gennemsnit 5,50 point under den aktive score for strand og 3,74 for waders. 24/48 og varianten uden direkte vind var fortsat næsten identiske. Den nationale kontrakt havde dog ingen komplette lokale retention-features, så runnet er et teknisk og aktuelt retningsbevis, ikke en aktiveringsgodkendelse.
+Den centralt hydrerede nationale shadow kontrollerede derefter alle 673 aktive dele i 210 zoner. 243 dele havde komplette scoreinput i begge jagtformer, mens 430 stod tydeligt som u-scorede på grund af manglende komplet lokal DKSS-familie. G 50/50 lå i gennemsnit 5,50 point under den aktive score for strand og 3,74 for waders. 24/48 og varianten uden direkte vind var fortsat næsten identiske. Runnet er derfor et teknisk og aktuelt retningsbevis, ikke en aktiveringsgodkendelse.
 
 Modellen er ikke klar til brugerne. Den ændrer referencebånd i 474 af de 1.460 beregninger sammenlignet med den aktive model. Desuden kan et ekstremt waders-scenarie have jagtbarhed 0 og samtidig høj kandidatscore, fordi stærk fysisk transport og mobilisering stadig kan være til stede. Det viser forskellen mellem ravpotentiale og et praktisk eller sikkert tidspunkt at gå i vandet.
 
@@ -2016,6 +2016,6 @@ Den færdige vægtfølsomhed holder samme proces og waders-loft fast og sammenli
 
 Forskningsresultatet indeholder nu én maskinlæsbar forklaring med de eksakte komponenter, vægte og bidrag, pilen nu, historikken før nu, den milde fysiske begrænsning og et synligt eventuelt waders-loft. Alle 1.460 replayforklaringer stemmer med deres score. Ved en senere offentlig visning kan brugeren derfor få én enkel hovedforklaring og åbne de tre komponenter uden at få en anden matematisk historie.
 
-Den nationale aktiveringsgate er fortsat åben. Kun 243 af 673 dele kunne scores i den seneste centrale shadow, og ingen havde komplette lokale retention-features. En hovedzones generelle rev-, lavtvands- eller vegetationsfelt er ikke automatisk sandt for hver lokal kystdel og må ikke bruges som genvej.
+Den nationale aktiveringsgate er fortsat åben. Kun 243 af 673 dele kunne scores i den friske centrale shadow, fordi 430 mangler komplet lokal DKSS-familie. Candidate G bruger ingen statisk lokal bonus for rev, lavt vand eller vegetation. Disse felter rapporteres kun som diagnostik, og en hovedzones generelle morfologi må ikke bruges som lokal genvej.
 
 Kandidat G er fortsat privat. Den aktive offentlige score er 25 % jagtbarhed, 40 % transport og 35 % mobilisering. Candidate G's samlede score-neutrale model-, vægt- og forklaringsgrundlag er klar til ejerreview, men aktivering kræver fortsat bedre central coverage, ejerens samlede go/no-go og fuld validering af en eventuel offentlig kobling.

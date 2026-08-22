@@ -1,10 +1,18 @@
+## 2026-08-22 – RavRadar 4.0.257: Candidate G-coverage uden skjult stedmodel
+
+- PR #69 bestod exact-head `32577977245`, blev merged som `d629177a`, og fuld produktion `32578049137` frigav verificeret 4.0.256 med 210 zoner og 673 dele.
+- Den efterfølgende private centrale shadow `32578554928` bestod score-neutralt, men kun 243/673 dele havde komplette dynamiske scoreinput. 430 mangler komplet lokal DKSS-familie.
+- DEC-0052 skelner nu dette reelle datagab fra statiske lokale rev-/lavtvands-/ålegræsfelter. Candidate G bruger ingen sådan stedmodel, giver den nul point og kræver den ikke i coveragegaten.
+- Shadowvalidator schema 1.4.0 rapporterer fortsat felttilgængeligheden, afviser parentmorfologi og holder `automaticActivationAllowed=false`, men `activationCoverageReady` følger nu kun komplet dynamisk scoreinputcoverage.
+- Målrettede shadow-, fase-D- og Candidate G-tests samt fuld lokal `scripts/validate-source.ps1` og releasegate er grønne. Offentlig score 25/40/35, UI, data, geometri og land-/vandpunkter er uændrede.
+
 ## 2026-08-22 – RavRadar 4.0.256: Candidate G-vægtinterval og forklaringskontrakt
 
 - Den godkendte `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT` er afprøvet score-neutralt med `15/50/35`, `20/45/35` og `25/40/35` på 1.460 evalueringer.
 - Yderpunkterne adskiller sig 4,947 point i gennemsnit og 282 referencebånd. `20/45/35` bevares som gennemsigtigt analysecentrum; alle tre priorer består de kanoniske proces- og waders-kontrakter.
 - Candidate G udstiller nu eksakte komponenter/bidrag, pil nu, historik før nu, fysisk gate og synligt waders-loft i en diagnostic-only forklaringskontrakt. Replay gav 1.460/1.460 konsistente forklaringer.
 - Målrettede tests, RDKS, fuld lokal `scripts/validate-source.ps1` og releasegate er grønne for 4.0.256.
-- Materialet er ikke fundkalibreret. Offentlig 25/40/35 og UI er uændret; central scoreinput-/retention-coverage og ejer-go/no-go forbliver aktiveringsgates.
+- Materialet er ikke fundkalibreret. Offentlig 25/40/35 og UI er uændret; komplet dynamisk scoreinputcoverage og ejer-go/no-go forbliver aktiveringsgates. DEC-0052 erstatter efterfølgende den ældre retention-coverageformulering.
 - Den Git-ignorerede cache blev brugt uden private payloads i Git. Artifact, protected-dirty-data, geometri og land-/vandpunkter blev ikke læst eller ændret.
 - Det foregående dokumentationscheckpoint PR #68 bestod exact-head-gate `32576541706`, blev merged som `8cffdd54` og bestod fuld produktion `32576619969`. Live 4.0.255/datasæt `rr-20260822135100-210` har 210 zoner og 673 dele.
 
@@ -1751,7 +1759,7 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - Den foretrukne `G-50-50-NO-DIRECT-WIND` har 219/730 waders-evalueringer med jagtbarhed under 35; 7 har samtidig mindst 55 point, og det kanoniske højenergiforløb er 0/79.
 - Forskningsanbefalingen er én RavScore som ravpotentiale med separat tydelig metodeegnethed, ingen anbefaling af utilgængelig waders-metode, sikkerhed som uafhængig kontrakt og ingen skjult koefficient. Offentlig kobling kræver ejerbeslutning.
 - Pilen fastholdes som aktuel lokal strøm. Historik forklares særskilt; 332/872 tydelige contexts er modrettede, og 100 ændrer den afrundede score.
-- Den nationale shadowrapport klassificerer coverage fail-closed og afviser parentzonemorfologi som lokal kystdelsevidens. 243/673 scorede dele og nul komplette lokale retention-features er fortsat en aktiveringsblokering.
+- Den nationale shadowrapport klassificerede coverage fail-closed og afviste parentzonemorfologi som lokal kystdelsevidens. 243/673 scorede dele var en aktiveringsblokering; DEC-0052 præciserer efterfølgende, at de samtidige nul lokale retentionfeatures kun er diagnostik.
 - Aktiv 25/40/35, offentlig UI, DMI/fallback, geometri, land-/vandpunkter, central admin, private artifacts og beskyttede data er uændrede. Candidate G er fortsat diagnostic-only.
 
 ## 2026-08-22 - 4.0.253 merged og produktionsverificeret

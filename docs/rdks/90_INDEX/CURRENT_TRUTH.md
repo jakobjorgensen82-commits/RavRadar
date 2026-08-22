@@ -1,14 +1,24 @@
 # Current truth – gældende projektviden
 
-## 4.0.256-kandidat – Candidate G-vægt og forklaring, fortsat score-neutral
+## 4.0.257-kandidat – ærlig Candidate G-coverage uden skjult stedmodel
+
+- Frisk central shadow `32578554928` på den produktionsverificerede 4.0.256-merge `d629177a` bestod alle private score-neutrale trin for 210 zoner og 673 aktive dele.
+- 243 dele havde komplette dynamiske scoreinput; 430 var eksplicit u-scorede, fordi de mangler komplet lokal DKSS-familie. Bølgefamilien manglede ikke blandt de u-scorede. Coverage er derfor 36,1 % og fortsat en hård no-go.
+- Shadowen havde nul komplette lokale rev-/lavtvands-/ålegræsfelter. DEC-0052 præciserer, at dette kun er diagnostik: Candidate G bruger ingen statisk lokal retention-/stedmodel og giver disse felter nul point.
+- `activationCoverageReady` måles nu kun på komplet dynamisk scoreinput til alle aktive dele. Parentzonens morfologi afvises fortsat som lokal evidens, og `automaticActivationAllowed` er fortsat altid falsk.
+- Offentlig RavScore 25/40/35, Candidate G-beregningen, waders-loftet, UI, DMI/fallback, central admin, geometri og land-/vandpunkter er uændrede.
+- Målrettede shadow-, Candidate G- og fase-D-tests samt fuld lokal `scripts/validate-source.ps1` og releasegate er grønne for 4.0.257. Exact-head PR-gate, produktion og en ny central shadow afventer.
+
+## 4.0.256 – Candidate G-vægt og forklaring, produktionsverificeret
 
 - Den ejer-godkendte `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT` er genafspillet med `15/50/35`, `20/45/35` og `25/40/35` på 1.460 evalueringer. Yderpunkterne adskiller sig 4,947 point i gennemsnit og 282 referencebånd.
 - `20/45/35` ligger praktisk midt mellem yderpunkterne og bevares som Candidate G's analysecentrum. Det er en faglig forskningsprior, ikke fundkalibrering; offentlig 25/40/35 er uændret.
 - Alle tre priorer består de kanoniske kontrakter. Ingen giver waders-score over jagtbarheden eller mindst middel score ved waders-jagtbarhed under 35.
 - Candidate G-resultatet har nu en diagnostic-only forklaringskontrakt med eksakte komponenter/bidrag, pil nu, historik før nu, fysisk gate og synligt waders-loft. Replayet gav nul forklaringsafvigelser i 1.460 evalueringer.
-- Målrettede tests, RDKS, fuld lokal `scripts/validate-source.ps1` og releasegate er grønne for 4.0.256; exact-head GitHub- og produktionsbevis afventer PR.
+- PR #69 bestod exact-head-gate `32577977245`, blev merged som `d629177a`, og produktion `32578049137` bestod central hydrering, frisk DMI/proveniens, fuld validering, releasegate, support, Supabase, Pages-artifact og deploy.
+- Live 4.0.256/datasæt `rr-20260822141748-210` viste 210 zoner, 673 dele, komplet manifest og `controlled-live`.
 - Bund/dybde/render/adgang og særskilt sikkerhedsmodel indgår ikke. Private cachepayloads, artifact, protected-dirty-data, geometri og land-/vandpunkter er urørte.
-- Samlet model-/vægt-/forklaringsgrundlag er klart til ejerreview. Aktivering er fortsat no-go, indtil frisk central scoreinputcoverage, lokal retention-evidens og ejerens samlede go/no-go er lukket.
+- Samlet model-/vægt-/forklaringsgrundlag er klart til ejerreview. Aktivering er fortsat no-go, indtil komplet dynamisk scoreinputcoverage og ejerens samlede go/no-go er lukket.
 
 ## Dokumentationscheckpoint efter 4.0.255
 
@@ -42,7 +52,7 @@
 - På den foretrukne `G-50-50-NO-DIRECT-WIND`-variant har 219/730 waders-evalueringer jagtbarhed under 35; 7 af dem har mindst 55 point. Det kanoniske højenergiforløb er jagtbarhed 0 og score 79.
 - Forskningsanbefalingen er én RavScore som ravpotentiale plus en tydelig separat metodestatus. En utilgængelig waders-metode må ikke anbefales, sikkerhed forbliver uafhængig, og ingen skjult koefficient er tilladt. Offentlig kobling afventer ejerbeslutning.
 - I 332 af 872 tydeligt retningsbestemte contexts modvirker historikken den aktuelle retning; i 100 påvirker det den afrundede score. Pilen betyder fortsat strøm nu, mens historikken skal forklares særskilt.
-- National coverage er fortsat utilstrækkelig: 243/673 scorede dele og nul komplette lokale retention-features. Parentzonens morfologi må ikke arves som lokal kystdelsevidens.
+- National dynamisk scoreinputcoverage var og er utilstrækkelig: 243/673 scorede dele. Den samtidige mangel på lokale retentionfeatures er efterfølgende klassificeret som diagnostik, ikke gate, af DEC-0052. Parentzonens morfologi må fortsat ikke arves.
 - Aktiv score 25/40/35, offentlig UI, geometri, land-/vandpunkter, DMI/fallback, central admin og beskyttede data er uændrede. Kandidat G er ikke aktiveret.
 - Fuld 210/673-browseraudit gentages ikke for dette checkpoint, fordi offentlig score, UI-adfærd og offentlig datakontrakt er uændrede; målrettet live metadata- og 673/673-kontrol er grøn.
 

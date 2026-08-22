@@ -85,11 +85,10 @@ Vægt- og forklaringskontrakten er nu tilstrækkeligt præcis til ejerreview. Ak
 
 - de 12 hændelsesvinduer er udvalgte vejrhændelser, ikke repræsentative ture;
 - der mangler komplette fund-/nul-fundsture og søgeindsats;
-- den seneste centralt hydrerede Candidate G-shadow kunne kun score 243 af 673 kystdele;
-- nul kystdele havde komplette dokumenterede lokale retention-features;
+- den friske centralt hydrerede Candidate G-shadow kunne kun score 243 af 673 kystdele, fordi 430 mangler komplet lokal DKSS-familie;
 - offentlig produktforklaring og samlet ejer-go/no-go er ikke godkendt.
 
-Coverage må ikke lukkes ved at arve parentzonens rev-, lavtvands- eller vegetationsfelter. En ny central shadow kan måle, om nyere native vejrhistorik har forbedret scoreinputdækningen, men lokale retention-features kræver særskilt dokumenteret evidens eller en eksplicit beslutning om at holde dem ude af modellen.
+Den efterfølgende ejerbeslutning og DEC-0052 holder statiske lokale rev-, lavtvands- og vegetationsfelter ude af Candidate G. De har nul scorepåvirkning og er derfor ikke en aktiveringsgate. Shadowen rapporterer fortsat deres tilgængelighed diagnostisk og afviser parentzonens morfologi som lokal evidens. Den hårde coveragegate er nu entydigt komplet dynamisk scoreinput til alle aktive dele; den er fortsat lukket ved 243/673.
 
 ## Samlet anbefaling
 
@@ -97,7 +96,7 @@ Coverage må ikke lukkes ved at arve parentzonens rev-, lavtvands- eller vegetat
 2. Behold `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT` med `20/45/35` som samlet score-neutralt beslutningscentrum.
 3. Brug `15/50/35` og `25/40/35` som faste følsomhedsgrænser, ikke som parallelle produktmodeller.
 4. Brug den maskinlæsbare kontrakt som eneste kilde til senere komponent-, pil-, historik- og waders-forklaring.
-5. Genmål central national scoreinputcoverage på den eksakte kandidatkode.
+5. Luk den centrale nationale dynamiske scoreinputcoverage på den eksakte kandidatkode uden at opfinde statiske stedfeatures.
 6. Aktivér ikke kandidaten, før coverage, produktforklaring og ejerens samlede go/no-go er lukket.
 
 ## Reproducerbarhed

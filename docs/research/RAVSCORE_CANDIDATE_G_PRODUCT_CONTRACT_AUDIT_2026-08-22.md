@@ -1,6 +1,8 @@
 # Kandidat G – score-neutral produktkontraktaudit, 2026-08-22
 
 > **Historisk 4.0.253-reference:** Den efterfølgende ejerbeslutning DEC-0051 erstatter anbefalingen om kun en separat waders-metodestatus. Den nye score-neutrale forskningsvariant bevarer strand og begrænser waders-scoren ved jagtbarheden. Se `RAVSCORE_MODE_SPECIFIC_HUNTABILITY_ANALYSIS_2026-08-22.md`.
+>
+> **Efterfølgende coveragepræcisering:** DEC-0052 erstatter dette dokuments sammenblanding af dynamisk scoreinputcoverage og lokale retention-features. Candidate G bruger ingen statisk lokal retentionmodel. 243/673 dynamisk inputcoverage er fortsat en hård no-go; nul lokale morfologifelter er kun diagnostik.
 
 ## Status
 
@@ -90,7 +92,7 @@ Den nuværende klassifikation er ikke klar til aktivering. Den private 12-vindue
 - Komponent-/score-/gatekontrakten er lukket score-neutralt: 0 afvigelser i 1.460 evalueringer.
 - Pil-/historikkontrakten er fastlagt score-neutralt: pilen viser nu, historikken forklares separat.
 - Waders-konflikten er målt og har en konkret forskningsanbefaling, men offentlig produktbeslutning er åben.
-- National coverage og lokal retention-evidens er fortsat åbne aktiveringsgates.
+- National dynamisk scoreinputcoverage er fortsat en åben aktiveringsgate. Lokal statisk retention-evidens er efter DEC-0052 ikke en Candidate G-gate, fordi modellen bevidst ikke bruger den.
 - Offentlig 25/40/35 og ingen Candidate G-aktivering er fortsat den sikre anbefaling.
 
 ## Reproducerbarhed
