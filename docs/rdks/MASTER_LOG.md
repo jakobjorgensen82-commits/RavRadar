@@ -6,6 +6,7 @@
 - DEC-0055 klassificerer derfor strømgrænsen og start-/forældelsesreglen som åbne aktiveringsblokeringer. Offentlig RavScore `25/40/35`, UI og runtime er uændret.
 - Candidate G beholder `20/50/30` og DEC-0054's waders-regler. Ingen nye rådata, geometri eller punktændringer indgår.
 - Målrettede tests, samlet RDKS-/håndbogsvalidering og fuld lokal `scripts/validate-source.ps1` inklusive releasegate er grønne.
+- PR #75's exact-head-kildegate `32598284279` bestod på `d37d15fe`; PR'en blev merged som `4379606e` uden et nyt produktionsartifact eller offentlig scoreaktivering.
 
 ## 2026-08-22 – RavRadar 4.0.258: vindstyret waders-jagtbarhed i Candidate G
 

@@ -10,6 +10,7 @@
 - [x] Bevar `20/50/30`, DEC-0054's waders-kontrakt og offentlig `25/40/35` uændret.
 - [x] Kør målrettede regime-, Candidate G-, scenarie-, analyse- og nationale shadow-self-tests.
 - [x] Kør samlet RDKS-/håndbogsvalidering og fuld lokal `scripts/validate-source.ps1`, inklusive releasegate.
+- [x] Bestå exact-head-kildegate `32598284279` på `d37d15fe`, merge PR #75 som `4379606e` og verificér, at ingen offentlig produktionsaktivering blev startet.
 - [ ] Kalibrér eller afvis strømgrænsen, beslut start-/24–48-timers forældelsesregel og valider senere mod komplette ture/hold-out.
 - [ ] Offentlig aktivering kræver et senere særskilt ejer-go/no-go og fulde produktgates.
 

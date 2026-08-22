@@ -7,6 +7,7 @@
 - Den private kandidat beholder `20/50/30` og DEC-0054's vindstyrede waders-jagtbarhed. Offentlig RavScore er fortsat `25/40/35`; ingen score- eller UI-aktivering er foretaget.
 - Referencegrænserne 0,05→0,20 m/s og replaystart 0 er forskningspriorer, ikke naturkonstanter. Følsomhed 0,03→0,15 og 0,02→0,12 flytter Candidate G-scoren henholdsvis +3,068 og +4,296 point, mens diagnostisk start 50 flytter den +21,136.
 - Mekanikken består målrettede tests og det private 1.460-evalueringsreplay, men strømgrænsen, starttilstanden og et eventuelt passivt 24–48-timers tab er åbne aktiveringsblokeringer.
+- PR #75's exact-head-kørsel `32598284279` bestod på `d37d15fe`, og checkpointet blev merged som `4379606e`. Der blev ikke bygget eller aktiveret et nyt produktionsartifact.
 - G 24/48 og tidligere kandidater bevares som historisk evidens. Ingen nye rådata er hentet; private cachepayloads, artifact, protected-dirty-data, geometri og land-/vandpunkter er urørte.
 
 ## Candidate G 4.0.258 – vind er hovedsignal for waders-jagtbarhed
