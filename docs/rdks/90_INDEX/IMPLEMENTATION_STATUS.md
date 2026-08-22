@@ -13,6 +13,7 @@
 - [x] Bestå exact-head-kildegate `32598284279` på `d37d15fe`, merge PR #75 som `4379606e` og verificér, at ingen offentlig produktionsaktivering blev startet.
 - [x] Implementér en isoleret neutral 24-/48-timers halveringsfølsomhed, bevis at den ikke ændrer ind-/udtransport eller missing, og auditér replayets tidsgrænser.
 - [x] Dokumentér, at alle 12 eventvinduer kun har 24 timers forhistorie, at ingen referenceprøver når fuld strømstyrke, og at dette replay derfor ikke kan vælge levetid eller kalibrere strømgrænsen.
+- [x] Bestå exact-head-kildegate `32599255165` på `ed1f0297`, merge PR #77 som `75ed93d6` og produktionsverificér i `32599309735` med live `rr-20260822212612-210`/210/673.
 - [ ] Kalibrér eller afvis senere strømgrænsen og fysisk levetid på mindst 72 timers forhistorie eller komplette ture/hold-out. Indtil da forbliver start 0 uden passivt tab den mekaniske reference, ikke en naturpåstand.
 - [ ] Offentlig aktivering kræver et senere særskilt ejer-go/no-go og fulde produktgates.
 
