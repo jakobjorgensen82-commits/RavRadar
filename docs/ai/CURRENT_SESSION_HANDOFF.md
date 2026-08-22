@@ -1,5 +1,13 @@
 # RavRadar - aktuelt Codex-handoff
 
+## Checkpoint 2026-08-23 – Candidate G frigivelsesrevision
+
+- `scripts/audit-ravscore-candidate-g-release-readiness.mjs` giver et syntetisk, score-neutralt og reproducerbart bevis for de godkendte grænser uden private rådata.
+- Den godkendte udgående 8-pointskurve er låst time for time fra 100 til 0 ved 13 effektive fuldstyrketimer. Halv styrke, deadband, neutral strøm, 24/48-timers følsomhed, missing-pause, bølge-only, landingsgrænse og waders-vindstop indgår i samme audit.
+- Den nuværende mekanik sætter transportpotentialet til 0 efter 13 timer, men ikke hele Candidate G-scoren. Det faste scenarie giver da samlet 35 for både strand og waders, fordi jagtbarhed og mobilisering fortsat bidrager. En eventuel fuld RavScore-gate er en åben ejerbeslutning og må ikke indføres implicit.
+- Nationale aktiveringsmarkører er ajourført: komplet dynamisk inputcoverage, strømgrænse, starttilstand/passivt tab, transportnul kontra totalscorenul, repræsentativ tur- eller tilsvarende validering, UI/forklaring, central admin/rollback og eksplicit ejer-go/no-go.
+- Offentlig `25/40/35`, UI, produktion, geometri, land-/vandpunkter, artifact, protected-dirty-data og private cachepayloads er urørte. Automatisk aktivering er fortsat falsk.
+
 ## Checkpoint 2026-08-23 – docs-only produktionsskip afsluttet
 
 - PR #80 var et rent dokumentationscheckpoint inklusive rodens `CHANGELOG.md` og blev merged som `1565e073`.

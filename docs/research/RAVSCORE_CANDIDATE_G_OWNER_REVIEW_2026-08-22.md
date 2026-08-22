@@ -1,17 +1,20 @@
 # Candidate G – aktuelt beslutningsgrundlag til ejerreview
 
+> **Efterfølgende transport- og release-readiness-præcisering:** DEC-0055 erstatter det gamle 50/50-transportspor med `G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED`. Den nye grænseaudit viser, at transportpotentialet er 0 efter 13 effektive fuldstyrketimer med udtransport, mens totalscoren i en fast kontrol stadig er 35 på grund af jagtbarhed og mobilisering. Om 13-timers-nullet skal gælde komponenten eller hele RavScore er nu et udtrykkeligt ejerpunkt; se `RAVSCORE_CANDIDATE_G_RELEASE_READINESS_2026-08-23.md`.
+
 ## Kort svar
 
 RavRadar bruger fortsat den offentlige RavScore med `25 % jagtbarhed`, `40 % transport` og `35 % mobilisering`. Candidate G er en privat testmodel og ændrer endnu ikke brugernes score.
 
 Det ene forslag, vi nu fører videre, er:
 
-`G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED`
+`G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED`
 
 Det betyder i almindeligt sprog:
 
 - transport vægtes højest, så kandidatens arbejdsfordeling er `20/50/30`;
-- tidligere bølger og strøm kan kun forstærke eller dæmpe en transportvej, der fysisk findes nu;
+- verificeret indgående strøm bygger transportpotentiale, mens udgående strøm reducerer det straks og glidende;
+- bølger kan kun påvirke den sidste levering og kan aldrig skabe transport;
 - direkte vindhistorik er udeladt for at undgå dobbeltregning;
 - strandscoren viser ravpotentiale uden jagtbarhedsloft;
 - waders-scoren kan aldrig være højere end den aktuelle waders-jagtbarhed;
@@ -36,7 +39,8 @@ Dette er søgeeffektivitet, ikke sikkerhedsrådgivning.
 | G 24 og G 48 | Følsomhedsgrænser for kortere og længere historik |
 | G 50/50 uden direkte vind | Kontrol for dobbeltregning af vind |
 | Tidligere waders-limit | Reference for den mere bølgefølsomme jagtbarhed |
-| Ny vindstyret waders-variant | Det ene samlede forslag, der føres videre |
+| Vindstyret waders-variant | Bevarer den godkendte metodejagtbarhed og waders-loftet |
+| Strømstyret variant med 8-point-udtransport | Det ene samlede forslag, der føres videre; strømgrænse, starttilstand og 13-timers-totalbetydning er åbne |
 
 De gamle modeller er ikke forkastet som evidens. De bevares som revisionsspor, så vi kan se, hvilke faglige valg der skaber forskellene.
 
@@ -53,6 +57,8 @@ De 12 allerede udvalgte vejrhændelser giver 1.460 evalueringer:
 - alle seks replaytilfælde ved mindst 15 m/s ender på 0.
 
 Tallene er mekanisk kontrol, ikke repræsentativ dansk fundkalibrering. Replayet kan vise modsigelser og utilsigtede effekter, men ikke bevise, at `20/50/30` er den statistisk bedste vægt.
+
+Den efterfølgende strømrevision har en særskilt 14-punkts grænsekontrol. Transportpotentialet følger 100, 92 … 4, 0, og totalscoren falder monotont fra 91 til 35 for strand og 88 til 35 for waders i den faste kontrol. Det lukker mekanikken, men åbner den præcise ejerbeslutning om, hvorvidt “helt i bund” skal gælde transportkomponenten eller hele RavScore.
 
 ## Hvad er besluttet – og hvad venter?
 
@@ -71,9 +77,10 @@ Venter:
 - eventuel finjustering ud fra komplette ture med fund, reelle nul-fund, søgetid og jagtform;
 - geografisk og tidslig hold-out;
 - komplet godkendt dynamisk scoreinputcoverage og fuld produktkontrol.
+- om 13 effektive fuldstyrketimer med udtransport skal nulstille kun transportpotentialet eller hele RavScore.
 
 ## Anbefaling
 
-Behold offentlig `25/40/35` uændret. Brug den vindstyrede `20/50/30`-variant som det ene private forslag i det videre beslutningsgrundlag. Når komplette ture findes, skal de bruges til at efterprøve vægtene – ikke til at skjule eller ændre de faglige kontrakter baglæns.
+Behold offentlig `25/40/35` uændret. Brug den strømstyrede, vindstyrede `20/50/30`-variant som det ene private forslag i det videre beslutningsgrundlag. Luk først 13-timers-totalbetydningen, strømgrænsen og start-/forældelsesreglen. Når komplette ture findes, skal de bruges til at efterprøve vægtene – ikke til at skjule eller ændre de faglige kontrakter baglæns.
 
 Checkpointet ændrer ingen offentlig score, UI, vejrdata, geometri eller land-/vandpunkter.

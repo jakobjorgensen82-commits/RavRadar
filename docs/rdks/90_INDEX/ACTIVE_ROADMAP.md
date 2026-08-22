@@ -33,6 +33,10 @@ Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre for
 - [x] Før beslutningsgrundlaget gennem exact-head-kørsel `32598284279`, PR #75 og score-neutral merge `4379606e` uden nyt produktionsartifact.
 - [x] Undersøg en afgrænset 24–48-timers forældelsesregel og strømgrænse uden offentlig aktivering. Resultat: 12/12 vinduer har kun 24 timers forhistorie, referencegrænsen har ingen fuldstyrkeevalueringer, og replayet kan derfor afgrænse men ikke vælge reglerne.
 - [x] Før efterkontrollen gennem exact-head `32599255165`, PR #77/merge `75ed93d6` og fuld produktion `32599309735`; live `rr-20260822212612-210` bevarer 210/673 og offentlig `25/40/35`.
+- [x] Tilføj en reproducerbar frigivelsesrevision, der låser 0–13-timerskurven og grænserne for halv styrke, deadband, neutral strøm, forældelsesfølsomhed, missing, bølge-only og waders-stop.
+- [x] Erstat shadowvalidatorens historiske waders-/pil-/ekstremgates med de aktuelle Candidate G-aktiveringsblokeringer og lås dem i kildegaten.
+- [x] Dokumentér den offentlige forklarings- og rollbackkontrakt uden at aktivere eller ændre den offentlige score.
+- [ ] Afgør eksplicit, om 13 timers kraftig udgående strøm kun skal give transportpotentiale 0, som nu, eller tvinge hele Candidate G-scoren til 0. Sidstnævnte er ikke implementeret.
 - [ ] Bevar start 0 uden passivt tab som mekanisk reference og 24/48 som følsomhedsspor, indtil mindst 72 timers forhistorie eller komplette ture/hold-out giver et forsvarligt valg.
 - [ ] En eventuel offentlig Candidate G-aktivering forbliver et særskilt ejer-go/no-go med validering og fulde produktgates.
 

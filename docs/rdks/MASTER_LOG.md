@@ -1,3 +1,10 @@
+## 2026-08-23 – Candidate G score-neutral frigivelsesrevision
+
+- En ny syntetisk audit låser DEC-0055's udtransportkurve time for time fra 100 til 0 ved 13 effektive fuldstyrketimer og dækker de centrale randtilfælde uden private rådata.
+- Auditten viser tydeligt komponentbetydningen: ved 13 timer er transportpotentiale og levering 0, men den samlede Candidate G-score er cirka 35, fordi jagtbarhed og mobilisering fortsat bidrager. En eventuel totalscore-gate er en åben ejerbeslutning, ikke implementeret adfærd.
+- Den nationale shadowvalidator og dens kontrakttest følger nu de aktuelle aktiveringsgates og afviser erstattede waders-/pil-/ekstremmarkører.
+- Candidate G forbliver diagnostic-only med `20/50/30`; offentlig `25/40/35`, UI, geometri, land-/vandpunkter, artifact, protected-dirty-data og private caches er uændrede. Automatisk aktivering er falsk.
+
 ## 2026-08-23 – docs-only skip praktisk bevist og lukket
 
 - PR #80 indeholdt kun `CHANGELOG.md` og intern AI/RDKS-dokumentation og blev merged som `1565e073`.
