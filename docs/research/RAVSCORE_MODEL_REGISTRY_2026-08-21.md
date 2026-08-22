@@ -52,3 +52,12 @@ Det reproducerbare resultat og den fulde beslutning findes i `RAVSCORE_PAIRED_DI
 - Naeste private matrix sammenligner hvert spor alene og sammen i en lille, foruddefineret foelsomhedstest.
 - Direkte vind, vindstressproxy, boelgeenergi og stroem skal kunne slaas fra hver for sig, saa samme fysiske paavirkning ikke dobbeltregnes.
 - Evidens: `RAVSCORE_REGIME_MEMORY_RESULT_2026-08-21.md`.
+
+## Kandidat G 24/48-afgraensning efter ablation
+
+- `RRS-G-HISTORY-ACTIVE-24H`, en 50/50-foelsomhedsvariant og `RRS-G-HISTORY-BACKGROUND-48H` gaar videre til historisk replay.
+- 75/25 og 25/75 udgaar af naeste matrix, fordi de ikke tilfoejede tydeligt forskellig adfaerd i de 12 forloeb.
+- Lineaer vind er hovedanalysen for direkte vind. Vindstressproxy er kun yderkant.
+- En no-direct-wind-ablation er obligatorisk, saa indirekte vind gennem boelger og stroem ikke dobbeltregnes.
+- Ingen af disse poster er produktionsregler, point eller godkendte koefficienter.
+- Evidens: `RAVSCORE_HISTORY_TRACK_ABLATION_RESULT_2026-08-22.md`.
