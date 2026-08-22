@@ -15,4 +15,6 @@
 ## Verifikation
 
 - Den målrettede nationale kontrakttest og shadow-selftesten er grønne lokalt.
-- Fuld lokal `scripts/validate-source.ps1` og releasegate er grønne. Exact-head PR-gate og central produktionsverifikation dokumenteres før afslutning.
+- Fuld lokal `scripts/validate-source.ps1` og releasegate er grønne. PR #67's exact-head-gate `32575697204` bestod på `b011f915`, og PR'en blev merged som `af8f30cf`.
+- Produktion `32575740539` bestod kildegate, frisk DMI/proveniens, fuld validering, releasegate, coverageaudit, support `RavRadar-support-3389`, Supabase, Pages-artifact og deploy.
+- Live version 4.0.255/datasæt `rr-20260822133041-210` viser 210 zoner og 673 kystdele. Manifestet er komplet og `controlled-live`; begge offentlige datafiler matcher deres publicerede byteantal og SHA-256.

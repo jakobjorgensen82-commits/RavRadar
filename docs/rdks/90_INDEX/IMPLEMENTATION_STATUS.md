@@ -7,7 +7,9 @@
 - [x] Kontrakttesten forventer nu `candidate-waders-rule-order-public-product-review` og indgår i `validate:source`.
 - [x] Målrettet national kontrakttest og shadow-selftest er grønne lokalt.
 - [x] Fuld lokal `scripts/validate-source.ps1` og releasegate er grønne for 4.0.255.
-- [ ] Exact-head PR-gate og ny fuld post-data-produktionsverifikation.
+- [x] PR #67 exact-head-gate `32575697204` og merge `af8f30cf`.
+- [x] Produktion `32575740539`: frisk DMI/proveniens, fuld validering, releasegate, coverageaudit, support `RavRadar-support-3389`, Supabase, Pages-artifact og deploy.
+- [x] Live 4.0.255/datasæt `rr-20260822133041-210`: 210 zoner, 673 dele, komplet `controlled-live`-manifest og byte-/SHA-match for public conditions/detail.
 - [x] Ingen score, kandidatberegning, geometri, land-/vandpunkter eller beskyttede data er ændret.
 
 ## 4.0.254-kandidat – modeafhængig jagtbarhed

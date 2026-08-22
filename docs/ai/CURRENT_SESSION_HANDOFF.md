@@ -4,8 +4,10 @@
 
 - PR #66 bestod exact-head-kildegaten `32575000140`, blev merged som `95e3064d` og udløste produktion `32575055644`.
 - Frisk vejr og proveniens blev bygget, men fuld validering stoppede fail-closed på den forældede forventning `candidate-waders-product-decision`. Releasegate, Supabase og Pages blev ikke kørt.
-- Reparationsbranchen er `codex/ravscore-waders-contract-fix`. Testen forventer nu `candidate-waders-rule-order-public-product-review` og er tilføjet `validate:source`; målrettet kontrakttest og shadow-selftest er grønne.
-- Kandidatberegning, aktiv score, geometri, land-/vandpunkter og beskyttede data er uændrede. Fuld lokal `scripts/validate-source.ps1` og releasegate er grønne; exact-head PR-gate og ny produktion mangler ved dette checkpoint.
+- Reparationsbranchen `codex/ravscore-waders-contract-fix` opdaterede testen til `candidate-waders-rule-order-public-product-review` og tilføjede den `validate:source`; målrettede tests og fuld lokal gate blev grønne.
+- PR #67 exact-head-gate `32575697204` bestod på `b011f915`, og merge `af8f30cf` blev fuldt produktionsverificeret i `32575740539` med support `RavRadar-support-3389`, Supabase og Pages.
+- Live 4.0.255/datasæt `rr-20260822133041-210` har 210 zoner og 673 dele. Manifestet er komplet/`controlled-live`, og begge offentlige datafiler matcher byteantal og SHA-256.
+- Kandidatberegning, aktiv score, geometri, land-/vandpunkter og beskyttede data er uændrede. Næste trin er at fortsætte det samlede Candidate G-beslutningsgrundlag; ingen offentlig aktivering er godkendt.
 
 ## Checkpoint 2026-08-22 - 4.0.254 waders-kandidat lokalt valideret
 

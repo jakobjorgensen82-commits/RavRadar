@@ -3,6 +3,8 @@
 - PR #66 bestod exact-head-kildegaten og blev merged som `95e3064d`, men produktion `32575055644` stoppede fail-closed i fuld validering. Den nationale kontrakttest forventede stadig den erstattede gate `candidate-waders-product-decision`; releasegate, Supabase og Pages blev korrekt sprunget over.
 - 4.0.255 forventer den aktuelle åbne gate `candidate-waders-rule-order-public-product-review` og kører selve den nationale weather-/score-shadow-kontrakttest i `validate:source`.
 - Rettelsen ændrer ingen score, kandidatberegning, vejrdata, geometri, land-/vandpunkter eller beskyttede data. Ny exact-head-kildegate og fuld post-data-validering er obligatorisk.
+- PR #67's exact-head-gate `32575697204` bestod på `b011f915`, og merge `af8f30cf` udløste grøn produktion `32575740539`. Frisk DMI/proveniens, fuld validering, releasegate, coverageaudit, support `RavRadar-support-3389`, Supabase, Pages-artifact og deploy bestod.
+- Offentlig 4.0.255/datasæt `rr-20260822133041-210` har 210 zoner, 673 kystdele, komplet `controlled-live`-manifest samt byte- og SHA-match for både public conditions og public condition details.
 
 ## 2026-08-22 – 4.0.254 score-neutral waders-kandidat
 

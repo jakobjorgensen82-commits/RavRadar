@@ -2,7 +2,7 @@
 
 ## 4.0.255 national waders-kontraktgate
 
-- **ISSUE-RAVSCORE-NATIONAL-WADERS-CONTRACT-MARKER – REPARERET LOKALT, AFVENTER PR/PRODUKTION:** PR #66's produktion `32575055644` stoppede korrekt før release og deploy, fordi fuld validering stadig forventede den erstattede markør `candidate-waders-product-decision`. Testen følger nu den aktuelle `candidate-waders-rule-order-public-product-review` og er tilføjet den hurtige kildegate. Ingen score- eller dataadfærd er ændret.
+- **ISSUE-RAVSCORE-NATIONAL-WADERS-CONTRACT-MARKER – PRODUKTIONSVERIFICERET LØST:** PR #66's produktion `32575055644` stoppede korrekt før release og deploy, fordi fuld validering stadig forventede den erstattede markør `candidate-waders-product-decision`. Testen følger nu den aktuelle `candidate-waders-rule-order-public-product-review` og er tilføjet den hurtige kildegate. PR #67, exact-head-gate `32575697204`, merge `af8f30cf` og produktion `32575740539` er grønne; live 4.0.255-integritet er verificeret. Ingen score- eller dataadfærd er ændret.
 
 ## Copernicus-pilot #72 - 2026-08-20
 

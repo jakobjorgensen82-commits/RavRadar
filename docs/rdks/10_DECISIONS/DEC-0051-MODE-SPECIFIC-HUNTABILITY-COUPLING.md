@@ -56,3 +56,5 @@ De endelige vægte kan ikke afgøres før komponenternes indhold og den jagtform
 - `js/core/score-candidates.js`
 
 Produktionsbeviset fra PR #66 fandt én dokumentations-/testkonflikt: den fulde nationale shadowkontrakt forventede stadig den erstattede gate `candidate-waders-product-decision`, mens koden korrekt bar `candidate-waders-rule-order-public-product-review`. Produktion `32575055644` stoppede før release og deploy. 4.0.255 opdaterer kontrakttesten og fører den ind i `validate:source`; selve beslutningen og scoreberegningen ændres ikke.
+
+Rettelsen er efterfølgende afsluttet med PR #67 exact-head-gate `32575697204`, merge `af8f30cf` og grøn produktion `32575740539`. Live 4.0.255/datasæt `rr-20260822133041-210` har 210 zoner, 673 dele og verificeret offentlig manifestintegritet.
