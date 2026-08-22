@@ -10,6 +10,9 @@ export const CANDIDATE_G_WEIGHTS = Object.freeze({
   mobilisation: 0.30,
 });
 
+export const CANDIDATE_G_OUTFLOW_ZERO_EXPLANATION_DA =
+  'På grund af kraftig fralandsstrøm trækkes ravet ud i havet og derfor går scoren i nul, selv om der fortsat kan være mobilisering og god jagtbarhed';
+
 export const CANDIDATE_G_HISTORY_MIX = Object.freeze({
   current: 0.55,
   wave: 0.35,
@@ -62,7 +65,7 @@ export const CANDIDATE_G_VARIANTS = Object.freeze({
   }),
   'G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED': Object.freeze({
     id: 'G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED',
-    modelId: 'RRS-CANDIDATE-G-CURRENT-LED-OUTFLOW-8-RESEARCH-1',
+    modelId: 'RRS-CANDIDATE-G-CURRENT-LED-OUTFLOW-8-RESEARCH-2',
     memoryTrack: 'current-led-transport-potential-with-event-context',
     directWindPower: null,
     directWindIncluded: false,
@@ -122,10 +125,13 @@ function buildResearchExplanation({
   finalScore,
   modeHuntabilityPolicy,
   modeHuntabilityMaximum,
+  modeHuntabilityApplied,
   currentLedTransport,
+  scoreBeforeOutflowExhaustionGate,
+  outflowExhaustionGateApplied,
 }) {
   return {
-    contractVersion: '1.0.0',
+    contractVersion: '1.1.0',
     scoreMeaning: mode === 'waders'
       ? 'AMBER_OPPORTUNITY_FOR_WADERS_METHOD_LIMITED_BY_CURRENT_HUNTABILITY'
       : 'AMBER_OPPORTUNITY_FOR_BEACH_SEARCH',
@@ -185,7 +191,17 @@ function buildResearchExplanation({
     modeHuntability: {
       policy: modeHuntabilityPolicy,
       maximum: modeHuntabilityMaximum,
-      applied: finalScore < uncoupledScore,
+      applied: modeHuntabilityApplied,
+    },
+    outflowExhaustion: {
+      meaning: 'ACTUAL_STRONG_OUTBOUND_CURRENT_EXHAUSTS_TRANSPORT_AND_FORCES_FINAL_SCORE_TO_ZERO',
+      trigger: 'ACTUAL_OUTBOUND_TRANSPORT_WITH_ZERO_TRANSPORT_POTENTIAL',
+      applied: outflowExhaustionGateApplied,
+      scoreBeforeGate: scoreBeforeOutflowExhaustionGate,
+      scoreAfterGate: finalScore,
+      explanationDa: outflowExhaustionGateApplied
+        ? CANDIDATE_G_OUTFLOW_ZERO_EXPLANATION_DA
+        : null,
     },
     uncoupledScore,
     finalScore,
@@ -236,8 +252,9 @@ function currentLedTransportAndDelivery(base, memory, variant) {
  * Legacy variants modulate Candidate E's existing physical path. The newer
  * current-led revision instead receives a causal 0-100 transport reservoir:
  * current builds or erodes it, while waves can only modulate dependent landing.
- * All variants remain diagnostic-only and preserve zero at zero transport
- * capacity/potential.
+ * All variants remain diagnostic-only. The current-led RESEARCH-2 revision
+ * distinguishes unknown/start-zero potential from documented outbound
+ * exhaustion and only the latter forces the final candidate score to zero.
  */
 export function evaluateRavScoreCandidateG(
   context = {},
@@ -309,9 +326,16 @@ export function evaluateRavScoreCandidateG(
   const wadersHuntabilityMaximum = variant.wadersHuntabilityLimit && context.mode === 'waders'
     ? huntability
     : null;
-  const candidateG = wadersHuntabilityMaximum === null
+  const scoreBeforeOutflowExhaustionGate = wadersHuntabilityMaximum === null
     ? uncoupledCandidateG
     : Math.min(uncoupledCandidateG, wadersHuntabilityMaximum);
+  const outflowExhaustionGateApplied = currentLedTransport?.actualOutboundTransport === true
+    && currentLedTransport.transportPotential === 0;
+  const candidateG = outflowExhaustionGateApplied
+    ? 0
+    : scoreBeforeOutflowExhaustionGate;
+  const modeHuntabilityApplied = wadersHuntabilityMaximum !== null
+    && scoreBeforeOutflowExhaustionGate < uncoupledCandidateG;
   const scoreCalculation = {
     components: {
       huntability,
@@ -332,6 +356,12 @@ export function evaluateRavScoreCandidateG(
       ? 'UNCHANGED'
       : 'VISIBLE_WADERS_HUNTABILITY_MAXIMUM',
     modeHuntabilityMaximum: wadersHuntabilityMaximum,
+    modeHuntabilityApplied,
+    scoreBeforeOutflowExhaustionGate,
+    outflowExhaustionGateApplied,
+    outflowExhaustionExplanationDa: outflowExhaustionGateApplied
+      ? CANDIDATE_G_OUTFLOW_ZERO_EXPLANATION_DA
+      : null,
     roundedScore: candidateG,
   };
   const researchExplanation = buildResearchExplanation({
@@ -346,7 +376,10 @@ export function evaluateRavScoreCandidateG(
     finalScore: candidateG,
     modeHuntabilityPolicy: scoreCalculation.modeHuntabilityPolicy,
     modeHuntabilityMaximum: wadersHuntabilityMaximum,
+    modeHuntabilityApplied,
     currentLedTransport,
+    scoreBeforeOutflowExhaustionGate,
+    outflowExhaustionGateApplied,
   });
   const limitations = new Set(base.confidence?.limitations || []);
   limitations.add('directional-history-is-research-prior');
@@ -362,6 +395,7 @@ export function evaluateRavScoreCandidateG(
     limitations.add('current-normal-speed-thresholds-are-uncalibrated-research-priors');
     limitations.add('initial-transport-potential-is-unobserved-at-replay-boundary');
     limitations.add('wave-landing-share-is-uncalibrated-secondary-prior');
+    limitations.add('actual-outbound-exhaustion-zero-gate-is-owner-prior');
   }
 
   return {
@@ -385,7 +419,7 @@ export function evaluateRavScoreCandidateG(
     candidateDefinitions: {
       ...base.candidateDefinitions,
       candidateG: currentLedTransport
-        ? 'Current-led transport potential with immediate strength-scaled outbound loss, secondary dependent wave landing, 20/50/30 weights and the same mild physical bottleneck'
+        ? 'Current-led transport potential with immediate strength-scaled outbound loss, an actual-outbound-exhaustion final-score gate, secondary dependent wave landing, 20/50/30 weights and the same mild physical bottleneck'
         : 'Candidate E process path with capacity-preserving causal direction memory, 20/50/30 weights and the same mild physical bottleneck',
     },
     additiveScore: Number(additiveScore.toFixed(3)),
@@ -411,6 +445,11 @@ export function evaluateRavScoreCandidateG(
       candidateGHuntabilityProfile: variant.huntabilityProfile || PHASE_D_HUNTABILITY_PROFILES.BASELINE,
       candidateGWadersHuntabilityLimit: variant.wadersHuntabilityLimit === true,
       candidateGUncoupledScore: uncoupledCandidateG,
+      candidateGScoreBeforeOutflowExhaustionGate: scoreBeforeOutflowExhaustionGate,
+      candidateGOutflowExhaustionGateApplied: outflowExhaustionGateApplied,
+      candidateGOutflowExhaustionExplanationDa: outflowExhaustionGateApplied
+        ? CANDIDATE_G_OUTFLOW_ZERO_EXPLANATION_DA
+        : null,
       candidateGWadersHuntabilityMaximum: wadersHuntabilityMaximum,
       candidateGHuntabilityWindScore: huntabilityResult?.windScore ?? null,
       candidateGHuntabilityWaveScore: huntabilityResult?.waveScore ?? null,

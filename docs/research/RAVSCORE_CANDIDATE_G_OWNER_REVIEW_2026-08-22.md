@@ -1,6 +1,6 @@
 # Candidate G – aktuelt beslutningsgrundlag til ejerreview
 
-> **Efterfølgende transport- og release-readiness-præcisering:** DEC-0055 erstatter det gamle 50/50-transportspor med `G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED`. Den nye grænseaudit viser, at transportpotentialet er 0 efter 13 effektive fuldstyrketimer med udtransport, mens totalscoren i en fast kontrol stadig er 35 på grund af jagtbarhed og mobilisering. Om 13-timers-nullet skal gælde komponenten eller hele RavScore er nu et udtrykkeligt ejerpunkt; se `RAVSCORE_CANDIDATE_G_RELEASE_READINESS_2026-08-23.md`.
+> **Efterfølgende transport- og release-readiness-præcisering:** DEC-0055 erstatter det gamle 50/50-transportspor med `G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED`. Den første `RESEARCH-1`-audit viste 35 ved udtømt transport. Ejeren har siden valgt `RESEARCH-2`: dokumenteret faktisk kraftig udtransport med transportpotentiale 0 tvinger slutscoren til 0, mens jagtbarhed og mobilisering fortsat vises; se `RAVSCORE_CANDIDATE_G_RELEASE_READINESS_2026-08-23.md`.
 
 ## Kort svar
 
@@ -58,7 +58,7 @@ De 12 allerede udvalgte vejrhændelser giver 1.460 evalueringer:
 
 Tallene er mekanisk kontrol, ikke repræsentativ dansk fundkalibrering. Replayet kan vise modsigelser og utilsigtede effekter, men ikke bevise, at `20/50/30` er den statistisk bedste vægt.
 
-Den efterfølgende strømrevision har en særskilt 14-punkts grænsekontrol. Transportpotentialet følger 100, 92 … 4, 0, og totalscoren falder monotont fra 91 til 35 for strand og 88 til 35 for waders i den faste kontrol. Det lukker mekanikken, men åbner den præcise ejerbeslutning om, hvorvidt “helt i bund” skal gælde transportkomponenten eller hele RavScore.
+Den efterfølgende strømrevision har en særskilt 14-punkts grænsekontrol. Transportpotentialet følger 100, 92 … 4, 0. Før-gate-scoren falder monotont fra 91 til 35 for strand og 88 til 35 for waders, hvorefter den ejerbesluttede udtransportgate sætter begge slutscorer til 0 ved dokumenteret faktisk udtransport.
 
 ## Hvad er besluttet – og hvad venter?
 
@@ -77,10 +77,9 @@ Venter:
 - eventuel finjustering ud fra komplette ture med fund, reelle nul-fund, søgetid og jagtform;
 - geografisk og tidslig hold-out;
 - komplet godkendt dynamisk scoreinputcoverage og fuld produktkontrol.
-- om 13 effektive fuldstyrketimer med udtransport skal nulstille kun transportpotentialet eller hele RavScore.
 
 ## Anbefaling
 
-Behold offentlig `25/40/35` uændret. Brug den strømstyrede, vindstyrede `20/50/30`-variant som det ene private forslag i det videre beslutningsgrundlag. Luk først 13-timers-totalbetydningen, strømgrænsen og start-/forældelsesreglen. Når komplette ture findes, skal de bruges til at efterprøve vægtene – ikke til at skjule eller ændre de faglige kontrakter baglæns.
+Behold offentlig `25/40/35` uændret. Brug den strømstyrede, vindstyrede `20/50/30`-variant med den afgjorte udtransportgate som det ene private forslag i det videre beslutningsgrundlag. Luk først strømgrænsen og start-/forældelsesreglen. Når komplette ture findes, skal de bruges til at efterprøve vægtene – ikke til at skjule eller ændre de faglige kontrakter baglæns.
 
 Checkpointet ændrer ingen offentlig score, UI, vejrdata, geometri eller land-/vandpunkter.

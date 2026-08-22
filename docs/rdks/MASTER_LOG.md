@@ -3,7 +3,8 @@
 - PR #82 bestod exact-head `32602287607` på `74624ac3` og blev merged som `189644a0`. Produktion `32602328912` gennemførte frisk vejr/proveniens, fuld validering, releasegate, support, Supabase og Pages uden fejl.
 - Live `rr-20260822223539-210` er komplet med 210 zoner og 673 kystdele; manifest, offentlig startfil og offentlig detaljefil er atomisk bundet til samme datasæt-id.
 - En ny syntetisk audit låser DEC-0055's udtransportkurve time for time fra 100 til 0 ved 13 effektive fuldstyrketimer og dækker de centrale randtilfælde uden private rådata.
-- Auditten viser tydeligt komponentbetydningen: ved 13 timer er transportpotentiale og levering 0, men den samlede Candidate G-score er cirka 35, fordi jagtbarhed og mobilisering fortsat bidrager. En eventuel totalscore-gate er en åben ejerbeslutning, ikke implementeret adfærd.
+- Den første audit viste 35/35 ved transportpotentiale 0. Ejeren har efterfølgende erstattet denne `RESEARCH-1`-betydning: `RESEARCH-2` sætter slutscoren til 0, når faktisk kraftig udtransport har udtømt transportpotentialet, men bevarer mobilisering og jagtbarhed som synlige delscorer.
+- Den bindende forklaring er: `På grund af kraftig fralandsstrøm trækkes ravet ud i havet og derfor går scoren i nul, selv om der fortsat kan være mobilisering og god jagtbarhed`. Gaten udløses ikke af start 0 uden faktisk udtransport, missing, neutral strøm eller svag modstrøm.
 - Den nationale shadowvalidator og dens kontrakttest følger nu de aktuelle aktiveringsgates og afviser erstattede waders-/pil-/ekstremmarkører.
 - Candidate G forbliver diagnostic-only med `20/50/30`; offentlig `25/40/35`, UI, geometri, land-/vandpunkter, artifact, protected-dirty-data og private caches er uændrede. Automatisk aktivering er falsk.
 

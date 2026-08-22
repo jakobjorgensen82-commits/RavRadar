@@ -17,7 +17,8 @@
 | RRS-CANDIDATE-G-50-50-NO-DIRECT-WIND-4.0.252 | Sammenligningsreference efter DEC-0051 | 20/45/35 | Samme 50/50-historik uden direkte vindbidrag |
 | RRS-CANDIDATE-G-50-50-NO-DIRECT-WIND-WADERS-LIMIT-4.0.254 | Historisk waders-reference | 20/45/35 + synligt waders-loft | Strand uændret; waders begrænses af jagtbarhed; erstattet som foretrukken variant af DEC-0054/0055 |
 | RRS-CANDIDATE-G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED-4.0.258 | Waders-kontraktreference | 20/50/30 + vindstyret waders-loft | Vind er hovedsignal, WAM er blødt fradrag; transportfortolkningen er senere erstattet af DEC-0055 |
-| RRS-CANDIDATE-G-CURRENT-LED-OUTFLOW-8-RESEARCH-1 | Foretrukken score-neutral forskningsvariant | 20/50/30 + strømreservoir + vindstyret waders-loft | 10 point ind pr. effektiv fuldstyrketime, 8 point ud og transportpotentiale 0 fra 13; ingen offentlig aktivering |
+| RRS-CANDIDATE-G-CURRENT-LED-OUTFLOW-8-RESEARCH-1 | Historisk strømstyret revisionsspor | 20/50/30 + strømreservoir + vindstyret waders-loft | Transportpotentiale 0 fra 13 timer, men totalscore kunne fortsat være 35; erstattet af ejerens slutscorebeslutning |
+| RRS-CANDIDATE-G-CURRENT-LED-OUTFLOW-8-RESEARCH-2 | Foretrukken score-neutral forskningsvariant | 20/50/30 + strømreservoir + udtransportgate + vindstyret waders-loft | Faktisk kraftig udtransport med udtømt transportpotentiale giver slutscore 0, mens delscorer bevares; ingen offentlig aktivering |
 
 ## Stabile kandidatregler
 
@@ -36,6 +37,7 @@
 | RRS-G3-WADERS-HUNTABILITY-LIMIT | G waders-limit | Endelig waders-score kan ikke overstige jagtbarheden | Strand er uændret; regler må ikke efterfølgende løfte over loftet |
 | RRS-T6-CURRENT-LED-RESERVOIR | G current-led | Verificeret kystnormal strøm bygger/nedbryder 0–100 transportpotentiale | Strømgrænse, starttilstand og eventuelt passivt tab er ukalibreret |
 | RRS-T7-DEPENDENT-WAVE-LANDING | G current-led | Bølger/timing kan kun dæmpe allerede eksisterende levering med højst 15 % | Bølger kan ikke oprette transport; andelen er en forskningsprior |
+| RRS-G4-OUTFLOW-EXHAUSTION-ZERO | G current-led RESEARCH-2 | Faktisk kraftig udtransport og transportpotentiale 0 tvinger slutscoren til 0 | Start 0, missing, neutral strøm eller svag modstrøm må ikke alene udløse reglen |
 
 Alle kandidater er score-neutrale forskningsfunktioner. Se DEC-0046 og den samlede evidensanbefaling.
 

@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 
-import { evaluateRavScoreCandidateG } from '../js/core/ravscore-candidate-g.js';
+import {
+  CANDIDATE_G_OUTFLOW_ZERO_EXPLANATION_DA,
+  evaluateRavScoreCandidateG,
+} from '../js/core/ravscore-candidate-g.js';
 import { buildCurrentTransportPotential } from '../js/core/ravscore-regime-memory.js';
 
 const VARIANT_ID = 'G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED';
@@ -75,7 +78,11 @@ function runAudit() {
       transportPotential: round3(record.transportPotential),
       transportAndDelivery: beach.components.transportAndDelivery,
       beachScore: beach.score,
+      beachScoreBeforeOutflowExhaustionGate:
+        beach.scoreCalculation.scoreBeforeOutflowExhaustionGate,
       wadersScore: waders.score,
+      wadersScoreBeforeOutflowExhaustionGate:
+        waders.scoreCalculation.scoreBeforeOutflowExhaustionGate,
       wadersHuntability: waders.components.huntability,
       actualOutboundTransport: record.actualOutboundTransport,
     };
@@ -139,6 +146,12 @@ function runAudit() {
     wavePeriodS: 10,
     waveDirectionDeg: 270,
   });
+  const initialZeroWithoutOutflow = evaluate('beach', {
+    transportPotential: 0,
+    outboundEpisodeEffectiveHours: 0,
+    outboundEpisodeLossPoints: 0,
+    actualOutboundTransport: false,
+  });
   const calmLanding = evaluate('beach', {
     transportPotential: 100,
     outboundEpisodeEffectiveHours: 0,
@@ -166,9 +179,10 @@ function runAudit() {
 
   const finalOutbound = outboundCurve.at(-1);
   const report = {
-    schemaVersion: '1.0.0',
+    schemaVersion: '1.1.0',
     status: 'passed-score-neutral-candidate-g-release-readiness-audit',
-    modelId: VARIANT_ID,
+    variantId: VARIANT_ID,
+    modelVersion: waveOnlyBeach.modelVersion,
     generatedAt: new Date().toISOString(),
     outboundCurve,
     inboundCurve,
@@ -182,6 +196,11 @@ function runAudit() {
       waveOnlyTransportAndDelivery: waveOnlyBeach.components.transportAndDelivery,
       waveOnlyBeachScore: waveOnlyBeach.score,
       waveOnlyWadersScore: waveOnlyWaders.score,
+      waveOnlyBeachMobilisation: waveOnlyBeach.components.mobilisation,
+      waveOnlyBeachHuntability: waveOnlyBeach.components.huntability,
+      initialZeroWithoutOutflowScore: initialZeroWithoutOutflow.score,
+      initialZeroWithoutOutflowGateApplied:
+        initialZeroWithoutOutflow.scoreCalculation.outflowExhaustionGateApplied,
       waveLandingMaximumTransportAndDeliveryDelta:
         activeLanding.components.transportAndDelivery - calmLanding.components.transportAndDelivery,
       highWindWadersScore: highWindWaders.score,
@@ -192,10 +211,12 @@ function runAudit() {
       finalWadersScoreAfter13Hours: finalOutbound.wadersScore,
     },
     productMeaning: {
-      zeroAtThirteenAppliesTo: 'CURRENT_LED_TRANSPORT_POTENTIAL_COMPONENT',
-      totalCandidateScoreAlsoForcedToZero: false,
-      reasonTotalCanRemainAboveZero: 'HUNTABILITY_AND_MOBILISATION_REMAIN_WEIGHTED_AND_THE_PHYSICAL_GATE_IS_MILD',
-      ownerMeaningDecisionRequiredBeforePublicActivation: true,
+      zeroAtThirteenAppliesTo: 'CURRENT_LED_TRANSPORT_POTENTIAL_AND_FINAL_CANDIDATE_SCORE',
+      totalCandidateScoreAlsoForcedToZero: true,
+      componentValuesRemainVisible: true,
+      triggerRequiresActualOutboundTransport: true,
+      explanationDa: CANDIDATE_G_OUTFLOW_ZERO_EXPLANATION_DA,
+      ownerMeaningDecisionRequiredBeforePublicActivation: false,
     },
     explanationContract: {
       currentArrowTimeMeaning: waveOnlyBeach.researchExplanation.currentArrow.timeMeaning,
@@ -206,9 +227,12 @@ function runAudit() {
       siteSuitabilityIncluded: waveOnlyBeach.researchExplanation.siteSuitabilityIncluded,
       safetyAdviceIncluded: waveOnlyBeach.researchExplanation.safetyAdviceIncluded,
       publicActivationAllowed: waveOnlyBeach.researchExplanation.publicActivationAllowed,
+      outflowExhaustionGateApplied:
+        waveOnlyBeach.researchExplanation.outflowExhaustion.applied,
+      outflowExplanationDa:
+        waveOnlyBeach.researchExplanation.outflowExhaustion.explanationDa,
     },
     activationGatesRemaining: [
-      'OWNER_DECISION_TRANSPORT_ZERO_VS_TOTAL_SCORE_ZERO',
       'CALIBRATED_COAST_NORMAL_CURRENT_THRESHOLDS',
       'APPROVED_INITIAL_RESERVOIR_AND_OPTIONAL_PASSIVE_DECAY',
       'REPRESENTATIVE_COMPLETE_TRIPS_OR_EQUIVALENT_STRONG_VALIDATION',
@@ -242,8 +266,8 @@ function runAudit() {
   assert.equal(outboundCurve[12].transportPotential, 4);
   assert.equal(finalOutbound.transportPotential, 0);
   assert.equal(finalOutbound.actualOutboundTransport, true);
-  assert.ok(finalOutbound.beachScore > 0 && finalOutbound.wadersScore > 0,
-    'The current contract exhausts transport potential, not the full Candidate G score');
+  assert.equal(finalOutbound.beachScore, 0);
+  assert.equal(finalOutbound.wadersScore, 0);
   assert.equal(halfStrengthOutbound.transportPotential, 96);
   assert.equal(deadbandOutbound.transportPotential, 100);
   assert.equal(neutralReference.transportPotential, 100);
@@ -252,6 +276,14 @@ function runAudit() {
   assert.equal(missingPause.transportPotential, 100);
   assert.equal(waveOnlyBeach.components.transportAndDelivery, 0);
   assert.equal(waveOnlyWaders.components.transportAndDelivery, 0);
+  assert.ok(waveOnlyBeach.components.mobilisation > 0);
+  assert.ok(waveOnlyBeach.components.huntability > 0);
+  assert.ok(waveOnlyBeach.scoreCalculation.scoreBeforeOutflowExhaustionGate > 0);
+  assert.equal(waveOnlyBeach.scoreCalculation.outflowExhaustionGateApplied, true);
+  assert.equal(waveOnlyBeach.score, 0);
+  assert.equal(waveOnlyWaders.score, 0);
+  assert.ok(initialZeroWithoutOutflow.score > 0);
+  assert.equal(initialZeroWithoutOutflow.scoreCalculation.outflowExhaustionGateApplied, false);
   assert.ok(activeLanding.components.transportAndDelivery
     - calmLanding.components.transportAndDelivery <= 3);
   assert.equal(highWindWaders.score, 0);
@@ -263,6 +295,11 @@ function runAudit() {
   assert.equal(report.explanationContract.siteSuitabilityIncluded, false);
   assert.equal(report.explanationContract.safetyAdviceIncluded, false);
   assert.equal(report.explanationContract.publicActivationAllowed, false);
+  assert.equal(report.explanationContract.outflowExhaustionGateApplied, true);
+  assert.equal(report.explanationContract.outflowExplanationDa,
+    CANDIDATE_G_OUTFLOW_ZERO_EXPLANATION_DA);
+  assert.equal(report.modelVersion,
+    'RRS-CANDIDATE-G-CURRENT-LED-OUTFLOW-8-RESEARCH-2');
   assert.equal(report.scoreChanged, false);
   assert.equal(report.publicRuntimeChanged, false);
   assert.equal(report.automaticActivationAllowed, false);
@@ -271,7 +308,7 @@ function runAudit() {
 
 const report = runAudit();
 if (process.argv.includes('--self-test')) {
-  console.log('OK: Candidate G release-readiness boundaries are explicit, monotone and score-neutral; the 13-hour total-score meaning remains an owner decision.');
+  console.log('OK: Candidate G release-readiness boundaries are explicit, monotone and score-neutral; actual outbound exhaustion forces only the diagnostic Candidate G final score to zero.');
 } else {
   console.log(JSON.stringify(report, null, 2));
 }

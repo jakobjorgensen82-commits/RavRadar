@@ -5,7 +5,9 @@
 - En ny syntetisk, reproducerbar audit låser den godkendte udtransportkurve: transportpotentialet falder 100, 92, 84, 76, 68, 60, 52, 44, 36, 28, 20, 12, 4 og 0 fra 13 effektive fuldstyrketimer.
 - Auditten dækker samtidig halv styrke, deadband, neutral strøm, valgfri 24/48-timers halvering, manglende verificering, bølge-only, den begrænsede landingsfaktor og waders-vindstoppet.
 - Den nationale shadowkontrakt bruger nu de aktuelle aktiveringsgates og afviser de erstattede waders-/pil-/ekstremmarkører.
-- En vigtig produktbetydning er gjort eksplicit: 13 timer nulstiller i den nuværende kandidat transportdelen, ikke automatisk hele RavScoren. Det faste scenarie ender derfor omkring 35 samlet; en eventuel totalscore-gate kræver ejerbeslutning og er ikke implementeret.
+- Ejeren har efterfølgende afgjort 13-timersbetydningen. Den nye interne `RESEARCH-2`-revision sætter Candidate G's slutscore til 0, når dokumenteret kraftig fralandsstrøm både har udløst reel udtransport og udtømt transportpotentialet. Mobilisering og jagtbarhed bevares som synlige delscorer.
+- Den bindende forklaring er: `På grund af kraftig fralandsstrøm trækkes ravet ud i havet og derfor går scoren i nul, selv om der fortsat kan være mobilisering og god jagtbarhed`.
+- Reglen udløses ikke af startpotentiale 0, missing, neutral strøm eller almindelig svag modstrøm. Den tidligere `RESEARCH-1`-betydning med samlet score cirka 35 ved udtømt transport bevares kun som revisionsspor.
 - Offentlig RavScore `25/40/35`, UI, produktion, geometri, land-/vandpunkter og beskyttede data er uændrede. Candidate G forbliver privat og kan ikke aktiveres automatisk.
 
 ## Intern workflowrettelse efter 4.0.258 – docs-only skip bevist (2026-08-23)
