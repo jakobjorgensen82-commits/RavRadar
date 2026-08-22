@@ -281,5 +281,17 @@ Kandidat G er privat og score-neutral. Aktiv RavScore 25/40/35, DMI-first, geome
 - [x] 24/48-fortegnsuenighed er kun 1-2 procent; 48 timer reducerer strømsporets fortegnsskift fra 14 til 10.
 - [x] Næste replay er afgrænset til 24 alene, 50/50 og 48 alene; 75/25 og 25/75 udgår som redundante følsomhedspunkter.
 - [x] Lineær vind er konservativ hovedanalyse; vindstressproxy er yderkant, og en variant uden direkte vind er obligatorisk.
-- [ ] Integrér de tre historikvarianter i kandidat-G-replay og den parrede retningskontrol uden pointaktivering.
-- [ ] Kør derefter national scenariematrix og national shadow før ekspertregel-, sikkerheds- og forklaringsgaten.
+- [x] Integrér de tre historikvarianter i kandidat-G-replay og den parrede retningskontrol uden pointaktivering.
+- [x] Kør den kanoniske nationale scenariematrix uden geometri-/punktlæsning.
+- [ ] Kør den virkelige centralt hydrerede nationale shadow før den endelige ekspertregel-, sikkerheds- og forklaringsgate.
+
+## Kandidat G næste beslutningsgate - 2026-08-22
+
+- [x] Historisk kandidat-G-replay: 1.460 private evalueringer med 24 timer, 50/50, 48 timer og no-direct-wind.
+- [x] Separat strøm-, bølge-, direkte vind- og totalvindablation samt gain-, vægt- og vindstressfølsomhed.
+- [x] Kanonisk national rotationsmatrix: 176 evalueringer, nul historikskabt transport ved nul kapacitet og korrekt respons på svage/stærke vendinger.
+- [x] National shadow-kode understøtter G-sporene og er self-testet uden produktionsaktivering.
+- [ ] Kør den virkelige centralt hydrerede nationale shadow efter merge; brug 50/50 uden direkte vind som foretrukken beslutningsvariant og 24/48 som grænser.
+- [ ] Løs før go/no-go, at waders kan have jagtbarhed 0 samtidig med høj G-score. Det kræver eksplicit produkt-/forklaringsvalg, ikke en skjult koefficient.
+- [ ] Afspil frisk central ekspertregelkaede og verificér pil, historik, komponenter, score og forklaring på samme context.
+- [ ] Fremlæg derefter ejerreview. Den nuværende anbefaling er at beholde offentlig 25/40/35 og ikke aktivere G endnu.

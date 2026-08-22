@@ -1286,3 +1286,14 @@ Foerste private aktive RavScore-shadowrun stoppede korrekt foer state og score, 
 - Samlet korrelation overvurderer dele af overlap på grund af forskelle mellem hændelser. Bølge/vind-overlap består dog inden for hændelser, og vindstressproxy giver ikke et mere uafhængigt direkte vindbidrag.
 - Lineær vind er derfor konservativ hovedanalyse. Vindstress bevares som yderkant, og replay skal have en variant uden direkte vind.
 - Aktiv RavScore 25/40/35, offentlig runtime, DMI-first, geometri og alle land-/vandpunkter er uændrede. Se `docs/research/RAVSCORE_HISTORY_TRACK_ABLATION_RESULT_2026-08-22.md`.
+
+## RavScore kandidat G - aktuel forskningssandhed 2026-08-22
+
+- Kandidat G er implementeret diagnostic-only med 24 timer, 50/50, 48 timer og en separat 50/50-variant uden direkte vind.
+- 1.460 private replayevalueringer viser, at G 50/50 ligger 1,492 point under aktiv model i gennemsnit, men skifter referencebånd i 474 evalueringer. Det er en væsentlig modelændring, ikke en lille vægtjustering.
+- Lav kapacitet dæmpes 3,405 point mod kandidat E, mens høj kapacitet løftes 0,876 point. Historik kan ikke skabe transport ved nul fysisk kapacitet.
+- 24/48 adskiller sig kun 0,064 point absolut i gennemsnit. Direkte vind adskiller sig kun 0,086 point fra no-direct og er ikke begrundet som selvstændigt bidrag.
+- Kanoniske scenarier afslører, at waders-jagtbarhed 0 kan sameksistere med G-score cirka 79. Det blokerer aktivering, indtil betydning og forklaring er besluttet eksplicit.
+- National shadow-validator kan nu beregne G-varianterne, men den friske centralt hydrerede nationale kørsel og aktuelle centrale regler mangler.
+- Faglig foreløbig anbefaling: behold offentlig 25/40/35; brug 50/50 uden direkte vind som næste shadowvariant; aktiver ikke G nu.
+- Ingen offentlig score, UI, data, DMI/fallback, geometri eller land-/vandpunkter er ændret. Se `docs/research/RAVSCORE_CANDIDATE_G_DECISION_BASIS_2026-08-22.md`.

@@ -134,11 +134,16 @@ export function normalizeMemoryTrackCausally(
   {
     getState = (record) => record?.blendedState,
     initialScale = 1,
+    minimumScale = Number.EPSILON,
   } = {},
 ) {
   const safeInitialScale = finiteNumber(initialScale, Number.NaN);
   if (!(safeInitialScale > 0)) {
     throw new Error("initialScale must be greater than zero");
+  }
+  const safeMinimumScale = finiteNumber(minimumScale, Number.NaN);
+  if (!(safeMinimumScale > 0)) {
+    throw new Error("minimumScale must be greater than zero");
   }
   let priorAbsoluteStateSum = 0;
   let priorStateCount = 0;
@@ -146,8 +151,8 @@ export function normalizeMemoryTrackCausally(
   return (Array.isArray(records) ? records : []).map((record) => {
     const state = finiteNumber(getState(record));
     const causalScale = priorStateCount > 0
-      ? Math.max(priorAbsoluteStateSum / priorStateCount, EPSILON)
-      : safeInitialScale;
+      ? Math.max(priorAbsoluteStateSum / priorStateCount, safeMinimumScale)
+      : Math.max(safeInitialScale, safeMinimumScale);
     const normalizedState = state / causalScale;
     const boundedState = normalizedState / (1 + Math.abs(normalizedState));
 

@@ -23,7 +23,7 @@ on:
         default: false
         type: boolean
       ravscore_active_shadow:
-        description: "Kør privat A/B/C-shadow på de aktive 210/673-punkter (ingen produktion/deploy)"
+        description: "Kør privat A-G-shadow på de aktive 210/673-punkter (ingen produktion/deploy)"
         required: false
         default: false
         type: boolean
@@ -868,6 +868,14 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: "24"
+
+      - name: Hydrate centrally saved expert rules for active RavScore shadow
+        run: |
+          python scripts/sync-admin-config.py
+          node scripts/generate-public-admin-rules.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Build read-only shadow input from active 210/673 runtime
         run: |
