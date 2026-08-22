@@ -1,10 +1,16 @@
 # Kendte åbne og overvågede forhold
 
+## Candidate G strømstyret transporthukommelse efter 4.0.258
+
+- **ISSUE-CANDIDATE-G-CURRENT-NORMAL-THRESHOLD – AKTIVERINGSBLOKERING:** DEC-0055's mekanik er testet, men fuld strømstyrke er ikke fundkalibreret. Reference 0,05→0,20 m/s og følsomheder 0,03→0,15 samt 0,02→0,12 flytter Candidate G-scoren mærkbart. Ingen grænse må skjult gøres til produktionssandhed.
+- **ISSUE-CANDIDATE-G-TRANSPORT-INITIAL-STATE-AND-DECAY – AKTIVERINGSBLOKERING:** Den private replayhistorik indeholder ikke et observeret reservoir før første time. Fail-closed start 0 og diagnostisk start 50 adskiller sig 21,136 scorepoint i gennemsnit. En eventuel passiv 24–48-timers forældelsesregel under neutral strøm er ikke besluttet og skal undersøges særskilt.
+- **ISSUE-CANDIDATE-G-PUBLIC-ACTIVATION – FORTSAT LUKKET:** Den nye variant er diagnostic-only. Offentlig aktivering kræver løste strøm-/tilstandsblokeringer, komplette ture eller tilsvarende hold-out-evidens, frisk national shadow, særskilt ejer-go/no-go og fulde produktgates.
+
 ## 4.0.257 Candidate G national scoreinputcoverage
 
 - **ISSUE-CANDIDATE-G-DYNAMIC-SCORE-INPUT-COVERAGE – SENERE AKTIVERINGSGATE / IKKE AKTUELT DATAARBEJDE:** Frisk exact-merge-shadow `32580774128` på `bb16ffe9` kunne score 243 af 673 aktive dele. Manglerne må ikke nuludfyldes, lånes fra nabo/parent eller løses ved punktflytning. De 243 bruges nu kun som mekanisk snapshot, og der hentes ikke ekstra rådata til den aktuelle beslutningsanalyse. En eventuel senere offentlig aktivering kræver en særskilt landsdækkende inputkontrakt.
 - **ISSUE-CANDIDATE-G-STATIC-RETENTION-COVERAGE-GATE – PRODUKTIONSVERIFICERET LØST:** Den ældre shadowkontrakt krævede komplette lokale rev-/lavtvands-/ålegræsfelter, selv om Candidate G ikke bruger en sådan statisk stedmodel. DEC-0052 gør felterne til ren diagnostik med nul scorepåvirkning. PR #70, produktion `32580314866` og exact-merge-shadow `32580774128` bekræfter kontrakten.
-- **ISSUE-CANDIDATE-G-FINAL-WEIGHTS – ÅBEN FOR TURKALIBRERING:** `20/45/35` er analysecentrum, men `15/50/35`, `20/45/35` og `25/40/35` består alle de mekaniske kontrakter. Udvalgte vejrhændelser og et 243-deles aktuelt snapshot kan ikke afgøre, hvilken vægt der bedst forudsiger fund. Offentlig `25/40/35` bevares, indtil komplette ture med fund/nul-fund og hold-out giver bedre evidens.
+- **ISSUE-CANDIDATE-G-FINAL-WEIGHTS – ÅBEN FOR TURKALIBRERING:** Ejeren har valgt `20/50/30` som privat faglig analyseprior. Det er ikke fundkalibrering. Udvalgte vejrhændelser og mekaniske snapshots kan ikke afgøre, hvilken vægt der bedst forudsiger fund. Offentlig `25/40/35` bevares, indtil stærkere validering og særskilt ejer-go/no-go foreligger.
 
 ## 4.0.255 national waders-kontraktgate
 

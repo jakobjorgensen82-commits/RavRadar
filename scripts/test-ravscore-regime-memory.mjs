@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 
 import {
+  buildCurrentTransportPotential,
   buildBlendedRegimeMemory,
   buildExponentialRegimeMemory,
+  CURRENT_TRANSPORT_POTENTIAL_PRIOR,
   extractReversalEpisodes,
   normalizeMemoryTrackCausally,
   signedDirectionalForce,
@@ -10,6 +12,88 @@ import {
   summarizeRegimeReversals,
   summarizeReversalEpisodes,
 } from "../js/core/ravscore-regime-memory.js";
+
+assert.deepEqual(CURRENT_TRANSPORT_POTENTIAL_PRIOR, {
+  deadbandNormalSpeedMps: 0.05,
+  fullStrengthNormalSpeedMps: 0.20,
+  inboundPointsPerEffectiveHour: 10,
+  outboundPointsPerEffectiveHour: 8,
+  exhaustedAfterEffectiveHours: 13,
+  preExhaustionMaximumLossPoints: 96,
+});
+
+const strongOutbound = Array.from({ length: 14 }, (_, hour) => ({
+  time: new Date(Date.UTC(2024, 0, 1, hour)).toISOString(),
+  currentSpeedMps: 0.2,
+  currentAlignment: -1,
+  currentVerified: true,
+}));
+const strongOutboundTrack = buildCurrentTransportPotential(strongOutbound, {
+  initialPotential: 100,
+  isVerified: sample => sample.currentVerified,
+});
+assert.deepEqual(
+  strongOutboundTrack.map(record => record.transportPotential),
+  [100, 92, 84, 76, 68, 60, 52, 44, 36, 28, 20, 12, 4, 0],
+  'Kraftig udgående strøm skal reducere transportpotentialet otte point pr. time og nå nul fra time 13',
+);
+assert.equal(strongOutboundTrack[1].phase, 'OUTBOUND_EROSION');
+assert.equal(strongOutboundTrack[12].actualOutboundTransport, false);
+assert.equal(strongOutboundTrack[13].phase, 'OUTBOUND_TRANSPORT');
+assert.equal(strongOutboundTrack[13].actualOutboundTransport, true);
+
+const halfStrengthOutboundTrack = buildCurrentTransportPotential(
+  strongOutbound.map(sample => ({ ...sample, currentSpeedMps: 0.125 })),
+  { initialPotential: 100, isVerified: sample => sample.currentVerified },
+);
+assert.ok(Math.abs(halfStrengthOutboundTrack[1].outboundStrength - 0.5) < 1e-12);
+assert.equal(halfStrengthOutboundTrack[1].transportPotential, 96);
+assert.equal(halfStrengthOutboundTrack[13].transportPotential, 48);
+
+const deadbandOutboundTrack = buildCurrentTransportPotential(
+  strongOutbound.map(sample => ({ ...sample, currentSpeedMps: 0.05 })),
+  { initialPotential: 100, isVerified: sample => sample.currentVerified },
+);
+assert.ok(deadbandOutboundTrack.every(record => record.transportPotential === 100));
+
+const recoveryTrack = buildCurrentTransportPotential([
+  ...strongOutbound.slice(0, 4),
+  ...Array.from({ length: 4 }, (_, offset) => ({
+    time: new Date(Date.UTC(2024, 0, 1, 4 + offset)).toISOString(),
+    currentSpeedMps: 0.2,
+    currentAlignment: 1,
+    currentVerified: true,
+  })),
+], { initialPotential: 100, isVerified: sample => sample.currentVerified });
+assert.equal(recoveryTrack[3].transportPotential, 76);
+assert.deepEqual(recoveryTrack.slice(4).map(record => record.transportPotential), [86, 96, 100, 100]);
+assert.equal(recoveryTrack[4].outboundEpisodeEffectiveHours, 0);
+assert.equal(recoveryTrack[4].phase, 'INBOUND_BUILDUP');
+
+const tenHourInboundBuildTrack = buildCurrentTransportPotential(
+  Array.from({ length: 11 }, (_, hour) => ({
+    time: new Date(Date.UTC(2024, 0, 2, hour)).toISOString(),
+    currentSpeedMps: 0.2,
+    currentAlignment: 1,
+    currentVerified: true,
+  })),
+  { initialPotential: 0, isVerified: sample => sample.currentVerified },
+);
+assert.deepEqual(
+  tenHourInboundBuildTrack.map(record => record.transportPotential),
+  [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
+);
+
+const unverifiedPauseTrack = buildCurrentTransportPotential([
+  strongOutbound[0],
+  { ...strongOutbound[1], currentVerified: false },
+], { initialPotential: 100, isVerified: sample => sample.currentVerified });
+assert.equal(unverifiedPauseTrack[1].transportPotential, 100);
+assert.equal(unverifiedPauseTrack[1].phase, 'UNVERIFIED_PAUSE');
+assert.throws(() => buildCurrentTransportPotential(strongOutbound, {
+  deadbandNormalSpeedMps: 0.2,
+  fullStrengthNormalSpeedMps: 0.2,
+}));
 
 assert.equal(signedDirectionalForce({ magnitude: 0.4, alignment: 0.5 }), 0.2);
 assert.equal(signedDirectionalForce({ magnitude: 10, alignment: -0.5, power: 2 }), -50);

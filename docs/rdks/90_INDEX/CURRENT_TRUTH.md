@@ -1,5 +1,14 @@
 # Current truth – gældende projektviden
 
+## Candidate G – strømstyret transportpotentiale efter 4.0.258
+
+- DEC-0055 gør verificeret kystnormal strøm til Candidate G's transportled. Bølger kan ikke skabe transport; de må kun påvirke den sidste levering med højst 15 procent, når strømmen allerede har skabt potentiale.
+- Fuld indgående strøm bygger 10 point pr. effektiv time mod 100. Fuld udgående strøm reducerer straks med 8 point pr. effektiv time: 100, 92, 84, 76, 68, 60, 52, 44, 36, 28, 20, 12, 4 og 0 fra 13 timer.
+- Den private kandidat beholder `20/50/30` og DEC-0054's vindstyrede waders-jagtbarhed. Offentlig RavScore er fortsat `25/40/35`; ingen score- eller UI-aktivering er foretaget.
+- Referencegrænserne 0,05→0,20 m/s og replaystart 0 er forskningspriorer, ikke naturkonstanter. Følsomhed 0,03→0,15 og 0,02→0,12 flytter Candidate G-scoren henholdsvis +3,068 og +4,296 point, mens diagnostisk start 50 flytter den +21,136.
+- Mekanikken består målrettede tests og det private 1.460-evalueringsreplay, men strømgrænsen, starttilstanden og et eventuelt passivt 24–48-timers tab er åbne aktiveringsblokeringer.
+- G 24/48 og tidligere kandidater bevares som historisk evidens. Ingen nye rådata er hentet; private cachepayloads, artifact, protected-dirty-data, geometri og land-/vandpunkter er urørte.
+
 ## Candidate G 4.0.258 – vind er hovedsignal for waders-jagtbarhed
 
 - Den foretrukne private forskningsvariant er `G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED` med ejerens faglige analyseprior `20/50/30`. Offentlig RavScore er fortsat `25/40/35`.

@@ -15,6 +15,18 @@
 
 Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre forsknings-/versionsafsnit bevares som revisionsspor. En tom afkrydsningsboks i historikken er ikke en aktiv opgave, medmindre punktet ogsaa findes her.
 
+## Aktuelt Candidate G-delmaal – strømstyret transporthukommelse
+
+- [x] Fastlæg strømmen som transportled og bølger som en lille afhængig landingsfaktor.
+- [x] Implementér og test ejerens fuldstyrkekurve: 8 points straks-tab pr. effektiv udgående time og nul fra 13 timer.
+- [x] Bevar cirka 10 timers indgående opbygning, `20/50/30` og DEC-0054's waders-kontrakt.
+- [x] Genafspil den eksisterende private cache uden nye rådata og kør målrettede følsomheder.
+- [x] Dokumentér, at strømgrænsen og replayets start-/forældelsesregel har væsentlig betydning og endnu ikke er kalibreret.
+- [x] Afslut samlet RDKS-/håndbogskontrol og fuld lokal kildegate inklusive releasegate.
+- [ ] Før beslutningsgrundlaget gennem exact-head PR og score-neutral merge.
+- [ ] Undersøg derefter en afgrænset 24–48-timers forældelsesregel og strømgrænse uden offentlig aktivering.
+- [ ] En eventuel offentlig Candidate G-aktivering forbliver et særskilt ejer-go/no-go med validering og fulde produktgates.
+
 ## Aktuelt Candidate G-review – 4.0.258 vindstyret waders-kandidat
 
 - [x] Saml én score-neutral ejerreviewvariant og klassificér de øvrige modeller som revisions-/følsomhedsspor.

@@ -203,3 +203,11 @@ Fem sammenhængende produktionskørsler afslørede, at samme ugentlige GitHub-ca
 - Ejerbeslutning: privat analyseprior `20/50/30`, vindkurve med nul ved 15 m/s og WAM-bølger kun som blødt fradrag på højst 20 point.
 - DEC-0054 og `G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED` erstatter den tidligere reviewvariant, men ændrer ingen offentlig score.
 - 1.460-evalueringsreplay og kanoniske/nationale self-tests består uden nye rådata, geometri eller punktændringer.
+
+## 2026-08-22 – Candidate G strømstyret transportpotentiale
+
+1. Ejeren præciserede, at strømmen transporterer ravet, mens bølger højst hjælper det sidste stykke over revle eller op på strand.
+2. Fuld udgående strøm skal reducere potentialet fra første time med 8 point pr. effektiv time og nå 0 ved 13 timer; fuld indgående strøm bygger mod 100 over cirka 10 timer.
+3. Den nye private variant og nationale shadowkontrakt implementerer retningen uden at ændre offentlig `25/40/35`.
+4. Replayet viser korrekt mekanik, men også stor følsomhed over for strømgrænsen og reservoirværdien ved start. DEC-0055 holder derfor aktiveringen lukket.
+5. Ingen nye rådata, geometri, land-/vandpunkter, artifact eller protected-dirty-data er ændret.

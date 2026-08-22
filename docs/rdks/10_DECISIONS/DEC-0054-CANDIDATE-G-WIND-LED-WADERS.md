@@ -1,5 +1,7 @@
 # DEC-0054: Candidate G bruger vindstyret waders-jagtbarhed
 
+> **Efterfølgende transportbeslutning:** DEC-0055 erstatter Candidate G's foretrukne transportfortolkning, men bevarer `20/50/30`, denne vindstyrede waders-kurve, bølgefradraget i jagtbarhed og waders-loftet uændret.
+
 **Status:** Aktiv score-neutral forskningsbeslutning; ingen produktionsaktivering
 
 **Dato:** 2026-08-22

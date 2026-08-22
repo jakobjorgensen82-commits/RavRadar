@@ -1,5 +1,7 @@
 # Beslutningsgrundlag for RavScore kandidat G, 2026-08-22
 
+> **Efterfølgende transportbeslutning:** DEC-0055 erstatter dette dokuments foretrukne transportfortolkning med en strømstyret reservoirregel: 10 point pr. effektiv fuld indgående time, straks-tab på 8 point pr. effektiv fuld udgående time og 0 fra 13 timer. Bølger kan ikke skabe transport. Dette dokument bevares som historisk evidens; se `RAVSCORE_CURRENT_LED_TRANSPORT_MEMORY_2026-08-22.md`.
+
 > **Efterfølgende beslutning:** DEC-0051 vælger `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT` som næste score-neutrale analysecentrum. Den tidligere no-direct-variant i dette dokument bevares som reference. Se `RAVSCORE_MODE_SPECIFIC_HUNTABILITY_ANALYSIS_2026-08-22.md`.
 >
 > **Efterfølgende coveragepræcisering:** DEC-0052 holder statiske lokale retention-/stedfeatures helt ude af Candidate G. Den friske centrale shadow på 243/673 lukker fortsat ikke den dynamiske scoreinputgate; manglende statiske felter er kun diagnostik.

@@ -47,6 +47,7 @@ assert.deepEqual(Object.keys(CANDIDATE_G_VARIANTS), [
   'G-50-50-NO-DIRECT-WIND',
   'G-50-50-NO-DIRECT-WIND-WADERS-LIMIT',
   'G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED',
+  'G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED',
 ]);
 
 const neutral = evaluate({ current: 0, wave: 0, directWind: 0 });
@@ -135,6 +136,78 @@ assert.equal(approvedWaders.at(-1).researchExplanation.modeHuntability.applied, 
 assert.equal(approvedWaders.at(-1).components.huntability, 0);
 assert.equal(approvedWaders.at(-1).diagnostics.candidateGHuntabilityWindHardStopApplied, true);
 
+const currentLedBaseMemory = {
+  transportPotential: 100,
+  outboundEpisodeEffectiveHours: 0,
+  outboundEpisodeLossPoints: 0,
+  actualOutboundTransport: false,
+};
+const currentLedFull = evaluate(currentLedBaseMemory, {
+  variantId: 'G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED',
+});
+assert.equal(currentLedFull.available, true);
+assert.equal(currentLedFull.components.transport, 100);
+assert.equal(currentLedFull.diagnostics.candidateGCurrentLedTransportPotential, 100);
+assert.equal(currentLedFull.diagnostics.candidateGHistoryFactor, 1);
+assert.equal(currentLedFull.diagnostics.candidateGDirectionalHistorySignal, null);
+assert.equal(currentLedFull.researchExplanation.currentLedTransport.waveCanCreateTransport, false);
+assert.equal(currentLedFull.researchExplanation.currentLedTransport.waveLandingMaximumShare, 0.15);
+
+const currentLedHourly = [100, 92, 84, 76, 68, 60, 52, 44, 36, 28, 20, 12, 4, 0]
+  .map((transportPotential, hour) => evaluate({
+    transportPotential,
+    outboundEpisodeEffectiveHours: hour,
+    outboundEpisodeLossPoints: hour >= 13 ? 100 : Math.min(96, hour * 8),
+    actualOutboundTransport: hour >= 13,
+  }, {
+    variantId: 'G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED',
+  }));
+assert.ok(currentLedHourly.every(result => result.available));
+assert.deepEqual(
+  currentLedHourly.map(result => result.diagnostics.candidateGCurrentLedTransportPotential),
+  [100, 92, 84, 76, 68, 60, 52, 44, 36, 28, 20, 12, 4, 0],
+);
+assert.ok(currentLedHourly.every((result, index) => index === 0
+  || result.components.transportAndDelivery <= currentLedHourly[index - 1].components.transportAndDelivery));
+assert.equal(currentLedHourly.at(-1).components.transportAndDelivery, 0);
+assert.equal(currentLedHourly.at(-1).diagnostics.candidateGActualOutboundTransport, true);
+
+const noCurrentHighWave = evaluate({
+  transportPotential: 0,
+  outboundEpisodeEffectiveHours: 13,
+  outboundEpisodeLossPoints: 100,
+  actualOutboundTransport: true,
+}, {
+  variantId: 'G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED',
+}, {
+  weather: {
+    waveHeightM: 4,
+    wavePeriodS: 10,
+    waveDirectionDeg: 270,
+  },
+});
+assert.equal(noCurrentHighWave.components.transport, 0);
+assert.equal(noCurrentHighWave.components.delivery, 0);
+assert.equal(noCurrentHighWave.components.transportAndDelivery, 0,
+  'Bølger må ikke skabe transport eller levering uden et strømopbygget transportpotentiale');
+
+const lowWaveLanding = evaluate(currentLedBaseMemory, {
+  variantId: 'G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED',
+}, {
+  weather: { waveHeightM: 0, wavePeriodS: 0, waveDirectionDeg: 270 },
+});
+const highWaveLanding = evaluate(currentLedBaseMemory, {
+  variantId: 'G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED',
+}, {
+  weather: { waveHeightM: 3, wavePeriodS: 8, waveDirectionDeg: 270 },
+});
+assert.ok(highWaveLanding.components.delivery >= lowWaveLanding.components.delivery);
+assert.ok(highWaveLanding.components.transportAndDelivery - lowWaveLanding.components.transportAndDelivery <= 3,
+  'Bølgernes afhængige landingsbidrag skal forblive lille i forhold til strømtransporten');
+assert.equal(evaluate({}, {
+  variantId: 'G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED',
+}).reason, 'MISSING_REQUIRED_CURRENT_LED_TRANSPORT_POTENTIAL');
+
 const wavePenaltyCases = [
   { windSpeedMps: 6, waveHeightM: 0.7, expected: 93 },
   { windSpeedMps: 6, waveHeightM: 1.2, expected: 85 },
@@ -184,7 +257,8 @@ assert.throws(() => evaluate(
 ));
 
 for (const result of [neutral, inbound, outbound, withDirect, withoutDirect, approvedBeach,
-  ...approvedWaders, zeroCapacity, staticA, staticB]) {
+  ...approvedWaders, currentLedFull, ...currentLedHourly, noCurrentHighWave,
+  lowWaveLanding, highWaveLanding, zeroCapacity, staticA, staticB]) {
   assert.ok(result.score >= 0 && result.score <= 100);
   assert.equal(result.candidateScores.candidateG, result.score);
 }

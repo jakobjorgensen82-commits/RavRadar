@@ -16,6 +16,144 @@ export function signedDirectionalForce({ magnitude, alignment, power = 1 } = {})
   return (safeMagnitude ** safePower) * safeAlignment;
 }
 
+export const CURRENT_TRANSPORT_POTENTIAL_PRIOR = Object.freeze({
+  deadbandNormalSpeedMps: 0.05,
+  fullStrengthNormalSpeedMps: 0.20,
+  inboundPointsPerEffectiveHour: 10,
+  outboundPointsPerEffectiveHour: 8,
+  exhaustedAfterEffectiveHours: 13,
+  preExhaustionMaximumLossPoints: 96,
+});
+
+function normalCurrentStrength(normalSpeedMps, {
+  deadbandNormalSpeedMps,
+  fullStrengthNormalSpeedMps,
+}) {
+  const safeSpeed = Math.max(0, finiteNumber(normalSpeedMps));
+  if (safeSpeed <= deadbandNormalSpeedMps) return 0;
+  if (safeSpeed >= fullStrengthNormalSpeedMps) return 1;
+  return (safeSpeed - deadbandNormalSpeedMps)
+    / (fullStrengthNormalSpeedMps - deadbandNormalSpeedMps);
+}
+
+/**
+ * Builds the score-neutral, current-led 0-100 transport-potential track.
+ *
+ * Only the coast-normal current component changes the reservoir. A full-strength
+ * inbound hour restores ten points (the existing approximately ten-hour buildup
+ * requirement), while a full-strength outbound hour removes the owner-selected
+ * eight points. Outbound loss starts immediately, remains continuous for weaker
+ * currents, and reaches the explicit owner-selected exhausted state after thirteen
+ * effective full-strength hours. Waves are deliberately absent from this state.
+ */
+export function buildCurrentTransportPotential(
+  samples,
+  {
+    initialPotential = 0,
+    deadbandNormalSpeedMps = CURRENT_TRANSPORT_POTENTIAL_PRIOR.deadbandNormalSpeedMps,
+    fullStrengthNormalSpeedMps = CURRENT_TRANSPORT_POTENTIAL_PRIOR.fullStrengthNormalSpeedMps,
+    inboundPointsPerEffectiveHour = CURRENT_TRANSPORT_POTENTIAL_PRIOR.inboundPointsPerEffectiveHour,
+    outboundPointsPerEffectiveHour = CURRENT_TRANSPORT_POTENTIAL_PRIOR.outboundPointsPerEffectiveHour,
+    exhaustedAfterEffectiveHours = CURRENT_TRANSPORT_POTENTIAL_PRIOR.exhaustedAfterEffectiveHours,
+    preExhaustionMaximumLossPoints = CURRENT_TRANSPORT_POTENTIAL_PRIOR.preExhaustionMaximumLossPoints,
+    getTime = (sample) => sample?.time,
+    getSpeed = (sample) => sample?.currentSpeedMps,
+    getAlignment = (sample) => sample?.currentAlignment,
+    isVerified = () => true,
+  } = {},
+) {
+  const safeDeadband = finiteNumber(deadbandNormalSpeedMps, Number.NaN);
+  const safeFullStrength = finiteNumber(fullStrengthNormalSpeedMps, Number.NaN);
+  const safeInboundRate = finiteNumber(inboundPointsPerEffectiveHour, Number.NaN);
+  const safeOutboundRate = finiteNumber(outboundPointsPerEffectiveHour, Number.NaN);
+  const safeExhaustionHours = finiteNumber(exhaustedAfterEffectiveHours, Number.NaN);
+  const safePreExhaustionLoss = finiteNumber(preExhaustionMaximumLossPoints, Number.NaN);
+  if (!(safeDeadband >= 0 && safeFullStrength > safeDeadband)) {
+    throw new Error('current transport potential requires full strength above the deadband');
+  }
+  if (!(safeInboundRate > 0 && safeOutboundRate > 0 && safeExhaustionHours > 0)) {
+    throw new Error('current transport potential requires positive rates and exhaustion hours');
+  }
+  if (!(safePreExhaustionLoss >= 0 && safePreExhaustionLoss <= 100)) {
+    throw new Error('preExhaustionMaximumLossPoints must be between zero and one hundred');
+  }
+
+  const ordered = [...(Array.isArray(samples) ? samples : [])]
+    .map((sample) => ({
+      sample,
+      time: new Date(getTime(sample)),
+      speed: Math.max(0, finiteNumber(getSpeed(sample))),
+      alignment: clamp(finiteNumber(getAlignment(sample)), -1, 1),
+      verified: isVerified(sample) === true,
+    }))
+    .filter((entry) => Number.isFinite(entry.time.getTime()))
+    .sort((left, right) => left.time - right.time);
+
+  let potential = clamp(finiteNumber(initialPotential), 0, 100);
+  let previousTime = null;
+  let outboundEpisodeEffectiveHours = 0;
+  let outboundEpisodeLossPoints = 0;
+
+  return ordered.map((entry) => {
+    const elapsedHours = previousTime
+      ? Math.max(0, (entry.time - previousTime) / 3_600_000)
+      : 0;
+    const inboundNormalSpeedMps = entry.verified
+      ? entry.speed * Math.max(0, entry.alignment)
+      : 0;
+    const outboundNormalSpeedMps = entry.verified
+      ? entry.speed * Math.max(0, -entry.alignment)
+      : 0;
+    const inboundStrength = normalCurrentStrength(inboundNormalSpeedMps, {
+      deadbandNormalSpeedMps: safeDeadband,
+      fullStrengthNormalSpeedMps: safeFullStrength,
+    });
+    const outboundStrength = normalCurrentStrength(outboundNormalSpeedMps, {
+      deadbandNormalSpeedMps: safeDeadband,
+      fullStrengthNormalSpeedMps: safeFullStrength,
+    });
+    const previousPotential = potential;
+    let phase = entry.verified ? 'RETAINED_OR_NEUTRAL' : 'UNVERIFIED_PAUSE';
+
+    if (outboundStrength > 0) {
+      const previousLossPoints = outboundEpisodeLossPoints;
+      outboundEpisodeEffectiveHours += elapsedHours * outboundStrength;
+      const actualOutboundTransport = outboundEpisodeEffectiveHours >= safeExhaustionHours;
+      outboundEpisodeLossPoints = actualOutboundTransport
+        ? 100
+        : Math.min(safePreExhaustionLoss, safeOutboundRate * outboundEpisodeEffectiveHours);
+      potential = clamp(potential - Math.max(0, outboundEpisodeLossPoints - previousLossPoints), 0, 100);
+      if (actualOutboundTransport) potential = 0;
+      phase = actualOutboundTransport ? 'OUTBOUND_TRANSPORT' : 'OUTBOUND_EROSION';
+    } else if (inboundStrength > 0) {
+      outboundEpisodeEffectiveHours = 0;
+      outboundEpisodeLossPoints = 0;
+      potential = clamp(potential + safeInboundRate * elapsedHours * inboundStrength, 0, 100);
+      phase = 'INBOUND_BUILDUP';
+    }
+
+    const actualOutboundTransport = outboundEpisodeEffectiveHours >= safeExhaustionHours;
+    previousTime = entry.time;
+    return {
+      time: entry.time.toISOString(),
+      elapsedHours,
+      verified: entry.verified,
+      speedMps: entry.speed,
+      alignment: entry.alignment,
+      inboundNormalSpeedMps,
+      outboundNormalSpeedMps,
+      inboundStrength,
+      outboundStrength,
+      previousPotential,
+      transportPotential: potential,
+      outboundEpisodeEffectiveHours,
+      outboundEpisodeLossPoints,
+      actualOutboundTransport,
+      phase,
+    };
+  });
+}
+
 export function buildExponentialRegimeMemory(
   samples,
   {
