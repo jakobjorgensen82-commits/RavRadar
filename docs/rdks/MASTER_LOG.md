@@ -5,6 +5,7 @@
 - En ny syntetisk audit låser DEC-0055's udtransportkurve time for time fra 100 til 0 ved 13 effektive fuldstyrketimer og dækker de centrale randtilfælde uden private rådata.
 - Den første audit viste 35/35 ved transportpotentiale 0. Ejeren har efterfølgende erstattet denne `RESEARCH-1`-betydning: `RESEARCH-2` sætter slutscoren til 0, når faktisk kraftig udtransport har udtømt transportpotentialet, men bevarer mobilisering og jagtbarhed som synlige delscorer.
 - Den bindende forklaring er: `På grund af kraftig fralandsstrøm trækkes ravet ud i havet og derfor går scoren i nul, selv om der fortsat kan være mobilisering og god jagtbarhed`. Gaten udløses ikke af start 0 uden faktisk udtransport, missing, neutral strøm eller svag modstrøm.
+- `RESEARCH-2` bestod exact-head `32604792201` på `f6458f09`, blev merged via PR #84 som `800a93cb` og bestod fuld produktion `32604850884`. Live `rr-20260822232159-210` er direkte verificeret som 210/673 med samme datasæt-id i manifest/start/detaljer; offentlig `25/40/35` er fortsat aktiv.
 - Den nationale shadowvalidator og dens kontrakttest følger nu de aktuelle aktiveringsgates og afviser erstattede waders-/pil-/ekstremmarkører.
 - Candidate G forbliver diagnostic-only med `20/50/30`; offentlig `25/40/35`, UI, geometri, land-/vandpunkter, artifact, protected-dirty-data og private caches er uændrede. Automatisk aktivering er falsk.
 

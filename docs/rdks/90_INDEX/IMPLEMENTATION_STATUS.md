@@ -10,6 +10,7 @@
 - [x] Bestå exact-head `32602287607` på `74624ac3`, merge PR #82 som `189644a0` og fuld post-merge-produktion `32602328912`.
 - [x] Verificér live `rr-20260822223539-210` som komplet 210/673 med samme datasæt-id i manifest, startdata og detaljedata.
 - [x] Ejerbeslutning og score-neutral implementation: faktisk kraftig udtransport med udtømt transportpotentiale giver samlet Candidate G 0, mens de øvrige komponenter bevares synligt; start 0 uden faktisk udtransport udløser ikke reglen.
+- [x] Bestå exact-head `32604792201` på `f6458f09`, merge PR #84 som `800a93cb`, fuld produktion `32604850884` og verificér live `rr-20260822232159-210` som komplet 210/673 uden offentlig Candidate G-aktivering.
 - [ ] Luk resterende coverage-, tærskel-, starttilstands-, validerings-, admin-/rollback- og ejer-go/no-go-gates før enhver offentlig aktivering.
 
 ## Docs-only skip – rod-CHANGELOG

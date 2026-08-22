@@ -8,6 +8,8 @@
 - Ejeren har efterfølgende afgjort 13-timersbetydningen. Den nye interne `RESEARCH-2`-revision sætter Candidate G's slutscore til 0, når dokumenteret kraftig fralandsstrøm både har udløst reel udtransport og udtømt transportpotentialet. Mobilisering og jagtbarhed bevares som synlige delscorer.
 - Den bindende forklaring er: `På grund af kraftig fralandsstrøm trækkes ravet ud i havet og derfor går scoren i nul, selv om der fortsat kan være mobilisering og god jagtbarhed`.
 - Reglen udløses ikke af startpotentiale 0, missing, neutral strøm eller almindelig svag modstrøm. Den tidligere `RESEARCH-1`-betydning med samlet score cirka 35 ved udtømt transport bevares kun som revisionsspor.
+- Implementationen bestod exact-head `32604792201` på `f6458f09`, blev merged via PR #84 som `800a93cb` og bestod fuld post-merge-produktion `32604850884`.
+- Live `rr-20260822232159-210` er direkte verificeret som komplet med 210 zoner, 673 kystdele og samme datasæt-id i manifest, startfil og detaljefil. Candidate G er fortsat ikke offentligt aktiveret.
 - Offentlig RavScore `25/40/35`, UI, produktion, geometri, land-/vandpunkter og beskyttede data er uændrede. Candidate G forbliver privat og kan ikke aktiveres automatisk.
 
 ## Intern workflowrettelse efter 4.0.258 – docs-only skip bevist (2026-08-23)
