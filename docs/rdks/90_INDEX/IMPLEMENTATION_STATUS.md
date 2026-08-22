@@ -9,6 +9,7 @@
 - [x] Saml A-C, D-E, F og G 24/48 som revisionsspor og før kun `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT` videre til ejerreview.
 - [x] Bevar `20/45/35` som analysecentrum og offentlig `25/40/35` som aktiv model. Endelig produktionsvægt afventer komplette ture og hold-out.
 - [x] Dokumentér beslutningsgrundlaget i DEC-0053 og den korte ejerreviewrapport.
+- [x] Før beslutningspakken gennem PR #71, exact-head-kildegate `32583123375` og merge `52f66808`.
 - [ ] Gennemfør ejerens samlede faglige review før enhver særskilt score-/UI-implementering.
 
 ## 4.0.257-kandidat – dynamisk inputcoverage adskilt fra udeladt stedmodel

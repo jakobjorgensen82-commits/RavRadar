@@ -6,6 +6,7 @@
 - Alle 730 strandscorer er uændrede, ingen waders-score overstiger jagtbarheden, og ingen af 216 lave waders-jagtbarheder får mindst 55 point.
 - `20/45/35` er analysecentrum, ikke slutvægt. Offentlig `25/40/35` er uændret; endelig vægtning afventer komplette ture og hold-out.
 - Ingen ekstra rådata, score, UI, geometri, land-/vandpunkter, artifact eller protected-dirty-data er ændret.
+- PR #71 bestod exact-head-kildegate `32583123375` og blev merged som `52f66808204b1de4b643e05192a5bd7e92797244`. Dokumentationsmerget udløser ikke et nyt produktionsartifact.
 
 ## 2026-08-22 – RavRadar 4.0.257: Candidate G-coverage uden skjult stedmodel
 

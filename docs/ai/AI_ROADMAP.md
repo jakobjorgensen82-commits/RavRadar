@@ -7,6 +7,7 @@
 - [x] Genafspil 1.460 private evalueringer og bekræft 730 uændrede strandscorer, nul waders-score over jagtbarheden og nul middel/høj score ved waders-jagtbarhed under 35.
 - [x] Saml én ejerreviewvariant: `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT`; behold de øvrige kandidater som revisions- og følsomhedsevidens.
 - [x] Fastslå, at `20/45/35` er analysecentrum, ikke slutvægt. Endelig vægtning afventer komplette ture med fund/nul-fund og hold-out.
+- [x] Merge den samlede beslutningspakke via PR #71 efter grøn exact-head-kildegate `32583123375`.
 - [ ] Gennemgå det samlede faglige forslag med ejeren. Ingen offentlig score- eller UI-aktivering før en efterfølgende særskilt beslutning.
 
 ## 4.0.257 Candidate G-coveragepræcisering
