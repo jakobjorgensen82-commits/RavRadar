@@ -1,5 +1,10 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.257 Candidate G national scoreinputcoverage
+
+- **ISSUE-CANDIDATE-G-DYNAMIC-SCORE-INPUT-COVERAGE – ÅBEN / NO-GO:** Frisk central shadow `32578554928` på 4.0.256-merge `d629177a` kunne score 243 af 673 aktive dele. De øvrige 430 mangler komplet lokal DKSS-familie; bølgefamilien er komplet. Manglerne må ikke nuludfyldes, lånes fra nabo/parent eller løses ved punktflytning. Candidate G kan ikke aktiveres ved 36,1 % dynamisk inputcoverage.
+- **ISSUE-CANDIDATE-G-STATIC-RETENTION-COVERAGE-GATE – LOKALT LØST / PRODUKTIONSBEVIS AFVENTER:** Den ældre shadowkontrakt krævede komplette lokale rev-/lavtvands-/ålegræsfelter, selv om nyere Candidate G-kode og ejerbeslutning holder en sådan statisk stedmodel ude. DEC-0052 gør felterne til ren diagnostik med nul scorepåvirkning og kræver kun komplet dynamisk scoreinput i coveragegaten. Målrettede tests er grønne; exact-head, produktion og ny central shadow afventer.
+
 ## 4.0.255 national waders-kontraktgate
 
 - **ISSUE-RAVSCORE-NATIONAL-WADERS-CONTRACT-MARKER – PRODUKTIONSVERIFICERET LØST:** PR #66's produktion `32575055644` stoppede korrekt før release og deploy, fordi fuld validering stadig forventede den erstattede markør `candidate-waders-product-decision`. Testen følger nu den aktuelle `candidate-waders-rule-order-public-product-review` og er tilføjet den hurtige kildegate. PR #67, exact-head-gate `32575697204`, merge `af8f30cf` og produktion `32575740539` er grønne; live 4.0.255-integritet er verificeret. Ingen score- eller dataadfærd er ændret.

@@ -1,6 +1,19 @@
-# Implementeringsstatus – 4.0.256 Candidate G-vægt og forklaring
+# Implementeringsstatus – 4.0.257 Candidate G-coveragekontrakt
 
-## 4.0.256-kandidat – score-neutralt beslutningsgrundlag
+## 4.0.257-kandidat – dynamisk inputcoverage adskilt fra udeladt stedmodel
+
+- [x] Kør frisk central Candidate G-shadow på produktionsverificeret 4.0.256-merge `d629177a`.
+- [x] Dokumentér 243/673 scorede dele og 430 u-scorede dele med manglende komplet lokal DKSS-familie.
+- [x] Afklar mod nyere ejerbeslutninger, DEC-0050/0051 og faktisk kode, at statiske rev-/lavtvands-/ålegræsfelter ikke indgår i Candidate G.
+- [x] Erstat den kombinerede scoreinput-/retention-gate med én ren dynamisk scoreinputcoveragegate.
+- [x] Bevar retentionfelternes tilgængelighed som diagnostik, nul scorepåvirkning, afvist parentarv og `automaticActivationAllowed=false`.
+- [x] Opdatér RDKS, forskningsgrundlag, Markdown-håndbog, webhåndbog og changelog.
+- [x] Kør målrettede nationale shadow-, fase-D- og Candidate G-tests.
+- [x] Kør fuld lokal `scripts/validate-source.ps1` og releasegate for 4.0.257.
+- [ ] Kør exact-head PR-gate, merge-/produktionskontrol og en ny central shadow på den præcise mergecommit.
+- [ ] Udvid den reelle dynamiske DKSS-scoreinputcoverage; offentlig aktivering forbliver no-go.
+
+## 4.0.256 – score-neutralt beslutningsgrundlag, afsluttet
 
 - [x] Genafspil `15/50/35`, `20/45/35` og `25/40/35` på den godkendte waders-variant med eksakte komponenter og uændret fysisk gate.
 - [x] Dokumentér yderpunktsforskellen: 4,947 point i gennemsnit og 282 referencebånd på 1.460 evalueringer.
@@ -9,8 +22,8 @@
 - [x] Tilføj diagnostic-only forklaringskontrakt for eksakte komponenter, bidrag, pil nu, historik før nu, fysisk gate og synligt waders-loft.
 - [x] Genafspil 1.460 forklaringer med nul kontraktafvigelser og uden private payloads i Git.
 - [x] Kør målrettede tests samt fuld lokal `validate:source` og releasegate for 4.0.256.
-- [ ] Kør exact-head PR-gate og præcis merge-/produktionskontrol.
-- [ ] Genkør den centralt hydrerede nationale Candidate G-shadow på den eksakte mergecommit og mål den aktuelle scoreinputcoverage; lokale retention-features må ikke opfindes fra parentzoner.
+- [x] PR #69 exact-head-gate `32577977245`, merge `d629177a` og fuld produktion `32578049137`.
+- [x] Genkør den centralt hydrerede nationale Candidate G-shadow `32578554928` på den eksakte mergecommit: 243/673 scorede, 430 uden komplet lokal DKSS-familie.
 - [ ] Indhent ejerens samlede go/no-go før enhver offentlig score- eller UI-aktivering.
 
 ## Afsluttet dokumentationscheckpoint efter 4.0.255
@@ -54,7 +67,7 @@
 - **WADERS:** 219/730 evalueringer har jagtbarhed under 35, 7 af dem har mindst 55 point på den foretrukne no-direct-wind-variant, og det kanoniske højenergiforløb er 0/79.
 - **PRODUKTANBEFALING:** Én RavScore som ravpotentiale med separat tydelig metodeegnethed; utilgængelig waders må ikke anbefales. Sikkerhed er fortsat uafhængig. Ejerbeslutning er åben.
 - **PIL/HISTORIK:** Pilen er aktuel lokal strøm. Historik forklares separat; 332/872 tydelige contexts er modrettede, og 100 har ændret afrundet score.
-- **COVERAGE:** National shadow er fortsat 243/673 scorede dele med nul komplette lokale retention-features. Parentzonemorfologi accepteres ikke som lokal del-evidens.
+- **COVERAGE:** National shadow er fortsat 243/673 scorede dele. DEC-0052 erstatter den ældre retention-gate: statiske lokale features er diagnostic-only, mens parentzonemorfologi fortsat ikke accepteres som lokal del-evidens.
 - **ISOLATION:** Ingen offentlig UI-/scorekobling, geometri-, punkt-, DMI/fallback-, admin- eller protected-dataændring.
 
 ## P1-driftsevidens - Copernicus-pilot #72
@@ -1722,7 +1735,7 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [x] Versionsbundet offentlig ekspertregelkaede er afspillet; nul aktive regler giver nul slutscoreændring.
 - [x] Centralt hydreret national shadow `32554012542` på exact head: 673 dele/210 zoner, 243 scorede dele, 430 eksplicit u-scorede, nul blokerede og nul offentlige ændringer.
 - [x] National G 50/50 minus aktiv: -5,50 point for strand og -3,74 for waders i gennemsnit; 24/48 og no-direct-wind er fortsat praktisk identiske.
-- [ ] Luk coveragegaten: national kontrakt har nul komplette lokale retention-features, og kun 243 af 673 dele kan indgå i scoresammenligningen.
+- [ ] Luk den dynamiske scoreinputcoveragegate: kun 243 af 673 dele kan indgå i scoresammenligningen. Statiske lokale retentionfeatures er efter DEC-0052 ikke et Candidate G-input.
 - [ ] Afgør waders-produktbetydningen: jagtbarhed 0 kan sameksistere med G-score cirka 79; ingen aktivering før tydelig UI-/forklaringsbeslutning.
 - [x] Aktuelle centrale regler er hydreret og kontrolleret: nul aktive regler og nul matchede contexts.
 - [ ] Definér og kontrollér kandidatens pile, komponenter og forklaring samlet; offentlig UI er bevidst uændret i den score-neutrale shadow.

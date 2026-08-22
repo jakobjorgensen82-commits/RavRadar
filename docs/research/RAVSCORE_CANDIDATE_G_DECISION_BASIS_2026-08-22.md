@@ -1,6 +1,8 @@
 # Beslutningsgrundlag for RavScore kandidat G, 2026-08-22
 
 > **Efterfølgende beslutning:** DEC-0051 vælger `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT` som næste score-neutrale analysecentrum. Den tidligere no-direct-variant i dette dokument bevares som reference. Se `RAVSCORE_MODE_SPECIFIC_HUNTABILITY_ANALYSIS_2026-08-22.md`.
+>
+> **Efterfølgende coveragepræcisering:** DEC-0052 holder statiske lokale retention-/stedfeatures helt ude af Candidate G. Den friske centrale shadow på 243/673 lukker fortsat ikke den dynamiske scoreinputgate; manglende statiske felter er kun diagnostik.
 
 ## Kort konklusion
 
@@ -133,7 +135,7 @@ GitHub Actions-run `32554012542` kørte den centralt hydrerede shadow på PR #59
 
 24 og 48 timer var identiske på 236 af 243 stranddele og 241 af 243 waders-dele. Direkte vind ændrede kun to stranddele med ét point og ændrede ingen waders-del. Den nationale kørsel styrker derfor valget af 50/50 som gennemsigtig repræsentant og no-direct-wind som konservativ beslutningsvariant.
 
-Shadowen lukker kørselsgaten, men ikke aktiveringsgaten. Den nationale kontrakt havde nul komplette lokale retention-features, og kun 243 af 673 dele kunne scores. Resultatet er et stærkt teknisk og aktuelt retningscheck, men ikke fundkalibrering eller fuld national effektmåling. Det dataminimerede artefakt forbliver privat.
+Shadowen lukker kørselsgaten, men ikke aktiveringsgaten. Kun 243 af 673 dele kunne scores. De samtidige nul komplette lokale retention-features registreres efter DEC-0052 kun diagnostisk, fordi Candidate G ikke bruger en statisk stedmodel. Resultatet er et stærkt teknisk og aktuelt retningscheck, men ikke fundkalibrering eller fuld national effektmåling. Det dataminimerede artefakt forbliver privat.
 
 ## Produktkontraktaudit i 4.0.253
 
@@ -158,10 +160,10 @@ Kandidat G bør **ikke aktiveres i sin nuværende form**. Den er en bedre forskn
 - ekstra strømhistorik og direkte vind giver meget lille selvstændig effekt;
 - direkte vind har ikke dokumenteret merværdi og risikerer dobbeltregning;
 - en høj waders-score kan sameksistere med jagtbarhed 0;
-- den nationale shadow har nul komplette lokale retention-features og kan kun score 243 af 673 dele;
+- den nationale shadow kan kun score 243 af 673 dele; statiske lokale retentionfeatures er efter DEC-0052 bevidst udeladt og forklarer ikke dette dynamiske inputgab;
 - der findes endnu ikke tilstrækkelige komplette fund-/nul-fundsture til kalibrering.
 
-Det bedste næste faglige spor er G 50/50 **uden direkte vind**, med 24/48 som følsomhedsgrænser, efterfulgt af en særskilt ejerbeslutning om waders-betydningen, forklaringskontrakten og den utilstrækkelige retention-/scorecoverage. Offentlig 25/40/35 forbliver den sikreste reference indtil da.
+Det efterfølgende bedste faglige spor er efter DEC-0051 waders-loftvarianten af G 50/50 **uden direkte vind**, med 24/48 som følsomhedsgrænser. Waders-betydningen og forklaringskontrakten er lukket score-neutralt; den utilstrækkelige dynamiske scoreinputcoverage og samlet ejer-go/no-go er fortsat åbne. Offentlig 25/40/35 forbliver den sikreste reference indtil da.
 
 ## Reproducerbarhed og databeskyttelse
 

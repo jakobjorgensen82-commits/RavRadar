@@ -1,12 +1,22 @@
 # RavRadar - aktuelt Codex-handoff
 
-## Checkpoint 2026-08-22 - Candidate G-vægt og forklaring
+## Checkpoint 2026-08-22 - Candidate G-coveragekontrakt 4.0.257
 
-- Aktiv branch er `codex/ravscore-candidate-g-weight-decision` fra `main`/merge `8cffdd54`.
+- Aktiv branch er `codex/ravscore-candidate-g-coverage-checkpoint` fra 4.0.256-merge `d629177a`.
+- PR #69/exact-head `32577977245`, produktion `32578049137` og live 4.0.256/datasæt `rr-20260822141748-210` er grønne.
+- Frisk score-neutral central shadow `32578554928` bestod for 210 zoner/673 dele, men kunne kun score 243 dele. De øvrige 430 mangler komplet lokal DKSS-familie; dette er den reelle coverageblokering.
+- DEC-0052 retter den ældre sammenblanding med statiske lokale retention-features. Candidate G bruger dem ikke, giver dem nul point og kræver dem ikke for coverage. Parentzonens morfologi må fortsat ikke arves.
+- Shadowvalidatorens schema 1.4.0 har nu `scoreInputCoverageReady`, eksplicit udeladt statisk stedmodel og den åbne gate `candidate-national-score-input-coverage`. `automaticActivationAllowed` er fortsat falsk.
+- Målrettede tests, fuld lokal `scripts/validate-source.ps1` og releasegate er grønne. Exact-head PR, produktion og ny central shadow mangler ved dette checkpoint.
+- Offentlig score, UI, DMI/fallback, central admin, geometri, land-/vandpunkter, artifact og protected-dirty-data er urørte.
+
+## Checkpoint 2026-08-22 - Candidate G-vægt og forklaring 4.0.256
+
+- Historisk branch var `codex/ravscore-candidate-g-weight-decision` fra `main`/merge `8cffdd54`.
 - PR #68's dokumentationscheckpoint er afsluttet: exact-head-gate `32576541706`, merge `8cffdd54`, fuld produktion `32576619969` og live 4.0.255/datasæt `rr-20260822135100-210` med 210 zoner og 673 dele er grønne.
 - Den ejer-godkendte waders-variant er genafspillet med `15/50/35`, `20/45/35` og `25/40/35`. Yderpunkterne adskiller sig 4,947 point og 282 referencebånd; `20/45/35` bevares som Candidate G's analysecentrum.
 - Den nye diagnostic-only forklaringskontrakt binder eksakte komponenter og bidrag sammen med pil nu, historik før nu, fysisk gate og synligt waders-loft. Lokal replay gav nul afvigelser i 1.460 evalueringer.
-- Målrettede self-tests, fuld lokal `scripts/validate-source.ps1` og releasegate er grønne for 4.0.256. Næste trin er PR/exact-head, merge-/produktionskontrol og derefter en frisk central Candidate G-shadow til måling af scoreinputcoverage.
+- PR #69 exact-head-gate `32577977245`, merge `d629177a`, produktion `32578049137` og efterfølgende central shadow `32578554928` afsluttede dette checkpoint.
 - Offentlig 25/40/35, UI, DMI/fallback, central admin, geometri og land-/vandpunkter er uændrede. Artifact, protected-dirty-data og private cachepayloads må ikke stages eller eksponeres.
 
 ## Checkpoint 2026-08-22 - 4.0.255 reparerer national shadowkontrakt
@@ -35,7 +45,7 @@
 - Det verificerede live-snapshot `rr-20260822112859-210` viste version 4.0.253, 210 zoner og 673/673 scorede kystdele. Vejrdatasættet er rullende, så den aktuelle dataset-identitet skal kontrolleres live og ikke udledes af dette historiske checkpoint.
 - Candidate G er fortsat privat og score-neutral. Eksakte komponenter/gate rekonstruerer 1.460/1.460 private scorer; den foretrukne no-direct-wind-variant har 219 lave waders-jagtbarheder, heraf 7 med mindst 55 point, og det kanoniske 0/79-forløb.
 - Pilen betyder fortsat aktuel lokal strøm. Historik forklares separat; 332/872 tydelige contexts er modrettede, og 100 ændrer den afrundede score.
-- Åbent til ejerreview: offentlig waders-/forklaringskontrakt. Åbent som dataarbejde: national scoreinput- og lokal retention-coverage ud over 243/673 og nul komplette lokale retention-features.
+- Dette historiske checkpoint er erstattet af DEC-0051/0052: waders-/forklaringskontrakten er valgt score-neutralt, og det åbne dataarbejde er komplet dynamisk scoreinputcoverage ud over 243/673. Statiske lokale retentionfeatures indgår ikke i Candidate G.
 - Aktiv RavScore 25/40/35, offentlig score/UI, DMI/fallback, central admin, geometri og land-/vandpunkter er uændrede. Den Git-ignorerede cache og de fire beskyttede dirty-datafiler må fortsat aldrig stages.
 
 ## Checkpoint 2026-08-22 - efter PR #57

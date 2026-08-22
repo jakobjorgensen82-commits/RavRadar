@@ -294,7 +294,7 @@ Kandidat G er privat og score-neutral. Aktiv RavScore 25/40/35, DMI-first, geome
 - [x] National shadow-kode understøtter G-sporene og er self-testet uden produktionsaktivering.
 - [x] Centralt hydreret exact-head-shadow `32554012542`: 673/210 kontrolleret, 243 scorede dele, 430 eksplicit u-scorede, nul blokerede og nul offentlige ændringer.
 - [x] Bekræft 50/50 uden direkte vind som foretrukken beslutningsvariant og 24/48 som grænser; nationalt er forskellene fortsat højst ét point.
-- [ ] Udvid den relevante nationale coverage: nul komplette lokale retention-features og kun 243 af 673 scorede dele er utilstrækkeligt til aktivering. 4.0.253 klassificerer coverage samlet og afviser parentzonens morfologi som lokal del-evidens; datagrundlaget er fortsat åbent.
+- [ ] Udvid den relevante nationale scoreinputcoverage: den friske 4.0.256-shadow kunne kun score 243 af 673 dele, fordi 430 mangler komplet lokal DKSS-familie. Statiske rev-/lavtvands-/ålegræsfelter forbliver diagnosticeret, men er efter DEC-0052 udeladt af Candidate G og ikke en aktiveringsgate; parentzonens morfologi må fortsat ikke arves.
 - [x] Mål waders-konflikten på den foretrukne variant og fastlæg en score-neutral forskningsanbefaling: behold ravpotentialet, vis metodeegnethed separat, anbefal aldrig en utilgængelig metode, hold sikkerhed uafhængig og brug ingen skjult koefficient.
 - [ ] Få ejerens produktbeslutning om waders-betydningen før enhver offentlig UI- eller scorekobling.
 - [x] Afspil frisk central ekspertregelkaede; den havde nul aktive regler og nul matches.

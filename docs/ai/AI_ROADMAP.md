@@ -1,5 +1,15 @@
 # AI Roadmap – RavRadar 4.0.243+
 
+## 4.0.257 Candidate G-coveragepræcisering
+
+- [x] Færdiggør PR #69, exact-head `32577977245`, merge `d629177a` og fuld produktion `32578049137` for vægt-/forklaringsgrundlaget.
+- [x] Kør frisk central score-neutral shadow `32578554928`: 243/673 dele kan scores, 430 mangler komplet lokal DKSS-familie.
+- [x] Adskil komplet dynamisk scoreinputcoverage fra statiske lokale retention-/stedfeatures, som Candidate G bevidst ikke bruger.
+- [x] Bevar parentmorfologi-afvisning, nul statisk scorepåvirkning og alle mutations-/aktiveringslåse.
+- [ ] Produktionsverificér 4.0.257-kontrakten og gentag shadowen på eksakt mergecommit.
+- [ ] Undersøg og udvid den reelle lokale DKSS-scoreinputcoverage uden fallback, nabodeling eller punktflytning.
+- [ ] Gennemfør resterende produkt-/ekstrem-/UI-/rollbackreview og ejerens samlede go/no-go; ingen offentlig Candidate G-aktivering før da.
+
 ## 4.0.255 reparationspunkt efter PR #66
 
 - [x] Afgræns fuld-produktionsfejlen til en forældet intern waders-gatemarkør; frisk data, kandidatkode og scoreberegning var ikke rodårsagen.
@@ -662,13 +672,13 @@ En ekstra kandidat bruger samme stoettebaserede maks. 4 point, men tillader kun 
 - [x] Før kode-/analysebaseline 4.0.253 gennem PR #62 og dokumentationscheckpointene gennem PR #64; fuld produktionsverifikation `32570223437` og live 210/673 er grønne.
 - [x] Ejerreview af den score-neutrale waders-/vindkontrakt; den er valgt som næste analysecentrum, ikke som offentlig aktivering.
 - [x] Saml pil, komponenter, vægte og forklaring i det endelige score-neutrale beslutningsgrundlag. `20/45/35` bevares som analysecentrum efter intervaltest; offentlig aktivering og ejerens samlede go/no-go er fortsat åbne.
-- [ ] Udvid dokumenteret lokal retention- og scoreinputcoverage ud over 243/673 før enhver aktiveringsbeslutning.
+- [ ] Udvid dokumenteret dynamisk scoreinputcoverage fra 243/673 til alle aktive dele før enhver aktiveringsbeslutning. Statiske lokale retentionfeatures er efter DEC-0052 udeladt af Candidate G og er ikke en gate.
 
 ### Candidate G-vægt og forklaring
 
 - De faste priorer `15/50/35`, `20/45/35` og `25/40/35` er genafspillet på den ejer-godkendte waders-variant uden direkte vindhistorik.
 - Yderpunkterne adskiller sig 4,947 point i gennemsnit og 282 referencebånd; `20/45/35` er den gennemsigtige midte og forbliver beslutningscentrum, ikke fundkalibreret facit.
 - Den maskinlæsbare diagnostic-only forklaring binder eksakte komponenter og bidrag sammen med pil nu, historik før nu, fysisk gate og synligt waders-loft. Replay gav nul forklaringsafvigelser i 1.460 evalueringer.
-- Næste bindende analysetrin er en frisk centralt hydreret national shadow på den eksakte kandidatkode. Den må måle scoreinputcoverage, men må ikke opfinde lokale retention-features fra parentzoner.
+- Frisk central shadow `32578554928` er gennemført på merge `d629177a`: 243/673 scorede dele og 430 uden komplet lokal DKSS-familie. Næste datatrin er at udvide dette reelle dynamiske inputgrundlag uden at opfinde lokale stedfeatures fra parentzoner.
 
 Aktiv RavScore 25/40/35, offentlig UI, DMI/fallback, geometri, land-/vandpunkter og central admin forbliver uændrede.

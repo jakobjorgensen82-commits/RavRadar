@@ -6,6 +6,8 @@ Status: Faglig afgrænsning og implementeringsplan. Dokumentet ændrer ikke RavS
 
 Kandidat B må ikke få en fast universel fastholdelsesbonus fra `rev`, `lavt vand` eller `ålegræs`. Nationaljobbet havde nul komplet dækning for lokale fastholdelsesfeatures, og forskningen viser, at fastholdelse er en tidslig proces, ikke en enkelt statisk egenskab.
 
+DEC-0052 afslutter dette spørgsmål for Candidate G: de statiske lokale felter holdes helt ude af modellen og er ikke en aktiveringsgate. Den dynamiske leveringskæde og kravet om komplet vejr-/strøminput består uændret.
+
 Fastholdelse opdeles fremover i:
 
 1. levering til brændingszone eller opskyl,
