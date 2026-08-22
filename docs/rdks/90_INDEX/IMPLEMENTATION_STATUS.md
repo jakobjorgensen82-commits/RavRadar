@@ -5,7 +5,8 @@
 - [x] Afgræns PR #78's uventede fulde produktion til den manglende eksakte `CHANGELOG.md`-linje i `paths-ignore`.
 - [x] Bevar den eksisterende `CHANGELOG-*.md`-regel og tilføj kun `CHANGELOG.md`; ingen bred Markdown- eller docsundtagelse.
 - [x] Udvid regressionstesten til at kræve begge mønstre og fortsat afvise `*.md`, `docs/**`, data, scripts, workflows og HTML.
-- [ ] Før workflowrettelsen gennem exact-head, merge og én fuld produktion; bevis derefter skip med en ren dokumentationsmerge.
+- [x] Før workflowrettelsen gennem exact-head `32600654326`, merge `41f71900` og fuld produktion `32600714319`.
+- [ ] Bevis skip med denne rene dokumentationsmerge og kontrollér, at ingen ny push-produktion oprettes.
 
 ## Strømstyret transporthukommelse – score-neutralt forskningscheckpoint
 

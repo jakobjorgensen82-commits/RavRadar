@@ -2,7 +2,7 @@
 
 ## Docs-only produktionsskip
 
-- **ISSUE-ROOT-CHANGELOG-DOCS-SKIP – RETTELSE UNDER VALIDERING:** Den snævre allowlist dækkede `CHANGELOG-*.md`, men ikke den faktiske samlede `CHANGELOG.md`. Derfor startede PR #78's ellers rene dokumentationsmerge fuld produktion `32599980640`. Kandidaten tilføjer kun den eksakte fil og en målrettet regression; den er først løst efter full-gate merge og et separat docs-only skip-bevis.
+- **ISSUE-ROOT-CHANGELOG-DOCS-SKIP – KODE OG PRODUKTION GRØN, SLUTBEVIS AFVENTES:** Den snævre allowlist dækkede `CHANGELOG-*.md`, men ikke den faktiske samlede `CHANGELOG.md`. Derfor startede PR #78's ellers rene dokumentationsmerge fuld produktion `32599980640`. PR #79 tilføjede kun den eksakte fil, bestod exact-head `32600654326` og blev merged som `41f71900`; den efterfølgende fulde produktion `32600714319` var grøn. Dette rene docs-checkpoint skal nu bevise, at der ikke oprettes en ny push-produktion.
 
 ## Candidate G strømstyret transporthukommelse efter 4.0.258
 

@@ -1,5 +1,12 @@
 # RavRadar - aktuelt Codex-handoff
 
+## Checkpoint 2026-08-23 – PR #79 produktionsverificeret, docs-skip til slutbevis
+
+- PR #79 bestod exact-head `32600654326` på `24d944c0` og blev sikkert merged som `41f71900`.
+- Push-produktion `32600714319` gennemførte den fulde kæde: frisk vejr/provenance, fuld projektvalidering, release-gate, supportpakke, Supabase-synkronisering og Pages-deploy.
+- Det offentlige manifest er komplet som `rr-20260822215524-210` med 210 zoner og 673 kystdele; manifest, conditions og details bruger samme dataset-id.
+- Denne branch ændrer kun intern dokumentation inklusive rodens `CHANGELOG.md`. Efter merge skal GitHub vise, at ingen ny `Update weather and deploy RavRadar`-pushkørsel blev oprettet; derefter kan ISSUE-ROOT-CHANGELOG-DOCS-SKIP lukkes.
+
 ## Checkpoint 2026-08-22 – bevidst snæver docs-skip-rettelse
 
 - PR #78 var ren intern dokumentation, men merge `7133b33b` startede alligevel fuld produktion `32599980640`; live blev fortsat sundt som `rr-20260822213959-210` med 210 zoner og 673/673 dele.

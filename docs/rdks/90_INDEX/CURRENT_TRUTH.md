@@ -4,7 +4,8 @@
 
 - PR #78 var ellers ren intern dokumentation, men merge `7133b33b` startede fuld produktion `32599980640`, fordi workflowet ignorerede de historiske `CHANGELOG-*.md` uden at ignorere projektets aktuelle samlede `CHANGELOG.md`.
 - Den snævre rettelse tilføjer kun den eksakte rod-fil `CHANGELOG.md` og bevarer den eksisterende versionerede `CHANGELOG-*.md`-regel. Kode, data, øvrige Markdownfiler, HTML, scripts og workflows er fortsat ikke bredt undtaget.
-- Regressionstesten kræver nu begge changelogmønstre. Selve workflowrettelsen skal gennem én fuld produktion, hvorefter et rent dokumentationscheckpoint skal bevise, at push-produktion ikke oprettes.
+- Regressionstesten kræver nu begge changelogmønstre. PR #79 bestod exact-head `32600654326`, blev merged som `41f71900`, og fuld produktion `32600714319` bestod frisk vejr/provenance, fuld validering, release-gate, Supabase og Pages.
+- Det deployede live-manifest `rr-20260822215524-210` er komplet med 210 zoner og 673 kystdele. Et rent docs-checkpoint med rodens `CHANGELOG.md` mangler kun at bevise, at push-produktionen nu springes over.
 
 ## Candidate G – strømstyret transportpotentiale efter 4.0.258
 
