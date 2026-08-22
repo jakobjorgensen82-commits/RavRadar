@@ -1,5 +1,9 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.255 national waders-kontraktgate
+
+- **ISSUE-RAVSCORE-NATIONAL-WADERS-CONTRACT-MARKER – REPARERET LOKALT, AFVENTER PR/PRODUKTION:** PR #66's produktion `32575055644` stoppede korrekt før release og deploy, fordi fuld validering stadig forventede den erstattede markør `candidate-waders-product-decision`. Testen følger nu den aktuelle `candidate-waders-rule-order-public-product-review` og er tilføjet den hurtige kildegate. Ingen score- eller dataadfærd er ændret.
+
 ## Copernicus-pilot #72 - 2026-08-20
 
 - **ISSUE-COPERNICUS-CURRENT-PILOT - FORTSAT SUND / 168 TIMER IKKE NÅET:** Automatisk dispatch `#32347060320`/artifact `copernicus-current-pilot-72` har 46 eksakte timer til og med 2026-08-20 08:00Z, 28.934 private poster, 625 unikke mål og 629 mål/kilde-par med nul gitter- eller lagustabilitet. Pilotens 48 Copernicus-huller er uændrede kildedækningshuller og udfyldes ikke. Scorepåvirkning, offentlig runtime og interpolation er fortsat deaktiveret; syvdøgnsanalysen forbliver åben.

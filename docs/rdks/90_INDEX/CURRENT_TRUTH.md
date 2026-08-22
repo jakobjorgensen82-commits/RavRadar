@@ -1,5 +1,11 @@
 # Current truth – gældende projektviden
 
+## 4.0.255-kandidat – national waders-kontrakt ført ind i kildegaten
+
+- PR #66 bestod exact-head-kildegaten `32575000140` og blev merged som `95e3064d`. Fuld produktion `32575055644` stoppede derefter korrekt før release, Supabase og Pages, fordi en ældre national kontrakttest fortsat krævede den erstattede gate `candidate-waders-product-decision`.
+- Koden bruger allerede den nyere og korrekte åbne gate `candidate-waders-rule-order-public-product-review`. 4.0.255 opdaterer testen og gør den obligatorisk i `validate:source`, så kontraktforskellen fremover opdages før merge.
+- Waders-varianten, vindkurven, replayresultaterne og den offentlige 25/40/35-model er uændrede. Ingen geometri, land-/vandpunkter, private caches eller beskyttede data er ændret.
+
 ## 4.0.254-kandidat – ejerbesluttet waders-kobling, fortsat score-neutral
 
 - Den næste Candidate G-forskningsvariant er `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT`: strand er uændret, mens waders-scoren er det laveste af den hidtidige Candidate G-score og waders-jagtbarheden.

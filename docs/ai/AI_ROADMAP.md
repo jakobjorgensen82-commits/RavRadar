@@ -1,5 +1,11 @@
 # AI Roadmap – RavRadar 4.0.243+
 
+## 4.0.255 reparationspunkt efter PR #66
+
+- [x] Afgræns fuld-produktionsfejlen til en forældet intern waders-gatemarkør; frisk data, kandidatkode og scoreberegning var ikke rodårsagen.
+- [x] Opdatér kontrakttesten til den aktuelle regelrækkefølge-/produktreviewgate og tilføj testen til `validate:source`.
+- [ ] Bestå ny exact-head PR-gate og fuld post-data-produktion, før Candidate G-roadmapet fortsætter.
+
 ## Aktiv samlet retning efter v4.0.243 – 2026-08-21
 
 - [x] v4.0.243 er merged som `2ded7943`, og produktion `32455335962` bestod frisk data, fuld validering, releasegate, Supabase og Pages.
