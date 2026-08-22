@@ -23,7 +23,8 @@ Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre for
 - [x] Ejeren har valgt `20/50/30` som privat faglig analyseprior; aktiv `25/40/35` og senere turkalibrering forbliver adskilt.
 - [x] Ejeren har valgt vind som hovedsignal for waders-jagtbarhed: fuld til 6 m/s, 0 ved 15 m/s og WAM-bølger kun som blødt fradrag på højst 20 point.
 - [x] Genkør replay og kanoniske/nationale kontrakter med den nye variant; strand er uændret og waders-score overstiger aldrig jagtbarheden.
-- [ ] Før 4.0.258-checkpointet gennem exact-head-gate og sikker merge. En eventuel offentlig implementering er et nyt delmål med særskilt beslutning, ture, komplet inputcoverage og fulde produktgates.
+- [x] Før 4.0.258-checkpointet gennem exact-head-gate `32586707063`, PR #73, merge `9bdb8de8` og fuld produktion `32586958989`; live er 4.0.258/`rr-20260822171406-210` med 210 zoner og 673 dele.
+- [ ] En eventuel offentlig implementering er et nyt delmål med særskilt beslutning, repræsentative ture/hold-out, komplet dynamisk inputcoverage og fulde produktgates. Indtil da forbliver offentlig `25/40/35` uændret.
 
 ## P0 - luk den aktuelle kandidat
 

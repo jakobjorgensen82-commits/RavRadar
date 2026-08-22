@@ -9,7 +9,7 @@
 - [x] Genkør 1.460-evalueringsreplay, kanoniske scenarier, modeaudit og national shadow-self-test.
 - [x] Dokumentér DEC-0054, ejerreview, håndbøger, RDKS og changelog uden private payloads.
 - [x] Kør fuld lokal kildegate/releasegate på den samlede kandidat; alle kildechecks og den efterfølgende releasegate er grønne.
-- [ ] Få exact-head PR-kildegate grøn, merge sikkert og verificér relevant efterkæde.
+- [x] Exact-head PR-kildegate `32586707063` bestod, PR #73 blev merged som `9bdb8de8`, og produktion `32586958989` bestod frisk vejr/proveniens, fuld validering, releasegate, coverageaudit, Supabase og Pages.
 - [ ] Offentlig aktivering forbliver et senere særskilt ejer-go/no-go efter turkalibrering, komplet scoreinputcoverage og produktkontrol.
 
 Nedenstående 4.0.257-afsnit er historisk revisionsspor og er erstattet af DEC-0054, hvor de omtaler foretrukken variant, `20/45/35`, 18 m/s-stop eller selvstændig bølgevægt.

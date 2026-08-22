@@ -8,6 +8,8 @@
 - Replayet omfatter 1.460 evalueringer: 730 uændrede strandscorer, nul waders-score over jagtbarheden, 138 lave jagtbarheder uden score mindst 55 og seks af seks vindtilfælde ved mindst 15 m/s på 0.
 - Bølgefradraget er gennemsnitligt 4,002 point og højst 20. Ved vind til og med 6 m/s er den nye kandidat aldrig lavere end den tidligere waders-limit.
 - DEC-0054 erstatter DEC-0053's valg af variant, `20/45/35`, 18 m/s-stop og selvstændige bølgekobling. A-C, D-E, F, G 24/48 og tidligere waders-varianter bevares som revisionsspor.
+- PR #73's exact-head-kildegate `32586707063` bestod på `2abc5a4c`. Merge `9bdb8de8` blev derefter produktionsverificeret i `32586958989` med frisk vejr/proveniens, fuld validering, releasegate, coverageaudit, support `RavRadar-support-3405`, Supabase og Pages.
+- Live 4.0.258/datasæt `rr-20260822171406-210` er direkte verificeret med 210 zoner, 673/673 scoreklare kystdele og 2.100 femdøgnsvisninger. Den offentlige scoremodel er fortsat den uændrede `25/40/35`.
 - Kandidaten er diagnostic-only og ikke fundkalibreret. En offentlig aktivering kræver særskilt ejer-go/no-go, komplette ture/hold-out, godkendt dynamisk inputcoverage og fulde gates.
 - Bund, dybde, render, revler, adgang, stedegnethed og sikkerhedsrådgivning indgår ikke. Artifact, protected-dirty-data, private cachepayloads, geometri og land-/vandpunkter er urørte.
 
