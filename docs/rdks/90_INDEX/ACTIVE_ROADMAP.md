@@ -293,8 +293,10 @@ Kandidat G er privat og score-neutral. Aktiv RavScore 25/40/35, DMI-first, geome
 - [x] National shadow-kode understøtter G-sporene og er self-testet uden produktionsaktivering.
 - [x] Centralt hydreret exact-head-shadow `32554012542`: 673/210 kontrolleret, 243 scorede dele, 430 eksplicit u-scorede, nul blokerede og nul offentlige ændringer.
 - [x] Bekræft 50/50 uden direkte vind som foretrukken beslutningsvariant og 24/48 som grænser; nationalt er forskellene fortsat højst ét point.
-- [ ] Udvid den relevante nationale coverage: nul komplette lokale retention-features og kun 243 af 673 scorede dele er utilstrækkeligt til aktivering.
-- [ ] Løs før go/no-go, at waders kan have jagtbarhed 0 samtidig med høj G-score. Det kræver eksplicit produkt-/forklaringsvalg, ikke en skjult koefficient.
+- [ ] Udvid den relevante nationale coverage: nul komplette lokale retention-features og kun 243 af 673 scorede dele er utilstrækkeligt til aktivering. 4.0.253 klassificerer coverage samlet og afviser parentzonens morfologi som lokal del-evidens; datagrundlaget er fortsat åbent.
+- [x] Mål waders-konflikten på den foretrukne variant og fastlæg en score-neutral forskningsanbefaling: behold ravpotentialet, vis metodeegnethed separat, anbefal aldrig en utilgængelig metode, hold sikkerhed uafhængig og brug ingen skjult koefficient.
+- [ ] Få ejerens produktbeslutning om waders-betydningen før enhver offentlig UI- eller scorekobling.
 - [x] Afspil frisk central ekspertregelkaede; den havde nul aktive regler og nul matches.
-- [ ] Fastlæg og verificér kandidatens pil, historik, komponenter, score og forklaring på samme context før enhver offentlig kobling.
+- [x] Fastlæg kandidatens score-neutrale kontrakt: eksakte komponenter/gate rekonstruerer 1.460/1.460 scorer; pilen er aktuel lokal strøm, mens historik forklares særskilt på samme context.
+- [ ] Verificér den endelige offentlige UI-/forklaringskobling efter ejerbeslutningen; ingen kobling er implementeret i 4.0.253.
 - [ ] Fremlæg derefter ejerreview. Den nuværende anbefaling er at beholde offentlig 25/40/35 og ikke aktivere G endnu.

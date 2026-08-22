@@ -272,7 +272,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.252
+**Håndbogsversion:** 4.0.253
 
 **Opdateret:** 19. august 2026
 
@@ -1997,3 +1997,15 @@ Modellen er ikke klar til brugerne. Den ændrer referencebånd i 474 af de 1.460
 Før en eventuel ændring skal den private nationale kontrol køres med frisk centralt gemt konfiguration. Ejeren skal derefter tage stilling til, hvordan ravpotentiale og jagtbarhed forklares i appen. RavScore er ikke sikkerhedsrådgivning, og en høj score må aldrig stå alene som en opfordring til at gå i vandet.
 
 Ingen geometri, land-/vandpunkter, DMI-kilder, pile, offentlig forklaring eller aktiv score er ændret af analysen.
+
+## Candidate G: score, waders, pil og historik i samme kontrakt
+
+Den efterfølgende score-neutrale kontrol har gjort kandidatens beregning præcis nok til produktreview. Eksakte komponenter, vægtede bidrag og den fysiske gate giver den samme slutscore i alle 1.460 private evalueringer. De afrundede tal, som en bruger senere kan få vist, er forklaringstal og må ikke bruges til at genberegne facit alene.
+
+På den foretrukne variant uden direkte vind har 219 af 730 waders-evalueringer jagtbarhed under 35. Syv af dem har samtidig mindst 55 RavScore-point, og det kanoniske højenergiforløb har jagtbarhed 0 og score 79. Det betyder ikke, at brugeren bør gå i vandet. Den faglige anbefaling er at lade RavScore beskrive ravpotentialet og vise waders-metodens egnethed som en tydelig separat status. En metode, der er utilgængelig, må ikke præsenteres som anbefalet. Sikkerhed er stadig en anden og bredere vurdering end jagtbarhed.
+
+Pilen og historikken beskriver heller ikke samme tid. Pilen skal fortsat vise den aktuelle lokale strøm. Historikken fortæller, hvad forløbet før nu har gjort ved transportpotentialet. I 332 af 872 tydeligt retningsbestemte kontrolsituationer pegede de to oplysninger modsat; i 100 flyttede historikken den afrundede score. Derfor skal en senere forklaring vise historikken særskilt og aldrig ændre pilens betydning i det skjulte.
+
+Den nationale aktiveringsgate er fortsat åben. Kun 243 af 673 dele kunne scores i den seneste centrale shadow, og ingen havde komplette lokale retention-features. En hovedzones generelle rev-, lavtvands- eller vegetationsfelt er ikke automatisk sandt for hver lokal kystdel og må ikke bruges som genvej.
+
+Kandidat G er fortsat privat. Den aktive offentlige score er 25 % jagtbarhed, 40 % transport og 35 % mobilisering, indtil ejeren har taget produktbeslutningen, coverage er tilstrækkelig, og en eventuel offentlig kobling er fuldt valideret.

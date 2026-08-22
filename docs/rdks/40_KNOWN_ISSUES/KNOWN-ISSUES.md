@@ -434,19 +434,28 @@ Den nye appkode må ikke merges, før migrationen 20260821_trip_evidence_contrac
 - 4.0.246 løser timen inden for højst tre timer og binder efterfølgende DMI/Copernicus/live/score til samme time.
 - PR #36 blev merged som c2e0d024. Produktion 32467031990 bestod 673/673, fuld validering, releasegate, Supabase og Pages; live viser version 4.0.246 og den løste 09:00-reference.
 
-## ISSUE-CANDIDATE-G-WADERS-MEANING - ÅBEN FORSKNINGSSTOPKLODS
+## ISSUE-CANDIDATE-G-WADERS-MEANING - FORSKNINGSANBEFALING KLAR / EJERBESLUTNING ÅBEN
 
 - Den kanoniske Candidate G-matrix kan give cirka 79 point samtidig med waders-jagtbarhed 0, fordi den fysiske gate efter DEC-0050 ikke indeholder jagtbarhed.
-- Replayet har 219 waders-evalueringer under 35 i jagtbarhed; 10 har samtidig mindst middel kandidat-G-score.
+- Replayet har 219 waders-evalueringer under 35 i jagtbarhed; på den foretrukne no-direct-wind-variant har 7 samtidig mindst 55 point. Den tidligere bredere G-optælling på 10 brugte ikke præcis samme variant.
 - Dette er ikke en offentlig regression, fordi Candidate G er diagnostic-only. Det er en aktiveringsstopklods for betydning, UI og forklaring.
-- Løsningen kræver ejerbeslutning. Der må ikke tilføjes en skjult sikkerheds- eller jagtbarhedsgate alene for at få modellen til at se rigtig ud.
+- 4.0.253 anbefaler score-neutralt én RavScore som ravpotentiale og en separat tydelig waders-metodestatus; en utilgængelig metode må ikke præsenteres som anbefalet, og sikkerhed forbliver en uafhængig kontrakt.
+- Offentlig kobling kræver fortsat ejerbeslutning. Der må ikke tilføjes en skjult sikkerheds- eller jagtbarhedsgate alene for at få modellen til at se rigtig ud.
 
 ## ISSUE-CANDIDATE-G-FRESH-NATIONAL-SHADOW - KØRSELSGATE LUKKET, COVERAGEGATE ÅBEN
 
 - Centralt hydreret exact-head-run `32554012542` kontrollerede 673 aktive dele i 210 zoner og gennemførte G 24 timer, 50/50, 48 timer og 50/50 uden direkte vind uden offentlig ændring.
 - 243 dele blev scoret i begge jagtformer; 430 var eksplicit u-scorede, nul var blokerede, og retention-featurecoverage var nul.
+- 4.0.253 rapporterer nu coverage samlet og fail-closed. Parentzonens morfologifelter accepteres udtrykkeligt ikke som dokumentation for den lokale kystdel.
 - Aktuelle centrale regler var hydreret, men havde nul aktive regler og nul matches.
 - Kørselsgaten er dermed lukket. Coverage-, ekstrem-, forklarings- og ejer-gaten er fortsat åbne; ingen aktivering må ske på dette grundlag alene.
+
+## ISSUE-CANDIDATE-G-ARROW-HISTORY-EXPLANATION - FORSKNINGSKONTRAKT LUKKET / OFFENTLIG KOBLING ÅBEN
+
+- 4.0.253 rekonstruerer komponenter, vægtede bidrag, fysisk gate og slutscore uden afvigelser i 1.460/1.460 evalueringer.
+- Blandt 872 tydeligt retningsbestemte contexts var aktuel retning og historik modrettet i 332; i 100 flyttede historikken den afrundede score.
+- Pilen skal fortsat betyde aktuel lokal strøm. Historisk nettoforløb skal forklares separat på samme kystdel, tidspunkt og jagtform og må ikke skjult ændre pilens betydning.
+- Den score-neutrale kontrakt er lukket. Endelig offentlig UI-/forklaringskobling kræver ejerbeslutning og efterfølgende browservalidering.
 
 ## ISSUE-RAVSCORE-SHADOW-ADMIN-CONTRACT - LUKKET I PRODUKTION
 

@@ -1,5 +1,14 @@
 # Current truth – gældende projektviden
 
+## 4.0.253 – Candidate G-produktkontrakt er auditeret score-neutralt
+
+- Den Git-ignorerede 12-vinduescache er genafspillet uden private payloads i Git. Kandidatens eksakte komponenter, bidrag og fysiske gate rekonstruerer 1.460/1.460 scorer.
+- På den foretrukne `G-50-50-NO-DIRECT-WIND`-variant har 219/730 waders-evalueringer jagtbarhed under 35; 7 af dem har mindst 55 point. Det kanoniske højenergiforløb er jagtbarhed 0 og score 79.
+- Forskningsanbefalingen er én RavScore som ravpotentiale plus en tydelig separat metodestatus. En utilgængelig waders-metode må ikke anbefales, sikkerhed forbliver uafhængig, og ingen skjult koefficient er tilladt. Offentlig kobling afventer ejerbeslutning.
+- I 332 af 872 tydeligt retningsbestemte contexts modvirker historikken den aktuelle retning; i 100 påvirker det den afrundede score. Pilen betyder fortsat strøm nu, mens historikken skal forklares særskilt.
+- National coverage er fortsat utilstrækkelig: 243/673 scorede dele og nul komplette lokale retention-features. Parentzonens morfologi må ikke arves som lokal kystdelsevidens.
+- Aktiv score 25/40/35, offentlig UI, geometri, land-/vandpunkter, DMI/fallback, central admin og beskyttede data er uændrede. Kandidat G er ikke aktiveret.
+
 ## Copernicus-pilot #72 - fortsat sund 168-timersopsamling
 
 - Readiness-skip `#32347036227` udløste automatisk `#32347060320`/artifact `copernicus-current-pilot-72` mod den centralt godkendte bestand på 673 dele.

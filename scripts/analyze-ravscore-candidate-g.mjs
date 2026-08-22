@@ -40,6 +40,22 @@ const utc = value => new Date(String(value));
 const hours = milliseconds => milliseconds / 3_600_000;
 const scoreBand = score => score >= 75 ? 'good' : score >= 55 ? 'fair' : score >= 35 ? 'weak' : 'poor';
 
+function currentArrowRegime(alignment) {
+  const value = Number(alignment);
+  if (!Number.isFinite(value)) return 'unknown';
+  if (value >= 0.35) return 'onshore-delivery';
+  if (value <= -0.35) return 'offshore-removal';
+  return 'alongshore-passage';
+}
+
+function historyDirection(signal) {
+  const value = Number(signal);
+  if (!Number.isFinite(value)) return 'unknown';
+  if (value > 0) return 'inbound-history';
+  if (value < 0) return 'outbound-history';
+  return 'neutral-history';
+}
+
 function parseArguments(args) {
   const valueAfter = flag => {
     const index = args.indexOf(flag);
@@ -308,14 +324,81 @@ function aggregate(rows) {
       lowHuntabilityEvaluations: rows.filter(row => row.mode === 'waders' && row.huntability < 35).length,
       lowHuntabilityButFairOrGoodCandidateG: rows.filter(row =>
         row.mode === 'waders' && row.huntability < 35 && row.variants['G-50-50-LIN'] >= 55).length,
+      zeroHuntabilityEvaluations: rows.filter(row => row.mode === 'waders' && row.huntability === 0).length,
+      zeroHuntabilityButFairOrGoodPreferred: rows.filter(row =>
+        row.mode === 'waders' && row.huntability === 0 && row.noDirectWind >= 55).length,
+      zeroHuntabilityButGoodPreferred: rows.filter(row =>
+        row.mode === 'waders' && row.huntability === 0 && row.noDirectWind >= 75).length,
+      methodAvailabilityMustRemainSeparateFromSafety: true,
+      hiddenScoreCoefficientAllowed: false,
       scoreIsSafetyAdvice: false,
     },
+    productContractAudit: productContractAudit(rows),
     publicRuleChain: {
       activeRuleCount: rows[0]?.activeRuleCount ?? 0,
       matchedEvaluationCount: rows.filter(row => row.publicRuleMatchCount > 0).length,
       blockedEvaluationCount: rows.filter(row => row.publicRuleBlocked).length,
       candidateGBaseToFinal: summarizeDifference(rows, row => row.finalCandidateG ?? row.variants['G-50-50-LIN'], row => row.variants['G-50-50-LIN']),
     },
+  };
+}
+
+function productContractAudit(rows) {
+  const directional = rows.filter(row =>
+    ['onshore-delivery', 'offshore-removal'].includes(row.currentArrowRegime)
+    && ['inbound-history', 'outbound-history'].includes(row.historyDirection));
+  const aligned = directional.filter(row =>
+    (row.currentArrowRegime === 'onshore-delivery' && row.historyDirection === 'inbound-history')
+    || (row.currentArrowRegime === 'offshore-removal' && row.historyDirection === 'outbound-history'));
+  const opposed = directional.filter(row =>
+    (row.currentArrowRegime === 'onshore-delivery' && row.historyDirection === 'outbound-history')
+    || (row.currentArrowRegime === 'offshore-removal' && row.historyDirection === 'inbound-history'));
+  const waders = rows.filter(row => row.mode === 'waders');
+  const inconsistent = rows.filter(row => {
+    const contributionSum = Object.values(row.preferredScoreCalculation.weightedContributions)
+      .reduce((sum, value) => sum + Number(value), 0);
+    const reconstructed = Math.round(clamp(
+      row.preferredScoreCalculation.additiveScore * row.preferredScoreCalculation.gateFactor));
+    return Math.abs(contributionSum - row.preferredScoreCalculation.additiveScore) > 1e-9
+      || reconstructed !== row.noDirectWind
+      || row.preferredScoreCalculation.roundedScore !== row.noDirectWind;
+  });
+  return {
+    preferredVariant: 'G-50-50-NO-DIRECT-WIND',
+    evaluationCount: rows.length,
+    componentScoreConsistency: {
+      checkedEvaluationCount: rows.length,
+      mismatchCount: inconsistent.length,
+      sameContextRequired: true,
+    },
+    wadersMeaning: {
+      evaluationCount: waders.length,
+      zeroHuntabilityCount: waders.filter(row => row.huntability === 0).length,
+      zeroHuntabilityWithFairOrGoodScoreCount: waders.filter(row => row.huntability === 0 && row.noDirectWind >= 55).length,
+      lowHuntabilityCount: waders.filter(row => row.huntability < 35).length,
+      lowHuntabilityWithFairOrGoodScoreCount: waders.filter(row => row.huntability < 35 && row.noDirectWind >= 55).length,
+      productRecommendation: 'EXPLICIT_WADING_METHOD_AVAILABILITY_ALONGSIDE_UNCHANGED_COMPOSITE_SCORE',
+      unavailableMethodMustNotBePresentedAsRecommended: true,
+      safetyStatusRemainsIndependent: true,
+      hiddenScoreCoefficientAllowed: false,
+    },
+    arrowAndHistory: {
+      arrowMeaning: 'CURRENT_VECTOR_AT_THE_SELECTED_CONTEXT',
+      historyMeaning: 'CAUSAL_PRIOR_CONTEXT_MODULATING_EXISTING_TRANSPORT_CAPACITY',
+      directionalContextCount: directional.length,
+      alignedContextCount: aligned.length,
+      opposedContextCount: opposed.length,
+      opposedContextWithRoundedScoreEffectCount: opposed.filter(row => row.historyScoreDelta !== 0).length,
+      currentOnshoreHistoryOutboundCount: opposed.filter(row =>
+        row.currentArrowRegime === 'onshore-delivery' && row.historyDirection === 'outbound-history').length,
+      currentOffshoreHistoryInboundCount: opposed.filter(row =>
+        row.currentArrowRegime === 'offshore-removal' && row.historyDirection === 'inbound-history').length,
+      explicitHistoryExplanationRequiredWhenOpposed: true,
+      arrowMustNotBeReinterpretedAsHistoricalNetDirection: true,
+    },
+    publicScoreChanged: false,
+    publicUiChanged: false,
+    scoreIsSafetyAdvice: false,
   };
 }
 
@@ -366,6 +449,10 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
           const noDirectWind = evaluateRavScoreCandidateG(context, {
             variantId: 'G-50-50-NO-DIRECT-WIND', memory: primaryMemory,
           });
+          const noHistory = evaluateRavScoreCandidateG(context, {
+            variantId: 'G-50-50-NO-DIRECT-WIND',
+            memory: { current: 0, wave: 0, directWind: 0 },
+          });
           const windStress = evaluateRavScoreCandidateG(context, {
             variantId: 'G-50-50-LIN', memory: stressMemory.get(timeKey),
           });
@@ -413,6 +500,13 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
             mixSensitivity,
             weightSensitivity,
             huntability: primary.components.huntability,
+            mobilisation: noDirectWind.components.mobilisation,
+            preferredTransportAndDelivery: noDirectWind.components.transportAndDelivery,
+            preferredGateFactor: noDirectWind.gateFactor,
+            preferredScoreCalculation: noDirectWind.scoreCalculation,
+            currentArrowRegime: currentArrowRegime(sample.currentOnshoreAlignment),
+            historyDirection: historyDirection(noDirectWind.diagnostics.candidateGDirectionalHistorySignal),
+            historyScoreDelta: noDirectWind.score - noHistory.score,
             finalCandidateG: publicRuleResult.score,
             publicRuleBlocked: publicRuleResult.blocked,
             publicRuleMatchCount: publicRuleResult.matches.length,

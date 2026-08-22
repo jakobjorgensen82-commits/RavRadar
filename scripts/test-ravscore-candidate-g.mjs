@@ -44,6 +44,15 @@ const outbound = evaluate({ current: -1, wave: -1, directWind: -1 });
 assert.equal(neutral.available, true);
 assert.ok(inbound.score > neutral.score && neutral.score > outbound.score);
 assert.equal(neutral.diagnostics.candidateGHistoryFactor, 1);
+assert.equal(neutral.scoreCalculation.roundedScore, neutral.score);
+assert.equal(
+  Math.round(neutral.scoreCalculation.additiveScore * neutral.scoreCalculation.gateFactor),
+  neutral.score,
+);
+assert.ok(Math.abs(
+  Object.values(neutral.scoreCalculation.weightedContributions).reduce((sum, value) => sum + value, 0)
+  - neutral.scoreCalculation.additiveScore,
+) < 1e-9);
 assert.equal(neutral.scoreImpact, 'diagnostic-only');
 assert.equal(neutral.diagnostics.automaticActivationAllowed, false);
 assert.equal(neutral.diagnostics.scoreIsSafetyAdvice, false);

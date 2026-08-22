@@ -1719,3 +1719,12 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - PR #60 bestod exact-head-gaten `32566573875` og blev merged som `41e01e2d`.
 - Exact-commit-produktion `32566631701` bestod frisk DMI, fuld validering, releasegate, Supabase, Pages-artifact og deploy; deployment `6035679906` er `success`.
 - Live datasæt `rr-20260822100745-210` har 210 zoner og 673 dele. Manifest, byteantal og SHA-256 for den offentlige startpakke matcher.
+
+## 2026-08-22 - 4.0.253 Candidate G-produktkontrakt
+
+- Den Git-ignorerede 12-vinduescache er genafspillet score-neutralt. Eksakte komponenter, vægtede bidrag og fysisk gate rekonstruerer 1.460/1.460 Candidate G-scorer.
+- Den foretrukne `G-50-50-NO-DIRECT-WIND` har 219/730 waders-evalueringer med jagtbarhed under 35; 7 har samtidig mindst 55 point, og det kanoniske højenergiforløb er 0/79.
+- Forskningsanbefalingen er én RavScore som ravpotentiale med separat tydelig metodeegnethed, ingen anbefaling af utilgængelig waders-metode, sikkerhed som uafhængig kontrakt og ingen skjult koefficient. Offentlig kobling kræver ejerbeslutning.
+- Pilen fastholdes som aktuel lokal strøm. Historik forklares særskilt; 332/872 tydelige contexts er modrettede, og 100 ændrer den afrundede score.
+- Den nationale shadowrapport klassificerer coverage fail-closed og afviser parentzonemorfologi som lokal kystdelsevidens. 243/673 scorede dele og nul komplette lokale retention-features er fortsat en aktiveringsblokering.
+- Aktiv 25/40/35, offentlig UI, DMI/fallback, geometri, land-/vandpunkter, central admin, private artifacts og beskyttede data er uændrede. Candidate G er fortsat diagnostic-only.
