@@ -8,9 +8,9 @@ Den foretrukne forskningsvariant er fortsat `G-50-50-NO-DIRECT-WIND`, med 24 og 
 
 ## Produktionsverifikation
 
-- PR #62 bestod exact-head-kildegate `32568914124` på `d272c6ca` og blev merged som `b2951d90`.
-- Pushproduktion `32568958136` bestod central hydrering, frisk DMI, fuld `validate`, releasegate, support `RavRadar-support-3379`, Supabase, Pages-artifact og deploy.
-- Pages-deployment `6036054331` er `success`. Live 4.0.253/datasæt `rr-20260822110004-210` har 210 zoner og 673/673 scorede kystdele.
+- PR #62 bestod exact-head-kildegate `32568914124` på `d272c6ca` og blev merged som `b2951d90`; dokumentationscheckpoint PR #63 bestod `32569597610` og blev merged som `579ea914`.
+- Seneste pushproduktion `32569650036` bestod central hydrering, frisk DMI, fuld `validate`, releasegate, support `RavRadar-support-3380`, Supabase, Pages-artifact og deploy.
+- Pages-deployment `6036178330` er `success`. Live 4.0.253/datasæt `rr-20260822111522-210` har 210 zoner og 673/673 scorede kystdele.
 - Offentlig score, UI-adfærd og offentlig datakontrakt er uændrede; derfor krævede testmatrixen målrettet live metadata-/coveragekontrol og ikke en ny fuld 210/673-browseraudit.
 
 ## Grundlag og databeskyttelse

@@ -2,9 +2,9 @@
 
 ## 4.0.253 – Candidate G-produktkontrakt er merged og produktionsverificeret
 
-- PR #62 bestod exact-head-kildegate `32568914124` på `d272c6ca` og blev merged som `b2951d90`.
-- Pushproduktion `32568958136` bestod central adminhydrering, frisk DMI, fuld `validate`, releasegate, support `RavRadar-support-3379`, Supabase, Pages-artifact og deploy. Pages-deployment `6036054331` er `success`.
-- Live viser version 4.0.253 og datasæt `rr-20260822110004-210` med 210 zoner og 673/673 scorede kystdele.
+- PR #62 bestod exact-head-kildegate `32568914124` på `d272c6ca` og blev merged som `b2951d90`; dokumentationscheckpoint PR #63 bestod `32569597610` på `b90c4adc` og blev merged som `579ea914`.
+- Den seneste pushproduktion `32569650036` bestod central adminhydrering, frisk DMI, fuld `validate`, releasegate, support `RavRadar-support-3380`, Supabase, Pages-artifact og deploy. Pages-deployment `6036178330` er `success`.
+- Live viser version 4.0.253 og datasæt `rr-20260822111522-210` med 210 zoner og 673/673 scorede kystdele.
 - Den Git-ignorerede 12-vinduescache er genafspillet uden private payloads i Git. Kandidatens eksakte komponenter, bidrag og fysiske gate rekonstruerer 1.460/1.460 scorer.
 - På den foretrukne `G-50-50-NO-DIRECT-WIND`-variant har 219/730 waders-evalueringer jagtbarhed under 35; 7 af dem har mindst 55 point. Det kanoniske højenergiforløb er jagtbarhed 0 og score 79.
 - Forskningsanbefalingen er én RavScore som ravpotentiale plus en tydelig separat metodestatus. En utilgængelig waders-metode må ikke anbefales, sikkerhed forbliver uafhængig, og ingen skjult koefficient er tilladt. Offentlig kobling afventer ejerbeslutning.
