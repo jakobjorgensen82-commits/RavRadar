@@ -2,7 +2,7 @@
 
 ## Checkpoint 2026-08-22 – Candidate G-ejerreview samlet
 
-- Aktiv arbejdsgren er `codex/ravscore-candidate-g-owner-review` fra 4.0.257-merge `bb16ffe9546a4668084045c1526702d01a54566f`.
+- Beslutningspakken blev ført gennem PR #71: exact-head-kildegate `32583123375` bestod, og PR'en blev merged som `52f66808204b1de4b643e05192a5bd7e92797244`.
 - PR #70, produktion `32580314866`, live `rr-20260822150210-210` og exact-merge-shadow `32580774128` er grønne.
 - Ingen yderligere rådata skal hentes til de 430 dele, som ikke indgik i den strenge private scorekørsel. De 243 komplette dele bruges kun som mekanisk aktuelt snapshot.
 - Privat replay er genkørt: 1.460 evalueringer, 730 uændrede strandscorer, nul waders-score over jagtbarheden og nul af 216 lave waders-jagtbarheder med mindst 55 point.

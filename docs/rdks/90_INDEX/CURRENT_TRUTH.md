@@ -9,6 +9,7 @@
 - Det friske 243-deles snapshot ligger mod aktiv model i gennemsnit -5,49 for strand og -0,97 for waders. Det viser reel omfordeling og kontraktmekanik, men er ikke landsdækkende fundkalibrering.
 - Candidate G beholder `20/45/35` som analysecentrum. Endelig vægtning af jagtbarhed, transport og mobilisering afventer komplette ture med fund/nul-fund og hold-out. Offentlig `25/40/35` er uændret.
 - Ingen ekstra rådata, offentlig score, UI, DMI/fallback, geometri, land-/vandpunkter, artifact eller protected-dirty-data er ændret.
+- PR #71 bestod exact-head-kildegate `32583123375` og blev merged som `52f66808`. Ændringen er dokumentation og beslutningshukommelse; den bygger ikke et nyt produktionsartifact.
 
 ## 4.0.257-kandidat – ærlig Candidate G-coverage uden skjult stedmodel
 
