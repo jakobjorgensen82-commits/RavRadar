@@ -220,3 +220,11 @@ Fem sammenhængende produktionskørsler afslørede, at samme ugentlige GitHub-ca
 4. Referencegrænsen har ingen fuldstyrkeevalueringer, og lavere profiler har kun sparsom fuldstyrkedækning uden fundlabels; strømgrænsen forbliver ukalibreret.
 5. Ingen offentlig score, nye rådata, geometri, punkter eller artifacts er ændret.
 6. Exact-head `32599255165` bestod på `ed1f0297`, PR #77 blev merged som `75ed93d6`, og produktion `32599309735` leverede `rr-20260822212612-210` med 210 zoner og 673/673 dele uden Candidate G-aktivering.
+
+## 2026-08-23 – Candidate G udtransportgate afgjort score-neutralt
+
+1. Ejeren har afgjort, at dokumenteret faktisk kraftig udtransport med udtømt transportpotentiale skal sætte den interne Candidate G-slutscore til 0.
+2. Mobilisering og jagtbarhed beregnes og bevares som synlige komponenter; reglen er derfor ikke en påstand om, at disse forhold også er nul.
+3. Startpotentiale 0 uden faktisk udtransport, missing, neutral strøm og svag modstrøm må ikke udløse gaten.
+4. Den bindende forklaring er: `På grund af kraftig fralandsstrøm trækkes ravet ud i havet og derfor går scoren i nul, selv om der fortsat kan være mobilisering og god jagtbarhed`.
+5. Adfærden versionsbindes som `RRS-CANDIDATE-G-CURRENT-LED-OUTFLOW-8-RESEARCH-2`; `RESEARCH-1` bevares som revisionsspor. Offentlig RavScore og automatisk aktivering er uændret.

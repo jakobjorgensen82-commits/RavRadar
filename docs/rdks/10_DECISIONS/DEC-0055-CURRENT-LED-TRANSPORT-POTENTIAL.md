@@ -86,11 +86,17 @@ Før offentlig aktivering kræves mindst:
 4. en frisk national score-neutral shadow med den endelige inputkontrakt;
 5. særskilt ejer-go/no-go og alle relevante produktionsgates.
 
-## Efterfølgende release-readiness-præcisering
+## Efterfølgende ejerbeslutning om udtømt udtransport
 
-Den reproducerbare grænseaudit af den faktiske kandidatkode viser, at punkt 4's nul efter 13 timer gælder **transportpotentialet**, ikke automatisk hele den vægtede Candidate G-score. I den faste syntetiske kontrol falder transportpotentialet præcis 100→92→…→4→0, mens totalscoren falder monotont fra 91/88 til 35/35 for strand/waders. Jagtbarhed og mobilisering giver fortsat point, og den milde fysiske gate er ikke en nul-gate.
+Den første reproducerbare grænseaudit viste, at `RESEARCH-1` kun satte transportpotentialet til 0. Den faste syntetiske kontrol endte derfor på 35/35 for strand/waders, fordi jagtbarhed og mobilisering fortsat bidrog. Denne adfærd bevares kun som revisionsspor.
 
-Det er ikke en ny scorebeslutning. Før offentlig aktivering skal ejeren udtrykkeligt afgøre, om “helt i bund” fortsat betyder transportkomponenten, eller om dokumenteret udtransport efter 13 effektive fuldstyrketimer skal udløse en synlig fuld-scoregate. Ingen sådan gate er godkendt eller implementeret.
+Ejeren har efterfølgende besluttet, at den foretrukne `RESEARCH-2`-revision skal sætte den endelige Candidate G-score til 0, når den samme dokumenterede kraftige fralandsstrøm både har udløst faktisk udtransport og udtømt transportpotentialet. Komponenterne beregnes og bevares fortsat, så forklaringen kan vise, at mobilisering og jagtbarhed godt kan være positive, selv om slutscoren er 0.
+
+Den bindende forklaring er:
+
+`På grund af kraftig fralandsstrøm trækkes ravet ud i havet og derfor går scoren i nul, selv om der fortsat kan være mobilisering og god jagtbarhed`
+
+Dette er ikke en generel `transportAndDelivery === 0`-regel. Den kræver både et udtømt transportpotentiale og den særskilte historikmarkør for faktisk udtransport. Et fail-closed startpotentiale på 0, missing, neutral strøm eller svag modstrøm må derfor ikke alene udløse nul-gaten.
 
 DEC-0055 erstatter den hidtidige foretrukne transportfortolkning i Candidate G. G 24/48 og de tidligere modeller bevares som historisk evidens og følsomhedsspor, ikke som parallelle produktforslag.
 

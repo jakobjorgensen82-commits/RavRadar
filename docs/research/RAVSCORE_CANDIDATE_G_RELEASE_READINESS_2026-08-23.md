@@ -6,13 +6,14 @@ Den strømstyrede Candidate G består den mekaniske grænsekontrol score-neutral
 
 Revisionen er ført gennem exact-head `32602287607`, PR #82/merge `189644a0` og fuld post-merge-produktion `32602328912`. Live `rr-20260822223539-210` er komplet med 210 zoner og 673 kystdele og ændrer ikke den offentlige scoremodel.
 
-Auditten afdækker samtidig én ejerbetydning, som skal være helt eksplicit før offentlig aktivering:
+Den efterfølgende ejerbeslutning lukker samtidig den sidste tvetydighed i 13-timersbetydningen:
 
 - efter 13 effektive timer med fuld kraftig udgående strøm er **transportpotentialet 0**;
-- den samlede Candidate G-score er ikke tvunget til 0, fordi jagtbarhed og mobilisering fortsat vægtes;
-- i den faste syntetiske kontrol ender totalscoren derfor på 35 for både strand og waders.
+- den samlede `RESEARCH-2`-slutscore bliver også 0, når historikken dokumenterer faktisk udtransport;
+- jagtbarhed og mobilisering beregnes og bevares fortsat som forklarende komponenter;
+- en startværdi på 0 uden faktisk udtransport udløser ikke slutscoregaten.
 
-Det er den nuværende DEC-0055-/`20/50/30`-kontrakt. Hvis ejerens “helt i bund” i stedet betyder, at hele RavScore skal være 0 ved dokumenteret udtransport, kræver det en ny synlig fuld-scoregate. Den må ikke indføres skjult som en teknisk detalje.
+Det er den nuværende DEC-0055-/`20/50/30`-kontrakt. `RESEARCH-1`-resultatet på 35 ved udtømt transport bevares kun som revisionsspor. Offentlig RavScore er fortsat uændret.
 
 ## Reproducerbar audit
 
@@ -35,9 +36,9 @@ Det er den nuværende DEC-0055-/`20/50/30`-kontrakt. Hvis ejerens “helt i bund
 | 10 | 20 | 47 | 48 |
 | 11 | 12 | 42 | 43 |
 | 12 | 4 | 37 | 38 |
-| 13 | 0 | 35 | 35 |
+| 13 | 0 | 0 | 0 |
 
-Transportpotentialet følger præcis 8-pointskurven. Totalscoren falder også monotont, men ikke med otte point pr. time, fordi transport kun udgør 50 procent af den samlede score, og den milde fysiske gate ikke er en nul-gate.
+Transportpotentialet følger præcis 8-pointskurven. Før udtransportgaten falder den beregnede score monotont til 35/35, fordi transport kun udgør 50 procent. Ved dokumenteret faktisk udtransport og potentiale 0 sætter den særskilte ejerbesluttede gate derefter begge slutscorer til 0. Delscorerne overskrives ikke.
 
 ### Øvrige grænser
 
@@ -47,7 +48,8 @@ Transportpotentialet følger præcis 8-pointskurven. Totalscoren falder også mo
 - Verificeret neutral strøm holder den mekaniske reference på 100 efter 48 timer.
 - Følsomhedssporene giver 50 efter henholdsvis 24 og 48 timer ved deres tilsvarende halveringstid.
 - 48 timers ikke-verificeret strøm holder potentialet uændret; missing tolkes ikke som nulstrøm.
-- Høje bølger med transportpotentiale 0 giver transport/levering 0. Den samlede score kan stadig være 27 for strand og 34 for waders på grund af de andre komponenter.
+- Høje bølger med transportpotentiale 0 giver transport/levering 0. Ved dokumenteret faktisk udtransport er før-gate-scoren fortsat positiv på grund af de andre komponenter, men slutscoren er 0.
+- Et fail-closed startpotentiale på 0 uden faktisk udtransport giver fortsat en positiv score i den syntetiske kontrol. Dermed forveksles ukendt starttilstand ikke med dokumenteret udtransport.
 - Bølgelandingsleddet flytter højst to transport-/leveringspoint i den faste yderpunktskontrol og kan ikke oprette en transportvej.
 - Ved 15 m/s vind er waders-jagtbarhed og waders-score 0, mens strandscoren i samme høje-potentialekontekst er 84. Det matcher ejerens metodeafhængige kontrakt.
 
@@ -55,12 +57,16 @@ Transportpotentialet følger præcis 8-pointskurven. Totalscoren falder også mo
 
 En senere offentlig visning skal holde fire ting adskilt:
 
-1. **RavScore:** det samlede indeks fra jagtbarhed, transport/levering og mobilisering.
+1. **RavScore:** det samlede indeks fra jagtbarhed, transport/levering og mobilisering, med en eksplicit slutscoregate ved dokumenteret udtømt udtransport.
 2. **Transportpotentiale:** det strømopbyggede reservoir, som er 0 efter 13 effektive fuldstyrketimer med udtransport.
 3. **Strøm nu:** den aktuelle lokale pil; den er ikke et gennemsnit af historikken.
 4. **Forløbet før nu:** den tidligere ind-/udtransport, der forklarer reservoirværdien.
 
-Hvis totalen vises som 35 samtidig med transportpotentiale 0, må forklaringen ikke sige, at der stadig er god transport. Den skal sige, at transportleddet er udtømt, mens andre scoreled fortsat holder det samlede indeks over nul. Om dette overhovedet er den ønskede produktbetydning er den åbne ejerbeslutning.
+Når udtransportgaten er aktiv, er den bindende forklaring:
+
+`På grund af kraftig fralandsstrøm trækkes ravet ud i havet og derfor går scoren i nul, selv om der fortsat kan være mobilisering og god jagtbarhed`
+
+Forklaringen må ikke påstå, at mobilisering eller jagtbarhed også er 0. Den må heller ikke bruges ved et ubekræftet startpotentiale på 0, missing, neutral strøm eller svag modstrøm.
 
 Waders skal fortsat vise det synlige jagtbarhedsloft og må ikke omtales som sikkerhedsrådgivning. Bund, dybde, render, revler, adgang og lokal grundegnethed er fortsat udeladt.
 
@@ -83,13 +89,12 @@ Der er ikke udført en faktisk central admin-roundtrip for denne endnu uaktivere
 
 Mekanisk yderpunktskontrol, waders-betydning og pil-/historiksemantik er nu afklaret som forskningskontrakter. Følgende er fortsat åbent:
 
-1. ejerbeslutning: 0 efter 13 timer for transportkomponenten eller for hele RavScore;
-2. kalibreret kystnormal strømgrænse;
-3. godkendt startreservoir og eventuelt passivt 24–48-timers tab;
-4. repræsentative komplette ture eller tilsvarende stærk validering;
-5. frisk national score-neutral shadow med den endelige inputkontrakt;
-6. endelig offentlig UI-/forklaringskontrol;
-7. central admin-roundtrip, rollback og fulde produktgates;
-8. udtrykkeligt ejer-go/no-go.
+1. kalibreret kystnormal strømgrænse;
+2. godkendt startreservoir og eventuelt passivt 24–48-timers tab;
+3. repræsentative komplette ture eller tilsvarende stærk validering;
+4. frisk national score-neutral shadow med den endelige inputkontrakt;
+5. endelig offentlig UI-/forklaringskontrol;
+6. central admin-roundtrip, rollback og fulde produktgates;
+7. udtrykkeligt ejer-go/no-go.
 
 Offentlig RavScore forbliver `25/40/35`. Auditresultatet er et beslutningsgrundlag, ikke en aktivering.
