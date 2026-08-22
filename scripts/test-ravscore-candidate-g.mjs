@@ -38,7 +38,7 @@ const evaluate = (memory, options = {}, overrides = {}) => evaluateRavScoreCandi
   zone: { ...context.zone, ...(overrides.zone || {}) },
 }, { memory, ...options });
 
-assert.deepEqual(CANDIDATE_G_WEIGHTS, { huntability: 0.20, transportAndDelivery: 0.45, mobilisation: 0.35 });
+assert.deepEqual(CANDIDATE_G_WEIGHTS, { huntability: 0.20, transportAndDelivery: 0.50, mobilisation: 0.30 });
 assert.deepEqual(CANDIDATE_G_HISTORY_MIX, { current: 0.55, wave: 0.35, directWind: 0.10 });
 assert.deepEqual(Object.keys(CANDIDATE_G_VARIANTS), [
   'G-24H-LIN',
@@ -46,6 +46,7 @@ assert.deepEqual(Object.keys(CANDIDATE_G_VARIANTS), [
   'G-48H-LIN',
   'G-50-50-NO-DIRECT-WIND',
   'G-50-50-NO-DIRECT-WIND-WADERS-LIMIT',
+  'G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED',
 ]);
 
 const neutral = evaluate({ current: 0, wave: 0, directWind: 0 });
@@ -90,7 +91,7 @@ assert.equal(withoutDirect.diagnostics.candidateGDirectWindIncluded, false);
 
 const approvedBeach = evaluate(
   { current: 0, wave: 0, directWind: 1 },
-  { variantId: 'G-50-50-NO-DIRECT-WIND-WADERS-LIMIT' },
+  { variantId: 'G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED' },
 );
 assert.equal(approvedBeach.score, withoutDirect.score, 'Den nye waders-kontrakt må ikke ændre strandscoren');
 assert.equal(approvedBeach.scoreCalculation.modeHuntabilityPolicy, 'UNCHANGED');
@@ -106,16 +107,16 @@ const wadersWindCases = [
   [8, 60],
   [10, 35],
   [13, 10],
-  [18, 0],
+  [15, 0],
 ];
 const approvedWaders = wadersWindCases.map(([windSpeedMps, expectedWindScore]) => {
   const huntability = evaluatePhaseDHuntability('waders', { windSpeedMps, waveHeightM: 0.4 }, {
-    profile: PHASE_D_HUNTABILITY_PROFILES.WADERS_UNDER_6_PROGRESSIVE,
+    profile: PHASE_D_HUNTABILITY_PROFILES.WADERS_WIND_LED_WAVE_20,
   });
   assert.equal(huntability.windScore, expectedWindScore);
   const result = evaluate(
     { current: 0, wave: 0, directWind: 1 },
-    { variantId: 'G-50-50-NO-DIRECT-WIND-WADERS-LIMIT' },
+    { variantId: 'G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED' },
     { mode: 'waders', weather: { windSpeedMps, waveHeightM: 0.4 } },
   );
   assert.equal(result.scoreCalculation.modeHuntabilityPolicy, 'VISIBLE_WADERS_HUNTABILITY_MAXIMUM');
@@ -131,6 +132,24 @@ assert.ok(approvedWaders.every((result, index) => index === 0
   || wadersWindCases[index][0] <= 6
   || result.diagnostics.candidateGHuntabilityWindScore < approvedWaders[index - 1].diagnostics.candidateGHuntabilityWindScore));
 assert.equal(approvedWaders.at(-1).researchExplanation.modeHuntability.applied, true);
+assert.equal(approvedWaders.at(-1).components.huntability, 0);
+assert.equal(approvedWaders.at(-1).diagnostics.candidateGHuntabilityWindHardStopApplied, true);
+
+const wavePenaltyCases = [
+  { windSpeedMps: 6, waveHeightM: 0.7, expected: 93 },
+  { windSpeedMps: 6, waveHeightM: 1.2, expected: 85 },
+  { windSpeedMps: 8, waveHeightM: 0.7, expected: 60 },
+  { windSpeedMps: 8, waveHeightM: 1.2, expected: 53 },
+  { windSpeedMps: 15, waveHeightM: 0, expected: 0 },
+];
+for (const item of wavePenaltyCases) {
+  const huntability = evaluatePhaseDHuntability('waders', item, {
+    profile: PHASE_D_HUNTABILITY_PROFILES.WADERS_WIND_LED_WAVE_20,
+  });
+  assert.equal(Math.round(huntability.value), item.expected);
+  assert.ok(huntability.value <= huntability.windScore);
+  assert.ok(huntability.wavePenalty <= huntability.windScore * 0.20);
+}
 
 const zeroCapacity = evaluate(
   { current: 1, wave: 1, directWind: 1 },

@@ -2,3 +2,5 @@ node_modules/
 __pycache__/
 *.py[cod]
 pnpm-lock.yaml
+.cache/ravscore-candidate-g-wind-led-analysis.json
+.cache/ravscore-candidate-g-wind-led-analysis.txt

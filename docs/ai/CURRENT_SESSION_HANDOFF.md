@@ -1,6 +1,19 @@
 # RavRadar - aktuelt Codex-handoff
 
-## Checkpoint 2026-08-22 – Candidate G-ejerreview samlet
+## Checkpoint 2026-08-22 – Candidate G 4.0.258 vindstyret waders-jagtbarhed
+
+- Arbejdsbranch er `codex/ravscore-wind-led-huntability` fra main-merge `bc1e87b6960e0d4cc44d9d88f83cb682b7aab215`.
+- Ejeren valgte `20/50/30` som Candidate G's private faglige analyseprior; offentlig RavScore `25/40/35` forbliver uændret.
+- Foretrukken variant er `G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED`. Vind giver 100 til og med 6 m/s og falder gennem 7/80, 8/60, 10/35, 13/10 og 15/0.
+- WAM-bølgehøjde kan kun reducere vindscoren med 20 procent af et negativt gab, højst 20 point; den kan ikke hæve jagtbarheden eller alene give hard stop.
+- Privat replay er genkørt på 1.460 evalueringer: 730 uændrede strandscorer, ingen waders-score over jagtbarheden, gennemsnitligt bølgefradrag 4,002 og alle seks tilfælde ved mindst 15 m/s på 0.
+- Candidate G-, mode-, scenarie- og nationale shadow-self-tests samt fuld lokal `scripts/validate-source.ps1` og releasegate er grønne. Commit, exact-head PR, merge og efterverifikation mangler ved dette checkpoint.
+- DEC-0054 erstatter DEC-0053's foretrukne variant, `20/45/35`, 18 m/s-stop og mere selvstændige bølgekobling. Tidligere modeller bevares som evidensspor.
+- Der er ikke hentet nye rådata. Private cachepayloads, artifact, protected-dirty-data, DMI/fallback, geometri og land-/vandpunkter må ikke stages eller ændres.
+
+## Historisk checkpoint 2026-08-22 – Candidate G-ejerreview samlet før DEC-0054
+
+Dette afsnits variant og vægt er erstattet af det aktuelle 4.0.258-checkpoint ovenfor.
 
 - Beslutningspakken blev ført gennem PR #71: exact-head-kildegate `32583123375` bestod, og PR'en blev merged som `52f66808204b1de4b643e05192a5bd7e92797244`.
 - PR #70, produktion `32580314866`, live `rr-20260822150210-210` og exact-merge-shadow `32580774128` er grønne.

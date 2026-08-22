@@ -12,14 +12,14 @@ import {
   evaluateModeHuntabilityCoupling,
 } from '../js/core/ravscore-mode-huntability-research.js';
 
-const WINDS_MPS = Object.freeze([3, 5, 5.9, 6, 7, 8, 9, 10, 12, 13, 18]);
+const WINDS_MPS = Object.freeze([3, 5, 5.9, 6, 7, 8, 9, 10, 12, 13, 15, 18]);
 const WAVES_M = Object.freeze([0.2, 0.4, 0.7, 1.0, 1.2, 2.0]);
 const FIXED_PHYSICAL_POTENTIAL = 85;
 const clamp = value => Math.max(0, Math.min(100, Number(value)));
 
 function huntability(mode, windSpeedMps, waveHeightM) {
   const result = evaluatePhaseDHuntability(mode, { windSpeedMps, waveHeightM }, {
-    profile: PHASE_D_HUNTABILITY_PROFILES.WADERS_UNDER_6_PROGRESSIVE,
+    profile: PHASE_D_HUNTABILITY_PROFILES.WADERS_WIND_LED_WAVE_20,
   });
   assert.ok(Number.isFinite(result.value));
   return {
@@ -86,7 +86,9 @@ function buildReport() {
   assert.ok(windCurve.filter(row => row.windSpeedMps <= 6)
     .every(row => row.windComponentScore === 100));
   assert.ok(windCurve.filter(row => row.windSpeedMps > 6)
-    .every((row, index, selected) => index === 0 || row.windComponentScore < selected[index - 1].windComponentScore));
+    .every((row, index, selected) => index === 0 || row.windComponentScore <= selected[index - 1].windComponentScore));
+  assert.ok(windCurve.filter(row => row.windSpeedMps >= 15)
+    .every(row => row.windComponentScore === 0 && row.huntability === 0));
 
   const representative = rows.filter(row =>
     [6, 7, 8, 9, 10, 12, 13].includes(row.windSpeedMps)
@@ -96,8 +98,9 @@ function buildReport() {
     status: 'passed-score-neutral-mode-huntability-audit',
     generatedAt: new Date().toISOString(),
     method: 'synthetic-fixed-physical-potential-mode-coupling-matrix',
-    huntabilityProfile: PHASE_D_HUNTABILITY_PROFILES.WADERS_UNDER_6_PROGRESSIVE,
-    wadersWindCurve: [[0, 100], [6, 100], [7, 80], [8, 60], [10, 35], [13, 10], [18, 0]],
+    huntabilityProfile: PHASE_D_HUNTABILITY_PROFILES.WADERS_WIND_LED_WAVE_20,
+    wadersWindCurve: [[0, 100], [6, 100], [7, 80], [8, 60], [10, 35], [13, 10], [15, 0]],
+    waveInfluence: 'wave-can-only-deduct-20-percent-of-the-gap-below-wind-score',
     fixedPhysicalPotential: FIXED_PHYSICAL_POTENTIAL,
     windValuesMps: WINDS_MPS,
     waveValuesM: WAVES_M,
@@ -107,7 +110,8 @@ function buildReport() {
     allBeachPolicyScoresUnchanged: true,
     wadersPoliciesMonotonicByWindAtFixedWave: true,
     wadersWindComponentMaximumThrough6Mps: true,
-    wadersWindComponentStrictlyDecreasesAbove6Mps: true,
+    wadersWindComponentDoesNotIncreaseAbove6Mps: true,
+    wadersHuntabilityZeroFrom15Mps: true,
     siteSuitabilityIncluded: false,
     safetyAdviceIncluded: false,
     publicScoreChanged: false,

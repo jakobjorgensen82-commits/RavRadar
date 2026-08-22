@@ -15,13 +15,15 @@
 
 Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre forsknings-/versionsafsnit bevares som revisionsspor. En tom afkrydsningsboks i historikken er ikke en aktiv opgave, medmindre punktet ogsaa findes her.
 
-## Aktuelt Candidate G-review efter 4.0.257
+## Aktuelt Candidate G-review – 4.0.258 vindstyret waders-kandidat
 
 - [x] Saml én score-neutral ejerreviewvariant og klassificér de øvrige modeller som revisions-/følsomhedsspor.
 - [x] Genkør 1.460-evalueringsanalysen og verificér strand-/waders-kontrakten.
 - [x] Brug exact-merge-shadowens 243 komplette dele som mekanisk aktuelt snapshot uden at hente ekstra rådata.
-- [x] Dokumentér at `20/45/35` er analysecentrum, mens aktiv `25/40/35` og endelig turkalibrering forbliver adskilt.
-- [ ] Gennemfør ejerens samlede review af Candidate G. En eventuel offentlig implementering er et nyt delmål med særskilt beslutning og fulde gates.
+- [x] Ejeren har valgt `20/50/30` som privat faglig analyseprior; aktiv `25/40/35` og senere turkalibrering forbliver adskilt.
+- [x] Ejeren har valgt vind som hovedsignal for waders-jagtbarhed: fuld til 6 m/s, 0 ved 15 m/s og WAM-bølger kun som blødt fradrag på højst 20 point.
+- [x] Genkør replay og kanoniske/nationale kontrakter med den nye variant; strand er uændret og waders-score overstiger aldrig jagtbarheden.
+- [ ] Før 4.0.258-checkpointet gennem exact-head-gate og sikker merge. En eventuel offentlig implementering er et nyt delmål med særskilt beslutning, ture, komplet inputcoverage og fulde produktgates.
 
 ## P0 - luk den aktuelle kandidat
 
@@ -309,4 +311,4 @@ Kandidat G er privat og score-neutral. Aktiv RavScore 25/40/35, DMI-first, geome
 - [x] Fastlæg kandidatens score-neutrale kontrakt: eksakte komponenter/gate rekonstruerer 1.460/1.460 scorer; pilen er aktuel lokal strøm, mens historik forklares særskilt på samme context.
 - [x] Før kode-/analysebaseline 4.0.253 gennem PR #62 og dokumentationscheckpointene gennem PR #64; fuld produktionsverifikation `32570223437` og snapshot `rr-20260822112859-210` er 210/673 grønne.
 - [ ] Verificér den endelige offentlige UI-/forklaringskobling efter ejerbeslutningen; ingen kobling er implementeret i 4.0.253.
-- [ ] Fremlæg det samlede DEC-0053-ejerreview. Den nuværende anbefaling er at beholde offentlig 25/40/35 og ikke aktivere G endnu.
+- [x] DEC-0053-ejerreviewet er gennemført og erstattet af ejerbeslutningen i DEC-0054: privat `20/50/30`, vindstyret waders-jagtbarhed og fortsat ingen offentlig aktivering.

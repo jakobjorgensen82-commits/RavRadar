@@ -1,6 +1,19 @@
 # Current truth – gældende projektviden
 
-## Candidate G-beslutningsgrundlag – samlet på produktionsverificeret 4.0.257
+## Candidate G 4.0.258 – vind er hovedsignal for waders-jagtbarhed
+
+- Den foretrukne private forskningsvariant er `G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED` med ejerens faglige analyseprior `20/50/30`. Offentlig RavScore er fortsat `25/40/35`.
+- Waders-vindkurven er 100 til og med 6 m/s, derefter 7/80, 8/60, 10/35, 13/10 og 15/0. WAM's signifikante bølgehøjde kan kun reducere vindscoren med 20 procent af et negativt gab, højst 20 point; den kan ikke hæve scoren eller alene give hårdt stop.
+- Waders-slutscore er højst jagtbarheden, også efter ekspertregler. Strandjagt er uændret og har intet jagtbarhedsloft.
+- Replayet omfatter 1.460 evalueringer: 730 uændrede strandscorer, nul waders-score over jagtbarheden, 138 lave jagtbarheder uden score mindst 55 og seks af seks vindtilfælde ved mindst 15 m/s på 0.
+- Bølgefradraget er gennemsnitligt 4,002 point og højst 20. Ved vind til og med 6 m/s er den nye kandidat aldrig lavere end den tidligere waders-limit.
+- DEC-0054 erstatter DEC-0053's valg af variant, `20/45/35`, 18 m/s-stop og selvstændige bølgekobling. A-C, D-E, F, G 24/48 og tidligere waders-varianter bevares som revisionsspor.
+- Kandidaten er diagnostic-only og ikke fundkalibreret. En offentlig aktivering kræver særskilt ejer-go/no-go, komplette ture/hold-out, godkendt dynamisk inputcoverage og fulde gates.
+- Bund, dybde, render, revler, adgang, stedegnethed og sikkerhedsrådgivning indgår ikke. Artifact, protected-dirty-data, private cachepayloads, geometri og land-/vandpunkter er urørte.
+
+## Historisk Candidate G-beslutningsgrundlag – produktionsverificeret 4.0.257
+
+Variant-, vægt- og jagtbarhedsvalgene i dette afsnit er erstattet af DEC-0054 og 4.0.258-afsnittet ovenfor.
 
 - PR #70 blev merged som `bb16ffe9546a4668084045c1526702d01a54566f`. Produktion `32580314866` bestod central hydrering, frisk DMI/proveniens, fuld validering, releasegate, support, Supabase, Pages-artifact og deploy. Live datasæt `rr-20260822150210-210` har 210 zoner og 673 dele med komplet `controlled-live`-manifest.
 - Frisk privat exact-merge-shadow `32580774128` bestod score-neutralt. De 243 allerede komplette dele bruges kun som aktuelt mekanisk kontrolsnapshot; der hentes ikke yderligere rådata til de øvrige dele i dette analyseafsnit.
