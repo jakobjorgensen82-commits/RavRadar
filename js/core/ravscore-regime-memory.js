@@ -23,6 +23,7 @@ export const CURRENT_TRANSPORT_POTENTIAL_PRIOR = Object.freeze({
   outboundPointsPerEffectiveHour: 8,
   exhaustedAfterEffectiveHours: 13,
   preExhaustionMaximumLossPoints: 96,
+  neutralPassiveHalfLifeHours: null,
 });
 
 function normalCurrentStrength(normalSpeedMps, {
@@ -56,6 +57,7 @@ export function buildCurrentTransportPotential(
     outboundPointsPerEffectiveHour = CURRENT_TRANSPORT_POTENTIAL_PRIOR.outboundPointsPerEffectiveHour,
     exhaustedAfterEffectiveHours = CURRENT_TRANSPORT_POTENTIAL_PRIOR.exhaustedAfterEffectiveHours,
     preExhaustionMaximumLossPoints = CURRENT_TRANSPORT_POTENTIAL_PRIOR.preExhaustionMaximumLossPoints,
+    neutralPassiveHalfLifeHours = CURRENT_TRANSPORT_POTENTIAL_PRIOR.neutralPassiveHalfLifeHours,
     getTime = (sample) => sample?.time,
     getSpeed = (sample) => sample?.currentSpeedMps,
     getAlignment = (sample) => sample?.currentAlignment,
@@ -68,6 +70,10 @@ export function buildCurrentTransportPotential(
   const safeOutboundRate = finiteNumber(outboundPointsPerEffectiveHour, Number.NaN);
   const safeExhaustionHours = finiteNumber(exhaustedAfterEffectiveHours, Number.NaN);
   const safePreExhaustionLoss = finiteNumber(preExhaustionMaximumLossPoints, Number.NaN);
+  const safeNeutralPassiveHalfLife = neutralPassiveHalfLifeHours === null
+    || neutralPassiveHalfLifeHours === undefined
+    ? null
+    : finiteNumber(neutralPassiveHalfLifeHours, Number.NaN);
   if (!(safeDeadband >= 0 && safeFullStrength > safeDeadband)) {
     throw new Error('current transport potential requires full strength above the deadband');
   }
@@ -76,6 +82,9 @@ export function buildCurrentTransportPotential(
   }
   if (!(safePreExhaustionLoss >= 0 && safePreExhaustionLoss <= 100)) {
     throw new Error('preExhaustionMaximumLossPoints must be between zero and one hundred');
+  }
+  if (safeNeutralPassiveHalfLife !== null && !(safeNeutralPassiveHalfLife > 0)) {
+    throw new Error('neutralPassiveHalfLifeHours must be null or greater than zero');
   }
 
   const ordered = [...(Array.isArray(samples) ? samples : [])]
@@ -113,6 +122,7 @@ export function buildCurrentTransportPotential(
       fullStrengthNormalSpeedMps: safeFullStrength,
     });
     const previousPotential = potential;
+    let neutralPassiveDecayPoints = 0;
     let phase = entry.verified ? 'RETAINED_OR_NEUTRAL' : 'UNVERIFIED_PAUSE';
 
     if (outboundStrength > 0) {
@@ -130,6 +140,11 @@ export function buildCurrentTransportPotential(
       outboundEpisodeLossPoints = 0;
       potential = clamp(potential + safeInboundRate * elapsedHours * inboundStrength, 0, 100);
       phase = 'INBOUND_BUILDUP';
+    } else if (entry.verified && safeNeutralPassiveHalfLife !== null && elapsedHours > 0) {
+      const retainedFraction = 2 ** (-elapsedHours / safeNeutralPassiveHalfLife);
+      potential = clamp(potential * retainedFraction, 0, 100);
+      neutralPassiveDecayPoints = previousPotential - potential;
+      phase = neutralPassiveDecayPoints > 0 ? 'PASSIVE_NEUTRAL_DECAY' : phase;
     }
 
     const actualOutboundTransport = outboundEpisodeEffectiveHours >= safeExhaustionHours;
@@ -149,6 +164,8 @@ export function buildCurrentTransportPotential(
       outboundEpisodeEffectiveHours,
       outboundEpisodeLossPoints,
       actualOutboundTransport,
+      neutralPassiveHalfLifeHours: safeNeutralPassiveHalfLife,
+      neutralPassiveDecayPoints,
       phase,
     };
   });

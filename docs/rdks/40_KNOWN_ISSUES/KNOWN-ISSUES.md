@@ -2,8 +2,8 @@
 
 ## Candidate G strømstyret transporthukommelse efter 4.0.258
 
-- **ISSUE-CANDIDATE-G-CURRENT-NORMAL-THRESHOLD – AKTIVERINGSBLOKERING:** DEC-0055's mekanik er testet, men fuld strømstyrke er ikke fundkalibreret. Reference 0,05→0,20 m/s og følsomheder 0,03→0,15 samt 0,02→0,12 flytter Candidate G-scoren mærkbart. Ingen grænse må skjult gøres til produktionssandhed.
-- **ISSUE-CANDIDATE-G-TRANSPORT-INITIAL-STATE-AND-DECAY – AKTIVERINGSBLOKERING:** Den private replayhistorik indeholder ikke et observeret reservoir før første time. Fail-closed start 0 og diagnostisk start 50 adskiller sig 21,136 scorepoint i gennemsnit. En eventuel passiv 24–48-timers forældelsesregel under neutral strøm er ikke besluttet og skal undersøges særskilt.
+- **ISSUE-CANDIDATE-G-CURRENT-NORMAL-THRESHOLD – AKTIVERINGSBLOKERING:** DEC-0055's mekanik er testet, men fuld strømstyrke er ikke fundkalibreret. Reference 0,05→0,20 m/s har nul fuldstyrkeevalueringer i replayet; 0,03→0,15 har nul fulde indgående og 10 fulde udgående, mens 0,02→0,12 har to og 44. Lavere grænser flytter scoren mærkbart, men de 12 bølgeudvalgte vinduer uden fundlabels kan ikke kalibrere dem. Ingen grænse må skjult gøres til produktionssandhed.
+- **ISSUE-CANDIDATE-G-TRANSPORT-INITIAL-STATE-AND-DECAY – AKTIVERINGSBLOKERING:** Den private replayhistorik indeholder ikke et observeret reservoir og har kun 24 timers forhistorie i alle 12 vinduer. Valgfri neutral halvering på 24/48 timer er mekanisk testet og flytter start-0-scoren -1,182/-0,697 point, men ukendt starttilstand giver fortsat væsentlig forskel. Replayet kan derfor ikke vælge levetid; hovedreferencen forbliver fail-closed start 0 uden passivt tab, og halveringerne er kun følsomhedsspor.
 - **ISSUE-CANDIDATE-G-PUBLIC-ACTIVATION – FORTSAT LUKKET:** Den nye variant er diagnostic-only. Offentlig aktivering kræver løste strøm-/tilstandsblokeringer, komplette ture eller tilsvarende hold-out-evidens, frisk national shadow, særskilt ejer-go/no-go og fulde produktgates.
 
 ## 4.0.257 Candidate G national scoreinputcoverage

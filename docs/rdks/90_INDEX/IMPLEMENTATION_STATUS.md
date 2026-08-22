@@ -11,7 +11,9 @@
 - [x] Kør målrettede regime-, Candidate G-, scenarie-, analyse- og nationale shadow-self-tests.
 - [x] Kør samlet RDKS-/håndbogsvalidering og fuld lokal `scripts/validate-source.ps1`, inklusive releasegate.
 - [x] Bestå exact-head-kildegate `32598284279` på `d37d15fe`, merge PR #75 som `4379606e` og verificér, at ingen offentlig produktionsaktivering blev startet.
-- [ ] Kalibrér eller afvis strømgrænsen, beslut start-/24–48-timers forældelsesregel og valider senere mod komplette ture/hold-out.
+- [x] Implementér en isoleret neutral 24-/48-timers halveringsfølsomhed, bevis at den ikke ændrer ind-/udtransport eller missing, og auditér replayets tidsgrænser.
+- [x] Dokumentér, at alle 12 eventvinduer kun har 24 timers forhistorie, at ingen referenceprøver når fuld strømstyrke, og at dette replay derfor ikke kan vælge levetid eller kalibrere strømgrænsen.
+- [ ] Kalibrér eller afvis senere strømgrænsen og fysisk levetid på mindst 72 timers forhistorie eller komplette ture/hold-out. Indtil da forbliver start 0 uden passivt tab den mekaniske reference, ikke en naturpåstand.
 - [ ] Offentlig aktivering kræver et senere særskilt ejer-go/no-go og fulde produktgates.
 
 Nedenstående 4.0.258-afsnit gælder fortsat for jagtbarhed. DEC-0055 erstatter kun den foretrukne transportfortolkning.
