@@ -5,6 +5,8 @@
 - Privat replay på 1.460 evalueringer bevarer 730/730 strandscorer, holder alle waders-scorer under jagtbarheden og giver gennemsnitligt 4,002 points bølgefradrag.
 - Den nationale score-neutrale shadow følger varianten gennem centrale regler og waders-loft. Automatisk aktivering er fortsat deaktiveret.
 - DEC-0054 erstatter DEC-0053's variant, `20/45/35`, 18 m/s-stop og mere selvstændige bølgekobling. Tidligere modeller bevares som evidensspor.
+- PR #73 bestod exact-head-kildegate `32586707063` og blev merged som `9bdb8de8`. Produktion `32586958989` bestod frisk vejr/proveniens, fuld validering, releasegate, coverageaudit, support `RavRadar-support-3405`, Supabase og Pages.
+- Live 4.0.258/datasæt `rr-20260822171406-210` er verificeret med 210 zoner, 673 dele og 2.100 femdøgnsvisninger. Offentlig RavScore er fortsat `25/40/35`; Candidate G er ikke aktiveret.
 - Ingen nye rådata er hentet. Private caches, artifact, protected-dirty-data, geometri og land-/vandpunkter er urørte.
 
 ## 2026-08-22 – Candidate G-beslutningsgrundlag samlet efter 4.0.257

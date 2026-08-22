@@ -2,12 +2,14 @@
 
 ## Checkpoint 2026-08-22 – Candidate G 4.0.258 vindstyret waders-jagtbarhed
 
-- Arbejdsbranch er `codex/ravscore-wind-led-huntability` fra main-merge `bc1e87b6960e0d4cc44d9d88f83cb682b7aab215`.
+- Kandidaten blev leveret i PR #73. Exact-head-kildegate `32586707063` bestod på `2abc5a4c96945247679341f8e9b47c43844af7a3`, og PR'en blev merged som `9bdb8de8d73ab5b62622600e207646e98a4efe8c`.
 - Ejeren valgte `20/50/30` som Candidate G's private faglige analyseprior; offentlig RavScore `25/40/35` forbliver uændret.
 - Foretrukken variant er `G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED`. Vind giver 100 til og med 6 m/s og falder gennem 7/80, 8/60, 10/35, 13/10 og 15/0.
 - WAM-bølgehøjde kan kun reducere vindscoren med 20 procent af et negativt gab, højst 20 point; den kan ikke hæve jagtbarheden eller alene give hard stop.
 - Privat replay er genkørt på 1.460 evalueringer: 730 uændrede strandscorer, ingen waders-score over jagtbarheden, gennemsnitligt bølgefradrag 4,002 og alle seks tilfælde ved mindst 15 m/s på 0.
-- Candidate G-, mode-, scenarie- og nationale shadow-self-tests samt fuld lokal `scripts/validate-source.ps1` og releasegate er grønne. Commit, exact-head PR, merge og efterverifikation mangler ved dette checkpoint.
+- Candidate G-, mode-, scenarie- og nationale shadow-self-tests samt fuld lokal `scripts/validate-source.ps1` og releasegate er grønne.
+- Produktion `32586958989` bestod frisk vejr/proveniens, fuld validering, releasegate, coverageaudit, support `RavRadar-support-3405`, Supabase, Pages-artifact og deploy. Live 4.0.258/datasæt `rr-20260822171406-210` er verificeret med 210 zoner, 673 dele og 2.100 femdøgnsvisninger.
+- Beslutningsgrundlaget for den private kandidat er dermed færdigt. Næste faglige trin er ikke en automatisk aktivering, men et senere særskilt ejer-go/no-go efter repræsentative ture/hold-out og komplet dynamisk inputcoverage.
 - DEC-0054 erstatter DEC-0053's foretrukne variant, `20/45/35`, 18 m/s-stop og mere selvstændige bølgekobling. Tidligere modeller bevares som evidensspor.
 - Der er ikke hentet nye rådata. Private cachepayloads, artifact, protected-dirty-data, DMI/fallback, geometri og land-/vandpunkter må ikke stages eller ændres.
 

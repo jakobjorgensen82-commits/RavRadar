@@ -25,4 +25,6 @@
 ## Validering
 
 - Første lokale `scripts/validate-source.ps1` bestod alle kildechecks og stoppede alene ved det endnu manglende versionsspecifikke changelog. Efter oprettelsen bestod releasegaten.
-- Den afsluttende samlede lokale `scripts/validate-source.ps1`, inklusive releasegaten, er grøn. Exact-head PR-kildegaten skal fortsat være grøn før merge.
+- Den afsluttende samlede lokale `scripts/validate-source.ps1`, inklusive releasegaten, er grøn.
+- PR #73's exact-head-kildegate `32586707063` bestod, og merge `9bdb8de8` blev fuldt produktionsverificeret i `32586958989` med support `RavRadar-support-3405`, Supabase og Pages.
+- Live 4.0.258/datasæt `rr-20260822171406-210` er verificeret med 210 zoner, 673 kystdele og 2.100 femdøgnsvisninger. Den offentlige score er fortsat uændret.
