@@ -1981,3 +1981,19 @@ Den aktive vaegtning er stadig 25 % jagtbarhed, 40 % transport og 35 % mobiliser
 I den private scorekontrol tæller en boelgefamilie kun som komplet, naar boelgehoejde, retning og periode kommer fra samme DMI-collection. DKSS tæller kun som komplet, naar vandstand og stroem kommer fra samme collection, og stroemmens U og V desuden kommer fra samme fysiske gitterpunkt.
 
 Hvis det ikke er opfyldt, vises delen som deldaekket eller blokeret i den private analyse. Den faar ikke state eller kandidat-score. Dette ændrer ikke den offentlige 25/40/35-score eller nogen land-/vandpunkter.
+
+## Kandidat G: hvad den nye analyse viser
+
+**Kort fortalt:** RavRadar har nu en privat kandidat, som husker de seneste strøm-, bølge- og vindforløb. Den er kun et analyseværktøj. Brugernes RavScore er fortsat 25 % jagtbarhed, 40 % transport og 35 % mobilisering.
+
+Kandidat G starter med den eksisterende forskningsmodel for mobilisering, transport og levering. Historikken kan kun dæmpe eller forstærke en transportvej, der allerede findes. Hvis bølger og strøm ikke har nogen fysisk flytteevne, kan et tidligere pålandsforløb derfor ikke opfinde transportpoint.
+
+Den private kontrol omfatter 1.460 beregninger på 12 historiske vejrhændelser. Et hukommelsesspor på 24 timer, en 50/50-blanding af 24 og 48 timer samt 48 timer alene giver næsten samme score. Direkte vind giver kun en meget lille selvstændig forskel og overlapper de virkninger, vinden allerede har gennem bølger, strøm, vandstand, mobilisering og jagtbarhed. Næste foretrukne analysevariant er derfor 50/50 uden direkte vind.
+
+Den centralt hydrerede nationale shadow kontrollerede derefter alle 673 aktive dele i 210 zoner. 243 dele havde komplette scoreinput i begge jagtformer, mens 430 stod tydeligt som u-scorede. G 50/50 lå i gennemsnit 5,50 point under den aktive score for strand og 3,74 for waders. 24/48 og varianten uden direkte vind var fortsat næsten identiske. Den nationale kontrakt havde dog ingen komplette lokale retention-features, så runnet er et teknisk og aktuelt retningsbevis, ikke en aktiveringsgodkendelse.
+
+Modellen er ikke klar til brugerne. Den ændrer referencebånd i 474 af de 1.460 beregninger sammenlignet med den aktive model. Desuden kan et ekstremt waders-scenarie have jagtbarhed 0 og samtidig høj kandidatscore, fordi stærk fysisk transport og mobilisering stadig kan være til stede. Det viser forskellen mellem ravpotentiale og et praktisk eller sikkert tidspunkt at gå i vandet.
+
+Før en eventuel ændring skal den private nationale kontrol køres med frisk centralt gemt konfiguration. Ejeren skal derefter tage stilling til, hvordan ravpotentiale og jagtbarhed forklares i appen. RavScore er ikke sikkerhedsrådgivning, og en høj score må aldrig stå alene som en opfordring til at gå i vandet.
+
+Ingen geometri, land-/vandpunkter, DMI-kilder, pile, offentlig forklaring eller aktiv score er ændret af analysen.

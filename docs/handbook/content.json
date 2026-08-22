@@ -2,8 +2,15 @@
   "schemaVersion": "2.0",
   "handbookVersion": "4.0.252",
   "title": "RavRadar Håndbog",
-  "updatedAt": "2026-08-21",
+  "updatedAt": "2026-08-22",
   "sections": [
+    {
+      "id": "ravscore-candidate-g-decision-basis-2026-08-22",
+      "chapter": "18B",
+      "title": "Kandidat G: historik, kapacitet og jagtbarhed",
+      "summary": "Den private kandidat husker strøm-, bølge- og vindforløb, men er ikke klar til aktivering og ændrer ikke den offentlige 25/40/35-score.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Kandidat G er et privat analyseværktøj. Historik kan kun dæmpe eller forstærke en fysisk transportvej, der allerede findes; den kan ikke skabe transport ved nul kapacitet.</div><p>Den private kontrol omfatter 1.460 beregninger på 12 historiske hændelser. Hukommelse på 24 timer, en 50/50-blanding og 48 timer giver næsten samme score. Direkte vind giver kun en meget lille selvstændig forskel og overlapper vindens indirekte veje gennem bølger, strøm, vandstand, mobilisering og jagtbarhed. Derfor er 50/50 uden direkte vind den foretrukne næste beslutningsvariant.</p><p>Den centralt hydrerede nationale shadow kontrollerede 673 aktive dele i 210 zoner. 243 dele havde komplette scoreinput i begge jagtformer, mens 430 stod eksplicit som u-scorede. G 50/50 lå i gennemsnit 5,50 point under aktiv model for strand og 3,74 for waders; 24/48 og no-direct-wind var fortsat næsten identiske. Den nationale kontrakt havde nul komplette lokale retention-features, så runnet lukker kørselsgaten, men ikke coverage- eller aktiveringsgaten.</p><p>Kandidat G er ikke klar til brugerne. Den skifter referencebånd i 474 af de 1.460 historiske beregninger mod den aktive model. Et ekstremt waders-scenarie kan desuden have jagtbarhed 0 og samtidig høj kandidatscore, fordi ravpotentiale og et praktisk eller sikkert jagttidspunkt ikke er det samme.</p><div class=\"callout\"><strong>Ingen aktivering:</strong> Den aktive score er fortsat 25 % jagtbarhed, 40 % transport og 35 % mobilisering. Før en ændring kræves bedre national coverage, tydelig forklaring af ravpotentiale kontra jagtbarhed og ejerens udtrykkelige go/no-go.</div><p>RavScore er ikke sikkerhedsrådgivning. Ingen geometri, land-/vandpunkter, DMI-kilder, pile, offentlig forklaring eller aktiv score er ændret af analysen.</p>"
+    },
     {
       "id": "national-ranking-opportunity-correction-4-0-252",
       "chapter": "18A",

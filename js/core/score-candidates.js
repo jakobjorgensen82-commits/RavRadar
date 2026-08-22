@@ -16,6 +16,10 @@ export const SCORE_MODEL_IDS = Object.freeze({
   candidateC: 'RRS-CAND-C-WEAKEST-LINK',
   candidateD: 'RRS-CAND-D-WAVE-DELIVERY-PATH',
   candidateE: 'RRS-CAND-E-PHYSICAL-BOTTLENECK',
+  candidateG24: 'RRS-CANDIDATE-G-24H-LIN-4.0.252',
+  candidateG5050: 'RRS-CANDIDATE-G-50-50-LIN-4.0.252',
+  candidateG48: 'RRS-CANDIDATE-G-48H-LIN-4.0.252',
+  candidateGNoDirectWind: 'RRS-CANDIDATE-G-50-50-NO-DIRECT-WIND-4.0.252',
 });
 
 function normaliseComponents(result) {

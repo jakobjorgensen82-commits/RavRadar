@@ -88,3 +88,19 @@ Naeste historiske kandidat-G-replay afgraenses derfor til 24 timer alene, 50/50 
 Ablationen viser samtidig betydeligt boelge-/vindoverlap inden for haendelser. Lineaer vind er den konservative hovedanalyse, mens vindstressproxy kun er en foelsomhedsmaessig yderkant. En variant uden direkte vind er obligatorisk, foer et direkte vindbidrag kan foreslaas; direkte og indirekte vind maa ikke summeres som fulde uafhaengige bidrag.
 
 Ingen point, aktiv score eller offentlig kontrakt er aendret. Se `docs/research/RAVSCORE_HISTORY_TRACK_ABLATION_RESULT_2026-08-22.md`.
+
+## Resultat af historisk kandidat-G-replay
+
+Kandidat G er nu implementeret som en score-neutral forskningsfunktion med stabile ID'er for 24 timer, 50/50, 48 timer og den obligatoriske 50/50-variant uden direkte vind. Historik multiplicerer kun en eksisterende transport-/leveringsvej og kan derfor ikke skabe transport ved nul fysisk kapacitet.
+
+Replayet omfatter 1.460 evalueringer på de 12 private forløb. 24 og 48 timer adskiller sig kun 0,064 point absolut i gennemsnit og højst ét point. 50/50 bruges derfor som praktisk shadow-repræsentant, mens enderne bevares som følsomhedsgrænser.
+
+G 50/50 ligger i gennemsnit 1,492 point under aktiv model, men skifter referencebånd i 474 af 1.460 evalueringer og spænder fra 32 point under til 24 point over. Ved lav kapacitet ligger den 3,405 point under kandidat E; ved høj kapacitet ligger den 0,876 point over. Det støtter kapacitetsprincippet, men viser også, at aktivering ville være en væsentlig modelændring.
+
+Direkte vind flytter kun 0,086 point absolut i gennemsnit og højst ét point. Den foretrukne næste beslutningsvariant er derfor 50/50 uden direkte vind, indtil et selvstændigt direkte signal kan dokumenteres. 20/45/35 og historikgain 0,40 forbliver forskningspriorer.
+
+Den kanoniske rotationsmatrix består 176 score-neutrale scenarier og bekræfter nul historikskabt transport ved nul kapacitet. Den afslører samtidig en aktiveringsstopklods: et ekstremt waders-forløb kan have jagtbarhed 0 og kandidat-G-score omkring 79. Ejerbeslutning om betydning, UI og forklaring er obligatorisk; en skjult ny gate maa ikke indfoeres.
+
+Den versionsbundne offentlige ekspertregelkaede har nul aktive regler og flytter derfor ingen af de 1.460 scorer. Den centralt hydrerede nationale shadow `32554012542` paa PR #59's eksakte head fandt ligeledes nul aktive regler og gennemfoerte 673 aktive dele/210 zoner uden offentlige aendringer. 243 dele gav 486 scorecontexts, mens 430 forblev eksplicit u-scorede; retention-featurecoverage var nul. G 50/50 laa i gennemsnit 5,50 point under aktiv model for strand og 3,74 for waders. 24/48 og no-direct-wind var fortsat praktisk identiske. Kandidat G maa ikke aktiveres, foer pil-/forklaringskontrakten, waders-betydningen, coveragebegrænsningen og ejerens go/no-go er afsluttet.
+
+Samlet beslutningsgrundlag: `docs/research/RAVSCORE_CANDIDATE_G_DECISION_BASIS_2026-08-22.md`.

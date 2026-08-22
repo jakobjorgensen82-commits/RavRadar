@@ -97,7 +97,13 @@ assert.deepEqual(
   "future samples must not change earlier memory or normalization",
 );
 assert.ok(normalizedPrefix.every((record) => Math.abs(record.boundedState) < 1));
+const floorNormalized = normalizeMemoryTrackCausally(balanced, {
+  initialScale: 10,
+  minimumScale: 10,
+});
+assert.ok(floorNormalized.every(record => record.causalScale >= 10));
 assert.throws(() => buildBlendedRegimeMemory(trackSamples, { activeWeight: 1.1 }));
 assert.throws(() => normalizeMemoryTrackCausally(balanced, { initialScale: 0 }));
+assert.throws(() => normalizeMemoryTrackCausally(balanced, { minimumScale: 0 }));
 
 console.log("OK: regime memory preserves prior transport through weak reversals and responds to sustained strong reversals.");

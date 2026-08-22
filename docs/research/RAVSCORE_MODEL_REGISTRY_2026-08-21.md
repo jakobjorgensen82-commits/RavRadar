@@ -11,6 +11,10 @@
 | RRS-CAND-C-WEAKEST-LINK | Forskningskandidat | 25/40/35 | B plus mild svageste-led-begrænsning |
 | RRS-CAND-D-WAVE-DELIVERY-PATH | Forskningskandidat | 25/40/35 | Bevarer A-C og kræver en bølge-/strømunderstøttet leveringsvej; statisk fastholdelse er neutral |
 | RRS-CAND-E-PHYSICAL-BOTTLENECK | Forskningskandidat | 25/40/35 | D plus højst 15 % reduktion, kun når mobilisering eller samlet transport/levering er under 35 |
+| RRS-CANDIDATE-G-24H-LIN-4.0.252 | Forskningskandidat | 20/45/35 | Kandidat E med kapacitetsbevarende 24-timers historik og højst 10 % direkte vind i historiksignalet |
+| RRS-CANDIDATE-G-50-50-LIN-4.0.252 | Forskningskandidat | 20/45/35 | Kandidat E med 50/50-blanding af 24- og 48-timers historik |
+| RRS-CANDIDATE-G-48H-LIN-4.0.252 | Forskningskandidat | 20/45/35 | Kandidat E med langsomt 48-timers historikspor |
+| RRS-CANDIDATE-G-50-50-NO-DIRECT-WIND-4.0.252 | Foretrukken næste beslutningsvariant | 20/45/35 | Samme 50/50-historik uden direkte vindbidrag; offentlig aktivering er ikke godkendt |
 
 ## Stabile kandidatregler
 
@@ -61,3 +65,12 @@ Det reproducerbare resultat og den fulde beslutning findes i `RAVSCORE_PAIRED_DI
 - En no-direct-wind-ablation er obligatorisk, saa indirekte vind gennem boelger og stroem ikke dobbeltregnes.
 - Ingen af disse poster er produktionsregler, point eller godkendte koefficienter.
 - Evidens: `RAVSCORE_HISTORY_TRACK_ABLATION_RESULT_2026-08-22.md`.
+
+## Kandidat G replayresultat
+
+- 24 timer, 50/50 og 48 timer adskiller sig højst ét point i de 1.460 historiske evalueringer; 50/50 er kun praktisk repræsentant, ikke fundkalibreret vinder.
+- Direkte vind flytter 0,086 point absolut i gennemsnit og har ikke dokumenteret selvstændig merværdi. `RRS-CANDIDATE-G-50-50-NO-DIRECT-WIND-4.0.252` er derfor foretrukken til næste nationale shadow.
+- Kandidat G skifter 474 af 1.460 referencebånd mod aktiv model og kan ikke kaldes en mindre justering.
+- Et kanonisk waders-scenarie giver jagtbarhed 0 og score omkring 79. Ingen G-model må aktiveres, før produktbetydning og forklaring er afgjort eksplicit.
+- National exact-head-shadow `32554012542` bekræfter næsten identiske 24/48/no-direct-spor. G 50/50 ligger i gennemsnit 5,50 point under aktiv model for strand og 3,74 for waders på 243 scorede dele; 430 dele er u-scorede, og retention-featurecoverage er nul.
+- Evidens: `RAVSCORE_CANDIDATE_G_DECISION_BASIS_2026-08-22.md`.

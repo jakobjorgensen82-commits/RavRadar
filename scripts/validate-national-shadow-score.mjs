@@ -4,7 +4,10 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { calculateRavScore } from '../js/core/score-engine.js';
+import { evaluateRules } from '../js/core/rule-engine.js';
 import { evaluatePhaseDWaveProcessCandidate } from '../js/core/phase-d-wave-process-candidate.js';
+import { evaluateRavScoreCandidateG } from '../js/core/ravscore-candidate-g.js';
+import { buildBlendedRegimeMemory, normalizeMemoryTrackCausally, signedDirectionalForce } from '../js/core/ravscore-regime-memory.js';
 import { SCORE_MODEL_IDS } from '../js/core/score-candidates.js';
 import { applyCurrentTransportToHistory } from './lib/current-transport-history.mjs';
 
@@ -16,6 +19,27 @@ const windFrom=(u,v)=>norm(toward(u,v)+180);
 const digest=value=>crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex').slice(0,20);
 const round=(value,digits=2)=>Number(Number(value).toFixed(digits));
 const hours=milliseconds=>milliseconds/3600000;
+const candidateGTracks={candidateG24:{variantId:'G-24H-LIN',activeWeight:1},candidateG5050:{variantId:'G-50-50-LIN',activeWeight:.5},candidateG48:{variantId:'G-48H-LIN',activeWeight:0}};
+
+function directionalAlignment(towardDirection,onshoreDirection){
+  return Math.cos((Number(towardDirection)-Number(onshoreDirection))*Math.PI/180);
+}
+
+function candidateGMemoryByTime(marineHours,localWind,part){
+  const samples=marineHours.map(hour=>{
+    const wind=localWind.get(hour.time),cu=finite(hour['current-u']),cv=finite(hour['current-v']),wu=finite(wind?.['wind-u-10m']),wv=finite(wind?.['wind-v-10m']),waveHeight=finite(hour['significant-wave-height']),wavePeriod=finite(hour['dominant-wave-period']),waveFrom=finite(hour['mean-wave-dir']);
+    if([cu,cv,wu,wv,waveHeight,wavePeriod,waveFrom].some(value=>value===null))return null;
+    const onshore=Number(part.onshoreDirectionDeg);
+    return {time:hour.time,currentForce:signedDirectionalForce({magnitude:Math.hypot(cu,cv),alignment:directionalAlignment(toward(cu,cv),onshore)}),waveForce:signedDirectionalForce({magnitude:Math.max(0,waveHeight)**2*Math.max(0,wavePeriod),alignment:directionalAlignment(norm(waveFrom+180),onshore)}),windForce:signedDirectionalForce({magnitude:Math.hypot(wu,wv),alignment:directionalAlignment(toward(wu,wv),onshore)})};
+  }).filter(Boolean).sort((a,b)=>Date.parse(a.time)-Date.parse(b.time));
+  const result={};
+  for(const [key,track] of Object.entries(candidateGTracks)){
+    const normalized=(force,scale)=>normalizeMemoryTrackCausally(buildBlendedRegimeMemory(samples,{activeHalfLifeHours:24,backgroundHalfLifeHours:48,activeWeight:track.activeWeight,getTime:sample=>sample.time,getForce:sample=>sample[force]}),{initialScale:scale,minimumScale:scale});
+    const current=normalized('currentForce',.3),wave=normalized('waveForce',7),directWind=normalized('windForce',8);
+    result[key]=new Map(samples.map((sample,index)=>[sample.time,{current:current[index].boundedState,wave:wave[index].boundedState,directWind:directWind[index].boundedState}]));
+  }
+  return result;
+}
 
 function currentRegime(weather,zone){
   const direction=finite(weather?.currentDirectionDeg),onshore=finite(zone?.onshoreDirectionDeg);
@@ -64,18 +88,20 @@ function buildShadowHistory(marineHours,localWind,currentSamples,at){
 }
 
 function summarizeDeltas(rows,from,to){
-  const values=rows.map(row=>row[to]-row[from]).filter(Number.isFinite);
+  const values=rows.filter(row=>Number.isFinite(row[from])&&Number.isFinite(row[to])).map(row=>row[to]-row[from]);
   if(!values.length)return {count:0,meanDelta:null,minimumDelta:null,maximumDelta:null,raisedCount:0,loweredCount:0,unchangedCount:0};
   return {count:values.length,meanDelta:round(values.reduce((sum,value)=>sum+value,0)/values.length),minimumDelta:Math.min(...values),maximumDelta:Math.max(...values),raisedCount:values.filter(value=>value>0).length,loweredCount:values.filter(value=>value<0).length,unchangedCount:values.filter(value=>value===0).length};
 }
 
 function buildCandidateShadow(partRows){
-  const rows=partRows.flatMap(part=>part.snapshots.flatMap(snapshot=>Object.entries(snapshot.modes).map(([mode,result])=>({zoneId:part.zoneId,partId:part.partId,time:snapshot.time,mode,currentRegime:result.currentRegime,active:result.score,...result.shadowCandidates}))));
-  const byMode=Object.fromEntries(['waders','beach'].map(mode=>{const selected=rows.filter(row=>row.mode===mode);return [mode,{activeToA:summarizeDeltas(selected,'active','candidateA'),activeToB:summarizeDeltas(selected,'active','candidateB'),activeToC:summarizeDeltas(selected,'active','candidateC'),activeToD:summarizeDeltas(selected,'active','candidateD'),activeToE:summarizeDeltas(selected,'active','candidateE'),aToB:summarizeDeltas(selected,'candidateA','candidateB'),bToC:summarizeDeltas(selected,'candidateB','candidateC'),cToD:summarizeDeltas(selected,'candidateC','candidateD'),dToE:summarizeDeltas(selected,'candidateD','candidateE')}];}));
-  const deliveryDirectionAudit=Object.fromEntries(['onshore-delivery','alongshore-passage','offshore-removal','unknown'].map(regime=>{const selected=rows.filter(row=>row.currentRegime===regime);return [regime,{candidateBMinusA:summarizeDeltas(selected,'candidateA','candidateB'),candidateDMinusA:summarizeDeltas(selected,'candidateA','candidateD'),candidateEMinusD:summarizeDeltas(selected,'candidateD','candidateE')}];}));
-  const extremes=rows.flatMap(row=>['candidateA','candidateB','candidateC','candidateD','candidateE'].map(candidate=>({...row,candidate,delta:row[candidate]-row.active,candidateScore:row[candidate]}))).sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta)||a.partId.localeCompare(b.partId)).slice(0,5).map(row=>({zoneId:row.zoneId,partId:row.partId,time:row.time,mode:row.mode,currentRegime:row.currentRegime,candidate:row.candidate,activeScore:row.active,candidateScore:row.candidateScore,delta:row.delta}));
+  const rows=partRows.flatMap(part=>part.snapshots.flatMap(snapshot=>Object.entries(snapshot.modes).map(([mode,result])=>({zoneId:part.zoneId,partId:part.partId,time:snapshot.time,mode,currentRegime:result.currentRegime,active:result.score,activeFinal:result.finalScore,activeRuleCount:result.activeRuleCount,activeRuleMatchCount:result.activeRuleMatchCount,candidateGRuleMatchCount:result.candidateGRuleMatchCount,noDirectRuleMatchCount:result.noDirectRuleMatchCount,...result.shadowCandidates}))));
+  const byMode=Object.fromEntries(['waders','beach'].map(mode=>{const selected=rows.filter(row=>row.mode===mode);return [mode,{activeToA:summarizeDeltas(selected,'active','candidateA'),activeToB:summarizeDeltas(selected,'active','candidateB'),activeToC:summarizeDeltas(selected,'active','candidateC'),activeToD:summarizeDeltas(selected,'active','candidateD'),activeToE:summarizeDeltas(selected,'active','candidateE'),activeToG24:summarizeDeltas(selected,'active','candidateG24'),activeToG5050:summarizeDeltas(selected,'active','candidateG5050'),activeToG48:summarizeDeltas(selected,'active','candidateG48'),activeFinalToG5050Final:summarizeDeltas(selected,'activeFinal','candidateG5050Final'),activeFinalToGNoDirectWindFinal:summarizeDeltas(selected,'activeFinal','candidateGNoDirectWindFinal'),g5050BaseToFinal:summarizeDeltas(selected,'candidateG5050','candidateG5050Final'),noDirectBaseToFinal:summarizeDeltas(selected,'candidateGNoDirectWind','candidateGNoDirectWindFinal'),eToG5050:summarizeDeltas(selected,'candidateE','candidateG5050'),g24ToG48:summarizeDeltas(selected,'candidateG24','candidateG48'),noDirectToG5050:summarizeDeltas(selected,'candidateGNoDirectWind','candidateG5050'),aToB:summarizeDeltas(selected,'candidateA','candidateB'),bToC:summarizeDeltas(selected,'candidateB','candidateC'),cToD:summarizeDeltas(selected,'candidateC','candidateD'),dToE:summarizeDeltas(selected,'candidateD','candidateE')}];}));
+  const deliveryDirectionAudit=Object.fromEntries(['onshore-delivery','alongshore-passage','offshore-removal','unknown'].map(regime=>{const selected=rows.filter(row=>row.currentRegime===regime);return [regime,{candidateBMinusA:summarizeDeltas(selected,'candidateA','candidateB'),candidateDMinusA:summarizeDeltas(selected,'candidateA','candidateD'),candidateEMinusD:summarizeDeltas(selected,'candidateD','candidateE'),candidateG5050MinusE:summarizeDeltas(selected,'candidateE','candidateG5050'),candidateG5050MinusNoDirectWind:summarizeDeltas(selected,'candidateGNoDirectWind','candidateG5050')}];}));
+  const candidateIds=['candidateA','candidateB','candidateC','candidateD','candidateE','candidateG24','candidateG5050','candidateG48','candidateGNoDirectWind','candidateG5050Final','candidateGNoDirectWindFinal'];
+  const extremes=rows.flatMap(row=>candidateIds.filter(candidate=>Number.isFinite(row[candidate])).map(candidate=>({...row,candidate,delta:row[candidate]-row.active,candidateScore:row[candidate]}))).sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta)||a.partId.localeCompare(b.partId)).slice(0,5).map(row=>({zoneId:row.zoneId,partId:row.partId,time:row.time,mode:row.mode,currentRegime:row.currentRegime,candidate:row.candidate,activeScore:row.active,candidateScore:row.candidateScore,delta:row.delta}));
   const retentionFeatureContextCount=partRows.reduce((sum,part)=>sum+(part.retentionFeaturesAvailable?part.snapshots.length*2:0),0);
-  return {status:'private-score-neutral-ravscore-candidate-shadow',modelIds:SCORE_MODEL_IDS,contextCount:rows.length,retentionFeatureContextCount,retentionFeatureCoverage:rows.length?round(retentionFeatureContextCount/rows.length,3):0,limitations:retentionFeatureContextCount===rows.length?[]:['NATIONAL_CONTRACT_HAS_NO_COMPLETE_LOCAL_RETENTION_FEATURES'],byMode,deliveryDirectionAudit,extremes,eventHistory:{windowHours:24,currentWindowHours:72,samplingAwareStrongEventDuration:true},rawWeatherValuesStored:false,scoreChanged:false,publicRuntimeChanged:false,automaticActivationAllowed:false};
+  const activeRuleCount=rows[0]?.activeRuleCount??0;
+  return {status:'private-score-neutral-ravscore-candidate-shadow',modelIds:SCORE_MODEL_IDS,contextCount:rows.length,retentionFeatureContextCount,retentionFeatureCoverage:rows.length?round(retentionFeatureContextCount/rows.length,3):0,limitations:[...(retentionFeatureContextCount===rows.length?[]:['NATIONAL_CONTRACT_HAS_NO_COMPLETE_LOCAL_RETENTION_FEATURES']),'CANDIDATE_G_REMAINS_RESEARCH_ONLY_WITHOUT_FIND_OUTCOME_CALIBRATION'],byMode,deliveryDirectionAudit,extremes,centralRuleChain:{activeRuleCount,activeMatchedContextCount:rows.filter(row=>row.activeRuleMatchCount>0).length,candidateGMatchedContextCount:rows.filter(row=>row.candidateGRuleMatchCount>0).length,noDirectMatchedContextCount:rows.filter(row=>row.noDirectRuleMatchCount>0).length,blockedActiveFinalCount:rows.filter(row=>row.activeFinal===null).length,blockedCandidateGFinalCount:rows.filter(row=>row.candidateG5050Final===null).length,blockedNoDirectFinalCount:rows.filter(row=>row.candidateGNoDirectWindFinal===null).length,ruleSource:'versioned-rule-files-at-validator-runtime'},eventHistory:{windowHours:24,currentWindowHours:72,samplingAwareStrongEventDuration:true,candidateGTracks:['24h','24h-48h-50-50','48h'],candidateGNoDirectWindControl:true},rawWeatherValuesStored:false,scoreChanged:false,publicRuntimeChanged:false,automaticActivationAllowed:false};
 }
 
 function validateInputs(contract,multi,state,wind,marineInput,windInput){
@@ -84,8 +110,9 @@ function validateInputs(contract,multi,state,wind,marineInput,windInput){
   for(const report of [multi,state,wind])for(const flag of ['productionGeometryChanged','adminDataChanged','publicRuntimeChanged','scoreChanged','automaticActivationAllowed'])if(report[flag]!==false)throw new Error(`Forgate tillader mutation: ${flag}`);
 }
 
-export function buildNationalShadowScoreReport(contract,multi,state,wind,marineInput,windInput){
+export function buildNationalShadowScoreReport(contract,multi,state,wind,marineInput,windInput,publicRules=[]){
   validateInputs(contract,multi,state,wind,marineInput,windInput);
+  const activeRules=publicRules.filter(rule=>rule.status==='active');
   const contractById=new Map(contract.parts.map(part=>[part.partId,part]));
   const windById=new Map(windInput.series.map(row=>[row.partId,new Map(row.hours.map(hour=>[hour.time,hour]))]));
   const partRows=[];
@@ -93,6 +120,7 @@ export function buildNationalShadowScoreReport(contract,multi,state,wind,marineI
     const part=contractById.get(marine.partId),localWind=windById.get(marine.partId);
     if(!part||marine.zoneId!==part.zoneId||marine.seriesId!==part.seriesId||!localWind)continue;
     const marineByTime=new Map(marine.hours.map(hour=>[Date.parse(hour.time),hour]));
+    const candidateGMemory=candidateGMemoryByTime(marine.hours,localWind,part);
     const currentSamples=[];
     for(const hour of marine.hours){
       const u=finite(hour['current-u']),v=finite(hour['current-v']);
@@ -115,7 +143,17 @@ export function buildNationalShadowScoreReport(contract,multi,state,wind,marineI
         if(!result.available||!Number.isFinite(result.score))throw new Error(`${part.partId}/${hour.time}/${mode} gav ikke gyldig RavScore`);
         const shadow=evaluatePhaseDWaveProcessCandidate({mode,zone,weather,history});
         if(!shadow.available||!Object.values(shadow.candidateScores||{}).every(Number.isFinite))throw new Error(`${part.partId}/${hour.time}/${mode} gav ikke gyldige RavScore-kandidater`);
-        modes[mode]={score:result.score,components:result.components,contributions:result.explanation?.contributions,dominantPathway:result.explanation?.mobilisationDiagnostics?.dominantPathway??null,currentRegime:currentRegime(weather,zone),shadowCandidates:shadow.candidateScores};
+        const candidateGResults=Object.fromEntries(Object.entries(candidateGTracks).map(([key,track])=>{
+          const memory=candidateGMemory[key].get(hour.time);if(!memory)throw new Error(`${part.partId}/${hour.time}/${mode} mangler Candidate G memory`);
+          const candidate=evaluateRavScoreCandidateG({mode,zone,weather,history},{variantId:track.variantId,memory});
+          if(!candidate.available||!Number.isFinite(candidate.score))throw new Error(`${part.partId}/${hour.time}/${mode} gav ikke gyldig Candidate G`);
+          return [key,candidate.score];
+        }));
+        const noDirect=evaluateRavScoreCandidateG({mode,zone,weather,history},{variantId:'G-50-50-NO-DIRECT-WIND',memory:candidateGMemory.candidateG5050.get(hour.time)});
+        const activeFinal=evaluateRules({rules:activeRules,zone,mode,weather,history,baseScore:result.score});
+        const candidateGFinal=evaluateRules({rules:activeRules,zone,mode,weather,history,baseScore:candidateGResults.candidateG5050});
+        const noDirectFinal=evaluateRules({rules:activeRules,zone,mode,weather,history,baseScore:noDirect.score});
+        modes[mode]={score:result.score,finalScore:activeFinal.score,activeRuleCount:activeRules.length,activeRuleMatchCount:activeFinal.matches.length,candidateGRuleMatchCount:candidateGFinal.matches.length,noDirectRuleMatchCount:noDirectFinal.matches.length,components:result.components,contributions:result.explanation?.contributions,dominantPathway:result.explanation?.mobilisationDiagnostics?.dominantPathway??null,currentRegime:currentRegime(weather,zone),shadowCandidates:{...shadow.candidateScores,...candidateGResults,candidateGNoDirectWind:noDirect.score,candidateG5050Final:candidateGFinal.score,candidateGNoDirectWindFinal:noDirectFinal.score}};
       }
       snapshots.push({time:hour.time,inputDigest:digest([part.seriesId,hour.time,weather,history]),modes,stateModelMode:history.stateModelMode??'shadow-v2'});
     }
@@ -151,11 +189,14 @@ export function selfTest(){
   const multi={status:'passed-private-national-multi-step-series-validation',...clean},state={status:'passed-private-national-state-history-isolation',...clean},wind={status:'passed-private-national-native-wind-series-validation',...clean};
   const marineInput={status:'private-transient-national-shadow-score-marine-input',series:parts.map((p,i)=>({...p,hours:times.map((time,j)=>({time,'significant-wave-height':.4+i*.02,'mean-wave-dir':270,'dominant-wave-period':5,'sea-mean-deviation':.1+j*.01,'current-u':.2,'current-v':.1}))})),excluded:[]};
   const windInput={status:'private-transient-national-shadow-score-wind-input',series:parts.map(p=>({...p,hours:[{time:times[0],'wind-u-10m':-4,'wind-v-10m':0}]})),excluded:[]};
-  const report=buildNationalShadowScoreReport(contract,multi,state,wind,marineInput,windInput);
+  const publicRules=[{id:'self-test-central-rule',status:'active',kind:'bonus',priority:1,geography:{scope:'national'},conditions:{},effect:{scoreAdjustment:2,explanation:'self-test'}}];
+  const report=buildNationalShadowScoreReport(contract,multi,state,wind,marineInput,windInput,publicRules);
   if(report.status!=='passed-private-national-shadow-score-validation'||report.scoredPartCount!==2||report.zones.length!==1||report.zones[0].evaluations.length!==2||report.rawWeatherValuesStored)throw new Error('Gyldig shadow-score blev afvist');
   if(report.candidateShadow?.status!=='private-score-neutral-ravscore-candidate-shadow'||report.candidateShadow.contextCount!==4||report.candidateShadow.rawWeatherValuesStored||report.candidateShadow.scoreChanged||report.candidateShadow.automaticActivationAllowed)throw new Error('Kandidat-shadow mangler eller kan aktivere score');
   if(report.candidateShadow.retentionFeatureCoverage!==0||!report.candidateShadow.limitations.includes('NATIONAL_CONTRACT_HAS_NO_COMPLETE_LOCAL_RETENTION_FEATURES'))throw new Error('Kandidat-shadow skjuler manglende fastholdelsesfeatures');
-  if(!report.candidateShadow.modelIds?.candidateA||!report.candidateShadow.modelIds?.candidateD||!Object.values(report.parts[0].snapshots[0].modes.waders.shadowCandidates).every(Number.isFinite))throw new Error('Kandidat-shadow mangler stabile modeller eller scorer');
+  if(!report.candidateShadow.modelIds?.candidateA||!report.candidateShadow.modelIds?.candidateD||!report.candidateShadow.modelIds?.candidateG5050||!Object.values(report.parts[0].snapshots[0].modes.waders.shadowCandidates).every(Number.isFinite))throw new Error('Kandidat-shadow mangler stabile modeller eller scorer');
+  if(report.candidateShadow.byMode.waders.activeToG5050.count!==2||report.candidateShadow.byMode.beach.noDirectToG5050.count!==2)throw new Error('Candidate G national shadow mangler tracks eller no-direct-wind kontrol');
+  if(report.candidateShadow.centralRuleChain.activeRuleCount!==1||report.candidateShadow.centralRuleChain.activeMatchedContextCount!==4||report.candidateShadow.centralRuleChain.candidateGMatchedContextCount!==4||report.candidateShadow.byMode.waders.g5050BaseToFinal.meanDelta!==2)throw new Error('Candidate G national shadow afspiller ikke den centrale slutregelkaede');
   if(report.candidateShadow.deliveryDirectionAudit['onshore-delivery'].candidateDMinusA.count!==4)throw new Error('Retningsaudit dækkede ikke alle score-contexts');
   const broken=structuredClone(windInput);broken.series.pop();try{buildNationalShadowScoreReport(contract,multi,state,wind,marineInput,broken);throw new Error('Manglende fulddækket del blev accepteret');}catch(error){if(error.message==='Manglende fulddækket del blev accepteret')throw error;}
   console.log('National privat shadow-score self-test: bestået');
@@ -167,7 +208,8 @@ async function main(){
   const files=Object.fromEntries(Object.entries(DEFAULTS).map(([key,fallback])=>[key,value(`--${key.replace(/[A-Z]/g,m=>`-${m.toLowerCase()}`)}`,fallback)]));
   try{
     const [contract,multi,state,wind,marineInput,windInput]=await Promise.all(['contract','multi','state','wind','marineInput','windInput'].map(key=>fs.readFile(files[key],'utf8').then(JSON.parse)));
-    const report=buildNationalShadowScoreReport(contract,multi,state,wind,marineInput,windInput);await fs.mkdir(path.dirname(files.output),{recursive:true});await fs.writeFile(files.output,JSON.stringify(report,null,2)+'\n');
+    const publicRules=(await Promise.all(['rules/national-rules.json','rules/local-rules.json','rules/experimental-rules.json','rules/admin-active-rules.json'].map(file=>fs.readFile(file,'utf8').then(JSON.parse)))).flatMap(document=>document.rules||[]);
+    const report=buildNationalShadowScoreReport(contract,multi,state,wind,marineInput,windInput,publicRules);await fs.mkdir(path.dirname(files.output),{recursive:true});await fs.writeFile(files.output,JSON.stringify(report,null,2)+'\n');
     await Promise.all([files.marineInput,files.windInput].map(file=>fs.unlink(file)));report.transientInputsDeleted=true;await fs.writeFile(files.output,JSON.stringify(report,null,2)+'\n');
     console.log(JSON.stringify({status:report.status,scoredPartCount:report.scoredPartCount,unscoredPartCount:report.unscoredPartCount,coverageStatusCounts:report.coverageStatusCounts,scoreChanged:false}));
   }finally{await Promise.all([files.marineInput,files.windInput].map(file=>fs.unlink(file).catch(()=>{})));}

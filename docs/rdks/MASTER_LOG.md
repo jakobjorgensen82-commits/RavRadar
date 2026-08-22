@@ -1697,3 +1697,14 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - 24/48-sporene er enige om fortegnet i 98-99 procent af timerne; næste replay begrænses til 24 alene, 50/50 og 48 alene.
 - Bølge/vind-overlap består inden for hændelser. Lineær vind går videre som konservativ hovedanalyse; vindstress er yderkant, og no-direct-wind forbliver obligatorisk.
 - Cacheinput og output er Git-ignoreret. Beskyttede data, artifact, geometri, land-/vandpunkter, aktiv score og offentlig runtime er ikke ændret.
+
+## 2026-08-22 - kandidat G historisk replay og beslutningsgrundlag
+
+- Candidate G er implementeret diagnostic-only med stabile 24h-, 50/50-, 48h- og no-direct-wind-ID'er.
+- 1.460 private evalueringer viser næsten identiske historikspor, kapacitetsstyret dæmpning ved lav bevægelse og kun 0,086 points gennemsnitlig absolut direkte-vind-effekt.
+- 176 rotationsinvariante scenarier bekræfter vendinger og nul transport ved nul kapacitet, men afslører waders-jagtbarhed 0 samtidig med score cirka 79.
+- Versionsbundne offentlige regler er afspillet med nul aktive regler og nul slutscoreændring.
+- Centralt hydreret exact-head-shadow `32554012542` kontrollerede 673 aktive dele i 210 zoner; 243 dele blev scoret i begge jagtformer, 430 var eksplicit u-scorede, og nul var blokerede.
+- G 50/50 laa i gennemsnit 5,50 point under aktiv model for strand og 3,74 for waders. 24/48 og no-direct-wind forblev praktisk identiske; den centrale regelkaede havde nul aktive regler.
+- Retention-featurecoverage var nul. Runnet ændrede ikke score, state, admin, sampling, geometri, offentlig runtime eller produktion og uploadede kun et privat dataminimeret artefakt.
+- Anbefalingen er ingen aktivering, offentlig 25/40/35 uændret og ejerreview af 50/50 uden direkte vind, waders-betydning, forklaring og coverage.

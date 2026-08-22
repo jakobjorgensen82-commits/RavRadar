@@ -433,3 +433,17 @@ Den nye appkode må ikke merges, før migrationen 20260821_trip_evidence_contrac
 - Nærmeste verificerede DMI-strømtime var 09:00 med 622/673 og 51 reelle supplementhuller.
 - 4.0.246 løser timen inden for højst tre timer og binder efterfølgende DMI/Copernicus/live/score til samme time.
 - PR #36 blev merged som c2e0d024. Produktion 32467031990 bestod 673/673, fuld validering, releasegate, Supabase og Pages; live viser version 4.0.246 og den løste 09:00-reference.
+
+## ISSUE-CANDIDATE-G-WADERS-MEANING - ÅBEN FORSKNINGSSTOPKLODS
+
+- Den kanoniske Candidate G-matrix kan give cirka 79 point samtidig med waders-jagtbarhed 0, fordi den fysiske gate efter DEC-0050 ikke indeholder jagtbarhed.
+- Replayet har 219 waders-evalueringer under 35 i jagtbarhed; 10 har samtidig mindst middel kandidat-G-score.
+- Dette er ikke en offentlig regression, fordi Candidate G er diagnostic-only. Det er en aktiveringsstopklods for betydning, UI og forklaring.
+- Løsningen kræver ejerbeslutning. Der må ikke tilføjes en skjult sikkerheds- eller jagtbarhedsgate alene for at få modellen til at se rigtig ud.
+
+## ISSUE-CANDIDATE-G-FRESH-NATIONAL-SHADOW - KØRSELSGATE LUKKET, COVERAGEGATE ÅBEN
+
+- Centralt hydreret exact-head-run `32554012542` kontrollerede 673 aktive dele i 210 zoner og gennemførte G 24 timer, 50/50, 48 timer og 50/50 uden direkte vind uden offentlig ændring.
+- 243 dele blev scoret i begge jagtformer; 430 var eksplicit u-scorede, nul var blokerede, og retention-featurecoverage var nul.
+- Aktuelle centrale regler var hydreret, men havde nul aktive regler og nul matches.
+- Kørselsgaten er dermed lukket. Coverage-, ekstrem-, forklarings- og ejer-gaten er fortsat åbne; ingen aktivering må ske på dette grundlag alene.
