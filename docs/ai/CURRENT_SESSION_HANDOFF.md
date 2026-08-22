@@ -1,5 +1,12 @@
 # RavRadar - aktuelt Codex-handoff
 
+## Checkpoint 2026-08-22 – bevidst snæver docs-skip-rettelse
+
+- PR #78 var ren intern dokumentation, men merge `7133b33b` startede alligevel fuld produktion `32599980640`; live blev fortsat sundt som `rr-20260822213959-210` med 210 zoner og 673/673 dele.
+- Rodårsagen er eksakt: workflowet ignorerer `CHANGELOG-*.md`, men den løbende samlede fil hedder `CHANGELOG.md`.
+- Branch `codex/fix-root-changelog-docs-skip` tilføjer kun `CHANGELOG.md` ved siden af det eksisterende versionsmønster og udvider den snævre regressionstest. Ingen bred `*.md`-, `docs/**`-, data-, script-, workflow- eller HTML-undtagelse er tilladt.
+- Næste bevis er målrettet/full source-gate, exact-head, merge, én forventet fuld produktion for workflowændringen og derefter en ren docs-only merge uden ny push-produktion.
+
 ## Checkpoint 2026-08-22 – strømstyret Candidate G efter 4.0.258
 
 - Candidate G-checkpointet blev leveret fra `codex/ravscore-current-led-memory` på `d37d15fe` og merged til `main` som `4379606e` i PR #75.

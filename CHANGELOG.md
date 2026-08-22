@@ -1,3 +1,9 @@
+## Intern workflowrettelse efter 4.0.258 – samlet CHANGELOG i docs-skip (2026-08-22)
+
+- Den selektive dokumentationsregel dækkede versionsfilerne `CHANGELOG-*.md`, men ikke projektets aktuelle samlede `CHANGELOG.md`; derfor udløste PR #78's docs-only merge en unødvendig fuld produktion.
+- Den eksakte rod-fil tilføjes til allowlisten ved siden af versionsmønstret. Regressionstesten kræver begge og bevarer forbuddet mod brede Markdown-, docs-, data-, script-, workflow- og HTML-undtagelser.
+- Workflowrettelsen kræver én fuld produktionskørsel og derefter et separat docs-only skip-bevis.
+
 ## Intern RavScore-forskning efter 4.0.258 – strømstyret hukommelse (2026-08-22)
 
 - Candidate G har fået en score-neutral variant, hvor verificeret kystnormal strøm bygger eller nedbryder transportpotentialet.

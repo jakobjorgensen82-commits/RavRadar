@@ -15,6 +15,12 @@
 
 Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre forsknings-/versionsafsnit bevares som revisionsspor. En tom afkrydsningsboks i historikken er ikke en aktiv opgave, medmindre punktet ogsaa findes her.
 
+## Aktuel workflowkorrektion – samlet CHANGELOG.md
+
+- [x] Bevis rodårsagen til PR #78's uventede produktion: `CHANGELOG-*.md` dækkede versionsfilerne, men ikke den aktuelle samlede `CHANGELOG.md`.
+- [x] Tilføj kun den eksakte rod-fil og lås begge changelogmønstre i regressionstesten.
+- [ ] Bestå exact-head, fuld post-merge-produktion og et efterfølgende docs-only skip-bevis.
+
 ## Aktuelt Candidate G-delmaal – strømstyret transporthukommelse
 
 - [x] Fastlæg strømmen som transportled og bølger som en lille afhængig landingsfaktor.

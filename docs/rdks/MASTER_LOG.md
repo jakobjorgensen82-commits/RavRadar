@@ -1,3 +1,9 @@
+## 2026-08-22 – rod-CHANGELOG manglede i docs-only skip
+
+- PR #78/merge `7133b33b` indeholdt kun intern dokumentation, men startede fuld produktion `32599980640`, fordi `paths-ignore` dækkede `CHANGELOG-*.md` og ikke den aktuelle samlede `CHANGELOG.md`.
+- Rettelsen bevarer versionsmønstret og tilføjer kun den eksakte rod-fil. Regressionen kræver begge og afviser fortsat brede Markdown-, docs-, data-, script-, workflow- og HTML-undtagelser.
+- En fuld produktion på selve workflowrettelsen og en efterfølgende ren docs-merge kræves som slutbevis.
+
 ## 2026-08-22 – Candidate G strømstyret transporthukommelse efter 4.0.258
 
 - Ejeren har godkendt, at fuld kraftig udgående strøm straks reducerer det interne transportpotentiale med 8 point pr. effektiv time og når 0 fra 13 timer. Fuld indgående strøm bygger 10 point pr. effektiv time mod 100.

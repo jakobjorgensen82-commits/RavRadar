@@ -1,5 +1,9 @@
 # Kendte åbne og overvågede forhold
 
+## Docs-only produktionsskip
+
+- **ISSUE-ROOT-CHANGELOG-DOCS-SKIP – RETTELSE UNDER VALIDERING:** Den snævre allowlist dækkede `CHANGELOG-*.md`, men ikke den faktiske samlede `CHANGELOG.md`. Derfor startede PR #78's ellers rene dokumentationsmerge fuld produktion `32599980640`. Kandidaten tilføjer kun den eksakte fil og en målrettet regression; den er først løst efter full-gate merge og et separat docs-only skip-bevis.
+
 ## Candidate G strømstyret transporthukommelse efter 4.0.258
 
 - **ISSUE-CANDIDATE-G-CURRENT-NORMAL-THRESHOLD – AKTIVERINGSBLOKERING:** DEC-0055's mekanik er testet, men fuld strømstyrke er ikke fundkalibreret. Reference 0,05→0,20 m/s har nul fuldstyrkeevalueringer i replayet; 0,03→0,15 har nul fulde indgående og 10 fulde udgående, mens 0,02→0,12 har to og 44. Lavere grænser flytter scoren mærkbart, men de 12 bølgeudvalgte vinduer uden fundlabels kan ikke kalibrere dem. Ingen grænse må skjult gøres til produktionssandhed.
