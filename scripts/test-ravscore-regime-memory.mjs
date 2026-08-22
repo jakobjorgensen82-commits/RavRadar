@@ -4,7 +4,9 @@ import {
   buildCurrentTransportPotential,
   buildBlendedRegimeMemory,
   buildExponentialRegimeMemory,
+  CURRENT_TRANSPORT_POTENTIAL_CONTINUATION_POLICY,
   CURRENT_TRANSPORT_POTENTIAL_PRIOR,
+  CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
   extractReversalEpisodes,
   normalizeMemoryTrackCausally,
   signedDirectionalForce,
@@ -22,6 +24,17 @@ assert.deepEqual(CURRENT_TRANSPORT_POTENTIAL_PRIOR, {
   preExhaustionMaximumLossPoints: 96,
   neutralPassiveHalfLifeHours: null,
 });
+assert.deepEqual(CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE, {
+  deadbandNormalSpeedMps: 0.03,
+  fullStrengthNormalSpeedMps: 0.15,
+  inboundPointsPerEffectiveHour: 10,
+  outboundPointsPerEffectiveHour: 8,
+  exhaustedAfterEffectiveHours: 13,
+  preExhaustionMaximumLossPoints: 96,
+  neutralPassiveHalfLifeHours: null,
+});
+assert.equal(CURRENT_TRANSPORT_POTENTIAL_CONTINUATION_POLICY,
+  'CARRY_FORWARD_COMPACT_DERIVED_TRANSPORT_STATE');
 
 const strongOutbound = Array.from({ length: 14 }, (_, hour) => ({
   time: new Date(Date.UTC(2024, 0, 1, hour)).toISOString(),
@@ -42,6 +55,46 @@ assert.equal(strongOutboundTrack[1].phase, 'OUTBOUND_EROSION');
 assert.equal(strongOutboundTrack[12].actualOutboundTransport, false);
 assert.equal(strongOutboundTrack[13].phase, 'OUTBOUND_TRANSPORT');
 assert.equal(strongOutboundTrack[13].actualOutboundTransport, true);
+
+const outboundFirstRun = strongOutboundTrack.slice(0, 7);
+const outboundContinuation = buildCurrentTransportPotential(strongOutbound.slice(7), {
+  initialState: outboundFirstRun.at(-1),
+  isVerified: sample => sample.currentVerified,
+});
+assert.deepEqual(
+  outboundContinuation.map(record => record.transportPotential),
+  strongOutboundTrack.slice(7).map(record => record.transportPotential),
+  'En ny pipelinekørsel skal kunne fortsætte den afledte udtransportstilstand uden spring',
+);
+assert.deepEqual(
+  outboundContinuation.map(record => record.outboundEpisodeEffectiveHours),
+  strongOutboundTrack.slice(7).map(record => record.outboundEpisodeEffectiveHours),
+);
+assert.equal(outboundContinuation.at(-1).actualOutboundTransport, true);
+
+const neutralContinuation = buildCurrentTransportPotential([
+  {
+    time: new Date(Date.UTC(2024, 0, 2, 14)).toISOString(),
+    currentSpeedMps: 0,
+    currentAlignment: 0,
+    currentVerified: true,
+  },
+], {
+  initialState: strongOutboundTrack[6],
+  isVerified: sample => sample.currentVerified,
+});
+assert.equal(neutralContinuation[0].transportPotential, strongOutboundTrack[6].transportPotential);
+assert.equal(neutralContinuation[0].outboundEpisodeEffectiveHours,
+  strongOutboundTrack[6].outboundEpisodeEffectiveHours);
+assert.throws(() => buildCurrentTransportPotential(strongOutbound, {
+  initialState: { time: 'invalid', transportPotential: 50, outboundEpisodeEffectiveHours: 2 },
+}));
+assert.throws(() => buildCurrentTransportPotential(strongOutbound, {
+  initialState: { time: strongOutbound[0].time, transportPotential: null, outboundEpisodeEffectiveHours: 2 },
+}));
+assert.throws(() => buildCurrentTransportPotential(strongOutbound, {
+  initialState: { time: strongOutbound[1].time, transportPotential: 50, outboundEpisodeEffectiveHours: 2 },
+}));
 
 const halfStrengthOutboundTrack = buildCurrentTransportPotential(
   strongOutbound.map(sample => ({ ...sample, currentSpeedMps: 0.125 })),

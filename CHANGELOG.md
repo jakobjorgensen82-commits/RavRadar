@@ -139,3 +139,10 @@
 - Waders-vinddelen er 100 til og med 6 m/s og falder glidende gennem 7/80, 8/60, 10/35, 13/10 og 18/0; bølger indgår fortsat separat.
 - 1.460 private replayevalueringer og 132 syntetiske vind-/bølgekombinationer er kontrolleret uden rå vejrdata, U/V, koordinater eller beskyttede payloads i Git.
 - Ingen sikkerhedsadvarsel eller automatisk bund-/dybde-/adgangsvurdering er tilføjet. Offentlig RavScore 25/40/35, UI, DMI/fallback, geometri og land-/vandpunkter er uændrede.
+## Intern RavScore-forskning efter 4.0.258 – transporttærskel og kørselskontinuitet (2026-08-23)
+
+- Efter ejerreview anbefales `0,03→0,15 m/s` som Candidate G's private kystnormale produktprior. `0,15` matcher RavRadars eksisterende betydning af en velegnet strømstyrke; profilen er ikke fundkalibreret.
+- Det opdaterede `RESEARCH-2`-replay på 1.460 evalueringer giver 31,360 i gennemsnit og 213 ændrede scorebånd mod 28,291 for 0,05→0,20. Den mere følsomme 0,02→0,12 ændrer 377 bånd.
+- Neutral og missing giver intet passivt tab. 24-/48-timers neutral halvering bevares som følsomhed, ikke produktadfærd.
+- Regimemodellen kan nu fortsætte en kompakt afledt tilstand over en pipelinegrænse. En opdelt syntetisk kørsel reproducerer potentiale, effektive udtransporttimer og 13-timers nul-gate eksakt.
+- Offentlig RavScore `25/40/35`, UI, produktion, private payloads, artifact, protected-dirty-data, geometri og land-/vandpunkter er uændrede.

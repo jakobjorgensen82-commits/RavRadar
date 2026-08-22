@@ -7,7 +7,9 @@
 - [x] Fastslå, at 12/12 vinduer kun har 24 timers forhistorie, og at hverken fysisk levetid eller starttilstand kan vælges herfra.
 - [x] Fastslå, at referencegrænsen har nul fuldstyrkeevalueringer, mens lavere grænser kun har sparsom dækning uden fundlabels.
 - [x] Før checkpointet gennem samlet kildegate, exact-head `32599255165`, PR #77/merge `75ed93d6` og fuld produktion `32599309735`; offentlig score og Candidate G-aktivering forbliver uændret.
-- [ ] Kalibrering af fysisk levetid og strømgrænse afventer mindst 72 timers forhistorie eller senere komplette ture/hold-out.
+- [x] Anbefal efter ejerreview 0,03→0,15 m/s, intet passivt neutralt tab og kompakt tilstandsfortsættelse som praktisk privat produktprior uden at kalde den fundkalibreret.
+- [x] Lås score-neutralt, at en opdelt kørsel reproducerer den ubrudte 13-timerskurve eksakt.
+- [ ] Gennemfør mobiliserings-/helhedsreview og derefter særskilt offentlig pipeline-/rollbackkobling, hvis ejeren aktiverer kandidaten.
 
 ## Candidate G – samlet beslutningsgrundlag efter 4.0.257
 
