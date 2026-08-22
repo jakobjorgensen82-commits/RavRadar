@@ -1708,3 +1708,11 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - G 50/50 laa i gennemsnit 5,50 point under aktiv model for strand og 3,74 for waders. 24/48 og no-direct-wind forblev praktisk identiske; den centrale regelkaede havde nul aktive regler.
 - Retention-featurecoverage var nul. Runnet ændrede ikke score, state, admin, sampling, geometri, offentlig runtime eller produktion og uploadede kun et privat dataminimeret artefakt.
 - Anbefalingen er ingen aktivering, offentlig 25/40/35 uændret og ejerreview af 50/50 uden direkte vind, waders-betydning, forklaring og coverage.
+
+## 2026-08-22 - PR #59 merge og fail-closed produktionskontrakt
+
+- PR #59 bestod exact-head-kildegaten `32565767549` og blev merged som `6b1511e0`.
+- Pushproduktion `32565885534` gennemførte central hydrering og frisk vejr, men den fulde validering stoppede før release og deploy.
+- Den fejlede test brugte det brede forbud `/admin/` og afviste dermed den nye GET-only regelhydrering. Samme test indgik ikke i PR-kildegaten.
+- Reparationskandidaten bevarer hydreringen, låser den til read-only-adfærd, forbyder konkrete skrive-/deployveje og føjer kontrakten til `validate:source`.
+- Ingen offentlig score, Candidate G-aktivering, beskyttede data, geometri eller land-/vandpunkter er ændret.

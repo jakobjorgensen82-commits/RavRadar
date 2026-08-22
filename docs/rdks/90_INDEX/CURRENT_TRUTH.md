@@ -1241,7 +1241,7 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 
 ## Aktuel sandhed i 4.0.250
 
-+RavRadar har nu et separat privat, manuelt RavScore-shadow-job, som laeser de aktive 210 zoner og 673 kystdele uden at aendre dem. Jobbet bruger den eksisterende native DMI-kaede og kan hverken deploye, skrive til admin eller aktivere score. Den offentlige vaegtning er stadig 25/40/35. A/B/C er analysemodeller, ikke produktionsregler. GeoDanmark-koersel `32474884163` stoppede korrekt paa et forældet punktbevis; den gate er ikke omgaaet.
++RavRadar har nu et separat privat, manuelt RavScore-shadow-job, som laeser de aktive 210 zoner og 673 kystdele uden at aendre dem. Jobbet bruger den eksisterende native DMI-kaede og kan læse centralt gemte aktive ekspertregler, men kan hverken skrive til central admin, deploye eller aktivere score. Den offentlige vaegtning er stadig 25/40/35. A/B/C er analysemodeller, ikke produktionsregler. GeoDanmark-koersel `32474884163` stoppede korrekt paa et forældet punktbevis; den gate er ikke omgaaet.
 
 ## Aktuel sandhed i 4.0.251
 
@@ -1299,3 +1299,11 @@ Foerste private aktive RavScore-shadowrun stoppede korrekt foer state og score, 
 - Den centrale regelkaede havde nul aktive regler og nul matches. Retention-featurecoverage var samtidig nul, saa shadowen lukker kørselsgaten, men ikke coverage-, forklarings- eller aktiveringsgaten.
 - Faglig anbefaling: behold offentlig 25/40/35; brug 50/50 uden direkte vind som næste beslutningsvariant; aktiver ikke G nu.
 - Ingen offentlig score, UI, data, DMI/fallback, geometri eller land-/vandpunkter er ændret. Se `docs/research/RAVSCORE_CANDIDATE_G_DECISION_BASIS_2026-08-22.md`.
+
+## PR #59 og produktionsgatens testkonflikt 2026-08-22
+
+- PR #59 bestod exact-head-kildegaten `32565767549` og blev merged som `6b1511e0e72e0b8327ad3668ccc7159701dc68ed`.
+- Produktion `32565885534` hydrerede centrale data og frisk DMI, men stoppede korrekt før releasegate, artifact og deploy i den fulde validering.
+- Årsagen var en for bred test, som forbød enhver forekomst af ordet `admin` i det private shadowjob. Jobbets nye centrale regelhydrering er derimod en eksplicit GET-læsning efterfulgt af lokal regelfilsgenerering.
+- Den samme shadowtest manglede i `validate:source`, så PR-gaten kunne ikke opdage kontraktkonflikten. Reparationskandidaten tillader kun de to læsende hydreringstrin, forbyder konkrete skrive-/deployveje og føjer testen til kildegaten.
+- Offentlig RavScore er fortsat 25/40/35. Candidate G, beskyttede data, geometri og land-/vandpunkter er uændrede; produktionsbeviset for reparationskandidaten afventer PR, merge og en ny fuld kørsel.

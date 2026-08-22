@@ -12,3 +12,9 @@
 - Den fælles produktionsformel er låst til den samme retningsmatematik som den landsdækkende 210/673-analyse.
 - Ufuldstændige eller uoverensstemmende kystdelsdata falder sikkert tilbage til den oprindelige rækkefølge.
 - Ingen geometri eller land-/vandpunkter er ændret.
+
+## Intern shadowgate-rettelse efter PR #59
+
+- Den private Candidate G-shadow kan læse centralt gemte aktive ekspertregler med GET og bygge en midlertidig lokal regelfil.
+- Testen skelner nu denne læsning fra centrale skrive-, roundtrip- og deployveje og indgår i `validate:source`.
+- Offentlig RavScore 25/40/35, Candidate G-status, data, geometri og land-/vandpunkter er uændrede.

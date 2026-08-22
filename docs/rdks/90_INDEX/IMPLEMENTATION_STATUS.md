@@ -1671,3 +1671,14 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [ ] Definér og kontrollér kandidatens pile, komponenter og forklaring samlet; offentlig UI er bevidst uændret i den score-neutrale shadow.
 - [ ] Ejer-go/no-go efter gennemgang. Foreløbig faglig anbefaling er ingen aktivering og videre shadow med 50/50 uden direkte vind.
 - Offentlig 25/40/35, DMI-first, UI, geometri og land-/vandpunkter er uændrede.
+
+## Reparationsstatus efter PR #59 - central regelhydrering i read-only shadow
+
+- [x] PR #59 exact-head-gate `32565767549` og merge `6b1511e0` er gennemført.
+- [x] Produktion `32565885534` stoppede fail-closed før release og deploy på en testkonflikt; ingen fejlende artifact blev udgivet.
+- [x] Rodårsagen er isoleret til det brede tekstforbud `/admin/` i shadowworkflowtesten, ikke til en central skrivning.
+- [x] Den tilladte kæde er låst til GET-only `sync-admin-config.py` og lokal `generate-public-admin-rules.mjs`.
+- [x] Konkrete centrale skrive-, roundtrip- og Pages-veje er fortsat forbudt i shadowjobbet.
+- [x] Shadowworkflowtesten er føjet til `test:workflow-action-contracts` og dermed `validate:source`.
+- [ ] Exact-head-kildegate, merge og ny fuld produktion/releasegate/deploy for reparationsbranchen.
+- Candidate G forbliver diagnostic-only; aktiv 25/40/35, beskyttede data, geometri og land-/vandpunkter er uændrede.
