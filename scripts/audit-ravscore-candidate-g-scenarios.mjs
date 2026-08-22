@@ -3,6 +3,10 @@ import assert from 'node:assert/strict';
 
 import { evaluateRavScoreCandidateG } from '../js/core/ravscore-candidate-g.js';
 import { buildBlendedRegimeMemory, normalizeMemoryTrackCausally } from '../js/core/ravscore-regime-memory.js';
+import {
+  MODE_COUPLING_POLICIES,
+  evaluateModeHuntabilityCoupling,
+} from '../js/core/ravscore-mode-huntability-research.js';
 
 const TRACKS = Object.freeze({
   candidateG24: Object.freeze({ variantId: 'G-24H-LIN', activeWeight: 1 }),
@@ -92,6 +96,9 @@ function runAudit() {
         const noDirect = evaluateRavScoreCandidateG(context, {
           variantId: 'G-50-50-NO-DIRECT-WIND', memory: memories.candidateG5050,
         });
+        const ownerApproved = evaluateRavScoreCandidateG(context, {
+          variantId: 'G-50-50-NO-DIRECT-WIND-WADERS-LIMIT', memory: memories.candidateG5050,
+        });
         assert.ok(Object.values(results).every(result => result.available));
         rows.push({
           scenarioId: scenario.id,
@@ -102,6 +109,12 @@ function runAudit() {
           candidateG5050: results.candidateG5050.score,
           candidateG48: results.candidateG48.score,
           candidateGNoDirectWind: noDirect.score,
+          ownerApprovedModeScore: ownerApproved.score,
+          ownerApprovedHuntability: ownerApproved.components.huntability,
+          modeCoupling: Object.fromEntries(MODE_COUPLING_POLICIES.map(policy => [
+            policy.id,
+            evaluateModeHuntabilityCoupling(noDirect, mode, policy.id).score,
+          ])),
           huntability: results.candidateG5050.components.huntability,
           transportAndDelivery: results.candidateG5050.components.transportAndDelivery,
           scoreIsSafetyAdvice: results.candidateG5050.diagnostics.scoreIsSafetyAdvice,
@@ -122,6 +135,9 @@ function runAudit() {
       candidateG5050Mean: value('candidateG5050'),
       candidateG48Mean: value('candidateG48'),
       candidateGNoDirectWindMean: value('candidateGNoDirectWind'),
+      ownerApprovedModeScoreMean: value('ownerApprovedModeScore'),
+      ownerApprovedHuntabilityMean: value('ownerApprovedHuntability'),
+      wadersHuntabilityCapMean: round3(mean(selected.map(row => row.modeCoupling['W-HUNTABILITY-CAP']))),
       huntabilityMean: value('huntability'),
       transportAndDeliveryMean: value('transportAndDelivery'),
       rotationInvariant: ['candidateG24', 'candidateG5050', 'candidateG48'].every(key =>
@@ -143,7 +159,11 @@ function runAudit() {
     maximumDirectWindDelta: Math.max(...rows.map(row => Math.abs(row.candidateG5050 - row.candidateGNoDirectWind))),
     highEnergyWaderHuntability: summary('high-energy-wader-warning', 'waders').huntabilityMean,
     highEnergyWaderPreferredScore: summary('high-energy-wader-warning', 'waders').candidateGNoDirectWindMean,
-    highEnergyWaderRequiresExplicitMethodStatus:
+    highEnergyWaderHuntabilityCappedScore: summary('high-energy-wader-warning', 'waders').wadersHuntabilityCapMean,
+    highEnergyWaderOwnerApprovedScore: summary('high-energy-wader-warning', 'waders').ownerApprovedModeScoreMean,
+    postStormWaderOwnerApprovedScore: summary('post-storm-huntable', 'waders').ownerApprovedModeScoreMean,
+    postStormWaderHuntabilityCappedScore: summary('post-storm-huntable', 'waders').wadersHuntabilityCapMean,
+    highEnergyWaderRequiresModeSpecificLimit:
       summary('high-energy-wader-warning', 'waders').huntabilityMean === 0
       && summary('high-energy-wader-warning', 'waders').candidateGNoDirectWindMean >= 55,
   };
@@ -179,7 +199,15 @@ function runAudit() {
   assert.equal(pairChecks.zeroCapacityTransportAndDelivery, 0, 'Inbound memory must not create transport at zero capacity');
   assert.ok(pairChecks.strongReversal24Minus48 <= 0, 'The 24h track must react at least as fast as the 48h track to a strong reversal');
   assert.ok(pairChecks.highEnergyWaderHuntabilityMinusPostStorm < 0, 'High energy must remain visibly less huntable for waders');
-  assert.equal(pairChecks.highEnergyWaderRequiresExplicitMethodStatus, true, 'High physical opportunity with zero wader huntability must require an explicit method status');
+  assert.equal(pairChecks.highEnergyWaderRequiresModeSpecificLimit, true, 'High physical opportunity with zero wader huntability must require a mode-specific score limit');
+  assert.equal(pairChecks.highEnergyWaderHuntabilityCappedScore, 0, 'Zero wader huntability must cap the experimental waders score at zero');
+  assert.equal(pairChecks.highEnergyWaderOwnerApprovedScore, 0, 'The owner-approved mode variant must cap zero-huntability waders at zero');
+  assert.ok(rows.filter(row => row.mode === 'waders')
+    .every(row => row.ownerApprovedModeScore <= row.ownerApprovedHuntability));
+  assert.ok(rows.filter(row => row.mode === 'beach')
+    .every(row => row.ownerApprovedModeScore === row.candidateGNoDirectWind));
+  assert.ok(rows.filter(row => row.mode === 'beach').every(row =>
+    Object.values(row.modeCoupling).every(score => score === row.candidateGNoDirectWind)));
   assert.ok(rows.every(row => row.scoreIsSafetyAdvice === false));
   assert.ok(pairChecks.maximumDirectWindDelta <= 2, 'The capped direct-wind prior must remain minor in canonical scenarios');
   return report;

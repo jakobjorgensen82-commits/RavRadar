@@ -1,5 +1,7 @@
 # Beslutningsgrundlag for RavScore kandidat G, 2026-08-22
 
+> **Efterfølgende beslutning:** DEC-0051 vælger `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT` som næste score-neutrale analysecentrum. Den tidligere no-direct-variant i dette dokument bevares som reference. Se `RAVSCORE_MODE_SPECIFIC_HUNTABILITY_ANALYSIS_2026-08-22.md`.
+
 ## Kort konklusion
 
 Kandidat G er nu bygget og analyseret som en privat, score-neutral forskningsmodel. Den løser det vigtigste kendte retningsproblem bedre end den aktive model: retning får kun stor betydning, når der samtidig findes en fysisk transportvej. Historik kan dæmpe eller forstærke en eksisterende transportvej, men kan ikke skabe transport ved nul kapacitet.
