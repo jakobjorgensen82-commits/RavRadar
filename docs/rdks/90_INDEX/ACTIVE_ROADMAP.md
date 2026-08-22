@@ -299,6 +299,6 @@ Kandidat G er privat og score-neutral. Aktiv RavScore 25/40/35, DMI-first, geome
 - [ ] Få ejerens produktbeslutning om waders-betydningen før enhver offentlig UI- eller scorekobling.
 - [x] Afspil frisk central ekspertregelkaede; den havde nul aktive regler og nul matches.
 - [x] Fastlæg kandidatens score-neutrale kontrakt: eksakte komponenter/gate rekonstruerer 1.460/1.460 scorer; pilen er aktuel lokal strøm, mens historik forklares særskilt på samme context.
-- [x] Før 4.0.253 gennem PR #62 og dokumentationscheckpoint PR #63; seneste merge `579ea914`, fuld produktion `32569650036` og live `rr-20260822111522-210` er 210/673 grønne.
+- [x] Før kode-/analysebaseline 4.0.253 gennem PR #62 og dokumentationscheckpointene gennem PR #64; fuld produktionsverifikation `32570223437` og snapshot `rr-20260822112859-210` er 210/673 grønne.
 - [ ] Verificér den endelige offentlige UI-/forklaringskobling efter ejerbeslutningen; ingen kobling er implementeret i 4.0.253.
 - [ ] Fremlæg derefter ejerreview. Den nuværende anbefaling er at beholde offentlig 25/40/35 og ikke aktivere G endnu.

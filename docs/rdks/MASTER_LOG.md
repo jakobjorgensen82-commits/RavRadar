@@ -1743,3 +1743,10 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - Da friskhedsgaten krævede en ny vejropdatering, gennemførte `32569650036` den fulde produktionskæde i stedet for preflight-skip; alle gates og jobs bestod.
 - Support `RavRadar-support-3380`, Supabase, Pages-artifact og deployment `6036178330` er grønne. Live `rr-20260822111522-210` viser 210 zoner og 673/673 scorede kystdele.
 - Kandidat G er fortsat privat og score-neutral. Ingen offentlig score-/UI-kobling, geometri- eller punktændring indgik.
+
+## 2026-08-22 - fremtidssikkert Candidate G-handoff
+
+- PR #64 bestod exact-head-kildegate `32570172205` på `bd8a73ec` og blev merged som `01904b92`.
+- Fuld produktion `32570223437` bestod med support `RavRadar-support-3382`, Supabase, Pages-artifact og deployment `6036286717`.
+- Live-snapshot `rr-20260822112859-210` viste version 4.0.253, 210 zoner og 673/673 scorede kystdele.
+- Handoffet binder herefter den faglige kodebaseline og dokumenterede produktionsbeviser, men ikke en evigt fast `main`-spids eller dataset-id. Begge skal kontrolleres direkte, så docs-publicering ikke gør sin egen tekst forældet.

@@ -6,7 +6,7 @@
 - Pilen fastholdes som aktuel lokal strøm; historik får en separat forklaringskontrakt, når den modvirker den aktuelle retning.
 - Den nationale shadow klassificerer coverage samlet og afviser parentzonens morfologi som lokal kystdelsevidens.
 - Aktiv RavScore 25/40/35, offentlig UI, geometri, land-/vandpunkter, DMI/fallback og central admin er uændrede. Kandidat G er fortsat ikke aktiveret.
-- PR #62 leverede koden som `b2951d90`, og dokumentationscheckpoint PR #63 blev merged som `579ea914`. Seneste fulde produktion `32569650036`, support `RavRadar-support-3380`, Supabase og Pages-deployment `6036178330` er grønne; live `rr-20260822111522-210` har 210 zoner og 673/673 scorede dele.
+- PR #62 leverede kode-/analysebaselinen som `b2951d90`; dokumentationscheckpointene PR #63/#64 bestod exact-head-gates. Fuld produktionsverifikation `32570223437`, support `RavRadar-support-3382`, Supabase og Pages-deployment `6036286717` er grønne; det verificerede live-snapshot `rr-20260822112859-210` havde 210 zoner og 673/673 scorede dele.
 
 ## 4.0.243 - releasekandidat: komplette ture (2026-08-21)
 

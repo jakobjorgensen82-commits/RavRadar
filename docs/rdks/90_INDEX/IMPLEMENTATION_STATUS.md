@@ -2,9 +2,9 @@
 
 ## Produktionsstatus for 4.0.253
 
-- **PR OG MERGE:** PR #62 leverede kode og analyse som `b2951d90`; dokumentationscheckpoint PR #63 bestod exact-head-kildegate `32569597610` og blev merged som `579ea914`.
-- **FULD PRODUKTION:** Seneste kørsel `32569650036` bestod central hydrering, frisk DMI, fuld `validate`, releasegate, support `RavRadar-support-3380`, Supabase og Pages.
-- **LIVE:** Pages-deployment `6036178330` er `success`; version 4.0.253 og datasæt `rr-20260822111522-210` viser 210 zoner og 673/673 scorede kystdele.
+- **PR OG MERGE:** PR #62 leverede kode-/analysebaselinen som `b2951d90`; dokumentationscheckpointene gennem PR #64 bestod exact-head-gates og ændrede ikke programkode eller data.
+- **FULD PRODUKTION:** Verifikationskørsel `32570223437` bestod central hydrering, frisk DMI, fuld `validate`, releasegate, support `RavRadar-support-3382`, Supabase og Pages på `01904b92`.
+- **LIVE-SNAPSHOT:** Pages-deployment `6036286717` er `success`; version 4.0.253 og datasæt `rr-20260822112859-210` viste 210 zoner og 673/673 scorede kystdele. Aktuel rullende dataset-identitet kontrolleres live.
 - **TESTMATRIX:** Ingen fuld browseraudit er nødvendig, fordi offentlig score, UI-adfærd og offentlig datakontrakt er uændrede. Målrettet live version-, datasæt- og coveragekontrol er grøn.
 - **ISOLATION:** Ingen Candidate G-aktivering, score-/UI-ændring, geometri- eller punktændring og ingen beskyttede data i Git.
 
