@@ -16,6 +16,6 @@
 
 ## Produktionsverifikation
 
-- PR #62 bestod exact-head-kildegaten og blev merged som `b2951d90`; dokumentationscheckpoint PR #63 bestod exact-head-gate `32569597610` og blev merged som `579ea914`.
-- Den seneste fulde produktion `32569650036`, support `RavRadar-support-3380`, Supabase og Pages-deployment `6036178330` er grønne på det endelige mergecommit.
-- Live version 4.0.253/datasæt `rr-20260822111522-210` har 210 zoner og 673/673 scorede kystdele.
+- PR #62 bestod exact-head-kildegaten og leverede kode-/analysebaselinen som `b2951d90`; dokumentationscheckpointene PR #63 og #64 bestod også deres exact-head-gates.
+- Fuld produktionsverifikation `32570223437`, support `RavRadar-support-3382`, Supabase og Pages-deployment `6036286717` er grønne på PR #64-merget `01904b92`.
+- Det verificerede live-snapshot `rr-20260822112859-210` viste version 4.0.253, 210 zoner og 673/673 scorede kystdele. Aktuelt datasæt er bevidst rullende og kontrolleres live.

@@ -3,9 +3,10 @@
 ## Checkpoint 2026-08-22 - Candidate G 4.0.253 produktionsverificeret
 
 - Dette checkpoint erstatter alle ældre branch-, baseline- og næste-trin-angivelser nedenfor.
-- Autoritativt repository er `C:\Users\Lenovo T14\Documents\GitHub\RavRadar`; `main` er dokumentationsmerge `579ea914` fra PR #63 oven på kode-/analysemerge `b2951d90` fra PR #62.
-- PR #62's exact-head-kildegate `32568914124` bestod på `d272c6ca`; PR #63's exact-head-kildegate `32569597610` bestod på `b90c4adc`. Den seneste pushproduktion `32569650036` bestod central hydrering, frisk DMI, fuld `validate`, releasegate, supportartifact, Supabase og Pages på `579ea914`.
-- Supportartifact er `RavRadar-support-3380`; Pages-deployment `6036178330` er `success`. Live viser 4.0.253 og datasæt `rr-20260822111522-210` med 210 zoner og 673/673 scorede kystdele.
+- Autoritativt repository er `C:\Users\Lenovo T14\Documents\GitHub\RavRadar`, og arbejdet skal altid begynde fra den aktuelle `main`. Kontrollér aktuel head med `git status`, `git log -1` og remote; et fast commit-id i et handoff må ikke bruges som erstatning for den kontrol.
+- Candidate G's faglige kode-/analysebaseline er PR #62, merge `b2951d90`; dokumentationscheckpointene PR #63 og #64 ændrede kun RDKS/changelog. PR #62's exact-head-kildegate `32568914124` bestod på `d272c6ca`.
+- Et fuldt produktionsbevis for samme 4.0.253-baseline er `32570223437`: central hydrering, frisk DMI, fuld `validate`, releasegate, support `RavRadar-support-3382`, Supabase og Pages bestod på PR #64-merget `01904b92`; deployment `6036286717` er `success`.
+- Det verificerede live-snapshot `rr-20260822112859-210` viste version 4.0.253, 210 zoner og 673/673 scorede kystdele. Vejrdatasættet er rullende, så den aktuelle dataset-identitet skal kontrolleres live og ikke udledes af dette historiske checkpoint.
 - Candidate G er fortsat privat og score-neutral. Eksakte komponenter/gate rekonstruerer 1.460/1.460 private scorer; den foretrukne no-direct-wind-variant har 219 lave waders-jagtbarheder, heraf 7 med mindst 55 point, og det kanoniske 0/79-forløb.
 - Pilen betyder fortsat aktuel lokal strøm. Historik forklares separat; 332/872 tydelige contexts er modrettede, og 100 ændrer den afrundede score.
 - Åbent til ejerreview: offentlig waders-/forklaringskontrakt. Åbent som dataarbejde: national scoreinput- og lokal retention-coverage ud over 243/673 og nul komplette lokale retention-features.
