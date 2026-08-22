@@ -447,3 +447,10 @@ Den nye appkode må ikke merges, før migrationen 20260821_trip_evidence_contrac
 - 243 dele blev scoret i begge jagtformer; 430 var eksplicit u-scorede, nul var blokerede, og retention-featurecoverage var nul.
 - Aktuelle centrale regler var hydreret, men havde nul aktive regler og nul matches.
 - Kørselsgaten er dermed lukket. Coverage-, ekstrem-, forklarings- og ejer-gaten er fortsat åbne; ingen aktivering må ske på dette grundlag alene.
+
+## ISSUE-RAVSCORE-SHADOW-ADMIN-CONTRACT - RETTELSE KLAR, PRODUKTIONSBEVIS ÅBENT
+
+- PR #59's kildegate var grøn, men produktion `32565885534` stoppede før release og deploy, fordi den fulde shadowtest afviste selve ordet `admin`.
+- Den faktiske nye adfærd læser centralt gemte regler med GET og bygger kun en lokal midlertidig regelfil; den skriver ikke til central admin.
+- Testen lå ikke i `validate:source`. Reparationskandidaten flytter den ind i kildegaten og erstatter ordforbuddet med eksplicit tilladelse af de to læsetrin samt forbud mod konkrete skrive-, roundtrip- og deployveje.
+- Issue lukkes først efter grøn exact-head-gate og fuld produktion/releasegate på den mergede rettelse.
