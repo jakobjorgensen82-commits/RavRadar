@@ -2,7 +2,7 @@
 
 ## Docs-only produktionsskip
 
-- **ISSUE-ROOT-CHANGELOG-DOCS-SKIP – KODE OG PRODUKTION GRØN, SLUTBEVIS AFVENTES:** Den snævre allowlist dækkede `CHANGELOG-*.md`, men ikke den faktiske samlede `CHANGELOG.md`. Derfor startede PR #78's ellers rene dokumentationsmerge fuld produktion `32599980640`. PR #79 tilføjede kun den eksakte fil, bestod exact-head `32600654326` og blev merged som `41f71900`; den efterfølgende fulde produktion `32600714319` var grøn. Dette rene docs-checkpoint skal nu bevise, at der ikke oprettes en ny push-produktion.
+- **ISSUE-ROOT-CHANGELOG-DOCS-SKIP – LØST OG BEVIST:** Den snævre allowlist dækkede `CHANGELOG-*.md`, men ikke den faktiske samlede `CHANGELOG.md`. Derfor startede PR #78's ellers rene dokumentationsmerge fuld produktion `32599980640`. PR #79 tilføjede kun den eksakte fil, bestod exact-head `32600654326`, blev merged som `41f71900` og bestod fuld produktion `32600714319`. Det rene docs-checkpoint PR #80 blev merged som `1565e073`; GitHub viste 0 workflowkørsler på mergecommitten, så ingen push-produktion blev oprettet.
 
 ## Candidate G strømstyret transporthukommelse efter 4.0.258
 

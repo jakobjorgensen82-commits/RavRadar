@@ -6,7 +6,7 @@
 - [x] Bevar den eksisterende `CHANGELOG-*.md`-regel og tilføj kun `CHANGELOG.md`; ingen bred Markdown- eller docsundtagelse.
 - [x] Udvid regressionstesten til at kræve begge mønstre og fortsat afvise `*.md`, `docs/**`, data, scripts, workflows og HTML.
 - [x] Før workflowrettelsen gennem exact-head `32600654326`, merge `41f71900` og fuld produktion `32600714319`.
-- [ ] Bevis skip med denne rene dokumentationsmerge og kontrollér, at ingen ny push-produktion oprettes.
+- [x] Bevis skip med PR #80/merge `1565e073`: GitHub viste 0 workflowkørsler på mergecommitten, og ingen ny push-produktion blev oprettet.
 
 ## Strømstyret transporthukommelse – score-neutralt forskningscheckpoint
 

@@ -1,3 +1,9 @@
+## 2026-08-23 – docs-only skip praktisk bevist og lukket
+
+- PR #80 indeholdt kun `CHANGELOG.md` og intern AI/RDKS-dokumentation og blev merged som `1565e073`.
+- GitHubs Actions-forespørgsel på den eksakte mergecommit returnerede 0 workflowkørsler; `Update weather and deploy RavRadar` blev ikke oprettet.
+- ISSUE-ROOT-CHANGELOG-DOCS-SKIP er dermed lukket efter exact-head, fuld produktion og separat praktisk skip-bevis. Den seneste fuldt produktionsverificerede baseline forbliver `rr-20260822215524-210` fra run `32600714319`.
+
 ## 2026-08-23 – PR #79 fuldt produktionsverificeret
 
 - Exact-head `32600654326` bestod på commit `24d944c0`; PR #79 blev merged som `41f71900`.
