@@ -1680,5 +1680,6 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [x] Den tilladte kæde er låst til GET-only `sync-admin-config.py` og lokal `generate-public-admin-rules.mjs`.
 - [x] Konkrete centrale skrive-, roundtrip- og Pages-veje er fortsat forbudt i shadowjobbet.
 - [x] Shadowworkflowtesten er føjet til `test:workflow-action-contracts` og dermed `validate:source`.
-- [ ] Exact-head-kildegate, merge og ny fuld produktion/releasegate/deploy for reparationsbranchen.
+- [x] PR #60 exact-head-gate `32566573875` på `a13e5387`, merge `41e01e2d` og exact-commit-produktion `32566631701` er grønne.
+- [x] GitHub Pages deployment `6035679906` er `success`; live 4.0.252/datasæt `rr-20260822100745-210` har 210 zoner og 673 kystdele med matchende startpakkehash.
 - Candidate G forbliver diagnostic-only; aktiv 25/40/35, beskyttede data, geometri og land-/vandpunkter er uændrede.

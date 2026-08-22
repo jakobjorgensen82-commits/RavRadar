@@ -285,3 +285,17 @@ Den tidligere nationale geometrikoersel `32474884163` fejlede korrekt paa det ua
 ## Checkpoint 4.0.251 - foerste aktive shadowrun fandt collection-mismatch
 
 Run `32479158213` paa merge `34ed1dbc39c18aaefcb77aac89028ebb29c45468` sprang produktion/deploy over, byggede aktivt 210/673-input og verificerede 673 native DMI-punkter. Kontrakten rapporterede foreloebigt 622 fuld og 51 delvis dækning, men flertrinsgaten stoppede foer state/score ved `dk-b01-02-national-part-01`, fordi DKSS-komponenter var fordelt over collections. 4.0.251 klassificerer nu kun en familie som komplet inden for samme collection og kræver U/V i samme punkt og collection. Koer ny PR, produktion og shadow; brug ikke den fejlede rapports 622/51 som scoreevidens.
+
+## Checkpoint 2026-08-22 - Candidate G-beslutningsgrundlag og shadowgate lukket
+
+- PR #59 er merged som `6b1511e0`. Centralt hydreret shadow `32554012542` kontrollerede 210 zoner/673 dele score-neutralt; kun 243 dele havde komplette scoreinput, og retention-featurecoverage var nul.
+- Kandidat G må ikke aktiveres. 50/50 uden direkte vind er næste foretrukne beslutningsvariant; coverage, waders-betydning, pile/forklaring og ejer-go/no-go er åbne.
+- Første main-produktion `32565885534` stoppede korrekt før release/deploy på en for bred shadowtest. PR #60 låste GET-only regelhydrering, konkrete skrive-/deployforbud og kørsel af testen i `validate:source`.
+- PR #60 er merged som `41e01e2d`; exact-head-gate `32566573875`, fuld produktion `32566631701` og Pages deployment `6035679906` er grønne. Live 4.0.252/datasæt `rr-20260822100745-210` har 210 zoner og 673 dele.
+- Aktiv RavScore er fortsat 25/40/35. Beskyttede data, artifactkilder, geometri og land-/vandpunkter er ikke ændret.
+
+## Lokal Codex/GitHub-login på den nye Windows-computer
+
+- Git Credential Manager er sat til den Windows-DPAPI-krypterede filstore med global `credential.credentialStore=dpapi`; et frisk noninteraktivt `git ls-remote` og PR #60-flowet bekræftede vedvarende adgang uden nyt browserlogin.
+- Brug den bundne Codex-Git under `.cache\codex-runtimes\codex-primary-runtime\dependencies\native\git\cmd\git.exe`, hvis appens PATH mister Git efter sleep eller genstart.
+- Start lange autonome forløb med en read-only `git ls-remote`- og GitHub-connectorpreflight. Ingen credentials, tokens eller storeindhold må logges eller committes.

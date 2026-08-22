@@ -1716,3 +1716,6 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - Den fejlede test brugte det brede forbud `/admin/` og afviste dermed den nye GET-only regelhydrering. Samme test indgik ikke i PR-kildegaten.
 - Reparationskandidaten bevarer hydreringen, låser den til read-only-adfærd, forbyder konkrete skrive-/deployveje og føjer kontrakten til `validate:source`.
 - Ingen offentlig score, Candidate G-aktivering, beskyttede data, geometri eller land-/vandpunkter er ændret.
+- PR #60 bestod exact-head-gaten `32566573875` og blev merged som `41e01e2d`.
+- Exact-commit-produktion `32566631701` bestod frisk DMI, fuld validering, releasegate, Supabase, Pages-artifact og deploy; deployment `6035679906` er `success`.
+- Live datasæt `rr-20260822100745-210` har 210 zoner og 673 dele. Manifest, byteantal og SHA-256 for den offentlige startpakke matcher.
