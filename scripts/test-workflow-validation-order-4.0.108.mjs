@@ -128,6 +128,7 @@ for (const marker of [
   "'docs/ai/**'",
   "'docs/rdks/**'",
   "'docs/research/**'",
+  "'CHANGELOG.md'",
   "'CHANGELOG-*.md'",
   "'AGENTS.md'",
   "'release/RELEASE-REPORT.json'",

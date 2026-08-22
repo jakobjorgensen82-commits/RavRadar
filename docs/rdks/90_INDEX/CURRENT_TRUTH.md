@@ -1,5 +1,11 @@
 # Current truth – gældende projektviden
 
+## Afgrænset rettelse af docs-only produktionsskip
+
+- PR #78 var ellers ren intern dokumentation, men merge `7133b33b` startede fuld produktion `32599980640`, fordi workflowet ignorerede de historiske `CHANGELOG-*.md` uden at ignorere projektets aktuelle samlede `CHANGELOG.md`.
+- Den snævre rettelse tilføjer kun den eksakte rod-fil `CHANGELOG.md` og bevarer den eksisterende versionerede `CHANGELOG-*.md`-regel. Kode, data, øvrige Markdownfiler, HTML, scripts og workflows er fortsat ikke bredt undtaget.
+- Regressionstesten kræver nu begge changelogmønstre. Selve workflowrettelsen skal gennem én fuld produktion, hvorefter et rent dokumentationscheckpoint skal bevise, at push-produktion ikke oprettes.
+
 ## Candidate G – strømstyret transportpotentiale efter 4.0.258
 
 - DEC-0055 gør verificeret kystnormal strøm til Candidate G's transportled. Bølger kan ikke skabe transport; de må kun påvirke den sidste levering med højst 15 procent, når strømmen allerede har skabt potentiale.

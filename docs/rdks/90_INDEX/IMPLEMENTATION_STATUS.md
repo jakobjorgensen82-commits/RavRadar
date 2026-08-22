@@ -1,5 +1,12 @@
 # Implementeringsstatus – Candidate G efter 4.0.258
 
+## Docs-only skip – rod-CHANGELOG
+
+- [x] Afgræns PR #78's uventede fulde produktion til den manglende eksakte `CHANGELOG.md`-linje i `paths-ignore`.
+- [x] Bevar den eksisterende `CHANGELOG-*.md`-regel og tilføj kun `CHANGELOG.md`; ingen bred Markdown- eller docsundtagelse.
+- [x] Udvid regressionstesten til at kræve begge mønstre og fortsat afvise `*.md`, `docs/**`, data, scripts, workflows og HTML.
+- [ ] Før workflowrettelsen gennem exact-head, merge og én fuld produktion; bevis derefter skip med en ren dokumentationsmerge.
+
 ## Strømstyret transporthukommelse – score-neutralt forskningscheckpoint
 
 - [x] Gør verificeret kystnormal strøm til transportpotentialets eneste opbygnings-/nedbrydningssignal.
