@@ -1,3 +1,11 @@
+## Intern RavScore-forskning efter 4.0.258 – Candidate G frigivelsesrevision (2026-08-23)
+
+- En ny syntetisk, reproducerbar audit låser den godkendte udtransportkurve: transportpotentialet falder 100, 92, 84, 76, 68, 60, 52, 44, 36, 28, 20, 12, 4 og 0 fra 13 effektive fuldstyrketimer.
+- Auditten dækker samtidig halv styrke, deadband, neutral strøm, valgfri 24/48-timers halvering, manglende verificering, bølge-only, den begrænsede landingsfaktor og waders-vindstoppet.
+- Den nationale shadowkontrakt bruger nu de aktuelle aktiveringsgates og afviser de erstattede waders-/pil-/ekstremmarkører.
+- En vigtig produktbetydning er gjort eksplicit: 13 timer nulstiller i den nuværende kandidat transportdelen, ikke automatisk hele RavScoren. Det faste scenarie ender derfor omkring 35 samlet; en eventuel totalscore-gate kræver ejerbeslutning og er ikke implementeret.
+- Offentlig RavScore `25/40/35`, UI, produktion, geometri, land-/vandpunkter og beskyttede data er uændrede. Candidate G forbliver privat og kan ikke aktiveres automatisk.
+
 ## Intern workflowrettelse efter 4.0.258 – docs-only skip bevist (2026-08-23)
 
 - PR #80 blev merged som `1565e073` med kun `CHANGELOG.md` og intern AI/RDKS-dokumentation.

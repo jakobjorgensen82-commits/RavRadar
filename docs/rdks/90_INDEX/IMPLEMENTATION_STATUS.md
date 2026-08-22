@@ -1,5 +1,15 @@
 # Implementeringsstatus – Candidate G efter 4.0.258
 
+## Candidate G frigivelsesrevision – score-neutral
+
+- [x] Lås den godkendte 0–13-timers udtransportkurve i en reproducerbar syntetisk audit.
+- [x] Test halv styrke, deadband, neutral strøm, valgfri 24/48-timers halvering, missing-pause, bølge-only, landingsgrænse og waders-vindstop.
+- [x] Kør auditten via `test:score` og `validate:source`.
+- [x] Opdatér den nationale shadows aktiveringsgates og afvis de erstattede waders-/pil-/ekstremmarkører i kontrakttesten.
+- [x] Dokumentér produktforklaring, automatisk aktiveringsforbud og rollback uden offentlig scoreændring.
+- [ ] Ejerbeslutning: transportpotentiale 0 med fortsatte øvrige komponenter eller eksplicit samlet RavScore 0 efter 13 timers kraftig udgående strøm.
+- [ ] Luk resterende coverage-, tærskel-, starttilstands-, validerings-, admin-/rollback- og ejer-go/no-go-gates før enhver offentlig aktivering.
+
 ## Docs-only skip – rod-CHANGELOG
 
 - [x] Afgræns PR #78's uventede fulde produktion til den manglende eksakte `CHANGELOG.md`-linje i `paths-ignore`.

@@ -15,7 +15,9 @@
 | RRS-CANDIDATE-G-50-50-LIN-4.0.252 | Forskningskandidat | 20/45/35 | Kandidat E med 50/50-blanding af 24- og 48-timers historik |
 | RRS-CANDIDATE-G-48H-LIN-4.0.252 | Forskningskandidat | 20/45/35 | Kandidat E med langsomt 48-timers historikspor |
 | RRS-CANDIDATE-G-50-50-NO-DIRECT-WIND-4.0.252 | Sammenligningsreference efter DEC-0051 | 20/45/35 | Samme 50/50-historik uden direkte vindbidrag |
-| RRS-CANDIDATE-G-50-50-NO-DIRECT-WIND-WADERS-LIMIT-4.0.254 | Foretrukken næste forskningsvariant | 20/45/35 + synligt waders-loft | Strand uændret; waders begrænses af jagtbarhed og bruger den ejerbesluttede vindkurve; ingen offentlig aktivering |
+| RRS-CANDIDATE-G-50-50-NO-DIRECT-WIND-WADERS-LIMIT-4.0.254 | Historisk waders-reference | 20/45/35 + synligt waders-loft | Strand uændret; waders begrænses af jagtbarhed; erstattet som foretrukken variant af DEC-0054/0055 |
+| RRS-CANDIDATE-G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED-4.0.258 | Waders-kontraktreference | 20/50/30 + vindstyret waders-loft | Vind er hovedsignal, WAM er blødt fradrag; transportfortolkningen er senere erstattet af DEC-0055 |
+| RRS-CANDIDATE-G-CURRENT-LED-OUTFLOW-8-RESEARCH-1 | Foretrukken score-neutral forskningsvariant | 20/50/30 + strømreservoir + vindstyret waders-loft | 10 point ind pr. effektiv fuldstyrketime, 8 point ud og transportpotentiale 0 fra 13; ingen offentlig aktivering |
 
 ## Stabile kandidatregler
 
@@ -32,6 +34,8 @@
 | RRS-G2-PHYSICAL-BOTTLENECK | E | Højst 15 % reduktion ved svag mobilisering eller samlet transport/levering | Forskningsprior, ikke fundkalibreret |
 | RRS-J2-WADERS-WIND-UNDER-6 | G waders-limit | 100 vindpoint til og med 6 m/s og monotont fald over 6 | Kun søgemetodens effektivitet; bølger er separat, ikke sikkerhed |
 | RRS-G3-WADERS-HUNTABILITY-LIMIT | G waders-limit | Endelig waders-score kan ikke overstige jagtbarheden | Strand er uændret; regler må ikke efterfølgende løfte over loftet |
+| RRS-T6-CURRENT-LED-RESERVOIR | G current-led | Verificeret kystnormal strøm bygger/nedbryder 0–100 transportpotentiale | Strømgrænse, starttilstand og eventuelt passivt tab er ukalibreret |
+| RRS-T7-DEPENDENT-WAVE-LANDING | G current-led | Bølger/timing kan kun dæmpe allerede eksisterende levering med højst 15 % | Bølger kan ikke oprette transport; andelen er en forskningsprior |
 
 Alle kandidater er score-neutrale forskningsfunktioner. Se DEC-0046 og den samlede evidensanbefaling.
 

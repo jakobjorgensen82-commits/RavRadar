@@ -86,6 +86,12 @@ Før offentlig aktivering kræves mindst:
 4. en frisk national score-neutral shadow med den endelige inputkontrakt;
 5. særskilt ejer-go/no-go og alle relevante produktionsgates.
 
+## Efterfølgende release-readiness-præcisering
+
+Den reproducerbare grænseaudit af den faktiske kandidatkode viser, at punkt 4's nul efter 13 timer gælder **transportpotentialet**, ikke automatisk hele den vægtede Candidate G-score. I den faste syntetiske kontrol falder transportpotentialet præcis 100→92→…→4→0, mens totalscoren falder monotont fra 91/88 til 35/35 for strand/waders. Jagtbarhed og mobilisering giver fortsat point, og den milde fysiske gate er ikke en nul-gate.
+
+Det er ikke en ny scorebeslutning. Før offentlig aktivering skal ejeren udtrykkeligt afgøre, om “helt i bund” fortsat betyder transportkomponenten, eller om dokumenteret udtransport efter 13 effektive fuldstyrketimer skal udløse en synlig fuld-scoregate. Ingen sådan gate er godkendt eller implementeret.
+
 DEC-0055 erstatter den hidtidige foretrukne transportfortolkning i Candidate G. G 24/48 og de tidligere modeller bevares som historisk evidens og følsomhedsspor, ikke som parallelle produktforslag.
 
 ## Bevarede kontrakter
