@@ -4,7 +4,7 @@
 
 Den strømstyrede Candidate G består den mekaniske grænsekontrol score-neutralt. Den er monotont faldende under udgående strøm, bølger kan ikke skabe transport, waders-loftet virker, strandjagt bevarer højt ravpotentiale under hård vind, og missing ændrer ikke reservoiret.
 
-Revisionen er ført gennem exact-head `32602287607`, PR #82/merge `189644a0` og fuld post-merge-produktion `32602328912`. Live `rr-20260822223539-210` er komplet med 210 zoner og 673 kystdele og ændrer ikke den offentlige scoremodel.
+Den oprindelige revision blev ført gennem exact-head `32602287607`, PR #82/merge `189644a0` og fuld post-merge-produktion `32602328912`. Den efterfølgende `RESEARCH-2`-udtransportgate bestod exact-head `32604792201` på `f6458f09`, PR #84/merge `800a93cb` og fuld produktion `32604850884`. Live `rr-20260822232159-210` er komplet med 210 zoner og 673 kystdele og ændrer ikke den offentlige scoremodel.
 
 Den efterfølgende ejerbeslutning lukker samtidig den sidste tvetydighed i 13-timersbetydningen:
 
@@ -98,3 +98,9 @@ Mekanisk yderpunktskontrol, waders-betydning og pil-/historiksemantik er nu afkl
 7. udtrykkeligt ejer-go/no-go.
 
 Offentlig RavScore forbliver `25/40/35`. Auditresultatet er et beslutningsgrundlag, ikke en aktivering.
+
+## Verificeret levering
+
+Den mergede kode er bundet til `RRS-CANDIDATE-G-CURRENT-LED-OUTFLOW-8-RESEARCH-2`. Post-merge-run’et gennemførte kildegate, frisk DMI/proveniens, 673/673-referencegate, fuld projektvalidering, releasegate, supportpakke, Supabase og Pages. Direkte livekontrol bekræfter samme datasæt-id i manifest, den offentlige startfil og detaljefilen; detaljefilens id blev læst via et 8 KB HTTP-range uden at hente hele den 116.494.109-byte store fil.
+
+Dette leveringsbevis ændrer ikke aktiveringskontrakten: Candidate G er fortsat `diagnostic-only`, og den offentlige score er fortsat `25/40/35`.

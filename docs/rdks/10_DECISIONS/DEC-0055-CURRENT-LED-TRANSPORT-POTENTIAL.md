@@ -98,6 +98,8 @@ Den bindende forklaring er:
 
 Dette er ikke en generel `transportAndDelivery === 0`-regel. Den kræver både et udtømt transportpotentiale og den særskilte historikmarkør for faktisk udtransport. Et fail-closed startpotentiale på 0, missing, neutral strøm eller svag modstrøm må derfor ikke alene udløse nul-gaten.
 
+Implementationen bestod exact-head-kildegate `32604792201` på `f6458f09`, blev merged i PR #84 som `800a93cb` og bestod fuld post-merge-produktion `32604850884`. Live `rr-20260822232159-210` er komplet med 210 zoner og 673 kystdele. Dette er implementerings- og regressionsbevis, ikke offentlig Candidate G-aktivering eller fundkalibrering.
+
 DEC-0055 erstatter den hidtidige foretrukne transportfortolkning i Candidate G. G 24/48 og de tidligere modeller bevares som historisk evidens og følsomhedsspor, ikke som parallelle produktforslag.
 
 ## Bevarede kontrakter

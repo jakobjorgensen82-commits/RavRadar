@@ -9,6 +9,8 @@
 - Ejeren har nu lukket totalscore-spørgsmålet. Den versionsbundne interne `RESEARCH-2`-regel sætter slutscoren til 0, når faktisk kraftig udtransport har udtømt transportpotentialet; mobilisering og jagtbarhed bevares som synlige delscorer. Startpotentiale 0 uden faktisk udtransport, missing, neutral strøm og svag modstrøm udløser ikke reglen.
 - Den bindende forklaring er: `På grund af kraftig fralandsstrøm trækkes ravet ud i havet og derfor går scoren i nul, selv om der fortsat kan være mobilisering og god jagtbarhed`.
 - Nationale aktiveringsmarkører er ajourført: komplet dynamisk inputcoverage, strømgrænse, starttilstand/passivt tab, repræsentativ tur- eller tilsvarende validering, UI/forklaring, central admin/rollback og eksplicit ejer-go/no-go. Den afsluttede transportnul-kontra-totalscorenul-beslutning er fjernet fra listen.
+- `RESEARCH-2` bestod lokal fuld kildegate og exact-head `32604792201` på `f6458f09`, blev merged via PR #84 som `800a93cb` og bestod hele post-merge-kæden i `32604850884`: frisk vejr/proveniens, fuld validering, releasegate, support, Supabase, Pages-artifact og deploy.
+- Direkte livekontrol viser `rr-20260822232159-210`, 210 zoner, 673 dele, `controlled-live` og samme datasæt-id i manifest/start/detaljer. Den 116.494.109-byte store offentlige detaljefil blev kun læst med et 8 KB HTTP-range for id-kontrollen.
 - Offentlig `25/40/35`, UI, produktion, geometri, land-/vandpunkter, artifact, protected-dirty-data og private cachepayloads er urørte. Automatisk aktivering er fortsat falsk.
 
 ## Checkpoint 2026-08-23 – docs-only produktionsskip afsluttet

@@ -228,3 +228,4 @@ Fem sammenhængende produktionskørsler afslørede, at samme ugentlige GitHub-ca
 3. Startpotentiale 0 uden faktisk udtransport, missing, neutral strøm og svag modstrøm må ikke udløse gaten.
 4. Den bindende forklaring er: `På grund af kraftig fralandsstrøm trækkes ravet ud i havet og derfor går scoren i nul, selv om der fortsat kan være mobilisering og god jagtbarhed`.
 5. Adfærden versionsbindes som `RRS-CANDIDATE-G-CURRENT-LED-OUTFLOW-8-RESEARCH-2`; `RESEARCH-1` bevares som revisionsspor. Offentlig RavScore og automatisk aktivering er uændret.
+6. Exact-head `32604792201` bestod på `f6458f09`, PR #84 blev merged som `800a93cb`, og fuld produktion `32604850884` leverede live `rr-20260822232159-210` med 210 zoner, 673 dele og samme datasæt-id i manifest/start/detaljer.
