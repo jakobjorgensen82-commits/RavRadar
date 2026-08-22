@@ -448,9 +448,9 @@ Den nye appkode må ikke merges, før migrationen 20260821_trip_evidence_contrac
 - Aktuelle centrale regler var hydreret, men havde nul aktive regler og nul matches.
 - Kørselsgaten er dermed lukket. Coverage-, ekstrem-, forklarings- og ejer-gaten er fortsat åbne; ingen aktivering må ske på dette grundlag alene.
 
-## ISSUE-RAVSCORE-SHADOW-ADMIN-CONTRACT - RETTELSE KLAR, PRODUKTIONSBEVIS ÅBENT
+## ISSUE-RAVSCORE-SHADOW-ADMIN-CONTRACT - LUKKET I PRODUKTION
 
 - PR #59's kildegate var grøn, men produktion `32565885534` stoppede før release og deploy, fordi den fulde shadowtest afviste selve ordet `admin`.
 - Den faktiske nye adfærd læser centralt gemte regler med GET og bygger kun en lokal midlertidig regelfil; den skriver ikke til central admin.
-- Testen lå ikke i `validate:source`. Reparationskandidaten flytter den ind i kildegaten og erstatter ordforbuddet med eksplicit tilladelse af de to læsetrin samt forbud mod konkrete skrive-, roundtrip- og deployveje.
-- Issue lukkes først efter grøn exact-head-gate og fuld produktion/releasegate på den mergede rettelse.
+- Testen lå ikke i `validate:source`. PR #60 flyttede den ind i kildegaten og erstattede ordforbuddet med eksplicit tilladelse af de to læsetrin samt forbud mod konkrete skrive-, roundtrip- og deployveje.
+- Exact-head-gate `32566573875`, merge `41e01e2d`, fuld produktion `32566631701` og Pages deployment `6035679906` er grønne. Issuet er lukket uden score-, data-, geometri- eller punktændring.

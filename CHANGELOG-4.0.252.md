@@ -18,3 +18,4 @@
 - Den private Candidate G-shadow kan læse centralt gemte aktive ekspertregler med GET og bygge en midlertidig lokal regelfil.
 - Testen skelner nu denne læsning fra centrale skrive-, roundtrip- og deployveje og indgår i `validate:source`.
 - Offentlig RavScore 25/40/35, Candidate G-status, data, geometri og land-/vandpunkter er uændrede.
+- PR #60 blev merged som `41e01e2d`; produktion `32566631701` og Pages deployment `6035679906` er grønne på den samme commit.

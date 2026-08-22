@@ -1300,10 +1300,12 @@ Foerste private aktive RavScore-shadowrun stoppede korrekt foer state og score, 
 - Faglig anbefaling: behold offentlig 25/40/35; brug 50/50 uden direkte vind som næste beslutningsvariant; aktiver ikke G nu.
 - Ingen offentlig score, UI, data, DMI/fallback, geometri eller land-/vandpunkter er ændret. Se `docs/research/RAVSCORE_CANDIDATE_G_DECISION_BASIS_2026-08-22.md`.
 
-## PR #59 og produktionsgatens testkonflikt 2026-08-22
+## PR #59 og produktionsverificeret shadowgate-rettelse 2026-08-22
 
 - PR #59 bestod exact-head-kildegaten `32565767549` og blev merged som `6b1511e0e72e0b8327ad3668ccc7159701dc68ed`.
 - Produktion `32565885534` hydrerede centrale data og frisk DMI, men stoppede korrekt før releasegate, artifact og deploy i den fulde validering.
 - Årsagen var en for bred test, som forbød enhver forekomst af ordet `admin` i det private shadowjob. Jobbets nye centrale regelhydrering er derimod en eksplicit GET-læsning efterfulgt af lokal regelfilsgenerering.
-- Den samme shadowtest manglede i `validate:source`, så PR-gaten kunne ikke opdage kontraktkonflikten. Reparationskandidaten tillader kun de to læsende hydreringstrin, forbyder konkrete skrive-/deployveje og føjer testen til kildegaten.
-- Offentlig RavScore er fortsat 25/40/35. Candidate G, beskyttede data, geometri og land-/vandpunkter er uændrede; produktionsbeviset for reparationskandidaten afventer PR, merge og en ny fuld kørsel.
+- Den samme shadowtest manglede i `validate:source`, så PR-gaten kunne ikke opdage kontraktkonflikten. PR #60 tillader kun de to læsende hydreringstrin, forbyder konkrete skrive-/deployveje og føjer testen til kildegaten.
+- PR #60 bestod exact-head-gaten `32566573875` på `a13e5387` og blev merged som `41e01e2d21d6579a7c9a7fac489e6609038341ea`.
+- Exact-commit-produktion `32566631701` bestod frisk DMI, fuld `validate`, releasegate, Supabase, Pages-artifact og deploy. Deployment `6035679906` er `success` på samme commit.
+- Live 4.0.252 viser datasæt `rr-20260822100745-210` med 210 zoner og 673 kystdele; manifest, byteantal og SHA-256 for den offentlige startpakke matcher. Offentlig RavScore er fortsat 25/40/35. Candidate G, beskyttede data, geometri og land-/vandpunkter er uændrede.
