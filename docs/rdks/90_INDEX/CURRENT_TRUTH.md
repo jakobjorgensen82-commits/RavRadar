@@ -1294,6 +1294,8 @@ Foerste private aktive RavScore-shadowrun stoppede korrekt foer state og score, 
 - Lav kapacitet dæmpes 3,405 point mod kandidat E, mens høj kapacitet løftes 0,876 point. Historik kan ikke skabe transport ved nul fysisk kapacitet.
 - 24/48 adskiller sig kun 0,064 point absolut i gennemsnit. Direkte vind adskiller sig kun 0,086 point fra no-direct og er ikke begrundet som selvstændigt bidrag.
 - Kanoniske scenarier afslører, at waders-jagtbarhed 0 kan sameksistere med G-score cirka 79. Det blokerer aktivering, indtil betydning og forklaring er besluttet eksplicit.
-- National shadow-validator kan nu beregne G-varianterne, men den friske centralt hydrerede nationale kørsel og aktuelle centrale regler mangler.
-- Faglig foreløbig anbefaling: behold offentlig 25/40/35; brug 50/50 uden direkte vind som næste shadowvariant; aktiver ikke G nu.
+- Centralt hydreret shadow `32554012542` paa PR #59's eksakte head kontrollerede 673 aktive dele i 210 zoner. 243 dele gav 486 scorecontexts, 430 var eksplicit u-scorede, og ingen var blokeret.
+- G 50/50 laa nationalt 5,50 point under aktiv model for strand og 3,74 for waders i gennemsnit. 24/48 og no-direct-wind var praktisk identiske; direkte vind flyttede højst ét point.
+- Den centrale regelkaede havde nul aktive regler og nul matches. Retention-featurecoverage var samtidig nul, saa shadowen lukker kørselsgaten, men ikke coverage-, forklarings- eller aktiveringsgaten.
+- Faglig anbefaling: behold offentlig 25/40/35; brug 50/50 uden direkte vind som næste beslutningsvariant; aktiver ikke G nu.
 - Ingen offentlig score, UI, data, DMI/fallback, geometri eller land-/vandpunkter er ændret. Se `docs/research/RAVSCORE_CANDIDATE_G_DECISION_BASIS_2026-08-22.md`.

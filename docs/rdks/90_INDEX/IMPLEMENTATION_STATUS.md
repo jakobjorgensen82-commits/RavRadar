@@ -1617,7 +1617,7 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [x] Udled stroem- og vindhukommelse fra 96-timers historik med styrke, varighed, stabilitet, vendingsalder og nettoeffekt.
 - [x] Koer separate stroem-, boelge- og vindablationer samt svage/kraftige vendinger.
 - [x] Gentag historisk replay og national scenariematrix med kandidat G.
-- [x] Udvid national shadow-validator med G-varianterne og central slutregelkaede; virkelig centralt hydreret kørsel afventer merge.
+- [x] Udvid national shadow-validator med G-varianterne og central slutregelkaede; centralt hydreret exact-head-run `32554012542` er grønt og score-neutralt.
 - [ ] Kontrollér pile, score, komponenter, forklaring, jagtbarhed og vadesikkerhed samlet før mulig aktivering.
 - [ ] Fremlaeg den endelige vaegtbegrundelse grundigt og forstaaeligt for ejeren foer go/no-go.
 - Aktiv offentlig score, UI, geometri og alle land-/vandpunkter er uændrede. Bindende metode: DEC-0050.
@@ -1632,7 +1632,7 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [x] Koer separate ablationer af stroem, boelgeenergi, lineaer vind og vindstressproxy.
 - [x] Integrér 24 alene, 50/50 og 48 alene i historisk replay/parret retning med en obligatorisk variant uden direkte vind.
 - [x] National scenariematrix og versionsbundet offentlig regelkaede er gennemført.
-- [ ] Virkelig central shadow, aktuelle ekspertregler og samlet pil-/score-/forklaringskontrol mangler fortsat.
+- [x] Virkelig central shadow og aktuelle ekspertregler er kontrolleret på PR #59's eksakte head; kandidatens pil-/score-/forklaringskontrakt mangler fortsat før aktivering.
 
 ## Regimehukommelse - merge- og driftsstatus
 
@@ -1663,8 +1663,11 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [x] 176 kanoniske, rotationsinvariante nationale scenarier kontrollerer vendinger, konflikter, nul kapacitet og waders-jagtbarhed uden at læse land-/vandpunkter.
 - [x] National shadow-validator beregner nu alle fire G-varianter og består self-test score-neutralt.
 - [x] Versionsbundet offentlig ekspertregelkaede er afspillet; nul aktive regler giver nul slutscoreændring.
-- [ ] Kør frisk centralt hydreret national shadow på merged kode og gennemgå geografiske/regimebestemte ekstremer.
+- [x] Centralt hydreret national shadow `32554012542` på exact head: 673 dele/210 zoner, 243 scorede dele, 430 eksplicit u-scorede, nul blokerede og nul offentlige ændringer.
+- [x] National G 50/50 minus aktiv: -5,50 point for strand og -3,74 for waders i gennemsnit; 24/48 og no-direct-wind er fortsat praktisk identiske.
+- [ ] Luk coveragegaten: national kontrakt har nul komplette lokale retention-features, og kun 243 af 673 dele kan indgå i scoresammenligningen.
 - [ ] Afgør waders-produktbetydningen: jagtbarhed 0 kan sameksistere med G-score cirka 79; ingen aktivering før tydelig UI-/forklaringsbeslutning.
-- [ ] Kontrollér aktuelle centrale regler, pile, komponenter og forklaringer samlet i den friske shadow.
+- [x] Aktuelle centrale regler er hydreret og kontrolleret: nul aktive regler og nul matchede contexts.
+- [ ] Definér og kontrollér kandidatens pile, komponenter og forklaring samlet; offentlig UI er bevidst uændret i den score-neutrale shadow.
 - [ ] Ejer-go/no-go efter gennemgang. Foreløbig faglig anbefaling er ingen aktivering og videre shadow med 50/50 uden direkte vind.
 - Offentlig 25/40/35, DMI-first, UI, geometri og land-/vandpunkter er uændrede.

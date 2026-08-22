@@ -101,6 +101,6 @@ Direkte vind flytter kun 0,086 point absolut i gennemsnit og højst ét point. D
 
 Den kanoniske rotationsmatrix består 176 score-neutrale scenarier og bekræfter nul historikskabt transport ved nul kapacitet. Den afslører samtidig en aktiveringsstopklods: et ekstremt waders-forløb kan have jagtbarhed 0 og kandidat-G-score omkring 79. Ejerbeslutning om betydning, UI og forklaring er obligatorisk; en skjult ny gate maa ikke indfoeres.
 
-Den versionsbundne offentlige ekspertregelkaede har nul aktive regler og flytter derfor ingen af de 1.460 scorer. Frisk centralt hydreret national shadow og aktuelle centrale regler mangler fortsat. Kandidat G maa ikke aktiveres, foer denne koersel, pil-/forklaringskontrakten, waders-betydningen og ejerens go/no-go er afsluttet.
+Den versionsbundne offentlige ekspertregelkaede har nul aktive regler og flytter derfor ingen af de 1.460 scorer. Den centralt hydrerede nationale shadow `32554012542` paa PR #59's eksakte head fandt ligeledes nul aktive regler og gennemfoerte 673 aktive dele/210 zoner uden offentlige aendringer. 243 dele gav 486 scorecontexts, mens 430 forblev eksplicit u-scorede; retention-featurecoverage var nul. G 50/50 laa i gennemsnit 5,50 point under aktiv model for strand og 3,74 for waders. 24/48 og no-direct-wind var fortsat praktisk identiske. Kandidat G maa ikke aktiveres, foer pil-/forklaringskontrakten, waders-betydningen, coveragebegrænsningen og ejerens go/no-go er afsluttet.
 
 Samlet beslutningsgrundlag: `docs/research/RAVSCORE_CANDIDATE_G_DECISION_BASIS_2026-08-22.md`.

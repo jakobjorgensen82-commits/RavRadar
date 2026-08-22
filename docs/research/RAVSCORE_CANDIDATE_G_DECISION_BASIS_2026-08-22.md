@@ -10,7 +10,7 @@ Resultatet er **ikke** et fagligt grundlag for at aktivere kandidat G endnu. Den
 2. behold 50/50-sporet som praktisk repræsentant for videre shadow, fordi 24 og 48 timer næsten ikke kan skelnes i de 12 forløb;
 3. brug varianten uden direkte vind som foretrukken beslutningskandidat, indtil direkte vind kan påvises som et selvstændigt signal;
 4. løs den tydelige vadejagt-konflikt mellem højt ravpotentiale og nul jagtbarhed i produktbetydning, UI og forklaring før enhver aktivering;
-5. kør den centralt hydrerede nationale shadow og de aktuelle centrale ekspertregler på PR'ens mergede kode;
+5. læg den grønne centralt hydrerede nationale shadow på PR'ens eksakte kode til grund, men behandl dens manglende retention-featuredækning og 430 u-scorede dele som en reel begrænsning;
 6. brug senere komplette ture til kalibrering og geografisk/tidslig hold-out.
 
 ## Hvad kandidat G beregner
@@ -111,15 +111,27 @@ RavScore er fortsat ikke sikkerhedsrådgivning. Strøm, temperatur, dybde, bund 
 
 ## Regler, pile og forklaring
 
-De versionsbundne offentlige regel-filer indeholder aktuelt nul aktive regler. Den fulde offentlige regelmotor er afspillet på alle 1.460 evalueringer og ændrer derfor nul scorer. Frisk centralt hydrerede, endnu ikke publicerede administratorregler var ikke tilgængelige lokalt og skal kontrolleres i den nationale shadow.
+De versionsbundne offentlige regel-filer indeholder aktuelt nul aktive regler. Den fulde offentlige regelmotor er afspillet på alle 1.460 evalueringer og ændrer derfor nul scorer. Den centralt hydrerede nationale shadow fandt også nul aktive regler og nul matchede contexts. Lokal og central regelstatus er derfor ens ved dette checkpoint.
 
 Kandidat G er ikke koblet til offentlig UI. Derfor er de eksisterende pile og forklaringer uændrede og kan ikke være regressede af dette checkpoint. En senere aktivering kræver derimod en ny forklaringskontrakt: den aktuelle pil viser et øjebliksbillede, mens scoren kan bære historisk nettoforløb. UI skal fortælle, når historikken modvirker den aktuelle retning, hvilken transportkapacitet der findes, og hvorfor waders-jagtbarheden kan være lav trods højt ravpotentiale.
 
 ## National shadow
 
-Den eksisterende private nationale validator beregner nu G 24 timer, G 50/50, G 48 timer og G 50/50 uden direkte vind på samme lokaldel, tidspunkt, jagtform og historik som den aktive model. Self-testen beviser, at kandidaterne er dataminimerede, score-neutrale og ikke kan aktivere offentlig runtime.
+Den eksisterende private nationale validator beregner G 24 timer, G 50/50, G 48 timer og G 50/50 uden direkte vind på samme lokaldel, tidspunkt, jagtform og historik som den aktive model. Self-testen beviser, at kandidaterne er dataminimerede, score-neutrale og ikke kan aktivere offentlig runtime.
 
-Den virkelige centralt hydrerede kørsel over alle dækkede aktive kystdele mangler ved dette lokale checkpoint. Den skal køres efter merge og skal omfatte aktuelle ekspertregler. Resultatet kan ændre den endelige anbefaling, især hvis afvigelser samler sig geografisk eller i bestemte strømregimer.
+GitHub Actions-run `32554012542` kørte den centralt hydrerede shadow på PR #59's eksakte head `5762827873acaa439329c9779ec94c4593e11e1a`. Alle 673 aktive dele i 210 zoner blev kontrolleret. 243 dele havde komplette scoreinput og gav 486 jagtformskontekster; 430 dele forblev eksplicit u-scorede, og ingen del blev blokeret. Ingen parentfallback, interpolation, sammensmeltning på tværs af dele, state-, admin-, geometri-, sampling-, offentlig runtime- eller scoreændring blev registreret.
+
+| National sammenligning | Strand | Waders |
+| --- | ---: | ---: |
+| G 50/50 minus aktiv, gennemsnit | -5,50 | -3,74 |
+| G 50/50 minus aktiv, spænd | -28 til +12 | -30 til +25 |
+| G 50/50 minus kandidat E, gennemsnit | -3,02 | -2,14 |
+| G 48 minus G 24, gennemsnit | 0,00 | -0,01 |
+| G 50/50 minus no-direct-wind, gennemsnit | 0,00 | 0,00 |
+
+24 og 48 timer var identiske på 236 af 243 stranddele og 241 af 243 waders-dele. Direkte vind ændrede kun to stranddele med ét point og ændrede ingen waders-del. Den nationale kørsel styrker derfor valget af 50/50 som gennemsigtig repræsentant og no-direct-wind som konservativ beslutningsvariant.
+
+Shadowen lukker kørselsgaten, men ikke aktiveringsgaten. Den nationale kontrakt havde nul komplette lokale retention-features, og kun 243 af 673 dele kunne scores. Resultatet er et stærkt teknisk og aktuelt retningscheck, men ikke fundkalibrering eller fuld national effektmåling. Det dataminimerede artefakt forbliver privat.
 
 ## Samlet anbefaling til ejerreview
 
@@ -130,10 +142,10 @@ Kandidat G bør **ikke aktiveres i sin nuværende form**. Den er en bedre forskn
 - ekstra strømhistorik og direkte vind giver meget lille selvstændig effekt;
 - direkte vind har ikke dokumenteret merværdi og risikerer dobbeltregning;
 - en høj waders-score kan sameksistere med jagtbarhed 0;
-- den friske nationale shadow og centralt hydrerede regelkæde mangler;
+- den nationale shadow har nul komplette lokale retention-features og kan kun score 243 af 673 dele;
 - der findes endnu ikke tilstrækkelige komplette fund-/nul-fundsture til kalibrering.
 
-Det bedste næste faglige spor er G 50/50 **uden direkte vind**, med 24/48 som følsomhedsgrænser, efterfulgt af national shadow og en særskilt ejerbeslutning om waders-betydningen. Offentlig 25/40/35 forbliver den sikreste reference indtil da.
+Det bedste næste faglige spor er G 50/50 **uden direkte vind**, med 24/48 som følsomhedsgrænser, efterfulgt af en særskilt ejerbeslutning om waders-betydningen, forklaringskontrakten og den utilstrækkelige retention-/scorecoverage. Offentlig 25/40/35 forbliver den sikreste reference indtil da.
 
 ## Reproducerbarhed og databeskyttelse
 

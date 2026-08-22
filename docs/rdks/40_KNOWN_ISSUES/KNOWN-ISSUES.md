@@ -441,8 +441,9 @@ Den nye appkode må ikke merges, før migrationen 20260821_trip_evidence_contrac
 - Dette er ikke en offentlig regression, fordi Candidate G er diagnostic-only. Det er en aktiveringsstopklods for betydning, UI og forklaring.
 - Løsningen kræver ejerbeslutning. Der må ikke tilføjes en skjult sikkerheds- eller jagtbarhedsgate alene for at få modellen til at se rigtig ud.
 
-## ISSUE-CANDIDATE-G-FRESH-NATIONAL-SHADOW - ÅBEN EVIDENSGATE
+## ISSUE-CANDIDATE-G-FRESH-NATIONAL-SHADOW - KØRSELSGATE LUKKET, COVERAGEGATE ÅBEN
 
-- National validator understøtter G 24 timer, 50/50, 48 timer og 50/50 uden direkte vind og består self-test.
-- Den virkelige centralt hydrerede kørsel på merged kode mangler endnu. Den skal kontrollere aktuelle centrale regler og geografiske/regimebestemte ekstremer.
-- Ingen aktivering må ske på den lokale 12-hændelsesreplay alene.
+- Centralt hydreret exact-head-run `32554012542` kontrollerede 673 aktive dele i 210 zoner og gennemførte G 24 timer, 50/50, 48 timer og 50/50 uden direkte vind uden offentlig ændring.
+- 243 dele blev scoret i begge jagtformer; 430 var eksplicit u-scorede, nul var blokerede, og retention-featurecoverage var nul.
+- Aktuelle centrale regler var hydreret, men havde nul aktive regler og nul matches.
+- Kørselsgaten er dermed lukket. Coverage-, ekstrem-, forklarings- og ejer-gaten er fortsat åbne; ingen aktivering må ske på dette grundlag alene.

@@ -259,7 +259,7 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [x] Udled historisk stroemhukommelse fra de eksisterende 96-timers forloeb: styrke, retning, varighed, stabilitet, vendingsalder og nettoforloeb.
 - [x] Udled tilsvarende vindhukommelse og adskil direkte vind fra indirekte virkning gennem boelger, stroem og vandstand.
 - [x] Koer separate ablationer og kontroller svage/korte samt kraftige/langvarige vendinger.
-- [ ] Byg og sammenlign kandidat G i historisk replay, national scenariematrix og national shadow.
+- [x] Byg og sammenlign kandidat G i historisk replay, national scenariematrix og centralt hydreret national shadow.
 - [ ] Kontrollér den fulde ekspertregelkaede, jagtbarhed, vadesikkerhed og at pile, score og forklaring passer sammen.
 - [ ] Fremlaeg en grundig forklaring i almindeligt sprog paa den endelige vaegtmatrix og dens konsekvenser; offentlig aendring kraever derefter ejer-go/no-go.
 - [ ] Fortsaet efter godkendt scoremodel med haendelsesmodel, ravvinduer, lagdelte brugerforklaringer og det omfattende laeringsmodul i den allerede vedtagne roadmapraekkefoelge.
@@ -283,7 +283,7 @@ Kandidat G er privat og score-neutral. Aktiv RavScore 25/40/35, DMI-first, geome
 - [x] Lineær vind er konservativ hovedanalyse; vindstressproxy er yderkant, og en variant uden direkte vind er obligatorisk.
 - [x] Integrér de tre historikvarianter i kandidat-G-replay og den parrede retningskontrol uden pointaktivering.
 - [x] Kør den kanoniske nationale scenariematrix uden geometri-/punktlæsning.
-- [ ] Kør den virkelige centralt hydrerede nationale shadow før den endelige ekspertregel-, sikkerheds- og forklaringsgate.
+- [x] Kør den virkelige centralt hydrerede nationale shadow før den endelige ekspertregel-, sikkerheds- og forklaringsgate.
 
 ## Kandidat G næste beslutningsgate - 2026-08-22
 
@@ -291,7 +291,10 @@ Kandidat G er privat og score-neutral. Aktiv RavScore 25/40/35, DMI-first, geome
 - [x] Separat strøm-, bølge-, direkte vind- og totalvindablation samt gain-, vægt- og vindstressfølsomhed.
 - [x] Kanonisk national rotationsmatrix: 176 evalueringer, nul historikskabt transport ved nul kapacitet og korrekt respons på svage/stærke vendinger.
 - [x] National shadow-kode understøtter G-sporene og er self-testet uden produktionsaktivering.
-- [ ] Kør den virkelige centralt hydrerede nationale shadow efter merge; brug 50/50 uden direkte vind som foretrukken beslutningsvariant og 24/48 som grænser.
+- [x] Centralt hydreret exact-head-shadow `32554012542`: 673/210 kontrolleret, 243 scorede dele, 430 eksplicit u-scorede, nul blokerede og nul offentlige ændringer.
+- [x] Bekræft 50/50 uden direkte vind som foretrukken beslutningsvariant og 24/48 som grænser; nationalt er forskellene fortsat højst ét point.
+- [ ] Udvid den relevante nationale coverage: nul komplette lokale retention-features og kun 243 af 673 scorede dele er utilstrækkeligt til aktivering.
 - [ ] Løs før go/no-go, at waders kan have jagtbarhed 0 samtidig med høj G-score. Det kræver eksplicit produkt-/forklaringsvalg, ikke en skjult koefficient.
-- [ ] Afspil frisk central ekspertregelkaede og verificér pil, historik, komponenter, score og forklaring på samme context.
+- [x] Afspil frisk central ekspertregelkaede; den havde nul aktive regler og nul matches.
+- [ ] Fastlæg og verificér kandidatens pil, historik, komponenter, score og forklaring på samme context før enhver offentlig kobling.
 - [ ] Fremlæg derefter ejerreview. Den nuværende anbefaling er at beholde offentlig 25/40/35 og ikke aktivere G endnu.

@@ -72,4 +72,5 @@ Det reproducerbare resultat og den fulde beslutning findes i `RAVSCORE_PAIRED_DI
 - Direkte vind flytter 0,086 point absolut i gennemsnit og har ikke dokumenteret selvstændig merværdi. `RRS-CANDIDATE-G-50-50-NO-DIRECT-WIND-4.0.252` er derfor foretrukken til næste nationale shadow.
 - Kandidat G skifter 474 af 1.460 referencebånd mod aktiv model og kan ikke kaldes en mindre justering.
 - Et kanonisk waders-scenarie giver jagtbarhed 0 og score omkring 79. Ingen G-model må aktiveres, før produktbetydning og forklaring er afgjort eksplicit.
+- National exact-head-shadow `32554012542` bekræfter næsten identiske 24/48/no-direct-spor. G 50/50 ligger i gennemsnit 5,50 point under aktiv model for strand og 3,74 for waders på 243 scorede dele; 430 dele er u-scorede, og retention-featurecoverage er nul.
 - Evidens: `RAVSCORE_CANDIDATE_G_DECISION_BASIS_2026-08-22.md`.
