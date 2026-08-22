@@ -1736,3 +1736,10 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - Pages-deployment `6036054331` er `success`. Live version er 4.0.253; datasæt `rr-20260822110004-210` har 210 zoner og 673/673 scorede kystdele.
 - Målrettet livekontrol var tilstrækkelig, fordi offentlig score, UI-adfærd og offentlig datakontrakt ikke blev ændret. Candidate G er fortsat privat, og coverage-/ejer-gates er fortsat åbne.
 - Ingen private payloads, beskyttede dirty-datafiler, geometri eller land-/vandpunkter indgik i PR'en eller checkpointet.
+
+## 2026-08-22 - endeligt Candidate G-produktionscheckpoint
+
+- Dokumentationscheckpoint PR #63 bestod exact-head-kildegate `32569597610` på `b90c4adc` og blev merged som `579ea914`.
+- Da friskhedsgaten krævede en ny vejropdatering, gennemførte `32569650036` den fulde produktionskæde i stedet for preflight-skip; alle gates og jobs bestod.
+- Support `RavRadar-support-3380`, Supabase, Pages-artifact og deployment `6036178330` er grønne. Live `rr-20260822111522-210` viser 210 zoner og 673/673 scorede kystdele.
+- Kandidat G er fortsat privat og score-neutral. Ingen offentlig score-/UI-kobling, geometri- eller punktændring indgik.
