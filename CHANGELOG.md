@@ -1,3 +1,9 @@
+## Intern workflowrettelse efter 4.0.258 – produktionsbevis på rod-CHANGELOG (2026-08-23)
+
+- PR #79 bestod exact-head-kørsel `32600654326` på `24d944c0` og blev merged som `41f71900`.
+- Den forventede fulde produktion `32600714319` bestod frisk vejr/provenance, fuld projektvalidering, release-gate, supportpakke, Supabase-synkronisering og Pages-deploy.
+- Live-manifestet er komplet som `rr-20260822215524-210` med 210 zoner og 673 kystdele. Dette rene dokumentationscheckpoint er det særskilte skip-bevis; ingen ny push-produktion må oprettes ved merge.
+
 ## Intern workflowrettelse efter 4.0.258 – samlet CHANGELOG i docs-skip (2026-08-22)
 
 - Den selektive dokumentationsregel dækkede versionsfilerne `CHANGELOG-*.md`, men ikke projektets aktuelle samlede `CHANGELOG.md`; derfor udløste PR #78's docs-only merge en unødvendig fuld produktion.
