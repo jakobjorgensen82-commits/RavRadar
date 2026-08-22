@@ -15,6 +15,10 @@ import {
   normalizeMemoryTrackCausally,
   signedDirectionalForce,
 } from '../js/core/ravscore-regime-memory.js';
+import {
+  MODE_COUPLING_POLICIES,
+  evaluateModeHuntabilityCoupling,
+} from '../js/core/ravscore-mode-huntability-research.js';
 
 const TRACKS = Object.freeze([
   Object.freeze({ id: 'G-24H-LIN', activeWeight: 1 }),
@@ -319,6 +323,75 @@ function aggregate(rows) {
     scoreWeightSensitivity: Object.fromEntries(WEIGHT_PRIORS.map(weights => [weights.id,
       summarizeDifference(rows, row => row.weightSensitivity[weights.id], row => row.active),
     ])),
+    modeCouplingSensitivity: Object.fromEntries(MODE_COUPLING_POLICIES.map(policy => {
+      const waders = rows.filter(row => row.mode === 'waders');
+      const beach = rows.filter(row => row.mode === 'beach');
+      const huntabilityBands = [
+        { id: '0-34', matches: row => row.huntability < 35 },
+        { id: '35-54', matches: row => row.huntability >= 35 && row.huntability < 55 },
+        { id: '55-74', matches: row => row.huntability >= 55 && row.huntability < 75 },
+        { id: '75-100', matches: row => row.huntability >= 75 },
+      ];
+      return [policy.id, {
+        description: policy.description,
+        wadersVsPreferredCandidateG: summarizeScores(
+          waders,
+          row => row.modeCoupling[policy.id],
+          row => row.noDirectWind,
+        ),
+        beachVsPreferredCandidateG: summarizeDifference(
+          beach,
+          row => row.modeCoupling[policy.id],
+          row => row.noDirectWind,
+        ),
+        byWadersHuntability: Object.fromEntries(huntabilityBands.map(band => {
+          const selected = waders.filter(band.matches);
+          return [band.id, selected.length ? summarizeScores(
+            selected,
+            row => row.modeCoupling[policy.id],
+            row => row.noDirectWind,
+          ) : null];
+        })),
+        lowHuntabilityFairOrGoodCount: waders.filter(row =>
+          row.huntability < 35 && row.modeCoupling[policy.id] >= 55).length,
+        lowHuntabilityGoodCount: waders.filter(row =>
+          row.huntability < 35 && row.modeCoupling[policy.id] >= 75).length,
+        zeroHuntabilityMaximumScore: Math.max(0, ...waders.filter(row => row.huntability === 0)
+          .map(row => row.modeCoupling[policy.id])),
+      }];
+    })),
+    ownerApprovedModeVariant: {
+      variantId: 'G-50-50-NO-DIRECT-WIND-WADERS-LIMIT',
+      overallVsPreviousPreferred: summarizeScores(rows, row => row.approvedModeScore, row => row.noDirectWind),
+      beachVsPreviousPreferred: summarizeScores(
+        rows.filter(row => row.mode === 'beach'),
+        row => row.approvedModeScore,
+        row => row.noDirectWind,
+      ),
+      wadersVsPreviousPreferred: summarizeScores(
+        rows.filter(row => row.mode === 'waders'),
+        row => row.approvedModeScore,
+        row => row.noDirectWind,
+      ),
+      wadersVsPreviousVisibleCap: summarizeScores(
+        rows.filter(row => row.mode === 'waders'),
+        row => row.approvedModeScore,
+        row => row.modeCoupling['W-HUNTABILITY-CAP'],
+      ),
+      wadersHuntability: summarizeScores(
+        rows.filter(row => row.mode === 'waders'),
+        row => row.approvedHuntability,
+        row => row.huntability,
+      ),
+      wadersLowHuntabilityCount: rows.filter(row =>
+        row.mode === 'waders' && row.approvedHuntability < 35).length,
+      wadersLowHuntabilityFairOrGoodCount: rows.filter(row =>
+        row.mode === 'waders' && row.approvedHuntability < 35 && row.approvedModeScore >= 55).length,
+      beachChangedCount: rows.filter(row =>
+        row.mode === 'beach' && row.approvedModeScore !== row.noDirectWind).length,
+      wadersScoreAboveHuntabilityCount: rows.filter(row =>
+        row.mode === 'waders' && row.approvedModeScore > row.approvedHuntability).length,
+    },
     waderHuntability: {
       evaluations: rows.filter(row => row.mode === 'waders').length,
       lowHuntabilityEvaluations: rows.filter(row => row.mode === 'waders' && row.huntability < 35).length,
@@ -329,7 +402,10 @@ function aggregate(rows) {
         row.mode === 'waders' && row.huntability === 0 && row.noDirectWind >= 55).length,
       zeroHuntabilityButGoodPreferred: rows.filter(row =>
         row.mode === 'waders' && row.huntability === 0 && row.noDirectWind >= 75).length,
-      methodAvailabilityMustRemainSeparateFromSafety: true,
+      beachLowHuntabilityMayCoexistWithHighAmberPotential: true,
+      wadersLowHuntabilityMustLimitFinalMethodScore: true,
+      siteSuitabilityIncluded: false,
+      safetyAdviceIncluded: false,
       hiddenScoreCoefficientAllowed: false,
       scoreIsSafetyAdvice: false,
     },
@@ -363,13 +439,30 @@ function productContractAudit(rows) {
       || reconstructed !== row.noDirectWind
       || row.preferredScoreCalculation.roundedScore !== row.noDirectWind;
   });
+  const approvedInconsistent = rows.filter(row => {
+    const calculation = row.approvedScoreCalculation;
+    const reconstructedUncoupled = Math.round(clamp(calculation.additiveScore * calculation.gateFactor));
+    const reconstructedFinal = row.mode === 'waders'
+      ? Math.min(reconstructedUncoupled, row.approvedHuntability)
+      : reconstructedUncoupled;
+    return reconstructedUncoupled !== calculation.uncoupledRoundedScore
+      || reconstructedFinal !== row.approvedModeScore
+      || calculation.roundedScore !== row.approvedModeScore;
+  });
   return {
-    preferredVariant: 'G-50-50-NO-DIRECT-WIND',
+    comparisonBaselineVariant: 'G-50-50-NO-DIRECT-WIND',
+    ownerApprovedResearchVariant: 'G-50-50-NO-DIRECT-WIND-WADERS-LIMIT',
     evaluationCount: rows.length,
     componentScoreConsistency: {
       checkedEvaluationCount: rows.length,
       mismatchCount: inconsistent.length,
       sameContextRequired: true,
+    },
+    ownerApprovedVariantConsistency: {
+      checkedEvaluationCount: rows.length,
+      mismatchCount: approvedInconsistent.length,
+      wadersUsesVisibleHuntabilityMaximum: true,
+      beachScoreUnchanged: true,
     },
     wadersMeaning: {
       evaluationCount: waders.length,
@@ -377,9 +470,13 @@ function productContractAudit(rows) {
       zeroHuntabilityWithFairOrGoodScoreCount: waders.filter(row => row.huntability === 0 && row.noDirectWind >= 55).length,
       lowHuntabilityCount: waders.filter(row => row.huntability < 35).length,
       lowHuntabilityWithFairOrGoodScoreCount: waders.filter(row => row.huntability < 35 && row.noDirectWind >= 55).length,
-      productRecommendation: 'EXPLICIT_WADING_METHOD_AVAILABILITY_ALONGSIDE_UNCHANGED_COMPOSITE_SCORE',
-      unavailableMethodMustNotBePresentedAsRecommended: true,
-      safetyStatusRemainsIndependent: true,
+      approvedLowHuntabilityCount: waders.filter(row => row.approvedHuntability < 35).length,
+      approvedLowHuntabilityWithFairOrGoodScoreCount: waders.filter(row =>
+        row.approvedHuntability < 35 && row.approvedModeScore >= 55).length,
+      productRecommendation: 'CONTINUE_SCORE_NEUTRAL_SHADOW_WITH_OWNER_APPROVED_MODE_VARIANT',
+      lowWadersHuntabilityMustLimitFinalMethodScore: true,
+      siteSuitabilityIncluded: false,
+      safetyAdviceIncluded: false,
       hiddenScoreCoefficientAllowed: false,
     },
     arrowAndHistory: {
@@ -449,6 +546,9 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
           const noDirectWind = evaluateRavScoreCandidateG(context, {
             variantId: 'G-50-50-NO-DIRECT-WIND', memory: primaryMemory,
           });
+          const approvedModeVariant = evaluateRavScoreCandidateG(context, {
+            variantId: 'G-50-50-NO-DIRECT-WIND-WADERS-LIMIT', memory: primaryMemory,
+          });
           const noHistory = evaluateRavScoreCandidateG(context, {
             variantId: 'G-50-50-NO-DIRECT-WIND',
             memory: { current: 0, wave: 0, directWind: 0 },
@@ -494,11 +594,18 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
             candidateE: primary.candidateScores.candidateE,
             variants,
             noDirectWind: noDirectWind.score,
+            approvedModeScore: approvedModeVariant.score,
+            approvedHuntability: approvedModeVariant.components.huntability,
+            approvedScoreCalculation: approvedModeVariant.scoreCalculation,
             windStress: windStress.score,
             ablations,
             gainSensitivity,
             mixSensitivity,
             weightSensitivity,
+            modeCoupling: Object.fromEntries(MODE_COUPLING_POLICIES.map(policy => [
+              policy.id,
+              evaluateModeHuntabilityCoupling(noDirectWind, mode, policy.id).score,
+            ])),
             huntability: primary.components.huntability,
             mobilisation: noDirectWind.components.mobilisation,
             preferredTransportAndDelivery: noDirectWind.components.transportAndDelivery,
@@ -519,6 +626,11 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
 
   assert.ok(rows.length > 0);
   assert.ok(rows.every(row => Object.values(row.variants).every(score => score >= 0 && score <= 100)));
+  assert.ok(rows.every(row => row.approvedModeScore >= 0 && row.approvedModeScore <= 100));
+  assert.ok(rows.filter(row => row.mode === 'beach')
+    .every(row => row.approvedModeScore === row.noDirectWind));
+  assert.ok(rows.filter(row => row.mode === 'waders')
+    .every(row => row.approvedModeScore <= row.approvedHuntability));
   return {
     schemaVersion: '1.0.0',
     status: 'passed-private-candidate-g-decision-analysis',
@@ -531,6 +643,7 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
       historyMix: CANDIDATE_G_HISTORY_MIX,
       historyGain: 0.40,
       variants: Object.values(CANDIDATE_G_VARIANTS),
+      modeCouplingPolicies: MODE_COUPLING_POLICIES,
       capacityContract: 'history-multiplies-existing-transport-and-delivery-and-cannot-create-a-zero-capacity-path',
       physicalBottleneck: 'same-mild-gate-as-candidate-e-recomputed-after-history-modulation',
     },
@@ -548,7 +661,7 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
     },
     interpretationGuards: [
       'SCORE_IS_NOT_SAFETY_ADVICE',
-      'HUNTABILITY_IS_REPORTED_SEPARATELY_FOR_WADERS',
+      'HUNTABILITY_HAS_MODE_DEPENDENT_FINAL_SCORE_EFFECT',
       'DIRECT_WIND_IS_A_CAPPED_RESEARCH_PRIOR_AND_HAS_A_MANDATORY_NO_DIRECT_CONTROL',
       'TOTAL_WIND_ABLATION_INCLUDES_HUNTABILITY_AND_MOBILISATION_PATHS',
       'TOTAL_WAVE_ABLATION_INCLUDES_HUNTABILITY_AND_MOBILISATION_PATHS',
@@ -650,6 +763,7 @@ function summaryText(report) {
     `Mean direct-wind contribution: ${aggregate.directWind.primaryMinusNoDirect.meanDelta}`,
     `Mean linear minus stress-wind difference: ${aggregate.directWind.linearMinusStress.meanDelta}`,
     `Wader low-huntability evaluations: ${aggregate.waderHuntability.lowHuntabilityEvaluations}`,
+    `Owner-approved waders mean delta: ${aggregate.ownerApprovedModeVariant.wadersVsPreviousPreferred.meanDeltaFromBaseline}`,
     'Protected geometry read: no',
     'Coordinates/raw weather/raw U/V stored: no',
     'Public score impact: no',
@@ -667,6 +781,13 @@ function main() {
     assert.equal(report.protectedGeometryRead, false);
     assert.equal(report.scoreImpact, false);
     assert.equal(report.aggregate.waderHuntability.scoreIsSafetyAdvice, false);
+    assert.equal(report.aggregate.ownerApprovedModeVariant.beachChangedCount, 0);
+    assert.equal(report.aggregate.ownerApprovedModeVariant.wadersScoreAboveHuntabilityCount, 0);
+    assert.equal(report.aggregate.productContractAudit.ownerApprovedVariantConsistency.mismatchCount, 0);
+    for (const policy of MODE_COUPLING_POLICIES) {
+      assert.equal(report.aggregate.modeCouplingSensitivity[policy.id]
+        .beachVsPreferredCandidateG.meanAbsoluteDelta, 0);
+    }
     assert.ok(report.aggregate.trackComparisons.h24MinusH48.evaluations > 0);
     const serialized = JSON.stringify(report).toLowerCase();
     for (const forbidden of ['waterpoint', 'landpoint', 'longitude', 'latitude', 'umps']) {

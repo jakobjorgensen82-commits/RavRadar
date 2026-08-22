@@ -1,4 +1,8 @@
 import { evaluatePhaseDWaveProcessCandidate } from './phase-d-wave-process-candidate.js';
+import {
+  PHASE_D_HUNTABILITY_PROFILES,
+  evaluatePhaseDHuntability,
+} from './phase-d-process-candidate.js';
 
 export const CANDIDATE_G_WEIGHTS = Object.freeze({
   huntability: 0.20,
@@ -37,6 +41,15 @@ export const CANDIDATE_G_VARIANTS = Object.freeze({
     memoryTrack: '24h-48h-50-50',
     directWindPower: null,
     directWindIncluded: false,
+  }),
+  'G-50-50-NO-DIRECT-WIND-WADERS-LIMIT': Object.freeze({
+    id: 'G-50-50-NO-DIRECT-WIND-WADERS-LIMIT',
+    modelId: 'RRS-CANDIDATE-G-50-50-NO-DIRECT-WIND-WADERS-LIMIT-4.0.254',
+    memoryTrack: '24h-48h-50-50',
+    directWindPower: null,
+    directWindIncluded: false,
+    huntabilityProfile: PHASE_D_HUNTABILITY_PROFILES.WADERS_UNDER_6_PROGRESSIVE,
+    wadersHuntabilityLimit: true,
   }),
 });
 
@@ -123,14 +136,25 @@ export function evaluateRavScoreCandidateG(
   const historyFactor = clamp(1 + Number(historyGain) * directionalHistorySignal, 0, 2);
   const baseTransportAndDelivery = Number(base.components.transportAndDelivery);
   const transportAndDelivery = clamp(baseTransportAndDelivery * historyFactor);
-  const huntability = Number(base.components.huntability);
+  const huntabilityResult = variant.huntabilityProfile
+    ? evaluatePhaseDHuntability(context.mode || 'beach', context.weather || {}, {
+      profile: variant.huntabilityProfile,
+    })
+    : null;
+  const huntability = round(huntabilityResult?.value ?? base.components.huntability);
   const mobilisation = Number(base.components.mobilisation);
   const additiveScore = huntability * CANDIDATE_G_WEIGHTS.huntability
     + transportAndDelivery * CANDIDATE_G_WEIGHTS.transportAndDelivery
     + mobilisation * CANDIDATE_G_WEIGHTS.mobilisation;
   const weakestPhysicalStage = Math.min(transportAndDelivery, mobilisation);
   const gateFactor = physicalBottleneckGate(weakestPhysicalStage);
-  const candidateG = round(additiveScore * gateFactor);
+  const uncoupledCandidateG = round(additiveScore * gateFactor);
+  const wadersHuntabilityMaximum = variant.wadersHuntabilityLimit && context.mode === 'waders'
+    ? huntability
+    : null;
+  const candidateG = wadersHuntabilityMaximum === null
+    ? uncoupledCandidateG
+    : Math.min(uncoupledCandidateG, wadersHuntabilityMaximum);
   const scoreCalculation = {
     components: {
       huntability,
@@ -146,6 +170,11 @@ export function evaluateRavScoreCandidateG(
     additiveScore,
     gateFactor,
     gatedScore: additiveScore * gateFactor,
+    uncoupledRoundedScore: uncoupledCandidateG,
+    modeHuntabilityPolicy: wadersHuntabilityMaximum === null
+      ? 'UNCHANGED'
+      : 'VISIBLE_WADERS_HUNTABILITY_MAXIMUM',
+    modeHuntabilityMaximum: wadersHuntabilityMaximum,
     roundedScore: candidateG,
   };
   const limitations = new Set(base.confidence?.limitations || []);
@@ -153,6 +182,8 @@ export function evaluateRavScoreCandidateG(
   limitations.add('history-gain-is-uncalibrated');
   limitations.add('no-find-outcome-calibration');
   if (directWindState === null) limitations.add('direct-wind-history-omitted');
+  if (variant.huntabilityProfile) limitations.add('waders-wind-curve-is-owner-prior');
+  if (variant.wadersHuntabilityLimit) limitations.add('waders-huntability-limit-is-owner-prior');
 
   return {
     ...base,
@@ -161,6 +192,7 @@ export function evaluateRavScoreCandidateG(
     modelVersion: variant.modelId,
     components: {
       ...base.components,
+      huntability,
       transportAndDelivery: round(transportAndDelivery),
     },
     candidateScores: {
@@ -190,6 +222,12 @@ export function evaluateRavScoreCandidateG(
       candidateGHistoryMix: mix,
       candidateGHistoryGain: Number(historyGain),
       candidateGDirectWindIncluded: directWindState !== null,
+      candidateGHuntabilityProfile: variant.huntabilityProfile || PHASE_D_HUNTABILITY_PROFILES.BASELINE,
+      candidateGWadersHuntabilityLimit: variant.wadersHuntabilityLimit === true,
+      candidateGUncoupledScore: uncoupledCandidateG,
+      candidateGWadersHuntabilityMaximum: wadersHuntabilityMaximum,
+      candidateGHuntabilityWindScore: huntabilityResult?.windScore ?? null,
+      candidateGHuntabilityWaveScore: huntabilityResult?.waveScore ?? null,
       candidateGDirectionalHistorySignal: Number(directionalHistorySignal.toFixed(6)),
       candidateGHistoryFactor: Number(historyFactor.toFixed(6)),
       candidateGBaseTransportAndDelivery: baseTransportAndDelivery,

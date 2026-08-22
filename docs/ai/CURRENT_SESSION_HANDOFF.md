@@ -1,5 +1,13 @@
 # RavRadar - aktuelt Codex-handoff
 
+## Checkpoint 2026-08-22 - 4.0.254 waders-kandidat lokalt valideret
+
+- Dette checkpoint erstatter den ældre anbefaling om kun at vise waders som separat metodestatus. Ejeren har valgt et synligt waders-scoreloft ved jagtbarheden og en ny vinddel med 100 point til og med 6 m/s og monotont fald derover.
+- Arbejdsbranch er `codex/ravscore-mode-huntability-analysis`. Ny stabil diagnostic-only variant er `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT`; den tidligere no-direct-variant bevares som reference.
+- Replayet dækker 1.460 evalueringer. Alle 730 strandscorer er identiske; waders-gennemsnittet er 27,351 mod 35,465 før, og ingen waders-score overstiger jagtbarheden. Den nye vindkurve ændrer kun +0,449 point i gennemsnit mod samme loft på den gamle kurve.
+- Ingen sikkerhedsmodel eller bund-/dybde-/rende-/adgangsegnethed indgår. Beskyttede data, private cachepayloads, geometri og land-/vandpunkter er urørte.
+- Offentlig 25/40/35 og runtime er uændret. Målrettede tests, RDKS, `scripts/validate-source.ps1`, releasegate og versionslukning er grønne. Exact-head PR-gate, merge og det samlede Candidate G-beslutningsgrundlag mangler ved dette checkpoint.
+
 ## Checkpoint 2026-08-22 - Candidate G 4.0.253 produktionsverificeret
 
 - Dette checkpoint erstatter alle ældre branch-, baseline- og næste-trin-angivelser nedenfor.

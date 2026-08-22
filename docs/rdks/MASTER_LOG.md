@@ -1,3 +1,10 @@
+## 2026-08-22 – 4.0.254 score-neutral waders-kandidat
+
+- Ejeren har valgt, at waders-jagtbarhed får fuld vindkomponent til og med 6 m/s og derefter falder progressivt ved højere vind. Forskningskurvens ankre er 6/100, 7/80, 8/60, 10/35, 13/10 og 18/0 med lineær interpolation.
+- Kandidaten `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT` begrænser kun waders-slutscoren til den beregnede jagtbarhed. Strandjagtens Candidate G-score er uændret; sikkerhed og fravalgte modeller for bund-/stedegnethed indgår ikke.
+- Privat replay af 1.460 evalueringer giver nul ændrede strandscorer og nul waders-scorer over jagtbarheden. Kandidaten er fortsat forskning og ændrer ikke den aktive offentlige 25/40/35-model uden en senere udtrykkelig go/no-go-beslutning.
+- Ejerens land-/vandpunkter og beskyttede data er urørte; versionsændringer i kystdata er kun topniveauets versionsmetadata.
+
 ## 2026-08-19 – scheduler overdraget, 30-timerscache og browserfallback
 
 - Ejeren slettede RavRadar-jobbene i cron-job.org. Efterfølgende naturlig produktion `#32272470720`, cachebevaring `#32272473716`/`#32272598725` og Copernicus-pilot `#32273634626` bestod, så GitHub Actions er eneste normale scheduler.
@@ -1750,3 +1757,12 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - Fuld produktion `32570223437` bestod med support `RavRadar-support-3382`, Supabase, Pages-artifact og deployment `6036286717`.
 - Live-snapshot `rr-20260822112859-210` viste version 4.0.253, 210 zoner og 673/673 scorede kystdele.
 - Handoffet binder herefter den faglige kodebaseline og dokumenterede produktionsbeviser, men ikke en evigt fast `main`-spids eller dataset-id. Begge skal kontrolleres direkte, så docs-publicering ikke gør sin egen tekst forældet.
+
+## 2026-08-22 - ejerbesluttet waders-vind- og jagtbarhedsvariant
+
+- Ejeren præciserede, at strand fortsat må vise højt ravpotentiale ved lav jagtbarhed, mens waders-scoren skal begrænses af søgemetodens faktiske jagtbarhed.
+- Ny diagnostic-only variant `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT` bruger 100 vindpoint til og med 6 m/s og falder monotont gennem 7/80, 8/60, 10/35, 13/10 og 18/0. Bølger indgår separat.
+- Historisk replay dækker 1.460 evalueringer. 730/730 strandscorer er identiske, ingen waders-score overstiger jagtbarheden, og ingen af 216 waders-evalueringer under jagtbarhed 35 får mindst 55 point.
+- Mod den tidligere no-direct-reference falder waders-gennemsnittet fra 35,465 til 27,351. Selve den nye vindkurve flytter kun +0,449 point i gennemsnit mod det samme loft på den gamle kurve.
+- Beslutningen er ikke sikkerhedsrådgivning og indfører ingen bund-, dybde-, rende-, vadebredde- eller adgangsmodel. Private rådata, geometri og land-/vandpunkter er urørte.
+- Offentlig 25/40/35 er uændret. Samlet vægt-/forklarings-/coverage-/ejer-go/no-go er fortsat åbent.

@@ -3,6 +3,27 @@ const number = value => finite(value) ? Number(value) : null;
 const clamp = (value, minimum = 0, maximum = 100) => Math.max(minimum, Math.min(maximum, Number(value)));
 const rounded = value => Math.round(Number(value));
 
+export const PHASE_D_HUNTABILITY_PROFILES = Object.freeze({
+  BASELINE: 'phase-d-huntability-baseline-v1',
+  WADERS_UNDER_6_PROGRESSIVE: 'waders-under-6-progressive-v1',
+});
+
+const BASELINE_WADERS_WIND_POINTS = Object.freeze([
+  [0, 100], [3, 100], [6, 80], [8, 55], [13, 10], [18, 0],
+]);
+const WADERS_UNDER_6_PROGRESSIVE_WIND_POINTS = Object.freeze([
+  [0, 100], [6, 100], [7, 80], [8, 60], [10, 35], [13, 10], [18, 0],
+]);
+const BEACH_WIND_POINTS = Object.freeze([
+  [0, 100], [5, 100], [8, 90], [13, 60], [18, 25], [25, 0],
+]);
+const WADERS_WAVE_POINTS = Object.freeze([
+  [0, 100], [0.25, 95], [0.7, 65], [1.2, 25], [2.5, 0],
+]);
+const BEACH_WAVE_POINTS = Object.freeze([
+  [0, 100], [0.3, 100], [0.7, 90], [1.2, 75], [2.5, 45], [4, 20], [6, 0],
+]);
+
 function interpolate(value, points) {
   const input = number(value);
   if (input === null) return null;
@@ -39,13 +60,20 @@ function directionAlignment(weather, zone) {
   return Math.cos(difference * Math.PI / 180);
 }
 
-function huntability(mode, weather) {
+export function evaluatePhaseDHuntability(
+  mode,
+  weather,
+  { profile = PHASE_D_HUNTABILITY_PROFILES.BASELINE } = {},
+) {
+  if (!Object.values(PHASE_D_HUNTABILITY_PROFILES).includes(profile)) {
+    throw new Error(`Unknown Phase D huntability profile: ${profile}`);
+  }
   const windPoints = mode === 'waders'
-    ? [[0, 100], [3, 100], [6, 80], [8, 55], [13, 10], [18, 0]]
-    : [[0, 100], [5, 100], [8, 90], [13, 60], [18, 25], [25, 0]];
-  const wavePoints = mode === 'waders'
-    ? [[0, 100], [0.25, 95], [0.7, 65], [1.2, 25], [2.5, 0]]
-    : [[0, 100], [0.3, 100], [0.7, 90], [1.2, 75], [2.5, 45], [4, 20], [6, 0]];
+    ? profile === PHASE_D_HUNTABILITY_PROFILES.WADERS_UNDER_6_PROGRESSIVE
+      ? WADERS_UNDER_6_PROGRESSIVE_WIND_POINTS
+      : BASELINE_WADERS_WIND_POINTS
+    : BEACH_WIND_POINTS;
+  const wavePoints = mode === 'waders' ? WADERS_WAVE_POINTS : BEACH_WAVE_POINTS;
   const parts = [
     { id: 'wind', value: interpolate(weather?.windSpeedMps, windPoints), weight: mode === 'waders' ? 40 : 55 },
     { id: 'wave', value: interpolate(weather?.waveHeightM, wavePoints), weight: mode === 'waders' ? 60 : 45 },
@@ -56,6 +84,9 @@ function huntability(mode, weather) {
   return {
     value: Math.min(...knownValues) * 0.6 + average.value * 0.4,
     coverage: average.coverage,
+    profile,
+    windScore: parts[0].value,
+    waveScore: parts[1].value,
   };
 }
 
@@ -171,7 +202,7 @@ function confidenceLabel(coverage) {
 }
 
 export function evaluatePhaseDProcessCandidate({ mode = 'beach', history = {}, weather = {}, zone = {} } = {}) {
-  const search = huntability(mode, weather);
+  const search = evaluatePhaseDHuntability(mode, weather);
   const mobilisationResult = mobilisation(history, weather, zone);
   const transportResult = transport(history, weather, zone);
   const deliveryResult = delivery(history, weather, zone, transportResult);

@@ -1,4 +1,13 @@
-# Implementeringsstatus – 4.0.253 score-neutral forskningskandidat
+# Implementeringsstatus – 4.0.254 score-neutral waders-kandidat
+
+## 4.0.254-kandidat – modeafhængig jagtbarhed
+
+- **IMPLEMENTERET SCORE-NEUTRALT:** Stabil variant `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT`, særskilt waders-vindprofil og synligt slutscoreloft ved jagtbarheden.
+- **VINDKONTRAKT:** 100 vindpoint til og med 6 m/s; derefter monotont fald gennem 7/80, 8/60, 10/35, 13/10 og 18/0. Bølger beregnes fortsat særskilt.
+- **REPLAY:** 1.460 evalueringer; 730/730 strandscorer uændrede, nul waders-score over jagtbarheden og nul middel/gode scorer ved jagtbarhed under 35.
+- **AFGRÆNSNING:** Ingen sikkerhedsadvarsel, ingen bund-/dybde-/rende-/adgangsmodel og ingen ændring af beskyttede data eller land-/vandpunkter.
+- **VALIDERET LOKALT:** Målrettede tests, RDKS, `scripts/validate-source.ps1`, releasegate og versionslukning er grønne.
+- **ÅBEN:** Exact-head PR-gate, merge og samlet Candidate G-vægt-/forklarings-/coverage-/ejerbeslutning. Ingen offentlig aktivering.
 
 ## Produktionsstatus for 4.0.253
 

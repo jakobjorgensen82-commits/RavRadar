@@ -272,7 +272,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.253
+**Håndbogsversion:** 4.0.254
 
 **Opdateret:** 19. august 2026
 
@@ -2002,7 +2002,11 @@ Ingen geometri, land-/vandpunkter, DMI-kilder, pile, offentlig forklaring eller 
 
 Den efterfølgende score-neutrale kontrol har gjort kandidatens beregning præcis nok til produktreview. Eksakte komponenter, vægtede bidrag og den fysiske gate giver den samme slutscore i alle 1.460 private evalueringer. De afrundede tal, som en bruger senere kan få vist, er forklaringstal og må ikke bruges til at genberegne facit alene.
 
-På den foretrukne variant uden direkte vind har 219 af 730 waders-evalueringer jagtbarhed under 35. Syv af dem har samtidig mindst 55 RavScore-point, og det kanoniske højenergiforløb har jagtbarhed 0 og score 79. Det betyder ikke, at brugeren bør gå i vandet. Den faglige anbefaling er at lade RavScore beskrive ravpotentialet og vise waders-metodens egnethed som en tydelig separat status. En metode, der er utilgængelig, må ikke præsenteres som anbefalet. Sikkerhed er stadig en anden og bredere vurdering end jagtbarhed.
+På referencevarianten uden direkte vind har 219 af 730 waders-evalueringer jagtbarhed under 35. Syv af dem har samtidig mindst 55 RavScore-point, og det kanoniske højenergiforløb har jagtbarhed 0 og score 79. Ejeren har derfor valgt en ny score-neutral forskningsvariant: strandscoren forbliver uændret, mens waders-scoren ikke kan overstige waders-jagtbarheden. Det er søgemetodens effektivitet, ikke en sikkerhedsgodkendelse.
+
+I den nye variant giver vinddelen 100 point til og med 6 m/s. Over 6 m/s falder den glidende gennem 80 ved 7 m/s, 60 ved 8 m/s, 35 ved 10 m/s, 10 ved 13 m/s og 0 ved 18 m/s. Bølger indgår fortsat separat. Bund, dybdeprofil, render, vadebredde og adgang indgår ikke, fordi automatisk lokal grundegnethed kan være misvisende uden lokalkendskab.
+
+Genafspilningen gav nul ændringer i 730 strandscorer og ingen waders-score over jagtbarheden. Waders-gennemsnittet gik fra 35,465 til 27,351 i de udvalgte vejrhændelser. Varianten er fortsat privat og er ikke en kalibreret produktionsmodel.
 
 Pilen og historikken beskriver heller ikke samme tid. Pilen skal fortsat vise den aktuelle lokale strøm. Historikken fortæller, hvad forløbet før nu har gjort ved transportpotentialet. I 332 af 872 tydeligt retningsbestemte kontrolsituationer pegede de to oplysninger modsat; i 100 flyttede historikken den afrundede score. Derfor skal en senere forklaring vise historikken særskilt og aldrig ændre pilens betydning i det skjulte.
 

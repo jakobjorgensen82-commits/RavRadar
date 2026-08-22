@@ -1,5 +1,14 @@
 # Current truth – gældende projektviden
 
+## 4.0.254-kandidat – ejerbesluttet waders-kobling, fortsat score-neutral
+
+- Den næste Candidate G-forskningsvariant er `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT`: strand er uændret, mens waders-scoren er det laveste af den hidtidige Candidate G-score og waders-jagtbarheden.
+- Vinddelen er 100 fra 0 til og med 6 m/s og falder glidende gennem 7/80, 8/60, 10/35, 13/10 og 18/0. Bølgedelen er fortsat separat. Dette beskriver søgemetodens effektivitet, ikke sikkerhed.
+- Historisk replay på 730 waders-evalueringer giver 27,351 mod 35,465 i den tidligere no-direct-reference. 231 falder, 323 er uændrede og 176 stiger højst 3 point på grund af den nye rolige-vindkurve; 200 skifter scorebånd.
+- Samme loft på den gamle vindkurve ville give 26,901 i gennemsnit. Den nye kurves selvstændige forskel er derfor kun +0,449 point. Ingen af 216 evalueringer med ny jagtbarhed under 35 får mindst 55 point, og ingen waders-score overstiger jagtbarheden.
+- Alle 730 strandscorer er identiske. Bund, dybde, render, vadebredde, adgang, geometri og land-/vandpunkter indgår ikke. Private rådata er ikke skrevet til Git.
+- Den tidligere anbefaling om kun en separat metodestatus er erstattet som næste forskningscentrum. Offentlig 25/40/35, UI, DMI/fallback, central admin og produktionsruntime er fortsat uændrede; samlet model-, vægt-, forklarings-, coverage- og ejer-go/no-go mangler.
+
 ## 4.0.253 – Candidate G-produktkontrakt er merged og produktionsverificeret
 
 - PR #62 bestod exact-head-kildegate `32568914124` på `d272c6ca` og leverede kode-/analysebaselinen som `b2951d90`; dokumentationscheckpointene gennem PR #64 bestod også exact-head-gates.

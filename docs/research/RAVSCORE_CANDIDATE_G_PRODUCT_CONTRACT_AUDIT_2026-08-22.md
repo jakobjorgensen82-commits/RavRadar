@@ -1,5 +1,7 @@
 # Kandidat G – score-neutral produktkontraktaudit, 2026-08-22
 
+> **Historisk 4.0.253-reference:** Den efterfølgende ejerbeslutning DEC-0051 erstatter anbefalingen om kun en separat waders-metodestatus. Den nye score-neutrale forskningsvariant bevarer strand og begrænser waders-scoren ved jagtbarheden. Se `RAVSCORE_MODE_SPECIFIC_HUNTABILITY_ANALYSIS_2026-08-22.md`.
+
 ## Status
 
 Denne audit er diagnostic-only i 4.0.253. Den ændrer ikke den aktive RavScore 25/40/35, offentlig UI, regler, DMI/fallback, geometri, land-/vandpunkter, central admin eller produktionsdata.

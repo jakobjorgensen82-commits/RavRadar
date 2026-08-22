@@ -649,11 +649,13 @@ En ekstra kandidat bruger samme stoettebaserede maks. 4 point, men tillader kun 
 - [x] Genafspil den Git-ignorerede 12-vinduescache og verificér den foretrukne `G-50-50-NO-DIRECT-WIND` uden at skrive private payloads til Git.
 - [x] Gør komponent-/score-/gatekontrakten eksakt; 1.460/1.460 evalueringer rekonstruerer samme score.
 - [x] Mål waders-produktkonflikten: 219/730 under jagtbarhed 35, 7 med mindst 55 point, og kanonisk 0/79.
-- [x] Fastlæg forskningsanbefalingen: én ravpotentialescore, separat tydelig metodeegnethed, ingen anbefaling af utilgængelig metode, sikkerhed uafhængig og ingen skjult koefficient.
+- [x] Fastlæg waders-forskningskontrakten: strand uden loft; waders med synligt loft ved jagtbarheden; ingen sikkerheds- eller grundegnethedsmodel.
+- [x] Implementér og genafspil `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT`: vinddel 100 til 6 m/s, monotont fald over 6, 730/730 uændrede strandscorer og nul waders-scorer over jagtbarheden.
 - [x] Fastlæg pil/historik: pilen viser aktuel lokal strøm; historik forklares særskilt på samme context. 332/872 tydelige contexts er modrettede, 100 med scoreeffekt.
 - [x] Udvid den nationale shadowrapport med en fail-closed coveragegate og afvis parentzonemorfologi som lokal del-evidens.
 - [x] Før kode-/analysebaseline 4.0.253 gennem PR #62 og dokumentationscheckpointene gennem PR #64; fuld produktionsverifikation `32570223437` og live 210/673 er grønne.
-- [ ] Ejerreview: vælg offentlig waders-/forklaringskontrakt eller behold kandidaten helt privat.
+- [x] Ejerreview af den score-neutrale waders-/vindkontrakt; den er valgt som næste analysecentrum, ikke som offentlig aktivering.
+- [ ] Saml pil, komponenter, vægte og forklaring i det endelige beslutningsgrundlag og indhent ejerens samlede go/no-go.
 - [ ] Udvid dokumenteret lokal retention- og scoreinputcoverage ud over 243/673 før enhver aktiveringsbeslutning.
 
 Aktiv RavScore 25/40/35, offentlig UI, DMI/fallback, geometri, land-/vandpunkter og central admin forbliver uændrede.

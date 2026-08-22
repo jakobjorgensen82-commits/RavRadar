@@ -14,7 +14,8 @@
 | RRS-CANDIDATE-G-24H-LIN-4.0.252 | Forskningskandidat | 20/45/35 | Kandidat E med kapacitetsbevarende 24-timers historik og højst 10 % direkte vind i historiksignalet |
 | RRS-CANDIDATE-G-50-50-LIN-4.0.252 | Forskningskandidat | 20/45/35 | Kandidat E med 50/50-blanding af 24- og 48-timers historik |
 | RRS-CANDIDATE-G-48H-LIN-4.0.252 | Forskningskandidat | 20/45/35 | Kandidat E med langsomt 48-timers historikspor |
-| RRS-CANDIDATE-G-50-50-NO-DIRECT-WIND-4.0.252 | Foretrukken næste beslutningsvariant | 20/45/35 | Samme 50/50-historik uden direkte vindbidrag; offentlig aktivering er ikke godkendt |
+| RRS-CANDIDATE-G-50-50-NO-DIRECT-WIND-4.0.252 | Sammenligningsreference efter DEC-0051 | 20/45/35 | Samme 50/50-historik uden direkte vindbidrag |
+| RRS-CANDIDATE-G-50-50-NO-DIRECT-WIND-WADERS-LIMIT-4.0.254 | Foretrukken næste forskningsvariant | 20/45/35 + synligt waders-loft | Strand uændret; waders begrænses af jagtbarhed og bruger den ejerbesluttede vindkurve; ingen offentlig aktivering |
 
 ## Stabile kandidatregler
 
@@ -29,6 +30,8 @@
 | RRS-G1-WEAKEST-LINK | C | Højst 25 % glat reduktion ved et klart svagt led | Må ikke blive en hård minimumsregel |
 | RRS-T4-WAVE-CURRENT-PATH | D-E | Bølge- og strømstøtte danner leveringsvejen; timing kan ikke skabe levering alene | Kystnær bølgeomformning er ikke modelleret |
 | RRS-G2-PHYSICAL-BOTTLENECK | E | Højst 15 % reduktion ved svag mobilisering eller samlet transport/levering | Forskningsprior, ikke fundkalibreret |
+| RRS-J2-WADERS-WIND-UNDER-6 | G waders-limit | 100 vindpoint til og med 6 m/s og monotont fald over 6 | Kun søgemetodens effektivitet; bølger er separat, ikke sikkerhed |
+| RRS-G3-WADERS-HUNTABILITY-LIMIT | G waders-limit | Endelig waders-score kan ikke overstige jagtbarheden | Strand er uændret; regler må ikke efterfølgende løfte over loftet |
 
 Alle kandidater er score-neutrale forskningsfunktioner. Se DEC-0046 og den samlede evidensanbefaling.
 
@@ -69,8 +72,8 @@ Det reproducerbare resultat og den fulde beslutning findes i `RAVSCORE_PAIRED_DI
 ## Kandidat G replayresultat
 
 - 24 timer, 50/50 og 48 timer adskiller sig højst ét point i de 1.460 historiske evalueringer; 50/50 er kun praktisk repræsentant, ikke fundkalibreret vinder.
-- Direkte vind flytter 0,086 point absolut i gennemsnit og har ikke dokumenteret selvstændig merværdi. `RRS-CANDIDATE-G-50-50-NO-DIRECT-WIND-4.0.252` er derfor foretrukken til næste nationale shadow.
+- Direkte vind flytter 0,086 point absolut i gennemsnit og har ikke dokumenteret selvstændig merværdi. `RRS-CANDIDATE-G-50-50-NO-DIRECT-WIND-4.0.252` er derfor reference for næste nationale shadow.
 - Kandidat G skifter 474 af 1.460 referencebånd mod aktiv model og kan ikke kaldes en mindre justering.
-- Et kanonisk waders-scenarie giver jagtbarhed 0 og score omkring 79. Ingen G-model må aktiveres, før produktbetydning og forklaring er afgjort eksplicit.
+- Et kanonisk waders-scenarie gav jagtbarhed 0 og score omkring 79 på referencen. DEC-0051's nye variant begrænser dette til 0, bevarer stranden og går videre score-neutralt; offentlig aktivering mangler fortsat samlet go/no-go.
 - National exact-head-shadow `32554012542` bekræfter næsten identiske 24/48/no-direct-spor. G 50/50 ligger i gennemsnit 5,50 point under aktiv model for strand og 3,74 for waders på 243 scorede dele; 430 dele er u-scorede, og retention-featurecoverage er nul.
 - Evidens: `RAVSCORE_CANDIDATE_G_DECISION_BASIS_2026-08-22.md`.

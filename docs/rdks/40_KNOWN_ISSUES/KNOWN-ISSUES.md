@@ -434,14 +434,15 @@ Den nye appkode må ikke merges, før migrationen 20260821_trip_evidence_contrac
 - 4.0.246 løser timen inden for højst tre timer og binder efterfølgende DMI/Copernicus/live/score til samme time.
 - PR #36 blev merged som c2e0d024. Produktion 32467031990 bestod 673/673, fuld validering, releasegate, Supabase og Pages; live viser version 4.0.246 og den løste 09:00-reference.
 
-## ISSUE-CANDIDATE-G-WADERS-MEANING - FORSKNINGSANBEFALING KLAR / EJERBESLUTNING ÅBEN
+## ISSUE-CANDIDATE-G-WADERS-MEANING - FORSKNINGSKONTRAKT BESLUTTET / PRODUKTION ÅBEN
 
 - Den kanoniske Candidate G-matrix kan give cirka 79 point samtidig med waders-jagtbarhed 0, fordi den fysiske gate efter DEC-0050 ikke indeholder jagtbarhed.
 - Replayet har 219 waders-evalueringer under 35 i jagtbarhed; på den foretrukne no-direct-wind-variant har 7 samtidig mindst 55 point. Den tidligere bredere G-optælling på 10 brugte ikke præcis samme variant.
 - Dette er ikke en offentlig regression, fordi Candidate G er diagnostic-only. Det er en aktiveringsstopklods for betydning, UI og forklaring.
-- 4.0.253 anbefaler score-neutralt én RavScore som ravpotentiale og en separat tydelig waders-metodestatus; en utilgængelig metode må ikke præsenteres som anbefalet, og sikkerhed forbliver en uafhængig kontrakt.
-- Offentlig kobling kræver fortsat ejerbeslutning. Der må ikke tilføjes en skjult sikkerheds- eller jagtbarhedsgate alene for at få modellen til at se rigtig ud.
-- 4.0.253-koden har fuldt produktionsbevis i `32570223437` på PR #64-merget `01904b92`, men Candidate G er ikke koblet offentligt; produktbeslutningen er derfor fortsat åben og ikke skjult af en grøn deploystatus.
+- Ejeren har besluttet næste forskningskontrakt: strand forbliver uden loft, mens waders bruger et synligt loft ved jagtbarheden og en vinddel på 100 til 6 m/s med monotont fald derover. Dette er ikke en sikkerhedsgate.
+- Den score-neutrale variant `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT` giver nul waders-score i 0/79-yderpunktet, ændrer nul af 730 strandscorer og giver ingen waders-score over jagtbarheden.
+- Den tidligere separate-metodestatus-anbefaling er erstattet som forskningscentrum. En tydelig produktforklaring er fortsat nødvendig, men må ikke skjule eller omgå den besluttede scorekobling.
+- Offentlig aktivering er fortsat blokeret af samlet model-/vægt-/forklaringsreview, utilstrækkelig lokal coverage og ejerens endelige go/no-go. 4.0.253's produktionsbevis er ikke et aktiveringsbevis for den nye variant.
 
 ## ISSUE-CANDIDATE-G-FRESH-NATIONAL-SHADOW - KØRSELSGATE LUKKET, COVERAGEGATE ÅBEN
 
