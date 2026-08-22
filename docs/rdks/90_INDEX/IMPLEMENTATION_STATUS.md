@@ -1,4 +1,15 @@
-# Implementeringsstatus – 4.0.257 Candidate G-coveragekontrakt
+# Implementeringsstatus – Candidate G-beslutningsgrundlag efter 4.0.257
+
+## Aktuelt score-neutralt beslutningscheckpoint
+
+- [x] Produktionsverificér 4.0.257 via PR #70, merge `bb16ffe9`, fuld produktion `32580314866` og live `rr-20260822150210-210`.
+- [x] Kør privat Candidate G-shadow `32580774128` på den eksakte mergecommit.
+- [x] Genafspil den Git-ignorerede cache: 1.460 evalueringer, 730 uændrede strandscorer og nul waders-score over jagtbarheden.
+- [x] Brug kun de 243 allerede komplette nationale dele som mekanisk kontrolsnapshot; hent ingen ekstra rådata til de øvrige dele i dette analyseafsnit.
+- [x] Saml A-C, D-E, F og G 24/48 som revisionsspor og før kun `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT` videre til ejerreview.
+- [x] Bevar `20/45/35` som analysecentrum og offentlig `25/40/35` som aktiv model. Endelig produktionsvægt afventer komplette ture og hold-out.
+- [x] Dokumentér beslutningsgrundlaget i DEC-0053 og den korte ejerreviewrapport.
+- [ ] Gennemfør ejerens samlede faglige review før enhver særskilt score-/UI-implementering.
 
 ## 4.0.257-kandidat – dynamisk inputcoverage adskilt fra udeladt stedmodel
 
@@ -10,8 +21,8 @@
 - [x] Opdatér RDKS, forskningsgrundlag, Markdown-håndbog, webhåndbog og changelog.
 - [x] Kør målrettede nationale shadow-, fase-D- og Candidate G-tests.
 - [x] Kør fuld lokal `scripts/validate-source.ps1` og releasegate for 4.0.257.
-- [ ] Kør exact-head PR-gate, merge-/produktionskontrol og en ny central shadow på den præcise mergecommit.
-- [ ] Udvid den reelle dynamiske DKSS-scoreinputcoverage; offentlig aktivering forbliver no-go.
+- [x] Kør exact-head PR-gate, merge-/produktionskontrol og en ny central shadow på den præcise mergecommit.
+- [ ] En eventuel senere offentlig aktivering kræver en særskilt landsdækkende inputkontrakt; dette er ikke en del af den afsluttede mekaniske test.
 
 ## 4.0.256 – score-neutralt beslutningsgrundlag, afsluttet
 
@@ -1735,10 +1746,10 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [x] Versionsbundet offentlig ekspertregelkaede er afspillet; nul aktive regler giver nul slutscoreændring.
 - [x] Centralt hydreret national shadow `32554012542` på exact head: 673 dele/210 zoner, 243 scorede dele, 430 eksplicit u-scorede, nul blokerede og nul offentlige ændringer.
 - [x] National G 50/50 minus aktiv: -5,50 point for strand og -3,74 for waders i gennemsnit; 24/48 og no-direct-wind er fortsat praktisk identiske.
-- [ ] Luk den dynamiske scoreinputcoveragegate: kun 243 af 673 dele kan indgå i scoresammenligningen. Statiske lokale retentionfeatures er efter DEC-0052 ikke et Candidate G-input.
-- [ ] Afgør waders-produktbetydningen: jagtbarhed 0 kan sameksistere med G-score cirka 79; ingen aktivering før tydelig UI-/forklaringsbeslutning.
+- [ ] Kun ved senere offentlig aktivering: luk den landsdækkende scoreinputgate. Den aktuelle mekaniske analyse bruger de 243 komplette dele uden ekstra rådata; statiske lokale retentionfeatures er ikke Candidate G-input.
+- [x] Afgør waders-produktbetydningen: strand uden loft; waders højst jagtbarheden; vinddel fuld til 6 m/s; ingen sikkerheds- eller automatisk stedegnethedsmodel.
 - [x] Aktuelle centrale regler er hydreret og kontrolleret: nul aktive regler og nul matchede contexts.
-- [ ] Definér og kontrollér kandidatens pile, komponenter og forklaring samlet; offentlig UI er bevidst uændret i den score-neutrale shadow.
+- [x] Definér og kontrollér kandidatens pile, komponenter og forklaring samlet score-neutralt; offentlig UI er bevidst uændret.
 - [ ] Ejer-go/no-go efter gennemgang. Foreløbig faglig anbefaling er ingen aktivering og videre shadow med 50/50 uden direkte vind.
 - Offentlig 25/40/35, DMI-first, UI, geometri og land-/vandpunkter er uændrede.
 

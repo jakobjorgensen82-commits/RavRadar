@@ -1,13 +1,22 @@
 # AI Roadmap – RavRadar 4.0.243+
 
+## Candidate G – samlet beslutningsgrundlag efter 4.0.257
+
+- [x] Produktionsverificér PR #70/merge `bb16ffe9` i `32580314866` og kontrollér live 210/673.
+- [x] Kør exact-merge-shadow `32580774128` og brug de 243 komplette dele som mekanisk snapshot uden nye rådata.
+- [x] Genafspil 1.460 private evalueringer og bekræft 730 uændrede strandscorer, nul waders-score over jagtbarheden og nul middel/høj score ved waders-jagtbarhed under 35.
+- [x] Saml én ejerreviewvariant: `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT`; behold de øvrige kandidater som revisions- og følsomhedsevidens.
+- [x] Fastslå, at `20/45/35` er analysecentrum, ikke slutvægt. Endelig vægtning afventer komplette ture med fund/nul-fund og hold-out.
+- [ ] Gennemgå det samlede faglige forslag med ejeren. Ingen offentlig score- eller UI-aktivering før en efterfølgende særskilt beslutning.
+
 ## 4.0.257 Candidate G-coveragepræcisering
 
 - [x] Færdiggør PR #69, exact-head `32577977245`, merge `d629177a` og fuld produktion `32578049137` for vægt-/forklaringsgrundlaget.
 - [x] Kør frisk central score-neutral shadow `32578554928`: 243/673 dele kan scores, 430 mangler komplet lokal DKSS-familie.
 - [x] Adskil komplet dynamisk scoreinputcoverage fra statiske lokale retention-/stedfeatures, som Candidate G bevidst ikke bruger.
 - [x] Bevar parentmorfologi-afvisning, nul statisk scorepåvirkning og alle mutations-/aktiveringslåse.
-- [ ] Produktionsverificér 4.0.257-kontrakten og gentag shadowen på eksakt mergecommit.
-- [ ] Undersøg og udvid den reelle lokale DKSS-scoreinputcoverage uden fallback, nabodeling eller punktflytning.
+- [x] Produktionsverificér 4.0.257-kontrakten og gentag shadowen på eksakt mergecommit.
+- [ ] En eventuel senere aktivering skal have en særskilt landsdækkende inputløsning uden nabodeling eller punktflytning; der hentes ikke flere data til den aktuelle mekaniske analyse.
 - [ ] Gennemfør resterende produkt-/ekstrem-/UI-/rollbackreview og ejerens samlede go/no-go; ingen offentlig Candidate G-aktivering før da.
 
 ## 4.0.255 reparationspunkt efter PR #66
@@ -672,7 +681,7 @@ En ekstra kandidat bruger samme stoettebaserede maks. 4 point, men tillader kun 
 - [x] Før kode-/analysebaseline 4.0.253 gennem PR #62 og dokumentationscheckpointene gennem PR #64; fuld produktionsverifikation `32570223437` og live 210/673 er grønne.
 - [x] Ejerreview af den score-neutrale waders-/vindkontrakt; den er valgt som næste analysecentrum, ikke som offentlig aktivering.
 - [x] Saml pil, komponenter, vægte og forklaring i det endelige score-neutrale beslutningsgrundlag. `20/45/35` bevares som analysecentrum efter intervaltest; offentlig aktivering og ejerens samlede go/no-go er fortsat åbne.
-- [ ] Udvid dokumenteret dynamisk scoreinputcoverage fra 243/673 til alle aktive dele før enhver aktiveringsbeslutning. Statiske lokale retentionfeatures er efter DEC-0052 udeladt af Candidate G og er ikke en gate.
+- [ ] Kun ved en senere aktiveringsbeslutning: etablér en særskilt landsdækkende inputkontrakt. Den aktuelle mekaniske analyse bruger de 243 komplette dele og henter ikke ekstra rådata; statiske lokale retentionfeatures er udeladt.
 
 ### Candidate G-vægt og forklaring
 

@@ -1,3 +1,12 @@
+## 2026-08-22 – Candidate G-beslutningsgrundlag samlet efter 4.0.257
+
+- PR #70 blev merged som `bb16ffe9`; produktion `32580314866` og live `rr-20260822150210-210` bestod den fulde kæde for 210 zoner/673 dele.
+- Exact-merge-shadow `32580774128` og det private 1.460-evalueringsreplay er genlæst uden nye rådata. De 243 komplette dele bruges alene som mekanisk nationalt snapshot.
+- DEC-0053 fører kun `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT` videre til ejerreview. Tidligere kandidater bevares som revisions- og følsomhedsevidens.
+- Alle 730 strandscorer er uændrede, ingen waders-score overstiger jagtbarheden, og ingen af 216 lave waders-jagtbarheder får mindst 55 point.
+- `20/45/35` er analysecentrum, ikke slutvægt. Offentlig `25/40/35` er uændret; endelig vægtning afventer komplette ture og hold-out.
+- Ingen ekstra rådata, score, UI, geometri, land-/vandpunkter, artifact eller protected-dirty-data er ændret.
+
 ## 2026-08-22 – RavRadar 4.0.257: Candidate G-coverage uden skjult stedmodel
 
 - PR #69 bestod exact-head `32577977245`, blev merged som `d629177a`, og fuld produktion `32578049137` frigav verificeret 4.0.256 med 210 zoner og 673 dele.

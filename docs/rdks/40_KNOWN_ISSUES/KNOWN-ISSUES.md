@@ -2,8 +2,9 @@
 
 ## 4.0.257 Candidate G national scoreinputcoverage
 
-- **ISSUE-CANDIDATE-G-DYNAMIC-SCORE-INPUT-COVERAGE – ÅBEN / NO-GO:** Frisk central shadow `32578554928` på 4.0.256-merge `d629177a` kunne score 243 af 673 aktive dele. De øvrige 430 mangler komplet lokal DKSS-familie; bølgefamilien er komplet. Manglerne må ikke nuludfyldes, lånes fra nabo/parent eller løses ved punktflytning. Candidate G kan ikke aktiveres ved 36,1 % dynamisk inputcoverage.
-- **ISSUE-CANDIDATE-G-STATIC-RETENTION-COVERAGE-GATE – LOKALT LØST / PRODUKTIONSBEVIS AFVENTER:** Den ældre shadowkontrakt krævede komplette lokale rev-/lavtvands-/ålegræsfelter, selv om nyere Candidate G-kode og ejerbeslutning holder en sådan statisk stedmodel ude. DEC-0052 gør felterne til ren diagnostik med nul scorepåvirkning og kræver kun komplet dynamisk scoreinput i coveragegaten. Målrettede tests er grønne; exact-head, produktion og ny central shadow afventer.
+- **ISSUE-CANDIDATE-G-DYNAMIC-SCORE-INPUT-COVERAGE – SENERE AKTIVERINGSGATE / IKKE AKTUELT DATAARBEJDE:** Frisk exact-merge-shadow `32580774128` på `bb16ffe9` kunne score 243 af 673 aktive dele. Manglerne må ikke nuludfyldes, lånes fra nabo/parent eller løses ved punktflytning. De 243 bruges nu kun som mekanisk snapshot, og der hentes ikke ekstra rådata til den aktuelle beslutningsanalyse. En eventuel senere offentlig aktivering kræver en særskilt landsdækkende inputkontrakt.
+- **ISSUE-CANDIDATE-G-STATIC-RETENTION-COVERAGE-GATE – PRODUKTIONSVERIFICERET LØST:** Den ældre shadowkontrakt krævede komplette lokale rev-/lavtvands-/ålegræsfelter, selv om Candidate G ikke bruger en sådan statisk stedmodel. DEC-0052 gør felterne til ren diagnostik med nul scorepåvirkning. PR #70, produktion `32580314866` og exact-merge-shadow `32580774128` bekræfter kontrakten.
+- **ISSUE-CANDIDATE-G-FINAL-WEIGHTS – ÅBEN FOR TURKALIBRERING:** `20/45/35` er analysecentrum, men `15/50/35`, `20/45/35` og `25/40/35` består alle de mekaniske kontrakter. Udvalgte vejrhændelser og et 243-deles aktuelt snapshot kan ikke afgøre, hvilken vægt der bedst forudsiger fund. Offentlig `25/40/35` bevares, indtil komplette ture med fund/nul-fund og hold-out giver bedre evidens.
 
 ## 4.0.255 national waders-kontraktgate
 

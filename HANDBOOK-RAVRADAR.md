@@ -1994,7 +1994,7 @@ Den centralt hydrerede nationale shadow kontrollerede derefter alle 673 aktive d
 
 Modellen er ikke klar til brugerne. Den ændrer referencebånd i 474 af de 1.460 beregninger sammenlignet med den aktive model. Desuden kan et ekstremt waders-scenarie have jagtbarhed 0 og samtidig høj kandidatscore, fordi stærk fysisk transport og mobilisering stadig kan være til stede. Det viser forskellen mellem ravpotentiale og et praktisk eller sikkert tidspunkt at gå i vandet.
 
-Før en eventuel ændring skal den private nationale kontrol køres med frisk centralt gemt konfiguration. Ejeren skal derefter tage stilling til, hvordan ravpotentiale og jagtbarhed forklares i appen. RavScore er ikke sikkerhedsrådgivning, og en høj score må aldrig stå alene som en opfordring til at gå i vandet.
+Før en eventuel ændring skal den private nationale kontrol køres med frisk centralt gemt konfiguration. Ejeren har efterfølgende besluttet, at waders-begrænsningen skal beskrive søgemetodens effektivitet, ikke være en sikkerhedsadvarsel. Strandscoren må fortsat vise højt ravpotentiale uden et jagtbarhedsloft.
 
 Ingen geometri, land-/vandpunkter, DMI-kilder, pile, offentlig forklaring eller aktiv score er ændret af analysen.
 
@@ -2019,3 +2019,15 @@ Forskningsresultatet indeholder nu én maskinlæsbar forklaring med de eksakte k
 Den nationale aktiveringsgate er fortsat åben. Kun 243 af 673 dele kunne scores i den friske centrale shadow, fordi 430 mangler komplet lokal DKSS-familie. Candidate G bruger ingen statisk lokal bonus for rev, lavt vand eller vegetation. Disse felter rapporteres kun som diagnostik, og en hovedzones generelle morfologi må ikke bruges som lokal genvej.
 
 Kandidat G er fortsat privat. Den aktive offentlige score er 25 % jagtbarhed, 40 % transport og 35 % mobilisering. Candidate G's samlede score-neutrale model-, vægt- og forklaringsgrundlag er klar til ejerreview, men aktivering kræver fortsat bedre central coverage, ejerens samlede go/no-go og fuld validering af en eventuel offentlig kobling.
+
+## Candidate G: ét forslag til ejerreview
+
+De mange kandidatnavne er nu samlet i én forståelig arbejdsretning. A-C er sammenligningsmodeller, D og E er udviklingstrin, F er historikpiloten, og G 24/48 er følsomhedsgrænser. De bevares som revisionsspor, men de er ikke samtidige produktforslag.
+
+Den eneste variant, der føres videre til samlet ejerreview, er `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT`. Den bevarer strandscoren uden jagtbarhedsloft og begrænser waders til den beregnede jagtbarhed. Direkte vindhistorik er udeladt, mens 24 og 48 timer fortsat viser, hvor følsom 50/50-blandingen er.
+
+På den friske produktionsverificerede merge er den private analyse genkørt uden nye rådata. Det historiske replay har 730 uændrede strandscorer og ingen waders-score over jagtbarheden. I det aktuelle mekaniske snapshot af 243 allerede komplette kystdele ligger kandidaten i gennemsnit 5,49 point under aktiv model for strand og 0,97 point under for waders. Snapshotet viser, at modellen omfordeler scorer, men det er ikke et repræsentativt udsnit eller fundkalibrering.
+
+`20/45/35` er fortsat et analysecentrum, ikke en besluttet produktionsvægt. Den endelige vægt mellem jagtbarhed, transport og mobilisering skal senere vælges med komplette ture, reelle nul-fund og geografisk/tidslig hold-out. Den offentlige RavScore forbliver `25/40/35`.
+
+Der hentes ikke yderligere rådata til de øvrige dele som led i dette mekaniske beslutningsgrundlag. En eventuel offentlig aktivering er en særskilt opgave med landsdækkende inputkontrakt, ejerbeslutning og fulde valideringsgates.

@@ -15,6 +15,14 @@
 
 Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre forsknings-/versionsafsnit bevares som revisionsspor. En tom afkrydsningsboks i historikken er ikke en aktiv opgave, medmindre punktet ogsaa findes her.
 
+## Aktuelt Candidate G-review efter 4.0.257
+
+- [x] Saml én score-neutral ejerreviewvariant og klassificér de øvrige modeller som revisions-/følsomhedsspor.
+- [x] Genkør 1.460-evalueringsanalysen og verificér strand-/waders-kontrakten.
+- [x] Brug exact-merge-shadowens 243 komplette dele som mekanisk aktuelt snapshot uden at hente ekstra rådata.
+- [x] Dokumentér at `20/45/35` er analysecentrum, mens aktiv `25/40/35` og endelig turkalibrering forbliver adskilt.
+- [ ] Gennemfør ejerens samlede review af Candidate G. En eventuel offentlig implementering er et nyt delmål med særskilt beslutning og fulde gates.
+
 ## P0 - luk den aktuelle kandidat
 
 - [x] Gennemgaa draft-PR #1 og saml den korrekte 4.0.238-versionspakke med RDKS, changelog og haandbog.
@@ -294,11 +302,11 @@ Kandidat G er privat og score-neutral. Aktiv RavScore 25/40/35, DMI-first, geome
 - [x] National shadow-kode understøtter G-sporene og er self-testet uden produktionsaktivering.
 - [x] Centralt hydreret exact-head-shadow `32554012542`: 673/210 kontrolleret, 243 scorede dele, 430 eksplicit u-scorede, nul blokerede og nul offentlige ændringer.
 - [x] Bekræft 50/50 uden direkte vind som foretrukken beslutningsvariant og 24/48 som grænser; nationalt er forskellene fortsat højst ét point.
-- [ ] Udvid den relevante nationale scoreinputcoverage: den friske 4.0.256-shadow kunne kun score 243 af 673 dele, fordi 430 mangler komplet lokal DKSS-familie. Statiske rev-/lavtvands-/ålegræsfelter forbliver diagnosticeret, men er efter DEC-0052 udeladt af Candidate G og ikke en aktiveringsgate; parentzonens morfologi må fortsat ikke arves.
+- [ ] Kun hvis ejeren senere ønsker offentlig aktivering: definér en særskilt landsdækkende scoreinputkontrakt uden nuludfyldning, nabo-/parentlån eller punktflytning. Den aktuelle mekaniske analyse bruger de 243 komplette dele og henter ikke yderligere rådata.
 - [x] Mål waders-konflikten på den foretrukne variant og fastlæg en score-neutral forskningsanbefaling: behold ravpotentialet, vis metodeegnethed separat, anbefal aldrig en utilgængelig metode, hold sikkerhed uafhængig og brug ingen skjult koefficient.
-- [ ] Få ejerens produktbeslutning om waders-betydningen før enhver offentlig UI- eller scorekobling.
+- [x] Få ejerens produktbeslutning om waders-betydningen: strand uden loft, waders højst jagtbarheden, vindkurve fuld til 6 m/s og ingen sikkerheds- eller stedegnethedsmodel.
 - [x] Afspil frisk central ekspertregelkaede; den havde nul aktive regler og nul matches.
 - [x] Fastlæg kandidatens score-neutrale kontrakt: eksakte komponenter/gate rekonstruerer 1.460/1.460 scorer; pilen er aktuel lokal strøm, mens historik forklares særskilt på samme context.
 - [x] Før kode-/analysebaseline 4.0.253 gennem PR #62 og dokumentationscheckpointene gennem PR #64; fuld produktionsverifikation `32570223437` og snapshot `rr-20260822112859-210` er 210/673 grønne.
 - [ ] Verificér den endelige offentlige UI-/forklaringskobling efter ejerbeslutningen; ingen kobling er implementeret i 4.0.253.
-- [ ] Fremlæg derefter ejerreview. Den nuværende anbefaling er at beholde offentlig 25/40/35 og ikke aktivere G endnu.
+- [ ] Fremlæg det samlede DEC-0053-ejerreview. Den nuværende anbefaling er at beholde offentlig 25/40/35 og ikke aktivere G endnu.

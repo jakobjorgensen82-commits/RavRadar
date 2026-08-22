@@ -5,6 +5,13 @@
   "updatedAt": "2026-08-22",
   "sections": [
     {
+      "id": "ravscore-candidate-g-owner-review-2026-08-22",
+      "chapter": "18B",
+      "title": "Candidate G: ét forslag til ejerreview",
+      "summary": "De tidligere kandidater er samlet som revisionsspor omkring én privat ejerreviewvariant; offentlig 25/40/35 er uændret.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> A-C er sammenligninger, D-E er udviklingstrin, F er historikpiloten, og G 24/48 er følsomhedsgrænser. Kun G-50-50-NO-DIRECT-WIND-WADERS-LIMIT føres videre som samlet ejerreviewforslag.</div><p>Varianten ændrer ingen strandscore i det private 730-evalueringsreplay og lader ingen waders-score overstige jagtbarheden. Vinddelen er fuld til og med 6 m/s og falder derefter gennem de aftalte knækpunkter. Det beskriver søgemetodens effektivitet, ikke sikkerhed, og bund, dybde, render og adgang indgår ikke.</p><p>Det aktuelle mekaniske snapshot bruger kun de 243 kystdele, der allerede havde komplette input. Mod aktiv model er gennemsnitsforskellen -5,49 point for strand og -0,97 for waders. Snapshotet viser reel omfordeling, men er ikke repræsentativ fundkalibrering. Der hentes ikke yderligere rådata til denne analyse.</p><p>20/45/35 er fortsat analysecentrum, ikke slutvægt. Endelig vægtning kræver komplette ture med fund og reelle nul-fund samt geografisk og tidslig hold-out.</p><div class=\"callout\"><strong>Ingen offentlig ændring:</strong> RavRadar bruger fortsat 25/40/35. En senere aktivering kræver en særskilt ejerbeslutning, landsdækkende inputkontrakt og fulde gates.</div>"
+    },
+    {
       "id": "ravscore-candidate-g-weight-explanation-4-0-257",
       "chapter": "18B",
       "title": "Candidate G: vægte og én sammenhængende forklaring",
