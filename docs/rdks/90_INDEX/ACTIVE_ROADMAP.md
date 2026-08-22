@@ -20,7 +20,7 @@ Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre for
 - [x] Bevis rodårsagen til PR #78's uventede produktion: `CHANGELOG-*.md` dækkede versionsfilerne, men ikke den aktuelle samlede `CHANGELOG.md`.
 - [x] Tilføj kun den eksakte rod-fil og lås begge changelogmønstre i regressionstesten.
 - [x] Bestå exact-head `32600654326` og fuld post-merge-produktion `32600714319` på merge `41f71900`.
-- [ ] Merge dette rene docs-checkpoint og bevis, at der ikke oprettes en ny push-produktion.
+- [x] Merge PR #80 som `1565e073` og bevis med 0 workflowkørsler på mergecommitten, at der ikke oprettes en ny push-produktion.
 
 ## Aktuelt Candidate G-delmaal – strømstyret transporthukommelse
 

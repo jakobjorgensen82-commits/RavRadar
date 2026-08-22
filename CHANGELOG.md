@@ -1,3 +1,9 @@
+## Intern workflowrettelse efter 4.0.258 – docs-only skip bevist (2026-08-23)
+
+- PR #80 blev merged som `1565e073` med kun `CHANGELOG.md` og intern AI/RDKS-dokumentation.
+- GitHub viste 0 workflowkørsler på mergecommitten; `Update weather and deploy RavRadar` blev derfor ikke oprettet.
+- Den snævre rod-CHANGELOG-rettelse er dermed både kilde-, produktions- og skip-verificeret uden brede undtagelser.
+
 ## Intern workflowrettelse efter 4.0.258 – produktionsbevis på rod-CHANGELOG (2026-08-23)
 
 - PR #79 bestod exact-head-kørsel `32600654326` på `24d944c0` og blev merged som `41f71900`.

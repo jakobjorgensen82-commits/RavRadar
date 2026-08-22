@@ -1,5 +1,12 @@
 # RavRadar - aktuelt Codex-handoff
 
+## Checkpoint 2026-08-23 – docs-only produktionsskip afsluttet
+
+- PR #80 var et rent dokumentationscheckpoint inklusive rodens `CHANGELOG.md` og blev merged som `1565e073`.
+- GitHubs Actions-forespørgsel på den eksakte mergecommit viste 0 workflowkørsler. `Update weather and deploy RavRadar` blev ikke oprettet, så den manglende rod-CHANGELOG-regel er praktisk bevist rettet.
+- ISSUE-ROOT-CHANGELOG-DOCS-SKIP er lukket. Den selektive regel er fortsat snæver: øvrige Markdownfiler, kode, data, scripts, workflows og HTML er ikke bredt undtaget.
+- Seneste fuldt produktionsverificerede dataset er fortsat `rr-20260822215524-210` fra run `32600714319`, 210 zoner og 673 kystdele.
+
 ## Checkpoint 2026-08-23 – PR #79 produktionsverificeret, docs-skip til slutbevis
 
 - PR #79 bestod exact-head `32600654326` på `24d944c0` og blev sikkert merged som `41f71900`.
