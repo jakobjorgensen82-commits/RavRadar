@@ -109,3 +109,11 @@ DEC-0055 erstatter den hidtidige foretrukne transportfortolkning i Candidate G. 
 - Ingen nye rådata er hentet.
 - Private cachepayloads må ikke lægges i Git eller offentlige artifacts.
 - Artifact, protected-dirty-data, geometri og land-/vandpunkter er urørte.
+
+## Efterfølgende anbefalet privat tærskel- og tilstandspolitik
+
+Efter ejerens gennemgang er den anbefalede private produktprofil `0,03→0,15 m/s` med intet passivt tab ved verificeret neutral strøm. Grænsen 0,15 m/s genbruger RavRadars eksisterende betydning af en velegnet strømstyrke, men anvender den på den relevante kystnormale komponent. Dødzonen 0,03 m/s dæmper svage retnings-/modeludsving. Profilen er en system- og ejer-konsistent forskningsprior, ikke en fundkalibreret naturgrænse.
+
+En produktionskørsel må ikke nulstille potentialet. Kandidatværktøjet understøtter derfor videreførelse af en kompakt afledt tilstand med sidste tidspunkt, transportpotentiale og effektive timer i det igangværende udtransportforløb. En opdelt 13-timerssyntese giver nu eksakt samme kurve som én ubrudt kørsel. Neutral og missing ændrer fortsat ikke potentialet; 24-/48-timers halvering bevares kun som følsomhed.
+
+Denne anbefaling ændrer ikke den offentlige score eller selve Candidate G-standardkørslen endnu. Før offentlig aktivering skal den afledte tilstand føres gennem den centrale pipeline, valideres nationalt og have en dokumenteret rollback. Private rådata, U/V og koordinater må ikke bruges som offentlig tilstand.

@@ -5,7 +5,11 @@ import {
   CANDIDATE_G_OUTFLOW_ZERO_EXPLANATION_DA,
   evaluateRavScoreCandidateG,
 } from '../js/core/ravscore-candidate-g.js';
-import { buildCurrentTransportPotential } from '../js/core/ravscore-regime-memory.js';
+import {
+  buildCurrentTransportPotential,
+  CURRENT_TRANSPORT_POTENTIAL_CONTINUATION_POLICY,
+  CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
+} from '../js/core/ravscore-regime-memory.js';
 
 const VARIANT_ID = 'G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED';
 const HOUR_MS = 3_600_000;
@@ -61,6 +65,16 @@ function compactMemory(record) {
     outboundEpisodeLossPoints: record.outboundEpisodeLossPoints,
     actualOutboundTransport: record.actualOutboundTransport,
   };
+}
+
+function strengthAt(normalSpeedMps) {
+  const {
+    deadbandNormalSpeedMps: deadband,
+    fullStrengthNormalSpeedMps: fullStrength,
+  } = CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE;
+  if (normalSpeedMps <= deadband) return 0;
+  if (normalSpeedMps >= fullStrength) return 1;
+  return (normalSpeedMps - deadband) / (fullStrength - deadband);
 }
 
 function runAudit() {
@@ -129,6 +143,20 @@ function runAudit() {
     alignment: -1,
     verified: false,
   }), { initialPotential: 100, isVerified: sample => sample.verified === true }).at(-1);
+  const outboundFirstRun = fullOutboundTrack.slice(0, 7);
+  const outboundContinuation = buildCurrentTransportPotential(
+    hourlySamples({ hours: 13, speedMps: 0.20, alignment: -1 }).slice(7),
+    { initialState: outboundFirstRun.at(-1) },
+  );
+  const recommendedStrengthCurve = [0.03, 0.05, 0.09, 0.12, 0.15].map(normalSpeedMps => {
+    const strength = strengthAt(normalSpeedMps);
+    return {
+      normalSpeedMps,
+      strength: round3(strength),
+      hoursToBuildFromZero: strength > 0 ? round3(10 / strength) : null,
+      hoursToActualOutboundTransport: strength > 0 ? round3(13 / strength) : null,
+    };
+  });
 
   const zeroTransportMemory = {
     transportPotential: 0,
@@ -193,6 +221,9 @@ function runAudit() {
       neutral24HalfLifeAfter24Hours: round3(neutral24.transportPotential),
       neutral48HalfLifeAfter48Hours: round3(neutral48.transportPotential),
       unverifiedAfter48Hours: round3(missingPause.transportPotential),
+      continuedRunFinalPotential: round3(outboundContinuation.at(-1).transportPotential),
+      continuedRunFinalEffectiveOutboundHours:
+        round3(outboundContinuation.at(-1).outboundEpisodeEffectiveHours),
       waveOnlyTransportAndDelivery: waveOnlyBeach.components.transportAndDelivery,
       waveOnlyBeachScore: waveOnlyBeach.score,
       waveOnlyWadersScore: waveOnlyWaders.score,
@@ -217,6 +248,9 @@ function runAudit() {
       triggerRequiresActualOutboundTransport: true,
       explanationDa: CANDIDATE_G_OUTFLOW_ZERO_EXPLANATION_DA,
       ownerMeaningDecisionRequiredBeforePublicActivation: false,
+      recommendedResearchProfile: CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
+      recommendedStrengthCurve,
+      pipelineBoundaryPolicy: CURRENT_TRANSPORT_POTENTIAL_CONTINUATION_POLICY,
     },
     explanationContract: {
       currentArrowTimeMeaning: waveOnlyBeach.researchExplanation.currentArrow.timeMeaning,
@@ -274,6 +308,14 @@ function runAudit() {
   assert.ok(Math.abs(neutral24.transportPotential - 50) < 1e-9);
   assert.ok(Math.abs(neutral48.transportPotential - 50) < 1e-9);
   assert.equal(missingPause.transportPotential, 100);
+  assert.deepEqual(
+    outboundContinuation.map(record => record.transportPotential),
+    fullOutboundTrack.slice(7).map(record => record.transportPotential),
+  );
+  assert.equal(outboundContinuation.at(-1).actualOutboundTransport, true);
+  assert.deepEqual(recommendedStrengthCurve.map(row => row.strength), [0, 0.167, 0.5, 0.75, 1]);
+  assert.deepEqual(recommendedStrengthCurve.map(row => row.hoursToBuildFromZero),
+    [null, 60, 20, 13.333, 10]);
   assert.equal(waveOnlyBeach.components.transportAndDelivery, 0);
   assert.equal(waveOnlyWaders.components.transportAndDelivery, 0);
   assert.ok(waveOnlyBeach.components.mobilisation > 0);

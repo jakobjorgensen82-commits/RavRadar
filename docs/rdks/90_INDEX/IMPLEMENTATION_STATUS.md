@@ -11,6 +11,9 @@
 - [x] Verificér live `rr-20260822223539-210` som komplet 210/673 med samme datasæt-id i manifest, startdata og detaljedata.
 - [x] Ejerbeslutning og score-neutral implementation: faktisk kraftig udtransport med udtømt transportpotentiale giver samlet Candidate G 0, mens de øvrige komponenter bevares synligt; start 0 uden faktisk udtransport udløser ikke reglen.
 - [x] Bestå exact-head `32604792201` på `f6458f09`, merge PR #84 som `800a93cb`, fuld produktion `32604850884` og verificér live `rr-20260822232159-210` som komplet 210/673 uden offentlig Candidate G-aktivering.
+- [x] Udpeg `0,03→0,15 m/s` uden passivt neutralt tab som anbefalet privat produktprior efter nyt `RESEARCH-2`-replay; det ændrer 213/1.460 scorebånd mod 377 for 0,02→0,12.
+- [x] Implementér en score-neutral kompakt fortsættelsestilstand og bevis, at en opdelt pipelinekørsel reproducerer ubrudt potentiale, udtransporttimer og nul-gate eksakt.
+- [ ] Kobl senere den afledte tilstand gennem den centrale produktionspipeline og national shadow med rollback; dette delmål ændrer ikke offentlig score eller runtime.
 - [ ] Luk resterende coverage-, tærskel-, starttilstands-, validerings-, admin-/rollback- og ejer-go/no-go-gates før enhver offentlig aktivering.
 
 ## Docs-only skip – rod-CHANGELOG
@@ -35,7 +38,8 @@
 - [x] Implementér en isoleret neutral 24-/48-timers halveringsfølsomhed, bevis at den ikke ændrer ind-/udtransport eller missing, og auditér replayets tidsgrænser.
 - [x] Dokumentér, at alle 12 eventvinduer kun har 24 timers forhistorie, at ingen referenceprøver når fuld strømstyrke, og at dette replay derfor ikke kan vælge levetid eller kalibrere strømgrænsen.
 - [x] Bestå exact-head-kildegate `32599255165` på `ed1f0297`, merge PR #77 som `75ed93d6` og produktionsverificér i `32599309735` med live `rr-20260822212612-210`/210/673.
-- [ ] Kalibrér eller afvis senere strømgrænsen og fysisk levetid på mindst 72 timers forhistorie eller komplette ture/hold-out. Indtil da forbliver start 0 uden passivt tab den mekaniske reference, ikke en naturpåstand.
+- [x] Afgræns det praktiske produktvalg uden at kalde det fundkalibrering: anbefal 0,03→0,15, videreført afledt tilstand og intet passivt neutralt tab; behold gammel start-0/0,05→0,20 og 24/48 som reference-/følsomhedsspor.
+- [ ] Efterprøv senere den anbefalede prior mod komplette ture/hold-out, når materialet findes; manglende turdata må fremgå som modelusikkerhed.
 - [ ] Offentlig aktivering kræver et senere særskilt ejer-go/no-go og fulde produktgates.
 
 Nedenstående 4.0.258-afsnit gælder fortsat for jagtbarhed. DEC-0055 erstatter kun den foretrukne transportfortolkning.

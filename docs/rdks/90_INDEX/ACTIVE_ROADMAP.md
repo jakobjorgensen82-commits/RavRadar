@@ -39,7 +39,10 @@ Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre for
 - [x] Før revisionen gennem exact-head `32602287607`, PR #82/merge `189644a0` og fuld produktion `32602328912`; verificér live `rr-20260822223539-210` med 210/673 og ens datasæt-id.
 - [x] Afgør og implementér totalscorebetydningen score-neutralt: dokumenteret faktisk kraftig udtransport med udtømt transportpotentiale tvinger `RESEARCH-2`-slutscoren til 0, men bevarer mobilisering og jagtbarhed som synlige komponenter. Start 0 uden faktisk udtransport må ikke udløse gaten.
 - [x] Før udtransportgaten gennem exact-head `32604792201`, PR #84/merge `800a93cb`, fuld produktion `32604850884` og direkte livekontrol af `rr-20260822232159-210` med 210/673 og sammenhængende datasæt-id.
-- [ ] Bevar start 0 uden passivt tab som mekanisk reference og 24/48 som følsomhedsspor, indtil mindst 72 timers forhistorie eller komplette ture/hold-out giver et forsvarligt valg.
+- [x] Vælg et praktisk, ærligt privat produktspor efter ejerreview: 0,03→0,15 m/s, intet passivt neutralt tab og kompakt tilstandsfortsættelse; behold 0,05→0,20/start 0 og 24/48 som reference-/følsomhedsspor.
+- [x] Bevis score-neutralt, at potentiale og igangværende udtransport fortsætter eksakt over en simuleret pipelinegrænse.
+- [ ] Gennemfør mobiliserings-/helhedsreviewet, før en eventuel offentlig kobling implementeres.
+- [ ] Ved offentlig kobling: persistér den kompakte afledte tilstand centralt, kør frisk national shadow, forklaring/rollback og alle produktgates.
 - [ ] En eventuel offentlig Candidate G-aktivering forbliver et særskilt ejer-go/no-go med validering og fulde produktgates.
 
 ## Aktuelt Candidate G-review – 4.0.258 vindstyret waders-kandidat

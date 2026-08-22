@@ -26,6 +26,19 @@ export const CURRENT_TRANSPORT_POTENTIAL_PRIOR = Object.freeze({
   neutralPassiveHalfLifeHours: null,
 });
 
+export const CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE = Object.freeze({
+  deadbandNormalSpeedMps: 0.03,
+  fullStrengthNormalSpeedMps: 0.15,
+  inboundPointsPerEffectiveHour: 10,
+  outboundPointsPerEffectiveHour: 8,
+  exhaustedAfterEffectiveHours: 13,
+  preExhaustionMaximumLossPoints: 96,
+  neutralPassiveHalfLifeHours: null,
+});
+
+export const CURRENT_TRANSPORT_POTENTIAL_CONTINUATION_POLICY =
+  'CARRY_FORWARD_COMPACT_DERIVED_TRANSPORT_STATE';
+
 function normalCurrentStrength(normalSpeedMps, {
   deadbandNormalSpeedMps,
   fullStrengthNormalSpeedMps,
@@ -51,6 +64,7 @@ export function buildCurrentTransportPotential(
   samples,
   {
     initialPotential = 0,
+    initialState = null,
     deadbandNormalSpeedMps = CURRENT_TRANSPORT_POTENTIAL_PRIOR.deadbandNormalSpeedMps,
     fullStrengthNormalSpeedMps = CURRENT_TRANSPORT_POTENTIAL_PRIOR.fullStrengthNormalSpeedMps,
     inboundPointsPerEffectiveHour = CURRENT_TRANSPORT_POTENTIAL_PRIOR.inboundPointsPerEffectiveHour,
@@ -87,6 +101,40 @@ export function buildCurrentTransportPotential(
     throw new Error('neutralPassiveHalfLifeHours must be null or greater than zero');
   }
 
+  const continuation = initialState && typeof initialState === 'object'
+    ? initialState
+    : null;
+  const continuationPotentialValue = continuation?.transportPotential;
+  const continuationOutboundHoursValue = continuation?.outboundEpisodeEffectiveHours;
+  const continuationPotential = continuation
+    ? finiteNumber(continuationPotentialValue, Number.NaN)
+    : null;
+  const continuationOutboundHours = continuation
+    ? finiteNumber(continuationOutboundHoursValue, Number.NaN)
+    : null;
+  const continuationTime = continuation?.time === null || continuation?.time === undefined
+    ? null
+    : new Date(continuation.time);
+  if (continuation && !(
+    continuationPotentialValue !== null
+    && continuationPotentialValue !== undefined
+    && continuationPotentialValue !== ''
+    && typeof continuationPotentialValue !== 'boolean'
+    && continuationOutboundHoursValue !== null
+    && continuationOutboundHoursValue !== undefined
+    && continuationOutboundHoursValue !== ''
+    && typeof continuationOutboundHoursValue !== 'boolean'
+    && Number.isFinite(continuationPotential)
+    && continuationPotential >= 0
+    && continuationPotential <= 100
+    && Number.isFinite(continuationOutboundHours)
+    && continuationOutboundHours >= 0
+    && continuationTime
+    && Number.isFinite(continuationTime.getTime())
+  )) {
+    throw new Error('initialState requires a valid time, transportPotential and outboundEpisodeEffectiveHours');
+  }
+
   const ordered = [...(Array.isArray(samples) ? samples : [])]
     .map((sample) => ({
       sample,
@@ -97,11 +145,19 @@ export function buildCurrentTransportPotential(
     }))
     .filter((entry) => Number.isFinite(entry.time.getTime()))
     .sort((left, right) => left.time - right.time);
+  if (continuation && ordered.some(entry => entry.time < continuationTime)) {
+    throw new Error('initialState time must not be later than a continued sample');
+  }
 
-  let potential = clamp(finiteNumber(initialPotential), 0, 100);
-  let previousTime = null;
-  let outboundEpisodeEffectiveHours = 0;
-  let outboundEpisodeLossPoints = 0;
+  let potential = continuation
+    ? continuationPotential
+    : clamp(finiteNumber(initialPotential), 0, 100);
+  let previousTime = continuation ? continuationTime : null;
+  let outboundEpisodeEffectiveHours = continuation ? continuationOutboundHours : 0;
+  let outboundEpisodeLossPoints = outboundEpisodeEffectiveHours >= safeExhaustionHours
+    ? 100
+    : Math.min(safePreExhaustionLoss, safeOutboundRate * outboundEpisodeEffectiveHours);
+  if (outboundEpisodeEffectiveHours >= safeExhaustionHours) potential = 0;
 
   return ordered.map((entry) => {
     const elapsedHours = previousTime

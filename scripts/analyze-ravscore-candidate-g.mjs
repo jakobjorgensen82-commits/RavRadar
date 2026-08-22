@@ -13,7 +13,9 @@ import {
 import {
   buildBlendedRegimeMemory,
   buildCurrentTransportPotential,
+  CURRENT_TRANSPORT_POTENTIAL_CONTINUATION_POLICY,
   CURRENT_TRANSPORT_POTENTIAL_PRIOR,
+  CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
   normalizeMemoryTrackCausally,
   signedDirectionalForce,
 } from '../js/core/ravscore-regime-memory.js';
@@ -59,6 +61,22 @@ const CURRENT_LED_SENSITIVITY_PROFILES = Object.freeze([
   Object.freeze({
     id: 'neutral-passive-half-life-48',
     options: Object.freeze({ neutralPassiveHalfLifeHours: 48 }),
+  }),
+  Object.freeze({
+    id: 'normal-current-0.03-to-0.15-neutral-passive-half-life-24',
+    options: Object.freeze({
+      deadbandNormalSpeedMps: 0.03,
+      fullStrengthNormalSpeedMps: 0.15,
+      neutralPassiveHalfLifeHours: 24,
+    }),
+  }),
+  Object.freeze({
+    id: 'normal-current-0.03-to-0.15-neutral-passive-half-life-48',
+    options: Object.freeze({
+      deadbandNormalSpeedMps: 0.03,
+      fullStrengthNormalSpeedMps: 0.15,
+      neutralPassiveHalfLifeHours: 48,
+    }),
   }),
   Object.freeze({
     id: 'warm-start-50-neutral-passive-half-life-24',
@@ -698,6 +716,14 @@ function aggregate(rows) {
       inboundPointsPerEffectiveStrongHour: 10,
       pointsLostPerEffectiveStrongOutboundHour: 8,
       actualOutboundTransportAfterEffectiveHours: 13,
+      recommendedResearchProfile: {
+        id: 'normal-current-0.03-to-0.15',
+        options: CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
+        boundaryPolicy: CURRENT_TRANSPORT_POTENTIAL_CONTINUATION_POLICY,
+        passiveNeutralDecay: false,
+        empiricalStatus: 'owner-and-system-consistent-research-prior-not-find-calibrated',
+        publicActivationAllowed: false,
+      },
       findOutcomeCalibration: false,
       automaticActivationAllowed: false,
     },
@@ -1246,6 +1272,11 @@ function main() {
     assert.equal(report.aggregate.currentLedRevision.inboundPointsPerEffectiveStrongHour, 10);
     assert.equal(report.aggregate.currentLedRevision.pointsLostPerEffectiveStrongOutboundHour, 8);
     assert.equal(report.aggregate.currentLedRevision.actualOutboundTransportAfterEffectiveHours, 13);
+    assert.equal(report.aggregate.currentLedRevision.recommendedResearchProfile.id,
+      'normal-current-0.03-to-0.15');
+    assert.equal(report.aggregate.currentLedRevision.recommendedResearchProfile.boundaryPolicy,
+      'CARRY_FORWARD_COMPACT_DERIVED_TRANSPORT_STATE');
+    assert.equal(report.aggregate.currentLedRevision.recommendedResearchProfile.passiveNeutralDecay, false);
     assert.equal(Object.keys(report.aggregate.currentLedRevision.parameterSensitivity).length,
       CURRENT_LED_SENSITIVITY_PROFILES.length);
     assert.equal(report.aggregate.productContractAudit.ownerApprovedVariantConsistency.mismatchCount, 0);

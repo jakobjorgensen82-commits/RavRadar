@@ -81,3 +81,27 @@ Behold den strømstyrede variant som det foretrukne private Candidate G-spor, fo
 Offentlig RavScore forbliver `25/40/35`. Der er ikke ændret UI, data, geometri, land-/vandpunkter, artifact eller protected-dirty-data.
 
 Efterkontrollen bestod exact-head-kildegate `32599255165` på `ed1f0297` og blev merged i PR #77 som `75ed93d6`. Den efterfølgende produktion `32599309735` bestod frisk vejr/proveniens, fuld validering, releasegate, Supabase og Pages. Live datasæt `rr-20260822212612-210` har 210 zoner og 673/673 scoreklare dele med sammenhængende dataset-id. Candidate G blev ikke aktiveret offentligt.
+
+## Efterfølgende teknisk anbefaling efter ejerreview
+
+Ejeren har bedt om et praktisk valg uden at foregive fundkalibrering. Den anbefalede private profil er derfor nu `0,03→0,15 m/s`, intet passivt tab ved neutral strøm og videreførelse af den kompakte afledte transporttilstand mellem produktionskørsler. Tilstanden består kun af tidspunkt, transportpotentiale og det igangværende effektive udtransportforløb; rå U/V, koordinater og private vejrserier indgår ikke.
+
+Valget bygger på tre forhold:
+
+1. `0,15 m/s` er allerede RavRadars aktive grænse for en velegnet absolut strømhastighed. Kandidaten bruger den mere præcist på den kystnormale del.
+2. `0,05→0,20` er så forsigtig, at replayet aldrig når fuld styrke. `0,02→0,12` er så følsom, at 377 af 1.460 scorebånd ændres. `0,03→0,15` ligger mellem yderpunkterne og ændrer 213 bånd.
+3. Neutral eller manglende strøm dokumenterer ingen udtransport. Et automatisk 24-/48-timers tab ville derfor fjerne potentiale uden observeret fysisk transport og svække ejerens krav om, at kortvarige eller svage ugunstige perioder ikke nulstiller et godt forløb.
+
+Efter `RESEARCH-2`-nul-gaten giver den nye eksakte replaykontrol følgende score-neutrale sammenligning:
+
+| Profil | Gennemsnitligt potentiale | Gennemsnitlig Candidate G-score | Ændrede scorebånd mod 0,05→0,20 |
+|---|---:|---:|---:|
+| 0,05→0,20, intet passivt tab | 7,246 | 28,291 | 0 |
+| **0,03→0,15, intet passivt tab** | **13,302** | **31,360** | **213** |
+| 0,03→0,15, neutral halvering 24 timer | 10,529 | 30,014 | 162 |
+| 0,03→0,15, neutral halvering 48 timer | 11,743 | 30,619 | 178 |
+| 0,02→0,12, intet passivt tab | 16,129 | 32,313 | 377 |
+
+Ved den anbefalede profil er 0,03 m/s dødzone, 0,09 m/s halv styrke og 0,15 m/s fuld styrke. Det svarer til cirka 20 timers opbygning eller 26 timers udtransport ved 0,09 m/s og den godkendte 10-/13-timersadfærd ved 0,15 m/s. Værktøjet kan nu genoptage en kompakt tilstand på en ny kørselsgrænse og reproducerer den ubrudte 13-timerskurve eksakt.
+
+Dette lukker kandidatens tekniske anbefaling, ikke den empiriske usikkerhed. Profilen er fortsat en forskningsprior, og offentlig aktivering kræver særskilt pipelinekobling, national slutkontrol, forklaring/rollback og ejerens aktiveringsbeslutning. Offentlig `25/40/35` er uændret.

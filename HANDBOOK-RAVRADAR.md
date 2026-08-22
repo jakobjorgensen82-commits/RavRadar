@@ -8,9 +8,11 @@ I kandidaten er det den verificerede strøm vinkelret på kysten, der flytter tr
 
 Svagere strøm tæller som en del af en effektiv time. Manglende eller ikke-verificeret strøm ændrer ingenting; den må ikke foregives at være nulstrøm. Bølger kan ikke skabe transport. De kan kun give en lille korrektion af den sidste levering over en revle eller op på stranden, når strømmen allerede har bygget et potentiale.
 
-Den private genafspilning består de mekaniske kontroller og skelner tydeligt mellem ind- og udtransport. Den viser samtidig, at resultatet afhænger meget af to ubesluttede forhold: hvor stærk den kystnormale strøm skal være for at tælle fuldt, og hvor stort et ravpotentiale der allerede findes ved analysens første time. Om potentialet skal falde passivt gennem 24–48 timer med neutral strøm, er heller ikke besluttet.
+Den private genafspilning består de mekaniske kontroller og skelner tydeligt mellem ind- og udtransport. Efter ejerreview anbefales 0,03 m/s som dødzone og 0,15 m/s som fuld kystnormal styrke. Ved 0,09 m/s tæller strømmen halvt, så opbygning tager cirka 20 timer og faktisk udtransport cirka 26 timer. Valget er en faglig produktprior, ikke en fundkalibreret naturgrænse.
 
-Derfor er kandidaten ikke klar til offentlig aktivering. Den godkendte udtransportkurve bevares, mens strømgrænse og start-/forældelsesregel undersøges videre. Den vindstyrede waders-jagtbarhed fortsætter uændret: fuld til 6 m/s, trinvis fald og 0 ved 15 m/s, mens strandjagt ikke får et jagtbarhedsloft.
+Neutral eller manglende strøm trækker ikke automatisk point fra. I stedet skal RavRadar føre en lille afledt tilstand videre mellem produktionskørsler: tidspunkt, eksisterende potentiale og det igangværende effektive udtransportforløb. En ny kørsel må ikke få modellen til at glemme ravet. Den score-neutrale test reproducerer nu samme 13-timerskurve, uanset om forløbet beregnes samlet eller deles over en kørselsgrænse.
+
+Kandidaten er endnu ikke offentlig. Næste faglige trin er mobiliserings-/helhedsreview, hvorefter en eventuel aktivering kræver central tilstandskobling, national slutkontrol, forklaring og rollback. Den vindstyrede waders-jagtbarhed fortsætter uændret: fuld til 6 m/s, trinvis fald og 0 ved 15 m/s, mens strandjagt ikke får et jagtbarhedsloft.
 
 Ingen nye rådata, bundmodel, dybde, render, geometri eller land-/vandpunkter indgår i dette arbejde.
 
