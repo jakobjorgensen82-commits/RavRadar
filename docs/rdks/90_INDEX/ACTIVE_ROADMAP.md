@@ -260,8 +260,9 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [x] Udled tilsvarende vindhukommelse og adskil direkte vind fra indirekte virkning gennem boelger, stroem og vandstand.
 - [x] Koer separate ablationer og kontroller svage/korte samt kraftige/langvarige vendinger.
 - [x] Byg og sammenlign kandidat G i historisk replay, national scenariematrix og centralt hydreret national shadow.
-- [ ] Kontrollér den fulde ekspertregelkaede, jagtbarhed, vadesikkerhed og at pile, score og forklaring passer sammen.
-- [ ] Fremlaeg en grundig forklaring i almindeligt sprog paa den endelige vaegtmatrix og dens konsekvenser; offentlig aendring kraever derefter ejer-go/no-go.
+- [x] Kontrollér score-neutralt den fulde ekspertregelkaede, jagtbarhed samt at komponenter, score, pil og historik passer sammen; 4.0.253 dokumenterer kontrakten uden offentlig kobling.
+- [x] Forbered den grundige forklaring i almindeligt sprog og en konkret waders-produktanbefaling uden skjult koefficient.
+- [ ] Gennemfør ejerreview af waders-/forklaringsvalget; offentlig ændring kræver fortsat særskilt go/no-go.
 - [ ] Fortsaet efter godkendt scoremodel med haendelsesmodel, ravvinduer, lagdelte brugerforklaringer og det omfattende laeringsmodul i den allerede vedtagne roadmapraekkefoelge.
 
 Kandidat G er privat og score-neutral. Aktiv RavScore 25/40/35, DMI-first, geometri og land-/vandpunkter forbliver uændrede under analysen.
@@ -298,5 +299,6 @@ Kandidat G er privat og score-neutral. Aktiv RavScore 25/40/35, DMI-first, geome
 - [ ] Få ejerens produktbeslutning om waders-betydningen før enhver offentlig UI- eller scorekobling.
 - [x] Afspil frisk central ekspertregelkaede; den havde nul aktive regler og nul matches.
 - [x] Fastlæg kandidatens score-neutrale kontrakt: eksakte komponenter/gate rekonstruerer 1.460/1.460 scorer; pilen er aktuel lokal strøm, mens historik forklares særskilt på samme context.
+- [x] Før 4.0.253 gennem PR #62, exact-head-gate `32568914124`, merge `b2951d90` og fuld produktion `32568958136`; live `rr-20260822110004-210` er 210/673 grønt.
 - [ ] Verificér den endelige offentlige UI-/forklaringskobling efter ejerbeslutningen; ingen kobling er implementeret i 4.0.253.
 - [ ] Fremlæg derefter ejerreview. Den nuværende anbefaling er at beholde offentlig 25/40/35 og ikke aktivere G endnu.

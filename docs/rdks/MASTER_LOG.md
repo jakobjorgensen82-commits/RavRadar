@@ -1728,3 +1728,11 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - Pilen fastholdes som aktuel lokal strøm. Historik forklares særskilt; 332/872 tydelige contexts er modrettede, og 100 ændrer den afrundede score.
 - Den nationale shadowrapport klassificerer coverage fail-closed og afviser parentzonemorfologi som lokal kystdelsevidens. 243/673 scorede dele og nul komplette lokale retention-features er fortsat en aktiveringsblokering.
 - Aktiv 25/40/35, offentlig UI, DMI/fallback, geometri, land-/vandpunkter, central admin, private artifacts og beskyttede data er uændrede. Candidate G er fortsat diagnostic-only.
+
+## 2026-08-22 - 4.0.253 merged og produktionsverificeret
+
+- PR #62 bestod exact-head-kildegate `32568914124` på `d272c6ca` og blev merged som `b2951d90`.
+- Pushproduktion `32568958136` gennemførte central adminhydrering, frisk DMI, fuld `validate`, releasegate, support `RavRadar-support-3379`, Supabase, Pages-artifact og deployment.
+- Pages-deployment `6036054331` er `success`. Live version er 4.0.253; datasæt `rr-20260822110004-210` har 210 zoner og 673/673 scorede kystdele.
+- Målrettet livekontrol var tilstrækkelig, fordi offentlig score, UI-adfærd og offentlig datakontrakt ikke blev ændret. Candidate G er fortsat privat, og coverage-/ejer-gates er fortsat åbne.
+- Ingen private payloads, beskyttede dirty-datafiler, geometri eller land-/vandpunkter indgik i PR'en eller checkpointet.

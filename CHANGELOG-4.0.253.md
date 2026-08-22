@@ -13,3 +13,9 @@
 - Offentlig UI, regler, DMI/fallback, central admin og produktionens scorelogik er uændret.
 - Ingen geometri, land-/vandpunkter, private artifacts eller beskyttede data er ændret.
 - Offentlig waders-/forklaringskobling kræver ejerbeslutning og efterfølgende fuld relevant validering.
+
+## Produktionsverifikation
+
+- PR #62 bestod exact-head-kildegaten og blev merged som `b2951d90`.
+- Produktion `32568958136`, support `RavRadar-support-3379`, Supabase og Pages-deployment `6036054331` er grønne på mergecommittet.
+- Live version 4.0.253/datasæt `rr-20260822110004-210` har 210 zoner og 673/673 scorede kystdele.

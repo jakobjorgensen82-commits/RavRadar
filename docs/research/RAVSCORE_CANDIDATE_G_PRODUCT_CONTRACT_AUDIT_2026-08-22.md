@@ -6,6 +6,13 @@ Denne audit er diagnostic-only i 4.0.253. Den ændrer ikke den aktive RavScore 2
 
 Den foretrukne forskningsvariant er fortsat `G-50-50-NO-DIRECT-WIND`, med 24 og 48 timer som følsomhedsgrænser. Kandidaten er ikke godkendt til aktivering.
 
+## Produktionsverifikation
+
+- PR #62 bestod exact-head-kildegate `32568914124` på `d272c6ca` og blev merged som `b2951d90`.
+- Pushproduktion `32568958136` bestod central hydrering, frisk DMI, fuld `validate`, releasegate, support `RavRadar-support-3379`, Supabase, Pages-artifact og deploy.
+- Pages-deployment `6036054331` er `success`. Live 4.0.253/datasæt `rr-20260822110004-210` har 210 zoner og 673/673 scorede kystdele.
+- Offentlig score, UI-adfærd og offentlig datakontrakt er uændrede; derfor krævede testmatrixen målrettet live metadata-/coveragekontrol og ikke en ny fuld 210/673-browseraudit.
+
 ## Grundlag og databeskyttelse
 
 - Den Git-ignorerede cache `.cache/ravscore-historical-wave-pilot-12/` blev genafspillet lokalt.

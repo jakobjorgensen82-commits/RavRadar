@@ -1,5 +1,16 @@
 # RavRadar - aktuelt Codex-handoff
 
+## Checkpoint 2026-08-22 - Candidate G 4.0.253 produktionsverificeret
+
+- Dette checkpoint erstatter alle ældre branch-, baseline- og næste-trin-angivelser nedenfor.
+- Autoritativt repository er `C:\Users\Lenovo T14\Documents\GitHub\RavRadar`; `main` er merge `b2951d90` fra PR #62.
+- PR #62's exact-head-kildegate `32568914124` bestod på `d272c6ca`. Pushproduktion `32568958136` bestod central hydrering, frisk DMI, fuld `validate`, releasegate, supportartifact, Supabase og Pages på mergecommittet.
+- Supportartifact er `RavRadar-support-3379`; Pages-deployment `6036054331` er `success`. Live viser 4.0.253 og datasæt `rr-20260822110004-210` med 210 zoner og 673/673 scorede kystdele.
+- Candidate G er fortsat privat og score-neutral. Eksakte komponenter/gate rekonstruerer 1.460/1.460 private scorer; den foretrukne no-direct-wind-variant har 219 lave waders-jagtbarheder, heraf 7 med mindst 55 point, og det kanoniske 0/79-forløb.
+- Pilen betyder fortsat aktuel lokal strøm. Historik forklares separat; 332/872 tydelige contexts er modrettede, og 100 ændrer den afrundede score.
+- Åbent til ejerreview: offentlig waders-/forklaringskontrakt. Åbent som dataarbejde: national scoreinput- og lokal retention-coverage ud over 243/673 og nul komplette lokale retention-features.
+- Aktiv RavScore 25/40/35, offentlig score/UI, DMI/fallback, central admin, geometri og land-/vandpunkter er uændrede. Den Git-ignorerede cache og de fire beskyttede dirty-datafiler må fortsat aldrig stages.
+
 ## Checkpoint 2026-08-22 - efter PR #57
 
 - Dette checkpoint erstatter de ældre arbejdssteds- og branchangivelser nedenfor.
