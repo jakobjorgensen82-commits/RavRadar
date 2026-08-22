@@ -2,6 +2,8 @@
 
 ## Checkpoint 2026-08-23 – Candidate G frigivelsesrevision
 
+- PR #82 bestod exact-head-kildegate `32602287607` på `74624ac3` og blev merged som `189644a0`.
+- Produktion `32602328912` bestod frisk vejr/proveniens, fuld validering, releasegate, supportpakke, Supabase og Pages. Live `rr-20260822223539-210` er komplet med 210 zoner og 673 dele; manifest, offentlig startfil og offentlig detaljefil har samme datasæt-id.
 - `scripts/audit-ravscore-candidate-g-release-readiness.mjs` giver et syntetisk, score-neutralt og reproducerbart bevis for de godkendte grænser uden private rådata.
 - Den godkendte udgående 8-pointskurve er låst time for time fra 100 til 0 ved 13 effektive fuldstyrketimer. Halv styrke, deadband, neutral strøm, 24/48-timers følsomhed, missing-pause, bølge-only, landingsgrænse og waders-vindstop indgår i samme audit.
 - Den nuværende mekanik sætter transportpotentialet til 0 efter 13 timer, men ikke hele Candidate G-scoren. Det faste scenarie giver da samlet 35 for både strand og waders, fordi jagtbarhed og mobilisering fortsat bidrager. En eventuel fuld RavScore-gate er en åben ejerbeslutning og må ikke indføres implicit.

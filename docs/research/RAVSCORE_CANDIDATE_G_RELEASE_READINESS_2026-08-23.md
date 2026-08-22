@@ -4,6 +4,8 @@
 
 Den strømstyrede Candidate G består den mekaniske grænsekontrol score-neutralt. Den er monotont faldende under udgående strøm, bølger kan ikke skabe transport, waders-loftet virker, strandjagt bevarer højt ravpotentiale under hård vind, og missing ændrer ikke reservoiret.
 
+Revisionen er ført gennem exact-head `32602287607`, PR #82/merge `189644a0` og fuld post-merge-produktion `32602328912`. Live `rr-20260822223539-210` er komplet med 210 zoner og 673 kystdele og ændrer ikke den offentlige scoremodel.
+
 Auditten afdækker samtidig én ejerbetydning, som skal være helt eksplicit før offentlig aktivering:
 
 - efter 13 effektive timer med fuld kraftig udgående strøm er **transportpotentialet 0**;

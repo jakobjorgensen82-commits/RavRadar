@@ -7,6 +7,8 @@
 - [x] Kør auditten via `test:score` og `validate:source`.
 - [x] Opdatér den nationale shadows aktiveringsgates og afvis de erstattede waders-/pil-/ekstremmarkører i kontrakttesten.
 - [x] Dokumentér produktforklaring, automatisk aktiveringsforbud og rollback uden offentlig scoreændring.
+- [x] Bestå exact-head `32602287607` på `74624ac3`, merge PR #82 som `189644a0` og fuld post-merge-produktion `32602328912`.
+- [x] Verificér live `rr-20260822223539-210` som komplet 210/673 med samme datasæt-id i manifest, startdata og detaljedata.
 - [ ] Ejerbeslutning: transportpotentiale 0 med fortsatte øvrige komponenter eller eksplicit samlet RavScore 0 efter 13 timers kraftig udgående strøm.
 - [ ] Luk resterende coverage-, tærskel-, starttilstands-, validerings-, admin-/rollback- og ejer-go/no-go-gates før enhver offentlig aktivering.
 

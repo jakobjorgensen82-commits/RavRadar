@@ -11,6 +11,7 @@
 ## Candidate G – strømstyret transportpotentiale efter 4.0.258
 
 - En fast syntetisk frigivelsesrevision låser nu den godkendte kurve og de vigtigste randtilfælde uden private data. Den indgår i `test:score` og `validate:source`.
+- Revisionen bestod exact-head `32602287607`, PR #82/merge `189644a0` og fuld produktion `32602328912`. Live `rr-20260822223539-210` er komplet med 210 zoner, 673 kystdele og ens datasæt-id i manifest, startdata og detaljedata.
 - DEC-0055 gør verificeret kystnormal strøm til Candidate G's transportled. Bølger kan ikke skabe transport; de må kun påvirke den sidste levering med højst 15 procent, når strømmen allerede har skabt potentiale.
 - Fuld indgående strøm bygger 10 point pr. effektiv time mod 100. Fuld udgående strøm reducerer straks med 8 point pr. effektiv time: 100, 92, 84, 76, 68, 60, 52, 44, 36, 28, 20, 12, 4 og 0 fra 13 timer.
 - Den private kandidat beholder `20/50/30` og DEC-0054's vindstyrede waders-jagtbarhed. Offentlig RavScore er fortsat `25/40/35`; ingen score- eller UI-aktivering er foretaget.

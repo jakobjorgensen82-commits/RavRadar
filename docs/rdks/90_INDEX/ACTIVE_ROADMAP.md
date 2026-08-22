@@ -36,6 +36,7 @@ Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre for
 - [x] Tilføj en reproducerbar frigivelsesrevision, der låser 0–13-timerskurven og grænserne for halv styrke, deadband, neutral strøm, forældelsesfølsomhed, missing, bølge-only og waders-stop.
 - [x] Erstat shadowvalidatorens historiske waders-/pil-/ekstremgates med de aktuelle Candidate G-aktiveringsblokeringer og lås dem i kildegaten.
 - [x] Dokumentér den offentlige forklarings- og rollbackkontrakt uden at aktivere eller ændre den offentlige score.
+- [x] Før revisionen gennem exact-head `32602287607`, PR #82/merge `189644a0` og fuld produktion `32602328912`; verificér live `rr-20260822223539-210` med 210/673 og ens datasæt-id.
 - [ ] Afgør eksplicit, om 13 timers kraftig udgående strøm kun skal give transportpotentiale 0, som nu, eller tvinge hele Candidate G-scoren til 0. Sidstnævnte er ikke implementeret.
 - [ ] Bevar start 0 uden passivt tab som mekanisk reference og 24/48 som følsomhedsspor, indtil mindst 72 timers forhistorie eller komplette ture/hold-out giver et forsvarligt valg.
 - [ ] En eventuel offentlig Candidate G-aktivering forbliver et særskilt ejer-go/no-go med validering og fulde produktgates.
