@@ -66,6 +66,18 @@ assert.ok(Math.abs(
 assert.equal(neutral.scoreImpact, 'diagnostic-only');
 assert.equal(neutral.diagnostics.automaticActivationAllowed, false);
 assert.equal(neutral.diagnostics.scoreIsSafetyAdvice, false);
+assert.deepEqual(neutral.researchExplanation.componentOrder, [
+  'transportAndDelivery', 'mobilisation', 'huntability',
+]);
+assert.equal(neutral.researchExplanation.currentArrow.timeMeaning, 'NOW');
+assert.equal(neutral.researchExplanation.directionalHistory.meaning,
+  'CAUSAL_DIRECTIONAL_CONTEXT_BEFORE_NOW');
+assert.equal(neutral.researchExplanation.directionalHistory.effect,
+  'NEUTRAL_FOR_EXISTING_TRANSPORT_PATH');
+assert.equal(neutral.researchExplanation.directionalHistory.canCreateTransportFromZeroCapacity, false);
+assert.equal(neutral.researchExplanation.siteSuitabilityIncluded, false);
+assert.equal(neutral.researchExplanation.safetyAdviceIncluded, false);
+assert.equal(neutral.researchExplanation.publicActivationAllowed, false);
 
 const withDirect = evaluate({ current: 0, wave: 0, directWind: 1 });
 const withoutDirect = evaluate(
@@ -83,6 +95,8 @@ const approvedBeach = evaluate(
 assert.equal(approvedBeach.score, withoutDirect.score, 'Den nye waders-kontrakt må ikke ændre strandscoren');
 assert.equal(approvedBeach.scoreCalculation.modeHuntabilityPolicy, 'UNCHANGED');
 assert.equal(approvedBeach.diagnostics.candidateGWadersHuntabilityMaximum, null);
+assert.equal(approvedBeach.researchExplanation.modeHuntability.applied, false);
+assert.equal(approvedBeach.researchExplanation.scoreMeaning, 'AMBER_OPPORTUNITY_FOR_BEACH_SEARCH');
 
 const wadersWindCases = [
   [3, 100],
@@ -107,12 +121,16 @@ const approvedWaders = wadersWindCases.map(([windSpeedMps, expectedWindScore]) =
   assert.equal(result.scoreCalculation.modeHuntabilityPolicy, 'VISIBLE_WADERS_HUNTABILITY_MAXIMUM');
   assert.ok(result.score <= result.components.huntability);
   assert.equal(result.diagnostics.candidateGHuntabilityWindScore, expectedWindScore);
+  assert.equal(result.researchExplanation.modeHuntability.maximum, result.components.huntability);
+  assert.equal(result.researchExplanation.scoreMeaning,
+    'AMBER_OPPORTUNITY_FOR_WADERS_METHOD_LIMITED_BY_CURRENT_HUNTABILITY');
   return result;
 });
 assert.ok(approvedWaders.every((result, index) => index === 0 || result.score <= approvedWaders[index - 1].score));
 assert.ok(approvedWaders.every((result, index) => index === 0
   || wadersWindCases[index][0] <= 6
   || result.diagnostics.candidateGHuntabilityWindScore < approvedWaders[index - 1].diagnostics.candidateGHuntabilityWindScore));
+assert.equal(approvedWaders.at(-1).researchExplanation.modeHuntability.applied, true);
 
 const zeroCapacity = evaluate(
   { current: 1, wave: 1, directWind: 1 },

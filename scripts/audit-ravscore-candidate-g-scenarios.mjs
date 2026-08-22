@@ -13,10 +13,27 @@ const TRACKS = Object.freeze({
   candidateG5050: Object.freeze({ variantId: 'G-50-50-LIN', activeWeight: 0.5 }),
   candidateG48: Object.freeze({ variantId: 'G-48H-LIN', activeWeight: 0 }),
 });
+const WEIGHT_PRIORS = Object.freeze([
+  Object.freeze({ id: 'E-25-40-35', huntability: 0.25, transportAndDelivery: 0.40, mobilisation: 0.35 }),
+  Object.freeze({ id: 'G-20-45-35', huntability: 0.20, transportAndDelivery: 0.45, mobilisation: 0.35 }),
+  Object.freeze({ id: 'F-15-50-35', huntability: 0.15, transportAndDelivery: 0.50, mobilisation: 0.35 }),
+]);
 const ROTATIONS = Object.freeze([0, 45, 90, 135, 180, 225, 270, 315]);
 const normalise = value => (Number(value) % 360 + 360) % 360;
+const clamp = (value, minimum = 0, maximum = 100) => Math.max(minimum, Math.min(maximum, Number(value)));
 const round3 = value => Number(Number(value).toFixed(3));
 const mean = values => values.reduce((sum, value) => sum + value, 0) / values.length;
+
+function scoreWithWeights(candidate, weights) {
+  const calculation = candidate.scoreCalculation;
+  const additiveScore = calculation.components.huntability * weights.huntability
+    + calculation.components.transportAndDelivery * weights.transportAndDelivery
+    + calculation.components.mobilisation * weights.mobilisation;
+  const uncoupledScore = Math.round(clamp(additiveScore * calculation.gateFactor));
+  return calculation.modeHuntabilityMaximum === null
+    ? uncoupledScore
+    : Math.min(uncoupledScore, Number(calculation.modeHuntabilityMaximum));
+}
 
 const scenarios = Object.freeze([
   Object.freeze({ id: 'sustained-inbound', current: 0.3, wave: 1, period: 7, wind: 8, currentOffset: 0, waveOffset: 0, windOffset: 0, history: [[72, 1, 1, 1]], maxWave: 2, maxWind: 14, duration: 8, age: 8 }),
@@ -111,6 +128,10 @@ function runAudit() {
           candidateGNoDirectWind: noDirect.score,
           ownerApprovedModeScore: ownerApproved.score,
           ownerApprovedHuntability: ownerApproved.components.huntability,
+          ownerApprovedWeightScores: Object.fromEntries(WEIGHT_PRIORS.map(weights => [
+            weights.id,
+            scoreWithWeights(ownerApproved, weights),
+          ])),
           modeCoupling: Object.fromEntries(MODE_COUPLING_POLICIES.map(policy => [
             policy.id,
             evaluateModeHuntabilityCoupling(noDirect, mode, policy.id).score,
@@ -137,6 +158,10 @@ function runAudit() {
       candidateGNoDirectWindMean: value('candidateGNoDirectWind'),
       ownerApprovedModeScoreMean: value('ownerApprovedModeScore'),
       ownerApprovedHuntabilityMean: value('ownerApprovedHuntability'),
+      ownerApprovedWeightMeans: Object.fromEntries(WEIGHT_PRIORS.map(weights => [
+        weights.id,
+        round3(mean(selected.map(row => row.ownerApprovedWeightScores[weights.id]))),
+      ])),
       wadersHuntabilityCapMean: round3(mean(selected.map(row => row.modeCoupling['W-HUNTABILITY-CAP']))),
       huntabilityMean: value('huntability'),
       transportAndDeliveryMean: value('transportAndDelivery'),
@@ -166,6 +191,21 @@ function runAudit() {
     highEnergyWaderRequiresModeSpecificLimit:
       summary('high-energy-wader-warning', 'waders').huntabilityMean === 0
       && summary('high-energy-wader-warning', 'waders').candidateGNoDirectWindMean >= 55,
+    weightPriorContracts: Object.fromEntries(WEIGHT_PRIORS.map(weights => [weights.id, {
+      inboundMinusOutboundBeach: round3(
+        summary('sustained-inbound', 'beach').ownerApprovedWeightMeans[weights.id]
+        - summary('sustained-outbound', 'beach').ownerApprovedWeightMeans[weights.id]),
+      inboundMinusOutboundWaders: round3(
+        summary('sustained-inbound', 'waders').ownerApprovedWeightMeans[weights.id]
+        - summary('sustained-outbound', 'waders').ownerApprovedWeightMeans[weights.id]),
+      highEnergyWadersScore: summary('high-energy-wader-warning', 'waders')
+        .ownerApprovedWeightMeans[weights.id],
+      postStormWadersScore: summary('post-storm-huntable', 'waders')
+        .ownerApprovedWeightMeans[weights.id],
+      alongshoreLeftMinusRightBeach: round3(
+        summary('alongshore-left', 'beach').ownerApprovedWeightMeans[weights.id]
+        - summary('alongshore-right', 'beach').ownerApprovedWeightMeans[weights.id]),
+    }])),
   };
   const report = {
     schemaVersion: '1.0.0',
@@ -206,6 +246,16 @@ function runAudit() {
     .every(row => row.ownerApprovedModeScore <= row.ownerApprovedHuntability));
   assert.ok(rows.filter(row => row.mode === 'beach')
     .every(row => row.ownerApprovedModeScore === row.candidateGNoDirectWind));
+  for (const weights of WEIGHT_PRIORS) {
+    const contracts = pairChecks.weightPriorContracts[weights.id];
+    assert.ok(contracts.inboundMinusOutboundBeach > 10);
+    assert.ok(contracts.inboundMinusOutboundWaders >= 0,
+      'The visible waders huntability maximum may compress, but must not reverse, the directional contrast');
+    assert.equal(contracts.highEnergyWadersScore, 0);
+    assert.equal(contracts.alongshoreLeftMinusRightBeach, 0);
+    assert.ok(rows.filter(row => row.mode === 'waders').every(row =>
+      row.ownerApprovedWeightScores[weights.id] <= row.ownerApprovedHuntability));
+  }
   assert.ok(rows.filter(row => row.mode === 'beach').every(row =>
     Object.values(row.modeCoupling).every(score => score === row.candidateGNoDirectWind)));
   assert.ok(rows.every(row => row.scoreIsSafetyAdvice === false));

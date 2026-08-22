@@ -661,7 +661,14 @@ En ekstra kandidat bruger samme stoettebaserede maks. 4 point, men tillader kun 
 - [x] Udvid den nationale shadowrapport med en fail-closed coveragegate og afvis parentzonemorfologi som lokal del-evidens.
 - [x] Før kode-/analysebaseline 4.0.253 gennem PR #62 og dokumentationscheckpointene gennem PR #64; fuld produktionsverifikation `32570223437` og live 210/673 er grønne.
 - [x] Ejerreview af den score-neutrale waders-/vindkontrakt; den er valgt som næste analysecentrum, ikke som offentlig aktivering.
-- [ ] Saml pil, komponenter, vægte og forklaring i det endelige beslutningsgrundlag og indhent ejerens samlede go/no-go.
+- [x] Saml pil, komponenter, vægte og forklaring i det endelige score-neutrale beslutningsgrundlag. `20/45/35` bevares som analysecentrum efter intervaltest; offentlig aktivering og ejerens samlede go/no-go er fortsat åbne.
 - [ ] Udvid dokumenteret lokal retention- og scoreinputcoverage ud over 243/673 før enhver aktiveringsbeslutning.
+
+### Candidate G-vægt og forklaring
+
+- De faste priorer `15/50/35`, `20/45/35` og `25/40/35` er genafspillet på den ejer-godkendte waders-variant uden direkte vindhistorik.
+- Yderpunkterne adskiller sig 4,947 point i gennemsnit og 282 referencebånd; `20/45/35` er den gennemsigtige midte og forbliver beslutningscentrum, ikke fundkalibreret facit.
+- Den maskinlæsbare diagnostic-only forklaring binder eksakte komponenter og bidrag sammen med pil nu, historik før nu, fysisk gate og synligt waders-loft. Replay gav nul forklaringsafvigelser i 1.460 evalueringer.
+- Næste bindende analysetrin er en frisk centralt hydreret national shadow på den eksakte kandidatkode. Den må måle scoreinputcoverage, men må ikke opfinde lokale retention-features fra parentzoner.
 
 Aktiv RavScore 25/40/35, offentlig UI, DMI/fallback, geometri, land-/vandpunkter og central admin forbliver uændrede.

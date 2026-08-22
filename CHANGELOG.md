@@ -1,3 +1,10 @@
+## 4.0.256 - Candidate G-vægt og forklaring (2026-08-22)
+
+- Den score-neutrale waders-variant er genafspillet med `15/50/35`, `20/45/35` og `25/40/35`; `20/45/35` bevares som gennemsigtigt analysecentrum.
+- Candidate G udstiller nu eksakte komponentbidrag, pil nu, historik før nu, fysisk gate og synligt waders-loft i én maskinlæsbar diagnostic-only forklaring.
+- Replay og kanoniske scenarier er grønne uden offentlig score-, UI-, data-, geometri- eller punktændring. Offentlig 25/40/35 er fortsat aktiv.
+- Central coverage og ejerens samlede go/no-go er fortsat nødvendige før aktivering.
+
 ## 4.0.255 - national waders-kontrakt i kildegaten (2026-08-22)
 
 - PR #66's fulde post-data-validering stoppede korrekt på den gamle interne markør `candidate-waders-product-decision`; release, Supabase og Pages blev ikke kørt.

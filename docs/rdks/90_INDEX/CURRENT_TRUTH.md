@@ -1,5 +1,22 @@
 # Current truth – gældende projektviden
 
+## 4.0.256-kandidat – Candidate G-vægt og forklaring, fortsat score-neutral
+
+- Den ejer-godkendte `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT` er genafspillet med `15/50/35`, `20/45/35` og `25/40/35` på 1.460 evalueringer. Yderpunkterne adskiller sig 4,947 point i gennemsnit og 282 referencebånd.
+- `20/45/35` ligger praktisk midt mellem yderpunkterne og bevares som Candidate G's analysecentrum. Det er en faglig forskningsprior, ikke fundkalibrering; offentlig 25/40/35 er uændret.
+- Alle tre priorer består de kanoniske kontrakter. Ingen giver waders-score over jagtbarheden eller mindst middel score ved waders-jagtbarhed under 35.
+- Candidate G-resultatet har nu en diagnostic-only forklaringskontrakt med eksakte komponenter/bidrag, pil nu, historik før nu, fysisk gate og synligt waders-loft. Replayet gav nul forklaringsafvigelser i 1.460 evalueringer.
+- Målrettede tests, RDKS, fuld lokal `scripts/validate-source.ps1` og releasegate er grønne for 4.0.256; exact-head GitHub- og produktionsbevis afventer PR.
+- Bund/dybde/render/adgang og særskilt sikkerhedsmodel indgår ikke. Private cachepayloads, artifact, protected-dirty-data, geometri og land-/vandpunkter er urørte.
+- Samlet model-/vægt-/forklaringsgrundlag er klart til ejerreview. Aktivering er fortsat no-go, indtil frisk central scoreinputcoverage, lokal retention-evidens og ejerens samlede go/no-go er lukket.
+
+## Dokumentationscheckpoint efter 4.0.255
+
+- PR #68 bestod exact-head-gate `32576541706` på `7c4108f7` og blev merged som `8cffdd54`.
+- Pushproduktion `32576619969` bestod frisk DMI/proveniens, fuld validering, releasegate, support, Supabase, Pages-artifact og deploy.
+- Live 4.0.255/datasæt `rr-20260822135100-210` viser 210 zoner, 673 dele, komplet manifest, matchende conditions-datasæt og `controlled-live`.
+- PR #68 ændrede kun intern dokumentation og release-rapporter; offentlig score, UI, data- og geometrikontrakter er uændrede.
+
 ## 4.0.255-kandidat – national waders-kontrakt ført ind i kildegaten
 
 - PR #66 bestod exact-head-kildegaten `32575000140` og blev merged som `95e3064d`. Fuld produktion `32575055644` stoppede derefter korrekt før release, Supabase og Pages, fordi en ældre national kontrakttest fortsat krævede den erstattede gate `candidate-waders-product-decision`.
