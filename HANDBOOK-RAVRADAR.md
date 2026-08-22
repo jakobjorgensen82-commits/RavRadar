@@ -272,7 +272,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.255
+**Håndbogsversion:** 4.0.256
 
 **Opdateret:** 19. august 2026
 
@@ -652,14 +652,14 @@ Ekspertpunkt E-14: Valider wadersgrænserne for forskellige kyster og vurder om 
 
 **Sikkerhed:** RavScore vurderer ravmuligheden, ikke om det er sikkert at gå i vandet. En høj score kan godt optræde samtidig med farlige lokale forhold. Appen må aldrig erstatte egen sikkerhedsvurdering.
 
-## 18. Præcis implementering i RavScore 4.0.60
+## 18. Præcis implementering i RavScore 4.0.256
 
 *Den faktiske kodevirkning, trin for trin.*
 
 Den aktive beregning findes i js/core/score-engine.js. Den gamle rod-fil ravscore.js er historisk/sekundær og må ikke bruges som beskrivelse af den aktive app uden at bekræfte importkæden.
 
 18.1 Hovedformel
-rå score = jagtbarhed × 0,40 + transport × 0,35 + mobilisering/tilgængelighed × 0,25
+rå score = jagtbarhed × 0,25 + transport × 0,40 + mobilisering/tilgængelighed × 0,35
 
 Vægtene kan ændres af den godkendte adaptive model, men normaliseres altid til 1,0. Hver vægt begrænses til 0,05–0,80. Derefter lægges et adaptivt justeringsled på -25 til +25. Til sidst anvendes aktive ekspertregler.
 
@@ -2012,6 +2012,10 @@ Den nationale shadowkontrakt kontrolleres nu også i kildegaten. Det betyder, at
 
 Pilen og historikken beskriver heller ikke samme tid. Pilen skal fortsat vise den aktuelle lokale strøm. Historikken fortæller, hvad forløbet før nu har gjort ved transportpotentialet. I 332 af 872 tydeligt retningsbestemte kontrolsituationer pegede de to oplysninger modsat; i 100 flyttede historikken den afrundede score. Derfor skal en senere forklaring vise historikken særskilt og aldrig ændre pilens betydning i det skjulte.
 
+Den færdige vægtfølsomhed holder samme proces og waders-loft fast og sammenligner 15/50/35, 20/45/35 og 25/40/35. Yderpunkterne adskiller sig 4,947 point i gennemsnit og 282 scorebånd i de 1.460 evalueringer. 20/45/35 ligger praktisk midt mellem dem og bevares som Candidate G's forståelige analysecentrum. Det er ikke en fundkalibrering: alle tre vægte består de fysiske kontraktscenarier, så de udvalgte hændelser kan ikke afgøre, hvilken vægt der bedst forudsiger faktiske fund.
+
+Forskningsresultatet indeholder nu én maskinlæsbar forklaring med de eksakte komponenter, vægte og bidrag, pilen nu, historikken før nu, den milde fysiske begrænsning og et synligt eventuelt waders-loft. Alle 1.460 replayforklaringer stemmer med deres score. Ved en senere offentlig visning kan brugeren derfor få én enkel hovedforklaring og åbne de tre komponenter uden at få en anden matematisk historie.
+
 Den nationale aktiveringsgate er fortsat åben. Kun 243 af 673 dele kunne scores i den seneste centrale shadow, og ingen havde komplette lokale retention-features. En hovedzones generelle rev-, lavtvands- eller vegetationsfelt er ikke automatisk sandt for hver lokal kystdel og må ikke bruges som genvej.
 
-Kandidat G er fortsat privat. Den aktive offentlige score er 25 % jagtbarhed, 40 % transport og 35 % mobilisering, indtil ejeren har taget produktbeslutningen, coverage er tilstrækkelig, og en eventuel offentlig kobling er fuldt valideret.
+Kandidat G er fortsat privat. Den aktive offentlige score er 25 % jagtbarhed, 40 % transport og 35 % mobilisering. Candidate G's samlede score-neutrale model-, vægt- og forklaringsgrundlag er klar til ejerreview, men aktivering kræver fortsat bedre central coverage, ejerens samlede go/no-go og fuld validering af en eventuel offentlig kobling.

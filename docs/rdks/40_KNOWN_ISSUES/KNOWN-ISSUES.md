@@ -446,7 +446,7 @@ Den nye appkode må ikke merges, før migrationen 20260821_trip_evidence_contrac
 - Ejeren har besluttet næste forskningskontrakt: strand forbliver uden loft, mens waders bruger et synligt loft ved jagtbarheden og en vinddel på 100 til 6 m/s med monotont fald derover. Dette er ikke en sikkerhedsgate.
 - Den score-neutrale variant `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT` giver nul waders-score i 0/79-yderpunktet, ændrer nul af 730 strandscorer og giver ingen waders-score over jagtbarheden.
 - Den tidligere separate-metodestatus-anbefaling er erstattet som forskningscentrum. En tydelig produktforklaring er fortsat nødvendig, men må ikke skjule eller omgå den besluttede scorekobling.
-- Offentlig aktivering er fortsat blokeret af samlet model-/vægt-/forklaringsreview, utilstrækkelig lokal coverage og ejerens endelige go/no-go. 4.0.253's produktionsbevis er ikke et aktiveringsbevis for den nye variant.
+- Det score-neutrale model-, vægt- og forklaringsgrundlag er nu samlet. Offentlig aktivering er fortsat blokeret af utilstrækkelig lokal coverage og ejerens endelige go/no-go. Produktionsbeviset er ikke et aktiveringsbevis for den nye variant.
 
 ## ISSUE-CANDIDATE-G-FRESH-NATIONAL-SHADOW - KØRSELSGATE LUKKET, COVERAGEGATE ÅBEN
 
@@ -464,6 +464,14 @@ Den nye appkode må ikke merges, før migrationen 20260821_trip_evidence_contrac
 - Pilen skal fortsat betyde aktuel lokal strøm. Historisk nettoforløb skal forklares separat på samme kystdel, tidspunkt og jagtform og må ikke skjult ændre pilens betydning.
 - Den score-neutrale kontrakt er lukket. Endelig offentlig UI-/forklaringskobling kræver ejerbeslutning og efterfølgende browservalidering.
 - Kontrakten er merged og produktionsverificeret i 4.0.253 (`01904b92`/`32570223437`) uden offentlig UI-kobling.
+
+## ISSUE-CANDIDATE-G-WEIGHT-CALIBRATION - FORSKNINGSPRior FASTHOLDT / EMPIRISK GATE ÅBEN
+
+- Den godkendte waders-variant er genafspillet med `15/50/35`, `20/45/35` og `25/40/35` på 1.460 evalueringer.
+- Yderpunkterne adskiller sig 4,947 point i gennemsnit og 282 referencebånd. `20/45/35` ligger praktisk midt mellem dem og bevares som Candidate G's analysecentrum.
+- Alle tre priorer består de kanoniske proces- og waders-kontrakter. Scenarier og udvalgte hændelsesvinduer kan derfor ikke afgøre den empirisk bedste vægt.
+- Endelig kalibrering kræver komplette ture med fund, reelle nul-fund og søgeindsats. Offentlig 25/40/35 forbliver uændret, indtil coverage og samlet ejer-go/no-go er lukket.
+- Candidate G's maskinlæsbare forklaring rekonstruerer 1.460/1.460 evalueringer og holder pil nu, historik før nu, komponentbidrag og det synlige waders-loft adskilt. Den er diagnostic-only og ikke en offentlig UI-ændring.
 
 ## ISSUE-RAVSCORE-SHADOW-ADMIN-CONTRACT - LUKKET I PRODUKTION
 

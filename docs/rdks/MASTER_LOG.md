@@ -1,3 +1,13 @@
+## 2026-08-22 – RavRadar 4.0.256: Candidate G-vægtinterval og forklaringskontrakt
+
+- Den godkendte `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT` er afprøvet score-neutralt med `15/50/35`, `20/45/35` og `25/40/35` på 1.460 evalueringer.
+- Yderpunkterne adskiller sig 4,947 point i gennemsnit og 282 referencebånd. `20/45/35` bevares som gennemsigtigt analysecentrum; alle tre priorer består de kanoniske proces- og waders-kontrakter.
+- Candidate G udstiller nu eksakte komponenter/bidrag, pil nu, historik før nu, fysisk gate og synligt waders-loft i en diagnostic-only forklaringskontrakt. Replay gav 1.460/1.460 konsistente forklaringer.
+- Målrettede tests, RDKS, fuld lokal `scripts/validate-source.ps1` og releasegate er grønne for 4.0.256.
+- Materialet er ikke fundkalibreret. Offentlig 25/40/35 og UI er uændret; central scoreinput-/retention-coverage og ejer-go/no-go forbliver aktiveringsgates.
+- Den Git-ignorerede cache blev brugt uden private payloads i Git. Artifact, protected-dirty-data, geometri og land-/vandpunkter blev ikke læst eller ændret.
+- Det foregående dokumentationscheckpoint PR #68 bestod exact-head-gate `32576541706`, blev merged som `8cffdd54` og bestod fuld produktion `32576619969`. Live 4.0.255/datasæt `rr-20260822135100-210` har 210 zoner og 673 dele.
+
 ## 2026-08-22 – 4.0.255 lukker hullet mellem kilde- og fuld shadowkontrakt
 
 - PR #66 bestod exact-head-kildegaten og blev merged som `95e3064d`, men produktion `32575055644` stoppede fail-closed i fuld validering. Den nationale kontrakttest forventede stadig den erstattede gate `candidate-waders-product-decision`; releasegate, Supabase og Pages blev korrekt sprunget over.

@@ -110,10 +110,26 @@ function physicalBottleneckGate(weakestPhysicalStage) {
 }
 
 function scoreWithWeights(candidate, weights) {
-  const additive = candidate.components.huntability * weights.huntability
-    + candidate.components.transportAndDelivery * weights.transportAndDelivery
-    + candidate.components.mobilisation * weights.mobilisation;
-  return Math.round(clamp(additive * candidate.gateFactor));
+  const calculation = candidate.scoreCalculation;
+  const components = calculation.components;
+  const additiveScore = components.huntability * weights.huntability
+    + components.transportAndDelivery * weights.transportAndDelivery
+    + components.mobilisation * weights.mobilisation;
+  const uncoupledScore = Math.round(clamp(additiveScore * calculation.gateFactor));
+  const maximumScore = calculation.modeHuntabilityMaximum;
+  const score = maximumScore === null || maximumScore === undefined
+    ? uncoupledScore
+    : Math.min(uncoupledScore, Number(maximumScore));
+  return {
+    score,
+    uncoupledScore,
+    additiveScore,
+    gateFactor: Number(calculation.gateFactor),
+    maximumScore: maximumScore === null || maximumScore === undefined
+      ? null
+      : Number(maximumScore),
+    capApplied: score < uncoupledScore,
+  };
 }
 
 function eventHistory(event, sampleTime, samples) {
@@ -323,6 +339,67 @@ function aggregate(rows) {
     scoreWeightSensitivity: Object.fromEntries(WEIGHT_PRIORS.map(weights => [weights.id,
       summarizeDifference(rows, row => row.weightSensitivity[weights.id], row => row.active),
     ])),
+    ownerApprovedWeightSensitivity: {
+      variantId: 'G-50-50-NO-DIRECT-WIND-WADERS-LIMIT',
+      referencePrior: 'G-20-45-35',
+      priors: Object.fromEntries(WEIGHT_PRIORS.map(weights => {
+        const waders = rows.filter(row => row.mode === 'waders');
+        const beach = rows.filter(row => row.mode === 'beach');
+        return [weights.id, {
+          weights: {
+            huntability: weights.huntability,
+            transportAndDelivery: weights.transportAndDelivery,
+            mobilisation: weights.mobilisation,
+          },
+          overallVsActive: summarizeScores(
+            rows,
+            row => row.approvedWeightSensitivity[weights.id].score,
+            row => row.active,
+          ),
+          beachVsActive: summarizeScores(
+            beach,
+            row => row.approvedWeightSensitivity[weights.id].score,
+            row => row.active,
+          ),
+          wadersVsActive: summarizeScores(
+            waders,
+            row => row.approvedWeightSensitivity[weights.id].score,
+            row => row.active,
+          ),
+          vsApprovedVariant: summarizeDifference(
+            rows,
+            row => row.approvedWeightSensitivity[weights.id].score,
+            row => row.approvedModeScore,
+          ),
+          wadersCapAppliedCount: waders.filter(row =>
+            row.approvedWeightSensitivity[weights.id].capApplied).length,
+          wadersScoreAboveHuntabilityCount: waders.filter(row =>
+            row.approvedWeightSensitivity[weights.id].score > row.approvedHuntability).length,
+          lowHuntabilityFairOrGoodCount: waders.filter(row =>
+            row.approvedHuntability < 35
+            && row.approvedWeightSensitivity[weights.id].score >= 55).length,
+        }];
+      })),
+      higherHuntabilityPriorMinusLowerHuntabilityPrior: {
+        overall: summarizeDifference(
+          rows,
+          row => row.approvedWeightSensitivity['E-25-40-35'].score,
+          row => row.approvedWeightSensitivity['F-15-50-35'].score,
+        ),
+        beach: summarizeDifference(
+          rows.filter(row => row.mode === 'beach'),
+          row => row.approvedWeightSensitivity['E-25-40-35'].score,
+          row => row.approvedWeightSensitivity['F-15-50-35'].score,
+        ),
+        waders: summarizeDifference(
+          rows.filter(row => row.mode === 'waders'),
+          row => row.approvedWeightSensitivity['E-25-40-35'].score,
+          row => row.approvedWeightSensitivity['F-15-50-35'].score,
+        ),
+      },
+      findOutcomeCalibration: false,
+      automaticActivationAllowed: false,
+    },
     modeCouplingSensitivity: Object.fromEntries(MODE_COUPLING_POLICIES.map(policy => {
       const waders = rows.filter(row => row.mode === 'waders');
       const beach = rows.filter(row => row.mode === 'beach');
@@ -449,6 +526,23 @@ function productContractAudit(rows) {
       || reconstructedFinal !== row.approvedModeScore
       || calculation.roundedScore !== row.approvedModeScore;
   });
+  const explanationInconsistent = rows.filter(row => {
+    const explanation = row.approvedResearchExplanation;
+    const contributionSum = Object.values(explanation.components)
+      .reduce((sum, component) => sum + Number(component.weightedContribution), 0);
+    const expectedScoreMeaning = row.mode === 'waders'
+      ? 'AMBER_OPPORTUNITY_FOR_WADERS_METHOD_LIMITED_BY_CURRENT_HUNTABILITY'
+      : 'AMBER_OPPORTUNITY_FOR_BEACH_SEARCH';
+    return Math.abs(contributionSum - Number(explanation.additiveScore)) > 1e-9
+      || explanation.finalScore !== row.approvedModeScore
+      || explanation.scoreMeaning !== expectedScoreMeaning
+      || explanation.currentArrow.timeMeaning !== 'NOW'
+      || explanation.directionalHistory.meaning !== 'CAUSAL_DIRECTIONAL_CONTEXT_BEFORE_NOW'
+      || explanation.directionalHistory.canCreateTransportFromZeroCapacity !== false
+      || explanation.siteSuitabilityIncluded !== false
+      || explanation.safetyAdviceIncluded !== false
+      || explanation.publicActivationAllowed !== false;
+  });
   return {
     comparisonBaselineVariant: 'G-50-50-NO-DIRECT-WIND',
     ownerApprovedResearchVariant: 'G-50-50-NO-DIRECT-WIND-WADERS-LIMIT',
@@ -463,6 +557,17 @@ function productContractAudit(rows) {
       mismatchCount: approvedInconsistent.length,
       wadersUsesVisibleHuntabilityMaximum: true,
       beachScoreUnchanged: true,
+    },
+    explanationContract: {
+      checkedEvaluationCount: rows.length,
+      mismatchCount: explanationInconsistent.length,
+      componentContributionsUseExactValues: true,
+      currentArrowMeaning: 'CURRENT_LOCAL_CURRENT_VECTOR_AT_SELECTED_CONTEXT_NOW',
+      historyMeaning: 'CAUSAL_DIRECTIONAL_CONTEXT_BEFORE_NOW',
+      wadersLimitIsVisible: true,
+      siteSuitabilityIncluded: false,
+      safetyAdviceIncluded: false,
+      publicActivationAllowed: false,
     },
     wadersMeaning: {
       evaluationCount: waders.length,
@@ -575,7 +680,10 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
             }).score,
           ]));
           const weightSensitivity = Object.fromEntries(WEIGHT_PRIORS.map(weights => [weights.id,
-            scoreWithWeights(primary, weights),
+            scoreWithWeights(primary, weights).score,
+          ]));
+          const approvedWeightSensitivity = Object.fromEntries(WEIGHT_PRIORS.map(weights => [weights.id,
+            scoreWithWeights(approvedModeVariant, weights),
           ]));
           const activePublicRules = publicRules.filter(rule => rule.status === 'active');
           const publicRuleResult = evaluateRules({
@@ -597,11 +705,13 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
             approvedModeScore: approvedModeVariant.score,
             approvedHuntability: approvedModeVariant.components.huntability,
             approvedScoreCalculation: approvedModeVariant.scoreCalculation,
+            approvedResearchExplanation: approvedModeVariant.researchExplanation,
             windStress: windStress.score,
             ablations,
             gainSensitivity,
             mixSensitivity,
             weightSensitivity,
+            approvedWeightSensitivity,
             modeCoupling: Object.fromEntries(MODE_COUPLING_POLICIES.map(policy => [
               policy.id,
               evaluateModeHuntabilityCoupling(noDirectWind, mode, policy.id).score,
@@ -784,6 +894,13 @@ function main() {
     assert.equal(report.aggregate.ownerApprovedModeVariant.beachChangedCount, 0);
     assert.equal(report.aggregate.ownerApprovedModeVariant.wadersScoreAboveHuntabilityCount, 0);
     assert.equal(report.aggregate.productContractAudit.ownerApprovedVariantConsistency.mismatchCount, 0);
+    assert.equal(report.aggregate.productContractAudit.explanationContract.mismatchCount, 0);
+    assert.equal(report.aggregate.ownerApprovedWeightSensitivity
+      .priors['G-20-45-35'].vsApprovedVariant.meanAbsoluteDelta, 0);
+    for (const prior of Object.values(report.aggregate.ownerApprovedWeightSensitivity.priors)) {
+      assert.equal(prior.wadersScoreAboveHuntabilityCount, 0);
+      assert.equal(prior.lowHuntabilityFairOrGoodCount, 0);
+    }
     for (const policy of MODE_COUPLING_POLICIES) {
       assert.equal(report.aggregate.modeCouplingSensitivity[policy.id]
         .beachVsPreferredCandidateG.meanAbsoluteDelta, 0);

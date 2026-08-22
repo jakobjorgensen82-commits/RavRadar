@@ -84,6 +84,81 @@ function physicalBottleneckGate(weakestPhysicalStage) {
   return 0.85 + 0.15 * clamp(weakestPhysicalStage / 35, 0, 1);
 }
 
+function directionalHistoryEffect(signal) {
+  if (signal > 0) return 'SUPPORTS_EXISTING_TRANSPORT_PATH';
+  if (signal < 0) return 'LIMITS_EXISTING_TRANSPORT_PATH';
+  return 'NEUTRAL_FOR_EXISTING_TRANSPORT_PATH';
+}
+
+function buildResearchExplanation({
+  mode,
+  components,
+  weightedContributions,
+  additiveScore,
+  gateFactor,
+  directionalHistorySignal,
+  historyFactor,
+  uncoupledScore,
+  finalScore,
+  modeHuntabilityPolicy,
+  modeHuntabilityMaximum,
+}) {
+  return {
+    contractVersion: '1.0.0',
+    scoreMeaning: mode === 'waders'
+      ? 'AMBER_OPPORTUNITY_FOR_WADERS_METHOD_LIMITED_BY_CURRENT_HUNTABILITY'
+      : 'AMBER_OPPORTUNITY_FOR_BEACH_SEARCH',
+    componentOrder: ['transportAndDelivery', 'mobilisation', 'huntability'],
+    components: {
+      transportAndDelivery: {
+        value: components.transportAndDelivery,
+        weight: CANDIDATE_G_WEIGHTS.transportAndDelivery,
+        weightedContribution: weightedContributions.transportAndDelivery,
+        meaning: 'PHYSICAL_TRANSPORT_DELIVERY_AND_RETENTION_PATH',
+      },
+      mobilisation: {
+        value: components.mobilisation,
+        weight: CANDIDATE_G_WEIGHTS.mobilisation,
+        weightedContribution: weightedContributions.mobilisation,
+        meaning: 'RECENT_MOBILISATION_AND_AVAILABILITY',
+      },
+      huntability: {
+        value: components.huntability,
+        weight: CANDIDATE_G_WEIGHTS.huntability,
+        weightedContribution: weightedContributions.huntability,
+        meaning: 'CURRENT_SEARCH_EFFECTIVENESS_FOR_SELECTED_MODE',
+      },
+    },
+    additiveScore,
+    currentArrow: {
+      meaning: 'CURRENT_LOCAL_CURRENT_VECTOR_AT_SELECTED_CONTEXT',
+      timeMeaning: 'NOW',
+    },
+    directionalHistory: {
+      meaning: 'CAUSAL_DIRECTIONAL_CONTEXT_BEFORE_NOW',
+      effect: directionalHistoryEffect(directionalHistorySignal),
+      signal: directionalHistorySignal,
+      factor: historyFactor,
+      canCreateTransportFromZeroCapacity: false,
+    },
+    physicalBottleneck: {
+      meaning: 'MILD_TRANSPORT_MOBILISATION_BOTTLENECK',
+      factor: gateFactor,
+      applied: gateFactor < 1,
+    },
+    modeHuntability: {
+      policy: modeHuntabilityPolicy,
+      maximum: modeHuntabilityMaximum,
+      applied: finalScore < uncoupledScore,
+    },
+    uncoupledScore,
+    finalScore,
+    siteSuitabilityIncluded: false,
+    safetyAdviceIncluded: false,
+    publicActivationAllowed: false,
+  };
+}
+
 /**
  * Score-neutral Candidate G research evaluator.
  *
@@ -177,6 +252,19 @@ export function evaluateRavScoreCandidateG(
     modeHuntabilityMaximum: wadersHuntabilityMaximum,
     roundedScore: candidateG,
   };
+  const researchExplanation = buildResearchExplanation({
+    mode: context.mode || 'beach',
+    components: scoreCalculation.components,
+    weightedContributions: scoreCalculation.weightedContributions,
+    additiveScore,
+    gateFactor,
+    directionalHistorySignal,
+    historyFactor,
+    uncoupledScore: uncoupledCandidateG,
+    finalScore: candidateG,
+    modeHuntabilityPolicy: scoreCalculation.modeHuntabilityPolicy,
+    modeHuntabilityMaximum: wadersHuntabilityMaximum,
+  });
   const limitations = new Set(base.confidence?.limitations || []);
   limitations.add('directional-history-is-research-prior');
   limitations.add('history-gain-is-uncalibrated');
@@ -205,6 +293,7 @@ export function evaluateRavScoreCandidateG(
     },
     additiveScore: Number(additiveScore.toFixed(3)),
     scoreCalculation,
+    researchExplanation,
     weakestStage: Number(weakestPhysicalStage.toFixed(3)),
     weakestPhysicalStage: Number(weakestPhysicalStage.toFixed(3)),
     gateFactor: Number(gateFactor.toFixed(3)),

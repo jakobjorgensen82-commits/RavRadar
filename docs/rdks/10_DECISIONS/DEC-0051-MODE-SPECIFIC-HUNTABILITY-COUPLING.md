@@ -35,6 +35,14 @@ Den aktive offentlige vægtning forbliver 25/40/35. Candidate G's 20/45/35 forbl
 
 De endelige vægte kan ikke afgøres før komponenternes indhold og den jagtformsafhængige kobling er fastlagt. Derefter kan en fagligt begrundet produktionsprior vælges. Endelig empirisk kalibrering kræver senere repræsentative komplette ture med både fund og reelle nul-fund.
 
+Den efterfølgende vægtfølsomhed holder hele Candidate G-processen og waders-loftet fast og sammenligner `15/50/35`, `20/45/35` og `25/40/35` på de samme 1.460 evalueringer. Yderpunkterne adskiller sig 4,947 point i gennemsnit og skifter referencebånd i 282 evalueringer. `20/45/35` ligger praktisk midt mellem dem og bevares derfor som fagligt analysecentrum. Alle tre priorer består de kanoniske proceskontrakter, så resultatet er ikke empirisk evidens for en endelig vægt.
+
+## Forklaringskontrakt
+
+Candidate G's diagnostic-only resultat angiver nu eksakte komponenter, vægte, bidrag, additiv score, fysisk gate, score før jagtformsregel og endelig score. Pilen betyder aktuel lokal strøm **nu**. Retningshistorikken betyder det kausale forløb **før nu** og kan ikke skabe transport ved nul fysisk kapacitet. Waders-forklaringen viser synligt, når jagtbarheden begrænser slutscoren; strand har ikke dette loft.
+
+Kontrakten rekonstruerede korrekt i 1.460 af 1.460 replayevalueringer. Den indeholder ingen grundegnetheds- eller sikkerhedsmodel og kan ikke aktivere offentlig runtime. Se `docs/research/RAVSCORE_CANDIDATE_G_WEIGHT_AND_EXPLANATION_DECISION_2026-08-22.md`.
+
 ## Bevarede kontrakter
 
 - Offentlig RavScore, UI, forklaring og scorebånd er uændrede.
@@ -46,6 +54,7 @@ De endelige vægte kan ikke afgøres før komponenternes indhold og den jagtform
 ## Evidens
 
 - `docs/research/RAVSCORE_MODE_SPECIFIC_HUNTABILITY_ANALYSIS_2026-08-22.md`
+- `docs/research/RAVSCORE_CANDIDATE_G_WEIGHT_AND_EXPLANATION_DECISION_2026-08-22.md`
 - `js/core/ravscore-mode-huntability-research.js`
 - `js/core/phase-d-process-candidate.js`
 - `js/core/ravscore-candidate-g.js`

@@ -1,5 +1,14 @@
 # RavRadar - aktuelt Codex-handoff
 
+## Checkpoint 2026-08-22 - Candidate G-vægt og forklaring
+
+- Aktiv branch er `codex/ravscore-candidate-g-weight-decision` fra `main`/merge `8cffdd54`.
+- PR #68's dokumentationscheckpoint er afsluttet: exact-head-gate `32576541706`, merge `8cffdd54`, fuld produktion `32576619969` og live 4.0.255/datasæt `rr-20260822135100-210` med 210 zoner og 673 dele er grønne.
+- Den ejer-godkendte waders-variant er genafspillet med `15/50/35`, `20/45/35` og `25/40/35`. Yderpunkterne adskiller sig 4,947 point og 282 referencebånd; `20/45/35` bevares som Candidate G's analysecentrum.
+- Den nye diagnostic-only forklaringskontrakt binder eksakte komponenter og bidrag sammen med pil nu, historik før nu, fysisk gate og synligt waders-loft. Lokal replay gav nul afvigelser i 1.460 evalueringer.
+- Målrettede self-tests, fuld lokal `scripts/validate-source.ps1` og releasegate er grønne for 4.0.256. Næste trin er PR/exact-head, merge-/produktionskontrol og derefter en frisk central Candidate G-shadow til måling af scoreinputcoverage.
+- Offentlig 25/40/35, UI, DMI/fallback, central admin, geometri og land-/vandpunkter er uændrede. Artifact, protected-dirty-data og private cachepayloads må ikke stages eller eksponeres.
+
 ## Checkpoint 2026-08-22 - 4.0.255 reparerer national shadowkontrakt
 
 - PR #66 bestod exact-head-kildegaten `32575000140`, blev merged som `95e3064d` og udløste produktion `32575055644`.

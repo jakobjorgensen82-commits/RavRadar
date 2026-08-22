@@ -1,4 +1,23 @@
-# Implementeringsstatus – 4.0.255 national waders-kontraktgate
+# Implementeringsstatus – 4.0.256 Candidate G-vægt og forklaring
+
+## 4.0.256-kandidat – score-neutralt beslutningsgrundlag
+
+- [x] Genafspil `15/50/35`, `20/45/35` og `25/40/35` på den godkendte waders-variant med eksakte komponenter og uændret fysisk gate.
+- [x] Dokumentér yderpunktsforskellen: 4,947 point i gennemsnit og 282 referencebånd på 1.460 evalueringer.
+- [x] Bevar `20/45/35` som gennemsigtigt analysecentrum; offentlig 25/40/35 forbliver uændret.
+- [x] Verificér alle tre priorer på de kanoniske retnings-, kapacitets-, symmetri- og waders-kontrakter.
+- [x] Tilføj diagnostic-only forklaringskontrakt for eksakte komponenter, bidrag, pil nu, historik før nu, fysisk gate og synligt waders-loft.
+- [x] Genafspil 1.460 forklaringer med nul kontraktafvigelser og uden private payloads i Git.
+- [x] Kør målrettede tests samt fuld lokal `validate:source` og releasegate for 4.0.256.
+- [ ] Kør exact-head PR-gate og præcis merge-/produktionskontrol.
+- [ ] Genkør den centralt hydrerede nationale Candidate G-shadow på den eksakte mergecommit og mål den aktuelle scoreinputcoverage; lokale retention-features må ikke opfindes fra parentzoner.
+- [ ] Indhent ejerens samlede go/no-go før enhver offentlig score- eller UI-aktivering.
+
+## Afsluttet dokumentationscheckpoint efter 4.0.255
+
+- [x] PR #68 exact-head-gate `32576541706`, merge `8cffdd54` og fuld produktion `32576619969`.
+- [x] Live 4.0.255/datasæt `rr-20260822135100-210`: 210 zoner, 673 dele, komplet `controlled-live`-manifest og matchende conditions-datasæt.
+- [x] Ingen offentlig score-, UI-, data-, geometri- eller punktændring.
 
 ## 4.0.255-kandidat – reparationsstatus efter PR #66
 
