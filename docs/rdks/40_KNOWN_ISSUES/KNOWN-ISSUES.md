@@ -1,5 +1,9 @@
 # Kendte åbne og overvågede forhold
 
+## Dokumentationsmerge udløser unødvendig fuld produktion via rodhåndbogen
+
+- **ISSUE-ROOT-HANDBOOK-DOCS-SKIP – ÅBEN, IKKE SCOREBLOKERENDE:** Den rent dokumentariske PR #102 ændrede blandt andet `HANDBOOK-RAVRADAR.md`. Workflowets `paths-ignore` dækker `docs/**`, changelog og release-rapporter, men ikke rodhåndbogen; merge `0da5b31d` startede derfor unødvendigt fuld produktion `32646026290`. Kørselen var grøn, og live `rr-20260823144117-210` bevarede 4.0.263, Candidate G aktiv, 210/673, komplet coverage og `CURRENT_COMMON_ZONE_REFERENCE`. En senere særskilt workflowrettelse skal tilføje den eksakte rodhåndbog til dokumentationsskip og bevise både en normal kodeproduktion og en ren docs-merge uden push-produktion. Der er ingen score-, data- eller runtimefejl.
+
 ## P0 – Candidate G-profilgate ved senere prognosehuller
 
 - **ISSUE-CANDIDATE-G-CURRENT-REFERENCE-GATE – PRODUKTIONSVERIFICERET LØST:** 4.0.262 beregnede transport korrekt, men `candidateWarmupEligible` blev bedømt over alle femdøgnsrækker. Et senere prognosehul kunne derfor rulle en sund aktuel `WINDOW_INCOMPLETE`-reference tilbage til legacy. DEC-0062/4.0.263 bedømmer memory og warmup ved den nærmeste fælles aktuelle scoretid i hver zone. Komplet scorecoverage for hele forecastet og global fail-closed ved fejl i den faktisk valgte aktuelle reference bevares. PR #101/exact-head `32644701811`, merge `9f5953f6`, produktion `32644772373`, live `rr-20260823142247-210`, aktiv shadow `32645569741` og fuld browserkontrol er grønne på 210/673/420/2.100 uden fejl.
