@@ -45,7 +45,7 @@ Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre for
 - [x] Før mobiliseringscheckpointet gennem exact-head `32607989444`, PR #87/merge `48240d73` og fuld post-merge-produktion `32608050112` uden offentlig scoreændring; 210/673, fuld validering, releasegate, Supabase, artifact og Pages er grønne.
 - [x] Implementér den score-neutrale 4.0.259-pakke: begge kompakte tilstande centralt, Candidate G som adskilt diagnostisk runtime, fallback-kompatibel 210/673-shadow og deterministisk rollback til fortsat aktiv `25/40/35`.
 - [x] Bestå den samlede lokale kildegate og releasegate for 4.0.259.
-- [ ] Før 4.0.259 gennem exact-head, merge og fuld post-merge-produktion; kør derefter den nye shadow på den producerede runtime.
+- [x] Før 4.0.259 gennem exact-head `32609888406`, PR #89/merge `31e50acb`, fuld post-merge-produktion `32609952992` og read-only shadow `32610281620` på den producerede runtime. Live `rr-20260823011924-210` består 210/673/1.346 uden score-rekonstruktionsfejl; alle 673 tilstande er dokumenteret bootstrap.
 - [ ] Lad den centrale tilstand opbygge dokumenteret naturlig alder. Første bootstrap fra 0 må ikke præsenteres som en modnet 48-timersfordeling.
 - [ ] Byg derefter den særskilte aktive score-omskifter og brugerforklaring med testet tilbagekobling til `25/40/35`; selve aktiveringen sker først på en grøn, modnet slutshadow uden modstridende evidens.
 - [ ] Offentlig aktivering må først gennemføres, når den samlede pakke er grøn og ingen konkret modstridende evidens består; manglende turkalibrering skal fortsat fremgå ærligt som modelusikkerhed.
@@ -60,7 +60,7 @@ Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre for
 - [x] Genkør replay og kanoniske/nationale kontrakter med den nye variant; strand er uændret og waders-score overstiger aldrig jagtbarheden.
 - [x] Før 4.0.258-checkpointet gennem exact-head-gate `32586707063`, PR #73, merge `9bdb8de8` og fuld produktion `32586958989`; live er 4.0.258/`rr-20260822171406-210` med 210 zoner og 673 dele.
 - [x] Den faglige ejerretning er valgt gennem DEC-0054–0056. Manglende repræsentative ture/hold-out bevares som modelusikkerhed og senere efterkalibrering, ikke som en umulig før-aktiveringsgate.
-- [x] Den score-neutrale offentlige diagnostic-runtime og fallback-kompatible shadow er implementeret i 4.0.259-kandidaten. Exact-head, produktion, modning og senere aktiv omskifter udestår; indtil da forbliver offentlig `25/40/35` uændret.
+- [x] Den score-neutrale offentlige diagnostic-runtime og fallback-kompatible shadow er leveret og produktionsverificeret i 4.0.259. Naturlig modning og en senere særskilt aktiv omskifter udestår; indtil da forbliver offentlig `25/40/35` uændret.
 
 ## P0 - luk den aktuelle kandidat
 

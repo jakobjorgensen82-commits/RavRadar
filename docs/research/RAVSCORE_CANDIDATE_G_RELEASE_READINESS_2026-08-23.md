@@ -6,7 +6,7 @@ Den strømstyrede Candidate G består den mekaniske grænsekontrol score-neutral
 
 Den oprindelige revision blev ført gennem exact-head `32602287607`, PR #82/merge `189644a0` og fuld post-merge-produktion `32602328912`. Den efterfølgende `RESEARCH-2`-udtransportgate bestod exact-head `32604792201` på `f6458f09`, PR #84/merge `800a93cb` og fuld produktion `32604850884`. Live `rr-20260822232159-210` er komplet med 210 zoner og 673 kystdele og ændrer ikke den offentlige scoremodel.
 
-4.0.259-kandidaten fører nu både transport- og mobiliseringstilstanden gennem den centrale pipeline efter DEC-0057 og lægger Candidate G i et særskilt offentligt diagnostic-only-navnerum. Den aktive score er fortsat urørt. Dette er implementeret lokalt, men exact-head, post-merge-produktion, naturlig state-alder og den nye fallback-kompatible slutshadow er endnu ikke leverancebevist i dette dokument.
+4.0.259 fører nu både transport- og mobiliseringstilstanden gennem den centrale pipeline efter DEC-0057 og lægger Candidate G i et særskilt offentligt diagnostic-only-navnerum. Exact-head `32609888406`, PR #89/merge `31e50acb`, fuld produktion `32609952992` og read-only shadow `32610281620` er grønne. Live `rr-20260823011924-210` består 210/673 og 1.346 modeevalueringer uden rekonstruktionsfejl. Den aktive score er fortsat urørt. Alle 673 tilstande er første bootstrap; naturlig state-alder og en senere modnet slutshadow er endnu ikke leverancebevist.
 
 Den efterfølgende ejerbeslutning lukker samtidig den sidste tvetydighed i 13-timersbetydningen:
 

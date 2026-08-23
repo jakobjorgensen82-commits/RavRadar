@@ -1,6 +1,6 @@
 # Current truth – gældende projektviden
 
-## 4.0.259-kandidat – central Candidate G-tilstand uden aktiv scoreændring
+## 4.0.259 – central Candidate G-tilstand produktionsverificeret uden aktiv scoreændring
 
 - DEC-0057 kobler DEC-0055's transport og DEC-0056's mobilisering til den centrale kystdelspipeline. Candidate G beregnes ved samme fælles lokale referencetime som den aktive score, men ligger i et særskilt `diagnostic-only`-navnerum.
 - Den kompakte fortsættelsestilstand indeholder kun model-/profilversion, en konteksthash, tidspunkt, transportpotentiale, effektive udtransporttimer og mobiliseringspotentiale. Rå U/V, vejrinput, koordinater og private replaydata indgår ikke.
@@ -8,7 +8,9 @@
 - Kun tilstanden ved `currentReferenceAt` føres videre. Fremtidige prognosetimer bliver ikke gjort til historisk sandhed i næste kørsel.
 - Den aktive `25/40/35`-score, farve, zonevinder og UI læser ikke Candidate G-navnerummet. `automaticActivationAllowed=false` og `publicScoreChanged=false` er låst i runtime og test.
 - Den manuelle shadow er omlagt fra en ny native-only DMI-prøve til den faktisk producerede fallback-kompatible detaljefil. Den kræver 210 zoner, 673 dele og 1.346 modeevalueringer og skriver kun en dataminimeret aggregatrapport.
-- Første produktion er bootstrap fra 0 og må ikke kaldes en modnet 48-timersfordeling. Endelig aktiveringsshadow kræver naturligt videreført tilstand, exact-head, fuld produktion og dokumenteret state-alder.
+- Exact-head `32609888406`, PR #89/merge `31e50acb` og fuld produktion `32609952992` er grønne. Live `rr-20260823011924-210` er version 4.0.259 med 210 zoner og 673 kystdele.
+- Frisk read-only shadow `32610281620` består 210/673, 1.346 modeevalueringer og nul score-rekonstruktionsfejl. Den viser 0 accepterede og 673 nulstillede tilstande, præcis som forventet ved første bootstrap.
+- Første produktion er derfor dokumenteret bootstrap fra 0 og må ikke kaldes en modnet 48-timersfordeling. Endelig aktiveringsshadow kræver naturligt videreført tilstand og dokumenteret state-alder.
 - 4.0.259 ændrer ingen geometri, land-/vandpunkter, bundmodel, beskyttede data eller sikkerhedsbetydning.
 
 ## Candidate G – én bølgeenergistyret mobiliseringstilstand

@@ -1,14 +1,16 @@
 # RavRadar - aktuelt Codex-handoff
 
-## Checkpoint 2026-08-23 – 4.0.259 central Candidate G-kandidat
+## Checkpoint 2026-08-23 – 4.0.259 central Candidate G produktionsverificeret
 
-- Branch `codex/candidate-g-central-state-pipeline` forbereder 4.0.259. Aktiv offentlig RavScore er fortsat `25/40/35`; Candidate G er kun et adskilt diagnostisk runtimefelt.
+- PR #89 bestod exact-head `32609888406` på `337466b5` og blev merged som `31e50acb`. Aktiv offentlig RavScore er fortsat `25/40/35`; Candidate G er kun et adskilt diagnostisk runtimefelt.
 - DEC-0057 binder den centrale tilstand til model, profil, kystdel, vandpunkt og kystretning via hash. Kun tidspunkt, transportpotentiale, effektive udtransporttimer og mobiliseringspotentiale persistéres; rå U/V, vejrinput, koordinater og private payloads indgår ikke.
 - Tilstanden vælges ved zonens fælles `currentReferenceAt`. Same-time-rekørsel og missing holder tilstanden, og ændret kontekst nulstiller fail-closed.
 - Den manuelle shadow er ændret fra ny native-only DMI-hentning til read-only audit af den faktiske fallback-kompatible public detaljefil. Self-test kræver 210 zoner, 673 dele, 1.346 modeevalueringer og nul score-rekonstruktionsafvigelser.
 - Rollback er score-neutral: aktiv scorekode ignorerer Candidate G-navnerummet. En senere aktivering kræver en særskilt omskifter og testet tilbagekobling til `25/40/35`.
-- Første produktion er bootstrap fra 0 og må ikke beskrives som modnet 48-timershistorik. Efter lokal gate, exact-head, merge og fuld produktion skal en frisk manual shadow køres, mens naturlig state-alder dokumenteres.
-- Samlet lokal `scripts/validate-source.ps1`, inklusive alle nye Candidate G-/workflowtests og releasegaten, er grøn for 4.0.259.
+- Fuld produktion `32609952992` bestod central adminhydrering, frisk kontrolleret data, fuld validering, releasegate, Supabase, artifact og Pages. Live 4.0.259/datasæt `rr-20260823011924-210` har 210 zoner og 673 kystdele.
+- Read-only shadow `32610281620` bestod 210/673 og 1.346 modeevalueringer med nul score-rekonstruktionsfejl. Det dataminimerede artifact er `9485298931`.
+- Alle 673 tilstande er korrekt første bootstrap fra 0. De må ikke beskrives som modnet 48-timershistorik; næste aktive opgave er naturlig state-alder, ikke ny model eller offentlig aktivering.
+- Samlet lokal `scripts/validate-source.ps1`, exact-head, post-data releasegate, deploy og frisk offentlig shadow er grønne for 4.0.259.
 - Geometri, land-/vandpunkter, artifact, protected-dirty-data og den private cache er urørte.
 
 ## Checkpoint 2026-08-23 – Candidate G mobilisering leveret

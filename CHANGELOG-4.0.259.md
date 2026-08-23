@@ -34,4 +34,6 @@
 - De nye tests låser opdelt/ubrudt tilstandsidentitet, same-time-hold, missing-hold, kontekstreset, dataminimering, offentlig projektion og syntetisk 210/673-shadow.
 - RDKS, versionskonsistens, modelversioner, browsermodullukning og workflowkontrakter er kontrolleret for 4.0.259.
 - Den samlede lokale `scripts/validate-source.ps1`, inklusive releasegaten, er grøn.
-- Exact-head GitHub-kildegate, fuld post-merge-produktion og frisk manuel public shadow skal fortsat verificeres som ekstern leveranceevidens.
+- Exact-head `32609888406` bestod på `337466b5`; PR #89 blev merged som `31e50acb`.
+- Fuld produktion `32609952992` deployede 4.0.259/`rr-20260823011924-210` efter central hydrering, frisk data/proveniens, fuld validering, releasegate, Supabase og artifact.
+- Frisk read-only shadow `32610281620` bestod 210 zoner, 673 dele og 1.346 modeevalueringer uden rekonstruktionsfejl. Alle 673 tilstande er dokumenteret første bootstrap, ikke modnet historik.
