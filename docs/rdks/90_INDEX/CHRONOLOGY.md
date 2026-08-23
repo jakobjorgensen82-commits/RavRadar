@@ -1,11 +1,20 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-23 – startværdien erstattet af afgrænset evidens
+
+1. Ejeren afviste, at Candidate G skulle kunne være permanent skæv på grund af den værdi, modellen startede med på en bestemt computer eller produktionskørsel.
+2. Neutral startprior 50 blev derfor forkastet. DEC-0059 vælger i stedet et fast, rullende 48-timers vindue, som genafspilles fra samme eksplicitte rand for alle kystdele.
+3. Randen 0 betyder “ingen dokumenteret indtransport før vinduet”, ikke udtransport. Kun dokumenteret strøm kan bygge eller nedbryde transporten og udløse 13-timersgaten.
+4. Missing og tidsgab behandles ikke som roligt vejr. Candidate G forbliver fail-closed på legacy, indtil hele vinduet igen er sammenhængende.
+5. Historisk genafspilning giver nul forskel mellem tænkte starter 0, 50 og 100 for alle 582 komplette vinduer. Ejeren kræver derfor ikke en ny 48-timers realtidsudviklingstest.
+6. Candidate G er ikke aktiveret. Offentlig `25/40/35`, geometri, land-/vandpunkter og beskyttede data er uændrede.
+
 ## 2026-08-23 – start-0-skævhed fundet efter produktionsshadow
 
 1. Den grønne live-shadow viste 493/673 transporttilstande på 0, men ingen udløst 13-timers udtransportgate.
 2. RavRadars eksisterende offentlige historik blev genafspillet uden nye kildedata: 42.551 poster, 633 dækkede dele og 65–117 timers tidsdybde.
 3. Start 0 gav fortsat median 0. Kun 6/633 dele blev uafhængige af start 0 kontra 100, og 607/633 bevarede mindst 50 points forskel.
-4. Historikken kan dermed ikke vælge startreserven under den allerede valgte regel uden passivt neutralt tab. Neutral prior 50 anbefales til ejerreview, men er ikke implementeret eller aktiveret.
+4. Historikken kunne dermed ikke vælge startreserven under den daværende ubundne regel uden passivt neutralt tab. Den efterfølgende anbefaling om neutral prior 50 er erstattet af DEC-0059's faste 48-timers evidensvindue.
 
 ## 2026-08-23 – 4.0.260 produktionsverificeret uden Candidate G-aktivering
 

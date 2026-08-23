@@ -1,5 +1,15 @@
 # RavRadar - aktuelt Codex-handoff
 
+## Checkpoint 2026-08-23 – Candidate G bounded transport-memory efter ejerbeslutning
+
+- Ejeren har erstattet både den varige start 0 og anbefalingen om neutral startprior 50 med DEC-0059's faste 48-timers evidensvindue. Der skal ikke køres eller afventes endnu en 48-timers realtidsudviklingstest.
+- Branch `codex/candidate-g-bounded-transport-memory` ændrer kun den inaktive Candidate G-state og dens tests/dokumentation. Offentlig `25/40/35`, profile switch, geodataversion 4.0.260, geometri og land-/vandpunkter er uændrede.
+- State schema er `2.0.0`; profilen er `current-0.03-0.15-in10-out8-exhaust13-window48-boundary0-wave-build4-decay48`. Højst 49 afledte `time`/`strength`-beviser persistéres. Rå U/V, fart, retning, koordinater, del-id'er og private payloads er forbudt.
+- Et komplet vindue genafspilles fra rand 0, som betyder ingen dokumenteret indtransport før vinduet og aldrig dokumenteret udtransport. Persistéret transportoutput ignoreres som startinput. Missing/tidsgab holder `transportMemoryReady=false`, så hele omskifteren forbliver på legacy.
+- Målrettede tests er grønne for 47/48 timer, startuafhængighed 0/50/100, 0,15-loftet, 12/13-timers udtransport, kort modstrøm, genopbygning, same-time, split/ubrudt, changed-context, missing og datasikker state.
+- Read-only audit af 42.551 offentlige supplementposter fandt 582 eksakte, ubrudte 48-timersvinduer og nul startmismatch. Filens øvrige 91 dele må ikke kaldes almindelige vejrholes; supplementet omfatter kun 633 af 673 og har desuden tidsmæssige huller.
+- RDKS, håndbog, målrettede kontroller og samlet lokal `scripts/validate-source.ps1` inklusive releasegate er grønne. Næste trin er exact-head PR, sikker merge og første fulde legacy-aktive produktion. Efter kontraktskiftet opbygges den nye state naturligt i højst 48 timer; den periode er ikke en blokering for mekanisk accept, men Candidate G må ikke aktiveres på en ufuldstændig state.
+
 ## Checkpoint 2026-08-23 – 4.0.260 produktionsverificeret score-neutral omskifter
 
 - PR #92 bestod exact-head `32628441062` på `eabf7e8b` og blev merged som `c5898ce8`. Produktion `32628516066` bestod hele kæden og udgav `rr-20260823083627-210`.
@@ -9,7 +19,7 @@
 - Standard, aktiv og rollback er fortsat `RRS-CURRENT-B0-4.0.247` med 25/40/35. Candidate G er ikke aktiveret, `publicScoreChanged=false`, og automatisk aktivering er falsk.
 - Candidate G-shadowens gennemsnit er waders 19,187 og strand 21,276 mod aktiv 35,770/43,655; 1.127 af 1.346 evalueringer skifter scorebånd. Gennemsnitlig transport er 4,242 og mobilisering 13,747 i den unge tilstand. Næste opgave er ejerreview af betydningen, ikke aktivering.
 - Rodårsagen er nu afgrænset: 493/673 transporttilstande er 0, men ingen udtransportgate er aktiv. Eksisterende offentlig historie har 42.551 poster, dækker 633 dele i 65–117 timer og giver ved start 0 stadig transportmedian 0.
-- Startreserven kan ikke udledes af historikken under den valgte regel uden neutralt tab. Kun 6/633 dele er uafhængige af start 0 kontra 100; 607/633 bevarer mindst 50 points forskel. Teknisk anbefaling til næste ejerreview er neutral prior 50, versionsbundet og tydeligt adskilt fra faktisk udtransport 0.
+- Startreserven kunne ikke udledes under den daværende ubundne regel. Den historiske anbefaling om neutral prior 50 er nu erstattet af DEC-0059's faste, afgrænsede evidensvindue.
 - En fremtidig aktivering kræver central admin-roundtrip, ny versionsbundet aktiveringsændring, frisk grøn aktiveringsshadow og særskilt ejerbeslutning.
 - Ingen artifact- eller protected-dirty-datafiler er lagt i Git. Privat cache, geometri og land-/vandpunkter er urørte; kun de to godkendte geodataversionsfelter blev ændret.
 
@@ -24,7 +34,7 @@
 ## Checkpoint 2026-08-23 – 4.0.259 central Candidate G produktionsverificeret
 
 - PR #89 bestod exact-head `32609888406` på `337466b5` og blev merged som `31e50acb`. Aktiv offentlig RavScore er fortsat `25/40/35`; Candidate G er kun et adskilt diagnostisk runtimefelt.
-- DEC-0057 binder den centrale tilstand til model, profil, kystdel, vandpunkt og kystretning via hash. Kun tidspunkt, transportpotentiale, effektive udtransporttimer og mobiliseringspotentiale persistéres; rå U/V, vejrinput, koordinater og private payloads indgår ikke.
+- DEC-0057 binder den centrale tilstand til model, profil, kystdel, vandpunkt og kystretning via hash. DEC-0059's schema 2 persistérer kun tidspunkt og afledt kystnormal strømstyrke i transportvinduet samt mobiliseringspotentialet; rå U/V, øvrige vejrinput, koordinater og private payloads indgår ikke.
 - Tilstanden vælges ved zonens fælles `currentReferenceAt`. Same-time-rekørsel og missing holder tilstanden, og ændret kontekst nulstiller fail-closed.
 - Den manuelle shadow er ændret fra ny native-only DMI-hentning til read-only audit af den faktiske fallback-kompatible public detaljefil. Self-test kræver 210 zoner, 673 dele, 1.346 modeevalueringer og nul score-rekonstruktionsafvigelser.
 - Rollback er score-neutral: aktiv scorekode ignorerer Candidate G-navnerummet. En senere aktivering kræver en særskilt omskifter og testet tilbagekobling til `25/40/35`.

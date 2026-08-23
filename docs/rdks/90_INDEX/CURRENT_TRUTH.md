@@ -1,5 +1,15 @@
 # Current truth – gældende projektviden
 
+## Efter 4.0.260 – Candidate G har afgrænset 48-timers transporthukommelse
+
+- DEC-0059 erstatter den ubundne videreførelse af transportpotentialet og den efterfølgende anbefaling om startprior 50. Candidate G genafspiller nu de seneste 48 timers sammenhængende, verificerede kystnormale strømbevis fra samme faste rand 0.
+- Rand 0 betyder ingen dokumenteret indtransport før vinduets begyndelse. Det er ikke dokumenteret fralandsstrøm og udløser ikke totalscoregaten. Persistéret transportpotentiale og persistérede udtransporttimer er output, ikke skjult startinput til næste komplette vindue.
+- State schema `2.0.0` og profilen `current-0.03-0.15-in10-out8-exhaust13-window48-boundary0-wave-build4-decay48` gemmer højst 49 afledte timebeviser som styrke -1..1 eller eksplicit missing. Rå U/V, fart, retning, koordinater, geometri, del-id'er og private payloads indgår ikke.
+- Missing eller tidsgab behandles ikke som neutral strøm. Et komplet aktiveringsklart vindue kræver 48 sammenhængende timer ved den aktuelle reference; ellers er `transportMemoryReady=false`, og DEC-0058's globale omskifter bliver fail-closed på legacy.
+- Syntetiske tests beviser 47/48-timersgrænsen, startuafhængighed 0/50/100, 0,15 m/s-loftet, 12/13-timers udtransport, kort modstrøm, fornyet indtransport, same-time, split/ubrudt og raw-input-forbud. Ingen 48-timers realtidsventetest kræves eller udføres.
+- Read-only replay af 42.551 offentlige supplementposter fandt 582 dele med et ubrudt eksakt 48-timersvindue; alle 582 gav nul mismatch mellem tænkte eksterne starter 0/50/100. De øvrige 91 er ikke almindelige RavRadar-vejrholes: supplementfilen omfatter kun 633 dele og indeholder desuden tidsmæssige huller.
+- Den nye state opbygges naturligt i højst 48 timer efter kontraktskiftet. Foreløbige Candidate G-resultater må bruges diagnostisk, men ikke som slutshadow eller aktiveringsbevis. Offentlig `25/40/35`, mobiliseringens 4/48-profil, geodata, geometri og land-/vandpunkter er uændrede.
+
 ## 4.0.260 – produktionsverificeret score-neutral omskifter, fortsat offentlig 25/40/35
 
 - DEC-0058 indfører `RAVSCORE-PROFILE-SWITCH-4.0.260`. Ønsket, aktiv og rollbackprofil er fortsat `RRS-CURRENT-B0-4.0.247`; versionen ændrer derfor ingen offentlig score, farve, zonevinder eller bedste tidspunkt.
@@ -12,14 +22,14 @@
 - Den fulde live-browseraudit består 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdøgnsvisninger uden browser-, side- eller HTTP-fejl.
 - Omskifteren vælger fortsat legacy globalt, `publicScoreChanged=false` og automatisk aktivering er falsk. Den score-neutrale Candidate G-shadow ligger aktuelt lavere end aktiv score: waders 19,187 mod 35,770 og strand 21,276 mod 43,655 i gennemsnit; 1.127 af 1.346 modeevalueringer skifter scorebånd. Den vigtigste forklaring er lav, endnu ung tilstand: transportgennemsnit 4,242 og mobilisering 13,747. Dette er beslutningsevidens, ikke et aktiveringsbevis.
 - Startreserveanalysen forklarer transportskævheden. 493/673 live dele har transport 0, men nul dele har udløst den dokumenterede udtransportgate. Den offentlige syvdøgnshistorik har 42.551 poster og dækker 633 dele med 65–117 timers forløb; genafspilning fra 0 giver stadig median 0 og gennemsnit 5,781.
-- Historikken kan ikke identificere den ukendte startreserve under den valgte regel uden passivt neutralt tab: kun 6/633 dele ender uafhængigt af start 0 kontra 100, mens 607/633 bevarer mindst 50 points forskel. Start 0 er derfor en konservativ prior, ikke observeret udtransport. En neutral startprior på 50 anbefales til ejerreview; den er ikke valgt eller implementeret.
-- Før offentlig aktivering kræves fortsat ejerbeslutning om startreserve, central admin-roundtrip, en versionsbundet aktiveringsændring, frisk grøn aktiveringsshadow og særskilt ejer-gennemgang af scorefordelingen.
+- Historikken kunne ikke identificere den ukendte startreserve under den daværende ubundne regel: kun 6/633 dele endte uafhængigt af start 0 kontra 100, mens 607/633 bevarede mindst 50 points forskel. Den efterfølgende anbefaling om startprior 50 er nu erstattet af DEC-0059's faste 48-timers evidensvindue.
+- Før offentlig aktivering kræves fortsat komplet bounded-memory-readiness på 673/673, central admin-roundtrip, en versionsbundet aktiveringsændring, frisk grøn aktiveringsshadow og særskilt ejer-gennemgang af scorefordelingen.
 - Ingen artifact- eller protected-dirty-datafiler er lagt i Git. Privat cache, geometri og land-/vandpunkter er urørte; i geodata blev kun de to udtrykkeligt godkendte versionsfelter ændret fra 4.0.259 til 4.0.260.
 
 ## 4.0.259 – central Candidate G-tilstand produktionsverificeret uden aktiv scoreændring
 
 - DEC-0057 kobler DEC-0055's transport og DEC-0056's mobilisering til den centrale kystdelspipeline. Candidate G beregnes ved samme fælles lokale referencetime som den aktive score, men ligger i et særskilt `diagnostic-only`-navnerum.
-- Den kompakte fortsættelsestilstand indeholder kun model-/profilversion, en konteksthash, tidspunkt, transportpotentiale, effektive udtransporttimer og mobiliseringspotentiale. Rå U/V, vejrinput, koordinater og private replaydata indgår ikke.
+- Den historiske schema-1-fortsættelsestilstand indeholdt kun model-/profilversion, konteksthash, tidspunkt, transportpotentiale, effektive udtransporttimer og mobiliseringspotentiale. DEC-0059 erstatter transportdelen med et afgrænset afledt 48-timersvindue; rå U/V, vejrinput, koordinater og private replaydata er fortsat forbudt.
 - Tilstanden er bundet til kystdel, vandpunkt, kystretning, model og profil via hash. Inkompatibel kontekst nulstiller fail-closed; samme-time-rekørsel og missing holder tilstanden uden dobbelttælling.
 - Kun tilstanden ved `currentReferenceAt` føres videre. Fremtidige prognosetimer bliver ikke gjort til historisk sandhed i næste kørsel.
 - Den aktive `25/40/35`-score, farve, zonevinder og UI læser ikke Candidate G-navnerummet. `automaticActivationAllowed=false` og `publicScoreChanged=false` er låst i runtime og test.

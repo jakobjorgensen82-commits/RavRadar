@@ -99,6 +99,77 @@ const threshold = buildCandidateGDerivedStateSeries([
 assert.equal(threshold.rows[1].transportPotential, 0, '0.03 m/s is the neutral deadband');
 assert.equal(threshold.rows[2].transportPotential, 10, '0.15 m/s gives ten inbound points per hour');
 
+const fullInboundWindow = buildCandidateGDerivedStateSeries(
+  Array.from({ length: 49 }, (_, index) => sample(index)),
+  { stateKey: 'sha256:full-inbound-window' },
+);
+assert.equal(fullInboundWindow.rows.at(-1).transportMemoryReady, true);
+assert.equal(fullInboundWindow.rows.at(-1).transportMemoryStatus, 'READY');
+assert.equal(fullInboundWindow.rows.at(-1).transportMemoryCoverageHours, 48);
+assert.equal(fullInboundWindow.rows.at(-1).transportPotential, 100);
+assert.equal(fullInboundWindow.continuationState.transportEvidence.length, 49);
+
+const neutralWindow = buildCandidateGDerivedStateSeries(
+  Array.from({ length: 49 }, (_, index) => sample(index, {
+    currentSpeedMps: 0,
+    currentAlignment: 0,
+  })),
+  { stateKey: 'sha256:full-neutral-window' },
+);
+assert.equal(neutralWindow.rows.at(-1).transportMemoryReady, true);
+assert.equal(neutralWindow.rows.at(-1).transportPotential, 0);
+
+const continuedFromAlteredOutputs = [0, 50, 100].map(transportPotential =>
+  buildCandidateGDerivedStateSeries([sample(49, {
+    currentSpeedMps: 0,
+    currentAlignment: 0,
+  })], {
+    stateKey: 'sha256:full-inbound-window',
+    initialState: {
+      ...fullInboundWindow.continuationState,
+      transportPotential,
+      outboundEpisodeEffectiveHours: transportPotential === 100 ? 12 : 0,
+    },
+  }));
+assert.ok(continuedFromAlteredOutputs.every(result => result.initialStateAccepted));
+assert.equal(new Set(continuedFromAlteredOutputs.map(result =>
+  result.rows[0].transportPotential)).size, 1,
+'a complete bounded window must ignore persisted transport output and replay only its evidence');
+assert.equal(new Set(continuedFromAlteredOutputs.map(result =>
+  result.rows[0].outboundEpisodeEffectiveHours)).size, 1,
+'a complete bounded window must rebuild the outbound episode from evidence');
+
+const missingInsideWindow = buildCandidateGDerivedStateSeries(
+  Array.from({ length: 49 }, (_, index) => sample(index, index === 24 ? {
+    currentSpeedMps: null,
+    currentAlignment: null,
+    currentVerified: false,
+  } : {})),
+  { stateKey: 'sha256:missing-inside-window' },
+);
+assert.equal(missingInsideWindow.rows.at(-1).transportMemoryReady, false);
+assert.equal(missingInsideWindow.rows.at(-1).transportMemoryStatus, 'WINDOW_HAS_MISSING_EVIDENCE');
+
+const twelveHourOutbound = buildCandidateGDerivedStateSeries(
+  Array.from({ length: 49 }, (_, index) => sample(index, index >= 37
+    ? { currentAlignment: -1 }
+    : { currentAlignment: 1 })),
+  { stateKey: 'sha256:twelve-hour-outbound' },
+);
+assert.equal(twelveHourOutbound.rows.at(-1).transportMemoryReady, true);
+assert.equal(twelveHourOutbound.rows.at(-1).transportPotential, 4);
+assert.equal(twelveHourOutbound.rows.at(-1).actualOutboundTransport, false);
+
+const thirteenHourOutbound = buildCandidateGDerivedStateSeries(
+  Array.from({ length: 49 }, (_, index) => sample(index, index >= 36
+    ? { currentAlignment: -1 }
+    : { currentAlignment: 1 })),
+  { stateKey: 'sha256:thirteen-hour-outbound' },
+);
+assert.equal(thirteenHourOutbound.rows.at(-1).transportMemoryReady, true);
+assert.equal(thirteenHourOutbound.rows.at(-1).transportPotential, 0);
+assert.equal(thirteenHourOutbound.rows.at(-1).actualOutboundTransport, true);
+
 const compact = secondHalf.continuationState;
 assert.equal(compact.schemaVersion, CANDIDATE_G_STATE_SCHEMA_VERSION);
 assert.equal(compact.modelId, CANDIDATE_G_STATE_MODEL_ID);
@@ -111,9 +182,15 @@ assert.deepEqual(Object.keys(compact).sort(), [
   'schemaVersion',
   'stateKey',
   'time',
+  'transportEvidence',
+  'transportMemoryCoverageHours',
+  'transportMemoryReady',
+  'transportMemoryStatus',
+  'transportMemoryWindowHours',
   'transportPotential',
   'variantId',
 ].sort());
+assert.ok(compact.transportEvidence.every(item => Object.keys(item).sort().join(',') === 'strength,time'));
 const serialized = JSON.stringify(compact).toLowerCase();
 for (const forbidden of [
   'currentu', 'currentv', 'windspeed', 'waveheight', 'waveperiod',

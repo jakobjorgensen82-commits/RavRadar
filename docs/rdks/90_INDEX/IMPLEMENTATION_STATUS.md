@@ -1,4 +1,19 @@
-# Implementeringsstatus – Candidate G 4.0.260 score-neutral omskifter produktionsverificeret
+# Implementeringsstatus – Candidate G bounded transport-memory efter 4.0.260
+
+## Afgrænset 48-timers transporthukommelse – offentlig score uændret
+
+- [x] Erstat den ubundne maskinstart og anbefalingen om startprior 50 med DEC-0059's faste 48-timers vindue og faste randbetydning.
+- [x] Persistér højst 49 dataminimerede kystrelative timebeviser; tillad kun `time` og afledt `strength`, og markér missing eksplicit.
+- [x] Genafspil transporten uden at bruge persistéret transportpotentiale eller persistérede udtransporttimer som startinput.
+- [x] Kræv præcis 48 timers sammenhængende evidens ved referencetimen for `transportMemoryReady=true`; missing og tidsgab holder den globale omskifter på legacy.
+- [x] Versionsløft state til `2.0.0` og bind den nye `window48-boundary0`-profil til kystkontekstens hash.
+- [x] Bevar `0,03→0,15 m/s`, +10/-8, 13-timers udtransportgate, 20/50/30, mobilisering 4/48, waders-loft og eksakt legacyrollback.
+- [x] Lås 47/48 timer, startuafhængighed 0/50/100, fuldstyrkeloft, 12/13 timer, kort modstrøm, fornyet indtransport, same-time, split/ubrudt, changed-context, missing og raw-input-forbud i målrettede tests.
+- [x] Genafspil eksisterende offentlig supplementhistorik read-only: 42.551 poster, 582 komplette 48-timersvinduer og nul startmismatch; ingen rå vektorer, koordinater, del-id'er eller private payloads i rapporten.
+- [x] Bevar foreløbig Candidate G som `diagnostic-only` under naturlig opbygning; aktiv `25/40/35` må ikke ændres, og mekanisk accept kræver ingen 48-timers realtidsventetest.
+- [x] Bestå samlet lokal `scripts/validate-source.ps1`, inklusive RDKS-validering, målrettede Candidate G-kontrakter og releasegate.
+- [ ] Bestå exact-head-kildegate, merge og første fulde post-merge-produktion med legacy aktiv og ny state fail-closed under opbygning.
+- [ ] Først ved senere ejerreview: kræv frisk 673/673 `transportMemoryReady`-slutshadow på den eksakte aktiveringskode. Det er ikke en ny 48-timers realtidsudviklingstest, men en aktiveringskontrol af naturligt produceret state.
 
 ## Versionsbundet profilvalg og rollback – offentlig 25/40/35 uændret
 
@@ -15,7 +30,7 @@
 - [x] Kør fuld browserkontrol: 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer uden fejl.
 - [x] Dokumentér den nye beslutningsevidens: Candidate G-gennemsnit 19,187/21,276 mod aktiv 35,770/43,655 for waders/strand og 1.127 scorebåndsskift; den unge tilstand har gennemsnitlig transport 4,242 og mobilisering 13,747.
 - [x] Efterprøv bootstrap mod eksisterende offentlig historik uden nye kildedata: 42.551 poster, 633/673 dele og 65–117 timer ændrer ikke start-0-medianen fra 0; kun 6/633 dele bliver uafhængige af startprioren.
-- [ ] Afgør startreserven med ejeren. Teknisk anbefaling er en eksplicit neutral prior 50 ved manglende/inkompatibel tidligere state, mens faktisk 13-timers udtransport fortsat er den eneste vej til dokumenteret udtømt transport og totalscore 0.
+- [x] Afgør startreserven med ejeren: neutral prior 50 forkastes som ny vilkårlig maskinstart og erstattes af DEC-0059's afgrænsede evidensvindue. Faktisk 13-timers udtransport er fortsat den eneste vej til dokumenteret udtømt transport og totalscore 0.
 - [ ] Offentlig Candidate G-aktivering afventer fortsat central admin-roundtrip, versionsbundet aktiveringsændring, frisk grøn aktiveringsshadow og særskilt ejer-gennemgang af scorefordelingen.
 
 ## Central tilstand og fallback-kompatibel shadow – score-neutral

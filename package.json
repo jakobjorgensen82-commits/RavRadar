@@ -28,7 +28,7 @@
     "test:ravscore-sensitivity": "node scripts/audit-ravscore-sensitivity.mjs --self-test",
     "test:ravscore-canonical-scenarios": "node scripts/audit-ravscore-canonical-scenarios.mjs --self-test",
     "test:ravscore-historical-events": "python scripts/select-ravscore-historical-events.py --self-test",
-    "test:ravscore-regime-memory": "node scripts/test-ravscore-regime-memory.mjs && node scripts/analyze-ravscore-history-track-ablation.mjs --self-test",
+    "test:ravscore-regime-memory": "node scripts/test-ravscore-regime-memory.mjs && node scripts/audit-ravscore-candidate-g-bounded-transport-memory.mjs --self-test && node scripts/analyze-ravscore-history-track-ablation.mjs --self-test",
     "test:ravscore-mobilisation-memory": "node scripts/test-ravscore-mobilisation-memory.mjs",
     "test:ravscore-candidate-g": "node scripts/test-ravscore-candidate-g.mjs",
     "test:ravscore-candidate-g-state-pipeline": "node scripts/test-ravscore-candidate-g-state-pipeline.mjs && node scripts/test-ravscore-candidate-g-central-runtime.mjs && node scripts/test-ravscore-profile-switch-4.0.260.mjs && node scripts/audit-ravscore-candidate-g-public-shadow.mjs --self-test",

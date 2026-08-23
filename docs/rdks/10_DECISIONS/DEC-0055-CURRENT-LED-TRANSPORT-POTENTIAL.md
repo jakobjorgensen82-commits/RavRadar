@@ -117,3 +117,9 @@ Efter ejerens gennemgang er den anbefalede private produktprofil `0,03→0,15 m/
 En produktionskørsel må ikke nulstille potentialet. Kandidatværktøjet understøtter derfor videreførelse af en kompakt afledt tilstand med sidste tidspunkt, transportpotentiale og effektive timer i det igangværende udtransportforløb. En opdelt 13-timerssyntese giver nu eksakt samme kurve som én ubrudt kørsel. Neutral og missing ændrer fortsat ikke potentialet; 24-/48-timers halvering bevares kun som følsomhed.
 
 Denne anbefaling ændrer ikke den offentlige score eller selve Candidate G-standardkørslen endnu. Før offentlig aktivering skal den afledte tilstand føres gennem den centrale pipeline, valideres nationalt og have en dokumenteret rollback. Private rådata, U/V og koordinater må ikke bruges som offentlig tilstand.
+
+## Erstattet start-/fortsættelsesregel i DEC-0059
+
+Den efterfølgende produktionsshadow viste, at ubundet videreførelse uden neutralt tab lod maskinens første startværdi dominere efter 65–117 timers historik. Ejeren har derfor erstattet både fail-closed start 0 som varig state og den senere anbefaling om neutral startprior 50.
+
+DEC-0059 bevarer dette dokuments strømgrænse, +10/-8-kurve, 13-timersgate og forklaring, men genafspiller transporten fra en fast rand over de seneste 48 timers sammenhængende, afledte strømbevis. Randværdien er ikke udtransportbevis. Missing og tidsgab gør kandidaten ikke aktiveringsklar og må ikke behandles som neutral strøm.
