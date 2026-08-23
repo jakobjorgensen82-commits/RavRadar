@@ -50,6 +50,10 @@ const app = fs.readFileSync('app.js', 'utf8');
 const index = fs.readFileSync('index.html', 'utf8');
 assert.ok(app.includes('compareNationalRankingRows') && app.includes('addNationalRanking'), 'Begge landslister skal bruge den faelles rangfunktion.');
 assert.ok(app.includes('${item.result.score}${exceptionalScoreMark(item.result.score)}'), 'Brugerfladen skal fortsat vise den oprindelige RavScore.');
-assert.equal((index.match(/Placeringen tager højde for/g) || []).length, 2, 'Begge landslister skal forklare den interne rangkorrektion.');
+assert.equal(
+  (index.match(/Et område står højere, når flere af dets kyststrækninger har gode forhold\./g) || []).length,
+  2,
+  'Begge landslister skal forklare rangeringen med den gældende almindelige brugertekst.',
+);
 
 console.log('National broad-support-rangering: 210 zoner / 673 kystdele og UI-kontrakt er groen.');

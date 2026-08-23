@@ -7,7 +7,8 @@
 3. Grundbogen skelner mellem bølgernes mobilisering, strømmens transport, vindens indirekte virkning og kystens sortering/opsamling. Der gives ingen universel dansk vind- eller strømretning.
 4. RavRadar og den aktive Candidate G-model forklares først til sidst. Score, vejrdata, privat datakontrakt, geometri og land-/vandpunkter ændres ikke.
 5. Den samtidige sproggennemgang fjernede interne standardsystemord fra normal offentlig tekst og samlede sikkerhedsafgrænsningen ét sted uden en særskilt offentlig sikkerhedsscore.
-6. Lokal målrettet test samt desktop- og mobilkontrol er grøn. Exact-head, frisk 4.0.268-produktion og offentlig 210/673-kontrol mangler endnu.
+6. Lokal målrettet test samt desktop- og mobilkontrol blev grøn. PR #116 bestod exact-head `32670857438` og blev merged som `5a2f7796`.
+7. Første produktion `32670920742` stoppede korrekt før deploy: en ældre fuld rangeringstest krævede fortsat den tidligere tekniske hjælpetekst ordret. Den nye almindelige forklaring er bevaret, testkontrakten er rettet og føjet til den tidlige kildegate; ny exact-head og produktion afventer.
 
 ## 2026-08-23 – den virkelige login- og turlogprøve lukker et produktionsgab
 

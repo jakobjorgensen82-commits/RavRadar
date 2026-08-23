@@ -1,3 +1,11 @@
+## 2026-08-24 – grundbog, almindeligt sprog og en korrekt stoppet første produktion
+
+- Læringsmodulet er omskrevet til en offentlig grundbog i ravjagt fra ravets egenskaber over mobilisering, transport, kyst og felttegn til strand-, vandkant-, waders- og UV-jagt. RavRadar forklares først bagefter.
+- De centrale offentlige tekster er gennemgået og forenklet uden ændring af Candidate G, `20/50/30`, vejr, Supabase-kontrakt, geometri eller land-/vandpunkter.
+- PR #116 bestod exact-head `32670857438` på `c810155b` og blev merged som `5a2f7796`.
+- Første produktion `32670920742` stoppede før release/deploy, fordi den fulde validering fandt en ældre rangeringstest, der stadig krævede den erstattede tekniske hjælpetekst ordret.
+- Den nye almindelige forklaring bevares. Testen kræver nu den gældende tekst og er føjet til `validate:source`, så samme mismatch opdages før en dyr vejropbygning. Ny exact-head, produktion og onlinekontrol afventer.
+
 ## 2026-08-23 – skema og tom GPS-værdi blokerede turindberetninger
 
 - Efter grøn 4.0.266-læsning viste ejerens genprøve, at hverken den oprindelige eller en ny manuel kontoindberetning blev synlig. Aggregeret databasekontrol viste nul nye rækker; ingen privat payload blev læst.
