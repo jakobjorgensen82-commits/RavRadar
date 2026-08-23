@@ -74,6 +74,18 @@ export const CANDIDATE_G_VARIANTS = Object.freeze({
     currentLedTransportPotential: true,
     waveLandingMaximumShare: 0.15,
   }),
+  'G-CURRENT-LED-WAVE-MOBILISATION-WADERS-WIND-LED': Object.freeze({
+    id: 'G-CURRENT-LED-WAVE-MOBILISATION-WADERS-WIND-LED',
+    modelId: 'RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3',
+    memoryTrack: 'current-led-transport-plus-wave-energy-mobilisation-state',
+    directWindPower: null,
+    directWindIncluded: false,
+    huntabilityProfile: PHASE_D_HUNTABILITY_PROFILES.WADERS_WIND_LED_WAVE_20,
+    wadersHuntabilityLimit: true,
+    currentLedTransportPotential: true,
+    waveLandingMaximumShare: 0.15,
+    waveMobilisationMemory: true,
+  }),
 });
 
 const finite = value => value !== null
@@ -129,6 +141,7 @@ function buildResearchExplanation({
   currentLedTransport,
   scoreBeforeOutflowExhaustionGate,
   outflowExhaustionGateApplied,
+  mobilisationMemory,
 }) {
   return {
     contractVersion: '1.1.0',
@@ -182,6 +195,17 @@ function buildResearchExplanation({
       outboundEpisodeEffectiveHours: currentLedTransport.outboundEpisodeEffectiveHours,
       outboundEpisodeLossPoints: currentLedTransport.outboundEpisodeLossPoints,
       actualOutboundTransport: currentLedTransport.actualOutboundTransport,
+    } : null,
+    mobilisationMemory: mobilisationMemory ? {
+      meaning: 'CAUSAL_WAVE_ENERGY_EVENT_STATE_WITHOUT_ADDITIVE_DIRECT_WIND_OR_CURRENT_SCORE',
+      mobilisationPotential: mobilisationMemory.mobilisationPotential,
+      waveEnergyProxy: mobilisationMemory.waveEnergyProxy,
+      waveEnergyScore: mobilisationMemory.waveEnergyScore,
+      transition: mobilisationMemory.transition,
+      buildHalfLifeHours: mobilisationMemory.buildHalfLifeHours,
+      decayHalfLifeHours: mobilisationMemory.decayHalfLifeHours,
+      directWindScoreIncluded: false,
+      currentSpeedScoreIncluded: false,
     } : null,
     physicalBottleneck: {
       meaning: 'MILD_TRANSPORT_MOBILISATION_BOTTLENECK',
@@ -266,11 +290,10 @@ export function evaluateRavScoreCandidateG(
     historyMix = CANDIDATE_G_HISTORY_MIX,
   } = {},
 ) {
-  const base = evaluatePhaseDWaveProcessCandidate(context);
-  if (!base.available) return base;
-
   const variant = CANDIDATE_G_VARIANTS[variantId];
   if (!variant) throw new Error(`Unknown Candidate G variant: ${variantId}`);
+  const base = evaluatePhaseDWaveProcessCandidate(context);
+  if (!base.available) return base;
   if (!(finite(historyGain) && Number(historyGain) >= 0 && Number(historyGain) <= 1)) {
     throw new Error('Candidate G historyGain must be between zero and one');
   }
@@ -300,6 +323,29 @@ export function evaluateRavScoreCandidateG(
       reason: 'MISSING_REQUIRED_CURRENT_LED_TRANSPORT_POTENTIAL',
     };
   }
+  const mobilisationMemory = variant.waveMobilisationMemory ? {
+    mobilisationPotential: finite(memory.mobilisationPotential)
+      ? clamp(memory.mobilisationPotential)
+      : null,
+    waveEnergyProxy: finite(memory.waveEnergyProxy) ? Math.max(0, Number(memory.waveEnergyProxy)) : null,
+    waveEnergyScore: finite(memory.waveEnergyScore) ? clamp(memory.waveEnergyScore) : null,
+    transition: memory.waveMobilisationTransition || null,
+    buildHalfLifeHours: finite(memory.waveMobilisationBuildHalfLifeHours)
+      ? Number(memory.waveMobilisationBuildHalfLifeHours)
+      : null,
+    decayHalfLifeHours: finite(memory.waveMobilisationDecayHalfLifeHours)
+      ? Number(memory.waveMobilisationDecayHalfLifeHours)
+      : null,
+  } : null;
+  if (variant.waveMobilisationMemory && mobilisationMemory.mobilisationPotential === null) {
+    return {
+      ...base,
+      available: false,
+      score: null,
+      scoreImpact: 'diagnostic-only',
+      reason: 'MISSING_REQUIRED_WAVE_MOBILISATION_STATE',
+    };
+  }
   const directionalHistorySignal = currentLedTransport === null
     ? clamp(mix.current * currentState + mix.wave * waveState + directWindContribution, -1, 1)
     : null;
@@ -316,7 +362,9 @@ export function evaluateRavScoreCandidateG(
     })
     : null;
   const huntability = round(huntabilityResult?.value ?? base.components.huntability);
-  const mobilisation = Number(base.components.mobilisation);
+  const mobilisation = mobilisationMemory === null
+    ? Number(base.components.mobilisation)
+    : mobilisationMemory.mobilisationPotential;
   const additiveScore = huntability * CANDIDATE_G_WEIGHTS.huntability
     + transportAndDelivery * CANDIDATE_G_WEIGHTS.transportAndDelivery
     + mobilisation * CANDIDATE_G_WEIGHTS.mobilisation;
@@ -380,6 +428,7 @@ export function evaluateRavScoreCandidateG(
     currentLedTransport,
     scoreBeforeOutflowExhaustionGate,
     outflowExhaustionGateApplied,
+    mobilisationMemory,
   });
   const limitations = new Set(base.confidence?.limitations || []);
   limitations.add('directional-history-is-research-prior');
@@ -397,6 +446,13 @@ export function evaluateRavScoreCandidateG(
     limitations.add('wave-landing-share-is-uncalibrated-secondary-prior');
     limitations.add('actual-outbound-exhaustion-zero-gate-is-owner-prior');
   }
+  if (variant.waveMobilisationMemory) {
+    limitations.add('wave-mobilisation-energy-is-relative-proxy');
+    limitations.add('wave-mobilisation-build-and-decay-are-uncalibrated-research-priors');
+    limitations.add('nearshore-wave-transformation-unmodelled');
+    limitations.add('direct-wind-and-current-speed-are-excluded-from-mobilisation-score');
+    limitations.add('initial-mobilisation-potential-is-unobserved-at-replay-boundary');
+  }
 
   return {
     ...base,
@@ -411,6 +467,7 @@ export function evaluateRavScoreCandidateG(
         delivery: round(currentLedTransport.delivery),
       } : {}),
       transportAndDelivery: round(transportAndDelivery),
+      ...(mobilisationMemory ? { mobilisation: round(mobilisation) } : {}),
     },
     candidateScores: {
       ...base.candidateScores,
@@ -419,7 +476,9 @@ export function evaluateRavScoreCandidateG(
     candidateDefinitions: {
       ...base.candidateDefinitions,
       candidateG: currentLedTransport
-        ? 'Current-led transport potential with immediate strength-scaled outbound loss, an actual-outbound-exhaustion final-score gate, secondary dependent wave landing, 20/50/30 weights and the same mild physical bottleneck'
+        ? variant.waveMobilisationMemory
+          ? 'Current-led transport plus a causal wave-energy mobilisation state without additive wind/current points, an actual-outbound-exhaustion final-score gate, 20/50/30 weights and the same mild physical bottleneck'
+          : 'Current-led transport potential with immediate strength-scaled outbound loss, an actual-outbound-exhaustion final-score gate, secondary dependent wave landing, 20/50/30 weights and the same mild physical bottleneck'
         : 'Candidate E process path with capacity-preserving causal direction memory, 20/50/30 weights and the same mild physical bottleneck',
     },
     additiveScore: Number(additiveScore.toFixed(3)),
@@ -465,6 +524,13 @@ export function evaluateRavScoreCandidateG(
       candidateGOutboundEpisodeEffectiveHours: currentLedTransport?.outboundEpisodeEffectiveHours ?? null,
       candidateGOutboundEpisodeLossPoints: currentLedTransport?.outboundEpisodeLossPoints ?? null,
       candidateGActualOutboundTransport: currentLedTransport?.actualOutboundTransport ?? false,
+      candidateGWaveMobilisationMemoryIncluded: mobilisationMemory !== null,
+      candidateGWaveMobilisationPotential: mobilisationMemory?.mobilisationPotential ?? null,
+      candidateGWaveMobilisationEnergyProxy: mobilisationMemory?.waveEnergyProxy ?? null,
+      candidateGWaveMobilisationEnergyScore: mobilisationMemory?.waveEnergyScore ?? null,
+      candidateGWaveMobilisationTransition: mobilisationMemory?.transition ?? null,
+      candidateGWaveMobilisationBuildHalfLifeHours: mobilisationMemory?.buildHalfLifeHours ?? null,
+      candidateGWaveMobilisationDecayHalfLifeHours: mobilisationMemory?.decayHalfLifeHours ?? null,
       candidateGBaseTransportAndDelivery: baseTransportAndDelivery,
       scoreIsSafetyAdvice: false,
       automaticActivationAllowed: false,

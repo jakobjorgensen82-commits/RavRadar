@@ -87,15 +87,14 @@ Der er ikke udført en faktisk central admin-roundtrip for denne endnu uaktivere
 
 ## Aktiveringsgater efter auditten
 
-Mekanisk yderpunktskontrol, waders-betydning og pil-/historiksemantik er nu afklaret som forskningskontrakter. Følgende er fortsat åbent:
+Mekanisk yderpunktskontrol, waders-betydning og pil-/historiksemantik er nu afklaret som forskningskontrakter. Efterfølgende ejerreview har valgt `0,03→0,15 m/s`, ingen passiv neutral aftrapning og kompakt tilstandsfortsættelse som teknisk prior. DEC-0056 vælger desuden én 4/48-timers bølgeenergimobilisering. Følgende tekniske aktiveringsarbejde er fortsat åbent:
 
-1. kalibreret kystnormal strømgrænse;
-2. godkendt startreservoir og eventuelt passivt 24–48-timers tab;
-3. repræsentative komplette ture eller tilsvarende stærk validering;
-4. frisk national score-neutral shadow med den endelige inputkontrakt;
-5. endelig offentlig UI-/forklaringskontrol;
-6. central admin-roundtrip, rollback og fulde produktgates;
-7. udtrykkeligt ejer-go/no-go.
+1. central persistens af både transport- og mobiliseringstilstand;
+2. frisk fallback-kompatibel national score-neutral shadow med den endelige inputkontrakt;
+3. endelig offentlig UI-/forklaringskontrol;
+4. central admin-roundtrip, rollback og fulde produktgates.
+
+Strømgrænsen og mobiliseringens halveringstider er ejer-/forskningspriorer, ikke fundkalibrerede naturkonstanter. Repræsentative komplette ture findes ikke før den planlagte aktivering og skal derfor stå som tydelig modelusikkerhed og senere efterkalibrering, ikke som en skjult eller umulig før-gate.
 
 Offentlig RavScore forbliver `25/40/35`. Auditresultatet er et beslutningsgrundlag, ikke en aktivering.
 

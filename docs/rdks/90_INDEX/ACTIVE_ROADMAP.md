@@ -41,9 +41,10 @@ Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre for
 - [x] Før udtransportgaten gennem exact-head `32604792201`, PR #84/merge `800a93cb`, fuld produktion `32604850884` og direkte livekontrol af `rr-20260822232159-210` med 210/673 og sammenhængende datasæt-id.
 - [x] Vælg et praktisk, ærligt privat produktspor efter ejerreview: 0,03→0,15 m/s, intet passivt neutralt tab og kompakt tilstandsfortsættelse; behold 0,05→0,20/start 0 og 24/48 som reference-/følsomhedsspor.
 - [x] Bevis score-neutralt, at potentiale og igangværende udtransport fortsætter eksakt over en simuleret pipelinegrænse.
-- [ ] Gennemfør mobiliserings-/helhedsreviewet, før en eventuel offentlig kobling implementeres.
-- [ ] Ved offentlig kobling: persistér den kompakte afledte tilstand centralt, kør frisk national shadow, forklaring/rollback og alle produktgates.
-- [ ] En eventuel offentlig Candidate G-aktivering forbliver et særskilt ejer-go/no-go med validering og fulde produktgates.
+- [x] Gennemfør mobiliserings-/helhedsreviewet: én bølgeenergistyret 4/48-tilstand uden additive vind-, strøm-, varigheds- eller stedpoint; dokumentér DEC-0056 og reproducerbare randtilfælde.
+- [ ] Før mobiliseringscheckpointet gennem exact-head, sikker merge og post-merge-produktion uden offentlig scoreændring.
+- [ ] Forbered derefter den ejerønskede offentlige kobling som én versionsbundet pakke: persistér begge kompakte afledte tilstande centralt, kør frisk fallback-kompatibel 673-deles shadow, forklaring/rollback og alle produktgates.
+- [ ] Offentlig aktivering må først gennemføres, når den samlede pakke er grøn og ingen konkret modstridende evidens består; manglende turkalibrering skal fortsat fremgå ærligt som modelusikkerhed.
 
 ## Aktuelt Candidate G-review – 4.0.258 vindstyret waders-kandidat
 
@@ -54,7 +55,8 @@ Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre for
 - [x] Ejeren har valgt vind som hovedsignal for waders-jagtbarhed: fuld til 6 m/s, 0 ved 15 m/s og WAM-bølger kun som blødt fradrag på højst 20 point.
 - [x] Genkør replay og kanoniske/nationale kontrakter med den nye variant; strand er uændret og waders-score overstiger aldrig jagtbarheden.
 - [x] Før 4.0.258-checkpointet gennem exact-head-gate `32586707063`, PR #73, merge `9bdb8de8` og fuld produktion `32586958989`; live er 4.0.258/`rr-20260822171406-210` med 210 zoner og 673 dele.
-- [ ] En eventuel offentlig implementering er et nyt delmål med særskilt beslutning, repræsentative ture/hold-out, komplet dynamisk inputcoverage og fulde produktgates. Indtil da forbliver offentlig `25/40/35` uændret.
+- [x] Den faglige ejerretning er valgt gennem DEC-0054–0056. Manglende repræsentative ture/hold-out bevares som modelusikkerhed og senere efterkalibrering, ikke som en umulig før-aktiveringsgate.
+- [ ] Den offentlige implementering er et nyt samlet delmål med central tilstandspersistens, frisk fallback-kompatibel national slutshadow, forklaring, rollback og fulde produktgates. Indtil da forbliver offentlig `25/40/35` uændret.
 
 ## P0 - luk den aktuelle kandidat
 

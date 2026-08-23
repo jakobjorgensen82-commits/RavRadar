@@ -1,5 +1,14 @@
 # AI Roadmap – RavRadar 4.0.243+
 
+## Candidate G – mobiliserings-/helhedsreview efter DEC-0056
+
+- [x] Udskift additiv bølge/vind/strøm/varighedsmobilisering med én kausal bølgeenergitilstand.
+- [x] Lås 4/48-profil, missing-hold og kompakt fortsættelse i syntetiske tests og privat 1.460-evalueringsreplay.
+- [x] Bevar stedegnethed, bund/dybde/render/revler og sikkerhedsrådgivning uden for modellen.
+- [x] Saml `RESEARCH-3` som foretrukken score-neutral helhedskandidat med `20/50/30`, DEC-0054 og DEC-0055.
+- [ ] Før checkpointet gennem exact-head, merge og produktion uden offentlig scoreændring.
+- [ ] Næste afgrænsede fase er én samlet offentlig pipeline-/forklarings-/rollbackpakke med fallback-kompatibel 673-deles shadow; ikke endnu en parallel modelvariant.
+
 ## Candidate G – strømstyret rand- og tærskelkontrol efter DEC-0055
 
 - [x] Implementér valgfri neutral halvering på 24/48 timer uden at ændre den godkendte ind-/udtransport eller missing-pause.
@@ -9,7 +18,7 @@
 - [x] Før checkpointet gennem samlet kildegate, exact-head `32599255165`, PR #77/merge `75ed93d6` og fuld produktion `32599309735`; offentlig score og Candidate G-aktivering forbliver uændret.
 - [x] Anbefal efter ejerreview 0,03→0,15 m/s, intet passivt neutralt tab og kompakt tilstandsfortsættelse som praktisk privat produktprior uden at kalde den fundkalibreret.
 - [x] Lås score-neutralt, at en opdelt kørsel reproducerer den ubrudte 13-timerskurve eksakt.
-- [ ] Gennemfør mobiliserings-/helhedsreview og derefter særskilt offentlig pipeline-/rollbackkobling, hvis ejeren aktiverer kandidaten.
+- [x] Gennemfør mobiliserings-/helhedsreview efter DEC-0056; offentlig pipeline-/rollbackkobling er næste særskilte fase.
 
 ## Candidate G – samlet beslutningsgrundlag efter 4.0.257
 

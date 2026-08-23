@@ -1,5 +1,16 @@
 # RavRadar - aktuelt Codex-handoff
 
+## Checkpoint 2026-08-23 – Candidate G mobilisering under levering
+
+- Branch `codex/candidate-g-mobilisation-policy` bygger `RESEARCH-3`, som kun erstatter Candidate G's mobiliseringsled. Offentlig `25/40/35` er uændret.
+- Én kausal bølgeenergitilstand bruger højde² × periode, fire timers opbygning og 48 timers aftrapning. Missing holder tilstanden, og kompakt fortsættelse reproducerer en ubrudt kørsel eksakt.
+- Direkte vind, aktuel strøm, separat varighed og statisk stedegnethed giver ingen mobiliseringspoint. Vind hører til waders-jagtbarhed, strøm til transport og bølgeretning til den afhængige levering.
+- Syntetisk audit: 15,910 efter én høj time, 27,625 efter fire moderate, 87,500 efter tolv høje og 43,750 efter yderligere 48 rolige timer.
+- Privat Git-ignoreret replay: 1.460 evalueringer, ny mobilisering 73,348 mod 57,651, samlet score 31,775 og +3,484 mod transportrevisionen. Ingen nye downloads, koordinater eller private payloads i Git.
+- DEC-0056 og forskningsrapporten er beslutningsgrundlaget. Målrettede tests og samlet lokal `scripts/validate-source.ps1`, inklusive releasegate, er grønne. Exact-head PR, merge og post-merge-produktion mangler endnu ved dette checkpoint.
+- PR #86/merge `5d7d4c2b` og produktion `32606559443` er den grønne transportbaseline. Produktionen håndterede et midlertidigt DMI 429/uforandrede collections via den godkendte fallback og sluttede med fulde gates og 210/673.
+- Næste fase efter sikker levering er samlet offentlig persistens, fallback-kompatibel national shadow, forklaring og rollback; ikke en ny parallel model.
+
 ## Checkpoint 2026-08-23 – Candidate G frigivelsesrevision
 
 - PR #82 bestod exact-head-kildegate `32602287607` på `74624ac3` og blev merged som `189644a0`.
