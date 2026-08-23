@@ -7,6 +7,7 @@
 - Rodhåndbogen tilføjes til workflowets eksakte docs-only-skip; en separat ren dokumentationsmerge skal senere bevise, at ændringen giver 0 push-produktionskørsler.
 - Candidate G, `20/50/30`, scorelogik, vejrruntime, geometri og land-/vandpunkter er uændrede. Versionsløftet må kun ændre versionsfeltet i de to geodatafiler.
 - PR #104 bestod exact-head og blev merged. Den første produktionskørsel stoppede før release på en forældet UI-test. PR #105 rettede den, bestod exact-head og blev merged; den næste produktion stoppede før deploy på en anden gammel ordret stjernetest. Stjernetesten og den lokalt fundne gamle mobil-turtest følger nu den nye UI og indgår i kildegaten.
+- PR #106 bestod exact-head og produktion `32652970105` udgav 4.0.264 på 210/673. Live konto-/turflowet er kontrolleret, og den fulde 420/2.100/673-audit er grøn efter at audittens gamle `3-timers trend`-opslag blev rettet til UI'ets `Vandstandsændring på 3 timer`.
 
 ## 4.0.263 – Candidate G-gate følger den aktuelle zonereference (2026-08-23)
 

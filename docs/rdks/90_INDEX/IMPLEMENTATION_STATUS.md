@@ -14,10 +14,12 @@
 - [x] Afvis første produktionsforsøg `32651106811` før release, fordi den gamle `test-feedback-zone-ui` stadig krævede den fjernede GPS-parallelrejse; ret testen til at kræve direkte v2 og føj den til `validate:source`.
 - [x] Bestå PR #105 exact-head `32651724416` og merge som `7c43146f`; afvis produktion `32651786366` før deploy på den næste forældede ordrette teksttest.
 - [x] Ret stjerneforklaringens test og den lokalt fundne gamle mobil-turtest, og føj begge til `validate:source`.
-- [ ] Bestå ny opfølgnings-PR, frisk fuld produktion og live browserkontrol af login, magic link, log, turindsendelse og tekster.
+- [x] Bestå PR #106 exact-head `32652894729`, merge `23fa89ed` og produktion `32652970105`; live 4.0.264 er 210/673.
+- [x] Browserkontrollér konto-/loginforklaring, direkte tur uden GPS/rute og den fulde 420/2.100/673-visning uden fejl efter korrektion af auditlabelen.
+- [ ] Merge auditlabelrettelsen; en rigtig magic-link-mail, autentificeret turliste og kontoejet tur kræver senere ejerens interaktive loginprøve.
 - [ ] Separat ren dokumentationsmerge med 0 oprettede push-produktionskørsler.
 
-4.0.263 er fortsat produktionsverificeret sandhed. De følgende Candidate G-afsnit er revisionssporet for den nuværende scoremotor.
+4.0.264 er nu produktionsverificeret sandhed. De følgende Candidate G-afsnit er revisionssporet for den nuværende scoremotor.
 
 ## P0-opfølgning efter 4.0.262-produktionen
 

@@ -12,7 +12,10 @@
 - [x] Fang den forældede GPS-feedbacktest i produktion `32651106811`, ret den til direkte v2 og føj den til `validate:source`.
 - [x] Bestå PR #105 exact-head `32651724416` og merge som `7c43146f`; lad produktion `32651786366` stoppe før deploy på den næste forældede ordrette teksttest.
 - [x] Ret stjerneforklaringens test og den lokalt fundne gamle mobil-turtest, og føj begge til `validate:source`.
-- [ ] Bestå ny opfølgnings-PR, frisk fuld produktion og live browserkontrol.
+- [x] Bestå PR #106 exact-head `32652894729`, merge `23fa89ed` og frisk fuld produktion `32652970105` med live 4.0.264 på 210/673.
+- [x] Browserkontrollér konto-/loginforklaring og direkte tur uden GPS/rute; ret den fulde audits gamle vandstandsetiket og bestå 420/2.100/673 uden fejl.
+- [ ] Før auditrettelsen gennem exact-head og merge.
+- [ ] Ejerens senere interaktive loginprøve kan kontrollere en rigtig magic-link-mail, den autentificerede **Mine ture og fund**-liste og en kontoejet tur; ingen mail sendes automatisk.
 - [ ] Bevis bagefter workflowets rodhåndbogsskip med en særskilt ren dokumentationsmerge og 0 push-produktionskørsler.
 
 ## Candidate G – 4.0.263 aktuel referencegate

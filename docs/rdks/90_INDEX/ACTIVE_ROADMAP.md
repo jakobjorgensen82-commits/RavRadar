@@ -12,15 +12,16 @@
 - [x] Lad produktion `32651106811` stoppe før release på den forældede feedback-UI-test; opdatér testen til at kræve den nye v2-tur og kør den også i `validate:source`.
 - [x] Før turtestrettelsen gennem PR #105/exact-head `32651724416` og merge `7c43146f`; produktion `32651786366` stoppede før deploy på den næste gamle teksttest.
 - [x] Ret stjerneforklaringens test og den lokalt fundne gamle mobil-turtest, og kør begge i `validate:source`.
-- [ ] Før den samlede testrettelse gennem exact-head og én frisk fuld produktion, fordi kode og workflow er ændret.
-- [ ] Browserkontrollér adgangskodelogin, magic link, udlogning, **Mine ture og fund**, anonym/indlogget turindsendelse samt de centrale offentlige forklaringer på live 4.0.264.
+- [x] Før den samlede testrettelse gennem PR #106/exact-head `32652894729`, merge `23fa89ed` og fuld produktion `32652970105`.
+- [x] Browserkontrollér live konto-/loginforklaring, direkte tur uden GPS/rute og centrale offentlige forklaringer; korrigér auditens gamle vandstandsetiket og bestå 420/2.100/673 uden fejl.
+- [ ] Merge auditlabelrettelsen. Kontrol af rigtig magic-link-mail, autentificeret **Mine ture og fund**, udlogning og en kontoejet tur gennemføres senere interaktivt af ejeren; der sendes ingen mail automatisk.
 - [ ] Bevis derefter med en separat ren RDKS-/håndbogsmerge, at rodhåndbogen ikke opretter en push-produktion.
 
 ## Samme leverances afgrænsede procesrettelse – rodhåndbog i docs-only-skip
 
 - [x] Tilføj kun `HANDBOOK-RAVRADAR.md` til push-workflowets eksakte dokumentations-`paths-ignore`, og opdatér den eksisterende workflowkontrakttest.
 - [x] Bestå målrettet workflowtest og PR #104 exact-head. Første produktion stoppede korrekt før release på en særskilt forældet UI-test.
-- [ ] Bestå den samlede testrettelses exact-head og en forventet fuld grøn produktion.
+- [x] Bestå den samlede testrettelses exact-head og fuld grøn produktion `32652970105`.
 - [ ] Bevis derefter med en separat ren RDKS-/håndbogsmerge, at der oprettes 0 push-produktionskørsler. Ingen score, data, geometri eller punkter må ændres.
 
 ## Aktuel P0-status – Candidate G-referencegate i 4.0.263

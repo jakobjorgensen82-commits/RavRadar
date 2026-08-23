@@ -1,6 +1,6 @@
 # Current truth – gældende projektviden
 
-## Lokal 4.0.264-kandidat – forståeligt brugerflow og privat turlog uden dobbeltlagring
+## Produktionsverificeret 4.0.264 – forståeligt brugerflow og privat turlog uden dobbeltlagring
 
 - Den aktive turrejse er nu direkte v2: start, afslut og færdiggør én komplet tur. Den gamle parallelle GPS-tur er ikke længere koblet til brugerfladen.
 - **Mine ture og fund** læser de eksisterende `observations`-rækker gennem Supabase RLS. Der oprettes ingen ekstra tabel, serverrække eller kopi; læsningen sker først ved klik, med et lille feltudvalg og højst 100 ture.
@@ -8,8 +8,8 @@
 - Anonyme ture forbliver anonyme. En lokal outbox er leveringssikring på enheden og deduplikeres mod serverrækkens eksisterende tur-id.
 - Magic-link-teksten forklarer engangslinket, redirecten er versionsuafhængig på samme origin/sti, og callbacken henter den faktiske Supabase-bruger før kontoejerskab bruges.
 - Offentlige hovedord er forenklet til blandt andet **Søgeforhold**, **Transport mod kysten** og **Rav i bevægelse**. Candidate G, `20/50/30`, scorelogik, vejrdata, geometri og land-/vandpunkter er uændrede.
-- Koden og 4.0.264-versionsløftet er merged. PR #104 bestod exact-head `32651048627` og blev merged som `579bd167`; PR #105 bestod exact-head `32651724416` og blev merged som `7c43146f`.
-- Produktion `32651106811` stoppede før release på den gamle `test-feedback-zone-ui`. Produktion `32651786366` beviste, at den rettede turtest var grøn, men stoppede stadig før deploy, fordi `test-score-presentation` forventede en erstattet ordret formulering. Den aktuelle opfølgning retter stjernetesten og en lokalt fundet gammel mobil-turtest og føjer begge til `validate:source`; samlet lokal kilde-/RDKS-/releasegate er grøn. Frisk produktion og live browserkontrol mangler; 4.0.263 er derfor fortsat produktionssandheden.
+- PR #106 bestod exact-head `32652894729`, blev merged som `23fa89ed`, og produktion `32652970105` bestod frisk data, fuld validering, releasegate og Pages. Live `rr-20260823165645-210` er 4.0.264 på 210/673.
+- Konto-/loginforklaring og direkte tur uden GPS/rute er kontrolleret live. Den fulde audit fandt kun en forældet label i selve audittestens opslag: UI'et viser `Vandstandsændring på 3 timer`, mens auditten søgte `3-timers trend`. Efter labelrettelsen består 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer uden kontrol-, konsol-, side- eller HTTP-fejl. En rigtig loginmail og autentificeret kontooversigt kræver senere ejerens interaktive prøve.
 
 
 ## Aktuel produktionsverificeret 4.0.263 – Candidate G-gate ved den aktuelle fælles zonereference
