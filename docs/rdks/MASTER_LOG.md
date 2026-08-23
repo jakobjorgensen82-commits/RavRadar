@@ -1,3 +1,12 @@
+## 2026-08-23 – 4.0.259 central Candidate G og fallback-kompatibel shadow
+
+- DEC-0057 kobler DEC-0055/0056 til den centrale 673-deles pipeline uden at ændre aktiv `25/40/35`.
+- Kystdelen fører en kompakt versions-/kontekstbundet tilstand videre ved `currentReferenceAt`: tidspunkt, transportpotentiale, effektive udtransporttimer og mobiliseringspotentiale.
+- Same-time og missing holder tilstanden; ændret model, profil, punkt eller kystretning nulstiller fail-closed. Rå U/V, øvrige vejrinput, koordinater og private replaydata indgår ikke i tilstanden.
+- Den manuelle shadow genhenter ikke længere en smallere native-only DMI-prøve. Den auditerer den producerede fallback-kompatible public detaljefil og kræver 210/673 samt begge jagtformer.
+- Samlet lokal kildegate og releasegate er grøn for 4.0.259.
+- Candidate G er fortsat `diagnostic-only`; aktiv score, UI, geometri, punkter og beskyttede data er uændrede. Første produktion er bootstrap, og modnet slutshadow samt ekstern leveringsverifikation udestår.
+
 ## 2026-08-23 – Candidate G bølgeenergistyret mobilisering
 
 - DEC-0056 vælger `RESEARCH-3` som foretrukken score-neutral helhedskandidat: `20/50/30`, strømstyret transport, vindstyret waders-jagtbarhed og én bølgeenergistyret mobiliseringstilstand.

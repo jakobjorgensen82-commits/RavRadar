@@ -1,4 +1,20 @@
-# Implementeringsstatus – Candidate G efter 4.0.258
+# Implementeringsstatus – Candidate G 4.0.259-kandidat
+
+## Central tilstand og fallback-kompatibel shadow – score-neutral
+
+- [x] Saml transport- og mobiliseringstilstanden i én versions- og kontekstbundet central kontrakt efter DEC-0057.
+- [x] Persistér kun tilstanden ved kystdelens fælles aktuelle referencetime; fremtidige prognoser må ikke blive historisk startpunkt.
+- [x] Lås opdelt/ubrudt identitet, same-time-hold, missing-hold og sikker nulstilling ved ændret model-/kystkontekst.
+- [x] Bevis, at den kompakte tilstand ikke indeholder rå U/V, vejrinput, koordinater eller private replaydata.
+- [x] Beregn Candidate G for begge jagtformer som separat `diagnostic-only`-runtime uden at ændre aktiv `25/40/35`.
+- [x] Erstat den manuelle native-only aktiveringsshadow med en read-only audit af den faktiske fallback-kompatible 210/673-detaljeruntime.
+- [x] Lås 1.346 modeevalueringer, score-rekonstruktion, udtransportforklaring, dataminimering og automatisk aktiveringsforbud i self-tests og kildegate.
+- [x] Dokumentér den nuværende rollback: aktiv score ignorerer Candidate G-navnerummet; en senere aktivering kræver en særskilt omskifter og tilbagekobling.
+- [x] Bestå samlet lokal `scripts/validate-source.ps1`, inklusive releasegate, for 4.0.259.
+- [ ] Bestå exact-head PR-kontrol og merge for 4.0.259.
+- [ ] Bestå fuld post-merge-produktion med central admin, frisk fallback-kompatibel data, fuld validering, releasegate, Supabase, artifact og Pages.
+- [ ] Kør den nye manuelle 210/673-shadow på den producerede 4.0.259-runtime, og dokumentér bootstrap/state-alder uden at kalde første kørsel modnet.
+- [ ] Først derefter: forbered særskilt aktiv score-omskifter og brugerforklaring; offentlig aktivering afventer modnet slutshadow og ingen modstridende evidens.
 
 ## Candidate G mobiliserings-/helhedsreview – score-neutralt
 
@@ -12,7 +28,7 @@
 - [x] Dokumentér DEC-0056, beslutningsrapport, modelregister, RDKS, håndbog og changelog uden private payloads.
 - [x] Bestå samlet lokal `scripts/validate-source.ps1`, inklusive de nye mobiliseringstests og releasegate.
 - [x] Bestå exact-head `32607989444` på `03083f92`, merge PR #87 som `48240d73` og fuld post-merge-produktion `32608050112` med central hydrering, fuld validering, releasegate, Supabase, artifact, Pages og grøn 210/673-kontrakt.
-- [ ] Implementér nu samlet central persistens af transport- og mobiliseringstilstand, frisk fallback-kompatibel 673-deles shadow, forklaring og rollback som særskilt offentlig aktiveringspakke.
+- [x] Implementér samlet central persistens af transport- og mobiliseringstilstand samt fallback-kompatibel 673-deles shadowkontrakt i 4.0.259-kandidaten; eksternt produktionsbevis og modnet slutshadow udestår ovenfor.
 
 ## Candidate G frigivelsesrevision – score-neutral
 
@@ -27,7 +43,7 @@
 - [x] Bestå exact-head `32604792201` på `f6458f09`, merge PR #84 som `800a93cb`, fuld produktion `32604850884` og verificér live `rr-20260822232159-210` som komplet 210/673 uden offentlig Candidate G-aktivering.
 - [x] Udpeg `0,03→0,15 m/s` uden passivt neutralt tab som anbefalet privat produktprior efter nyt `RESEARCH-2`-replay; det ændrer 213/1.460 scorebånd mod 377 for 0,02→0,12.
 - [x] Implementér en score-neutral kompakt fortsættelsestilstand og bevis, at en opdelt pipelinekørsel reproducerer ubrudt potentiale, udtransporttimer og nul-gate eksakt.
-- [ ] Kobl senere den afledte tilstand gennem den centrale produktionspipeline og national shadow med rollback; dette delmål ændrer ikke offentlig score eller runtime.
+- [x] Kobl den afledte tilstand gennem den centrale produktionspipeline og fallback-kompatible nationale shadow med score-neutral rollback i 4.0.259-kandidaten.
 - [ ] Luk resterende coverage-, tærskel-, starttilstands-, validerings-, admin-/rollback- og ejer-go/no-go-gates før enhver offentlig aktivering.
 
 ## Docs-only skip – rod-CHANGELOG

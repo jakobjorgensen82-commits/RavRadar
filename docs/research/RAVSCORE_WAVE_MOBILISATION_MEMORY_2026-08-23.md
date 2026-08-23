@@ -81,7 +81,7 @@ Opbygningsvalget og replaystarten har beskeden betydning i dette materiale. Aftr
 
 ## Anbefaling
 
-Brug `RESEARCH-3` med fire timers opbygning og 48 timers aftrapning som det samlede Candidate G-spor til næste produkttrin. Bevar den gamle mobilisering som revisionsreference. Kobl ikke den nye model halvt ind i den offentlige runtime: transporttilstand, mobiliseringstilstand, forklaring og rollback skal versionsbindes og valideres samlet.
+Brug `RESEARCH-3` med fire timers opbygning og 48 timers aftrapning som det samlede Candidate G-spor. Bevar den gamle mobilisering som revisionsreference. DEC-0057/4.0.259-kandidaten kobler nu transporttilstand, mobiliseringstilstand, forklaring og score-neutral rollback samlet til den centrale runtime; aktiv scorekobling afventer ekstern leveringsverifikation og en modnet slutshadow.
 
 ## Leveranceevidens
 

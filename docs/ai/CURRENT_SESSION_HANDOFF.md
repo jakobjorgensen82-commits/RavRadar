@@ -1,5 +1,16 @@
 # RavRadar - aktuelt Codex-handoff
 
+## Checkpoint 2026-08-23 – 4.0.259 central Candidate G-kandidat
+
+- Branch `codex/candidate-g-central-state-pipeline` forbereder 4.0.259. Aktiv offentlig RavScore er fortsat `25/40/35`; Candidate G er kun et adskilt diagnostisk runtimefelt.
+- DEC-0057 binder den centrale tilstand til model, profil, kystdel, vandpunkt og kystretning via hash. Kun tidspunkt, transportpotentiale, effektive udtransporttimer og mobiliseringspotentiale persistéres; rå U/V, vejrinput, koordinater og private payloads indgår ikke.
+- Tilstanden vælges ved zonens fælles `currentReferenceAt`. Same-time-rekørsel og missing holder tilstanden, og ændret kontekst nulstiller fail-closed.
+- Den manuelle shadow er ændret fra ny native-only DMI-hentning til read-only audit af den faktiske fallback-kompatible public detaljefil. Self-test kræver 210 zoner, 673 dele, 1.346 modeevalueringer og nul score-rekonstruktionsafvigelser.
+- Rollback er score-neutral: aktiv scorekode ignorerer Candidate G-navnerummet. En senere aktivering kræver en særskilt omskifter og testet tilbagekobling til `25/40/35`.
+- Første produktion er bootstrap fra 0 og må ikke beskrives som modnet 48-timershistorik. Efter lokal gate, exact-head, merge og fuld produktion skal en frisk manual shadow køres, mens naturlig state-alder dokumenteres.
+- Samlet lokal `scripts/validate-source.ps1`, inklusive alle nye Candidate G-/workflowtests og releasegaten, er grøn for 4.0.259.
+- Geometri, land-/vandpunkter, artifact, protected-dirty-data og den private cache er urørte.
+
 ## Checkpoint 2026-08-23 – Candidate G mobilisering leveret
 
 - Branch `codex/candidate-g-mobilisation-policy` bygger `RESEARCH-3`, som kun erstatter Candidate G's mobiliseringsled. Offentlig `25/40/35` er uændret.

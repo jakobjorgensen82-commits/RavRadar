@@ -181,7 +181,9 @@ export function buildCurrentTransportPotential(
     let neutralPassiveDecayPoints = 0;
     let phase = entry.verified ? 'RETAINED_OR_NEUTRAL' : 'UNVERIFIED_PAUSE';
 
-    if (outboundStrength > 0) {
+    if (elapsedHours === 0) {
+      phase = entry.verified ? 'SAME_TIME_HOLD' : 'UNVERIFIED_PAUSE';
+    } else if (outboundStrength > 0) {
       const previousLossPoints = outboundEpisodeLossPoints;
       outboundEpisodeEffectiveHours += elapsedHours * outboundStrength;
       const actualOutboundTransport = outboundEpisodeEffectiveHours >= safeExhaustionHours;
