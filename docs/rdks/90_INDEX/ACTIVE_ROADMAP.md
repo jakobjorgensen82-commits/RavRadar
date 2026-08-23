@@ -10,7 +10,10 @@
 - [x] Kontrollér lokal desktop og mobil ved 390 px uden vandret overløb.
 - [x] Bestå PR #116 exact-head `32670857438` og merge `5a2f7796`; første produktion `32670920742` stoppede korrekt før deploy på en ældre test, der stadig krævede den tidligere tekniske rangeringstekst.
 - [x] Bevar den nye almindelige forklaring, ret rangeringstestens kontrakt og føj den til `validate:source`, så mismatchet fremover opdages før vejropbygningen.
-- [ ] Bestå gatekorrektionens exact-head, merge, frisk 4.0.268-produktion og den relevante offentlige 210/673-browserkontrol.
+- [x] Bestå PR #117 exact-head `32671863965`, merge `21acb0a2` og lad produktion `32671924885` bekræfte rangeringstesten; kørselen stoppede fortsat før deploy på en anden gammel ordret stateforklaringstest.
+- [x] Ret stateforklaringskontrakten til **De seneste timers betydning**, føj den til `validate:source` og målret hele den resterende testsamling, der læser de ændrede offentlige moduler.
+- [x] Bestå 29 direkte UI-/auth-/konto-/assistent-/startup-tests og fjern den historiske 4.0.240-sikkerhedstests modstrid med den gældende 4.0.268-kontrakt.
+- [ ] Bestå den samlede gatekorrektions exact-head, merge, frisk 4.0.268-produktion og den relevante offentlige 210/673-browserkontrol.
 - [ ] Luk derefter 4.0.268 med eksakte run-id'er i RDKS, roadmap, håndbøger, changelog og permanent handoff.
 
 ## Produktionsverificeret 4.0.267 – kontoindberetningens uploadskema

@@ -10,7 +10,10 @@
 - [x] Kontrollér desktop og 390 px mobil lokalt uden vandret overløb.
 - [x] Bestå PR #116 exact-head `32670857438` på source-head `c810155b` og merge som `5a2f7796`.
 - [x] Lad første produktion `32670920742` stoppe før deploy på den forældede ordrette rangeringstest; bevar den nye almindelige forklaring, ret testen og føj den til `validate:source`.
-- [ ] Bestå gatekorrektionens exact-head, merge, frisk 4.0.268-produktion og den offentlige 210/673-runtime.
+- [x] Bestå PR #117 exact-head `32671863965`, merge `21acb0a2` og bekræft i produktion `32671924885`, at rangeringstesten nu passerer.
+- [x] Lad samme produktion stoppe før deploy på den næste forældede ordrette test; ret stateforklaringstesten til **De seneste timers betydning** og føj den til `validate:source`.
+- [x] Kør 29 direkte læsere af de ændrede offentlige moduler målrettet; gør den historiske 4.0.240-sikkerhedstest til en kompatibel indgang til den gældende 4.0.268-kontrakt. Hele gruppen er grøn.
+- [ ] Bestå den samlede gatekorrektions exact-head, merge, frisk 4.0.268-produktion og den offentlige 210/673-runtime.
 - [ ] Opdatér denne status med eksakte commits, kørsler og liveversion.
 
 Score, Candidate G, `20/50/30`, vejrdata, Supabase-kontrakt, geometri og land-/vandpunkter er uændrede. Se DEC-0067.

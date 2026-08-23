@@ -4,7 +4,10 @@
 - De centrale offentlige tekster er gennemgået og forenklet uden ændring af Candidate G, `20/50/30`, vejr, Supabase-kontrakt, geometri eller land-/vandpunkter.
 - PR #116 bestod exact-head `32670857438` på `c810155b` og blev merged som `5a2f7796`.
 - Første produktion `32670920742` stoppede før release/deploy, fordi den fulde validering fandt en ældre rangeringstest, der stadig krævede den erstattede tekniske hjælpetekst ordret.
-- Den nye almindelige forklaring bevares. Testen kræver nu den gældende tekst og er føjet til `validate:source`, så samme mismatch opdages før en dyr vejropbygning. Ny exact-head, produktion og onlinekontrol afventer.
+- Den nye almindelige forklaring bevares. PR #117/exact-head `32671863965` rettede rangeringstesten og blev merged som `21acb0a2`.
+- Produktion `32671924885` bekræftede rangeringstesten, men stoppede fortsat før deploy på en anden gammel ordret kontrakt: stateforklaringstesten krævede **Hvad skete før nu?** frem for **De seneste timers betydning**.
+- Den anden kontrakt rettes og føjes til `validate:source`. Hele testsamlingen, der direkte læser de ændrede offentlige moduler, køres nu målrettet før næste PR. Ny exact-head, produktion og onlinekontrol afventer.
+- Den systemiske målretning kørte 29 direkte tests og fandt én yderligere historisk 4.0.240-sikkerhedstest, som ikke længere lå i en gate, men stadig krævede gentagne advarsler. Den historiske indgang følger nu 4.0.268-kontrakten, og hele gruppen er grøn.
 
 ## 2026-08-23 – skema og tom GPS-værdi blokerede turindberetninger
 
