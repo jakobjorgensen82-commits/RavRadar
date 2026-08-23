@@ -1,7 +1,7 @@
-import { authEnabled, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.267";
-import { getLocalObservations, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.267";
-import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.267";
-import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.267";
+import { authEnabled, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.268";
+import { getLocalObservations, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.268";
+import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.268";
+import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.268";
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>'"]/g, character => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" })[character]);
@@ -62,7 +62,7 @@ function renderHistoryRows(rows, context) {
     const found = rowFound(row);
     const zoneId = row.actual_zone_id || row.zone_id;
     const zone = displayName(zoneId, zoneNames, row.zone_name || 'Område ikke angivet');
-    const part = displayName(row.actual_coastal_part_id, partNames, 'Kystdel ikke angivet');
+    const part = displayName(row.actual_coastal_part_id, partNames, 'Kyststrækning ikke angivet');
     const grams = found && Number.isFinite(Number(row.grams)) ? `<span>${escapeHtml(Number(row.grams).toLocaleString('da-DK'))} g</span>` : '';
     const pending = row._source === 'device' && row.sync_status !== 'synced' ? '<span class="trip-log-pending">Venter på at blive sendt</span>' : '';
     const manual = row.data_quality_flags?.includes('account-manual') ? '<span>Efterregistreret</span>' : '';
@@ -91,7 +91,7 @@ async function showTripHistory(dialog, context) {
     <div class="trip-log-summary"><div><strong>${rows.length}</strong><span>Ture</span></div><div><strong>${foundCount}</strong><span>Ture med fund</span></div><div><strong>${escapeHtml(minutesLabel(totalMinutes))}</strong><span>Samlet søgetid</span></div></div>
     <div class="trip-log-list">${rows.length ? renderHistoryRows(rows, context) : '<p class="empty-state-inline">Du har endnu ingen indsendte ture på denne konto.</p>'}</div>
     ${rows.length >= 100 ? '<p class="muted">Viser de seneste 100 ture.</p>' : ''}
-    <p class="trip-log-privacy">RavRadar gemmer den valgte zone og kystdel – ikke din præcise position eller GPS-rute.</p>`;
+    <p class="trip-log-privacy">RavRadar gemmer det valgte område og den valgte kyststrækning – ikke din præcise position eller GPS-rute.</p>`;
   content.querySelector('#tripHistoryBack')?.addEventListener('click', () => renderAccount(dialog, context));
 }
 
@@ -126,11 +126,11 @@ function renderAccount(dialog, context, message = '') {
   content.innerHTML = signedIn ? `
     <h2>Min konto</h2>
     <p>Du er logget ind${session.user?.email ? ` som <strong>${escapeHtml(session.user.email)}</strong>` : ''}.</p>
-    <p>Når du indsender en ravtur, gemmes den én gang i RavRadars database og knyttes til din konto, så kun du kan se den i din turlog.</p>
+    <p>Når du indsender en ravtur, gemmes den hos RavRadar og knyttes til din konto, så kun du kan se den i din turlog.</p>
     ${message ? `<p class="notice" role="status">${escapeHtml(message)}</p>` : ''}
     <a id="accountTripReportLink" class="account-feature-link" href="#indberet-tur">Indberet tur eller fund <span aria-hidden="true">→</span></a>
     <a id="tripHistoryLink" class="account-feature-link" href="#mine-ture">Mine ture og fund <span aria-hidden="true">→</span></a>
-    <p class="account-privacy-note">RavRadar sender ikke din præcise position eller GPS-rute. Oplysningerne bruges til at undersøge, hvornår score-reglerne rammer rigtigt og forkert.</p>
+    <p class="account-privacy-note">RavRadar sender ikke din præcise position eller GPS-rute. Oplysningerne bruges til at undersøge, hvornår scorereglerne rammer rigtigt og forkert.</p>
     <button id="signOutButton" class="primary-button" type="button">Log ud</button>` : `
     <h2>Login er valgfrit</h2>
     <p>Du kan bruge RavRadar og indberette ture uden en konto. Uden login sendes turen uden forbindelse til en bruger og kan derfor ikke følge med til en anden enhed.</p>

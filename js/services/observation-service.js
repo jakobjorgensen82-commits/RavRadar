@@ -1,7 +1,7 @@
-import { PUBLIC_CONFIG } from '../../config.js?v=4.0.267';
-import { authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.267';
-import { assertTripEvidencePrivacy } from './trip-evidence-contract.js?v=4.0.267';
-import { ACCOUNT_TRIP_REPORT_SOURCE, HISTORICAL_SNAPSHOT_UNAVAILABLE } from './account-trip-report-contract.js?v=4.0.267';
+import { PUBLIC_CONFIG } from '../../config.js?v=4.0.268';
+import { authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.268';
+import { assertTripEvidencePrivacy } from './trip-evidence-contract.js?v=4.0.268';
+import { ACCOUNT_TRIP_REPORT_SOURCE, HISTORICAL_SNAPSHOT_UNAVAILABLE } from './account-trip-report-contract.js?v=4.0.268';
 const enabled=Boolean(PUBLIC_CONFIG.supabaseUrl&&PUBLIC_CONFIG.supabasePublishableKey);
 const LOCAL_KEY='ravradar-observations-v2';
 const OUTBOX_KEY='ravradar-observation-outbox-v1';
@@ -44,7 +44,7 @@ async function postRemote(row){
   }else{
     response=await fetch(url,{...options,headers:{apikey:PUBLIC_CONFIG.supabasePublishableKey,Authorization:`Bearer ${PUBLIC_CONFIG.supabasePublishableKey}`,...options.headers}});
   }
-  if(!response.ok)throw new Error(`HTTP ${response.status}`);
+  if(!response.ok)throw new Error('Turen kunne ikke sendes lige nu. Den bliver liggende på enheden, så du kan prøve igen.');
 }
 export async function syncPendingObservations(){if(!enabled)return getObservationSyncStatus();const queue=read(OUTBOX_KEY,[]),remaining=[];for(const row of queue){try{await postRemote({...row,sync_status:undefined,sync_error:undefined});upsertLocal({...row,sync_status:'synced',synced_at:new Date().toISOString(),sync_error:null});}catch(error){remaining.push({...row,sync_status:'pending',sync_error:error.message});upsertLocal({...row,sync_status:'pending',sync_error:error.message});}}write(OUTBOX_KEY,remaining);localStorage.setItem('ravradar-observation-last-sync',new Date().toISOString());return getObservationSyncStatus();}
 export async function submitObservation({zone,huntMode,result,grams=null,scoreResult,weather,gps=null,tripId=null,observedAt=null,prediction=null}){
@@ -52,7 +52,7 @@ export async function submitObservation({zone,huntMode,result,grams=null,scoreRe
   upsertLocal(row);if(!enabled)return {stored:'local',row};enqueue(row);const status=await syncPendingObservations();const stored=status.pending?'pending':'supabase';return {stored,row,status};
 }
 export async function submitTripEvidenceObservation(columns){
-  if(columns?.schema_version!==2)throw new Error('Kun turkontrakt v2 kan gemmes gennem denne funktion.');
+  if(columns?.schema_version!==2)throw new Error('Turen har et ugyldigt format og kan ikke gemmes.');
   assertTripEvidencePrivacy(columns);
   const existing=getLocalObservations().find(row=>row.trip_id===columns.trip_id);
   let session=currentSession();
@@ -109,8 +109,8 @@ export async function submitTripEvidenceObservation(columns){
 }
 
 export async function submitAccountTripReportObservation(columns){
-  if(columns?.schema_version!==1||!columns?.data_quality_flags?.includes(ACCOUNT_TRIP_REPORT_SOURCE))throw new Error('Kontoindberetningen har ugyldigt format.');
-  if(columns.calibration_eligible!==false)throw new Error('En efterregistreret tur uden sikkert historisk snapshot må ikke bruges direkte til scorekalibrering.');
+  if(columns?.schema_version!==1||!columns?.data_quality_flags?.includes(ACCOUNT_TRIP_REPORT_SOURCE))throw new Error('Efterregistreringen har et ugyldigt format og kan ikke gemmes.');
+  if(columns.calibration_eligible!==false)throw new Error('Efterregistreringen mangler de nødvendige historiske oplysninger og kan ikke gemmes som en almindelig RavRadar-tur.');
   assertTripEvidencePrivacy(columns);
   let session=currentSession();
   if(session?.access_token&&!session?.user?.id)session=await requireFreshSession();

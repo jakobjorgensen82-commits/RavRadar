@@ -1,12 +1,23 @@
 # Current truth – gældende projektviden
 
-## 4.0.267-kandidat – komplet uploadskema
+## Aktiv 4.0.268-kandidat – ravjagt før RavRadar
+
+- Den offentlige læring er nu en selvstændig **Grundbog i ravjagt**, ikke en vejledning i at trykke rundt i appen. Den lærer først ravets egenskaber, mobilisering, transport, vind, bølger, strøm, vandstand, kystformer, felttegn og selve jagten.
+- Grundforklaringen er: Bølger kan mobilisere, strøm transporterer, og kysten sorterer og samler. Vind virker især gennem bølger, vandlag, vandstand og søgeforhold; der findes ingen universel gunstig dansk vindretning.
+- Strand, vandkant, waders og UV omkring 365 nm beskrives som forskellige metoder. UV er et spor og ikke et endeligt ægthedsbevis; ødelæggende hjemmetests anbefales ikke.
+- RavRadar forklares først efter den praktiske og fysiske viden. Den aktive `20/50/30`-model, waders-vindkurven og 13-timers udtransportregel beskrives som testede RavRadar-regler, ikke universelle naturgrænser.
+- Centrale offentlige tekster om login, konto, tur, score, opdatering og datakilder er gjort mere forståelige. Interne standardord som fallback, datasæt, databaseleverandør og tekniske scorereferencer vises ikke som normal brugertekst.
+- Kandidaten ændrer ingen score, Candidate G-regel, vejrdata, Supabase-kontrakt, geometri eller land-/vandpunkter. De to geodatafiler har kun versionsfeltet 4.0.268.
+- Lokal målrettet test samt desktop- og 390 px-mobilkontrol er grøn. Exact-head, frisk produktion og offentlig 210/673-kontrol mangler endnu. Se DEC-0067.
+
+## Produktionsverificeret 4.0.267 – komplet uploadskema
 
 - 4.0.266 løste redirect og privat turloglæsning, men den aktive tabel manglede stadig de manuelle kontoindberetningers POST-only-felter `forecast_target_at` og `report_accuracy`.
 - Den centrale, databevarende hotfix er anvendt og read-only efterkontrolleret. Begge felter findes nu; ingen observationsrække er ændret eller slettet.
 - Ejerens efterfølgende genindlæsning gav fortsat nul ture. API-loggen viste GET men intet POST: den fælles privatlivskontrol afviste den krævede tomme værdi `gps=null` før lokal lagring. Det ramte både efterregistrering og **Start ravtur → Slut ravtur**.
-- 4.0.267 tillader kun lokationsnøgler med værdien `null`; alle faktiske GPS-/positions-/rutedata forbliver blokeret. De to tidligere forsøg nåede ikke outboxen og skal indberettes igen efter udgivelsen.
-- Exact-head, 4.0.267-produktion og en ny ejerprøve udestår. Se DEC-0066.
+- 4.0.267 tillader kun lokationsnøgler med værdien `null`; alle faktiske GPS-/positions-/rutedata forbliver blokeret. De to tidligere forsøg nåede ikke outboxen og blev ikke fejlagtigt eftersendt.
+- PR #115 bestod exact-head `32664463654` på source-head `92379b27`, blev merged som `43ceffc1`, og produktion `32664525128` bestod frisk data, fuld validering, releasegate, Supabase og Pages.
+- Ejeren oprettede derefter en ny indberetning, og den blev både sendt og synlig i **Mine ture og fund**. Uploadkæden er dermed lukket ende til ende. Se DEC-0066.
 
 ## Produktionsverificeret 4.0.266 – virkelig magic-link-retur og aktiv turlogkontrakt
 

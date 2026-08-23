@@ -1,4 +1,4 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.267";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.268";
 
 const STORAGE_KEY = "ravradar-auth-session";
 const REFRESH_MARGIN_SECONDS = 300;
@@ -24,7 +24,7 @@ function saveSession(next) {
 }
 function timeoutSignal(timeoutMs=DEFAULT_TIMEOUT_MS, externalSignal=null) {
   const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(new DOMException(`Supabase svarede ikke inden ${Math.round(timeoutMs/1000)} sekunder.`, 'TimeoutError')),timeoutMs);
+  const timer=setTimeout(()=>controller.abort(new DOMException(`Loginforbindelsen svarede ikke inden ${Math.round(timeoutMs/1000)} sekunder.`, 'TimeoutError')),timeoutMs);
   if(externalSignal){
     if(externalSignal.aborted)controller.abort(externalSignal.reason);
     else externalSignal.addEventListener('abort',()=>controller.abort(externalSignal.reason),{once:true});
@@ -32,12 +32,21 @@ function timeoutSignal(timeoutMs=DEFAULT_TIMEOUT_MS, externalSignal=null) {
   return {signal:controller.signal,done:()=>clearTimeout(timer)};
 }
 function friendlyNetworkError(error){
-  if(error?.name==='AbortError'||error?.name==='TimeoutError')return new Error('Supabase svarede ikke i tide. Kontrollér forbindelsen og prøv igen.');
-  if(error instanceof TypeError)return new Error('Kunne ikke kontakte Supabase. Din eksisterende opsætning er bevaret; prøv igen eller kontrollér netværket.');
+  if(error?.name==='AbortError'||error?.name==='TimeoutError')return new Error('Loginforbindelsen svarede ikke i tide. Kontrollér forbindelsen og prøv igen.');
+  if(error instanceof TypeError)return new Error('RavRadar kunne ikke kontakte loginforbindelsen. Prøv igen, eller kontrollér netværket.');
   return error;
 }
+function friendlyAuthResponse(body,status){
+  const raw=String(body?.msg||body?.error_description||body?.message||'').toLowerCase();
+  const problem=message=>Object.assign(new Error(message),{status,body});
+  if(/invalid login|invalid credentials/.test(raw))return problem('E-mail eller adgangskode er forkert.');
+  if(/email not confirmed/.test(raw))return problem('Åbn først bekræftelsesmailen, og prøv derefter igen.');
+  if(/already registered|already exists/.test(raw))return problem('Der findes allerede en konto med denne e-mail. Prøv at logge ind.');
+  if(/rate limit|too many/.test(raw))return problem('Der er sendt for mange forsøg på kort tid. Vent lidt, og prøv igen.');
+  return problem('Login kunne ikke gennemføres. Prøv igen.');
+}
 async function authRequest(path, options = {}, { useAuthorization = true, timeoutMs=DEFAULT_TIMEOUT_MS } = {}) {
-  if (!enabled) throw new Error("Login er ikke aktiveret i config.js endnu.");
+  if (!enabled) throw new Error("Login er ikke tilgængeligt lige nu.");
   const guard=timeoutSignal(timeoutMs,options.signal);
   let response;
   try { response = await fetch(`${PUBLIC_CONFIG.supabaseUrl}/auth/v1${path}`, {
@@ -51,7 +60,7 @@ async function authRequest(path, options = {}, { useAuthorization = true, timeou
     signal:guard.signal
   }); } catch(error) { throw friendlyNetworkError(error); } finally { guard.done(); }
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw Object.assign(new Error(body.msg || body.error_description || body.message || `Loginfejl (${response.status})`), { status: response.status, body });
+  if (!response.ok) throw friendlyAuthResponse(body,response.status);
   return body;
 }
 function tokenNeedsRefresh() {
@@ -66,10 +75,10 @@ async function hydrateSessionUser() {
   return session;
 }
 export async function refreshSession({ force = false } = {}) {
-  if (!enabled) throw new Error("Supabase er ikke konfigureret.");
+  if (!enabled) throw new Error("Loginforbindelsen er ikke klar lige nu.");
   if (!session?.refresh_token) {
     if (session?.access_token && !force) return session;
-    throw new Error("Din Supabase-session kan ikke fornyes. Log ind igen.");
+    throw new Error("Din login-session kunne ikke fornyes. Log ind igen.");
   }
   if (!force && !tokenNeedsRefresh()) return session;
   if (refreshPromise) return refreshPromise;
@@ -87,7 +96,7 @@ export async function refreshSession({ force = false } = {}) {
   return refreshPromise;
 }
 export async function requireFreshSession() {
-  if (!session?.access_token) throw new Error("Du er ikke logget ind på Supabase.");
+  if (!session?.access_token) throw new Error("Du er ikke logget ind.");
   if (tokenNeedsRefresh()) await refreshSession();
   if (!session?.user?.id) await hydrateSessionUser();
   return session;
@@ -144,7 +153,7 @@ export async function consumeAuthCallback() {
 export async function getCurrentProfile() {
   const s = await requireFreshSession();
   const userId = s.user?.id;
-  if (!userId) throw new Error("Supabase-sessionen mangler bruger-id. Log ind igen.");
+  if (!userId) throw new Error("Din login-session kunne ikke knyttes til din konto. Log ind igen.");
   const response = await authorizedFetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/profiles?select=id,email,display_name,role,is_active&id=eq.${encodeURIComponent(userId)}&limit=1`);
   if (!response.ok) throw new Error(`Kunne ikke kontrollere brugerprofilen (${response.status})`);
   return (await response.json())[0] || null;
@@ -160,7 +169,7 @@ export async function signInAsExpert(username,password){
   return currentSession();
 }
 export async function testConnection(){
-  if(!enabled) return {ok:false,status:0,authenticated:false,message:'Supabase er ikke konfigureret'};
+  if(!enabled) return {ok:false,status:0,authenticated:false,message:'Loginforbindelsen er ikke sat op'};
   try {
     const s = await requireFreshSession();
     const response=await authorizedFetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/profiles?select=id&limit=1`);

@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 
 const root=process.cwd();
 const read=rel=>fs.readFile(path.join(root,rel),'utf8');
@@ -8,6 +9,9 @@ const pkg=JSON.parse(await read('package.json'));
 const version=pkg.version;
 const errors=[];
 const ok=(cond,msg)=>{if(!cond)errors.push(msg)};
+
+const publicLearningTest=spawnSync(process.execPath,['scripts/test-public-learning-module-4.0.268.mjs'],{cwd:root,stdio:'inherit'});
+ok(publicLearningTest.status===0,'Det offentlige læringsmodul eller sproggaten fejlede');
 
 const exactVersionFiles=['version.json','data/kystdata.json','data/zones.geojson','docs/handbook/content.json'];
 for(const rel of exactVersionFiles){

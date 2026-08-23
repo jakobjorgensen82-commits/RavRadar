@@ -1,9 +1,9 @@
 # Kendte åbne og overvågede forhold
 
-## 4.0.267 turindberetningens uploadkæde
+## 4.0.267 turindberetningens uploadkæde – lukket og overvåget
 
-- **ISSUE-ACCOUNT-TRIP-POST-COLUMNS – CENTRAL HOTFIX ANVENDT / RELEASE AFVENTER:** Den manuelle kontoindberetning sender `forecast_target_at` og `report_accuracy`, som manglede i aktiv Supabase. Begge kolonner er nu tilføjet uden rækkeændring. Se DEC-0066.
-- **ISSUE-TRIP-PRIVACY-NULL-GUARD – LOKALT RETTET / RELEASE OG NY EJERPRØVE AFVENTER:** Privatlivskontrollen afviste feltet `gps`, selv med værdien `null`, før lokal lagring og upload. Det ramte både kontoindberetning og almindelig Start/Slut-tur. 4.0.267 tillader kun `null`; enhver faktisk lokationsværdi er fortsat blokeret. De to tidligere ejerforsøg nåede ikke outboxen.
+- **ISSUE-ACCOUNT-TRIP-POST-COLUMNS – PRODUKTIONSVERIFICERET LØST:** Den manuelle kontoindberetning sender `forecast_target_at` og `report_accuracy`, som manglede i aktiv Supabase. Begge kolonner er tilføjet uden rækkeændring, og 4.0.267 bestod fuld produktion. Se DEC-0066.
+- **ISSUE-TRIP-PRIVACY-NULL-GUARD – PRODUKTIONSVERIFICERET LØST:** Privatlivskontrollen afviste feltet `gps`, selv med værdien `null`, før lokal lagring og upload. 4.0.267 tillader kun `null`; enhver faktisk lokationsværdi er fortsat blokeret. En ny ejerindberetning blev sendt og synlig efter release. De to tidligere forsøg nåede ikke outboxen.
 
 ## 4.0.266 produktionslogin og turlog
 

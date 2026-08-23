@@ -4,7 +4,7 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#073b4c">
   <meta name="description" content="RavRadar vurderer aktuelle forhold for ravjagt langs danske kyster.">
   <title>RavRadar – dansk ravprognose</title>
-  <link rel="manifest" href="manifest.webmanifest"><link rel="preconnect" href="https://unpkg.com"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""><link rel="stylesheet" href="style.css?v=4.0.267">
+  <link rel="manifest" href="manifest.webmanifest"><link rel="preconnect" href="https://unpkg.com"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""><link rel="stylesheet" href="style.css?v=4.0.268">
 </head>
 <body>
   <header class="app-header">
@@ -19,19 +19,19 @@
   <main>
     <section class="mode-panel" aria-labelledby="modeTitle"><div><h2 id="modeTitle">Hvordan vil du lede?</h2><p>Vælg vand eller strand. RavRadar tilpasser scoren til den måde, du vil lede på.</p></div><div class="segmented-control" role="group" aria-label="Søgemåde"><button class="mode-button active" type="button" data-mode="waders" aria-pressed="true">🌊 I vandet (waders)</button><button class="mode-button" type="button" data-mode="beach" aria-pressed="false">🥾 På stranden</button></div></section>
     <section class="dashboard"><div class="map-column"><div class="map-shell" aria-label="Kort over ravzoner"><div id="map"></div></div><div class="legend" aria-label="Kortforklaring"><span><i class="legend-dot good"></i>God</span><span><i class="legend-dot fair"></i>Middel</span><span><i class="legend-dot weak"></i>Svag</span><span><i class="legend-dot poor"></i>Dårlig</span><span><i class="legend-dot unavailable"></i>Ingen data</span></div><p class="legend-note">En stjerne viser usædvanligt gode forhold.</p></div>
-      <aside class="ranking-panel" aria-labelledby="rankingTitle"><div class="section-heading"><p class="eyebrow dark">Aktuelt</p><h2 id="rankingTitle">Bedste områder</h2><p class="ranking-note">Placeringen tager højde for, om en høj score støttes af flere kyststrækninger. Den viste RavScore ændres ikke.</p></div><div id="ranking" class="ranking"><p class="ranking-empty">Indlæser rangliste…</p></div></aside></section>
-    <section id="nationalForecast" class="national-forecast" aria-labelledby="nationalForecastTitle"><div class="section-heading"><p class="eyebrow dark">De bedste zoner dag for dag</p><h2 id="nationalForecastTitle">5-dages RavRadar</h2><p class="ranking-note">Placeringen tager højde for, om en høj score støttes af flere kyststrækninger. Den viste RavScore ændres ikke.</p></div><div id="nationalForecastContent"><p class="ranking-empty">Indlæser prognose…</p></div></section>
+      <aside class="ranking-panel" aria-labelledby="rankingTitle"><div class="section-heading"><p class="eyebrow dark">Aktuelt</p><h2 id="rankingTitle">Bedste områder</h2><p class="ranking-note">Et område står højere, når flere af dets kyststrækninger har gode forhold. RavScore-tallet er stadig områdets bedste aktuelle score.</p></div><div id="ranking" class="ranking"><p class="ranking-empty">Indlæser rangliste…</p></div></aside></section>
+    <section id="nationalForecast" class="national-forecast" aria-labelledby="nationalForecastTitle"><div class="section-heading"><p class="eyebrow dark">De bedste zoner dag for dag</p><h2 id="nationalForecastTitle">5-dages RavRadar</h2><p class="ranking-note">Et område står højere, når flere af dets kyststrækninger har gode forhold. RavScore-tallet er stadig områdets bedste score på det viste tidspunkt.</p></div><div id="nationalForecastContent"><p class="ranking-empty">Indlæser prognose…</p></div></section>
     <section id="infoPanel" class="info-panel" aria-live="polite"><div class="empty-state"><h2>Vælg et område på kortet</h2><p>Du får RavScore, en forklaring og de vigtigste forhold for den måde, du vil lede på.</p></div></section>
-    <section class="about-panel"><h2>Sådan læses RavScore</h2><p>RavScore samler tre ting: hvor let det er at lede, om strømmen fører rav mod kysten, og om rav kan være blevet løsnet og sat i bevægelse. Tryk på en delscore for at se både betydningen og grunden til pointene.</p></section>
+    <section class="about-panel"><div><h2>Sådan læses RavScore</h2><p>RavScore samler tre ting: hvor let det er at lede, om strømmen fører rav mod kysten, og om rav kan være blevet løsnet og sat i bevægelse. Tryk på en delscore for at se både betydningen og grunden til pointene.</p></div><a class="learn-link" href="./learn.html">Lær ravjagt fra havbund til fund <span aria-hidden="true">→</span></a></section>
   </main>
   <footer>
-    <p>RavRadar viser en beregnet prognose. De lokale forhold kan afvige.</p>
+    <p>RavRadar viser en beregnet vurdering. Forholdene på stedet kan være anderledes.</p>
     <p id="dataStatus">Indlæser data…</p>
-    <p class="app-version">Version <span id="appVersion">4.0.267</span></p>
+    <p class="app-version">Version <span id="appVersion">4.0.268</span></p>
     <details class="source-credits">
       <summary>Kilder, kort og licenser</summary>
       <div>
-        <p><strong>Vejr og hav:</strong> Baseret på data fra <a href="https://www.dmi.dk/frie-data" target="_blank" rel="noopener noreferrer">DMI</a> og efterfølgende bearbejdet. Fallback-data kan komme fra <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> og <a href="https://api.met.no/" target="_blank" rel="noopener noreferrer">MET Norway</a>. Data er bearbejdet til RavRadars egne scorer og forklaringer.</p>
+        <p><strong>Vejr og hav:</strong> Baseret på data fra <a href="https://www.dmi.dk/frie-data" target="_blank" rel="noopener noreferrer">DMI</a> og efterfølgende bearbejdet. Når DMI mangler en nødvendig værdi, kan den komme fra <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> eller <a href="https://api.met.no/" target="_blank" rel="noopener noreferrer">MET Norway</a>. Data er bearbejdet til RavRadars egne scorer og forklaringer.</p>
         <p><strong>Kort:</strong> Kortdata © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap-bidragsydere</a>. Satellitbilleder © Esri, Maxar, Earthstar Geographics og GIS-brugerfællesskabet. Kortvisningen er bygget med <a href="https://leafletjs.com/" target="_blank" rel="noopener noreferrer">Leaflet</a>.</p>
         <p><strong>Licens:</strong> DMI-, Open-Meteo- og MET Norway-data anvendes under de respektive åbne datalicenser, herunder <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>, hvor det er relevant.</p>
       </div>
@@ -41,6 +41,6 @@
   <dialog id="accountDialog" class="app-dialog"><button class="dialog-close" type="button" aria-label="Luk">×</button><div class="dialog-content"></div></dialog>
   <dialog id="developerDialog" class="app-dialog wide-dialog"><button class="dialog-close" type="button" aria-label="Luk">×</button><div class="dialog-content"></div></dialog>
   <dialog id="pinDialog" class="app-dialog"><button class="dialog-close" type="button" aria-label="Luk">×</button><div class="dialog-content"><h2>Udviklertilstand</h2><form id="pinForm" class="stack-form"><label>PIN<input name="pin" type="password" inputmode="numeric" maxlength="4" required></label><button class="primary-button">Åbn</button><p id="pinStatus" class="form-status"></p></form></div></dialog>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script><script type="module" src="bootstrap.js?v=4.0.267"></script>
-  <script>window.RAVRADAR_VERSION='4.0.267';</script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script><script type="module" src="bootstrap.js?v=4.0.268"></script>
+  <script>window.RAVRADAR_VERSION='4.0.268';</script>
 </body></html>

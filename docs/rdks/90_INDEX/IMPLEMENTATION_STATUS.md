@@ -1,4 +1,20 @@
-# Aktiv implementeringsstatus – komplet uploadskema i 4.0.267
+# Implementeringsstatus – 4.0.268 offentlig grundbog og almindeligt dansk
+
+## Lokal kandidat
+
+- [x] Tilføj en offentlig **Grundbog i ravjagt** med ravets egenskaber, hav, kyst, felttegn, jagtmetoder, hændelsesforløb, RavRadar-forklaring, kilder og ordliste.
+- [x] Placér den praktiske og faglige ravjagt før RavRadar og RavScore.
+- [x] Forklar bølger, strøm, vind, vandstand, revler, render, langs-/tværtransport, strand, vandkant, waders og UV uden en falsk universel retningsregel.
+- [x] Gennemgå normal offentlig ordlyd i forside, scorepanel, Rav-assistent, konto, login, tur og fejl.
+- [x] Tilføj målrettede kontrakttests og releasegate for faglig rækkefølge, emner, aktiv model, mobilopsætning og fravær af internt standardsprog.
+- [x] Kontrollér desktop og 390 px mobil lokalt uden vandret overløb.
+- [ ] Bestå PR'ens exact-head `validate:source`.
+- [ ] Merge, kør frisk 4.0.268-produktion og verificér den offentlige 210/673-runtime.
+- [ ] Opdatér denne status med eksakte commits, kørsler og liveversion.
+
+Score, Candidate G, `20/50/30`, vejrdata, Supabase-kontrakt, geometri og land-/vandpunkter er uændrede. Se DEC-0067.
+
+# Produktionsverificeret implementeringsstatus – komplet uploadskema i 4.0.267
 
 - [x] Bekræft aggregeret, at ingen af de to manuelle ture nåede databasen; læs ingen privat payload.
 - [x] Sammenhold den manuelle uploads fulde feltliste med den aktive tabel og find præcis `forecast_target_at` og `report_accuracy` som manglende.
@@ -6,8 +22,8 @@
 - [x] Bekræft særskilt, at **Start ravtur → Slut ravtur** ikke bruger de to skemafelter, men rammes af den fælles `gps=null`-klientfejl før lagring.
 - [x] Ret privatlivskontrollen, så kun `null` accepteres for lokationsnøgler, mens faktiske GPS-/positions-/rutedata fortsat afvises.
 - [x] Versionsstyr migration, regression, RDKS, håndbogsmetadata og changelog som 4.0.267.
-- [ ] Bestå exact-head, merge og frisk 4.0.267-produktion.
-- [ ] Indberet én ny ejerprøve efter udgivelsen og bekræft, at den sendes og vises. De to tidligere forsøg nåede ikke outboxen.
+- [x] Bestå PR #115 exact-head `32664463654`, merge `43ceffc1` og frisk 4.0.267-produktion `32664525128`.
+- [x] Indberet én ny ejerprøve efter udgivelsen og bekræft, at den sendes og vises i **Mine ture og fund**. De to tidligere forsøg nåede ikke outboxen.
 
 # Implementeringsstatus – produktionslogin og privat turlog i 4.0.266
 
@@ -1849,7 +1865,7 @@ Implementeret og målrettet testet: v2-kontrakt, JSON Schema, korrekt observatio
 - Ikke implementeret: færdig evidenssyntese og internt forsknings-/regelregister.
 - Ikke implementeret: score-neutrale kandidatregler og automatisk gammel-mod-ny-rapport til Codex-samarbejdet.
 - Ikke implementeret: hændelsesmodel, ravvinduer og nye lagdelte forklaringer.
-- Ikke implementeret: omfattende offentligt læringsmodul.
+- Implementeret som 4.0.268-kandidat: omfattende offentlig **Grundbog i ravjagt**; exact-head og produktion afventer.
 - Udskudt: gemte områder og varsler.
 - Fravalgt: separat offentlig scoresikkerhed og gårsdagsbaseret scoreforklaring.
 

@@ -1,5 +1,14 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-24 – læringsmodulet bliver en grundbog i ravjagt
+
+1. Ejeren gjorde det klart, at læringsmodulet ikke skal lære brugeren at anvende RavRadar, men lære alt det, projektet aktuelt ved om ravjagt.
+2. Den eksisterende forskning og supplerende primære kilder blev omsat til en offentlig rækkefølge fra ravets egenskaber over hav, kyst og felttegn til strand-, vandkant-, waders- og UV-jagt.
+3. Grundbogen skelner mellem bølgernes mobilisering, strømmens transport, vindens indirekte virkning og kystens sortering/opsamling. Der gives ingen universel dansk vind- eller strømretning.
+4. RavRadar og den aktive Candidate G-model forklares først til sidst. Score, vejrdata, privat datakontrakt, geometri og land-/vandpunkter ændres ikke.
+5. Den samtidige sproggennemgang fjernede interne standardsystemord fra normal offentlig tekst og samlede sikkerhedsafgrænsningen ét sted uden en særskilt offentlig sikkerhedsscore.
+6. Lokal målrettet test samt desktop- og mobilkontrol er grøn. Exact-head, frisk 4.0.268-produktion og offentlig 210/673-kontrol mangler endnu.
+
 ## 2026-08-23 – den virkelige login- og turlogprøve lukker et produktionsgab
 
 1. Ejeren prøvede et rigtigt magic link. Browseren blev sendt til `localhost:3000` med forbindelsesfejl, mens **Mine ture og fund** ikke kunne hente Supabase og viste nul ture.

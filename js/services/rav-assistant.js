@@ -1,13 +1,13 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.267";
-import { calculateRavScore } from "../core/score-engine.js?v=4.0.267";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.268";
+import { calculateRavScore } from "../core/score-engine.js?v=4.0.268";
 
 const KNOWLEDGE={
- equipment:'Til almindelig ravjagt er de mest nyttige ting: polariserede briller i dagslys, en god ravlygte i mørke, handsker, vindtæt tøj, en lille beholder til fund og kun waders/vadestav hvor forholdene er rolige og kendte.',
- safety:'Gå ikke alene ud i hårdt vejr eller stærk strøm. Kend bunden, følg vandstanden og vend om før forholdene bliver usikre.',
+ equipment:'Til almindelig ravjagt er de mest nyttige ting: polariserede briller i dagslys, en god ravlygte i mørke, handsker, vindtæt tøj og en lille beholder til fund. Waders og vadestav er relevante, når du vil lede i vandet.',
+ safety:'RavScore er en vurdering af ravforholdene, ikke en sikkerhedsvurdering. Vurder altid selv strøm, dybde, bund, vandstand og lokale forhold på stedet.',
  technique:'Se efter tang, træstumper, frø, skaller og andre lette materialer i striber, render, læsider og nye opskylskanter. Afprøv flere små områder frem for at blive stående ét sted.',
- current:'Strømretningen er retningen vandet bevæger sig imod. Rav kan både flyttes ind mod stranden og langs kysten; næsten parallel strøm er derfor ikke automatisk værdiløs.',
- waves:'Bølger kan frigøre og flytte materiale, men større bølger giver ofte dårligere sigt og sikkerhed. Perioden efter kraftigt vejr kan være vigtigere end selve stormtoppen.',
- water:'Faldende vand kan blotlægge opskyl og render. Stigende vand kan føre materiale ind, men kan også gøre passager og wadersjagt farligere.'
+ current:'Strømpilen viser, hvor vandet bevæger sig hen lige nu. Strømmen kan føre rav ind mod kysten, langs kysten eller ud i havet. En næsten kystparallel strøm er derfor ikke automatisk værdiløs.',
+ waves:'Bølger kan løsne rav og andet let materiale fra bunden. Strømmen står for den vigtigste transport, mens bølger også kan hjælpe materiale over en revle eller op på stranden. Derfor kan timerne efter kraftigt vejr være vigtigere end selve toppen.',
+ water:'Faldende vand kan blotlægge nye opskyl og områder, som før var dækket. Stigende vand kan flytte opskylskanten og gøre det sværere at komme til bestemte steder. Vandstand bruges sammen med de øvrige forhold og er ikke alene et tegn på rav.'
 };
 function finite(v){const n=Number(v);return Number.isFinite(n)?n:null;}
 function fmt(v,d=1){const n=finite(v);return n===null?'ukendt':n.toFixed(d).replace('.',',');}
@@ -43,9 +43,9 @@ Listen bygger på alle aktive zoner og deres timeprognoser.`;}
 function bestTime(ctx,q){if(!ctx.zone)return'Vælg en zone først, så finder jeg dens bedste tidspunkt.';const tomorrow=/i morgen|imorgen/.test(q.toLowerCase());const rows=selectedScored(ctx,tomorrow?1:0).slice(0,3);if(!rows.length)return'Der er ikke nok prognosedata for den valgte zone.';const best=rows[0];return`${tomorrow?'I morgen':'I dag'} er bedste tidspunkt i ${ctx.zone.name} cirka ${clock(best.hour.time)} med RavScore ${best.result.score}.
 
 Næste muligheder: ${rows.slice(1).map(x=>`${clock(x.hour.time)} (${x.result.score})`).join(', ')||'ingen næsten lige så gode timer'}.`}
-function equipmentAnswer(ctx){const w=ctx.weather||{};let extra='';if(finite(w.windSpeedMps)>=6||finite(w.waveHeightM)>=.7)extra=' Med de aktuelle forhold ville jeg holde mig på stranden eller helt lavt vand og undgå dyb wadersjagt.';return KNOWLEDGE.equipment+extra;}
-function localAnswer(q,ctx){const intent=classify(q);if(intent==='equipment')return equipmentAnswer(ctx);if(intent==='best-place')return bestPlace(ctx,q);if(intent==='best-time')return bestTime(ctx,q);if(intent==='score')return scoreAnswer(ctx);if(intent==='safety')return KNOWLEDGE.safety;if(intent==='current')return KNOWLEDGE.current;if(intent==='waves')return KNOWLEDGE.waves;if(intent==='water')return KNOWLEDGE.water;if(intent==='technique')return KNOWLEDGE.technique;return'Jeg forstår ikke spørgsmålet sikkert nok endnu. Prøv at spørge om bedste sted, bedste tidspunkt, udstyr, teknik, sikkerhed, strøm, bølger, vandstand eller hvorfor en score er høj eller lav.';}
+function equipmentAnswer(ctx){const w=ctx.weather||{};let extra='';if(finite(w.windSpeedMps)>=6)extra=` Den aktuelle vind på ${fmt(w.windSpeedMps)} m/s trækker ned i søgeforholdene for waders, fordi krusninger og bølger gør det sværere at lyse gennem vandet. Sammenlign eventuelt med “På stranden” på kortet.`;return KNOWLEDGE.equipment+extra;}
+function localAnswer(q,ctx){const intent=classify(q);if(intent==='equipment')return equipmentAnswer(ctx);if(intent==='best-place')return bestPlace(ctx,q);if(intent==='best-time')return bestTime(ctx,q);if(intent==='score')return scoreAnswer(ctx);if(intent==='safety')return KNOWLEDGE.safety;if(intent==='current')return KNOWLEDGE.current;if(intent==='waves')return KNOWLEDGE.waves;if(intent==='water')return KNOWLEDGE.water;if(intent==='technique')return KNOWLEDGE.technique;return'Jeg er ikke sikker på, hvad du mener endnu. Prøv at spørge om bedste sted, bedste tidspunkt, udstyr, teknik, strøm, bølger, vandstand eller hvorfor en score er høj eller lav.';}
 async function remoteAnswer(question,ctx){if(!PUBLIC_CONFIG.supabaseUrl||!PUBLIC_CONFIG.supabasePublishableKey)return null;const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),8000);try{const response=await fetch(`${PUBLIC_CONFIG.supabaseUrl}/functions/v1/ravradar-assistant`,{method:'POST',headers:{apikey:PUBLIC_CONFIG.supabasePublishableKey,'Content-Type':'application/json'},body:JSON.stringify({question,context:ctx}),signal:controller.signal});if(!response.ok)return null;return(await response.json()).answer||null;}catch{return null;}finally{clearTimeout(timer);}}
 export async function askRavRadar(question,context={},options={}){const safe=String(question||'').trim().slice(0,1200);if(!safe)throw new Error('Skriv et spørgsmål først.');if(options?.localOnly)return localAnswer(safe,context);return await remoteAnswer(safe,context)||localAnswer(safe,context);}
-export const QUICK_QUESTIONS=['Hvorfor denne score?','Bedste tidspunkt i dag?','Bedste sted i morgen?','Hvilket udstyr skal jeg bruge?','Forklar strømretningen','Er forholdene sikre?'];
+export const QUICK_QUESTIONS=['Hvorfor denne score?','Bedste tidspunkt i dag?','Bedste sted i morgen?','Hvilket udstyr skal jeg bruge?','Forklar strømretningen','Hvad gør bølgerne?'];
 export { classify as classifyRavQuestion };

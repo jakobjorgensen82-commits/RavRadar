@@ -97,7 +97,7 @@ assert.match(app,/display\.result,display\.weather/,'Zonepanelet får ikke score
 assert.match(app,/zoneReferenceAt\|\|state\.conditions\.productionReferenceAt\|\|state\.conditions\.generatedAt/,'Aktuel lokal score bruger ikke zonens komplette fælles current-reference.');
 assert.match(app,/bestByDate/,'Zonepanelet genbruger ikke den nationale lokale dagsbeslutning.');
 assert.match(ui,/bestByDate\?\.\[day\.date\]/,'Femdøgnspanelet bruger ikke den fælles lokale dagsbeslutning.');
-assert.match(ui,/Hovedzone vises midlertidigt/,'Hovedzonefallback er ikke tydeligt mærket.');
+assert.match(ui,/Viser hele området lige nu/,'Den samlede områdevisning er ikke tydeligt mærket for brugeren.');
 assert.match(producer,/componentReasons:winner\.detail\?\.componentReasons/,'Producenten fører ikke vinderens forklaring med til prognosen.');
 assert.match(producer,/waterTemperatureC:weather\.waterTemperatureC/,'Producenten fører ikke vinderens vandtemperatur med til prognosen.');
 assert.match(producer,/selectNearestCompleteLocalScoreRow\(hourly, generatedAt, expectedPartCount\)/,'Producenten vælger ikke nærmeste komplette fælles time pr. zone.');

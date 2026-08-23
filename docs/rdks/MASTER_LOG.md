@@ -3,7 +3,7 @@
 - Efter grøn 4.0.266-læsning viste ejerens genprøve, at hverken den oprindelige eller en ny manuel kontoindberetning blev synlig. Aggregeret databasekontrol viste nul nye rækker; ingen privat payload blev læst.
 - Uploaden sender `forecast_target_at` og `report_accuracy`, men felterne fandtes ikke i den aktive tabel. Den centrale, databevarende hotfix tilføjede begge og genindlæste PostgREST-schemaet.
 - Efter den centrale rettelse gav genindlæsning fortsat nul ture. API-loggen viste GET uden POST. Den fælles privatlivskontrol afviste `gps=null` før lokal lagring og ramte derfor både efterregistrering og almindelig Start/Slut-tur.
-- 4.0.267 accepterer kun den tomme lokationsværdi `null`; faktiske GPS-, koordinat-, positions-, rute- og spordata afvises fortsat. De to tidligere forsøg nåede ikke outboxen og skal indberettes igen. Exact-head, produktion og ny ejerprøve udestår. Se DEC-0066.
+- 4.0.267 accepterer kun den tomme lokationsværdi `null`; faktiske GPS-, koordinat-, positions-, rute- og spordata afvises fortsat. PR #115/exact-head `32664463654`, merge `43ceffc1` og produktion `32664525128` er grønne, og en ny ejerindberetning blev sendt og synlig. De to tidligere forsøg nåede ikke outboxen. Se DEC-0066.
 
 ## 2026-08-23 – interaktiv login-/turlogprøve finder to produktionskontraktfejl
 
@@ -1996,3 +1996,10 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - Begge rapportveje bruger samme zone→kyststrækningsvalg. GPS-spor, rute, præcis position, fri tekst og billeder indsamles ikke.
 - Turloggens brugerflade viser ikke længere den interne databaseforklaring “Der oprettes ikke en ekstra kopi i databasen”.
 - Målrettede tests er grønne. Version, exact-head og produktion udestår. Candidate G, score, vejrdata, geometri, land-/vandpunkter og beskyttede data er uændrede. Se DEC-0064.
+## 2026-08-24 – 4.0.268-kandidat samler offentlig ravjagtviden og almindeligt dansk
+
+- Ejeren præciserede, at læringsmodulet skal lære alt det, projektet ved om ravjagt, og ikke først og fremmest forklare appen. Den nye **Grundbog i ravjagt** følger derfor kæden fra ravets egenskaber over hav og kyst til felttegn og selve jagten, før RavRadar forklares.
+- Grundbogen dækker mobilisering, transport, vind, bølger, strøm, vandstand, revler, render, langs- og tværtransport, strand, vandkant, waders, UV, hændelsesfaser, scenarier, misforståelser, kilder og ordliste.
+- Offentlig standardsprog i forside, scorepanel, Rav-assistent, login, konto, tur og fejl er samtidig gjort mere forståeligt. Admin- og debugværktøjer forbliver bevidst tekniske.
+- Nye målrettede tests låser faglig rækkefølge, aktiv `20/50/30`, waders-kurve, udtransportregel, mobilopsætning, bølge-/strømroller og fravær af intern standardtekst. Lokal desktop og 390 px mobil er grøn.
+- Ingen score, Candidate G-regel, vejrdata, Supabase-kontrakt, geometri eller land-/vandpunkt ændres. Exact-head og produktion afventer. Se DEC-0067.
