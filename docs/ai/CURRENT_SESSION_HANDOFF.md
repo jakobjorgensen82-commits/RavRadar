@@ -2,13 +2,13 @@
 
 ## Aktuel arbejdsleverance 2026-08-23 – forståeligt brugerflow og privat turlog i 4.0.264
 
-- Aktuel opfølgningsbranch er `codex/fix-plain-copy-validation` fra merge `7c43146f`; den oprindelige leverance var `codex/plain-user-flow-and-trip-log`.
+- Aktuel opfølgningsbranch er `codex/fix-live-browser-audit` fra den produktionsgrønne merge `23fa89ed`; den oprindelige leverance var `codex/plain-user-flow-and-trip-log`.
 - **Mine ture og fund** læser den eksisterende Supabase-`observations`-tabel gennem ejer-RLS. Ingen ekstra tabel, serverrække eller kopi må oprettes; læsningen sker først ved klik, har et lille feltudvalg og højst 100 ture.
 - Den aktive turknap bruger nu v2 direkte og starter ikke længere den gamle GPS-baserede parallelrejse. Historiske lokale og centrale data er urørte.
 - Magic-link-callbacken hydreres med Supabase-brugeren. En kontoejet outbox-tur kan kun sendes som samme bruger. Adgangskode, magic link, udlogning, anonym/indlogget tur og turlog skal kontrolleres live.
 - Centrale offentlige RavScore- og turord er forenklet. DEC-0063, RDKS, håndbog og changelog beskriver datagenbrug, anonymitet og den snævre `user_id`-RLS-kobling.
 - Den eksakte rodhåndbog er tilføjet docs-only-skip. Denne kode-/workflowmerge skal gennem normal fuld produktion; en efterfølgende ren dokumentationsmerge skal bevise 0 oprettede push-kørsler.
-- PR #104 bestod exact-head `32651048627` og blev merged som `579bd167`. Produktion `32651106811` stoppede før release på en gammel test af den fjernede GPS-parallelrejse. PR #105 bestod derefter exact-head `32651724416` og blev merged som `7c43146f`; produktion `32651786366` stoppede før deploy på en anden gammel ordret test, mens den rettede turtest var grøn. Den aktuelle opfølgning retter stjerneforklaringens test, retter den lokalt fundne gamle mobil-turtest og føjer begge til `validate:source`; samlet lokal kilde-/RDKS-/releasegate er grøn. Ny exact-head, fuld produktion og browserkontrol mangler. Candidate G, `20/50/30`, artifact, protected-dirty-data, private cachedata, geometri og land-/vandpunkter må ikke røres. Geodata må kun have versionsfeltet 4.0.264.
+- PR #104 og #105 stoppede sikkert på to forældede tests uden deploy. PR #106 bestod exact-head `32652894729`, blev merged som `23fa89ed`, og produktion `32652970105` bestod hele kæden og udgav `rr-20260823165645-210` som 4.0.264 på 210/673. Live konto-/logintekst og direkte tur uden GPS/rute er kontrolleret. Første fulde browseraudit fandt kun den forældede etiket `3-timers trend`; med den viste etiket `Vandstandsændring på 3 timer` består 420/2.100/673 uden browser-, konsol- eller HTTP-fejl. Auditrettelsens exact-head/merge og en efterfølgende docs-only-bevismerge mangler. En rigtig loginmail eller kontoejet tur må ikke sendes uden særskilt bevidst ejerhandling. Candidate G, `20/50/30`, artifact, protected-dirty-data, private cachedata, geometri og land-/vandpunkter må ikke røres.
 
 ## Aktuel arbejdsleverance 2026-08-23 – Candidate G aktuel referencegate i 4.0.263
 
