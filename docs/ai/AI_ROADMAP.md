@@ -1,17 +1,26 @@
 # AI Roadmap – RavRadar 4.0.243+
 
-## Candidate G – versionsbundet scoreomskifter efter DEC-0058
+## Candidate G – aktiv 4.0.261-leverance efter DEC-0060
+
+- [x] Registrér ejerens pre-public aktiveringsbeslutning og accept af foreløbig score under det første ufuldstændige 48-timersvindue.
+- [x] Vælg Candidate G `RESEARCH-3` med `20/50/30` globalt og bevar eksakt legacyrollback.
+- [x] Implementér central `ravscore-profile-selection`, sikker engangspromotion, central autoritet og readbackkontrakt.
+- [x] Lås komplet scoreprojektion, ærlig memory-status, automatisk aktiveringsforbud og global fail-closed i målrettede tests.
+- [x] Bestå samlet lokal kildegate.
+- [ ] Bestå exact-head, frisk fuld produktion, aktiv 210/673-shadow og fuld browserkontrol.
+
+## Historisk score-neutral omskifter efter DEC-0058
 
 - [x] Accepter nattens 6/6 timers naturlige 673/673-state som praktisk ejerbesluttet evidens uden at kalde det et 48-timersbevis.
 - [x] Implementér en global, versionsbundet profilomskifter med aktiv `RRS-CURRENT-B0-4.0.247`, Candidate G-id og eksakt rollback.
 - [x] Lås fail-closed krav om komplet dækning, frisk slutshadow og særskilt ejerbeslutning; automatisk aktivering forbliver falsk.
 - [x] Før profilkontrakten gennem offentlig startpakke, detaljepakke og manifest uden offentlig scoreændring.
 - [x] Bestå 4.0.260 exact-head `32628441062`, PR #92/merge `c5898ce8`, produktion `32628516066`, frisk 210/673/1.346-shadow og 420/2.100-browserkontrol.
-- [ ] Gennemgå Candidate G's væsentligt lavere friske scorefordeling med ejeren; skeln mellem ung ni-timers tilstand, modeladfærd og ønsket produktbetydning.
+- [x] Gennemgå Candidate G's unge scorefordeling med ejeren. DEC-0059 fjernede maskinstarten, og DEC-0060 accepterer den nye models første ikke-offentlige opvarmningsfordeling som foreløbig.
 - [x] Bevis dataminimeret, at eksisterende 65–117 timers offentlige strømhistorik ikke kan identificere startreserven, når neutral strøm ikke nedskriver state; 607/633 dele bevarer mindst 50 points priorforskel.
 - [x] Forkast neutral startprior 50 efter ejerbeslutning og implementér DEC-0059's faste 48-timers evidensvindue i en ny versionsbundet state-/profilkontrakt.
 - [x] Bevis uden en ny realtidsventeperiode, at 582 komplette historiske vinduer giver samme resultat for tænkte starter 0, 50 og 100.
-- [ ] Aktivér ikke Candidate G før central admin-roundtrip og en ny særskilt ejer-gennemgang.
+- [x] Erstattet af DEC-0060: ejeren har godkendt pre-public aktivering; central roundtrip implementeres i 4.0.261 og skal produktionsverificeres.
 
 ## Candidate G – mobiliserings-/helhedsreview efter DEC-0056
 

@@ -5,7 +5,7 @@
 | ID | Status | Vægte | Formål |
 | --- | --- | --- | --- |
 | RRS-LEGACY-WEIGHTS-4.0.241 | Historisk sammenligning | 40/35/25 | Viser virkningen af den tidligere vægtning på samme komponenter |
-| RRS-CURRENT-B0-4.0.247 | Aktiv og rollback i 4.0.260 | 25/40/35 | Nuværende offentlige reference valgt af den versionsbundne profilomskifter |
+| RRS-CURRENT-B0-4.0.247 | Global rollback i 4.0.261 | 25/40/35 | Fail-closed reference ved manglende eller ugyldig Candidate G-projektion |
 | RRS-CAND-A-SMOOTH-EVENT | Forskningskandidat | 25/40/35 | Glatte kurver og hændelseshukommelse |
 | RRS-CAND-B-DELIVERY-RETENTION | Forskningskandidat | 25/40/35 | A plus levering og fastholdelse |
 | RRS-CAND-C-WEAKEST-LINK | Forskningskandidat | 25/40/35 | B plus mild svageste-led-begrænsning |
@@ -19,7 +19,7 @@
 | RRS-CANDIDATE-G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED-4.0.258 | Waders-kontraktreference | 20/50/30 + vindstyret waders-loft | Vind er hovedsignal, WAM er blødt fradrag; transportfortolkningen er senere erstattet af DEC-0055 |
 | RRS-CANDIDATE-G-CURRENT-LED-OUTFLOW-8-RESEARCH-1 | Historisk strømstyret revisionsspor | 20/50/30 + strømreservoir + vindstyret waders-loft | Transportpotentiale 0 fra 13 timer, men totalscore kunne fortsat være 35; erstattet af ejerens slutscorebeslutning |
 | RRS-CANDIDATE-G-CURRENT-LED-OUTFLOW-8-RESEARCH-2 | Transportreference | 20/50/30 + strømreservoir + udtransportgate + vindstyret waders-loft | Faktisk kraftig udtransport med udtømt transportpotentiale giver slutscore 0, mens delscorer bevares; mobiliseringen er senere erstattet af DEC-0056 |
-| RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3 | Foretrukken aktiveringskandidat, switch-ready i 4.0.260 men ikke aktiv | 20/50/30 + afgrænset strømevidens + bølgeenergitilstand + udtransportgate + vindstyret waders-loft | Fast 48-timers transportvindue efter DEC-0059 og én 4/48-timers mobiliseringstilstand fra højde² × periode; aktiv 25/40/35 er uændret |
+| RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3 | Gældende profil i 4.0.261 under ejer-godkendt pre-public opvarmning | 20/50/30 + afgrænset strømevidens + bølgeenergitilstand + udtransportgate + vindstyret waders-loft | Fast 48-timers transportvindue efter DEC-0059; DEC-0060 tillader ærligt mærket aktiv score før vinduet er komplet, mens legacy bevares som global rollback |
 
 ## Stabile kandidatregler
 
@@ -42,7 +42,7 @@
 | RRS-M3-WAVE-ENERGY-MEMORY | G current-led RESEARCH-3 | Én kausal mobiliseringstilstand bygger på bølgehøjde² × periode og aftrappes 4/48 timer | Relativ proxy uden bunddybde; halveringstiderne er ikke fundkalibrerede |
 | RRS-P1-CENTRAL-DERIVED-STATE | G current-led RESEARCH-3 | Transport genafspilles fra et fast 48-timers vindue af afledt kystnormal strøm; mobilisering fortsætter versions- og kontekstbundet | Kun tidspunkt, afledt styrke og mobiliseringsstate må persistéres; missing/tidsgab er fail-closed |
 
-Alle kandidater er fortsat score-neutrale i den offentlige 4.0.260-konfiguration. Candidate G har nu en testbar aktiveringsvej, men omskifteren vælger stadig legacy. Se DEC-0046, DEC-0058, DEC-0059 og den samlede evidensanbefaling.
+De historiske kandidater forbliver score-neutrale sammenligningsspor. DEC-0060 vælger kun `RESEARCH-3` som gældende 4.0.261-profil under den ikke-offentlige opvarmning; `RRS-CURRENT-B0-4.0.247` er global rollback. Se DEC-0046 og DEC-0058–0060.
 
 ## Registertilfoejelse efter exact-commit-koersel 32521046654
 

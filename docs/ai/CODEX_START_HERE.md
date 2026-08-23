@@ -4,7 +4,9 @@ Dette er den obligatoriske indgang til RavRadar for Codex og andre kodeassistent
 
 ## Aktuelt roadmapcheckpoint 2026-08-23
 
-- Den offentlige RavScore er fortsat `25/40/35`. DEC-0058's versionsbundne omskifter er produktionsverificeret i 4.0.260, men vælger fortsat legacy; Candidate G er ikke aktiveret.
+- Ejeren har i DEC-0060 besluttet at aktivere Candidate G allerede under den første, ikke-offentlige opvarmning. 4.0.261-kandidaten vælger derfor `RESEARCH-3` med `20/50/30`, mens `25/40/35` bevares som eksakt global rollback.
+- Den ufuldstændige transporthukommelse skal vises ærligt som `candidate-active-pre-public-warmup`; den må ikke kaldes et 48-timersbevis. Mangler blot én nødvendig Candidate G-projektion, falder hele datasættet fortsat tilbage til legacy.
+- Profilvalget skal hydreres og skrives tilbage som det centrale admin-dokument `ravscore-profile-selection`. Exact-head, fuld produktion, aktiv 210/673-shadow og browserkontrol skal være grønne før 4.0.261 kaldes produktionsverificeret.
 - Den foretrukne private helhedskandidat er `RESEARCH-3`: `20/50/30`, DEC-0054's vindstyrede waders-jagtbarhed, DEC-0055's strømstyrede transport og DEC-0056's ene bølgeenergistyrede mobiliseringstilstand.
 - Mobilisering bruger højde² × periode med fire timers opbygning og 48 timers aftrapning. Direkte vind, aktuel strøm, separat varighed og statisk stedegnethed giver ingen mobiliseringspoint.
 - PR #92/exact-head `32628441062`, merge `c5898ce8`, produktion `32628516066` og live `rr-20260823083627-210` er grønne for 210/673/1.346 og browser 420/2.100/673. Statealderen er 9/9 timer uden nulstilling; det er ikke et 48-timersbevis.

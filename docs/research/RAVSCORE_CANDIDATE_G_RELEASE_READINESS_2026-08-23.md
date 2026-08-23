@@ -1,5 +1,7 @@
 # Candidate G – release-readiness og grænsekontrol, 2026-08-23
 
+> **Efterfølgende ejerbeslutning:** DEC-0060 erstatter dette dokuments aktiveringsrækkefølge for den endnu ikke offentlige 4.0.261-installation. Candidate G aktiveres under ærligt mærket opvarmning, mens komplet scoreprojektion, global rollback, central konfiguration og efterfølgende produktions-/shadow-/browserbevis bevares. De nedenstående mekaniske analyser og usikkerheder gælder fortsat.
+
 ## Kort konklusion
 
 Den strømstyrede Candidate G består den mekaniske grænsekontrol score-neutralt. Den er monotont faldende under udgående strøm, bølger kan ikke skabe transport, waders-loftet virker, strandjagt bevarer højt ravpotentiale under hård vind, og missing ændrer ikke reservoiret.

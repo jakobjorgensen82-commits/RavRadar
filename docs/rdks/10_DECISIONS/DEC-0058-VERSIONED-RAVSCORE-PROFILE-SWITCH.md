@@ -43,3 +43,9 @@ En almindelig boolesk aktivering er ikke tilstrækkelig. Den ville ikke i sig se
 - Artifact, protected-dirty-data, privat cache, geometri og land-/vandpunkter er uden for ændringen.
 
 DEC-0058 erstatter DEC-0057's rækkefølgekrav om først at bygge omskifteren efter mindst 48 timers observation. DEC-0057's dataminimering, statekontrakt og krav om ærlig alder består uændret.
+
++
++## Efterfølgende pre-public aktivering i DEC-0060
++
++Ejeren har besluttet, at Candidate G skal være gældende allerede under den første, ikke-offentlige opvarmning. DEC-0060 erstatter derfor kun rækkefølgen, hvor frisk slutshadow og komplet transportmemory skulle foreligge før den første kobling. 4.0.261 kræver stadig komplet beregnelig Candidate G-projektion, eksplicit ejerautoritet, central konfiguration, global legacyrollback og efterfølgende exact-merge produktion/shadow/browserbevis. Automatisk aktivering og blandede profiler forbliver forbudt.
++

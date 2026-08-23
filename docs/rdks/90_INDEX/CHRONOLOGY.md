@@ -1,5 +1,14 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-23 – Candidate G godkendt som gældende under pre-public opvarmning
+
+1. Ejeren afklarede, at RavRadar-siden endnu ikke er offentlig, og at foreløbige scoreværdier i de første 48 timer derfor er acceptable.
+2. Ejeren bad Candidate G blive implementeret som den gældende scoremotor nu, ikke først efter 48 timers ventetid.
+3. DEC-0060 vælger `RESEARCH-3` med `20/50/30`, mens legacy `25/40/35` bevares som global rollback.
+4. Ufuldstændig transporthukommelse må kun passere med den konkrete ejer-godkendte pre-public-konfiguration og skal vises som `candidate-active-pre-public-warmup`; scoreprojektionen skal stadig være komplet i hele datasættet.
+5. Profilvalget versionsbindes centralt i `ravscore-profile-selection`, automatisk aktivering forbliver falsk, og én manglende kandidatscore giver global legacyfallback.
+6. Modelregler, geometri, land-/vandpunkter og private data ændres ikke. Exact-head, produktion, central readback, aktiv shadow og browserkontrol er leverancegates.
+
 ## 2026-08-23 – startværdien erstattet af afgrænset evidens
 
 1. Ejeren afviste, at Candidate G skulle kunne være permanent skæv på grund af den værdi, modellen startede med på en bestemt computer eller produktionskørsel.

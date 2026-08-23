@@ -1,5 +1,7 @@
 # RavScore-profilomskifter 4.0.260
 
+> **Efterfølgende aktivering:** DEC-0060 og `RAVSCORE_PROFILE_ACTIVATION_4.0.261.md` erstatter 4.0.260's inaktive profilvalg. 4.0.261 vælger Candidate G under en ejer-godkendt, ikke-offentlig opvarmning og bevarer legacy som global rollback.
+
 ## Kort konklusion
 
 RavRadar har nu en særskilt, versionsbundet og testbar vej fra den aktive `25/40/35`-profil til Candidate G og tilbage igen. Version 4.0.260 bruger fortsat legacyprofilen. Omskifteren er forberedelse og ændrer ikke det, brugerne ser.

@@ -1,3 +1,13 @@
+## 2026-08-23 – ejeren aktiverer Candidate G under den første pre-public opvarmning
+
+- Ejeren præciserede, at siden endnu ikke er offentlig, og godkendte, at Candidate G bliver gældende nu, selv om scoreværdierne først retter sig fuldt ind efter et komplet naturligt 48-timersvindue.
+- DEC-0060 erstatter derfor rækkefølgen, hvor komplet memory og frisk slutshadow skulle foreligge før kobling. Det er en pre-public ejerundtagelse; ufuldstændig historik skal fortsat vises ærligt og må ikke kaldes et 48-timersbevis.
+- 4.0.261 vælger `RESEARCH-3` med `20/50/30` globalt. Mangler én nødvendig Candidate G-projektion, vælger hele datasættet legacy `25/40/35`; blandede profiler og automatisk aktivering er fortsat forbudt.
+- Profilvalget gemmes som det private centrale admin-dokument `ravscore-profile-selection`. En nyere ejer-godkendt repositoryversion må krydse central hydrering én gang, hvorefter central samme/nyere værdi er autoritativ, også ved rollback.
+- Målrettede lokale tests er grønne for aktiv opvarmningsprofil, global fail-closed, uændret rollback, aktiv public projection, dataminimeret shadow og central promotion/readback-kontrakt.
+- Exact-head, frisk fuld produktion, central readback, aktiv 210/673-shadow og browserkontrol mangler fortsat, før 4.0.261 kan kaldes produktionsverificeret.
+- Artifact, protected-dirty-data, privat cache, geometri og land-/vandpunkter er urørte. Kun versionsfeltet i de to geodatafiler løftes til 4.0.261.
+
 ## 2026-08-23 – Candidate G får fast 48-timers transporthukommelse
 
 - Ejeren afviste en ny vilkårlig startprior og valgte, at Candidate G skal rette sig ind efter de faktiske nyere forhold med tiden uden endnu en 48-timers realtidsudviklingstest.

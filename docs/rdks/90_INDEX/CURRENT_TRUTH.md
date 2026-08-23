@@ -1,6 +1,17 @@
 # Current truth – gældende projektviden
 
-## Efter 4.0.260 – Candidate G har afgrænset 48-timers transporthukommelse
+## 4.0.261-kandidat – ejer-godkendt Candidate G-aktivering under pre-public opvarmning
+
+- Ejeren har udtrykkeligt besluttet, at Candidate G skal være RavRadars gældende scoremotor nu. Siden er endnu ikke offentlig, og ejeren accepterer, at de første scoreværdier bygger på mindre end 48 timers naturlig schema-2-historik.
+- DEC-0060 vælger `RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3` med `20/50/30`. Modelregler, strømgrænser, +10/-8, 13-timers udtransportgate, mobilisering 4/48 og vindstyret waders-jagtbarhed ændres ikke.
+- Den aktive profil må være `candidate-active-pre-public-warmup`, mens `transportMemoryReady=false`. Runtime skal fortsat vise den faktiske `WINDOW_INCOMPLETE`-status og coverage; opvarmningen må aldrig omtales som et komplet 48-timersbevis.
+- Global dækning betyder i denne opvarmningsfase, at alle nødvendige Candidate G-resultater er beregnelige med korrekt model-id. Mangler én nødvendig score, vælger hele datasættet eksakt legacy `RRS-CURRENT-B0-4.0.247`; blandede profiler er forbudt.
+- Aktiveringen ligger i det private, centrale admin-dokument `ravscore-profile-selection`, kræver versionsbundet ejerautoritet og har altid `automaticActivationAllowed=false`. En nyere ejer-godkendt repositorykonfiguration kan promoveres centralt én gang; derefter er samme eller nyere central konfiguration autoritativ, også ved rollback.
+- Den tidligere rækkefølge med komplet 48-timersvindue og frisk slutshadow før kobling er erstattet kun for den nuværende ikke-offentlige opvarmning. Exact-head-kildegate køres før merge; fuld produktion, central readback, aktiv 210/673-shadow og fuld browserkontrol følger den eksakte merge. Modstridende evidens udløser global rollback.
+- Når vinduet senere bliver komplet, fortsætter samme Candidate G-profil. Der programmeres eller aktiveres ikke en ny model på det tidspunkt; transporten bliver blot fuldt uafhængig af opvarmningsranden.
+- 4.0.261 ændrer ingen private caches, artifact, protected-dirty-data, geometri eller land-/vandpunkter. I `data/kystdata.json` og `data/zones.geojson` ændres kun versionsfeltet.
+
+## Historisk efter 4.0.260 – Candidate G fik afgrænset 48-timers transporthukommelse før aktivering
 
 - DEC-0059 erstatter den ubundne videreførelse af transportpotentialet og den efterfølgende anbefaling om startprior 50. Candidate G genafspiller nu de seneste 48 timers sammenhængende, verificerede kystnormale strømbevis fra samme faste rand 0.
 - Rand 0 betyder ingen dokumenteret indtransport før vinduets begyndelse. Det er ikke dokumenteret fralandsstrøm og udløser ikke totalscoregaten. Persistéret transportpotentiale og persistérede udtransporttimer er output, ikke skjult startinput til næste komplette vindue.
