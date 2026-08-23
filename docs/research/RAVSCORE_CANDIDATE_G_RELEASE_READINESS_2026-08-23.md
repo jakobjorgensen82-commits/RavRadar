@@ -17,6 +17,14 @@ Den efterfølgende ejerbeslutning lukker samtidig den sidste tvetydighed i 13-ti
 
 Det er den nuværende DEC-0055-/`20/50/30`-kontrakt. `RESEARCH-1`-resultatet på 35 ved udtømt transport bevares kun som revisionsspor. Offentlig RavScore er fortsat uændret.
 
+## 4.0.260-opfølgning: naturlig state og profilomskifter
+
+Seneste naturlige runtime `rr-20260823075018-210` har ført den samme state videre til 06:00Z. Den dataminimerede audit består 210 zoner, 673 kystdele og 1.346 modeevalueringer, accepterer alle 673 tidligere tilstande, nulstiller ingen og finder ingen rekonstruktionsfejl. Yngste og ældste dokumenterede state-alder er seks timer.
+
+Ejeren har accepteret nattens seks timer som praktisk evidens til at forberede næste tekniske trin. Det er ikke et 48-timersbevis og ændrer ikke mobiliseringens 48 timers halveringstid.
+
+DEC-0058/4.0.260 tilføjer derfor en versionsbundet, score-neutral profilomskifter. Den vælger stadig `RRS-CURRENT-B0-4.0.247` med 25/40/35. Candidate G kan kun vælges i en senere version med eksplicit aktivering, komplet global dækning, frisk grøn slutshadow og særskilt ejerbeslutning. Rollback vælger den eksakte legacyprofil for hele datasættet; blandede zone- eller timeprofiler er forbudt.
+
 ## Reproducerbar audit
 
 `scripts/audit-ravscore-candidate-g-release-readiness.mjs` bruger kun syntetiske input. Den læser ikke den private cache, geometri, land-/vandpunkter, artifact eller protected-dirty-data. Den ændrer ikke offentlig score, UI eller runtime og er nu en del af kildegaten.

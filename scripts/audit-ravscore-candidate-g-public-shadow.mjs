@@ -13,6 +13,11 @@ import {
   CANDIDATE_G_OUTFLOW_ZERO_EXPLANATION_DA,
   CANDIDATE_G_WEIGHTS,
 } from '../js/core/ravscore-candidate-g.js';
+import {
+  CANDIDATE_G_RAVSCORE_PROFILE_ID,
+  LEGACY_RAVSCORE_PROFILE_ID,
+  resolvePublicRavScoreProfile,
+} from '../js/core/ravscore-profile-switch.js';
 
 const DEFAULT_INPUT = '.cache/active-public-condition-details.json';
 const DEFAULT_OUTPUT = '.geometry-v2-work/candidate-g-public-shadow-audit.json';
@@ -73,6 +78,11 @@ export function auditCandidateGPublicShadow(document, {
   add(Number(coastal?.expectedPartCount) === expectedPartCount, 'EXPECTED_PART_COUNT_MISMATCH');
   add(Number(coastal?.scoredPartCount) === expectedPartCount, 'SCORED_PART_COUNT_MISMATCH');
   add(parts.length === expectedPartCount, 'PART_OBJECT_COUNT_MISMATCH');
+  add(coastal?.scoreProfile?.activeProfileId === LEGACY_RAVSCORE_PROFILE_ID, 'PUBLIC_PROFILE_NOT_LEGACY');
+  add(coastal?.scoreProfile?.rollbackProfileId === LEGACY_RAVSCORE_PROFILE_ID, 'ROLLBACK_PROFILE_MISMATCH');
+  add(coastal?.scoreProfile?.candidateProfileId === CANDIDATE_G_RAVSCORE_PROFILE_ID, 'CANDIDATE_PROFILE_MISMATCH');
+  add(coastal?.scoreProfile?.activationState === 'legacy-active-score-neutral', 'PROFILE_NOT_SCORE_NEUTRAL');
+  add(coastal?.scoreProfile?.automaticActivationAllowed === false, 'PROFILE_AUTOMATIC_ACTIVATION_NOT_BLOCKED');
 
   const partCountByZone = new Map();
   for (const [, part] of parts) {
@@ -167,7 +177,17 @@ export function auditCandidateGPublicShadow(document, {
     diagnosticShadowReady: uniqueErrors.length === 0,
     automaticActivationAllowed: false,
     publicScoreChanged: false,
-    rollbackPath: 'ACTIVE_RAVSCORE_REMAINS_25_40_35_AND_IGNORES_CANDIDATE_G_NAMESPACE',
+    rollbackPath: 'VERSIONED_SWITCH_SELECTS_RRS_CURRENT_B0_4_0_247',
+    scoreProfile: coastal?.scoreProfile ? {
+      switchVersion: coastal.scoreProfile.switchVersion,
+      requestedProfileId: coastal.scoreProfile.requestedProfileId,
+      activeProfileId: coastal.scoreProfile.activeProfileId,
+      rollbackProfileId: coastal.scoreProfile.rollbackProfileId,
+      candidateProfileId: coastal.scoreProfile.candidateProfileId,
+      candidateCoverageReady: coastal.scoreProfile.candidateCoverageReady,
+      activationState: coastal.scoreProfile.activationState,
+      automaticActivationAllowed: coastal.scoreProfile.automaticActivationAllowed,
+    } : null,
     datasetDigest: digest({ datasetId: document?.datasetId, generatedAt: document?.generatedAt }),
     coverage: {
       zoneCount: zones.length,
@@ -194,6 +214,7 @@ function syntheticDocument() {
   const zones = {};
   const parts = {};
   let partNumber = 0;
+  const scoreProfile = resolvePublicRavScoreProfile({ candidateCoverageReady: true });
   for (let zoneNumber = 0; zoneNumber < EXPECTED_ZONES; zoneNumber += 1) {
     const zoneId = `zone-${zoneNumber}`;
     const partCount = zoneNumber < 43 ? 4 : 3;
@@ -255,6 +276,7 @@ function syntheticDocument() {
     generatedAt: referenceAt,
     coastalParts: {
       enabled: true,
+      scoreProfile,
       expectedPartCount: EXPECTED_PARTS,
       scoredPartCount: EXPECTED_PARTS,
       zones,

@@ -1,5 +1,14 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-23 – nattens state accepteret og scoreomskifter forberedt
+
+1. Den naturlige Candidate G-state fortsatte til fælles reference 06:00Z i den offentliggjorte runtime `rr-20260823075018-210`.
+2. Den dataminimerede kontrol bestod 210/673/1.346, accepterede alle 673 tidligere tilstande og nulstillede ingen. Yngste og ældste dokumenterede alder er seks timer.
+3. Ejeren besluttede, at nattens forløb er nok praktisk evidens til at fortsætte. Perioden må ikke beskrives som et 48-timersbevis.
+4. DEC-0058 forbereder en særskilt versionsbundet omskifter med offentlig `25/40/35` som fortsat aktiv profil og eksakt rollback.
+5. Candidate G kan ikke aktiveres automatisk eller delvist. Komplet dækning, frisk slutshadow og særskilt ejer-gennemgang kræves stadig.
+
+
 ## 2026-08-19 – scheduler overdraget og næste browservej fastlagt
 
 1. Ejeren bekræftede, at RavRadar-jobbene i cron-job.org er slettet.

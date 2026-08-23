@@ -1,5 +1,15 @@
 # Current truth – gældende projektviden
 
+## 4.0.260-kandidat – versionsbundet scoreomskifter, fortsat offentlig 25/40/35
+
+- DEC-0058 indfører `RAVSCORE-PROFILE-SWITCH-4.0.260`. Ønsket, aktiv og rollbackprofil er fortsat `RRS-CURRENT-B0-4.0.247`; versionen ændrer derfor ingen offentlig score, farve, zonevinder eller bedste tidspunkt.
+- Candidate G kan i en senere version kun vælges samlet, når aktiveringsflag, komplet global dækning, frisk grøn slutshadow og særskilt ejerbeslutning alle foreligger. Ukendt eller ufuldstændig konfiguration falder fail-closed tilbage til legacy for hele datasættet; blandede zone-/timeresultater er forbudt.
+- Profilvalget sker før opbygning af lokale score-/vinderrækker og følger offentlig startpakke, detaljepakke og manifest. Rollback returnerer det oprindelige legacyresultat direkte og rekonstruerer ikke 25/40/35 gennem Candidate G-kode.
+- Candidate G-adapteren bevarer `20/50/30`, wadersloftet og udtransportgaten med den godkendte danske forklaring. Den tilføjer ikke sikkerhedsråd eller bund-, dybde-, rende-, revle-, adgangs- eller stedegnethedsregler.
+- Seneste naturlige runtime `rr-20260823075018-210` består den dataminimerede audit med 210/210 zoner, 673/673 dele, 1.346 modeevalueringer, 673 accepterede tidligere tilstande, nul nulstillinger og nul rekonstruktionsfejl. Dokumenteret yngste/ældste state-alder er 6/6 timer.
+- Ejeren har valgt nattens seks timer som praktisk evidens til næste gennemgang. Det er ikke et 48-timersbevis. Før en offentlig aktivering kræves stadig exact-head aktiveringskode, central admin-roundtrip, fuld produktion, frisk slutshadow, browserkontrol og særskilt ejer-gennemgang.
+- Artifact, protected-dirty-data, privat cache, geometri og land-/vandpunkter er urørte.
+
 ## 4.0.259 – central Candidate G-tilstand produktionsverificeret uden aktiv scoreændring
 
 - DEC-0057 kobler DEC-0055's transport og DEC-0056's mobilisering til den centrale kystdelspipeline. Candidate G beregnes ved samme fælles lokale referencetime som den aktive score, men ligger i et særskilt `diagnostic-only`-navnerum.

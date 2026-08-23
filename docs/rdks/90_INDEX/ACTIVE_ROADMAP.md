@@ -46,8 +46,11 @@ Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre for
 - [x] Implementér den score-neutrale 4.0.259-pakke: begge kompakte tilstande centralt, Candidate G som adskilt diagnostisk runtime, fallback-kompatibel 210/673-shadow og deterministisk rollback til fortsat aktiv `25/40/35`.
 - [x] Bestå den samlede lokale kildegate og releasegate for 4.0.259.
 - [x] Før 4.0.259 gennem exact-head `32609888406`, PR #89/merge `31e50acb`, fuld post-merge-produktion `32609952992` og read-only shadow `32610281620` på den producerede runtime. Live `rr-20260823011924-210` består 210/673/1.346 uden score-rekonstruktionsfejl; alle 673 tilstande er dokumenteret bootstrap.
-- [ ] Lad den centrale tilstand opbygge dokumenteret naturlig alder. Første naturlige schedule `32613284735` accepterede 673/673 tilstande uden nulstilling og dokumenterer 3/3 timers yngste/ældste alder; fortsæt read-only til mindst 48 timer. Første bootstrap fra 0 må ikke præsenteres som en modnet 48-timersfordeling.
-- [ ] Byg derefter den særskilte aktive score-omskifter og brugerforklaring med testet tilbagekobling til `25/40/35`; selve aktiveringen sker først på en grøn, modnet slutshadow uden modstridende evidens.
+- [x] Lad den centrale tilstand fortsætte naturligt gennem natten. Seneste audit af `rr-20260823075018-210` accepterer 673/673 tilstande uden nulstilling og dokumenterer 6/6 timers yngste/ældste alder. Ejeren accepterer perioden som praktisk evidens, men den må ikke kaldes et 48-timersbevis.
+- [x] Byg den særskilte versionsbundne scoreomskifter og brugerforklaring med testet global tilbagekobling til `25/40/35`; 4.0.260-kandidaten vælger fortsat legacy og aktiverer ikke Candidate G.
+- [x] Bestå samlet lokal kildegate og releasegate for 4.0.260.
+- [ ] Før 4.0.260 gennem exact-head, merge, fuld produktion, frisk 210/673-slutshadow og browserkontrol.
+- [ ] Gennemfør central admin-roundtrip og særskilt ejer-gennemgang, før ønsket profil eventuelt ændres til Candidate G.
 - [ ] Offentlig aktivering må først gennemføres, når den samlede pakke er grøn og ingen konkret modstridende evidens består; manglende turkalibrering skal fortsat fremgå ærligt som modelusikkerhed.
 
 ## Aktuelt Candidate G-review – 4.0.258 vindstyret waders-kandidat
@@ -60,7 +63,7 @@ Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre for
 - [x] Genkør replay og kanoniske/nationale kontrakter med den nye variant; strand er uændret og waders-score overstiger aldrig jagtbarheden.
 - [x] Før 4.0.258-checkpointet gennem exact-head-gate `32586707063`, PR #73, merge `9bdb8de8` og fuld produktion `32586958989`; live er 4.0.258/`rr-20260822171406-210` med 210 zoner og 673 dele.
 - [x] Den faglige ejerretning er valgt gennem DEC-0054–0056. Manglende repræsentative ture/hold-out bevares som modelusikkerhed og senere efterkalibrering, ikke som en umulig før-aktiveringsgate.
-- [x] Den score-neutrale offentlige diagnostic-runtime og fallback-kompatible shadow er leveret og produktionsverificeret i 4.0.259. Naturlig modning og en senere særskilt aktiv omskifter udestår; indtil da forbliver offentlig `25/40/35` uændret.
+- [x] Den score-neutrale offentlige diagnostic-runtime og fallback-kompatible shadow er leveret og produktionsverificeret i 4.0.259. Nattens seks timers naturlige fortsættelse er dokumenteret, og den særskilte omskifter er forberedt i 4.0.260 med offentlig `25/40/35` fortsat aktiv.
 
 ## P0 - luk den aktuelle kandidat
 

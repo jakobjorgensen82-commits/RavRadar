@@ -1879,3 +1879,11 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - Mod den tidligere no-direct-reference falder waders-gennemsnittet fra 35,465 til 27,351. Selve den nye vindkurve flytter kun +0,449 point i gennemsnit mod det samme loft på den gamle kurve.
 - Beslutningen er ikke sikkerhedsrådgivning og indfører ingen bund-, dybde-, rende-, vadebredde- eller adgangsmodel. Private rådata, geometri og land-/vandpunkter er urørte.
 - Offentlig 25/40/35 er uændret. Samlet vægt-/forklarings-/coverage-/ejer-go/no-go er fortsat åbent.
+# 2026-08-23 – 4.0.260 versionsbundet scoreomskifter uden aktivering
+
+- Nattens seneste naturlige runtime `rr-20260823075018-210` består den dataminimerede Candidate G-audit med 210 zoner, 673 dele, 1.346 modeevalueringer, 673 accepterede tidligere tilstande, nul nulstillinger og nul rekonstruktionsfejl.
+- Den dokumenterede state-alder er 6/6 timer. Ejeren har accepteret den som praktisk evidens til næste trin; den kaldes ikke et 48-timersbevis.
+- DEC-0058 indfører `RAVSCORE-PROFILE-SWITCH-4.0.260` med legacy `RRS-CURRENT-B0-4.0.247`, Candidate G `RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3` og legacy som eksakt rollback.
+- 4.0.260 vælger fortsat legacy. Candidate G kræver i en senere version eksplicit flag, komplet global dækning, frisk slutshadow-id og særskilt ejerbeslutnings-id. Automatisk aktivering er falsk, og manglende evidens falder globalt tilbage.
+- Profilkontrakten føres gennem offentlig startpakke, detaljepakke og manifest. Målrettede tests dækker legacyidentitet, kandidatprojektion, udtransportforklaring, forbud mod blandede profiler og rollback.
+- Samlet lokal `scripts/validate-source.ps1`, inklusive releasegate, er grøn for 4.0.260. Artifact, protected-dirty-data, privat cache, geometri og land-/vandpunkter er urørte. Exact-head, produktion, frisk slutshadow og browserkontrol udestår.
