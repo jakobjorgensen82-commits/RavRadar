@@ -8,7 +8,7 @@
 - [x] Bevar global rollback ved aktuel missing/gap og lokal fail-closed state ved fremtidige gaps.
 - [x] Lås regressionen og `CURRENT_COMMON_ZONE_REFERENCE` i målrettede tests/shadowkontrakten.
 - [x] Bestå samlet lokal source-/RDKS-/releasegate og eksakt geodatadiff.
-- [ ] Bestå exact-head, frisk produktion, aktiv 210/673-shadow og fuld browserkontrol.
+- [x] Bestå PR #101/exact-head `32644701811`, merge `9f5953f6`, frisk produktion `32644772373`, aktiv shadow `32645569741` og fuld browserkontrol på live `rr-20260823142247-210`.
 
 ## Candidate G – 4.0.262 native cadence og sikker warmup
 

@@ -16,7 +16,7 @@ Valget er fortsat globalt og fail-closed. Hvis blot én nødvendig Candidate G-s
 
 Profilvalget gemmes centralt og følger startpakke, detaljepakke og manifest. Ingen private rå strømvektorer, koordinater eller replaypayloads offentliggøres. Bund, dybde, render, revler, adgang, stedegnethed og sikkerhedsadvarsler indgår fortsat ikke, og aktiveringen flytter ingen geometri eller land-/vandpunkter.
 
-De følgende Candidate G-afsnit beskriver den historiske, score-neutrale forberedelse. Deres udsagn om, at Candidate G endnu ikke var aktiv eller at 25/40/35 var gældende, er versionshistorik. Den aktuelle kontrakt er DEC-0060-aktiveringen med DEC-0061's native cadence og DEC-0062's aktuelle referencescope. Ved dette lokale checkpoint afventer 4.0.263 fuld exact-head-, produktions-, shadow- og browserverifikation.
+De følgende Candidate G-afsnit beskriver den historiske, score-neutrale forberedelse. Deres udsagn om, at Candidate G endnu ikke var aktiv eller at 25/40/35 var gældende, er versionshistorik. Den aktuelle kontrakt er DEC-0060-aktiveringen med DEC-0061's native cadence og DEC-0062's aktuelle referencescope. 4.0.263 er produktionsverificeret på 210 zoner og 673 kystdele med eksakt replay, særskilt aktiv shadow og fuld browserkontrol.
 
 ## Candidate G glemmer maskinens startværdi efter et fast vindue
 

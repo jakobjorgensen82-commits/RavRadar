@@ -8,7 +8,7 @@
 - [x] Implementér DEC-0062: aktuel fælles reference styrer memory-/warmup-gaten, mens hele prognosens kandidatscorecoverage og fail-closed state bevares.
 - [x] Lås aktuel gap-rollback, senere prognosegap og moden aktuel reference i målrettede tests.
 - [x] Bestå samlet lokal source-/RDKS-/releasekontrol og eksakt geodatadiff for 4.0.263.
-- [ ] Bestå exact-head, frisk produktion, aktiv 210/673-shadow og browserkontrol for 4.0.263.
+- [x] Bestå PR #101/exact-head `32644701811`, merge `9f5953f6`, frisk produktion `32644772373`, aktiv shadow `32645569741` og browserkontrol for live `rr-20260823142247-210` på 210/673/420/2.100 uden fejl.
 
 ## Historisk P0-del – Candidate G-transportcadence i 4.0.262
 
@@ -22,7 +22,7 @@
 - [ ] Følg derefter den naturlige memoryopbygning som driftsevidens uden en ny 48-timers realtidsudviklingstest.
 
 **Opdateret:** 2026-08-23
-**Statusgrundlag:** 4.0.263 lokalt på `codex/candidate-g-reference-gate-fix`; produktion er 4.0.262/merge `586fbd18` med cadence rettet og sikker legacyrollback, indtil 4.0.263's åbne gates er bestået
+**Statusgrundlag:** 4.0.263 er produktionsverificeret på merge `9f5953f6`, produktion `32644772373`, datasæt `rr-20260823142247-210`, aktiv shadow `32645569741` og grøn browserkontrol. P0 er lukket; naturlig memoryopbygning er driftsevidens, ikke en ny aktiveringsgate.
 
 Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre forsknings-/versionsafsnit bevares som revisionsspor. En tom afkrydsningsboks i historikken er ikke en aktiv opgave, medmindre punktet ogsaa findes her.
 

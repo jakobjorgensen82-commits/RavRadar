@@ -6,6 +6,8 @@
 - Fremtidige gaps forbliver fail-closed i deres egen state: der opfindes ingen strøm, og det brugbare suffix genstarter fra den faste rand efter hullet.
 - Kontrakten eksponerer `CURRENT_COMMON_ZONE_REFERENCE` og er låst i målrettede tests og public-shadowen.
 - Scorefysik, `20/50/30`, rollback `25/40/35`, geometri, land-/vandpunkter og beskyttede/private data er uændrede; kun versionsfeltet i de to geodatafiler løftes til 4.0.263.
+- PR #101 bestod exact-head `32644701811`, blev merged som `9f5953f6`, og produktion `32644772373` bestod hele kæden. Live `rr-20260823142247-210` har Candidate G aktiv på 210/673 med 673 fortsatte states, nul reset/replaymismatch, 139 positive og 534 aktuelt fysiske nultransporter.
+- Aktiv shadow `32645569741` og browserkontrollen er grønne med 420 aktuelle visninger, 2.100 femdøgnsvisninger, 673 kystdelsreferencer og nul fejl. P0 er produktionslukket.
 
 ## 4.0.262 – Candidate G følger produktionens native strømcadence (2026-08-23)
 

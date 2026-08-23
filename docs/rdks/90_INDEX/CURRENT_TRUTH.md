@@ -1,13 +1,14 @@
 # Current truth – gældende projektviden
 
-## Aktuel 4.0.263-kandidat – Candidate G-gate ved den aktuelle fælles zonereference
+## Aktuel produktionsverificeret 4.0.263 – Candidate G-gate ved den aktuelle fælles zonereference
 
 - PR #100/exact-head `32642456123`, merge `586fbd184f68c6445acfb38a39814f6348f14bd0` og produktion `32642532892` beviser DEC-0061's cadence: live `rr-20260823134605-210` accepterer 673/673 states uden reset eller replaymismatch og har 110 positive mod 563 fysisk fortsat nul transportpotentialer.
 - 4.0.262's offentlige profil faldt alligevel fail-closed tilbage til legacy. Alle 673 faktisk valgte aktuelle referencer var lovlig `WINDOW_INCOMPLETE`, men den globale gate inspicerede også senere femdøgnsrækker og lod et fremtidigt gap gøre `candidateWarmupEligible=false`.
 - DEC-0062/4.0.263 binder derfor `candidateMemoryReady` og `candidateWarmupEligible` til den nærmeste scoretid, der er fælles for alle kystdele i hver zone og ligger nærmest produktionsreferencen. Hele femdøgnets Candidate G-scorecoverage kræves fortsat.
 - `LATEST_SAMPLE_MISSING`, `WINDOW_HAS_MISSING_EVIDENCE` eller `WINDOW_HAS_TIME_GAP` ved den aktuelle fælles reference giver fortsat global rollback. Et senere prognosegap behandles fail-closed i sin egen state og må ikke retroaktivt slå den aktuelle profil fra.
 - Referencescopet offentliggøres som `CURRENT_COMMON_ZONE_REFERENCE` og kræves af den dataminimerede 210/673-shadow.
-- Målrettede tests og samlet lokal source-/RDKS-/releasegate er grønne. Exact-head, frisk produktion, aktiv shadow og browserkontrol afventer, så P0 er ikke endnu lukket.
+- PR #101/exact-head `32644701811`, merge `9f5953f6` og fuld produktion `32644772373` er grønne. Live `rr-20260823142247-210` har Candidate G aktiv på 210/673 med 673 accepterede states, nul reset/replaymismatch og 139 positive mod 534 aktuelt fysiske nultransporter.
+- Aktiv shadow `32645569741` og browserkontrollen er grønne. Browseren bestod 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer uden kontrol-, konsol-, side- eller HTTP-fejl. P0 er lukket.
 
 ## 4.0.262 – cadence rettet, men profilgaten rullede tilbage på senere prognosegap
 
