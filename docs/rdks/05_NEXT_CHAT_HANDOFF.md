@@ -1,5 +1,15 @@
 # RavRadar – overlevering til næste chat
 
+## Nedlukningscheckpoint 2026-08-23 – 4.0.266 login og privat turlog
+
+- PR #113 bestod exact-head `32662085932` på `bd3b4984` og blev flettet som `db4db876`.
+- Produktionskørsel `32662155582` bestod central hydrering, frisk vejr, fuld validering, releasegate, artifact og Pages. Den almindelige adresse viser 4.0.266.
+- Supabases Site URL og tilladte redirect er den aktuelle GitHub Pages-adresse. Når `ravradar.dk` tages i brug, skal begge auth-adresser ændres i samme deployment og prøves med et nyt magic link.
+- Et nyt magic link returnerede til RavRadar uden token i den afsluttende adresse. Kontoen blev indlæst, og **Mine ture og fund** hentede uden fejl gennem den private SELECT-policy.
+- Codex-browseren viste nul ture. Det er forventet, fordi ejerens tidligere efterregistrering ligger i den oprindelige Chrome-browsers lokale outbox, som en anden browser ikke kan se.
+- Første og eneste resterende P0-trin: genindlæs den oprindelige Chrome-fane, mens brugeren er logget ind, og kontrollér at turen eftersendes og vises i **Mine ture og fund**. Opret ikke en testtur og læs ikke private turdetaljer.
+- Score, Candidate G, `20/50/30`, geometri, land-/vandpunkter, artifact, protected-dirty-data og private caches er urørte. Geodatafilerne fik kun versionsfeltet 4.0.266.
+
 ## Aktuel 4.0.263-P0 – Candidate G's aktuelle referencegate
 
 - 4.0.262-produktion `32642532892` beviste cadence-rettelsen med 673/673 fortsatte states, nul replaymismatch og 110 positive transportpotentialer. Profilen rullede alligevel tilbage til legacy, fordi en senere prognosegapstatus blev brugt som aktuel warmup-gate.

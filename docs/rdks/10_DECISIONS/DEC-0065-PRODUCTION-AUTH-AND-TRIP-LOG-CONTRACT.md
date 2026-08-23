@@ -1,6 +1,6 @@
 # DEC-0065: Produktionslogin og privat turlog skal verificeres mod den aktive Supabase-kontrakt
 
-**Status:** IMPLEMENTERET LOKALT; CENTRAL KONFIGURATION OG DATABASE RETTET; RELEASE AFVENTER
+**Status:** PRODUKTIONSVERIFICERET; OPRINDELIG CHROME-OUTBOX AFVENTER EJERENS GENINDLÆSNING
 
 **Dato:** 2026-08-23
 
@@ -33,11 +33,15 @@ Den første bevidste ejerprøve af det autentificerede flow viste to uafhængige
 - Kildekontrakten skal kræve migrationens kolonne, policy, grant og PostgREST-schemaopdatering og afvise `UPDATE`, `DELETE` og `TRUNCATE` i migrationen.
 - Domæneskiftet til `ravradar.dk` er ikke afsluttet, før auth-adresserne er ændret og et nyt link er prøvet på den faktiske kanoniske adresse.
 
-## Gennemført før release
+## Gennemført kontrol
 
 - Site URL og redirect-listen er rettet og efterkontrolleret i Supabase.
 - Migrationen er kørt med resultatet **Success. No rows returned**.
 - Den offentlige feltkontrakt svarer HTTP 200 ved `limit=0`, og policyoversigten viser **users can read own observations / SELECT / authenticated**.
 - Målrettede konto-, efterregistrerings-, auth- og syntakstests består lokalt.
+- PR #113 bestod exact-head-kørslen `32662085932` på `bd3b4984` og blev flettet som `db4db876`.
+- Produktionskørsel `32662155582` bestod central hydrering, frisk vejr, fuld validering, releasegate, artifact og Pages-deploy.
+- Den almindelige produktionsadresse viser 4.0.266. Et nyt magic link landede på RavRadar uden token i den afsluttende adresse, og kontoen blev indlæst som logget ind.
+- **Mine ture og fund** henter nu uden fejl gennem den private SELECT-policy. Codex-browseren viste nul ture, fordi ejerens tidligere afventende efterregistrering ligger i den oprindelige Chrome-browsers lokale outbox.
 
-Exact-head, merge, nyt Pages-artifact og den afsluttende ejerprøve på et nyt magic link udestår, før 4.0.266 kaldes fuldt produktionsverificeret.
+Den eneste resterende ejerprøve er derfor at genindlæse den oprindelige Chrome-fane, mens brugeren er logget ind, og kontrollere at den lokale outbox eftersendes og turen vises. Det er ikke en ny kode-, release- eller databaseskemafejl.

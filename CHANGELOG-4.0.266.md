@@ -8,4 +8,5 @@
 - Tilføjer en versionsstyret, idempotent migration og en regressionstest, der kræver kolonne, privat SELECT-policy, tabelgrant og PostgREST-schemaopdatering uden dataændrende SQL.
 - Dokumenterer, at Supabases Site URL og redirect-liste skal ændres samtidig med flytningen til `https://ravradar.dk/`.
 - Candidate G, `20/50/30`, vejrdata, geometri, land-/vandpunkter, artifact, protected-dirty-data og private caches er uændrede. I `data/kystdata.json` og `data/zones.geojson` ændres kun versionsfeltet til 4.0.266.
-- Central auth-konfiguration og databasemigration er rettet og read-only efterkontrolleret. Exact-head, merge, frisk produktion og den afsluttende interaktive login-/turlogprøve afventer.
+- Central auth-konfiguration og databasemigration er rettet og read-only efterkontrolleret. PR #113/exact-head `32662085932`, merge `db4db876` og produktion `32662155582` er grønne.
+- Et nyt magic link returnerede rent til den udgivne 4.0.266-side, og den private turlog hentede uden fejl. Ejerens oprindelige Chrome-fane skal stadig genindlæses én gang for at eftersende den efterregistrering, som kun findes i den browsers lokale outbox.

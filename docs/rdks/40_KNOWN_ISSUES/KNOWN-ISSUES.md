@@ -2,8 +2,8 @@
 
 ## 4.0.266 produktionslogin og turlog
 
-- **ISSUE-MAGIC-LINK-LOCALHOST – CENTRAL KONFIGURATION LØST / RELEASEPRØVE AFVENTER:** Den interaktive ejerprøve viste, at Supabases Site URL var `http://localhost:3000`, og redirect-listen var tom. Site URL og tilladt redirect peger nu på den aktuelle RavRadar-side. Et nyt link skal verificeres efter 4.0.266-release, og flytningen til `ravradar.dk` skal ændre begge auth-adresser i samme deployment.
-- **ISSUE-ACCOUNT-TRIP-LOG-LIVE-SCHEMA – CENTRAL DATABASE LØST / RELEASEPRØVE AFVENTER:** Produktionen manglede `data_quality_flags` og SELECT-policyen for egne ture. Migrationen er anvendt uden dataændring; hele feltlisten accepteres med HTTP 200/`limit=0`, og policyen vises for `authenticated`. Exact-head, nyt artifact og ejerens turlogprøve udestår.
+- **ISSUE-MAGIC-LINK-LOCALHOST – PRODUKTIONSVERIFICERET LØST:** Site URL og tilladt redirect peger på den aktuelle RavRadar-side. Et nyt link returnerede rent til 4.0.266 og indlæste kontoen. Flytningen til `ravradar.dk` skal fortsat ændre begge auth-adresser i samme deployment og prøves med et nyt link.
+- **ISSUE-ACCOUNT-TRIP-LOG-LIVE-SCHEMA – PRODUKTIONSVERIFICERET LØST / LOKAL CHROME-OUTBOX AFVENTER EJERPRØVE:** Migrationen er anvendt uden dataændring; feltlisten svarer HTTP 200, og egen SELECT-policy er aktiv. 4.0.266-turloggen henter uden fejl. Den tidligere efterregistrering ligger kun i ejerens oprindelige Chrome-outbox og skal eftersendes ved genindlæsning; Codex-browseren kan ikke læse en anden browsers lokale kø.
 - **ISSUE-AUTH-FLOW-PROOF-GAP – RETTET TESTKRAV:** Grøn kildekode, Pages og generel Supabase-sync beviste ikke en virkelig magic-link-retur eller den aktive brugertabels schema/RLS. DEC-0065 kræver fremover særskilt central konfigurations-, nul-rækkers schema-, policy- og interaktiv ejerprøve.
 
 ## 4.0.265 fleksibel kontoindberetning

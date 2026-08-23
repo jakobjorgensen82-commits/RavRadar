@@ -7,8 +7,9 @@
 - [x] Verificér den fulde feltkontrakt med HTTP 200 og `limit=0` samt policyen i Supabase-dashboardet.
 - [x] Lås migration, grant, almindelig brugerfejl og fravær af dataændrende SQL i målrettede tests.
 - [x] Registrér `ravradar.dk` som en samtidig auth-/deployopgave: ny Site URL, tilladt redirect og nyt loginlink på den kanoniske adresse.
-- [ ] Bestå RDKS/version, PR exact-head og den faktiske 4.0.266-produktionskæde.
-- [ ] Prøv et nyt magic link og bekræft, at brugerens afventende/indsendte tur vises i **Mine ture og fund**. Først da er det autentificerede flow lukket.
+- [x] Bestå RDKS/version, PR #113 exact-head `32662085932` og den faktiske 4.0.266-produktionskæde `32662155582`.
+- [x] Prøv et nyt magic link og bekræft ren retur til RavRadar samt fejlfri privat læsning i **Mine ture og fund**.
+- [ ] Genindlæs den oprindelige Chrome-fane og bekræft, at netop dens lokalt afventende efterregistrering bliver eftersendt og synlig. Dette er sidste ejerprøve; ingen ny kodeændring er aktuelt indiceret.
 
 ## Produktionsverificeret 4.0.265 – fleksibel og ærlig indberetning
 

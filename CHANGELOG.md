@@ -5,7 +5,8 @@
 - En dataminimeret `limit=0`-kontrol accepterer nu hele turloggens feltliste med HTTP 200, og Supabase viser **users can read own observations / SELECT / authenticated**.
 - Turloggens fejltekst bruger almindeligt RavRadar-sprog i stedet for leverandørnavnet Supabase.
 - Flytning til `ravradar.dk` kræver, at Supabases Site URL og redirect-liste ændres i samme deployment og prøves med et nyt magic link.
-- Målrettede konto-, efterregistrerings-, auth- og syntakstests er grønne. Exact-head, merge, frisk produktion og afsluttende interaktiv brugerprøve afventer.
+- Målrettede konto-, efterregistrerings-, auth- og syntakstests er grønne. PR #113/exact-head `32662085932`, merge `db4db876` og produktion `32662155582` bestod hele kæden.
+- Et nyt magic link returnerede rent til 4.0.266, og den private turlog hentede uden fejl. Kun eftersendelsen fra ejerens oprindelige Chrome-outbox mangler at blive bekræftet ved en genindlæsning.
 - Score, vejr, Candidate G, geometri og land-/vandpunkter er uændrede; geodatafilerne får kun versionsfeltet 4.0.266.
 
 ## 4.0.264 – forståeligt brugerflow og privat turlog (2026-08-23)
