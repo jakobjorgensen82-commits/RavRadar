@@ -8,7 +8,8 @@
 4. Kontologgen er doven og begrænset til de seneste 100 ture og et lille feltudvalg. Lokale afventende ture deduplikeres mod serveren via eksisterende klient-/tur-id.
 5. `user_id` tillades som en snæver teknisk RLS-kobling til den samme række. Mail/navn gemmes ikke i turposten, og identiteten må ikke bruges i analyse eller modeltræning. Anonyme ture forbliver anonyme.
 6. Magic link forklares i almindeligt dansk, callbacken hydreres med den faktiske Supabase-bruger, og centrale offentlige RavScore-ord forenkles uden scoreændring.
-7. Den lokale 4.0.264-kandidat og målrettede tests er grønne. Samlet gate, PR, fuld produktion og live kontrol af login, magic link, turlog og turindsendelse mangler endnu.
+7. Den lokale 4.0.264-kandidat og kildegaten blev grønne; PR #104 bestod exact-head `32651048627` og blev merged som `579bd167`.
+8. Produktion `32651106811` stoppede før release, fordi en gammel fuldtest stadig krævede den fjernede GPS-parallelrejse. Opfølgningen kræver nu direkte v2, afviser de gamle UI-markører og flytter testen ind i `validate:source`. Frisk fuld produktion og live kontrol mangler.
 
 
 ## 2026-08-23 – den aktuelle Candidate G-gate afgrænses fra senere prognosehuller

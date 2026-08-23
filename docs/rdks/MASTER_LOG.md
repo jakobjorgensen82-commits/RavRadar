@@ -1,5 +1,6 @@
 ## 2026-08-23 – lokal 4.0.264-kandidat: privat turlog og forståeligt brugerflow
 
+- PR #104 bestod exact-head `32651048627` og blev merged som `579bd167`. Den første fulde produktion `32651106811` stoppede korrekt før release og deployment blev sprunget over, fordi `test-feedback-zone-ui` stadig krævede den bevidst fjernede GPS-parallelrejse. Opfølgningen kræver nu den direkte v2-tur, afviser de gamle UI-markører og kører testen i `validate:source`, så fejlen fremover findes før merge.
 - Ejeren besluttede, at brugerens konto skal have et enkelt **Mine ture og fund** uden at gemme Supabase-data to gange. Implementationen læser derfor de eksisterende `observations`-rækker gennem RLS, først ved klik, med et lille feltudvalg og højst 100 ture.
 - Den samme serverrække bruges både som privat ejerlog og som senere anonymiseret modelgrundlag. `user_id` bruges kun til RLS-ejerskab; mail/navn gemmes ikke i turposten og må ikke indgå i analyse, eksport eller træning. Anonyme ture forbliver anonyme.
 - Den aktive turknap går direkte gennem v2-kontrakten og starter ikke længere den gamle GPS-baserede parallelrejse. Den aktive rejse indsamler ikke GPS, rute eller præcis position; historiske lokale data og historiske centrale rækker er urørte.

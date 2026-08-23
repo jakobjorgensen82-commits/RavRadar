@@ -2,13 +2,13 @@
 
 ## Aktuel arbejdsleverance 2026-08-23 – forståeligt brugerflow og privat turlog i 4.0.264
 
-- Branch er `codex/plain-user-flow-and-trip-log` fra produktionsverificeret main `7f4d57a5`.
+- Aktuel opfølgningsbranch er `codex/fix-feedback-ui-validation` fra merge `579bd167`; den oprindelige leverance var `codex/plain-user-flow-and-trip-log`.
 - **Mine ture og fund** læser den eksisterende Supabase-`observations`-tabel gennem ejer-RLS. Ingen ekstra tabel, serverrække eller kopi må oprettes; læsningen sker først ved klik, har et lille feltudvalg og højst 100 ture.
 - Den aktive turknap bruger nu v2 direkte og starter ikke længere den gamle GPS-baserede parallelrejse. Historiske lokale og centrale data er urørte.
 - Magic-link-callbacken hydreres med Supabase-brugeren. En kontoejet outbox-tur kan kun sendes som samme bruger. Adgangskode, magic link, udlogning, anonym/indlogget tur og turlog skal kontrolleres live.
 - Centrale offentlige RavScore- og turord er forenklet. DEC-0063, RDKS, håndbog og changelog beskriver datagenbrug, anonymitet og den snævre `user_id`-RLS-kobling.
 - Den eksakte rodhåndbog er tilføjet docs-only-skip. Denne kode-/workflowmerge skal gennem normal fuld produktion; en efterfølgende ren dokumentationsmerge skal bevise 0 oprettede push-kørsler.
-- Målrettede tests og samlet lokal source-/RDKS-/releasegate er grønne. Exact-head, PR, merge, produktion og browserkontrol mangler. Candidate G, `20/50/30`, artifact, protected-dirty-data, private cachedata, geometri og land-/vandpunkter må ikke røres. Geodata må kun have versionsfeltet 4.0.264.
+- PR #104 bestod exact-head `32651048627` og blev merged som `579bd167`. Produktion `32651106811` stoppede før release på en forældet fuldtest, som stadig krævede den gamle GPS-parallelrejse. Opfølgningen retter kun testkontrakten til direkte v2 og føjer testen til `validate:source`; ny exact-head, fuld produktion og browserkontrol mangler. Candidate G, `20/50/30`, artifact, protected-dirty-data, private cachedata, geometri og land-/vandpunkter må ikke røres. Geodata må kun have versionsfeltet 4.0.264.
 
 ## Aktuel arbejdsleverance 2026-08-23 – Candidate G aktuel referencegate i 4.0.263
 

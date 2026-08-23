@@ -8,7 +8,9 @@
 - [x] Hydrér bruger-id efter magic-link-callback, og blokér afsendelse af en kontoejet outbox-tur som en anden bruger.
 - [x] Forenkle centrale offentlige forklaringer og lås kontrakterne i målrettede tests.
 - [x] Bestå samlet lokal kilde-/RDKS-/releasegate og eksakt geodatadiff.
-- [ ] Bestå exact-head, PR, fuld produktion og live browserkontrol.
+- [x] Bestå PR #104 exact-head `32651048627` og merge som `579bd167`.
+- [x] Fang den forældede GPS-feedbacktest i produktion `32651106811`, ret den til direkte v2 og føj den til `validate:source`.
+- [ ] Bestå opfølgnings-PR, frisk fuld produktion og live browserkontrol.
 - [ ] Bevis bagefter workflowets rodhåndbogsskip med en særskilt ren dokumentationsmerge og 0 push-produktionskørsler.
 
 ## Candidate G – 4.0.263 aktuel referencegate

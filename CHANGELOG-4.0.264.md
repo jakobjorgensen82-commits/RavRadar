@@ -10,3 +10,4 @@
 - Tilføjer den eksakte `HANDBOOK-RAVRADAR.md` til workflowets docs-only-skip. Denne merge skal gennem én normal fuld produktion; en senere ren dokumentationsmerge skal bevise 0 oprettede push-produktionskørsler.
 - Bevarer Candidate G, `20/50/30`, scorelogik, vejrdata, geometri, land-/vandpunkter, artifact, protected-dirty-data og private caches. I `data/kystdata.json` og `data/zones.geojson` er kun versionsfeltet ændret til 4.0.264.
 - Målrettede kontrakttests og den samlede lokale source-/RDKS-/releasegate er grønne. Exact-head, frisk fuld produktion og live browserkontrol dokumenteres efter PR.
+- PR #104 bestod exact-head `32651048627` og blev merged som `579bd167`. Første produktion `32651106811` stoppede før release på en gammel test, som stadig krævede den fjernede GPS-parallelrejse; opfølgningen retter testen til direkte v2 og føjer den til `validate:source`.
