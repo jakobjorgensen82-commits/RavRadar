@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.264",
+  "version": "4.0.265",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -55,7 +55,8 @@
     "test:feedback-learning": "node scripts/test-feedback-learning.mjs",
     "test:observation-db-privacy": "node scripts/test-observation-database-privacy.mjs",
     "test:trip-evidence-contract": "node scripts/test-trip-evidence-contract.mjs",
-    "test:user-account-trip-log": "node scripts/test-user-account-trip-log-4.0.264.mjs",
+    "test:user-account-trip-log": "node scripts/test-user-account-trip-log-4.0.264.mjs && node scripts/test-flexible-account-reporting-4.0.265.mjs",
+    "test:flexible-account-reporting": "node scripts/test-flexible-account-reporting-4.0.265.mjs",
     "test:adaptive-prediction": "node scripts/test-adaptive-prediction.mjs",
     "test:feedback-zone-ui": "node scripts/test-feedback-zone-ui.mjs",
     "test:b12-coastlines": "node scripts/test-b12-coastlines.mjs",

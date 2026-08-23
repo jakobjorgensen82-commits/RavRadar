@@ -1,5 +1,19 @@
 # RavRadar Håndbog
 
+## Indberet en tidligere tur fra kontoen – 4.0.265
+
+En indlogget bruger kan under kontoen vælge **Indberet tur eller fund** uden først at have startet en tur i RavRadar. Brugeren skal selv vælge dato og klokkeslæt for turens start og oplyse, hvor længe turen varede. Formularen spørger derefter om jagtform, faktisk område og kyststrækning, hvor grundigt der blev søgt, og om der blev fundet rav.
+
+RavRadar sætter aldrig dagens vejr på en ældre tur. Hvis systemet ikke sikkert har vejr og RavScore fra brugerens valgte tidspunkt, gemmes turen stadig som erfaring, men den bruges ikke direkte til at ændre scorereglerne. Et senere kontrolleret analysearbejde kan sammenholde den valgte tid og kyststrækning med sikre historiske data.
+
+Den påvirker heller ikke den aktuelle beregnede fundchance, så længe den mangler et sikkert historisk grundlag.
+
+Efterregistreringen gemmes som én almindelig turpost i den eksisterende `observations`-tabel. Den samme post vises i **Mine ture og fund**. Der oprettes ingen ny tabel eller særskilt fundpost, og brugeren møder ikke tekniske databaseforklaringer i turloggen.
+
+Ved afslutning af en startet tur kan brugeren vælge **Indsend tur**, **Svar senere** eller **Afslut uden at indberette**. **Svar senere** bevarer turen på enheden. Det sidste valg kræver bekræftelse og rydder turen uden at sende eller gemme en rapport.
+
+Begge rapportveje bruger samme afhængige valg af område og kyststrækning. RavRadar indsamler fortsat ikke GPS-spor, rute, præcis position, fri tekst eller billeder. Candidate G og den aktive `20/50/30`-score ændres ikke af denne funktion.
+
 ## Enklere brugerrejse og privat turlog – 4.0.264
 
 Under kontoen kan en indlogget bruger åbne **Mine ture og fund**. Oversigten viser de samme ture, som allerede ligger i Supabases `observations`-tabel. RavRadar gemmer altså ikke turen en ekstra gang og opretter ikke en ny logtabel. Listen hentes først, når brugeren åbner den, og viser højst de seneste 100 ture for at begrænse belastningen.
@@ -372,7 +386,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.264
+**Håndbogsversion:** 4.0.265
 
 **Opdateret:** 19. august 2026
 
@@ -2073,6 +2087,14 @@ RavRadar indsamler ikke turens GPS-spor, rute eller præcise position i den akti
 ### Mine ture og fund
 
 En indlogget bruger kan åbne sin private log under kontoen. Loggen læser den eksisterende turpost i `observations` og gemmer ikke turen igen. Supabase viser kun rækker med den aktuelle brugers `user_id`; mailadresse og navn ligger ikke i turposten. Anonyme ture forbliver anonyme. Oversigten hentes først ved klik, begrænses til de seneste 100 ture og viser kun de nødvendige felter.
+
+### Efterregistrér en tur eller et fund
+
+En indlogget bruger kan fra kontoen indberette uden først at have startet en tur. Brugeren vælger selv dato og klokkeslæt for turens start og oplyser varigheden. Samme spørgsmål om jagtform, faktisk zone og kyststrækning, søgegrundighed og fund bruges som ved en almindelig turafslutning.
+
+Aktuelle vejrforhold på indberetningstidspunktet bruges aldrig som et historisk snapshot. Hvis det oprindelige vejr og den oprindelige score ikke sikkert kan genskabes, bevares rapporten som erfaring, men den markeres ikke som direkte egnet til scorekalibrering.
+
+Ved en startet tur betyder **Svar senere**, at turen bevares lokalt. **Afslut uden at indberette** kræver bekræftelse og rydder turen uden en observations- eller serverpost.
 
 ## v4.0.249: privat RavScore-kandidat-shadow
 

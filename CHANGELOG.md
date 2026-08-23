@@ -240,3 +240,15 @@
 - Den dataminimerede audit består 210/673/1.346 med 673 accepterede tilstande, nul nulstillinger og 9/9 timers alder; browserauditten består 420/2.100/673 uden fejl.
 - Candidate G er fortsat ikke aktiv. Den friske scorefordeling er væsentligt lavere end aktiv score og afventer særskilt ejerreview før en eventuel aktiveringsversion.
 - En dataminimeret bootstrapaudit af 42.551 eksisterende offentlige historikposter viste under den daværende ubundne regel, at 65–117 timers forløb ikke kunne bestemme startreserven uden passivt neutralt tab. Den historiske anbefaling om neutral startprior 50 er nu erstattet af DEC-0059; 0 og 100 bevares kun som følsomhedsspor, og ingen score aktiveres.
+## 4.0.265 – fleksibel kontoindberetning og ærligt fravalg (2026-08-23)
+
+- En indlogget bruger kan vælge **Indberet tur eller fund** fra kontoen uden først at starte en tur.
+- Efterregistreringen kræver, at brugeren selv vælger dato og klokkeslæt for turens start samt turens varighed. Dato og klokkeslæt er ikke forudfyldt. Formularen genbruger samme spørgsmål og zoneafhængige kyststrækningsvalg som en almindelig tur.
+- Rapporten gemmes i den eksisterende `observations`-tabel uden ny tabel, dubletrække eller databaseændring. Aktuelle vejrforhold bruges aldrig som historisk erstatning.
+- Når et sikkert historisk snapshot ikke kan genskabes, gemmes efterregistreringen med tomme forecast-/snapshotfelter og `calibration_eligible=false`; den kan bruges som erfaring, men ikke direkte til scorejustering.
+- Den lokale sandsynlighedsberegning filtrerer nu udtrykkeligt rækker med `calibration_eligible=false`, så en efterregistrering uden historisk vejr ikke ændrer brugerens aktuelle fundchance.
+- En startet tur kan nu **Afsluttes uden at indberette** efter bekræftelse. Det rydder den lokale aktive tur uden observationspost, outboxpost eller Supabase-række; **Svar senere** bevarer turen lokalt.
+- **Mine ture og fund** viser tid og mærker efterregistrering, men viser ikke længere intern tekst om databasekopier.
+- Gramfeltets maksimum følger nu databasens eksisterende grænse, så en ellers gyldig rapport ikke kan ende fastlåst i offlinekøen.
+- Målrettede kontrakt-, observation-, turlog- og syntakstests er grønne. Første PR exact-head `32658093582` stoppede sikkert før merge, fordi Candidate G-omskifterens versionsmærke stadig stod på 4.0.264. Mærket følger nu 4.0.265, og versionsværktøjet opdaterer det fremover automatisk; profilvalg og scorelogik er uændrede. Anden exact-head `32658348688` fandt to manglende, allerede vedtagne forklaringssætninger i webhåndbogen. Tredje exact-head `32658502017` bestod derefter alle kildekontrakter og stoppede først ved den manglende versionsspecifikke `CHANGELOG-4.0.265.md`; begge dokumentationsmangler er nu lukket. Ny exact-head og produktion afventer.
+- Candidate G, `20/50/30`, scorelogik, vejrruntime, database, geometri og land-/vandpunkter er uændrede. Versionsløftet må kun ændre versionsfeltet i de to geodatafiler.

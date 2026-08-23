@@ -1,14 +1,15 @@
 # AI Roadmap – RavRadar 4.0.243+
 
-## Næste aftalte brugerdataforbedring – kontoindberetning og frivilligt fravalg
+## 4.0.265-kandidat – kontoindberetning og frivilligt fravalg
 
-- [ ] En indlogget bruger skal kunne indberette en tur eller et fund fra kontosiden uden først at starte en tur.
-- [ ] Kontoindberetningen skal genbruge den aktive afslutningsformular, de samme forståelige spørgsmål, samme `observations`-række og samme dataminimerede vejr-/scoresnapshot. Der må ikke opstå en ekstra Supabase-tabel eller dubletpost.
-- [ ] Brugeren skal selv vælge korrekt dato og tidspunkt. Snapshot og eventuel scorekalibrering skal bruge historiske forhold fra det valgte tidspunkt, aldrig de aktuelle forhold på indberetningstidspunktet.
-- [ ] Hvis sikkert historisk vejr-/scoregrundlag ikke findes for det valgte tidspunkt, skal rapporten bevares som erfaring med `calibration_eligible=false` frem for at konstruere eller gætte data.
-- [ ] En startet tur skal have et udtrykkeligt **Afslut uden at indberette**, som efter bekræftelse rydder den lokale tur uden serverpost. **Svar senere** bevarer fortsat turen lokalt.
-- [ ] Den eksisterende afhængige zone→kyststrækning-menu i start-/afslutningsdialogen skal genbruges fra kontoen og kontraktlåses, så den faktiske kystdel altid tilhører den valgte zone.
-- [ ] Implementeringen afventer et naturligt roadmaptidspunkt og må ikke blandes ind i en igangværende score-, geometri- eller produktionsrettelse.
+- [x] En indlogget bruger kan indberette en tur eller et fund fra kontosiden uden først at starte en tur.
+- [x] Kontoindberetningen genbruger de aktive, forståelige rapportspørgsmål og samme `observations`-række. Der opstår ingen ekstra Supabase-tabel eller dubletpost.
+- [x] Brugeren vælger korrekt startdato, starttid og varighed. Aktuelle forhold ved den senere indberetning må aldrig gemmes som historisk vejr eller score.
+- [x] Uden et sikkert historisk vejr-/scoregrundlag gemmes rapporten med tomme snapshotfelter og `calibration_eligible=false` frem for konstruerede data.
+- [x] En startet tur har **Afslut uden at indberette**, som efter bekræftelse rydder den lokale tur uden observations- eller serverpost. **Svar senere** bevarer fortsat turen lokalt.
+- [x] Begge rapportveje bruger samme afhængige zone→kyststrækning-menu og validering.
+- [x] Målrettede tests for kontrakt, lagring, fravalg, kontooversigt og almindeligt dansk er grønne.
+- [ ] Versionsluk, bestå nødvendige dokumentations-/versionskontroller og én exact-head-kildegate i GitHub; produktionsverificér derefter den synlige, ikke-dataskrivende brugerflade.
 
 ## 4.0.264 – brugerflow, login og privat turlog
 

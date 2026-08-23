@@ -1,5 +1,14 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-23 – fleksibel efterregistrering og frivilligt fravalg
+
+1. Ejeren besluttede, at en indlogget bruger skal kunne indberette en tidligere tur eller et fund direkte fra kontoen og selv vælge korrekt dato og klokkeslæt.
+2. Kontoindberetningen genbruger samme spørgsmål, zone→kyststrækningsvalg og eksisterende `observations`-tabel. Ingen ny tabel, ekstra række eller databasekolonne indføres.
+3. Den offentlige klient kan ikke sikkert genskabe et vilkårligt historisk vejr-/scoresnapshot. Nutidens vejr må ikke bruges som erstatning; rapporten gemmes derfor med tomme snapshotfelter og `calibration_eligible=false`.
+4. En startet tur får tre valg: indsend, svar senere eller afslut uden at indberette. Det sidste valg kræver bekræftelse og rydder kun den lokale aktive tur.
+5. Ejeren fjernede den tekniske sætning om databasekopier fra brugerens **Mine ture og fund** og præciserede igen, at efterregistreringen skal have et tydeligt valg af både dato og klokkeslæt.
+6. DEC-0064 og målrettede kontrakt-, observation-, turlog- og syntakstests dokumenterer den lokale 4.0.265-kandidat. Version, exact-head og produktion udestår.
+
 ## 2026-08-23 – ejeren vælger en privat turlog uden dobbeltlagring
 
 1. Ejeren bad om et let forståeligt konto-link til brugerens egne ture og fund og gjorde det bindende, at eksisterende Supabase-data skal genbruges for at beskytte free-planen.

@@ -1,13 +1,14 @@
 # RavRadar - aktuelt Codex-handoff
 
-## Næste aftalte produktforbedring – kontoindberetning uden startet tur
+## Aktuel 4.0.265-kandidat – kontoindberetning uden startet tur
 
-- Ejeren har besluttet, at en indlogget bruger senere skal kunne indberette en tur eller et fund direkte fra kontosiden uden først at have startet en tur.
-- Kontoindberetningen skal genbruge den eksisterende afslutningsformular og `observations`-række uden dobbeltlagring. Brugeren vælger selv korrekt dato og tidspunkt; kun historisk vejr og score fra det valgte tidspunkt må kobles til rapporten.
-- Hvis sikkert historisk grundlag mangler, gemmes rapporten som erfaring med `calibration_eligible=false`. Nutidens vejr må aldrig bruges som erstatning for et ældre fund.
-- En startet tur skal kunne **Afsluttes uden at indberette** efter bekræftelse og uden Supabase-post. Den nuværende **Svar senere** skal fortsat bevare turen lokalt.
-- Den aktive start-/afslutningsdialog har allerede zoneafhængigt valg af kyststrækning. Samme komponent og zone→kystdel-validering skal genbruges på kontosiden.
-- Dette er registreret roadmaparbejde, ikke implementeret kode. Aktuel dokumentationsbranch er `codex/record-flexible-trip-reporting`.
+- En indlogget bruger kan vælge **Indberet tur eller fund** fra kontoen uden først at starte en tur. Formularen kræver, at brugeren selv vælger dato og klokkeslæt for turens start samt turens varighed.
+- Kontoindberetningen genbruger den almindelige rapports spørgsmål og den eksisterende `observations`-tabel. Der oprettes ingen ny Supabase-tabel, ekstra række eller fundkopi.
+- Aktuelle forhold ved indberetningen bruges aldrig som historisk vejr. Da klienten ikke sikkert kan genskabe et vilkårligt historisk snapshot, gemmes efterregistreringen med tomme forecast-/snapshotfelter og `calibration_eligible=false`.
+- En startet tur kan efter bekræftelse **Afsluttes uden at indberette**. Det rydder kun den lokale aktive tur og opretter ingen observations-, outbox- eller Supabase-post. **Svar senere** bevarer turen.
+- Begge rapportveje bruger samme zoneafhængige kyststrækningsvalg og afviser en kyststrækning fra en anden zone.
+- Målrettede kontrakt-, observation-, turlog-, versions- og syntakstests er grønne. Exact-head `32658093582` fandt et efterladt profilversionsmærke, `32658348688` fandt to manglende webhåndbogssætninger, og `32658502017` bestod alle kildekontrakter før et stop på den manglende versionsspecifikke changelog. Alle tre afgrænsede mangler er lukket uden ændring af kontoindberetning eller scorelogik; ny exact-head og produktion udestår. En rigtig autentificeret indsendelse skal senere udføres bevidst af ejeren, fordi den opretter en virkelig række.
+- Candidate G, `20/50/30`, vejrdata, geometri, land-/vandpunkter, artifact, protected-dirty-data og private caches er urørte. Se DEC-0064.
 
 ## Aktuel arbejdsleverance 2026-08-23 – forståeligt brugerflow og privat turlog i 4.0.264
 

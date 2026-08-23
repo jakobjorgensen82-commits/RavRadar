@@ -2,7 +2,7 @@ import {
   TRIP_EVIDENCE_SCHEMA_VERSION,
   completeTripEvidence,
   createTripStartRecord
-} from './trip-evidence-contract.js?v=4.0.264';
+} from './trip-evidence-contract.js?v=4.0.265';
 
 const ACTIVE_KEY = 'ravradar-trip-evidence-v2-active';
 const PENDING_KEY = 'ravradar-trip-evidence-v2-pending';
@@ -77,6 +77,14 @@ export function finishTripEvidence(completion, storage = null) {
   target.setItem(PENDING_KEY, JSON.stringify(next));
   target.removeItem(ACTIVE_KEY);
   return evidence;
+}
+
+export function discardActiveTripEvidence(storage = null) {
+  const target = resolveStorage(storage);
+  const active = loadActiveTripEvidence(target);
+  if (!active) throw new Error('Der er ingen aktiv ravtur at afslutte.');
+  target.removeItem(ACTIVE_KEY);
+  return { tripId: active.tripId };
 }
 
 export function markTripEvidenceSubmitted(tripId, storage = null) {

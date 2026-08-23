@@ -9,4 +9,8 @@ const analysis=analyzeObservationRows(observations);
 assert.equal(analysis.status,'coverage-only');assert.equal(analysis.calibrationLocked,true);assert.deepEqual(analysis.suggestions,[]);
 const prediction=predictAmberChance({baseScore:70,zone:{id:'z'},weather:{windSpeedMps:7,waveHeightM:1,waterLevelCm:30,currentSpeedMps:.3},observations,model});
 assert.equal(prediction.available,true);assert.ok(prediction.probability>=0&&prediction.probability<=100);assert.ok(prediction.confidence>=35);
+const excluded=Array.from({length:20},(_,i)=>({zone_id:'z',observed_at:`2026-06-${String(i+1).padStart(2,'0')}T12:00:00Z`,result:'good',calibration_eligible:false,weather_snapshot:{historicalSnapshotStatus:'historical-snapshot-unavailable'}}));
+const predictionWithoutUnsafeHistory=predictAmberChance({baseScore:70,zone:{id:'z'},weather:{windSpeedMps:7,waveHeightM:1,waterLevelCm:30,currentSpeedMps:.3},observations:[...observations,...excluded],model});
+assert.equal(predictionWithoutUnsafeHistory.sampleSize,prediction.sampleSize,'Observationer mærket calibration_eligible=false må ikke påvirke den direkte sandsynlighedsberegning.');
+assert.equal(predictionWithoutUnsafeHistory.probability,prediction.probability);
 console.log('Eksisterende adaptive model og AI Prediction Engine består, mens nye observationsforslag er scorelåst.');
