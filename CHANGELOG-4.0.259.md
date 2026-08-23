@@ -21,6 +21,7 @@
 - `automaticActivationAllowed=false` og `publicScoreChanged=false` er låst i runtime og tests.
 - Rollback i 4.0.259 er den uændrede aktive motor. En senere reel aktivering kræver en særskilt versionsbundet omskifter og testet tilbagekobling til `25/40/35`.
 - Første produktion starter Candidate G-tilstanden på 0. Den må ikke kaldes en modnet 48-timersfordeling; naturlig state-alder og en frisk slutshadow kræves før aktiv kobling.
+- Første naturlige schedule `32613284735` accepterer 673/673 tidligere tilstande uden nulstilling. Forskellen mellem bootstrapreferencen 00:00Z og den nye fælles reference 03:00Z dokumenterer 3/3 timers yngste/ældste fortsættelsesalder; 48 timer er endnu ikke nået.
 
 ## Uændret
 

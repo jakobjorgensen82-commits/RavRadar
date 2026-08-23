@@ -46,7 +46,7 @@ Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre for
 - [x] Implementér den score-neutrale 4.0.259-pakke: begge kompakte tilstande centralt, Candidate G som adskilt diagnostisk runtime, fallback-kompatibel 210/673-shadow og deterministisk rollback til fortsat aktiv `25/40/35`.
 - [x] Bestå den samlede lokale kildegate og releasegate for 4.0.259.
 - [x] Før 4.0.259 gennem exact-head `32609888406`, PR #89/merge `31e50acb`, fuld post-merge-produktion `32609952992` og read-only shadow `32610281620` på den producerede runtime. Live `rr-20260823011924-210` består 210/673/1.346 uden score-rekonstruktionsfejl; alle 673 tilstande er dokumenteret bootstrap.
-- [ ] Lad den centrale tilstand opbygge dokumenteret naturlig alder. Første bootstrap fra 0 må ikke præsenteres som en modnet 48-timersfordeling.
+- [ ] Lad den centrale tilstand opbygge dokumenteret naturlig alder. Første naturlige schedule `32613284735` accepterede 673/673 tilstande uden nulstilling og dokumenterer 3/3 timers yngste/ældste alder; fortsæt read-only til mindst 48 timer. Første bootstrap fra 0 må ikke præsenteres som en modnet 48-timersfordeling.
 - [ ] Byg derefter den særskilte aktive score-omskifter og brugerforklaring med testet tilbagekobling til `25/40/35`; selve aktiveringen sker først på en grøn, modnet slutshadow uden modstridende evidens.
 - [ ] Offentlig aktivering må først gennemføres, når den samlede pakke er grøn og ingen konkret modstridende evidens består; manglende turkalibrering skal fortsat fremgå ærligt som modelusikkerhed.
 

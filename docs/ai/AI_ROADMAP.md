@@ -6,8 +6,9 @@
 - [x] Lås 4/48-profil, missing-hold og kompakt fortsættelse i syntetiske tests og privat 1.460-evalueringsreplay.
 - [x] Bevar stedegnethed, bund/dybde/render/revler og sikkerhedsrådgivning uden for modellen.
 - [x] Saml `RESEARCH-3` som foretrukken score-neutral helhedskandidat med `20/50/30`, DEC-0054 og DEC-0055.
-- [ ] Før checkpointet gennem exact-head, merge og produktion uden offentlig scoreændring.
-- [ ] Næste afgrænsede fase er én samlet offentlig pipeline-/forklarings-/rollbackpakke med fallback-kompatibel 673-deles shadow; ikke endnu en parallel modelvariant.
+- [x] Før checkpointet gennem exact-head `32609888406`, PR #89/merge `31e50acb` og fuld produktion `32609952992` uden offentlig scoreændring.
+- [x] Lever den samlede score-neutrale pipeline-/rollbackpakke og fallback-kompatible 673-deles shadow i 4.0.259.
+- [ ] Opbyg mindst 48 timers naturlig state-alder. Første schedule `32613284735` accepterede 673/673 tilstande og dokumenterer 3/3 timer; offentlig aktivering forbliver lukket.
 
 ## Candidate G – strømstyret rand- og tærskelkontrol efter DEC-0055
 

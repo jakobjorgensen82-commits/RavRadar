@@ -10,6 +10,8 @@
 - Den manuelle shadow er omlagt fra en ny native-only DMI-prøve til den faktisk producerede fallback-kompatible detaljefil. Den kræver 210 zoner, 673 dele og 1.346 modeevalueringer og skriver kun en dataminimeret aggregatrapport.
 - Exact-head `32609888406`, PR #89/merge `31e50acb` og fuld produktion `32609952992` er grønne. Live `rr-20260823011924-210` er version 4.0.259 med 210 zoner og 673 kystdele.
 - Frisk read-only shadow `32610281620` består 210/673, 1.346 modeevalueringer og nul score-rekonstruktionsfejl. Den viser 0 accepterede og 673 nulstillede tilstande, præcis som forventet ved første bootstrap.
+- Første naturlige schedule `32613284735` på `main`/`600e8a45` bestod frisk data, fuld validering, releasegate, artifact og Pages. Live `rr-20260823023951-210` består fortsat 210/673 og 1.346 modeevalueringer uden rekonstruktionsfejl.
+- Alle 673 tilstande accepterede den tidligere kontekst, og ingen blev nulstillet. Fra bootstrapreferencen 00:00Z til den nye fælles reference 03:00Z er både yngste og ældste dokumenterede naturlige fortsættelsesalder derfor 3 timer. Det er første fortsættelsesbevis, ikke en modnet 48-timersslutshadow.
 - Første produktion er derfor dokumenteret bootstrap fra 0 og må ikke kaldes en modnet 48-timersfordeling. Endelig aktiveringsshadow kræver naturligt videreført tilstand og dokumenteret state-alder.
 - 4.0.259 ændrer ingen geometri, land-/vandpunkter, bundmodel, beskyttede data eller sikkerhedsbetydning.
 

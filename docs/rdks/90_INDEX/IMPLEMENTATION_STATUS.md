@@ -14,6 +14,8 @@
 - [x] Bestå exact-head `32609888406` på `337466b5`, merge PR #89 som `31e50acb` og bevar den eksakte head under merge.
 - [x] Bestå fuld post-merge-produktion `32609952992` med central admin, frisk fallback-kompatibel data, fuld validering, releasegate, Supabase, artifact og Pages.
 - [x] Kør den nye manuelle 210/673-shadow som read-only run `32610281620` på den producerede 4.0.259-runtime: 210 zoner, 673 dele, 1.346 modeevalueringer og nul rekonstruktionsfejl. Alle 673 tilstande er korrekt bootstrap og ikke modnet.
+- [x] Dokumentér første naturlige state-fortsættelse i schedule `32613284735`: live `rr-20260823023951-210` accepterer 673/673 tidligere tilstande, nulstiller 0 og består 210/673/1.346 med nul rekonstruktionsfejl. Dokumenteret yngste/ældste fortsættelsesalder er 3/3 timer.
+- [ ] Fortsæt uændret read-only observation til mindst 48 timers naturlig state-alder og kør derefter en frisk slutshadow. Tre timer er ikke modnet evidens.
 - [ ] Først derefter: forbered særskilt aktiv score-omskifter og brugerforklaring; offentlig aktivering afventer modnet slutshadow og ingen modstridende evidens.
 
 ## Candidate G mobiliserings-/helhedsreview – score-neutralt
