@@ -10,6 +10,7 @@
 - Offentlige hovedord er forenklet til blandt andet **Søgeforhold**, **Transport mod kysten** og **Rav i bevægelse**. Candidate G, `20/50/30`, scorelogik, vejrdata, geometri og land-/vandpunkter er uændrede.
 - PR #106 bestod exact-head `32652894729`, blev merged som `23fa89ed`, og produktion `32652970105` bestod hele kæden. PR #107 bestod exact-head `32654048944`, blev merged som `8b758337`, og produktion `32654119745` bestod igen frisk data, fuld validering, releasegate og Pages. Live `rr-20260823171804-210` er 4.0.264 på 210/673.
 - Konto-/loginforklaring og direkte tur uden GPS/rute er kontrolleret live. UI og audit er enige om `Vandstandsændring på 3 timer`, og 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer består uden kontrol-, konsol-, side- eller HTTP-fejl. En rigtig loginmail og autentificeret kontooversigt kræver senere ejerens interaktive prøve.
+- PR #108 bestod exact-head `32654780774` og blev merged som den rent dokumentariske `98621bf9`. GitHub oprettede 0 push-produktionskørsler for mergecommitten, så den eksakte rodhåndbog og RDKS er bevist omfattet af docs-only-skip. Den seneste push-produktion er fortsat `32654119745`.
 
 
 ## Aktuel produktionsverificeret 4.0.263 – Candidate G-gate ved den aktuelle fælles zonereference

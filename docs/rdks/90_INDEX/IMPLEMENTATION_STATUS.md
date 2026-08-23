@@ -18,7 +18,7 @@
 - [x] Browserkontrollér konto-/loginforklaring, direkte tur uden GPS/rute og den fulde 420/2.100/673-visning uden fejl efter korrektion af auditlabelen.
 - [x] Merge auditlabelrettelsen via PR #107/exact-head `32654048944` og produktion `32654119745`; live dataset er `rr-20260823171804-210`.
 - [ ] En rigtig magic-link-mail, autentificeret turliste og kontoejet tur kræver senere ejerens interaktive loginprøve.
-- [ ] Separat ren dokumentationsmerge med 0 oprettede push-produktionskørsler.
+- [x] Separat ren dokumentations-PR #108/exact-head `32654780774`, merge `98621bf9`, med 0 oprettede push-produktionskørsler.
 
 4.0.264 er nu produktionsverificeret sandhed. De følgende Candidate G-afsnit er revisionssporet for den nuværende scoremotor.
 

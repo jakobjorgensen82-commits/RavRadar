@@ -14,6 +14,7 @@
 10. PR #106 bestod exact-head `32652894729`, blev merged som `23fa89ed`, og produktion `32652970105` udgav `rr-20260823165645-210` som 4.0.264 på 210/673 efter grøn fuld validering og releasegate.
 11. Live konto/login og direkte tur uden GPS/rute blev kontrolleret. Den fulde audit afslørede kun en gammel testetiket: `3-timers trend` mod UI'ets `Vandstandsændring på 3 timer`. Med etiketten rettet bestod 420/2.100/673 uden browser-, konsol-, side- eller HTTP-fejl.
 12. PR #107 bestod exact-head `32654048944`, blev merged som `8b758337`, og produktion `32654119745` bestod hele kæden igen og udgav `rr-20260823171804-210`. Den afsluttende rene dokumentationsmerge bruges som bevis for 0 push-produktionskørsler.
+13. PR #108 bestod exact-head `32654780774` og blev merged som `98621bf9` med kun håndbog, RDKS, changelog og release-rapport. GitHub oprettede 0 push-produktionskørsler for mergecommitten; rodhåndbogens docs-only-skip er bevist.
 
 
 ## 2026-08-23 – den aktuelle Candidate G-gate afgrænses fra senere prognosehuller
