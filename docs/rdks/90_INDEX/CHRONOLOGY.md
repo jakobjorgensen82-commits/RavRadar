@@ -1,5 +1,30 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-23 – ejeren bestiller den systemiske cadence-rettelse
+
+1. Efter bekræftelsen af 673/673 nultransporter bad ejeren om en grundig analyse og implementation af den rette rettelse.
+2. Analysen valgte produktionens dokumenterede native marine stride på tre timer som maksimal sammenhængende bevisafstand. Faktisk tid integreres; der opfindes ingen mellemtimer.
+3. Et fire-timers eller manglende gab forbliver fail-closed. Ejerens pre-public undtagelse gælder kun et kort, sammenhængende `WINDOW_INCOMPLETE`-vindue.
+4. Profilomskifteren får `candidateWarmupEligible`, og shadowen genafspiller kompakt state med aktuel kode.
+5. Deterministiske tests er grønne, og dataminimeret replay af den gamle live state giver 110 positive transporter mod 0 før rettelsen. Eksterne leverancegates afventer.
+
+## 2026-08-23 – nultransport afslører cadencefejl efter aktiveringen
+
+1. Ejeren spurgte, om alle transportværdier kunne være startet på 0 efter Candidate G-aktiveringen.
+2. En dataminimeret livekontrol af `rr-20260823121818-210` bekræftede 673/673 transportpotentialer og transportkomponenter på 0.
+3. 658 dele havde to afledte beviser med tre timers afstand og 15 kun ét. Candidate G accepterer højst én time mellem sammenhængende beviser, så genafspilningen bruger kun den seneste prøve.
+4. Den første prøve har nul forløbstid; derfor kan selv en indgående seneste styrke ikke bygge transport. Ved uændret cadence bliver memory aldrig komplet, og scoren retter sig ikke ind over tid.
+5. PR #97–99's grønne gates fangede ikke den semantiske cadencefejl. Ingen kode eller rollback blev udført under den read-only kontrol; P0 kræver nu global rollback eller en særskilt testet rettelse.
+
+## 2026-08-23 – Candidate G-aktiveringen produktionsverificeret og lukket
+
+1. PR #97 bestod exact-head `32636378576`, blev merged som `0f7a9d5f`, og fuld produktion `32636433944` gennemførte central hydrering, frisk data, fuld validering, releasegate, central profil-readback og Pages.
+2. Live `rr-20260823112726-210` viste Candidate G som aktiv global profil på 210 zoner og 673 kystdele med identisk manifestbinding og nul offentlige kandidat-scoreafvigelser.
+3. Den første aktive shadow fandt en for snæver auditantagelse om lovlige non-ready-memory-statusser. Fejlen var i kontrollen, ikke i runtime eller score, og blev ikke omgået.
+4. PR #98/merge `fd69f8a0`, produktion `32637387600` og shadow `32637833674` lukkede auditkontrakten grønt på 210/673.
+5. Den fulde livebrowseraudit bestod 420 aktuelle visninger, 2.100 femdøgnsvisninger og begge jagtformer uden kontrol-, konsol-, side- eller HTTP-fejl. PR #99/merge `328b4d7c` registrerede lukningen.
+6. Candidate G er dermed den produktionsverificerede 4.0.261-scoremotor. Naturlig memoryopbygning er driftsevidens, ikke en ny aktiveringsgate; 25/40/35 er eksakt global rollback.
+
 ## 2026-08-23 – Candidate G godkendt som gældende under pre-public opvarmning
 
 1. Ejeren afklarede, at RavRadar-siden endnu ikke er offentlig, og at foreløbige scoreværdier i de første 48 timer derfor er acceptable.

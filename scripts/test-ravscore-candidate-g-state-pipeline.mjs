@@ -109,6 +109,33 @@ assert.equal(fullInboundWindow.rows.at(-1).transportMemoryCoverageHours, 48);
 assert.equal(fullInboundWindow.rows.at(-1).transportPotential, 100);
 assert.equal(fullInboundWindow.continuationState.transportEvidence.length, 49);
 
+const nativeThreeHourlyWindow = buildCandidateGDerivedStateSeries(
+  Array.from({ length: 17 }, (_, index) => sample(index * 3)),
+  { stateKey: 'sha256:native-three-hour-window' },
+);
+assert.equal(nativeThreeHourlyWindow.rows[1].transportPotential, 30,
+  'the native three-hour continuation must not collapse to a zero-duration sample');
+assert.equal(nativeThreeHourlyWindow.rows.at(-1).transportMemoryReady, true);
+assert.equal(nativeThreeHourlyWindow.rows.at(-1).transportMemoryStatus, 'READY');
+assert.equal(nativeThreeHourlyWindow.rows.at(-1).transportMemoryCoverageHours, 48);
+assert.equal(nativeThreeHourlyWindow.rows.at(-1).transportPotential, 100);
+assert.equal(nativeThreeHourlyWindow.continuationState.transportEvidence.length, 17);
+
+const nativeFirstRun = buildCandidateGDerivedStateSeries(
+  Array.from({ length: 9 }, (_, index) => sample(index * 3)),
+  { stateKey: 'sha256:native-three-hour-window' },
+);
+const nativeSecondRun = buildCandidateGDerivedStateSeries(
+  Array.from({ length: 9 }, (_, index) => sample((index + 8) * 3)),
+  {
+    stateKey: 'sha256:native-three-hour-window',
+    initialState: nativeFirstRun.continuationState,
+  },
+);
+assert.equal(nativeSecondRun.initialStateAccepted, true);
+assert.deepEqual(nativeSecondRun.continuationState, nativeThreeHourlyWindow.continuationState,
+  'split and continuous native-cadence replays must be identical');
+
 const neutralWindow = buildCandidateGDerivedStateSeries(
   Array.from({ length: 49 }, (_, index) => sample(index, {
     currentSpeedMps: 0,

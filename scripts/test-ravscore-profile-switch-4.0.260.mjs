@@ -61,11 +61,13 @@ const warmupProfile = resolvePublicRavScoreProfile({
   ...productionConfiguration,
   candidateCoverageReady: true,
   candidateMemoryReady: false,
+  candidateWarmupEligible: true,
 });
 assert.equal(warmupProfile.activeProfileId, CANDIDATE_G_RAVSCORE_PROFILE_ID);
 assert.equal(warmupProfile.activationState, 'candidate-active-pre-public-warmup');
 assert.equal(warmupProfile.candidateCoverageReady, true);
 assert.equal(warmupProfile.candidateMemoryReady, false);
+assert.equal(warmupProfile.candidateWarmupEligible, true);
 assert.equal(warmupProfile.prePublicWarmupAccepted, true);
 assert.equal(warmupProfile.freshFinalShadowPassed, false);
 assert.equal(warmupProfile.ownerReviewApproved, true);
@@ -100,6 +102,25 @@ const incompleteProjection = resolvePublicRavScoreProfile({
 });
 assert.equal(incompleteProjection.activeProfileId, LEGACY_RAVSCORE_PROFILE_ID);
 assert.equal(incompleteProjection.fallbackReason, 'CANDIDATE_COVERAGE_INCOMPLETE');
+
+const unhealthyWarmup = resolvePublicRavScoreProfile({
+  ...productionConfiguration,
+  candidateCoverageReady: true,
+  candidateMemoryReady: false,
+  candidateWarmupEligible: false,
+});
+assert.equal(unhealthyWarmup.activeProfileId, LEGACY_RAVSCORE_PROFILE_ID);
+assert.equal(unhealthyWarmup.fallbackReason, 'CANDIDATE_MEMORY_GAP');
+assert.equal(unhealthyWarmup.candidateWarmupEligible, false);
+
+const unprovenWarmup = resolvePublicRavScoreProfile({
+  ...productionConfiguration,
+  candidateCoverageReady: true,
+  candidateMemoryReady: false,
+});
+assert.equal(unprovenWarmup.activeProfileId, LEGACY_RAVSCORE_PROFILE_ID,
+  'warmup eligibility must fail closed when the caller does not prove it');
+assert.equal(unprovenWarmup.fallbackReason, 'CANDIDATE_MEMORY_GAP');
 
 const candidateProfile = resolvePublicRavScoreProfile({
   selection: approvedCandidateSelection,

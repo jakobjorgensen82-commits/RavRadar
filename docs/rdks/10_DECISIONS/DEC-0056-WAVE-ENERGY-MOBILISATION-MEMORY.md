@@ -1,10 +1,10 @@
 # DEC-0056: Én bølgeenergistyret mobiliseringstilstand
 
-**Status:** Aktiv score-neutral forskningsbeslutning; anbefalet Candidate G-mobilisering
+**Status:** Aktiv Candidate G-modelregel; dette dokuments score-neutrale aktiveringsstatus er erstattet af DEC-0060
 
 **Dato:** 2026-08-23
 
-**Scorepåvirkning:** Ingen offentlig scorepåvirkning
+**Scorepåvirkning:** Ingen ved dette checkpoint; reglen blev senere aktiv via DEC-0060/4.0.261
 
 ## Problem
 

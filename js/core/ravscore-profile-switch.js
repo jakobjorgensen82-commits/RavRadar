@@ -5,7 +5,7 @@ export const CANDIDATE_G_RAVSCORE_PROFILE_ID = CANDIDATE_G_STATE_MODEL_ID;
 
 export const PUBLIC_RAVSCORE_PROFILE_SELECTION = Object.freeze({
   schemaVersion: '1.1.0',
-  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.261',
+  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.262',
   requestedProfileId: LEGACY_RAVSCORE_PROFILE_ID,
   rollbackProfileId: LEGACY_RAVSCORE_PROFILE_ID,
   candidateProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
@@ -113,6 +113,7 @@ export function resolvePublicRavScoreProfile({
   evidence = PUBLIC_RAVSCORE_ACTIVATION_EVIDENCE,
   candidateCoverageReady = false,
   candidateMemoryReady = candidateCoverageReady,
+  candidateWarmupEligible = false,
 } = {}) {
   const rollbackProfileId = selection?.rollbackProfileId === LEGACY_RAVSCORE_PROFILE_ID
     ? selection.rollbackProfileId
@@ -133,6 +134,8 @@ export function resolvePublicRavScoreProfile({
   if (candidateRequested && selection?.candidateActivationEnabled !== true) blockers.push('CANDIDATE_ACTIVATION_DISABLED');
   if (candidateRequested && candidateCoverageReady !== true) blockers.push('CANDIDATE_COVERAGE_INCOMPLETE');
   if (candidateRequested && candidateMemoryReady !== true && !warmupAccepted) blockers.push('CANDIDATE_MEMORY_INCOMPLETE');
+  if (candidateRequested && candidateMemoryReady !== true && warmupAccepted
+    && candidateWarmupEligible !== true) blockers.push('CANDIDATE_MEMORY_GAP');
   if (candidateRequested && !activationEvidenceReady(evidence) && !warmupAccepted) {
     blockers.push('FINAL_SHADOW_OR_OWNER_REVIEW_MISSING');
   }
@@ -147,6 +150,7 @@ export function resolvePublicRavScoreProfile({
     candidateProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
     candidateCoverageReady: candidateCoverageReady === true,
     candidateMemoryReady: candidateMemoryReady === true,
+    candidateWarmupEligible: candidateWarmupEligible === true,
     freshFinalShadowPassed: typeof evidence?.freshFinalShadowRunId === 'string'
       && evidence.freshFinalShadowRunId.length > 0,
     ownerReviewApproved: typeof evidence?.ownerReviewDecisionId === 'string'

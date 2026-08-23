@@ -2,15 +2,18 @@
 
 Dette er den obligatoriske indgang til RavRadar for Codex og andre kodeassistenter. Projektet må ikke behandles som en samling isolerede filer. Hver ændring skal forstås som et træk i et sammenhængende system.
 
-## Aktuelt roadmapcheckpoint 2026-08-23
+## Aktuelt produktionscheckpoint 2026-08-23
 
-- Ejeren har i DEC-0060 besluttet at aktivere Candidate G allerede under den første, ikke-offentlige opvarmning. 4.0.261-kandidaten vælger derfor `RESEARCH-3` med `20/50/30`, mens `25/40/35` bevares som eksakt global rollback.
-- Den ufuldstændige transporthukommelse skal vises ærligt som `candidate-active-pre-public-warmup`; den må ikke kaldes et 48-timersbevis. Mangler blot én nødvendig Candidate G-projektion, falder hele datasættet fortsat tilbage til legacy.
-- Profilvalget skal hydreres og skrives tilbage som det centrale admin-dokument `ravscore-profile-selection`. Exact-head, fuld produktion, aktiv 210/673-shadow og browserkontrol skal være grønne før 4.0.261 kaldes produktionsverificeret.
-- Den foretrukne private helhedskandidat er `RESEARCH-3`: `20/50/30`, DEC-0054's vindstyrede waders-jagtbarhed, DEC-0055's strømstyrede transport og DEC-0056's ene bølgeenergistyrede mobiliseringstilstand.
+- **Aktuel 4.0.262-kandidat:** DEC-0061 retter lokalt 4.0.261's P0, hvor native tre-timers beviser blev afvist af en én-times-gate og låste transporten på 0. Candidate G accepterer nu højst tre timer mellem verificerede beviser, integrerer den faktiske forløbstid og opfinder ingen mellemtimer. Et hul over tre timer eller missing er fortsat fail-closed.
+- Pre-public opvarmning er nu kun gyldig ved `WINDOW_INCOMPLETE`. `LATEST_SAMPLE_MISSING`, `WINDOW_HAS_MISSING_EVIDENCE` og `WINDOW_HAS_TIME_GAP` giver global legacyrollback via `candidateWarmupEligible=false`.
+- Dataminimeret replay af den gamle 673-state giver 110 positive og 563 fortsat fysisk nul i stedet for 673 fastlåste nuller. Den gamle public runtime afvises med 658 replaymismatch som forventet. Exact-head, frisk produktion, aktiv 210/673-shadow og fuld browserkontrol afventer ved dette checkpoint.
+- Ejeren har i DEC-0060 besluttet at aktivere Candidate G allerede under den første, ikke-offentlige opvarmning. Den produktionsverificerede 4.0.261 bruger derfor `RESEARCH-3` med `20/50/30`, mens `25/40/35` bevares som eksakt global rollback.
+- Den ufuldstændige, men sammenhængende transporthukommelse skal vises ærligt som `candidate-active-pre-public-warmup`; den må ikke kaldes et 48-timersbevis. Mangler blot én nødvendig Candidate G-projektion eller brydes sammenhængen, falder hele datasættet tilbage til legacy.
+- Profilvalget hydreres og skrives tilbage som det centrale admin-dokument `ravscore-profile-selection`. PR #97 aktiverede modellen; PR #98 lukkede den daværende shadowkontrakt; PR #99 registrerede den grønne browserkontrol. Disse gates fangede ikke cadencefejlen ovenfor og kan derfor ikke længere stå alene som scorebevis.
+- Den gældende helhedsmodel er `RESEARCH-3`: `20/50/30`, DEC-0054's vindstyrede waders-jagtbarhed, DEC-0055's strømstyrede transport og DEC-0056's ene bølgeenergistyrede mobiliseringstilstand.
 - Mobilisering bruger højde² × periode med fire timers opbygning og 48 timers aftrapning. Direkte vind, aktuel strøm, separat varighed og statisk stedegnethed giver ingen mobiliseringspoint.
 - PR #92/exact-head `32628441062`, merge `c5898ce8`, produktion `32628516066` og live `rr-20260823083627-210` er grønne for 210/673/1.346 og browser 420/2.100/673. Statealderen er 9/9 timer uden nulstilling; det er ikke et 48-timersbevis.
-- Den friske Candidate G-shadow lå væsentligt lavere end aktiv score, fordi den ubundne start 0 fortsat dominerede efter 65–117 timers historik. Ejeren har nu afvist en ny vilkårlig startprior og valgt DEC-0059's faste 48-timers evidensvindue. State schema 2 genafspiller afledt kystnormal strøm fra samme rand, markerer missing/tidsgab og holder Candidate G ikke aktiveringsklar, indtil vinduet er komplet. Mekanikken valideres med simulation og historisk replay; kræv ikke en ny 48-timers realtidsudviklingstest. Offentlig aktivering kræver stadig frisk 673/673 slutshadow og særskilt ejerreview. Opret ikke en parallel model eller aktivér automatisk.
+- Den tidligere score-neutrale Candidate G-shadow lå væsentligt lavere end legacy, fordi den ubundne start 0 fortsat dominerede efter 65–117 timers historik. Ejeren afviste en vilkårlig startprior og valgte DEC-0059's faste 48-timers evidensvindue. State schema 2 genafspiller afledt kystnormal strøm fra samme rand og markerer missing/tidsgab. DEC-0060 erstattede kun kravet om komplet memory før den første pre-public aktivering; mekanikken er valideret med simulation og historisk replay, og der kræves ikke en ny 48-timers realtidsudviklingstest. Opret ikke en parallel model, og tillad aldrig automatisk aktivering.
 
 ## Verificeret startbaseline
 - Applikationsversion: **4.0.117**.

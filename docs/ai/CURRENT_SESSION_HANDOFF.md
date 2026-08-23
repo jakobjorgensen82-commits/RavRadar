@@ -1,13 +1,18 @@
 # RavRadar - aktuelt Codex-handoff
 
-## Aktiv opgave 2026-08-23 – Candidate G pre-public aktivering i 4.0.261
+## Aktuel arbejdsleverance 2026-08-23 – Candidate G native cadence-rettelse i 4.0.262
 
-- Aktuel branch er `codex/candidate-g-public-activation` fra `origin/main` `9f72f737`.
-- Ejeren har i DEC-0060 godkendt Candidate G som gældende scoremotor nu og accepteret, at det første ikke-offentlige 48-timersvindue er ufuldstændigt. Runtime skal mærke det `candidate-active-pre-public-warmup`; der må ikke foregives fuld historik.
+- 4.0.261-P0 er reproduceret: native tre-timers beviser blev afvist af en én-times-gate, så transporten stod på 0 i 673/673 dele og kunne ikke modne ved at vente.
+- Arbejdsbranch er `codex/candidate-g-transport-cadence-fix` fra `main`/merge `328b4d7c`. DEC-0061 implementerer maksimum tre timers verificeret bevisafstand, faktisk tidsintegration uden kunstige mellemtimer og fail-closed ved større eller manglende gab.
+- Ejeraccepteret pre-public opvarmning tillader nu kun `WINDOW_INCOMPLETE`. De tre egentlige fejlstatusser giver global legacyrollback via `candidateWarmupEligible=false`.
+- Målrettede tests er grønne. Dataminimeret replay af gammel live state giver 110 positive og 563 fortsat nul, og afviser det gamle artifact med 658 state-replaymismatch. Exact-head, frisk produktion, aktiv shadow og fuld browserkontrol afventer.
+- Ejeren har i DEC-0060 godkendt Candidate G som gældende scoremotor og accepteret, at det første ikke-offentlige 48-timersvindue er ufuldstændigt. Runtime mærker det `candidate-active-pre-public-warmup`; der foregives ikke fuld historik.
 - Den globale scoreprofil er `RESEARCH-3` med `20/50/30`. Én manglende nødvendig Candidate G-projektion giver samlet rollback til `RRS-CURRENT-B0-4.0.247`; automatisk aktivering og profilblanding er fortsat forbudt.
 - Det nye private centrale dokument er `data/admin/ravscore-profile-selection.json`. Central hydrering tillader kun nyere ejer-godkendt engangspromotion; efter write/readback er central samme/nyere værdi autoritativ.
-- Målrettede switch-, central-runtime-, aktiv-shadow-, workflow- og central-hydreringstests er grønne. Version 4.0.261 er sat; RDKS-lukning, samlet sourcegate, exact-head, produktion, central readback, aktiv 210/673-shadow og browseraudit udestår.
-- Artifact, protected-dirty-data, private cachedata, geometri og land-/vandpunkter må ikke røres. Geodata har kun versionsfeltet 4.0.261.
+- PR #97/exact-head `32636378576` aktiverede modellen og fuld produktion `32636433944` beviste central readback og live 210/673. PR #98 lukkede den legitime non-ready-shadowstatus, produktion `32637387600` var grøn, og shadow `32637833674` bestod. PR #99 registrerede den fulde browserlukning med 420 aktuelle og 2.100 femdøgnsvisninger uden fejl.
+- Artifact, protected-dirty-data, private cachedata, geometri og land-/vandpunkter må ikke røres. Geodata må kun få versionsfeltet 4.0.262.
+
+Næste arbejde er at gennemføre 4.0.262's exact-head, fulde produktion, aktive 210/673-shadow og hændelseskrævede browserkontrol. Der kræves ikke endnu en 48-timers realtidsudviklingstest.
 
 ## Checkpoint 2026-08-23 – Candidate G bounded transport-memory efter ejerbeslutning
 

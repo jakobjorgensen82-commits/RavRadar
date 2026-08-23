@@ -1,10 +1,10 @@
 # DEC-0058: Versionsbundet RavScore-profilomskifter med fail-closed rollback
 
-**Status:** Aktiv score-neutral produktbeslutning for 4.0.260
+**Status:** Aktiv omskifter-/rollbackkontrakt; 4.0.260's legacyvalg er erstattet af DEC-0060
 
 **Dato:** 2026-08-23
 
-**Scorepåvirkning:** Ingen. Den offentlige RavScore er fortsat `RRS-CURRENT-B0-4.0.247` med `25/40/35`.
+**Scorepåvirkning:** Ingen i 4.0.260. DEC-0060 valgte senere Candidate G; `RRS-CURRENT-B0-4.0.247` med `25/40/35` er fortsat eksakt rollback.
 
 ## Problem
 
@@ -44,8 +44,6 @@ En almindelig boolesk aktivering er ikke tilstrækkelig. Den ville ikke i sig se
 
 DEC-0058 erstatter DEC-0057's rækkefølgekrav om først at bygge omskifteren efter mindst 48 timers observation. DEC-0057's dataminimering, statekontrakt og krav om ærlig alder består uændret.
 
-+
-+## Efterfølgende pre-public aktivering i DEC-0060
-+
-+Ejeren har besluttet, at Candidate G skal være gældende allerede under den første, ikke-offentlige opvarmning. DEC-0060 erstatter derfor kun rækkefølgen, hvor frisk slutshadow og komplet transportmemory skulle foreligge før den første kobling. 4.0.261 kræver stadig komplet beregnelig Candidate G-projektion, eksplicit ejerautoritet, central konfiguration, global legacyrollback og efterfølgende exact-merge produktion/shadow/browserbevis. Automatisk aktivering og blandede profiler forbliver forbudt.
-+
+## Efterfølgende pre-public aktivering i DEC-0060
+
+Ejeren har besluttet, at Candidate G skal være gældende allerede under den første, ikke-offentlige opvarmning. DEC-0060 erstatter derfor kun rækkefølgen, hvor frisk slutshadow og komplet transportmemory skulle foreligge før den første kobling. 4.0.261 kræver stadig komplet beregnelig Candidate G-projektion, eksplicit ejerautoritet, central konfiguration, global legacyrollback og efterfølgende exact-merge produktion/shadow/browserbevis. Automatisk aktivering og blandede profiler forbliver forbudt.

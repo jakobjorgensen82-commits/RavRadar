@@ -26,6 +26,7 @@ for (const marker of [
   'transportMemoryReady: derivedState.transportMemoryReady',
   'score?.candidateG?.transportMemoryReady === true',
   'candidateMemoryReady',
+  'candidateWarmupEligible',
   'resolvePublicRavScoreProfile',
   'selectPublicRavScoreResult',
   "? 'active-public' : 'diagnostic-only'",
@@ -42,6 +43,7 @@ const scoreProfile = resolvePublicRavScoreProfile({
   ...productionConfiguration,
   candidateCoverageReady: true,
   candidateMemoryReady: false,
+  candidateWarmupEligible: true,
 });
 const candidateG = {
   schemaVersion: CANDIDATE_G_STATE_SCHEMA_VERSION,

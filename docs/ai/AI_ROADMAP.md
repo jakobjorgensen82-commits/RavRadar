@@ -1,5 +1,17 @@
 # AI Roadmap – RavRadar 4.0.243+
 
+## Candidate G – 4.0.262 native cadence og sikker warmup
+
+- [x] Reproducér den aktive P0 systemisk: 658/673 states havde tre timers bevisafstand, én-times-gaten efterlod én prøve med nul forløbstid, og alle 673 transportresultater stod på 0.
+- [x] Vælg produktionens dokumenterede tre-timers native stride som maksimal kontinuerlig afstand; integrér faktisk forløbstid uden at opfinde mellemtimer.
+- [x] Bevar fail-closed ved mere end tre timer og missing; tillad kun `WINDOW_INCOMPLETE` under ejerens pre-public opvarmning.
+- [x] Tilføj global `candidateWarmupEligible`-gate og genafspil kompakt public state i shadowen med eksakt resultatkontrol.
+- [x] Lås 3-timers fortsættelse, 17-punkts/48-timers readiness, split/ubrudt identitet og 4-timers gap i målrettede tests.
+- [x] Genafspil gammel live state dataminimeret: 110 positive, 563 fortsat nul og 658 forventede mismatch mod det fejlberegnede artifact.
+- [x] Bestå samlet lokal source-/RDKS-/releasekontrol og diffkontrol.
+- [ ] Bestå GitHub exact-head, merge og frisk fuld produktion med central readback.
+- [ ] Bestå aktiv 210/673-shadow med nul replaymismatch samt fuld browserkontrol.
+
 ## Candidate G – aktiv 4.0.261-leverance efter DEC-0060
 
 - [x] Registrér ejerens pre-public aktiveringsbeslutning og accept af foreløbig score under det første ufuldstændige 48-timersvindue.
@@ -7,7 +19,7 @@
 - [x] Implementér central `ravscore-profile-selection`, sikker engangspromotion, central autoritet og readbackkontrakt.
 - [x] Lås komplet scoreprojektion, ærlig memory-status, automatisk aktiveringsforbud og global fail-closed i målrettede tests.
 - [x] Bestå samlet lokal kildegate.
-- [ ] Bestå exact-head, frisk fuld produktion, aktiv 210/673-shadow og fuld browserkontrol.
+- [x] Bestå exact-head `32636378576`, fuld produktion `32636433944`, auditrettelse og produktion `32637387600`, aktiv shadow `32637833674` samt fuld 210/673/420/2.100-browserkontrol; lukket i PR #97–99.
 
 ## Historisk score-neutral omskifter efter DEC-0058
 
@@ -30,7 +42,7 @@
 - [x] Saml `RESEARCH-3` som foretrukken score-neutral helhedskandidat med `20/50/30`, DEC-0054 og DEC-0055.
 - [x] Før checkpointet gennem exact-head `32609888406`, PR #89/merge `31e50acb` og fuld produktion `32609952992` uden offentlig scoreændring.
 - [x] Lever den samlede score-neutrale pipeline-/rollbackpakke og fallback-kompatible 673-deles shadow i 4.0.259.
-- [x] Opbyg 6/6 timers naturlig state-alder uden nulstilling. Ejeren valgte dette som praktisk evidens til omskifterforberedelsen; offentlig aktivering forbliver lukket, og perioden er ikke et 48-timersbevis.
+- [x] Opbyg 6/6 timers naturlig state-alder uden nulstilling. Dette var praktisk evidens til omskifterforberedelsen; den daværende lukkede aktiveringsstatus blev senere erstattet af DEC-0060.
 
 ## Candidate G – strømstyret rand- og tærskelkontrol efter DEC-0055
 
@@ -51,7 +63,7 @@
 - [x] Saml én ejerreviewvariant: `G-50-50-NO-DIRECT-WIND-WADERS-LIMIT`; behold de øvrige kandidater som revisions- og følsomhedsevidens.
 - [x] Fastslå, at `20/45/35` er analysecentrum, ikke slutvægt. Endelig vægtning afventer komplette ture med fund/nul-fund og hold-out.
 - [x] Merge den samlede beslutningspakke via PR #71 efter grøn exact-head-kildegate `32583123375`.
-- [ ] Gennemgå det samlede faglige forslag med ejeren. Ingen offentlig score- eller UI-aktivering før en efterfølgende særskilt beslutning.
+- [x] Gennemgå det samlede faglige forslag med ejeren; den efterfølgende særskilte beslutning er truffet i DEC-0060 og produktionsverificeret i 4.0.261.
 
 ## 4.0.257 Candidate G-coveragepræcisering
 
@@ -60,8 +72,8 @@
 - [x] Adskil komplet dynamisk scoreinputcoverage fra statiske lokale retention-/stedfeatures, som Candidate G bevidst ikke bruger.
 - [x] Bevar parentmorfologi-afvisning, nul statisk scorepåvirkning og alle mutations-/aktiveringslåse.
 - [x] Produktionsverificér 4.0.257-kontrakten og gentag shadowen på eksakt mergecommit.
-- [ ] En eventuel senere aktivering skal have en særskilt landsdækkende inputløsning uden nabodeling eller punktflytning; der hentes ikke flere data til den aktuelle mekaniske analyse.
-- [ ] Gennemfør resterende produkt-/ekstrem-/UI-/rollbackreview og ejerens samlede go/no-go; ingen offentlig Candidate G-aktivering før da.
+- [x] Erstattet af den fallback-kompatible 210/673-kontrakt i DEC-0057 og den globale, produktionsverificerede 4.0.261-aktivering uden nabodeling eller punktflytning.
+- [x] Produkt-/ekstrem-/UI-/rollbackreview og ejerens go/no-go er lukket gennem DEC-0054–0060 og PR #97–99.
 
 ## 4.0.255 reparationspunkt efter PR #66
 
@@ -74,10 +86,10 @@
 - [x] v4.0.243 er merged som `2ded7943`, og produktion `32455335962` bestod frisk data, fuld validering, releasegate, Supabase og Pages.
 - [x] Browser-plugin bekræftede liveversionen. Godkendt Playwright-fallback kontrollerede datasæt `rr-20260821071436-210`: 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 prognosevisninger uden fejl.
 - [ ] Begræns den normale Copernicus-pilot til de få godkendte DMI-huller. Bevar DMI-først og score-neutralitet; 673-delskontrol bliver sjælden/manual forskning.
-- [ ] Gennemfør den store RavScore-/ravtransportanalyse og opret det interne forsknings- og regelregister efter DEC-0044.
-- [ ] Udled score-neutrale kandidatregler og foreløbig vægtning. 25/40/35 forbliver aktiv, indtil en særskilt kandidat er bedre dokumenteret og godkendt.
-- [ ] Automatisér gammel-mod-ny-sammenligning lokalt. Vis kun de vigtigste konsekvenser til ejeren gennem almindelig Codex-samtale; ingen OpenAI API i offentlig runtime.
-- [ ] Implementér godkendt hændelsesmodel, ravvinduer og lagdelte aktuelle forklaringer.
+- [x] Gennemfør den store RavScore-/ravtransportanalyse og opret det interne forsknings- og regelregister efter DEC-0044.
+- [x] Udled, gennemgå og godkend Candidate G med `20/50/30`; 25/40/35 er nu eksakt rollback.
+- [x] Automatisér gammel-mod-ny-sammenligning lokalt og brug den i det dataminimerede beslutningsgrundlag; ingen OpenAI API i offentlig runtime.
+- [x] Implementér og produktionsverificér Candidate G's strøm-, mobiliserings-, jagtbarheds-, memory-, forklarings- og rollbackkontrakt. Et bredere offentligt læringsmodul er fortsat et senere roadmapspunkt.
 - [ ] Byg et omfattende offentligt læringsmodul på den kvalitetssikrede forskning.
 - [ ] Udskyd gemte områder/varsler mindst cirka et halvt år eller til en senere brugerdata-sektion.
 - Fravalgt nu: særskilt offentlig scoresikkerhed og forklaring af forskel fra gårsdagen.

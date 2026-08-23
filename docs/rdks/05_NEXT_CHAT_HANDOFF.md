@@ -1,13 +1,18 @@
 # RavRadar – overlevering til næste chat
 
-## Aktiv 4.0.261-opgave – Candidate G bliver gældende under pre-public opvarmning
+## Aktuel 4.0.262-arbejdsbaseline – Candidate G cadence-rettelse
 
+- **P0 reproduceret og rettet lokalt:** Den aktive 4.0.261-runtime har transport 0 i 673/673 dele, fordi native tre-timers beviser blev afvist af én-times-gaten. DEC-0061/4.0.262 accepterer højst tre timer, integrerer den faktiske tid uden kunstige mellemtimer og afviser fortsat større eller manglende gab.
+- Pre-public opvarmning er kun lovlig med `WINDOW_INCOMPLETE`; latest-missing, missing inde i vinduet og tidsgab giver global legacyrollback gennem `candidateWarmupEligible=false`.
+- Målrettede tests er grønne. Dataminimeret gammel-state-replay giver 110 positive og 563 fortsat nul; det gamle artifact får 658 forventede replaymismatch. Exact-head, frisk fuld produktion, aktiv 210/673-shadow og browserkontrol mangler endnu.
 - Ejeren har i DEC-0060 godkendt øjeblikkelig Candidate G-aktivering, selv om det første schema-2-vindue endnu ikke har 48 timers naturlig historik. Siden er endnu ikke offentlig, og de foreløbige scoreværdier er accepteret.
-- Branchen `codex/candidate-g-public-activation` er oprettet fra `origin/main` `9f72f737`. 4.0.261 vælger `RESEARCH-3` med `20/50/30`; modelreglerne ændres ikke, og legacy `RRS-CURRENT-B0-4.0.247` er global rollback.
+- Startbaselinen er `main` på merge `328b4d7c` fra PR #99. Arbejdsbranch er `codex/candidate-g-transport-cadence-fix`. 4.0.262 bruger fortsat `RESEARCH-3` med `20/50/30`; modelreglerne er uændrede, og legacy `RRS-CURRENT-B0-4.0.247` er global rollback.
 - Den private centrale konfiguration hedder `ravscore-profile-selection`. Den må promoveres centralt én gang med versions- og ejerbinding; derefter er central samme/nyere konfiguration autoritativ.
 - Aktivering under ufuldstændig memory kræver stadig komplette Candidate G-scoreprojektioner for alle nødvendige rækker. Runtime skal vise `candidate-active-pre-public-warmup` og faktisk `WINDOW_INCOMPLETE`; én manglende projektion giver global legacyfallback.
-- Målrettede switch-, central-runtime-, aktiv-shadow-, workflow- og central-hydreringstests er grønne lokalt. RDKS-/versionslukning, samlet sourcegate, exact-head, produktion, central readback, aktiv 210/673-shadow og fuld browserkontrol udestår.
+- PR #97/exact-head `32636378576`, merge `0f7a9d5f` og produktion `32636433944` beviser aktivering, central readback og live 210/673. PR #98/merge `fd69f8a0`, produktion `32637387600` og shadow `32637833674` lukkede auditkontrakten. PR #99/merge `328b4d7c` registrerede den fulde 210/673/420/2.100-browserkontrol uden fejl.
 - Ingen artifact, protected-dirty-data, private cachedata, geometri eller land-/vandpunkter er rørt. Kun versionsfeltet må ændres i `data/kystdata.json` og `data/zones.geojson`.
+
+Den naturlige memoryopbygning følges som driftsevidens, ikke som ny implementerings- eller aktiveringsgate. Repræsentative ture og hold-out er senere efterkalibrering.
 
 ## Aktuelt checkpoint 2026-08-23 – 4.0.260 score-neutral produktion grøn
 

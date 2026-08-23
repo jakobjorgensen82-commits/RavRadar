@@ -1,11 +1,22 @@
+## 2026-08-23 – Candidate G native cadence-rettelse i 4.0.262
+
+- Ejeren bad om en grundig analyse og den rette implementation efter fundet af 673/673 nultransporter.
+- Rodårsagen er produktionens dokumenterede native tre-timers marine stride mod en fejlagtig én-times stategate. DEC-0061 accepterer op til tre timer, integrerer faktisk forløbstid og opfinder ingen mellemtimer.
+- Et hul over tre timer eller missing er fortsat fail-closed. Pre-public warmup må kun være `WINDOW_INCOMPLETE`; en ny global `candidateWarmupEligible`-gate beskytter profile switchen.
+- Målrettede tests og dataminimeret replay af den gamle 673-state er grønne: 110 transportpotentialer bliver positive, 563 forbliver nul efter evidensen, og 658 gamle artifactværdier afvises som mismatch.
+- Version 4.0.262 og dokumentation er lukket lokalt. Exact-head, frisk fuld produktion, aktiv 210/673-shadow og browserkontrol afventer.
+
 ## 2026-08-23 – ejeren aktiverer Candidate G under den første pre-public opvarmning
+
+- Efter PR #99 viste en ny dataminimeret livekontrol af `rr-20260823121818-210`, at transportpotentiale og transportkomponent er 0 i alle 673 dele. 658 dele har to beviser med tre timers afstand, mens modellen tillader højst én time; 15 har ét bevis. Det brugbare suffix bliver én prøve med nul forløbstid, så transporten kan ikke bygge og memory kan ikke modnes under uændret cadence.
+- De tidligere grønne gates beviser deployment og kontraktidentitet, men ikke korrekt tidsintegration. P0 er genåbnet; global rollback eller en testet cadence-rettelse udestår. Ingen kode, central konfiguration eller runtime er ændret under opdagelsen.
 
 - Ejeren præciserede, at siden endnu ikke er offentlig, og godkendte, at Candidate G bliver gældende nu, selv om scoreværdierne først retter sig fuldt ind efter et komplet naturligt 48-timersvindue.
 - DEC-0060 erstatter derfor rækkefølgen, hvor komplet memory og frisk slutshadow skulle foreligge før kobling. Det er en pre-public ejerundtagelse; ufuldstændig historik skal fortsat vises ærligt og må ikke kaldes et 48-timersbevis.
 - 4.0.261 vælger `RESEARCH-3` med `20/50/30` globalt. Mangler én nødvendig Candidate G-projektion, vælger hele datasættet legacy `25/40/35`; blandede profiler og automatisk aktivering er fortsat forbudt.
 - Profilvalget gemmes som det private centrale admin-dokument `ravscore-profile-selection`. En nyere ejer-godkendt repositoryversion må krydse central hydrering én gang, hvorefter central samme/nyere værdi er autoritativ, også ved rollback.
 - Målrettede lokale tests er grønne for aktiv opvarmningsprofil, global fail-closed, uændret rollback, aktiv public projection, dataminimeret shadow og central promotion/readback-kontrakt.
-- Exact-head, frisk fuld produktion, central readback, aktiv 210/673-shadow og browserkontrol mangler fortsat, før 4.0.261 kan kaldes produktionsverificeret.
+- PR #97 bestod exact-head `32636378576`, blev merged som `0f7a9d5f`, og produktion `32636433944` beviste central readback og live Candidate G på 210/673. PR #98/merge `fd69f8a0` lukkede den legitime non-ready-shadowstatus; produktion `32637387600` og shadow `32637833674` er grønne. PR #99/merge `328b4d7c` registrerede den fulde browserlukning med 420 aktuelle og 2.100 femdøgnsvisninger uden fejl. 4.0.261 er dermed produktionsverificeret.
 - Artifact, protected-dirty-data, privat cache, geometri og land-/vandpunkter er urørte. Kun versionsfeltet i de to geodatafiler løftes til 4.0.261.
 
 ## 2026-08-23 – Candidate G får fast 48-timers transporthukommelse

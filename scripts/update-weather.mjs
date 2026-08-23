@@ -1215,11 +1215,18 @@ function scoreCoastalPartsRuntime(
   const candidateMemoryReady = candidateCoverageReady
     && partRows.every(row => row.scores.every(score =>
       score?.candidateG?.transportMemoryReady === true));
+  const candidateWarmupEligible = candidateCoverageReady
+    && partRows.every(row => row.scores.every(score => {
+      const ready = score?.candidateG?.transportMemoryReady === true;
+      const status = score?.candidateG?.transportMemoryStatus;
+      return (ready && status === 'READY') || (!ready && status === 'WINDOW_INCOMPLETE');
+    }));
   const scoreProfile = resolvePublicRavScoreProfile({
     selection: RAVSCORE_PROFILE_CONFIGURATION.selection,
     evidence: RAVSCORE_PROFILE_CONFIGURATION.evidence,
     candidateCoverageReady,
     candidateMemoryReady,
+    candidateWarmupEligible,
   });
   const selectedMode = (scoreRow, mode) => selectPublicRavScoreResult({
     profile: scoreProfile,
