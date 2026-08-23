@@ -8,8 +8,9 @@
 - [x] Gennemgå normal offentlig ordlyd i forside, scorepanel, Rav-assistent, konto, login, tur og fejl.
 - [x] Tilføj målrettede kontrakttests og releasegate for faglig rækkefølge, emner, aktiv model, mobilopsætning og fravær af internt standardsprog.
 - [x] Kontrollér desktop og 390 px mobil lokalt uden vandret overløb.
-- [ ] Bestå PR'ens exact-head `validate:source`.
-- [ ] Merge, kør frisk 4.0.268-produktion og verificér den offentlige 210/673-runtime.
+- [x] Bestå PR #116 exact-head `32670857438` på source-head `c810155b` og merge som `5a2f7796`.
+- [x] Lad første produktion `32670920742` stoppe før deploy på den forældede ordrette rangeringstest; bevar den nye almindelige forklaring, ret testen og føj den til `validate:source`.
+- [ ] Bestå gatekorrektionens exact-head, merge, frisk 4.0.268-produktion og den offentlige 210/673-runtime.
 - [ ] Opdatér denne status med eksakte commits, kørsler og liveversion.
 
 Score, Candidate G, `20/50/30`, vejrdata, Supabase-kontrakt, geometri og land-/vandpunkter er uændrede. Se DEC-0067.

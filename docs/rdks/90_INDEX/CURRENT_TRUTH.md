@@ -8,7 +8,8 @@
 - RavRadar forklares først efter den praktiske og fysiske viden. Den aktive `20/50/30`-model, waders-vindkurven og 13-timers udtransportregel beskrives som testede RavRadar-regler, ikke universelle naturgrænser.
 - Centrale offentlige tekster om login, konto, tur, score, opdatering og datakilder er gjort mere forståelige. Interne standardord som fallback, datasæt, databaseleverandør og tekniske scorereferencer vises ikke som normal brugertekst.
 - Kandidaten ændrer ingen score, Candidate G-regel, vejrdata, Supabase-kontrakt, geometri eller land-/vandpunkter. De to geodatafiler har kun versionsfeltet 4.0.268.
-- Lokal målrettet test samt desktop- og 390 px-mobilkontrol er grøn. Exact-head, frisk produktion og offentlig 210/673-kontrol mangler endnu. Se DEC-0067.
+- Lokal målrettet test samt desktop- og 390 px-mobilkontrol er grøn. PR #116 bestod exact-head `32670857438` på source-head `c810155b` og blev merged som `5a2f7796`.
+- Første produktion `32670920742` stoppede korrekt før deploy, fordi en ældre fuld rangeringstest stadig krævede den tidligere tekniske hjælpetekst ordret. Den nye almindelige forklaring er bevaret; testkontrakten er rettet og føjet til den tidlige kildegate. Ny exact-head, frisk produktion og offentlig 210/673-kontrol afventer. Se DEC-0067.
 
 ## Produktionsverificeret 4.0.267 – komplet uploadskema
 

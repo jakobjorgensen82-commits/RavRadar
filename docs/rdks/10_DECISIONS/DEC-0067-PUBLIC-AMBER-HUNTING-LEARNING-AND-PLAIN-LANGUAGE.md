@@ -1,6 +1,6 @@
 # DEC-0067: Det offentlige læringsmodul er en grundbog i ravjagt
 
-**Status:** IMPLEMENTERET SOM 4.0.268-KANDIDAT; EXACT-HEAD OG PRODUKTION AFVENTER
+**Status:** IMPLEMENTERET SOM 4.0.268-KANDIDAT; NY EXACT-HEAD OG PRODUKTION AFVENTER EFTER GATEKORREKTION
 
 **Dato:** 2026-08-24
 
@@ -45,3 +45,6 @@ Den samtidige sproggennemgang erstatter blandt andet offentlig standardtekst om 
 - `test:public-learning` kræver emnedækningen, rækkefølgen, den aktive scoreforklaring, mobilopsætning og fravær af gammel vægtning og internt standardsprog.
 - `test:huntability-safety-copy` kræver én samlet sikkerhedsafgrænsning og ingen gentaget offentlig sikkerhedsscore.
 - Releasegaten kører læringstesten, og ændringen kræver exact-head, frisk produktion samt relevant desktop-/mobil- og 210/673-onlinekontrol.
+- PR #116 bestod exact-head `32670857438` på source-head `c810155b` og blev merged som `5a2f7796`.
+- Første produktion `32670920742` stoppede korrekt før release og deploy: den fulde validering fandt, at den gamle rangeringstest stadig krævede den tidligere tekniske hjælpetekst, selv om brugerfladen nu viste den besluttede almindelige forklaring.
+- Gatekorrektionen kræver den nye almindelige sætning og kører rangeringstesten allerede i `validate:source`, så samme kontraktbrud fremover opdages før vejropbygningen.
