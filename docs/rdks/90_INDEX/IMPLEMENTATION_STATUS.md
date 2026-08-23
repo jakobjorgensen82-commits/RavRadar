@@ -10,7 +10,9 @@
 - [x] Tilføj målrettede tests for samme tabel, RLS, dataminimering, legacyrækker, direkte v2 og login-callback.
 - [x] Tilføj den eksakte rodhåndbog til docs-only-skip og opdatér workflowtesten.
 - [x] Versionsløft, RDKS-/håndbogs-/changeloglukning og samlet lokal source-/releasegate.
-- [ ] Exact-head, PR, fuld produktion og live browserkontrol af login, magic link, log, turindsendelse og tekster.
+- [x] Bestå PR #104 exact-head `32651048627` og merge den som `579bd167`.
+- [x] Afvis første produktionsforsøg `32651106811` før release, fordi den gamle `test-feedback-zone-ui` stadig krævede den fjernede GPS-parallelrejse; ret testen til at kræve direkte v2 og føj den til `validate:source`.
+- [ ] Bestå opfølgnings-PR, frisk fuld produktion og live browserkontrol af login, magic link, log, turindsendelse og tekster.
 - [ ] Separat ren dokumentationsmerge med 0 oprettede push-produktionskørsler.
 
 4.0.263 er fortsat produktionsverificeret sandhed. De følgende Candidate G-afsnit er revisionssporet for den nuværende scoremotor.

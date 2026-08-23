@@ -4,8 +4,9 @@ if(!/Debug: vis alle mellemregninger/.test(infoPanelSource))throw new Error("Deb
 if(!/currentDirectionDifferenceDeg/.test(infoPanelSource))throw new Error("Retningsforskel mangler i debug");
 if(!/scoreBeforeCaps/.test(infoPanelSource))throw new Error("Score før loft mangler i debug");
 if(!/scoreAfterCaps/.test(infoPanelSource))throw new Error("Score efter loft mangler i debug");
-const app=fs.readFileSync("app.js","utf8");const zones=JSON.parse(fs.readFileSync("data/zones.geojson","utf8"));
+const app=fs.readFileSync("app.js","utf8");const tripDialog=fs.readFileSync("js/ui/trip-evidence-dialog.js","utf8");const zones=JSON.parse(fs.readFileSync("data/zones.geojson","utf8"));
 for(const id of ["DK-B12-01","DK-B12-03","DK-B12-04","DK-B12-06","DK-B12-07","DK-B12-08"])if(!zones.features.some(f=>f.properties.id===id))throw new Error(`Mangler zone: ${id}`);
-if(!app.includes("tripZoneSearch")||!app.includes("Indsend")||app.includes('value="much"'))throw new Error("Feedbackdialogen er ikke opdateret korrekt");
-if(!app.includes("Administratorcenteret"))throw new Error("Administratorcenter-kvittering mangler");
+if(!app.includes("createPublicTripEvidenceRuntime")||!app.includes("submitTripEvidenceObservation")||!app.includes("startWithPrompt"))throw new Error("Den direkte v2-tur er ikke koblet korrekt til brugerfladen");
+if(!tripDialog.includes("Start en ravtur")||!tripDialog.includes("Indsend tur")||!tripDialog.includes("Hvilket område starter du i?"))throw new Error("Den aktive turdialog mangler den forståelige v2-rejse");
+if(app.includes("tripZoneSearch")||app.includes("Administratorcenteret")||app.includes('value="much"'))throw new Error("Den gamle parallelle feedbackdialog må ikke være aktiv");
 console.log(`Feedback-UI og ${zones.features.length} zoner valideret.`);

@@ -6,6 +6,7 @@
 - **ISSUE-TRIP-DUPLICATE-FLOWS – LØST I LOKAL KILDE / AFVENTER PRODUKTION:** Den gamle turknap kunne starte en GPS-baseret rejse før den komplette v2-dialog og efterlade sporing aktiv ved afbrydelse. Brugerfladen går nu direkte gennem v2 og indsamler ikke GPS/rute.
 - **ISSUE-MAGIC-LINK-USER-HYDRATION – LØST I LOKAL KILDE / AFVENTER PRODUKTION:** Callbacken kunne have tokens uden et hydreret bruger-id. Den henter nu den aktuelle Supabase-bruger før kontoejerskab bruges. Produktionsredirect, rigtig magic-link-mail, adgangskodelogin og udlogning kræver live browserkontrol.
 - **ISSUE-PUBLIC-WORDING – FORBEDRET I LOKAL KILDE / LØBENDE:** De centrale brugerord er forenklet. Den samlede live browserkontrol skal fortsat fange interne fagtermer eller forklaringer, som ikke er forståelige i deres faktiske sammenhæng.
+- **ISSUE-FEEDBACK-UI-STALE-TEST – LØST I LOKAL OPFØLGNING / AFVENTER EXACT-HEAD:** Produktion `32651106811` stoppede før release, fordi den gamle fuldtest stadig krævede `tripZoneSearch` og Administratorcenter-kvitteringen fra den fjernede GPS-parallelrejse. Testen kræver nu den direkte v2-runtime og dens forståelige start-/indsendelsesdialog, afviser gamle markører og er føjet til `validate:source`, så samme fejl fremover fanges før merge.
 
 ## Dokumentationsmerge udløser unødvendig fuld produktion via rodhåndbogen
 
