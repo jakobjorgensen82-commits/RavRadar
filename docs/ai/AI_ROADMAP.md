@@ -14,9 +14,9 @@
 - [x] Ret stjerneforklaringens test og den lokalt fundne gamle mobil-turtest, og føj begge til `validate:source`.
 - [x] Bestå PR #106 exact-head `32652894729`, merge `23fa89ed` og frisk fuld produktion `32652970105` med live 4.0.264 på 210/673.
 - [x] Browserkontrollér konto-/loginforklaring og direkte tur uden GPS/rute; ret den fulde audits gamle vandstandsetiket og bestå 420/2.100/673 uden fejl.
-- [ ] Før auditrettelsen gennem exact-head og merge.
+- [x] Før auditrettelsen gennem PR #107/exact-head `32654048944`, merge `8b758337` og fuld grøn produktion `32654119745`.
 - [ ] Ejerens senere interaktive loginprøve kan kontrollere en rigtig magic-link-mail, den autentificerede **Mine ture og fund**-liste og en kontoejet tur; ingen mail sendes automatisk.
-- [ ] Bevis bagefter workflowets rodhåndbogsskip med en særskilt ren dokumentationsmerge og 0 push-produktionskørsler.
+- [ ] Bevis nu workflowets rodhåndbogsskip med denne særskilte rene dokumentationsmerge og 0 push-produktionskørsler.
 
 ## Candidate G – 4.0.263 aktuel referencegate
 

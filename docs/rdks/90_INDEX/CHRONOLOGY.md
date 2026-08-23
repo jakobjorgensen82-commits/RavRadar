@@ -13,6 +13,7 @@
 9. Produktion `32651786366` stoppede derefter før deploy på en anden gammel ordret test af stjerneforklaringen; den rettede feedbacktest var grøn. Den aktuelle opfølgning retter denne test og en lokalt fundet gammel mobil-turtest og flytter begge ind i `validate:source`. Frisk fuld produktion og live kontrol mangler.
 10. PR #106 bestod exact-head `32652894729`, blev merged som `23fa89ed`, og produktion `32652970105` udgav `rr-20260823165645-210` som 4.0.264 på 210/673 efter grøn fuld validering og releasegate.
 11. Live konto/login og direkte tur uden GPS/rute blev kontrolleret. Den fulde audit afslørede kun en gammel testetiket: `3-timers trend` mod UI'ets `Vandstandsændring på 3 timer`. Med etiketten rettet bestod 420/2.100/673 uden browser-, konsol-, side- eller HTTP-fejl.
+12. PR #107 bestod exact-head `32654048944`, blev merged som `8b758337`, og produktion `32654119745` bestod hele kæden igen og udgav `rr-20260823171804-210`. Den afsluttende rene dokumentationsmerge bruges som bevis for 0 push-produktionskørsler.
 
 
 ## 2026-08-23 – den aktuelle Candidate G-gate afgrænses fra senere prognosehuller

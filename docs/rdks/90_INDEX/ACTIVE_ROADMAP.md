@@ -14,7 +14,8 @@
 - [x] Ret stjerneforklaringens test og den lokalt fundne gamle mobil-turtest, og kør begge i `validate:source`.
 - [x] Før den samlede testrettelse gennem PR #106/exact-head `32652894729`, merge `23fa89ed` og fuld produktion `32652970105`.
 - [x] Browserkontrollér live konto-/loginforklaring, direkte tur uden GPS/rute og centrale offentlige forklaringer; korrigér auditens gamle vandstandsetiket og bestå 420/2.100/673 uden fejl.
-- [ ] Merge auditlabelrettelsen. Kontrol af rigtig magic-link-mail, autentificeret **Mine ture og fund**, udlogning og en kontoejet tur gennemføres senere interaktivt af ejeren; der sendes ingen mail automatisk.
+- [x] Merge auditlabelrettelsen via PR #107/exact-head `32654048944` og bestå fuld produktion `32654119745` på live `rr-20260823171804-210`.
+- [ ] Kontrol af rigtig magic-link-mail, autentificeret **Mine ture og fund**, udlogning og en kontoejet tur gennemføres senere interaktivt af ejeren; der sendes ingen mail automatisk.
 - [ ] Bevis derefter med en separat ren RDKS-/håndbogsmerge, at rodhåndbogen ikke opretter en push-produktion.
 
 ## Samme leverances afgrænsede procesrettelse – rodhåndbog i docs-only-skip

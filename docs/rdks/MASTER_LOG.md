@@ -4,13 +4,14 @@
 - Den aktuelle opfølgning retter stjernetesten til den nye almindelige formulering og en lokalt fundet mobiltest, som stadig krævede den gamle `startTrip()`-rejse. Begge kontroller køres fremover i `validate:source`, så de opdages før merge.
 - PR #106 bestod exact-head `32652894729`, blev merged som `23fa89ed`, og produktion `32652970105` bestod central hydrering, frisk vejr/state, fuld projektvalidering, releasegate, artifact og Pages. Live `rr-20260823165645-210` er version 4.0.264 med 210 zoner og 673 kystdele.
 - Live konto-/loginforklaring og den direkte turformular er kontrolleret; formularen oplyser og indsamler ingen GPS-rute. Første fulde audit fandt 2.520 gentagelser af én gammel auditlabel: siden viser `Vandstandsændring på 3 timer`, mens auditten søgte `3-timers trend`. Feltet var både beregnet og vist. Efter den afgrænsede labelrettelse består auditten 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer uden kontrol-, konsol-, side- eller HTTP-fejl.
+- PR #107 bestod exact-head `32654048944`, blev merged som `8b758337`, og produktion `32654119745` bestod igen central hydrering, frisk vejr/state, fuld projektvalidering, releasegate, artifact og Pages. Live `rr-20260823171804-210` er 4.0.264 på 210/673, og auditlabelen er nu låst mod UI'et i kildegaten.
 - Ejeren besluttede, at brugerens konto skal have et enkelt **Mine ture og fund** uden at gemme Supabase-data to gange. Implementationen læser derfor de eksisterende `observations`-rækker gennem RLS, først ved klik, med et lille feltudvalg og højst 100 ture.
 - Den samme serverrække bruges både som privat ejerlog og som senere anonymiseret modelgrundlag. `user_id` bruges kun til RLS-ejerskab; mail/navn gemmes ikke i turposten og må ikke indgå i analyse, eksport eller træning. Anonyme ture forbliver anonyme.
 - Den aktive turknap går direkte gennem v2-kontrakten og starter ikke længere den gamle GPS-baserede parallelrejse. Den aktive rejse indsamler ikke GPS, rute eller præcis position; historiske lokale data og historiske centrale rækker er urørte.
 - Magic link forklares som et tidsbegrænset engangslink via mail. Callbacken henter den faktiske Supabase-bruger, og en kontoejet outbox-tur kan kun sendes som samme bruger.
 - Centrale offentlige ord om RavScore og turen er gjort enklere. Candidate G, `20/50/30`, vejrdata, geometri, land-/vandpunkter, artifact, protected-dirty-data og private caches er uændrede.
 - Workflowets eksakte docs-only-skip omfatter nu rodhåndbogen. En normal fuld produktion skal først verificere kode-/workflowmergen; derefter skal en særskilt ren dokumentationsmerge bevise 0 oprettede push-produktionskørsler.
-- Version 4.0.264 er produktionsverificeret. Auditlabelrettelsens exact-head/merge og den særskilte docs-only-bevismerge mangler. De to geodatafiler fik kun versionsfeltet ændret fra 4.0.263 til 4.0.264.
+- Version 4.0.264 er produktionsverificeret. Kun den særskilte docs-only-bevismerge mangler. De to geodatafiler fik kun versionsfeltet ændret fra 4.0.263 til 4.0.264.
 
 ## 2026-08-23 – rodhåndbog mangler i dokumentationsskip
 
