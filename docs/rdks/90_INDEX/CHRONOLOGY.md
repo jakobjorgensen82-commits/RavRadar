@@ -8,7 +8,9 @@
 4. RavRadar og den aktive Candidate G-model forklares først til sidst. Score, vejrdata, privat datakontrakt, geometri og land-/vandpunkter ændres ikke.
 5. Den samtidige sproggennemgang fjernede interne standardsystemord fra normal offentlig tekst og samlede sikkerhedsafgrænsningen ét sted uden en særskilt offentlig sikkerhedsscore.
 6. Lokal målrettet test samt desktop- og mobilkontrol blev grøn. PR #116 bestod exact-head `32670857438` og blev merged som `5a2f7796`.
-7. Første produktion `32670920742` stoppede korrekt før deploy: en ældre fuld rangeringstest krævede fortsat den tidligere tekniske hjælpetekst ordret. Den nye almindelige forklaring er bevaret, testkontrakten er rettet og føjet til den tidlige kildegate; ny exact-head og produktion afventer.
+7. Første produktion `32670920742` stoppede korrekt før deploy: en ældre fuld rangeringstest krævede fortsat den tidligere tekniske hjælpetekst ordret. Den nye almindelige forklaring blev bevaret, PR #117/exact-head `32671863965` rettede testkontrakten og blev merged som `21acb0a2`.
+8. Anden produktion `32671924885` kom forbi rangeringen, men stoppede fortsat før deploy på stateforklaringstestens gamle overskrift **Hvad skete før nu?**. Den gældende **De seneste timers betydning** låses nu i testen, som flyttes til `validate:source`; alle direkte læsere af de ændrede brugerfiler målrettes før næste PR.
+9. Den målrettede gruppe på 29 UI-/auth-/konto-/assistent-/startup-tests blev grøn. Den fandt desuden en historisk 4.0.240-sikkerhedstest, som krævede gentagne advarsler i strid med ejerbeslutningen; den historiske indgang følger nu 4.0.268-kontrakten.
 
 ## 2026-08-23 – den virkelige login- og turlogprøve lukker et produktionsgab
 

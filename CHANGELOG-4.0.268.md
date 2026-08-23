@@ -6,5 +6,5 @@
 - Viser kilder og skelner mellem dokumenteret viden, stærk kystfysisk analogi, praktisk erfaring og åbne spørgsmål.
 - Forenkler offentlige standardtekster om opdatering, datakilder, score, Rav-assistent, login, konto, tur og fejl. Admin- og debugværktøjer forbliver tekniske.
 - Låser grundbogens faglige rækkefølge, emner, aktive `20/50/30`, waders-vindkurve, udtransportregel, mobilopsætning og almindelige sprog i målrettede tests og releasegaten.
-- Kører også landslisternes almindelige rangeringstekst i den tidlige kildegate, så en forældet ordret UI-test ikke først opdages efter en fuld vejropbygning.
+- Kører også landslisternes almindelige rangeringstekst og stateforklaringens nye overskrift i den tidlige kildegate, så forældede ordrette UI-tests ikke først opdages efter en fuld vejropbygning.
 - Ændrer ingen RavScore-regel, Candidate G-profil, vejrdata, Supabase-kontrakt, geometri eller land-/vandpunkter. Geodatafilerne ændrer kun versionsfelt til 4.0.268.

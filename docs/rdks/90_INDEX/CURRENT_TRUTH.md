@@ -9,7 +9,9 @@
 - Centrale offentlige tekster om login, konto, tur, score, opdatering og datakilder er gjort mere forståelige. Interne standardord som fallback, datasæt, databaseleverandør og tekniske scorereferencer vises ikke som normal brugertekst.
 - Kandidaten ændrer ingen score, Candidate G-regel, vejrdata, Supabase-kontrakt, geometri eller land-/vandpunkter. De to geodatafiler har kun versionsfeltet 4.0.268.
 - Lokal målrettet test samt desktop- og 390 px-mobilkontrol er grøn. PR #116 bestod exact-head `32670857438` på source-head `c810155b` og blev merged som `5a2f7796`.
-- Første produktion `32670920742` stoppede korrekt før deploy, fordi en ældre fuld rangeringstest stadig krævede den tidligere tekniske hjælpetekst ordret. Den nye almindelige forklaring er bevaret; testkontrakten er rettet og føjet til den tidlige kildegate. Ny exact-head, frisk produktion og offentlig 210/673-kontrol afventer. Se DEC-0067.
+- Første produktion `32670920742` stoppede korrekt før deploy, fordi en ældre fuld rangeringstest stadig krævede den tidligere tekniske hjælpetekst ordret. PR #117/exact-head `32671863965` rettede kontrakten og blev merged som `21acb0a2`.
+- Anden produktion `32671924885` kom forbi rangeringstesten, men stoppede fortsat før deploy på den samme fejlfamilie i stateforklaringstesten: den krævede den gamle **Hvad skete før nu?** frem for **De seneste timers betydning**. Også denne kontrakt rettes og flyttes til den tidlige kildegate; frisk produktion og offentlig 210/673-kontrol afventer. Se DEC-0067.
+- Den efterfølgende målrettede gennemgang af 29 direkte testlæsere er grøn og har også afviklet den historiske 4.0.240-sikkerhedstest til den gældende 4.0.268-kontrakt med én samlet afgrænsning og ingen gentagne delscoreadvarsler.
 
 ## Produktionsverificeret 4.0.267 – komplet uploadskema
 
