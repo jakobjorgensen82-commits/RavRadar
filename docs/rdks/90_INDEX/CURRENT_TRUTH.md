@@ -8,8 +8,8 @@
 - Anonyme ture forbliver anonyme. En lokal outbox er leveringssikring på enheden og deduplikeres mod serverrækkens eksisterende tur-id.
 - Magic-link-teksten forklarer engangslinket, redirecten er versionsuafhængig på samme origin/sti, og callbacken henter den faktiske Supabase-bruger før kontoejerskab bruges.
 - Offentlige hovedord er forenklet til blandt andet **Søgeforhold**, **Transport mod kysten** og **Rav i bevægelse**. Candidate G, `20/50/30`, scorelogik, vejrdata, geometri og land-/vandpunkter er uændrede.
-- Koden, 4.0.264-versionsløftet, målrettede kontrakttests og den samlede lokale source-/RDKS-/releasegate er grønne. PR #104 bestod exact-head `32651048627` og blev merged som `579bd167`.
-- Første fulde produktion `32651106811` stoppede før release og sprang deployment over: den gamle `test-feedback-zone-ui` krævede stadig den fjernede GPS-parallelrejse. Den lokale opfølgning kræver nu direkte v2, afviser den gamle rejse og føjer testen til `validate:source`. Frisk produktion og live browserkontrol mangler; 4.0.263 er derfor fortsat produktionssandheden.
+- Koden og 4.0.264-versionsløftet er merged. PR #104 bestod exact-head `32651048627` og blev merged som `579bd167`; PR #105 bestod exact-head `32651724416` og blev merged som `7c43146f`.
+- Produktion `32651106811` stoppede før release på den gamle `test-feedback-zone-ui`. Produktion `32651786366` beviste, at den rettede turtest var grøn, men stoppede stadig før deploy, fordi `test-score-presentation` forventede en erstattet ordret formulering. Den aktuelle opfølgning retter stjernetesten og en lokalt fundet gammel mobil-turtest og føjer begge til `validate:source`; samlet lokal kilde-/RDKS-/releasegate er grøn. Frisk produktion og live browserkontrol mangler; 4.0.263 er derfor fortsat produktionssandheden.
 
 
 ## Aktuel produktionsverificeret 4.0.263 – Candidate G-gate ved den aktuelle fælles zonereference

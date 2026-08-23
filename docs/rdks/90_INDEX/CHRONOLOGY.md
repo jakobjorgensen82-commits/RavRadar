@@ -9,7 +9,8 @@
 5. `user_id` tillades som en snæver teknisk RLS-kobling til den samme række. Mail/navn gemmes ikke i turposten, og identiteten må ikke bruges i analyse eller modeltræning. Anonyme ture forbliver anonyme.
 6. Magic link forklares i almindeligt dansk, callbacken hydreres med den faktiske Supabase-bruger, og centrale offentlige RavScore-ord forenkles uden scoreændring.
 7. Den lokale 4.0.264-kandidat og kildegaten blev grønne; PR #104 bestod exact-head `32651048627` og blev merged som `579bd167`.
-8. Produktion `32651106811` stoppede før release, fordi en gammel fuldtest stadig krævede den fjernede GPS-parallelrejse. Opfølgningen kræver nu direkte v2, afviser de gamle UI-markører og flytter testen ind i `validate:source`. Frisk fuld produktion og live kontrol mangler.
+8. Produktion `32651106811` stoppede før release, fordi en gammel fuldtest stadig krævede den fjernede GPS-parallelrejse. PR #105 rettede kontrakten, bestod exact-head `32651724416` og blev merged som `7c43146f`.
+9. Produktion `32651786366` stoppede derefter før deploy på en anden gammel ordret test af stjerneforklaringen; den rettede feedbacktest var grøn. Den aktuelle opfølgning retter denne test og en lokalt fundet gammel mobil-turtest og flytter begge ind i `validate:source`. Frisk fuld produktion og live kontrol mangler.
 
 
 ## 2026-08-23 – den aktuelle Candidate G-gate afgrænses fra senere prognosehuller
