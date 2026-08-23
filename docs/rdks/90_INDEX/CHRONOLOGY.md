@@ -1,5 +1,14 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-23 – den virkelige login- og turlogprøve lukker et produktionsgab
+
+1. Ejeren prøvede et rigtigt magic link. Browseren blev sendt til `localhost:3000` med forbindelsesfejl, mens **Mine ture og fund** ikke kunne hente Supabase og viste nul ture.
+2. Supabase-dashboardet bekræftede Site URL `http://localhost:3000` og ingen tilladte redirects. Begge blev rettet til den aktuelle RavRadar-origin.
+3. En read-only `limit=0`-audit bekræftede, at forbindelsen og nøglen virkede, men at `data_quality_flags` manglede. Policyoversigten viste kun INSERT-regler og ingen SELECT-regel for egne ture.
+4. En databevarende migration tilføjede feltet og den private læsepolicy. Efterfølgende svarede hele feltkontrakten HTTP 200 uden hentede rækker, og policyen blev synlig for `authenticated`.
+5. Ejeren mindede om det købte domæne `ravradar.dk`. DEC-0065 gør det bindende, at Site URL og redirect-liste ændres samtidig med domæneskiftet og prøves med et nyt link.
+6. 4.0.266 versionsstyrer den centrale kontrakt, en almindelig brugerfejl og regressionstesten. Ingen score, vejr, geometri eller land-/vandpunkter ændres.
+
 ## 2026-08-23 – fleksibel efterregistrering og frivilligt fravalg
 
 1. Ejeren besluttede, at en indlogget bruger skal kunne indberette en tidligere tur eller et fund direkte fra kontoen og selv vælge korrekt dato og klokkeslæt.

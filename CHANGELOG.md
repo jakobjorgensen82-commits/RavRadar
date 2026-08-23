@@ -1,3 +1,13 @@
+## 4.0.266 – virkeligt login og privat turlog (2026-08-23)
+
+- Den første interaktive ejerprøve viste, at Supabase sendte magic links til `localhost:3000`, fordi den centrale Site URL var forkert, og ingen produktionsredirect var tilladt. Begge er nu sat til den aktuelle RavRadar-side.
+- Den aktive `observations`-tabel manglede `data_quality_flags` og SELECT-policyen for egne ture. Den idempotente migration tilføjer begge dele uden ny tabel, dubletpost, `UPDATE`, `DELETE` eller sletning af historiske rækker.
+- En dataminimeret `limit=0`-kontrol accepterer nu hele turloggens feltliste med HTTP 200, og Supabase viser **users can read own observations / SELECT / authenticated**.
+- Turloggens fejltekst bruger almindeligt RavRadar-sprog i stedet for leverandørnavnet Supabase.
+- Flytning til `ravradar.dk` kræver, at Supabases Site URL og redirect-liste ændres i samme deployment og prøves med et nyt magic link.
+- Målrettede konto-, efterregistrerings-, auth- og syntakstests er grønne. Exact-head, merge, frisk produktion og afsluttende interaktiv brugerprøve afventer.
+- Score, vejr, Candidate G, geometri og land-/vandpunkter er uændrede; geodatafilerne får kun versionsfeltet 4.0.266.
+
 ## 4.0.264 – forståeligt brugerflow og privat turlog (2026-08-23)
 
 - Kontoen får **Mine ture og fund**, som viser brugerens eksisterende Supabase-ture uden en ny tabel, ekstra serverrække eller dobbelt lagring.

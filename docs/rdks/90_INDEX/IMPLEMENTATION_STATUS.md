@@ -1,4 +1,22 @@
-# Implementeringsstatus – fleksibel kontoindberetning i 4.0.265
+# Implementeringsstatus – produktionslogin og privat turlog i 4.0.266
+
+## Aktiv leverance
+
+- [x] Reproducer magic-link-fejlen og fastslå, at Supabases Site URL var localhost og redirect-listen tom.
+- [x] Sæt central Site URL og tilladt redirect til den aktuelle GitHub Pages-origin.
+- [x] Afgræns turlogfejlen med nul-rækkers requests: kun `data_quality_flags` manglede i det faste feltudvalg.
+- [x] Verificér i policyoversigten, at den aktive tabel manglede SELECT-policyen for egne ture.
+- [x] Anvend den databevarende migration centralt og verificér HTTP 200 med `limit=0` samt **users can read own observations / SELECT / authenticated**.
+- [x] Versionsstyr migrationen, tabelgrantet, almindelig fejltekst og regressionstesten i repositoryet.
+- [x] Dokumentér den bindende auth-ændring ved senere flytning til `ravradar.dk`.
+- [x] Bestå målrettede konto-, efterregistrerings-, auth- og syntakstests lokalt.
+- [ ] Bestå versions-/RDKS-kontroller og én exact-head `validate:source` i PR.
+- [ ] Merge den eksakte head og verificér nyt 4.0.266-artifact uden score-, vejr- eller geometriændring.
+- [ ] Gennemfør et nyt interaktivt magic link og verificér den eksisterende efterregistrering i **Mine ture og fund**; brug ikke det tidligere viste token.
+
+Ingen eksisterende observationer, score, Candidate G, vejrdata, geometri eller land-/vandpunkter er ændret. Se DEC-0065.
+
+# Historisk implementeringsstatus – fleksibel kontoindberetning i 4.0.265
 
 ## Produktionsverificeret
 

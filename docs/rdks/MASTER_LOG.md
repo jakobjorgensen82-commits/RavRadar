@@ -1,3 +1,12 @@
+## 2026-08-23 – interaktiv login-/turlogprøve finder to produktionskontraktfejl
+
+- Ejerens magic link landede på `localhost:3000`, og **Mine ture og fund** viste en læsefejl. Den virkelige prøve viste dermed, at de tidligere kilde-/Pages-beviser ikke dækkede ekstern auth-konfiguration eller den aktive brugertabel.
+- Supabases Site URL stod til localhost, og redirect-listen var tom. Begge er rettet til den aktuelle GitHub Pages-origin. Flytning til `ravradar.dk` kræver samme samtidige ændring og et nyt loginlink.
+- En nul-rækkers feltkontrol fandt præcis én manglende kolonne, `data_quality_flags`. Policyoversigten viste samtidig, at SELECT-policyen for egne ture ikke var installeret.
+- Den idempotente migration tilføjede feltet, genoprettede den private policy, gav SELECT til `authenticated` og genindlæste PostgREST-schemaet. Den indeholdt ingen ændring eller sletning af observationer.
+- Efter rettelsen accepteres hele turlogfeltlisten med HTTP 200/`limit=0`, og dashboardet viser **users can read own observations / SELECT / authenticated**.
+- 4.0.266 versionsstyrer migration, almindelig fejltekst, tests og domænekravet. Exact-head, merge, frisk produktion og et nyt interaktivt link/turlogbevis udestår. Se DEC-0065.
+
 ## 2026-08-23 – aftalt næste indberetningsforbedring
 
 - Ejeren besluttede, at indloggede brugere senere skal kunne indberette en tur eller et fund direkte fra kontosiden uden først at starte en RavRadar-tur.

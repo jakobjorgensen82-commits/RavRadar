@@ -13,3 +13,7 @@
 - Bevarer vejrdata, geometri, land-/vandpunkter, artifact, protected-dirty-data og private caches. I `data/kystdata.json` og `data/zones.geojson` er kun versionsfeltet ændret til 4.0.265.
 - PR #111 bestod exact-head `32658661075`, blev merged som `cb7d2232`, og produktion `32658724861` bestod frisk vejr, fuld validering, releasegate, Supabase og Pages. Live `rr-20260823184330-210` er version 4.0.265 på 210 zoner og 673 kystdele.
 - Den målrettede livekontrol bekræfter det udgivne kontoflow, den krævede selvvalgte dato og tid uden forudfyldning samt **Afslut uden at indberette**. En rigtig autentificeret indsendelse er fortsat en senere bevidst ejerprøve, fordi den opretter en virkelig Supabase-række.
+
+## Efterfølgende produktionsfund
+
+Den senere interaktive ejerprøve fandt, at Supabases centrale Site URL stadig pegede på localhost, og at den aktive `observations`-tabel manglede både `data_quality_flags` og ejerens SELECT-policy. 4.0.266/DEC-0065 er den bindende korrektion. 4.0.265's formular- og fravalgskontrakt består, men den autentificerede upload/turlog må ikke kaldes bevist af denne release.

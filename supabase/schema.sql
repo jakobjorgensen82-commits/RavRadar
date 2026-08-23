@@ -82,6 +82,7 @@ drop policy if exists "observations are publicly readable" on public.observation
 drop policy if exists "users can read own observations" on public.observations;
 create policy "users can read own observations" on public.observations for select to authenticated
 using (user_id = auth.uid());
+grant select on table public.observations to authenticated;
 
 -- RavRadar 2.6.25: fundament for ekspertviden, regelversioner og analyse.
 -- Administrative writes must later be restricted to server-side/admin functions.

@@ -1,5 +1,14 @@
 # Current truth – gældende projektviden
 
+## 4.0.266-kandidat – virkelig magic-link-retur og aktiv turlogkontrakt
+
+- Ejerens første autentificerede prøve viste, at 4.0.264/4.0.265 ikke var fuldt ende-til-ende-verificeret: Supabases Site URL stod til localhost, redirect-listen var tom, og den aktive `observations`-tabel manglede både `data_quality_flags` og SELECT-policyen for egne ture.
+- Den centrale Site URL og tilladte redirect er nu `https://jakobjorgensen82-commits.github.io/RavRadar/`. Et senere skift til `https://ravradar.dk/` skal ændre begge indstillinger og prøves med et nyt link i samme deployment.
+- `20260823_account_trip_log_contract.sql` er anvendt centralt. Den tilføjer kun det manglende felt og den private læseregel; ingen eksisterende observationer er ændret eller slettet.
+- Read-only produktionskontrol får HTTP 200 for hele turlogfeltlisten med `limit=0`. Policyoversigten viser **users can read own observations / SELECT / authenticated** og ingen offentlig SELECT-policy.
+- Den lokale outbox genprøver afventende ture ved sideindlæsning med samme klient-id. Brugerfladen omtaler en eventuel læsefejl som RavRadar og ikke som Supabase.
+- Målrettede tests består lokalt. 4.0.266 må først kaldes produktionsverificeret efter exact-head, merge, nyt artifact og en ny interaktiv magic-link-/turlogprøve. Se DEC-0065.
+
 ## Produktionsverificeret 4.0.265 – fleksibel kontoindberetning uden falske vejrdata
 
 - En indlogget bruger kan vælge **Indberet tur eller fund** på kontosiden uden en forudgående turstart. Indberetningen bruger samme spørgsmål og eksisterende `observations`-tabel; der oprettes ingen ekstra tabel, dubletpost eller fundkopi.
