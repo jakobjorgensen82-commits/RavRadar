@@ -1,5 +1,27 @@
 # RavRadar Håndbog
 
+## Grundbog i ravjagt og almindeligt brugersprog – 4.0.268
+
+RavRadars offentlige læringsmodul er nu en grundbog i ravjagt for begyndere og øvede. Det starter ikke med appens knapper. Det følger i stedet den fysiske kæde fra ravets egenskaber og mulige lagre gennem mobilisering, transport, kystens sortering, felttegn og selve jagten. Først derefter forklares RavRadar som et værktøj, der omsætter en del af denne viden til en score.
+
+Grundbogens korte huskeregel er: **Bølger kan mobilisere. Strøm transporterer. Kysten sorterer og samler.** Vind påvirker især gennem bølger, overfladelag, vandstand og søgeforhold. Retninger skal altid ses i forhold til den konkrete kyst; der findes ikke én dansk vind- eller strømretning, som altid er bedst.
+
+Modulet forklarer blandt andet, hvorfor det meste rav synker i almindeligt dansk havvand, hvordan størrelse og form ændrer bevægelsen, og hvorfor vinterens storme er en bedre forklaring på vintersæsonen end påstanden om, at kulden får ravet til at flyde. Revler, render, opskyl, høfder, kystknæk og danske kystsystemer beskrives som lokale sorterings- og transportmiljøer.
+
+Felt- og metodeafsnittene dækker frisk opskyl, tang, træ, frø, kul, skaller, strandjagt, vandkant, waders og UV-lys. Langbølget UV omkring 365 nm kan være et godt spor, men ikke et endeligt ægthedsbevis; varme nåle, ild og andre ødelæggende hjemmetests frarådes.
+
+Candidate G forklares til sidst med den aktive vægtning **20 % søgeforhold, 50 % transport og 30 % rav i bevægelse**. Waders er bedst under 6 m/s og falder til 0 ved 15 m/s. Kraftig udtransport trækker transporten ned fra første time og giver nul efter 13 timer. Disse tal er RavRadars testede arbejdsregler, ikke universelle naturgrænser.
+
+Den samtidige sproggennemgang fjerner tekniske standardord fra normal brugerstatus og fejltekst. Brugeren møder blandt andet **loginforbindelse**, **senest opdateret** og **kyststrækning** i stedet for leverandørnavn, datasæt og databaseudtryk. Admin- og debugværktøjer forbliver bevidst tekniske.
+
+Ændringen er score-neutral. Candidate G, vejrdata, geometri, land-/vandpunkter og private turdata ændres ikke. Se DEC-0067 og `docs/research/PUBLIC_LANGUAGE_REVIEW_4.0.268.md`.
+
+## Turindberetningen lukket ende til ende – 4.0.267
+
+4.0.267 tillader den krævede tomme lokationsværdi `gps=null`, men afviser fortsat faktiske GPS-, koordinat-, positions-, rute- og spordata. Den aktive tabel har også de to POST-felter, som kontoindberetningen kræver.
+
+PR #115 bestod exact-head `32664463654` på source-head `92379b27`, blev merged som `43ceffc1`, og produktion `32664525128` bestod frisk vejr, fuld validering, releasegate, Supabase og Pages. Ejeren oprettede derefter en ny indberetning, som blev sendt og synlig i **Mine ture og fund**. De to tidligere forsøg nåede ikke outboxen og blev ikke fejlagtigt eftersendt. Se DEC-0066.
+
 ## Login og Mine ture og fund – 4.0.266
 
 Et **magic link** er et tidsbegrænset engangslink, som RavRadar sender til brugerens mail. Linket logger brugeren ind uden adgangskode og skal føre tilbage til den samme RavRadar-side, hvor det blev bestilt.
@@ -398,7 +420,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.267
+**Håndbogsversion:** 4.0.268
 
 **Opdateret:** 19. august 2026
 

@@ -1,6 +1,6 @@
 # DEC-0066: Alle uploadfelter skal verificeres mod den aktive observationstabel
 
-**Status:** CENTRAL HOTFIX ANVENDT; 4.0.267 RELEASE AFVENTER
+**Status:** PRODUKTIONSVERIFICERET OG LUKKET I 4.0.267
 
 **Dato:** 2026-08-23
 
@@ -23,7 +23,7 @@ Efter den centrale skemarettelse viste en ny ejerprøve fortsat nul ture. API-lo
 - Privatlivskontrollen må acceptere en lokationsnøgle, når værdien er præcis `null`, fordi databasen kræver `gps=null`. Enhver ikke-tom GPS-, koordinat-, positions-, rute- eller spornøgle skal fortsat afvises.
 - Begge uploadveje bruger fortsat samme outbox og samme `observations`-tabel. Når en række først er lagt i kø, genbruges dens klient-id ved genforsøg; der oprettes ingen dublet.
 
-## Produktionskontrol før release
+## Produktionskontrol og lukning
 
 - Før hotfix: 0 nye rækker i de seneste 30 minutter; ingen privat payload blev læst.
 - Den aktive tabel manglede præcis `forecast_target_at` og `report_accuracy` blandt den manuelle uploads felter.
@@ -31,4 +31,4 @@ Efter den centrale skemarettelse viste en ny ejerprøve fortsat nul ture. API-lo
 - Read-only efterkontrol viser begge kolonner som til stede og fortsat 0 nye rækker før ejerens genindlæsning.
 - Efter genindlæsning viste API-loggen fortsat kun GET og intet POST. De to forsøg blev derfor ikke gemt i outboxen og kan ikke automatisk eftersendes; en ny prøve kræves efter udgivelsen.
 
-4.0.267 må først kaldes lukket, når exact-head, produktion og én ny ejerindberetning har bekræftet, at en tur sendes og kan ses i turloggen.
+PR #115 bestod exact-head `32664463654` på source-head `92379b27`, blev merged som `43ceffc1`, og produktion `32664525128` bestod frisk vejr, fuld validering, releasegate, Supabase og Pages. Ejeren oprettede derefter en ny indberetning, som både blev sendt og synlig i **Mine ture og fund**. Beslutningens ende-til-ende-gate er dermed opfyldt.

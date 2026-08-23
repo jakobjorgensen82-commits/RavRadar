@@ -1,6 +1,6 @@
-import { createTripEvidenceController } from './trip-evidence-controller.js?v=4.0.267';
-import { createTripStartFromPublicState } from './trip-evidence-public-adapter.js?v=4.0.267';
-import { openTripEvidenceStartDialog } from '../ui/trip-evidence-dialog.js?v=4.0.267';
+import { createTripEvidenceController } from './trip-evidence-controller.js?v=4.0.268';
+import { createTripStartFromPublicState } from './trip-evidence-public-adapter.js?v=4.0.268';
+import { openTripEvidenceStartDialog } from '../ui/trip-evidence-dialog.js?v=4.0.268';
 
 function defaultTripId() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
@@ -20,12 +20,12 @@ export function createPublicTripEvidenceRuntime({
   now = () => new Date().toISOString(),
   createTripId = defaultTripId
 } = {}) {
-  if (typeof getContext !== 'function') throw new Error('RavRadar-konteksten mangler.');
+  if (typeof getContext !== 'function') throw new Error('RavRadar mangler oplysninger om området. Genindlæs siden og prøv igen.');
   const controller = createTripEvidenceController({ storage, persist, openDialog });
 
   const readContext = selection => {
     const context = getContext(selection);
-    if (!context || typeof context !== 'object') throw new Error('RavRadar-konteksten er ikke klar.');
+    if (!context || typeof context !== 'object') throw new Error('Oplysningerne om området er ikke klar endnu. Vent et øjeblik og prøv igen.');
     return context;
   };
 

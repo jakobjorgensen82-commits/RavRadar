@@ -1,5 +1,16 @@
 # RavRadar – overlevering til næste chat
 
+## Aktivt checkpoint 2026-08-24 – 4.0.268 offentlig grundbog
+
+- Aktiv branch er `codex/public-learning-and-language-4.0.268` fra produktionsverificeret 4.0.267/main `43ceffc1`.
+- **Grundbog i ravjagt** er implementeret i `learn.html`/`learn.css` og tilgængelig fra forsiden. Den lærer ravjagt fra havbund til fund, før RavRadar forklares.
+- En samtidig sproggennemgang har forenklet normal offentlig tekst i forside, scorepanel, Rav-assistent, login, konto, tur og fejl uden at gøre admin-/debugværktøjer ubrugeligt upræcise.
+- Nye målrettede tests låser emnedækning, faglig rækkefølge, aktiv `20/50/30`, waders-kurve, udtransportregel, mobilopsætning, bølge-/strømroller, kilder og almindeligt sprog.
+- Lokal desktop og mobil 390×844 er kontrolleret uden vandret overløb. Normal browserstørrelse er gendannet.
+- Score, Candidate G, vejrdata, Supabase-kontrakt, geometri og land-/vandpunkter er urørte; geodatafilerne ændrer kun versionsfelt til 4.0.268.
+- Næste trin: samlet målrettet test, versions-/RDKS-/geodatakontrol, exact-head, merge, frisk produktion, offentlig 210/673-kontrol og en afsluttende dokumentationsmerge med eksakte id'er.
+- 4.0.267 er lukket: PR #115/exact-head `32664463654`, merge `43ceffc1`, produktion `32664525128`, og en ny ejerindberetning blev sendt og synlig.
+
 ## Akut checkpoint 2026-08-23 – 4.0.267 uploadhotfix
 
 - Ejerens oprindelige og nye manuelle kontoindberetning var ikke synlige efter 4.0.266. Aggregeret Supabase-kontrol viste 0 nye rækker; turindhold blev ikke læst.

@@ -129,7 +129,7 @@
 - [x] Udled, gennemgå og godkend Candidate G med `20/50/30`; 25/40/35 er nu eksakt rollback.
 - [x] Automatisér gammel-mod-ny-sammenligning lokalt og brug den i det dataminimerede beslutningsgrundlag; ingen OpenAI API i offentlig runtime.
 - [x] Implementér og produktionsverificér Candidate G's strøm-, mobiliserings-, jagtbarheds-, memory-, forklarings- og rollbackkontrakt. Et bredere offentligt læringsmodul er fortsat et senere roadmapspunkt.
-- [ ] Byg et omfattende offentligt læringsmodul på den kvalitetssikrede forskning.
+- [x] Byg et omfattende offentligt læringsmodul på den kvalitetssikrede forskning. **Grundbog i ravjagt** er implementeret som 4.0.268-kandidat; exact-head og produktion afventer.
 - [ ] Udskyd gemte områder/varsler mindst cirka et halvt år eller til en senere brugerdata-sektion.
 - Fravalgt nu: særskilt offentlig scoresikkerhed og forklaring af forskel fra gårsdagen.
 - Se `docs/rdks/10_DECISIONS/DEC-0044-SCORE-RESEARCH-PRODUCT-PLAN.md` og `docs/research/RAVSCORE_RESEARCH_PRODUCT_PLAN_2026-08-21.md`.

@@ -1,5 +1,16 @@
 # RavRadar - aktuelt Codex-handoff
 
+## Aktivt checkpoint – 2026-08-24 4.0.268
+
+- Branch: `codex/public-learning-and-language-4.0.268` fra main `43ceffc1`.
+- Leverance: offentlig **Grundbog i ravjagt** fra havbund til fund samt målrettet gennemgang af almindeligt offentligt dansk.
+- Implementeret lokalt: `learn.html`, `learn.css`, forside-link, service-worker-cache, sprogrettelser i offentlige paneler/services og to nye kontrakttests koblet til releasegaten.
+- Faglig kontrakt: bølger kan mobilisere, strøm transporterer, kysten sorterer/samler; ingen universel gunstig dansk retning; jagtmetoder før appforklaring; kilder og evidensniveauer synlige.
+- Beskyttet: ingen ændring af score, Candidate G, `20/50/30`, vejrdata, Supabase-kontrakt, geometri, land-/vandpunkter eller private data. Geodata har kun versionsfelt 4.0.268.
+- Lokal desktop og 390 px mobil er kontrolleret uden vandret overløb. Målrettede tests var grønne før den samlede afslutningskørsel.
+- Næste: færdiggør dokumentkontrol, kør nødvendige målrettede gates, commit/push, exact-head PR, merge, produktion, 210/673-onlineaudit og afsluttende docs-only-status med run-id'er.
+- 4.0.267 er endeligt produktionsverificeret: exact-head `32664463654`, merge `43ceffc1`, produktion `32664525128` og en synlig ny ejerindberetning.
+
 ## Produktionsverificeret 4.0.265 – kontoindberetning uden startet tur
 
 - En indlogget bruger kan vælge **Indberet tur eller fund** fra kontoen uden først at starte en tur. Formularen kræver, at brugeren selv vælger dato og klokkeslæt for turens start samt turens varighed.

@@ -1,13 +1,24 @@
 # RavRadar - aktivt roadmap
 
-## P0 – luk kontoindberetningens uploadskema i 4.0.267
+## Aktiv 4.0.268-kandidat – offentlig grundbog og almindeligt brugersprog
+
+- [x] Gennemgå de centrale offentlige tekster om score, opdatering, kildevalg, login, konto, tur og fejl og erstat interne systemord med almindeligt dansk.
+- [x] Byg **Grundbog i ravjagt** som et selvstændigt offentligt modul, hvor ravets egenskaber, havets processer, kysten, felttegn og selve jagten kommer før RavRadar.
+- [x] Dæk strand, vandkant, waders, UV, hændelsesforløb, revler, render, langs- og tværtransport samt forskellen mellem mobilisering, transport og opsamling.
+- [x] Skeln mellem dokumenteret viden, stærk kystfysisk analogi, praktisk erfaring og åbne spørgsmål; vis kilder i modulet.
+- [x] Lås faglig rækkefølge, offentlig ordlyd, aktiv `20/50/30`, waders-kurve, udtransportregel og én samlet sikkerhedsafgrænsning i målrettede tests.
+- [x] Kontrollér lokal desktop og mobil ved 390 px uden vandret overløb.
+- [ ] Bestå exact-head, merge, frisk 4.0.268-produktion og den relevante offentlige 210/673-browserkontrol.
+- [ ] Luk derefter 4.0.268 med eksakte run-id'er i RDKS, roadmap, håndbøger, changelog og permanent handoff.
+
+## Produktionsverificeret 4.0.267 – kontoindberetningens uploadskema
 
 - [x] Find de to POST-only-felter, som manglede i aktiv Supabase: `forecast_target_at` og `report_accuracy`.
 - [x] Anvend en databevarende central migration og efterkontrollér begge kolonner.
 - [x] Kontrollér den almindelige **Start ravtur → Slut ravtur**-kontrakt særskilt; den bruger ikke de to skemafelter, men ramtes af den fælles `gps=null`-klientfejl før lagring.
 - [x] Ret privatlivskontrollen uden at tillade faktiske GPS-, koordinat-, positions-, rute- eller spordata.
 - [x] Tilføj versionsstyret migration og regression for hele kontoindberetningens uploadkontrakt.
-- [ ] Bestå exact-head, merge, 4.0.267-produktion og én ny ejerindberetning.
+- [x] Bestå PR #115 exact-head `32664463654`, merge `43ceffc1`, fuld 4.0.267-produktion `32664525128` og én ny ejerindberetning, som blev sendt og synlig i **Mine ture og fund**.
 
 ## P0 – luk det virkelige login- og turlogflow i 4.0.266
 
@@ -335,7 +346,7 @@ Aktiv kandidat: 25/40/35 efter DEC-0041. Konsekvensauditterne er grønne. Næste
 - [ ] P1: omsæt analysen til score-neutrale kandidatregler og en forskningsbaseret foreløbig vægtning. Vent ikke på et halvt års ture, men brug senere komplette ture til efterkalibrering.
 - [ ] P1: sammenlign gammel og ny model automatisk på samme data. Ejer og Codex retter kun de vigtigste afvigelser gennem almindelig samtale; ingen offentlig AI/API.
 - [ ] P1: implementér godkendt hændelsesmodel, ravvinduer og enkel lagdelt forklaring med fuld regression og produktionsevidens.
-- [ ] P2: byg et omfattende læringsmodul for begyndere og øvede på den kvalitetssikrede viden.
+- [x] P2: byg et omfattende læringsmodul for begyndere og øvede på den kvalitetssikrede viden. Implementeret som **Grundbog i ravjagt** i 4.0.268-kandidaten; produktionsbevis afventer.
 - [ ] P3 senere: gemte områder og varsler genovervejes efter cirka et halvt år eller i en samlet brugerdata-sektion.
 - [x] Eksisterende score-/pil-/forklaringskontrol genbruges. Fuld 210/673 køres ugentligt eller ved relevante score-, UI- og datakontraktændringer.
 - Fravalgt: separat offentlig scoresikkerhed og historisk “hvorfor ændrede scoren sig?”-funktion.
@@ -357,7 +368,7 @@ Copernicus-afgrænsningen er implementeret som 4.0.244-kandidat: normal drift br
 - [x] Genbrug de eksisterende syntetiske og observerede audits.
 - [ ] Generér og gennemgå kun den korte automatiske ejer-rapport.
 - [ ] Vælg eller forkast kandidatdele skriftligt før enhver produktionsscoreændring.
-- [ ] Hændelsesmodel, ravvinduer, lagdelte forklaringer og læringsmodul følger først efter kandidatbeslutningen.
+- [x] Kandidatbeslutningen er gennemført; hændelsesmodel, ravvinduer, lagdelte forklaringer og læringsmodul er efterfølgende implementeret. Grundbogens produktionsbevis afventer 4.0.268.
 
 ## v4.0.249: privat RavScore-kandidat-shadow
 

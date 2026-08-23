@@ -1,8 +1,8 @@
-const APP_VERSION = "4.0.267";
+const APP_VERSION = "4.0.268";
 const CACHE_PREFIX = "ravradar-app-";
 const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}`;
 const STATIC = [
-  "./","./index.html","./admin.html",`./admin.css?v=${APP_VERSION}`,`./js/ui/admin-dashboard.js?v=${APP_VERSION}`,`./style.css?v=${APP_VERSION}`,`./bootstrap.js?v=${APP_VERSION}`,`./app.js?v=${APP_VERSION}`,
+  "./","./index.html","./learn.html","./admin.html",`./learn.css?v=${APP_VERSION}`,`./admin.css?v=${APP_VERSION}`,`./js/ui/admin-dashboard.js?v=${APP_VERSION}`,`./style.css?v=${APP_VERSION}`,`./bootstrap.js?v=${APP_VERSION}`,`./app.js?v=${APP_VERSION}`,
   "./config.js","./manifest.webmanifest","./version.json",`./data/zones.geojson?v=${APP_VERSION}`,"./data/model.json",
   "./js/core/score-engine.js","./js/core/rule-engine.js","./js/core/adaptive-model.js","./js/core/prediction-engine.js",
   "./js/services/rule-service.js","./rules/national-rules.json","./rules/local-rules.json","./rules/experimental-rules.json","./rules/admin-active-rules.json",
