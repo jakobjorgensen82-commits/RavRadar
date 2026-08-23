@@ -1,5 +1,13 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-23 – 4.0.260 produktionsverificeret uden Candidate G-aktivering
+
+1. PR #92 bestod exact-head `32628441062` på `eabf7e8b` og blev merged som `c5898ce8`.
+2. Produktion `32628516066` bestod central hydrering, frisk DMI/fallback, fuld validering, releasegate, Supabase, artifact og Pages og udgav `rr-20260823083627-210`.
+3. Den dataminimerede liveaudit bestod 210/673/1.346 med 673 accepterede tilstande, nul nulstillinger og nul rekonstruktionsfejl. Reference 09:00Z dokumenterer 9/9 timers alder fra bootstrap 00:00Z; det er ikke et 48-timersbevis.
+4. Browserauditten bestod 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer uden fejl.
+5. Candidate G var score-neutral og automatisk aktivering falsk. Shadowen lå væsentligt lavere end aktiv score og skal derfor gennemgås særskilt med ejeren før en eventuel senere aktiveringsversion.
+
 ## 2026-08-23 – nattens state accepteret og scoreomskifter forberedt
 
 1. Den naturlige Candidate G-state fortsatte til fælles reference 06:00Z i den offentliggjorte runtime `rr-20260823075018-210`.

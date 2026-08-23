@@ -1,14 +1,15 @@
 # RavRadar - aktuelt Codex-handoff
 
-## Checkpoint 2026-08-23 – 4.0.260 versionsbundet scoreomskifter under levering
+## Checkpoint 2026-08-23 – 4.0.260 produktionsverificeret score-neutral omskifter
 
-- Seneste naturlige runtime er `rr-20260823075018-210` med fælles state-reference 06:00Z. Den dataminimerede audit består 210 zoner, 673 kystdele og 1.346 modeevalueringer; alle 673 tidligere tilstande accepteres, ingen nulstilles, og dokumenteret alder er 6/6 timer.
-- Ejeren accepterer nattens seks timer som praktisk evidens til næste trin. Det er ikke et 48-timersbevis, og 48 timers mobiliseringsaftrapning ændres ikke.
-- Branch `codex/candidate-g-versioned-profile-switch` bygger 4.0.260 og DEC-0058. Standard, aktiv og rollback er fortsat `RRS-CURRENT-B0-4.0.247` med 25/40/35; Candidate G er ikke aktiveret.
-- Et fremtidigt Candidate G-valg kræver eksplicit aktiveringsflag, komplet global dækning, frisk slutshadow-id og særskilt ejerbeslutnings-id. Mangler ét krav, vælges legacy globalt; automatisk aktivering er altid falsk.
-- Profilen følger offentlig startpakke, detaljepakke og manifest. Candidate G-adapteren bevarer 20/50/30, waderskontrakten og udtransportforklaringen uden sikkerheds- eller stedmodel.
-- Målrettede tests og samlet lokal `scripts/validate-source.ps1`, inklusive releasegate, er grønne. Exact-head, fuld post-merge-produktion, frisk offentlig slutshadow og 210/673-browserkontrol udestår.
-- Artifact, protected-dirty-data, privat cache, geometri og land-/vandpunkter må ikke berøres.
+- PR #92 bestod exact-head `32628441062` på `eabf7e8b` og blev merged som `c5898ce8`. Produktion `32628516066` bestod hele kæden og udgav `rr-20260823083627-210`.
+- Manifest, startdata og detaljer er komplet 210/673; begge runtimefiler matcher manifestets byteantal og SHA-256. Den dataminimerede audit består 1.346 modeevalueringer, accepterer 673/673 tilstande, nulstiller 0 og finder 0 rekonstruktionsfejl.
+- Fælles reference er 09:00Z mod bootstrap 00:00Z, altså 9/9 timers dokumenteret naturlig state-alder. Det er praktisk evidens, ikke et 48-timersbevis.
+- Browserauditten består 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer uden browser-, side- eller HTTP-fejl.
+- Standard, aktiv og rollback er fortsat `RRS-CURRENT-B0-4.0.247` med 25/40/35. Candidate G er ikke aktiveret, `publicScoreChanged=false`, og automatisk aktivering er falsk.
+- Candidate G-shadowens gennemsnit er waders 19,187 og strand 21,276 mod aktiv 35,770/43,655; 1.127 af 1.346 evalueringer skifter scorebånd. Gennemsnitlig transport er 4,242 og mobilisering 13,747 i den unge tilstand. Næste opgave er ejerreview af betydningen, ikke aktivering.
+- En fremtidig aktivering kræver central admin-roundtrip, ny versionsbundet aktiveringsændring, frisk grøn aktiveringsshadow og særskilt ejerbeslutning.
+- Ingen artifact- eller protected-dirty-datafiler er lagt i Git. Privat cache, geometri og land-/vandpunkter er urørte; kun de to godkendte geodataversionsfelter blev ændret.
 
 
 ## Checkpoint 2026-08-23 – første naturlige Candidate G-statefortsættelse

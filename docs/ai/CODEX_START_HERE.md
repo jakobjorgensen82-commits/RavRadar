@@ -4,11 +4,11 @@ Dette er den obligatoriske indgang til RavRadar for Codex og andre kodeassistent
 
 ## Aktuelt roadmapcheckpoint 2026-08-23
 
-- Den offentlige RavScore er fortsat `25/40/35`. Candidate G er diagnostic-only, indtil en samlet offentlig pipeline-/forklarings-/rollbackpakke er valideret.
+- Den offentlige RavScore er fortsat `25/40/35`. DEC-0058's versionsbundne omskifter er produktionsverificeret i 4.0.260, men vælger fortsat legacy; Candidate G er ikke aktiveret.
 - Den foretrukne private helhedskandidat er `RESEARCH-3`: `20/50/30`, DEC-0054's vindstyrede waders-jagtbarhed, DEC-0055's strømstyrede transport og DEC-0056's ene bølgeenergistyrede mobiliseringstilstand.
 - Mobilisering bruger højde² × periode med fire timers opbygning og 48 timers aftrapning. Direkte vind, aktuel strøm, separat varighed og statisk stedegnethed giver ingen mobiliseringspoint.
-- Den gamle 243/673-shadow var en snæver native-DKSS-testkontrakt, ikke bevis for manglende almindelig vejrdækning. Aktuel produktion har 673/673 dokumenterede strømidentiteter. En fremtidig slutshadow skal bruge den endelige fallback-kompatible kontrakt uden nye downloads eller punktflytning.
-- Næste ikke-blokerede RavScore-fase er samlet central persistens af transport- og mobiliseringstilstand, frisk national shadow, offentlig forklaring og rollback. Opret ikke endnu en parallel model uden ny modstridende evidens.
+- PR #92/exact-head `32628441062`, merge `c5898ce8`, produktion `32628516066` og live `rr-20260823083627-210` er grønne for 210/673/1.346 og browser 420/2.100/673. Statealderen er 9/9 timer uden nulstilling; det er ikke et 48-timersbevis.
+- Den friske Candidate G-shadow ligger væsentligt lavere end aktiv score, især mens transport- og mobiliseringstilstanden er ung. Næste fase er særskilt ejerreview af scorefordelingen og først derefter eventuel central aktiverings-roundtrip i en ny version. Opret ikke en ny parallel model eller aktivér automatisk.
 
 ## Verificeret startbaseline
 - Applikationsversion: **4.0.117**.
