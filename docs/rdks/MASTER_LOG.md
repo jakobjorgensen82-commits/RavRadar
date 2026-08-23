@@ -1,3 +1,9 @@
+## 2026-08-23 – rodhåndbog mangler i dokumentationsskip
+
+- Den rent dokumentariske PR #102 blev merged som `0da5b31d`, men startede fuld push-produktion `32646026290`, fordi `HANDBOOK-RAVRADAR.md` ikke er omfattet af workflowets nuværende `paths-ignore`.
+- Kørselen bestod og udgav `rr-20260823144117-210` med uændret 4.0.263-kode, Candidate G aktiv, 210/673, komplet coverage og korrekt `CURRENT_COMMON_ZONE_REFERENCE`. Det er en procesomkostning, ikke en score- eller runtimefejl.
+- Forholdet er registreret som `ISSUE-ROOT-HANDBOOK-DOCS-SKIP`. En senere særskilt workflowrettelse skal både produktionsverificeres og efterfølges af en ren docs-merge med 0 push-kørsler.
+
 ## 2026-08-23 – Candidate G's aktuelle referencegate i 4.0.263
 
 - PR #100/exact-head `32642456123`, merge `586fbd184f68c6445acfb38a39814f6348f14bd0` og fuld produktion `32642532892` beviste, at 4.0.262 accepterer den native tre-timers cadence korrekt: 673/673 states fortsatte uden nulstilling, replaymismatch var 0, og 110 transportpotentialer blev positive, mens 563 var fysisk nul efter de aktuelle strømforhold.

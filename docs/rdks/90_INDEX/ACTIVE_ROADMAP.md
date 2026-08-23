@@ -1,5 +1,11 @@
 # RavRadar - aktivt roadmap
 
+## Næste afgrænsede procesrettelse – rodhåndbog i docs-only-skip
+
+- [ ] Tilføj kun `HANDBOOK-RAVRADAR.md` til push-workflowets eksakte dokumentations-`paths-ignore`, og opdatér den eksisterende workflowkontrakttest.
+- [ ] Bestå målrettet workflowtest og exact-head. Fordi selve workflowfilen ændres, skal denne merge gennem én forventet fuld grøn produktion.
+- [ ] Bevis derefter med en separat ren RDKS-/håndbogsmerge, at der oprettes 0 push-produktionskørsler. Ingen score, data, geometri eller punkter må ændres.
+
 ## Aktuel P0-status – Candidate G-referencegate i 4.0.263
 
 - [x] Før DEC-0061 gennem PR #100/exact-head `32642456123`, merge `586fbd184f68c6445acfb38a39814f6348f14bd0` og fuld produktion `32642532892`.
