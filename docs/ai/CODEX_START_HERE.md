@@ -8,7 +8,7 @@ Dette er den obligatoriske indgang til RavRadar for Codex og andre kodeassistent
 - Den foretrukne private helhedskandidat er `RESEARCH-3`: `20/50/30`, DEC-0054's vindstyrede waders-jagtbarhed, DEC-0055's strømstyrede transport og DEC-0056's ene bølgeenergistyrede mobiliseringstilstand.
 - Mobilisering bruger højde² × periode med fire timers opbygning og 48 timers aftrapning. Direkte vind, aktuel strøm, separat varighed og statisk stedegnethed giver ingen mobiliseringspoint.
 - PR #92/exact-head `32628441062`, merge `c5898ce8`, produktion `32628516066` og live `rr-20260823083627-210` er grønne for 210/673/1.346 og browser 420/2.100/673. Statealderen er 9/9 timer uden nulstilling; det er ikke et 48-timersbevis.
-- Den friske Candidate G-shadow ligger væsentligt lavere end aktiv score, især mens transport- og mobiliseringstilstanden er ung. Næste fase er særskilt ejerreview af scorefordelingen og først derefter eventuel central aktiverings-roundtrip i en ny version. Opret ikke en ny parallel model eller aktivér automatisk.
+- Den friske Candidate G-shadow ligger væsentligt lavere end aktiv score. Bootstrapauditten viser, at start 0 fortsat dominerer transporten efter 65–117 timers eksisterende historik, fordi neutral strøm ikke nedskriver state. Næste fase er ejerbeslutning om anbefalet neutral startprior 50 og først derefter eventuel ny versionsbundet shadow. Opret ikke en ny parallel model eller aktivér automatisk.
 
 ## Verificeret startbaseline
 - Applikationsversion: **4.0.117**.

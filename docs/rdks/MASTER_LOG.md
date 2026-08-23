@@ -1891,3 +1891,6 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - Live `rr-20260823083627-210` matcher manifestets byteantal og SHA-256 og består den dataminimerede 210/673/1.346-audit med 673 accepterede tilstande, nul nulstillinger og nul rekonstruktionsfejl. Reference 09:00Z dokumenterer 9/9 timers alder fra bootstrap 00:00Z.
 - Browserauditten består 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer uden fejl. Aktiv profil er fortsat legacy, og automatisk aktivering er falsk.
 - Candidate G-shadowen ligger markant lavere end aktiv score i den unge state. Denne scorefordeling er et åbent ejerreview før aktivering, ikke en leverancefejl eller tilladelse til automatisk skift.
+- Efterfølgende bootstrapaudit fandt 493/673 transporttilstande på 0 uden én eneste faktisk udtransportgate. Den allerede offentlige historik har 42.551 poster og dækker 633 dele med 65–117 timer, men start-0-replay har stadig median 0.
+- Kun 6/633 dele bliver uafhængige af start 0 kontra 100; 607/633 bevarer mindst 50 points priorforskel. Uden passivt neutralt tab er startreserven en eksplicit modelprior og kan ikke udledes ved blot at vente.
+- Neutral startprior 50 anbefales til særskilt ejerbeslutning. Den er ikke implementeret; offentlig profil forbliver legacy, og Candidate G aktiveres ikke.

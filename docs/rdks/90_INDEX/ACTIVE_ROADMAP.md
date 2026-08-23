@@ -51,6 +51,8 @@ Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre for
 - [x] Bestå samlet lokal kildegate og releasegate for 4.0.260.
 - [x] Før 4.0.260 gennem exact-head `32628441062`, PR #92/merge `c5898ce8`, fuld produktion `32628516066`, frisk `rr-20260823083627-210`-shadow og grøn 210/673/420/2.100-browserkontrol.
 - [ ] Gennemgå den friske scorefordeling særskilt med ejeren: Candidate G ligger aktuelt markant lavere end aktiv score, mens transport- og mobiliseringstilstanden kun er ni timer gammel.
+- [x] Efterprøv om den eksisterende syvdøgnshistorik kan fjerne bootstrap-skævheden. Resultat: nej; 65–117 timers historik efterlader 607/633 dele med mindst 50 points startpriorafhængighed, fordi neutral strøm ikke giver passivt tab.
+- [ ] Vælg startreserve. Anbefaling til ejerreview: neutral 50 ved ukendt/inkompatibel state, tydeligt versionsbundet og adskilt fra dokumenteret udtransport 0; start 0 og start 100 bevares som følsomhedsgrænser.
 - [ ] Gennemfør central admin-roundtrip og en ny versionsbundet aktiveringsændring, før ønsket profil eventuelt ændres til Candidate G.
 - [ ] Offentlig aktivering må først gennemføres, når den samlede pakke er grøn og ingen konkret modstridende evidens består; manglende turkalibrering skal fortsat fremgå ærligt som modelusikkerhed.
 

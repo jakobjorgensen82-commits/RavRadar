@@ -1,5 +1,12 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-23 – start-0-skævhed fundet efter produktionsshadow
+
+1. Den grønne live-shadow viste 493/673 transporttilstande på 0, men ingen udløst 13-timers udtransportgate.
+2. RavRadars eksisterende offentlige historik blev genafspillet uden nye kildedata: 42.551 poster, 633 dækkede dele og 65–117 timers tidsdybde.
+3. Start 0 gav fortsat median 0. Kun 6/633 dele blev uafhængige af start 0 kontra 100, og 607/633 bevarede mindst 50 points forskel.
+4. Historikken kan dermed ikke vælge startreserven under den allerede valgte regel uden passivt neutralt tab. Neutral prior 50 anbefales til ejerreview, men er ikke implementeret eller aktiveret.
+
 ## 2026-08-23 – 4.0.260 produktionsverificeret uden Candidate G-aktivering
 
 1. PR #92 bestod exact-head `32628441062` på `eabf7e8b` og blev merged som `c5898ce8`.
