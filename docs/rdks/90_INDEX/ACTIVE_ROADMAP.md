@@ -1,6 +1,16 @@
 # RavRadar - aktivt roadmap
 
-## Aktuel P0-status – Candidate G-transportcadence i 4.0.262
+## Aktuel P0-status – Candidate G-referencegate i 4.0.263
+
+- [x] Før DEC-0061 gennem PR #100/exact-head `32642456123`, merge `586fbd184f68c6445acfb38a39814f6348f14bd0` og fuld produktion `32642532892`.
+- [x] Bevis cadence-rettelsen i live: 673/673 states fortsat, nul replaymismatch, 110 positive og 563 fysisk fortsat nul.
+- [x] Afgræns 4.0.262's efterfølgende legacyrollback til en for bred gate, som lod et senere prognosegap blokere 673/673 sammenhængende aktuelle referencer.
+- [x] Implementér DEC-0062: aktuel fælles reference styrer memory-/warmup-gaten, mens hele prognosens kandidatscorecoverage og fail-closed state bevares.
+- [x] Lås aktuel gap-rollback, senere prognosegap og moden aktuel reference i målrettede tests.
+- [x] Bestå samlet lokal source-/RDKS-/releasekontrol og eksakt geodatadiff for 4.0.263.
+- [ ] Bestå exact-head, frisk produktion, aktiv 210/673-shadow og browserkontrol for 4.0.263.
+
+## Historisk P0-del – Candidate G-transportcadence i 4.0.262
 
 - [x] Opdag read-only i live `rr-20260823121818-210`, at alle 673 dele har transportpotentiale og transportkomponent 0.
 - [x] Afgræns årsagen til tre timers afstand mellem produktionsbeviser mod `maximumGapHours=1`; énprøve-suffixet har nul forløbstid.
@@ -8,11 +18,11 @@
 - [x] Bevar fail-closed ved mere end tre timer eller missing, og begræns pre-public warmup til `WINDOW_INCOMPLETE` via global `candidateWarmupEligible`.
 - [x] Lås rettelsen i målrettede state-/score-/profil-/shadowtests og genafspil den gamle 673-state dataminimeret.
 - [x] Bestå samlet lokal source-/RDKS-/releasekontrol og eksakt diffkontrol.
-- [ ] Bestå exact-head, frisk fuld produktion, aktiv dataminimeret 210/673-shadow med nul replaymismatch og browserkontrol før P0 lukkes.
+- [x] Bestå exact-head og frisk fuld produktion; efterauditen fandt DEC-0062's særskilte referencescopefejl, som nu lukkes i 4.0.263.
 - [ ] Følg derefter den naturlige memoryopbygning som driftsevidens uden en ny 48-timers realtidsudviklingstest.
 
 **Opdateret:** 2026-08-23
-**Statusgrundlag:** 4.0.262 lokalt på `codex/candidate-g-transport-cadence-fix`; produktion er fortsat 4.0.261/merge `328b4d7c`, indtil de åbne gates er bestået
+**Statusgrundlag:** 4.0.263 lokalt på `codex/candidate-g-reference-gate-fix`; produktion er 4.0.262/merge `586fbd18` med cadence rettet og sikker legacyrollback, indtil 4.0.263's åbne gates er bestået
 
 Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre forsknings-/versionsafsnit bevares som revisionsspor. En tom afkrydsningsboks i historikken er ikke en aktiv opgave, medmindre punktet ogsaa findes her.
 

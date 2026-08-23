@@ -2,10 +2,11 @@ import { CANDIDATE_G_STATE_MODEL_ID } from './ravscore-candidate-g-state-pipelin
 
 export const LEGACY_RAVSCORE_PROFILE_ID = 'RRS-CURRENT-B0-4.0.247';
 export const CANDIDATE_G_RAVSCORE_PROFILE_ID = CANDIDATE_G_STATE_MODEL_ID;
+export const CANDIDATE_G_MEMORY_REFERENCE_SCOPE = 'CURRENT_COMMON_ZONE_REFERENCE';
 
 export const PUBLIC_RAVSCORE_PROFILE_SELECTION = Object.freeze({
   schemaVersion: '1.1.0',
-  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.262',
+  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.263',
   requestedProfileId: LEGACY_RAVSCORE_PROFILE_ID,
   rollbackProfileId: LEGACY_RAVSCORE_PROFILE_ID,
   candidateProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
@@ -29,6 +30,68 @@ const finite = value => value !== null
   && typeof value !== 'boolean'
   && Number.isFinite(Number(value));
 const clamp = value => Math.max(0, Math.min(100, Number(value)));
+
+const emptyCandidateReferenceReadiness = () => Object.freeze({
+  candidateMemoryReady: false,
+  candidateWarmupEligible: false,
+  referenceZoneCount: 0,
+  referencePartCount: 0,
+});
+
+/**
+ * Resolves the Candidate G memory gate at the common current reference for
+ * every coastal part in a zone. Later forecast gaps remain fail-closed inside
+ * their own bounded state rows, but they must not retroactively classify the
+ * current, continuous warmup window as a gap.
+ */
+export function candidateGReferenceReadiness(partRows = [], referenceTime = null) {
+  const targetMs = Date.parse(referenceTime);
+  if (!Number.isFinite(targetMs) || !Array.isArray(partRows) || partRows.length === 0) {
+    return emptyCandidateReferenceReadiness();
+  }
+
+  const rowsByZone = new Map();
+  for (const row of partRows) {
+    if (typeof row?.zoneId !== 'string' || !row.zoneId || !Array.isArray(row.scores) || row.scores.length === 0) {
+      return emptyCandidateReferenceReadiness();
+    }
+    if (!rowsByZone.has(row.zoneId)) rowsByZone.set(row.zoneId, []);
+    rowsByZone.get(row.zoneId).push(row);
+  }
+
+  const selectedScores = [];
+  for (const rows of rowsByZone.values()) {
+    const scoresByRow = rows.map(row => new Map(row.scores
+      .filter(score => score?.candidateG && Number.isFinite(Date.parse(score.time)))
+      .map(score => [new Date(score.time).toISOString(), score])));
+    if (scoresByRow.some(scores => scores.size === 0)) return emptyCandidateReferenceReadiness();
+    const commonTimes = [...scoresByRow[0].keys()]
+      .filter(time => scoresByRow.every(scores => scores.has(time)))
+      .sort((left, right) => {
+        const distance = Math.abs(Date.parse(left) - targetMs) - Math.abs(Date.parse(right) - targetMs);
+        return distance || Date.parse(left) - Date.parse(right);
+      });
+    const selectedTime = commonTimes[0];
+    if (!selectedTime) return emptyCandidateReferenceReadiness();
+    selectedScores.push(...scoresByRow.map(scores => scores.get(selectedTime)));
+  }
+
+  if (selectedScores.length !== partRows.length) return emptyCandidateReferenceReadiness();
+  const memoryReady = selectedScores.every(score =>
+    score.candidateG.transportMemoryReady === true
+    && score.candidateG.transportMemoryStatus === 'READY');
+  const warmupEligible = selectedScores.every(score => {
+    const ready = score.candidateG.transportMemoryReady === true;
+    const status = score.candidateG.transportMemoryStatus;
+    return (ready && status === 'READY') || (!ready && status === 'WINDOW_INCOMPLETE');
+  });
+  return Object.freeze({
+    candidateMemoryReady: memoryReady,
+    candidateWarmupEligible: warmupEligible,
+    referenceZoneCount: rowsByZone.size,
+    referencePartCount: selectedScores.length,
+  });
+}
 
 function rating(score) {
   const value = Number(score);
@@ -151,6 +214,7 @@ export function resolvePublicRavScoreProfile({
     candidateCoverageReady: candidateCoverageReady === true,
     candidateMemoryReady: candidateMemoryReady === true,
     candidateWarmupEligible: candidateWarmupEligible === true,
+    candidateMemoryReferenceScope: CANDIDATE_G_MEMORY_REFERENCE_SCOPE,
     freshFinalShadowPassed: typeof evidence?.freshFinalShadowRunId === 'string'
       && evidence.freshFinalShadowRunId.length > 0,
     ownerReviewApproved: typeof evidence?.ownerReviewDecisionId === 'string'

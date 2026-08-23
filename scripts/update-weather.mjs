@@ -12,6 +12,7 @@ import {
   CANDIDATE_G_STATE_VARIANT_ID,
 } from '../js/core/ravscore-candidate-g-state-pipeline.js';
 import {
+  candidateGReferenceReadiness,
   CANDIDATE_G_RAVSCORE_PROFILE_ID,
   publicRavScoreConfigurationFromDocument,
   resolvePublicRavScoreProfile,
@@ -1212,15 +1213,11 @@ function scoreCoastalPartsRuntime(
         score?.candidateG?.modes?.[mode]?.available === true
         && score.candidateG.modes[mode].modelId === CANDIDATE_G_RAVSCORE_PROFILE_ID
         && Number.isFinite(score.candidateG.modes[mode].score))));
+  const referenceReadiness = candidateGReferenceReadiness(partRows, generatedAt);
   const candidateMemoryReady = candidateCoverageReady
-    && partRows.every(row => row.scores.every(score =>
-      score?.candidateG?.transportMemoryReady === true));
+    && referenceReadiness.candidateMemoryReady;
   const candidateWarmupEligible = candidateCoverageReady
-    && partRows.every(row => row.scores.every(score => {
-      const ready = score?.candidateG?.transportMemoryReady === true;
-      const status = score?.candidateG?.transportMemoryStatus;
-      return (ready && status === 'READY') || (!ready && status === 'WINDOW_INCOMPLETE');
-    }));
+    && referenceReadiness.candidateWarmupEligible;
   const scoreProfile = resolvePublicRavScoreProfile({
     selection: RAVSCORE_PROFILE_CONFIGURATION.selection,
     evidence: RAVSCORE_PROFILE_CONFIGURATION.evidence,

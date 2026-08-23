@@ -18,6 +18,7 @@ import {
   CANDIDATE_G_WEIGHTS,
 } from '../js/core/ravscore-candidate-g.js';
 import {
+  CANDIDATE_G_MEMORY_REFERENCE_SCOPE,
   CANDIDATE_G_RAVSCORE_PROFILE_ID,
   LEGACY_RAVSCORE_PROFILE_ID,
   PUBLIC_RAVSCORE_PROFILE_SELECTION,
@@ -96,6 +97,8 @@ export function auditCandidateGPublicShadow(document, {
     'PROFILE_NOT_CANDIDATE_ACTIVE');
   add(coastal?.scoreProfile?.candidateCoverageReady === true, 'CANDIDATE_SCORE_COVERAGE_INCOMPLETE');
   add(coastal?.scoreProfile?.candidateWarmupEligible === true, 'CANDIDATE_MEMORY_GAP');
+  add(coastal?.scoreProfile?.candidateMemoryReferenceScope === CANDIDATE_G_MEMORY_REFERENCE_SCOPE,
+    'CANDIDATE_MEMORY_REFERENCE_SCOPE_MISMATCH');
   add(coastal?.scoreProfile?.automaticActivationAllowed === false, 'PROFILE_AUTOMATIC_ACTIVATION_NOT_BLOCKED');
 
   const partCountByZone = new Map();
@@ -276,6 +279,7 @@ export function auditCandidateGPublicShadow(document, {
       candidateCoverageReady: coastal.scoreProfile.candidateCoverageReady,
       candidateMemoryReady: coastal.scoreProfile.candidateMemoryReady,
       candidateWarmupEligible: coastal.scoreProfile.candidateWarmupEligible,
+      candidateMemoryReferenceScope: coastal.scoreProfile.candidateMemoryReferenceScope,
       prePublicWarmupAccepted: coastal.scoreProfile.prePublicWarmupAccepted,
       activationState: coastal.scoreProfile.activationState,
       automaticActivationAllowed: coastal.scoreProfile.automaticActivationAllowed,

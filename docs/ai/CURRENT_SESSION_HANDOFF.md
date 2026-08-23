@@ -1,6 +1,15 @@
 # RavRadar - aktuelt Codex-handoff
 
-## Aktuel arbejdsleverance 2026-08-23 – Candidate G native cadence-rettelse i 4.0.262
+## Aktuel arbejdsleverance 2026-08-23 – Candidate G aktuel referencegate i 4.0.263
+
+- PR #100 bestod exact-head `32642456123`, blev merged som `586fbd18`, og produktion `32642532892` bestod alle fulde gates og Pages.
+- Live `rr-20260823134605-210` beviser cadence-rettelsen: 673/673 accepterede states, nul reset/replaymismatch, 110 positive og 563 fysisk fortsat nul. Den offentlige profil rullede dog sikkert tilbage til legacy.
+- Rodårsagen til rollbacken er en for bred gate: alle 673 aktuelle referencer var `WINDOW_INCOMPLETE`, men senere femdøgnsgaps gjorde `candidateWarmupEligible=false`.
+- DEC-0062/4.0.263 vurderer memory/warmup ved nærmeste fælles aktuelle scoretid pr. zone. Hele prognosens kandidatscorecoverage består, og et gap ved den aktuelle reference giver fortsat global rollback.
+- Målrettede tests og samlet lokal source-/RDKS-/releasegate er grønne. Exact-head, frisk produktion, aktiv 210/673-shadow og browserkontrol afventer.
+- Branch er `codex/candidate-g-reference-gate-fix`. Artifact, protected-dirty-data, private cachedata, geometri og land-/vandpunkter må ikke røres; geodata må kun få versionsfeltet 4.0.263.
+
+## Historisk arbejdsleverance – Candidate G native cadence-rettelse i 4.0.262
 
 - 4.0.261-P0 er reproduceret: native tre-timers beviser blev afvist af en én-times-gate, så transporten stod på 0 i 673/673 dele og kunne ikke modne ved at vente.
 - Arbejdsbranch er `codex/candidate-g-transport-cadence-fix` fra `main`/merge `328b4d7c`. DEC-0061 implementerer maksimum tre timers verificeret bevisafstand, faktisk tidsintegration uden kunstige mellemtimer og fail-closed ved større eller manglende gab.
@@ -12,7 +21,7 @@
 - PR #97/exact-head `32636378576` aktiverede modellen og fuld produktion `32636433944` beviste central readback og live 210/673. PR #98 lukkede den legitime non-ready-shadowstatus, produktion `32637387600` var grøn, og shadow `32637833674` bestod. PR #99 registrerede den fulde browserlukning med 420 aktuelle og 2.100 femdøgnsvisninger uden fejl.
 - Artifact, protected-dirty-data, private cachedata, geometri og land-/vandpunkter må ikke røres. Geodata må kun få versionsfeltet 4.0.262.
 
-Næste arbejde er at gennemføre 4.0.262's exact-head, fulde produktion, aktive 210/673-shadow og hændelseskrævede browserkontrol. Der kræves ikke endnu en 48-timers realtidsudviklingstest.
+Denne cadenceleverance bestod exact-head og fuld produktion. DEC-0062 beskriver den særskilte referencescopeopfølgning; der kræves fortsat ikke endnu en 48-timers realtidsudviklingstest.
 
 ## Checkpoint 2026-08-23 – Candidate G bounded transport-memory efter ejerbeslutning
 

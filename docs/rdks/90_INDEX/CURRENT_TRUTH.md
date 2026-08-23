@@ -1,13 +1,22 @@
 # Current truth – gældende projektviden
 
-## Aktuel 4.0.262-kandidat – native transportcadence og sikker warmup
+## Aktuel 4.0.263-kandidat – Candidate G-gate ved den aktuelle fælles zonereference
+
+- PR #100/exact-head `32642456123`, merge `586fbd184f68c6445acfb38a39814f6348f14bd0` og produktion `32642532892` beviser DEC-0061's cadence: live `rr-20260823134605-210` accepterer 673/673 states uden reset eller replaymismatch og har 110 positive mod 563 fysisk fortsat nul transportpotentialer.
+- 4.0.262's offentlige profil faldt alligevel fail-closed tilbage til legacy. Alle 673 faktisk valgte aktuelle referencer var lovlig `WINDOW_INCOMPLETE`, men den globale gate inspicerede også senere femdøgnsrækker og lod et fremtidigt gap gøre `candidateWarmupEligible=false`.
+- DEC-0062/4.0.263 binder derfor `candidateMemoryReady` og `candidateWarmupEligible` til den nærmeste scoretid, der er fælles for alle kystdele i hver zone og ligger nærmest produktionsreferencen. Hele femdøgnets Candidate G-scorecoverage kræves fortsat.
+- `LATEST_SAMPLE_MISSING`, `WINDOW_HAS_MISSING_EVIDENCE` eller `WINDOW_HAS_TIME_GAP` ved den aktuelle fælles reference giver fortsat global rollback. Et senere prognosegap behandles fail-closed i sin egen state og må ikke retroaktivt slå den aktuelle profil fra.
+- Referencescopet offentliggøres som `CURRENT_COMMON_ZONE_REFERENCE` og kræves af den dataminimerede 210/673-shadow.
+- Målrettede tests og samlet lokal source-/RDKS-/releasegate er grønne. Exact-head, frisk produktion, aktiv shadow og browserkontrol afventer, så P0 er ikke endnu lukket.
+
+## 4.0.262 – cadence rettet, men profilgaten rullede tilbage på senere prognosegap
 
 - DEC-0061 retter lokalt 4.0.261's P0: Candidate G accepterer højst tre timer mellem verificerede native strømbeviser, bruger den faktiske forløbstid og opfinder ingen mellemtimer.
 - Mere end tre timer, manglende seneste bevis eller missing inde i vinduet er stadig et ægte hul. Ejerens pre-public undtagelse accepterer kun `WINDOW_INCOMPLETE`; øvrige ikke-ready-statusser vælger legacy globalt via `candidateWarmupEligible=false`.
 - Public-shadow genafspiller nu alle kompakte states og kræver identisk potentiale, udtransporttilstand, readiness, status og coverage. Målrettede tests dækker 3-timers fortsættelse, komplet 17-punkts/48-timers vindue, split/ubrudt replay og 4-timers fail-closed gap.
 - Dataminimeret replay af den gamle 673-state giver 110 positive og 563 fortsat nul i stedet for 673 fastlåste nuller; det gamle artifact afvises med 658 forventede replaymismatch.
 - Model/state/profile-identitet og de faglige `20/50/30`, 0,03→0,15, +10/-8, 13 timer, mobilisering 4/48 og wadersregler er uændrede. Ingen private data, geometri eller punkter er ændret.
-- Ved dette checkpoint er rettelsen lokal. Exact-head, frisk fuld produktion, central readback, aktiv 210/673-shadow og fuld browserkontrol mangler, så P0 er ikke endnu produktionslukket.
+- Exact-head og fuld produktion er grønne som beskrevet ovenfor. Den efterfølgende audit beviste selve cadence-replayet, men fandt DEC-0062's uafhængige referencescopefejl før aktiv shadow kunne godkendes.
 
 ## Historisk P0 i 4.0.261 – aktiv Candidate G kunne ikke opbygge transport ved produktionscadencen
 

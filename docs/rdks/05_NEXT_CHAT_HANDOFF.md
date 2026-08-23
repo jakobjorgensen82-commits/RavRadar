@@ -1,5 +1,11 @@
 # RavRadar – overlevering til næste chat
 
+## Aktuel 4.0.263-P0 – Candidate G's aktuelle referencegate
+
+- 4.0.262-produktion `32642532892` beviste cadence-rettelsen med 673/673 fortsatte states, nul replaymismatch og 110 positive transportpotentialer. Profilen rullede alligevel tilbage til legacy, fordi en senere prognosegapstatus blev brugt som aktuel warmup-gate.
+- DEC-0062 lader memory-/warmup-gaten følge den nærmeste fælles aktuelle scoretid pr. zone. Fuld Candidate G-scorecoverage over hele prognosen består; missing/gap ved den aktuelle reference giver stadig global rollback, mens senere gaps håndteres fail-closed i deres egen state.
+- 4.0.263 er lokalt grøn på `codex/candidate-g-reference-gate-fix`, inklusive samlet source-/RDKS-/releasegate og eksakt geodatadiff. Exact-head, frisk produktion, aktiv 210/673-shadow og fuld browserkontrol mangler.
+
 ## Aktuel 4.0.262-arbejdsbaseline – Candidate G cadence-rettelse
 
 - **P0 reproduceret og rettet lokalt:** Den aktive 4.0.261-runtime har transport 0 i 673/673 dele, fordi native tre-timers beviser blev afvist af én-times-gaten. DEC-0061/4.0.262 accepterer højst tre timer, integrerer den faktiske tid uden kunstige mellemtimer og afviser fortsat større eller manglende gab.

@@ -1,5 +1,14 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-23 – den aktuelle Candidate G-gate afgrænses fra senere prognosehuller
+
+1. 4.0.262 blev exact-head- og produktionsverificeret. Cadencerettelsen fortsatte alle 673 states uden nulstilling og gav 110 positive transportpotentialer mod 0 før rettelsen; 563 var fortsat fysisk nul efter de aktuelle strømforhold.
+2. Den offentlige profil stod alligevel på legacy, fordi `candidateWarmupEligible` blev beregnet over hele femdøgnsprognosen. Et senere prognosehul blev derfor fejlagtigt brugt som bevis mod den faktisk viste aktuelle opvarmning.
+3. Ejeren bad om en grundig permanent rettelse og en almindeligt forståelig forklaring af både tre-timersfejlen og rollbackrollen efter leverancen.
+4. DEC-0062 lader den globale profilgate bedømme memory ved den nærmeste fælles aktuelle scoretid for alle dele i hver zone. Senere huller påvirker fortsat deres egne fremtidige states fail-closed, men slår ikke den aktuelle profil fra.
+5. Komplet beregnelig Candidate G-scorecoverage kræves stadig for alle publicerede rækker, og missing eller tidsgab ved den faktisk valgte aktuelle reference vælger fortsat legacy globalt.
+6. Målrettede tests og samlet lokal source-/RDKS-/releasegate er grønne. Exact-head, frisk produktion, aktiv shadow og fuld browserkontrol afventer.
+
 ## 2026-08-23 – ejeren bestiller den systemiske cadence-rettelse
 
 1. Efter bekræftelsen af 673/673 nultransporter bad ejeren om en grundig analyse og implementation af den rette rettelse.
