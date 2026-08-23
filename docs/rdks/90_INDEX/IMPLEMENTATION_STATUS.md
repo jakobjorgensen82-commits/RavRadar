@@ -10,8 +10,9 @@
 - [x] Tilføj bekræftet **Afslut uden at indberette** med nul observations-/outbox-/serverposter; bevar **Svar senere**.
 - [x] Vis klokkeslæt og mærk efterregistrering i brugerens eksisterende private turlog.
 - [x] Bestå de målrettede kontrakt-, observation-, turlog- og syntakskontroller.
-- [ ] Opdatér version, RDKS, håndbog og changelog og bestå nødvendige målrettede versions-/dokumentationskontroller.
+- [x] Opdatér version, RDKS, håndbog og changelog og bestå nødvendige målrettede versions-/dokumentationskontroller.
 - [ ] Bestå én fuld `validate:source` på PR'ens eksakte head, merge og produktionsverificér.
+- [x] Første exact-head `32658093582` stoppede sikkert før merge på Candidate G-omskifterens efterladte 4.0.264-versionsmærke. Ret mærket til 4.0.265 og gør versionsværktøjet ansvarligt for både profildokument og kodekontrakt uden at ændre aktiv profil eller scorelogik.
 
 Ingen score, Candidate G, vejrdata, geometri eller land-/vandpunkter er ændret. En rigtig autentificeret indsendelse kræver senere en bevidst ejerprøve, fordi den opretter en virkelig Supabase-række.
 

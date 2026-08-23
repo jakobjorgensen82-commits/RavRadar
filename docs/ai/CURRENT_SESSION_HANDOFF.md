@@ -7,7 +7,7 @@
 - Aktuelle forhold ved indberetningen bruges aldrig som historisk vejr. Da klienten ikke sikkert kan genskabe et vilkårligt historisk snapshot, gemmes efterregistreringen med tomme forecast-/snapshotfelter og `calibration_eligible=false`.
 - En startet tur kan efter bekræftelse **Afsluttes uden at indberette**. Det rydder kun den lokale aktive tur og opretter ingen observations-, outbox- eller Supabase-post. **Svar senere** bevarer turen.
 - Begge rapportveje bruger samme zoneafhængige kyststrækningsvalg og afviser en kyststrækning fra en anden zone.
-- Målrettede kontrakt-, observation-, turlog- og syntakstests er grønne. Versionslukning, RDKS-/versionskontrol, PR exact-head og produktion udestår. En rigtig autentificeret indsendelse skal senere udføres bevidst af ejeren, fordi den opretter en virkelig række.
+- Målrettede kontrakt-, observation-, turlog-, versions- og syntakstests er grønne. Første PR exact-head `32658093582` stoppede før merge på et efterladt 4.0.264-versionsmærke i Candidate G-profilomskifteren. Mærket og versionsværktøjet er rettet uden ændring af profilvalg eller scorelogik; ny exact-head og produktion udestår. En rigtig autentificeret indsendelse skal senere udføres bevidst af ejeren, fordi den opretter en virkelig række.
 - Candidate G, `20/50/30`, vejrdata, geometri, land-/vandpunkter, artifact, protected-dirty-data og private caches er urørte. Se DEC-0064.
 
 ## Aktuel arbejdsleverance 2026-08-23 – forståeligt brugerflow og privat turlog i 4.0.264

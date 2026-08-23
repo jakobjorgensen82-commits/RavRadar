@@ -8,6 +8,11 @@ const previousVersion=packageBefore.version;
 const replacements=[
  ['package.json',json=>({...json,version})],
  ['version.json',json=>({...json,version,minimumSupportedVersion:version,releasedAt:new Date().toISOString()})],
+ ['data/admin/ravscore-profile-selection.json',json=>({
+   ...json,
+   sourceVersion:version,
+   switchVersion:`RAVSCORE-PROFILE-SWITCH-${version}`
+ })],
  ['data/kystdata.json',json=>({...json,version})],
  ['data/zones.geojson',json=>({...json,version})]
 ];
@@ -57,6 +62,18 @@ for(const file of ['.github/workflows/update-and-deploy.yml']){
   let text=await fs.readFile(file,'utf8');
   text=text.replace(/RavRadar\/\d+\.\d+\.\d+/g,`RavRadar/${version}`);
   await fs.writeFile(file,text);
+}
+
+// Profilomskifterens versionsmærke er en kompatibilitetskontrol. Ret kun
+// mærket her; profilvalg, aktivering og rollback-id'er må ikke versionsløftes.
+{
+ const file='js/core/ravscore-profile-switch.js';
+ let text=await fs.readFile(file,'utf8');
+ text=text.replace(
+   /(switchVersion:\s*'RAVSCORE-PROFILE-SWITCH-)\d+\.\d+\.\d+(')/,
+   `$1${version}$2`
+ );
+ await fs.writeFile(file,text);
 }
 
 // Releasebærende dokumenter kan være gledet fra package-versionen. Normalisér deres

@@ -9,7 +9,8 @@
 - [x] Tilføj **Afslut uden at indberette**. Efter bekræftelse ryddes den lokale aktive tur uden observationspost eller upload; **Svar senere** bevarer den.
 - [x] Genbrug det zoneafhængige valg af kyststrækning, gem begge ID'er og afvis ugyldige kombinationer.
 - [x] Lås samme tabel, ingen dubletlagring, brugerens valgte tid, forbuddet mod falsk historisk snapshot, fravalg uden upload, kystdelsfiltrering, privatliv og almindeligt dansk i målrettede kontrakttests.
-- [ ] Versionsluk 4.0.265 og bestå målrettede tests, RDKS-/versionskontrol og PR'ens ene exact-head `validate:source`.
+- [x] Versionsluk 4.0.265 og bestå målrettede tests samt RDKS-/versionskontrol. Første exact-head `32658093582` fandt et efterladt 4.0.264-versionsmærke i profilomskifteren og stoppede før merge; mærket og versionsværktøjet er rettet score-neutralt.
+- [ ] Bestå den nye exact-head `validate:source` efter versionsrettelsen.
 - [ ] Produktionsverificér kontolink og dialog uden at oprette en virkelig brugerpost. En autentificeret indsendelse forbliver en senere bevidst ejerprøve.
 
 ## Aktuel produktleverance – enkelt sprog, komplet tur og privat turlog i 4.0.264

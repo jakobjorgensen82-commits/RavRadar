@@ -1971,6 +1971,7 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - En indlogget bruger kan nu indberette en tur eller et fund direkte fra kontoen uden en forudgående turstart. Brugeren skal selv vælge dato og klokkeslæt for turens start samt turens varighed.
 - Kontoindberetningen genbruger de samme spørgsmål og samme `observations`-tabel. Der er ingen ny tabel, databasekolonne, dubletrække eller særskilt fundkopi.
 - Nutidens vejr må aldrig sættes på en ældre tur. Den offentlige klient kan ikke sikkert genskabe et vilkårligt historisk snapshot, så rapporten gemmes som erfaring med tomme forecast-/snapshotfelter, kvalitetsmarkører og `calibration_eligible=false`.
+- PR #111's første exact-head `32658093582` stoppede sikkert før merge, fordi Candidate G-profilens versionsmærke ikke var fulgt med fra 4.0.264 til 4.0.265. Kun versionsbindingen er rettet, og `scripts/set-version.mjs` opdaterer fremover både det centrale profildokument og kodekontrakten. Profilvalg, aktivering og scoreberegning er uændrede.
 - Den aktive afslutningsdialog har nu **Indsend tur**, **Svar senere** og et bekræftet **Afslut uden at indberette**. Fravalg rydder den aktive lokale tur med nul observations-, outbox- og Supabase-poster.
 - Begge rapportveje bruger samme zone→kyststrækningsvalg. GPS-spor, rute, præcis position, fri tekst og billeder indsamles ikke.
 - Turloggens brugerflade viser ikke længere den interne databaseforklaring “Der oprettes ikke en ekstra kopi i databasen”.
