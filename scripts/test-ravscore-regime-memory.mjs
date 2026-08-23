@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 
 import {
+  buildBoundedCurrentTransportMemory,
   buildCurrentTransportPotential,
   buildBlendedRegimeMemory,
   buildExponentialRegimeMemory,
   CURRENT_TRANSPORT_POTENTIAL_CONTINUATION_POLICY,
+  CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY,
   CURRENT_TRANSPORT_POTENTIAL_PRIOR,
   CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
   deriveCurrentTransportEvidence,
@@ -36,6 +38,8 @@ assert.deepEqual(CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE, {
 });
 assert.equal(CURRENT_TRANSPORT_POTENTIAL_CONTINUATION_POLICY,
   'CARRY_FORWARD_BOUNDED_DERIVED_CURRENT_EVIDENCE');
+assert.equal(CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.maximumGapHours, 3,
+  'bounded memory must accept one native three-hour production step');
 assert.deepEqual(deriveCurrentTransportEvidence({
   time: new Date(Date.UTC(2024, 0, 1)).toISOString(),
   currentSpeedMps: null,
@@ -45,6 +49,40 @@ assert.deepEqual(deriveCurrentTransportEvidence({
   time: new Date(Date.UTC(2024, 0, 1)).toISOString(),
   strength: null,
 }, 'verified provenance without numeric current must remain missing rather than become neutral');
+
+const threeHourlyInboundEvidence = Array.from({ length: 17 }, (_, index) => ({
+  time: new Date(Date.UTC(2024, 0, 1) + (index * 3 * 3_600_000)).toISOString(),
+  strength: 1,
+}));
+const threeHourlyInboundMemory = buildBoundedCurrentTransportMemory(threeHourlyInboundEvidence, {
+  referenceTime: threeHourlyInboundEvidence.at(-1).time,
+});
+assert.equal(threeHourlyInboundMemory.memoryReady, true);
+assert.equal(threeHourlyInboundMemory.coverageHours, 48);
+assert.equal(threeHourlyInboundMemory.maximumObservedGapHours, 3);
+assert.equal(threeHourlyInboundMemory.result.transportPotential, 100);
+
+const firstNativeContinuation = buildBoundedCurrentTransportMemory(
+  threeHourlyInboundEvidence.slice(0, 2),
+  { referenceTime: threeHourlyInboundEvidence[1].time },
+);
+assert.equal(firstNativeContinuation.memoryReady, false);
+assert.equal(firstNativeContinuation.status, 'WINDOW_INCOMPLETE');
+assert.equal(firstNativeContinuation.coverageHours, 3);
+assert.equal(firstNativeContinuation.result.transportPotential, 30,
+  'the first native continuation must integrate its actual three elapsed hours');
+
+const fourHourGapEvidence = Array.from({ length: 49 }, (_, index) => ({
+  time: new Date(Date.UTC(2024, 0, 1) + (index * 3_600_000)).toISOString(),
+  strength: 1,
+})).filter((_, index) => ![24, 25, 26].includes(index));
+const fourHourGapMemory = buildBoundedCurrentTransportMemory(fourHourGapEvidence, {
+  referenceTime: fourHourGapEvidence.at(-1).time,
+});
+assert.equal(fourHourGapMemory.memoryReady, false);
+assert.equal(fourHourGapMemory.status, 'WINDOW_HAS_TIME_GAP');
+assert.equal(fourHourGapMemory.maximumObservedGapHours, 4,
+  'a missed native production step must remain a real fail-closed gap');
 
 const strongOutbound = Array.from({ length: 14 }, (_, hour) => ({
   time: new Date(Date.UTC(2024, 0, 1, hour)).toISOString(),

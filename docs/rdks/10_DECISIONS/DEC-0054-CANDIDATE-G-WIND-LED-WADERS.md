@@ -2,11 +2,11 @@
 
 > **Efterfølgende transportbeslutning:** DEC-0055 erstatter Candidate G's foretrukne transportfortolkning, men bevarer `20/50/30`, denne vindstyrede waders-kurve, bølgefradraget i jagtbarhed og waders-loftet uændret.
 
-**Status:** Aktiv score-neutral forskningsbeslutning; ingen produktionsaktivering
+**Status:** Aktiv modelregel i Candidate G; dette dokuments score-neutrale aktiveringsstatus er erstattet af DEC-0060
 
 **Dato:** 2026-08-22
 
-**Scorepåvirkning:** Ingen offentlig scorepåvirkning
+**Scorepåvirkning:** Ingen ved dette checkpoint; reglen blev senere aktiv via DEC-0060/4.0.261
 
 ## Problem
 

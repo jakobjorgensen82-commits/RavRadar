@@ -1,16 +1,20 @@
 # Kendte åbne og overvågede forhold
 
+## P0 – Candidate G-transport ved tre-timers produktionsevidens
+
+- **ISSUE-CANDIDATE-G-TRANSPORT-CADENCE – RETTET LOKALT / AFVENTER PRODUKTIONSBEVIS:** Live `rr-20260823121818-210` havde transport 0 i 673/673 dele, fordi tre timers native bevisafstand blev afvist af én-times-gaten. DEC-0061/4.0.262 accepterer højst tre timer, bruger faktisk forløbstid uden kunstige mellemtimer og bevarer fail-closed ved større eller manglende gab. Målrettede tests og dataminimeret replay er grønne; exact-head, frisk produktion, aktiv shadow og browserkontrol mangler.
+
 ## 4.0.261 Candidate G-aktivering under pre-public opvarmning
 
-- **ISSUE-CANDIDATE-G-PREPUBLIC-WARMUP – EJERACCEPTERET / PRODUKTIONSBEVIS AFVENTER:** Candidate G aktiveres, før schema-2-vinduet har 48 timers naturlig historik, fordi siden endnu ikke er offentlig. Scoreværdierne kan derfor være foreløbige under opbygningen. Runtime skal vise `candidate-active-pre-public-warmup`, faktisk memory-status og coverage; perioden må ikke kaldes et komplet 48-timersbevis. Se DEC-0060.
+- **ISSUE-CANDIDATE-G-PREPUBLIC-WARMUP – RETTET LOKALT / AFVENTER PRODUKTIONSBEVIS:** Candidate G må fortsat være aktiv før 48 timers moden historik, fordi siden endnu ikke er offentlig, men kun når vinduet er kort og sammenhængende (`WINDOW_INCOMPLETE`). Latest-missing, missing-evidence og time-gap vælger nu legacy globalt. Se DEC-0060/0061.
 - **ISSUE-CANDIDATE-G-ACTIVE-PROJECTION – PRODUKTIONSVERIFICERET LØST:** Den globale 4.0.261-profil kræver fortsat beregnelige Candidate G-resultater for alle nødvendige rækker og begge jagtformer. Én manglende projektion vælger legacy for hele datasættet. PR #97/exact-head `32636378576`, merge `0f7a9d5f`, produktion `32636433944`, auditrettelse PR #98/merge `fd69f8a0`, frisk produktion `32637387600`, grøn shadow `32637833674` og fuld livebrowserkontrol beviser aktiv 210/673-projektion uden score- eller visningsafvigelser.
 - **ISSUE-CANDIDATE-G-CENTRAL-SELECTION – PRODUKTIONSVERIFICERET LØST:** `ravscore-profile-selection` er privat centralt admin-dokument med sikker engangspromotion af en nyere ejerbeslutning og efterfølgende central autoritet. Produktion `32636433944` skrev og genlæste Candidate G-konfigurationen identisk; samme eller nyere central konfiguration kan gennemføre global rollback.
-- **ISSUE-CANDIDATE-G-SHADOW-NOT-READY-STATUS – LØST:** Shadow `32637022498` bestod scoreidentiteter, rekonstruktion og dataminimering, men afviste 8 legitime `WINDOW_HAS_MISSING_EVIDENCE`-tilstande. PR #98 accepterer nu alle fire lovlige ikke-ready-statusser kun ved `memoryReady=false` og kræver fortsat `READY` ved moden memory. Exact-head `32637339636`, merge `fd69f8a0`, produktion `32637387600` og shadow `32637833674` er grønne.
+- **ISSUE-CANDIDATE-G-SHADOW-NOT-READY-STATUS – TIDLIGERE AUDITLEMPELSE ERSTATTET:** PR #98 accepterede alle fire ikke-ready-statusser under pre-public warmup. Live cadencefundet viste, at dette kunne skjule et permanent gap. DEC-0061 tillader derfor kun `WINDOW_INCOMPLETE`; de tre fejlstatusser udløser global rollback, og shadowen genafspiller desuden den kompakte state. Produktionsbevis afventer 4.0.262.
 
 ## 4.0.260 versionsbundet RavScore-profilomskifter
 
 - **ISSUE-CANDIDATE-G-PROFILE-SWITCH – LØST OG PRODUKTIONSVERIFICERET SCORE-NEUTRALT:** DEC-0058 vælger fortsat `RRS-CURRENT-B0-4.0.247` som ønsket, aktiv og rollbackprofil. PR #92/exact-head `32628441062`, merge `c5898ce8`, produktion `32628516066`, live `rr-20260823083627-210`, dataminimeret 210/673/1.346-shadow og fuld browseraudit er grønne. Candidate G kan fortsat kun vælges samlet efter komplet dækning, frisk aktiveringsshadow og særskilt ejerbeslutning; manglende eller ukendt konfiguration falder fail-closed tilbage globalt.
-- **ISSUE-CANDIDATE-G-ACTIVATION-CONFIG-ROUNDTRIP – LØST LOKALT I 4.0.261 / PRODUKTIONSREADBACK AFVENTER:** Den versionsbundne aktivering ligger i `ravscore-profile-selection`, hydreres centralt og skrives tilbage med identitetskontrol. Legacydefault er fortsat fail-closed ved manglende eller ugyldigt dokument. Først en grøn produktionsreadback lukker den eksterne gate.
+- **ISSUE-CANDIDATE-G-ACTIVATION-CONFIG-ROUNDTRIP – PRODUKTIONSVERIFICERET LØST:** Den versionsbundne aktivering ligger i `ravscore-profile-selection`, hydreres centralt og skrives tilbage med identitetskontrol. Produktion `32636433944` gennemførte identisk central readback; legacydefault er fortsat fail-closed ved manglende eller ugyldigt dokument.
 
 ## Docs-only produktionsskip
 
@@ -22,13 +26,13 @@
 - **ISSUE-CANDIDATE-G-CURRENT-NORMAL-THRESHOLD – TEKNISK ANBEFALING VALGT / EMPIRISK USIKKERHED BEVARET:** 0,03→0,15 m/s er valgt som anbefalet privat produktprior, fordi 0,15 allerede er RavRadars aktive betydning af velegnet strøm, 0,05→0,20 aldrig når fuld styrke i replayet, og 0,02→0,12 ændrer væsentligt flere scorebånd. Profilen er ikke fundkalibreret og må ikke fremstilles som naturgrænse.
 - **ISSUE-CANDIDATE-G-TRANSPORT-INITIAL-STATE-AND-DECAY – LØST OG PRODUKTIONSVERIFICERET:** Den ubundne videreførelse og anbefalingen om neutral startprior 50 er erstattet af et fast 48-timers vindue af sammenhængende, afledt kystnormal strømevidens. Persistéret transportoutput bruges ikke som ny start. Missing og tidsgab holder `transportMemoryReady=false`. Syntetiske tests og 582 komplette historiske vinduer giver nul mismatch mellem tænkte starter 0/50/100. Exact-head `32633533257`, PR #95/merge `1d848724`, produktion `32633607166` og live `rr-20260823102619-210` verificerede den score-neutrale 4.0.260-indførelse; DEC-0060 erstatter kun den daværende legacy-aktiveringsstatus og tillader Candidate G under ærligt mærket pre-public opvarmning.
 - **ISSUE-CANDIDATE-G-FRESH-SCORE-DISTRIBUTION – GAMMEL FORDELING FORKLARET / PRE-PUBLIC AKTIVERING EJERACCEPTERET:** Den tidligere shadow lå 16,582/22,379 point under aktiv waders/strand og havde 493/673 transporttilstande på 0 uden udtransportgate, fordi maskinstarten hang ved; den fordeling er ikke et modenhedsbevis. DEC-0060 tillader alligevel den nye afgrænsede model som gældende under den ikke-offentlige opvarmning. En frisk aktiv shadow skal bevise eksakt projektion nu, mens senere komplet memory beskriver den indrettede fordeling.
-- **ISSUE-CANDIDATE-G-PUBLIC-ACTIVATION – EJER-GODKENDT PRE-PUBLIC I DEC-0060 / PRODUKTIONSVERIFIKATION AFVENTER:** Ejeren har valgt `RESEARCH-3` som gældende scoremotor nu og accepteret de foreløbige værdier under den første ikke-offentlige opvarmning. 4.0.261 implementerer global Candidate G-projektion, central konfiguration og eksakt legacyrollback. Exact-head, frisk fuld produktion, central readback, aktiv 210/673-shadow og browserkontrol udestår; repræsentative ture bevares som senere modelusikkerhed og efterkalibrering.
+- **ISSUE-CANDIDATE-G-PUBLIC-ACTIVATION – PRODUKTIONSVERIFICERET LØST:** Ejeren har valgt `RESEARCH-3` som gældende scoremotor og accepteret de foreløbige værdier under den første ikke-offentlige opvarmning. 4.0.261's globale Candidate G-projektion, centrale konfiguration og eksakte legacyrollback er bevist af exact-head `32636378576`, produktion `32636433944`, central readback, aktiv shadow `32637833674` og fuld browserkontrol. Repræsentative ture bevares som senere modelusikkerhed og efterkalibrering.
 
 ## Candidate G bølgeenergistyret mobilisering
 
 - **ISSUE-CANDIDATE-G-MOBILISATION-DOUBLE-COUNTING – LØST SCORE-NEUTRALT:** `RESEARCH-3` erstatter de overlappende additive mobiliseringspoint fra bølger, vind, strøm og varighed med én kausal bølgeenergitilstand. Direkte vind og strøm giver nul mobiliseringspoint; stedegnethed indgår ikke. Den offentlige score er uændret.
 - **ISSUE-CANDIDATE-G-MOBILISATION-HALF-LIVES – TEKNISK ANBEFALING VALGT / EMPIRISK USIKKERHED BEVARET:** Fire timers opbygning og 48 timers aftrapning er den anbefalede private profil. Syntetiske randtilfælde og 1.460-evalueringsreplayet er monotone og robuste, men profilen er ikke fundkalibreret. 24/72 timer bevares som følsomhedsgrænser.
-- **ISSUE-CANDIDATE-G-MOBILISATION-PIPELINE-STATE – PRODUKTIONS- OG NATURLIG FORTSÆTTELSE BEVIST:** Den kompakte afledte mobiliseringstilstand fortsætter eksakt centralt sammen med transporttilstanden. Missing og same-time holder; ændret kontekst nulstiller. 4.0.259 er produktionsverificeret, og den naturlige runtime dokumenterer 6/6 timer på alle 673 dele uden nulstilling. En fremtidig aktivering kræver fortsat frisk slutshadow på aktiveringskoden.
+- **ISSUE-CANDIDATE-G-MOBILISATION-PIPELINE-STATE – PRODUKTIONS- OG NATURLIG FORTSÆTTELSE BEVIST:** Den kompakte afledte mobiliseringstilstand fortsætter eksakt centralt sammen med transporttilstanden. Missing og same-time holder; ændret kontekst nulstiller. 4.0.259 beviste fortsættelsen, og 4.0.261's friske aktive shadow `32637833674` lukkede aktiveringskontrollen.
 
 ## 4.0.257 Candidate G national scoreinputcoverage
 
@@ -474,7 +478,7 @@ Den nye appkode må ikke merges, før migrationen 20260821_trip_evidence_contrac
 - 4.0.246 løser timen inden for højst tre timer og binder efterfølgende DMI/Copernicus/live/score til samme time.
 - PR #36 blev merged som c2e0d024. Produktion 32467031990 bestod 673/673, fuld validering, releasegate, Supabase og Pages; live viser version 4.0.246 og den løste 09:00-reference.
 
-## ISSUE-CANDIDATE-G-WADERS-MEANING - FORSKNINGSKONTRAKT BESLUTTET / PRODUKTION ÅBEN
+## Historik – ISSUE-CANDIDATE-G-WADERS-MEANING før DEC-0054–0060
 
 - Den kanoniske Candidate G-matrix kan give cirka 79 point samtidig med waders-jagtbarhed 0, fordi den fysiske gate efter DEC-0050 ikke indeholder jagtbarhed.
 - Replayet har 219 waders-evalueringer under 35 i jagtbarhed; på den foretrukne no-direct-wind-variant har 7 samtidig mindst 55 point. Den tidligere bredere G-optælling på 10 brugte ikke præcis samme variant.
@@ -484,7 +488,7 @@ Den nye appkode må ikke merges, før migrationen 20260821_trip_evidence_contrac
 - Den tidligere separate-metodestatus-anbefaling er erstattet som forskningscentrum. En tydelig produktforklaring er fortsat nødvendig, men må ikke skjule eller omgå den besluttede scorekobling.
 - Det score-neutrale model-, vægt- og forklaringsgrundlag er nu samlet. Offentlig aktivering er fortsat blokeret af utilstrækkelig lokal coverage og ejerens endelige go/no-go. Produktionsbeviset er ikke et aktiveringsbevis for den nye variant.
 
-## ISSUE-CANDIDATE-G-FRESH-NATIONAL-SHADOW - KØRSELSGATE LUKKET, COVERAGEGATE ÅBEN
+## Historik – ISSUE-CANDIDATE-G-FRESH-NATIONAL-SHADOW før fallback-kompatibel 210/673-shadow
 
 - Centralt hydreret exact-head-run `32554012542` kontrollerede 673 aktive dele i 210 zoner og gennemførte G 24 timer, 50/50, 48 timer og 50/50 uden direkte vind uden offentlig ændring.
 - 243 dele blev scoret i begge jagtformer; 430 var eksplicit u-scorede, nul var blokerede, og retention-featurecoverage var nul.
@@ -493,7 +497,7 @@ Den nye appkode må ikke merges, før migrationen 20260821_trip_evidence_contrac
 - Kørselsgaten er dermed lukket. Coverage-, ekstrem-, forklarings- og ejer-gaten er fortsat åbne; ingen aktivering må ske på dette grundlag alene.
 - Den nye fail-closed coverageklassifikation bestod PR #62's exact-head-gate og den fulde 4.0.253-produktion. Den klassificerer manglen; den fylder ikke 430 u-scorede dele kunstigt ud.
 
-## ISSUE-CANDIDATE-G-ARROW-HISTORY-EXPLANATION - FORSKNINGSKONTRAKT LUKKET / OFFENTLIG KOBLING ÅBEN
+## Historik – ISSUE-CANDIDATE-G-ARROW-HISTORY-EXPLANATION før 4.0.261-koblingen
 
 - 4.0.253 rekonstruerer komponenter, vægtede bidrag, fysisk gate og slutscore uden afvigelser i 1.460/1.460 evalueringer.
 - Blandt 872 tydeligt retningsbestemte contexts var aktuel retning og historik modrettet i 332; i 100 flyttede historikken den afrundede score.
@@ -501,7 +505,7 @@ Den nye appkode må ikke merges, før migrationen 20260821_trip_evidence_contrac
 - Den score-neutrale kontrakt er lukket. Endelig offentlig UI-/forklaringskobling kræver ejerbeslutning og efterfølgende browservalidering.
 - Kontrakten er merged og produktionsverificeret i 4.0.253 (`01904b92`/`32570223437`) uden offentlig UI-kobling.
 
-## ISSUE-CANDIDATE-G-WEIGHT-CALIBRATION - FORSKNINGSPRior FASTHOLDT / EMPIRISK GATE ÅBEN
+## Historik – ISSUE-CANDIDATE-G-WEIGHT-CALIBRATION før ejerens 20/50/30-beslutning
 
 - Den godkendte waders-variant er genafspillet med `15/50/35`, `20/45/35` og `25/40/35` på 1.460 evalueringer.
 - Yderpunkterne adskiller sig 4,947 point i gennemsnit og 282 referencebånd. `20/45/35` ligger praktisk midt mellem dem og bevares som Candidate G's analysecentrum.

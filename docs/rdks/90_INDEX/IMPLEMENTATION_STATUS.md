@@ -1,4 +1,16 @@
-# Implementeringsstatus – Candidate G-aktivering i 4.0.261
+# Implementeringsstatus – Candidate G native cadence-rettelse i 4.0.262
+
+## P0-regression efter aktiveringslukningen
+
+- [x] Konstatér read-only i live `rr-20260823121818-210`, at transportpotentiale og transportkomponent er 0 i 673/673 dele.
+- [x] Afgræns årsagen: 658 dele har to beviser med tre timers afstand, mens `maximumGapHours=1`; suffixet bliver én prøve, og første prøves forløbstid er 0.
+- [x] Fastslå, at `candidateCoverageReady=true` ikke opdager denne semantiske nultransport, og at memory ikke kan blive klar ved uændret cadence.
+- [x] Vælg DEC-0061's native cadence-rettelse frem for rollback: maksimum tre timer, faktisk tidsintegration og ingen kunstige mellemtimer.
+- [x] Begræns pre-public warmup til `WINDOW_INCOMPLETE`; afvis latest-missing, missing-evidence og time-gap globalt.
+- [x] Tilføj `candidateWarmupEligible` og state-replayidentitet i den dataminimerede public shadow.
+- [x] Bestå målrettede cadence-, state-, profil- og shadow-self-tests samt gammel-live-state-replay.
+- [x] Bestå samlet lokal source-/RDKS-/releasekontrol og diffkontrol.
+- [ ] Bestå exact-head, fuld frisk produktion, dataminimeret aktiv 210/673-shadow og browserkontrol. Grøn kontraktidentitet alene er ikke nok.
 
 ## Ejer-godkendt pre-public opvarmningsaktivering
 
@@ -16,6 +28,8 @@
 - [x] Kør aktiv dataminimeret shadow `32637833674` og fuld browserkontrol af live `rr-20260823114744-210`: 210/673, 420 aktuelle og 2.100 femdøgnsvisninger uden fejl.
 - [x] Ret shadowens for snævre ikke-ready-statuskontrakt efter run `32637022498`; exact-head `32637339636`, PR #98/merge `fd69f8a0`, produktion `32637387600` og ny shadow `32637833674` er grønne. Runtime og score blev ikke ændret.
 
+Den oprindelige aktiveringsleverance blev lukket af PR #97–99, men den efterfølgende P0-cadenceregression ovenfor genåbner scorevalideringen. Alle senere afsnit i denne fil er versionsbundet revisionshistorik. Uafkrydsede ældre punkter om den oprindelige aktiveringsrækkefølge er fortsat erstattet af DEC-0060; de erstatter ikke den nye P0.
+
 # Tidligere checkpoint – Candidate G bounded transport-memory efter 4.0.260
 
 ## Afgrænset 48-timers transporthukommelse – offentlig score uændret
@@ -32,7 +46,7 @@
 - [x] Bestå samlet lokal `scripts/validate-source.ps1`, inklusive RDKS-validering, målrettede Candidate G-kontrakter og releasegate.
 - [x] Bestå exact-head `32633533257` på `56824ab0`, merge PR #95 som `1d848724` og fuld post-merge-produktion `32633607166` med legacy aktiv og ny state fail-closed under opbygning.
 - [x] Verificér live `rr-20260823102619-210`: manifestintegritet, 210 zoner, 673 dele, schema 2 på 673/673, ét første timebevis, 0/673 ready, 0 aktiverede Candidate G-dele og 0 raw-input-læk i state.
-- [ ] Først ved senere ejerreview: kræv frisk 673/673 `transportMemoryReady`-slutshadow på den eksakte aktiveringskode. Det er ikke en ny 48-timers realtidsudviklingstest, men en aktiveringskontrol af naturligt produceret state.
+- [x] Erstattet af DEC-0060 for den første pre-public kobling. Aktiv 210/673-shadow `32637833674` er grøn; komplet naturlig memory følges kun som driftsevidens og er ikke en ny aktiveringsgate.
 
 ## Historisk 4.0.260-checkpoint – versionsbundet profilvalg og offentlig 25/40/35 uændret
 
@@ -50,7 +64,7 @@
 - [x] Dokumentér den nye beslutningsevidens: Candidate G-gennemsnit 19,187/21,276 mod aktiv 35,770/43,655 for waders/strand og 1.127 scorebåndsskift; den unge tilstand har gennemsnitlig transport 4,242 og mobilisering 13,747.
 - [x] Efterprøv bootstrap mod eksisterende offentlig historik uden nye kildedata: 42.551 poster, 633/673 dele og 65–117 timer ændrer ikke start-0-medianen fra 0; kun 6/633 dele bliver uafhængige af startprioren.
 - [x] Afgør startreserven med ejeren: neutral prior 50 forkastes som ny vilkårlig maskinstart og erstattes af DEC-0059's afgrænsede evidensvindue. Faktisk 13-timers udtransport er fortsat den eneste vej til dokumenteret udtømt transport og totalscore 0.
-- [x] Erstattet af DEC-0060: ejeren har godkendt pre-public aktivering i 4.0.261; central roundtrip er implementeret lokalt, mens exact-head, produktion, aktiv shadow og browserbevis udestår.
+- [x] Erstattet og afsluttet af DEC-0060 samt PR #97–99: central roundtrip, exact-head, produktion, aktiv shadow og browserbevis er grønne.
 
 ## Central tilstand og fallback-kompatibel shadow – score-neutral
 
@@ -68,7 +82,7 @@
 - [x] Kør den nye manuelle 210/673-shadow som read-only run `32610281620` på den producerede 4.0.259-runtime: 210 zoner, 673 dele, 1.346 modeevalueringer og nul rekonstruktionsfejl. Alle 673 tilstande er korrekt bootstrap og ikke modnet.
 - [x] Dokumentér første naturlige state-fortsættelse i schedule `32613284735`: live `rr-20260823023951-210` accepterer 673/673 tidligere tilstande, nulstiller 0 og består 210/673/1.346 med nul rekonstruktionsfejl. Dokumenteret yngste/ældste fortsættelsesalder er 3/3 timer.
 - [x] Fortsæt nattens read-only observation til 6/6 timers dokumenteret naturlig state-alder. Ejeren accepterer dette som praktisk evidens; det er ikke en modnet 48-timersfordeling.
-- [x] Forbered den særskilte, score-neutrale omskifter og brugerforklaring efter DEC-0058. Offentlig aktivering er stadig lukket.
+- [x] Forbered den særskilte, score-neutrale omskifter og brugerforklaring efter DEC-0058. Den historiske lukkede aktiveringsstatus er erstattet af DEC-0060 og produktionsverificeret i 4.0.261.
 
 ## Candidate G mobiliserings-/helhedsreview – score-neutralt
 
@@ -98,7 +112,7 @@
 - [x] Udpeg `0,03→0,15 m/s` uden passivt neutralt tab som anbefalet privat produktprior efter nyt `RESEARCH-2`-replay; det ændrer 213/1.460 scorebånd mod 377 for 0,02→0,12.
 - [x] Implementér en score-neutral kompakt fortsættelsestilstand og bevis, at en opdelt pipelinekørsel reproducerer ubrudt potentiale, udtransporttimer og nul-gate eksakt.
 - [x] Kobl den afledte tilstand gennem den centrale produktionspipeline og fallback-kompatible nationale shadow med score-neutral rollback i 4.0.259-kandidaten.
-- [ ] Luk resterende coverage-, tærskel-, starttilstands-, validerings-, admin-/rollback- og ejer-go/no-go-gates før enhver offentlig aktivering.
+- [x] Luk coverage-, tærskel-, starttilstands-, validerings-, admin-/rollback- og ejer-go/no-go-gates gennem DEC-0055–0060 og PR #97–99.
 
 ## Docs-only skip – rod-CHANGELOG
 
@@ -124,7 +138,7 @@
 - [x] Bestå exact-head-kildegate `32599255165` på `ed1f0297`, merge PR #77 som `75ed93d6` og produktionsverificér i `32599309735` med live `rr-20260822212612-210`/210/673.
 - [x] Afgræns det praktiske produktvalg uden at kalde det fundkalibrering: anbefal 0,03→0,15, videreført afledt tilstand og intet passivt neutralt tab; behold gammel start-0/0,05→0,20 og 24/48 som reference-/følsomhedsspor.
 - [ ] Efterprøv senere den anbefalede prior mod komplette ture/hold-out, når materialet findes; manglende turdata må fremgå som modelusikkerhed.
-- [ ] Offentlig aktivering kræver et senere særskilt ejer-go/no-go og fulde produktgates.
+- [x] Det særskilte ejer-go/no-go og de fulde produktgates er gennemført i DEC-0060 og PR #97–99. Komplette ture/hold-out forbliver senere efterkalibrering.
 
 Nedenstående 4.0.258-afsnit gælder fortsat for jagtbarhed. DEC-0055 erstatter kun den foretrukne transportfortolkning.
 
@@ -138,7 +152,7 @@ Nedenstående 4.0.258-afsnit gælder fortsat for jagtbarhed. DEC-0055 erstatter 
 - [x] Dokumentér DEC-0054, ejerreview, håndbøger, RDKS og changelog uden private payloads.
 - [x] Kør fuld lokal kildegate/releasegate på den samlede kandidat; alle kildechecks og den efterfølgende releasegate er grønne.
 - [x] Exact-head PR-kildegate `32586707063` bestod, PR #73 blev merged som `9bdb8de8`, og produktion `32586958989` bestod frisk vejr/proveniens, fuld validering, releasegate, coverageaudit, Supabase og Pages.
-- [ ] Offentlig aktivering forbliver et senere særskilt ejer-go/no-go efter turkalibrering, komplet scoreinputcoverage og produktkontrol.
+- [x] Den senere ejerbeslutning blev truffet i DEC-0060, og den fallback-kompatible 210/673-produktkontrol er grøn. Turkalibrering er fortsat senere efterkalibrering.
 
 Nedenstående 4.0.257-afsnit er historisk revisionsspor og er erstattet af DEC-0054, hvor de omtaler foretrukken variant, `20/45/35`, 18 m/s-stop eller selvstændig bølgevægt.
 
@@ -152,7 +166,7 @@ Nedenstående 4.0.257-afsnit er historisk revisionsspor og er erstattet af DEC-0
 - [x] Bevar `20/45/35` som analysecentrum og offentlig `25/40/35` som aktiv model. Endelig produktionsvægt afventer komplette ture og hold-out.
 - [x] Dokumentér beslutningsgrundlaget i DEC-0053 og den korte ejerreviewrapport.
 - [x] Før beslutningspakken gennem PR #71, exact-head-kildegate `32583123375` og merge `52f66808`.
-- [ ] Gennemfør ejerens samlede faglige review før enhver særskilt score-/UI-implementering.
+- [x] Ejerens samlede faglige review og særskilte aktiveringsbeslutning er gennemført i DEC-0054–0060.
 
 ## 4.0.257-kandidat – dynamisk inputcoverage adskilt fra udeladt stedmodel
 
@@ -165,7 +179,7 @@ Nedenstående 4.0.257-afsnit er historisk revisionsspor og er erstattet af DEC-0
 - [x] Kør målrettede nationale shadow-, fase-D- og Candidate G-tests.
 - [x] Kør fuld lokal `scripts/validate-source.ps1` og releasegate for 4.0.257.
 - [x] Kør exact-head PR-gate, merge-/produktionskontrol og en ny central shadow på den præcise mergecommit.
-- [ ] En eventuel senere offentlig aktivering kræver en særskilt landsdækkende inputkontrakt; dette er ikke en del af den afsluttede mekaniske test.
+- [x] Den særskilte fallback-kompatible landskontrakt blev etableret i DEC-0057 og produktionsverificeret 210/673 ved 4.0.261-aktiveringen.
 
 ## 4.0.256 – score-neutralt beslutningsgrundlag, afsluttet
 
@@ -178,7 +192,7 @@ Nedenstående 4.0.257-afsnit er historisk revisionsspor og er erstattet af DEC-0
 - [x] Kør målrettede tests samt fuld lokal `validate:source` og releasegate for 4.0.256.
 - [x] PR #69 exact-head-gate `32577977245`, merge `d629177a` og fuld produktion `32578049137`.
 - [x] Genkør den centralt hydrerede nationale Candidate G-shadow `32578554928` på den eksakte mergecommit: 243/673 scorede, 430 uden komplet lokal DKSS-familie.
-- [ ] Indhent ejerens samlede go/no-go før enhver offentlig score- eller UI-aktivering.
+- [x] Ejerens samlede go/no-go er registreret i DEC-0060 og produktionsverificeret i 4.0.261.
 
 ## Afsluttet dokumentationscheckpoint efter 4.0.255
 
@@ -1832,7 +1846,7 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [x] Målrettet 210/673-regression er tilføjet til den normale valideringskæde.
 - [x] PR #52 exact-head-gate, merge `ad70fbca`, exact-commit-produktion `32515757957` og fuld online 210/673-browserkontrol er grønne.
 
-## RavScore kandidat G - analyse implementeret, model ikke aktiveret
+## Historik – RavScore Candidate G før aktivering
 
 - [x] Parret historisk retningskontrol isolerer retning fra forskelle i tidspunkt og styrke.
 - [x] Retningsresultatet er opdelt efter lav, mellem og hoej fysisk bevaegelseskapacitet samt jagtform.
@@ -1842,9 +1856,9 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [x] Koer separate stroem-, boelge- og vindablationer samt svage/kraftige vendinger.
 - [x] Gentag historisk replay og national scenariematrix med kandidat G.
 - [x] Udvid national shadow-validator med G-varianterne og central slutregelkaede; centralt hydreret exact-head-run `32554012542` er grønt og score-neutralt.
-- [ ] Kontrollér pile, score, komponenter, forklaring, jagtbarhed og vadesikkerhed samlet før mulig aktivering.
-- [ ] Fremlaeg den endelige vaegtbegrundelse grundigt og forstaaeligt for ejeren foer go/no-go.
-- Aktiv offentlig score, UI, geometri og alle land-/vandpunkter er uændrede. Bindende metode: DEC-0050.
+- [x] Pile, score, komponenter, forklaring og jagtbarhed er samlet kontrolleret; sikkerhed er bevidst uden for modellen. Slutkontrollen er produktionsverificeret i PR #97–99.
+- [x] Den endelige vægtbegrundelse blev gennemgået med ejeren; `20/50/30` blev besluttet i DEC-0054 og aktiveret i DEC-0060.
+- Historisk status ved dette checkpoint: offentlig score, UI, geometri og alle land-/vandpunkter var uændrede. Den efterfølgende aktivering er dokumenteret øverst.
 
 ## Kandidat G historikhukommelse - checkpoint 2026-08-21
 
@@ -1889,12 +1903,12 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [x] Versionsbundet offentlig ekspertregelkaede er afspillet; nul aktive regler giver nul slutscoreændring.
 - [x] Centralt hydreret national shadow `32554012542` på exact head: 673 dele/210 zoner, 243 scorede dele, 430 eksplicit u-scorede, nul blokerede og nul offentlige ændringer.
 - [x] National G 50/50 minus aktiv: -5,50 point for strand og -3,74 for waders i gennemsnit; 24/48 og no-direct-wind er fortsat praktisk identiske.
-- [ ] Kun ved senere offentlig aktivering: luk den landsdækkende scoreinputgate. Den aktuelle mekaniske analyse bruger de 243 komplette dele uden ekstra rådata; statiske lokale retentionfeatures er ikke Candidate G-input.
+- [x] Den senere landsdækkende scoreinputgate blev erstattet af den fallback-kompatible 210/673-kontrakt i DEC-0057 og lukket ved 4.0.261-aktiveringen uden ekstra rådata eller statiske retentionfeatures.
 - [x] Afgør waders-produktbetydningen: strand uden loft; waders højst jagtbarheden; vinddel fuld til 6 m/s; ingen sikkerheds- eller automatisk stedegnethedsmodel.
 - [x] Aktuelle centrale regler er hydreret og kontrolleret: nul aktive regler og nul matchede contexts.
 - [x] Definér og kontrollér kandidatens pile, komponenter og forklaring samlet score-neutralt; offentlig UI er bevidst uændret.
-- [ ] Ejer-go/no-go efter gennemgang. Foreløbig faglig anbefaling er ingen aktivering og videre shadow med 50/50 uden direkte vind.
-- Offentlig 25/40/35, DMI-first, UI, geometri og land-/vandpunkter er uændrede.
+- [x] Ejer-go/no-go er gennemført; den foreløbige anbefaling blev erstattet af DEC-0054–0060 og aktiv `20/50/30`.
+- Historisk status ved dette checkpoint: offentlig 25/40/35, DMI-first, UI, geometri og land-/vandpunkter var uændrede.
 
 ## Reparationsstatus efter PR #59 - central regelhydrering i read-only shadow
 
@@ -1906,4 +1920,4 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [x] Shadowworkflowtesten er føjet til `test:workflow-action-contracts` og dermed `validate:source`.
 - [x] PR #60 exact-head-gate `32566573875` på `a13e5387`, merge `41e01e2d` og exact-commit-produktion `32566631701` er grønne.
 - [x] GitHub Pages deployment `6035679906` er `success`; live 4.0.252/datasæt `rr-20260822100745-210` har 210 zoner og 673 kystdele med matchende startpakkehash.
-- Candidate G forbliver diagnostic-only; aktiv 25/40/35, beskyttede data, geometri og land-/vandpunkter er uændrede.
+- Historisk status ved dette checkpoint: Candidate G var diagnostic-only, og 25/40/35 var aktiv. DEC-0060/4.0.261 erstatter kun aktiveringsstatussen; beskyttede data, geometri og land-/vandpunkter er fortsat uændrede.

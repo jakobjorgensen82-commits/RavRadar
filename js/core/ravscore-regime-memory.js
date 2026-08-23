@@ -41,7 +41,12 @@ export const CURRENT_TRANSPORT_POTENTIAL_CONTINUATION_POLICY =
 
 export const CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY = Object.freeze({
   windowHours: 48,
-  maximumGapHours: 1,
+  // Production advances the common verified coastal-current reference on the
+  // native three-hour marine cadence. The replay already integrates by the
+  // actual elapsed time, so accepting up to one native step preserves the
+  // +10/-8 effective-hour physics without inventing intermediate samples.
+  // A missed native step (>3 h) remains a real gap and fails closed.
+  maximumGapHours: 3,
   boundaryPotential: 0,
   evidenceSemantics: 'DERIVED_COAST_NORMAL_STRENGTH_ONLY',
 });

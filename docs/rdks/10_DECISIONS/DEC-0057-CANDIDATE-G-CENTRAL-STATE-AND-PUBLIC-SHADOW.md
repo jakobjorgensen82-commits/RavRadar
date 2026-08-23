@@ -1,10 +1,10 @@
 # DEC-0057: Central Candidate G-tilstand og fallback-kompatibel offentlig shadow
 
-**Status:** Aktiv score-neutral produktionsbeslutning for 4.0.259
+**Status:** Aktiv state-/shadowkontrakt; 4.0.259's score-neutrale aktiveringsstatus er erstattet af DEC-0060
 
 **Dato:** 2026-08-23
 
-**Scorepåvirkning:** Ingen ændring af den aktive offentlige RavScore
+**Scorepåvirkning:** Ingen i 4.0.259; kontrakten blev senere aktiv via DEC-0060/4.0.261
 
 ## Problem
 

@@ -1,10 +1,12 @@
 # RavRadar Håndbog
 
-## Candidate G er den gældende scoremotor under pre-public opvarmning – 4.0.261
+## Candidate G følger produktionens native strømrytme – 4.0.262
+
+4.0.262 retter den fejl, som i den første aktive runtime holdt transporten på 0 overalt. Candidate G accepterer nu produktionens dokumenterede strømbeviser med op til tre timers afstand og regner med den faktiske tid mellem dem. Den opfinder ikke kunstige mellemtimer. Mere end tre timers afstand eller manglende strøm er fortsat et ægte datagab og giver global tilbagevenden til den gamle scoremodel.
 
 RavRadar bruger nu Candidate G med `20 % jagtbarhed`, `50 % transport` og `30 % mobilisering` som én samlet scoreprofil for hele Danmark. Ejeren har valgt den aktiveret nu, fordi siden endnu ikke er offentlig, og har accepteret, at de første scoreværdier bygger på et transportvindue med mindre end 48 timers naturlig historik.
 
-Opvarmningen vises ærligt som `candidate-active-pre-public-warmup`. RavRadar opfinder ikke de manglende timer og kalder ikke perioden et 48-timersbevis. Efterhånden som nye dokumenterede timer kommer ind, beskæres det rullende vindue automatisk; når det er komplet, afhænger transporten kun af de seneste 48 timer. Der skal ikke installeres eller aktiveres endnu en model på det tidspunkt.
+Opvarmningen vises som `candidate-active-pre-public-warmup`, når vinduet er kort, men sammenhængende. Kun `WINDOW_INCOMPLETE` er lovlig opvarmning. Manglende seneste bevis, missing inde i vinduet eller et hul over tre timer skifter hele Danmark til rollbackprofilen; RavRadar skjuler ikke et datagab som opvarmning.
 
 Den aktive Candidate G bevarer de aftalte regler: strømmen styrer transporten, bølgeenergi styrer mobiliseringen, og vinden er hovedsignal for waders-jagtbarhed. Strandjagt har intet wadersloft. Faktisk kraftig udtransport med udtømt transportpotentiale giver samlet score 0 med den aftalte forklaring.
 
@@ -12,7 +14,7 @@ Valget er fortsat globalt og fail-closed. Hvis blot én nødvendig Candidate G-s
 
 Profilvalget gemmes centralt og følger startpakke, detaljepakke og manifest. Ingen private rå strømvektorer, koordinater eller replaypayloads offentliggøres. Bund, dybde, render, revler, adgang, stedegnethed og sikkerhedsadvarsler indgår fortsat ikke, og aktiveringen flytter ingen geometri eller land-/vandpunkter.
 
-De følgende 4.0.259–4.0.260-afsnit beskriver den historiske, score-neutrale forberedelse. Deres udsagn om, at Candidate G endnu ikke var aktiv, er erstattet af DEC-0060 og dette 4.0.261-afsnit.
+De følgende Candidate G-afsnit beskriver den historiske, score-neutrale forberedelse. Deres udsagn om, at Candidate G endnu ikke var aktiv eller at 25/40/35 var gældende, er versionshistorik. Den aktuelle kontrakt er DEC-0060-aktiveringen med DEC-0061's native cadence- og warmup-gate. Ved dette lokale checkpoint afventer den fuld exact-head-, produktions-, shadow- og browserverifikation.
 
 ## Candidate G glemmer maskinens startværdi efter et fast vindue
 
@@ -20,9 +22,9 @@ Candidate G beregner nu transport ud fra et fast, rullende vindue med de seneste
 
 Når vinduet er komplet, afhænger transporten derfor kun af de seneste 48 timers dokumenterede forhold. En gammel startværdi fra den computer eller produktionskørsel, som først begyndte at opsamle tilstanden, kan ikke længere påvirke resultatet. Den aftalte fysik er uændret: fuld pålandsstrøm bygger 10 point pr. effektiv time, fuld fralandsstrøm trækker 8 point pr. effektiv time, og 13 timers fuld fralandsstrøm udtømmer transporten.
 
-RavRadar gemmer kun tidspunkt og afledt kystnormal strømstyrke i vinduet. Manglende eller ikke-verificeret strøm behandles ikke som roligt vejr: Candidate G kan fortsat beregnes foreløbigt, men bliver ikke klar til offentlig aktivering, før hele vinduet igen er sammenhængende. Det er testet med historisk genafspilning; der kræves ikke en ny 48-timers realtidsudviklingstest.
+RavRadar gemmer kun tidspunkt og afledt kystnormal strømstyrke i vinduet. Native beviser må ligge op til tre timer fra hinanden, og den faktiske tidsafstand tæller i beregningen. Manglende eller ikke-verificeret strøm behandles ikke som roligt vejr: et hul over tre timer eller missing gør vinduet ugyldigt og udløser global rollback. Det er testet med deterministisk genafspilning; der kræves ikke en ny 48-timers realtidsudviklingstest.
 
-I 4.0.260 var Candidate G endnu ikke slået til, og den offentlige RavScore var derfor fortsat `25/40/35`. Denne historiske aktiveringsstatus er erstattet af 4.0.261; hukommelsesmekanikken og forbuddet mod geometri-, punkt-, bund-, privatdata- og sikkerhedsændringer består.
+I 4.0.260 var Candidate G endnu ikke slået til, og den offentlige RavScore var derfor fortsat `25/40/35`. Denne historiske aktiveringsstatus er erstattet af 4.0.261/4.0.262; hukommelsesmekanikken og forbuddet mod geometri-, punkt-, bund-, privatdata- og sikkerhedsændringer består.
 
 ## Candidate G's score-neutrale omskifterforberedelse – 4.0.260
 
@@ -352,7 +354,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.261
+**Håndbogsversion:** 4.0.262
 
 **Opdateret:** 19. august 2026
 

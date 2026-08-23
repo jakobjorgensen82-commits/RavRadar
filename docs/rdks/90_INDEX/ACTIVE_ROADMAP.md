@@ -1,17 +1,18 @@
 # RavRadar - aktivt roadmap
 
-## Aktuel P0-status - 4.0.238 produktion
+## Aktuel P0-status – Candidate G-transportcadence i 4.0.262
 
-- P0.1 og P0.2 er afsluttet: PR #1 blev merged som `b8844841`, og den korrekte 4.0.238-pakke blev ført til `main` uden de fire beskyttede lokale datafiler.
-- P0.4-P0.6 er afsluttet i `#32344813967`/support `RavRadar-support-3252`/datasæt `rr-20260820074127-210`: seks bølgehuller lukket, verificeret historik vokset til 39,594 timer og browseraudit grøn for 210/673/420/2.100.
-- P0.3 er afsluttet: naturlig schedule `#32351140886` byggede frisk datasæt `rr-20260820085852-210`, gennemførte begge fulde gates, Supabase og Pages og bevarede den låste referencetime på tværs af UTC-timeskiftet uden manuel omgåelse.
-- P1-observation: Copernicus-pilot #72 har 46 eksakte timer, 28.934 poster og nul gitter-/lagustabilitet. Fortsæt mod 168 timer.
-- P1-cykluskontrol: 4.0.238-artifact #3252 bruger fortsat HARMONIE 20. august 00Z, WAM 19. august 18Z og DKSS 19. august 12Z. Det er stabil drift, ikke en ny uafhængig cyklus; ingen grænse ændres.
-- P1-performance: 4.0.238's fulde build tog 415 sekunder mod 475,5 sekunders median for seks fulde builds. Ingen gate er reduceret; målingen gentages ved reelle nye modelrotationer.
-- P1-driftsevidens og analyse fortsætter efter den afsluttende dokumentationsmerge. Ingen missing værdi må skjules, og ingen land-/vandpunkter må flyttes.
+- [x] Opdag read-only i live `rr-20260823121818-210`, at alle 673 dele har transportpotentiale og transportkomponent 0.
+- [x] Afgræns årsagen til tre timers afstand mellem produktionsbeviser mod `maximumGapHours=1`; énprøve-suffixet har nul forløbstid.
+- [x] Vælg og implementér DEC-0061: højst tre timers native bevisafstand, integration med faktisk forløbstid og ingen kunstige mellemtimer.
+- [x] Bevar fail-closed ved mere end tre timer eller missing, og begræns pre-public warmup til `WINDOW_INCOMPLETE` via global `candidateWarmupEligible`.
+- [x] Lås rettelsen i målrettede state-/score-/profil-/shadowtests og genafspil den gamle 673-state dataminimeret.
+- [x] Bestå samlet lokal source-/RDKS-/releasekontrol og eksakt diffkontrol.
+- [ ] Bestå exact-head, frisk fuld produktion, aktiv dataminimeret 210/673-shadow med nul replaymismatch og browserkontrol før P0 lukkes.
+- [ ] Følg derefter den naturlige memoryopbygning som driftsevidens uden en ny 48-timers realtidsudviklingstest.
 
-**Opdateret:** 2026-08-20  
-**Statusgrundlag:** 4.0.238 live på merge `b8844841`; verifikationsbranch `codex/verify-4.0.238`
+**Opdateret:** 2026-08-23
+**Statusgrundlag:** 4.0.262 lokalt på `codex/candidate-g-transport-cadence-fix`; produktion er fortsat 4.0.261/merge `328b4d7c`, indtil de åbne gates er bestået
 
 Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre forsknings-/versionsafsnit bevares som revisionsspor. En tom afkrydsningsboks i historikken er ikke en aktiv opgave, medmindre punktet ogsaa findes her.
 

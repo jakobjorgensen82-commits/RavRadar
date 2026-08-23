@@ -1,6 +1,23 @@
 # Current truth – gældende projektviden
 
-## 4.0.261-kandidat – ejer-godkendt Candidate G-aktivering under pre-public opvarmning
+## Aktuel 4.0.262-kandidat – native transportcadence og sikker warmup
+
+- DEC-0061 retter lokalt 4.0.261's P0: Candidate G accepterer højst tre timer mellem verificerede native strømbeviser, bruger den faktiske forløbstid og opfinder ingen mellemtimer.
+- Mere end tre timer, manglende seneste bevis eller missing inde i vinduet er stadig et ægte hul. Ejerens pre-public undtagelse accepterer kun `WINDOW_INCOMPLETE`; øvrige ikke-ready-statusser vælger legacy globalt via `candidateWarmupEligible=false`.
+- Public-shadow genafspiller nu alle kompakte states og kræver identisk potentiale, udtransporttilstand, readiness, status og coverage. Målrettede tests dækker 3-timers fortsættelse, komplet 17-punkts/48-timers vindue, split/ubrudt replay og 4-timers fail-closed gap.
+- Dataminimeret replay af den gamle 673-state giver 110 positive og 563 fortsat nul i stedet for 673 fastlåste nuller; det gamle artifact afvises med 658 forventede replaymismatch.
+- Model/state/profile-identitet og de faglige `20/50/30`, 0,03→0,15, +10/-8, 13 timer, mobilisering 4/48 og wadersregler er uændrede. Ingen private data, geometri eller punkter er ændret.
+- Ved dette checkpoint er rettelsen lokal. Exact-head, frisk fuld produktion, central readback, aktiv 210/673-shadow og fuld browserkontrol mangler, så P0 er ikke endnu produktionslukket.
+
+## Historisk P0 i 4.0.261 – aktiv Candidate G kunne ikke opbygge transport ved produktionscadencen
+
+- En dataminimeret read-only kontrol af live `rr-20260823121818-210` viser 673 Candidate G-states og 673/673 transportpotentialer på 0. Begge jagtformer har transportkomponent 0 i 673/673 dele.
+- 15 dele har ét afledt strømbevis og 658 har to. De 658 par ligger tre timer fra hinanden; statekontrakten tillader højst én time mellem beviser. Det kontinuerte suffix reduceres derfor til den seneste enkeltprøve.
+- Første prøve har nul forløbstid i transportintegrationen. Selv om seneste anonyme evidensfordeling indeholder både indgående, neutral og udgående styrke, kan en enkeltprøve ikke bygge eller nedbryde potentialet. Under uændret produktion vil det faste 48-timersvindue derfor aldrig blive komplet, og transporten vil ikke rette sig ind af sig selv.
+- Manifestet vælger fortsat Candidate G globalt med `candidateCoverageReady=true`, `candidateMemoryReady=false` og `candidate-active-pre-public-warmup`. De tidligere grønne exact-head-, produktion-, shadow- og browsergates kontrollerede kontraktidentitet, men fangede ikke mismatch mellem én-times-gaten og tre-timers produktionsbevis.
+- 4.0.261 er dermed teknisk deployet og gateverificeret, men den aktive score er ikke fagligt acceptabel som samlet Candidate G-score. DEC-0061/4.0.262 er den valgte lokale rettelse; de eksterne leverancegates står ovenfor.
+
+## 4.0.261 – produktionsverificeret Candidate G under pre-public opvarmning
 
 - Ejeren har udtrykkeligt besluttet, at Candidate G skal være RavRadars gældende scoremotor nu. Siden er endnu ikke offentlig, og ejeren accepterer, at de første scoreværdier bygger på mindre end 48 timers naturlig schema-2-historik.
 - DEC-0060 vælger `RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3` med `20/50/30`. Modelregler, strømgrænser, +10/-8, 13-timers udtransportgate, mobilisering 4/48 og vindstyret waders-jagtbarhed ændres ikke.
@@ -14,6 +31,8 @@
 - Første aktive shadow `32637022498` fandt ingen score-, coverage-, rekonstruktions- eller privatlivsfejl, men fejlede på en for snæver auditantagelse: 8 legitime `WINDOW_HAS_MISSING_EVIDENCE`-tilstande blev fejlagtigt afvist, fordi auditen kun tillod `WINDOW_INCOMPLETE` ved `memoryReady=false`. Runtimekontrakten og state-pipelinen har hele tiden defineret begge samt `LATEST_SAMPLE_MISSING` og `WINDOW_HAS_TIME_GAP` som ærlige ikke-ready-statusser. Auditkontrakten rettes og genkøres; den røde gate omgås ikke.
 - Auditkontrakten blev rettet i PR #98 efter grøn exact-head `32637339636` og merged som `fd69f8a0`. Frisk produktion `32637387600` bestod central hydrering, frisk data, fuld validate, releasegate og Pages. Aktiv shadow `32637833674` bestod 210/673 på eksakt main.
 - Den fulde livebrowseraudit af `rr-20260823114744-210` bestod 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdøgnsvisninger i begge jagtformer med nul kontrol-, konsol-, side- eller HTTP-fejl. Browserrunneren kan nu få den forventede version via `RAVRADAR_EXPECTED_VERSION`, så samme systematiske kontrol kan bruges uden kildeændring ved kommende versioner.
+
+Alle senere versionsbundne afsnit i denne fil beskriver sandheden ved deres daværende checkpoint. Udsagn dér om, at Candidate G er privat, `diagnostic-only`, ikke aktiveret, eller at `25/40/35` er aktiv, er historik og er erstattet af dette 4.0.261-afsnit og DEC-0060. De faglige regler og dokumenterede usikkerheder består, medmindre en nyere beslutning udtrykkeligt erstatter dem.
 
 ## Historisk efter 4.0.260 – Candidate G fik afgrænset 48-timers transporthukommelse før aktivering
 
@@ -793,17 +812,18 @@ Punkterne nedenfor bevarer beslutnings- og fejlsøgningshistorikken frem mod 4.0
 - Ejerens første offentlige kortkontrol fandt en alvorlig præsentationsfejl: appen omdannede alle lokale beregningsdele til selvstændige synlige linjer. Hver del fik to sorte endemarkeringer og egne tunge Leaflet-lag; ved Sibirien blev samme hovedzone blandt andet vist med gentaget navn, mange interne markeringer og huller.
 - 4.0.181 bevarer alle lokale dele, punkter, vejrserier og scorer, men tegner igen kun hovedzonernes autoritative kystlinjer. Dermed er de indre delgrænser usynlige, og kun hovedzonens start og slutning markeres. #2279 (`31505747519`) bestod frisk DMI-kæde, fuld Linux-validering, release-gate, Pages-artifact og deploy. Offentlig browserkontrol viste version 4.0.181, 208 centralt aktive hovedzoner og præcis 416 endemarkeringer.
 
-## Planlagt privat besøgsrapport
-- Ejeren har besluttet, at RavRadar senere skal have en besøgtæller, som ikke vises offentligt. En enkel rapport skal være tilgængelig i den adgangsbeskyttede admin-del.
-- Funktionen er endnu ikke implementeret. Designet skal være dataminimeret, skelne sidevisninger fra besøg/anslået unikhed, være kvotesikkert og aldrig blokere siden eller påvirke RavScore.
+## Privat besøgsrapport – implementeret og produktionsverificeret i 4.0.215
+- Den offentlige side registrerer dataminimeret én sidevisning og højst ét browserbesøg pr. browserfane og dansk kalenderdag; statistikken vises kun i den adgangsbeskyttede adminrapport.
+- Supabase gemmer kun daglige totaler uden rå IP-adresser, præcis lokalitet, fingerprint eller stabil besøgsidentitet. Browserbesøg kaldes ikke unikke personer, statistikfejl blokerer aldrig siden, og funktionen påvirker ikke RavScore.
+- Produktion `31876816700` og direkte efterkontrol beviste Supabase-adgangskontrakten, Pages 4.0.215 og rapportens sidevisninger, browserbesøg samt oprettede/aktive konti.
 
 ## Næste aktive roadmaptrin
-- P0-ejeropgaven er en gradvis manuel gennemgang af de eksisterende land-/havpunktpar. Den kan udskydes og må ikke blokere uafhængigt udviklingsarbejde, men skal være afsluttet før endelig faglig score- og brugerreleasegodkendelse.
-- Næste aktive udviklertrin er P1-audit og design af komplette DMI-first femdøgnskæder pr. komponent under DEC-0030. Ingen ny produktionskilde eller fallback må indføres, før aktuel dækning, proveniens, overgange og regressioner er dokumenteret.
-- Supabase-egress følges gennem næste billingperiode. Den private, dataminimerede besøgstæller med enkel adminrapport er fortsat en senere P2-opgave.
-- 4.0.237-estimatoren paa supportartifact `#3238` beregner en nedre pipelinegraense paa 3,644 GiB/30 dage mod cirka 3,03 GiB i 4.0.219. `dmi-water-stations` er nu 565.218 bytes med 373 stationer og 250 notifikationer. Tallet er ikke billing-egress; payload eller ejerdiagnostik er ikke aendret.
+- Følg Candidate G's naturlige memoryopbygning dataminimeret som driftsevidens. Det er ikke en ny implementerings- eller aktiveringsgate, og den samme model fortsætter, når vinduet bliver komplet.
+- Repræsentative ture med fund, reelle nul-fund, søgeindsats og hold-out bruges senere til efterkalibrering; de ændrer ikke automatisk den aktive model.
+- Den gradvise manuelle ejerkontrol af eksisterende land-/vandpunktpar og øvrige uafhængige drifts-/forskningspunkter fortsætter kun efter den prioriterede liste i `ACTIVE_ROADMAP.md`; Candidate G-aktiveringen må ikke genåbnes af gamle afkrydsningsfelter.
+- Supabase-egress følges fortsat gennem en faktisk billingperiode. Estimatorer er ikke billingbevis.
 
-Denne fil er første opslag ved en ny chat. Den indeholder kun gældende sandhed og udtrykkeligt planlagte næste skridt. Historik findes andre steder i RDKS.
+Denne fil er første opslag ved en ny chat. Den aktuelle sandhed står øverst og ved de nyeste emneafsnit; ældre versionsafsnit bevares som revisionsspor og må aldrig tilsidesætte en nyere, udtrykkeligt markeret status.
 
 ## Historik – kystgeometri-v2-pilot før aktivering
 Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer om manglende aktivering er historiske og er erstattet af den aktive status ovenfor.
