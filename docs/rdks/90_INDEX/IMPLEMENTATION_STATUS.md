@@ -11,8 +11,8 @@
 - [x] Bevar DEC-0055's udtransportgate: en høj mobilisering kan forblive synlig, mens dokumenteret udtømt udtransport giver slutscore 0.
 - [x] Dokumentér DEC-0056, beslutningsrapport, modelregister, RDKS, håndbog og changelog uden private payloads.
 - [x] Bestå samlet lokal `scripts/validate-source.ps1`, inklusive de nye mobiliseringstests og releasegate.
-- [ ] Bestå exact-head PR-gate, sikker merge og post-merge-produktion for det score-neutrale checkpoint.
-- [ ] Implementér derefter samlet central persistens af transport- og mobiliseringstilstand, frisk fallback-kompatibel 673-deles shadow, forklaring og rollback som særskilt offentlig aktiveringspakke.
+- [x] Bestå exact-head `32607989444` på `03083f92`, merge PR #87 som `48240d73` og fuld post-merge-produktion `32608050112` med central hydrering, fuld validering, releasegate, Supabase, artifact, Pages og grøn 210/673-kontrakt.
+- [ ] Implementér nu samlet central persistens af transport- og mobiliseringstilstand, frisk fallback-kompatibel 673-deles shadow, forklaring og rollback som særskilt offentlig aktiveringspakke.
 
 ## Candidate G frigivelsesrevision – score-neutral
 

@@ -83,4 +83,8 @@ Opbygningsvalget og replaystarten har beskeden betydning i dette materiale. Aftr
 
 Brug `RESEARCH-3` med fire timers opbygning og 48 timers aftrapning som det samlede Candidate G-spor til næste produkttrin. Bevar den gamle mobilisering som revisionsreference. Kobl ikke den nye model halvt ind i den offentlige runtime: transporttilstand, mobiliseringstilstand, forklaring og rollback skal versionsbindes og valideres samlet.
 
+## Leveranceevidens
+
+Checkpointet bestod exact-head `32607989444` på `03083f92`, blev merged via PR #87 som `48240d73` og bestod fuld post-merge-produktion `32608050112`. Produktionen gennemførte central adminhydrering, frisk kontrolleret data, fuld validering, releasegate, Supabase, artifact og Pages. Den nationale kontrakt er grøn for 210 zoner og 673 kystdele. Offentlig score og UI er fortsat uændret; næste fase er den samlede, versionsbundne aktiveringspakke.
+
 Offentlig RavScore er fortsat `25/40/35` i dette checkpoint. Kandidaten ændrer ingen brugerdata, UI, geometri, land-/vandpunkter eller beskyttede data.
