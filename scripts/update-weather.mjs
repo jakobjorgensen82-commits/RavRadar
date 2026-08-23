@@ -1181,6 +1181,9 @@ function scoreCoastalPartsRuntime(
           candidateG: derivedState ? {
             referenceAt: weather.time,
             continuationState: derivedState.continuationState,
+            transportMemoryReady: derivedState.transportMemoryReady,
+            transportMemoryStatus: derivedState.transportMemoryStatus,
+            transportMemoryCoverageHours: derivedState.transportMemoryCoverageHours,
             modes: candidateGModes,
           } : null,
           ...modes
@@ -1203,7 +1206,8 @@ function scoreCoastalPartsRuntime(
   const candidateCoverageReady = partRows.length === Number(contract?.partCount)
     && partRows.every(row => row.scores.length > 0
       && row.scores.every(score => ['waders', 'beach'].every(mode =>
-        score?.candidateG?.modes?.[mode]?.available === true
+        score?.candidateG?.transportMemoryReady === true
+        && score?.candidateG?.modes?.[mode]?.available === true
         && score.candidateG.modes[mode].modelId === CANDIDATE_G_RAVSCORE_PROFILE_ID
         && Number.isFinite(score.candidateG.modes[mode].score))));
   const scoreProfile = resolvePublicRavScoreProfile({
@@ -1279,6 +1283,9 @@ function scoreCoastalPartsRuntime(
       automaticActivationAllowed: false,
       publicScoreChanged: scoreProfile.activeProfileId === CANDIDATE_G_RAVSCORE_PROFILE_ID,
       referenceAt: score.candidateG.referenceAt,
+      transportMemoryReady: score.candidateG.transportMemoryReady,
+      transportMemoryStatus: score.candidateG.transportMemoryStatus,
+      transportMemoryCoverageHours: score.candidateG.transportMemoryCoverageHours,
       initialStateAccepted: row.candidateGState?.initialStateAccepted ?? null,
       initialStateResetReason: row.candidateGState?.initialStateResetReason ?? null,
       currentState: score.candidateG.continuationState,

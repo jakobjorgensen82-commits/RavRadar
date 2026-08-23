@@ -31,6 +31,8 @@ Den friske score-neutrale fordeling er væsentlig beslutningsevidens. Candidate 
 
 ## Bootstrap-/startreserveanalyse
 
+> **Efterfølgende beslutning:** Denne analyse dokumenterede problemet under den daværende ubundne regel. Anbefalingen om startprior 50 er erstattet af DEC-0059. Candidate G bruger nu et fast 48-timers evidensvindue og genbruger ikke et tidligere transportoutput som startværdi.
+
 493 af 673 live transporttilstande er 0, mens udtransportgaten er udløst 0 gange. Nulværdierne dokumenterer derfor ikke, at rav er trukket ud; de afspejler primært den valgte fail-closed startprior 0.
 
 Den allerede offentlige syvdøgnshistorik blev genafspillet dataminimeret uden nye DMI-/Copernicus-kald og uden at vise U/V, koordinater eller del-id'er. Den indeholder 42.551 poster, dækker 633/673 dele med 39–89 prøver og 65–117 timers tidsdybde. Start 0 giver efter replay gennemsnit 5,781 og median 0; start 50 giver 52,060/50, mens start 100 giver 96,716/100.

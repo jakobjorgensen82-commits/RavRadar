@@ -18,6 +18,8 @@ Den persistérede tilstand er valgt ved zonens fælles aktuelle referencetime. F
 
 Tilstanden indeholder model-/profilversion, en hash af kystkonteksten, tidspunkt, transportpotentiale, effektive udtransporttimer og mobiliseringspotentiale. Den indeholder ikke rå U/V, vind, strømretning, bølgehøjde, bølgeperiode, koordinater eller private replayrækker.
 
+> **Efterfølgende kontrakt:** Ovenstående beskriver schema 1 i 4.0.259. DEC-0059/schema 2 erstatter de persistérede transportoutput med et fast 48-timers vindue af tidspunkt og afledt kystnormal strømstyrke. Mobiliseringsdelen og forbuddet mod rå/private data er uændret.
+
 Kontrollen sammenligner model, profil og konteksthash før warm start. Ved forskel startes fail-closed fra 0. En prøve på samme tidspunkt som den persistérede tilstand har nul varighed og holder begge tilstande. Missing holder ligeledes seneste afledte værdi.
 
 ## Ny national shadow

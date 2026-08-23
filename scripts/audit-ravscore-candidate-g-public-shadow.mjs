@@ -116,6 +116,9 @@ export function auditCandidateGPublicShadow(document, {
     add(candidate?.publicScoreChanged === false, 'PUBLIC_SCORE_CHANGE_FLAGGED');
     add(candidate?.referenceAt === zone?.currentReferenceAt, 'CANDIDATE_ZONE_REFERENCE_MISMATCH');
     add(candidate?.referenceAt === part?.current?.time, 'CANDIDATE_ACTIVE_REFERENCE_MISMATCH');
+    add(candidate?.transportMemoryReady === true, 'BOUNDED_TRANSPORT_MEMORY_NOT_READY');
+    add(candidate?.transportMemoryStatus === 'READY', 'BOUNDED_TRANSPORT_MEMORY_STATUS_NOT_READY');
+    add(Number(candidate?.transportMemoryCoverageHours) === 48, 'BOUNDED_TRANSPORT_MEMORY_COVERAGE_INCOMPLETE');
     add(state?.time === candidate?.referenceAt, 'STATE_REFERENCE_TIME_MISMATCH');
     add(state?.schemaVersion === CANDIDATE_G_STATE_SCHEMA_VERSION, 'COMPACT_STATE_SCHEMA_MISMATCH');
     add(state?.modelId === CANDIDATE_G_STATE_MODEL_ID, 'COMPACT_STATE_MODEL_MISMATCH');
@@ -123,6 +126,19 @@ export function auditCandidateGPublicShadow(document, {
     add(typeof state?.stateKey === 'string' && state.stateKey.startsWith('sha256:'), 'COMPACT_STATE_KEY_MISSING');
     add(finite(state?.transportPotential) && Number(state.transportPotential) >= 0 && Number(state.transportPotential) <= 100, 'TRANSPORT_STATE_INVALID');
     add(finite(state?.outboundEpisodeEffectiveHours) && Number(state.outboundEpisodeEffectiveHours) >= 0, 'OUTFLOW_STATE_INVALID');
+    add(state?.transportMemoryReady === true, 'COMPACT_BOUNDED_TRANSPORT_MEMORY_NOT_READY');
+    add(state?.transportMemoryStatus === 'READY', 'COMPACT_BOUNDED_TRANSPORT_MEMORY_STATUS_NOT_READY');
+    add(Number(state?.transportMemoryWindowHours) === 48, 'COMPACT_BOUNDED_TRANSPORT_MEMORY_WINDOW_INVALID');
+    add(Number(state?.transportMemoryCoverageHours) === 48, 'COMPACT_BOUNDED_TRANSPORT_MEMORY_COVERAGE_INCOMPLETE');
+    add(Array.isArray(state?.transportEvidence) && state.transportEvidence.length === 49,
+      'COMPACT_BOUNDED_TRANSPORT_EVIDENCE_INCOMPLETE');
+    add((state?.transportEvidence ?? []).every((item, index, rows) =>
+      item && Object.keys(item).sort().join(',') === 'strength,time'
+      && Number.isFinite(Date.parse(item.time))
+      && (item.strength === null || (finite(item.strength)
+        && Number(item.strength) >= -1 && Number(item.strength) <= 1))
+      && (index === 0 || Date.parse(item.time) > Date.parse(rows[index - 1].time))),
+    'COMPACT_BOUNDED_TRANSPORT_EVIDENCE_INVALID');
     add(finite(state?.mobilisationPotential) && Number(state.mobilisationPotential) >= 0 && Number(state.mobilisationPotential) <= 100, 'MOBILISATION_STATE_INVALID');
     if (candidate?.initialStateAccepted === true) acceptedStateCount += 1;
     else resetStateCount += 1;
@@ -136,9 +152,20 @@ export function auditCandidateGPublicShadow(document, {
       'schemaVersion',
       'stateKey',
       'time',
+      'transportEvidence',
+      'transportMemoryCoverageHours',
+      'transportMemoryReady',
+      'transportMemoryStatus',
+      'transportMemoryWindowHours',
       'transportPotential',
       'variantId',
     ].sort()), 'COMPACT_STATE_FIELD_SET_MISMATCH');
+    const compactText = JSON.stringify(state ?? {}).toLowerCase();
+    for (const forbidden of [
+      'currentu', 'currentv', 'currentspeed', 'currentdirection', 'windspeed',
+      'waveheight', 'waveperiod', 'latitude', 'longitude', 'waterpoint',
+      'landpoint', 'coordinates',
+    ]) add(!compactText.includes(forbidden), 'COMPACT_STATE_RAW_INPUT_INCLUDED');
 
     for (const mode of MODES) {
       const activeScore = part?.current?.[mode]?.score;
@@ -251,6 +278,9 @@ function syntheticDocument() {
           automaticActivationAllowed: false,
           publicScoreChanged: false,
           referenceAt,
+          transportMemoryReady: true,
+          transportMemoryStatus: 'READY',
+          transportMemoryCoverageHours: 48,
           initialStateAccepted: zoneNumber > 0,
           initialStateResetReason: zoneNumber > 0 ? null : 'NO_PREVIOUS_STATE',
           currentState: {
@@ -262,6 +292,14 @@ function syntheticDocument() {
             time: referenceAt,
             transportPotential: 50,
             outboundEpisodeEffectiveHours: 0,
+            transportMemoryReady: true,
+            transportMemoryStatus: 'READY',
+            transportMemoryWindowHours: 48,
+            transportMemoryCoverageHours: 48,
+            transportEvidence: Array.from({ length: 49 }, (_, index) => ({
+              time: new Date(Date.parse(referenceAt) - ((48 - index) * 3_600_000)).toISOString(),
+              strength: 0,
+            })),
             mobilisationPotential: 50,
           },
           modes: { waders: mode, beach: mode },

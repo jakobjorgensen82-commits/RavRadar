@@ -37,7 +37,195 @@ export const CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE = Object.f
 });
 
 export const CURRENT_TRANSPORT_POTENTIAL_CONTINUATION_POLICY =
-  'CARRY_FORWARD_COMPACT_DERIVED_TRANSPORT_STATE';
+  'CARRY_FORWARD_BOUNDED_DERIVED_CURRENT_EVIDENCE';
+
+export const CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY = Object.freeze({
+  windowHours: 48,
+  maximumGapHours: 1,
+  boundaryPotential: 0,
+  evidenceSemantics: 'DERIVED_COAST_NORMAL_STRENGTH_ONLY',
+});
+
+function canonicalTime(value) {
+  const time = new Date(value);
+  return Number.isFinite(time.getTime()) ? time.toISOString() : null;
+}
+
+/**
+ * Reduces one verified current sample to a data-minimised, coast-relative
+ * transport strength. Positive values are inward, negative values are outward,
+ * zero is verified neutral and null is explicitly unverified/missing.
+ *
+ * The result deliberately contains no raw speed, direction, U/V component,
+ * coordinate or coastal-part identifier and is therefore safe to retain in the
+ * compact Candidate G continuation state.
+ */
+export function deriveCurrentTransportEvidence(
+  sample,
+  {
+    deadbandNormalSpeedMps = CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE.deadbandNormalSpeedMps,
+    fullStrengthNormalSpeedMps = CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE.fullStrengthNormalSpeedMps,
+    getTime = value => value?.time,
+    getSpeed = value => value?.currentSpeedMps,
+    getAlignment = value => value?.currentAlignment,
+    isVerified = value => value?.currentVerified === true,
+  } = {},
+) {
+  const time = canonicalTime(getTime(sample));
+  if (!time) return null;
+  if (isVerified(sample) !== true) return { time, strength: null };
+  const rawSpeed = getSpeed(sample);
+  const rawAlignment = getAlignment(sample);
+  if (rawSpeed === null || rawSpeed === undefined || rawSpeed === '' || typeof rawSpeed === 'boolean'
+    || rawAlignment === null || rawAlignment === undefined || rawAlignment === '' || typeof rawAlignment === 'boolean'
+    || !Number.isFinite(Number(rawSpeed)) || !Number.isFinite(Number(rawAlignment))) {
+    return { time, strength: null };
+  }
+  const speed = Math.max(0, Number(rawSpeed));
+  const alignment = clamp(Number(rawAlignment), -1, 1);
+  const inboundStrength = normalCurrentStrength(speed * Math.max(0, alignment), {
+    deadbandNormalSpeedMps,
+    fullStrengthNormalSpeedMps,
+  });
+  const outboundStrength = normalCurrentStrength(speed * Math.max(0, -alignment), {
+    deadbandNormalSpeedMps,
+    fullStrengthNormalSpeedMps,
+  });
+  return {
+    time,
+    strength: clamp(inboundStrength - outboundStrength, -1, 1),
+  };
+}
+
+function normalizedTransportEvidence(evidence, referenceTime, windowHours) {
+  const referenceMs = Date.parse(referenceTime);
+  const cutoffMs = referenceMs - (windowHours * 3_600_000);
+  const byTime = new Map();
+  for (const item of Array.isArray(evidence) ? evidence : []) {
+    const time = canonicalTime(item?.time);
+    if (!time) continue;
+    const timeMs = Date.parse(time);
+    if (timeMs < cutoffMs || timeMs > referenceMs || byTime.has(time)) continue;
+    const strength = item?.strength === null
+      ? null
+      : clamp(finiteNumber(item?.strength, Number.NaN), -1, 1);
+    if (strength === null || Number.isFinite(strength)) byTime.set(time, { time, strength });
+  }
+  return [...byTime.values()].sort((left, right) => Date.parse(left.time) - Date.parse(right.time));
+}
+
+function continuousVerifiedSuffix(evidence, maximumGapHours) {
+  const suffix = [];
+  for (let index = evidence.length - 1; index >= 0; index -= 1) {
+    const item = evidence[index];
+    if (!Number.isFinite(item?.strength)) break;
+    if (suffix.length) {
+      const next = suffix[0];
+      const gapHours = (Date.parse(next.time) - Date.parse(item.time)) / 3_600_000;
+      if (!(gapHours > 0 && gapHours <= maximumGapHours + EPSILON)) break;
+    }
+    suffix.unshift(item);
+  }
+  return suffix;
+}
+
+/**
+ * Replays a fixed trailing window from a fixed zero boundary. The boundary is
+ * "no documented inward transport before this recent-evidence window"; it is
+ * not evidence of offshore removal and cannot by itself trigger the separate
+ * thirteen-hour outflow gate.
+ *
+ * Until the window is complete the returned result is explicitly provisional.
+ * Missing evidence splits the usable suffix and keeps memoryReady false, so a
+ * data gap is never silently treated as neutral current.
+ */
+export function buildBoundedCurrentTransportMemory(
+  evidence,
+  {
+    referenceTime,
+    windowHours = CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.windowHours,
+    maximumGapHours = CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.maximumGapHours,
+    boundaryPotential = CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.boundaryPotential,
+    ...profile
+  } = {},
+) {
+  const reference = canonicalTime(referenceTime);
+  const safeWindowHours = finiteNumber(windowHours, Number.NaN);
+  const safeMaximumGapHours = finiteNumber(maximumGapHours, Number.NaN);
+  const safeBoundaryPotential = finiteNumber(boundaryPotential, Number.NaN);
+  if (!reference) throw new Error('bounded current transport memory requires a valid referenceTime');
+  if (!(safeWindowHours > 0 && safeMaximumGapHours > 0)) {
+    throw new Error('bounded current transport memory requires positive window and gap hours');
+  }
+  if (safeBoundaryPotential !== 0) {
+    throw new Error('bounded current transport memory requires the fixed zero boundary');
+  }
+
+  const transportProfile = {
+    ...CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
+    ...profile,
+  };
+  const retainedEvidence = normalizedTransportEvidence(evidence, reference, safeWindowHours);
+  const referenceMs = Date.parse(reference);
+  const cutoffMs = referenceMs - (safeWindowHours * 3_600_000);
+  const latestAtReference = Date.parse(retainedEvidence.at(-1)?.time ?? '') === referenceMs;
+  const startsAtBoundary = Date.parse(retainedEvidence[0]?.time ?? '') === cutoffMs;
+  const containsMissing = retainedEvidence.some(item => !Number.isFinite(item.strength));
+  let maximumObservedGapHours = 0;
+  for (let index = 1; index < retainedEvidence.length; index += 1) {
+    maximumObservedGapHours = Math.max(
+      maximumObservedGapHours,
+      (Date.parse(retainedEvidence[index].time) - Date.parse(retainedEvidence[index - 1].time)) / 3_600_000,
+    );
+  }
+  const cadenceComplete = retainedEvidence.length > 1
+    && maximumObservedGapHours <= safeMaximumGapHours + EPSILON;
+  const memoryReady = latestAtReference && startsAtBoundary && cadenceComplete && !containsMissing;
+  const suffix = latestAtReference
+    ? continuousVerifiedSuffix(retainedEvidence, safeMaximumGapHours)
+    : [];
+  const deadband = Number(transportProfile.deadbandNormalSpeedMps);
+  const fullStrength = Number(transportProfile.fullStrengthNormalSpeedMps);
+  const replaySamples = suffix.map(item => {
+    const magnitude = Math.abs(item.strength);
+    return {
+      time: item.time,
+      currentSpeedMps: magnitude <= EPSILON
+        ? 0
+        : deadband + ((fullStrength - deadband) * magnitude),
+      currentAlignment: Math.sign(item.strength),
+      currentVerified: true,
+    };
+  });
+  const rows = buildCurrentTransportPotential(replaySamples, {
+    ...transportProfile,
+    initialPotential: safeBoundaryPotential,
+    getTime: sample => sample.time,
+    getSpeed: sample => sample.currentSpeedMps,
+    getAlignment: sample => sample.currentAlignment,
+    isVerified: sample => sample.currentVerified === true,
+  });
+  const result = rows.at(-1) ?? null;
+  const coverageHours = suffix.length > 1
+    ? (Date.parse(suffix.at(-1).time) - Date.parse(suffix[0].time)) / 3_600_000
+    : 0;
+  let status = 'READY';
+  if (!latestAtReference) status = 'LATEST_SAMPLE_MISSING';
+  else if (containsMissing) status = 'WINDOW_HAS_MISSING_EVIDENCE';
+  else if (!startsAtBoundary) status = 'WINDOW_INCOMPLETE';
+  else if (!cadenceComplete) status = 'WINDOW_HAS_TIME_GAP';
+
+  return {
+    memoryReady,
+    status,
+    windowHours: safeWindowHours,
+    coverageHours,
+    maximumObservedGapHours,
+    evidence: retainedEvidence,
+    rows,
+    result,
+  };
+}
 
 function normalCurrentStrength(normalSpeedMps, {
   deadbandNormalSpeedMps,

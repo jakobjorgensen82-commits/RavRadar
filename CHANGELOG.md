@@ -1,3 +1,12 @@
+## Intern Candidate G-rettelse efter 4.0.260 – afgrænset transporthukommelse (2026-08-23)
+
+- DEC-0059 erstatter Candidate G's ubundne transportfortsættelse og den forkastede startprior 50 med et fast, rullende 48-timers vindue af sammenhængende, verificeret og afledt kystnormal strømevidens.
+- Transporten genafspilles fra en fast rand 0, der betyder “ingen dokumenteret indtransport før vinduet” og ikke fralandsstrøm. Persistéret transportoutput bruges ikke som ny startværdi.
+- Fuld pålandsstrøm bygger fortsat 10 point pr. effektiv time; fuld fralandsstrøm trækker 8 point pr. effektiv time og udtømmer transporten fra 13 timer. Mobilisering og waders-jagtbarhed er uændrede.
+- Statekontrakten er versionsbundet som schema 2. Missing og tidsgab må ikke foregives at være neutral strøm og holder Candidate G's globale aktiveringsgate lukket, indtil 48-timersvinduet igen er komplet.
+- Syntetiske tests beviser samme resultat efter komplet vindue for tænkte starter 0, 50 og 100. En dataminimeret historisk audit finder 582 komplette vinduer og nul startafhængighed uden at udgive rå strømvektorer, koordinater, del-id'er eller private payloads.
+- Der kræves ikke en ny 48-timers realtidsudviklingstest. Candidate G er fortsat inaktiv; offentlig `25/40/35`, UI, geometri, land-/vandpunkter, artifact, protected-dirty-data og private caches er uændrede.
+
 ## 4.0.259 – central Candidate G-tilstand og 210/673 public shadow (2026-08-23)
 
 - Candidate G beregnes nu centralt for hver kystdel med den anbefalede `20/50/30`-model, men forbliver et adskilt `diagnostic-only`-navnerum. Den aktive offentlige `25/40/35`-score, UI, farver og zonevindere er uændrede.
@@ -179,4 +188,4 @@
 - PR #92 bestod exact-head `32628441062` på `eabf7e8b` og blev merged som `c5898ce8`. Fuld produktion `32628516066` udgav `rr-20260823083627-210` efter alle gates.
 - Den dataminimerede audit består 210/673/1.346 med 673 accepterede tilstande, nul nulstillinger og 9/9 timers alder; browserauditten består 420/2.100/673 uden fejl.
 - Candidate G er fortsat ikke aktiv. Den friske scorefordeling er væsentligt lavere end aktiv score og afventer særskilt ejerreview før en eventuel aktiveringsversion.
-- En dataminimeret bootstrapaudit af 42.551 eksisterende offentlige historikposter viser, at 65–117 timers forløb ikke kan bestemme startreserven uden passivt neutralt tab. Neutral startprior 50 anbefales til ejerreview; 0 og 100 bevares som følsomhedsgrænser, og ingen score aktiveres.
+- En dataminimeret bootstrapaudit af 42.551 eksisterende offentlige historikposter viste under den daværende ubundne regel, at 65–117 timers forløb ikke kunne bestemme startreserven uden passivt neutralt tab. Den historiske anbefaling om neutral startprior 50 er nu erstattet af DEC-0059; 0 og 100 bevares kun som følsomhedsspor, og ingen score aktiveres.

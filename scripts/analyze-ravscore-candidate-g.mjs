@@ -1445,7 +1445,7 @@ function main() {
     assert.equal(report.aggregate.currentLedRevision.recommendedResearchProfile.id,
       'normal-current-0.03-to-0.15');
     assert.equal(report.aggregate.currentLedRevision.recommendedResearchProfile.boundaryPolicy,
-      'CARRY_FORWARD_COMPACT_DERIVED_TRANSPORT_STATE');
+      'CARRY_FORWARD_BOUNDED_DERIVED_CURRENT_EVIDENCE');
     assert.equal(report.aggregate.currentLedRevision.recommendedResearchProfile.passiveNeutralDecay, false);
     assert.equal(Object.keys(report.aggregate.currentLedRevision.parameterSensitivity).length,
       CURRENT_LED_SENSITIVITY_PROFILES.length);

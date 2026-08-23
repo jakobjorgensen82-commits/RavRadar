@@ -6,6 +6,8 @@ RavRadar har nu en særskilt, versionsbundet og testbar vej fra den aktive `25/4
 
 Den seneste naturlige runtime `rr-20260823075018-210` dokumenterer seks timers videreført Candidate G-state: 210/210 zoner, 673/673 kystdele, 1.346 jagtformsevalueringer, 673 accepterede tidligere tilstande, nul nulstillinger og nul rekonstruktionsfejl. Perioden er det praktiske evidensgrundlag, ejeren har valgt til den næste gennemgang; den betegnes ikke som et 48-timersbevis.
 
+DEC-0059 erstatter efterfølgende den ubundne transportfortsættelse med et fast 48-timers vindue af afledt strømevidens. Omskifteren regner derfor kun Candidate G som dækningsklar, når alle 673 kystdele har et komplet sammenhængende vindue under den nye schema-2-kontrakt. Under opbygning eller efter et datahul vælges legacy fortsat globalt.
+
 ## Omskifterens kontrakt
 
 | Felt | 4.0.260 |
@@ -38,4 +40,4 @@ Den valgte profil publiceres sammen med kystdelsdata i startpakke, detaljepakke 
 
 ## Næste aktiveringsgate
 
-Efter levering af den score-neutrale 4.0.260-pakke skal en eventuel aktiveringsversion stadig gennemføre central admin-roundtrip, frisk fuld produktion, en dataminimeret slutshadow på den eksakte kode, fuld 210/673-browserkontrol og særskilt ejer-gennemgang. Først derefter kan den ønskede profil ændres fra legacy til Candidate G.
+Efter levering af den score-neutrale 4.0.260-pakke skal en eventuel aktiveringsversion stadig gennemføre central admin-roundtrip, dokumentere komplet schema-2-transporthukommelse for 673/673, frisk fuld produktion, en dataminimeret slutshadow på den eksakte kode, fuld 210/673-browserkontrol og særskilt ejer-gennemgang. Først derefter kan den ønskede profil ændres fra legacy til Candidate G.

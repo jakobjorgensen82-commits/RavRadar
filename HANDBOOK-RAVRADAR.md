@@ -1,5 +1,15 @@
 # RavRadar Håndbog
 
+## Candidate G glemmer maskinens startværdi efter et fast vindue
+
+Candidate G beregner nu transport ud fra et fast, rullende vindue med de seneste 48 timers sammenhængende og verificerede strøm mod eller væk fra kysten. Beregningen begynder ved en fast rand på 0, som betyder, at der ikke antages nogen dokumenteret indtransport før vinduet. Den betyder ikke, at der har været fralandsstrøm.
+
+Når vinduet er komplet, afhænger transporten derfor kun af de seneste 48 timers dokumenterede forhold. En gammel startværdi fra den computer eller produktionskørsel, som først begyndte at opsamle tilstanden, kan ikke længere påvirke resultatet. Den aftalte fysik er uændret: fuld pålandsstrøm bygger 10 point pr. effektiv time, fuld fralandsstrøm trækker 8 point pr. effektiv time, og 13 timers fuld fralandsstrøm udtømmer transporten.
+
+RavRadar gemmer kun tidspunkt og afledt kystnormal strømstyrke i vinduet. Manglende eller ikke-verificeret strøm behandles ikke som roligt vejr: Candidate G kan fortsat beregnes foreløbigt, men bliver ikke klar til offentlig aktivering, før hele vinduet igen er sammenhængende. Det er testet med historisk genafspilning; der kræves ikke en ny 48-timers realtidsudviklingstest.
+
+Candidate G er fortsat ikke slået til. Den offentlige RavScore, farverne og vægtene `25/40/35` er uændrede. Ingen geometri, land-/vandpunkter, bunddata, private rådata eller sikkerhedsregler indgår i rettelsen.
+
 ## Candidate G har nu en sikker omskifter – men er ikke slået til – 4.0.260
 
 RavRadar har nu en versionsbundet omskifter, som kan vælge én RavScore-model for hele Danmark og vende tilbage til den hidtidige model. I 4.0.260 står omskifteren fortsat på `25 % jagtbarhed`, `40 % transport` og `35 % mobilisering`. Brugernes score, farver, zonevindere og bedste tidspunkt er derfor uændrede.
@@ -16,7 +26,7 @@ Candidate G's forklaring holder jagtbarhed, transport og mobilisering adskilt. V
 
 RavRadar beregner nu den valgte Candidate G for alle 673 kystdele som en adskilt kontrolscore. Den er endnu ikke den synlige RavScore: brugerne får fortsat den aktive `25 % jagtbarhed`, `40 % transport` og `35 % mobilisering`. Candidate G's `20/50/30` ligger i et særskilt diagnostisk felt, som den aktive farve og zonevinder ikke læser.
 
-Hver kystdel husker kun tre afledte forhold fra den fælles aktuelle time: transportpotentialet, hvor længe et effektivt udtransportforløb har stået på, og mobiliseringspotentialet. Model, profil og kystkontekst bindes med en hash. Hvis model, vandpunkt eller kystretning ændres, genbruges den gamle tilstand ikke. En gentagelse i samme time tæller ikke dobbelt, og manglende input foregives ikke at være roligt vejr.
+I 4.0.259 huskede hver kystdel kun transportpotentiale, effektive udtransporttimer og mobiliseringspotentiale. DEC-0059 erstatter transportdelen med et fast 48-timers vindue af dataminimeret strømevidens, mens mobiliseringshukommelsen fortsætter uændret. Model, profil og kystkontekst bindes fortsat med en hash. Hvis model, vandpunkt eller kystretning ændres, genbruges den gamle tilstand ikke. En gentagelse i samme time tæller ikke dobbelt, og manglende input foregives ikke at være roligt vejr.
 
 Tilstanden indeholder ikke rå strømvektorer, vind, bølgehøjde, bølgeperiode eller koordinater. Candidate G-resultatet viser kun scorekomponenter og afledte værdier, så 20/50/30-regnestykket og den særlige udtransportregel kan kontrolleres uden at udgive private analysepayloads.
 
@@ -36,7 +46,7 @@ Svagere strøm tæller som en del af en effektiv time. Manglende eller ikke-veri
 
 Den private genafspilning består de mekaniske kontroller og skelner tydeligt mellem ind- og udtransport. Efter ejerreview anbefales 0,03 m/s som dødzone og 0,15 m/s som fuld kystnormal styrke. Ved 0,09 m/s tæller strømmen halvt, så opbygning tager cirka 20 timer og faktisk udtransport cirka 26 timer. Valget er en faglig produktprior, ikke en fundkalibreret naturgrænse.
 
-Neutral eller manglende strøm trækker ikke automatisk point fra. I stedet skal RavRadar føre en lille afledt tilstand videre mellem produktionskørsler: tidspunkt, eksisterende potentiale og det igangværende effektive udtransportforløb. En ny kørsel må ikke få modellen til at glemme ravet. Den score-neutrale test reproducerer nu samme 13-timerskurve, uanset om forløbet beregnes samlet eller deles over en kørselsgrænse.
+Neutral strøm ændrer ikke transportpotentialet. Manglende eller ikke-verificeret strøm er derimod et hul og må ikke behandles som neutral strøm. RavRadar genafspiller det sammenhængende afledte strømforløb inden for de seneste 48 timer fra en fast rand; et tidligere gemt transportresultat bruges ikke som ny startværdi. En ny kørsel kan derfor hverken glemme den dokumenterede nyere transport eller bevare en vilkårlig maskinstart for evigt.
 
 Kandidaten er koblet score-neutralt til den centrale pipeline i 4.0.259, men er endnu ikke den aktive offentlige score. Den særskilte omskifter er nu forberedt i 4.0.260 og vælger stadig legacy. Næste leverancebevis er exact-head, fuld produktion og fallback-kompatibel slutkontrol; en senere aktivering kræver desuden central konfiguration og særskilt ejer-gennemgang. Den vindstyrede waders-jagtbarhed fortsætter uændret: fuld til 6 m/s, trinvis fald og 0 ved 15 m/s, mens strandjagt ikke får et jagtbarhedsloft.
 

@@ -1,3 +1,12 @@
+## 2026-08-23 – Candidate G får fast 48-timers transporthukommelse
+
+- Ejeren afviste en ny vilkårlig startprior og valgte, at Candidate G skal rette sig ind efter de faktiske nyere forhold med tiden uden endnu en 48-timers realtidsudviklingstest.
+- DEC-0059 implementerer derfor et fast, rullende 48-timers vindue af sammenhængende, verificeret og dataminimeret kystnormal strømevidens. Det tidligere gemte transportresultat bruges ikke som ny start.
+- Den faste rand 0 betyder kun, at der ikke antages dokumenteret indtransport før vinduet. Den må ikke udløse udtransportgaten. Den aftalte +10/-8-kurve og 13-timers udtømning er uændret.
+- Missing og tidsgab er ikke neutral strøm og holder aktiveringsberedskabet lukket. Schema 2 og en ny profilidentitet forhindrer skjult genbrug af den gamle statekontrakt.
+- Syntetiske kontroller samt 582 komplette historiske 48-timersvinduer viser nul slutafvigelse mellem tænkte starter 0, 50 og 100. Auditoutputtet indeholder kun aggregater.
+- Candidate G er fortsat score-neutral og inaktiv. Offentlig `25/40/35`, geometri, land-/vandpunkter, artifact, protected-dirty-data og private caches er urørte.
+
 ## 2026-08-23 – 4.0.259 central Candidate G og fallback-kompatibel shadow
 
 - DEC-0057 kobler DEC-0055/0056 til den centrale 673-deles pipeline uden at ændre aktiv `25/40/35`.

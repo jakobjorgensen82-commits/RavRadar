@@ -56,3 +56,9 @@ DEC-0057 erstatter den native 243/673-shadow som aktiveringsklar dækningskontro
 ## Senere præcisering i DEC-0058
 
 Ejeren accepterede nattens seks timers naturlige videreførelse som praktisk evidens til næste produkttrin. DEC-0058 erstatter derfor rækkefølgen, hvor selve den score-neutrale omskifter først måtte bygges efter 48 timer. Seks timer er ikke et 48-timersbevis, og Candidate G må fortsat ikke aktiveres uden frisk slutshadow på den eksakte aktiveringskode og særskilt ejer-gennemgang. Mobiliseringens 48 timers halveringstid ændres ikke.
+
+## Senere erstatning af den ubundne transportstate
+
+DEC-0059 erstatter videreførelse af selve transportpotentialet som næste kørsels startinput. Den centrale kontrakt fører nu højst 49 dataminimerede, kystrelative timebeviser for et fast 48-timersvindue videre og genberegner transporten fra samme rand hver gang. Rå U/V, fart, retning, koordinater og private payloads er fortsat forbudt.
+
+Candidate G er ikke aktiveringsklar, før hele vinduet er sammenhængende. Den offentlige legacyprofil fortsætter uændret under opbygning eller datagab. Mobiliseringens særskilte afledte state og alle aktiveringskrav i DEC-0058 bevares.

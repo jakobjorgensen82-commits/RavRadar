@@ -50,9 +50,10 @@ Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre for
 - [x] Byg den særskilte versionsbundne scoreomskifter og brugerforklaring med testet global tilbagekobling til `25/40/35`; 4.0.260-kandidaten vælger fortsat legacy og aktiverer ikke Candidate G.
 - [x] Bestå samlet lokal kildegate og releasegate for 4.0.260.
 - [x] Før 4.0.260 gennem exact-head `32628441062`, PR #92/merge `c5898ce8`, fuld produktion `32628516066`, frisk `rr-20260823083627-210`-shadow og grøn 210/673/420/2.100-browserkontrol.
-- [ ] Gennemgå den friske scorefordeling særskilt med ejeren: Candidate G ligger aktuelt markant lavere end aktiv score, mens transport- og mobiliseringstilstanden kun er ni timer gammel.
+- [x] Gennemgå startskævheden særskilt med ejeren: den unge scorefordeling må ikke gøres permanent afhængig af maskinens bootstrapværdi.
 - [x] Efterprøv om den eksisterende syvdøgnshistorik kan fjerne bootstrap-skævheden. Resultat: nej; 65–117 timers historik efterlader 607/633 dele med mindst 50 points startpriorafhængighed, fordi neutral strøm ikke giver passivt tab.
-- [ ] Vælg startreserve. Anbefaling til ejerreview: neutral 50 ved ukendt/inkompatibel state, tydeligt versionsbundet og adskilt fra dokumenteret udtransport 0; start 0 og start 100 bevares som følsomhedsgrænser.
+- [x] Forkast en ny startreserve og implementér DEC-0059's faste 48-timers evidensvindue. 582 komplette historiske vinduer er uafhængige af tænkt start 0/50/100; der kræves ikke en ny 48-timers realtidsudviklingstest.
+- [ ] Før den afgrænsede schema-2-state gennem exact-head, merge og første fail-closed produktion uden offentlig aktivering.
 - [ ] Gennemfør central admin-roundtrip og en ny versionsbundet aktiveringsændring, før ønsket profil eventuelt ændres til Candidate G.
 - [ ] Offentlig aktivering må først gennemføres, når den samlede pakke er grøn og ingen konkret modstridende evidens består; manglende turkalibrering skal fortsat fremgå ærligt som modelusikkerhed.
 
