@@ -4,7 +4,7 @@
 - Transportpotentiale, effektive udtransporttimer og mobiliseringspotentiale føres videre ved den fælles aktuelle referencetime. Model, profil og kystkontekst er versionsbundet; samme-time-rekørsel og missing holder tilstanden, mens inkompatibel kontekst nulstiller fail-closed.
 - Den kompakte tilstand indeholder ingen rå U/V, vind-, bølge- eller koordinatdata. Offentlige Candidate G-resultater viser kun de afledte værdier og de komponenter, der kræves for forklaring og kontrol.
 - Den manuelle Candidate G-shadow auditerer nu den faktiske fallback-kompatible public runtime i stedet for at genhente en smallere native-only DMI-prøve. Kontrakten kræver 210 zoner, 673 dele og 1.346 rekonstruerbare modeevalueringer.
-- DEC-0057 dokumenterer dataminimering, bootstrap, forklaring og rollback. Første produktion starter tilstanden på 0 og må ikke kaldes en modnet 48-timersfordeling; aktiv scorekobling afventer exact-head, fuld produktion og en naturligt videreført slutshadow.
+- DEC-0057 dokumenterer dataminimering, bootstrap, forklaring og rollback. Exact-head `32609888406`, PR #89/merge `31e50acb`, fuld produktion `32609952992` og read-only shadow `32610281620` er grønne på 210 zoner, 673 dele og 1.346 modeevalueringer. Alle 673 tilstande er første bootstrap og må ikke kaldes en modnet 48-timersfordeling; aktiv scorekobling afventer naturligt videreført state-alder og en frisk slutshadow.
 - Artifact, protected-dirty-data, geometri, land-/vandpunkter, bundmodel og sikkerhedsbetydning er urørte.
 
 ## Intern RavScore-forskning efter 4.0.258 – Candidate G mobilisering (2026-08-23)

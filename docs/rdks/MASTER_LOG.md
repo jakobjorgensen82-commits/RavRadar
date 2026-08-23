@@ -4,8 +4,10 @@
 - Kystdelen fører en kompakt versions-/kontekstbundet tilstand videre ved `currentReferenceAt`: tidspunkt, transportpotentiale, effektive udtransporttimer og mobiliseringspotentiale.
 - Same-time og missing holder tilstanden; ændret model, profil, punkt eller kystretning nulstiller fail-closed. Rå U/V, øvrige vejrinput, koordinater og private replaydata indgår ikke i tilstanden.
 - Den manuelle shadow genhenter ikke længere en smallere native-only DMI-prøve. Den auditerer den producerede fallback-kompatible public detaljefil og kræver 210/673 samt begge jagtformer.
-- Samlet lokal kildegate og releasegate er grøn for 4.0.259.
-- Candidate G er fortsat `diagnostic-only`; aktiv score, UI, geometri, punkter og beskyttede data er uændrede. Første produktion er bootstrap, og modnet slutshadow samt ekstern leveringsverifikation udestår.
+- Samlet lokal kildegate og releasegate er grøn for 4.0.259. Exact-head `32609888406` bestod på `337466b5`, og PR #89 blev merged som `31e50acb`.
+- Produktion `32609952992` bestod den fulde kæde og deployede 4.0.259/`rr-20260823011924-210` med 210 zoner og 673 dele.
+- Read-only shadow `32610281620` bestod 210/673, 1.346 modeevalueringer og nul rekonstruktionsfejl; artifact `9485298931` er dataminimeret. Alle 673 tilstande er forventet bootstrap.
+- Candidate G er fortsat `diagnostic-only`; aktiv score, UI, geometri, punkter og beskyttede data er uændrede. Modnet slutshadow efter naturlig state-alder udestår.
 
 ## 2026-08-23 – Candidate G bølgeenergistyret mobilisering
 

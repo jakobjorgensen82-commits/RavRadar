@@ -1,4 +1,4 @@
-# Implementeringsstatus – Candidate G 4.0.259-kandidat
+# Implementeringsstatus – Candidate G 4.0.259 produktionsverificeret
 
 ## Central tilstand og fallback-kompatibel shadow – score-neutral
 
@@ -11,9 +11,9 @@
 - [x] Lås 1.346 modeevalueringer, score-rekonstruktion, udtransportforklaring, dataminimering og automatisk aktiveringsforbud i self-tests og kildegate.
 - [x] Dokumentér den nuværende rollback: aktiv score ignorerer Candidate G-navnerummet; en senere aktivering kræver en særskilt omskifter og tilbagekobling.
 - [x] Bestå samlet lokal `scripts/validate-source.ps1`, inklusive releasegate, for 4.0.259.
-- [ ] Bestå exact-head PR-kontrol og merge for 4.0.259.
-- [ ] Bestå fuld post-merge-produktion med central admin, frisk fallback-kompatibel data, fuld validering, releasegate, Supabase, artifact og Pages.
-- [ ] Kør den nye manuelle 210/673-shadow på den producerede 4.0.259-runtime, og dokumentér bootstrap/state-alder uden at kalde første kørsel modnet.
+- [x] Bestå exact-head `32609888406` på `337466b5`, merge PR #89 som `31e50acb` og bevar den eksakte head under merge.
+- [x] Bestå fuld post-merge-produktion `32609952992` med central admin, frisk fallback-kompatibel data, fuld validering, releasegate, Supabase, artifact og Pages.
+- [x] Kør den nye manuelle 210/673-shadow som read-only run `32610281620` på den producerede 4.0.259-runtime: 210 zoner, 673 dele, 1.346 modeevalueringer og nul rekonstruktionsfejl. Alle 673 tilstande er korrekt bootstrap og ikke modnet.
 - [ ] Først derefter: forbered særskilt aktiv score-omskifter og brugerforklaring; offentlig aktivering afventer modnet slutshadow og ingen modstridende evidens.
 
 ## Candidate G mobiliserings-/helhedsreview – score-neutralt
@@ -28,7 +28,7 @@
 - [x] Dokumentér DEC-0056, beslutningsrapport, modelregister, RDKS, håndbog og changelog uden private payloads.
 - [x] Bestå samlet lokal `scripts/validate-source.ps1`, inklusive de nye mobiliseringstests og releasegate.
 - [x] Bestå exact-head `32607989444` på `03083f92`, merge PR #87 som `48240d73` og fuld post-merge-produktion `32608050112` med central hydrering, fuld validering, releasegate, Supabase, artifact, Pages og grøn 210/673-kontrakt.
-- [x] Implementér samlet central persistens af transport- og mobiliseringstilstand samt fallback-kompatibel 673-deles shadowkontrakt i 4.0.259-kandidaten; eksternt produktionsbevis og modnet slutshadow udestår ovenfor.
+- [x] Implementér samlet central persistens af transport- og mobiliseringstilstand samt fallback-kompatibel 673-deles shadowkontrakt i 4.0.259; exact-head, produktion og første bootstrap-shadow er leverancebevist ovenfor. Kun naturlig state-alder og modnet slutshadow udestår.
 
 ## Candidate G frigivelsesrevision – score-neutral
 

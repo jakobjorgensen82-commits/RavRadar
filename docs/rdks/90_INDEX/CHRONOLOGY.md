@@ -187,6 +187,9 @@ Fem sammenhængende produktionskørsler afslørede, at samme ugentlige GitHub-ca
 3. Same-time-rekørsel blev gjort til eksplicit hold, så en ændret prognose i samme time hverken tæller dobbelt eller nulstiller et udtransportforløb.
 4. Candidate G offentliggøres diagnostisk med rekonstruerbare 20/50/30-bidrag, men aktiv `25/40/35` og UI er uændrede.
 5. Den manuelle shadow blev omlagt fra native-only genhentning til fallback-kompatibel audit af den faktiske 210/673-runtime. Første produktion er bootstrap fra 0 og kan ikke i sig selv bevise en modnet 48-timersfordeling.
+6. Exact-head `32609888406` bestod på `337466b5`; PR #89 blev merged som `31e50acb`.
+7. Produktion `32609952992` bestod central hydrering, frisk data/proveniens, fuld validering, releasegate, Supabase, artifact og Pages. Live er 4.0.259/`rr-20260823011924-210` med 210 zoner og 673 dele.
+8. Read-only shadow `32610281620` bestod 1.346 modeevalueringer uden rekonstruktionsfejl. Alle 673 tilstande var forventet bootstrap; næste trin er naturlig state-alder, ikke offentlig aktivering.
 
 ## 2026-08-08 – DEC-0031 model- og kvotestyring
 1. Jakob fastlagde, at kvalitet går foran kvotebesparelse, men at Sol ikke skal bruges til rutinearbejde af bekvemmelighed.
