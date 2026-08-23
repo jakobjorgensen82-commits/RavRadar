@@ -240,3 +240,10 @@ Fem sammenhængende produktionskørsler afslørede, at samme ugentlige GitHub-ca
 4. Den bindende forklaring er: `På grund af kraftig fralandsstrøm trækkes ravet ud i havet og derfor går scoren i nul, selv om der fortsat kan være mobilisering og god jagtbarhed`.
 5. Adfærden versionsbindes som `RRS-CANDIDATE-G-CURRENT-LED-OUTFLOW-8-RESEARCH-2`; `RESEARCH-1` bevares som revisionsspor. Offentlig RavScore og automatisk aktivering er uændret.
 6. Exact-head `32604792201` bestod på `f6458f09`, PR #84 blev merged som `800a93cb`, og fuld produktion `32604850884` leverede live `rr-20260822232159-210` med 210 zoner, 673 dele og samme datasæt-id i manifest/start/detaljer.
+
+## 2026-08-23 – første naturlige Candidate G-statefortsættelse
+
+1. Schedule `32613284735` kørte naturligt på `main`/`600e8a45` og bestod frisk data, fuld validering, releasegate, artifact og Pages.
+2. Live `rr-20260823023951-210` består den dataminimerede 210/673-shadow med 1.346 modeevalueringer og nul rekonstruktionsfejl.
+3. Alle 673 tidligere tilstande blev accepteret, og ingen blev nulstillet. Referencetiden gik fra 00:00Z til 03:00Z, så dokumenteret yngste og ældste naturlige state-alder er 3/3 timer.
+4. Candidate G er fortsat diagnostic-only; offentlig `25/40/35` og aktiveringsforbuddet er uændret. 48-timersslutshadow udestår.

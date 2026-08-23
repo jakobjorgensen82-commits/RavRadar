@@ -7,6 +7,8 @@
 - Samlet lokal kildegate og releasegate er grøn for 4.0.259. Exact-head `32609888406` bestod på `337466b5`, og PR #89 blev merged som `31e50acb`.
 - Produktion `32609952992` bestod den fulde kæde og deployede 4.0.259/`rr-20260823011924-210` med 210 zoner og 673 dele.
 - Read-only shadow `32610281620` bestod 210/673, 1.346 modeevalueringer og nul rekonstruktionsfejl; artifact `9485298931` er dataminimeret. Alle 673 tilstande er forventet bootstrap.
+- Første naturlige schedule `32613284735` bestod hele produktionskæden og udgav `rr-20260823023951-210`. Den dataminimerede audit accepterede 673/673 tidligere tilstande, nulstillede 0 og bestod 210/673/1.346 uden rekonstruktionsfejl.
+- Bootstrapreferencen 00:00Z til ny fælles reference 03:00Z dokumenterer 3/3 timers yngste/ældste naturlige fortsættelsesalder. Det opfylder ikke 48-timerskravet.
 - Candidate G er fortsat `diagnostic-only`; aktiv score, UI, geometri, punkter og beskyttede data er uændrede. Modnet slutshadow efter naturlig state-alder udestår.
 
 ## 2026-08-23 – Candidate G bølgeenergistyret mobilisering

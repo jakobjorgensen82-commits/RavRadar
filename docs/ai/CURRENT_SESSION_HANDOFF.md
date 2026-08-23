@@ -1,5 +1,12 @@
 # RavRadar - aktuelt Codex-handoff
 
+## Checkpoint 2026-08-23 – første naturlige Candidate G-statefortsættelse
+
+- Naturlig schedule `32613284735` på docs-only `main`/`600e8a45` bestod frisk data, fuld validering, releasegate, artifact og Pages. Den offentliggjorte runtime er `rr-20260823023951-210` med 210 zoner og 673 kystdele.
+- Den dataminimerede public audit består 1.346 modeevalueringer uden score-rekonstruktionsfejl. 673/673 tidligere tilstande blev accepteret, og 0 blev nulstillet.
+- Bootstrapreferencen var 00:00Z og den nye fælles reference 03:00Z. Yngste og ældste dokumenterede naturlige state-alder er derfor begge 3 timer; 48-timerskravet er ikke opfyldt.
+- Candidate G er fortsat `diagnostic-only`; offentlig `25/40/35`, aktiveringsflag, geometri, land-/vandpunkter, artifact, protected-dirty-data og private cachedata er urørte.
+
 ## Checkpoint 2026-08-23 – 4.0.259 central Candidate G produktionsverificeret
 
 - PR #89 bestod exact-head `32609888406` på `337466b5` og blev merged som `31e50acb`. Aktiv offentlig RavScore er fortsat `25/40/35`; Candidate G er kun et adskilt diagnostisk runtimefelt.
