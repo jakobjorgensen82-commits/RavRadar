@@ -13,8 +13,8 @@
 - [x] Kør samlet lokal RDKS-/målrettet kildekontrol og releasegate.
 - [x] Bestå exact-head `32636378576` på PR #97's præcise commit `41cdb897`.
 - [x] Merge som `0f7a9d5f`, følg fuld produktion `32636433944` og verificér central profil-readback, live `rr-20260823112726-210`, manifest, aktiv Candidate G og global rollbackmetadata.
-- [ ] Kør aktiv dataminimeret 210/673-shadow og fuld 210/673-browserkontrol på den eksakte merge.
-- [ ] Ret shadowens for snævre ikke-ready-statuskontrakt efter run `32637022498`; genkør på eksakt main og kræv grønt resultat. Runtime og score ændres ikke.
+- [x] Kør aktiv dataminimeret shadow `32637833674` og fuld browserkontrol af live `rr-20260823114744-210`: 210/673, 420 aktuelle og 2.100 femdøgnsvisninger uden fejl.
+- [x] Ret shadowens for snævre ikke-ready-statuskontrakt efter run `32637022498`; exact-head `32637339636`, PR #98/merge `fd69f8a0`, produktion `32637387600` og ny shadow `32637833674` er grønne. Runtime og score blev ikke ændret.
 
 # Tidligere checkpoint – Candidate G bounded transport-memory efter 4.0.260
 
