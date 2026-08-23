@@ -25,6 +25,12 @@ const DEFAULT_OUTPUT = '.geometry-v2-work/candidate-g-public-shadow-audit.json';
 const EXPECTED_ZONES = 210;
 const EXPECTED_PARTS = 673;
 const MODES = ['waders', 'beach'];
+const NOT_READY_TRANSPORT_MEMORY_STATUSES = new Set([
+  'LATEST_SAMPLE_MISSING',
+  'WINDOW_HAS_MISSING_EVIDENCE',
+  'WINDOW_INCOMPLETE',
+  'WINDOW_HAS_TIME_GAP',
+]);
 
 const finite = value => value !== null
   && value !== undefined
@@ -128,7 +134,7 @@ export function auditCandidateGPublicShadow(document, {
       'INCOMPLETE_MEMORY_WITHOUT_OWNER_WARMUP');
     add(memoryReady
       ? candidate?.transportMemoryStatus === 'READY'
-      : candidate?.transportMemoryStatus === 'WINDOW_INCOMPLETE',
+      : NOT_READY_TRANSPORT_MEMORY_STATUSES.has(candidate?.transportMemoryStatus),
     'BOUNDED_TRANSPORT_MEMORY_STATUS_INVALID');
     add(memoryReady
       ? Number(candidate?.transportMemoryCoverageHours) === 48
@@ -371,6 +377,13 @@ async function main() {
     assert.equal(report.stateContinuation.warmupPartCount, EXPECTED_PARTS);
     assert.equal(report.scoreProfile.activeProfileId, CANDIDATE_G_RAVSCORE_PROFILE_ID);
     assert.equal(report.privacy.partIdentifiersIncluded, false);
+    for (const status of NOT_READY_TRANSPORT_MEMORY_STATUSES) {
+      const statusDocument = syntheticDocument();
+      const firstPart = Object.values(statusDocument.coastalParts.parts)[0];
+      firstPart.candidateG.transportMemoryStatus = status;
+      firstPart.candidateG.currentState.transportMemoryStatus = status;
+      assert.equal(auditCandidateGPublicShadow(statusDocument).status, 'passed');
+    }
     console.log('Candidate G aktiv pre-public warmup-shadow-self-test: OK');
     return;
   }

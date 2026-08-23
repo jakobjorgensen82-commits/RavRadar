@@ -10,6 +10,8 @@
 - Den tidligere rækkefølge med komplet 48-timersvindue og frisk slutshadow før kobling er erstattet kun for den nuværende ikke-offentlige opvarmning. Exact-head-kildegate køres før merge; fuld produktion, central readback, aktiv 210/673-shadow og fuld browserkontrol følger den eksakte merge. Modstridende evidens udløser global rollback.
 - Når vinduet senere bliver komplet, fortsætter samme Candidate G-profil. Der programmeres eller aktiveres ikke en ny model på det tidspunkt; transporten bliver blot fuldt uafhængig af opvarmningsranden.
 - 4.0.261 ændrer ingen private caches, artifact, protected-dirty-data, geometri eller land-/vandpunkter. I `data/kystdata.json` og `data/zones.geojson` ændres kun versionsfeltet.
+- PR #97 bestod exact-head `32636378576` på `41cdb897`, blev merged som `0f7a9d5f`, og fuld produktion `32636433944` bestod central hydrering, frisk data, fuld validate, releasegate, central profil-readback og Pages. Live `rr-20260823112726-210` er 4.0.261 med Candidate G aktiv, 210 zoner, 673 dele, identiske manifesthashes og nul offentlig kandidat-scoreafvigelser.
+- Første aktive shadow `32637022498` fandt ingen score-, coverage-, rekonstruktions- eller privatlivsfejl, men fejlede på en for snæver auditantagelse: 8 legitime `WINDOW_HAS_MISSING_EVIDENCE`-tilstande blev fejlagtigt afvist, fordi auditen kun tillod `WINDOW_INCOMPLETE` ved `memoryReady=false`. Runtimekontrakten og state-pipelinen har hele tiden defineret begge samt `LATEST_SAMPLE_MISSING` og `WINDOW_HAS_TIME_GAP` som ærlige ikke-ready-statusser. Auditkontrakten rettes og genkøres; den røde gate omgås ikke.
 
 ## Historisk efter 4.0.260 – Candidate G fik afgrænset 48-timers transporthukommelse før aktivering
 
