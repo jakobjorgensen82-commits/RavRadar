@@ -1,6 +1,6 @@
 # RavRadar - aktivt roadmap
 
-## Aktiv 4.0.268-kandidat – offentlig grundbog og almindeligt brugersprog
+## Produktionsverificeret 4.0.268 – offentlig grundbog og almindeligt brugersprog
 
 - [x] Gennemgå de centrale offentlige tekster om score, opdatering, kildevalg, login, konto, tur og fejl og erstat interne systemord med almindeligt dansk.
 - [x] Byg **Grundbog i ravjagt** som et selvstændigt offentligt modul, hvor ravets egenskaber, havets processer, kysten, felttegn og selve jagten kommer før RavRadar.
@@ -13,8 +13,9 @@
 - [x] Bestå PR #117 exact-head `32671863965`, merge `21acb0a2` og lad produktion `32671924885` bekræfte rangeringstesten; kørselen stoppede fortsat før deploy på en anden gammel ordret stateforklaringstest.
 - [x] Ret stateforklaringskontrakten til **De seneste timers betydning**, føj den til `validate:source` og målret hele den resterende testsamling, der læser de ændrede offentlige moduler.
 - [x] Bestå 29 direkte UI-/auth-/konto-/assistent-/startup-tests og fjern den historiske 4.0.240-sikkerhedstests modstrid med den gældende 4.0.268-kontrakt.
-- [ ] Bestå den samlede gatekorrektions exact-head, merge, frisk 4.0.268-produktion og den relevante offentlige 210/673-browserkontrol.
-- [ ] Luk derefter 4.0.268 med eksakte run-id'er i RDKS, roadmap, håndbøger, changelog og permanent handoff.
+- [x] Bestå PR #118 exact-head `32672522334` på `8faccce3`, merge `3c22e40b` og frisk 4.0.268-produktion `32672578127`.
+- [x] Kontrollér live `rr-20260823230848-210` på 210/673 samt 420 aktuelle, 2.100 femdøgns- og 673 kystdelsvisninger uden fejl.
+- [x] Luk 4.0.268 med eksakte run-id'er i RDKS, roadmap, håndbøger, changelog og permanent handoff.
 
 ## Produktionsverificeret 4.0.267 – kontoindberetningens uploadskema
 
@@ -351,7 +352,7 @@ Aktiv kandidat: 25/40/35 efter DEC-0041. Konsekvensauditterne er grønne. Næste
 - [ ] P1: omsæt analysen til score-neutrale kandidatregler og en forskningsbaseret foreløbig vægtning. Vent ikke på et halvt års ture, men brug senere komplette ture til efterkalibrering.
 - [ ] P1: sammenlign gammel og ny model automatisk på samme data. Ejer og Codex retter kun de vigtigste afvigelser gennem almindelig samtale; ingen offentlig AI/API.
 - [ ] P1: implementér godkendt hændelsesmodel, ravvinduer og enkel lagdelt forklaring med fuld regression og produktionsevidens.
-- [x] P2: byg et omfattende læringsmodul for begyndere og øvede på den kvalitetssikrede viden. Implementeret som **Grundbog i ravjagt** i 4.0.268-kandidaten; produktionsbevis afventer.
+- [x] P2: byg et omfattende læringsmodul for begyndere og øvede på den kvalitetssikrede viden. **Grundbog i ravjagt** er produktionsverificeret i 4.0.268 via PR #118, produktion `32672578127` og grøn 210/673-browseraudit.
 - [ ] P3 senere: gemte områder og varsler genovervejes efter cirka et halvt år eller i en samlet brugerdata-sektion.
 - [x] Eksisterende score-/pil-/forklaringskontrol genbruges. Fuld 210/673 køres ugentligt eller ved relevante score-, UI- og datakontraktændringer.
 - Fravalgt: separat offentlig scoresikkerhed og historisk “hvorfor ændrede scoren sig?”-funktion.
@@ -373,7 +374,7 @@ Copernicus-afgrænsningen er implementeret som 4.0.244-kandidat: normal drift br
 - [x] Genbrug de eksisterende syntetiske og observerede audits.
 - [ ] Generér og gennemgå kun den korte automatiske ejer-rapport.
 - [ ] Vælg eller forkast kandidatdele skriftligt før enhver produktionsscoreændring.
-- [x] Kandidatbeslutningen er gennemført; hændelsesmodel, ravvinduer, lagdelte forklaringer og læringsmodul er efterfølgende implementeret. Grundbogens produktionsbevis afventer 4.0.268.
+- [x] Kandidatbeslutningen er gennemført; hændelsesmodel, ravvinduer, lagdelte forklaringer og læringsmodul er efterfølgende implementeret og produktionsverificeret gennem 4.0.268.
 
 ## v4.0.249: privat RavScore-kandidat-shadow
 

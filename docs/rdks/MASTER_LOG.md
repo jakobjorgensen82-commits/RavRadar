@@ -6,8 +6,11 @@
 - Første produktion `32670920742` stoppede før release/deploy, fordi den fulde validering fandt en ældre rangeringstest, der stadig krævede den erstattede tekniske hjælpetekst ordret.
 - Den nye almindelige forklaring bevares. PR #117/exact-head `32671863965` rettede rangeringstesten og blev merged som `21acb0a2`.
 - Produktion `32671924885` bekræftede rangeringstesten, men stoppede fortsat før deploy på en anden gammel ordret kontrakt: stateforklaringstesten krævede **Hvad skete før nu?** frem for **De seneste timers betydning**.
-- Den anden kontrakt rettes og føjes til `validate:source`. Hele testsamlingen, der direkte læser de ændrede offentlige moduler, køres nu målrettet før næste PR. Ny exact-head, produktion og onlinekontrol afventer.
+- Den anden kontrakt blev rettet og føjet til `validate:source`. Hele testsamlingen, der direkte læser de ændrede offentlige moduler, blev derefter kørt målrettet før næste PR.
 - Den systemiske målretning kørte 29 direkte tests og fandt én yderligere historisk 4.0.240-sikkerhedstest, som ikke længere lå i en gate, men stadig krævede gentagne advarsler. Den historiske indgang følger nu 4.0.268-kontrakten, og hele gruppen er grøn.
+- PR #118 bestod den samlede exact-head-kildegate `32672522334` på `8faccce3` og blev merged som `3c22e40b`.
+- Frisk produktion `32672578127` bestod central hydrering, DMI/Copernicus, frisk vejr, fuld projektvalidering, releasegate, artifacts og Pages. Live `rr-20260823230848-210` er 4.0.268 på 210 zoner og 673 kystdele.
+- Den fulde offentlige browseraudit bestod 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer uden kontrol-, konsol-, side- eller HTTP-fejl. Leverancen er lukket; ingen score, vejrkontrakt, Supabase-kontrakt, geometri, land-/vandpunkter eller private data blev ændret.
 
 ## 2026-08-23 – skema og tom GPS-værdi blokerede turindberetninger
 
@@ -2007,10 +2010,10 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - Begge rapportveje bruger samme zone→kyststrækningsvalg. GPS-spor, rute, præcis position, fri tekst og billeder indsamles ikke.
 - Turloggens brugerflade viser ikke længere den interne databaseforklaring “Der oprettes ikke en ekstra kopi i databasen”.
 - Målrettede tests er grønne. Version, exact-head og produktion udestår. Candidate G, score, vejrdata, geometri, land-/vandpunkter og beskyttede data er uændrede. Se DEC-0064.
-## 2026-08-24 – 4.0.268-kandidat samler offentlig ravjagtviden og almindeligt dansk
+## 2026-08-24 – 4.0.268 samler offentlig ravjagtviden og almindeligt dansk
 
 - Ejeren præciserede, at læringsmodulet skal lære alt det, projektet ved om ravjagt, og ikke først og fremmest forklare appen. Den nye **Grundbog i ravjagt** følger derfor kæden fra ravets egenskaber over hav og kyst til felttegn og selve jagten, før RavRadar forklares.
 - Grundbogen dækker mobilisering, transport, vind, bølger, strøm, vandstand, revler, render, langs- og tværtransport, strand, vandkant, waders, UV, hændelsesfaser, scenarier, misforståelser, kilder og ordliste.
 - Offentlig standardsprog i forside, scorepanel, Rav-assistent, login, konto, tur og fejl er samtidig gjort mere forståeligt. Admin- og debugværktøjer forbliver bevidst tekniske.
 - Nye målrettede tests låser faglig rækkefølge, aktiv `20/50/30`, waders-kurve, udtransportregel, mobilopsætning, bølge-/strømroller og fravær af intern standardtekst. Lokal desktop og 390 px mobil er grøn.
-- Ingen score, Candidate G-regel, vejrdata, Supabase-kontrakt, geometri eller land-/vandpunkt ændres. Exact-head og produktion afventer. Se DEC-0067.
+- Ingen score, Candidate G-regel, vejrdata, Supabase-kontrakt, geometri eller land-/vandpunkt ændres. PR #118/exact-head `32672522334`, merge `3c22e40b`, produktion `32672578127` og live `rr-20260823230848-210` lukker leverancen på 210/673 med grøn offentlig browseraudit. Se DEC-0067.

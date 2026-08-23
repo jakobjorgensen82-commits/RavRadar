@@ -11,6 +11,8 @@
 7. Første produktion `32670920742` stoppede korrekt før deploy: en ældre fuld rangeringstest krævede fortsat den tidligere tekniske hjælpetekst ordret. Den nye almindelige forklaring blev bevaret, PR #117/exact-head `32671863965` rettede testkontrakten og blev merged som `21acb0a2`.
 8. Anden produktion `32671924885` kom forbi rangeringen, men stoppede fortsat før deploy på stateforklaringstestens gamle overskrift **Hvad skete før nu?**. Den gældende **De seneste timers betydning** låses nu i testen, som flyttes til `validate:source`; alle direkte læsere af de ændrede brugerfiler målrettes før næste PR.
 9. Den målrettede gruppe på 29 UI-/auth-/konto-/assistent-/startup-tests blev grøn. Den fandt desuden en historisk 4.0.240-sikkerhedstest, som krævede gentagne advarsler i strid med ejerbeslutningen; den historiske indgang følger nu 4.0.268-kontrakten.
+10. PR #118 bestod den samlede exact-head `32672522334` på `8faccce3` og blev merged som `3c22e40b`. Produktion `32672578127` gennemførte hele kæden og udgav `rr-20260823230848-210` som 4.0.268 på 210/673.
+11. Den afsluttende offentlige browseraudit bestod 420 aktuelle, 2.100 femdøgns- og 673 kystdelsvisninger uden kontrol-, konsol-, side- eller HTTP-fejl. RDKS, roadmap og håndbøger blev derefter lukket i en docs-only-opfølgning.
 
 ## 2026-08-23 – den virkelige login- og turlogprøve lukker et produktionsgab
 

@@ -42,3 +42,7 @@ Admin- og debugvisninger er ikke skrevet om som almindelig brugerflade. De er be
 - manglende forklaring af bølgernes, strømmens og kystens forskellige roller.
 
 Gennemgangen ændrer ingen RavScore-regel, vejrdata, geometri, land-/vandpunkter eller privat datakontrakt.
+
+## Produktionslukning
+
+PR #118 bestod exact-head `32672522334` på `8faccce3` og blev merged som `3c22e40b`. Produktion `32672578127` bestod hele produktionskæden og udgav `rr-20260823230848-210` som 4.0.268 på 210 zoner og 673 kystdele. Den efterfølgende offentlige browseraudit bestod 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer uden kontrol-, konsol-, side- eller HTTP-fejl.

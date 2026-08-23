@@ -1,5 +1,15 @@
 # AI Roadmap – RavRadar 4.0.243+
 
+## 4.0.268 – produktionsverificeret grundbog og almindeligt dansk
+
+- [x] Gør læringsmodulet til en grundbog i ravjagt, hvor ravets egenskaber, havets processer, kysten, felttegn og jagtmetoder kommer før RavRadar.
+- [x] Dæk mobilisering, transport, strøm, vind, bølger, vandstand, revler, render, strand, vandkant, waders, UV og hændelsesforløb med synlige kilder og evidensniveauer.
+- [x] Gennemgå offentligt sprog i score, opdatering, assistent, login, konto, tur og fejl uden at ændre tekniske adminværktøjer.
+- [x] Lås faglig rækkefølge, almindeligt dansk, aktiv `20/50/30`, waders-kurve og udtransportregel i målrettede tests og releasegate.
+- [x] Bestå PR #118 exact-head `32672522334`, merge `3c22e40b`, produktion `32672578127` og live `rr-20260823230848-210` på 210/673.
+- [x] Bestå 420 aktuelle, 2.100 femdøgns- og 673 kystdelsvisninger uden kontrol-, konsol-, side- eller HTTP-fejl.
+- [x] Bevar score, Candidate G, vejrkontrakt, Supabase-kontrakt, geometri, land-/vandpunkter og private data uændret.
+
 ## 4.0.265 – produktionsverificeret kontoindberetning og frivilligt fravalg
 
 - [x] En indlogget bruger kan indberette en tur eller et fund fra kontosiden uden først at starte en tur.
@@ -129,7 +139,7 @@
 - [x] Udled, gennemgå og godkend Candidate G med `20/50/30`; 25/40/35 er nu eksakt rollback.
 - [x] Automatisér gammel-mod-ny-sammenligning lokalt og brug den i det dataminimerede beslutningsgrundlag; ingen OpenAI API i offentlig runtime.
 - [x] Implementér og produktionsverificér Candidate G's strøm-, mobiliserings-, jagtbarheds-, memory-, forklarings- og rollbackkontrakt. Et bredere offentligt læringsmodul er fortsat et senere roadmapspunkt.
-- [x] Byg et omfattende offentligt læringsmodul på den kvalitetssikrede forskning. **Grundbog i ravjagt** er implementeret som 4.0.268-kandidat; exact-head og produktion afventer.
+- [x] Byg og produktionsverificér et omfattende offentligt læringsmodul på den kvalitetssikrede forskning. **Grundbog i ravjagt** er udgivet i 4.0.268 via PR #118, produktion `32672578127` og grøn 210/673-browseraudit.
 - [ ] Udskyd gemte områder/varsler mindst cirka et halvt år eller til en senere brugerdata-sektion.
 - Fravalgt nu: særskilt offentlig scoresikkerhed og forklaring af forskel fra gårsdagen.
 - Se `docs/rdks/10_DECISIONS/DEC-0044-SCORE-RESEARCH-PRODUCT-PLAN.md` og `docs/research/RAVSCORE_RESEARCH_PRODUCT_PLAN_2026-08-21.md`.

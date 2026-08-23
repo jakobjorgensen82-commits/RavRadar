@@ -1,6 +1,6 @@
 # Current truth – gældende projektviden
 
-## Aktiv 4.0.268-kandidat – ravjagt før RavRadar
+## Produktionsverificeret 4.0.268 – ravjagt før RavRadar
 
 - Den offentlige læring er nu en selvstændig **Grundbog i ravjagt**, ikke en vejledning i at trykke rundt i appen. Den lærer først ravets egenskaber, mobilisering, transport, vind, bølger, strøm, vandstand, kystformer, felttegn og selve jagten.
 - Grundforklaringen er: Bølger kan mobilisere, strøm transporterer, og kysten sorterer og samler. Vind virker især gennem bølger, vandlag, vandstand og søgeforhold; der findes ingen universel gunstig dansk vindretning.
@@ -10,8 +10,10 @@
 - Kandidaten ændrer ingen score, Candidate G-regel, vejrdata, Supabase-kontrakt, geometri eller land-/vandpunkter. De to geodatafiler har kun versionsfeltet 4.0.268.
 - Lokal målrettet test samt desktop- og 390 px-mobilkontrol er grøn. PR #116 bestod exact-head `32670857438` på source-head `c810155b` og blev merged som `5a2f7796`.
 - Første produktion `32670920742` stoppede korrekt før deploy, fordi en ældre fuld rangeringstest stadig krævede den tidligere tekniske hjælpetekst ordret. PR #117/exact-head `32671863965` rettede kontrakten og blev merged som `21acb0a2`.
-- Anden produktion `32671924885` kom forbi rangeringstesten, men stoppede fortsat før deploy på den samme fejlfamilie i stateforklaringstesten: den krævede den gamle **Hvad skete før nu?** frem for **De seneste timers betydning**. Også denne kontrakt rettes og flyttes til den tidlige kildegate; frisk produktion og offentlig 210/673-kontrol afventer. Se DEC-0067.
+- Anden produktion `32671924885` kom forbi rangeringstesten, men stoppede fortsat før deploy på den samme fejlfamilie i stateforklaringstesten: den krævede den gamle **Hvad skete før nu?** frem for **De seneste timers betydning**. Også denne kontrakt blev rettet og flyttet til den tidlige kildegate.
 - Den efterfølgende målrettede gennemgang af 29 direkte testlæsere er grøn og har også afviklet den historiske 4.0.240-sikkerhedstest til den gældende 4.0.268-kontrakt med én samlet afgrænsning og ingen gentagne delscoreadvarsler.
+- PR #118 bestod exact-head `32672522334` på `8faccce3` og blev merged som `3c22e40b`. Frisk produktion `32672578127` bestod hele kæden og udgav live `rr-20260823230848-210` som 4.0.268 på 210 zoner og 673 kystdele.
+- Den fulde offentlige browseraudit bestod 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer med nul kontrol-, konsol-, side- eller HTTP-fejl. Se DEC-0067.
 
 ## Produktionsverificeret 4.0.267 – komplet uploadskema
 

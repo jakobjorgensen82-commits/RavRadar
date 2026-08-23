@@ -1,6 +1,6 @@
 # DEC-0067: Det offentlige læringsmodul er en grundbog i ravjagt
 
-**Status:** IMPLEMENTERET SOM 4.0.268-KANDIDAT; NY EXACT-HEAD OG PRODUKTION AFVENTER EFTER GATEKORREKTION
+**Status:** PRODUKTIONSVERIFICERET I 4.0.268
 
 **Dato:** 2026-08-24
 
@@ -51,3 +51,9 @@ Den samtidige sproggennemgang erstatter blandt andet offentlig standardtekst om 
 - PR #117 bestod exact-head `32671863965` på `fa2d23dd` og blev merged som `21acb0a2`. Produktion `32671924885` kom forbi rangeringstesten, men stoppede fortsat før deploy på en anden ældre ordret kontrakt: stateforklaringstesten krævede overskriften **Hvad skete før nu?** i stedet for den nye **De seneste timers betydning**.
 - Den anden testkontrakt rettes tilsvarende og føjes til `validate:source`. Hele testsamlingen, der direkte læser de ændrede offentlige moduler, køres målrettet før næste PR for at undgå én produktionskørsel pr. forældet formulering.
 - Den målrettede gennemgang omfatter 29 direkte UI-/auth-/konto-/assistent-/startup-tests. Den fandt også den historiske, ikke-gatede 4.0.240-sikkerhedstest, som krævede gentagne advarsler i strid med den nye ejerbeslutning; den historiske indgang viderestiller nu til den gældende 4.0.268-kontrakt. Hele den direkte testgruppe er grøn.
+- PR #118 bestod den samlede exact-head-kildegate i kørsel `32672522334` på source-head `8faccce3` og blev merged som `3c22e40b`.
+- Frisk produktion `32672578127` bestod central hydrering, DMI/Copernicus, frisk vejr, fuld projektvalidering, releasegate, supportartifact, Pages-artifact og deploy.
+- Live datasæt `rr-20260823230848-210` er version 4.0.268 med 210 zoner og 673 kystdele. Den fulde offentlige browseraudit bestod 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer med nul kontrol-, konsol-, side- eller HTTP-fejl.
+- Den lokale desktop- og 390×844-kontrol bestod uden vandret overløb. Den midlertidige browservisning blev nulstillet efter kontrollen.
+
+De to stoppede produktionsforsøg var ikke udgivelser. De beviser, at de fulde gates afviste modstridende gamle testkontrakter før artifact og deploy. 4.0.268 er først produktionsverificeret ved merge `3c22e40b` og kørsel `32672578127`.
