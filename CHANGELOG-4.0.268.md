@@ -8,3 +8,4 @@
 - Låser grundbogens faglige rækkefølge, emner, aktive `20/50/30`, waders-vindkurve, udtransportregel, mobilopsætning og almindelige sprog i målrettede tests og releasegaten.
 - Kører også landslisternes almindelige rangeringstekst og stateforklaringens nye overskrift i den tidlige kildegate, så forældede ordrette UI-tests ikke først opdages efter en fuld vejropbygning.
 - Ændrer ingen RavScore-regel, Candidate G-profil, vejrdata, Supabase-kontrakt, geometri eller land-/vandpunkter. Geodatafilerne ændrer kun versionsfelt til 4.0.268.
+- Produktionsverificeret via PR #118/exact-head `32672522334`, merge `3c22e40b`, produktion `32672578127` og live `rr-20260823230848-210` på 210/673. Den offentlige browseraudit bestod 420 aktuelle, 2.100 femdøgns- og 673 kystdelsvisninger uden fejl.

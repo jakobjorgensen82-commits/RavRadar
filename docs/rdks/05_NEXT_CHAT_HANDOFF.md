@@ -1,15 +1,15 @@
 # RavRadar – overlevering til næste chat
 
-## Aktivt checkpoint 2026-08-24 – 4.0.268 offentlig grundbog
+## Lukket checkpoint 2026-08-24 – 4.0.268 offentlig grundbog
 
-- Aktiv branch er `codex/public-learning-and-language-4.0.268` fra produktionsverificeret 4.0.267/main `43ceffc1`.
-- **Grundbog i ravjagt** er implementeret i `learn.html`/`learn.css` og tilgængelig fra forsiden. Den lærer ravjagt fra havbund til fund, før RavRadar forklares.
-- En samtidig sproggennemgang har forenklet normal offentlig tekst i forside, scorepanel, Rav-assistent, login, konto, tur og fejl uden at gøre admin-/debugværktøjer ubrugeligt upræcise.
-- Nye målrettede tests låser emnedækning, faglig rækkefølge, aktiv `20/50/30`, waders-kurve, udtransportregel, mobilopsætning, bølge-/strømroller, kilder og almindeligt sprog.
-- Lokal desktop og mobil 390×844 er kontrolleret uden vandret overløb. Normal browserstørrelse er gendannet.
+- **Grundbog i ravjagt** er udgivet i `learn.html`/`learn.css` og tilgængelig fra forsiden. Den lærer ravjagt fra havbund til fund, før RavRadar forklares.
+- Normal offentlig tekst i forside, scorepanel, Rav-assistent, login, konto, tur og fejl er gennemgået og gjort mere forståelig. Admin-/debugværktøjer er fortsat bevidst tekniske.
+- Målrettede tests låser emnedækning, faglig rækkefølge, aktiv `20/50/30`, waders-kurve, udtransportregel, mobilopsætning, bølge-/strømroller, kilder og almindeligt sprog.
+- PR #116 og #117 stoppede to forældede ordrette testkontrakter før deploy. Den samlede rettelse bestod PR #118 exact-head `32672522334` på `8faccce3` og blev merged som `3c22e40b`.
+- Produktion `32672578127` bestod hele kæden. Live `rr-20260823230848-210` er version 4.0.268 med 210 zoner og 673 kystdele.
+- Den offentlige browseraudit bestod 420 aktuelle, 2.100 femdøgns- og 673 kystdelsvisninger uden kontrol-, konsol-, side- eller HTTP-fejl. Lokal desktop og 390×844-mobilvisning bestod uden vandret overløb.
 - Score, Candidate G, vejrdata, Supabase-kontrakt, geometri og land-/vandpunkter er urørte; geodatafilerne ændrer kun versionsfelt til 4.0.268.
-- Næste trin: samlet målrettet test, versions-/RDKS-/geodatakontrol, exact-head, merge, frisk produktion, offentlig 210/673-kontrol og en afsluttende dokumentationsmerge med eksakte id'er.
-- 4.0.267 er lukket: PR #115/exact-head `32664463654`, merge `43ceffc1`, produktion `32664525128`, og en ny ejerindberetning blev sendt og synlig.
+- Næste chat skal begynde fra ren `main` efter den afsluttende docs-only-merge. Næste produktarbejde vælges ud fra det aktive roadmap; 4.0.268 skal ikke genåbnes uden ny modstridende evidens.
 
 ## Akut checkpoint 2026-08-23 – 4.0.267 uploadhotfix
 

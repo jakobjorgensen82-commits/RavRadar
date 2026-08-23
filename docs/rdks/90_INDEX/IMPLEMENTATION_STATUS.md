@@ -1,6 +1,6 @@
-# Implementeringsstatus – 4.0.268 offentlig grundbog og almindeligt dansk
+# Produktionsverificeret implementeringsstatus – 4.0.268 offentlig grundbog og almindeligt dansk
 
-## Lokal kandidat
+## Afsluttet leverance
 
 - [x] Tilføj en offentlig **Grundbog i ravjagt** med ravets egenskaber, hav, kyst, felttegn, jagtmetoder, hændelsesforløb, RavRadar-forklaring, kilder og ordliste.
 - [x] Placér den praktiske og faglige ravjagt før RavRadar og RavScore.
@@ -13,8 +13,11 @@
 - [x] Bestå PR #117 exact-head `32671863965`, merge `21acb0a2` og bekræft i produktion `32671924885`, at rangeringstesten nu passerer.
 - [x] Lad samme produktion stoppe før deploy på den næste forældede ordrette test; ret stateforklaringstesten til **De seneste timers betydning** og føj den til `validate:source`.
 - [x] Kør 29 direkte læsere af de ændrede offentlige moduler målrettet; gør den historiske 4.0.240-sikkerhedstest til en kompatibel indgang til den gældende 4.0.268-kontrakt. Hele gruppen er grøn.
-- [ ] Bestå den samlede gatekorrektions exact-head, merge, frisk 4.0.268-produktion og den offentlige 210/673-runtime.
-- [ ] Opdatér denne status med eksakte commits, kørsler og liveversion.
+- [x] Bestå PR #118 exact-head `32672522334` på `8faccce3` og merge den eksakte head som `3c22e40b`.
+- [x] Bestå frisk produktion `32672578127` med central hydrering, DMI/Copernicus, frisk vejr, fuld validering, releasegate, artifacts og Pages.
+- [x] Kontrollér live `rr-20260823230848-210` som version 4.0.268 på 210 zoner og 673 kystdele.
+- [x] Bestå offentlig browseraudit på 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer uden kontrol-, konsol-, side- eller HTTP-fejl.
+- [x] Opdatér RDKS, roadmap, håndbøger, changelog og permanent handoff med eksakte commits og kørsler.
 
 Score, Candidate G, `20/50/30`, vejrdata, Supabase-kontrakt, geometri og land-/vandpunkter er uændrede. Se DEC-0067.
 
@@ -1869,7 +1872,7 @@ Implementeret og målrettet testet: v2-kontrakt, JSON Schema, korrekt observatio
 - Ikke implementeret: færdig evidenssyntese og internt forsknings-/regelregister.
 - Ikke implementeret: score-neutrale kandidatregler og automatisk gammel-mod-ny-rapport til Codex-samarbejdet.
 - Ikke implementeret: hændelsesmodel, ravvinduer og nye lagdelte forklaringer.
-- Implementeret som 4.0.268-kandidat: omfattende offentlig **Grundbog i ravjagt**; exact-head og produktion afventer.
+- Produktionsverificeret i 4.0.268: omfattende offentlig **Grundbog i ravjagt** via PR #118, produktion `32672578127` og grøn 210/673-browseraudit.
 - Udskudt: gemte områder og varsler.
 - Fravalgt: separat offentlig scoresikkerhed og gårsdagsbaseret scoreforklaring.
 

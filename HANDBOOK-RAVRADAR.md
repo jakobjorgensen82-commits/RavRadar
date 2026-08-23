@@ -16,6 +16,8 @@ Den samtidige sproggennemgang fjerner tekniske standardord fra normal brugerstat
 
 Ændringen er score-neutral. Candidate G, vejrdata, geometri, land-/vandpunkter og private turdata ændres ikke. Se DEC-0067 og `docs/research/PUBLIC_LANGUAGE_REVIEW_4.0.268.md`.
 
+4.0.268 er produktionsverificeret. PR #118 bestod exact-head `32672522334` og blev merged som `3c22e40b`. Produktion `32672578127` udgav `rr-20260823230848-210` på 210 zoner og 673 kystdele efter frisk vejr, fuld validering og releasegate. Den offentlige browseraudit bestod 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer uden kontrol-, konsol-, side- eller HTTP-fejl.
+
 ## Turindberetningen lukket ende til ende – 4.0.267
 
 4.0.267 tillader den krævede tomme lokationsværdi `gps=null`, men afviser fortsat faktiske GPS-, koordinat-, positions-, rute- og spordata. Den aktive tabel har også de to POST-felter, som kontoindberetningen kræver.

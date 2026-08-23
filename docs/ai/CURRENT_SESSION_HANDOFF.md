@@ -1,15 +1,14 @@
 # RavRadar - aktuelt Codex-handoff
 
-## Aktivt checkpoint – 2026-08-24 4.0.268
+## Afsluttet checkpoint – 2026-08-24 4.0.268
 
-- Branch: `codex/public-learning-and-language-4.0.268` fra main `43ceffc1`.
 - Leverance: offentlig **Grundbog i ravjagt** fra havbund til fund samt målrettet gennemgang af almindeligt offentligt dansk.
-- Implementeret lokalt: `learn.html`, `learn.css`, forside-link, service-worker-cache, sprogrettelser i offentlige paneler/services og to nye kontrakttests koblet til releasegaten.
 - Faglig kontrakt: bølger kan mobilisere, strøm transporterer, kysten sorterer/samler; ingen universel gunstig dansk retning; jagtmetoder før appforklaring; kilder og evidensniveauer synlige.
+- PR #116 og #117 lod de fulde gates stoppe to forældede ordrette UI-testkontrakter før deploy. PR #118 bestod den samlede exact-head `32672522334` på `8faccce3` og blev merged som `3c22e40b`.
+- Produktion `32672578127` bestod central hydrering, DMI/Copernicus, frisk vejr, fuld validering, releasegate, artifacts og Pages. Live `rr-20260823230848-210` er 4.0.268 på 210/673.
+- Offentlig browseraudit bestod 420 aktuelle, 2.100 femdøgns- og 673 kystdelsvisninger uden kontrol-, konsol-, side- eller HTTP-fejl. Lokal desktop og 390×844-mobilvisning bestod uden vandret overløb.
 - Beskyttet: ingen ændring af score, Candidate G, `20/50/30`, vejrdata, Supabase-kontrakt, geometri, land-/vandpunkter eller private data. Geodata har kun versionsfelt 4.0.268.
-- Lokal desktop og 390 px mobil er kontrolleret uden vandret overløb. Målrettede tests var grønne før den samlede afslutningskørsel.
-- Næste: færdiggør dokumentkontrol, kør nødvendige målrettede gates, commit/push, exact-head PR, merge, produktion, 210/673-onlineaudit og afsluttende docs-only-status med run-id'er.
-- 4.0.267 er endeligt produktionsverificeret: exact-head `32664463654`, merge `43ceffc1`, produktion `32664525128` og en synlig ny ejerindberetning.
+- Den sidste branch er docs-only og må kun lukke RDKS, roadmap, håndbøger og handoff. Efter merge skal næste session starte på ren `main`; 4.0.268 kræver ikke mere produktarbejde uden ny modstridende evidens.
 
 ## Produktionsverificeret 4.0.265 – kontoindberetning uden startet tur
 
