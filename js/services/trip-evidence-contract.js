@@ -75,7 +75,10 @@ export function assertTripEvidencePrivacy(value, path = 'tripEvidence') {
   }
   if (!value || typeof value !== 'object') return true;
   for (const [key, entry] of Object.entries(value)) {
-    if (FORBIDDEN_REMOTE_KEY.test(key)) throw new Error(`Præcis position må ikke sendes (${path}.${key}).`);
+    if (FORBIDDEN_REMOTE_KEY.test(key)) {
+      if (entry !== null) throw new Error(`Præcis position må ikke sendes (${path}.${key}).`);
+      continue;
+    }
     assertTripEvidencePrivacy(entry, `${path}.${key}`);
   }
   return true;

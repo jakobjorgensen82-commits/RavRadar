@@ -1,3 +1,11 @@
+## 4.0.267 – komplet uploadskema for kontoindberetninger (2026-08-23)
+
+- Den aktive observationstabel manglede de to POST-only-felter `forecast_target_at` og `report_accuracy`. Desuden afviste klientens privatlivskontrol den krævede tomme værdi `gps=null`, før turen blev gemt lokalt eller sendt.
+- En databevarende, idempotent migration tilføjer felterne og genindlæser PostgREST-schemaet uden at ændre eller slette ture.
+- Privatlivskontrollen accepterer kun lokationsfelter med værdien `null`; faktiske GPS-, koordinat-, positions-, rute- og spordata forbliver blokeret. Rettelsen dækker både kontoindberetning og **Start ravtur → Slut ravtur**.
+- API-loggen viste intet POST-forsøg fra de to ejerprøver. De nåede derfor ikke outboxen og skal indberettes igen efter udgivelsen.
+- Score, vejr, Candidate G, geometri og land-/vandpunkter er uændrede; geodatafilerne får kun versionsfeltet 4.0.267.
+
 ## 4.0.266 – virkeligt login og privat turlog (2026-08-23)
 
 - Den første interaktive ejerprøve viste, at Supabase sendte magic links til `localhost:3000`, fordi den centrale Site URL var forkert, og ingen produktionsredirect var tilladt. Begge er nu sat til den aktuelle RavRadar-side.

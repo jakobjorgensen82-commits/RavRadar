@@ -400,6 +400,10 @@ assert.throws(() => buildTripEvidence({
   forecastSnapshot: { ...input.forecastSnapshot, issuedAt: '2026-08-21T03:11:00.000Z' }
 }), /udstedt efter/);
 assert.throws(() => assertTripEvidencePrivacy({ nested: { gpsTrack: [] } }), /Præcis position/);
+assert.doesNotThrow(() => assertTripEvidencePrivacy({ gps: null }));
+assert.throws(() => assertTripEvidencePrivacy({ gps: {} }), /Præcis position/);
+assert.throws(() => assertTripEvidencePrivacy({ latitude: 0 }), /Præcis position/);
+assert.throws(() => assertTripEvidencePrivacy({ route: [] }), /Præcis position/);
 
 const migration = fs.readFileSync('supabase/migrations/20260821_trip_evidence_contract.sql', 'utf8');
 for (const column of [
@@ -433,6 +437,7 @@ assert.match(observationServiceSource, /on_conflict=client_observation_id/);
 assert.match(observationServiceSource, /resolution=ignore-duplicates/);
 assert.match(observationServiceSource, /client_observation_id:clientObservationId/);
 assert.match(observationServiceSource, /route,track,position,coordinates,latitude,longitude,location/);
+assert.match(observationServiceSource, /gps:null/);
 
 const appSource = fs.readFileSync('app.js', 'utf8');
 assert.match(appSource, /const TRIP_EVIDENCE_INTEGRATION_V2 = true/);
