@@ -11,4 +11,5 @@
 - Binder Candidate G-profilomskifterens versionsmærke til 4.0.265 og lader fremtidige versionsløft opdatere det automatisk. Profilvalg, aktivering, `20/50/30` og scorelogik er uændrede.
 - Synkroniserer webhåndbogens allerede vedtagne forklaring af **Søgeforhold** med hovedhåndbogen og brugerfladen.
 - Bevarer vejrdata, geometri, land-/vandpunkter, artifact, protected-dirty-data og private caches. I `data/kystdata.json` og `data/zones.geojson` er kun versionsfeltet ændret til 4.0.265.
-- Målrettede kontrakt-, observation-, turlog-, versions-, håndbogs- og RDKS-kontroller er grønne. PR exact-head, frisk fuld produktion og live browserkontrol dokumenteres efterfølgende.
+- PR #111 bestod exact-head `32658661075`, blev merged som `cb7d2232`, og produktion `32658724861` bestod frisk vejr, fuld validering, releasegate, Supabase og Pages. Live `rr-20260823184330-210` er version 4.0.265 på 210 zoner og 673 kystdele.
+- Den målrettede livekontrol bekræfter det udgivne kontoflow, den krævede selvvalgte dato og tid uden forudfyldning samt **Afslut uden at indberette**. En rigtig autentificeret indsendelse er fortsat en senere bevidst ejerprøve, fordi den opretter en virkelig Supabase-række.

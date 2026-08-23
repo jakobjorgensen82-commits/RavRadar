@@ -1,6 +1,6 @@
 # Current truth – gældende projektviden
 
-## Lokal 4.0.265-kandidat – fleksibel kontoindberetning uden falske vejrdata
+## Produktionsverificeret 4.0.265 – fleksibel kontoindberetning uden falske vejrdata
 
 - En indlogget bruger kan vælge **Indberet tur eller fund** på kontosiden uden en forudgående turstart. Indberetningen bruger samme spørgsmål og eksisterende `observations`-tabel; der oprettes ingen ekstra tabel, dubletpost eller fundkopi.
 - Brugeren vælger korrekt startdato, starttid og varighed. Valget gemmes som start, afslutning og midtpunkt. Aktuelle forhold på indberetningstidspunktet kobles aldrig på som historisk vejr eller score.
@@ -8,7 +8,7 @@
 - Den lokale sandsynlighedsberegning sorterer udtrykkeligt alle rækker med `calibration_eligible=false` fra. Ældre rækker uden feltet bevarer deres eksisterende adfærd.
 - En startet tur kan afsluttes med **Afslut uden at indberette** efter bekræftelse. Det rydder kun den lokale aktive tur og opretter ingen observations-/outbox-/serverpost. **Svar senere** bevarer fortsat turen lokalt.
 - Begge indgange bruger samme afhængige zone→kyststrækningsvalg og afviser en kyststrækning fra en anden zone. GPS-spor, rute, præcis position, fri tekst og billeder indsamles ikke.
-- Målrettede kontrakttests er grønne. Kandidaten afventer versionslukning, PR-exact-head og produktion. Candidate G, `20/50/30`, vejrdata, geometri og land-/vandpunkter er uændrede. Se DEC-0064.
+- PR #111/exact-head `32658661075`, merge `cb7d2232` og produktion `32658724861` er grønne. Live `rr-20260823184330-210` er version 4.0.265 på 210/673, og det udgivne modul er målrettet kontrolleret for selvvalgt dato/tid uden forudfyldning samt fravalg. Candidate G, `20/50/30`, vejrdata, geometri og land-/vandpunkter er uændrede. Se DEC-0064.
 
 ## Produktionsverificeret 4.0.264 – forståeligt brugerflow og privat turlog uden dobbeltlagring
 

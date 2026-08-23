@@ -1,13 +1,13 @@
 # RavRadar - aktuelt Codex-handoff
 
-## Aktuel 4.0.265-kandidat – kontoindberetning uden startet tur
+## Produktionsverificeret 4.0.265 – kontoindberetning uden startet tur
 
 - En indlogget bruger kan vælge **Indberet tur eller fund** fra kontoen uden først at starte en tur. Formularen kræver, at brugeren selv vælger dato og klokkeslæt for turens start samt turens varighed.
 - Kontoindberetningen genbruger den almindelige rapports spørgsmål og den eksisterende `observations`-tabel. Der oprettes ingen ny Supabase-tabel, ekstra række eller fundkopi.
 - Aktuelle forhold ved indberetningen bruges aldrig som historisk vejr. Da klienten ikke sikkert kan genskabe et vilkårligt historisk snapshot, gemmes efterregistreringen med tomme forecast-/snapshotfelter og `calibration_eligible=false`.
 - En startet tur kan efter bekræftelse **Afsluttes uden at indberette**. Det rydder kun den lokale aktive tur og opretter ingen observations-, outbox- eller Supabase-post. **Svar senere** bevarer turen.
 - Begge rapportveje bruger samme zoneafhængige kyststrækningsvalg og afviser en kyststrækning fra en anden zone.
-- Målrettede kontrakt-, observation-, turlog-, versions- og syntakstests er grønne. Exact-head `32658093582` fandt et efterladt profilversionsmærke, `32658348688` fandt to manglende webhåndbogssætninger, og `32658502017` bestod alle kildekontrakter før et stop på den manglende versionsspecifikke changelog. Alle tre afgrænsede mangler er lukket uden ændring af kontoindberetning eller scorelogik; ny exact-head og produktion udestår. En rigtig autentificeret indsendelse skal senere udføres bevidst af ejeren, fordi den opretter en virkelig række.
+- PR #111 bestod exact-head `32658661075` efter tre sikre, afgrænsede dokumentations-/versionsstop, blev merged som `cb7d2232`, og produktion `32658724861` bestod frisk vejr, fuld validering, releasegate, Supabase og Pages. Live `rr-20260823184330-210` er 4.0.265 på 210/673; den udgivne formular kræver selvvalgt dato og tid uden forudfyldning og indeholder fravalget. En rigtig autentificeret indsendelse skal senere udføres bevidst af ejeren, fordi den opretter en virkelig række.
 - Candidate G, `20/50/30`, vejrdata, geometri, land-/vandpunkter, artifact, protected-dirty-data og private caches er urørte. Se DEC-0064.
 
 ## Aktuel arbejdsleverance 2026-08-23 – forståeligt brugerflow og privat turlog i 4.0.264

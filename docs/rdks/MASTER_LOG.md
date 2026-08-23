@@ -1966,7 +1966,7 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - Efterfølgende bootstrapaudit fandt 493/673 transporttilstande på 0 uden én eneste faktisk udtransportgate. Den allerede offentlige historik har 42.551 poster og dækker 633 dele med 65–117 timer, men start-0-replay har stadig median 0.
 - Kun 6/633 dele bliver uafhængige af start 0 kontra 100; 607/633 bevarer mindst 50 points priorforskel. Uden passivt neutralt tab er startreserven en eksplicit modelprior og kan ikke udledes ved blot at vente.
 - Neutral startprior 50 anbefales til særskilt ejerbeslutning. Den er ikke implementeret; offentlig profil forbliver legacy, og Candidate G aktiveres ikke.
-## 2026-08-23 – lokal 4.0.265-kandidat: fleksibel kontoindberetning
+## 2026-08-23 – 4.0.265: fleksibel kontoindberetning
 
 - En indlogget bruger kan nu indberette en tur eller et fund direkte fra kontoen uden en forudgående turstart. Brugeren skal selv vælge dato og klokkeslæt for turens start samt turens varighed.
 - Kontoindberetningen genbruger de samme spørgsmål og samme `observations`-tabel. Der er ingen ny tabel, databasekolonne, dubletrække eller særskilt fundkopi.
@@ -1974,6 +1974,7 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - PR #111's første exact-head `32658093582` stoppede sikkert før merge, fordi Candidate G-profilens versionsmærke ikke var fulgt med fra 4.0.264 til 4.0.265. Kun versionsbindingen er rettet, og `scripts/set-version.mjs` opdaterer fremover både det centrale profildokument og kodekontrakten. Profilvalg, aktivering og scoreberegning er uændrede.
 - Anden exact-head `32658348688` bestod versionsbindingen og alle nye kontoindberetningskontrakter. Den stoppede senere på to forklaringssætninger, der fandtes i rodhåndbogen og UI-kontrakten, men manglede i webhåndbogen. Webhåndbogen er synkroniseret; ingen produktkode eller score er ændret.
 - Tredje exact-head `32658502017` bestod hele `validate:source` frem til releasegaten. Den eneste fejl var en manglende `CHANGELOG-4.0.265.md`; den versionsspecifikke releaseoversigt er tilføjet uden produktændring.
+- PR #111's endelige exact-head `32658661075` bestod og blev merged som `cb7d2232`. Produktion `32658724861` bestod frisk vejr, fuld validering, releasegate, Supabase og Pages; live `rr-20260823184330-210` er 4.0.265 på 210/673. Den målrettede, ikke-dataskrivende livekontrol bekræfter selvvalgt dato og tid uden forudfyldning samt **Afslut uden at indberette**.
 - Den aktive afslutningsdialog har nu **Indsend tur**, **Svar senere** og et bekræftet **Afslut uden at indberette**. Fravalg rydder den aktive lokale tur med nul observations-, outbox- og Supabase-poster.
 - Begge rapportveje bruger samme zone→kyststrækningsvalg. GPS-spor, rute, præcis position, fri tekst og billeder indsamles ikke.
 - Turloggens brugerflade viser ikke længere den interne databaseforklaring “Der oprettes ikke en ekstra kopi i databasen”.
