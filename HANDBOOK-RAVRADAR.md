@@ -1,5 +1,17 @@
 # RavRadar Håndbog
 
+## Login og Mine ture og fund – 4.0.266
+
+Et **magic link** er et tidsbegrænset engangslink, som RavRadar sender til brugerens mail. Linket logger brugeren ind uden adgangskode og skal føre tilbage til den samme RavRadar-side, hvor det blev bestilt.
+
+Supabase skal kende hjemmesidens rigtige adresse to steder: som standardadresse og som tilladt login-returadresse. Den aktuelle adresse er `https://jakobjorgensen82-commits.github.io/RavRadar/`. Når siden flyttes til `https://ravradar.dk/`, skal begge indstillinger ændres samtidig, og et nyt magic link skal prøves på den nye adresse. Ellers kan et korrekt link ende på en gammel adresse eller localhost.
+
+**Mine ture og fund** læser de samme turposter, som RavRadar allerede har gemt. Der oprettes ikke en ekstra tabel eller kopi. Kun den indloggede ejer må læse rækker med sit eget bruger-id, og listen henter højst de seneste 100 ture.
+
+Efterregistreringens kvalitetsmarkører gemmes i `data_quality_flags`. De fortæller blandt andet, at turen er indtastet bagefter og ikke har et sikkert historisk vejrgrundlag. Markørerne må ikke indeholde mail, navn, GPS, rute eller fri tekst.
+
+Hvis en tur ikke kunne sendes færdigt, bliver den i den lokale leveringskø på enheden. RavRadar prøver igen ved næste sideindlæsning med det samme klient-id, så forsøget ikke opretter en dublet. Brugeren møder en almindelig RavRadar-forklaring, hvis listen midlertidigt ikke kan hentes; interne leverandørnavne er ikke en hjælpsom fejltekst.
+
 ## Indberet en tidligere tur fra kontoen – 4.0.265
 
 En indlogget bruger kan under kontoen vælge **Indberet tur eller fund** uden først at have startet en tur i RavRadar. Brugeren skal selv vælge dato og klokkeslæt for turens start og oplyse, hvor længe turen varede. Formularen spørger derefter om jagtform, faktisk område og kyststrækning, hvor grundigt der blev søgt, og om der blev fundet rav.
@@ -26,7 +38,7 @@ Den aktive turrejse er: **Start tur**, **Afslut tur** og **Færdiggør tur**. Ra
 
 Hvis brugeren var logget ind ved indsendelsen, kan den samme turpost vises privat for ejeren gennem Supabases adgangsregler. Mailadresse og navn gemmes ikke i turposten, og brugeridentiteten bruges ikke i modelanalyse. En tur indsendt uden login forbliver anonym og kan ikke sikkert tilskrives en konto bagefter.
 
-Et **magic link** er et engangslink, der sendes til brugerens mail og logger brugeren ind uden adgangskode. Adgangskodelogin er fortsat muligt. Loginlinkets forklaring og redirect er kontrolleret live; selve mailmodtagelsen og den autentificerede private liste afprøves senere interaktivt af ejeren.
+Et **magic link** er et engangslink, der sendes til brugerens mail og logger brugeren ind uden adgangskode. Adgangskodelogin er fortsat muligt. 4.0.264 kontrollerede klientkoden og forklaringen, men den senere rigtige mail viste en forkert central localhost-adresse. Den aktive korrektion og domænekravet står i 4.0.266-afsnittet ovenfor.
 
 Candidate G og 20/50/30 er uændret. De synlige hovedord er gjort enklere: **Søgeforhold**, **Transport mod kysten** og **Rav i bevægelse**. Søgeforhold handler om, hvor effektivt man kan lede – ikke om sikkerhed. RavScore vurderer ravmuligheden, ikke om turen er sikker.
 
@@ -386,7 +398,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.265
+**Håndbogsversion:** 4.0.266
 
 **Opdateret:** 19. august 2026
 

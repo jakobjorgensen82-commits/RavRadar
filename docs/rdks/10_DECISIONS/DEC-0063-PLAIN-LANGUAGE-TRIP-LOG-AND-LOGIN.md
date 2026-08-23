@@ -32,3 +32,7 @@ Offentlige tekster om RavScore, turregistrering, login og fund skal bruge almind
 - Både gamle og nye egne observationer skal kunne vises uden at gøre gamle observationer fit-klare til modeltræning.
 - Adgangskodelogin, magic-link-callback, udlogning, turlog og indsendelse som henholdsvis indlogget og anonym skal browserkontrolleres.
 - Produktionsredirect til magic link skal verificeres mod Supabases godkendte redirect-URL'er, før en rigtig mail sendes.
+
+## Produktionskorrektion i 4.0.266
+
+Den første virkelige mail-/kontoprøve viste, at dette kontrolkrav ikke var gennemført i 4.0.264: den centrale Site URL stod til localhost, og den aktive database manglede både et felt i turloggens SELECT og ejerens SELECT-policy. DEC-0065 retter og erstatter derfor den tidligere antagelse om, at live redirect- og RLS-kontrakten allerede var bevist. Selve beslutningen om én privat `observations`-række uden dobbeltlagring består.

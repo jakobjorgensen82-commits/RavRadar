@@ -1,7 +1,7 @@
-import { authEnabled, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.265";
-import { getLocalObservations, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.265";
-import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.265";
-import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.265";
+import { authEnabled, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.266";
+import { getLocalObservations, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.266";
+import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.266";
+import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.266";
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>'"]/g, character => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" })[character]);
@@ -87,7 +87,7 @@ async function showTripHistory(dialog, context) {
     <button id="tripHistoryBack" class="text-link back-link" type="button">← Tilbage til min konto</button>
     <h2>Mine ture og fund</h2>
     <p>Her ser du de ture, som du har indsendt til RavRadar.</p>
-    ${loadError ? '<p class="notice">Supabase kunne ikke hentes lige nu. Eventuelle ture, der stadig ligger på denne enhed, vises nedenfor.</p>' : ''}
+    ${loadError ? '<p class="notice">RavRadar kunne ikke hente dine gemte ture lige nu. Ture, der stadig ligger på denne enhed, vises nedenfor.</p>' : ''}
     <div class="trip-log-summary"><div><strong>${rows.length}</strong><span>Ture</span></div><div><strong>${foundCount}</strong><span>Ture med fund</span></div><div><strong>${escapeHtml(minutesLabel(totalMinutes))}</strong><span>Samlet søgetid</span></div></div>
     <div class="trip-log-list">${rows.length ? renderHistoryRows(rows, context) : '<p class="empty-state-inline">Du har endnu ingen indsendte ture på denne konto.</p>'}</div>
     ${rows.length >= 100 ? '<p class="muted">Viser de seneste 100 ture.</p>' : ''}

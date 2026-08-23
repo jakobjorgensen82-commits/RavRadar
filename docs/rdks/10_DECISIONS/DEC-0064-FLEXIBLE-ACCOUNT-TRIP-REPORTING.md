@@ -47,8 +47,10 @@ Under udvikling køres kun de målrettede tests for denne kontrakt samt nødvend
 
 - Candidate G, `20/50/30`, scorelogik, vejrdata og profilvalg ændres ikke.
 - Der ændres ingen geometri, land-/vandpunkter, artifact, protected-dirty-data eller private cachedata.
-- Der tilføjes ingen Supabase-tabel eller databasekolonne.
+- Der tilføjes ingen ny Supabase-tabel eller særskilt tur-/fundrække. DEC-0065/4.0.266 tilføjer den manglende eksisterende kontraktkolonne `data_quality_flags`, som denne beslutning allerede krævede, uden at ændre eller slette observationer.
 
 ## Produktionsbevis
 
 PR #111 bestod exact-head `32658661075` og blev merged som `cb7d2232`. Produktion `32658724861` bestod frisk vejr, fuld validering, releasegate, Supabase og Pages. Live `rr-20260823184330-210` er version 4.0.265 på 210 zoner og 673 kystdele. Den målrettede, ikke-dataskrivende livekontrol bekræfter den udgivne efterregistreringsformular, dens krævede selvvalgte dato og tid uden forudfyldning samt **Afslut uden at indberette**.
+
+Den efterfølgende interaktive ejerprøve viste, at den autentificerede upload og turlog ikke var omfattet af dette produktionsbevis: den aktive tabel manglede `data_quality_flags` og ejerens SELECT-policy. DEC-0065/4.0.266 er den bindende produktionskorrektion. Formular- og fravalgskontrakten ovenfor består uændret.

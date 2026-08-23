@@ -2,6 +2,13 @@
 
 Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslutninger, chatkilder og kode.
 
+## Konto, magic link og privat turlog – 4.0.266
+
+- **REQ-AUTH-CANONICAL-REDIRECT-001 – BINDENDE:** Supabases Site URL og tilladte redirect-liste skal pege på den faktisk kanoniske RavRadar-origin. Et domæneskift, herunder til `https://ravradar.dk/`, er ufuldstændigt, indtil begge indstillinger er ændret og et nyt magic link er prøvet på den nye adresse. Gamle origins beholdes kun, mens de reelt skal understøttes.
+- **REQ-ACCOUNT-TRIP-LOG-SCHEMA-001 – BINDENDE:** Den aktive `observations`-tabel skal indeholde turloggens faste feltkontrakt, herunder `data_quality_flags`. En version må ikke kalde turloggen produktionsverificeret alene ud fra repositoryets `schema.sql`; den aktive PostgREST-kontrakt skal kontrolleres med `limit=0` uden at hente rækker.
+- **REQ-ACCOUNT-TRIP-LOG-RLS-001 – BINDENDE:** RLS skal være aktiv. Kun `authenticated` må SELECT-læse en observation, når `user_id = auth.uid()`. Der må ikke oprettes offentlig læsning, ny logtabel eller en kopi af turen.
+- **REQ-AUTH-INTERACTIVE-PROOF-001 – BINDENDE:** Ekstern auth-konfiguration, callback, faktisk brugerhydrering, privat turlæsning og udlogning kræver en bevidst interaktiv ejerprøve. Grøn kildekode, Pages og generel Supabase-sync er ikke i sig selv bevis for dette flow.
+
 ## Produktionsplan og beskyttet diagnostik – 4.0.234
 
 - **REQ-WORKFLOW-GITHUB-SCHEDULE-001 – BINDENDE EJERBESLUTNING / OVERDRAGET:** GitHub Actions ejer den normale 15-minuttersproduktion. Tidsplanen er forskudt fra hel time, og en planlagt kørsel uden den eksakte aktuelle Copernicus-time skal afsluttes sikkert uden nyt vejrartifact, Supabase-sync eller Pages-deploy. Heartbeatet må bestille den manglende time, hvorefter næste kørsel prøver igen. Push/manual release forbliver fuldt fail-closed. Den krævede naturlige schedule-gate er bestået, ejeren har slettet cron-job.org-jobbene, og efterfølgende native produktion, pilot og cachebevaring er grønne. Se DEC-0042.

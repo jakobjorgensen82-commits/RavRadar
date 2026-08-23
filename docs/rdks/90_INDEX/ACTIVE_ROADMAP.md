@@ -1,5 +1,15 @@
 # RavRadar - aktivt roadmap
 
+## P0 – luk det virkelige login- og turlogflow i 4.0.266
+
+- [x] Ret Supabases centrale Site URL og tilladte redirect fra localhost til den aktuelle GitHub Pages-origin.
+- [x] Installer den manglende `data_quality_flags`-kolonne og private SELECT-policy uden ny tabel, dubletpost eller ændring/sletning af eksisterende ture.
+- [x] Verificér den fulde feltkontrakt med HTTP 200 og `limit=0` samt policyen i Supabase-dashboardet.
+- [x] Lås migration, grant, almindelig brugerfejl og fravær af dataændrende SQL i målrettede tests.
+- [x] Registrér `ravradar.dk` som en samtidig auth-/deployopgave: ny Site URL, tilladt redirect og nyt loginlink på den kanoniske adresse.
+- [ ] Bestå RDKS/version, PR exact-head og den faktiske 4.0.266-produktionskæde.
+- [ ] Prøv et nyt magic link og bekræft, at brugerens afventende/indsendte tur vises i **Mine ture og fund**. Først da er det autentificerede flow lukket.
+
 ## Produktionsverificeret 4.0.265 – fleksibel og ærlig indberetning
 
 - [x] Tilføj **Indberet tur eller fund** under kontoen, så en indlogget bruger kan rapportere uden først at have startet en tur i RavRadar.
