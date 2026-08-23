@@ -9,6 +9,8 @@
 - Syntetiske tests beviser 47/48-timersgrænsen, startuafhængighed 0/50/100, 0,15 m/s-loftet, 12/13-timers udtransport, kort modstrøm, fornyet indtransport, same-time, split/ubrudt og raw-input-forbud. Ingen 48-timers realtidsventetest kræves eller udføres.
 - Read-only replay af 42.551 offentlige supplementposter fandt 582 dele med et ubrudt eksakt 48-timersvindue; alle 582 gav nul mismatch mellem tænkte eksterne starter 0/50/100. De øvrige 91 er ikke almindelige RavRadar-vejrholes: supplementfilen omfatter kun 633 dele og indeholder desuden tidsmæssige huller.
 - Den nye state opbygges naturligt i højst 48 timer efter kontraktskiftet. Foreløbige Candidate G-resultater må bruges diagnostisk, men ikke som slutshadow eller aktiveringsbevis. Offentlig `25/40/35`, mobiliseringens 4/48-profil, geodata, geometri og land-/vandpunkter er uændrede.
+- Exact-head `32633533257` på `56824ab0`, PR #95/merge `1d848724` og fuld produktion `32633607166` er grønne. Live `rr-20260823102619-210` har 210/673 og korrekt manifestintegritet.
+- Første schema-2-produktion har præcis ét afledt timebevis på alle 673 dele, `WINDOW_INCOMPLETE`, 0/673 aktiveringsklar hukommelse, 0 offentlig Candidate G-aktivering og 0 raw-input-læk i den dataminimerede state. Ønsket, aktiv og rollbackprofil er fortsat `RRS-CURRENT-B0-4.0.247`.
 
 ## 4.0.260 – produktionsverificeret score-neutral omskifter, fortsat offentlig 25/40/35
 

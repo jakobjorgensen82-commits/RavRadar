@@ -8,7 +8,9 @@
 - Et komplet vindue genafspilles fra rand 0, som betyder ingen dokumenteret indtransport før vinduet og aldrig dokumenteret udtransport. Persistéret transportoutput ignoreres som startinput. Missing/tidsgab holder `transportMemoryReady=false`, så hele omskifteren forbliver på legacy.
 - Målrettede tests er grønne for 47/48 timer, startuafhængighed 0/50/100, 0,15-loftet, 12/13-timers udtransport, kort modstrøm, genopbygning, same-time, split/ubrudt, changed-context, missing og datasikker state.
 - Read-only audit af 42.551 offentlige supplementposter fandt 582 eksakte, ubrudte 48-timersvinduer og nul startmismatch. Filens øvrige 91 dele må ikke kaldes almindelige vejrholes; supplementet omfatter kun 633 af 673 og har desuden tidsmæssige huller.
-- RDKS, håndbog, målrettede kontroller og samlet lokal `scripts/validate-source.ps1` inklusive releasegate er grønne. Næste trin er exact-head PR, sikker merge og første fulde legacy-aktive produktion. Efter kontraktskiftet opbygges den nye state naturligt i højst 48 timer; den periode er ikke en blokering for mekanisk accept, men Candidate G må ikke aktiveres på en ufuldstændig state.
+- RDKS, håndbog, målrettede kontroller og samlet lokal `scripts/validate-source.ps1` inklusive releasegate er grønne. Exact-head `32633533257` bestod på `56824ab0`; PR #95 blev merged som `1d848724`, og fuld produktion `32633607166` er grøn.
+- Live `rr-20260823102619-210` består manifestets byte-/SHA-256-integritet med 210 zoner og 673 dele. Alle 673 Candidate G-states er schema 2 med ét første timebevis, `WINDOW_INCOMPLETE`, 0 ready, 0 offentlig aktivering og ingen rå inputfelter. Aktiv, ønsket og rollback er fortsat legacy `RRS-CURRENT-B0-4.0.247`.
+- Efter kontraktskiftet opbygges den nye state naturligt i højst 48 timer. Den periode er ikke en blokering for den nu afsluttede mekaniske accept, men Candidate G må ikke aktiveres på en ufuldstændig state. Næste modeltrin er først en frisk 673/673 aktiveringsshadow og særskilt ejerreview, når den naturlige state er komplet.
 
 ## Checkpoint 2026-08-23 – 4.0.260 produktionsverificeret score-neutral omskifter
 

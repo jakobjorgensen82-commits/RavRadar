@@ -12,7 +12,8 @@
 - [x] Genafspil eksisterende offentlig supplementhistorik read-only: 42.551 poster, 582 komplette 48-timersvinduer og nul startmismatch; ingen rå vektorer, koordinater, del-id'er eller private payloads i rapporten.
 - [x] Bevar foreløbig Candidate G som `diagnostic-only` under naturlig opbygning; aktiv `25/40/35` må ikke ændres, og mekanisk accept kræver ingen 48-timers realtidsventetest.
 - [x] Bestå samlet lokal `scripts/validate-source.ps1`, inklusive RDKS-validering, målrettede Candidate G-kontrakter og releasegate.
-- [ ] Bestå exact-head-kildegate, merge og første fulde post-merge-produktion med legacy aktiv og ny state fail-closed under opbygning.
+- [x] Bestå exact-head `32633533257` på `56824ab0`, merge PR #95 som `1d848724` og fuld post-merge-produktion `32633607166` med legacy aktiv og ny state fail-closed under opbygning.
+- [x] Verificér live `rr-20260823102619-210`: manifestintegritet, 210 zoner, 673 dele, schema 2 på 673/673, ét første timebevis, 0/673 ready, 0 aktiverede Candidate G-dele og 0 raw-input-læk i state.
 - [ ] Først ved senere ejerreview: kræv frisk 673/673 `transportMemoryReady`-slutshadow på den eksakte aktiveringskode. Det er ikke en ny 48-timers realtidsudviklingstest, men en aktiveringskontrol af naturligt produceret state.
 
 ## Versionsbundet profilvalg og rollback – offentlig 25/40/35 uændret

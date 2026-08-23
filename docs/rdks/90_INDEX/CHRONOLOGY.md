@@ -8,6 +8,7 @@
 4. Missing og tidsgab behandles ikke som roligt vejr. Candidate G forbliver fail-closed på legacy, indtil hele vinduet igen er sammenhængende.
 5. Historisk genafspilning giver nul forskel mellem tænkte starter 0, 50 og 100 for alle 582 komplette vinduer. Ejeren kræver derfor ikke en ny 48-timers realtidsudviklingstest.
 6. Candidate G er ikke aktiveret. Offentlig `25/40/35`, geometri, land-/vandpunkter og beskyttede data er uændrede.
+7. Exact-head `32633533257`, PR #95/merge `1d848724` og fuld produktion `32633607166` er grønne. Live `rr-20260823102619-210` starter schema 2 fail-closed på alle 673 dele med ét timebevis, 0 ready og legacy aktiv.
 
 ## 2026-08-23 – start-0-skævhed fundet efter produktionsshadow
 
