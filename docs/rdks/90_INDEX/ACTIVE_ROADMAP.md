@@ -10,7 +10,9 @@
 - [x] Versionsløft til 4.0.264, opdatér samlet RDKS/håndbog/changelog og bestå source-/RDKS-/releasekontroller på eksakt geodatadiff.
 - [x] Før exact head gennem PR #104 (`32651048627`) og merge som `579bd167`.
 - [x] Lad produktion `32651106811` stoppe før release på den forældede feedback-UI-test; opdatér testen til at kræve den nye v2-tur og kør den også i `validate:source`.
-- [ ] Før testrettelsen gennem exact-head og én frisk fuld produktion, fordi kode og workflow er ændret.
+- [x] Før turtestrettelsen gennem PR #105/exact-head `32651724416` og merge `7c43146f`; produktion `32651786366` stoppede før deploy på den næste gamle teksttest.
+- [x] Ret stjerneforklaringens test og den lokalt fundne gamle mobil-turtest, og kør begge i `validate:source`.
+- [ ] Før den samlede testrettelse gennem exact-head og én frisk fuld produktion, fordi kode og workflow er ændret.
 - [ ] Browserkontrollér adgangskodelogin, magic link, udlogning, **Mine ture og fund**, anonym/indlogget turindsendelse samt de centrale offentlige forklaringer på live 4.0.264.
 - [ ] Bevis derefter med en separat ren RDKS-/håndbogsmerge, at rodhåndbogen ikke opretter en push-produktion.
 
@@ -18,7 +20,7 @@
 
 - [x] Tilføj kun `HANDBOOK-RAVRADAR.md` til push-workflowets eksakte dokumentations-`paths-ignore`, og opdatér den eksisterende workflowkontrakttest.
 - [x] Bestå målrettet workflowtest og PR #104 exact-head. Første produktion stoppede korrekt før release på en særskilt forældet UI-test.
-- [ ] Bestå testrettelsens exact-head og en forventet fuld grøn produktion.
+- [ ] Bestå den samlede testrettelses exact-head og en forventet fuld grøn produktion.
 - [ ] Bevis derefter med en separat ren RDKS-/håndbogsmerge, at der oprettes 0 push-produktionskørsler. Ingen score, data, geometri eller punkter må ændres.
 
 ## Aktuel P0-status – Candidate G-referencegate i 4.0.263

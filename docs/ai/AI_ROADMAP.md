@@ -10,7 +10,9 @@
 - [x] Bestå samlet lokal kilde-/RDKS-/releasegate og eksakt geodatadiff.
 - [x] Bestå PR #104 exact-head `32651048627` og merge som `579bd167`.
 - [x] Fang den forældede GPS-feedbacktest i produktion `32651106811`, ret den til direkte v2 og føj den til `validate:source`.
-- [ ] Bestå opfølgnings-PR, frisk fuld produktion og live browserkontrol.
+- [x] Bestå PR #105 exact-head `32651724416` og merge som `7c43146f`; lad produktion `32651786366` stoppe før deploy på den næste forældede ordrette teksttest.
+- [x] Ret stjerneforklaringens test og den lokalt fundne gamle mobil-turtest, og føj begge til `validate:source`.
+- [ ] Bestå ny opfølgnings-PR, frisk fuld produktion og live browserkontrol.
 - [ ] Bevis bagefter workflowets rodhåndbogsskip med en særskilt ren dokumentationsmerge og 0 push-produktionskørsler.
 
 ## Candidate G – 4.0.263 aktuel referencegate

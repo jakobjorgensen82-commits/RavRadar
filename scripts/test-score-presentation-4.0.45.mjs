@@ -20,7 +20,7 @@ const index = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8")
 const app = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8");
 const css = fs.readFileSync(new URL("../style.css", import.meta.url), "utf8");
 assert.doesNotMatch(index, /Fremragende|legend-dot excellent|score-symbol excellent/);
-assert.match(index, /En stjerne ved scoren markerer exceptionelt gode forhold/);
+assert.match(index, /En stjerne viser usædvanligt gode forhold/);
 assert.match(app, /exceptionalScoreMark\(item\.result\.score\)/);
 assert.doesNotMatch(css, /\.rank-score\.excellent|\.score-badge\.excellent/);
-console.log("Scoresignatur 4.0.45 valideret: fire kortfarver og stjerne kun ved exceptionel ranglistescore.");
+console.log("Scoresignatur valideret: fire kortfarver og stjerne kun ved usædvanligt god ranglistescore.");

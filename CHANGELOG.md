@@ -6,7 +6,7 @@
 - Centrale brugerord om RavScore, turen og fund er gjort mere almindelige og forklarende.
 - Rodhåndbogen tilføjes til workflowets eksakte docs-only-skip; en separat ren dokumentationsmerge skal senere bevise, at ændringen giver 0 push-produktionskørsler.
 - Candidate G, `20/50/30`, scorelogik, vejrruntime, geometri og land-/vandpunkter er uændrede. Versionsløftet må kun ændre versionsfeltet i de to geodatafiler.
-- PR #104 bestod exact-head og blev merged. Den første produktionskørsel stoppede før release på en forældet UI-test; testen kræver nu den direkte v2-tur, afviser den gamle parallelrejse og indgår også i kildegaten.
+- PR #104 bestod exact-head og blev merged. Den første produktionskørsel stoppede før release på en forældet UI-test. PR #105 rettede den, bestod exact-head og blev merged; den næste produktion stoppede før deploy på en anden gammel ordret stjernetest. Stjernetesten og den lokalt fundne gamle mobil-turtest følger nu den nye UI og indgår i kildegaten.
 
 ## 4.0.263 – Candidate G-gate følger den aktuelle zonereference (2026-08-23)
 
