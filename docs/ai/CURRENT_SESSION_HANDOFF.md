@@ -1,5 +1,15 @@
 # RavRadar - aktuelt Codex-handoff
 
+## Aktuel arbejdsleverance 2026-08-23 – forståeligt brugerflow og privat turlog i 4.0.264
+
+- Branch er `codex/plain-user-flow-and-trip-log` fra produktionsverificeret main `7f4d57a5`.
+- **Mine ture og fund** læser den eksisterende Supabase-`observations`-tabel gennem ejer-RLS. Ingen ekstra tabel, serverrække eller kopi må oprettes; læsningen sker først ved klik, har et lille feltudvalg og højst 100 ture.
+- Den aktive turknap bruger nu v2 direkte og starter ikke længere den gamle GPS-baserede parallelrejse. Historiske lokale og centrale data er urørte.
+- Magic-link-callbacken hydreres med Supabase-brugeren. En kontoejet outbox-tur kan kun sendes som samme bruger. Adgangskode, magic link, udlogning, anonym/indlogget tur og turlog skal kontrolleres live.
+- Centrale offentlige RavScore- og turord er forenklet. DEC-0063, RDKS, håndbog og changelog beskriver datagenbrug, anonymitet og den snævre `user_id`-RLS-kobling.
+- Den eksakte rodhåndbog er tilføjet docs-only-skip. Denne kode-/workflowmerge skal gennem normal fuld produktion; en efterfølgende ren dokumentationsmerge skal bevise 0 oprettede push-kørsler.
+- Målrettede tests og samlet lokal source-/RDKS-/releasegate er grønne. Exact-head, PR, merge, produktion og browserkontrol mangler. Candidate G, `20/50/30`, artifact, protected-dirty-data, private cachedata, geometri og land-/vandpunkter må ikke røres. Geodata må kun have versionsfeltet 4.0.264.
+
 ## Aktuel arbejdsleverance 2026-08-23 – Candidate G aktuel referencegate i 4.0.263
 
 - PR #100 bestod exact-head `32642456123`, blev merged som `586fbd18`, og produktion `32642532892` bestod alle fulde gates og Pages.

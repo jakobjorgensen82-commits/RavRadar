@@ -1,4 +1,4 @@
-import { loadAdaptiveModel, modelAdjustment } from './adaptive-model.js?v=4.0.263';
+import { loadAdaptiveModel, modelAdjustment } from './adaptive-model.js?v=4.0.264';
 const clamp=(v,min=0,max=100)=>Math.min(max,Math.max(min,v));
 const sigmoid=x=>1/(1+Math.exp(-x));
 const asFinite=v=>(v===null||v===undefined||v===''||typeof v==='boolean')?null:(Number.isFinite(Number(v))?Number(v):null);
@@ -25,6 +25,6 @@ export function predictAmberChance({baseScore,zone,weather={},history={},observa
   const confidence=clamp(Math.round(30+completeness*30+freshness*15+Math.min(25,comparable.rows.length*.75)));
   const reasons=[`RavScore-modellen svarer til cirka ${Math.round(modelProbability*100)} %.`,`Datagrundlaget bruger ${comparable.rows.length} ture fra ${comparable.scope} og en udglattet fundrate på ${Math.round(empirical.rate*100)} %.`];
   if(adaptive.adjustment)reasons.push(`Godkendte modeltilpasninger ændrer vurderingen med ${adaptive.adjustment>0?'+':''}${adaptive.adjustment} point.`);
-  if(confidence<55)reasons.push('Sikkerheden er begrænset, fordi datagrundlaget eller vejrsnapshot er ufuldstændigt.');
+  if(confidence<55)reasons.push('Datagrundlaget er begrænset, fordi nogle oplysninger mangler eller er for gamle.');
   return {available:true,probability,confidence,label:probability>=70?'Høj chance':probability>=45?'Middel chance':'Lav chance',modelProbability:Math.round(modelProbability*100),empiricalProbability:Math.round(empirical.rate*100),sampleSize:comparable.rows.length,evidenceScope:comparable.scope,adaptiveAdjustment:adaptive.adjustment,reasons,modelVersion:model.version};
 }

@@ -70,7 +70,7 @@ export function openTripEvidenceDialog({
   const form = createElement('form', { className: 'trip-evidence-form', method: 'dialog' });
   form.append(createElement('h2', { id: 'tripEvidenceTitle' }, 'Hvordan gik ravturen?'));
   const modeLabel = mode === 'waders' ? 'i vandet' : 'på stranden';
-  form.append(createElement('p', { className: 'trip-evidence-intro' }, `Du søgte ${Math.max(1, Math.round(Number(searchMinutes) || 0))} minutter ${modeLabel}. Svar kort, så hjælper turen med at gøre RavRadar mere præcis.`));
+  form.append(createElement('p', { className: 'trip-evidence-intro' }, `Du søgte ${Math.max(1, Math.round(Number(searchMinutes) || 0))} minutter ${modeLabel}. Dit svar hjælper os med at se, hvornår RavScore rammer rigtigt og forkert.`));
 
   const foundField = createElement('fieldset', { className: 'trip-evidence-field trip-evidence-fieldset' });
   foundField.append(createElement('legend', {}, 'Fandt du rav?'));
@@ -81,24 +81,24 @@ export function openTripEvidenceDialog({
   form.append(foundField);
 
   const zoneLabel = createElement('label', { className: 'trip-evidence-field' });
-  zoneLabel.append(createElement('span', {}, 'Hvor søgte du?'));
+  zoneLabel.append(createElement('span', {}, 'Hvilket område søgte du faktisk i?'));
   const zoneSelect = createElement('select', { name: 'zoneId', required: '' });
   appendOptions(zoneSelect, zones, forecastZoneId);
   zoneLabel.append(zoneSelect);
   form.append(zoneLabel);
 
   const partLabel = createElement('label', { className: 'trip-evidence-field' });
-  partLabel.append(createElement('span', {}, 'Hvilken kystdel?'));
+  partLabel.append(createElement('span', {}, 'Hvilken del af kysten søgte du på?'));
   const partSelect = createElement('select', { name: 'coastalPartId', required: '' });
   partLabel.append(partSelect);
   form.append(partLabel);
 
   const coverageField = createElement('fieldset', { className: 'trip-evidence-field trip-evidence-fieldset' });
-  coverageField.append(createElement('legend', {}, 'Hvor grundigt søgte du?'));
+  coverageField.append(createElement('legend', {}, 'Hvor meget af stedet fik du undersøgt?'));
   const coverageChoices = createElement('div', { className: 'trip-evidence-choices trip-evidence-choices--three' });
-  appendRadio(coverageChoices, { name: 'searchCoverage', value: 'partial', label: 'Kort kig' });
-  appendRadio(coverageChoices, { name: 'searchCoverage', value: 'normal', label: 'Normal tur', checked: true });
-  appendRadio(coverageChoices, { name: 'searchCoverage', value: 'thorough', label: 'Grundigt' });
+  appendRadio(coverageChoices, { name: 'searchCoverage', value: 'partial', label: 'Kun en lille del' });
+  appendRadio(coverageChoices, { name: 'searchCoverage', value: 'normal', label: 'En almindelig tur', checked: true });
+  appendRadio(coverageChoices, { name: 'searchCoverage', value: 'thorough', label: 'Det meste grundigt' });
   coverageField.append(coverageChoices);
   form.append(coverageField);
 
@@ -108,13 +108,13 @@ export function openTripEvidenceDialog({
   gramsLabel.append(gramsInput);
   form.append(gramsLabel);
 
-  const calibrationNote = createElement('p', { className: 'trip-evidence-note' }, 'Vi gemmer kystdelen, ikke din præcise position eller rute.');
+  const calibrationNote = createElement('p', { className: 'trip-evidence-note' }, 'Vi sender dit valgte område og din kystdel til RavRadar – ikke din præcise position eller GPS-rute.');
   form.append(calibrationNote);
 
   const actions = createElement('div', { className: 'trip-evidence-actions' });
   actions.append(
     createElement('button', { className: 'trip-evidence-later', type: 'button' }, 'Svar senere'),
-    createElement('button', { className: 'trip-evidence-save', type: 'submit' }, 'Gem tur')
+    createElement('button', { className: 'trip-evidence-save', type: 'submit' }, 'Indsend tur')
   );
   form.append(actions);
   dialog.append(form);
@@ -130,8 +130,8 @@ export function openTripEvidenceDialog({
   const updateNote = () => {
     const matches = zoneSelect.value === forecastZoneId && partSelect.value === forecastCoastalPartId;
     calibrationNote.textContent = matches
-      ? 'Vi gemmer kystdelen, ikke din præcise position eller rute.'
-      : 'Turen bliver gemt, men bruges ikke til automatisk scorejustering, fordi stedet er ændret siden turstart.';
+      ? 'Vi sender dit valgte område og din kystdel til RavRadar – ikke din præcise position eller GPS-rute.'
+      : 'Turen bliver gemt som nyttig erfaring, men sammenlignes ikke direkte med startscoren, fordi du søgte et andet sted end først valgt.';
   };
   zoneSelect.addEventListener('change', updateParts);
   partSelect.addEventListener('change', updateNote);
@@ -179,30 +179,30 @@ export function openTripEvidenceStartDialog({
 
   const dialog = createElement('dialog', { className: 'trip-evidence-dialog', 'aria-labelledby': 'tripEvidenceStartTitle' });
   const form = createElement('form', { className: 'trip-evidence-form', method: 'dialog' });
-  form.append(createElement('h2', { id: 'tripEvidenceStartTitle' }, 'Hvor vil du lede?'));
-  form.append(createElement('p', { className: 'trip-evidence-intro' }, 'Vælg søgemetode og kystdel. Så gemmer RavRadar den prognose, du faktisk starter turen med.'));
+  form.append(createElement('h2', { id: 'tripEvidenceStartTitle' }, 'Start en ravtur'));
+  form.append(createElement('p', { className: 'trip-evidence-intro' }, 'Vælg hvordan og hvor du vil lede. RavRadar gemmer samtidig den score og de forhold, du så ved turens start.'));
 
   const modeField = createElement('fieldset', { className: 'trip-evidence-field trip-evidence-fieldset' });
   modeField.append(createElement('legend', {}, 'Hvordan vil du søge?'));
   const modeChoices = createElement('div', { className: 'trip-evidence-choices' });
-  appendRadio(modeChoices, { name: 'mode', value: 'waders', label: 'I vandet', checked: mode === 'waders' });
+  appendRadio(modeChoices, { name: 'mode', value: 'waders', label: 'I vandet (waders)', checked: mode === 'waders' });
   appendRadio(modeChoices, { name: 'mode', value: 'beach', label: 'På stranden', checked: mode === 'beach' });
   modeField.append(modeChoices);
   form.append(modeField);
 
   const zoneLabel = createElement('label', { className: 'trip-evidence-field' });
-  zoneLabel.append(createElement('span', {}, 'Hvilken zone?'));
+  zoneLabel.append(createElement('span', {}, 'Hvilket område starter du i?'));
   const zoneSelect = createElement('select', { name: 'zoneId', required: '' });
   appendOptions(zoneSelect, zones, zoneId || zones[0]?.id);
   zoneLabel.append(zoneSelect);
   form.append(zoneLabel);
 
   const partLabel = createElement('label', { className: 'trip-evidence-field' });
-  partLabel.append(createElement('span', {}, 'Hvilken kystdel?'));
+  partLabel.append(createElement('span', {}, 'Hvilken del af kysten?'));
   const partSelect = createElement('select', { name: 'coastalPartId', required: '' });
   partLabel.append(partSelect);
   form.append(partLabel);
-  form.append(createElement('p', { className: 'trip-evidence-note' }, 'Vi bruger dit valgte kystafsnit. Din præcise position og rute bliver ikke sendt.'));
+  form.append(createElement('p', { className: 'trip-evidence-note' }, 'Når du afslutter turen, spørger vi kun til søgningen og resultatet. Din præcise position og GPS-rute bliver ikke sendt.'));
 
   const actions = createElement('div', { className: 'trip-evidence-actions' });
   actions.append(

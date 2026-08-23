@@ -1,28 +1,29 @@
-import { calculateRavScore, exceptionalScoreMark } from "./js/core/score-engine.js?v=4.0.263";
-import { selectBestTimeForDay } from "./js/core/best-time-selector.js?v=4.0.263";
-import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest } from "./js/services/data-service.js?v=4.0.263";
-import { submitObservation, getLocalObservations, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.263";
-import { predictAmberChance } from "./js/core/prediction-engine.js?v=4.0.263";
-import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.263";
-import { activeTrip, answerTrip, pendingTripPrompt, resumeTripTracking, startTrip, stopTrip } from "./js/services/trip-service.js?v=4.0.263";
-import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.263";
-import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.263";
-import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.263";
-import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.263";
-import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.263";
-import { askRavRadar, QUICK_QUESTIONS } from "./js/services/rav-assistant.js?v=4.0.263";
-import { loadAdaptiveModel } from "./js/core/adaptive-model.js?v=4.0.263";
-import { buildLocalZoneScore, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.263";
-import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.263";
+import { calculateRavScore, exceptionalScoreMark } from "./js/core/score-engine.js?v=4.0.264";
+import { selectBestTimeForDay } from "./js/core/best-time-selector.js?v=4.0.264";
+import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest } from "./js/services/data-service.js?v=4.0.264";
+import { getLocalObservations, submitTripEvidenceObservation, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.264";
+import { predictAmberChance } from "./js/core/prediction-engine.js?v=4.0.264";
+import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.264";
+import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.264";
+import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.264";
+import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.264";
+import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.264";
+import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.264";
+import { askRavRadar, QUICK_QUESTIONS } from "./js/services/rav-assistant.js?v=4.0.264";
+import { loadAdaptiveModel } from "./js/core/adaptive-model.js?v=4.0.264";
+import { buildLocalZoneScore, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.264";
+import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.264";
+import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.264';
 
-const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, lastGps:null, flowArrows:null, adaptiveModel:loadAdaptiveModel(), currentScores:new Map(), forecastGroups:new Map(), forecastRenderId:0 };
+const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, flowArrows:null, adaptiveModel:loadAdaptiveModel(), currentScores:new Map(), forecastGroups:new Map(), forecastRenderId:0 };
 const map = createMap("map");
 performance.mark?.('ravradar:map-shell-ready');
 const infoPanel = document.querySelector("#infoPanel"), dataStatus = document.querySelector("#dataStatus"), ranking = document.querySelector("#ranking");
 const nationalForecast = document.querySelector("#nationalForecastContent");
 const tripButton = document.querySelector("#tripButton");
 let conditionDetailsPromise=Promise.resolve(null);
-const assistantDialog=document.querySelector("#assistantDialog"), accountDialog=document.querySelector("#accountDialog"), developerDialog=document.querySelector("#developerDialog"), pinDialog=document.querySelector("#pinDialog"), tripDialog=document.querySelector("#tripDialog");
+let publicTripEvidenceRuntime=null;
+const assistantDialog=document.querySelector("#assistantDialog"), accountDialog=document.querySelector("#accountDialog"), developerDialog=document.querySelector("#developerDialog"), pinDialog=document.querySelector("#pinDialog");
 
 function zoneCondition(zone) { return state.conditions.zones?.[zone?.id] || {}; }
 function localZoneScore(zone,time=null){
@@ -46,13 +47,6 @@ function currentDisplayFor(zone){
 function resultFor(zone, weather = zoneCondition(zone).current || {}, history = zoneCondition(zone).history || {}) { if(weather===zoneCondition(zone).current)return currentDisplayFor(zone).result;const result=scoreFor(zone,weather,history);return withPrediction(result,zone,weather,history); }
 function currentScoreFor(zone){const key=`${state.mode}:${zone.id}`;if(!state.currentScores.has(key)){const local=state.conditions.coastalParts?.enabled?localZoneScore(zone):null;const result=local?.available?local:scoreFor(zone);state.currentScores.set(key,result);}return state.currentScores.get(key);}
 function nationalRankingRow(row){return addNationalRanking(row,state.zones?.coastalParts?.zones?.[row.zone?.id]);}
-function weatherForObservedDate(zone,date){
-  const condition=zoneCondition(zone);const hours=condition.forecast?.hourly||[];
-  const target=Date.parse(`${date}T12:00:00Z`);
-  const sameDay=hours.filter(hour=>String(hour.time||'').slice(0,10)===date);
-  if(!sameDay.length)return condition.current||{};
-  return sameDay.reduce((best,hour)=>Math.abs(Date.parse(hour.time)-target)<Math.abs(Date.parse(best.time)-target)?hour:best,sameDay[0]);
-}
 function selectedFeature() { return state.zones?.features.find(item=>item.properties.id===state.selectedZone?.id); }
 function showSelectedZoneParts() {
   if(!state.selectedZone)return;
@@ -88,7 +82,7 @@ function closeZone() {
   state.selectedZone=null;
   state.zoneLayer?.selectZone?.(null);
   document.body.classList.remove("zone-focus");
-  infoPanel.innerHTML='<div class="empty-state"><h2>Vælg et område på kortet</h2><p>Du får RavScore, forklaring og de vigtigste forhold for den valgte jagtform.</p></div>';
+  infoPanel.innerHTML='<div class="empty-state"><h2>Vælg et område på kortet</h2><p>Du får RavScore, en forklaring og de vigtigste forhold for den måde, du vil lede på.</p></div>';
   requestAnimationFrame(()=>{map.invalidateSize();state.zoneLayer?.showOverview?.();});
   document.querySelector("#map")?.scrollIntoView({behavior:"smooth",block:"start"});
 }
@@ -158,32 +152,16 @@ async function renderNationalForecast() {
 }
 
 function setMode(mode,{render=true}={}){state.mode=mode;state.currentScores.clear();localStorage.setItem("ravradar-mode",mode);document.querySelectorAll(".mode-button").forEach(button=>{const active=button.dataset.mode===mode;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active));});if(!render)return;if(state.zoneLayer)refreshZoneStyles(state.zoneLayer,id=>currentScoreFor(state.zones.features.find(item=>item.properties.id===id).properties));renderRanking();performance.mark?.('ravradar:ranking-ready');renderNationalForecast().then(completed=>{if(completed)performance.mark?.('ravradar:forecast-ready');}).catch(error=>{console.error('5-dages prognosen kunne ikke beregnes',error);nationalForecast.innerHTML='<p class="ranking-empty">5-dages prognosen kunne ikke beregnes.</p>';});renderSelectedZone();}
-function updateTripUi(){const trip=activeTrip();tripButton.textContent=trip?"Afslut tur":"Start ravtur";tripButton.classList.toggle("trip-active",Boolean(trip));tripButton.setAttribute("aria-pressed",String(Boolean(trip)));document.querySelector("#tripStatus").textContent=trip?"Ravtur i gang. GPS registreres kun, mens appen er åben.":"";}
-function normalizeZoneSearch(value){return String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("da-DK").trim();}
-function installZoneSearch(form,zones){
-  const input=form.querySelector("#tripZoneSearch"), hidden=form.querySelector("input[name=zoneId]"), results=form.querySelector("#tripZoneResults");
-  const label=zone=>`${zone.name} · ${zone.region}`;
-  const render=()=>{const query=normalizeZoneSearch(input.value);const matches=zones.filter(zone=>!query||normalizeZoneSearch(`${zone.name} ${zone.region} ${zone.id}`).includes(query)).slice(0,30);results.innerHTML=matches.map(zone=>`<button type="button" role="option" data-zone-id="${zone.id}"><strong>${zone.name}</strong><small>${zone.region}</small></button>`).join("")||'<p>Ingen zoner matcher søgningen.</p>';results.hidden=false;results.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>{const zone=zones.find(item=>item.id===button.dataset.zoneId);input.value=label(zone);hidden.value=zone.id;results.hidden=true;input.setAttribute("aria-expanded","false");}));};
-  input.addEventListener("focus",()=>{input.setAttribute("aria-expanded","true");render();});
-  input.addEventListener("input",()=>{hidden.value="";input.setAttribute("aria-expanded","true");render();});
-  input.addEventListener("keydown",event=>{if(event.key==="Escape"){results.hidden=true;input.setAttribute("aria-expanded","false");}});
-  document.addEventListener("click",event=>{if(!form.querySelector(".zone-search").contains(event.target)){results.hidden=true;input.setAttribute("aria-expanded","false");}},{once:false});
-}
-function openTripPrompt(trip){
-  const zones=(state.zones?.features||[]).map(feature=>feature.properties).sort((a,b)=>a.name.localeCompare(b.name,"da"));
-  const defaultDate=String(trip.endedAt||trip.startedAt||new Date().toISOString()).slice(0,10);
-  tripDialog.querySelector(".dialog-content").innerHTML=`<h2>Fortæl om din ravtur</h2><p>For at gøre RavRadar bedre sammenholder vi dit svar med de vejr-, vandstands- og prognosedata, der gjaldt på den valgte dato og i den valgte zone.</p><form id="tripAnswerForm" class="stack-form"><fieldset class="trip-found-field"><legend>Fandt du rav?</legend><div class="trip-answer-buttons"><label><input type="radio" name="response" value="none" required><span>Nej</span></label><label><input type="radio" name="response" value="medium" required><span>Ja</span></label></div></fieldset><label>Dato for ravjagten<input name="observedDate" type="date" required value="${defaultDate}" max="${new Date().toISOString().slice(0,10)}"></label><label>Zone<div class="zone-search"><input id="tripZoneSearch" type="search" placeholder="Søg efter zone, fx øs" autocomplete="off" role="combobox" aria-controls="tripZoneResults" aria-expanded="false" required><input name="zoneId" type="hidden"><div id="tripZoneResults" class="zone-search-results" role="listbox" hidden></div></div></label><label>Valgfrit antal gram<input name="grams" type="number" min="0" max="10000" step="0.1" inputmode="decimal"></label><button type="submit" class="primary-button trip-submit">Indsend</button><p class="form-status" id="tripAnswerStatus"></p></form>`;
-  tripDialog.showModal();
-  const form=tripDialog.querySelector("#tripAnswerForm");installZoneSearch(form,zones);
-  form.addEventListener("submit",async event=>{
-    event.preventDefault();const data=new FormData(form),response=String(data.get("response")||""),zone=zones.find(item=>item.id===data.get("zoneId")),status=form.querySelector("#tripAnswerStatus");
-    if(!response||!zone){status.textContent="Vælg både Ja/Nej og en zone fra søgeresultaterne.";return;}
-    const observedDate=String(data.get("observedDate"));const condition=zoneCondition(zone);const weather=weatherForObservedDate(zone,observedDate);const scoreResult=resultFor(zone,weather,condition.history||{});const submitButton=form.querySelector(".trip-submit");submitButton.disabled=true;submitButton.textContent="Indsender…";
-    try{answerTrip(trip.id,response,data.get("grams"),{observedDate,zoneId:zone.id,zoneName:zone.name});await submitObservation({zone,huntMode:state.mode,result:response,grams:data.get("grams"),observedAt:`${observedDate}T12:00:00.000Z`,scoreResult,weather,prediction:scoreResult.prediction,gps:trip.points?.at(-1)||null,tripId:trip.id});status.textContent="Tak. Oplysningerne er sendt til Administratorcenteret.";setTimeout(()=>tripDialog.close(),450);}catch(error){status.textContent=error.message;submitButton.disabled=false;submitButton.textContent="Indsend";}
-  });
+function updateTripUi(message=''){
+  const trip=publicTripEvidenceRuntime?.active();
+  const stopped=Boolean(trip?.stoppedAt);
+  tripButton.textContent=stopped?'Færdiggør tur':trip?'Afslut tur':'Start ravtur';
+  tripButton.classList.toggle('trip-active',Boolean(trip));
+  tripButton.setAttribute('aria-pressed',String(Boolean(trip)));
+  document.querySelector('#tripStatus').textContent=message||(stopped?'Turen er afsluttet. Fortæl kort, hvordan den gik.':trip?'Ravtur i gang. Afslut turen, når du er færdig med at lede.':'');
 }
 function enableDialogClose(dialog){dialog.querySelector(".dialog-close")?.addEventListener("click",()=>dialog.close());dialog.addEventListener("click",event=>{if(event.target===dialog)dialog.close();});}
-[assistantDialog,accountDialog,developerDialog,pinDialog,tripDialog].forEach(enableDialogClose);
+[assistantDialog,accountDialog,developerDialog,pinDialog].forEach(enableDialogClose);
 
 function assistantContext(){const zone=state.selectedZone;const condition=zoneCondition(zone);return {zone,weather:condition.current||{},history:condition.history||{},result:zone?resultFor(zone):null,mode:state.mode,zones:state.zones,conditions:state.conditions};}
 function addAssistantMessage(text,who="assistant",loading=false){const box=document.querySelector("#assistantMessages");const div=document.createElement("div");div.className=`assistant-message ${who}${loading?" loading":""}`;const p=document.createElement("p");p.textContent=text;div.appendChild(p);box.appendChild(div);box.scrollTop=box.scrollHeight;return div;}
@@ -191,8 +169,21 @@ async function submitAssistantQuestion(question){const clean=String(question||""
 const quickBox=document.querySelector("#assistantQuickQuestions");quickBox.innerHTML=QUICK_QUESTIONS.map(q=>`<button type="button">${q}</button>`).join("");quickBox.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>submitAssistantQuestion(button.textContent)));document.querySelector("#assistantButton").addEventListener("click",()=>assistantDialog.showModal());document.querySelector("#assistantForm").addEventListener("submit",async event=>{event.preventDefault();const field=event.currentTarget.elements.question;const q=field.value;field.value="";await submitAssistantQuestion(q);});
 
 document.querySelectorAll(".mode-button").forEach(button=>button.addEventListener("click",()=>setMode(button.dataset.mode)));
-document.querySelector("#accountButton").addEventListener("click",()=>openAccountDialog(accountDialog));
-tripButton.addEventListener("click",()=>{if(activeTrip()){stopTrip();updateTripUi();return;}startTrip();updateTripUi();});
+document.querySelector("#accountButton").addEventListener("click",()=>openAccountDialog(accountDialog,userDataContext()));
+tripButton.addEventListener('click',async()=>{
+  if(!publicTripEvidenceRuntime)return;
+  tripButton.disabled=true;
+  try{
+    await conditionDetailsPromise;
+    const active=publicTripEvidenceRuntime.active();
+    const result=active?.stoppedAt?await publicTripEvidenceRuntime.resume():active?await publicTripEvidenceRuntime.stop():await publicTripEvidenceRuntime.startWithPrompt();
+    if(result?.status==='started')updateTripUi('Ravturen er startet. Afslut den, når du er færdig med at lede.');
+    else if(result?.status==='submitted')updateTripUi('Tak. Turen er sendt til RavRadar og kan ses under Mine ture og fund.');
+    else if(result?.status==='queued')updateTripUi('Turen er gemt på enheden og sendes automatisk, når forbindelsen er tilbage.');
+    else updateTripUi();
+  }catch(error){updateTripUi(error?.message||'Turen kunne ikke behandles. Prøv igen.');}
+  finally{tripButton.disabled=false;}
+});
 let logoTaps=0,tapTimer=null;document.querySelector("#logoButton").addEventListener("click",()=>{logoTaps+=1;clearTimeout(tapTimer);tapTimer=setTimeout(()=>{logoTaps=0;},5000);if(logoTaps>=10){logoTaps=0;pinDialog.showModal();pinDialog.querySelector("input").focus();}});
 document.querySelector("#pinForm").addEventListener("submit",event=>{event.preventDefault();const pin=new FormData(event.currentTarget).get("pin");if(pin!=="1931"){document.querySelector("#pinStatus").textContent="Forkert PIN.";return;}pinDialog.close();event.currentTarget.reset();document.querySelector("#pinStatus").textContent="";openDeveloperDialog(developerDialog,state);});
 
@@ -266,14 +257,14 @@ try {
   setTimeout(installArrows,0);
   if(conditions.available&&conditions.generatedAt)dataStatus.textContent=`Senest opdateret ${new Date(conditions.generatedAt).toLocaleString('da-DK')} · klar på ${Math.round(performance.now()-started)} ms`;
   else dataStatus.textContent='Aktuelle data kunne ikke hentes. Gamle data vises ikke.';
-  resumeTripTracking();syncPendingObservations().catch(()=>{});updateTripUi();const pending=pendingTripPrompt();if(pending)setTimeout(()=>openTripPrompt(pending),650);
+  syncPendingObservations().catch(()=>{});updateTripUi();
 } catch(error){console.error(error);infoPanel.innerHTML='<div class="notice">Aktuelle data kunne ikke indlæses. Gamle prognoser vises ikke.</div>';dataStatus.textContent='Fejl ved indlæsning';}
 
-// RavRadar 4.0.263: versionsmanifest + sikker service-worker-opdatering.
+// RavRadar 4.0.264: versionsmanifest + sikker service-worker-opdatering.
 function installAppUpdateFlow() {
   if (!("serviceWorker" in navigator)) return;
   const banner=document.querySelector("#updateBanner"), updateButton=document.querySelector("#updateAppButton");
-  const version=window.RAVRADAR_VERSION||"4.0.263"; document.querySelector("#appVersion").textContent=version;
+  const version=window.RAVRADAR_VERSION||"4.0.264"; document.querySelector("#appVersion").textContent=version;
   let refreshing=false, registration=null, waitingWorker=null;
   const showUpdate=worker=>{waitingWorker=worker||waitingWorker;if(waitingWorker){waitingWorker.postMessage({type:'SKIP_WAITING'});return;}if(!banner||!updateButton)return;banner.hidden=false;updateButton.disabled=false;updateButton.textContent="Opdater nu";};
   const activate=()=>{updateButton.disabled=true;updateButton.textContent="Opdaterer…";(waitingWorker||registration?.waiting)?.postMessage({type:"SKIP_WAITING"});};
@@ -286,9 +277,6 @@ function installAppUpdateFlow() {
 }
 installAppUpdateFlow();
 const TRIP_EVIDENCE_INTEGRATION_V2 = true;
-import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.263';
-import { installTripEvidenceLegacyBridge } from './js/services/trip-evidence-legacy-bridge.js?v=4.0.263';
-import { submitTripEvidenceObservation } from './js/services/observation-service.js?v=4.0.263';
 
 function publicTripEvidenceContext(selection = null) {
   const partsById = state.conditions?.coastalParts?.parts || {};
@@ -303,14 +291,17 @@ function publicTripEvidenceContext(selection = null) {
     .sort((left, right) => left.name.localeCompare(right.name, 'da'));
   if (!zones.length || !coastalParts.length) throw new Error('Kystdelene er ikke klar endnu.');
 
-  const zoneId = selection?.zoneId || zones[0].id;
+  const selectedZoneId = state.selectedZone?.id;
+  const zoneId = selection?.zoneId || (zones.some(zone => zone.id === selectedZoneId) ? selectedZoneId : zones[0].id);
+  const recommendedPartId = state.selectedZone?.id === zoneId ? localZoneScore(state.selectedZone)?.localPartId : null;
   const coastalPartId = selection?.coastalPartId
+    || (coastalParts.some(part => part.id === recommendedPartId && part.zoneId === zoneId) ? recommendedPartId : null)
     || coastalParts.find(part => part.zoneId === zoneId)?.id;
   const coastalPart = partsById[coastalPartId];
   if (!coastalPart) throw new Error('Den valgte kystdel findes ikke i det aktive datasæt.');
 
-  const versionText = String(globalThis.RAVRADAR_VERSION || document.querySelector('#appVersion')?.textContent || '4.0.263');
-  const appVersion = versionText.match(/\d+\.\d+\.\d+/)?.[0] || '4.0.263';
+  const versionText = String(globalThis.RAVRADAR_VERSION || document.querySelector('#appVersion')?.textContent || '4.0.264');
+  const appVersion = versionText.match(/\d+\.\d+\.\d+/)?.[0] || '4.0.264';
   return {
     mode: selection?.mode || state.mode,
     zoneId,
@@ -329,13 +320,15 @@ function publicTripEvidenceContext(selection = null) {
   };
 }
 
-const publicTripEvidenceRuntime = createPublicTripEvidenceRuntime({
+function userDataContext() {
+  const zones = (state.zones?.features || []).map(feature => feature?.properties).filter(zone => zone?.id);
+  const coastalParts = Object.entries(state.conditions?.coastalParts?.parts || {}).map(([id, part]) => ({ id, zoneId:part?.zoneId, name:part?.name || id }));
+  return { zones, coastalParts };
+}
+
+publicTripEvidenceRuntime = createPublicTripEvidenceRuntime({
   getContext: publicTripEvidenceContext,
   persist: submitTripEvidenceObservation
 });
-const uninstallTripEvidenceBridge = installTripEvidenceLegacyBridge({
-  runtime: publicTripEvidenceRuntime,
-  onError: error => console.warn('Den nye turregistrering kunne ikke bruges; det gamle turflow er bevaret.', error?.message || error)
-});
+updateTripUi();
 void TRIP_EVIDENCE_INTEGRATION_V2;
-void uninstallTripEvidenceBridge;

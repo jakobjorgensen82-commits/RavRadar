@@ -1,5 +1,16 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-23 – ejeren vælger en privat turlog uden dobbeltlagring
+
+1. Ejeren bad om et let forståeligt konto-link til brugerens egne ture og fund og gjorde det bindende, at eksisterende Supabase-data skal genbruges for at beskytte free-planen.
+2. Kodegennemgangen viste, at `observations` allerede rummer turdata og har RLS for egne rækker. Løsningen læser samme række i stedet for at bygge en ny tabel eller gemme en kopi.
+3. Den aktive turknap havde stadig en gammel GPS-baseret parallelrejse foran v2-dialogen. Den fjernes fra brugerrejsen, så Start/Afslut/Færdiggør bruger én komplet v2-tur uden GPS eller rute.
+4. Kontologgen er doven og begrænset til de seneste 100 ture og et lille feltudvalg. Lokale afventende ture deduplikeres mod serveren via eksisterende klient-/tur-id.
+5. `user_id` tillades som en snæver teknisk RLS-kobling til den samme række. Mail/navn gemmes ikke i turposten, og identiteten må ikke bruges i analyse eller modeltræning. Anonyme ture forbliver anonyme.
+6. Magic link forklares i almindeligt dansk, callbacken hydreres med den faktiske Supabase-bruger, og centrale offentlige RavScore-ord forenkles uden scoreændring.
+7. Den lokale 4.0.264-kandidat og målrettede tests er grønne. Samlet gate, PR, fuld produktion og live kontrol af login, magic link, turlog og turindsendelse mangler endnu.
+
+
 ## 2026-08-23 – den aktuelle Candidate G-gate afgrænses fra senere prognosehuller
 
 1. 4.0.262 blev exact-head- og produktionsverificeret. Cadencerettelsen fortsatte alle 673 states uden nulstilling og gav 110 positive transportpotentialer mod 0 før rettelsen; 563 var fortsat fysisk nul efter de aktuelle strømforhold.

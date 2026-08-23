@@ -4,6 +4,8 @@ Dette er den obligatoriske indgang til RavRadar for Codex og andre kodeassistent
 
 ## Aktuelt produktionscheckpoint 2026-08-23
 
+- **Aktuel lokal 4.0.264-kandidat:** Kontoen får **Mine ture og fund** som en begrænset RLS-læsning af den eksisterende `observations`-række. Der må ikke oprettes en ny tabel, serverrække eller kopi. Den direkte v2-tur erstatter den gamle GPS-baserede parallelrejse i UI, og login/magic-link-tekster samt centrale RavScore-ord er forenklet. Se DEC-0063.
+- Branch er `codex/plain-user-flow-and-trip-log`. Kilde og målrettede tests er lokale; samlet gate, exact-head, PR, produktion og live browserkontrol mangler. Candidate G, `20/50/30`, runtime, artifact, private data, geometri og land-/vandpunkter må ikke ændres. I de to geodatafiler er kun versionsfeltet 4.0.264 tilladt.
 - **Aktuel produktionsverificeret 4.0.263:** DEC-0062 retter profilgatens referencescope. Memory-/warmup-aktivering bedømmes ved den nærmeste fælles aktuelle scoretid pr. zone; senere prognosegaps må ikke retroaktivt slå den aktuelle Candidate G fra.
 - PR #100/exact-head `32642456123`, merge `586fbd18` og produktion `32642532892` beviser DEC-0061's cadence. Live `rr-20260823134605-210` fortsatte 673/673 states uden replaymismatch og gav 110 positive mod 563 fysisk fortsat nul, men 4.0.262 valgte legacy, fordi den for brede gate også inspicerede senere prognoser.
 - Pre-public opvarmning er kun gyldig ved aktuel `WINDOW_INCOMPLETE`. `LATEST_SAMPLE_MISSING`, `WINDOW_HAS_MISSING_EVIDENCE` og `WINDOW_HAS_TIME_GAP` ved den valgte aktuelle fælles reference giver global rollback; samme status senere i prognosen håndteres fail-closed i sin egen state.

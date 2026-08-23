@@ -1,8 +1,20 @@
 # RavRadar - aktivt roadmap
 
-## Næste afgrænsede procesrettelse – rodhåndbog i docs-only-skip
+## Aktuel produktleverance – enkelt sprog, komplet tur og privat turlog i 4.0.264
 
-- [ ] Tilføj kun `HANDBOOK-RAVRADAR.md` til push-workflowets eksakte dokumentations-`paths-ignore`, og opdatér den eksisterende workflowkontrakttest.
+- [x] Erstat den gamle parallelle GPS-tur med den direkte v2-rejse: start, afslut og færdiggør én komplet tur.
+- [x] Gennemgå og forenkle de centrale brugerord om RavScore, søgeforhold, transport, rav i bevægelse, turregistrering og login.
+- [x] Tilføj **Mine ture og fund** under kontoen som en doven, begrænset læsning af de eksisterende `observations`-rækker; ingen ny Supabase-tabel, række eller kopi.
+- [x] Forklar magic link i almindeligt dansk og hydrér brugerens Supabase-id efter callback.
+- [x] Lås samme-tabel, RLS, dataminimering, legacyvisning, lokal outbox-deduplikering og den direkte v2-rejse i målrettede tests.
+- [x] Versionsløft til 4.0.264, opdatér samlet RDKS/håndbog/changelog og bestå source-/RDKS-/releasekontroller på eksakt geodatadiff.
+- [ ] Før exact head gennem PR og én forventet fuld produktion, fordi kode og workflow er ændret.
+- [ ] Browserkontrollér adgangskodelogin, magic link, udlogning, **Mine ture og fund**, anonym/indlogget turindsendelse samt de centrale offentlige forklaringer på live 4.0.264.
+- [ ] Bevis derefter med en separat ren RDKS-/håndbogsmerge, at rodhåndbogen ikke opretter en push-produktion.
+
+## Samme leverances afgrænsede procesrettelse – rodhåndbog i docs-only-skip
+
+- [x] Tilføj kun `HANDBOOK-RAVRADAR.md` til push-workflowets eksakte dokumentations-`paths-ignore`, og opdatér den eksisterende workflowkontrakttest.
 - [ ] Bestå målrettet workflowtest og exact-head. Fordi selve workflowfilen ændres, skal denne merge gennem én forventet fuld grøn produktion.
 - [ ] Bevis derefter med en separat ren RDKS-/håndbogsmerge, at der oprettes 0 push-produktionskørsler. Ingen score, data, geometri eller punkter må ændres.
 
@@ -120,17 +132,17 @@ Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre for
 
 ## P2 - forskning, kapacitet og vedligeholdelse
 
-- [ ] Udfoer den planlagte RavScore-/fysikanalyse i fase A-D: kilder, faktisk kode, fysisk systemmodel og evidensmatrix/valideringseksperimenter.
-- [ ] Fremlaeg forskningsresultatet foer enhver ny scoremodel eller faglig implementering. Implementering kraever en saerskilt ejerbeslutning.
+- [x] Udfoer den planlagte RavScore-/fysikanalyse i fase A-D: kilder, faktisk kode, fysisk systemmodel og evidensmatrix/valideringseksperimenter. Candidate G er resultatet af den efterfølgende ejerbeslutning og produktionsleverance.
+- [x] Fremlaeg forskningsresultatet foer enhver ny scoremodel eller faglig implementering. Candidate G blev gennemgået med ejeren og særskilt godkendt i DEC-0054–0060.
 - [ ] Maal faktisk Supabase-egress i naeste billingperiode; estimatorer er ikke billingbevis.
 - [ ] Foelg GitHub Actions' Node-runtimeadvarsler og opgrader kun til officielle, verificerede actionversioner.
 - [ ] Beslut senere, om raa diagnostiske zoneeksempler skal have en saerskilt beskyttet lagrings-/downloadvej uden at reducere ejerens diagnostik.
 
 ## P3 - ejerafgoerelser og manuel faglig kontrol
 
-- [ ] Ejeren gennemgaar gradvist zoner og lokale punktpar paa bugtede/tvetydige kyststraekninger. Codex maa dokumentere og stoette, men ikke gaette eller flytte punkter.
+- [x] Ejeren har gennemgået den planlagte manuelle zone-/kystdelkontrol og afsluttet ejeropgaven. Nye konkrete geometri- eller punktfejl behandles som særskilte issues; Codex må fortsat ikke gætte eller flytte punkter.
 - [ ] Privat national geometri, recoverykandidater og andre shadowresultater maa kun aktiveres efter eksplicit ejer-go/no-go.
-- [ ] Afslut den manuelle faglige zone-/kystkontrol foer endelig domaene- og brugerrelease.
+- [x] Den planlagte manuelle faglige zone-/kystkontrol er afsluttet af ejeren. En senere domæne-/brugerrelease får sin egen samlede modenhedskontrol og genåbner ikke automatisk den gamle manuelle opgave.
 
 ## Afsluttet og derfor ikke laengere aktivt
 
@@ -261,9 +273,9 @@ Aktiv kandidat: 25/40/35 efter DEC-0041. Konsekvensauditterne er grønne. Næste
 
 - [x] Mål observerede 4.0.242-input-/scorefordelinger og komponentablation score-neutralt.
 - [x] Fastlæg tripniveau som kalibreringsenhed i DEC-0042; enkeltfund må ikke styre fit.
-- [ ] Implementér dataminimeret tripkontrakt med start/slut, søgetid, jagtform, faktisk kystdel, dækningsgrad og immutable forecast-link.
-- [ ] Bevar præcis GPS lokalt, og hold observationsanalysen coverage-only med tomme scoreforslag.
-- [ ] Generér første aggregerede kvalitets-/dækningsrapport før enhver beslutning om numeriske fit-minimummer.
+- [x] Implementér dataminimeret tripkontrakt med start/slut, søgetid, jagtform, faktisk kystdel, dækningsgrad og immutable forecast-link. Leveret og produktionsverificeret i 4.0.243.
+- [x] Hold observationsanalysen coverage-only med tomme scoreforslag og send ingen præcis GPS centralt. 4.0.264 fjerner desuden den gamle lokale GPS-rejse fra den aktive brugerflade; historiske lokale data røres ikke.
+- [x] Generér første aggregerede kvalitets-/dækningsrapport før enhver beslutning om numeriske fit-minimummer. Senere fit forbliver låst til repræsentative komplette ture.
 - P1's naturlige 72/168-timersdrift fortsætter uden backfill og vurderes først, når tidskravene faktisk er nået.
 
 ## Næste P1: frigiv 4.0.243 sikkert

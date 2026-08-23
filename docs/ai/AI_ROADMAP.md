@@ -1,5 +1,16 @@
 # AI Roadmap – RavRadar 4.0.243+
 
+## 4.0.264 – brugerflow, login og privat turlog
+
+- [x] Brug én direkte komplet v2-tur og fjern den gamle GPS-baserede parallelrejse fra den aktive UI.
+- [x] Vis **Mine ture og fund** fra den eksisterende `observations`-tabel gennem ejer-RLS uden ekstra Supabase-tabel, række eller kopi.
+- [x] Begræns kontolæsningen til brugerens klik, nødvendige felter og højst 100 ture; deduplikér lokal outbox mod serverposten.
+- [x] Hydrér bruger-id efter magic-link-callback, og blokér afsendelse af en kontoejet outbox-tur som en anden bruger.
+- [x] Forenkle centrale offentlige forklaringer og lås kontrakterne i målrettede tests.
+- [x] Bestå samlet lokal kilde-/RDKS-/releasegate og eksakt geodatadiff.
+- [ ] Bestå exact-head, PR, fuld produktion og live browserkontrol.
+- [ ] Bevis bagefter workflowets rodhåndbogsskip med en særskilt ren dokumentationsmerge og 0 push-produktionskørsler.
+
 ## Candidate G – 4.0.263 aktuel referencegate
 
 - [x] Produktionsverificér 4.0.262's cadence i `32642532892`: 673/673 accepterede states, nul replaymismatch, 110 positive og 563 fysisk fortsat nul.

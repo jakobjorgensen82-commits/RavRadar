@@ -1,8 +1,15 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.264 brugerrejse og konto
+
+- **ISSUE-ACCOUNT-TRIP-LOG – LØST I LOKAL KILDE / AFVENTER PRODUKTION:** Kontoen har nu **Mine ture og fund**, som læser den eksisterende `observations`-tabel gennem RLS. Ingen ny tabel, serverrække eller kopi oprettes. Læsningen er doven, feltbegrænset og højst 100 ture; live ejerskabs- og egressadfærd skal verificeres efter deploy.
+- **ISSUE-TRIP-DUPLICATE-FLOWS – LØST I LOKAL KILDE / AFVENTER PRODUKTION:** Den gamle turknap kunne starte en GPS-baseret rejse før den komplette v2-dialog og efterlade sporing aktiv ved afbrydelse. Brugerfladen går nu direkte gennem v2 og indsamler ikke GPS/rute.
+- **ISSUE-MAGIC-LINK-USER-HYDRATION – LØST I LOKAL KILDE / AFVENTER PRODUKTION:** Callbacken kunne have tokens uden et hydreret bruger-id. Den henter nu den aktuelle Supabase-bruger før kontoejerskab bruges. Produktionsredirect, rigtig magic-link-mail, adgangskodelogin og udlogning kræver live browserkontrol.
+- **ISSUE-PUBLIC-WORDING – FORBEDRET I LOKAL KILDE / LØBENDE:** De centrale brugerord er forenklet. Den samlede live browserkontrol skal fortsat fange interne fagtermer eller forklaringer, som ikke er forståelige i deres faktiske sammenhæng.
+
 ## Dokumentationsmerge udløser unødvendig fuld produktion via rodhåndbogen
 
-- **ISSUE-ROOT-HANDBOOK-DOCS-SKIP – ÅBEN, IKKE SCOREBLOKERENDE:** Den rent dokumentariske PR #102 ændrede blandt andet `HANDBOOK-RAVRADAR.md`. Workflowets `paths-ignore` dækker `docs/**`, changelog og release-rapporter, men ikke rodhåndbogen; merge `0da5b31d` startede derfor unødvendigt fuld produktion `32646026290`. Kørselen var grøn, og live `rr-20260823144117-210` bevarede 4.0.263, Candidate G aktiv, 210/673, komplet coverage og `CURRENT_COMMON_ZONE_REFERENCE`. En senere særskilt workflowrettelse skal tilføje den eksakte rodhåndbog til dokumentationsskip og bevise både en normal kodeproduktion og en ren docs-merge uden push-produktion. Der er ingen score-, data- eller runtimefejl.
+- **ISSUE-ROOT-HANDBOOK-DOCS-SKIP – RETTET I LOKAL KILDE / BEVIS AFVENTER:** Den rent dokumentariske PR #102 ændrede blandt andet `HANDBOOK-RAVRADAR.md`. Workflowets `paths-ignore` dækkede `docs/**`, changelog og release-rapporter, men ikke rodhåndbogen; merge `0da5b31d` startede derfor unødvendigt fuld produktion `32646026290`. Den eksakte rodhåndbog og regressionstesten er nu rettet lokalt. Fordi workflowfilen ændres, skal denne merge først gennem én normal fuld produktion; derefter skal en særskilt ren dokumentationsmerge bevise 0 oprettede push-produktionskørsler.
 
 ## P0 – Candidate G-profilgate ved senere prognosehuller
 
@@ -465,9 +472,9 @@ Vandstandsfanen kunne tidligere blive vist med automatisk routing, mens central 
 - Eksisterende rækker bevares og må bruges coverage-only. De må ikke bruges til koefficientfit uden fuldt feltbevis.
 - Løsningen er den dataminimerede tripkontrakt i DEC-0042; præcis GPS må fortsat ikke sendes centralt.
 
-## Åben gate 4.0.243: Supabase-turkontrakt
+## Lukket gate 4.0.243: Supabase-turkontrakt
 
-Den nye appkode må ikke merges, før migrationen 20260821_trip_evidence_contract.sql er anvendt og verificeret på public.observations. Uden migration bevares turen lokalt/outbox, men fjernsynk vil fejle på manglende kolonner. Dette må ikke skjules af grønne kildechecks. 4.0.242 forbliver produktion indtil gate, deploy og browserkontrol er fuldført.
+Migrationen `20260821_trip_evidence_contract.sql` blev anvendt og verificeret på `public.observations`, og 4.0.243 blev efterfølgende merged, deployet og browserverificeret. Den historiske gate er lukket; nye ændringer skal fortsat bevare kolonner, RLS og privacykontrakt.
 ## KI-2026-08-21-SUPABASE-EGRESS
 
 - **Status:** Åben driftsrisiko, ikke en kodefejl i 4.0.243.

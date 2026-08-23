@@ -1,5 +1,17 @@
 # RavRadar Håndbog
 
+## Enklere brugerrejse og privat turlog – 4.0.264
+
+Under kontoen kan en indlogget bruger åbne **Mine ture og fund**. Oversigten viser de samme ture, som allerede ligger i Supabases `observations`-tabel. RavRadar gemmer altså ikke turen en ekstra gang og opretter ikke en ny logtabel. Listen hentes først, når brugeren åbner den, og viser højst de seneste 100 ture for at begrænse belastningen.
+
+Den aktive turrejse er: **Start tur**, **Afslut tur** og **Færdiggør tur**. Rapporten beskriver hele søgeturen med søgetid, jagtform, faktisk område og kystdel, hvor grundigt der blev søgt, og om der blev fundet rav. Den aktive rejse indsamler ikke GPS-spor, rute eller præcis position.
+
+Hvis brugeren var logget ind ved indsendelsen, kan den samme turpost vises privat for ejeren gennem Supabases adgangsregler. Mailadresse og navn gemmes ikke i turposten, og brugeridentiteten bruges ikke i modelanalyse. En tur indsendt uden login forbliver anonym og kan ikke sikkert tilskrives en konto bagefter.
+
+Et **magic link** er et engangslink, der sendes til brugerens mail og logger brugeren ind uden adgangskode. Adgangskodelogin er fortsat muligt. Produktionsredirect og begge loginrejser kontrolleres særskilt i browseren før 4.0.264 lukkes.
+
+Candidate G og 20/50/30 er uændret. De synlige hovedord er gjort enklere: **Søgeforhold**, **Transport mod kysten** og **Rav i bevægelse**. Søgeforhold handler om, hvor effektivt man kan lede – ikke om sikkerhed. RavScore vurderer ravmuligheden, ikke om turen er sikker.
+
 ## Candidate G bruger den aktuelle fælles zonereference – 4.0.263
 
 4.0.262 rettede den fejl, som holdt transporten på 0 overalt: Candidate G accepterer produktionens dokumenterede strømbeviser med op til tre timers afstand og regner med den faktiske tid mellem dem. Den første produktionskørsel beviste 110 positive transportpotentialer og 563, som fortsat var 0 på grund af de faktiske forhold – ikke 0 overalt.
@@ -356,7 +368,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.263
+**Håndbogsversion:** 4.0.264
 
 **Opdateret:** 19. august 2026
 
@@ -388,7 +400,7 @@ De seks zoner valideres i en særskilt privat arbejdsgang, som ikke kan udgive e
 
 Når RavRadar fortæller, at bestemte kystdele scorer højere end resten af hovedzonen, kan brugeren vælge **Hvor er det?**. Hovedkortet zoomer derefter til zonen og tegner dens allerede indlæste præcise kystdele med navn. De aktuelt bedste dele fremhæves. Hvis forskellen er højst 7 point og forholdene derfor gælder hele zonen, udpeges ingen enkelt del som bedre.
 
-Kortet bruger de samme kystdata, som allerede er hentet til hovedkortet. Funktionen kræver derfor ingen samling af skærmbilleder og ingen ekstra datahentning ved normal opstart. Den tidligere offentlige formular **Hvad fandt du?** vises ikke længere under hver zone; turregistreringens særskilte observation og administratorens analysefunktion er fortsat bevaret. Turens præcise GPS-spor bliver på brugerens enhed og fjernes udtrykkeligt fra den centrale observationspayload.
+Kortet bruger de samme kystdata, som allerede er hentet til hovedkortet. Funktionen kræver derfor ingen samling af skærmbilleder og ingen ekstra datahentning ved normal opstart. Den tidligere offentlige formular **Hvad fandt du?** vises ikke længere under hver zone; den komplette turregistrering og administratorens analysefunktion er fortsat bevaret. Den aktive turrejse indsamler ikke GPS-spor, rute eller præcis position.
 
 ## Lokal scoreforklaring i 4.0.184
 
@@ -1731,8 +1743,8 @@ Fire zoner bruges til automatiseret kontrol af geometri, strøm og skyggetilstan
 
 Als Odde og Helberskov er åben kyst nord for Mariager Fjord og må ikke behandles som fjordzone. Referencezonerapporten samler zonegeometri, pålandsretning, morfologi, verificeret strømproveniens og historiske state-felter. Rapporten ændrer ikke scoren. Nye manuelle billedserier skal kun kræves, hvis projekt-ZIP, logs, sitetest og automatisk diagnostik ikke kan afgøre en konkret fejl.
 
-### 60.6 Brugerfund og GPS
-En fundrapport skal kræve, at brugeren vælger den zone, hvor jagten foregik. GPS må bruges lokalt til at kontrollere, om valget virker plausibelt, men må ikke automatisk blive jagtstedet eller sendes til den centrale observationstabel. Brugeren kan oprette rapporten hjemmefra, og telefonens aktuelle position kan derfor være irrelevant.
+### 60.6 Brugerfund og faktisk søgeområde
+En afsluttet tur skal bruge den zone og eventuelle kystdel, hvor jagten faktisk foregik. Den aktive v2-tur indsamler ikke GPS, rute eller præcis position. Brugeren kan færdiggøre rapporten hjemmefra, og telefonens aktuelle position må derfor heller ikke bruges som automatisk jagtsted.
 
 Fundrapporten skal knyttes til den historiske vejr- og tilstandskæde på det valgte tidspunkt. Observationer bruges foreløbig kun til dækningskontrol. Automatiske scoreforslag er låst, indtil søgeindsats, uforanderligt forecastlink, tidsmæssig test og geografisk hold-out er dokumenteret og godkendt i RDKS. Manglende fund er svagere evidens end et dokumenteret fund, fordi erfaring, udstyr, søgetid og konkurrence påvirker resultatet.
 
@@ -2052,7 +2064,11 @@ RavRadar lærer af hele ture, ikke af hvert enkelt ravstykke. Når en tur starte
 
 Start, slut og søgetid gemmes, og prognosen ved turstart fastholdes. Hvis brugeren søgte et andet sted end valgt ved start, gemmes turen stadig, men den bruges ikke automatisk til scorejustering.
 
-RavRadar sender ikke turens GPS-spor, rute eller præcise position. Kystdelen er det mest præcise stedniveau i læringsdata. Vægtene 25 procent jagtbarhed, 40 procent transport og 35 procent mobilisering er fortsat foreløbige og ændres ikke af denne registrering alene.
+RavRadar indsamler ikke turens GPS-spor, rute eller præcise position i den aktive rejse. Kystdelen er det mest præcise stedniveau i læringsdata. Candidate G's vægte er nu 20 procent søgeforhold, 50 procent transport mod kysten og 30 procent rav i bevægelse; turregistreringen ændrer ikke i sig selv disse vægte.
+
+### Mine ture og fund
+
+En indlogget bruger kan åbne sin private log under kontoen. Loggen læser den eksisterende turpost i `observations` og gemmer ikke turen igen. Supabase viser kun rækker med den aktuelle brugers `user_id`; mailadresse og navn ligger ikke i turposten. Anonyme ture forbliver anonyme. Oversigten hentes først ved klik, begrænses til de seneste 100 ture og viser kun de nødvendige felter.
 
 ## v4.0.249: privat RavScore-kandidat-shadow
 

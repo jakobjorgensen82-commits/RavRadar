@@ -1,3 +1,12 @@
+## 4.0.264 – forståeligt brugerflow og privat turlog (2026-08-23)
+
+- Kontoen får **Mine ture og fund**, som viser brugerens eksisterende Supabase-ture uden en ny tabel, ekstra serverrække eller dobbelt lagring.
+- Den aktive turknap bruger nu den komplette v2-rejse direkte og starter ikke længere den gamle GPS-baserede parallelrejse.
+- Login forklarer magic link som et engangslink via mail, og callbacken henter den faktiske Supabase-bruger før kontoejerskab bruges.
+- Centrale brugerord om RavScore, turen og fund er gjort mere almindelige og forklarende.
+- Rodhåndbogen tilføjes til workflowets eksakte docs-only-skip; en separat ren dokumentationsmerge skal senere bevise, at ændringen giver 0 push-produktionskørsler.
+- Candidate G, `20/50/30`, scorelogik, vejrruntime, geometri og land-/vandpunkter er uændrede. Versionsløftet må kun ændre versionsfeltet i de to geodatafiler.
+
 ## 4.0.263 – Candidate G-gate følger den aktuelle zonereference (2026-08-23)
 
 - 4.0.262-produktion `32642532892` beviste, at cadence-rettelsen virker: 673/673 states fortsatte, replaymismatch var 0, og 110 transportpotentialer blev positive mod 563 fysisk fortsat nul.

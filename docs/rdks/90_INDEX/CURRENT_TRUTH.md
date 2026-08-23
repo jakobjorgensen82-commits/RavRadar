@@ -1,5 +1,16 @@
 # Current truth – gældende projektviden
 
+## Lokal 4.0.264-kandidat – forståeligt brugerflow og privat turlog uden dobbeltlagring
+
+- Den aktive turrejse er nu direkte v2: start, afslut og færdiggør én komplet tur. Den gamle parallelle GPS-tur er ikke længere koblet til brugerfladen.
+- **Mine ture og fund** læser de eksisterende `observations`-rækker gennem Supabase RLS. Der oprettes ingen ekstra tabel, serverrække eller kopi; læsningen sker først ved klik, med et lille feltudvalg og højst 100 ture.
+- En allerede eksisterende turpost kan have `user_id`, når brugeren var logget ind ved indsendelsen. Feltet bruges kun til ejerens private læsning. Mail/navn gemmes ikke i turposten, og analyse eller modeltræning må ikke bruge identiteten.
+- Anonyme ture forbliver anonyme. En lokal outbox er leveringssikring på enheden og deduplikeres mod serverrækkens eksisterende tur-id.
+- Magic-link-teksten forklarer engangslinket, redirecten er versionsuafhængig på samme origin/sti, og callbacken henter den faktiske Supabase-bruger før kontoejerskab bruges.
+- Offentlige hovedord er forenklet til blandt andet **Søgeforhold**, **Transport mod kysten** og **Rav i bevægelse**. Candidate G, `20/50/30`, scorelogik, vejrdata, geometri og land-/vandpunkter er uændrede.
+- Koden, 4.0.264-versionsløftet, målrettede kontrakttests og den samlede lokale source-/RDKS-/releasegate er grønne. PR, exact-head, produktion og live browserkontrol mangler endnu; 4.0.263 er derfor fortsat produktionssandheden.
+
+
 ## Aktuel produktionsverificeret 4.0.263 – Candidate G-gate ved den aktuelle fælles zonereference
 
 - PR #100/exact-head `32642456123`, merge `586fbd184f68c6445acfb38a39814f6348f14bd0` og produktion `32642532892` beviser DEC-0061's cadence: live `rr-20260823134605-210` accepterer 673/673 states uden reset eller replaymismatch og har 110 positive mod 563 fysisk fortsat nul transportpotentialer.
