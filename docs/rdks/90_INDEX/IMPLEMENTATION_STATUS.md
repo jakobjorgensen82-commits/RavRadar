@@ -14,6 +14,7 @@
 - [ ] Bestå én fuld `validate:source` på PR'ens eksakte head, merge og produktionsverificér.
 - [x] Første exact-head `32658093582` stoppede sikkert før merge på Candidate G-omskifterens efterladte 4.0.264-versionsmærke. Ret mærket til 4.0.265 og gør versionsværktøjet ansvarligt for både profildokument og kodekontrakt uden at ændre aktiv profil eller scorelogik.
 - [x] Anden exact-head `32658348688` bekræftede versionsrettelsen og alle nye kontoindberetningskontrakter, men stoppede på to manglende, allerede vedtagne forklaringssætninger i webhåndbogen. Synkronisér dem uden kode- eller scoreændring.
+- [x] Tredje exact-head `32658502017` bestod alle kildekontrakter og stoppede først i releasegaten, fordi `CHANGELOG-4.0.265.md` manglede. Tilføj den versionsspecifikke releaseoversigt uden produktændring.
 
 Ingen score, Candidate G, vejrdata, geometri eller land-/vandpunkter er ændret. En rigtig autentificeret indsendelse kræver senere en bevidst ejerprøve, fordi den opretter en virkelig Supabase-række.
 
