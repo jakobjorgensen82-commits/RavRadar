@@ -2,10 +2,12 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const account = fs.readFileSync('js/ui/account-panel.js', 'utf8');
+const accountContract = fs.readFileSync('js/services/account-trip-report-contract.js', 'utf8');
 const observations = fs.readFileSync('js/services/observation-service.js', 'utf8');
 const auth = fs.readFileSync('js/services/auth-service.js', 'utf8');
 const schema = fs.readFileSync('supabase/schema.sql', 'utf8');
 const productionContract = fs.readFileSync('supabase/migrations/20260823_account_trip_log_contract.sql', 'utf8');
+const uploadContract = fs.readFileSync('supabase/migrations/20260823_observation_upload_contract.sql', 'utf8');
 const app = fs.readFileSync('app.js', 'utf8');
 
 for (const marker of [
@@ -40,6 +42,15 @@ assert.match(productionContract, /create policy "users can read own observations
 assert.match(productionContract, /grant select on table public\.observations to authenticated/);
 assert.match(productionContract, /notify pgrst, 'reload schema'/);
 assert.doesNotMatch(productionContract, /\b(?:delete|truncate|update)\b/i, 'Turlogmigrationen må ikke ændre eller slette eksisterende observationer.');
+
+for (const column of ['forecast_target_at', 'report_accuracy']) {
+  assert.match(uploadContract, new RegExp(`add column if not exists ${column}\\b`), `Produktionsmigrationen mangler uploadfeltet ${column}.`);
+}
+assert.match(uploadContract, /notify pgrst, 'reload schema'/);
+assert.doesNotMatch(uploadContract, /\b(?:delete|truncate|update)\b/i, 'Uploadmigrationen må ikke ændre eller slette eksisterende observationer.');
+assert.match(observations, /\.\.\.columns/);
+assert.match(accountContract, /forecast_target_at: report\.observedAt/);
+assert.match(accountContract, /report_accuracy: 'exact'/);
 
 assert.doesNotMatch(account, /Supabase kunne ikke hentes/, 'Brugeren skal møde RavRadar-sprog og ikke leverandørnavnet ved en læsefejl.');
 assert.match(account, /RavRadar kunne ikke hente dine gemte ture lige nu/);

@@ -1,3 +1,10 @@
+## 2026-08-23 – skema og tom GPS-værdi blokerede turindberetninger
+
+- Efter grøn 4.0.266-læsning viste ejerens genprøve, at hverken den oprindelige eller en ny manuel kontoindberetning blev synlig. Aggregeret databasekontrol viste nul nye rækker; ingen privat payload blev læst.
+- Uploaden sender `forecast_target_at` og `report_accuracy`, men felterne fandtes ikke i den aktive tabel. Den centrale, databevarende hotfix tilføjede begge og genindlæste PostgREST-schemaet.
+- Efter den centrale rettelse gav genindlæsning fortsat nul ture. API-loggen viste GET uden POST. Den fælles privatlivskontrol afviste `gps=null` før lokal lagring og ramte derfor både efterregistrering og almindelig Start/Slut-tur.
+- 4.0.267 accepterer kun den tomme lokationsværdi `null`; faktiske GPS-, koordinat-, positions-, rute- og spordata afvises fortsat. De to tidligere forsøg nåede ikke outboxen og skal indberettes igen. Exact-head, produktion og ny ejerprøve udestår. Se DEC-0066.
+
 ## 2026-08-23 – interaktiv login-/turlogprøve finder to produktionskontraktfejl
 
 - Ejerens magic link landede på `localhost:3000`, og **Mine ture og fund** viste en læsefejl. Den virkelige prøve viste dermed, at de tidligere kilde-/Pages-beviser ikke dækkede ekstern auth-konfiguration eller den aktive brugertabel.

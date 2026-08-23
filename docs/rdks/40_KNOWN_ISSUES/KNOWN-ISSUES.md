@@ -1,9 +1,14 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.267 turindberetningens uploadkæde
+
+- **ISSUE-ACCOUNT-TRIP-POST-COLUMNS – CENTRAL HOTFIX ANVENDT / RELEASE AFVENTER:** Den manuelle kontoindberetning sender `forecast_target_at` og `report_accuracy`, som manglede i aktiv Supabase. Begge kolonner er nu tilføjet uden rækkeændring. Se DEC-0066.
+- **ISSUE-TRIP-PRIVACY-NULL-GUARD – LOKALT RETTET / RELEASE OG NY EJERPRØVE AFVENTER:** Privatlivskontrollen afviste feltet `gps`, selv med værdien `null`, før lokal lagring og upload. Det ramte både kontoindberetning og almindelig Start/Slut-tur. 4.0.267 tillader kun `null`; enhver faktisk lokationsværdi er fortsat blokeret. De to tidligere ejerforsøg nåede ikke outboxen.
+
 ## 4.0.266 produktionslogin og turlog
 
 - **ISSUE-MAGIC-LINK-LOCALHOST – PRODUKTIONSVERIFICERET LØST:** Site URL og tilladt redirect peger på den aktuelle RavRadar-side. Et nyt link returnerede rent til 4.0.266 og indlæste kontoen. Flytningen til `ravradar.dk` skal fortsat ændre begge auth-adresser i samme deployment og prøves med et nyt link.
-- **ISSUE-ACCOUNT-TRIP-LOG-LIVE-SCHEMA – PRODUKTIONSVERIFICERET LØST / LOKAL CHROME-OUTBOX AFVENTER EJERPRØVE:** Migrationen er anvendt uden dataændring; feltlisten svarer HTTP 200, og egen SELECT-policy er aktiv. 4.0.266-turloggen henter uden fejl. Den tidligere efterregistrering ligger kun i ejerens oprindelige Chrome-outbox og skal eftersendes ved genindlæsning; Codex-browseren kan ikke læse en anden browsers lokale kø.
+- **ISSUE-ACCOUNT-TRIP-LOG-LIVE-SCHEMA – PRODUKTIONSVERIFICERET LØST:** Migrationen er anvendt uden dataændring; feltlisten svarer HTTP 200, og egen SELECT-policy er aktiv. 4.0.266-turloggen henter uden fejl. Den tidligere antagelse om en afventende Chrome-outbox blev erstattet af 4.0.267-diagnosen: API-loggen viste intet POST, fordi klienten stoppede før lokal lagring.
 - **ISSUE-AUTH-FLOW-PROOF-GAP – RETTET TESTKRAV:** Grøn kildekode, Pages og generel Supabase-sync beviste ikke en virkelig magic-link-retur eller den aktive brugertabels schema/RLS. DEC-0065 kræver fremover særskilt central konfigurations-, nul-rækkers schema-, policy- og interaktiv ejerprøve.
 
 ## 4.0.265 fleksibel kontoindberetning

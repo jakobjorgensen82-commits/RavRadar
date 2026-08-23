@@ -1,5 +1,13 @@
 # Current truth – gældende projektviden
 
+## 4.0.267-kandidat – komplet uploadskema
+
+- 4.0.266 løste redirect og privat turloglæsning, men den aktive tabel manglede stadig de manuelle kontoindberetningers POST-only-felter `forecast_target_at` og `report_accuracy`.
+- Den centrale, databevarende hotfix er anvendt og read-only efterkontrolleret. Begge felter findes nu; ingen observationsrække er ændret eller slettet.
+- Ejerens efterfølgende genindlæsning gav fortsat nul ture. API-loggen viste GET men intet POST: den fælles privatlivskontrol afviste den krævede tomme værdi `gps=null` før lokal lagring. Det ramte både efterregistrering og **Start ravtur → Slut ravtur**.
+- 4.0.267 tillader kun lokationsnøgler med værdien `null`; alle faktiske GPS-/positions-/rutedata forbliver blokeret. De to tidligere forsøg nåede ikke outboxen og skal indberettes igen efter udgivelsen.
+- Exact-head, 4.0.267-produktion og en ny ejerprøve udestår. Se DEC-0066.
+
 ## Produktionsverificeret 4.0.266 – virkelig magic-link-retur og aktiv turlogkontrakt
 
 - Ejerens første autentificerede prøve viste, at 4.0.264/4.0.265 ikke var fuldt ende-til-ende-verificeret: Supabases Site URL stod til localhost, redirect-listen var tom, og den aktive `observations`-tabel manglede både `data_quality_flags` og SELECT-policyen for egne ture.

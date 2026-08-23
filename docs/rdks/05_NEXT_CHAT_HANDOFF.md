@@ -1,5 +1,13 @@
 # RavRadar – overlevering til næste chat
 
+## Akut checkpoint 2026-08-23 – 4.0.267 uploadhotfix
+
+- Ejerens oprindelige og nye manuelle kontoindberetning var ikke synlige efter 4.0.266. Aggregeret Supabase-kontrol viste 0 nye rækker; turindhold blev ikke læst.
+- Første rodårsag var den aktive tabels manglende POST-only-felter `forecast_target_at` og `report_accuracy`. Central databevarende hotfix er anvendt og begge felter er efterkontrolleret.
+- Genindlæsningen gav stadig nul ture, og API-loggen viste GET uden POST. Den fælles klientkontrol afviste den krævede tomme værdi `gps=null` før lokal lagring. Det ramte både kontoindberetning og **Start ravtur → Slut ravtur**.
+- 4.0.267 tillader kun lokationsfelter med værdien `null`; faktiske GPS-, positions- og rutedata er fortsat blokeret. De to tidligere forsøg nåede ikke outboxen og skal indberettes igen efter udgivelsen.
+- 4.0.267-branch versionsstyrer migration, test, RDKS og changelog. Exact-head, merge og produktion skal færdiggøres før lukning, hvis tiden tillader det.
+
 ## Nedlukningscheckpoint 2026-08-23 – 4.0.266 login og privat turlog
 
 - PR #113 bestod exact-head `32662085932` på `bd3b4984` og blev flettet som `db4db876`.

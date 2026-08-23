@@ -1,5 +1,14 @@
 # RavRadar - aktivt roadmap
 
+## P0 – luk kontoindberetningens uploadskema i 4.0.267
+
+- [x] Find de to POST-only-felter, som manglede i aktiv Supabase: `forecast_target_at` og `report_accuracy`.
+- [x] Anvend en databevarende central migration og efterkontrollér begge kolonner.
+- [x] Kontrollér den almindelige **Start ravtur → Slut ravtur**-kontrakt særskilt; den bruger ikke de to skemafelter, men ramtes af den fælles `gps=null`-klientfejl før lagring.
+- [x] Ret privatlivskontrollen uden at tillade faktiske GPS-, koordinat-, positions-, rute- eller spordata.
+- [x] Tilføj versionsstyret migration og regression for hele kontoindberetningens uploadkontrakt.
+- [ ] Bestå exact-head, merge, 4.0.267-produktion og én ny ejerindberetning.
+
 ## P0 – luk det virkelige login- og turlogflow i 4.0.266
 
 - [x] Ret Supabases centrale Site URL og tilladte redirect fra localhost til den aktuelle GitHub Pages-origin.
@@ -9,7 +18,7 @@
 - [x] Registrér `ravradar.dk` som en samtidig auth-/deployopgave: ny Site URL, tilladt redirect og nyt loginlink på den kanoniske adresse.
 - [x] Bestå RDKS/version, PR #113 exact-head `32662085932` og den faktiske 4.0.266-produktionskæde `32662155582`.
 - [x] Prøv et nyt magic link og bekræft ren retur til RavRadar samt fejlfri privat læsning i **Mine ture og fund**.
-- [ ] Genindlæs den oprindelige Chrome-fane og bekræft, at netop dens lokalt afventende efterregistrering bliver eftersendt og synlig. Dette er sidste ejerprøve; ingen ny kodeændring er aktuelt indiceret.
+- [x] Genindlæs den oprindelige Chrome-fane. API-loggen viste GET uden POST og afslørede den fælles klientfejl; de tidligere forsøg lå ikke i outboxen.
 
 ## Produktionsverificeret 4.0.265 – fleksibel og ærlig indberetning
 

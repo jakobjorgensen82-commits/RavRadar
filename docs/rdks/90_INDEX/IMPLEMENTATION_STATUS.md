@@ -1,3 +1,14 @@
+# Aktiv implementeringsstatus – komplet uploadskema i 4.0.267
+
+- [x] Bekræft aggregeret, at ingen af de to manuelle ture nåede databasen; læs ingen privat payload.
+- [x] Sammenhold den manuelle uploads fulde feltliste med den aktive tabel og find præcis `forecast_target_at` og `report_accuracy` som manglende.
+- [x] Tilføj begge felter centralt med databevarende SQL og genindlæs PostgREST-schemaet.
+- [x] Bekræft særskilt, at **Start ravtur → Slut ravtur** ikke bruger de to skemafelter, men rammes af den fælles `gps=null`-klientfejl før lagring.
+- [x] Ret privatlivskontrollen, så kun `null` accepteres for lokationsnøgler, mens faktiske GPS-/positions-/rutedata fortsat afvises.
+- [x] Versionsstyr migration, regression, RDKS, håndbogsmetadata og changelog som 4.0.267.
+- [ ] Bestå exact-head, merge og frisk 4.0.267-produktion.
+- [ ] Indberet én ny ejerprøve efter udgivelsen og bekræft, at den sendes og vises. De to tidligere forsøg nåede ikke outboxen.
+
 # Implementeringsstatus – produktionslogin og privat turlog i 4.0.266
 
 ## Produktionsverificeret leverance
