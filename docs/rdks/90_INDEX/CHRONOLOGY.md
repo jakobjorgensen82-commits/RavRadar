@@ -7,7 +7,8 @@
 3. Ejeren bad om en grundig permanent rettelse og en almindeligt forståelig forklaring af både tre-timersfejlen og rollbackrollen efter leverancen.
 4. DEC-0062 lader den globale profilgate bedømme memory ved den nærmeste fælles aktuelle scoretid for alle dele i hver zone. Senere huller påvirker fortsat deres egne fremtidige states fail-closed, men slår ikke den aktuelle profil fra.
 5. Komplet beregnelig Candidate G-scorecoverage kræves stadig for alle publicerede rækker, og missing eller tidsgab ved den faktisk valgte aktuelle reference vælger fortsat legacy globalt.
-6. Målrettede tests og samlet lokal source-/RDKS-/releasegate er grønne. Exact-head, frisk produktion, aktiv shadow og fuld browserkontrol afventer.
+6. PR #101 bestod exact-head `32644701811`, blev merged som `9f5953f6`, og fuld produktion `32644772373` udgav live `rr-20260823142247-210` med Candidate G aktiv på 210/673.
+7. Den dataminimerede audit bestod 673 fortsatte states, nul reset/replaymismatch og 139 positive mod 534 aktuelt fysiske nultransporter. Aktiv shadow `32645569741` og browser 420/2.100/673 er grønne uden fejl; P0 er lukket.
 
 ## 2026-08-23 – ejeren bestiller den systemiske cadence-rettelse
 

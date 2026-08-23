@@ -1,6 +1,6 @@
 # DEC-0062: Candidate G's aktiveringsgate følger den aktuelle fælles zonereference
 
-**Status:** IMPLEMENTERET; målrettede tests og samlet lokal source-/RDKS-/releasegate er grønne; exact-head, frisk produktion, aktiv shadow og browserkontrol afventer
+**Status:** IMPLEMENTERET OG PRODUKTIONSVERIFICERET
 
 **Dato:** 2026-08-23
 
@@ -26,6 +26,10 @@ Den offentlige profil faldt alligevel tilbage til legacy. Alle 673 faktisk valgt
 - Et gap ved den fælles aktuelle reference skal fortsat blokere.
 - En fælles aktuel `READY`-reference skal give `candidateMemoryReady=true`, selv om senere prognoser ikke ændrer den aktuelle modenhed.
 - Manglende fælles reference, manglende del eller ugyldig tid fejler lukket.
+
+## Produktionsbevis
+
+PR #101 bestod exact-head `32644701811` på `b7e5d3d4`, blev merged som `9f5953f6`, og fuld produktion `32644772373` gennemførte central hydrering, frisk vejr/state, samlet validering, releasegate, Supabase, artifact og Pages. Live `rr-20260823142247-210` har Candidate G aktiv på 210/673 med `CURRENT_COMMON_ZONE_REFERENCE`, 673 accepterede states, nul reset, nul replay- eller scorerekonstruktionsfejl og 139 positive mod 534 aktuelt fysiske nultransporter. Aktiv shadow `32645569741` og fuld browserkontrol er grønne; browseren bestod 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer uden fejl.
 
 ## Uændrede grænser
 

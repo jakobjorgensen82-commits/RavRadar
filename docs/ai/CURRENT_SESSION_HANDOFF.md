@@ -6,7 +6,7 @@
 - Live `rr-20260823134605-210` beviser cadence-rettelsen: 673/673 accepterede states, nul reset/replaymismatch, 110 positive og 563 fysisk fortsat nul. Den offentlige profil rullede dog sikkert tilbage til legacy.
 - Rodårsagen til rollbacken er en for bred gate: alle 673 aktuelle referencer var `WINDOW_INCOMPLETE`, men senere femdøgnsgaps gjorde `candidateWarmupEligible=false`.
 - DEC-0062/4.0.263 vurderer memory/warmup ved nærmeste fælles aktuelle scoretid pr. zone. Hele prognosens kandidatscorecoverage består, og et gap ved den aktuelle reference giver fortsat global rollback.
-- Målrettede tests og samlet lokal source-/RDKS-/releasegate er grønne. Exact-head, frisk produktion, aktiv 210/673-shadow og browserkontrol afventer.
+- PR #101/exact-head `32644701811`, merge `9f5953f6`, produktion `32644772373`, live `rr-20260823142247-210`, aktiv shadow `32645569741` og browserkontrol er grønne. Candidate G er aktiv på 210/673; 673 states fortsatte uden reset eller replaymismatch, og browseren bestod 420/2.100/673 uden fejl.
 - Branch er `codex/candidate-g-reference-gate-fix`. Artifact, protected-dirty-data, private cachedata, geometri og land-/vandpunkter må ikke røres; geodata må kun få versionsfeltet 4.0.263.
 
 ## Historisk arbejdsleverance – Candidate G native cadence-rettelse i 4.0.262

@@ -4,7 +4,8 @@
 - Den ønskede Candidate G-profil rullede alligevel globalt tilbage til legacy. De 673 valgte aktuelle referencer var lovlige `WINDOW_INCOMPLETE`, men profilgaten bedømte warmup over alle senere femdøgnsrækker og lod et fremtidigt prognosehul slå den sunde aktuelle reference fra.
 - DEC-0062 binder derfor memory- og warmup-gaten til den nærmeste fælles aktuelle scoretid for alle dele i hver zone. Komplet Candidate G-scorecoverage kræves fortsat for hele det publicerede femdøgn, og en missing- eller gapstatus ved den faktisk valgte aktuelle reference udløser stadig global rollback.
 - Fremtidige huller forbliver fail-closed i deres egne states: der opfindes ingen mellemliggende strøm, det sammenhængende suffix brydes, og replayet genstarter fra den faste rand. De kan ikke længere retroaktivt ændre den aktuelle profilsundhed.
-- Version 4.0.263, målrettede regressionstests, samlet lokal source-/RDKS-/releasegate og eksakt geodatadiff er grønne. Exact-head, frisk fuld produktion, aktiv 210/673-shadow og browserkontrol afventer.
+- Version 4.0.263, målrettede regressionstests, samlet lokal source-/RDKS-/releasegate og eksakt geodatadiff er grønne. PR #101 bestod exact-head `32644701811`, blev merged som `9f5953f6`, og fuld produktion `32644772373` bestod central hydrering, frisk data/state, samlet validering, releasegate, Supabase, artifact og Pages.
+- Live `rr-20260823142247-210` har Candidate G aktiv på 210/673 med 673 accepterede states, nul reset, nul replay- eller scorerekonstruktionsfejl og 139 positive mod 534 aktuelt fysiske nultransporter. Aktiv shadow `32645569741` og browser 420/2.100/673 er grønne uden fejl. P0 er lukket.
 - Candidate G's `20/50/30`, fysik, geometri, land-/vandpunkter, artifact, protected-dirty-data og private caches er uændrede. Kun versionsfeltet i de to godkendte geodatafiler løftes til 4.0.263.
 
 ## 2026-08-23 – Candidate G native cadence-rettelse i 4.0.262

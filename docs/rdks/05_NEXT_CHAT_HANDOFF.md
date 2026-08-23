@@ -4,7 +4,7 @@
 
 - 4.0.262-produktion `32642532892` beviste cadence-rettelsen med 673/673 fortsatte states, nul replaymismatch og 110 positive transportpotentialer. Profilen rullede alligevel tilbage til legacy, fordi en senere prognosegapstatus blev brugt som aktuel warmup-gate.
 - DEC-0062 lader memory-/warmup-gaten følge den nærmeste fælles aktuelle scoretid pr. zone. Fuld Candidate G-scorecoverage over hele prognosen består; missing/gap ved den aktuelle reference giver stadig global rollback, mens senere gaps håndteres fail-closed i deres egen state.
-- 4.0.263 er lokalt grøn på `codex/candidate-g-reference-gate-fix`, inklusive samlet source-/RDKS-/releasegate og eksakt geodatadiff. Exact-head, frisk produktion, aktiv 210/673-shadow og fuld browserkontrol mangler.
+- 4.0.263 er produktionslukket gennem PR #101/exact-head `32644701811`, merge `9f5953f6`, fuld produktion `32644772373`, live `rr-20260823142247-210`, aktiv shadow `32645569741` og grøn 420/2.100/673-browserkontrol. Candidate G er aktiv på 210/673 med nul reset, replay-, score- eller visningsfejl.
 
 ## Aktuel 4.0.262-arbejdsbaseline – Candidate G cadence-rettelse
 

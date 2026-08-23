@@ -10,9 +10,9 @@
 - [x] Bevar global rollback ved et gap på den aktuelle reference og lokal fail-closed stateadfærd efter senere prognosegaps.
 - [x] Lås referencescopet som `CURRENT_COMMON_ZONE_REFERENCE` i profil, tests og public-shadow.
 - [x] Bestå samlet lokal source-/RDKS-/releasekontrol og eksakt geodatadiff for 4.0.263.
-- [ ] Bestå exact-head, frisk produktion, aktiv 210/673-shadow og fuld browserkontrol for 4.0.263.
+- [x] Bestå PR #101/exact-head `32644701811`, merge `9f5953f6`, frisk produktion `32644772373`, aktiv shadow `32645569741` og browserkontrol for live `rr-20260823142247-210` på 210/673/420/2.100 uden fejl.
 
-Den følgende 4.0.262-sektion er revisionshistorik. Cadencefejlen er løst, men den samlede P0 lukkes først, når 4.0.263 er produktionsverificeret.
+Den følgende 4.0.262-sektion er revisionshistorik. Cadencefejlen og den efterfølgende referencescopefejl er samlet produktionslukket i 4.0.263.
 
 ## P0-regression efter aktiveringslukningen
 
