@@ -1,5 +1,14 @@
 # RavRadar - aktuelt Codex-handoff
 
+## Aktiv opgave 2026-08-23 – Candidate G pre-public aktivering i 4.0.261
+
+- Aktuel branch er `codex/candidate-g-public-activation` fra `origin/main` `9f72f737`.
+- Ejeren har i DEC-0060 godkendt Candidate G som gældende scoremotor nu og accepteret, at det første ikke-offentlige 48-timersvindue er ufuldstændigt. Runtime skal mærke det `candidate-active-pre-public-warmup`; der må ikke foregives fuld historik.
+- Den globale scoreprofil er `RESEARCH-3` med `20/50/30`. Én manglende nødvendig Candidate G-projektion giver samlet rollback til `RRS-CURRENT-B0-4.0.247`; automatisk aktivering og profilblanding er fortsat forbudt.
+- Det nye private centrale dokument er `data/admin/ravscore-profile-selection.json`. Central hydrering tillader kun nyere ejer-godkendt engangspromotion; efter write/readback er central samme/nyere værdi autoritativ.
+- Målrettede switch-, central-runtime-, aktiv-shadow-, workflow- og central-hydreringstests er grønne. Version 4.0.261 er sat; RDKS-lukning, samlet sourcegate, exact-head, produktion, central readback, aktiv 210/673-shadow og browseraudit udestår.
+- Artifact, protected-dirty-data, private cachedata, geometri og land-/vandpunkter må ikke røres. Geodata har kun versionsfeltet 4.0.261.
+
 ## Checkpoint 2026-08-23 – Candidate G bounded transport-memory efter ejerbeslutning
 
 - Ejeren har erstattet både den varige start 0 og anbefalingen om neutral startprior 50 med DEC-0059's faste 48-timers evidensvindue. Der skal ikke køres eller afventes endnu en 48-timers realtidsudviklingstest.

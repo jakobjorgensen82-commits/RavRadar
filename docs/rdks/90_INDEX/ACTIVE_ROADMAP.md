@@ -15,6 +15,18 @@
 
 Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre forsknings-/versionsafsnit bevares som revisionsspor. En tom afkrydsningsboks i historikken er ikke en aktiv opgave, medmindre punktet ogsaa findes her.
 
+## Aktuel 4.0.261-opgave – Candidate G pre-public aktivering
+
+- [x] Registrér ejerens beslutning i DEC-0060: Candidate G skal være gældende nu, og den første ikke-offentlige opvarmningsscore accepteres som foreløbig.
+- [x] Aktivér `RESEARCH-3` med `20/50/30` uden ændring af de faglige modelregler.
+- [x] Bevar global fail-closed ved manglende Candidate G-projektion og eksakt rollback til `25/40/35`.
+- [x] Tilføj det private centrale dokument `ravscore-profile-selection` med sikker engangspromotion og central readback.
+- [x] Lås aktiv Candidate G-projektion, ærlig `WINDOW_INCOMPLETE`-status, rollback, dataminimering og automatisk aktiveringsforbud i målrettede tests.
+- [x] Bestå samlet lokal kildegate og releasegate for 4.0.261.
+- [ ] Før exact-head gennem PR, merge og frisk fuld produktion med central profil-readback.
+- [ ] Kør aktiv dataminimeret 210/673-shadow og fuld 210/673/420/2.100-browserkontrol på den eksakte merge.
+- [ ] Følg den naturlige memoryopbygning som driftsevidens uden at gøre den til en ny implementerings- eller aktiveringsgate.
+
 ## Aktuel workflowkorrektion – samlet CHANGELOG.md
 
 - [x] Bevis rodårsagen til PR #78's uventede produktion: `CHANGELOG-*.md` dækkede versionsfilerne, men ikke den aktuelle samlede `CHANGELOG.md`.
@@ -54,8 +66,8 @@ Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre for
 - [x] Efterprøv om den eksisterende syvdøgnshistorik kan fjerne bootstrap-skævheden. Resultat: nej; 65–117 timers historik efterlader 607/633 dele med mindst 50 points startpriorafhængighed, fordi neutral strøm ikke giver passivt tab.
 - [x] Forkast en ny startreserve og implementér DEC-0059's faste 48-timers evidensvindue. 582 komplette historiske vinduer er uafhængige af tænkt start 0/50/100; der kræves ikke en ny 48-timers realtidsudviklingstest.
 - [x] Før den afgrænsede schema-2-state gennem exact-head `32633533257`, PR #95/merge `1d848724` og fuld produktion `32633607166`. Live `rr-20260823102619-210` er fail-closed med legacy aktiv, 673/673 schema-2-state, ét første timebevis, 0/673 ready og nul Candidate G-aktivering.
-- [ ] Gennemfør central admin-roundtrip og en ny versionsbundet aktiveringsændring, før ønsket profil eventuelt ændres til Candidate G.
-- [ ] Offentlig aktivering må først gennemføres, når den samlede pakke er grøn og ingen konkret modstridende evidens består; manglende turkalibrering skal fortsat fremgå ærligt som modelusikkerhed.
+- [x] Ejeren har gennem DEC-0060 godkendt central profilaktivering under den første ikke-offentlige opvarmning; 4.0.261 implementerer den versionsbundne ændring og readbackkontrakt.
+- [ ] Produktionsverificér den aktive pakke. Manglende turkalibrering skal fortsat fremgå ærligt som modelusikkerhed, og konkret modstridende evidens kræver rollback.
 
 ## Aktuelt Candidate G-review – 4.0.258 vindstyret waders-kandidat
 

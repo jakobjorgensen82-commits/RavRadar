@@ -16,6 +16,7 @@ import {
 import {
   CANDIDATE_G_RAVSCORE_PROFILE_ID,
   LEGACY_RAVSCORE_PROFILE_ID,
+  PUBLIC_RAVSCORE_PROFILE_SELECTION,
   resolvePublicRavScoreProfile,
 } from '../js/core/ravscore-profile-switch.js';
 
@@ -78,10 +79,12 @@ export function auditCandidateGPublicShadow(document, {
   add(Number(coastal?.expectedPartCount) === expectedPartCount, 'EXPECTED_PART_COUNT_MISMATCH');
   add(Number(coastal?.scoredPartCount) === expectedPartCount, 'SCORED_PART_COUNT_MISMATCH');
   add(parts.length === expectedPartCount, 'PART_OBJECT_COUNT_MISMATCH');
-  add(coastal?.scoreProfile?.activeProfileId === LEGACY_RAVSCORE_PROFILE_ID, 'PUBLIC_PROFILE_NOT_LEGACY');
+  add(coastal?.scoreProfile?.activeProfileId === CANDIDATE_G_RAVSCORE_PROFILE_ID, 'PUBLIC_PROFILE_NOT_CANDIDATE_G');
   add(coastal?.scoreProfile?.rollbackProfileId === LEGACY_RAVSCORE_PROFILE_ID, 'ROLLBACK_PROFILE_MISMATCH');
   add(coastal?.scoreProfile?.candidateProfileId === CANDIDATE_G_RAVSCORE_PROFILE_ID, 'CANDIDATE_PROFILE_MISMATCH');
-  add(coastal?.scoreProfile?.activationState === 'legacy-active-score-neutral', 'PROFILE_NOT_SCORE_NEUTRAL');
+  add(['candidate-active-pre-public-warmup', 'candidate-active'].includes(coastal?.scoreProfile?.activationState),
+    'PROFILE_NOT_CANDIDATE_ACTIVE');
+  add(coastal?.scoreProfile?.candidateCoverageReady === true, 'CANDIDATE_SCORE_COVERAGE_INCOMPLETE');
   add(coastal?.scoreProfile?.automaticActivationAllowed === false, 'PROFILE_AUTOMATIC_ACTIVATION_NOT_BLOCKED');
 
   const partCountByZone = new Map();
@@ -100,6 +103,8 @@ export function auditCandidateGPublicShadow(document, {
   let outflowGateCount = 0;
   let scoreReconstructionMismatchCount = 0;
   let bandChangeCount = 0;
+  let memoryReadyPartCount = 0;
+  let warmupPartCount = 0;
   for (const [, part] of parts) {
     const zone = coastal?.zones?.[part?.zoneId];
     const candidate = part?.candidateG;
@@ -111,14 +116,25 @@ export function auditCandidateGPublicShadow(document, {
     add(candidate?.variantId === CANDIDATE_G_STATE_VARIANT_ID, 'STATE_VARIANT_MISMATCH');
     add(candidate?.profileId === CANDIDATE_G_STATE_PROFILE_ID, 'STATE_PROFILE_MISMATCH');
     add(JSON.stringify(candidate?.weights) === JSON.stringify(CANDIDATE_G_WEIGHTS), 'CANDIDATE_WEIGHT_MISMATCH');
-    add(candidate?.scoreImpact === 'diagnostic-only', 'CANDIDATE_NOT_DIAGNOSTIC_ONLY');
+    add(candidate?.scoreImpact === 'active-public', 'CANDIDATE_NOT_ACTIVE_PUBLIC');
     add(candidate?.automaticActivationAllowed === false, 'AUTOMATIC_ACTIVATION_NOT_BLOCKED');
-    add(candidate?.publicScoreChanged === false, 'PUBLIC_SCORE_CHANGE_FLAGGED');
+    add(candidate?.publicScoreChanged === true, 'PUBLIC_SCORE_CHANGE_NOT_FLAGGED');
     add(candidate?.referenceAt === zone?.currentReferenceAt, 'CANDIDATE_ZONE_REFERENCE_MISMATCH');
     add(candidate?.referenceAt === part?.current?.time, 'CANDIDATE_ACTIVE_REFERENCE_MISMATCH');
-    add(candidate?.transportMemoryReady === true, 'BOUNDED_TRANSPORT_MEMORY_NOT_READY');
-    add(candidate?.transportMemoryStatus === 'READY', 'BOUNDED_TRANSPORT_MEMORY_STATUS_NOT_READY');
-    add(Number(candidate?.transportMemoryCoverageHours) === 48, 'BOUNDED_TRANSPORT_MEMORY_COVERAGE_INCOMPLETE');
+    const memoryReady = candidate?.transportMemoryReady === true;
+    if (memoryReady) memoryReadyPartCount += 1;
+    else warmupPartCount += 1;
+    add(memoryReady || coastal?.scoreProfile?.prePublicWarmupAccepted === true,
+      'INCOMPLETE_MEMORY_WITHOUT_OWNER_WARMUP');
+    add(memoryReady
+      ? candidate?.transportMemoryStatus === 'READY'
+      : candidate?.transportMemoryStatus === 'WINDOW_INCOMPLETE',
+    'BOUNDED_TRANSPORT_MEMORY_STATUS_INVALID');
+    add(memoryReady
+      ? Number(candidate?.transportMemoryCoverageHours) === 48
+      : Number(candidate?.transportMemoryCoverageHours) >= 0
+        && Number(candidate?.transportMemoryCoverageHours) < 48,
+    'BOUNDED_TRANSPORT_MEMORY_COVERAGE_INVALID');
     add(state?.time === candidate?.referenceAt, 'STATE_REFERENCE_TIME_MISMATCH');
     add(state?.schemaVersion === CANDIDATE_G_STATE_SCHEMA_VERSION, 'COMPACT_STATE_SCHEMA_MISMATCH');
     add(state?.modelId === CANDIDATE_G_STATE_MODEL_ID, 'COMPACT_STATE_MODEL_MISMATCH');
@@ -126,12 +142,16 @@ export function auditCandidateGPublicShadow(document, {
     add(typeof state?.stateKey === 'string' && state.stateKey.startsWith('sha256:'), 'COMPACT_STATE_KEY_MISSING');
     add(finite(state?.transportPotential) && Number(state.transportPotential) >= 0 && Number(state.transportPotential) <= 100, 'TRANSPORT_STATE_INVALID');
     add(finite(state?.outboundEpisodeEffectiveHours) && Number(state.outboundEpisodeEffectiveHours) >= 0, 'OUTFLOW_STATE_INVALID');
-    add(state?.transportMemoryReady === true, 'COMPACT_BOUNDED_TRANSPORT_MEMORY_NOT_READY');
-    add(state?.transportMemoryStatus === 'READY', 'COMPACT_BOUNDED_TRANSPORT_MEMORY_STATUS_NOT_READY');
+    add(state?.transportMemoryReady === memoryReady, 'COMPACT_BOUNDED_TRANSPORT_MEMORY_READY_MISMATCH');
+    add(state?.transportMemoryStatus === candidate?.transportMemoryStatus,
+      'COMPACT_BOUNDED_TRANSPORT_MEMORY_STATUS_MISMATCH');
     add(Number(state?.transportMemoryWindowHours) === 48, 'COMPACT_BOUNDED_TRANSPORT_MEMORY_WINDOW_INVALID');
-    add(Number(state?.transportMemoryCoverageHours) === 48, 'COMPACT_BOUNDED_TRANSPORT_MEMORY_COVERAGE_INCOMPLETE');
-    add(Array.isArray(state?.transportEvidence) && state.transportEvidence.length === 49,
-      'COMPACT_BOUNDED_TRANSPORT_EVIDENCE_INCOMPLETE');
+    add(Number(state?.transportMemoryCoverageHours) === Number(candidate?.transportMemoryCoverageHours),
+      'COMPACT_BOUNDED_TRANSPORT_MEMORY_COVERAGE_MISMATCH');
+    add(Array.isArray(state?.transportEvidence)
+      && (memoryReady ? state.transportEvidence.length === 49 : state.transportEvidence.length >= 1
+        && state.transportEvidence.length <= 48),
+    'COMPACT_BOUNDED_TRANSPORT_EVIDENCE_INVALID_LENGTH');
     add((state?.transportEvidence ?? []).every((item, index, rows) =>
       item && Object.keys(item).sort().join(',') === 'strength,time'
       && Number.isFinite(Date.parse(item.time))
@@ -178,6 +198,7 @@ export function auditCandidateGPublicShadow(document, {
       const active = Number(activeScore);
       const proposed = Number(candidateMode.score);
       add(active >= 0 && active <= 100 && proposed >= 0 && proposed <= 100, 'SCORE_OUT_OF_RANGE');
+      add(active === proposed, 'ACTIVE_SCORE_DOES_NOT_MATCH_CANDIDATE_G');
       const reconstructed = reconstructCandidateScore(mode, candidateMode);
       if (reconstructed !== proposed) scoreReconstructionMismatchCount += 1;
       if (scoreBand(active) !== scoreBand(proposed)) bandChangeCount += 1;
@@ -199,11 +220,11 @@ export function auditCandidateGPublicShadow(document, {
   const uniqueErrors = [...new Set(errors)].sort();
   return {
     schemaVersion: 1,
-    audit: 'candidate-g-fallback-compatible-public-shadow',
+    audit: 'candidate-g-active-public-shadow',
     status: uniqueErrors.length ? 'failed' : 'passed',
-    diagnosticShadowReady: uniqueErrors.length === 0,
+    activationShadowReady: uniqueErrors.length === 0,
     automaticActivationAllowed: false,
-    publicScoreChanged: false,
+    publicScoreChanged: true,
     rollbackPath: 'VERSIONED_SWITCH_SELECTS_RRS_CURRENT_B0_4_0_247',
     scoreProfile: coastal?.scoreProfile ? {
       switchVersion: coastal.scoreProfile.switchVersion,
@@ -212,6 +233,8 @@ export function auditCandidateGPublicShadow(document, {
       rollbackProfileId: coastal.scoreProfile.rollbackProfileId,
       candidateProfileId: coastal.scoreProfile.candidateProfileId,
       candidateCoverageReady: coastal.scoreProfile.candidateCoverageReady,
+      candidateMemoryReady: coastal.scoreProfile.candidateMemoryReady,
+      prePublicWarmupAccepted: coastal.scoreProfile.prePublicWarmupAccepted,
       activationState: coastal.scoreProfile.activationState,
       automaticActivationAllowed: coastal.scoreProfile.automaticActivationAllowed,
     } : null,
@@ -223,7 +246,7 @@ export function auditCandidateGPublicShadow(document, {
       expectedPartCount,
       modeEvaluationCount: modeRows.waders.length + modeRows.beach.length,
     },
-    stateContinuation: { acceptedStateCount, resetStateCount },
+    stateContinuation: { acceptedStateCount, resetStateCount, memoryReadyPartCount, warmupPartCount },
     scoreComparison: { modes: modeSummary, bandChangeCount, outflowGateCount },
     scoreReconstructionMismatchCount,
     errors: uniqueErrors,
@@ -241,7 +264,22 @@ function syntheticDocument() {
   const zones = {};
   const parts = {};
   let partNumber = 0;
-  const scoreProfile = resolvePublicRavScoreProfile({ candidateCoverageReady: true });
+  const scoreProfile = resolvePublicRavScoreProfile({
+    selection: {
+      ...PUBLIC_RAVSCORE_PROFILE_SELECTION,
+      requestedProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
+      candidateActivationEnabled: true,
+      prePublicWarmupAccepted: true,
+      status: 'owner-approved-pre-public-synthetic-active',
+      activationAuthority: 'synthetic-owner-review',
+    },
+    evidence: {
+      freshFinalShadowRunId: null,
+      ownerReviewDecisionId: 'synthetic-owner-review',
+    },
+    candidateCoverageReady: true,
+    candidateMemoryReady: false,
+  });
   for (let zoneNumber = 0; zoneNumber < EXPECTED_ZONES; zoneNumber += 1) {
     const zoneId = `zone-${zoneNumber}`;
     const partCount = zoneNumber < 43 ? 4 : 3;
@@ -267,20 +305,20 @@ function syntheticDocument() {
       };
       parts[partId] = {
         zoneId,
-        current: { time: referenceAt, waders: { score: 45 }, beach: { score: 45 } },
+        current: { time: referenceAt, waders: { score: 50 }, beach: { score: 50 } },
         candidateG: {
           schemaVersion: CANDIDATE_G_STATE_SCHEMA_VERSION,
           modelId: CANDIDATE_G_STATE_MODEL_ID,
           variantId: CANDIDATE_G_STATE_VARIANT_ID,
           profileId: CANDIDATE_G_STATE_PROFILE_ID,
           weights: CANDIDATE_G_WEIGHTS,
-          scoreImpact: 'diagnostic-only',
+          scoreImpact: 'active-public',
           automaticActivationAllowed: false,
-          publicScoreChanged: false,
+          publicScoreChanged: true,
           referenceAt,
-          transportMemoryReady: true,
-          transportMemoryStatus: 'READY',
-          transportMemoryCoverageHours: 48,
+          transportMemoryReady: false,
+          transportMemoryStatus: 'WINDOW_INCOMPLETE',
+          transportMemoryCoverageHours: 0,
           initialStateAccepted: zoneNumber > 0,
           initialStateResetReason: zoneNumber > 0 ? null : 'NO_PREVIOUS_STATE',
           currentState: {
@@ -292,14 +330,11 @@ function syntheticDocument() {
             time: referenceAt,
             transportPotential: 50,
             outboundEpisodeEffectiveHours: 0,
-            transportMemoryReady: true,
-            transportMemoryStatus: 'READY',
+            transportMemoryReady: false,
+            transportMemoryStatus: 'WINDOW_INCOMPLETE',
             transportMemoryWindowHours: 48,
-            transportMemoryCoverageHours: 48,
-            transportEvidence: Array.from({ length: 49 }, (_, index) => ({
-              time: new Date(Date.parse(referenceAt) - ((48 - index) * 3_600_000)).toISOString(),
-              strength: 0,
-            })),
+            transportMemoryCoverageHours: 0,
+            transportEvidence: [{ time: referenceAt, strength: 0 }],
             mobilisationPotential: 50,
           },
           modes: { waders: mode, beach: mode },
@@ -332,8 +367,11 @@ async function main() {
     assert.equal(report.coverage.partCount, EXPECTED_PARTS);
     assert.equal(report.coverage.modeEvaluationCount, EXPECTED_PARTS * 2);
     assert.equal(report.scoreReconstructionMismatchCount, 0);
+    assert.equal(report.stateContinuation.memoryReadyPartCount, 0);
+    assert.equal(report.stateContinuation.warmupPartCount, EXPECTED_PARTS);
+    assert.equal(report.scoreProfile.activeProfileId, CANDIDATE_G_RAVSCORE_PROFILE_ID);
     assert.equal(report.privacy.partIdentifiersIncluded, false);
-    console.log('Candidate G fallback-kompatibel offentlig shadow-self-test: OK');
+    console.log('Candidate G aktiv pre-public warmup-shadow-self-test: OK');
     return;
   }
   const inputIndex = arguments_.indexOf('--input');

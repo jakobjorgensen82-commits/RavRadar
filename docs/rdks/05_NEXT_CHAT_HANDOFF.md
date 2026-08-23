@@ -1,5 +1,14 @@
 # RavRadar – overlevering til næste chat
 
+## Aktiv 4.0.261-opgave – Candidate G bliver gældende under pre-public opvarmning
+
+- Ejeren har i DEC-0060 godkendt øjeblikkelig Candidate G-aktivering, selv om det første schema-2-vindue endnu ikke har 48 timers naturlig historik. Siden er endnu ikke offentlig, og de foreløbige scoreværdier er accepteret.
+- Branchen `codex/candidate-g-public-activation` er oprettet fra `origin/main` `9f72f737`. 4.0.261 vælger `RESEARCH-3` med `20/50/30`; modelreglerne ændres ikke, og legacy `RRS-CURRENT-B0-4.0.247` er global rollback.
+- Den private centrale konfiguration hedder `ravscore-profile-selection`. Den må promoveres centralt én gang med versions- og ejerbinding; derefter er central samme/nyere konfiguration autoritativ.
+- Aktivering under ufuldstændig memory kræver stadig komplette Candidate G-scoreprojektioner for alle nødvendige rækker. Runtime skal vise `candidate-active-pre-public-warmup` og faktisk `WINDOW_INCOMPLETE`; én manglende projektion giver global legacyfallback.
+- Målrettede switch-, central-runtime-, aktiv-shadow-, workflow- og central-hydreringstests er grønne lokalt. RDKS-/versionslukning, samlet sourcegate, exact-head, produktion, central readback, aktiv 210/673-shadow og fuld browserkontrol udestår.
+- Ingen artifact, protected-dirty-data, private cachedata, geometri eller land-/vandpunkter er rørt. Kun versionsfeltet må ændres i `data/kystdata.json` og `data/zones.geojson`.
+
 ## Aktuelt checkpoint 2026-08-23 – 4.0.260 score-neutral produktion grøn
 
 - PR #92/exact-head `32628441062`, merge `c5898ce8` og produktion `32628516066` er grønne. Live `rr-20260823083627-210` består 210/673/1.346, manifestintegritet og 420/2.100/673-browseraudit uden fejl.

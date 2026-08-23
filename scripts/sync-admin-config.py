@@ -12,6 +12,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 URL = os.getenv("SUPABASE_URL", "").rstrip("/")
 KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 ACTIVATION_KEY = "coastal-parts-v2-activation"
+RAVSCORE_PROFILE_KEY = "ravscore-profile-selection"
 MAP = {
     "water-level-station-routing": "data/water-level-station-routing.json",
     "direction-reviews": "data/admin/direction-reviews.json",
@@ -19,6 +20,7 @@ MAP = {
     "coastline-overrides": "data/admin/coastline-overrides.json",
     "dmi-water-stations": "data/live/dmi-water-stations.json",
     ACTIVATION_KEY: "data/geometry-v2/active-national-coastal-parts/manifest.json",
+    RAVSCORE_PROFILE_KEY: "data/admin/ravscore-profile-selection.json",
 }
 
 
@@ -45,6 +47,27 @@ def preserve_newer_owner_approved_activation(local, central):
     return bool(explicit_approval and local_version and central_version and local_version > central_version)
 
 
+def preserve_newer_owner_approved_ravscore_selection(local, central):
+    """Carry a newer, explicit owner-approved profile choice into central storage once.
+
+    Equal or newer central data remains authoritative, including a later global
+    rollback to the legacy profile.
+    """
+    local_version = version_tuple(local.get("sourceVersion")) if isinstance(local, dict) else None
+    central_version = version_tuple(central.get("sourceVersion")) if isinstance(central, dict) else None
+    explicit_approval = (
+        isinstance(local, dict)
+        and local.get("candidateActivationEnabled") is True
+        and local.get("prePublicWarmupAccepted") is True
+        and local.get("automaticActivationAllowed") is False
+        and bool(str(local.get("activationAuthority") or "").strip())
+        and str(local.get("status") or "").startswith("owner-approved-pre-public-")
+        and bool(str((local.get("evidence") or {}).get("ownerReviewDecisionId") or "").strip())
+    )
+    return bool(explicit_approval and local_version
+                and (central_version is None or local_version > central_version))
+
+
 def write_document(document_key, payload):
     target = ROOT / pathlib.Path(MAP[document_key])
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -55,6 +78,13 @@ def write_document(document_key, payload):
             local = None
         if preserve_newer_owner_approved_activation(local, payload):
             return "preserved-newer-owner-approved-repository-activation"
+    if document_key == RAVSCORE_PROFILE_KEY and target.exists():
+        try:
+            local = json.loads(target.read_text(encoding="utf8"))
+        except (OSError, json.JSONDecodeError):
+            local = None
+        if preserve_newer_owner_approved_ravscore_selection(local, payload):
+            return "preserved-newer-owner-approved-ravscore-selection"
     target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf8")
     return "central"
 

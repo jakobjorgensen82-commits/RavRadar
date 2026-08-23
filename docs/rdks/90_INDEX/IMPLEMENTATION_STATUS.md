@@ -1,4 +1,21 @@
-# Implementeringsstatus – Candidate G bounded transport-memory efter 4.0.260
+# Implementeringsstatus – Candidate G-aktivering i 4.0.261
+
+## Ejer-godkendt pre-public opvarmningsaktivering
+
+- [x] Registrér DEC-0060: Candidate G skal være gældende nu, mens den ikke-offentlige side opbygger sit første komplette 48-timersvindue.
+- [x] Vælg `RESEARCH-3` med `20/50/30` og bevar alle faglige regler fra DEC-0054–0059 uændret.
+- [x] Del den globale gate i beregnelig Candidate G-dækning og moden transporthukommelse; kræv fortsat fuld scoreprojektion, men tillad ufuldstændig memory kun med den eksakte ejer-godkendte pre-public-konfiguration.
+- [x] Bevar global fail-closed legacy ved én manglende nødvendig kandidatscore; forbyd blanding mellem steder, timer og jagtformer.
+- [x] Tilføj det private centrale dokument `ravscore-profile-selection`, sikker engangspromotion gennem central hydrering og byte-stabil central write/readback.
+- [x] Bevar eksakt rollback til `RRS-CURRENT-B0-4.0.247`, slå automatisk aktivering fra og lås begge veje i målrettede tests.
+- [x] Gør den aktive shadow i stand til at kontrollere Candidate G som gældende score under ærligt mærket `WINDOW_INCOMPLETE`-opvarmning.
+- [x] Versionsløft til 4.0.261 uden geometriændring; kun versionsfelterne i de to geodatafiler må ændres.
+- [x] Kør samlet lokal RDKS-/målrettet kildekontrol og releasegate.
+- [ ] Bestå exact-head-kildegaten på PR'ens præcise commit.
+- [ ] Merge, følg frisk fuld produktion og verificér central profil-readback, manifest, aktiv Candidate G og global rollbackmetadata.
+- [ ] Kør aktiv dataminimeret 210/673-shadow og fuld 210/673-browserkontrol på den eksakte merge.
+
+# Tidligere checkpoint – Candidate G bounded transport-memory efter 4.0.260
 
 ## Afgrænset 48-timers transporthukommelse – offentlig score uændret
 
@@ -16,7 +33,7 @@
 - [x] Verificér live `rr-20260823102619-210`: manifestintegritet, 210 zoner, 673 dele, schema 2 på 673/673, ét første timebevis, 0/673 ready, 0 aktiverede Candidate G-dele og 0 raw-input-læk i state.
 - [ ] Først ved senere ejerreview: kræv frisk 673/673 `transportMemoryReady`-slutshadow på den eksakte aktiveringskode. Det er ikke en ny 48-timers realtidsudviklingstest, men en aktiveringskontrol af naturligt produceret state.
 
-## Versionsbundet profilvalg og rollback – offentlig 25/40/35 uændret
+## Historisk 4.0.260-checkpoint – versionsbundet profilvalg og offentlig 25/40/35 uændret
 
 - [x] Dokumentér 6/6 timers naturligt videreført state på 673/673 kystdele uden nulstilling eller rekonstruktionsfejl; perioden er praktisk ejeraccepteret evidens, ikke et 48-timersbevis.
 - [x] Implementér én versionsbundet profilomskifter med eksakte legacy-, Candidate G- og rollback-id'er.
@@ -32,7 +49,7 @@
 - [x] Dokumentér den nye beslutningsevidens: Candidate G-gennemsnit 19,187/21,276 mod aktiv 35,770/43,655 for waders/strand og 1.127 scorebåndsskift; den unge tilstand har gennemsnitlig transport 4,242 og mobilisering 13,747.
 - [x] Efterprøv bootstrap mod eksisterende offentlig historik uden nye kildedata: 42.551 poster, 633/673 dele og 65–117 timer ændrer ikke start-0-medianen fra 0; kun 6/633 dele bliver uafhængige af startprioren.
 - [x] Afgør startreserven med ejeren: neutral prior 50 forkastes som ny vilkårlig maskinstart og erstattes af DEC-0059's afgrænsede evidensvindue. Faktisk 13-timers udtransport er fortsat den eneste vej til dokumenteret udtømt transport og totalscore 0.
-- [ ] Offentlig Candidate G-aktivering afventer fortsat central admin-roundtrip, versionsbundet aktiveringsændring, frisk grøn aktiveringsshadow og særskilt ejer-gennemgang af scorefordelingen.
+- [x] Erstattet af DEC-0060: ejeren har godkendt pre-public aktivering i 4.0.261; central roundtrip er implementeret lokalt, mens exact-head, produktion, aktiv shadow og browserbevis udestår.
 
 ## Central tilstand og fallback-kompatibel shadow – score-neutral
 

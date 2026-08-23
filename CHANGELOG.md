@@ -1,3 +1,27 @@
++## 4.0.261 – Candidate G aktiv under pre-public opvarmning (2026-08-23)
+
+- Ejeren har i DEC-0060 valgt Candidate G som RavRadars gældende scoremotor nu og accepteret, at den første ikke-offentlige scoreperiode bruger mindre end 48 timers naturlig schema-2-historik.
+- Den aktive profil er `RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3` med `20/50/30`; modelregler, strømgrænser, +10/-8-kurven, 13-timers udtransportgate, mobilisering 4/48 og vindstyret waders-jagtbarhed er uændrede.
+- Profilomskifteren skelner nu mellem fuld beregnelig Candidate G-dækning og moden transporthukommelse. Pre-public opvarmning tillades kun med eksakt ejerautoritet; én manglende nødvendig kandidatscore giver fortsat global rollback til `25/40/35`.
+- Runtime mærker den første periode `candidate-active-pre-public-warmup` og bevarer faktisk `WINDOW_INCOMPLETE`-/coverage-status. Manglende timer opfindes ikke og kaldes ikke et 48-timersbevis.
+- `ravscore-profile-selection` er et nyt privat centralt admin-dokument. En nyere ejer-godkendt repositoryversion kan promoveres én gang, hvorefter central samme/nyere konfiguration er autoritativ. Produktion skriver dokumentet tilbage og kræver identisk readback.
+- Den aktive, dataminimerede shadow kontrollerer nu, at den offentlige score er identisk med Candidate G i alle 673 dele, samtidig med at rå U/V, koordinater og private payloads fortsat er forbudt.
+- Eksakt legacyrollback, automatisk aktiveringsforbud og global fail-closed-adfærd er bevaret og målrettet testet.
+- Ingen artifact, protected-dirty-data, private caches, geometri eller land-/vandpunkter er ændret. I `data/kystdata.json` og `data/zones.geojson` er kun versionsfeltet løftet til 4.0.261.
+
+
++## 4.0.261 – Candidate G aktiv under pre-public opvarmning (2026-08-23)
+
+- Ejeren har i DEC-0060 valgt Candidate G som RavRadars gældende scoremotor nu og accepteret, at den første ikke-offentlige scoreperiode bruger mindre end 48 timers naturlig schema-2-historik.
+- Den aktive profil er `RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3` med `20/50/30`; modelregler, strømgrænser, +10/-8-kurven, 13-timers udtransportgate, mobilisering 4/48 og vindstyret waders-jagtbarhed er uændrede.
+- Profilomskifteren skelner nu mellem fuld beregnelig Candidate G-dækning og moden transporthukommelse. Pre-public opvarmning tillades kun med eksakt ejerautoritet; én manglende nødvendig kandidatscore giver fortsat global rollback til `25/40/35`.
+- Runtime mærker den første periode `candidate-active-pre-public-warmup` og bevarer faktisk `WINDOW_INCOMPLETE`-/coverage-status. Manglende timer opfindes ikke og kaldes ikke et 48-timersbevis.
+- `ravscore-profile-selection` er et nyt privat centralt admin-dokument. En nyere ejer-godkendt repositoryversion kan promoveres én gang, hvorefter central samme/nyere konfiguration er autoritativ. Produktion skriver dokumentet tilbage og kræver identisk readback.
+- Den aktive, dataminimerede shadow kontrollerer nu, at den offentlige score er identisk med Candidate G i alle 673 dele, samtidig med at rå U/V, koordinater og private payloads fortsat er forbudt.
+- Eksakt legacyrollback, automatisk aktiveringsforbud og global fail-closed-adfærd er bevaret og målrettet testet.
+- Ingen artifact, protected-dirty-data, private caches, geometri eller land-/vandpunkter er ændret. I `data/kystdata.json` og `data/zones.geojson` er kun versionsfeltet løftet til 4.0.261.
+
+
 ## Intern Candidate G-rettelse efter 4.0.260 – afgrænset transporthukommelse (2026-08-23)
 
 - DEC-0059 erstatter Candidate G's ubundne transportfortsættelse og den forkastede startprior 50 med et fast, rullende 48-timers vindue af sammenhængende, verificeret og afledt kystnormal strømevidens.

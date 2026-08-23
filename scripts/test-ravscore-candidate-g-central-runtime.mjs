@@ -13,7 +13,8 @@ import {
   CANDIDATE_G_STATE_VARIANT_ID,
 } from '../js/core/ravscore-candidate-g-state-pipeline.js';
 import {
-  LEGACY_RAVSCORE_PROFILE_ID,
+  CANDIDATE_G_RAVSCORE_PROFILE_ID,
+  publicRavScoreConfigurationFromDocument,
   resolvePublicRavScoreProfile,
 } from '../js/core/ravscore-profile-switch.js';
 
@@ -24,6 +25,7 @@ for (const marker of [
   'initialStateAccepted',
   'transportMemoryReady: derivedState.transportMemoryReady',
   'score?.candidateG?.transportMemoryReady === true',
+  'candidateMemoryReady',
   'resolvePublicRavScoreProfile',
   'selectPublicRavScoreResult',
   "? 'active-public' : 'diagnostic-only'",
@@ -33,20 +35,27 @@ for (const marker of [
 ]) assert.ok(updater.includes(marker), `Central Candidate G-runtime mangler ${marker}`);
 
 const referenceAt = '2026-08-23T12:00:00.000Z';
-const scoreProfile = resolvePublicRavScoreProfile({ candidateCoverageReady: true });
+const productionConfiguration = publicRavScoreConfigurationFromDocument(
+  JSON.parse(fs.readFileSync('data/admin/ravscore-profile-selection.json', 'utf8')),
+);
+const scoreProfile = resolvePublicRavScoreProfile({
+  ...productionConfiguration,
+  candidateCoverageReady: true,
+  candidateMemoryReady: false,
+});
 const candidateG = {
   schemaVersion: CANDIDATE_G_STATE_SCHEMA_VERSION,
   modelId: CANDIDATE_G_STATE_MODEL_ID,
   variantId: CANDIDATE_G_STATE_VARIANT_ID,
   profileId: CANDIDATE_G_STATE_PROFILE_ID,
   weights: { huntability: 0.2, transportAndDelivery: 0.5, mobilisation: 0.3 },
-  scoreImpact: 'diagnostic-only',
+  scoreImpact: 'active-public',
   automaticActivationAllowed: false,
-  publicScoreChanged: false,
+  publicScoreChanged: true,
   referenceAt,
-  transportMemoryReady: true,
-  transportMemoryStatus: 'READY',
-  transportMemoryCoverageHours: 48,
+  transportMemoryReady: false,
+  transportMemoryStatus: 'WINDOW_INCOMPLETE',
+  transportMemoryCoverageHours: 0,
   initialStateAccepted: true,
   initialStateResetReason: null,
   currentState: {
@@ -58,14 +67,11 @@ const candidateG = {
     time: referenceAt,
     transportPotential: 50,
     outboundEpisodeEffectiveHours: 0,
-    transportMemoryReady: true,
-    transportMemoryStatus: 'READY',
+    transportMemoryReady: false,
+    transportMemoryStatus: 'WINDOW_INCOMPLETE',
     transportMemoryWindowHours: 48,
-    transportMemoryCoverageHours: 48,
-    transportEvidence: Array.from({ length: 49 }, (_, index) => ({
-      time: new Date(Date.parse(referenceAt) - ((48 - index) * 3_600_000)).toISOString(),
-      strength: 0,
-    })),
+    transportMemoryCoverageHours: 0,
+    transportEvidence: [{ time: referenceAt, strength: 0 }],
     mobilisationPotential: 50,
   },
   modes: { waders: { available: true, score: 45 }, beach: { available: true, score: 55 } },
@@ -87,7 +93,7 @@ const full = {
     parts: {
       part1: {
         zoneId: 'zone1',
-        current: { time: referenceAt, waders: { score: 40 }, beach: { score: 50 } },
+        current: { time: referenceAt, waders: { score: 45 }, beach: { score: 55 } },
         candidateG,
       },
     },
@@ -98,8 +104,8 @@ const full = {
         currentReferenceAt: referenceAt,
         hourly: [{
           time: referenceAt,
-          waders: { status: 'whole-zone', score: 40, comparisonPartCount: 1, winningPartId: 'part1' },
-          beach: { status: 'whole-zone', score: 50, comparisonPartCount: 1, winningPartId: 'part1' },
+          waders: { status: 'whole-zone', score: 45, comparisonPartCount: 1, winningPartId: 'part1' },
+          beach: { status: 'whole-zone', score: 55, comparisonPartCount: 1, winningPartId: 'part1' },
         }],
       },
     },
@@ -114,14 +120,16 @@ assert.deepEqual(details.coastalParts.parts.part1.candidateG, candidateG);
 assert.deepEqual(startup.coastalParts.scoreProfile, scoreProfile);
 assert.deepEqual(details.coastalParts.scoreProfile, scoreProfile);
 assert.deepEqual(manifest.ravScoreProfile, scoreProfile);
-assert.equal(startup.coastalParts.scoreProfile.activeProfileId, LEGACY_RAVSCORE_PROFILE_ID);
-assert.equal(details.coastalParts.parts.part1.current.waders.score, 40);
+assert.equal(startup.coastalParts.scoreProfile.activeProfileId, CANDIDATE_G_RAVSCORE_PROFILE_ID);
+assert.equal(startup.coastalParts.scoreProfile.activationState, 'candidate-active-pre-public-warmup');
+assert.equal(startup.coastalParts.scoreProfile.candidateMemoryReady, false);
+assert.equal(details.coastalParts.parts.part1.current.waders.score, 45);
 assert.equal(details.coastalParts.parts.part1.candidateG.modes.waders.score, 45);
-assert.equal(details.coastalParts.parts.part1.candidateG.publicScoreChanged, false);
+assert.equal(details.coastalParts.parts.part1.candidateG.publicScoreChanged, true);
 
 const stateText = JSON.stringify(details.coastalParts.parts.part1.candidateG.currentState).toLowerCase();
 for (const forbidden of ['currentu', 'currentv', 'waveheight', 'waveperiod', 'waterpoint', 'coordinates']) {
   assert.equal(stateText.includes(forbidden), false, `Den kompakte offentlige tilstand maa ikke indeholde ${forbidden}`);
 }
 
-console.log('Candidate G central diagnostic-only runtimekontrakt: OK');
+console.log('Candidate G central pre-public warmup-runtimekontrakt: OK');

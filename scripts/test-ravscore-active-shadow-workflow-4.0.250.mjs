@@ -38,9 +38,11 @@ for (const forbidden of [
 for (const marker of [
   'EXPECTED_ZONES = 210',
   'EXPECTED_PARTS = 673',
-  "scoreImpact === 'diagnostic-only'",
+  "scoreImpact === 'active-public'",
   'automaticActivationAllowed === false',
-  'publicScoreChanged === false',
+  'publicScoreChanged === true',
+  'ACTIVE_SCORE_DOES_NOT_MATCH_CANDIDATE_G',
+  'prePublicWarmupAccepted',
   'CANDIDATE_SCORE_RECONSTRUCTION_MISMATCH',
   'rawCurrentVectorsIncluded: false',
   'coordinatesIncluded: false',

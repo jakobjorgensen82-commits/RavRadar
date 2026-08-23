@@ -16,6 +16,7 @@ const assets={
  'cache-audit':'data/diagnostics/dmi-cache-audit.json',
  'implementation-audit':'data/diagnostics/implementation-plan-audit.json',
  'coastal-parts-v2-activation':'data/geometry-v2/active-national-coastal-parts/manifest.json',
+ 'ravscore-profile-selection':'data/admin/ravscore-profile-selection.json',
  'handbook':'docs/handbook/content.json'
 };
 const lifecycleFields=['hasEverDelivered','firstObservationAt','lastObservationAt','lastObservationValueCm','consecutiveMissingObservationRuns','deliveryStatus','forecastCacheGeneratedAt','forecastCacheValidUntil','forecastCacheStatus','overallUsabilityStatus','forecastCacheZoneIds'];
@@ -66,3 +67,12 @@ if(!activationCentral||stableDigest(activationCentral)!==stableDigest(activation
  throw new Error('coastal-parts-v2-activation central readback matcher ikke den publicerede aktivering');
 }
 console.log(`Central kystdelsaktivering verificeret: ${activationCentral.publicActivation?'aktiv':'rollback'}`);
+const ravScoreSelectionLocal=JSON.parse(await fs.readFile(assets['ravscore-profile-selection'],'utf8'));
+const ravScoreSelectionCentral=await existingDocument('ravscore-profile-selection');
+if(!ravScoreSelectionCentral
+ ||stableDigest(ravScoreSelectionCentral)!==stableDigest(ravScoreSelectionLocal)
+ ||ravScoreSelectionCentral.requestedProfileId!==ravScoreSelectionLocal.requestedProfileId
+ ||ravScoreSelectionCentral.automaticActivationAllowed!==false){
+ throw new Error('ravscore-profile-selection central readback matcher ikke den versionsbundne profilaktivering');
+}
+console.log(`Central RavScore-profil verificeret: ${ravScoreSelectionCentral.requestedProfileId}`);

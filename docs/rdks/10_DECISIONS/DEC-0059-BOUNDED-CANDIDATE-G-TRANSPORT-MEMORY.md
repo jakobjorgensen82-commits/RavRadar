@@ -50,3 +50,9 @@ Den dataminimerede genafspilning læste 42.551 offentlige historikposter. Den su
 DEC-0059 erstatter DEC-0055/0057's ubundne videreførelse af selve transportpotentialet samt den efterfølgende anbefaling om en neutral startprior på 50. De gamle start-0/50/100- og passive-halveringsspor bevares som følsomhedsevidens, ikke som produktvalg.
 
 DEC-0054's jagtbarhed, DEC-0055's ind-/udtransportkurve og forklaring, DEC-0056's mobilisering samt DEC-0058's globale fail-closed omskifter bevares. Ingen geodata, land-/vandpunkter, bund-, dybde-, rende-, revle-, adgangs- eller sikkerhedsregler ændres.
+
++
++## Efterfølgende pre-public aktivering i DEC-0060
++
++DEC-0060 ændrer ikke dette dokuments 48-timersvindue, randbetydning, missingregel eller transportfysik. Ejeren accepterer imidlertid, at den endnu ikke offentlige side bruger de tydeligt foreløbige Candidate G-resultater, mens vinduet fyldes. Kravet om komplet `transportMemoryReady` før aktivering er derfor erstattet for denne pre-public opvarmning; runtime skal fortsat vise den faktiske ufuldstændige status, og komplet scoreprojektion i hele datasættet er stadig en global fail-closed gate.
++

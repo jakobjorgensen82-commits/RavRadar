@@ -1,5 +1,19 @@
 # RavRadar Håndbog
 
+## Candidate G er den gældende scoremotor under pre-public opvarmning – 4.0.261
+
+RavRadar bruger nu Candidate G med `20 % jagtbarhed`, `50 % transport` og `30 % mobilisering` som én samlet scoreprofil for hele Danmark. Ejeren har valgt den aktiveret nu, fordi siden endnu ikke er offentlig, og har accepteret, at de første scoreværdier bygger på et transportvindue med mindre end 48 timers naturlig historik.
+
+Opvarmningen vises ærligt som `candidate-active-pre-public-warmup`. RavRadar opfinder ikke de manglende timer og kalder ikke perioden et 48-timersbevis. Efterhånden som nye dokumenterede timer kommer ind, beskæres det rullende vindue automatisk; når det er komplet, afhænger transporten kun af de seneste 48 timer. Der skal ikke installeres eller aktiveres endnu en model på det tidspunkt.
+
+Den aktive Candidate G bevarer de aftalte regler: strømmen styrer transporten, bølgeenergi styrer mobiliseringen, og vinden er hovedsignal for waders-jagtbarhed. Strandjagt har intet wadersloft. Faktisk kraftig udtransport med udtømt transportpotentiale giver samlet score 0 med den aftalte forklaring.
+
+Valget er fortsat globalt og fail-closed. Hvis blot én nødvendig Candidate G-score ikke kan beregnes korrekt, bruger hele datasættet den tidligere `25/40/35`-profil. RavRadar blander aldrig scoremotorer mellem zoner, timer eller jagtformer. Den gamle profil er også den centrale rollback, og en vejrkørsel kan ikke aktivere en model automatisk.
+
+Profilvalget gemmes centralt og følger startpakke, detaljepakke og manifest. Ingen private rå strømvektorer, koordinater eller replaypayloads offentliggøres. Bund, dybde, render, revler, adgang, stedegnethed og sikkerhedsadvarsler indgår fortsat ikke, og aktiveringen flytter ingen geometri eller land-/vandpunkter.
+
+De følgende 4.0.259–4.0.260-afsnit beskriver den historiske, score-neutrale forberedelse. Deres udsagn om, at Candidate G endnu ikke var aktiv, er erstattet af DEC-0060 og dette 4.0.261-afsnit.
+
 ## Candidate G glemmer maskinens startværdi efter et fast vindue
 
 Candidate G beregner nu transport ud fra et fast, rullende vindue med de seneste 48 timers sammenhængende og verificerede strøm mod eller væk fra kysten. Beregningen begynder ved en fast rand på 0, som betyder, at der ikke antages nogen dokumenteret indtransport før vinduet. Den betyder ikke, at der har været fralandsstrøm.
@@ -8,9 +22,9 @@ Når vinduet er komplet, afhænger transporten derfor kun af de seneste 48 timer
 
 RavRadar gemmer kun tidspunkt og afledt kystnormal strømstyrke i vinduet. Manglende eller ikke-verificeret strøm behandles ikke som roligt vejr: Candidate G kan fortsat beregnes foreløbigt, men bliver ikke klar til offentlig aktivering, før hele vinduet igen er sammenhængende. Det er testet med historisk genafspilning; der kræves ikke en ny 48-timers realtidsudviklingstest.
 
-Candidate G er fortsat ikke slået til. Den offentlige RavScore, farverne og vægtene `25/40/35` er uændrede. Ingen geometri, land-/vandpunkter, bunddata, private rådata eller sikkerhedsregler indgår i rettelsen.
+I 4.0.260 var Candidate G endnu ikke slået til, og den offentlige RavScore var derfor fortsat `25/40/35`. Denne historiske aktiveringsstatus er erstattet af 4.0.261; hukommelsesmekanikken og forbuddet mod geometri-, punkt-, bund-, privatdata- og sikkerhedsændringer består.
 
-## Candidate G har nu en sikker omskifter – men er ikke slået til – 4.0.260
+## Candidate G's score-neutrale omskifterforberedelse – 4.0.260
 
 RavRadar har nu en versionsbundet omskifter, som kan vælge én RavScore-model for hele Danmark og vende tilbage til den hidtidige model. I 4.0.260 står omskifteren fortsat på `25 % jagtbarhed`, `40 % transport` og `35 % mobilisering`. Brugernes score, farver, zonevindere og bedste tidspunkt er derfor uændrede.
 
@@ -338,7 +352,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.260
+**Håndbogsversion:** 4.0.261
 
 **Opdateret:** 19. august 2026
 
