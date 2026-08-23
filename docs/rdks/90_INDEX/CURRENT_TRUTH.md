@@ -1,5 +1,16 @@
 # Current truth – gældende projektviden
 
+## 4.0.259-kandidat – central Candidate G-tilstand uden aktiv scoreændring
+
+- DEC-0057 kobler DEC-0055's transport og DEC-0056's mobilisering til den centrale kystdelspipeline. Candidate G beregnes ved samme fælles lokale referencetime som den aktive score, men ligger i et særskilt `diagnostic-only`-navnerum.
+- Den kompakte fortsættelsestilstand indeholder kun model-/profilversion, en konteksthash, tidspunkt, transportpotentiale, effektive udtransporttimer og mobiliseringspotentiale. Rå U/V, vejrinput, koordinater og private replaydata indgår ikke.
+- Tilstanden er bundet til kystdel, vandpunkt, kystretning, model og profil via hash. Inkompatibel kontekst nulstiller fail-closed; samme-time-rekørsel og missing holder tilstanden uden dobbelttælling.
+- Kun tilstanden ved `currentReferenceAt` føres videre. Fremtidige prognosetimer bliver ikke gjort til historisk sandhed i næste kørsel.
+- Den aktive `25/40/35`-score, farve, zonevinder og UI læser ikke Candidate G-navnerummet. `automaticActivationAllowed=false` og `publicScoreChanged=false` er låst i runtime og test.
+- Den manuelle shadow er omlagt fra en ny native-only DMI-prøve til den faktisk producerede fallback-kompatible detaljefil. Den kræver 210 zoner, 673 dele og 1.346 modeevalueringer og skriver kun en dataminimeret aggregatrapport.
+- Første produktion er bootstrap fra 0 og må ikke kaldes en modnet 48-timersfordeling. Endelig aktiveringsshadow kræver naturligt videreført tilstand, exact-head, fuld produktion og dokumenteret state-alder.
+- 4.0.259 ændrer ingen geometri, land-/vandpunkter, bundmodel, beskyttede data eller sikkerhedsbetydning.
+
 ## Candidate G – én bølgeenergistyret mobiliseringstilstand
 
 - DEC-0056 gør `RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3` til den foretrukne private helhedskandidat. Transporten følger fortsat DEC-0055, jagtbarheden DEC-0054 og vægtene `20/50/30`.

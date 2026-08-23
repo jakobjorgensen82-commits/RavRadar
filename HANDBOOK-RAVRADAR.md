@@ -1,5 +1,19 @@
 # RavRadar Håndbog
 
+## Candidate G føres nu gennem den centrale pipeline – 4.0.259
+
+RavRadar beregner nu den valgte Candidate G for alle 673 kystdele som en adskilt kontrolscore. Den er endnu ikke den synlige RavScore: brugerne får fortsat den aktive `25 % jagtbarhed`, `40 % transport` og `35 % mobilisering`. Candidate G's `20/50/30` ligger i et særskilt diagnostisk felt, som den aktive farve og zonevinder ikke læser.
+
+Hver kystdel husker kun tre afledte forhold fra den fælles aktuelle time: transportpotentialet, hvor længe et effektivt udtransportforløb har stået på, og mobiliseringspotentialet. Model, profil og kystkontekst bindes med en hash. Hvis model, vandpunkt eller kystretning ændres, genbruges den gamle tilstand ikke. En gentagelse i samme time tæller ikke dobbelt, og manglende input foregives ikke at være roligt vejr.
+
+Tilstanden indeholder ikke rå strømvektorer, vind, bølgehøjde, bølgeperiode eller koordinater. Candidate G-resultatet viser kun scorekomponenter og afledte værdier, så 20/50/30-regnestykket og den særlige udtransportregel kan kontrolleres uden at udgive private analysepayloads.
+
+Den nationale skyggekontrol bruger nu den samme fallback-kompatible runtime som RavRadar. Den henter ikke længere en smallere native DMI-prøve, der kun kunne måle 243 dele. Et grønt resultat kræver 210 zoner, 673 dele, både waders og strand samt nøjagtig genberegning af alle 1.346 kandidatresultater.
+
+Første produktionskørsel starter den nye hukommelse på 0. Det er en sikker bootstrap, men ikke en fuld 48-timershistorik. Derfor ændres den synlige score ikke på første kørsel. Tilstanden skal først fortsætte naturligt, og den fulde produktion og slutkontrol skal være grønne, før den særskilte aktive omskifter bygges.
+
+Rollback er enkel i denne version: den aktive 25/40/35-score ignorerer hele Candidate G-feltet. Geometri, land-/vandpunkter, bund, dybde, adgang og sikkerhedsadvarsler indgår ikke i ændringen.
+
 ## Candidate G lader strømmen styre transporthukommelsen
 
 RavRadars offentlige score er fortsat `25 % jagtbarhed`, `40 % transport` og `35 % mobilisering`. Det nye arbejde er en privat Candidate G med `20/50/30`; det ændrer ikke det, brugerne ser.
@@ -12,7 +26,7 @@ Den private genafspilning består de mekaniske kontroller og skelner tydeligt me
 
 Neutral eller manglende strøm trækker ikke automatisk point fra. I stedet skal RavRadar føre en lille afledt tilstand videre mellem produktionskørsler: tidspunkt, eksisterende potentiale og det igangværende effektive udtransportforløb. En ny kørsel må ikke få modellen til at glemme ravet. Den score-neutrale test reproducerer nu samme 13-timerskurve, uanset om forløbet beregnes samlet eller deles over en kørselsgrænse.
 
-Kandidaten er endnu ikke offentlig. Næste faglige trin er mobiliserings-/helhedsreview, hvorefter en eventuel aktivering kræver central tilstandskobling, national slutkontrol, forklaring og rollback. Den vindstyrede waders-jagtbarhed fortsætter uændret: fuld til 6 m/s, trinvis fald og 0 ved 15 m/s, mens strandjagt ikke får et jagtbarhedsloft.
+Kandidaten er nu koblet score-neutralt til den centrale pipeline i 4.0.259, men er endnu ikke den aktive offentlige score. Næste trin er exact-head, fuld produktion, naturlig state-alder og fallback-kompatibel slutkontrol, før en særskilt aktiv omskifter kan bygges. Den vindstyrede waders-jagtbarhed fortsætter uændret: fuld til 6 m/s, trinvis fald og 0 ved 15 m/s, mens strandjagt ikke får et jagtbarhedsloft.
 
 Ingen nye rådata, bundmodel, dybde, render, geometri eller land-/vandpunkter indgår i dette arbejde.
 
@@ -302,7 +316,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.258
+**Håndbogsversion:** 4.0.259
 
 **Opdateret:** 19. august 2026
 

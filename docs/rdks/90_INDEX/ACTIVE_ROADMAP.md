@@ -43,7 +43,11 @@ Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre for
 - [x] Bevis score-neutralt, at potentiale og igangværende udtransport fortsætter eksakt over en simuleret pipelinegrænse.
 - [x] Gennemfør mobiliserings-/helhedsreviewet: én bølgeenergistyret 4/48-tilstand uden additive vind-, strøm-, varigheds- eller stedpoint; dokumentér DEC-0056 og reproducerbare randtilfælde.
 - [x] Før mobiliseringscheckpointet gennem exact-head `32607989444`, PR #87/merge `48240d73` og fuld post-merge-produktion `32608050112` uden offentlig scoreændring; 210/673, fuld validering, releasegate, Supabase, artifact og Pages er grønne.
-- [ ] Forbered derefter den ejerønskede offentlige kobling som én versionsbundet pakke: persistér begge kompakte afledte tilstande centralt, kør frisk fallback-kompatibel 673-deles shadow, forklaring/rollback og alle produktgates.
+- [x] Implementér den score-neutrale 4.0.259-pakke: begge kompakte tilstande centralt, Candidate G som adskilt diagnostisk runtime, fallback-kompatibel 210/673-shadow og deterministisk rollback til fortsat aktiv `25/40/35`.
+- [x] Bestå den samlede lokale kildegate og releasegate for 4.0.259.
+- [ ] Før 4.0.259 gennem exact-head, merge og fuld post-merge-produktion; kør derefter den nye shadow på den producerede runtime.
+- [ ] Lad den centrale tilstand opbygge dokumenteret naturlig alder. Første bootstrap fra 0 må ikke præsenteres som en modnet 48-timersfordeling.
+- [ ] Byg derefter den særskilte aktive score-omskifter og brugerforklaring med testet tilbagekobling til `25/40/35`; selve aktiveringen sker først på en grøn, modnet slutshadow uden modstridende evidens.
 - [ ] Offentlig aktivering må først gennemføres, når den samlede pakke er grøn og ingen konkret modstridende evidens består; manglende turkalibrering skal fortsat fremgå ærligt som modelusikkerhed.
 
 ## Aktuelt Candidate G-review – 4.0.258 vindstyret waders-kandidat
@@ -56,7 +60,7 @@ Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre for
 - [x] Genkør replay og kanoniske/nationale kontrakter med den nye variant; strand er uændret og waders-score overstiger aldrig jagtbarheden.
 - [x] Før 4.0.258-checkpointet gennem exact-head-gate `32586707063`, PR #73, merge `9bdb8de8` og fuld produktion `32586958989`; live er 4.0.258/`rr-20260822171406-210` med 210 zoner og 673 dele.
 - [x] Den faglige ejerretning er valgt gennem DEC-0054–0056. Manglende repræsentative ture/hold-out bevares som modelusikkerhed og senere efterkalibrering, ikke som en umulig før-aktiveringsgate.
-- [ ] Den offentlige implementering er et nyt samlet delmål med central tilstandspersistens, frisk fallback-kompatibel national slutshadow, forklaring, rollback og fulde produktgates. Indtil da forbliver offentlig `25/40/35` uændret.
+- [x] Den score-neutrale offentlige diagnostic-runtime og fallback-kompatible shadow er implementeret i 4.0.259-kandidaten. Exact-head, produktion, modning og senere aktiv omskifter udestår; indtil da forbliver offentlig `25/40/35` uændret.
 
 ## P0 - luk den aktuelle kandidat
 

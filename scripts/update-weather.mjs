@@ -1,7 +1,16 @@
 import fs from 'node:fs/promises';
+import crypto from 'node:crypto';
 import { writePublicRuntimeFromFull } from './public-conditions-lib.mjs';
 import { build as buildPublicCoastalParts } from './build-public-coastal-parts-v2.mjs';
 import { calculateRavScore } from '../js/core/score-engine.js';
+import { evaluateRavScoreCandidateG, CANDIDATE_G_WEIGHTS } from '../js/core/ravscore-candidate-g.js';
+import {
+  buildCandidateGDerivedStateSeries,
+  CANDIDATE_G_STATE_MODEL_ID,
+  CANDIDATE_G_STATE_PROFILE_ID,
+  CANDIDATE_G_STATE_SCHEMA_VERSION,
+  CANDIDATE_G_STATE_VARIANT_ID,
+} from '../js/core/ravscore-candidate-g-state-pipeline.js';
 import { recommendWaterStationBracket } from '../js/core/water-station-routing.js';
 import {
   DMI_FORECAST_HOURS,
@@ -1009,7 +1018,48 @@ function mergeBulkCacheIntoForecastStore(features, bulkCache, store, generatedAt
   return stats;
 }
 
-function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, liveCurrentPilot, generatedAt) {
+function candidateGStateKey(part) {
+  const context = JSON.stringify({
+    partId: part.partId,
+    waterPoint: part.waterPoint,
+    onshoreDirectionDeg: part.onshoreDirectionDeg,
+    modelId: CANDIDATE_G_STATE_MODEL_ID,
+    variantId: CANDIDATE_G_STATE_VARIANT_ID,
+    profileId: CANDIDATE_G_STATE_PROFILE_ID,
+  });
+  return `sha256:${crypto.createHash('sha256').update(context).digest('hex')}`;
+}
+
+function compactCandidateGMode(result) {
+  if (!result?.available || !Number.isFinite(result.score)) {
+    return {
+      available: false,
+      score: null,
+      reason: result?.reason ?? 'CANDIDATE_G_NOT_AVAILABLE',
+    };
+  }
+  return {
+    available: true,
+    score: result.score,
+    components: result.components,
+    weightedContributions: result.scoreCalculation?.weightedContributions ?? null,
+    additiveScore: result.scoreCalculation?.additiveScore ?? null,
+    physicalGateFactor: result.scoreCalculation?.gateFactor ?? null,
+    wadersHuntabilityMaximum: result.scoreCalculation?.modeHuntabilityMaximum ?? null,
+    wadersHuntabilityLimitApplied: result.scoreCalculation?.modeHuntabilityApplied === true,
+    outflowExhaustionGateApplied: result.scoreCalculation?.outflowExhaustionGateApplied === true,
+    outflowExhaustionExplanationDa: result.scoreCalculation?.outflowExhaustionExplanationDa ?? null,
+  };
+}
+
+function scoreCoastalPartsRuntime(
+  contract,
+  parentFeatures,
+  bulkCache,
+  liveCurrentPilot,
+  generatedAt,
+  previousCoastalParts = null,
+) {
   const parentById = new Map(parentFeatures.map(feature => [feature.properties?.id, feature]));
   const expectedByZone = new Map();
   const partRows = [];
@@ -1056,12 +1106,29 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, liveCurre
         currentAlignment: Math.cos((Number(hour.currentDirectionDeg) - Number(part.onshoreDirectionDeg)) * Math.PI / 180),
         currentVerified: true
       }));
+      const stateKey = candidateGStateKey(part);
+      const candidateGState = buildCandidateGDerivedStateSeries(hourly.map(hour => ({
+        time: hour.time,
+        currentSpeedMps: hour.currentSpeedMps,
+        currentAlignment: hour.currentSpeedMps != null && hour.currentDirectionDeg != null
+          ? Math.cos((Number(hour.currentDirectionDeg) - Number(part.onshoreDirectionDeg)) * Math.PI / 180)
+          : null,
+        currentVerified: hour.currentProvenance?.status === 'verified',
+        waveHeightM: hour.waveHeightM,
+        wavePeriodS: hour.wavePeriodS,
+      })), {
+        stateKey,
+        initialState: previousCoastalParts?.parts?.[part.partId]?.candidateG?.currentState ?? null,
+      });
+      const candidateGStateByTime = new Map(candidateGState.rows.map(row => [row.time, row]));
       const zone = localPartRuntimeProperties(parent.properties, part, part.partId);
       const scores = [];
       for (const weather of hourly) {
         const at = Date.parse(weather.time);
         const history = applyCurrentTransportToHistory({}, currentSamples.filter(sample => Date.parse(sample.at) <= at));
         const modes = {};
+        const candidateGModes = {};
+        const derivedState = candidateGStateByTime.get(weather.time) ?? null;
         for (const mode of ['waders', 'beach']) {
           const result = calculateRavScore({ mode, zone, weather, history });
           const hasCurrent = weather.currentSpeedMps != null && weather.currentDirectionDeg != null;
@@ -1071,6 +1138,26 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, liveCurre
             componentReasons: result.componentReasons,
             explanation: result.explanation
           };
+          if (derivedState) {
+            candidateGModes[mode] = compactCandidateGMode(evaluateRavScoreCandidateG(
+              { mode, zone, weather, history },
+              {
+                variantId: CANDIDATE_G_STATE_VARIANT_ID,
+                memory: {
+                  transportPotential: derivedState.transportPotential,
+                  outboundEpisodeEffectiveHours: derivedState.outboundEpisodeEffectiveHours,
+                  outboundEpisodeLossPoints: derivedState.outboundEpisodeLossPoints,
+                  actualOutboundTransport: derivedState.actualOutboundTransport,
+                  mobilisationPotential: derivedState.mobilisationPotential,
+                  waveEnergyProxy: derivedState.waveEnergyProxy,
+                  waveEnergyScore: derivedState.waveEnergyScore,
+                  waveMobilisationTransition: derivedState.waveMobilisationTransition,
+                  waveMobilisationBuildHalfLifeHours: derivedState.waveMobilisationBuildHalfLifeHours,
+                  waveMobilisationDecayHalfLifeHours: derivedState.waveMobilisationDecayHalfLifeHours,
+                },
+              },
+            ));
+          }
         }
         if (Object.keys(modes).length) scores.push({
           time: weather.time,
@@ -1083,6 +1170,11 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, liveCurre
             currentUMps: weather.currentUMps, currentVMps: weather.currentVMps,
             currentProvenance: weather.currentProvenance
           },
+          candidateG: derivedState ? {
+            referenceAt: weather.time,
+            continuationState: derivedState.continuationState,
+            modes: candidateGModes,
+          } : null,
           ...modes
         });
       }
@@ -1092,6 +1184,7 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, liveCurre
           landPoint: part.landPoint, waterPoint: part.waterPoint,
           onshoreDirectionDeg: part.onshoreDirectionDeg,
           onshoreDirectionSource: part.onshoreDirectionSource || 'Godkendt land-/havpunkt for kystdelen',
+          candidateGState,
           record,
           scores
         });
@@ -1149,13 +1242,29 @@ function scoreCoastalPartsRuntime(contract, parentFeatures, bulkCache, liveCurre
       ? row.scores.find(candidate => Date.parse(candidate.time) === Date.parse(currentReferenceAt))
       : row.scores[nearestIndex(row.scores)]) ?? null;
     const flowPoints = flowPointsFromForecastRecord(row.record, row.waterPoint, score?.time ?? generatedAt);
+    const candidateG = score?.candidateG ? {
+      schemaVersion: CANDIDATE_G_STATE_SCHEMA_VERSION,
+      modelId: CANDIDATE_G_STATE_MODEL_ID,
+      variantId: CANDIDATE_G_STATE_VARIANT_ID,
+      profileId: CANDIDATE_G_STATE_PROFILE_ID,
+      weights: CANDIDATE_G_WEIGHTS,
+      scoreImpact: 'diagnostic-only',
+      automaticActivationAllowed: false,
+      publicScoreChanged: false,
+      referenceAt: score.candidateG.referenceAt,
+      initialStateAccepted: row.candidateGState?.initialStateAccepted ?? null,
+      initialStateResetReason: row.candidateGState?.initialStateResetReason ?? null,
+      currentState: score.candidateG.continuationState,
+      modes: score.candidateG.modes,
+    } : null;
     return [row.partId, {
       zoneId: row.zoneId, name: row.name, marineCoverage: row.marineCoverage,
       landPoint: row.landPoint, waterPoint: row.waterPoint,
       onshoreDirectionDeg: row.onshoreDirectionDeg,
       onshoreDirectionSource: row.onshoreDirectionSource,
       flowPoints,
-      current: score
+      current: score ? { ...score, candidateG: undefined } : null,
+      candidateG,
     }];
   }));
   return {
@@ -2313,7 +2422,14 @@ output.controlledLiveCurrentPilot = {
   generatedAt: liveCurrentPilot?.generatedAt ?? null,
 };
 output.coastalParts = coastalPartsContract.enabled
-  ? scoreCoastalPartsRuntime(coastalPartsContract, features, dmiBulkCache, liveCurrentPilot, generatedAt)
+  ? scoreCoastalPartsRuntime(
+    coastalPartsContract,
+    features,
+    dmiBulkCache,
+    liveCurrentPilot,
+    generatedAt,
+    previous?.coastalParts ?? null,
+  )
   : { schemaVersion: 1, enabled: false, datasetVersion: coastalPartsContract.datasetVersion, sourceRunId: coastalPartsContract.sourceRunId, generatedAt, marginPoints: 7, expectedPartCount: coastalPartsContract.partCount, scoredPartCount: 0, parts: {}, zones: {} };
 // Conditions skrives først. Den offentlige runtime og manifestet bygges derefter af én fælles, deterministisk funktion.
 await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(output, null, 2)}\n`);

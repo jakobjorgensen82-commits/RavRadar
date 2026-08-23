@@ -180,6 +180,14 @@ Fem sammenhængende produktionskørsler afslørede, at samme ugentlige GitHub-ca
 5. #1831 genkendte begge DKSS U/V-felter, gav 107 vindhalezoner ≥96 timer og gennemførte validate, release gate og deploy.
 6. Det offentlige datasæt havde 200/208 zoner med vind, 108/208 ≥96 timer og maksimum 111,5 timer; videre automatiske runs skal rotere LF/NSBS og lukke de resterende huller.
 
+## 2026-08-23 – 4.0.259 central Candidate G-kandidat
+
+1. DEC-0055/0056's afledte transport- og mobiliseringstilstand blev koblet til den centrale kystdelspipeline ved den fælles aktuelle referencetime.
+2. En versions- og konteksthash forhindrer, at tilstand bæres over ændret model, profil, vandpunkt eller kystretning; kun kompakte afledte værdier persistéres.
+3. Same-time-rekørsel blev gjort til eksplicit hold, så en ændret prognose i samme time hverken tæller dobbelt eller nulstiller et udtransportforløb.
+4. Candidate G offentliggøres diagnostisk med rekonstruerbare 20/50/30-bidrag, men aktiv `25/40/35` og UI er uændrede.
+5. Den manuelle shadow blev omlagt fra native-only genhentning til fallback-kompatibel audit af den faktiske 210/673-runtime. Første produktion er bootstrap fra 0 og kan ikke i sig selv bevise en modnet 48-timersfordeling.
+
 ## 2026-08-08 – DEC-0031 model- og kvotestyring
 1. Jakob fastlagde, at kvalitet går foran kvotebesparelse, men at Sol ikke skal bruges til rutinearbejde af bekvemmelighed.
 2. Codex fik ansvar for både at anbefale billigere model og senere kræve skift tilbage til Sol før kritiske opgaver.

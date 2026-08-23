@@ -6,6 +6,8 @@ Den strømstyrede Candidate G består den mekaniske grænsekontrol score-neutral
 
 Den oprindelige revision blev ført gennem exact-head `32602287607`, PR #82/merge `189644a0` og fuld post-merge-produktion `32602328912`. Den efterfølgende `RESEARCH-2`-udtransportgate bestod exact-head `32604792201` på `f6458f09`, PR #84/merge `800a93cb` og fuld produktion `32604850884`. Live `rr-20260822232159-210` er komplet med 210 zoner og 673 kystdele og ændrer ikke den offentlige scoremodel.
 
+4.0.259-kandidaten fører nu både transport- og mobiliseringstilstanden gennem den centrale pipeline efter DEC-0057 og lægger Candidate G i et særskilt offentligt diagnostic-only-navnerum. Den aktive score er fortsat urørt. Dette er implementeret lokalt, men exact-head, post-merge-produktion, naturlig state-alder og den nye fallback-kompatible slutshadow er endnu ikke leverancebevist i dette dokument.
+
 Den efterfølgende ejerbeslutning lukker samtidig den sidste tvetydighed i 13-timersbetydningen:
 
 - efter 13 effektive timer med fuld kraftig udgående strøm er **transportpotentialet 0**;
@@ -87,12 +89,12 @@ Der er ikke udført en faktisk central admin-roundtrip for denne endnu uaktivere
 
 ## Aktiveringsgater efter auditten
 
-Mekanisk yderpunktskontrol, waders-betydning og pil-/historiksemantik er nu afklaret som forskningskontrakter. Efterfølgende ejerreview har valgt `0,03→0,15 m/s`, ingen passiv neutral aftrapning og kompakt tilstandsfortsættelse som teknisk prior. DEC-0056 vælger desuden én 4/48-timers bølgeenergimobilisering. Følgende tekniske aktiveringsarbejde er fortsat åbent:
+Mekanisk yderpunktskontrol, waders-betydning og pil-/historiksemantik er nu afklaret som forskningskontrakter. Efterfølgende ejerreview har valgt `0,03→0,15 m/s`, ingen passiv neutral aftrapning og kompakt tilstandsfortsættelse som teknisk prior. DEC-0056 vælger desuden én 4/48-timers bølgeenergimobilisering. Central persistens og den fallback-kompatible shadowkontrakt er implementeret i 4.0.259-kandidaten. Følgende leverings- og aktiveringsarbejde er fortsat åbent:
 
-1. central persistens af både transport- og mobiliseringstilstand;
-2. frisk fallback-kompatibel national score-neutral shadow med den endelige inputkontrakt;
-3. endelig offentlig UI-/forklaringskontrol;
-4. central admin-roundtrip, rollback og fulde produktgates.
+1. exact-head, merge og fuld post-merge-produktion af 4.0.259;
+2. frisk 210/673-shadow på den producerede runtime samt dokumenteret naturlig state-alder; bootstrap fra 0 er ikke en modnet 48-timersfordeling;
+3. særskilt aktiv score-omskifter, endelig brugerforklaring og testet tilbagekobling til `25/40/35`;
+4. central admin-roundtrip for aktiveringskonfigurationen og alle relevante produkt-/browsergates.
 
 Strømgrænsen og mobiliseringens halveringstider er ejer-/forskningspriorer, ikke fundkalibrerede naturkonstanter. Repræsentative komplette ture findes ikke før den planlagte aktivering og skal derfor stå som tydelig modelusikkerhed og senere efterkalibrering, ikke som en skjult eller umulig før-gate.
 

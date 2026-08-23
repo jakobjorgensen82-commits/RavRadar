@@ -135,7 +135,7 @@ jobs:
         run: python scripts/hydrate-deployed-weather.py
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
-          WEATHER_USER_AGENT: "RavRadar/4.0.258 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.259 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Preserve deployed DMI zone cache as safe fallback
         run: |
@@ -156,7 +156,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.258 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.259 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Report skipped refresh
         if: steps.preflight.outputs.should_run != 'true'
@@ -276,7 +276,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.258 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.259 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Save progressed DMI GRIB download cache
@@ -402,7 +402,7 @@ jobs:
           DMI_DEPLOYED_CACHE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/live/dmi-forecast-cache.json"
           WEATHER_REQUEST_TIMEOUT_MS: 25000
           DMI_OCEAN_REQUEST_TIMEOUT_MS: 60000
-          WEATHER_USER_AGENT: "RavRadar/4.0.258 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.259 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Attach scientific current provenance and exact DMI grid points
@@ -848,75 +848,35 @@ jobs:
           include-hidden-files: true
 
   ravscore-active-shadow:
-    name: Validate active 210/673 points in private RavScore candidate shadow
+    name: Audit fallback-compatible 210/673 Candidate G public shadow
     if: github.event_name == 'workflow_dispatch' && inputs.ravscore_active_shadow == true && inputs.geometry_v2_national != true && inputs.geometry_v2_pilot != true
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v7
 
-      - name: Set up Python for private active-point shadow
-        uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-
-      - name: Install DMI native-grid reader
-        run: python -m pip install --disable-pip-version-check -r requirements-dmi.txt
-
-      - name: Set up Node.js for private candidate score
+      - name: Set up Node.js for Candidate G public shadow audit
         uses: actions/setup-node@v7
         with:
           node-version: "24"
 
-      - name: Hydrate centrally saved expert rules for active RavScore shadow
-        run: |
-          python scripts/sync-admin-config.py
-          node scripts/generate-public-admin-rules.mjs
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-
-      - name: Build read-only shadow input from active 210/673 runtime
+      - name: Download read-only fallback-compatible 210/673 runtime
         run: |
           mkdir -p .cache .geometry-v2-work
           curl --fail --location --retry 3 --retry-all-errors --max-time 120 \
             --output .cache/active-public-condition-details.json \
             https://jakobjorgensen82-commits.github.io/RavRadar/data/live/public-condition-details.json
-          python scripts/build-active-runtime-shadow-input.py
 
-      - name: Validate active points on native DMI grids
-        env:
-          DMI_BULK_MAX_RUNTIME_SECONDS: "3000"
-        run: python scripts/validate-national-local-part-dmi-grid.py
+      - name: Audit centrally derived Candidate G state and score
+        run: node scripts/audit-ravscore-candidate-g-public-shadow.mjs
 
-      - name: Build isolated active-point weather identities
-        run: python scripts/build-national-weather-shadow-contract.py
-
-      - name: Validate active-point native marine series
-        env:
-          NATIONAL_MULTI_STEP_MAX_ASSETS: "4"
-        run: python scripts/validate-national-multi-step-series.py
-
-      - name: Validate active-point state and history isolation
-        run: node scripts/validate-national-state-history.mjs
-
-      - name: Validate active-point native wind series
-        env:
-          DMI_BULK_MAX_RUNTIME_SECONDS: "3000"
-        run: python scripts/validate-national-local-part-wind-series.py
-
-      - name: Validate active-point private RavScore candidate shadow
-        run: node scripts/validate-national-shadow-score.mjs
-
-      - name: Upload dataminimized active-point RavScore shadow
+      - name: Upload dataminimized Candidate G public shadow audit
         uses: actions/upload-artifact@v7
         with:
           name: ravradar-active-ravscore-shadow-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            .geometry-v2-work/active-runtime-shadow-input-summary.json
-            .geometry-v2-work/national-shadow-score-validation.json
+          path: .geometry-v2-work/candidate-g-public-shadow-audit.json
           retention-days: 14
           if-no-files-found: error
           include-hidden-files: true

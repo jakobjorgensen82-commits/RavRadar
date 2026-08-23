@@ -19,7 +19,7 @@
 | RRS-CANDIDATE-G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED-4.0.258 | Waders-kontraktreference | 20/50/30 + vindstyret waders-loft | Vind er hovedsignal, WAM er blødt fradrag; transportfortolkningen er senere erstattet af DEC-0055 |
 | RRS-CANDIDATE-G-CURRENT-LED-OUTFLOW-8-RESEARCH-1 | Historisk strømstyret revisionsspor | 20/50/30 + strømreservoir + vindstyret waders-loft | Transportpotentiale 0 fra 13 timer, men totalscore kunne fortsat være 35; erstattet af ejerens slutscorebeslutning |
 | RRS-CANDIDATE-G-CURRENT-LED-OUTFLOW-8-RESEARCH-2 | Transportreference | 20/50/30 + strømreservoir + udtransportgate + vindstyret waders-loft | Faktisk kraftig udtransport med udtømt transportpotentiale giver slutscore 0, mens delscorer bevares; mobiliseringen er senere erstattet af DEC-0056 |
-| RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3 | Foretrukken score-neutral forskningsvariant | 20/50/30 + strømreservoir + bølgeenergitilstand + udtransportgate + vindstyret waders-loft | Én 4/48-timers mobiliseringstilstand fra højde² × periode; ingen additive vind-, strøm-, varigheds- eller stedpoint; ingen offentlig aktivering |
+| RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3 | Foretrukken score-neutral 4.0.259 diagnostic-runtime | 20/50/30 + strømreservoir + bølgeenergitilstand + udtransportgate + vindstyret waders-loft | Én 4/48-timers mobiliseringstilstand fra højde² × periode; central kompakt tilstand og public shadow efter DEC-0057; aktiv 25/40/35 er uændret |
 
 ## Stabile kandidatregler
 
@@ -40,6 +40,7 @@
 | RRS-T7-DEPENDENT-WAVE-LANDING | G current-led | Bølger/timing kan kun dæmpe allerede eksisterende levering med højst 15 % | Bølger kan ikke oprette transport; andelen er en forskningsprior |
 | RRS-G4-OUTFLOW-EXHAUSTION-ZERO | G current-led RESEARCH-2 | Faktisk kraftig udtransport og transportpotentiale 0 tvinger slutscoren til 0 | Start 0, missing, neutral strøm eller svag modstrøm må ikke alene udløse reglen |
 | RRS-M3-WAVE-ENERGY-MEMORY | G current-led RESEARCH-3 | Én kausal mobiliseringstilstand bygger på bølgehøjde² × periode og aftrappes 4/48 timer | Relativ proxy uden bunddybde; halveringstiderne er ikke fundkalibrerede |
+| RRS-P1-CENTRAL-DERIVED-STATE | G current-led RESEARCH-3 | Versions- og kontekstbundet transport-/mobiliseringstilstand fortsætter ved aktuel lokal referencetime | Første kørsel er bootstrap fra 0; kun afledte værdier må persistéres |
 
 Alle kandidater er score-neutrale forskningsfunktioner. Se DEC-0046 og den samlede evidensanbefaling.
 
