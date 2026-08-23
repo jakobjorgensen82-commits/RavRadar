@@ -1,3 +1,12 @@
+## 4.0.263 – Candidate G-gate følger den aktuelle zonereference (2026-08-23)
+
+- 4.0.262-produktion `32642532892` beviste, at cadence-rettelsen virker: 673/673 states fortsatte, replaymismatch var 0, og 110 transportpotentialer blev positive mod 563 fysisk fortsat nul.
+- Den efterfølgende audit fandt en særskilt profilfejl: et senere hul i femdøgnsprognosen gjorde `candidateWarmupEligible=false`, selv om alle 673 faktisk viste aktuelle referencer var sammenhængende `WINDOW_INCOMPLETE`.
+- Candidate G's memory-/warmup-gate vurderer nu den nærmeste fælles aktuelle referencetime pr. zone. Hele femdøgnets Candidate G-scorecoverage kræves fortsat, og et gap ved den aktuelle reference udløser stadig global rollback.
+- Fremtidige gaps forbliver fail-closed i deres egen state: der opfindes ingen strøm, og det brugbare suffix genstarter fra den faste rand efter hullet.
+- Kontrakten eksponerer `CURRENT_COMMON_ZONE_REFERENCE` og er låst i målrettede tests og public-shadowen.
+- Scorefysik, `20/50/30`, rollback `25/40/35`, geometri, land-/vandpunkter og beskyttede/private data er uændrede; kun versionsfeltet i de to geodatafiler løftes til 4.0.263.
+
 ## 4.0.262 – Candidate G følger produktionens native strømcadence (2026-08-23)
 
 - Candidate G's rullende 48-timers transporthukommelse accepterer nu op til tre timer mellem to verificerede beviser, svarende til produktionens dokumenterede marine stride. Integrationen bruger fortsat den faktiske forløbstid; der opfindes ingen mellemliggende timeprøver.
@@ -6,7 +15,7 @@
 - Målrettede tests dækker første native tre-timers fortsættelse, et komplet 17-punkts/48-timers vindue, opdelt mod ubrudt replay og fail-closed ved fire timers hul.
 - Dataminimeret genafspilning af den fejlramte 4.0.261-runtime ændrer 673 fastlåste nuller til 110 positive og 563 fysisk fortsat nul. Det gamle artifact afvises som forventet med state-replaymismatch; ingen rå strømvektorer, koordinater eller private payloads vises.
 - Model-id, state-schema, `20/50/30`, +10/-8-/13-timersreglerne, mobilisering 4/48 og waders-jagtbarhed er uændrede. Artifact, protected-dirty-data, privat cache, geometri og land-/vandpunkter er urørte; kun versionsfeltet i de to geodatafiler løftes til 4.0.262.
-- Lokal implementation er færdig. Exact-head, frisk fuld produktion, aktiv 210/673-shadow og hændelseskrævet browserkontrol skal være grønne, før P0 kan kaldes produktionslukket.
+- Lokal implementation, målrettede tests og samlet source-/RDKS-/releasegate er grønne. Exact-head, frisk fuld produktion, aktiv 210/673-shadow og hændelseskrævet browserkontrol skal være grønne, før P0 kan kaldes produktionslukket.
 
 ## 4.0.261 – Candidate G aktiv og produktionsverificeret under pre-public opvarmning (2026-08-23)
 

@@ -1,12 +1,14 @@
 # RavRadar Håndbog
 
-## Candidate G følger produktionens native strømrytme – 4.0.262
+## Candidate G bruger den aktuelle fælles zonereference – 4.0.263
 
-4.0.262 retter den fejl, som i den første aktive runtime holdt transporten på 0 overalt. Candidate G accepterer nu produktionens dokumenterede strømbeviser med op til tre timers afstand og regner med den faktiske tid mellem dem. Den opfinder ikke kunstige mellemtimer. Mere end tre timers afstand eller manglende strøm er fortsat et ægte datagab og giver global tilbagevenden til den gamle scoremodel.
+4.0.262 rettede den fejl, som holdt transporten på 0 overalt: Candidate G accepterer produktionens dokumenterede strømbeviser med op til tre timers afstand og regner med den faktiske tid mellem dem. Den første produktionskørsel beviste 110 positive transportpotentialer og 563, som fortsat var 0 på grund af de faktiske forhold – ikke 0 overalt.
+
+Efterkontrollen fandt derefter, at et hul senere i femdøgnsprognosen kunne slå den sunde aktuelle opvarmning fra. 4.0.263 retter derfor kun profilgaten: den vurderer transporthukommelsen ved den nærmeste fælles aktuelle scoretid i hver zone. Hele femdøgnets Candidate G-score skal stadig kunne beregnes.
 
 RavRadar bruger nu Candidate G med `20 % jagtbarhed`, `50 % transport` og `30 % mobilisering` som én samlet scoreprofil for hele Danmark. Ejeren har valgt den aktiveret nu, fordi siden endnu ikke er offentlig, og har accepteret, at de første scoreværdier bygger på et transportvindue med mindre end 48 timers naturlig historik.
 
-Opvarmningen vises som `candidate-active-pre-public-warmup`, når vinduet er kort, men sammenhængende. Kun `WINDOW_INCOMPLETE` er lovlig opvarmning. Manglende seneste bevis, missing inde i vinduet eller et hul over tre timer skifter hele Danmark til rollbackprofilen; RavRadar skjuler ikke et datagab som opvarmning.
+Opvarmningen vises som `candidate-active-pre-public-warmup`, når det aktuelle vindue er kort, men sammenhængende. Kun `WINDOW_INCOMPLETE` er lovlig ved den valgte aktuelle reference. Manglende seneste bevis, missing eller et hul over tre timer dér skifter hele Danmark til rollbackprofilen. Et senere prognosehul ændrer ikke nutidens status bagudrettet; den fremtidige beregning bryder i stedet sit brugbare suffix og opfinder ingen strøm.
 
 Den aktive Candidate G bevarer de aftalte regler: strømmen styrer transporten, bølgeenergi styrer mobiliseringen, og vinden er hovedsignal for waders-jagtbarhed. Strandjagt har intet wadersloft. Faktisk kraftig udtransport med udtømt transportpotentiale giver samlet score 0 med den aftalte forklaring.
 
@@ -14,7 +16,7 @@ Valget er fortsat globalt og fail-closed. Hvis blot én nødvendig Candidate G-s
 
 Profilvalget gemmes centralt og følger startpakke, detaljepakke og manifest. Ingen private rå strømvektorer, koordinater eller replaypayloads offentliggøres. Bund, dybde, render, revler, adgang, stedegnethed og sikkerhedsadvarsler indgår fortsat ikke, og aktiveringen flytter ingen geometri eller land-/vandpunkter.
 
-De følgende Candidate G-afsnit beskriver den historiske, score-neutrale forberedelse. Deres udsagn om, at Candidate G endnu ikke var aktiv eller at 25/40/35 var gældende, er versionshistorik. Den aktuelle kontrakt er DEC-0060-aktiveringen med DEC-0061's native cadence- og warmup-gate. Ved dette lokale checkpoint afventer den fuld exact-head-, produktions-, shadow- og browserverifikation.
+De følgende Candidate G-afsnit beskriver den historiske, score-neutrale forberedelse. Deres udsagn om, at Candidate G endnu ikke var aktiv eller at 25/40/35 var gældende, er versionshistorik. Den aktuelle kontrakt er DEC-0060-aktiveringen med DEC-0061's native cadence og DEC-0062's aktuelle referencescope. Ved dette lokale checkpoint afventer 4.0.263 fuld exact-head-, produktions-, shadow- og browserverifikation.
 
 ## Candidate G glemmer maskinens startværdi efter et fast vindue
 
@@ -354,7 +356,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.262
+**Håndbogsversion:** 4.0.263
 
 **Opdateret:** 19. august 2026
 

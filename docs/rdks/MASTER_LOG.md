@@ -1,3 +1,12 @@
+## 2026-08-23 – Candidate G's aktuelle referencegate i 4.0.263
+
+- PR #100/exact-head `32642456123`, merge `586fbd184f68c6445acfb38a39814f6348f14bd0` og fuld produktion `32642532892` beviste, at 4.0.262 accepterer den native tre-timers cadence korrekt: 673/673 states fortsatte uden nulstilling, replaymismatch var 0, og 110 transportpotentialer blev positive, mens 563 var fysisk nul efter de aktuelle strømforhold.
+- Den ønskede Candidate G-profil rullede alligevel globalt tilbage til legacy. De 673 valgte aktuelle referencer var lovlige `WINDOW_INCOMPLETE`, men profilgaten bedømte warmup over alle senere femdøgnsrækker og lod et fremtidigt prognosehul slå den sunde aktuelle reference fra.
+- DEC-0062 binder derfor memory- og warmup-gaten til den nærmeste fælles aktuelle scoretid for alle dele i hver zone. Komplet Candidate G-scorecoverage kræves fortsat for hele det publicerede femdøgn, og en missing- eller gapstatus ved den faktisk valgte aktuelle reference udløser stadig global rollback.
+- Fremtidige huller forbliver fail-closed i deres egne states: der opfindes ingen mellemliggende strøm, det sammenhængende suffix brydes, og replayet genstarter fra den faste rand. De kan ikke længere retroaktivt ændre den aktuelle profilsundhed.
+- Version 4.0.263, målrettede regressionstests, samlet lokal source-/RDKS-/releasegate og eksakt geodatadiff er grønne. Exact-head, frisk fuld produktion, aktiv 210/673-shadow og browserkontrol afventer.
+- Candidate G's `20/50/30`, fysik, geometri, land-/vandpunkter, artifact, protected-dirty-data og private caches er uændrede. Kun versionsfeltet i de to godkendte geodatafiler løftes til 4.0.263.
+
 ## 2026-08-23 – Candidate G native cadence-rettelse i 4.0.262
 
 - Ejeren bad om en grundig analyse og den rette implementation efter fundet af 673/673 nultransporter.

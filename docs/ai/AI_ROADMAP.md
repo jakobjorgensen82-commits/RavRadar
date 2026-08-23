@@ -1,5 +1,15 @@
 # AI Roadmap – RavRadar 4.0.243+
 
+## Candidate G – 4.0.263 aktuel referencegate
+
+- [x] Produktionsverificér 4.0.262's cadence i `32642532892`: 673/673 accepterede states, nul replaymismatch, 110 positive og 563 fysisk fortsat nul.
+- [x] Opdag før godkendelse, at et senere prognosegap slog den sunde aktuelle warmup fra og valgte legacy globalt.
+- [x] Implementér DEC-0062's fælles aktuelle zonereference for memory-/warmup-gaten uden at lempe femdøgnets scorecoverage.
+- [x] Bevar global rollback ved aktuel missing/gap og lokal fail-closed state ved fremtidige gaps.
+- [x] Lås regressionen og `CURRENT_COMMON_ZONE_REFERENCE` i målrettede tests/shadowkontrakten.
+- [x] Bestå samlet lokal source-/RDKS-/releasegate og eksakt geodatadiff.
+- [ ] Bestå exact-head, frisk produktion, aktiv 210/673-shadow og fuld browserkontrol.
+
 ## Candidate G – 4.0.262 native cadence og sikker warmup
 
 - [x] Reproducér den aktive P0 systemisk: 658/673 states havde tre timers bevisafstand, én-times-gaten efterlod én prøve med nul forløbstid, og alle 673 transportresultater stod på 0.
@@ -9,8 +19,8 @@
 - [x] Lås 3-timers fortsættelse, 17-punkts/48-timers readiness, split/ubrudt identitet og 4-timers gap i målrettede tests.
 - [x] Genafspil gammel live state dataminimeret: 110 positive, 563 fortsat nul og 658 forventede mismatch mod det fejlberegnede artifact.
 - [x] Bestå samlet lokal source-/RDKS-/releasekontrol og diffkontrol.
-- [ ] Bestå GitHub exact-head, merge og frisk fuld produktion med central readback.
-- [ ] Bestå aktiv 210/673-shadow med nul replaymismatch samt fuld browserkontrol.
+- [x] Bestå GitHub exact-head `32642456123`, PR #100/merge `586fbd18` og frisk fuld produktion `32642532892` med central readback.
+- [x] Efteraudit beviste nul replaymismatch og cadencekorrekt transport, men fandt DEC-0062's referencescopefejl; aktiv shadow og browserlukning flyttes derfor til 4.0.263.
 
 ## Candidate G – aktiv 4.0.261-leverance efter DEC-0060
 

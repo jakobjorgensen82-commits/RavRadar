@@ -1,4 +1,18 @@
-# Implementeringsstatus – Candidate G native cadence-rettelse i 4.0.262
+# Implementeringsstatus – Candidate G aktuel referencegate i 4.0.263
+
+## P0-opfølgning efter 4.0.262-produktionen
+
+- [x] Bestå PR #100 exact-head `32642456123`, merge `586fbd184f68c6445acfb38a39814f6348f14bd0` og fuld produktion `32642532892` med central hydrering, frisk state, `validate`, releasegate, Supabase og Pages.
+- [x] Bevis i live `rr-20260823134605-210`, at cadence-replayet er rettet: 673/673 accepterede states, nul reset, nul replaymismatch, 110 positive og 563 fysisk fortsat nul.
+- [x] Opdag, at profilen alligevel rullede tilbage til legacy, selv om alle 673 aktuelle referencer var `WINDOW_INCOMPLETE`; `candidateWarmupEligible` blev falsk på grund af senere prognosegaps.
+- [x] Afgræns rodårsagen til, at memory-/warmup-gaten fejlagtigt gennemgik samtlige femdøgnsrækker i stedet for den aktuelle fælles zonereference.
+- [x] Implementér DEC-0062: behold fuld Candidate G-scorecoverage for hele prognosen, men bind memory-/warmup-aktiveringen til den nærmeste fælles aktuelle referencetime pr. zone.
+- [x] Bevar global rollback ved et gap på den aktuelle reference og lokal fail-closed stateadfærd efter senere prognosegaps.
+- [x] Lås referencescopet som `CURRENT_COMMON_ZONE_REFERENCE` i profil, tests og public-shadow.
+- [x] Bestå samlet lokal source-/RDKS-/releasekontrol og eksakt geodatadiff for 4.0.263.
+- [ ] Bestå exact-head, frisk produktion, aktiv 210/673-shadow og fuld browserkontrol for 4.0.263.
+
+Den følgende 4.0.262-sektion er revisionshistorik. Cadencefejlen er løst, men den samlede P0 lukkes først, når 4.0.263 er produktionsverificeret.
 
 ## P0-regression efter aktiveringslukningen
 
@@ -10,7 +24,7 @@
 - [x] Tilføj `candidateWarmupEligible` og state-replayidentitet i den dataminimerede public shadow.
 - [x] Bestå målrettede cadence-, state-, profil- og shadow-self-tests samt gammel-live-state-replay.
 - [x] Bestå samlet lokal source-/RDKS-/releasekontrol og diffkontrol.
-- [ ] Bestå exact-head, fuld frisk produktion, dataminimeret aktiv 210/673-shadow og browserkontrol. Grøn kontraktidentitet alene er ikke nok.
+- [x] Bestå exact-head og fuld frisk produktion. Den dataminimerede efteraudit fandt DEC-0062's særskilte referencescopefejl, så aktiv shadow og browserlukning flyttes til 4.0.263.
 
 ## Ejer-godkendt pre-public opvarmningsaktivering
 

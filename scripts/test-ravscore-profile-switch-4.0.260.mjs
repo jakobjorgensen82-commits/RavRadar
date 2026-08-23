@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 import {
+  candidateGReferenceReadiness,
+  CANDIDATE_G_MEMORY_REFERENCE_SCOPE,
   CANDIDATE_G_RAVSCORE_PROFILE_ID,
   LEGACY_RAVSCORE_PROFILE_ID,
   PUBLIC_RAVSCORE_PROFILE_SELECTION,
@@ -52,6 +54,46 @@ assert.equal(productionProfile.activeProfileId, LEGACY_RAVSCORE_PROFILE_ID);
 assert.equal(productionProfile.activationState, 'legacy-active-score-neutral');
 assert.equal(selectPublicRavScoreResult({ profile: productionProfile, legacy, candidateG, mode: 'beach' }), legacy);
 
+const currentReferenceAt = '2026-08-23T12:00:00.000Z';
+const candidateStateScore = (time, status, ready = false) => ({
+  time,
+  candidateG: { transportMemoryReady: ready, transportMemoryStatus: status },
+});
+const referenceRows = [
+  {
+    zoneId: 'zone-a',
+    scores: [
+      candidateStateScore(currentReferenceAt, 'WINDOW_INCOMPLETE'),
+      candidateStateScore('2026-08-23T13:00:00.000Z', 'WINDOW_HAS_MISSING_EVIDENCE'),
+    ],
+  },
+  {
+    zoneId: 'zone-a',
+    scores: [
+      candidateStateScore(currentReferenceAt, 'WINDOW_INCOMPLETE'),
+      candidateStateScore('2026-08-23T13:00:00.000Z', 'WINDOW_HAS_TIME_GAP'),
+    ],
+  },
+];
+const currentReferenceReadiness = candidateGReferenceReadiness(referenceRows, currentReferenceAt);
+assert.equal(currentReferenceReadiness.candidateMemoryReady, false);
+assert.equal(currentReferenceReadiness.candidateWarmupEligible, true,
+  'later forecast gaps must not retroactively block a continuous current warmup reference');
+assert.equal(currentReferenceReadiness.referenceZoneCount, 1);
+assert.equal(currentReferenceReadiness.referencePartCount, 2);
+
+const currentGapRows = structuredClone(referenceRows);
+currentGapRows[0].scores[0].candidateG.transportMemoryStatus = 'WINDOW_HAS_MISSING_EVIDENCE';
+assert.equal(candidateGReferenceReadiness(currentGapRows, currentReferenceAt).candidateWarmupEligible, false,
+  'a gap at the selected current reference must still fail closed');
+
+const readyReferenceRows = structuredClone(referenceRows);
+for (const row of readyReferenceRows) {
+  row.scores[0].candidateG.transportMemoryReady = true;
+  row.scores[0].candidateG.transportMemoryStatus = 'READY';
+}
+assert.equal(candidateGReferenceReadiness(readyReferenceRows, currentReferenceAt).candidateMemoryReady, true);
+
 const productionDocument = JSON.parse(fs.readFileSync('data/admin/ravscore-profile-selection.json', 'utf8'));
 const packageVersion = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
 assert.equal(productionDocument.sourceVersion, packageVersion);
@@ -68,6 +110,7 @@ assert.equal(warmupProfile.activationState, 'candidate-active-pre-public-warmup'
 assert.equal(warmupProfile.candidateCoverageReady, true);
 assert.equal(warmupProfile.candidateMemoryReady, false);
 assert.equal(warmupProfile.candidateWarmupEligible, true);
+assert.equal(warmupProfile.candidateMemoryReferenceScope, CANDIDATE_G_MEMORY_REFERENCE_SCOPE);
 assert.equal(warmupProfile.prePublicWarmupAccepted, true);
 assert.equal(warmupProfile.freshFinalShadowPassed, false);
 assert.equal(warmupProfile.ownerReviewApproved, true);
