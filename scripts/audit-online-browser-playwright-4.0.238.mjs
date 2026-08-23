@@ -12,7 +12,7 @@ try {
 }
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const liveUrl = 'https://jakobjorgensen82-commits.github.io/RavRadar/';
-const expectedVersion = '4.0.238';
+const expectedVersion = process.env.RAVRADAR_EXPECTED_VERSION || '4.0.238';
 const chromePath = process.env.RAVRADAR_CHROME || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 if (!fs.existsSync(chromePath)) {
   throw new Error(`Chrome blev ikke fundet paa ${chromePath}. Saet RAVRADAR_CHROME til den installerede binær.`);

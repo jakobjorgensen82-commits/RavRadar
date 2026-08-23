@@ -24,8 +24,8 @@ Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre for
 - [x] Lås aktiv Candidate G-projektion, ærlig `WINDOW_INCOMPLETE`-status, rollback, dataminimering og automatisk aktiveringsforbud i målrettede tests.
 - [x] Bestå samlet lokal kildegate og releasegate for 4.0.261.
 - [x] Før exact-head `32636378576` gennem PR #97, merge `0f7a9d5f` og fuld produktion `32636433944` med central profil-readback og live `rr-20260823112726-210`.
-- [ ] Kør aktiv dataminimeret 210/673-shadow og fuld 210/673/420/2.100-browserkontrol på den eksakte merge.
-- [ ] Luk auditkontraktfejlen fra shadow `32637022498`: godkend alle fire legitime ikke-ready-memory-statusser, men aldrig `READY`, når `memoryReady=false`; kør ny exact-head og frisk shadow.
+- [x] Kør aktiv dataminimeret shadow `32637833674` og fuld livebrowserkontrol på eksakt main: 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdøgnsvisninger uden fejl.
+- [x] Luk auditkontraktfejlen fra shadow `32637022498` via exact-head `32637339636`, PR #98, merge `fd69f8a0`, frisk produktion `32637387600` og grøn shadow `32637833674`.
 - [ ] Følg den naturlige memoryopbygning som driftsevidens uden at gøre den til en ny implementerings- eller aktiveringsgate.
 
 ## Aktuel workflowkorrektion – samlet CHANGELOG.md
