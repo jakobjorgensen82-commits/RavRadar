@@ -8,8 +8,8 @@
 - Anonyme ture forbliver anonyme. En lokal outbox er leveringssikring på enheden og deduplikeres mod serverrækkens eksisterende tur-id.
 - Magic-link-teksten forklarer engangslinket, redirecten er versionsuafhængig på samme origin/sti, og callbacken henter den faktiske Supabase-bruger før kontoejerskab bruges.
 - Offentlige hovedord er forenklet til blandt andet **Søgeforhold**, **Transport mod kysten** og **Rav i bevægelse**. Candidate G, `20/50/30`, scorelogik, vejrdata, geometri og land-/vandpunkter er uændrede.
-- PR #106 bestod exact-head `32652894729`, blev merged som `23fa89ed`, og produktion `32652970105` bestod frisk data, fuld validering, releasegate og Pages. Live `rr-20260823165645-210` er 4.0.264 på 210/673.
-- Konto-/loginforklaring og direkte tur uden GPS/rute er kontrolleret live. Den fulde audit fandt kun en forældet label i selve audittestens opslag: UI'et viser `Vandstandsændring på 3 timer`, mens auditten søgte `3-timers trend`. Efter labelrettelsen består 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer uden kontrol-, konsol-, side- eller HTTP-fejl. En rigtig loginmail og autentificeret kontooversigt kræver senere ejerens interaktive prøve.
+- PR #106 bestod exact-head `32652894729`, blev merged som `23fa89ed`, og produktion `32652970105` bestod hele kæden. PR #107 bestod exact-head `32654048944`, blev merged som `8b758337`, og produktion `32654119745` bestod igen frisk data, fuld validering, releasegate og Pages. Live `rr-20260823171804-210` er 4.0.264 på 210/673.
+- Konto-/loginforklaring og direkte tur uden GPS/rute er kontrolleret live. UI og audit er enige om `Vandstandsændring på 3 timer`, og 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer består uden kontrol-, konsol-, side- eller HTTP-fejl. En rigtig loginmail og autentificeret kontooversigt kræver senere ejerens interaktive prøve.
 
 
 ## Aktuel produktionsverificeret 4.0.263 – Candidate G-gate ved den aktuelle fælles zonereference

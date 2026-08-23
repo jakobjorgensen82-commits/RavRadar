@@ -4,6 +4,8 @@
 
 Under kontoen kan en indlogget bruger åbne **Mine ture og fund**. Oversigten viser de samme ture, som allerede ligger i Supabases `observations`-tabel. RavRadar gemmer altså ikke turen en ekstra gang og opretter ikke en ny logtabel. Listen hentes først, når brugeren åbner den, og viser højst de seneste 100 ture for at begrænse belastningen.
 
+4.0.264 er produktionsverificeret på 210 zoner og 673 kystdele. Konto-/loginforklaringen og den direkte tur uden GPS-rute er kontrolleret live; den autentificerede private liste og en rigtig loginmail afprøves senere interaktivt af ejeren, så RavRadar ikke sender en mail eller opretter en tur uden en bevidst brugerhandling.
+
 Den aktive turrejse er: **Start tur**, **Afslut tur** og **Færdiggør tur**. Rapporten beskriver hele søgeturen med søgetid, jagtform, faktisk område og kystdel, hvor grundigt der blev søgt, og om der blev fundet rav. Den aktive rejse indsamler ikke GPS-spor, rute eller præcis position.
 
 Hvis brugeren var logget ind ved indsendelsen, kan den samme turpost vises privat for ejeren gennem Supabases adgangsregler. Mailadresse og navn gemmes ikke i turposten, og brugeridentiteten bruges ikke i modelanalyse. En tur indsendt uden login forbliver anonym og kan ikke sikkert tilskrives en konto bagefter.
