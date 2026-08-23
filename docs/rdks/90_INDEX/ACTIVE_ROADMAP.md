@@ -53,7 +53,7 @@ Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre for
 - [x] Gennemgå startskævheden særskilt med ejeren: den unge scorefordeling må ikke gøres permanent afhængig af maskinens bootstrapværdi.
 - [x] Efterprøv om den eksisterende syvdøgnshistorik kan fjerne bootstrap-skævheden. Resultat: nej; 65–117 timers historik efterlader 607/633 dele med mindst 50 points startpriorafhængighed, fordi neutral strøm ikke giver passivt tab.
 - [x] Forkast en ny startreserve og implementér DEC-0059's faste 48-timers evidensvindue. 582 komplette historiske vinduer er uafhængige af tænkt start 0/50/100; der kræves ikke en ny 48-timers realtidsudviklingstest.
-- [ ] Før den afgrænsede schema-2-state gennem exact-head, merge og første fail-closed produktion uden offentlig aktivering.
+- [x] Før den afgrænsede schema-2-state gennem exact-head `32633533257`, PR #95/merge `1d848724` og fuld produktion `32633607166`. Live `rr-20260823102619-210` er fail-closed med legacy aktiv, 673/673 schema-2-state, ét første timebevis, 0/673 ready og nul Candidate G-aktivering.
 - [ ] Gennemfør central admin-roundtrip og en ny versionsbundet aktiveringsændring, før ønsket profil eventuelt ændres til Candidate G.
 - [ ] Offentlig aktivering må først gennemføres, når den samlede pakke er grøn og ingen konkret modstridende evidens består; manglende turkalibrering skal fortsat fremgå ærligt som modelusikkerhed.
 

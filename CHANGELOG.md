@@ -6,6 +6,8 @@
 - Statekontrakten er versionsbundet som schema 2. Missing og tidsgab må ikke foregives at være neutral strøm og holder Candidate G's globale aktiveringsgate lukket, indtil 48-timersvinduet igen er komplet.
 - Syntetiske tests beviser samme resultat efter komplet vindue for tænkte starter 0, 50 og 100. En dataminimeret historisk audit finder 582 komplette vinduer og nul startafhængighed uden at udgive rå strømvektorer, koordinater, del-id'er eller private payloads.
 - Der kræves ikke en ny 48-timers realtidsudviklingstest. Candidate G er fortsat inaktiv; offentlig `25/40/35`, UI, geometri, land-/vandpunkter, artifact, protected-dirty-data og private caches er uændrede.
+- Exact-head `32633533257` bestod på `56824ab0`; PR #95 blev merged som `1d848724`, og fuld post-merge-produktion `32633607166` bestod frisk data, fuld validering, releasegate, Supabase, artifact og Pages.
+- Live `rr-20260823102619-210` er integritetskontrolleret mod manifestet med 210 zoner og 673 kystdele. Alle 673 har schema 2 med ét første afledt timebevis, `transportMemoryReady=false` og `WINDOW_INCOMPLETE`; aktiv, ønsket og rollback er fortsat legacy, og Candidate G er aktiveret 0 steder.
 
 ## 4.0.259 – central Candidate G-tilstand og 210/673 public shadow (2026-08-23)
 

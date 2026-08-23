@@ -6,6 +6,8 @@
 - Missing og tidsgab er ikke neutral strøm og holder aktiveringsberedskabet lukket. Schema 2 og en ny profilidentitet forhindrer skjult genbrug af den gamle statekontrakt.
 - Syntetiske kontroller samt 582 komplette historiske 48-timersvinduer viser nul slutafvigelse mellem tænkte starter 0, 50 og 100. Auditoutputtet indeholder kun aggregater.
 - Candidate G er fortsat score-neutral og inaktiv. Offentlig `25/40/35`, geometri, land-/vandpunkter, artifact, protected-dirty-data og private caches er urørte.
+- Exact-head `32633533257` bestod på `56824ab0`; PR #95 blev merged som `1d848724`. Produktion `32633607166` gennemførte central hydrering, frisk vejr/proveniens, fuld validering, releasegate, Supabase, artifact og Pages.
+- Live `rr-20260823102619-210` består manifestets byte- og SHA-256-integritet med 210 zoner og 673 dele. Schema 2 er oprettet 673/673 med ét første timebevis, ingen aktiveringsklar transporthukommelse og nul offentlig Candidate G-aktivering. Legacy er fortsat aktiv, ønsket og rollback.
 
 ## 2026-08-23 – 4.0.259 central Candidate G og fallback-kompatibel shadow
 
