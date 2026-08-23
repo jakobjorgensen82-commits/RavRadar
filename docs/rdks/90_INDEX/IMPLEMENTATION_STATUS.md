@@ -1,4 +1,19 @@
-# Implementeringsstatus – Candidate G aktuel referencegate i 4.0.263
+# Implementeringsstatus – brugerflow og privat turlog i 4.0.264
+
+## Aktuel lokale kandidat
+
+- [x] Fjern den gamle GPS-baserede parallelrejse fra den aktive turknap og brug den komplette v2-rejse direkte.
+- [x] Vis gamle og nye egne ture under **Mine ture og fund** via den eksisterende `observations`-tabel og RLS.
+- [x] Undgå dobbeltlagring i Supabase; læs først ved klik, højst 100 rækker og kun nødvendige felter.
+- [x] Forklar magic link og hydrér bruger-id efter Supabase-callback.
+- [x] Forenkle centrale offentlige RavScore- og turord uden at ændre scoreberegningen.
+- [x] Tilføj målrettede tests for samme tabel, RLS, dataminimering, legacyrækker, direkte v2 og login-callback.
+- [x] Tilføj den eksakte rodhåndbog til docs-only-skip og opdatér workflowtesten.
+- [x] Versionsløft, RDKS-/håndbogs-/changeloglukning og samlet lokal source-/releasegate.
+- [ ] Exact-head, PR, fuld produktion og live browserkontrol af login, magic link, log, turindsendelse og tekster.
+- [ ] Separat ren dokumentationsmerge med 0 oprettede push-produktionskørsler.
+
+4.0.263 er fortsat produktionsverificeret sandhed. De følgende Candidate G-afsnit er revisionssporet for den nuværende scoremotor.
 
 ## P0-opfølgning efter 4.0.262-produktionen
 
@@ -1753,7 +1768,7 @@ Status: Implementeret og lokalt valideret.
 - Implementeret score-neutralt: `scripts/audit-ravscore-observed-ablation.mjs` med deterministisk self-test i `validate:source`.
 - Dokumenteret: nationale fordelinger, komponentablation, driveroverlap og zonevinderbias i 4.0.242.
 - Besluttet i DEC-0042: tripniveau, indsats, faktisk kystdel og immutable forecast-link er obligatorisk før senere fit.
-- Åben implementering: den nuværende turformular skal erstattes af den dataminimerede tripkontrakt, mens GPS-redaktion og kalibreringslås bevares.
+- Erstattet og udgivet: 4.0.243 leverede den dataminimerede tripkontrakt. 4.0.264 fjerner den resterende gamle GPS-baserede parallelrejse fra den aktive brugerflade; GPS-redaktion og kalibreringslås bevares.
 
 ## 4.0.243 kandidatstatus
 

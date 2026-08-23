@@ -418,10 +418,10 @@ assert.doesNotMatch(migration, /\b(?:delete|update)\s+(?:from\s+)?observations\b
 assert.doesNotMatch(migration, /\b(?:latitude|longitude|gps|route|track)\b/i);
 
 const dialogSource = fs.readFileSync('js/ui/trip-evidence-dialog.js', 'utf8');
-for (const text of ['Hvordan gik ravturen?', 'Fandt du rav?', 'Hvilken kystdel?', 'Kort kig', 'Normal tur', 'Grundigt', 'Svar senere', 'Gem tur', 'Hvor vil du lede?', 'Hvordan vil du søge?', 'Start tur']) {
+for (const text of ['Hvordan gik ravturen?', 'Fandt du rav?', 'Hvilken del af kysten søgte du på?', 'Kun en lille del', 'En almindelig tur', 'Det meste grundigt', 'Svar senere', 'Indsend tur', 'Start en ravtur', 'Hvordan vil du søge?', 'Start tur']) {
   assert.match(dialogSource, new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 }
-assert.match(dialogSource, /ikke din præcise position eller rute/);
+assert.match(dialogSource, /ikke din præcise position eller GPS-rute/);
 assert.doesNotMatch(dialogSource, /\.innerHTML\s*=/);
 assert.doesNotMatch(dialogSource, /\b(?:fetch|geolocation|localStorage)\b/);
 
@@ -437,9 +437,10 @@ assert.match(observationServiceSource, /route,track,position,coordinates,latitud
 const appSource = fs.readFileSync('app.js', 'utf8');
 assert.match(appSource, /const TRIP_EVIDENCE_INTEGRATION_V2 = true/);
 assert.match(appSource, /createPublicTripEvidenceRuntime/);
-assert.match(appSource, /installTripEvidenceLegacyBridge/);
 assert.match(appSource, /persist: submitTripEvidenceObservation/);
 assert.match(appSource, /state\.conditions\?\.coastalParts\?\.parts/);
+assert.doesNotMatch(appSource, /installTripEvidenceLegacyBridge/);
+assert.doesNotMatch(appSource, /(?:startTrip|stopTrip|resumeTripTracking|pendingTripPrompt)\s*\(/);
 assert.doesNotMatch(appSource.slice(appSource.indexOf('const TRIP_EVIDENCE_INTEGRATION_V2 = true')), /\b(?:geolocation|latitude|longitude|coordinates|route|track)\b/i);
 
 const legacyBridgeSource = fs.readFileSync('js/services/trip-evidence-legacy-bridge.js', 'utf8');

@@ -17,8 +17,8 @@ const event=evaluateTransportEvent({zone:{coastType:'east'},weather:{currentSpee
 assert.equal(event.stateExplanation.phase,'indtransport opbygges');
 
 const ui=fs.readFileSync('js/ui/info-panel.js','utf8');
-assert.match(ui,/Historisk tilstand/);
-assert.match(ui,/ændrer endnu ikke den numeriske RavScore/);
+assert.match(ui,/Hvad skete før nu\?/);
+assert.match(ui,/bruger det dokumenterede forløb i den aktuelle score/);
 const assistant=fs.readFileSync('js/services/rav-assistant.js','utf8');
-assert.match(assistant,/Historisk tilstand:/);
-console.log('✓ Historiske tilstandsforklaringer er aktive uden at ændre point');
+assert.match(assistant,/Det tidligere forløb:/);
+console.log('✓ Tidligere strøm- og bølgeforløb forklares i almindeligt dansk');

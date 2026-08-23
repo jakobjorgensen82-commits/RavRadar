@@ -130,6 +130,7 @@ for (const marker of [
   "'docs/research/**'",
   "'CHANGELOG.md'",
   "'CHANGELOG-*.md'",
+  "'HANDBOOK-RAVRADAR.md'",
   "'AGENTS.md'",
   "'release/RELEASE-REPORT.json'",
   "'release/RELEASE-REPORT.md'",

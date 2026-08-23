@@ -6,7 +6,7 @@ export const CANDIDATE_G_MEMORY_REFERENCE_SCOPE = 'CURRENT_COMMON_ZONE_REFERENCE
 
 export const PUBLIC_RAVSCORE_PROFILE_SELECTION = Object.freeze({
   schemaVersion: '1.1.0',
-  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.263',
+  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.264',
   requestedProfileId: LEGACY_RAVSCORE_PROFILE_ID,
   rollbackProfileId: LEGACY_RAVSCORE_PROFILE_ID,
   candidateProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
@@ -114,15 +114,15 @@ function componentReason(name, value, mode) {
     return 'Strandjagtens ravpotentiale begrænses ikke af wadersforholdene.';
   }
   if (name === 'transport') {
-    if (rounded >= 70) return 'Strømforløbet har bygget et stærkt transportpotentiale ind mod kysten.';
-    if (rounded >= 40) return 'Strømforløbet giver et middel transportpotentiale mod kysten.';
-    if (rounded > 0) return 'Strømforløbet giver kun et svagt transportpotentiale mod kysten.';
-    return 'Strømforløbet giver intet tilbageværende transportpotentiale mod kysten.';
+    if (rounded >= 70) return 'Strømmen gennem de seneste timer giver stærke tegn på transport af rav ind mod kysten.';
+    if (rounded >= 40) return 'Strømmen gennem de seneste timer giver nogen tegn på transport af rav ind mod kysten.';
+    if (rounded > 0) return 'Strømmen gennem de seneste timer giver kun svage tegn på transport af rav ind mod kysten.';
+    return 'Strømforløbet giver ikke tegn på, at rav er ført ind mod kysten.';
   }
-  if (rounded >= 70) return 'Bølgeenergien har opbygget et højt mobiliseringspotentiale.';
-  if (rounded >= 40) return 'Bølgeenergien giver et middel mobiliseringspotentiale.';
-  if (rounded > 0) return 'Bølgeenergien giver kun et lavt mobiliseringspotentiale.';
-  return 'Bølgeenergien har ikke opbygget et dokumenteret mobiliseringspotentiale.';
+  if (rounded >= 70) return 'Bølgerne gennem de seneste døgn har givet gode muligheder for at løsne rav fra havbunden.';
+  if (rounded >= 40) return 'Bølgerne gennem de seneste døgn har givet nogen mulighed for at løsne rav fra havbunden.';
+  if (rounded > 0) return 'Bølgerne gennem de seneste døgn har kun givet svage muligheder for at løsne rav fra havbunden.';
+  return 'Der er ikke tegn på, at bølgerne har løsnet rav fra havbunden.';
 }
 
 function activationEvidenceReady(evidence = {}) {
@@ -282,10 +282,10 @@ export function projectCandidateGForPublic(candidate, { mode, profile } = {}) {
       contributions,
       rawScore: candidate.additiveScore ?? score,
       finalScore: score,
-      formula: 'Jagtbarhed 20 % + transport 50 % + mobilisering 30 %',
+      formula: 'Søgeforhold 20 % + transport mod kysten 50 % + rav i bevægelse 30 %',
       scoreMeaning: mode === 'waders'
-        ? 'Ravpotentiale for wadersjagt, begrænset af jagtbarheden'
-        : 'Ravpotentiale for strandjagt',
+        ? 'Ravmulighed ved søgning i vandet, begrænset af søgeforholdene'
+        : 'Ravmulighed ved søgning på stranden',
       transportDiagnostics: {
         transportPotential: candidate?.components?.transport ?? null,
         transportAndDelivery: transport,

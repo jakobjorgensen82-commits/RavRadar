@@ -1,5 +1,5 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.263";
-import { calculateRavScore } from "../core/score-engine.js?v=4.0.263";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.264";
+import { calculateRavScore } from "../core/score-engine.js?v=4.0.264";
 
 const KNOWLEDGE={
  equipment:'Til almindelig ravjagt er de mest nyttige ting: polariserede briller i dagslys, en god ravlygte i mørke, handsker, vindtæt tøj, en lille beholder til fund og kun waders/vadestav hvor forholdene er rolige og kendte.',
@@ -30,9 +30,9 @@ function allScored(ctx,dayOffset=0){
  return (ctx.zones?.features||[]).flatMap(f=>{const z=f.properties,c=ctx.conditions?.zones?.[z.id]||{};const hours=(c.forecast?.hourly||[]).filter(h=>String(h.time||'').slice(0,10)===date);return hours.map(h=>({zone:z,hour:h,result:calculateRavScore({mode,zone:z,weather:h,history:c.history||{}})}));}).filter(x=>x.result.available).sort((a,b)=>b.result.score-a.result.score);
 }
 function selectedScored(ctx,dayOffset=0){const z=ctx.zone;if(!z)return[];const c=ctx.conditions?.zones?.[z.id]||{};const d=new Date();d.setUTCDate(d.getUTCDate()+dayOffset);const date=d.toISOString().slice(0,10);return(c.forecast?.hourly||[]).filter(h=>String(h.time||'').slice(0,10)===date).map(h=>({hour:h,result:calculateRavScore({mode:ctx.mode||'waders',zone:z,weather:h,history:c.history||{}})})).filter(x=>x.result.available).sort((a,b)=>b.result.score-a.result.score);}
-function scoreAnswer(ctx){const r=ctx.result,w=ctx.weather||{};if(!r)return'Vælg først en zone, så kan jeg forklare dens score.';const rows=(r.explanations||r.reasons||[]).slice(0,5).map(x=>typeof x==='string'?x:x?.text||x?.explanation).filter(Boolean);const state=r.explanation?.transportEvent?.stateExplanation;const historical=state?.summary?`\n\nHistorisk tilstand: ${state.summary}${(state.facts||[]).length?`\n${state.facts.slice(0,3).map(x=>'• '+x).join('\n')}`:''}`:'';return`RavScore ${r.score} for ${ctx.zone?.name||'zonen'} skyldes især:
+function scoreAnswer(ctx){const r=ctx.result,w=ctx.weather||{};if(!r)return'Vælg først en zone, så kan jeg forklare dens score.';const rows=(r.explanations||r.reasons||[]).slice(0,5).map(x=>typeof x==='string'?x:x?.text||x?.explanation).filter(Boolean);const state=r.explanation?.transportEvent?.stateExplanation;const historical=state?.summary?`\n\nDet tidligere forløb: ${state.summary}${(state.facts||[]).length?`\n${state.facts.slice(0,3).map(x=>'• '+x).join('\n')}`:''}`:'';return`RavScore ${r.score} for ${ctx.zone?.name||'zonen'} skyldes især:
 
-${rows.map(x=>'• '+x).join('\n')||'• Samspillet mellem transport, mobilisering og jagtbarhed.'}${historical}
+${rows.map(x=>'• '+x).join('\n')||'• Samspillet mellem strøm mod kysten, rav i bevægelse og hvor let det er at lede.'}${historical}
 
 Aktuelt: vind ${fmt(w.windSpeedMps)} m/s, bølger ${fmt(w.waveHeightM)} m, strøm ${fmt(w.currentSpeedMps,2)} m/s og vandstand ${fmt(w.waterLevelCm,0)} cm.`;}
 function bestPlace(ctx,q){const tomorrow=/i morgen|imorgen/.test(q.toLowerCase());const rows=allScored(ctx,tomorrow?1:0).slice(0,5);if(!rows.length)return'Der er ikke nok gyldige prognosedata til at rangere hele landet.';return`${tomorrow?'I morgen':'I dag'} ser disse steder bedst ud:

@@ -1,4 +1,4 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.263";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.264";
 
 const STORAGE_KEY = "ravradar-auth-session";
 const REFRESH_MARGIN_SECONDS = 300;
@@ -59,6 +59,12 @@ function tokenNeedsRefresh() {
   if (!session.expires_at) return false;
   return Number(session.expires_at) <= Math.floor(Date.now() / 1000) + REFRESH_MARGIN_SECONDS;
 }
+async function hydrateSessionUser() {
+  if (!session?.access_token || session?.user?.id) return session;
+  const user = await authRequest("/user");
+  saveSession({ ...session, user });
+  return session;
+}
 export async function refreshSession({ force = false } = {}) {
   if (!enabled) throw new Error("Supabase er ikke konfigureret.");
   if (!session?.refresh_token) {
@@ -83,6 +89,7 @@ export async function refreshSession({ force = false } = {}) {
 export async function requireFreshSession() {
   if (!session?.access_token) throw new Error("Du er ikke logget ind på Supabase.");
   if (tokenNeedsRefresh()) await refreshSession();
+  if (!session?.user?.id) await hydrateSessionUser();
   return session;
 }
 export async function authorizedFetch(url, options = {}, { retry401 = true, timeoutMs=DEFAULT_TIMEOUT_MS } = {}) {
@@ -108,7 +115,11 @@ export async function authorizedFetch(url, options = {}, { retry401 = true, time
 export function authEnabled() { return enabled; }
 export function currentSession() { return session; }
 export function onAuthChange(listener) { listeners.add(listener); return () => listeners.delete(listener); }
-export async function sendMagicLink(email) { await authRequest("/otp", { method: "POST", body: JSON.stringify({ email, create_user: true }) }, { useAuthorization: false }); }
+export async function sendMagicLink(email) {
+  const redirectTo = typeof location === 'undefined' ? null : `${location.origin}${location.pathname}`;
+  const path = redirectTo ? `/otp?redirect_to=${encodeURIComponent(redirectTo)}` : '/otp';
+  await authRequest(path, { method: "POST", body: JSON.stringify({ email, create_user: true }) }, { useAuthorization: false });
+}
 export async function signInWithPassword(email, password) {
   const next = await authRequest("/token?grant_type=password", { method: "POST", body: JSON.stringify({ email, password }) }, { useAuthorization: false });
   saveSession(next); return session;
@@ -126,7 +137,9 @@ export async function consumeAuthCallback() {
   const accessToken = values.get("access_token");
   if (!accessToken) return session;
   saveSession({ access_token: accessToken, refresh_token: values.get("refresh_token"), expires_in: Number(values.get("expires_in") || 0), token_type: values.get("token_type") || "bearer", user: { email: values.get("email") || null } });
-  history.replaceState(null, "", location.pathname + location.search); return session;
+  history.replaceState(null, "", location.pathname + location.search);
+  await hydrateSessionUser().catch(() => {});
+  return session;
 }
 export async function getCurrentProfile() {
   const s = await requireFreshSession();

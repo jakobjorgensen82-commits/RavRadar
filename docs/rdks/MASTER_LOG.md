@@ -1,3 +1,13 @@
+## 2026-08-23 – lokal 4.0.264-kandidat: privat turlog og forståeligt brugerflow
+
+- Ejeren besluttede, at brugerens konto skal have et enkelt **Mine ture og fund** uden at gemme Supabase-data to gange. Implementationen læser derfor de eksisterende `observations`-rækker gennem RLS, først ved klik, med et lille feltudvalg og højst 100 ture.
+- Den samme serverrække bruges både som privat ejerlog og som senere anonymiseret modelgrundlag. `user_id` bruges kun til RLS-ejerskab; mail/navn gemmes ikke i turposten og må ikke indgå i analyse, eksport eller træning. Anonyme ture forbliver anonyme.
+- Den aktive turknap går direkte gennem v2-kontrakten og starter ikke længere den gamle GPS-baserede parallelrejse. Den aktive rejse indsamler ikke GPS, rute eller præcis position; historiske lokale data og historiske centrale rækker er urørte.
+- Magic link forklares som et tidsbegrænset engangslink via mail. Callbacken henter den faktiske Supabase-bruger, og en kontoejet outbox-tur kan kun sendes som samme bruger.
+- Centrale offentlige ord om RavScore og turen er gjort enklere. Candidate G, `20/50/30`, vejrdata, geometri, land-/vandpunkter, artifact, protected-dirty-data og private caches er uændrede.
+- Workflowets eksakte docs-only-skip omfatter nu rodhåndbogen. En normal fuld produktion skal først verificere kode-/workflowmergen; derefter skal en særskilt ren dokumentationsmerge bevise 0 oprettede push-produktionskørsler.
+- Version 4.0.264, målrettede kontroller og samlet lokal source-/RDKS-/releasegate er grønne. Exact-head, PR, produktion og live browserkontrol mangler endnu. De to geodatafiler har kun fået versionsfeltet ændret fra 4.0.263 til 4.0.264.
+
 ## 2026-08-23 – rodhåndbog mangler i dokumentationsskip
 
 - Den rent dokumentariske PR #102 blev merged som `0da5b31d`, men startede fuld push-produktion `32646026290`, fordi `HANDBOOK-RAVRADAR.md` ikke er omfattet af workflowets nuværende `paths-ignore`.

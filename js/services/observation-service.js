@@ -1,6 +1,6 @@
-import { PUBLIC_CONFIG } from '../../config.js?v=4.0.263';
-import { currentSession } from './auth-service.js?v=4.0.263';
-import { assertTripEvidencePrivacy } from './trip-evidence-contract.js?v=4.0.263';
+import { PUBLIC_CONFIG } from '../../config.js?v=4.0.264';
+import { authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.264';
+import { assertTripEvidencePrivacy } from './trip-evidence-contract.js?v=4.0.264';
 const enabled=Boolean(PUBLIC_CONFIG.supabaseUrl&&PUBLIC_CONFIG.supabasePublishableKey);
 const LOCAL_KEY='ravradar-observations-v2';
 const OUTBOX_KEY='ravradar-observation-outbox-v1';
@@ -12,10 +12,39 @@ function immutableWeatherSnapshot(weather,scoreResult,prediction){return structu
 export function observationsEnabled(){return enabled;}
 export function getLocalObservations(){return read(LOCAL_KEY,[]);}
 export function getObservationSyncStatus(){const rows=getLocalObservations(),pending=read(OUTBOX_KEY,[]);return {local:rows.length,pending:pending.length,synced:rows.filter(x=>x.sync_status==='synced').length,lastAttemptAt:localStorage.getItem('ravradar-observation-last-sync')};}
+export async function getOwnTripObservations({ limit = 100 } = {}) {
+  if (!enabled) throw new Error('Login og turlog er ikke aktiveret endnu.');
+  const active = await requireFreshSession();
+  const userId = active?.user?.id;
+  if (!userId) throw new Error('Din konto kunne ikke knyttes sikkert til turloggen. Log ind igen.');
+  const safeLimit = Math.max(1, Math.min(200, Math.round(Number(limit) || 100)));
+  const fields = [
+    'id', 'client_observation_id', 'trip_id', 'observed_at', 'trip_started_at', 'trip_ended_at', 'zone_id',
+    'search_minutes', 'hunt_mode', 'found', 'result', 'grams', 'actual_zone_id',
+    'actual_coastal_part_id', 'zone_name', 'schema_version'
+  ].join(',');
+  const url = `${PUBLIC_CONFIG.supabaseUrl}/rest/v1/observations?select=${fields}&user_id=eq.${encodeURIComponent(userId)}&order=observed_at.desc&limit=${safeLimit}`;
+  const response = await authorizedFetch(url);
+  if (!response.ok) throw new Error(`Dine ture kunne ikke hentes (${response.status}).`);
+  return response.json();
+}
 function upsertLocal(row){const rows=getLocalObservations();const i=rows.findIndex(x=>x.id===row.id);if(i>=0)rows[i]=row;else rows.push(row);write(LOCAL_KEY,rows);}
 function enqueue(row){const rows=read(OUTBOX_KEY,[]);if(!rows.some(x=>x.id===row.id))rows.push(row);write(OUTBOX_KEY,rows);}
 export function remoteObservationPayload(row){const {id:clientObservationId,gps:localGps,route,track,position,coordinates,latitude,longitude,location,sync_status,sync_error,synced_at,...remote}=structuredClone(row||{});const publicZoneId=remote.actual_zone_id||(typeof remote.zone_id==='string'?remote.zone_id:null);return {...remote,zone_id:Number.isSafeInteger(remote.zone_id)?remote.zone_id:null,actual_zone_id:publicZoneId,client_observation_id:clientObservationId,gps:null};}
-async function postRemote(row){const session=currentSession();const response=await fetch(`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/observations?on_conflict=client_observation_id`,{method:'POST',headers:{apikey:PUBLIC_CONFIG.supabasePublishableKey,Authorization:`Bearer ${session?.access_token||PUBLIC_CONFIG.supabasePublishableKey}`,'Content-Type':'application/json',Prefer:'resolution=ignore-duplicates,return=minimal'},body:JSON.stringify(remoteObservationPayload(row))});if(!response.ok)throw new Error(`HTTP ${response.status}`);}
+async function postRemote(row){
+  const url=`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/observations?on_conflict=client_observation_id`;
+  const payload=remoteObservationPayload(row);
+  const options={method:'POST',headers:{'Content-Type':'application/json',Prefer:'resolution=ignore-duplicates,return=minimal'},body:JSON.stringify(payload)};
+  let response;
+  if(payload.user_id){
+    const active=await requireFreshSession();
+    if(active?.user?.id!==payload.user_id)throw new Error('Log ind med den konto, som turen tilhører, før den kan sendes.');
+    response=await authorizedFetch(url,options);
+  }else{
+    response=await fetch(url,{...options,headers:{apikey:PUBLIC_CONFIG.supabasePublishableKey,Authorization:`Bearer ${PUBLIC_CONFIG.supabasePublishableKey}`,...options.headers}});
+  }
+  if(!response.ok)throw new Error(`HTTP ${response.status}`);
+}
 export async function syncPendingObservations(){if(!enabled)return getObservationSyncStatus();const queue=read(OUTBOX_KEY,[]),remaining=[];for(const row of queue){try{await postRemote({...row,sync_status:undefined,sync_error:undefined});upsertLocal({...row,sync_status:'synced',synced_at:new Date().toISOString(),sync_error:null});}catch(error){remaining.push({...row,sync_status:'pending',sync_error:error.message});upsertLocal({...row,sync_status:'pending',sync_error:error.message});}}write(OUTBOX_KEY,remaining);localStorage.setItem('ravradar-observation-last-sync',new Date().toISOString());return getObservationSyncStatus();}
 export async function submitObservation({zone,huntMode,result,grams=null,scoreResult,weather,gps=null,tripId=null,observedAt=null,prediction=null}){
   const session=currentSession();const row={id:crypto.randomUUID(),zone_id:zone.id,zone_name:zone.name,coast_type:zone.coastType||null,observed_at:observedAt||new Date().toISOString(),submitted_at:new Date().toISOString(),hunt_mode:huntMode,result,grams:grams===''||grams==null?null:Number(grams),anonymous_id:anonymousId(),user_id:session?.user?.id||null,trip_id:tripId,gps,rav_score:scoreResult?.score??null,score_level:scoreResult?.level??null,ai_probability:prediction?.probability??scoreResult?.prediction?.probability??null,ai_confidence:prediction?.confidence??scoreResult?.prediction?.confidence??null,model_version:prediction?.modelVersion??null,weather_snapshot:immutableWeatherSnapshot(weather,scoreResult,prediction),wind_speed_mps:weather?.windSpeedMps??null,wind_direction_deg:weather?.windDirectionDeg??null,wave_height_m:weather?.waveHeightM??null,wave_period_s:weather?.wavePeriodS??null,water_level_cm:weather?.waterLevelCm??null,current_speed_mps:weather?.currentSpeedMps??null,current_direction_deg:weather?.currentDirectionDeg??null,water_temperature_c:weather?.waterTemperatureC??null,sync_status:enabled?'pending':'local'};
@@ -25,7 +54,9 @@ export async function submitTripEvidenceObservation(columns){
   if(columns?.schema_version!==2)throw new Error('Kun turkontrakt v2 kan gemmes gennem denne funktion.');
   assertTripEvidencePrivacy(columns);
   const existing=getLocalObservations().find(row=>row.trip_id===columns.trip_id);
-  const session=currentSession(),features=columns.calibration_features||{};
+  let session=currentSession();
+  if(session?.access_token&&!session?.user?.id)session=await requireFreshSession();
+  const features=columns.calibration_features||{};
   const row={
     id:existing?.id||columns.trip_id,
     zone_id:columns.actual_zone_id,

@@ -236,12 +236,18 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-RESEARCH-WIND-FIELD-001 – PLANLAGT UDEN PRODUKTIONSMANDAT:** Den store DEC-0029-analyse skal undersøge det relevante rumlige og historiske vindfelt over hav og kyst, inklusive områder uden viste kortpile. Pile er UI-visualiseringer og må ikke definere analyseområdet. Opstrøms/regional vind, kobling til bølger og strøm, tidsforsinkelse, persistens, overlap og dobbelt-tælling skal vurderes, før et eventuelt nyt signal overhovedet kan foreslås.
 - **REQ-PERFORMANCE-STATE-001 – BINDENDE:** Historik og tilstandsberegning sker i pipeline. Offentlig runtime må kun modtage kompakte afledte felter, og opstart må ikke forringes væsentligt.
 - **REQ-MORPHOLOGY-001 – BINDENDE:** Eksisterende dokumenteret morfologi må fortsat påvirke scoren. Manglende data er neutralt, og administratoren pålægges ikke ny landsdækkende manuel kortlægning.
-- **REQ-OBSERVATION-ZONE-001 – AKTIV:** En fundrapport skal kræve valg af jagtzonen. GPS bruges som plausibilitetskontrol og må ikke automatisk antages at være jagtstedet, fordi rapporten kan indsendes hjemmefra.
+- **REQ-OBSERVATION-ZONE-001 – AKTIV:** En afsluttet tur skal gemme den faktisk valgte jagtzone og, når den findes, den faktiske kystdel. Den aktive v2-tur indsamler ikke GPS, rute eller præcis position. En rapport kan indsendes hjemmefra, så telefonens aktuelle position må heller ikke bruges som automatisk jagtsted.
+- **REQ-TRIP-V2-001 – AKTIV:** Turregistreringen skal bruge én direkte v2-rejse: start tur, afslut tur og færdiggør den komplette rapport med jagtform, start/slut, søgetid, faktisk område og kystdel, søgegrundighed samt fund eller intet fund. Den gamle GPS-baserede parallelrejse må ikke starte i baggrunden.
+- **REQ-TRIP-PRIVACY-001 – BINDENDE:** Fjernposten må ikke indeholde GPS-spor, rute, præcis position, fri tekst eller billeder. Historiske lokale data må ikke slettes uden særskilt godkendelse.
+- **REQ-ACCOUNT-TRIP-LOG-001 – AKTIV:** En indlogget bruger skal kunne åbne **Mine ture og fund** under sin konto. Loggen læser den eksisterende `observations`-række gennem RLS og må ikke oprette en ekstra Supabase-tabel, række eller kopi. Læsningen er først ved brugerens klik, bruger et lille fast feltudvalg og viser højst de seneste 100 ture.
+- **REQ-ACCOUNT-TRIP-OWNERSHIP-001 – BINDENDE:** `user_id` må kun knytte den eksisterende turpost til den indloggede ejer for privat RLS-læsning. Mailadresse og navn må ikke gemmes i turposten, og analyse, eksport og modeltræning må ikke bruge brugeridentiteten. Anonyme ture må ikke efterfølgende tilskrives en konto ved gæt.
+- **REQ-AUTH-MAGIC-LINK-001 – AKTIV:** Login skal forklare, at et magic link er et engangslink sendt med mail, som logger brugeren ind uden adgangskode. Callbacken skal hydrere den faktiske Supabase-bruger før kontoejerskab bruges. Adgangskode, magic link, udlogning og produktionsredirect skal browserkontrolleres.
+- **REQ-PUBLIC-PLAIN-LANGUAGE-001 – AKTIV:** Offentlige tekster om RavScore, turregistrering, fund og login skal bruge almindelige danske ord. Interne fagtermer må kun vises, når de forklares på samme sted.
 
 ## Historisk model og brugerfund
 - Kravet om shadow før scoreændring er opfyldt for Candidate G gennem den dataminimerede udviklings-, aktiverings- og slutshadow. Nye fremtidige modelændringer kræver fortsat deres egen shadow og ejerbeslutning.
 - Candidate G lader indtransport påvirke scoren gradvist efter varighed og styrke uden en fast generel forsinkelse.
-- Brugerfund skal kræve valgt zone; GPS bruges kun til plausibilitetskontrol.
+- Brugerfund skal indgå i en komplet tur med valgt faktisk zone og eventuel kystdel. Den aktive v2-rejse indsamler ikke GPS.
 - Projektet skal være kildeneutralt og må ikke indeholde navne på eksterne analysekilder.
 
 ## Privat besøgsstatistik – 4.0.215
