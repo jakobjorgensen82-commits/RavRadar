@@ -1,5 +1,14 @@
 # RavRadar - aktuelt Codex-handoff
 
+## Næste aftalte produktforbedring – kontoindberetning uden startet tur
+
+- Ejeren har besluttet, at en indlogget bruger senere skal kunne indberette en tur eller et fund direkte fra kontosiden uden først at have startet en tur.
+- Kontoindberetningen skal genbruge den eksisterende afslutningsformular og `observations`-række uden dobbeltlagring. Brugeren vælger selv korrekt dato og tidspunkt; kun historisk vejr og score fra det valgte tidspunkt må kobles til rapporten.
+- Hvis sikkert historisk grundlag mangler, gemmes rapporten som erfaring med `calibration_eligible=false`. Nutidens vejr må aldrig bruges som erstatning for et ældre fund.
+- En startet tur skal kunne **Afsluttes uden at indberette** efter bekræftelse og uden Supabase-post. Den nuværende **Svar senere** skal fortsat bevare turen lokalt.
+- Den aktive start-/afslutningsdialog har allerede zoneafhængigt valg af kyststrækning. Samme komponent og zone→kystdel-validering skal genbruges på kontosiden.
+- Dette er registreret roadmaparbejde, ikke implementeret kode. Aktuel dokumentationsbranch er `codex/record-flexible-trip-reporting`.
+
 ## Aktuel arbejdsleverance 2026-08-23 – forståeligt brugerflow og privat turlog i 4.0.264
 
 - Aktuel afslutningsbranch `codex/record-docs-only-proof` registrerer kun det observerede 0-kørselsbevis fra PR #108; den oprindelige leverance var `codex/plain-user-flow-and-trip-log`.

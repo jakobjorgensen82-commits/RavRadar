@@ -1,5 +1,15 @@
 # RavRadar - aktivt roadmap
 
+## Næste aftalte brugerdataforbedring – fleksibel og ærlig indberetning
+
+- [ ] Tilføj **Indberet tur eller fund** under kontoen, så en indlogget bruger kan rapportere uden først at have startet en tur i RavRadar.
+- [ ] Genbrug den samme afslutningsformular, de samme spørgsmål, den samme validering og den samme eksisterende `observations`-række; ingen ekstra tabel, dubletrække eller separat fundkopi.
+- [ ] Lad brugeren vælge den korrekte dato og det korrekte tidspunkt. Kobl kun rapporten til historisk vejr og score fra det valgte tidspunkt; brug aldrig de aktuelle forhold på indberetningstidspunktet som erstatning.
+- [ ] Hvis det valgte tidspunkt mangler et sikkert historisk vejr-/scoregrundlag, gem rapporten som erfaring, men markér den ikke direkte kalibreringsegnet.
+- [ ] Tilføj **Afslut uden at indberette** til en startet tur. Efter tydelig bekræftelse skal den lokale tur ryddes uden upload, mens **Svar senere** fortsat må bevare den lokalt.
+- [ ] Genbrug zoneafhængig kyststrækningsmenu. Den findes allerede i den aktive start-/afslutningsdialog og skal også gælde kontoformularen; gem både zone og kystdel og afvis ugyldige kombinationer.
+- [ ] Lås samme-tabel, ingen dubletlagring, brugerens valgte tid, korrekt historisk snapshot, fravalg uden upload, kystdelsfiltrering, privatliv og almindeligt dansk i målrettede kontrakt- og browsertests før release.
+
 ## Aktuel produktleverance – enkelt sprog, komplet tur og privat turlog i 4.0.264
 
 - [x] Erstat den gamle parallelle GPS-tur med den direkte v2-rejse: start, afslut og færdiggør én komplet tur.
