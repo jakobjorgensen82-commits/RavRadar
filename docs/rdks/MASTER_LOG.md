@@ -10,8 +10,8 @@
 - Den aktive turknap går direkte gennem v2-kontrakten og starter ikke længere den gamle GPS-baserede parallelrejse. Den aktive rejse indsamler ikke GPS, rute eller præcis position; historiske lokale data og historiske centrale rækker er urørte.
 - Magic link forklares som et tidsbegrænset engangslink via mail. Callbacken henter den faktiske Supabase-bruger, og en kontoejet outbox-tur kan kun sendes som samme bruger.
 - Centrale offentlige ord om RavScore og turen er gjort enklere. Candidate G, `20/50/30`, vejrdata, geometri, land-/vandpunkter, artifact, protected-dirty-data og private caches er uændrede.
-- Workflowets eksakte docs-only-skip omfatter nu rodhåndbogen. En normal fuld produktion skal først verificere kode-/workflowmergen; derefter skal en særskilt ren dokumentationsmerge bevise 0 oprettede push-produktionskørsler.
-- Version 4.0.264 er produktionsverificeret. Kun den særskilte docs-only-bevismerge mangler. De to geodatafiler fik kun versionsfeltet ændret fra 4.0.263 til 4.0.264.
+- Workflowets eksakte docs-only-skip omfatter rodhåndbogen. PR #108 bestod exact-head `32654780774`, blev merged som `98621bf9` med kun ignorerede dokumentationsfiler og oprettede 0 push-produktionskørsler. Den synlige planlagte kørsel var startet før dokumentationsmergen og er ikke mergeudløst.
+- Version 4.0.264 og docs-only-reglen er produktions-/procesverificeret. De to geodatafiler fik kun versionsfeltet ændret fra 4.0.263 til 4.0.264.
 
 ## 2026-08-23 – rodhåndbog mangler i dokumentationsskip
 

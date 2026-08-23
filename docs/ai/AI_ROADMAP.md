@@ -16,7 +16,7 @@
 - [x] Browserkontrollér konto-/loginforklaring og direkte tur uden GPS/rute; ret den fulde audits gamle vandstandsetiket og bestå 420/2.100/673 uden fejl.
 - [x] Før auditrettelsen gennem PR #107/exact-head `32654048944`, merge `8b758337` og fuld grøn produktion `32654119745`.
 - [ ] Ejerens senere interaktive loginprøve kan kontrollere en rigtig magic-link-mail, den autentificerede **Mine ture og fund**-liste og en kontoejet tur; ingen mail sendes automatisk.
-- [ ] Bevis nu workflowets rodhåndbogsskip med denne særskilte rene dokumentationsmerge og 0 push-produktionskørsler.
+- [x] Bevis workflowets rodhåndbogsskip med PR #108/exact-head `32654780774`, merge `98621bf9` og 0 oprettede push-produktionskørsler.
 
 ## Candidate G – 4.0.263 aktuel referencegate
 

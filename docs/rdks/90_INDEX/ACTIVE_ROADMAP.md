@@ -16,14 +16,14 @@
 - [x] Browserkontrollér live konto-/loginforklaring, direkte tur uden GPS/rute og centrale offentlige forklaringer; korrigér auditens gamle vandstandsetiket og bestå 420/2.100/673 uden fejl.
 - [x] Merge auditlabelrettelsen via PR #107/exact-head `32654048944` og bestå fuld produktion `32654119745` på live `rr-20260823171804-210`.
 - [ ] Kontrol af rigtig magic-link-mail, autentificeret **Mine ture og fund**, udlogning og en kontoejet tur gennemføres senere interaktivt af ejeren; der sendes ingen mail automatisk.
-- [ ] Bevis derefter med en separat ren RDKS-/håndbogsmerge, at rodhåndbogen ikke opretter en push-produktion.
+- [x] Bevis med PR #108/exact-head `32654780774`, merge `98621bf9`, at en ren RDKS-/rodhåndbogsmerge opretter 0 push-produktionskørsler.
 
 ## Samme leverances afgrænsede procesrettelse – rodhåndbog i docs-only-skip
 
 - [x] Tilføj kun `HANDBOOK-RAVRADAR.md` til push-workflowets eksakte dokumentations-`paths-ignore`, og opdatér den eksisterende workflowkontrakttest.
 - [x] Bestå målrettet workflowtest og PR #104 exact-head. Første produktion stoppede korrekt før release på en særskilt forældet UI-test.
 - [x] Bestå den samlede testrettelses exact-head og fuld grøn produktion `32652970105`.
-- [ ] Bevis derefter med en separat ren RDKS-/håndbogsmerge, at der oprettes 0 push-produktionskørsler. Ingen score, data, geometri eller punkter må ændres.
+- [x] PR #108/merge `98621bf9` ændrede kun ignorerede dokumentationsfiler og oprettede 0 push-produktionskørsler. Ingen score, data, geometri eller punkter blev ændret.
 
 ## Aktuel P0-status – Candidate G-referencegate i 4.0.263
 

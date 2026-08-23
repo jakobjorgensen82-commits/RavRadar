@@ -12,7 +12,7 @@
 
 ## Dokumentationsmerge udløser unødvendig fuld produktion via rodhåndbogen
 
-- **ISSUE-ROOT-HANDBOOK-DOCS-SKIP – RETTET I LOKAL KILDE / BEVIS AFVENTER:** Den rent dokumentariske PR #102 ændrede blandt andet `HANDBOOK-RAVRADAR.md`. Workflowets `paths-ignore` dækkede `docs/**`, changelog og release-rapporter, men ikke rodhåndbogen; merge `0da5b31d` startede derfor unødvendigt fuld produktion `32646026290`. Den eksakte rodhåndbog og regressionstesten er nu rettet lokalt. Fordi workflowfilen ændres, skal denne merge først gennem én normal fuld produktion; derefter skal en særskilt ren dokumentationsmerge bevise 0 oprettede push-produktionskørsler.
+- **ISSUE-ROOT-HANDBOOK-DOCS-SKIP – LØST OG BEVIST:** Den rent dokumentariske PR #102 ændrede blandt andet `HANDBOOK-RAVRADAR.md`, men merge `0da5b31d` startede unødvendigt fuld produktion `32646026290`, fordi rodhåndbogen manglede i `paths-ignore`. Rettelsen blev fuldt produktionsverificeret i `32654119745`. PR #108/exact-head `32654780774`, merge `98621bf9` ændrede kun håndbog/RDKS/changelog/release-rapport og oprettede 0 push-produktionskørsler; den eksakte regel er dermed praktisk bevist.
 
 ## P0 – Candidate G-profilgate ved senere prognosehuller
 

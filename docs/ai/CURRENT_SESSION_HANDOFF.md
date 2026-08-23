@@ -2,13 +2,13 @@
 
 ## Aktuel arbejdsleverance 2026-08-23 – forståeligt brugerflow og privat turlog i 4.0.264
 
-- Aktuel afslutningsbranch er den rent dokumentariske `codex/close-4.0.264-account-log` fra den produktionsgrønne merge `8b758337`; den oprindelige leverance var `codex/plain-user-flow-and-trip-log`.
+- Aktuel afslutningsbranch `codex/record-docs-only-proof` registrerer kun det observerede 0-kørselsbevis fra PR #108; den oprindelige leverance var `codex/plain-user-flow-and-trip-log`.
 - **Mine ture og fund** læser den eksisterende Supabase-`observations`-tabel gennem ejer-RLS. Ingen ekstra tabel, serverrække eller kopi må oprettes; læsningen sker først ved klik, har et lille feltudvalg og højst 100 ture.
 - Den aktive turknap bruger nu v2 direkte og starter ikke længere den gamle GPS-baserede parallelrejse. Historiske lokale og centrale data er urørte.
 - Magic-link-callbacken hydreres med Supabase-brugeren. En kontoejet outbox-tur kan kun sendes som samme bruger. Adgangskode, magic link, udlogning, anonym/indlogget tur og turlog skal kontrolleres live.
 - Centrale offentlige RavScore- og turord er forenklet. DEC-0063, RDKS, håndbog og changelog beskriver datagenbrug, anonymitet og den snævre `user_id`-RLS-kobling.
-- Den eksakte rodhåndbog er tilføjet docs-only-skip. Denne kode-/workflowmerge skal gennem normal fuld produktion; en efterfølgende ren dokumentationsmerge skal bevise 0 oprettede push-kørsler.
-- PR #104 og #105 stoppede sikkert på to forældede tests uden deploy. PR #106/exact-head `32652894729`, merge `23fa89ed` og produktion `32652970105` udgav 4.0.264. PR #107/exact-head `32654048944`, merge `8b758337` og produktion `32654119745` førte auditrettelsen sikkert igennem og udgav `rr-20260823171804-210` på 210/673. Live konto-/logintekst og direkte tur uden GPS/rute er kontrolleret; 420/2.100/673 består uden browser-, konsol-, side- eller HTTP-fejl. Den rent dokumentariske afslutningsmerge skal nu bevise, at rodhåndbog/RDKS udløser 0 push-produktionskørsler. En rigtig loginmail eller kontoejet tur må ikke sendes uden særskilt bevidst ejerhandling. Candidate G, `20/50/30`, artifact, protected-dirty-data, private cachedata, geometri og land-/vandpunkter må ikke røres.
+- Den eksakte rodhåndbog er tilføjet docs-only-skip. PR #108/exact-head `32654780774`, merge `98621bf9` ændrede kun ignorerede dokumentationsfiler og oprettede 0 push-produktionskørsler; workflowrettelsen er dermed praktisk bevist.
+- PR #104 og #105 stoppede sikkert på to forældede tests uden deploy. PR #106/exact-head `32652894729`, merge `23fa89ed` og produktion `32652970105` udgav 4.0.264. PR #107/exact-head `32654048944`, merge `8b758337` og produktion `32654119745` førte auditrettelsen sikkert igennem og udgav `rr-20260823171804-210` på 210/673. Live konto-/logintekst og direkte tur uden GPS/rute er kontrolleret; 420/2.100/673 består uden browser-, konsol-, side- eller HTTP-fejl. PR #108 beviste 0 push-produktionskørsler for rodhåndbog/RDKS. En rigtig loginmail eller kontoejet tur må ikke sendes uden særskilt bevidst ejerhandling. Candidate G, `20/50/30`, artifact, protected-dirty-data, private cachedata, geometri og land-/vandpunkter må ikke røres.
 
 ## Aktuel arbejdsleverance 2026-08-23 – Candidate G aktuel referencegate i 4.0.263
 

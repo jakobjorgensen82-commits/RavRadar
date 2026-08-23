@@ -9,6 +9,7 @@
 - PR #104 bestod exact-head og blev merged. Den første produktionskørsel stoppede før release på en forældet UI-test. PR #105 rettede den, bestod exact-head og blev merged; den næste produktion stoppede før deploy på en anden gammel ordret stjernetest. Stjernetesten og den lokalt fundne gamle mobil-turtest følger nu den nye UI og indgår i kildegaten.
 - PR #106 bestod exact-head og produktion `32652970105` udgav 4.0.264 på 210/673. Live konto-/turflowet er kontrolleret, og den fulde 420/2.100/673-audit er grøn efter at audittens gamle `3-timers trend`-opslag blev rettet til UI'ets `Vandstandsændring på 3 timer`.
 - PR #107 bestod exact-head `32654048944`, merge `8b758337` og fuld produktion `32654119745`; live `rr-20260823171804-210` er grøn med den låste auditlabel.
+- Den rene dokumentations-PR #108 bestod exact-head `32654780774` og blev merged som `98621bf9`. Mergecommitten oprettede 0 push-produktionskørsler, så rodhåndbogens docs-only-skip er bevist.
 
 ## 4.0.263 – Candidate G-gate følger den aktuelle zonereference (2026-08-23)
 

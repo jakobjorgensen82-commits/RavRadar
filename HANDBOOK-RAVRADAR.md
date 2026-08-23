@@ -6,11 +6,13 @@ Under kontoen kan en indlogget bruger åbne **Mine ture og fund**. Oversigten vi
 
 4.0.264 er produktionsverificeret på 210 zoner og 673 kystdele. Konto-/loginforklaringen og den direkte tur uden GPS-rute er kontrolleret live; den autentificerede private liste og en rigtig loginmail afprøves senere interaktivt af ejeren, så RavRadar ikke sender en mail eller opretter en tur uden en bevidst brugerhandling.
 
+En efterfølgende ren ændring af håndbog, RDKS, changelog og release-rapport oprettede ingen push-produktionskørsel. Dokumentation kan derfor holdes ajour uden at bruge en unødvendig fuld vejropbygning.
+
 Den aktive turrejse er: **Start tur**, **Afslut tur** og **Færdiggør tur**. Rapporten beskriver hele søgeturen med søgetid, jagtform, faktisk område og kystdel, hvor grundigt der blev søgt, og om der blev fundet rav. Den aktive rejse indsamler ikke GPS-spor, rute eller præcis position.
 
 Hvis brugeren var logget ind ved indsendelsen, kan den samme turpost vises privat for ejeren gennem Supabases adgangsregler. Mailadresse og navn gemmes ikke i turposten, og brugeridentiteten bruges ikke i modelanalyse. En tur indsendt uden login forbliver anonym og kan ikke sikkert tilskrives en konto bagefter.
 
-Et **magic link** er et engangslink, der sendes til brugerens mail og logger brugeren ind uden adgangskode. Adgangskodelogin er fortsat muligt. Produktionsredirect og begge loginrejser kontrolleres særskilt i browseren før 4.0.264 lukkes.
+Et **magic link** er et engangslink, der sendes til brugerens mail og logger brugeren ind uden adgangskode. Adgangskodelogin er fortsat muligt. Loginlinkets forklaring og redirect er kontrolleret live; selve mailmodtagelsen og den autentificerede private liste afprøves senere interaktivt af ejeren.
 
 Candidate G og 20/50/30 er uændret. De synlige hovedord er gjort enklere: **Søgeforhold**, **Transport mod kysten** og **Rav i bevægelse**. Søgeforhold handler om, hvor effektivt man kan lede – ikke om sikkerhed. RavScore vurderer ravmuligheden, ikke om turen er sikker.
 
