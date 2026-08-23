@@ -22,6 +22,18 @@ def manifest(version, active=True, approved=True):
     }
 
 
+def ravscore_selection(version, active=True, approved=True):
+    return {
+        "sourceVersion": version,
+        "status": "owner-approved-pre-public-candidate-g-active" if approved else "draft",
+        "candidateActivationEnabled": active,
+        "prePublicWarmupAccepted": approved,
+        "automaticActivationAllowed": False,
+        "activationAuthority": "DEC-0060" if approved else "",
+        "evidence": {"ownerReviewDecisionId": "DEC-0060-OWNER" if approved else None},
+    }
+
+
 class ActivationPrecedenceTest(unittest.TestCase):
     def test_newer_explicit_owner_activation_crosses_central_boundary(self):
         self.assertTrue(MODULE.preserve_newer_owner_approved_activation(manifest("4.0.182"), manifest("4.0.181")))
@@ -36,6 +48,28 @@ class ActivationPrecedenceTest(unittest.TestCase):
     def test_invalid_or_older_versions_never_win(self):
         self.assertFalse(MODULE.preserve_newer_owner_approved_activation(manifest("next"), manifest("4.0.182")))
         self.assertFalse(MODULE.preserve_newer_owner_approved_activation(manifest("4.0.181"), manifest("4.0.182")))
+
+
+class RavScoreSelectionPrecedenceTest(unittest.TestCase):
+    def test_newer_explicit_owner_selection_crosses_central_boundary(self):
+        self.assertTrue(MODULE.preserve_newer_owner_approved_ravscore_selection(
+            ravscore_selection("4.0.261"), ravscore_selection("4.0.260")))
+
+    def test_first_owner_selection_is_preserved_when_central_version_is_missing(self):
+        self.assertTrue(MODULE.preserve_newer_owner_approved_ravscore_selection(
+            ravscore_selection("4.0.261"), {}))
+
+    def test_equal_or_newer_central_selection_remains_authoritative(self):
+        self.assertFalse(MODULE.preserve_newer_owner_approved_ravscore_selection(
+            ravscore_selection("4.0.261"), ravscore_selection("4.0.261", active=False)))
+        self.assertFalse(MODULE.preserve_newer_owner_approved_ravscore_selection(
+            ravscore_selection("4.0.261"), ravscore_selection("4.0.262", active=False)))
+
+    def test_unapproved_or_inactive_selection_never_wins(self):
+        self.assertFalse(MODULE.preserve_newer_owner_approved_ravscore_selection(
+            ravscore_selection("4.0.261", approved=False), ravscore_selection("4.0.260")))
+        self.assertFalse(MODULE.preserve_newer_owner_approved_ravscore_selection(
+            ravscore_selection("4.0.261", active=False), ravscore_selection("4.0.260")))
 
 
 class CentralAdminRequestTest(unittest.TestCase):

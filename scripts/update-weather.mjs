@@ -13,8 +13,7 @@ import {
 } from '../js/core/ravscore-candidate-g-state-pipeline.js';
 import {
   CANDIDATE_G_RAVSCORE_PROFILE_ID,
-  PUBLIC_RAVSCORE_ACTIVATION_EVIDENCE,
-  PUBLIC_RAVSCORE_PROFILE_SELECTION,
+  publicRavScoreConfigurationFromDocument,
   resolvePublicRavScoreProfile,
   selectPublicRavScoreResult,
 } from '../js/core/ravscore-profile-switch.js';
@@ -58,6 +57,7 @@ const WATER_STATION_INVENTORY_PATH = 'data/live/dmi-water-stations.json';
 const OFFICIAL_WATER_STATION_SUPPLEMENT_PATH = 'data/dmi-official-water-stations.json';
 const WATER_STATION_ROUTING_AUDIT_PATH = 'data/live/water-station-routing-audit.json';
 const WATER_STATION_NOTIFICATIONS_PATH = 'data/live/water-station-notifications.json';
+const RAVSCORE_PROFILE_SELECTION_PATH = 'data/admin/ravscore-profile-selection.json';
 const ACCEPTED_FORECAST_HOURS = 118;
 const SHORT_DMI_WATER_GAP_HOURS = 6;
 const WATER_LEVEL_JUMP_WARN_CM = 35;
@@ -82,6 +82,9 @@ const PROVIDER_FAILURE_THRESHOLD = Math.max(1, Number(process.env.WEATHER_PROVID
 const PROVIDER_COOLDOWN_MS = Number(process.env.WEATHER_PROVIDER_COOLDOWN_MS ?? 10 * 60 * 1000);
 const USER_AGENT = process.env.WEATHER_USER_AGENT ?? 'RavRadar/2.4 (central weather updater)';
 const APP_VERSION = JSON.parse(await fs.readFile('package.json', 'utf8')).version;
+const RAVSCORE_PROFILE_CONFIGURATION = publicRavScoreConfigurationFromDocument(
+  await fs.readFile(RAVSCORE_PROFILE_SELECTION_PATH, 'utf8').then(JSON.parse).catch(() => null),
+);
 const PIPELINE_RUN_ID = process.env.GITHUB_RUN_ID ? `${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT ?? '1'}` : `local-${Date.now()}`;
 const CURRENT_VECTOR_SEMANTICS_VERSION = 3;
 
@@ -1206,14 +1209,17 @@ function scoreCoastalPartsRuntime(
   const candidateCoverageReady = partRows.length === Number(contract?.partCount)
     && partRows.every(row => row.scores.length > 0
       && row.scores.every(score => ['waders', 'beach'].every(mode =>
-        score?.candidateG?.transportMemoryReady === true
-        && score?.candidateG?.modes?.[mode]?.available === true
+        score?.candidateG?.modes?.[mode]?.available === true
         && score.candidateG.modes[mode].modelId === CANDIDATE_G_RAVSCORE_PROFILE_ID
         && Number.isFinite(score.candidateG.modes[mode].score))));
+  const candidateMemoryReady = candidateCoverageReady
+    && partRows.every(row => row.scores.every(score =>
+      score?.candidateG?.transportMemoryReady === true));
   const scoreProfile = resolvePublicRavScoreProfile({
-    selection: PUBLIC_RAVSCORE_PROFILE_SELECTION,
-    evidence: PUBLIC_RAVSCORE_ACTIVATION_EVIDENCE,
+    selection: RAVSCORE_PROFILE_CONFIGURATION.selection,
+    evidence: RAVSCORE_PROFILE_CONFIGURATION.evidence,
     candidateCoverageReady,
+    candidateMemoryReady,
   });
   const selectedMode = (scoreRow, mode) => selectPublicRavScoreResult({
     profile: scoreProfile,

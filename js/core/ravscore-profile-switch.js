@@ -4,12 +4,13 @@ export const LEGACY_RAVSCORE_PROFILE_ID = 'RRS-CURRENT-B0-4.0.247';
 export const CANDIDATE_G_RAVSCORE_PROFILE_ID = CANDIDATE_G_STATE_MODEL_ID;
 
 export const PUBLIC_RAVSCORE_PROFILE_SELECTION = Object.freeze({
-  schemaVersion: '1.0.0',
-  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.260',
+  schemaVersion: '1.1.0',
+  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.261',
   requestedProfileId: LEGACY_RAVSCORE_PROFILE_ID,
   rollbackProfileId: LEGACY_RAVSCORE_PROFILE_ID,
   candidateProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
   candidateActivationEnabled: false,
+  prePublicWarmupAccepted: false,
   automaticActivationAllowed: false,
 });
 
@@ -68,10 +69,50 @@ function activationEvidenceReady(evidence = {}) {
     && evidence.ownerReviewDecisionId.length > 0;
 }
 
+function ownerApprovedPrePublicWarmup(selection = {}, evidence = {}) {
+  return selection.prePublicWarmupAccepted === true
+    && selection.automaticActivationAllowed === false
+    && typeof selection.activationAuthority === 'string'
+    && selection.activationAuthority.length > 0
+    && typeof selection.status === 'string'
+    && selection.status.startsWith('owner-approved-pre-public-')
+    && typeof evidence.ownerReviewDecisionId === 'string'
+    && evidence.ownerReviewDecisionId.length > 0;
+}
+
+export function publicRavScoreConfigurationFromDocument(document) {
+  if (!document || typeof document !== 'object') {
+    return Object.freeze({
+      selection: PUBLIC_RAVSCORE_PROFILE_SELECTION,
+      evidence: PUBLIC_RAVSCORE_ACTIVATION_EVIDENCE,
+    });
+  }
+  return Object.freeze({
+    selection: Object.freeze({
+      schemaVersion: document.schemaVersion,
+      switchVersion: document.switchVersion,
+      requestedProfileId: document.requestedProfileId,
+      rollbackProfileId: document.rollbackProfileId,
+      candidateProfileId: document.candidateProfileId,
+      candidateActivationEnabled: document.candidateActivationEnabled,
+      prePublicWarmupAccepted: document.prePublicWarmupAccepted,
+      automaticActivationAllowed: document.automaticActivationAllowed,
+      activationAuthority: document.activationAuthority,
+      status: document.status,
+      sourceVersion: document.sourceVersion,
+    }),
+    evidence: Object.freeze({
+      freshFinalShadowRunId: document.evidence?.freshFinalShadowRunId ?? null,
+      ownerReviewDecisionId: document.evidence?.ownerReviewDecisionId ?? null,
+    }),
+  });
+}
+
 export function resolvePublicRavScoreProfile({
   selection = PUBLIC_RAVSCORE_PROFILE_SELECTION,
   evidence = PUBLIC_RAVSCORE_ACTIVATION_EVIDENCE,
   candidateCoverageReady = false,
+  candidateMemoryReady = candidateCoverageReady,
 } = {}) {
   const rollbackProfileId = selection?.rollbackProfileId === LEGACY_RAVSCORE_PROFILE_ID
     ? selection.rollbackProfileId
@@ -80,14 +121,21 @@ export function resolvePublicRavScoreProfile({
     ? selection.requestedProfileId
     : rollbackProfileId;
   const candidateRequested = requestedProfileId === CANDIDATE_G_RAVSCORE_PROFILE_ID;
+  const warmupAccepted = candidateRequested
+    && ownerApprovedPrePublicWarmup(selection, evidence);
   const blockers = [];
   if (!KNOWN_PROFILE_IDS.has(selection?.requestedProfileId)) blockers.push('UNKNOWN_REQUESTED_PROFILE');
+  if (selection?.schemaVersion !== PUBLIC_RAVSCORE_PROFILE_SELECTION.schemaVersion) blockers.push('INVALID_SELECTION_SCHEMA');
   if (selection?.switchVersion !== PUBLIC_RAVSCORE_PROFILE_SELECTION.switchVersion) blockers.push('INVALID_SWITCH_VERSION');
   if (selection?.rollbackProfileId !== LEGACY_RAVSCORE_PROFILE_ID) blockers.push('INVALID_ROLLBACK_PROFILE');
   if (selection?.candidateProfileId !== CANDIDATE_G_RAVSCORE_PROFILE_ID) blockers.push('INVALID_CANDIDATE_PROFILE');
+  if (selection?.automaticActivationAllowed !== false) blockers.push('AUTOMATIC_ACTIVATION_FORBIDDEN');
   if (candidateRequested && selection?.candidateActivationEnabled !== true) blockers.push('CANDIDATE_ACTIVATION_DISABLED');
   if (candidateRequested && candidateCoverageReady !== true) blockers.push('CANDIDATE_COVERAGE_INCOMPLETE');
-  if (candidateRequested && !activationEvidenceReady(evidence)) blockers.push('FINAL_SHADOW_OR_OWNER_REVIEW_MISSING');
+  if (candidateRequested && candidateMemoryReady !== true && !warmupAccepted) blockers.push('CANDIDATE_MEMORY_INCOMPLETE');
+  if (candidateRequested && !activationEvidenceReady(evidence) && !warmupAccepted) {
+    blockers.push('FINAL_SHADOW_OR_OWNER_REVIEW_MISSING');
+  }
 
   const candidateActive = candidateRequested && blockers.length === 0;
   return Object.freeze({
@@ -98,11 +146,15 @@ export function resolvePublicRavScoreProfile({
     rollbackProfileId,
     candidateProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
     candidateCoverageReady: candidateCoverageReady === true,
+    candidateMemoryReady: candidateMemoryReady === true,
     freshFinalShadowPassed: typeof evidence?.freshFinalShadowRunId === 'string'
       && evidence.freshFinalShadowRunId.length > 0,
     ownerReviewApproved: typeof evidence?.ownerReviewDecisionId === 'string'
       && evidence.ownerReviewDecisionId.length > 0,
-    activationState: candidateActive ? 'candidate-active' : 'legacy-active-score-neutral',
+    prePublicWarmupAccepted: warmupAccepted,
+    activationState: candidateActive
+      ? (candidateMemoryReady === true ? 'candidate-active' : 'candidate-active-pre-public-warmup')
+      : 'legacy-active-score-neutral',
     fallbackReason: blockers[0] ?? null,
     automaticActivationAllowed: false,
   });
@@ -196,6 +248,7 @@ export function rollbackPublicRavScoreSelection(selection = PUBLIC_RAVSCORE_PROF
     requestedProfileId: LEGACY_RAVSCORE_PROFILE_ID,
     rollbackProfileId: LEGACY_RAVSCORE_PROFILE_ID,
     candidateActivationEnabled: false,
+    prePublicWarmupAccepted: false,
     automaticActivationAllowed: false,
   });
 }

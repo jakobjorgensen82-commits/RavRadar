@@ -12,6 +12,8 @@ assert.match(reader,/document_key.*in\.\(/s,'Admin-readback skal filtrere server
 assert.ok(!reader.includes("admin_documents?select=document_key,payload,updated_at"),'Ufiltreret fuld payload-readback er forbudt');
 for(const token of ['preserve_newer_owner_approved_activation','local_version > central_version','automaticActivationAllowed','activationAuthority'])assert.ok(reader.includes(token),`Central sync mangler sikker engangspromotion: ${token}`);
 for(const token of ['protected-asset-manifest','sha256','springer skrivning over','buildRuntimeDiagnosticsEnvelope','pakket tabsfrit'])assert.ok(writer.includes(token),`Idempotent protected sync mangler ${token}`);
+for(const token of ['ravscore-profile-selection','preserve_newer_owner_approved_ravscore_selection','prePublicWarmupAccepted'])assert.ok(reader.includes(token),`Central RavScore-hydrering mangler ${token}`);
+for(const token of ['ravscore-profile-selection','Central RavScore-profil verificeret'])assert.ok(writer.includes(token),`Central RavScore-readback mangler ${token}`);
 for(const token of ['new.payload is not distinct from old.payload','if not machine_document','r.rn>100','VACUUM FULL is deliberately not automatic'])assert.ok(migration.includes(token),`Kvotemigration mangler ${token}`);
 for(const token of ['READ ONLY','rows_that_cleanup_will_remove','payload_that_cleanup_will_remove'])assert.ok(audit.includes(token),`Read-only kvoteaudit mangler ${token}`);
 for(const token of ['new.payload is not distinct from old.payload','protected-asset-manifest'])assert.ok(schema.includes(token),`Nye Supabase-installationer mangler ${token}`);

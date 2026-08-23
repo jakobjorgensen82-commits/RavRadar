@@ -5,6 +5,7 @@ import {
   CANDIDATE_G_RAVSCORE_PROFILE_ID,
   LEGACY_RAVSCORE_PROFILE_ID,
   PUBLIC_RAVSCORE_PROFILE_SELECTION,
+  publicRavScoreConfigurationFromDocument,
   resolvePublicRavScoreProfile,
   rollbackPublicRavScoreSelection,
   selectPublicRavScoreResult,
@@ -43,12 +44,38 @@ const approvedEvidence = Object.freeze({
 
 assert.equal(PUBLIC_RAVSCORE_PROFILE_SELECTION.requestedProfileId, LEGACY_RAVSCORE_PROFILE_ID);
 assert.equal(PUBLIC_RAVSCORE_PROFILE_SELECTION.candidateActivationEnabled, false);
+assert.equal(PUBLIC_RAVSCORE_PROFILE_SELECTION.prePublicWarmupAccepted, false);
 assert.equal(PUBLIC_RAVSCORE_PROFILE_SELECTION.automaticActivationAllowed, false);
 
 const productionProfile = resolvePublicRavScoreProfile({ candidateCoverageReady: true });
 assert.equal(productionProfile.activeProfileId, LEGACY_RAVSCORE_PROFILE_ID);
 assert.equal(productionProfile.activationState, 'legacy-active-score-neutral');
 assert.equal(selectPublicRavScoreResult({ profile: productionProfile, legacy, candidateG, mode: 'beach' }), legacy);
+
+const productionDocument = JSON.parse(fs.readFileSync('data/admin/ravscore-profile-selection.json', 'utf8'));
+const packageVersion = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+assert.equal(productionDocument.sourceVersion, packageVersion);
+assert.equal(productionDocument.switchVersion, `RAVSCORE-PROFILE-SWITCH-${packageVersion}`);
+const productionConfiguration = publicRavScoreConfigurationFromDocument(productionDocument);
+const warmupProfile = resolvePublicRavScoreProfile({
+  ...productionConfiguration,
+  candidateCoverageReady: true,
+  candidateMemoryReady: false,
+});
+assert.equal(warmupProfile.activeProfileId, CANDIDATE_G_RAVSCORE_PROFILE_ID);
+assert.equal(warmupProfile.activationState, 'candidate-active-pre-public-warmup');
+assert.equal(warmupProfile.candidateCoverageReady, true);
+assert.equal(warmupProfile.candidateMemoryReady, false);
+assert.equal(warmupProfile.prePublicWarmupAccepted, true);
+assert.equal(warmupProfile.freshFinalShadowPassed, false);
+assert.equal(warmupProfile.ownerReviewApproved, true);
+assert.equal(warmupProfile.automaticActivationAllowed, false);
+assert.equal(selectPublicRavScoreResult({
+  profile: warmupProfile,
+  legacy,
+  candidateG,
+  mode: 'beach',
+}).score, 68);
 
 const blockedCandidate = resolvePublicRavScoreProfile({
   selection: approvedCandidateSelection,
@@ -60,15 +87,25 @@ assert.equal(blockedCandidate.fallbackReason, 'FINAL_SHADOW_OR_OWNER_REVIEW_MISS
 const incompleteCandidate = resolvePublicRavScoreProfile({
   selection: approvedCandidateSelection,
   evidence: approvedEvidence,
-  candidateCoverageReady: false,
+  candidateCoverageReady: true,
+  candidateMemoryReady: false,
 });
 assert.equal(incompleteCandidate.activeProfileId, LEGACY_RAVSCORE_PROFILE_ID);
-assert.equal(incompleteCandidate.fallbackReason, 'CANDIDATE_COVERAGE_INCOMPLETE');
+assert.equal(incompleteCandidate.fallbackReason, 'CANDIDATE_MEMORY_INCOMPLETE');
+
+const incompleteProjection = resolvePublicRavScoreProfile({
+  ...productionConfiguration,
+  candidateCoverageReady: false,
+  candidateMemoryReady: false,
+});
+assert.equal(incompleteProjection.activeProfileId, LEGACY_RAVSCORE_PROFILE_ID);
+assert.equal(incompleteProjection.fallbackReason, 'CANDIDATE_COVERAGE_INCOMPLETE');
 
 const candidateProfile = resolvePublicRavScoreProfile({
   selection: approvedCandidateSelection,
   evidence: approvedEvidence,
   candidateCoverageReady: true,
+  candidateMemoryReady: true,
 });
 assert.equal(candidateProfile.activeProfileId, CANDIDATE_G_RAVSCORE_PROFILE_ID);
 assert.equal(candidateProfile.automaticActivationAllowed, false);
@@ -118,6 +155,7 @@ const rollbackProfile = resolvePublicRavScoreProfile({
   selection: rollbackSelection,
   evidence: approvedEvidence,
   candidateCoverageReady: true,
+  candidateMemoryReady: true,
 });
 assert.equal(rollbackProfile.activeProfileId, LEGACY_RAVSCORE_PROFILE_ID);
 assert.equal(selectPublicRavScoreResult({ profile: rollbackProfile, legacy, candidateG, mode: 'beach' }), legacy);
@@ -144,6 +182,24 @@ const mismatchedSwitchVersion = resolvePublicRavScoreProfile({
 });
 assert.equal(mismatchedSwitchVersion.activeProfileId, LEGACY_RAVSCORE_PROFILE_ID);
 assert.equal(mismatchedSwitchVersion.fallbackReason, 'INVALID_SWITCH_VERSION');
+
+const mismatchedSelectionSchema = resolvePublicRavScoreProfile({
+  selection: { ...productionConfiguration.selection, schemaVersion: '0.0.0' },
+  evidence: productionConfiguration.evidence,
+  candidateCoverageReady: true,
+  candidateMemoryReady: false,
+});
+assert.equal(mismatchedSelectionSchema.activeProfileId, LEGACY_RAVSCORE_PROFILE_ID);
+assert.equal(mismatchedSelectionSchema.fallbackReason, 'INVALID_SELECTION_SCHEMA');
+
+const warmupWithoutOwnerReview = resolvePublicRavScoreProfile({
+  selection: productionConfiguration.selection,
+  evidence: { freshFinalShadowRunId: null, ownerReviewDecisionId: null },
+  candidateCoverageReady: true,
+  candidateMemoryReady: false,
+});
+assert.equal(warmupWithoutOwnerReview.activeProfileId, LEGACY_RAVSCORE_PROFILE_ID);
+assert.equal(warmupWithoutOwnerReview.fallbackReason, 'CANDIDATE_MEMORY_INCOMPLETE');
 
 const updater = fs.readFileSync('scripts/update-weather.mjs', 'utf8');
 for (const marker of [
