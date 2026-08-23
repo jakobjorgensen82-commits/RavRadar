@@ -10,12 +10,14 @@ const app = fs.readFileSync('app.js', 'utf8');
 for (const marker of [
   'Mine ture og fund',
   'Loginlink uden adgangskode',
-  'Der oprettes ikke en ekstra kopi i databasen',
+  'Her ser du de ture, som du har indsendt til RavRadar.',
   'getOwnTripObservations',
   'mergeOwnRows',
   'client_observation_id',
   'Venter på at blive sendt'
 ]) assert.match(account, new RegExp(marker));
+
+assert.doesNotMatch(account, /Der oprettes ikke en ekstra kopi i databasen/, 'Turloggen må ikke vise intern databaseforklaring.');
 
 assert.doesNotMatch(account, /\b(?:latitude|longitude|coordinates)\b/i);
 assert.doesNotMatch(account, /fetch\s*\(/, 'Kontovisningen må kun bruge den afgrænsede observationstjeneste.');

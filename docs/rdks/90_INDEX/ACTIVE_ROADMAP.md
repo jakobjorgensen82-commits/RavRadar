@@ -1,14 +1,16 @@
 # RavRadar - aktivt roadmap
 
-## Næste aftalte brugerdataforbedring – fleksibel og ærlig indberetning
+## Aktuel 4.0.265-kandidat – fleksibel og ærlig indberetning
 
-- [ ] Tilføj **Indberet tur eller fund** under kontoen, så en indlogget bruger kan rapportere uden først at have startet en tur i RavRadar.
-- [ ] Genbrug den samme afslutningsformular, de samme spørgsmål, den samme validering og den samme eksisterende `observations`-række; ingen ekstra tabel, dubletrække eller separat fundkopi.
-- [ ] Lad brugeren vælge den korrekte dato og det korrekte tidspunkt. Kobl kun rapporten til historisk vejr og score fra det valgte tidspunkt; brug aldrig de aktuelle forhold på indberetningstidspunktet som erstatning.
-- [ ] Hvis det valgte tidspunkt mangler et sikkert historisk vejr-/scoregrundlag, gem rapporten som erfaring, men markér den ikke direkte kalibreringsegnet.
-- [ ] Tilføj **Afslut uden at indberette** til en startet tur. Efter tydelig bekræftelse skal den lokale tur ryddes uden upload, mens **Svar senere** fortsat må bevare den lokalt.
-- [ ] Genbrug zoneafhængig kyststrækningsmenu. Den findes allerede i den aktive start-/afslutningsdialog og skal også gælde kontoformularen; gem både zone og kystdel og afvis ugyldige kombinationer.
-- [ ] Lås samme-tabel, ingen dubletlagring, brugerens valgte tid, korrekt historisk snapshot, fravalg uden upload, kystdelsfiltrering, privatliv og almindeligt dansk i målrettede kontrakt- og browsertests før release.
+- [x] Tilføj **Indberet tur eller fund** under kontoen, så en indlogget bruger kan rapportere uden først at have startet en tur i RavRadar.
+- [x] Genbrug de samme rapportspørgsmål, den samme validering og den samme eksisterende `observations`-række; ingen ekstra tabel, dubletrække eller separat fundkopi.
+- [x] Lad brugeren vælge korrekt startdato, starttid og varighed. Gem den valgte tid, og brug aldrig de aktuelle forhold på indberetningstidspunktet som historisk erstatning.
+- [x] Gem en efterregistrering uden sikkert historisk vejr-/scoregrundlag som erfaring med tomme snapshotfelter og `calibration_eligible=false`.
+- [x] Tilføj **Afslut uden at indberette**. Efter bekræftelse ryddes den lokale aktive tur uden observationspost eller upload; **Svar senere** bevarer den.
+- [x] Genbrug det zoneafhængige valg af kyststrækning, gem begge ID'er og afvis ugyldige kombinationer.
+- [x] Lås samme tabel, ingen dubletlagring, brugerens valgte tid, forbuddet mod falsk historisk snapshot, fravalg uden upload, kystdelsfiltrering, privatliv og almindeligt dansk i målrettede kontrakttests.
+- [ ] Versionsluk 4.0.265 og bestå målrettede tests, RDKS-/versionskontrol og PR'ens ene exact-head `validate:source`.
+- [ ] Produktionsverificér kontolink og dialog uden at oprette en virkelig brugerpost. En autentificeret indsendelse forbliver en senere bevidst ejerprøve.
 
 ## Aktuel produktleverance – enkelt sprog, komplet tur og privat turlog i 4.0.264
 

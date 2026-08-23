@@ -1966,3 +1966,12 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - Efterfølgende bootstrapaudit fandt 493/673 transporttilstande på 0 uden én eneste faktisk udtransportgate. Den allerede offentlige historik har 42.551 poster og dækker 633 dele med 65–117 timer, men start-0-replay har stadig median 0.
 - Kun 6/633 dele bliver uafhængige af start 0 kontra 100; 607/633 bevarer mindst 50 points priorforskel. Uden passivt neutralt tab er startreserven en eksplicit modelprior og kan ikke udledes ved blot at vente.
 - Neutral startprior 50 anbefales til særskilt ejerbeslutning. Den er ikke implementeret; offentlig profil forbliver legacy, og Candidate G aktiveres ikke.
+## 2026-08-23 – lokal 4.0.265-kandidat: fleksibel kontoindberetning
+
+- En indlogget bruger kan nu indberette en tur eller et fund direkte fra kontoen uden en forudgående turstart. Brugeren skal selv vælge dato og klokkeslæt for turens start samt turens varighed.
+- Kontoindberetningen genbruger de samme spørgsmål og samme `observations`-tabel. Der er ingen ny tabel, databasekolonne, dubletrække eller særskilt fundkopi.
+- Nutidens vejr må aldrig sættes på en ældre tur. Den offentlige klient kan ikke sikkert genskabe et vilkårligt historisk snapshot, så rapporten gemmes som erfaring med tomme forecast-/snapshotfelter, kvalitetsmarkører og `calibration_eligible=false`.
+- Den aktive afslutningsdialog har nu **Indsend tur**, **Svar senere** og et bekræftet **Afslut uden at indberette**. Fravalg rydder den aktive lokale tur med nul observations-, outbox- og Supabase-poster.
+- Begge rapportveje bruger samme zone→kyststrækningsvalg. GPS-spor, rute, præcis position, fri tekst og billeder indsamles ikke.
+- Turloggens brugerflade viser ikke længere den interne databaseforklaring “Der oprettes ikke en ekstra kopi i databasen”.
+- Målrettede tests er grønne. Version, exact-head og produktion udestår. Candidate G, score, vejrdata, geometri, land-/vandpunkter og beskyttede data er uændrede. Se DEC-0064.

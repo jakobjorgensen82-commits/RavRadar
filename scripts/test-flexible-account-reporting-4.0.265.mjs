@@ -1,0 +1,155 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {
+  ACCOUNT_TRIP_REPORT_SOURCE,
+  HISTORICAL_SNAPSHOT_UNAVAILABLE,
+  buildAccountTripReport,
+  toAccountObservationColumns
+} from '../js/services/account-trip-report-contract.js';
+import {
+  beginTripEvidence,
+  discardActiveTripEvidence,
+  listPendingTripEvidence,
+  loadActiveTripEvidence
+} from '../js/services/trip-evidence-store.js';
+import { createTripEvidenceController } from '../js/services/trip-evidence-controller.js';
+
+class MemoryStorage {
+  constructor() { this.values = new Map(); }
+  getItem(key) { return this.values.has(key) ? this.values.get(key) : null; }
+  setItem(key, value) { this.values.set(key, String(value)); }
+  removeItem(key) { this.values.delete(key); }
+}
+
+const tripId = '88888888-8888-4888-8888-888888888888';
+const report = buildAccountTripReport({
+  tripId,
+  startedAt: '2026-08-22T18:00:00.000Z',
+  searchMinutes: 90,
+  mode: 'beach',
+  zoneId: 'DK-B04-12',
+  coastalPartId: 'DK-B04-12-P01',
+  searchCoverage: 'normal',
+  found: true,
+  grams: 4.7
+}, { now: Date.parse('2026-08-23T08:00:00.000Z') });
+
+assert.equal(report.reportSource, ACCOUNT_TRIP_REPORT_SOURCE);
+assert.equal(report.tripEndedAt, '2026-08-22T19:30:00.000Z');
+assert.equal(report.observedAt, '2026-08-22T18:45:00.000Z');
+assert.equal(report.calibrationEligible, false);
+assert.equal(report.historicalSnapshotStatus, HISTORICAL_SNAPSHOT_UNAVAILABLE);
+
+const columns = toAccountObservationColumns(report);
+assert.equal(columns.schema_version, 1, 'Efterregistrering bruger den bagudkompatible historiske observationskontrakt.');
+assert.equal(columns.forecast_target_at, report.observedAt);
+assert.equal(columns.calibration_eligible, false);
+assert.equal(columns.forecast_snapshot_id, null);
+assert.equal(columns.calibration_features, null);
+assert.deepEqual(columns.data_quality_flags, [
+  'account-manual',
+  'historical-snapshot-unavailable',
+  'not-calibration-eligible'
+]);
+assert.equal('weather_snapshot' in columns, false, 'Kontrakten må ikke opfinde et vejrsnapshot.');
+assert.equal(JSON.stringify(columns).match(/latitude|longitude|coordinates|route|track/gi), null);
+
+assert.throws(() => buildAccountTripReport({
+  tripId,
+  startedAt: '2026-08-23T08:00:00.000Z',
+  searchMinutes: 60,
+  mode: 'beach',
+  zoneId: 'DK-B04-12',
+  coastalPartId: 'DK-B04-12-P01',
+  searchCoverage: 'normal',
+  found: false
+}, { now: Date.parse('2026-08-23T08:00:00.000Z') }), /slutte i fremtiden/);
+assert.throws(() => buildAccountTripReport({
+  tripId,
+  startedAt: report.tripStartedAt,
+  searchMinutes: report.searchMinutes,
+  mode: report.mode,
+  zoneId: report.zoneId,
+  coastalPartId: '',
+  searchCoverage: report.searchCoverage,
+  found: report.found
+}, { now: Date.parse('2026-08-23T08:00:00.000Z') }), /Kystdel/);
+assert.throws(() => buildAccountTripReport({
+  tripId,
+  startedAt: report.tripStartedAt,
+  searchMinutes: report.searchMinutes,
+  mode: report.mode,
+  zoneId: report.zoneId,
+  coastalPartId: report.coastalPartId,
+  searchCoverage: report.searchCoverage,
+  found: true,
+  grams: 10000.1
+}, { now: Date.parse('2026-08-23T08:00:00.000Z') }), /0 og 10000/);
+
+const store = new MemoryStorage();
+const startInput = {
+  tripId: '99999999-9999-4999-8999-999999999999',
+  startedAt: '2026-08-23T06:00:00.000Z',
+  mode: 'waders',
+  zoneId: 'DK-B04-12',
+  coastalPartId: 'DK-B04-12-P01',
+  forecastSnapshot: {
+    id: 'rr-test-210',
+    issuedAt: '2026-08-23T05:00:00.000Z',
+    validAt: '2026-08-23T06:00:00.000Z',
+    capturedAt: '2026-08-23T06:00:00.000Z'
+  },
+  calibrationFeatures: {
+    modelVersion: 'ravscore-test', appVersion: '4.0.265',
+    totalScore: 50, huntabilityScore: 50, transportScore: 50, mobilisationScore: 50
+  }
+};
+beginTripEvidence(startInput, store);
+assert.equal(discardActiveTripEvidence(store).tripId, startInput.tripId);
+assert.equal(loadActiveTripEvidence(store), null);
+assert.equal(listPendingTripEvidence(store).length, 0);
+
+let persistCalls = 0;
+const controllerStore = new MemoryStorage();
+const controller = createTripEvidenceController({
+  storage: controllerStore,
+  openDialog: async () => ({ action: 'discard' }),
+  persist: async () => { persistCalls += 1; }
+});
+controller.start(startInput);
+const discarded = await controller.stop({
+  endedAt: '2026-08-23T07:00:00.000Z',
+  zones: [{ id: 'DK-B04-12', name: 'Testområde' }],
+  coastalParts: [{ id: 'DK-B04-12-P01', zoneId: 'DK-B04-12', name: 'Teststrækning' }]
+});
+assert.equal(discarded.status, 'discarded');
+assert.equal(controller.active(), null);
+assert.equal(listPendingTripEvidence(controllerStore).length, 0);
+assert.equal(persistCalls, 0, 'Fravalg må hverken oprette køpost eller kalde Supabase-tjenesten.');
+
+const dialog = fs.readFileSync('js/ui/trip-evidence-dialog.js', 'utf8');
+const account = fs.readFileSync('js/ui/account-panel.js', 'utf8');
+const observationService = fs.readFileSync('js/services/observation-service.js', 'utf8');
+const app = fs.readFileSync('app.js', 'utf8');
+
+for (const marker of [
+  'Indberet tur eller fund',
+  'Vælg dato og tidspunkt for turens start',
+  'Hvor mange minutter ledte du?',
+  'Afslut uden at indberette',
+  'Svar senere',
+  'Hvilken kyststrækning søgte du på?',
+  'RavRadar sætter aldrig dagens vejr på en ældre tur'
+]) assert.ok(dialog.includes(marker), `Turformularen mangler teksten: ${marker}`);
+assert.match(dialog, /name:\s*'startedAt',\s*type:\s*'datetime-local'/, 'Efterregistrering skal have ét tydeligt felt med både dato og klokkeslæt.');
+assert.doesNotMatch(dialog, /name:\s*'startedAt'[^}\n]*\bvalue\s*:/, 'Dato og klokkeslæt må ikke være forudfyldt; brugeren skal selv vælge dem.');
+assert.equal((dialog.match(/function appendReportQuestions/g) || []).length, 1);
+assert.match(dialog, /openTripEvidenceDialog[\s\S]*appendReportQuestions/);
+assert.match(dialog, /openAccountTripReportDialog[\s\S]*appendReportQuestions/);
+assert.match(account, /submitAccountTripReportObservation\(toAccountObservationColumns\(report\)\)/);
+assert.match(observationService, /rest\/v1\/observations\?on_conflict=client_observation_id/);
+assert.doesNotMatch(observationService, /rest\/v1\/(?:manual_reports|account_reports|trip_reports)/);
+assert.match(observationService, /historicalSnapshotStatus:HISTORICAL_SNAPSHOT_UNAVAILABLE/);
+assert.match(app, /status==='discarded'/);
+
+console.log('Fleksibel kontoindberetning: samme observationsrække, valgt tid, ingen opdigtet vejrsnapshot og sikkert fravalg består.');

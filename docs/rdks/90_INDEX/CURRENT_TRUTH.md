@@ -1,11 +1,14 @@
 # Current truth – gældende projektviden
 
-## Aftalt næste brugerdataforbedring – endnu ikke implementeret
+## Lokal 4.0.265-kandidat – fleksibel kontoindberetning uden falske vejrdata
 
-- En indlogget bruger skal senere kunne indberette en tur eller et fund direkte fra kontosiden uden en forudgående turstart og uden en ekstra Supabase-tabel eller dubletpost.
-- Brugeren vælger selv korrekt dato og tidspunkt. Rapportens vejr-/scoresnapshot skal komme fra de historiske forhold på det valgte tidspunkt; mangler sikkert historisk grundlag, er rapporten ikke direkte kalibreringsegnet. Aktuelle forhold på indberetningstidspunktet må aldrig bruges som erstatning.
-- En startet tur skal kunne afsluttes uden indberetning og uden serverpost. **Svar senere** bevarer fortsat turen lokalt.
-- Den eksisterende afslutningsdialog har allerede et afhængigt zone→kyststrækningsvalg. Samme formular og validering skal genbruges fra kontoen.
+- En indlogget bruger kan vælge **Indberet tur eller fund** på kontosiden uden en forudgående turstart. Indberetningen bruger samme spørgsmål og eksisterende `observations`-tabel; der oprettes ingen ekstra tabel, dubletpost eller fundkopi.
+- Brugeren vælger korrekt startdato, starttid og varighed. Valget gemmes som start, afslutning og midtpunkt. Aktuelle forhold på indberetningstidspunktet kobles aldrig på som historisk vejr eller score.
+- Klienten kan ikke sikkert genskabe et vilkårligt historisk snapshot. Kontoindberetningen gemmes derfor med schema 1, tomme forecast-/snapshotfelter, entydige kvalitetsmarkører og `calibration_eligible=false`. Den er erfaring og kan senere sammenstilles kontrolleret med historiske data, men bruges ikke direkte til scorejustering.
+- Den lokale sandsynlighedsberegning sorterer udtrykkeligt alle rækker med `calibration_eligible=false` fra. Ældre rækker uden feltet bevarer deres eksisterende adfærd.
+- En startet tur kan afsluttes med **Afslut uden at indberette** efter bekræftelse. Det rydder kun den lokale aktive tur og opretter ingen observations-/outbox-/serverpost. **Svar senere** bevarer fortsat turen lokalt.
+- Begge indgange bruger samme afhængige zone→kyststrækningsvalg og afviser en kyststrækning fra en anden zone. GPS-spor, rute, præcis position, fri tekst og billeder indsamles ikke.
+- Målrettede kontrakttests er grønne. Kandidaten afventer versionslukning, PR-exact-head og produktion. Candidate G, `20/50/30`, vejrdata, geometri og land-/vandpunkter er uændrede. Se DEC-0064.
 
 ## Produktionsverificeret 4.0.264 – forståeligt brugerflow og privat turlog uden dobbeltlagring
 

@@ -1,4 +1,4 @@
-import { loadAdaptiveModel, modelAdjustment } from './adaptive-model.js?v=4.0.264';
+import { loadAdaptiveModel, modelAdjustment } from './adaptive-model.js?v=4.0.265';
 const clamp=(v,min=0,max=100)=>Math.min(max,Math.max(min,v));
 const sigmoid=x=>1/(1+Math.exp(-x));
 const asFinite=v=>(v===null||v===undefined||v===''||typeof v==='boolean')?null:(Number.isFinite(Number(v))?Number(v):null);
@@ -16,7 +16,8 @@ function comparableRows(observations,zone,weather){
 export function predictAmberChance({baseScore,zone,weather={},history={},observations=[],model=loadAdaptiveModel()}={}){
   if(asFinite(baseScore)===null)return {available:false,probability:null,confidence:0,label:'Ingen prognose',reasons:['RavScore mangler.']};
   const adaptive=modelAdjustment({model,zone,weather});
-  const comparable=comparableRows(observations,zone,weather);const empirical=betaEstimate(comparable.rows);
+  const calibrationRows=observations.filter(row=>row?.calibration_eligible!==false);
+  const comparable=comparableRows(calibrationRows,zone,weather);const empirical=betaEstimate(comparable.rows);
   const modelProbability=sigmoid((Number(baseScore)+adaptive.adjustment-55)/13);
   const evidenceWeight=Math.min(.50,comparable.rows.length/60);
   const probability=clamp(Math.round(100*((1-evidenceWeight)*modelProbability+evidenceWeight*empirical.rate)));

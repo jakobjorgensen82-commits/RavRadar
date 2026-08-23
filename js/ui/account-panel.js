@@ -1,5 +1,7 @@
-import { authEnabled, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.264";
-import { getLocalObservations, getOwnTripObservations } from "../services/observation-service.js?v=4.0.264";
+import { authEnabled, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.265";
+import { getLocalObservations, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.265";
+import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.265";
+import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.265";
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>'"]/g, character => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" })[character]);
@@ -10,9 +12,9 @@ function rowKey(row = {}) {
 }
 
 function tripDate(row) {
-  const parsed = Date.parse(row.observed_at || row.trip_started_at || '');
+  const parsed = Date.parse(row.trip_started_at || row.observed_at || '');
   return Number.isFinite(parsed)
-    ? new Intl.DateTimeFormat('da-DK', { dateStyle: 'medium' }).format(new Date(parsed))
+    ? new Intl.DateTimeFormat('da-DK', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(parsed))
     : 'Dato mangler';
 }
 
@@ -63,9 +65,10 @@ function renderHistoryRows(rows, context) {
     const part = displayName(row.actual_coastal_part_id, partNames, 'Kystdel ikke angivet');
     const grams = found && Number.isFinite(Number(row.grams)) ? `<span>${escapeHtml(Number(row.grams).toLocaleString('da-DK'))} g</span>` : '';
     const pending = row._source === 'device' && row.sync_status !== 'synced' ? '<span class="trip-log-pending">Venter på at blive sendt</span>' : '';
+    const manual = row.data_quality_flags?.includes('account-manual') ? '<span>Efterregistreret</span>' : '';
     return `<article class="trip-log-row">
       <div><strong>${escapeHtml(tripDate(row))}</strong><span>${escapeHtml(zone)} · ${escapeHtml(part)}</span></div>
-      <div class="trip-log-facts"><span>${huntModeLabel(row.hunt_mode)}</span><span>${escapeHtml(minutesLabel(row.search_minutes))}</span><span class="${found ? 'trip-found' : 'trip-not-found'}">${found ? 'Fandt rav' : 'Fandt ikke rav'}</span>${grams}${pending}</div>
+      <div class="trip-log-facts"><span>${huntModeLabel(row.hunt_mode)}</span><span>${escapeHtml(minutesLabel(row.search_minutes))}</span><span class="${found ? 'trip-found' : 'trip-not-found'}">${found ? 'Fandt rav' : 'Fandt ikke rav'}</span>${grams}${manual}${pending}</div>
     </article>`;
   }).join('');
 }
@@ -83,7 +86,7 @@ async function showTripHistory(dialog, context) {
   content.innerHTML = `
     <button id="tripHistoryBack" class="text-link back-link" type="button">← Tilbage til min konto</button>
     <h2>Mine ture og fund</h2>
-    <p>Her ser du de samme ture, som du har indsendt til RavRadar. Der oprettes ikke en ekstra kopi i databasen.</p>
+    <p>Her ser du de ture, som du har indsendt til RavRadar.</p>
     ${loadError ? '<p class="notice">Supabase kunne ikke hentes lige nu. Eventuelle ture, der stadig ligger på denne enhed, vises nedenfor.</p>' : ''}
     <div class="trip-log-summary"><div><strong>${rows.length}</strong><span>Ture</span></div><div><strong>${foundCount}</strong><span>Ture med fund</span></div><div><strong>${escapeHtml(minutesLabel(totalMinutes))}</strong><span>Samlet søgetid</span></div></div>
     <div class="trip-log-list">${rows.length ? renderHistoryRows(rows, context) : '<p class="empty-state-inline">Du har endnu ingen indsendte ture på denne konto.</p>'}</div>
@@ -92,7 +95,31 @@ async function showTripHistory(dialog, context) {
   content.querySelector('#tripHistoryBack')?.addEventListener('click', () => renderAccount(dialog, context));
 }
 
-function renderAccount(dialog, context) {
+async function showAccountTripReport(dialog, context) {
+  dialog.close();
+  try {
+    const answer = await openAccountTripReportDialog({
+      mode: context.mode,
+      zoneId: context.zoneId,
+      coastalPartId: context.coastalPartId,
+      zones: context.zones,
+      coastalParts: context.coastalParts
+    });
+    if (!dialog.open) dialog.showModal();
+    if (!answer) return renderAccount(dialog, context);
+    const report = buildAccountTripReport({ ...answer, tripId: crypto.randomUUID() });
+    const result = await submitAccountTripReportObservation(toAccountObservationColumns(report));
+    const message = result.stored === 'supabase'
+      ? 'Tak. Turen er sendt til RavRadar og kan nu ses under Mine ture og fund.'
+      : 'Turen er gemt på denne enhed og sendes automatisk, når forbindelsen er tilbage.';
+    renderAccount(dialog, context, message);
+  } catch (error) {
+    if (!dialog.open) dialog.showModal();
+    renderAccount(dialog, context, error?.message || 'Turen kunne ikke indsendes. Prøv igen.');
+  }
+}
+
+function renderAccount(dialog, context, message = '') {
   const session = currentSession();
   const signedIn = Boolean(session?.access_token && session?.user?.id);
   const content = dialog.querySelector('.dialog-content');
@@ -100,6 +127,8 @@ function renderAccount(dialog, context) {
     <h2>Min konto</h2>
     <p>Du er logget ind${session.user?.email ? ` som <strong>${escapeHtml(session.user.email)}</strong>` : ''}.</p>
     <p>Når du indsender en ravtur, gemmes den én gang i RavRadars database og knyttes til din konto, så kun du kan se den i din turlog.</p>
+    ${message ? `<p class="notice" role="status">${escapeHtml(message)}</p>` : ''}
+    <a id="accountTripReportLink" class="account-feature-link" href="#indberet-tur">Indberet tur eller fund <span aria-hidden="true">→</span></a>
     <a id="tripHistoryLink" class="account-feature-link" href="#mine-ture">Mine ture og fund <span aria-hidden="true">→</span></a>
     <p class="account-privacy-note">RavRadar sender ikke din præcise position eller GPS-rute. Oplysningerne bruges til at undersøge, hvornår score-reglerne rammer rigtigt og forkert.</p>
     <button id="signOutButton" class="primary-button" type="button">Log ud</button>` : `
@@ -115,6 +144,7 @@ function renderAccount(dialog, context) {
       <button name="action" value="magic" type="submit">Send loginlink til min e-mail</button><p id="authStatus" class="form-status" role="status"></p>
     </form>` : '<div class="notice">Login er ikke aktiveret endnu.</div>'}`;
 
+  content.querySelector('#accountTripReportLink')?.addEventListener('click', event => { event.preventDefault(); showAccountTripReport(dialog, context); });
   content.querySelector('#tripHistoryLink')?.addEventListener('click', event => { event.preventDefault(); showTripHistory(dialog, context); });
   content.querySelector('#signOutButton')?.addEventListener('click', async () => { await signOut(); renderAccount(dialog, context); });
   content.querySelector('#authForm')?.addEventListener('submit', async event => {

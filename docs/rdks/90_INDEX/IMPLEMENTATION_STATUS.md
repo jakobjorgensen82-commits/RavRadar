@@ -1,6 +1,23 @@
-# Implementeringsstatus – brugerflow og privat turlog i 4.0.264
+# Implementeringsstatus – fleksibel kontoindberetning i 4.0.265
 
-## Aktuel lokale kandidat
+## Aktuel lokal kandidat
+
+- [x] Tilføj **Indberet tur eller fund** under en indlogget konto.
+- [x] Genbrug samme rapportspørgsmål og samme `observations`-tabel uden ny databaseændring eller dobbeltlagring.
+- [x] Gem brugerens valgte starttid, afledte sluttid og midtpunkt; knyt aldrig nutidens vejr til en historisk indberetning.
+- [x] Markér efterregistreringen `calibration_eligible=false`, når et sikkert historisk snapshot ikke kan rekonstrueres.
+- [x] Genbrug zone→kyststrækning og afvis kombinationer på tværs af zoner.
+- [x] Tilføj bekræftet **Afslut uden at indberette** med nul observations-/outbox-/serverposter; bevar **Svar senere**.
+- [x] Vis klokkeslæt og mærk efterregistrering i brugerens eksisterende private turlog.
+- [x] Bestå de målrettede kontrakt-, observation-, turlog- og syntakskontroller.
+- [ ] Opdatér version, RDKS, håndbog og changelog og bestå nødvendige målrettede versions-/dokumentationskontroller.
+- [ ] Bestå én fuld `validate:source` på PR'ens eksakte head, merge og produktionsverificér.
+
+Ingen score, Candidate G, vejrdata, geometri eller land-/vandpunkter er ændret. En rigtig autentificeret indsendelse kræver senere en bevidst ejerprøve, fordi den opretter en virkelig Supabase-række.
+
+# Historisk implementeringsstatus – brugerflow og privat turlog i 4.0.264
+
+## Afsluttet 4.0.264-leverance
 
 - [x] Fjern den gamle GPS-baserede parallelrejse fra den aktive turknap og brug den komplette v2-rejse direkte.
 - [x] Vis gamle og nye egne ture under **Mine ture og fund** via den eksisterende `observations`-tabel og RLS.

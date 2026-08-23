@@ -46,8 +46,8 @@ function requiredIso(value, label) {
 function optionalGrams(value, found) {
   if (!found || value === '' || value == null) return null;
   const grams = Number(value);
-  if (!Number.isFinite(grams) || grams < 0 || grams > 100000) {
-    throw new Error('Gram skal være et tal mellem 0 og 100000.');
+  if (!Number.isFinite(grams) || grams < 0 || grams > 10000) {
+    throw new Error('Gram skal være et tal mellem 0 og 10000.');
   }
   return Math.round(grams * 10) / 10;
 }
