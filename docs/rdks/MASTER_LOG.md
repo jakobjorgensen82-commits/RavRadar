@@ -5,7 +5,8 @@
 - En nul-rækkers feltkontrol fandt præcis én manglende kolonne, `data_quality_flags`. Policyoversigten viste samtidig, at SELECT-policyen for egne ture ikke var installeret.
 - Den idempotente migration tilføjede feltet, genoprettede den private policy, gav SELECT til `authenticated` og genindlæste PostgREST-schemaet. Den indeholdt ingen ændring eller sletning af observationer.
 - Efter rettelsen accepteres hele turlogfeltlisten med HTTP 200/`limit=0`, og dashboardet viser **users can read own observations / SELECT / authenticated**.
-- 4.0.266 versionsstyrer migration, almindelig fejltekst, tests og domænekravet. Exact-head, merge, frisk produktion og et nyt interaktivt link/turlogbevis udestår. Se DEC-0065.
+- 4.0.266 versionsstyrer migration, almindelig fejltekst, tests og domænekravet. PR #113/exact-head `32662085932`, merge `db4db876` og produktion `32662155582` bestod.
+- Et nyt magic link returnerede til den rene RavRadar-adresse, kontoen blev indlæst, og den private turlog hentede uden fejl. Den tidligere efterregistrering ligger i ejerens oprindelige Chrome-outbox; sidste ejertrin er at genindlæse netop den fane og kontrollere eftersendelsen. Se DEC-0065.
 
 ## 2026-08-23 – aftalt næste indberetningsforbedring
 

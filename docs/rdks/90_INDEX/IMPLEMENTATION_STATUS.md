@@ -1,6 +1,6 @@
 # Implementeringsstatus – produktionslogin og privat turlog i 4.0.266
 
-## Aktiv leverance
+## Produktionsverificeret leverance
 
 - [x] Reproducer magic-link-fejlen og fastslå, at Supabases Site URL var localhost og redirect-listen tom.
 - [x] Sæt central Site URL og tilladt redirect til den aktuelle GitHub Pages-origin.
@@ -10,9 +10,10 @@
 - [x] Versionsstyr migrationen, tabelgrantet, almindelig fejltekst og regressionstesten i repositoryet.
 - [x] Dokumentér den bindende auth-ændring ved senere flytning til `ravradar.dk`.
 - [x] Bestå målrettede konto-, efterregistrerings-, auth- og syntakstests lokalt.
-- [ ] Bestå versions-/RDKS-kontroller og én exact-head `validate:source` i PR.
-- [ ] Merge den eksakte head og verificér nyt 4.0.266-artifact uden score-, vejr- eller geometriændring.
-- [ ] Gennemfør et nyt interaktivt magic link og verificér den eksisterende efterregistrering i **Mine ture og fund**; brug ikke det tidligere viste token.
+- [x] Bestå versions-/RDKS-kontroller og én exact-head `validate:source` i PR #113, kørsel `32662085932`, head `bd3b4984`.
+- [x] Merge den eksakte head som `db4db876` og verificér produktionskørsel `32662155582` med frisk vejr, fuld validering, releasegate, artifact og Pages.
+- [x] Gennemfør et nyt interaktivt magic link til den rene produktionsadresse og verificér, at **Mine ture og fund** kan læses uden fejl; det tidligere viste token er ikke brugt.
+- [ ] Genindlæs ejerens oprindelige Chrome-fane og bekræft, at dens lokale afventende efterregistrering eftersendes og derefter vises i **Mine ture og fund**. Codex-browseren har en anden lokal outbox og kan derfor ikke udføre dette sidste trin.
 
 Ingen eksisterende observationer, score, Candidate G, vejrdata, geometri eller land-/vandpunkter er ændret. Se DEC-0065.
 
