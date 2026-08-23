@@ -1,6 +1,6 @@
 # RavRadar - aktivt roadmap
 
-## Aktuel 4.0.265-kandidat – fleksibel og ærlig indberetning
+## Produktionsverificeret 4.0.265 – fleksibel og ærlig indberetning
 
 - [x] Tilføj **Indberet tur eller fund** under kontoen, så en indlogget bruger kan rapportere uden først at have startet en tur i RavRadar.
 - [x] Genbrug de samme rapportspørgsmål, den samme validering og den samme eksisterende `observations`-række; ingen ekstra tabel, dubletrække eller separat fundkopi.
@@ -10,8 +10,8 @@
 - [x] Genbrug det zoneafhængige valg af kyststrækning, gem begge ID'er og afvis ugyldige kombinationer.
 - [x] Lås samme tabel, ingen dubletlagring, brugerens valgte tid, forbuddet mod falsk historisk snapshot, fravalg uden upload, kystdelsfiltrering, privatliv og almindeligt dansk i målrettede kontrakttests.
 - [x] Versionsluk 4.0.265 og bestå målrettede tests samt RDKS-/versionskontrol. Første exact-head `32658093582` fandt et efterladt 4.0.264-versionsmærke i profilomskifteren og stoppede før merge; mærket og versionsværktøjet er rettet score-neutralt.
-- [ ] Bestå den nye exact-head `validate:source` efter versionsrettelsen.
-- [ ] Produktionsverificér kontolink og dialog uden at oprette en virkelig brugerpost. En autentificeret indsendelse forbliver en senere bevidst ejerprøve.
+- [x] Bestå PR #111's endelige exact-head `32658661075` og merge den eksakte head som `cb7d2232`.
+- [x] Produktionsverificér via `32658724861`, live `rr-20260823184330-210` og en målrettet, ikke-dataskrivende kontrol, at 4.0.265 er udgivet med selvvalgt dato/tid uden forudfyldning og sikkert fravalg. En autentificeret indsendelse forbliver en senere bevidst ejerprøve.
 
 ## Aktuel produktleverance – enkelt sprog, komplet tur og privat turlog i 4.0.264
 

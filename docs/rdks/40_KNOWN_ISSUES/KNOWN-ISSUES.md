@@ -1,9 +1,13 @@
 # Kendte åbne og overvågede forhold
 
-## 4.0.264 brugerrejse og konto
+## 4.0.265 fleksibel kontoindberetning
 
-- **ISSUE-TRIP-REPORTING-CHOICE – LØST LOKALT / AFVENTER EXACT-HEAD OG PRODUKTION:** Kontoen har nu **Indberet tur eller fund**, og den aktive afslutningsdialog har **Indsend tur**, **Svar senere** og et bekræftet **Afslut uden at indberette**. Fravalg rydder kun den lokale aktive tur og opretter ingen observations-, outbox- eller Supabase-post. Kontoindberetningen genbruger samme `observations`-tabel, brugerens valgte tid og tomme snapshotfelter med `calibration_eligible=false`; nutidens vejr bruges aldrig som historisk erstatning. Se DEC-0064.
-- **ISSUE-TRIP-COASTAL-PART-REPORTING – LØST LOKALT / AFVENTER EXACT-HEAD OG PRODUKTION:** Den aktive tur og kontoindberetningen bruger nu samme zoneafhængige kyststrækningsvalg, gemmer zone og kystdel og afviser en kyststrækning fra en anden zone.
+- **ISSUE-ACCOUNT-REPORTING-RELEASE-CLOSURE – PRODUKTIONSVERIFICERET LØST:** De tre første PR-kørsler stoppede sikkert på et efterladt profilversionsmærke og to dokumentationsmangler. PR #111/exact-head `32658661075`, merge `cb7d2232`, produktion `32658724861` og live `rr-20260823184330-210` lukker dem. Efterregistreringen kræver selvvalgt dato/tid uden forudfyldning, genbruger samme observationsrække og kan fravælges uden upload; scorelogikken er uændret.
+
+## 4.0.264–4.0.265 brugerrejse og konto
+
+- **ISSUE-TRIP-REPORTING-CHOICE – PRODUKTIONSVERIFICERET LØST:** Kontoen har nu **Indberet tur eller fund**, og den aktive afslutningsdialog har **Indsend tur**, **Svar senere** og et bekræftet **Afslut uden at indberette**. Fravalg rydder kun den lokale aktive tur og opretter ingen observations-, outbox- eller Supabase-post. Kontoindberetningen genbruger samme `observations`-tabel, brugerens valgte tid og tomme snapshotfelter med `calibration_eligible=false`; nutidens vejr bruges aldrig som historisk erstatning. Se DEC-0064 og produktion `32658724861`.
+- **ISSUE-TRIP-COASTAL-PART-REPORTING – PRODUKTIONSVERIFICERET LØST:** Den aktive tur og kontoindberetningen bruger nu samme zoneafhængige kyststrækningsvalg, gemmer zone og kystdel og afviser en kyststrækning fra en anden zone. PR #111/exact-head `32658661075` og produktion `32658724861` beviser kontrakten.
 - **ISSUE-ACCOUNT-TRIP-LOG – PRODUKTIONSVERIFICERET KODE / AFVENTER INTERAKTIV KONTO:** Kontoen har nu **Mine ture og fund**, som læser den eksisterende `observations`-tabel gennem RLS. Ingen ny tabel, serverrække eller kopi oprettes. Læsningen er doven, feltbegrænset og højst 100 ture; en autentificeret ejerprøve skal senere bekræfte den faktiske private liste uden at sende en automatisk loginmail nu.
 - **ISSUE-TRIP-DUPLICATE-FLOWS – PRODUKTIONSVERIFICERET LØST:** Den gamle turknap kunne starte en GPS-baseret rejse før den komplette v2-dialog og efterlade sporing aktiv ved afbrydelse. Live brugerflade går nu direkte gennem v2 og oplyser, at GPS/rute ikke indsamles.
 - **ISSUE-MAGIC-LINK-USER-HYDRATION – PRODUKTIONSVERIFICERET KODE / AFVENTER INTERAKTIV MAIL:** Callbacken henter den aktuelle Supabase-bruger før kontoejerskab bruges. Loginlinkets forklaring og live redirectkontrakt er kontrolleret; rigtig magic-link-mail, adgangskodelogin og udlogning kræver ejerens senere interaktive prøve.

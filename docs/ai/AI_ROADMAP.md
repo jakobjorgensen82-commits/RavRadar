@@ -1,6 +1,6 @@
 # AI Roadmap – RavRadar 4.0.243+
 
-## 4.0.265-kandidat – kontoindberetning og frivilligt fravalg
+## 4.0.265 – produktionsverificeret kontoindberetning og frivilligt fravalg
 
 - [x] En indlogget bruger kan indberette en tur eller et fund fra kontosiden uden først at starte en tur.
 - [x] Kontoindberetningen genbruger de aktive, forståelige rapportspørgsmål og samme `observations`-række. Der opstår ingen ekstra Supabase-tabel eller dubletpost.
@@ -9,7 +9,7 @@
 - [x] En startet tur har **Afslut uden at indberette**, som efter bekræftelse rydder den lokale tur uden observations- eller serverpost. **Svar senere** bevarer fortsat turen lokalt.
 - [x] Begge rapportveje bruger samme afhængige zone→kyststrækning-menu og validering.
 - [x] Målrettede tests for kontrakt, lagring, fravalg, kontooversigt og almindeligt dansk er grønne.
-- [ ] Versionsluk, bestå nødvendige dokumentations-/versionskontroller og én exact-head-kildegate i GitHub; produktionsverificér derefter den synlige, ikke-dataskrivende brugerflade.
+- [x] Versionsluk og bestå PR #111/exact-head `32658661075`, merge `cb7d2232` og fuld produktion `32658724861`. Live `rr-20260823184330-210` er 4.0.265 på 210/673; den udgivne, ikke-dataskrivende kontrol bekræfter selvvalgt dato/tid uden forudfyldning samt fravalg.
 
 ## 4.0.264 – brugerflow, login og privat turlog
 

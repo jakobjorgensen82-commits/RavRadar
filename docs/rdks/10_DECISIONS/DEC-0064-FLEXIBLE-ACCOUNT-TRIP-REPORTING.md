@@ -1,6 +1,6 @@
 # DEC-0064: Fleksibel kontoindberetning uden falske vejrdata eller dobbeltlagring
 
-**Status:** IMPLEMENTERET LOKALT / AFVENTER EXACT-HEAD OG PRODUKTION
+**Status:** PRODUKTIONSVERIFICERET
 
 **Dato:** 2026-08-23
 
@@ -48,3 +48,7 @@ Under udvikling køres kun de målrettede tests for denne kontrakt samt nødvend
 - Candidate G, `20/50/30`, scorelogik, vejrdata og profilvalg ændres ikke.
 - Der ændres ingen geometri, land-/vandpunkter, artifact, protected-dirty-data eller private cachedata.
 - Der tilføjes ingen Supabase-tabel eller databasekolonne.
+
+## Produktionsbevis
+
+PR #111 bestod exact-head `32658661075` og blev merged som `cb7d2232`. Produktion `32658724861` bestod frisk vejr, fuld validering, releasegate, Supabase og Pages. Live `rr-20260823184330-210` er version 4.0.265 på 210 zoner og 673 kystdele. Den målrettede, ikke-dataskrivende livekontrol bekræfter den udgivne efterregistreringsformular, dens krævede selvvalgte dato og tid uden forudfyldning samt **Afslut uden at indberette**.
