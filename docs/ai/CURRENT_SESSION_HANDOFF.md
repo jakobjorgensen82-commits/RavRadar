@@ -1,5 +1,16 @@
 # RavRadar - aktuelt Codex-handoff
 
+## Checkpoint 2026-08-23 – 4.0.260 versionsbundet scoreomskifter under levering
+
+- Seneste naturlige runtime er `rr-20260823075018-210` med fælles state-reference 06:00Z. Den dataminimerede audit består 210 zoner, 673 kystdele og 1.346 modeevalueringer; alle 673 tidligere tilstande accepteres, ingen nulstilles, og dokumenteret alder er 6/6 timer.
+- Ejeren accepterer nattens seks timer som praktisk evidens til næste trin. Det er ikke et 48-timersbevis, og 48 timers mobiliseringsaftrapning ændres ikke.
+- Branch `codex/candidate-g-versioned-profile-switch` bygger 4.0.260 og DEC-0058. Standard, aktiv og rollback er fortsat `RRS-CURRENT-B0-4.0.247` med 25/40/35; Candidate G er ikke aktiveret.
+- Et fremtidigt Candidate G-valg kræver eksplicit aktiveringsflag, komplet global dækning, frisk slutshadow-id og særskilt ejerbeslutnings-id. Mangler ét krav, vælges legacy globalt; automatisk aktivering er altid falsk.
+- Profilen følger offentlig startpakke, detaljepakke og manifest. Candidate G-adapteren bevarer 20/50/30, waderskontrakten og udtransportforklaringen uden sikkerheds- eller stedmodel.
+- Målrettede tests og samlet lokal `scripts/validate-source.ps1`, inklusive releasegate, er grønne. Exact-head, fuld post-merge-produktion, frisk offentlig slutshadow og 210/673-browserkontrol udestår.
+- Artifact, protected-dirty-data, privat cache, geometri og land-/vandpunkter må ikke berøres.
+
+
 ## Checkpoint 2026-08-23 – første naturlige Candidate G-statefortsættelse
 
 - Naturlig schedule `32613284735` på docs-only `main`/`600e8a45` bestod frisk data, fuld validering, releasegate, artifact og Pages. Den offentliggjorte runtime er `rr-20260823023951-210` med 210 zoner og 673 kystdele.

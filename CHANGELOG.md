@@ -168,3 +168,11 @@
 - Neutral og missing giver intet passivt tab. 24-/48-timers neutral halvering bevares som følsomhed, ikke produktadfærd.
 - Regimemodellen kan nu fortsætte en kompakt afledt tilstand over en pipelinegrænse. En opdelt syntetisk kørsel reproducerer potentiale, effektive udtransporttimer og 13-timers nul-gate eksakt.
 - Offentlig RavScore `25/40/35`, UI, produktion, private payloads, artifact, protected-dirty-data, geometri og land-/vandpunkter er uændrede.
+# 4.0.260 – versionsbundet RavScore-omskifter uden offentlig aktivering (2026-08-23)
+
+- RavRadar kan nu vælge én eksakt RavScore-profil for hele den lokale 210/673-runtime og rulle deterministisk tilbage til `RRS-CURRENT-B0-4.0.247`.
+- Standard, aktiv og rollback er fortsat offentlig `25/40/35`; Candidate G's `20/50/30` er ikke aktiveret.
+- Candidate G kræver eksplicit aktivering, komplet global dækning, frisk grøn slutshadow og særskilt ejerbeslutning. Manglende eller ukendt konfiguration falder fail-closed tilbage for hele datasættet.
+- Profilkontrakten følger startpakke, detaljepakke og manifest. Nye tests låser legacyidentitet, Candidate G-projektion, udtransportforklaring, forbud mod blandede profiler og eksakt rollback.
+- Den naturlige state er dokumenteret videreført i seks timer på alle 673 dele uden nulstilling. Det er praktisk evidens efter ejerbeslutning, ikke et 48-timersbevis.
+- Ingen artifact-, cache-, geometri-, punkt-, bund-, sikkerheds- eller offentlig scoreændring indgår.

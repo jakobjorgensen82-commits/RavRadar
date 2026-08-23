@@ -11,6 +11,13 @@ import {
   CANDIDATE_G_STATE_SCHEMA_VERSION,
   CANDIDATE_G_STATE_VARIANT_ID,
 } from '../js/core/ravscore-candidate-g-state-pipeline.js';
+import {
+  CANDIDATE_G_RAVSCORE_PROFILE_ID,
+  PUBLIC_RAVSCORE_ACTIVATION_EVIDENCE,
+  PUBLIC_RAVSCORE_PROFILE_SELECTION,
+  resolvePublicRavScoreProfile,
+  selectPublicRavScoreResult,
+} from '../js/core/ravscore-profile-switch.js';
 import { recommendWaterStationBracket } from '../js/core/water-station-routing.js';
 import {
   DMI_FORECAST_HOURS,
@@ -1041,6 +1048,7 @@ function compactCandidateGMode(result) {
   return {
     available: true,
     score: result.score,
+    modelId: result.modelVersion,
     components: result.components,
     weightedContributions: result.scoreCalculation?.weightedContributions ?? null,
     additiveScore: result.scoreCalculation?.additiveScore ?? null,
@@ -1192,6 +1200,24 @@ function scoreCoastalPartsRuntime(
     }
   }
 
+  const candidateCoverageReady = partRows.length === Number(contract?.partCount)
+    && partRows.every(row => row.scores.length > 0
+      && row.scores.every(score => ['waders', 'beach'].every(mode =>
+        score?.candidateG?.modes?.[mode]?.available === true
+        && score.candidateG.modes[mode].modelId === CANDIDATE_G_RAVSCORE_PROFILE_ID
+        && Number.isFinite(score.candidateG.modes[mode].score))));
+  const scoreProfile = resolvePublicRavScoreProfile({
+    selection: PUBLIC_RAVSCORE_PROFILE_SELECTION,
+    evidence: PUBLIC_RAVSCORE_ACTIVATION_EVIDENCE,
+    candidateCoverageReady,
+  });
+  const selectedMode = (scoreRow, mode) => selectPublicRavScoreResult({
+    profile: scoreProfile,
+    legacy: scoreRow?.[mode] ?? null,
+    candidateG: scoreRow?.candidateG?.modes?.[mode] ?? null,
+    mode,
+  });
+
   const partRowsByZone = new Map();
   for (const row of partRows) (partRowsByZone.get(row.zoneId) ?? partRowsByZone.set(row.zoneId, []).get(row.zoneId)).push(row);
   const zones = {};
@@ -1205,7 +1231,7 @@ function scoreCoastalPartsRuntime(
       for (const mode of ['waders', 'beach']) {
         const available = rows.map(row => {
           const scoreRow=row.scores.find(score => score.time === time);
-          const detail=scoreRow?.[mode];
+          const detail=scoreRow ? selectedMode(scoreRow, mode) : null;
           return {partId:row.partId,name:row.name,score:detail?.score,detail,weather:scoreRow?.weather};
         }).filter(row => Number.isFinite(row.score));
         if (available.length !== expectedPartCount) {
@@ -1248,9 +1274,10 @@ function scoreCoastalPartsRuntime(
       variantId: CANDIDATE_G_STATE_VARIANT_ID,
       profileId: CANDIDATE_G_STATE_PROFILE_ID,
       weights: CANDIDATE_G_WEIGHTS,
-      scoreImpact: 'diagnostic-only',
+      scoreImpact: scoreProfile.activeProfileId === CANDIDATE_G_RAVSCORE_PROFILE_ID
+        ? 'active-public' : 'diagnostic-only',
       automaticActivationAllowed: false,
-      publicScoreChanged: false,
+      publicScoreChanged: scoreProfile.activeProfileId === CANDIDATE_G_RAVSCORE_PROFILE_ID,
       referenceAt: score.candidateG.referenceAt,
       initialStateAccepted: row.candidateGState?.initialStateAccepted ?? null,
       initialStateResetReason: row.candidateGState?.initialStateResetReason ?? null,
@@ -1263,13 +1290,19 @@ function scoreCoastalPartsRuntime(
       onshoreDirectionDeg: row.onshoreDirectionDeg,
       onshoreDirectionSource: row.onshoreDirectionSource,
       flowPoints,
-      current: score ? { ...score, candidateG: undefined } : null,
+      current: score ? {
+        ...score,
+        candidateG: undefined,
+        waders: selectedMode(score, 'waders'),
+        beach: selectedMode(score, 'beach'),
+      } : null,
       candidateG,
     }];
   }));
   return {
     schemaVersion: 1, enabled: true, datasetVersion: contract.datasetVersion, sourceRunId: contract.sourceRunId,
     generatedAt, marginPoints: 7, expectedPartCount: contract.partCount, scoredPartCount: partRows.length,
+    scoreProfile,
     currentPilotMode: liveCurrentPilot?.mode ?? 'unavailable',
     currentPilotEnabled: liveCurrentPilot?.mode === 'controlled-live' && liveCurrentPilot?.enabled === true,
     parts, zones

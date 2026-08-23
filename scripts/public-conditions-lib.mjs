@@ -31,7 +31,7 @@ function buildStartupCoastalParts(full){
     zones[zoneId]={expectedPartCount:zone.expectedPartCount||0,scoredPartCount:zone.scoredPartCount||0,currentReferenceAt:row?.time||null,hourly:row?[row]:[]};
   }
   const parts=Object.fromEntries([...winnerIds].filter(id=>source.parts?.[id]).map(id=>[id,source.parts[id]]));
-  return {schemaVersion:source.schemaVersion,enabled:source.enabled===true,datasetVersion:source.datasetVersion||null,sourceRunId:source.sourceRunId||null,generatedAt:source.generatedAt||full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||source.productionReferenceAt||null,marginPoints:source.marginPoints||7,expectedPartCount:source.expectedPartCount||0,scoredPartCount:source.scoredPartCount||0,parts,zones};
+  return {schemaVersion:source.schemaVersion,enabled:source.enabled===true,datasetVersion:source.datasetVersion||null,sourceRunId:source.sourceRunId||null,generatedAt:source.generatedAt||full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||source.productionReferenceAt||null,marginPoints:source.marginPoints||7,scoreProfile:source.scoreProfile||null,expectedPartCount:source.expectedPartCount||0,scoredPartCount:source.scoredPartCount||0,parts,zones};
 }
 
 function buildDetailedCoastalParts(full){
@@ -40,7 +40,7 @@ function buildDetailedCoastalParts(full){
     const row=currentLocalRow(zone,source,full);
     return [zoneId,{...zone,currentReferenceAt:row?.time||null}];
   }));
-  return {schemaVersion:source.schemaVersion,enabled:source.enabled===true,datasetVersion:source.datasetVersion||null,sourceRunId:source.sourceRunId||null,generatedAt:source.generatedAt||full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||source.productionReferenceAt||null,marginPoints:source.marginPoints||7,expectedPartCount:source.expectedPartCount||0,scoredPartCount:source.scoredPartCount||0,parts:source.parts||{},zones};
+  return {schemaVersion:source.schemaVersion,enabled:source.enabled===true,datasetVersion:source.datasetVersion||null,sourceRunId:source.sourceRunId||null,generatedAt:source.generatedAt||full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||source.productionReferenceAt||null,marginPoints:source.marginPoints||7,scoreProfile:source.scoreProfile||null,expectedPartCount:source.expectedPartCount||0,scoredPartCount:source.scoredPartCount||0,parts:source.parts||{},zones};
 }
 
 export function buildPublicConditions(full){
@@ -99,6 +99,7 @@ export function buildPublicManifest(full, publicText, detailsText){
     fullConditionsPath:'./conditions.json',
     currentPilotHistoryPath:'./current-pilot-history.json',
     currentPilotMode:full?.controlledLiveCurrentPilot?.mode||null,
+    ravScoreProfile:full?.coastalParts?.scoreProfile||null,
     publicConditionsSha256:sha256Text(publicText),
     publicConditionsBytes:Buffer.byteLength(publicText),
     publicConditionDetailsSha256:sha256Text(detailsText),

@@ -1,4 +1,18 @@
-# Implementeringsstatus – Candidate G 4.0.259 produktionsverificeret
+# Implementeringsstatus – Candidate G 4.0.260 score-neutral omskifterkandidat
+
+## Versionsbundet profilvalg og rollback – offentlig 25/40/35 uændret
+
+- [x] Dokumentér 6/6 timers naturligt videreført state på 673/673 kystdele uden nulstilling eller rekonstruktionsfejl; perioden er praktisk ejeraccepteret evidens, ikke et 48-timersbevis.
+- [x] Implementér én versionsbundet profilomskifter med eksakte legacy-, Candidate G- og rollback-id'er.
+- [x] Bevar `RRS-CURRENT-B0-4.0.247` som ønsket, aktiv og rollbackprofil i 4.0.260.
+- [x] Kræv eksplicit aktivering, komplet global Candidate G-dækning, frisk slutshadow-id og særskilt ejerbeslutnings-id før et fremtidigt kandidatskift.
+- [x] Fald globalt tilbage til legacy ved manglende/ukendt konfiguration og forbyd blandede profiler mellem zoner, timer og jagtformer.
+- [x] Før profilkontrakten gennem offentlig startpakke, detaljepakke og manifest.
+- [x] Lås Candidate G-adapter, udtransportforklaring, forbud mod sikkerheds-/stedmodel og eksakt legacyrollback i målrettede tests.
+- [x] Bestå samlet lokal `scripts/validate-source.ps1`, inklusive releasegate, på 4.0.260-kandidaten.
+- [ ] Bestå exact-head PR-gate, merge og fuld post-merge-produktion med central hydrering og frisk data.
+- [ ] Kør frisk dataminimeret 210/673-slutshadow og fuld browserkontrol på den offentliggjorte 4.0.260-runtime.
+- [ ] Offentlig Candidate G-aktivering afventer fortsat central admin-roundtrip og særskilt ejer-gennemgang på en frisk grøn slutshadow.
 
 ## Central tilstand og fallback-kompatibel shadow – score-neutral
 
@@ -9,14 +23,14 @@
 - [x] Beregn Candidate G for begge jagtformer som separat `diagnostic-only`-runtime uden at ændre aktiv `25/40/35`.
 - [x] Erstat den manuelle native-only aktiveringsshadow med en read-only audit af den faktiske fallback-kompatible 210/673-detaljeruntime.
 - [x] Lås 1.346 modeevalueringer, score-rekonstruktion, udtransportforklaring, dataminimering og automatisk aktiveringsforbud i self-tests og kildegate.
-- [x] Dokumentér den nuværende rollback: aktiv score ignorerer Candidate G-navnerummet; en senere aktivering kræver en særskilt omskifter og tilbagekobling.
+- [x] Dokumentér 4.0.259-rollbacken: aktiv score ignorerede Candidate G-navnerummet. DEC-0058 erstatter nu denne med en særskilt versionsbundet omskifter og testet tilbagekobling.
 - [x] Bestå samlet lokal `scripts/validate-source.ps1`, inklusive releasegate, for 4.0.259.
 - [x] Bestå exact-head `32609888406` på `337466b5`, merge PR #89 som `31e50acb` og bevar den eksakte head under merge.
 - [x] Bestå fuld post-merge-produktion `32609952992` med central admin, frisk fallback-kompatibel data, fuld validering, releasegate, Supabase, artifact og Pages.
 - [x] Kør den nye manuelle 210/673-shadow som read-only run `32610281620` på den producerede 4.0.259-runtime: 210 zoner, 673 dele, 1.346 modeevalueringer og nul rekonstruktionsfejl. Alle 673 tilstande er korrekt bootstrap og ikke modnet.
 - [x] Dokumentér første naturlige state-fortsættelse i schedule `32613284735`: live `rr-20260823023951-210` accepterer 673/673 tidligere tilstande, nulstiller 0 og består 210/673/1.346 med nul rekonstruktionsfejl. Dokumenteret yngste/ældste fortsættelsesalder er 3/3 timer.
-- [ ] Fortsæt uændret read-only observation til mindst 48 timers naturlig state-alder og kør derefter en frisk slutshadow. Tre timer er ikke modnet evidens.
-- [ ] Først derefter: forbered særskilt aktiv score-omskifter og brugerforklaring; offentlig aktivering afventer modnet slutshadow og ingen modstridende evidens.
+- [x] Fortsæt nattens read-only observation til 6/6 timers dokumenteret naturlig state-alder. Ejeren accepterer dette som praktisk evidens; det er ikke en modnet 48-timersfordeling.
+- [x] Forbered den særskilte, score-neutrale omskifter og brugerforklaring efter DEC-0058. Offentlig aktivering er stadig lukket.
 
 ## Candidate G mobiliserings-/helhedsreview – score-neutralt
 
@@ -30,7 +44,7 @@
 - [x] Dokumentér DEC-0056, beslutningsrapport, modelregister, RDKS, håndbog og changelog uden private payloads.
 - [x] Bestå samlet lokal `scripts/validate-source.ps1`, inklusive de nye mobiliseringstests og releasegate.
 - [x] Bestå exact-head `32607989444` på `03083f92`, merge PR #87 som `48240d73` og fuld post-merge-produktion `32608050112` med central hydrering, fuld validering, releasegate, Supabase, artifact, Pages og grøn 210/673-kontrakt.
-- [x] Implementér samlet central persistens af transport- og mobiliseringstilstand samt fallback-kompatibel 673-deles shadowkontrakt i 4.0.259; exact-head, produktion og første bootstrap-shadow er leverancebevist ovenfor. Kun naturlig state-alder og modnet slutshadow udestår.
+- [x] Implementér samlet central persistens af transport- og mobiliseringstilstand samt fallback-kompatibel 673-deles shadowkontrakt i 4.0.259; exact-head, produktion, bootstrap-shadow og seks timers naturlig fortsættelse er leverancebevist. Frisk slutshadow på 4.0.260 udestår.
 
 ## Candidate G frigivelsesrevision – score-neutral
 

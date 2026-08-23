@@ -52,3 +52,7 @@ Rollback i 4.0.259 er deterministisk: den aktive scorekode læser ikke Candidate
 - Artifact, protected-dirty-data, geometri og land-/vandpunkter er urørte.
 
 DEC-0057 erstatter den native 243/673-shadow som aktiveringsklar dækningskontrol. Den gamle validator bevares som historisk forskningsværktøj og må ikke længere fortolkes som almindelig produktdækning.
+
+## Senere præcisering i DEC-0058
+
+Ejeren accepterede nattens seks timers naturlige videreførelse som praktisk evidens til næste produkttrin. DEC-0058 erstatter derfor rækkefølgen, hvor selve den score-neutrale omskifter først måtte bygges efter 48 timer. Seks timer er ikke et 48-timersbevis, og Candidate G må fortsat ikke aktiveres uden frisk slutshadow på den eksakte aktiveringskode og særskilt ejer-gennemgang. Mobiliseringens 48 timers halveringstid ændres ikke.

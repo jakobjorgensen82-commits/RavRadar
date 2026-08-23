@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.259",
+  "version": "4.0.260",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -12,7 +12,7 @@
     "test:progressive-public-conditions": "node scripts/test-progressive-public-conditions-4.0.216.mjs",
     "test:local-weather-snapshot": "node scripts/test-local-weather-snapshot-status-4.0.208.mjs",
     "validate:data": "npm run test:local-weather-snapshot && node scripts/validate-data.mjs",
-    "test:score": "node scripts/test-score-engine.mjs && node scripts/audit-ravscore-sensitivity.mjs --self-test && node scripts/audit-ravscore-canonical-scenarios.mjs --self-test && node scripts/test-phase-d-wave-process-candidate.mjs && python scripts/select-ravscore-historical-events.py --self-test && node scripts/test-ravscore-regime-memory.mjs && node scripts/test-ravscore-mobilisation-memory.mjs && node scripts/test-ravscore-candidate-g.mjs && node scripts/test-ravscore-candidate-g-state-pipeline.mjs && node scripts/test-ravscore-candidate-g-central-runtime.mjs && node scripts/audit-ravscore-candidate-g-public-shadow.mjs --self-test && node scripts/audit-ravscore-candidate-g-mobilisation-readiness.mjs --self-test && node scripts/audit-ravscore-candidate-g-release-readiness.mjs --self-test && node scripts/audit-ravscore-mode-huntability.mjs --self-test && node scripts/analyze-ravscore-history-track-ablation.mjs --self-test && node scripts/test-active-wave-approach-4.0.241.mjs && node scripts/test-zone-ranking-broad-support-4.0.252.mjs",
+    "test:score": "node scripts/test-score-engine.mjs && node scripts/audit-ravscore-sensitivity.mjs --self-test && node scripts/audit-ravscore-canonical-scenarios.mjs --self-test && node scripts/test-phase-d-wave-process-candidate.mjs && python scripts/select-ravscore-historical-events.py --self-test && node scripts/test-ravscore-regime-memory.mjs && node scripts/test-ravscore-mobilisation-memory.mjs && node scripts/test-ravscore-candidate-g.mjs && node scripts/test-ravscore-candidate-g-state-pipeline.mjs && node scripts/test-ravscore-candidate-g-central-runtime.mjs && node scripts/test-ravscore-profile-switch-4.0.260.mjs && node scripts/audit-ravscore-candidate-g-public-shadow.mjs --self-test && node scripts/audit-ravscore-candidate-g-mobilisation-readiness.mjs --self-test && node scripts/audit-ravscore-candidate-g-release-readiness.mjs --self-test && node scripts/audit-ravscore-mode-huntability.mjs --self-test && node scripts/analyze-ravscore-history-track-ablation.mjs --self-test && node scripts/test-active-wave-approach-4.0.241.mjs && node scripts/test-zone-ranking-broad-support-4.0.252.mjs",
     "test:active-wave-approach": "node scripts/test-active-wave-approach-4.0.241.mjs",
     "test:provisional-score-weights": "node scripts/test-provisional-score-weights-4.0.242.mjs",
     "test:zone-ranking-broad-support": "node scripts/test-zone-ranking-broad-support-4.0.252.mjs",
@@ -31,7 +31,7 @@
     "test:ravscore-regime-memory": "node scripts/test-ravscore-regime-memory.mjs && node scripts/analyze-ravscore-history-track-ablation.mjs --self-test",
     "test:ravscore-mobilisation-memory": "node scripts/test-ravscore-mobilisation-memory.mjs",
     "test:ravscore-candidate-g": "node scripts/test-ravscore-candidate-g.mjs",
-    "test:ravscore-candidate-g-state-pipeline": "node scripts/test-ravscore-candidate-g-state-pipeline.mjs && node scripts/test-ravscore-candidate-g-central-runtime.mjs && node scripts/audit-ravscore-candidate-g-public-shadow.mjs --self-test",
+    "test:ravscore-candidate-g-state-pipeline": "node scripts/test-ravscore-candidate-g-state-pipeline.mjs && node scripts/test-ravscore-candidate-g-central-runtime.mjs && node scripts/test-ravscore-profile-switch-4.0.260.mjs && node scripts/audit-ravscore-candidate-g-public-shadow.mjs --self-test",
     "analyze:ravscore-candidate-g": "node scripts/analyze-ravscore-candidate-g.mjs",
     "test:ravscore-candidate-g-analysis": "node scripts/analyze-ravscore-candidate-g.mjs --self-test",
     "test:ravscore-candidate-g-scenarios": "node scripts/audit-ravscore-candidate-g-scenarios.mjs --self-test",

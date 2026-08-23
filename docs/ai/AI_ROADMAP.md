@@ -1,5 +1,14 @@
 # AI Roadmap – RavRadar 4.0.243+
 
+## Candidate G – versionsbundet scoreomskifter efter DEC-0058
+
+- [x] Accepter nattens 6/6 timers naturlige 673/673-state som praktisk ejerbesluttet evidens uden at kalde det et 48-timersbevis.
+- [x] Implementér en global, versionsbundet profilomskifter med aktiv `RRS-CURRENT-B0-4.0.247`, Candidate G-id og eksakt rollback.
+- [x] Lås fail-closed krav om komplet dækning, frisk slutshadow og særskilt ejerbeslutning; automatisk aktivering forbliver falsk.
+- [x] Før profilkontrakten gennem offentlig startpakke, detaljepakke og manifest uden offentlig scoreændring.
+- [ ] Bestå 4.0.260 exact-head, fuld post-merge-produktion, frisk slutshadow og browserkontrol.
+- [ ] Aktivér ikke Candidate G før central admin-roundtrip og en ny særskilt ejer-gennemgang.
+
 ## Candidate G – mobiliserings-/helhedsreview efter DEC-0056
 
 - [x] Udskift additiv bølge/vind/strøm/varighedsmobilisering med én kausal bølgeenergitilstand.
@@ -8,7 +17,7 @@
 - [x] Saml `RESEARCH-3` som foretrukken score-neutral helhedskandidat med `20/50/30`, DEC-0054 og DEC-0055.
 - [x] Før checkpointet gennem exact-head `32609888406`, PR #89/merge `31e50acb` og fuld produktion `32609952992` uden offentlig scoreændring.
 - [x] Lever den samlede score-neutrale pipeline-/rollbackpakke og fallback-kompatible 673-deles shadow i 4.0.259.
-- [ ] Opbyg mindst 48 timers naturlig state-alder. Første schedule `32613284735` accepterede 673/673 tilstande og dokumenterer 3/3 timer; offentlig aktivering forbliver lukket.
+- [x] Opbyg 6/6 timers naturlig state-alder uden nulstilling. Ejeren valgte dette som praktisk evidens til omskifterforberedelsen; offentlig aktivering forbliver lukket, og perioden er ikke et 48-timersbevis.
 
 ## Candidate G – strømstyret rand- og tærskelkontrol efter DEC-0055
 
