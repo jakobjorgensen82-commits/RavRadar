@@ -14,6 +14,8 @@
 - [x] Kør frisk dataminimeret liveaudit af `rr-20260823083627-210`: 210/673/1.346, 673 accepterede tilstande, nul nulstillinger, nul rekonstruktionsfejl og 9/9 timers dokumenteret state-alder.
 - [x] Kør fuld browserkontrol: 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer uden fejl.
 - [x] Dokumentér den nye beslutningsevidens: Candidate G-gennemsnit 19,187/21,276 mod aktiv 35,770/43,655 for waders/strand og 1.127 scorebåndsskift; den unge tilstand har gennemsnitlig transport 4,242 og mobilisering 13,747.
+- [x] Efterprøv bootstrap mod eksisterende offentlig historik uden nye kildedata: 42.551 poster, 633/673 dele og 65–117 timer ændrer ikke start-0-medianen fra 0; kun 6/633 dele bliver uafhængige af startprioren.
+- [ ] Afgør startreserven med ejeren. Teknisk anbefaling er en eksplicit neutral prior 50 ved manglende/inkompatibel tidligere state, mens faktisk 13-timers udtransport fortsat er den eneste vej til dokumenteret udtømt transport og totalscore 0.
 - [ ] Offentlig Candidate G-aktivering afventer fortsat central admin-roundtrip, versionsbundet aktiveringsændring, frisk grøn aktiveringsshadow og særskilt ejer-gennemgang af scorefordelingen.
 
 ## Central tilstand og fallback-kompatibel shadow – score-neutral

@@ -29,6 +29,16 @@ DEC-0058/4.0.260 tilføjer derfor en versionsbundet, score-neutral profilomskift
 
 Den friske score-neutrale fordeling er væsentlig beslutningsevidens. Candidate G ligger i gennemsnit på 19,187 for waders og 21,276 for strand mod aktiv 35,770 og 43,655; 1.127 af 1.346 evalueringer skifter scorebånd. Gennemsnitlig transport er 4,242 og mobilisering 13,747 i den unge tilstand. Mekanik og rekonstruktion består, men denne produktbetydning skal gennemgås særskilt med ejeren før en aktiveringsversion.
 
+## Bootstrap-/startreserveanalyse
+
+493 af 673 live transporttilstande er 0, mens udtransportgaten er udløst 0 gange. Nulværdierne dokumenterer derfor ikke, at rav er trukket ud; de afspejler primært den valgte fail-closed startprior 0.
+
+Den allerede offentlige syvdøgnshistorik blev genafspillet dataminimeret uden nye DMI-/Copernicus-kald og uden at vise U/V, koordinater eller del-id'er. Den indeholder 42.551 poster, dækker 633/673 dele med 39–89 prøver og 65–117 timers tidsdybde. Start 0 giver efter replay gennemsnit 5,781 og median 0; start 50 giver 52,060/50, mens start 100 giver 96,716/100.
+
+Forskellen er ikke et spørgsmål om at vente lidt længere. Kun 6/633 dele ender ens ved start 0 og 100, og 607/633 bevarer mindst 50 points forskel; medianforskellen er 99,097. Uden passivt neutralt tab kan historikken kun vaske prioren ud, hvis tilstrækkelig ind-/udgående strøm rammer loft eller bund.
+
+Den tekniske anbefaling til ejerreview er derfor en eksplicit neutral startprior 50 ved manglende eller inkompatibel tidligere state. Den siger "ukendt midte", ikke "dokumenteret rav ved kysten". Faktisk 13-timers udtransport skal fortsat være den eneste vej til dokumenteret udtømt transport og totalscore 0. En beslutning skal udløse ny profil-/stateversion og ny score-neutral shadow; intet er aktiveret af denne analyse.
+
 ## Reproducerbar audit
 
 `scripts/audit-ravscore-candidate-g-release-readiness.mjs` bruger kun syntetiske input. Den læser ikke den private cache, geometri, land-/vandpunkter, artifact eller protected-dirty-data. Den ændrer ikke offentlig score, UI eller runtime og er nu en del af kildegaten.

@@ -8,6 +8,8 @@
 - Browserauditten består 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer uden browser-, side- eller HTTP-fejl.
 - Standard, aktiv og rollback er fortsat `RRS-CURRENT-B0-4.0.247` med 25/40/35. Candidate G er ikke aktiveret, `publicScoreChanged=false`, og automatisk aktivering er falsk.
 - Candidate G-shadowens gennemsnit er waders 19,187 og strand 21,276 mod aktiv 35,770/43,655; 1.127 af 1.346 evalueringer skifter scorebånd. Gennemsnitlig transport er 4,242 og mobilisering 13,747 i den unge tilstand. Næste opgave er ejerreview af betydningen, ikke aktivering.
+- Rodårsagen er nu afgrænset: 493/673 transporttilstande er 0, men ingen udtransportgate er aktiv. Eksisterende offentlig historie har 42.551 poster, dækker 633 dele i 65–117 timer og giver ved start 0 stadig transportmedian 0.
+- Startreserven kan ikke udledes af historikken under den valgte regel uden neutralt tab. Kun 6/633 dele er uafhængige af start 0 kontra 100; 607/633 bevarer mindst 50 points forskel. Teknisk anbefaling til næste ejerreview er neutral prior 50, versionsbundet og tydeligt adskilt fra faktisk udtransport 0.
 - En fremtidig aktivering kræver central admin-roundtrip, ny versionsbundet aktiveringsændring, frisk grøn aktiveringsshadow og særskilt ejerbeslutning.
 - Ingen artifact- eller protected-dirty-datafiler er lagt i Git. Privat cache, geometri og land-/vandpunkter er urørte; kun de to godkendte geodataversionsfelter blev ændret.
 

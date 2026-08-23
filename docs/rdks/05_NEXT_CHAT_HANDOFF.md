@@ -6,6 +6,7 @@
 - Candidate G er ikke aktiveret; legacy `25/40/35` er fortsat ønsket, aktiv og rollbackprofil, og automatisk aktivering er falsk.
 - 673/673 tilstande blev videreført uden nulstilling til 09:00Z, svarende til 9/9 timer fra bootstrap 00:00Z. Det er praktisk evidens, ikke et 48-timersbevis.
 - Candidate G ligger aktuelt væsentligt lavere end aktiv score. Næste opgave er ejerreview af scorefordelingen og den unge transport-/mobiliseringstilstand, ikke central aktivering.
+- Bootstrapauditten viser, at problemet ikke løses ved blot at vente: 65–117 timers eksisterende historik efterlader 607/633 dele med mindst 50 points afhængighed af startprioren. Neutral startprior 50 anbefales til ejerbeslutning; den er ikke implementeret.
 - Privat cache, protected-dirty-data, geometri og land-/vandpunkter må fortsat ikke berøres.
 
 ## Afslutningscheckpoint 2026-08-20 - online browserkontrol grøn

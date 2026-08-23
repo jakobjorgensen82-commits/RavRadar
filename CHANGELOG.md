@@ -179,3 +179,4 @@
 - PR #92 bestod exact-head `32628441062` på `eabf7e8b` og blev merged som `c5898ce8`. Fuld produktion `32628516066` udgav `rr-20260823083627-210` efter alle gates.
 - Den dataminimerede audit består 210/673/1.346 med 673 accepterede tilstande, nul nulstillinger og 9/9 timers alder; browserauditten består 420/2.100/673 uden fejl.
 - Candidate G er fortsat ikke aktiv. Den friske scorefordeling er væsentligt lavere end aktiv score og afventer særskilt ejerreview før en eventuel aktiveringsversion.
+- En dataminimeret bootstrapaudit af 42.551 eksisterende offentlige historikposter viser, at 65–117 timers forløb ikke kan bestemme startreserven uden passivt neutralt tab. Neutral startprior 50 anbefales til ejerreview; 0 og 100 bevares som følsomhedsgrænser, og ingen score aktiveres.

@@ -8,6 +8,8 @@
 - [x] Før profilkontrakten gennem offentlig startpakke, detaljepakke og manifest uden offentlig scoreændring.
 - [x] Bestå 4.0.260 exact-head `32628441062`, PR #92/merge `c5898ce8`, produktion `32628516066`, frisk 210/673/1.346-shadow og 420/2.100-browserkontrol.
 - [ ] Gennemgå Candidate G's væsentligt lavere friske scorefordeling med ejeren; skeln mellem ung ni-timers tilstand, modeladfærd og ønsket produktbetydning.
+- [x] Bevis dataminimeret, at eksisterende 65–117 timers offentlige strømhistorik ikke kan identificere startreserven, når neutral strøm ikke nedskriver state; 607/633 dele bevarer mindst 50 points priorforskel.
+- [ ] Anbefal neutral startprior 50 som ærlig ukendt midte, men implementér den først efter ejerbeslutning og som en ny versionsbundet profil/statekontrakt.
 - [ ] Aktivér ikke Candidate G før central admin-roundtrip og en ny særskilt ejer-gennemgang.
 
 ## Candidate G – mobiliserings-/helhedsreview efter DEC-0056
