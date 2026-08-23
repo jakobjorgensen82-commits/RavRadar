@@ -1,5 +1,15 @@
 # AI Roadmap – RavRadar 4.0.243+
 
+## Næste aftalte brugerdataforbedring – kontoindberetning og frivilligt fravalg
+
+- [ ] En indlogget bruger skal kunne indberette en tur eller et fund fra kontosiden uden først at starte en tur.
+- [ ] Kontoindberetningen skal genbruge den aktive afslutningsformular, de samme forståelige spørgsmål, samme `observations`-række og samme dataminimerede vejr-/scoresnapshot. Der må ikke opstå en ekstra Supabase-tabel eller dubletpost.
+- [ ] Brugeren skal selv vælge korrekt dato og tidspunkt. Snapshot og eventuel scorekalibrering skal bruge historiske forhold fra det valgte tidspunkt, aldrig de aktuelle forhold på indberetningstidspunktet.
+- [ ] Hvis sikkert historisk vejr-/scoregrundlag ikke findes for det valgte tidspunkt, skal rapporten bevares som erfaring med `calibration_eligible=false` frem for at konstruere eller gætte data.
+- [ ] En startet tur skal have et udtrykkeligt **Afslut uden at indberette**, som efter bekræftelse rydder den lokale tur uden serverpost. **Svar senere** bevarer fortsat turen lokalt.
+- [ ] Den eksisterende afhængige zone→kyststrækning-menu i start-/afslutningsdialogen skal genbruges fra kontoen og kontraktlåses, så den faktiske kystdel altid tilhører den valgte zone.
+- [ ] Implementeringen afventer et naturligt roadmaptidspunkt og må ikke blandes ind i en igangværende score-, geometri- eller produktionsrettelse.
+
 ## 4.0.264 – brugerflow, login og privat turlog
 
 - [x] Brug én direkte komplet v2-tur og fjern den gamle GPS-baserede parallelrejse fra den aktive UI.

@@ -1,3 +1,12 @@
+## 2026-08-23 – aftalt næste indberetningsforbedring
+
+- Ejeren besluttede, at indloggede brugere senere skal kunne indberette en tur eller et fund direkte fra kontosiden uden først at starte en RavRadar-tur.
+- Løsningen skal genbruge den eksisterende rapportformular, `observations`-række, privatlivskontrakt og kompakte vejr-/scoresnapshot; ingen ekstra tabel, dubletrække eller særskilt fundkopi.
+- Brugeren vælger selv korrekt dato og tidspunkt. Kun historisk vejr og score fra det valgte tidspunkt må kobles til rapporten. Hvis sikkert historisk grundlag mangler, gemmes rapporten som erfaring, men ikke som direkte kalibreringsegnet evidens.
+- En startet tur skal have **Afslut uden at indberette**, som efter bekræftelse rydder den lokale tur uden Supabase-post. **Svar senere** skal fortsat bevare turen lokalt.
+- Den aktive start-/afslutningsdialog filtrerer allerede kyststrækninger efter valgt zone. Den kommende kontoindberetning skal genbruge samme zone→kystdel-komponent og gemme begge ID'er.
+- Kravet er dokumenteret til et naturligt roadmaptidspunkt; ingen produktkode, score, geodata eller brugerdata er ændret i dette checkpoint.
+
 ## 2026-08-23 – lokal 4.0.264-kandidat: privat turlog og forståeligt brugerflow
 
 - PR #104 bestod exact-head `32651048627` og blev merged som `579bd167`. Den første fulde produktion `32651106811` stoppede korrekt før release og deployment blev sprunget over, fordi `test-feedback-zone-ui` stadig krævede den bevidst fjernede GPS-parallelrejse. PR #105 rettede kontrakten, bestod exact-head `32651724416` og blev merged som `7c43146f`; produktion `32651786366` stoppede også før deploy, fordi `test-score-presentation` stadig forventede den erstattede ordlyd om en "exceptionel" stjerne. Den rettede feedbacktest var grøn i samme kørsel.

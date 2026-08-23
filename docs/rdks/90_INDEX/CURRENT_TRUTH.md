@@ -1,5 +1,12 @@
 # Current truth – gældende projektviden
 
+## Aftalt næste brugerdataforbedring – endnu ikke implementeret
+
+- En indlogget bruger skal senere kunne indberette en tur eller et fund direkte fra kontosiden uden en forudgående turstart og uden en ekstra Supabase-tabel eller dubletpost.
+- Brugeren vælger selv korrekt dato og tidspunkt. Rapportens vejr-/scoresnapshot skal komme fra de historiske forhold på det valgte tidspunkt; mangler sikkert historisk grundlag, er rapporten ikke direkte kalibreringsegnet. Aktuelle forhold på indberetningstidspunktet må aldrig bruges som erstatning.
+- En startet tur skal kunne afsluttes uden indberetning og uden serverpost. **Svar senere** bevarer fortsat turen lokalt.
+- Den eksisterende afslutningsdialog har allerede et afhængigt zone→kyststrækningsvalg. Samme formular og validering skal genbruges fra kontoen.
+
 ## Produktionsverificeret 4.0.264 – forståeligt brugerflow og privat turlog uden dobbeltlagring
 
 - Den aktive turrejse er nu direkte v2: start, afslut og færdiggør én komplet tur. Den gamle parallelle GPS-tur er ikke længere koblet til brugerfladen.
