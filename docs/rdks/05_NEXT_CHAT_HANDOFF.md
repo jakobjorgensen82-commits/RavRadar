@@ -1,5 +1,13 @@
 # RavRadar – overlevering til næste chat
 
+## Aktuelt checkpoint 2026-08-23 – 4.0.260 score-neutral produktion grøn
+
+- PR #92/exact-head `32628441062`, merge `c5898ce8` og produktion `32628516066` er grønne. Live `rr-20260823083627-210` består 210/673/1.346, manifestintegritet og 420/2.100/673-browseraudit uden fejl.
+- Candidate G er ikke aktiveret; legacy `25/40/35` er fortsat ønsket, aktiv og rollbackprofil, og automatisk aktivering er falsk.
+- 673/673 tilstande blev videreført uden nulstilling til 09:00Z, svarende til 9/9 timer fra bootstrap 00:00Z. Det er praktisk evidens, ikke et 48-timersbevis.
+- Candidate G ligger aktuelt væsentligt lavere end aktiv score. Næste opgave er ejerreview af scorefordelingen og den unge transport-/mobiliseringstilstand, ikke central aktivering.
+- Privat cache, protected-dirty-data, geometri og land-/vandpunkter må fortsat ikke berøres.
+
 ## Afslutningscheckpoint 2026-08-20 - online browserkontrol grøn
 
 - Live index og bootstrap er 4.0.237; senest auditerede datasæt er `rr-20260819213342-210` fra grøn naturlig produktion `#3237`.

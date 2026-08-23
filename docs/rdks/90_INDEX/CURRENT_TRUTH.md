@@ -1,14 +1,18 @@
 # Current truth – gældende projektviden
 
-## 4.0.260-kandidat – versionsbundet scoreomskifter, fortsat offentlig 25/40/35
+## 4.0.260 – produktionsverificeret score-neutral omskifter, fortsat offentlig 25/40/35
 
 - DEC-0058 indfører `RAVSCORE-PROFILE-SWITCH-4.0.260`. Ønsket, aktiv og rollbackprofil er fortsat `RRS-CURRENT-B0-4.0.247`; versionen ændrer derfor ingen offentlig score, farve, zonevinder eller bedste tidspunkt.
 - Candidate G kan i en senere version kun vælges samlet, når aktiveringsflag, komplet global dækning, frisk grøn slutshadow og særskilt ejerbeslutning alle foreligger. Ukendt eller ufuldstændig konfiguration falder fail-closed tilbage til legacy for hele datasættet; blandede zone-/timeresultater er forbudt.
 - Profilvalget sker før opbygning af lokale score-/vinderrækker og følger offentlig startpakke, detaljepakke og manifest. Rollback returnerer det oprindelige legacyresultat direkte og rekonstruerer ikke 25/40/35 gennem Candidate G-kode.
 - Candidate G-adapteren bevarer `20/50/30`, wadersloftet og udtransportgaten med den godkendte danske forklaring. Den tilføjer ikke sikkerhedsråd eller bund-, dybde-, rende-, revle-, adgangs- eller stedegnethedsregler.
-- Seneste naturlige runtime `rr-20260823075018-210` består den dataminimerede audit med 210/210 zoner, 673/673 dele, 1.346 modeevalueringer, 673 accepterede tidligere tilstande, nul nulstillinger og nul rekonstruktionsfejl. Dokumenteret yngste/ældste state-alder er 6/6 timer.
-- Ejeren har valgt nattens seks timer som praktisk evidens til næste gennemgang. Det er ikke et 48-timersbevis. Før en offentlig aktivering kræves stadig exact-head aktiveringskode, central admin-roundtrip, fuld produktion, frisk slutshadow, browserkontrol og særskilt ejer-gennemgang.
-- Artifact, protected-dirty-data, privat cache, geometri og land-/vandpunkter er urørte.
+- PR #92 bestod exact-head `32628441062` på `eabf7e8b` og blev merged som `c5898ce8`. Fuld produktion `32628516066` bestod central hydrering, frisk DMI/fallback, fuld validering, releasegate, Supabase, artifact og Pages.
+- Live `rr-20260823083627-210` er komplet med 210/210 zoner og 673/673 dele. Begge offentlige runtimefiler matcher manifestets byteantal og SHA-256, og den dataminimerede audit består 1.346 modeevalueringer med 673 accepterede tilstande, nul nulstillinger og nul rekonstruktionsfejl.
+- Fælles state-reference er 09:00Z mod bootstrap 00:00Z; dokumenteret yngste/ældste naturlige state-alder er derfor 9/9 timer. Ejeren accepterede nattens seks timer som praktisk evidens; den længere observation er fortsat ikke et 48-timersbevis.
+- Den fulde live-browseraudit består 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdøgnsvisninger uden browser-, side- eller HTTP-fejl.
+- Omskifteren vælger fortsat legacy globalt, `publicScoreChanged=false` og automatisk aktivering er falsk. Den score-neutrale Candidate G-shadow ligger aktuelt lavere end aktiv score: waders 19,187 mod 35,770 og strand 21,276 mod 43,655 i gennemsnit; 1.127 af 1.346 modeevalueringer skifter scorebånd. Den vigtigste forklaring er lav, endnu ung tilstand: transportgennemsnit 4,242 og mobilisering 13,747. Dette er beslutningsevidens, ikke et aktiveringsbevis.
+- Før offentlig aktivering kræves fortsat central admin-roundtrip, en versionsbundet aktiveringsændring, frisk grøn aktiveringsshadow og særskilt ejer-gennemgang af blandt andet scorefordelingen.
+- Ingen artifact- eller protected-dirty-datafiler er lagt i Git. Privat cache, geometri og land-/vandpunkter er urørte; i geodata blev kun de to udtrykkeligt godkendte versionsfelter ændret fra 4.0.259 til 4.0.260.
 
 ## 4.0.259 – central Candidate G-tilstand produktionsverificeret uden aktiv scoreændring
 

@@ -25,6 +25,10 @@ Ejeren har accepteret nattens seks timer som praktisk evidens til at forberede n
 
 DEC-0058/4.0.260 tilføjer derfor en versionsbundet, score-neutral profilomskifter. Den vælger stadig `RRS-CURRENT-B0-4.0.247` med 25/40/35. Candidate G kan kun vælges i en senere version med eksplicit aktivering, komplet global dækning, frisk grøn slutshadow og særskilt ejerbeslutning. Rollback vælger den eksakte legacyprofil for hele datasættet; blandede zone- eller timeprofiler er forbudt.
 
+4.0.260 er efterfølgende leverancebevist gennem exact-head `32628441062`, PR #92/merge `c5898ce8` og fuld produktion `32628516066`. Live `rr-20260823083627-210` består manifestintegritet, 210/673/1.346-shadow og browserauditten 420/2.100/673 uden fejl. Alle 673 tilstande fortsatte uden nulstilling til reference 09:00Z, så yngste og ældste dokumenterede alder er ni timer fra bootstrap 00:00Z; det er fortsat ikke et 48-timersbevis.
+
+Den friske score-neutrale fordeling er væsentlig beslutningsevidens. Candidate G ligger i gennemsnit på 19,187 for waders og 21,276 for strand mod aktiv 35,770 og 43,655; 1.127 af 1.346 evalueringer skifter scorebånd. Gennemsnitlig transport er 4,242 og mobilisering 13,747 i den unge tilstand. Mekanik og rekonstruktion består, men denne produktbetydning skal gennemgås særskilt med ejeren før en aktiveringsversion.
+
 ## Reproducerbar audit
 
 `scripts/audit-ravscore-candidate-g-release-readiness.mjs` bruger kun syntetiske input. Den læser ikke den private cache, geometri, land-/vandpunkter, artifact eller protected-dirty-data. Den ændrer ikke offentlig score, UI eller runtime og er nu en del af kildegaten.

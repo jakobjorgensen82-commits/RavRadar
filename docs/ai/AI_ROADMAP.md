@@ -6,7 +6,8 @@
 - [x] Implementér en global, versionsbundet profilomskifter med aktiv `RRS-CURRENT-B0-4.0.247`, Candidate G-id og eksakt rollback.
 - [x] Lås fail-closed krav om komplet dækning, frisk slutshadow og særskilt ejerbeslutning; automatisk aktivering forbliver falsk.
 - [x] Før profilkontrakten gennem offentlig startpakke, detaljepakke og manifest uden offentlig scoreændring.
-- [ ] Bestå 4.0.260 exact-head, fuld post-merge-produktion, frisk slutshadow og browserkontrol.
+- [x] Bestå 4.0.260 exact-head `32628441062`, PR #92/merge `c5898ce8`, produktion `32628516066`, frisk 210/673/1.346-shadow og 420/2.100-browserkontrol.
+- [ ] Gennemgå Candidate G's væsentligt lavere friske scorefordeling med ejeren; skeln mellem ung ni-timers tilstand, modeladfærd og ønsket produktbetydning.
 - [ ] Aktivér ikke Candidate G før central admin-roundtrip og en ny særskilt ejer-gennemgang.
 
 ## Candidate G – mobiliserings-/helhedsreview efter DEC-0056

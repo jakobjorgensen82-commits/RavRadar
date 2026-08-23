@@ -46,11 +46,12 @@ Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre for
 - [x] Implementér den score-neutrale 4.0.259-pakke: begge kompakte tilstande centralt, Candidate G som adskilt diagnostisk runtime, fallback-kompatibel 210/673-shadow og deterministisk rollback til fortsat aktiv `25/40/35`.
 - [x] Bestå den samlede lokale kildegate og releasegate for 4.0.259.
 - [x] Før 4.0.259 gennem exact-head `32609888406`, PR #89/merge `31e50acb`, fuld post-merge-produktion `32609952992` og read-only shadow `32610281620` på den producerede runtime. Live `rr-20260823011924-210` består 210/673/1.346 uden score-rekonstruktionsfejl; alle 673 tilstande er dokumenteret bootstrap.
-- [x] Lad den centrale tilstand fortsætte naturligt gennem natten. Seneste audit af `rr-20260823075018-210` accepterer 673/673 tilstande uden nulstilling og dokumenterer 6/6 timers yngste/ældste alder. Ejeren accepterer perioden som praktisk evidens, men den må ikke kaldes et 48-timersbevis.
+- [x] Lad den centrale tilstand fortsætte naturligt gennem natten. Live `rr-20260823083627-210` accepterer 673/673 tilstande uden nulstilling og dokumenterer nu 9/9 timers yngste/ældste alder. Ejeren accepterede nattens seks timer som praktisk evidens, men perioden må ikke kaldes et 48-timersbevis.
 - [x] Byg den særskilte versionsbundne scoreomskifter og brugerforklaring med testet global tilbagekobling til `25/40/35`; 4.0.260-kandidaten vælger fortsat legacy og aktiverer ikke Candidate G.
 - [x] Bestå samlet lokal kildegate og releasegate for 4.0.260.
-- [ ] Før 4.0.260 gennem exact-head, merge, fuld produktion, frisk 210/673-slutshadow og browserkontrol.
-- [ ] Gennemfør central admin-roundtrip og særskilt ejer-gennemgang, før ønsket profil eventuelt ændres til Candidate G.
+- [x] Før 4.0.260 gennem exact-head `32628441062`, PR #92/merge `c5898ce8`, fuld produktion `32628516066`, frisk `rr-20260823083627-210`-shadow og grøn 210/673/420/2.100-browserkontrol.
+- [ ] Gennemgå den friske scorefordeling særskilt med ejeren: Candidate G ligger aktuelt markant lavere end aktiv score, mens transport- og mobiliseringstilstanden kun er ni timer gammel.
+- [ ] Gennemfør central admin-roundtrip og en ny versionsbundet aktiveringsændring, før ønsket profil eventuelt ændres til Candidate G.
 - [ ] Offentlig aktivering må først gennemføres, når den samlede pakke er grøn og ingen konkret modstridende evidens består; manglende turkalibrering skal fortsat fremgå ærligt som modelusikkerhed.
 
 ## Aktuelt Candidate G-review – 4.0.258 vindstyret waders-kandidat

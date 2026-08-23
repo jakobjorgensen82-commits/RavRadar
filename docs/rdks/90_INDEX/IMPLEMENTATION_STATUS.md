@@ -1,4 +1,4 @@
-# Implementeringsstatus – Candidate G 4.0.260 score-neutral omskifterkandidat
+# Implementeringsstatus – Candidate G 4.0.260 score-neutral omskifter produktionsverificeret
 
 ## Versionsbundet profilvalg og rollback – offentlig 25/40/35 uændret
 
@@ -10,9 +10,11 @@
 - [x] Før profilkontrakten gennem offentlig startpakke, detaljepakke og manifest.
 - [x] Lås Candidate G-adapter, udtransportforklaring, forbud mod sikkerheds-/stedmodel og eksakt legacyrollback i målrettede tests.
 - [x] Bestå samlet lokal `scripts/validate-source.ps1`, inklusive releasegate, på 4.0.260-kandidaten.
-- [ ] Bestå exact-head PR-gate, merge og fuld post-merge-produktion med central hydrering og frisk data.
-- [ ] Kør frisk dataminimeret 210/673-slutshadow og fuld browserkontrol på den offentliggjorte 4.0.260-runtime.
-- [ ] Offentlig Candidate G-aktivering afventer fortsat central admin-roundtrip og særskilt ejer-gennemgang på en frisk grøn slutshadow.
+- [x] Bestå exact-head `32628441062` på `eabf7e8b`, merge PR #92 som `c5898ce8` og fuld post-merge-produktion `32628516066` med central hydrering, frisk data, fuld validering, releasegate, Supabase, artifact og Pages.
+- [x] Kør frisk dataminimeret liveaudit af `rr-20260823083627-210`: 210/673/1.346, 673 accepterede tilstande, nul nulstillinger, nul rekonstruktionsfejl og 9/9 timers dokumenteret state-alder.
+- [x] Kør fuld browserkontrol: 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer uden fejl.
+- [x] Dokumentér den nye beslutningsevidens: Candidate G-gennemsnit 19,187/21,276 mod aktiv 35,770/43,655 for waders/strand og 1.127 scorebåndsskift; den unge tilstand har gennemsnitlig transport 4,242 og mobilisering 13,747.
+- [ ] Offentlig Candidate G-aktivering afventer fortsat central admin-roundtrip, versionsbundet aktiveringsændring, frisk grøn aktiveringsshadow og særskilt ejer-gennemgang af scorefordelingen.
 
 ## Central tilstand og fallback-kompatibel shadow – score-neutral
 
