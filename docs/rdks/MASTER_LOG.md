@@ -6,6 +6,7 @@
 - Det eksisterende Git-ignorerede replay omfatter 1.460 evalueringer. Mobiliseringen stiger fra 57,651 til 73,348 i gennemsnit; totalscoren er 31,775 og +3,484 mod transportrevisionen. Hændelsesudvalget er stormpræget og ikke fundkalibrering.
 - Målrettede tests og samlet lokal `scripts/validate-source.ps1`, inklusive de nye mobiliseringsaudits og releasegate, er grønne.
 - Transportbaseline PR #86/merge `5d7d4c2b` bestod post-merge-produktion `32606559443` med fulde gates og 210/673. Den godkendte fallback håndterede et midlertidigt DMI 429/uforandrede collections uden at skjule missing eller omgå gates.
+- Mobiliseringscheckpointet bestod exact-head `32607989444` på `03083f92`, blev merged via PR #87 som `48240d73` og bestod fuld produktion `32608050112`. Central hydrering, frisk kontrolleret data, fuld validering, releasegate, Supabase, artifact og Pages er grønne; `controlled-live` har 673/673 scoreklare dele.
 - Offentlig `25/40/35`, UI, runtime, geometri, land-/vandpunkter, artifact og protected-dirty-data er uændrede. Næste fase er samlet offentlig pipeline-/forklarings-/rollbackforberedelse.
 
 ## 2026-08-23 – Candidate G score-neutral frigivelsesrevision

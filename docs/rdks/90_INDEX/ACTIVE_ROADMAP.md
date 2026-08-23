@@ -42,7 +42,7 @@ Dette er den eneste aktive opgaveliste. `IMPLEMENTATION_STATUS.md` og aeldre for
 - [x] Vælg et praktisk, ærligt privat produktspor efter ejerreview: 0,03→0,15 m/s, intet passivt neutralt tab og kompakt tilstandsfortsættelse; behold 0,05→0,20/start 0 og 24/48 som reference-/følsomhedsspor.
 - [x] Bevis score-neutralt, at potentiale og igangværende udtransport fortsætter eksakt over en simuleret pipelinegrænse.
 - [x] Gennemfør mobiliserings-/helhedsreviewet: én bølgeenergistyret 4/48-tilstand uden additive vind-, strøm-, varigheds- eller stedpoint; dokumentér DEC-0056 og reproducerbare randtilfælde.
-- [ ] Før mobiliseringscheckpointet gennem exact-head, sikker merge og post-merge-produktion uden offentlig scoreændring.
+- [x] Før mobiliseringscheckpointet gennem exact-head `32607989444`, PR #87/merge `48240d73` og fuld post-merge-produktion `32608050112` uden offentlig scoreændring; 210/673, fuld validering, releasegate, Supabase, artifact og Pages er grønne.
 - [ ] Forbered derefter den ejerønskede offentlige kobling som én versionsbundet pakke: persistér begge kompakte afledte tilstande centralt, kør frisk fallback-kompatibel 673-deles shadow, forklaring/rollback og alle produktgates.
 - [ ] Offentlig aktivering må først gennemføres, når den samlede pakke er grøn og ingen konkret modstridende evidens består; manglende turkalibrering skal fortsat fremgå ærligt som modelusikkerhed.
 

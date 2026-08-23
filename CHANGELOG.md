@@ -7,6 +7,7 @@
 - De nye mobiliseringstests indgår både i `test:score` og den hurtige kildegate. Samlet lokal `scripts/validate-source.ps1` og releasegate er grønne.
 - Den gamle 243/673-shadow beskriver en tidligere snæver native-DKSS-testkontrakt, ikke manglende almindelig vejrdækning. Den aktuelle produktion har 673/673 dokumenterede strømidentiteter; en senere slutshadow skal bruge den endelige fallback-kompatible kontrakt.
 - PR #86/merge `5d7d4c2b` og produktion `32606559443` er grøn transportbaseline med fulde gates, 210 zoner og 673 dele. En midlertidig DMI 429/uforandret collection blev håndteret af den godkendte fallback uden gateomgåelse.
+- Mobiliseringscheckpointet bestod exact-head `32607989444` på `03083f92`, blev merged via PR #87 som `48240d73` og bestod fuld produktion `32608050112`. Central hydrering, frisk kontrolleret data, fuld validering, releasegate, Supabase, artifact og Pages er grønne; 210/673-kontrakten består.
 - Offentlig RavScore `25/40/35`, UI, runtime, geometri, land-/vandpunkter og beskyttede data er uændrede. Næste delmål er samlet pipeline-/forklarings-/rollbackforberedelse før offentlig kobling.
 
 ## Intern RavScore-forskning efter 4.0.258 – Candidate G frigivelsesrevision (2026-08-23)
