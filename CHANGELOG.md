@@ -1,3 +1,14 @@
+## Intern RavScore-forskning efter 4.0.258 – Candidate G mobilisering (2026-08-23)
+
+- `RESEARCH-3` samler den foretrukne private Candidate G: `20/50/30`, DEC-0054's jagtbarhed, DEC-0055's strømtransport og DEC-0056's nye mobilisering.
+- Mobilisering beregnes som én kausal tilstand fra bølgehøjde² × periode med fire timers opbygning og 48 timers aftrapning. Direkte vind, aktuel strøm, separat varighed og statisk stedegnethed giver ikke ekstra mobiliseringspoint.
+- En ny syntetisk audit tester kort spids mod vedvarende hændelse, præcis 48-timers halvering, missing-hold, kørselsfortsættelse og udtransportgate uden private input.
+- Den eksisterende Git-ignorerede cache er genafspillet uden nye downloads: 1.460 evalueringer, gennemsnitlig ny mobilisering 73,348 mod 57,651 og samlet scoreændring +3,484 mod den valgte transportrevision.
+- De nye mobiliseringstests indgår både i `test:score` og den hurtige kildegate. Samlet lokal `scripts/validate-source.ps1` og releasegate er grønne.
+- Den gamle 243/673-shadow beskriver en tidligere snæver native-DKSS-testkontrakt, ikke manglende almindelig vejrdækning. Den aktuelle produktion har 673/673 dokumenterede strømidentiteter; en senere slutshadow skal bruge den endelige fallback-kompatible kontrakt.
+- PR #86/merge `5d7d4c2b` og produktion `32606559443` er grøn transportbaseline med fulde gates, 210 zoner og 673 dele. En midlertidig DMI 429/uforandret collection blev håndteret af den godkendte fallback uden gateomgåelse.
+- Offentlig RavScore `25/40/35`, UI, runtime, geometri, land-/vandpunkter og beskyttede data er uændrede. Næste delmål er samlet pipeline-/forklarings-/rollbackforberedelse før offentlig kobling.
+
 ## Intern RavScore-forskning efter 4.0.258 – Candidate G frigivelsesrevision (2026-08-23)
 
 - PR #82 bestod exact-head-kildegate `32602287607` på `74624ac3` og blev merged som `189644a0`.

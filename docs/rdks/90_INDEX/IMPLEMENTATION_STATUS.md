@@ -1,5 +1,19 @@
 # Implementeringsstatus – Candidate G efter 4.0.258
 
+## Candidate G mobiliserings-/helhedsreview – score-neutralt
+
+- [x] Erstat overlappende bølge-, vind-, strøm- og varighedspoint i mobilisering med én kausal bølgeenergitilstand.
+- [x] Lås `Hs² × T` som relativ proxy uden at kalde den bundskærspænding eller direkte ravtransport.
+- [x] Vælg fire timers opbygning og 48 timers aftrapning som anbefalet privat profil; behold 24/72 som følsomhedsgrænser.
+- [x] Bevis syntetisk, at en udviklet moderat hændelse slår én høj spids, at 48 rolige timer halverer tilstanden, og at opdelt/ubrudt kørsel er identisk.
+- [x] Bevis, at direkte vind, aktuel strøm, separat varighed og statisk stedegnethed ikke giver mobiliseringspoint.
+- [x] Genafspil den eksisterende Git-ignorerede cache uden nye downloads: 1.460 evalueringer, ny mobilisering 73,348 mod 57,651 og samlet scoreændring +3,484 mod transportrevisionen.
+- [x] Bevar DEC-0055's udtransportgate: en høj mobilisering kan forblive synlig, mens dokumenteret udtømt udtransport giver slutscore 0.
+- [x] Dokumentér DEC-0056, beslutningsrapport, modelregister, RDKS, håndbog og changelog uden private payloads.
+- [x] Bestå samlet lokal `scripts/validate-source.ps1`, inklusive de nye mobiliseringstests og releasegate.
+- [ ] Bestå exact-head PR-gate, sikker merge og post-merge-produktion for det score-neutrale checkpoint.
+- [ ] Implementér derefter samlet central persistens af transport- og mobiliseringstilstand, frisk fallback-kompatibel 673-deles shadow, forklaring og rollback som særskilt offentlig aktiveringspakke.
+
 ## Candidate G frigivelsesrevision – score-neutral
 
 - [x] Lås den godkendte 0–13-timers udtransportkurve i en reproducerbar syntetisk audit.

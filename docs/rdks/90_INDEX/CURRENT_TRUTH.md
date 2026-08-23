@@ -1,5 +1,18 @@
 # Current truth – gældende projektviden
 
+## Candidate G – én bølgeenergistyret mobiliseringstilstand
+
+- DEC-0056 gør `RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3` til den foretrukne private helhedskandidat. Transporten følger fortsat DEC-0055, jagtbarheden DEC-0054 og vægtene `20/50/30`.
+- Mobilisering bygges nu som én kausal tilstand fra lokal bølgehøjde² × periode. Den bygger mod det aktuelle energimål med fire timers halveringstid og aftrappes mod et lavere mål med 48 timer.
+- Direkte vind, aktuel strøm, en separat varighedsscore og statisk stedegnethed giver ingen mobiliseringspoint. Vind forbliver i waders-jagtbarheden, strøm i transportleddet og bølgeretning i den afhængige levering.
+- En syntetisk audit låser én høj time til 15,910, fire moderate timer til 27,625, tolv høje timer til 87,500 og præcis halvering til 43,750 efter 48 rolige timer. En opdelt og ubrudt kørsel giver samme sluttilstand.
+- Det private Git-ignorerede replay omfatter fortsat 12 hændelsesvinduer og 1.460 evalueringer uden nye downloads. Ny mobilisering er i gennemsnit 73,348 mod 57,651 tidligere; den samlede score er 31,775, +3,484 mod den allerede valgte strømrevision, med 332 ændrede referencebånd.
+- Replayet er bølgehændelsesudvalgt og har ingen fundlabels. Fire/48 er derfor en begrundet forskningsprior, ikke en naturkonstant eller fundkalibrering. Aftrapning 24/72 timer flytter gennemsnitsscoren -1,651/+0,703 og bevares som følsomhed.
+- Manglende bølger holder den afledte tilstand; missing betyder ikke roligt vejr. En offentlig pipeline skal stadig håndhæve freshness og komplet fallback-kompatibel inputcoverage.
+- Den gamle 243/673-shadow målte en snæver native-DKSS-testkontrakt. De 430 øvrige dele var ikke bevis for manglende almindelig vejrdækning. Den aktuelle produktion dokumenterer 673/673 strømidentiteter via DMI, Copernicus eller godkendt proxy; en frisk slutshadow skal bruge den endelige inputkontrakt uden nye punktflytninger eller nuludfyldning.
+- PR #86 blev merged som `5d7d4c2b`. Produktion `32606559443` bestod kildegate, frisk kontrolleret data, fuld validering, releasegate, Supabase og Pages med 210 zoner og 673/673 dele. Et DMI-kald ramte midlertidigt 429/uforandrede collections, men den godkendte fallback-kæde leverede et komplet kontrolleret datasæt; ingen gate blev omgået.
+- Offentlig RavScore er fortsat `25/40/35`. Mobiliseringscheckpointet ændrer ikke UI, runtime, geometri, land-/vandpunkter, artifact eller protected-dirty-data. Næste delmål er samlet offentlig pipeline-/forklarings-/rollbackforberedelse, ikke endnu en modelrunde.
+
 ## Afgrænset rettelse af docs-only produktionsskip
 
 - PR #78 var ellers ren intern dokumentation, men merge `7133b33b` startede fuld produktion `32599980640`, fordi workflowet ignorerede de historiske `CHANGELOG-*.md` uden at ignorere projektets aktuelle samlede `CHANGELOG.md`.

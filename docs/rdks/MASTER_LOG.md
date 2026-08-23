@@ -1,3 +1,13 @@
+## 2026-08-23 – Candidate G bølgeenergistyret mobilisering
+
+- DEC-0056 vælger `RESEARCH-3` som foretrukken score-neutral helhedskandidat: `20/50/30`, strømstyret transport, vindstyret waders-jagtbarhed og én bølgeenergistyret mobiliseringstilstand.
+- Mobiliseringen bruger højde² × periode, fire timers opbygning og 48 timers aftrapning. Direkte vind, aktuel strøm, separat varighed og statisk stedegnethed giver ingen mobiliseringspoint.
+- En syntetisk audit låser korte spidser, vedvarende hændelser, eksakt 48-timers halvering, missing-hold og kompakt fortsættelse uden private data.
+- Det eksisterende Git-ignorerede replay omfatter 1.460 evalueringer. Mobiliseringen stiger fra 57,651 til 73,348 i gennemsnit; totalscoren er 31,775 og +3,484 mod transportrevisionen. Hændelsesudvalget er stormpræget og ikke fundkalibrering.
+- Målrettede tests og samlet lokal `scripts/validate-source.ps1`, inklusive de nye mobiliseringsaudits og releasegate, er grønne.
+- Transportbaseline PR #86/merge `5d7d4c2b` bestod post-merge-produktion `32606559443` med fulde gates og 210/673. Den godkendte fallback håndterede et midlertidigt DMI 429/uforandrede collections uden at skjule missing eller omgå gates.
+- Offentlig `25/40/35`, UI, runtime, geometri, land-/vandpunkter, artifact og protected-dirty-data er uændrede. Næste fase er samlet offentlig pipeline-/forklarings-/rollbackforberedelse.
+
 ## 2026-08-23 – Candidate G score-neutral frigivelsesrevision
 
 - PR #82 bestod exact-head `32602287607` på `74624ac3` og blev merged som `189644a0`. Produktion `32602328912` gennemførte frisk vejr/proveniens, fuld validering, releasegate, support, Supabase og Pages uden fejl.

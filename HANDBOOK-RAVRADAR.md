@@ -1445,6 +1445,16 @@ RavRadar kender ikke den faktiske mængde rav i sedimentet. Den modellerer trans
 
 For en regel eller vurdering skal eksperten beskrive: hvad der ser forkert ud, hvilken kysttype det gælder, hvilke målbare forhold der bør udløse en anden vurdering, hvor meget scoren bør ændres, og hvilke observationer der ville kunne vise, at hypotesen er forkert. På den måde kan kommentaren omsættes til en testbar regel i stedet for en løs mening.
 
+### 54.7 Den score-neutrale Candidate G-mobilisering
+
+RavRadar afprøver en intern model, som gør mobilisering mere enkel. Bølgehøjde og bølgeperiode bygger tilsammen én tilstand over tid. En kort høj bølgetop giver kun en mindre opbygning, mens flere timers vedvarende bølger giver et stærkere niveau. Når bølgerne falder, aftager tilstanden gradvist; den forsvinder ikke efter én rolig time.
+
+Vind giver ikke ekstra mobiliseringspoint i denne kandidat. Vindens fysiske virkning kommer allerede gennem bølger og strøm, og vind bruges særskilt til at vurdere waders-jagtbarhed. Strømmen bruges til at vurdere transport. Dermed belønnes samme vejrhændelse ikke flere gange under forskellige navne.
+
+Kandidaten bruger ikke bunddybde, render, revler eller en automatisk vurdering af stedets grundegnethed. Sådanne grove oplysninger kan overse lokale passager og give et forkert fradrag. Modellen er heller ikke en sikkerhedsvurdering.
+
+Den foretrukne interne profil bygger mobiliseringen op over cirka fire timer og lader eftervirkningen falde med en halveringstid på 48 timer. Tiderne er en begrundet forskningsprior, ikke en dokumenteret naturgrænse. Den aktive offentlige RavScore bruger fortsat `25/40/35`; Candidate G er endnu ikke koblet til kort, farver eller brugerforklaringer.
+
 ## 55. Sådan holdes den hurtige brugerfil og den fulde diagnosefil sammen
 
 RavRadar gemmer de samme vejrforhold i to forskellige udgaver. Den lille brugerfil indeholder alt det, der skal bruges på kortet, i scorerne og i femdøgnsprognosen. Den store fil indeholder desuden tekniske spor, som kun er nødvendige for administration og fejlsøgning.
@@ -2014,13 +2024,15 @@ Hvis det ikke er opfyldt, vises delen som deldaekket eller blokeret i den privat
 
 ## Kandidat G: hvad den nye analyse viser
 
+*Historisk udviklingsspor:* Dette afsnit beskriver den første Candidate G-analyse. DEC-0054, DEC-0055 og DEC-0056 erstatter nu variant, vægte, waders-kurve, transport og mobilisering. Den aktuelle private helhedskandidat er `RESEARCH-3` med `20/50/30`.
+
 **Kort fortalt:** RavRadar har nu en privat kandidat, som husker de seneste strøm-, bølge- og vindforløb. Den er kun et analyseværktøj. Brugernes RavScore er fortsat 25 % jagtbarhed, 40 % transport og 35 % mobilisering.
 
 Kandidat G starter med den eksisterende forskningsmodel for mobilisering, transport og levering. Historikken kan kun dæmpe eller forstærke en transportvej, der allerede findes. Hvis bølger og strøm ikke har nogen fysisk flytteevne, kan et tidligere pålandsforløb derfor ikke opfinde transportpoint.
 
 Den private kontrol omfatter 1.460 beregninger på 12 historiske vejrhændelser. Et hukommelsesspor på 24 timer, en 50/50-blanding af 24 og 48 timer samt 48 timer alene giver næsten samme score. Direkte vind giver kun en meget lille selvstændig forskel og overlapper de virkninger, vinden allerede har gennem bølger, strøm, vandstand, mobilisering og jagtbarhed. Næste foretrukne analysevariant er derfor 50/50 uden direkte vind.
 
-Den centralt hydrerede nationale shadow kontrollerede derefter alle 673 aktive dele i 210 zoner. 243 dele havde komplette scoreinput i begge jagtformer, mens 430 stod tydeligt som u-scorede på grund af manglende komplet lokal DKSS-familie. G 50/50 lå i gennemsnit 5,50 point under den aktive score for strand og 3,74 for waders. 24/48 og varianten uden direkte vind var fortsat næsten identiske. Runnet er derfor et teknisk og aktuelt retningsbevis, ikke en aktiveringsgodkendelse.
+Den centralt hydrerede nationale shadow kontrollerede derefter alle 673 aktive dele i 210 zoner. Dens daværende snævre native-DKSS-testkontrakt scorede 243 dele og holdt 430 ude af netop denne modeltest. Det var ikke bevis for manglende almindelig vejrdækning. Den aktuelle produktionskæde har 673/673 dokumenterede strømidentiteter via DMI, Copernicus eller godkendt proxy. Den historiske G 50/50 lå i gennemsnit 5,50 point under den aktive score for strand og 3,74 for waders. Runnet er et historisk mekanisk retningsbevis, ikke en aktiveringsgodkendelse.
 
 Modellen er ikke klar til brugerne. Den ændrer referencebånd i 474 af de 1.460 beregninger sammenlignet med den aktive model. Desuden kan et ekstremt waders-scenarie have jagtbarhed 0 og samtidig høj kandidatscore, fordi stærk fysisk transport og mobilisering stadig kan være til stede. Det viser forskellen mellem ravpotentiale og et praktisk eller sikkert tidspunkt at gå i vandet.
 
@@ -2030,11 +2042,13 @@ Ingen geometri, land-/vandpunkter, DMI-kilder, pile, offentlig forklaring eller 
 
 ## Candidate G: score, waders, pil og historik i samme kontrakt
 
+*Historisk udviklingsspor:* Den beskrevne 50/50-variant og `20/45/35` er erstattet. Aktuel privat retning er `RESEARCH-3`, `20/50/30`, vindkurve til 0 ved 15 m/s, strømstyret transport og én bølgeenergistyret mobiliseringstilstand.
+
 Den efterfølgende score-neutrale kontrol har gjort kandidatens beregning præcis nok til produktreview. Eksakte komponenter, vægtede bidrag og den fysiske gate giver den samme slutscore i alle 1.460 private evalueringer. De afrundede tal, som en bruger senere kan få vist, er forklaringstal og må ikke bruges til at genberegne facit alene.
 
 På referencevarianten uden direkte vind har 219 af 730 waders-evalueringer jagtbarhed under 35. Syv af dem har samtidig mindst 55 RavScore-point, og det kanoniske højenergiforløb har jagtbarhed 0 og score 79. Ejeren har derfor valgt en ny score-neutral forskningsvariant: strandscoren forbliver uændret, mens waders-scoren ikke kan overstige waders-jagtbarheden. Det er søgemetodens effektivitet, ikke en sikkerhedsgodkendelse.
 
-I den nye variant giver vinddelen 100 point til og med 6 m/s. Over 6 m/s falder den glidende gennem 80 ved 7 m/s, 60 ved 8 m/s, 35 ved 10 m/s, 10 ved 13 m/s og 0 ved 18 m/s. Bølger indgår fortsat separat. Bund, dybdeprofil, render, vadebredde og adgang indgår ikke, fordi automatisk lokal grundegnethed kan være misvisende uden lokalkendskab.
+I denne historiske variant gav vinddelen 100 point til og med 6 m/s og nåede 0 ved 18 m/s. Den senere ejerbeslutning i DEC-0054 erstatter slutpunktet med 15 m/s og gør WAM-bølger til et blødt fradrag på højst 20 point. Bund, dybdeprofil, render, vadebredde og adgang indgår ikke, fordi automatisk lokal grundegnethed kan være misvisende uden lokalkendskab.
 
 Genafspilningen gav nul ændringer i 730 strandscorer og ingen waders-score over jagtbarheden. Waders-gennemsnittet gik fra 35,465 til 27,351 i de udvalgte vejrhændelser. Varianten er fortsat privat og er ikke en kalibreret produktionsmodel.
 
@@ -2046,11 +2060,13 @@ Den færdige vægtfølsomhed holder samme proces og waders-loft fast og sammenli
 
 Forskningsresultatet indeholder nu én maskinlæsbar forklaring med de eksakte komponenter, vægte og bidrag, pilen nu, historikken før nu, den milde fysiske begrænsning og et synligt eventuelt waders-loft. Alle 1.460 replayforklaringer stemmer med deres score. Ved en senere offentlig visning kan brugeren derfor få én enkel hovedforklaring og åbne de tre komponenter uden at få en anden matematisk historie.
 
-Den nationale aktiveringsgate er fortsat åben. Kun 243 af 673 dele kunne scores i den friske centrale shadow, fordi 430 mangler komplet lokal DKSS-familie. Candidate G bruger ingen statisk lokal bonus for rev, lavt vand eller vegetation. Disse felter rapporteres kun som diagnostik, og en hovedzones generelle morfologi må ikke bruges som lokal genvej.
+Den historiske nationale shadow brugte en snæver native-DKSS-testkontrakt og scorede derfor 243 af 673 dele. Det må ikke læses som 430 huller i den almindelige vejrproduktion. Den aktuelle produktion dokumenterer 673/673 strømidentiteter gennem DMI, Copernicus eller godkendt proxy. Før en offentlig kobling skal en ny shadow bruge netop den endelige fallback-kompatible Candidate G-kontrakt. Candidate G bruger ingen statisk lokal bonus for rev, lavt vand eller vegetation, og en hovedzones generelle morfologi må ikke bruges som lokal genvej.
 
-Kandidat G er fortsat privat. Den aktive offentlige score er 25 % jagtbarhed, 40 % transport og 35 % mobilisering. Candidate G's samlede score-neutrale model-, vægt- og forklaringsgrundlag er klar til ejerreview, men aktivering kræver fortsat bedre central coverage, ejerens samlede go/no-go og fuld validering af en eventuel offentlig kobling.
+Kandidat G er fortsat privat. Den aktive offentlige score er 25 % jagtbarhed, 40 % transport og 35 % mobilisering. Ejerreviewet har siden valgt `20/50/30`, den modeafhængige jagtbarhed, den strømstyrede transport og bølgeenergimobiliseringen. Næste trin er en samlet offentlig pipeline-, forklarings- og rollbackpakke med frisk national slutshadow og fulde gates.
 
 ## Candidate G: ét forslag til ejerreview
+
+*Historisk og erstattet:* Dette forslag blev efterfølgende afløst af DEC-0054–0056. Det bevares kun for at vise, hvordan den nuværende helhedskandidat blev valgt.
 
 De mange kandidatnavne er nu samlet i én forståelig arbejdsretning. A-C er sammenligningsmodeller, D og E er udviklingstrin, F er historikpiloten, og G 24/48 er følsomhedsgrænser. De bevares som revisionsspor, men de er ikke samtidige produktforslag.
 

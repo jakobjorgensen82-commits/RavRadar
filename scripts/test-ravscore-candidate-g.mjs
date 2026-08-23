@@ -48,6 +48,7 @@ assert.deepEqual(Object.keys(CANDIDATE_G_VARIANTS), [
   'G-50-50-NO-DIRECT-WIND-WADERS-LIMIT',
   'G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED',
   'G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED',
+  'G-CURRENT-LED-WAVE-MOBILISATION-WADERS-WIND-LED',
 ]);
 
 const neutral = evaluate({ current: 0, wave: 0, directWind: 0 });
@@ -208,6 +209,34 @@ assert.equal(evaluate({}, {
   variantId: 'G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED',
 }).reason, 'MISSING_REQUIRED_CURRENT_LED_TRANSPORT_POTENTIAL');
 
+const waveMobilisationMemory = {
+  ...currentLedBaseMemory,
+  mobilisationPotential: 70,
+  waveEnergyProxy: 7,
+  waveEnergyScore: 75,
+  waveMobilisationTransition: 'decay',
+  waveMobilisationBuildHalfLifeHours: 4,
+  waveMobilisationDecayHalfLifeHours: 48,
+};
+const waveMobilisation = evaluate(waveMobilisationMemory, {
+  variantId: 'G-CURRENT-LED-WAVE-MOBILISATION-WADERS-WIND-LED',
+});
+assert.equal(waveMobilisation.available, true);
+assert.equal(waveMobilisation.components.mobilisation, 70);
+assert.equal(waveMobilisation.diagnostics.candidateGWaveMobilisationMemoryIncluded, true);
+assert.equal(waveMobilisation.researchExplanation.mobilisationMemory.directWindScoreIncluded, false);
+assert.equal(waveMobilisation.researchExplanation.mobilisationMemory.currentSpeedScoreIncluded, false);
+const waveMobilisationOtherWindAndCurrent = evaluate(waveMobilisationMemory, {
+  variantId: 'G-CURRENT-LED-WAVE-MOBILISATION-WADERS-WIND-LED',
+}, {
+  weather: { windSpeedMps: 14, currentSpeedMps: 1.2 },
+});
+assert.equal(waveMobilisationOtherWindAndCurrent.components.mobilisation, 70,
+  'Direkte vind og aktuel strøm må ikke give ekstra mobiliseringspoint');
+assert.equal(evaluate(currentLedBaseMemory, {
+  variantId: 'G-CURRENT-LED-WAVE-MOBILISATION-WADERS-WIND-LED',
+}).reason, 'MISSING_REQUIRED_WAVE_MOBILISATION_STATE');
+
 const wavePenaltyCases = [
   { windSpeedMps: 6, waveHeightM: 0.7, expected: 93 },
   { windSpeedMps: 6, waveHeightM: 1.2, expected: 85 },
@@ -258,7 +287,8 @@ assert.throws(() => evaluate(
 
 for (const result of [neutral, inbound, outbound, withDirect, withoutDirect, approvedBeach,
   ...approvedWaders, currentLedFull, ...currentLedHourly, noCurrentHighWave,
-  lowWaveLanding, highWaveLanding, zeroCapacity, staticA, staticB]) {
+  lowWaveLanding, highWaveLanding, waveMobilisation, waveMobilisationOtherWindAndCurrent,
+  zeroCapacity, staticA, staticB]) {
   assert.ok(result.score >= 0 && result.score <= 100);
   assert.equal(result.candidateScores.candidateG, result.score);
 }

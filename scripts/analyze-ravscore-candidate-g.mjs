@@ -20,6 +20,10 @@ import {
   signedDirectionalForce,
 } from '../js/core/ravscore-regime-memory.js';
 import {
+  WAVE_MOBILISATION_RECOMMENDED_RESEARCH_PROFILE,
+  buildWaveMobilisationPotential,
+} from '../js/core/ravscore-mobilisation-memory.js';
+import {
   MODE_COUPLING_POLICIES,
   evaluateModeHuntabilityCoupling,
 } from '../js/core/ravscore-mode-huntability-research.js';
@@ -101,6 +105,29 @@ const CURRENT_LED_SENSITIVITY_PROFILES = Object.freeze([
       fullStrengthNormalSpeedMps: 0.12,
       neutralPassiveHalfLifeHours: 48,
     }),
+  }),
+]);
+const WAVE_MOBILISATION_SENSITIVITY_PROFILES = Object.freeze([
+  Object.freeze({ id: 'wave-energy-state-build-4-decay-48', options: Object.freeze({}) }),
+  Object.freeze({
+    id: 'wave-energy-state-build-3-decay-48',
+    options: Object.freeze({ buildHalfLifeHours: 3 }),
+  }),
+  Object.freeze({
+    id: 'wave-energy-state-build-6-decay-48',
+    options: Object.freeze({ buildHalfLifeHours: 6 }),
+  }),
+  Object.freeze({
+    id: 'wave-energy-state-build-4-decay-24',
+    options: Object.freeze({ decayHalfLifeHours: 24 }),
+  }),
+  Object.freeze({
+    id: 'wave-energy-state-build-4-decay-72',
+    options: Object.freeze({ decayHalfLifeHours: 72 }),
+  }),
+  Object.freeze({
+    id: 'wave-energy-state-build-4-decay-48-warm-start-50',
+    options: Object.freeze({ initialPotential: 50 }),
   }),
 ]);
 const HISTORY_MIXES = Object.freeze([
@@ -346,6 +373,23 @@ function buildCurrentTransportMemory(samples, options = {}) {
   }]));
 }
 
+function buildWaveMobilisationMemory(samples, options = {}) {
+  const records = buildWaveMobilisationPotential(samples, {
+    ...options,
+    getTime: sample => sample.time,
+    getWaveHeight: sample => sample.waveHeightM,
+    getWavePeriod: sample => sample.wavePeriodS,
+  });
+  return new Map(records.map(record => [utc(record.time).getTime(), {
+    mobilisationPotential: record.mobilisationPotential,
+    waveEnergyProxy: record.waveEnergyProxy,
+    waveEnergyScore: record.waveEnergyScore,
+    waveMobilisationTransition: record.transition,
+    waveMobilisationBuildHalfLifeHours: record.buildHalfLifeHours,
+    waveMobilisationDecayHalfLifeHours: record.decayHalfLifeHours,
+  }]));
+}
+
 function buildMemories(samples, activeWeight, directWindPower = 1) {
   const current = buildMemoryTrack(samples, sample => signedDirectionalForce({
     magnitude: sample.currentSpeedMps,
@@ -361,11 +405,13 @@ function buildMemories(samples, activeWeight, directWindPower = 1) {
     power: directWindPower,
   }), activeWeight, directWindPower === 1 ? MEMORY_SCALES.directWindLinear : MEMORY_SCALES.directWindStress);
   const transportMemory = buildCurrentTransportMemory(samples);
+  const mobilisationMemory = buildWaveMobilisationMemory(samples);
   return new Map(samples.map((sample, index) => [utc(sample.time).getTime(), {
     current: current[index].boundedState,
     wave: wave[index].boundedState,
     directWind: directWind[index].boundedState,
     ...transportMemory.get(utc(sample.time).getTime()),
+    ...mobilisationMemory.get(utc(sample.time).getTime()),
   }]));
 }
 
@@ -727,6 +773,80 @@ function aggregate(rows) {
       findOutcomeCalibration: false,
       automaticActivationAllowed: false,
     },
+    mobilisationRevision: {
+      variantId: 'G-CURRENT-LED-WAVE-MOBILISATION-WADERS-WIND-LED',
+      recommendedResearchProfile: WAVE_MOBILISATION_RECOMMENDED_RESEARCH_PROFILE,
+      overallVsCurrentLedTransportRevision: summarizeScores(
+        rows,
+        row => row.waveMobilisationScore,
+        row => row.currentLedScore,
+      ),
+      beachVsCurrentLedTransportRevision: summarizeScores(
+        rows.filter(row => row.mode === 'beach'),
+        row => row.waveMobilisationScore,
+        row => row.currentLedScore,
+      ),
+      wadersVsCurrentLedTransportRevision: summarizeScores(
+        rows.filter(row => row.mode === 'waders'),
+        row => row.waveMobilisationScore,
+        row => row.currentLedScore,
+      ),
+      previousMobilisation: summarizeNumbers(rows.map(row => row.mobilisation)),
+      waveStateMobilisation: summarizeNumbers(rows.map(row => row.waveMobilisationPotential)),
+      mobilisationDelta: summarizeNumbers(
+        rows.map(row => row.waveMobilisationPotential - row.mobilisation),
+      ),
+      waveEnergyProxy: summarizeNumbers(rows.map(row => row.waveMobilisationEnergyProxy)),
+      waveEnergyScore: summarizeNumbers(rows.map(row => row.waveMobilisationEnergyScore)),
+      transitions: Object.fromEntries(
+        [...new Set(rows.map(row => row.waveMobilisationTransition))].sort().map(transition => [
+          transition,
+          rows.filter(row => row.waveMobilisationTransition === transition).length,
+        ]),
+      ),
+      parameterSensitivity: Object.fromEntries(WAVE_MOBILISATION_SENSITIVITY_PROFILES.map(profile => [
+        profile.id,
+        {
+          options: profile.options,
+          scoreVsRecommendedProfile: summarizeScores(
+            rows,
+            row => row.waveMobilisationSensitivity[profile.id].score,
+            row => row.waveMobilisationSensitivity[WAVE_MOBILISATION_RECOMMENDED_RESEARCH_PROFILE.id].score,
+          ),
+          mobilisationPotential: summarizeNumbers(
+            rows.map(row => row.waveMobilisationSensitivity[profile.id].mobilisationPotential),
+          ),
+          mobilisationDeltaVsRecommended: summarizeNumbers(rows.map(row =>
+            row.waveMobilisationSensitivity[profile.id].mobilisationPotential
+            - row.waveMobilisationSensitivity[WAVE_MOBILISATION_RECOMMENDED_RESEARCH_PROFILE.id]
+              .mobilisationPotential)),
+        },
+      ])),
+      byEventClassification: Object.fromEntries(
+        [...new Set(rows.map(row => row.classification))].sort().map(classification => {
+          const selected = rows.filter(row => row.classification === classification);
+          return [classification, {
+            evaluations: selected.length,
+            previousMobilisation: summarizeNumbers(selected.map(row => row.mobilisation)),
+            waveStateMobilisation: summarizeNumbers(
+              selected.map(row => row.waveMobilisationPotential),
+            ),
+            scoreVsCurrentLedTransportRevision: summarizeScores(
+              selected,
+              row => row.waveMobilisationScore,
+              row => row.currentLedScore,
+            ),
+          }];
+        }),
+      ),
+      directWindScoreIncluded: false,
+      currentSpeedScoreIncluded: false,
+      staticSiteSuitabilityIncluded: false,
+      currentAndWindRemainAvailableForOtherComponents: true,
+      compactStateContinuationRequired: true,
+      findOutcomeCalibration: false,
+      publicActivationAllowed: false,
+    },
     windLedWadersHuntability: (() => {
       const waders = rows.filter(row => row.mode === 'waders');
       const compareBand = (key, value) => {
@@ -926,6 +1046,12 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
           buildCurrentTransportMemory(samples, profile.options),
         ]),
       );
+      const waveMobilisationSensitivityMemories = Object.fromEntries(
+        WAVE_MOBILISATION_SENSITIVITY_PROFILES.map(profile => [
+          profile.id,
+          buildWaveMobilisationMemory(samples, profile.options),
+        ]),
+      );
       const stressMemory = buildMemories(samples, 0.5, 2);
       const evaluationSamples = samples.filter(sample => utc(sample.time) >= utc(waveEvent.peakTime));
       for (const sample of evaluationSamples) {
@@ -959,6 +1085,10 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
           const currentLedVariant = evaluateRavScoreCandidateG(context, {
             variantId: 'G-CURRENT-LED-OUTFLOW-8-WADERS-WIND-LED', memory: primaryMemory,
           });
+          const waveMobilisationVariant = evaluateRavScoreCandidateG(context, {
+            variantId: 'G-CURRENT-LED-WAVE-MOBILISATION-WADERS-WIND-LED',
+            memory: primaryMemory,
+          });
           const currentLedSensitivity = Object.fromEntries(
             CURRENT_LED_SENSITIVITY_PROFILES.map(profile => {
               const transportMemory = currentLedSensitivityMemories[profile.id].get(timeKey);
@@ -974,6 +1104,19 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
                 neutralPassiveDecayPoints: transportMemory.neutralPassiveDecayPoints,
                 inboundStrength: transportMemory.inboundStrength,
                 outboundStrength: transportMemory.outboundStrength,
+              }];
+            }),
+          );
+          const waveMobilisationSensitivity = Object.fromEntries(
+            WAVE_MOBILISATION_SENSITIVITY_PROFILES.map(profile => {
+              const mobilisationMemory = waveMobilisationSensitivityMemories[profile.id].get(timeKey);
+              const result = evaluateRavScoreCandidateG(context, {
+                variantId: 'G-CURRENT-LED-WAVE-MOBILISATION-WADERS-WIND-LED',
+                memory: { ...primaryMemory, ...mobilisationMemory },
+              });
+              return [profile.id, {
+                score: result.score,
+                mobilisationPotential: result.diagnostics.candidateGWaveMobilisationPotential,
               }];
             }),
           );
@@ -1039,6 +1182,16 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
             currentLedInboundNormalSpeedMps: primaryMemory.inboundNormalSpeedMps,
             currentLedOutboundNormalSpeedMps: primaryMemory.outboundNormalSpeedMps,
             currentLedSensitivity,
+            waveMobilisationScore: waveMobilisationVariant.score,
+            waveMobilisationPotential: waveMobilisationVariant.diagnostics
+              .candidateGWaveMobilisationPotential,
+            waveMobilisationEnergyProxy: waveMobilisationVariant.diagnostics
+              .candidateGWaveMobilisationEnergyProxy,
+            waveMobilisationEnergyScore: waveMobilisationVariant.diagnostics
+              .candidateGWaveMobilisationEnergyScore,
+            waveMobilisationTransition: waveMobilisationVariant.diagnostics
+              .candidateGWaveMobilisationTransition,
+            waveMobilisationSensitivity,
             windHuntabilityBand: windHuntabilityBand(context.weather.windSpeedMps),
             waveHuntabilityBand: waveHuntabilityBand(context.weather.waveHeightM),
             approvedScoreCalculation: approvedModeVariant.scoreCalculation,
@@ -1075,6 +1228,7 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
   assert.ok(rows.every(row => Object.values(row.variants).every(score => score >= 0 && score <= 100)));
   assert.ok(rows.every(row => row.approvedModeScore >= 0 && row.approvedModeScore <= 100));
   assert.ok(rows.every(row => row.currentLedScore >= 0 && row.currentLedScore <= 100));
+  assert.ok(rows.every(row => row.waveMobilisationScore >= 0 && row.waveMobilisationScore <= 100));
   assert.ok(rows.every(row =>
     row.currentLedSensitivity['owner-outflow-reference'].score === row.currentLedScore));
   assert.ok(rows.filter(row => row.mode === 'beach')
@@ -1083,6 +1237,8 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
     .every(row => row.approvedModeScore <= row.approvedHuntability));
   assert.ok(rows.filter(row => row.mode === 'waders')
     .every(row => row.currentLedScore <= row.currentLedHuntability));
+  assert.ok(rows.filter(row => row.mode === 'waders')
+    .every(row => row.waveMobilisationScore <= row.currentLedHuntability));
   return {
     schemaVersion: '1.1.0',
     status: 'passed-private-candidate-g-decision-analysis',
@@ -1109,6 +1265,14 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
         waveRole: 'dependent-landing-only',
         waveCanCreateTransport: false,
       },
+      mobilisationRevision: {
+        variantId: 'G-CURRENT-LED-WAVE-MOBILISATION-WADERS-WIND-LED',
+        recommendedResearchProfile: WAVE_MOBILISATION_RECOMMENDED_RESEARCH_PROFILE,
+        driver: 'causal-wave-energy-state-from-height-squared-times-period',
+        directWindScoreIncluded: false,
+        currentSpeedScoreIncluded: false,
+        staticSiteSuitabilityIncluded: false,
+      },
     },
     historicalWindowCount: forcing.enrichedEventCount,
     historyBoundaryAudit: boundaryAudit,
@@ -1129,6 +1293,7 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
       'DIRECT_WIND_IS_A_CAPPED_RESEARCH_PRIOR_AND_HAS_A_MANDATORY_NO_DIRECT_CONTROL',
       'TOTAL_WIND_ABLATION_INCLUDES_HUNTABILITY_AND_MOBILISATION_PATHS',
       'TOTAL_WAVE_ABLATION_INCLUDES_HUNTABILITY_AND_MOBILISATION_PATHS',
+      'WAVE_MOBILISATION_STATE_REPLACES_ADDITIVE_WIND_CURRENT_AND_DURATION_POINTS_ONLY_IN_RESEARCH_3',
     ],
     limitations: [
       'FOUR_SENTINEL_COASTS_ONLY',
@@ -1140,6 +1305,7 @@ function compareDocuments(forcing, wave, wind, publicRules = []) {
       'CURRENT_NORMAL_SPEED_THRESHOLDS_ARE_UNCALIBRATED_RESEARCH_PRIORS',
       'CURRENT_TRANSPORT_REPLAY_START_STATE_IS_NOT_OBSERVED',
       'EVENT_WINDOWS_HAVE_ONLY_TWENTY_FOUR_HOURS_BEFORE_EVALUATION',
+      'MOBILISATION_BUILD_AND_DECAY_HALF_LIVES_ARE_UNCALIBRATED_RESEARCH_PRIORS',
       'PASSIVE_DECAY_PROFILES_ARE_BOUNDARY_SENSITIVITIES_NOT_SELECTED_PRODUCT_RULES',
       'EVENT_CLASS_IS_DIRECTIONAL_NOT_DELIVERY_STRENGTH',
       'NATIONAL_PRIVATE_SHADOW_REQUIRES_CENTRAL_HYDRATED_INPUT',
@@ -1240,6 +1406,10 @@ function summaryText(report) {
     `Current-led warm-start mean transport potential: ${aggregate.currentLedRevision.parameterSensitivity['warm-start-50-diagnostic-edge'].transportPotential.mean}`,
     `Current-led neutral 24h half-life mean transport potential: ${aggregate.currentLedRevision.parameterSensitivity['neutral-passive-half-life-24'].transportPotential.mean}`,
     `Current-led neutral 48h half-life mean transport potential: ${aggregate.currentLedRevision.parameterSensitivity['neutral-passive-half-life-48'].transportPotential.mean}`,
+    `Wave-state mobilisation mean: ${aggregate.mobilisationRevision.waveStateMobilisation.mean}`,
+    `Previous mobilisation mean: ${aggregate.mobilisationRevision.previousMobilisation.mean}`,
+    `Wave-state score mean: ${aggregate.mobilisationRevision.overallVsCurrentLedTransportRevision.mean}`,
+    `Wave-state score mean delta: ${aggregate.mobilisationRevision.overallVsCurrentLedTransportRevision.meanDeltaFromBaseline}`,
     'Protected geometry read: no',
     'Coordinates/raw weather/raw U/V stored: no',
     'Public score impact: no',
@@ -1279,6 +1449,14 @@ function main() {
     assert.equal(report.aggregate.currentLedRevision.recommendedResearchProfile.passiveNeutralDecay, false);
     assert.equal(Object.keys(report.aggregate.currentLedRevision.parameterSensitivity).length,
       CURRENT_LED_SENSITIVITY_PROFILES.length);
+    assert.equal(report.aggregate.mobilisationRevision.recommendedResearchProfile.id,
+      'wave-energy-state-build-4-decay-48');
+    assert.equal(report.aggregate.mobilisationRevision.directWindScoreIncluded, false);
+    assert.equal(report.aggregate.mobilisationRevision.currentSpeedScoreIncluded, false);
+    assert.equal(report.aggregate.mobilisationRevision.staticSiteSuitabilityIncluded, false);
+    assert.equal(Object.keys(report.aggregate.mobilisationRevision.parameterSensitivity).length,
+      WAVE_MOBILISATION_SENSITIVITY_PROFILES.length);
+    assert.ok(report.aggregate.mobilisationRevision.waveStateMobilisation.count > 0);
     assert.equal(report.aggregate.productContractAudit.ownerApprovedVariantConsistency.mismatchCount, 0);
     assert.equal(report.aggregate.productContractAudit.explanationContract.mismatchCount, 0);
     assert.equal(report.aggregate.ownerApprovedWeightSensitivity

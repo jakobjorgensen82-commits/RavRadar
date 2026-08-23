@@ -2,6 +2,14 @@
 
 Dette er den obligatoriske indgang til RavRadar for Codex og andre kodeassistenter. Projektet må ikke behandles som en samling isolerede filer. Hver ændring skal forstås som et træk i et sammenhængende system.
 
+## Aktuelt roadmapcheckpoint 2026-08-23
+
+- Den offentlige RavScore er fortsat `25/40/35`. Candidate G er diagnostic-only, indtil en samlet offentlig pipeline-/forklarings-/rollbackpakke er valideret.
+- Den foretrukne private helhedskandidat er `RESEARCH-3`: `20/50/30`, DEC-0054's vindstyrede waders-jagtbarhed, DEC-0055's strømstyrede transport og DEC-0056's ene bølgeenergistyrede mobiliseringstilstand.
+- Mobilisering bruger højde² × periode med fire timers opbygning og 48 timers aftrapning. Direkte vind, aktuel strøm, separat varighed og statisk stedegnethed giver ingen mobiliseringspoint.
+- Den gamle 243/673-shadow var en snæver native-DKSS-testkontrakt, ikke bevis for manglende almindelig vejrdækning. Aktuel produktion har 673/673 dokumenterede strømidentiteter. En fremtidig slutshadow skal bruge den endelige fallback-kompatible kontrakt uden nye downloads eller punktflytning.
+- Næste ikke-blokerede RavScore-fase er samlet central persistens af transport- og mobiliseringstilstand, frisk national shadow, offentlig forklaring og rollback. Opret ikke endnu en parallel model uden ny modstridende evidens.
+
 ## Verificeret startbaseline
 - Applikationsversion: **4.0.117**.
 - Aktuel `main` ved handoff: `a164b6e52fa18efc7209d90779048bb86bcf870a` (`RavRadar 4.0.117 codex handoff v2`).
