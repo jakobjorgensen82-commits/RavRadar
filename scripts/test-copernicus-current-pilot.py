@@ -106,18 +106,28 @@ def main() -> None:
         need(len(two_times["records"]) == 2, "A restored shadow must retain both different valid times")
         need(two_time_evidence["validTimeCount"] == 2, "Safe evidence must prove multi-time aggregation")
 
-        original_fingerprint = target_fingerprint([target])
+        sibling_target = {**target, "partId": "p2", "waterPoint": [9.02, 57.0]}
+        sibling_record = {
+            **record,
+            "partId": "p2",
+            "samplingPoint": [9.02, 57.0],
+            "validTime": now.isoformat().replace("+00:00", "Z"),
+        }
+        original_identities = {row["partId"]: row for row in [target, sibling_target]}
+        original_fingerprint = target_fingerprint([target, sibling_target])
         collected = update_shadow(
             path,
-            [{**record, "validTime": now.isoformat().replace("+00:00", "Z")}],
+            [{**record, "validTime": now.isoformat().replace("+00:00", "Z")}, sibling_record],
             now,
             collection_time=now,
             target_fingerprint=original_fingerprint,
-            target_points={"p1": [9.0, 57.0]},
+            target_identities=original_identities,
+            target_part_ids=["p1", "p2"],
         )
         need(collected["collections"][-1]["targetFingerprint"] == original_fingerprint,
              "A completed hour must be bound to the authoritative target geometry")
         moved_target = {**target, "waterPoint": [9.01, 57.0]}
+        moved_identities = {row["partId"]: row for row in [moved_target, sibling_target]}
         moved_fingerprint = target_fingerprint([moved_target])
         moved_record = {
             **record,
@@ -130,15 +140,55 @@ def main() -> None:
             now,
             collection_time=now,
             target_fingerprint=moved_fingerprint,
-            target_points={"p1": [9.01, 57.0]},
+            target_identities=moved_identities,
+            target_part_ids=["p1"],
         )
         same_hour = [row for row in replaced["records"] if row["validTime"] == moved_record["validTime"]]
-        need(len(same_hour) == 1 and same_hour[0]["samplingPoint"] == [9.01, 57.0],
-             "Recollection after a point move must replace the whole hour, not retain stale rows")
-        need(replaced["collections"][-1]["targetFingerprint"] == moved_fingerprint,
-             "Recollected hour must carry the new geometry fingerprint")
+        need(len(same_hour) == 2 and any(row["samplingPoint"] == [9.01, 57.0] for row in same_hour),
+             "Recollection after a point move must replace only the moved part")
+        need(any(row["partId"] == "p2" and row["samplingPoint"] == [9.02, 57.0] for row in same_hour),
+             "An unchanged sibling part must retain its verified row")
+        need(replaced["collections"][-1]["targetFingerprint"] == target_fingerprint([moved_target, sibling_target]),
+             "Reconciled hour must carry the exact retained geometry fingerprint")
+        need(replaced["collections"][-1]["targetPartIds"] == ["p1", "p2"]
+             and replaced["collections"][-1]["recordCount"] == 2,
+             "Reconciled collection metadata must authorize every retained row")
         need(not any(row["samplingPoint"] == [9.0, 57.0] for row in replaced["records"]),
              "A moved point must invalidate its retained history at older hours as well")
+
+        retention_path = Path(directory) / "copernicus-current-sibling-retention.json"
+        earlier = now - timedelta(hours=1)
+        earlier_text = earlier.isoformat().replace("+00:00", "Z")
+        first_hour_records = [
+            {**record, "validTime": earlier_text},
+            {**sibling_record, "validTime": earlier_text},
+        ]
+        update_shadow(
+            retention_path,
+            first_hour_records,
+            now,
+            collection_time=earlier,
+            target_fingerprint=original_fingerprint,
+            target_identities=original_identities,
+            target_part_ids=["p1", "p2"],
+        )
+        moved_next_hour = update_shadow(
+            retention_path,
+            [moved_record],
+            now,
+            collection_time=now,
+            target_fingerprint=moved_fingerprint,
+            target_identities=moved_identities,
+            target_part_ids=["p1"],
+        )
+        earlier_rows = [row for row in moved_next_hour["records"] if row["validTime"] == earlier_text]
+        need(len(earlier_rows) == 1 and earlier_rows[0]["partId"] == "p2",
+             "Moving one point must preserve the unchanged sibling's older verified history")
+        earlier_collection = next(
+            row for row in moved_next_hour["collections"] if row["validTime"] == earlier_text
+        )
+        need(earlier_collection["targetPartIds"] == ["p2"] and earlier_collection["recordCount"] == 1,
+             "The preserved sibling hour must be re-authorized with its exact retained identity")
 
     pilot_workflow = (ROOT / ".github/workflows/validate-copernicus-current-pilot.yml").read_text(encoding="utf-8")
     keepalive_workflow = (ROOT / ".github/workflows/preserve-copernicus-current-shadow.yml").read_text(encoding="utf-8")

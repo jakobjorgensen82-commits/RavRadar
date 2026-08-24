@@ -1,5 +1,10 @@
 # Kendte åbne og overvågede forhold
 
+## Kandidat 4.0.276 – punktvis bevaring af strømhistorik
+
+- **ISSUE-COPERNICUS-COLLECTION-GROUP-INVALIDATION – LØST I KANDIDAT:** En hel Copernicus-time var bundet til den dynamisk valgte indsamlingsgruppe. Skift i DMI-dækning, genindsamling eller flytning af ét punkt kunne dermed fjerne godkendelsen af uændrede punkters historik. 4.0.276 validerer den valgte delmængde mod den fulde centrale identitetsliste, erstatter kun valgte punkter og genopbygger hver times bevis fra de faktisk bevarede rækker.
+- **ISSUE-CANDIDATE-G-48H-HISTORY-NOT-LOST – AFGRÆNSET:** Den kompakte Candidate G-state var fortsat til cirka 36 timer ved seneste kontrollerede reference. Den ældre brede cache kan ikke sikkert lukke resten landsdækkende: 43 dele havde komplet kontinuitet til målreferencen, 621 var ufuldstændige, og otte manglede. Der backfilles eller interpoleres ikke; lokal score bliver aktiv ved ægte komplet historik.
+
 ## Kandidat 4.0.275 – Candidate G-only og synkron håndbogskilde
 
 - **ISSUE-HANDBOOK-INSTALL-SOURCE-DRIFT – LØST I KANDIDAT:** Produktion `32775444781` bestod Candidate G-only-hydreringen, men stoppede før deploy, fordi repositoryets webhåndbog og Supabase-installationskopi var forskellige. Central ekspertdata var ikke indlæst i det fejlede trin. 4.0.275 synkroniserer kopien, bevarer den fulde kontrol og føjer samme kontrol til exact-head-kildegaten.

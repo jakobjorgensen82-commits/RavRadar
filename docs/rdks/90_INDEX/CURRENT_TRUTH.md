@@ -1,5 +1,14 @@
 # Current truth – gældende projektviden
 
+## Kandidat 4.0.276 – strømhistorik bevares pr. kystpunkt
+
+- Candidate G med **20 % søgeforhold, 50 % transport og 30 % rav i bevægelse** er fortsat den eneste offentlige scoremodel. Der indføres ingen gammel reserveprofil.
+- En dataminimeret kontrol viser, at den kompakte Candidate G-state ikke er gået tabt. Ved den seneste kontrollerede reference havde den dokumenterede kæde cirka 36 sammenhængende timer; den skal fortsætte naturligt til 48 timer uden opdigtede mellemtimer.
+- Den private brede Copernicus-cache kunne hidtil behandle en dynamisk delmængde som én samlet time. En ændring ved ét punkt eller i DMI-dækningen kunne derfor ugyldiggøre verificeret historik for uændrede punkter.
+- 4.0.276 binder hver bevaret række til den fulde centrale punktidentitet, erstatter kun genindsamlede punkter i samme time og nulstiller kun historikken for et faktisk flyttet eller omgrupperet punkt.
+- Den ældre brede cache er ikke brugt som kunstig landsdækkende genvej. Kun 43 dele havde et sikkert sammenhængende vindue frem til målreferencen; 621 var ufuldstændige, og otte manglede.
+- Ingen scoreregel, vejrregel, offentlig datakontrakt, zone, geometri eller land-/vandpunkt ændres. Se DEC-0073.
+
 ## Produktionsverificeret 4.0.275 – Candidate G-only og lokal zonestatus
 
 - Candidate G med **20 % søgeforhold, 50 % transport og 30 % rav i bevægelse** er fortsat den eneste offentlige scoremodel. Forsiden, zonepanelet og Rav-assistenten bruger nu alle den samme lokale Candidate G-beregning og har ingen offentlig import af den gamle scoremotor.
@@ -16,7 +25,7 @@
 - PR #136 bestod exact-head-kildegaten `32778118765` på `8103143c018253861a154f9fce5b7d937572a166` og blev merged som `59ea4546f3505ed96d2512a9bf5c9925ff7dff2a`.
 - Produktion `32778269487` bestod central hydrering, frisk vejropdatering, fuld validering, releasegate, beskyttet adminsynkronisering, artifact og Pages-deploy. Live er version 4.0.275 med datasæt `rr-20260824211701-210` på 210 zoner og 673 kystdele.
 - Det levende manifest har Candidate G som både ønsket, aktiv og faktisk profil, `rollbackProfileId: null`, forbud mod legacyfallback og lokal fail-closed availability. Den gamle 25/40/35-model kan derfor ikke vende tilbage automatisk.
-- Ved slutkontrollen var **0/210 zoner aktive**, fordi ingen zone endnu havde den krævede sammenhængende 48-timers strømhistorik efter Candidate G-only-starten. Det er en ærlig opvarmningstilstand: ingen gammel eller opdigtet score vises, og zoner bliver aktive enkeltvis, når deres eget grundlag er komplet.
+- Ved slutkontrollen var **0/210 zoner aktive**, fordi ingen zone endnu havde den krævede sammenhængende 48-timers strømhistorik. Senere audit dokumenterede, at statekæden var fortsat til cirka 36 timer og altså ikke startet forfra ved Candidate G-only-udgivelsen. Det er en ærlig opvarmningstilstand: ingen gammel eller opdigtet score vises, og zoner bliver aktive enkeltvis, når deres eget grundlag er komplet.
 - Adminforsiden viser den samme `0/210 AKTIVE`-status og oplister alle berørte zone-/søgemådepar med forklaringen om manglende sammenhængende strømdata. Ingen rå strømvektorer, koordinater eller private payloads vises.
 
 ## Historisk kandidat 4.0.274 – Candidate G-only-kontrakten blev central og gennemgående

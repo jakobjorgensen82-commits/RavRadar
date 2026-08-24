@@ -1,3 +1,12 @@
+## 4.0.276 – strømhistorik bevares pr. kystpunkt (2026-08-25)
+
+- Retter den private Copernicus-cache, så en dynamisk indsamlingsgruppe eller flytning af ét punkt ikke længere kan ugyldiggøre verificeret historik for uændrede kystpunkter.
+- Genindsamling af samme time erstatter kun de valgte punkter. Et ændret punkt mister sin egen gamle historik, mens uændrede søsterpunkter og deres eksakte samlingsbevis bevares.
+- Den fulde centrale punktidentitet følger hver opdatering. Ukendte punkter, moderzone-/vandpunktmismatch, dubletter og forkert delmængdefingeraftryk afvises fail-closed.
+- Der udføres ingen backfill, interpolation eller rekonstruktion. Candidate G 20/50/30 forbliver eneste offentlige scoremodel, og lokale scorer åbner ved ægte komplet 48-timers historik.
+- En dataminimeret audit dokumenterede cirka 36 timers fortsat kompakt state. Den ældre brede cache var ikke sikkert sammenhængende til målreferencen for hele landet og bruges derfor ikke som genvej.
+- Scoreformel, vejrregler, offentlig runtimekontrakt, zoner, geometri og land-/vandpunkter er uændrede. Se DEC-0073.
+
 ## 4.0.274 – holdbar Candidate G-only-kontrakt (2026-08-24)
 
 - Retter den centrale migrationsgrænse, som fik mergeproduktionen for 4.0.273 til at stoppe før deploy: en historisk central rollbackkonfiguration kan ikke længere overskrive den ejerbesluttede Candidate G-only-kontrakt.

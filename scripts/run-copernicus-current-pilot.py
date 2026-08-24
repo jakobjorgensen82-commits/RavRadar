@@ -163,8 +163,15 @@ def main() -> int:
         ):
             raise RuntimeError(f"Selected Copernicus target is not identical to central geometry: {target['partId']}")
     targets_fingerprint = target_fingerprint(targets)
-    target_points = {
-        target["partId"]: [round(float(target["waterPoint"][0]), 7), round(float(target["waterPoint"][1]), 7)]
+    target_identities = {
+        target["partId"]: {
+            "partId": target["partId"],
+            "parentZoneId": target["parentZoneId"],
+            "waterPoint": [
+                round(float(target["waterPoint"][0]), 7),
+                round(float(target["waterPoint"][1]), 7),
+            ],
+        }
         for target in authoritative_targets
     }
     if targets and not args.fixture_directory:
@@ -216,7 +223,7 @@ def main() -> int:
         datetime.now(timezone.utc),
         collection_time=at,
         target_fingerprint=targets_fingerprint,
-        target_points=target_points,
+        target_identities=target_identities,
         target_part_ids=[target["partId"] for target in targets],
     )
     selected = [safe_record(selected_by_part[key]) for key in sorted(selected_by_part)]
