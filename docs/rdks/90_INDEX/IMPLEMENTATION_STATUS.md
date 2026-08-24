@@ -15,7 +15,8 @@
 - [x] Bestå PR #122 exact-head `32721778498` på `a885bc5b` og merge den eksakte head som `abe10127`.
 - [x] Lad produktion `32721891349` stoppe sikkert før deploy, da den fandt en centralt ændret håndbog uden en lagret første kildebaseline.
 - [x] Bestå PR #123 exact-head `32724526697`, merge som `00f59456`, og lad produktion `32724616331` stoppe sikkert før deploy, da Pages ikke indeholder håndbogens kildefil.
-- [x] Afgræns første migrering til den produktionsverificerede 4.0.269-kilde på uforanderlig commit `d745e0ba4ad88dde91c308a9ad9810797f951c91` med obligatorisk SHA-256-match mod det tidligere beskyttede manifest.
+- [x] Bestå PR #124 exact-head `32726897134`, merge som `fd7bc868`, og lad produktion `32727025187` stoppe sikkert ved hashafvigelsen efter alle øvrige gates.
+- [x] Afgræns første migrering til den sidste centralt synkroniserede 4.0.269-kilde på uforanderlig commit `fc13fb5ab326d8824ca55235ac454ac230e3db3e` fra grøn produktion `32706573863`, med obligatorisk SHA-256-match mod det tidligere beskyttede manifest.
 
 ## Mangler før produktionslukning
 
