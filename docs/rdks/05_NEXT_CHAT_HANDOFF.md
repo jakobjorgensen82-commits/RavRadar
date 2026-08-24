@@ -1,13 +1,15 @@
 # RavRadar – overlevering til næste chat
 
-## Akut 4.0.272-kandidat – scorekollaps efter tabt Candidate G-fortsættelse
+## Produktionslukket 4.0.272 – scorekollaps efter tabt Candidate G-fortsættelse
 
 - Den landsdækkende lave score skyldes, at en planlagt produktion fortsatte efter timeout i den atomiske hentning af offentligt manifest/conditions. Alle 673 dele startede derefter med `NO_PREVIOUS_STATE`.
 - Sidste grønne 4.0.271-artifact har 673/673 accepterede fortsættelser og normal scorevariation. Det er den eneste godkendte recoverykilde.
 - Branchen `codex/candidate-g-state-recovery-4.0.272` gør hydreringen fatal, afviser global nulstart og genoptager kun kompakt Candidate G-state fra én eksakt Actions-kørsel efter streng del-/model-/type-/tids-/integritetskontrol. Den aktuelle nulstillede fortsættelseslinje genkendes uden at være låst til ét senere datasæt-id og bliver straks inaktiv, når historikken er genindsat.
 - Scoreformel, vægte, vejr, zoner, geometri og land-/vandpunkter er ikke ændret. Kun geodatafilernes versionsfelt følger releasen fra 4.0.271 til 4.0.272.
 - Punktpar 2 blev senere flyttet af ejeren. Én efterfølgende kystdel manglede en komplet frisk offentlig vejrrække; det er separat og må ikke løses ved at låne strøm fra moderzone/nabo.
-- Næste trin er målrettede tests, exact-head, frisk fuld produktion, 210/673 og offentlig browserkontrol. Hvis 672/673 gentager sig, stopper releasen korrekt, mens delens egen cache-/friskdatakæde undersøges videre.
+- PR #131/merge `1bbb4cc2` indførte recoveryen. PR #132/merge `392fea15` bevarede den ældre hydratorindgang uden runtimeændring. Produktion `32761751284` bestod den fulde kæde og udgav `rr-20260824183620-210` som 4.0.272 på 210/673.
+- Offentlig top-5 varierer igen 76, 74, 72, 72 og 71; femdøgnslisten sorterer 86, 84, 83, 76 og 76. Det tidligere landsdækkende 17/18-kollaps er lukket.
+- Runtime har 672 accepterede states, én lovlig lokal kontekstreset efter punktpar 2 og otte aktuelle missing-evidence-huller, som også fandtes før nulstillingen. Den viser derfor midlertidigt den samlede 25/40/35-reserve. Næste naturlige kontrol skal overvåge disse otte huller; ingen ny score- eller geodatarettelse er begrundet af kollapset.
 
 ## Produktionslukket 4.0.271 – samlet feltrettelse af grundbogen
 

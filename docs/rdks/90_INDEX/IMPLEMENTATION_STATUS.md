@@ -1,6 +1,6 @@
 # Implementeringsstatus – 4.0.272 Candidate G-tilstandsrecovery
 
-## Lokal kandidat
+## Produktionsverificeret
 
 - [x] Rodårsag afgrænset til ikke-fatal atomisk hydreringstimeout efterfulgt af global `NO_PREVIOUS_STATE`.
 - [x] Sidste grønne og fejlramte 210/673-artifact sammenlignet dataminimeret.
@@ -12,7 +12,10 @@
 - [x] Målrettede tests, RDKS og PR #131 exact-head-kildegate.
 - [x] PR #131 merged som `1bbb4cc2`; produktion `32759180937` beviste den afgrænsede state-only recovery, men stoppede senere på en ældre tekstlig hydrator-kontrakt.
 - [x] Kompatibilitetsindgangen `active_zone_ids()` genetableret uden ændring af hydreringens eller scorens adfærd.
-- [ ] Frisk fuld produktion, 210/673, releasegate og offentlig browserkontrol.
+- [x] PR #132 merged som `392fea15`; produktion `32761751284` bestod central hydrering, frisk vejr/state, fuld validering, releasegate og Pages-deploy.
+- [x] Live `rr-20260824183620-210` kontrolleret på 210/673 og version 4.0.272; offentlig top-5 varierer 76, 74, 72, 72, 71, og femdøgnslisten sorterer 86, 84, 83, 76, 76.
+- [x] Engangsrecoveryen er logisk inaktiv efter genindsættelsen af før-historik.
+- [ ] Overvåg de otte separate aktuelle missing-evidence-huller, som også fandtes før nulstillingen; Candidate G må først vises igen, når den eksisterende fail-closed gate er opfyldt naturligt.
 
 Ingen scoreformel, Candidate G-vægt, vejrregel, zone, geometri eller land-/vandpunkt ændres.
 

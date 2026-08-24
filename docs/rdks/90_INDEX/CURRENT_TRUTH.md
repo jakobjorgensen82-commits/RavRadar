@@ -1,6 +1,6 @@
 # Current truth – gældende projektviden
 
-## Akut 4.0.272-kandidat – Candidate G-tilstand gendannes fail-closed
+## Produktionsverificeret 4.0.272 – Candidate G-tilstand gendannet fail-closed
 
 - Den offentlige scorekollapsede ikke på grund af grundbogstekst eller en ændret scoreformel. En planlagt produktion fik timeout ved atomisk hentning af det seneste offentlige stategrundlag, men fortsatte og nulstillede Candidate G i alle 673 kystdele.
 - Den sidste grønne 4.0.271-produktion dokumenterer 673/673 accepterede tilstande og normal scorevariation. Den fejlramte offentlige produktion dokumenterer 673/673 `NO_PREVIOUS_STATE` og et kunstigt sammenpresset scorebillede.
@@ -8,7 +8,10 @@
 - Recoveryen kan kun kopiere Candidate G's kompakte `currentState`. Den kopierer ikke vejr, score, profil, geometri, zoner, land-/vandpunkter eller private payloads.
 - Ejerens senere flytning af punktpar 2 er et separat lokalt forhold. Den kan legitimt nulstille netop den berørte dels state, men delen må ikke låne strøm fra andre. 673/673-gaten består.
 - I `data/kystdata.json` og `data/zones.geojson` ændres kun versionsfeltet fra 4.0.271 til 4.0.272; alt geografisk indhold er uændret.
-- Produktionsstatus: lokal kandidat; exact-head, frisk fuld produktion og offentlig 210/673-kontrol mangler endnu.
+- PR #131 blev merged som `1bbb4cc2`. PR #132 bevarede den gamle hydratorindgang uden runtimeændring og blev merged som `392fea15`.
+- Produktion `32761751284` bestod central hydrering, frisk vejr/state, fuld validering, releasegate og Pages-deploy. Live `rr-20260824183620-210` er version 4.0.272 på 210/673.
+- Den offentlige top-5 viser igen normale, faldende områdescorer 76, 74, 72, 72 og 71; femdøgnslisten viser 86, 84, 83, 76 og 76. Det landsdækkende 17/18-kollaps er væk.
+- Den aktuelle runtime har 672 accepterede states og én lovlig lokal kontekstreset efter punktpar 2. Otte aktuelle missing-evidence-huller fandtes allerede i den sunde recoverykilde; derfor viser hele runtime midlertidigt den sammenhængende legacyreserve 25/40/35. Der blandes ikke profiler, og der opfindes ingen strøm.
 
 ## Produktionsverificeret 4.0.271 – samlet feltrettelse af Grundbog i ravjagt
 

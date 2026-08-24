@@ -9,16 +9,17 @@
 - [x] Bind en engangs, state-only recovery til den eksakte sidste grønne Actions-kørsel og den dokumenterede forgiftede fortsættelseslinje; gør den straks inaktiv, når historik fra før nulstillingen igen findes.
 - [x] Bevar scoreformel, Candidate G 20/50/30, vejr, zoner, geometri og land-/vandpunkter uændret; kun geodatafilernes versionsfelt følger releasen til 4.0.272.
 - [x] Bestå målrettede regressioner, RDKS og PR #131-kildegate på eksakt head; bevar derefter den ældre fulde produktionsgates hydrator-indgang i en afgrænset opfølgning.
-- [ ] Bestå frisk central 210/673-produktion, releasegate og offentlig score-/browserkontrol.
-- [ ] Luk engangsrecoveryen som inaktiv efter en frisk grøn produktion.
+- [x] Bestå frisk central 210/673-produktion `32761751284`, releasegate, Pages-deploy og offentlig score-/browserkontrol af 4.0.272.
+- [x] Luk engangsrecoveryen som logisk inaktiv efter genindsat før-historik.
+- [ ] Overvåg de otte separate aktuelle missing-evidence-huller, der allerede fandtes før nulstillingen; lad den eksisterende fail-closed profilgate skifte naturligt tilbage til Candidate G, når evidensen igen er sammenhængende.
 
 ### Separat lokalt datapunkt efter ejerens punktflytning
 
 - [x] Afgræns én manglende kystdel til en ufuldstændig ny offentlig vejrrække efter punktflytningen; det er ikke årsagen til det tidligere landsdækkende scorekollaps.
 - [x] Bevar forbuddet mod at låne strøm fra moderzone eller nabo og behold 673/673-gaten.
-- [ ] Lad de normale private cache-/friskdataforløb skaffe delens egen tilladte evidens og genprøv produktionen uden endnu en punktændring.
+- [x] Lad de normale private cache-/friskdataforløb genoprette 673/673 uden parent-/nabofallback; den ændrede del fortsætter lovligt med lokal opvarmning.
 
-Produktion `32759180937` viste, at punktdelen igen var til stede i 673-bestanden; kørslen stoppede først senere på hydratorens kompatibilitetskontrol. Punktforholdet var derfor ikke stopårsagen i denne kørsel.
+Produktion `32759180937` viste, at punktdelen igen var til stede i 673-bestanden; kørslen stoppede først senere på hydratorens kompatibilitetskontrol. Produktion `32761751284` lukkede derefter hele 210/673-kæden. Punktforholdet var ikke årsagen til det landsdækkende scorekollaps.
 
 ## Afsluttet – 4.0.271 offentlig grundbog
 
