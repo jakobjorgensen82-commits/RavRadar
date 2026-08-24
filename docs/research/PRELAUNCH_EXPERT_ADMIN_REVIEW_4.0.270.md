@@ -42,7 +42,9 @@ Ingen virkelig ekspertkommentar eller persistenstest blev oprettet i produktion 
 
 Deploysynkroniseringen havde desuden en databevaringsrisiko: en håndbog, som ejeren allerede havde rettet centralt efter et ekspertreview, kunne blive erstattet af repositoryets standardhåndbog ved næste deploy. 4.0.270 gemmer den officielle kilde som en særskilt baseline og trevejsfletter nye officielle afsnit med centralt ændrede afsnit. En ukendt afvigelse uden baseline stopper sikkert; den overskrives ikke.
 
-Den første produktion efter PR #122, kørsel `32721891349`, ramte præcis denne første-overgangssituation og stoppede før deploy. Den efterfølgende afgrænsede rettelse henter den tidligere offentlige håndbog som startbaseline og accepterer den kun, hvis dens SHA-256 matcher det forrige beskyttede manifest. Dermed kan ekspertændringerne bevares ved første migrering uden at gøre en ukendt eller ændret offentlig fil autoritativ.
+Den første produktion efter PR #122, kørsel `32721891349`, ramte præcis denne første-overgangssituation og stoppede før deploy. PR #123 bestod exact-head `32724526697` og blev merged som `00f59456`, men produktion `32724616331` viste, at den slanke Pages-pakke med vilje ikke udgiver håndbogens kildefil. Alle kode-, data- og releasegates var grønne, og deploy stoppede fortsat sikkert.
+
+Første migrering henter derfor den tidligere produktionsverificerede 4.0.269-kilde direkte fra den uforanderlige Git-commit `d745e0ba4ad88dde91c308a9ad9810797f951c91`. Kilden accepteres kun, hvis dens SHA-256 matcher det forrige beskyttede manifest. Dermed kan ekspertændringerne bevares ved første migrering uden at gøre en ukendt eller ændret netfil autoritativ.
 
 ## Synlig og fair områdescore
 
@@ -70,3 +72,4 @@ Historiske afsnit er mærket som historik. Det aktive kodekapitel følger `ravsc
 3. Supabase Site URL og tilladte redirect-adresser flyttes i samme deployment til det kanoniske domæne, efterfulgt af et nyt magic-link-login.
 4. Den aktuelle Supabase-egress og DMI-rate-limit følges efter rigtig trafik.
 5. Fundprognosen forbliver skjult, indtil ture med fund og nul-fund udgør et særskilt besluttet repræsentativt grundlag.
+
