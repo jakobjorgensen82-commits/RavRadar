@@ -40,7 +40,7 @@ for(const marker of ['0,03 m/s','0,15 m/s','13 timers fuld udtransport','48 time
 }
 const scoreEngine=await read('js/core/score-engine.js');
 for(const marker of ['huntability: 0.25','transport: 0.40','release: 0.35','current >= .15 && current <= .65','max: 28','max: 42','hours >= 3 && hours <= 18','nearshore-remobilisation','dominantPathway']){
-  ok(scoreEngine.includes(marker),`Rollback-scoremotorens forventede auditkonstant mangler: ${marker}`);
+  ok(scoreEngine.includes(marker),`Den historiske sammenligningsmotors forventede auditkonstant mangler: ${marker}`);
 }
 const candidateG=await read('js/core/ravscore-candidate-g.js');
 for(const marker of ['huntability: 0.20','transportAndDelivery: 0.50','mobilisation: 0.30','physicalBottleneckGate','actualOutboundTransport === true','transportPotential === 0','wadersHuntabilityLimit']){

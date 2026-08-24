@@ -1,3 +1,11 @@
+## 2026-08-24 – 4.0.273 Candidate G-only godkendt og implementeret
+
+- Ejeren forkastede den globale 25/40/35-reserve, fordi den ikke løser Candidate G's underliggende datagab og kan ændre hele landets scoremotor på grund af en lokal mangel.
+- DEC-0072 gør Candidate G 20/50/30 til eneste offentlige profil. Et hul lukkes kun for den konkrete zone, søgemåde og tid; der lånes ingen legacy-, parent-, nabo- eller anden-timescore.
+- Aktuelle og femdøgns-rangeringer udelader kun berørte scorer. Adminforsiden viser samlet aktivstatus og dataminimerede lokale årsager.
+- Målrettede profil-, pipeline-, lands-, UI- og shadowtests er grønne. Exact-head, merge og frisk fuld produktion mangler.
+- Geodatafilerne har kun versionsfelt 4.0.272 → 4.0.273; geometri og land-/vandpunkter er urørte.
+
 ## 2026-08-24 – 4.0.272 produktionslukket med normal scorevariation
 
 - PR #132 blev merged som `392fea15`. Produktion `32761751284` bestod central hydrering, frisk vejr/state, fuld validering, releasegate og Pages-deploy og udgav `rr-20260824183620-210` som 4.0.272 på 210/673.

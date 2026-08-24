@@ -20,7 +20,6 @@ import {
 import {
   CANDIDATE_G_MEMORY_REFERENCE_SCOPE,
   CANDIDATE_G_RAVSCORE_PROFILE_ID,
-  LEGACY_RAVSCORE_PROFILE_ID,
   PUBLIC_RAVSCORE_PROFILE_SELECTION,
   resolvePublicRavScoreProfile,
 } from '../js/core/ravscore-profile-switch.js';
@@ -91,15 +90,26 @@ export function auditCandidateGPublicShadow(document, {
   add(Number(coastal?.scoredPartCount) === expectedPartCount, 'SCORED_PART_COUNT_MISMATCH');
   add(parts.length === expectedPartCount, 'PART_OBJECT_COUNT_MISMATCH');
   add(coastal?.scoreProfile?.activeProfileId === CANDIDATE_G_RAVSCORE_PROFILE_ID, 'PUBLIC_PROFILE_NOT_CANDIDATE_G');
-  add(coastal?.scoreProfile?.rollbackProfileId === LEGACY_RAVSCORE_PROFILE_ID, 'ROLLBACK_PROFILE_MISMATCH');
+  add(coastal?.scoreProfile?.rollbackProfileId === null, 'PUBLIC_ROLLBACK_PROFILE_PRESENT');
   add(coastal?.scoreProfile?.candidateProfileId === CANDIDATE_G_RAVSCORE_PROFILE_ID, 'CANDIDATE_PROFILE_MISMATCH');
-  add(['candidate-active-pre-public-warmup', 'candidate-active'].includes(coastal?.scoreProfile?.activationState),
-    'PROFILE_NOT_CANDIDATE_ACTIVE');
-  add(coastal?.scoreProfile?.candidateCoverageReady === true, 'CANDIDATE_SCORE_COVERAGE_INCOMPLETE');
-  add(coastal?.scoreProfile?.candidateWarmupEligible === true, 'CANDIDATE_MEMORY_GAP');
+  add(coastal?.scoreProfile?.activationState === 'candidate-g-only-local-fail-closed',
+    'PROFILE_NOT_CANDIDATE_G_ONLY');
+  add(coastal?.scoreProfile?.publicAvailabilityPolicy === 'candidate-g-local-fail-closed',
+    'PUBLIC_AVAILABILITY_POLICY_MISMATCH');
+  add(coastal?.scoreProfile?.legacyPublicFallbackAllowed === false,
+    'LEGACY_PUBLIC_FALLBACK_NOT_BLOCKED');
   add(coastal?.scoreProfile?.candidateMemoryReferenceScope === CANDIDATE_G_MEMORY_REFERENCE_SCOPE,
     'CANDIDATE_MEMORY_REFERENCE_SCOPE_MISMATCH');
   add(coastal?.scoreProfile?.automaticActivationAllowed === false, 'PROFILE_AUTOMATIC_ACTIVATION_NOT_BLOCKED');
+
+  const availability = coastal?.scoreAvailability;
+  const unavailableEntries = Array.isArray(availability?.unavailableZones) ? availability.unavailableZones : [];
+  const unavailableByZone = new Map(unavailableEntries.map(entry => [entry?.zoneId, entry]));
+  add(availability?.policy === 'candidate-g-local-fail-closed', 'SCORE_AVAILABILITY_POLICY_MISMATCH');
+  add(Number(availability?.totalZoneCount) === zones.length, 'SCORE_AVAILABILITY_ZONE_COUNT_MISMATCH');
+  add(Number(availability?.unavailableZoneCount) === unavailableEntries.length, 'SCORE_UNAVAILABLE_ZONE_COUNT_MISMATCH');
+  add(Number(availability?.activeZoneCount) + unavailableEntries.length === zones.length, 'SCORE_ACTIVE_ZONE_COUNT_MISMATCH');
+  add(availability?.allZonesActive === (unavailableEntries.length === 0), 'SCORE_ALL_ZONES_ACTIVE_FLAG_MISMATCH');
 
   const partCountByZone = new Map();
   for (const [, part] of parts) {
@@ -109,6 +119,11 @@ export function auditCandidateGPublicShadow(document, {
     add(Number.isFinite(Date.parse(zone?.currentReferenceAt)), 'ZONE_REFERENCE_TIME_MISSING');
     add(Number(zone?.scoredPartCount) === Number(zone?.expectedPartCount), 'ZONE_PART_COVERAGE_INCOMPLETE');
     add((partCountByZone.get(zoneId) ?? 0) === Number(zone?.expectedPartCount), 'ZONE_PART_OBJECT_COUNT_MISMATCH');
+    const current = (zone?.hourly ?? []).find(row => row?.time === zone?.currentReferenceAt);
+    const unavailableModes = MODES.filter(mode => current?.[mode]?.available !== true || !finite(current?.[mode]?.score));
+    const listedModes = unavailableByZone.get(zoneId)?.modes ?? [];
+    add(unavailableModes.every(mode => listedModes.includes(mode)), 'LOCAL_UNAVAILABLE_MODE_NOT_LISTED');
+    add(listedModes.every(mode => unavailableModes.includes(mode)), 'LISTED_UNAVAILABLE_MODE_IS_ACTIVE');
   }
 
   const modeRows = { waders: [], beach: [] };
@@ -141,11 +156,9 @@ export function auditCandidateGPublicShadow(document, {
     const memoryReady = candidate?.transportMemoryReady === true;
     if (memoryReady) memoryReadyPartCount += 1;
     else warmupPartCount += 1;
-    add(memoryReady || coastal?.scoreProfile?.prePublicWarmupAccepted === true,
-      'INCOMPLETE_MEMORY_WITHOUT_OWNER_WARMUP');
     add(memoryReady
       ? candidate?.transportMemoryStatus === 'READY'
-      : candidate?.transportMemoryStatus === 'WINDOW_INCOMPLETE',
+      : NOT_READY_TRANSPORT_MEMORY_STATUSES.has(candidate?.transportMemoryStatus),
     'BOUNDED_TRANSPORT_MEMORY_STATUS_INVALID');
     add(memoryReady
       ? Number(candidate?.transportMemoryCoverageHours) === 48
@@ -232,12 +245,17 @@ export function auditCandidateGPublicShadow(document, {
     ]) add(!compactText.includes(forbidden), 'COMPACT_STATE_RAW_INPUT_INCLUDED');
 
     for (const mode of MODES) {
-      const activeScore = part?.current?.[mode]?.score;
+      const activePublic = part?.current?.[mode];
+      const activeScore = activePublic?.score;
       const candidateMode = candidate?.modes?.[mode];
-      add(finite(activeScore), 'ACTIVE_SCORE_MISSING');
       add(candidateMode?.available === true && finite(candidateMode?.score), 'CANDIDATE_SCORE_MISSING');
       add(Object.keys(CANDIDATE_G_WEIGHTS).every(key => finite(candidateMode?.weightedContributions?.[key])), 'CANDIDATE_CONTRIBUTION_MISSING');
       add(finite(candidateMode?.physicalGateFactor), 'CANDIDATE_PHYSICAL_GATE_MISSING');
+      if (!memoryReady) {
+        add(activePublic?.available === false && !finite(activeScore), 'NOT_READY_CANDIDATE_EXPOSED_PUBLIC_SCORE');
+        continue;
+      }
+      add(activePublic?.available === true && finite(activeScore), 'READY_ACTIVE_SCORE_MISSING');
       if (!finite(activeScore) || !finite(candidateMode?.score)) continue;
       const active = Number(activeScore);
       const proposed = Number(candidateMode.score);
@@ -269,7 +287,8 @@ export function auditCandidateGPublicShadow(document, {
     activationShadowReady: uniqueErrors.length === 0,
     automaticActivationAllowed: false,
     publicScoreChanged: true,
-    rollbackPath: 'VERSIONED_SWITCH_SELECTS_RRS_CURRENT_B0_4_0_247',
+    rollbackPath: null,
+    publicAvailabilityPolicy: 'candidate-g-local-fail-closed',
     scoreProfile: coastal?.scoreProfile ? {
       switchVersion: coastal.scoreProfile.switchVersion,
       requestedProfileId: coastal.scoreProfile.requestedProfileId,
@@ -282,6 +301,8 @@ export function auditCandidateGPublicShadow(document, {
       candidateMemoryReferenceScope: coastal.scoreProfile.candidateMemoryReferenceScope,
       prePublicWarmupAccepted: coastal.scoreProfile.prePublicWarmupAccepted,
       activationState: coastal.scoreProfile.activationState,
+      publicAvailabilityPolicy: coastal.scoreProfile.publicAvailabilityPolicy,
+      legacyPublicFallbackAllowed: coastal.scoreProfile.legacyPublicFallbackAllowed,
       automaticActivationAllowed: coastal.scoreProfile.automaticActivationAllowed,
     } : null,
     datasetDigest: digest({ datasetId: document?.datasetId, generatedAt: document?.generatedAt }),
@@ -345,7 +366,11 @@ function syntheticDocument() {
       expectedPartCount: partCount,
       scoredPartCount: partCount,
       currentReferenceAt: referenceAt,
-      hourly: [],
+      hourly: [{
+        time: referenceAt,
+        waders: { status: 'unavailable', available: false, score: null, reasons: ['Candidate G-historikken er endnu ikke sammenhængende.'] },
+        beach: { status: 'unavailable', available: false, score: null, reasons: ['Candidate G-historikken er endnu ikke sammenhængende.'] },
+      }],
     };
     for (let local = 0; local < partCount; local += 1) {
       const partId = `part-${partNumber}`;
@@ -363,7 +388,11 @@ function syntheticDocument() {
       };
       parts[partId] = {
         zoneId,
-        current: { time: referenceAt, waders: { score: 50 }, beach: { score: 50 } },
+        current: {
+          time: referenceAt,
+          waders: { available: false, score: null, reasons: ['Candidate G-historikken er endnu ikke sammenhængende.'] },
+          beach: { available: false, score: null, reasons: ['Candidate G-historikken er endnu ikke sammenhængende.'] },
+        },
         candidateG: {
           schemaVersion: CANDIDATE_G_STATE_SCHEMA_VERSION,
           modelId: CANDIDATE_G_STATE_MODEL_ID,
@@ -408,6 +437,21 @@ function syntheticDocument() {
     coastalParts: {
       enabled: true,
       scoreProfile,
+      scoreAvailability: {
+        schemaVersion: 1,
+        policy: 'candidate-g-local-fail-closed',
+        allZonesActive: false,
+        activeZoneCount: 0,
+        unavailableZoneCount: EXPECTED_ZONES,
+        totalZoneCount: EXPECTED_ZONES,
+        evaluatedAt: referenceAt,
+        unavailableZones: Object.keys(zones).map(zoneId => ({
+          zoneId,
+          zoneName: zoneId,
+          modes: [...MODES],
+          reasons: ['Candidate G-historikken er endnu ikke sammenhængende.'],
+        })),
+      },
       expectedPartCount: EXPECTED_PARTS,
       scoredPartCount: EXPECTED_PARTS,
       zones,
@@ -423,22 +467,17 @@ async function main() {
     assert.equal(report.status, 'passed');
     assert.equal(report.coverage.zoneCount, EXPECTED_ZONES);
     assert.equal(report.coverage.partCount, EXPECTED_PARTS);
-    assert.equal(report.coverage.modeEvaluationCount, EXPECTED_PARTS * 2);
+    assert.equal(report.coverage.modeEvaluationCount, 0);
     assert.equal(report.scoreReconstructionMismatchCount, 0);
     assert.equal(report.stateContinuation.memoryReadyPartCount, 0);
     assert.equal(report.stateContinuation.warmupPartCount, EXPECTED_PARTS);
     assert.equal(report.scoreProfile.activeProfileId, CANDIDATE_G_RAVSCORE_PROFILE_ID);
     assert.equal(report.privacy.partIdentifiersIncluded, false);
-    for (const status of [...NOT_READY_TRANSPORT_MEMORY_STATUSES]
-      .filter(value => value !== 'WINDOW_INCOMPLETE')) {
-      const statusDocument = syntheticDocument();
-      const firstPart = Object.values(statusDocument.coastalParts.parts)[0];
-      firstPart.candidateG.transportMemoryStatus = status;
-      firstPart.candidateG.currentState.transportMemoryStatus = status;
-      assert.equal(auditCandidateGPublicShadow(statusDocument).status, 'failed',
-        `${status} must not pass as an owner-approved warmup state`);
-    }
-    console.log('Candidate G aktiv pre-public warmup-shadow-self-test: OK');
+    const leakDocument = syntheticDocument();
+    Object.values(leakDocument.coastalParts.parts)[0].current.waders = { available: true, score: 50 };
+    assert.equal(auditCandidateGPublicShadow(leakDocument).status, 'failed',
+      'En gammel eller opfundet offentlig score må ikke lække ud, når Candidate G-historikken mangler.');
+    console.log('Candidate G-only lokal fail-closed public-audit-self-test: OK');
     return;
   }
   const inputIndex = arguments_.indexOf('--input');

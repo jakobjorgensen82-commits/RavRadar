@@ -5,14 +5,16 @@ export const CANDIDATE_G_RAVSCORE_PROFILE_ID = CANDIDATE_G_STATE_MODEL_ID;
 export const CANDIDATE_G_MEMORY_REFERENCE_SCOPE = 'CURRENT_COMMON_ZONE_REFERENCE';
 
 export const PUBLIC_RAVSCORE_PROFILE_SELECTION = Object.freeze({
-  schemaVersion: '1.1.0',
-  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.272',
-  requestedProfileId: LEGACY_RAVSCORE_PROFILE_ID,
-  rollbackProfileId: LEGACY_RAVSCORE_PROFILE_ID,
+  schemaVersion: '2.0.0',
+  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.273',
+  requestedProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
+  rollbackProfileId: null,
   candidateProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
-  candidateActivationEnabled: false,
-  prePublicWarmupAccepted: false,
+  candidateActivationEnabled: true,
+  prePublicWarmupAccepted: true,
   automaticActivationAllowed: false,
+  publicAvailabilityPolicy: 'candidate-g-local-fail-closed',
+  legacyPublicFallbackAllowed: false,
 });
 
 export const PUBLIC_RAVSCORE_ACTIVATION_EVIDENCE = Object.freeze({
@@ -20,10 +22,6 @@ export const PUBLIC_RAVSCORE_ACTIVATION_EVIDENCE = Object.freeze({
   ownerReviewDecisionId: null,
 });
 
-const KNOWN_PROFILE_IDS = new Set([
-  LEGACY_RAVSCORE_PROFILE_ID,
-  CANDIDATE_G_RAVSCORE_PROFILE_ID,
-]);
 const finite = value => value !== null
   && value !== undefined
   && value !== ''
@@ -219,6 +217,8 @@ export function publicRavScoreConfigurationFromDocument(document) {
       activationAuthority: document.activationAuthority,
       status: document.status,
       sourceVersion: document.sourceVersion,
+      publicAvailabilityPolicy: document.publicAvailabilityPolicy,
+      legacyPublicFallbackAllowed: document.legacyPublicFallbackAllowed,
     }),
     evidence: Object.freeze({
       freshFinalShadowRunId: document.evidence?.freshFinalShadowRunId ?? null,
@@ -234,38 +234,28 @@ export function resolvePublicRavScoreProfile({
   candidateMemoryReady = candidateCoverageReady,
   candidateWarmupEligible = false,
 } = {}) {
-  const rollbackProfileId = selection?.rollbackProfileId === LEGACY_RAVSCORE_PROFILE_ID
-    ? selection.rollbackProfileId
-    : LEGACY_RAVSCORE_PROFILE_ID;
-  const requestedProfileId = KNOWN_PROFILE_IDS.has(selection?.requestedProfileId)
-    ? selection.requestedProfileId
-    : rollbackProfileId;
-  const candidateRequested = requestedProfileId === CANDIDATE_G_RAVSCORE_PROFILE_ID;
-  const warmupAccepted = candidateRequested
-    && ownerApprovedPrePublicWarmup(selection, evidence);
-  const blockers = [];
-  if (!KNOWN_PROFILE_IDS.has(selection?.requestedProfileId)) blockers.push('UNKNOWN_REQUESTED_PROFILE');
-  if (selection?.schemaVersion !== PUBLIC_RAVSCORE_PROFILE_SELECTION.schemaVersion) blockers.push('INVALID_SELECTION_SCHEMA');
-  if (selection?.switchVersion !== PUBLIC_RAVSCORE_PROFILE_SELECTION.switchVersion) blockers.push('INVALID_SWITCH_VERSION');
-  if (selection?.rollbackProfileId !== LEGACY_RAVSCORE_PROFILE_ID) blockers.push('INVALID_ROLLBACK_PROFILE');
-  if (selection?.candidateProfileId !== CANDIDATE_G_RAVSCORE_PROFILE_ID) blockers.push('INVALID_CANDIDATE_PROFILE');
-  if (selection?.automaticActivationAllowed !== false) blockers.push('AUTOMATIC_ACTIVATION_FORBIDDEN');
-  if (candidateRequested && selection?.candidateActivationEnabled !== true) blockers.push('CANDIDATE_ACTIVATION_DISABLED');
-  if (candidateRequested && candidateCoverageReady !== true) blockers.push('CANDIDATE_COVERAGE_INCOMPLETE');
-  if (candidateRequested && candidateMemoryReady !== true && !warmupAccepted) blockers.push('CANDIDATE_MEMORY_INCOMPLETE');
-  if (candidateRequested && candidateMemoryReady !== true && warmupAccepted
-    && candidateWarmupEligible !== true) blockers.push('CANDIDATE_MEMORY_GAP');
-  if (candidateRequested && !activationEvidenceReady(evidence) && !warmupAccepted) {
-    blockers.push('FINAL_SHADOW_OR_OWNER_REVIEW_MISSING');
-  }
-
-  const candidateActive = candidateRequested && blockers.length === 0;
+  const invalid = [];
+  if (selection?.schemaVersion !== PUBLIC_RAVSCORE_PROFILE_SELECTION.schemaVersion) invalid.push('INVALID_SELECTION_SCHEMA');
+  if (selection?.switchVersion !== PUBLIC_RAVSCORE_PROFILE_SELECTION.switchVersion) invalid.push('INVALID_SWITCH_VERSION');
+  if (selection?.requestedProfileId !== CANDIDATE_G_RAVSCORE_PROFILE_ID) invalid.push('CANDIDATE_G_NOT_REQUESTED');
+  if (selection?.candidateProfileId !== CANDIDATE_G_RAVSCORE_PROFILE_ID) invalid.push('INVALID_CANDIDATE_PROFILE');
+  if (selection?.candidateActivationEnabled !== true) invalid.push('CANDIDATE_G_DISABLED');
+  if (selection?.rollbackProfileId !== null) invalid.push('PUBLIC_ROLLBACK_PROFILE_FORBIDDEN');
+  if (selection?.legacyPublicFallbackAllowed !== false) invalid.push('LEGACY_PUBLIC_FALLBACK_FORBIDDEN');
+  if (selection?.publicAvailabilityPolicy !== 'candidate-g-local-fail-closed') invalid.push('INVALID_PUBLIC_AVAILABILITY_POLICY');
+  if (selection?.automaticActivationAllowed !== false) invalid.push('AUTOMATIC_ACTIVATION_FORBIDDEN');
+  if (invalid.length) throw new Error(`Ugyldig offentlig RavScore-konfiguration: ${invalid.join(', ')}`);
+  const warmupAccepted = ownerApprovedPrePublicWarmup(selection, evidence);
+  const advisories = [];
+  if (candidateCoverageReady !== true) advisories.push('LOCAL_CANDIDATE_COVERAGE_INCOMPLETE');
+  if (candidateMemoryReady !== true) advisories.push('LOCAL_CANDIDATE_MEMORY_INCOMPLETE');
+  if (candidateWarmupEligible !== true) advisories.push('LOCAL_CANDIDATE_MEMORY_GAPS');
   return Object.freeze({
     schemaVersion: selection?.schemaVersion ?? '1.0.0',
     switchVersion: selection?.switchVersion ?? 'UNKNOWN_SWITCH_VERSION',
-    requestedProfileId,
-    activeProfileId: candidateActive ? CANDIDATE_G_RAVSCORE_PROFILE_ID : rollbackProfileId,
-    rollbackProfileId,
+    requestedProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
+    activeProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
+    rollbackProfileId: null,
     candidateProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
     candidateCoverageReady: candidateCoverageReady === true,
     candidateMemoryReady: candidateMemoryReady === true,
@@ -276,11 +266,38 @@ export function resolvePublicRavScoreProfile({
     ownerReviewApproved: typeof evidence?.ownerReviewDecisionId === 'string'
       && evidence.ownerReviewDecisionId.length > 0,
     prePublicWarmupAccepted: warmupAccepted,
-    activationState: candidateActive
-      ? (candidateMemoryReady === true ? 'candidate-active' : 'candidate-active-pre-public-warmup')
-      : 'legacy-active-score-neutral',
-    fallbackReason: blockers[0] ?? null,
+    activationState: 'candidate-g-only-local-fail-closed',
+    fallbackReason: null,
+    advisories,
+    publicAvailabilityPolicy: 'candidate-g-local-fail-closed',
+    legacyPublicFallbackAllowed: false,
     automaticActivationAllowed: false,
+  });
+}
+
+const MEMORY_REASON_TEXT = Object.freeze({
+  WINDOW_INCOMPLETE: 'Der er endnu ikke nok sammenhængende strømdata til at beregne zonens RavScore.',
+  WINDOW_HAS_MISSING_EVIDENCE: 'Der mangler en eller flere dokumenterede strømtimer i det nødvendige forløb.',
+  WINDOW_HAS_TIME_GAP: 'Der er et hul i det sammenhængende strømforløb, som RavScore kræver.',
+  LATEST_SAMPLE_MISSING: 'Den nyeste strømtime mangler, så zonens aktuelle RavScore kan ikke beregnes.',
+});
+
+export function candidateGLocalAvailability(candidate, candidateState) {
+  const status = candidateState?.transportMemoryStatus ?? 'CANDIDATE_G_STATE_MISSING';
+  const candidateReady = candidate?.available === true
+    && finite(candidate?.score)
+    && candidate?.modelId === CANDIDATE_G_RAVSCORE_PROFILE_ID;
+  if (candidateState?.transportMemoryReady === true && status === 'READY' && candidateReady) {
+    return Object.freeze({ available: true, code: 'READY', messageDa: null });
+  }
+  const code = candidateReady ? status : 'CANDIDATE_G_SCORE_MISSING';
+  return Object.freeze({
+    available: false,
+    code,
+    messageDa: MEMORY_REASON_TEXT[code]
+      ?? (code === 'CANDIDATE_G_SCORE_MISSING'
+        ? 'De nødvendige data til Candidate G mangler for denne kystdel og dette tidspunkt.'
+        : 'Det sammenhængende datagrundlag til zonens RavScore er ikke klar.'),
   });
 }
 
@@ -358,21 +375,23 @@ export function projectCandidateGForPublic(candidate, { mode, profile, context =
   };
 }
 
-export function selectPublicRavScoreResult({ profile, legacy, candidateG, mode, context = {} }) {
-  if (!profile || profile.activeProfileId === LEGACY_RAVSCORE_PROFILE_ID) return legacy;
-  if (profile.activeProfileId !== CANDIDATE_G_RAVSCORE_PROFILE_ID) {
-    throw new Error(`Unknown resolved RavScore profile: ${profile.activeProfileId}`);
+export function selectPublicRavScoreResult({ profile, candidateG, candidateState, mode, context = {} }) {
+  if (!profile || profile.activeProfileId !== CANDIDATE_G_RAVSCORE_PROFILE_ID) {
+    throw new Error(`Unknown resolved RavScore profile: ${profile?.activeProfileId ?? 'missing'}`);
   }
+  const availability = candidateGLocalAvailability(candidateG, candidateState);
+  if (!availability.available) return {
+    available: false,
+    score: null,
+    level: 'unavailable',
+    label: 'RavScore midlertidigt utilgængelig',
+    unavailability: availability,
+    reasons: [availability.messageDa],
+    scoreProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
+  };
   return projectCandidateGForPublic(candidateG, { mode, profile, context });
 }
 
-export function rollbackPublicRavScoreSelection(selection = PUBLIC_RAVSCORE_PROFILE_SELECTION) {
-  return Object.freeze({
-    ...selection,
-    requestedProfileId: LEGACY_RAVSCORE_PROFILE_ID,
-    rollbackProfileId: LEGACY_RAVSCORE_PROFILE_ID,
-    candidateActivationEnabled: false,
-    prePublicWarmupAccepted: false,
-    automaticActivationAllowed: false,
-  });
+export function rollbackPublicRavScoreSelection() {
+  throw new Error('Offentlig rollback til den gamle RavScore-model er fjernet. Candidate G fejler lokalt og lukket.');
 }

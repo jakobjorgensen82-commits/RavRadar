@@ -101,7 +101,7 @@ need(closeLayer.counts().wind===2&&closeLayer.counts().current===2,'Det rendered
 
 const updateWeather=await fs.readFile('scripts/update-weather.mjs','utf8');
 const app=await fs.readFile('app.js','utf8');
-need(updateWeather.includes('selectNearestCompleteLocalScoreRow(hourly, generatedAt, expectedPartCount)')&&updateWeather.includes('row.scores.find(candidate => Date.parse(candidate.time) === Date.parse(currentReferenceAt))')&&updateWeather.includes('flowPointsFromForecastRecord(row.record, row.waterPoint, score?.time ?? generatedAt)'),'Produktionsbygningen låser ikke score og pile til zonens samme komplette time.');
+need(updateWeather.includes('selectNearestLocalScoreRow(hourly, generatedAt)')&&updateWeather.includes('row.scores.find(candidate => Date.parse(candidate.time) === Date.parse(currentReferenceAt))')&&updateWeather.includes('flowPointsFromForecastRecord(row.record, row.waterPoint, score?.time ?? generatedAt)'),'Produktionsbygningen låser ikke score og pile til zonens samme faktiske time.');
 need(updateWeather.includes('function verifiedBulkCurrent')&&updateWeather.includes('verifiedBulkCurrent(bulkCache, bulkZone, point, rowCurrent)')&&updateWeather.includes('samePoint(source?.samplingPoint, expectedSamplingPoint)'),'Scorebygningen accepterer strøm uden hver times dokumenterede vandkolonne og dybdelag.');
 need(updateWeather.includes('function withOnlyVerifiedCurrent')&&updateWeather.includes('const safeRecord = withOnlyVerifiedCurrent(record, zonePoint(feature));'),'Gamle prognosecacher kan stadig føre ikke-verificeret strøm til score eller pil.');
 const directDmiBlock=updateWeather.slice(updateWeather.indexOf('async function fromDmi('),updateWeather.indexOf('function mergeHourlyPreferDmi('));

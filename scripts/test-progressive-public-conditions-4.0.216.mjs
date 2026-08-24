@@ -5,18 +5,20 @@ const generatedAt='2026-08-15T10:20:00.000Z';
 const score=(partId,value)=>({status:'only-part',score:value,winningPartId:partId,winningPartName:partId,scoreSpread:9,comparisonPartCount:3,components:{huntability:20,transport:30,release:10},parts:[{partId,name:partId,score:value}]});
 const rows=[0,1,2].map(hour=>({time:`2026-08-15T${String(9+hour).padStart(2,'0')}:00:00.000Z`,waders:score(hour===1?'p1':'p2',60+hour),beach:score(hour===1?'p2':'p1',50+hour)}));
 rows[1]={time:rows[1].time,waders:{status:'uncertain',validPartCount:2,expectedPartCount:3},beach:{status:'uncertain',validPartCount:2,expectedPartCount:3}};
-const selectedReferenceAt=rows[2].time;
+const selectedReferenceAt=rows[1].time;
 const part=id=>({zoneId:'z1',name:id,waterPoint:[10,56],landPoint:[10.01,56],onshoreDirectionDeg:90,current:{time:selectedReferenceAt,weather:{windSpeedMps:4},waders:{score:62,components:{},componentReasons:{},explanation:id},beach:{score:52,components:{},componentReasons:{},explanation:id}}});
-const full={datasetId:'progressive-test',generatedAt,productionReferenceAt:generatedAt,zones:{z1:{provider:'dmi',current:{time:generatedAt,windSpeedMps:4},history:{maxWind24hMps:8},forecast:{provider:'dmi',generatedAt,validUntil:rows.at(-1).time,hourly:rows.map(row=>({time:row.time,windSpeedMps:4}))}}},coastalParts:{schemaVersion:1,enabled:true,generatedAt,expectedPartCount:3,scoredPartCount:3,privateDiagnostic:'må aldrig publiceres',parts:{p1:part('p1'),p2:part('p2'),p3:part('p3')},zones:{z1:{expectedPartCount:3,scoredPartCount:3,hourly:rows}}}};
+const scoreAvailability={schemaVersion:1,policy:'candidate-g-local-fail-closed',allZonesActive:false,activeZoneCount:0,unavailableZoneCount:1,totalZoneCount:1,unavailableZones:[{zoneId:'z1',zoneName:'Testzone',modes:['waders','beach'],reasons:['Candidate G mangler komplette data.']}]};
+const full={datasetId:'progressive-test',generatedAt,productionReferenceAt:generatedAt,zones:{z1:{provider:'dmi',current:{time:generatedAt,windSpeedMps:4},history:{maxWind24hMps:8},forecast:{provider:'dmi',generatedAt,validUntil:rows.at(-1).time,hourly:rows.map(row=>({time:row.time,windSpeedMps:4}))}}},coastalParts:{schemaVersion:1,enabled:true,generatedAt,scoreAvailability,expectedPartCount:3,scoredPartCount:3,privateDiagnostic:'må aldrig publiceres',parts:{p1:part('p1'),p2:part('p2'),p3:part('p3')},zones:{z1:{expectedPartCount:3,scoredPartCount:3,hourly:rows}}}};
 
 const startup=buildPublicConditions(full);
 const details=buildPublicConditionDetails(full);
 if(startup.zones.z1.forecast.hourly.length!==0)throw new Error('Startpakken indeholder stadig hele femdøgnsprognosen.');
 if(startup.zones.z1.current.windSpeedMps!==4||startup.zones.z1.history.maxWind24hMps!==8)throw new Error('Startpakken mistede aktuelle forhold eller kompakt historik.');
-if(startup.coastalParts.zones.z1.hourly.length!==1||startup.coastalParts.zones.z1.hourly[0].time!==selectedReferenceAt)throw new Error('Startpakken valgte ikke zonens nærmeste komplette fælles scorerække.');
+if(startup.coastalParts.zones.z1.hourly.length!==1||startup.coastalParts.zones.z1.hourly[0].time!==selectedReferenceAt)throw new Error('Startpakken valgte ikke zonens faktiske nærmeste scorerække med lokal Candidate G-status.');
 if(startup.coastalParts.zones.z1.currentReferenceAt!==selectedReferenceAt||details.coastalParts.zones.z1.currentReferenceAt!==selectedReferenceAt)throw new Error('Zonens fælles current-reference føres ikke gennem begge offentlige pakker.');
 if(startup.productionReferenceAt!==generatedAt||details.productionReferenceAt!==generatedAt)throw new Error('Produktionstidspunktet føres ikke gennem begge offentlige pakker.');
-if(Object.keys(startup.coastalParts.parts).sort().join(',')!=='p1,p2')throw new Error('Startpakken skal kun medtage aktuelle vindere for begge jagtformer.');
+if(Object.keys(startup.coastalParts.parts).length!==0)throw new Error('En lokalt utilgængelig scorerække må ikke opfinde eller genbruge tidligere vindere.');
+if(startup.coastalParts.scoreAvailability?.allZonesActive!==false||details.coastalParts.scoreAvailability?.unavailableZones?.[0]?.zoneId!=='z1')throw new Error('Candidate G-tilgængeligheden føres ikke gennem begge offentlige pakker.');
 if(details.zones.z1.forecast.hourly.length!==3||details.coastalParts.zones.z1.hourly.length!==3||Object.keys(details.coastalParts.parts).length!==3)throw new Error('Detaljepakken bevarer ikke hele prognosen og alle kystdele.');
 if('privateDiagnostic' in details.coastalParts)throw new Error('Detaljepakken lækkede et ikke-offentligt kystdelsfelt.');
 const merged=mergeConditionDetails({...startup,available:true},details);
@@ -26,5 +28,5 @@ if(!mismatchRejected)throw new Error('Detaljer fra et andet datasæt blev ikke a
 let timeMismatchRejected=false;try{mergeConditionDetails(startup,{...details,productionReferenceAt:'2026-08-15T12:00:00.000Z'});}catch{timeMismatchRejected=true;}
 if(!timeMismatchRejected)throw new Error('Detaljer fra et andet produktionstidspunkt blev ikke afvist.');
 const startText=compactJson(startup),detailsText=compactJson(details),manifest=buildPublicManifest(full,startText,detailsText);
-if(manifest.conditionDetailsPath!=='./public-condition-details.json'||manifest.publicConditionDetailsBytes!==Buffer.byteLength(detailsText)||manifest.productionReferenceAt!==generatedAt)throw new Error('Manifestet mangler den integritetsbundne detaljepakke eller produktionstidspunktet.');
+if(manifest.conditionDetailsPath!=='./public-condition-details.json'||manifest.publicConditionDetailsBytes!==Buffer.byteLength(detailsText)||manifest.productionReferenceAt!==generatedAt||manifest.ravScoreAvailability?.allZonesActive!==false)throw new Error('Manifestet mangler detaljepakken, produktionstidspunktet eller Candidate G-tilgængeligheden.');
 console.log(`OK: progressiv offentlig runtime bevarer funktioner og reducerer syntetisk startpayload fra ${Buffer.byteLength(detailsText)} til ${Buffer.byteLength(startText)} bytes.`);
