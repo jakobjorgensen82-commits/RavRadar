@@ -1,3 +1,25 @@
+# Implementeringsstatus – 4.0.270 før-lancering, ekspert og admin
+
+## Lokalt afsluttet
+
+- [x] Kontrollér en ny naturlig 210/673-produktionskørsel, prognoselængde, reelle tidsintervaller, fallback og vandstandsdiagnostik uden private payloads.
+- [x] Kontrollér Supabase Free-planens aktuelle forbrug og tidligere egress-overskridelse.
+- [x] Gennemgå administratorens og ekspertens håndbog, rettigheder, centrale dokumenter og målrettede funktionstest.
+- [x] Ret den falske første adminfejl for `coastline-overrides`.
+- [x] Bevar DEC-0049's lotterikorrektion, og vis den samme afrundede områdescore, som område- og femdøgnslisterne sorterer efter.
+- [x] Ret forældede og modstridende Candidate G-afsnit, kodekapitel, scenarier, hypoteseregister og ekspertarbejdsplan i begge håndbøger.
+- [x] Ret releasegaten, så den kontrollerer aktiv Candidate G særskilt fra 25/40/35-rollback i stedet for at kræve gamle håndbogstekster.
+- [x] Synkronisér hele webhåndbogen til Supabase-installationsfilen ved versionsskift.
+- [x] Trevejsflet officielle håndbogsopdateringer med centralt godkendte ekspertændringer ved deploy; stop sikkert ved ukendt afvigelse uden baseline.
+- [x] Dokumentér ændringen i beslutning, researchnotat, roadmap, kendte forhold, handoff og changelog.
+
+## Mangler før produktionslukning
+
+- [ ] Bestå målrettede kontrakter, RDKS-, versions- og `validate:source`-gates på branchens eksakte head.
+- [ ] Merge og følg en frisk produktionskørsel med centrale data og releasegate.
+- [ ] Kontrollér begge offentlige lister, adminoversigten og eksperthåndbogen i den udgivne version.
+- [ ] Luk 4.0.270 med eksakte commit-, run-, artifact- og browserbeviser.
+
 # Produktionsverificeret implementeringsstatus – 4.0.269 aktuelle scoreforklaringer
 
 ## Afsluttet leverance

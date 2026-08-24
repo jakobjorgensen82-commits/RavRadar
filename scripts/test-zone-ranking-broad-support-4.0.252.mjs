@@ -6,6 +6,7 @@ import {
   analyzeRankingDirections,
   calculateNationalRanking,
   compareNationalRankingRows,
+  displayNationalRankingScore,
   rankingSupportRatio,
 } from '../js/core/zone-ranking.js';
 
@@ -43,17 +44,25 @@ const rows = [
   addNationalRanking({ zone: { id: 'bred' }, result: onlyPartResult }, spreadParts),
   addNationalRanking({ zone: { id: 'smal' }, result: { score: 75, localCoverage: { status: 'only-part', comparisonPartCount: 1 } } }, [{ onshoreDirectionDeg: 0 }]),
 ].sort(compareNationalRankingRows);
-assert.equal(rows[0].zone.id, 'smal', 'En enkelt heldig del i en bred zone maa ikke automatisk vinde landslisten.');
-assert.equal(rows[1].result.score, 80, 'Den viste RavScore maa ikke omskrives af rangmodellen.');
+assert.equal(rows[0].zone.id, 'smal', 'Områdescoren skal fortsat modvirke ekstra lodder fra mange retninger.');
+assert.ok(rows[0].rankingDisplayScore>=rows[1].rankingDisplayScore, 'Den viste områdescore skal falde med rangeringen.');
+assert.equal(displayNationalRankingScore(-4),0);
+assert.equal(displayNationalRankingScore(100.8),100);
+
+const tiedRows = [
+  addNationalRanking({ zone: { id: 'bred-lav-stoette' }, result: onlyPartResult }, spreadParts),
+  addNationalRanking({ zone: { id: 'smal-fuld-stoette' }, result: { score: 80, localCoverage: { status: 'only-part', comparisonPartCount: 1 } } }, [{ onshoreDirectionDeg: 0 }]),
+].sort(compareNationalRankingRows);
+assert.equal(tiedRows[0].zone.id, 'smal-fuld-stoette', 'Støttevurderingen skal fortsat afgøre den reelle områdescore.');
 
 const app = fs.readFileSync('app.js', 'utf8');
 const index = fs.readFileSync('index.html', 'utf8');
 assert.ok(app.includes('compareNationalRankingRows') && app.includes('addNationalRanking'), 'Begge landslister skal bruge den faelles rangfunktion.');
-assert.ok(app.includes('${item.result.score}${exceptionalScoreMark(item.result.score)}'), 'Brugerfladen skal fortsat vise den oprindelige RavScore.');
+assert.equal((app.match(/item\.rankingDisplayScore/g)||[]).length>=4,true,'Begge lister skal vise den samme områdescore, som de sorterer efter.');
 assert.equal(
-  (index.match(/Et område står højere, når flere af dets kyststrækninger har gode forhold\./g) || []).length,
+  (index.match(/Højeste områdescore står øverst\./g) || []).length,
   2,
-  'Begge landslister skal forklare rangeringen med den gældende almindelige brugertekst.',
+  'Begge landslister skal forklare områdescoren med almindeligt brugersprog.',
 );
 
 console.log('National broad-support-rangering: 210 zoner / 673 kystdele og UI-kontrakt er groen.');

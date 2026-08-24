@@ -23,7 +23,8 @@ const infoPanel = fs.readFileSync(new URL("../js/ui/info-panel.js", import.meta.
 const browserAudit = fs.readFileSync(new URL("./audit-online-browser-4.0.237.py", import.meta.url), "utf8");
 assert.doesNotMatch(index, /Fremragende|legend-dot excellent|score-symbol excellent/);
 assert.match(index, /En stjerne viser usædvanligt gode forhold/);
-assert.match(app, /exceptionalScoreMark\(item\.result\.score\)/);
+assert.match(app, /exceptionalScoreMark\(item\.rankingDisplayScore\)/);
+assert.match(app, /title="Områdescore"/);
 assert.doesNotMatch(css, /\.rank-score\.excellent|\.score-badge\.excellent/);
 assert.match(infoPanel, /Vandstandsændring på 3 timer/);
 assert.match(browserAudit, /Vandstandsændring på 3 timer/);

@@ -66,9 +66,16 @@ export function calculateNationalRanking(result, parts) {
 
 export function addNationalRanking(row, parts) {
   const ranking = calculateNationalRanking(row?.result, parts);
-  return { ...row, rankingScore: ranking.rankingScore, rankingCorrection: ranking };
+  return { ...row, rankingScore: ranking.rankingScore, rankingDisplayScore: displayNationalRankingScore(ranking.rankingScore), rankingCorrection: ranking };
+}
+
+export function displayNationalRankingScore(value) {
+  const score = Number(value);
+  return Number.isFinite(score) ? Math.round(clamp(score, 0, 100)) : null;
 }
 
 export function compareNationalRankingRows(left, right) {
-  return Number(right?.rankingScore ?? right?.result?.score) - Number(left?.rankingScore ?? left?.result?.score);
+  const rankingDifference = Number(right?.rankingScore ?? right?.result?.score) - Number(left?.rankingScore ?? left?.result?.score);
+  if (Number.isFinite(rankingDifference) && rankingDifference !== 0) return rankingDifference;
+  return Number(right?.result?.score) - Number(left?.result?.score);
 }

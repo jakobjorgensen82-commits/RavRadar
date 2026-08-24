@@ -1,5 +1,5 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.269";
-import { authorizedFetch, currentSession, requireFreshSession } from "./auth-service.js?v=4.0.269";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.270";
+import { authorizedFetch, currentSession, requireFreshSession } from "./auth-service.js?v=4.0.270";
 
 const PREFIX="ravradar-admin-document:";
 const listeners=new Set();
@@ -59,7 +59,7 @@ export async function loadAdminDocument(key,fallback){
 export function queueAdminDocumentSave(key,payload,{delay=500}={}){writeLocal(key,payload);emit({state:"saving",key,central:false});clearTimeout(pending.get(key));pending.set(key,setTimeout(async()=>{try{const row=await remoteWrite(key,payload);emit({state:"saved",key,at:new Date().toISOString(),serverAt:row.updated_at||null,version:row.version,central:true});}catch(error){emit({state:"local",key,error:error.message,central:false});}},delay));}
 export async function saveAdminDocumentNow(key,payload,{writeLocal:shouldWriteLocal=true}={}){if(shouldWriteLocal)writeLocal(key,payload);emit({state:"saving",key,central:false});try{const row=await remoteWrite(key,payload);const clientAt=new Date().toISOString();emit({state:"saved",key,at:clientAt,serverAt:row.updated_at||null,version:row.version,central:true});return {ok:true,row,clientAt}}catch(error){emit({state:"local",key,error:error.message,central:false});return {ok:false,error}}}
 export function centralAdminStorageEnabled(){return enabled&&Boolean(currentSession()?.access_token);}
-export async function adminStorageHealth(keys=['rules','rule-history','water-level-station-routing','direction-reviews']){
+export async function adminStorageHealth(keys=['rules','rule-history','water-level-station-routing','direction-reviews','coastline-overrides']){
   const result={ok:true,checkedAt:new Date().toISOString(),documents:{}};
   try{await requireFreshSession();}catch(error){return {ok:false,checkedAt:result.checkedAt,error:error.message,documents:{}};}
   for(const key of keys){try{const row=await remoteRead(key);result.documents[key]={ok:true,exists:Boolean(row),updatedAt:row?.updated_at||null,version:row?.version||null};}catch(error){result.ok=false;result.documents[key]={ok:false,error:error.message};}}

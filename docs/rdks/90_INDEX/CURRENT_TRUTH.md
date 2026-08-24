@@ -1,5 +1,17 @@
 # Current truth – gældende projektviden
 
+## 4.0.270-kandidat – før-lancering, ekspert, admin og synlig rangering
+
+- Den seneste naturlige produktionskørsel dokumenterer 210 zoner og 673 kystdele. De 198 geografisk verificerbare zoner har 72 timers sammenhængende prognose med naturlige tretimerspunkter; der opfindes ikke mellemliggende timer. Tolv kendte zoner mangler ærligt et marint punkt.
+- Supabase-projektet er sundt på Free-planen. I den aktuelle periode er databasen cirka 17 % og egress cirka 5 % af kvoten. Den forrige periodes egress-overskridelse og fristen 9. september overvåges fortsat.
+- Administratoren og eksperten bruger den samme centralt gemte håndbog. Ekspertadgang er begrænset af rettighederne `admin_access`, `handbook_view` og `handbook_review`; målrettede admin-, håndbogs- og rettighedstest er grønne. Officielle opdateringer trevejsflettes mod sidste kildebaseline, så centralt godkendte ekspertændringer ikke overskrives ved deploy.
+- En falsk rød status for `coastline-overrides` i den første adminoversigt er rettet ved at kontrollere alle fem centrale dokumenter.
+- Offentlige lister bevarer DEC-0049's lotterikorrektion og viser den afrundede områdescore, de faktisk sorterer efter. Højeste viste områdescore står derfor øverst; detailvisningen viser fortsat bedste kyststræknings almindelige RavScore.
+- Begge håndbøger beskriver den aktive Candidate G-model som 20 % søgeforhold, 50 % transport og 30 % rav i bevægelse. Arbejdsplan, kodekapitel, scenarier og hypoteseregister følger den faktiske aktive motor; ældre kandidater er tydeligt mærket som historik.
+- Releasegaten kræver aktive Candidate G-spor og kontrollerer den aktive motor særskilt fra den globale 25/40/35-rollback.
+- Versionsværktøjet synkroniserer nu hele den aktuelle webhåndbog til installationsfilen til Supabase, så en ny installation ikke starter med forældet faglig tekst.
+- Kandidaten ændrer ingen delscore, farvegrænse, fysisk model, vejrdata, geometri eller land-/vandpunkt. Exact-head-gates, merge, frisk produktion og offentlig browserkontrol mangler endnu.
+
 ## Produktionsverificeret 4.0.269 – aktuelle scoreforklaringer og enkel offentlig visning
 
 - **Hvorfor denne score?** bruger nu den valgte kystdels faktiske offentlige vind-, bølge- og strømværdier samt relevant opbygget Candidate G-state for alle tre komponenter. Generiske intervaltekster står ikke længere alene.

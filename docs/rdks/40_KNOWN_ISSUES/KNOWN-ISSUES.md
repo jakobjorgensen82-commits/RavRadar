@@ -1,5 +1,14 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.270 før-lancering – kandidat
+
+- **ISSUE-VISIBLE-RANKING-MISMATCH – LOKALT LØST / AFVENTER PRODUKTION:** DEC-0049 sorterede efter en skjult støttebreddekorrektion, men viste bedste kyststræknings RavScore. Det kunne placere det synlige 68 under 63 og 86 under 81. Lotterikorrektionen bevares; toplisterne viser nu i stedet den afrundede områdescore, de faktisk sorterer efter.
+- **ISSUE-ADMIN-COASTLINE-STATUS-FALSE-RED – LOKALT LØST / AFVENTER PRODUKTION:** Den første adminoversigt kontrollerede fire centrale dokumenter, mens lagertabellen viste fem. `coastline-overrides` kunne derfor se fejlagtigt utilgængelig ud. Standardkontrollen omfatter nu alle fem.
+- **ISSUE-HANDBOOK-CURRENT-HISTORY-DRIFT – LOKALT LØST / AFVENTER PRODUKTION:** Ældre Candidate G-kandidater stod enkelte steder uden tydelig historisk mærkning, og Supabase-installationsfilen indeholdt en forældet håndbogskopi. Begge håndbøger er rettet, og versionsværktøjet synkroniserer nu hele installationskopien.
+- **ISSUE-HANDBOOK-DEPLOY-OVERWRITE – LOKALT LØST / AFVENTER PRODUKTION:** Den beskyttede sync kunne overskrive en centralt godkendt håndbogsrettelse med repositoryets standardpayload. 4.0.270 gemmer sidste officielle kilde som baseline og trevejsfletter kun de afsnit, eksperten faktisk har ændret. En ukendt afvigelse uden baseline stopper sikkert.
+- **ISSUE-SUPABASE-EGRESS-GRACE – OVERVÅGES:** Aktuel periode bruger cirka 5 % egress, men den forrige periode overskred Free-planen. Supabase viser en frist til 9. september 2026; forbruget skal følges efter lancering.
+- **ISSUE-DMI-FRESH-RATE-LIMIT – OVERVÅGES:** Den seneste naturlige kørsel modtog HTTP 429 fra et frisk DMI-kald, men den kontrollerede DMI-cache, fallback, fulde gates og deploy forblev grønne. Gentagelser eller faldende datadækning skal undersøges systemisk.
+
 ## 4.0.269 offentlig scoreforklaring og profilvisning
 
 - **ISSUE-PUBLIC-SCORE-REASONS-GENERIC – PRODUKTIONSVERIFICERET LØST:** Candidate G dannede forklaringer ud fra scoreintervallet og ikke de konkrete forhold. Live 4.0.269 fører de faktiske offentlige værdier og relevant state ind i alle tre forklaringer. Se DEC-0068.

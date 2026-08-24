@@ -1,5 +1,13 @@
 # RavRadar – overlevering til næste chat
 
+## Aktiv kandidat 2026-08-24 – 4.0.270 før-lancering
+
+- Naturlig 210/673-produktion, Supabase Free-plan, admin, eksperthåndbog og rettigheder er kontrolleret. Ingen private payloads, koordinater eller rå strømvektorer er udstillet.
+- Den synlige rangering er rettet uden at genindføre ekstra lotterilodder: toplisterne viser den samme afrundede områdescore, som DEC-0049 sorterer efter. Den falske adminstatus for `coastline-overrides` er også rettet.
+- Begge håndbøger beskriver den aktive 20/50/30-model, installationsfilen synkroniseres med hele webhåndbogen, og livehåndbogen trevejsflettes, så godkendte centrale ekspertændringer ikke overskrives.
+- Branchens målrettede tests, exact-head-kildegate, merge, frisk produktion og offentlig browserkontrol skal færdiggøres før 4.0.270 kan kaldes lukket.
+- Efter den tekniske lukning mangler den virkelige eksterne ekspertgennemgang samt domæne-, HTTPS-, Supabase-redirect- og fuld brugerflowprøve på `ravradar.dk`.
+
 ## Lukket checkpoint 2026-08-24 – 4.0.268 offentlig grundbog
 
 - **Grundbog i ravjagt** er udgivet i `learn.html`/`learn.css` og tilgængelig fra forsiden. Den lærer ravjagt fra havbund til fund, før RavRadar forklares.
