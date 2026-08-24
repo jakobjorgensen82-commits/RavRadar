@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 66053)
-Total output lines: 1608
-
 # Current truth – gældende projektviden
 
 ## 4.0.270-kandidat – før-lancering, ekspert, admin og synlig rangering
@@ -490,7 +487,409 @@ Den private Copernicus-shadow har ved pilot `#58` 37 gyldige timer, 23.273 poste
 - Ejeren fortsætter samtidig den manuelle land-/vandpunktgennemgang. Fem-døgnsdækning og historikanalyse er efter ejerbeslutning midlertidigt udsat, indtil flere naturlige data er opsamlet; dataopsamlingen og de eksisterende gates fortsætter uændret.
 
 ## 4.0.227 – lokal kystvinkel er en advarsel, ikke en ejerblokering
-…16053 tokens truncated… samt forkastelsen af de to fejlagtige præcisionsforslag. Den er ikke i sig selv en produktions- eller scoreaktivering.
+
+- Ved Svansodde afviste admin et cirka 461 meter langt visuelt kontrolleret punktpar ud fra tangenten på et cirka 15 meter langt mikrostykke af den detaljerede kystlinje. Den viste afvigelse var 50 grader mod en hård grænse på 20 grader.
+- På bugtede, takkede og fragmenterede kyster er mikrotangenten ikke et sikkert mål for den repræsentative hav→land-retning. Ejerens helhedsvurdering efter de tre eksplicitte zonebekræftelser er autoritativ.
+- 4.0.227 bevarer vinkelmålingen som synlig advarsel, men den kan ikke længere deaktivere **Godkend og gem centralt**. Admin forklarer samtidig eventuelle reelle blokeringer og angiver, når vinkeladvarslen kun er vejledende.
+- Manglende/ugyldige punkter, afstand uden for 0,05–8 km, manglende kystkryds og punkter på samme side blokerer fortsat. Central readback, DMI-gridvalidering, releasegate og rollback er uændrede.
+- Ingen eksisterende kyst, punktplacering, vejrdata eller RavScore ændres automatisk. Se DEC-0038.
+- #31908498204/#2824 på commit `6e920c297ef58f997ae95b3b6da16adfdf66bfe6` bestod central adminhydrering, frisk DMI, fuld `validate`, releasegate, supportartifact, beskyttet Supabase-sync, Pages-artifact og deploy.
+- Supportartifactets beståede releasegate og datasæt `rr-20260815210805-210` dokumenterer 210 zoner og 673 kyststrækninger; begge manifesthashes matcher. Direkte Pages-kontrol viser version 4.0.227, den vejledende advarsel og ingen hård vinkelblokering. 4.0.227 er produktionsverificeret.
+
+## 4.0.226 – én fail-closed genprøvning ved Supabase statement-timeout
+
+- #31904109833/#2814 forsøg 1 bestod frisk DMI, fuld `validate`, releasegate, vejrcache og supportartifact, men `runtime-diagnostics`-upserten stoppede Supabase/Pages med HTTP 500/PostgreSQL `57014` efter cirka 19 sekunder.
+- Payloaden er cirka 17,7 MB. Samme idempotente upsert lykkedes i #2810/#2812 på cirka 11,5 sekunder og i uændret #2814 forsøg 2 på cirka 10,3 sekunder; rerunnen gennemførte Supabase og Pages.
+- 4.0.226 genprøver kun den eksakte kombination HTTP 500 + kode `57014`, højst én gang. En anden timeout og alle øvrige fejl stopper fortsat fail-closed.
+- #31905211459/#2816 på commit `2dc8253a4c7f77449d6f92dcc9c996f211f033d2` bestod central adminhydrering, frisk DMI, fuld `validate`, releasegate, supportartifact, beskyttet Supabase-sync, Pages-artifact og deploy. Den store upsert lykkedes i første forsøg på cirka 11,5 sekunder; timeout-recoveryen er derfor syntetisk regressionstestet, ikke fremprovokeret mod produktion.
+- Datasæt `rr-20260815195620-210` har 22.890/22.890 komplette routede DMI-vandstandstimer og 210/210 komplette rækker ved aktuel 19:00 UTC. Begge manifesthashes matcher artifact og direkte Pages-kontrol, som viser version 4.0.226 og samme 210-zone-datasæt.
+- Sundhedsstatus var `degraded` på grund af et supplerende DMI EDR-kald med HTTP 429, mens `userForecastStatus` var `ok`. Brugerfuldstændigheden var fortsat 209/210 på grund af det kendte Feggesund-bølgegab; strøm og vandstand var 210/210. Det er ikke en regression fra retryændringen.
+- Ingen timeoutgrænse, payload, adminversionering, manifest, DMI, vejrdata, RavScore, historik eller geometri ændres. 4.0.226 er produktionsverificeret.
+
+## 4.0.225 – routet provenance på den igangværende klokktime
+
+- #31897098322/#2801 var fuldt grøn, men artifactet afslørede 210 DMI-vandstandstimer uden collection/model-run, alle ved 17:00 UTC i et datasæt genereret 17:02 UTC.
+- Rodårsagen var et tidsvindue: offentlig prognose bevarede aktuel klokktime, mens vandstandskildeindekset startede ved næste hele time.
+- 4.0.225 lader kun kildeindekset starte ved den aktuelle hele time. Faktisk genereringstid bruges fortsat til forecastalder og provenance.
+- Værdier, punkter, routing, vægte, continuity, fallback, RavScore, historik og geometri er uændrede.
+- Read-only replay af #2801 bevarer routing-auditten på 210 anvendte/0 ufuldstændige og dokumenterer alle 23.310 timer, inklusive 210/210 i aktuel time.
+- #31902872631/#2810 på commit `18499eb10a45f561d4440a7944b34725049cf34d` bestod central adminhydrering, frisk DMI, fuld `validate`, releasegate, Supabase, Pages-artifact og deploy.
+- Produktionsdatasæt `rr-20260815190651-210` har 22.890/22.890 routede DMI-vandstandstimer med fuld collection, model-run, lead time, forecastalder, native tider, routing og source keys; 210/210 ved aktuel 19:00-time er komplette. Manifesthashes matcher, og direkte Pages-kontrol efter #2810 viste 4.0.225 og samme datasæt.
+- #31903561423/#2812 gentog alle fulde gates og deploy efter evidenscommitten. Datasæt `rr-20260815192135-210` gentager 22.890/22.890 og 210/210 i aktuel time; begge manifesthashes matcher live. Sundheds-, DMI-dæknings- og API-status var `ok`.
+- Det kendte bølgegab ved Feggesund holder brugerfuldstændigheden på 209/210, mens vandstand og strøm er 210/210. Det er fortsat et separat fagligt forhold og ændrer ikke, at 4.0.225-proveniensrettelsen er produktionsverificeret.
+
+## 4.0.224 – sand kilde efter vandstandsrouting
+
+- #2795 viser, at vandstandsroutingen overskrev værdien korrekt, men kunne efterlade zonens tidligere modelmærke; én aktuel DMI-time pr. zone stod helt uden model-run.
+- Den centrale routing bruger 123 zoner med ét DKSS-modelområde og 87 zoner med en sammensætning af to områder. Et enkelt videreført collectionnavn var derfor ikke autoritativt.
+- 4.0.224 fører de valgte kildepunkters faktiske collection(s), model-run, native tider, routingmetode og source keys gennem den eksisterende interpolation. Manglende gammel identitet forbliver eksplicit ufuldstændig.
+- Værdier, routingvalg, vægte, continuity, fallback, RavScore, historik, UI og geometri er uændrede. Frisk produktion er næste gate.
+- #31895640397 bestod hele produktionskæden på commit `82c07b54`. Artifact #2797 har 23.310 routede vandstandstimer, nul uden collection, nul uden model-run og nul med ufuldstændig provenance.
+- Direkte Pages-kontrol viser 4.0.224, datasæt `rr-20260815163132-210` og 210 zoner. Strømhistorikken er 40,449 rå timer og 4,730–40,449 verificerede timer.
+
+- Den naturlige #31894320128/#2794 er fuldt grøn. DMI's nye WAM-/DKSS-12 UTC-kandidater er synlige, men den aktive cache beholder korrekt WAM 00 UTC og DKSS 06 UTC, mens deres fremadrettede horisont på ca. 107,9/109,9 timer overstiger 96-timersfastholdelsen. Det er beskyttet progressiv rotation, ikke en fastlåst scheduler.
+- #2794 har verificeret aktuel strøm i 210/210 zoner, nul `CURRENT_ANCHOR_PROTECTED`, nul valgte warning/critical-vandstandskilder og 4,27–39,99 timers verificeret historik. Alle zoner er fortsat under 72-timerskravet.
+
+## 4.0.223 – delvise modelcyklusser tælles ikke som fulde beviser
+
+- Den read-only P1-audit viser nu både timer og antal aktive zoner pr. DMI-modelkørsel og collection@run.
+- #31891391302 bestod fulde gates og deploy. Artifact #2783 havde en ny HARMONIE 12 UTC-cyklus med 416 timer i 208 zoner; den ældre 03 UTC-cyklus leverede 9.776 timer.
+- #31891984360 produktionsverificerer 4.0.223 med fulde gates, Supabase og Pages. Artifact #2785 viser indfasningsvækst til 3.744 timer fra 12 UTC og fald til 6.032 timer fra 03 UTC i 208 zoner. WAM 00 UTC og DKSS 06 UTC er fortsat uændrede.
+- #31892505177 bestod også hele kæden. Artifact #2787 fortsætter samme HARMONIE-indfasning til 5.616 timer fra 12 UTC og 4.160 timer fra 03 UTC i 208 zoner; overgangsmålene er uændrede. Det er driftsbevis fra samme nye cyklus, ikke endnu en uafhængig cyklus.
+- #31892947409 bestod også Supabase og deploy. Artifact #2789 fortsætter HARMONIE-indfasningen til 7.488/2.288 timer fra 12/03 UTC i 208 zoner. Overgangsmålene ændrede sig igen, hvilket understøtter stopreglen mod permanente grænser fra delvise snapshots.
+- #31893406911/#2790 afslutter indfasningen: HARMONIE 12 UTC leverer 45 timer i 208 zoner; 03 UTC har kun to bevarede timer pr. zone. To fulde vindcyklusser er nu sammenlignet. DMI→fallback er identisk, mens fallback→DMI varierer; tallene er en foreløbig ramme, ikke en permanent gate.
+- Vindovergangene er bedre i dette datasætpar, men én delvis indfasning er ikke grundlag for permanente tærskler.
+- Strømhistorikken er vokset til 39,176 rå timer og 3,457–39,176 verificerede timer. Alle zoner er fortsat under 72 verificerede timer.
+- #2787 løfter historikken videre til 39,364 rå timer og 3,644–39,364 verificerede timer; alle 210 er fortsat under 72 verificerede timer.
+- #2789 løfter historikken til 39,516 rå timer og 3,797–39,516 verificerede timer; alle 210 er fortsat under 72 verificerede timer.
+- #2790 løfter historikken til 39,662 rå timer og 3,943–39,662 verificerede timer; alle 210 er fortsat under 72 verificerede timer.
+- En separat workflow_dispatch-kørsel #31891504819 bestod alle vejr- og releasegates, men stoppede fail-closed på et enkelt Supabase `57014 statement timeout` ved skrivning af `runtime-diagnostics`. Den umiddelbart efterfølgende #31891984360 synkroniserede samme dokument og deployede grønt. Hændelsen overvåges; der er ikke indført en bred retry på ét transient fund.
+- #2785 måler den kompakte runtime-diagnostik til 9.287.456 byte; 25 rå `zoneSamples` udgør 8.690.021 byte/93,57 %. Statusdelen er cirka 0,60 MB. Zoneeksemplerne bruges ikke af adminstatusfelterne, men indgår i ejerens beskyttede rå download og må derfor ikke fjernes eller flyttes uden godkendelse og bevaret adgang.
+- Vejrdata, kilder, fallback, interpolation, RavScore og geometri er uændrede.
+
+## 4.0.222 – modelcyklusser tælles efter run-id, ikke artifact
+
+- Artifacts #2764, #2771 og #2777 genbruger samme aktive HARMONIE-, WAM- og DKSS-modelkørsler. De beviser stabil drift og historikvækst, men er ikke tre uafhængige forecastcyklusser.
+- Den read-only P1-audit rapporterer nu DMI-collection, model-run, tidsopløsning og manglende provenance pr. komponent uden at skrive data.
+- #2777 havde fuld collection-/modelrun-identitet for vind, bølger, strøm og vandtemperatur, men 210 routede vandstandstimer uden felterne. Den friske 4.0.222-kæde #31890898143 bestod alle gates og deploy; artifact #2782 har fuld collection/modelrun på samtlige DMI-timer i alle fem komponenter. Det ældre fund var dermed ikke vedvarende.
+- #2782 bruger fortsat samme aktive HARMONIE 03 UTC-, WAM 00 UTC- og DKSS 06 UTC-cyklus. Det er nyt driftsbevis, men endnu ikke en uafhængig forecastcyklus.
+- Strømhistorikken er vokset til 158 rå prøver/38,760 timer i alle 210 zoner. Verificeret spænd er 3,040–38,760 timer; ingen zone har endnu 72 verificerede timer.
+- Vejrdata, kilder, fallback, interpolation, RavScore og geometri er uændrede.
+
+## 4.0.221 – sand alarm for effektiv vandstandsrouting
+
+- Artifact #2771 viser 373 kendte vandstandskilder og 240 med gyldig forecastcache. Hals Barre og Hals Havn har hver 113 timers DMI-prognose. De gamle registerfelter sagde 15/21 zoner, men før/efter-kontrol af den producerede serie viser uændret faktisk brug i 5/6 zoner.
+- Observation, DMI-kildeprognose, routet forecastcache og samlet brugbarhed er allerede adskilt. Adminoverride, automatik, forecaststore, femdøgnstabel og score-/visningskæde bruger samme producerede vandstandsserie.
+- Alarmen fra 4.0.98 blev fjernet under 4.0.99-ombygningen, mens kravet og en teksttest blev stående. Gamle alarmfelter kunne derfor videreføres uden genberegning og vise `critical` samtidig med gyldig forecast.
+- 4.0.221 genberegner kun alarmstatus for faktisk valgte aktive kilder og bruger seneste gyldige tidspunkt fra både kildens prognose og routet cache. Leverende observationer og historiske/inaktive kilder alarmerer ikke; stale mærker ryddes.
+- Kildevalg, vandstandstal, interpolation, fallback og RavScore er uændrede.
+- #31889559758 bestod frisk DMI, fuld `validate`, releasegate, Supabase og Pages på commit `3f6c7661`. Artifact #2777 har nul valgte warning/critical-kilder og nul nye notifikationer; begge Hals-kilder har 116,6 timers resttid og ingen alarm. Datasættet er `rr-20260815142117-210` med 210 zoner.
+- 4.0.237-artifact `#3237` giver den foerste naturlige udloebseftermaaling: fire gamle observationscacher udloeb og blev notificeret, men ingen var en valgt effektiv routingkilde. Friske kildeprognoser og 210/210 aktiv vandstand var intakte. En naturlig warning/critical paa en faktisk valgt kilde er fortsat ikke observeret.
+
+## 4.0.220 – rå og verificeret strømhistorik måles hver for sig
+
+- Den read-only P1-audit viser nu aktuel verifikationsstatus, fordeling af verificerede prøver, verificeret tidsspænd og zoner under 72 verificerede timer.
+- Artifact #2764 har aktuel verificeret strøm i 210/210 zoner og 149 rå prøver over 37,149 timer i alle zoner. Verificeret historie er fortsat ujævn: 27×4, 75×5, 98×6 og 10×106 prøver; tidsspændet er 1,43 timer i 75 zoner, 18,97 timer i 125 og 37,149 timer i 10.
+- Ingen zone har endnu 72 verificerede timer. Rå historik er ikke i sig selv scoreklar, fallback tæller ikke som verificeret strøm, og fortid udfyldes ikke bagudrettet.
+- Samme artifact beviser en fuld ny `dkss_lf`-cyklus med 41/41 trin og vækst i de otte Limfjordszoners marine hale fra 98 til 115 viste timer. Ingen kilde, fallback eller RavScore er ændret.
+- GitHub Actions #31888082124 bestod den fulde produktionskæde på commit `50f2aa491483d584e1aaa922160e6253777a8fff`. Offentlig 4.0.220 bruger datasæt `rr-20260815134755-210` med 210 zoner og 673 kyststrækninger.
+- Artifact #2771 viser fortsat vækst uden rekonstruktion: 152 rå prøver/37,722 timer i alle zoner og verificerede prøveantal 27×7, 75×8, 98×9 og 10×109. Verificeret tidsspænd er 2,003 timer i 75 zoner, 19,54 timer i 125 og 37,722 timer i 10; ingen zone mangler verificerede prøver, men alle 210 er stadig under 72 timer.
+- Artifact #2777 fortsætter samme naturlige mønster: 155 rå prøver/38,278 timer, verificerede prøveantal 27×10, 75×11, 98×12 og 10×112 samt verificeret spænd på 2,559–38,278 timer. Alle 210 har aktuel verificeret strøm og mindst én verificeret historikprøve; alle er fortsat under 72-timerskravet.
+
+## 4.0.219 – reduceret Supabase-readback
+
+- Produktionsartifact #2757 viser, at routingauditten fylder cirka 0,53 MB som kompakt JSON og hidtil blev hentet centralt før hver 15-minutterskørsel, selv om den genbygges i samme kørsel.
+- 4.0.219 stopper kun denne overflødige readback. Frisk generering, beskyttet upload, central adminvisning, stationsregister og redigerbar admin-konfiguration bevares.
+- Read-only estimatoren sænker den beregnede nedre pipelinegrænse fra cirka 4,44 til 3,03 GiB pr. 30 dage ved 96 kørsler dagligt. Det er ikke billingbevis; næste Supabase-periode skal fortsat måles.
+- GitHub Actions #31885856568 bestod den fulde produktionskæde på commit `5c823947c9275e5234e996b3a86078613b6eee5a`: central adminhydrering/tombstones, frisk DMI, fuld `validate`, releasegate, Supabase, Pages-artifact og deploy.
+- Startloggen viser seks nødvendige centrale dokumenter og ingen `water-station-routing-audit`; slutloggen viser fortsat frisk beskyttet upload af routingauditten. Estimatoren på artifact #2764 giver 3,028 GiB/30 dage og 1,416 GiB/30 dage undgået readback. Faktisk billing-egress afventer fortsat næste Supabase-periode.
+- Offentlig version er 4.0.219 med datasæt `rr-20260815131334-210`, 210 zoner og 673 kyststrækninger.
+- Samme artifact har 149 rå `samples72h`-prøver i hver zone over 37,149 virkelige timer. Historikken vokser korrekt, men 72-timers-exitkriteriet er ikke nået, og der udfyldes ikke bagudrettet.
+
+## 4.0.218 – et halepar må ikke rydde aktuel strøm
+
+- Artifact #2750 viste en særskilt modelvalgsregression i 27 zoner: `dkss_idw` havde et marginalt bedre geografisk scoret U/V-par, men kun 19. august, og kunne derfor rydde en eksisterende `dkss_nsbs`-serie omkring nu.
+- 4.0.218 beskytter et eksisterende strømanker inden for seks timer af datasættets genereringstid. Et andet modelvalg accepteres kun, hvis kandidatens eget fælles U/V-par også ligger i ankervinduet.
+- Mangler den eksisterende model selv et aktuelt anker, er recovery fortsat tilladt. DMI-kilder, fallback, RavScore og punkter er uændrede.
+- Målrettede regressioner, versions-/håndbogs-/RDKS-kontrol og lokal releasegate består. Fuld lokal `validate` når forventet den historiske 211-mod-210-zonegrænse efter en grøn geometri-v2-kæde.
+- GitHub Actions #31883707138 bestod en fuld 21-minutters produktionskæde med central adminhydrering/tombstones, DMI-bulk, `validate`, releasegate, Supabase, Pages-artifact og deploy på commit `02fefbcffdeecce02aa8ac48218e45d9458d5ed4`.
+- Datasæt `rr-20260815122446-210` har verificeret aktuel strøm i 210/210 zoner. De 27 tidligere berørte zoner valgte `dkss_nsbs`, havde aktuelt tidsanker og 41 strømtrin hver. Denne rotation frembød ikke et konkurrerende sent IDW-par, så den eksplicitte `CURRENT_ANCHOR_PROTECTED`-gren skal fortsat eftermåles over kommende modelrotationer.
+
+## 4.0.217 – verificeret strømhistorik bevares i begge vinduer
+
+- Produktionsartifact #2750, datasæt `rr-20260815111030-210`, har 142 rå prøver og 35,1 timers faktisk `samples72h` i alle 210 zoner. Ét fælles historisk hul er 67,6 minutter; 24-timersvinduet har ingen huller over én time.
+- I #2750 havde 183/210 zoner et aktuelt tidsmatchende DMI-U/V-par. De øvrige 27 havde kun en fjern `dkss_idw`-hale 19. august og forblev korrekt `unverified/no-time-match`. Efterberigelsen skrev hidtil kun resultatet tilbage til `samples24h`; næste merge bruger `samples72h` som autoritativ historik, så mærket blev tabt igen.
+- Før rettelsen havde 75 zoner nul verificerede 72-timersprøver, 125 havde én og 10 havde 101. Rå sampleantal var derfor ikke bevis for verificeret transporthistorik.
+- 4.0.217 synkroniserer kun den aktuelle prøves allerede kontrollerede DMI-U/V-resultat til begge vinduer. 210-zonesimuleringen markerede kun de 183 tidsmatchende zoner; de 27 forblev uverificerede. Ældre uverificeret fortid rekonstrueres ikke; RavScore bruger fortsat kun 24 timer og er uændret.
+- GitHub Actions #31882866344 bestod central adminhydrering/tombstones, frisk vejrbygning, fuld validering, releasegate, Supabase, Pages-artifact og deploy på commit `abb92d438820270661b64ffac0176554d54cdd75`.
+- Første produktionsdatasæt med rettelsen er `rr-20260815114746-210`: alle 210 zoner har 145 rå prøver over 35,719 timer. Verificeret 72-timershistorik voksede som forventet til 102 zoner med én prøve, 98 med to og 10 med 102; den aktuelle prøve var verificeret i de samme 183 tidsmatchende zoner, mens de 27 uden tidsmatch forblev uverificerede.
+- Eftermålingen fortsætter til mindst 72 faktiske timer. Fortid udfyldes ikke bagudrettet.
+
+## 4.0.216 – progressiv offentlig vejrindlæsning
+
+- Den offentlige runtime er delt i en lille startpakke og en integritetsbundet detaljepakke med samme dataset-id.
+- Startpakken indeholder aktuelle hovedzoneforhold, kompakt historisk tilstand, flowpunkter, én aktuel lokal scorerække pr. zone og de kystdele, der vinder aktuelt for waders eller strand.
+- Hele femdøgnsprognosen og alle lokale kystdelsdetaljer bevares i `public-condition-details.json` og hentes straks efter første kort/rangliste.
+- Hvis detaljepakken fejler eller tilhører et andet datasæt, bevares aktuelle forhold, mens femdøgnsvisningen melder manglen. Stale data, konstruerede nuller og blandede datasæt er fortsat forbudt.
+- Direkte lokal browsertest med frisk 210-zonedata viste første klare kort/rangliste på cirka 0,7 sekund, efterfølgende komplet femdøgnsvisning og fungerende lokalt zonepanel uden browserfejl.
+- RavScore, historik, kilder, fallback og missing-regler er uændrede.
+- GitHub Actions #31880984004 bestod den fulde 210-zonekæde med `validate`, releasegate, Supabase/artifact og Pages-deploy. Direkte efterkontrol viste offentlig 4.0.216 og datasæt `rr-20260815110313-210`; startpakken er 2.534.969 bytes og den efterfølgende komplette detaljepakke 24.748.808 bytes.
+
+## 4.0.215 – privat og dataminimeret besøgsstatistik
+
+- Den offentlige side registrerer efter normal opstart én sidevisning og højst ét browserbesøg pr. browserfane og dansk kalenderdag. Statistikfejl blokerer aldrig appen.
+- Supabase gemmer kun daglige totaler. Ingen rå besøg, IP-adresser, præcis lokalitet, fingerprint eller stabil besøgsidentitet gemmes.
+- Ejer/full_admin kan vælge en periode i admin og se sidevisninger, browserbesøg samt oprettede og aktive login-konti. Browserbesøg er ikke unikke personer.
+- Migrationen er installeret i Supabase og efterkontrolleret: anonym rolle kan skrive, men ikke læse rapporten; authenticated kan kalde den ejerbeskyttede rapportfunktion.
+- #31876816700 bestod frisk DMI, fuld `validate`, releasegate, Supabase-synkronisering, Pages-artifact og deploy. Direkte Pages-kontrol viste 4.0.215; én rigtig åbning gav 1 sidevisning/1 browserbesøg, og ejerens rapport viste disse tal samt 2 oprettede og 2 aktive login-konti.
+
+## 4.0.214 – gammel umærket temperatur må ikke overleve
+
+- #31873118298 afviste 756 nye dybdelagsmeddelelser, men artifactet viste 29.459 ældre temperaturpunkter uden vertikal provenance mod 3.852 beviste `surface:0`-punkter.
+- 4.0.214 fjerner de umærkede punkter før genbrug. Manglende overfladetemperatur forbliver `missing`, indtil den relevante DKSS-model leverer nye `surface:0`-data.
+- Schedulerens DKSS-rotation medregner nu manglende overfladetemperatur. Alle 210 zoner havde fortsat 102 rå `samples24h` og 132 rå `samples72h`; øvrig vejrhistorik bevares.
+- P1-analysen af Limfjorden er afgrænset: `DK-B05-11` mangler bølger, fordi hverken et gyldigt DMI-bølgepunkt inden for den tilladte afstand eller den eksisterende fallback findes. De øvrige undersøgte Limfjordszoner får bølger fra `wam_dw`. Den fælles sene vandstands-/temperaturhale er et horisont-/overgangsproblem, ikke samme bølgeproblem.
+- Frisk 4.0.237-produktion `#3237` gentager resultatet paa en ny WAM 18Z-cyklus: Feggesund har 53 gyldige `dkss_lf`-marinerækker, men ingen boelgecollection og nul komplette boelgetimer. Nabozonerne har `wam_dw`. Det er et vedvarende kildegab, ikke et generelt pipelineudfald; `missing` bevares.
+- WAM 18Z slutter native 23. august 22 UTC og forklarer de 15 Limfjordszoner med 97 viste boelgetimer. DKSS slutter 24. august 12 UTC og forklarer 113 viste timer for stroem samt otte zoners vandstand og temperatur. Hvor den eksisterende reservekaede har vaerdier, naar visningen 118 timer; ellers bevares `missing`. Der er ikke evidens for tab i merge eller UI.
+- 4.0.214-datasæt `rr-20260815083802-210` giver den første fælles komponentmatrix: vind 210×118 timer; bølger 194 zoner med 118 timer, 15 med 117 og `DK-B05-11` med 0; strøm, vandstand og temperatur 202 zoner med 118 timer og otte zoner med 101. De otte deler dermed en aktuel 17-timers marinehale.
+- Alle zoner har 100 rå `samples24h` og 133 rå `samples72h`. Det er bevaret samplehistorik, ikke endnu 72 forløbne timer.
+- Overgangsauditten på samme datasæt viser, at vandstandsskiftets gennemsnit/p95 på 4,6/17 cm ikke er værre end almindelige timer på 5,0/22 cm. Vind-, bølge-, strøm- og temperaturgrænserne er derimod markant større end deres egne baselines.
+- Fallbackstrøm afviger cirka 92° i gennemsnit ved kildeskift og forbliver `unverified`. Vandtemperaturens sene DMI→fallback-skift er 3,59 °C i gennemsnit og 10,5 °C ved p95; temperatur forbliver score-neutral.
+- Artifact #2777 lukker den særskilte lagopfølgning: alle 210 hovedzoner har `surface:0`-temperaturgitter, fordelt 116 IDW/71 NSBS/23 LF, og alle 9.159 native DMI-temperaturtrin har samme eksplicitte overfladelag. Nul umærkede eller dybe temperaturtrin overlever. Otte Limfjordszoners nuværende 114 mod 118 viste timer er fortsat et separat horisontproblem.
+
+## 4.0.213 – vandtemperatur betyder havoverfladetemperatur
+
+- 4.0.212-supportartifactet viser, at lokal DMI-parameter 80 findes ved `surface:0` og ved mange `depthBelowSea`-niveauer. Den tidligere skalarparser skelnede ikke lagene og kunne derfor lade et senere dybdelag overskrive overfladetemperaturen.
+- 4.0.213 accepterer kun parameter 80 ved eksplicit `surface`, niveau 0, og gemmer `verticalLayer: surface:0` i grid- og timeproveniens. Dybere lag afvises; de interpoleres ikke til overfladen.
+- Parsergeneration 15 genbehandler den aktuelle cache. Datakilde, fallbackprioritet, RavScore, state og 72-timersvinduer er uændrede.
+- Lokal målrettet validering er grøn. CI- og produktionsbevis afventer en frisk fuld kørsel.
+
+## P1-bølge-/vandstandsaudit – 2026-08-15
+
+- Deployet dataset `rr-20260815071241-210` har 118 timer i 210 zoner. Bølgehøjde, -retning og -periode er samlet komplette i 209 zoner; `DK-B05-11` Mors nord/Feggesund mangler alle 118 bølgetimer.
+- Vandstand er komplet i 202 zoner. Otte Limfjordszoner har 103 timer og mangler samme hale fra 19. august kl. 14 UTC til 20. august kl. 04 UTC.
+- Mønsteret afgrænser næste analyse til Limfjordens WAM-fravalg/fallback og den fælles `dkss_lf`-hale. Den offentlige fil har ikke timeproveniens, så et beskyttet frisk supportartifact kræves før rodårsag eller design kan godkendes.
+- Lufttemperatur findes i den offentlige timefil, men vises ikke i det aktive informationspanel og bruges ikke af den aktive RavScore. Den er ikke automatisk en ny bindende P1-komponent.
+- Vandtemperatur er komplet i 202/210 zoner i samme datasæt. De samme otte Limfjordszoner mangler samme sidste 15 timer som vandstanden, hvilket peger på en fælles `dkss_lf`-grænse.
+- Vandtemperatur vises, gemmes med observationer og bevares i 24-/72-timershistorikken, men bruges ikke numerisk i aktiv RavScore eller nuværende state. 4.0.213 afgrænser DMI-feltet til det eksplicitte overfladelag, så DMI og den eksisterende havoverfladefallback har samme tilsigtede vertikale betydning; overgangskvaliteten skal fortsat måles.
+
+## 4.0.212 – skalarfelter må ikke rydde strømserien
+
+- Fire successive produktionsartifacts afgrænser regressionen. #31856697202 havde 210/210 zoner med brugbar strøm fra nutiden. #31857361460 faldt til 183/210, og de 27 berørte NSBS-zoner gik fra 38 sammenhængende strømtrin til kun `2026-08-19T12:00:00Z`.
+- Årsagen er verificeret i den faktiske modeludvælgelse: et IDW-vandstands-/temperaturpunkt kunne med modelstraf blive marginalt bedre end NSBS-strømparrets afstand og dermed midlertidigt skifte hele havmodellen. Skiftet ryddede alle marinefelter, selv om kandidaten ikke leverede et fælles strøm-U/V-par ved de manglende tider.
+- 4.0.212 lader skalare felter følge et eksisterende modelvalg uden at ændre valget eller dets score. Et fælles strøm-U/V-par kan fortsat skifte til en reelt bedre model. Behandlingssignaturen hæves én gang for genopbygning.
+- #31870747677 bestod central adminhydrering/tombstones, DMI-genindlæsning, fuld validering, releasegate, Supabase, artifact og Pages-deploy. Datasæt `rr-20260815071241-210` har verificeret strøm fra nutiden i 210/210 zoner; de 27 berørte zoner har 37 strømtrin og de øvrige 183 har 38.
+- Alle 210 zoner når mindst 100,8 timers sammenhængende marinehorisont. Ingen når endnu 118 timer ved denne byggetid, så de sidste cirka 17–19 timer forbliver en DEC-0030-haleanalyse, ikke et lukket femdøgnsmål.
+- Alle 210 zoner bevarer 131 rå `samples72h`-prøver. Det fulde 72-timers historikvindue er fortsat under naturlig opbygning.
+- Ingen kilde, fallback, interpolation eller score ændres.
+
+## 4.0.211 – bevaret havmodel og reel genbehandling
+
+- 4.0.210 blev produktionsverificeret i #31853585142 og diagnosticerede hullerne korrekt, men efterkontrollen viste uændrede strømserier: de relevante DMI-timer blev sprunget over som tidligere behandlet.
+- Den dybere årsag var, at `merge_previous` bevarede marinefelter og collectionnavne, men tabte `marineSelection`. En senere model kunne derfor rydde den tidligere autoritative serie, mens `processedSteps` stadig kaldte de oprindelige filer komplette.
+- 4.0.211 bevarer `marineSelection`, rekonstruerer den for legacy-cache fra faktisk collection, gitterafstand og kysttype og hæver behandlingssignaturen én gang, så den aktuelle DMI-kørsel genlæses.
+- Test mod produktionsartifactet rekonstruerer 1.138 hovedzone-/kystdelvalg og beviser, at en dårligere IDW-model ikke kan rydde en eksisterende Limfjordsserie.
+- Pushkørsel #31854174281 bestod hele releasekæden. Den efterfølgende fulde genopbygning #31855164652 bestod DMI, fuld validering, releasegate, Supabase og Pages-deploy og udgav datasæt `rr-20260815011320-210`.
+- Direkte artifactkontrol viser verificeret aktuel strøm i 210/210 zoner, bevaret `marineSelection` i 210/210 og 107 `samples72h`-prøver i hver zone. De 75 sidst genopbyggede zoner kan kun opsamle verificeret historik fremadrettet; manglende fortid rekonstrueres ikke.
+- Alle 210 zoner har sammenhængende marinegrundlag mindst cirka 70,8 timer frem, mens 121/210 når mindst 96 timer. De resterende 89 zoners hale er nu en eksplicit DEC-0030-opfølgning; cirka 120 timer er fortsat produktmålet.
+- Ingen ny kilde, fallback eller scoreændring indføres.
+
+## 4.0.210-kandidat – sammenhængende DMI-strøm fra nutiden
+
+- Produktionsbeviset fra 4.0.209 viste den konkrete fejl: 125 hovedzoner havde kun to native strømtrin 19. august, 75 havde syv sene trin, mens kun 10 havde en sammenhængende serie fra 14. august. Den gamle scheduler kaldte alligevel alle tre grupper dækket, fordi den kun målte sidste gyldige tidspunkt.
+- Dækning kræver nu, at alle nødvendige komponenter begynder højst én native cadence plus tolerance fra byggetiden og fortsætter uden større huller. En fjern hale giver derfor nul aktuel dækning.
+- På det faktiske 4.0.209-artifact ændrer den korrigerede diagnose resultatet fra tilsyneladende fuld marinedækning til 10 komplette og 200 genhentningskrævende hovedzoner. Schedulerens førstevalg bliver `dkss_idw` og `dkss_nsbs`, som svarer til de to dokumenterede hulgrupper.
+- Rettelsen ændrer ingen værdier, datakilder, fallback eller score. Manglende strøm forbliver missing, indtil DMI-serien faktisk er hentet.
+
+## 4.0.209 – tre døgns score-neutral vejrhukommelse
+
+- Den målte 4.0.208-produktion bevarer præcis 24 timers rå historik pr. zone: 101 prøver over cirka 24 timer ved den aktuelle 15-minutterskørsel.
+- Det er nok til den aktive `maxWind24hMps`/`maxWave24hM`-score, men ikke til analyse af hændelser 24–72 timer tilbage.
+- Fra 4.0.209 bevarer pipelinen separat `samples72h`. `samples24h` er fortsat eneste rå vindue for nuværende RavScore og `shadow-v2`; ældre prøver ændrer derfor ingen aktiv score.
+- Begge rå vinduer udelades fortsat fra `public-conditions.json`. `conditions.json` synkroniseres ikke til Supabase, så ændringen øger ikke Supabase-egress.
+- Providerskiftene har flere årsager: forecastets første timekant, HARMONIE→DKSS/progressive run-overgange og komponentvis ufuldstændig DKSS-cache. Ingen merge- eller kildeændring er godkendt endnu.
+- Vandstands-continuity bevarer i kandidaten den oprindelige DMI-timeidentitet fra `dmiByTime`.
+
+## 4.0.208 – stale lokale vejrsnapshots er ikke zonefejl
+
+- Den centralt anvendte og deployede runtime har 210 aktive hovedzoner. En skrivebeskyttet kontrol 15. august 2026 af det deployede zoneregister og `public-conditions.json` gav 210/210 identiske zone-ID'er; `DK-B04-12`, `DK-B04-13` og `DK-B04-14` findes med vejrdata.
+- Repositoryets medfølgende lokale vejrsnapshot er historisk: `conditions.json` er bygget 31. juli 2026 før de tre Vadehavszoner og før de seneste centrale tombstones. Repositoryets rå zoneregister og den centralt effektive bestand må derfor ikke sammenlignes uden central adminhydrering.
+- `validate:data` stopper fortsat fail-closed ved enhver dækningsforskel. Når snapshotet samtidig er udløbet, kaldes fejlen nu **FORÆLDET LOKALT VEJRSNAPSHOT** og henviser til en skrivebeskyttet produktionsaudit i stedet for at fremstille de manglende ID'er som dokumenterede zonefejl.
+- `npm run audit:deployed-zone-weather` kontrollerer uden skrivning, at deployet zoneregister og offentligt vejr har identisk bestand, og rapporterer særskilt de tre Vadehavs-ID'er. `npm run hydrate:deployed-weather` hydrerer kun mutable vejrfiler; en fuld frisk lokal/CI-validering skal stadig anvende central adminhydrering og tombstones før vejr, præcis som produktionsworkflowet.
+- Ingen zone, geometri, DMI-kilde, score eller offentlig runtimeadfærd ændres af 4.0.208. Release 4.0.208 er produktionsverificeret i GitHub Actions #31848912461 på commit `7a3382f200a72b702d814ba4d8ca205dc4523369`: central adminhydrering/tombstones, frisk vejrbygning, fuld `validate`, releasegate, Supabase-synkronisering, Pages-artifact og deploy bestod. Direkte efterkontrol viste version 4.0.208, datasæt `rr-20260814230422-210`, 210/210 zone-/vejr-ID'er og vejrdata til alle tre Vadehavszoner.
+
+## 4.0.207 – ét flytbart punktpar pr. kyststrækning
+
+- Ejeren har valgt den pragmatiske model i DEC-0037: hver af de 673 aktive kyststrækninger beholder ét autoritativt blåt havpunkt og ét grønt landpunkt. Bugtede strækninger får ikke automatisk flere punktpar eller en ny landsdækkende opdeling.
+- Admin retter placeringen ved at trække det eksisterende punktpar. De uvirksomme knapper **Sæt nyt havpunkt** og **Sæt nyt landpunkt** er fjernet; træk, rød hav→land-pil, vinkelret kystkontrol, central readback, DMI-validering og rollback er bevaret.
+- Når ejeren vælger **Godkend og gem centralt**, er ændringen først aktiv efter verificeret central genlæsning og en grøn efterfølgende DMI-/releasekørsel. Indtil da forbliver den seneste produktionsverificerede placering aktiv.
+- En skrivebeskyttet orienteringsaudit fandt 199 kontrolkandidater i 122 hovedzoner ved mindst 35 graders vedvarende variation. 171 er fragmenterede `MultiLineString`-dele, så tallet er en triageliste og ikke 199 beviste fejl. Auditten giver ingen automatisk ændringstilladelse.
+- Den manuelle ejerreview af alle zoner kan udføres gradvist og er ikke en blokering for uafhængige roadmapopgaver. Den skal være afsluttet før endelig faglig godkendelse af alle lokale RavScores, større scorekalibrering og domæne-/brugerrelease.
+- 4.0.207 er produktionsverificeret i GitHub Actions #31845836107 på commit `5176d2e14b2c5cff745caa428e6f1b43f45eb824`: frisk vejrdata, fuld projektvalidering, releasegate, Supabase-synkronisering, Pages-artifact og deploy bestod.
+
+## 4.0.206 – ren og idempotent fallbackslutkontrol
+
+- 4.0.206 er produktionsverificeret i #31831068809 på commit `4dc464a`: kompatibel progressiv DMI-cache blev genbrugt, to modelsamlinger blev færdiggjort, og frisk central vejrbygning, fuld validering, releasegate, Supabase-synkronisering, Pages-artifact og deploy bestod. Direkte Pages-kontrol viser version 4.0.206, 210 hovedzoner og `DK-B04-12`, `DK-B04-13` og `DK-B04-14` i den offentlige runtime.
+- 4.0.205 blev forinden produktionsverificeret i #31822335540. Den målrettede centrale roundtrip/rollback bestod i #31822371489.
+- Privat #31822748625 bestod officiel kilde, topologi, 835 foreløbige dele, navne, alle kandidatbundne land-/vandbeviser, begge nationale DMI-/state-/vind-/shadowkæder, ejerreview, slutaudit samt central create/read/update/delete/rollback. Den stoppede først bagefter, fordi fallbackbyggeren ikke selv oprettede `.owner-review/fallback-zone-recovery` på en ren runner.
+- Fallbackbyggeren opretter nu alle outputmapper og er idempotent efter en tidligere aktivering. Hvis et oprindeligt nabo-ID ikke længere findes, genbruger den de centralt aktive `remainder-*`-dele med samme ID, geometri, punktpar og afledte retning.
+- Punktbyggeren medtager eksisterende validerede punktpar i den samlede kandidat og stopper, hvis et sådant par mangler retning. Den kan derfor ikke stiltiende tabe centralt validerede land-/vanddata.
+- ESA WorldCover 10 m er genkørt på den aktuelle 17-dels kandidat. Resultatet er fortsat 11 verificerede, fire sikkert vendte og to blokerede dele. De blokerede dele er `dk-b10-14-fallback-recovery-02` og `dk-b10-14-fallback-recovery-05`, begge ved Albuen i `Lolland vest og Albuen`. Den første følger et længere forløb med skiftende lokal retning, mens den anden er en meget lille lukket kystfigur; systemet må derfor ikke vælge ét land-/vandpar eller aktivere dem automatisk. Kun kandidatfingeraftrykket ændres som følge af den aktuelle centralhydrerede serialisering.
+- En ren lokal fallbackslutkæde består med 17 dele, fire rettelser, to fail-closed dele, 2/2 ejerskabsflytninger, 9/9 erstatninger samt nul interne og eksterne overlap.
+- Privat national #31829349458 bestod derefter hele den friske kæde: officiel kilde/topologi, 835 foreløbige dele, navne, alle kandidatbundne land-/vandbeviser, native DMI og flertrinsvejr, state/historik, vind, score-neutral shadow-score, indre farvande, dubletter, ejerrettelser, endelig kyst/punkter, central create/read/update/delete/rollback, fallbackejerskab, nul overlap, fallback-DMI og begge artifacts. Ingen privat geometri blev aktiveret; aktivering kræver fortsat særskilt ejerafgørelse.
+
+## 4.0.205 – snæver Supabase-genprøvning og fail-closed adminsynkronisering
+
+- Offentlig 4.0.204 er produktionsverificeret i #31815039302 med frisk DMI, fuld validering, releasegate, central Supabase-synkronisering og Pages-deploy. Den offentlige geometri og RavScore er den fortsat urørte baseline.
+- Privat national #31815423082 bestod officiel kilde, topologi, 835 kandidatdele, navne, alle tre eksakte land-/vandbeviser, DMI-grid, flertrinsserier, state, vind, shadow-score, ejerreview og slutaudit. Reviewbestanden var 667 komplette, to deldækkede og 166 blokerede dele.
+- Kørslens første beskyttede læsning af `direction-reviews` fejlede alene med HTTP 401 / `PGRST303`. Supabase-loggen dokumenterer korrekt `sb_secret_`-nøgletype og samme nøglefingeraftryk som senere vellykkede læsninger og skrivninger. Det dokumenterer en enkelt fejl i Supabases interne omsætning af den uigennemsigtige nøgle, ikke en forkert Bearer-header, forkert nøgle eller for stor roundtripkladde.
+- Node- og Python-serverkaldene genprøver kun kombinationen `sb_secret_` + HTTP 401 + `PGRST303`, præcis én gang efter ét sekund. Alle andre fejl og en gentaget fejl stopper fail-closed. Python-hydreringen må ikke fortsætte med repositoryfallback i GitHub Actions efter en central læsefejl, og beskyttet manifestsync må ikke længere maskere en læsefejl som et manglende manifest.
+- En målrettet manuel workflow kan genbruge det kompakte private artifact fra #31815423082 og bevise central create/read/update/delete/rollback uden ny DMI-kørsel og uden deployrettigheder. Denne målrettede CI-kontrol og derefter en ny fuld privat national slutkørsel mangler endnu.
+- Intet i 4.0.205 giver automatisk tilladelse til at aktivere privat geometri, ændre offentlig score eller overskrive centrale ejerdata.
+
+## 4.0.204 – rå kandidatbundet land-/vandevidens
+
+- Privat #31804967576 bestod det udvidede DMI-tidsbudget, vejridentiteter, flertrinsserier, state, vind, shadow-score, bestandsafledt ejerreview og dubletaudit. Den stoppede derefter korrekt, fordi det gamle 121-rettelsesbevis var lavet til den aktive offentlige 673-dels bestand og ikke til den private 835-/652-dels kandidat.
+- Land-/vandevidens har nu et kryptografisk fingeraftryk af præcis den ukorrigerede punktbestand og et eksakt delantal. Workflowet afviser bevis fra en anden kandidat før DMI, score, artifact eller aktivering.
+- Offentlig 4.0.203 er produktionsverificeret i #31811492510 med frisk DMI, fuld projektvalidering, releasegate, Supabase og Pages. Privat #31812035188 stoppede korrekt ved første eksakte bevis: 4.0.203-beviset var ved en fejl afledt af en fil, hvor 107 historiske korrektioner allerede var anvendt, og var derfor ikke råt.
+- Den rå foreløbige kandidat på 835 dele har 520 verificerede, 149 sikkert vendte og 166 blokerede punktpar. Slutkandidatens allerede rå GitHub-bevis matcher fortsat 652 dele med 427 verificerede, 111 sikkert vendte og 114 blokerede punktpar. Tvetydige dele mister aktive punkter og beholder to neutrale alternativer; vejr, state, score og automatisk aktivering forbliver falsk.
+- Fallbackkandidaten har 17 dele: 11 verificerede, fire sikkert vendte og to blokerede. Fejø/Femø samt Havnø/Mariager Fjord øst er eksplicit bevaret som slettede, og de historiske Fejø/Femø-vinduer er fjernet fra fallbackbyggeren.
+- 4.0.203 er den offentligt produktionsverificerede baseline. 4.0.204 ændrer kun privat evidens og må ikke aktivere ny offentlig geometri uden fuld privat slutkørsel og særskilt ejerafgørelse.
+
+## 4.0.198 – sidste kendte 208-port fjernet
+
+- Den private kørsel #31792615992 bestod plan, officiel kilde, topologi, kystdele og officiel navneaudit med 210 zoner, men lokalitetsopdelingen havde stadig en historisk hardcodet 208-kontrol.
+- Lokalitetsopdelingen bruger nu samme eksplicitte 210-zonekontrakt som resten af kæden, og en regressionstest fastholder værdien.
+- Rettelsen ændrer ingen geometri, navne, DMI-data, punkter eller score.
+
+## 4.0.197 – national pipeline følger 210 effektive zoner
+
+- Fejø/Femø er efter ejerbeslutning slettet centralt. Den effektive bestand er derfor 210 aktive hovedzoner, selv om det historiske forældreregister fortsat kan indeholde 211 poster.
+- Den private nationale kørsel #31790559558 stoppede korrekt før kildehentning, fordi dens planport stadig forventede 211. Plan, topologi, kystdele, stednavne og alle tilsvarende fail-closed validatorer/tests forventer nu konsekvent 210.
+- Rettelsen ændrer ikke offentlig geometri, score eller centrale data. Den fjerner kun den forældede tælleblokering, så den private land-/vandkandidat kan gennemføre de allerede krævede gates.
+
+## 4.0.196 – land/hav er én fysisk kontrakt
+
+- Hver lokal kystdel har ét blåt havpunkt i vandet og ét grønt landpunkt på land. Linjen fra hav til land skal krydse den tilhørende kyst og være vinkelret på dens lokale retning; den røde pil i admin viser netop denne beregningsretning.
+- Pålandsretningen kan ikke længere redigeres som et løsrevet tal. Den beregnes geodætisk fra havpunkt til landpunkt og er samme retningskilde for admin, DMI-sampling, lokal score og offentlig forklaring.
+- En uafhængig landsaudit med ESA WorldCover 2021 ved fire afstande på hver side af den præcise kyst fandt 434 verificerede punktpar, 121 dokumenteret omvendte punktpar og 118 tvetydige. Stednavne må ikke bruges som bevis for land- eller vandside.
+- De 121 dokumenterede rettelser genbygges som nye vinkelrette punktpar og skal bestå den private nationale punkt-, DMI-grid-, shadow-score-, runtime- og rollbackkæde før aktivering. De 118 tvetydige ændres ikke automatisk og kræver senere ejer-/kortkontrol.
+- Rejsby og Ribe Vesterå er verificeret korrekt i sideauditen og bevares. En administrator kan fortsat flytte vandpunktet længere ud, men en godkendelse kan kun gemmes, når hele zonens punktpar krydser egen kyst vinkelret og med punkterne på hver sin side.
+
+## 4.0.195 – Leaflet får position før vektorlag
+
+- 4.0.194 ændrede kortets timing, men løste ikke rodårsagen. En isoleret browsertest med de rigtige 673 kystdele reproducerede Leaflet-fejlen `Cannot read properties of undefined (reading 'min')`.
+- Fejlen opstod, fordi editoren tilføjede zonepolygon og kystlinjer til et nyt Leaflet-kort, før kortet havde fået sin første geografiske position. Kaldet stoppede derfor før både linjer, markører og `fitBounds`.
+- 4.0.195 beregner først grænserne fra den valgte zones kystdele og punktpar, positionerer kortet og tegner derefter zone, kystlinjer og markører. Den isolerede browserkontrol af Rejsby/Ribe Vesterå viser korrekt område, 121 SVG-stier, to punktmarkører og ingen kortfejl.
+
+## 4.0.194 – utilstrækkelig timingrettelse (erstattet af 4.0.195)
+
+- Zonevalg blev gjort mere deterministisk, men ændringen løste ikke den manglende første Leaflet-position og er derfor erstattet af 4.0.195.
+- Alle zonens kystdele og eksisterende land-/havpunkter tegnes på ny; den valgte kystdel fremhæves og er den eneste med flytbare markører.
+- Den overflødige knap **Vis på hovedkortet** er fjernet fra arbejdsfladen. DMI, score, central lagring og det offentlige hovedkort er uændrede.
+
+## 4.0.193 – lokal DMI-kæde gøres reel og fail-closed
+
+- En systemaudit af 4.0.192 dokumenterede, at DMI-schedulerens dækningsnævner kun omfattede 210 hovedzoner. De 651 aktive lokale kystdele fandtes som samplingposter, men kunne ikke holde schedulerens recovery i gang. Det offentlige snapshot havde derfor 0/651 kystdele med dokumenteret lokal U/V-cache, selv om lokale scorer blev vist.
+- Dækningsnævneren omfatter nu både aktive hovedzoner og aktive kystdele. 4.0.193 indførte historisk mindst 95 % verificerede lokale U/V-punkter og afvisning af overpublicering; procentgrænsen er erstattet af REQ-CURRENT-COVERAGE-100-001 i 4.0.232.
+- En lokal del beregnes ikke uden både strømretning og -hastighed. Indtil en komplet lokal sammenligning findes, bruger brugersiden den fortsat valide hovedzonescore og viser ingen falsk påstand om forskelle mellem kystdele.
+- Den fulde vinderforklaring, lokale rå vejrdata, lokale punktpar og lokale pålandsretning bevares nu i runtime. Debugvisningen må ikke blande hovedzonens retning med den vindende kystdels strøm.
+- En enkelt beregnet kystdel må ikke beskrives som “forholdene gælder hele zonen”. Syvpointsreglen gælder kun en reel sammenligning mellem mindst to beregnede dele.
+- Den aktuelle ejerbestilling autoriserer en landsdækkende, systemisk revision af lokale land-/havpunkter og meningsfuld kystdelsopdeling. Fungerende geometri ændres ikke uden dokumenteret behov; offentlig aktivering kræver gates og efterkontrol.
+- Den godkendte kandidat er lokalt aktiveret som næste produktionspakke med 673 dele. Punktgeometriaudit, overlapgate og assembly-gate består med 0 fund; den hidtidige 651-dels pakke er bevaret som versionsstyret rollback.
+- Den konservative orienteringskandidat opdeler kun en hovedzone automatisk, når den hidtil har én del og et vedvarende retningsskift på mindst 45 grader. Det giver 673 dele og 10 opdelte zoner, ikke en ny blind national masseopdeling.
+- Helgenæs øst har tre lokale sider med selvstændige punktpar. Rejsby/Ribe Vesterå forbliver uændret, fordi land-siden er tvetydig. Privat GitHub Actions #31764242827 validerede alle 45 ændrede eller nye vandpunkter mod native DMI-grid med fuld dækning og 0 ugyldige punkter. Den daværende 95 %-indfasningsgate er historisk og nu erstattet af kravet om alle aktive dele.
+- GitHub Actions #31764453987 produktionsverificerede selve 4.0.193-kodekæden med frisk data, fuld `npm run validate`, releasegate og deploy, før geometriaktiveringen blev committed.
+
+## 4.0.192 – samlet land-/vandeditor pr. hovedzone
+
+- Admin søger på hovedzonens aktuelle navn og viser hele hovedzonen sammen med alle dens aktive præcise kyststrækninger.
+- Hver kyststrækning viser sit eget blå havpunkt og grønne landpunkt. Ejeren kan trække de eksisterende markører; pålandsretningen beregnes fra det autoritative punktpar.
+- Godkendte ændringer gemmes centralt i `direction-reviews` med kystdel-ID, læses tilbage og anvendes af den offentlige kystdelsbygger. Kladder påvirker ikke runtime.
+- DMI-sampleren læser nu den byggede aktive `data/live/coastal-parts-v2.json`, så adminrettet havpunkt, DMI-signatur, sampling, lokal score og offentlig visning ikke kan skilles ad. Næste fulde DMI-/releasegate er fortsat nødvendig før produktionsverifikation.
+
+## 4.0.191 – DMI-cache signeres efter sampling, ikke driftstid
+
+- #2437 beviste, at den private GitHub-cache blev restore-/save-behandlet, men `dkss_idw` startede igen og state indeholdt kun den aktuelle kørsels tidspunkt.
+- Supportpakkerne fra #2435 og #2437 havde forskellige `zoneRegistrySignature`, selv om samplinggeografien var uændret. Den løbende vandkilderegistrering ændrede blandt andet `lastSeenAt`, observations- og forecasttider ved hver kørsel; rå filbytes gjorde derfor enhver checkpoint-cache kunstigt inkompatibel. Også almindelige releaseversionsfelter i zoneregisteret kunne give samme falske nulstilling.
+- Signaturen bygges nu kanonisk kun af de felter, der bestemmer DMI-gridopslag: zone-ID, datapunkt/fallbackgeometri og kysttype; kystdel-ID, vandpunkt, status, kysttype og hovedzone; samt vandkildens stabile nøgle og punkt.
+- Ændres et faktisk samplingpunkt, ejerskab, status eller geometri, skifter signaturen fortsat fail-closed. Løbende helbred, observationer, forecasttider og appversion nulstiller ikke længere recovery.
+
+## 4.0.190 – progressiv DMI-cache vælges efter fremdrift
+
+- Produktionskørslerne #2429–#2431 bekræftede det samme 125/210-mønster trods 4.0.189-rotationen. Det var et gentaget systemmønster, ikke tilfældige DMI-fejl.
+- Den private checkpoint-cache blev gendannet korrekt, men builderen valgte derefter cache efter flest bevarede vejrkomponenter. En ældre offentlig cache kunne derfor vinde over den nyere private checkpoint-cache og slette `collectionState`, budgetrotation og behandlede forecast-trin fra arbejdsgrundlaget.
+- Kompatible caches vælges nu først efter nyeste `checkpointedAt`/buildertid. Kvalitetsmålet bruges kun som tie-breaker. Den private checkpoint indeholder allerede den offentlige cache, som blev flettet ind ved kørslens start; gyldige data smides derfor ikke væk.
+- DMI-audit, RavScore, fallback, kystdata og offentlig deploygate er uændret. Frisk CI skal stadig bevise rotation, voksende dækning og mindst 90 % verificeret aktuel U/V-dækning.
+
+## 4.0.189 – budgetrotation mellem DMI-havmodeller
+
+- Produktionskørslerne #2423–#2426 bevarede den progressive cache, men den videnskabelige strømaudit stod fast på 125/210 zoner.
+- Loggene dokumenterede, at `dkss_idw` gentagne gange brugte hele arbejdsbudgettet, hvorefter schedulerens geografiske prioritet valgte samme model igen. `dkss_nsbs` og `dkss_lf` nåede derfor ikke frem til de resterende geografiske områder.
+- En tidsafbrudt marinemodel registreres nu i den private collection-state og roterer bag ikke-forsøgte eller ældre afbrudte marinemodeller ved næste recoverykørsel. Markeringen nulstilles kun efter fuld eller dokumenteret uændret gyldig behandling.
+- Kravet om mindst 90 % verificerede hovedzoner, U/V-fællespunkt, proveniens, fallback, RavScore, kyst og offentlig deploygate er uændret. Løsningen afventer CI-/produktionsbevis.
+
+## 4.0.188 – progressiv privat DMI-zonecache
+
+- Gentagne produktionskørsler stoppede korrekt ved den strenge strømaudit, fordi kun 85/210 hovedzoner havde verificerede aktuelle marine U/V-gitterpunkter.
+- Fejlen fandtes før 4.0.187-kystændringen. De downloadede GRIB-filer blev bevaret, men den afledte `dmi-bulk-cache.json` gik tabt, når releasegaten stoppede deployment; næste kørsel begyndte derfor igen fra den samme utilstrækkelige offentlige cache.
+- Workflowet gendanner og gemmer nu kun en vellykket afledt zonecache i GitHub Actions' private cache før releasegaten. Builderen sammenligner den med den senest deployede cache og accepterer kun kandidater med signatur for præcis det aktuelle zone-, kystdels- og punktregister. Offentligt artifact og deploy er fortsat låst bag uændret fuld validering og releasegate.
+- Ingen DMI-audit, dækningsgrænse, fallback, RavScore eller kystgeometri er ændret.
+
+## Bindende regressionsregel
+
+- Eksisterende funktioner må ikke forsvinde eller blive afkoblet som utilsigtet bivirkning af nyt arbejde. Bevidst fjernelse kræver en udtrykkelig aktuel ejerbeslutning og skal afgrænses til det bestilte.
+- Releasekontrol skal sammenligne den berørte funktionsflade før og efter på tværs af offentlig UI, admin, data/runtime og deployment. Tavst funktionstab er en releaseblokker.
+
+## 4.0.187 – fem godkendte zoner og permanent sletning
+
+- Ejeren godkendte slutkortet for Langeland syd/Bagenkop, Nykøbing Sjælland/Rørvig, Dronningmølle/Hornbæk, Ålsgårde/Helsingør og Lolland vest/Albuen.
+- `DK-B10-16` Fejø/Femø er slettet helt efter udtrykkelig ejerbeslutning. Sletningen findes i repositoryets zoneregister, den aktive præcise kystpakke og centralt i Supabase `direction-reviews` version 315.
+- Den aktive pakke har 651 kystdele i 210 effektive hovedzoner, 651 punktpar, nul ugyldige punktpar og nul tværzoneoverlap. Den private native DMI-/runtimegate #31609637964 var grøn før ejerens slutgodkendelse.
+- Den tidligere 4.0.182-pakke og zoneregisteret ligger som rollback under `data/geometry-v2/rollback-4.0.186-before-five-zone-coast/`.
+- Offentlig produktion er først produktionsverificeret, når 4.0.187 har bestået frisk central hydration, fulde releasegates og deploy.
+
+## Historisk arbejdsafgrænsning – DEC-0036, senere udvidet af ejeren
+
+- DEC-0036 afgrænsede den daværende rettelse til fem godkendte zoner og den senere slettede Fejø/Femø-zone. Ejeren gav efterfølgende udtrykkeligt mandat til en landsdækkende, privat og score-neutral revision af kystdele og land-/vandpunkter. Den nyere aktuelle ejerbeslutning erstatter kun den gamle scope-stopregel, ikke sikkerhedsgates eller krav om særskilt aktivering.
+- Havnø og Mariager Fjord øst samt Fejø/Femø forbliver slettet. Den produktionsverificerede offentlige kyst er baseline, mens den brede kandidat auditeres privat.
+- Den nationale pipeline må fortsætte read-only gennem geometri, punktpar, DMI, state, shadow-score, admin-roundtrip og artifacts. Den må ikke aktivere offentlig geometri, score eller admin-sandhed automatisk.
+- Den aktive private valideringsvej er `.github/workflows/validate-six-zone-recovery.yml`. Den kan hverken deploye eller ændre offentlig geometri og afviser andet end den fastlåste seks-zoneplan.
+- #31609637964 bestod den korrigerede 22-dels kandidats geometri, punktpar, native DMI-grid, deaktiverede runtime og rollback-isolation. Kandidaten har 656 dele i 211 zoner; alle zoner uden for de seks mål og deres nødvendige grænsenaboer matcher den aktive runtime uændret. Visuel ejergodkendelse mangler.
+
+## 4.0.186-kandidat – trækbar kystgrænse og privat fallbackrecovery
+
+- Admin kan trække hovedzonens kystende til en eksisterende valideret nabokystdel. Ejerskab, geometri, land-/vandpunkt, DMI- og scoreidentitet flyttes samlet, og zoneafgrænsningen følger automatisk.
+- Et reversibelt viskelæder kan deaktivere en hel valideret del. Central schema-4-readback og produktionsbyggeren behandler geometri og datakontrakt samlet.
+- Fri ny kysttegning bliver ikke behandlet som valideret DMI-data. Helt ny geometri skal fortsat gennem private punkt-, grid-, shadow-score-, runtime- og rollbackgates.
+- Havnø/Mariager Fjord forbliver slettet. Hele del-flytninger til Nykøbing/Rørvig og Dronningmølle/Hornbæk blev forkastet, fordi de ville tømme nabozoner. Den korrigerede officielle kandidat opdeler ved de faktiske grænser og består af 22 mål-/naborester med 22/22 punktpar og nul overlap. Nyt DMI-bevis mangler.
+- Den eksisterende private nationale Linux-kæde er koblet til fallbackrecoveryen: kandidaten genbygges fra samme friske GeoDanmark-kyst, ejerskab/punktpar/overlap kontrolleres fail-closed, og vandpunkterne prøves på native DMI-grid. Ingen af disse trin kan aktivere offentlig geometri.
+- Første Linux-forsøg #31589561794 stoppede korrekt før kildehentning, fordi nationalpolitikken stadig krævede den historiske centrale bestand på 208 zoner, mens de tre nye Vadehavszoner giver 211. Politikken kræver nu udtrykkeligt 211 ved planporten; efterfølgende gater kræver samme positive bestand gennem plan, fliser, manifest, hydreret register og analyse.
+- Andet Linux-forsøg #31589831140 hentede og validerede den officielle nationale kilde samt fjord-/normasker, men stoppede ved en separat historisk 208-konstant i topologiauditen. Topologiaudit, delgenerator og deres fail-closed validatorer/tests er afstemt til den samme eksplicitte 211-zonepolitik; dette er en privat pipelinekorrektion og ændrer ikke den offentlige kyst.
+- Tredje Linux-forsøg #31590992368 bestod hele den rettede kæde gennem 211 zoner, 131 fliser, topologi, offentlig-kystdækning og private dele. Det stoppede før netværkskald på stednavneaudittens historiske krav om præcis 100 fliser. Gaten kræver nu i stedet præcis overensstemmelse med den aktuelle ikke-tomme plan og et komplet minimumsspor for alle fem stedtyper pr. flise.
+
+## 4.0.185-kandidat – lokalt delkort og ryddet zonepanel
+
+- Zoneforklaringen har en behovsstyret “Hvor er det?”-knap, som viser de allerede indlæste præcise kystdele med navne på hovedkortet og zoomer til zonen. Der tilføjes ingen billedfiler eller ekstra normal datahentning.
+- Aktuelt bedste dele fremhæves efter den eksisterende syvpunktsregel. Ved status hele zonen udpeges ingen enkelt del som bedre.
+- Den offentlige “Hvad fandt du?”-formular er fjernet fra zonepanelet. Turregistrering, observationstjeneste og adminanalyse er bevaret.
+- Funktionen er produktionsverificeret i GitHub Actions #31578272122: frisk datakæde, fuld projektvalidering, releasegate og Pages-deploy bestod. Offentlig filkontrol viste version 4.0.185, “Hvor er det?”-knappen, kortlaget og zonezoom; “Hvad fandt du?”/observationsformularen findes ikke længere i zonepanelet.
+
+## 4.0.184-kandidat – lokal scoreforklaring
+
+- Når en hovedzone bruger de præcise kystdeles score, følger den vindende dels delscorer og forklaringer nu med til zonepanelet, debug, assistent og observationssnapshot.
+- Syvpunktsreglen er uændret: højst 7 points forskel betyder hele zonen; først ved mere end 7 point fremhæves den bedste del eller flere dele inden for 7 point af maksimum.
+- Zonepanelet viser tydeligt navn og score for den bedste kystdel og advarer om, at den viste hovedzonescore ikke nødvendigvis gælder resten af zonen.
+- En audit af den offentlige 4.0.183-runtime fandt 412/412 aktuelle zone-/jagtformsvisninger med gyldig lokal score, vinder, delscorer og klassifikation. Fejlen var tab af præsentationsfelter, ikke DMI- eller scorefejl.
+- Funktionen er produktionsverificeret i GitHub Actions #31575562432: frisk DMI-/scoreruntime, fuld projektvalidering, releasegate og Pages-deploy bestod. Offentlig kontrol viste version 4.0.184 og bekræftede for `DK-B09-19` score 78, vinderen `Mullerup Klint`, spredning 30 samt alle tre delscorer og forklaringsgrupper.
+
+## 4.0.183 – entydige hovedzoneskel og redigerbart delejerskab
+
+- Det offentlige kort tegner kun ét sort skel ved et dokumenteret møde mellem to forskellige hovedzoner. Interne kystdele og frie ender får ingen sort markering; markeringen er lille på landsniveau.
+- “Tilbage til oversigten” gendanner Danmarksoverblikket.
+- Admin kan ændre en hovedzones længde ved at flytte eksisterende præcise kystdele mellem hovedzoner. Geometri, land-/vandpunkt, DMI-gridbevis og lokal scoreidentitet følger samlet med.
+- Produktionsbygningen afviser ejerskab til en ukendt/slettet zone og publicerer hver del højst én gang. En slettet zones ikke-flyttede dele fjernes fra runtime.
+- Funktionen er produktionsverificeret. GitHub Actions #31572312647 bestod den fulde bygge-, data-, release- og Pages-kæde, og den offentlige side leverer 4.0.183 med de nye kort- og adminfunktioner.
+
+## Aktiv national kystgeometri – 4.0.182 produktionsverificeret
+
+- Ejeren har godkendt den samlede slutkontrol og de efterfølgende seks rettelser. 4.0.182 er lokalt samlet med 212 hovedzoner: 206 bruger præcise kystforløb og seks beholder den gamle hovedzonelinje som sikker fallback.
+- De 212 er repositoryets samlede register før central adminhydrering. Den eksisterende, centralt godkendte tombstone for `DK-B02-14` bevares, så effektiv offentlig produktion har 211 hovedzoner. De tre nye Vadehavszoner er blandt de 211 og blev alle bygget med friske data i #31539597870.
+- De 643 interne beregningsdele bliver fortsat ikke vist som selvstændige zoner. Kortet viser én klikbar hovedzone, én scorefarve og kun hovedzonens to endemarkeringer, mens dens synlige streg samles af de præcise dele.
+- Kandidaten har nul tværzoneoverlap og nul uafklarede relevante kysthuller. Vadehavets fastlandskyst fra Emmerlev mod Esbjerg er med. 632 dele har fuldt og 11 delvist marint gridbevis; alle 643 har land-/vandpunkter.
+- Privat kørsel #31532688885 beviste DMI for alle 39 nye eller ændrede punktpar. Privat #31533385967 beviste den komplette deaktiverede runtime, offentlig kontrakt samt central create/read/update/delete/rollback uden at ændre beskyttede adminposter.
+- Offentlig produktion er 4.0.182. #31541126136 bestod frisk DMI, fuld `npm run validate`, release-gate, central Supabase-readback, Pages-artifact og deploy. Efterfølgende onlinekontrol bekræftede HTTP 200, version 4.0.182, 211 effektive hovedzoner, 643 aktiverede kystdele under 206 præcise zoner, alle tre Vadehavszoner med offentlige vejrdata samt et synligt Leaflet-kort uden browserfejl.
+- De to første produktionsforsøg deployede intet. #31536061680 fandt, at legacy-kystgeneratoren fjernede de tre godkendte Vadehavszoner; #31537882402 fandt derefter, at Supabases ældre aktiveringsmanifest overskrev den nyere godkendte repositorymanifest. Begge dokumenterede årsager er rettet uden at svække central admin-sandhed: kun en strengt nyere, eksplicit ejer-godkendt aktivering kan krydse den centrale grænse én gang, mens samme version igen gør Supabase autoritativ for rollback.
+- #31539597870 beviste derefter engangspromotionen, frisk DMI, alle tre Vadehavszoner og central vejrskrivning. Den stoppede uden deploy på en ældre test, der matchede Python-filens tidligere komprimerede tekstformatering; testen kontrollerer nu den semantiske nøgle-/stikontrakt.
+
+### Historisk kandidatforløb – erstattet af den produktionsverificerede status ovenfor
+
+Punkterne nedenfor bevarer beslutnings- og fejlsøgningshistorikken frem mod 4.0.182. Formuleringer som “privat”, “kommende” og “ikke aktiveret” er historiske og må ikke læses som aktuel produktionsstatus.
+
+- De seks ejer-godkendte rettelser er nu samlet med den additive kandidat i en ny privat slutkandidat: 206 hovedzoner med præcis kyst og 643 lokale kystdele. En korrigeret, symmetrisk overlapgate fandt 11 additive dubletdele, som den tidligere ensidige kontrol overså; de er fjernet med eksisterende ejer-godkendt linje som autoritet. Tre præcisionszoner blev derved helt tomme og bruger derfor deres bevarede hovedzonefallback. Én 120,7 meter lukket, irrelevant småø-del er også fjernet, og ejerskabet ved Pøl Huk er overført til `Mommark & Pøl Huk`. Den samlede kandidat har nul tværzoneoverlap.
+- Den nye nationale hulaudit beskriver 161 kildeforskelle: 74 tidligere ejer-godkendte udeladelser, 73 forskelle løst af de aktuelle ejerafgørelser og 14 teknisk irrelevante små lukkede øformer. Der er nul uafklarede relevante huller.
+- Alle 643 dele har nu land- og vandpunkt. De 604 genbrugte dele bevarer deres eksisterende punktpar; alle 39 reelt nye eller ændrede dele har nye punktpar uden blokering. Privat Linux-kørsel #31532688885 godkendte den endelige bestand: 39/39 har fuld WAM+DKSS-dækning, nul er delvise eller blokerede. Det samlede kommende hovedzoneregister er 212: 206 zoner med præcis kyst og seks zoner med bevaret fallbacklinje. Intet er aktiveret offentligt endnu.
+- Ejeren godkendte 11. august 2026 det private seks-zoners korrektionskort. Godkendelsen omfatter Nibe-reduktionen, navnene `Bredfjed` og `Mommark & Pøl Huk`, de tre Vadehavszoner inklusive de to dokumenterede broer samt forkastelsen af de to fejlagtige præcisionsforslag. Den er ikke i sig selv en produktions- eller scoreaktivering.
 - Ejerens seneste og autoritative slutkontrol er eksport `(4)` kl. 21.19 med otte afgørelser. Rejsby–Ribe er godkendt. Ålsgårde/Helsingør-kandidaten (svensk geometri) og Fejø/Femø-kandidaten (irrelevante småøer) er forkastet, ikke de eksisterende hovedzoner. Nibe beholder kun den sydlige relevante linje; DK-B10-13 foreslås som `Bredfjed`; DK-B12-07 som `Mommark & Pøl Huk`; Emmerlev–Ballum er samlet; Ribe Å springes over ved mundingen. Rettelserne er fortsat private og ikke aktiveret.
 - Fastlandskysten langs Vadehavet fra Emmerlev mod Esbjerg er bindende relevant ravkyst, selv om Rømø, Mandø og Fanø ligger udenfor. Det rettede private forslag har tre forståelige hovedzoner (`Emmerlev og Ballum`, `Rejsby og Ribe Vesterå`, `Ribe Kammersluse og Esbjerg`), samlet 81,883 km efter deduplikering mod den eksisterende Emmerlev-kyst. Økyster og Rømødæmningen er filtreret fra, og runtime-overlap er nul. To ejerbestemte forbindelser på samlet 4.671,4 meter er dokumenterede manuelle broer uden for den direkte GeoDanmark-linje: den fragmenterede Vadehavsdige-strækning og springet over Ribe Å. Forslaget er ikke offentligt aktiveret.
 - 4.0.181 er kun den akutte overskuelighedsrettelse, ikke det endelige kystprodukt. Ejerens bindende mål er de forståelige hovedzoner kombineret med de præcise officielle kystforløb, uden offentlige interne delmarkeringer og uden uforklarede huller på relevante almindelige kyster.
@@ -1206,4 +1605,3 @@ Foerste private aktive RavScore-shadowrun stoppede korrekt foer state og score, 
 - PR #60 bestod exact-head-gaten `32566573875` på `a13e5387` og blev merged som `41e01e2d21d6579a7c9a7fac489e6609038341ea`.
 - Exact-commit-produktion `32566631701` bestod frisk DMI, fuld `validate`, releasegate, Supabase, Pages-artifact og deploy. Deployment `6035679906` er `success` på samme commit.
 - Live 4.0.252 viser datasæt `rr-20260822100745-210` med 210 zoner og 673 kystdele; manifest, byteantal og SHA-256 for den offentlige startpakke matcher. Offentlig RavScore er fortsat 25/40/35. Candidate G, beskyttede data, geometri og land-/vandpunkter er uændrede.
-
