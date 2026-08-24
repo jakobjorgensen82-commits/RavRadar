@@ -1,6 +1,6 @@
 # DEC-0049: Landsrangering korrigeres for mange retningsmuligheder
 
-**Status:** Godkendt af ejeren 2026-08-21
+**Status:** Gældende og præciseret af DEC-0069 den 2026-08-24
 
 ## Problem
 
@@ -8,7 +8,7 @@ Bedste områder og 5-dages RavRadar sorterede hidtil zoner efter den højeste lo
 
 ## Beslutning
 
-Begge nationale top-5-lister bruger modellen `direction-broad-19-v1` som intern sorteringsscore. Den viste RavScore og alle lokale resultater bevares.
+Begge nationale top-5-lister bruger modellen `direction-broad-19-v1` som områdescore og intern sorteringsscore. Fra 4.0.270 vises den afrundede områdescore direkte i toplisterne. Derfor følger de viste tal altid rækkefølgen, uden at lotterikorrektionen svækkes. Når brugeren åbner området, vises fortsat den bedste kyststræknings almindelige RavScore og dens delscorer, farve, pile og forklaringer.
 
 Korrektionen er højst 19 point og skaleres med zonens vejruafhængige retningsmulighed og den andel af zonens dele, der støtter vinderen. Ved støtte fra mindst halvdelen af zonen er korrektionen nul. Mellem en fjerdedel og halvdelen udfases den lineært. En helzonevurdering og en zone med én effektiv retning korrigeres ikke.
 
@@ -16,7 +16,7 @@ Retningsmuligheden beregnes med samme 360-graders metode som den godkendte natio
 
 ## Sikkerhedsgrænser
 
-- Kun rækkefølgen i de to nationale lister ændres.
+- Kun rangeringstallet og rækkefølgen i de to nationale lister ændres.
 - RavScore, delscorer, niveau, farve, pile og forklaringer ændres ikke.
 - Manglende eller uoverensstemmende kystdelskontrakt giver ingen korrektion.
 - Ingen geometri eller land-/vandpunkter flyttes.

@@ -95,8 +95,14 @@ for(const file of ['.github/workflows/update-and-deploy.yml']){
 {
  const file='supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql';
  let text=await fs.readFile(file,'utf8');
- text=text.replace(/(\"handbookVersion\"\s*:\s*\")\d+\.\d+\.\d+(\")/g,`$1${version}$2`);
- text=text.replace(/RavScore \d+\.\d+\.\d+/g,`RavScore ${version}`);
+ const handbook=JSON.parse(await fs.readFile('docs/handbook/content.json','utf8'));
+ const sqlPayload=JSON.stringify(handbook).replace(/'/g,"''");
+ const marker="insert into public.admin_documents(document_key,payload,updated_by) values('handbook','";
+ const start=text.indexOf(marker);
+ const payloadStart=start+marker.length;
+ const payloadEnd=text.indexOf("'::jsonb,null)",payloadStart);
+ if(start<0||payloadEnd<0)throw new Error('Supabase-installationsfilens håndbogspayload kunne ikke findes.');
+ text=`${text.slice(0,payloadStart)}${sqlPayload}${text.slice(payloadEnd)}`;
  await fs.writeFile(file,text);
 }
 console.log(`RavRadar-version opdateret fra ${previousVersion} til ${version}.`);

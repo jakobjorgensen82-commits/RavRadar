@@ -1,5 +1,14 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-24 – før-lancering af data, admin, ekspert og rangering
+
+1. Ejeren bad om roadmapets naturlige datakontrol, Supabase-forbrug og tekniske vedligehold samt en gennemgang af eksperthåndbogen og administratorens funktioner før lancering.
+2. Den naturlige produktionskørsel dokumenterede fuld kendt 210/673-runtime, reelle tretimerspunkter og ærlig markering af de tolv kendte marine huller. Supabase er sund i den aktuelle periode, mens forrige egress-overskridelse fortsat overvåges.
+3. Admin- og eksperthåndbogen viste sig funktionelle og rettighedsbeskyttede. En manglende femte nøgle i første lagertjek forklarede en falsk rød adminstatus.
+4. Ejerens billeder viste, at begge offentlige toplister kunne vise højere RavScore under lavere. Rodårsagen var ikke DEC-0049's lotterikorrektion, men at listen skjulte områdescoren og viste bedste enkeltstræknings RavScore. 4.0.270 bevarer korrektionen og viser den afrundede områdescore, så højeste viste tal står øverst.
+5. Håndbogsgennemgangen fandt historiske modelkandidater, der kunne læses som aktuelle, en forældet Supabase-installationskopi og en deploysynkronisering, som kunne overskrive centralt godkendte ekspertændringer. Tekster, kodekapitel, scenarier, hypoteser og releasegate er rettet; installationskopien synkroniseres fuldt, og livehåndbogen trevejsflettes mod en beskyttet kildebaseline.
+6. Score, farvegrænser, fysik, vejrdata, geometri og land-/vandpunkter er urørte. Se DEC-0069.
+
 ## 2026-08-24 – ejerens visuelle scoregennemgang
 
 1. Ejeren bad først om, at ændringerne ventede, mens flere billeder og observationer blev samlet.

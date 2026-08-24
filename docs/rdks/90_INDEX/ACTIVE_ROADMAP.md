@@ -1,5 +1,27 @@
 # RavRadar - aktivt roadmap
 
+## P0 – 4.0.270 før-lancering, ekspert og admin
+
+- [x] Kontrollér nye naturlige vejrdata, reelle tidsintervaller, fallback og vandstandsdiagnostik.
+- [x] Kontrollér Supabase Free-planens aktuelle forbrug og den tidligere egress-overskridelse.
+- [x] Gennemgå admin, ekspertrettigheder og den centralt gemte eksperthåndbog.
+- [x] Ret den falske statusfejl for det femte centrale admindokument.
+- [x] Bevar lotterikorrektionen i **Bedste områder** og **5-dages RavRadar**, men vis den samme områdescore, som listerne sorterer efter.
+- [x] Gennemgå begge håndbøger for historiske modeltekster, fejl og mangler; ret også kodekapitel, scenarier, hypoteseregister, ekspertarbejdsplan og releasegate, synkronisér installationskopien og beskyt centrale ekspertændringer med trevejsfletning.
+- [ ] Bestå exact-head-gates, merge, frisk produktion og offentlig browserkontrol.
+- [ ] Lad den eksterne ekspert gennemgå fagindholdet og behandle reviewkøen; det kan ikke erstattes af en teknisk kontrol.
+
+## P0 – lancering på ravradar.dk
+
+- [ ] Opret og kontrollér DNS, GitHub Pages-custom domain og HTTPS for `ravradar.dk` samt eventuelt `www`.
+- [ ] Skift Supabase Site URL og tilladte redirect-adresser samlet til det nye domæne.
+- [ ] Prøv et helt nyt magic link samt konto, almindelig tur, efterregistrering og turlog på domænet.
+- [ ] Følg egress, DMI-ratebegrænsning, planlagte kørsler og den første offentlige drift.
+
+## Laveste prioritet – gemte områder og varslinger
+
+- [ ] Afvent ejerens beslutning om funktionen overhovedet skal bygges.
+
 ## Produktionsverificeret 4.0.269 – aktuelle scoreforklaringer
 
 - [x] Brug aktuelle vind-, bølge-, strøm- og stateværdier i alle tre delscoreforklaringer.

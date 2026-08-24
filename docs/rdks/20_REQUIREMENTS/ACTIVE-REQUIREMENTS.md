@@ -358,7 +358,7 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 
 - `Bedste områder` og `5-dages RavRadar` skal bruge samme interne landsrangeringsmodel.
 - Modellen skal korrigere for zonens forskellige retningsmuligheder, ikke blot råt antal kystdele.
-- Den højeste lokale RavScore må fortsat vises uændret sammen med samme delscore, farve, pil og forklaring.
+- Toplisterne skal vise den afrundede områdescore, som de faktisk sorterer efter, højeste først. Når området åbnes, skal den højeste lokale RavScore fortsat vises uændret sammen med samme delscore, farve, pil og forklaring.
 - En helzonevurdering eller støtte fra mindst halvdelen af zonens dele må ikke få fradrag.
 - Manglende eller uoverensstemmende delkontrakt skal falde tilbage til råscore uden korrektion.
 - Den godkendte produktionsmodel er `direction-broad-19-v1` fra DEC-0049.

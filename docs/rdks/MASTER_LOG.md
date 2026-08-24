@@ -1,3 +1,12 @@
+## 2026-08-24 – før-lancering af ekspert, admin og synlig rangering
+
+- Den seneste naturlige produktion blev kontrolleret dataminimeret: 210 zoner, 673 kystdele, 72 timers ægte tretimersprognose for alle 198 geografisk verificerbare zoner og tolv kendte ærlige marine huller.
+- Supabase er sund i den aktuelle Free-planperiode med cirka 17 % database og 5 % egress; den forrige periodes egress-overskridelse overvåges frem mod 9. september.
+- Admin- og ekspertfunktioner, rettigheder og den centrale håndbog bestod målrettede kontrakter. En falsk rød status for det femte centrale dokument er rettet. Deploysynkroniseringen trevejsfletter nu officielle håndbogsopdateringer med centralt godkendte ekspertændringer i stedet for at overskrive dem.
+- Område- og femdøgnslister bevarer DEC-0049's fulde beskyttelse mod ekstra lotterilodder og viser nu den samme afrundede områdescore, som de sorterer efter. Den bedste kyststræknings almindelige RavScore vises fortsat i detaljen.
+- Begge håndbøger, kodekapitel, scenarier, hypoteseregister, ekspertarbejdsplan, releasegate og Supabase-installationskopi er ajourført til aktiv Candidate G 20/50/30. Se DEC-0069 og før-lanceringsreviewet.
+- 4.0.270 ændrer ikke scoremotor, farver, vejrdata, geometri eller land-/vandpunkter. Exact-head, produktion og offentlig browserkontrol afventer.
+
 ## 2026-08-24 – visuel scoregennemgang bliver til aktuelle forklaringer
 
 - Ejerens gennemgang viste, at Candidate G's *Hvorfor denne score?* var generisk, at mobiliseringens bølgevirkning ikke var forklaret tydeligt, og at reserveprofilens lavt-og-stigende-vand-tekst var misvisende.
