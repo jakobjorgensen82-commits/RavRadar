@@ -489,7 +489,7 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          RAVRADAR_DEPLOYED_HANDBOOK_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/docs/handbook/content.json
+          RAVRADAR_PREVIOUS_HANDBOOK_URL: https://raw.githubusercontent.com/${{ github.repository }}/d745e0ba4ad88dde91c308a9ad9810797f951c91/docs/handbook/content.json
         run: |
           if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
             echo "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY; refusing to publish protected admin files."
@@ -1017,3 +1017,4 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+
