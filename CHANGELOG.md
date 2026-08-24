@@ -1,3 +1,10 @@
+## 4.0.272 – fail-closed Candidate G-tilstandsrecovery (2026-08-24)
+
+- En ikke-fatal timeout ved hentning af tidligere offentlig tilstand nulstillede kunstigt alle 673 kystdele. 4.0.272 gør hentefejlen fatal, afviser global nulstart og genoptager kun den kompakte tilstand fra den eksakte låste sunde produktion.
+- PR #131/merge `1bbb4cc2` indførte rettelsen. PR #132/merge `392fea15` bevarede den ældre hydratorindgang uden runtimeændring.
+- Produktion `32761751284` bestod hele kæden og udgav `rr-20260824183620-210` på 210/673. Offentlig top-5 varierer igen 76–71, og femdøgnslisten sorterer 86–76.
+- Scoreformel, vejrregler, zoner, geometri og land-/vandpunkter er uændrede. Én lokal punktkontekst opvarmes, og otte ældre aktuelle evidenshuller holder midlertidigt hele runtime på den eksisterende 25/40/35-reserve.
+
 ## 4.0.269 – aktuelle scoreforklaringer (2026-08-24)
 
 - De tre RavScore-komponenter forklarer den viste kystdels konkrete vind-, bølge-, strøm- og stateforhold.

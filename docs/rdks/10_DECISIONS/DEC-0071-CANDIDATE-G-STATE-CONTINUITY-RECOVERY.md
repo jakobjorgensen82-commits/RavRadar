@@ -1,6 +1,6 @@
 # DEC-0071 – Candidate G-tilstand skal fortsætte fail-closed
 
-**Status:** MERGET I 4.0.272; PRODUKTIONSBEVIS MANGLER
+**Status:** PRODUKTIONSVERIFICERET I 4.0.272
 
 **Dato:** 2026-08-24
 
@@ -38,3 +38,7 @@ Ejerens senere flytning af punktpar 2 ændrer legitimt stateKey for netop den be
 - Eksakt diffkontrol af `data/kystdata.json` og `data/zones.geojson`: kun versionsfelt 4.0.271 → 4.0.272; intet geografisk indhold.
 
 PR #131 bestod exact-head-kildegaten og blev merged som `1bbb4cc2`. Produktion `32759180937` gennemførte både genkendelse, hentning og state-only recovery grønt, men stoppede senere i den fulde validering: en ældre kontrakttest krævede fortsat hydratorens nul-argument-funktion `active_zone_ids()`. Opfølgningen bevarer denne indgang og lægger den nye testbare rodvariant bagved; ingen runtimeadfærd eller data ændres af kompatibilitetsrettelsen.
+
+PR #132 blev merged som `392fea15`. Den efterfølgende produktion `32761751284` bestod central hydrering, frisk vejr/state, fuld validering, releasegate og Pages-deploy. Den udgav `rr-20260824183620-210` som version 4.0.272 på 210 zoner og 673 kystdele. En målrettet offentlig kontrol viste igen normal scorevariation og korrekt faldende rangering: den aktuelle top-5 var 76, 74, 72, 72 og 71, mens femdøgnslistens valgte dag begyndte 86, 84, 83, 76 og 76. Det tidligere landsdækkende 17/18-scorekollaps er dermed væk.
+
+Den genoprettede runtime har 672 accepterede fortsættelser og én lovlig lokal `COASTAL_PART_CONTEXT_CHANGED` efter ejerens flytning af punktpar 2. Otte aktuelle kystdele har fortsat `WINDOW_HAS_MISSING_EVIDENCE`; de samme otte huller fandtes allerede i den låste sunde recoverykilde før den globale nulstilling. Den versionsbundne profilgate viser derfor midlertidigt den samlede legacyreserve `25/40/35` i stedet for at blande eller foregive komplet Candidate G. Det er et separat, ærligt datagab og ikke en rest af statekollapset. Der opfindes ingen strøm eller nabofallback for at tvinge Candidate G aktiv.

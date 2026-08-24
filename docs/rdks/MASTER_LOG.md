@@ -1,3 +1,10 @@
+## 2026-08-24 – 4.0.272 produktionslukket med normal scorevariation
+
+- PR #132 blev merged som `392fea15`. Produktion `32761751284` bestod central hydrering, frisk vejr/state, fuld validering, releasegate og Pages-deploy og udgav `rr-20260824183620-210` som 4.0.272 på 210/673.
+- Den målrettede offentlige kontrol viser aktuelle områdescorer 76, 74, 72, 72 og 71 samt femdøgnsscorer 86, 84, 83, 76 og 76 i faldende rækkefølge. Det tidligere landsdækkende 17/18-kollaps er væk.
+- Recoveryen kopierede kun kompakt Candidate G-state. Scoreformel, vejrregler, zoner, geometri og land-/vandpunkter er uændrede; geodatafilerne ændrede kun versionsfeltet til 4.0.272.
+- Én lokal `COASTAL_PART_CONTEXT_CHANGED` følger ejerens punktpar 2-flytning. Otte aktuelle missing-evidence-huller fandtes allerede i den sunde recoverykilde, så den globale profilgate viser midlertidigt den samlede 25/40/35-reserve. Der blandes ikke profiler og opfindes ingen strøm.
+
 ## 2026-08-24 – Candidate G-recovery bestod, ældre hydratorgate stoppede deploy
 
 - PR #131 bestod exact-head-kildegaten og blev merged som `1bbb4cc2`.
