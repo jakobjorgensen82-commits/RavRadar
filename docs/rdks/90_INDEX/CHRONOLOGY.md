@@ -1,5 +1,9 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-24 – Candidate G-only bestod central hydrering, håndbogsdrift blev flyttet frem i kildegaten
+
+PR #135 bestod exact-head og blev merged. Den efterfølgende produktion beviste, at den centrale legacyprofil ikke længere kan genindføre 25/40/35. Produktionen stoppede senere før deploy, fordi repositoryets webhåndbog og Supabase-installationskopi reelt var forskellige; central ekspertdata var ikke indlæst i det trin. 4.0.275 synkroniserer kopien og kører samme strenge kontrol både i exact-head-kildegaten og i den fulde produktionsvalidering. Ingen score- eller geodataadfærd ændres.
+
 ## 2026-08-24 – kandidat 4.0.271 samlet feltrettelse
 
 Grundbogen blev samlet rettet efter ejerens feltgennemgang: kystpil, opdrift i koldt saltvand, bundnær strøm, lokale retningseksempler, revlehuller, tanglinje, grus, fralandsvind og speciallygter. DEC-0070 skelner mellem dokumenteret fysik, aktiv modelkontrakt og praktisk erfaring. Ingen score- eller geometriadfærd blev ændret.

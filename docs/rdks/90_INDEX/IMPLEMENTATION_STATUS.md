@@ -1,4 +1,4 @@
-# Implementeringsstatus – 4.0.274 central Candidate G-only-kontrakt
+# Implementeringsstatus – 4.0.275 håndbogskildegate
 
 ## Implementeret og målrettet verificeret
 
@@ -19,15 +19,22 @@
 - [x] Fjern de sidste offentlige legacyberegningsveje fra forside, zonepanel og Rav-assistent.
 - [x] Udvid releasegaten, så central legacy og offentlige legacyimports ikke kan genindføres ubemærket.
 - [x] Sæt version 4.0.274; geodatafilerne har kun versionsfelt 4.0.273 → 4.0.274.
+- [x] Bestå PR #135 exact-head-kildegaten `32775343561` og merge som `3a96c28d`.
+- [x] Bevis i produktion `32775444781`, at central Candidate G-only-hydrering og den hurtige kildegate består.
+- [x] Afgræns næste sikre stop til reel drift mellem repositoryets webhåndbog og Supabase-installationskopi; central ekspertdata var ikke indlæst i det fejlede trin.
+- [x] Synkronisér installationskopien med 4.0.275-webhåndbogen.
+- [x] Bevar den strenge identitetskontrol i den fulde produktionsvalidering.
+- [x] Føj samme identitetskontrol til exact-head `validate:source`, så drift opdages før merge og dyr vejrbygning.
+- [x] Sæt version 4.0.275; geodatafilerne har kun versionsfelt 4.0.274 → 4.0.275.
 
 ## Mangler før produktionslukning
 
-- [ ] Bestå den nye 4.0.274 exact-head-kildegate.
+- [ ] Bestå den nye 4.0.275 exact-head-kildegate.
 - [ ] Merge den eksakte grønne head.
 - [ ] Bestå frisk central 210/673-produktion, fuld validering og releasegate.
 - [ ] Kontrollér offentlig Candidate G-only-visning, lokale utilgængeligheder, rangeringer og adminstatus.
 
-Ingen Candidate G-regel, vejrregel, zone, geometri eller land-/vandpunkt ændres. 4.0.273 nåede ikke produktion.
+Ingen Candidate G-regel, vejrregel, zone, geometri eller land-/vandpunkt ændres. 4.0.273 og 4.0.274 nåede ikke produktion.
 
 # Historisk implementeringsstatus – 4.0.272 Candidate G-tilstandsrecovery
 
