@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {mergeProtectedHandbook} from './lib/merge-protected-handbook.mjs';
+import {fetchPreviousPublicHandbook,handbookPayloadDigest,mergeProtectedHandbook} from './lib/merge-protected-handbook.mjs';
 
 const section=(id,body)=>({id,title:id,summary:`Kort ${id}`,body});
 const baseline={handbookVersion:'4.0.269',updatedAt:'før',sections:[section('a','gammel a'),section('b','gammel b')]};
@@ -24,6 +24,22 @@ assert.throws(
   ()=>mergeProtectedHandbook({source,central,baseline:null}),
   /tidligere kildebaseline mangler/,
   'En ukendt central håndbog må ikke overskrives uden en trevejsbaseline.'
+);
+
+const fetched=await fetchPreviousPublicHandbook({
+  url:'https://example.invalid/previous-handbook.json',
+  expectedDigest:handbookPayloadDigest(baseline),
+  fetchImpl:async()=>({ok:true,status:200,json:async()=>structuredClone(baseline)}),
+});
+assert.deepEqual(fetched,baseline,'Første migrering skal kunne bruge den verificerede tidligere offentlige kilde som baseline.');
+await assert.rejects(
+  fetchPreviousPublicHandbook({
+    url:'https://example.invalid/previous-handbook.json',
+    expectedDigest:handbookPayloadDigest(source),
+    fetchImpl:async()=>({ok:true,status:200,json:async()=>structuredClone(baseline)}),
+  }),
+  /matcher ikke det beskyttede manifest/,
+  'En anden offentlig payload må ikke bruges som baseline.',
 );
 
 console.log('Beskyttet håndbog: officiel opdatering og ekspertændringer flettes uden datatab.');

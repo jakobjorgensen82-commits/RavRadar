@@ -42,6 +42,8 @@ Ingen virkelig ekspertkommentar eller persistenstest blev oprettet i produktion 
 
 Deploysynkroniseringen havde desuden en databevaringsrisiko: en håndbog, som ejeren allerede havde rettet centralt efter et ekspertreview, kunne blive erstattet af repositoryets standardhåndbog ved næste deploy. 4.0.270 gemmer den officielle kilde som en særskilt baseline og trevejsfletter nye officielle afsnit med centralt ændrede afsnit. En ukendt afvigelse uden baseline stopper sikkert; den overskrives ikke.
 
+Den første produktion efter PR #122, kørsel `32721891349`, ramte præcis denne første-overgangssituation og stoppede før deploy. Den efterfølgende afgrænsede rettelse henter den tidligere offentlige håndbog som startbaseline og accepterer den kun, hvis dens SHA-256 matcher det forrige beskyttede manifest. Dermed kan ekspertændringerne bevares ved første migrering uden at gøre en ukendt eller ændret offentlig fil autoritativ.
+
 ## Synlig og fair områdescore
 
 DEC-0049 løser et andet problem end den viste rækkefølge: områder med mange forskelligt vendte kyststrækninger må ikke få flere muligheder for en tilfældig topscore. Den korrektion bevares derfor som den egentlige områdevurdering. Fejlen var, at brugeren så bedste enkeltstræknings RavScore i stedet for det tal, listen brugte.

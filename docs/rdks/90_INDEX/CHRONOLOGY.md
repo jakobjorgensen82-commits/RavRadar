@@ -7,7 +7,9 @@
 3. Admin- og eksperthåndbogen viste sig funktionelle og rettighedsbeskyttede. En manglende femte nøgle i første lagertjek forklarede en falsk rød adminstatus.
 4. Ejerens billeder viste, at begge offentlige toplister kunne vise højere RavScore under lavere. Rodårsagen var ikke DEC-0049's lotterikorrektion, men at listen skjulte områdescoren og viste bedste enkeltstræknings RavScore. 4.0.270 bevarer korrektionen og viser den afrundede områdescore, så højeste viste tal står øverst.
 5. Håndbogsgennemgangen fandt historiske modelkandidater, der kunne læses som aktuelle, en forældet Supabase-installationskopi og en deploysynkronisering, som kunne overskrive centralt godkendte ekspertændringer. Tekster, kodekapitel, scenarier, hypoteser og releasegate er rettet; installationskopien synkroniseres fuldt, og livehåndbogen trevejsflettes mod en beskyttet kildebaseline.
-6. Score, farvegrænser, fysik, vejrdata, geometri og land-/vandpunkter er urørte. Se DEC-0069.
+6. PR #122 bestod exact-head `32721778498` på `a885bc5b` og blev merged som `abe10127`. Produktion `32721891349` bestod frem til den beskyttede synkronisering og stoppede før deploy, fordi den centralt ændrede håndbog endnu ikke havde en lagret første kildebaseline.
+7. Første migrering må derfor hente den tidligere offentlige håndbog som baseline, men accepterer den kun ved SHA-256-match mod det tidligere beskyttede manifest. Ukendt, ændret eller utilgængelig baseline stopper fortsat sikkert.
+8. Score, farvegrænser, fysik, vejrdata, geometri og land-/vandpunkter er urørte. Se DEC-0069.
 
 ## 2026-08-24 – ejerens visuelle scoregennemgang
 

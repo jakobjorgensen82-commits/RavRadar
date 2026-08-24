@@ -5,7 +5,8 @@
 - Admin- og ekspertfunktioner, rettigheder og den centrale håndbog bestod målrettede kontrakter. En falsk rød status for det femte centrale dokument er rettet. Deploysynkroniseringen trevejsfletter nu officielle håndbogsopdateringer med centralt godkendte ekspertændringer i stedet for at overskrive dem.
 - Område- og femdøgnslister bevarer DEC-0049's fulde beskyttelse mod ekstra lotterilodder og viser nu den samme afrundede områdescore, som de sorterer efter. Den bedste kyststræknings almindelige RavScore vises fortsat i detaljen.
 - Begge håndbøger, kodekapitel, scenarier, hypoteseregister, ekspertarbejdsplan, releasegate og Supabase-installationskopi er ajourført til aktiv Candidate G 20/50/30. Se DEC-0069 og før-lanceringsreviewet.
-- 4.0.270 ændrer ikke scoremotor, farver, vejrdata, geometri eller land-/vandpunkter. Exact-head, produktion og offentlig browserkontrol afventer.
+- PR #122 bestod exact-head `32721778498` på `a885bc5b` og blev merged som `abe10127`. Produktion `32721891349` stoppede sikkert før deploy, fordi en centralt ændret håndbog ved første migrering endnu ikke havde en lagret kildebaseline.
+- Hotfixet accepterer kun den tidligere offentlige håndbog som første baseline, når dens SHA-256 matcher det tidligere beskyttede manifest. 4.0.270 ændrer ikke scoremotor, farver, vejrdata, geometri eller land-/vandpunkter. Ny exact-head, produktion og offentlig browserkontrol afventer.
 
 ## 2026-08-24 – visuel scoregennemgang bliver til aktuelle forklaringer
 
