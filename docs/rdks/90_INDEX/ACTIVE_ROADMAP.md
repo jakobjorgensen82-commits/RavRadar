@@ -8,7 +8,7 @@
 - [x] Afvis global `NO_PREVIOUS_STATE` som lovlig aktiv Candidate G-opvarmning; tillad kun lille lokal kontekstreset efter bevidst punktændring.
 - [x] Bind en engangs, state-only recovery til den eksakte sidste grønne Actions-kørsel og den dokumenterede forgiftede fortsættelseslinje; gør den straks inaktiv, når historik fra før nulstillingen igen findes.
 - [x] Bevar scoreformel, Candidate G 20/50/30, vejr, zoner, geometri og land-/vandpunkter uændret; kun geodatafilernes versionsfelt følger releasen til 4.0.272.
-- [ ] Bestå målrettede regressioner, RDKS og kildegate på eksakt head.
+- [x] Bestå målrettede regressioner, RDKS og PR #131-kildegate på eksakt head; bevar derefter den ældre fulde produktionsgates hydrator-indgang i en afgrænset opfølgning.
 - [ ] Bestå frisk central 210/673-produktion, releasegate og offentlig score-/browserkontrol.
 - [ ] Luk engangsrecoveryen som inaktiv efter en frisk grøn produktion.
 
@@ -17,6 +17,8 @@
 - [x] Afgræns én manglende kystdel til en ufuldstændig ny offentlig vejrrække efter punktflytningen; det er ikke årsagen til det tidligere landsdækkende scorekollaps.
 - [x] Bevar forbuddet mod at låne strøm fra moderzone eller nabo og behold 673/673-gaten.
 - [ ] Lad de normale private cache-/friskdataforløb skaffe delens egen tilladte evidens og genprøv produktionen uden endnu en punktændring.
+
+Produktion `32759180937` viste, at punktdelen igen var til stede i 673-bestanden; kørslen stoppede først senere på hydratorens kompatibilitetskontrol. Punktforholdet var derfor ikke stopårsagen i denne kørsel.
 
 ## Afsluttet – 4.0.271 offentlig grundbog
 

@@ -73,7 +73,16 @@ def atomic_write_json(path: pathlib.Path, document: Any) -> None:
     atomic_write_bytes(path, (json.dumps(document, ensure_ascii=False, indent=2) + "\n").encode("utf-8"))
 
 
-def active_zone_ids(root: pathlib.Path) -> set[str]:
+def active_zone_ids() -> set[str]:
+    """Return active zones from the normal repository root.
+
+    Keep this zero-argument entry point for the established production gate.
+    Isolated tests use ``active_zone_ids_at_root`` directly.
+    """
+    return active_zone_ids_at_root(DEFAULT_ROOT)
+
+
+def active_zone_ids_at_root(root: pathlib.Path) -> set[str]:
     zones_path = root / "data/zones.geojson"
     document = read_json(zones_path)
     ids: set[str] = set()
@@ -178,7 +187,7 @@ def main() -> int:
     preserved: list[str] = []
     sanitized: dict[str, list[str]] = {}
     errors: list[dict[str, str]] = []
-    allowed_zone_ids = active_zone_ids(root)
+    allowed_zone_ids = active_zone_ids_at_root(root)
 
     # Manifest and conditions are one atomic publication unit. Never hydrate one
     # without the other, otherwise a deployed forecast can be paired with a

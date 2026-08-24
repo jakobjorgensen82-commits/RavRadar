@@ -1,3 +1,10 @@
+## 2026-08-24 – Candidate G-recovery bestod, ældre hydratorgate stoppede deploy
+
+- PR #131 bestod exact-head-kildegaten og blev merged som `1bbb4cc2`.
+- Produktion `32759180937` genkendte den dokumenterede nulstillede fortsættelseslinje, hentede den låste sunde 673-deles kilde og gennemførte state-only recovery grønt.
+- Den fulde validering stoppede senere, fordi en ældre kontrakt fortsat søgte efter nul-argument-indgangen `active_zone_ids()`.
+- Opfølgningen bevarer denne indgang som wrapper omkring den nye testbare rodvariant. Scoreformel, vejrdata, zoner, geometri og land-/vandpunkter er uændrede.
+
 ## 2026-08-24 – produktionsverificeret 4.0.271
 
 - Samlet feltrettelse af Grundbog i ravjagt implementeret.

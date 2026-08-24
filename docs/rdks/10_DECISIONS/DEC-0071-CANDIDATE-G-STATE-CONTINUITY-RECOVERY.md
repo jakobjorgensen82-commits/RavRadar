@@ -1,6 +1,6 @@
 # DEC-0071 – Candidate G-tilstand skal fortsætte fail-closed
 
-**Status:** IMPLEMENTERET LOKALT I 4.0.272; PRODUKTIONSBEVIS MANGLER
+**Status:** MERGET I 4.0.272; PRODUKTIONSBEVIS MANGLER
 
 **Dato:** 2026-08-24
 
@@ -36,3 +36,5 @@ Ejerens senere flytning af punktpar 2 ændrer legitimt stateKey for netop den be
 - Målrettet recoverytest for state-only kopi samt afvisning ved integritetsændring.
 - Exact-head kildegate, frisk central fuld produktion, releasegate og 210/673-browserkontrol.
 - Eksakt diffkontrol af `data/kystdata.json` og `data/zones.geojson`: kun versionsfelt 4.0.271 → 4.0.272; intet geografisk indhold.
+
+PR #131 bestod exact-head-kildegaten og blev merged som `1bbb4cc2`. Produktion `32759180937` gennemførte både genkendelse, hentning og state-only recovery grønt, men stoppede senere i den fulde validering: en ældre kontrakttest krævede fortsat hydratorens nul-argument-funktion `active_zone_ids()`. Opfølgningen bevarer denne indgang og lægger den nye testbare rodvariant bagved; ingen runtimeadfærd eller data ændres af kompatibilitetsrettelsen.
