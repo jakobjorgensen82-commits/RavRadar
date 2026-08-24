@@ -1,3 +1,10 @@
+## 2026-08-24 – kandidat 4.0.271
+
+- Samlet feltrettelse af Grundbog i ravjagt implementeret.
+- Eksperthåndbog, RDKS, forskningsnotat, SQL-håndbogspayload og changelog synkroniseret.
+- Rettelsen er score-neutral og ændrer ikke vejrdata eller geometri.
+- Næste dokumenterede trin: exact-head-kildegate, merge, produktionsgate og målrettet offentlig kontrol.
+
 ## 2026-08-24 – før-lancering af ekspert, admin og synlig rangering
 
 - PR #126 blev merged som `fda934ae`. Den eksakte mergeproduktion `32730674577` (#3522) bestod hele kæden og udgav Pages-artifact `9521472172` samt supportartifact `RavRadar-support-3522` (`9521463897`).

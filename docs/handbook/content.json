@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.270",
+  "handbookVersion": "4.0.271",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-08-24",
   "sections": [
+    {
+      "id": "public-amber-hunting-field-corrections-4-0-271",
+      "chapter": "61",
+      "title": "Feltrettelser til Grundbog i ravjagt",
+      "summary": "Grundbogen skelner skarpere mellem dokumenteret fysik, RavRadars aktive kontrakt og praktisk felterfaring.",
+      "body": "<div class=\"handbook-stack\"><p><strong>Dokumenteret fysik:</strong> Koldere saltvand er normalt lidt tættere end varmere saltvand med samme saltindhold og kan derfor give rav en smule større opdrift. Effekten er for lille til at få det meste almindelige rav til at flyde.</p><p><strong>Aktiv RavRadar-kontrakt:</strong> Vind, overfladestrøm og bundnær strøm holdes adskilt. RavRadar koncentrerer sig om en bundnær repræsentation af strømmen, og retningen vurderes altid mod den konkrete kyst og det foregående forløb.</p><p><strong>Praktisk felterfaring fra ejeren:</strong> Rav kan findes i revlehullet, på kystsiden lige bag hullet og på bagsiden af revlen nær hullet. Der skal også søges bag en frisk tanglinje. Speciallygter med ikke offentligt oplyste bølgelængder kan under visse forhold gøre rav lettere at se gennem alger i vand. Disse observationer er nyttige søgetips, ikke universelle regler eller nye scoreinput.</p><p><strong>Rettede misforståelser:</strong> Grus er fjernet som almindeligt ravtegn, fralandsvind er adskilt fra udgående bundnær strøm, og den fejlvendte kystpil er rettet.</p><p>Se <code>DEC-0070</code> og <code>docs/research/PUBLIC_LEARNING_FIELD_CORRECTIONS_4.0.271.md</code>. Rettelsen er score-neutral.</p></div>"
+    },
     {
       "id": "prelaunch-expert-admin-visible-ranking-4-0-270",
       "chapter": "60",

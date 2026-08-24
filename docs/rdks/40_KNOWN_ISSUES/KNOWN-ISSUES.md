@@ -1,5 +1,9 @@
 # Kendte åbne og overvågede forhold
 
+## Lukket i kandidat 4.0.271 – offentlig grundbog
+
+Den samlede feltgennemgang fandt misvisende eller uklare formuleringer om pilretning, koldt saltvand, bundnær strøm, revlehuller, tanglinjer, grus, fralandsvind og specialtygter. Alle er rettet i samme kandidat og dækket af en målrettet kontrakttest. Endelig lukning afventer exact-head- og produktionskontrol.
+
 ## 4.0.270 før-lancering – produktionsverificeret
 
 - **PRODUKTIONSBEVIS:** PR #126 blev merged som `fda934ae`. Den eksakte mergeproduktion `32730674577` (#3522) bestod hele kæden og udgav Pages-artifact `9521472172` samt supportartifact `RavRadar-support-3522` (`9521463897`).

@@ -1,5 +1,15 @@
 # Implementeringsstatus – 4.0.270 før-lancering, ekspert og admin
 
+## Kandidat 4.0.271 – offentlig grundbog
+
+- [x] Samlet public copy- og illustrationsrettelse implementeret.
+- [x] Eksperthåndbog, struktureret håndbog, SQL-payload, RDKS, forskningsnotat og changelog opdateret.
+- [x] Målrettet kontrakttest udvidet til de rettede formuleringer.
+- [ ] PR'ens eksakte head har bestået kildegaten.
+- [ ] PR er merget til main.
+- [ ] Produktionsartifact og releasegate er grønne på mergecommittet.
+- [ ] Den offentlige `learn.html` er målrettet kontrolleret.
+
 ## Afsluttet
 
 - [x] PR #126 blev merged som `fda934ae`. Den eksakte mergeproduktion `32730674577` (#3522) bestod hele kæden og udgav Pages-artifact `9521472172` samt supportartifact `RavRadar-support-3522` (`9521463897`).

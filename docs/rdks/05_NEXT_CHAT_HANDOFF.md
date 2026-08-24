@@ -1,5 +1,21 @@
 # RavRadar – overlevering til næste chat
 
+## Kandidat 4.0.271 – samlet feltrettelse af grundbogen
+
+Branch: `codex/public-groundbook-corrections-4.0.271`
+
+Implementeret:
+- offentlig grundbog og målrettet test,
+- ekspert- og webhåndbog,
+- DEC-0070, forskningsnotat, aktive krav, indeks og changelog,
+- versionsløft uden ændring af score, vejrdata eller geometri.
+
+Afventer:
+1. exact-head-kildegate,
+2. merge,
+3. den normale produktions-/releasegate,
+4. målrettet kontrol af den offentlige `learn.html`.
+
 > Produktionsbevis: PR #126 blev merged som `fda934ae`. Den eksakte mergeproduktion `32730674577` (#3522) bestod hele kæden og udgav Pages-artifact `9521472172` samt supportartifact `RavRadar-support-3522` (`9521463897`).
 
 ## Produktionslukket 2026-08-24 – 4.0.270 før-lancering
