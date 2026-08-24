@@ -2051,3 +2051,11 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - Offentlig standardsprog i forside, scorepanel, Rav-assistent, login, konto, tur og fejl er samtidig gjort mere forståeligt. Admin- og debugværktøjer forbliver bevidst tekniske.
 - Nye målrettede tests låser faglig rækkefølge, aktiv `20/50/30`, waders-kurve, udtransportregel, mobilopsætning, bølge-/strømroller og fravær af intern standardtekst. Lokal desktop og 390 px mobil er grøn.
 - Ingen score, Candidate G-regel, vejrdata, Supabase-kontrakt, geometri eller land-/vandpunkt ændres. PR #118/exact-head `32672522334`, merge `3c22e40b`, produktion `32672578127` og live `rr-20260823230848-210` lukker leverancen på 210/673 med grøn offentlig browseraudit. Se DEC-0067.
+## 2026-08-24 – 4.0.272 Candidate G-tilstandsrecovery under arbejde
+
+- Ejerens screenshots viste kunstigt lave og stærkt ens RavScore-værdier landsdækkende.
+- Den fejlramte offentlige produktion havde 673/673 globale `NO_PREVIOUS_STATE`-nulstillinger. Den sidste grønne 4.0.271-produktion havde 673/673 accepterede fortsættelser og normal scorevariation.
+- Rodårsagen var en timeout i atomisk manifest-/conditions-hydrering, som blev logget men ikke stoppede workflowet.
+- 4.0.272-kandidaten gør fejlen fatal, afviser global nulstart og indfører en streng engangs state-only recovery fra den eksakte sidste grønne Actions-kørsel. Den dokumenterede nulstillede fortsættelseslinje genkendes på tidsvindue og manglende før-historik, så senere accepterede nulstates ikke undslipper under et nyt datasæt-id; efter genindsættelsen er recoveryen straks inaktiv.
+- Ejerens senere flytning af punktpar 2 er afgrænset som et separat lokalt friskdataforhold. Ingen parent-/nabostrøm må lånes, og 673/673-gaten består.
+- Scoreformel, Candidate G 20/50/30, vejrregler, geometri, zoner og land-/vandpunkter er uændrede. Kun geodatafilernes versionsfelt følger releasen fra 4.0.271 til 4.0.272.

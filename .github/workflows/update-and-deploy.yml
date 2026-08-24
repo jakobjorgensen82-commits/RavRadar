@@ -98,6 +98,7 @@ jobs:
     timeout-minutes: 40
     permissions:
       contents: read
+      actions: read
     env:
       # Every production build remains bound to the UTC hour resolved at
       # readiness, even if the job crosses an hour boundary. The authoritative
@@ -136,7 +137,39 @@ jobs:
         run: python scripts/hydrate-deployed-weather.py
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
-          WEATHER_USER_AGENT: "RavRadar/4.0.271 (${{ github.server_url }}/${{ github.repository }})"
+          RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
+          WEATHER_USER_AGENT: "RavRadar/4.0.272 (${{ github.server_url }}/${{ github.repository }})"
+
+      - name: Inspect verified Candidate G continuation recovery
+        id: candidate-g-recovery
+        run: >-
+          node scripts/restore-candidate-g-continuation.mjs
+          --check
+          --github-output "$GITHUB_OUTPUT"
+
+      - name: Download last verified healthy public artifact for poisoned Candidate G continuation
+        if: steps.candidate-g-recovery.outputs.required == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: github-pages
+          run-id: ${{ steps.candidate-g-recovery.outputs.source_run_id }}
+          github-token: ${{ github.token }}
+          path: .cache/candidate-g-recovery-artifact
+
+      - name: Extract last verified healthy public artifact
+        if: steps.candidate-g-recovery.outputs.required == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .cache/candidate-g-recovery-source
+          test -s .cache/candidate-g-recovery-artifact/artifact.tar
+          tar -xf .cache/candidate-g-recovery-artifact/artifact.tar -C .cache/candidate-g-recovery-source
+
+      - name: Restore only compact Candidate G continuation state
+        if: steps.candidate-g-recovery.outputs.required == 'true'
+        run: >-
+          node scripts/restore-candidate-g-continuation.mjs
+          --source-root .cache/candidate-g-recovery-source
 
       - name: Preserve deployed DMI zone cache as safe fallback
         run: |
@@ -157,7 +190,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.271 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.272 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Report skipped refresh
         if: steps.preflight.outputs.should_run != 'true'
@@ -277,7 +310,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.271 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.272 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Save progressed DMI GRIB download cache
@@ -403,7 +436,7 @@ jobs:
           DMI_DEPLOYED_CACHE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/live/dmi-forecast-cache.json"
           WEATHER_REQUEST_TIMEOUT_MS: 25000
           DMI_OCEAN_REQUEST_TIMEOUT_MS: 60000
-          WEATHER_USER_AGENT: "RavRadar/4.0.271 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.272 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Attach scientific current provenance and exact DMI grid points

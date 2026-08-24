@@ -6,7 +6,7 @@ export const CANDIDATE_G_MEMORY_REFERENCE_SCOPE = 'CURRENT_COMMON_ZONE_REFERENCE
 
 export const PUBLIC_RAVSCORE_PROFILE_SELECTION = Object.freeze({
   schemaVersion: '1.1.0',
-  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.271',
+  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.272',
   requestedProfileId: LEGACY_RAVSCORE_PROFILE_ID,
   rollbackProfileId: LEGACY_RAVSCORE_PROFILE_ID,
   candidateProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
@@ -59,7 +59,7 @@ export function candidateGReferenceReadiness(partRows = [], referenceTime = null
     rowsByZone.get(row.zoneId).push(row);
   }
 
-  const selectedScores = [];
+  const selectedEntries = [];
   for (const rows of rowsByZone.values()) {
     const scoresByRow = rows.map(row => new Map(row.scores
       .filter(score => score?.candidateG && Number.isFinite(Date.parse(score.time)))
@@ -73,14 +73,26 @@ export function candidateGReferenceReadiness(partRows = [], referenceTime = null
       });
     const selectedTime = commonTimes[0];
     if (!selectedTime) return emptyCandidateReferenceReadiness();
-    selectedScores.push(...scoresByRow.map(scores => scores.get(selectedTime)));
+    selectedEntries.push(...scoresByRow.map((scores, index) => ({
+      row: rows[index],
+      score: scores.get(selectedTime),
+    })));
   }
 
-  if (selectedScores.length !== partRows.length) return emptyCandidateReferenceReadiness();
-  const memoryReady = selectedScores.every(score =>
+  if (selectedEntries.length !== partRows.length) return emptyCandidateReferenceReadiness();
+  const memoryReady = selectedEntries.every(({ score }) =>
     score.candidateG.transportMemoryReady === true
     && score.candidateG.transportMemoryStatus === 'READY');
-  const warmupEligible = selectedScores.every(score => {
+  const continuousOrLocalContextReset = selectedEntries.every(({ row }) =>
+    row?.candidateGState?.initialStateAccepted === true
+    || row?.candidateGState?.initialStateResetReason === 'COASTAL_PART_CONTEXT_CHANGED');
+  const localContextResetCount = selectedEntries.filter(({ row }) =>
+    row?.candidateGState?.initialStateAccepted !== true
+    && row?.candidateGState?.initialStateResetReason === 'COASTAL_PART_CONTEXT_CHANGED').length;
+  const localContextResetLimit = Math.max(1, Math.floor(partRows.length * 0.01));
+  const warmupEligible = continuousOrLocalContextReset
+    && localContextResetCount <= localContextResetLimit
+    && selectedEntries.every(({ score }) => {
     const ready = score.candidateG.transportMemoryReady === true;
     const status = score.candidateG.transportMemoryStatus;
     return (ready && status === 'READY') || (!ready && status === 'WINDOW_INCOMPLETE');
@@ -89,7 +101,7 @@ export function candidateGReferenceReadiness(partRows = [], referenceTime = null
     candidateMemoryReady: memoryReady,
     candidateWarmupEligible: warmupEligible,
     referenceZoneCount: rowsByZone.size,
-    referencePartCount: selectedScores.length,
+    referencePartCount: selectedEntries.length,
   });
 }
 

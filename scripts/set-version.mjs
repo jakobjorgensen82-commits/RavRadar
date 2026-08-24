@@ -1,7 +1,8 @@
 import fs from 'node:fs/promises';
 
 const version=process.argv[2];
-if(!/^\d+\.\d+\.\d+$/.test(version||''))throw new Error('Brug: node scripts/set-version.mjs X.Y.Z');
+const preserveGeodataVersion=process.argv.includes('--preserve-geodata-version');
+if(!/^\d+\.\d+\.\d+$/.test(version||''))throw new Error('Brug: node scripts/set-version.mjs X.Y.Z [--preserve-geodata-version]');
 
 const packageBefore=JSON.parse(await fs.readFile('package.json','utf8'));
 const previousVersion=packageBefore.version;
@@ -12,10 +13,14 @@ const replacements=[
    ...json,
    sourceVersion:version,
    switchVersion:`RAVSCORE-PROFILE-SWITCH-${version}`
- })],
- ['data/kystdata.json',json=>({...json,version})],
- ['data/zones.geojson',json=>({...json,version})]
+ })]
 ];
+if(!preserveGeodataVersion){
+ replacements.push(
+  ['data/kystdata.json',json=>({...json,version})],
+  ['data/zones.geojson',json=>({...json,version})]
+ );
+}
 for(const [file,transform] of replacements){
  const json=JSON.parse(await fs.readFile(file,'utf8'));
  await fs.writeFile(file,JSON.stringify(transform(json),null,2)+'\n');
@@ -105,4 +110,4 @@ for(const file of ['.github/workflows/update-and-deploy.yml']){
  text=`${text.slice(0,payloadStart)}${sqlPayload}${text.slice(payloadEnd)}`;
  await fs.writeFile(file,text);
 }
-console.log(`RavRadar-version opdateret fra ${previousVersion} til ${version}.`);
+console.log(`RavRadar-version opdateret fra ${previousVersion} til ${version}.${preserveGeodataVersion?' Geodataenes versionsfelter er bevaret uændret.':''}`);

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "enabled": true,
+  "reason": "One-time recovery of the verified poisoned continuation lineage after failed deployed-state hydration caused a nationwide NO_PREVIOUS_STATE reset.",
+  "targetDatasetId": "rr-20260824155647-210",
+  "poisonedLineage": {
+    "resetReferenceAt": "2026-08-24T15:00:00.000Z",
+    "datasetGeneratedAtNotBefore": "2026-08-24T15:56:47.000Z",
+    "datasetGeneratedAtBefore": "2026-08-25T16:00:00.000Z",
+    "minimumAffectedPartRatio": 0.99
+  },
+  "sourceRunId": "32745389504",
+  "sourceDatasetId": "rr-20260824153552-210",
+  "sourcePartCount": 673,
+  "sourceStateSha256": "ef75bfaeef7e2723b0dc8e01b480d4cb40336b60a8cffcf89e74e3923ad7337a"
+}

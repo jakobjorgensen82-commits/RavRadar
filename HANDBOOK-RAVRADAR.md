@@ -463,7 +463,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.271
+**Håndbogsversion:** 4.0.272
 
 **Opdateret:** 19. august 2026
 
@@ -2230,3 +2230,12 @@ Ved det historiske udviklingstrin blev den private analyse genkørt uden nye rå
 På dette historiske tidspunkt var `20/45/35` et analysecentrum. Ejeren valgte siden `20/50/30` som aktiv Candidate G-vægt. Komplette ture, reelle nul-fund og geografisk/tidslig hold-out kan senere bruges til efterkalibrering; `25/40/35` er global rollback.
 
 Der hentes ikke yderligere rådata til de øvrige dele som led i dette mekaniske beslutningsgrundlag. En eventuel offentlig aktivering er en særskilt opgave med landsdækkende inputkontrakt, ejerbeslutning og fulde valideringsgates.
+# Candidate G fortsætter kun fra dokumenteret tilstand – 4.0.272
+
+En produktionskørsel mistede den tidligere Candidate G-tilstand, fordi hentningen af det offentlige manifest og den tilhørende conditions-fil fik timeout, men vejropbygningen fortsatte. Det fik alle kystdele til at starte uden tidligere transport- og mobiliseringshukommelse og gav derfor et landsdækkende, kunstigt lavt scorebillede. Senere timer kunne godt acceptere den nye state, men de fortsatte så blot fra den forkerte nulstart.
+
+Fra 4.0.272 er den atomiske hentning af manifest og conditions obligatorisk. Hvis de to filer ikke kan hentes som ét sammenhørende datasæt, stopper produktionen før ny score og offentliggørelse. En global `NO_PREVIOUS_STATE`-nulstart er heller ikke længere en lovlig Candidate G-opvarmning. Kun en lille, lokalt afgrænset nulstilling med årsagen `COASTAL_PART_CONTEXT_CHANGED` kan accepteres, eksempelvis efter ejerens bevidste flytning af ét land-/vandpunktpar. Engangsrettelsen genkender den dokumenterede nulstillede fortsættelseslinje på dens tidsvindue og manglende historik fra før fejlen; den bliver automatisk inaktiv i samme øjeblik, den raske historik er genindsat.
+
+Den aktuelle rettelse genoptager kun Candidate G's kompakte tilstand fra den sidste fuldt grønne 673-deles produktion. Kilden er bundet til én eksakt, uforanderlig Actions-kørsel, samme delbestand og en kontrolleret samlet integritet. Vejr, scoreformel, profilvægtning, geometri, zoner og land-/vandpunkter kopieres ikke. Hvis blot én kontrol ikke passer, stopper recoveryen.
+
+Den særskilte kystdel, som efter punktflytningen midlertidigt mangler en komplet ny offentlig vejrrække, må ikke låne strøm fra sin moderzone eller nabo. Den almindelige 673/673-gate forbliver derfor uændret og stopper en ufuldstændig produktion, indtil kystdelen igen har frisk, tilladt evidens. Se DEC-0071.

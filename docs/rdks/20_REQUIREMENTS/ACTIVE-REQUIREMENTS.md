@@ -1,5 +1,12 @@
 # Aktive krav – samlet register
 
+## Candidate G-tilstand og produktionsfortsættelse – bindende fra 4.0.272
+
+- **REQ-CANDIDATE-G-ATOMIC-CONTINUATION-001 – BINDENDE:** Det offentlige manifest og conditions skal hydreres atomisk fra samme datasæt. Timeout, netværksfejl, manglende fil eller mismatch er fatal og skal stoppe før frisk beregning og deploy; produktionen må ikke fortsætte som global `NO_PREVIOUS_STATE`.
+- **REQ-CANDIDATE-G-GLOBAL-RESET-001 – BINDENDE:** Aktiv Candidate G må ikke erklæres klar, når den valgte aktuelle reference globalt er nulstillet med `NO_PREVIOUS_STATE`. En lokal `COASTAL_PART_CONTEXT_CHANGED` efter en bevidst kontekstændring må højst omfatte cirka én procent af delbestanden og må aldrig lempe fuld score- eller 673/673-dækning.
+- **REQ-CANDIDATE-G-RECOVERY-001 – BINDENDE ENGANGSFORLØB:** Recovery må kun genoptage den kompakte Candidate G-tilstand fra den eksakte sidste grønne Actions-kørsel, når delantal, del-ID'er, model-/profil-/variantbinding, typer, tider, evidensvindue og samlet integritet matcher. Målet skal ligge i det dokumenterede fejl-tidsvindue, og mindst 99 % af delene skal mangle al evidens fra før den kendte nulstilling. Når den ældre historik er tilbage, skal recoveryen være logisk inaktiv. Den må ikke kopiere vejr, score, geometri, zoner, land-/vandpunkter eller private payloads.
+- **REQ-CANDIDATE-G-LOCAL-MISSING-001 – BINDENDE:** En kystdel, der efter en bevidst punktflytning endnu mangler en komplet frisk vejrrække, må ikke låne U/V eller retningsbevis fra moderzone eller nabodel. 673/673-gaten stopper fortsat offentliggørelsen, indtil delen selv har tilladt evidens.
+
 ## Grundbogens feltrettelser – bindende fra 4.0.271
 
 ### REQ-PUBLIC-AMBER-LEARNING-FIELD-001
