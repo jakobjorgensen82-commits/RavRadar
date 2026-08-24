@@ -44,7 +44,9 @@ Deploysynkroniseringen havde desuden en databevaringsrisiko: en håndbog, som ej
 
 Den første produktion efter PR #122, kørsel `32721891349`, ramte præcis denne første-overgangssituation og stoppede før deploy. PR #123 bestod exact-head `32724526697` og blev merged som `00f59456`, men produktion `32724616331` viste, at den slanke Pages-pakke med vilje ikke udgiver håndbogens kildefil. Alle kode-, data- og releasegates var grønne, og deploy stoppede fortsat sikkert.
 
-Første migrering henter derfor den tidligere produktionsverificerede 4.0.269-kilde direkte fra den uforanderlige Git-commit `d745e0ba4ad88dde91c308a9ad9810797f951c91`. Kilden accepteres kun, hvis dens SHA-256 matcher det forrige beskyttede manifest. Dermed kan ekspertændringerne bevares ved første migrering uden at gøre en ukendt eller ændret netfil autoritativ.
+PR #124 bestod exact-head `32726897134`, blev merged som `fd7bc868`, og produktion `32727025187` bestod alle øvrige gates, men stoppede fortsat før deploy ved hashkontrollen. Den viste, at manifestet ikke svarer til den første 4.0.269-merge, fordi en senere dokumentationsmerge også blev produceret og synkroniseret centralt.
+
+Første migrering henter derfor den sidste faktisk synkroniserede 4.0.269-kilde direkte fra den uforanderlige Git-commit `fc13fb5ab326d8824ca55235ac454ac230e3db3e`, som var grøn i produktion `32706573863`. Kilden accepteres kun, hvis dens SHA-256 matcher det forrige beskyttede manifest. Dermed kan ekspertændringerne bevares ved første migrering uden at gøre en ukendt eller ændret netfil autoritativ.
 
 ## Synlig og fair områdescore
 

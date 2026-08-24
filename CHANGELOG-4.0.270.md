@@ -16,7 +16,8 @@
 - Releasegaten kræver nu de aktive Candidate G-spor og kontrollerer den aktive motor særskilt fra 25/40/35-rollback.
 - Deploysynkroniseringen trevejsfletter officielle håndbogsopdateringer med allerede godkendte centrale ekspertændringer. En ukendt central håndbog uden tidligere baseline stopper sikkert frem for at blive overskrevet.
 - Den første 4.0.270-produktion stoppede netop sikkert, fordi den centrale håndbog var ændret, mens den nye baseline endnu ikke fandtes. PR #123 bestod exact-head `32724526697` og blev merged som `00f59456`; den efterfølgende produktion `32724616331` bestod alle kode-, data- og releasegates, men stoppede før deploy, fordi den slanke Pages-pakke med vilje ikke indeholder håndbogens kildefil.
-- Første overgang bruger derfor den tidligere produktionsverificerede 4.0.269-kilde på den uforanderlige commit `d745e0ba4ad88dde91c308a9ad9810797f951c91`. Kilden accepteres kun, når dens SHA-256 matcher det tidligere beskyttede manifest; hentefejl eller hashafvigelse stopper fortsat synkroniseringen.
+- PR #124 bestod exact-head `32726897134`, blev merged som `fd7bc868`, og produktion `32727025187` bestod igen alle kode-, data- og releasegates. Hashkontrollen stoppede fortsat sikkert før deploy og viste, at manifestet svarer til den senere produktionsgrønne 4.0.269-dokumentationsmerge, ikke den første 4.0.269-merge.
+- Første overgang bruger derfor den seneste 4.0.269-håndbog, som faktisk blev synkroniseret centralt: den uforanderlige commit `fc13fb5ab326d8824ca55235ac454ac230e3db3e` fra grøn produktion `32706573863`. Kilden accepteres kun, når dens SHA-256 matcher det tidligere beskyttede manifest; hentefejl eller hashafvigelse stopper fortsat synkroniseringen.
 
 ## Data og drift
 
