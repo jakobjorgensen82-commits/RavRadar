@@ -37,7 +37,7 @@ if (typeof window !== 'undefined') {
       ['Vandstand','waterLevelCm',0],
       ['Strøm','currentSpeedMps',2],
       ['Vandtemperatur','waterTemperatureC',1],
-      ['3-timers trend','waterLevelTrendCm3h',0]
+      ['Vandstandsændring på 3 timer','waterLevelTrendCm3h',0]
     ];
     const metrics=[...(root?.querySelectorAll?.(':scope > .metric')||[])];
     for(const [label,field,digits] of expectedFields){
