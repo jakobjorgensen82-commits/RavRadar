@@ -1,5 +1,14 @@
 # Current truth – gældende projektviden
 
+## Kandidat 4.0.271 – samlet feltrettelse af Grundbog i ravjagt
+
+- Den offentlige grundbog, eksperthåndbogen og RDKS er synkroniseret med DEC-0070.
+- Pil, opdriftsforklaring, bundnær strøm, lokale retningseksempler, revlehuller, tanglinje, grus, fralandsvind og specialtygter er rettet samlet.
+- Dokumenteret fysik, aktiv modelkontrakt og ejerens praktiske erfaring er mærket hver for sig.
+- RavScore, vejrpipeline, runtime-state, geometri og land-/vandpunkter er uændrede.
+- I `data/kystdata.json` og `data/zones.geojson` ændres kun versionsfeltet fra 4.0.270 til 4.0.271.
+- Afventer exact-head-kildegate, merge, produktionsgate og en målrettet offentlig kontrol.
+
 ## Produktionsverificeret 4.0.270 – før-lancering, ekspert, admin og synlig rangering
 
 - PR #126 blev merged som `fda934ae`. Den eksakte mergeproduktion `32730674577` (#3522) bestod hele kæden og udgav Pages-artifact `9521472172` samt supportartifact `RavRadar-support-3522` (`9521463897`).

@@ -1,5 +1,20 @@
 # RavRadar Håndbog
 
+## Feltrettelser til Grundbog i ravjagt – 4.0.271
+
+Den offentlige grundbog er fagligt præciseret efter ejerens feltgennemgang og en afgrænset kontrol af vandets massefylde:
+
+- Pilen ved **Kyst A** peger nu fysisk mod kysten.
+- Koldere saltvand beskrives som en lille forøgelse af vandets tæthed og ravets opdrift, ikke som en forklaring på at almindeligt rav pludselig flyder. Vinterens bedre muligheder knyttes fortsat primært til mobilisering, transport, vandstandsændringer og adgang til nye lag.
+- Overfladestrøm, vind og bundnær strøm holdes adskilt. Grundbogen siger nu direkte, at RavRadar koncentrerer sig om en **bundnær repræsentation** af strømmen.
+- Retning forklares med kystnære eksempler: samme vind eller strøm kan have forskellig betydning, fordi kyststrækninger vender forskelligt, og fordi det foregående forløb har betydning.
+- Ejerens praktiske erfaring med rav ved revlehuller, på kystsiden af hullet og på bagsiden af revlen nær hullet er medtaget som mulige samlesteder – ikke som en universel regel.
+- Der skal også søges bag en frisk, våd tanglinje. Grus er fjernet som almindeligt ravtegn.
+- Speciallygter med andre, ikke offentligt oplyste bølgelængder omtales alene som praktisk erfaring: nogle kan gøre det lettere at se rav gennem alger i vand. Der opfindes ingen bølgelængde og ingen dokumenteret universalvirkning.
+- En irrelevant myteboks er fjernet, og afsnittet om fralandsvind skelner nu tydeligt mellem vindens virkning på overfladen og den bundnære strøms transport.
+
+Fysik, aktiv RavRadar-kontrakt og praktisk felterfaring er skilt fra hinanden i [DEC-0070](docs/rdks/10_DECISIONS/DEC-0070-PUBLIC-GROUNDBOOK-FIELD-CORRECTIONS.md) og [forskningsnotatet](docs/research/PUBLIC_LEARNING_FIELD_CORRECTIONS_4.0.271.md). Rettelsen ændrer ikke RavScore, vejrdata, kystgeometri eller land-/vandpunkter.
+
 ## Før-lancering, ekspert og synlig rangering – 4.0.270
 
 De to nationale lister viser nu den samme **områdescore**, som de sorterer efter. Områdescoren bevarer DEC-0049's beskyttelse mod, at områder med mange kyststrækninger får flere lodder i lotteriet: den tager både områdets bedste RavScore og støtten fra flere kyststrækninger med. Højeste viste områdescore står derfor altid øverst. Når et område åbnes, vises fortsat den bedste kyststræknings almindelige RavScore.
@@ -448,7 +463,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.270
+**Håndbogsversion:** 4.0.271
 
 **Opdateret:** 19. august 2026
 

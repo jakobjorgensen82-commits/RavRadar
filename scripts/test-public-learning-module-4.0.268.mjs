@@ -45,6 +45,17 @@ assert.match(learning, /Strømmen transporterer/, 'Strøm og bølger skal have f
 assert.match(learning, /Bølgerne mobiliserer/, 'Mobilisering skal forklares i almindeligt dansk');
 assert.match(learning, /Der findes ikke én dansk vind- eller strømretning, som altid er bedst/, 'Modulet må ikke lære en falsk universel retning');
 assert.match(learning, /Langbølget UV omkring 365 nm/, 'UV-afsnittet skal angive det praktiske langbølgede område');
+assert.match(learning, /ikke offentligt oplyste bølgelængder/, 'Praktisk erfaring med andre speciallygter skal forklares uden at opfinde et tal');
+assert.match(learning, /se rav gennem alger/, 'Erfaringen med speciallygter i vand skal være med');
+assert.match(learning, /flow-arrow">←<\/span><small>Strøm mod kysten/, 'Pilen skal pege ind mod Kyst A');
+assert.match(learning, /Koldere saltvand kan give rav en smule større opdrift/, 'Koldt saltvands lille opdriftsforskel skal forklares');
+assert.match(learning, /RavRadar koncentrerer sig derfor om en bundnær repræsentation af strømmen/, 'RavRadars bundnære fokus skal forklares');
+assert.match(learning, /vestvendt kyst[\s\S]*østvendt kyst/, 'Retning skal forklares med konkrete kysteksempler');
+assert.match(learning, /selve revlehullet[\s\S]*bagsiden af revlen/, 'De praktiske samlesteder ved revlehuller skal forklares');
+assert.match(learning, /lige foran og bag linjen/, 'Der skal også søges bag en frisk tanglinje');
+assert.match(learning, /Vinden fortæller ikke i sig selv, hvilken vej den bundnære strøm går/, 'Vind og bundnær strøm må ikke blandes sammen');
+assert.doesNotMatch(learning, /\bgrus\b/i, 'Grus må ikke stå som et almindeligt ravtegn');
+assert.doesNotMatch(learning, /Fem enkle påstande/, 'Den overflødige myteboks skal være fjernet');
 assert.match(learning, /Undgå varme nåle, ild og andre ødelæggende hjemmetests/, 'Modulet skal fraråde ødelæggende ægthedstests');
 assert.match(learning, /<svg[\s\S]*Strømmen transporterer/, 'Modulet skal have en tilgængelig illustration af processen');
 assert.match(learningCss, /@media\(max-width:640px\)/, 'Modulet skal have en målrettet mobilopsætning');

@@ -1,5 +1,13 @@
 # RavRadar - aktivt roadmap
 
+## P0 – afslut kandidat 4.0.271
+
+- [x] Ret Grundbog i ravjagt samlet efter ejerens feltgennemgang.
+- [x] Synkronisér eksperthåndbog, RDKS, forskningsnotat og changelog.
+- [x] Udvid kun den målrettede grundbogstest.
+- [ ] Bestå exact-head-kildegaten og merge PR'en.
+- [ ] Følg den ene normale produktionsgate og kontrollér den offentlige grundbog målrettet.
+
 ## P0 – 4.0.270 før-lancering, ekspert og admin
 
 - [x] Kontrollér nye naturlige vejrdata, reelle tidsintervaller, fallback og vandstandsdiagnostik.

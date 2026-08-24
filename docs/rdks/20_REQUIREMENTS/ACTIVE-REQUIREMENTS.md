@@ -1,5 +1,19 @@
 # Aktive krav – samlet register
 
+## Grundbogens feltrettelser – bindende fra 4.0.271
+
+### REQ-PUBLIC-AMBER-LEARNING-FIELD-001
+Praktisk felterfaring skal mærkes som erfaring og må ikke omskrives til en universel fysisk regel eller et nyt scoreinput.
+
+### REQ-PUBLIC-AMBER-LEARNING-CURRENT-001
+Offentlig tekst skal holde vind, overfladestrøm og bundnær strøm adskilt. RavRadars fokus beskrives som en bundnær repræsentation, ikke som en direkte måling på selve havbunden.
+
+### REQ-PUBLIC-AMBER-LEARNING-GRAVEL-001
+Grus må ikke bruges som et almindeligt ravtegn i den offentlige jagtvejledning.
+
+### REQ-PUBLIC-AMBER-LEARNING-UV-001
+Speciallygter med ikke offentligt oplyste bølgelængder må omtales som ejerens praktiske erfaring. RavRadar må ikke opfinde en bølgelængde eller påstå en dokumenteret universalvirkning.
+
 Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslutninger, chatkilder og kode.
 
 ## Konto, magic link og privat turlog – 4.0.266

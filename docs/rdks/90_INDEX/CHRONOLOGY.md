@@ -1,5 +1,9 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-24 – kandidat 4.0.271 samlet feltrettelse
+
+Grundbogen blev samlet rettet efter ejerens feltgennemgang: kystpil, opdrift i koldt saltvand, bundnær strøm, lokale retningseksempler, revlehuller, tanglinje, grus, fralandsvind og speciallygter. DEC-0070 skelner mellem dokumenteret fysik, aktiv modelkontrakt og praktisk erfaring. Ingen score- eller geometriadfærd blev ændret.
+
 ## 2026-08-24 – før-lancering af data, admin, ekspert og rangering
 
 **Produktionsbevis:** PR #126 blev merged som `fda934ae`. Den eksakte mergeproduktion `32730674577` (#3522) bestod hele kæden og udgav Pages-artifact `9521472172` samt supportartifact `RavRadar-support-3522` (`9521463897`).
