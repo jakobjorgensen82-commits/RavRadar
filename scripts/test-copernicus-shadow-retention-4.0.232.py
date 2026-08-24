@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from lib.copernicus_current import FORECAST_HOURS, RETENTION_HOURS, safe_shadow_summary, update_shadow
+from lib.copernicus_target_identity import target_fingerprint
 
 
 def need(condition: bool, message: str) -> None:
@@ -98,14 +99,20 @@ def main() -> None:
 
         forecast_path = Path(directory) / "copernicus-forecast-shadow.json"
         forecast_time = now + timedelta(hours=FORECAST_HOURS)
-        forecast_fingerprint = "sha256:" + "f" * 64
+        target_identity = {
+            "partId": "part-1",
+            "parentZoneId": "zone-1",
+            "waterPoint": [9.0, 57.0],
+        }
+        target_identities = {"part-1": target_identity}
+        forecast_fingerprint = target_fingerprint([target_identity])
         forecast = update_shadow(
             forecast_path,
             [record(forecast_time)],
             now,
             collection_time=forecast_time,
             target_fingerprint=forecast_fingerprint,
-            target_points={"part-1": [9.0, 57.0]},
+            target_identities=target_identities,
         )
         need(len(forecast["records"]) == 1 and forecast["records"][0]["validTime"] == record(forecast_time)["validTime"],
              "A complete declared collection at the bounded production forecast hour must be retained")
@@ -119,7 +126,7 @@ def main() -> None:
                 now,
                 collection_time=too_far,
                 target_fingerprint=forecast_fingerprint,
-                target_points={"part-1": [9.0, 57.0]},
+                target_identities=target_identities,
             )
         except RuntimeError as error:
             need("outside the 168-hour retention window" in str(error),
@@ -129,21 +136,22 @@ def main() -> None:
 
         geometry_path = Path(directory) / "copernicus-geometry-shadow.json"
         first_time = now - timedelta(hours=2)
-        first_fingerprint = "sha256:" + "1" * 64
+        first_fingerprint = target_fingerprint([target_identity])
         first = update_shadow(
             geometry_path,
             [record(first_time)],
             now,
             collection_time=first_time,
             target_fingerprint=first_fingerprint,
-            target_points={"part-1": [9.0, 57.0]},
+            target_identities=target_identities,
         )
         need(first["collections"][0]["targetFingerprint"] == first_fingerprint,
              "A completed collection must retain its target-geometry fingerprint")
         need(first["collections"][0]["targetPartIds"] == ["part-1"],
              "A completed collection must retain its exact selected target ids")
         moved_time = now - timedelta(hours=1)
-        moved_fingerprint = "sha256:" + "2" * 64
+        moved_identity = {**target_identity, "waterPoint": [9.1, 57.0]}
+        moved_fingerprint = target_fingerprint([moved_identity])
         moved_record = {**record(moved_time), "samplingPoint": [9.1, 57.0]}
         moved = update_shadow(
             geometry_path,
@@ -151,7 +159,7 @@ def main() -> None:
             now,
             collection_time=moved_time,
             target_fingerprint=moved_fingerprint,
-            target_points={"part-1": [9.1, 57.0]},
+            target_identities={"part-1": moved_identity},
         )
         need(len(moved["records"]) == 1 and moved["records"][0]["samplingPoint"] == [9.1, 57.0],
              "Moving a central point must prune that part's older retained geometry")

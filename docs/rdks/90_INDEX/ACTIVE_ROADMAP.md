@@ -1,5 +1,17 @@
 # RavRadar - aktivt roadmap
 
+## P0 – 4.0.276 bevar strømhistorik lokalt pr. kystpunkt
+
+- [x] Bevis dataminimeret, at den kompakte Candidate G-state fortsatte til cirka 36 timer og ikke blev nulstillet ved Candidate G-only-udgivelsen.
+- [x] Afvis landsdækkende genbrug af den ældre brede cache, fordi kun 43 dele havde sikker kontinuitet til målreferencen, mens 621 var ufuldstændige og otte manglede.
+- [x] Ret den private Copernicus-cache, så skiftende DMI-huller eller én punktflytning ikke ugyldiggør historikken for uændrede kystpunkter.
+- [x] Genopbyg hver bevaret times bevis fra de eksakte tilbageværende punktidentiteter og afvis dubletter eller mismatch fail-closed.
+- [x] Bevar Candidate G 20/50/30 som eneste scoremodel; opfind ingen timer og ændr ingen geometri eller land-/vandpunkter.
+- [x] Bestå de målrettede regressioner for punktflytning, søsterpunktsbevaring, retention, cache og native tretimerskadence.
+- [ ] Bestå exact-head, merge, frisk fuld produktion og dataminimeret livekontrol.
+
+Når den tekniske lukning er grøn, fortsætter det eksisterende før-lanceringsroadmap. Zoner aktiveres enkeltvis, når deres egne virkelige 48 timer er komplette; dette er drift, ikke en ny 48-timers udviklingstest.
+
 ## P0 – 4.0.275 luk Candidate G-only-produktionen med synkron håndbogskilde
 
 - [x] Gør Candidate G 20/50/30 til eneste offentlige scoremodel.
@@ -18,7 +30,7 @@
 - [x] Bestå 4.0.275 exact-head `32778118765`, merge som `59ea4546` og frisk fuld 210/673-produktion `32778269487`.
 - [x] Kontrollér live `rr-20260824211701-210`: Candidate G er eneste profil; rollback er `null`; legacyfallback er forbudt; lokale mangler giver ingen erstatningsscore.
 
-DEC-0072 erstatter roadmapets tidligere opgave om at vente på, at den globale 25/40/35-reserve naturligt skifter tilbage. Den gamle model er ikke længere en offentlig driftsvej. Ved slutkontrollen var 0/210 zoner aktive, fordi den nødvendige sammenhængende 48-timers strømhistorik endnu ikke var komplet; admin viser alle berørte zone-/søgemådepar og årsagen. Zoner bliver aktive lokalt, når deres eget grundlag er komplet. 4.0.273 og 4.0.274 blev ikke deployet; de sikre stop er produktionsbevis, ikke offentlige regressioner.
+DEC-0072 erstatter roadmapets tidligere opgave om at vente på, at den globale 25/40/35-reserve naturligt skifter tilbage. Den gamle model er ikke længere en offentlig driftsvej. Ved slutkontrollen var 0/210 zoner aktive, fordi den nødvendige sammenhængende 48-timers strømhistorik endnu ikke var komplet; senere audit dokumenterede cirka 36 timers fortsat state. Admin viser alle berørte zone-/søgemådepar og årsagen. Zoner bliver aktive lokalt, når deres eget grundlag er komplet. 4.0.273 og 4.0.274 blev ikke deployet; de sikre stop er produktionsbevis, ikke offentlige regressioner.
 
 ## Historisk P0 – Candidate G-tilstand efter fejlslagen hydrering i 4.0.272
 

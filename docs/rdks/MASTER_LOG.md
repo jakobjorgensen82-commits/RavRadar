@@ -1,3 +1,13 @@
+## 2026-08-25 – 4.0.276 punktvis bevaring af Candidate G-strømhistorik
+
+- Ejerens spørgsmål om de 48 timer udløste en dataminimeret kontrol af både kompakt Candidate G-state og den private brede Copernicus-cache.
+- Den kompakte state var ikke tabt eller startet forfra: den dokumenterede kæde var cirka 36 timer ved den seneste kontrollerede reference.
+- Den brede cache havde en gruppefejl. En ændret indsamlingsdelmængde eller ét flyttet punkt kunne erstatte en hel time eller fratage uændrede punkter deres samlingsbevis.
+- 4.0.276 sender den fulde centrale identitetsliste, validerer den valgte delmængde eksakt, erstatter kun valgte punkter og genopbygger samlingsbeviset pr. time ud fra faktisk bevarede rækker.
+- Et flyttet punkt mister kun sin egen ældre historik. Målrettede tests beviser, at et uændret søsterpunkt bevarer både samme times og ældre verificerede historik.
+- Den ældre cache bruges ikke til kunstig recovery: kun 43 dele havde komplet kontinuitet til målreferencen, 621 var ufuldstændige, og otte manglede. Der opfindes ingen data.
+- Candidate G 20/50/30, lokal fail-closed availability, scorefysik, offentlig kontrakt, geometri og land-/vandpunkter er uændrede. Exact-head, merge og fuld produktion udestår.
+
 ## 2026-08-24 – 4.0.275 synkron håndbogs- og installationskilde
 
 - PR #135 bestod exact-head `32775343561` og blev merged som `3a96c28d`. Produktion `32775444781` kom gennem central Candidate G-only-hydrering og den hurtige kildegate; den gamle scoremodel blev ikke genaktiveret.

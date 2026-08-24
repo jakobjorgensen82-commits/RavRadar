@@ -1,6 +1,6 @@
 # DEC-0072 – Candidate G er eneste offentlige scoremodel
 
-**Status:** GODKENDT TIL 4.0.274 – AFVENTER PRODUKTIONSVERIFIKATION
+**Status:** GODKENDT OG PRODUKTIONSVERIFICERET I 4.0.275
 
 **Dato:** 2026-08-24
 

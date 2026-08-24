@@ -1,4 +1,26 @@
-# Produktionsverificeret implementeringsstatus – 4.0.275 Candidate G-only
+# Implementeringsstatus – kandidat 4.0.276 punktvis strømhistorik
+
+## Implementeret og målrettet verificeret
+
+- [x] Afgræns cacheidentiteten til hvert faktisk bevaret kystpunkt frem for én skiftende indsamlingsgruppe.
+- [x] Send den fulde centrale identitetsliste med hver opdatering og validér den valgte delmængdes eksakte fingeraftryk.
+- [x] Erstat ved genindsamling kun samme times valgte punkter; bevar uændrede søsterpunkter.
+- [x] Fjern ved punktflytning kun det konkrete punkts ældre historik og genopbyg timens samlingsbevis fra de bevarede identiteter.
+- [x] Afvis dubletter, ukendte punkter og identitetsmismatch fail-closed.
+- [x] Bevar Candidate G-only 20/50/30, lokal utilgængelighed og forbuddet mod rekonstruktion, interpolation og legacyfallback.
+- [x] Bestå målrettede cache-, retention-, DMI-først- og Candidate G-kadencetests.
+- [x] Dokumentér beslutning og faktisk statefund i DEC-0073, current truth, roadmap, known issues, masterlog og changelog.
+
+## Produktionslukning
+
+- [ ] Sæt version 4.0.276 og verificér, at geodatafilerne kun ændrer versionsfelt.
+- [ ] Bestå RDKS- og kildegaten på PR'ens eksakte head.
+- [ ] Merge den eksakte grønne head og bestå frisk central produktion, fuld validering, releasegate, artifact og Pages-deploy.
+- [ ] Kontrollér den levende Candidate G-only-runtime og den fortsatte lokale state uden rå strømvektorer, koordinater eller private payloads.
+
+Ingen Candidate G-regel, vejrregel, zone, geometri eller land-/vandpunkt ændres i 4.0.276.
+
+# Historisk produktionsverificeret implementeringsstatus – 4.0.275 Candidate G-only
 
 ## Implementeret og målrettet verificeret
 

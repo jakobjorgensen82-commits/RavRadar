@@ -14,6 +14,8 @@ from typing import Any
 
 import numpy as np
 
+from .copernicus_target_identity import target_fingerprint as geometry_fingerprint
+
 
 RETENTION_HOURS = 168
 FORECAST_HOURS = 3
@@ -319,7 +321,7 @@ def update_shadow(
     *,
     collection_time: datetime | None = None,
     target_fingerprint: str | None = None,
-    target_points: dict[str, list[float]] | None = None,
+    target_identities: dict[str, dict[str, Any]] | None = None,
     target_part_ids: list[str] | None = None,
 ) -> dict[str, Any]:
     document = load_shadow(path)
@@ -328,10 +330,13 @@ def update_shadow(
     now_utc = now.astimezone(timezone.utc)
     cutoff = now_utc - timedelta(hours=RETENTION_HOURS)
     forecast_limit = now_utc + timedelta(hours=FORECAST_HOURS)
-    collection_metadata = (collection_time, target_fingerprint, target_points)
+    collection_metadata = (collection_time, target_fingerprint, target_identities)
     if any(value is not None for value in collection_metadata) and not all(value is not None for value in collection_metadata):
-        raise ValueError("Collection time, target fingerprint and target points must be supplied together")
+        raise ValueError("Collection time, target fingerprint and target identities must be supplied together")
+    if target_part_ids is not None and collection_time is None:
+        raise ValueError("Collection target ids require a declared collection")
     collection_time_utc = None
+    selected_part_ids: list[str] = []
     if collection_time is not None:
         if collection_time.tzinfo is None:
             raise ValueError("Copernicus collection time must include a timezone")
@@ -342,9 +347,12 @@ def update_shadow(
                 "Copernicus collection time is outside the 168-hour retention window "
                 "or 3-hour forecast window"
             )
-        selected_part_ids = sorted(target_part_ids if target_part_ids is not None else target_points)
-        if len(selected_part_ids) != len(set(selected_part_ids)) or any(part_id not in target_points for part_id in selected_part_ids):
+        selected_part_ids = sorted(target_part_ids if target_part_ids is not None else target_identities)
+        if len(selected_part_ids) != len(set(selected_part_ids)) or any(part_id not in target_identities for part_id in selected_part_ids):
             raise RuntimeError("Copernicus collection target ids do not match authoritative central geometry")
+        expected_fingerprint = geometry_fingerprint([target_identities[part_id] for part_id in selected_part_ids])
+        if target_fingerprint != expected_fingerprint:
+            raise RuntimeError("Copernicus collection fingerprint does not match its selected central geometry")
         if not records and selected_part_ids:
             raise RuntimeError("A completed Copernicus collection must contain verified records")
     existing_collections = document.get("collections") or []
@@ -382,51 +390,89 @@ def update_shadow(
             if is_new:
                 raise RuntimeError("New Copernicus shadow record is outside the 168-hour retention window")
             continue
-        if target_points is not None:
-            expected_point = target_points.get(str(record.get("partId") or ""))
+        if target_identities is not None:
+            identity = target_identities.get(str(record.get("partId") or ""))
+            expected_point = identity.get("waterPoint") if identity else None
             actual_point = record.get("samplingPoint")
+            same_parent = (
+                identity is not None
+                and str(record.get("parentZoneId") or "")
+                == str(identity.get("parentZoneId") or "")
+            )
             same_sampling_point = (
                 expected_point is not None
                 and _finite_pair(actual_point)
                 and tuple(round(float(value), 7) for value in actual_point)
                 == tuple(round(float(value), 7) for value in expected_point)
             )
-            if not same_sampling_point:
+            if not same_sampling_point or not same_parent:
                 if index >= len(existing_records):
-                    raise RuntimeError("New Copernicus record does not match the current central sampling point")
-                continue  # a moved or removed central point invalidates its retained history
+                    raise RuntimeError("New Copernicus record does not match the current central target identity")
+                continue  # a moved, removed or re-parented central point invalidates only that part's history
         if collection_time_utc is not None:
-            if index < len(existing_records) and valid_time == collection_time_utc:
-                continue  # replace the whole hour when authoritative target geometry changed
+            if (
+                index < len(existing_records)
+                and valid_time == collection_time_utc
+                and str(record.get("partId") or "") in selected_part_ids
+            ):
+                continue  # recollect only the selected parts; unrelated valid rows survive
             if index >= len(existing_records) and valid_time != collection_time_utc:
                 raise RuntimeError("New Copernicus record does not match the declared collection hour")
+            if index >= len(existing_records) and str(record.get("partId") or "") not in selected_part_ids:
+                raise RuntimeError("New Copernicus collection contains a record outside its selected target set")
         key = (
             record.get("partId"), record.get("source"), record.get("datasetId"),
             record.get("validTime"), tuple(record.get("gridPoint") or []), record.get("verticalLayerM"),
         )
         retained[key] = record
-    collections: dict[str, dict[str, Any]] = {}
+    collection_hours: set[str] = set()
     for collection in existing_collections:
         try:
-            valid_time, _fingerprint, record_count, _target_part_ids = _validate_collection(collection)
+            valid_time, _fingerprint, _record_count, _target_part_ids = _validate_collection(collection)
         except (TypeError, ValueError):
             continue
-        valid_time_text = utc_iso(valid_time)
-        actual_count = sum(row.get("validTime") == valid_time_text for row in retained.values())
-        if cutoff <= valid_time <= forecast_limit and actual_count == record_count:
-            collections[utc_iso(valid_time)] = collection
+        if cutoff <= valid_time <= forecast_limit:
+            collection_hours.add(utc_iso(valid_time))
     if collection_time_utc is not None:
-        valid_time_text = utc_iso(collection_time_utc)
+        collection_hours.add(utc_iso(collection_time_utc))
+
+    collections: dict[str, dict[str, Any]] = {}
+    for valid_time_text in sorted(collection_hours):
         collected_records = [row for row in retained.values() if row.get("validTime") == valid_time_text]
-        collected_part_ids = {str(row.get("partId") or "") for row in collected_records}
-        if not collected_part_ids.issubset(set(selected_part_ids)):
-            raise RuntimeError("Copernicus collection contains a record outside its selected target set")
+        collected_part_ids = sorted({str(row.get("partId") or "") for row in collected_records})
+        if not collected_records:
+            continue
+        if target_identities is None:
+            original = next(
+                (collection for collection in existing_collections
+                 if str(collection.get("validTime") or "") == valid_time_text),
+                None,
+            )
+            if original is None:
+                continue
+            try:
+                _valid_time, _fingerprint, record_count, original_part_ids = _validate_collection(original)
+            except (TypeError, ValueError):
+                continue
+            if len(collected_records) != record_count:
+                continue
+            if original_part_ids is not None and collected_part_ids != original_part_ids:
+                continue
+            collections[valid_time_text] = original
+            continue
+        if (
+            any(part_id not in target_identities for part_id in collected_part_ids)
+            or len(collected_records) != len(collected_part_ids)
+        ):
+            continue
         collections[valid_time_text] = {
             "validTime": valid_time_text,
-            "targetFingerprint": target_fingerprint,
-            "targetPartIds": selected_part_ids,
+            "targetFingerprint": geometry_fingerprint([
+                target_identities[part_id] for part_id in collected_part_ids
+            ]),
+            "targetPartIds": collected_part_ids,
             "recordCount": len(collected_records),
-            "uniqueTargetCount": len({str(row.get("partId") or "") for row in collected_records}),
+            "uniqueTargetCount": len(collected_part_ids),
         }
     retained = {
         key: record for key, record in retained.items()
