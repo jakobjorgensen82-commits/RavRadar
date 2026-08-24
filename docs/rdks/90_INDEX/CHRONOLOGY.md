@@ -8,8 +8,9 @@
 4. Ejerens billeder viste, at begge offentlige toplister kunne vise højere RavScore under lavere. Rodårsagen var ikke DEC-0049's lotterikorrektion, men at listen skjulte områdescoren og viste bedste enkeltstræknings RavScore. 4.0.270 bevarer korrektionen og viser den afrundede områdescore, så højeste viste tal står øverst.
 5. Håndbogsgennemgangen fandt historiske modelkandidater, der kunne læses som aktuelle, en forældet Supabase-installationskopi og en deploysynkronisering, som kunne overskrive centralt godkendte ekspertændringer. Tekster, kodekapitel, scenarier, hypoteser og releasegate er rettet; installationskopien synkroniseres fuldt, og livehåndbogen trevejsflettes mod en beskyttet kildebaseline.
 6. PR #122 bestod exact-head `32721778498` på `a885bc5b` og blev merged som `abe10127`. Produktion `32721891349` bestod frem til den beskyttede synkronisering og stoppede før deploy, fordi den centralt ændrede håndbog endnu ikke havde en lagret første kildebaseline.
-7. Første migrering må derfor hente den tidligere offentlige håndbog som baseline, men accepterer den kun ved SHA-256-match mod det tidligere beskyttede manifest. Ukendt, ændret eller utilgængelig baseline stopper fortsat sikkert.
-8. Score, farvegrænser, fysik, vejrdata, geometri og land-/vandpunkter er urørte. Se DEC-0069.
+7. PR #123 bestod exact-head `32724526697`, blev merged som `00f59456`, og produktion `32724616331` bestod alle kode-, data- og releasegates. Den stoppede før deploy, fordi den slanke Pages-pakke ikke udgiver håndbogens kildefil.
+8. Første migrering må derfor hente den produktionsverificerede 4.0.269-kilde på uforanderlig commit `d745e0ba4ad88dde91c308a9ad9810797f951c91`, men accepterer den kun ved SHA-256-match mod det tidligere beskyttede manifest. Ukendt, ændret eller utilgængelig baseline stopper fortsat sikkert.
+9. Score, farvegrænser, fysik, vejrdata, geometri og land-/vandpunkter er urørte. Se DEC-0069.
 
 ## 2026-08-24 – ejerens visuelle scoregennemgang
 
@@ -398,3 +399,4 @@ Fem sammenhængende produktionskørsler afslørede, at samme ugentlige GitHub-ca
 2. Live `rr-20260823023951-210` består den dataminimerede 210/673-shadow med 1.346 modeevalueringer og nul rekonstruktionsfejl.
 3. Alle 673 tidligere tilstande blev accepteret, og ingen blev nulstillet. Referencetiden gik fra 00:00Z til 03:00Z, så dokumenteret yngste og ældste naturlige state-alder er 3/3 timer.
 4. Candidate G er fortsat diagnostic-only; offentlig `25/40/35` og aktiveringsforbuddet er uændret. 48-timersslutshadow udestår.
+

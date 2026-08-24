@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import {createSupabaseAdminRequester} from './lib/supabase-admin-rest.mjs';
 import {buildRuntimeDiagnosticsEnvelope} from './lib/runtime-diagnostics-envelope.mjs';
-import {fetchPreviousPublicHandbook,mergeProtectedHandbook,stableHandbookDigest} from './lib/merge-protected-handbook.mjs';
+import {fetchPreviousHandbookSource,mergeProtectedHandbook,stableHandbookDigest} from './lib/merge-protected-handbook.mjs';
 const url=process.env.SUPABASE_URL?.replace(/\/$/,'');
 const key=process.env.SUPABASE_SERVICE_ROLE_KEY;
 if(!url||!key)throw new Error('SUPABASE_URL og SUPABASE_SERVICE_ROLE_KEY kræves');
@@ -59,8 +59,8 @@ for(const [document_key,file] of Object.entries(assets)){
   let compatibleBaseline=previousHandbookBaseline
    ??(central&&previousSourceHash&&digest(central)===previousSourceHash?central:null);
   if(!compatibleBaseline&&central&&previousSourceHash){
-   compatibleBaseline=await fetchPreviousPublicHandbook({
-    url:process.env.RAVRADAR_DEPLOYED_HANDBOOK_URL,
+   compatibleBaseline=await fetchPreviousHandbookSource({
+    url:process.env.RAVRADAR_PREVIOUS_HANDBOOK_URL,
     expectedDigest:previousSourceHash,
    });
   }
@@ -101,3 +101,4 @@ if(!ravScoreSelectionCentral
  throw new Error('ravscore-profile-selection central readback matcher ikke den versionsbundne profilaktivering');
 }
 console.log(`Central RavScore-profil verificeret: ${ravScoreSelectionCentral.requestedProfileId}`);
+

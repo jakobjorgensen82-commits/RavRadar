@@ -6,7 +6,8 @@
 - Den synlige rangering er rettet uden at genindføre ekstra lotterilodder: toplisterne viser den samme afrundede områdescore, som DEC-0049 sorterer efter. Den falske adminstatus for `coastline-overrides` er også rettet.
 - Begge håndbøger beskriver den aktive 20/50/30-model, installationsfilen synkroniseres med hele webhåndbogen, og livehåndbogen trevejsflettes, så godkendte centrale ekspertændringer ikke overskrives.
 - PR #122 bestod exact-head `32721778498` på `a885bc5b` og blev flettet som `abe10127`. Produktion `32721891349` bestod de fulde kode- og datagates, men stoppede før Supabase- og Pages-deploy ved den første beskyttede håndbogssynkronisering: central håndbog var ændret, og en tidligere kildebaseline fandtes endnu ikke.
-- Hotfixbranchen `codex/protected-handbook-baseline-4.0.270` bruger den tidligere offentlige håndbog som første baseline, men kun efter SHA-256-match mod det tidligere beskyttede manifest. Målrettede tests, exact-head, merge, ny produktion og offentlig browserkontrol mangler før 4.0.270 kan kaldes lukket.
+- PR #123 bestod exact-head `32724526697`, blev merged som `00f59456`, og produktion `32724616331` bestod alle kode-, data- og releasegates. Den stoppede fortsat sikkert før deploy, fordi den slanke Pages-pakke ikke udgiver håndbogens kildefil.
+- Den endelige hotfix bruger i stedet den produktionsverificerede 4.0.269-kilde på uforanderlig commit `d745e0ba4ad88dde91c308a9ad9810797f951c91`, men kun efter SHA-256-match mod det tidligere beskyttede manifest. Exact-head, merge, ny produktion og offentlig browserkontrol mangler før 4.0.270 kan kaldes lukket.
 - Efter den tekniske lukning mangler den virkelige eksterne ekspertgennemgang samt domæne-, HTTPS-, Supabase-redirect- og fuld brugerflowprøve på `ravradar.dk`.
 
 ## Lukket checkpoint 2026-08-24 – 4.0.268 offentlig grundbog
@@ -213,3 +214,4 @@ Aktiv kodekandidat retter verifikationsmaerket i timeskarp historik: brug `produ
 Kandidaten ligger i draft-PR `#1`. Featuregrenen har ingen automatiske PR-checks; den er ikke paa `main` og ikke produktionsverificeret.
 
 Produktionskoersel `#3237` er maelt read-only. Nye WAM 18Z- og DKSS 12Z-cyklusser er dokumenteret; HARMONIE 12Z er kun delvist indfaset. 4.0.232's kompatible `controlled-live`-historik har 28,903 timer og maa fortsat opbygges naturligt til 72 timer. Ingen kilde-, fallback-, score- eller geometriaendring er godkendt. Se `docs/research/P1_COMPONENT_TRANSITIONS_4.0.237_RUN3237.md`.
+

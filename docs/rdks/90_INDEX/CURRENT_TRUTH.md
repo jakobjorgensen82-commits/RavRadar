@@ -11,7 +11,8 @@
 - Releasegaten kræver aktive Candidate G-spor og kontrollerer den aktive motor særskilt fra den globale 25/40/35-rollback.
 - Versionsværktøjet synkroniserer nu hele den aktuelle webhåndbog til installationsfilen til Supabase, så en ny installation ikke starter med forældet faglig tekst.
 - PR #122 bestod exact-head `32721778498` på `a885bc5b` og blev merged som `abe10127`. Produktion `32721891349` stoppede før Supabase- og Pages-deploy, da den centralt ændrede håndbog manglede en lagret baseline ved første migrering.
-- Første migrering kan bruge den tidligere offentlige håndbog som baseline, men kun når dens SHA-256 matcher det tidligere beskyttede manifest. Kandidaten ændrer ingen delscore, farvegrænse, fysisk model, vejrdata, geometri eller land-/vandpunkt. Hotfix-exact-head, frisk produktion og offentlig browserkontrol mangler endnu.
+- PR #123 bestod exact-head `32724526697`, blev merged som `00f59456`, og produktion `32724616331` bestod alle kode-, data- og releasegates. Den stoppede før deploy, fordi den slanke Pages-pakke ikke udgiver håndbogens kildefil; ingen central håndbog eller offentlig side blev overskrevet.
+- Første migrering kan bruge den produktionsverificerede 4.0.269-kilde på uforanderlig commit `d745e0ba4ad88dde91c308a9ad9810797f951c91` som baseline, men kun når dens SHA-256 matcher det tidligere beskyttede manifest. Kandidaten ændrer ingen delscore, farvegrænse, fysisk model, vejrdata, geometri eller land-/vandpunkt. Endelig hotfix-exact-head, frisk produktion og offentlig browserkontrol mangler endnu.
 
 ## Produktionsverificeret 4.0.269 – aktuelle scoreforklaringer og enkel offentlig visning
 

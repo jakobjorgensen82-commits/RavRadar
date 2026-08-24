@@ -16,17 +16,17 @@ export const handbookPayloadDigest=value=>crypto
   .update(JSON.stringify(value))
   .digest('hex');
 
-export async function fetchPreviousPublicHandbook({url,expectedDigest,fetchImpl=globalThis.fetch}){
+export async function fetchPreviousHandbookSource({url,expectedDigest,fetchImpl=globalThis.fetch}){
   if(!url||!expectedDigest)return null;
-  if(typeof fetchImpl!=='function')throw new Error('Den tidligere offentlige håndbog kan ikke hentes i denne runtime.');
+  if(typeof fetchImpl!=='function')throw new Error('Den tidligere versionsbundne håndbogskilde kan ikke hentes i denne runtime.');
   const response=await fetchImpl(url,{
     headers:{'user-agent':'RavRadar protected-handbook baseline'},
     signal:AbortSignal.timeout(15000),
   });
-  if(!response.ok)throw new Error(`Den tidligere offentlige håndbog kunne ikke hentes (${response.status}).`);
+  if(!response.ok)throw new Error(`Den tidligere versionsbundne håndbogskilde kunne ikke hentes (${response.status}).`);
   const payload=await response.json();
   if(handbookPayloadDigest(payload)!==expectedDigest){
-    throw new Error('Den tidligere offentlige håndbog matcher ikke det beskyttede manifest.');
+    throw new Error('Den tidligere versionsbundne håndbogskilde matcher ikke det beskyttede manifest.');
   }
   return payload;
 }
@@ -72,3 +72,4 @@ export function mergeProtectedHandbook({source,central,baseline}){
   }
   return {payload,strategy:'three-way-merge',preservedSectionIds:preserved};
 }
+
