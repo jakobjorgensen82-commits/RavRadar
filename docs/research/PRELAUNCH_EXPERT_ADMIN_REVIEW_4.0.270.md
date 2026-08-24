@@ -1,5 +1,7 @@
 # Før-lancering: ekspert, admin og driftsgrundlag – 4.0.270
 
+> Produktionsbevis: PR #126 blev merged som `fda934ae`. Den eksakte mergeproduktion `32730674577` (#3522) bestod hele kæden og udgav Pages-artifact `9521472172` samt supportartifact `RavRadar-support-3522` (`9521463897`).
+
 ## Kort resultat
 
 RavRadars centrale drift, private kontolagring og ekspertværktøj er funktionsdygtige. Kontrollen fandt to afgrænsede produktfejl og en tværgående dokumentationsfejl, som 4.0.270 lukker:
@@ -66,6 +68,12 @@ Det aktuelle fagafsnit beskriver nu entydigt Candidate G:
 - mobilisering opbygget over cirka fire timer og aftaget over cirka 48 timer.
 
 Historiske afsnit er mærket som historik. Det aktive kodekapitel følger `ravscore-candidate-g.js`, state-pipelinen og profilomskifteren, mens `score-engine.js` beskrives som rollback. Hypoteseregisteret og scenarierne bruger de samme aktive grænser. Bund, dybde, render, revler, adgang, automatisk stedegnethed og sikkerhedsadvarsler fremstilles ikke som aktive Candidate G-input.
+
+## Produktionslukning
+
+PR #125 bestod exact-head `32728525467` på `3fe579ab`, blev merged som `7861079b`, og produktion `32728654553` gennemførte den beskyttede første håndbogsmigrering som `source-update`, aktiv Candidate G-readback, fuld validering, releasegate, supportartifact og Pages.
+
+Den aktive liveaudit blev justeret fra den gamle interne label **3-timers trend** til brugerfladens gældende **Vandstandsændring på 3 timer**. PR #126 bestod exact-head `32730584569` på `01853d21`. Den gentagne fulde 4.0.270-kontrol bestod 210 zoner, 673 kystdele, 420 aktuelle og 2.100 femdøgnsvisninger med nul kontrol-, konsol-, side- eller HTTP-fejl.
 
 ## Resterende før ravradar.dk
 

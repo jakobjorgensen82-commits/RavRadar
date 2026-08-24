@@ -2,6 +2,8 @@
 
 ## 2026-08-24 – før-lancering af data, admin, ekspert og rangering
 
+**Produktionsbevis:** PR #126 blev merged som `fda934ae`. Den eksakte mergeproduktion `32730674577` (#3522) bestod hele kæden og udgav Pages-artifact `9521472172` samt supportartifact `RavRadar-support-3522` (`9521463897`).
+
 1. Ejeren bad om roadmapets naturlige datakontrol, Supabase-forbrug og tekniske vedligehold samt en gennemgang af eksperthåndbogen og administratorens funktioner før lancering.
 2. Den naturlige produktionskørsel dokumenterede fuld kendt 210/673-runtime, reelle tretimerspunkter og ærlig markering af de tolv kendte marine huller. Supabase er sund i den aktuelle periode, mens forrige egress-overskridelse fortsat overvåges.
 3. Admin- og eksperthåndbogen viste sig funktionelle og rettighedsbeskyttede. En manglende femte nøgle i første lagertjek forklarede en falsk rød adminstatus.
@@ -12,6 +14,8 @@
 8. PR #124 bestod exact-head `32726897134`, blev merged som `fd7bc868`, og produktion `32727025187` bestod alle øvrige gates, men stoppede ved hashkontrollen. Dermed blev det bevist, at manifestet stammer fra den senere produktionsgrønne 4.0.269-dokumentationsmerge.
 9. Første migrering må derfor hente den sidste centralt synkroniserede 4.0.269-kilde på uforanderlig commit `fc13fb5ab326d8824ca55235ac454ac230e3db3e` fra grøn produktion `32706573863`, men accepterer den kun ved SHA-256-match mod det tidligere beskyttede manifest.
 10. Score, farvegrænser, fysik, vejrdata, geometri og land-/vandpunkter er urørte. Se DEC-0069.
+11. PR #125 bestod exact-head `32728525467` på `3fe579ab`, blev merged som `7861079b`, og produktion `32728654553` bestod den beskyttede håndbogsmigrering, fulde gates, artifact og Pages.
+12. Den første liveaudit fandt kun en gammel auditlabel, ikke en brugerfejl. PR #126/exact-head `32730584569` rettede kontrollen, og gentaget 4.0.270-audit bestod 210/673/420/2.100 uden browser-, konsol-, side- eller HTTP-fejl.
 
 ## 2026-08-24 – ejerens visuelle scoregennemgang
 

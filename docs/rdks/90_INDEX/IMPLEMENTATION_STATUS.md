@@ -1,7 +1,8 @@
 # Implementeringsstatus – 4.0.270 før-lancering, ekspert og admin
 
-## Lokalt afsluttet
+## Afsluttet
 
+- [x] PR #126 blev merged som `fda934ae`. Den eksakte mergeproduktion `32730674577` (#3522) bestod hele kæden og udgav Pages-artifact `9521472172` samt supportartifact `RavRadar-support-3522` (`9521463897`).
 - [x] Kontrollér en ny naturlig 210/673-produktionskørsel, prognoselængde, reelle tidsintervaller, fallback og vandstandsdiagnostik uden private payloads.
 - [x] Kontrollér Supabase Free-planens aktuelle forbrug og tidligere egress-overskridelse.
 - [x] Gennemgå administratorens og ekspertens håndbog, rettigheder, centrale dokumenter og målrettede funktionstest.
@@ -18,12 +19,14 @@
 - [x] Bestå PR #124 exact-head `32726897134`, merge som `fd7bc868`, og lad produktion `32727025187` stoppe sikkert ved hashafvigelsen efter alle øvrige gates.
 - [x] Afgræns første migrering til den sidste centralt synkroniserede 4.0.269-kilde på uforanderlig commit `fc13fb5ab326d8824ca55235ac454ac230e3db3e` fra grøn produktion `32706573863`, med obligatorisk SHA-256-match mod det tidligere beskyttede manifest.
 
-## Mangler før produktionslukning
+## Produktionslukning
 
-- [ ] Bestå den endelige hotfix' målrettede kontrakter, RDKS-, versions- og `validate:source`-gates på branchens eksakte head.
-- [ ] Merge hotfixet og følg en ny frisk produktionskørsel med central trevejsfletning og releasegate.
-- [ ] Kontrollér begge offentlige lister, adminoversigten og eksperthåndbogen i den udgivne version.
-- [ ] Luk 4.0.270 med eksakte commit-, run-, artifact- og browserbeviser.
+- [x] Bestå PR #125 exact-head `32728525467` på `3fe579ab` og merge som `7861079b`.
+- [x] Bestå produktion `32728654553` med beskyttet `source-update`, aktiv Candidate G-readback, fuld validering, releasegate, supportartifact og Pages.
+- [x] Kontrollér live 4.0.270, begge offentlige ranglister, adminoversigten og eksperthåndbogen.
+- [x] Ret den aktive browseraudits forældede label i PR #126 og bestå exact-head `32730584569` på `01853d21`.
+- [x] Bestå fuld liveaudit: 210 zoner, 673 kystdele, 420 aktuelle og 2.100 femdøgnsvisninger; nul kontrol-, konsol-, side- eller HTTP-fejl.
+- [x] Bevar score, vejr, Supabase-kontrakt, geometri og land-/vandpunkter uændret.
 
 # Produktionsverificeret implementeringsstatus – 4.0.269 aktuelle scoreforklaringer
 

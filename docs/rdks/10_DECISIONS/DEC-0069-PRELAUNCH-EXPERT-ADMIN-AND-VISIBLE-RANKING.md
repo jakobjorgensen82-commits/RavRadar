@@ -1,8 +1,10 @@
 # DEC-0069: Før-lancering ekspert-/adminlukning og synlig rangering
 
-**Status:** Godkendt gennem ejerens før-lanceringsopgave 2026-08-24
+**Status:** Produktionsverificeret 2026-08-24
 
 **Scorepåvirkning:** Nej på lokale RavScore-tal, komponenter og farver. Ja på rækkefølgen i de to nationale top-5-lister.
+
+**Produktionsbevis:** PR #126 blev merged som `fda934ae`. Den eksakte mergeproduktion `32730674577` (#3522) bestod hele kæden og udgav Pages-artifact `9521472172` samt supportartifact `RavRadar-support-3522` (`9521463897`).
 
 ## Problem
 
@@ -38,3 +40,9 @@ Håndbogens nyeste afsnit beskrev Candidate G korrekt, men arbejdsplanen, kodeka
 
 Den foreløbige idé om at gøre bedste enkeltstræknings RavScore til primær sortering blev forkastet efter ejerens præcisering, fordi den ville genindføre flere lotterilodder for store områder. DEC-0049 bevares fuldt; i stedet gøres den hidtil skjulte områdescore synlig.
 
+
+## Produktionsbevis
+
+- PR #125 bestod exact-head `32728525467` på `3fe579ab`, blev merged som `7861079b`, og produktion `32728654553` bestod central trevejsfletning, fuld validering, releasegate, artifact og Pages. Den beskyttede håndbog blev migreret som `source-update` med aktiv Candidate G-readback.
+- PR #126 rettede kun browseraudittens forældede testlabel og bestod exact-head `32730584569` på `01853d21`.
+- Den fulde liveaudit af 4.0.270 bestod 210/673, 420 aktuelle og 2.100 femdøgnsvisninger uden kontrol-, konsol-, side- eller HTTP-fejl.

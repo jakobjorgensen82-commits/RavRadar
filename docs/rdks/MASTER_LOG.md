@@ -1,5 +1,6 @@
 ## 2026-08-24 – før-lancering af ekspert, admin og synlig rangering
 
+- PR #126 blev merged som `fda934ae`. Den eksakte mergeproduktion `32730674577` (#3522) bestod hele kæden og udgav Pages-artifact `9521472172` samt supportartifact `RavRadar-support-3522` (`9521463897`).
 - Den seneste naturlige produktion blev kontrolleret dataminimeret: 210 zoner, 673 kystdele, 72 timers ægte tretimersprognose for alle 198 geografisk verificerbare zoner og tolv kendte ærlige marine huller.
 - Supabase er sund i den aktuelle Free-planperiode med cirka 17 % database og 5 % egress; den forrige periodes egress-overskridelse overvåges frem mod 9. september.
 - Admin- og ekspertfunktioner, rettigheder og den centrale håndbog bestod målrettede kontrakter. En falsk rød status for det femte centrale dokument er rettet. Deploysynkroniseringen trevejsfletter nu officielle håndbogsopdateringer med centralt godkendte ekspertændringer i stedet for at overskrive dem.
@@ -8,7 +9,9 @@
 - PR #122 bestod exact-head `32721778498` på `a885bc5b` og blev merged som `abe10127`. Produktion `32721891349` stoppede sikkert før deploy, fordi en centralt ændret håndbog ved første migrering endnu ikke havde en lagret kildebaseline.
 - PR #123 bestod exact-head `32724526697`, blev merged som `00f59456`, og produktion `32724616331` bestod alle kode-, data- og releasegates, men stoppede før deploy, fordi Pages ikke udgiver håndbogens kildefil.
 - PR #124 bestod exact-head `32726897134`, blev merged som `fd7bc868`, og produktion `32727025187` bestod alle kode-, data- og releasegates, men stoppede sikkert før deploy ved hashkontrollen. Det afgrænser den sidste centralt synkroniserede 4.0.269-håndbog til commit `fc13fb5ab326d8824ca55235ac454ac230e3db3e` fra grøn produktion `32706573863`.
-- Den endelige hotfix accepterer kun denne uforanderlige kilde som første baseline, når dens SHA-256 matcher det tidligere beskyttede manifest. 4.0.270 ændrer ikke scoremotor, farver, vejrdata, geometri eller land-/vandpunkter. Ny exact-head, produktion og offentlig browserkontrol afventer.
+- Den endelige hotfix accepterer kun denne uforanderlige kilde som første baseline, når dens SHA-256 matcher det tidligere beskyttede manifest. PR #125 bestod exact-head `32728525467` på `3fe579ab`, blev merged som `7861079b`, og produktion `32728654553` bestod `source-update`, aktiv Candidate G-readback, alle gates, supportartifact og Pages.
+- Den første gentagne liveaudit fandt én gammel auditlabel (`3-timers trend`) mod den korrekte offentlige tekst (`Vandstandsændring på 3 timer`). PR #126/exact-head `32730584569` rettede kun kontrollen. Gentaget 4.0.270-audit består 210/673, 420 aktuelle og 2.100 femdøgnsvisninger med nul kontrol-, konsol-, side- eller HTTP-fejl.
+- 4.0.270 ændrer ikke scoremotor, farver, vejrdata, geometri eller land-/vandpunkter.
 
 ## 2026-08-24 – visuel scoregennemgang bliver til aktuelle forklaringer
 

@@ -1,5 +1,12 @@
 # Changelog 4.0.270 – før-lancering, ekspert og synlig rangering
 
+## Produktionslukning
+
+- PR #125 bestod exact-head `32728525467` på `3fe579ab`, blev merged som `7861079b`, og produktion `32728654553` gennemførte central håndbogsfletning, fuld validering, releasegate, supportartifact og Pages. Den beskyttede håndbog blev migreret som `source-update` med aktiv Candidate G-readback.
+- Den aktive browseraudit havde én forældet testlabel: brugerfladen viste korrekt **Vandstandsændring på 3 timer**, mens 4.0.238-auditten søgte **3-timers trend**. PR #126 retter kun auditkontrakten; brugerflade og score er uændrede.
+- Den gentagne fulde liveaudit af 4.0.270 bestod 210 zoner, 673 kystdele, 420 aktuelle visninger og 2.100 femdøgnsvisninger med nul kontrol-, konsol-, side- eller HTTP-fejl.
+- PR #126 blev merged som `fda934ae`. Den eksakte mergeproduktion `32730674577` (#3522) bestod hele kæden og udgav Pages-artifact `9521472172` samt supportartifact `RavRadar-support-3522` (`9521463897`).
+
 ## Brugerflade
 
 - **Bedste områder** og **5-dages RavRadar** viser nu den korrigerede områdescore, som listerne faktisk sorterer efter, så det højeste viste tal altid står øverst.
