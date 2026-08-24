@@ -8,8 +8,10 @@
 - [x] Profilgaten afviser global nulstart og accepterer kun lille lokal kontekstreset.
 - [x] Engangs state-only recovery med uforanderlig kilde, 673 del-ID'er, integritetskontrol og afgrænset genkendelse af den dokumenterede nulstillede fortsættelseslinje implementeret.
 - [x] Separat efterfølgende mangel på én kystdel efter ejerens punktflytning afgrænset uden parent-/nabofallback.
-- [x] Version 4.0.272 sat uden ændring af geodatafilernes versionsfelter.
-- [ ] Målrettede tests, RDKS og exact-head kildegate.
+- [x] Version 4.0.272 sat; geodatafilerne har kun fået versionsfelt 4.0.271 → 4.0.272.
+- [x] Målrettede tests, RDKS og PR #131 exact-head-kildegate.
+- [x] PR #131 merged som `1bbb4cc2`; produktion `32759180937` beviste den afgrænsede state-only recovery, men stoppede senere på en ældre tekstlig hydrator-kontrakt.
+- [x] Kompatibilitetsindgangen `active_zone_ids()` genetableret uden ændring af hydreringens eller scorens adfærd.
 - [ ] Frisk fuld produktion, 210/673, releasegate og offentlig browserkontrol.
 
 Ingen scoreformel, Candidate G-vægt, vejrregel, zone, geometri eller land-/vandpunkt ændres.
