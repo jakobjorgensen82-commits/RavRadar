@@ -96,10 +96,10 @@ const producer=fs.readFileSync('scripts/update-weather.mjs','utf8');
 assert.match(app,/display\.result,display\.weather/,'Zonepanelet får ikke score og vejr fra samme aktuelle kontekst.');
 assert.match(app,/zoneReferenceAt\|\|state\.conditions\.productionReferenceAt\|\|state\.conditions\.generatedAt/,'Aktuel lokal score bruger ikke zonens komplette fælles current-reference.');
 assert.match(app,/bestByDate/,'Zonepanelet genbruger ikke den nationale lokale dagsbeslutning.');
-assert.match(ui,/bestByDate\?\.\[day\.date\]/,'Femdøgnspanelet bruger ikke den fælles lokale dagsbeslutning.');
-assert.match(ui,/Viser hele området lige nu/,'Den samlede områdevisning er ikke tydeligt mærket for brugeren.');
+assert.match(ui,/hasOwnProperty\.call\(bestByDate,day\.date\)/,'Femdøgnspanelet bruger ikke den fælles lokale dagsbeslutning.');
+assert.match(ui,/RavScore er midlertidigt utilgængelig/,'Manglende lokal Candidate G-score er ikke tydeligt mærket for brugeren.');
 assert.match(producer,/componentReasons:winner\.detail\?\.componentReasons/,'Producenten fører ikke vinderens forklaring med til prognosen.');
 assert.match(producer,/waterTemperatureC:weather\.waterTemperatureC/,'Producenten fører ikke vinderens vandtemperatur med til prognosen.');
-assert.match(producer,/selectNearestCompleteLocalScoreRow\(hourly, generatedAt, expectedPartCount\)/,'Producenten vælger ikke nærmeste komplette fælles time pr. zone.');
+assert.match(producer,/selectNearestLocalScoreRow\(hourly, generatedAt\)/,'Producenten vælger ikke nærmeste faktiske fælles time pr. zone.');
 
 console.log(`OK: ${zoneCount} zoner, ${partCount} kystdele og ${checkedTabs} lokale femdøgnsvisninger bruger samme vinder, tidspunkt, score, vejr og forklaring.`);

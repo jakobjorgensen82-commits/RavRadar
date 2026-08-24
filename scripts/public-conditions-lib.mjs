@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
-import { isCompleteLocalScoreRow, selectNearestCompleteLocalScoreRow } from './lib/local-current-reference.mjs';
+import { selectNearestLocalScoreRow } from './lib/local-current-reference.mjs';
 
 const HOURLY_FIELDS = [
   'time','windSpeedMps','windDirectionDeg','airTemperatureC','waveHeightM','waveDirectionDeg','wavePeriodS',
@@ -10,15 +10,13 @@ const CURRENT_FIELDS = HOURLY_FIELDS.filter(key => key !== 'time' && key !== 'ai
 const HISTORY_FIELDS = ['maxWind24hMps','maxWave24hM','hoursSinceHighEnergy','strongEventDurationHours','hoursSinceStrongEventEnd','inboundCurrentDurationHours','inboundCurrentMomentum','outboundCurrentDurationHours','outboundCurrentPressure','activeCurrentRegime','activeCurrentRegimeDurationHours','activeCurrentRegimeMomentum','activeCurrentRegimeStability','activeCurrentRegimeSampleCount','verifiedCurrentCoverageHours','unverifiedCurrentSampleCount','currentDirectionStability','mobilisationPotential','nearshorePotential','eventPhase','stateModelMode'];
 const pick=(source,fields)=>Object.fromEntries(fields.filter(key=>source?.[key]!==undefined).map(key=>[key,source[key]]));
 const currentLocalRow=(zone,source,full)=>{
-  const expected=Number(zone?.expectedPartCount||0);
   const explicit=Date.parse(zone?.currentReferenceAt||'');
   const exact=Number.isFinite(explicit)
-    ? (zone?.hourly||[]).find(row=>Date.parse(row?.time||'')===explicit&&isCompleteLocalScoreRow(row,expected))
+    ? (zone?.hourly||[]).find(row=>Date.parse(row?.time||'')===explicit)
     : null;
-  return exact||selectNearestCompleteLocalScoreRow(
+  return exact||selectNearestLocalScoreRow(
     zone?.hourly,
-    full?.productionReferenceAt||source?.productionReferenceAt||full?.generatedAt||source?.generatedAt,
-    expected
+    full?.productionReferenceAt||source?.productionReferenceAt||full?.generatedAt||source?.generatedAt
   );
 };
 
@@ -31,7 +29,7 @@ function buildStartupCoastalParts(full){
     zones[zoneId]={expectedPartCount:zone.expectedPartCount||0,scoredPartCount:zone.scoredPartCount||0,currentReferenceAt:row?.time||null,hourly:row?[row]:[]};
   }
   const parts=Object.fromEntries([...winnerIds].filter(id=>source.parts?.[id]).map(id=>[id,source.parts[id]]));
-  return {schemaVersion:source.schemaVersion,enabled:source.enabled===true,datasetVersion:source.datasetVersion||null,sourceRunId:source.sourceRunId||null,generatedAt:source.generatedAt||full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||source.productionReferenceAt||null,marginPoints:source.marginPoints||7,scoreProfile:source.scoreProfile||null,expectedPartCount:source.expectedPartCount||0,scoredPartCount:source.scoredPartCount||0,parts,zones};
+  return {schemaVersion:source.schemaVersion,enabled:source.enabled===true,datasetVersion:source.datasetVersion||null,sourceRunId:source.sourceRunId||null,generatedAt:source.generatedAt||full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||source.productionReferenceAt||null,marginPoints:source.marginPoints||7,scoreProfile:source.scoreProfile||null,scoreAvailability:source.scoreAvailability||null,expectedPartCount:source.expectedPartCount||0,scoredPartCount:source.scoredPartCount||0,parts,zones};
 }
 
 function buildDetailedCoastalParts(full){
@@ -40,7 +38,7 @@ function buildDetailedCoastalParts(full){
     const row=currentLocalRow(zone,source,full);
     return [zoneId,{...zone,currentReferenceAt:row?.time||null}];
   }));
-  return {schemaVersion:source.schemaVersion,enabled:source.enabled===true,datasetVersion:source.datasetVersion||null,sourceRunId:source.sourceRunId||null,generatedAt:source.generatedAt||full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||source.productionReferenceAt||null,marginPoints:source.marginPoints||7,scoreProfile:source.scoreProfile||null,expectedPartCount:source.expectedPartCount||0,scoredPartCount:source.scoredPartCount||0,parts:source.parts||{},zones};
+  return {schemaVersion:source.schemaVersion,enabled:source.enabled===true,datasetVersion:source.datasetVersion||null,sourceRunId:source.sourceRunId||null,generatedAt:source.generatedAt||full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||source.productionReferenceAt||null,marginPoints:source.marginPoints||7,scoreProfile:source.scoreProfile||null,scoreAvailability:source.scoreAvailability||null,expectedPartCount:source.expectedPartCount||0,scoredPartCount:source.scoredPartCount||0,parts:source.parts||{},zones};
 }
 
 export function buildPublicConditions(full){
@@ -100,6 +98,7 @@ export function buildPublicManifest(full, publicText, detailsText){
     currentPilotHistoryPath:'./current-pilot-history.json',
     currentPilotMode:full?.controlledLiveCurrentPilot?.mode||null,
     ravScoreProfile:full?.coastalParts?.scoreProfile||null,
+    ravScoreAvailability:full?.coastalParts?.scoreAvailability||null,
     publicConditionsSha256:sha256Text(publicText),
     publicConditionsBytes:Buffer.byteLength(publicText),
     publicConditionDetailsSha256:sha256Text(detailsText),

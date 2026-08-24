@@ -1,15 +1,17 @@
 {
-  "schemaVersion": "1.1.0",
-  "sourceVersion": "4.0.272",
-  "switchVersion": "RAVSCORE-PROFILE-SWITCH-4.0.272",
+  "schemaVersion": "2.0.0",
+  "sourceVersion": "4.0.273",
+  "switchVersion": "RAVSCORE-PROFILE-SWITCH-4.0.273",
   "requestedProfileId": "RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3",
-  "rollbackProfileId": "RRS-CURRENT-B0-4.0.247",
+  "rollbackProfileId": null,
   "candidateProfileId": "RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3",
   "candidateActivationEnabled": true,
   "prePublicWarmupAccepted": true,
   "automaticActivationAllowed": false,
-  "status": "owner-approved-pre-public-candidate-g-active",
-  "activationAuthority": "DEC-0060-explicit-owner-decision-2026-08-23",
+  "publicAvailabilityPolicy": "candidate-g-local-fail-closed",
+  "legacyPublicFallbackAllowed": false,
+  "status": "owner-approved-candidate-g-only-local-fail-closed",
+  "activationAuthority": "DEC-0072-owner-decision-2026-08-24",
   "evidence": {
     "freshFinalShadowRunId": null,
     "ownerReviewDecisionId": "DEC-0060-OWNER-PREPUBLIC-WARMUP-ACTIVATION"

@@ -37,7 +37,7 @@ import { applyCurrentTransportToHistory } from './lib/current-transport-history.
 import { retainWeatherHistory } from './lib/weather-history-retention.mjs';
 import { buildEffectiveRoutingCacheAlerts } from './lib/water-station-routing-alerts.mjs';
 import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
-import { selectNearestCompleteLocalScoreRow } from './lib/local-current-reference.mjs';
+import { selectNearestLocalScoreRow } from './lib/local-current-reference.mjs';
 import { localPartRuntimeProperties } from './lib/local-part-runtime.mjs';
 import { mergeLiveCurrentPilotIntoRecord, verifiedLivePilotSource } from './lib/live-current-pilot.mjs';
 import { resolveProductionReferenceTime } from './lib/production-reference-time.mjs';
@@ -1240,8 +1240,8 @@ function scoreCoastalPartsRuntime(
   });
   const selectedMode = (scoreRow, mode) => selectPublicRavScoreResult({
     profile: scoreProfile,
-    legacy: scoreRow?.[mode] ?? null,
     candidateG: scoreRow?.candidateG?.modes?.[mode] ?? null,
+    candidateState: scoreRow?.candidateG ?? null,
     mode,
     context: scoreRow?.candidateG?.publicContext ?? {},
   });
@@ -1257,13 +1257,25 @@ function scoreCoastalPartsRuntime(
     for (const time of times) {
       const result = { time };
       for (const mode of ['waders', 'beach']) {
-        const available = rows.map(row => {
+        const evaluated = rows.map(row => {
           const scoreRow=row.scores.find(score => score.time === time);
           const detail=scoreRow ? selectedMode(scoreRow, mode) : null;
           return {partId:row.partId,name:row.name,score:detail?.score,detail,weather:scoreRow?.weather};
-        }).filter(row => Number.isFinite(row.score));
+        });
+        const available = evaluated.filter(row => row.detail?.available === true && Number.isFinite(row.score));
         if (available.length !== expectedPartCount) {
-          result[mode] = { status: 'uncertain', validPartCount: available.length, expectedPartCount };
+          const unavailableParts = evaluated.filter(row => row.detail?.available !== true).map(row => ({
+            partId: row.partId,
+            name: row.name,
+            code: row.detail?.unavailability?.code ?? 'CANDIDATE_G_SCORE_MISSING',
+            reason: row.detail?.unavailability?.messageDa ?? 'Candidate G-datagrundlaget mangler for denne kystdel.',
+          }));
+          result[mode] = {
+            status: 'unavailable', available: false, score: null,
+            validPartCount: available.length, expectedPartCount,
+            unavailableParts,
+            reasons: [...new Set(unavailableParts.map(part => part.reason))],
+          };
           continue;
         }
         available.sort((a, b) => b.score - a.score || a.partId.localeCompare(b.partId));
@@ -1286,7 +1298,7 @@ function scoreCoastalPartsRuntime(
       }
       hourly.push(result);
     }
-    const currentRow = selectNearestCompleteLocalScoreRow(hourly, generatedAt, expectedPartCount);
+    const currentRow = selectNearestLocalScoreRow(hourly, generatedAt);
     currentReferenceByZone.set(zoneId, currentRow?.time ?? null);
     zones[zoneId] = { expectedPartCount, scoredPartCount: rows.length, currentReferenceAt: currentRow?.time ?? null, hourly };
   }
@@ -1330,12 +1342,33 @@ function scoreCoastalPartsRuntime(
       candidateG,
     }];
   }));
+  const unavailableZones = [];
+  for (const [zoneId, zone] of Object.entries(zones)) {
+    const current = selectNearestLocalScoreRow(zone.hourly, generatedAt);
+    const unavailableModes = ['waders', 'beach'].filter(mode => current?.[mode]?.available !== true || !Number.isFinite(current?.[mode]?.score));
+    if (!unavailableModes.length) continue;
+    const zoneName = parentById.get(zoneId)?.properties?.name ?? zoneId;
+    const reasons = [...new Set(unavailableModes.flatMap(mode => current?.[mode]?.reasons ?? ['Datagrundlaget er ikke sammenhængende.']))];
+    unavailableZones.push({ zoneId, zoneName, modes: unavailableModes, reasons });
+  }
+  const totalZoneCount = expectedByZone.size;
+  const scoreAvailability = {
+    schemaVersion: 1,
+    policy: 'candidate-g-local-fail-closed',
+    allZonesActive: unavailableZones.length === 0,
+    activeZoneCount: totalZoneCount - unavailableZones.length,
+    unavailableZoneCount: unavailableZones.length,
+    totalZoneCount,
+    evaluatedAt: generatedAt,
+    unavailableZones,
+  };
   return {
     schemaVersion: 1, enabled: true, datasetVersion: contract.datasetVersion, sourceRunId: contract.sourceRunId,
     generatedAt, marginPoints: 7, expectedPartCount: contract.partCount, scoredPartCount: partRows.length,
     scoreProfile,
     currentPilotMode: liveCurrentPilot?.mode ?? 'unavailable',
     currentPilotEnabled: liveCurrentPilot?.mode === 'controlled-live' && liveCurrentPilot?.enabled === true,
+    scoreAvailability,
     parts, zones
   };
 }

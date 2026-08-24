@@ -2,7 +2,15 @@
 
 Dette er den obligatoriske indgang til RavRadar for Codex og andre kodeassistenter. Projektet må ikke behandles som en samling isolerede filer. Hver ændring skal forstås som et træk i et sammenhængende system.
 
-## Aktuelt produktionscheckpoint 2026-08-23
+## Aktuelt arbejdscheckpoint 2026-08-24 – 4.0.273
+
+- **Candidate G er den eneste tilladte offentlige scoremodel.** Den aktive formel er `20 % søgeforhold`, `50 % transport mod kysten` og `30 % rav i bevægelse`. `25/40/35` må kun bruges til historisk analyse og kan ikke vælges som offentlig reserve.
+- Manglende eller usammenhængende Candidate G-grundlag håndteres lokalt: den konkrete zone, søgemåde og time får ingen score og udelades fra aktuelle og femdøgns-ranglister. Andre zoner fortsætter på Candidate G. Der må ikke lånes score fra en gammel model, moderzone, nabozone eller anden time.
+- Adminforsiden viser, om alle zone-/søgemådekombinationer har en aktiv Candidate G-score. Hvis ikke, listes de berørte zoner, søgemåder og almindeligt forståelige årsager uden private payloads, rå strømvektorer eller koordinater.
+- Produktionshydrering, tidligere state, kildeproveniens og releasegates er fortsat fail-closed. En mangelfuld produktion må stadig stoppe før publicering; lokal utilgængelighed er ikke tilladelse til at opfinde data eller svække gates.
+- Ændringen er implementeret og målrettet lokalt valideret. Exact-head CI, frisk produktion og offentlig runtime er endnu ikke verificeret. Se DEC-0072. Ingen geometri eller land-/vandpunkter er ændret.
+
+## Historisk produktionscheckpoint 2026-08-23
 
 - **Aktuel produktionsverificeret 4.0.265:** Kontoen har **Indberet tur eller fund** uden forudgående turstart. Brugeren skal selv vælge dato og klokkeslæt for turens start samt varighed; dato og tid er ikke forudfyldt. Nutidens vejr bruges aldrig som historisk erstatning, og en efterregistrering uden sikkert snapshot gemmes i den eksisterende `observations`-tabel med `calibration_eligible=false`. **Afslut uden at indberette** rydder kun den lokale aktive tur. Se DEC-0064.
 - PR #111 bestod exact-head `32658661075`, blev merged som `cb7d2232`, og produktion `32658724861` bestod frisk vejr, fuld validering, releasegate, Supabase og Pages. Live `rr-20260823184330-210` er version 4.0.265 på 210/673, og den udgivne formulars dato-/tids- og fravalgskontrakt er målrettet kontrolleret. En autentificeret indsendelse kræver fortsat ejerens bevidste handling, fordi den opretter en virkelig række.
@@ -12,10 +20,10 @@ Dette er den obligatoriske indgang til RavRadar for Codex og andre kodeassistent
 - I den produktionsverificerede 4.0.265-baseline er kun versionsfeltet løftet i de to geodatafiler. Geometri og land-/vandpunkter er uændrede.
 - **Tidligere produktionsverificeret 4.0.263:** DEC-0062 retter profilgatens referencescope. Memory-/warmup-aktivering bedømmes ved den nærmeste fælles aktuelle scoretid pr. zone; senere prognosegaps må ikke retroaktivt slå den aktuelle Candidate G fra.
 - PR #100/exact-head `32642456123`, merge `586fbd18` og produktion `32642532892` beviser DEC-0061's cadence. Live `rr-20260823134605-210` fortsatte 673/673 states uden replaymismatch og gav 110 positive mod 563 fysisk fortsat nul, men 4.0.262 valgte legacy, fordi den for brede gate også inspicerede senere prognoser.
-- Pre-public opvarmning er kun gyldig ved aktuel `WINDOW_INCOMPLETE`. `LATEST_SAMPLE_MISSING`, `WINDOW_HAS_MISSING_EVIDENCE` og `WINDOW_HAS_TIME_GAP` ved den valgte aktuelle fælles reference giver global rollback; samme status senere i prognosen håndteres fail-closed i sin egen state.
+- Pre-public opvarmning var kun gyldig ved aktuel `WINDOW_INCOMPLETE`. I 4.0.263 gav `LATEST_SAMPLE_MISSING`, `WINDOW_HAS_MISSING_EVIDENCE` og `WINDOW_HAS_TIME_GAP` global rollback. Denne historiske offentlige adfærd er erstattet af DEC-0072's lokale utilgængelighed.
 - Hele femdøgnets Candidate G-scorecoverage kræves fortsat. PR #101/exact-head `32644701811`, merge `9f5953f6`, fuld produktion `32644772373`, live `rr-20260823142247-210`, aktiv shadow `32645569741` og browserkontrol er grønne. Candidate G er aktiv på 210/673 med 139 positive og 534 aktuelt fysiske nultransporter; replay- og visningsfejl er 0.
-- Ejeren har i DEC-0060 besluttet at aktivere Candidate G allerede under den første, ikke-offentlige opvarmning. Den produktionsverificerede 4.0.261 bruger derfor `RESEARCH-3` med `20/50/30`, mens `25/40/35` bevares som eksakt global rollback.
-- Den ufuldstændige, men sammenhængende transporthukommelse skal vises ærligt som `candidate-active-pre-public-warmup`; den må ikke kaldes et 48-timersbevis. Mangler blot én nødvendig Candidate G-projektion eller brydes sammenhængen, falder hele datasættet tilbage til legacy.
+- Ejeren besluttede i DEC-0060 at aktivere Candidate G allerede under den første, ikke-offentlige opvarmning. 4.0.261 brugte `RESEARCH-3` med `20/50/30` og bevarede dengang `25/40/35` som global rollback. DEC-0072 har siden fjernet den offentlige rollback.
+- Den ufuldstændige, men sammenhængende transporthukommelse blev vist ærligt som `candidate-active-pre-public-warmup`; den måtte ikke kaldes et 48-timersbevis. DEC-0072 erstatter kun fejlhåndteringen: et lokalt hul skjuler nu den konkrete score uden at skifte resten af landet til legacy.
 - Profilvalget hydreres og skrives tilbage som det centrale admin-dokument `ravscore-profile-selection`. PR #97 aktiverede modellen; PR #98 lukkede den daværende shadowkontrakt; PR #99 registrerede den grønne browserkontrol. Disse gates fangede ikke cadencefejlen ovenfor og kan derfor ikke længere stå alene som scorebevis.
 - Den gældende helhedsmodel er `RESEARCH-3`: `20/50/30`, DEC-0054's vindstyrede waders-jagtbarhed, DEC-0055's strømstyrede transport og DEC-0056's ene bølgeenergistyrede mobiliseringstilstand.
 - Mobilisering bruger højde² × periode med fire timers opbygning og 48 timers aftrapning. Direkte vind, aktuel strøm, separat varighed og statisk stedegnethed giver ingen mobiliseringspoint.

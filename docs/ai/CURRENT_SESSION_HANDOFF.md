@@ -1,5 +1,14 @@
 # RavRadar - aktuelt Codex-handoff
 
+## Aktuelt arbejdscheckpoint – 2026-08-24 4.0.273
+
+- Ejerbeslutning: Candidate G med `20/50/30` er eneste offentlige scoremodel. Den historiske `25/40/35`-model må ikke længere bruges som offentlig fallback eller rollback.
+- Et manglende Candidate G-grundlag gør kun den konkrete zone, søgemåde og time utilgængelig. Aktuelle og femdøgns-ranglister udelader den; øvrige zoner fortsætter på Candidate G. Ingen score må lånes fra legacy, moderzone, nabo eller en anden time.
+- Adminforsiden har en samlet status for aktive Candidate G-scorer og viser zone, søgemåde og almindelig forklaring ved lokale huller.
+- Kode, målrettede kontrakttests, Candidate G-audits og RDKS-validering er lokale grønne. Exact-head CI, frisk produktion, releasegate og offentlig browserkontrol mangler endnu.
+- Beskyttet: Ingen geometri, zoneform, land-/vandpunkt, scoretærskel eller fysisk Candidate G-regel er ændret. Geodata har kun versionsfelt 4.0.273.
+- Se DEC-0072. Senere afsnit i denne fil er historiske checkpoints; deres globale rollbackbeskrivelser er ikke længere gældende produktkrav.
+
 ## Afsluttet checkpoint – 2026-08-24 4.0.269
 
 - Leverance: alle tre offentlige RavScore-komponenter forklarer den valgte kystdels aktuelle vind, bølger, strøm og relevante forløb; mobilisering forklares som bølgevirkning, og lavt vand beskrives ikke som indtransporthjælp.

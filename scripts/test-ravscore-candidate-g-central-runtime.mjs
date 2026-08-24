@@ -123,7 +123,7 @@ assert.deepEqual(startup.coastalParts.scoreProfile, scoreProfile);
 assert.deepEqual(details.coastalParts.scoreProfile, scoreProfile);
 assert.deepEqual(manifest.ravScoreProfile, scoreProfile);
 assert.equal(startup.coastalParts.scoreProfile.activeProfileId, CANDIDATE_G_RAVSCORE_PROFILE_ID);
-assert.equal(startup.coastalParts.scoreProfile.activationState, 'candidate-active-pre-public-warmup');
+assert.equal(startup.coastalParts.scoreProfile.activationState, 'candidate-g-only-local-fail-closed');
 assert.equal(startup.coastalParts.scoreProfile.candidateMemoryReady, false);
 assert.equal(details.coastalParts.parts.part1.current.waders.score, 45);
 assert.equal(details.coastalParts.parts.part1.candidateG.modes.waders.score, 45);

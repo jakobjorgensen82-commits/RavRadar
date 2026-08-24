@@ -1,5 +1,16 @@
 # Current truth – gældende projektviden
 
+## Kandidat 4.0.273 – Candidate G er eneste offentlige scoremodel
+
+- Candidate G med **20 % søgeforhold, 50 % transport og 30 % rav i bevægelse** er den eneste offentlige scoremodel. Den gamle 25/40/35-model kan ikke længere vælges som reserve, rollback eller automatisk fallback.
+- Et manglende eller usammenhængende Candidate G-grundlag gør kun den konkrete zone, søgemåde og tid utilgængelig. Den får ingen parent-, nabo-, time- eller legacyscore og udelades fra aktuelle og femdøgns-rangeringer.
+- Andre zoner fortsætter på Candidate G. Et lokalt datagab ændrer derfor ikke scoremotoren for resten af Danmark.
+- Adminforsiden viser **alle aktive**, når alle zoner har en offentlig Candidate G-score. Ellers viser den antal aktive zoner samt de berørte zoner, søgemåder og forståelige årsager uden rå strømvektorer, koordinater eller private payloads.
+- Profilkonfigurationen afviser legacyfallback og rollbackforsøg. Produktionshydrering, state-recovery og releasegates forbliver fail-closed.
+- `data/kystdata.json` og `data/zones.geojson` har kun versionsfeltet ændret fra 4.0.272 til 4.0.273; geometri og land-/vandpunkter er urørte.
+- DEC-0072 erstatter alle tidligere aktive beskrivelser af global offentlig 25/40/35-rollback. Ældre afsnit nedenfor er historiske checkpoints.
+- Målrettede tests er grønne. Exact-head, frisk fuld produktion og offentlig slutkontrol mangler endnu.
+
 ## Produktionsverificeret 4.0.272 – Candidate G-tilstand gendannet fail-closed
 
 - Den offentlige scorekollapsede ikke på grund af grundbogstekst eller en ændret scoreformel. En planlagt produktion fik timeout ved atomisk hentning af det seneste offentlige stategrundlag, men fortsatte og nulstillede Candidate G i alle 673 kystdele.

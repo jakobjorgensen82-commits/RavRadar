@@ -1,6 +1,19 @@
 # RavRadar - aktivt roadmap
 
-## P0 – Candidate G-tilstand efter fejlslagen hydrering i 4.0.272
+## P0 – 4.0.273 Candidate G-only og lokal utilgængelighed
+
+- [x] Gør Candidate G 20/50/30 til eneste offentlige scoremodel.
+- [x] Fjern automatisk og manuel offentlig rollback til 25/40/35.
+- [x] Luk datahuller lokalt pr. zone, søgemåde og tid uden opdigtede erstatningsscorer.
+- [x] Udelad kun de berørte scorer fra aktuelle og femdøgns-rangeringer.
+- [x] Vis samlet zonestatus og lokale årsager på adminforsiden.
+- [x] Opdatér målrettede tests og bindende dokumentation.
+- [ ] Bestå exact-head, merge og frisk fuld 210/673-produktion.
+- [ ] Kontrollér live, at Candidate G forbliver eneste profil, og at lokale mangler ikke påvirker resten af landet.
+
+DEC-0072 erstatter roadmapets tidligere opgave om at vente på, at den globale 25/40/35-reserve naturligt skifter tilbage. Den gamle model er ikke længere en offentlig driftsvej.
+
+## Historisk P0 – Candidate G-tilstand efter fejlslagen hydrering i 4.0.272
 
 - [x] Afgræns scorekollapset til en ikke-fatal timeout ved atomisk hentning af det seneste offentlige stategrundlag.
 - [x] Bevis dataminimeret, at den sidste grønne produktion havde 673/673 videreførte Candidate G-tilstande, mens den fejlramte produktion nulstillede 673/673 med `NO_PREVIOUS_STATE`.
@@ -11,7 +24,7 @@
 - [x] Bestå målrettede regressioner, RDKS og PR #131-kildegate på eksakt head; bevar derefter den ældre fulde produktionsgates hydrator-indgang i en afgrænset opfølgning.
 - [x] Bestå frisk central 210/673-produktion `32761751284`, releasegate, Pages-deploy og offentlig score-/browserkontrol af 4.0.272.
 - [x] Luk engangsrecoveryen som logisk inaktiv efter genindsat før-historik.
-- [ ] Overvåg de otte separate aktuelle missing-evidence-huller, der allerede fandtes før nulstillingen; lad den eksisterende fail-closed profilgate skifte naturligt tilbage til Candidate G, når evidensen igen er sammenhængende.
+- [x] De otte separate aktuelle missing-evidence-huller håndteres fra 4.0.273 lokalt; de kan ikke længere skifte hele landet til 25/40/35.
 
 ### Separat lokalt datapunkt efter ejerens punktflytning
 

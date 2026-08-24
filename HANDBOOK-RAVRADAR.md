@@ -1,5 +1,15 @@
 # RavRadar Håndbog
 
+## Candidate G-only og lokal scoretilgængelighed – 4.0.273
+
+RavRadar bruger nu kun **Candidate G: 20 % søgeforhold, 50 % transport mod kysten og 30 % rav i bevægelse**. Den gamle 25/40/35-model er historik og kan ikke længere overtage den offentlige side, hvis der mangler en måling eller en sammenhængende Candidate G-tilstand.
+
+Et datahul rammer i stedet kun den konkrete zone, søgemåde og tid. RavRadar viser ingen opdigtet erstatningsscore fra en moderzone, nabozone, anden time eller den gamle model. Den berørte score udelades fra **Bedste områder** og **5-dages RavRadar**, mens andre zoner fortsætter normalt på Candidate G.
+
+Adminforsiden viser, om alle zoner har aktive Candidate G-scorer. Hvis ikke, vises antal aktive zoner samt en dataminimeret liste over berørte zoner, søgemåder og forståelige årsager. Oversigten viser ikke rå strømvektorer, koordinater eller private data.
+
+Produktionshydrering, state-recovery og releasegates er fortsat fail-closed. Ændringen fjerner kun den svage globale modelomskiftning; den opfinder eller lemper ingen vejrdata. Ingen kystgeometri eller land-/vandpunkter er ændret. Se [DEC-0072](docs/rdks/10_DECISIONS/DEC-0072-CANDIDATE-G-ONLY-LOCAL-AVAILABILITY.md).
+
 ## Feltrettelser til Grundbog i ravjagt – 4.0.271
 
 Den offentlige grundbog er fagligt præciseret efter ejerens feltgennemgang og en afgrænset kontrol af vandets massefylde:
@@ -21,7 +31,7 @@ De to nationale lister viser nu den samme **områdescore**, som de sorterer efte
 
 Adminens første lagerkontrol omfatter nu også `coastline-overrides`, så en eksisterende kystoverstyring ikke vises som en falsk fejl. Ekspertens håndbog, rettigheder, reviewkø, kortfunktioner og centrale dokumentkontrakter er gennemgået målrettet. Eksperten kan læse og kommentere håndbogen med `admin_access`, `handbook_view` og `handbook_review` uden at få fuld ret til score, vejr eller kystdata.
 
-Ekspertens arbejdsplan, kodekapitel, scenarier og hypoteseregister beskriver den aktive Candidate G med 20/50/30, 48 timers transportvindue, +10/-8-forløbet, 13-timersreglen, waderskurven 6–15 m/s og én bølgeenergistyret mobiliseringstilstand. Gamle 25/40/35-regler står kun som historik eller global rollback. Versionsværktøjet synkroniserer nu hele webhåndbogen til Supabase-installationsfilen og stopper, hvis kopierne afviger.
+Ekspertens arbejdsplan, kodekapitel, scenarier og hypoteseregister beskriver den aktive Candidate G med 20/50/30, 48 timers transportvindue, +10/-8-forløbet, 13-timersreglen, waderskurven 6–15 m/s og én bølgeenergistyret mobiliseringstilstand. Gamle 25/40/35-regler er historik; DEC-0072 har fjernet dem som offentlig rollback. Versionsværktøjet synkroniserer nu hele webhåndbogen til Supabase-installationsfilen og stopper, hvis kopierne afviger.
 
 Den naturlige 210/673-produktion og Supabase Free-forbruget er kontrolleret dataminimeret. Der er ikke ændret lokale RavScore-tal, farver, scoremodel, vejrdata, geometri eller land-/vandpunkter. Se DEC-0069 og `docs/research/PRELAUNCH_EXPERT_ADMIN_REVIEW_4.0.270.md`.
 
@@ -37,7 +47,7 @@ Den offentlige **Fundprognose** er skjult, indtil RavRadar har et repræsentativ
 
 Det tomme **Vælg et område på kortet**-felt er fjernet. Kortvalget virker som før, og informationspanelet åbner, når brugeren vælger et område. Kildeafsnittet beskriver nu DMI som førstevalg, de dokumenterede Copernicus Marine- og DMI-regionalveje for godkendte strømhuller, Open-Meteo/MET Norway ved dokumenterede øvrige vejrdatagab samt OpenStreetMap, Leaflet og de angivne billedleverandører.
 
-Candidate G er fortsat den aktive model med **20 % søgeforhold, 50 % transport mod kysten og 30 % rav i bevægelse**. Den globale 25/40/35-reserve bevares uændret og må kun vælges samlet, når Candidate G ikke kan udgives komplet. 4.0.269 ændrer ingen scoretal, vejrkilder, Supabase-kontrakt, geometri eller land-/vandpunkter. Se DEC-0068 og `docs/research/PUBLIC_SCORE_EXPLANATION_REVIEW_4.0.269.md`.
+Candidate G er fortsat den aktive model med **20 % søgeforhold, 50 % transport mod kysten og 30 % rav i bevægelse**. Afsnittets tidligere globale 25/40/35-reserve er erstattet af DEC-0072: et datahul gør kun den konkrete Candidate G-score utilgængelig. 4.0.269 ændrede ingen scoretal, vejrkilder, Supabase-kontrakt, geometri eller land-/vandpunkter. Se DEC-0068 og `docs/research/PUBLIC_SCORE_EXPLANATION_REVIEW_4.0.269.md`.
 
 4.0.269 er produktionsverificeret. PR #120 bestod exact-head `32703138969` på `37de330c` og blev merged som `d745e0ba`. Produktion `32703271897` udgav `rr-20260824080543-210` på 210 zoner og 673 kystdele efter frisk vejr, fuld validering og releasegate. Den offentlige browseraudit bestod 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer uden kontrol-, konsol-, side- eller HTTP-fejl.
 
@@ -115,11 +125,11 @@ Efterkontrollen fandt derefter, at et hul senere i femdøgnsprognosen kunne slå
 
 RavRadar bruger nu Candidate G med `20 % jagtbarhed`, `50 % transport` og `30 % mobilisering` som én samlet scoreprofil for hele Danmark. Ejeren har valgt den aktiveret nu, fordi siden endnu ikke er offentlig, og har accepteret, at de første scoreværdier bygger på et transportvindue med mindre end 48 timers naturlig historik.
 
-Opvarmningen vises som `candidate-active-pre-public-warmup`, når det aktuelle vindue er kort, men sammenhængende. Kun `WINDOW_INCOMPLETE` er lovlig ved den valgte aktuelle reference. Manglende seneste bevis, missing eller et hul over tre timer dér skifter hele Danmark til rollbackprofilen. Et senere prognosehul ændrer ikke nutidens status bagudrettet; den fremtidige beregning bryder i stedet sit brugbare suffix og opfinder ingen strøm.
+Opvarmningen blev i 4.0.263 vist som `candidate-active-pre-public-warmup`, når det aktuelle vindue var kort, men sammenhængende. Dengang kunne manglende seneste bevis, missing eller et hul over tre timer skifte hele Danmark til rollbackprofilen. DEC-0072 har erstattet denne globale offentlige reaktion: den konkrete Candidate G-score bliver nu utilgængelig, mens øvrige gyldige Candidate G-scorer fortsætter. Et senere prognosehul ændrer ikke nutidens status bagudrettet og må aldrig udfyldes med opdigtet strøm.
 
 Den aktive Candidate G bevarer de aftalte regler: strømmen styrer transporten, bølgeenergi styrer mobiliseringen, og vinden er hovedsignal for waders-jagtbarhed. Strandjagt har intet wadersloft. Faktisk kraftig udtransport med udtømt transportpotentiale giver samlet score 0 med den aftalte forklaring.
 
-Valget er fortsat globalt og fail-closed. Hvis blot én nødvendig Candidate G-score ikke kan beregnes korrekt, bruger hele datasættet den tidligere `25/40/35`-profil. RavRadar blander aldrig scoremotorer mellem zoner, timer eller jagtformer. Den gamle profil er også den centrale rollback, og en vejrkørsel kan ikke aktivere en model automatisk.
+Candidate G er nu den eneste offentlige scoremotor. Hvis en nødvendig beregning mangler, vises ingen score for netop den zone, søgemåde og time, og den udelades fra ranglisterne. RavRadar låner ikke et tal fra `25/40/35`, en moderzone, en nabozone eller en anden time. Produktionshydrering, state/proveniens og releasegates er fortsat globale stopklodser, men de må ikke omsættes til en gammel offentlig scoremodel.
 
 Profilvalget gemmes centralt og følger startpakke, detaljepakke og manifest. Ingen private rå strømvektorer, koordinater eller replaypayloads offentliggøres. Bund, dybde, render, revler, adgang, stedegnethed og sikkerhedsadvarsler indgår fortsat ikke, og aktiveringen flytter ingen geometri eller land-/vandpunkter.
 
@@ -131,7 +141,7 @@ Candidate G beregner nu transport ud fra et fast, rullende vindue med de seneste
 
 Når vinduet er komplet, afhænger transporten derfor kun af de seneste 48 timers dokumenterede forhold. En gammel startværdi fra den computer eller produktionskørsel, som først begyndte at opsamle tilstanden, kan ikke længere påvirke resultatet. Den aftalte fysik er uændret: fuld pålandsstrøm bygger 10 point pr. effektiv time, fuld fralandsstrøm trækker 8 point pr. effektiv time, og 13 timers fuld fralandsstrøm udtømmer transporten.
 
-RavRadar gemmer kun tidspunkt og afledt kystnormal strømstyrke i vinduet. Native beviser må ligge op til tre timer fra hinanden, og den faktiske tidsafstand tæller i beregningen. Manglende eller ikke-verificeret strøm behandles ikke som roligt vejr: et hul over tre timer eller missing gør vinduet ugyldigt og udløser global rollback. Det er testet med deterministisk genafspilning; der kræves ikke en ny 48-timers realtidsudviklingstest.
+RavRadar gemmer kun tidspunkt og afledt kystnormal strømstyrke i vinduet. Native beviser må ligge op til tre timer fra hinanden, og den faktiske tidsafstand tæller i beregningen. Manglende eller ikke-verificeret strøm behandles ikke som roligt vejr: et hul over tre timer eller missing gør den konkrete Candidate G-beregning ugyldig og dermed utilgængelig. Det er testet med deterministisk genafspilning; der kræves ikke en ny 48-timers realtidsudviklingstest.
 
 I 4.0.260 var Candidate G endnu ikke slået til, og den offentlige RavScore var derfor fortsat `25/40/35`. Denne historiske aktiveringsstatus er erstattet af 4.0.261/4.0.262; hukommelsesmekanikken og forbuddet mod geometri-, punkt-, bund-, privatdata- og sikkerhedsændringer består.
 
@@ -159,7 +169,7 @@ Den nationale skyggekontrol bruger nu den samme fallback-kompatible runtime som 
 
 Første produktionskørsel startede den nye hukommelse på 0. Det var en sikker bootstrap, men ikke en fuld 48-timershistorik. Den senere naturlige kontrol har nu dokumenteret seks timers videreførelse. DEC-0058 tillader derfor, at den score-neutrale omskifter bygges, men ikke at Candidate G aktiveres.
 
-Rollback i 4.0.259 var, at den aktive 25/40/35-score ignorerede Candidate G-feltet. Fra 4.0.260 vælger en eksakt versionsbundet profil den samme legacy-score som standard og rollback. Geometri, land-/vandpunkter, bund, dybde, adgang og sikkerhedsadvarsler indgår ikke i ændringen.
+Rollback i 4.0.259 var, at den aktive 25/40/35-score ignorerede Candidate G-feltet. Fra 4.0.260 valgte en eksakt versionsbundet profil den samme legacy-score som standard og rollback. Det er historik: DEC-0072 tillader nu kun Candidate G offentligt. Geometri, land-/vandpunkter, bund, dybde, adgang og sikkerhedsadvarsler indgår ikke i ændringen.
 
 ## Candidate G lader strømmen styre transporthukommelsen
 
@@ -173,7 +183,7 @@ Den private genafspilning består de mekaniske kontroller og skelner tydeligt me
 
 Neutral strøm ændrer ikke transportpotentialet. Manglende eller ikke-verificeret strøm er derimod et hul og må ikke behandles som neutral strøm. RavRadar genafspiller det sammenhængende afledte strømforløb inden for de seneste 48 timer fra en fast rand; et tidligere gemt transportresultat bruges ikke som ny startværdi. En ny kørsel kan derfor hverken glemme den dokumenterede nyere transport eller bevare en vilkårlig maskinstart for evigt.
 
-I 4.0.259 var kandidaten koblet score-neutralt til den centrale pipeline, og i 4.0.260 var omskifteren forberedt med legacy som valgt profil. Candidate G blev siden aktiveret i 4.0.261 efter central konfiguration, exact-head, fuld produktion og fallback-kompatibel slutkontrol. Den vindstyrede waders-jagtbarhed fortsætter uændret: fuld til 6 m/s, trinvis fald og 0 ved 15 m/s, mens strandjagt ikke får et jagtbarhedsloft.
+I 4.0.259 var kandidaten koblet score-neutralt til den centrale pipeline, og i 4.0.260 var omskifteren forberedt med legacy som valgt profil. Candidate G blev siden aktiveret i 4.0.261 efter central konfiguration, exact-head og fuld produktion. Den daværende slutkontrol var fallback-kompatibel; DEC-0072 har siden fjernet den offentlige fallback. Den vindstyrede waders-jagtbarhed fortsætter uændret: fuld til 6 m/s, trinvis fald og 0 ved 15 m/s, mens strandjagt ikke får et jagtbarhedsloft.
 
 Ingen nye rådata, bundmodel, dybde, render, geometri eller land-/vandpunkter indgår i dette arbejde.
 
@@ -463,7 +473,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.272
+**Håndbogsversion:** 4.0.273
 
 **Opdateret:** 19. august 2026
 
@@ -839,7 +849,7 @@ Ekspertpunkt E-14: Valider wadersgrænserne for forskellige kyster og vurder om 
 
 *Den faktiske offentlige beregning, trin for trin.*
 
-Candidate G beregnes i `js/core/ravscore-candidate-g.js`, tilstanden bygges i `js/core/ravscore-candidate-g-state-pipeline.js`, og den offentlige profil vælges samlet i `js/core/ravscore-profile-switch.js`. `js/core/score-engine.js` er fortsat den fulde 25/40/35-rollback. Den gamle rod-fil `ravscore.js` er historisk og må ikke bruges som beskrivelse af den aktive app.
+Candidate G beregnes i `js/core/ravscore-candidate-g.js`, tilstanden bygges i `js/core/ravscore-candidate-g-state-pipeline.js`, og den offentlige profil håndhæves i `js/core/ravscore-profile-switch.js`. `js/core/score-engine.js` bevares kun til historiske sammenligninger og er ikke en offentlig fallback. Den gamle rod-fil `ravscore.js` er historisk og må ikke bruges som beskrivelse af den aktive app.
 
 ### 18.1 Hovedformel
 
@@ -1584,7 +1594,7 @@ Candidate G bruger **20 % søgeforhold, 50 % transport mod kysten og 30 % rav i 
 
 Transporten genafspilles fra et fast rullende vindue med de seneste 48 timers sammenhængende, afledte strømevidens. Et komplet vindue gør resultatet uafhængigt af computerens oprindelige startværdi. Native strømbeviser må ligge op til tre timer fra hinanden; den faktiske tidsafstand tæller, og RavRadar opfinder ikke mellemliggende timesmålinger.
 
-Hvis blot én nødvendig Candidate G-beregning mangler, skifter hele datasættet til den eksakte 25/40/35-rollback. RavRadar blander ikke scoreprofiler mellem steder, tider eller jagtformer.
+Hvis en nødvendig Candidate G-beregning mangler, bliver kun den konkrete zone, søgemåde og time utilgængelig. Den vises ikke med en erstatningsscore og udelades fra de relevante ranglister, mens øvrige gyldige Candidate G-scorer fortsætter. Adminforsiden viser, om alle er aktive, og forklarer lokale huller. RavRadar blander ikke scoreprofiler mellem steder, tider eller jagtformer.
 
 ### 54.3 Hvad modellen bevidst ikke gør
 
@@ -2173,7 +2183,7 @@ På dette historiske tidspunkt var vægtningen 25 % jagtbarhed, 40 % transport o
 
 I den private scorekontrol tæller en boelgefamilie kun som komplet, naar boelgehoejde, retning og periode kommer fra samme DMI-collection. DKSS tæller kun som komplet, naar vandstand og stroem kommer fra samme collection, og stroemmens U og V desuden kommer fra samme fysiske gitterpunkt.
 
-Hvis det ikke er opfyldt, vises delen som deldækket eller blokeret i analysen. Den får ikke state eller Candidate G-score, og den globale profilgate kan derfor vælge 25/40/35-rollback for hele datasættet. Ingen land-/vandpunkter ændres.
+Hvis det ikke er opfyldt, vises delen som deldækket eller blokeret i analysen. Den får ikke state eller Candidate G-score. Offentligt bliver kun den berørte zone, søgemåde og time utilgængelig; resten fortsætter på Candidate G. Ingen land-/vandpunkter ændres.
 
 ## Kandidat G: hvad den nye analyse viser
 
@@ -2227,7 +2237,7 @@ Den eneste variant, der føres videre til samlet ejerreview, er `G-50-50-NO-DIRE
 
 Ved det historiske udviklingstrin blev den private analyse genkørt uden nye rådata. Replayet havde 730 uændrede strandscorer og ingen waders-score over jagtbarheden. I datidens snapshot af 243 komplette kystdele lå kandidaten i gennemsnit 5,49 point under den daværende aktive model for strand og 0,97 point under for waders. Snapshotet viste omfordeling, ikke et repræsentativt udsnit eller fundkalibrering.
 
-På dette historiske tidspunkt var `20/45/35` et analysecentrum. Ejeren valgte siden `20/50/30` som aktiv Candidate G-vægt. Komplette ture, reelle nul-fund og geografisk/tidslig hold-out kan senere bruges til efterkalibrering; `25/40/35` er global rollback.
+På dette historiske tidspunkt var `20/45/35` et analysecentrum. Ejeren valgte siden `20/50/30` som aktiv Candidate G-vægt. Komplette ture, reelle nul-fund og geografisk/tidslig hold-out kan senere bruges til efterkalibrering. `25/40/35` var senere global rollback, men DEC-0072 har fjernet den fra den offentlige runtime.
 
 Der hentes ikke yderligere rådata til de øvrige dele som led i dette mekaniske beslutningsgrundlag. En eventuel offentlig aktivering er en særskilt opgave med landsdækkende inputkontrakt, ejerbeslutning og fulde valideringsgates.
 # Candidate G fortsætter kun fra dokumenteret tilstand – 4.0.272

@@ -1,4 +1,4 @@
-import { scoreRating } from './score-engine.js?v=4.0.272';
+import { scoreRating } from './score-engine.js?v=4.0.273';
 
 const finite = value => Number.isFinite(Number(value));
 const coverageReason = value => Number(value?.comparisonPartCount) <= 1
@@ -33,13 +33,27 @@ export function localCoverageSummary(value) {
 }
 
 export function buildLocalZoneScore({coastalParts,zoneId,mode,time}) {
-  const rows=coastalParts?.zones?.[zoneId]?.hourly || [];
+  const rows=(coastalParts?.zones?.[zoneId]?.hourly || []).filter(row=>Number.isFinite(Date.parse(row?.time||'')));
   if(!coastalParts?.enabled || !rows.length)return null;
   const target=Date.parse(time || coastalParts.generatedAt || new Date().toISOString());
   const row=rows.reduce((best,item)=>Math.abs(Date.parse(item.time)-target)<Math.abs(Date.parse(best.time)-target)?item:best,rows[0]);
   const rawValue=row?.[mode];
   const value=rawValue ? {...rawValue,comparisonPartCount:Number(rawValue.comparisonPartCount ?? coastalParts?.zones?.[zoneId]?.expectedPartCount ?? 0)} : rawValue;
-  if(!finite(value?.score) || value.status === 'uncertain')return {available:false,score:null,level:'unavailable',label:'Lokale data mangler',localCoverage:value||null};
+  if(!finite(value?.score) || ['uncertain','unavailable'].includes(value?.status)){
+    const reasons=(value?.reasons||[]).filter(Boolean);
+    return {
+      available:false,score:null,level:'unavailable',label:'RavScore midlertidigt utilgængelig',
+      reasons:reasons.length?reasons:['Det sammenhængende datagrundlag til Candidate G mangler for denne zone lige nu.'],
+      unavailability:{
+        policy:'candidate-g-local-fail-closed',
+        validPartCount:Number(value?.validPartCount??0),
+        expectedPartCount:Number(value?.expectedPartCount??coastalParts?.zones?.[zoneId]?.expectedPartCount??0),
+        parts:value?.unavailableParts||[],
+      },
+      localCoverage:value||null,
+      time:row.time,
+    };
+  }
   const rating=scoreRating(value.score);
   const winner=coastalParts.parts?.[value.winningPartId];
   const exact=winner?.current?.time === row.time ? winner.current?.[mode] : null;

@@ -1,3 +1,12 @@
+## 4.0.273 – Candidate G-only og lokal scoretilgængelighed (2026-08-24)
+
+- Candidate G 20/50/30 er nu den eneste offentlige scoremodel. Den gamle 25/40/35-model kan ikke længere vælges som reserve, rollback eller automatisk fallback.
+- Manglende Candidate G-data gør kun den konkrete zone, søgemåde og tid utilgængelig. Der lånes ingen score fra gammel model, moderzone, nabo eller anden time.
+- Utilgængelige scorer udelades fra **Bedste områder** og **5-dages RavRadar**, mens resten af landet fortsætter normalt på Candidate G.
+- Adminforsiden viser, om alle zoner er aktive, og lister ellers berørte zoner, søgemåder og forståelige årsager.
+- Profil-, pipeline-, lands-, UI- og shadowtests er opdateret til den nye kontrakt. Produktionshydrering og releasegates forbliver fail-closed.
+- Geodatafilerne har kun fået versionsfelt 4.0.273; geometri og land-/vandpunkter er uændrede. Se DEC-0072.
+
 ## 4.0.272 – fail-closed Candidate G-tilstandsrecovery (2026-08-24)
 
 - En ikke-fatal timeout ved hentning af tidligere offentlig tilstand nulstillede kunstigt alle 673 kystdele. 4.0.272 gør hentefejlen fatal, afviser global nulstart og genoptager kun den kompakte tilstand fra den eksakte låste sunde produktion.

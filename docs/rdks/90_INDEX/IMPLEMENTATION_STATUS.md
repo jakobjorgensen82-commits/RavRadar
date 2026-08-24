@@ -1,4 +1,28 @@
-# Implementeringsstatus – 4.0.272 Candidate G-tilstandsrecovery
+# Implementeringsstatus – 4.0.273 Candidate G-only med lokal utilgængelighed
+
+## Implementeret og målrettet verificeret
+
+- [x] Fjern den offentlige 25/40/35-reserve og gør Candidate G 20/50/30 til eneste mulige offentlige profil.
+- [x] Afvis legacyfallback, rollbackprofil og ugyldig profilkonfiguration fail-closed.
+- [x] Lad manglende Candidate G-grundlag gøre kun den konkrete zone/søgemåde/tid utilgængelig.
+- [x] Forbyd parent-, nabo-, anden-time- og legacyscore som erstatning.
+- [x] Udelad utilgængelige scorer fra aktuelle og femdøgns-rangeringer, mens andre zoner fortsætter.
+- [x] Tilføj en dataminimeret `scoreAvailability`-oversigt til offentlig runtime.
+- [x] Tilføj adminfelt med samlet aktiv status og liste over berørte zoner, søgemåder og årsager.
+- [x] Opdatér målrettede profil-, pipeline-, lands-, UI- og shadowtests.
+- [x] Sæt version 4.0.273; geodatafilerne har kun versionsfelt 4.0.272 → 4.0.273.
+- [x] Dokumentér beslutningen i DEC-0072, RDKS, roadmap, håndbog og changelog.
+
+## Mangler før produktionslukning
+
+- [ ] Bestå exact-head-kildegaten.
+- [ ] Merge den eksakte grønne head.
+- [ ] Bestå frisk central 210/673-produktion, fuld validering og releasegate.
+- [ ] Kontrollér offentlig Candidate G-only-visning, lokale utilgængeligheder, rangeringer og adminstatus.
+
+Ingen Candidate G-regel, vejrregel, zone, geometri eller land-/vandpunkt ændres.
+
+# Historisk implementeringsstatus – 4.0.272 Candidate G-tilstandsrecovery
 
 ## Produktionsverificeret
 

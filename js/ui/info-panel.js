@@ -1,5 +1,5 @@
-import { calculateRavScore, scoreRating } from "../core/score-engine.js?v=4.0.272";
-import { selectBestTimeForDay } from "../core/best-time-selector.js?v=4.0.272";
+import { calculateRavScore, scoreRating } from "../core/score-engine.js?v=4.0.273";
+import { selectBestTimeForDay } from "../core/best-time-selector.js?v=4.0.273";
 
 const hasNumber = value => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value));
 const formatNumber = (value, suffix, digits = 1) => hasNumber(value) ? `${Number(value).toFixed(digits).replace(".", ",")} ${suffix}` : "Mangler";
@@ -59,7 +59,7 @@ function localCoveragePanel(result, {showMapButton=true} = {}) {
 function displayContextPanel(result, context = {}) {
   if(context.scope === 'local')return `<section class="display-context local"><p><b>Viser lokal kystdel:</b> ${escapeHtml(context.partName||result.localPartName||'Navngiven kystdel')} · ${hourLabel(context.time||result.time)}</p></section>`;
   if(context.scope === 'local-weather-missing')return `<section class="display-context warning"><p><b>Vejrdetaljer mangler for den bedste kyststrækning:</b> RavRadar viser de manglende felter som “Mangler” i stedet for at sætte vejret fra en anden del af området ind.</p></section>`;
-  if(context.scope === 'parent-fallback')return `<section class="display-context warning"><p><b>Viser hele området lige nu:</b> Kyststrækningerne har ikke alle de oplysninger, der skal bruges til samme beregning på dette tidspunkt. Derfor vises én samlet vurdering for området, uden at en bestemt kyststrækning udpeges.</p></section>`;
+  if(context.scope === 'local-unavailable')return `<section class="display-context warning"><p><b>RavScore er midlertidigt utilgængelig:</b> ${escapeHtml(result?.reasons?.[0]||'Der mangler sammenhængende Candidate G-data for en eller flere kystdele i zonen.')}</p><p>RavRadar viser ikke en beregnet erstatningsscore og bruger ikke den gamle scoremodel.</p></section>`;
   return '';
 }
 
@@ -127,7 +127,11 @@ function dayTabs(days, selected = 0, className = "forecast-day-tab") {
 
 function forecastPanel(days, zone, mode, history, currentWeather, currentResult, bestByDate = {}) {
   if (!days.length) return `<section class="forecast-section"><h3>5-dages prognose</h3><p class="muted">Prognosen bliver vist efter næste vejr-opdatering.</p></section>`;
-  const summaries = days.map(day => ({ ...day, best:bestByDate?.[day.date] || {...bestHourForDay(day,zone,mode,history,currentWeather,currentResult),displayScope:'parent-fallback'} }));
+  const unavailable=day=>({hour:{time:`${day.date}T12:00:00`},result:{available:false,score:null,level:'unavailable',label:'RavScore midlertidigt utilgængelig',reasons:['Der mangler sammenhængende Candidate G-data for zonen denne dag.']},recommended:false,displayScope:'local-unavailable'});
+  const summaries = days.map(day => {
+    const hasLocal=Object.prototype.hasOwnProperty.call(bestByDate,day.date);
+    return { ...day, best:hasLocal?(bestByDate[day.date]||unavailable(day)):{...bestHourForDay(day,zone,mode,history,currentWeather,currentResult),displayScope:'parent'} };
+  });
   return `<section class="forecast-section" data-forecast-section>
     <div class="section-title-row"><div><p class="eyebrow dark">Planlæg ravjagten</p><h3>5-dages prognose</h3></div></div>
     <div class="forecast-score-strip">${summaries.map((day,index) => `<button type="button" class="forecast-score-day ${index===0?"active":""}" data-day-index="${index}"><span>${dayLabel(`${day.date}T12:00:00`)}</span><b class="day-score ${day.best.result.level}">${day.best.result.available ? day.best.result.score : "–"}</b><small>${dateLabel(`${day.date}T12:00:00`)}</small></button>`).join("")}</div>

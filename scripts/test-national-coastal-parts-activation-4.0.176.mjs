@@ -43,11 +43,13 @@ assert.match(bulk,/collection != "harmonie_dini_sf"/);
 assert.match(bulk,/GRID_INDEX_CACHE\[cache_key\] = \[/);
 const weather=fs.readFileSync('scripts/update-weather.mjs','utf8');
 assert.match(weather,/scoreCoastalPartsRuntime/);
-assert.match(weather,/status: 'uncertain'/);
+assert.match(weather,/status: 'unavailable', available: false, score: null/,'Ufuldstændig Candidate G-dækning skal markeres lokalt utilgængelig.');
+assert.match(weather,/const scoreAvailability =/,'Produktionsruntime skal offentliggøre den samlede zoneaktivitet til adminpanelet.');
 assert.match(weather,/high - row\.score <= 7/);
 const app=fs.readFileSync('app.js','utf8');
 assert.match(app,/state\.conditions\.coastalParts\?\.enabled/);
-assert.match(app,/local\?\.available\?local:scoreFor/,'Hovedzonescoren skal være sikker fallback uden lokal geografisk påstand.');
+assert.match(app,/localRequired\?\(local\|\|\{available:false/,'Manglende lokal Candidate G-data må ikke erstattes af en gammel hovedzonescore.');
+assert.match(app,/if\(state\.conditions\.coastalParts\?\.enabled===true\)return null/,'Fem-dages ranglisten skal udelade lokalt utilgængelige zoner.');
 assert.match(app,/renderZones\(map,zones,/);
 assert.doesNotMatch(app,/_mapId|_partName|mapZoneCollection/,'Lokale beregningsdele må ikke blive til synlige kortzoner.');
 
@@ -55,4 +57,4 @@ const projected=buildPublicConditions({datasetId:'test',generatedAt:'2026-08-11T
 assert.equal(projected.schemaVersion,2);
 assert.equal(projected.coastalParts.enabled,true);
 assert.equal(projected.coastalParts.expectedPartCount,673);
-console.log('OK: 673 nationale kystdele i 210 zoner er aktiveret; Fejø/Femø er slettet, bugtede zoner kan sammenlignes lokalt, og sikker hovedzonefallback er bevaret.');
+console.log('OK: 673 nationale kystdele i 210 zoner er aktiveret; Fejø/Femø er slettet, og manglende Candidate G-data lukkes kun lokalt uden gammel fallback.');

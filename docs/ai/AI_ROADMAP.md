@@ -1,5 +1,14 @@
 # AI Roadmap – RavRadar 4.0.243+
 
+## P0 nu – Candidate G alene og lokal utilgængelighed i 4.0.273
+
+- Candidate G `20/50/30` er eneste offentlige scoremodel. Offentlig `25/40/35`-fallback er fjernet.
+- Hvis en konkret zone, søgemåde eller time ikke har et gyldigt Candidate G-grundlag, vises ingen score dér, og posten udelades fra aktuelle og femdøgns-ranglister. Resten af landet fortsætter på Candidate G.
+- Adminforsiden skal gøre det tydeligt, om alle zone-/søgemådekombinationer er aktive, og ellers vise hvilke der mangler og hvorfor.
+- Ingen legacy-, moderzone-, nabozone- eller anden-timescore må udfylde et hul. Produktionens state-, provenance- og releasegates forbliver strenge.
+- Lokal implementering og målrettede tests er gennemført. Exact-head CI, frisk produktionsbygning, releasegate og offentlig kontrol udestår. Se DEC-0072.
+- Ældre roadmap-punkter om global rollback eller automatisk skift til `25/40/35` er historiske og erstattet af dette punkt.
+
 ## 4.0.269 – aktuelle scoreforklaringer
 
 - [x] Bind alle tre offentlige delscoreforklaringer til den valgte rækkes faktiske offentlige forhold og state.
