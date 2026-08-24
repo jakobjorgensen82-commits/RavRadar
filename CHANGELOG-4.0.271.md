@@ -11,3 +11,5 @@
 - Fjernet en irrelevant myteboks.
 
 RavScore, vejrdata, kystgeometri og land-/vandpunkter er uændrede. I geodatafilerne er kun versionsfeltet løftet til 4.0.271.
+
+PR #128 og læsehjælps-hotfix #129 er produktionsverificeret. Produktion `32745389504` bestod hele kæden og udgav version 4.0.271; de ændrede grundbogstekster og illustrationen er kontrolleret målrettet på den levende side.

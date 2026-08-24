@@ -1,9 +1,11 @@
-## 2026-08-24 – kandidat 4.0.271
+## 2026-08-24 – produktionsverificeret 4.0.271
 
 - Samlet feltrettelse af Grundbog i ravjagt implementeret.
 - Eksperthåndbog, RDKS, forskningsnotat, SQL-håndbogspayload og changelog synkroniseret.
 - Rettelsen er score-neutral og ændrer ikke vejrdata eller geometri.
-- Næste dokumenterede trin: exact-head-kildegate, merge, produktionsgate og målrettet offentlig kontrol.
+- PR #128 bestod exact-head `32742727246` på `f2026167` og blev merged som `a723ae8c`. Den første produktion `32743307402` stoppede korrekt før deploy, fordi det nye eksperthåndbogskapitel manglede den faste læsehjælp.
+- PR #129 rettede kun læsehjælpen og den identiske Supabase-installationskopi, bestod exact-head `32745213320` på `5096d9aa` og blev merged som `499861e8`.
+- Produktion `32745389504` bestod central hydrering, fuld validering, releasegate og Pages-deploy. Den offentlige version er 4.0.271, og de syv rettede grundbogspunkter er kontrolleret målrettet på den levende side.
 
 ## 2026-08-24 – før-lancering af ekspert, admin og synlig rangering
 
