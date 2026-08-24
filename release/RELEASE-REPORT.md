@@ -1,7 +1,7 @@
-# Release-rapport 4.0.270
+# Release-rapport 4.0.272
 
 - Status: **BESTÅET**
-- Kontrolleret: 2026-08-24T12:17:15.006Z
+- Kontrolleret: 2026-08-24T17:46:10.525Z
 - Versionskonsistens: OK
 - Håndbog og RDKS: OK
 - Supabase- og rettighedskæde: OK
@@ -11,4 +11,3 @@
 - Pakningspolitik: OK
 
 Bemærk: Rapporten dokumenterer lokale kontroller. En faktisk grøn GitHub Actions-kørsel skal stadig verificeres efter push.
-

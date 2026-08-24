@@ -5,6 +5,8 @@ for (const marker of [
   'data/live/manifest.json',
   'data/live/conditions.json',
   'deployed manifest/conditions datasetId mismatch',
+  '"fatal": True',
+  'return 1',
   'atomic_write_json(local_manifest_path, remote_manifest)',
   'atomic_write_json(local_conditions_path, remote_conditions)'
 ]) {

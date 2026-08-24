@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.271",
+  "version": "4.0.272",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -31,7 +31,7 @@
     "test:ravscore-regime-memory": "node scripts/test-ravscore-regime-memory.mjs && node scripts/audit-ravscore-candidate-g-bounded-transport-memory.mjs --self-test && node scripts/analyze-ravscore-history-track-ablation.mjs --self-test",
     "test:ravscore-mobilisation-memory": "node scripts/test-ravscore-mobilisation-memory.mjs",
     "test:ravscore-candidate-g": "node scripts/test-ravscore-candidate-g.mjs",
-    "test:ravscore-candidate-g-state-pipeline": "node scripts/test-ravscore-candidate-g-state-pipeline.mjs && node scripts/test-ravscore-candidate-g-central-runtime.mjs && node scripts/test-ravscore-profile-switch-4.0.260.mjs && node scripts/audit-ravscore-candidate-g-public-shadow.mjs --self-test",
+    "test:ravscore-candidate-g-state-pipeline": "node scripts/test-ravscore-candidate-g-state-pipeline.mjs && node scripts/test-ravscore-candidate-g-central-runtime.mjs && node scripts/test-ravscore-profile-switch-4.0.260.mjs && node scripts/test-candidate-g-continuation-recovery-4.0.272.mjs && node scripts/audit-ravscore-candidate-g-public-shadow.mjs --self-test",
     "analyze:ravscore-candidate-g": "node scripts/analyze-ravscore-candidate-g.mjs",
     "test:ravscore-candidate-g-analysis": "node scripts/analyze-ravscore-candidate-g.mjs --self-test",
     "test:ravscore-candidate-g-scenarios": "node scripts/audit-ravscore-candidate-g-scenarios.mjs --self-test",
@@ -123,7 +123,7 @@
     "test:current-direction-audit": "node scripts/test-current-direction-audit-4.0.66.mjs",
     "test:fresh-startup": "node scripts/test-fresh-startup-4.0.66.mjs",
     "test:browser-regression": "python scripts/test-browser-regression-4.0.66.py",
-    "test:hydrated-atomic-dataset": "node scripts/test-hydrated-atomic-dataset-4.0.67.mjs",
+    "test:hydrated-atomic-dataset": "node scripts/test-hydrated-atomic-dataset-4.0.67.mjs && node scripts/test-hydrate-deployed-weather-fail-closed-4.0.272.mjs",
     "test:pages-module-closure": "node scripts/test-pages-module-closure-4.0.68.mjs",
     "test:site-function-suite": "node scripts/test-site-function-suite-4.0.70.mjs",
     "test:handbook-plain-language": "node scripts/test-handbook-plain-language-4.0.70.mjs",

@@ -1,5 +1,10 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.272 Candidate G-tilstand og én lokal friskdatarække
+
+- **ISSUE-CANDIDATE-G-GLOBAL-NO-PREVIOUS-STATE – LOKALT RETTET / PRODUKTIONSBEVIS MANGLER:** En atomisk hydreringstimeout blev behandlet som ikke-fatal. Den næste beregning fortsatte derfor uden tidligere Candidate G-tilstand og nulstillede alle 673 kystdele. Senere timer accepterede denne nulstillede state og bar derfor fejlen videre under nye datasæt-id'er. 4.0.272 stopper ved samme hydreringfejl, afviser global nulstart og kan én gang genoptage kun den kompakte tilstand fra den eksakte sidste grønne produktion, når den dokumenterede nulstillede state-linje genkendes. Frisk fuld produktion og offentlig kontrol mangler.
+- **ISSUE-MOVED-POINT-PART-WEATHER-ROW – SEPARAT / OVERVÅGES:** Efter ejerens flytning af punktpar 2 havde én kystdel ikke en komplet ny offentlig vejrrække i den efterfølgende build, selv om en tilladt strømobservation fandtes i pilotlaget. Samlingskæden opretter ikke en delpost alene ud fra denne observation, når den øvrige bulk-række er tom. Der indføres ikke parent-/nabofallback, og 673/673-gaten bevares; normal frisk cache-/vejrindsamling skal først genprøves.
+
 ## Lukket i kandidat 4.0.271 – offentlig grundbog
 
 Den samlede feltgennemgang fandt misvisende eller uklare formuleringer om pilretning, koldt saltvand, bundnær strøm, revlehuller, tanglinjer, grus, fralandsvind og specialtygter. Alle er rettet i samme kandidat og dækket af en målrettet kontrakttest. Endelig lukning afventer exact-head- og produktionskontrol.

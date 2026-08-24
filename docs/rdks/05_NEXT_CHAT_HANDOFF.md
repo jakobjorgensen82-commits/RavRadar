@@ -1,5 +1,14 @@
 # RavRadar – overlevering til næste chat
 
+## Akut 4.0.272-kandidat – scorekollaps efter tabt Candidate G-fortsættelse
+
+- Den landsdækkende lave score skyldes, at en planlagt produktion fortsatte efter timeout i den atomiske hentning af offentligt manifest/conditions. Alle 673 dele startede derefter med `NO_PREVIOUS_STATE`.
+- Sidste grønne 4.0.271-artifact har 673/673 accepterede fortsættelser og normal scorevariation. Det er den eneste godkendte recoverykilde.
+- Branchen `codex/candidate-g-state-recovery-4.0.272` gør hydreringen fatal, afviser global nulstart og genoptager kun kompakt Candidate G-state fra én eksakt Actions-kørsel efter streng del-/model-/type-/tids-/integritetskontrol. Den aktuelle nulstillede fortsættelseslinje genkendes uden at være låst til ét senere datasæt-id og bliver straks inaktiv, når historikken er genindsat.
+- Scoreformel, vægte, vejr, zoner, geometri og land-/vandpunkter er ikke ændret. Kun geodatafilernes versionsfelt følger releasen fra 4.0.271 til 4.0.272.
+- Punktpar 2 blev senere flyttet af ejeren. Én efterfølgende kystdel manglede en komplet frisk offentlig vejrrække; det er separat og må ikke løses ved at låne strøm fra moderzone/nabo.
+- Næste trin er målrettede tests, exact-head, frisk fuld produktion, 210/673 og offentlig browserkontrol. Hvis 672/673 gentager sig, stopper releasen korrekt, mens delens egen cache-/friskdatakæde undersøges videre.
+
 ## Produktionslukket 4.0.271 – samlet feltrettelse af grundbogen
 
 Implementeret og offentligt verificeret:

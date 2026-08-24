@@ -1,5 +1,15 @@
 # Current truth – gældende projektviden
 
+## Akut 4.0.272-kandidat – Candidate G-tilstand gendannes fail-closed
+
+- Den offentlige scorekollapsede ikke på grund af grundbogstekst eller en ændret scoreformel. En planlagt produktion fik timeout ved atomisk hentning af det seneste offentlige stategrundlag, men fortsatte og nulstillede Candidate G i alle 673 kystdele.
+- Den sidste grønne 4.0.271-produktion dokumenterer 673/673 accepterede tilstande og normal scorevariation. Den fejlramte offentlige produktion dokumenterer 673/673 `NO_PREVIOUS_STATE` og et kunstigt sammenpresset scorebillede.
+- 4.0.272 gør manifest-/conditions-hydrering fatal, afviser global nulstart som aktiv opvarmning og har en streng engangs state-only recovery fra den sidste grønne Actions-kørsel. Den genkender også senere datasæt i den samme dokumenterede nulstillede state-linje og bliver straks inaktiv, når historik fra før nulstillingen er tilbage.
+- Recoveryen kan kun kopiere Candidate G's kompakte `currentState`. Den kopierer ikke vejr, score, profil, geometri, zoner, land-/vandpunkter eller private payloads.
+- Ejerens senere flytning af punktpar 2 er et separat lokalt forhold. Den kan legitimt nulstille netop den berørte dels state, men delen må ikke låne strøm fra andre. 673/673-gaten består.
+- I `data/kystdata.json` og `data/zones.geojson` ændres kun versionsfeltet fra 4.0.271 til 4.0.272; alt geografisk indhold er uændret.
+- Produktionsstatus: lokal kandidat; exact-head, frisk fuld produktion og offentlig 210/673-kontrol mangler endnu.
+
 ## Produktionsverificeret 4.0.271 – samlet feltrettelse af Grundbog i ravjagt
 
 - Den offentlige grundbog, eksperthåndbogen og RDKS er synkroniseret med DEC-0070.

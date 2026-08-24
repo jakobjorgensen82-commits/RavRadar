@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.271",
+  "handbookVersion": "4.0.272",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-08-24",
   "sections": [
+    {
+      "id": "candidate-g-state-continuity-recovery-4-0-272",
+      "chapter": "62",
+      "title": "Candidate G fortsætter kun fra dokumenteret tilstand",
+      "summary": "Produktionen stopper nu, hvis den tidligere Candidate G-tilstand ikke kan hentes som et sammenhørende datasæt, og den landsdækkende nulstart genbruges ikke som normal opvarmning.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> En timeout ved hentning af den offentlige conditions-fil fik en produktion til at fortsætte uden tidligere Candidate G-hukommelse. Det gav kunstigt lave scorer i hele landet. Senere timer fortsatte fra den forkerte nulstart. Fra 4.0.272 stopper samme fejl før offentliggørelse.</div><div class=\"handbook-stack\"><p><strong>Atomisk fortsættelse:</strong> Manifest og conditions skal hentes som ét sammenhørende datasæt. En global <code>NO_PREVIOUS_STATE</code>-nulstart er ikke længere en lovlig opvarmning af den aktive Candidate G.</p><p><strong>Afgrænset recovery:</strong> Den aktuelle engangsrettelse genoptager kun den kompakte Candidate G-tilstand fra den sidste fuldt grønne 673-deles produktion. Kørsel, kildedatasæt, delbestand, tilstandstyper og samlet integritet skal passe eksakt. Den nulstillede fortsættelseslinje genkendes kun i det dokumenterede tidsvindue og kun, når næsten alle dele mangler historik fra før fejlen. Når historikken er tilbage, er rettelsen straks inaktiv. Vejr, scoreformel, vægte, zoner, geometri og land-/vandpunkter kopieres ikke.</p><p><strong>Bevidste punktændringer:</strong> En lille lokal nulstilling med <code>COASTAL_PART_CONTEXT_CHANGED</code> er fortsat lovlig efter en ejerændring af et punktpar. Den berørte del skal selv skaffe frisk tilladt strøm; den må ikke låne en moderzones eller nabodels måling. 673/673-gaten forbliver uændret.</p><p>Se <code>DEC-0071</code>. Rettelsen ændrer ikke Candidate G's 20/50/30-model eller dens fysiske regler.</p></div>"
+    },
     {
       "id": "public-amber-hunting-field-corrections-4-0-271",
       "chapter": "61",

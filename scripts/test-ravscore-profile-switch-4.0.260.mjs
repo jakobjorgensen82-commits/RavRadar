@@ -62,6 +62,7 @@ const candidateStateScore = (time, status, ready = false) => ({
 const referenceRows = [
   {
     zoneId: 'zone-a',
+    candidateGState: { initialStateAccepted: true, initialStateResetReason: null },
     scores: [
       candidateStateScore(currentReferenceAt, 'WINDOW_INCOMPLETE'),
       candidateStateScore('2026-08-23T13:00:00.000Z', 'WINDOW_HAS_MISSING_EVIDENCE'),
@@ -69,6 +70,7 @@ const referenceRows = [
   },
   {
     zoneId: 'zone-a',
+    candidateGState: { initialStateAccepted: true, initialStateResetReason: null },
     scores: [
       candidateStateScore(currentReferenceAt, 'WINDOW_INCOMPLETE'),
       candidateStateScore('2026-08-23T13:00:00.000Z', 'WINDOW_HAS_TIME_GAP'),
@@ -81,6 +83,31 @@ assert.equal(currentReferenceReadiness.candidateWarmupEligible, true,
   'later forecast gaps must not retroactively block a continuous current warmup reference');
 assert.equal(currentReferenceReadiness.referenceZoneCount, 1);
 assert.equal(currentReferenceReadiness.referencePartCount, 2);
+
+const globallyResetRows = structuredClone(referenceRows);
+for (const row of globallyResetRows) {
+  row.candidateGState.initialStateAccepted = false;
+  row.candidateGState.initialStateResetReason = 'NO_PREVIOUS_STATE';
+}
+assert.equal(candidateGReferenceReadiness(globallyResetRows, currentReferenceAt).candidateWarmupEligible, false,
+  'a nationwide NO_PREVIOUS_STATE reset must never activate Candidate G as warmup');
+
+const singleContextEditRows = structuredClone(referenceRows);
+singleContextEditRows[0].candidateGState.initialStateAccepted = false;
+singleContextEditRows[0].candidateGState.initialStateResetReason = 'COASTAL_PART_CONTEXT_CHANGED';
+assert.equal(candidateGReferenceReadiness(singleContextEditRows, currentReferenceAt).candidateWarmupEligible, true,
+  'one intentional local point-context edit may restart only that local warmup');
+
+const widespreadContextEditRows = Array.from({ length: 200 }, (_, index) => ({
+  zoneId: `zone-${index}`,
+  candidateGState: {
+    initialStateAccepted: index >= 3,
+    initialStateResetReason: index < 3 ? 'COASTAL_PART_CONTEXT_CHANGED' : null,
+  },
+  scores: [candidateStateScore(currentReferenceAt, 'WINDOW_INCOMPLETE')],
+}));
+assert.equal(candidateGReferenceReadiness(widespreadContextEditRows, currentReferenceAt).candidateWarmupEligible, false,
+  'a broad context reset must fail closed instead of looking like a local edit');
 
 const currentGapRows = structuredClone(referenceRows);
 currentGapRows[0].scores[0].candidateG.transportMemoryStatus = 'WINDOW_HAS_MISSING_EVIDENCE';

@@ -1,5 +1,23 @@
 # RavRadar - aktivt roadmap
 
+## P0 – Candidate G-tilstand efter fejlslagen hydrering i 4.0.272
+
+- [x] Afgræns scorekollapset til en ikke-fatal timeout ved atomisk hentning af det seneste offentlige stategrundlag.
+- [x] Bevis dataminimeret, at den sidste grønne produktion havde 673/673 videreførte Candidate G-tilstande, mens den fejlramte produktion nulstillede 673/673 med `NO_PREVIOUS_STATE`.
+- [x] Gør atomisk manifest-/conditions-hydrering fatal ved fejl eller mismatch.
+- [x] Afvis global `NO_PREVIOUS_STATE` som lovlig aktiv Candidate G-opvarmning; tillad kun lille lokal kontekstreset efter bevidst punktændring.
+- [x] Bind en engangs, state-only recovery til den eksakte sidste grønne Actions-kørsel og den dokumenterede forgiftede fortsættelseslinje; gør den straks inaktiv, når historik fra før nulstillingen igen findes.
+- [x] Bevar scoreformel, Candidate G 20/50/30, vejr, zoner, geometri og land-/vandpunkter uændret; kun geodatafilernes versionsfelt følger releasen til 4.0.272.
+- [ ] Bestå målrettede regressioner, RDKS og kildegate på eksakt head.
+- [ ] Bestå frisk central 210/673-produktion, releasegate og offentlig score-/browserkontrol.
+- [ ] Luk engangsrecoveryen som inaktiv efter en frisk grøn produktion.
+
+### Separat lokalt datapunkt efter ejerens punktflytning
+
+- [x] Afgræns én manglende kystdel til en ufuldstændig ny offentlig vejrrække efter punktflytningen; det er ikke årsagen til det tidligere landsdækkende scorekollaps.
+- [x] Bevar forbuddet mod at låne strøm fra moderzone eller nabo og behold 673/673-gaten.
+- [ ] Lad de normale private cache-/friskdataforløb skaffe delens egen tilladte evidens og genprøv produktionen uden endnu en punktændring.
+
 ## Afsluttet – 4.0.271 offentlig grundbog
 
 - [x] Ret Grundbog i ravjagt samlet efter ejerens feltgennemgang.

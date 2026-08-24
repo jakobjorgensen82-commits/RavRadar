@@ -12,7 +12,7 @@ import urllib.request
 from datetime import datetime
 from typing import Any
 
-ROOT = pathlib.Path(__file__).resolve().parents[1]
+DEFAULT_ROOT = pathlib.Path(__file__).resolve().parents[1]
 TIMEOUT = max(5, int(os.getenv("RAVRADAR_HYDRATE_TIMEOUT_SECONDS", "20")))
 USER_AGENT = os.getenv("WEATHER_USER_AGENT", "RavRadar deployed-state hydrator")
 ATOMIC_WEATHER_FILES = (
@@ -73,8 +73,8 @@ def atomic_write_json(path: pathlib.Path, document: Any) -> None:
     atomic_write_bytes(path, (json.dumps(document, ensure_ascii=False, indent=2) + "\n").encode("utf-8"))
 
 
-def active_zone_ids() -> set[str]:
-    zones_path = ROOT / "data/zones.geojson"
+def active_zone_ids(root: pathlib.Path) -> set[str]:
+    zones_path = root / "data/zones.geojson"
     document = read_json(zones_path)
     ids: set[str] = set()
     if not isinstance(document, dict):
@@ -161,7 +161,14 @@ def main() -> int:
         default=os.getenv("RAVRADAR_DEPLOYED_BASE_URL", ""),
         help="Deployed RavRadar base URL (or set RAVRADAR_DEPLOYED_BASE_URL).",
     )
-    base_url = str(parser.parse_args().base_url or "").rstrip("/")
+    parser.add_argument(
+        "--root",
+        default=os.getenv("RAVRADAR_HYDRATE_ROOT", str(DEFAULT_ROOT)),
+        help="Repository root receiving hydrated files (primarily for isolated contract tests).",
+    )
+    args = parser.parse_args()
+    base_url = str(args.base_url or "").rstrip("/")
+    root = pathlib.Path(args.root).resolve()
     all_files = (*ATOMIC_WEATHER_FILES, *JSON_FILES, *TEXT_FILES)
     if not base_url:
         print(json.dumps({"hydrated": [], "skipped": list(all_files), "reason": "missing-base-url"}))
@@ -171,7 +178,7 @@ def main() -> int:
     preserved: list[str] = []
     sanitized: dict[str, list[str]] = {}
     errors: list[dict[str, str]] = []
-    allowed_zone_ids = active_zone_ids()
+    allowed_zone_ids = active_zone_ids(root)
 
     # Manifest and conditions are one atomic publication unit. Never hydrate one
     # without the other, otherwise a deployed forecast can be paired with a
@@ -193,8 +200,8 @@ def main() -> int:
                 f"deployed manifest/conditions datasetId mismatch: {manifest_dataset!r} != {conditions_dataset!r}"
             )
 
-        local_manifest_path = ROOT / "data/live/manifest.json"
-        local_conditions_path = ROOT / "data/live/conditions.json"
+        local_manifest_path = root / "data/live/manifest.json"
+        local_conditions_path = root / "data/live/conditions.json"
         local_manifest = read_json(local_manifest_path)
         local_conditions = read_json(local_conditions_path)
         local_pair_matches = (
@@ -212,9 +219,17 @@ def main() -> int:
             preserved.extend(ATOMIC_WEATHER_FILES)
     except (urllib.error.URLError, TimeoutError, ValueError, RuntimeError, json.JSONDecodeError) as exc:
         errors.append({"file": "atomic-weather-dataset", "message": str(exc)})
+        print(json.dumps({
+            "hydrated": hydrated,
+            "preserved": preserved,
+            "sanitized": sanitized,
+            "errors": errors,
+            "fatal": True,
+        }, ensure_ascii=False))
+        return 1
 
     for relative in JSON_FILES:
-        local_path = ROOT / relative
+        local_path = root / relative
         try:
             remote = json.loads(fetch(f"{base_url}/{relative}", "application/json").decode("utf-8"))
             if not isinstance(remote, dict):
@@ -241,7 +256,7 @@ def main() -> int:
             errors.append({"file": relative, "message": str(exc)})
 
     for relative in TEXT_FILES:
-        local_path = ROOT / relative
+        local_path = root / relative
         try:
             payload = fetch(f"{base_url}/{relative}", "text/plain, */*")
             text = payload.decode("utf-8")
@@ -254,7 +269,13 @@ def main() -> int:
         except (urllib.error.URLError, TimeoutError, UnicodeDecodeError, RuntimeError) as exc:
             errors.append({"file": relative, "message": str(exc)})
 
-    print(json.dumps({"hydrated": hydrated, "preserved": preserved, "sanitized": sanitized, "errors": errors}, ensure_ascii=False))
+    print(json.dumps({
+        "hydrated": hydrated,
+        "preserved": preserved,
+        "sanitized": sanitized,
+        "errors": errors,
+        "fatal": False,
+    }, ensure_ascii=False))
     return 0
 
 
