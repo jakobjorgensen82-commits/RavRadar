@@ -15,10 +15,10 @@
 - [x] Bestå 4.0.274 exact-head og merge PR #135 som `3a96c28d`.
 - [x] Bevis, at central Candidate G-only-hydrering består; afgræns det næste sikre produktionsstop til drift mellem repositoryets håndbog og installationskopi.
 - [x] Synkronisér installationskopien og flyt den eksisterende strenge identitetskontrol frem i exact-head-kildegaten uden at fjerne den fulde produktionskontrol.
-- [ ] Bestå ny 4.0.275 exact-head, merge og frisk fuld 210/673-produktion.
-- [ ] Kontrollér live, at Candidate G forbliver eneste profil, og at lokale mangler ikke påvirker resten af landet.
+- [x] Bestå 4.0.275 exact-head `32778118765`, merge som `59ea4546` og frisk fuld 210/673-produktion `32778269487`.
+- [x] Kontrollér live `rr-20260824211701-210`: Candidate G er eneste profil; rollback er `null`; legacyfallback er forbudt; lokale mangler giver ingen erstatningsscore.
 
-DEC-0072 erstatter roadmapets tidligere opgave om at vente på, at den globale 25/40/35-reserve naturligt skifter tilbage. Den gamle model er ikke længere en offentlig driftsvej. 4.0.273 og 4.0.274 blev ikke deployet; de sikre stop er produktionsbevis, ikke offentlige regressioner.
+DEC-0072 erstatter roadmapets tidligere opgave om at vente på, at den globale 25/40/35-reserve naturligt skifter tilbage. Den gamle model er ikke længere en offentlig driftsvej. Ved slutkontrollen var 0/210 zoner aktive, fordi den nødvendige sammenhængende 48-timers strømhistorik endnu ikke var komplet; admin viser alle berørte zone-/søgemådepar og årsagen. Zoner bliver aktive lokalt, når deres eget grundlag er komplet. 4.0.273 og 4.0.274 blev ikke deployet; de sikre stop er produktionsbevis, ikke offentlige regressioner.
 
 ## Historisk P0 – Candidate G-tilstand efter fejlslagen hydrering i 4.0.272
 

@@ -1,4 +1,4 @@
-# Implementeringsstatus – 4.0.275 håndbogskildegate
+# Produktionsverificeret implementeringsstatus – 4.0.275 Candidate G-only
 
 ## Implementeret og målrettet verificeret
 
@@ -27,14 +27,15 @@
 - [x] Føj samme identitetskontrol til exact-head `validate:source`, så drift opdages før merge og dyr vejrbygning.
 - [x] Sæt version 4.0.275; geodatafilerne har kun versionsfelt 4.0.274 → 4.0.275.
 
-## Mangler før produktionslukning
+## Produktionslukning
 
-- [ ] Bestå den nye 4.0.275 exact-head-kildegate.
-- [ ] Merge den eksakte grønne head.
-- [ ] Bestå frisk central 210/673-produktion, fuld validering og releasegate.
-- [ ] Kontrollér offentlig Candidate G-only-visning, lokale utilgængeligheder, rangeringer og adminstatus.
+- [x] Bestå 4.0.275 exact-head-kildegaten `32778118765` på `8103143c`.
+- [x] Merge den eksakte grønne head som `59ea4546`.
+- [x] Bestå frisk central 210/673-produktion `32778269487`, fuld validering, releasegate, artifact og Pages-deploy.
+- [x] Kontrollér live `rr-20260824211701-210`: Candidate G er eneste profil, rollback er `null`, og legacyfallback er forbudt.
+- [x] Kontrollér lokal fail-closed availability og adminstatus. Ved kontrollen var 0/210 zoner aktive på grund af ufuldstændig sammenhængende 48-timers strømhistorik; ingen gammel eller opdigtet score blev vist.
 
-Ingen Candidate G-regel, vejrregel, zone, geometri eller land-/vandpunkt ændres. 4.0.273 og 4.0.274 nåede ikke produktion.
+Ingen Candidate G-regel, vejrregel, zone, geometri eller land-/vandpunkt blev ændret i 4.0.275. 4.0.273 og 4.0.274 nåede ikke produktion.
 
 # Historisk implementeringsstatus – 4.0.272 Candidate G-tilstandsrecovery
 
