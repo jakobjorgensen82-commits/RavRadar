@@ -1,5 +1,5 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.273";
-import { calculateRavScore } from "../core/score-engine.js?v=4.0.273";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.274";
+import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.274";
 
 const KNOWLEDGE={
  equipment:'Til almindelig ravjagt er de mest nyttige ting: polariserede briller i dagslys, en god ravlygte i mørke, handsker, vindtæt tøj og en lille beholder til fund. Waders og vadestav er relevante, når du vil lede i vandet.',
@@ -27,9 +27,13 @@ function classify(q){
 }
 function allScored(ctx,dayOffset=0){
  const target=new Date();target.setUTCDate(target.getUTCDate()+dayOffset);const date=target.toISOString().slice(0,10);const mode=ctx.mode||'waders';
- return (ctx.zones?.features||[]).flatMap(f=>{const z=f.properties,c=ctx.conditions?.zones?.[z.id]||{};const hours=(c.forecast?.hourly||[]).filter(h=>String(h.time||'').slice(0,10)===date);return hours.map(h=>({zone:z,hour:h,result:calculateRavScore({mode,zone:z,weather:h,history:c.history||{}})}));}).filter(x=>x.result.available).sort((a,b)=>b.result.score-a.result.score);
+ return (ctx.zones?.features||[]).map(feature=>{
+  const zone=feature.properties;
+  const best=selectLocalBestForDay({coastalParts:ctx.conditions?.coastalParts,zoneId:zone.id,mode,date});
+  return best?{zone,...best}:null;
+ }).filter(Boolean).sort((a,b)=>b.result.score-a.result.score||Date.parse(a.hour.time)-Date.parse(b.hour.time));
 }
-function selectedScored(ctx,dayOffset=0){const z=ctx.zone;if(!z)return[];const c=ctx.conditions?.zones?.[z.id]||{};const d=new Date();d.setUTCDate(d.getUTCDate()+dayOffset);const date=d.toISOString().slice(0,10);return(c.forecast?.hourly||[]).filter(h=>String(h.time||'').slice(0,10)===date).map(h=>({hour:h,result:calculateRavScore({mode:ctx.mode||'waders',zone:z,weather:h,history:c.history||{}})})).filter(x=>x.result.available).sort((a,b)=>b.result.score-a.result.score);}
+function selectedScored(ctx,dayOffset=0){const z=ctx.zone;if(!z)return[];const d=new Date();d.setUTCDate(d.getUTCDate()+dayOffset);const date=d.toISOString().slice(0,10);const coastalParts=ctx.conditions?.coastalParts;return(coastalParts?.zones?.[z.id]?.hourly||[]).filter(row=>String(row.time||'').slice(0,10)===date).map(row=>({hour:{time:row.time},result:buildLocalZoneScore({coastalParts,zoneId:z.id,mode:ctx.mode||'waders',time:row.time})})).filter(x=>x.result?.available).sort((a,b)=>b.result.score-a.result.score||Date.parse(a.hour.time)-Date.parse(b.hour.time));}
 function scoreAnswer(ctx){const r=ctx.result,w=ctx.weather||{};if(!r)return'Vælg først en zone, så kan jeg forklare dens score.';const rows=(r.explanations||r.reasons||[]).slice(0,5).map(x=>typeof x==='string'?x:x?.text||x?.explanation).filter(Boolean);const state=r.explanation?.transportEvent?.stateExplanation;const historical=state?.summary?`\n\nDet tidligere forløb: ${state.summary}${(state.facts||[]).length?`\n${state.facts.slice(0,3).map(x=>'• '+x).join('\n')}`:''}`:'';return`RavScore ${r.score} for ${ctx.zone?.name||'zonen'} skyldes især:
 
 ${rows.map(x=>'• '+x).join('\n')||'• Samspillet mellem strøm mod kysten, rav i bevægelse og hvor let det er at lede.'}${historical}

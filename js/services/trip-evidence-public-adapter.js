@@ -2,7 +2,7 @@ import {
   createCalibrationFeatureSnapshot,
   createForecastSnapshotReference,
   createTripStartRecord
-} from './trip-evidence-contract.js?v=4.0.273';
+} from './trip-evidence-contract.js?v=4.0.274';
 
 function finiteOrNull(value, scale = 1) {
   if (value == null || value === '') return null;

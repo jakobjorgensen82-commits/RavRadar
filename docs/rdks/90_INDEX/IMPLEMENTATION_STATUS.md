@@ -1,4 +1,4 @@
-# Implementeringsstatus – 4.0.273 Candidate G-only med lokal utilgængelighed
+# Implementeringsstatus – 4.0.274 central Candidate G-only-kontrakt
 
 ## Implementeret og målrettet verificeret
 
@@ -12,15 +12,22 @@
 - [x] Opdatér målrettede profil-, pipeline-, lands-, UI- og shadowtests.
 - [x] Sæt version 4.0.273; geodatafilerne har kun versionsfelt 4.0.272 → 4.0.273.
 - [x] Dokumentér beslutningen i DEC-0072, RDKS, roadmap, håndbog og changelog.
+- [x] Bestå PR #134 exact-head-kildegaten og merge som `10fd9896`.
+- [x] Lad mergeproduktionen `32772470050` stoppe før deploy, da central legacykonfiguration forsøgte at genindføre rollback.
+- [x] Ret central hydrering, så en gyldig lokal Candidate G-only-kontrakt vinder over enhver legacykonfiguration uanset legacyversionsnummer.
+- [x] Validér Candidate G-only før central persistence og efter readback.
+- [x] Fjern de sidste offentlige legacyberegningsveje fra forside, zonepanel og Rav-assistent.
+- [x] Udvid releasegaten, så central legacy og offentlige legacyimports ikke kan genindføres ubemærket.
+- [x] Sæt version 4.0.274; geodatafilerne har kun versionsfelt 4.0.273 → 4.0.274.
 
 ## Mangler før produktionslukning
 
-- [ ] Bestå exact-head-kildegaten.
+- [ ] Bestå den nye 4.0.274 exact-head-kildegate.
 - [ ] Merge den eksakte grønne head.
 - [ ] Bestå frisk central 210/673-produktion, fuld validering og releasegate.
 - [ ] Kontrollér offentlig Candidate G-only-visning, lokale utilgængeligheder, rangeringer og adminstatus.
 
-Ingen Candidate G-regel, vejrregel, zone, geometri eller land-/vandpunkt ændres.
+Ingen Candidate G-regel, vejrregel, zone, geometri eller land-/vandpunkt ændres. 4.0.273 nåede ikke produktion.
 
 # Historisk implementeringsstatus – 4.0.272 Candidate G-tilstandsrecovery
 

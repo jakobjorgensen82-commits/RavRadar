@@ -25,6 +25,7 @@ assert.ok((ui.match(/localCoveragePanel\(/g)||[]).length >= 3,'Både aktuel zone
 assert.match(weather,/high - low <= 7 \? 'whole-zone'/,'Produktionsbygningen skal bevare 7-point-reglen.');
 assert.match(weather,/componentReasons: result\.componentReasons/,'Vinderens faglige forklaringer skal følge med til offentlig runtime.');
 assert.match(weather,/explanation: result\.explanation/,'Hele den tekniske forklaring skal følge med til offentlig runtime.');
-assert.match(app,/localRequired\?\(local\|\|\{available:false/,'Manglende lokal Candidate G-data skal lukke zonen lokalt uden at bruge hovedzonens gamle score.');
-assert.match(app,/if\(state\.conditions\.coastalParts\?\.enabled===true\)return null/,'En lokalt utilgængelig zone må ikke falde tilbage til en gammel femdøgnsscore.');
+assert.match(app,/const local=localZoneScore\(zone\);const result=local\|\|\{available:false,score:null/,'Manglende lokal Candidate G-data skal lukke zonen lokalt uden at bruge hovedzonens gamle score.');
+assert.match(app,/return selectLocalBestForDay\(\{coastalParts:state\.conditions\.coastalParts,zoneId:zone\.id,mode:state\.mode,date\}\);/,'En lokalt utilgængelig zone må ikke falde tilbage til en gammel femdøgnsscore.');
+assert.doesNotMatch(app,/calculateRavScore|selectBestTimeForDay|scoreFor\(/,'Den offentlige app må ikke indeholde en vej tilbage til den gamle scoremotor.');
 console.log('OK: Lokal zonescore viser korrekt kystdel, 7-point-grænse og lukker lokalt uden gammel fallback.');

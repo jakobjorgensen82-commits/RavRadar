@@ -1,3 +1,13 @@
+## 2026-08-24 – 4.0.274 central Candidate G-only-migration
+
+- PR #134 bestod exact-head `32772324736` og blev merged som `10fd9896`, men mergeproduktionen `32772470050` stoppede sikkert før vejrbyg og deploy.
+- Rodårsagen var central adminhydrering: et historisk centralt profildokument med 25/40/35-rollback overskrev den nye lokale Candidate G-only-kontrakt. Kildegaten afviste derefter den forbudte konfiguration. 4.0.273 blev ikke udgivet.
+- 4.0.274 lader kun en central profil vinde, hvis den selv opfylder hele Candidate G-only-kontrakten og ikke er ældre. Et legacydokument kan ikke vinde på et kunstigt højere versionsnummer.
+- Beskyttet persistence validerer kontrakten før skrivning og efter readback. Forside, informationspanel og Rav-assistent bruger kun lokal Candidate G; manglende evidens giver ingen erstatningsscore.
+- Releasegaten kræver central Candidate G-only-migration og afviser offentlige legacyberegningsveje. Adminstatus viser alle aktive eller de konkrete lokale mangler, mens resten fortsætter.
+- Geodatafilerne har kun versionsfelt 4.0.273 → 4.0.274; geometri og land-/vandpunkter er urørte.
+- Målrettede tests er grønne. Ny exact-head, merge, frisk 210/673-produktion og livekontrol mangler.
+
 ## 2026-08-24 – 4.0.273 Candidate G-only godkendt og implementeret
 
 - Ejeren forkastede den globale 25/40/35-reserve, fordi den ikke løser Candidate G's underliggende datagab og kan ændre hele landets scoremotor på grund af en lokal mangel.

@@ -25,6 +25,26 @@ const manifestKey='protected-asset-manifest';
 const digest=payload=>crypto.createHash('sha256').update(JSON.stringify(payload)).digest('hex');
 const stable=value=>Array.isArray(value)?value.map(stable):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,stable(value[key])])):value;
 const stableDigest=payload=>crypto.createHash('sha256').update(JSON.stringify(stable(payload))).digest('hex');
+const candidateGProfileId='RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3';
+function assertCandidateGOnlySelection(payload,label='ravscore-profile-selection'){
+ const version=String(payload?.sourceVersion||'');
+ const valid=/^\d+\.\d+\.\d+$/.test(version)
+  &&payload?.schemaVersion==='2.0.0'
+  &&payload?.switchVersion===`RAVSCORE-PROFILE-SWITCH-${version}`
+  &&payload?.requestedProfileId===candidateGProfileId
+  &&payload?.candidateProfileId===candidateGProfileId
+  &&payload?.rollbackProfileId===null
+  &&payload?.candidateActivationEnabled===true
+  &&payload?.prePublicWarmupAccepted===true
+  &&payload?.automaticActivationAllowed===false
+  &&payload?.publicAvailabilityPolicy==='candidate-g-local-fail-closed'
+  &&payload?.legacyPublicFallbackAllowed===false
+  &&String(payload?.status||'').startsWith('owner-approved-candidate-g-only-')
+  &&Boolean(String(payload?.activationAuthority||'').trim())
+  &&Boolean(String(payload?.evidence?.ownerReviewDecisionId||'').trim());
+ if(!valid)throw new Error(`${label} er ikke den komplette Candidate G-only-kontrakt`);
+ return payload;
+}
 async function existingDocument(documentKey){
  return (await request(`?select=payload&document_key=eq.${encodeURIComponent(documentKey)}&limit=1`,{},`beskyttet sync: læs ${documentKey}`))?.[0]?.payload??null;
 }
@@ -51,6 +71,7 @@ const nextManifest={schemaVersion:1,assets:{}};
 for(const [document_key,file] of Object.entries(assets)){
  let handbookSourceForBaseline=null;
  let payload;try{payload=JSON.parse(await fs.readFile(file,'utf8'));}catch(e){if(e.code==='ENOENT'){console.warn(`Springer over ${file}`);continue;}throw e;}
+ if(document_key==='ravscore-profile-selection')assertCandidateGOnlySelection(payload,'Lokal ravscore-profile-selection');
  if(document_key==='dmi-water-stations')payload=mergeStationDocuments(payload,await existingDocument(document_key));
  if(document_key==='handbook'){
   const source=payload;
@@ -94,6 +115,8 @@ if(!activationCentral||stableDigest(activationCentral)!==stableDigest(activation
 console.log(`Central kystdelsaktivering verificeret: ${activationCentral.publicActivation?'aktiv':'rollback'}`);
 const ravScoreSelectionLocal=JSON.parse(await fs.readFile(assets['ravscore-profile-selection'],'utf8'));
 const ravScoreSelectionCentral=await existingDocument('ravscore-profile-selection');
+assertCandidateGOnlySelection(ravScoreSelectionLocal,'Lokal ravscore-profile-selection');
+assertCandidateGOnlySelection(ravScoreSelectionCentral,'Central ravscore-profile-selection');
 if(!ravScoreSelectionCentral
  ||stableDigest(ravScoreSelectionCentral)!==stableDigest(ravScoreSelectionLocal)
  ||ravScoreSelectionCentral.requestedProfileId!==ravScoreSelectionLocal.requestedProfileId

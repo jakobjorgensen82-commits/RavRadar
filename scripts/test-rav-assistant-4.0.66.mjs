@@ -1,1 +1,100 @@
-import {classifyRavQuestion,askRavRadar} from '../js/services/rav-assistant.js';const cases=[['hvilket udstyr skal jeg bruge?','equipment'],['bedste sted i morgen?','best-place'],['bedste tidspunkt i dag?','best-time'],['hvorfor denne score?','score'],['er det sikkert?','safety']];for(const[c,e]of cases)if(classifyRavQuestion(c)!==e)throw new Error(c);const answer=await askRavRadar('hvilket udstyr skal jeg bruge?',{weather:{windSpeedMps:7,waveHeightM:.8}});if(!/polariserede|ravlygte|waders/i.test(answer)||/Aktuelle RavRadar-data/.test(answer))throw new Error('Udstyrssvar er stadig fallback');console.log('OK: Spørg RavRadar genkender hensigt og svarer relevant.');
+import assert from 'node:assert/strict';
+
+import { classifyRavQuestion, askRavRadar } from '../js/services/rav-assistant.js';
+
+const cases = [
+  ['hvilket udstyr skal jeg bruge?', 'equipment'],
+  ['bedste sted i morgen?', 'best-place'],
+  ['bedste tidspunkt i dag?', 'best-time'],
+  ['hvorfor denne score?', 'score'],
+  ['er det sikkert?', 'safety'],
+];
+for (const [question, expected] of cases) {
+  assert.equal(classifyRavQuestion(question), expected, question);
+}
+
+const equipment = await askRavRadar(
+  'hvilket udstyr skal jeg bruge?',
+  { weather: { windSpeedMps: 7, waveHeightM: 0.8 } },
+  { localOnly: true },
+);
+assert.match(equipment, /polariserede|ravlygte|waders/i);
+assert.doesNotMatch(equipment, /Aktuelle RavRadar-data/);
+
+const date = new Date().toISOString().slice(0, 10);
+const at = hour => `${date}T${String(hour).padStart(2, '0')}:00:00.000Z`;
+const candidateValue = (score, partId) => ({
+  score,
+  status: 'whole-zone',
+  comparisonPartCount: 1,
+  winningPartId: partId,
+  winningPartName: `Kystdel ${partId}`,
+  components: { huntability: 70, transport: 80, release: 60 },
+  componentReasons: {
+    huntability: ['Aktuelle søgeforhold'],
+    transport: ['Aktuel transport'],
+    release: ['Aktuel mobilisering'],
+  },
+  weather: { windSpeedMps: 4 },
+});
+const coastalParts = {
+  enabled: true,
+  generatedAt: at(12),
+  zones: {
+    zoneHigh: {
+      expectedPartCount: 1,
+      hourly: [
+        { time: at(10), waders: candidateValue(72, 'high') },
+        { time: at(12), waders: candidateValue(81, 'high') },
+      ],
+    },
+    zoneLow: {
+      expectedPartCount: 1,
+      hourly: [{ time: at(11), waders: candidateValue(55, 'low') }],
+    },
+    zoneUnavailable: {
+      expectedPartCount: 1,
+      hourly: [{
+        time: at(12),
+        waders: {
+          score: null,
+          status: 'unavailable',
+          reasons: ['Candidate G mangler sammenhængende data'],
+        },
+      }],
+    },
+  },
+  parts: {},
+};
+const context = {
+  mode: 'waders',
+  zone: { id: 'zoneHigh', name: 'Zone høj' },
+  zones: {
+    features: [
+      { properties: { id: 'zoneLow', name: 'Zone lav' } },
+      { properties: { id: 'zoneUnavailable', name: 'Zone uden data' } },
+      { properties: { id: 'zoneHigh', name: 'Zone høj' } },
+    ],
+  },
+  conditions: { coastalParts },
+};
+
+const bestPlace = await askRavRadar('bedste sted i dag?', context, { localOnly: true });
+assert.match(bestPlace, /1\. Zone høj – score 81/);
+assert.match(bestPlace, /2\. Zone lav – score 55/);
+assert.doesNotMatch(bestPlace, /Zone uden data/);
+
+const bestTime = await askRavRadar('bedste tidspunkt i dag?', context, { localOnly: true });
+assert.match(bestTime, /Zone høj/);
+assert.match(bestTime, /RavScore 81/);
+assert.match(bestTime, /72/);
+
+const noCandidateData = await askRavRadar(
+  'bedste sted i dag?',
+  { ...context, conditions: {} },
+  { localOnly: true },
+);
+assert.match(noCandidateData, /ikke nok gyldige prognosedata/i);
+assert.doesNotMatch(noCandidateData, /score \d+/i);
+
+console.log('OK: Spørg RavRadar bruger kun lokale Candidate G-scorer og udelader utilgængelige zoner.');

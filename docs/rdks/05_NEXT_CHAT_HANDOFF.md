@@ -1,5 +1,16 @@
 # RavRadar – overlevering til næste chat
 
+## Kandidat 4.0.274 – Candidate G-only skal gennem central produktion
+
+- Ejerbeslutning: Candidate G 20/50/30 er eneste offentlige scoremotor. Der findes ingen offentlig 25/40/35-fallback eller rollback. Manglende evidens gør kun den konkrete zone/søgemåde/tid utilgængelig.
+- Adminforsiden viser **ALLE AKTIVE** eller en dataminimeret liste over berørte zone-/søgemådepar og almindelige danske årsager. Resten af Danmark fortsætter Candidate G.
+- PR #134/exact-head `32772324736` blev merged som `10fd989682f8658e603194e11363d861c489a166`.
+- Mergeproduktionen `32772470050` stoppede før vejrbyg og deploy, fordi central hydrering overskrev 4.0.273's lokale kontrakt med en historisk central legacykonfiguration. 4.0.273 blev ikke udgivet.
+- Branchen `codex/candidate-g-central-migration-4.0.274` genkender den fulde Candidate G-only-kontrakt. Central legacy kan ikke vinde uanset versionsnummer; kun en gyldig, mindst lige så ny Candidate G-only-kontrakt kan være central sandhed.
+- Beskyttet persistence validerer før skrivning og efter readback. Forside, informationspanel og Rav-assistent har ingen offentlige legacyberegningsveje. Releasegaten kræver dette.
+- Målrettede migrations-, profil-, assistent- og syntakskontroller er grønne. Der mangler slutdokumentation, ny exact-head, merge, frisk 210/673-produktion og livekontrol.
+- Geodatafilerne må kun ændre versionsfelt 4.0.273 → 4.0.274. Geometri og land-/vandpunkter må ikke ændres.
+
 ## Produktionslukket 4.0.272 – scorekollaps efter tabt Candidate G-fortsættelse
 
 - Den landsdækkende lave score skyldes, at en planlagt produktion fortsatte efter timeout i den atomiske hentning af offentligt manifest/conditions. Alle 673 dele startede derefter med `NO_PREVIOUS_STATE`.
