@@ -7,7 +7,8 @@
 - Begge håndbøger, kodekapitel, scenarier, hypoteseregister, ekspertarbejdsplan, releasegate og Supabase-installationskopi er ajourført til aktiv Candidate G 20/50/30. Se DEC-0069 og før-lanceringsreviewet.
 - PR #122 bestod exact-head `32721778498` på `a885bc5b` og blev merged som `abe10127`. Produktion `32721891349` stoppede sikkert før deploy, fordi en centralt ændret håndbog ved første migrering endnu ikke havde en lagret kildebaseline.
 - PR #123 bestod exact-head `32724526697`, blev merged som `00f59456`, og produktion `32724616331` bestod alle kode-, data- og releasegates, men stoppede før deploy, fordi Pages ikke udgiver håndbogens kildefil.
-- Den endelige hotfix accepterer kun den produktionsverificerede 4.0.269-kilde på uforanderlig commit `d745e0ba4ad88dde91c308a9ad9810797f951c91` som første baseline, når dens SHA-256 matcher det tidligere beskyttede manifest. 4.0.270 ændrer ikke scoremotor, farver, vejrdata, geometri eller land-/vandpunkter. Ny exact-head, produktion og offentlig browserkontrol afventer.
+- PR #124 bestod exact-head `32726897134`, blev merged som `fd7bc868`, og produktion `32727025187` bestod alle kode-, data- og releasegates, men stoppede sikkert før deploy ved hashkontrollen. Det afgrænser den sidste centralt synkroniserede 4.0.269-håndbog til commit `fc13fb5ab326d8824ca55235ac454ac230e3db3e` fra grøn produktion `32706573863`.
+- Den endelige hotfix accepterer kun denne uforanderlige kilde som første baseline, når dens SHA-256 matcher det tidligere beskyttede manifest. 4.0.270 ændrer ikke scoremotor, farver, vejrdata, geometri eller land-/vandpunkter. Ny exact-head, produktion og offentlig browserkontrol afventer.
 
 ## 2026-08-24 – visuel scoregennemgang bliver til aktuelle forklaringer
 
