@@ -72,10 +72,23 @@ for (const invalidSelection of [
 const updater = fs.readFileSync('scripts/update-weather.mjs', 'utf8');
 const app = fs.readFileSync('app.js', 'utf8');
 const admin = fs.readFileSync('js/ui/admin-dashboard.js', 'utf8');
+const assistant = fs.readFileSync('js/services/rav-assistant.js', 'utf8');
+const infoPanel = fs.readFileSync('js/ui/info-panel.js', 'utf8');
+const centralHydration = fs.readFileSync('scripts/sync-admin-config.py', 'utf8');
+const centralPersistence = fs.readFileSync('scripts/sync-protected-admin-assets.mjs', 'utf8');
 assert.match(updater, /candidate-g-local-fail-closed/);
 assert.match(updater, /scoreAvailability/);
 assert.doesNotMatch(app, /local\?\.available\?local:scoreFor\(zone\)/);
 assert.doesNotMatch(app, /displayScope:'parent-fallback'/);
+assert.doesNotMatch(app, /calculateRavScore|selectBestTimeForDay|scoreFor\(/);
+assert.doesNotMatch(assistant, /calculateRavScore|score-engine\.js/);
+assert.doesNotMatch(infoPanel, /calculateRavScore|selectBestTimeForDay|bestHourForDay/);
 assert.match(admin, /Zonernes RavScore-status/);
+assert.match(admin, /ALLE AKTIVE/);
+assert.match(admin, /Hvorfor\?/);
+assert.match(admin, /resten af Danmark fortsætter med Candidate G/);
+assert.match(centralHydration, /is_candidate_g_only_selection/);
+assert.match(centralHydration, /not is_candidate_g_only_selection\(central\)/);
+assert.match(centralPersistence, /assertCandidateGOnlySelection/);
 
 console.log('Candidate G-only med lokal, lukket utilgængelighed og uden gammel offentlig fallback: OK');

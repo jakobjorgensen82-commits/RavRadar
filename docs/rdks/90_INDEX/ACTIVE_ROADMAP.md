@@ -1,6 +1,6 @@
 # RavRadar - aktivt roadmap
 
-## P0 – 4.0.273 Candidate G-only og lokal utilgængelighed
+## P0 – 4.0.274 hold Candidate G-only gennem central produktion
 
 - [x] Gør Candidate G 20/50/30 til eneste offentlige scoremodel.
 - [x] Fjern automatisk og manuel offentlig rollback til 25/40/35.
@@ -8,10 +8,14 @@
 - [x] Udelad kun de berørte scorer fra aktuelle og femdøgns-rangeringer.
 - [x] Vis samlet zonestatus og lokale årsager på adminforsiden.
 - [x] Opdatér målrettede tests og bindende dokumentation.
-- [ ] Bestå exact-head, merge og frisk fuld 210/673-produktion.
+- [x] Bestå PR #134 exact-head og merge den første Candidate G-only-implementering.
+- [x] Afgræns det sikre produktionsstop til central legacykonfiguration, der overskrev den nye kontrakt under hydrering.
+- [x] Gør Candidate G-only-kontrakten holdbar gennem central hydrering og persistence; en legacyprofil må ikke vinde på versionsnummer.
+- [x] Fjern de sidste offentlige legacyberegningsveje fra forside, detaljepanel og Rav-assistent.
+- [ ] Bestå ny 4.0.274 exact-head, merge og frisk fuld 210/673-produktion.
 - [ ] Kontrollér live, at Candidate G forbliver eneste profil, og at lokale mangler ikke påvirker resten af landet.
 
-DEC-0072 erstatter roadmapets tidligere opgave om at vente på, at den globale 25/40/35-reserve naturligt skifter tilbage. Den gamle model er ikke længere en offentlig driftsvej.
+DEC-0072 erstatter roadmapets tidligere opgave om at vente på, at den globale 25/40/35-reserve naturligt skifter tilbage. Den gamle model er ikke længere en offentlig driftsvej. 4.0.273 blev ikke deployet; det sikre stop er input til 4.0.274, ikke en offentlig regression.
 
 ## Historisk P0 – Candidate G-tilstand efter fejlslagen hydrering i 4.0.272
 

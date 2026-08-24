@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-## Candidate G-only og lokal scoretilgængelighed – 4.0.273
+## Candidate G-only og lokal scoretilgængelighed – 4.0.274
 
 RavRadar bruger nu kun **Candidate G: 20 % søgeforhold, 50 % transport mod kysten og 30 % rav i bevægelse**. Den gamle 25/40/35-model er historik og kan ikke længere overtage den offentlige side, hvis der mangler en måling eller en sammenhængende Candidate G-tilstand.
 
@@ -9,6 +9,10 @@ Et datahul rammer i stedet kun den konkrete zone, søgemåde og tid. RavRadar vi
 Adminforsiden viser, om alle zoner har aktive Candidate G-scorer. Hvis ikke, vises antal aktive zoner samt en dataminimeret liste over berørte zoner, søgemåder og forståelige årsager. Oversigten viser ikke rå strømvektorer, koordinater eller private data.
 
 Produktionshydrering, state-recovery og releasegates er fortsat fail-closed. Ændringen fjerner kun den svage globale modelomskiftning; den opfinder eller lemper ingen vejrdata. Ingen kystgeometri eller land-/vandpunkter er ændret. Se [DEC-0072](docs/rdks/10_DECISIONS/DEC-0072-CANDIDATE-G-ONLY-LOCAL-AVAILABILITY.md).
+
+Den første 4.0.273-produktion blev stoppet før vejrbyg og deploy, fordi den centrale adminlagerkonfiguration stadig beskrev den gamle globale reserve og forsøgte at overskrive Candidate G-only-kontrakten under hydrering. 4.0.274 genkender og beskytter hele den ejerbesluttede kontrakt på begge sider af den centrale synkronisering. En centralt gemt legacyprofil kan derfor ikke genindføre 25/40/35, heller ikke ved et højere versionsnummer.
+
+Den offentlige forside, detaljepanelet og Rav-assistenten beregner og rangerer nu alle gennem den samme lokale Candidate G-vej. Hvis den nødvendige Candidate G-evidens mangler, vises ingen erstatningsscore. Releasegaten stopper, hvis en offentlig kodevej igen importerer den gamle scoremotor eller forsøger at gemme en central profil med rollback.
 
 ## Feltrettelser til Grundbog i ravjagt – 4.0.271
 
@@ -473,7 +477,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.273
+**Håndbogsversion:** 4.0.274
 
 **Opdateret:** 19. august 2026
 

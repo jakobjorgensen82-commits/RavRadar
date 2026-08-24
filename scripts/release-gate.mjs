@@ -70,6 +70,14 @@ ok(supabaseAdminRest.includes("startsWith('sb_secret_')")&&supabaseAdminRest.inc
 ok(supabaseAdminRest.includes("parseJson(body)?.code==='PGRST303'")&&supabaseAdminRest.includes('attempt===1'),'Supabase requester mangler snæver én-gangs PGRST303-genprøvning');
 ok(supabaseAdminRest.includes("status===500&&parseJson(body)?.code==='57014'")&&supabaseAdminRest.includes('statement-timeout 57014'),'Supabase requester mangler snæver én-gangs statement-timeout-genprøvning');
 ok(pythonAdminSync.includes('fetch_admin_rows')&&pythonAdminSync.includes('PGRST303')&&pythonAdminSync.includes('GITHUB_ACTIONS'),'Python-adminhydrering mangler fail-closed PGRST303-kontrakt');
+ok(pythonAdminSync.includes('is_candidate_g_only_selection')&&pythonAdminSync.includes('preserved-owner-approved-candidate-g-only-contract'),'Central adminhydrering kan genindføre en gammel offentlig RavScore-konfiguration');
+ok(sync.includes('assertCandidateGOnlySelection')&&sync.includes('candidate-g-local-fail-closed'),'Central adminpersistens mangler Candidate G-only-kontrakten');
+const publicApp=await read('app.js');
+const publicAssistant=await read('js/services/rav-assistant.js');
+const publicInfoPanel=await read('js/ui/info-panel.js');
+ok(!/calculateRavScore|selectBestTimeForDay|scoreFor\(/.test(publicApp),'Den offentlige app indeholder stadig en vej til den gamle RavScore-motor');
+ok(!/calculateRavScore|score-engine\.js/.test(publicAssistant),'Spørg RavRadar indeholder stadig en vej til den gamle RavScore-motor');
+ok(!/calculateRavScore|selectBestTimeForDay|bestHourForDay/.test(publicInfoPanel),'Informationspanelet indeholder stadig en vej til den gamle RavScore-motor');
 const workflow=await read('.github/workflows/update-and-deploy.yml');
 const workflowUserAgentVersions=[...workflow.matchAll(/RavRadar\/(\d+\.\d+\.\d+)/g)].map(match=>match[1]);
 ok(workflowUserAgentVersions.length>0,'Produktionsworkflowet mangler en versionsbåret RavRadar User-Agent');

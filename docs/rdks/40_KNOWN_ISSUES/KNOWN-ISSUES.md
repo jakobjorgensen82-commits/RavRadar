@@ -1,6 +1,12 @@
 # Kendte åbne og overvågede forhold
 
-## Kandidat 4.0.273 – Candidate G-only
+## Kandidat 4.0.274 – Candidate G-only gennem central produktion
+
+- **ISSUE-CANDIDATE-G-CENTRAL-LEGACY-REHYDRATION – LØST I KANDIDAT:** 4.0.273-koden var korrekt lokalt, men central hydrering genindsatte et historisk profilvalg med rollback og legacyfallback. Produktion `32772470050` stoppede korrekt før deploy. 4.0.274 beskytter den fulde ejerbesluttede Candidate G-only-kontrakt mod enhver central legacykonfiguration uanset legacyversionsnummer og validerer igen efter central readback.
+- **ISSUE-PUBLIC-LEGACY-CALCULATION-PATHS – LØST I KANDIDAT:** Forsiden, Rav-assistenten og informationspanelet havde stadig separate imports af den gamle beregner til enkelte fallback-/rangeringstilfælde. De bruger nu kun lokal Candidate G og returnerer utilgængelighed ved manglende evidens. Releasegaten afviser genindførsel.
+- **ISSUE-4.0.273-NOT-DEPLOYED – DOKUMENTERET:** PR #134 bestod exact-head og blev merged, men mergeproduktionen stoppede før vejrbyg og deploy. Den levende side blev derfor ikke ændret af 4.0.273.
+
+## Historisk kandidat 4.0.273 – Candidate G-only
 
 - **ISSUE-PUBLIC-GLOBAL-LEGACY-FALLBACK – LØST I KANDIDAT:** Et lokalt Candidate G-databet kunne skifte hele Danmark til den gamle 25/40/35-model, selv om den gamle model havde det samme underliggende datagab. 4.0.273 fjerner denne offentlige driftsvej. Candidate G er eneste profil, og manglen lukkes kun for den konkrete zone/søgemåde/tid.
 - **ISSUE-LOCAL-CANDIDATE-G-AVAILABILITY – IMPLEMENTERET / AFVENTER PRODUKTION:** Utilgængelige lokale scorer er `null`, låner ingen anden score og udelades fra aktuelle og femdøgns-rangeringer. Andre zoner fortsætter på Candidate G.

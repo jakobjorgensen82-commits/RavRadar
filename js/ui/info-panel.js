@@ -1,5 +1,4 @@
-import { calculateRavScore, scoreRating } from "../core/score-engine.js?v=4.0.273";
-import { selectBestTimeForDay } from "../core/best-time-selector.js?v=4.0.273";
+import { scoreRating } from "../core/score-engine.js?v=4.0.274";
 
 const hasNumber = value => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value));
 const formatNumber = (value, suffix, digits = 1) => hasNumber(value) ? `${Number(value).toFixed(digits).replace(".", ",")} ${suffix}` : "Mangler";
@@ -32,10 +31,6 @@ function groupForecastHours(forecast) {
     groups.get(date).push(hour);
   }
   return [...groups.entries()].slice(0, 5).map(([date, hours]) => ({ date, hours }));
-}
-
-function bestHourForDay(day, zone, mode, history, currentWeather = null, currentResult = null) {
-  return selectBestTimeForDay({ day, zone, mode, history, currentWeather, currentResult });
 }
 
 function componentDetails(name, key, result, definition) {
@@ -129,8 +124,7 @@ function forecastPanel(days, zone, mode, history, currentWeather, currentResult,
   if (!days.length) return `<section class="forecast-section"><h3>5-dages prognose</h3><p class="muted">Prognosen bliver vist efter næste vejr-opdatering.</p></section>`;
   const unavailable=day=>({hour:{time:`${day.date}T12:00:00`},result:{available:false,score:null,level:'unavailable',label:'RavScore midlertidigt utilgængelig',reasons:['Der mangler sammenhængende Candidate G-data for zonen denne dag.']},recommended:false,displayScope:'local-unavailable'});
   const summaries = days.map(day => {
-    const hasLocal=Object.prototype.hasOwnProperty.call(bestByDate,day.date);
-    return { ...day, best:hasLocal?(bestByDate[day.date]||unavailable(day)):{...bestHourForDay(day,zone,mode,history,currentWeather,currentResult),displayScope:'parent'} };
+    return { ...day, best:bestByDate[day.date]||unavailable(day) };
   });
   return `<section class="forecast-section" data-forecast-section>
     <div class="section-title-row"><div><p class="eyebrow dark">Planlæg ravjagten</p><h3>5-dages prognose</h3></div></div>

@@ -96,7 +96,7 @@ const producer=fs.readFileSync('scripts/update-weather.mjs','utf8');
 assert.match(app,/display\.result,display\.weather/,'Zonepanelet får ikke score og vejr fra samme aktuelle kontekst.');
 assert.match(app,/zoneReferenceAt\|\|state\.conditions\.productionReferenceAt\|\|state\.conditions\.generatedAt/,'Aktuel lokal score bruger ikke zonens komplette fælles current-reference.');
 assert.match(app,/bestByDate/,'Zonepanelet genbruger ikke den nationale lokale dagsbeslutning.');
-assert.match(ui,/hasOwnProperty\.call\(bestByDate,day\.date\)/,'Femdøgnspanelet bruger ikke den fælles lokale dagsbeslutning.');
+assert.match(ui,/best:bestByDate\[day\.date\]\|\|unavailable\(day\)/,'Femdøgnspanelet bruger ikke den fælles lokale dagsbeslutning eller lukker lokalt ved manglende data.');
 assert.match(ui,/RavScore er midlertidigt utilgængelig/,'Manglende lokal Candidate G-score er ikke tydeligt mærket for brugeren.');
 assert.match(producer,/componentReasons:winner\.detail\?\.componentReasons/,'Producenten fører ikke vinderens forklaring med til prognosen.');
 assert.match(producer,/waterTemperatureC:weather\.waterTemperatureC/,'Producenten fører ikke vinderens vandtemperatur med til prognosen.');

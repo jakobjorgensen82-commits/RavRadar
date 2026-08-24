@@ -1,6 +1,17 @@
 # Current truth – gældende projektviden
 
-## Kandidat 4.0.273 – Candidate G er eneste offentlige scoremodel
+## Kandidat 4.0.274 – Candidate G-only-kontrakten er central og gennemgående
+
+- Candidate G med **20 % søgeforhold, 50 % transport og 30 % rav i bevægelse** er fortsat den eneste offentlige scoremodel. Forsiden, zonepanelet og Rav-assistenten bruger nu alle den samme lokale Candidate G-beregning og har ingen offentlig import af den gamle scoremotor.
+- PR #134 bestod exact-head-kildegaten i kørsel `32772324736` og blev merged som `10fd989682f8658e603194e11363d861c489a166`.
+- Den første mergeproduktion `32772470050` stoppede sikkert før vejrbyg og deploy. Central adminhydrering havde overskrevet den nye 4.0.273-kontrakt med en historisk legacykonfiguration; kildegaten afviste derefter rollbackprofil, legacyfallback og forkert availability-policy. **4.0.273 blev ikke deployet.**
+- 4.0.274 retter rodårsagen: en fuldt gyldig ejerbesluttet Candidate G-only-kontrakt kan ikke overskrives af en central legacykonfiguration, heller ikke hvis legacydokumentet har samme eller et kunstigt højere versionsnummer. Kun en lige så gyldig og mindst lige så ny Candidate G-only-kontrakt må være central sandhed.
+- Den beskyttede centrale persistence validerer Candidate G-only både før skrivning og efter readback. Releasegaten kræver disse markører og afviser samtidig genindførsel af offentlige legacyberegninger.
+- Adminforsiden viser **ALLE AKTIVE** eller de konkrete utilgængelige zone-/søgemådepar og en almindelig dansk årsag. Resten af Danmark fortsætter på Candidate G.
+- `data/kystdata.json` og `data/zones.geojson` har kun versionsfeltet ændret fra 4.0.273 til 4.0.274; geometri og land-/vandpunkter er urørte.
+- Målrettede migrations-, profil-, assistent- og syntakskontroller er grønne. Ny exact-head, frisk fuld produktion og offentlig slutkontrol mangler endnu.
+
+## Historisk kandidat 4.0.273 – Candidate G er eneste offentlige scoremodel
 
 - Candidate G med **20 % søgeforhold, 50 % transport og 30 % rav i bevægelse** er den eneste offentlige scoremodel. Den gamle 25/40/35-model kan ikke længere vælges som reserve, rollback eller automatisk fallback.
 - Et manglende eller usammenhængende Candidate G-grundlag gør kun den konkrete zone, søgemåde og tid utilgængelig. Den får ingen parent-, nabo-, time- eller legacyscore og udelades fra aktuelle og femdøgns-rangeringer.
@@ -9,7 +20,7 @@
 - Profilkonfigurationen afviser legacyfallback og rollbackforsøg. Produktionshydrering, state-recovery og releasegates forbliver fail-closed.
 - `data/kystdata.json` og `data/zones.geojson` har kun versionsfeltet ændret fra 4.0.272 til 4.0.273; geometri og land-/vandpunkter er urørte.
 - DEC-0072 erstatter alle tidligere aktive beskrivelser af global offentlig 25/40/35-rollback. Ældre afsnit nedenfor er historiske checkpoints.
-- Målrettede tests er grønne. Exact-head, frisk fuld produktion og offentlig slutkontrol mangler endnu.
+- Målrettede tests og exact-head bestod, men mergeproduktionen stoppede før deploy på den centrale legacykonfiguration. 4.0.274 retter denne migrationsgrænse.
 
 ## Produktionsverificeret 4.0.272 – Candidate G-tilstand gendannet fail-closed
 

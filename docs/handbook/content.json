@@ -1,15 +1,15 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.273",
+  "handbookVersion": "4.0.274",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-08-24",
   "sections": [
     {
-      "id": "candidate-g-only-local-availability-4-0-273",
+      "id": "candidate-g-only-local-availability-4-0-274",
       "chapter": "63",
       "title": "Candidate G er eneste offentlige scoremodel",
       "summary": "Et lokalt datahul skjuler kun den berørte zone eller søgemåde; resten af landet fortsætter på Candidate G 20/50/30.",
-      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> RavRadar bruger nu kun Candidate G med 20 % søgeforhold, 50 % transport og 30 % rav i bevægelse. Den gamle 25/40/35-model kan ikke længere overtage den offentlige side.</div><div class=\"handbook-stack\"><p><strong>Lokal og ærlig utilgængelighed:</strong> Hvis en zone, søgemåde eller time mangler et sammenhængende Candidate G-grundlag, vises ingen score dér. RavRadar låner ikke et tal fra den gamle model, en moderzone, en nabozone eller en anden time.</p><p><strong>Resten fortsætter:</strong> Den berørte score udelades fra <em>Bedste områder</em> og <em>5-dages RavRadar</em>. Andre zoner fortsætter normalt på Candidate G.</p><p><strong>Adminstatus:</strong> Adminforsiden viser, om alle zoner er aktive. Hvis ikke, listes de berørte zoner, søgemåder og forståelige årsager uden rå strømvektorer, koordinater eller private data.</p><p>Produktionshydrering, state-recovery og releasegates er fortsat fail-closed. Beslutningen opfinder ingen data og ændrer ingen Candidate G-regel, geometri eller land-/vandpunkter. Se <code>DEC-0072</code>.</p></div>"
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> RavRadar bruger nu kun Candidate G med 20 % søgeforhold, 50 % transport og 30 % rav i bevægelse. Den gamle 25/40/35-model kan ikke længere overtage den offentlige side.</div><div class=\"handbook-stack\"><p><strong>Lokal og ærlig utilgængelighed:</strong> Hvis en zone, søgemåde eller time mangler et sammenhængende Candidate G-grundlag, vises ingen score dér. RavRadar låner ikke et tal fra den gamle model, en moderzone, en nabozone eller en anden time.</p><p><strong>Resten fortsætter:</strong> Den berørte score udelades fra <em>Bedste områder</em> og <em>5-dages RavRadar</em>. Andre zoner fortsætter normalt på Candidate G.</p><p><strong>Samme scorevej overalt:</strong> Forsiden, detaljepanelet og Rav-assistenten bruger den samme lokale Candidate G-beregning. En manglende beregning bliver ikke erstattet af en skjult ældre motor.</p><p><strong>Adminstatus:</strong> Adminforsiden viser, om alle zoner er aktive. Hvis ikke, listes de berørte zoner, søgemåder og forståelige årsager uden rå strømvektorer, koordinater eller private data.</p><p><strong>Central beskyttelse:</strong> En centralt gemt ældre fallbackkonfiguration må ikke overskrive Candidate G-only-kontrakten under produktion. Hydrering, central persistence, state-recovery og releasegates stopper ved forsøg på rollback.</p><p>Beslutningen opfinder ingen data og ændrer ingen Candidate G-regel, geometri eller land-/vandpunkter. Se <code>DEC-0072</code>.</p></div>"
     },
     {
       "id": "candidate-g-state-continuity-recovery-4-0-272",

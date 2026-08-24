@@ -1,3 +1,12 @@
+## 4.0.274 – holdbar Candidate G-only-kontrakt (2026-08-24)
+
+- Retter den centrale migrationsgrænse, som fik mergeproduktionen for 4.0.273 til at stoppe før deploy: en historisk central rollbackkonfiguration kan ikke længere overskrive den ejerbesluttede Candidate G-only-kontrakt.
+- Validerer Candidate G-only både før central persistence og efter readback. En legacyprofil kan ikke vinde på samme eller højere versionsnummer.
+- Forsiden, zonepanelet og Rav-assistenten bruger nu kun den lokale Candidate G-beregning. Manglende evidens giver utilgængelighed, ikke en skjult 25/40/35-, parent-, nabo- eller anden-timescore.
+- Releasegaten stopper ved central legacykonfiguration eller genindførte offentlige imports af den gamle scoremotor.
+- Adminforsiden viser **ALLE AKTIVE** eller berørte zone-/søgemådepar med forståelige årsager; andre zoner fortsætter Candidate G.
+- 4.0.273 blev ikke deployet. Geodatafilerne har kun fået versionsfelt 4.0.274; geometri og land-/vandpunkter er uændrede. Se DEC-0072.
+
 ## 4.0.273 – Candidate G-only og lokal scoretilgængelighed (2026-08-24)
 
 - Candidate G 20/50/30 er nu den eneste offentlige scoremodel. Den gamle 25/40/35-model kan ikke længere vælges som reserve, rollback eller automatisk fallback.
