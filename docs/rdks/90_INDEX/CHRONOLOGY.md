@@ -9,8 +9,9 @@
 5. Håndbogsgennemgangen fandt historiske modelkandidater, der kunne læses som aktuelle, en forældet Supabase-installationskopi og en deploysynkronisering, som kunne overskrive centralt godkendte ekspertændringer. Tekster, kodekapitel, scenarier, hypoteser og releasegate er rettet; installationskopien synkroniseres fuldt, og livehåndbogen trevejsflettes mod en beskyttet kildebaseline.
 6. PR #122 bestod exact-head `32721778498` på `a885bc5b` og blev merged som `abe10127`. Produktion `32721891349` bestod frem til den beskyttede synkronisering og stoppede før deploy, fordi den centralt ændrede håndbog endnu ikke havde en lagret første kildebaseline.
 7. PR #123 bestod exact-head `32724526697`, blev merged som `00f59456`, og produktion `32724616331` bestod alle kode-, data- og releasegates. Den stoppede før deploy, fordi den slanke Pages-pakke ikke udgiver håndbogens kildefil.
-8. Første migrering må derfor hente den produktionsverificerede 4.0.269-kilde på uforanderlig commit `d745e0ba4ad88dde91c308a9ad9810797f951c91`, men accepterer den kun ved SHA-256-match mod det tidligere beskyttede manifest. Ukendt, ændret eller utilgængelig baseline stopper fortsat sikkert.
-9. Score, farvegrænser, fysik, vejrdata, geometri og land-/vandpunkter er urørte. Se DEC-0069.
+8. PR #124 bestod exact-head `32726897134`, blev merged som `fd7bc868`, og produktion `32727025187` bestod alle øvrige gates, men stoppede ved hashkontrollen. Dermed blev det bevist, at manifestet stammer fra den senere produktionsgrønne 4.0.269-dokumentationsmerge.
+9. Første migrering må derfor hente den sidste centralt synkroniserede 4.0.269-kilde på uforanderlig commit `fc13fb5ab326d8824ca55235ac454ac230e3db3e` fra grøn produktion `32706573863`, men accepterer den kun ved SHA-256-match mod det tidligere beskyttede manifest.
+10. Score, farvegrænser, fysik, vejrdata, geometri og land-/vandpunkter er urørte. Se DEC-0069.
 
 ## 2026-08-24 – ejerens visuelle scoregennemgang
 
