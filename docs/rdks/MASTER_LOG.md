@@ -1,3 +1,10 @@
+## 2026-08-24 – 4.0.275 synkron håndbogs- og installationskilde
+
+- PR #135 bestod exact-head `32775343561` og blev merged som `3a96c28d`. Produktion `32775444781` kom gennem central Candidate G-only-hydrering og den hurtige kildegate; den gamle scoremodel blev ikke genaktiveret.
+- Den fulde validering stoppede før deploy, fordi repositoryets 154-kapitlers webhåndbog ikke var identisk med den statiske installationskopi. Workflowet havde ikke indlæst central ekspertdata i håndbogsfilen på dette tidspunkt; fejlen var reel kildedrift.
+- 4.0.275 synkroniserer installationskopien og bevarer den fulde identitetskontrol. Samme kontrol køres nu også i exact-head `validate:source`, så fremtidig drift stopper før merge og vejrbygning.
+- Den eksisterende beskyttede trevejsfletning af centralt godkendte ekspertændringer er uændret. Candidate G, vejr, zoner, geometri og punkter er urørte; geodatafilerne ændrer kun versionsfelt.
+
 ## 2026-08-24 – 4.0.274 central Candidate G-only-migration
 
 - PR #134 bestod exact-head `32772324736` og blev merged som `10fd9896`, men mergeproduktionen `32772470050` stoppede sikkert før vejrbyg og deploy.

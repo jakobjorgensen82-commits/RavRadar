@@ -1,4 +1,4 @@
-import { scoreRating } from "../core/score-engine.js?v=4.0.274";
+import { scoreRating } from "../core/score-engine.js?v=4.0.275";
 
 const hasNumber = value => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value));
 const formatNumber = (value, suffix, digits = 1) => hasNumber(value) ? `${Number(value).toFixed(digits).replace(".", ",")} ${suffix}` : "Mangler";

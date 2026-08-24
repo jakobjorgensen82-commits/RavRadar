@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import {fetchPreviousHandbookSource,handbookPayloadDigest,mergeProtectedHandbook} from './lib/merge-protected-handbook.mjs';
 
 const section=(id,body)=>({id,title:id,summary:`Kort ${id}`,body});
@@ -42,5 +43,13 @@ await assert.rejects(
   'En anden versionsbundet payload må ikke bruges som baseline.',
 );
 
-console.log('Beskyttet håndbog: officiel opdatering og ekspertændringer flettes uden datatab.');
+const sourceHandbook=JSON.parse(fs.readFileSync('docs/handbook/content.json','utf8'));
+const installSql=fs.readFileSync('supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql','utf8');
+const sqlPayload=JSON.stringify(sourceHandbook).replaceAll("'","''");
+assert.ok(
+  installSql.includes(`values('handbook','${sqlPayload}'::jsonb,null)`),
+  'Supabase-installationskopien skal matche repositoryets kildehåndbog før central hydrering.',
+);
+
+console.log('Beskyttet håndbog: kildekopi, officiel opdatering og ekspertændringer kontrolleres uden datatab.');
 

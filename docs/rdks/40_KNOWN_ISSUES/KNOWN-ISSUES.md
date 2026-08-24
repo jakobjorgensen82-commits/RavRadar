@@ -1,6 +1,11 @@
 # Kendte åbne og overvågede forhold
 
-## Kandidat 4.0.274 – Candidate G-only gennem central produktion
+## Kandidat 4.0.275 – Candidate G-only og synkron håndbogskilde
+
+- **ISSUE-HANDBOOK-INSTALL-SOURCE-DRIFT – LØST I KANDIDAT:** Produktion `32775444781` bestod Candidate G-only-hydreringen, men stoppede før deploy, fordi repositoryets webhåndbog og Supabase-installationskopi var forskellige. Central ekspertdata var ikke indlæst i det fejlede trin. 4.0.275 synkroniserer kopien, bevarer den fulde kontrol og føjer samme kontrol til exact-head-kildegaten.
+- **ISSUE-4.0.274-NOT-DEPLOYED – DOKUMENTERET:** PR #135 blev merged, men den sikre håndbogsgate stoppede mergeproduktionen før Pages-artifact og deploy. Den offentlige side blev derfor ikke ændret af 4.0.274.
+
+## Historisk kandidat 4.0.274 – Candidate G-only gennem central produktion
 
 - **ISSUE-CANDIDATE-G-CENTRAL-LEGACY-REHYDRATION – LØST I KANDIDAT:** 4.0.273-koden var korrekt lokalt, men central hydrering genindsatte et historisk profilvalg med rollback og legacyfallback. Produktion `32772470050` stoppede korrekt før deploy. 4.0.274 beskytter den fulde ejerbesluttede Candidate G-only-kontrakt mod enhver central legacykonfiguration uanset legacyversionsnummer og validerer igen efter central readback.
 - **ISSUE-PUBLIC-LEGACY-CALCULATION-PATHS – LØST I KANDIDAT:** Forsiden, Rav-assistenten og informationspanelet havde stadig separate imports af den gamle beregner til enkelte fallback-/rangeringstilfælde. De bruger nu kun lokal Candidate G og returnerer utilgængelighed ved manglende evidens. Releasegaten afviser genindførsel.

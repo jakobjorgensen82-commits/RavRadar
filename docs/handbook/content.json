@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.274",
+  "handbookVersion": "4.0.275",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-08-24",
   "sections": [
@@ -1017,6 +1017,13 @@
       "title": "Candidate G: mobilisering som ét bølgeforløb",
       "summary": "Den interne kandidat samler bølgehøjde og periode i én tilstand, så stormens varighed og eftervirkning tæller uden dobbeltregning.",
       "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> En kort høj bølgetop skal ikke ligne en udviklet storm. Candidate G bygger derfor én mobiliseringstilstand gradvist op fra bølgehøjde og bølgeperiode og lader den falde langsomt igen.</div><p>Vind giver ikke ekstra mobiliseringspoint. Vind bruges allerede til waders-jagtbarhed, og dens fysiske virkning kommer desuden gennem bølger og strøm. Strømmen bruges i transportleddet. Modellen undgår dermed at belønne samme hændelse flere gange.</p><p>Den aktive profil bygger mod bølgeniveauet over cirka fire timer og har 48 timers halveringstid i efterfasen. Det er en testet arbejdsregel og ikke en dokumenteret naturgrænse.</p><p>Bunddybde, render, revler, lokal grundegnethed og sikkerhed indgår ikke. Grove steddata kan overse kendte lokale passager og give misvisende fradrag.</p><div class=\"callout\"><strong>Aktuel status:</strong> Mobiliseringshukommelsen er del af den aktive Candidate G-model med 20/50/30. Candidate G er eneste offentlige scoremodel; et lokalt datagab vises uden erstatningsscore.</div>"
+    },
+    {
+      "id": "central-expert-handbook-validation-4-0-275",
+      "chapter": "63",
+      "title": "Håndbog og installationskopi følges ad",
+      "summary": "Repositoryets webhåndbog og Supabase-installationskopi kontrolleres allerede på PR'ens eksakte kodeversion og igen før deploy.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> RavRadar har både webhåndbogen i repositoryet og en statisk Supabase-installationskopi. De skal være identiske.</div><p>Kontrollen køres nu på PR'ens eksakte kodeversion, så en glemt installationskopi opdages før merge og dyr vejrbygning. Den fulde produktionsvalidering gentager kontrollen før deploy.</p><p>Den senere beskyttede trevejsfletning af centralt godkendte ekspertændringer er uændret. Den bevarer ekspertens arbejde centralt uden at tillade skjult drift mellem installationskilderne.</p><div class=\"callout\"><strong>Uændret produkt:</strong> Rettelsen ændrer ingen RavScore-regel, vejrdata, zone, geometri eller land-/vandpunkt.</div>"
     }
   ]
 }

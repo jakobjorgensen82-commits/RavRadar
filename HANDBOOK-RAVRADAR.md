@@ -1,5 +1,13 @@
 # RavRadar Håndbog
 
+## Synkron håndbog og installationskopi – 4.0.275
+
+RavRadar har både webhåndbogen i repositoryet, en statisk Supabase-installationskopi og den senere centralt gemte eksperthåndbog. Repositoryets håndbog og installationskopien skal være identiske. Det kontrolleres nu både på hver PR's eksakte kodeversion og igen i den fulde produktionsvalidering.
+
+Den centralt gemte eksperthåndbog håndteres senere af den eksisterende beskyttede trevejsfletning. Ekspertens godkendte rettelser kan derfor bevares centralt uden at skjule eller tillade drift mellem de to installationskilder.
+
+Rettelsen ændrer ingen RavScore-regel, vejrfysik, zone, kystgeometri eller land-/vandpunkt. `data/kystdata.json` og `data/zones.geojson` ændrer kun versionsfeltet til 4.0.275.
+
 ## Candidate G-only og lokal scoretilgængelighed – 4.0.274
 
 RavRadar bruger nu kun **Candidate G: 20 % søgeforhold, 50 % transport mod kysten og 30 % rav i bevægelse**. Den gamle 25/40/35-model er historik og kan ikke længere overtage den offentlige side, hvis der mangler en måling eller en sammenhængende Candidate G-tilstand.
@@ -477,7 +485,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.274
+**Håndbogsversion:** 4.0.275
 
 **Opdateret:** 19. august 2026
 

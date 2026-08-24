@@ -1,6 +1,6 @@
 # Current truth – gældende projektviden
 
-## Kandidat 4.0.274 – Candidate G-only-kontrakten er central og gennemgående
+## Kandidat 4.0.275 – håndbog og installationskopi låses før merge
 
 - Candidate G med **20 % søgeforhold, 50 % transport og 30 % rav i bevægelse** er fortsat den eneste offentlige scoremodel. Forsiden, zonepanelet og Rav-assistenten bruger nu alle den samme lokale Candidate G-beregning og har ingen offentlig import af den gamle scoremotor.
 - PR #134 bestod exact-head-kildegaten i kørsel `32772324736` og blev merged som `10fd989682f8658e603194e11363d861c489a166`.
@@ -9,7 +9,13 @@
 - Den beskyttede centrale persistence validerer Candidate G-only både før skrivning og efter readback. Releasegaten kræver disse markører og afviser samtidig genindførsel af offentlige legacyberegninger.
 - Adminforsiden viser **ALLE AKTIVE** eller de konkrete utilgængelige zone-/søgemådepar og en almindelig dansk årsag. Resten af Danmark fortsætter på Candidate G.
 - `data/kystdata.json` og `data/zones.geojson` har kun versionsfeltet ændret fra 4.0.273 til 4.0.274; geometri og land-/vandpunkter er urørte.
-- Målrettede migrations-, profil-, assistent- og syntakskontroller er grønne. Ny exact-head, frisk fuld produktion og offentlig slutkontrol mangler endnu.
+- PR #135 bestod exact-head-kildegaten `32775343561` og blev merged som `3a96c28d70eb60130db90bdb816be3b3f60149b4`. Produktion `32775444781` beviste, at central Candidate G-only-hydrering og den hurtige kildegate nu består.
+- Produktionen stoppede fortsat sikkert før deploy, fordi repositoryets webhåndbog og den statiske Supabase-installationskopi var forskellige på den mergede commit. Den centrale eksperthåndbog indlæses ikke i dette trin og var derfor ikke årsagen.
+- 4.0.275 synkroniserer installationskopien igen og føjer samme identitetskontrol til exact-head-kildegaten. Den fulde produktionsgate bevarer kontrollen, mens den senere beskyttede trevejsfletning fortsat kan bevare centralt godkendte ekspertændringer uden at skrive dem tilbage i repositoryet.
+- Ingen Candidate G-regel, vejrfysik, zone, geometri eller land-/vandpunkt ændres. Geodatafilerne ændrer kun versionsfelt 4.0.274 → 4.0.275.
+- Ny exact-head, frisk fuld produktion og offentlig slutkontrol mangler endnu.
+
+## Historisk kandidat 4.0.274 – Candidate G-only-kontrakten blev central og gennemgående
 
 ## Historisk kandidat 4.0.273 – Candidate G er eneste offentlige scoremodel
 

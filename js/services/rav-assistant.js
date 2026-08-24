@@ -1,5 +1,5 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.274";
-import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.274";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.275";
+import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.275";
 
 const KNOWLEDGE={
  equipment:'Til almindelig ravjagt er de mest nyttige ting: polariserede briller i dagslys, en god ravlygte i mørke, handsker, vindtæt tøj og en lille beholder til fund. Waders og vadestav er relevante, når du vil lede i vandet.',
