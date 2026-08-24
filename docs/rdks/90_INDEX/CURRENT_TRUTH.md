@@ -1,6 +1,6 @@
 # Current truth – gældende projektviden
 
-## 4.0.269-kandidat – aktuelle scoreforklaringer og enkel offentlig visning
+## Produktionsverificeret 4.0.269 – aktuelle scoreforklaringer og enkel offentlig visning
 
 - **Hvorfor denne score?** bruger nu den valgte kystdels faktiske offentlige vind-, bølge- og strømværdier samt relevant opbygget Candidate G-state for alle tre komponenter. Generiske intervaltekster står ikke længere alene.
 - **Rav i bevægelse** forklares som bølgevirkning – ofte skabt af vind – på allerede tilgængeligt rav og let materiale. Vind giver ikke direkte mobiliseringspoint, og strømmen står fortsat for transporten.
@@ -8,7 +8,9 @@
 - Den offentlige **Fundprognose** er skjult, fordi to ture ikke kan bære en troværdig procentchance. Observationer og intern læring bevares. **Anvendte scorelofter** og rå **Samlet score**-JSON er skjult, mens bagvedliggende teknisk logik består.
 - Det tomme **Vælg et område på kortet**-felt er fjernet uden ændring af kortvalg. Kilde- og licensafsnittet følger den faktiske DMI-/Copernicus-/dokumenterede fallback- og kortkæde.
 - Candidate G er fortsat aktiv 20/50/30. Ejerens 25/40/35-billede svarer til en kort global reservevisning; næste naturlige produktion viste igen Candidate G på 210/673. Den globale, ikke-blandede reserve bevares, og 4.0.269 forklarer begge profiler korrekt.
-- Ingen scoretal, Candidate G-regel, vejrdata, Supabase-kontrakt, geometri eller land-/vandpunkter ændres. De to geodatafiler ændrer kun versionsfeltet. Exact-head, frisk produktion og fuld 210/673-browserkontrol afventer. Se DEC-0068.
+- Ingen scoretal, Candidate G-regel, vejrdata, Supabase-kontrakt, geometri eller land-/vandpunkter er ændret. De to geodatafiler ændrede kun versionsfeltet.
+- PR #120 bestod exact-head `32703138969` på `37de330c` og blev merged som `d745e0ba`. Produktion `32703271897` udgav live `rr-20260824080543-210` som 4.0.269 efter grøn central hydrering, frisk DMI/strøm, fuld validering, releasegate og Pages.
+- Den fulde offentlige browseraudit bestod 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer uden kontrol-, konsol-, side- eller HTTP-fejl. Se DEC-0068.
 
 ## Produktionsverificeret 4.0.268 – ravjagt før RavRadar
 

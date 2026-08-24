@@ -1,6 +1,6 @@
 # DEC-0068 – Aktuelle scoreforklaringer og enkel zonevisning
 
-- **Status:** Implementeret lokalt i 4.0.269; afventer exact-head, frisk produktion og offentlig slutkontrol.
+- **Status:** Implementeret og produktionsverificeret i 4.0.269.
 - **Dato:** 2026-08-24
 - **Ejerbeslutning:** Den offentlige visning skal forklare de konkrete forhold, brugeren ser, og skjule tekniske eller statistisk umodne felter, som ikke hjælper brugeren.
 
@@ -35,3 +35,11 @@ Den globale reserve bevares som fail-closed adfærd: RavRadar må ikke blande pr
 - Exact-head `validate:source` i PR.
 - Frisk central hydrering, fuld validering og releasegate i produktion.
 - Fuld offentlig 210/673-browserkontrol, fordi ændringen rammer scoreforklaring og offentlig visningskontrakt.
+
+## Produktionsbevis
+
+- PR #120 bestod exact-head `32703138969` på `37de330c` og blev merged som `d745e0ba4ad88dde91c308a9ad9810797f951c91`.
+- Produktion `32703271897` gennemførte central adminhydrering, frisk DMI-strøm og vejr, deterministisk offentlig runtime, fuld projektvalidering, releasegate, artifact og Pages-deploy som grøn.
+- Live datasæt `rr-20260824080543-210` viser 4.0.269, 210 zoner, 673/673 kystdele og global Candidate G med 20/50/30.
+- Browserauditen kontrollerede begge søgemåder, 420 aktuelle paneler, 2.100 femdøgnsvisninger og 673 kystdelsreferencer. Den fandt nul kontrol-, konsol-, side- eller HTTP-fejl.
+- Den offentlige stikprøve viste konkrete aktuelle vind-, bølge- og strømforklaringer i alle tre komponenter. Fundprognose, scorelofter, rå samlet score, det tomme kortvalgsfelt og den gamle lavvandsformulering forekom ikke.

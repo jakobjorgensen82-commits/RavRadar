@@ -14,6 +14,8 @@ Det tomme **Vælg et område på kortet**-felt er fjernet. Kortvalget virker som
 
 Candidate G er fortsat den aktive model med **20 % søgeforhold, 50 % transport mod kysten og 30 % rav i bevægelse**. Den globale 25/40/35-reserve bevares uændret og må kun vælges samlet, når Candidate G ikke kan udgives komplet. 4.0.269 ændrer ingen scoretal, vejrkilder, Supabase-kontrakt, geometri eller land-/vandpunkter. Se DEC-0068 og `docs/research/PUBLIC_SCORE_EXPLANATION_REVIEW_4.0.269.md`.
 
+4.0.269 er produktionsverificeret. PR #120 bestod exact-head `32703138969` på `37de330c` og blev merged som `d745e0ba`. Produktion `32703271897` udgav `rr-20260824080543-210` på 210 zoner og 673 kystdele efter frisk vejr, fuld validering og releasegate. Den offentlige browseraudit bestod 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer uden kontrol-, konsol-, side- eller HTTP-fejl.
+
 ## Grundbog i ravjagt og almindeligt brugersprog – 4.0.268
 
 RavRadars offentlige læringsmodul er nu en grundbog i ravjagt for begyndere og øvede. Det starter ikke med appens knapper. Det følger i stedet den fysiske kæde fra ravets egenskaber og mulige lagre gennem mobilisering, transport, kystens sortering, felttegn og selve jagten. Først derefter forklares RavRadar som et værktøj, der omsætter en del af denne viden til en score.

@@ -19,4 +19,6 @@
 
 - DEC-0068, RDKS, roadmap, begge håndbøger, forskningsnote og changelog beskriver samme kontrakt.
 - Målrettede tests låser de aktuelle forklaringer, de skjulte offentlige felter, kildekrediteringen og begge scoreprofiler.
-- Exact-head, frisk produktionskørsel og fuld 210/673-browserkontrol registreres ved produktionslukningen.
+- PR #120 bestod exact-head `32703138969` på `37de330c`, blev merged som `d745e0ba`, og produktion `32703271897` bestod central hydrering, frisk vejr og strøm, fuld validering, releasegate og Pages-deploy.
+- Live `rr-20260824080543-210` viser 4.0.269 med Candidate G 20/50/30 på 210 zoner og 673 kystdele.
+- Den fulde offentlige browseraudit bestod 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer med nul kontrol-, konsol-, side- eller HTTP-fejl.

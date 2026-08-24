@@ -1,6 +1,6 @@
 # RavRadar - aktivt roadmap
 
-## P0 – produktionsluk 4.0.269's aktuelle scoreforklaringer
+## Produktionsverificeret 4.0.269 – aktuelle scoreforklaringer
 
 - [x] Brug aktuelle vind-, bølge-, strøm- og stateværdier i alle tre delscoreforklaringer.
 - [x] Forklar mobilisering som bølgevirkning på allerede tilgængeligt rav og let materiale; hold strømtransport særskilt.
@@ -8,9 +8,10 @@
 - [x] Skjul den umodne Fundprognose og de to tekniske scorefelter uden at slette bagvedliggende data eller logik.
 - [x] Fjern det tomme kortvalgsfelt og opdatér kilder/licenser.
 - [x] Bevar aktiv Candidate G 20/50/30 og den globale, ikke-blandede reserveprofil.
-- [ ] Bestå exact-head-kildegaten, merge den eksakte head og følg frisk produktion.
-- [ ] Bestå fuld 210/673-browserkontrol af tekster, profil, visning, konsol og netværk.
-- [ ] Luk 4.0.269 med eksakte beviser i RDKS, roadmap, begge håndbøger og changelog.
+- [x] Bestå PR #120 exact-head `32703138969` på `37de330c`, merge `d745e0ba` og frisk produktion `32703271897`.
+- [x] Kontrollér live `rr-20260824080543-210` med Candidate G 20/50/30 på 210 zoner og 673 kystdele.
+- [x] Bestå fuld browserkontrol af 420 aktuelle, 2.100 femdøgns- og 673 kystdelsvisninger med nul fejl.
+- [x] Luk 4.0.269 med eksakte beviser i RDKS, roadmap, begge håndbøger og changelog.
 
 ## P1 – fortsat læringsgrundlag fra brugerens ture
 

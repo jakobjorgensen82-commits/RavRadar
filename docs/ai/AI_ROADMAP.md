@@ -7,7 +7,8 @@
 - [x] Fjern misvisende lavvandsforklaring samt umoden Fundprognose og tekniske offentlige scorefelter.
 - [x] Bevar observationsdata og intern læring uden dobbeltlagring.
 - [x] Opdatér tomtilstand, kilder, licenser, tests, RDKS og håndbøger uden score- eller geodataændring.
-- [ ] Bestå exact-head, frisk produktion og fuld 210/673-browserkontrol.
+- [x] Bestå PR #120 exact-head `32703138969`, merge `d745e0ba`, produktion `32703271897` og live `rr-20260824080543-210` på 210/673.
+- [x] Bestå 420 aktuelle, 2.100 femdøgns- og 673 kystdelsvisninger uden kontrol-, konsol-, side- eller HTTP-fejl.
 
 ## 4.0.268 – produktionsverificeret grundbog og almindeligt dansk
 

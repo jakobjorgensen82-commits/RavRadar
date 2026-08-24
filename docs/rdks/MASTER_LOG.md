@@ -5,7 +5,8 @@
 - Fundprognosen skjules på grund af et ikke-repræsentativt totursgrundlag. Observationer, én eksisterende lagring og intern læring bevares. Scorelofter og rå JSON skjules ligeledes uden logiksletning.
 - Det tomme kortvalgsfelt fjernes, og kilde-/licensafsnittet opdateres til den faktiske DMI-, Copernicus-, dokumenterede fallback- og kortkæde.
 - Den offentlige runtimekontrol viste Candidate G 20/50/30 på 210/673 efter den korte 25/40/35-reservevisning på ejerens billede. Den globale reserve bevares som fail-closed kontrakt; ingen blandet profil tillades.
-- Målrettede lokale kontrakter er grønne. Exact-head, frisk fuld produktion og 210/673-browserkontrol afventer. Se DEC-0068.
+- PR #120 bestod exact-head `32703138969` på `37de330c` og blev merged som `d745e0ba`. Produktion `32703271897` bestod central hydrering, frisk DMI/strøm, fuld validering, releasegate, artifact og Pages og udgav `rr-20260824080543-210` som 4.0.269 på 210/673.
+- Den fulde offentlige browseraudit bestod 420 aktuelle, 2.100 femdøgns- og 673 kystdelsvisninger uden kontrol-, konsol-, side- eller HTTP-fejl. Se DEC-0068.
 
 ## 2026-08-24 – grundbog, almindeligt sprog og en korrekt stoppet første produktion
 

@@ -2,11 +2,11 @@
 
 ## 4.0.269 offentlig scoreforklaring og profilvisning
 
-- **ISSUE-PUBLIC-SCORE-REASONS-GENERIC – LØST LOKALT / AFVENTER PRODUKTION:** Candidate G dannede forklaringer ud fra scoreintervallet og ikke de konkrete forhold. 4.0.269 fører de faktiske offentlige værdier og relevant state ind i alle tre forklaringer. Se DEC-0068.
-- **ISSUE-LOW-WATER-INBOUND-WORDING – LØST LOKALT / AFVENTER PRODUKTION:** Reserveprofilen kunne både omtale lavt og stigende vand og hævdede, at lavt vand hjalp indtransport. 4.0.269 tillægger kun den stigende vandstand denne mulige virkning og mærker en fast lavvandsprofil som en fast reserveegenskab.
+- **ISSUE-PUBLIC-SCORE-REASONS-GENERIC – PRODUKTIONSVERIFICERET LØST:** Candidate G dannede forklaringer ud fra scoreintervallet og ikke de konkrete forhold. Live 4.0.269 fører de faktiske offentlige værdier og relevant state ind i alle tre forklaringer. Se DEC-0068.
+- **ISSUE-LOW-WATER-INBOUND-WORDING – PRODUKTIONSVERIFICERET LØST:** Reserveprofilen kunne både omtale lavt og stigende vand og hævdede, at lavt vand hjalp indtransport. 4.0.269 tillægger kun den stigende vandstand denne mulige virkning og mærker en fast lavvandsprofil som en fast reserveegenskab.
 - **ISSUE-PUBLIC-FIND-PROBABILITY-IMMATURE – SKJULT / DATAGRUNDLAG OVERVÅGES:** Den viste procentchance byggede på to ture og en udglattet rate. Feltet er skjult, mens observations- og læringskontrakten bevares. Det må kun genindføres efter en særskilt beslutning om et repræsentativt datagrundlag.
-- **ISSUE-PUBLIC-TECHNICAL-SCORE-FIELDS – LØST LOKALT / AFVENTER PRODUKTION:** Anvendte scorelofter og rå samlet score-JSON var interne kontroloplysninger i den offentlige visning. De er skjult uden at ændre scoremotoren.
-- **ISSUE-PUBLIC-TRANSIENT-GLOBAL-RESERVE – OVERVÅGET:** Ejerens skærmbillede viste 25/40/35 under en kort offentlig produktion. Den næste naturlige produktion viste igen Candidate G 20/50/30 på 210/673. Det er foreneligt med den bindende globale reservegate og ikke med en blandet model. Reserven bevares; 4.0.269 skal bestå frisk produktion og fuld browserkontrol i Candidate G-normaltilstand.
+- **ISSUE-PUBLIC-TECHNICAL-SCORE-FIELDS – PRODUKTIONSVERIFICERET LØST:** Anvendte scorelofter og rå samlet score-JSON var interne kontroloplysninger i den offentlige visning. De er skjult uden at ændre scoremotoren.
+- **ISSUE-PUBLIC-TRANSIENT-GLOBAL-RESERVE – OVERVÅGET, NORMALTILSTAND BEKRÆFTET:** Ejerens skærmbillede viste 25/40/35 under en kort offentlig produktion. Frisk 4.0.269-produktion `32703271897` og browserkontrollen viser Candidate G 20/50/30 på 210/673. Det er foreneligt med den bindende globale reservegate og ikke med en blandet model. Reserven bevares som fail-closed beskyttelse.
 
 ## 4.0.267 turindberetningens uploadkæde – lukket og overvåget
 
