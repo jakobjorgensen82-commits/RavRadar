@@ -1,6 +1,8 @@
 # RavRadar – overlevering til næste chat
 
-## Aktiv kandidat 2026-08-24 – 4.0.270 før-lancering
+> Produktionsbevis: PR #126 blev merged som `fda934ae`. Den eksakte mergeproduktion `32730674577` (#3522) bestod hele kæden og udgav Pages-artifact `9521472172` samt supportartifact `RavRadar-support-3522` (`9521463897`).
+
+## Produktionslukket 2026-08-24 – 4.0.270 før-lancering
 
 - Naturlig 210/673-produktion, Supabase Free-plan, admin, eksperthåndbog og rettigheder er kontrolleret. Ingen private payloads, koordinater eller rå strømvektorer er udstillet.
 - Den synlige rangering er rettet uden at genindføre ekstra lotterilodder: toplisterne viser den samme afrundede områdescore, som DEC-0049 sorterer efter. Den falske adminstatus for `coastline-overrides` er også rettet.
@@ -8,7 +10,9 @@
 - PR #122 bestod exact-head `32721778498` på `a885bc5b` og blev flettet som `abe10127`. Produktion `32721891349` bestod de fulde kode- og datagates, men stoppede før Supabase- og Pages-deploy ved den første beskyttede håndbogssynkronisering: central håndbog var ændret, og en tidligere kildebaseline fandtes endnu ikke.
 - PR #123 bestod exact-head `32724526697`, blev merged som `00f59456`, og produktion `32724616331` bestod alle kode-, data- og releasegates. Den stoppede fortsat sikkert før deploy, fordi den slanke Pages-pakke ikke udgiver håndbogens kildefil.
 - PR #124 bestod exact-head `32726897134`, blev merged som `fd7bc868`, og produktion `32727025187` bestod alle øvrige gates, men stoppede fortsat før deploy: hashkontrollen beviste, at manifestet stammer fra den senere produktionsgrønne 4.0.269-dokumentationsmerge.
-- Den endelige hotfix bruger derfor den seneste centralt synkroniserede 4.0.269-kilde på uforanderlig commit `fc13fb5ab326d8824ca55235ac454ac230e3db3e` fra grøn produktion `32706573863`, men kun efter SHA-256-match mod det tidligere beskyttede manifest. Ny exact-head, merge, produktion og offentlig browserkontrol mangler før 4.0.270 kan kaldes lukket.
+- PR #125 bestod exact-head `32728525467` på `3fe579ab`, blev merged som `7861079b`, og produktion `32728654553` lukkede den beskyttede første migrering med `source-update`, aktiv Candidate G-readback, fulde gates, supportartifact og Pages.
+- PR #126 rettede alene den aktive browseraudits forældede vandstandslabel og bestod exact-head `32730584569` på `01853d21`; offentlig brugerflade, score og data blev ikke ændret.
+- Den gentagne fulde 4.0.270-liveaudit bestod 210 zoner, 673 kystdele, 420 aktuelle og 2.100 femdøgnsvisninger med nul kontrol-, konsol-, side- eller HTTP-fejl.
 - Efter den tekniske lukning mangler den virkelige eksterne ekspertgennemgang samt domæne-, HTTPS-, Supabase-redirect- og fuld brugerflowprøve på `ravradar.dk`.
 
 ## Lukket checkpoint 2026-08-24 – 4.0.268 offentlig grundbog
