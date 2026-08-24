@@ -1,3 +1,11 @@
+## 4.0.269 – aktuelle scoreforklaringer (2026-08-24)
+
+- De tre RavScore-komponenter forklarer den viste kystdels konkrete vind-, bølge-, strøm- og stateforhold.
+- Mobilisering forklares som bølgevirkning, og lavt vand fremstilles ikke længere som selvstændig indtransporthjælp.
+- Fundprognose, offentlige scorelofter, rå samlet score-JSON og det tomme kortvalgsfelt er skjult; bagvedliggende data og logik bevares.
+- Kilder og licenser er opdateret. Candidate G 20/50/30, global reserve, scoretal, vejr, Supabase, geometri og land-/vandpunkter er uændrede.
+- Se `CHANGELOG-4.0.269.md` og DEC-0068. Exact-head og produktionslukning afventer.
+
 ## 4.0.267 – komplet uploadskema for kontoindberetninger (2026-08-23)
 
 - Den aktive observationstabel manglede de to POST-only-felter `forecast_target_at` og `report_accuracy`. Desuden afviste klientens privatlivskontrol den krævede tomme værdi `gps=null`, før turen blev gemt lokalt eller sendt.

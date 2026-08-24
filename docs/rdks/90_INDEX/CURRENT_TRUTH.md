@@ -1,5 +1,15 @@
 # Current truth – gældende projektviden
 
+## 4.0.269-kandidat – aktuelle scoreforklaringer og enkel offentlig visning
+
+- **Hvorfor denne score?** bruger nu den valgte kystdels faktiske offentlige vind-, bølge- og strømværdier samt relevant opbygget Candidate G-state for alle tre komponenter. Generiske intervaltekster står ikke længere alene.
+- **Rav i bevægelse** forklares som bølgevirkning – ofte skabt af vind – på allerede tilgængeligt rav og let materiale. Vind giver ikke direkte mobiliseringspoint, og strømmen står fortsat for transporten.
+- Lavt og stigende vand kan forekomme samtidig; kun stigningen beskrives som mulig hjælp til at føre materiale længere ind. En fast lavvandsprofil i reserveberegningen mærkes som en fast egenskab.
+- Den offentlige **Fundprognose** er skjult, fordi to ture ikke kan bære en troværdig procentchance. Observationer og intern læring bevares. **Anvendte scorelofter** og rå **Samlet score**-JSON er skjult, mens bagvedliggende teknisk logik består.
+- Det tomme **Vælg et område på kortet**-felt er fjernet uden ændring af kortvalg. Kilde- og licensafsnittet følger den faktiske DMI-/Copernicus-/dokumenterede fallback- og kortkæde.
+- Candidate G er fortsat aktiv 20/50/30. Ejerens 25/40/35-billede svarer til en kort global reservevisning; næste naturlige produktion viste igen Candidate G på 210/673. Den globale, ikke-blandede reserve bevares, og 4.0.269 forklarer begge profiler korrekt.
+- Ingen scoretal, Candidate G-regel, vejrdata, Supabase-kontrakt, geometri eller land-/vandpunkter ændres. De to geodatafiler ændrer kun versionsfeltet. Exact-head, frisk produktion og fuld 210/673-browserkontrol afventer. Se DEC-0068.
+
 ## Produktionsverificeret 4.0.268 – ravjagt før RavRadar
 
 - Den offentlige læring er nu en selvstændig **Grundbog i ravjagt**, ikke en vejledning i at trykke rundt i appen. Den lærer først ravets egenskaber, mobilisering, transport, vind, bølger, strøm, vandstand, kystformer, felttegn og selve jagten.

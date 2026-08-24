@@ -1,5 +1,15 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-24 – ejerens visuelle scoregennemgang
+
+1. Ejeren bad først om, at ændringerne ventede, mens flere billeder og observationer blev samlet.
+2. Gennemgangen viste, at *Rav sat i bevægelse* ikke forklarede bølgernes rolle tydeligt, og at *Hvorfor denne score?* skulle beskrive de aktuelle forhold i alle tre komponenter.
+3. Et billede viste både lavt og stigende vand. Ejeren afviste med rette formuleringen om, at lavt vand i sig selv hjælper materiale ind; 4.0.269 tillægger kun stigningen denne mulige virkning.
+4. Fundprognosen byggede på to ture. Ejeren besluttede, at feltet skal skjules nu og eventuelt genindføres senere, når et reelt historisk fundgrundlag findes.
+5. Ejeren bad også om at fjerne anvendte scorelofter, rå samlet score-JSON og det tomme *Vælg et område på kortet*-felt samt opdatere kilder, kort og licenser.
+6. Den systemiske kontrol bekræftede, at Candidate G 20/50/30 igen var aktiv på 210/673 efter en kort global 25/40/35-reservevisning. Den bindende globale reserve bevares; blandede profiler er fortsat forbudt.
+7. 4.0.269 implementerer aktuelle forklaringer i både Candidate G og reserveprofilen, skjuler de besluttede felter uden at slette bagvedliggende data/logik og ændrer ingen scoretal, geometri eller land-/vandpunkter. Se DEC-0068.
+
 ## 2026-08-24 – læringsmodulet bliver en grundbog i ravjagt
 
 1. Ejeren gjorde det klart, at læringsmodulet ikke skal lære brugeren at anvende RavRadar, men lære alt det, projektet aktuelt ved om ravjagt.

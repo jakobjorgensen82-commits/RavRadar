@@ -1,5 +1,5 @@
-import { calculateRavScore, scoreRating } from "../core/score-engine.js?v=4.0.268";
-import { selectBestTimeForDay } from "../core/best-time-selector.js?v=4.0.268";
+import { calculateRavScore, scoreRating } from "../core/score-engine.js?v=4.0.269";
+import { selectBestTimeForDay } from "../core/best-time-selector.js?v=4.0.269";
 
 const hasNumber = value => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value));
 const formatNumber = (value, suffix, digits = 1) => hasNumber(value) ? `${Number(value).toFixed(digits).replace(".", ",")} ${suffix}` : "Mangler";
@@ -21,6 +21,7 @@ const directionArrow = (value, type = "current") => {
 // Fælles renderer til både zonepanelet og alle prognosedage. Nye zoner får
 // automatisk samme visning, fordi værdierne kommer fra zonens forecast/condition.
 const directionMetric = (type, speed, speedSuffix, direction, digits = 1) => `<span class="direction-reading">${directionArrow(direction,type)}<span>${formatNumber(speed,speedSuffix,digits)} · ${compass(direction)}</span></span>`;
+const MOBILISATION_DEFINITION = "Om bølger – ofte skabt af vind – kan have løsnet allerede tilgængeligt rav eller andet let materiale fra havbund, tang eller kystnære aflejringer og holdt det i bevægelse. Vinden giver ikke point direkte; dens virkning sker gennem bølgerne.";
 
 function groupForecastHours(forecast) {
   const groups = new Map();
@@ -70,7 +71,7 @@ function stateExplanationPanel(result) {
   if(!state?.summary)return '';
   const facts=(state.facts||[]).map(item=>`<li>${escapeHtml(item)}</li>`).join('');
   const metrics=[];
-  if(Number.isFinite(Number(state.mobilisationPotential)))metrics.push(`<span>Rav sat i bevægelse <b>${Math.round(state.mobilisationPotential)}/100</b></span>`);
+  if(Number.isFinite(Number(state.mobilisationPotential)))metrics.push(`<span>Bølgernes opbyggede virkning <b>${Math.round(state.mobilisationPotential)}/100</b></span>`);
   if(Number.isFinite(Number(state.nearshorePotential)))metrics.push(`<span>Rav ført ind mod kysten <b>${Math.round(state.nearshorePotential)}/100</b></span>`);
   const phaseLabels={
     'højenergifase':'Kraftigt vejr nu eller lige før',
@@ -94,8 +95,6 @@ function debugPanel(zone, result, condition) {
   const debugZone = result.localZone || zone;
   const debugCondition = result.localWeather || condition;
   const d = result.explanation?.transportDiagnostics || {};
-  const prediction = result.prediction || {};
-  const caps = (d.capsApplied || []).map(cap => `<li><code>${escapeHtml(cap.reason)}</code>: maks. ${cap.max} transportpoint</li>`).join("") || "<li>Ingen scorelofter anvendt.</li>";
   const steps = (d.steps || []).map(step => `<tr><td>${escapeHtml(step.label)}</td><td>${step.delta > 0 ? "+" : ""}${step.delta}</td><td>${Math.round(step.scoreAfter)}</td></tr>`).join("") || '<tr><td colspan="3">Ingen mellemregninger tilgængelige.</td></tr>';
   const provider = debugCondition.providerLabel || debugCondition.provider || debugCondition.currentProvenance?.provider || "DMI";
   const currentDifference = Number.isFinite(Number(d.currentDirectionDifferenceDeg)) ? `${Math.round(d.currentDirectionDifferenceDeg)}°` : "Mangler";
@@ -119,8 +118,6 @@ function debugPanel(zone, result, condition) {
       <div><span>Nærkystpotentiale</span><strong>${Number.isFinite(Number(result.explanation?.transportEvent?.shadowState?.nearshorePotential)) ? `${Math.round(result.explanation.transportEvent.shadowState.nearshorePotential)}/100` : "–"}</strong></div>
     </div>
     <h4>Transportens mellemregninger</h4><div class="debug-table-wrap"><table class="debug-table"><thead><tr><th>Trin</th><th>Ændring</th><th>Efter trin</th></tr></thead><tbody>${steps}</tbody></table></div>
-    <h4>Anvendte scorelofter</h4><ul>${caps}</ul>
-    <h4>Samlet score</h4><pre>${escapeHtml(JSON.stringify({ formula:result.explanation?.formula, components:result.components, weights:result.explanation?.weights, contributions:result.explanation?.contributions, rawScore:result.explanation?.rawScore, adaptiveAdjustment:result.explanation?.adaptiveAdjustment, ruleAdjustment:result.explanation?.ruleAdjustment, finalScore:result.explanation?.finalScore, historicalState:result.explanation?.transportEvent?.shadowState, stateExplanation:result.explanation?.transportEvent?.stateExplanation, ai:{ probability:prediction.probability, modelProbability:prediction.modelProbability, empiricalProbability:prediction.empiricalProbability, confidence:prediction.confidence, sampleSize:prediction.sampleSize } }, null, 2))}</pre>
   </div></details>`;
 }
 
@@ -160,7 +157,7 @@ export function bindZoneInfoInteractions(element, zone, mode, history, options =
       detail.innerHTML = `<div class="forecast-selected"><div><h4>${capitalize(dayLabel(`${day.date}T12:00:00`))} ${dateLabel(`${day.date}T12:00:00`)}</h4>${best.recommended?`<p>Bedste beregnede tidspunkt: <b>${best.isNow?"Lige nu":hourLabel(h.time)}</b></p><p class="muted">Dette tidspunkt har dagens højeste samlede RavScore${best.isNow?" blandt timerne fra nu og frem":""}. Hvis to tidspunkter har samme score, bruges vandstanden til at vælge mellem dem.</p>${best.candidates?.length>1?`<details class="best-time-comparison"><summary>Se sammenligningen</summary><ol>${best.candidates.slice(0,5).map(candidate=>`<li><span>${candidate.isNow?"Lige nu":hourLabel(candidate.time)}</span><b>RavScore ${candidate.score}</b></li>`).join("")}</ol></details>`:""}`:`<p>Der kan ikke vælges et bedste tidspunkt, fordi der mangler data. Se timeprognosen i stedet.</p>`}</div><div class="score-badge ${r.level}"><strong>${r.available?r.score:"–"}</strong><span>RavScore</span></div></div>
         ${displayContextPanel(r,{scope:best.displayScope,partName:r.localPartName,time:h.time})}
         ${localCoveragePanel(r,{showMapButton:false})}
-        <div class="component-list compact metric-sized">${componentDetails("Søgeforhold","huntability",r,"Hvor let det er at lede på den valgte måde. Når du leder i vandet, tæller især vinden og de små bølger, som kan gøre det sværere at lyse gennem vandet.")}${componentDetails("Transport mod kysten","transport",r,"Om strømmen fører rav mod denne kyststrækning, langs kysten eller ud i havet. Ved kraftig strøm væk fra kysten kan transportscoren ende på nul.")}${componentDetails("Rav i bevægelse","release",r,"Om tidligere bølger kan have løsnet rav fra havbunden og holdt det i bevægelse. Virkningen kan fortsætte, efter at det hårdeste vejr er ovre.")}</div>${r.available ? coastTransportExplanation(r) : ""}
+        <div class="component-list compact metric-sized">${componentDetails("Søgeforhold","huntability",r,"Hvor let det er at lede på den valgte måde. Når du leder i vandet, tæller især vinden og de små bølger, som kan gøre det sværere at lyse gennem vandet.")}${componentDetails("Transport mod kysten","transport",r,"Om strømmen fører rav mod denne kyststrækning, langs kysten eller ud i havet. Ved kraftig strøm væk fra kysten kan transportscoren ende på nul.")}${componentDetails("Rav i bevægelse","release",r,MOBILISATION_DEFINITION)}</div>${r.available ? coastTransportExplanation(r) : ""}
         <div class="metric-grid weather-grid"><div class="metric"><span>Vind</span><strong>${directionMetric("wind",h.windSpeedMps,"m/s",h.windDirectionDeg)}</strong></div><div class="metric"><span>Bølger</span><strong>${formatNumber(h.waveHeightM,"m")}</strong></div><div class="metric"><span>Vandstand</span><strong>${formatNumber(h.waterLevelCm,"cm",0)}</strong></div><div class="metric"><span>Strøm</span><strong>${directionMetric("current",h.currentSpeedMps,"m/s",h.currentDirectionDeg,2)}</strong></div><div class="metric"><span>Vandstandsændring på 3 timer</span><strong>${formatNumber(h.waterLevelTrendCm3h,"cm",0)}</strong></div><div class="metric"><span>Vandtemperatur</span><strong>${formatNumber(h.waterTemperatureC,"°C")}</strong></div></div>`;
     };
     forecastSection.querySelectorAll(".forecast-score-day").forEach((button,index) => button.addEventListener("click",()=>render(index)));
@@ -182,14 +179,13 @@ export function bindZoneInfoInteractions(element, zone, mode, history, options =
 
 export function showZoneInfo(element, zone, result, condition, mode, options = {}) {
   const modeName = mode === "waders" ? "I vandet (waders)" : "På stranden", score = result.available ? result.score : "–", days = groupForecastHours(options.forecast);
-  const componentHtml = result.available ? `<div class="component-list metric-sized">${componentDetails("Søgeforhold","huntability",result,"Hvor let det er at lede på den valgte måde. Når du leder i vandet, tæller især vinden og de små bølger, som kan gøre det sværere at lyse gennem vandet.")}${componentDetails("Transport mod kysten","transport",result,"Om strømmen fører rav mod denne kyststrækning, langs kysten eller ud i havet. Ved kraftig strøm væk fra kysten kan transportscoren ende på nul.")}${componentDetails("Rav i bevægelse","release",result,"Om tidligere bølger kan have løsnet rav fra havbunden og holdt det i bevægelse. Virkningen kan fortsætte, efter at det hårdeste vejr er ovre.")}</div>` : `<div class="metric-grid"><div class="metric"><span>Søgeforhold</span><strong>–/100</strong></div><div class="metric"><span>Transport mod kysten</span><strong>–/100</strong></div><div class="metric"><span>Rav i bevægelse</span><strong>–/100</strong></div></div>`;
+  const componentHtml = result.available ? `<div class="component-list metric-sized">${componentDetails("Søgeforhold","huntability",result,"Hvor let det er at lede på den valgte måde. Når du leder i vandet, tæller især vinden og de små bølger, som kan gøre det sværere at lyse gennem vandet.")}${componentDetails("Transport mod kysten","transport",result,"Om strømmen fører rav mod denne kyststrækning, langs kysten eller ud i havet. Ved kraftig strøm væk fra kysten kan transportscoren ende på nul.")}${componentDetails("Rav i bevægelse","release",result,MOBILISATION_DEFINITION)}</div>` : `<div class="metric-grid"><div class="metric"><span>Søgeforhold</span><strong>–/100</strong></div><div class="metric"><span>Transport mod kysten</span><strong>–/100</strong></div><div class="metric"><span>Rav i bevægelse</span><strong>–/100</strong></div></div>`;
   element.innerHTML = `<button type="button" class="back-to-overview" data-close-zone>← Tilbage til oversigten</button><div class="zone-header"><div><h2>${escapeHtml(zone.name)}</h2><p class="zone-meta">${escapeHtml(zone.region)} · ${modeName}</p></div><div class="score-badge ${result.level}"><strong>${score}</strong><span>${escapeHtml(result.label)}</span></div></div>
     ${localCoveragePanel(result)}
     ${displayContextPanel(result,options.displayContext)}
     ${componentHtml}
     ${result.available ? stateExplanationPanel(result) : ""}
     ${result.available ? coastTransportExplanation(result) : ""}
-    ${result.prediction?.available ? `<section class="prediction-panel"><div><span class="eyebrow">Fundprognose</span><h3>${result.prediction.probability}% beregnet chance for ravfund</h3><p>${escapeHtml(result.prediction.label)} · datagrundlag ${result.prediction.confidence}%</p></div><details><summary>Sådan er prognosen beregnet</summary><ul>${result.prediction.reasons.map(reason=>`<li>${escapeHtml(reason)}</li>`).join("")}</ul></details></section>` : ""}
     ${result.available ? debugPanel(zone,result,condition) : ""}
     ${result.available ? `<div class="metric-grid weather-grid"><div class="metric"><span>Vind</span><strong>${directionMetric("wind",condition.windSpeedMps,"m/s",condition.windDirectionDeg)}</strong></div><div class="metric"><span>Bølger</span><strong>${formatNumber(condition.waveHeightM,"m")}</strong></div><div class="metric"><span>Vandstand</span><strong>${formatNumber(condition.waterLevelCm,"cm",0)}</strong></div><div class="metric"><span>Strøm</span><strong>${directionMetric("current",condition.currentSpeedMps,"m/s",condition.currentDirectionDeg,2)}</strong></div><div class="metric"><span>Vandstandsændring på 3 timer</span><strong>${formatNumber(condition.waterLevelTrendCm3h,"cm",0)}</strong></div><div class="metric"><span>Vandtemperatur</span><strong>${formatNumber(condition.waterTemperatureC,"°C")}</strong></div></div>` : ""}
     ${forecastPanel(days,zone,mode,options.history||{},condition,result,options.bestByDate||{})}${tidePanel(days)}`;

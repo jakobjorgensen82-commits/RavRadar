@@ -1188,6 +1188,19 @@ function scoreCoastalPartsRuntime(
             transportMemoryReady: derivedState.transportMemoryReady,
             transportMemoryStatus: derivedState.transportMemoryStatus,
             transportMemoryCoverageHours: derivedState.transportMemoryCoverageHours,
+            publicContext: {
+              windSpeedMps: weather.windSpeedMps,
+              waveHeightM: weather.waveHeightM,
+              currentSpeedMps: weather.currentSpeedMps,
+              currentAlignment: weather.currentSpeedMps != null && weather.currentDirectionDeg != null
+                ? Math.cos((Number(weather.currentDirectionDeg) - Number(part.onshoreDirectionDeg)) * Math.PI / 180)
+                : null,
+              currentVerified: weather.currentProvenance?.status === 'verified',
+              currentTransition: derivedState.currentTransition,
+              outboundEpisodeEffectiveHours: derivedState.outboundEpisodeEffectiveHours,
+              actualOutboundTransport: derivedState.actualOutboundTransport,
+              waveMobilisationTransition: derivedState.waveMobilisationTransition,
+            },
             modes: candidateGModes,
           } : null,
           ...modes
@@ -1230,6 +1243,7 @@ function scoreCoastalPartsRuntime(
     legacy: scoreRow?.[mode] ?? null,
     candidateG: scoreRow?.candidateG?.modes?.[mode] ?? null,
     mode,
+    context: scoreRow?.candidateG?.publicContext ?? {},
   });
 
   const partRowsByZone = new Map();

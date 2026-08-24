@@ -1,5 +1,19 @@
 # RavRadar Håndbog
 
+## Aktuelle scoreforklaringer og enkel zonevisning – 4.0.269
+
+Når en bruger åbner en RavScore-komponent, skal **Hvorfor denne score?** forklare den viste kystdels faktiske forhold. Søgeforhold omtaler den aktuelle vind og ved waders også den aktuelle bølgeuro. Transport omtaler den aktuelle strømstyrke, om strømmen går ind mod, langs med eller væk fra kysten, og hvordan de seneste timers sammenhængende strøm har bygget eller nedbrudt transporten. Rav i bevægelse omtaler den aktuelle bølgehøjde og den bølgevirkning, der er bygget op over tid.
+
+**Rav i bevægelse** betyder ikke, at vinden direkte løsner rav. Bølger – ofte skabt af vind – kan løsne allerede tilgængeligt rav og andet let materiale fra havbund, tang eller kystnære aflejringer og holde det i bevægelse. Strømmen står derefter for selve transporten.
+
+Et lavt aktuelt vandniveau kan godt optræde samtidig med stigende vandstand. Det er stigningen, ikke det lave udgangspunkt, der kan føre flydende materiale længere ind. Faste lokale reserveegenskaber beskrives særskilt og må ikke forveksles med aktuelle målinger.
+
+Den offentlige **Fundprognose** er skjult, indtil RavRadar har et repræsentativt grundlag af afsluttede ture med både fund og intet fund. Indberetningerne og den interne læringsmulighed bevares, men to ture må ikke fremstilles som en troværdig procentchance. **Anvendte scorelofter** og den rå sorte **Samlet score**-JSON er også skjult for almindelige brugere; den bagvedliggende scorelogik og tekniske kontrol er ikke slettet.
+
+Det tomme **Vælg et område på kortet**-felt er fjernet. Kortvalget virker som før, og informationspanelet åbner, når brugeren vælger et område. Kildeafsnittet beskriver nu DMI som førstevalg, de dokumenterede Copernicus Marine- og DMI-regionalveje for godkendte strømhuller, Open-Meteo/MET Norway ved dokumenterede øvrige vejrdatagab samt OpenStreetMap, Leaflet og de angivne billedleverandører.
+
+Candidate G er fortsat den aktive model med **20 % søgeforhold, 50 % transport mod kysten og 30 % rav i bevægelse**. Den globale 25/40/35-reserve bevares uændret og må kun vælges samlet, når Candidate G ikke kan udgives komplet. 4.0.269 ændrer ingen scoretal, vejrkilder, Supabase-kontrakt, geometri eller land-/vandpunkter. Se DEC-0068 og `docs/research/PUBLIC_SCORE_EXPLANATION_REVIEW_4.0.269.md`.
+
 ## Grundbog i ravjagt og almindeligt brugersprog – 4.0.268
 
 RavRadars offentlige læringsmodul er nu en grundbog i ravjagt for begyndere og øvede. Det starter ikke med appens knapper. Det følger i stedet den fysiske kæde fra ravets egenskaber og mulige lagre gennem mobilisering, transport, kystens sortering, felttegn og selve jagten. Først derefter forklares RavRadar som et værktøj, der omsætter en del af denne viden til en score.
@@ -422,7 +436,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.268
+**Håndbogsversion:** 4.0.269
 
 **Opdateret:** 19. august 2026
 
