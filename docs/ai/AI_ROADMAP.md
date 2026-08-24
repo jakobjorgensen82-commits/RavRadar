@@ -1,5 +1,14 @@
 # AI Roadmap – RavRadar 4.0.243+
 
+## 4.0.269 – aktuelle scoreforklaringer
+
+- [x] Bind alle tre offentlige delscoreforklaringer til den valgte rækkes faktiske offentlige forhold og state.
+- [x] Skeln tydeligt mellem bølgemobilisering, strømtransport og vindens indirekte virkning.
+- [x] Fjern misvisende lavvandsforklaring samt umoden Fundprognose og tekniske offentlige scorefelter.
+- [x] Bevar observationsdata og intern læring uden dobbeltlagring.
+- [x] Opdatér tomtilstand, kilder, licenser, tests, RDKS og håndbøger uden score- eller geodataændring.
+- [ ] Bestå exact-head, frisk produktion og fuld 210/673-browserkontrol.
+
 ## 4.0.268 – produktionsverificeret grundbog og almindeligt dansk
 
 - [x] Gør læringsmodulet til en grundbog i ravjagt, hvor ravets egenskaber, havets processer, kysten, felttegn og jagtmetoder kommer før RavRadar.

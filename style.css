@@ -36,6 +36,7 @@ main { width: min(1180px, 100%); margin: 0 auto; }
 .legend-dot { width: 14px; height: 14px; border-radius: 50%; display: inline-grid; place-items: center; color: white; font-size: 9px; font-style: normal; line-height: 1; font-weight: 900; }
 .good { background: var(--good); } .fair { background: var(--fair); } .weak { background: var(--weak); } .poor { background: var(--poor); } .unavailable { background: var(--unavailable); }
 .info-panel { min-height: 210px; margin: 14px; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
+.info-panel[hidden] { display:none; }
 .empty-state { text-align: center; padding: 22px 8px; }
 .empty-state h2 { margin: 0 0 8px; }
 .empty-state p { margin: 0; color: var(--muted); }

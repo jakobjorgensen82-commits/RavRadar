@@ -1,3 +1,21 @@
+# Implementeringsstatus – 4.0.269 aktuelle scoreforklaringer
+
+## Implementeret lokalt; produktionslukning afventer
+
+- [x] Gør alle tre *Hvorfor denne score?*-forklaringer afhængige af den valgte rækkes faktiske offentlige forhold og relevante state.
+- [x] Forklar bølgernes rolle i mobilisering og adskil den fra vindens indirekte virkning og strømmens transport.
+- [x] Ret lavt-og-stigende-vand-teksten, så det lave niveau ikke fremstilles som indtransporthjælp.
+- [x] Skjul offentlig Fundprognose, scoreloftsfelt og rå samlet score-JSON uden at slette data-, lærings- eller scorelogik.
+- [x] Skjul det tomme kortvalgsfelt og bevar områdevalget.
+- [x] Opdatér offentlige kilder og licenser til den aktive vejr-, hav- og kortkæde.
+- [x] Bevar Candidate G 20/50/30, global reserve, scoretal, vejrkontrakt, Supabase, geometri og land-/vandpunkter.
+- [x] Lås ændringen i målrettede tests og versionsbind 4.0.269; de to geodatafiler har kun versionsfeltdiff.
+- [ ] Bestå PR'ens exact-head `validate:source`.
+- [ ] Bestå frisk central produktion, fuld validering og releasegate.
+- [ ] Bestå fuld offentlig 210/673-browserkontrol og luk dokumentationen med eksakte run-/commit-id'er.
+
+Se DEC-0068 og `docs/research/PUBLIC_SCORE_EXPLANATION_REVIEW_4.0.269.md`.
+
 # Produktionsverificeret implementeringsstatus – 4.0.268 offentlig grundbog og almindeligt dansk
 
 ## Afsluttet leverance

@@ -1,5 +1,13 @@
 # AI Knowledge Base – RavRadar
 
+## 4.0.269 – offentlig forklaringskontekst er ikke ny rådata
+
+De tre offentlige RavScore-forklaringer skal bruge den valgte kystdels faktiske allerede-offentlige værdier og relevante Candidate G-state. Den lille forklaringskontekst er afledt visningsdata, ikke en ny rå strøm- eller privat datakanal: rå U/V, koordinater og private payloads er forbudt. Generiske scoreintervaltekster kan kun være supplement. Tidligere forløb skal mærkes som historik, og faste lokale reserveegenskaber skal mærkes som faste.
+
+Mobilisering betyder bølgevirkning – ofte skabt af vind – på allerede tilgængeligt rav og let materiale. Vind er ikke direkte mobiliseringspoint; strøm transporterer. Et lavt aktuelt vandniveau hjælper ikke i sig selv indtransport, selv om vandstanden samtidig kan være stigende.
+
+Fundprognosen er skjult, indtil et særskilt beslutningspunkt dokumenterer repræsentative afsluttede ture med både fund og intet fund. Observationer og intern læring bevares i den eksisterende datakontrakt. Se DEC-0068.
+
 ## 4.0.125 – proveniens skabes ved indlæsningen
 `update-dmi-bulk.py` parsergeneration 14 skriver DMI-identitet på den rå komponenttime: provider, collection, model-run og native valid time. `dmi-forecast-store.mjs` må kun interpolere identificerede trin med samme collection og model-run og fører lead time, forecast age, temporal resolution og native source times videre. To hydrerede pre-v14-trin uden identitet kan midlertidigt bevare tidligere værdiinterpolation, men får ingen opdigtet proveniens og udløser fortsat audit; et identificeret og et uidentificeret trin må ikke blandes. `update-weather.mjs` og vandstandskontinuiteten må ikke erstatte identiteten med en generisk DMI-markør. Public runtime forbliver slank; den fulde sporbarhed ligger i beskyttede conditions/audits.
 

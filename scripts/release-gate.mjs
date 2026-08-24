@@ -12,6 +12,8 @@ const ok=(cond,msg)=>{if(!cond)errors.push(msg)};
 
 const publicLearningTest=spawnSync(process.execPath,['scripts/test-public-learning-module-4.0.268.mjs'],{cwd:root,stdio:'inherit'});
 ok(publicLearningTest.status===0,'Det offentlige læringsmodul eller sproggaten fejlede');
+const publicScoreExplanationTest=spawnSync(process.execPath,['scripts/test-public-score-explanations-4.0.269.mjs'],{cwd:root,stdio:'inherit'});
+ok(publicScoreExplanationTest.status===0,'De offentlige RavScore-forklaringer eller den forenklede zonevisning fejlede');
 
 const exactVersionFiles=['version.json','data/kystdata.json','data/zones.geojson','docs/handbook/content.json'];
 for(const rel of exactVersionFiles){

@@ -1,10 +1,11 @@
-import { loadAdaptiveModel, modelAdjustment } from './adaptive-model.js?v=4.0.268';
-import { evaluateDirectionAnchors, anchorClassification, buildCoastTransportExplanation } from './direction-anchors.js?v=4.0.268';
-import { evaluateTransportEvent, classifyCoastalZone } from './coastal-process-model.js?v=4.0.268';
-import { buildScoreDebugTrace } from './debug-trace.js?v=4.0.268';
-import { boundedWaveTransportAdjustment } from './wave-approach.js?v=4.0.268';
+import { loadAdaptiveModel, modelAdjustment } from './adaptive-model.js?v=4.0.269';
+import { evaluateDirectionAnchors, anchorClassification, buildCoastTransportExplanation } from './direction-anchors.js?v=4.0.269';
+import { evaluateTransportEvent, classifyCoastalZone } from './coastal-process-model.js?v=4.0.269';
+import { buildScoreDebugTrace } from './debug-trace.js?v=4.0.269';
+import { boundedWaveTransportAdjustment } from './wave-approach.js?v=4.0.269';
 const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, value));
 const numberOrNull = value => (value === null || value === undefined || value === '' || typeof value === 'boolean') ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
+const daNumber = (value, digits = 1) => Number(value).toFixed(digits).replace('.', ',');
 
 export const SCORE_WEIGHTS = Object.freeze({ huntability: 0.25, transport: 0.40, release: 0.35 });
 
@@ -39,12 +40,13 @@ function directionScore(directionDeg, targetDeg) {
 
 function calculateHuntability(mode, weather, reasons) {
   const wind = numberOrNull(weather.windSpeedMps), waves = numberOrNull(weather.waveHeightM); let score = 60;
+  if (wind !== null) reasons.push(`Vinden er ${daNumber(wind)} m/s${waves === null ? '' : `, og de beregnede bølger er ${daNumber(waves)} m`}.`);
   if (wind === null) reasons.push("Vinddata mangler.");
   else if (mode === "waders") {
     if (wind <= 3) { score += 28; reasons.push("Svag vind giver roligt vand og gode observationsforhold."); }
     else if (wind <= 6) { score += 8; reasons.push("Vinden er stadig brugbar med waders."); }
     else if (wind <= 8) { score -= 35; reasons.push("Vind over cirka 6 m/s reducerer sigtbarhed og kontrol i vandet."); }
-    else { score -= 60; reasons.push("Kraftig vind gør vandjagt vanskelig og kan være usikker."); }
+    else { score -= 60; reasons.push("Kraftig vind og tydelige krusninger gør det meget svært at lyse gennem vandet."); }
   } else {
     if (wind <= 8) { score += 15; reasons.push("Vindstyrken er behagelig til strandjagt."); }
     else if (wind <= 13) { score += 5; reasons.push("Frisk vind kan stadig være brugbar på stranden."); }
@@ -53,7 +55,7 @@ function calculateHuntability(mode, weather, reasons) {
   if (waves !== null) {
     if (mode === "waders" && waves > .7) { score -= 25; reasons.push("Bølgerne reducerer sigtbarhed og stabilitet i vandet."); }
     else if (mode === "waders" && waves <= .3) { score += 12; reasons.push("Små bølger gør det lettere at se bunden."); }
-    if (mode === "beach" && waves > 2.5) { score -= 12; reasons.push("Store bølger gør kanten vanskeligere og mindre sikker at afsøge."); }
+    if (mode === "beach" && waves > 2.5) { score -= 12; reasons.push("Store bølger gør strandkanten vanskeligere at afsøge."); }
   }
   return clamp(score);
 }
@@ -61,6 +63,7 @@ function calculateHuntability(mode, weather, reasons) {
 function calculateTransport(zone, weather, reasons, diagnostics) {
   const current = numberOrNull(weather.currentSpeedMps);
   const trend = numberOrNull(weather.waterLevelTrendCm3h);
+  const waterLevel = numberOrNull(weather.waterLevelCm);
   const anchorEvaluation = evaluateDirectionAnchors(zone, weather.currentDirectionDeg);
   const onshore = anchorEvaluation.primaryAnchor?.onshoreDirectionDeg ?? numberOrNull(zone.onshoreDirectionDeg);
   let score = 34;
@@ -75,6 +78,8 @@ function calculateTransport(zone, weather, reasons, diagnostics) {
     else { add('Svag strøm',-12); reasons.push("Svag strøm giver begrænset transport lige nu."); }
     currentAlignment = anchorEvaluation.effectiveAlignment;
     if (currentAlignment !== null) {
+      const direction = currentAlignment >= .35 ? 'ind mod kystdelen' : currentAlignment <= -.35 ? 'væk fra kystdelen' : 'mest langs kysten';
+      reasons.push(`Den aktuelle strøm er ${daNumber(current, 2)} m/s og går ${direction}.`);
       add('Strømretning mod land', Math.round(30 * currentAlignment));
       if (currentAlignment >= .65) reasons.push("Strømmen fører materiale ind mod zonen.");
       else if (currentAlignment <= -.35) reasons.push("Strømmen fører hovedsageligt materiale væk fra zonen.");
@@ -93,14 +98,19 @@ function calculateTransport(zone, weather, reasons, diagnostics) {
   }
 
   if (trend !== null) {
-    if (trend >= 8) { add('Stigende vandstand',8); reasons.push("Stigende vandstand kan føre flydende materiale ind over lavt vand."); }
+    if (trend >= 8) {
+      add('Stigende vandstand',8);
+      reasons.push(waterLevel !== null && waterLevel < 0
+        ? "Vandstanden står lavt, men er stigende. Det er stigningen – ikke det lave niveau – som kan føre flydende materiale længere ind."
+        : "Den stigende vandstand kan føre flydende materiale længere ind.");
+    }
     else if (trend <= -8) { add('Faldende vandstand',3); reasons.push("Faldende vandstand kan samle materiale langs nye kanter."); }
     else if (Math.abs(trend) < 2) { add('Stabil vandstand',-4); reasons.push("Næsten stabil vandstand giver kun lidt ekstra transport."); }
   }
 
   // Statiske kystegenskaber må kun forstærke dokumenteret indtransport.
   if (currentAlignment !== null && currentAlignment >= .2) {
-    if (zone.shallowWater) { add('Lavt vand',4); reasons.push("Lavt vand kan hjælpe indgående materiale ind i strandzonen."); }
+    if (zone.shallowWater) { add('Lavvandet kystprofil',4); reasons.push("Området er registreret som lavvandet. Det er en fast lokal egenskab i reservemodellen og ikke den aktuelle vandstand."); }
     if (zone.reefs) { add('Rev',3); reasons.push("Rev kan koncentrere en allerede indgående transport."); }
     if (zone.seagrass) { add('Tang og ålegræs',3); reasons.push("Tang og ålegræs kan fastholde materiale, der allerede føres ind."); }
   }
@@ -176,6 +186,8 @@ function calculateMobilisationAvailability(zone, weather, history, transportDiag
   // Spor A: ny frigivelse fra bund, tang eller kystaflejring efter høj energi.
   let freshRelease = 18;
   const freshReasons = [];
+  if (maxWave !== null) freshReasons.push(`De højeste beregnede bølger det seneste døgn var ${daNumber(maxWave)} m.`);
+  else if (maxWind !== null) freshReasons.push(`Den højeste beregnede vind det seneste døgn var ${daNumber(maxWind)} m/s.`);
   if (maxWind !== null) {
     if (maxWind >= 14) { freshRelease += 35; freshReasons.push("Høj energi det seneste døgn kan have åbnet eller forstyrret et nyt kildelager."); }
     else if (maxWind >= 9) { freshRelease += 18; freshReasons.push("Tidligere frisk vind kan have løsnet eller omlejret materiale."); }
@@ -192,7 +204,7 @@ function calculateMobilisationAvailability(zone, weather, history, transportDiag
   // Spor B: genmobilisering af rav, som allerede ligger i nærkystzonen, i tanglinjer,
   // på revler eller i tidligere opskyl. Dette spor kræver ikke en ny stormhændelse.
   let remobilisation = 14;
-  const remobilisationReasons = [];
+  const remobilisationReasons = currentWave === null ? [] : [`De aktuelle beregnede bølger er ${daNumber(currentWave)} m.`];
   if (currentWave !== null) {
     if (currentWave >= .25 && currentWave <= 1.2) { remobilisation += 17; remobilisationReasons.push("Aktuelle bølger kan genmobilisere allerede nærkystnært rav uden en ny stor storm."); }
     else if (currentWave > 1.2) { remobilisation += 12; remobilisationReasons.push("Aktuelle høje bølger kan genmobilisere materiale, men aflejringen er mere uforudsigelig."); }

@@ -6,7 +6,7 @@ export const CANDIDATE_G_MEMORY_REFERENCE_SCOPE = 'CURRENT_COMMON_ZONE_REFERENCE
 
 export const PUBLIC_RAVSCORE_PROFILE_SELECTION = Object.freeze({
   schemaVersion: '1.1.0',
-  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.268',
+  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.269',
   requestedProfileId: LEGACY_RAVSCORE_PROFILE_ID,
   rollbackProfileId: LEGACY_RAVSCORE_PROFILE_ID,
   candidateProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
@@ -102,27 +102,71 @@ function rating(score) {
   return { label: 'Dårlig', level: 'poor' };
 }
 
-function componentReason(name, value, mode) {
+function daNumber(value, digits = 1) {
+  return finite(value) ? Number(value).toFixed(digits).replace('.', ',') : null;
+}
+
+function currentDirectionText(alignment) {
+  if (!finite(alignment)) return null;
+  if (Number(alignment) >= 0.35) return 'ind mod kystdelen';
+  if (Number(alignment) <= -0.35) return 'væk fra kystdelen';
+  return 'mest langs kysten';
+}
+
+function buildComponentReasons(name, value, mode, context = {}) {
   const rounded = Math.round(clamp(value));
   if (name === 'huntability') {
+    const wind = daNumber(context.windSpeedMps);
+    const waves = daNumber(context.waveHeightM);
     if (mode === 'waders') {
-      if (rounded >= 80) return 'Vind og krusninger giver gode forhold for at afsøge vandet med waders.';
-      if (rounded >= 45) return 'Vind og krusninger gør det sværere, men stadig muligt, at afsøge vandet med waders.';
-      if (rounded > 0) return 'Vind og krusninger gør wadersjagten markant mindre effektiv.';
-      return 'Vinden gør det ikke realistisk at udnytte ravpotentialet med waders lige nu.';
+      const actual = wind === null
+        ? 'Den aktuelle vindstyrke mangler.'
+        : `Vinden er ${wind} m/s${waves === null ? '' : `, og de beregnede bølger er ${waves} m`}.`;
+      if (rounded >= 80) return [actual, 'Det giver gode muligheder for at lyse gennem vandet med waders.'];
+      if (rounded >= 45) return [actual, 'Vindens krusninger gør det sværere, men stadig muligt, at lyse gennem vandet.'];
+      if (rounded > 0) return [actual, 'Vindens krusninger gør det markant sværere at afsøge vandet effektivt.'];
+      return [actual, 'Vindens krusninger gør det ikke realistisk at udnytte ravpotentialet med waders lige nu.'];
     }
-    return 'Strandjagtens ravpotentiale begrænses ikke af wadersforholdene.';
+    return [wind === null
+      ? 'Ved strandjagt trækker manglende wadersforhold ikke RavScoren ned.'
+      : `Vinden er ${wind} m/s. Ved strandjagt trækker wadersforholdene ikke RavScoren ned.`];
   }
   if (name === 'transport') {
-    if (rounded >= 70) return 'Strømmen gennem de seneste timer giver stærke tegn på transport af rav ind mod kysten.';
-    if (rounded >= 40) return 'Strømmen gennem de seneste timer giver nogen tegn på transport af rav ind mod kysten.';
-    if (rounded > 0) return 'Strømmen gennem de seneste timer giver kun svage tegn på transport af rav ind mod kysten.';
-    return 'Strømforløbet giver ikke tegn på, at rav er ført ind mod kysten.';
+    if (context.actualOutboundTransport === true) {
+      return ['Den kraftige fralandsstrøm har varet længe nok til, at transporten mod kysten er brugt op.'];
+    }
+    const speed = daNumber(context.currentSpeedMps, 2);
+    const direction = currentDirectionText(context.currentAlignment);
+    const reasons = [speed !== null && direction
+      ? `Den aktuelle strøm er ${speed} m/s og går ${direction}.`
+      : 'Transporten bygger på det dokumenterede strømforløb gennem de seneste timer.'];
+    const phase = context.currentTransition;
+    if (phase === 'INBOUND_BUILDUP') reasons.push('Den indgående strøm bygger transporten mod kysten op time for time.');
+    else if (phase === 'OUTBOUND_EROSION') {
+      const hours = daNumber(context.outboundEpisodeEffectiveHours);
+      reasons.push(hours === null
+        ? 'Strøm væk fra kysten er begyndt at trække transportscoren ned.'
+        : `Strøm væk fra kysten har reduceret transportscoren i cirka ${hours} effektiv${Number(context.outboundEpisodeEffectiveHours) === 1 ? '' : 'e'} time${Number(context.outboundEpisodeEffectiveHours) === 1 ? '' : 'r'}.`);
+    } else if (phase === 'PASSIVE_NEUTRAL_DECAY') reasons.push('Strømmen giver hverken tydelig ind- eller udtransport, så tidligere opbygget transport aftager langsomt.');
+    else if (phase === 'UNVERIFIED_PAUSE') reasons.push('Der mangler en verificeret strømmåling for denne time, så den senest dokumenterede transporttilstand holdes uændret.');
+    else if (rounded >= 70) reasons.push('De seneste timers samlede strømforløb giver stærke tegn på transport ind mod kysten.');
+    else if (rounded >= 40) reasons.push('De seneste timers samlede strømforløb giver nogen transport ind mod kysten.');
+    else if (rounded > 0) reasons.push('De seneste timers samlede strømforløb giver kun svag transport ind mod kysten.');
+    else reasons.push('Strømforløbet giver ikke tegn på, at rav er ført ind mod kysten.');
+    return reasons;
   }
-  if (rounded >= 70) return 'Bølgerne gennem de seneste døgn har givet gode muligheder for at løsne rav fra havbunden.';
-  if (rounded >= 40) return 'Bølgerne gennem de seneste døgn har givet nogen mulighed for at løsne rav fra havbunden.';
-  if (rounded > 0) return 'Bølgerne gennem de seneste døgn har kun givet svage muligheder for at løsne rav fra havbunden.';
-  return 'Der er ikke tegn på, at bølgerne har løsnet rav fra havbunden.';
+  const waves = daNumber(context.waveHeightM);
+  const reasons = [waves === null
+    ? 'Der mangler en ny bølgehøjde for denne time.'
+    : `De aktuelle beregnede bølger er ${waves} m.`];
+  if (context.waveMobilisationTransition === 'build') reasons.push('Bølgeforløbet bygger lige nu muligheden op for, at allerede tilgængeligt rav er løsnet og holdes i bevægelse.');
+  else if (context.waveMobilisationTransition === 'decay') reasons.push('Bølgerne er roligere end den tidligere tilstand, så den opbyggede virkning aftager gradvist.');
+  else if (context.waveMobilisationTransition === 'missing-hold') reasons.push('Den senest dokumenterede bølgetilstand holdes uændret, indtil en ny måling findes.');
+  else if (rounded >= 70) reasons.push('Bølgeforløbet gennem de seneste døgn har givet gode muligheder for at sætte allerede tilgængeligt rav i bevægelse.');
+  else if (rounded >= 40) reasons.push('Bølgeforløbet gennem de seneste døgn har givet nogen mulighed for at sætte allerede tilgængeligt rav i bevægelse.');
+  else if (rounded > 0) reasons.push('Bølgeforløbet gennem de seneste døgn har kun givet svage muligheder for at sætte allerede tilgængeligt rav i bevægelse.');
+  else reasons.push('Bølgeforløbet giver ikke tegn på, at allerede tilgængeligt rav er sat i bevægelse.');
+  return reasons;
 }
 
 function activationEvidenceReady(evidence = {}) {
@@ -228,7 +272,7 @@ export function resolvePublicRavScoreProfile({
   });
 }
 
-export function projectCandidateGForPublic(candidate, { mode, profile } = {}) {
+export function projectCandidateGForPublic(candidate, { mode, profile, context = {} } = {}) {
   if (profile?.activeProfileId !== CANDIDATE_G_RAVSCORE_PROFILE_ID) {
     throw new Error('Candidate G may only be projected by the resolved active Candidate G profile');
   }
@@ -256,9 +300,9 @@ export function projectCandidateGForPublic(candidate, { mode, profile } = {}) {
     release: Math.round(release * weights.release),
   };
   const componentReasons = {
-    huntability: [componentReason('huntability', huntability, mode)],
-    transport: [componentReason('transport', transport, mode)],
-    release: [componentReason('release', release, mode)],
+    huntability: buildComponentReasons('huntability', huntability, mode, context),
+    transport: buildComponentReasons('transport', transport, mode, context),
+    release: buildComponentReasons('release', release, mode, context),
   };
   const outflowReason = candidate.outflowExhaustionGateApplied === true
     ? candidate.outflowExhaustionExplanationDa : null;
@@ -302,12 +346,12 @@ export function projectCandidateGForPublic(candidate, { mode, profile } = {}) {
   };
 }
 
-export function selectPublicRavScoreResult({ profile, legacy, candidateG, mode }) {
+export function selectPublicRavScoreResult({ profile, legacy, candidateG, mode, context = {} }) {
   if (!profile || profile.activeProfileId === LEGACY_RAVSCORE_PROFILE_ID) return legacy;
   if (profile.activeProfileId !== CANDIDATE_G_RAVSCORE_PROFILE_ID) {
     throw new Error(`Unknown resolved RavScore profile: ${profile.activeProfileId}`);
   }
-  return projectCandidateGForPublic(candidateG, { mode, profile });
+  return projectCandidateGForPublic(candidateG, { mode, profile, context });
 }
 
 export function rollbackPublicRavScoreSelection(selection = PUBLIC_RAVSCORE_PROFILE_SELECTION) {

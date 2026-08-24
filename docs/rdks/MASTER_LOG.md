@@ -1,3 +1,12 @@
+## 2026-08-24 – visuel scoregennemgang bliver til aktuelle forklaringer
+
+- Ejerens gennemgang viste, at Candidate G's *Hvorfor denne score?* var generisk, at mobiliseringens bølgevirkning ikke var forklaret tydeligt, og at reserveprofilens lavt-og-stigende-vand-tekst var misvisende.
+- 4.0.269 fører kun allerede offentlige, afledte værdier og tilstandsord ind i forklaringerne. Rå U/V, koordinater, private payloads og beskyttede data følger ikke med.
+- Fundprognosen skjules på grund af et ikke-repræsentativt totursgrundlag. Observationer, én eksisterende lagring og intern læring bevares. Scorelofter og rå JSON skjules ligeledes uden logiksletning.
+- Det tomme kortvalgsfelt fjernes, og kilde-/licensafsnittet opdateres til den faktiske DMI-, Copernicus-, dokumenterede fallback- og kortkæde.
+- Den offentlige runtimekontrol viste Candidate G 20/50/30 på 210/673 efter den korte 25/40/35-reservevisning på ejerens billede. Den globale reserve bevares som fail-closed kontrakt; ingen blandet profil tillades.
+- Målrettede lokale kontrakter er grønne. Exact-head, frisk fuld produktion og 210/673-browserkontrol afventer. Se DEC-0068.
+
 ## 2026-08-24 – grundbog, almindeligt sprog og en korrekt stoppet første produktion
 
 - Læringsmodulet er omskrevet til en offentlig grundbog i ravjagt fra ravets egenskaber over mobilisering, transport, kyst og felttegn til strand-, vandkant-, waders- og UV-jagt. RavRadar forklares først bagefter.

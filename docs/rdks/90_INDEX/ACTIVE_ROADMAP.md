@@ -1,5 +1,23 @@
 # RavRadar - aktivt roadmap
 
+## P0 – produktionsluk 4.0.269's aktuelle scoreforklaringer
+
+- [x] Brug aktuelle vind-, bølge-, strøm- og stateværdier i alle tre delscoreforklaringer.
+- [x] Forklar mobilisering som bølgevirkning på allerede tilgængeligt rav og let materiale; hold strømtransport særskilt.
+- [x] Fjern den misvisende påstand om, at lavt vand i sig selv hjælper indtransport.
+- [x] Skjul den umodne Fundprognose og de to tekniske scorefelter uden at slette bagvedliggende data eller logik.
+- [x] Fjern det tomme kortvalgsfelt og opdatér kilder/licenser.
+- [x] Bevar aktiv Candidate G 20/50/30 og den globale, ikke-blandede reserveprofil.
+- [ ] Bestå exact-head-kildegaten, merge den eksakte head og følg frisk produktion.
+- [ ] Bestå fuld 210/673-browserkontrol af tekster, profil, visning, konsol og netværk.
+- [ ] Luk 4.0.269 med eksakte beviser i RDKS, roadmap, begge håndbøger og changelog.
+
+## P1 – fortsat læringsgrundlag fra brugerens ture
+
+- [ ] Bevar Fundprognosen skjult, mens indberettede ture samles og kvalitetssorteres.
+- [ ] Definér ved et senere ejerbeslutningspunkt, hvad et repræsentativt grundlag af ture med fund og intet fund er, før en procentchance eventuelt genindføres.
+- [ ] Brug ikke identitet, efterregistreringer uden sikkert historisk vejr eller andre ikke-kalibrerbare ture direkte til scorejustering.
+
 ## Produktionsverificeret 4.0.268 – offentlig grundbog og almindeligt brugersprog
 
 - [x] Gennemgå de centrale offentlige tekster om score, opdatering, kildevalg, login, konto, tur og fejl og erstat interne systemord med almindeligt dansk.
