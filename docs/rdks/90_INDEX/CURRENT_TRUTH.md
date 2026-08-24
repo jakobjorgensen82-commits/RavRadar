@@ -1,7 +1,8 @@
 # Current truth – gældende projektviden
 
-## 4.0.270-kandidat – før-lancering, ekspert, admin og synlig rangering
+## Produktionsverificeret 4.0.270 – før-lancering, ekspert, admin og synlig rangering
 
+- PR #126 blev merged som `fda934ae`. Den eksakte mergeproduktion `32730674577` (#3522) bestod hele kæden og udgav Pages-artifact `9521472172` samt supportartifact `RavRadar-support-3522` (`9521463897`).
 - Den seneste naturlige produktionskørsel dokumenterer 210 zoner og 673 kystdele. De 198 geografisk verificerbare zoner har 72 timers sammenhængende prognose med naturlige tretimerspunkter; der opfindes ikke mellemliggende timer. Tolv kendte zoner mangler ærligt et marint punkt.
 - Supabase-projektet er sundt på Free-planen. I den aktuelle periode er databasen cirka 17 % og egress cirka 5 % af kvoten. Den forrige periodes egress-overskridelse og fristen 9. september overvåges fortsat.
 - Administratoren og eksperten bruger den samme centralt gemte håndbog. Ekspertadgang er begrænset af rettighederne `admin_access`, `handbook_view` og `handbook_review`; målrettede admin-, håndbogs- og rettighedstest er grønne. Officielle opdateringer trevejsflettes mod sidste kildebaseline, så centralt godkendte ekspertændringer ikke overskrives ved deploy.
@@ -13,7 +14,9 @@
 - PR #122 bestod exact-head `32721778498` på `a885bc5b` og blev merged som `abe10127`. Produktion `32721891349` stoppede før Supabase- og Pages-deploy, da den centralt ændrede håndbog manglede en lagret baseline ved første migrering.
 - PR #123 bestod exact-head `32724526697`, blev merged som `00f59456`, og produktion `32724616331` bestod alle kode-, data- og releasegates. Den stoppede før deploy, fordi den slanke Pages-pakke ikke udgiver håndbogens kildefil; ingen central håndbog eller offentlig side blev overskrevet.
 - PR #124 bestod exact-head `32726897134`, blev merged som `fd7bc868`, og produktion `32727025187` bestod alle øvrige gates, men stoppede sikkert ved hashkontrollen. Den viste, at sidste centralt synkroniserede 4.0.269-kilde er commit `fc13fb5ab326d8824ca55235ac454ac230e3db3e` fra grøn produktion `32706573863`.
-- Første migrering kan kun bruge denne uforanderlige kilde som baseline og kun ved SHA-256-match mod det tidligere beskyttede manifest. Kandidaten ændrer ingen delscore, farvegrænse, fysisk model, vejrdata, geometri eller land-/vandpunkt. Endelig hotfix-exact-head, frisk produktion og offentlig browserkontrol mangler endnu.
+- Første migrering bruger kun denne uforanderlige kilde som baseline og kun ved SHA-256-match mod det tidligere beskyttede manifest. PR #125/exact-head `32728525467`, merge `7861079b` og produktion `32728654553` beviser `source-update`, aktiv Candidate G-readback, fulde gates, supportartifact og Pages.
+- PR #126/exact-head `32730584569` rettede alene den aktive audits forældede label. Den fulde 4.0.270-liveaudit består 210 zoner, 673 dele, 420 aktuelle og 2.100 femdøgnsvisninger uden kontrol-, konsol-, side- eller HTTP-fejl.
+- 4.0.270 ændrer ingen delscore, farvegrænse, fysisk model, vejrdata, geometri eller land-/vandpunkt.
 
 ## Produktionsverificeret 4.0.269 – aktuelle scoreforklaringer og enkel offentlig visning
 
