@@ -20,7 +20,7 @@ const index = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8")
 const app = fs.readFileSync(new URL("../app.js", import.meta.url), "utf8");
 const css = fs.readFileSync(new URL("../style.css", import.meta.url), "utf8");
 const infoPanel = fs.readFileSync(new URL("../js/ui/info-panel.js", import.meta.url), "utf8");
-const browserAudit = fs.readFileSync(new URL("./audit-online-browser-4.0.237.py", import.meta.url), "utf8");
+const browserAudit = fs.readFileSync(new URL("./audit-online-browser-4.0.238.py", import.meta.url), "utf8");
 assert.doesNotMatch(index, /Fremragende|legend-dot excellent|score-symbol excellent/);
 assert.match(index, /En stjerne viser usædvanligt gode forhold/);
 assert.match(app, /exceptionalScoreMark\(item\.rankingDisplayScore\)/);
