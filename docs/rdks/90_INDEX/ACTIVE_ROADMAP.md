@@ -8,7 +8,8 @@
 - [x] Ret den falske statusfejl for det femte centrale admindokument.
 - [x] Bevar lotterikorrektionen i **Bedste områder** og **5-dages RavRadar**, men vis den samme områdescore, som listerne sorterer efter.
 - [x] Gennemgå begge håndbøger for historiske modeltekster, fejl og mangler; ret også kodekapitel, scenarier, hypoteseregister, ekspertarbejdsplan og releasegate, synkronisér installationskopien og beskyt centrale ekspertændringer med trevejsfletning.
-- [ ] Bestå exact-head-gates, merge, frisk produktion og offentlig browserkontrol.
+- [x] Bestå PR #122 exact-head `32721778498`, merge `abe10127`, og bevis i produktion `32721891349`, at en ukendt første håndbogsafvigelse stopper før deploy.
+- [ ] Bestå hotfix-exact-head, merge, frisk produktion og offentlig browserkontrol med hash-verificeret første baseline.
 - [ ] Lad den eksterne ekspert gennemgå fagindholdet og behandle reviewkøen; det kan ikke erstattes af en teknisk kontrol.
 
 ## P0 – lancering på ravradar.dk

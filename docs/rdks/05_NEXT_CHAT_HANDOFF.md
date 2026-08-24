@@ -5,7 +5,8 @@
 - Naturlig 210/673-produktion, Supabase Free-plan, admin, eksperthåndbog og rettigheder er kontrolleret. Ingen private payloads, koordinater eller rå strømvektorer er udstillet.
 - Den synlige rangering er rettet uden at genindføre ekstra lotterilodder: toplisterne viser den samme afrundede områdescore, som DEC-0049 sorterer efter. Den falske adminstatus for `coastline-overrides` er også rettet.
 - Begge håndbøger beskriver den aktive 20/50/30-model, installationsfilen synkroniseres med hele webhåndbogen, og livehåndbogen trevejsflettes, så godkendte centrale ekspertændringer ikke overskrives.
-- Branchens målrettede tests, exact-head-kildegate, merge, frisk produktion og offentlig browserkontrol skal færdiggøres før 4.0.270 kan kaldes lukket.
+- PR #122 bestod exact-head `32721778498` på `a885bc5b` og blev flettet som `abe10127`. Produktion `32721891349` bestod de fulde kode- og datagates, men stoppede før Supabase- og Pages-deploy ved den første beskyttede håndbogssynkronisering: central håndbog var ændret, og en tidligere kildebaseline fandtes endnu ikke.
+- Hotfixbranchen `codex/protected-handbook-baseline-4.0.270` bruger den tidligere offentlige håndbog som første baseline, men kun efter SHA-256-match mod det tidligere beskyttede manifest. Målrettede tests, exact-head, merge, ny produktion og offentlig browserkontrol mangler før 4.0.270 kan kaldes lukket.
 - Efter den tekniske lukning mangler den virkelige eksterne ekspertgennemgang samt domæne-, HTTPS-, Supabase-redirect- og fuld brugerflowprøve på `ravradar.dk`.
 
 ## Lukket checkpoint 2026-08-24 – 4.0.268 offentlig grundbog

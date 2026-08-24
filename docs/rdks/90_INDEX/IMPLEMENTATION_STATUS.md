@@ -12,11 +12,14 @@
 - [x] Synkronisér hele webhåndbogen til Supabase-installationsfilen ved versionsskift.
 - [x] Trevejsflet officielle håndbogsopdateringer med centralt godkendte ekspertændringer ved deploy; stop sikkert ved ukendt afvigelse uden baseline.
 - [x] Dokumentér ændringen i beslutning, researchnotat, roadmap, kendte forhold, handoff og changelog.
+- [x] Bestå PR #122 exact-head `32721778498` på `a885bc5b` og merge den eksakte head som `abe10127`.
+- [x] Lad produktion `32721891349` stoppe sikkert før deploy, da den fandt en centralt ændret håndbog uden en lagret første kildebaseline.
+- [x] Afgræns første migrering til den tidligere offentlige håndbog med obligatorisk SHA-256-match mod det tidligere beskyttede manifest.
 
 ## Mangler før produktionslukning
 
-- [ ] Bestå målrettede kontrakter, RDKS-, versions- og `validate:source`-gates på branchens eksakte head.
-- [ ] Merge og følg en frisk produktionskørsel med centrale data og releasegate.
+- [ ] Bestå hotfixets målrettede kontrakter, RDKS-, versions- og `validate:source`-gates på branchens eksakte head.
+- [ ] Merge hotfixet og følg en ny frisk produktionskørsel med central trevejsfletning og releasegate.
 - [ ] Kontrollér begge offentlige lister, adminoversigten og eksperthåndbogen i den udgivne version.
 - [ ] Luk 4.0.270 med eksakte commit-, run-, artifact- og browserbeviser.
 

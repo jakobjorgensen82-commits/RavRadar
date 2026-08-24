@@ -15,6 +15,7 @@
 - Nye Supabase-installationer får nu hele den aktuelle webhåndbog i stedet for en ældre indlejret kopi.
 - Releasegaten kræver nu de aktive Candidate G-spor og kontrollerer den aktive motor særskilt fra 25/40/35-rollback.
 - Deploysynkroniseringen trevejsfletter officielle håndbogsopdateringer med allerede godkendte centrale ekspertændringer. En ukendt central håndbog uden tidligere baseline stopper sikkert frem for at blive overskrevet.
+- Den første 4.0.270-produktion stoppede netop sikkert, fordi den centrale håndbog var ændret, mens den nye baseline endnu ikke fandtes. Første overgang kan nu bruge den tidligere offentlige håndbog som baseline, men kun når dens SHA-256 matcher det tidligere beskyttede manifest; hentefejl eller hashafvigelse stopper fortsat synkroniseringen.
 
 ## Data og drift
 

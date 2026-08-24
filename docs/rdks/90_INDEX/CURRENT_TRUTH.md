@@ -10,7 +10,8 @@
 - Begge håndbøger beskriver den aktive Candidate G-model som 20 % søgeforhold, 50 % transport og 30 % rav i bevægelse. Arbejdsplan, kodekapitel, scenarier og hypoteseregister følger den faktiske aktive motor; ældre kandidater er tydeligt mærket som historik.
 - Releasegaten kræver aktive Candidate G-spor og kontrollerer den aktive motor særskilt fra den globale 25/40/35-rollback.
 - Versionsværktøjet synkroniserer nu hele den aktuelle webhåndbog til installationsfilen til Supabase, så en ny installation ikke starter med forældet faglig tekst.
-- Kandidaten ændrer ingen delscore, farvegrænse, fysisk model, vejrdata, geometri eller land-/vandpunkt. Exact-head-gates, merge, frisk produktion og offentlig browserkontrol mangler endnu.
+- PR #122 bestod exact-head `32721778498` på `a885bc5b` og blev merged som `abe10127`. Produktion `32721891349` stoppede før Supabase- og Pages-deploy, da den centralt ændrede håndbog manglede en lagret baseline ved første migrering.
+- Første migrering kan bruge den tidligere offentlige håndbog som baseline, men kun når dens SHA-256 matcher det tidligere beskyttede manifest. Kandidaten ændrer ingen delscore, farvegrænse, fysisk model, vejrdata, geometri eller land-/vandpunkt. Hotfix-exact-head, frisk produktion og offentlig browserkontrol mangler endnu.
 
 ## Produktionsverificeret 4.0.269 – aktuelle scoreforklaringer og enkel offentlig visning
 
