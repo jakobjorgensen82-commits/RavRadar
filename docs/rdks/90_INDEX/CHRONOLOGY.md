@@ -9,6 +9,8 @@
 5. Ejeren bad også om at fjerne anvendte scorelofter, rå samlet score-JSON og det tomme *Vælg et område på kortet*-felt samt opdatere kilder, kort og licenser.
 6. Den systemiske kontrol bekræftede, at Candidate G 20/50/30 igen var aktiv på 210/673 efter en kort global 25/40/35-reservevisning. Den bindende globale reserve bevares; blandede profiler er fortsat forbudt.
 7. 4.0.269 implementerer aktuelle forklaringer i både Candidate G og reserveprofilen, skjuler de besluttede felter uden at slette bagvedliggende data/logik og ændrer ingen scoretal, geometri eller land-/vandpunkter. Se DEC-0068.
+8. PR #120 bestod exact-head `32703138969` på `37de330c`, blev merged som `d745e0ba`, og produktion `32703271897` udgav `rr-20260824080543-210` som 4.0.269 med Candidate G 20/50/30 på 210/673.
+9. Den fulde offentlige browseraudit bestod 420 aktuelle, 2.100 femdøgns- og 673 kystdelsvisninger uden kontrol-, konsol-, side- eller HTTP-fejl. Leverancen er produktionslukket.
 
 ## 2026-08-24 – læringsmodulet bliver en grundbog i ravjagt
 

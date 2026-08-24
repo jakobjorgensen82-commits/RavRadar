@@ -1,6 +1,6 @@
-# Implementeringsstatus – 4.0.269 aktuelle scoreforklaringer
+# Produktionsverificeret implementeringsstatus – 4.0.269 aktuelle scoreforklaringer
 
-## Implementeret lokalt; produktionslukning afventer
+## Afsluttet leverance
 
 - [x] Gør alle tre *Hvorfor denne score?*-forklaringer afhængige af den valgte rækkes faktiske offentlige forhold og relevante state.
 - [x] Forklar bølgernes rolle i mobilisering og adskil den fra vindens indirekte virkning og strømmens transport.
@@ -10,9 +10,10 @@
 - [x] Opdatér offentlige kilder og licenser til den aktive vejr-, hav- og kortkæde.
 - [x] Bevar Candidate G 20/50/30, global reserve, scoretal, vejrkontrakt, Supabase, geometri og land-/vandpunkter.
 - [x] Lås ændringen i målrettede tests og versionsbind 4.0.269; de to geodatafiler har kun versionsfeltdiff.
-- [ ] Bestå PR'ens exact-head `validate:source`.
-- [ ] Bestå frisk central produktion, fuld validering og releasegate.
-- [ ] Bestå fuld offentlig 210/673-browserkontrol og luk dokumentationen med eksakte run-/commit-id'er.
+- [x] Bestå PR #120 exact-head `32703138969` på `37de330c` og merge den eksakte head som `d745e0ba`.
+- [x] Bestå frisk central produktion `32703271897` med fuld validering, releasegate, artifact og Pages; live `rr-20260824080543-210` er 4.0.269 på 210/673.
+- [x] Bestå fuld offentlig browserkontrol på 420 aktuelle, 2.100 femdøgns- og 673 kystdelsvisninger uden kontrol-, konsol-, side- eller HTTP-fejl.
+- [x] Luk RDKS, roadmap, begge håndbøger og changelog med de eksakte beviser.
 
 Se DEC-0068 og `docs/research/PUBLIC_SCORE_EXPLANATION_REVIEW_4.0.269.md`.
 

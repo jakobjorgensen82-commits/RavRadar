@@ -1,5 +1,14 @@
 # RavRadar - aktuelt Codex-handoff
 
+## Afsluttet checkpoint – 2026-08-24 4.0.269
+
+- Leverance: alle tre offentlige RavScore-komponenter forklarer den valgte kystdels aktuelle vind, bølger, strøm og relevante forløb; mobilisering forklares som bølgevirkning, og lavt vand beskrives ikke som indtransporthjælp.
+- Offentlig forenkling: Fundprognosen, scorelofterne, rå samlet score og det tomme kortvalgsfelt er skjult uden at slette bagvedliggende data eller logik. Kilder og licenser er opdateret.
+- PR #120 bestod exact-head `32703138969` på `37de330c`, blev merged som `d745e0ba`, og produktion `32703271897` udgav `rr-20260824080543-210` som 4.0.269 på 210/673.
+- Live viser Candidate G globalt med 20/50/30. Browserauditen bestod 420 aktuelle, 2.100 femdøgns- og 673 kystdelsvisninger uden kontrol-, konsol-, side- eller HTTP-fejl.
+- Beskyttet: ingen scoretal, modelregel, Supabase-kontrakt, geometri, land-/vandpunkt eller privat data blev ændret; geodatafilerne ændrede kun versionsfeltet.
+- Denne branch er docs-only og lukker produktionsbeviset. Efter merge skal næste session starte på ren `main`; 4.0.269 kræver ikke mere produktarbejde uden ny modstridende evidens. Se DEC-0068.
+
 ## Afsluttet checkpoint – 2026-08-24 4.0.268
 
 - Leverance: offentlig **Grundbog i ravjagt** fra havbund til fund samt målrettet gennemgang af almindeligt offentligt dansk.

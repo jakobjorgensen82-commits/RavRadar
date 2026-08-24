@@ -21,3 +21,7 @@ Forklaringsgeneratoren modtager en lille offentlig kontekst med faktiske afledte
 Den offentlige fundprognose, scorelofter og rå JSON skjules, mens beregnings- og datakontrakterne bevares internt. Dermed kan observationerne fortsat bruges til et senere, kontrolleret læringsgrundlag uden at love brugeren en sandsynlighed, som data endnu ikke kan bære.
 
 Se DEC-0068.
+
+## Slutresultat
+
+PR #120/exact-head `32703138969`, merge `d745e0ba` og produktion `32703271897` er grønne. Den udgivne 4.0.269-runtime `rr-20260824080543-210` har Candidate G 20/50/30 på 210 zoner og 673 kystdele. Den fulde browseraudit bestod 420 aktuelle og 2.100 femdøgnsvisninger samt alle 673 kystdelsreferencer uden kontrol-, konsol-, side- eller HTTP-fejl.

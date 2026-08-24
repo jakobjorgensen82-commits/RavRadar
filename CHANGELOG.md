@@ -4,7 +4,8 @@
 - Mobilisering forklares som bølgevirkning, og lavt vand fremstilles ikke længere som selvstændig indtransporthjælp.
 - Fundprognose, offentlige scorelofter, rå samlet score-JSON og det tomme kortvalgsfelt er skjult; bagvedliggende data og logik bevares.
 - Kilder og licenser er opdateret. Candidate G 20/50/30, global reserve, scoretal, vejr, Supabase, geometri og land-/vandpunkter er uændrede.
-- Se `CHANGELOG-4.0.269.md` og DEC-0068. Exact-head og produktionslukning afventer.
+- PR #120 bestod exact-head `32703138969`, blev merged som `d745e0ba`, og produktion `32703271897` udgav live `rr-20260824080543-210` som 4.0.269 på 210/673.
+- Browserkontrollen bestod 420 aktuelle, 2.100 femdøgns- og 673 kystdelsvisninger uden kontrol-, konsol-, side- eller HTTP-fejl. Se `CHANGELOG-4.0.269.md` og DEC-0068.
 
 ## 4.0.267 – komplet uploadskema for kontoindberetninger (2026-08-23)
 

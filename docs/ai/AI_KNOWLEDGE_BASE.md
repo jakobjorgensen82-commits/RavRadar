@@ -8,6 +8,8 @@ Mobilisering betyder bølgevirkning – ofte skabt af vind – på allerede tilg
 
 Fundprognosen er skjult, indtil et særskilt beslutningspunkt dokumenterer repræsentative afsluttede ture med både fund og intet fund. Observationer og intern læring bevares i den eksisterende datakontrakt. Se DEC-0068.
 
+4.0.269 er produktionsverificeret via PR #120/exact-head `32703138969`, merge `d745e0ba`, produktion `32703271897` og live `rr-20260824080543-210`. Candidate G står globalt på 20/50/30 for 210 zoner og 673 kystdele, og den fulde browseraudit er grøn uden fejl.
+
 ## 4.0.125 – proveniens skabes ved indlæsningen
 `update-dmi-bulk.py` parsergeneration 14 skriver DMI-identitet på den rå komponenttime: provider, collection, model-run og native valid time. `dmi-forecast-store.mjs` må kun interpolere identificerede trin med samme collection og model-run og fører lead time, forecast age, temporal resolution og native source times videre. To hydrerede pre-v14-trin uden identitet kan midlertidigt bevare tidligere værdiinterpolation, men får ingen opdigtet proveniens og udløser fortsat audit; et identificeret og et uidentificeret trin må ikke blandes. `update-weather.mjs` og vandstandskontinuiteten må ikke erstatte identiteten med en generisk DMI-markør. Public runtime forbliver slank; den fulde sporbarhed ligger i beskyttede conditions/audits.
 
