@@ -1,20 +1,18 @@
 # RavRadar – overlevering til næste chat
 
-## Kandidat 4.0.271 – samlet feltrettelse af grundbogen
+## Produktionslukket 4.0.271 – samlet feltrettelse af grundbogen
 
-Branch: `codex/public-groundbook-corrections-4.0.271`
-
-Implementeret:
+Implementeret og offentligt verificeret:
 - offentlig grundbog og målrettet test,
 - ekspert- og webhåndbog,
 - DEC-0070, forskningsnotat, aktive krav, indeks og changelog,
 - versionsløft uden ændring af score, vejrdata eller geometri.
 
-Afventer:
-1. exact-head-kildegate,
-2. merge,
-3. den normale produktions-/releasegate,
-4. målrettet kontrol af den offentlige `learn.html`.
+- PR #128 bestod exact-head `32742727246` og blev merged som `a723ae8c`.
+- Produktion `32743307402` stoppede fail-closed før deploy ved en manglende læsehjælp i det nye eksperthåndbogskapitel.
+- PR #129 bestod exact-head `32745213320`, blev merged som `499861e8`, og produktion `32745389504` bestod hele kæden og udgav 4.0.271.
+- Den levende `learn.html` er målrettet kontrolleret for pil, opdriftsforklaring, bundnær strøm, revlehuller, fjernet grus, adskilt vind/strøm og speciallygter.
+- Ingen score-, vejr-, geometri-, zone- eller land-/vandpunktsdata blev ændret ud over det allerede godkendte versionsfelt.
 
 > Produktionsbevis: PR #126 blev merged som `fda934ae`. Den eksakte mergeproduktion `32730674577` (#3522) bestod hele kæden og udgav Pages-artifact `9521472172` samt supportartifact `RavRadar-support-3522` (`9521463897`).
 

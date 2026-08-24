@@ -1,6 +1,6 @@
 # DEC-0070 – Samlet feltrettelse af den offentlige grundbog
 
-**Status:** IMPLEMENTERET I KANDIDAT 4.0.271 – afventer exact-head-gate, merge og offentlig kontrol  
+**Status:** PRODUKTIONSVERIFICERET I 4.0.271
 **Dato:** 2026-08-24  
 **Berører:** `learn.html`, eksperthåndbog, RDKS og den målrettede grundbogstest  
 **Ændrer ikke:** RavScore, vejrdata, runtime-state, kystgeometri eller land-/vandpunkter
@@ -26,3 +26,5 @@
 ## Kontrol
 
 Kandidaten skal bestå den målrettede læringsmodultest og projektets normale exact-head-kildegate. Der køres ingen ekstra fuld browsermatrix for denne afgrænsede tekst- og illustrationsrettelse.
+
+PR #128 bestod exact-head `32742727246` og blev merged som `a723ae8c`. Den første produktion `32743307402` stoppede korrekt før deploy ved en manglende læsehjælp. Hotfix-PR #129 bestod exact-head `32745213320`, blev merged som `499861e8`, og produktion `32745389504` udgav 4.0.271 efter grøn central hydrering, fuld validering og releasegate. De syv konkrete rettelser er derefter kontrolleret målrettet på den levende grundbog.

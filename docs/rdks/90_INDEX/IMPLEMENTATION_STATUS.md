@@ -1,14 +1,15 @@
-# Implementeringsstatus – 4.0.270 før-lancering, ekspert og admin
+# Implementeringsstatus – 4.0.271 offentlig grundbog
 
-## Kandidat 4.0.271 – offentlig grundbog
+## Produktionsverificeret 4.0.271 – offentlig grundbog
 
 - [x] Samlet public copy- og illustrationsrettelse implementeret.
 - [x] Eksperthåndbog, struktureret håndbog, SQL-payload, RDKS, forskningsnotat og changelog opdateret.
 - [x] Målrettet kontrakttest udvidet til de rettede formuleringer.
-- [ ] PR'ens eksakte head har bestået kildegaten.
-- [ ] PR er merget til main.
-- [ ] Produktionsartifact og releasegate er grønne på mergecommittet.
-- [ ] Den offentlige `learn.html` er målrettet kontrolleret.
+- [x] PR #128's eksakte head `f2026167` bestod kildegaten i `32742727246` og blev merged som `a723ae8c`.
+- [x] Den første produktion `32743307402` stoppede korrekt før deploy ved manglende læsehjælp.
+- [x] Hotfix-PR #129 bestod exact-head `32745213320` på `5096d9aa` og blev merged som `499861e8`.
+- [x] Produktion `32745389504` bestod central hydrering, fuld validering, releasegate og Pages-deploy.
+- [x] Den offentlige `learn.html` og version 4.0.271 er målrettet kontrolleret.
 
 ## Afsluttet
 

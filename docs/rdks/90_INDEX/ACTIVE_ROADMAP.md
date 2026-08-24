@@ -1,12 +1,14 @@
 # RavRadar - aktivt roadmap
 
-## P0 – afslut kandidat 4.0.271
+## Afsluttet – 4.0.271 offentlig grundbog
 
 - [x] Ret Grundbog i ravjagt samlet efter ejerens feltgennemgang.
 - [x] Synkronisér eksperthåndbog, RDKS, forskningsnotat og changelog.
 - [x] Udvid kun den målrettede grundbogstest.
-- [ ] Bestå exact-head-kildegaten og merge PR'en.
-- [ ] Følg den ene normale produktionsgate og kontrollér den offentlige grundbog målrettet.
+- [x] Bestå PR #128 exact-head `32742727246` og merge som `a723ae8c`.
+- [x] Lad den første produktion `32743307402` stoppe sikkert før deploy ved den manglende læsehjælp.
+- [x] Bestå hotfix-PR #129 exact-head `32745213320`, merge som `499861e8`, og udgiv gennem grøn produktion `32745389504`.
+- [x] Kontrollér den offentlige version 4.0.271 og de syv konkrete grundbogsrettelser målrettet.
 
 ## P0 – 4.0.270 før-lancering, ekspert og admin
 

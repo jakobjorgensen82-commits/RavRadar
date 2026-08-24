@@ -1,13 +1,15 @@
 # Current truth – gældende projektviden
 
-## Kandidat 4.0.271 – samlet feltrettelse af Grundbog i ravjagt
+## Produktionsverificeret 4.0.271 – samlet feltrettelse af Grundbog i ravjagt
 
 - Den offentlige grundbog, eksperthåndbogen og RDKS er synkroniseret med DEC-0070.
 - Pil, opdriftsforklaring, bundnær strøm, lokale retningseksempler, revlehuller, tanglinje, grus, fralandsvind og specialtygter er rettet samlet.
 - Dokumenteret fysik, aktiv modelkontrakt og ejerens praktiske erfaring er mærket hver for sig.
 - RavScore, vejrpipeline, runtime-state, geometri og land-/vandpunkter er uændrede.
 - I `data/kystdata.json` og `data/zones.geojson` ændres kun versionsfeltet fra 4.0.270 til 4.0.271.
-- Afventer exact-head-kildegate, merge, produktionsgate og en målrettet offentlig kontrol.
+- PR #128 bestod exact-head `32742727246` på `f2026167` og blev merged som `a723ae8c`. Produktion `32743307402` stoppede korrekt før deploy på grund af en manglende læsehjælp i det nye eksperthåndbogskapitel.
+- Hotfix-PR #129 bestod exact-head `32745213320` på `5096d9aa`, blev merged som `499861e8`, og produktion `32745389504` bestod central hydrering, fuld validering, releasegate og Pages-deploy.
+- Den levende side viser version 4.0.271. Pil, koldt saltvand, bundnær strøm, revlehuller, fjernet grus, adskilt vind/strøm og speciallygter er målrettet kontrolleret offentligt.
 
 ## Produktionsverificeret 4.0.270 – før-lancering, ekspert, admin og synlig rangering
 
