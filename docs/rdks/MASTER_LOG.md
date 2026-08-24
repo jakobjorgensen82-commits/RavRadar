@@ -4,6 +4,9 @@
 - Den fulde validering stoppede før deploy, fordi repositoryets 154-kapitlers webhåndbog ikke var identisk med den statiske installationskopi. Workflowet havde ikke indlæst central ekspertdata i håndbogsfilen på dette tidspunkt; fejlen var reel kildedrift.
 - 4.0.275 synkroniserer installationskopien og bevarer den fulde identitetskontrol. Samme kontrol køres nu også i exact-head `validate:source`, så fremtidig drift stopper før merge og vejrbygning.
 - Den eksisterende beskyttede trevejsfletning af centralt godkendte ekspertændringer er uændret. Candidate G, vejr, zoner, geometri og punkter er urørte; geodatafilerne ændrer kun versionsfelt.
+- PR #136 bestod exact-head `32778118765` på `8103143c018253861a154f9fce5b7d937572a166` og blev merged som `59ea4546f3505ed96d2512a9bf5c9925ff7dff2a`.
+- Produktion `32778269487` bestod central hydrering, frisk vejr, fuld validering, releasegate, beskyttet adminsynkronisering, artifact og Pages. Live `rr-20260824211701-210` er 4.0.275 på 210 zoner og 673 kystdele.
+- Det offentlige manifest bekræfter Candidate G-only, `rollbackProfileId: null`, forbud mod legacyfallback og lokal fail-closed availability. Ved kontrollen var 0/210 zoner aktive på grund af ufuldstændig sammenhængende 48-timers strømhistorik; admin viste alle berørte zone-/søgemådepar og almindelige årsager uden private data.
 
 ## 2026-08-24 – 4.0.274 central Candidate G-only-migration
 

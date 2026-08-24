@@ -1,6 +1,6 @@
 # Current truth – gældende projektviden
 
-## Kandidat 4.0.275 – håndbog og installationskopi låses før merge
+## Produktionsverificeret 4.0.275 – Candidate G-only og lokal zonestatus
 
 - Candidate G med **20 % søgeforhold, 50 % transport og 30 % rav i bevægelse** er fortsat den eneste offentlige scoremodel. Forsiden, zonepanelet og Rav-assistenten bruger nu alle den samme lokale Candidate G-beregning og har ingen offentlig import af den gamle scoremotor.
 - PR #134 bestod exact-head-kildegaten i kørsel `32772324736` og blev merged som `10fd989682f8658e603194e11363d861c489a166`.
@@ -13,7 +13,11 @@
 - Produktionen stoppede fortsat sikkert før deploy, fordi repositoryets webhåndbog og den statiske Supabase-installationskopi var forskellige på den mergede commit. Den centrale eksperthåndbog indlæses ikke i dette trin og var derfor ikke årsagen.
 - 4.0.275 synkroniserer installationskopien igen og føjer samme identitetskontrol til exact-head-kildegaten. Den fulde produktionsgate bevarer kontrollen, mens den senere beskyttede trevejsfletning fortsat kan bevare centralt godkendte ekspertændringer uden at skrive dem tilbage i repositoryet.
 - Ingen Candidate G-regel, vejrfysik, zone, geometri eller land-/vandpunkt ændres. Geodatafilerne ændrer kun versionsfelt 4.0.274 → 4.0.275.
-- Ny exact-head, frisk fuld produktion og offentlig slutkontrol mangler endnu.
+- PR #136 bestod exact-head-kildegaten `32778118765` på `8103143c018253861a154f9fce5b7d937572a166` og blev merged som `59ea4546f3505ed96d2512a9bf5c9925ff7dff2a`.
+- Produktion `32778269487` bestod central hydrering, frisk vejropdatering, fuld validering, releasegate, beskyttet adminsynkronisering, artifact og Pages-deploy. Live er version 4.0.275 med datasæt `rr-20260824211701-210` på 210 zoner og 673 kystdele.
+- Det levende manifest har Candidate G som både ønsket, aktiv og faktisk profil, `rollbackProfileId: null`, forbud mod legacyfallback og lokal fail-closed availability. Den gamle 25/40/35-model kan derfor ikke vende tilbage automatisk.
+- Ved slutkontrollen var **0/210 zoner aktive**, fordi ingen zone endnu havde den krævede sammenhængende 48-timers strømhistorik efter Candidate G-only-starten. Det er en ærlig opvarmningstilstand: ingen gammel eller opdigtet score vises, og zoner bliver aktive enkeltvis, når deres eget grundlag er komplet.
+- Adminforsiden viser den samme `0/210 AKTIVE`-status og oplister alle berørte zone-/søgemådepar med forklaringen om manglende sammenhængende strømdata. Ingen rå strømvektorer, koordinater eller private payloads vises.
 
 ## Historisk kandidat 4.0.274 – Candidate G-only-kontrakten blev central og gennemgående
 
