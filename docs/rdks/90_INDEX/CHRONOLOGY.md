@@ -13,6 +13,10 @@
 9. Den offentlige efterkontrol viste falsk 0/210 aktive, fordi vellykkede zone-/søgemåderesultater manglede `available: true`; fem zoner havde samtidig reelt ufuldstændig lokal historik.
 10. Dækningsgaten blev desuden afgrænset til den fælles aktuelle reference, så senere lokale prognosehuller ikke kan lukke current-status globalt.
 11. Aktuel liste og alle fem prognosedage blev kontrolleret for strand og waders. De bruger særskilte værdier og kan både afvige i score og rækkefølge; en regressionstest låser begge veje.
+12. PR #146 bestod exact-head `32844951668` på `432de975` og blev merged som `8facd2d8`.
+13. Produktion `32845130587` bestod hele kæden og udgav `rr-20260825120459-210`.
+14. Offentlig efterkontrol viste 205/210 aktive zoner, fem lokale utilgængelige zoner, 657/673 READY-kyststrækninger, 16 `WINDOW_INCOMPLETE`-forløb og 673 accepterede statefortsættelser uden reset.
+15. Aktuel liste og alle fem prognosedage brugte særskilte strand-/wadersscorer; tre prognosedage havde også forskellig top-5-rækkefølge. Begge offentlige topversionsfelter forblev 4.0.278 uden geodataændring.
 
 ## 2026-08-25 – kandidat 4.0.277 årsagstro native tretimerskadence
 

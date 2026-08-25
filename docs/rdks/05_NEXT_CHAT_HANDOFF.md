@@ -1,15 +1,16 @@
 # RavRadar – overlevering til næste chat
 
-## Aktiv kandidat 4.0.278 – Regelværksted pensioneret
+## Produktionslukket 4.0.278 – Regelværksted pensioneret og zonestatus rettet
 
 - Regelværkstedet var ikke en sikker vej til offentlig score: dets øjeblikstest kunne ikke validere Candidate G's 48-timersstate, lokale datagater, transport-nul, wadersloft eller øvrige invariants.
 - Regelværksted, Vidensbase, regelrettigheder og den offentlige regelfil fjernes fra den aktive kæde. Historiske centrale og lokale kladder bevares urørt uden runtimeeffekt.
 - Eksperten indsender fortsat faglige kommentarer i håndbogen. Accepterede scoreændringer går gennem Candidate G-kode, RDKS, målrettede tests, exact-head, produktion og offentlig kontrol.
 - Hele ekspert-håndbogen er rettet mod Candidate G 20/50/30, aktiv 48-timersstate, lokal fail-closed og fraværet af legacyfallback. Se DEC-0075.
-- Installationskopi, målrettede tests og RDKS-gate er lokale kandidater; PR-/produktionslukning er næste trin. Score og geodata er urørte bortset fra ejerens godkendte versionsfelt 4.0.277 → 4.0.278 i de to beskyttede filer.
-- Seneste naturlige kontrol viser 657/673 kyststrækninger med 48 timers historik, 205/210 zoner med gyldige beregnede aktuelle scorer og ingen nye resets ved kørselsskift. De resterende lokale kæder fortsætter naturligt.
-- Produktion `32840785390` udgav 4.0.278 grønt efter PR #145/merge `11478de3`. Livekontrollen fandt derefter en separat statusfejl: vellykkede zonescorer manglede `available: true`, så oversigten viste falsk 0/210. Current-readiness lod desuden senere prognosehuller påvirke den aktuelle landsstatus.
-- Opfølgningen tilføjer succesflaget, bruger den fælles aktuelle reference og låser aktuel samt 5-dages strand-/wadersrangering med regression. Version og beskyttede geodata forbliver uændret 4.0.278.
+- PR #146 bestod exact-head `32844951668` på `432de975`, blev merged som `8facd2d8`, og produktion `32845130587` bestod fuld validering, releasegate, artifact og Pages.
+- Live `rr-20260825120459-210` viser 205/210 aktive zoner. Fem zoner er korrekt lokalt utilgængelige; 657/673 kyststrækninger er READY, 16 er `WINDOW_INCOMPLETE`, og alle 673 statefortsættelser er accepteret uden reset.
+- Candidate G 20/50/30 er eneste offentlige profil uden rollback eller legacyfallback. Landsstatus bruger den fælles aktuelle reference, så senere lokale prognosehuller ikke lukker current-status globalt.
+- Aktuel liste og alle fem prognosedage er kontrolleret for strand og waders. Alle bruger særskilte værdier; tre prognosedage har forskellig top-5-rækkefølge. Stor overlapning er forventelig, fordi transport og rav i bevægelse er fælles.
+- De offentlige topfelter i `data/kystdata.json` og `data/zones.geojson` er 4.0.278. Opfølgningen ændrer ingen score, geodata, geometri eller land-/vandpunkter.
 
 ## Produktionslukket 4.0.277 – native tretimerskadence
 

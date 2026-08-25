@@ -1,19 +1,19 @@
 # Kendte åbne og overvågede forhold
 
-## Kandidat 4.0.278 – Regelværksted og håndbog
+## Produktionsverificeret 4.0.278 – Regelværksted, håndbog og zonestatus
 
-- **ISSUE-LIVE-RULE-WORKSHOP-UNSAFE-CONTRACT – RETTET I KANDIDAT:** Admin kunne præsentere en øjeblikstest og central publicering som en sikker scoreændring, selv om kæden ikke gennemførte Candidate G's 48-timershistorik, lokale datagater eller scoreinvariants. Den aktive funktion, rettighederne og den offentlige regelfil er fjernet. De gamle browserfiler er udelukket fra Pages, mens historiske kladder og forskningskilder bevares uden runtimeeffekt.
-- **ISSUE-EXPERT-HANDBOOK-ACTIVE-MODEL-DRIFT – RETTET I 4.0.278-KANDIDAT:** De samlede håndbogskilder blandede aktive Candidate G-forhold med historiske regel- og modelkandidater. Webhåndbog, Markdown-håndbog, installationskopi og systemspecifikation er nu gennemgået mod den aktuelle 20/50/30-kodekæde. Exact-head og produktionsverifikation udestår.
-- **ISSUE-ZONE-SUCCESS-MISSING-AVAILABLE-FLAG – RETTET I 4.0.278-OPFØLGNING:** Vellykkede zone-/søgemåderesultater havde score og forklaring, men manglede `available: true`. Derfor viste aktivitetsoversigten 0/210, selv om 205 zoner havde gyldige beregnede aktuelle scorer. Succesflaget er nu eksplicit og regressionstestet.
-- **ISSUE-CURRENT-COVERAGE-POLLUTED-BY-FUTURE-GAPS – RETTET I 4.0.278-OPFØLGNING:** Landsdækning krævede fejlagtigt alle fremtidige prognoserækker. Et senere lokalt hul kunne dermed gøre current-status falsk negativ. Gaten bruger nu kun den fælles aktuelle reference; lokale fremtidshuller forbliver lokale.
-- **ISSUE-BEACH-WADERS-RANKING-SHARED-PATH – AFVIST VED LIVE- OG REGRESSIONSTEST:** Aktuel liste og fem prognosedage bruger den valgte søgemåde særskilt. Scorer og rækkefølge varierer, når søgeforholdene varierer. Overlapning er forventelig, fordi 80 % af vægten kommer fra de fælles komponenter transport og rav i bevægelse.
+- **ISSUE-LIVE-RULE-WORKSHOP-UNSAFE-CONTRACT – PRODUKTIONSVERIFICERET LØST:** Admin kunne præsentere en øjeblikstest og central publicering som en sikker scoreændring, selv om kæden ikke gennemførte Candidate G's 48-timershistorik, lokale datagater eller scoreinvariants. Den aktive funktion, rettighederne og den offentlige regelfil er fjernet. De gamle browserfiler er udelukket fra Pages, mens historiske kladder og forskningskilder bevares uden runtimeeffekt.
+- **ISSUE-EXPERT-HANDBOOK-ACTIVE-MODEL-DRIFT – PRODUKTIONSVERIFICERET LØST:** Webhåndbog, Markdown-håndbog, installationskopi og systemspecifikation er gennemgået mod den aktuelle 20/50/30-kodekæde. PR #145 og den efterfølgende PR #146 er exact-head- og produktionsverificeret.
+- **ISSUE-ZONE-SUCCESS-MISSING-AVAILABLE-FLAG – PRODUKTIONSVERIFICERET LØST:** Vellykkede zone-/søgemåderesultater manglede `available: true` og gav falsk 0/210. Live efter PR #146 viser 205/210 aktive zoner; fem er korrekt lokalt utilgængelige.
+- **ISSUE-CURRENT-COVERAGE-POLLUTED-BY-FUTURE-GAPS – PRODUKTIONSVERIFICERET LØST:** Landsdækning krævede fejlagtigt alle fremtidige prognoserækker. Gaten bruger nu kun den fælles aktuelle reference; lokale fremtidshuller forbliver lokale.
+- **ISSUE-BEACH-WADERS-RANKING-SHARED-PATH – AFVIST VED LIVE- OG REGRESSIONSTEST:** Aktuel liste og alle fem prognosedage bruger den valgte søgemåde særskilt. Alle viser særskilte scores, og tre prognosedage har forskellig top-5-rækkefølge. Overlapning er forventelig, fordi 80 % af vægten kommer fra de fælles komponenter transport og rav i bevægelse.
 
 ## Produktionsverificeret 4.0.277 – native tretimerskadence
 
 - **ISSUE-CURRENT-FUTURE-REFERENCE-COUNTED-AS-CURRENT – PRODUKTIONSVERIFICERET LØST:** En senere regionalproxyprøve kunne tælles i byggerens aktuelle dækning, selv om den timeskarpe audit korrekt afviste den. 4.0.277 vælger kun prøver på eller før målreferencen; almindelig DMI/Copernicus kræver eksakt tid.
 - **ISSUE-CANDIDATE-G-NATIVE-GAPS-WRITTEN-AS-MISSING – PRODUKTIONSVERIFICERET LØST:** Candidate G skrev naturlige mellemtimer mellem de otte `dkss_lf`-proxyers ægte tretimersprøver som manglende evidens. 4.0.277 fastholder kun den seneste afledte transporttilstand i højst tre timer uden ny bevægelse, evidens eller synlig strømvektor. Mere end tre timer stopper fortsat lokalt.
 - **ISSUE-CURRENT-FULL-COVERAGE-STATIC-GATE-STALE – PRODUKTIONSVERIFICERET LØST:** PR #141 bestod exact-head `32817501003`; produktion `32817626537` bestod den faktiske 673-kontrakt, fuld validering, releasegate, artifact og Pages.
-- **CANDIDATE-G-48H-NATURAL-MATURITY – OVERVÅGES:** Seneste offentlige kontrol viser 673/673 accepterede states, ingen nye resets og 657/673 kyststrækninger med 48 timer. 205/210 zoner har gyldige beregnede aktuelle scorer; de resterende 16 lokale kæder åbner uden backfill eller modelskift. Det tidligere 0/210-statusresultat var desuden påvirket af det nu rettede manglende succesflag.
+- **CANDIDATE-G-48H-NATURAL-MATURITY – OVERVÅGES LOKALT:** Seneste offentlige kontrol viser 673/673 accepterede states, ingen resets og 657/673 READY-kyststrækninger. 205/210 zoner er aktive; de resterende 16 lokale kæder åbner uden backfill eller modelskift. Den tidligere falske 0/210-status er produktionsverificeret rettet.
 
 ## Produktionsverificeret 4.0.276 – punktvis bevaring af strømhistorik
 

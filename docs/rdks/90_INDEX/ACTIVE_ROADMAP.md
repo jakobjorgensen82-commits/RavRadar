@@ -15,9 +15,9 @@
 - [x] Afgræns den offentlige falske 0/210-status til et manglende succesflag, ikke til scoreformel, modevalg eller tabt Candidate G-state.
 - [x] Ret current-readiness, så senere prognosehuller ikke gør den aktuelle landsdækning falsk negativ.
 - [x] Bevis og test, at både aktuelle bedste områder og 5-dages prognosen bruger særskilte strand-/wadersværdier.
-- [ ] Bestå opfølgningens exact-head-kildegate, merge, fulde produktion og offentlige statuskontrol.
+- [x] Bestå opfølgningens exact-head `32844951668`, merge PR #146 som `8facd2d8`, fuld produktion `32845130587` og offentlig statuskontrol.
 
-Rettelsen ændrer ikke selve Candidate G-scoren eller geodata.
+Live er 205/210 zoner aktive; fem er korrekt lokalt utilgængelige. 657/673 kyststrækninger er READY, og alle 673 fortsættelser er accepteret uden reset. Strand og waders er særskilt verificeret i aktuel liste og alle fem prognosedage. De offentlige versionsfelter er fortsat 4.0.278. Rettelsen ændrer ikke selve Candidate G-scoren eller geodata.
 
 ## P0 – 4.0.277 luk native mellemtimer årsagstro
 

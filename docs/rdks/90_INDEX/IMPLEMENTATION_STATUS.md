@@ -1,6 +1,6 @@
-# Implementeringsstatus – kandidat 4.0.278 Regelværksted og ekspert-håndbog
+# Implementeringsstatus – produktionsverificeret 4.0.278
 
-## Kandidat 4.0.278 – retire aktivt Regelværksted
+## Produktionsverificeret 4.0.278 – retire aktivt Regelværksted og ret zonestatus
 
 - [x] Bevis, at Regelværkstedets test og publicering ikke kunne validere den aktive Candidate G-tilstandsmotor og dens bindende invariants.
 - [x] Fjern Regelværksted og Vidensbase fra den aktive adminnavigation samt de tre regelrettigheder fra rollemodellen.
@@ -23,9 +23,9 @@
 - [x] Flyt dækningsgaten fra alle fremtidige prognoserækker til den fælles aktuelle reference, så et senere lokalt hul ikke gør current-status falsk negativ.
 - [x] Kontrollér med offentlig runtime, at aktuel liste og alle fem prognosedage bruger særskilte strand-/wadersværdier; tilføj målrettet regression for begge rangeringer.
 - [x] Bevar version 4.0.278 uden yderligere ændring af de beskyttede geodatafiler.
-- [ ] Luk statusrettelsen gennem ny exact-head, merge, fuld produktion og offentlig efterkontrol.
+- [x] Luk statusrettelsen gennem PR #146 exact-head `32844951668`, merge `8facd2d8`, fuld produktion `32845130587` og offentlig efterkontrol.
 
-Ingen scoreformel, zone, geometri, land-/vandpunkt eller central adminpost ændres af rettelsen. Se DEC-0075.
+Den offentlige efterkontrol viser 205/210 aktive zoner, fem lokalt utilgængelige zoner, 657/673 READY-kyststrækninger, 16 lokale `WINDOW_INCOMPLETE`-forløb og 673 accepterede statefortsættelser uden reset. Candidate G 20/50/30 er eneste offentlige profil. Aktuel liste og alle fem prognosedage bruger særskilte strand-/wadersscorer; tre prognosedage har også forskellig top-5-rækkefølge. De offentlige versionsfelter er fortsat 4.0.278. Ingen scoreformel, zone, geometri, land-/vandpunkt eller central adminpost ændres af rettelsen. Se DEC-0075.
 
 ## Implementeret og målrettet verificeret
 
