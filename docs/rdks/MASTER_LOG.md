@@ -2151,7 +2151,7 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - Hele ekspert-håndbogen, webhåndbogen, installationskopien og systemspecifikationen er sammenholdt med den aktive Candidate G 20/50/30-model. Accepterede ekspertforslag går fremover gennem versionsstyret kode, RDKS, tests, exact-head, produktion og offentlig kontrol.
 - Den aktuelle liste og 5-dages prognosen er kontrolleret med både strand og waders. De beregnes mode-specifikt; ens liveplaceringer skyldes rolige forhold og afrunding, ikke en delt scorevej. Prognosedage med større forskel i søgeforhold giver forskellige lister. En regressionstest dækker nu begge veje.
 - Ejeren godkendte eksakt versionsløft 4.0.277 → 4.0.278 i de to beskyttede geodatafiler. Diffen ændrer kun versionsfeltet; score, vejrregler, zoner, geometri, land-/vandpunkter og central admin-data ændres ikke.
-- Seneste naturlige produktion viser 673 accepterede fortsættelser uden nye resets, 657/673 kyststrækninger med 48 timers historik og 205/210 aktive zoner. De resterende lokale kæder fortsætter naturligt.
+- Seneste naturlige produktion viser 673 accepterede fortsættelser uden nye resets, 657/673 kyststrækninger med 48 timers historik og 205/210 zoner med gyldige beregnede aktuelle scorer. De resterende lokale kæder fortsætter naturligt.
 
 ## 2026-08-25 – 4.0.278 første produktion stoppet af gammel testforventning
 
@@ -2165,3 +2165,12 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - Produktion `32839004087` byggede igen frisk vejr og fortsatte Candidate G-state, men den fulde validering stoppede korrekt, fordi en oversigtskontrol og den aktive helhedstest stadig krævede Regelværkstedets gamle adminfane og de centrale dokumenter `rules` og `rule-history`.
 - Helhedstesten følger nu alle 13 aktive adminfaner, tester det skrivebeskyttede kalibreringsgrundlag og kontrollerer kun de tre aktive centrale konfigurationsdokumenter. Historiske regelkladder og regeldokumenter bevares uden runtimeeffekt.
 - Ingen releasegate, artifact eller deploy blev gennemført. Candidate G, 20/50/30, state, vejrregler, zoner, geometri, land-/vandpunkter og beskyttede geodata er uændrede.
+
+## 2026-08-25 – 4.0.278 offentlig statusrettelse efter modekontrol
+
+- PR #145 blev merged som `11478de3`, og produktion `32840785390` bestod fuld validering, releasegate, artifact og Pages-deploy af 4.0.278.
+- Den dataminimerede livekontrol fandt 657 READY-kyststrækninger, 16 lokale ufuldstændige historikforløb og ingen nye resets. 205 zoner havde gyldige beregnede aktuelle Candidate G-scorer.
+- Aktivitetsoversigten viste alligevel 0/210, fordi den vellykkede zoneaggregering ikke satte `available: true`. Succesflaget tilføjes uden ændring af score, state eller forklaring.
+- Den globale current-dækning vurderede samtidig alle fremtidige prognoserækker. Den bindes nu til den fælles aktuelle reference, så et senere lokalt prognosehul ikke gør current-status falsk negativ.
+- Offentlig aktuel liste og alle fem prognosedage er sammenlignet for strand og waders. De bruger mode-specifikke værdier; nogle dage ændres rækkefølgen, og alle kontrollerede tidspunkter har mindst én scoreforskel. Overlapning er forventelig, fordi transport og rav i bevægelse er fælles.
+- Målrettede tests for readiness, central runtime og mode-specifik rangering er grønne. Versionen forbliver 4.0.278, og de beskyttede geodatafiler ændres ikke yderligere.

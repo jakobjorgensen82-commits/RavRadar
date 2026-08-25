@@ -18,7 +18,12 @@
 - [x] Bestå PR #144 exact-head-kildegate og merge som `fdf6e82c`.
 - [x] Lad produktion `32839004087` stoppe fail-closed før release/deploy på de sidste forældede krav til Regelværkstedets adminfane og centrale regeldokumenter.
 - [x] Opdatér helhedstesten til alle 13 aktive adminfaner, det skrivebeskyttede kalibreringsgrundlag og de tre aktive centrale konfigurationsdokumenter.
-- [ ] Luk rettelsen gennem ny exact-head, merge, fuld produktion og offentlig efterkontrol.
+- [x] Bestå PR #145, merge som `11478de3` og udgiv 4.0.278 gennem grøn produktion `32840785390`.
+- [x] Afgræns efterkontrollens falske 0/210-status til manglende `available: true` på vellykkede zoneresultater; bekræft samtidig 205 gyldige aktuelle zonescorer og fem reelt lokale historikhuller.
+- [x] Flyt dækningsgaten fra alle fremtidige prognoserækker til den fælles aktuelle reference, så et senere lokalt hul ikke gør current-status falsk negativ.
+- [x] Kontrollér med offentlig runtime, at aktuel liste og alle fem prognosedage bruger særskilte strand-/wadersværdier; tilføj målrettet regression for begge rangeringer.
+- [x] Bevar version 4.0.278 uden yderligere ændring af de beskyttede geodatafiler.
+- [ ] Luk statusrettelsen gennem ny exact-head, merge, fuld produktion og offentlig efterkontrol.
 
 Ingen scoreformel, zone, geometri, land-/vandpunkt eller central adminpost ændres af rettelsen. Se DEC-0075.
 

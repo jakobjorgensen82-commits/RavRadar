@@ -8,7 +8,11 @@
 4. Ekspertens review forbliver den faglige indgang. Scoreændringer gennemføres versionsstyret i Candidate G-kode, RDKS, tests, exact-head og produktion.
 5. Markdown-håndbog, webhåndbog, systemspecifikation og regelmotordokumentation er gennemgået samlet mod den aktive 20/50/30-model. Se DEC-0075.
 6. Ejeren godkendte versionsløftet 4.0.277 → 4.0.278 med kun versionsfeltet ændret i `data/kystdata.json` og `data/zones.geojson`.
-7. Den naturlige kontrol nåede 657/673 kyststrækninger med 48 timer og 205/210 aktive zoner uden nye resets ved kørselsskift.
+7. Den naturlige kontrol nåede 657/673 kyststrækninger med 48 timer og 205/210 zoner med gyldige beregnede aktuelle scorer uden nye resets ved kørselsskift.
+8. PR #145 blev merged som `11478de3`, og produktion `32840785390` udgav 4.0.278 gennem fuld grøn kæde.
+9. Den offentlige efterkontrol viste falsk 0/210 aktive, fordi vellykkede zone-/søgemåderesultater manglede `available: true`; fem zoner havde samtidig reelt ufuldstændig lokal historik.
+10. Dækningsgaten blev desuden afgrænset til den fælles aktuelle reference, så senere lokale prognosehuller ikke kan lukke current-status globalt.
+11. Aktuel liste og alle fem prognosedage blev kontrolleret for strand og waders. De bruger særskilte værdier og kan både afvige i score og rækkefølge; en regressionstest låser begge veje.
 
 ## 2026-08-25 – kandidat 4.0.277 årsagstro native tretimerskadence
 

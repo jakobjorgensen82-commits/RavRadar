@@ -30,6 +30,7 @@ const finite = value => value !== null
 const clamp = value => Math.max(0, Math.min(100, Number(value)));
 
 const emptyCandidateReferenceReadiness = () => Object.freeze({
+  candidateCoverageReady: false,
   candidateMemoryReady: false,
   candidateWarmupEligible: false,
   referenceZoneCount: 0,
@@ -76,6 +77,11 @@ export function candidateGReferenceReadiness(partRows = [], referenceTime = null
   }
 
   if (selectedEntries.length !== partRows.length) return emptyCandidateReferenceReadiness();
+  const coverageReady = selectedEntries.every(({ score }) =>
+    ['waders', 'beach'].every(mode =>
+      score.candidateG?.modes?.[mode]?.available === true
+      && score.candidateG.modes[mode].modelId === CANDIDATE_G_RAVSCORE_PROFILE_ID
+      && Number.isFinite(score.candidateG.modes[mode].score)));
   const memoryReady = selectedEntries.every(({ score }) =>
     score.candidateG.transportMemoryReady === true
     && score.candidateG.transportMemoryStatus === 'READY');
@@ -94,6 +100,7 @@ export function candidateGReferenceReadiness(partRows = [], referenceTime = null
     return (ready && status === 'READY') || (!ready && status === 'WINDOW_INCOMPLETE');
   });
   return Object.freeze({
+    candidateCoverageReady: coverageReady,
     candidateMemoryReady: memoryReady,
     candidateWarmupEligible: warmupEligible,
     referenceZoneCount: rowsByZone.size,
