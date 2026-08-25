@@ -13,6 +13,9 @@
 - PR #143 bestod exact-head-kildegaten og blev merged som `d627b5ee`. Produktion `32837294743` gennemførte central hydrering, Candidate G-statefortsættelse og frisk vejrbygning, men fuld validering stoppede på en forældet test, der stadig krævede `queueAdminDocumentSave('rules')`.
 - Releasegate, artifact og deploy blev derfor korrekt sprunget over. Fejlen lå i testforventningen, ikke i Candidate G, score, state eller vejrruntime. Testen kræver nu det modsatte: Regelværkstedets pensionerede gemmevej må ikke findes.
 - Versionen forbliver 4.0.278. Der foretages ingen yderligere ændring af de beskyttede geodatafiler.
+- PR #144 bestod exact-head-kildegaten og blev merged som `fdf6e82c`. Produktion `32839004087` stoppede fail-closed før release og deploy på endnu en forældet kontrol: helhedstesten krævede fortsat Regelværkstedets gamle adminfane og de centrale dokumenter `rules` og `rule-history`.
+- Den aktive helhedstest følger nu alle 13 synlige adminfaner, kontrollerer det skrivebeskyttede kalibreringsgrundlag og læser kun de tre aktive centrale konfigurationsdokumenter. Historiske regeldokumenter bevares uændret, men de er ikke aktive driftskrav.
+- Den anden lukning ændrer fortsat ikke Candidate G, scoreprofil, state, vejrregler, zoner, geometri, land-/vandpunkter eller beskyttede geodata.
 
 ## Produktionsverificeret 4.0.277 – native tretimerskadence uden falske mellemtimer
 
