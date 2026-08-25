@@ -1,11 +1,11 @@
 # Kendte åbne og overvågede forhold
 
-## Kandidat 4.0.277 – native tretimerskadence
+## Produktionsverificeret 4.0.277 – native tretimerskadence
 
-- **ISSUE-CURRENT-FUTURE-REFERENCE-COUNTED-AS-CURRENT – LØST LOKALT:** En senere regionalproxyprøve kunne tælles i byggerens aktuelle dækning, selv om den timeskarpe audit korrekt afviste den. 4.0.277 vælger kun prøver på eller før målreferencen; almindelig DMI/Copernicus kræver eksakt tid.
-- **ISSUE-CANDIDATE-G-NATIVE-GAPS-WRITTEN-AS-MISSING – LØST LOKALT:** Candidate G skrev naturlige mellemtimer mellem de otte `dkss_lf`-proxyers ægte tretimersprøver som manglende evidens. 4.0.277 fastholder kun den seneste afledte transporttilstand i højst tre timer uden ny bevægelse, evidens eller synlig strømvektor. Mere end tre timer stopper fortsat lokalt.
-- **ISSUE-CURRENT-FULL-COVERAGE-STATIC-GATE-STALE – RETTET / AFVENTER GENTAGET PRODUKTION:** PR #140 bestod exact-head og blev merged. Produktion `32816237198` byggede historik og runtime grønt, men den fulde validering stoppede før deploy, fordi en statisk test stadig søgte efter det tidligere dækningsfeltnavn. Testen kræver nu samme 673-kontrakt som produktionsauditen.
-- **PRODUKTIONSLUKNING – ÅBEN:** Ny exact-head, frisk 210/673-produktion og offentlig dataminimeret efterkontrol mangler.
+- **ISSUE-CURRENT-FUTURE-REFERENCE-COUNTED-AS-CURRENT – PRODUKTIONSVERIFICERET LØST:** En senere regionalproxyprøve kunne tælles i byggerens aktuelle dækning, selv om den timeskarpe audit korrekt afviste den. 4.0.277 vælger kun prøver på eller før målreferencen; almindelig DMI/Copernicus kræver eksakt tid.
+- **ISSUE-CANDIDATE-G-NATIVE-GAPS-WRITTEN-AS-MISSING – PRODUKTIONSVERIFICERET LØST:** Candidate G skrev naturlige mellemtimer mellem de otte `dkss_lf`-proxyers ægte tretimersprøver som manglende evidens. 4.0.277 fastholder kun den seneste afledte transporttilstand i højst tre timer uden ny bevægelse, evidens eller synlig strømvektor. Mere end tre timer stopper fortsat lokalt.
+- **ISSUE-CURRENT-FULL-COVERAGE-STATIC-GATE-STALE – PRODUKTIONSVERIFICERET LØST:** PR #141 bestod exact-head `32817501003`; produktion `32817626537` bestod den faktiske 673-kontrakt, fuld validering, releasegate, artifact og Pages.
+- **CANDIDATE-G-48H-NATURAL-MATURITY – OVERVÅGES:** Offentlig kontrol viser 673/673 accepterede states, nul resets og 12–45 timers historik. 0/210 zoner var endnu aktive; de åbner lokalt ved ægte 48 timer uden backfill eller modelskift.
 
 ## Produktionsverificeret 4.0.276 – punktvis bevaring af strømhistorik
 

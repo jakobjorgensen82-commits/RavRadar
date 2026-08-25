@@ -1,6 +1,6 @@
 # DEC-0074 – årsagstro strømreference ved native tretimerskadence
 
-**Status:** IMPLEMENTERET OG MERGET I 4.0.277 – AFVENTER GENTAGET PRODUKTIONSBEVIS
+**Status:** AKTIV OG PRODUKTIONSVERIFICERET I 4.0.277
 
 **Dato:** 2026-08-25
 
@@ -35,4 +35,8 @@ Candidate G-pipelinen skrev samtidig de naturlige mellemtimer som manglende evid
 
 ## Produktionsbevis
 
-PR #140 bestod exact-head `32816129342` på `35c8b7fb` og blev merged som `d3b4542f`. Første produktion `32816237198` byggede syvdageshistorik, central vejrtilstand, strømproveniens og offentlig runtime grønt. Fuld validering stoppede derefter før deploy på en statisk kildekodetest, som stadig krævede det tidligere feltnavn `verifiedPartGridPoints` alene. Produktionsauditen kræver allerede korrekt `verifiedScoreReadyParts`, dvs. eksakte dele plus kun dokumenterede native-cadence-tilstande. Testen er rettet til samme kontrakt; ny exact-head, fuld produktion og offentlig efterkontrol afventer.
+PR #140 bestod exact-head `32816129342` på `35c8b7fb` og blev merged som `d3b4542f`. Første produktion `32816237198` byggede syvdageshistorik, central vejrtilstand, strømproveniens og offentlig runtime grønt. Fuld validering stoppede derefter før deploy på en statisk kildekodetest, som stadig krævede det tidligere feltnavn `verifiedPartGridPoints` alene. Produktionsauditen brugte allerede korrekt `verifiedScoreReadyParts`, dvs. eksakte dele plus kun dokumenterede native-cadence-tilstande.
+
+Opfølgende PR #141 ændrede kun denne testkontrakt. Den bestod exact-head `32817501003` på `128c71ce` og blev merged som `81e9b891`. Produktion `32817626537` bestod central hydrering, frisk vejr, 673/673 scoreklare dele, fuld validering, releasegate, artifact og Pages-deploy.
+
+Den offentlige dataminimerede efterkontrol viser 673/673 udgivne dele med Candidate G-state, 673 accepterede fortsættelser og nul resetårsager. De lokale kæder spænder fra 12 til 45 timer. Candidate G 20/50/30 er eneste aktive profil, `rollbackProfileId` er `null`, og `legacyPublicFallbackAllowed` er `false`. 0/210 zoner var endnu aktive, fordi ingen lokal kæde ved kontrollen havde nået 48 timer. Det er naturlig modning, ikke en manglende udgivelse eller en ny realtidstest.

@@ -7,7 +7,9 @@
 3. Ejeren bad om en grundig rettelse uden ny 48-timers realtidstest og uden ændring af score, zoner eller punkter.
 4. 4.0.277 vælger kun årsagstro referencer og fastholder højst tre timer kun den afledte transporttilstand. Der opfindes ingen måling, bevægelse, U/V eller pil.
 5. PR #140 bestod exact-head `32816129342` og blev merged som `d3b4542f`.
-6. Produktion `32816237198` byggede historik og runtime grønt, men den fulde validering stoppede før deploy på en forældet statisk test. Testen er rettet til samme 673-kontrakt som produktionsauditen. Ny exact-head og frisk produktion mangler. Se DEC-0074.
+6. Produktion `32816237198` byggede historik og runtime grønt, men den fulde validering stoppede før deploy på en forældet statisk test.
+7. PR #141 rettede kun testkontrakten, bestod exact-head `32817501003` på `128c71ce` og blev merged som `81e9b891`.
+8. Produktion `32817626537` bestod hele produktionskæden og Pages. Offentlig kontrol viste 673/673 accepterede Candidate G-states, nul resets og 12–45 timers historik. 0/210 zoner var endnu aktive, fordi 48 timer ikke var nået. Se DEC-0074.
 
 ## 2026-08-24 – Candidate G-only bestod central hydrering, håndbogsdrift blev flyttet frem i kildegaten
 

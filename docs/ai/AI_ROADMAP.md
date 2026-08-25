@@ -8,9 +8,9 @@
 - [x] Bestå målrettede lokale regressioner og dokumentér DEC-0074.
 - [x] Bestå PR #140 exact-head og merge som `d3b4542f`.
 - [x] Ret den forældede statiske dæknings-test, som stoppede første produktion efter grøn historik- og runtimebygning.
-- [ ] Bestå ny exact-head, frisk produktion og offentlig dataminimeret efterkontrol.
+- [x] Bestå PR #141 exact-head `32817501003`, merge `81e9b891`, frisk produktion `32817626537` og offentlig dataminimeret efterkontrol.
 
-Der kræves ikke en ny 48-timers realtidstest. Der opbygges ingen kunstig historik, og ingen zone, geometri eller land-/vandpunkt ændres.
+Produktionslukningen viser 673/673 accepterede Candidate G-states, nul resets og 12–45 timers naturlig historik. Der kræves ikke en ny 48-timers realtidstest. Den eksisterende overvågning følger kun, at zonerne åbner ved ægte 48 timer; der opbygges ingen kunstig historik, og ingen zone, geometri eller land-/vandpunkt ændres.
 
 ## P0 nu – Candidate G alene og lokal utilgængelighed i 4.0.273
 
