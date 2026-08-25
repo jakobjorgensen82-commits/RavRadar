@@ -27,7 +27,7 @@ function validTime(value) {
   return Number.isFinite(Date.parse(value));
 }
 
-function validTransportEvidence(value, stateTime) {
+function validTransportEvidence(value, transportReferenceAt) {
   if (!Array.isArray(value) || value.length < 1 || value.length > 49) return false;
   let previousTime = null;
   for (const item of value) {
@@ -38,7 +38,7 @@ function validTransportEvidence(value, stateTime) {
     if (previousTime !== null && time <= previousTime) return false;
     previousTime = time;
   }
-  return previousTime === Date.parse(stateTime);
+  return previousTime === Date.parse(transportReferenceAt);
 }
 
 function compatibility(initialState, stateKey, firstSampleTime) {
@@ -63,7 +63,12 @@ function compatibility(initialState, stateKey, firstSampleTime) {
   if (initialState.stateKey !== stateKey) {
     return { accepted: false, reason: 'COASTAL_PART_CONTEXT_CHANGED' };
   }
+  const transportReferenceAt = initialState.transportReferenceAt ?? initialState.time;
   if (!validTime(initialState.time)
+    || !validTime(transportReferenceAt)
+    || Date.parse(transportReferenceAt) > Date.parse(initialState.time)
+    || (Date.parse(initialState.time) - Date.parse(transportReferenceAt)) / 3_600_000
+      > CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.maximumGapHours
     || !finite(initialState.transportPotential)
     || Number(initialState.transportPotential) < 0
     || Number(initialState.transportPotential) > 100
@@ -78,7 +83,7 @@ function compatibility(initialState, stateKey, firstSampleTime) {
     || Number(initialState.transportMemoryCoverageHours) > CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.windowHours
     || Number(initialState.transportMemoryWindowHours) !== CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.windowHours
     || typeof initialState.transportMemoryStatus !== 'string'
-    || !validTransportEvidence(initialState.transportEvidence, initialState.time)) {
+    || !validTransportEvidence(initialState.transportEvidence, transportReferenceAt)) {
     return { accepted: false, reason: 'INVALID_PREVIOUS_STATE' };
   }
   if (firstSampleTime && Date.parse(initialState.time) > Date.parse(firstSampleTime)) {
@@ -95,6 +100,7 @@ function compactState(stateKey, row) {
     profileId: CANDIDATE_G_STATE_PROFILE_ID,
     stateKey,
     time: row.time,
+    transportReferenceAt: row.transportReferenceAt,
     transportPotential: row.transportPotential,
     outboundEpisodeEffectiveHours: row.outboundEpisodeEffectiveHours,
     transportMemoryReady: row.transportMemoryReady,
@@ -122,6 +128,7 @@ export function buildCandidateGDerivedStateSeries(
     stateKey,
     initialState = null,
     firstSampleDurationHours = 1,
+    nativeCadenceHoldHours = 0,
   } = {},
 ) {
   if (typeof stateKey !== 'string' || !stateKey.trim()) {
@@ -138,9 +145,21 @@ export function buildCandidateGDerivedStateSeries(
 
   const stateCompatibility = compatibility(initialState, stateKey, ordered[0]?.time);
   const acceptedState = stateCompatibility.accepted ? initialState : null;
+  const safeNativeCadenceHoldHours = Number(nativeCadenceHoldHours);
+  if (!(safeNativeCadenceHoldHours >= 0
+    && safeNativeCadenceHoldHours <= CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.maximumGapHours)) {
+    throw new Error('Candidate G native cadence hold must be within the bounded current gap policy');
+  }
   let transportEvidence = acceptedState
     ? acceptedState.transportEvidence.map(item => ({ ...item }))
     : [];
+  if (safeNativeCadenceHoldHours > 0) {
+    // Older continuation states recorded the expected hours between native
+    // regional samples as explicit nulls. Removing only those null markers is
+    // a lossless migration of the verified evidence; it does not create or
+    // interpolate a current sample.
+    transportEvidence = transportEvidence.filter(item => Number.isFinite(item?.strength));
+  }
   let previousTransport = acceptedState ? {
     transportPotential: Number(acceptedState.transportPotential),
     outboundEpisodeEffectiveHours: Number(acceptedState.outboundEpisodeEffectiveHours),
@@ -151,11 +170,21 @@ export function buildCandidateGDerivedStateSeries(
     outboundEpisodeEffectiveHours: 0,
     actualOutboundTransport: false,
   };
-  let previousTransportTime = acceptedState?.time ?? null;
   const transportRows = ordered.map(sample => {
-    const sameTime = previousTransportTime
-      && Date.parse(previousTransportTime) === Date.parse(sample.time);
-    if (!sameTime) {
+    const sampleTime = new Date(sample.time).toISOString();
+    const verified = sample.currentVerified === true;
+    const existingAtSample = transportEvidence.some(item => item.time === sampleTime);
+    const lastVerifiedEvidence = [...transportEvidence]
+      .reverse()
+      .find(item => Number.isFinite(item?.strength)) ?? null;
+    const hoursSinceLastVerified = lastVerifiedEvidence
+      ? (Date.parse(sampleTime) - Date.parse(lastVerifiedEvidence.time)) / 3_600_000
+      : Number.POSITIVE_INFINITY;
+    const nativeCadenceHold = !verified
+      && safeNativeCadenceHoldHours > 0
+      && hoursSinceLastVerified > 0
+      && hoursSinceLastVerified <= safeNativeCadenceHoldHours;
+    if (!existingAtSample && !nativeCadenceHold) {
       const evidence = deriveCurrentTransportEvidence(sample, {
         ...CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
         getTime: value => value.time,
@@ -165,13 +194,15 @@ export function buildCandidateGDerivedStateSeries(
       });
       if (evidence) transportEvidence.push(evidence);
     }
+    const transportReferenceAt = nativeCadenceHold
+      ? lastVerifiedEvidence.time
+      : sampleTime;
     const bounded = buildBoundedCurrentTransportMemory(transportEvidence, {
       ...CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
-      referenceTime: sample.time,
+      referenceTime: transportReferenceAt,
     });
     transportEvidence = bounded.evidence;
     const replayed = bounded.result;
-    const verified = sample.currentVerified === true;
     const current = replayed ? {
       transportPotential: replayed.transportPotential,
       outboundEpisodeEffectiveHours: replayed.outboundEpisodeEffectiveHours,
@@ -188,10 +219,12 @@ export function buildCandidateGDerivedStateSeries(
         ),
     };
     let phase = bounded.memoryReady ? replayed?.phase ?? 'RETAINED_OR_NEUTRAL' : 'BOUNDED_MEMORY_WARMUP';
-    if (sameTime) phase = verified ? 'SAME_TIME_HOLD' : 'UNVERIFIED_PAUSE';
+    if (nativeCadenceHold) phase = 'NATIVE_CADENCE_HOLD';
+    else if (existingAtSample) phase = verified ? 'SAME_TIME_HOLD' : 'UNVERIFIED_PAUSE';
     else if (!verified) phase = 'UNVERIFIED_PAUSE';
     const row = {
-      time: new Date(sample.time).toISOString(),
+      time: sampleTime,
+      transportReferenceAt,
       verified,
       transportPotential: current.transportPotential,
       outboundEpisodeEffectiveHours: current.outboundEpisodeEffectiveHours,
@@ -205,7 +238,6 @@ export function buildCandidateGDerivedStateSeries(
       transportEvidence: bounded.evidence.map(item => ({ ...item })),
     };
     previousTransport = current;
-    previousTransportTime = row.time;
     return row;
   });
   const mobilisationRows = buildWaveMobilisationPotential(ordered, {
@@ -227,6 +259,7 @@ export function buildCandidateGDerivedStateSeries(
     }
     const row = {
       time: transport.time,
+      transportReferenceAt: transport.transportReferenceAt,
       transportPotential: transport.transportPotential,
       outboundEpisodeEffectiveHours: transport.outboundEpisodeEffectiveHours,
       outboundEpisodeLossPoints: transport.outboundEpisodeLossPoints,

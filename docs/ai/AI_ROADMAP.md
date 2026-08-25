@@ -1,4 +1,14 @@
-# AI Roadmap – RavRadar 4.0.243+
+# AI Roadmap – RavRadar 4.0.277+
+
+## P0 nu – årsagstro native mellemtimer i 4.0.277
+
+- [x] Afgræns 666/673-stoppet til fremtidstælling i readiness og falske null-mellemtimer for de otte godkendte `dkss_lf`-proxyer.
+- [x] Fasthold kun afledt transporttilstand i højst tre timer uden ny bevægelse, evidens, måling eller pil.
+- [x] Bevar Candidate G-only 20/50/30, punktvis historik og lokalt fail-closed stop efter tre timer.
+- [x] Bestå målrettede lokale regressioner og dokumentér DEC-0074.
+- [ ] Bestå exact-head, merge, frisk produktion og offentlig dataminimeret efterkontrol.
+
+Der kræves ikke en ny 48-timers realtidstest. Der opbygges ingen kunstig historik, og ingen zone, geometri eller land-/vandpunkt ændres.
 
 ## P0 nu – Candidate G alene og lokal utilgængelighed i 4.0.273
 

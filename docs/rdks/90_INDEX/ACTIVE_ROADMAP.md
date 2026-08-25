@@ -1,5 +1,17 @@
 # RavRadar - aktivt roadmap
 
+## P0 – 4.0.277 luk native mellemtimer årsagstro
+
+- [x] Bevis, at 666/673-stoppet skyldes en fremtidig regionalproxyprøve i readiness og falske null-mellemtimer – ikke tabt state, ændrede punkter eller scorevægte.
+- [x] Gør aktuel reference årsagstro og tillad kun de otte ejerallowlistede `dkss_lf`-proxyer at fastholde den seneste afledte transporttilstand i højst tre timer.
+- [x] Forbyd bevægelse, evidens, U/V, hastighed, retning og pil under fastholdelsen; næste ægte prøve bruger den faktiske tidsafstand.
+- [x] Bevar fail-closed efter tre timer og ved enhver ændret punkt-/kildekontekst.
+- [x] Bestå målrettede lokale regressioner og dokumentér DEC-0074 uden score-, geometri- eller adminændring.
+- [ ] Bestå exact-head-kildegaten og merge den eksakte grønne head.
+- [ ] Bestå frisk 210/673-produktion og kontrollér offentligt Candidate G-only, fortsat historik og korrekt mellemtimeadfærd.
+
+Efter grøn produktionslukning fortsætter før-lanceringsroadmapet. Denne rettelse kræver ikke en ny 48-timers realtidstest og opbygger ikke kunstig historik.
+
 ## P0 – 4.0.276 bevar strømhistorik lokalt pr. kystpunkt
 
 - [x] Bevis dataminimeret, at den kompakte Candidate G-state fortsatte til cirka 36 timer og ikke blev nulstillet ved Candidate G-only-udgivelsen.

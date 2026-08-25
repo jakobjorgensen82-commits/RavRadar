@@ -1,5 +1,15 @@
 # Current truth – gældende projektviden
 
+## Kandidat 4.0.277 – native tretimerskadence uden falske mellemtimer
+
+- Candidate G med **20 % søgeforhold, 50 % transport og 30 % rav i bevægelse** er fortsat den eneste offentlige scoremodel; legacyfallback er forbudt, og rollbackprofilen er `null`.
+- Den seneste sikre produktionslinje bevarede 673/673 kompakte states, men de otte ejerallowlistede `dkss_lf`-regionalproxyer leverer ægte U/V på native tretimerskadence. Ved mellemtimer kunne en fremtidig prøve fejlagtigt tælles som aktuel dækning, mens den timeskarpe audit korrekt afviste den. Det gav 666/673 og sikkert stop før deploy.
+- 4.0.277 gør alle valg årsagstro. Fremtidige prøver kan aldrig aktivere den aktuelle time. Kun de otte tilladte regionalproxyer må fastholde den seneste afledte transporttilstand i højst tre timer.
+- En fastholdt mellemtime tilføjer ingen bevægelse, evidens eller måling og viser ingen U/V, hastighed, retning eller pil. Næste ægte prøve integrerer den faktiske tidsafstand.
+- Mere end tre timers afstand eller enhver kilde-/punktændring giver lokal utilgængelighed. Der udføres ingen backfill, interpolation eller rekonstruktion.
+- Historikken var ikke tabt. Kandidaten ændrer ingen scorekurve, zone, geometri, land-/vandpunkt eller central admin-data. Se DEC-0074.
+- Målrettede lokale regressioner er grønne. Exact-head, frisk produktion og offentlig efterkontrol mangler endnu.
+
 ## Produktionsverificeret 4.0.276 – strømhistorik bevares pr. kystpunkt
 
 - Candidate G med **20 % søgeforhold, 50 % transport og 30 % rav i bevægelse** er fortsat den eneste offentlige scoremodel. Der indføres ingen gammel reserveprofil.

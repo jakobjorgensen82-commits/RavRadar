@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import {
   CANDIDATE_G_RAVSCORE_PROFILE_ID,
   PUBLIC_RAVSCORE_PROFILE_SELECTION,
+  candidateGReferenceReadiness,
   publicRavScoreConfigurationFromDocument,
   resolvePublicRavScoreProfile,
   rollbackPublicRavScoreSelection,
@@ -24,6 +25,19 @@ assert.equal(PUBLIC_RAVSCORE_PROFILE_SELECTION.requestedProfileId, CANDIDATE_G_R
 assert.equal(PUBLIC_RAVSCORE_PROFILE_SELECTION.rollbackProfileId, null);
 assert.equal(PUBLIC_RAVSCORE_PROFILE_SELECTION.legacyPublicFallbackAllowed, false);
 assert.equal(PUBLIC_RAVSCORE_PROFILE_SELECTION.publicAvailabilityPolicy, 'candidate-g-local-fail-closed');
+
+const readinessAt = '2026-08-25T05:00:00.000Z';
+const readinessRows = ['part-a', 'part-b'].map(partId => ({
+  zoneId: 'zone-a',
+  partId,
+  candidateGState: { initialStateAccepted: true },
+  scores: [
+    { time: '2026-08-25T03:00:00.000Z', candidateG: { transportMemoryReady: true, transportMemoryStatus: 'READY' } },
+    { time: '2026-08-25T06:00:00.000Z', candidateG: { transportMemoryReady: false, transportMemoryStatus: 'WINDOW_INCOMPLETE' } },
+  ],
+}));
+assert.equal(candidateGReferenceReadiness(readinessRows, readinessAt).candidateMemoryReady, true,
+  'the current readiness gate must use the latest causal row, never a future forecast row');
 
 const productionDocument = JSON.parse(fs.readFileSync('data/admin/ravscore-profile-selection.json', 'utf8'));
 const packageVersion = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
@@ -78,6 +92,7 @@ const centralHydration = fs.readFileSync('scripts/sync-admin-config.py', 'utf8')
 const centralPersistence = fs.readFileSync('scripts/sync-protected-admin-assets.mjs', 'utf8');
 assert.match(updater, /candidate-g-local-fail-closed/);
 assert.match(updater, /scoreAvailability/);
+assert.match(updater, /NATIVE_CADENCE_HOLD|nativeCadenceHoldHours/);
 assert.doesNotMatch(app, /local\?\.available\?local:scoreFor\(zone\)/);
 assert.doesNotMatch(app, /displayScope:'parent-fallback'/);
 assert.doesNotMatch(app, /calculateRavScore|selectBestTimeForDay|scoreFor\(/);

@@ -485,7 +485,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.276
+**Håndbogsversion:** 4.0.277
 
 **Opdateret:** 19. august 2026
 
@@ -1604,7 +1604,7 @@ Candidate G bruger **20 % søgeforhold, 50 % transport mod kysten og 30 % rav i 
 
 ### 54.2 Hukommelse og fail-closed
 
-Transporten genafspilles fra et fast rullende vindue med de seneste 48 timers sammenhængende, afledte strømevidens. Et komplet vindue gør resultatet uafhængigt af computerens oprindelige startværdi. Native strømbeviser må ligge op til tre timer fra hinanden; den faktiske tidsafstand tæller, og RavRadar opfinder ikke mellemliggende timesmålinger.
+Transporten genafspilles fra et fast rullende vindue med de seneste 48 timers sammenhængende, afledte strømevidens. Et komplet vindue gør resultatet uafhængigt af computerens oprindelige startværdi. De otte særskilt godkendte Limfjordsproxyer leverer ægte strømprøver på en native tretimerskadence. Mellem to sådanne prøver kan RavRadar i højst tre timer fastholde den seneste afledte transporttilstand, men der lægges ingen ny bevægelse eller evidens til, og der vises ingen strømretning, hastighed eller pil for mellemtimen. Næste ægte prøve bruger den faktiske tidsafstand. Fremtidige prøver kan aldrig bruges til den aktuelle time, og RavRadar opfinder ikke mellemliggende timesmålinger.
 
 Hvis en nødvendig Candidate G-beregning mangler, bliver kun den konkrete zone, søgemåde og time utilgængelig. Den vises ikke med en erstatningsscore og udelades fra de relevante ranglister, mens øvrige gyldige Candidate G-scorer fortsætter. Adminforsiden viser, om alle er aktive, og forklarer lokale huller. RavRadar blander ikke scoreprofiler mellem steder, tider eller jagtformer.
 

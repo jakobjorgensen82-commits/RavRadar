@@ -393,17 +393,40 @@ def main() -> int:
 
     historical_supplemental_parts = {row["partId"] for row in copernicus}
     historical_regional_parts = {row["partId"] for row in regional}
+    coverage_reference_iso = utc_iso(coverage_reference)
+    parts_with_reference_row = {
+        part_id for part_id, times in runtime_times.items()
+        if coverage_reference_iso in times
+    }
     supplemental_parts = {
         row["partId"] for row in copernicus
-        if row["validTime"] in runtime_times.get(row["partId"], set())
+        if row["partId"] in parts_with_reference_row
+        and row["validTime"] == coverage_reference_iso
+    }
+    regional_latest_at_or_before: dict[str, datetime] = {}
+    for row in regional:
+        valid_time = parse_time(row["validTime"])
+        part_id = row["partId"]
+        if valid_time > coverage_reference or part_id not in parts_with_reference_row:
+            continue
+        previous = regional_latest_at_or_before.get(part_id)
+        if previous is None or valid_time > previous:
+            regional_latest_at_or_before[part_id] = valid_time
+    regional_age_hours = {
+        part_id: (coverage_reference - valid_time).total_seconds() / 3600
+        for part_id, valid_time in regional_latest_at_or_before.items()
     }
     regional_parts = {
-        row["partId"] for row in regional
-        if row["validTime"] in runtime_times.get(row["partId"], set())
+        part_id for part_id, age_hours in regional_age_hours.items()
+        if 0 <= age_hours <= 3
+    }
+    regional_held_parts = {
+        part_id for part_id in regional_parts
+        if regional_age_hours[part_id] > 0
     }
     score_ready_dmi_parts = {
         part_id for part_id, times in dmi_times.items()
-        if times.intersection(runtime_times.get(part_id, set()))
+        if part_id in parts_with_reference_row and coverage_reference_iso in times
     }
     history_source_by_part: dict[str, str] = {}
     for part_id in targets:
@@ -422,6 +445,10 @@ def main() -> int:
         elif part_id in regional_parts:
             source_by_part[part_id] = "dmi-regional-proxy"
     counts = {source: sum(value == source for value in source_by_part.values()) for source in ("dmi-local", "copernicus-local", "dmi-regional-proxy")}
+    selected_regional_held_parts = {
+        part_id for part_id in regional_held_parts
+        if source_by_part.get(part_id) == "dmi-regional-proxy"
+    }
     history_counts = {source: sum(value == source for value in history_source_by_part.values()) for source in ("dmi-local", "copernicus-local", "dmi-regional-proxy")}
     missing = sorted(set(targets) - set(source_by_part))
 
@@ -454,6 +481,12 @@ def main() -> int:
         "expectedPartCount": len(targets),
         "coverageReferenceAt": utc_iso(coverage_reference),
         "verifiedPartCount": len(source_by_part),
+        "exactVerifiedPartCount": len(source_by_part) - len(selected_regional_held_parts),
+        "nativeCadenceHeldPartCount": len(selected_regional_held_parts),
+        "nativeCadenceMaximumAgeHours": max(
+            (regional_age_hours[part_id] for part_id in selected_regional_held_parts),
+            default=0,
+        ),
         "missingPartCount": len(missing),
         "partsBySelectedSource": counts,
         "retainedHistoryPartCount": len(history_source_by_part),
@@ -473,7 +506,8 @@ def main() -> int:
         f"Kontrolleret live-strømhistorik ({mode}): "
         f"{len(source_by_part)}/{len(targets)} scoreklare dele fra {utc_iso(coverage_reference)}; "
         f"DMI {counts['dmi-local']}, Copernicus {counts['copernicus-local']}, "
-        f"regionalproxy {counts['dmi-regional-proxy']}."
+        f"regionalproxy {counts['dmi-regional-proxy']} "
+        f"({len(selected_regional_held_parts)} med dokumenteret native-cadence-fastholdelse)."
     )
     return 0
 

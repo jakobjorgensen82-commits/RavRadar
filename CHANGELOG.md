@@ -1,3 +1,11 @@
+## 4.0.277 – årsagstro native tretimerskadence (2026-08-25)
+
+- Retter et sikkert 666/673-stop, hvor en fremtidig regionalproxyprøve kunne tælles som aktuel dækning, mens den timeskarpe audit korrekt afviste den.
+- Kun de otte ejerallowlistede `dkss_lf`-proxyer må fastholde den seneste afledte transporttilstand i højst tre timer mellem ægte prøver. Der tilføjes ingen bevægelse, evidens, U/V, hastighed, retning eller pil.
+- Næste ægte prøve integrerer den faktiske tidsafstand. Over tre timer eller enhver ændret punkt-/kildekontekst stopper fortsat lokalt.
+- Bevarer eksisterende Candidate G-historik uden backfill, interpolation eller rekonstruktion. Candidate G 20/50/30 er fortsat eneste offentlige profil uden rollback.
+- Scorekurver, zoner, geometri, land-/vandpunkter og central admin-data er uændrede; geodatafilerne ændrer kun versionsfelt. Se DEC-0074.
+
 ## 4.0.276 – strømhistorik bevares pr. kystpunkt (2026-08-25)
 
 - Retter den private Copernicus-cache, så en dynamisk indsamlingsgruppe eller flytning af ét punkt ikke længere kan ugyldiggøre verificeret historik for uændrede kystpunkter.

@@ -102,6 +102,35 @@ function verifiedEntry(entry, part) {
   return proof ? { entry, source, validTime, uMps, vMps, proof } : null;
 }
 
+/**
+ * The owner-approved DKSS Limfjord proxy is published on its native
+ * three-hour cadence. Candidate G may retain the last derived transport state
+ * between those native samples, but this function deliberately returns no
+ * permission for Copernicus or unverified/mismatched entries.
+ */
+export function nativeCadenceHoldHoursForPart(part, document) {
+  if (!controlledLiveCurrentEnabled(document)) return 0;
+  const approvedRegionalEntry = (document.entries ?? []).some(raw => {
+    const candidate = verifiedEntry(raw, part);
+    return candidate?.entry?.sourceClass === 'owner-approved-regional-proxy'
+      && candidate.entry.source === REGIONAL_SOURCE
+      && candidate.entry.collection === 'dkss_lf';
+  });
+  return approvedRegionalEntry ? 3 : 0;
+}
+
+export function verifiedNativeCadenceReferenceForPart(part, document, referenceAt) {
+  const reference = canonicalTime(referenceAt);
+  if (!reference || nativeCadenceHoldHoursForPart(part, document) !== 3) return false;
+  return (document.entries ?? []).some(raw => {
+    const candidate = verifiedEntry(raw, part);
+    return candidate?.validTime === reference
+      && candidate.entry.sourceClass === 'owner-approved-regional-proxy'
+      && candidate.entry.source === REGIONAL_SOURCE
+      && candidate.entry.collection === 'dkss_lf';
+  });
+}
+
 export function mergeLiveCurrentPilotIntoRecord(record, part, document, { primaryCurrentVerified = () => false } = {}) {
   if (!record || !Array.isArray(record.hourly) || !controlledLiveCurrentEnabled(document)) return record;
   const candidates = new Map();

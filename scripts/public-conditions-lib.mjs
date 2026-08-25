@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
-import { selectNearestLocalScoreRow } from './lib/local-current-reference.mjs';
+import { selectLatestLocalScoreRowAtOrBefore } from './lib/local-current-reference.mjs';
 
 const HOURLY_FIELDS = [
   'time','windSpeedMps','windDirectionDeg','airTemperatureC','waveHeightM','waveDirectionDeg','wavePeriodS',
@@ -14,7 +14,7 @@ const currentLocalRow=(zone,source,full)=>{
   const exact=Number.isFinite(explicit)
     ? (zone?.hourly||[]).find(row=>Date.parse(row?.time||'')===explicit)
     : null;
-  return exact||selectNearestLocalScoreRow(
+  return exact||selectLatestLocalScoreRowAtOrBefore(
     zone?.hourly,
     full?.productionReferenceAt||source?.productionReferenceAt||full?.generatedAt||source?.generatedAt
   );

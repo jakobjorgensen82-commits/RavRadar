@@ -166,6 +166,22 @@ export function auditCandidateGPublicShadow(document, {
         && Number(candidate?.transportMemoryCoverageHours) < 48,
     'BOUNDED_TRANSPORT_MEMORY_COVERAGE_INVALID');
     add(state?.time === candidate?.referenceAt, 'STATE_REFERENCE_TIME_MISMATCH');
+    add(state?.transportReferenceAt === candidate?.transportReferenceAt,
+      'STATE_TRANSPORT_REFERENCE_MISMATCH');
+    const transportReferenceAgeHours = Number.isFinite(Date.parse(candidate?.referenceAt))
+      && Number.isFinite(Date.parse(candidate?.transportReferenceAt))
+      ? (Date.parse(candidate.referenceAt) - Date.parse(candidate.transportReferenceAt)) / 3_600_000
+      : Number.NaN;
+    add(transportReferenceAgeHours >= 0
+      && transportReferenceAgeHours <= CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.maximumGapHours,
+    'STATE_TRANSPORT_REFERENCE_AGE_INVALID');
+    add(transportReferenceAgeHours === 0
+      || candidate?.currentTransition === 'NATIVE_CADENCE_HOLD',
+    'HELD_TRANSPORT_REFERENCE_WITHOUT_NATIVE_CADENCE');
+    add(candidate?.currentTransition !== 'NATIVE_CADENCE_HOLD'
+      || (part?.current?.weather?.currentSpeedMps == null
+        && part?.current?.weather?.currentDirectionDeg == null),
+    'NATIVE_CADENCE_HOLD_EXPOSES_INVENTED_CURRENT');
     add(state?.schemaVersion === CANDIDATE_G_STATE_SCHEMA_VERSION, 'COMPACT_STATE_SCHEMA_MISMATCH');
     add(state?.modelId === CANDIDATE_G_STATE_MODEL_ID, 'COMPACT_STATE_MODEL_MISMATCH');
     add(state?.profileId === CANDIDATE_G_STATE_PROFILE_ID, 'COMPACT_STATE_PROFILE_MISMATCH');
@@ -194,10 +210,13 @@ export function auditCandidateGPublicShadow(document, {
       && (index === 0 || (Date.parse(item.time) - Date.parse(rows[index - 1].time)) / 3_600_000
         <= CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.maximumGapHours)),
     'COMPACT_BOUNDED_TRANSPORT_EVIDENCE_NOT_CONTINUOUS');
+    add(Date.parse(state?.transportEvidence?.at(-1)?.time ?? '')
+      === Date.parse(state?.transportReferenceAt ?? ''),
+    'COMPACT_BOUNDED_TRANSPORT_EVIDENCE_REFERENCE_MISMATCH');
     let replayedTransport = null;
     try {
       replayedTransport = buildBoundedCurrentTransportMemory(state?.transportEvidence ?? [], {
-        referenceTime: candidate?.referenceAt,
+        referenceTime: candidate?.transportReferenceAt,
       });
     } catch {
       add(false, 'COMPACT_BOUNDED_TRANSPORT_REPLAY_FAILED');
@@ -229,6 +248,7 @@ export function auditCandidateGPublicShadow(document, {
       'schemaVersion',
       'stateKey',
       'time',
+      'transportReferenceAt',
       'transportEvidence',
       'transportMemoryCoverageHours',
       'transportMemoryReady',
@@ -403,6 +423,8 @@ function syntheticDocument() {
           automaticActivationAllowed: false,
           publicScoreChanged: true,
           referenceAt,
+          transportReferenceAt: referenceAt,
+          currentTransition: 'BOUNDED_MEMORY_WARMUP',
           transportMemoryReady: false,
           transportMemoryStatus: 'WINDOW_INCOMPLETE',
           transportMemoryCoverageHours: 0,
@@ -415,6 +437,7 @@ function syntheticDocument() {
             profileId: CANDIDATE_G_STATE_PROFILE_ID,
             stateKey: `sha256:${digest(partId)}`,
             time: referenceAt,
+            transportReferenceAt: referenceAt,
             transportPotential: 0,
             outboundEpisodeEffectiveHours: 0,
             transportMemoryReady: false,

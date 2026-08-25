@@ -1,4 +1,26 @@
-# Implementeringsstatus – produktionsverificeret 4.0.276 punktvis strømhistorik
+# Implementeringsstatus – kandidat 4.0.277 årsagstro native kadence
+
+## Implementeret og målrettet verificeret
+
+- [x] Afgræns rodårsagen til fremtidstælling i current-readiness og falske null-mellemtimer i Candidate G-state for otte native tretimersproxyer.
+- [x] Gør strømudvælgelsen årsagstro: kun eksakt målreference eller en ældre tilladt regionalproxyreference må anvendes.
+- [x] Fasthold kun afledt transporttilstand i højst tre timer og tilføj ingen bevægelse, evidens, U/V, hastighed, retning eller pil.
+- [x] Integrér den faktiske tidsafstand ved næste ægte native prøve og stop lokalt efter mere end tre timer.
+- [x] Bevar eksisterende verificeret state og filtrér kun gamle syntetiske null-markører for den tilladte regionalproxyklasse.
+- [x] Bestå målrettede pipeline-, readiness-, fremtidstid-, profil-, continuation-, public-shadow-, central-runtime- og brugerfladekontrakter.
+- [x] Dokumentér beslutningen i DEC-0074, aktive krav, current truth, roadmap, known issues, håndbøger og changelog.
+- [x] Sæt version 4.0.277 og verificér, at geodatafilerne kun ændrer versionsfelt.
+
+## Produktionslukning
+
+- [ ] Bestå RDKS- og kildegaten på PR'ens eksakte head.
+- [ ] Merge den eksakte grønne head.
+- [ ] Bestå frisk central produktion, fuld validering, releasegate, artifact og Pages-deploy.
+- [ ] Kontrollér dataminimeret live, at 673/673 state fortsætter, at native mellemtimer ikke viser strømvektor, og at Candidate G 20/50/30 fortsat er eneste profil.
+
+Ingen Candidate G-regel, vejrregel, zone, geometri, land-/vandpunkt eller central admin-data ændres i 4.0.277.
+
+# Historisk produktionsverificeret implementeringsstatus – 4.0.276 punktvis strømhistorik
 
 ## Implementeret og målrettet verificeret
 
