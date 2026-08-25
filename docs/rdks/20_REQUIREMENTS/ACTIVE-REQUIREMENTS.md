@@ -1,5 +1,14 @@
 # Aktive krav – samlet register
 
+## Offentlig Om RavRadar-side – bindende fra 4.0.279
+
+- **REQ-PUBLIC-ABOUT-001 – BINDENDE:** Forsidens topmenu skal linke til en offentlig Om RavRadar-side, der præsenterer Jakob Jørgensen, projektets formål, kontaktmulighed og at RavRadar er et frivilligt, gratis værktøj uden fundgaranti.
+- **REQ-PUBLIC-ABOUT-SCORE-CONTEXT-001 – BINDENDE:** Siden skal forklare, at RavScore vurderer forholdene for den enkelte kyststrækning og ikke den grundlæggende ravmængde i en landsdel. Det skal være forståeligt, hvordan en højere score i Limfjorden stadig kan være et dårligere ravvalg end en lavere score ved Sæby.
+- **REQ-PUBLIC-ABOUT-SUPPORT-001 – BINDENDE:** Frivillig støtte skal være tydeligt valgfri, uden score- eller funktionsfordel, og bruge MobilePay Box `4214MX` samt den godkendte betalingsadresse som både link og lokalt genereret QR-kode.
+- **REQ-PUBLIC-ABOUT-RESPONSIVE-001 – BINDENDE:** Om-siden skal være optimeret til både pc og mobil, bruge responsive billedvarianter og må ikke kræve vandret rulning ved normal smal visning.
+- **REQ-PUBLIC-ABOUT-PRIVACY-001 – BINDENDE:** Om-siden må ikke indsamle nye brugerdata. Kontakt åbner brugerens mailprogram, og MobilePay åbnes kun efter brugerens eget klik.
+- **REQ-RELEASE-VERSION-FIELD-STANDING-001 – BINDENDE:** Ejeren har stående godkendt, at topversionsfeltet i `data/kystdata.json` og `data/zones.geojson` automatisk følger den reelle releaseversion. Før commit skal en særskilt diff bevise, at kun versionsfeltet er ændret. Enhver anden ændring af geodata, zoner, geometri eller land-/vandpunkter falder uden for godkendelsen og skal stoppe releasen.
+
 ## Ekspertinput og scoreændringer – bindende efter 4.0.277
 
 - **REQ-EXPERT-SCORE-CHANGE-001 – BINDENDE:** Ekspertens håndbogsreview er en faglig indgang, ikke en direkte scoreeditor. En accepteret scoreændring skal omsættes i den autoritative Candidate G-kode og RDKS samt bestå historik-, grænse-, invariant-, exact-head-, produktions- og offentlig efterkontrol.

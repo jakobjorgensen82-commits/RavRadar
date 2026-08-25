@@ -1,5 +1,17 @@
 # RavRadar Håndbog
 
+## Offentlig Om RavRadar-side – 4.0.279
+
+RavRadar har en offentlig **Om RavRadar**-side, som nås fra topmenuen ved konto, **Start ravtur** og **Spørg RavRadar**. Siden præsenterer Jakob Jørgensen, projektets idé, det frivillige arbejde og en direkte mailkontakt.
+
+Siden forklarer, at RavScore vurderer de aktuelle forhold for den enkelte kyststrækning, men ikke hvor meget rav der grundlæggende findes i landsdelen. Derfor kan 95 point i Limfjorden godt være et dårligere fundvalg end 75 point ved Sæby. Den forklarer også, at komplekse vejr-, hav- og kystforhold kræver generaliseringer; noget tilsyneladende forkert kan være en fejl eller en nødvendig forenkling af hensyn til helheden.
+
+Frivillig støtte er samlet med projektets omkostninger. MobilePay Box `4214MX`, den godkendte betalingsadresse og en klikbar QR-kode fører til samme boks. Støtte er valgfri og giver ingen særlige funktioner eller scorer.
+
+De to ejerbilleder leveres som responsive WebP-varianter. Layoutet er tospaltet på pc, enspaltet på mobil og indgår i den versionsstyrede offline-appskal. Siden indsamler ingen nye brugerdata. Se [DEC-0076](docs/rdks/10_DECISIONS/DEC-0076-PUBLIC-ABOUT-RAVRADAR.md).
+
+Releaseversionen er 4.0.279. De to beskyttede geodatafiler ændrer kun deres topversionsfelt fra 4.0.278; score, zoner, geometri og land-/vandpunkter er urørte. Fremtidige rene versionsfeltsynkroniseringer er stående godkendt, men skal altid afvises, hvis den særskilte diff viser anden geodataændring.
+
 ## Synkron håndbog og installationskopi – 4.0.275
 
 RavRadar har både webhåndbogen i repositoryet, en statisk Supabase-installationskopi og den senere centralt gemte eksperthåndbog. Repositoryets håndbog og installationskopien skal være identiske. Det kontrolleres nu både på hver PR's eksakte kodeversion og igen i den fulde produktionsvalidering.
@@ -485,7 +497,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.278
+**Håndbogsversion:** 4.0.279
 
 **Opdateret:** 19. august 2026
 

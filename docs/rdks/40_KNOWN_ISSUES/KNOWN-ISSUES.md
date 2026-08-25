@@ -1,5 +1,10 @@
 # Kendte åbne og overvågede forhold
 
+## Kandidat 4.0.279 – offentlig Om RavRadar-side
+
+- **ISSUE-PUBLIC-PROJECT-OWNER-CONTEXT-MISSING – LØST I KANDIDAT:** Den offentlige side manglede samlet information om ejeren, formålet, RavScores begrænsning, kontakt og projektets frivillige drift. Den nye responsive Om-side samler informationen og indsamler ingen nye brugerdata.
+- **ISSUE-PUBLIC-ABOUT-MOBILE-LAYOUT – LØST I KANDIDAT:** Ejerbilleder, lange links, QR-kode og støtteafsnit har nu egne mobile brudpunkter, responsive billedvarianter og overflowbeskyttelse. Offentlig pc- og mobilkontrol afventer den mergede version.
+
 ## Produktionsverificeret 4.0.278 – Regelværksted, håndbog og zonestatus
 
 - **ISSUE-LIVE-RULE-WORKSHOP-UNSAFE-CONTRACT – PRODUKTIONSVERIFICERET LØST:** Admin kunne præsentere en øjeblikstest og central publicering som en sikker scoreændring, selv om kæden ikke gennemførte Candidate G's 48-timershistorik, lokale datagater eller scoreinvariants. Den aktive funktion, rettighederne og den offentlige regelfil er fjernet. De gamle browserfiler er udelukket fra Pages, mens historiske kladder og forskningskilder bevares uden runtimeeffekt.

@@ -1,5 +1,20 @@
 # RavRadar - aktivt roadmap
 
+## P0 – 4.0.279 offentlig Om RavRadar-side
+
+- [x] Placér **Om RavRadar** i topmenuen ved konto, **Start ravtur** og **Spørg RavRadar**.
+- [x] Præsentér Jakob Jørgensen, projektets formål, frivillige arbejde, kontakt og fraværet af fundgaranti.
+- [x] Forklar forskellen mellem en kyststræknings aktuelle RavScore og en landsdels grundlæggende ravpotentiale.
+- [x] Forklar, at landsdækkende regler kræver forståelige kompromiser, uden at skjule mulige fejl.
+- [x] Saml frivillighed og støtte i ét afsnit med MobilePay Box `4214MX`, synligt link og klikbar QR-kode.
+- [x] Optimér begge ejerbilleder som responsive WebP-varianter og lav særskilt pc- og mobillayout uden vandret rulning.
+- [x] Tilføj siden og aktiverne til den versionsstyrede offline-appskal.
+- [x] Lås indhold, navigation, betalingslink, billeder og responsive brudpunkter med en målrettet kontrakttest.
+- [x] Sæt version 4.0.279; særskilt diff bekræfter, at de to beskyttede geodatafiler kun ændrer topversionsfelt 4.0.278 → 4.0.279.
+- [ ] Bestå exact-head-kildegate, merge, fuld produktionskæde og offentlig kontrol på pc og mobil.
+
+Arbejdet er rent præsentationsmæssigt. Candidate G, RavScore, vejrruntime, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er urørte. Ejeren har samtidig givet stående godkendelse til fremtidige rene versionsfeltsynkroniseringer, når særskilt diffkontrol beviser, at intet andet geodata ændres. Se DEC-0076.
+
 ## P0 – 4.0.278 retire misvisende Regelværksted og ret hele ekspert-håndbogen
 
 - [x] Gennemgå Regelværkstedets faktiske kodevej mod Candidate G's state, lokale datagater og invariants.

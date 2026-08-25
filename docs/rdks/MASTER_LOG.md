@@ -1,3 +1,13 @@
+## 2026-08-25 – kandidat 4.0.279 offentlig Om RavRadar-side
+
+- Ny offentlig, responsiv Om-side med Jakob Jørgensen, projektets formål, scorekontekst, kompleksitet, kontakt og frivillig støtte.
+- Topmenuen linker til siden ved konto, tur og Rav-assistent.
+- MobilePay Box `4214MX`, synlig betalingsadresse og klikbar QR-kode bruger samme godkendte mål.
+- Ejerbilleder er lokalt komprimeret i responsive WebP-størrelser; originalerne er ikke ændret eller flyttet.
+- Pc- og mobillayout, lokale aktiver, service-worker og målrettet kontrakttest er implementeret uden ændring af score, data eller geografi.
+- Versionen er sat til 4.0.279. Særskilt diff viser, at `data/kystdata.json` og `data/zones.geojson` kun ændrer topversionsfeltet fra 4.0.278.
+- Ejeren har stående godkendt, at disse to topversionsfelter følger fremtidige reelle releases uden et nyt spørgsmål, men kun når en særskilt diff beviser, at intet andet geodata er ændret. Se DEC-0076.
+
 ## 2026-08-25 – 4.0.278 statusrettelse produktionsverificeret
 
 - PR #146 bestod exact-head `32844951668` på `432de975` og blev merged som `8facd2d8`.

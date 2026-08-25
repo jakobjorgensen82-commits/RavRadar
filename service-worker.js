@@ -1,8 +1,9 @@
-const APP_VERSION = "4.0.278";
+const APP_VERSION = "4.0.279";
 const CACHE_PREFIX = "ravradar-app-";
 const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}`;
 const STATIC = [
-  "./","./index.html","./learn.html","./admin.html",`./learn.css?v=${APP_VERSION}`,`./admin.css?v=${APP_VERSION}`,`./js/ui/admin-dashboard.js?v=${APP_VERSION}`,`./style.css?v=${APP_VERSION}`,`./bootstrap.js?v=${APP_VERSION}`,`./app.js?v=${APP_VERSION}`,
+  "./","./index.html","./about.html","./learn.html","./admin.html",`./about.css?v=${APP_VERSION}`,`./learn.css?v=${APP_VERSION}`,`./admin.css?v=${APP_VERSION}`,`./js/ui/admin-dashboard.js?v=${APP_VERSION}`,`./style.css?v=${APP_VERSION}`,`./bootstrap.js?v=${APP_VERSION}`,`./app.js?v=${APP_VERSION}`,
+  "./assets/about/jakob-480.webp","./assets/about/jakob-900.webp","./assets/about/ravjagt-med-boern-720.webp","./assets/about/ravjagt-med-boern-1200.webp","./assets/about/ravjagt-med-boern-1800.webp",`./assets/about/qrcode.min.js?v=${APP_VERSION}`,
   "./config.js","./manifest.webmanifest","./version.json",`./data/zones.geojson?v=${APP_VERSION}`,"./data/model.json",
   "./js/core/score-engine.js","./js/core/adaptive-model.js","./js/core/prediction-engine.js",
   "./js/services/data-service.js","./js/services/zone-registry.js","./js/services/auth-service.js","./js/services/trip-service.js","./js/services/observation-service.js","./js/services/learning-analysis.js","./js/services/historical-analysis.js","./js/services/storage-safety.js",

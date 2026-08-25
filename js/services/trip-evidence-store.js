@@ -2,7 +2,7 @@ import {
   TRIP_EVIDENCE_SCHEMA_VERSION,
   completeTripEvidence,
   createTripStartRecord
-} from './trip-evidence-contract.js?v=4.0.278';
+} from './trip-evidence-contract.js?v=4.0.279';
 
 const ACTIVE_KEY = 'ravradar-trip-evidence-v2-active';
 const PENDING_KEY = 'ravradar-trip-evidence-v2-pending';

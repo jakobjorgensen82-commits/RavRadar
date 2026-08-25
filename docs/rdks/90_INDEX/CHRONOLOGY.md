@@ -1,5 +1,17 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-25 – kandidat 4.0.279 offentlig Om RavRadar-side
+
+1. Ejeren bad om en Om RavRadar-side med præsentation af Jakob Jørgensen, projektets idé, frivillig drift, kontakt, to ejerbilleder og valgfri MobilePay-støtte.
+2. Det blev præciseret, at højeste RavScore ikke betyder størst grundlæggende ravmængde, og at Limfjorden 95 derfor godt kan være et dårligere fundvalg end Sæby 75.
+3. Siden forklarer også, at landsdækkende regler må rumme kompromiser, så noget tilsyneladende forkert kan være en fejl eller en bevidst helhedsforenkling.
+4. MobilePay Box `4214MX`, den godkendte adresse og en klikbar QR-kode vises samlet med den frivillige arbejdsindsats. Støtte giver ingen særlige funktioner eller scorer.
+5. Linket er placeret i topmenuen ved konto, **Start ravtur** og **Spørg RavRadar**.
+6. Ejerens billeder er optimeret til responsive WebP-varianter. Layoutet er tospaltet på pc og enspaltet på mobil uden vandret rulning.
+7. Siden er føjet til appskallen, og målrettet kontrakttest er grøn.
+8. Versionen er sat til 4.0.279; de to beskyttede geodatafiler ændrer kun topversionsfeltet fra 4.0.278.
+9. Ejeren har stående godkendt fremtidige rene versionsfeltsynkroniseringer uden et nyt spørgsmål, når særskilt diffkontrol beviser, at intet andet geodata ændres. Exact-head og offentlig efterkontrol afventer.
+
 ## 2026-08-25 – kandidat 4.0.278 pensionerer Regelværkstedet og retter hele ekspert-håndbogen
 
 1. Ejeren bad om at få hele ekspert-håndbogen sammenholdt med hele RavRadar og stillede spørgsmål ved, om Regelværkstedet realistisk kunne ændre scoren sikkert.
