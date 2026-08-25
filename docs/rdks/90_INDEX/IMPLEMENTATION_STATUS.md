@@ -1,6 +1,19 @@
-# Implementeringsstatus – kandidat 4.0.280
+# Implementeringsstatus – kandidat 4.0.281
 
-## Kandidat 4.0.280 – ret orientering og layout for familiebillede
+## Kandidat 4.0.281 – luk falske Mangler/Ukendt i Candidate G-visningen
+
+- [x] Afgræns fejlen til Candidate G's offentlige forklaringsprojektion, zoneaggregationen og den tekniske UI-visning; selve scoreberegningen er ikke årsagen.
+- [x] Bevar Candidate G's målingsstatus, transportreference, 48-timersdækning, fase, udgående forløb/tab, transportpotentiale, levering og mobilisering i den offentlige kontrakt.
+- [x] Erstat pensionerede legacyfelter i den tekniske visning med Candidate G-native felter og almindelige danske forklaringer.
+- [x] Gør native tretimers-mellemtimer tydelige uden at opfinde rå retning, forskel, klassifikation eller ny måling.
+- [x] Lås profilprojektion, zoneaggregering, UI-markører og produktionspipeline med målrettede regressionstests.
+- [x] Dokumentér DEC-0077 og opdatér roadmap, issues, changelog samt begge håndbøger.
+- [x] Sæt og kontrollér releaseversion 4.0.281; særskilt diff viser, at de beskyttede geodatafiler kun ændrer topversionsfelt 4.0.280 → 4.0.281.
+- [ ] Bestå exact-head-kildegate, merge, fuld produktionskæde og offentlig landskontrol.
+
+Candidate G 20/50/30, scorekurver, vejr, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er uændrede.
+
+## Produktionsverificeret 4.0.280 – ret orientering og layout for familiebillede
 
 - [x] Afgræns fejlen til en billedkonvertering, som ignorerede EXIF-orientering; ingen score-, zone- eller geodatafejl er involveret.
 - [x] Bevar kildebilledet urørt og indarbejd korrekt portrætretning fysisk i tre komprimerede JPEG-varianter.
@@ -8,7 +21,7 @@
 - [x] Opdatér HTML, service-worker og målrettet test til kun at bruge de nye varianter og kontrollere deres faktiske dimensioner.
 - [x] Kontrollér siden visuelt ved 1440 × 1000 og 390 × 844 pixel.
 - [x] Sæt version 4.0.280; særskilt diff skal vise, at de to beskyttede geodatafiler kun ændrer topversionsfelt 4.0.279 → 4.0.280.
-- [ ] Bestå exact-head-kildegate, merge, fuld produktion og offentlig pc-/mobilkontrol.
+- [x] Bestå exact-head-kildegate og merge PR #149 som `42b7058f`; ejeren har derefter kontrolleret den offentlige side på både mobil og pc og bekræftet korrekt orientering og layout.
 
 Candidate G, RavScore, vejr, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er urørte.
 

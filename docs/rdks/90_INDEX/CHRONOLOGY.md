@@ -1,5 +1,13 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-25 – kandidat 4.0.281 Candidate G-native teknisk visning
+
+1. Ejeren så **Mangler**, **Ukendt**, tankestreger og **Ikke beregnet** i den tekniske zonevisning og bad om at få forholdet rettet på tværs af alle zoner og kyststrækninger.
+2. Gennemgangen viste, at Candidate G allerede beregnede grundlaget, men UI'et læste pensionerede felter fra den gamle scoremotor, og zoneaggregationen fjernede dele af den nye forklaring.
+3. Candidate G's offentlige projektion bevarer nu målingsstatus, transportreference, 48-timersdækning, fase, udgående forløb/tab, transportpotentiale, levering og rav i bevægelse.
+4. Native tretimers-mellemtimer forklares uden opdigtet ny måling, retning, forskel eller klassifikation.
+5. Rettelsen ændrer ikke scoremodellen, scoretal, vejr, zoner, geometri, land-/vandpunkter, admin-data eller brugerdata. Se DEC-0077.
+
 ## 2026-08-25 – kandidat 4.0.280 korrekt orienteret Om RavRadar-billede
 
 1. Den offentlige kontrol viste, at familiebilledet stod 90 grader forkert.

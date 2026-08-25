@@ -15,6 +15,7 @@ const candidate = {
   components: {
     huntability: 68,
     transport: 100,
+    delivery: 100,
     transportAndDelivery: 100,
     mobilisation: 73,
   },
@@ -34,8 +35,15 @@ const projected = projectCandidateGForPublic(candidate, {
     waveHeightM: 0.4,
     currentSpeedMps: 0.18,
     currentAlignment: 0.76,
+    currentVerified: true,
     currentTransition: 'INBOUND_BUILDUP',
+    transportReferenceAt: '2026-08-25T18:00:00.000Z',
+    transportMemoryReady: true,
+    transportMemoryStatus: 'READY',
+    transportMemoryCoverageHours: 48,
+    transportMemoryWindowHours: 48,
     outboundEpisodeEffectiveHours: 0,
+    outboundEpisodeLossPoints: 0,
     actualOutboundTransport: false,
     waveMobilisationTransition: 'decay',
   },
@@ -49,6 +57,32 @@ assert.ok(projected.componentReasons.transport.some(reason => reason.includes('0
 assert.ok(projected.componentReasons.transport.some(reason => reason.includes('time for time')));
 assert.ok(projected.componentReasons.release.some(reason => reason.includes('0,4 m')));
 assert.ok(projected.componentReasons.release.some(reason => reason.includes('aftager gradvist')));
+assert.equal(projected.explanation.transportDiagnostics.engine, 'CANDIDATE_G');
+assert.equal(projected.explanation.transportDiagnostics.measurementStatus, 'VERIFIED');
+assert.equal(projected.explanation.transportDiagnostics.currentDirectionClass, 'INBOUND');
+assert.ok(Math.abs(projected.explanation.transportDiagnostics.currentDirectionDifferenceDeg - 40.5358) < 0.01);
+assert.equal(projected.explanation.transportDiagnostics.deliveryPotential, 100);
+assert.equal(projected.explanation.transportDiagnostics.transportMemoryStatus, 'READY');
+assert.equal(projected.explanation.transportDiagnostics.transportMemoryCoverageHours, 48);
+assert.equal(projected.explanation.transportDiagnostics.windDirectlyIncluded, false);
+
+const held = projectCandidateGForPublic(candidate, {
+  mode: 'beach',
+  profile,
+  context: {
+    currentVerified: true,
+    currentAlignment: 0.76,
+    currentTransition: 'NATIVE_CADENCE_HOLD',
+    transportMemoryReady: true,
+    transportMemoryStatus: 'READY',
+    transportMemoryCoverageHours: 48,
+    transportMemoryWindowHours: 48,
+  },
+});
+assert.equal(held.explanation.transportDiagnostics.measurementStatus, 'NATIVE_CADENCE_HOLD');
+assert.equal(held.explanation.transportDiagnostics.currentAlignment, null);
+assert.equal(held.explanation.transportDiagnostics.currentDirectionDifferenceDeg, null);
+assert.equal(held.explanation.transportDiagnostics.currentDirectionClass, null);
 
 const legacy = calculateRavScore({
   mode: 'waders',
@@ -94,7 +128,7 @@ assert.ok(!app.includes('Vælg et område på kortet'));
 assert.ok(index.includes('E.U. Copernicus Marine Service Information'));
 assert.ok(index.includes('Copernicus Marine-vilkårene'));
 assert.ok(index.includes('OpenStreetMap-data er under ODbL'));
-for (const marker of ['publicContext', 'currentTransition', 'waveMobilisationTransition', 'context: scoreRow?.candidateG?.publicContext']) {
+for (const marker of ['publicContext', 'currentTransition', 'waveMobilisationTransition', 'transportMemoryWindowHours', 'outboundEpisodeLossPoints', 'context: scoreRow?.candidateG?.publicContext']) {
   assert.ok(updater.includes(marker), `Produktionskæden mangler ${marker}`);
 }
 

@@ -134,6 +134,7 @@ export function auditCandidateGPublicShadow(document, {
   let bandChangeCount = 0;
   let memoryReadyPartCount = 0;
   let warmupPartCount = 0;
+  let technicalDiagnosticsModeCount = 0;
   let transportStateReplayMismatchCount = 0;
   const persistedTransportPotentials = [];
   const replayedTransportPotentials = [];
@@ -276,6 +277,33 @@ export function auditCandidateGPublicShadow(document, {
         continue;
       }
       add(activePublic?.available === true && finite(activeScore), 'READY_ACTIVE_SCORE_MISSING');
+      const diagnostics = activePublic?.explanation?.transportDiagnostics;
+      const measurementStatus = diagnostics?.measurementStatus;
+      add(diagnostics?.engine === 'CANDIDATE_G', 'CANDIDATE_G_PUBLIC_DIAGNOSTICS_MISSING');
+      add(['VERIFIED', 'NATIVE_CADENCE_HOLD', 'UNVERIFIED'].includes(measurementStatus),
+        'CANDIDATE_G_MEASUREMENT_STATUS_INVALID');
+      add(finite(diagnostics?.transportPotential), 'CANDIDATE_G_TRANSPORT_DIAGNOSTIC_MISSING');
+      add(finite(diagnostics?.deliveryPotential), 'CANDIDATE_G_DELIVERY_DIAGNOSTIC_MISSING');
+      add(finite(diagnostics?.transportAndDelivery), 'CANDIDATE_G_COMBINED_TRANSPORT_DIAGNOSTIC_MISSING');
+      add(diagnostics?.transportMemoryReady === true, 'CANDIDATE_G_MEMORY_DIAGNOSTIC_NOT_READY');
+      add(diagnostics?.transportMemoryStatus === candidate?.transportMemoryStatus,
+        'CANDIDATE_G_MEMORY_STATUS_DIAGNOSTIC_MISMATCH');
+      add(Number(diagnostics?.transportMemoryCoverageHours) === Number(candidate?.transportMemoryCoverageHours),
+        'CANDIDATE_G_MEMORY_COVERAGE_DIAGNOSTIC_MISMATCH');
+      add(Number(diagnostics?.transportMemoryWindowHours) === 48,
+        'CANDIDATE_G_MEMORY_WINDOW_DIAGNOSTIC_INVALID');
+      add(diagnostics?.windDirectlyIncluded === false, 'CANDIDATE_G_WIND_DIAGNOSTIC_INVALID');
+      if (measurementStatus === 'VERIFIED') {
+        add(['INBOUND', 'ALONG_COAST', 'OUTBOUND'].includes(diagnostics?.currentDirectionClass),
+          'CANDIDATE_G_DIRECTION_CLASS_MISSING');
+        add(finite(diagnostics?.currentDirectionDifferenceDeg),
+          'CANDIDATE_G_DIRECTION_DIFFERENCE_MISSING');
+      }
+      if (measurementStatus === 'NATIVE_CADENCE_HOLD') {
+        add(diagnostics?.currentDirectionClass == null && diagnostics?.currentDirectionDifferenceDeg == null,
+          'CANDIDATE_G_NATIVE_HOLD_EXPOSES_DIRECTION');
+      }
+      if (diagnostics?.engine === 'CANDIDATE_G') technicalDiagnosticsModeCount += 1;
       if (!finite(activeScore) || !finite(candidateMode?.score)) continue;
       const active = Number(activeScore);
       const proposed = Number(candidateMode.score);
@@ -293,6 +321,8 @@ export function auditCandidateGPublicShadow(document, {
     }
   }
   add(scoreReconstructionMismatchCount === 0, 'CANDIDATE_SCORE_RECONSTRUCTION_MISMATCH');
+  add(technicalDiagnosticsModeCount === memoryReadyPartCount * MODES.length,
+    'CANDIDATE_G_PUBLIC_DIAGNOSTICS_COVERAGE_INCOMPLETE');
 
   const modeSummary = Object.fromEntries(MODES.map(mode => [mode, {
     active: summarize(modeRows[mode].map(row => row.active)),
@@ -332,6 +362,7 @@ export function auditCandidateGPublicShadow(document, {
       partCount: parts.length,
       expectedPartCount,
       modeEvaluationCount: modeRows.waders.length + modeRows.beach.length,
+      technicalDiagnosticsModeCount,
     },
     stateContinuation: {
       acceptedStateCount,

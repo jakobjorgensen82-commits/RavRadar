@@ -1,5 +1,14 @@
 # Current truth – gældende projektviden
 
+## Kandidat 4.0.281 – Candidate G-native teknisk kontrolvisning
+
+- Candidate G 20/50/30 er fortsat eneste offentlige scoreprofil uden rollback eller legacyfallback.
+- Den tekniske visning læste pensionerede felter fra den gamle motor, mens zoneaggregationen fjernede dele af Candidate G's forklaring. Det gav falske **Mangler**, **Ukendt**, tankestreger og **Ikke beregnet**, selv om den viste score havde et gyldigt Candidate G-grundlag.
+- Candidate G's offentlige projektion bevarer nu aktuel målingsstatus, strøm/kyst-klassifikation ved en ny verificeret måling, transportreference, 48-timersdækning, historisk fase, udgående forløb og tab samt transport-, leverings- og mobiliseringsværdier gennem både kystdels- og zonevisning.
+- Ved en tilladt native tretimers-mellemtime siger UI'et, at ingen ny måling er kommet, og at den seneste verificerede tilstand fastholdes. Der vises ikke en opdigtet rå retning, forskel eller klassifikation.
+- De pensionerede legacyfelter er fjernet fra kontrolvisningen. **Mangler/Ukendt** bruges kun ved et reelt manglende Candidate G-grundlag.
+- Kandidaten ændrer ikke scoretal, scorekurver, vejr, zoner, geometri, land-/vandpunkter, admin-data eller brugerdata. Se DEC-0077.
+
 ## Kandidat 4.0.280 – korrekt orienteret Om RavRadar-billede
 
 - Familiebilledets tidligere WebP-konvertering havde ikke indarbejdet kameraets EXIF-orientering i pixels. Derfor kunne det offentlige portræt stå på siden, selv om kildebilledet så korrekt ud i programmer, der læser EXIF.

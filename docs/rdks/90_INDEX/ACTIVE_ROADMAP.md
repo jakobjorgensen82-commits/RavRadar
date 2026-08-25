@@ -1,6 +1,19 @@
 # RavRadar - aktivt roadmap
 
-## P0 – 4.0.280 korrekt orienteret Om RavRadar-billede
+## P0 – 4.0.281 luk falske Mangler/Ukendt i alle Candidate G-visninger
+
+- [x] Kortlæg Candidate G's eksisterende diagnosefelter og bevis, at scoremotoren allerede beregner grundlaget.
+- [x] Bevar hele den dataminimerede Candidate G-forklaring gennem både kystdel og zoneaggregation.
+- [x] Erstat legacyfelterne i den tekniske visning med Candidate G's aktuelle status, 48-timershukommelse, fase, udgående forløb/tab, transport, levering og rav i bevægelse.
+- [x] Gør native tretimers-mellemtimer ærlige uden opdigtet måling, retning eller klassifikation.
+- [x] Tilføj målrettede tests for projektion, UI, zoneaggregation og produktionspipeline.
+- [x] Dokumentér DEC-0077 og opdatér projektets hukommelse og håndbøger.
+- [x] Versionér til 4.0.281 og bevis med særskilt diff, at de to beskyttede geodatafiler kun ændrer topversionsfeltet.
+- [ ] Exact-head-validér, merge, kør fuld produktion og kontrollér alle offentlige zoner/kyststrækninger.
+
+Dette lukker roadmap-punktet om **Mangler/Ukendt** på tværs af alle zoner og kyststrækninger. Candidate G 20/50/30 og alle scorekurver er urørte.
+
+## Produktionsverificeret – 4.0.280 korrekt orienteret Om RavRadar-billede
 
 - [x] Bevar originalen urørt og indarbejd korrekt portrætretning i de leverede billedpixels.
 - [x] Lever tre komprimerede størrelser og vælg dem responsivt.
@@ -8,7 +21,7 @@
 - [x] Opdatér appskal og målrettet kontrakttest.
 - [x] Udfør målrettet visuel pc-/mobilkontrol.
 - [x] Sæt 4.0.280 og bevis, at geodatafilerne kun ændrer versionsfelt.
-- [ ] Bestå exact-head, merge, fuld produktion og offentlig pc-/mobilkontrol.
+- [x] Bestå exact-head og merge PR #149 som `42b7058f`; ejeren har efter udgivelsen kontrolleret og godkendt både mobil- og pc-visningen.
 
 Ingen score, vejrdata, zone, geometri, land-/vandpunkt, admin-data eller brugerdata ændres.
 

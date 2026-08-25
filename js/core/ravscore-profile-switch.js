@@ -6,7 +6,7 @@ export const CANDIDATE_G_MEMORY_REFERENCE_SCOPE = 'CURRENT_COMMON_ZONE_REFERENCE
 
 export const PUBLIC_RAVSCORE_PROFILE_SELECTION = Object.freeze({
   schemaVersion: '2.0.0',
-  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.280',
+  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.281',
   requestedProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
   rollbackProfileId: null,
   candidateProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
@@ -126,6 +126,38 @@ function currentDirectionText(alignment) {
   if (Number(alignment) >= 0.35) return 'ind mod kystdelen';
   if (Number(alignment) <= -0.35) return 'væk fra kystdelen';
   return 'mest langs kysten';
+}
+
+function candidateGCurrentDiagnostics(context = {}) {
+  const transition = context.currentTransition ?? null;
+  const nativeCadenceHold = transition === 'NATIVE_CADENCE_HOLD';
+  const verified = context.currentVerified === true && !nativeCadenceHold;
+  const alignment = verified && finite(context.currentAlignment)
+    ? Math.max(-1, Math.min(1, Number(context.currentAlignment)))
+    : null;
+  const directionDifferenceDeg = alignment === null
+    ? null
+    : Math.acos(alignment) * 180 / Math.PI;
+  const directionClass = alignment === null
+    ? null
+    : alignment >= 0.35
+      ? 'INBOUND'
+      : alignment <= -0.35
+        ? 'OUTBOUND'
+        : 'ALONG_COAST';
+  const measurementStatus = verified
+    ? 'VERIFIED'
+    : nativeCadenceHold
+      ? 'NATIVE_CADENCE_HOLD'
+      : 'UNVERIFIED';
+  return {
+    measurementStatus,
+    currentVerified: verified,
+    currentTransition: transition,
+    currentAlignment: alignment,
+    currentDirectionDifferenceDeg: directionDifferenceDeg,
+    currentDirectionClass: directionClass,
+  };
 }
 
 function buildComponentReasons(name, value, mode, context = {}) {
@@ -342,6 +374,7 @@ export function projectCandidateGForPublic(candidate, { mode, profile, context =
   };
   const outflowReason = candidate.outflowExhaustionGateApplied === true
     ? candidate.outflowExhaustionExplanationDa : null;
+  const currentDiagnostics = candidateGCurrentDiagnostics(context);
   const reasons = outflowReason
     ? [outflowReason]
     : [componentReasons.transport[0], componentReasons.release[0], componentReasons.huntability[0]];
@@ -367,8 +400,24 @@ export function projectCandidateGForPublic(candidate, { mode, profile, context =
         ? 'Ravmulighed ved søgning i vandet, begrænset af søgeforholdene'
         : 'Ravmulighed ved søgning på stranden',
       transportDiagnostics: {
+        engine: 'CANDIDATE_G',
+        ...currentDiagnostics,
         transportPotential: candidate?.components?.transport ?? null,
+        deliveryPotential: candidate?.components?.delivery ?? null,
         transportAndDelivery: transport,
+        transportReferenceAt: context.transportReferenceAt ?? null,
+        transportMemoryReady: context.transportMemoryReady === true,
+        transportMemoryStatus: context.transportMemoryStatus ?? null,
+        transportMemoryCoverageHours: finite(context.transportMemoryCoverageHours)
+          ? Number(context.transportMemoryCoverageHours) : null,
+        transportMemoryWindowHours: finite(context.transportMemoryWindowHours)
+          ? Number(context.transportMemoryWindowHours) : null,
+        outboundEpisodeEffectiveHours: finite(context.outboundEpisodeEffectiveHours)
+          ? Number(context.outboundEpisodeEffectiveHours) : null,
+        outboundEpisodeLossPoints: finite(context.outboundEpisodeLossPoints)
+          ? Number(context.outboundEpisodeLossPoints) : null,
+        actualOutboundTransport: context.actualOutboundTransport === true,
+        windDirectlyIncluded: false,
         outflowExhaustionGateApplied: candidate.outflowExhaustionGateApplied === true,
       },
       mobilisationDiagnostics: { mobilisationPotential: release },
@@ -396,7 +445,18 @@ export function selectPublicRavScoreResult({ profile, candidateG, candidateState
     reasons: [availability.messageDa],
     scoreProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
   };
-  return projectCandidateGForPublic(candidateG, { mode, profile, context });
+  const diagnosticContext = {
+    ...context,
+    transportReferenceAt: context.transportReferenceAt ?? candidateState?.transportReferenceAt ?? null,
+    transportMemoryReady: context.transportMemoryReady ?? candidateState?.transportMemoryReady ?? false,
+    transportMemoryStatus: context.transportMemoryStatus ?? candidateState?.transportMemoryStatus ?? null,
+    transportMemoryCoverageHours: context.transportMemoryCoverageHours
+      ?? candidateState?.transportMemoryCoverageHours ?? null,
+    transportMemoryWindowHours: context.transportMemoryWindowHours
+      ?? candidateState?.transportMemoryWindowHours ?? null,
+    currentTransition: context.currentTransition ?? candidateState?.currentTransition ?? null,
+  };
+  return projectCandidateGForPublic(candidateG, { mode, profile, context: diagnosticContext });
 }
 
 export function rollbackPublicRavScoreSelection() {
