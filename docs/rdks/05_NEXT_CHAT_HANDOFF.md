@@ -7,7 +7,9 @@
 - Eksperten indsender fortsat faglige kommentarer i håndbogen. Accepterede scoreændringer går gennem Candidate G-kode, RDKS, målrettede tests, exact-head, produktion og offentlig kontrol.
 - Hele ekspert-håndbogen er rettet mod Candidate G 20/50/30, aktiv 48-timersstate, lokal fail-closed og fraværet af legacyfallback. Se DEC-0075.
 - Installationskopi, målrettede tests og RDKS-gate er lokale kandidater; PR-/produktionslukning er næste trin. Score og geodata er urørte bortset fra ejerens godkendte versionsfelt 4.0.277 → 4.0.278 i de to beskyttede filer.
-- Seneste naturlige kontrol viser 657/673 kyststrækninger med 48 timers historik, 205/210 aktive zoner og ingen nye resets ved kørselsskift. De resterende lokale kæder fortsætter naturligt.
+- Seneste naturlige kontrol viser 657/673 kyststrækninger med 48 timers historik, 205/210 zoner med gyldige beregnede aktuelle scorer og ingen nye resets ved kørselsskift. De resterende lokale kæder fortsætter naturligt.
+- Produktion `32840785390` udgav 4.0.278 grønt efter PR #145/merge `11478de3`. Livekontrollen fandt derefter en separat statusfejl: vellykkede zonescorer manglede `available: true`, så oversigten viste falsk 0/210. Current-readiness lod desuden senere prognosehuller påvirke den aktuelle landsstatus.
+- Opfølgningen tilføjer succesflaget, bruger den fælles aktuelle reference og låser aktuel samt 5-dages strand-/wadersrangering med regression. Version og beskyttede geodata forbliver uændret 4.0.278.
 
 ## Produktionslukket 4.0.277 – native tretimerskadence
 

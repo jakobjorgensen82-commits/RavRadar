@@ -16,6 +16,11 @@
 - PR #144 bestod exact-head-kildegaten og blev merged som `fdf6e82c`. Produktion `32839004087` stoppede fail-closed før release og deploy på endnu en forældet kontrol: helhedstesten krævede fortsat Regelværkstedets gamle adminfane og de centrale dokumenter `rules` og `rule-history`.
 - Den aktive helhedstest følger nu alle 13 synlige adminfaner, kontrollerer det skrivebeskyttede kalibreringsgrundlag og læser kun de tre aktive centrale konfigurationsdokumenter. Historiske regeldokumenter bevares uændret, men de er ikke aktive driftskrav.
 - Den anden lukning ændrer fortsat ikke Candidate G, scoreprofil, state, vejrregler, zoner, geometri, land-/vandpunkter eller beskyttede geodata.
+- PR #145 blev merged som `11478de3`, og produktion `32840785390` bestod den fulde kæde inklusive releasegate, artifact og Pages. Offentlig version er 4.0.278 på 210 zoner og 673 kyststrækninger.
+- Livekontrollen viste 657 aktuelle READY-kyststrækninger og 16 lokale `WINDOW_INCOMPLETE`-forløb uden nye resets. 205 zoner havde gyldige beregnede Candidate G-scorer, men den offentlige aktivitetsoversigt viste fejlagtigt 0/210, fordi vellykkede zoneresultater manglede `available: true`.
+- Rettelseskandidaten tilføjer alene det manglende succesflag og beregner landsdækning ved den fælles aktuelle reference. Et lokalt hul i en senere prognosetime kan dermed ikke gøre den aktuelle landsstatus falsk negativ. De fem zoner med reelt ufuldstændig lokal historik forbliver korrekt utilgængelige.
+- Aktuel liste og alle fem prognosedage er kontrolleret med både strand og waders. De bruger hver sin søgeforholdsscore og kan både have forskellige scorer og forskellig rækkefølge. Stor overlapning er fagligt mulig, fordi transport og rav i bevægelse er fælles.
+- Rettelsen ændrer ikke 20/50/30, scorekurver, state, vejrregler, zoner, geometri, land-/vandpunkter eller versionsfelter. `data/kystdata.json` og `data/zones.geojson` forbliver 4.0.278.
 
 ## Produktionsverificeret 4.0.277 – native tretimerskadence uden falske mellemtimer
 
@@ -29,7 +34,7 @@
 - Første produktion `32816237198` byggede den bevarede strømhistorik, frisk vejr og den offentlige runtime grønt. Den fulde validering stoppede derefter sikkert før deploy, fordi en ældre statisk test stadig søgte efter det tidligere dækningsfeltnavn. Selve produktionsauditen brugte allerede den nye, korrekte 673-kontrakt.
 - PR #141 rettede kun den statiske testkontrakt, bestod exact-head `32817501003` på `128c71ce` og blev merged som `81e9b891`. Produktion `32817626537` bestod hele kæden inklusive fuld validering, releasegate, artifact og Pages.
 - Den seneste offentlige kontrol har 673/673 udgivne Candidate G-states, 673 accepterede fortsættelser og ingen nye resets ved kørselsskift. Profilen er alene 20/50/30; rollbackprofilen er `null`, og legacyfallback er forbudt.
-- 657/673 kyststrækninger har nået 48 timers naturlig historik, og 205/210 zoner er aktive. De resterende 16 lokale kæder har 15–23 timer og fortsætter naturligt uden backfill, interpolation eller modelskift.
+- 657/673 kyststrækninger havde nået 48 timers naturlig historik, og 205/210 zoner havde gyldige beregnede aktuelle scorer. En senere afdækket statuskontrakt manglede succesflaget og viste derfor falsk 0/210 aktive; det er rettet i 4.0.278-opfølgningen. De resterende 16 lokale kæder fortsætter naturligt uden backfill, interpolation eller modelskift.
 
 ## Produktionsverificeret 4.0.276 – strømhistorik bevares pr. kystpunkt
 

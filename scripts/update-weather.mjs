@@ -1228,13 +1228,10 @@ function scoreCoastalPartsRuntime(
     }
   }
 
-  const candidateCoverageReady = partRows.length === Number(contract?.partCount)
-    && partRows.every(row => row.scores.length > 0
-      && row.scores.every(score => ['waders', 'beach'].every(mode =>
-        score?.candidateG?.modes?.[mode]?.available === true
-        && score.candidateG.modes[mode].modelId === CANDIDATE_G_RAVSCORE_PROFILE_ID
-        && Number.isFinite(score.candidateG.modes[mode].score))));
   const referenceReadiness = candidateGReferenceReadiness(partRows, generatedAt);
+  const candidateCoverageReady = partRows.length === Number(contract?.partCount)
+    && referenceReadiness.referencePartCount === partRows.length
+    && referenceReadiness.candidateCoverageReady;
   const candidateMemoryReady = candidateCoverageReady
     && referenceReadiness.candidateMemoryReady;
   const candidateWarmupEligible = candidateCoverageReady
@@ -1293,7 +1290,7 @@ function scoreCoastalPartsRuntime(
         const weather=winner.weather||{};
         const explanation=winner.detail?.explanation||{};
         result[mode] = {
-          status,score:high,winningPartId:winner.partId,winningPartName:winner.name,scoreSpread:high-low,comparisonPartCount:available.length,
+          available:true,status,score:high,winningPartId:winner.partId,winningPartName:winner.name,scoreSpread:high-low,comparisonPartCount:available.length,
           components:winner.detail?.components||{},componentReasons:winner.detail?.componentReasons||{},
           explanation:{formula:explanation.formula,weights:explanation.weights,contributions:explanation.contributions,transportDiagnostics:{coastTransportExplanation:explanation.transportDiagnostics?.coastTransportExplanation}},
           weather:{

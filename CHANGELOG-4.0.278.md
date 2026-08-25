@@ -12,7 +12,9 @@
 ## Naturlig Candidate G-modning
 
 - Den seneste offentlige kontrol efter 4.0.277 viser 673 accepterede statefortsættelser og ingen nye resets ved kørselsskift.
-- 657 af 673 kyststrækninger har nået 48 timers naturlig historik, og 205 af 210 zoner er aktive. De resterende lokale kæder har 15–23 timers historik og fortsætter uden kunstig backfill.
+- 657 af 673 kyststrækninger har nået 48 timers naturlig historik. 205 af 210 zoner har gyldige beregnede aktuelle Candidate G-scorer, mens fem zoner fortsat mangler komplet lokal historik.
+- Den offentlige statusoversigt viste fejlagtigt 0 aktive zoner, fordi et vellykket zone-/søgemåderesultat manglede det eksplicitte felt `available: true`. Resultaterne og scorerne var beregnet, men blev af statuskontrakten behandlet som utilgængelige.
+- Dækningsgaten vurderede samtidig alle fremtidige prognoserækker og kunne derfor gøre den aktuelle landsstatus falsk negativ på grund af et senere lokalt prognosehul. Den vurderer nu kun den fælles aktuelle reference; fremtidige lokale huller forbliver lokale.
 
 ## Verifikation
 
@@ -21,3 +23,5 @@
 - Målrettede lokale kontrakttests, versions- og geodatakontrol, RDKS-validering, exact-head-kildegate, frisk produktion og offentlig efterkontrol gennemføres som releasekæde.
 - PR #143 bestod exact-head-kildegaten og blev merged som `d627b5ee`. Den første produktion `32837294743` byggede frisk vejr og fortsatte Candidate G-historikken, men stoppede før release og deploy, fordi en gammel valideringstest stadig krævede Regelværkstedets pensionerede gemmevej. Testen følger nu den nye kontrakt og kræver, at gemmevejen er fraværende. Ingen fejlende udgave blev offentliggjort.
 - PR #144 lukkede den første forældede test og blev merged som `fdf6e82c`. Den næste produktion `32839004087` stoppede ligeledes sikkert før release og deploy, fordi oversigts- og helhedstesten stadig krævede Regelværkstedets gamle adminfane og centrale regeldokumenter. Kontrollerne følger nu kun de 13 aktive adminfaner, de tre aktive centrale konfigurationsdokumenter og det skrivebeskyttede kalibreringsgrundlag. Historiske regeldokumenter er ikke slettet.
+- PR #145 blev merged som `11478de3`, og produktion `32840785390` bestod fuld validering, releasegate, artifact og offentlig deploy af 4.0.278. Den efterfølgende livekontrol afdækkede den falske 0/210-status ovenfor; ingen scoreformel eller Candidate G-state blev nulstillet.
+- Den målrettede rettelse markerer vellykkede zoneresultater som tilgængelige og binder current-readiness til den aktuelle fælles reference. Regressioner dækker både denne statuskontrakt og særskilte strand-/wadersrangeringer i aktuel liste og 5-dages prognose.

@@ -11,7 +11,11 @@
 - [x] Udeluk de pensionerede browserfiler og regelfiler fra Pages, mens forskningskilderne bevares internt.
 - [x] Synkronisér installationskopien, kør målrettede tests og RDKS-validering.
 - [x] Løft releaseversionen til 4.0.278 med kun versionsfeltet ændret i de to beskyttede geodatafiler.
-- [ ] Bestå exact-head-kildegaten, merge, produktion og offentlig efterkontrol.
+- [x] Bestå PR #145, merge som `11478de3` og udgiv gennem grøn produktion `32840785390`.
+- [x] Afgræns den offentlige falske 0/210-status til et manglende succesflag, ikke til scoreformel, modevalg eller tabt Candidate G-state.
+- [x] Ret current-readiness, så senere prognosehuller ikke gør den aktuelle landsdækning falsk negativ.
+- [x] Bevis og test, at både aktuelle bedste områder og 5-dages prognosen bruger særskilte strand-/wadersværdier.
+- [ ] Bestå opfølgningens exact-head-kildegate, merge, fulde produktion og offentlige statuskontrol.
 
 Rettelsen ændrer ikke selve Candidate G-scoren eller geodata.
 
