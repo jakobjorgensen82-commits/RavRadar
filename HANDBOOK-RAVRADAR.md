@@ -1,5 +1,17 @@
 # RavRadar Håndbog
 
+## Candidate G-native teknisk kontrolvisning – 4.0.281
+
+Den tekniske **Debug**-visning følger nu den samme Candidate G-motor som den offentlige RavScore. De tidligere ord **Mangler**, **Ukendt** og tomme felter skyldtes, at visningen læste pensionerede feltnavne fra den gamle scoremotor, mens Candidate G's rigtige forklaring delvist blev fjernet i zoneaggregationen. Selve scoren var ikke ændret af denne visningsfejl.
+
+Visningen forklarer nu i almindeligt dansk den aktuelle strømstatus, transportens reference, dækningen i den rullende 48-timershistorik, den historiske fase, et eventuelt udgående forløb og transporttab samt Candidate G's transport-, leverings- og mobiliseringsværdier. **Mangler** eller **Ukendt** bruges kun, når det konkrete datagrundlag faktisk ikke findes.
+
+Nogle strømkilder leverer en ny måling hver tredje time. I timerne imellem står der derfor **Ingen ny måling denne time; seneste verificerede tilstand fastholdes**. RavRadar fortsætter den seneste dokumenterede tilstand, men opfinder ikke en ny rå retning, forskel eller klassifikation. Næste ægte måling opdaterer igen visningen.
+
+Transportscoren bygger både på den aktuelle situation og det dokumenterede forløb i de seneste 48 timer. Derfor kan en strøm, som lige nu går mod kysten, stadig have en lavere transportscore, hvis indtransporten kun lige er begyndt, eller hvis et tidligere kraftigt udgående forløb stadig trækker ned.
+
+Rettelsen ændrer ikke Candidate G's **20/50/30**, scorekurver, vejrdata, zoner, geometri, land-/vandpunkter, admin-data eller brugerdata. Se [DEC-0077](docs/rdks/10_DECISIONS/DEC-0077-CANDIDATE-G-NATIVE-TECHNICAL-DIAGNOSTICS.md).
+
 ## Korrekt orienteret Om RavRadar-billede – 4.0.280
 
 Familiebilledets tidligere konvertering indarbejdede ikke kameraets EXIF-orientering i pixels. Derfor kunne billedet stå på siden i browseren. Originalen er urørt; de nye komprimerede portrætvarianter er fysisk vendt korrekt.
@@ -507,7 +519,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.280
+**Håndbogsversion:** 4.0.281
 
 **Opdateret:** 19. august 2026
 

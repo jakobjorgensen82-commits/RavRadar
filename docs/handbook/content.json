@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.280",
+  "handbookVersion": "4.0.281",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-08-25",
   "sections": [
+    {
+      "id": "candidate-g-native-technical-diagnostics-4-0-281",
+      "chapter": "65",
+      "title": "Candidate G-native teknisk kontrolvisning",
+      "summary": "Den tekniske visning læser nu Candidate G's egne forklaringsfelter, så Mangler og Ukendt kun vises ved et reelt manglende grundlag.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Candidate G beregnede oplysningerne korrekt, men den tekniske visning læste pensionerede felter fra den gamle scoremotor. Selve RavScore var ikke ændret af visningsfejlen.</div><div class=\"handbook-stack\"><p><strong>Samme motor og forklaring:</strong> Visningen følger nu Candidate G 20/50/30 og forklarer strømstatus, transportreference, 48-timershistorik, fase, udgående forløb, transporttab, levering, rav i bevægelse og samlet RavScore.</p><p><strong>Ærlige mellemtimer:</strong> Når en godkendt strømkilde leverer på native tretimerskadence, står der, at der ikke er kommet en ny måling denne time, og at den seneste verificerede tilstand fastholdes. RavRadar opfinder ikke en ny rå retning, forskel eller klassifikation.</p><p><strong>Historikken betyder noget:</strong> Transportscoren vurderer både den aktuelle strøm og det dokumenterede forløb i det rullende 48-timersvindue. En nyligt begyndt indtransport kan derfor godt have en moderat score, selv om pilen lige nu peger mod kysten.</p><p><strong>Reelle mangler:</strong> Ordene Mangler og Ukendt bruges kun, når det konkrete Candidate G-grundlag faktisk ikke findes, ikke fordi UI'et leder efter et gammelt feltnavn.</p><p>Scorekurver, vejr, zoner, geometri, land-/vandpunkter og private data er uændrede. Se <code>DEC-0077</code>.</p></div>"
+    },
     {
       "id": "public-about-ravradar-4-0-279",
       "chapter": "64",

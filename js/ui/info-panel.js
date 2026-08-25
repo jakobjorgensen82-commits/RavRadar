@@ -1,4 +1,4 @@
-import { scoreRating } from "../core/score-engine.js?v=4.0.280";
+import { scoreRating } from "../core/score-engine.js?v=4.0.281";
 
 const hasNumber = value => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value));
 const formatNumber = (value, suffix, digits = 1) => hasNumber(value) ? `${Number(value).toFixed(digits).replace(".", ",")} ${suffix}` : "Mangler";
@@ -86,33 +86,102 @@ function coastTransportExplanation(result) {
   const items = (explanation.items || []).map(item => `<li class="${item.selected ? "selected" : ""}"><b>${escapeHtml(item.name)}</b>: ${escapeHtml(item.text.replace(`${item.name}: `,""))}${item.selected && explanation.items.length > 1 ? " <span class=\"anchor-used\">Vægter højest nu</span>" : ""}</li>`).join("");
   return `<section class="coast-transport-explanation"><h3>Hvad sker der ved kysten?</h3><p>${escapeHtml(explanation.summary)}</p>${items ? `<details><summary>Se vurderingen af kystens delområder</summary><ul>${items}</ul><p class="muted">RavRadar bruger ikke et tilfældigt gennemsnit. Den kystdel, som strømmen rammer mest gunstigt, vægter højest, mens de øvrige kystdele bruges som støtte og kontrol.</p></details>` : ""}</section>`;
 }
+
+const CANDIDATE_G_PHASE_LABELS = {
+  INBOUND_BUILDUP: "Indtransport bygges op",
+  OUTBOUND_EROSION: "Udgående strøm reducerer transporten",
+  OUTBOUND_TRANSPORT: "Kraftig udtransport",
+  RETAINED_OR_NEUTRAL: "Tidligere transport bevares",
+  PASSIVE_NEUTRAL_DECAY: "Tidligere transport aftager",
+  NATIVE_CADENCE_HOLD: "Venter på næste naturlige strømmåling",
+  SAME_TIME_HOLD: "Samme måletid fastholdes",
+  BOUNDED_MEMORY_WARMUP: "Strømhistorikken bygges op",
+  UNVERIFIED_PAUSE: "Ny strøm kan ikke verificeres",
+};
+const CANDIDATE_G_DIRECTION_LABELS = {
+  INBOUND: "Ind mod kystdelen",
+  ALONG_COAST: "Mest langs kysten",
+  OUTBOUND: "Væk fra kystdelen",
+};
+const CANDIDATE_G_MEMORY_LABELS = {
+  READY: "Klar",
+  WINDOW_INCOMPLETE: "Historikvinduet er endnu ikke fuldt",
+  WINDOW_HAS_MISSING_EVIDENCE: "Historikvinduet har en manglende måling",
+  WINDOW_HAS_TIME_GAP: "Historikvinduet har et tidshul",
+  LATEST_SAMPLE_MISSING: "Den nyeste strømmåling mangler",
+};
+const technicalScore = value => hasNumber(value) ? `${Math.round(Number(value))}/100` : "Ikke leveret";
+const technicalDateTime = value => {
+  const date = new Date(value);
+  return value && Number.isFinite(date.getTime())
+    ? new Intl.DateTimeFormat("da-DK", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }).format(date)
+    : "Ikke leveret";
+};
+
 function debugPanel(zone, result, condition) {
   const debugZone = result.localZone || zone;
   const debugCondition = result.localWeather || condition;
   const d = result.explanation?.transportDiagnostics || {};
-  const steps = (d.steps || []).map(step => `<tr><td>${escapeHtml(step.label)}</td><td>${step.delta > 0 ? "+" : ""}${step.delta}</td><td>${Math.round(step.scoreAfter)}</td></tr>`).join("") || '<tr><td colspan="3">Ingen mellemregninger tilgængelige.</td></tr>';
+  const mobilisation = result.explanation?.mobilisationDiagnostics || {};
+  const isCandidateG = d.engine === "CANDIDATE_G";
   const provider = debugCondition.providerLabel || debugCondition.provider || debugCondition.currentProvenance?.provider || "DMI";
-  const currentDifference = Number.isFinite(Number(d.currentDirectionDifferenceDeg)) ? `${Math.round(d.currentDirectionDifferenceDeg)}°` : "Mangler";
-  const classificationLabels = { onshore:"Ind mod land", "partly-onshore":"Delvist ind mod land", "cross-shore":"Langs kysten/tværgående", offshore:"Væk fra land", "strongly-offshore":"Kraftigt væk fra land", unknown:"Ukendt" };
+  if (!isCandidateG) return `<details class="debug-panel"><summary>Debug: vis alle mellemregninger</summary><div class="debug-content"><p class="debug-warning"><b>Teknisk visning kan ikke vises.</b> Den offentlige Candidate G-diagnostik blev ikke leveret for denne beregning.</p></div></details>`;
+  const verified = d.measurementStatus === "VERIFIED";
+  const held = d.measurementStatus === "NATIVE_CADENCE_HOLD";
+  const currentMeasurement = verified
+    ? `${compass(debugCondition.currentDirectionDeg)} (mod-retning)`
+    : held
+      ? "Ingen ny måling denne time; seneste verificerede tilstand fastholdes"
+      : "Ingen verificeret strømmåling denne time";
+  const currentDifference = verified && hasNumber(d.currentDirectionDifferenceDeg)
+    ? `${Math.round(Number(d.currentDirectionDifferenceDeg))}°`
+    : held ? "Fastholdes fra seneste verificerede måling" : "Kan ikke beregnes uden verificeret måling";
+  const currentClass = verified
+    ? CANDIDATE_G_DIRECTION_LABELS[d.currentDirectionClass] || "Retningen ligger uden for den kendte klassifikation"
+    : held ? "Seneste verificerede klassifikation fastholdes i modellen" : "Kan ikke klassificeres uden verificeret måling";
+  const memoryStatus = CANDIDATE_G_MEMORY_LABELS[d.transportMemoryStatus]
+    || d.transportMemoryStatus
+    || "Historikstatus blev ikke leveret";
+  const memoryCoverage = hasNumber(d.transportMemoryCoverageHours) && hasNumber(d.transportMemoryWindowHours)
+    ? `${Math.round(Number(d.transportMemoryCoverageHours))} af ${Math.round(Number(d.transportMemoryWindowHours))} timer · ${memoryStatus}`
+    : memoryStatus;
+  const phase = CANDIDATE_G_PHASE_LABELS[d.currentTransition] || d.currentTransition || "Fase blev ikke leveret";
+  const outboundHours = hasNumber(d.outboundEpisodeEffectiveHours)
+    ? `${Number(d.outboundEpisodeEffectiveHours).toFixed(1).replace(".", ",")} effektive timer`
+    : "Ingen udgående episode registreret";
+  const outboundLoss = hasNumber(d.outboundEpisodeLossPoints)
+    ? `${Math.round(Number(d.outboundEpisodeLossPoints))} point`
+    : "Ikke leveret";
+  const rows = [
+    ["Transportpotentiale", technicalScore(d.transportPotential), "Opbygget af det dokumenterede strømforløb."],
+    ["Levering mod kysten", technicalScore(d.deliveryPotential), "Hvor meget af transportpotentialet der kan leveres kystnært."],
+    ["Samlet transportkomponent", technicalScore(d.transportAndDelivery), "65 % transportpotentiale og 35 % levering mod kysten."],
+    ["Rav i bevægelse", technicalScore(mobilisation.mobilisationPotential), "Bølgeforløbets opbyggede mobilisering."],
+  ].map(([name,value,meaning]) => `<tr><td>${name}</td><td>${value}</td><td>${meaning}</td></tr>`).join("");
   return `<details class="debug-panel"><summary>Debug: vis alle mellemregninger</summary><div class="debug-content">
-    <p class="debug-warning"><b>Teknisk visning.</b> Bruges til at kontrollere, at rådata, retninger og score passer fysisk sammen.</p>
+    <p class="debug-warning"><b>Teknisk Candidate G-visning.</b> Bruges til at kontrollere, at målinger, kystretning, historik og score passer fysisk sammen. Vinden indgår ikke direkte i transportscoren.</p>
     <div class="debug-grid">
       <div><span>Zone-ID</span><strong>${escapeHtml(debugZone.id)}</strong></div>
+      <div><span>Scoremotor</span><strong>Candidate G · 20/50/30</strong></div>
       <div><span>Datakilde</span><strong>${escapeHtml(provider)}</strong></div>
       <div><span>Pålandsretning</span><strong>${compass(debugZone.onshoreDirectionDeg)}</strong></div>
       <div><span>Retningskilde</span><strong>${escapeHtml(debugZone.onshoreDirectionSource || "Ikke angivet")}</strong></div>
-      <div><span>Rå strømretning</span><strong>${compass(debugCondition.currentDirectionDeg)} (mod-retning)</strong></div>
-      <div><span>Forskel strøm/land</span><strong>${currentDifference}</strong></div>
-      <div><span>Strømklassifikation</span><strong>${escapeHtml(classificationLabels[d.currentClassification] || d.currentClassification || "Ukendt")}</strong></div>
-      <div><span>Rå vindretning</span><strong>${compass(debugCondition.windDirectionDeg)} (fra-retning)</strong></div>
-      <div><span>Vindens bevægelse</span><strong>${compass(d.windTowardDirectionDeg)}</strong></div>
-      <div><span>Transport før loft</span><strong>${Number.isFinite(Number(d.scoreBeforeCaps)) ? d.scoreBeforeCaps : "–"}/100</strong></div>
-      <div><span>Transport efter loft</span><strong>${Number.isFinite(Number(d.scoreAfterCaps)) ? d.scoreAfterCaps : "–"}/100</strong></div>
+      <div><span>Aktuel strømstatus</span><strong>${escapeHtml(currentMeasurement)}</strong></div>
+      <div><span>Forskel strøm/kyst</span><strong>${escapeHtml(currentDifference)}</strong></div>
+      <div><span>Strømklassifikation</span><strong>${escapeHtml(currentClass)}</strong></div>
+      <div><span>Transportens måletid</span><strong>${technicalDateTime(d.transportReferenceAt)}</strong></div>
+      <div><span>Strømhistorik</span><strong>${escapeHtml(memoryCoverage)}</strong></div>
+      <div><span>Historisk fase</span><strong>${escapeHtml(phase)}</strong></div>
+      <div><span>Udgående episode</span><strong>${escapeHtml(outboundHours)}</strong></div>
+      <div><span>Tab ved udgående strøm</span><strong>${escapeHtml(outboundLoss)}</strong></div>
+      <div><span>Kraftig udtransport</span><strong>${d.actualOutboundTransport ? "Ja" : "Nej"}</strong></div>
+      <div><span>Transportpotentiale</span><strong>${technicalScore(d.transportPotential)}</strong></div>
+      <div><span>Levering mod kysten</span><strong>${technicalScore(d.deliveryPotential)}</strong></div>
+      <div><span>Samlet transportkomponent</span><strong>${technicalScore(d.transportAndDelivery)}</strong></div>
+      <div><span>Rav i bevægelse</span><strong>${technicalScore(mobilisation.mobilisationPotential)}</strong></div>
       <div><span>Endelig RavScore</span><strong>${result.score ?? "–"}/100</strong></div>
-      <div><span>Historisk fase</span><strong>${escapeHtml(result.explanation?.transportEvent?.stateExplanation?.phase || "Ikke beregnet")}</strong></div>
-      <div><span>Nærkystpotentiale</span><strong>${Number.isFinite(Number(result.explanation?.transportEvent?.shadowState?.nearshorePotential)) ? `${Math.round(result.explanation.transportEvent.shadowState.nearshorePotential)}/100` : "–"}</strong></div>
     </div>
-    <h4>Transportens mellemregninger</h4><div class="debug-table-wrap"><table class="debug-table"><thead><tr><th>Trin</th><th>Ændring</th><th>Efter trin</th></tr></thead><tbody>${steps}</tbody></table></div>
+    <h4>Candidate G’s beregningsled</h4><div class="debug-table-wrap"><table class="debug-table"><thead><tr><th>Led</th><th>Værdi</th><th>Betydning</th></tr></thead><tbody>${rows}</tbody></table></div>
   </div></details>`;
 }
 

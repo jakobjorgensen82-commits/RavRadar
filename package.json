@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.280",
+  "version": "4.0.281",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -90,7 +90,7 @@
     "validate:dmi-station-inventory": "node scripts/validate-dmi-station-inventory-4.0.33.mjs",
     "test:process-model": "node scripts/test-process-model-4.0.33.mjs",
     "test:admin-frontend": "node scripts/test-admin-frontend-4.0.44.mjs",
-    "test:score-presentation": "node scripts/test-score-presentation-4.0.45.mjs && node scripts/test-local-zone-explanation-4.0.184.mjs && node scripts/test-local-part-map-4.0.185.mjs && node scripts/test-public-local-display-consistency-4.0.235.mjs && node scripts/test-public-score-explanations-4.0.269.mjs",
+    "test:score-presentation": "node scripts/test-score-presentation-4.0.45.mjs && node scripts/test-local-zone-explanation-4.0.184.mjs && node scripts/test-local-part-map-4.0.185.mjs && node scripts/test-public-local-display-consistency-4.0.235.mjs && node scripts/test-public-score-explanations-4.0.269.mjs && node scripts/test-candidate-g-public-diagnostics-4.0.281.mjs",
     "test:huntability-safety-copy": "node scripts/test-huntability-safety-copy-4.0.268.mjs",
     "test:public-learning": "node scripts/test-public-learning-module-4.0.268.mjs",
     "test:public-about": "node scripts/test-public-about-page-4.0.279.mjs",

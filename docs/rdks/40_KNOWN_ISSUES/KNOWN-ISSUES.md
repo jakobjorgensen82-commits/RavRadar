@@ -1,5 +1,11 @@
 # Kendte åbne og overvågede forhold
 
+## Kandidat 4.0.281 – Candidate G-diagnoser
+
+- **ISSUE-CANDIDATE-G-PUBLIC-DIAGNOSTICS-LEGACY-FIELDS – LØST I KANDIDAT:** Den tekniske offentlige visning læste pensionerede felter fra den gamle scoremotor, og zoneaggregationen fjernede dele af Candidate G's aktuelle forklaring. Det gav falske **Mangler/Ukendt**-felter. UI og projektion bruger nu Candidate G's egne felter gennem både kystdel og zone.
+- **ISSUE-CANDIDATE-G-NATIVE-HOLD-DIAGNOSTICS – LØST I KANDIDAT:** En tilladt native tretimers-mellemtime kunne ikke forklares præcist i den gamle visning. Den nye kontrakt siger tydeligt, at ingen ny måling er kommet, fastholder kun den seneste verificerede tilstand og viser ingen opdigtet rå retning, forskel eller klassifikation.
+- **ISSUE-CANDIDATE-G-DIAGNOSTICS-NATIONAL-CLOSURE – AFVENTER PRODUKTION:** Exact-head, fuld produktion og offentlig kontrol af alle udgivne zoner og kyststrækninger mangler. Ingen score-, vejr- eller geodataændring er nødvendig.
+
 ## Kandidat 4.0.280 – Om RavRadar-billedets orientering
 
 - **ISSUE-PUBLIC-ABOUT-FAMILY-PHOTO-EXIF-ORIENTATION – LØST I KANDIDAT:** Kildebilledet var portræt med EXIF-orientering, men den tidligere WebP-konvertering indarbejdede ikke rotationen i pixels. Tre nye komprimerede JPEG-varianter er fysisk vendt korrekt og bruges i et særskilt pc-/mobillayout. Originalen er urørt, og ændringen påvirker ingen data- eller scorekæde.

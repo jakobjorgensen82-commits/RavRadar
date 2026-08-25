@@ -1,3 +1,19 @@
+## 4.0.281 – Candidate G-native teknisk diagnostik (2026-08-25)
+
+- Retter den tekniske scorevisning, som fejlagtigt viste **Mangler**, **Ukendt**, `–/100` og **Ikke beregnet**, fordi brugerfladen stadig læste pensionerede felter fra den gamle scoremotor.
+- Bevarer Candidate G's faktiske målingsstatus, retning mod den lokale kyst, 48-timers strømhistorik, fase, udgående episode og tab samt transport-, leverings- og mobiliseringsled gennem både kystdels- og zoneaggregationen.
+- Native tretimers-mellemtimer beskrives som fastholdt afledt tilstand. De får ikke opdigtet rå måling, retning, klassifikation eller ny evidens.
+- Teknisk visning siger udtrykkeligt, at vinden ikke indgår direkte i transportscoren, og forklarer beregningsleddene på almindeligt dansk.
+- En landsdækkende kontrakttest låser den samme Candidate G-native forklaring for alle offentlige zoner og kyststrækninger. **Mangler/Ukendt** må kun vises ved reel manglende Candidate G-evidens.
+- Candidate G 20/50/30, alle scorekurver, vejrregler, zoner, geometri, land-/vandpunkter, central admin-data og brugerdata er uændrede. De to beskyttede geodatafiler ændrer kun topversionsfelt til 4.0.281. Se DEC-0077.
+
+## 4.0.280 – korrekt orienteret familiebillede (2026-08-25)
+
+- Retter EXIF-orienteringen i familiebilledet på **Om RavRadar** uden at ændre originalen.
+- Leverer tre korrekt orienterede, komprimerede billedvarianter og et responsivt layout med opret billede ved siden af teksten på pc og over teksten på mobil.
+- PR #149 er merged som `42b7058f`, og ejeren har efter den offentlige udgivelse kontrolleret, at billedet står rigtigt på både mobil og pc.
+- Candidate G, RavScore, vejr, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er urørte. Geodatafilerne ændrede kun topversionsfelt til 4.0.280.
+
 ## 4.0.277 – årsagstro native tretimerskadence (2026-08-25)
 
 - Retter et sikkert 666/673-stop, hvor en fremtidig regionalproxyprøve kunne tælles som aktuel dækning, mens den timeskarpe audit korrekt afviste den.
@@ -327,9 +343,3 @@
 - Gramfeltets maksimum følger nu databasens eksisterende grænse, så en ellers gyldig rapport ikke kan ende fastlåst i offlinekøen.
 - Målrettede kontrakt-, observation-, turlog- og syntakstests er grønne. De tre første PR-kørsler stoppede sikkert på henholdsvis et gammelt profilversionsmærke, to manglende webhåndbogssætninger og den manglende versionsspecifikke changelog. Alle tre afgrænsede mangler blev lukket uden scoreændring. PR #111 bestod derefter exact-head `32658661075`, blev merged som `cb7d2232`, og produktion `32658724861` bestod frisk vejr, fuld validering, releasegate, Supabase og Pages. Live `rr-20260823184330-210` er 4.0.265 på 210/673; den udgivne formular kræver selvvalgt dato og tid uden forudfyldning.
 - Candidate G, `20/50/30`, scorelogik, vejrruntime, database, geometri og land-/vandpunkter er uændrede. Versionsløftet må kun ændre versionsfeltet i de to geodatafiler.
-## 4.0.280 – korrekt orienteret Om RavRadar-billede (2026-08-25)
-
-- Retter familiebilledet, hvis tidligere konvertering ignorerede kameraets EXIF-orientering.
-- Leverer tre komprimerede portrætvarianter med retningen fysisk indarbejdet i pixels.
-- Tilpasser billedet særskilt til pc og mobil uden vandret rulning og opdaterer appskal samt målrettet test.
-- Candidate G, RavScore, vejr, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er uændrede. Geodatafilerne ændrer kun versionsfelt.

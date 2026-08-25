@@ -1,8 +1,8 @@
-import { loadAdaptiveModel, modelAdjustment } from './adaptive-model.js?v=4.0.280';
-import { evaluateDirectionAnchors, anchorClassification, buildCoastTransportExplanation } from './direction-anchors.js?v=4.0.280';
-import { evaluateTransportEvent, classifyCoastalZone } from './coastal-process-model.js?v=4.0.280';
-import { buildScoreDebugTrace } from './debug-trace.js?v=4.0.280';
-import { boundedWaveTransportAdjustment } from './wave-approach.js?v=4.0.280';
+import { loadAdaptiveModel, modelAdjustment } from './adaptive-model.js?v=4.0.281';
+import { evaluateDirectionAnchors, anchorClassification, buildCoastTransportExplanation } from './direction-anchors.js?v=4.0.281';
+import { evaluateTransportEvent, classifyCoastalZone } from './coastal-process-model.js?v=4.0.281';
+import { buildScoreDebugTrace } from './debug-trace.js?v=4.0.281';
+import { boundedWaveTransportAdjustment } from './wave-approach.js?v=4.0.281';
 const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, value));
 const numberOrNull = value => (value === null || value === undefined || value === '' || typeof value === 'boolean') ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
 const daNumber = (value, digits = 1) => Number(value).toFixed(digits).replace('.', ',');

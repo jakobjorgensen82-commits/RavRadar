@@ -1196,6 +1196,7 @@ function scoreCoastalPartsRuntime(
             transportMemoryReady: derivedState.transportMemoryReady,
             transportMemoryStatus: derivedState.transportMemoryStatus,
             transportMemoryCoverageHours: derivedState.transportMemoryCoverageHours,
+            transportMemoryWindowHours: derivedState.transportMemoryWindowHours,
             publicContext: {
               windSpeedMps: weather.windSpeedMps,
               waveHeightM: weather.waveHeightM,
@@ -1203,9 +1204,15 @@ function scoreCoastalPartsRuntime(
               currentAlignment: weather.currentSpeedMps != null && weather.currentDirectionDeg != null
                 ? Math.cos((Number(weather.currentDirectionDeg) - Number(part.onshoreDirectionDeg)) * Math.PI / 180)
                 : null,
-              currentVerified: weather.currentProvenance?.status === 'verified',
+              currentVerified: derivedState.currentVerified === true,
               currentTransition: derivedState.currentTransition,
+              transportReferenceAt: derivedState.transportReferenceAt,
+              transportMemoryReady: derivedState.transportMemoryReady,
+              transportMemoryStatus: derivedState.transportMemoryStatus,
+              transportMemoryCoverageHours: derivedState.transportMemoryCoverageHours,
+              transportMemoryWindowHours: derivedState.transportMemoryWindowHours,
               outboundEpisodeEffectiveHours: derivedState.outboundEpisodeEffectiveHours,
+              outboundEpisodeLossPoints: derivedState.outboundEpisodeLossPoints,
               actualOutboundTransport: derivedState.actualOutboundTransport,
               waveMobilisationTransition: derivedState.waveMobilisationTransition,
             },
@@ -1292,7 +1299,13 @@ function scoreCoastalPartsRuntime(
         result[mode] = {
           available:true,status,score:high,winningPartId:winner.partId,winningPartName:winner.name,scoreSpread:high-low,comparisonPartCount:available.length,
           components:winner.detail?.components||{},componentReasons:winner.detail?.componentReasons||{},
-          explanation:{formula:explanation.formula,weights:explanation.weights,contributions:explanation.contributions,transportDiagnostics:{coastTransportExplanation:explanation.transportDiagnostics?.coastTransportExplanation}},
+          explanation:{
+            ...explanation,
+            transportDiagnostics:{
+              ...(explanation.transportDiagnostics || {}),
+              coastTransportExplanation:explanation.transportDiagnostics?.coastTransportExplanation
+            }
+          },
           weather:{
             windSpeedMps:weather.windSpeedMps,windDirectionDeg:weather.windDirectionDeg,waveHeightM:weather.waveHeightM,waveDirectionDeg:weather.waveDirectionDeg,
             waterLevelCm:weather.waterLevelCm,waterLevelTrendCm3h:weather.waterLevelTrendCm3h,currentSpeedMps:weather.currentSpeedMps,currentDirectionDeg:weather.currentDirectionDeg,
@@ -1329,6 +1342,7 @@ function scoreCoastalPartsRuntime(
       transportMemoryReady: score.candidateG.transportMemoryReady,
       transportMemoryStatus: score.candidateG.transportMemoryStatus,
       transportMemoryCoverageHours: score.candidateG.transportMemoryCoverageHours,
+      transportMemoryWindowHours: score.candidateG.transportMemoryWindowHours,
       initialStateAccepted: row.candidateGState?.initialStateAccepted ?? null,
       initialStateResetReason: row.candidateGState?.initialStateResetReason ?? null,
       currentState: score.candidateG.continuationState,
