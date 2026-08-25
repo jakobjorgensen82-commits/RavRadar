@@ -10,6 +10,9 @@
 - Både den aktuelle liste over bedste områder og hver dag i 5-dages prognosen beregnes særskilt for den valgte jagtform. Livekontrollen viser, at listerne kan være ens under rolige forhold, fordi transport og rav i bevægelse er fælles, og små forskelle i søgeforhold kan forsvinde ved afrunding. På prognosedage med større forskel mellem strand og waders bliver listerne forskellige. En målrettet regressionstest låser begge beregningsveje.
 - Rettelsen ændrer ikke RavScore, vejrregler, zoner, geometri, land-/vandpunkter eller centrale admin-data.
 - Ejeren har godkendt, at de beskyttede `data/kystdata.json` og `data/zones.geojson` kun ændrer versionsfelt fra 4.0.277 til 4.0.278. Ingen øvrige geodata ændres.
+- PR #143 bestod exact-head-kildegaten og blev merged som `d627b5ee`. Produktion `32837294743` gennemførte central hydrering, Candidate G-statefortsættelse og frisk vejrbygning, men fuld validering stoppede på en forældet test, der stadig krævede `queueAdminDocumentSave('rules')`.
+- Releasegate, artifact og deploy blev derfor korrekt sprunget over. Fejlen lå i testforventningen, ikke i Candidate G, score, state eller vejrruntime. Testen kræver nu det modsatte: Regelværkstedets pensionerede gemmevej må ikke findes.
+- Versionen forbliver 4.0.278. Der foretages ingen yderligere ændring af de beskyttede geodatafiler.
 
 ## Produktionsverificeret 4.0.277 – native tretimerskadence uden falske mellemtimer
 

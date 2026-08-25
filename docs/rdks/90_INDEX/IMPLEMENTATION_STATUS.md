@@ -12,7 +12,10 @@
 - [x] Synkronisér håndbogens statiske installationskopi, kør målrettede tests og RDKS-validering.
 - [x] Kontrollér, at både den aktuelle liste og 5-dages prognosen bruger den valgte jagtform, og lås begge veje med en målrettet regressionstest.
 - [x] Sæt version 4.0.278 og verificér, at de to beskyttede geodatafiler kun ændrer versionsfelt fra 4.0.277.
-- [ ] Luk ændringen gennem exact-head, merge, produktion og offentlig efterkontrol.
+- [x] Bestå PR #143 exact-head-kildegate og merge som `d627b5ee`.
+- [x] Lad første produktion `32837294743` stoppe fail-closed før release/deploy på en forældet test, som krævede Regelværkstedets gamle gemmevej.
+- [x] Vend testkontrakten, så den pensionerede gemmevej nu skal være fraværende.
+- [ ] Luk rettelsen gennem ny exact-head, merge, fuld produktion og offentlig efterkontrol.
 
 Ingen scoreformel, zone, geometri, land-/vandpunkt eller central adminpost ændres af rettelsen. Se DEC-0075.
 
