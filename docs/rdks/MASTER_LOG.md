@@ -1,3 +1,12 @@
+## 2026-08-25 – 4.0.278 statusrettelse produktionsverificeret
+
+- PR #146 bestod exact-head `32844951668` på `432de975` og blev merged som `8facd2d8`.
+- Produktion `32845130587` bestod fuld validering, releasegate, artifact og Pages og udgav `rr-20260825120459-210`.
+- Offentlig dataminimeret efterkontrol viser 205/210 aktive zoner, fem korrekt lokalt utilgængelige zoner, 657/673 READY-kyststrækninger, 16 lokale `WINDOW_INCOMPLETE`-forløb og 673 accepterede statefortsættelser uden reset.
+- Candidate G 20/50/30 er eneste offentlige profil med `rollbackProfileId: null` og `legacyPublicFallbackAllowed: false`.
+- Aktuel liste og alle fem prognosedage bruger særskilte strand-/wadersværdier. Tre prognosedage har forskellig top-5-rækkefølge; stor overlapning på de øvrige visninger skyldes de fælles transport- og mobiliseringskomponenter.
+- Begge offentlige topversionsfelter er 4.0.278. Opfølgningen ændrer ingen score, zone, geometri, land-/vandpunkt eller geodata.
+
 ## 2026-08-25 – 4.0.277 fuldt produktionsverificeret
 
 - Opfølgende PR #141 ændrede kun den forældede statiske dæknings-test, bestod exact-head `32817501003` på `128c71ce` og blev merged som `81e9b891`.
