@@ -1,12 +1,15 @@
 # Current truth – gældende projektviden
 
-## Kandidat 4.0.281 – Candidate G-native teknisk kontrolvisning
+## Produktionsverificeret 4.0.281 – Candidate G-native teknisk kontrolvisning
 
 - Candidate G 20/50/30 er fortsat eneste offentlige scoreprofil uden rollback eller legacyfallback.
 - Den tekniske visning læste pensionerede felter fra den gamle motor, mens zoneaggregationen fjernede dele af Candidate G's forklaring. Det gav falske **Mangler**, **Ukendt**, tankestreger og **Ikke beregnet**, selv om den viste score havde et gyldigt Candidate G-grundlag.
 - Candidate G's offentlige projektion bevarer nu aktuel målingsstatus, strøm/kyst-klassifikation ved en ny verificeret måling, transportreference, 48-timersdækning, historisk fase, udgående forløb og tab samt transport-, leverings- og mobiliseringsværdier gennem både kystdels- og zonevisning.
 - Ved en tilladt native tretimers-mellemtime siger UI'et, at ingen ny måling er kommet, og at den seneste verificerede tilstand fastholdes. Der vises ikke en opdigtet rå retning, forskel eller klassifikation.
 - De pensionerede legacyfelter er fjernet fra kontrolvisningen. **Mangler/Ukendt** bruges kun ved et reelt manglende Candidate G-grundlag.
+- PR #150 blev merged som `1308a07d`, og produktion `32899040618` udgav 4.0.281 gennem de fulde gates.
+- Offentlig audit viser 657 hukommelsesklare kyststrækninger og 1.314 komplette Candidate G-diagnostikker på tværs af strand og waders. Alle 673 statefortsættelser er accepteret uden reset. De resterende 16 kyststrækninger er korrekt lokalt fail-closed under naturlig modning.
+- Den fulde browserkontrol består 420 aktuelle visninger, 2.100 prognosevisninger og 673 kystdelsreferencer uden kontrol-, konsol-, side- eller HTTP-fejl. Auditkontrakten skelner nu mellem en beregnet Candidate G-score og en bevidst lokalt utilgængelig score.
 - Kandidaten ændrer ikke scoretal, scorekurver, vejr, zoner, geometri, land-/vandpunkter, admin-data eller brugerdata. Se DEC-0077.
 
 ## Kandidat 4.0.280 – korrekt orienteret Om RavRadar-billede

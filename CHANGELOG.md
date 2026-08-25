@@ -5,6 +5,8 @@
 - Native tretimers-mellemtimer beskrives som fastholdt afledt tilstand. De får ikke opdigtet rå måling, retning, klassifikation eller ny evidens.
 - Teknisk visning siger udtrykkeligt, at vinden ikke indgår direkte i transportscoren, og forklarer beregningsleddene på almindeligt dansk.
 - En landsdækkende kontrakttest låser den samme Candidate G-native forklaring for alle offentlige zoner og kyststrækninger. **Mangler/Ukendt** må kun vises ved reel manglende Candidate G-evidens.
+- PR #150 er merged som `1308a07d`, og produktion `32899040618` er grøn. Offentlig audit viser 1.314 komplette tekniske modeforklaringer, 673 accepterede statefortsættelser og nul reset.
+- Browserauditten følger nu Candidate G's lokale fail-closed-kontrakt og består 420 aktuelle visninger, 2.100 prognosevisninger og 673 kystdelsreferencer uden fejl. De 16 umodne dele viser utilgængelighed frem for falske felter eller gammel score.
 - Candidate G 20/50/30, alle scorekurver, vejrregler, zoner, geometri, land-/vandpunkter, central admin-data og brugerdata er uændrede. De to beskyttede geodatafiler ændrer kun topversionsfelt til 4.0.281. Se DEC-0077.
 
 ## 4.0.280 – korrekt orienteret familiebillede (2026-08-25)

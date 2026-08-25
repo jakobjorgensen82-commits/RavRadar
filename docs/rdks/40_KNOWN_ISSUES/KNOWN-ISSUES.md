@@ -1,10 +1,10 @@
 # Kendte åbne og overvågede forhold
 
-## Kandidat 4.0.281 – Candidate G-diagnoser
+## Produktionsverificeret 4.0.281 – Candidate G-diagnoser
 
-- **ISSUE-CANDIDATE-G-PUBLIC-DIAGNOSTICS-LEGACY-FIELDS – LØST I KANDIDAT:** Den tekniske offentlige visning læste pensionerede felter fra den gamle scoremotor, og zoneaggregationen fjernede dele af Candidate G's aktuelle forklaring. Det gav falske **Mangler/Ukendt**-felter. UI og projektion bruger nu Candidate G's egne felter gennem både kystdel og zone.
-- **ISSUE-CANDIDATE-G-NATIVE-HOLD-DIAGNOSTICS – LØST I KANDIDAT:** En tilladt native tretimers-mellemtime kunne ikke forklares præcist i den gamle visning. Den nye kontrakt siger tydeligt, at ingen ny måling er kommet, fastholder kun den seneste verificerede tilstand og viser ingen opdigtet rå retning, forskel eller klassifikation.
-- **ISSUE-CANDIDATE-G-DIAGNOSTICS-NATIONAL-CLOSURE – AFVENTER PRODUKTION:** Exact-head, fuld produktion og offentlig kontrol af alle udgivne zoner og kyststrækninger mangler. Ingen score-, vejr- eller geodataændring er nødvendig.
+- **ISSUE-CANDIDATE-G-PUBLIC-DIAGNOSTICS-LEGACY-FIELDS – PRODUKTIONSVERIFICERET LØST:** Den tekniske offentlige visning læste pensionerede felter fra den gamle scoremotor, og zoneaggregationen fjernede dele af Candidate G's aktuelle forklaring. Det gav falske **Mangler/Ukendt**-felter. UI og projektion bruger nu Candidate G's egne felter gennem både kystdel og zone.
+- **ISSUE-CANDIDATE-G-NATIVE-HOLD-DIAGNOSTICS – PRODUKTIONSVERIFICERET LØST:** En tilladt native tretimers-mellemtime kunne ikke forklares præcist i den gamle visning. Den nye kontrakt siger tydeligt, at ingen ny måling er kommet, fastholder kun den seneste verificerede tilstand og viser ingen opdigtet rå retning, forskel eller klassifikation.
+- **ISSUE-CANDIDATE-G-DIAGNOSTICS-NATIONAL-CLOSURE – PRODUKTIONSVERIFICERET LØST:** PR #150, merge `1308a07d` og produktion `32899040618` er grønne. Den dataminimerede audit viser 657 hukommelsesklare kyststrækninger, 1.314 komplette tekniske modeforklaringer, 673 accepterede statefortsættelser og nul reset. Den fulde browserkontrol består 420 aktuelle visninger, 2.100 prognosevisninger og 673 kystdelsreferencer uden fejl. De 16 umodne kyststrækninger er korrekt lokalt utilgængelige og viser ingen falsk diagnostik eller legacyscore.
 
 ## Kandidat 4.0.280 – Om RavRadar-billedets orientering
 

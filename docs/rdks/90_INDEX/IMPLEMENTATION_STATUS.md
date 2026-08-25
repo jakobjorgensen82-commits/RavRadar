@@ -1,6 +1,6 @@
-# Implementeringsstatus – kandidat 4.0.281
+# Implementeringsstatus – produktionsverificeret 4.0.281
 
-## Kandidat 4.0.281 – luk falske Mangler/Ukendt i Candidate G-visningen
+## Produktionsverificeret 4.0.281 – luk falske Mangler/Ukendt i Candidate G-visningen
 
 - [x] Afgræns fejlen til Candidate G's offentlige forklaringsprojektion, zoneaggregationen og den tekniske UI-visning; selve scoreberegningen er ikke årsagen.
 - [x] Bevar Candidate G's målingsstatus, transportreference, 48-timersdækning, fase, udgående forløb/tab, transportpotentiale, levering og mobilisering i den offentlige kontrakt.
@@ -9,7 +9,9 @@
 - [x] Lås profilprojektion, zoneaggregering, UI-markører og produktionspipeline med målrettede regressionstests.
 - [x] Dokumentér DEC-0077 og opdatér roadmap, issues, changelog samt begge håndbøger.
 - [x] Sæt og kontrollér releaseversion 4.0.281; særskilt diff viser, at de beskyttede geodatafiler kun ændrer topversionsfelt 4.0.280 → 4.0.281.
-- [ ] Bestå exact-head-kildegate, merge, fuld produktionskæde og offentlig landskontrol.
+- [x] Bestå PR #150/exact-head, merge `1308a07d`, fuld produktionskæde `32899040618` og offentlig 4.0.281-kontrol.
+- [x] Bevis 1.314 komplette diagnostiske modevisninger for 657 hukommelsesklare kyststrækninger, 673 accepterede statefortsættelser og nul reset.
+- [x] Bestå browserkontrol af 420 aktuelle visninger, 2.100 prognosevisninger og 673 kystdelsreferencer uden fejl; de 16 umodne dele er ærligt lokalt utilgængelige uden legacyfallback.
 
 Candidate G 20/50/30, scorekurver, vejr, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er uændrede.
 

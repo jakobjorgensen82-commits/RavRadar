@@ -1,6 +1,6 @@
 # RavRadar - aktivt roadmap
 
-## P0 – 4.0.281 luk falske Mangler/Ukendt i alle Candidate G-visninger
+## Produktionsverificeret – 4.0.281 lukker falske Mangler/Ukendt i Candidate G-visningen
 
 - [x] Kortlæg Candidate G's eksisterende diagnosefelter og bevis, at scoremotoren allerede beregner grundlaget.
 - [x] Bevar hele den dataminimerede Candidate G-forklaring gennem både kystdel og zoneaggregation.
@@ -9,9 +9,11 @@
 - [x] Tilføj målrettede tests for projektion, UI, zoneaggregation og produktionspipeline.
 - [x] Dokumentér DEC-0077 og opdatér projektets hukommelse og håndbøger.
 - [x] Versionér til 4.0.281 og bevis med særskilt diff, at de to beskyttede geodatafiler kun ændrer topversionsfeltet.
-- [ ] Exact-head-validér, merge, kør fuld produktion og kontrollér alle offentlige zoner/kyststrækninger.
+- [x] Bestå PR #150/exact-head, merge som `1308a07d`, kør fuld produktion `32899040618` og kontrollér den offentlige 4.0.281-runtime.
+- [x] Bevis Candidate G-diagnostik i 1.314 aktive modeevalueringer samt ærlig lokal utilgængelighed for de 16 kyststrækninger, hvis naturlige historik endnu ikke er moden.
+- [x] Bestå den fulde browserkontrol på 420 aktuelle visninger, 2.100 prognosevisninger og 673 kystdelsreferencer uden kontrol-, konsol-, side- eller HTTP-fejl.
 
-Dette lukker roadmap-punktet om **Mangler/Ukendt** på tværs af alle zoner og kyststrækninger. Candidate G 20/50/30 og alle scorekurver er urørte.
+Dette lukker roadmap-punktet om falsk **Mangler/Ukendt** på alle aktive kyststrækninger. De 16 umodne kyststrækninger viser i stedet ærlig lokal utilgængelighed og bruger ikke den gamle scoremodel. Candidate G 20/50/30 og alle scorekurver er urørte.
 
 ## Produktionsverificeret – 4.0.280 korrekt orienteret Om RavRadar-billede
 

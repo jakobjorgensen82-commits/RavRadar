@@ -1,9 +1,11 @@
-## 2026-08-25 – kandidat 4.0.281 lukker falske Mangler/Ukendt
+## 2026-08-26 – 4.0.281 falske Mangler/Ukendt produktionsverificeret lukket
 
 - Den tekniske offentlige visning læste gamle felter, som Candidate G ikke bruger, og zoneaggregationen tabte dele af den faktiske Candidate G-forklaring.
 - Candidate G's offentlige projektion og UI følger nu samme 20/50/30-motor og bevarer status, transportreference, 48-timersdækning, fase, udgående forløb/tab, transport, levering og rav i bevægelse.
 - Native tretimers-mellemtimer viser eksplicit, at ingen ny måling er kommet, uden at opfinde retning eller klassifikation.
-- Målrettede lokale kontrakter for projektion, UI og produktionspipeline er grønne. Exact-head, fuld produktion og offentlig landskontrol udestår.
+- PR #150, merge `1308a07d` og fuld produktion `32899040618` er grønne.
+- Offentlig audit beviser 1.314 komplette tekniske modeforklaringer for 657 hukommelsesklare kyststrækninger, 673 accepterede statefortsættelser og nul reset. De 16 umodne dele er ærligt lokalt utilgængelige.
+- Den opdaterede browseraudit består 420 aktuelle visninger, 2.100 prognosevisninger og 673 kystdelsreferencer uden kontrol-, konsol-, side- eller HTTP-fejl.
 - Ingen scorekurve, vejrkilde, zone, geometri, land-/vandpunkt, admin-data eller brugerdata ændres. Se DEC-0077.
 
 ## 2026-08-25 – kandidat 4.0.280 retter familiebilledets orientering
