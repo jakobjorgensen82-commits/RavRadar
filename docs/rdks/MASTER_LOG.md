@@ -6,7 +6,9 @@
 - 4.0.276 sender den fulde centrale identitetsliste, validerer den valgte delmængde eksakt, erstatter kun valgte punkter og genopbygger samlingsbeviset pr. time ud fra faktisk bevarede rækker.
 - Et flyttet punkt mister kun sin egen ældre historik. Målrettede tests beviser, at et uændret søsterpunkt bevarer både samme times og ældre verificerede historik.
 - Den ældre cache bruges ikke til kunstig recovery: kun 43 dele havde komplet kontinuitet til målreferencen, 621 var ufuldstændige, og otte manglede. Der opfindes ingen data.
-- Candidate G 20/50/30, lokal fail-closed availability, scorefysik, offentlig kontrakt, geometri og land-/vandpunkter er uændrede. Exact-head, merge og fuld produktion udestår.
+- Candidate G 20/50/30, lokal fail-closed availability, scorefysik, offentlig kontrakt, geometri og land-/vandpunkter er uændrede.
+- PR #138 bestod exact-head `32787344926` på `acb59cc6` og blev merged som `72913723`. Push-produktion `32787715986` bestod central hydrering, frisk vejr, fuld validering, releasegate, artifact og Pages.
+- De naturlige produktioner `32788514636` og `32790639192` bestod efterfølgende samme kæde. Seneste dataminimerede livekontrol viser 673/673 accepterede states, nul resets og 6–39 timers lokale kæder. Det flyttede punkt modner alene; uændrede punkters historik er bevaret. Ingen zone havde endnu et ægte komplet 48-timersvindue.
 
 ## 2026-08-24 – 4.0.275 synkron håndbogs- og installationskilde
 

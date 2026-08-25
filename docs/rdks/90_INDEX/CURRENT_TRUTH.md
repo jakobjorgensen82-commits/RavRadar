@@ -1,6 +1,6 @@
 # Current truth – gældende projektviden
 
-## Kandidat 4.0.276 – strømhistorik bevares pr. kystpunkt
+## Produktionsverificeret 4.0.276 – strømhistorik bevares pr. kystpunkt
 
 - Candidate G med **20 % søgeforhold, 50 % transport og 30 % rav i bevægelse** er fortsat den eneste offentlige scoremodel. Der indføres ingen gammel reserveprofil.
 - En dataminimeret kontrol viser, at den kompakte Candidate G-state ikke er gået tabt. Ved den seneste kontrollerede reference havde den dokumenterede kæde cirka 36 sammenhængende timer; den skal fortsætte naturligt til 48 timer uden opdigtede mellemtimer.
@@ -8,6 +8,9 @@
 - 4.0.276 binder hver bevaret række til den fulde centrale punktidentitet, erstatter kun genindsamlede punkter i samme time og nulstiller kun historikken for et faktisk flyttet eller omgrupperet punkt.
 - Den ældre brede cache er ikke brugt som kunstig landsdækkende genvej. Kun 43 dele havde et sikkert sammenhængende vindue frem til målreferencen; 621 var ufuldstændige, og otte manglede.
 - Ingen scoreregel, vejrregel, offentlig datakontrakt, zone, geometri eller land-/vandpunkt ændres. Se DEC-0073.
+- PR #138 bestod exact-head `32787344926` på `acb59cc6`, blev merged som `72913723`, og push-produktion `32787715986` bestod hele den centrale produktionskæde inklusive Pages-deploy.
+- De naturlige produktioner `32788514636` og `32790639192` bestod efterfølgende samme fulde kæde. Seneste livekontrol dokumenterer Candidate G-only 20/50/30, 673/673 accepterede states, nul resetårsager og lokale kæder på 6–39 timer.
+- Det flyttede punkt bygger kun sin egen state op igen. De uændrede punkters længere kæder er bevaret, hvilket produktionsbeviser den punktvise retention. 0/210 zoner var endnu aktive, fordi virkelige 48 timer ikke var komplette; zoner aktiveres enkeltvis uden ny udvikling eller modelskift.
 
 ## Produktionsverificeret 4.0.275 – Candidate G-only og lokal zonestatus
 

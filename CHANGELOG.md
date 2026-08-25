@@ -5,6 +5,8 @@
 - Den fulde centrale punktidentitet følger hver opdatering. Ukendte punkter, moderzone-/vandpunktmismatch, dubletter og forkert delmængdefingeraftryk afvises fail-closed.
 - Der udføres ingen backfill, interpolation eller rekonstruktion. Candidate G 20/50/30 forbliver eneste offentlige scoremodel, og lokale scorer åbner ved ægte komplet 48-timers historik.
 - En dataminimeret audit dokumenterede cirka 36 timers fortsat kompakt state. Den ældre brede cache var ikke sikkert sammenhængende til målreferencen for hele landet og bruges derfor ikke som genvej.
+- PR #138 bestod exact-head `32787344926` på `acb59cc6` og blev merged som `72913723`. Fuld produktion `32787715986` og de naturlige produktioner `32788514636`/`32790639192` er grønne.
+- Seneste dataminimerede livekontrol viser 673/673 accepterede states, nul resets og 6–39 timers lokale kæder. Et flyttet punkt modner kun sin egen kæde; uændrede punkters historik er bevaret.
 - Scoreformel, vejrregler, offentlig runtimekontrakt, zoner, geometri og land-/vandpunkter er uændrede. Se DEC-0073.
 
 ## 4.0.274 – holdbar Candidate G-only-kontrakt (2026-08-24)

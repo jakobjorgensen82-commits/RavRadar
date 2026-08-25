@@ -1,4 +1,4 @@
-# Implementeringsstatus – kandidat 4.0.276 punktvis strømhistorik
+# Implementeringsstatus – produktionsverificeret 4.0.276 punktvis strømhistorik
 
 ## Implementeret og målrettet verificeret
 
@@ -13,12 +13,14 @@
 
 ## Produktionslukning
 
-- [ ] Sæt version 4.0.276 og verificér, at geodatafilerne kun ændrer versionsfelt.
-- [ ] Bestå RDKS- og kildegaten på PR'ens eksakte head.
-- [ ] Merge den eksakte grønne head og bestå frisk central produktion, fuld validering, releasegate, artifact og Pages-deploy.
-- [ ] Kontrollér den levende Candidate G-only-runtime og den fortsatte lokale state uden rå strømvektorer, koordinater eller private payloads.
+- [x] Sæt version 4.0.276 og verificér, at geodatafilerne kun ændrer versionsfelt.
+- [x] Bestå RDKS- og kildegaten på PR'ens eksakte head i `32787344926` på `acb59cc6`.
+- [x] Merge den eksakte grønne head som `72913723` og bestå frisk central produktion `32787715986`, fuld validering, releasegate, artifact og Pages-deploy.
+- [x] Kontrollér den levende Candidate G-only-runtime efter de naturlige produktioner `32788514636` og `32790639192`: 673/673 states accepteret, nul resets og 6–39 timers lokal fortsættelse uden rå strømvektorer, koordinater eller private payloads.
 
 Ingen Candidate G-regel, vejrregel, zone, geometri eller land-/vandpunkt ændres i 4.0.276.
+
+Den tekniske retention er lukket. Et flyttet punkt modner sin egen kæde, mens uændrede punkter beholder deres historik. 48-timerskravet opfyldes herefter af naturlig drift pr. datagrundlag og er ikke en ny udviklingstest.
 
 # Historisk produktionsverificeret implementeringsstatus – 4.0.275 Candidate G-only
 

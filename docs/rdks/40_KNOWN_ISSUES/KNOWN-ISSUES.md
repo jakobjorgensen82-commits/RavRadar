@@ -1,9 +1,9 @@
 # Kendte åbne og overvågede forhold
 
-## Kandidat 4.0.276 – punktvis bevaring af strømhistorik
+## Produktionsverificeret 4.0.276 – punktvis bevaring af strømhistorik
 
-- **ISSUE-COPERNICUS-COLLECTION-GROUP-INVALIDATION – LØST I KANDIDAT:** En hel Copernicus-time var bundet til den dynamisk valgte indsamlingsgruppe. Skift i DMI-dækning, genindsamling eller flytning af ét punkt kunne dermed fjerne godkendelsen af uændrede punkters historik. 4.0.276 validerer den valgte delmængde mod den fulde centrale identitetsliste, erstatter kun valgte punkter og genopbygger hver times bevis fra de faktisk bevarede rækker.
-- **ISSUE-CANDIDATE-G-48H-HISTORY-NOT-LOST – AFGRÆNSET:** Den kompakte Candidate G-state var fortsat til cirka 36 timer ved seneste kontrollerede reference. Den ældre brede cache kan ikke sikkert lukke resten landsdækkende: 43 dele havde komplet kontinuitet til målreferencen, 621 var ufuldstændige, og otte manglede. Der backfilles eller interpoleres ikke; lokal score bliver aktiv ved ægte komplet historik.
+- **ISSUE-COPERNICUS-COLLECTION-GROUP-INVALIDATION – PRODUKTIONSVERIFICERET LØST:** En hel Copernicus-time var bundet til den dynamisk valgte indsamlingsgruppe. Skift i DMI-dækning, genindsamling eller flytning af ét punkt kunne dermed fjerne godkendelsen af uændrede punkters historik. 4.0.276 validerer den valgte delmængde mod den fulde centrale identitetsliste, erstatter kun valgte punkter og genopbygger hver times bevis fra de faktisk bevarede rækker. Exact-head `32787344926`, produktion `32787715986` og de naturlige produktioner `32788514636`/`32790639192` er grønne; live har 673/673 accepterede states og nul resets.
+- **ISSUE-CANDIDATE-G-48H-HISTORY-NOT-LOST – TEKNISK LUKKET / NATURLIG MODNING FORTSÆTTER:** Seneste dataminimerede livekontrol viser sammenhængende lokal state på 6–39 timer. Det flyttede punkt har lovligt den korte kæde, mens uændrede punkters længere historik er bevaret. Den ældre brede cache bruges ikke som kunstig genvej, og der backfilles eller interpoleres ikke. Lokal score bliver automatisk aktiv ved ægte komplet historik.
 
 ## Kandidat 4.0.275 – Candidate G-only og synkron håndbogskilde
 
@@ -19,8 +19,8 @@
 ## Historisk kandidat 4.0.273 – Candidate G-only
 
 - **ISSUE-PUBLIC-GLOBAL-LEGACY-FALLBACK – LØST I KANDIDAT:** Et lokalt Candidate G-databet kunne skifte hele Danmark til den gamle 25/40/35-model, selv om den gamle model havde det samme underliggende datagab. 4.0.273 fjerner denne offentlige driftsvej. Candidate G er eneste profil, og manglen lukkes kun for den konkrete zone/søgemåde/tid.
-- **ISSUE-LOCAL-CANDIDATE-G-AVAILABILITY – IMPLEMENTERET / AFVENTER PRODUKTION:** Utilgængelige lokale scorer er `null`, låner ingen anden score og udelades fra aktuelle og femdøgns-rangeringer. Andre zoner fortsætter på Candidate G.
-- **ISSUE-ADMIN-SCORE-ACTIVITY-OVERVIEW – IMPLEMENTERET / AFVENTER PRODUKTION:** Adminforsiden viser samlet aktivstatus og lister berørte zoner, søgemåder og forståelige årsager uden private eller rå marine data.
+- **ISSUE-LOCAL-CANDIDATE-G-AVAILABILITY – PRODUKTIONSVERIFICERET:** Utilgængelige lokale scorer er `null`, låner ingen anden score og udelades fra aktuelle og femdøgns-rangeringer. Andre zoner fortsætter på Candidate G.
+- **ISSUE-ADMIN-SCORE-ACTIVITY-OVERVIEW – PRODUKTIONSVERIFICERET:** Adminforsiden viser samlet aktivstatus og lister berørte zoner, søgemåder og forståelige årsager uden private eller rå marine data.
 
 DEC-0072 erstatter nedenstående ældre aktive beskrivelser af en global 25/40/35-reserve. De bevares som historik for 4.0.272 og tidligere.
 
