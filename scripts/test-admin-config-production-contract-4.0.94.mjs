@@ -30,6 +30,13 @@ assert.match(dashboard, /Scoreændringer kræver kodegennemgang/, 'Adminfladen s
 assert.doesNotMatch(dashboard, /adaptive-model|activateAdaptiveModel|rollbackAdaptiveModel|localModel/, 'Kalibreringsgrundlaget må ikke kunne aktivere eller tilbagerulle en lokal scoremodel');
 assert.match(dashboard, /Siden ændrer aldrig Candidate G eller den offentlige RavScore/, 'Kalibreringsgrundlaget skal forklare, at det er skrivebeskyttet');
 
+const siteFunctionTest = fs.readFileSync('js/services/site-function-test-service.js', 'utf8');
+assert.doesNotMatch(siteFunctionTest, /['"]rules['"]|['"]rule-history['"]/, 'Den aktive helhedstest må ikke kræve pensionerede adminfaner eller regeldokumenter');
+assert.match(siteFunctionTest, /skrivebeskyttet kalibreringsgrundlag/, 'Helhedstesten skal kontrollere den aktive skrivebeskyttede kalibreringsside');
+for (const tab of ['waterStations', 'coastlineEditor', 'observations', 'history', 'learning', 'documentation']) {
+  assert.match(siteFunctionTest, new RegExp(`['"]${tab}['"]`), `Helhedstesten mangler den aktive adminfane ${tab}`);
+}
+
 assert.equal(fs.existsSync('scripts/generate-public-admin-rules.mjs'), false, 'Et pensioneret udgivelsesværktøj må ikke kunne genaktivere administratorregler');
 
 const serviceWorker = fs.readFileSync('service-worker.js', 'utf8');

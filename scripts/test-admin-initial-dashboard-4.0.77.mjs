@@ -12,6 +12,6 @@ ok(admin.includes('ravradar:test-permission-denied'),'Rettighedsafvisninger kan 
 ok(site.includes("dataset?.adminReady==='true'"),'Sitetesten venter ikke på færdig admininitialisering.');
 ok(site.includes("win.alert=message=>dialogs.push"),'Sitetesten opsamler ikke browserdialoger.');
 ok(site.includes('Offentlig side, admin, service worker og version.json'),'Versionskontrollen bruger ikke de faktiske runtimekilder.');
-ok(store.includes("keys=['rules','rule-history','water-level-station-routing','direction-reviews','coastline-overrides']"),'Den første lagerkontrol mangler coastline-overrides og vil derfor vise en falsk fejl.');
+ok(store.includes("keys=['water-level-station-routing','direction-reviews','coastline-overrides']"),'Den første lagerkontrol følger ikke de aktive centrale admindokumenter.');
 ok(html.includes(pkg.version),`admin.html er ikke opdateret til ${pkg.version}.`);
 console.log('OK: Oversigt renderes ved første åbning, og sitetesten venter på færdig admin uden popup-dialoger.');

@@ -2158,3 +2158,10 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - PR #143 bestod exact-head-kildegaten og blev merged som `d627b5ee`.
 - Produktion `32837294743` nåede gennem central hydrering, frisk vejr og Candidate G-statefortsættelse, men den fulde validering krævede fejlagtigt Regelværkstedets nu pensionerede `rules`-gemmevej.
 - Ingen releasegate, artifact eller deploy blev gennemført. Testen er rettet til at forbyde den gamle gemmevej, mens version 4.0.278, score, state, geometri og punkter er uændrede.
+
+## 2026-08-25 – 4.0.278 anden produktion lukkede sidste aktive Regelværkstedskrav
+
+- PR #144 bestod exact-head-kildegaten og blev merged som `fdf6e82c`.
+- Produktion `32839004087` byggede igen frisk vejr og fortsatte Candidate G-state, men den fulde validering stoppede korrekt, fordi en oversigtskontrol og den aktive helhedstest stadig krævede Regelværkstedets gamle adminfane og de centrale dokumenter `rules` og `rule-history`.
+- Helhedstesten følger nu alle 13 aktive adminfaner, tester det skrivebeskyttede kalibreringsgrundlag og kontrollerer kun de tre aktive centrale konfigurationsdokumenter. Historiske regelkladder og regeldokumenter bevares uden runtimeeffekt.
+- Ingen releasegate, artifact eller deploy blev gennemført. Candidate G, 20/50/30, state, vejrregler, zoner, geometri, land-/vandpunkter og beskyttede geodata er uændrede.

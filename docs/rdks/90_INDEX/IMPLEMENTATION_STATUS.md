@@ -15,6 +15,9 @@
 - [x] Bestå PR #143 exact-head-kildegate og merge som `d627b5ee`.
 - [x] Lad første produktion `32837294743` stoppe fail-closed før release/deploy på en forældet test, som krævede Regelværkstedets gamle gemmevej.
 - [x] Vend testkontrakten, så den pensionerede gemmevej nu skal være fraværende.
+- [x] Bestå PR #144 exact-head-kildegate og merge som `fdf6e82c`.
+- [x] Lad produktion `32839004087` stoppe fail-closed før release/deploy på de sidste forældede krav til Regelværkstedets adminfane og centrale regeldokumenter.
+- [x] Opdatér helhedstesten til alle 13 aktive adminfaner, det skrivebeskyttede kalibreringsgrundlag og de tre aktive centrale konfigurationsdokumenter.
 - [ ] Luk rettelsen gennem ny exact-head, merge, fuld produktion og offentlig efterkontrol.
 
 Ingen scoreformel, zone, geometri, land-/vandpunkt eller central adminpost ændres af rettelsen. Se DEC-0075.
