@@ -1,10 +1,17 @@
+## 2026-08-25 – 4.0.277 fuldt produktionsverificeret
+
+- Opfølgende PR #141 ændrede kun den forældede statiske dæknings-test, bestod exact-head `32817501003` på `128c71ce` og blev merged som `81e9b891`.
+- Produktion `32817626537` bestod central hydrering, frisk vejr, 673/673 scoreklare dele, fuld validering, releasegate, artifact og Pages-deploy.
+- Offentlig efterkontrol viser 673/673 Candidate G-states, 673 accepterede fortsættelser, nul resets og 12–45 timers naturlig historik. Candidate G 20/50/30 er eneste profil; rollbackprofilen er `null`, og legacyfallback er forbudt.
+- 0/210 zoner var endnu aktive, fordi ingen lokal kæde havde nået 48 timer. Overvågningen følger naturlig modning; ingen kunstig historik, scoreændring, geometriændring eller punktændring er udført.
+
 ## 2026-08-25 – 4.0.277 exact-head grøn; forældet produktions-testkontrakt rettet
 
 - PR #140 bestod exact-head `32816129342` på `35c8b7fb` og blev merged som `d3b4542f`.
 - Produktion `32816237198` byggede syvdages strømhistorik, frisk vejr, proveniens og offentlig runtime grønt. Den fulde validering stoppede derefter før releasegate og deploy.
 - Stoppet skyldtes kun, at `test-current-full-coverage-gate` stadig søgte efter det tidligere statiske feltnavn. Den udførte produktionsaudit brugte allerede den nye strenge 673-kontrakt.
 - Testen kræver nu `verifiedScoreReadyParts = verifiedPartGridPoints + verifiedNativeCadenceHeldParts`. Dette lemper ikke kravet: alle 673 dele skal fortsat være eksakt verificerede eller have en dokumenteret, højst tre timer gammel native-cadence-tilstand.
-- Scoremodel, stateberegning, vejr, zoner, geometri, land-/vandpunkter og central admin-data er urørte. Ny exact-head og fuld produktion afventer.
+- Scoremodel, stateberegning, vejr, zoner, geometri, land-/vandpunkter og central admin-data er urørte. Dette mellemtrin blev efterfølgende lukket af PR #141 og produktion `32817626537`, som dokumenteret ovenfor.
 
 ## 2026-08-25 – 4.0.277 årsagstro native tretimerskadence
 

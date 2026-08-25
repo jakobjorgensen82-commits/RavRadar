@@ -1,13 +1,16 @@
 # RavRadar – overlevering til næste chat
 
-## Kandidat 4.0.277 – native tretimerskadence
+## Produktionslukket 4.0.277 – native tretimerskadence
 
 - Den seneste naturlige produktion stoppede sikkert på 666/673 ved en mellemtime. Historikken var ikke tabt.
 - Rodårsagen var todelt: readiness talte en fremtidig regionalproxyprøve som aktuel, mens Candidate G skrev den naturlige mellemtime som manglende evidens.
 - 4.0.277 gør alle valg årsagstro. DMI/Copernicus kræver eksakt tid; kun de otte godkendte `dkss_lf`-proxyer må fastholde den seneste afledte transporttilstand i højst tre timer.
 - Fastholdelsen tilføjer ingen bevægelse, evidens, U/V, hastighed, retning eller pil. Næste ægte prøve bruger den faktiske tidsafstand. Over tre timer stoppes lokalt.
 - Candidate G 20/50/30 er eneste offentlige profil. Scorekurver, zoner, geometri, punkter og central admin er urørte.
-- PR #140 bestod exact-head `32816129342` og blev merged som `d3b4542f`. Produktion `32816237198` byggede historik, vejr og runtime grønt, men stoppede før deploy på en forældet statisk dæknings-test. Testen er rettet til den faktiske 673-kontrakt. Næste handling er ny exact-head, frisk fuld produktion og dataminimeret offentlig efterkontrol. Se DEC-0074.
+- PR #140 bestod exact-head `32816129342` og blev merged som `d3b4542f`. Produktion `32816237198` byggede historik, vejr og runtime grønt, men stoppede før deploy på en forældet statisk dæknings-test.
+- PR #141 rettede kun testkontrakten, bestod exact-head `32817501003` på `128c71ce` og blev merged som `81e9b891`. Produktion `32817626537` bestod frisk vejr, fuld validering, releasegate, artifact og Pages.
+- Offentlig 4.0.277 viser 673/673 Candidate G-states, 673 accepterede fortsættelser, nul resets og 12–45 timers naturlig historik. Candidate G 20/50/30 er eneste profil uden rollback eller legacyfallback.
+- Ved kontrollen var 0/210 zoner aktive, fordi den længste kæde var 45 timer. Næste handling er kun naturlig overvågning af passage over 48 timer; der må ikke bygges kunstig historik eller ændres score, geometri eller punkter. Se DEC-0074.
 
 ## Produktionslukket 4.0.275 – Candidate G-only med lokal fail-closed zonestatus
 

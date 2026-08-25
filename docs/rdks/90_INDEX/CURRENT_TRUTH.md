@@ -1,6 +1,6 @@
 # Current truth – gældende projektviden
 
-## Kandidat 4.0.277 – native tretimerskadence uden falske mellemtimer
+## Produktionsverificeret 4.0.277 – native tretimerskadence uden falske mellemtimer
 
 - Candidate G med **20 % søgeforhold, 50 % transport og 30 % rav i bevægelse** er fortsat den eneste offentlige scoremodel; legacyfallback er forbudt, og rollbackprofilen er `null`.
 - Den seneste sikre produktionslinje bevarede 673/673 kompakte states, men de otte ejerallowlistede `dkss_lf`-regionalproxyer leverer ægte U/V på native tretimerskadence. Ved mellemtimer kunne en fremtidig prøve fejlagtigt tælles som aktuel dækning, mens den timeskarpe audit korrekt afviste den. Det gav 666/673 og sikkert stop før deploy.
@@ -9,7 +9,10 @@
 - Mere end tre timers afstand eller enhver kilde-/punktændring giver lokal utilgængelighed. Der udføres ingen backfill, interpolation eller rekonstruktion.
 - Historikken var ikke tabt. Kandidaten ændrer ingen scorekurve, zone, geometri, land-/vandpunkt eller central admin-data. Se DEC-0074.
 - PR #140 bestod exact-head `32816129342` på `35c8b7fb` og blev merged som `d3b4542f`.
-- Første produktion `32816237198` byggede den bevarede strømhistorik, frisk vejr og den offentlige runtime grønt. Den fulde validering stoppede derefter sikkert før deploy, fordi en ældre statisk test stadig søgte efter det tidligere dækningsfeltnavn. Selve produktionsauditen bruger allerede den nye, korrekte 673-kontrakt. Kun testkontrakten er rettet; frisk produktion og offentlig efterkontrol mangler endnu.
+- Første produktion `32816237198` byggede den bevarede strømhistorik, frisk vejr og den offentlige runtime grønt. Den fulde validering stoppede derefter sikkert før deploy, fordi en ældre statisk test stadig søgte efter det tidligere dækningsfeltnavn. Selve produktionsauditen brugte allerede den nye, korrekte 673-kontrakt.
+- PR #141 rettede kun den statiske testkontrakt, bestod exact-head `32817501003` på `128c71ce` og blev merged som `81e9b891`. Produktion `32817626537` bestod hele kæden inklusive fuld validering, releasegate, artifact og Pages.
+- Offentlig 4.0.277 har 673/673 udgivne Candidate G-states, 673 accepterede fortsættelser, nul resets og 12–45 timers lokal historik. Profilen er alene 20/50/30; rollbackprofilen er `null`, og legacyfallback er forbudt.
+- 0/210 zoner var endnu aktive ved efterkontrollen, fordi den længste lokale kæde var 45 timer. Zoner åbner enkeltvis ved ægte 48 timer; dette er naturlig drift og ikke en ny udviklings- eller realtidstest.
 
 ## Produktionsverificeret 4.0.276 – strømhistorik bevares pr. kystpunkt
 

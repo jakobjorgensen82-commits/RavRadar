@@ -10,9 +10,10 @@
 - [x] Bestå exact-head `32816129342` på `35c8b7fb` og merge PR #140 som `d3b4542f`.
 - [x] Afgræns første produktionsstop `32816237198` til en forældet statisk test, efter at strømhistorik, vejr og offentlig runtime var bygget grønt.
 - [x] Ret testkontrakten til den faktiske 673-dækning uden ændring af score, state, vejr eller geodata.
-- [ ] Bestå frisk 210/673-produktion og kontrollér offentligt Candidate G-only, fortsat historik og korrekt mellemtimeadfærd.
+- [x] Bestå PR #141 exact-head `32817501003`, merge `81e9b891` og frisk produktion `32817626537` med fuld validering, releasegate, artifact og Pages.
+- [x] Kontrollér offentligt Candidate G-only med 673/673 accepterede states, nul resets og 12–45 timers naturlig historik.
 
-Efter grøn produktionslukning fortsætter før-lanceringsroadmapet. Denne rettelse kræver ikke en ny 48-timers realtidstest og opbygger ikke kunstig historik.
+Produktionslukningen er grøn. Den eksisterende overvågning følger kun, at 0/210 aktive zoner begynder at åbne lokalt, når de virkelige kæder passerer 48 timer. Denne rettelse kræver ikke en ny 48-timers realtidstest og opbygger ikke kunstig historik.
 
 ## P0 – 4.0.276 bevar strømhistorik lokalt pr. kystpunkt
 

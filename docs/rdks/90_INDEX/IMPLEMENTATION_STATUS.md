@@ -17,8 +17,12 @@
 - [x] Merge den eksakte grønne head som `d3b4542f`.
 - [x] Lad første produktion `32816237198` bygge strømhistorik, vejr og offentlig runtime grønt og stoppe før deploy på en forældet statisk testkontrakt.
 - [x] Ret kun `test-current-full-coverage-gate`, så den kræver den faktiske 673-dækning: eksakte dele plus dokumenterede native-cadence-tilstande.
-- [ ] Bestå frisk central produktion, fuld validering, releasegate, artifact og Pages-deploy.
-- [ ] Kontrollér dataminimeret live, at 673/673 state fortsætter, at native mellemtimer ikke viser strømvektor, og at Candidate G 20/50/30 fortsat er eneste profil.
+- [x] Bestå PR #141 exact-head `32817501003` på `128c71ce` og merge som `81e9b891`.
+- [x] Bestå frisk central produktion `32817626537`, fuld validering, releasegate, artifact og Pages-deploy.
+- [x] Kontrollér dataminimeret live: 673/673 udgivne Candidate G-states, 673 accepterede fortsættelser, nul resets og 12–45 timers naturlig historik.
+- [x] Bekræft Candidate G 20/50/30 som eneste profil med `rollbackProfileId: null` og `legacyPublicFallbackAllowed: false`.
+
+Ved slutkontrollen var 0/210 zoner aktive, fordi den længste lokale kæde var 45 timer. Overvågningen følger kun den naturlige passage af 48 timer; der bygges ingen kunstig historik og kræves ingen ny 48-timers udviklingstest.
 
 Ingen Candidate G-regel, vejrregel, zone, geometri, land-/vandpunkt eller central admin-data ændres i 4.0.277.
 

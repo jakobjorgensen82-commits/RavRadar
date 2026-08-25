@@ -6,6 +6,8 @@
 - Bevarer eksisterende Candidate G-historik uden backfill, interpolation eller rekonstruktion. Candidate G 20/50/30 er fortsat eneste offentlige profil uden rollback.
 - Scorekurver, zoner, geometri, land-/vandpunkter og central admin-data er uændrede; geodatafilerne ændrer kun versionsfelt. Se DEC-0074.
 - PR #140 bestod exact-head og blev merged. Første produktion byggede historik og runtime grønt, men stoppede sikkert før deploy på en forældet statisk test. Testen kræver nu den samme 673-kontrakt som produktionsauditen; ingen runtime-, score- eller dataadfærd er ændret af opfølgningen.
+- Opfølgende PR #141 bestod exact-head `32817501003` på `128c71ce` og blev merged som `81e9b891`. Produktion `32817626537` bestod central hydrering, frisk vejr, 673/673-dækning, fuld validering, releasegate, artifact og Pages-deploy.
+- Offentlig 4.0.277 viser 673/673 Candidate G-states, 673 accepterede fortsættelser, nul resets og 12–45 timers naturlig historik. Candidate G 20/50/30 er fortsat eneste profil; rollbackprofilen er `null`, og legacyfallback er forbudt. 0/210 zoner er endnu aktive, fordi ingen lokal kæde ved kontrollen havde nået de krævede 48 timer.
 
 ## 4.0.276 – strømhistorik bevares pr. kystpunkt (2026-08-25)
 

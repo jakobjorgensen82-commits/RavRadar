@@ -1,12 +1,14 @@
 # RavRadar - aktuelt Codex-handoff
 
-## Aktuelt arbejdscheckpoint – 2026-08-25 4.0.277
+## Produktionslukket arbejdscheckpoint – 2026-08-25 4.0.277
 
 - Rodårsag: Ved mellemtimer for de otte ejerallowlistede `dkss_lf`-regionalproxyer kunne en fremtidig prøve tælles som aktuel readiness, mens den timeskarpe audit korrekt afviste den. Candidate G skrev samtidig den naturlige mellemtime som manglende evidens. Historikken var ikke tabt.
 - Kandidaten vælger kun strøm på eller før målreferencen. DMI/Copernicus kræver eksakt tid; kun de otte regionalproxyer må fastholde den seneste afledte transporttilstand i højst tre timer.
 - Fastholdelsen tilfører ingen bevægelse, evidens eller måling og viser ingen U/V, hastighed, retning eller pil. Næste ægte prøve integrerer faktisk tidsafstand; over tre timer stoppes lokalt.
 - Candidate G 20/50/30 er fortsat eneste offentlige profil uden legacyfallback eller rollback. Scorekurver, zoner, geometri, land-/vandpunkter og central admin er urørte.
-- PR #140 bestod exact-head `32816129342` og blev merged som `d3b4542f`. Produktion `32816237198` byggede historik og runtime grønt, men en forældet statisk test stoppede før deploy. Testen er rettet til den faktiske 673-kontrakt; ny exact-head, fuld produktion og offentlig efterkontrol mangler. Se DEC-0074. Senere ældre arbejdscheckpoints i denne fil er historik.
+- PR #140 bestod exact-head `32816129342` og blev merged som `d3b4542f`. Produktion `32816237198` byggede historik og runtime grønt, men en forældet statisk test stoppede før deploy.
+- PR #141 rettede kun testkontrakten, bestod exact-head `32817501003` på `128c71ce` og blev merged som `81e9b891`. Produktion `32817626537` bestod frisk vejr, fuld validering, releasegate, artifact og Pages.
+- Offentlig kontrol viser 673/673 accepterede Candidate G-states, nul resets og 12–45 timers naturlig historik. 0/210 zoner var endnu aktive, fordi den længste kæde var 45 timer. Overvågningen følger kun den naturlige passage af 48 timer; der skal ikke bygges kunstig historik eller ændres score, geometri eller punkter. Se DEC-0074. Senere ældre arbejdscheckpoints i denne fil er historik.
 
 ## Aktuelt arbejdscheckpoint – 2026-08-24 4.0.273
 

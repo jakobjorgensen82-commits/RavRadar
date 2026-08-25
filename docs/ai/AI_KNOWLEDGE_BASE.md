@@ -1,5 +1,11 @@
 # AI Knowledge Base – RavRadar
 
+## 4.0.277 – årsagstro native kadence og bevaret Candidate G-state
+
+Kun de otte ejerallowlistede `dkss_lf`-regionalproxyer må fastholde den seneste afledte transporttilstand mellem ægte tretimersprøver, højst tre timer. Fastholdelsen er ikke en ny måling og må ikke tilføje bevægelse, evidens, U/V, hastighed, retning eller pil. DMI og Copernicus kræver fortsat eksakt målreference, og fremtidige prøver må aldrig tælle som aktuelle.
+
+PR #141 bestod exact-head `32817501003`, merge `81e9b891` og fuld produktion `32817626537`. Offentlig 4.0.277 har 673/673 Candidate G-states, 673 accepterede fortsættelser, nul resets og 12–45 timers naturlig historik. Candidate G 20/50/30 er eneste offentlige profil uden rollback eller legacyfallback. 0/210 zoner var endnu aktive, fordi ingen lokal kæde ved kontrollen havde nået 48 timer; dette er naturlig modning og ikke et krav om en ny realtidstest. Se DEC-0074.
+
 ## 4.0.269 – offentlig forklaringskontekst er ikke ny rådata
 
 De tre offentlige RavScore-forklaringer skal bruge den valgte kystdels faktiske allerede-offentlige værdier og relevante Candidate G-state. Den lille forklaringskontekst er afledt visningsdata, ikke en ny rå strøm- eller privat datakanal: rå U/V, koordinater og private payloads er forbudt. Generiske scoreintervaltekster kan kun være supplement. Tidligere forløb skal mærkes som historik, og faste lokale reserveegenskaber skal mærkes som faste.
