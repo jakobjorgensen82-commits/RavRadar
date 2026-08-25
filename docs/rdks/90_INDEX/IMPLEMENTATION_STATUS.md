@@ -1,6 +1,18 @@
-# Implementeringsstatus – kandidat 4.0.279
+# Implementeringsstatus – kandidat 4.0.280
 
-## Kandidat 4.0.279 – offentlig Om RavRadar-side
+## Kandidat 4.0.280 – ret orientering og layout for familiebillede
+
+- [x] Afgræns fejlen til en billedkonvertering, som ignorerede EXIF-orientering; ingen score-, zone- eller geodatafejl er involveret.
+- [x] Bevar kildebilledet urørt og indarbejd korrekt portrætretning fysisk i tre komprimerede JPEG-varianter.
+- [x] Tilpas pc-layoutet til opret billede ved siden af tekst og mobillayoutet til opret billede over tekst uden vandret rulning.
+- [x] Opdatér HTML, service-worker og målrettet test til kun at bruge de nye varianter og kontrollere deres faktiske dimensioner.
+- [x] Kontrollér siden visuelt ved 1440 × 1000 og 390 × 844 pixel.
+- [x] Sæt version 4.0.280; særskilt diff skal vise, at de to beskyttede geodatafiler kun ændrer topversionsfelt 4.0.279 → 4.0.280.
+- [ ] Bestå exact-head-kildegate, merge, fuld produktion og offentlig pc-/mobilkontrol.
+
+Candidate G, RavScore, vejr, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er urørte.
+
+## Produktionsverificeret 4.0.279 – offentlig Om RavRadar-side
 
 - [x] Tilføj offentlig side med ejer, formål, scorekontekst, kompleksitet, kontakt og frivillig støtte.
 - [x] Placér linket i den primære topmenu.
@@ -11,7 +23,7 @@
 - [x] Tilføj målrettet kontrakttest for tekst, links, billeder, navigation og responsive brudpunkter.
 - [x] Dokumentér DEC-0076, aktive krav, roadmap, current truth, issues og begge håndbøger.
 - [x] Sæt 4.0.279; særskilt diff viser kun topversionsfelt 4.0.278 → 4.0.279 i de to beskyttede geodatafiler.
-- [ ] Bestå exact-head, merge, fuld produktion og offentlig visuel kontrol.
+- [x] Bestå PR #148, merge som `12db45a8`, fuld produktion `32881278351` og offentlig kontrol. Den fundne EXIF-orienteringsfejl følges op i 4.0.280.
 
 Candidate G, RavScore, vejrruntime, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er urørte. Ejeren har stående godkendt fremtidige rene versionsfeltsynkroniseringer, når den samme særskilte diffkontrol består.
 

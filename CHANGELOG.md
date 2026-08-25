@@ -327,3 +327,9 @@
 - Gramfeltets maksimum følger nu databasens eksisterende grænse, så en ellers gyldig rapport ikke kan ende fastlåst i offlinekøen.
 - Målrettede kontrakt-, observation-, turlog- og syntakstests er grønne. De tre første PR-kørsler stoppede sikkert på henholdsvis et gammelt profilversionsmærke, to manglende webhåndbogssætninger og den manglende versionsspecifikke changelog. Alle tre afgrænsede mangler blev lukket uden scoreændring. PR #111 bestod derefter exact-head `32658661075`, blev merged som `cb7d2232`, og produktion `32658724861` bestod frisk vejr, fuld validering, releasegate, Supabase og Pages. Live `rr-20260823184330-210` er 4.0.265 på 210/673; den udgivne formular kræver selvvalgt dato og tid uden forudfyldning.
 - Candidate G, `20/50/30`, scorelogik, vejrruntime, database, geometri og land-/vandpunkter er uændrede. Versionsløftet må kun ændre versionsfeltet i de to geodatafiler.
+## 4.0.280 – korrekt orienteret Om RavRadar-billede (2026-08-25)
+
+- Retter familiebilledet, hvis tidligere konvertering ignorerede kameraets EXIF-orientering.
+- Leverer tre komprimerede portrætvarianter med retningen fysisk indarbejdet i pixels.
+- Tilpasser billedet særskilt til pc og mobil uden vandret rulning og opdaterer appskal samt målrettet test.
+- Candidate G, RavScore, vejr, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er uændrede. Geodatafilerne ændrer kun versionsfelt.

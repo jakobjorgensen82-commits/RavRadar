@@ -1,13 +1,23 @@
 # Current truth – gældende projektviden
 
-## Kandidat 4.0.279 – offentlig Om RavRadar-side
+## Kandidat 4.0.280 – korrekt orienteret Om RavRadar-billede
+
+- Familiebilledets tidligere WebP-konvertering havde ikke indarbejdet kameraets EXIF-orientering i pixels. Derfor kunne det offentlige portræt stå på siden, selv om kildebilledet så korrekt ud i programmer, der læser EXIF.
+- Kildebilledet er bevaret urørt. Tre nye komprimerede JPEG-varianter har den korrekte portrætretning fysisk indarbejdet i pixels.
+- Pc-layoutet viser det oprette billede ved siden af teksten. Mobil viser det opret over teksten uden vandret rulning.
+- Appskallen og den målrettede kontrakttest peger kun på de nye varianter og kontrollerer deres faktiske dimensioner.
+- Versionen er 4.0.280. De beskyttede geodatafiler ændrer kun topversionsfelt 4.0.279 → 4.0.280.
+- Candidate G, RavScore, vejr, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er urørte. Se DEC-0076.
+
+## Produktionsverificeret 4.0.279 – offentlig Om RavRadar-side
 
 - Forsidens topmenu har nu **Om RavRadar** ved konto, **Start ravtur** og **Spørg RavRadar**.
 - Den nye side præsenterer Jakob Jørgensen og formålet med RavRadar, gør fraværet af fundgaranti tydeligt og forklarer, at den højeste aktuelle score ikke nødvendigvis betyder mest rav i landsdelen.
 - Siden beskriver projektets frivillige karakter og de løbende omkostninger. MobilePay Box `4214MX`, den godkendte betalingsadresse og en klikbar lokal QR-kode vises samlet. Støtte er frivillig og giver ingen særlige funktioner eller scorer.
 - Kontakt åbner brugerens mailprogram; siden indsamler ingen nye brugerdata.
-- Layoutet er tospaltet på pc og enspaltet på mobil. Billederne leveres i flere komprimerede WebP-størrelser, og siden indgår i den versionsstyrede offline-appskal.
+- Layoutet er tospaltet på pc og enspaltet på mobil. Siden og dens billedaktiver indgår i den versionsstyrede offline-appskal.
 - Versionen er løftet til 4.0.279. Særskilt diff af `data/kystdata.json` og `data/zones.geojson` viser kun topversionsfelt 4.0.278 → 4.0.279.
+- PR #148 blev merged som `12db45a8`, produktion `32881278351` var grøn, og offentlig 4.0.279 blev verificeret. Efterkontrollen viste samtidig, at familiebilledets EXIF-retning ikke var indarbejdet i WebP-pixels; dette er rettet i kandidat 4.0.280.
 - Ejeren har stående godkendt fremtidige rene versionsfeltsynkroniseringer i de samme to filer, når diffkontrollen beviser, at intet andet geodata ændres. Ændringer af Candidate G, score, vejr, zoner, geometri, land-/vandpunkter, admin-data eller brugerdata er ikke omfattet. Se DEC-0076.
 
 ## Produktionsverificeret 4.0.278 – Regelværkstedet udgår og zonestatus er rettet

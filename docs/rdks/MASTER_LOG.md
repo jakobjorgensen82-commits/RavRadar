@@ -1,4 +1,12 @@
-## 2026-08-25 – kandidat 4.0.279 offentlig Om RavRadar-side
+## 2026-08-25 – kandidat 4.0.280 retter familiebilledets orientering
+
+- Den offentlige efterkontrol af 4.0.279 viste, at familiebilledet stod på siden.
+- Rodårsagen var billedets EXIF-orientering: kildefilen var portræt, mens den tidligere konvertering ikke indarbejdede rotationen fysisk i WebP-pixels.
+- Originalen er urørt. Tre nye JPEG-varianter er fysisk vendt korrekt og tilpasset et opret pc-/mobillayout.
+- Målrettet kontrakt og visuel kontrol på 1440 × 1000 samt 390 × 844 er grønne.
+- Versionen er 4.0.280; de to beskyttede geodatafiler må kun ændre topversionsfelt 4.0.279 → 4.0.280.
+
+## 2026-08-25 – 4.0.279 offentlig Om RavRadar-side produktionsverificeret
 
 - Ny offentlig, responsiv Om-side med Jakob Jørgensen, projektets formål, scorekontekst, kompleksitet, kontakt og frivillig støtte.
 - Topmenuen linker til siden ved konto, tur og Rav-assistent.
@@ -7,6 +15,7 @@
 - Pc- og mobillayout, lokale aktiver, service-worker og målrettet kontrakttest er implementeret uden ændring af score, data eller geografi.
 - Versionen er sat til 4.0.279. Særskilt diff viser, at `data/kystdata.json` og `data/zones.geojson` kun ændrer topversionsfeltet fra 4.0.278.
 - Ejeren har stående godkendt, at disse to topversionsfelter følger fremtidige reelle releases uden et nyt spørgsmål, men kun når en særskilt diff beviser, at intet andet geodata er ændret. Se DEC-0076.
+- PR #148 blev merged som `12db45a8`, og produktion `32881278351` udgav den offentlige 4.0.279-side. Den efterfølgende visuelle kontrol fandt familiebilledets orienteringsfejl, som rettes i 4.0.280.
 
 ## 2026-08-25 – 4.0.278 statusrettelse produktionsverificeret
 

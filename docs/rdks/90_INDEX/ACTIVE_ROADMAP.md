@@ -1,17 +1,29 @@
 # RavRadar - aktivt roadmap
 
-## P0 – 4.0.279 offentlig Om RavRadar-side
+## P0 – 4.0.280 korrekt orienteret Om RavRadar-billede
+
+- [x] Bevar originalen urørt og indarbejd korrekt portrætretning i de leverede billedpixels.
+- [x] Lever tre komprimerede størrelser og vælg dem responsivt.
+- [x] Vis billedet ved siden af teksten på pc og over teksten på mobil uden vandret rulning.
+- [x] Opdatér appskal og målrettet kontrakttest.
+- [x] Udfør målrettet visuel pc-/mobilkontrol.
+- [x] Sæt 4.0.280 og bevis, at geodatafilerne kun ændrer versionsfelt.
+- [ ] Bestå exact-head, merge, fuld produktion og offentlig pc-/mobilkontrol.
+
+Ingen score, vejrdata, zone, geometri, land-/vandpunkt, admin-data eller brugerdata ændres.
+
+## Produktionsverificeret – 4.0.279 offentlig Om RavRadar-side
 
 - [x] Placér **Om RavRadar** i topmenuen ved konto, **Start ravtur** og **Spørg RavRadar**.
 - [x] Præsentér Jakob Jørgensen, projektets formål, frivillige arbejde, kontakt og fraværet af fundgaranti.
 - [x] Forklar forskellen mellem en kyststræknings aktuelle RavScore og en landsdels grundlæggende ravpotentiale.
 - [x] Forklar, at landsdækkende regler kræver forståelige kompromiser, uden at skjule mulige fejl.
 - [x] Saml frivillighed og støtte i ét afsnit med MobilePay Box `4214MX`, synligt link og klikbar QR-kode.
-- [x] Optimér begge ejerbilleder som responsive WebP-varianter og lav særskilt pc- og mobillayout uden vandret rulning.
+- [x] Optimér begge ejerbilleder som responsive billedvarianter og lav særskilt pc- og mobillayout uden vandret rulning.
 - [x] Tilføj siden og aktiverne til den versionsstyrede offline-appskal.
 - [x] Lås indhold, navigation, betalingslink, billeder og responsive brudpunkter med en målrettet kontrakttest.
 - [x] Sæt version 4.0.279; særskilt diff bekræfter, at de to beskyttede geodatafiler kun ændrer topversionsfelt 4.0.278 → 4.0.279.
-- [ ] Bestå exact-head-kildegate, merge, fuld produktionskæde og offentlig kontrol på pc og mobil.
+- [x] Bestå PR #148, merge `12db45a8`, fuld produktion `32881278351` og offentlig kontrol. Orienteringsfejlen i familiebilledet lukkes særskilt i 4.0.280.
 
 Arbejdet er rent præsentationsmæssigt. Candidate G, RavScore, vejrruntime, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er urørte. Ejeren har samtidig givet stående godkendelse til fremtidige rene versionsfeltsynkroniseringer, når særskilt diffkontrol beviser, at intet andet geodata ændres. Se DEC-0076.
 
