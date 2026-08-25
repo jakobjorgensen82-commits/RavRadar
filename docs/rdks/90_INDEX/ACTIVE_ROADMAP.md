@@ -1,5 +1,20 @@
 # RavRadar - aktivt roadmap
 
+## P0 – 4.0.278 retire misvisende Regelværksted og ret hele ekspert-håndbogen
+
+- [x] Gennemgå Regelværkstedets faktiske kodevej mod Candidate G's state, lokale datagater og invariants.
+- [x] Beslut, at ekspertinput fortsat indsendes gennem håndbogsreview, men at ingen adminregel må ændre offentlig score direkte.
+- [x] Fjern Regelværksted, Vidensbase, regelrettigheder og offentlig regelpublicering fra den aktive kæde.
+- [x] Bevar de eksisterende regelkladder og historikdokumenter urørt som historisk materiale.
+- [x] Gennemgå hele ekspert-håndbogen og ret aktive beskrivelser af scoreprofil, historik, datagater, fallback og scoreændringsproces.
+- [x] Dokumentér DEC-0075 og opdatér systemspecifikation, krav, issues, roadmap og changelog.
+- [x] Udeluk de pensionerede browserfiler og regelfiler fra Pages, mens forskningskilderne bevares internt.
+- [x] Synkronisér installationskopien, kør målrettede tests og RDKS-validering.
+- [x] Løft releaseversionen til 4.0.278 med kun versionsfeltet ændret i de to beskyttede geodatafiler.
+- [ ] Bestå exact-head-kildegaten, merge, produktion og offentlig efterkontrol.
+
+Rettelsen ændrer ikke selve Candidate G-scoren eller geodata.
+
 ## P0 – 4.0.277 luk native mellemtimer årsagstro
 
 - [x] Bevis, at 666/673-stoppet skyldes en fremtidig regionalproxyprøve i readiness og falske null-mellemtimer – ikke tabt state, ændrede punkter eller scorevægte.

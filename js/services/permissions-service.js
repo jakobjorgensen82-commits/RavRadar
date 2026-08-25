@@ -1,18 +1,15 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.277";
-import { authorizedFetch, currentSession, requireFreshSession, getCurrentProfile } from "./auth-service.js?v=4.0.277";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.278";
+import { authorizedFetch, currentSession, requireFreshSession, getCurrentProfile } from "./auth-service.js?v=4.0.278";
 export const PERMISSIONS=Object.freeze([
  {id:'admin_access',label:'Åbn administrationen'},
  {id:'handbook_view',label:'Læs håndbogen'},
  {id:'handbook_review',label:'Indsend faglige rettelser til håndbogen'},
- {id:'rules_view',label:'Se regler og erfaringsviden'},
- {id:'rules_edit',label:'Opret og redigér regler'},
- {id:'rules_publish',label:'Aktivér og publicér regler'},
  {id:'zones_view',label:'Se zoner, retninger og station-routing'},
  {id:'zones_weather_edit',label:'Redigér zoner og DMI-indstillinger'},
  {id:'diagnostics_view',label:'Se datakvalitet og diagnostik'},
  {id:'diagnostics_download',label:'Download rå diagnostik og logs'},
  {id:'observations_view',label:'Se observationer og historisk analyse'},
- {id:'learning_manage',label:'Godkend eller tilbagerul model-forslag'},
+ {id:'learning_manage',label:'Se kalibreringsgrundlag'},
  {id:'experts_manage',label:'Administrér eksperter og rettigheder'},
  {id:'system_manage',label:'Administrér system og caches'},
  {id:'full_admin',label:'Fuld adminadgang'}

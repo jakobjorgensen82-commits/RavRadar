@@ -16,6 +16,13 @@ const hypotheses=book.sections.find(x=>x.id==='hypoteseregister');
 for(const marker of ['Den aktive Candidate G-kode','grundscore = søgeforhold × 0,20','transportpotentiale 0 sættes hele RavScore til 0'])if(!`${scoreImplementation?.title||''}${scoreImplementation?.body||''}`.includes(marker))throw new Error(`Det aktive kodekapitel mangler: ${marker}`);
 for(const marker of ['H-09','Ingen Candidate G-point fra rev, lavt vand, tang eller ålegræs','Et komplet 48-timers strømvindue'])if(!hypotheses?.body.includes(marker))throw new Error(`Hypoteseregisteret mangler: ${marker}`);
 for(const forbidden of ['Transport starter på 34','Frigivelse starter på 22','0,15–0,65 m/s bonus','3–18 timer efter høj energi','Separat nearshore-remobilisation-spor'])if(book.sections.some(section=>section.body.includes(forbidden)))throw new Error(`Webhåndbogen beskriver stadig en erstattet aktiv regel: ${forbidden}`);
+const allBookText=book.sections.map(section=>`${section.title}\n${section.body}`).join('\n');
+for(const marker of ['20/50/30','Regelværkstedet er taget ud af aktiv administration','25/40/35 kan ikke længere vælges offentligt','Kalibreringssiden er skrivebeskyttet','Den kan ikke ændre Candidate G'])if(!allBookText.includes(marker))throw new Error(`Helhedshåndbogen mangler den aktuelle produktions- og admin-kontrakt: ${marker}`);
+for(const forbidden of ['nuværende maksimumsregel','rollback-kriterium','Model-forslag er lokale browsermodeller'])if(allBookText.includes(forbidden))throw new Error(`Helhedshåndbogen indeholder stadig en erstattet eller misvisende formulering: ${forbidden}`);
+for(const historicalId of ['production-shadow-validation-4-0-113','verified-current-history-readiness-4-0-220']){
+  const section=book.sections.find(item=>item.id===historicalId);
+  if(!`${section?.title||''} ${section?.summary||''} ${section?.body||''}`.toLowerCase().includes('historisk'))throw new Error(`${historicalId} er ikke tydeligt markeret som historisk evidens`);
+}
 const installSql=fs.readFileSync('supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql','utf8');
 const sqlPayload=JSON.stringify(book).replaceAll("'","''");
 if(!installSql.includes(`values('handbook','${sqlPayload}'::jsonb,null)`))throw new Error('Supabase-installationsfilens håndbog er ikke identisk med den aktuelle webhåndbog');

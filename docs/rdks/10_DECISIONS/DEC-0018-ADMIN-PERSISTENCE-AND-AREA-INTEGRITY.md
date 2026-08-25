@@ -3,6 +3,11 @@
 ## Status
 Bindende fra RavRadar 4.0.63.
 
+Punkt 4 er historisk og erstattet af DEC-0075. Regelværkstedet og rettighederne
+`rules_view`, `rules_edit` og `rules_publish` er ikke længere en aktiv del af
+RavRadar. De øvrige punkter om områder og verificeret central lagring gælder
+fortsat.
+
 ## Beslutning
 1. Et foruddefineret geografisk område skal være baseret på en fælles, testbar områdedefinition og ikke på løs, lokal tekstmatchning i brugerfladen.
 2. Valg af et område skal forvælge alle matchende zoner. Brugeren må derefter fravælge enkelte zoner, og filtrering må ikke ændre det underliggende udvalg.

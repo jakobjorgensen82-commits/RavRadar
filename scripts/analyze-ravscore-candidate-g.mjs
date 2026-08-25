@@ -1487,7 +1487,6 @@ function main() {
     'rules/national-rules.json',
     'rules/local-rules.json',
     'rules/experimental-rules.json',
-    'rules/admin-active-rules.json',
   ].flatMap(file => JSON.parse(fs.readFileSync(file, 'utf8')).rules || []);
   const report = compareDocuments(forcing, wave, wind, publicRules);
   fs.mkdirSync(path.dirname(args.outputPath), { recursive: true });

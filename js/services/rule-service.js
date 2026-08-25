@@ -1,10 +1,10 @@
-import { evaluateRules } from '../core/rule-engine.js?v=4.0.277';
+import { evaluateRules } from '../core/rule-engine.js?v=4.0.278';
 
 let cachedRules = null;
 
 export async function loadActiveRules() {
   if (cachedRules) return cachedRules;
-  const files = ['./rules/national-rules.json', './rules/local-rules.json', './rules/experimental-rules.json', './rules/admin-active-rules.json'];
+  const files = ['./rules/national-rules.json', './rules/local-rules.json', './rules/experimental-rules.json'];
   const results = await Promise.all(files.map(async url => {
     try {
       const response = await fetch(url, { cache: 'no-store' });
@@ -13,9 +13,10 @@ export async function loadActiveRules() {
       return Array.isArray(data.rules) ? data.rules : [];
     } catch { return []; }
   }));
-  // Offentlige brugere anvender kun den versionsstyrede, centralt publicerede
-  // administratorregelfil. Browserens localStorage må aldrig skabe en
-  // enhedsspecifik RavScore.
+  // Denne service er kun bevaret til versionsstyret forskning og historiske
+  // analyser. Den offentlige Candidate G-score anvender ikke disse regler.
+  // Centralt gemte administratorregler må hverken publiceres eller påvirke
+  // RavScore gennem denne service.
   cachedRules = results.flat().filter(rule => rule.status === 'active');
   return cachedRules;
 }

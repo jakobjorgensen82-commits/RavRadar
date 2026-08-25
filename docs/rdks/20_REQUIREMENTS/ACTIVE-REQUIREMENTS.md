@@ -1,5 +1,12 @@
 # Aktive krav – samlet register
 
+## Ekspertinput og scoreændringer – bindende efter 4.0.277
+
+- **REQ-EXPERT-SCORE-CHANGE-001 – BINDENDE:** Ekspertens håndbogsreview er en faglig indgang, ikke en direkte scoreeditor. En accepteret scoreændring skal omsættes i den autoritative Candidate G-kode og RDKS samt bestå historik-, grænse-, invariant-, exact-head-, produktions- og offentlig efterkontrol.
+- **REQ-RULE-WORKSHOP-RETIRED-001 – BINDENDE:** Regelværksted, Vidensbase og rettighederne `rules_view`, `rules_edit` og `rules_publish` må ikke vises som aktive adminfunktioner. Offentlig runtime og produktionsworkflow må ikke indlæse eller fremstille `rules/admin-active-rules.json`. Det pensionerede browserværksted, regelmotoren, regeltjenesten og regelfilerne må ikke kopieres med i Pages-artifactet.
+- **REQ-RULE-HISTORY-PRESERVE-001 – BINDENDE:** Eksisterende lokale og centrale regel- og regelhistorikdokumenter må ikke slettes ved pensioneringen. De er historisk arbejdsmateriale og må ikke påvirke offentlig RavScore.
+- **REQ-HANDBOOK-ACTIVE-MODEL-001 – BINDENDE:** Ekspert-håndbogen skal skelne mellem historiske kandidater og den aktive Candidate G-model med 20/50/30, 48-timers tilstand, lokal fail-closed og ingen legacyfallback.
+
 ## Candidate G-tilstand og produktionsfortsættelse – bindende fra 4.0.272
 
 - **REQ-CANDIDATE-G-NATIVE-CADENCE-HOLD-001 – BINDENDE FRA 4.0.277:** Kun de otte ejerallowlistede `dkss_lf`-regionalproxyer må mellem ægte native prøver fastholde den seneste afledte transporttilstand i højst tre timer. Fastholdelsen må ikke tilføje bevægelse, evidens eller måling og må ikke udstille U/V, strømretning, hastighed eller pil. Næste ægte prøve integrerer faktisk forløbet tid. Større afstand eller ændret punkt-/kildekontekst er lokalt `missing`.
@@ -232,7 +239,7 @@ Denne fil er den operationelle kravoversigt. Detaljer og historik findes i beslu
 - **REQ-DIAGNOSTIC-001 – IMPLEMENTERET:** Sitetestens deploykontrol skelner 404, timeout, netværksfejl og øvrige HTTP-fejl.
 - **REQ-DIAGNOSTIC-002 – IMPLEMENTERET:** Opstartsprofilen opdeles i netværk/data, beregning og rendering.
 
-- **REQ-ADMIN-008 – IMPLEMENTERET I 4.0.94:** Aktive centrale regler skal automatisk publiceres til én fælles offentlig regelfil. Offentlig RavScore må ikke afhænge af browserens lokale adminlager, og rå adminmellemdata må ikke udstilles på GitHub Pages.
+- **REQ-ADMIN-008 – HISTORISK / ERSTATTET AF DEC-0075:** 4.0.94 krævede en fælles offentlig regelfil. Kravet er ophævet, fordi regelkæden ikke kunne validere Candidate G's historik og invariants. Ingen offentlig regelfil må længere bygges eller indlæses.
 
 ## Vandstandsserier og administratorvalg – bindende regressionkrav
 - `null`, `undefined` og tomme DMI-værdier må aldrig normaliseres til fysisk 0 cm.

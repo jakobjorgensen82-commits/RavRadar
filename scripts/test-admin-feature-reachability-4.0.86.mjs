@@ -20,7 +20,8 @@ requireMatch(reviewStore,/deleteLocalHandbookDraft/,'Lokale nødkladder kan ikke
 requireMatch(dashboard,/Gældende sandhed/,'Dokumentationscenteret mangler Current Truth.');
 requireMatch(dashboard,/Implementeringsstatus/,'Dokumentationscenteret mangler implementeringsstatus.');
 requireMatch(dashboard,/Kendte problemer/,'Dokumentationscenteret mangler kendte problemer.');
-requireMatch(dashboard,/ny lokal modelversion i denne browser/,'Model-forslag forklarer ikke, at ændringen er lokal.');
+requireMatch(dashboard,/Siden ændrer aldrig Candidate G eller den offentlige RavScore/,'Kalibreringsgrundlaget forklarer ikke, at det er skrivebeskyttet.');
+if(/adaptive-model|activateAdaptiveModel|rollbackAdaptiveModel|localModel/.test(dashboard))failures.push('Kalibreringsgrundlaget indeholder stadig lokal modelaktivering eller rollback.');
 requireMatch(siteTest,/Manglende fil \(404\)/,'Sitetesten skelner ikke 404 fra timeout.');
 requireMatch(siteTest,/Timeout/,'Sitetesten mangler særskilt timeoutklassifikation.');
 requireMatch(siteTest,/networkAndDataMs/,'Performanceprofilen mangler netværk/data.');
@@ -29,4 +30,4 @@ requireMatch(siteTest,/renderingMs/,'Performanceprofilen mangler rendering.');
 requireMatch(siteTest,/håndbogsreview/,'Sitetesten mangler reachability-kontrol af håndbogsreview.');
 
 if(failures.length){console.error('Feature-reachability fejlede:\n- '+failures.join('\n- '));process.exit(1);}
-console.log('Feature-reachability bestået: reviewkø, nødkladder, dokumentation, lokal modelstatus og sitetestdiagnostik er synligt forbundet.');
+console.log('Feature-reachability bestået: reviewkø, nødkladder, dokumentation, skrivebeskyttet kalibreringsgrundlag og sitetestdiagnostik er synligt forbundet.');

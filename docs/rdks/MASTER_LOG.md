@@ -2136,3 +2136,19 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - 4.0.272-kandidaten gør fejlen fatal, afviser global nulstart og indfører en streng engangs state-only recovery fra den eksakte sidste grønne Actions-kørsel. Den dokumenterede nulstillede fortsættelseslinje genkendes på tidsvindue og manglende før-historik, så senere accepterede nulstates ikke undslipper under et nyt datasæt-id; efter genindsættelsen er recoveryen straks inaktiv.
 - Ejerens senere flytning af punktpar 2 er afgrænset som et separat lokalt friskdataforhold. Ingen parent-/nabostrøm må lånes, og 673/673-gaten består.
 - Scoreformel, Candidate G 20/50/30, vejrregler, geometri, zoner og land-/vandpunkter er uændrede. Kun geodatafilernes versionsfelt følger releasen fra 4.0.271 til 4.0.272.
+
+## 2026-08-25 – aktiv rettelse efter 4.0.277: Regelværksted pensioneret
+
+- Ejeren bad om en samlet faktakontrol af hele ekspert-håndbogen og stillede spørgsmål ved, om Regelværkstedet realistisk kunne implementere scoreændringer sikkert.
+- Kodegennemgangen viste, at værkstedet kun kunne evaluere simple øjebliksbilleder. Det gennemførte ikke Candidate G's 48-timers state, lokale datagater, transport-nul, wadersloft eller øvrige bindende invariants, og den offentlige Candidate G-kæde anvendte ikke det publicerede regelsæt.
+- Regelværksted, Vidensbase, de tre regelrettigheder og workflowets offentlige regelfil er derfor fjernet fra den aktive kæde. Eksisterende lokale og centrale regelkladder bevares urørt som historisk arbejdsmateriale uden runtimeeffekt.
+- Ekspertens håndbogsreview forbliver den faglige indgang. En accepteret scoreændring skal omsættes i Candidate G-koden og RDKS og bestå målrettede scenarier, exact-head, fuld produktion og offentlig efterkontrol.
+- Hele Markdown- og webhåndbogen, systemspecifikationen og regelmotordokumentationen er gennemgået mod Candidate G 20/50/30, 48-timers tilstand, lokal fail-closed og ingen legacyfallback. Se DEC-0075.
+- Selve RavScore, vejrregler, zoner, geometri, land-/vandpunkter og centrale adminposter er uændrede.
+## 2026-08-25 – kandidat 4.0.278 pensionerer Regelværkstedet
+
+- Kode- og kontraktgennemgangen viste, at Regelværkstedets øjeblikstest ikke kunne validere Candidate G's 48-timersstate, lokale datagater og bindende scoreinvariants. Værksted, regelrettigheder og offentlig regelpublicering fjernes derfor fra den aktive kæde; historiske kladder bevares uden runtimeeffekt.
+- Hele ekspert-håndbogen, webhåndbogen, installationskopien og systemspecifikationen er sammenholdt med den aktive Candidate G 20/50/30-model. Accepterede ekspertforslag går fremover gennem versionsstyret kode, RDKS, tests, exact-head, produktion og offentlig kontrol.
+- Den aktuelle liste og 5-dages prognosen er kontrolleret med både strand og waders. De beregnes mode-specifikt; ens liveplaceringer skyldes rolige forhold og afrunding, ikke en delt scorevej. Prognosedage med større forskel i søgeforhold giver forskellige lister. En regressionstest dækker nu begge veje.
+- Ejeren godkendte eksakt versionsløft 4.0.277 → 4.0.278 i de to beskyttede geodatafiler. Diffen ændrer kun versionsfeltet; score, vejrregler, zoner, geometri, land-/vandpunkter og central admin-data ændres ikke.
+- Seneste naturlige produktion viser 673 accepterede fortsættelser uden nye resets, 657/673 kyststrækninger med 48 timers historik og 205/210 aktive zoner. De resterende lokale kæder fortsætter naturligt.

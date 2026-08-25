@@ -485,7 +485,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.277
+**Håndbogsversion:** 4.0.278
 
 **Opdateret:** 19. august 2026
 
@@ -532,7 +532,7 @@ Håndbogen er den faglige og tekniske reference for RavRadar. RDKS er bindende f
 
 *Håndbogens rolle som fælles sandhed for ejer, eksperter og udvikling.*
 
-RavRadar er et beslutningsstøttesystem til ravjagt langs danske kyster. Systemet samler prognoser, lokale kystdata, en forklarlig procesmodel og kontrollerbare ekspertregler. Det skal hjælpe med at vælge sted og tidspunkt, men må aldrig fremstille en høj score som et løfte om fund.
+RavRadar er et beslutningsstøttesystem til ravjagt langs danske kyster. Systemet samler prognoser, lokale kystdata og den forklarlige Candidate G-scoremodel. Det skal hjælpe med at vælge sted og tidspunkt, men må aldrig fremstille en høj score som et løfte om fund. Ekspertviden kan føre til nye hypoteser og senere scoreændringer, men først efter en versionsstyret ændring af den autoritative kode, målrettede tests og den fulde releasekæde.
 
 Håndbogen er skrevet til tre målgrupper: ejeren, eksterne rav-/sediment-/kysteksperter og fremtidige udviklere. En ekspert skal kunne læse dokumentet uden at kende koden og forstå både den faglige hypotese, de konkrete tærskler og hvor systemet er usikkert.
 
@@ -548,16 +548,16 @@ Ortofotoet afslørede ved Blåvands Huk en fysisk kysthårnål ind mod en sandta
 
 *En fast klassifikation, så ekspertviden og hypoteser ikke bliver skjult som fakta.*
 
-RavRadar bruger fire evidensklasser. De skal fremgå både i håndbogen og i regelmotoren, når en faglig påstand omsættes til scorelogik.
+RavRadar bruger fire evidensklasser. De skal fremgå af håndbogen og af beslutningsgrundlaget, når en faglig påstand undersøges som mulig scorelogik.
 
 Klasse | Betydning | Må bruges til | Må ikke bruges til
 Dokumenteret viden | Understøttet af relevant forskning, officiel måling eller veletableret kystfysik | Procesforklaring, forsigtige generelle regler | Lokale numeriske tærskler uden lokal validering
-Ekspertobservation | Gentagen praktisk erfaring fra kendt område og jagtform | Regelkladde, lokal prioritering, testhypotese | Automatisk landsdækkende regel
-RavRadar-hypotese | Plausibel mekanisme eller arbejdsværdi | Simulering, eksperimentel regel, audit | Skjult produktionsregel uden markering
+Ekspertobservation | Gentagen praktisk erfaring fra kendt område og jagtform | Lokal prioritering og testhypotese | Automatisk landsdækkende scoreændring
+RavRadar-hypotese | Plausibel mekanisme eller arbejdsværdi | Simulering, scenarietest og audit | Skjult produktionslogik uden markering
 RavRadar-valideret | Understøttet af kontrollerede projektdata og hold-out-test | Modeljustering med versionshistorik | Universel naturvidenskabelig sandhed
 En kilde skal vurderes efter relevans, målemetode, skala og overførbarhed. Forskning i plastpartikler kan være nyttig som analogi, fordi visse plasttyper og rav har lav densitet og kan kobles til organisk opskyl, men plast og rav er ikke identiske. Form, størrelse, overflade, biofilm, vandmætning og bundkontakt kan ændre transporten væsentligt.
 
-Når ekspertens udsagn strider mod nuværende kode, skal udsagnet registreres som en ændringshypotese. Først når mekanisme, geografi, betingelser, effekt og test er beskrevet, kan det blive en aktiv regel.
+Når ekspertens udsagn strider mod den nuværende kode, skal udsagnet registreres som en ændringshypotese. Først når mekanisme, geografi, betingelser, forventet effekt og test er beskrevet, kan det omsættes til en versionsstyret ændring af Candidate G.
 
 
 ## 3. Ravets fysiske egenskaber og hvorfor densitet alene ikke er nok
@@ -594,7 +594,7 @@ To ravstykker med samme masse kan reagere forskelligt. Et fladt stykke har stør
 
 Et ravstykke, der ligger frit oven på glat sand, er ikke i samme tilstand som et stykke, der er klemt mellem grus, indlejret i tørv eller dækket af et tyndt sandlag. Den kritiske belastning for at frigøre stykket kan derfor være bestemt af mekanisk låsning snarere end af ravets egen masse. RavRadar bruger i dag vejrhistorik som indirekte proxy for denne frigørelse, men beregner ikke lokal bundskærspænding eller begravelsesdybde.
 
-Implementeret i: js/core/score-engine.js og js/core/coastal-process-model.js. Der findes endnu ingen partikelstørrelses- eller synkehastighedsmodel.
+Implementeret i den aktive scorevej i `js/core/ravscore-candidate-g.js` og tilstandskæden i `js/core/ravscore-candidate-g-state-pipeline.js`. `js/core/coastal-process-model.js` leverer en forklarende procesindikator, men ændrer ikke Candidate G-scoren. Der findes ingen partikelstørrelses-, synkehastigheds-, bundskærspændings- eller begravelsesmodel.
 
 
 ## 4. Tilstedeværelse og kildelagre
@@ -692,7 +692,7 @@ Bølger kan øge koncentrationen af mobile partikler ved at løfte dem fra bunde
 
 Én pålandsretning er kun en lokal normalvektor. Ved bugter, odder og uregelmæssige kyster kan samme strøm være indgående på én del og udgående på en anden. RavRadar bruger derfor lokale kystdele og flere retninger; eksperten bør kontrollere, om de beskriver den jagtbare kyst rimeligt.
 
-Implementeret i: js/core/direction-anchors.js og js/core/score-engine.js.
+Implementeret i: `js/core/direction-anchors.js`, `js/core/ravscore-candidate-g.js` og `js/core/ravscore-candidate-g-state-pipeline.js`.
 
 
 ## 8. Vindens direkte og indirekte rolle
@@ -893,7 +893,7 @@ Ved waders giver vind til og med 6 m/s fuld vindscore. Derefter falder den trinv
 
 ### 18.6 Forklarbarhed og profilvalg
 
-Den offentlige projektion viser de tre komponenter, 20/50/30-vægtene, deres bidrag, den aktuelle profil, transportforløbet, mobiliseringsforløbet og en eventuel udtransportregel. Hvis Candidate G ikke kan beregnes komplet ved den fælles aktuelle reference, vælges 25/40/35 for hele datasættet. Profiler blandes aldrig mellem steder, timer eller jagtformer.
+Den offentlige projektion viser de tre komponenter, 20/50/30-vægtene, deres bidrag, den aktuelle profil, transportforløbet, mobiliseringsforløbet og en eventuel udtransportregel. Hvis Candidate G ikke kan beregnes komplet, bliver kun den konkrete zone, søgemåde og time utilgængelig. Den gamle 25/40/35-model kan ikke overtage, og profiler blandes aldrig mellem steder, timer eller jagtformer.
 
 
 ## 19. Procesindikatoren for hændelsesfase
@@ -922,33 +922,25 @@ Administratorens godkendte geometri er den aktive sandhed. Hvis de oprindelige l
 Ekspertpunkt E-15: Vurder om flere kystankre skal vægtes efter kystlængde, eksponering og transportforbindelse i stedet for at vælge bedste alignment.
 
 
-## 21. Fra faglig viden til aktive regler
+## 21. Fra faglig viden til versionsstyret scoreændring
 
 *En kontrolleret vej fra ekspertudsagn til produktion.*
 
-En ekspertregel skal indeholde: påstand, mekanisme, geografi, jagtform, målbare betingelser, tidsvindue, effekt, evidensklasse, tillid, kilde, testeksempler, modbeviser og rollbackplan.
+Det tidligere Regelværksted er taget ud af aktiv administration. Det kunne kun afprøve enkle øjebliksbilleder og kunne ikke sikkert gennemføre Candidate G's 48-timers historik, lokale datagater, transport-nul, wadersloft og øvrige invariants. En direkte knap fra fri tekst til produktionsscore ville derfor give en falsk sikkerhed.
+
+En ændringshypotese skal indeholde: påstand, mekanisme, geografi, jagtform, målbare betingelser, tidsvindue, forventet effekt, evidensklasse, tillid, kilde, testeksempler og modbeviser.
 
 Arbejdsgangen er:
 
-- Registrér rå observation som viden – uden scoreeffekt.
+- Registrér observationen eller kommentaren i håndbogsreviewet – uden scoreeffekt.
+- Formulér en testbar hypotese med tydelig geografi, jagtform og tidslig mekanisme.
+- Omsæt en accepteret hypotese til den autoritative Candidate G-kode og en bindende RDKS-beslutning.
+- Test positive, negative, grænse- og regressionsscenarier, herunder historik, transport-nul, wadersloft og lokal fail-closed.
+- Kør kildegate og produktionsgates på PR'ens eksakte head.
+- Merge, deploy og verificér den offentlige runtime.
+- Evaluer senere mod ture med både fund og nul-fund, før yderligere kalibrering.
 
-- Formulér en testbar hypotese.
-
-- Opret regelkladde med konkret geografi og betingelser.
-
-- Simulér positive, negative og grænsetilfælde.
-
-- Kontrollér konflikter og maksimal samlet effekt.
-
-- Aktivér kun med relevant rettighed og versionshistorik.
-
-- Evaluer mod nye fund og nul-fund.
-
-- Tilbagetræk eller justér ved manglende effekt.
-
-Fri tekst-assistenten må kun oprette kladder. Den må ikke aktivere regler. En regel uden geografi, med ekstrem effekt eller med betingelser der altid er sande skal give advarsel.
-
-Der er aktuelt ingen aktive nationale eller lokale fagregler i JSON-filerne. Det betyder, at eksperten starter med at validere basismodellen og derefter kan opbygge et kontrolleret regelsæt.
+De tidligere centrale og lokale regeldokumenter slettes ikke. De bevares som historisk arbejdsmateriale, men indlæses ikke af adminforsiden, publiceres ikke og kan ikke påvirke den offentlige RavScore. `js/core/rule-engine.js` og de gamle regel-JSON-filer er historiske forskningsværktøjer, ikke en aktiv scorevej.
 
 
 ## 22. Hvordan ekspertudsagn og feltdata skal testes
@@ -998,15 +990,15 @@ Historiske/inaktive stationer skal være tydeligt markeret og må normalt ikke v
 I admin viser kortfarverne den routing, der faktisk er aktiv for zonen. Grøn betyder aktiv automatisk routing. Når administratoroverride er slået til, skjules de grønne automatiske markører, og de kilder som faktisk styrer produktionen vises rødt. Lilla “begge valg” bruges ikke længere. Grå er udfaset, og orange er øvrige kilder. Manglende livscyklusdata vises som ukendt og må ikke fejlagtigt blive til “utilgængelig”. Beskyttet stationshistorik læses tilbage fra Supabase før en ny kørsel og flettes ikke-destruktivt, så kendte observationer og cacheoplysninger ikke går tabt.
 
 
-## 25. Brugerfeedback, adaptiv model og AI
+## 25. Brugerfeedback, dækningsanalyse og AI
 
 *Menneskekontrolleret læring med versionshistorik.*
 
 Feedback gemmer et uforanderligt vejrsnapshot, score, modelversion, zone, jagtform og resultat. Både fund og nul-fund er nødvendige. Persondata og samtykke skal håndteres separat.
 
-Den adaptive model kan ændre hovedvægte, global justering, zonejusteringer og metrikjusteringer. Forslag skal godkendes manuelt. Ændringer versionsstyres og kan rulles tilbage.
+Den aktive læringsanalyse måler i dag kun, om observationsgrundlaget er bredt og balanceret nok til senere analyse. Den har `calibrationLocked=true`, udsteder ingen automatiske scoreforslag og ændrer hverken hovedvægte, zoner eller målepunkter. En eventuel fremtidig kalibrering kræver et særskilt, versionsstyret beslutningsgrundlag med tidslig og geografisk hold-out.
 
-AI må strukturere fri tekst, forklare score, finde mønstre og foreslå hypoteser. AI må ikke selv aktivere regler eller ændre produktionsmodellen. En AI-konklusion er ikke faglig evidens.
+AI må strukturere fri tekst, forklare score, finde mønstre og foreslå hypoteser. AI må ikke selv ændre produktionsmodellen. En AI-konklusion er ikke faglig evidens.
 
 
 ## 26. Administration, Supabase og ekspertrettigheder
@@ -1236,7 +1228,7 @@ For sediment bruges forholdet mellem synkehastighed og turbulent blanding til at
 ### 35.4 Praktisk anvendelse i RavRadar
 Disse tal skal i første omgang bruges til at formulere testbare hypoteser og laboratorieforsøg – ikke til at erstatte scoremotoren med uprøvede formler. En ny fysisk parameter må først aktiveres, når den kan beregnes stabilt og giver bedre hold-out-resultater.
 
-Ekspertpunkt E-16: Definér et realistisk forsøgsprogram for kritisk mobilisering og synkehastighed for repræsentative ravklasser.
+Supplerende spørgsmål til E-01: Definér et realistisk forsøgsprogram for kritisk mobilisering og synkehastighed for repræsentative ravklasser.
 
 
 ## 36. Bølgespektrum, periode, retning og varighed
@@ -1246,16 +1238,16 @@ Ekspertpunkt E-16: Definér et realistisk forsøgsprogram for kritisk mobiliseri
 En havtilstand består af mange bølgekomponenter. Signifikant bølgehøjde opsummerer højden, men ikke hele spektret.
 
 ### 36.1 Periode
-Lange bølger påvirker typisk bunden på større dybde og kan give en anden surfzone end korte vindbølger. Periode bør derfor undersøges som forklarende variabel sammen med højde.
+Lange bølger påvirker typisk bunden på større dybde og kan give en anden surfzone end korte vindbølger. Candidate G bruger derfor både bølgehøjde og periode i den timevise energi-proxy.
 
 ### 36.2 Retning og kysteksponering
 Den relevante bølgeretning skal sammenholdes med lokal kystnormal, revler og lægivende geometri. En offshore modelretning kan blive refrakteret, før bølgen når stranden. Ét havanker er derfor en approximation.
 
 ### 36.3 Fetch og varighed
-Lokal vind over kort fetch kan give stejle, korte bølger, mens fjern swell kan ankomme efter at den lokale vind er faldet. Varighed styrer, hvor længe bunden udsættes for mobiliserende belastning. RavRadars nuværende maksimumsregel kan ikke skelne mellem en kort spids og mange timers vedvarende energi.
+Lokal vind over kort fetch kan give stejle, korte bølger, mens fjern swell kan ankomme efter at den lokale vind er faldet. Candidate G samler den timevise energi-proxy i én mobiliseringstilstand, som bygges over cirka fire timer og derefter aftager med cirka 48 timers halveringstid. En kort spids tæller derfor ikke som mange timers vedvarende energi.
 
-### 36.4 Kandidat til ny energidosering
-En fremtidig indikator kan integrere en bølgeenergi-proxy over tid, vægtet med retning og periode. Den skal testes mod den enklere maksimumsregel, så kompleksitet kun beholdes, hvis den forbedrer prognosen.
+### 36.4 Den aktuelle begrænsning
+RavRadar bruger ikke hele bølgespektret og modellerer heller ikke lokal refraktion, brydning ved revler eller præcis bundbelastning. Bølgeretning eller en mere detaljeret spektral model må kun tilføjes, hvis robuste input og hold-out-data viser en stabil forbedring i forhold til Candidate G.
 
 
 ## 37. Strandprofiler, revler og morfodynamiske tilstande
@@ -1273,7 +1265,7 @@ Højenergiforhold kan flytte sand offshore og danne eller forstærke revler; rol
 ### 37.3 Databehov
 RavRadar har i dag statisk kystgeometri og generelle kystegenskaber. Dynamisk bathymetri er ikke tilgængelig i prognoseopløsning. Brugerobservationer af nye render, erosionskanter og tanglinjer kan derfor være værdifulde som kortlivede zonetilstande.
 
-Ekspertpunkt E-17: Angiv hvilke morfologiske observationer en ravjæger realistisk kan registrere, og hvor længe de bør påvirke modellen.
+Uddybning af E-11: Angiv hvilke morfologiske observationer en ravjæger realistisk kan registrere, og hvor længe de bør påvirke modellen.
 
 
 ## 38. Kildelager, udtømning og genopfyldning
@@ -1296,7 +1288,7 @@ Et område kan levere godt efter første storm og dårligt efter næste, selv om
 ### 38.3 Forsigtig implementering
 En lagerindikator bør være probabilistisk og langsomt skiftende. Den må ikke skjule dårlig hydrodynamik eller skabe en permanent favoritliste. Den bør opdateres af kvalitetssikrede observationer med negativ-evidens-vægtning, der tager højde for søgeindsats og sigt.
 
-Ekspertpunkt E-18: Vurder om en latent lagerfaktor er fagligt meningsfuld, og hvilke observationer der kan opdatere den uden cirkelslutning.
+Uddybning af E-02: Vurder om en latent lagerfaktor er fagligt meningsfuld, og hvilke observationer der kan opdatere den uden cirkelslutning.
 
 
 ## 39. Tang, ålegræs og beach-cast som fysisk system
@@ -1312,28 +1304,28 @@ Vegetationsmåtter og tangvolde reducerer lokale hastigheder, øger ruhed og ska
 ### 39.3 Tidsalder
 Frisk, våd tang ved den aktive opskylslinje er et andet signal end tør tang flyttet af vind. RavRadar bør derfor ikke nøjes med en permanent zoneegenskab; feltobservationer bør indeholde friskhed, højde på stranden, dominerende materiale og tidspunkt.
 
-Ekspertpunkt E-19: Definér en praktisk klassifikation af opskyl, som kan bruges konsistent af ikke-eksperter.
+Uddybning af E-09 og E-10: Definér en praktisk klassifikation af opskyl, som kan bruges konsistent af ikke-eksperter.
 
 
 ## 40. Dansk regional oceanografi og hvorfor én landsregel er utilstrækkelig
 
-*Nordsø, Skagerrak, Kattegat, Bælter, Øresund og Vadehav har forskellige dynamikker.*
+*Nordsø, Skagerrak, Kattegat, Bælter, Øresund og Vadehav har forskellige dynamikker. Candidate G bruger dog i dag de samme grundtærskler i hele landet og lokale kystretninger.*
 
 Danmarks kyster ligger i flere hydrodynamiske regimer. En regel, der virker på en åben Nordsøkyst, kan være forkert i et beskyttet farvand eller tidevandspræget vadeområde.
 
 ### 40.1 Åbne vestkyster
-Stor fetch, kraftig bølgeenergi, stormsurge og markant profilændring gør mobilisering og sikkerhed centrale. Bølgeretning og periode kan være vigtigere end lokal vind i det konkrete øjeblik.
+Stor fetch, kraftig bølgeenergi, stormsurge og markant profilændring gør mobilisering central. Bølgeretning og periode kan være vigtigere end lokal vind i det konkrete øjeblik.
 
 ### 40.2 Skagerrak og Kattegat
-Komplekse forbindelser mellem Nordsøen og Østersøen, tæthedsstrømme, vindstuvning og lokal kystgeometri kan give forskel mellem overflade- og bundstrøm. Nordjyske østvendte kyster kan få rolige jagtforhold under fralandsvind, mens tidligere eller fjern bølgeenergi stadig har påvirket bunden.
+Komplekse forbindelser mellem Nordsøen og Østersøen, tæthedsstrømme, vindstuvning og lokal kystgeometri kan give forskel mellem overflade- og bundstrøm. Nordjyske østvendte kyster kan få rolige søgeforhold under fralandsvind, mens tidligere eller fjern bølgeenergi stadig har påvirket bunden.
 
 ### 40.3 Indre farvande
 Bælter, fjorde og smalle passager kan være strømstyrede og stærkt afhængige af lokale indløb. Et groft modelgrid kan overse nærkystlige hvirvler og strømkonvergens.
 
 ### 40.4 Vadehavet
-Tidevand, render, vadeflader og hurtig vandstandsændring kræver særregler. Jagtbarhed og adgang kan ændres hurtigere end den generelle timeprognose antyder.
+Tidevand, render, vadeflader og hurtig vandstandsændring kan gøre de landsdækkende tærskler mindre præcise. Det er en faglig hypotese, ikke en aktiv særregel. En regional forskel må først indføres, når den kan beskrives målbart og består repræsentative hold-out-tests.
 
-Ekspertpunkt E-20: Definér regionale modelprofiler og hvilke tærskler der ikke bør være landsdækkende.
+Uddybning af E-19: Beskriv målbare regionale forskelle og hvilke observationer der kan vise, om en landsdækkende tærskel faktisk er utilstrækkelig.
 
 
 ## 41. Måleusikkerhed, modelopløsning og repræsentativitet
@@ -1389,7 +1381,7 @@ Nye tærskler skal vurderes på perioder og zoner, som ikke blev brugt til at ud
 En score på 80 behøver ikke betyde 80 % fundchance. Scoren er en relativ indeksværdi. På sigt kan man undersøge kalibrering: hvor ofte og hvor meget rav findes ved forskellige scoreintervaller, betinget af søgeindsats.
 
 ### 43.5 Før/efter-test af regler
-En ekspertregel bør have en tydelig forventet effekt, testperiode og rollback-kriterium. Ændringer skal versionsmærkes, så forbedring kan adskilles fra ændret datakvalitet.
+En ekspertregel bør have en tydelig forventet effekt, testperiode samt på forhånd fastlagte accept- og afvisningskriterier. Ændringer skal versionsmærkes, så forbedring kan adskilles fra ændret datakvalitet. Den aktive score ændres kun i kildekode efter RDKS-beslutning, målrettede tests og produktionskontrol.
 
 
 ## 44. Feltprotokol for ravjægere og eksperter
@@ -1437,21 +1429,27 @@ Gamle prognoser må ikke fremstå som aktuelle. Dataalder valideres, og for gamm
 
 Emne | Aktiv fil | Kontrol
 
-Hovedscore og vægte | js/core/score-engine.js | scripts/test-score-engine.mjs
+Candidate G-score og 20/50/30 | js/core/ravscore-candidate-g.js | scripts/test-ravscore-candidate-g.mjs
 
-Procesfase | js/core/coastal-process-model.js | scripts/test-process-model-4.0.33.mjs
+48-timers tilstand | js/core/ravscore-candidate-g-state-pipeline.js | scripts/test-ravscore-candidate-g-state-pipeline.mjs
+
+Eneste offentlige profil | js/core/ravscore-profile-switch.js | scripts/test-ravscore-profile-switch-4.0.260.mjs
+
+Procesfase uden direkte scorevirkning | js/core/coastal-process-model.js | scripts/test-process-model-4.0.33.mjs
 
 Retningsankre | js/core/direction-anchors.js | scripts/test-direction-anchors.mjs
 
-Ekspertregler | js/core/rule-engine.js | scripts/test-rule-engine.mjs
+Brugerfeedback og dækningsanalyse | js/services/learning-analysis.js | scripts/test-feedback-learning.mjs
 
-Adaptiv model | js/core/adaptive-prediction.js | scripts/test-adaptive-prediction.mjs
+Ekspertens håndbogsreview | js/services/handbook-review-store.js | scripts/test-handbook-review-archive-4.0.91.mjs
 
 Vejrdata | scripts/update-weather.mjs | Forecast- og datakvalitetstests
 
 Stationsrouting | data/water-level-station-routing.json | Stationstopologi og cachetests
 
 Håndbog | docs/handbook/content.json | scripts/release-gate.mjs
+
+`js/core/score-engine.js`, `js/core/rule-engine.js` og gamle regelfiler findes kun til historiske sammenligninger og forskning. De er ikke en offentlig scorevej.
 Historiske rodfiler kan stadig findes i projektet af kompatibilitets- eller dokumentationsgrunde. Håndbogen skal altid pege på den aktive fil og tydeligt mærke historiske implementeringer.
 
 
@@ -1491,7 +1489,7 @@ Langvarig lokal erfaring kan opdage mønstre, som modeller og publikationer over
 - Coastal Wiki/Van Rijn: Sand transport. Samlet faglig oversigt over bedload, suspension, bølge- og strømkomponenter samt tidsforsinkelse i ikke-stationær transport.
 
 - DMI Frie Data og API-dokumentation. Autoritativ kilde til hvilke observations- og prognoseprodukter RavRadar henter; dokumenterer datakilden, ikke ravfysikken.
-Kildelisten skal udvides løbende. Hver ny aktiv regel skal pege på mindst én mekanistisk kilde eller være tydeligt mærket som ekspertobservation/hypotese.
+Kildelisten skal udvides løbende. Hver ny scoreantagelse skal pege på mindst én mekanistisk kilde eller være tydeligt mærket som ekspertobservation eller RavRadar-hypotese. En ændring bliver først aktiv gennem den versionsstyrede Candidate G- og releaseproces.
 
 
 ## 49. Ekspertens review-arbejdsgang
@@ -1504,8 +1502,8 @@ Kildelisten skal udvides løbende. Hver ny aktiv regel skal pege på mindst én 
 - Angiv forventet retning og størrelse på modelændringen.
 - Vedlæg kilde, data eller gentagne observationer.
 - Foreslå en test og et kriterium for accept eller afvisning.
-- Ejeren vurderer forslaget; en accepteret ændring bliver først aktiv i en versioneret release.
-En ekspertkommentar ændrer aldrig håndbogen eller scoremotoren direkte. Den gemmes i Supabase med versionshistorik og kan accepteres, afvises eller implementeres af ejeren.
+- Ejeren vurderer forslaget; en accepteret ændring bliver først aktiv, når RDKS, Candidate G-koden, de relevante tests og den versionerede release er opdateret og verificeret.
+En ekspertkommentar ændrer aldrig håndbogen eller scoremotoren direkte. Den gemmes i Supabase med versionshistorik og kan accepteres, afvises eller omsættes til en kontrolleret kodeændring af ejeren og udviklingsprocessen.
 
 
 ## 50. Faglig ordliste
@@ -1557,16 +1555,13 @@ Moderate bølger kan løfte eller rulle ravet, mens en indgående eller skrå st
 
 ### 51.4 Aktiv implementering
 
-Komponenten mobilisering/tilgængelighed har to spor:
+Candidate G har ét mobiliseringsspor. Bølgehøjde og bølgeperiode danner ét energiindeks, som opbygges under hændelsen og derefter aftager gradvist med hukommelse. Aktuel vind, strøm, vandstand, rev og vegetation giver ikke ekstra mobiliseringspoint. Strømmen indgår i stedet i den særskilte transportkomponent.
 
-- **Fresh-release:** historisk vind, historiske bølger, tid siden høj energi og eksponering.
-- **Nearshore-remobilisation:** aktuelle bølger, strømstyrke, indkomponent, vandstandsændring og retention.
+Modellen kan derfor ikke afgøre, om et konkret ravstykke stammer fra en primær frigivelse eller en senere nærkystgenmobilisering. Processindikatoren kan beskrive et sandsynligt forløb, men ændrer ikke Candidate G-scoren.
 
-Det højeste spor bærer komponenten. Begge stærke samtidig giver en begrænset bonus. Den fulde kæde vægter dermed fortsat højest, men er ikke den eneste vej til en meningsfuld score.
+Ekspertpunkt E-22: Vurder om fremtidige data kan skelne pålideligt mellem primær mobilisering og nærkystgenmobilisering uden at blande transport og mobilisering sammen.
 
-Ekspertpunkt E-22: Vurder hvilke kombinationer af bølger, strøm, vandstandsændring og kystmorfologi der realistisk genmobiliserer rav fra sekundære nærkystlagre, og hvor længe sådanne lagre kan bestå.
-
-Implementeret i: **js/core/score-engine.js** og **js/core/coastal-process-model.js**.
+Implementeret i: **js/core/ravscore-candidate-g.js**, **js/core/ravscore-candidate-g-state-pipeline.js** og den score-neutrale **js/core/coastal-process-model.js**.
 
 
 ## Sproglig standard fra 4.0.69
@@ -1712,8 +1707,8 @@ Når en rettelse indsendes, kan den straks åbnes via **Håndbog → Reviewkø**
 
 Hvis Supabase ikke kan modtage rettelsen, oprettes en lokal nødkladde. Den vises nederst på Håndbog-fanen og kan gensendes, eksporteres eller slettes. En lokal nødkladde er aldrig autoritativ projektviden.
 
-### Dokumentation og model-forslag
-Dokumentationscenteret åbner Current Truth, implementeringsstatus, aktive krav, kendte problemer, masterlog og håndbogen. Model-forslag er udtrykkeligt lokale browsermodeller. De ændrer ikke automatisk fælles produktion eller andre enheder.
+### Dokumentation og kalibreringsgrundlag
+Dokumentationscenteret åbner Current Truth, implementeringsstatus, aktive krav, kendte problemer, masterlog og håndbogen. Kalibreringssiden er read-only og viser kun, om registrerede ture på sigt kan bruges i en kontrolleret analyse. Den kan ikke ændre Candidate G, den offentlige RavScore eller en lokal scoremodel.
 
 ### Sitetestens fejl og tider
 Deploykontrollen skelner mellem en virkelig manglende fil (HTTP 404), timeout, netværksfejl og andre HTTP-fejl. Opstart rapporteres særskilt som netværk/data, beregning og rendering. Dermed må en langsom hentning ikke fejlagtigt beskrives som en langsom scoremotor.
@@ -1745,12 +1740,10 @@ Administratoren søger efter en zone, vælger den, bruger **Flyt kort** eller **
 
 Gamle tekniske kystlinjekladder fra tidligere versioner aktiveres ikke automatisk. Kun ændringer, som er gemt gennem den nye centrale arbejdsgang, kan blive anvendt i produktionen.
 
-## Centrale regler og ens score for alle brugere – 4.0.94
-Når ejeren aktiverer en regel i administrationen, gemmes den centralt. Ved næste deployment udvælger RavRadar kun regler med status **Aktiv**, kontrollerer deres struktur og opretter en lille offentlig regelfil med de felter, scoremotoren behøver. Regler, der endnu ikke er aktive, påvirker ikke brugerne.
+## Regelværkstedet er ikke en aktiv scorevej
+Det tidligere Regelværksted og dets rettigheder er fjernet fra den aktive administration. Det kunne ikke sikkert afprøve eller håndhæve Candidate G's historik, lokale datagater og bindende invariants og kunne derfor give et misvisende indtryk af, at en enkel tekstregel var klar til produktion.
 
-Den offentlige side læser ikke længere ejerens lokale browserlager. Det betyder, at to brugere ikke kan få forskellige RavScore-resultater, blot fordi den ene browser tidligere har været brugt til administration. Alle brugere anvender samme versionerede regelsæt.
-
-Rå centrale adminfiler indeholder arbejdsmateriale og må ikke publiceres på GitHub Pages. Kun den sanitiserede liste over aktive regler bliver offentlig, fordi den er nødvendig for at beregne og forklare den fælles RavScore.
+De eksisterende centrale og lokale regeldokumenter slettes ikke. De bevares som historisk arbejdsmateriale, men admin indlæser dem ikke, produktionsworkflowet publicerer ingen aktiv regelfil, og den offentlige app anvender dem ikke. Alle brugere får den samme versionsbundne Candidate G-model.
 
 
 
@@ -1818,7 +1811,7 @@ Den historiske model beregner blandt andet:
 - nærkystpotentiale,
 - og en forklarende procesfase.
 
-I 4.0.112 er dette fortsat en skyggetilstand. Den bruges til forklaring, diagnostik og faglig kontrol, men ændrer ikke RavScore. Det er bevidst: nye historiske regler skal først bevises på faktiske produktionsdata og i regressionstest.
+Denne tilstandsmodel er nu en aktiv del af Candidate G. Den genafspiller de seneste 48 timers dokumenterede mobilisering og transport og påvirker den offentlige RavScore gennem de faste 20/50/30-vægte. Manglende data behandles som et hul; der opfindes ikke neutral strøm eller historik. Den ældre state-shadow-v2-beskrivelse er historik og må ikke bruges som beskrivelse af den aktive scorevej.
 
 ### 60.2 Ingen universel transportforsinkelse
 RavRadar bruger ikke en hård regel om, at almindelig indtransport altid kræver tre, fire eller fem timer. Den fysiske transporttid afhænger blandt andet af afstand, strømstyrke og hvor materialet allerede befinder sig. I stedet skal det senere numeriske bidrag vokse glidende med dokumenteret varighed, styrke og stabilitet af indadgående strøm.
@@ -1859,8 +1852,10 @@ Gamle tests kan indeholde antagelser om en tidligere arkitektur. De skal findes 
 ### 60.9 Overlevering mellem projektchats
 Ved starten af en ny chat skal `docs/rdks/05_NEXT_CHAT_HANDOFF.md` læses sammen med Current Truth, implementeringsstatus, aktive krav, kendte issues og seneste changelog. Projekt-ZIP’en er den primære tekniske sandhed. Historiske chats bruges kun til begrundelse, når projektets aktuelle dokumentation ikke er tilstrækkelig.
 
-## Produktionskontrol af historisk tilstand (4.0.113)
-Den historiske tilstand er fortsat en skyggeberegning uden pointvirkning. Efter hver frisk produktion kontrollerer workflowet de fire faste referencezoner. Kontrollen kræver verificeret DMI-strøm og en score-neutral skyggetilstand; nye produktioner bruger `shadow-v2`. En kompakt loglinje gør det muligt at sammenligne varighed, styrke, stabilitet og nærkystpotentiale mellem produktionstimer uden nye manuelle screenshots.
+## Historisk 4.0.113: produktionskontrol af skyggetilstand
+Dette er et historisk revisionsspor, ikke den aktive arkitektur. I 4.0.113 var tilstandsmodellen endnu en score-neutral skyggeberegning på fire faste referencezoner. Candidate G blev senere den offentlige scoremodel og bruger nu sin egen dokumenterede 48-timers strømtilstand og bølgeenergistyrede mobiliseringstilstand på de aktive kystdele.
+
+Dengang krævede kontrollen verificeret DMI-strøm og `stateModelMode: shadow-v2`. En kompakt loglinje gjorde det muligt at sammenligne varighed, styrke, stabilitet og nærkystpotentiale mellem produktionstimer uden nye manuelle screenshots.
 
 Den rå DMI GRIB-cache skal bevare fremdrift mellem kørsler. GitHub-caches kan ikke overskrives under samme nøgle, så hver kørsel gemmer en unik cache og næste kørsel henter den seneste kompatible. Dette er en driftsmekanisme og ændrer ikke de marine kvalitetskrav.
 
@@ -2111,13 +2106,13 @@ Et vandstands- eller temperaturpunkt kan ligge lidt nærmere kystpunktet end str
 
 Rettelsen ændrer ikke DMI-kilder, fallback eller RavScore. Manglende strøm forbliver manglende, og den videre femdøgnsanalyse gennemføres fortsat under DEC-0030.
 
-## Rå og verificeret strømhistorik i 4.0.220
+## Historisk 4.0.220: rå og verificeret strømhistorik
 
-RavRadar gemmer op til 72 timers rå vejrprøver, men en gemt prøve er ikke automatisk sikker nok til transport- eller scoreanalyse. Strøm tæller kun som verificeret, når øst-/vest- og nord-/sydkomponenten har et fælles DMI-bevis for samme sted, dybde, modelkørsel og tidspunkt.
+Dette er et historisk revisionsspor for den første opmåling af rå og DMI-verificeret strømhistorik. Det beskriver ikke den aktuelle aktiveringsgrænse. I 4.0.220 gemte RavRadar op til 72 timers rå vejrprøver, men en gemt prøve var ikke automatisk sikker nok til transport- eller scoreanalyse. Strøm talte kun som verificeret, når øst-/vest- og nord-/sydkomponenten havde et fælles DMI-bevis for samme sted, dybde, modelkørsel og tidspunkt.
 
 Den skrivebeskyttede kontrol viser derfor både rå længde og verificeret længde. I det første målte datasæt havde alle 210 zoner 37,149 timers rå historik og verificeret strøm ved nutiden, mens det verificerede historiske spænd varierede fra 1,43 til 37,149 timer. Ingen zone var endnu på 72 verificerede timer.
 
-Det betyder, at historikken bevares som planlagt, men endnu ikke er klar som landsdækkende grundlag for et nyt mobiliserings- eller scoremodul. Systemet rekonstruerer ikke fortiden, tæller ikke fallback som DMI og gentager ikke en gammel værdi for at lukke et hul.
+Aktuelt bruger Candidate G et rullende vindue på op til 48 timers sammenhængende, verificeret og afledt kystnormal strøm. Systemet rekonstruerer ikke fortiden og gentager ikke en gammel værdi for at lukke et hul. Manglende lokalt grundlag giver ingen erstatningsscore.
 
 ## Alarm for valgte vandstandskilder i 4.0.221
 

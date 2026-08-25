@@ -1,10 +1,10 @@
 // Compatibility markers for regression contract: Originalen kunne ikke gendannes; listHandbookReviews
-import { currentSession, requireFreshSession } from './auth-service.js?v=4.0.277';
-import { readAdminDocumentNow, saveAdminDocumentNow } from './admin-document-store.js?v=4.0.277';
-import { listProfiles } from './permissions-service.js?v=4.0.277';
-import { createHandbookReviewProbe } from './handbook-review-store.js?v=4.0.277';
+import { currentSession, requireFreshSession } from './auth-service.js?v=4.0.278';
+import { readAdminDocumentNow, saveAdminDocumentNow } from './admin-document-store.js?v=4.0.278';
+import { listProfiles } from './permissions-service.js?v=4.0.278';
+import { createHandbookReviewProbe } from './handbook-review-store.js?v=4.0.278';
 
-const DOCUMENTS=['rules','rule-history','water-level-station-routing','direction-reviews','coastline-overrides'];
+const DOCUMENTS=['water-level-station-routing','direction-reviews','coastline-overrides'];
 const clone=value=>value==null?value:structuredClone(value);
 const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 async function testDocument(key,runId){const before=await readAdminDocumentNow(key);if(!before?.payload)return{name:key,status:'skipped',detail:'Dokumentet findes endnu ikke centralt.'};const original=clone(before.payload);try{const probe={...clone(original),__ravradarPersistenceProbe:{runId,phase:'write',at:new Date().toISOString()}};let w=await saveAdminDocumentNow(key,probe,{writeLocal:false});if(!w.ok)throw w.error;let r=await readAdminDocumentNow(key);if(r?.payload?.__ravradarPersistenceProbe?.runId!==runId)throw new Error('Testmarkøren blev ikke læst tilbage.');probe.__ravradarPersistenceProbe.phase='update';w=await saveAdminDocumentNow(key,probe,{writeLocal:false});if(!w.ok)throw w.error;r=await readAdminDocumentNow(key);if(r?.payload?.__ravradarPersistenceProbe?.phase!=='update')throw new Error('Opdateringen blev ikke læst tilbage.');return{name:key,status:'passed',detail:'Skriv, læs og opdater bestået.'};}finally{const restore=await saveAdminDocumentNow(key,original,{writeLocal:false});if(!restore.ok)throw new Error(`Originalen for ${key} kunne ikke gendannes.`);const restored=await readAdminDocumentNow(key);if(!equal(restored?.payload,original))throw new Error(`Gendannelsen af ${key} kunne ikke verificeres.`);}}

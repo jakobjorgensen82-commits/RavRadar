@@ -9,6 +9,7 @@ import {
   displayNationalRankingScore,
   rankingSupportRatio,
 } from '../js/core/zone-ranking.js';
+import { buildLocalZoneScore, selectLocalBestForDay } from '../js/core/local-zone-score.js';
 
 const partsDocument = JSON.parse(fs.readFileSync('data/live/coastal-parts-v2.json', 'utf8'));
 const zones = Object.values(partsDocument.zones || {});
@@ -55,9 +56,81 @@ const tiedRows = [
 ].sort(compareNationalRankingRows);
 assert.equal(tiedRows[0].zone.id, 'smal-fuld-stoette', 'Støttevurderingen skal fortsat afgøre den reelle områdescore.');
 
+const modeSpecificCoastalParts = {
+  enabled: true,
+  generatedAt: '2026-08-25T09:00:00.000Z',
+  parts: {
+    'zone-a-part': { current: {} },
+    'zone-b-part': { current: {} },
+  },
+  zones: {
+    'zone-a': {
+      expectedPartCount: 1,
+      currentReferenceAt: '2026-08-25T09:00:00.000Z',
+      hourly: [
+        {
+          time: '2026-08-25T09:00:00.000Z',
+          waders: { status: 'whole-zone', score: 90, comparisonPartCount: 1, winningPartId: 'zone-a-part', winningPartName: 'A' },
+          beach: { status: 'whole-zone', score: 30, comparisonPartCount: 1, winningPartId: 'zone-a-part', winningPartName: 'A' },
+        },
+        {
+          time: '2026-08-25T10:00:00.000Z',
+          waders: { status: 'whole-zone', score: 85, comparisonPartCount: 1, winningPartId: 'zone-a-part', winningPartName: 'A' },
+          beach: { status: 'whole-zone', score: 35, comparisonPartCount: 1, winningPartId: 'zone-a-part', winningPartName: 'A' },
+        },
+      ],
+    },
+    'zone-b': {
+      expectedPartCount: 1,
+      currentReferenceAt: '2026-08-25T09:00:00.000Z',
+      hourly: [
+        {
+          time: '2026-08-25T09:00:00.000Z',
+          waders: { status: 'whole-zone', score: 40, comparisonPartCount: 1, winningPartId: 'zone-b-part', winningPartName: 'B' },
+          beach: { status: 'whole-zone', score: 80, comparisonPartCount: 1, winningPartId: 'zone-b-part', winningPartName: 'B' },
+        },
+        {
+          time: '2026-08-25T10:00:00.000Z',
+          waders: { status: 'whole-zone', score: 45, comparisonPartCount: 1, winningPartId: 'zone-b-part', winningPartName: 'B' },
+          beach: { status: 'whole-zone', score: 75, comparisonPartCount: 1, winningPartId: 'zone-b-part', winningPartName: 'B' },
+        },
+      ],
+    },
+  },
+};
+const modeSpecificZones = [
+  { id: 'zone-a', parts: [{ onshoreDirectionDeg: 0 }] },
+  { id: 'zone-b', parts: [{ onshoreDirectionDeg: 0 }] },
+];
+const currentModeRanking = mode => modeSpecificZones.map(zone => addNationalRanking({
+  zone,
+  result: buildLocalZoneScore({
+    coastalParts: modeSpecificCoastalParts,
+    zoneId: zone.id,
+    mode,
+    time: modeSpecificCoastalParts.zones[zone.id].currentReferenceAt,
+  }),
+}, zone.parts)).sort(compareNationalRankingRows);
+assert.equal(currentModeRanking('waders')[0].zone.id, 'zone-a', 'Den aktuelle wadersliste skal bruge wadersscoren.');
+assert.equal(currentModeRanking('beach')[0].zone.id, 'zone-b', 'Den aktuelle strandliste skal bruge strandscoren.');
+
+const dailyModeRanking = mode => modeSpecificZones.map(zone => addNationalRanking({
+  zone,
+  ...selectLocalBestForDay({
+    coastalParts: modeSpecificCoastalParts,
+    zoneId: zone.id,
+    mode,
+    date: '2026-08-25',
+  }),
+}, zone.parts)).sort(compareNationalRankingRows);
+assert.equal(dailyModeRanking('waders')[0].zone.id, 'zone-a', '5-dages waderslisten skal vælge dagens bedste wadersscore.');
+assert.equal(dailyModeRanking('beach')[0].zone.id, 'zone-b', '5-dages strandlisten skal vælge dagens bedste strandscore.');
+
 const app = fs.readFileSync('app.js', 'utf8');
 const index = fs.readFileSync('index.html', 'utf8');
 assert.ok(app.includes('compareNationalRankingRows') && app.includes('addNationalRanking'), 'Begge landslister skal bruge den faelles rangfunktion.');
+assert.match(app, /buildLocalZoneScore\(\{coastalParts:state\.conditions\.coastalParts,zoneId:zone\?\.id,mode:state\.mode,time:referenceAt\}\)/, 'Den aktuelle liste skal sende den valgte jagtform til lokal RavScore.');
+assert.match(app, /selectLocalBestForDay\(\{coastalParts:state\.conditions\.coastalParts,zoneId:zone\.id,mode:state\.mode,date\}\)/, '5-dages listen skal sende den valgte jagtform til dagens lokale RavScore.');
 assert.equal((app.match(/item\.rankingDisplayScore/g)||[]).length>=4,true,'Begge lister skal vise den samme områdescore, som de sorterer efter.');
 assert.equal(
   (index.match(/Højeste områdescore står øverst\./g) || []).length,

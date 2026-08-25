@@ -252,7 +252,7 @@ async function main(){
   const files=Object.fromEntries(Object.entries(DEFAULTS).map(([key,fallback])=>[key,value(`--${key.replace(/[A-Z]/g,m=>`-${m.toLowerCase()}`)}`,fallback)]));
   try{
     const [contract,multi,state,wind,marineInput,windInput]=await Promise.all(['contract','multi','state','wind','marineInput','windInput'].map(key=>fs.readFile(files[key],'utf8').then(JSON.parse)));
-    const publicRules=(await Promise.all(['rules/national-rules.json','rules/local-rules.json','rules/experimental-rules.json','rules/admin-active-rules.json'].map(file=>fs.readFile(file,'utf8').then(JSON.parse)))).flatMap(document=>document.rules||[]);
+    const publicRules=(await Promise.all(['rules/national-rules.json','rules/local-rules.json','rules/experimental-rules.json'].map(file=>fs.readFile(file,'utf8').then(JSON.parse)))).flatMap(document=>document.rules||[]);
     const report=buildNationalShadowScoreReport(contract,multi,state,wind,marineInput,windInput,publicRules);await fs.mkdir(path.dirname(files.output),{recursive:true});await fs.writeFile(files.output,JSON.stringify(report,null,2)+'\n');
     await Promise.all([files.marineInput,files.windInput].map(file=>fs.unlink(file)));report.transientInputsDeleted=true;await fs.writeFile(files.output,JSON.stringify(report,null,2)+'\n');
     console.log(JSON.stringify({status:report.status,scoredPartCount:report.scoredPartCount,unscoredPartCount:report.unscoredPartCount,coverageStatusCounts:report.coverageStatusCounts,scoreChanged:false}));
