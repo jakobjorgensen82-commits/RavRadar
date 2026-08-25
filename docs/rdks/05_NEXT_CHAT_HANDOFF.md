@@ -1,5 +1,14 @@
 # RavRadar – overlevering til næste chat
 
+## Kandidat 4.0.277 – native tretimerskadence
+
+- Den seneste naturlige produktion stoppede sikkert på 666/673 ved en mellemtime. Historikken var ikke tabt.
+- Rodårsagen var todelt: readiness talte en fremtidig regionalproxyprøve som aktuel, mens Candidate G skrev den naturlige mellemtime som manglende evidens.
+- 4.0.277 gør alle valg årsagstro. DMI/Copernicus kræver eksakt tid; kun de otte godkendte `dkss_lf`-proxyer må fastholde den seneste afledte transporttilstand i højst tre timer.
+- Fastholdelsen tilføjer ingen bevægelse, evidens, U/V, hastighed, retning eller pil. Næste ægte prøve bruger den faktiske tidsafstand. Over tre timer stoppes lokalt.
+- Candidate G 20/50/30 er eneste offentlige profil. Scorekurver, zoner, geometri, punkter og central admin er urørte.
+- Målrettede lokale tests er grønne. Næste handling er exact-head, merge, frisk fuld produktion og dataminimeret offentlig efterkontrol. Se DEC-0074.
+
 ## Produktionslukket 4.0.275 – Candidate G-only med lokal fail-closed zonestatus
 
 - Ejerbeslutning: Candidate G 20/50/30 er eneste offentlige scoremotor. Der findes ingen offentlig 25/40/35-fallback eller rollback. Manglende evidens gør kun den konkrete zone/søgemåde/tid utilgængelig.

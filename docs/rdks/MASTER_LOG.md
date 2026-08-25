@@ -1,3 +1,11 @@
+## 2026-08-25 – 4.0.277 årsagstro native tretimerskadence
+
+- En naturlig mellemtime stoppede sikkert på 666/673. State var ikke tabt; en fremtidig regionalproxyprøve var fejlagtigt talt som aktuel readiness, mens den timeskarpe audit afviste den.
+- Candidate G havde desuden skrevet timerne mellem de otte godkendte `dkss_lf`-proxyers ægte tretimersprøver som manglende evidens.
+- 4.0.277 tillader kun disse otte dele at fastholde den seneste afledte transporttilstand i højst tre timer. Der tilføjes ingen bevægelse, evidens, U/V, hastighed, retning eller pil.
+- Fremtidige prøver tæller aldrig. Næste ægte prøve integrerer faktisk tidsafstand; over tre timer og kontekstændringer stopper lokalt.
+- Målrettede lokale regressioner er grønne. Exact-head og frisk produktionsbevis afventer. Score, zoner, geometri, punkter og central admin er urørte. Se DEC-0074.
+
 ## 2026-08-25 – 4.0.276 punktvis bevaring af Candidate G-strømhistorik
 
 - Ejerens spørgsmål om de 48 timer udløste en dataminimeret kontrol af både kompakt Candidate G-state og den private brede Copernicus-cache.

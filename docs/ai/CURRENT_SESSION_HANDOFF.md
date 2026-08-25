@@ -1,5 +1,13 @@
 # RavRadar - aktuelt Codex-handoff
 
+## Aktuelt arbejdscheckpoint – 2026-08-25 4.0.277
+
+- Rodårsag: Ved mellemtimer for de otte ejerallowlistede `dkss_lf`-regionalproxyer kunne en fremtidig prøve tælles som aktuel readiness, mens den timeskarpe audit korrekt afviste den. Candidate G skrev samtidig den naturlige mellemtime som manglende evidens. Historikken var ikke tabt.
+- Kandidaten vælger kun strøm på eller før målreferencen. DMI/Copernicus kræver eksakt tid; kun de otte regionalproxyer må fastholde den seneste afledte transporttilstand i højst tre timer.
+- Fastholdelsen tilfører ingen bevægelse, evidens eller måling og viser ingen U/V, hastighed, retning eller pil. Næste ægte prøve integrerer faktisk tidsafstand; over tre timer stoppes lokalt.
+- Candidate G 20/50/30 er fortsat eneste offentlige profil uden legacyfallback eller rollback. Scorekurver, zoner, geometri, land-/vandpunkter og central admin er urørte.
+- Målrettede tests er grønne. Exact-head, merge, frisk produktion og offentlig efterkontrol mangler. Se DEC-0074. Senere ældre arbejdscheckpoints i denne fil er historik.
+
 ## Aktuelt arbejdscheckpoint – 2026-08-24 4.0.273
 
 - Ejerbeslutning: Candidate G med `20/50/30` er eneste offentlige scoremodel. Den historiske `25/40/35`-model må ikke længere bruges som offentlig fallback eller rollback.

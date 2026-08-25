@@ -37,9 +37,15 @@ import { applyCurrentTransportToHistory } from './lib/current-transport-history.
 import { retainWeatherHistory } from './lib/weather-history-retention.mjs';
 import { buildEffectiveRoutingCacheAlerts } from './lib/water-station-routing-alerts.mjs';
 import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
-import { selectNearestLocalScoreRow } from './lib/local-current-reference.mjs';
+import {
+  selectLatestLocalScoreRowAtOrBefore,
+} from './lib/local-current-reference.mjs';
 import { localPartRuntimeProperties } from './lib/local-part-runtime.mjs';
-import { mergeLiveCurrentPilotIntoRecord, verifiedLivePilotSource } from './lib/live-current-pilot.mjs';
+import {
+  mergeLiveCurrentPilotIntoRecord,
+  nativeCadenceHoldHoursForPart,
+  verifiedLivePilotSource,
+} from './lib/live-current-pilot.mjs';
 import { resolveProductionReferenceTime } from './lib/production-reference-time.mjs';
 import { OPEN_METEO_FUTURE_HOURS, openMeteoPastHours, trimOpenMeteoForecast } from './lib/open-meteo-forecast-window.mjs';
 
@@ -1131,6 +1137,7 @@ function scoreCoastalPartsRuntime(
       })), {
         stateKey,
         initialState: previousCoastalParts?.parts?.[part.partId]?.candidateG?.currentState ?? null,
+        nativeCadenceHoldHours: nativeCadenceHoldHoursForPart({ ...part, zoneId }, liveCurrentPilot),
       });
       const candidateGStateByTime = new Map(candidateGState.rows.map(row => [row.time, row]));
       const zone = localPartRuntimeProperties(parent.properties, part, part.partId);
@@ -1171,7 +1178,7 @@ function scoreCoastalPartsRuntime(
             ));
           }
         }
-        if (Object.keys(modes).length) scores.push({
+        if (Object.keys(candidateGModes).length) scores.push({
           time: weather.time,
           weather: {
             windSpeedMps: weather.windSpeedMps, windDirectionDeg: weather.windDirectionDeg,
@@ -1185,6 +1192,7 @@ function scoreCoastalPartsRuntime(
           candidateG: derivedState ? {
             referenceAt: weather.time,
             continuationState: derivedState.continuationState,
+            transportReferenceAt: derivedState.transportReferenceAt,
             transportMemoryReady: derivedState.transportMemoryReady,
             transportMemoryStatus: derivedState.transportMemoryStatus,
             transportMemoryCoverageHours: derivedState.transportMemoryCoverageHours,
@@ -1298,7 +1306,7 @@ function scoreCoastalPartsRuntime(
       }
       hourly.push(result);
     }
-    const currentRow = selectNearestLocalScoreRow(hourly, generatedAt);
+    const currentRow = selectLatestLocalScoreRowAtOrBefore(hourly, generatedAt);
     currentReferenceByZone.set(zoneId, currentRow?.time ?? null);
     zones[zoneId] = { expectedPartCount, scoredPartCount: rows.length, currentReferenceAt: currentRow?.time ?? null, hourly };
   }
@@ -1319,6 +1327,8 @@ function scoreCoastalPartsRuntime(
       automaticActivationAllowed: false,
       publicScoreChanged: scoreProfile.activeProfileId === CANDIDATE_G_RAVSCORE_PROFILE_ID,
       referenceAt: score.candidateG.referenceAt,
+      transportReferenceAt: score.candidateG.transportReferenceAt,
+      currentTransition: score.candidateG.publicContext?.currentTransition ?? null,
       transportMemoryReady: score.candidateG.transportMemoryReady,
       transportMemoryStatus: score.candidateG.transportMemoryStatus,
       transportMemoryCoverageHours: score.candidateG.transportMemoryCoverageHours,
@@ -1344,7 +1354,7 @@ function scoreCoastalPartsRuntime(
   }));
   const unavailableZones = [];
   for (const [zoneId, zone] of Object.entries(zones)) {
-    const current = selectNearestLocalScoreRow(zone.hourly, generatedAt);
+    const current = selectLatestLocalScoreRowAtOrBefore(zone.hourly, generatedAt);
     const unavailableModes = ['waders', 'beach'].filter(mode => current?.[mode]?.available !== true || !Number.isFinite(current?.[mode]?.score));
     if (!unavailableModes.length) continue;
     const zoneName = parentById.get(zoneId)?.properties?.name ?? zoneId;

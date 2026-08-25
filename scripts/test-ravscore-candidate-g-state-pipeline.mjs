@@ -136,6 +136,55 @@ assert.equal(nativeSecondRun.initialStateAccepted, true);
 assert.deepEqual(nativeSecondRun.continuationState, nativeThreeHourlyWindow.continuationState,
   'split and continuous native-cadence replays must be identical');
 
+const nativeCadenceHourlySamples = Array.from({ length: 52 }, (_, index) => sample(index, index % 3 === 0
+  ? {
+    currentSpeedMps: index === 51 ? 0.15 : 0,
+    currentAlignment: index === 51 ? 1 : 0,
+  }
+  : { currentSpeedMps: null, currentAlignment: null, currentVerified: false }));
+const nativeCadenceHourly = buildCandidateGDerivedStateSeries(nativeCadenceHourlySamples, {
+  stateKey: 'sha256:native-cadence-hourly',
+  nativeCadenceHoldHours: 3,
+});
+assert.equal(nativeCadenceHourly.rows[48].transportMemoryReady, true);
+assert.equal(nativeCadenceHourly.rows[49].currentTransition, 'NATIVE_CADENCE_HOLD');
+assert.equal(nativeCadenceHourly.rows[50].currentTransition, 'NATIVE_CADENCE_HOLD');
+assert.equal(nativeCadenceHourly.rows[50].transportReferenceAt, hour(48));
+assert.equal(nativeCadenceHourly.rows[50].transportPotential, 0,
+  'native-cadence hold must add no invented transport');
+assert.equal(nativeCadenceHourly.rows[51].transportPotential, 30,
+  'the next native sample must integrate its actual three-hour elapsed time');
+assert.equal(nativeCadenceHourly.rows[51].transportEvidence.length, 17,
+  'hourly placeholders must not enter the native three-hour evidence window');
+
+const nativeCadenceFirstRun = buildCandidateGDerivedStateSeries(nativeCadenceHourlySamples.slice(0, 50), {
+  stateKey: 'sha256:native-cadence-hourly',
+  nativeCadenceHoldHours: 3,
+});
+const nativeCadenceSecondRun = buildCandidateGDerivedStateSeries(nativeCadenceHourlySamples.slice(50), {
+  stateKey: 'sha256:native-cadence-hourly',
+  initialState: nativeCadenceFirstRun.continuationState,
+  nativeCadenceHoldHours: 3,
+});
+assert.equal(nativeCadenceSecondRun.initialStateAccepted, true);
+assert.deepEqual(nativeCadenceSecondRun.rows, nativeCadenceHourly.rows.slice(50),
+  'a held transport reference must survive a production-run boundary');
+
+const missedNativeStep = buildCandidateGDerivedStateSeries([
+  ...nativeCadenceHourlySamples.slice(0, 49),
+  ...[49, 50, 51, 52].map(index => sample(index, {
+    currentSpeedMps: null,
+    currentAlignment: null,
+    currentVerified: false,
+  })),
+], {
+  stateKey: 'sha256:missed-native-step',
+  nativeCadenceHoldHours: 3,
+});
+assert.equal(missedNativeStep.rows[52].currentTransition, 'UNVERIFIED_PAUSE');
+assert.equal(missedNativeStep.rows[52].transportMemoryReady, false,
+  'a real gap beyond one native step must fail closed');
+
 const neutralWindow = buildCandidateGDerivedStateSeries(
   Array.from({ length: 49 }, (_, index) => sample(index, {
     currentSpeedMps: 0,
@@ -209,6 +258,7 @@ assert.deepEqual(Object.keys(compact).sort(), [
   'schemaVersion',
   'stateKey',
   'time',
+  'transportReferenceAt',
   'transportEvidence',
   'transportMemoryCoverageHours',
   'transportMemoryReady',

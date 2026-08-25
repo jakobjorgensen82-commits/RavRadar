@@ -1,5 +1,13 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-25 – kandidat 4.0.277 årsagstro native tretimerskadence
+
+1. Den naturlige produktion stoppede sikkert på 666/673 ved en mellemtime for de otte godkendte `dkss_lf`-regionalproxyer.
+2. Historikken var bevaret. Rodårsagen var, at byggerens readiness kunne tælle en fremtidig prøve, mens Candidate G skrev mellemtimen som manglende evidens.
+3. Ejeren bad om en grundig rettelse uden ny 48-timers realtidstest og uden ændring af score, zoner eller punkter.
+4. 4.0.277 vælger kun årsagstro referencer og fastholder højst tre timer kun den afledte transporttilstand. Der opfindes ingen måling, bevægelse, U/V eller pil.
+5. Målrettede lokale tests er grønne. Exact-head og frisk produktion mangler. Se DEC-0074.
+
 ## 2026-08-24 – Candidate G-only bestod central hydrering, håndbogsdrift blev flyttet frem i kildegaten
 
 PR #135 bestod exact-head og blev merged. Den efterfølgende produktion beviste, at den centrale legacyprofil ikke længere kan genindføre 25/40/35. Produktionen stoppede senere før deploy, fordi repositoryets webhåndbog og Supabase-installationskopi reelt var forskellige; central ekspertdata var ikke indlæst i det trin. 4.0.275 synkroniserer kopien og kører samme strenge kontrol både i exact-head-kildegaten og i den fulde produktionsvalidering. Ingen score- eller geodataadfærd ændres.

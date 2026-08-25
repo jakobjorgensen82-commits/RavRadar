@@ -6,7 +6,7 @@ export const CANDIDATE_G_MEMORY_REFERENCE_SCOPE = 'CURRENT_COMMON_ZONE_REFERENCE
 
 export const PUBLIC_RAVSCORE_PROFILE_SELECTION = Object.freeze({
   schemaVersion: '2.0.0',
-  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.276',
+  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.277',
   requestedProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
   rollbackProfileId: null,
   candidateProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
@@ -65,10 +65,8 @@ export function candidateGReferenceReadiness(partRows = [], referenceTime = null
     if (scoresByRow.some(scores => scores.size === 0)) return emptyCandidateReferenceReadiness();
     const commonTimes = [...scoresByRow[0].keys()]
       .filter(time => scoresByRow.every(scores => scores.has(time)))
-      .sort((left, right) => {
-        const distance = Math.abs(Date.parse(left) - targetMs) - Math.abs(Date.parse(right) - targetMs);
-        return distance || Date.parse(left) - Date.parse(right);
-      });
+      .filter(time => Date.parse(time) <= targetMs)
+      .sort((left, right) => Date.parse(right) - Date.parse(left));
     const selectedTime = commonTimes[0];
     if (!selectedTime) return emptyCandidateReferenceReadiness();
     selectedEntries.push(...scoresByRow.map((scores, index) => ({
@@ -158,7 +156,8 @@ function buildComponentReasons(name, value, mode, context = {}) {
         ? 'Strøm væk fra kysten er begyndt at trække transportscoren ned.'
         : `Strøm væk fra kysten har reduceret transportscoren i cirka ${hours} effektiv${Number(context.outboundEpisodeEffectiveHours) === 1 ? '' : 'e'} time${Number(context.outboundEpisodeEffectiveHours) === 1 ? '' : 'r'}.`);
     } else if (phase === 'PASSIVE_NEUTRAL_DECAY') reasons.push('Strømmen giver hverken tydelig ind- eller udtransport, så tidligere opbygget transport aftager langsomt.');
-    else if (phase === 'UNVERIFIED_PAUSE') reasons.push('Der mangler en verificeret strømmåling for denne time, så den senest dokumenterede transporttilstand holdes uændret.');
+    else if (phase === 'NATIVE_CADENCE_HOLD') reasons.push('Den godkendte strømkilde måler hver tredje time. Næste måling er endnu ikke kommet, så den senest dokumenterede transporttilstand bevares uden at lægge ny bevægelse til.');
+    else if (phase === 'UNVERIFIED_PAUSE') reasons.push('Der mangler en verificeret strømmåling for denne time. Zonen får derfor ingen offentlig score, før datagrundlaget igen hænger sammen.');
     else if (rounded >= 70) reasons.push('De seneste timers samlede strømforløb giver stærke tegn på transport ind mod kysten.');
     else if (rounded >= 40) reasons.push('De seneste timers samlede strømforløb giver nogen transport ind mod kysten.');
     else if (rounded > 0) reasons.push('De seneste timers samlede strømforløb giver kun svag transport ind mod kysten.');

@@ -38,3 +38,12 @@ export function selectNearestLocalScoreRow(rows, referenceAt) {
     return distance < bestDistance ? row : best;
   }, candidates[0]);
 }
+
+export function selectLatestLocalScoreRowAtOrBefore(rows, referenceAt) {
+  const target = Date.parse(referenceAt ?? '');
+  const candidates = (rows ?? [])
+    .filter(row => Number.isFinite(Date.parse(row?.time ?? ''))
+      && (!Number.isFinite(target) || Date.parse(row.time) <= target))
+    .sort((left, right) => Date.parse(right.time) - Date.parse(left.time));
+  return candidates[0] ?? null;
+}

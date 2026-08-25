@@ -17,7 +17,7 @@ def write(path: Path, value: dict) -> None:
     path.write_text(json.dumps(value), encoding="utf-8")
 
 
-def run_builder(folder: Path) -> tuple[dict, dict]:
+def run_builder(folder: Path, at: str = "2026-08-18T15:30:00Z") -> tuple[dict, dict]:
     output = folder / "history.json"
     report = folder / "report.json"
     command = [
@@ -32,7 +32,7 @@ def run_builder(folder: Path) -> tuple[dict, dict]:
         "--control", str(folder / "control.json"),
         "--output", str(output),
         "--report", str(report),
-        "--at", "2026-08-18T15:30:00Z",
+        "--at", at,
     ]
     environment = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
     completed = subprocess.run(command, cwd=ROOT, env=environment, check=False, capture_output=True, text=True)
@@ -141,6 +141,8 @@ with tempfile.TemporaryDirectory(prefix="ravradar-live-current-") as raw_folder:
     assert len(history["entries"]) == 9
     assert all("uMps" in row and "vMps" in row for row in history["entries"])
     assert report["verifiedPartCount"] == 10 and report["coverageRequirementMet"] is True
+    assert report["exactVerifiedPartCount"] == 10
+    assert report["nativeCadenceHeldPartCount"] == 0
     assert report["partsBySelectedSource"] == {"dmi-local": 1, "copernicus-local": 1, "dmi-regional-proxy": 8}
     assert report["coverageReferenceAt"] == "2026-08-18T15:00:00Z"
     assert report["retainedHistoryPartCount"] == 10
@@ -148,11 +150,47 @@ with tempfile.TemporaryDirectory(prefix="ravradar-live-current-") as raw_folder:
     serialized = json.dumps(history).lower()
     assert "password" not in serialized and "username" not in serialized and "credential" not in serialized.replace("credentialsincluded", "")
 
+    for part in all_parts:
+        dmi_zones[f"PART::{part['partId']}"]["hourly"]["2026-08-18T16:00:00Z"] = {
+            "time": "2026-08-18T16:00:00Z"
+        }
+    dmi_zones["PART::dmi-part"]["hourly"]["2026-08-18T16:00:00Z"].update({
+        "current-u": 0.1, "current-v": 0.2, "sources": {"current": dmi_source},
+    })
+    write(folder / "dmi.json", {
+        "schemaVersion": 2, "currentVectorSemanticsVersion": 3,
+        "currentVectorSelection": selection, "currentMaxDistanceKm": 5,
+        "zones": dmi_zones,
+    })
+    cop_record_16 = {**cop_record, "validTime": "2026-08-18T16:00:00Z"}
+    write(folder / "copernicus.json", {
+        "scoreImpact": False, "publicRuntime": False, "records": [cop_record, cop_record_16],
+        "collections": [
+            {"validTime": "2026-08-18T15:00:00Z", "targetFingerprint": copernicus_fingerprint, "targetPartIds": copernicus_target_ids, "recordCount": 1},
+            {"validTime": "2026-08-18T16:00:00Z", "targetFingerprint": copernicus_fingerprint, "targetPartIds": copernicus_target_ids, "recordCount": 1},
+        ],
+    })
+    _, held_report = run_builder(folder, "2026-08-18T16:30:00Z")
+    assert held_report["verifiedPartCount"] == 10 and held_report["coverageRequirementMet"] is True
+    assert held_report["exactVerifiedPartCount"] == 2
+    assert held_report["nativeCadenceHeldPartCount"] == 8
+    assert held_report["nativeCadenceMaximumAgeHours"] == 1
+
+    future_only_anchors = json.loads(json.dumps(anchors))
+    for anchor in future_only_anchors.values():
+        anchor["samples"][0]["validTime"] = "2026-08-18T17:00:00Z"
+    write(folder / "regional.json", {"scoreImpact": False, "publicRuntime": False, "anchors": future_only_anchors})
+    _, future_only_report = run_builder(folder, "2026-08-18T16:30:00Z")
+    assert future_only_report["verifiedPartCount"] == 2
+    assert future_only_report["nativeCadenceHeldPartCount"] == 0
+    assert future_only_report["coverageRequirementMet"] is False
+    write(folder / "regional.json", {"scoreImpact": False, "publicRuntime": False, "anchors": anchors})
+
     live_control["mode"] = "dmi-only-rollback"
     write(folder / "control.json", live_control)
-    rollback_history, rollback_report = run_builder(folder)
+    rollback_history, rollback_report = run_builder(folder, "2026-08-18T16:30:00Z")
     assert rollback_history["enabled"] is False and rollback_history["mode"] == "dmi-only-rollback"
-    assert len(rollback_history["entries"]) == 9
+    assert len(rollback_history["entries"]) == 10
     assert rollback_report["verifiedPartCount"] == 10
 
     recent_history_record = {**cop_record, "validTime": "2026-08-18T14:00:00Z"}

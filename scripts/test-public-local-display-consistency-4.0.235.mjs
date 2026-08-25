@@ -100,6 +100,6 @@ assert.match(ui,/best:bestByDate\[day\.date\]\|\|unavailable\(day\)/,'Femdøgnsp
 assert.match(ui,/RavScore er midlertidigt utilgængelig/,'Manglende lokal Candidate G-score er ikke tydeligt mærket for brugeren.');
 assert.match(producer,/componentReasons:winner\.detail\?\.componentReasons/,'Producenten fører ikke vinderens forklaring med til prognosen.');
 assert.match(producer,/waterTemperatureC:weather\.waterTemperatureC/,'Producenten fører ikke vinderens vandtemperatur med til prognosen.');
-assert.match(producer,/selectNearestLocalScoreRow\(hourly, generatedAt\)/,'Producenten vælger ikke nærmeste faktiske fælles time pr. zone.');
+assert.match(producer,/selectLatestLocalScoreRowAtOrBefore\(hourly, generatedAt\)/,'Producenten vælger ikke seneste kausale fælles time ved eller før zonens visningstid.');
 
 console.log(`OK: ${zoneCount} zoner, ${partCount} kystdele og ${checkedTabs} lokale femdøgnsvisninger bruger samme vinder, tidspunkt, score, vejr og forklaring.`);

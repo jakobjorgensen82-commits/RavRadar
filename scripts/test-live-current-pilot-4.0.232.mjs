@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import { mergeLiveCurrentPilotIntoRecord, verifiedLivePilotSource } from './lib/live-current-pilot.mjs';
+import {
+  mergeLiveCurrentPilotIntoRecord,
+  nativeCadenceHoldHoursForPart,
+  verifiedLivePilotSource,
+  verifiedNativeCadenceReferenceForPart,
+} from './lib/live-current-pilot.mjs';
 import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
 import { buildFlowArrowCandidates } from '../js/map/map-view.js';
 
@@ -22,6 +27,24 @@ const live = {
   schemaVersion: 1, controlledLivePilot: true, mode: 'controlled-live', enabled: true,
   credentialsIncluded: false, entries: [copernicusEntry],
 };
+const regionalPart = { partId: 'R1', zoneId: 'ZR', waterPoint: [11, 56] };
+const regionalEntry = {
+  partId: 'R1', parentZoneId: 'ZR', validTime: '2026-08-18T12:00:00.000Z',
+  samplingPoint: regionalPart.waterPoint, provider: 'dmi', sourceClass: 'owner-approved-regional-proxy',
+  source: 'dmi-dkss-lf-regional-proxy', collection: 'dkss_lf', gridPoint: [11.1, 56],
+  distanceKm: 6.2, verticalLayer: 'depthbelowsea:5', verticalLayerRankM: 5,
+  componentPair: 'same-time-cell-layer', interpolation: false, vectorSemanticsVersion: 4,
+  uMps: 0.1, vMps: 0.2,
+};
+const regionalLive = { ...live, entries: [regionalEntry] };
+assert.equal(nativeCadenceHoldHoursForPart(regionalPart, regionalLive), 3);
+assert.equal(verifiedNativeCadenceReferenceForPart(
+  regionalPart, regionalLive, '2026-08-18T12:00:00.000Z'), true);
+assert.equal(verifiedNativeCadenceReferenceForPart(
+  regionalPart, regionalLive, '2026-08-18T13:00:00.000Z'), false,
+'a held state must reference a real native source row, not an invented intermediate hour');
+assert.equal(nativeCadenceHoldHoursForPart(part, live), 0,
+  'Copernicus entries must not receive native-cadence hold permission');
 const record = {
   model: { completeness: {
     currentVectorSemanticsVersion: 3, currentVectorSelection: dmiSource.vectorSelection,

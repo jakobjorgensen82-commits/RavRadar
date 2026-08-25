@@ -8,6 +8,8 @@
 
 **Ændrer ikke:** Candidate G's 20/50/30-formel, strøm-/mobiliseringsregler, offentlig datakontrakt, zoner, kystgeometri eller land-/vandpunkter
 
+**Efterfølgende præcisering:** DEC-0074 fastlægger den årsagstro behandling af de naturlige timer mellem de otte godkendte regionalproxyers tretimersprøver. Den præcisering ændrer ikke denne beslutnings punktvise historikbevaring.
+
 ## Problem
 
 Copernicus-cachen bandt en hel indsamlingstime til den delmængde af kystpunkter, som blev hentet i netop den kørsel. Når DMI-dækningen ændrede sig, eller ét centralt punkt blev flyttet, kunne den valgte delmængde få en ny identitet. Ved en genindsamling af samme time blev hele timen erstattet, og ældre timer kunne miste deres fælles godkendelse. Dermed kunne uændrede kystpunkter miste gyldig historik på grund af et andet punkts ændring.

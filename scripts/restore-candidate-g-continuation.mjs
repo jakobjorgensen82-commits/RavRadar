@@ -19,6 +19,7 @@ const STATE_KEYS = Object.freeze([
   'profileId',
   'stateKey',
   'time',
+  'transportReferenceAt',
   'transportPotential',
   'outboundEpisodeEffectiveHours',
   'transportMemoryReady',
@@ -28,6 +29,7 @@ const STATE_KEYS = Object.freeze([
   'transportEvidence',
   'mobilisationPotential',
 ]);
+const LEGACY_STATE_KEYS = Object.freeze(STATE_KEYS.filter(key => key !== 'transportReferenceAt'));
 
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const validTime = value => typeof value === 'string' && Number.isFinite(Date.parse(value));
@@ -54,7 +56,8 @@ function validateState(state, partId) {
     throw new Error(`Candidate G continuation mangler for kystdel ${partId}`);
   }
   const keys = Object.keys(state).sort();
-  if (JSON.stringify(keys) !== JSON.stringify([...STATE_KEYS].sort())) {
+  if (JSON.stringify(keys) !== JSON.stringify([...STATE_KEYS].sort())
+    && JSON.stringify(keys) !== JSON.stringify([...LEGACY_STATE_KEYS].sort())) {
     throw new Error(`Candidate G continuation har en uventet datakontrakt for kystdel ${partId}`);
   }
   if (state.schemaVersion !== CANDIDATE_G_STATE_SCHEMA_VERSION
@@ -63,8 +66,12 @@ function validateState(state, partId) {
     || state.profileId !== CANDIDATE_G_STATE_PROFILE_ID) {
     throw new Error(`Candidate G continuation har forkert modelidentitet for kystdel ${partId}`);
   }
+  const transportReferenceAt = state.transportReferenceAt ?? state.time;
   if (typeof state.stateKey !== 'string' || !state.stateKey
     || !validTime(state.time)
+    || !validTime(transportReferenceAt)
+    || Date.parse(transportReferenceAt) > Date.parse(state.time)
+    || (Date.parse(state.time) - Date.parse(transportReferenceAt)) / 3_600_000 > 3
     || !finite(state.transportPotential) || state.transportPotential < 0 || state.transportPotential > 100
     || !finite(state.outboundEpisodeEffectiveHours) || state.outboundEpisodeEffectiveHours < 0
     || typeof state.transportMemoryReady !== 'boolean'
@@ -88,8 +95,8 @@ function validateState(state, partId) {
     }
     previous = current;
   }
-  if (previous !== Date.parse(state.time)) {
-    throw new Error(`Candidate G transporthukommelse slutter ikke ved state-tid for kystdel ${partId}`);
+  if (previous !== Date.parse(transportReferenceAt)) {
+    throw new Error(`Candidate G transporthukommelse slutter ikke ved transportreferencen for kystdel ${partId}`);
   }
 }
 

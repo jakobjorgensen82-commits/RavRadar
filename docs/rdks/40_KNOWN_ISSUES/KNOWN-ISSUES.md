@@ -1,5 +1,11 @@
 # Kendte åbne og overvågede forhold
 
+## Kandidat 4.0.277 – native tretimerskadence
+
+- **ISSUE-CURRENT-FUTURE-REFERENCE-COUNTED-AS-CURRENT – LØST LOKALT:** En senere regionalproxyprøve kunne tælles i byggerens aktuelle dækning, selv om den timeskarpe audit korrekt afviste den. 4.0.277 vælger kun prøver på eller før målreferencen; almindelig DMI/Copernicus kræver eksakt tid.
+- **ISSUE-CANDIDATE-G-NATIVE-GAPS-WRITTEN-AS-MISSING – LØST LOKALT:** Candidate G skrev naturlige mellemtimer mellem de otte `dkss_lf`-proxyers ægte tretimersprøver som manglende evidens. 4.0.277 fastholder kun den seneste afledte transporttilstand i højst tre timer uden ny bevægelse, evidens eller synlig strømvektor. Mere end tre timer stopper fortsat lokalt.
+- **PRODUKTIONSLUKNING – ÅBEN:** Målrettede lokale tests er grønne. Exact-head, frisk 210/673-produktion og offentlig dataminimeret efterkontrol mangler.
+
 ## Produktionsverificeret 4.0.276 – punktvis bevaring af strømhistorik
 
 - **ISSUE-COPERNICUS-COLLECTION-GROUP-INVALIDATION – PRODUKTIONSVERIFICERET LØST:** En hel Copernicus-time var bundet til den dynamisk valgte indsamlingsgruppe. Skift i DMI-dækning, genindsamling eller flytning af ét punkt kunne dermed fjerne godkendelsen af uændrede punkters historik. 4.0.276 validerer den valgte delmængde mod den fulde centrale identitetsliste, erstatter kun valgte punkter og genopbygger hver times bevis fra de faktisk bevarede rækker. Exact-head `32787344926`, produktion `32787715986` og de naturlige produktioner `32788514636`/`32790639192` er grønne; live har 673/673 accepterede states og nul resets.
