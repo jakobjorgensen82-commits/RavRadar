@@ -1,4 +1,13 @@
-# AI Roadmap – RavRadar 4.0.281+
+# AI Roadmap – RavRadar 4.0.282+
+
+## P0 – eksakt native reference ved Candidate G-vinduesskift
+
+- [x] Afgræns 665/673 til de otte godkendte tretimers-regionalproxyer og bevis, at kildehistorikken ikke var tabt.
+- [x] Før kun den eksakte foregående verificerede prøve ind i state-pipelinen i højst tre timer.
+- [x] Dataminimér til tid og kystrelativ styrke uden rå U/V, koordinater eller punkt-id.
+- [x] Lås ingen-interpolation, ingen ny måling/pil og ingen mobilisering med målrettede tests.
+- [x] Dokumentér DEC-0078 og versionér til 4.0.282 med kun topversionsændring i beskyttet geodata.
+- [ ] Bestå exact-head, fuld produktion og offentlig 673-kystdelskontrol.
 
 ## Produktionsverificeret – Candidate G-native tekniske forklaringer i 4.0.281
 

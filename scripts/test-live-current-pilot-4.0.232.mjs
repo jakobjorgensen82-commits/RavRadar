@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import {
+  latestVerifiedNativeCadenceSampleForPart,
   mergeLiveCurrentPilotIntoRecord,
   nativeCadenceHoldHoursForPart,
   verifiedLivePilotSource,
@@ -38,6 +39,21 @@ const regionalEntry = {
 };
 const regionalLive = { ...live, entries: [regionalEntry] };
 assert.equal(nativeCadenceHoldHoursForPart(regionalPart, regionalLive), 3);
+const regionalReferenceSample = latestVerifiedNativeCadenceSampleForPart(
+  { ...regionalPart, onshoreDirectionDeg: 45 },
+  regionalLive,
+  '2026-08-18T13:00:00.000Z',
+);
+assert.equal(regionalReferenceSample?.time, '2026-08-18T12:00:00.000Z');
+assert.equal(regionalReferenceSample?.currentVerified, true);
+assert.ok(Number.isFinite(regionalReferenceSample?.currentSpeedMps));
+assert.ok(Number.isFinite(regionalReferenceSample?.currentAlignment));
+assert.deepEqual(Object.keys(regionalReferenceSample).sort(), [
+  'currentAlignment', 'currentSpeedMps', 'currentVerified', 'time',
+].sort(), 'referenceprøven må ikke føre rå U/V, koordinater eller kilde-id videre');
+assert.equal(latestVerifiedNativeCadenceSampleForPart(
+  { ...regionalPart, onshoreDirectionDeg: 45 }, regionalLive, '2026-08-18T16:00:01.000Z'), null,
+'a native measurement older than three hours must not seed Candidate G');
 assert.equal(verifiedNativeCadenceReferenceForPart(
   regionalPart, regionalLive, '2026-08-18T12:00:00.000Z'), true);
 assert.equal(verifiedNativeCadenceReferenceForPart(
@@ -98,6 +114,10 @@ const weatherPosition = workflow.indexOf('name: Update central weather cache');
 assert.ok(buildPosition >= 0 && buildPosition < weatherPosition, 'Livehistorikken skal bygges før score og pile.');
 assert.match(updateWeather, /mergeLiveCurrentPilotIntoRecord/);
 assert.match(updateWeather, /current-pilot-history\.json/);
+assert.match(updateWeather, /latestVerifiedNativeCadenceSampleForPart/,
+  'weather build must fetch the last exact native-cadence row before the public window');
+assert.match(updateWeather, /nativeCadenceReferenceSample/,
+  'weather build must pass the data-minimised native reference into Candidate G state');
 assert.ok(!packageRelease.includes("'data/live/*'"), 'Onlinehistorikken må ikke udelukkes af releasepakken.');
 
 console.log('OK: DMI-først, eksakt Copernicus-fletning, rigtig pilcelle og DMI-only rollback er regressionslåst.');

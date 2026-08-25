@@ -1,4 +1,17 @@
-# Implementeringsstatus – produktionsverificeret 4.0.281
+# Implementeringsstatus – kandidat 4.0.282
+
+## Kandidat 4.0.282 – luk native vinduesgrænsen uden kunstig historik
+
+- [x] Afgræns 665/673-stoppet til de otte godkendte regionalproxyers eksakte prøve umiddelbart før beregningsvinduet.
+- [x] Før kun en verificeret reference på højst tre timer ind i state-pipelinen.
+- [x] Dataminimér referencen til tid og kystrelativ styrke; rå U/V, koordinater og punkt-id'er må ikke bevares.
+- [x] Bevis, at referencen kun viderefører transport og ikke skaber ny måling, pil, mobilisering eller opdigtet mellemtime.
+- [x] Afvis en reference ældre end tre timer og bevar lokal fail-closed adfærd.
+- [x] Lås kildehjælper, state-pipeline og produktionskobling med målrettede tests.
+- [x] Dokumentér DEC-0078, version 4.0.282 og kun topversionsændring i de beskyttede geodatafiler.
+- [ ] Bestå exact-head-kildegate, merge, fuld produktionskæde og offentlig 673-kystdelskontrol.
+
+Candidate G 20/50/30, scorekurver, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er uændrede.
 
 ## Produktionsverificeret 4.0.281 – luk falske Mangler/Ukendt i Candidate G-visningen
 

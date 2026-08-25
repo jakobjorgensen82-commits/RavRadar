@@ -131,6 +131,40 @@ export function verifiedNativeCadenceReferenceForPart(part, document, referenceA
   });
 }
 
+/**
+ * Returns the latest exact, verified native-cadence measurement immediately
+ * before a production window. The result is deliberately reduced to the
+ * values Candidate G needs to derive coast-relative transport evidence; raw
+ * U/V components, coordinates and source identifiers never leave this helper.
+ */
+export function latestVerifiedNativeCadenceSampleForPart(part, document, referenceAt) {
+  const reference = canonicalTime(referenceAt);
+  const onshoreDirectionDeg = finite(part?.onshoreDirectionDeg);
+  const holdHours = nativeCadenceHoldHoursForPart(part, document);
+  if (!reference || onshoreDirectionDeg === null || holdHours !== 3) return null;
+  const referenceMs = Date.parse(reference);
+  const latest = (document.entries ?? [])
+    .map(raw => verifiedEntry(raw, part))
+    .filter(candidate => {
+      if (!candidate
+        || candidate.entry.sourceClass !== 'owner-approved-regional-proxy'
+        || candidate.entry.source !== REGIONAL_SOURCE
+        || candidate.entry.collection !== 'dkss_lf') return false;
+      const ageHours = (referenceMs - Date.parse(candidate.validTime)) / 3_600_000;
+      return ageHours > 0 && ageHours <= holdHours;
+    })
+    .sort((left, right) => Date.parse(right.validTime) - Date.parse(left.validTime))[0] ?? null;
+  if (!latest) return null;
+  const currentSpeedMps = Math.hypot(latest.uMps, latest.vMps);
+  const currentDirectionDeg = ((Math.atan2(latest.uMps, latest.vMps) * 180 / Math.PI) + 360) % 360;
+  return {
+    time: latest.validTime,
+    currentSpeedMps,
+    currentAlignment: Math.cos((currentDirectionDeg - onshoreDirectionDeg) * Math.PI / 180),
+    currentVerified: true,
+  };
+}
+
 export function mergeLiveCurrentPilotIntoRecord(record, part, document, { primaryCurrentVerified = () => false } = {}) {
   if (!record || !Array.isArray(record.hourly) || !controlledLiveCurrentEnabled(document)) return record;
   const candidates = new Map();

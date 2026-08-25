@@ -136,6 +136,33 @@ assert.equal(nativeSecondRun.initialStateAccepted, true);
 assert.deepEqual(nativeSecondRun.continuationState, nativeThreeHourlyWindow.continuationState,
   'split and continuous native-cadence replays must be identical');
 
+const nativeReferenceBootstrap = buildCandidateGDerivedStateSeries([
+  sample(52, { currentSpeedMps: null, currentAlignment: null, currentVerified: false }),
+], {
+  stateKey: 'sha256:native-three-hour-window',
+  initialState: nativeThreeHourlyWindow.continuationState,
+  nativeCadenceHoldHours: 3,
+  nativeCadenceReferenceSample: sample(51),
+});
+assert.equal(nativeReferenceBootstrap.initialStateAccepted, true);
+assert.equal(nativeReferenceBootstrap.rows[0].currentTransition, 'NATIVE_CADENCE_HOLD');
+assert.equal(nativeReferenceBootstrap.rows[0].transportReferenceAt, hour(51));
+assert.equal(nativeReferenceBootstrap.rows[0].transportMemoryReady, true);
+assert.equal(nativeReferenceBootstrap.rows[0].transportPotential, 100);
+assert.equal(nativeReferenceBootstrap.rows[0].transportEvidence.at(-1).time, hour(51));
+assert.ok(nativeReferenceBootstrap.rows[0].transportEvidence.every(item =>
+  Object.keys(item).sort().join(',') === 'strength,time'),
+'the exact native reference must immediately be reduced to data-minimised transport evidence');
+assert.throws(() => buildCandidateGDerivedStateSeries([
+  sample(56, { currentSpeedMps: null, currentAlignment: null, currentVerified: false }),
+], {
+  stateKey: 'sha256:native-three-hour-window',
+  initialState: nativeThreeHourlyWindow.continuationState,
+  nativeCadenceHoldHours: 3,
+  nativeCadenceReferenceSample: sample(51),
+}), /one exact verified sample within the allowed hold/,
+'a reference older than one native step must fail closed');
+
 const nativeCadenceHourlySamples = Array.from({ length: 52 }, (_, index) => sample(index, index % 3 === 0
   ? {
     currentSpeedMps: index === 51 ? 0.15 : 0,

@@ -1,5 +1,15 @@
 # RavRadar – overlevering til næste chat
 
+## Kandidat 4.0.282 – eksakt native reference ved nyt beregningsvindue
+
+- Den fulde produktion `32907678721` stoppede korrekt ved 665/673: de otte ejer-godkendte `dkss_lf`-regionalproxyer havde en ægte verificeret tretimersmåling umiddelbart før det aktuelle Candidate G-beregningsvindue, men den var endnu ikke en del af vinduets kompakte state.
+- Rettelsen sender kun denne eksakte foregående kilderække ind som reference, når den er verificeret, ligger før vinduet og højst er tre timer gammel.
+- Referencen reduceres straks til tidspunkt og kystrelativ transportstyrke. Den skaber ingen ny rå måling, mellemtime, pil, bevægelse eller mobilisering og fører ingen U/V, koordinater eller punkt-id'er videre.
+- Er referencen for gammel eller ugyldig, forbliver den konkrete kystdel lokalt fail-closed.
+- Målrettede tests for state-pipelinen og live-current-piloten er grønne. Versionen er 4.0.282; de beskyttede geodatafiler ændrer kun topversionsfelt 4.0.281 → 4.0.282.
+- Candidate G 20/50/30, scorekurver, 48-timershukommelse, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er uændrede. Se DEC-0078.
+- Næste trin er kilde- og RDKS-kontrol, exact-head, merge, fuld produktion og offentlig 673-kystdelskontrol.
+
 ## Kandidat 4.0.280 – korrekt orienteret Om RavRadar-billede
 
 - Offentlig kontrol af 4.0.279 viste, at familiebilledet stod på siden, fordi den tidligere konvertering ikke indarbejdede EXIF-orienteringen i pixels.

@@ -1,3 +1,10 @@
+## 4.0.282 – Eksakt Candidate G-reference ved native vinduesskift (2026-08-26)
+
+- Lukker de sidste falske **Mangler/Ukendt** for de otte godkendte tretimers-regionalproxyer, når seneste ægte prøve ligger umiddelbart før beregningsvinduet.
+- Genbruger kun en eksakt verificeret prøve på højst tre timer og kun som transportreference.
+- Dataminimerer til tid og kystrelativ styrke; ingen rå vektorer, koordinater, punkt-id'er, ny pil eller mobilisering.
+- Tilføjer målrettede tests. Candidate G 20/50/30, scorekurver, zoner, geometri og land-/vandpunkter er uændrede. Se DEC-0078.
+
 ## 4.0.281 – Candidate G-native teknisk diagnostik (2026-08-25)
 
 - Retter den tekniske scorevisning, som fejlagtigt viste **Mangler**, **Ukendt**, `–/100` og **Ikke beregnet**, fordi brugerfladen stadig læste pensionerede felter fra den gamle scoremotor.
