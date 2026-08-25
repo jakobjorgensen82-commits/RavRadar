@@ -1,13 +1,14 @@
 # AI Roadmap – RavRadar 4.0.281+
 
-## P0 nu – Candidate G-native tekniske forklaringer i 4.0.281
+## Produktionsverificeret – Candidate G-native tekniske forklaringer i 4.0.281
 
 - [x] Afgræns falske Mangler/Ukendt til forklaringsprojektionen og UI'et, ikke scoremotoren.
 - [x] Bevar Candidate G's aktuelle status, 48-timershistorik, fase og transportforklaring gennem zone- og kystdelsvisning.
 - [x] Fjern den tekniske visnings afhængighed af den pensionerede scoremotors felter.
 - [x] Forklar native tretimers-mellemtimer uden at opfinde en ny rå måling eller retning.
 - [x] Lås kontrakten med målrettede tests og DEC-0077.
-- [ ] Luk version, exact-head, produktion og offentlig landskontrol.
+- [x] Bestå PR #150/exact-head, merge `1308a07d`, fuld produktion `32899040618` og offentlig landskontrol.
+- [x] Bestå 420 aktuelle visninger, 2.100 prognosevisninger og 673 kystdelsreferencer uden fejl og uden falsk **Mangler/Ukendt** på aktive dele.
 
 Candidate G 20/50/30, scorekurver, vejrdata, zoner, geometri og land-/vandpunkter ændres ikke.
 

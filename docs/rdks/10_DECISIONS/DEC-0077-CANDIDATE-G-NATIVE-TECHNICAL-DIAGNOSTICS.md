@@ -1,6 +1,6 @@
 # DEC-0077 – Candidate G-native tekniske forklaringer
 
-**Status:** AKTIV – KANDIDAT 4.0.281
+**Status:** AKTIV – PRODUKTIONSVERIFICERET 4.0.281
 
 **Dato:** 2026-08-25
 
@@ -33,9 +33,11 @@ Fejlen lå i forklarings- og dataflowet, ikke i selve RavScore-beregningen.
 
 - En målrettet kontrakttest skal bevise felterne i både Candidate G-projektionen, zoneaggregationen og UI'et.
 - Den eksisterende scoreforklaringstest skal kontrollere, at teknisk visning ikke falder tilbage til legacyfelter.
-- Alle offentlige zoner og kyststrækninger skal efter deploy kunne åbne den samme Candidate G-native tekniske visning uden falsk **Mangler/Ukendt**.
+- Alle offentlige, beregnelige zone- og kystdelsvisninger skal efter deploy kunne åbne den samme Candidate G-native tekniske visning uden falsk **Mangler/Ukendt**. Lokalt umodne eller reelt manglende forløb skal i stedet være tydeligt utilgængelige uden tekniske skinværdier eller legacyfallback.
 - Native mellemtimer skal kontrolleres særskilt, så der ikke offentliggøres opdigtet rå retning eller måling.
 - Exact-head-kildegate og den fulde produktionskæde skal bestå før offentliggørelse.
+
+PR #150, merge `1308a07d` og produktion `32899040618` opfylder kontrollen. Den offentlige dataminimerede audit viser 1.314 komplette tekniske modeforklaringer for 657 hukommelsesklare kyststrækninger, mens 16 umodne dele er lokalt fail-closed. Browserkontrollen består 420 aktuelle visninger, 2.100 prognosevisninger og 673 kystdelsreferencer uden fejl.
 
 ## Erstattede beskrivelser
 

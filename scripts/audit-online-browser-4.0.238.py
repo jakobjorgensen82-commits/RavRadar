@@ -74,30 +74,46 @@ if (typeof window !== 'undefined') {
       const shownScore=number(panel?.querySelector('.zone-header .score-badge strong'));
       const shownLabel=panel?.querySelector('.zone-header .score-badge span')?.textContent?.trim()||'';
       const badge=panel?.querySelector('.zone-header .score-badge');
-      if(shownScore!==Number(result.score))fail('current-score',{zoneId,mode:state.mode,expected:result.score,shown:shownScore});
+      const currentAvailable=result.available===true&&finite(result.score);
+      const expectedCurrentScore=currentAvailable?Number(result.score):null;
+      if(shownScore!==expectedCurrentScore)fail('current-score',{zoneId,mode:state.mode,available:currentAvailable,expected:expectedCurrentScore,shown:shownScore});
       if(shownLabel!==String(result.label||''))fail('current-label',{zoneId,mode:state.mode,expected:result.label,shown:shownLabel});
       if(result.level&&!badge?.classList.contains(result.level))fail('current-level',{zoneId,mode:state.mode,expected:result.level,className:badge?.className||''});
-      const weatherGrid=panel?.querySelector('.metric-grid.weather-grid');
-      const shownWind=arrow(weatherGrid,'wind'),shownCurrent=arrow(weatherGrid,'current');
-      const expectedWind=rotation(weather.windDirectionDeg,'wind'),expectedCurrent=rotation(weather.currentDirectionDeg,'current');
-      if(shownWind!==expectedWind)fail('current-wind-arrow',{zoneId,mode:state.mode,expected:expectedWind,shown:shownWind});
-      if(shownCurrent!==expectedCurrent)fail('current-current-arrow',{zoneId,mode:state.mode,expected:expectedCurrent,shown:shownCurrent});
-      checkWeatherMetrics(weatherGrid,weather,'current',{zoneId,mode:state.mode});
+      const weatherGrid=panel?.querySelector(':scope > .metric-grid.weather-grid');
       const components=panel?.querySelectorAll(':scope > .component-list .component-detail').length||0;
       const reasons=panel?.querySelectorAll(':scope > .component-list .component-detail li').length||0;
-      if(components!==3||reasons<3)fail('current-components',{zoneId,mode:state.mode,components,reasons});
       const expectedCoast=Boolean(result.explanation?.transportDiagnostics?.coastTransportExplanation?.summary);
       const shownCoast=Boolean(panel?.querySelector(':scope > .coast-transport-explanation'));
-      if(expectedCoast!==shownCoast)fail('current-coast-explanation',{zoneId,mode:state.mode,expected:expectedCoast,shown:shownCoast});
       const contextText=panel?.querySelector(':scope > .display-context')?.textContent||'';
-      if(context.scope==='local'&&result.localPartName&&!contextText.includes(result.localPartName))fail('current-context',{zoneId,mode:state.mode,partName:result.localPartName,scope:context.scope});
       const debugText=panel?.querySelector('.debug-panel')?.textContent||'';
-      if(!debugText.includes(String(result.score)))fail('current-debug-score',{zoneId,mode:state.mode,score:result.score});
-      if(result.localPartId&&!debugText.includes(result.localPartId))fail('current-debug-part',{zoneId,mode:state.mode,partId:result.localPartId});
       const parts=state.conditions?.coastalParts?.zones?.[zoneId]?.expectedPartCount||state.conditions?.coastalParts?.zones?.[zoneId]?.parts?.length||0;
       const whereButton=panel?.querySelector('[data-show-local-parts]');
-      if(parts>1&&!whereButton)fail('parts-button-missing',{zoneId,mode:state.mode,parts});
-      whereButton?.click();
+      if(currentAvailable){
+        const shownWind=arrow(weatherGrid,'wind'),shownCurrent=arrow(weatherGrid,'current');
+        const expectedWind=rotation(weather.windDirectionDeg,'wind'),expectedCurrent=rotation(weather.currentDirectionDeg,'current');
+        if(shownWind!==expectedWind)fail('current-wind-arrow',{zoneId,mode:state.mode,expected:expectedWind,shown:shownWind});
+        if(shownCurrent!==expectedCurrent)fail('current-current-arrow',{zoneId,mode:state.mode,expected:expectedCurrent,shown:shownCurrent});
+        checkWeatherMetrics(weatherGrid,weather,'current',{zoneId,mode:state.mode});
+        if(components!==3||reasons<3)fail('current-components',{zoneId,mode:state.mode,components,reasons});
+        if(expectedCoast!==shownCoast)fail('current-coast-explanation',{zoneId,mode:state.mode,expected:expectedCoast,shown:shownCoast});
+        if(context.scope==='local'&&result.localPartName&&!contextText.includes(result.localPartName))fail('current-context',{zoneId,mode:state.mode,partName:result.localPartName,scope:context.scope});
+        if(!debugText.includes(String(result.score)))fail('current-debug-score',{zoneId,mode:state.mode,score:result.score});
+        if(result.localPartId&&!debugText.includes(result.localPartId))fail('current-debug-part',{zoneId,mode:state.mode,partId:result.localPartId});
+        const requiredDiagnostics=['Candidate G · 20/50/30','Forskel strøm/kyst','Strømklassifikation','Strømhistorik','Historisk fase','Samlet transportkomponent'];
+        for(const required of requiredDiagnostics){
+          if(!debugText.includes(required))fail('current-debug-contract',{zoneId,mode:state.mode,required});
+        }
+        if(/\b(?:Mangler|Ukendt)\b/i.test(debugText))fail('current-debug-placeholder',{zoneId,mode:state.mode,text:debugText.slice(0,500)});
+        if(parts>1&&!whereButton)fail('parts-button-missing',{zoneId,mode:state.mode,parts});
+        whereButton?.click();
+      }else{
+        const fallbackMetrics=[...(panel?.querySelectorAll(':scope > .metric-grid:not(.weather-grid) > .metric')||[])];
+        const expectedFallback=['Søgeforhold','Transport mod kysten','Rav i bevægelse'];
+        const shownFallback=fallbackMetrics.map(item=>({label:item.querySelector('span')?.textContent?.trim()||'',value:item.querySelector('strong')?.textContent?.trim()||''}));
+        if(weatherGrid||components||reasons||shownCoast||debugText||whereButton)fail('current-unavailable-leak',{zoneId,mode:state.mode,weather:Boolean(weatherGrid),components,reasons,coast:shownCoast,debug:Boolean(debugText),whereButton:Boolean(whereButton)});
+        if(shownFallback.length!==3||expectedFallback.some((label,index)=>shownFallback[index]?.label!==label||shownFallback[index]?.value!=='–/100'))fail('current-unavailable-components',{zoneId,mode:state.mode,shown:shownFallback});
+        if(!/RavScore er midlertidigt utilgængelig/i.test(contextText)||!/bruger ikke den gamle scoremodel/i.test(contextText))fail('current-unavailable-explanation',{zoneId,mode:state.mode,text:contextText});
+      }
       const days=groupHoursForZone(zone);
       const buttons=[...(panel?.querySelectorAll('[data-forecast-section] .forecast-score-day')||[])];
       if(buttons.length!==days.length)fail('forecast-day-count',{zoneId,mode:state.mode,expected:days.length,shown:buttons.length});
@@ -108,7 +124,13 @@ if (typeof window !== 'undefined') {
         const detail=panel?.querySelector('[data-forecast-detail]');
         const shown=number(detail?.querySelector('.score-badge strong'));
         const strip=number(buttons[index]?.querySelector('.day-score'));
-        if(!expected||shown!==Number(expected.result?.score)||strip!==Number(expected.result?.score))fail('forecast-score',{zoneId,mode:state.mode,index,date:days[index].date,expected:expected?.result?.score,shown,strip});
+        const forecastAvailable=expected?.result?.available===true&&finite(expected?.result?.score);
+        const expectedForecastScore=forecastAvailable?Number(expected.result.score):null;
+        if(shown!==expectedForecastScore||strip!==expectedForecastScore)fail('forecast-score',{zoneId,mode:state.mode,index,date:days[index].date,available:forecastAvailable,expected:expectedForecastScore,shown,strip});
+        const forecastBadge=detail?.querySelector('.score-badge');
+        const stripBadge=buttons[index]?.querySelector('.day-score');
+        const expectedLevel=forecastAvailable?expected.result.level:'unavailable';
+        if(expectedLevel&&(!forecastBadge?.classList.contains(expectedLevel)||!stripBadge?.classList.contains(expectedLevel)))fail('forecast-level',{zoneId,mode:state.mode,index,date:days[index].date,expected:expectedLevel,detailClass:forecastBadge?.className||'',stripClass:stripBadge?.className||''});
         const grid=detail?.querySelector('.metric-grid.weather-grid');
         const ew=rotation(expected?.hour?.windDirectionDeg,'wind'),ec=rotation(expected?.hour?.currentDirectionDeg,'current');
         const sw=arrow(grid,'wind'),sc=arrow(grid,'current');
@@ -123,6 +145,10 @@ if (typeof window !== 'undefined') {
         if(expectExplanation!==hasExplanation)fail('forecast-coast-explanation',{zoneId,mode:state.mode,index,date:days[index].date,expected:expectExplanation,shown:hasExplanation});
         const displayContext=detail?.querySelector('.display-context')?.textContent||'';
         if(expected?.displayScope==='local'&&expected.result?.localPartName&&!displayContext.includes(expected.result.localPartName))fail('forecast-context',{zoneId,mode:state.mode,index,date:days[index].date,partName:expected.result.localPartName});
+        if(!forecastAvailable){
+          const detailText=detail?.textContent||'';
+          if(!/Der kan ikke vælges et bedste tidspunkt, fordi der mangler data/i.test(detailText)||!/RavScore er midlertidigt utilgængelig/i.test(displayContext)||!/bruger ikke den gamle scoremodel/i.test(displayContext))fail('forecast-unavailable-explanation',{zoneId,mode:state.mode,index,date:days[index].date,detail:detailText.slice(0,500),context:displayContext});
+        }
       }
       return {zoneId,days:days.length,parts};
     }
