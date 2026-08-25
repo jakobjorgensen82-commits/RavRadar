@@ -1,5 +1,15 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-25 – kandidat 4.0.278 pensionerer Regelværkstedet og retter hele ekspert-håndbogen
+
+1. Ejeren bad om at få hele ekspert-håndbogen sammenholdt med hele RavRadar og stillede spørgsmål ved, om Regelværkstedet realistisk kunne ændre scoren sikkert.
+2. Kodegennemgangen viste, at værkstedet testede enkle øjebliksbilleder, mens den aktive Candidate G-motor kræver 48-timers state, lokale datagater og flere bindende invariants. Den offentlige Candidate G-kæde indlæste heller ikke værkstedets regelfil.
+3. Regelværksted og Vidensbase udgår derfor af aktiv admin sammen med regelrettigheder og offentlig regelpublicering. Eksisterende kladder slettes ikke.
+4. Ekspertens review forbliver den faglige indgang. Scoreændringer gennemføres versionsstyret i Candidate G-kode, RDKS, tests, exact-head og produktion.
+5. Markdown-håndbog, webhåndbog, systemspecifikation og regelmotordokumentation er gennemgået samlet mod den aktive 20/50/30-model. Se DEC-0075.
+6. Ejeren godkendte versionsløftet 4.0.277 → 4.0.278 med kun versionsfeltet ændret i `data/kystdata.json` og `data/zones.geojson`.
+7. Den naturlige kontrol nåede 657/673 kyststrækninger med 48 timer og 205/210 aktive zoner uden nye resets ved kørselsskift.
+
 ## 2026-08-25 – kandidat 4.0.277 årsagstro native tretimerskadence
 
 1. Den naturlige produktion stoppede sikkert på 666/673 ved en mellemtime for de otte godkendte `dkss_lf`-regionalproxyer.

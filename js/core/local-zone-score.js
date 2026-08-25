@@ -1,4 +1,4 @@
-import { scoreRating } from './score-engine.js?v=4.0.277';
+import { scoreRating } from './score-engine.js?v=4.0.278';
 
 const finite = value => Number.isFinite(Number(value));
 const coverageReason = value => Number(value?.comparisonPartCount) <= 1

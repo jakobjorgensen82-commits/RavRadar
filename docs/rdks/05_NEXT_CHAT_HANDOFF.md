@@ -1,5 +1,14 @@
 # RavRadar – overlevering til næste chat
 
+## Aktiv kandidat 4.0.278 – Regelværksted pensioneret
+
+- Regelværkstedet var ikke en sikker vej til offentlig score: dets øjeblikstest kunne ikke validere Candidate G's 48-timersstate, lokale datagater, transport-nul, wadersloft eller øvrige invariants.
+- Regelværksted, Vidensbase, regelrettigheder og den offentlige regelfil fjernes fra den aktive kæde. Historiske centrale og lokale kladder bevares urørt uden runtimeeffekt.
+- Eksperten indsender fortsat faglige kommentarer i håndbogen. Accepterede scoreændringer går gennem Candidate G-kode, RDKS, målrettede tests, exact-head, produktion og offentlig kontrol.
+- Hele ekspert-håndbogen er rettet mod Candidate G 20/50/30, aktiv 48-timersstate, lokal fail-closed og fraværet af legacyfallback. Se DEC-0075.
+- Installationskopi, målrettede tests og RDKS-gate er lokale kandidater; PR-/produktionslukning er næste trin. Score og geodata er urørte bortset fra ejerens godkendte versionsfelt 4.0.277 → 4.0.278 i de to beskyttede filer.
+- Seneste naturlige kontrol viser 657/673 kyststrækninger med 48 timers historik, 205/210 aktive zoner og ingen nye resets ved kørselsskift. De resterende lokale kæder fortsætter naturligt.
+
 ## Produktionslukket 4.0.277 – native tretimerskadence
 
 - Den seneste naturlige produktion stoppede sikkert på 666/673 ved en mellemtime. Historikken var ikke tabt.

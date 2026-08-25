@@ -1,5 +1,16 @@
 # Current truth – gældende projektviden
 
+## Kandidat 4.0.278 – Regelværkstedet udgår
+
+- Regelværkstedet var ikke koblet sikkert til den offentlige Candidate G-motor. Dets enkle øjeblikstest kunne ikke gennemføre 48-timershistorik, lokale datagater, transport-nul, wadersloft eller de øvrige bindende invariants.
+- En regel kunne derfor se grøn ud i admin uden at være et gyldigt bevis for en offentlig scoreændring. Funktionen var misvisende og udgår af den aktive adminflade og rettighedsmodel.
+- Produktionsworkflowet må ikke længere fremstille `rules/admin-active-rules.json`, og den offentlige app må ikke indlæse filen. Det gamle browserværksted, regelmotoren, regeltjenesten og regelfilerne udelukkes fra Pages-artifactet. Historiske centrale og lokale regelkladder samt forskningskilder slettes ikke; de bevares i repositoryet som arbejdshistorik uden runtimeeffekt.
+- Faglige forslag indsendes fortsat gennem ekspertens håndbogsreview. En accepteret scoreændring skal derefter ind i Candidate G-koden, RDKS, målrettede scenarietests, exact-head-kildegate, fuld produktionsgate og offentlig efterkontrol.
+- Hele ekspert-håndbogen er gennemgået mod den aktive 20/50/30 Candidate G-kæde. Historiske kandidater er mærket som historik, og beskrivelser af aktiv regelpublicering er fjernet. Se DEC-0075.
+- Både den aktuelle liste over bedste områder og hver dag i 5-dages prognosen beregnes særskilt for den valgte jagtform. Livekontrollen viser, at listerne kan være ens under rolige forhold, fordi transport og rav i bevægelse er fælles, og små forskelle i søgeforhold kan forsvinde ved afrunding. På prognosedage med større forskel mellem strand og waders bliver listerne forskellige. En målrettet regressionstest låser begge beregningsveje.
+- Rettelsen ændrer ikke RavScore, vejrregler, zoner, geometri, land-/vandpunkter eller centrale admin-data.
+- Ejeren har godkendt, at de beskyttede `data/kystdata.json` og `data/zones.geojson` kun ændrer versionsfelt fra 4.0.277 til 4.0.278. Ingen øvrige geodata ændres.
+
 ## Produktionsverificeret 4.0.277 – native tretimerskadence uden falske mellemtimer
 
 - Candidate G med **20 % søgeforhold, 50 % transport og 30 % rav i bevægelse** er fortsat den eneste offentlige scoremodel; legacyfallback er forbudt, og rollbackprofilen er `null`.
@@ -11,8 +22,8 @@
 - PR #140 bestod exact-head `32816129342` på `35c8b7fb` og blev merged som `d3b4542f`.
 - Første produktion `32816237198` byggede den bevarede strømhistorik, frisk vejr og den offentlige runtime grønt. Den fulde validering stoppede derefter sikkert før deploy, fordi en ældre statisk test stadig søgte efter det tidligere dækningsfeltnavn. Selve produktionsauditen brugte allerede den nye, korrekte 673-kontrakt.
 - PR #141 rettede kun den statiske testkontrakt, bestod exact-head `32817501003` på `128c71ce` og blev merged som `81e9b891`. Produktion `32817626537` bestod hele kæden inklusive fuld validering, releasegate, artifact og Pages.
-- Offentlig 4.0.277 har 673/673 udgivne Candidate G-states, 673 accepterede fortsættelser, nul resets og 12–45 timers lokal historik. Profilen er alene 20/50/30; rollbackprofilen er `null`, og legacyfallback er forbudt.
-- 0/210 zoner var endnu aktive ved efterkontrollen, fordi den længste lokale kæde var 45 timer. Zoner åbner enkeltvis ved ægte 48 timer; dette er naturlig drift og ikke en ny udviklings- eller realtidstest.
+- Den seneste offentlige kontrol har 673/673 udgivne Candidate G-states, 673 accepterede fortsættelser og ingen nye resets ved kørselsskift. Profilen er alene 20/50/30; rollbackprofilen er `null`, og legacyfallback er forbudt.
+- 657/673 kyststrækninger har nået 48 timers naturlig historik, og 205/210 zoner er aktive. De resterende 16 lokale kæder har 15–23 timer og fortsætter naturligt uden backfill, interpolation eller modelskift.
 
 ## Produktionsverificeret 4.0.276 – strømhistorik bevares pr. kystpunkt
 
@@ -69,7 +80,7 @@
 - PR #131 blev merged som `1bbb4cc2`. PR #132 bevarede den gamle hydratorindgang uden runtimeændring og blev merged som `392fea15`.
 - Produktion `32761751284` bestod central hydrering, frisk vejr/state, fuld validering, releasegate og Pages-deploy. Live `rr-20260824183620-210` er version 4.0.272 på 210/673.
 - Den offentlige top-5 viser igen normale, faldende områdescorer 76, 74, 72, 72 og 71; femdøgnslisten viser 86, 84, 83, 76 og 76. Det landsdækkende 17/18-kollaps er væk.
-- Den aktuelle runtime har 672 accepterede states og én lovlig lokal kontekstreset efter punktpar 2. Otte aktuelle missing-evidence-huller fandtes allerede i den sunde recoverykilde; derfor viser hele runtime midlertidigt den sammenhængende legacyreserve 25/40/35. Der blandes ikke profiler, og der opfindes ingen strøm.
+- **Historisk status ved 4.0.272:** Runtime havde 672 accepterede states og én lovlig lokal kontekstreset efter punktpar 2. Otte missing-evidence-huller fandtes allerede i den sunde recoverykilde, og den daværende runtime viste derfor midlertidigt den sammenhængende legacyreserve 25/40/35. DEC-0072 har siden fjernet denne reserve fra den offentlige runtime.
 
 ## Produktionsverificeret 4.0.271 – samlet feltrettelse af Grundbog i ravjagt
 
@@ -91,7 +102,7 @@
 - En falsk rød status for `coastline-overrides` i den første adminoversigt er rettet ved at kontrollere alle fem centrale dokumenter.
 - Offentlige lister bevarer DEC-0049's lotterikorrektion og viser den afrundede områdescore, de faktisk sorterer efter. Højeste viste områdescore står derfor øverst; detailvisningen viser fortsat bedste kyststræknings almindelige RavScore.
 - Begge håndbøger beskriver den aktive Candidate G-model som 20 % søgeforhold, 50 % transport og 30 % rav i bevægelse. Arbejdsplan, kodekapitel, scenarier og hypoteseregister følger den faktiske aktive motor; ældre kandidater er tydeligt mærket som historik.
-- Releasegaten kræver aktive Candidate G-spor og kontrollerer den aktive motor særskilt fra den globale 25/40/35-rollback.
+- **Historisk 4.0.270-gate:** Releasegaten kontrollerede dengang Candidate G særskilt fra den globale 25/40/35-rollback. DEC-0072 har siden fjernet rollbackprofilen; den aktuelle gate kræver Candidate G-only og lokal fail-closed-adfærd.
 - Versionsværktøjet synkroniserer nu hele den aktuelle webhåndbog til installationsfilen til Supabase, så en ny installation ikke starter med forældet faglig tekst.
 - PR #122 bestod exact-head `32721778498` på `a885bc5b` og blev merged som `abe10127`. Produktion `32721891349` stoppede før Supabase- og Pages-deploy, da den centralt ændrede håndbog manglede en lagret baseline ved første migrering.
 - PR #123 bestod exact-head `32724526697`, blev merged som `00f59456`, og produktion `32724616331` bestod alle kode-, data- og releasegates. Den stoppede før deploy, fordi den slanke Pages-pakke ikke udgiver håndbogens kildefil; ingen central håndbog eller offentlig side blev overskrevet.
@@ -107,7 +118,7 @@
 - Lavt og stigende vand kan forekomme samtidig; kun stigningen beskrives som mulig hjælp til at føre materiale længere ind. En fast lavvandsprofil i reserveberegningen mærkes som en fast egenskab.
 - Den offentlige **Fundprognose** er skjult, fordi to ture ikke kan bære en troværdig procentchance. Observationer og intern læring bevares. **Anvendte scorelofter** og rå **Samlet score**-JSON er skjult, mens bagvedliggende teknisk logik består.
 - Det tomme **Vælg et område på kortet**-felt er fjernet uden ændring af kortvalg. Kilde- og licensafsnittet følger den faktiske DMI-/Copernicus-/dokumenterede fallback- og kortkæde.
-- Candidate G er fortsat aktiv 20/50/30. Ejerens 25/40/35-billede svarer til en kort global reservevisning; næste naturlige produktion viste igen Candidate G på 210/673. Den globale, ikke-blandede reserve bevares, og 4.0.269 forklarer begge profiler korrekt.
+- **Historisk status ved 4.0.269:** Candidate G var aktiv 20/50/30, men runtime kunne kort vise en global, ikke-blandet 25/40/35-reserve. DEC-0072 har siden fjernet denne reserve, så et lokalt datahul nu kun skjuler den berørte Candidate G-score.
 - Ingen scoretal, Candidate G-regel, vejrdata, Supabase-kontrakt, geometri eller land-/vandpunkter er ændret. De to geodatafiler ændrede kun versionsfeltet.
 - PR #120 bestod exact-head `32703138969` på `37de330c` og blev merged som `d745e0ba`. Produktion `32703271897` udgav live `rr-20260824080543-210` som 4.0.269 efter grøn central hydrering, frisk DMI/strøm, fuld validering, releasegate og Pages.
 - Den fulde offentlige browseraudit bestod 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer uden kontrol-, konsol-, side- eller HTTP-fejl. Se DEC-0068.
@@ -1214,7 +1225,7 @@ Følgende punkter dokumenterer de tidligere private gates. Deres formuleringer o
 - Lokale nødkladder kan findes, gensendes, eksporteres og slettes.
 - Ejerens implementering af et review gemmer den centrale håndbog og verificerer readback, før reviewet markeres implementeret.
 - Dokumentationscenteret giver adgang til RDKS-kernedokumenterne.
-- Model-forslag er lokale browsermodeller, indtil de særskilt indarbejdes i en versioneret produktionsrelease.
+- Kalibreringsgrundlaget er skrivebeskyttet og viser kun, om turdata senere kan bruges i en kontrolleret faglig analyse. Det kan ikke ændre Candidate G, den offentlige RavScore eller en lokal scoremodel.
 - En funktion regnes ikke som implementeret alene fordi kode eller database findes; den synlige brugerrejse skal bestå.
 
 ## Kortpile, admin-kort og modulversionering – 4.0.87

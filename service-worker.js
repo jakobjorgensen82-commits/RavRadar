@@ -1,11 +1,10 @@
-const APP_VERSION = "4.0.277";
+const APP_VERSION = "4.0.278";
 const CACHE_PREFIX = "ravradar-app-";
 const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}`;
 const STATIC = [
   "./","./index.html","./learn.html","./admin.html",`./learn.css?v=${APP_VERSION}`,`./admin.css?v=${APP_VERSION}`,`./js/ui/admin-dashboard.js?v=${APP_VERSION}`,`./style.css?v=${APP_VERSION}`,`./bootstrap.js?v=${APP_VERSION}`,`./app.js?v=${APP_VERSION}`,
   "./config.js","./manifest.webmanifest","./version.json",`./data/zones.geojson?v=${APP_VERSION}`,"./data/model.json",
-  "./js/core/score-engine.js","./js/core/rule-engine.js","./js/core/adaptive-model.js","./js/core/prediction-engine.js",
-  "./js/services/rule-service.js","./rules/national-rules.json","./rules/local-rules.json","./rules/experimental-rules.json","./rules/admin-active-rules.json",
+  "./js/core/score-engine.js","./js/core/adaptive-model.js","./js/core/prediction-engine.js",
   "./js/services/data-service.js","./js/services/zone-registry.js","./js/services/auth-service.js","./js/services/trip-service.js","./js/services/observation-service.js","./js/services/learning-analysis.js","./js/services/historical-analysis.js","./js/services/storage-safety.js",
   "./js/map/map-view.js","./js/ui/info-panel.js","./js/ui/account-panel.js","./js/ui/developer-panel.js"
 ];

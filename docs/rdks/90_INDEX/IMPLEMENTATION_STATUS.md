@@ -1,4 +1,20 @@
-# Implementeringsstatus – kandidat 4.0.277 årsagstro native kadence
+# Implementeringsstatus – kandidat 4.0.278 Regelværksted og ekspert-håndbog
+
+## Kandidat 4.0.278 – retire aktivt Regelværksted
+
+- [x] Bevis, at Regelværkstedets test og publicering ikke kunne validere den aktive Candidate G-tilstandsmotor og dens bindende invariants.
+- [x] Fjern Regelværksted og Vidensbase fra den aktive adminnavigation samt de tre regelrettigheder fra rollemodellen.
+- [x] Fjern offentlig indlæsning og workflow-generering af `rules/admin-active-rules.json`.
+- [x] Bevar historiske centrale og lokale regelkladder urørt som arbejdshistorik uden offentlig scoreeffekt.
+- [x] Gennemgå hele ekspert-håndbogen mod faktisk kodeadfærd og beskriv Candidate G 20/50/30, 48-timers state, lokal fail-closed og versionsstyret scoreændring korrekt.
+- [x] Tilføj kilde- og releasekontrakter, som afviser genindførsel af det aktive Regelværksted eller den offentlige regelfil.
+- [x] Hold det pensionerede browserværksted, regelmotoren, regeltjenesten og regelfilerne ude af Pages-artifactet, men bevar forskningskilderne i repositoryet.
+- [x] Synkronisér håndbogens statiske installationskopi, kør målrettede tests og RDKS-validering.
+- [x] Kontrollér, at både den aktuelle liste og 5-dages prognosen bruger den valgte jagtform, og lås begge veje med en målrettet regressionstest.
+- [x] Sæt version 4.0.278 og verificér, at de to beskyttede geodatafiler kun ændrer versionsfelt fra 4.0.277.
+- [ ] Luk ændringen gennem exact-head, merge, produktion og offentlig efterkontrol.
+
+Ingen scoreformel, zone, geometri, land-/vandpunkt eller central adminpost ændres af rettelsen. Se DEC-0075.
 
 ## Implementeret og målrettet verificeret
 

@@ -1,153 +1,64 @@
-# RavRadar System Specification 1.0
+# RavRadar – gældende systemspecifikation
 
-Status: integreret arkitekturgrundlag  
-Projektversion: 2.6.27  
-Formål: gøre RavRadar klar til regelstyret ekspertviden, Supabase-synkronisering, analyse af brugerfund og løbende forbedring af RavScore.
+Denne specifikation beskriver den aktive 4.0.277-arkitektur. RDKS er fortsat bindende ved konflikt.
 
-## 1. Grundprincipper
+## Offentlig scoremotor
 
-RavRadar skal bevare sin offline-first PWA-adfærd. Supabase er senere systemets synkroniserings- og analysetjeneste; telefonen fungerer fortsat som lokal cache og kan bruges uden forbindelse.
+RavRadar anvender kun Candidate G som offentlig scoreprofil:
 
-Systemets viden holdes i tre adskilte klasser:
+- søgeforhold: 20 %;
+- transport mod kysten: 50 %;
+- rav i bevægelse: 30 %.
 
-1. **Dokumenteret viden** – fysik, meteorologi, oceanografi, kystprocesser og verificerbare kilder.
-2. **Ekspertviden** – erfaringer fra administratoren og identificerede ravjægere.
-3. **Databaserede hypoteser** – mønstre udledt af registrerede fund og samtidige/historiske miljødata.
+Den gamle 25/40/35-profil er ikke en offentlig fallback. `legacyPublicFallbackAllowed` er `false`, og der findes ingen rollbackprofil i den offentlige profilvælger.
 
-Ingen regel må være aktiv uden kilde, geografisk gyldighed, version og tillidsniveau.
+Candidate G beregnes i `js/core/ravscore-candidate-g.js`. Tilstandshistorikken og dens videreførelse ligger i `js/core/ravscore-candidate-g-state-pipeline.js`. Profilkontrakten ligger i `js/core/ravscore-profile-switch.js`.
 
-## 2. Tillidsniveau
+## Fysiske hoveddele
 
-Kun tre værdier må anvendes i hele systemet:
+### Søgeforhold
 
-- `lav`
-- `mellem`
-- `stor`
+Vurderer hvor let det er at lede på den valgte måde. Strandjagt kan bevare en høj samlet score ved kraftig vind, når transport og mobilisering er gode. Ved wadersjagt reduceres scoren trinvist over 6 m/s, fordi vindskabte krusninger gør det sværere at se gennem vandet; 15 m/s giver 0 i waders-søgeforhold.
 
-Tillidsniveauet er en administrativ vurdering og må ikke forveksles med statistisk sandsynlighed. En regel ændrer aldrig automatisk sit tillidsniveau; systemet kan foreslå en ændring, men administratoren godkender den.
+### Transport mod kysten
 
-## 3. Systemlag
+Den bundnære strøm vurderes mod den lokale kystretning. Pålandskomponenten og varigheden af det sammenhængende forløb er centrale. Kraftig fralandsstrøm reducerer transporten glidende fra første time; efter 13 sammenhængende timer går transporten i 0. Når transport er 0, er den samlede RavScore 0, selv om der fortsat kan være mobilisering og gode søgeforhold.
 
-### 3.1 Klient/PWA
-Viser kort, zoner, score, ture, observationer og forklaringer. Gemmer brugerens data lokalt og synkroniserer senere med Supabase.
+### Rav i bevægelse
 
-### 3.2 Vejrpipeline
-Prioritet:
+Vurderer om bølgeenergi kan have løsnet eller genmobiliseret tilgængeligt rav. Virkningen huskes og aftager over tid. Bølger er ikke hovedtransportøren mod kysten; strømmen står for transporten, mens bølger især kan mobilisere og hjælpe materiale over lokale barrierer eller op på stranden.
 
-1. DMI
-2. Open-Meteo Marine
-3. MET Norway
-4. senest gyldige cache
+## Data og lokal geografi
 
-Vejrinput normaliseres til et fælles snapshot-format, så algoritmen og analysen ikke afhænger af den konkrete leverandør.
+- Hver aktiv kyststrækning har et havpunkt og et landpunkt, der fastlægger den lokale retning mod land.
+- Aktuelle strømdata rekonstrueres eller interpoleres ikke.
+- DMI-strøm accepteres inden for den normale lokale afstandskontrakt.
+- Copernicus Baltic/AMM15 kan anvendes inden for den dokumenterede afstandskontrakt.
+- Kun de otte godkendte `dkss_lf`-proxyer må bruge den særskilte 15 km-kontrakt. Proxyen skal have samme eksakte tidspunkt; en allerede dokumenteret afledt tilstand må højst holdes tre timer og må ikke opfinde strømstyrke, retning eller pil.
+- Manglende nødvendig lokal strømtilstand lukker den berørte kyststrækning eller zone fail-closed. Andre zoner fortsætter med Candidate G.
+- Uændrede punktmål bevarer deres historik på tværs af produktionskørsler. Flyttes et hav- eller landpunkt, nulstilles kun historikken for det ændrede punktmål.
 
-### 3.3 Basisscore
-Den eksisterende RavScore beregner en fysisk/operationel score ud fra jagtbarhed, transport og frigivelse.
+## Produktionskæde
 
-### 3.4 Regelmotor
-Regelmotoren anvender geografiske, tidslige og miljømæssige betingelser oven på basisscoren. Regler kan give bonus, straf, fastholde en tidligere effekt eller markere utilstrækkelige data.
+1. Centralt gemt administratorgeometri og routing hydreres.
+2. Seneste verificerede Candidate G-tilstand hentes.
+3. Friske vejr- og havdata indlæses med provenance og tidskontrol.
+4. Score og forklaringer beregnes for kyststrækninger og zoner.
+5. Kildevalidering, fuld produktionsvalidering og releasegate skal bestå.
+6. Det offentlige artifact deployes og verificeres på den mergede commit.
 
-### 3.5 Observations- og analysemotor
-Et fund kobles til det aktuelle miljøsnapshot og historiske vind-, bølge-, strøm- og vandstandsforløb. Data kan eksporteres til analyse uden direkte personidentifikation.
+## Administratorfunktioner
 
-### 3.6 Administration
-Administrator kan oprette, versionere, teste, aktivere og deaktivere regler; eksportere data; kontrollere datakvalitet; og sammenligne score med faktiske fund.
+Adminfladen kan blandt andet kontrollere datakvalitet, vandstandsstationer, zoner, kystlinjer, hav-/landretning, observationer, læringsdækning, eksperter, håndbog og systemstatus.
 
-## 4. Regeltyper
+Det tidligere Regelværksted er pensioneret. Centralt gemte regeludkast slettes ikke, men indlæses ikke som aktive adminfunktioner, publiceres ikke og påvirker ikke RavScore. Ekspertviden indsendes via håndbogens review og kan kun ændre scoren gennem kode, RDKS, tests, pull request og deployment.
 
-- `bonus`: lægger point til basisscoren.
-- `penalty`: trækker point fra basisscoren.
-- `persistence`: fastholder ravpotentiale i en periode, selv om andre forhold bliver mindre gunstige.
-- `gate`: kræver at en betingelse er opfyldt, før en anden regel må påvirke scoren.
-- `override`: erstatter en delberegning i en klart afgrænset situation.
-- `annotation`: ændrer ikke score, men giver forklaring/advarsel.
+## Brugerdata og læring
 
-En regel må som udgangspunkt ikke ændre samlet score med mere end 20 point uden eksplicit administratorgodkendelse og dokumenteret begrundelse.
+Brugere kan gemme ture og fund i Supabase. Turens relevante vejrsnapshot gemmes sammen med indberetningen til senere, pseudonymiseret analyse. Den præcise GPS-rute gemmes ikke.
 
-## 5. Regelprioritet og konflikter
+Læringsmodulet måler aktuelt kun datadækning. Det ændrer ikke automatisk vægte, regler, zoner eller score. En fremtidig kalibrering kræver dokumenteret søgeindsats, uforanderligt forecastlink, tidsmæssig test, geografisk hold-out og en særskilt RDKS-godkendelse.
 
-Regler evalueres i denne rækkefølge:
+## Sandhedskilder
 
-1. datakvalitet og sikkerhed
-2. gates
-3. lokale overrides
-4. persistence-regler
-5. bonus/penalty
-6. annotationer
-
-Mere specifik geografi vinder over bredere geografi. Ved samme specificitet vinder højere prioritet; derefter nyeste godkendte version. Alle anvendte regler logges i scoreforklaringen.
-
-## 6. Persistence: "rav bliver liggende"
-
-En persistence-regel beskriver, at gunstige tidligere forhold kan have placeret rav i en zone, og at potentialet bevares i et tidsrum, når efterfølgende forhold ikke forventes at fjerne eller begrave det.
-
-Reglen skal kunne udtrykke:
-
-- geografisk område
-- historisk vindretning og maksimal/minimal styrke
-- historisk strømretning og styrke
-- nødvendigt varighedsvindue
-- efterfølgende maksimum for vind/bølge/strøm
-- varighed af fastholdelsen
-- gradvis nedtrapning eller fast effekt
-- forhold der straks annullerer effekten
-
-## 7. Observationer
-
-Et brugerfund skal kunne registrere:
-
-- zone og eventuelt GPS med kontrolleret præcision
-- observationstidspunkt
-- jagtform
-- resultatkategori og valgfri vægt
-- RavScore og scoreforklaring på tidspunktet
-- vejr-/havsnapshot
-- historiske aggregeringer: 6, 12, 24, 48 og 72 timer
-- anvendte regelversioner
-- datakvalitet og kilde pr. måling
-
-Ingen billeder er påkrævet eller understøttet i den nuværende observationstype.
-
-## 8. Analyseudtræk
-
-Systemet skal kunne eksportere pseudonymiserede CSV- og JSONL-filer med én række pr. observation og flade analysefelter. Direkte bruger-id, mail og præcis rå GPS må ikke indgå i standardudtræk.
-
-Minimumsfelter:
-
-- observation_id
-- zone_id
-- observed_at
-- result og grams
-- basis_score, rule_adjustment, final_score
-- vind/strøm/bølge/vandstand nu
-- cirkulære retningsfeatures og historiske aggregater
-- sæson, time på dagen og tid siden markant hændelse
-- anvendte regel-id/versioner
-
-## 9. Algoritmeudvikling
-
-Data bruges i tre trin:
-
-1. eksplorativ analyse og datakvalitetskontrol
-2. test af på forhånd formulerede hypoteser
-3. kontrolleret A/B- eller shadow-evaluering af ny algoritme
-
-En model eller regel må ikke sættes i produktion alene på baggrund af træningsdata. Der skal bruges tidsopdelt validering og helst geografisk hold-out, så modellen ikke blot husker enkelte zoner.
-
-## 10. Supabase-arkitektur
-
-Den medfølgende SQL er udvidet med fremtidige tabeller for regelkatalog, regelversioner, scoreevalueringer, vejrhistorik og eksportjobs. Klienten må ikke få administrative rettigheder. Regelændringer foretages via admin-bruger/Edge Function eller service role på serveren.
-
-## 11. Domæne og drift
-
-`ravradar.dk` bør sikres tidligt. Produktionsmiljøet skal bruge HTTPS, egen Supabase-projektkonfiguration, separate secrets og versionsstyret deployment. Domænet ændrer ikke datamodellen og kan kobles på før eller efter Supabase, men før lukket beta.
-
-## 12. Næste implementeringsrækkefølge
-
-1. Validér denne arkitektur og udfyld de første ekspertregler.
-2. Udvid mobil-layoutet, så kortet fylder ca. 60–70 % og zonepanelet fungerer som bottom sheet.
-3. Implementér regelmotor lokalt i shadow mode uden at påvirke den viste score.
-4. Opsæt Supabase og migrationer.
-5. Implementér synkronisering og snapshot-indsamling.
-6. Byg administrationsside med regelredigering og eksport.
-7. Kobl `ravradar.dk` på og gennemfør lukket beta.
+Ved konflikt gælder: ejerens aktuelle instruktion, derefter aktiv RDKS-beslutning, verificeret kodeadfærd, håndbog og changelog. Administratorens centralt gemte redigerbare geometri og routing er runtime-sandhed og må ikke erstattes af historiske hardcodede værdier.
