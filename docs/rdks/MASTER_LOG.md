@@ -2152,3 +2152,9 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - Den aktuelle liste og 5-dages prognosen er kontrolleret med både strand og waders. De beregnes mode-specifikt; ens liveplaceringer skyldes rolige forhold og afrunding, ikke en delt scorevej. Prognosedage med større forskel i søgeforhold giver forskellige lister. En regressionstest dækker nu begge veje.
 - Ejeren godkendte eksakt versionsløft 4.0.277 → 4.0.278 i de to beskyttede geodatafiler. Diffen ændrer kun versionsfeltet; score, vejrregler, zoner, geometri, land-/vandpunkter og central admin-data ændres ikke.
 - Seneste naturlige produktion viser 673 accepterede fortsættelser uden nye resets, 657/673 kyststrækninger med 48 timers historik og 205/210 aktive zoner. De resterende lokale kæder fortsætter naturligt.
+
+## 2026-08-25 – 4.0.278 første produktion stoppet af gammel testforventning
+
+- PR #143 bestod exact-head-kildegaten og blev merged som `d627b5ee`.
+- Produktion `32837294743` nåede gennem central hydrering, frisk vejr og Candidate G-statefortsættelse, men den fulde validering krævede fejlagtigt Regelværkstedets nu pensionerede `rules`-gemmevej.
+- Ingen releasegate, artifact eller deploy blev gennemført. Testen er rettet til at forbyde den gamle gemmevej, mens version 4.0.278, score, state, geometri og punkter er uændrede.

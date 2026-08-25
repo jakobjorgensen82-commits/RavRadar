@@ -8,7 +8,11 @@ const hydrate = fs.readFileSync(new URL('./hydrate-deployed-weather.py', import.
 
 assert.match(admin, /queueAdminDocumentSave\('water-level-station-routing'/);
 assert.match(admin, /queueAdminDocumentSave\('direction-reviews'/);
-assert.match(admin, /queueAdminDocumentSave\('rules'/);
+assert.doesNotMatch(
+  admin,
+  /queueAdminDocumentSave\('rules'/,
+  'Det pensionerede Regelværksted må ikke længere have en aktiv central gemmevej',
+);
 assert.match(store, /admin_documents/);
 assert.match(store, /localStorage/);
 
@@ -25,4 +29,4 @@ assert.match(update, /output\.dataQuality\.stationNotifications\s*=\s*stationLif
 
 assert.match(hydrate, /dmi-water-stations\.json/);
 assert.match(update, /const horizons=\[6,24,48,ACCEPTED_FORECAST_HOURS\]/);
-console.log('OK: central adminlagring, stationslivscyklus, stationsregister-cache og udvidet diagnostik er koblet sammen.');
+console.log('OK: central adminlagring uden Regelværksted, stationslivscyklus, stationsregister-cache og udvidet diagnostik er koblet sammen.');
