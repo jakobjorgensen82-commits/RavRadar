@@ -1,5 +1,11 @@
 # AI Knowledge Base – RavRadar
 
+## 4.0.282 – eksakt reference ved native vinduesskift
+
+De otte godkendte `dkss_lf`-regionalproxyer har ægte tretimerskadence. Hvis et Candidate G-beregningsvindue starter efter den seneste verificerede prøve, må state-pipelinen bruge den eksakte prøve som transportreference, men kun når den ligger før vinduet og højst tre timer tilbage. Prøven reduceres straks til `time` og kystrelativ `strength`.
+
+Referencen er ikke en ny måling og må ikke skabe pil, ekstra bevægelse, mobilisering eller en opdigtet mellemtime. Rå U/V, koordinater, punkt-id og private kildefelter må ikke indgå i Candidate G-state. Efter tre timer stopper den konkrete kystdel fortsat lokalt. Se DEC-0078.
+
 ## 4.0.277 – årsagstro native kadence og bevaret Candidate G-state
 
 Kun de otte ejerallowlistede `dkss_lf`-regionalproxyer må fastholde den seneste afledte transporttilstand mellem ægte tretimersprøver, højst tre timer. Fastholdelsen er ikke en ny måling og må ikke tilføje bevægelse, evidens, U/V, hastighed, retning eller pil. DMI og Copernicus kræver fortsat eksakt målreference, og fremtidige prøver må aldrig tælle som aktuelle.

@@ -1,5 +1,11 @@
 # Kendte åbne og overvågede forhold
 
+## Kandidat 4.0.282 – native reference ved vinduesskift
+
+- **ISSUE-CANDIDATE-G-NATIVE-WINDOW-REFERENCE – LØST I KANDIDAT:** De otte godkendte tretimers-regionalproxyer kunne ved et nyt beregningsvindue have en eksakt verificeret prøve lige før vinduet, uden at prøven endnu stod i den kompakte state. Kildehistorikken var intakt, men første mellemtime blev fejlagtigt `UNVERIFIED_PAUSE`. 4.0.282 fører kun den eksakte prøve videre som dataminimeret transportreference i højst tre timer.
+- **ISSUE-4.0.281-PRODUCTION-NOT-DEPLOYED – DOKUMENTERET:** PR #151's browserauditrettelse blev merged, men produktion `32907678721` stoppede sikkert ved den strenge 665/673-gate. Der blev ikke bygget eller deployet et nyt artifact. Den offentlige 4.0.281-runtime forblev urørt.
+- **ISSUE-CANDIDATE-G-NATIVE-WINDOW-PRODUCTION-CLOSURE – ÅBEN:** Exact-head, fuld produktion og offentlig 673-kystdelskontrol udestår for 4.0.282.
+
 ## Produktionsverificeret 4.0.281 – Candidate G-diagnoser
 
 - **ISSUE-CANDIDATE-G-PUBLIC-DIAGNOSTICS-LEGACY-FIELDS – PRODUKTIONSVERIFICERET LØST:** Den tekniske offentlige visning læste pensionerede felter fra den gamle scoremotor, og zoneaggregationen fjernede dele af Candidate G's aktuelle forklaring. Det gav falske **Mangler/Ukendt**-felter. UI og projektion bruger nu Candidate G's egne felter gennem både kystdel og zone.

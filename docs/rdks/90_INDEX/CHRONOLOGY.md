@@ -1,5 +1,14 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-26 – kandidat 4.0.282 native reference ved vinduesskift
+
+1. Ejeren bad om at få de resterende tekniske **Mangler/Ukendt** skubbet helt videre på tværs af zoner og kyststrækninger.
+2. Den strenge produktion stoppede ved 665/673 og viste, at alle otte afvigelser var de godkendte regionalproxyer med ægte tretimerskadence.
+3. Rodårsagen var et beregningsvindue, som begyndte efter den seneste ægte kildeprøve, før prøven var indlejret i den kompakte Candidate G-state. Historikken var ikke tabt.
+4. 4.0.282 giver state-pipelinen den eksakte foregående prøve i højst tre timer og reducerer den straks til tid og kystrelativ styrke.
+5. Der opfindes ingen time, måling, pil eller mobilisering. Rå strømvektorer, koordinater og punkt-id'er føres ikke videre.
+6. Candidate G 20/50/30, 48-timersregler, scorekurver, zoner, geometri og land-/vandpunkter er uændrede. Se DEC-0078.
+
 ## 2026-08-26 – 4.0.281 Candidate G-native teknisk visning produktionsverificeret
 
 1. Ejeren så **Mangler**, **Ukendt**, tankestreger og **Ikke beregnet** i den tekniske zonevisning og bad om at få forholdet rettet på tværs af alle zoner og kyststrækninger.

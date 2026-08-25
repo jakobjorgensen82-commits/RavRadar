@@ -1,5 +1,16 @@
 # RavRadar - aktivt roadmap
 
+## P0 – 4.0.282 luk sidste falske Mangler/Ukendt ved native vinduesskift
+
+- [x] Afgræns stoppet til de otte godkendte regionalproxyers eksakte måling umiddelbart før beregningsvinduet.
+- [x] Genbrug kun den verificerede kildeprøve i højst tre timer og kun som transportreference.
+- [x] Reducér den til tid og kystrelativ styrke før Candidate G-state; ingen rå vektorer, koordinater eller punkt-id'er.
+- [x] Bevar forbuddet mod interpolation, kunstige timer, ny pil og mobilisering.
+- [x] Tilføj målrettede regressioner og dokumentér DEC-0078.
+- [ ] Bestå exact-head, merge, fuld produktion og offentlig kontrol af alle 673 kyststrækninger.
+
+Dette ændrer ikke 20/50/30, scorekurver, 48-timersregler, zoner, geometri eller land-/vandpunkter.
+
 ## Produktionsverificeret – 4.0.281 lukker falske Mangler/Ukendt i Candidate G-visningen
 
 - [x] Kortlæg Candidate G's eksisterende diagnosefelter og bevis, at scoremotoren allerede beregner grundlaget.

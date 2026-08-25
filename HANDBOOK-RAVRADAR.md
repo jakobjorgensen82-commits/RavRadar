@@ -1,5 +1,13 @@
 # RavRadar Håndbog
 
+## Eksakt native reference ved beregningsvinduets begyndelse – 4.0.282
+
+Nogle af de godkendte regionale strømkilder leverer en ægte måling hver tredje time. Hvis et nyt Candidate G-beregningsvindue begynder mellem to målinger, kan den seneste verificerede måling ligge lige før vinduet. RavRadar bruger nu denne eksakte måling som reference for den fortsatte transporttilstand i højst tre timer.
+
+Det er ikke interpolation og ikke en opdigtet ny måling. Referencen skaber ingen ny pil eller mobilisering og reduceres straks til tidspunkt og kystrelativ transportstyrke. Rå strømvektorer, koordinater og punkt-id'er føres ikke ind i den kompakte Candidate G-state.
+
+Er den seneste måling mere end tre timer gammel, bliver den konkrete score fortsat utilgængelig. Candidate G's 20/50/30, 48-timershistorik, scorekurver, zoner, geometri og land-/vandpunkter er uændrede. Se [DEC-0078](docs/rdks/10_DECISIONS/DEC-0078-CANDIDATE-G-NATIVE-WINDOW-REFERENCE.md).
+
 ## Candidate G-native teknisk kontrolvisning – 4.0.281
 
 Den tekniske **Debug**-visning følger nu den samme Candidate G-motor som den offentlige RavScore. De tidligere ord **Mangler**, **Ukendt** og tomme felter skyldtes, at visningen læste pensionerede feltnavne fra den gamle scoremotor, mens Candidate G's rigtige forklaring delvist blev fjernet i zoneaggregationen. Selve scoren var ikke ændret af denne visningsfejl.
@@ -519,7 +527,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.281
+**Håndbogsversion:** 4.0.282
 
 **Opdateret:** 19. august 2026
 

@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.281",
+  "handbookVersion": "4.0.282",
   "title": "RavRadar Håndbog",
-  "updatedAt": "2026-08-25",
+  "updatedAt": "2026-08-26",
   "sections": [
+    {
+      "id": "candidate-g-native-window-reference-4-0-282",
+      "chapter": "66",
+      "title": "Eksakt native reference ved beregningsvinduets begyndelse",
+      "summary": "En verificeret tretimersmåling lige før et nyt beregningsvindue kan fortsætte transporttilstanden uden interpolation eller en opdigtet ny måling.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Nogle godkendte regionale strømkilder måler hver tredje time. Ligger den seneste ægte måling lige før Candidate G's beregningsvindue, kan RavRadar bruge den som transportreference i højst tre timer.</div><div class=\"handbook-stack\"><p><strong>Ikke en ny måling:</strong> Referencen skaber ingen ny pil, bevægelsestime eller mobilisering og udfylder ikke mellemtimer med opdigtede værdier.</p><p><strong>Dataminimeret:</strong> Før den gemmes i Candidate G-state, reduceres den til tidspunkt og kystrelativ transportstyrke. Rå U/V, koordinater og punkt-id'er føres ikke videre.</p><p><strong>Fortsat fail-closed:</strong> Er målingen ældre end tre timer, forkert placeret eller ikke verificeret, bliver den konkrete kystdel fortsat utilgængelig.</p><p>Candidate G 20/50/30, 48-timershistorik, scorekurver, zoner, geometri og land-/vandpunkter er uændrede. Se <code>DEC-0078</code>.</p></div>"
+    },
     {
       "id": "candidate-g-native-technical-diagnostics-4-0-281",
       "chapter": "65",

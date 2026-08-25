@@ -1,5 +1,13 @@
 # Current truth – gældende projektviden
 
+## Kandidat 4.0.282 – eksakt native reference lukker sidste vindueshul
+
+- Produktion `32907678721` stoppede korrekt ved 665/673, fordi de otte godkendte regionalproxyers seneste ægte tretimersmåling kunne ligge lige før det aktuelle beregningsvindue uden endnu at være i den kompakte Candidate G-state.
+- Målingen var ikke tabt. 4.0.282 giver state-pipelinen den eksakte foregående verificerede kilderække som transportreference, men kun når den er højst tre timer gammel.
+- Referencen reduceres straks til tid og kystrelativ styrke. Den skaber ingen ny måling, pil, mellemtime, bevægelse eller mobilisering og indeholder ingen rå U/V, koordinater eller punkt-id'er.
+- Mere end tre timers afstand eller ugyldig reference forbliver lokalt fail-closed.
+- Candidate G 20/50/30, scorekurver, 48-timershukommelse, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er uændrede. Se DEC-0078.
+
 ## Produktionsverificeret 4.0.281 – Candidate G-native teknisk kontrolvisning
 
 - Candidate G 20/50/30 er fortsat eneste offentlige scoreprofil uden rollback eller legacyfallback.

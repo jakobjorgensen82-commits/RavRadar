@@ -42,6 +42,7 @@ import {
 } from './lib/local-current-reference.mjs';
 import { localPartRuntimeProperties } from './lib/local-part-runtime.mjs';
 import {
+  latestVerifiedNativeCadenceSampleForPart,
   mergeLiveCurrentPilotIntoRecord,
   nativeCadenceHoldHoursForPart,
   verifiedLivePilotSource,
@@ -1125,6 +1126,12 @@ function scoreCoastalPartsRuntime(
         currentVerified: true
       }));
       const stateKey = candidateGStateKey(part);
+      const nativeCadenceHoldHours = nativeCadenceHoldHoursForPart({ ...part, zoneId }, liveCurrentPilot);
+      const nativeCadenceReferenceSample = latestVerifiedNativeCadenceSampleForPart(
+        { ...part, zoneId },
+        liveCurrentPilot,
+        hourly[0]?.time,
+      );
       const candidateGState = buildCandidateGDerivedStateSeries(hourly.map(hour => ({
         time: hour.time,
         currentSpeedMps: hour.currentSpeedMps,
@@ -1137,7 +1144,8 @@ function scoreCoastalPartsRuntime(
       })), {
         stateKey,
         initialState: previousCoastalParts?.parts?.[part.partId]?.candidateG?.currentState ?? null,
-        nativeCadenceHoldHours: nativeCadenceHoldHoursForPart({ ...part, zoneId }, liveCurrentPilot),
+        nativeCadenceHoldHours,
+        nativeCadenceReferenceSample,
       });
       const candidateGStateByTime = new Map(candidateGState.rows.map(row => [row.time, row]));
       const zone = localPartRuntimeProperties(parent.properties, part, part.partId);

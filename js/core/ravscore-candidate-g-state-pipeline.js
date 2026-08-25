@@ -129,6 +129,7 @@ export function buildCandidateGDerivedStateSeries(
     initialState = null,
     firstSampleDurationHours = 1,
     nativeCadenceHoldHours = 0,
+    nativeCadenceReferenceSample = null,
   } = {},
 ) {
   if (typeof stateKey !== 'string' || !stateKey.trim()) {
@@ -159,6 +160,33 @@ export function buildCandidateGDerivedStateSeries(
     // a lossless migration of the verified evidence; it does not create or
     // interpolate a current sample.
     transportEvidence = transportEvidence.filter(item => Number.isFinite(item?.strength));
+  }
+  if (nativeCadenceReferenceSample !== null && nativeCadenceReferenceSample !== undefined) {
+    const firstSampleTime = ordered[0]?.time;
+    const referenceSampleTime = validTime(nativeCadenceReferenceSample?.time)
+      ? new Date(nativeCadenceReferenceSample.time).toISOString()
+      : null;
+    const referenceAgeHours = referenceSampleTime && firstSampleTime
+      ? (Date.parse(firstSampleTime) - Date.parse(referenceSampleTime)) / 3_600_000
+      : Number.NaN;
+    const referenceEvidence = deriveCurrentTransportEvidence(nativeCadenceReferenceSample, {
+      ...CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
+      getTime: value => value.time,
+      getSpeed: value => value.currentSpeedMps,
+      getAlignment: value => value.currentAlignment,
+      isVerified: value => value.currentVerified === true,
+    });
+    if (!(safeNativeCadenceHoldHours > 0
+      && referenceAgeHours > 0
+      && referenceAgeHours <= safeNativeCadenceHoldHours
+      && Number.isFinite(referenceEvidence?.strength))) {
+      throw new Error('Candidate G native cadence reference must be one exact verified sample within the allowed hold');
+    }
+    const lastEvidenceTime = Date.parse(transportEvidence.at(-1)?.time ?? '');
+    const referenceEvidenceTime = Date.parse(referenceEvidence.time);
+    if (!Number.isFinite(lastEvidenceTime) || referenceEvidenceTime > lastEvidenceTime) {
+      transportEvidence.push(referenceEvidence);
+    }
   }
   let previousTransport = acceptedState ? {
     transportPotential: Number(acceptedState.transportPotential),

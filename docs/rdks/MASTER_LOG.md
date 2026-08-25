@@ -1,3 +1,10 @@
+## 2026-08-26 – kandidat 4.0.282 lukker native vinduesgrænsen
+
+- Produktion `32907678721` stoppede fail-closed ved 665/673, fordi de otte godkendte regionalproxyers seneste ægte prøve kunne ligge lige før beregningsvinduet uden endnu at være del af den kompakte state.
+- Kildehistorikken var bevaret. 4.0.282 bruger kun den eksakte verificerede prøve i højst tre timer som transportreference.
+- Referencen dataminimeres straks til tid og kystrelativ styrke. Der tilføjes ingen ny måling, pil, bevægelsestime, mobilisering, rå vektor, koordinat eller punkt-id.
+- Candidate G 20/50/30, scorekurver, zoner, geometri og land-/vandpunkter er uændrede. Se DEC-0078.
+
 ## 2026-08-26 – 4.0.281 falske Mangler/Ukendt produktionsverificeret lukket
 
 - Den tekniske offentlige visning læste gamle felter, som Candidate G ikke bruger, og zoneaggregationen tabte dele af den faktiske Candidate G-forklaring.
