@@ -1,6 +1,6 @@
 # DEC-0073 – strømhistorik bevares pr. kystpunkt
 
-**Status:** GODKENDT TIL 4.0.276 – AFVENTER PRODUKTIONSVERIFIKATION
+**Status:** PRODUKTIONSVERIFICERET I 4.0.276 – NATURLIG 48-TIMERS MODNING FORTSÆTTER
 
 **Dato:** 2026-08-25
 
@@ -30,3 +30,11 @@ Den kompakte Candidate G-state var ikke gået tabt. En dataminimeret kontrol dok
 - Eksisterende tests for 168-timersgrænse, dubletter, DMI-først, cachebevaring og Candidate G's native tretimerskadence skal bestå.
 - RDKS- og kildegaten skal bestå på PR'ens eksakte head.
 - En frisk produktion skal bestå central hydrering, vejrbyg, fuld validering, releasegate og deploy. Den efterfølgende dataminimerede kontrol skal bekræfte fortsat Candidate G-only og lokal tilgængelighed uden rå strømvektorer, koordinater eller private payloads.
+
+## Produktionsbevis
+
+- PR #138 bestod exact-head-kildegaten `32787344926` på `acb59cc6` og blev merged som `72913723`.
+- Push-produktion `32787715986` bestod central hydrering, frisk vejrbyg, fuld validering, releasegate, artifact og Pages-deploy.
+- De naturlige produktioner `32788514636` og `32790639192` bestod samme fulde kæde uden state-reset.
+- Den seneste dataminimerede livekontrol dokumenterer 673/673 accepterede Candidate G-tilstande, nul resetårsager og sammenhængende lokal state på 6–39 timer. Den korte kæde tilhører det faktisk flyttede punkt; uændrede punkters længere historik er bevaret.
+- Ingen zone havde endnu et komplet 48-timersvindue ved kontrollen. Den tekniske retention er dermed produktionsverificeret, mens aktivering fortsætter automatisk og lokalt, når virkelige timer gør det enkelte datagrundlag komplet.

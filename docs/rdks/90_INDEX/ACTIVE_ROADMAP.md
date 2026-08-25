@@ -8,9 +8,9 @@
 - [x] Genopbyg hver bevaret times bevis fra de eksakte tilbageværende punktidentiteter og afvis dubletter eller mismatch fail-closed.
 - [x] Bevar Candidate G 20/50/30 som eneste scoremodel; opfind ingen timer og ændr ingen geometri eller land-/vandpunkter.
 - [x] Bestå de målrettede regressioner for punktflytning, søsterpunktsbevaring, retention, cache og native tretimerskadence.
-- [ ] Bestå exact-head, merge, frisk fuld produktion og dataminimeret livekontrol.
+- [x] Bestå exact-head `32787344926`, merge `72913723`, fuld produktion `32787715986`, to naturlige produktioner og dataminimeret livekontrol med 673/673 accepterede states og nul resets.
 
-Når den tekniske lukning er grøn, fortsætter det eksisterende før-lanceringsroadmap. Zoner aktiveres enkeltvis, når deres egne virkelige 48 timer er komplette; dette er drift, ikke en ny 48-timers udviklingstest.
+Den tekniske lukning er grøn. Seneste kontrol viser 6–39 timers lokal state: det flyttede punkt har den korte kæde, mens uændrede punkter har bevaret den længere historik. Det eksisterende før-lanceringsroadmap fortsætter. Zoner aktiveres enkeltvis, når deres egne virkelige 48 timer er komplette; dette er drift, ikke en ny 48-timers udviklingstest.
 
 ## P0 – 4.0.275 luk Candidate G-only-produktionen med synkron håndbogskilde
 
