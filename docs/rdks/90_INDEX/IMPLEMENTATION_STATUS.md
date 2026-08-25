@@ -13,8 +13,10 @@
 
 ## Produktionslukning
 
-- [ ] Bestå RDKS- og kildegaten på PR'ens eksakte head.
-- [ ] Merge den eksakte grønne head.
+- [x] Bestå RDKS- og kildegaten på PR #140's eksakte head i `32816129342` på `35c8b7fb`.
+- [x] Merge den eksakte grønne head som `d3b4542f`.
+- [x] Lad første produktion `32816237198` bygge strømhistorik, vejr og offentlig runtime grønt og stoppe før deploy på en forældet statisk testkontrakt.
+- [x] Ret kun `test-current-full-coverage-gate`, så den kræver den faktiske 673-dækning: eksakte dele plus dokumenterede native-cadence-tilstande.
 - [ ] Bestå frisk central produktion, fuld validering, releasegate, artifact og Pages-deploy.
 - [ ] Kontrollér dataminimeret live, at 673/673 state fortsætter, at native mellemtimer ikke viser strømvektor, og at Candidate G 20/50/30 fortsat er eneste profil.
 

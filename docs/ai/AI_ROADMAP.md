@@ -6,7 +6,9 @@
 - [x] Fasthold kun afledt transporttilstand i højst tre timer uden ny bevægelse, evidens, måling eller pil.
 - [x] Bevar Candidate G-only 20/50/30, punktvis historik og lokalt fail-closed stop efter tre timer.
 - [x] Bestå målrettede lokale regressioner og dokumentér DEC-0074.
-- [ ] Bestå exact-head, merge, frisk produktion og offentlig dataminimeret efterkontrol.
+- [x] Bestå PR #140 exact-head og merge som `d3b4542f`.
+- [x] Ret den forældede statiske dæknings-test, som stoppede første produktion efter grøn historik- og runtimebygning.
+- [ ] Bestå ny exact-head, frisk produktion og offentlig dataminimeret efterkontrol.
 
 Der kræves ikke en ny 48-timers realtidstest. Der opbygges ingen kunstig historik, og ingen zone, geometri eller land-/vandpunkt ændres.
 

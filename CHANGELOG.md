@@ -5,6 +5,7 @@
 - Næste ægte prøve integrerer den faktiske tidsafstand. Over tre timer eller enhver ændret punkt-/kildekontekst stopper fortsat lokalt.
 - Bevarer eksisterende Candidate G-historik uden backfill, interpolation eller rekonstruktion. Candidate G 20/50/30 er fortsat eneste offentlige profil uden rollback.
 - Scorekurver, zoner, geometri, land-/vandpunkter og central admin-data er uændrede; geodatafilerne ændrer kun versionsfelt. Se DEC-0074.
+- PR #140 bestod exact-head og blev merged. Første produktion byggede historik og runtime grønt, men stoppede sikkert før deploy på en forældet statisk test. Testen kræver nu den samme 673-kontrakt som produktionsauditen; ingen runtime-, score- eller dataadfærd er ændret af opfølgningen.
 
 ## 4.0.276 – strømhistorik bevares pr. kystpunkt (2026-08-25)
 

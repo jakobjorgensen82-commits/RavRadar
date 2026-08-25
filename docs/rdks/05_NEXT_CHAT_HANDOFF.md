@@ -7,7 +7,7 @@
 - 4.0.277 gør alle valg årsagstro. DMI/Copernicus kræver eksakt tid; kun de otte godkendte `dkss_lf`-proxyer må fastholde den seneste afledte transporttilstand i højst tre timer.
 - Fastholdelsen tilføjer ingen bevægelse, evidens, U/V, hastighed, retning eller pil. Næste ægte prøve bruger den faktiske tidsafstand. Over tre timer stoppes lokalt.
 - Candidate G 20/50/30 er eneste offentlige profil. Scorekurver, zoner, geometri, punkter og central admin er urørte.
-- Målrettede lokale tests er grønne. Næste handling er exact-head, merge, frisk fuld produktion og dataminimeret offentlig efterkontrol. Se DEC-0074.
+- PR #140 bestod exact-head `32816129342` og blev merged som `d3b4542f`. Produktion `32816237198` byggede historik, vejr og runtime grønt, men stoppede før deploy på en forældet statisk dæknings-test. Testen er rettet til den faktiske 673-kontrakt. Næste handling er ny exact-head, frisk fuld produktion og dataminimeret offentlig efterkontrol. Se DEC-0074.
 
 ## Produktionslukket 4.0.275 – Candidate G-only med lokal fail-closed zonestatus
 

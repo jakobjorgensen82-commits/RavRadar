@@ -1,6 +1,6 @@
 # DEC-0074 – årsagstro strømreference ved native tretimerskadence
 
-**Status:** IMPLEMENTERET LOKALT I 4.0.277 – AFVENTER EXACT-HEAD OG PRODUKTIONSBEVIS
+**Status:** IMPLEMENTERET OG MERGET I 4.0.277 – AFVENTER GENTAGET PRODUKTIONSBEVIS
 
 **Dato:** 2026-08-25
 
@@ -35,4 +35,4 @@ Candidate G-pipelinen skrev samtidig de naturlige mellemtimer som manglende evid
 
 ## Produktionsbevis
 
-Afventer exact-head, merge, frisk central produktion og dataminimeret offentlig efterkontrol.
+PR #140 bestod exact-head `32816129342` på `35c8b7fb` og blev merged som `d3b4542f`. Første produktion `32816237198` byggede syvdageshistorik, central vejrtilstand, strømproveniens og offentlig runtime grønt. Fuld validering stoppede derefter før deploy på en statisk kildekodetest, som stadig krævede det tidligere feltnavn `verifiedPartGridPoints` alene. Produktionsauditen kræver allerede korrekt `verifiedScoreReadyParts`, dvs. eksakte dele plus kun dokumenterede native-cadence-tilstande. Testen er rettet til samme kontrakt; ny exact-head, fuld produktion og offentlig efterkontrol afventer.

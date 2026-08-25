@@ -8,7 +8,8 @@
 - En fastholdt mellemtime tilføjer ingen bevægelse, evidens eller måling og viser ingen U/V, hastighed, retning eller pil. Næste ægte prøve integrerer den faktiske tidsafstand.
 - Mere end tre timers afstand eller enhver kilde-/punktændring giver lokal utilgængelighed. Der udføres ingen backfill, interpolation eller rekonstruktion.
 - Historikken var ikke tabt. Kandidaten ændrer ingen scorekurve, zone, geometri, land-/vandpunkt eller central admin-data. Se DEC-0074.
-- Målrettede lokale regressioner er grønne. Exact-head, frisk produktion og offentlig efterkontrol mangler endnu.
+- PR #140 bestod exact-head `32816129342` på `35c8b7fb` og blev merged som `d3b4542f`.
+- Første produktion `32816237198` byggede den bevarede strømhistorik, frisk vejr og den offentlige runtime grønt. Den fulde validering stoppede derefter sikkert før deploy, fordi en ældre statisk test stadig søgte efter det tidligere dækningsfeltnavn. Selve produktionsauditen bruger allerede den nye, korrekte 673-kontrakt. Kun testkontrakten er rettet; frisk produktion og offentlig efterkontrol mangler endnu.
 
 ## Produktionsverificeret 4.0.276 – strømhistorik bevares pr. kystpunkt
 
