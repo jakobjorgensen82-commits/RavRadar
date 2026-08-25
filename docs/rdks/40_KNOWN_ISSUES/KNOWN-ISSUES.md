@@ -1,9 +1,13 @@
 # Kendte åbne og overvågede forhold
 
-## Kandidat 4.0.279 – offentlig Om RavRadar-side
+## Kandidat 4.0.280 – Om RavRadar-billedets orientering
+
+- **ISSUE-PUBLIC-ABOUT-FAMILY-PHOTO-EXIF-ORIENTATION – LØST I KANDIDAT:** Kildebilledet var portræt med EXIF-orientering, men den tidligere WebP-konvertering indarbejdede ikke rotationen i pixels. Tre nye komprimerede JPEG-varianter er fysisk vendt korrekt og bruges i et særskilt pc-/mobillayout. Originalen er urørt, og ændringen påvirker ingen data- eller scorekæde.
+
+## Produktionsverificeret 4.0.279 – offentlig Om RavRadar-side
 
 - **ISSUE-PUBLIC-PROJECT-OWNER-CONTEXT-MISSING – LØST I KANDIDAT:** Den offentlige side manglede samlet information om ejeren, formålet, RavScores begrænsning, kontakt og projektets frivillige drift. Den nye responsive Om-side samler informationen og indsamler ingen nye brugerdata.
-- **ISSUE-PUBLIC-ABOUT-MOBILE-LAYOUT – LØST I KANDIDAT:** Ejerbilleder, lange links, QR-kode og støtteafsnit har nu egne mobile brudpunkter, responsive billedvarianter og overflowbeskyttelse. Offentlig pc- og mobilkontrol afventer den mergede version.
+- **ISSUE-PUBLIC-ABOUT-MOBILE-LAYOUT – PRODUKTIONSVERIFICERET LØST:** Ejerbilleder, lange links, QR-kode og støtteafsnit har egne mobile brudpunkter, responsive billedvarianter og overflowbeskyttelse. PR #148, merge `12db45a8` og produktion `32881278351` er grønne. Familiebilledets særskilte orienteringsfejl følges op i 4.0.280.
 
 ## Produktionsverificeret 4.0.278 – Regelværksted, håndbog og zonestatus
 

@@ -1,15 +1,26 @@
 # RavRadar – overlevering til næste chat
 
-## Kandidat 4.0.279 – offentlig Om RavRadar-side
+## Kandidat 4.0.280 – korrekt orienteret Om RavRadar-billede
+
+- Offentlig kontrol af 4.0.279 viste, at familiebilledet stod på siden, fordi den tidligere konvertering ikke indarbejdede EXIF-orienteringen i pixels.
+- Originalen er urørt. Tre nye komprimerede JPEG-varianter er fysisk vendt korrekt: 540 × 720, 900 × 1200 og 1350 × 1800.
+- Pc viser billedet ved siden af teksten; mobil viser det over teksten uden vandret rulning.
+- HTML, appskal og målrettet test bruger kun de nye varianter. Lokal pc-/mobilkontrol er grøn.
+- Versionen er 4.0.280. De beskyttede geodatafiler må kun ændre topversionsfelt 4.0.279 → 4.0.280.
+- Candidate G, score, vejr, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er urørte.
+- Næste trin er exact-head, merge, fuld produktion og offentlig kontrol.
+
+## Produktionslukket 4.0.279 – offentlig Om RavRadar-side
 
 - Ny offentlig side er implementeret og linket i topmenuen ved konto, tur og Rav-assistent.
 - Siden forklarer ejer, formål, scorebegrænsning, landsdelsforskel, modelkompromiser, kontakt og frivillig støtte.
 - MobilePay Box `4214MX` og den godkendte betalingsadresse bruges som tekstlink og klikbar QR-kode.
-- Begge ejerbilleder ligger som responsive WebP-varianter; siden er tospaltet på pc og enspaltet på mobil.
+- Begge ejerbilleder ligger som responsive billedvarianter; siden er tospaltet på pc og enspaltet på mobil.
 - Siden og aktiverne ligger i appskallen. Målrettet kontrakttest er grøn.
-- Versionen er sat til 4.0.279. Særskilt diff viser kun topversionsfelt 4.0.278 → 4.0.279 i `data/kystdata.json` og `data/zones.geojson`; næste skridt er exact-head, merge, produktion og offentlig pc-/mobilkontrol.
+- Versionen er sat til 4.0.279. Særskilt diff viser kun topversionsfelt 4.0.278 → 4.0.279 i `data/kystdata.json` og `data/zones.geojson`.
 - Ejeren har stående godkendt fremtidige rene versionsfeltsynkroniseringer i de samme to filer, når diffkontrollen beviser, at intet andet geodata ændres. Der skal derfor ikke spørges igen ved en ren versionssynkronisering.
 - Candidate G, score, vejr, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er urørte. Se DEC-0076.
+- PR #148 blev merged som `12db45a8`, og produktion `32881278351` var grøn. Familiebilledets efterfølgende konstaterede orienteringsfejl lukkes i 4.0.280.
 
 ## Produktionslukket 4.0.278 – Regelværksted pensioneret og zonestatus rettet
 

@@ -1,6 +1,6 @@
 # DEC-0076 – Offentlig Om RavRadar-side og frivillig støtte
 
-**Status:** AKTIV – IMPLEMENTERES I 4.0.279
+**Status:** AKTIV – PRODUKTIONSVERIFICERET FRA 4.0.279; BILLEDRETTELSE I 4.0.280
 
 **Dato:** 2026-08-25
 
@@ -20,7 +20,7 @@ RavRadar skal have en tydelig offentlig afsenderside, så brugeren kan forstå, 
 4. Siden forklarer, at komplekse vejr-, hav- og kystforhold kræver generaliseringer og kompromiser. Noget, der ser forkert ud, kan være en fejl eller en bevidst forenkling af hensyn til helheden.
 5. Kontakt foregår gennem et almindeligt `mailto`-link til ejeren. Der indsamles ingen ekstra brugerdata på siden.
 6. Frivillig støtte vises samlet med projektets omkostninger, MobilePay Box `4214MX`, synlig betalingsadresse og en lokal QR-kode, der linker til den samme MobilePay-boks. Støtte giver ingen særlige funktioner eller scorer.
-7. Ejerens to billeder leveres som komprimerede, responsive WebP-varianter. Siden skal fungere uden vandret rulning på mobil og bruge et luftigt tospaltet layout på større skærme.
+7. Ejerens to billeder leveres som komprimerede, responsive billedvarianter. Orienteringen skal være fysisk indarbejdet i de leverede pixels og må ikke afhænge af browserens EXIF-fortolkning. Siden skal fungere uden vandret rulning på mobil og bruge et luftigt tospaltet layout på større skærme.
 8. Siden og dens lokale aktiver indgår i service-workerens appskal, så den følger samme versionsstyrede cache som resten af den offentlige app.
 9. Ejeren giver stående godkendelse til, at de to beskyttede geodatafilers topversionsfelt automatisk følger enhver fremtidig reel RavRadar-release. Godkendelsen gælder kun, når en præcis diffkontrol beviser, at `data/kystdata.json` og `data/zones.geojson` ikke ændrer andet end versionsfeltet. Enhver øvrig geodataændring er fortsat uden for denne godkendelse og skal stoppe arbejdsforløbet.
 
@@ -29,7 +29,7 @@ RavRadar skal have en tydelig offentlig afsenderside, så brugeren kan forstå, 
 - Topmenuen skal vise linket i det godkendte handlingsområde.
 - Kontakt-, MobilePay- og QR-link skal pege på de godkendte adresser.
 - Tekstkontrakten skal indeholde ejer, formål, begrænsning, scorekontekst, kompleksitet og frivillig støtte.
-- Responsive brudpunkter, billedvarianter og fravær af vandret overflow skal kontrolleres målrettet.
+- Responsive brudpunkter, billedvarianternes faktiske orientering og dimensioner samt fravær af vandret overflow skal kontrolleres målrettet.
 - Pages- og service-worker-kontrakter skal indeholde siden og alle nødvendige aktiver.
 - Hver release skal kontrollere de to beskyttede geodatafiler særskilt og afvise ændringen, hvis diffen indeholder andet end det forventede versionsfelt.
 - Offentlig efterkontrol skal bekræfte den mergede version på både bred og smal visning.

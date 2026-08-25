@@ -1,5 +1,13 @@
 # RavRadar Håndbog
 
+## Korrekt orienteret Om RavRadar-billede – 4.0.280
+
+Familiebilledets tidligere konvertering indarbejdede ikke kameraets EXIF-orientering i pixels. Derfor kunne billedet stå på siden i browseren. Originalen er urørt; de nye komprimerede portrætvarianter er fysisk vendt korrekt.
+
+På pc står det oprette billede ved siden af teksten. På mobil står det opret over teksten uden vandret rulning. Den målrettede test kontrollerer filernes faktiske dimensioner, og appskallen bruger kun de korrekt orienterede varianter.
+
+Rettelsen påvirker ikke Candidate G, RavScore, vejr, zoner, geometri, land-/vandpunkter, admin-data eller brugerdata. De beskyttede geodatafiler ændrer kun topversionsfelt 4.0.279 → 4.0.280.
+
 ## Offentlig Om RavRadar-side – 4.0.279
 
 RavRadar har en offentlig **Om RavRadar**-side, som nås fra topmenuen ved konto, **Start ravtur** og **Spørg RavRadar**. Siden præsenterer Jakob Jørgensen, projektets idé, det frivillige arbejde og en direkte mailkontakt.
@@ -8,9 +16,11 @@ Siden forklarer, at RavScore vurderer de aktuelle forhold for den enkelte kystst
 
 Frivillig støtte er samlet med projektets omkostninger. MobilePay Box `4214MX`, den godkendte betalingsadresse og en klikbar QR-kode fører til samme boks. Støtte er valgfri og giver ingen særlige funktioner eller scorer.
 
-De to ejerbilleder leveres som responsive WebP-varianter. Layoutet er tospaltet på pc, enspaltet på mobil og indgår i den versionsstyrede offline-appskal. Siden indsamler ingen nye brugerdata. Se [DEC-0076](docs/rdks/10_DECISIONS/DEC-0076-PUBLIC-ABOUT-RAVRADAR.md).
+De to ejerbilleder leveres som responsive billedvarianter. Layoutet er tospaltet på pc, enspaltet på mobil og indgår i den versionsstyrede offline-appskal. Siden indsamler ingen nye brugerdata. Se [DEC-0076](docs/rdks/10_DECISIONS/DEC-0076-PUBLIC-ABOUT-RAVRADAR.md).
 
 Releaseversionen er 4.0.279. De to beskyttede geodatafiler ændrer kun deres topversionsfelt fra 4.0.278; score, zoner, geometri og land-/vandpunkter er urørte. Fremtidige rene versionsfeltsynkroniseringer er stående godkendt, men skal altid afvises, hvis den særskilte diff viser anden geodataændring.
+
+PR #148 blev merged som `12db45a8`, og produktion `32881278351` udgav 4.0.279. Den efterfølgende orienteringsfejl i familiebilledet er rettet i 4.0.280.
 
 ## Synkron håndbog og installationskopi – 4.0.275
 
@@ -497,7 +507,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.279
+**Håndbogsversion:** 4.0.280
 
 **Opdateret:** 19. august 2026
 

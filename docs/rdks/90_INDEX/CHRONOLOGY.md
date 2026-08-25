@@ -1,6 +1,15 @@
 # Rekonstrueret chatkronologi
 
-## 2026-08-25 – kandidat 4.0.279 offentlig Om RavRadar-side
+## 2026-08-25 – kandidat 4.0.280 korrekt orienteret Om RavRadar-billede
+
+1. Den offentlige kontrol viste, at familiebilledet stod 90 grader forkert.
+2. Kilden var portræt med EXIF-orientering; den tidligere konvertering havde ikke indarbejdet retningen i pixels.
+3. Originalen blev bevaret urørt. Tre nye JPEG-varianter blev fysisk vendt korrekt og komprimeret.
+4. Pc viser nu portrættet ved siden af teksten, mobil viser det over teksten uden vandret rulning.
+5. Appskal og målrettet test bruger kun de nye varianter og kontrollerer deres dimensioner.
+6. Versionen er 4.0.280 med kun topversionsfeltet ændret i de to beskyttede geodatafiler. Score, vejr og geografi er urørt.
+
+## 2026-08-25 – 4.0.279 offentlig Om RavRadar-side produktionsverificeret
 
 1. Ejeren bad om en Om RavRadar-side med præsentation af Jakob Jørgensen, projektets idé, frivillig drift, kontakt, to ejerbilleder og valgfri MobilePay-støtte.
 2. Det blev præciseret, at højeste RavScore ikke betyder størst grundlæggende ravmængde, og at Limfjorden 95 derfor godt kan være et dårligere fundvalg end Sæby 75.
@@ -10,7 +19,8 @@
 6. Ejerens billeder er optimeret til responsive WebP-varianter. Layoutet er tospaltet på pc og enspaltet på mobil uden vandret rulning.
 7. Siden er føjet til appskallen, og målrettet kontrakttest er grøn.
 8. Versionen er sat til 4.0.279; de to beskyttede geodatafiler ændrer kun topversionsfeltet fra 4.0.278.
-9. Ejeren har stående godkendt fremtidige rene versionsfeltsynkroniseringer uden et nyt spørgsmål, når særskilt diffkontrol beviser, at intet andet geodata ændres. Exact-head og offentlig efterkontrol afventer.
+9. Ejeren har stående godkendt fremtidige rene versionsfeltsynkroniseringer uden et nyt spørgsmål, når særskilt diffkontrol beviser, at intet andet geodata ændres.
+10. PR #148 blev merged som `12db45a8`; produktion `32881278351` var grøn. Offentlig efterkontrol fandt derefter familiebilledets orienteringsfejl, som følges op i 4.0.280.
 
 ## 2026-08-25 – kandidat 4.0.278 pensionerer Regelværkstedet og retter hele ekspert-håndbogen
 

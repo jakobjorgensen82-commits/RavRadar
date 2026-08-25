@@ -1,4 +1,14 @@
-# AI Roadmap – RavRadar 4.0.277+
+# AI Roadmap – RavRadar 4.0.280+
+
+## P0 nu – korrekt orienteret Om RavRadar-billede i 4.0.280
+
+- [x] Afgræns fejlen til EXIF-orientering i den tidligere billedkonvertering.
+- [x] Bevar originalen urørt og indarbejd portrætretningen i tre komprimerede billedvarianter.
+- [x] Tilpas pc- og mobillayout uden vandret rulning.
+- [x] Opdatér appskal, målrettet test og RDKS.
+- [ ] Bestå exact-head, merge, fuld produktion og offentlig pc-/mobilkontrol.
+
+Ingen Candidate G-, score-, vejr-, zone-, geometri-, punkt- eller adminadfærd ændres.
 
 ## P0 nu – årsagstro native mellemtimer i 4.0.277
 
