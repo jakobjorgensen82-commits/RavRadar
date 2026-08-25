@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.278",
+  "handbookVersion": "4.0.279",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-08-25",
   "sections": [
+    {
+      "id": "public-about-ravradar-4-0-279",
+      "chapter": "64",
+      "title": "Offentlig Om RavRadar-side",
+      "summary": "RavRadar viser nu tydeligt, hvem der står bag, hvordan RavScore bør forstås, og hvordan brugeren kan kontakte eller frivilligt støtte projektet.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Forsidens topmenu linker til en ny Om RavRadar-side med Jakob Jørgensen, projektets formål, kontakt og frivillig støtte.</div><div class=\"handbook-stack\"><p><strong>RavScore i sammenhæng:</strong> Scoren vurderer de aktuelle forhold for den enkelte kyststrækning. Den måler ikke, hvor meget rav der grundlæggende findes i landsdelen. Derfor kan 95 point i Limfjorden godt være et dårligere fundvalg end 75 point ved Sæby.</p><p><strong>En model af virkeligheden:</strong> Vejr, havstrømme og kyster er komplekse. Landsdækkende kode må nogle gange bruge en forståelig forenkling; noget, der ser forkert ud, kan være en fejl eller et bevidst kompromis af hensyn til helheden.</p><p><strong>Frivilligt og gratis:</strong> Projektet er gratis at bruge. MobilePay Box <code>4214MX</code> vises med godkendt link og QR-kode. Støtte er frivillig og giver ingen særlige funktioner eller scorer.</p><p><strong>Teknisk:</strong> Siden er responsiv på pc og mobil, bruger komprimerede billedvarianter, indgår i appskallen og indsamler ingen nye brugerdata. Se <code>DEC-0076</code>.</p></div>"
+    },
     {
       "id": "candidate-g-only-local-availability-4-0-274",
       "chapter": "63",

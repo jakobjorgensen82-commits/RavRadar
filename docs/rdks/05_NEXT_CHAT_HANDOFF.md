@@ -1,5 +1,16 @@
 # RavRadar – overlevering til næste chat
 
+## Kandidat 4.0.279 – offentlig Om RavRadar-side
+
+- Ny offentlig side er implementeret og linket i topmenuen ved konto, tur og Rav-assistent.
+- Siden forklarer ejer, formål, scorebegrænsning, landsdelsforskel, modelkompromiser, kontakt og frivillig støtte.
+- MobilePay Box `4214MX` og den godkendte betalingsadresse bruges som tekstlink og klikbar QR-kode.
+- Begge ejerbilleder ligger som responsive WebP-varianter; siden er tospaltet på pc og enspaltet på mobil.
+- Siden og aktiverne ligger i appskallen. Målrettet kontrakttest er grøn.
+- Versionen er sat til 4.0.279. Særskilt diff viser kun topversionsfelt 4.0.278 → 4.0.279 i `data/kystdata.json` og `data/zones.geojson`; næste skridt er exact-head, merge, produktion og offentlig pc-/mobilkontrol.
+- Ejeren har stående godkendt fremtidige rene versionsfeltsynkroniseringer i de samme to filer, når diffkontrollen beviser, at intet andet geodata ændres. Der skal derfor ikke spørges igen ved en ren versionssynkronisering.
+- Candidate G, score, vejr, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er urørte. Se DEC-0076.
+
 ## Produktionslukket 4.0.278 – Regelværksted pensioneret og zonestatus rettet
 
 - Regelværkstedet var ikke en sikker vej til offentlig score: dets øjeblikstest kunne ikke validere Candidate G's 48-timersstate, lokale datagater, transport-nul, wadersloft eller øvrige invariants.

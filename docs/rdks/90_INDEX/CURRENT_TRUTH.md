@@ -1,5 +1,15 @@
 # Current truth – gældende projektviden
 
+## Kandidat 4.0.279 – offentlig Om RavRadar-side
+
+- Forsidens topmenu har nu **Om RavRadar** ved konto, **Start ravtur** og **Spørg RavRadar**.
+- Den nye side præsenterer Jakob Jørgensen og formålet med RavRadar, gør fraværet af fundgaranti tydeligt og forklarer, at den højeste aktuelle score ikke nødvendigvis betyder mest rav i landsdelen.
+- Siden beskriver projektets frivillige karakter og de løbende omkostninger. MobilePay Box `4214MX`, den godkendte betalingsadresse og en klikbar lokal QR-kode vises samlet. Støtte er frivillig og giver ingen særlige funktioner eller scorer.
+- Kontakt åbner brugerens mailprogram; siden indsamler ingen nye brugerdata.
+- Layoutet er tospaltet på pc og enspaltet på mobil. Billederne leveres i flere komprimerede WebP-størrelser, og siden indgår i den versionsstyrede offline-appskal.
+- Versionen er løftet til 4.0.279. Særskilt diff af `data/kystdata.json` og `data/zones.geojson` viser kun topversionsfelt 4.0.278 → 4.0.279.
+- Ejeren har stående godkendt fremtidige rene versionsfeltsynkroniseringer i de samme to filer, når diffkontrollen beviser, at intet andet geodata ændres. Ændringer af Candidate G, score, vejr, zoner, geometri, land-/vandpunkter, admin-data eller brugerdata er ikke omfattet. Se DEC-0076.
+
 ## Produktionsverificeret 4.0.278 – Regelværkstedet udgår og zonestatus er rettet
 
 - Regelværkstedet var ikke koblet sikkert til den offentlige Candidate G-motor. Dets enkle øjeblikstest kunne ikke gennemføre 48-timershistorik, lokale datagater, transport-nul, wadersloft eller de øvrige bindende invariants.

@@ -1,4 +1,21 @@
-# Implementeringsstatus – produktionsverificeret 4.0.278
+# Implementeringsstatus – kandidat 4.0.279
+
+## Kandidat 4.0.279 – offentlig Om RavRadar-side
+
+- [x] Tilføj offentlig side med ejer, formål, scorekontekst, kompleksitet, kontakt og frivillig støtte.
+- [x] Placér linket i den primære topmenu.
+- [x] Vis MobilePay Box `4214MX`, synlig betalingsadresse og klikbar QR-kode til samme godkendte mål.
+- [x] Komprimér de to ejerbilleder til responsive WebP-varianter uden at ændre originalerne.
+- [x] Implementér særskilt pc- og mobiltilpasning med enspaltet smal visning og uden vandret rulning.
+- [x] Medtag siden og lokale aktiver i service-workerens appskal.
+- [x] Tilføj målrettet kontrakttest for tekst, links, billeder, navigation og responsive brudpunkter.
+- [x] Dokumentér DEC-0076, aktive krav, roadmap, current truth, issues og begge håndbøger.
+- [x] Sæt 4.0.279; særskilt diff viser kun topversionsfelt 4.0.278 → 4.0.279 i de to beskyttede geodatafiler.
+- [ ] Bestå exact-head, merge, fuld produktion og offentlig visuel kontrol.
+
+Candidate G, RavScore, vejrruntime, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er urørte. Ejeren har stående godkendt fremtidige rene versionsfeltsynkroniseringer, når den samme særskilte diffkontrol består.
+
+## Produktionsverificeret 4.0.278
 
 ## Produktionsverificeret 4.0.278 – retire aktivt Regelværksted og ret zonestatus
 

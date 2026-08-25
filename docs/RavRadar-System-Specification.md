@@ -1,6 +1,14 @@
 # RavRadar – gældende systemspecifikation
 
-Denne specifikation beskriver den aktive 4.0.277-arkitektur. RDKS er fortsat bindende ved konflikt.
+Denne specifikation beskriver den aktive 4.0.278-arkitektur og den score-neutrale 4.0.279-kandidat. RDKS er fortsat bindende ved konflikt. Releaseversionens topfelt synkroniseres automatisk i de to beskyttede geodatafiler under en stående ejergodkendelse, men kun når særskilt diffkontrol beviser, at intet andet geodata ændres.
+
+## Offentlig projektinformation
+
+- Forsidens topmenu linker til `about.html` ved konto, tur og Rav-assistent.
+- Siden forklarer ejer, formål, fravær af fundgaranti, forskellen mellem RavScore og landsdelens grundpotentiale samt nødvendige modelkompromiser.
+- Kontakt bruger et `mailto`-link. Frivillig støtte bruger MobilePay Box `4214MX` med synligt link og lokalt genereret QR-kode. Der indsamles ingen nye brugerdata.
+- Ejerbilleder leveres som responsive WebP-varianter. Siden har pc- og mobillayout og er en del af service-workerens versionsstyrede appskal.
+- Informationssiden påvirker ikke Candidate G, score, runtime-data, geografi eller administration. Se DEC-0076.
 
 ## Offentlig scoremotor
 

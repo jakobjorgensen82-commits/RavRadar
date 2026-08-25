@@ -18,6 +18,8 @@ Ved enhver ny version skal assistenten uden særskilt påmindelse:
 - markere hvad der er erstattet, forkastet eller fortsat uklart,
 - og køre RDKS-validering samt relevante tests.
 
+Ejeren har stående godkendt, at topversionsfeltet i `data/kystdata.json` og `data/zones.geojson` automatisk følger den reelle releaseversion. Codex skal derfor ikke bede om en ny særskilt godkendelse til en ren versionsfeltsynkronisering. Før commit skal en særskilt diff bevise, at kun versionsfeltet er ændret; enhver anden ændring af geodata, zoner, geometri eller land-/vandpunkter falder uden for godkendelsen og skal stoppe releasen.
+
 En version må ikke afleveres, hvis projektets hukommelse stadig beskriver en tidligere version eller mangler væsentlige beslutninger fra den aktuelle samtale.
 
 Ved konflikt gælder: brugerens aktuelle instruktion > aktiv RDKS-beslutning > verificeret aktuel kodeadfærd > håndbog > changelog > gamle chats.
