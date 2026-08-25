@@ -7,7 +7,9 @@
 - [x] Forbyd bevægelse, evidens, U/V, hastighed, retning og pil under fastholdelsen; næste ægte prøve bruger den faktiske tidsafstand.
 - [x] Bevar fail-closed efter tre timer og ved enhver ændret punkt-/kildekontekst.
 - [x] Bestå målrettede lokale regressioner og dokumentér DEC-0074 uden score-, geometri- eller adminændring.
-- [ ] Bestå exact-head-kildegaten og merge den eksakte grønne head.
+- [x] Bestå exact-head `32816129342` på `35c8b7fb` og merge PR #140 som `d3b4542f`.
+- [x] Afgræns første produktionsstop `32816237198` til en forældet statisk test, efter at strømhistorik, vejr og offentlig runtime var bygget grønt.
+- [x] Ret testkontrakten til den faktiske 673-dækning uden ændring af score, state, vejr eller geodata.
 - [ ] Bestå frisk 210/673-produktion og kontrollér offentligt Candidate G-only, fortsat historik og korrekt mellemtimeadfærd.
 
 Efter grøn produktionslukning fortsætter før-lanceringsroadmapet. Denne rettelse kræver ikke en ny 48-timers realtidstest og opbygger ikke kunstig historik.

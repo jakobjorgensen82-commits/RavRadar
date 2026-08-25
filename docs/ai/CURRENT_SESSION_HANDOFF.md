@@ -6,7 +6,7 @@
 - Kandidaten vælger kun strøm på eller før målreferencen. DMI/Copernicus kræver eksakt tid; kun de otte regionalproxyer må fastholde den seneste afledte transporttilstand i højst tre timer.
 - Fastholdelsen tilfører ingen bevægelse, evidens eller måling og viser ingen U/V, hastighed, retning eller pil. Næste ægte prøve integrerer faktisk tidsafstand; over tre timer stoppes lokalt.
 - Candidate G 20/50/30 er fortsat eneste offentlige profil uden legacyfallback eller rollback. Scorekurver, zoner, geometri, land-/vandpunkter og central admin er urørte.
-- Målrettede tests er grønne. Exact-head, merge, frisk produktion og offentlig efterkontrol mangler. Se DEC-0074. Senere ældre arbejdscheckpoints i denne fil er historik.
+- PR #140 bestod exact-head `32816129342` og blev merged som `d3b4542f`. Produktion `32816237198` byggede historik og runtime grønt, men en forældet statisk test stoppede før deploy. Testen er rettet til den faktiske 673-kontrakt; ny exact-head, fuld produktion og offentlig efterkontrol mangler. Se DEC-0074. Senere ældre arbejdscheckpoints i denne fil er historik.
 
 ## Aktuelt arbejdscheckpoint – 2026-08-24 4.0.273
 

@@ -1,3 +1,11 @@
+## 2026-08-25 – 4.0.277 exact-head grøn; forældet produktions-testkontrakt rettet
+
+- PR #140 bestod exact-head `32816129342` på `35c8b7fb` og blev merged som `d3b4542f`.
+- Produktion `32816237198` byggede syvdages strømhistorik, frisk vejr, proveniens og offentlig runtime grønt. Den fulde validering stoppede derefter før releasegate og deploy.
+- Stoppet skyldtes kun, at `test-current-full-coverage-gate` stadig søgte efter det tidligere statiske feltnavn. Den udførte produktionsaudit brugte allerede den nye strenge 673-kontrakt.
+- Testen kræver nu `verifiedScoreReadyParts = verifiedPartGridPoints + verifiedNativeCadenceHeldParts`. Dette lemper ikke kravet: alle 673 dele skal fortsat være eksakt verificerede eller have en dokumenteret, højst tre timer gammel native-cadence-tilstand.
+- Scoremodel, stateberegning, vejr, zoner, geometri, land-/vandpunkter og central admin-data er urørte. Ny exact-head og fuld produktion afventer.
+
 ## 2026-08-25 – 4.0.277 årsagstro native tretimerskadence
 
 - En naturlig mellemtime stoppede sikkert på 666/673. State var ikke tabt; en fremtidig regionalproxyprøve var fejlagtigt talt som aktuel readiness, mens den timeskarpe audit afviste den.
