@@ -8,6 +8,10 @@
 - PR #164/exact-head `33019055639` blev merged som `e9cd20ee`. Første D1-cutover `33019198166` oprettede ti EU-shards og deployede Workeren, men stoppede før migration/Edge på en kort health-udbredelsesforsinkelse. Payloadfri health blev derefter grøn, og verifikationen har nu bounded retry uden svagere krav.
 - PR #166/exact-head `33019805663` blev merged som `2d12c085`. D1-cutover `33019868542` bestod med fire migrerede kilderækker, fire idempotente dubletter ved andet gennemløb, aktiv D1-Edge og grøn ikke-skrivende grænsekontrol.
 - Produktion `33019856228`, Pages-job `98351206091` og offentlig `rr-20260826224651-210` er grønne på 210/673/420/2.100, 210/210 aktive zoner, befolket rangliste og nul fejl. Read-only monitor `33021364240` verificerede ti shards og 0 % forbrug uden turlæsning.
+- Begge Cloudflare-tokens blev sat til **No expiration** uden værdiskift eller bredere rettigheder. Supabase-PAT'et blev roteret til udløb 25. august 2027; ende-til-ende-D1-run `33024408547` bestod før tilbagekaldelse af gammel og ubrugt mellem-token. Payloadfri audit `33024621109`/`98362935528` genbekræftede ti shards og 0 %.
+- Første rotationsprøve `33023652174` stoppede sikkert ved tokenformatet på grund af adskilte browser-/Windows-udklipsholdere. Ingen værdi blev logget, og den korrigerede overførsel brugte en lokal engangskanal uden fil eller kommandolinjeværdi.
+- Ejeren ønskede ingen Codex-kalenderpåmindelse. Et secret-frit GitHub-workflow med kun `issues: write` opretter og tildeler i stedet en issue fra 60 dage før PAT-udløb og følger op ved 30/14/7/3/1/0 dage; GitHub-kontoens issuelevering er verificeret som GitHub + mail.
+- En senere analyse må sammenligne offentligt synlige Ravudsigten-resultater mod RavRadar over flere vejrsituationer og eventuelle uafhængige fund. Den er hypoteseorienteret, omgår ingen adgang, har `scoreImpact=false`/`publicRuntime=false` og må kun stå i RDKS, roadmap og changelog – aldrig i app, offentlig håndbog, ekspert-/adminflader eller public runtime.
 
 ## 2026-08-26 – 4.0.286 lukker rullende Candidate G-regression, produktionsverificeret
 

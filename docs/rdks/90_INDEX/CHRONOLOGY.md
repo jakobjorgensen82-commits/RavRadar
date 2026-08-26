@@ -11,7 +11,11 @@
 7. PR #164 bestod exact-head `33019055639` og blev merged som `e9cd20ee`. Første D1-run `33019198166` oprettede ti EU-shards og deployede Workeren, men stoppede sikkert før migration/Edge på den umiddelbare health-udbredelsesforsinkelse. Efterfølgende payloadfri health var grøn; bounded retry blev tilføjet før ny exact-head og cutover.
 8. Bounded retry bestod PR #166 exact-head `33019805663` og blev merged som `2d12c085`. Cutover `33019868542` migrerede fire Supabase-rækker, genkendte fire idempotente dubletter i andet gennemløb og satte Edge i D1-normaldrift gennem grøn privat og offentlig grænsekontrol.
 9. Fuld produktion `33019856228` og Pages-job `98351206091` udgav `rr-20260826224651-210` som 4.0.287. Offentlig audit viste 210/210 aktive zoner, befolket **Bedste områder**, 673 dele, 420 aktuelle og 2.100 prognosevisninger uden fejl.
-10. Read-only monitor `33021364240`/`98352259752` verificerede ti shards, 0 MB afrundet og 0 % forbrug uden at læse ture. Supabase-varslet og credential-rotationer forbliver drift, mens implementeringen er lukket.
+10. Read-only monitor `33021364240`/`98352259752` verificerede ti shards, 0 MB afrundet og 0 % forbrug uden at læse ture.
+11. Begge mindst-mulige Cloudflare-tokens blev sat til **No expiration** uden værdiskift. Supabase-PAT'et blev sikkert udskiftet til udløb 25. august 2027; `33024408547` bestod hele D1-kæden, før det gamle og et ubrugt mellem-token blev tilbagekaldt.
+12. Første rotationsprøve `33023652174` stoppede sikkert ved formatkontrollen på grund af adskilte browser-/Windows-udklipsholdere. Ingen værdi blev logget; korrigeret overførsel brugte en lokal engangskanal uden fil eller kommandolinjeværdi. Audit `33024621109`/`98362935528` genbekræftede ti shards og 0 % uden turlæsning.
+13. Ejeren afviste Codex-kalenderpåmindelse og valgte GitHub-mail. Et secret-frit workflow med kun `issues: write` opretter/tildeler en issue fra 60 dage før udløb og følger op ved 30/14/7/3/1/0 dage. GitHub-kontoens levering for deltagelse/tildeling er verificeret som GitHub + mail.
+14. En senere Ravudsigten-sammenligning er godkendt som intern roadmapopgave baseret på offentligt synlige resultater og uafhængige fund. Den har `scoreImpact=false`/`publicRuntime=false` og må kun omtales i RDKS, roadmap og changelog, ikke i bruger-/ekspertrettede flader.
 
 ## 2026-08-26 – 4.0.286 fra kandidat til produktionsverificeret efter offentlig 4.0.285-afvisning
 

@@ -24,13 +24,20 @@ GitHub Actions kræver:
 
 Secretværdier må aldrig skrives i PR, issue, log, artifact, dokumentation eller chat. `TRIP_PSEUDONYM_SECRET_V1` er en stabil identitetsnøgle: blind rotation gør eksisterende kontoture ulæselige. En nødvendig rotation kræver en særskilt versioneret v2-migration. Gateway-secret kan roteres koordineret gennem GitHub → Cloudflare → Supabase.
 
-Aktuelle credential-frister er:
+Aktuel credential-status er:
 
-- `SUPABASE_ACCESS_TOKEN` roteres før 25. september 2026;
-- Cloudflare deploy- og audit-token roteres før 27. august 2027;
+- `SUPABASE_ACCESS_TOKEN` er et dedikeret PAT, som udløber 25. august 2027. Supabase-dashboardet accepterede i den aktuelle konto højst en dato under ét år frem, selv om Supabases generelle produktbeskrivelse også omtaler tokens uden udløb;
+- Cloudflare deploy-tokenet har kun D1 Write og Workers Scripts Write og er sat til **No expiration**;
+- Cloudflare audit-tokenet har kun D1 Read og er sat til **No expiration**;
 - gateway-secret kan roteres koordineret, mens pseudonym-secret kun må roteres gennem en særskilt v2-migration.
 
+Cloudflare-tokenværdierne ændrede sig ikke, da udløbet blev fjernet. De skal derfor ikke roteres efter en kalender, men straks ved mistanke om kompromittering eller en nødvendig rettighedsændring. Supabase-PAT'et skal udskiftes, fordi den installerede udløbsdato ikke kan forlænges som en del af RavRadars deploykæde.
+
+Det separate **Warn before RavRadar credential expiry**-workflow har ingen adgang til secrets eller produktionsdata. Fra 60 dage før 25. august 2027 opretter det en tydeligt navngivet GitHub-issue, tildeler den til repositoryejeren og følger op ved 30, 14, 7, 3, 1 og 0 dage. GitHub-levering for tildelte/omtalte issues er kontrolleret som **on GitHub, Email**. Ved hver rotation skal dato og issue-markør opdateres i workflowet og denne runbook.
+
 Rotation skal ske gennem den godkendte interaktive kanal. Værdier, token-id'er, konto-id og fuld privat gateway-origin må ikke kopieres til dokumentation eller logs.
+
+Sikker Supabase-rotation er: opret nyt PAT, opdatér GitHub-secretet gennem en lukket kanal, kør den fulde D1-deployverifikation, og tilbagekald først derefter det gamle PAT. En mislykket verifikation betyder, at det gamle PAT bevares, indtil årsagen er rettet og en ny kørsel er grøn.
 
 ## Første idriftsættelse og normal opdatering
 

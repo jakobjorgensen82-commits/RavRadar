@@ -4,11 +4,13 @@
 
 - Den færdige lagerarkitektur er Supabase Auth/Edge og ti EU-låste Cloudflare D1-shards; rå ID, mail, navn, JWT, GPS og rute forlader ikke Supabase-grænsen.
 - Lokal kontrakt er grøn for service-HMAC, pseudonymisering, idempotens, turlog, ejer-sletning, pre/post-cutover-migration, kapacitetskontrol og eksplicit Supabase-rollback.
-- Infrastruktur-PR #162/#163, dedikeret Cloudflare-konto, mindst-mulige tokens, krypterede GitHub-secrets og rollback-Edge-deploy `33014772035` er grønne. Værdier og private ture blev ikke vist eller logget.
+- Infrastruktur-PR #162/#163, dedikeret Cloudflare-konto, mindst-mulige tokens, krypterede GitHub-secrets og rollback-Edge-deploy `33014772035` er grønne. Værdier og private ture blev ikke vist eller logget. Cloudflare-token er nu uden udløb; Supabase-PAT'et udløber 25. august 2027.
 - PR #164/exact-head `33019055639` blev merged som `e9cd20ee`. Første D1-run `33019198166` oprettede ti EU-shards og deployede Workeren, men stoppede sikkert før migration/Edge på den korte health-udbredelsesforsinkelse.
 - PR #166 bestod exact-head `33019805663` og blev merged som `2d12c085`. Cutover `33019868542` bestod privat Worker-grænse, pre-/post-migration, D1-Edge og ikke-skrivende CORS/login/feltkontrol; fire kilderækker blev migreret og genkørslen var idempotent.
 - Produktion `33019856228` og Pages-job `98351206091` udgav offentlig `rr-20260826224651-210` med 210/210 aktive zoner, befolket **Bedste områder**, 210/673/420/2.100 og nul fejl. Read-only monitor `33021364240` viste ti shards og 0 % lagerforbrug uden turlæsning.
-- Supabase-varslet 9. september 2026 og de dokumenterede credential-rotationer forbliver aktive driftsopgaver; ingen sikkerheds- eller releasegate må lempes.
+- Supabase-PAT-rotationen er ende-til-ende-verificeret i `33024408547`; først derefter blev de to gamle PAT'er tilbagekaldt. Cloudflare-audit `33024621109` bestod efter **No expiration**-ændringen. Et nyt secret-frit GitHub-issue/mailvarsel starter 60 dage før PAT-udløb.
+- Supabase-varslet 9. september 2026 og næste PAT-udløb forbliver aktive driftsopgaver; ingen sikkerheds- eller releasegate må lempes. Cloudflare-token roteres kun ved kompromittering eller rettighedsændring.
+- Planlagt Ravudsigten-sammenligning er intern og score-neutral: kun RDKS/roadmap/changelog, `scoreImpact=false`, `publicRuntime=false`, ingen app-, håndbogs-, ekspert-, admin- eller public-runtime-visning.
 - Se DEC-0082 og øverste checkpoint i `docs/ai/CURRENT_SESSION_HANDOFF.md`.
 
 ## Produktionsverificeret 4.0.286 – faktisk runtimegate og native-hold-score
