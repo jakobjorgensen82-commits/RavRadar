@@ -135,7 +135,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.285 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.286 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Inspect verified Candidate G continuation recovery
         id: candidate-g-recovery
@@ -187,7 +187,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.285 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.286 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Report skipped refresh
         if: steps.preflight.outputs.should_run != 'true'
@@ -307,7 +307,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.285 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.286 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Save progressed DMI GRIB download cache
@@ -433,7 +433,7 @@ jobs:
           DMI_DEPLOYED_CACHE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/live/dmi-forecast-cache.json"
           WEATHER_REQUEST_TIMEOUT_MS: 25000
           DMI_OCEAN_REQUEST_TIMEOUT_MS: 60000
-          WEATHER_USER_AGENT: "RavRadar/4.0.285 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.286 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Attach scientific current provenance and exact DMI grid points
@@ -443,6 +443,13 @@ jobs:
       - name: Rebuild deterministic public weather runtime before validation and deploy
         if: steps.preflight.outputs.should_run == 'true'
         run: node scripts/generate-public-conditions.mjs
+
+      - name: Audit actual Candidate G public runtime before deploy
+        if: steps.preflight.outputs.should_run == 'true'
+        run: >-
+          node scripts/audit-ravscore-candidate-g-public-shadow.mjs
+          --input data/live/conditions.json
+          --output .geometry-v2-work/candidate-g-public-runtime-audit.json
 
       - name: Generate and strictly validate production reference zones
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'

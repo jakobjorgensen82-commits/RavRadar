@@ -2,11 +2,12 @@
 
 ## Candidate G-cadencefase og state-recovery
 
-- `js/core/ravscore-regime-memory.js` – fast 48-timersrand, højst tre timers verificeret kompakt kadence og fail-closed ved manglende forgænger eller internt hul.
+- `js/core/ravscore-regime-memory.js` – fast 48-timersrand, højst tre timers verificeret kompakt kadence og fail-closed ved manglende forgænger eller internt hul. Når en virkelig forgænger kræves for et faseskudt komplet vindue, bevares den kompakt til næste rullende reference, men holdes ude af aktuelt replay og dækningssum.
 - `js/core/ravscore-candidate-g-state-pipeline.js` – fortsætter kun kompatibel model-/profil-/kystkontekst og gemmer den dataminimerede transportstate.
 - `scripts/restore-candidate-g-continuation.mjs` – eksakt artifact-/hash-låst engangsrecovery; 4.0.285-strategien sammenfletter kun compact transport evidence og kræver mindst 99 % `READY`.
 - `data/admin/candidate-g-continuation-recovery.json` – tids-, datasæt-, run-, delantal- og SHA-256-binding for den aktuelle engangshændelse.
-- `scripts/test-ravscore-regime-memory.mjs`, `test-ravscore-candidate-g-state-pipeline.mjs` og `test-candidate-g-continuation-recovery-4.0.272.mjs` – fase-, kort-vindue-, split-run- og recoverykontrakter.
+- `scripts/test-ravscore-regime-memory.mjs`, `test-ravscore-candidate-g-state-pipeline.mjs` og `test-candidate-g-continuation-recovery-4.0.272.mjs` – fase-, kort-vindue-, to-rullende-reference-, split-run- og recoverykontrakter.
+- `scripts/audit-ravscore-candidate-g-public-shadow.mjs` + `.github/workflows/update-and-deploy.yml` – syntetisk selftest og obligatorisk audit af den faktisk genererede public runtime før deploy.
 
 Se DEC-0081. Recoveryen må ikke kopiere rå strøm, vejr, scoreoutput, koordinater, geometri, punkter eller private payloads.
 
@@ -23,7 +24,7 @@ Se DEC-0081. Recoveryen må ikke kopiere rå strøm, vejr, scoreoutput, koordina
 Windows Application Control må ikke omgås for Edge-deploy. Brug en godkendt browser-, CI- eller CLI-kanal. Se DEC-0080.
 
 ## Data- og buildpipeline
-- `.github/workflows/update-and-deploy.yml` – samlet produktionsorkestrering og eneste repositoryworkflow med Pages-deploy. Det startes normalt eksternt via `workflow_dispatch`.
+- `.github/workflows/update-and-deploy.yml` – samlet produktionsorkestrering og eneste repositoryworkflow med Pages-deploy. Det startes normalt eksternt via `workflow_dispatch` og auditerer den faktiske Candidate G-runtime efter generering og før fuld validering, Supabase-sync, artifact og Pages.
 - `.github/workflows/validate-copernicus-current-pilot.yml` og `preserve-copernicus-current-shadow.yml` – privat, score-neutral strømopsamling og read-only cacheheartbeat. Heartbeatet kan kun dispatch'e piloten ved manglende aktuel UTC-time; piloten genbruger kun en time med matchende centralt vandpunktsfingeraftryk og komplet recordmanifest. Ingen af dem har Pages-rettigheder.
 - De øvrige workflowfiler er registrerede private, manuelle QA-/recoveryjobs uden Pages-deploy. `scripts/test-workflow-validation-order-4.0.108.mjs` er det bindende aktive inventar. `pages-build-deployment` er GitHubs egen Pages-mekanisme, ikke en repositoryfil.
 - `scripts/sync-admin-config.py` – henter central admin-konfiguration.

@@ -1,6 +1,16 @@
 # RavRadar - aktivt roadmap
 
-## P0 – luk 4.0.285 Candidate G-cadencefase
+## P0 – luk 4.0.286 rullende Candidate G-kontinuitet
+
+- [x] Afvis 4.0.285 funktionelt efter ellers grøn exact-head, merge og produktion; dokumentér 0/210 aktive zoner og 665/673 `WINDOW_INCOMPLETE`.
+- [x] Bevar den virkelige kompakte forgænger til næste rullende reference uden replay, ny måling eller ekstra dækning.
+- [x] Lås to efterfølgende faseskudte referencer med målrettede tests.
+- [x] Flyt audit af den faktiske public runtime ind før deploy og bevis stop på 4.0.285-masseregressionen.
+- [x] Simulér ny recovery mod de virkelige offentlige artifacts til 672/673 `READY`.
+- [x] Synkronisér 4.0.286-version, RDKS, håndbøger og changelog med kun topversionsændring i beskyttet geodata.
+- [ ] Bestå exact-head, merge, fuld frisk produktion og positiv offentlig ranglistekontrol.
+
+## Afsluttet men funktionelt afvist – 4.0.285 Candidate G-cadencefase
 
 - [x] Bevis artifact-for-artifact, at første 4.0.284-build ændrede 672/673 `READY` til 8/673 og 209/210 aktive zoner til 0/210.
 - [x] Ret kun 48-timersgrænsens cadencefase inden for den eksisterende tretimersgrænse.
@@ -8,7 +18,8 @@
 - [x] Hash-lås sidste sunde offentlige compact state og gendan kun afledte transportbeviser.
 - [x] Bevis 672/673 `READY` i en lokal simulation med de virkelige offentlige artifacts.
 - [x] Opdatér RDKS, håndbøger, changelog og 4.0.285-version uden geodataændring.
-- [ ] Bestå exact-head, merge, fuld frisk produktion og positiv offentlig aktuel-ranglistekontrol.
+- [x] Bestå exact-head `32993055324`, merge `de6b7844` og fuld frisk produktion `32993270783`.
+- [x] Kør positiv offentlig kontrol; 4.0.285 blev korrekt afvist og erstattes af 4.0.286.
 
 Se DEC-0081. Ingen scorekurve, zone, geometri eller land-/vandpunkt ændres.
 
@@ -23,7 +34,7 @@ Se DEC-0081. Ingen scorekurve, zone, geometri eller land-/vandpunkt ændres.
 - [x] Versions-/RDKS-/håndbogs-/changeloglukning og særskilt geodatadiff.
 - [x] Lokal source-/releasegate og målrettet browserkontrol uden fjernassistentskald.
 - [x] Exact-head `32986025916`, PR #155, merge `a92e2704`, fuld pushproduktion `32987875007` og offentlig sikkerheds-/strukturkontrol.
-- [ ] Candidate G-cadencefasen fra den funktionelle efterkontrol lukkes særskilt i P0 4.0.285 ovenfor.
+- [ ] Candidate G's rullende cadencefase fra den funktionelle efterkontrol lukkes særskilt i P0 4.0.286 ovenfor.
 - [ ] Følg Supabase-egress og varslet om mulig begrænsning fra 9. september 2026 uden at lempe sikkerhedskrav.
 
 Se DEC-0080. Candidate G, score, vejr, zoner, geometri og land-/vandpunkter er uden for ændringen.

@@ -1,8 +1,42 @@
 # RavRadar - aktuelt Codex-handoff
 
+## AKTUELT CHECKPOINT – 2026-08-26 – KANDIDAT 4.0.286
+
+Dette er den aktuelle overdragelse. Alle efterfølgende checkpoints i filen er historik.
+
+### Placering og beskyttelse
+
+- Arbejd kun i `C:\Users\Lenovo T14\Documents\GitHub\RavRadar\.codex-worktrees\stability-security-4.0.284` på `codex/stability-security-4.0.284`.
+- Rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data er urørte. En versionsløftning må kun ændre topversionsfeltet 4.0.285 → 4.0.286 i de to beskyttede geodatafiler under DEC-0076.
+
+### 4.0.285 blev deployet, men er funktionelt afvist
+
+- Commit `20ad0ce1` og triggercommit `f041b843` blev pushet i PR #156. Exact-head `32993055324` bestod, PR'en blev merged som `de6b78444bf1d9bd19beb6100ceb193fe40a8d85`, og produktion `32993270783` bestod recovery, frisk vejr/runtime, fuld validering, releasegate, Supabase-sync, artifact og Pages.
+- Den skærpede offentlige Playwright-kontrol fandt nul browser-, side- og HTTP-fejl og komplet 210/673/420/2.100-struktur, men afviste korrekt 0/210 aktive zoner. Den publicerede state havde 665 `WINDOW_INCOMPLETE` og 8 `READY`.
+- Den nye dataminimerede shadowaudit af det offentlige 4.0.285-artifact afviser samme signatur med `AcceptedNearBoundaryIncomplete=665`. 4.0.285 må ikke kaldes stabil baseline.
+
+### Rodårsag og kandidat 4.0.286
+
+- 4.0.285 brugte den virkelige kompakte forgænger før den faseskudte 48-timersgrænse til at gøre samme beregning `READY`, men `buildBoundedCurrentTransportMemory` publicerede kun evidensen inde i vinduet.
+- Ved næste rullende reference var forgængeren derfor væk, og 665 dele faldt tilbage til cirka 47 timers dækning.
+- 4.0.286 bevarer forgængeren kompakt, når den var nødvendig for faseskiftet. Replay og dækningssum bruger stadig kun evidensen inde i vinduet; den faste rand 0 er uændret, og der opfindes ingen måling eller interpolation.
+- Regime- og statepipeline-tests følger nu en anden efterfølgende reference og kræver fortsat `READY` med 48 timers dækning.
+- `.github/workflows/update-and-deploy.yml` auditerer den faktisk genererede `data/live/conditions.json` umiddelbart efter runtimegenerering og før fuld validering, Supabase-sync, artifact og Pages. Den tidligere fulde validering kørte kun shadowauditens `--self-test`.
+- En ny lokal recoverysimulation mod offentligt 4.0.285-mål `rr-20260826172504-210` og hash-låst offentlig kilde fra workflow `32978542594` genskabte 672/673 `READY`; efterkontrollen viste recoveryen inaktiv.
+
+### Kontroller og næste trin
+
+- De målrettede regime-, statepipeline-, recovery-, shadow- og workflowtests er grønne. Den nye faktiske gate afviser det offentlige 4.0.285-artifact som forventet.
+- Færdiggør 4.0.286-version, RDKS, håndbøger og changelog; verificér særskilt geodatadiff og kør lokal source gate.
+- Commit/push, exact-head, PR/merge og fuld frisk produktion. Den nye faktiske shadowaudit skal være grøn før deploy.
+- Offentlig slutkontrol skal kræve en befolket aktuel rangliste samt ingen browser-, side- eller HTTP-fejl.
+- Supabases mulige begrænsning fra 9. september 2026 forbliver en separat driftsrisiko; sikkerhed eller releasegates må ikke lempes. GitHub Pages er fortsat kanonisk, mens `ravradar.dk` ikke er løst.
+
+Se DEC-0080 og DEC-0081. 4.0.286 er ikke færdig eller produktionsverificeret ved dette checkpoint.
+
 ## AKTUELT CHECKPOINT – 2026-08-26 – KANDIDAT 4.0.285
 
-Dette er den aktuelle overdragelse. Alle senere checkpoints i filen er historik.
+Dette checkpoint er historik og er erstattet af 4.0.286-checkpointet ovenfor.
 
 ### Placering og beskyttelse
 

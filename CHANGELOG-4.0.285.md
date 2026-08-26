@@ -1,5 +1,7 @@
 # RavRadar 4.0.285
 
+> **Erstattet af 4.0.286:** PR #156 bestod exact-head `32993055324`, blev merged som `de6b78444bf1d9bd19beb6100ceb193fe40a8d85`, og produktion `32993270783` bestod alle daværende predeploy-gates. Den skærpede offentlige positive audit fandt derefter 0/210 aktive zoner og 665/673 `WINDOW_INCOMPLETE`. 4.0.285 er derfor strukturelt udgivet, men ikke en funktionelt stabil baseline. 4.0.286 bevarer grænsebeviset til næste rullende reference og auditerer den faktiske runtime før deploy.
+
 4.0.285 retter en Candidate G-cadencefase, som gjorde den aktuelle rangliste tom efter den ellers grønne 4.0.284-sikkerhedsrelease.
 
 - Offentlige Pages-artifacts lokaliserede faldet til første 4.0.284-build: 672/673 `READY` og 209/210 aktive zoner blev til 8/673 og 0/210.

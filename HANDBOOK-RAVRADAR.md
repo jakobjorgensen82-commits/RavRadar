@@ -1,5 +1,13 @@
 # RavRadar Håndbog
 
+## Rullende Candidate G-kontinuitet og kontrol før udgivelse – 4.0.286
+
+Når den fælles reference ligger mellem native strømprøver, kan en virkelig kompakt prøve lige før 48-timersgrænsen bevise, at forløbet er sammenhængende. Dette bevis skal også følge den kompakte tilstand til næste rullende reference; ellers kan næste time fejlagtigt miste den første del af de dokumenterede 48 timer.
+
+Beviset før grænsen tæller stadig ikke som en måling i det aktuelle vindue. Det afspilles ikke, giver ingen ekstra dækningsminutter og ændrer ikke den faste begyndelsestilstand 0 ved den eksakte grænse. Et reelt kort vindue uden forgænger samt huller over tre timer forbliver utilgængelige.
+
+RavRadars produktionskæde kontrollerer nu den faktisk nybyggede offentlige Candidate G-runtime, før noget synkroniseres eller deployes. En landsdækkende fejl med næsten alle kyststrækninger fast i et accepteret, men for kort vindue stopper derfor før udgivelse. Candidate G 20/50/30, fysikken, vejr, zoner, geometri og land-/vandpunkter er uændrede. Se [DEC-0081](docs/rdks/10_DECISIONS/DEC-0081-CANDIDATE-G-CADENCE-PHASE-BOUNDARY-RECOVERY.md).
+
 ## Candidate G og en forskudt 48-timersgrænse – 4.0.285
 
 Candidate G bruger et rullende vindue med 48 timers sammenhængende, verificeret og afledt strøm. Nogle kilder leverer på tretimerskadence, mens den fælles aktuelle reference kan ligge i en mellemtime. Et komplet forløb må derfor ikke blive erklæret kort alene, fordi første måling inde i vinduet ligger én eller to timer efter den matematiske grænse.
@@ -555,7 +563,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.285
+**Håndbogsversion:** 4.0.286
 
 **Opdateret:** 19. august 2026
 

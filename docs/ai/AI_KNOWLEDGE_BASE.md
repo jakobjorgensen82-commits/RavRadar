@@ -1,5 +1,13 @@
 # AI Knowledge Base – RavRadar
 
+## 4.0.286 – et faseskudt grænsebevis skal overleve næste rullende reference
+
+Når `buildBoundedCurrentTransportMemory` bruger en virkelig kompakt forgænger før `referenceAt - 48h` til at dokumentere ubrudt højst tretimerskadence, skal forgængeren bevares i den kompakte state til næste reference. Ellers kan samme beregning blive `READY`, mens næste produktion igen mister én times sammenhæng og bliver `WINDOW_INCOMPLETE`.
+
+Forgængeren er kun kontinuitetsbevis. Det aktuelle replay og dækningsberegningen bruger fortsat kun evidens fra og efter vinduesgrænsen, som starter med fast tilstand 0. Der opfindes ingen måling eller interpolation, og et reelt kort vindue uden forgænger forbliver lukket.
+
+En syntetisk shadow-selftest er ikke bevis for den runtime, produktionen netop har bygget. `data/live/conditions.json` skal auditeres fail-closed efter generering og før Supabase-sync, artifact og Pages. Se DEC-0081.
+
 ## 4.0.285 – 48-timersgrænsen skal tåle en dokumenteret cadencefase
 
 `buildBoundedCurrentTransportMemory` må ikke kræve, at første bevarede bevis ligger præcis på `referenceAt - 48h`. Hvis referencen ligger mellem native prøver, er vinduet komplet, når et verificeret compact bevis umiddelbart før grænsen og første bevis efter grænsen sammen dokumenterer højst tre timers kadence. Den faste rand er fortsat 0 ved den eksakte grænse; forgængeren er sammenhængsbevis, ikke en ny måling i vinduet.

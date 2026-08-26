@@ -3,7 +3,7 @@
   "enabled": true,
   "reason": "One-time recovery of the verified cadence-phase lineage after a shifted exact-hour reference pruned the compact sample immediately before the 48-hour boundary.",
   "restoreStrategy": "merge-transport-evidence",
-  "targetDatasetId": "rr-20260826163014-210",
+  "targetDatasetId": "rr-20260826172504-210",
   "minimumRecoveredReadyPartRatio": 0.99,
   "poisonedLineage": {
     "kind": "accepted-cadence-phase-window-incomplete",

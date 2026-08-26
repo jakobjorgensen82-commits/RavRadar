@@ -1,3 +1,11 @@
+## 2026-08-26 – kandidat 4.0.286 lukker rullende Candidate G-regression før deploy
+
+- PR #156 bestod exact-head `32993055324`, blev merged som `de6b7844`, og produktion `32993270783` udgav 4.0.285 gennem alle daværende gates.
+- Den skærpede offentlige audit afviste derefter resultatet med 0/210 aktive zoner og 665/673 `WINDOW_INCOMPLETE`, selv om browser-, HTTP- og 210/673/420/2.100-strukturen var fejlfri.
+- Forgængeren før en faseskudt 48-timersgrænse blev brugt i samme beregning, men ikke bevaret til næste rullende reference. 4.0.286 bevarer kun dette virkelige kompakte kontinuitetsbevis; det afspilles eller tælles ikke i det aktuelle vindue.
+- Regime- og statepipeline-tests følger nu to efterfølgende referencer. Den nye produktionsgate auditerer den faktisk genererede runtime før Supabase-sync, artifact og Pages og afviser det offentlige 4.0.285-artifact.
+- En ny virkelig artifactsimulation genskabte 672/673 `READY` og gjorde recoveryen inaktiv. Exact-head, fuld produktion og positiv offentlig ranglistekontrol afventer. Se DEC-0081 og `CHANGELOG-4.0.286.md`.
+
 ## 2026-08-26 – kandidat 4.0.285 retter Candidate G-cadencefasen
 
 - PR #155/exact-head `32986025916`, merge `a92e2704` og produktion `32987875007` udgav 4.0.284-sikkerhedshærdningen gennem fulde gates.
