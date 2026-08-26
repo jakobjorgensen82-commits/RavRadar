@@ -29,11 +29,15 @@ Dette er den aktuelle overdragelse. Alle efterfølgende checkpoints i filen er h
 - De målrettede regime-, statepipeline-, recovery-, shadow- og workflowtests er grønne. Den nye faktiske gate afviser det offentlige 4.0.285-artifact som forventet.
 - 4.0.286-version, RDKS, håndbøger, changelog, særskilt geodatadiff og lokal source gate blev færdiggjort. PR #157 bestod exact-head `32995801418` og blev merged som `2f2fd14883fbb974b331774858a61473ca06acc4`.
 - Produktion `32995888183` anvendte recovery, frisk DMI/Copernicus og byggede runtime, men den nye faktiske shadowaudit stoppede korrekt før fuld validering, Supabase-sync, artifact og Pages. Offentlig 4.0.285 forblev urørt og sort.
-- Den første gateversion skrev kun exitkode i loggen. Kandidaten skriver nu kun fejlkoder og summerede ready/warmup/replay-/diagnostikoptællinger, aldrig del-ID'er, rå U/V, koordinater eller private felter. Kør ny exact-head/produktion, brug den sikre evidens til rodårsag, og ret før deploy.
+- Den første gateversion skrev kun exitkode i loggen. PR #158 tilføjede kun fejlkoder og summerede ready/warmup/replay-/diagnostikoptællinger, aldrig del-ID'er, rå U/V, koordinater eller private felter. Exact-head `32997043974` bestod, og PR'en blev merged som `ca784210eabd1f26a615116c6da00684fcf24a01`.
+- Produktion `32997118162` stoppede korrekt før deploy og viste 672 `READY`, én warmup, nul replaymismatch og 1.328 af forventede 1.344 modeevalueringer/diagnostikker. De manglende 16 var præcis de otte godkendte `dkss_lf`-dele i en to timer gammel `NATIVE_CADENCE_HOLD`.
+- Rodårsagen var Candidate G-evaluatorens ældre Phase D-fortrin: det krævede et aktuelt strømfelt og returnerede `MISSING_REQUIRED_PHASE_D_COMPONENT`, før den komplette Candidate G-memory blev brugt. Kandidaten går nu kun uden om dette fortrin ved allowlist-afledt eksakt tre-timers hold, `READY`, alder over 0/højst 3 timer og tomme aktuelle U/V-, fart-, retning- og alignmentfelter.
+- Almindelig unverified, for gammel, ikke-allowlisted og ikke-READY forbliver fail-closed. Begge modes, state/livepilot/forklaringskontrakter og et dataminimeret replay af de otte faktiske offentlige fejlpunkter er grønne med 16/16 modes, uden rå vektorer eller udskrevne identifikatorer.
+- Næste trin er source gate, ny exact-head/merge, fuld frisk produktion gennem den faktiske runtimegate, validate/release/Supabase/Pages og positiv offentlig rangliste-/browserkontrol.
 - Offentlig slutkontrol skal kræve en befolket aktuel rangliste samt ingen browser-, side- eller HTTP-fejl.
 - Supabases mulige begrænsning fra 9. september 2026 forbliver en separat driftsrisiko; sikkerhed eller releasegates må ikke lempes. GitHub Pages er fortsat kanonisk, mens `ravradar.dk` ikke er løst.
 
-Se DEC-0080 og DEC-0081. 4.0.286 er ikke færdig eller produktionsverificeret ved dette checkpoint.
+Se DEC-0080 og DEC-0081. 4.0.286 er ikke færdig eller produktionsverificeret ved dette checkpoint; den offentlige 4.0.285-side er fortsat sort og må ikke kaldes grøn.
 
 ## AKTUELT CHECKPOINT – 2026-08-26 – KANDIDAT 4.0.285
 

@@ -3,6 +3,7 @@ import {
   PHASE_D_HUNTABILITY_PROFILES,
   evaluatePhaseDHuntability,
 } from './phase-d-process-candidate.js';
+import { evaluateWaveApproachSupport } from './wave-approach.js?v=4.0.286';
 
 export const CANDIDATE_G_WEIGHTS = Object.freeze({
   huntability: 0.20,
@@ -142,6 +143,7 @@ function buildResearchExplanation({
   scoreBeforeOutflowExhaustionGate,
   outflowExhaustionGateApplied,
   mobilisationMemory,
+  nativeCadenceHoldUsed,
 }) {
   return {
     contractVersion: '1.1.0',
@@ -171,8 +173,10 @@ function buildResearchExplanation({
     },
     additiveScore,
     currentArrow: {
-      meaning: 'CURRENT_LOCAL_CURRENT_VECTOR_AT_SELECTED_CONTEXT',
-      timeMeaning: 'NOW',
+      meaning: nativeCadenceHoldUsed
+        ? 'NO_CURRENT_VECTOR_DURING_APPROVED_NATIVE_CADENCE_HOLD'
+        : 'CURRENT_LOCAL_CURRENT_VECTOR_AT_SELECTED_CONTEXT',
+      timeMeaning: nativeCadenceHoldUsed ? 'HELD_TRANSPORT_STATE_ONLY' : 'NOW',
     },
     directionalHistory: {
       meaning: currentLedTransport
@@ -235,15 +239,24 @@ function buildResearchExplanation({
   };
 }
 
-function currentLedTransportAndDelivery(base, memory, variant) {
+function currentLedTransportAndDelivery(base, memory, variant, context) {
   if (!variant.currentLedTransportPotential) return null;
   if (!finite(memory?.transportPotential)) return null;
   const transportPotential = clamp(memory.transportPotential);
   const eventTimingReadiness = finite(base.diagnostics?.eventTimingScore)
     ? clamp(base.diagnostics.eventTimingScore) / 100
     : 0.5;
-  const waveLandingReadiness = finite(base.diagnostics?.waveApproachSupportScore)
-    ? clamp(base.diagnostics.waveApproachSupportScore) / 100
+  const waveApproach = evaluateWaveApproachSupport({
+    weather: context?.weather,
+    onshoreDirectionDeg: context?.zone?.onshoreDirectionDeg,
+  });
+  const waveLandingSupport = finite(base.diagnostics?.waveApproachSupportScore)
+    ? base.diagnostics.waveApproachSupportScore
+    : waveApproach.available
+      ? waveApproach.supportScore
+      : null;
+  const waveLandingReadiness = finite(waveLandingSupport)
+    ? clamp(waveLandingSupport) / 100
     : 0.5;
   const landingReadiness = 0.60 * eventTimingReadiness + 0.40 * waveLandingReadiness;
   const waveLandingMaximumShare = clamp(variant.waveLandingMaximumShare, 0, 1);
@@ -270,6 +283,27 @@ function currentLedTransportAndDelivery(base, memory, variant) {
   };
 }
 
+function approvedNativeCadenceHold(context, hold, variant) {
+  if (!variant.currentLedTransportPotential
+    || hold?.transition !== 'NATIVE_CADENCE_HOLD'
+    || hold?.transportMemoryReady !== true
+    || hold?.transportMemoryStatus !== 'READY'
+    || Number(hold?.maximumHoldHours) !== 3) return false;
+  const evaluatedAt = Date.parse(hold?.evaluatedAt ?? '');
+  const referenceAt = Date.parse(hold?.referenceAt ?? '');
+  const ageHours = (evaluatedAt - referenceAt) / 3_600_000;
+  if (!(Number.isFinite(ageHours) && ageHours > 0 && ageHours <= 3)) return false;
+  const weather = context?.weather ?? {};
+  return [
+    weather.currentUMps,
+    weather.currentVMps,
+    weather.currentSpeedMps,
+    weather.currentDirectionDeg,
+    weather.currentAlignment,
+    weather.currentAlignmentScore,
+  ].every(value => !finite(value));
+}
+
 /**
  * Score-neutral Candidate G research evaluator.
  *
@@ -288,12 +322,16 @@ export function evaluateRavScoreCandidateG(
     includeDirectWind = true,
     historyGain = 0.40,
     historyMix = CANDIDATE_G_HISTORY_MIX,
+    nativeCadenceHold = null,
   } = {},
 ) {
   const variant = CANDIDATE_G_VARIANTS[variantId];
   if (!variant) throw new Error(`Unknown Candidate G variant: ${variantId}`);
   const base = evaluatePhaseDWaveProcessCandidate(context);
-  if (!base.available) return base;
+  const nativeCadenceHoldUsed = !base.available
+    && base.reason === 'MISSING_REQUIRED_PHASE_D_COMPONENT'
+    && approvedNativeCadenceHold(context, nativeCadenceHold, variant);
+  if (!base.available && !nativeCadenceHoldUsed) return base;
   if (!(finite(historyGain) && Number(historyGain) >= 0 && Number(historyGain) <= 1)) {
     throw new Error('Candidate G historyGain must be between zero and one');
   }
@@ -313,7 +351,7 @@ export function evaluateRavScoreCandidateG(
   }
 
   const directWindContribution = directWindState === null ? 0 : mix.directWind * directWindState;
-  const currentLedTransport = currentLedTransportAndDelivery(base, memory, variant);
+  const currentLedTransport = currentLedTransportAndDelivery(base, memory, variant, context);
   if (variant.currentLedTransportPotential && currentLedTransport === null) {
     return {
       ...base,
@@ -352,7 +390,9 @@ export function evaluateRavScoreCandidateG(
   const historyFactor = currentLedTransport === null
     ? clamp(1 + Number(historyGain) * directionalHistorySignal, 0, 2)
     : 1;
-  const baseTransportAndDelivery = Number(base.components.transportAndDelivery);
+  const baseTransportAndDelivery = finite(base.components?.transportAndDelivery)
+    ? Number(base.components.transportAndDelivery)
+    : null;
   const transportAndDelivery = currentLedTransport === null
     ? clamp(baseTransportAndDelivery * historyFactor)
     : currentLedTransport.transportAndDelivery;
@@ -361,7 +401,16 @@ export function evaluateRavScoreCandidateG(
       profile: variant.huntabilityProfile,
     })
     : null;
-  const huntability = round(huntabilityResult?.value ?? base.components.huntability);
+  if (nativeCadenceHoldUsed && !finite(huntabilityResult?.value)) {
+    return {
+      ...base,
+      available: false,
+      score: null,
+      scoreImpact: 'diagnostic-only',
+      reason: 'MISSING_REQUIRED_NATIVE_CADENCE_HUNTABILITY',
+    };
+  }
+  const huntability = round(huntabilityResult?.value ?? base.components?.huntability);
   const mobilisation = mobilisationMemory === null
     ? Number(base.components.mobilisation)
     : mobilisationMemory.mobilisationPotential;
@@ -429,6 +478,7 @@ export function evaluateRavScoreCandidateG(
     scoreBeforeOutflowExhaustionGate,
     outflowExhaustionGateApplied,
     mobilisationMemory,
+    nativeCadenceHoldUsed,
   });
   const limitations = new Set(base.confidence?.limitations || []);
   limitations.add('directional-history-is-research-prior');
@@ -453,9 +503,14 @@ export function evaluateRavScoreCandidateG(
     limitations.add('direct-wind-and-current-speed-are-excluded-from-mobilisation-score');
     limitations.add('initial-mobilisation-potential-is-unobserved-at-replay-boundary');
   }
+  if (nativeCadenceHoldUsed) {
+    limitations.add('native-cadence-hold-uses-last-derived-transport-without-current-vector');
+  }
 
   return {
     ...base,
+    available: true,
+    reason: null,
     score: candidateG,
     scoreImpact: 'diagnostic-only',
     modelVersion: variant.modelId,
@@ -524,6 +579,7 @@ export function evaluateRavScoreCandidateG(
       candidateGOutboundEpisodeEffectiveHours: currentLedTransport?.outboundEpisodeEffectiveHours ?? null,
       candidateGOutboundEpisodeLossPoints: currentLedTransport?.outboundEpisodeLossPoints ?? null,
       candidateGActualOutboundTransport: currentLedTransport?.actualOutboundTransport ?? false,
+      candidateGNativeCadenceHoldUsed: nativeCadenceHoldUsed,
       candidateGWaveMobilisationMemoryIncluded: mobilisationMemory !== null,
       candidateGWaveMobilisationPotential: mobilisationMemory?.mobilisationPotential ?? null,
       candidateGWaveMobilisationEnergyProxy: mobilisationMemory?.waveEnergyProxy ?? null,

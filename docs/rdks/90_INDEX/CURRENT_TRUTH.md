@@ -10,10 +10,13 @@
 - Produktionsworkflowet auditerer nu den faktisk genererede `data/live/conditions.json` før Supabase-sync, artifact og Pages. Den nye gate afviser det offentlige 4.0.285-artifact med den dokumenterede 665/673-masseregression.
 - En ny lokal recoveryprøve mod det offentlige 4.0.285-mål og den hash-låste kilde genskabte 672/673 `READY` og blev derefter inaktiv.
 - Der kopieres ingen rå U/V, koordinater, vejr, scoreoutput, geometri, land-/vandpunkter eller private payloads. De beskyttede geodatafiler må kun ændre topversionsfelt 4.0.285 → 4.0.286 under DEC-0076.
-- Ny exact-head efter den dataminimerede diagnosedelta, fuld frisk produktion og positiv offentlig ranglistekontrol afventer. Se DEC-0081.
 - PR #157 bestod exact-head `32995801418` på `da8e1c0efe8c872bdca4aeac81f719c84ecbcfe0` og blev merged som `2f2fd14883fbb974b331774858a61473ca06acc4`. Produktion `32995888183` anvendte recovery, frisk DMI/Copernicus og byggede runtime, men den nye faktiske shadowgate stoppede korrekt før validering, Supabase-sync, artifact og Pages. Den første gateversion loggede ikke sine sikre fejlkoder; kandidaten tilføjer nu kun fejlkoder og summerede optællinger uden del-ID'er, rådata, koordinater eller private felter før ny exact-head-/produktionsprøve.
+- PR #158 bestod exact-head `32997043974` og blev merged som `ca784210eabd1f26a615116c6da00684fcf24a01`. Produktion `32997118162` stoppede igen før deploy og gav den dataminimerede signatur 672/673 `READY`, én ærlig warmup, nul replaymismatch og 1.328 af forventede 1.344 modeevalueringer/diagnostikker.
+- De manglende 16 modeevalueringer var præcis de otte ejerallowlistede `dkss_lf`-dele ved en gyldig to timer gammel `NATIVE_CADENCE_HOLD`. Candidate G-state var `READY`, men evaluatorens ældre Phase D-fortrin krævede stadig et aktuelt strømfelt og returnerede `MISSING_REQUIRED_PHASE_D_COMPONENT`, før den hukommelsesbaserede Candidate G-beregning blev nået.
+- Candidate G bruger nu den eksisterende afledte transport- og mobiliseringstilstand under denne snævre hold: kun `NATIVE_CADENCE_HOLD`, `READY`, eksakt tre-timers tilladelse, alder over 0 og højst 3 timer samt fravær af aktuelle U/V-, fart-, retning- og alignmentfelter accepteres. Almindelig uverificeret strøm, for gammel reference, manglende allowlisttilladelse eller ikke-READY state forbliver lukket.
+- Målrettede tests og et dataminimeret replay af de otte faktiske offentlige fejlpunkter giver 16/16 tilgængelige modes uden rå vektorer eller udskrevne identifikatorer. Ny exact-head, fuld frisk produktion og positiv offentlig ranglistekontrol afventer. Se DEC-0081.
 
-Candidate G 20/50/30 og dens fysiske +10/-8-/13-timersregler er uændrede.
+Candidate G 20/50/30 og dens fysiske +10/-8-/13-timersregler er uændrede; rettelsen gør den allerede godkendte native hold scorebar fra afledt memory uden at fremstille en aktuel måling.
 
 ## Udgivet 4.0.284 – smallere tillid og server-side sikkerhedsgrænser
 

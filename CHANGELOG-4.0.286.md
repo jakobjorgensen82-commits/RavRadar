@@ -12,3 +12,9 @@
 Candidate G 20/50/30, +10/-8-/13-timersreglerne, sikkerhedsgrænserne fra 4.0.284, vejr, zoner, geometri og land-/vandpunkter er uændrede. De to beskyttede geodatafiler ændrer kun topversionsfeltet til 4.0.286 under den stående godkendelse i DEC-0076. Se DEC-0081.
 
 PR #157 bestod exact-head `32995801418` og blev merged som `2f2fd14883fbb974b331774858a61473ca06acc4`. Produktion `32995888183` beviste, at den nye faktiske runtimegate stopper før deploy, men den loggede i første version ikke de dataminimerede fejlkoder. Kandidaten logger nu kun fejlkoder og summerede optællinger til den fortsatte rodårsagsanalyse; 4.0.286 er endnu ikke offentligt udgivet.
+
+PR #158 bestod exact-head `32997043974` og blev merged som `ca784210eabd1f26a615116c6da00684fcf24a01`. Produktion `32997118162` stoppede fortsat før deploy og viste sikkert 672 `READY`, én warmup, nul replaymismatch samt 1.328 af forventede 1.344 modeevalueringer og diagnostikker. De manglende 16 var de otte ejerallowlistede `dkss_lf`-dele ved en gyldig to timer gammel `NATIVE_CADENCE_HOLD`.
+
+Candidate G-evaluatorens ældre Phase D-fortrin krævede et aktuelt strømfelt og returnerede derfor før den komplette transport- og mobiliseringsmemory. Kandidaten bruger nu memory under en native hold, men kun når holdt er allowlist-afledt med eksakt tre-timers tilladelse, memory er `READY`, referencen er mere end 0 og højst 3 timer gammel, og aktuelle U/V-, fart-, retning- og alignmentfelter er tomme. Den offentlige forklaring viser ingen aktuel vektor eller retning. Almindelig uverificeret strøm, for gammel reference, manglende tilladelse og ikke-READY memory forbliver fail-closed.
+
+Begge modes og alle negative modtilfælde er regressionstestet. Et dataminimeret replay af de otte faktiske offentlige fejlpunkter giver 16/16 tilgængelige modes uden at læse rå vektorer eller udskrive identifikatorer. Ny exact-head, fuld frisk produktion og positiv offentlig ranglistekontrol afventer fortsat.

@@ -5,6 +5,8 @@
 - Forgængeren før en faseskudt 48-timersgrænse blev brugt i samme beregning, men ikke bevaret til næste rullende reference. 4.0.286 bevarer kun dette virkelige kompakte kontinuitetsbevis; det afspilles eller tælles ikke i det aktuelle vindue.
 - Regime- og statepipeline-tests følger nu to efterfølgende referencer. Den nye produktionsgate auditerer den faktisk genererede runtime før Supabase-sync, artifact og Pages og afviser det offentlige 4.0.285-artifact.
 - En ny virkelig artifactsimulation genskabte 672/673 `READY` og gjorde recoveryen inaktiv. Exact-head, fuld produktion og positiv offentlig ranglistekontrol afventer. Se DEC-0081 og `CHANGELOG-4.0.286.md`.
+- PR #157/exact-head `32995801418` og produktion `32995888183` beviste, at den faktiske runtimegate stopper før deploy. PR #158/exact-head `32997043974`, merge `ca784210` og produktion `32997118162` leverede den sikre signatur 672 `READY`, én warmup, nul replaymismatch og 1.328/1.344 modes.
+- De sidste 16 modes tilhørte de otte godkendte `dkss_lf`-holds. Candidate G's ældre Phase D-fortrin krævede fejlagtigt en ny strømvektor før memoryberegningen. Kandidaten tillader nu kun `READY`, allowlist-afledt eksakt tre-timers hold uden aktuelle U/V-/retningsfelter; alle modtilfælde forbliver lukket. Faktisk dataminimeret replay giver 16/16.
 
 ## 2026-08-26 – kandidat 4.0.285 retter Candidate G-cadencefasen
 

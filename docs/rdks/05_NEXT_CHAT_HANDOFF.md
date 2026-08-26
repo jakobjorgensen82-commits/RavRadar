@@ -1,5 +1,15 @@
 # RavRadar – overlevering til næste chat
 
+## Kandidat 4.0.286 – faktisk runtimegate og native-hold-score
+
+- Offentlig 4.0.285 er funktionelt afvist med sorte zoner og tom aktuel rangliste. Den må ikke kaldes grøn.
+- PR #157/exact-head `32995801418` blev merged som `2f2fd148`; produktion `32995888183` beviste, at den nye gate stopper den faktisk genererede runtime før deploy.
+- PR #158/exact-head `32997043974` blev merged som `ca784210`; produktion `32997118162` stoppede sikkert med 672/673 `READY`, én warmup, nul replaymismatch og 1.328/1.344 modes.
+- De sidste 16 modes var de otte godkendte `dkss_lf`-dele ved en gyldig to timer gammel `NATIVE_CADENCE_HOLD`. Den ældre Phase D-base krævede et nyt aktuelt strømfelt, før Candidate G-memory blev nået.
+- Kandidaten bruger nu den eksisterende `READY` transport- og mobiliseringstilstand kun ved allowlist-afledt eksakt tre-timers hold, referencealder over 0/højst 3 timer og tomme aktuelle U/V-, fart-, retnings- og alignmentfelter. Almindelig unverified, for gammel, ikke-allowlisted og ikke-READY forbliver fail-closed.
+- Målrettede kontrakter og et dataminimeret replay af de otte faktiske offentlige fejlpunkter giver 16/16 modes uden rå vektorer eller udskrevne identifikatorer.
+- Næste trin er exact-head, merge, fuld frisk produktion gennem runtimegate/validate/release/Supabase/Pages og offentlig kontrol af en befolket rangliste uden browser-, side- eller HTTP-fejl. Se DEC-0081.
+
 ## Kandidat 4.0.283 – slutkontrollen bevarer moderzonen
 
 - Produktion `32912103679` byggede 673/673 scoreklare kyststrækninger, inklusive de otte ejer-godkendte native-kadencereferencer, men den afsluttende videnskabelige kontrol rapporterede 665/673 og stoppede sikkert før deploy.
