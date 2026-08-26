@@ -1,5 +1,20 @@
 # RavRadar - aktivt roadmap
 
+## P0 – luk 4.0.284 drifts- og sikkerhedshærdning
+
+- [x] CSP, eksterne scripts og sikker allowlist-visning af centralt HTML.
+- [x] Smallere ekspertprofil-/rettighedsscope gennem RLS, RPC og UI.
+- [x] Server-side observation-gateway med dataminimering, brugerbinding, idempotens og rate limit.
+- [x] Fælles Edge-gateway med origin-allowlist, CORS, timeout og sikre fejl.
+- [x] Live smallere RLS og begge Edge-funktioner deployet/verificeret uden Windows-sikkerhedsomgåelse eller private testdata.
+- [x] Lokal assistent er standard; fjernassistentflaget er lukket, indtil en separat secret-/omkostningsbeslutning er positivt verificeret.
+- [x] Versions-/RDKS-/håndbogs-/changeloglukning og særskilt geodatadiff.
+- [x] Lokal source-/releasegate og målrettet browserkontrol uden fjernassistentskald.
+- [ ] Exact-head-kildegate, merge, fuld frisk produktionskæde og offentlig efterkontrol.
+- [ ] Følg Supabase-egress og varslet om mulig begrænsning fra 9. september 2026 uden at lempe sikkerhedskrav.
+
+Se DEC-0080. Candidate G, score, vejr, zoner, geometri og land-/vandpunkter er uden for ændringen.
+
 ## Produktionsverificeret – 4.0.283 bevarer moderzone i Candidate G-slutkontrollen
 
 - [x] Bevis, at produktionens livepilot og Candidate G-state havde 673/673 scoreklare kyststrækninger.

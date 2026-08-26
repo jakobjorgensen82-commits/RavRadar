@@ -1,5 +1,15 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-26 – kandidat 4.0.284 drifts- og sikkerhedshærdning
+
+1. Ejeren bestilte en samlet hærdning før domæneflytning: HTML, ekspertadgange, observationer, assistentgateway, CORS, RLS og sikkerhedstests.
+2. Efter en tvungen Windows-genstart blev den isolerede worktree, hele diffen og fraværet af Git-lås/halv operation verificeret. Rod-worktree, recoveryfiler, geometri, punkter og private data forblev urørte.
+3. Den første live-migration havde en for bred `experts_manage`-læsning. RLS, skrive-RPC og UI blev indsnævret til ekspertprofiler og tre sikre ekspertadgange; live katalogkontrol blev udført uden private rækker.
+4. Tre ens Edge-gatewayfiler blev samlet til én delt kilde. Begge funktioner blev deployet gennem Supabase-browsereditoren, fordi Windows Application Control blokerede CLI'en. Windows-sikkerheden blev ikke omgået.
+5. CORS-, payload-, rate-limit- og gammel-anonym-rapportkontrollerne bestod uden databaseinsert. Legacy-JWT blev slået fra på begge funktioner.
+6. Fjernassistenten manglede en godkendt OpenAI-secret. Ejeren bad Codex vælge den bedste vej; 4.0.284 vælger lokal Candidate G-assistent som standard og forbyder skjulte fjernkald via et eksplicit `false`-flag.
+7. Supabases mulige begrænsning fra 9. september 2026 forbliver en åben driftsrisiko. Exact-head, produktion og offentlig Pages-lukning udestår. Se DEC-0080.
+
 ## 2026-08-26 – 4.0.283 moderzonekobling produktionsverificeret
 
 1. Ejeren bad om at få **Mangler/Ukendt** skubbet helt videre og derefter få en særskilt drifts- og sikkerhedsanalyse.

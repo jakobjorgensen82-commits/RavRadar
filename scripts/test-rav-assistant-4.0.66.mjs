@@ -97,4 +97,18 @@ const noCandidateData = await askRavRadar(
 assert.match(noCandidateData, /ikke nok gyldige prognosedata/i);
 assert.doesNotMatch(noCandidateData, /score \d+/i);
 
-console.log('OK: Spørg RavRadar bruger kun lokale Candidate G-scorer og udelader utilgængelige zoner.');
+const originalFetch = globalThis.fetch;
+let remoteCalls = 0;
+globalThis.fetch = async () => {
+  remoteCalls += 1;
+  throw new Error('Fjernassistenten må ikke kaldes, mens dens produktionsflag er slået fra.');
+};
+try {
+  const localByDefault = await askRavRadar('hvilket udstyr skal jeg bruge?', context);
+  assert.match(localByDefault, /polariserede|ravlygte|waders/i);
+  assert.equal(remoteCalls, 0);
+} finally {
+  globalThis.fetch = originalFetch;
+}
+
+console.log('OK: Spørg RavRadar bruger lokale Candidate G-scorer, udelader utilgængelige zoner og kalder ikke den deaktiverede fjernassistent.');

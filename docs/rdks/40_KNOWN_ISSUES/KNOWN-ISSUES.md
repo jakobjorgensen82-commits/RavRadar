@@ -1,5 +1,16 @@
 # Kendte åbne og overvågede forhold
 
+## Kandidat 4.0.284 – sikkerheds- og driftslukning
+
+- **ISSUE-DYNAMIC-HTML-TRUST – LØST I KANDIDAT:** Centralt håndbogs-HTML blev tidligere sat direkte i DOM. Det går nu gennem en allowlist-sanitizer, og alle offentlige sider har CSP uden inline JavaScript eller `unsafe-eval`.
+- **ISSUE-EXPERTS-MANAGE-OVERBROAD – LIVE-RLS LUKKET / RELEASE AFVENTER:** Den første hærdning gav `experts_manage` for bred læsning. Live RLS, RPC og UI er nu afgrænset til ekspertprofiler og tre ekspertadgange. En dataminimeret katalogkontrol viste præcis én smallere policy pr. tabel, ingen legacy-policy og ingen `anon`-SELECT.
+- **ISSUE-DIRECT-OBSERVATION-INSERT – LIVE-GATEWAY LUKKET / RELEASE AFVENTER:** Direkte browserinsert er tilbagekaldt. Den deployede `submit-observation` håndhæver felt-, privatlivs-, bruger-, tids- og rate-limit-kontrakten. En gammel anonym rapport blev afvist før insert; ingen testobservation blev oprettet.
+- **ISSUE-EDGE-GATEWAY-DUPLICATION – LØST I KANDIDAT:** Tre byte-identiske `public-gateway.ts`-filer havde ingen dokumenteret nødvendig forskel. Repositoryet har nu én delt kanonisk kilde, og sikkerhedstesten afviser lokale kopier.
+- **ISSUE-SUPABASE-CLI-WINDOWS-APPLICATION-CONTROL – DRIFTSBEGRÆNSNING:** Den lokale Supabase CLI blev blokeret af Windows Application Control. Begge funktioner er deployet gennem Supabases godkendte browsereditor. Windows-sikkerheden blev ikke og må ikke svækkes; en fremtidig automatiseret Edge-deploykanal skal være særskilt godkendt.
+- **ISSUE-REMOTE-ASSISTANT-SECRET-MISSING – BEVIDST LOCAL-ONLY:** Edge-funktionen har ingen `OPENAI_API_KEY` og svarede derfor kontrolleret 503. 4.0.284 sætter `ravAssistantRemoteEnabled=false`; den offentlige side bruger kun lokal Candidate G-assistent og foretager intet fjernkald. Senere aktivering er en separat feature, ikke en releaseblokering.
+- **ISSUE-SUPABASE-EGRESS-GRACE – ÅBEN DRIFTSRISIKO:** Aktuel måling var cirka 455 MB/5 GB egress og 86 MB/500 MB database, men organisationens banner varsler fortsat mulig begrænsning fra 9. september 2026 efter forrige betalingsperiode. Overvågning og eventuelt planvalg udestår.
+- **ISSUE-SECURITY-4.0.284-PRODUCTION-CLOSURE – ÅBEN:** Exact-head `validate:source`, merge, fuld frisk produktion og offentlig Pages-/gateway-efterkontrol mangler endnu.
+
 ## Kandidat 4.0.283 – moderzonekobling i slutkontrollen
 
 - **ISSUE-CANDIDATE-G-FINAL-AUDIT-PARENT-ZONE – LØST I KANDIDAT:** Slutkontrollen mistede moderzonen, da 210 zonegrupper blev foldet ud til 673 kystdele. Derfor kunne otte gyldige native-kadencereferencer ikke matches, selv om livepiloten og Candidate G-state allerede var 673/673 scoreklare. Den fælles udfladning bevarer nu den autoritative zone-nøgle.

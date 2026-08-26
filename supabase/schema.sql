@@ -62,21 +62,10 @@ create index if not exists observations_user_idx on public.observations (user_id
 alter table public.observations enable row level security;
 
 drop policy if exists "anonymous observations can be inserted" on public.observations;
-create policy "anonymous observations can be inserted" on public.observations for insert to anon
-with check (
-  user_id is null
-  and gps is null
-  and not (coalesce(weather_snapshot, '{}'::jsonb) ?| array['gps','latitude','longitude','coordinates','position'])
-  and observed_at between now() - interval '2 days' and now() + interval '10 minutes'
-);
-
 drop policy if exists "authenticated observations can be inserted" on public.observations;
-create policy "authenticated observations can be inserted" on public.observations for insert to authenticated
-with check (
-  (user_id is null or user_id = auth.uid())
-  and gps is null
-  and not (coalesce(weather_snapshot, '{}'::jsonb) ?| array['gps','latitude','longitude','coordinates','position'])
-);
+revoke insert on table public.observations from anon, authenticated;
+-- Offentlige writes går gennem submit-observation Edge Function, som validerer,
+-- begrænser frekvensen og bruger service_role efter den server-side kontrol.
 
 drop policy if exists "observations are publicly readable" on public.observations;
 drop policy if exists "users can read own observations" on public.observations;
@@ -284,9 +273,11 @@ drop trigger if exists admin_documents_version_trigger on public.admin_documents
 create trigger admin_documents_version_trigger before update on public.admin_documents for each row execute function public.version_admin_document();
 alter table public.admin_documents enable row level security; alter table public.admin_document_versions enable row level security;
 drop policy if exists "authenticated admins manage documents" on public.admin_documents;
-create policy "authenticated admins manage documents" on public.admin_documents for all to authenticated using(true) with check(true);
 drop policy if exists "authenticated admins read document versions" on public.admin_document_versions;
-create policy "authenticated admins read document versions" on public.admin_document_versions for select to authenticated using(true);
+revoke all on public.admin_documents,public.admin_document_versions from anon;
+revoke insert,update,delete on public.admin_documents,public.admin_document_versions from authenticated;
+-- Denne fil er en historisk skemareference. Den aktuelle SECURITY-installation
+-- opretter de dokumentnøgle-afgrænsede læsepolicies og RPC-baseret skrivning.
 
 -- RavRadar 4.0.33: produktionsgrundlag for samtykke, prognosekobling og datakvalitet.
 alter table public.observations add column if not exists consent_version text;

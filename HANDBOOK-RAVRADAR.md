@@ -1,5 +1,17 @@
 # RavRadar Håndbog
 
+## Sikker drift og afgrænsede adgange – 4.0.284
+
+RavRadar viser centralt håndbogsindhold gennem en fast allowlist og beskytter alle offentlige sider med en Content Security Policy. Scripts, indlejrede objekter, event handlers, inline-stil, DOM-id'er og farlige links fjernes fra dynamisk HTML. De få nødvendige scripts ligger i versionsstyrede filer.
+
+En ekspertadministrator med `experts_manage` kan kun arbejde med ekspertprofiler og de tre adgange til administration, håndbogslæsning og fagligt review. Ejer og fuld administrator er de eneste, som kan administrere den komplette rettighedsmatrix eller hele reviewkøen. Grænsen håndhæves både i Supabase og i brugerfladen.
+
+Observationer sendes gennem en server-side Edge-gateway. Browseren kan ikke længere skrive direkte til observationstabellen. Gatewayen afviser ukendte felter, for store eller dybe payloads, præcis lokation, forkert brugerbinding og urimelige anonyme historiske rapporter. Rate limiting og idempotent klient-id beskytter mod misbrug og dubletter.
+
+Rav-assistenten bruger fortsat den lokale Candidate G-beregning. Fjernassistenten er slået fra, så RavRadar ikke sender spørgsmål eller kontekst til en ekstern model uden en særskilt godkendt nøgle-, omkostnings- og driftbeslutning. En senere aktivering må kun sende det lille dokumenterede offentlige kontekstobjekt.
+
+Supabase varsler mulig begrænsning fra 9. september 2026 efter en tidligere egressoverskridelse. Det overvåges som drift; privatliv, RLS, rate limits og releasegates må ikke lempes for at spare kvote. Se [DEC-0080](docs/rdks/10_DECISIONS/DEC-0080-SECURITY-BOUNDARIES-AND-PUBLIC-EDGE-GATEWAYS.md).
+
 ## Moderzonekobling i Candidate G-slutkontrollen – 4.0.283
 
 RavRadars kystdelsfil grupperer 673 kyststrækninger under 210 moderzoner. Moderzonen står som gruppens nøgle og behøver ikke gentages inde i hver kystdel. Den afsluttende kontrol mistede tidligere denne kobling, når den lavede én flad liste. Derfor kunne otte gyldige native-kadencereferencer ikke genkendes, selv om produktionen allerede havde 673/673 scoreklare kyststrækninger.
@@ -533,7 +545,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.283
+**Håndbogsversion:** 4.0.284
 
 **Opdateret:** 19. august 2026
 

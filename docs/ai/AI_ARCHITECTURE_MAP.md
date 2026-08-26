@@ -1,5 +1,17 @@
 # AI Architecture Map – RavRadar
 
+## Sikkerhedsgrænser og offentlige Edge-funktioner
+
+- `js/services/html-sanitizer.js` – allowlist for dynamisk, centralt HTML før DOM-visning.
+- `js/services/permissions-service.js` + `js/ui/admin-dashboard.js` – smallere ekspertprofil-/rettighedsflade; databasen er fortsat autoritativ.
+- `js/services/observation-service.js` – lokal outbox og dataminimeret klientpayload til Edge, aldrig direkte browserinsert.
+- `supabase/functions/_shared/public-gateway.ts` – fælles origin/CORS, JSON-grænse, timeout, sikre fejl og rate limiting.
+- `supabase/functions/submit-observation/index.ts` – observationens server-side felt-, privatlivs-, bruger- og tidskontrakt.
+- `supabase/functions/ravradar-assistant/index.ts` – afgrænset offentlig assistentgateway; Pages bruger den ikke, mens `ravAssistantRemoteEnabled=false`.
+- `supabase/migrations/20260826_security_hardening.sql` – RLS, privilege-revokes, smallere permissions-RPC og rate-limit-tabel/RPC.
+
+Windows Application Control må ikke omgås for Edge-deploy. Brug en godkendt browser-, CI- eller CLI-kanal. Se DEC-0080.
+
 ## Data- og buildpipeline
 - `.github/workflows/update-and-deploy.yml` – samlet produktionsorkestrering og eneste repositoryworkflow med Pages-deploy. Det startes normalt eksternt via `workflow_dispatch`.
 - `.github/workflows/validate-copernicus-current-pilot.yml` og `preserve-copernicus-current-shadow.yml` – privat, score-neutral strømopsamling og read-only cacheheartbeat. Heartbeatet kan kun dispatch'e piloten ved manglende aktuel UTC-time; piloten genbruger kun en time med matchende centralt vandpunktsfingeraftryk og komplet recordmanifest. Ingen af dem har Pages-rettigheder.

@@ -1,15 +1,21 @@
-import { PUBLIC_CONFIG } from '../../config.js?v=4.0.283';
-import { authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.283';
-import { assertTripEvidencePrivacy } from './trip-evidence-contract.js?v=4.0.283';
-import { ACCOUNT_TRIP_REPORT_SOURCE, HISTORICAL_SNAPSHOT_UNAVAILABLE } from './account-trip-report-contract.js?v=4.0.283';
+import { PUBLIC_CONFIG } from '../../config.js?v=4.0.284';
+import { authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.284';
+import { assertTripEvidencePrivacy } from './trip-evidence-contract.js?v=4.0.284';
+import { ACCOUNT_TRIP_REPORT_SOURCE, HISTORICAL_SNAPSHOT_UNAVAILABLE } from './account-trip-report-contract.js?v=4.0.284';
 const enabled=Boolean(PUBLIC_CONFIG.supabaseUrl&&PUBLIC_CONFIG.supabasePublishableKey);
 const LOCAL_KEY='ravradar-observations-v2';
 const OUTBOX_KEY='ravradar-observation-outbox-v1';
 const SNAPSHOT_SCHEMA_VERSION=3;
+const WEATHER_SNAPSHOT_FIELDS=Object.freeze([
+  'generatedAt','time','provider','providerLabel','windSpeedMps','windDirectionDeg','waveHeightM','wavePeriodS',
+  'waveDirectionDeg','currentSpeedMps','currentDirectionDeg','waterLevelCm','waterLevelTrendCm3h','waterTemperatureC'
+]);
 function read(key,fallback=[]){try{return JSON.parse(localStorage.getItem(key)||'null')??fallback;}catch{return fallback;}}
 function write(key,value){localStorage.setItem(key,JSON.stringify(value));}
 function anonymousId(){const key='ravradar-anonymous-id';let value=localStorage.getItem(key);if(!value){value=crypto.randomUUID();localStorage.setItem(key,value);}return value;}
-function immutableWeatherSnapshot(weather,scoreResult,prediction){return structuredClone({schemaVersion:SNAPSHOT_SCHEMA_VERSION,capturedAt:new Date().toISOString(),sourceGeneratedAt:weather?.generatedAt??null,forecastTime:weather?.time??null,provider:weather?.provider??null,current:weather||{},score:{baseScore:scoreResult?.baseScore??scoreResult?.score??null,finalScore:scoreResult?.score??null,level:scoreResult?.level??null},prediction:prediction||scoreResult?.prediction||null,matchedRules:scoreResult?.ruleEvaluation?.matches??[]});}
+function publicWeatherSnapshot(weather){const source=weather&&typeof weather==='object'?weather:{};return Object.fromEntries(WEATHER_SNAPSHOT_FIELDS.map(key=>[key,source[key]??null]));}
+function publicPredictionSnapshot(prediction){const source=prediction&&typeof prediction==='object'?prediction:{};return {probability:source.probability??null,confidence:source.confidence??null,modelVersion:source.modelVersion??null};}
+function immutableWeatherSnapshot(weather,scoreResult,prediction){return structuredClone({schemaVersion:SNAPSHOT_SCHEMA_VERSION,capturedAt:new Date().toISOString(),sourceGeneratedAt:weather?.generatedAt??null,forecastTime:weather?.time??null,provider:weather?.provider??null,current:publicWeatherSnapshot(weather),score:{baseScore:scoreResult?.baseScore??scoreResult?.score??null,finalScore:scoreResult?.score??null,level:scoreResult?.level??null},prediction:publicPredictionSnapshot(prediction||scoreResult?.prediction),matchedRuleIds:(scoreResult?.ruleEvaluation?.matches??[]).map(match=>String(match?.id??match?.ruleId??'').slice(0,120)).filter(Boolean).slice(0,40)});}
 export function observationsEnabled(){return enabled;}
 export function getLocalObservations(){return read(LOCAL_KEY,[]);}
 export function getObservationSyncStatus(){const rows=getLocalObservations(),pending=read(OUTBOX_KEY,[]);return {local:rows.length,pending:pending.length,synced:rows.filter(x=>x.sync_status==='synced').length,lastAttemptAt:localStorage.getItem('ravradar-observation-last-sync')};}
@@ -33,9 +39,9 @@ function upsertLocal(row){const rows=getLocalObservations();const i=rows.findInd
 function enqueue(row){const rows=read(OUTBOX_KEY,[]);if(!rows.some(x=>x.id===row.id))rows.push(row);write(OUTBOX_KEY,rows);}
 export function remoteObservationPayload(row){const {id:clientObservationId,gps:localGps,route,track,position,coordinates,latitude,longitude,location,sync_status,sync_error,synced_at,...remote}=structuredClone(row||{});const publicZoneId=remote.actual_zone_id||(typeof remote.zone_id==='string'?remote.zone_id:null);return {...remote,zone_id:Number.isSafeInteger(remote.zone_id)?remote.zone_id:null,actual_zone_id:publicZoneId,client_observation_id:clientObservationId,gps:null};}
 async function postRemote(row){
-  const url=`${PUBLIC_CONFIG.supabaseUrl}/rest/v1/observations?on_conflict=client_observation_id`;
+  const url=`${PUBLIC_CONFIG.supabaseUrl}/functions/v1/submit-observation`;
   const payload=remoteObservationPayload(row);
-  const options={method:'POST',headers:{'Content-Type':'application/json',Prefer:'resolution=ignore-duplicates,return=minimal'},body:JSON.stringify(payload)};
+  const options={method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)};
   let response;
   if(payload.user_id){
     const active=await requireFreshSession();

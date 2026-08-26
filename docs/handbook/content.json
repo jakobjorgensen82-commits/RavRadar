@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.283",
+  "handbookVersion": "4.0.284",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-08-26",
   "sections": [
+    {
+      "id": "security-boundaries-public-edge-gateways-4-0-284",
+      "chapter": "68",
+      "title": "Sikker drift og afgrænsede adgange",
+      "summary": "4.0.284 flytter tillid fra browseren til smallere HTML-, rettigheds- og Edge-kontrakter og bruger den lokale assistent som standard.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Dynamisk HTML saniteres, ekspertadgang er begrænset i databasen, og observationer går gennem en validerende servergateway i stedet for direkte tabelinsert.</div><div class=\"handbook-stack\"><p><strong>Sikker visning:</strong> Offentlige sider bruger Content Security Policy uden inline JavaScript. Centralt håndbogs-HTML går gennem en allowlist, som fjerner aktive elementer, event handlers, inline-stil, DOM-id'er, ukendte attributter og farlige links.</p><p><strong>Smallere ekspertadgang:</strong> <code>experts_manage</code> kan kun se ekspertprofiler og de tre adgange <code>admin_access</code>, <code>handbook_view</code> og <code>handbook_review</code>. Kun ejer eller fuld administrator kan administrere hele rettighedsmatricen og reviewkøen.</p><p><strong>Sikker observation:</strong> Browserroller kan ikke indsætte direkte i observationstabellen. Edge-gatewayen håndhæver feltallowlist, payloadgrænser, privatliv, brugerbinding, anonym tidsgrænse, idempotens og rate limit før lagring.</p><p><strong>Lokal assistent:</strong> Fjernassistenten er deaktiveret i 4.0.284. RavRadar bruger den lokale Candidate G-assistent og sender ikke spørgsmål eller kontekst til en ekstern model uden en senere særskilt godkendt secret-, omkostnings- og driftsbeslutning.</p><p><strong>Drift:</strong> Supabases mulige begrænsning fra 9. september 2026 overvåges. Kvotehensyn må ikke lempe privatliv, RLS, rate limits eller releasegates.</p><p>Candidate G 20/50/30, score, vejr, zoner, geometri og land-/vandpunkter er uændrede. Se <code>DEC-0080</code>.</p></div>"
+    },
     {
       "id": "candidate-g-parent-zone-audit-binding-4-0-283",
       "chapter": "67",
