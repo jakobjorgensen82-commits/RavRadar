@@ -1,9 +1,11 @@
-## 2026-08-26 – kandidat 4.0.283 bevarer moderzonen i slutkontrollen
+## 2026-08-26 – 4.0.283 bevarer moderzonen i slutkontrollen, produktionsverificeret
 
 - Produktion `32912103679` havde 673/673 scoreklare kyststrækninger i livepilot og Candidate G-state, men slutkontrollen tabte moderzonekonteksten og genkendte kun 665/673.
 - En fælles udfladningsfunktion bevarer nu moderzonen fra den autoritative zone-nøgle. En målrettet regression låser koblingen uden krav om et indlejret `zoneId`.
 - Datakravene er uændrede; der opfindes ingen måling, historik, retning eller pil.
 - Candidate G 20/50/30, vejr, zoner, geometri og land-/vandpunkter er uændrede. Se DEC-0079.
+- PR #153 bestod exact-head `32914734446`, blev merged som `1caad399`, og produktion `32914887586` udgav offentlig 4.0.283 gennem de fulde gates.
+- Offentlig runtime er komplet på 210/673. 657 kyststrækninger har komplet transporthukommelse, mens 16 har 30–48 timers naturlig historik uden reset og gør fem moderzoner lokalt utilgængelige. Det er ærlig fail-closed adfærd, ikke falsk **Mangler/Ukendt**.
 
 ## 2026-08-26 – kandidat 4.0.282 lukker native vinduesgrænsen
 

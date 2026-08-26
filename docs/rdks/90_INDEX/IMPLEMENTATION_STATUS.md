@@ -1,17 +1,19 @@
-# Implementeringsstatus – kandidat 4.0.283
+# Implementeringsstatus – produktionsverificeret 4.0.283
 
-## Kandidat 4.0.283 – bevar moderzone i slutkontrollen
+## Produktionsverificeret 4.0.283 – bevar moderzone i slutkontrollen
 
 - [x] Afgræns fejlen til kontrolkonteksten; den byggede livepilot og Candidate G-state var allerede 673/673 scoreklare.
 - [x] Bevar den autoritative moderzone, når kystdelskilden foldes ud.
 - [x] Brug samme hjælpefunktion i regression og afsluttende videnskabelig kontrol.
 - [x] Bevar alle krav til verificeret strøm, native kadence og lokal fail-closed adfærd.
 - [x] Dokumentér DEC-0079, version 4.0.283 og kun topversionsændring i de beskyttede geodatafiler.
-- [ ] Bestå exact-head-kildegate, merge, fuld produktionskæde og offentlig 673-kystdelskontrol.
+- [x] Bestå PR #153/exact-head `32914734446`, merge `1caad399`, fuld produktionskæde `32914887586` og offentlig 673-kystdelskontrol.
+
+Offentlig version 4.0.283 er komplet på 210 zoner og 673 kyststrækninger. Candidate G 20/50/30 er aktiv og ønsket profil, rollbackprofilen er tom, og `legacyPublicFallbackAllowed=false`. 657 kyststrækninger har komplet transporthukommelse. De resterende 16 har 30–48 timers naturlig historik uden reset og gør kun deres fem moderzoner ærligt lokalt utilgængelige.
 
 Candidate G 20/50/30, scorekurver, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er uændrede.
 
-## Kandidat 4.0.282 – luk native vinduesgrænsen uden kunstig historik
+## Produktionsverificeret 4.0.282 – luk native vinduesgrænsen uden kunstig historik
 
 - [x] Afgræns 665/673-stoppet til de otte godkendte regionalproxyers eksakte prøve umiddelbart før beregningsvinduet.
 - [x] Før kun en verificeret reference på højst tre timer ind i state-pipelinen.
@@ -20,7 +22,7 @@ Candidate G 20/50/30, scorekurver, zoner, geometri, land-/vandpunkter, admin-dat
 - [x] Afvis en reference ældre end tre timer og bevar lokal fail-closed adfærd.
 - [x] Lås kildehjælper, state-pipeline og produktionskobling med målrettede tests.
 - [x] Dokumentér DEC-0078, version 4.0.282 og kun topversionsændring i de beskyttede geodatafiler.
-- [ ] Bestå exact-head-kildegate, merge, fuld produktionskæde og offentlig 673-kystdelskontrol.
+- [x] Bestå exact-head-kildegate, merge og 4.0.283's fulde produktionskæde/offentlige 673-kystdelskontrol.
 
 Candidate G 20/50/30, scorekurver, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er uændrede.
 

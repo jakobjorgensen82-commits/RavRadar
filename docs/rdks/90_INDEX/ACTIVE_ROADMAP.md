@@ -1,24 +1,26 @@
 # RavRadar - aktivt roadmap
 
-## P0 – 4.0.283 bevar moderzone i Candidate G-slutkontrollen
+## Produktionsverificeret – 4.0.283 bevarer moderzone i Candidate G-slutkontrollen
 
 - [x] Bevis, at produktionens livepilot og Candidate G-state havde 673/673 scoreklare kyststrækninger.
 - [x] Afgræns 665/673 til tab af moderzone i den afsluttende kontrol.
 - [x] Bevar den autoritative zone-nøgle ved udfladning af kystdele.
 - [x] Lås koblingen med en målrettet regression uden indlejret `zoneId`.
 - [x] Dokumentér DEC-0079 og kun topversionsændring i beskyttet geodata.
-- [ ] Bestå exact-head, merge, fuld produktion og offentlig 673-kystdelskontrol.
+- [x] Bestå PR #153/exact-head `32914734446`, merge som `1caad399`, fuld produktion `32914887586` og offentlig 673-kystdelskontrol.
+
+Offentlig 4.0.283 viser 210 zoner og 673/673 kyststrækninger på Candidate G 20/50/30 uden rollback eller legacyfallback. 657 kyststrækninger har komplet transporthukommelse; 16 er ærligt lokalt utilgængelige med 30–48 timers naturlig historik og nul reset. De fem berørte moderzoner viser derfor ingen opdigtet score. Den falske **Mangler/Ukendt**-fejl er lukket.
 
 Dette ændrer ikke strømkrav, Candidate G 20/50/30, scorekurver, zoner, geometri eller land-/vandpunkter.
 
-## P0 – 4.0.282 luk sidste falske Mangler/Ukendt ved native vinduesskift
+## Produktionsverificeret – 4.0.282 lukker sidste falske Mangler/Ukendt ved native vinduesskift
 
 - [x] Afgræns stoppet til de otte godkendte regionalproxyers eksakte måling umiddelbart før beregningsvinduet.
 - [x] Genbrug kun den verificerede kildeprøve i højst tre timer og kun som transportreference.
 - [x] Reducér den til tid og kystrelativ styrke før Candidate G-state; ingen rå vektorer, koordinater eller punkt-id'er.
 - [x] Bevar forbuddet mod interpolation, kunstige timer, ny pil og mobilisering.
 - [x] Tilføj målrettede regressioner og dokumentér DEC-0078.
-- [ ] Bestå exact-head, merge, fuld produktion og offentlig kontrol af alle 673 kyststrækninger.
+- [x] Bestå exact-head, merge og 4.0.283's fulde produktion/offentlige kontrol af alle 673 kyststrækninger.
 
 Dette ændrer ikke 20/50/30, scorekurver, 48-timersregler, zoner, geometri eller land-/vandpunkter.
 

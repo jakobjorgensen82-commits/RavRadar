@@ -1,6 +1,6 @@
 # DEC-0079 – Candidate G-slutkontrollen bevarer moderzonen
 
-**Status:** Kandidat i 4.0.283; afventer exact-head, fuld produktion og offentlig kontrol.
+**Status:** Produktionsverificeret i 4.0.283.
 
 ## Problem
 
@@ -28,3 +28,11 @@ Slutkontrollen og regressionen bruger samme hjælpefunktion. Regressionen skal b
 3. Exact-head kildegate i GitHub.
 4. Fuld produktionskæde med frisk data og releasegate.
 5. Offentlig dataminimeret kontrol af 673/673 kyststrækninger.
+
+## Produktionsbevis
+
+- PR #153 bestod exact-head-kildegaten `32914734446` og blev merged som `1caad399`.
+- Produktion `32914887586` bestod fuld validering, releasegate, artifact og Pages-deploy.
+- Offentlig runtime er 4.0.283 og komplet på 210 zoner samt 673/673 kyststrækninger.
+- Candidate G 20/50/30 er eneste aktive og ønskede scoreprofil. Rollbackprofilen er tom, og legacyfallback er forbudt.
+- 657 kyststrækninger har komplet transporthukommelse. 16 har 30–48 timers naturligt videreført historik uden reset og gør kun deres fem moderzoner lokalt utilgængelige. Der bygges ingen kunstig historik.
