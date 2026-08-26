@@ -81,19 +81,30 @@ assert.match(publicConfig,/ravAssistantRemoteEnabled:\s*false/);
 assert.match(assistantService,/PUBLIC_CONFIG\.ravAssistantRemoteEnabled!==true/);
 
 const submit=await read('supabase/functions/submit-observation/index.ts');
+const tripStore=await read('supabase/functions/_shared/trip-store.ts');
+const tripLog=await read('supabase/functions/trip-log/index.ts');
 assert.match(submit,/readJsonObject\(request, 64 \* 1024\)/);
 assert.match(submit,/minute: 4, hour: 50, globalDay: 2000/);
 assert.match(submit,/PRECISE_LOCATION_NOT_ALLOWED/);
 assert.match(submit,/LOGIN_REQUIRED_FOR_ACCOUNT_REPORT/);
-assert.match(submit,/SUPABASE_SERVICE_ROLE_KEY/);
+assert.match(submit,/storeObservation/);
+assert.match(tripStore,/SUPABASE_SERVICE_ROLE_KEY/);
+assert.match(tripStore,/TRIP_STORAGE_MODE/);
+assert.match(tripStore,/TRIP_PSEUDONYM_SECRET_V1/);
+assert.match(tripStore,/TRIP_GATEWAY_SHARED_SECRET/);
+assert.match(tripStore,/CLOUDFLARE_TRIP_GATEWAY_URL/);
+assert.match(tripLog,/requireAuthenticatedUserId/);
+assert.match(tripLog,/readJsonObject\(request, 4 \* 1024\)/);
 assert.doesNotMatch(submit,/\"consent_version\"/,'Edge-porten må ikke acceptere felter, som ikke findes i den levende observations-tabel.');
 assert.doesNotMatch(submit,/\"score_engine_version\"/,'Edge-porten må ikke acceptere felter, som ikke findes i den levende observations-tabel.');
 
 assert.match(assistant,/from "\.\.\/_shared\/public-gateway\.ts"/);
 assert.match(submit,/from "\.\.\/_shared\/public-gateway\.ts"/);
+assert.match(tripLog,/from "\.\.\/_shared\/public-gateway\.ts"/);
 for(const functionGateway of [
   'supabase/functions/ravradar-assistant/public-gateway.ts',
-  'supabase/functions/submit-observation/public-gateway.ts'
+  'supabase/functions/submit-observation/public-gateway.ts',
+  'supabase/functions/trip-log/public-gateway.ts'
 ]){
   await assert.rejects(read(functionGateway),{code:'ENOENT'},`${functionGateway} må ikke duplikere den fælles gateway.`);
 }

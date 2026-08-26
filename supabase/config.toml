@@ -1,0 +1,10 @@
+project_id = "ravradar"
+
+[functions.submit-observation]
+verify_jwt = false
+
+[functions.trip-log]
+verify_jwt = false
+
+[functions.ravradar-assistant]
+verify_jwt = false

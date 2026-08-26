@@ -1,16 +1,9 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { assertAllowedOrigin, corsHeaders, enforceRateLimits, fetchWithTimeout, GatewayError, jsonResponse, readJsonObject, safeGatewayError } from "../_shared/public-gateway.ts";
+import { assertAllowedOrigin, corsHeaders, enforceRateLimits, GatewayError, jsonResponse, readJsonObject, resolveAuthenticatedUserId, safeGatewayError } from "../_shared/public-gateway.ts";
+import { storeObservation } from "../_shared/trip-store.ts";
+import { TRIP_INPUT_FIELD_NAMES } from "../_shared/trip-storage.js";
 
-const ALLOWED_FIELDS = new Set([
-  "zone_id", "zone_name", "coast_type", "observed_at", "submitted_at", "hunt_mode", "result", "grams",
-  "anonymous_id", "user_id", "trip_id", "gps", "rav_score", "score_level", "ai_probability", "ai_confidence",
-  "model_version", "weather_snapshot", "wind_speed_mps", "wind_direction_deg", "wave_height_m", "wave_period_s",
-  "water_level_cm", "current_speed_mps", "current_direction_deg", "water_temperature_c", "client_observation_id",
-  "schema_version", "trip_started_at", "trip_ended_at", "search_minutes", "search_coverage", "actual_zone_id",
-  "actual_coastal_part_id", "forecast_zone_id", "forecast_coastal_part_id", "calibration_eligible", "found",
-  "forecast_snapshot_id", "forecast_issued_at", "forecast_valid_at", "forecast_captured_at", "calibration_features",
-  "data_quality_flags", "forecast_target_at", "report_accuracy",
-]);
+const ALLOWED_FIELDS = new Set(TRIP_INPUT_FIELD_NAMES);
 
 const LOCATION_KEYS = new Set(["gps", "latitude", "longitude", "coordinates", "position", "route", "track", "location"]);
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -148,34 +141,6 @@ function validatePayload(payload: Record<string, unknown>) {
   validateTripContract(payload, schemaVersion);
 }
 
-async function authenticatedUserId(request: Request) {
-  const authorization = request.headers.get("authorization");
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  const url = Deno.env.get("SUPABASE_URL");
-  if (!authorization || !anonKey || !url) return null;
-  const response = await fetchWithTimeout(`${url}/auth/v1/user`, { headers: { apikey: anonKey, authorization } }, 5_000);
-  if (!response.ok) return null;
-  const user = await response.json();
-  return typeof user?.id === "string" ? user.id : null;
-}
-
-async function store(payload: Record<string, unknown>) {
-  const url = Deno.env.get("SUPABASE_URL");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!url || !serviceKey) throw new GatewayError(503, "OBSERVATION_STORE_NOT_CONFIGURED");
-  const response = await fetchWithTimeout(`${url}/rest/v1/observations?on_conflict=client_observation_id`, {
-    method: "POST",
-    headers: {
-      apikey: serviceKey,
-      authorization: `Bearer ${serviceKey}`,
-      "Content-Type": "application/json",
-      Prefer: "resolution=ignore-duplicates,return=minimal",
-    },
-    body: JSON.stringify(payload),
-  }, 8_000);
-  if (!response.ok) throw new GatewayError(503, "OBSERVATION_STORE_UNAVAILABLE");
-}
-
 Deno.serve(async (request) => {
   try {
     assertAllowedOrigin(request);
@@ -184,8 +149,9 @@ Deno.serve(async (request) => {
     validatePayload(payload);
     await enforceRateLimits(request, "submit-observation", { minute: 4, hour: 50, globalDay: 2000 });
 
-    const userId = await authenticatedUserId(request);
+    const userId = await resolveAuthenticatedUserId(request);
     if (payload.user_id && payload.user_id !== userId) throw new GatewayError(403, "USER_MISMATCH");
+    const boundUserId = userId && payload.user_id === userId ? userId : null;
     const observedAt = Date.parse(String(payload.observed_at));
     if (!userId && (observedAt < Date.now() - 7 * 86400_000 || observedAt > Date.now() + 10 * 60_000)) {
       throw new GatewayError(403, "LOGIN_REQUIRED_FOR_HISTORICAL_REPORT");
@@ -194,12 +160,12 @@ Deno.serve(async (request) => {
       throw new GatewayError(403, "LOGIN_REQUIRED_FOR_ACCOUNT_REPORT");
     }
 
-    await store({
+    await storeObservation({
       ...payload,
       submitted_at: new Date().toISOString(),
-      user_id: userId && payload.user_id === userId ? userId : null,
+      user_id: boundUserId,
       gps: null,
-    });
+    }, boundUserId);
     return jsonResponse(request, { stored: true });
   } catch (error) {
     return safeGatewayError(request, error);

@@ -86,6 +86,25 @@ export async function readJsonObject(request: Request, maxBytes: number) {
   return value as Record<string, unknown>;
 }
 
+export async function resolveAuthenticatedUserId(request: Request) {
+  const authorization = request.headers.get("authorization");
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  const url = Deno.env.get("SUPABASE_URL");
+  if (!authorization || !anonKey || !url) return null;
+  const response = await fetchWithTimeout(`${url}/auth/v1/user`, {
+    headers: { apikey: anonKey, authorization },
+  }, 5_000);
+  if (!response.ok) return null;
+  const user = await response.json();
+  return typeof user?.id === "string" ? user.id : null;
+}
+
+export async function requireAuthenticatedUserId(request: Request) {
+  const userId = await resolveAuthenticatedUserId(request);
+  if (!userId) throw new GatewayError(401, "LOGIN_REQUIRED");
+  return userId;
+}
+
 async function hmac(value: string) {
   const secret = Deno.env.get("PUBLIC_RATE_LIMIT_SECRET") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!secret) throw new GatewayError(503, "RATE_LIMIT_NOT_CONFIGURED");

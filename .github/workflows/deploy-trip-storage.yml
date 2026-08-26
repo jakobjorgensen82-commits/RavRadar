@@ -1,0 +1,125 @@
+name: Deploy RavRadar trip storage
+
+on:
+  workflow_dispatch:
+    inputs:
+      storage_mode:
+        description: Normal Cloudflare D1-drift eller kontrolleret Supabase-rollback
+        required: true
+        default: d1
+        type: choice
+        options:
+          - d1
+          - supabase
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ravradar-trip-storage-production
+  cancel-in-progress: false
+
+jobs:
+  deploy-trip-storage:
+    name: Validate, migrate and deploy trip storage
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
+      TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
+      TRIP_PSEUDONYM_SECRET_V1: ${{ secrets.TRIP_PSEUDONYM_SECRET_V1 }}
+      TRIP_WRANGLER_CONFIG_PATH: ${{ runner.temp }}/ravradar-trip-wrangler.json
+    steps:
+      - name: Require the exact main head
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "Trip storage may only deploy from main."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install source-gate dependencies
+        run: >-
+          python -m pip install --disable-pip-version-check
+          -r requirements-dmi.txt
+          "shapely>=2.0,<3"
+          "pyproj>=3.6,<4"
+
+      - name: Validate exact source head before external writes
+        run: npm run validate:source
+
+      - name: Prepare ten EU-restricted D1 shards and schema
+        if: inputs.storage_mode == 'd1'
+        run: node scripts/prepare-cloudflare-trip-storage.mjs
+
+      - name: Require safe D1 storage headroom
+        if: inputs.storage_mode == 'd1'
+        run: node scripts/audit-cloudflare-trip-storage.mjs
+
+      - name: Install the private Worker secret
+        if: inputs.storage_mode == 'd1'
+        run: printf '%s' "$TRIP_GATEWAY_SHARED_SECRET" | npx --yes wrangler@4.28.1 secret put TRIP_GATEWAY_SHARED_SECRET --config "$TRIP_WRANGLER_CONFIG_PATH"
+
+      - name: Deploy the private D1 gateway
+        if: inputs.storage_mode == 'd1'
+        run: npx --yes wrangler@4.28.1 deploy --config "$TRIP_WRANGLER_CONFIG_PATH"
+
+      - name: Verify Worker boundary before migration
+        if: inputs.storage_mode == 'd1'
+        run: node scripts/verify-cloudflare-trip-gateway.mjs
+
+      - name: Idempotently migrate existing Supabase trips
+        if: inputs.storage_mode == 'd1'
+        run: node scripts/migrate-trip-storage-to-cloudflare.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
+        with:
+          version: latest
+
+      - name: Configure normal Cloudflare D1 mode
+        if: inputs.storage_mode == 'd1'
+        run: >-
+          supabase secrets set
+          --project-ref "$SUPABASE_PROJECT_ID"
+          TRIP_STORAGE_MODE=d1
+          CLOUDFLARE_TRIP_GATEWAY_URL="$CLOUDFLARE_TRIP_GATEWAY_URL"
+          TRIP_GATEWAY_SHARED_SECRET="$TRIP_GATEWAY_SHARED_SECRET"
+          TRIP_PSEUDONYM_SECRET_V1="$TRIP_PSEUDONYM_SECRET_V1"
+
+      - name: Configure explicit Supabase rollback mode
+        if: inputs.storage_mode == 'supabase'
+        run: >-
+          supabase secrets set
+          --project-ref "$SUPABASE_PROJECT_ID"
+          TRIP_STORAGE_MODE=supabase
+
+      - name: Deploy all version-controlled Edge functions
+        run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Reconcile trips written during the D1 cutover
+        if: inputs.storage_mode == 'd1'
+        run: node scripts/migrate-trip-storage-to-cloudflare.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Verify public Edge boundaries without creating data
+        run: node scripts/verify-trip-storage-edge.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

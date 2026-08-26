@@ -5,7 +5,7 @@ const workflowDirectory = '.github/workflows';
 const workflowFiles = fs.readdirSync(workflowDirectory)
   .filter((name) => /\.ya?ml$/i.test(name))
   .sort();
-const expectedWorkflowFiles = ['build-ravscore-historical-wave-pilot.yml', 'extract-private-geodanmark-layer.yml', 'preserve-copernicus-current-shadow.yml', 'retry-national-admin-roundtrip.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml'];
+const expectedWorkflowFiles = ['build-ravscore-historical-wave-pilot.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'monitor-trip-storage.yml', 'preserve-copernicus-current-shadow.yml', 'retry-national-admin-roundtrip.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml'];
 if (JSON.stringify(workflowFiles) !== JSON.stringify(expectedWorkflowFiles)) {
   throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun produktionsworkflowet og de registrerede private, ikke-deployerende workflows må være aktive.`);
 }
@@ -47,6 +47,7 @@ for (const marker of [
   'npm run validate:rdks',
   'npm run test:feedback-learning',
   'npm run test:observation-db-privacy',
+  'npm run test:hybrid-trip-storage',
   'npm run test:adaptive-prediction',
   'npm run test:admin-feature-reachability',
   'npm run test:current-transport-history',
@@ -166,6 +167,43 @@ for (let i = 1; i < expected.length; i += 1) {
   if (!(positions[before] < positions[after])) {
     throw new Error(`Forkert rækkefølge: ${before} skal ligge før ${after}`);
   }
+}
+const tripStorageDeployment = fs.readFileSync(`${workflowDirectory}/deploy-trip-storage.yml`, 'utf8').replace(/\r\n/g, '\n');
+for (const marker of [
+  'workflow_dispatch:',
+  'permissions:\n  contents: read',
+  'storage_mode:',
+  'npm run validate:source',
+  'node scripts/prepare-cloudflare-trip-storage.mjs',
+  'node scripts/audit-cloudflare-trip-storage.mjs',
+  'wrangler@4.28.1 deploy',
+  'node scripts/verify-cloudflare-trip-gateway.mjs',
+  'node scripts/migrate-trip-storage-to-cloudflare.mjs',
+  'TRIP_STORAGE_MODE=d1',
+  'TRIP_STORAGE_MODE=supabase',
+  'supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID"',
+  'node scripts/verify-trip-storage-edge.mjs',
+]) {
+  if (!tripStorageDeployment.includes(marker)) throw new Error(`Turlager-deploymentet mangler ${marker}`);
+}
+if (/\b(?:push|pull_request|schedule|workflow_run):/.test(tripStorageDeployment)) {
+  throw new Error('Turlager-deploymentet må kun kunne startes manuelt fra main.');
+}
+if (tripStorageDeployment.includes('pages: write') || tripStorageDeployment.includes('id-token: write') || tripStorageDeployment.includes('deploy-pages')) {
+  throw new Error('Turlager-deploymentet må ikke kunne deploye Pages.');
+}
+if (!tripStorageDeployment.includes("if: inputs.storage_mode == 'd1'") || tripStorageDeployment.includes('continue-on-error')) {
+  throw new Error('D1-deploymentet skal være eksplicit og må ikke skjule fejl eller falde automatisk tilbage.');
+}
+if ((tripStorageDeployment.match(/node scripts\/migrate-trip-storage-to-cloudflare\.mjs/g) || []).length !== 2) {
+  throw new Error('D1-cutover skal migrere både før og efter Edge-skiftet, så ingen ture efterlades i Supabase-vinduet.');
+}
+const tripStorageMonitor = fs.readFileSync(`${workflowDirectory}/monitor-trip-storage.yml`, 'utf8').replace(/\r\n/g, '\n');
+for (const marker of ['workflow_dispatch:', 'schedule:', 'permissions:\n  contents: read', 'CLOUDFLARE_AUDIT_API_TOKEN', 'node scripts/audit-cloudflare-trip-storage.mjs']) {
+  if (!tripStorageMonitor.includes(marker)) throw new Error(`Turlager-overvågningen mangler ${marker}`);
+}
+if (tripStorageMonitor.includes('pages: write') || tripStorageMonitor.includes('id-token: write') || tripStorageMonitor.includes('deploy-pages')) {
+  throw new Error('Turlager-overvågningen må ikke kunne deploye Pages.');
 }
 const publicAuditBlockEnd = text.indexOf('\n\n', positions.publicAudit);
 const publicAuditBlock = text.slice(positions.publicAudit,
