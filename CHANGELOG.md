@@ -5,6 +5,7 @@
 - Migration kører før og efter cutover uden kildesletning. `TRIP_STORAGE_MODE=supabase` er eksplicit rollback uden normal dual-write.
 - Daglig payloadfri kapacitetskontrol og eksplicit ejersletning er implementeret. Supabase-varslet 9. september 2026 forbliver åbent.
 - Infrastruktur-PR #162/#163 og deres exact-head-gates er merged. Dedikeret Cloudflare-konto, mindst-mulige tokens, krypterede GitHub-secrets og rollback-Edge-deploy `33014772035` er verificeret uden private data; D1-shards/Worker, migration, kandidatens endelige exact-head/merge, fuld produktion og offentlig verifikation afventer stadig. Se DEC-0082 og `CHANGELOG-4.0.287.md`.
+- Første D1-cutover `33019198166` oprettede ti EU-shards og deployede Workeren, men stoppede sikkert før migration/Edge ved en kort health-udbredelsesforsinkelse. Den efterfølgende health-kontrol var grøn; deployverifikationen har nu bounded retry uden svagere kontrakt.
 
 ## 4.0.286 – rullende Candidate G-kontinuitet og predeploy-funktionsgate (2026-08-26)
 

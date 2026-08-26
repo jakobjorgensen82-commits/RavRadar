@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { handleRequest } from '../cloudflare/trip-gateway/worker.js';
+import { WORKER_HEALTH_RETRY_DELAYS_MS, waitForWorkerHealth } from './verify-cloudflare-trip-gateway.mjs';
 import {
   D1_TRIP_SCHEMA_STATEMENTS,
   canonicalJson,
@@ -55,6 +56,23 @@ assert.equal(canonicalJson({ z: 1, nested: { b: 2, a: 1 } }), canonicalJson({ ne
 assert.equal(normalizeCloudflareGatewayUrl(gatewayUrl), gatewayUrl);
 assert.throws(() => normalizeCloudflareGatewayUrl('https://example.com'), /TRIP_GATEWAY_URL_INVALID/);
 assert.throws(() => normalizeCloudflareGatewayUrl(`${gatewayUrl}/other`), /TRIP_GATEWAY_URL_INVALID/);
+
+let healthAttempts = 0;
+const eventualHealth = await waitForWorkerHealth({
+  gatewayUrl,
+  retryDelaysMs: [0, 0, 0],
+  fetchImpl: async () => {
+    healthAttempts += 1;
+    const healthy = healthAttempts === 3;
+    return new Response(JSON.stringify(healthy
+      ? { ok: true, service: 'ravradar-trip-gateway', storage_schema_version: 1, shards: 10 }
+      : { ok: false }), { status: healthy ? 200 : 404, headers: { 'Content-Type': 'application/json' } });
+  },
+});
+assert.equal(healthAttempts, 3);
+assert.equal(eventualHealth.body?.ok, true);
+assert.ok(WORKER_HEALTH_RETRY_DELAYS_MS.length >= 2);
+assert.ok(WORKER_HEALTH_RETRY_DELAYS_MS.reduce((sum, delay) => sum + delay, 0) <= 60_000);
 
 const timestamp = 1_777_000_000_000;
 const signedBody = '{"safe":true}';

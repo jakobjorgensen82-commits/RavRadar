@@ -8,8 +8,9 @@
 - [x] Migrér før/efter cutover uden kildesletning; behold eksplicit Supabase-rollback og idempotent vej tilbage.
 - [x] Overvåg lager uden payloads ved 70/85 % og understøt eksplicit ejersletning på tværs af begge lagre.
 - [x] Opret live Cloudflare-konto, mindst-mulige credentials og krypterede GitHub-secrets efter godkendelse; bestå infrastrukturens exact-head/merge og rollback-Edge-deploy.
-- [ ] Opret og verificér ti live EU-shards, deploy Worker, migrér og aktivér normal D1-drift på eksakt merged `main`.
-- [ ] Bestå kandidatens endelige exact-head/merge, fuld produktion og offentlig verifikation.
+- [x] Bestå kandidatens exact-head/merge, opret/skema-verificér ti live EU-shards og deploy Worker; stop første cutover sikkert før migration/Edge på health-udbredelsesforsinkelsen.
+- [ ] Bestå bounded-retry-opfølgningens exact-head/merge, privat Worker-grænse, migration og normal D1-drift på eksakt `main`.
+- [ ] Bestå fuld produktion og offentlig verifikation.
 
 Se DEC-0082. Supabase-varselet 9. september 2026 følges fortsat.
 
