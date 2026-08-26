@@ -1,7 +1,7 @@
-import { authEnabled, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.286";
-import { getLocalObservations, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.286";
-import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.286";
-import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.286";
+import { authEnabled, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.287";
+import { getLocalObservations, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.287";
+import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.287";
+import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.287";
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>'"]/g, character => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" })[character]);
@@ -109,7 +109,7 @@ async function showAccountTripReport(dialog, context) {
     if (!answer) return renderAccount(dialog, context);
     const report = buildAccountTripReport({ ...answer, tripId: crypto.randomUUID() });
     const result = await submitAccountTripReportObservation(toAccountObservationColumns(report));
-    const message = result.stored === 'supabase'
+    const message = result.stored === 'remote'
       ? 'Tak. Turen er sendt til RavRadar og kan nu ses under Mine ture og fund.'
       : 'Turen er gemt på denne enhed og sendes automatisk, når forbindelsen er tilbage.';
     renderAccount(dialog, context, message);

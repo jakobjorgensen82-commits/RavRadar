@@ -1,3 +1,11 @@
+## 4.0.287 – Supabase-identitet og EU-D1-turlager (2026-08-26)
+
+- Supabase bevarer Auth/Edge, mens normale ture går til ti EU-låste Cloudflare D1-shards med HMAC-pseudonym og uden rå ID, mail, navn, JWT, GPS eller rute.
+- Privat service-HMAC, kanonisk payload-hash og klient-/tur-id låser tidsgrænse, idempotens og konfliktstop.
+- Migration kører før og efter cutover uden kildesletning. `TRIP_STORAGE_MODE=supabase` er eksplicit rollback uden normal dual-write.
+- Daglig payloadfri kapacitetskontrol og eksplicit ejersletning er implementeret. Supabase-varslet 9. september 2026 forbliver åbent.
+- Infrastruktur-PR #162/#163 og deres exact-head-gates er merged. Dedikeret Cloudflare-konto, mindst-mulige tokens, krypterede GitHub-secrets og rollback-Edge-deploy `33014772035` er verificeret uden private data; D1-shards/Worker, migration, kandidatens endelige exact-head/merge, fuld produktion og offentlig verifikation afventer stadig. Se DEC-0082 og `CHANGELOG-4.0.287.md`.
+
 ## 4.0.286 – rullende Candidate G-kontinuitet og predeploy-funktionsgate (2026-08-26)
 
 - Den offentlige positive audit afviste 4.0.285 korrekt efter ellers grønne gates: 0/210 aktive zoner og 665/673 `WINDOW_INCOMPLETE`.

@@ -1,5 +1,16 @@
 # Kendte åbne og overvågede forhold
 
+## Åbent i kandidat 4.0.287 – D1-cutover og produktionslukning for EU-turlager
+
+- Kode, migrationsflow, rollback, privacy, idempotens, kapacitetskontrol og målrettede tests er implementeret lokalt.
+- Dedikeret Cloudflare-konto, mindst-mulige tokens, krypterede GitHub-secrets og Edge-deploy i eksplicit Supabase-rollback er verificeret uden credential- eller payloadudskrift. Der findes endnu ingen verificeret live Worker/D1-shardkæde eller migration.
+- Supabase-PAT roteres før 25. september 2026. Cloudflare deploy-/audit-tokens roteres før 27. august 2027. Pseudonym-secret må ikke roteres blindt.
+- Supabase-banneret varsler fortsat mulig projektbegrænsning fra 9. september 2026. Flytning af fremtidige ture reducerer databasevæksten, men ikke Auth-/Edge-egress eller tidligere billinghistorik.
+- Under eksplicit Supabase-rollback er ældre D1-ture bevaret, men kan være midlertidigt usynlige, indtil D1 er tilgængelig igen. Nye rollback-ture migreres idempotent ved tilbagevenden.
+- Turso Free er forkastet som normalmål, fordi en DPA ikke fremgår tydeligt af gratisplanen. Genindfør ikke Turso uden ny juridisk og teknisk beslutning.
+
+Se DEC-0082. Issue lukkes først efter live EU-jurisdiktion, migration, konto/turlog, rollback og offentlig produktion er grønne.
+
 ## Produktionsverificeret 4.0.286 – rullende Candidate G-kontinuitet
 
 - **ISSUE-CANDIDATE-G-BOUNDARY-PREDECESSOR-NOT-PERSISTED – PRODUKTIONSVERIFICERET LØST:** 4.0.285 brugte forgængeren før den faseskudte grænse i samme beregning, men publicerede kun evidensen inde i vinduet. Næste reference mistede derfor igen sammenhængen. 4.0.286 bevarer den virkelige kompakte forgænger til næste reference uden at afspille eller tælle den i det aktuelle vindue.

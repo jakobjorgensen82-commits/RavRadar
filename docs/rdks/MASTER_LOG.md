@@ -1,3 +1,11 @@
+## 2026-08-26 – kandidat 4.0.287 flytter normal turvækst til EU-D1
+
+- Ejeren besluttede en færdig hybridarkitektur fra første dag med eksplicit Supabase-rollback.
+- Supabase bevarer Auth/Edge; ti EU-låste D1-shards modtager kun HMAC-pseudonym og allowlistede turdata gennem en privat signeret Worker.
+- Idempotent migration kører før og efter cutover uden at slette Supabase-kilden. Daglig payloadfri kapacitetskontrol og eksplicit ejersletning er implementeret.
+- Turso Free blev forkastet på uklart DPA-grundlag. Infrastruktur-PR #162/#163 bestod exact-head `33014102652`/`33014672254` og blev merged som `27cebfd0`/`94b58e41`.
+- Dedikeret Cloudflare-konto, mindst-mulige deploy-/audit-tokens og krypterede GitHub-secrets er verificeret uden værdier. Rollback-Edge-deploy `33014772035` er grøn; live EU-shards/Worker, migration, kandidatens endelige exact-head/merge og produktion afventer. Se DEC-0082.
+
 ## 2026-08-26 – 4.0.286 lukker rullende Candidate G-regression, produktionsverificeret
 
 - PR #156 bestod exact-head `32993055324`, blev merged som `de6b7844`, og produktion `32993270783` udgav 4.0.285 gennem alle daværende gates.

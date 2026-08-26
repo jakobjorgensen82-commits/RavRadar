@@ -1,5 +1,15 @@
 # RavRadar Håndbog
 
+## Supabase-login og EU-turlager med rollback – 4.0.287
+
+Supabase håndterer fortsat login, profiler, rettigheder, rate limit og RavRadars offentlige Edge-gateway. Normale ture gemmes i ti Cloudflare D1-databaser, som er låst til EU. Det giver op til 5 GB samlet gratis turlager i stedet for at lade turene vokse mod Supabases 500 MB-databaseloft.
+
+Før en tur forlader Supabase-grænsen, erstatter Edge brugerens eller den anonyme enheds id med et versionsbåret HMAC-pseudonym. Cloudflare modtager ikke bruger-id, mail, navn, login-token, GPS eller rute. Kaldet mellem Edge og Cloudflare er privat signeret og tidsbegrænset; samme klient-/tur-id kan prøves igen uden dublet, men afvises hvis indholdet ændres.
+
+Eksisterende ture kopieres idempotent før og efter selve skiftet uden at blive slettet i Supabase. Normal drift dobbeltgemmer ikke. En manuel `TRIP_STORAGE_MODE=supabase` kan sende nye ture tilbage til Supabase ved en D1-fejl; ved tilbagevenden migreres rollback-perioden igen. Ældre D1-ture er bevaret, men kan være midlertidigt usynlige under en D1-nedetid.
+
+Et dagligt kontroljob læser kun leverandørernes størrelsestal – aldrig turpayloads – og advarer ved 70 % samt stopper ved 85 %. En eksplicit bekræftet driftskommando kan slette en ejers ture i begge lagre uden at udskrive id eller payload. Supabases varsel om mulig begrænsning fra 9. september 2026 overvåges fortsat, fordi login og Edge stadig bruger Supabase. Se [DEC-0082](docs/rdks/10_DECISIONS/DEC-0082-HYBRID-AUTH-AND-EU-TRIP-STORAGE.md).
+
 ## Rullende Candidate G-kontinuitet og kontrol før udgivelse – 4.0.286
 
 Når den fælles reference ligger mellem native strømprøver, kan en virkelig kompakt prøve lige før 48-timersgrænsen bevise, at forløbet er sammenhængende. Dette bevis skal også følge den kompakte tilstand til næste rullende reference; ellers kan næste time fejlagtigt miste den første del af de dokumenterede 48 timer.
@@ -28,7 +38,7 @@ Observationer sendes gennem en server-side Edge-gateway. Browseren kan ikke læn
 
 Rav-assistenten bruger fortsat den lokale Candidate G-beregning. Fjernassistenten er slået fra, så RavRadar ikke sender spørgsmål eller kontekst til en ekstern model uden en særskilt godkendt nøgle-, omkostnings- og driftbeslutning. En senere aktivering må kun sende det lille dokumenterede offentlige kontekstobjekt.
 
-Supabase varsler mulig begrænsning fra 9. september 2026 efter en tidligere egressoverskridelse. Det overvåges som drift; privatliv, RLS, rate limits og releasegates må ikke lempes for at spare kvote. Se [DEC-0080](docs/rdks/10_DECISIONS/DEC-0080-SECURITY-BOUNDARIES-AND-PUBLIC-EDGE-GATEWAYS.md).
+Supabase varsler mulig begrænsning fra 9. september 2026 efter en tidligere egressoverskridelse. Det overvåges som drift; privatliv, RLS, rate limits og releasegates må ikke lempes for at spare kvote. Kandidat 4.0.287 flytter normal turvækst til EU-D1, men Auth-/Edge-egress bliver i Supabase. Se [DEC-0080](docs/rdks/10_DECISIONS/DEC-0080-SECURITY-BOUNDARIES-AND-PUBLIC-EDGE-GATEWAYS.md) og [DEC-0082](docs/rdks/10_DECISIONS/DEC-0082-HYBRID-AUTH-AND-EU-TRIP-STORAGE.md).
 
 ## Moderzonekobling i Candidate G-slutkontrollen – 4.0.283
 
@@ -171,7 +181,7 @@ Et **magic link** er et tidsbegrænset engangslink, som RavRadar sender til brug
 
 Supabase skal kende hjemmesidens rigtige adresse to steder: som standardadresse og som tilladt login-returadresse. Den aktuelle adresse er `https://jakobjorgensen82-commits.github.io/RavRadar/`. Når siden flyttes til `https://ravradar.dk/`, skal begge indstillinger ændres samtidig, og et nyt magic link skal prøves på den nye adresse. Ellers kan et korrekt link ende på en gammel adresse eller localhost.
 
-**Mine ture og fund** læser de samme turposter, som RavRadar allerede har gemt. Der oprettes ikke en ekstra tabel eller kopi. Kun den indloggede ejer må læse rækker med sit eget bruger-id, og listen henter højst de seneste 100 ture.
+**Mine ture og fund** læser de samme logiske turposter, som RavRadar allerede har gemt. Der oprettes ikke en ekstra fundkopi. Kun den indloggede ejer må læse listen gennem Edge-gatewayen, som omdanner ejer-id til HMAC-pseudonym; listen henter normalt højst de seneste 100 ture. Den tidligere direkte Supabase-RLS-læsning er historik fra 4.0.266 og erstattet af DEC-0082.
 
 Efterregistreringens kvalitetsmarkører gemmes i `data_quality_flags`. De fortæller blandt andet, at turen er indtastet bagefter og ikke har et sikkert historisk vejrgrundlag. Markørerne må ikke indeholde mail, navn, GPS, rute eller fri tekst.
 
@@ -185,7 +195,7 @@ RavRadar sætter aldrig dagens vejr på en ældre tur. Hvis systemet ikke sikker
 
 Den påvirker heller ikke den aktuelle beregnede fundchance, så længe den mangler et sikkert historisk grundlag.
 
-Efterregistreringen gemmes som én almindelig turpost i den eksisterende `observations`-tabel. Den samme post vises i **Mine ture og fund**. Der oprettes ingen ny tabel eller særskilt fundpost, og brugeren møder ikke tekniske databaseforklaringer i turloggen.
+Efterregistreringen gemmes som én almindelig logisk turpost i det aktive turlager. Den samme post vises i **Mine ture og fund**. Der oprettes ingen særskilt fundpost eller normal dobbeltkopi, og brugeren møder ikke tekniske databaseforklaringer i turloggen. Supabase-tabellen er fra 4.0.287 migrationskilde og eksplicit rollback.
 
 Ved afslutning af en startet tur kan brugeren vælge **Indsend tur**, **Svar senere** eller **Afslut uden at indberette**. **Svar senere** bevarer turen på enheden. Det sidste valg kræver bekræftelse og rydder turen uden at sende eller gemme en rapport.
 
@@ -193,7 +203,7 @@ Begge rapportveje bruger samme afhængige valg af område og kyststrækning. Rav
 
 ## Enklere brugerrejse og privat turlog – 4.0.264
 
-Under kontoen kan en indlogget bruger åbne **Mine ture og fund**. Oversigten viser de samme ture, som allerede ligger i Supabases `observations`-tabel. RavRadar gemmer altså ikke turen en ekstra gang og opretter ikke en ny logtabel. Listen hentes først, når brugeren åbner den, og viser højst de seneste 100 ture for at begrænse belastningen.
+Historisk i 4.0.264 læste **Mine ture og fund** direkte fra Supabases `observations`-tabel. Fra 4.0.287 går samme private brugerfunktion gennem Edge og det pseudonymiserede EU-turlager. RavRadar gemmer stadig ikke turen som en ekstra fundkopi. Listen hentes først, når brugeren åbner den, og viser normalt højst de seneste 100 ture for at begrænse belastningen.
 
 4.0.264 er produktionsverificeret på 210 zoner og 673 kystdele. Konto-/loginforklaringen og den direkte tur uden GPS-rute er kontrolleret live; den autentificerede private liste og en rigtig loginmail afprøves senere interaktivt af ejeren, så RavRadar ikke sender en mail eller opretter en tur uden en bevidst brugerhandling.
 
@@ -201,7 +211,7 @@ En efterfølgende ren ændring af håndbog, RDKS, changelog og release-rapport o
 
 Den aktive turrejse er: **Start tur**, **Afslut tur** og **Færdiggør tur**. Rapporten beskriver hele søgeturen med søgetid, jagtform, faktisk område og kystdel, hvor grundigt der blev søgt, og om der blev fundet rav. Den aktive rejse indsamler ikke GPS-spor, rute eller præcis position.
 
-Hvis brugeren var logget ind ved indsendelsen, kan den samme turpost vises privat for ejeren gennem Supabases adgangsregler. Mailadresse og navn gemmes ikke i turposten, og brugeridentiteten bruges ikke i modelanalyse. En tur indsendt uden login forbliver anonym og kan ikke sikkert tilskrives en konto bagefter.
+Hvis brugeren var logget ind ved indsendelsen, kan den samme turpost vises privat for ejeren gennem Supabase-login og Edge-gatewayen. Cloudflare ser kun HMAC-pseudonymet. Mailadresse og navn gemmes ikke i turposten, og brugeridentiteten bruges ikke i modelanalyse. En tur indsendt uden login forbliver anonym og kan ikke sikkert tilskrives en konto bagefter.
 
 Et **magic link** er et engangslink, der sendes til brugerens mail og logger brugeren ind uden adgangskode. Adgangskodelogin er fortsat muligt. 4.0.264 kontrollerede klientkoden og forklaringen, men den senere rigtige mail viste en forkert central localhost-adresse. Den aktive korrektion og domænekravet står i 4.0.266-afsnittet ovenfor.
 
@@ -563,7 +573,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.286
+**Håndbogsversion:** 4.0.287
 
 **Opdateret:** 19. august 2026
 

@@ -13,3 +13,9 @@ At kunne undersøge hvor, hvornår og under hvilke forløb rav registreres, samt
 
 ## Standardudtræk
 Se `schemas/analysis-export.schema.json`. Udtrækket kan efterfølgende gives til en analysemodel sammen med en beskrivelse af den konkrete hypotese.
+
+## Fysisk lager og identitetsgrænse
+
+Supabase er fortsat identitetssandhed. Normal turdata ligger i ti EU-låste D1-shards under et versionsbåret HMAC-pseudonym. Direkte bruger-id, anonym-id, mail, navn, JWT, GPS, rute, fri tekst og billeder må ikke nå D1. Analyse må aldrig forsøge at vende pseudonymet eller koble det til Supabase-identitet.
+
+En brugerhenvendelse om sletning håndteres med den eksplicit bekræftede driftskommando, som sletter og verificerer både D1 og Supabase uden payloadlog. Se DEC-0082.
