@@ -12,6 +12,7 @@ const expected = new Map([
   ['actions/configure-pages', 'v6'],
   ['actions/upload-pages-artifact', 'v5'],
   ['actions/deploy-pages', 'v5'],
+  ['actions/github-script', 'v8'],
 ]);
 
 const files = [];
@@ -26,7 +27,7 @@ const seenInWorkflows = new Set();
 let references = 0;
 for (const file of files.sort()) {
   const text = fs.readFileSync(file, 'utf8').replaceAll('\\/', '/');
-  const pattern = /actions\/(?:checkout|cache\/(?:restore|save)|setup-(?:node|python)|upload-artifact|download-artifact|configure-pages|upload-pages-artifact|deploy-pages)@v\d+/g;
+  const pattern = /actions\/(?:checkout|cache\/(?:restore|save)|setup-(?:node|python)|upload-artifact|download-artifact|configure-pages|upload-pages-artifact|deploy-pages|github-script)@v\d+/g;
   for (const reference of text.match(pattern) || []) {
     references += 1;
     const split = reference.lastIndexOf('@');

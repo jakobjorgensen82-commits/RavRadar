@@ -11,8 +11,19 @@
 - [x] Bestå kandidatens exact-head/merge, opret/skema-verificér ti live EU-shards og deploy Worker; stop første cutover sikkert før migration/Edge på health-udbredelsesforsinkelsen.
 - [x] Bestå bounded-retry-opfølgningens exact-head `33019805663`, merge PR #166 som `2d12c085`, privat Worker-grænse, idempotent 4/4-migration og normal D1-drift på eksakt `main` gennem `33019868542`.
 - [x] Bestå fuld produktion `33019856228`, Pages-job `98351206091`, offentlig `rr-20260826224651-210`-verifikation og payloadfri kapacitetsmonitor `33021364240`.
+- [x] Sæt begge mindst-mulige Cloudflare-tokens til **No expiration**, udskift Supabase-PAT'et til udløb 25. august 2027 og bestå ende-til-ende-D1-verifikation `33024408547` før tilbagekaldelse af gamle PAT'er.
+- [x] Genbekræft audit-tokenet gennem payloadfri `33024621109` med ti shards og 0 % forbrug.
+- [x] Tilføj et secret-frit GitHub-issue/mailvarsel fra 60 dage før PAT-udløb med opfølgning ved 30/14/7/3/1/0 dage.
 
 Se DEC-0082. Supabase-varselet 9. september 2026 følges fortsat.
+
+## P1 planlagt – intern, score-neutral Ravudsigten-sammenligning
+
+- [ ] Indsaml skånsomt tidsstemplede, offentligt synlige resultater fra Ravudsigten og RavRadar for sammenlignelige kystområder over flere reelle vejrsituationer.
+- [ ] Sammenlign enighed og forskydning i sted, starttid, varighed og styrke samt observerbare hypoteser om vind, strøm i flere lag, vandstand og historik.
+- [ ] Brug uafhængige tur-/fundobservationer som fasit, hvor datakvalitet og samtykke tillader det; et enkelt snapshot eller modellernes indbyrdes enighed er ikke validering.
+- [ ] Omgå ingen adgangskontrol, hent ingen privat kode, og beskriv sandsynlige regler som hypoteser frem for fakta.
+- [ ] Bevar `scoreImpact=false` og `publicRuntime=false`. Opgaven må kun være synlig i RDKS/roadmap/changelog og må ikke nå app, offentlig håndbog, ekspert-/adminflader eller offentlige prognosedata.
 
 ## P0 afsluttet – 4.0.286 rullende cadencefase
 

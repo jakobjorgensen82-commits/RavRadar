@@ -4,14 +4,16 @@
 
 - Kode, migrationsflow, rollback, privacy, idempotens, kapacitetskontrol og målrettede tests er implementeret og produktionsverificeret.
 - Dedikeret Cloudflare-konto, mindst-mulige tokens, krypterede GitHub-secrets, Edge-deploy i eksplicit Supabase-rollback og den aktive Worker/D1-shardkæde er verificeret uden credential- eller payloadudskrift.
-- Supabase-PAT roteres før 25. september 2026. Cloudflare deploy-/audit-tokens roteres før 27. august 2027. Pseudonym-secret må ikke roteres blindt.
+- Cloudflare deploy-/audit-token er sat til **No expiration** med uændrede mindst-mulige rettigheder og roteres kun ved kompromittering eller rettighedsændring. Supabase-PAT'et udløber 25. august 2027; et secret-frit GitHub-workflow opretter og tildeler en issue fra 60 dage før udløb og følger op ved 30/14/7/3/1/0 dage. Pseudonym-secret må ikke roteres blindt.
 - Supabase-banneret varsler fortsat mulig projektbegrænsning fra 9. september 2026. Flytning af fremtidige ture reducerer databasevæksten, men ikke Auth-/Edge-egress eller tidligere billinghistorik.
 - Under eksplicit Supabase-rollback er ældre D1-ture bevaret, men kan være midlertidigt usynlige, indtil D1 er tilgængelig igen. Nye rollback-ture migreres idempotent ved tilbagevenden.
 - Turso Free er forkastet som normalmål, fordi en DPA ikke fremgår tydeligt af gratisplanen. Genindfør ikke Turso uden ny juridisk og teknisk beslutning.
 - **ISSUE-CLOUDFLARE-WORKER-HEALTH-PROPAGATION-RACE – PRODUKTIONSVERIFICERET LØST:** D1-run `33019198166` bestod sourcegate, EU-shards, skema, kapacitet, secret og Worker-deploy, men det umiddelbare health-kald ramte kort udbredelsesforsinkelse og stoppede før migration/Edge. Bounded retry gennem PR #166/exact-head `33019805663` og merge `2d12c085` kræver fortsat eksakt 200, skemaversion 1 og ti shards; fuld cutover `33019868542` bestod.
 - **ISSUE-HYBRID-TRIP-STORAGE-PRODUCTION-CLOSURE – PRODUKTIONSVERIFICERET LUKKET:** Cutover `33019868542` migrerede fire rækker og beviste fire idempotente dubletter ved andet gennemløb. Produktion `33019856228`, Pages-job `98351206091`, offentlig `rr-20260826224651-210` og read-only monitor `33021364240` er grønne. Normal mode er D1; Supabase-rollbackkontrakten er bevaret.
+- **ISSUE-CREDENTIAL-EXPIRY-NOTIFICATION – LØST I KANDIDAT:** Begge Cloudflare-tokens er uden kalenderudløb, Supabase-PAT-rotationen bestod ende-til-ende i `33024408547` før gammel tilbagekaldelse, og audit `33024621109` er grøn. Et minimalt workflow med kun `issues: write`, ingen secrets og ingen deployadgang leverer det ønskede GitHub-issue/mailvarsel. Exact-head og manuel post-merge-prøve udestår.
+- **ISSUE-INTERNAL-RAVUDSIGTEN-COMPARISON – PLANLAGT / IKKE AKTIV:** En senere analyse må sammenligne offentligt synlige resultater over flere vejrsituationer og bruge uafhængige fund som mulig fasit. Den er hypoteseorienteret, omgår ingen adgang og er låst til `scoreImpact=false`/`publicRuntime=false`. Den må kun dokumenteres i RDKS, roadmap og changelog, aldrig i app, offentlig håndbog, ekspert-/adminflader eller offentlige prognosedata.
 
-Se DEC-0082. Implementeringsissue er lukket. De åbne driftsforhold er Supabase-varslet og credential-rotationerne ovenfor; rollbackens midlertidigt usynlige ældre D1-ture er en dokumenteret begrænsning, ikke en skjult fallback.
+Se DEC-0082. Implementeringsissue er lukket. De åbne driftsforhold er Supabase-varslet og den kommende Supabase-PAT-rotation; rollbackens midlertidigt usynlige ældre D1-ture er en dokumenteret begrænsning, ikke en skjult fallback.
 
 ## Produktionsverificeret 4.0.286 – rullende Candidate G-kontinuitet
 

@@ -19,8 +19,18 @@
 - [x] Verificér live D1-normaldrift, privat Worker-/Edge-grænse, idempotent 4/4-rækkemigration, dataminimerede tællinger og den eksplicitte rollbackkontrakt.
 - [x] Bestå fuld frisk produktionsgate `33019856228`, Pages-job `98351206091` og offentlig `rr-20260826224651-210`-kontrol med 210/210 aktive zoner, befolket rangliste, 210/673/420/2.100 og nul fejl.
 - [x] Bestå separat read-only monitor `33021364240`/`98352259752` med ti shards, 0 MB afrundet og 0 % lagerforbrug uden turlæsning.
+- [x] Sæt begge mindst-mulige Cloudflare-tokens til **No expiration** uden værdiskift eller bredere rettigheder.
+- [x] Udskift Supabase-PAT'et til udløb 25. august 2027; bestå D1-verifikation `33024408547` før tilbagekaldelse af gammel og ubrugt mellem-token.
+- [x] Genbekræft audit-tokenet payloadfrit gennem `33024621109`/`98362935528` med ti shards og 0 % uden turlæsning.
+- [x] Implementér et secret-frit GitHub-issue/mailvarsel fra 60 dage før PAT-udløb med kun `issues: write`; exact-head og manuel post-merge-prøve udestår.
 
-Supabase-banneret om mulig begrænsning fra 9. september 2026 forbliver et åbent driftskrav. Supabase-PAT roteres før 25. september 2026, og begge Cloudflare-tokens før 27. august 2027. Se DEC-0082.
+Supabase-banneret om mulig begrænsning fra 9. september 2026 forbliver et åbent driftskrav. Supabase-PAT'et roteres før 25. august 2027 efter GitHub-varslet; Cloudflare-token roteres kun ved kompromittering eller rettighedsændring. Se DEC-0082.
+
+## P1 planlagt – intern Ravudsigten-sammenligning
+
+- [ ] Sammenlign kun offentligt synlige, tidsstemplede resultater over flere vejrsituationer og brug eventuelle uafhængige fund med dokumenteret kvalitet/samtykke.
+- [ ] Behandl mulige regler som hypoteser; ingen adgangsomgåelse eller privat kode.
+- [ ] Bevar `scoreImpact=false` og `publicRuntime=false`; synlighed er begrænset til RDKS, roadmap og changelog og forbudt i app, offentlig håndbog, ekspert-/adminflader og offentlige prognosedata.
 
 ## Produktionsverificeret 4.0.286 – rullende Candidate G-kontinuitet og predeploy-funktionsgate
 
