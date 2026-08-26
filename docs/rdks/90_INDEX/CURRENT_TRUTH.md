@@ -10,7 +10,8 @@
 - Produktionsworkflowet auditerer nu den faktisk genererede `data/live/conditions.json` før Supabase-sync, artifact og Pages. Den nye gate afviser det offentlige 4.0.285-artifact med den dokumenterede 665/673-masseregression.
 - En ny lokal recoveryprøve mod det offentlige 4.0.285-mål og den hash-låste kilde genskabte 672/673 `READY` og blev derefter inaktiv.
 - Der kopieres ingen rå U/V, koordinater, vejr, scoreoutput, geometri, land-/vandpunkter eller private payloads. De beskyttede geodatafiler må kun ændre topversionsfelt 4.0.285 → 4.0.286 under DEC-0076.
-- Exact-head, fuld frisk produktion og positiv offentlig ranglistekontrol afventer. Se DEC-0081.
+- Ny exact-head efter den dataminimerede diagnosedelta, fuld frisk produktion og positiv offentlig ranglistekontrol afventer. Se DEC-0081.
+- PR #157 bestod exact-head `32995801418` på `da8e1c0efe8c872bdca4aeac81f719c84ecbcfe0` og blev merged som `2f2fd14883fbb974b331774858a61473ca06acc4`. Produktion `32995888183` anvendte recovery, frisk DMI/Copernicus og byggede runtime, men den nye faktiske shadowgate stoppede korrekt før validering, Supabase-sync, artifact og Pages. Den første gateversion loggede ikke sine sikre fejlkoder; kandidaten tilføjer nu kun fejlkoder og summerede optællinger uden del-ID'er, rådata, koordinater eller private felter før ny exact-head-/produktionsprøve.
 
 Candidate G 20/50/30 og dens fysiske +10/-8-/13-timersregler er uændrede.
 

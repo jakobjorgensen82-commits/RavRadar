@@ -571,6 +571,18 @@ async function main() {
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
   await fs.writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`);
   console.log(`Candidate G public shadow: ${report.status}; ${report.coverage.zoneCount}/${report.coverage.expectedZoneCount} zoner og ${report.coverage.partCount}/${report.coverage.expectedPartCount} kystdele.`);
+  if (report.status !== 'passed') {
+    console.error(`Candidate G public shadow errors: ${report.errors.join(',')}`);
+    console.error([
+      'Candidate G public shadow aggregates:',
+      `ready=${report.stateContinuation.memoryReadyPartCount}`,
+      `warmup=${report.stateContinuation.warmupPartCount}`,
+      `acceptedNearBoundaryIncomplete=${report.stateContinuation.acceptedNearBoundaryIncompletePartCount}`,
+      `replayMismatch=${report.stateContinuation.transportStateReplayMismatchCount}`,
+      `modeEvaluations=${report.coverage.modeEvaluationCount}`,
+      `technicalDiagnostics=${report.coverage.technicalDiagnosticsModeCount}`,
+    ].join(' '));
+  }
   if (report.status !== 'passed') process.exitCode = 1;
 }
 
