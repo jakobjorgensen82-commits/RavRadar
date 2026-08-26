@@ -1,6 +1,6 @@
 # Rekonstrueret chatkronologi
 
-## 2026-08-26 – kandidat 4.0.286 efter offentlig 4.0.285-afvisning
+## 2026-08-26 – 4.0.286 fra kandidat til produktionsverificeret efter offentlig 4.0.285-afvisning
 
 1. PR #156 bestod exact-head `32993055324`, blev merged som `de6b7844`, og produktion `32993270783` bestod recovery, frisk runtime, fuld validering, releasegate, Supabase-sync, artifact og Pages.
 2. Den skærpede offentlige kontrol bestod struktur og browser-/HTTP-kontrakt, men afviste korrekt 0/210 aktive zoner. 665/673 dele var igen `WINDOW_INCOMPLETE`; 4.0.285 blev ikke erklæret stabil.
@@ -8,9 +8,10 @@
 4. 4.0.286 gemmer dette virkelige kompakte kontinuitetsbevis, men holder det ude af replay og dækningssum. Det skaber ingen måling, interpolation, rå U/V eller koordinat.
 5. To-trins regime- og statepipeline-tests beviser, at næste reference fortsat er `READY` med 48 timers dækning, mens ægte korte vinduer og huller fortsat stopper.
 6. Den faktiske public runtime auditeres nu i produktionsworkflowet før Supabase-sync, artifact og Pages. Gaten afviser det offentlige 4.0.285-artifact med 665/673-signaturen.
-7. Recoverysimulation mod de virkelige offentlige artifacts gav 672/673 `READY` og efterfølgende inaktiv recovery. Exact-head og offentlig produktionslukning afventer. Se DEC-0081.
+7. Recoverysimulation mod de virkelige offentlige artifacts gav 672/673 `READY` og efterfølgende inaktiv recovery. På dette deltrin afventede exact-head og offentlig produktionslukning.
 8. PR #157/exact-head `32995801418` og produktion `32995888183` beviste et sikkert stop i den faktiske runtimegate. PR #158/exact-head `32997043974`, merge `ca784210` og produktion `32997118162` gav dataminimeret 672 `READY`, én warmup, nul replaymismatch og 1.328/1.344 modes.
 9. De manglende 16 modes var de otte godkendte `dkss_lf`-dele i gyldig `NATIVE_CADENCE_HOLD`. Den ældre Phase D-base afviste manglende aktuel strøm før Candidate G-memory. Den snævre rettelse kræver allowlist-afledt tre-timers tilladelse, `READY`, alder højst tre timer og tomme aktuelle vektorfelter; øvrige mangler forbliver fail-closed. Offentligt fejlpunktsreplay gav 16/16.
+10. PR #159/exact-head `33001615758`, merge `c0f42b33` og produktion `33001743118` lukkede forløbet. Offentlig `rr-20260826185603-210` viste 210/210 aktive zoner, befolket **Bedste områder** og nul browser-/HTTP-fejl. Se DEC-0081.
 
 ## 2026-08-26 – kandidat 4.0.285 efter offentlig 4.0.284-kontrol
 

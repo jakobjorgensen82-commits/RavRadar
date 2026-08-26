@@ -15,7 +15,7 @@ Dette er den aktuelle overdragelse. Alle efterfølgende checkpoints i filen er h
 - Den skærpede offentlige Playwright-kontrol fandt nul browser-, side- og HTTP-fejl og komplet 210/673/420/2.100-struktur, men afviste korrekt 0/210 aktive zoner. Den publicerede state havde 665 `WINDOW_INCOMPLETE` og 8 `READY`.
 - Den nye dataminimerede shadowaudit af det offentlige 4.0.285-artifact afviser samme signatur med `AcceptedNearBoundaryIncomplete=665`. 4.0.285 må ikke kaldes stabil baseline.
 
-### Rodårsag og kandidat 4.0.286
+### Rodårsag og endelig rettelse i 4.0.286
 
 - 4.0.285 brugte den virkelige kompakte forgænger før den faseskudte 48-timersgrænse til at gøre samme beregning `READY`, men `buildBoundedCurrentTransportMemory` publicerede kun evidensen inde i vinduet.
 - Ved næste rullende reference var forgængeren derfor væk, og 665 dele faldt tilbage til cirka 47 timers dækning.
