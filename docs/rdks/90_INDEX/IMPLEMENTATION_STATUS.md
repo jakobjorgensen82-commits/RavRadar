@@ -1,6 +1,6 @@
-# Implementeringsstatus – kandidat 4.0.286
+# Implementeringsstatus – produktionsverificeret 4.0.286
 
-## Kandidat 4.0.286 – rullende Candidate G-kontinuitet og predeploy-funktionsgate
+## Produktionsverificeret 4.0.286 – rullende Candidate G-kontinuitet og predeploy-funktionsgate
 
 - [x] Verificér 4.0.285 exact-head `32993055324`, merge `de6b78444bf1d9bd19beb6100ceb193fe40a8d85` og fuld produktion `32993270783` uden at forveksle grøn struktur med funktionel stabilitet.
 - [x] Afvis offentlig 4.0.285 på den positive kontrol: 0/210 aktive zoner og 665/673 `WINDOW_INCOMPLETE`.
@@ -18,7 +18,8 @@
 - [x] Afgræns de sidste 16 manglende modes til de otte godkendte `dkss_lf`-dele ved `NATIVE_CADENCE_HOLD`, hvor den ældre Phase D-base krævede aktuel strøm før Candidate G-memory.
 - [x] Tillad kun Candidate G-memoryberegningen ved allowlist-afledt eksakt tre-timers hold, `READY`, alder højst tre timer og tomme aktuelle strømfelter; bevar almindelig unverified, for gammel og ikke-READY fail-closed.
 - [x] Bestå målrettede evaluator-, state-, livepilot-, forklarings- og diagnosekontrakter samt 16/16 dataminimeret replay af de faktiske offentlige fejlpunkter.
-- [ ] Bestå ny exact-head-kildegate, gennemfør fuld frisk produktion og offentlig kontrol af faktisk befolket aktuel rangliste.
+- [x] Bestå PR #159 exact-head `33001615758`, merge `c0f42b33956e3d2af361da1366ab552b9e2a33ef` og fuld frisk produktion `33001743118` gennem faktisk runtimegate, validering, releasegate, Supabase, artifact og Pages.
+- [x] Verificér offentlig `rr-20260826185603-210`: 210/210 aktive zoner, befolket **Bedste områder**, 210/673/420/2.100-struktur og nul kontrol-, browser-, side- eller HTTP-fejl.
 
 ## Udgivet men funktionelt afvist 4.0.285 – første cadencefaselukning
 
@@ -33,7 +34,7 @@
 - [x] Løft appversionen til 4.0.285; præcis diff beviser kun topversionsfelt 4.0.284 → 4.0.285 i de to beskyttede geodatafiler og ingen ændret geometri eller land-/vandpunkter.
 - [x] Bestå exact-head-kildegate `32993055324`, merge PR #156 som `de6b78444bf1d9bd19beb6100ceb193fe40a8d85` og fuld frisk produktion `32993270783`.
 - [x] Kør skærpet offentlig kontrol; den afviste korrekt 4.0.285 med 0/210 aktive zoner og 665/673 `WINDOW_INCOMPLETE`.
-- [ ] Erstattes funktionelt af 4.0.286; 4.0.285 må ikke kaldes stabil baseline.
+- [x] Erstattet funktionelt af den produktionsverificerede 4.0.286; 4.0.285 må ikke kaldes stabil baseline.
 
 Se DEC-0081. Den sikkerhedsrelaterede 4.0.284-kode forbliver uændret i patchen.
 
@@ -53,7 +54,7 @@ Se DEC-0081. Den sikkerhedsrelaterede 4.0.284-kode forbliver uændret i patchen.
 - [x] Bestå lokal `scripts/validate-source.ps1`, inklusive releasegate, samt målrettet browserkontrol af CSP, håndbog, Om-side, dokumentation og lokal assistent uden fjernkald.
 - [x] Bestå GitHub exact-head `32986025916`, merge PR #155 som `a92e270419404f249c526ed06d821cc2c2cf5cb2` og fuld pushproduktion `32987875007` inklusive Pages.
 - [x] Bestå offentlig CSP/app-/210/673/420/2.100-strukturkontrol uden browserfejl.
-- [ ] Luk den særskilte Candidate G-cadencefase, som den funktionelle ranglistekontrol fandt efter deploy; følges i 4.0.285.
+- [x] Luk den særskilte Candidate G-cadencefase gennem den produktionsverificerede 4.0.286-kæde.
 
 Supabases mulige begrænsning fra 9. september 2026 forbliver en åben driftsrisiko. Fjernassistenten kan senere aktiveres som en særskilt ændring med secret-, omkostnings- og positiv kontraktverifikation; den er ikke en releaseafhængighed i 4.0.284. Se DEC-0080.
 

@@ -1,4 +1,4 @@
-## 2026-08-26 – kandidat 4.0.286 lukker rullende Candidate G-regression før deploy
+## 2026-08-26 – 4.0.286 lukker rullende Candidate G-regression, produktionsverificeret
 
 - PR #156 bestod exact-head `32993055324`, blev merged som `de6b7844`, og produktion `32993270783` udgav 4.0.285 gennem alle daværende gates.
 - Den skærpede offentlige audit afviste derefter resultatet med 0/210 aktive zoner og 665/673 `WINDOW_INCOMPLETE`, selv om browser-, HTTP- og 210/673/420/2.100-strukturen var fejlfri.
@@ -7,6 +7,7 @@
 - En ny virkelig artifactsimulation genskabte 672/673 `READY` og gjorde recoveryen inaktiv. Exact-head, fuld produktion og positiv offentlig ranglistekontrol afventer. Se DEC-0081 og `CHANGELOG-4.0.286.md`.
 - PR #157/exact-head `32995801418` og produktion `32995888183` beviste, at den faktiske runtimegate stopper før deploy. PR #158/exact-head `32997043974`, merge `ca784210` og produktion `32997118162` leverede den sikre signatur 672 `READY`, én warmup, nul replaymismatch og 1.328/1.344 modes.
 - De sidste 16 modes tilhørte de otte godkendte `dkss_lf`-holds. Candidate G's ældre Phase D-fortrin krævede fejlagtigt en ny strømvektor før memoryberegningen. Kandidaten tillader nu kun `READY`, allowlist-afledt eksakt tre-timers hold uden aktuelle U/V-/retningsfelter; alle modtilfælde forbliver lukket. Faktisk dataminimeret replay giver 16/16.
+- PR #159/exact-head `33001615758`, merge `c0f42b33` og produktion `33001743118` er grønne gennem faktisk runtimegate, fuld validering, releasegate, Supabase-sync, artifact og Pages. Offentlig `rr-20260826185603-210` har 210/210 aktive zoner, befolket **Bedste områder** og nul browser-/HTTP-fejl.
 
 ## 2026-08-26 – kandidat 4.0.285 retter Candidate G-cadencefasen
 

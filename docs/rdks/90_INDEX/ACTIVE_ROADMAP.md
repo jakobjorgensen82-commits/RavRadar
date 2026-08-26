@@ -1,6 +1,6 @@
 # RavRadar - aktivt roadmap
 
-## P0 – luk 4.0.286 rullende Candidate G-kontinuitet
+## P0 afsluttet – 4.0.286 rullende Candidate G-kontinuitet
 
 - [x] Afvis 4.0.285 funktionelt efter ellers grøn exact-head, merge og produktion; dokumentér 0/210 aktive zoner og 665/673 `WINDOW_INCOMPLETE`.
 - [x] Bevar den virkelige kompakte forgænger til næste rullende reference uden replay, ny måling eller ekstra dækning.
@@ -10,7 +10,7 @@
 - [x] Synkronisér 4.0.286-version, RDKS, håndbøger og changelog med kun topversionsændring i beskyttet geodata.
 - [x] Brug den dataminimerede #3620-gate til at afgrænse 1.328/1.344 modes til de otte gyldige `NATIVE_CADENCE_HOLD`-dele.
 - [x] Ret den ældre Phase D-forbetingelse med en snæver `READY`/tre-timers/manglende-vektor-kontrakt og bevis 16/16 faktisk replay.
-- [ ] Bestå exact-head, merge, fuld frisk produktion og positiv offentlig ranglistekontrol.
+- [x] Bestå PR #159/exact-head `33001615758`, merge `c0f42b33`, fuld frisk produktion `33001743118` og positiv offentlig kontrol med 210/210 aktive zoner og befolket rangliste.
 
 ## Afsluttet men funktionelt afvist – 4.0.285 Candidate G-cadencefase
 
@@ -36,7 +36,7 @@ Se DEC-0081. Ingen scorekurve, zone, geometri eller land-/vandpunkt ændres.
 - [x] Versions-/RDKS-/håndbogs-/changeloglukning og særskilt geodatadiff.
 - [x] Lokal source-/releasegate og målrettet browserkontrol uden fjernassistentskald.
 - [x] Exact-head `32986025916`, PR #155, merge `a92e2704`, fuld pushproduktion `32987875007` og offentlig sikkerheds-/strukturkontrol.
-- [ ] Candidate G's rullende cadencefase fra den funktionelle efterkontrol lukkes særskilt i P0 4.0.286 ovenfor.
+- [x] Candidate G's rullende cadencefase fra den funktionelle efterkontrol er produktionsverificeret lukket i P0 4.0.286 ovenfor.
 - [ ] Følg Supabase-egress og varslet om mulig begrænsning fra 9. september 2026 uden at lempe sikkerhedskrav.
 
 Se DEC-0080. Candidate G, score, vejr, zoner, geometri og land-/vandpunkter er uden for ændringen.
