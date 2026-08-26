@@ -97,7 +97,13 @@ try {
   };
   console.log(JSON.stringify(result, null, 2));
   const expected = { currentViews: 420, forecastViews: 2100, partReferences: 673 };
-  if (state.version !== expectedVersion || zoneIds.length !== 210 || JSON.stringify(totals) !== JSON.stringify(expected) || failures.length || pageErrors.length) {
+  if (state.version !== expectedVersion
+    || zoneIds.length !== 210
+    || !Number.isFinite(state.activeZoneCount)
+    || state.activeZoneCount <= 0
+    || JSON.stringify(totals) !== JSON.stringify(expected)
+    || failures.length
+    || pageErrors.length) {
     process.exitCode = 1;
   }
 } finally {

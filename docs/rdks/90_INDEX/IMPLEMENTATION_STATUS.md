@@ -1,6 +1,21 @@
-# Implementeringsstatus – kandidat 4.0.284
+# Implementeringsstatus – kandidat 4.0.285
 
-## Kandidat 4.0.284 – drifts- og sikkerhedshærdning
+## Kandidat 4.0.285 – Candidate G-cadencefase og offentlig funktionslukning
+
+- [x] Sammenlign det sidste 4.0.283-, første 4.0.284- og deployede 4.0.284-Pages-artifact uden supportpakker eller private data.
+- [x] Afgræns faldet til første 4.0.284-build: 672/673 → 8/673 `READY` og 209/210 → 0/210 aktive zoner.
+- [x] Ret 48-timersgrænsen, så en dokumenteret kadencefase på højst tre timer bevares uden et kunstigt målepunkt.
+- [x] Bevar fail-closed for et ægte 47-timersdatasæt uden verificeret forgænger og for interne huller over tre timer.
+- [x] Hash-lås den sidste sunde offentlige compact state og sammenflet kun transportbeviser med den nyere public state.
+- [x] Bevis recovery lokalt mod de virkelige artifacts: 672/673 `READY`, én kendt umoden del og recovery straks inaktiv.
+- [x] Kør målrettede regime-, statepipeline-, recovery-, shadow- og ablationstests.
+- [x] Gør den positive offentlige funktionskontrol permanent: onlineaudits kræver mindst én aktiv zone, og shadowgaten afviser den brede accepterede 45–48-timers fejlsignatur.
+- [x] Løft appversionen til 4.0.285; præcis diff beviser kun topversionsfelt 4.0.284 → 4.0.285 i de to beskyttede geodatafiler og ingen ændret geometri eller land-/vandpunkter.
+- [ ] Bestå exact-head-kildegate, merge, fuld frisk produktion og offentlig kontrol af faktisk befolket aktuel rangliste.
+
+Se DEC-0081. Den sikkerhedsrelaterede 4.0.284-kode forbliver uændret i patchen.
+
+## Udgivet 4.0.284 – drifts- og sikkerhedshærdning
 
 - [x] Lås offentlige sider med CSP, fjern inline scripts/event handlers og saniter centralt HTML med allowlist.
 - [x] Afgræns ekspertprofil- og rettighedslæsning i både RLS, RPC og UI.
@@ -14,7 +29,9 @@
 - [x] Kør målrettede sikkerheds-, assistent-, tur-, konto- og Pages-modultests.
 - [x] Sæt releaseversion, synkronisér RDKS/håndbøger/changelog og bevis kun versionsfeltændring i beskyttet geodata.
 - [x] Bestå lokal `scripts/validate-source.ps1`, inklusive releasegate, samt målrettet browserkontrol af CSP, håndbog, Om-side, dokumentation og lokal assistent uden fjernkald.
-- [ ] Bestå GitHub exact-head `validate:source`, merge, fuld frisk produktionskæde og offentlig efterkontrol.
+- [x] Bestå GitHub exact-head `32986025916`, merge PR #155 som `a92e270419404f249c526ed06d821cc2c2cf5cb2` og fuld pushproduktion `32987875007` inklusive Pages.
+- [x] Bestå offentlig CSP/app-/210/673/420/2.100-strukturkontrol uden browserfejl.
+- [ ] Luk den særskilte Candidate G-cadencefase, som den funktionelle ranglistekontrol fandt efter deploy; følges i 4.0.285.
 
 Supabases mulige begrænsning fra 9. september 2026 forbliver en åben driftsrisiko. Fjernassistenten kan senere aktiveres som en særskilt ændring med secret-, omkostnings- og positiv kontraktverifikation; den er ikke en releaseafhængighed i 4.0.284. Se DEC-0080.
 

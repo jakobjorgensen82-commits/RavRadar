@@ -1,10 +1,19 @@
+## 2026-08-26 – kandidat 4.0.285 retter Candidate G-cadencefasen
+
+- PR #155/exact-head `32986025916`, merge `a92e2704` og produktion `32987875007` udgav 4.0.284-sikkerhedshærdningen gennem fulde gates.
+- Den offentlige 210/673/420/2.100-audit var strukturelt grøn, men den aktuelle rangliste var tom. 4.0.284 havde 8/673 `READY` og 0/210 aktive zoner mod 672/673 og 209/210 i sidste 4.0.283-artifact.
+- Sammenligning af kun offentlige Pages-artifacts placerede faldet i første 4.0.284-build. Referencefasen flyttede én time og skar beviset umiddelbart før 48-timersgrænsen væk.
+- 4.0.285 accepterer grænsekrydsning kun med et verificeret kompakt bevis før randen og højst tre timers sammenhæng. Et ægte 47-timersdatasæt uden forgænger forbliver lukket.
+- Engangsrecoveryen er hash-låst til workflow `32978542594` og fletter kun compact transport evidence. Virkelig artifactsimulation genskabte 672/673 `READY` uden rådata, geometri eller punkter.
+- Målrettede tests er grønne; exact-head, fuld produktion og positiv offentlig ranglistekontrol mangler. Se DEC-0081 og `CHANGELOG-4.0.285.md`.
+
 ## 2026-08-26 – kandidat 4.0.284 drifts- og sikkerhedshærdning
 
 - Offentlige sider har CSP, eksterne scripts og saniteret dynamisk HTML.
 - Ekspertadministration er smallere i live RLS, RPC og UI; direkte observationstabelinsert er erstattet af en validerende, rate-limited Edge-gateway.
 - Én delt Edge-gateway håndhæver CORS, origin, payload, timeout og sikre fejl. Begge funktioner er deployet uden omgåelse af Windows Application Control, og negative/pre-store livekontroller er grønne uden oprettede rækker.
 - Fjernassistenten er bevidst deaktiveret; den lokale Candidate G-assistent er releaseadfærden. Supabase-kvotevarslet 9. september 2026 overvåges.
-- Målrettede kontrakter er grønne. Exact-head, fuld produktion og offentlig efterkontrol mangler. Se DEC-0080 og `CHANGELOG-4.0.284.md`.
+- Målrettede kontrakter, exact-head `32986025916`, PR #155, merge `a92e2704` og produktion `32987875007` er grønne. Den offentlige sikkerheds-/strukturkontrol bestod; Candidate G-cadencefasen følges separat i 4.0.285. Se DEC-0080 og `CHANGELOG-4.0.284.md`.
 
 ## 2026-08-26 – 4.0.283 bevarer moderzonen i slutkontrollen, produktionsverificeret
 

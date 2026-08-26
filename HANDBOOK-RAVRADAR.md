@@ -1,5 +1,15 @@
 # RavRadar Håndbog
 
+## Candidate G og en forskudt 48-timersgrænse – 4.0.285
+
+Candidate G bruger et rullende vindue med 48 timers sammenhængende, verificeret og afledt strøm. Nogle kilder leverer på tretimerskadence, mens den fælles aktuelle reference kan ligge i en mellemtime. Et komplet forløb må derfor ikke blive erklæret kort alene, fordi første måling inde i vinduet ligger én eller to timer efter den matematiske grænse.
+
+RavRadar kræver både en verificeret kompakt måling umiddelbart før grænsen og den næste måling inden for højst tre timer. Målingen før grænsen beviser kun, at kadencen er sammenhængende. Den indsættes ikke som en ny måling, flyttes ikke og vises ikke som interpolation. Beregningen starter fortsat fra den faste rand 0 på det eksakte 48-timerstidspunkt.
+
+Et datasæt, som reelt kun indeholder 47 timer og ikke har en verificeret forgænger, forbliver utilgængeligt. Det samme gælder missing, manglende seneste måling og interne huller over tre timer.
+
+Efter 4.0.284 var det nødvendige grænsebevis allerede faldet ud af den deployede kompakte state. En engangsrecovery fletter derfor kun de afledte transportbeviser fra den eksakte hash-låste sidste sunde offentlige produktion med den nyere kompakte state. Den kopierer ikke vejr, rå strømvektorer, koordinater, scoreoutput, geometri, land-/vandpunkter eller private data. Se [DEC-0081](docs/rdks/10_DECISIONS/DEC-0081-CANDIDATE-G-CADENCE-PHASE-BOUNDARY-RECOVERY.md).
+
 ## Sikker drift og afgrænsede adgange – 4.0.284
 
 RavRadar viser centralt håndbogsindhold gennem en fast allowlist og beskytter alle offentlige sider med en Content Security Policy. Scripts, indlejrede objekter, event handlers, inline-stil, DOM-id'er og farlige links fjernes fra dynamisk HTML. De få nødvendige scripts ligger i versionsstyrede filer.
@@ -545,7 +555,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.284
+**Håndbogsversion:** 4.0.285
 
 **Opdateret:** 19. august 2026
 

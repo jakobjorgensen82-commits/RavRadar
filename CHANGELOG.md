@@ -1,3 +1,14 @@
+## 4.0.285 – Candidate G-cadencefase ved 48-timersgrænsen (2026-08-26)
+
+- Den offentlige 4.0.284-strukturaudit var grøn, men den aktuelle rangliste var tom. Pages-artifacts viste 672/673 `READY` og 209/210 aktive zoner i sidste 4.0.283-build mod 8/673 og 0/210 allerede i første 4.0.284-build.
+- Et eksakt lighedskrav ved `reference - 48h` fjernede målingen umiddelbart før vinduet, når referencen flyttede én time væk fra native tretimersfasen. 665 sammenhængende forløb blev derfor kunstigt 46 timer.
+- 4.0.285 accepterer kun grænsekrydsningen med et verificeret compact bevis før grænsen og højst tre timers sammenhæng til første bevis efter den. Der opfindes ingen måling eller interpolation.
+- Et ægte kort vindue uden forgænger og et hul over tre timer er fortsat fail-closed. Den eksisterende bounded-memory-selftest stoppede en første for bred variant og er bevaret sammen med den nye regression.
+- En engangsrecovery er låst til workflow `32978542594`, datasæt `rr-20260826142942-210`, 673 del-ID'er og SHA-256 `d5877f8a0945619b700efa3a97807ac9552033d244ab117e92d8fea87f1877d5`. Den fletter kun compact transport evidence.
+- Lokal simulation mod de virkelige offentlige source-/target-artifacts genskabte 672/673 `READY`; den ene kendte umodne del forblev lukket, og recoveryen blev straks inaktiv.
+- Onlineaudits kræver nu mindst én aktiv aktuel zone, og Candidate G-shadowgaten stopper den brede accepterede 45–48-timers `WINDOW_INCOMPLETE`-fejlsignatur.
+- Candidate G 20/50/30, scorekurver, sikkerhedsgrænser, vejr, zoner, geometri og land-/vandpunkter er uændrede. De to beskyttede geodatafiler ændrer kun topversionsfeltet til 4.0.285 som godkendt i DEC-0076. Se DEC-0081.
+
 ## 4.0.283 – Moderzonen bevares i Candidate G-slutkontrollen (2026-08-26)
 
 - Retter en afgrænset fejl i den afsluttende videnskabelige kontrol, som mistede kystdelens moderzone, når 210 zoner blev foldet ud til 673 kyststrækninger.

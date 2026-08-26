@@ -9,6 +9,7 @@ import {
   CANDIDATE_G_STATE_SCHEMA_VERSION,
   CANDIDATE_G_STATE_VARIANT_ID,
 } from '../js/core/ravscore-candidate-g-state-pipeline.js';
+import { buildBoundedCurrentTransportMemory } from '../js/core/ravscore-regime-memory.js';
 
 const DEFAULT_CONFIG = 'data/admin/candidate-g-continuation-recovery.json';
 const DEFAULT_TARGET = 'data/live/conditions.json';
@@ -122,6 +123,34 @@ function rowsHash(rows) {
 function poisonedLineageDetected(config, target) {
   const policy = config?.poisonedLineage;
   if (!policy || typeof policy !== 'object' || Array.isArray(policy)) return false;
+  if (policy.kind === 'accepted-cadence-phase-window-incomplete') {
+    if (!validTime(policy.datasetGeneratedAtNotBefore)
+      || !validTime(policy.datasetGeneratedAtBefore)
+      || !finite(policy.minimumAffectedPartRatio)
+      || Number(policy.minimumAffectedPartRatio) <= 0
+      || Number(policy.minimumAffectedPartRatio) > 1
+      || !finite(policy.minimumCoverageHours)
+      || !finite(policy.maximumCoverageHoursExclusive)
+      || Number(policy.minimumCoverageHours) < 0
+      || Number(policy.maximumCoverageHoursExclusive) <= Number(policy.minimumCoverageHours)
+      || !validTime(target?.generatedAt)) {
+      throw new Error('Candidate G recovery har en ugyldig cadence-phase-kontrakt');
+    }
+    const generatedAt = Date.parse(target.generatedAt);
+    if (generatedAt < Date.parse(policy.datasetGeneratedAtNotBefore)
+      || generatedAt >= Date.parse(policy.datasetGeneratedAtBefore)) return false;
+    const rows = continuationRows(target, { requireAccepted: false });
+    const affected = rows.filter(([partId, state]) => {
+      const candidate = target.coastalParts.parts[partId]?.candidateG;
+      return candidate?.initialStateAccepted === true
+        && state.transportMemoryReady === false
+        && state.transportMemoryStatus === 'WINDOW_INCOMPLETE'
+        && Number(state.transportMemoryCoverageHours) >= Number(policy.minimumCoverageHours)
+        && Number(state.transportMemoryCoverageHours) < Number(policy.maximumCoverageHoursExclusive)
+        && state.transportEvidence.every(item => Number.isFinite(item?.strength));
+    }).length;
+    return affected / rows.length >= Number(policy.minimumAffectedPartRatio);
+  }
   if (!validTime(policy.resetReferenceAt)
     || !validTime(policy.datasetGeneratedAtNotBefore)
     || !validTime(policy.datasetGeneratedAtBefore)
@@ -145,7 +174,44 @@ function poisonedLineageDetected(config, target) {
 
 function recoveryRequired(config, target) {
   if (config.enabled !== true) return false;
-  return target.datasetId === config.targetDatasetId || poisonedLineageDetected(config, target);
+  const poisonedLineage = poisonedLineageDetected(config, target);
+  if (config.restoreStrategy === 'merge-transport-evidence') return poisonedLineage;
+  return target.datasetId === config.targetDatasetId || poisonedLineage;
+}
+
+function mergeTransportEvidence(sourceState, targetState, partId) {
+  validateState(targetState, partId);
+  for (const key of ['schemaVersion', 'modelId', 'variantId', 'profileId', 'stateKey']) {
+    if (sourceState[key] !== targetState[key]) {
+      throw new Error(`Candidate G recovery matcher ikke målets modelkontekst for kystdel ${partId}`);
+    }
+  }
+  const byTime = new Map();
+  for (const item of [...sourceState.transportEvidence, ...targetState.transportEvidence]) {
+    const existing = byTime.get(item.time);
+    if (existing && existing.strength !== item.strength) {
+      throw new Error(`Candidate G recovery har modstridende transportbevis for kystdel ${partId}`);
+    }
+    byTime.set(item.time, { ...item });
+  }
+  const combined = [...byTime.values()]
+    .sort((left, right) => Date.parse(left.time) - Date.parse(right.time));
+  const referenceTime = targetState.transportReferenceAt ?? targetState.time;
+  const bounded = buildBoundedCurrentTransportMemory(combined, { referenceTime });
+  const replayed = bounded.result;
+  const merged = {
+    ...targetState,
+    transportPotential: replayed?.transportPotential ?? targetState.transportPotential,
+    outboundEpisodeEffectiveHours: replayed?.outboundEpisodeEffectiveHours
+      ?? targetState.outboundEpisodeEffectiveHours,
+    transportMemoryReady: bounded.memoryReady,
+    transportMemoryStatus: bounded.status,
+    transportMemoryWindowHours: bounded.windowHours,
+    transportMemoryCoverageHours: bounded.coverageHours,
+    transportEvidence: bounded.evidence.map(item => ({ ...item })),
+  };
+  validateState(merged, partId);
+  return merged;
 }
 
 async function writeGithubOutput(file, values) {
@@ -202,11 +268,28 @@ export async function restoreContinuation({ root = '.', sourceRoot } = {}) {
   if (Object.keys(targetParts).some(partId => !sourcePartIds.has(partId))) {
     throw new Error('Måldatasættets kystdelsidentiteter matcher ikke recovery-kilden');
   }
+  const strategy = config.restoreStrategy ?? 'replace-state';
+  if (!['replace-state', 'merge-transport-evidence'].includes(strategy)) {
+    throw new Error('Candidate G recovery har en ukendt restore-strategi');
+  }
+  let recoveredReadyPartCount = 0;
   for (const [partId, state] of sourceRows) {
     if (!targetParts[partId]?.candidateG) {
       throw new Error(`Måldatasættet mangler Candidate G for kystdel ${partId}`);
     }
-    targetParts[partId].candidateG.currentState = structuredClone(state);
+    const restoredState = strategy === 'merge-transport-evidence'
+      ? mergeTransportEvidence(state, targetParts[partId].candidateG.currentState, partId)
+      : structuredClone(state);
+    targetParts[partId].candidateG.currentState = restoredState;
+    if (restoredState.transportMemoryReady === true
+      && restoredState.transportMemoryStatus === 'READY') recoveredReadyPartCount += 1;
+  }
+  if (strategy === 'merge-transport-evidence') {
+    const minimumReadyRatio = Number(config.minimumRecoveredReadyPartRatio);
+    if (!(minimumReadyRatio > 0 && minimumReadyRatio <= 1)
+      || recoveredReadyPartCount / sourceRows.length < minimumReadyRatio) {
+      throw new Error('Candidate G recovery kunne ikke genskabe den krævede READY-dækning');
+    }
   }
   const temporary = `${targetPath}.candidate-g-recovery-${process.pid}.tmp`;
   await fs.writeFile(temporary, `${JSON.stringify(target, null, 2)}\n`);
@@ -217,6 +300,8 @@ export async function restoreContinuation({ root = '.', sourceRoot } = {}) {
     sourceDatasetId: source.datasetId,
     targetDatasetId: target.datasetId,
     partCount: sourceRows.length,
+    strategy,
+    recoveredReadyPartCount,
     oldestStateAt: times[0],
     newestStateAt: times.at(-1),
   };
