@@ -1,6 +1,6 @@
 # DEC-0081 – Candidate G-cadencefase ved 48-timersgrænsen
 
-**Status:** Besluttet; 4.0.285 er strukturelt produktionsudgivet, men funktionelt afvist. Den rullende kontinuitetsrettelse og den faktiske predeploy-runtimegate er lokalt verificeret i kandidat 4.0.286; exact-head-, produktions- og offentlig lukning afventer.
+**Status:** Besluttet; 4.0.285 er strukturelt produktionsudgivet, men funktionelt afvist. Den rullende kontinuitetsrettelse, den faktiske predeploy-runtimegate og den snævre native-hold-scorevej er lokalt verificeret i kandidat 4.0.286; ny exact-head-, produktions- og offentlig lukning afventer.
 
 ## Problem
 
@@ -18,6 +18,7 @@ Den kompakte 48-timershukommelse accepterede tidligere kun et vindue, hvis førs
 6. Recoveryen må ikke kopiere vejr, rå U/V, koordinater, geometri, land-/vandpunkter, scoreoutput eller private payloads. En lokal prøve mod de to virkelige offentlige artifacts genskabte 672/673 `READY`; den ene tidligere umodne del forblev korrekt lukket.
 7. Grænsebeviset før vinduet skal bevares kompakt i den publicerede transporthukommelse, når det var nødvendigt for en faseskudt `READY`-beregning. Det må fortsat ikke afspilles i det aktuelle vindue eller tælle med i de 48 timers dækning; det eksisterer kun, så næste rullende reference kan bevise den samme virkelige sammenhæng.
 8. Produktionsworkflowet skal auditere den faktisk genererede `data/live/conditions.json` med Candidate G-shadowkontrakten efter runtimegenerering og før fuld validering, Supabase-sync, artifact og Pages. `--self-test` alene er ikke produktionsbevis.
+9. Når den faktiske gate beviser `READY` memory ved en ejerallowlist-afledt `NATIVE_CADENCE_HOLD`, må Candidate G evaluere fra den allerede afledte transport- og mobiliseringstilstand uden den ældre Phase D-bases krav om et nyt aktuelt strømfelt. Tilladelsen kræver eksakt tre-timers holdkontrakt, referencealder over 0 og højst 3 timer, `READY` og tomme U/V-, fart-, retning- og alignmentfelter. Den må ikke udstille en aktuel strømvektor. Almindelig uverificeret strøm og enhver brudt betingelse forbliver lokalt fail-closed.
 
 ## Produktions- og auditkrav
 
@@ -25,6 +26,7 @@ Den kompakte 48-timershukommelse accepterede tidligere kun et vindue, hvis førs
 - Exact-head-kildegaten og den fulde friske produktionskæde skal bestå på samme commit.
 - Offentlig efterkontrol skal ud over 210/673-struktur kontrollere, at den aktuelle rangliste faktisk er befolket. Onlineaudits kræver mindst én aktiv zone, og Candidate G-shadowgaten afviser en accepteret 45–48-timers `WINDOW_INCOMPLETE`-fejlsignatur på mindst 98 % af delene.
 - En regressionstest skal køre mindst to efterfølgende forskudte referencer og bevise, at den næste rullende reference fortsat er `READY` med 48 timers dækning.
+- Native-hold-regressionen skal dække begge søgemåder, afvise for gammel, ikke-allowlisted og ikke-READY hold samt bevise, at offentlige diagnostikker ikke viser en aktuel retning eller vektor.
 - Candidate G 20/50/30, +10/-8-/13-timersfysikken, mobilisering, zoner, geometri og land-/vandpunkter er uændrede.
 
 ## Driftskontekst
@@ -32,3 +34,5 @@ Den kompakte 48-timershukommelse accepterede tidligere kun et vindue, hvis førs
 PR #155 og produktion `32987875007` beviste 4.0.284-sikkerhedskæden. En GitHub Actions/Pages-driftsforstyrrelse forsinkede events og lod den første manuelle produktion blive afløst af den senere pushproduktion, men artifact-sammenligningen beviser, at Candidate G-faldet allerede opstod i det første 4.0.284-build og ikke skyldtes deploy-kapløbet.
 
 PR #156 bestod exact-head `32993055324`, blev merged som `de6b78444bf1d9bd19beb6100ceb193fe40a8d85`, og produktion `32993270783` bestod recovery, frisk runtime, fuld validering, releasegate, Supabase-sync og Pages. Den skærpede offentlige efterkontrol afviste derefter 4.0.285 korrekt: 0/210 aktive zoner og 665/673 `WINDOW_INCOMPLETE`. Rodårsagen var, at faseskiftets virkelige grænsebevis blev brugt i samme beregning, men ikke bevaret til næste rullende reference. 4.0.286 retter denne fortsættelse og flytter den faktiske shadowaudit ind før deploy.
+
+PR #157/exact-head `32995801418` og produktion `32995888183` beviste, at den nye gate stopper den faktiske runtime før deploy. PR #158/exact-head `32997043974`, merge `ca784210eabd1f26a615116c6da00684fcf24a01` og produktion `32997118162` gav en dataminimeret signatur med 672/673 `READY`, én warmup, nul replaymismatch og 1.328/1.344 modeevalueringer. De sidste 16 var de otte godkendte `dkss_lf`-dele i gyldig to-timers hold, som den ældre Phase D-base afviste før Candidate G-memory. Den snævre regel i punkt 9 giver 16/16 i et replay af de offentlige fejlpunkter uden rå vektorer eller udskrevne identifikatorer.

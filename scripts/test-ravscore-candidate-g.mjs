@@ -237,6 +237,68 @@ assert.equal(evaluate(currentLedBaseMemory, {
   variantId: 'G-CURRENT-LED-WAVE-MOBILISATION-WADERS-WIND-LED',
 }).reason, 'MISSING_REQUIRED_WAVE_MOBILISATION_STATE');
 
+const nativeCadenceContext = {
+  weather: {
+    currentUMps: null,
+    currentVMps: null,
+    currentSpeedMps: null,
+    currentDirectionDeg: null,
+    currentAlignment: null,
+  },
+  history: {
+    stateModelMode: null,
+    verifiedCurrentCoverageHours: null,
+    maxWave24hM: null,
+    maxWind24hMps: null,
+    strongEventDurationHours: null,
+    hoursSinceStrongEventEnd: null,
+  },
+};
+const nativeCadenceHold = {
+  transition: 'NATIVE_CADENCE_HOLD',
+  evaluatedAt: '2026-08-26T17:00:00.000Z',
+  referenceAt: '2026-08-26T15:00:00.000Z',
+  maximumHoldHours: 3,
+  transportMemoryReady: true,
+  transportMemoryStatus: 'READY',
+};
+for (const mode of ['waders', 'beach']) {
+  const held = evaluate(waveMobilisationMemory, {
+    variantId: 'G-CURRENT-LED-WAVE-MOBILISATION-WADERS-WIND-LED',
+    nativeCadenceHold,
+  }, {
+    ...nativeCadenceContext,
+    mode,
+  });
+  assert.equal(held.available, true, `${mode} must use ready bounded memory during the approved hold`);
+  assert.ok(Number.isFinite(held.score));
+  assert.equal(held.diagnostics.candidateGNativeCadenceHoldUsed, true);
+  assert.equal(held.reason, null);
+  assert.equal(held.researchExplanation.currentArrow.meaning,
+    'NO_CURRENT_VECTOR_DURING_APPROVED_NATIVE_CADENCE_HOLD');
+  assert.ok(Number.isFinite(held.components.transportAndDelivery));
+  assert.ok(Number.isFinite(held.components.mobilisation));
+}
+const noNativeCadencePermission = evaluate(waveMobilisationMemory, {
+  variantId: 'G-CURRENT-LED-WAVE-MOBILISATION-WADERS-WIND-LED',
+}, nativeCadenceContext);
+assert.equal(noNativeCadencePermission.available, false,
+  'ordinary unverified current must remain fail-closed even with derived memory');
+assert.equal(noNativeCadencePermission.reason, 'MISSING_REQUIRED_PHASE_D_COMPONENT');
+for (const invalidHold of [
+  { ...nativeCadenceHold, evaluatedAt: '2026-08-26T18:00:01.000Z' },
+  { ...nativeCadenceHold, maximumHoldHours: 0 },
+  { ...nativeCadenceHold, transportMemoryReady: false },
+  { ...nativeCadenceHold, transportMemoryStatus: 'WINDOW_INCOMPLETE' },
+]) {
+  const rejected = evaluate(waveMobilisationMemory, {
+    variantId: 'G-CURRENT-LED-WAVE-MOBILISATION-WADERS-WIND-LED',
+    nativeCadenceHold: invalidHold,
+  }, nativeCadenceContext);
+  assert.equal(rejected.available, false, 'stale, non-allowlisted or non-ready holds must fail closed');
+  assert.equal(rejected.reason, 'MISSING_REQUIRED_PHASE_D_COMPONENT');
+}
+
 const wavePenaltyCases = [
   { windSpeedMps: 6, waveHeightM: 0.7, expected: 93 },
   { windSpeedMps: 6, waveHeightM: 1.2, expected: 85 },

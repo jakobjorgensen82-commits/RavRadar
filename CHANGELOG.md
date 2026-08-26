@@ -4,7 +4,9 @@
 - Grænsebeviset før et faseskudt 48-timersvindue bevares nu kompakt til næste rullende reference. Det afspilles ikke i det aktuelle vindue og tæller ikke som måling, interpolation eller ekstra dækning.
 - To-trins regressionstests kræver fortsat `READY` og 48 timers dækning ved næste reference.
 - Produktionsworkflowet auditerer den faktisk genererede `data/live/conditions.json` før Supabase-sync, artifact og Pages og stopper på den dokumenterede masseregression.
-- Candidate G 20/50/30, fysik, sikkerhed, vejr, zoner, geometri og land-/vandpunkter er uændrede. Geodatafilerne ændrer kun topversionsfeltet til 4.0.286. Se DEC-0081 og `CHANGELOG-4.0.286.md`.
+- Den dataminimerede produktion `32997118162` beviste 672 `READY`, én warmup og nul replaymismatch, men kun 1.328/1.344 modes. De sidste 16 var otte godkendte native holds, som en ældre Phase D-forbetingelse afviste før Candidate G-memory.
+- En native hold kan nu kun score fra den allerede afledte `READY` memory ved allowlist-afledt eksakt tre-timers tilladelse, alder højst tre timer og uden aktuelle U/V-, fart-, retnings- eller alignmentfelter. Almindelig uverificeret, for gammel og ikke-READY strøm er fortsat fail-closed.
+- Candidate G 20/50/30, +10/-8-/13-timersfysikken, sikkerhed, vejr, zoner, geometri og land-/vandpunkter er uændrede. Geodatafilerne ændrer kun topversionsfeltet til 4.0.286. Se DEC-0081 og `CHANGELOG-4.0.286.md`.
 
 ## 4.0.285 – Candidate G-cadencefase ved 48-timersgrænsen (2026-08-26)
 

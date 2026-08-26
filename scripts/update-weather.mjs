@@ -1170,6 +1170,14 @@ function scoreCoastalPartsRuntime(
               { mode, zone, weather, history },
               {
                 variantId: CANDIDATE_G_STATE_VARIANT_ID,
+                nativeCadenceHold: derivedState.currentTransition === 'NATIVE_CADENCE_HOLD' ? {
+                  transition: derivedState.currentTransition,
+                  evaluatedAt: weather.time,
+                  referenceAt: derivedState.transportReferenceAt,
+                  maximumHoldHours: nativeCadenceHoldHours,
+                  transportMemoryReady: derivedState.transportMemoryReady,
+                  transportMemoryStatus: derivedState.transportMemoryStatus,
+                } : null,
                 memory: {
                   transportPotential: derivedState.transportPotential,
                   outboundEpisodeEffectiveHours: derivedState.outboundEpisodeEffectiveHours,

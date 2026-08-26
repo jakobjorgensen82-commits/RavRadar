@@ -14,7 +14,11 @@
 - [x] Bestå PR #157 exact-head `32995801418` og merge som `2f2fd14883fbb974b331774858a61473ca06acc4`.
 - [x] Stop produktion `32995888183` fail-closed i den nye faktiske runtimegate før Supabase-sync, artifact og Pages; offentlig 4.0.285 forblev urørt.
 - [x] Tilføj dataminimeret gatefejlrapportering med kun fejlkoder og summerede optællinger, ingen del-ID'er, rådata, koordinater eller private felter.
-- [ ] Bestå ny exact-head-kildegate, diagnosticér/reparer den faktiske runtimeafvigelse, gennemfør fuld frisk produktion og offentlig kontrol af faktisk befolket aktuel rangliste.
+- [x] Bestå PR #158 exact-head `32997043974`, merge som `ca784210eabd1f26a615116c6da00684fcf24a01`, og stop produktion `32997118162` før deploy med sikker evidens: 672 `READY`, én warmup, nul replaymismatch og 1.328/1.344 modeevalueringer.
+- [x] Afgræns de sidste 16 manglende modes til de otte godkendte `dkss_lf`-dele ved `NATIVE_CADENCE_HOLD`, hvor den ældre Phase D-base krævede aktuel strøm før Candidate G-memory.
+- [x] Tillad kun Candidate G-memoryberegningen ved allowlist-afledt eksakt tre-timers hold, `READY`, alder højst tre timer og tomme aktuelle strømfelter; bevar almindelig unverified, for gammel og ikke-READY fail-closed.
+- [x] Bestå målrettede evaluator-, state-, livepilot-, forklarings- og diagnosekontrakter samt 16/16 dataminimeret replay af de faktiske offentlige fejlpunkter.
+- [ ] Bestå ny exact-head-kildegate, gennemfør fuld frisk produktion og offentlig kontrol af faktisk befolket aktuel rangliste.
 
 ## Udgivet men funktionelt afvist 4.0.285 – første cadencefaselukning
 

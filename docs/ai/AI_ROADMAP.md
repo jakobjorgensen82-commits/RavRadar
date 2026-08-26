@@ -7,6 +7,8 @@
 - [x] Lås to efterfølgende faseskudte referencer.
 - [x] Auditér den faktiske public runtime før deploy og afvis 4.0.285-artifactet med den nye gate.
 - [x] Simulér recovery til 672/673 `READY` mod de offentlige artifacts.
+- [x] Afgræns #3620's 1.328/1.344 modes til otte gyldige native holds og ret kun den hukommelsesbaserede Candidate G-vej.
+- [x] Bevis begge modes og fail-closed-modtilfælde samt 16/16 faktisk offentligt fejlpunktsreplay uden rådata.
 - [ ] Bestå exact-head, fuld produktion og positiv offentlig current-ranking/readiness-kontrol.
 
 ## Afsluttet men funktionelt afvist – 4.0.285 cadencefase-recovery

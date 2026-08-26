@@ -128,6 +128,12 @@ assert.match(updateWeather, /latestVerifiedNativeCadenceSampleForPart/,
   'weather build must fetch the last exact native-cadence row before the public window');
 assert.match(updateWeather, /nativeCadenceReferenceSample/,
   'weather build must pass the data-minimised native reference into Candidate G state');
+for (const token of [
+  'nativeCadenceHold:',
+  'maximumHoldHours: nativeCadenceHoldHours',
+  'transportMemoryReady: derivedState.transportMemoryReady',
+  'transportMemoryStatus: derivedState.transportMemoryStatus',
+]) assert.ok(updateWeather.includes(token), `weather build must bind Candidate G hold proof: ${token}`);
 assert.ok(!packageRelease.includes("'data/live/*'"), 'Onlinehistorikken må ikke udelukkes af releasepakken.');
 
 console.log('OK: DMI-først, eksakt Copernicus-fletning, rigtig pilcelle og DMI-only rollback er regressionslåst.');

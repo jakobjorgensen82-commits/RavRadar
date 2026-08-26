@@ -8,6 +8,8 @@
 - [x] Flyt audit af den faktiske public runtime ind før deploy og bevis stop på 4.0.285-masseregressionen.
 - [x] Simulér ny recovery mod de virkelige offentlige artifacts til 672/673 `READY`.
 - [x] Synkronisér 4.0.286-version, RDKS, håndbøger og changelog med kun topversionsændring i beskyttet geodata.
+- [x] Brug den dataminimerede #3620-gate til at afgrænse 1.328/1.344 modes til de otte gyldige `NATIVE_CADENCE_HOLD`-dele.
+- [x] Ret den ældre Phase D-forbetingelse med en snæver `READY`/tre-timers/manglende-vektor-kontrakt og bevis 16/16 faktisk replay.
 - [ ] Bestå exact-head, merge, fuld frisk produktion og positiv offentlig ranglistekontrol.
 
 ## Afsluttet men funktionelt afvist – 4.0.285 Candidate G-cadencefase

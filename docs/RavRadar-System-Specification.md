@@ -42,7 +42,7 @@ Vurderer om bølgeenergi kan have løsnet eller genmobiliseret tilgængeligt rav
 - Aktuelle strømdata rekonstrueres eller interpoleres ikke.
 - DMI-strøm accepteres inden for den normale lokale afstandskontrakt.
 - Copernicus Baltic/AMM15 kan anvendes inden for den dokumenterede afstandskontrakt.
-- Kun de otte godkendte `dkss_lf`-proxyer må bruge den særskilte 15 km-kontrakt. Proxyen skal have samme eksakte tidspunkt; en allerede dokumenteret afledt tilstand må højst holdes tre timer og må ikke opfinde strømstyrke, retning eller pil.
+- Kun de otte godkendte `dkss_lf`-proxyer må bruge den særskilte 15 km-kontrakt. Proxyen skal have samme eksakte tidspunkt; en allerede dokumenteret `READY`-tilstand må højst holdes tre timer og må bruges af Candidate G uden et nyt aktuelt strømfelt. Det må ikke opfinde eller vise U/V, strømstyrke, retning, alignment eller pil. Almindelig uverificeret eller for gammel strøm lukker fortsat lokalt.
 - Manglende nødvendig lokal strømtilstand lukker den berørte kyststrækning eller zone fail-closed. Andre zoner fortsætter med Candidate G.
 - Uændrede punktmål bevarer deres historik på tværs af produktionskørsler. Flyttes et hav- eller landpunkt, nulstilles kun historikken for det ændrede punktmål.
 
