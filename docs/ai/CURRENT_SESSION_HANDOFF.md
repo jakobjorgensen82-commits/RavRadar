@@ -1,6 +1,6 @@
 # RavRadar - aktuelt Codex-handoff
 
-## AKTUELT ARBEJDSCHECKPOINT – 2026-08-27 – kandidat 4.0.287 EU-turlager
+## AKTUELT PRODUKTIONSLUKKET CHECKPOINT – 2026-08-27 – 4.0.287 EU-turlager
 
 - Arbejd fortsat kun i `C:\Users\Lenovo T14\Documents\GitHub\RavRadar\.codex-worktrees\stability-security-4.0.284` på `codex/stability-security-4.0.284`. Rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data er urørte.
 - Ejeren kræver en færdig normalarkitektur fra første dag og en eksplicit Supabase-rollback. DEC-0082 vælger Supabase Auth/Edge plus ti EU-låste Cloudflare D1-shards.
@@ -8,10 +8,13 @@
 - Turso Free er forkastet, fordi gratisplanens DPA-status ikke er tydelig. Cloudflares DPA omfatter self-serve-aftalen, og D1 understøtter uforanderlig EU-jurisdiktion.
 - Infrastruktur-PR #162/#163 bestod exact-head `33014102652`/`33014672254` og er merged som `27cebfd0`/`94b58e41`. Dedikeret Cloudflare-konto, præcis to mindst-mulige API-tokens og nødvendige krypterede GitHub-secrets er oprettet og verificeret uden at vise værdier. Supabase-PAT roteres før 25. september 2026; Cloudflare-tokens før 27. august 2027.
 - Rollback-deploy `33014772035` satte `TRIP_STORAGE_MODE=supabase`, deployede alle versionsstyrede Edge-funktioner gennem CI og bestod ikke-skrivende CORS-, login- og feltkontrol. På dette deltrin fandtes endnu ingen D1-shards, deployet Worker eller migrerede liveposter.
-- PR #164 bestod exact-head `33019055639` på `eb6e165d` og blev merged som `e9cd20ee`. D1-run `33019198166` oprettede/skema-verificerede ti tomme EU-shards og deployede Workeren, men stoppede før migration/Edge, da det øjeblikkelige health-kald ramte Cloudflare-udbredelsesforsinkelsen. Payloadfri efterkontrol gav korrekt 200/health; kandidaten tilføjer bounded retry på højst 53 sekunder uden at lempe kontrakten.
-- Normal D1-deploy må først ske fra eksakt `main` efter grøn source gate. Workflowet opretter/verificerer EU-shards, deployer Worker, migrerer Supabase, skifter Edge, migrerer igen og kører ikke-skrivende grænsekontrol.
+- PR #164 bestod exact-head `33019055639` på `eb6e165d` og blev merged som `e9cd20ee`. D1-run `33019198166` oprettede/skema-verificerede ti tomme EU-shards og deployede Workeren, men stoppede sikkert før migration/Edge, da det øjeblikkelige health-kald ramte Cloudflare-udbredelsesforsinkelsen.
+- Bounded retry bestod PR #166 exact-head `33019805663` og blev merged som `2d12c085c8178c4b89e8b00bf00ca43abe15129f`. D1-run `33019868542` bestod eksakt-main sourcegate, ti EU-shards/skema, headroom, Worker-secret/deploy/boundary, pre-/post-migration, D1-Edge-deploy og ikke-skrivende CORS/login/feltkontrol. Fire kilderækker blev migreret; andet gennemløb fandt fire idempotente dubletter og fortsat fire målposter uden kildesletning eller payloadlog.
+- Pushproduktion `33019856228` og Pages-job `98351206091` bestod timeskarp readiness, central hydrering, frisk DMI/Copernicus, runtimeaudit, fuld validering, releasegate, beskyttet Supabase-sync, artifact og Pages.
+- Offentlig Playwright-audit af `rr-20260826224651-210` viste 4.0.287, 210/210 aktive zoner, 673 kystdele, 420 aktuelle visninger, 2.100 prognosevisninger og nul kontrol-, konsol-, side- eller HTTP-fejl. **Bedste områder** var befolket; top-5 var Lønstrup og Nørlev 76, Langeland vest og Ristinge 72, Fanø nord og Nordby 63, Hals og Nordmandshage 62 samt Lyngby og Lodbjerg 61.
+- Read-only monitor `33021364240`/`98352259752` bestod på eksakt `main` med ti shards, 0 MB afrundet samlet/største shard og 0 % forbrug uden at læse ture.
 - Supabase-banneret om mulig begrænsning fra 9. september 2026 er stadig åbent. Turlagerflytningen stopper fremtidig turvækst i Postgres, men ikke Auth-/Edge-egress.
-- Næste trin: færdiggør 4.0.287-dokument/version, lokal målrettet gate, commit/push og kandidatens exact-head/PR/merge; kør straks derefter D1-workflowet på eksakt `main`, migration, fuld frisk produktion og offentlig 210/673/420/2.100-kontrol.
+- Næste drift: følg Supabase-banneret, rotér PAT/token til de dokumenterede frister, behold daglig D1-monitor og brug kun den eksplicitte Supabase-rollback ved en verificeret D1-hændelse. Implementeringen og den offentlige release er grønne.
 
 Se DEC-0082. Alle checkpoints nedenfor er historik, medmindre et nyere punkt udtrykkeligt genbruger dem.
 

@@ -1,6 +1,6 @@
 # Current truth – gældende projektviden
 
-## Kandidat 4.0.287 – Supabase-identitet, EU-D1-turlager og eksplicit rollback
+## Produktionsverificeret 4.0.287 – Supabase-identitet, EU-D1-turlager og eksplicit rollback
 
 - Supabase forbliver Auth-, profil-, rettigheds-, rate-limit- og Edge-grænse. Normal lagring af ture flyttes til ti EU-låste Cloudflare D1-shards, så fremtidig turvækst ikke rammer Supabases 500 MB-databaseloft.
 - Edge verificerer Supabase-sessionen og erstatter bruger-/anonym-id med en versionsbåret HMAC-SHA-256-pseudonymnøgle. Cloudflare modtager aldrig rå bruger-id, mail, navn, JWT, GPS eller rute.
@@ -10,7 +10,9 @@
 - Et payloadfrit dagligt kapacitetsjob kontrollerer ti shards, EU-jurisdiktion og lager; det advarer ved 70 % og stopper ved 85 %. En eksplicit driftskommando kan slette en ejers ture i både D1 og Supabase uden payloadudskrift.
 - Cloudflare Free oplyser 5 GB samlet D1-lager, 500 MB pr. database, 100.000 Worker-kald/dag, 5 mio. læste rækker/dag og 100.000 skrevne rækker/dag. RavRadars smallere globale gates holder normaltrafik klart under disse dagsgrænser.
 - Supabase-varselet om mulig begrænsning fra 9. september 2026 forbliver aktivt, fordi Auth/Edge/egress stadig bruger Supabase. Aktuel officiel Free-kvote er 50.000 MAU, 500.000 Edge-kald/måned, 500 MB database og 5 GB egress.
-- Målrettet kontrakt og fuld lokal `validate:source` inklusive releasegate er grøn. Infrastruktur-PR #162/#163 bestod exact-head `33014102652`/`33014672254` og er merged som `27cebfd0`/`94b58e41`. Dedikeret Cloudflare-konto, mindst-mulige tokens og krypterede GitHub-secrets er verificeret uden værdier; rollback-Edge-deploy `33014772035` er grøn. PR #164/exact-head `33019055639` blev merged som `e9cd20ee`. D1-run `33019198166` oprettede ti EU-shards og deployede Workeren, men stoppede før migration/Edge ved den umiddelbare health-udbredelsesforsinkelse; payloadfri efterkontrol var grøn, og bounded retry afventer ny exact-head. Ende-til-ende-D1, migration og offentlig verifikation mangler endnu. Se DEC-0082.
+- Målrettet kontrakt og fuld lokal `validate:source` inklusive releasegate er grøn. Infrastruktur-PR #162/#163 bestod exact-head `33014102652`/`33014672254` og er merged som `27cebfd0`/`94b58e41`. Dedikeret Cloudflare-konto, mindst-mulige tokens og krypterede GitHub-secrets er verificeret uden værdier; rollback-Edge-deploy `33014772035` er grøn. PR #164/exact-head `33019055639` blev merged som `e9cd20ee`. Første D1-run `33019198166` stoppede sikkert før migration/Edge på health-udbredelsesforsinkelsen; bounded retry lukkede fejlen gennem PR #166/exact-head `33019805663` og merge `2d12c085`.
+- D1-cutover `33019868542` er ende-til-ende-grøn. Den verificerede ti EU-shards, Worker-grænse, fire nye migrationsposter, fire idempotente dubletter i andet gennemløb, Edge i `d1`-mode og CORS/login/feltgate uden turoprettelse eller payloadlog.
+- Produktion `33019856228` og Pages-job `98351206091` udgav `rr-20260826224651-210` som offentlig 4.0.287 med 210/210 aktive zoner, 673 kystdele, 420 aktuelle visninger, 2.100 prognosevisninger, befolket **Bedste områder** og nul kontrol-, konsol-, side- eller HTTP-fejl. Monitor `33021364240` viste ti shards og 0 % lagerforbrug uden at læse ture. Se DEC-0082.
 
 Candidate G, score, vejr, zoner, geometri, land-/vandpunkter og private payloads er uændrede.
 

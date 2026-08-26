@@ -1,14 +1,17 @@
 # Rekonstrueret chatkronologi
 
-## 2026-08-26 – kandidat 4.0.287 endeligt hybridt turlager
+## 2026-08-26–27 – 4.0.287 endeligt hybridt turlager, produktionsverificeret
 
 1. Ejeren afviste en senere halv implementering og krævede den endelige løsning fra dag ét plus Supabase-rollback.
 2. Turso Free blev forkastet, fordi en DPA ikke fremgår tydeligt. Cloudflare D1 blev valgt med ti EU-låste shards og self-serve-DPA.
 3. Supabase Edge verificerer login og HMAC-pseudonymiserer ejerskab; Cloudflare modtager ingen rå identitet, JWT, GPS eller rute.
 4. Worker-kontrakten er HMAC-signeret, tidsafgrænset og idempotent. Migration kører før/efter cutover, og rollback er eksplicit uden normal dual-write.
 5. Lokal målrettet kontrakt og fuld sourcegate er grøn. Infrastruktur-PR #162/#163 bestod exact-head `33014102652`/`33014672254` og blev merged som `27cebfd0`/`94b58e41`.
-6. Dedikeret Cloudflare-konto, mindst-mulige deploy-/audit-tokens og krypterede GitHub-secrets blev oprettet gennem den godkendte kanal uden at vise værdier. Rollback-Edge-deploy `33014772035` bestod; live EU-shards/Worker, migration, kandidatens endelige exact-head/merge og offentlig verifikation afventer. Se DEC-0082.
-7. PR #164 bestod exact-head `33019055639` og blev merged som `e9cd20ee`. Første D1-run `33019198166` oprettede ti EU-shards og deployede Workeren, men stoppede sikkert før migration/Edge på den umiddelbare health-udbredelsesforsinkelse. Efterfølgende payloadfri health var grøn; bounded retry er tilføjet før ny exact-head og cutover.
+6. Dedikeret Cloudflare-konto, mindst-mulige deploy-/audit-tokens og krypterede GitHub-secrets blev oprettet gennem den godkendte kanal uden at vise værdier. Rollback-Edge-deploy `33014772035` bestod; live EU-shards/Worker, migration, kandidatens endelige exact-head/merge og offentlig verifikation afventede på dette trin. Se DEC-0082.
+7. PR #164 bestod exact-head `33019055639` og blev merged som `e9cd20ee`. Første D1-run `33019198166` oprettede ti EU-shards og deployede Workeren, men stoppede sikkert før migration/Edge på den umiddelbare health-udbredelsesforsinkelse. Efterfølgende payloadfri health var grøn; bounded retry blev tilføjet før ny exact-head og cutover.
+8. Bounded retry bestod PR #166 exact-head `33019805663` og blev merged som `2d12c085`. Cutover `33019868542` migrerede fire Supabase-rækker, genkendte fire idempotente dubletter i andet gennemløb og satte Edge i D1-normaldrift gennem grøn privat og offentlig grænsekontrol.
+9. Fuld produktion `33019856228` og Pages-job `98351206091` udgav `rr-20260826224651-210` som 4.0.287. Offentlig audit viste 210/210 aktive zoner, befolket **Bedste områder**, 673 dele, 420 aktuelle og 2.100 prognosevisninger uden fejl.
+10. Read-only monitor `33021364240`/`98352259752` verificerede ti shards, 0 MB afrundet og 0 % forbrug uden at læse ture. Supabase-varslet og credential-rotationer forbliver drift, mens implementeringen er lukket.
 
 ## 2026-08-26 – 4.0.286 fra kandidat til produktionsverificeret efter offentlig 4.0.285-afvisning
 
