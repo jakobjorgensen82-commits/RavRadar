@@ -14,7 +14,8 @@
 - [x] Bestå fuld lokal `scripts/validate-source.ps1` inklusive releasegate på den færdige kandidat.
 - [x] Opret/godkend dedikeret Cloudflare-konto, mindst-mulige D1/Worker-credentials og krypterede GitHub-secrets gennem den godkendte kanal uden at vise værdier.
 - [x] Bestå infrastrukturens exact-head-gates `33014102652`/`33014672254`, merge PR #162/#163 og deployér/verificér Edge i eksplicit Supabase-rollback gennem `33014772035`.
-- [ ] Bestå kandidatens endelige exact-head source gate, merge og den manuelle D1-deploy/migration.
+- [x] Bestå kandidatens exact-head `33019055639`, merge PR #164 som `e9cd20ee` og opret/skema-verificér ti EU-shards samt deploy Worker i det sikkert stoppede D1-run `33019198166`.
+- [ ] Bestå udbredelsesrettelsens exact-head/merge og den fulde manuelle D1-migration/cutover.
 - [ ] Verificér live D1-normaldrift, konto/turlog, dataminimerede tællinger og den eksplicitte rollbackkontrakt.
 - [ ] Bestå fuld frisk produktionsgate og offentlig 210/673/420/2.100-kontrol på merged head.
 

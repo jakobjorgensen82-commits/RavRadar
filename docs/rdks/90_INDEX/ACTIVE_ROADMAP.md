@@ -9,7 +9,8 @@
 - [x] Bevar eksisterende Supabase-rækker som migrationskilde/rollback uden normal dual-write.
 - [x] Opret dedikeret Cloudflare-konto, mindst-mulige deploy-/audit-tokens og krypterede GitHub-secrets gennem godkendt brugerkanal; verificér DPA/self-serve-kontrakt uden at vise værdier.
 - [x] Bestå infrastrukturens exact-head/merge og deployér Edge grønt i eksplicit Supabase-rollback.
-- [ ] Bestå kandidatens endelige exact-head/merge, opret og verificér alle ti EU-shards, deploy Worker, migrér og aktivér D1.
+- [x] Bestå kandidatens exact-head/merge, opret/skema-verificér alle ti EU-shards og deploy Worker; stop sikkert før migration/Edge på første health-udbredelsesforsinkelse.
+- [ ] Bestå bounded-retry-opfølgningens exact-head/merge, privat Worker-grænse, migration og D1-aktivering.
 - [ ] Bestå fuld frisk produktion og offentlig ende-til-ende-verifikation.
 - [ ] Følg Supabase-banneret frem mod 9. september 2026; turlagerflytningen fjerner ikke Auth-/Edge-egress.
 

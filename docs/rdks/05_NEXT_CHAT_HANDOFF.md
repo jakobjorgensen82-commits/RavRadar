@@ -5,7 +5,7 @@
 - Den færdige lagerarkitektur er Supabase Auth/Edge og ti EU-låste Cloudflare D1-shards; rå ID, mail, navn, JWT, GPS og rute forlader ikke Supabase-grænsen.
 - Lokal kontrakt er grøn for service-HMAC, pseudonymisering, idempotens, turlog, ejer-sletning, pre/post-cutover-migration, kapacitetskontrol og eksplicit Supabase-rollback.
 - Infrastruktur-PR #162/#163, dedikeret Cloudflare-konto, mindst-mulige tokens, krypterede GitHub-secrets og rollback-Edge-deploy `33014772035` er grønne. Værdier og private ture blev ikke vist eller logget.
-- Live D1-shards/Worker og migration mangler fortsat. Kør kandidatens exact-head/merge og derefter det manuelle D1-workflow, fuld produktion og offentlig kontrol. Supabase-varslet 9. september 2026 forbliver aktivt.
+- PR #164/exact-head `33019055639` blev merged som `e9cd20ee`. D1-run `33019198166` oprettede ti EU-shards og deployede Workeren, men stoppede før migration/Edge på den korte health-udbredelsesforsinkelse; efterkontrollen var grøn. Kør bounded-retry-opfølgningens exact-head/merge og derefter D1-workflowet, fuld produktion og offentlig kontrol. Supabase-varslet 9. september 2026 forbliver aktivt.
 - Se DEC-0082 og øverste checkpoint i `docs/ai/CURRENT_SESSION_HANDOFF.md`.
 
 ## Produktionsverificeret 4.0.286 – faktisk runtimegate og native-hold-score

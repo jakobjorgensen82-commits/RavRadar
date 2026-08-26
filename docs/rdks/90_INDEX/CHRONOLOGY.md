@@ -8,6 +8,7 @@
 4. Worker-kontrakten er HMAC-signeret, tidsafgrænset og idempotent. Migration kører før/efter cutover, og rollback er eksplicit uden normal dual-write.
 5. Lokal målrettet kontrakt og fuld sourcegate er grøn. Infrastruktur-PR #162/#163 bestod exact-head `33014102652`/`33014672254` og blev merged som `27cebfd0`/`94b58e41`.
 6. Dedikeret Cloudflare-konto, mindst-mulige deploy-/audit-tokens og krypterede GitHub-secrets blev oprettet gennem den godkendte kanal uden at vise værdier. Rollback-Edge-deploy `33014772035` bestod; live EU-shards/Worker, migration, kandidatens endelige exact-head/merge og offentlig verifikation afventer. Se DEC-0082.
+7. PR #164 bestod exact-head `33019055639` og blev merged som `e9cd20ee`. Første D1-run `33019198166` oprettede ti EU-shards og deployede Workeren, men stoppede sikkert før migration/Edge på den umiddelbare health-udbredelsesforsinkelse. Efterfølgende payloadfri health var grøn; bounded retry er tilføjet før ny exact-head og cutover.
 
 ## 2026-08-26 – 4.0.286 fra kandidat til produktionsverificeret efter offentlig 4.0.285-afvisning
 

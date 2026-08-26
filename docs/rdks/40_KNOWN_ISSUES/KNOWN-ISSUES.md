@@ -8,6 +8,7 @@
 - Supabase-banneret varsler fortsat mulig projektbegrænsning fra 9. september 2026. Flytning af fremtidige ture reducerer databasevæksten, men ikke Auth-/Edge-egress eller tidligere billinghistorik.
 - Under eksplicit Supabase-rollback er ældre D1-ture bevaret, men kan være midlertidigt usynlige, indtil D1 er tilgængelig igen. Nye rollback-ture migreres idempotent ved tilbagevenden.
 - Turso Free er forkastet som normalmål, fordi en DPA ikke fremgår tydeligt af gratisplanen. Genindfør ikke Turso uden ny juridisk og teknisk beslutning.
+- **ISSUE-CLOUDFLARE-WORKER-HEALTH-PROPAGATION-RACE – LØST I OPFØLGNINGSKANDIDAT:** D1-run `33019198166` bestod sourcegate, EU-shards, skema, kapacitet, secret og Worker-deploy, men det umiddelbare health-kald ramte kort udbredelsesforsinkelse og stoppede før migration/Edge. Endepunktet svarede derefter korrekt. Health-verifikationen genprøver nu bounded i højst 53 sekunder og kræver fortsat eksakt 200, skemaversion 1 og ti shards.
 
 Se DEC-0082. Issue lukkes først efter live EU-jurisdiktion, migration, konto/turlog, rollback og offentlig produktion er grønne.
 
