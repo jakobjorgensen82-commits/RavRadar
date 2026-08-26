@@ -1,6 +1,6 @@
 # Current truth – gældende projektviden
 
-## Kandidat 4.0.286 – rullende Candidate G-kontinuitet og faktisk predeploy-audit
+## Produktionsverificeret 4.0.286 – rullende Candidate G-kontinuitet og faktisk predeploy-audit
 
 - PR #156 bestod exact-head `32993055324`, blev merged som `de6b78444bf1d9bd19beb6100ceb193fe40a8d85`, og produktion `32993270783` udgav 4.0.285 gennem recovery, frisk runtime, fuld validering, releasegate, Supabase-sync og Pages.
 - Den skærpede offentlige funktionskontrol afviste resultatet korrekt: 0/210 aktive zoner, 665/673 `WINDOW_INCOMPLETE`, 8/673 `READY` og ellers komplet 210/673/420/2.100-struktur uden browser- eller HTTP-fejl. 4.0.285 er derfor ikke en stabil baseline.
@@ -14,7 +14,9 @@
 - PR #158 bestod exact-head `32997043974` og blev merged som `ca784210eabd1f26a615116c6da00684fcf24a01`. Produktion `32997118162` stoppede igen før deploy og gav den dataminimerede signatur 672/673 `READY`, én ærlig warmup, nul replaymismatch og 1.328 af forventede 1.344 modeevalueringer/diagnostikker.
 - De manglende 16 modeevalueringer var præcis de otte ejerallowlistede `dkss_lf`-dele ved en gyldig to timer gammel `NATIVE_CADENCE_HOLD`. Candidate G-state var `READY`, men evaluatorens ældre Phase D-fortrin krævede stadig et aktuelt strømfelt og returnerede `MISSING_REQUIRED_PHASE_D_COMPONENT`, før den hukommelsesbaserede Candidate G-beregning blev nået.
 - Candidate G bruger nu den eksisterende afledte transport- og mobiliseringstilstand under denne snævre hold: kun `NATIVE_CADENCE_HOLD`, `READY`, eksakt tre-timers tilladelse, alder over 0 og højst 3 timer samt fravær af aktuelle U/V-, fart-, retning- og alignmentfelter accepteres. Almindelig uverificeret strøm, for gammel reference, manglende allowlisttilladelse eller ikke-READY state forbliver lukket.
-- Målrettede tests og et dataminimeret replay af de otte faktiske offentlige fejlpunkter giver 16/16 tilgængelige modes uden rå vektorer eller udskrevne identifikatorer. Ny exact-head, fuld frisk produktion og positiv offentlig ranglistekontrol afventer. Se DEC-0081.
+- Målrettede tests og et dataminimeret replay af de otte faktiske offentlige fejlpunkter giver 16/16 tilgængelige modes uden rå vektorer eller udskrevne identifikatorer.
+- PR #159 bestod exact-head `33001615758`, blev merged som `c0f42b33956e3d2af361da1366ab552b9e2a33ef`, og produktion `33001743118` bestod faktisk Candidate G-runtimegate, fuld validering, releasegate, Supabase-sync, artifact og Pages-deploy.
+- Offentlig `rr-20260826185603-210` er version 4.0.286 med 210/210 aktive zoner, 673 kystdele, 420 aktuelle og 2.100 prognosevisninger uden kontrol-, browser-, side- eller HTTP-fejl. **Bedste områder** er befolket med fem rangerede områder; den sorte 4.0.285-baseline er erstattet. Se DEC-0081.
 
 Candidate G 20/50/30 og dens fysiske +10/-8-/13-timersregler er uændrede; rettelsen gør den allerede godkendte native hold scorebar fra afledt memory uden at fremstille en aktuel måling.
 

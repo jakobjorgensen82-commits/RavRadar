@@ -1,6 +1,6 @@
 # DEC-0081 – Candidate G-cadencefase ved 48-timersgrænsen
 
-**Status:** Besluttet; 4.0.285 er strukturelt produktionsudgivet, men funktionelt afvist. Den rullende kontinuitetsrettelse, den faktiske predeploy-runtimegate og den snævre native-hold-scorevej er lokalt verificeret i kandidat 4.0.286; ny exact-head-, produktions- og offentlig lukning afventer.
+**Status:** Besluttet og produktionsverificeret i 4.0.286. 4.0.285 er strukturelt produktionsudgivet, men funktionelt afvist og erstattet.
 
 ## Problem
 
@@ -36,3 +36,5 @@ PR #155 og produktion `32987875007` beviste 4.0.284-sikkerhedskæden. En GitHub 
 PR #156 bestod exact-head `32993055324`, blev merged som `de6b78444bf1d9bd19beb6100ceb193fe40a8d85`, og produktion `32993270783` bestod recovery, frisk runtime, fuld validering, releasegate, Supabase-sync og Pages. Den skærpede offentlige efterkontrol afviste derefter 4.0.285 korrekt: 0/210 aktive zoner og 665/673 `WINDOW_INCOMPLETE`. Rodårsagen var, at faseskiftets virkelige grænsebevis blev brugt i samme beregning, men ikke bevaret til næste rullende reference. 4.0.286 retter denne fortsættelse og flytter den faktiske shadowaudit ind før deploy.
 
 PR #157/exact-head `32995801418` og produktion `32995888183` beviste, at den nye gate stopper den faktiske runtime før deploy. PR #158/exact-head `32997043974`, merge `ca784210eabd1f26a615116c6da00684fcf24a01` og produktion `32997118162` gav en dataminimeret signatur med 672/673 `READY`, én warmup, nul replaymismatch og 1.328/1.344 modeevalueringer. De sidste 16 var de otte godkendte `dkss_lf`-dele i gyldig to-timers hold, som den ældre Phase D-base afviste før Candidate G-memory. Den snævre regel i punkt 9 giver 16/16 i et replay af de offentlige fejlpunkter uden rå vektorer eller udskrevne identifikatorer.
+
+PR #159 bestod exact-head `33001615758` på `bae90f4311c9a3655234a9010c8770abe8ac6a30` og blev merged som `c0f42b33956e3d2af361da1366ab552b9e2a33ef`. Produktion `33001743118` bestod den faktiske Candidate G-runtimegate på 210/210 zoner og 673/673 kystdele, fuld validering, releasegate, Supabase-sync, artifact og Pages-deploy. Offentlig `rr-20260826185603-210` viser 210/210 aktive zoner og en befolket aktuel top-5 uden kontrol-, browser-, side- eller HTTP-fejl. Beslutningen er dermed produktionslukket.

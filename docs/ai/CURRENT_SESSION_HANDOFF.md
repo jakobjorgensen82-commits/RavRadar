@@ -1,6 +1,6 @@
 # RavRadar - aktuelt Codex-handoff
 
-## AKTUELT CHECKPOINT – 2026-08-26 – KANDIDAT 4.0.286
+## AKTUELT PRODUKTIONSLUKKET CHECKPOINT – 2026-08-26 – 4.0.286
 
 Dette er den aktuelle overdragelse. Alle efterfølgende checkpoints i filen er historik.
 
@@ -33,11 +33,13 @@ Dette er den aktuelle overdragelse. Alle efterfølgende checkpoints i filen er h
 - Produktion `32997118162` stoppede korrekt før deploy og viste 672 `READY`, én warmup, nul replaymismatch og 1.328 af forventede 1.344 modeevalueringer/diagnostikker. De manglende 16 var præcis de otte godkendte `dkss_lf`-dele i en to timer gammel `NATIVE_CADENCE_HOLD`.
 - Rodårsagen var Candidate G-evaluatorens ældre Phase D-fortrin: det krævede et aktuelt strømfelt og returnerede `MISSING_REQUIRED_PHASE_D_COMPONENT`, før den komplette Candidate G-memory blev brugt. Kandidaten går nu kun uden om dette fortrin ved allowlist-afledt eksakt tre-timers hold, `READY`, alder over 0/højst 3 timer og tomme aktuelle U/V-, fart-, retning- og alignmentfelter.
 - Almindelig unverified, for gammel, ikke-allowlisted og ikke-READY forbliver fail-closed. Begge modes, state/livepilot/forklaringskontrakter og et dataminimeret replay af de otte faktiske offentlige fejlpunkter er grønne med 16/16 modes, uden rå vektorer eller udskrevne identifikatorer.
-- Næste trin er source gate, ny exact-head/merge, fuld frisk produktion gennem den faktiske runtimegate, validate/release/Supabase/Pages og positiv offentlig rangliste-/browserkontrol.
-- Offentlig slutkontrol skal kræve en befolket aktuel rangliste samt ingen browser-, side- eller HTTP-fejl.
+- PR #159 bestod exact-head-kildegaten `33001615758` på `bae90f4311c9a3655234a9010c8770abe8ac6a30` og blev merged som `c0f42b33956e3d2af361da1366ab552b9e2a33ef`.
+- Pushproduktion `33001743118` bestod den faktiske Candidate G-runtimegate på 210/210 zoner og 673/673 kystdele, fuld validering, releasegate, Supabase-sync, artifact og Pages-deploy. Buildjobbet var `98285159773`, og deployjobbet `98288517204`.
+- Offentlig Playwright-kontrol af datasæt `rr-20260826185603-210` viste version 4.0.286, 210/210 aktive zoner, 673 kystdele, 420 aktuelle visninger, 2.100 prognosevisninger og nul kontrol-, browser-, side- eller HTTP-fejl.
+- En særskilt genindlæst DOM-kontrol viste en befolket **Bedste områder**-top-5; første område var **Lønstrup og Nørlev** med områdescore 77. Den sorte 4.0.285-tilstand er dermed erstattet af offentligt verificeret 4.0.286.
 - Supabases mulige begrænsning fra 9. september 2026 forbliver en separat driftsrisiko; sikkerhed eller releasegates må ikke lempes. GitHub Pages er fortsat kanonisk, mens `ravradar.dk` ikke er løst.
 
-Se DEC-0080 og DEC-0081. 4.0.286 er ikke færdig eller produktionsverificeret ved dette checkpoint; den offentlige 4.0.285-side er fortsat sort og må ikke kaldes grøn.
+Se DEC-0080 og DEC-0081. 4.0.286 er produktionsverificeret og er den aktuelle grønne offentlige baseline.
 
 ## AKTUELT CHECKPOINT – 2026-08-26 – KANDIDAT 4.0.285
 

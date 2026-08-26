@@ -4,6 +4,8 @@
 
 Den faktiske predeploy-gate fandt efter kontinuitetsrettelsen en separat 8-delsfejl: 672/673 states var `READY`, men de otte ejerallowlistede `dkss_lf`-dele ved `NATIVE_CADENCE_HOLD` manglede 16 modes, fordi Candidate G-evaluatorens ældre Phase D-fortrin krævede et nyt aktuelt strømfelt. En godkendt native hold må bruge den allerede afledte `READY` transport- og mobiliseringstilstand, men kun med eksakt tre-timers tilladelse, referencealder over 0 og højst 3 timer samt tomme U/V-, fart-, retnings- og alignmentfelter. Den må ikke foregive en aktuel vektor. Ordinary `UNVERIFIED`, for gammel eller ikke-READY forbliver lukket. Se DEC-0081.
 
+4.0.286 er produktionsverificeret via PR #159/exact-head `33001615758`, merge `c0f42b33` og produktion `33001743118`. Offentlig `rr-20260826185603-210` har 210/210 aktive zoner, befolket **Bedste områder**, komplet 210/673/420/2.100-struktur og nul kontrol-, browser-, side- eller HTTP-fejl.
+
 Når `buildBoundedCurrentTransportMemory` bruger en virkelig kompakt forgænger før `referenceAt - 48h` til at dokumentere ubrudt højst tretimerskadence, skal forgængeren bevares i den kompakte state til næste reference. Ellers kan samme beregning blive `READY`, mens næste produktion igen mister én times sammenhæng og bliver `WINDOW_INCOMPLETE`.
 
 Forgængeren er kun kontinuitetsbevis. Det aktuelle replay og dækningsberegningen bruger fortsat kun evidens fra og efter vinduesgrænsen, som starter med fast tilstand 0. Der opfindes ingen måling eller interpolation, og et reelt kort vindue uden forgænger forbliver lukket.

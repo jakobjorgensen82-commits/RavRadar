@@ -1,6 +1,6 @@
 # RavRadar – overlevering til næste chat
 
-## Kandidat 4.0.286 – faktisk runtimegate og native-hold-score
+## Produktionsverificeret 4.0.286 – faktisk runtimegate og native-hold-score
 
 - Offentlig 4.0.285 er funktionelt afvist med sorte zoner og tom aktuel rangliste. Den må ikke kaldes grøn.
 - PR #157/exact-head `32995801418` blev merged som `2f2fd148`; produktion `32995888183` beviste, at den nye gate stopper den faktisk genererede runtime før deploy.
@@ -8,7 +8,9 @@
 - De sidste 16 modes var de otte godkendte `dkss_lf`-dele ved en gyldig to timer gammel `NATIVE_CADENCE_HOLD`. Den ældre Phase D-base krævede et nyt aktuelt strømfelt, før Candidate G-memory blev nået.
 - Kandidaten bruger nu den eksisterende `READY` transport- og mobiliseringstilstand kun ved allowlist-afledt eksakt tre-timers hold, referencealder over 0/højst 3 timer og tomme aktuelle U/V-, fart-, retnings- og alignmentfelter. Almindelig unverified, for gammel, ikke-allowlisted og ikke-READY forbliver fail-closed.
 - Målrettede kontrakter og et dataminimeret replay af de otte faktiske offentlige fejlpunkter giver 16/16 modes uden rå vektorer eller udskrevne identifikatorer.
-- Næste trin er exact-head, merge, fuld frisk produktion gennem runtimegate/validate/release/Supabase/Pages og offentlig kontrol af en befolket rangliste uden browser-, side- eller HTTP-fejl. Se DEC-0081.
+- PR #159 bestod exact-head `33001615758`, blev merged som `c0f42b33956e3d2af361da1366ab552b9e2a33ef`, og produktion `33001743118` bestod runtimegate, fuld validering, releasegate, Supabase-sync, artifact og Pages.
+- Offentlig `rr-20260826185603-210` viser 210/210 aktive zoner, 673 kystdele, 420 aktuelle og 2.100 prognosevisninger uden fejl. **Bedste områder** er befolket; første område var **Lønstrup og Nørlev** med områdescore 77.
+- 4.0.286 er den aktuelle grønne baseline. Åbne driftsforhold er Supabases mulige begrænsning fra 9. september 2026 og det endnu uløste `ravradar.dk`; GitHub Pages er kanonisk. Se DEC-0081.
 
 ## Kandidat 4.0.283 – slutkontrollen bevarer moderzonen
 
